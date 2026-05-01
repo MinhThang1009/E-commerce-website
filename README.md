@@ -18,7 +18,7 @@
 Mở MySQL client (MySQL Workbench, HeidiSQL, hoặc terminal) và chạy:
 
 ```sql
-CREATE DATABASE websitebanhangmini;
+CREATE DATABASE techstore;
 ```
 
 ### Cấu hình kết nối
@@ -28,7 +28,7 @@ Mở file `be/.env` và điền thông tin MySQL của bạn:
 ```env
 DB_USER=root
 DB_PASSWORD=       # Mật khẩu MySQL của bạn
-DB_NAME=websitebanhangmini
+DB_NAME=techstore
 DB_HOST=127.0.0.1
 DB_PORT=3306
 ```

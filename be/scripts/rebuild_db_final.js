@@ -4,6 +4,7 @@ const fs = require('fs');
 const path = require('path');
 const bcrypt = require('bcrypt');
 const { sequelize, User, Banner, DiscountCode, Collection, WarrantyPackage, AttributeGroup } = require('../src/models');
+const { seedFull } = require('./seed_products_v2');
 
 async function importSql(conn, filename) {
   console.log(`\n⏳ Đang import [${filename}]...`);
@@ -47,10 +48,9 @@ async function rebuild() {
     await sequelize.sync({ force: true });
     console.log('✅ Đã tạo bảng thành công.');
 
-    // Bước 3: Import data_new.sql (Chứa categories, brands, products, variants, images, product_reviews)
-    await rawConn.query(`USE \`${dbName}\``);
-    await rawConn.query('SET FOREIGN_KEY_CHECKS = 0');
-    await importSql(rawConn, 'data_new.sql');
+    // Bước 3: Seed 45 sản phẩm qua seed_products_v2.js
+    console.log('⏳ Đang seed sản phẩm từ seed_products_v2.js...');
+    await seedFull();
 
     // Bước 4: Seed Data cơ bản (User, Banners, Discount...) dùng trực tiếp Model
     console.log('⏳ Đang gieo mầm dữ liệu Seed bằng Model...');

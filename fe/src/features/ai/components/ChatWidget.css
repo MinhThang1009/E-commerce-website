@@ -1,0 +1,95 @@
+/* Modern Chat Widget Styles */
+
+/* Base container animations */
+@keyframes chatFadeIn {
+  from { opacity: 0; transform: scale(0.98); }
+  to { opacity: 1; transform: scale(1); }
+}
+
+.chat-widget-active {
+  animation: chatFadeIn 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.25), 0 0 0 1px rgba(0, 0, 0, 0.05);
+}
+
+/* Custom scrollbar for message area */
+.custom-scrollbar::-webkit-scrollbar {
+  width: 5px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb {
+  background: rgba(59, 130, 246, 0.2);
+  border-radius: 10px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb:hover {
+  background: rgba(59, 130, 246, 0.4);
+}
+
+/* Message bubble hover effect */
+.message-bubble {
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.message-bubble:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+/* Drag handle styling */
+.chat-header-drag {
+  cursor: grab;
+}
+
+.chat-header-drag:active {
+  cursor: grabbing;
+}
+
+/* Fix for overlapping issues - Ensure stacking context */
+.chat-header-drag {
+  position: relative;
+  z-index: 50;
+}
+
+.chat-messages {
+  z-index: 0;
+}
+
+/* Animations for new messages */
+@keyframes slideUp {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.animate-in {
+  animation: slideUp 0.3s ease-out forwards;
+}
+
+/* Suggestions hover Lift */
+.chat-suggestion-button {
+  transition: all 0.2s ease;
+}
+
+.chat-suggestion-button:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(59, 130, 246, 0.15);
+}
+
+/* Dark mode adjustments */
+.dark .custom-scrollbar::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.1);
+}
+
+.dark .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+  background: rgba(255, 255, 255, 0.2);
+}
+
+/* Responsive tweaks */
+@media (max-width: 640px) {
+  .chat-widget-active {
+    border-radius: 20px !important;
+  }
+}

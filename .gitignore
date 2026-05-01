@@ -1,0 +1,46 @@
+# Dependencies
+node_modules/
+.pnpm-store/
+
+# Environment variables
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+
+# Build outputs
+dist/
+build/
+out/
+.output/
+
+# Logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# OS specific
+.DS_Store
+Thumbs.db
+
+# IDEs
+.idea/
+.vscode/
+
+# Temp
+tmp/
+temp/
+
+# Claude Code
+.claude/
+
+# Analysis files
+ANALYSIS_INDEX.md
+ANALYSIS_REPORT.md
+ANALYSIS_SUMMARY.md
+QUICK_SUMMARY.txt
+README_ANALYSIS.txt
+export_docx.py

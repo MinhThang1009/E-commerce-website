@@ -255,7 +255,7 @@ const createOrder = async (req, res, next) => {
       const variant = item.ProductVariant;
 
       // Kiểm tra sản phẩm còn kinh doanh không
-      if (product.status !== 'active' && product.status !== 'Đang kinh doanh') {
+      if (product.status !== 'active') {
         throw new AppError(`Sản phẩm "${product.name}" hiện không kinh doanh`, 400);
       }
 

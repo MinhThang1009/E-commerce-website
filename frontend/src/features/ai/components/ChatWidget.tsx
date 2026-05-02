@@ -292,7 +292,7 @@ const ChatWidget: React.FC = () => {
               <div className="flex items-center group">
                 <VerifiedIcon className="mr-1.5 text-primary-500/70" size={12} />
                 <span className="uppercase tracking-widest">
-                  Powered by <span className="text-primary-600 dark:text-primary-400">Shopmini AI</span>
+                  {t('chat.poweredByLabel')}
                 </span>
               </div>
 
@@ -301,19 +301,19 @@ const ChatWidget: React.FC = () => {
                   type="button"
                   className="hover:text-red-500 transition-colors flex items-center gap-1"
                   onClick={() => {
-                    if (window.confirm('Xóa hội thoại?')) setMessages([]);
+                    if (window.confirm(t('chat.clearConfirm'))) setMessages([]);
                   }}
                 >
                   <TrashIcon size={12} />
-                  <span>Xóa</span>
+                  <span>{t('chat.clearButton')}</span>
                 </button>
                 <button
                   type="button"
                   className="hover:text-primary-500 transition-colors flex items-center gap-1"
-                  onClick={() => handleSendMessage('Hướng dẫn sử dụng')}
+                  onClick={() => handleSendMessage(t('chat.helpMessage'))}
                 >
                   <HelpIcon size={12} />
-                  <span>Hỗ trợ</span>
+                  <span>{t('chat.supportButton')}</span>
                 </button>
               </div>
             </div>

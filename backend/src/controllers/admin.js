@@ -276,7 +276,7 @@ const getDetailedStats = catchAsync(async (req, res) => {
   const orderStats = await Order.findAll({
     attributes: [
       [
-        Sequelize.fn('DATE_FORMAT', Sequelize.col('created_at'), dateFormat),
+        Sequelize.fn('DATE_FORMAT', Sequelize.col('createdAt'), dateFormat),
         'period',
       ],
       [Sequelize.fn('COUNT', Sequelize.col('id')), 'orderCount'],
@@ -288,11 +288,11 @@ const getDetailedStats = catchAsync(async (req, res) => {
       },
     },
     group: [
-      Sequelize.fn('DATE_FORMAT', Sequelize.col('created_at'), dateFormat),
+      Sequelize.fn('DATE_FORMAT', Sequelize.col('createdAt'), dateFormat),
     ],
     order: [
       [
-        Sequelize.fn('DATE_FORMAT', Sequelize.col('created_at'), dateFormat),
+        Sequelize.fn('DATE_FORMAT', Sequelize.col('createdAt'), dateFormat),
         'ASC',
       ],
     ],
@@ -302,7 +302,7 @@ const getDetailedStats = catchAsync(async (req, res) => {
   const userStats = await User.findAll({
     attributes: [
       [
-        Sequelize.fn('DATE_FORMAT', Sequelize.col('created_at'), dateFormat),
+        Sequelize.fn('DATE_FORMAT', Sequelize.col('createdAt'), dateFormat),
         'period',
       ],
       [Sequelize.fn('COUNT', Sequelize.col('id')), 'newUsers'],
@@ -314,11 +314,11 @@ const getDetailedStats = catchAsync(async (req, res) => {
       },
     },
     group: [
-      Sequelize.fn('DATE_FORMAT', Sequelize.col('created_at'), dateFormat),
+      Sequelize.fn('DATE_FORMAT', Sequelize.col('createdAt'), dateFormat),
     ],
     order: [
       [
-        Sequelize.fn('DATE_FORMAT', Sequelize.col('created_at'), dateFormat),
+        Sequelize.fn('DATE_FORMAT', Sequelize.col('createdAt'), dateFormat),
         'ASC',
       ],
     ],
@@ -509,7 +509,7 @@ const getProductById = catchAsync(async (req, res) => {
       },
       {
         model: ProductAttribute,
-        as: 'attributes',
+        as: 'productAttributes',
       },
       {
         model: ProductVariant,
@@ -935,7 +935,7 @@ const createProduct = catchAsync(async (req, res) => {
       },
       {
         model: ProductAttribute,
-        as: 'attributes',
+        as: 'productAttributes',
       },
       {
         model: ProductVariant,
@@ -1301,7 +1301,7 @@ const updateProduct = catchAsync(async (req, res) => {
     const finalProduct = await Product.findByPk(id, {
       include: [
         { model: Category, as: 'categories', through: { attributes: [] } },
-        { model: ProductAttribute, as: 'attributes' },
+        { model: ProductAttribute, as: 'productAttributes' },
         { model: ProductVariant, as: 'variants' },
         { model: ProductSpecification, as: 'productSpecifications' },
         { 
@@ -1574,11 +1574,12 @@ const getAllReviews = catchAsync(async (req, res) => {
     include: [
       {
         model: User,
+        as: 'user',
         attributes: ['id', 'firstName', 'lastName', 'avatar'],
       },
       {
         model: Product,
-        attributes: ['id', 'name', 'images'],
+        attributes: ['id', 'name', 'slug'],
       },
     ],
     limit: parseInt(limit),
@@ -1775,7 +1776,7 @@ const cloneProduct = catchAsync(async (req, res) => {
   const originalProduct = await Product.findByPk(id, {
     include: [
       { model: Category, as: 'categories' },
-      { model: ProductAttribute, as: 'attributes' },
+      { model: ProductAttribute, as: 'productAttributes' },
       { model: ProductVariant, as: 'variants' },
       { model: ProductSpecification, as: 'productSpecifications' },
       {

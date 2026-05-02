@@ -1,4 +1,5 @@
-﻿import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import {
   Form,
   Select,
@@ -17,37 +18,16 @@ import {
 import {
   BulbOutlined,
   SettingOutlined,
-  EyeOutlined,
-  SyncOutlined,
   InfoCircleOutlined,
 } from '@ant-design/icons';
-import { attributeService } from '@/services/attributeApi';
+import { attributeService, AttributeValue, AttributeGroup as BaseAttributeGroup } from '@/services/attributeApi';
 import DynamicProductName from './DynamicProductName';
 
 const { Option } = Select;
-const { Text, Title } = Typography;
+const { Text } = Typography;
 
-interface AttributeGroup {
-  id: string;
-  name: string;
-  description?: string;
-  type: string;
-  isRequired: boolean;
-  sortOrder: number;
+interface AttributeGroup extends BaseAttributeGroup {
   values: AttributeValue[];
-}
-
-interface AttributeValue {
-  id: string;
-  name: string;
-  value: string;
-  colorCode?: string;
-  imageUrl?: string;
-  priceAdjustment: number;
-  sortOrder: number;
-  isActive: boolean;
-  affectsName: boolean;
-  nameTemplate?: string;
 }
 
 interface DynamicAttributeSelectorProps {
@@ -70,6 +50,7 @@ const DynamicAttributeSelector: React.FC<DynamicAttributeSelectorProps> = ({
   disabled = false,
   showNamePreview = true,
 }) => {
+  const { t } = useTranslation();
   const [loading, setLoading] = useState(true);
   const [attributeGroups, setAttributeGroups] = useState<AttributeGroup[]>([]);
   const [selectedAttributes, setSelectedAttributes] = useState<
@@ -83,7 +64,6 @@ const DynamicAttributeSelector: React.FC<DynamicAttributeSelectorProps> = ({
 
   const form = Form.useFormInstance();
 
-  // Tải danh sách nhóm thuộc tính
   useEffect(() => {
     loadAttributeGroups();
     loadNameAffectingAttributes();
@@ -97,7 +77,7 @@ const DynamicAttributeSelector: React.FC<DynamicAttributeSelectorProps> = ({
         setAttributeGroups(response.data);
       }
     } catch (err: any) {
-      setError('Failed to load attribute groups');
+      setError(t('attr.loadError'));
       console.error('Lỗi tải nhóm thuộc tính:', err);
     } finally {
       setLoading(false);
@@ -124,7 +104,6 @@ const DynamicAttributeSelector: React.FC<DynamicAttributeSelectorProps> = ({
 
     setSelectedAttributes(newSelectedAttributes);
 
-    // Lọc thuộc tính ảnh hưởng đến tên
     const affectingNameOnly: Record<string, string> = {};
     Object.entries(newSelectedAttributes).forEach(([gId, vId]) => {
       if (vId) {
@@ -137,14 +116,9 @@ const DynamicAttributeSelector: React.FC<DynamicAttributeSelectorProps> = ({
       }
     });
 
-    // Thông báo cho component cha
     if (onAttributeChange) {
       onAttributeChange(newSelectedAttributes, affectingNameOnly);
     }
-  };
-
-  const getAttributesByType = (type: string) => {
-    return attributeGroups.filter((group) => group.type === type);
   };
 
   const getVisibleAttributeGroups = () => {
@@ -177,13 +151,13 @@ const DynamicAttributeSelector: React.FC<DynamicAttributeSelectorProps> = ({
             {value.priceAdjustment !== 0 && (
               <Text type="secondary" style={{ marginLeft: 8 }}>
                 {value.priceAdjustment > 0 ? '+' : ''}
-                {value.priceAdjustment.toLocaleString()} VNĐ
+                {value.priceAdjustment.toLocaleString()}₫
               </Text>
             )}
           </span>
           {isNameAffecting && (
             <Tooltip
-              title={`Ảnh hưởng tên: ${value.nameTemplate || value.name}`}
+              title={t('product.affectsNameTemplate', { template: value.nameTemplate || value.name })}
             >
               <Tag color="blue" size="small">
                 {value.nameTemplate || 'NAME'}
@@ -197,7 +171,7 @@ const DynamicAttributeSelector: React.FC<DynamicAttributeSelectorProps> = ({
 
   if (loading) {
     return (
-      <Card title="Thuộc tính sản phẩm">
+      <Card title={t('attr.configTitle')}>
         <Skeleton active paragraph={{ rows: 4 }} />
       </Card>
     );
@@ -206,13 +180,13 @@ const DynamicAttributeSelector: React.FC<DynamicAttributeSelectorProps> = ({
   if (error) {
     return (
       <Alert
-        message="Lỗi tải thuộc tính"
+        message={t('attr.loadError')}
         description={error}
         type="error"
         closable
         action={
           <Button size="small" onClick={loadAttributeGroups}>
-            Thử lại
+            {t('attr.retry')}
           </Button>
         }
       />
@@ -227,23 +201,22 @@ const DynamicAttributeSelector: React.FC<DynamicAttributeSelectorProps> = ({
 
   return (
     <div>
-      {/* Control Panel */}
       <Card
         size="small"
         style={{ marginBottom: 16 }}
         title={
           <Space>
             <SettingOutlined />
-            <span>Cấu hình thuộc tính</span>
+            <span>{t('attr.configTitle')}</span>
             <Tag color="blue">
-              {nameAffectingCount} thuộc tính ảnh hưởng tên
+              {t('attr.nameAffectingCount', { count: nameAffectingCount })}
             </Tag>
           </Space>
         }
         extra={
           <Space>
             <span style={{ fontSize: '12px', color: '#666' }}>
-              Chỉ xem thuộc tính ảnh hưởng tên:
+              {t('attr.showNameAffecting')}
             </span>
             <Switch
               size="small"
@@ -255,8 +228,8 @@ const DynamicAttributeSelector: React.FC<DynamicAttributeSelectorProps> = ({
       >
         {nameAffectingCount > 0 && (
           <Alert
-            message={`Tìm thấy ${nameAffectingCount} thuộc tính có thể ảnh hưởng đến tên sản phẩm`}
-            description={`Đã chọn ${selectedNameAffecting} thuộc tính. Tên sản phẩm sẽ được cập nhật tự động.`}
+            message={t('attr.foundNameAffecting', { count: nameAffectingCount })}
+            description={t('attr.selectedNameAffecting', { count: selectedNameAffecting })}
             type="info"
             icon={<BulbOutlined />}
             style={{ marginBottom: 12 }}
@@ -264,7 +237,6 @@ const DynamicAttributeSelector: React.FC<DynamicAttributeSelectorProps> = ({
         )}
       </Card>
 
-      {/* Dynamic Name Preview */}
       {showNamePreview && baseName && (
         <DynamicProductName
           baseName={baseName}
@@ -275,8 +247,7 @@ const DynamicAttributeSelector: React.FC<DynamicAttributeSelectorProps> = ({
         />
       )}
 
-      {/* Attribute Groups */}
-      <Card title={`Chọn thuộc tính (${visibleGroups.length} nhóm)`}>
+      <Card title={t('attr.selectTitle', { count: visibleGroups.length })}>
         <Row gutter={[16, 16]}>
           {visibleGroups.map((group) => (
             <Col span={12} key={group.id}>
@@ -286,7 +257,7 @@ const DynamicAttributeSelector: React.FC<DynamicAttributeSelectorProps> = ({
                     <span>{group.name}</span>
                     {group.isRequired && <Text type="danger">*</Text>}
                     {group.values.some((v) => v.affectsName) && (
-                      <Tooltip title="Nhóm thuộc tính này có ảnh hưởng đến tên sản phẩm">
+                      <Tooltip title={t('product.affectsNameTooltip')}>
                         <Tag color="blue" size="small">
                           <BulbOutlined style={{ fontSize: 10 }} />
                         </Tag>
@@ -303,7 +274,7 @@ const DynamicAttributeSelector: React.FC<DynamicAttributeSelectorProps> = ({
                 }
               >
                 <Select
-                  placeholder={`Chọn ${group.name.toLowerCase()}`}
+                  placeholder={t('attr.selectGroupPlaceholder', { name: group.name.toLowerCase() })}
                   allowClear
                   value={selectedAttributes[group.id]}
                   onChange={(value) => handleAttributeChange(group.id, value)}
@@ -311,11 +282,11 @@ const DynamicAttributeSelector: React.FC<DynamicAttributeSelectorProps> = ({
                   style={{ width: '100%' }}
                   showSearch
                   optionFilterProp="children"
-                  notFoundContent="Không tìm thấy thuộc tính"
+                  notFoundContent={t('common.noResults')}
                 >
                   {group.values
                     .filter((value) => value.isActive)
-                    .sort((a, b) => a.sortOrder - b.sortOrder)
+                    .sort((a, b) => (a.sortOrder ?? 0) - (b.sortOrder ?? 0))
                     .map((value) => renderAttributeValue(value, group.type))}
                 </Select>
               </Form.Item>
@@ -325,18 +296,17 @@ const DynamicAttributeSelector: React.FC<DynamicAttributeSelectorProps> = ({
 
         {visibleGroups.length === 0 && (
           <Alert
-            message="Chưa có thuộc tính"
-            description="Chưa có nhóm thuộc tính nào được cấu hình cho sản phẩm này."
+            message={t('attr.emptyText')}
+            description={t('attr.noGroupsDesc')}
             type="warning"
             showIcon
           />
         )}
       </Card>
 
-      {/* Selected Attributes Summary */}
       {Object.keys(selectedAttributes).length > 0 && (
         <Card
-          title="Thuộc tính đã chọn"
+          title={t('attr.selectedTitle')}
           size="small"
           style={{ marginTop: 16 }}
           extra={
@@ -345,7 +315,7 @@ const DynamicAttributeSelector: React.FC<DynamicAttributeSelectorProps> = ({
               size="small"
               onClick={() => setSelectedAttributes({})}
             >
-              Xóa tất cả
+              {t('common.clear')}
             </Button>
           }
         >

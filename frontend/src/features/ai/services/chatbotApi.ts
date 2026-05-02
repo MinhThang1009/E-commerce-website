@@ -11,6 +11,47 @@ export interface ChatResponse {
   suggestions?: string[];
 }
 
+export interface ProductRecommendation {
+  id: string | number;
+  name: string;
+  price: number;
+  compareAtPrice?: number;
+  thumbnail?: string;
+  rating: number;
+  inStock: boolean;
+  discount: number;
+}
+
+export interface ChatbotResponse {
+  response: string;
+  suggestions?: string[];
+  products?: ProductRecommendation[];
+  actions?: Array<{ type: string; label: string; url?: string; data?: Record<string, any> }>;
+  sessionId?: string;
+}
+
+export interface SendChatbotMessageRequest {
+  message: string;
+  userId?: number | string;
+  sessionId: string;
+  context?: Record<string, any>;
+}
+
+export interface TrackAnalyticsRequest {
+  event: string;
+  userId?: number | string;
+  sessionId: string;
+  productId?: string | number;
+  value?: number;
+  metadata?: Record<string, any>;
+}
+
+export interface AddToCartViaChatbotRequest {
+  productId: string | number;
+  quantity: number;
+  sessionId: string;
+}
+
 // Phát hiện ý định đơn giản từ tin nhắn người dùng
 function determineIntent(message: string): string {
   const lowerMessage = message.toLowerCase();
@@ -73,12 +114,12 @@ const enhancedChatService = {
           error.message?.includes('quota')
         ) {
           return {
-            text: `⚠️ ${error.message}\n\nTôi đang chuyển sang chế độ demo. Bạn vẫn có thể chat với tôi nhưng sẽ nhận được phản hồi mẫu.`,
+            text: `⚠️ ${error.message}\n\n${i18n.t('chat.errors.demoMode')}`,
             suggestions: [
-              'Tiếp tục với chế độ demo',
-              'Tìm sản phẩm',
-              'Hỏi về chính sách',
-              'Liên hệ hỗ trợ',
+              i18n.t('chat.suggestions.demoMode'),
+              i18n.t('chat.suggestions.findProducts'),
+              i18n.t('chat.suggestions.askPolicy'),
+              i18n.t('chat.suggestions.contactSupport'),
             ],
           };
         }
@@ -114,10 +155,10 @@ const enhancedChatService = {
         mockResponse = {
           text: i18n.t('chat.responses.productSearch', { query: message }),
           suggestions: [
-            'Xem áo thun',
-            'Xem quần jean',
-            'Xem giày sneaker',
-            'Tìm sản phẩm khác',
+            i18n.t('chat.suggestions.viewTshirts'),
+            i18n.t('chat.suggestions.viewJeans'),
+            i18n.t('chat.suggestions.viewSneakers'),
+            i18n.t('chat.suggestions.findOther'),
           ],
         };
         break;
@@ -125,10 +166,10 @@ const enhancedChatService = {
         mockResponse = {
           text: i18n.t('chat.responses.orderHelp'),
           suggestions: [
-            'Phương thức thanh toán',
-            'Phí vận chuyển',
-            'Thời gian giao hàng',
-            'Mã giảm giá',
+            i18n.t('chat.suggestions.paymentMethods'),
+            i18n.t('chat.suggestions.shippingFee'),
+            i18n.t('chat.suggestions.deliveryTime'),
+            i18n.t('chat.suggestions.discountCode'),
           ],
         };
         break;
@@ -136,10 +177,10 @@ const enhancedChatService = {
         mockResponse = {
           text: i18n.t('chat.responses.returnPolicy'),
           suggestions: [
-            'Cách thức đổi trả',
-            'Hoàn tiền như thế nào',
-            'Sản phẩm lỗi',
-            'Liên hệ bộ phận CSKH',
+            i18n.t('chat.suggestions.returnProcess'),
+            i18n.t('chat.suggestions.refund'),
+            i18n.t('chat.suggestions.defectiveProduct'),
+            i18n.t('chat.suggestions.customerService'),
           ],
         };
         break;
@@ -150,7 +191,7 @@ const enhancedChatService = {
             i18n.t('chat.suggestions.findProducts'),
             i18n.t('chat.suggestions.howToOrder'),
             i18n.t('chat.suggestions.returnPolicy'),
-            'Khuyến mãi hiện có',
+            i18n.t('chat.suggestions.currentPromo'),
           ],
         };
     }
@@ -167,7 +208,6 @@ export const chatApi = api.injectEndpoints({
         method: 'POST',
         body: { message },
       }),
-      // Chuyển đổi response để khớp với interface ChatResponse
       transformResponse: (response: any) => {
         return {
           text: response.data.response,
@@ -175,7 +215,33 @@ export const chatApi = api.injectEndpoints({
         };
       },
     }),
+    sendChatbotMessage: builder.mutation<any, SendChatbotMessageRequest>({
+      query: (body) => ({
+        url: '/chatbot/message',
+        method: 'POST',
+        body,
+      }),
+    }),
+    trackChatbotAnalytics: builder.mutation<any, TrackAnalyticsRequest>({
+      query: (body) => ({
+        url: '/chatbot/analytics',
+        method: 'POST',
+        body,
+      }),
+    }),
+    addToCartViaChatbot: builder.mutation<any, AddToCartViaChatbotRequest>({
+      query: ({ productId, quantity }) => ({
+        url: '/cart',
+        method: 'POST',
+        body: { productId, quantity },
+      }),
+    }),
   }),
 });
 
-export const { useSendMessageMutation } = chatApi;
+export const {
+  useSendMessageMutation,
+  useSendChatbotMessageMutation,
+  useTrackChatbotAnalyticsMutation,
+  useAddToCartViaChatbotMutation,
+} = chatApi;

@@ -1,4 +1,5 @@
 import { useState, useRef, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 
 export interface SelectOption {
   value: string;
@@ -21,13 +22,15 @@ const Select: React.FC<SelectProps> = ({
   options,
   value,
   onChange,
-  placeholder = 'Select an option',
+  placeholder,
   label,
   error,
   disabled = false,
   className = '',
   required = false,
 }) => {
+  const { t } = useTranslation();
+  const placeholderText = placeholder ?? t('common.selectOption');
   const [isOpen, setIsOpen] = useState(false);
   const selectRef = useRef<HTMLDivElement>(null);
 
@@ -91,7 +94,7 @@ const Select: React.FC<SelectProps> = ({
           aria-expanded={isOpen}
         >
           <span className="block truncate">
-            {selectedOption ? selectedOption.label : placeholder}
+            {selectedOption ? selectedOption.label : placeholderText}
           </span>
           <span className="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none">
             <svg

@@ -1,6 +1,11 @@
-﻿const embeddingService = require('./embedding');
+const embeddingService = require('./embedding');
+const viEmbeddingService = require('./viEmbedding');
 const path = require('path');
 const fs = require('fs');
+
+function detectLanguage(text) {
+  return /[àáâãèéêìíòóôõùúýăđơưÀÁÂÃÈÉÊÌÍÒÓÔÕÙÚÝĂĐƠƯ]/.test(text) ? 'vi' : 'en';
+}
 
 class SimpleVectorStore {
   constructor() {
@@ -28,7 +33,7 @@ class SimpleVectorStore {
     try {
       const dataDir = path.dirname(this.storagePath);
       if (!fs.existsSync(dataDir)) fs.mkdirSync(dataDir, { recursive: true });
-      
+
       console.log(`💾 Đang lưu ${this.items.length} mục vào ${this.storagePath}...`);
       fs.writeFileSync(this.storagePath, JSON.stringify(this.items, null, 2));
       console.log('✅ Lưu file thành công');
@@ -45,29 +50,39 @@ class SimpleVectorStore {
   async addProduct(product) {
     try {
       const textToEmbed = `${product.name}. ${product.shortDescription || ''}`.substring(0, 500);
-      const vector = await embeddingService.generateEmbedding(textToEmbed);
-      
-      if (!vector || !Array.isArray(vector)) {
-          throw new Error('Vector được tạo không hợp lệ');
+
+      // Vector tiếng Anh (bắt buộc)
+      const vectorEn = await embeddingService.generateEmbedding(textToEmbed);
+      if (!vectorEn || !Array.isArray(vectorEn)) throw new Error('vectorEn không hợp lệ');
+
+      // Vector tiếng Việt (tùy chọn — skip nếu HF chưa cấu hình)
+      let vectorVi = null;
+      if (viEmbeddingService.isAvailable()) {
+        try {
+          vectorVi = await viEmbeddingService.generateEmbedding(textToEmbed);
+        } catch (err) {
+          console.warn(`⚠️ Không thể tạo Vietnamese vector cho "${product.name}": ${err.message}`);
+        }
       }
 
       // Xóa bản ghi cũ của sản phẩm này nếu đã tồn tại
       this.items = this.items.filter(item => item.metadata.id !== product.id);
-      
+
       this.items.push({
-        vector,
+        vectorEn,
+        vectorVi,
         text: textToEmbed,
         metadata: {
           id: product.id,
           name: product.name,
-          price: product.price,
+          price: product.basePrice,
           compareAtPrice: product.compareAtPrice,
           thumbnail: product.thumbnail,
           inStock: product.inStock,
           stockQuantity: product.stockQuantity,
           category: product.categories?.[0]?.name || 'Sản phẩm',
-          baseName: product.baseName
-        }
+          baseName: product.baseName,
+        },
       });
     } catch (error) {
       console.error(`Lỗi khi thêm sản phẩm ${product.id} vào vector store:`, error.message);
@@ -94,14 +109,30 @@ class SimpleVectorStore {
 
   async search(query, limit = 5) {
     try {
-      const queryVector = await embeddingService.generateEmbedding(query);
-      
-      const scores = this.items.map(item => ({
-        ...item,
-        score: this.cosineSimilarity(queryVector, item.vector)
-      }));
-      
+      const lang = detectLanguage(query);
+      const useViModel = lang === 'vi'
+        && viEmbeddingService.isAvailable()
+        && this.items.some(item => item.vectorVi);
+
+      let queryVector;
+      if (useViModel) {
+        queryVector = await viEmbeddingService.generateEmbedding(query);
+      } else {
+        queryVector = await embeddingService.generateEmbedding(query);
+      }
+
+      console.log(`[SEARCH] lang=${lang}, useViModel=${useViModel}`);
+
+      const scores = this.items.map(item => {
+        // Fallback: item.vector là field cũ trước khi re-index dual-vector
+        const docVector = useViModel
+          ? (item.vectorVi || item.vectorEn || item.vector)
+          : (item.vectorEn || item.vector);
+        return { ...item, score: this.cosineSimilarity(queryVector, docVector) };
+      });
+
       return scores
+        .filter(item => isFinite(item.score) && item.score >= 0.3)
         .sort((a, b) => b.score - a.score)
         .slice(0, limit);
     } catch (error) {

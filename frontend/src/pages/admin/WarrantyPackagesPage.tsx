@@ -14,7 +14,6 @@ import {
   Card,
   Row,
   Col,
-  Tooltip,
 } from 'antd';
 import {
   PlusOutlined,
@@ -26,33 +25,26 @@ import {
   CheckCircleOutlined,
   StopOutlined,
 } from '@ant-design/icons';
+import { useTranslation } from 'react-i18next';
 import {
   useGetWarrantyPackagesQuery,
   useCreateWarrantyPackageMutation,
   useUpdateWarrantyPackageMutation,
   useDeleteWarrantyPackageMutation,
-  CreateWarrantyPackageRequest,
-  UpdateWarrantyPackageRequest,
 } from '@/services/warrantyApi';
 import { WarrantyPackage } from '@/types/product.types';
 
 const { TextArea } = Input;
 
 const WarrantyPackagesPage: React.FC = () => {
+  const { t } = useTranslation();
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [editingPackage, setEditingPackage] = useState<WarrantyPackage | null>(
-    null
-  );
+  const [editingPackage, setEditingPackage] = useState<WarrantyPackage | null>(null);
   const [form] = Form.useForm();
 
-  // Các API hooks
-  const { data: warrantyPackagesData, isLoading } = useGetWarrantyPackagesQuery(
-    { isActive: undefined }
-  );
-  const [createWarrantyPackage, { isLoading: isCreating }] =
-    useCreateWarrantyPackageMutation();
-  const [updateWarrantyPackage, { isLoading: isUpdating }] =
-    useUpdateWarrantyPackageMutation();
+  const { data: warrantyPackagesData, isLoading } = useGetWarrantyPackagesQuery({ isActive: undefined });
+  const [createWarrantyPackage, { isLoading: isCreating }] = useCreateWarrantyPackageMutation();
+  const [updateWarrantyPackage, { isLoading: isUpdating }] = useUpdateWarrantyPackageMutation();
   const [deleteWarrantyPackage] = useDeleteWarrantyPackageMutation();
 
   const warrantyPackages = warrantyPackagesData?.data?.warrantyPackages || [];
@@ -60,12 +52,7 @@ const WarrantyPackagesPage: React.FC = () => {
   const handleCreate = () => {
     setEditingPackage(null);
     form.resetFields();
-    form.setFieldsValue({
-      isActive: true,
-      sortOrder: 0,
-      price: 0,
-      coverage: [],
-    });
+    form.setFieldsValue({ isActive: true, sortOrder: 0, price: 0, coverage: [] });
     setIsModalOpen(true);
   };
 
@@ -81,11 +68,9 @@ const WarrantyPackagesPage: React.FC = () => {
   const handleDelete = async (id: string) => {
     try {
       await deleteWarrantyPackage(id).unwrap();
-      message.success('Xóa gói bảo hành thành công');
+      message.success(t('admin.warrantyPackages.messages.deleteSuccess'));
     } catch (error: any) {
-      message.error(
-        error?.data?.message || 'Có lỗi xảy ra khi xóa gói bảo hành'
-      );
+      message.error(error?.data?.message || t('admin.warrantyPackages.messages.deleteError'));
     }
   };
 
@@ -94,41 +79,30 @@ const WarrantyPackagesPage: React.FC = () => {
       const coverageArray = values.coverage
         ? values.coverage.split('\n').filter((item: string) => item.trim())
         : [];
-
-      const data = {
-        ...values,
-        coverage: coverageArray,
-      };
+      const data = { ...values, coverage: coverageArray };
 
       if (editingPackage) {
-        await updateWarrantyPackage({
-          id: editingPackage.id,
-          ...data,
-        }).unwrap();
-        message.success('Cập nhật gói bảo hành thành công');
+        await updateWarrantyPackage({ id: editingPackage.id, ...data }).unwrap();
+        message.success(t('admin.warrantyPackages.messages.editSuccess'));
       } else {
         await createWarrantyPackage(data).unwrap();
-        message.success('Tạo gói bảo hành thành công');
+        message.success(t('admin.warrantyPackages.messages.createSuccess'));
       }
 
       setIsModalOpen(false);
       form.resetFields();
       setEditingPackage(null);
     } catch (error: any) {
-      message.error(error?.data?.message || 'Có lỗi xảy ra');
+      message.error(error?.data?.message || t('common.errorOccurred'));
     }
   };
 
-  const formatPrice = (price: number) => {
-    return new Intl.NumberFormat('vi-VN', {
-      style: 'currency',
-      currency: 'VND',
-    }).format(price);
-  };
+  const formatPrice = (price: number) =>
+    new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(price);
 
   const columns = [
     {
-      title: 'Tên gói',
+      title: t('admin.warrantyPackages.table.packageName'),
       dataIndex: 'name',
       key: 'name',
       render: (text: string, record: WarrantyPackage) => (
@@ -139,31 +113,31 @@ const WarrantyPackagesPage: React.FC = () => {
       ),
     },
     {
-      title: 'Thời hạn',
+      title: t('admin.warrantyPackages.table.period'),
       dataIndex: 'durationMonths',
       key: 'durationMonths',
       render: (months: number) => (
         <div className="flex items-center gap-1">
           <CalendarOutlined className="text-blue-500" />
-          <span>{months} tháng</span>
+          <span>{t('admin.warrantyPackages.table.monthsLabel', { months })}</span>
         </div>
       ),
     },
     {
-      title: 'Giá',
+      title: t('admin.warrantyPackages.table.price'),
       dataIndex: 'price',
       key: 'price',
       render: (price: number) => (
         <div className="flex items-center gap-1">
           <DollarOutlined className="text-green-500" />
           <span className={price === 0 ? 'text-green-600 font-medium' : ''}>
-            {price === 0 ? 'Miễn phí' : formatPrice(price)}
+            {price === 0 ? t('admin.warrantyPackages.table.free') : formatPrice(price)}
           </span>
         </div>
       ),
     },
     {
-      title: 'Quyền lợi',
+      title: t('admin.warrantyPackages.table.benefits'),
       dataIndex: 'coverage',
       key: 'coverage',
       render: (coverage: any) => {
@@ -178,7 +152,7 @@ const WarrantyPackagesPage: React.FC = () => {
             ))}
             {coverageArray.length > 2 && (
               <div className="text-sm text-gray-500">
-                +{coverageArray.length - 2} quyền lợi khác
+                {t('admin.warrantyPackages.table.moreBenefits', { count: coverageArray.length - 2 })}
               </div>
             )}
           </div>
@@ -186,88 +160,58 @@ const WarrantyPackagesPage: React.FC = () => {
       },
     },
     {
-      title: 'Trạng thái',
+      title: t('common.status'),
       dataIndex: 'isActive',
       key: 'isActive',
       render: (isActive: boolean) => (
-        <Tag
-          color={isActive ? 'green' : 'red'}
-          icon={isActive ? <CheckCircleOutlined /> : <StopOutlined />}
-        >
-          {isActive ? 'Hoạt động' : 'Tạm dừng'}
+        <Tag color={isActive ? 'green' : 'red'} icon={isActive ? <CheckCircleOutlined /> : <StopOutlined />}>
+          {isActive ? t('admin.warrantyPackages.status.active') : t('admin.warrantyPackages.status.paused')}
         </Tag>
       ),
     },
     {
-      title: 'Thứ tự',
+      title: t('admin.warrantyPackages.table.order'),
       dataIndex: 'sortOrder',
       key: 'sortOrder',
-      render: (sortOrder: number) => (
-        <span className="font-mono">{sortOrder}</span>
-      ),
+      render: (sortOrder: number) => <span className="font-mono">{sortOrder}</span>,
     },
     {
-      title: 'Thao tác',
+      title: t('admin.common.actions'),
       key: 'actions',
       render: (_: any, record: WarrantyPackage) => (
         <Space>
-          <Tooltip title="Chỉnh sửa">
-            <Button
-              type="primary"
-              icon={<EditOutlined />}
-              size="small"
-              onClick={() => handleEdit(record)}
-            />
-          </Tooltip>
-          <Tooltip title="Xóa">
-            <Popconfirm
-              title="Bạn có chắc chắn muốn xóa gói bảo hành này?"
-              onConfirm={() => handleDelete(record.id)}
-              okText="Xóa"
-              cancelText="Hủy"
-            >
-              <Button
-                type="primary"
-                danger
-                icon={<DeleteOutlined />}
-                size="small"
-              />
-            </Popconfirm>
-          </Tooltip>
+          <Button type="link" icon={<EditOutlined />} size="small" onClick={() => handleEdit(record)} />
+          <Popconfirm
+            title={t('admin.warrantyPackages.deleteTitle')}
+            description={t('admin.warrantyPackages.deleteConfirm')}
+            onConfirm={() => handleDelete(record.id)}
+            okText={t('common.delete')}
+            cancelText={t('common.cancel')}
+            okButtonProps={{ danger: true }}
+          >
+            <Button type="link" danger icon={<DeleteOutlined />} size="small" />
+          </Popconfirm>
         </Space>
       ),
     },
   ];
 
   return (
-    <div className="p-6">
-      <div className="mb-6">
-        <Row gutter={[16, 16]}>
-          <Col span={24}>
-            <Card>
-              <div className="flex items-center justify-between">
-                <div>
-                  <h1 className="text-2xl font-bold flex items-center gap-2">
-                    <SafetyOutlined className="text-blue-500" />
-                    Quản lý gói bảo hành
-                  </h1>
-                  <p className="text-gray-600 mt-1">
-                    Tạo và quản lý các gói bảo hành cho sản phẩm
-                  </p>
-                </div>
-                <Button
-                  type="primary"
-                  icon={<PlusOutlined />}
-                  onClick={handleCreate}
-                  size="large"
-                >
-                  Tạo gói bảo hành
-                </Button>
-              </div>
-            </Card>
-          </Col>
-        </Row>
-      </div>
+    <div className="p-2 sm:p-4 md:p-6">
+      <Card className="mb-4 md:mb-6">
+        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+          <div>
+            <h1 className="text-xl md:text-2xl font-bold flex items-center gap-2 m-0">
+              <SafetyOutlined className="text-blue-500" />
+              {t('admin.warrantyPackages.title')}
+            </h1>
+            <p className="text-neutral-600 mt-1">{t('admin.warrantyPackages.subtitle')}</p>
+          </div>
+          <Button type="primary" icon={<PlusOutlined />} onClick={handleCreate} size="large">
+            {t('admin.warrantyPackages.createPackage')}
+          </Button>
+        </div>
+      </Card>
 
       <Card>
         <Table
@@ -275,85 +219,65 @@ const WarrantyPackagesPage: React.FC = () => {
           dataSource={warrantyPackages}
           rowKey="id"
           loading={isLoading}
+          scroll={{ x: 800 }}
           pagination={{
             total: warrantyPackagesData?.data?.pagination?.total || 0,
             showSizeChanger: true,
             showQuickJumper: true,
-            showTotal: (total, range) =>
-              `${range[0]}-${range[1]} của ${total} gói bảo hành`,
+            showTotal: (total, range) => t('admin.warrantyPackages.totalItems', { range0: range[0], range1: range[1], total }),
           }}
         />
       </Card>
 
       <Modal
-        title={
-          editingPackage ? 'Chỉnh sửa gói bảo hành' : 'Tạo gói bảo hành mới'
-        }
+        title={editingPackage ? t('admin.warrantyPackages.editPackage') : t('admin.warrantyPackages.createPackageModal')}
         open={isModalOpen}
-        onCancel={() => {
-          setIsModalOpen(false);
-          form.resetFields();
-          setEditingPackage(null);
-        }}
+        onCancel={() => { setIsModalOpen(false); form.resetFields(); setEditingPackage(null); }}
         footer={null}
         width={800}
       >
-        <Form
-          form={form}
-          layout="vertical"
-          onFinish={handleSubmit}
-          autoComplete="off"
-        >
+        <Form form={form} layout="vertical" onFinish={handleSubmit} autoComplete="off">
           <Row gutter={16}>
             <Col span={12}>
               <Form.Item
                 name="name"
-                label="Tên gói bảo hành"
-                rules={[
-                  { required: true, message: 'Vui lòng nhập tên gói bảo hành' },
-                ]}
+                label={t('admin.warrantyPackages.form.name')}
+                rules={[{ required: true, message: t('admin.warrantyPackages.form.nameRequired') }]}
               >
-                <Input placeholder="Ví dụ: Bảo hành mở rộng 12 tháng" />
+                <Input placeholder={t('admin.warrantyPackages.form.namePlaceholder')} />
               </Form.Item>
             </Col>
             <Col span={12}>
               <Form.Item
                 name="durationMonths"
-                label="Thời hạn (tháng)"
-                rules={[{ required: true, message: 'Vui lòng nhập thời hạn' }]}
+                label={t('admin.warrantyPackages.form.duration')}
+                rules={[{ required: true, message: t('admin.warrantyPackages.form.durationRequired') }]}
               >
-                <InputNumber
-                  min={1}
-                  max={120}
-                  placeholder="12"
-                  style={{ width: '100%' }}
-                />
+                <InputNumber min={1} max={120} placeholder="12" style={{ width: '100%' }} />
               </Form.Item>
             </Col>
           </Row>
 
           <Form.Item
             name="description"
-            label="Mô tả"
-            rules={[{ required: true, message: 'Vui lòng nhập mô tả' }]}
+            label={t('admin.warrantyPackages.form.description')}
+            rules={[{ required: true, message: t('admin.warrantyPackages.form.descriptionRequired') }]}
           >
-            <TextArea rows={2} placeholder="Mô tả ngắn gọn về gói bảo hành" />
+            <TextArea rows={2} placeholder={t('admin.warrantyPackages.form.descriptionPlaceholder')} />
           </Form.Item>
 
           <Row gutter={16}>
             <Col span={12}>
               <Form.Item
                 name="price"
-                label="Giá (VND)"
-                rules={[{ required: true, message: 'Vui lòng nhập giá' }]}
+                label={t('admin.warrantyPackages.form.price')}
+                rules={[{ required: true, message: t('admin.warrantyPackages.form.priceRequired') }]}
               >
                 <InputNumber
                   min={0}
                   placeholder="0"
                   style={{ width: '100%' }}
-                  formatter={(value) =>
-                    `${value}`.replace(/\B(?=(\d{3})+(?!\d))/g, ',')
-                  }
+                  formatter={(value) => `${value}`.replace(/\B(?=(\d{3})+(?!\d))/g, ',')}
                   parser={(value) => (value ? value.replace(/\$\s?|(,*)/g, '') : '') as any}
                 />
               </Form.Item>
@@ -361,50 +285,36 @@ const WarrantyPackagesPage: React.FC = () => {
             <Col span={12}>
               <Form.Item
                 name="sortOrder"
-                label="Thứ tự hiển thị"
-                rules={[{ required: true, message: 'Vui lòng nhập thứ tự' }]}
+                label={t('admin.warrantyPackages.form.sortOrder')}
+                rules={[{ required: true, message: t('admin.warrantyPackages.form.sortOrderRequired') }]}
               >
-                <InputNumber
-                  min={0}
-                  placeholder="0"
-                  style={{ width: '100%' }}
-                />
+                <InputNumber min={0} placeholder="0" style={{ width: '100%' }} />
               </Form.Item>
             </Col>
           </Row>
 
           <Form.Item
             name="coverage"
-            label="Quyền lợi bảo hành"
-            rules={[{ required: true, message: 'Vui lòng nhập quyền lợi' }]}
+            label={t('admin.warrantyPackages.form.coverage')}
+            rules={[{ required: true, message: t('admin.warrantyPackages.form.coverageRequired') }]}
           >
-            <TextArea
-              rows={4}
-              placeholder="Mỗi dòng là một quyền lợi. Ví dụ:&#10;Sửa chữa lỗi phần cứng&#10;Thay thế linh kiện lỗi&#10;Hỗ trợ kỹ thuật 24/7"
+            <TextArea rows={4} placeholder={t('admin.warrantyPackages.form.coveragePlaceholder')} />
+          </Form.Item>
+
+          <Form.Item name="isActive" label={t('common.status')} valuePropName="checked">
+            <Switch
+              checkedChildren={t('admin.warrantyPackages.status.active')}
+              unCheckedChildren={t('admin.warrantyPackages.status.paused')}
             />
           </Form.Item>
 
-          <Form.Item name="isActive" label="Trạng thái" valuePropName="checked">
-            <Switch checkedChildren="Hoạt động" unCheckedChildren="Tạm dừng" />
-          </Form.Item>
-
           <Form.Item>
-            <Space>
-              <Button
-                type="primary"
-                htmlType="submit"
-                loading={isCreating || isUpdating}
-              >
-                {editingPackage ? 'Cập nhật' : 'Tạo mới'}
+            <Space className="w-full justify-end">
+              <Button onClick={() => { setIsModalOpen(false); form.resetFields(); setEditingPackage(null); }}>
+                {t('common.cancel')}
               </Button>
-              <Button
-                onClick={() => {
-                  setIsModalOpen(false);
-                  form.resetFields();
-                  setEditingPackage(null);
-                }}
-              >
-                Hủy
+              <Button type="primary" htmlType="submit" loading={isCreating || isUpdating}>
+                {editingPackage ? t('common.update') : t('common.create')}
               </Button>
             </Space>
           </Form.Item>

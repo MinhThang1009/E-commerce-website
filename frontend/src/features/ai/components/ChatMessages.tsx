@@ -1,4 +1,5 @@
 import React, { RefObject } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Message } from '../types/Message';
 import { UserIcon } from './icons';
 import MessageBubble from './MessageBubble';
@@ -19,6 +20,7 @@ const ChatMessages: React.FC<ChatMessagesProps> = ({
   messagesEndRef,
   user,
 }) => {
+  const { t } = useTranslation();
   return (
     <div className="chat-messages flex-1 overflow-y-auto p-4 sm:p-6 space-y-4 bg-gradient-to-b from-neutral-50/80 via-white/50 to-neutral-50/80 dark:from-neutral-800/80 dark:via-neutral-900/50 dark:to-neutral-800/80 min-h-[300px] max-h-[50vh] sm:max-h-[400px] scrollbar-thin scrollbar-thumb-primary-200 dark:scrollbar-thumb-primary-800 scrollbar-track-transparent">
       {messages.map((message) => (
@@ -34,7 +36,7 @@ const ChatMessages: React.FC<ChatMessagesProps> = ({
               <div className="w-10 h-10 rounded-full overflow-hidden border-2 border-primary-200 dark:border-primary-800 shadow-lg flex-shrink-0 mr-2 bg-gradient-to-br from-primary-50 to-primary-100 dark:from-primary-900 dark:to-primary-800">
                 <img
                   src="data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjAwIiBoZWlnaHQ9IjIwMCIgdmlld0JveD0iMCAwIDIwMCAyMDAiIGZpbGw9Im5vbmUiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+CiAgPGRlZnM+CiAgICA8bGluZWFyR3JhZGllbnQgaWQ9ImdyYWQxIiB4MT0iMCUiIHkxPSIwJSIgeDI9IjEwMCUiIHkyPSIxMDAlIj4KICAgICAgPHN0b3Agb2Zmc2V0PSIwJSIgc3RvcC1jb2xvcj0iIzYzNjZGMSIgLz4KICAgICAgPHN0b3Agb2Zmc2V0PSIxMDAlIiBzdG9wLWNvbG9yPSIjODI4QUZGIiAvPgogICAgPC9saW5lYXJHcmFkaWVudD4KICAgIDxsaW5lYXJHcmFkaWVudCBpZD0iZ3JhZDIiIHgxPSIwJSIgeTE9IjAlIiB4Mj0iMTAwJSIgeTI9IjEwMCUiPgogICAgICA8c3RvcCBvZmZzZXQ9IjAlIiBzdG9wLWNvbG9yPSIjRjVGNUY1IiAvPgogICAgICA8c3RvcCBvZmZzZXQ9IjEwMCUiIHN0b3AtY29sb3I9IiNGRkZGRkYiIC8+CiAgICA8L2xpbmVhckdyYWRpZW50PgogIDwvZGVmcz4KICA8Y2lyY2xlIGN4PSIxMDAiIGN5PSIxMDAiIHI9IjEwMCIgZmlsbD0idXJsKCNncmFkMSkiLz4KICA8cGF0aCBkPSJNMTAwIDE3NUMxMzUuODk5IDE3NSAxNjUgMTQ1Ljg5OSAxNjUgMTEwQzE2NSA3NC4xMDE1IDEzNS44OTkgNDUgMTAwIDQ1QzY0LjEwMTUgNDUgMzUgNzQuMTAxNSAzNSAxMTBDMzUgMTQ1Ljg5OSA2NC4xMDE1IDE3NSAxMDAgMTc1WiIgZmlsbD0idXJsKCNncmFkMikiLz4KICA8cGF0aCBkPSJNNjUgOTBDNjUgODIuMjY4IDcxLjI2OCA3NiA3OSA3NkM4Ni43MzIgNzYgOTMgODIuMjY4IDkzIDkwQzkzIDk3LjczMiA4Ni43MzIgMTA0IDc5IDEwNEM3MS4yNjggMTA0IDY1IDk3LjczMiA2NSA5MFoiIGZpbGw9IiM0MjQyNDIiLz4KICA8cGF0aCBkPSJNMTA3IDkwQzEwNyA4Mi4yNjggMTEzLjI2OCA3NiAxMjEgNzZDMTI4LjczMiA3NiAxMzUgODIuMjY4IDEzNSA5MEMxMzUgOTcuNzMyIDEyOC43MzIgMTA0IDEyMSAxMDRDMTEzLjI2OCAxMDQgMTA3IDk3LjczMiAxMDcgOTBaIiBmaWxsPSIjNDI0MjQyIi8+CiAgPHBhdGggZD0iTTc1IDEyNUM4NSAxMzUgMTE1IDEzNSAxMjUgMTI1IiBzdHJva2U9IiM0MjQyNDIiIHN0cm9rZS13aWR0aD0iNCIgc3Ryb2tlLWxpbmVjYXA9InJvdW5kIi8+CiAgPHBhdGggZD0iTTEwMCAxNzVDMTM1Ljg5OSAxNzUgMTY1IDE0NS44OTkgMTY1IDExMEMxNjUgNzQuMTAxNSAxMzUuODk5IDQ1IDEwMCA0NUM2NC4xMDE1IDQ1IDM1IDc0LjEwMTUgMzUgMTEwQzM1IDE0NS44OTkgNjQuMTAxNSAxNzUgMTAwIDE3NVoiIHN0cm9rZT0iIzYzNjZGMSIgc3Ryb2tlLXdpZHRoPSIyIi8+Cjwvc3ZnPgo="
-                  alt="AI Assistant"
+                  alt={t('chat.avatarAlt')}
                   className="w-full h-full object-cover"
                   onError={(e) => {
                     // Fallback nếu ảnh không tải được

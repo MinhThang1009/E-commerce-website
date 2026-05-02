@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Card, Button, Space, Typography, Tag, Divider, Alert } from 'antd';
 import { CheckOutlined, PlusOutlined } from '@ant-design/icons';
 import { simpleNamingService } from '@/services/productNamingService';
@@ -16,6 +17,7 @@ const SimpleAttributeSelector: React.FC<SimpleAttributeSelectorProps> = ({
   onNamePreview,
   disabled = false,
 }) => {
+  const { t } = useTranslation();
   const [selectedAttributes, setSelectedAttributes] = useState<
     Record<string, string>
   >({});
@@ -95,7 +97,7 @@ const SimpleAttributeSelector: React.FC<SimpleAttributeSelectorProps> = ({
         <Alert
           message={
             <div>
-              <Text strong>Đã chọn: </Text>
+              <Text strong>{t('product.selectedLabel')} </Text>
               <Space wrap size="small" style={{ marginTop: 4 }}>
                 {Object.entries(selectedAttributes).map(([type, value]) => {
                   const shortName = getShortName(type, value);
@@ -119,7 +121,7 @@ const SimpleAttributeSelector: React.FC<SimpleAttributeSelectorProps> = ({
                   onClick={clearAllAttributes}
                   style={{ padding: 0, height: 'auto' }}
                 >
-                  Xóa tất cả
+                  {t('product.clearAll')}
                 </Button>
               </Space>
             </div>
@@ -190,8 +192,8 @@ const SimpleAttributeSelector: React.FC<SimpleAttributeSelectorProps> = ({
       {/* Preview */}
       {Object.keys(selectedAttributes).length === 0 && (
         <Alert
-          message="💡 Chọn các thuộc tính để tạo tên sản phẩm tự động"
-          description="Tên sẽ được tạo theo thứ tự: CPU → GPU → RAM → Storage"
+          message={t('product.autoNameHint')}
+          description={t('product.autoNameOrder')}
           type="info"
           showIcon
         />

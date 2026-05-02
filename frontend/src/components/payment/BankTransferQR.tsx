@@ -10,7 +10,6 @@ interface BankTransferQRProps {
 
 const BankTransferQR: React.FC<BankTransferQRProps> = ({
   amount,
-  orderId,
   numberOrder,
 }) => {
   const { t } = useTranslation();
@@ -58,7 +57,7 @@ const BankTransferQR: React.FC<BankTransferQRProps> = ({
             <div className="bg-white p-4 rounded-lg flex justify-center">
               <img
                 src={qrUrl}
-                alt="QR Code for bank transfer"
+                alt={t('checkout.bankTransfer.qrAlt')}
                 className="w-48 h-48 object-contain"
               />
             </div>
@@ -99,7 +98,7 @@ const BankTransferQR: React.FC<BankTransferQRProps> = ({
                     copyToClipboard(bankInfo.accountNumber, 'accountNumber')
                   }
                   className="p-1 hover:bg-neutral-100 dark:hover:bg-neutral-700 rounded transition-colors"
-                  title="Copy account number"
+                  title={t('checkout.bankTransfer.copyAccountNumber')}
                 >
                   {copiedField === 'accountNumber' ? (
                     <CheckOutlined className="text-green-500 text-sm" />
@@ -122,7 +121,7 @@ const BankTransferQR: React.FC<BankTransferQRProps> = ({
                 {t('checkout.bankTransfer.amount')}
               </span>
               <span className="font-medium text-red-600 dark:text-red-400">
-                {roundedAmount.toLocaleString('vi-VN')} VND
+                {roundedAmount.toLocaleString('vi-VN')} {t('product.currencyCode')}
               </span>
             </div>
 
@@ -139,7 +138,7 @@ const BankTransferQR: React.FC<BankTransferQRProps> = ({
                     copyToClipboard(bankInfo.reference, 'reference')
                   }
                   className="p-1 hover:bg-neutral-100 dark:hover:bg-neutral-700 rounded transition-colors"
-                  title="Copy reference"
+                  title={t('checkout.bankTransfer.copyReference')}
                 >
                   {copiedField === 'reference' ? (
                     <CheckOutlined className="text-green-500 text-sm" />

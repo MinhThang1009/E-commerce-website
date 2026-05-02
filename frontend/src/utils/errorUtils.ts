@@ -1,7 +1,4 @@
-/**
- * Các tiện ích xử lý lỗi
- * Xử lý lỗi tập trung và phản hồi cho người dùng
- */
+import i18next from 'i18next';
 
 /**
  * Các loại lỗi phổ biến trong ứng dụng
@@ -26,39 +23,15 @@ export interface AppError {
   details?: any;
 }
 
-/**
- * Ánh xạ thông báo lỗi
- */
-const ERROR_MESSAGES = {
-  [ErrorType.NETWORK_ERROR]: {
-    vi: 'Không thể kết nối tới server. Vui lòng kiểm tra kết nối internet.',
-    en: 'Unable to connect to server. Please check your internet connection.',
-  },
-  [ErrorType.VALIDATION_ERROR]: {
-    vi: 'Dữ liệu không hợp lệ. Vui lòng kiểm tra lại thông tin.',
-    en: 'Invalid data. Please check your information.',
-  },
-  [ErrorType.AUTHENTICATION_ERROR]: {
-    vi: 'Phiên đăng nhập đã hết hạn. Vui lòng đăng nhập lại.',
-    en: 'Session expired. Please login again.',
-  },
-  [ErrorType.AUTHORIZATION_ERROR]: {
-    vi: 'Bạn không có quyền truy cập tài nguyên này.',
-    en: 'You do not have permission to access this resource.',
-  },
-  [ErrorType.NOT_FOUND_ERROR]: {
-    vi: 'Không tìm thấy tài nguyên yêu cầu.',
-    en: 'Requested resource not found.',
-  },
-  [ErrorType.SERVER_ERROR]: {
-    vi: 'Lỗi server. Vui lòng thử lại sau.',
-    en: 'Server error. Please try again later.',
-  },
-  [ErrorType.UNKNOWN_ERROR]: {
-    vi: 'Đã xảy ra lỗi không xác định.',
-    en: 'An unknown error occurred.',
-  },
-} as const;
+const ERROR_TYPE_TO_KEY: Record<ErrorType, string> = {
+  [ErrorType.NETWORK_ERROR]: 'errors.network',
+  [ErrorType.VALIDATION_ERROR]: 'errors.validation',
+  [ErrorType.AUTHENTICATION_ERROR]: 'errors.authentication',
+  [ErrorType.AUTHORIZATION_ERROR]: 'errors.authorization',
+  [ErrorType.NOT_FOUND_ERROR]: 'errors.notFound',
+  [ErrorType.SERVER_ERROR]: 'errors.server',
+  [ErrorType.UNKNOWN_ERROR]: 'errors.unknown',
+};
 
 /**
  * Phân tích lỗi từ các nguồn khác nhau
@@ -145,7 +118,7 @@ export const parseError = (error: any): AppError => {
   // Lỗi không xác định mặc định
   return {
     type: ErrorType.UNKNOWN_ERROR,
-    message: 'An unknown error occurred',
+    message: i18next.t('errors.unknown'),
     details: error,
   };
 };
@@ -153,19 +126,14 @@ export const parseError = (error: any): AppError => {
 /**
  * Lấy thông báo lỗi thân thiện với người dùng
  */
-export const getErrorMessage = (
-  error: any,
-  language: 'vi' | 'en' = 'vi'
-): string => {
+export const getErrorMessage = (error: any): string => {
   const parsedError = parseError(error);
 
-  // Dùng thông báo được cung cấp nếu có và không phải thông báo chung
   if (parsedError.message && !parsedError.message.includes('Unknown error')) {
     return parsedError.message;
   }
 
-  // Dự phòng dùng các thông báo định sẵn
-  return ERROR_MESSAGES[parsedError.type][language];
+  return i18next.t(ERROR_TYPE_TO_KEY[parsedError.type]);
 };
 
 /**

@@ -39,22 +39,19 @@ const ChatWidgetPortal: React.FC = () => {
   // Hiển thị tin nhắn chào mừng khi mở chatbot
   useEffect(() => {
     if (isOpen && messages.length === 0) {
-      const greetingText =
-        isAuthenticated && user
-          ? t('chat.greetingWithName', { name: user.name }) ||
-            `Chào ${user.name}! Tôi là trợ lý AI của Shopmini! 😊 Tôi có thể giúp bạn tìm sản phẩm, xem khuyến mãi và hỗ trợ mua hàng. Bạn cần gì nhỉ?`
-          : t('chat.greeting') ||
-            'Chào bạn! Tôi là trợ lý AI của Shopmini! 😊 Tôi có thể giúp bạn tìm sản phẩm, xem khuyến mãi và hỗ trợ mua hàng. Bạn cần gì nhỉ?';
+      const greetingText = isAuthenticated && user
+        ? t('chat.greetingWithName', { name: user.name })
+        : t('chat.greeting');
 
       const greeting = {
         id: Date.now().toString(),
         text: greetingText,
         sender: 'ai' as const,
         suggestions: [
-          t('chat.suggestions.findProducts') || 'Tìm sản phẩm hot 🔥',
-          t('chat.suggestions.viewPromotions') || 'Xem khuyến mãi 🎉',
-          t('chat.suggestions.howToOrder') || 'Hướng dẫn mua hàng',
-          t('chat.suggestions.returnPolicy') || 'Chính sách đổi trả',
+          t('chat.suggestions.hotProducts'),
+          t('chat.suggestions.viewPromotions'),
+          t('chat.suggestions.howToOrder'),
+          t('chat.suggestions.returnPolicy'),
         ],
       };
       setMessages([greeting]);
@@ -149,9 +146,9 @@ const ChatWidgetPortal: React.FC = () => {
               text: response.data.response,
               sender: 'ai',
               suggestions: response.data.suggestions || [
-                t('chat.suggestions.findProducts') || 'Tìm thêm sản phẩm',
-                t('chat.suggestions.viewCart') || 'Xem giỏ hàng',
-                t('chat.suggestions.askMore') || 'Hỏi thêm',
+                t('chat.suggestions.findMore'),
+                t('chat.suggestions.viewCart'),
+                t('chat.suggestions.askMore'),
               ],
               products: response.data.products,
               actions: response.data.actions,
@@ -159,31 +156,22 @@ const ChatWidgetPortal: React.FC = () => {
           ];
         });
       } else {
-        throw new Error(response.message || 'Lỗi không xác định');
+        throw new Error(response.message || t('errors.unknown'));
       }
     } catch (error: any) {
       console.error('Lỗi khi tạo phản hồi AI:', error);
 
       // Xác định thông báo lỗi phù hợp
-      let errorMessage =
-        t('chat.errors.general') ||
-        'Xin lỗi, có lỗi xảy ra. Vui lòng thử lại sau.';
+      let errorMessage = t('chat.errors.general');
 
       if (error.message === 'Request timeout') {
-        errorMessage =
-          t('chat.errors.timeout') ||
-          'Yêu cầu đã hết thời gian chờ. Vui lòng thử lại.';
+        errorMessage = t('chat.errors.timeout');
       } else if (error.status === 404) {
-        errorMessage =
-          t('chat.errors.notFound') ||
-          'Không tìm thấy dịch vụ AI. Vui lòng thử lại sau.';
+        errorMessage = t('chat.errors.notFound');
       } else if (error.status === 429) {
-        errorMessage =
-          t('chat.errors.tooManyRequests') ||
-          'Quá nhiều yêu cầu. Vui lòng thử lại sau ít phút.';
+        errorMessage = t('chat.errors.tooManyRequests');
       } else if (error.status >= 500) {
-        errorMessage =
-          t('chat.errors.serverError') || 'Lỗi máy chủ. Vui lòng thử lại sau.';
+        errorMessage = t('chat.errors.serverError');
       }
 
       // Xóa tin nhắn "đang nhập" và thêm thông báo lỗi
@@ -196,9 +184,9 @@ const ChatWidgetPortal: React.FC = () => {
             text: errorMessage,
             sender: 'ai',
             suggestions: [
-              t('chat.suggestions.tryAgain') || 'Thử lại',
-              t('chat.suggestions.findProducts') || 'Tìm sản phẩm',
-              t('chat.suggestions.contactSupport') || 'Liên hệ hỗ trợ',
+              t('chat.suggestions.tryAgain'),
+              t('chat.suggestions.findProducts'),
+              t('chat.suggestions.contactSupport'),
             ],
           },
         ];

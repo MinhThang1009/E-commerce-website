@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { Modal, Radio, Space, Button, message } from 'antd';
+import { useTranslation } from 'react-i18next';
 import { exportToExcel, exportToCSV } from '@/utils/exportUtils';
 
 interface ProductExportModalProps {
@@ -27,6 +28,7 @@ const ProductExportModal: React.FC<ProductExportModalProps> = ({
   onExportAll,
   isLoading,
 }) => {
+  const { t } = useTranslation();
   const [scope, setScope] = useState<'current' | 'all' | 'selected' | 'filtered'>('current');
   const [format, setFormat] = useState<'xlsx' | 'csv'>('xlsx');
   const [isProcessing, setIsProcessing] = useState(false);
@@ -40,7 +42,7 @@ const ProductExportModal: React.FC<ProductExportModalProps> = ({
         dataToExport = currentPageData;
       } else if (scope === 'selected') {
         if (selectedRows.length === 0) {
-          message.warning('Vui lòng chọn sản phẩm cần xuất');
+          message.warning(t('productExport.selectProducts'));
           setIsProcessing(false);
           return;
         }
@@ -52,7 +54,7 @@ const ProductExportModal: React.FC<ProductExportModalProps> = ({
       }
 
       if (dataToExport.length === 0) {
-        message.warning('Không có dữ liệu để xuất');
+        message.warning(t('productExport.noData'));
         setIsProcessing(false);
         return;
       }
@@ -96,11 +98,11 @@ const ProductExportModal: React.FC<ProductExportModalProps> = ({
         exportToCSV(transformedData, fileName);
       }
 
-      message.success('Xuất dữ liệu thành công');
+      message.success(t('productExport.success'));
       onClose();
     } catch (error) {
       console.error('Xuất dữ liệu thất bại:', error);
-      message.error('Có lỗi xảy ra khi xuất dữ liệu');
+      message.error(t('productExport.error'));
     } finally {
       setIsProcessing(false);
     }
@@ -108,12 +110,12 @@ const ProductExportModal: React.FC<ProductExportModalProps> = ({
 
   return (
     <Modal
-      title="Xuất sản phẩm"
+      title={t('productExport.title')}
       open={isOpen}
       onCancel={onClose}
       footer={[
         <Button key="cancel" onClick={onClose}>
-          Hủy
+          {t('productExport.cancel')}
         </Button>,
         <Button
           key="submit"
@@ -121,28 +123,28 @@ const ProductExportModal: React.FC<ProductExportModalProps> = ({
           onClick={handleExport}
           loading={isProcessing || isLoading}
         >
-          Đồng ý
+          {t('productExport.confirm')}
         </Button>,
       ]}
     >
       <div style={{ marginBottom: 24 }}>
-        <div style={{ marginBottom: 8, fontWeight: 500 }}>Dữ liệu xuất</div>
+        <div style={{ marginBottom: 8, fontWeight: 500 }}>{t('productExport.scopeLabel')}</div>
         <Radio.Group onChange={(e) => setScope(e.target.value)} value={scope}>
           <Space direction="vertical">
-            <Radio value="current">Trang hiện tại</Radio>
-            <Radio value="all">Tất cả sản phẩm</Radio>
-            <Radio value="selected">Sản phẩm được chọn ({selectedRows.length})</Radio>
-            <Radio value="filtered">Theo bộ lọc hiện tại</Radio>
+            <Radio value="current">{t('productExport.currentPage')}</Radio>
+            <Radio value="all">{t('productExport.allProducts')}</Radio>
+            <Radio value="selected">{t('productExport.selectedProducts', { count: selectedRows.length })}</Radio>
+            <Radio value="filtered">{t('productExport.filteredProducts')}</Radio>
           </Space>
         </Radio.Group>
       </div>
 
       <div>
-        <div style={{ marginBottom: 8, fontWeight: 500 }}>Dạng file sẽ xuất</div>
+        <div style={{ marginBottom: 8, fontWeight: 500 }}>{t('productExport.formatLabel')}</div>
         <Radio.Group onChange={(e) => setFormat(e.target.value)} value={format}>
           <Space direction="vertical">
-            <Radio value="xlsx">File Excel (.xlsx)</Radio>
-            <Radio value="csv">File CSV (.csv)</Radio>
+            <Radio value="xlsx">{t('productExport.formatExcel')}</Radio>
+            <Radio value="csv">{t('productExport.formatCsv')}</Radio>
           </Space>
         </Radio.Group>
       </div>

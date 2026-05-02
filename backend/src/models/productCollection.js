@@ -24,6 +24,7 @@ const ProductCollection = sequelize.define(
   {
     tableName: 'product_collections',
     timestamps: false,
+    underscored: false,
   }
 );
 

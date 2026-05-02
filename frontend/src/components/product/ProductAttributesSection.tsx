@@ -1,4 +1,5 @@
 import React from 'react';
+import { useTranslation } from 'react-i18next';
 import { Button, Row, Col, Typography, Table, Space, Alert } from 'antd';
 import { PlusOutlined, EditOutlined, DeleteOutlined } from '@ant-design/icons';
 import { ProductAttribute } from '@/types/product';
@@ -18,19 +19,21 @@ const ProductAttributesSection: React.FC<ProductAttributesSectionProps> = ({
   onEditAttribute,
   onDeleteAttribute,
 }) => {
+  const { t } = useTranslation();
+
   const attributeColumns = [
     {
-      title: 'Tên thuộc tính',
+      title: t('productSection.attr.nameColumn'),
       dataIndex: 'name',
       key: 'name',
     },
     {
-      title: 'Giá trị',
+      title: t('productSection.attr.valueColumn'),
       dataIndex: 'value',
       key: 'value',
     },
     {
-      title: 'Hành động',
+      title: t('productSection.attr.actionsColumn'),
       key: 'actions',
       width: 120,
       render: (_: any, record: ProductAttribute) => (
@@ -66,16 +69,14 @@ const ProductAttributesSection: React.FC<ProductAttributesSectionProps> = ({
           >
             <div>
               <Title level={5}>
-                Thuộc tính sản phẩm <Text type="danger">*</Text>
+                {t('productSection.attr.sectionTitle')} <Text type="danger">*</Text>
               </Title>
               <Text type="secondary">
-                Thêm thuộc tính để mô tả chi tiết sản phẩm (màu sắc, kích thước,
-                chất liệu...)
+                {t('productSection.attr.sectionDesc')}
               </Text>
               <div style={{ marginTop: 8 }}>
                 <Text type="warning">
-                  <strong>Lưu ý:</strong> Thuộc tính sẽ được sử dụng để tạo biến
-                  thể sản phẩm ở bước tiếp theo.
+                  <strong>{t('common.note')}:</strong> {t('productSection.attr.note')}
                 </Text>
               </div>
             </div>
@@ -84,7 +85,7 @@ const ProductAttributesSection: React.FC<ProductAttributesSectionProps> = ({
               icon={<PlusOutlined />}
               onClick={onAddAttribute}
             >
-              Thêm thuộc tính
+              {t('productSection.attr.addButton')}
             </Button>
           </div>
         </Col>
@@ -92,8 +93,8 @@ const ProductAttributesSection: React.FC<ProductAttributesSectionProps> = ({
 
       {attributes.length === 0 && (
         <Alert
-          message="Cần có ít nhất 1 thuộc tính"
-          description="Vui lòng thêm ít nhất một thuộc tính cho sản phẩm trước khi tiếp tục."
+          message={t('productSection.attr.emptyError')}
+          description={t('productSection.attr.emptyErrorDesc')}
           type="error"
           showIcon
           style={{ marginBottom: 16 }}
@@ -105,7 +106,7 @@ const ProductAttributesSection: React.FC<ProductAttributesSectionProps> = ({
         columns={attributeColumns}
         rowKey="id"
         pagination={false}
-        locale={{ emptyText: 'Chưa có thuộc tính nào' }}
+        locale={{ emptyText: t('productSection.attr.emptyTable') }}
       />
     </div>
   );

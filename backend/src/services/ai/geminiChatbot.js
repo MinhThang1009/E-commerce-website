@@ -1,5 +1,5 @@
 ﻿const axios = require('axios');
-const { Product, Category, sequelize } = require('../models');
+const { Product, Category, Brand, sequelize } = require('../../models');
 const { Op } = require('sequelize');
 const vectorStoreService = require('./vectorStore');
 
@@ -8,7 +8,22 @@ class GeminiChatbotService {
     this.apiKey = process.env.OPENROUTER_API_KEY;
     this.model = 'google/gemini-2.0-flash-001';
     this.apiUrl = 'https://openrouter.ai/api/v1/chat/completions';
+    this._brandsCache = null;
+    this._categoriesCache = null;
+    this._catalogCacheExpiry = 0;
     this.initializeChatbot();
+  }
+
+  // Load brands và categories từ DB, cache 5 phút
+  async _ensureCatalogCache() {
+    if (this._brandsCache && Date.now() < this._catalogCacheExpiry) return;
+    const [brands, categories] = await Promise.all([
+      Brand.findAll({ attributes: ['name'], raw: true }),
+      Category.findAll({ attributes: ['name'], raw: true }),
+    ]);
+    this._brandsCache = brands.map(b => b.name);
+    this._categoriesCache = categories.map(c => c.name);
+    this._catalogCacheExpiry = Date.now() + 5 * 60 * 1000;
   }
 
   initializeChatbot() {
@@ -84,6 +99,7 @@ class GeminiChatbotService {
     }
 
     try {
+      await this._ensureCatalogCache();
       // Tạo prompt đầy đủ cho AI
       const prompt = this.createPrompt(userMessage, products, context);
       if (process.env.NODE_ENV !== 'production') {
@@ -97,7 +113,7 @@ class GeminiChatbotService {
           messages: [
             {
               role: 'system',
-              content: 'Bạn là một nhân viên bán hàng chuyên nghiệp, thân thiện và am hiểu của cửa hàng chúng tôi.'
+              content: 'Bạn là nhân viên tư vấn của TechStore — cửa hàng công nghệ chuyên điện thoại, máy tính bảng và laptop. Bạn am hiểu sâu về thông số kỹ thuật, chip, RAM, màn hình, pin của các thiết bị. Tư vấn trung thực dựa trên nhu cầu thực tế. Chỉ giới thiệu sản phẩm có trong danh sách được cung cấp, không bịa thêm.'
             },
             {
               role: 'user',
@@ -110,7 +126,7 @@ class GeminiChatbotService {
           headers: {
             'Authorization': `Bearer ${this.apiKey} `,
             'HTTP-Referer': process.env.FRONTEND_URL || 'http://localhost:5173',
-            'X-Title': 'Shopmini E-commerce Chatbot',
+            'X-Title': 'TechStore Chatbot',
             'Content-Type': 'application/json'
           },
           timeout: 30000,
@@ -152,7 +168,12 @@ class GeminiChatbotService {
               content: `Bạn là trợ lý ảo hỗ trợ chuẩn hóa câu hỏi mua sắm tiếng Việt. 
                 Nhiệm vụ: 
                 1. Sửa lỗi chính tả.
-                2. Mở rộng từ viết tắt (VD: "ip" -> "iPhone", "pm" -> "Pro Max", "đh" -> "đơn hàng", "giá bn" -> "giá bao nhiêu").
+                2. Mở rộng từ viết tắt phổ biến trong ngành công nghệ Việt Nam:
+                   - Điện thoại: "ip" -> "iPhone", "pm" -> "Pro Max", "ip17" -> "iPhone 17", "ss" -> "Samsung", "xl" -> "Xiaomi", "rm" -> "Redmi", "op" -> "OPPO", "rl" -> "realme"
+                   - Máy tính bảng: "mtb" -> "máy tính bảng", "tab" -> "máy tính bảng", "pad" -> "máy tính bảng"
+                   - Laptop: "lap" -> "laptop", "mb" -> "MacBook", "mac" -> "MacBook", "vivo" -> "Asus Vivobook", "del" -> "Dell Inspiron", "len" -> "Lenovo IdeaPad"
+                   - Cấu hình: "i5/i7/i3" -> giữ nguyên, "r5/r7" -> "AMD Ryzen 5/7", "rtx" -> giữ nguyên, "ssd" -> "ổ cứng SSD"
+                   - Chung: "đh" -> "đơn hàng", "giá bn" -> "giá bao nhiêu", "sp" -> "sản phẩm", "bh" -> "bảo hành"
                 3. Chuyển thành câu chuẩn, mạch lạc, dễ hiểu nhưng TUYỆT ĐỐI không thay đổi ý định của khách hàng.
                 Nếu câu hỏi đã chuẩn, hãy giữ nguyên. 
                 Trả về DUY NHẤT một chuỗi kết quả (câu chuẩn nhất), không giải thích thêm.`
@@ -261,36 +282,56 @@ KHẢ NĂNG CỦA BẠN:
 DANH SÁCH SẢN PHẨM HIỆN CÓ(Dữ liệu thực tế):
 ${productList}
 
-THÔNG TIN CỬA HÀNG:
-- Chính sách: Đổi trả và bảo hành theo quy định của từng sản phẩm.
-- Giao hàng: Hỗ trợ giao hàng toàn quốc.
-- Hỗ trợ: Luôn sẵn sàng hỗ trợ khách hàng.
+THÔNG TIN CỬA HÀNG (TechStore):
+- Danh mục: ${(this._categoriesCache || []).join(', ')} — Thương hiệu: ${(this._brandsCache || []).join(', ')}
+- Bảo hành: 12 tháng chính hãng, hỗ trợ bảo hành tại trung tâm
+- Giao hàng: Miễn phí toàn quốc, giao nhanh nội thành
+- Đổi trả: 30 ngày nếu lỗi từ nhà sản xuất
+- Hỗ trợ kỹ thuật: Tư vấn cấu hình, so sánh sản phẩm, hỗ trợ sau mua hàng
 
 TIN NHẮN KHÁCH HÀNG: "${userMessage}"
 CONTEXT: ${JSON.stringify(context)}
 
 HƯỚNG DẪN TRẢ LỜI CỰC KỲ QUAN TRỌNG (BẮT BUỘC):
 1. TRẢ LỜI BẰNG TIẾNG VIỆT.
-2. QUY TẮC SO KHỚP Tên (Cực kỳ quan trọng):
-   - Bản "Thường" (không hậu tố), "Pro", "Pro Max", "Plus" là các sản phẩm KHÁC NHAU HOÀN TOÀN.
-   - Các đời (13, 14, 15) là các thế hệ KHÁC NHAU HOÀN TOÀN.
+2. QUY TẮC SO KHỚP SẢN PHẨM (áp dụng cho mọi danh mục):
+   A. ĐIỆN THOẠI: Thương hiệu + Dòng sản phẩm + Hậu tố phiên bản là 3 yếu tố phân biệt.
+      - Bản thường, Pro, Pro Max, Plus, Ultra, e, Lite là các sản phẩm KHÁC NHAU HOÀN TOÀN.
+      - Số thế hệ/đời (13, 14, 15, 16, 17…) là các thế hệ KHÁC NHAU HOÀN TOÀN.
+      - Cùng tên dòng nhưng khác đuôi (VD: A37 vs A57) → KHÁC NHAU.
+   B. MÁY TÍNH BẢNG: Thương hiệu + Model + Loại kết nối là 3 yếu tố phân biệt.
+      - WiFi, 4G, 5G cùng model → KHÁC NHAU (giá và tính năng kết nối khác).
+      - Bản thường vs Pro cùng dòng → KHÁC NHAU.
+   C. LAPTOP: Thương hiệu + Tên model + Cấu hình chip là 3 yếu tố phân biệt.
+      - Cùng tên model nhưng khác chip (i3/i5/i7, R5/R7, Ultra 5/Ultra 7, M3/M4/M5) → KHÁC NHAU.
+      - Laptop gaming (có card đồ họa rời RTX/RX) khác laptop văn phòng (đồ họa tích hợp).
+   → Quy tắc này áp dụng cho bất kỳ danh mục sản phẩm nào trong danh sách, kể cả khi có danh mục mới.
 3. QUY TRÌNH KIỂM TRA & PHẢN HỒI:
-   - Bước 1: Kiểm tra xem sản phẩm khách hỏi có tên KHỚP 100% (cả đời máy và hậu tố) với sản phẩm nào trong "DANH SÁCH SẢN PHẨM HIỆN CÓ" hay không.
-   - Bước 2: 
-     + Nếu KHỚP 100%: Tư vấn trực tiếp sản phẩm đó.
-     + Nếu KHÔNG KHỚP 100%: Bạn PHẢI bắt đầu bằng cụm từ: "Tiếc quá, hiện tại bên mình chưa có [Tên sản phẩm khách hỏi] ạ".
-     + Bước 3: Sau khi báo không có, hãy gợi ý các bản khác cùng đời (nếu có) hoặc đời mới hơn (nếu có).
+   - Bước 1: Xác định nhóm sản phẩm (điện thoại / tablet / laptop).
+   - Bước 2: Kiểm tra xem sản phẩm khách hỏi có KHỚP với sản phẩm trong "DANH SÁCH SẢN PHẨM HIỆN CÓ" hay không.
+   - Bước 3:
+     + Nếu KHỚP: Tư vấn trực tiếp sản phẩm đó (nêu điểm nổi bật, giá, tình trạng hàng).
+     + Nếu KHÔNG KHỚP: Bắt đầu bằng "Tiếc quá, hiện tại bên mình chưa có [tên sản phẩm] ạ", sau đó gợi ý sản phẩm gần nhất cùng thương hiệu hoặc cùng tầm giá.
+     + Nếu khách hỏi chung chung (VD: "laptop tầm 15 triệu"): Gợi ý 2-3 sản phẩm phù hợp từ danh sách với lý do rõ ràng.
 4. VÍ DỤ MẪU (BẮT BUỘC HỌC THEO):
-   - Khách: "có ip14 không?" | List chỉ có "iPhone 14 Pro" -> Trả lời: "Tiếc quá, bên mình hiện chưa có iPhone 14 bản thường ạ. Nhưng mình đang có sẵn iPhone 14 Pro với cấu hình mạnh hơn, bạn có muốn tham khảo không?"
-   - Khách: "ai phôn 14 pro max" | List chỉ có "iPhone 15 Pro Max" -> Trả lời: "Dạ hiện tại bên mình đã hết hàng iPhone 14 Pro Max rồi ạ. Tuy nhiên mình đang có sẵn iPhone 15 Pro Max (đời mới nhất) cực kỳ hot, mình tư vấn cho bạn nhé?"
-   - Khách: "ip15" | List có "15 Pro", "15 Pro Max" -> Trả lời: "Dạ bên mình hiện chưa có iPhone 15 bản thường, nhưng đang có sẵn bản 15 Pro và 15 Pro Max nè, bạn quan tâm bản nào ạ?"
-5. KHÔNG TỰ BỊA: Tuyệt đối không tự ý bịa giá hoặc tên.
-6. PHONG CÁCH: Thân thiện (mình/em - bạn/anh/chị).
+   ĐIỆN THOẠI:
+   - "ip17" | List có "iPhone 17", "iPhone 17 Pro", "iPhone 17 Pro Max", "iPhone 17e" -> "Bên mình đang có đủ dòng iPhone 17 nè: iPhone 17 thường, 17e, 17 Pro và 17 Pro Max. Bạn đang cân nhắc bản nào ạ?"
+   - "ss a57" | List chỉ có "Samsung Galaxy A57" -> Tư vấn trực tiếp Samsung Galaxy A57.
+   - "oppo find x7" | List chỉ có "OPPO Find X8 Pro" -> "Tiếc quá, bên mình chưa có Find X7 ạ. Nhưng mình đang có OPPO Find X8 Pro — đời mới nhất, cấu hình vượt trội hơn, bạn muốn xem không?"
+   MÁY TÍNH BẢNG:
+   - "ipad wifi" | List có "iPad A16 WiFi" và "iPad A16 5G" -> Tư vấn iPad A16 WiFi, hỏi thêm có cần dùng SIM 5G không để gợi ý thêm bản 5G.
+   - "samsung tab s11" | List có 3 bản S11 -> "Dòng Samsung Galaxy Tab S11 bên mình có 3 bản: WiFi, 5G và Ultra 5G. Bạn ưu tiên dùng ở nhà hay mang đi nhiều ạ?"
+   LAPTOP:
+   - "macbook" | List có 3 MacBook -> "TechStore đang có 3 mẫu MacBook: Air 13 inch M4, Air 15 inch M4 và Pro 14 inch M5. Bạn cần dùng cho công việc gì để mình tư vấn phù hợp ạ?"
+   - "laptop gaming tầm 20 triệu" | List có Acer Gaming Nitro V -> Gợi ý Acer Gaming Nitro V (có RTX), nêu cấu hình và giá.
+   - "dell i5" | List có 2 Dell i5 (3520 và 3530) -> "Dell Inspiron i5 bên mình có 2 mẫu: Inspiron 15 3520 và 3530, khác nhau ở chip thế hệ. Bạn cần dùng cho văn phòng hay học tập ạ?"
+5. KHÔNG TỰ BỊA: Tuyệt đối không bịa tên, giá, cấu hình hay thông tin sản phẩm ngoài danh sách.
+6. PHONG CÁCH: Thân thiện, chuyên nghiệp (mình/em - bạn/anh/chị). Khi tư vấn laptop/tablet nên hỏi thêm nhu cầu sử dụng để gợi ý chính xác.
 
 Hãy trả lời THEO ĐÚNG ĐỊNH DẠNG JSON SAU:
 {
   "response": "Câu trả lời đúng quy trình trên (dùng emoji phù hợp)",
-  "matchedProducts": ["Tên chính xác mẫu sản phẩm trong danh sách (VD: 'iPhone 14 Pro')"],
+  "matchedProducts": ["Tên chính xác sản phẩm trong danh sách (VD: 'Điện thoại iPhone 17 Pro')"],
   "suggestions": ["Gợi ý câu tiếp theo"],
   "intent": "product_search|pricing|policy|support|complaint|general|off_topic"
 }

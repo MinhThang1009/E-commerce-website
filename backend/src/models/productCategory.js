@@ -21,6 +21,7 @@ const ProductCategory = sequelize.define(
   {
     tableName: 'product_categories',
     timestamps: true,
+    underscored: false,
   }
 );
 

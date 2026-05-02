@@ -1,10 +1,12 @@
 import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { useGetBrandsQuery } from '@/services/brandApi';
 import { PageLayout } from '@/components/layout/PageLayout';
 import { ErrorState } from '@/components/common/ErrorState';
 
 const BrandsPage: React.FC = () => {
+    const { t } = useTranslation();
     const { data: brandsData, isLoading, error, refetch } = useGetBrandsQuery({ isActive: true });
     const [searchTerm, setSearchTerm] = useState('');
 
@@ -14,21 +16,21 @@ const BrandsPage: React.FC = () => {
     );
 
     return (
-        <PageLayout title="Thương hiệu" description="Khám phá các thương hiệu hàng đầu">
+        <PageLayout title={t('brands.pageTitle')} description={t('brands.pageDescription')}>
             <div className="py-10">
                 <div className="mb-10 text-center">
                     <h1 className="text-4xl font-extrabold text-neutral-900 dark:text-white mb-4">
-                        Thương hiệu của chúng tôi
+                        {t('brands.title')}
                     </h1>
                     <p className="text-neutral-600 dark:text-neutral-400 max-w-2xl mx-auto mb-8">
-                        Chúng tôi hợp tác với những thương hiệu hàng đầu để mang đến cho bạn những sản phẩm chất lượng nhất.
+                        {t('brands.description')}
                     </p>
                     <div className="max-w-md mx-auto relative">
                          <input
                             type="text"
                             value={searchTerm}
                             onChange={(e) => setSearchTerm(e.target.value)}
-                            placeholder="Tìm kiếm thương hiệu..."
+                            placeholder={t('brands.searchPlaceholder')}
                             className="w-full pl-12 pr-4 py-3 rounded-2xl border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-neutral-900 focus:ring-2 focus:ring-primary-500 transition-all shadow-sm"
                         />
                         <svg className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-neutral-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -48,8 +50,8 @@ const BrandsPage: React.FC = () => {
                 ) : filteredBrands.length === 0 ? (
                     <div className="text-center py-20">
                         <div className="text-6xl mb-4">🏪</div>
-                        <h3 className="text-xl font-bold">Không tìm thấy thương hiệu nào</h3>
-                        <p className="text-neutral-500">Thử tìm kiếm với từ khóa khác</p>
+                        <h3 className="text-xl font-bold">{t('brands.noResults')}</h3>
+                        <p className="text-neutral-500">{t('brands.noResultsHint')}</p>
                     </div>
                 ) : (
                     <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6 gap-6">
@@ -72,7 +74,7 @@ const BrandsPage: React.FC = () => {
                                     {brand.name}
                                 </h3>
                                 <p className="text-xs text-neutral-500 mt-2 line-clamp-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                                    Xem sản phẩm
+                                    {t('brands.viewProducts')}
                                 </p>
                             </Link>
                         ))}

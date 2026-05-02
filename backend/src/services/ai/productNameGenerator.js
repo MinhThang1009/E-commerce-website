@@ -1,4 +1,4 @@
-const { AttributeValue, AttributeGroup } = require('../models');
+const { AttributeValue, AttributeGroup } = require('../../models');
 
 // Định nghĩa association nếu chưa tồn tại
 if (!AttributeValue.associations.attributeGroup) {

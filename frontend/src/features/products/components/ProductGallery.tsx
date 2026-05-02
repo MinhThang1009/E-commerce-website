@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 
 interface ProductGalleryProps {
   images: string[];
@@ -9,6 +10,7 @@ const ProductGallery: React.FC<ProductGalleryProps> = ({
   images,
   productName,
 }) => {
+  const { t } = useTranslation();
   const [activeImage, setActiveImage] = useState(0);
   const [isZoomed, setIsZoomed] = useState(false);
   const [zoomPosition, setZoomPosition] = useState({ x: 0, y: 0 });
@@ -90,7 +92,7 @@ const ProductGallery: React.FC<ProductGalleryProps> = ({
         >
           <img
             src={images[activeImage]}
-            alt={`${productName} - Hình ${activeImage + 1}`}
+            alt={t('product.imageNumber', { name: productName, n: activeImage + 1 })}
             className="w-full h-full object-cover"
           />
         </div>

@@ -151,10 +151,10 @@ const CheckoutPage: React.FC = () => {
 
   // Các phương thức thanh toán
   const paymentMethods = [
-    { value: 'cod', label: 'Thanh toán khi nhận hàng (COD)' },
+    { value: 'cod', label: t('checkout.paymentMethod.cod') },
     { value: 'vnpay', label: t('checkout.paymentMethod.vnpay') },
-    { value: 'momo', label: 'Thanh toán MoMo' },
-    { value: 'installment', label: 'Trả góp 0% qua thẻ tín dụng' },
+    { value: 'momo', label: t('checkout.paymentMethod.momo') },
+    { value: 'installment', label: t('checkout.paymentMethod.installment') },
   ];
 
   // Các phương thức vận chuyển
@@ -222,31 +222,32 @@ const CheckoutPage: React.FC = () => {
   // Cột bảng trả góp
   const installmentColumns = [
     {
-      title: 'Ngân hàng',
+      title: t('checkout.installment.bankColumn'),
       dataIndex: 'bank',
       key: 'bank',
       render: (text: string) => <span className="font-medium">{text}</span>,
     },
     {
-      title: 'Kỳ hạn',
+      title: t('checkout.installment.termsColumn'),
       dataIndex: 'terms',
       key: 'terms',
     },
     {
-      title: 'Phí chuyển đổi',
+      title: t('checkout.installment.feeColumn'),
       dataIndex: 'fee',
       key: 'fee',
-      render: () => <span className="text-green-600 font-medium">Miễn phí</span>,
+      render: () => <span className="text-green-600 font-medium">{t('checkout.installment.freeLabel')}</span>,
     },
   ];
 
+  const mo = t('checkout.installment.monthsUnit');
   const installmentData = [
-    { key: '1', bank: 'Techcombank', terms: '3, 6, 9, 12 tháng', fee: '0%' },
-    { key: '2', bank: 'VPBank', terms: '3, 6, 9, 12 tháng', fee: '0%' },
-    { key: '3', bank: 'Sacombank', terms: '6, 12 tháng', fee: '0%' },
-    { key: '4', bank: 'VIB', terms: '3, 6, 9, 12 tháng', fee: '0%' },
-    { key: '5', bank: 'HSBC', terms: '3, 6, 9, 12 tháng', fee: '0%' },
-    { key: '6', bank: 'TPBank', terms: '3, 6, 9, 12 tháng', fee: '0%' },
+    { key: '1', bank: 'Techcombank', terms: `3, 6, 9, 12 ${mo}`, fee: '0%' },
+    { key: '2', bank: 'VPBank', terms: `3, 6, 9, 12 ${mo}`, fee: '0%' },
+    { key: '3', bank: 'Sacombank', terms: `6, 12 ${mo}`, fee: '0%' },
+    { key: '4', bank: 'VIB', terms: `3, 6, 9, 12 ${mo}`, fee: '0%' },
+    { key: '5', bank: 'HSBC', terms: `3, 6, 9, 12 ${mo}`, fee: '0%' },
+    { key: '6', bank: 'TPBank', terms: `3, 6, 9, 12 ${mo}`, fee: '0%' },
   ];
 
   // Mở modal khi chọn thanh toán trả góp
@@ -425,7 +426,7 @@ const CheckoutPage: React.FC = () => {
   // Xử lý áp dụng mã giảm giá
   const handleApplyDiscount = async () => {
     if (!discountCodeInput.trim()) {
-      setDiscountError('Vui lòng nhập mã giảm giá');
+      setDiscountError(t('checkout.discountCode.required'));
       return;
     }
 
@@ -443,11 +444,11 @@ const CheckoutPage: React.FC = () => {
       dispatch(
         addNotification({
           type: 'success',
-          message: 'Áp dụng mã giảm giá thành công!',
+          message: t('checkout.discountCode.success'),
         })
       );
     } catch (error: any) {
-      setDiscountError(error.data?.message || 'Mã giảm giá không hợp lệ');
+      setDiscountError(error.data?.message || t('checkout.discountCode.invalid'));
     }
   };
 
@@ -459,21 +460,20 @@ const CheckoutPage: React.FC = () => {
 
   const handleApplyPoints = (val: number) => {
     if (val < 0) {
-      setPointsError('Số điểm không hợp lệ');
+      setPointsError(t('checkout.loyaltyPoints.invalidPoints'));
       setPointsToUse(0);
       return;
     }
     if (val > availablePoints) {
-      setPointsError(`Bạn chỉ có tối đa ${availablePoints} điểm`);
+      setPointsError(t('checkout.loyaltyPoints.maxExceeded', { max: availablePoints }));
       setPointsToUse(availablePoints);
       return;
     }
-    
-    // Kiểm tra nếu giảm giá bằng điểm vượt quá tổng phụ
+
     if (val * 1000 > subtotal - discountAmount) {
       const maxPoints = Math.floor((subtotal - discountAmount) / 1000);
       setPointsToUse(maxPoints);
-      setPointsError(`Giảm giá bằng điểm không được vượt quá giá trị đơn hàng`);
+      setPointsError(t('checkout.loyaltyPoints.exceeds'));
       return;
     }
 
@@ -649,7 +649,7 @@ const CheckoutPage: React.FC = () => {
           dispatch(
             addNotification({
               type: 'error',
-              message: 'Không thể tạo mã thanh toán VNPay',
+              message: t('checkout.errors.vnpayFailed'),
               duration: 5000,
             })
           );
@@ -681,7 +681,7 @@ const CheckoutPage: React.FC = () => {
           dispatch(
             addNotification({
               type: 'error',
-              message: 'Không thể tạo mã thanh toán MoMo',
+              message: t('checkout.errors.momoFailed'),
               duration: 5000,
             })
           );
@@ -845,7 +845,7 @@ const CheckoutPage: React.FC = () => {
                 />
                 <div className="md:col-span-2">
                   <AddressPicker
-                    label="Địa chỉ giao hàng"
+                    label={t('checkout.shippingInfo.address')}
                     value={formData.address}
                     onChange={(val, lat, lon) => {
                       handleInputChange('address', val);
@@ -899,14 +899,14 @@ const CheckoutPage: React.FC = () => {
               title={
                 <div className="flex items-center space-x-2 text-xl text-primary-600">
                   <InfoCircleOutlined />
-                  <span>Hướng dẫn Trả góp 0%</span>
+                  <span>{t('checkout.installment.title')}</span>
                 </div>
               }
               open={isInstallmentModalOpen}
               onCancel={() => setIsInstallmentModalOpen(false)}
               footer={[
                 <Button key="close" type="primary" onClick={() => setIsInstallmentModalOpen(false)}>
-                  Đã hiểu
+                  {t('checkout.installment.understood')}
                 </Button>,
               ]}
               width={700}
@@ -914,15 +914,15 @@ const CheckoutPage: React.FC = () => {
             >
               <div className="space-y-4 py-2">
                 <div className="bg-blue-50 p-4 rounded-lg border border-blue-100 text-blue-800">
-                  <h4 className="font-semibold mb-2">Quy trình trả góp:</h4>
+                  <h4 className="font-semibold mb-2">{t('checkout.installment.process')}</h4>
                   <ol className="list-decimal list-inside space-y-1 text-sm">
-                    <li>Chọn ngân hàng và kỳ hạn trả góp phù hợp trong bảng dưới đây.</li>
-                    <li>Hoàn tất đặt hàng với phương thức "Trả góp 0%".</li>
-                    <li>Nhân viên tư vấn sẽ liên hệ lại để hướng dẫn quý khách thực hiện chuyển đổi trả góp.</li>
+                    <li>{t('checkout.installment.step1')}</li>
+                    <li>{t('checkout.installment.step2')}</li>
+                    <li>{t('checkout.installment.step3')}</li>
                   </ol>
                 </div>
 
-                <h4 className="font-semibold text-gray-700 mt-4">Danh sách ngân hàng hỗ trợ:</h4>
+                <h4 className="font-semibold text-gray-700 mt-4">{t('checkout.installment.bankList')}</h4>
                 <Table
                   columns={installmentColumns}
                   dataSource={installmentData}
@@ -932,7 +932,7 @@ const CheckoutPage: React.FC = () => {
                 />
 
                 <p className="text-xs text-gray-500 italic mt-2">
-                  * Lưu ý: Chương trình trả góp 0% chỉ áp dụng cho thẻ tín dụng (Credit Card). Không áp dụng cho thẻ ATM/Debit.
+                  {t('checkout.installment.note')}
                 </p>
               </div>
             </Modal>
@@ -941,12 +941,12 @@ const CheckoutPage: React.FC = () => {
           {/* Ghi chú đơn hàng */}
           <div className="bg-white dark:bg-neutral-800 rounded-lg shadow-sm p-6">
             <h2 className="text-xl font-semibold text-neutral-800 dark:text-neutral-100 mb-4">
-              Order Notes (Optional)
+              {t('checkout.orderNotes.title')}
             </h2>
             <textarea
               value={formData.notes}
               onChange={(e) => handleInputChange('notes', e.target.value)}
-              placeholder="Any special instructions for your order..."
+              placeholder={t('checkout.orderNotes.placeholder')}
               className="w-full p-3 border border-neutral-200 dark:border-neutral-700 rounded-lg bg-white dark:bg-neutral-800 text-neutral-800 dark:text-neutral-100"
               rows={3}
             />
@@ -997,7 +997,7 @@ const CheckoutPage: React.FC = () => {
                 <div className="flex space-x-2 items-end">
                   <div className="flex-grow">
                     <Input
-                      placeholder="Mã giảm giá"
+                      placeholder={t('checkout.discountCode.placeholder')}
                       value={discountCodeInput}
                       onChange={(e) => setDiscountCodeInput(e.target.value.toUpperCase())}
                       disabled={!!appliedDiscount}
@@ -1009,7 +1009,7 @@ const CheckoutPage: React.FC = () => {
                     isLoading={isValidatingCode}
                     className="h-[42px] px-4"
                   >
-                    {appliedDiscount ? "Hủy" : "Áp dụng"}
+                    {appliedDiscount ? t('checkout.discountCode.cancel') : t('common.apply')}
                   </CustomButton>
                 </div>
                 {discountError && (
@@ -1018,7 +1018,7 @@ const CheckoutPage: React.FC = () => {
                 {appliedDiscount && (
                   <p className="text-green-600 text-sm mt-1 flex items-center">
                     <CheckCircleOutlined className="mr-1" />
-                    Đã áp dụng mã <strong>{appliedDiscount.code}</strong>. Giảm {formatPrice(appliedDiscount.amount)}
+                    {t('checkout.discountCode.discountInfo', { code: appliedDiscount.code, amount: formatPrice(appliedDiscount.amount) })}
                   </p>
                 )}
               </div>
@@ -1029,15 +1029,15 @@ const CheckoutPage: React.FC = () => {
               <div className="mb-6 border-t border-neutral-200 dark:border-neutral-700 pt-4">
                 <div className="flex justify-between items-center mb-2">
                   <span className="text-sm font-medium text-neutral-700 dark:text-neutral-300">
-                    Sử dụng điểm tích lũy (Có {availablePoints} điểm)
+                    {t('checkout.loyaltyPoints.pointsHeader', { points: availablePoints })}
                   </span>
-                  <span className="text-xs text-neutral-500">1 điểm = 1,000đ</span>
+                  <span className="text-xs text-neutral-500">{t('checkout.loyaltyPoints.rate')}</span>
                 </div>
                 <div className="flex space-x-2 items-end">
                   <div className="flex-grow">
                     <Input
                       type="number"
-                      placeholder="Số điểm muốn dùng"
+                      placeholder={t('checkout.loyaltyPoints.inputPlaceholder')}
                       value={pointsToUse.toString()}
                       min={0}
                       max={availablePoints}
@@ -1049,7 +1049,7 @@ const CheckoutPage: React.FC = () => {
                     onClick={() => handleApplyPoints(availablePoints)}
                     className="h-[42px] px-4 text-xs"
                   >
-                    Dùng hết
+                    {t('checkout.loyaltyPoints.useAll')}
                   </CustomButton>
                 </div>
                 {pointsError && (
@@ -1058,7 +1058,7 @@ const CheckoutPage: React.FC = () => {
                 {pointsToUse > 0 && !pointsError && (
                   <p className="text-green-600 text-sm mt-1 flex items-center">
                     <CheckCircleOutlined className="mr-1" />
-                    Đã áp dụng {pointsToUse} điểm. Giảm {formatPrice(pointsToUse * 1000)}
+                    {t('checkout.loyaltyPoints.appliedInfo', { points: pointsToUse, amount: formatPrice(pointsToUse * 1000) })}
                   </p>
                 )}
               </div>
@@ -1077,7 +1077,7 @@ const CheckoutPage: React.FC = () => {
                       <span>{t('checkout.orderSummary.shipping')}</span>
                       {finalDistance > 0 && (
                         <span className="text-base font-bold text-emerald-700 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-900/30 px-2.5 py-1.5 rounded-md mt-1.5 shadow-sm border border-emerald-100 dark:border-emerald-800 inline-flex items-center">
-                          📍 Khoảng cách: {finalDistance.toFixed(1)} km - Phí: {formatPrice(shippingCost)}
+                          {t('checkout.orderSummary.distanceInfo', { distance: finalDistance.toFixed(1), fee: formatPrice(shippingCost) })}
                         </span>
                       )}
                     </div>
@@ -1089,19 +1089,19 @@ const CheckoutPage: React.FC = () => {
                   </div>
                   {warrantyTotal > 0 && (
                     <div className="flex justify-between text-neutral-600 dark:text-neutral-400">
-                      <span>Phí gói bảo hành</span>
+                      <span>{t('checkout.orderSummary.warrantyFee')}</span>
                       <span>{formatPrice(warrantyTotal)}</span>
                     </div>
                   )}
                   {appliedDiscount && (
                     <div className="flex justify-between text-green-600 font-medium">
-                      <span>Mã giảm giá ({appliedDiscount.code})</span>
+                      <span>{t('checkout.orderSummary.discountCodeLabel', { code: appliedDiscount.code })}</span>
                       <span>-{formatPrice(appliedDiscount.amount)}</span>
                     </div>
                   )}
                   {pointsToUse > 0 && (
                     <div className="flex justify-between text-green-600 font-medium">
-                      <span>Giảm giá bằng điểm</span>
+                      <span>{t('checkout.orderSummary.loyaltyDiscount')}</span>
                       <span>-{formatPrice(pointsToUse * 1000)}</span>
                     </div>
                   )}
@@ -1131,11 +1131,11 @@ const CheckoutPage: React.FC = () => {
                 size="large"
                 iconType="arrow-right"
                 isProcessing={isProcessing}
-                processingText="Processing..."
+                processingText={t('common.processing')}
                 onClick={handleStripeOrderCreation}
                 className="w-full mt-6 h-14 text-lg font-semibold"
               >
-                Continue to Payment
+                {t('checkout.buttons.processPayment')}
               </PremiumButton>
             )}
 
@@ -1145,12 +1145,11 @@ const CheckoutPage: React.FC = () => {
                 size="large"
                 iconType="arrow-right"
                 isProcessing={isProcessing}
-                processingText={t('common.processing') || 'Processing...'}
+                processingText={t('common.processing')}
                 onClick={handleSubmit}
                 className="w-full mt-6 h-14 text-lg font-semibold"
               >
-                {t('checkout.buttons.continueToPayment') ||
-                  'Continue to Payment'}
+                {t('checkout.buttons.continueToPayment')}
               </PremiumButton>
             )}
 
@@ -1175,6 +1174,7 @@ const CheckoutPage: React.FC = () => {
                   <p className="text-lg text-neutral-700 dark:text-neutral-300">
                     {t('checkout.redirectingToPayment')}
                   </p>
+
                 </div>
               </div>
             )}

@@ -2,12 +2,14 @@ import React from 'react';
 import { useGoogleLogin } from '@react-oauth/google';
 import { useGoogleLoginMutation } from '@/services/authApi';
 import { useDispatch } from 'react-redux';
+import { useTranslation } from 'react-i18next';
 import { loginSuccess } from '@/features/auth/authSlice';
 import { addNotification } from '@/features/ui/uiSlice';
 import { PremiumButton } from '@/components/common';
 
 const GoogleLoginButton: React.FC = () => {
   const dispatch = useDispatch();
+  const { t } = useTranslation();
   const [googleLogin, { isLoading }] = useGoogleLoginMutation();
 
   const handleGoogleSuccess = async (tokenResponse: any) => {
@@ -21,13 +23,13 @@ const GoogleLoginButton: React.FC = () => {
       dispatch(loginSuccess(result));
 
       dispatch(addNotification({
-        message: 'Đăng nhập Google thành công!',
+        message: t('auth.googleLoginSuccess'),
         type: 'success',
       }));
     } catch (error: any) {
       console.error('Lỗi đăng nhập Google:', error);
       dispatch(addNotification({
-        message: error?.data?.message || 'Đăng nhập Google thất bại',
+        message: error?.data?.message || t('auth.googleLoginError'),
         type: 'error',
       }));
     }
@@ -37,7 +39,7 @@ const GoogleLoginButton: React.FC = () => {
     onSuccess: handleGoogleSuccess,
     onError: () => {
       dispatch(addNotification({
-        message: 'Xác thực Google thất bại',
+        message: t('auth.googleAuthFailed'),
         type: 'error',
       }));
     },
@@ -70,7 +72,7 @@ const GoogleLoginButton: React.FC = () => {
           />
         </svg>
         <span className="font-semibold text-neutral-700 dark:text-neutral-200">
-          Đăng nhập với Google
+          {t('auth.loginWithGoogle')}
         </span>
       </div>
     </PremiumButton>

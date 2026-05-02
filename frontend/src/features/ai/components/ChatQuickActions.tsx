@@ -1,12 +1,12 @@
 import React from 'react';
-import { StatusIcon } from './icons';
+import { useTranslation } from 'react-i18next';
 import { geminiService } from '../services/geminiApi';
 
 interface QuickAction {
   id: string;
-  label: string;
+  labelKey: string;
+  messageKey: string;
   emoji: string;
-  message: string;
   color: {
     from: string;
     to: string;
@@ -21,12 +21,12 @@ interface ChatQuickActionsProps {
   onSendMessage: (message: string) => void;
 }
 
-const quickActions: QuickAction[] = [
+const QUICK_ACTION_DEFS: QuickAction[] = [
   {
     id: 'search',
-    label: 'Tìm sản phẩm',
+    labelKey: 'chat.quickActions.search',
+    messageKey: 'chat.quickActions.search',
     emoji: '🔍',
-    message: 'Tìm sản phẩm',
     color: {
       from: 'from-primary-50',
       to: 'to-primary-100',
@@ -38,9 +38,9 @@ const quickActions: QuickAction[] = [
   },
   {
     id: 'promotion',
-    label: 'Khuyến mãi',
+    labelKey: 'chat.quickActions.promotion',
+    messageKey: 'chat.quickActions.promotion',
     emoji: '🎉',
-    message: 'Khuyến mãi',
     color: {
       from: 'from-orange-50',
       to: 'to-orange-100',
@@ -52,9 +52,9 @@ const quickActions: QuickAction[] = [
   },
   {
     id: 'support',
-    label: 'Hỗ trợ',
+    labelKey: 'chat.quickActions.support',
+    messageKey: 'chat.quickActions.support',
     emoji: '💬',
-    message: 'Hỗ trợ',
     color: {
       from: 'from-green-50',
       to: 'to-green-100',
@@ -66,21 +66,20 @@ const quickActions: QuickAction[] = [
   },
 ];
 
-const ChatQuickActions: React.FC<ChatQuickActionsProps> = ({
-  onSendMessage,
-}) => {
+const ChatQuickActions: React.FC<ChatQuickActionsProps> = ({ onSendMessage }) => {
+  const { t } = useTranslation();
+
   return (
     <div className="mt-4">
-      {/* Các nút hành động nhanh */}
       <div className="flex flex-wrap gap-2">
-        {quickActions.map((action) => (
+        {QUICK_ACTION_DEFS.map((action) => (
           <button
             key={action.id}
-            onClick={() => onSendMessage(action.message)}
+            onClick={() => onSendMessage(t(action.messageKey))}
             className={`text-xs px-4 py-2 bg-gradient-to-r ${action.color.from} ${action.color.to} ${action.color.text} rounded-xl ${action.color.hoverFrom} ${action.color.hoverTo} transition-all duration-300 font-semibold shadow-sm hover:shadow-md transform hover:-translate-y-0.5 border ${action.color.border} active:scale-95`}
           >
             <span className="mr-1.5">{action.emoji}</span>
-            {action.label}
+            {t(action.labelKey)}
           </button>
         ))}
       </div>

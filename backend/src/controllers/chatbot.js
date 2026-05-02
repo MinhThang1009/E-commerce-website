@@ -555,7 +555,7 @@ class ChatbotController {
   getTemplateResponse(prompt, context) {
     const templates = [
       'Tôi hiểu bạn đang tìm kiếm sản phẩm phù hợp! 😊 Để giúp bạn tốt nhất, hãy cho tôi biết thêm chi tiết về sở thích của bạn nhé.',
-      'Chào bạn! 👋 Shopmini có rất nhiều sản phẩm tuyệt vời. Bạn quan tâm đến loại sản phẩm nào nhất?',
+      'Chào bạn! 👋 TechStore có rất nhiều sản phẩm tuyệt vời. Bạn quan tâm đến loại sản phẩm nào nhất?',
       'Cảm ơn bạn đã quan tâm! 🌟 Tôi sẽ giúp bạn tìm những sản phẩm tốt nhất với giá ưu đãi.',
     ];
     return templates[Math.floor(Math.random() * templates.length)];
@@ -580,7 +580,7 @@ class ChatbotController {
 
       // Phản hồi đơn giản
       const response = {
-        response: `Chào bạn! Bạn vừa nói: "${message}". Tôi là trợ lý AI của Shopmini! 😊`,
+        response: `Chào bạn! Bạn vừa nói: "${message}". Tôi là trợ lý AI của TechStore! 😊`,
         suggestions: [
           'Tìm sản phẩm hot 🔥',
           'Xem khuyến mãi 🎉',

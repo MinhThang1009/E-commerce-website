@@ -1,8 +1,10 @@
 import { useState, useCallback } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Message } from '../types/Message';
 import { useSendMessageMutation } from '../services/chatbotApi';
 
 export const useChat = () => {
+  const { t } = useTranslation();
   const [messages, setMessages] = useState<Message[]>([]);
   const [sendMessageMutation, { isLoading }] = useSendMessageMutation();
 
@@ -10,13 +12,15 @@ export const useChat = () => {
   const initChat = useCallback((userName?: string) => {
     const greeting: Message = {
       id: Date.now().toString(),
-      text: `Xin chào${userName ? ` ${userName}` : ''}! Tôi là trợ lý mua sắm AI. Tôi có thể giúp gì cho bạn hôm nay?`,
+      text: userName
+        ? t('chat.greetingWithName', { name: userName })
+        : t('chat.greeting'),
       sender: 'ai',
       suggestions: [
-        'Tìm sản phẩm mới',
-        'Xem khuyến mãi',
-        'Cách đặt hàng',
-        'Chính sách đổi trả',
+        t('chat.suggestions.findProducts'),
+        t('chat.suggestions.viewPromotions'),
+        t('chat.suggestions.howToOrder'),
+        t('chat.suggestions.returnPolicy'),
       ],
     };
 
@@ -57,7 +61,7 @@ export const useChat = () => {
         // Thêm tin nhắn lỗi
         const errorMessage: Message = {
           id: (Date.now() + 1).toString(),
-          text: 'Xin lỗi, tôi gặp sự cố khi xử lý yêu cầu của bạn. Vui lòng thử lại sau.',
+          text: t('chat.errors.general'),
           sender: 'ai',
         };
 

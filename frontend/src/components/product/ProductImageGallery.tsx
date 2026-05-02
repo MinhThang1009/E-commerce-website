@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Image } from 'antd';
 import { LeftOutlined, RightOutlined, EyeOutlined } from '@ant-design/icons';
 
@@ -13,6 +14,7 @@ const ProductImageGallery: React.FC<ProductImageGalleryProps> = ({
   thumbnail,
   productName,
 }) => {
+  const { t } = useTranslation();
   const [selectedImage, setSelectedImage] = useState(0);
 
   // Kết hợp thumbnail và ảnh, lọc bỏ trùng lặp và chuỗi rỗng
@@ -56,7 +58,7 @@ const ProductImageGallery: React.FC<ProductImageGalleryProps> = ({
                   mask: (
                     <div className="flex items-center justify-center bg-black/30 backdrop-blur-[2px] w-full h-full text-white transition-opacity">
                       <EyeOutlined className="text-xl mr-2" />
-                      <span className="font-medium">Xem ảnh lớn</span>
+                      <span className="font-medium">{t('product.viewLargeImage')}</span>
                     </div>
                   ),
                 }}
@@ -69,14 +71,14 @@ const ProductImageGallery: React.FC<ProductImageGalleryProps> = ({
             <button
               onClick={handlePrevImage}
               className="absolute left-4 top-1/2 -translate-y-1/2 w-10 h-10 flex items-center justify-center bg-white/90 hover:bg-white dark:bg-neutral-800/90 dark:hover:bg-neutral-800 rounded-full shadow-lg border border-gray-100 dark:border-neutral-700 text-gray-700 dark:text-neutral-200 opacity-0 group-hover:opacity-100 transition-all duration-300 transform hover:scale-110 z-10"
-              aria-label="Previous image"
+              aria-label={t('product.prevImage')}
             >
               <LeftOutlined style={{ fontSize: '14px' }} />
             </button>
             <button
               onClick={handleNextImage}
               className="absolute right-4 top-1/2 -translate-y-1/2 w-10 h-10 flex items-center justify-center bg-white/90 hover:bg-white dark:bg-neutral-800/90 dark:hover:bg-neutral-800 rounded-full shadow-lg border border-gray-100 dark:border-neutral-700 text-gray-700 dark:text-neutral-200 opacity-0 group-hover:opacity-100 transition-all duration-300 transform hover:scale-110 z-10"
-              aria-label="Next image"
+              aria-label={t('product.nextImage')}
             >
               <RightOutlined style={{ fontSize: '14px' }} />
             </button>

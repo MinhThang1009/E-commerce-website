@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
+import { useTranslation } from 'react-i18next';
 import Quill from 'quill';
 import 'quill/dist/quill.snow.css';
 import { processHtmlForEditor } from '../../utils/htmlProcessor';
@@ -15,10 +16,12 @@ interface SimpleRichTextEditorProps {
 const SimpleRichTextEditor: React.FC<SimpleRichTextEditorProps> = ({
   value = '',
   onChange,
-  placeholder = 'Nhập nội dung...',
+  placeholder,
   height = 200,
   readonly = false,
 }) => {
+  const { t } = useTranslation();
+  const resolvedPlaceholder = placeholder ?? t('editor.placeholder');
   const containerRef = useRef<HTMLDivElement>(null);
   const quillRef = useRef<Quill | null>(null);
   const isInternalChange = useRef(false);
@@ -29,7 +32,7 @@ const SimpleRichTextEditor: React.FC<SimpleRichTextEditorProps> = ({
 
     const quill = new Quill(containerRef.current, {
       theme: 'snow',
-      placeholder,
+      placeholder: resolvedPlaceholder,
       modules: {
         toolbar: [
           [{ header: [1, 2, 3, false] }],
@@ -96,7 +99,7 @@ const SimpleRichTextEditor: React.FC<SimpleRichTextEditorProps> = ({
   return (
     <EditorErrorBoundary
       height={height}
-      placeholder={placeholder}
+      placeholder={resolvedPlaceholder}
       value={value}
       onChange={onChange}
     >

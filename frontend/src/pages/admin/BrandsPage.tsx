@@ -14,6 +14,7 @@ import {
   Card,
   Typography,
 } from 'antd';
+import { useTranslation } from 'react-i18next';
 import ImageUpload from '@/components/common/ImageUpload';
 import {
   PlusOutlined,
@@ -42,71 +43,56 @@ interface BrandFormData {
 }
 
 const BrandsPage: React.FC = () => {
+  const { t } = useTranslation();
   const [form] = Form.useForm();
   const [isModalVisible, setIsModalVisible] = useState(false);
   const [editingBrand, setEditingBrand] = useState<any | null>(null);
   const [fileList, setFileList] = useState<any[]>([]);
 
-  // Các API hooks
-  const {
-    data: brandsData,
-    isLoading,
-    refetch,
-  } = useGetBrandsQuery();
-
+  const { data: brandsData, isLoading, refetch } = useGetBrandsQuery();
   const [createBrand, { isLoading: isCreating }] = useCreateBrandMutation();
   const [updateBrand, { isLoading: isUpdating }] = useUpdateBrandMutation();
   const [deleteBrand, { isLoading: isDeleting }] = useDeleteBrandMutation();
 
   const brands = brandsData?.data || [];
 
-  // Xử lý tạo/chỉnh sửa thương hiệu
   const handleSubmit = async (values: BrandFormData) => {
     try {
       if (editingBrand) {
-        await updateBrand({
-          id: editingBrand.id,
-          body: values,
-        }).unwrap();
-        message.success('Cập nhật thương hiệu thành công!');
+        await updateBrand({ id: editingBrand.id, body: values }).unwrap();
+        message.success(t('admin.brands.messages.editSuccess'));
       } else {
         await createBrand(values).unwrap();
-        message.success('Tạo thương hiệu thành công!');
+        message.success(t('admin.brands.messages.addSuccess'));
       }
-
       setIsModalVisible(false);
       setEditingBrand(null);
       form.resetFields();
       setFileList([]);
       refetch();
     } catch (error: any) {
-      message.error(error?.data?.message || 'Có lỗi xảy ra!');
+      message.error(error?.data?.message || t('common.errorOccurred'));
     }
   };
 
-  // Xử lý xóa thương hiệu
   const handleDelete = async (id: string) => {
     try {
       await deleteBrand(id).unwrap();
-      message.success('Xóa thương hiệu thành công!');
+      message.success(t('admin.brands.messages.deleteSuccess'));
       refetch();
     } catch (error: any) {
-      message.error(error?.data?.message || 'Không thể xóa thương hiệu!');
+      message.error(error?.data?.message || t('admin.brands.messages.deleteError'));
     }
   };
 
-  // Mở modal tạo mới
   const handleCreate = () => {
     setEditingBrand(null);
     setIsModalVisible(true);
     form.resetFields();
     setFileList([]);
-    form.setFieldsValue({
-      isActive: true,
-    });
+    form.setFieldsValue({ isActive: true });
   };
 
-  // Mở modal chỉnh sửa
   const handleEdit = (brand: any) => {
     setEditingBrand(brand);
     setIsModalVisible(true);
@@ -117,25 +103,16 @@ const BrandsPage: React.FC = () => {
       website: brand.website,
       isActive: brand.isActive,
     });
-    
     if (brand.logo) {
-      setFileList([
-        {
-          uid: '-1',
-          name: 'logo',
-          status: 'done',
-          url: brand.logo,
-        },
-      ]);
+      setFileList([{ uid: '-1', name: 'logo', status: 'done', url: brand.logo }]);
     } else {
       setFileList([]);
     }
   };
 
-  // Các cột của bảng
   const columns = [
     {
-      title: 'Logo',
+      title: t('admin.brands.table.logo'),
       dataIndex: 'logo',
       key: 'logo',
       width: 80,
@@ -157,7 +134,7 @@ const BrandsPage: React.FC = () => {
       },
     },
     {
-      title: 'Tên thương hiệu',
+      title: t('admin.brands.table.name'),
       dataIndex: 'name',
       key: 'name',
       render: (name: string, record: any) => (
@@ -168,7 +145,7 @@ const BrandsPage: React.FC = () => {
       ),
     },
     {
-      title: 'Website',
+      title: t('admin.brands.table.website') || 'Website',
       dataIndex: 'website',
       key: 'website',
       render: (website: string) =>
@@ -181,33 +158,28 @@ const BrandsPage: React.FC = () => {
         ),
     },
     {
-      title: 'Trạng thái',
+      title: t('admin.brands.table.status'),
       dataIndex: 'isActive',
       key: 'isActive',
       render: (isActive: boolean) => (
         <Tag color={isActive ? 'success' : 'error'}>
-          {isActive ? 'Hoạt động' : 'Ẩn'}
+          {isActive ? t('common.active') : t('admin.common.hidden')}
         </Tag>
       ),
     },
     {
-      title: 'Hành động',
+      title: t('admin.brands.table.actions'),
       key: 'actions',
       width: 120,
       render: (_: any, record: any) => (
         <Space>
-          <Button
-            type="link"
-            icon={<EditOutlined />}
-            onClick={() => handleEdit(record)}
-            size="small"
-          />
+          <Button type="link" icon={<EditOutlined />} onClick={() => handleEdit(record)} size="small" />
           <Popconfirm
-            title="Xóa thương hiệu"
-            description="Bạn có chắc chắn muốn xóa thương hiệu này?"
+            title={t('admin.brands.deleteTitle')}
+            description={t('admin.brands.deleteConfirm')}
             onConfirm={() => handleDelete(record.id)}
-            okText="Xóa"
-            cancelText="Hủy"
+            okText={t('common.delete')}
+            cancelText={t('common.cancel')}
             okButtonProps={{ danger: true }}
           >
             <Button type="link" icon={<DeleteOutlined />} danger size="small" />
@@ -222,31 +194,19 @@ const BrandsPage: React.FC = () => {
       <Card className="dark:bg-neutral-800">
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 gap-4">
           <div>
-            <Title
-              level={2}
-              className="!mb-1 text-xl md:text-2xl dark:text-white"
-            >
-              Quản lý thương hiệu
+            <Title level={2} className="!mb-1 text-xl md:text-2xl dark:text-white">
+              {t('admin.brands.title')}
             </Title>
             <p className="text-neutral-600 dark:text-neutral-400">
-              Quản lý các thương hiệu sản phẩm
+              {t('admin.brands.subtitle')}
             </p>
           </div>
           <Space className="flex-wrap">
-            <Button
-              icon={<ReloadOutlined />}
-              onClick={() => refetch()}
-              loading={isLoading}
-              className="dark:text-neutral-300"
-            >
-              Làm mới
+            <Button icon={<ReloadOutlined />} onClick={() => refetch()} loading={isLoading} className="dark:text-neutral-300">
+              {t('common.refresh')}
             </Button>
-            <Button
-              type="primary"
-              icon={<PlusOutlined />}
-              onClick={handleCreate}
-            >
-              Thêm thương hiệu
+            <Button type="primary" icon={<PlusOutlined />} onClick={handleCreate}>
+              {t('admin.brands.addBrand')}
             </Button>
           </Space>
         </div>
@@ -261,51 +221,32 @@ const BrandsPage: React.FC = () => {
             pagination={{
               pageSize: 10,
               showSizeChanger: true,
-              showTotal: (total) => `Tổng cộng ${total} thương hiệu`,
+              showTotal: (total) => t('admin.brands.totalItems', { total }),
             }}
           />
         </div>
 
         <Modal
-          title={editingBrand ? 'Chỉnh sửa thương hiệu' : 'Thêm thương hiệu mới'}
+          title={editingBrand ? t('admin.brands.editBrand') : t('admin.brands.addBrandModal')}
           open={isModalVisible}
-          onCancel={() => {
-            setIsModalVisible(false);
-            setEditingBrand(null);
-            form.resetFields();
-          }}
+          onCancel={() => { setIsModalVisible(false); setEditingBrand(null); form.resetFields(); }}
           footer={null}
           width={600}
         >
-          <Form
-            form={form}
-            layout="vertical"
-            onFinish={handleSubmit}
-          >
+          <Form form={form} layout="vertical" onFinish={handleSubmit}>
             <Form.Item
               name="name"
-              label="Tên thương hiệu"
-              rules={[
-                { required: true, message: 'Vui lòng nhập tên thương hiệu!' },
-              ]}
+              label={t('admin.brands.form.name')}
+              rules={[{ required: true, message: t('admin.brands.form.nameRequired') }]}
             >
-              <Input placeholder="Nhập tên thương hiệu" />
+              <Input placeholder={t('admin.brands.form.namePlaceholder')} />
             </Form.Item>
 
-            <Form.Item
-              name="description"
-              label="Mô tả"
-            >
-              <TextArea
-                rows={3}
-                placeholder="Nhập mô tả thương hiệu"
-              />
+            <Form.Item name="description" label={t('admin.brands.form.description')}>
+              <TextArea rows={3} placeholder={t('admin.brands.form.descriptionPlaceholder')} />
             </Form.Item>
 
-            <Form.Item
-              name="logo"
-              label="Logo thương hiệu"
-            >
+            <Form.Item name="logo" label={t('admin.brands.form.logo')}>
               <ImageUpload
                 type="brands"
                 multiple={false}
@@ -316,32 +257,20 @@ const BrandsPage: React.FC = () => {
 
             <Form.Item
               name="website"
-              label="Website"
-              rules={[
-                { type: 'url', message: 'Vui lòng nhập URL hợp lệ!' },
-              ]}
+              label={t('admin.brands.form.website')}
+              rules={[{ type: 'url', message: t('admin.brands.form.websiteInvalid') }]}
             >
-              <Input placeholder="https://example.com" />
+              <Input placeholder={t('admin.brands.form.websitePlaceholder')} />
             </Form.Item>
 
-            <Form.Item
-              name="isActive"
-              label="Trạng thái"
-              valuePropName="checked"
-            >
-              <Switch checkedChildren="Hoạt động" unCheckedChildren="Ẩn" />
+            <Form.Item name="isActive" label={t('common.status')} valuePropName="checked">
+              <Switch checkedChildren={t('common.active')} unCheckedChildren={t('admin.common.hidden')} />
             </Form.Item>
 
             <div className="flex justify-end gap-2 mt-6">
-              <Button onClick={() => setIsModalVisible(false)}>
-                Hủy
-              </Button>
-              <Button
-                type="primary"
-                htmlType="submit"
-                loading={isCreating || isUpdating}
-              >
-                {editingBrand ? 'Cập nhật' : 'Tạo mới'}
+              <Button onClick={() => setIsModalVisible(false)}>{t('common.cancel')}</Button>
+              <Button type="primary" htmlType="submit" loading={isCreating || isUpdating}>
+                {editingBrand ? t('common.update') : t('common.create')}
               </Button>
             </div>
           </Form>

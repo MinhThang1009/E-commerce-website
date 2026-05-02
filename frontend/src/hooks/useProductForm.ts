@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Form, FormInstance, message } from 'antd';
 import { ProductFormData } from '@/types/product';
 
@@ -23,6 +24,7 @@ export const useProductForm = ({
   variants = [],
   isEditMode = false,
 }: UseProductFormProps) => {
+  const { t } = useTranslation();
   const [isFormValid, setIsFormValid] = useState(false);
   const [activeTab, setActiveTab] = useState('basic');
 
@@ -274,14 +276,14 @@ export const useProductForm = ({
     const values = watchFormValues || {};
 
     const fieldLabels = {
-      name: 'Tên sản phẩm',
-      shortDescription: 'Mô tả ngắn',
-      description: 'Mô tả chi tiết',
-      price: 'Giá bán',
-      stockQuantity: 'Số lượng tồn kho',
-      categoryIds: 'Danh mục',
-      attributes: 'Thuộc tính sản phẩm',
-      variants: 'Biến thể sản phẩm',
+      name: t('productForm.fieldName'),
+      shortDescription: t('productForm.fieldShortDesc'),
+      description: t('productForm.fieldDesc'),
+      price: t('productForm.fieldPrice'),
+      stockQuantity: t('productForm.fieldStock'),
+      categoryIds: t('productForm.fieldCategory'),
+      attributes: t('productForm.fieldAttributes'),
+      variants: t('productForm.fieldVariants'),
     };
 
     // Chỉ kiểm tra các trường form cơ bản, không kiểm tra attributes và variants
@@ -342,20 +344,18 @@ export const useProductForm = ({
   // Điền dữ liệu mẫu
   const fillExampleData = () => {
     form.setFieldsValue({
-      name: 'iPhone 15 Pro Max 256GB',
-      description:
-        'iPhone 15 Pro Max với chip A17 Pro mạnh mẽ, camera 48MP và màn hình Super Retina XDR 6.7 inch sắc nét.',
-      shortDescription: 'Flagship mới nhất từ Apple với hiệu năng vượt trội',
-      price: 29990000,
-      compareAtPrice: 32990000,
-      stockQuantity: 100,
+      name: t('productForm.sampleName'),
+      description: t('productForm.sampleDescription'),
+      shortDescription: t('productForm.sampleShortDesc'),
+      price: 28990000,
+      compareAtPrice: 31990000,
+      stockQuantity: 50,
       status: 'active',
       featured: true,
-      categoryIds: [], // Sẽ cần chọn category từ danh sách
-      seoTitle: 'iPhone 15 Pro Max 256GB - Chính hãng Apple',
-      seoDescription:
-        'Mua iPhone 15 Pro Max 256GB chính hãng với giá tốt nhất. Bảo hành 12 tháng.',
-      seoKeywords: 'iphone 15 pro max, apple, smartphone, điện thoại',
+      categoryIds: [],
+      seoTitle: t('productForm.sampleSeoTitle'),
+      seoDescription: t('productForm.sampleSeoDesc'),
+      seoKeywords: t('productForm.sampleSeoKeywords'),
     });
 
     // Trigger validation sau khi fill data
@@ -371,7 +371,7 @@ export const useProductForm = ({
       try {
         await onSubmit(values);
       } catch (error: any) {
-        message.error('Có lỗi xảy ra khi lưu sản phẩm. Vui lòng thử lại.');
+        message.error(t('productForm.saveError'));
       }
       return;
     }
@@ -380,17 +380,14 @@ export const useProductForm = ({
     const missingFieldNames = getMissingFields();
 
     if (missingFieldNames.length > 0) {
-      // Hiển thị thông báo về các trường còn thiếu
-      message.error(
-        `Vui lòng điền đầy đủ thông tin: ${missingFieldNames.join(', ')}`
-      );
+      message.error(t('productForm.fillRequired', { fields: missingFieldNames.join(', ') }));
       return;
     }
 
     try {
       await onSubmit(values);
     } catch (error: any) {
-      message.error('Có lỗi xảy ra khi lưu sản phẩm. Vui lòng thử lại.');
+      message.error(t('productForm.saveError'));
     }
   };
 

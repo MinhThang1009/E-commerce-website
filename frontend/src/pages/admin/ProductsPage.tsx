@@ -264,7 +264,7 @@ const ProductsPage: React.FC = () => {
           width={50}
           height={50}
           src={images?.[0] || '/placeholder-image.jpg'}
-          alt="Product"
+          alt={t('product.imageAlt')}
           style={{ objectFit: 'cover', borderRadius: 4 }}
           fallback="/placeholder-image.jpg"
         />

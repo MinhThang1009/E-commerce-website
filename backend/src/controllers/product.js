@@ -67,13 +67,7 @@ const getAllProducts = async (req, res, next) => {
 
     // Lọc theo trạng thái
     if (status !== undefined) {
-      if (status === 'active') {
-        whereConditions.status = { [Op.or]: ['active', 'Đang kinh doanh', 'In Stock'] };
-      } else if (status === 'inactive') {
-        whereConditions.status = { [Op.or]: ['inactive', 'Ngừng kinh doanh', 'Out of Stock'] };
-      } else {
-        whereConditions.status = status;
-      }
+      whereConditions.status = status;
     }
 
     // Lọc theo danh mục
@@ -1271,7 +1265,7 @@ const getRelatedProducts = async (req, res, next) => {
         ],
         where: {
           id: { [Op.ne]: id }, // Loại trừ sản phẩm hiện tại
-          status: 'Đang kinh doanh', // Chỉ lấy sản phẩm đang hoạt động
+          status: 'active',
         },
         limit: parseInt(limit),
         order: [
@@ -1500,23 +1494,20 @@ const getBestSellers = async (req, res, next) => {
     // Lấy sản phẩm bán chạy dựa trên order items
     const bestSellers = await sequelize.query(
       `
-      SELECT 
-        p.id, 
-        p.name, 
-        p.slug, 
-        p.price, 
-        p.compare_at_price, 
-        p.thumbnail, 
-        p.in_stock,
-        p.stock_quantity,
-        p.isFeatured,
-        COUNT(oi.product_id) as sales_count,
+      SELECT
+        p.id,
+        p.name,
+        p.slug,
+        p.base_price as price,
+        p.compare_at_price,
+        p.is_featured as isFeatured,
+        COUNT(oi.productId) as sales_count,
         SUM(oi.quantity) as units_sold
       FROM products p
-      JOIN order_items oi ON p.id = oi.product_id
-      JOIN orders o ON oi.order_id = o.id
+      JOIN order_items oi ON p.id = oi.productId
+      JOIN orders o ON oi.orderId = o.id
       WHERE o.status != 'cancelled'
-      AND o.created_at >= :startDate
+      AND o.createdAt >= :startDate
       GROUP BY p.id
       ORDER BY units_sold DESC
       LIMIT :limit
@@ -1792,8 +1783,8 @@ const getProductFilters = async (req, res, next) => {
     // Lấy khoảng giá
     const priceRange = await Product.findAll({
       attributes: [
-        [sequelize.fn('MIN', sequelize.col('price')), 'min'],
-        [sequelize.fn('MAX', sequelize.col('price')), 'max'],
+        [sequelize.fn('MIN', sequelize.col('base_price')), 'min'],
+        [sequelize.fn('MAX', sequelize.col('base_price')), 'max'],
       ],
       where: whereCondition,
       include: includeCondition,

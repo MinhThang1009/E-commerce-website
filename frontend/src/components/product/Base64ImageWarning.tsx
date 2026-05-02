@@ -1,4 +1,5 @@
 import React from 'react';
+import { useTranslation } from 'react-i18next';
 import { Alert } from 'antd';
 import { InfoCircleOutlined } from '@ant-design/icons';
 import { countBase64Images } from '@/utils/descriptionImageProcessor';
@@ -12,6 +13,7 @@ const Base64ImageWarning: React.FC<Base64ImageWarningProps> = ({
   description,
   className,
 }) => {
+  const { t } = useTranslation();
   const base64Count = countBase64Images(description);
 
   if (base64Count === 0) {
@@ -20,21 +22,12 @@ const Base64ImageWarning: React.FC<Base64ImageWarningProps> = ({
 
   return (
     <Alert
-      message="Phát hiện ảnh Base64 trong mô tả"
+      message={t('base64Warning.title')}
       description={
         <div>
-          <p>
-            Tìm thấy <strong>{base64Count}</strong> ảnh dạng base64 trong mô tả
-            sản phẩm.
-          </p>
-          <p>
-            ✅ <strong>Khi submit form</strong>, các ảnh này sẽ được tự động
-            convert thành file và upload lên server.
-          </p>
-          <p>
-            💡 <strong>Khuyến nghị:</strong> Sử dụng nút "Thêm ảnh" trong editor
-            để upload trực tiếp thay vì paste ảnh base64.
-          </p>
+          <p>{t('base64Warning.found', { count: base64Count })}</p>
+          <p>{t('base64Warning.autoConvert')}</p>
+          <p>{t('base64Warning.recommendation')}</p>
         </div>
       }
       type="info"

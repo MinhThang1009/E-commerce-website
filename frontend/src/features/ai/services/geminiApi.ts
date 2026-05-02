@@ -1,4 +1,5 @@
 ﻿import axios from 'axios';
+import i18n from '@/config/i18n';
 import { mockProducts } from '@/data/mockProducts';
 import { mockCategories } from '@/data/mockCategories';
 
@@ -47,7 +48,7 @@ SẢN PHẨM: ${productsInfo.map(p => p.name).join(', ')}
 
   async sendMessage(userMessage: string): Promise<GeminiChatResponse> {
     if (!userMessage || userMessage.trim().length === 0) {
-      throw new Error('Vui lòng nhập câu hỏi');
+      throw new Error(i18n.t('chat.errors.emptyMessage'));
     }
 
     const cleanMessage = userMessage.trim();
@@ -67,15 +68,19 @@ SẢN PHẨM: ${productsInfo.map(p => p.name).join(', ')}
       const data = response.data.data;
 
       return {
-        text: data.response || data.text || 'Xin lỗi, tôi không nhận được phản hồi.',
+        text: data.response || data.text || i18n.t('chat.errors.noResponse'),
         suggestions: data.suggestions || this.generateSuggestions(cleanMessage, data.response || ''),
       };
     } catch (error: any) {
       console.error('Lỗi AI Service:', error);
 
       return {
-        text: 'Xin chào! Hệ thống AI đang bận một chút. Bạn có thể thử lại sau hoặc liên hệ hỗ trợ trực tiếp nhé.',
-        suggestions: ['Tìm sản phẩm', 'Chính sách đổi trả', 'Hỗ trợ trực tiếp']
+        text: i18n.t('chat.errors.busy'),
+        suggestions: [
+          i18n.t('chat.suggestions.findProducts'),
+          i18n.t('chat.suggestions.returnPolicy'),
+          i18n.t('chat.suggestions.directSupport'),
+        ],
       };
     }
   }
@@ -84,10 +89,18 @@ SẢN PHẨM: ${productsInfo.map(p => p.name).join(', ')}
     const lowerMessage = userMessage.toLowerCase();
 
     if (lowerMessage.includes('tìm') || lowerMessage.includes('mua')) {
-      return ['Xem sản phẩm mới', 'Khuyến mãi hot', 'Hướng dẫn mua hàng'];
+      return [
+        i18n.t('chat.suggestions.newProducts'),
+        i18n.t('chat.suggestions.hotPromo'),
+        i18n.t('chat.suggestions.buyingGuide'),
+      ];
     }
 
-    return ['Tìm sản phẩm', 'Xem khuyến mãi', 'Liên hệ hỗ trợ'];
+    return [
+      i18n.t('chat.suggestions.findProducts'),
+      i18n.t('chat.suggestions.viewPromotions'),
+      i18n.t('chat.suggestions.contactSupport'),
+    ];
   }
 
   isReady(): boolean {

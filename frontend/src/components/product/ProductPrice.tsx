@@ -1,4 +1,5 @@
 import React from 'react';
+import { useTranslation } from 'react-i18next';
 import { useProductPriceRange } from '@/hooks/useProductPriceRange';
 
 interface ProductPriceProps {
@@ -14,9 +15,9 @@ const ProductPrice: React.FC<ProductPriceProps> = ({
   compareAtPrice,
   className = '',
 }) => {
+  const { t } = useTranslation();
   const { priceInfo } = useProductPriceRange(basePrice, variants);
 
-  // Tính discount dựa trên basePrice của variants (giá thấp nhất)
   const discount =
     compareAtPrice && compareAtPrice > priceInfo.basePrice
       ? Math.round(
@@ -32,7 +33,7 @@ const ProductPrice: React.FC<ProductPriceProps> = ({
         </span>
         {compareAtPrice && compareAtPrice > priceInfo.basePrice && (
           <span className="text-base text-neutral-400 dark:text-neutral-500 line-through font-medium">
-            {compareAtPrice.toLocaleString('vi-VN')}đ
+            {compareAtPrice.toLocaleString('vi-VN')}{t('common.currencySymbol')}
           </span>
         )}
       </div>
@@ -40,12 +41,13 @@ const ProductPrice: React.FC<ProductPriceProps> = ({
       {compareAtPrice && compareAtPrice > priceInfo.basePrice && (
         <div className="flex items-center gap-2 mt-1">
           <span className="text-sm text-emerald-600 dark:text-emerald-400 font-semibold">
-            Tiết kiệm{' '}
-            {(compareAtPrice - priceInfo.basePrice).toLocaleString('vi-VN')}đ
+            {t('product.savings', {
+              amount: `${(compareAtPrice - priceInfo.basePrice).toLocaleString('vi-VN')}${t('common.currencySymbol')}`,
+            })}
           </span>
           <div className="h-1 w-1 bg-neutral-300 dark:bg-neutral-600 rounded-full"></div>
           <span className="text-sm text-emerald-600 dark:text-emerald-400 font-semibold">
-            {discount}% OFF
+            {t('product.discountOff', { percent: discount })}
           </span>
         </div>
       )}

@@ -65,7 +65,7 @@ const ProductCard: React.FC<ProductCardProps> = ({
       dispatch(
         addNotification({
           type: 'info',
-          message: 'Vui lòng đăng nhập để sử dụng chức năng yêu thích',
+          message: t('product.loginToWishlist'),
         })
       );
       navigate('/login');
@@ -152,7 +152,7 @@ const ProductCard: React.FC<ProductCardProps> = ({
       console.error('Mua ngay thất bại:', error);
       dispatch(addNotification({
         type: 'error',
-        message: 'Không thể thực hiện mua ngay. Vui lòng thử lại.',
+        message: t('product.buyNowFailed'),
       }));
     } finally {
       setIsBuying(false);
@@ -172,7 +172,7 @@ const ProductCard: React.FC<ProductCardProps> = ({
           )}
           {isNew && (
             <div className="bg-gradient-to-r from-emerald-500 via-emerald-600 to-emerald-700 text-white text-xs font-bold px-3 py-1.5 rounded-xl shadow-xl backdrop-blur-sm border border-white/20">
-              <span className="drop-shadow-sm">MỚI</span>
+              <span className="drop-shadow-sm">{t('product.new')}</span>
             </div>
           )}
         </div>
@@ -249,14 +249,14 @@ const ProductCard: React.FC<ProductCardProps> = ({
             </span>
             {compareAtPrice && compareAtPrice > priceInfo.basePrice && (
               <span className="text-sm text-neutral-400 dark:text-neutral-500 line-through font-medium">
-                {compareAtPrice.toLocaleString('vi-VN')}đ
+                {compareAtPrice.toLocaleString('vi-VN')}{t('common.currencySymbol')}
               </span>
             )}
           </div>
           {compareAtPrice && compareAtPrice > priceInfo.basePrice && (
             <div className="flex items-center gap-1.5 flex-wrap">
               <span className="text-xs text-emerald-600 dark:text-emerald-400 font-semibold bg-emerald-50 dark:bg-emerald-900/20 px-2 py-1 rounded-md">
-                Tiết kiệm {(compareAtPrice - priceInfo.basePrice).toLocaleString('vi-VN')}đ
+                {t('product.savings', { amount: `${(compareAtPrice - priceInfo.basePrice).toLocaleString('vi-VN')}${t('common.currencySymbol')}` })}
               </span>
               <span className="text-xs text-rose-600 dark:text-rose-400 font-semibold bg-rose-50 dark:bg-rose-900/20 px-2 py-1 rounded-md">
                 -{discount}%
@@ -277,7 +277,7 @@ const ProductCard: React.FC<ProductCardProps> = ({
             ) : (
               <ShoppingCartIcon className="h-4 w-4" />
             )}
-            <span>MUA NGAY</span>
+            <span>{t('product.buyNow')}</span>
           </button>
 
           {/* Nút xem chi tiết — luôn ở dưới cùng */}
@@ -305,7 +305,7 @@ const ProductCard: React.FC<ProductCardProps> = ({
                 d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"
               />
             </svg>
-            <span>XEM CHI TIẾT</span>
+            <span>{t('product.viewDetails')}</span>
           </button>
         </div>
       </div>

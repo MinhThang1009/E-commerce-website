@@ -57,9 +57,9 @@ const AIStatusIndicator: React.FC = () => {
   };
 
   const getStatusText = () => {
-    if (status.ready && status.hasApiKey) return 'Gemini AI Active';
-    if (status.ready && !status.hasApiKey) return 'Demo Mode';
-    return 'AI Offline';
+    if (status.ready && status.hasApiKey) return t('ai.statusActive');
+    if (status.ready && !status.hasApiKey) return t('ai.statusDemo');
+    return t('ai.statusOffline');
   };
 
   return (
@@ -77,7 +77,7 @@ const AIStatusIndicator: React.FC = () => {
           <div className="space-y-3">
             <div className="flex items-center justify-between">
               <h4 className="font-medium text-neutral-800 dark:text-neutral-200">
-                AI Status
+                {t('ai.statusTitle')}
               </h4>
               <button
                 onClick={() => setShowDetails(false)}
@@ -100,29 +100,29 @@ const AIStatusIndicator: React.FC = () => {
             <div className="space-y-2 text-sm">
               <div className="flex items-center justify-between">
                 <span className="text-neutral-600 dark:text-neutral-400">
-                  Model Ready:
+                  {t('ai.modelReady')}
                 </span>
                 <span
                   className={status.ready ? 'text-green-500' : 'text-red-500'}
                 >
-                  {status.ready ? 'Yes' : 'No'}
+                  {status.ready ? t('common.yes') : t('common.no')}
                 </span>
               </div>
               <div className="flex items-center justify-between">
                 <span className="text-neutral-600 dark:text-neutral-400">
-                  API Key:
+                  {t('ai.apiKey')}
                 </span>
                 <span
                   className={
                     status.hasApiKey ? 'text-green-500' : 'text-yellow-500'
                   }
                 >
-                  {status.hasApiKey ? 'Configured' : 'Demo Mode'}
+                  {status.hasApiKey ? t('ai.configured') : t('ai.statusDemo')}
                 </span>
               </div>
               {status.error && (
                 <div className="text-red-500 text-xs">
-                  Error: {status.error}
+                  {t('common.error')}: {status.error}
                 </div>
               )}
             </div>
@@ -130,73 +130,55 @@ const AIStatusIndicator: React.FC = () => {
             {!status.hasApiKey && (
               <div className="border-t border-neutral-200 dark:border-neutral-700 pt-3">
                 <h5 className="font-medium text-neutral-800 dark:text-neutral-200 mb-2">
-                  Enable Gemini AI
+                  {t('ai.enableGemini')}
                 </h5>
                 <div className="text-xs text-neutral-600 dark:text-neutral-400 space-y-1">
                   <p>
-                    1. Get API key from{' '}
+                    {t('ai.setupStep1')}{' '}
                     <a
                       href="https://makersuite.google.com/app/apikey"
                       target="_blank"
                       rel="noopener noreferrer"
                       className="text-primary-500 hover:text-primary-600"
                     >
-                      Google AI Studio
+                      {t('ai.googleAIStudio')}
                     </a>
                   </p>
-                  <p>2. Add to .env file:</p>
+                  <p>{t('ai.setupStep2')}</p>
                   <code className="block bg-neutral-100 dark:bg-neutral-700 p-2 rounded text-xs">
                     VITE_GEMINI_API_KEY=your_api_key_here
                   </code>
-                  <p>3. Restart the development server</p>
+                  <p>{t('ai.setupStep3')}</p>
                 </div>
               </div>
             )}
 
             <div className="border-t border-neutral-200 dark:border-neutral-700 pt-3">
               <h5 className="font-medium text-neutral-800 dark:text-neutral-200 mb-2">
-                Features
+                {t('ai.features')}
               </h5>
               <div className="text-xs text-neutral-600 dark:text-neutral-400 space-y-1">
                 <div className="flex items-center space-x-2">
-                  <span
-                    className={
-                      status.ready && status.hasApiKey
-                        ? 'text-green-500'
-                        : 'text-neutral-400'
-                    }
-                  >
+                  <span className={status.ready && status.hasApiKey ? 'text-green-500' : 'text-neutral-400'}>
                     {status.ready && status.hasApiKey ? '✓' : '○'}
                   </span>
-                  <span>Smart product recommendations</span>
+                  <span>{t('ai.featureRecommendations')}</span>
                 </div>
                 <div className="flex items-center space-x-2">
-                  <span
-                    className={
-                      status.ready && status.hasApiKey
-                        ? 'text-green-500'
-                        : 'text-neutral-400'
-                    }
-                  >
+                  <span className={status.ready && status.hasApiKey ? 'text-green-500' : 'text-neutral-400'}>
                     {status.ready && status.hasApiKey ? '✓' : '○'}
                   </span>
-                  <span>Natural language understanding</span>
+                  <span>{t('ai.featureNLP')}</span>
                 </div>
                 <div className="flex items-center space-x-2">
-                  <span
-                    className={
-                      status.ready && status.hasApiKey
-                        ? 'text-green-500'
-                        : 'text-neutral-400'
-                    }
-                  >
+                  <span className={status.ready && status.hasApiKey ? 'text-green-500' : 'text-neutral-400'}>
                     {status.ready && status.hasApiKey ? '✓' : '○'}
                   </span>
-                  <span>Context-aware responses</span>
+                  <span>{t('ai.featureContext')}</span>
                 </div>
                 <div className="flex items-center space-x-2">
                   <span className="text-green-500">✓</span>
-                  <span>Multilingual support</span>
+                  <span>{t('ai.featureMultilingual')}</span>
                 </div>
               </div>
             </div>

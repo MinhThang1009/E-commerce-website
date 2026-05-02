@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
-import { Table, Button, Space, Modal, Form, Input, Select, Switch, message, Upload, Popconfirm } from 'antd';
-import { PlusOutlined, EditOutlined, DeleteOutlined, UploadOutlined } from '@ant-design/icons';
+import { Table, Button, Space, Modal, Form, Input, Select, Switch, message, Popconfirm } from 'antd';
+import { PlusOutlined, EditOutlined, DeleteOutlined } from '@ant-design/icons';
+import { useTranslation } from 'react-i18next';
 import apiClient from '@/services/apiClient';
 import ImageUpload from '@/components/common/ImageUpload';
 
@@ -15,6 +16,7 @@ interface Banner {
 }
 
 const BannersPage: React.FC = () => {
+  const { t } = useTranslation();
   const [banners, setBanners] = useState<Banner[]>([]);
   const [loading, setLoading] = useState(false);
   const [isModalVisible, setIsModalVisible] = useState(false);
@@ -27,7 +29,7 @@ const BannersPage: React.FC = () => {
       const response = await apiClient.get('/banners');
       setBanners(response.data.data);
     } catch (error) {
-      message.error('Failed to fetch banners');
+      message.error(t('admin.banners.messages.fetchError'));
     } finally {
       setLoading(false);
     }
@@ -52,10 +54,10 @@ const BannersPage: React.FC = () => {
   const handleDelete = async (id: string) => {
     try {
       await apiClient.delete(`/banners/${id}`);
-      message.success('Banner deleted successfully');
+      message.success(t('admin.banners.messages.deleteSuccess'));
       fetchBanners();
     } catch (error) {
-      message.error('Failed to delete banner');
+      message.error(t('admin.banners.messages.deleteError'));
     }
   };
 
@@ -64,73 +66,70 @@ const BannersPage: React.FC = () => {
       const values = await form.validateFields();
       if (editingBanner) {
         await apiClient.patch(`/banners/${editingBanner.id}`, values);
-        message.success('Banner updated successfully');
+        message.success(t('admin.banners.messages.editSuccess'));
       } else {
         await apiClient.post('/banners', values);
-        message.success('Banner created successfully');
+        message.success(t('admin.banners.messages.createSuccess'));
       }
       setIsModalVisible(false);
       fetchBanners();
     } catch (error) {
-      message.error('Failed to save banner');
+      message.error(t('admin.banners.messages.saveError'));
     }
   };
 
   const columns = [
     {
-      title: 'Title',
+      title: t('admin.banners.table.title'),
       dataIndex: 'title',
       key: 'title',
     },
     {
-      title: 'Image',
+      title: t('admin.banners.table.image'),
       dataIndex: 'imageUrl',
       key: 'imageUrl',
       render: (url: string) => {
         const fullUrl = url?.startsWith('http') ? url : `${import.meta.env.VITE_API_URL || 'http://localhost:8888'}${url?.startsWith('/') ? '' : '/'}${url}`;
-        return <img src={fullUrl} alt="Banner" style={{ width: 100, borderRadius: 4 }} />;
+        return <img src={fullUrl} alt={t('admin.banners.table.image')} style={{ width: 100, borderRadius: 4 }} />;
       },
     },
     {
-      title: 'Position',
+      title: t('admin.banners.table.position'),
       dataIndex: 'position',
       key: 'position',
       render: (pos: string) => {
-        const colors: Record<string, string> = {
-          home_hero: 'blue',
-          home_middle: 'green',
-          sidebar: 'orange',
-        };
+        const colors: Record<string, string> = { home_hero: 'blue', home_middle: 'green', sidebar: 'orange' };
         return <span style={{ color: colors[pos] || 'black' }}>{pos}</span>;
       },
     },
     {
-      title: 'Active',
+      title: t('admin.banners.table.active'),
       dataIndex: 'isActive',
       key: 'isActive',
       render: (active: boolean) => (active ? '✅' : '❌'),
     },
     {
-      title: 'Priority',
+      title: t('admin.banners.table.priority'),
       dataIndex: 'priority',
       key: 'priority',
     },
     {
-      title: 'Action',
+      title: t('admin.common.actions'),
       key: 'action',
       render: (_: any, record: Banner) => (
         <Space size="middle">
           <Button icon={<EditOutlined />} onClick={() => handleEdit(record)}>
-            Edit
+            {t('common.edit')}
           </Button>
           <Popconfirm
-            title="Are you sure to delete this banner?"
+            title={t('admin.banners.deleteConfirm')}
             onConfirm={() => handleDelete(record.id)}
-            okText="Yes"
-            cancelText="No"
+            okText={t('common.delete')}
+            cancelText={t('common.cancel')}
+            okButtonProps={{ danger: true }}
           >
             <Button icon={<DeleteOutlined />} danger>
-              Delete
+              {t('common.delete')}
             </Button>
           </Popconfirm>
         </Space>
@@ -141,52 +140,61 @@ const BannersPage: React.FC = () => {
   return (
     <div style={{ padding: 24 }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 16 }}>
-        <h2>Banner Management</h2>
+        <h2>{t('admin.banners.title')}</h2>
         <Button type="primary" icon={<PlusOutlined />} onClick={handleCreate}>
-          Create Banner
+          {t('admin.banners.createBanner')}
         </Button>
       </div>
 
-      <Table
-        columns={columns}
-        dataSource={banners}
-        rowKey="id"
-        loading={loading}
-      />
+      <Table columns={columns} dataSource={banners} rowKey="id" loading={loading} />
 
       <Modal
-        title={editingBanner ? 'Edit Banner' : 'Create Banner'}
-        visible={isModalVisible}
+        title={editingBanner ? t('admin.banners.editBanner') : t('admin.banners.createBannerModal')}
+        open={isModalVisible}
         onOk={handleModalOk}
         onCancel={() => setIsModalVisible(false)}
+        okText={editingBanner ? t('common.update') : t('common.create')}
+        cancelText={t('common.cancel')}
         width={600}
       >
         <Form form={form} layout="vertical">
-          <Form.Item name="title" label="Title" rules={[{ required: true }]}>
+          <Form.Item
+            name="title"
+            label={t('admin.banners.form.title')}
+            rules={[{ required: true, message: t('admin.banners.form.titleRequired') }]}
+          >
             <Input />
           </Form.Item>
-          <Form.Item name="imageUrl" label="Hình ảnh Banner" rules={[{ required: true, message: 'Vui lòng tải ảnh lên' }]}>
-            <ImageUpload 
-              type="banners" 
-              multiple={false} 
+          <Form.Item
+            name="imageUrl"
+            label={t('admin.banners.form.imageUrl')}
+            rules={[{ required: true, message: t('admin.banners.form.imageRequired') }]}
+          >
+            <ImageUpload
+              type="banners"
+              multiple={false}
               value={form.getFieldValue('imageUrl')}
               onChange={(val) => form.setFieldsValue({ imageUrl: val })}
             />
           </Form.Item>
-          <Form.Item name="linkUrl" label="Link URL">
-            <Input placeholder="Enter destination URL" />
+          <Form.Item name="linkUrl" label={t('admin.banners.form.linkUrl')}>
+            <Input placeholder={t('admin.banners.form.linkPlaceholder')} />
           </Form.Item>
-          <Form.Item name="position" label="Position" rules={[{ required: true }]}>
+          <Form.Item
+            name="position"
+            label={t('admin.banners.form.position')}
+            rules={[{ required: true, message: t('admin.banners.form.positionRequired') }]}
+          >
             <Select>
-              <Select.Option value="home_hero">Home Hero</Select.Option>
-              <Select.Option value="home_middle">Home Middle</Select.Option>
-              <Select.Option value="sidebar">Sidebar</Select.Option>
+              <Select.Option value="home_hero">{t('admin.banners.positions.homeHero')}</Select.Option>
+              <Select.Option value="home_middle">{t('admin.banners.positions.homeMiddle')}</Select.Option>
+              <Select.Option value="sidebar">{t('admin.banners.positions.sidebar')}</Select.Option>
             </Select>
           </Form.Item>
-          <Form.Item name="isActive" label="Is Active" valuePropName="checked" initialValue={true}>
+          <Form.Item name="isActive" label={t('admin.banners.form.isActive')} valuePropName="checked" initialValue={true}>
             <Switch />
           </Form.Item>
-          <Form.Item name="priority" label="Priority" initialValue={0}>
+          <Form.Item name="priority" label={t('admin.banners.form.priority')} initialValue={0}>
             <Input type="number" />
           </Form.Item>
         </Form>

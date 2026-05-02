@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useDispatch, useSelector } from 'react-redux';
 import { RootState } from '@/store';
 import {
@@ -23,32 +24,26 @@ const ProductFilters: React.FC<ProductFiltersProps> = ({
   isMobile = false,
   onClose,
 }) => {
+  const { t } = useTranslation();
   const dispatch = useDispatch();
   const filters = useSelector((state: RootState) => state.products.filters);
 
-  // State cục bộ cho khoảng giá
   const [priceRange, setPriceRangeLocal] = useState<[number, number]>(
     filters.priceRange
   );
-
-  // State cục bộ cho danh mục đã chọn
   const [selectedCategories, setSelectedCategoriesLocal] = useState<string[]>(
     filters.categories
   );
-
-  // State cục bộ cho thuộc tính đã chọn
   const [selectedAttributes, setSelectedAttributesLocal] = useState<
     Record<string, string[]>
   >(filters.attributes);
 
-  // Xử lý thay đổi khoảng giá
   const handlePriceChange = (index: 0 | 1, value: number) => {
     const newRange = [...priceRange] as [number, number];
     newRange[index] = value;
     setPriceRangeLocal(newRange);
   };
 
-  // Xử lý chọn/bỏ danh mục
   const handleCategoryChange = (categoryId: string, checked: boolean) => {
     if (checked) {
       setSelectedCategoriesLocal([...selectedCategories, categoryId]);
@@ -59,51 +54,30 @@ const ProductFilters: React.FC<ProductFiltersProps> = ({
     }
   };
 
-  // Xử lý chọn/bỏ thuộc tính
-  const handleAttributeChange = (
-    name: string,
-    value: string,
-    checked: boolean
-  ) => {
+  const handleAttributeChange = (name: string, value: string, checked: boolean) => {
     const currentValues = selectedAttributes[name] || [];
-
     if (checked) {
-      setSelectedAttributesLocal({
-        ...selectedAttributes,
-        [name]: [...currentValues, value],
-      });
+      setSelectedAttributesLocal({ ...selectedAttributes, [name]: [...currentValues, value] });
     } else {
-      setSelectedAttributesLocal({
-        ...selectedAttributes,
-        [name]: currentValues.filter((v) => v !== value),
-      });
+      setSelectedAttributesLocal({ ...selectedAttributes, [name]: currentValues.filter((v) => v !== value) });
     }
   };
 
-  // Áp dụng bộ lọc
   const applyFilters = () => {
     dispatch(setPriceRange(priceRange));
     dispatch(setCategories(selectedCategories));
     dispatch(setAttributes(selectedAttributes));
-
-    if (isMobile && onClose) {
-      onClose();
-    }
+    if (isMobile && onClose) onClose();
   };
 
-  // Đặt lại bộ lọc
   const resetFilters = () => {
     setPriceRangeLocal([0, 10000000]);
     setSelectedCategoriesLocal([]);
     setSelectedAttributesLocal({});
     dispatch(clearFilters());
-
-    if (isMobile && onClose) {
-      onClose();
-    }
+    if (isMobile && onClose) onClose();
   };
 
-  // Định dạng giá để hiển thị
   const formatPrice = (price: number) => {
     return new Intl.NumberFormat('vi-VN', {
       style: 'currency',
@@ -115,15 +89,13 @@ const ProductFilters: React.FC<ProductFiltersProps> = ({
   return (
     <div className={`${isMobile ? 'p-4' : ''}`}>
       <div className="space-y-6">
-        {/* Bộ lọc khoảng giá */}
         <div>
-          <h3 className="text-lg font-medium mb-3">Giá</h3>
+          <h3 className="text-lg font-medium mb-3">{t('filters.price')}</h3>
           <div className="space-y-4">
             <div className="flex justify-between text-sm">
               <span>{formatPrice(priceRange[0])}</span>
               <span>{formatPrice(priceRange[1])}</span>
             </div>
-
             <div className="flex items-center space-x-4">
               <input
                 type="range"
@@ -147,9 +119,8 @@ const ProductFilters: React.FC<ProductFiltersProps> = ({
           </div>
         </div>
 
-        {/* Bộ lọc danh mục */}
         <div>
-          <h3 className="text-lg font-medium mb-3">Danh mục</h3>
+          <h3 className="text-lg font-medium mb-3">{t('filters.categories')}</h3>
           <div className="space-y-2">
             {categories.map((category) => (
               <div key={category.id} className="flex items-center">
@@ -157,9 +128,7 @@ const ProductFilters: React.FC<ProductFiltersProps> = ({
                   type="checkbox"
                   id={`category-${category.id}`}
                   checked={selectedCategories.includes(category.id)}
-                  onChange={(e) =>
-                    handleCategoryChange(category.id, e.target.checked)
-                  }
+                  onChange={(e) => handleCategoryChange(category.id, e.target.checked)}
                   className="mr-2"
                 />
                 <label htmlFor={`category-${category.id}`} className="text-sm">
@@ -170,7 +139,6 @@ const ProductFilters: React.FC<ProductFiltersProps> = ({
           </div>
         </div>
 
-        {/* Bộ lọc thuộc tính */}
         {Object.entries(attributes).map(([name, values]) => (
           <div key={name}>
             <h3 className="text-lg font-medium mb-3">{name}</h3>
@@ -181,9 +149,7 @@ const ProductFilters: React.FC<ProductFiltersProps> = ({
                     type="checkbox"
                     id={`attr-${name}-${value}`}
                     checked={(selectedAttributes[name] || []).includes(value)}
-                    onChange={(e) =>
-                      handleAttributeChange(name, value, e.target.checked)
-                    }
+                    onChange={(e) => handleAttributeChange(name, value, e.target.checked)}
                     className="mr-2"
                   />
                   <label htmlFor={`attr-${name}-${value}`} className="text-sm">
@@ -195,13 +161,12 @@ const ProductFilters: React.FC<ProductFiltersProps> = ({
           </div>
         ))}
 
-        {/* Nút áp dụng / đặt lại bộ lọc */}
         <div className="flex flex-col space-y-2">
           <Button variant="primary" fullWidth onClick={applyFilters}>
-            Áp dụng
+            {t('filters.apply')}
           </Button>
           <Button variant="outline" fullWidth onClick={resetFilters}>
-            Đặt lại
+            {t('filters.reset')}
           </Button>
         </div>
       </div>

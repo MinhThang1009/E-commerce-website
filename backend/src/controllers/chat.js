@@ -69,10 +69,10 @@ const getAdminChatList = async (req, res, next) => {
       attributes: [
         'sessionId',
         'userId',
-        [sequelize.fn('MAX', sequelize.col('created_at')), 'lastMessageAt'],
+        [sequelize.fn('MAX', sequelize.col('createdAt')), 'lastMessageAt'],
       ],
       group: ['sessionId', 'userId'],
-      order: [[sequelize.literal('MAX(created_at)'), 'DESC']],
+      order: [[sequelize.literal('MAX(createdAt)'), 'DESC']],
     });
 
     // Bổ sung nội dung tin nhắn cuối cùng cho mỗi phiên

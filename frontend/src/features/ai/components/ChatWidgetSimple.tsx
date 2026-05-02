@@ -21,23 +21,24 @@ const ChatWidgetSimple: React.FC = () => {
   // Hiển thị tin nhắn chào mừng khi mở chatbot
   useEffect(() => {
     if (isOpen && messages.length === 0) {
-      const greetingText =
-        'Chào bạn! Tôi là trợ lý AI của Shopmini! 😊 Tôi có thể giúp bạn tìm sản phẩm, xem khuyến mãi và hỗ trợ mua hàng. Bạn cần gì nhỉ?';
+      const greetingText = isAuthenticated && user
+        ? t('chat.greetingWithName', { name: user.name })
+        : t('chat.greeting');
 
       const greeting = {
         id: Date.now().toString(),
         text: greetingText,
         sender: 'ai' as const,
         suggestions: [
-          'Tìm sản phẩm hot 🔥',
-          'Xem khuyến mãi 🎉',
-          'Sản phẩm bán chạy ⭐',
-          'Hỗ trợ mua hàng 💬',
+          t('chat.suggestions.hotProducts'),
+          t('chat.suggestions.viewPromotions'),
+          t('chat.suggestions.bestSellers'),
+          t('chat.suggestions.shoppingSupport'),
         ],
       };
       setMessages([greeting]);
     }
-  }, [isOpen, messages.length]);
+  }, [isOpen, messages.length, isAuthenticated, user, t]);
 
   // Cuộn xuống tin nhắn mới nhất
   useEffect(() => {
@@ -142,7 +143,11 @@ const ChatWidgetSimple: React.FC = () => {
             id: (Date.now() + 2).toString(),
             text: response.text,
             sender: 'ai',
-            suggestions: response.suggestions || ['Tìm thêm sản phẩm', 'Xem giỏ hàng', 'Hỏi thêm'],
+            suggestions: response.suggestions || [
+              t('chat.suggestions.findMore'),
+              t('chat.suggestions.viewCart'),
+              t('chat.suggestions.askMore'),
+            ],
           },
         ];
       });
@@ -150,7 +155,7 @@ const ChatWidgetSimple: React.FC = () => {
       console.error('Lỗi khi tạo phản hồi AI:', error);
 
       // Xử lý lỗi
-      let errorMessage = 'Xin lỗi, có lỗi xảy ra. Vui lòng thử lại sau.';
+      let errorMessage = t('chat.errors.general');
 
       // Xóa tin nhắn "đang nhập" và thêm thông báo lỗi
       setMessages((prev) => {
@@ -161,7 +166,11 @@ const ChatWidgetSimple: React.FC = () => {
             id: (Date.now() + 2).toString(),
             text: errorMessage,
             sender: 'ai',
-            suggestions: ['Thử lại', 'Tìm sản phẩm', 'Liên hệ hỗ trợ'],
+            suggestions: [
+              t('chat.suggestions.tryAgain'),
+              t('chat.suggestions.findProducts'),
+              t('chat.suggestions.contactSupport'),
+            ],
           },
         ];
       });
@@ -305,9 +314,9 @@ const ChatWidgetSimple: React.FC = () => {
                     </svg>
                   </div>
                   <div>
-                    <h3 className="font-bold text-lg">Trợ lý AI</h3>
+                    <h3 className="font-bold text-lg">{t('chat.title')}</h3>
                     <p className="text-xs text-white/80">
-                      Hỗ trợ trực tuyến 24/7
+                      {t('chat.subtitle')}
                     </p>
                   </div>
                 </div>
@@ -341,7 +350,7 @@ const ChatWidgetSimple: React.FC = () => {
                     <>
                       <div className="flex items-center space-x-2 bg-white/15 backdrop-blur-sm rounded-full px-3 py-1.5">
                         <div className="w-2.5 h-2.5 bg-green-400 rounded-full animate-pulse shadow-lg"></div>
-                        <span className="text-xs font-semibold">Gemini AI</span>
+                        <span className="text-xs font-semibold">{t('ai.geminiName')}</span>
                       </div>
                     </>
                   ) : (
@@ -349,7 +358,7 @@ const ChatWidgetSimple: React.FC = () => {
                       <div className="flex items-center space-x-2 bg-white/15 backdrop-blur-sm rounded-full px-3 py-1.5">
                         <div className="w-2.5 h-2.5 bg-yellow-400 rounded-full animate-pulse shadow-lg"></div>
                         <span className="text-xs font-semibold">
-                          Đang kết nối...
+                          {t('chat.connecting')}
                         </span>
                       </div>
                     </>
@@ -423,7 +432,7 @@ const ChatWidgetSimple: React.FC = () => {
                 <input
                   type="text"
                   name="message"
-                  placeholder="Nhập tin nhắn..."
+                  placeholder={t('chat.typeSomething')}
                   className="chat-input flex-1 bg-neutral-100 dark:bg-neutral-800 border-none rounded-full px-4 py-2 focus:outline-none focus:ring-2 focus:ring-primary-500"
                 />
                 <button

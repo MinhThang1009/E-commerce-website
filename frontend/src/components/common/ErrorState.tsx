@@ -1,9 +1,5 @@
-/**
- * Các component trạng thái lỗi
- * Các trạng thái lỗi tái sử dụng cho nhiều tình huống khác nhau
- */
-
 import React from 'react';
+import { useTranslation } from 'react-i18next';
 import PremiumButton from './PremiumButton';
 import { getErrorMessage } from '@/utils/errorUtils';
 
@@ -26,19 +22,18 @@ interface EmptyStateProps {
   className?: string;
 }
 
-/**
- * Component trạng thái lỗi
- */
 export const ErrorState: React.FC<ErrorStateProps> = ({
   error,
   onRetry,
   className = '',
   size = 'md',
   showRetryButton = true,
-  retryText = 'Thử lại',
+  retryText,
   language = 'vi',
 }) => {
+  const { t } = useTranslation();
   const errorMessage = getErrorMessage(error, language);
+  const effectiveRetryText = retryText || t('common.tryAgain');
 
   const sizeClasses = {
     sm: {
@@ -70,7 +65,6 @@ export const ErrorState: React.FC<ErrorStateProps> = ({
     <div
       className={`flex flex-col items-center text-center ${classes.container} ${className}`}
     >
-      {/* Biểu tượng lỗi */}
       <div className={`${classes.icon} text-red-500 mb-4`}>
         <svg
           fill="none"
@@ -87,21 +81,18 @@ export const ErrorState: React.FC<ErrorStateProps> = ({
         </svg>
       </div>
 
-      {/* Tiêu đề lỗi */}
       <h3
         className={`font-semibold text-neutral-800 dark:text-neutral-200 mb-2 ${classes.title}`}
       >
-        Đã xảy ra lỗi
+        {t('common.errorTitle')}
       </h3>
 
-      {/* Mô tả lỗi */}
       <p
         className={`text-neutral-600 dark:text-neutral-400 mb-6 max-w-md ${classes.description}`}
       >
         {errorMessage}
       </p>
 
-      {/* Nút thử lại */}
       {showRetryButton && onRetry && (
         <PremiumButton
           variant="primary"
@@ -109,16 +100,13 @@ export const ErrorState: React.FC<ErrorStateProps> = ({
           onClick={onRetry}
           className={classes.button}
         >
-          {retryText}
+          {effectiveRetryText}
         </PremiumButton>
       )}
     </div>
   );
 };
 
-/**
- * Component trạng thái trống
- */
 export const EmptyState: React.FC<EmptyStateProps> = ({
   title,
   description,
@@ -148,22 +136,18 @@ export const EmptyState: React.FC<EmptyStateProps> = ({
     <div
       className={`flex flex-col items-center text-center py-12 ${className}`}
     >
-      {/* Biểu tượng */}
       <div className="mb-4">{icon || defaultIcon}</div>
 
-      {/* Tiêu đề */}
       <h3 className="text-lg font-semibold text-neutral-800 dark:text-neutral-200 mb-2">
         {title}
       </h3>
 
-      {/* Mô tả */}
       {description && (
         <p className="text-neutral-600 dark:text-neutral-400 mb-6 max-w-md">
           {description}
         </p>
       )}
 
-      {/* Nút hành động */}
       {actionLabel && onAction && (
         <PremiumButton variant="primary" size="middle" onClick={onAction}>
           {actionLabel}
@@ -173,23 +157,18 @@ export const EmptyState: React.FC<EmptyStateProps> = ({
   );
 };
 
-/**
- * Component trạng thái lỗi mạng
- */
 export const NetworkErrorState: React.FC<Omit<ErrorStateProps, 'error'>> = (
   props
 ) => {
+  const { t } = useTranslation();
   const networkError = {
     status: 'FETCH_ERROR',
-    message: 'Không thể kết nối tới server',
+    message: t('common.networkError'),
   };
 
   return <ErrorState error={networkError} {...props} />;
 };
 
-/**
- * Component trạng thái không tìm thấy
- */
 export const NotFoundState: React.FC<{
   title?: string;
   description?: string;
@@ -197,12 +176,17 @@ export const NotFoundState: React.FC<{
   onAction?: () => void;
   className?: string;
 }> = ({
-  title = 'Không tìm thấy',
-  description = 'Tài nguyên bạn đang tìm kiếm không tồn tại hoặc đã bị xóa.',
-  actionLabel = 'Về trang chủ',
+  title,
+  description,
+  actionLabel,
   onAction,
   className = '',
 }) => {
+  const { t } = useTranslation();
+  const effectiveTitle = title || t('common.notFound');
+  const effectiveDescription = description || t('common.notFoundDesc');
+  const effectiveActionLabel = actionLabel || t('common.backToHome');
+
   const notFoundIcon = (
     <svg
       className="h-12 w-12 text-neutral-400"
@@ -222,9 +206,9 @@ export const NotFoundState: React.FC<{
 
   return (
     <EmptyState
-      title={title}
-      description={description}
-      actionLabel={actionLabel}
+      title={effectiveTitle}
+      description={effectiveDescription}
+      actionLabel={effectiveActionLabel}
       onAction={onAction}
       icon={notFoundIcon}
       className={className}
@@ -232,27 +216,26 @@ export const NotFoundState: React.FC<{
   );
 };
 
-/**
- * Component trạng thái không có kết quả
- */
 export const NoResultsState: React.FC<{
   searchQuery?: string;
   onClearSearch?: () => void;
   className?: string;
 }> = ({ searchQuery, onClearSearch, className = '' }) => {
+  const { t } = useTranslation();
+
   const title = searchQuery
-    ? `Không tìm thấy kết quả cho "${searchQuery}"`
-    : 'Không có kết quả';
+    ? t('common.noResultsFor', { query: searchQuery })
+    : t('common.noResults');
 
   const description = searchQuery
-    ? 'Hãy thử tìm kiếm với từ khóa khác hoặc kiểm tra lại cách viết.'
-    : 'Hiện tại không có dữ liệu nào để hiển thị.';
+    ? t('common.tryDifferentKeyword')
+    : t('common.noResultsDesc');
 
   return (
     <EmptyState
       title={title}
       description={description}
-      actionLabel={searchQuery ? 'Xóa tìm kiếm' : undefined}
+      actionLabel={searchQuery ? t('common.clearSearch') : undefined}
       onAction={onClearSearch}
       className={className}
     />

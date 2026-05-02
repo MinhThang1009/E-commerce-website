@@ -1,8 +1,6 @@
 import React, { useState } from 'react';
-import { Modal, Input, List, Image, Button, message, Spin } from 'antd';
-import { SearchOutlined } from '@ant-design/icons';
-import { useGetNewsQuery } from '@/services/newsApi';
-// Sử dụng products API thay vì news API
+import { useTranslation } from 'react-i18next';
+import { Modal, Input, List, Image, Button, Spin } from 'antd';
 import { useGetProductsQuery } from '@/services/productApi';
 
 const { Search } = Input;
@@ -14,6 +12,7 @@ interface ProductPickerModalProps {
 }
 
 const ProductPickerModal: React.FC<ProductPickerModalProps> = ({ open, onCancel, onSelect }) => {
+  const { t } = useTranslation();
   const [searchTerm, setSearchTerm] = useState('');
   
   const { data: productsData, isLoading } = useGetProductsQuery({
@@ -29,7 +28,7 @@ const ProductPickerModal: React.FC<ProductPickerModalProps> = ({ open, onCancel,
 
   return (
     <Modal
-      title="Chọn sản phẩm để chèn"
+      title={t('productPicker.title')}
       open={open}
       onCancel={onCancel}
       footer={null}
@@ -37,9 +36,9 @@ const ProductPickerModal: React.FC<ProductPickerModalProps> = ({ open, onCancel,
     >
       <div className="mb-4">
         <Search
-          placeholder="Tìm kiếm sản phẩm..."
+          placeholder={t('productPicker.searchPlaceholder')}
           allowClear
-          enterButton="Tìm kiếm"
+          enterButton={t('productPicker.searchButton')}
           size="large"
           onSearch={handleSearch}
         />
@@ -53,7 +52,7 @@ const ProductPickerModal: React.FC<ProductPickerModalProps> = ({ open, onCancel,
             <List.Item
               actions={[
                 <Button type="primary" onClick={() => onSelect(item)}>
-                  Chọn
+                  {t('productPicker.selectButton')}
                 </Button>
               ]}
             >
@@ -73,9 +72,9 @@ const ProductPickerModal: React.FC<ProductPickerModalProps> = ({ open, onCancel,
                       {new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(item.price)}
                     </span>
                     {item.stockQuantity > 0 ? (
-                       <span className="ml-2 text-xs text-green-500">Còn hàng</span>
+                       <span className="ml-2 text-xs text-green-500">{t('product.inStock')}</span>
                     ) : (
-                       <span className="ml-2 text-xs text-red-500">Hết hàng</span>
+                       <span className="ml-2 text-xs text-red-500">{t('product.outOfStock')}</span>
                     )}
                   </div>
                 }

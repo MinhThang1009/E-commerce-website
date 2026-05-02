@@ -1,7 +1,4 @@
-/**
- * Các hàm hỗ trợ xử lý sản phẩm cho Frontend
- * Tiện ích quản lý biến thể và tồn kho sản phẩm
- */
+import i18next from 'i18next';
 
 import {
   Product,
@@ -277,9 +274,9 @@ export const getAttributeValueStockWithContext = (
  * Định dạng văn bản hiển thị tồn kho
  */
 export const formatStockText = (stock: number): string => {
-  if (stock === 0) return 'Hết hàng';
-  if (stock < 10) return `Chỉ còn ${stock} sản phẩm`;
-  return `Còn ${stock} sản phẩm`;
+  if (stock === 0) return i18next.t('product.outOfStock');
+  if (stock < 10) return i18next.t('product.stockLimited', { count: stock });
+  return i18next.t('product.stockAvailable', { count: stock });
 };
 
 /**

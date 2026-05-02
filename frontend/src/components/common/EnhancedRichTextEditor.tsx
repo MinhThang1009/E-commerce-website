@@ -2,11 +2,11 @@ import React, {
   useEffect,
   useRef,
   useCallback,
-  useMemo,
 } from 'react';
 import Quill from 'quill';
 import 'quill/dist/quill.snow.css';
 import { message } from 'antd';
+import { useTranslation } from 'react-i18next';
 import { useUploadImageMutation } from '@/services/imageApi';
 import EditorErrorBoundary from './EditorErrorBoundary';
 
@@ -26,13 +26,15 @@ interface EnhancedRichTextEditorProps {
 const EnhancedRichTextEditor: React.FC<EnhancedRichTextEditorProps> = ({
   value = '',
   onChange,
-  placeholder = 'Nhập nội dung...',
+  placeholder,
   height = 200,
   readonly = false,
   productId,
   category = 'product',
   onImageUpload,
 }) => {
+  const { t } = useTranslation();
+  const resolvedPlaceholder = placeholder ?? t('richEditor.placeholder');
   const containerRef = useRef<HTMLDivElement>(null);
   const quillRef = useRef<Quill | null>(null);
   const isInternalChange = useRef(false);
@@ -42,7 +44,7 @@ const EnhancedRichTextEditor: React.FC<EnhancedRichTextEditorProps> = ({
   // Hàm xử lý chèn ảnh tùy chỉnh cho Quill
   const handleImageInsert = useCallback(async () => {
     if (isUploadingRef.current) {
-      message.warning('Đang upload ảnh, vui lòng chờ...');
+      message.warning(t('richEditor.uploadWait'));
       return;
     }
 
@@ -56,17 +58,17 @@ const EnhancedRichTextEditor: React.FC<EnhancedRichTextEditorProps> = ({
       if (!file) return;
 
       if (file.size > 5 * 1024 * 1024) {
-        message.error('Kích thước ảnh không được vượt quá 5MB');
+        message.error(t('richEditor.imageSizeLimit'));
         return;
       }
 
       if (!file.type.startsWith('image/')) {
-        message.error('Chỉ được upload file ảnh');
+        message.error(t('richEditor.imageTypeError'));
         return;
       }
 
       isUploadingRef.current = true;
-      const hideProgress = message.loading('Đang upload ảnh...', 0);
+      const hideProgress = message.loading(t('richEditor.uploading'), 0);
 
       try {
         const result = await uploadImage({
@@ -95,9 +97,9 @@ const EnhancedRichTextEditor: React.FC<EnhancedRichTextEditorProps> = ({
             onImageUpload(imageUrl, result.data.id);
           }
         }
-        message.success('Upload ảnh thành công!');
+        message.success(t('richEditor.uploadSuccess'));
       } catch (error: any) {
-        const errorMessage = error?.data?.message || 'Upload ảnh thất bại';
+        const errorMessage = error?.data?.message || t('richEditor.uploadError');
         message.error(errorMessage);
         console.error('Lỗi upload ảnh:', error);
       } finally {
@@ -113,7 +115,7 @@ const EnhancedRichTextEditor: React.FC<EnhancedRichTextEditorProps> = ({
 
     const quill = new Quill(containerRef.current, {
       theme: 'snow',
-      placeholder,
+      placeholder: resolvedPlaceholder,
       modules: {
         toolbar: {
           container: [
@@ -161,12 +163,12 @@ const EnhancedRichTextEditor: React.FC<EnhancedRichTextEditorProps> = ({
           if (!file) continue;
 
           if (isUploadingRef.current) {
-            message.warning('Đang upload ảnh, vui lòng chờ...');
+            message.warning(t('richEditor.uploadWait'));
             return;
           }
 
           isUploadingRef.current = true;
-          const hideProgress = message.loading('Đang upload ảnh từ clipboard...', 0);
+          const hideProgress = message.loading(t('richEditor.uploading'), 0);
 
           try {
             const result = await uploadImage({
@@ -188,9 +190,9 @@ const EnhancedRichTextEditor: React.FC<EnhancedRichTextEditorProps> = ({
 
               if (onImageUpload) onImageUpload(imageUrl, result.data.id);
             }
-            message.success('Upload ảnh thành công!');
+            message.success(t('richEditor.uploadSuccess'));
           } catch (error: any) {
-            message.error('Upload ảnh thất bại');
+            message.error(t('richEditor.uploadError'));
           } finally {
             hideProgress();
             isUploadingRef.current = false;

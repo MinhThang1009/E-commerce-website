@@ -5,45 +5,10 @@ import { RootState } from '@/store';
 import { useState, useEffect } from 'react';
 import { useSelector, useDispatch } from 'react-redux';
 import { useNavigate, useSearchParams } from 'react-router-dom';
-
-// ─── Dữ liệu thẻ test ───────────────────────────────────────────────
-const TEST_CARDS = [
-  {
-    bank: 'NCB',
-    logo: '🏦',
-    color: 'from-blue-600 to-blue-800',
-    cardNumber: '9704198526191432198',
-    cardHolder: 'NGUYEN VAN A',
-    expiry: '07/15',
-    otp: '123456',
-    note: 'Thanh toán thành công',
-    type: 'success',
-  },
-  {
-    bank: 'NCB – Số dư không đủ',
-    logo: '🏦',
-    color: 'from-slate-500 to-slate-700',
-    cardNumber: '9704195798459170486',
-    cardHolder: 'NGUYEN VAN B',
-    expiry: '07/15',
-    otp: '123456',
-    note: 'Thẻ không đủ số dư',
-    type: 'error',
-  },
-  {
-    bank: 'VIETCOMBANK',
-    logo: '🏛️',
-    color: 'from-green-600 to-green-800',
-    cardNumber: '4456530000001005',
-    cardHolder: 'NGUYEN VAN C',
-    expiry: '01/25',
-    otp: '123456',
-    note: 'Thẻ quốc tế Visa',
-    type: 'success',
-  },
-];
+import { useTranslation } from 'react-i18next';
 
 const PaymentQRPage: React.FC = () => {
+  const { t } = useTranslation();
   const navigate = useNavigate();
   const dispatch = useDispatch();
   const [searchParams] = useSearchParams();
@@ -62,6 +27,42 @@ const PaymentQRPage: React.FC = () => {
   const [showSuccessMessage, setShowSuccessMessage] = useState(false);
   const [countdown, setCountdown] = useState(3);
 
+  const TEST_CARDS = [
+    {
+      bank: t('paymentQR.card1bank'),
+      logo: '🏦',
+      color: 'from-blue-600 to-blue-800',
+      cardNumber: '9704198526191432198',
+      cardHolder: 'NGUYEN VAN A',
+      expiry: '07/15',
+      otp: '123456',
+      note: t('paymentQR.card1note'),
+      type: 'success',
+    },
+    {
+      bank: t('paymentQR.card2bank'),
+      logo: '🏦',
+      color: 'from-slate-500 to-slate-700',
+      cardNumber: '9704195798459170486',
+      cardHolder: 'NGUYEN VAN B',
+      expiry: '07/15',
+      otp: '123456',
+      note: t('paymentQR.card2note'),
+      type: 'error',
+    },
+    {
+      bank: t('paymentQR.card3bank'),
+      logo: '🏛️',
+      color: 'from-green-600 to-green-800',
+      cardNumber: '4456530000001005',
+      cardHolder: 'NGUYEN VAN C',
+      expiry: '01/25',
+      otp: '123456',
+      note: t('paymentQR.card3note'),
+      type: 'success',
+    },
+  ];
+
   const [createVnpayUrl] = useCreateVNPayUrlMutation();
   const [cancelOrder, { isLoading: isCancelling }] = useCancelOrderMutation();
 
@@ -74,7 +75,6 @@ const PaymentQRPage: React.FC = () => {
     if (amountParam) setAmount(parseFloat(amountParam));
   }, [amountParam]);
 
-  // Phát hiện thanh toán thành công
   useEffect(() => {
     if (orderData?.data?.paymentStatus === 'paid') {
       setShowSuccessMessage(true);
@@ -88,12 +88,11 @@ const PaymentQRPage: React.FC = () => {
       return () => clearInterval(iv);
     }
     if (orderData?.data?.status === 'cancelled') {
-      dispatch(addNotification({ type: 'warning', message: 'Đơn hàng đã bị hủy.', duration: 3000 }));
+      dispatch(addNotification({ type: 'warning', message: t('paymentQR.orderCancelled'), duration: 3000 }));
       navigate('/orders');
     }
   }, [orderData, navigate, dispatch]);
 
-  // Đếm ngược thời gian
   useEffect(() => {
     if (isExpired || timeLeft <= 0) {
       setIsExpired(true);
@@ -104,13 +103,13 @@ const PaymentQRPage: React.FC = () => {
       }
       return;
     }
-    const t = setInterval(() => {
+    const timer = setInterval(() => {
       setTimeLeft(prev => {
-        if (prev <= 1) { setIsExpired(true); clearInterval(t); return 0; }
+        if (prev <= 1) { setIsExpired(true); clearInterval(timer); return 0; }
         return prev - 1;
       });
     }, 1000);
-    return () => clearInterval(t);
+    return () => clearInterval(timer);
   }, [isExpired, timeLeft, orderId, cancelOrder, isCancelling, navigate]);
 
   const formatTime = (s: number) => {
@@ -140,13 +139,20 @@ const PaymentQRPage: React.FC = () => {
         window.location.href = res.data.paymentUrl;
       }
     } catch (err) {
-      dispatch(addNotification({ type: 'error', message: 'Không thể tạo link VNPay. Vui lòng thử lại.', duration: 4000 }));
+      dispatch(addNotification({ type: 'error', message: t('paymentQR.cancelError'), duration: 4000 }));
       setIsRedirecting(false);
     }
   };
 
   const card = TEST_CARDS[selectedCard];
   const formatVND = (n: number) => new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(n);
+
+  const cardFields = [
+    { label: t('paymentQR.cardNumberField'), value: card.cardNumber, field: 'cardNumber' },
+    { label: t('paymentQR.cardHolderLabel'), value: card.cardHolder, field: 'cardHolder' },
+    { label: t('paymentQR.expiryField'), value: card.expiry, field: 'expiry' },
+    { label: 'OTP', value: card.otp, field: 'otp' },
+  ];
 
   if (!orderId || !amountParam) {
     return (
@@ -157,9 +163,9 @@ const PaymentQRPage: React.FC = () => {
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
             </svg>
           </div>
-          <h2 className="text-xl font-semibold text-neutral-800 dark:text-neutral-100 mb-2">Liên kết không hợp lệ</h2>
+          <h2 className="text-xl font-semibold text-neutral-800 dark:text-neutral-100 mb-2">{t('paymentQR.invalidLink')}</h2>
           <button onClick={() => navigate('/')} className="px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors">
-            Trở về trang chủ
+            {t('paymentQR.backHome')}
           </button>
         </div>
       </div>
@@ -168,7 +174,6 @@ const PaymentQRPage: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 to-blue-50 dark:from-neutral-900 dark:to-neutral-800 py-8 px-4">
-      {/* Modal thanh toán thành công */}
       {showSuccessMessage && (
         <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
           <div className="bg-white dark:bg-neutral-800 rounded-2xl shadow-2xl max-w-sm w-full p-8 text-center">
@@ -177,59 +182,54 @@ const PaymentQRPage: React.FC = () => {
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M5 13l4 4L19 7" />
               </svg>
             </div>
-            <h3 className="text-2xl font-bold text-neutral-800 dark:text-neutral-100 mb-2">Thanh toán thành công!</h3>
-            <p className="text-neutral-500 dark:text-neutral-400 mb-4">Đơn hàng của bạn đã được xác nhận.</p>
-            <p className="text-sm text-neutral-400">Chuyển hướng sau <span className="font-bold text-blue-600">{countdown}</span> giây...</p>
+            <h3 className="text-2xl font-bold text-neutral-800 dark:text-neutral-100 mb-2">{t('paymentQR.successTitle')}</h3>
+            <p className="text-neutral-500 dark:text-neutral-400 mb-4">{t('paymentQR.successDesc')}</p>
+            <p className="text-sm text-neutral-400">{t('paymentQR.successRedirect', { count: countdown })}</p>
           </div>
         </div>
       )}
 
       <div className="container mx-auto max-w-4xl">
-        {/* Tiêu đề */}
         <div className="text-center mb-8">
           <div className="inline-flex items-center gap-2 bg-blue-600 text-white px-4 py-2 rounded-full text-sm font-medium mb-4">
-            <span>🔒</span> Thanh toán an toàn qua VNPay
+            <span>🔒</span> {t('paymentQR.securePayment')}
           </div>
-          <h1 className="text-3xl font-bold text-neutral-800 dark:text-neutral-100">Thanh Toán Thẻ Ngân Hàng</h1>
-          <p className="text-neutral-500 dark:text-neutral-400 mt-2">Sử dụng thẻ ngân hàng để hoàn tất thanh toán</p>
+          <h1 className="text-3xl font-bold text-neutral-800 dark:text-neutral-100">{t('paymentQR.title')}</h1>
+          <p className="text-neutral-500 dark:text-neutral-400 mt-2">{t('paymentQR.subtitle')}</p>
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-5 gap-6">
-          {/* Cột trái: Thông tin đơn hàng + nút VNPay */}
           <div className="lg:col-span-2 space-y-4">
-            {/* Tóm tắt đơn hàng */}
             <div className="bg-white dark:bg-neutral-800 rounded-2xl shadow-md p-6">
               <h2 className="text-lg font-semibold text-neutral-800 dark:text-neutral-100 mb-4 flex items-center gap-2">
-                <span>📋</span> Thông tin đơn hàng
+                <span>📋</span> {t('paymentQR.orderInfo')}
               </h2>
               <div className="space-y-3 text-sm">
                 <div className="flex justify-between">
-                  <span className="text-neutral-500">Mã đơn hàng</span>
+                  <span className="text-neutral-500">{t('paymentQR.orderCode')}</span>
                   <span className="font-mono font-medium text-neutral-800 dark:text-neutral-200">{numberOrder || orderId}</span>
                 </div>
                 <div className="flex justify-between">
-                  <span className="text-neutral-500">Trạng thái</span>
-                  <span className="px-2 py-0.5 bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-400 rounded-full text-xs font-medium">Chờ thanh toán</span>
+                  <span className="text-neutral-500">{t('paymentQR.status')}</span>
+                  <span className="px-2 py-0.5 bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-400 rounded-full text-xs font-medium">{t('paymentQR.pendingPayment')}</span>
                 </div>
                 <div className="border-t border-neutral-100 dark:border-neutral-700 pt-3 flex justify-between items-center">
-                  <span className="font-medium text-neutral-700 dark:text-neutral-300">Tổng cộng</span>
+                  <span className="font-medium text-neutral-700 dark:text-neutral-300">{t('paymentQR.total')}</span>
                   <span className="text-xl font-bold text-blue-600 dark:text-blue-400">{formatVND(amount)}</span>
                 </div>
               </div>
             </div>
 
-            {/* Đồng hồ đếm ngược */}
             <div className={`rounded-2xl p-4 text-center ${isExpired ? 'bg-red-50 dark:bg-red-900/20' : 'bg-amber-50 dark:bg-amber-900/20'}`}>
               <div className="flex items-center justify-center gap-2">
                 <span className="text-xl">⏱️</span>
                 <span className={`font-semibold text-lg ${isExpired ? 'text-red-600' : 'text-amber-600 dark:text-amber-400'}`}>
-                  {isExpired ? 'Đã hết thời gian!' : formatTime(timeLeft)}
+                  {isExpired ? t('paymentQR.expired') : formatTime(timeLeft)}
                 </span>
               </div>
-              <p className="text-xs text-neutral-500 mt-1">{isExpired ? 'Đơn hàng sẽ bị hủy' : 'Thời gian thanh toán còn lại'}</p>
+              <p className="text-xs text-neutral-500 mt-1">{isExpired ? t('paymentQR.willCancel') : t('paymentQR.timeLeft')}</p>
             </div>
 
-            {/* Nút chuyển hướng VNPay */}
             <button
               onClick={handleVnpayPayment}
               disabled={isExpired || isRedirecting}
@@ -241,24 +241,23 @@ const PaymentQRPage: React.FC = () => {
                     <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
                     <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
                   </svg>
-                  Đang chuyển hướng...
+                  {t('paymentQR.redirecting')}
                 </>
               ) : (
                 <>
                   <span className="text-2xl">💳</span>
-                  Thanh toán qua VNPay
+                  {t('paymentQR.payVnpay')}
                 </>
               )}
             </button>
 
-            {/* Hủy đơn */}
             {!isExpired && (
               <button
                 onClick={async () => {
                   if (orderId) {
                     try {
                       await cancelOrder(orderId).unwrap();
-                      dispatch(addNotification({ type: 'success', message: 'Đơn hàng đã được hủy', duration: 3000 }));
+                      dispatch(addNotification({ type: 'success', message: t('paymentQR.cancelSuccess'), duration: 3000 }));
                     } catch {}
                     navigate('/orders');
                   }
@@ -266,22 +265,20 @@ const PaymentQRPage: React.FC = () => {
                 disabled={isCancelling}
                 className="w-full py-3 px-6 bg-white dark:bg-neutral-800 hover:bg-red-50 dark:hover:bg-red-900/20 text-red-500 font-medium rounded-2xl border border-red-200 dark:border-red-800 transition-colors"
               >
-                {isCancelling ? 'Đang hủy...' : 'Hủy đơn hàng'}
+                {isCancelling ? t('paymentQR.cancelling') : t('paymentQR.cancelOrder')}
               </button>
             )}
           </div>
 
-          {/* Cột phải: Thẻ test */}
           <div className="lg:col-span-3 space-y-4">
             <div className="bg-white dark:bg-neutral-800 rounded-2xl shadow-md p-6">
               <div className="flex items-center justify-between mb-5">
                 <h2 className="text-lg font-semibold text-neutral-800 dark:text-neutral-100 flex items-center gap-2">
-                  <span>🧪</span> Thẻ Test VNPay Sandbox
+                  <span>🧪</span> {t('paymentQR.testCards')}
                 </h2>
-                <span className="text-xs px-2 py-1 bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-300 rounded-full font-medium">DEV MODE</span>
+                <span className="text-xs px-2 py-1 bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-300 rounded-full font-medium">{t('paymentQR.devMode')}</span>
               </div>
 
-              {/* Tab chọn thẻ */}
               <div className="flex gap-2 mb-5 flex-wrap">
                 {TEST_CARDS.map((c, i) => (
                   <button
@@ -298,14 +295,13 @@ const PaymentQRPage: React.FC = () => {
                 ))}
               </div>
 
-              {/* Hình ảnh thẻ */}
               <div className={`bg-gradient-to-br ${card.color} rounded-2xl p-6 text-white mb-5 shadow-lg relative overflow-hidden`}>
                 <div className="absolute top-0 right-0 w-48 h-48 bg-white/5 rounded-full -translate-y-16 translate-x-16" />
                 <div className="absolute bottom-0 left-0 w-32 h-32 bg-white/5 rounded-full translate-y-12 -translate-x-8" />
                 <div className="relative">
                   <div className="flex items-start justify-between mb-8">
                     <div>
-                      <p className="text-white/60 text-xs mb-1">Ngân hàng</p>
+                      <p className="text-white/60 text-xs mb-1">{t('paymentQR.bankLabel')}</p>
                       <p className="font-bold text-lg">{card.logo} {card.bank.split('–')[0].trim()}</p>
                     </div>
                     <div className="text-right">
@@ -319,32 +315,26 @@ const PaymentQRPage: React.FC = () => {
                   </p>
                   <div className="flex justify-between items-end">
                     <div>
-                      <p className="text-white/60 text-xs mb-1">Tên chủ thẻ</p>
+                      <p className="text-white/60 text-xs mb-1">{t('paymentQR.cardHolderLabel')}</p>
                       <p className="font-medium tracking-wide">{card.cardHolder}</p>
                     </div>
                     <div className="text-right">
-                      <p className="text-white/60 text-xs mb-1">Hết hạn</p>
+                      <p className="text-white/60 text-xs mb-1">{t('paymentQR.expiryLabel')}</p>
                       <p className="font-medium">{card.expiry}</p>
                     </div>
                   </div>
                 </div>
               </div>
 
-              {/* Bảng thông tin thẻ */}
               <div className="space-y-2 mb-5">
-                {[
-                  { label: 'Số thẻ', value: card.cardNumber, field: 'cardNumber' },
-                  { label: 'Tên chủ thẻ', value: card.cardHolder, field: 'cardHolder' },
-                  { label: 'Ngày hết hạn', value: card.expiry, field: 'expiry' },
-                  { label: 'OTP', value: card.otp, field: 'otp' },
-                ].map(({ label, value, field }) => (
+                {cardFields.map(({ label, value, field }) => (
                   <div key={field} className="flex items-center justify-between bg-neutral-50 dark:bg-neutral-700/50 rounded-xl px-4 py-3">
                     <span className="text-sm text-neutral-500 dark:text-neutral-400 w-28 flex-shrink-0">{label}</span>
                     <span className="font-mono font-medium text-neutral-800 dark:text-neutral-200 flex-1 text-center">{value}</span>
                     <button
                       onClick={() => copy(value, field)}
                       className="ml-2 p-1.5 hover:bg-neutral-200 dark:hover:bg-neutral-600 rounded-lg transition-colors flex-shrink-0"
-                      title="Sao chép"
+                      title={t('paymentQR.copy')}
                     >
                       {copiedField === field ? (
                         <svg className="h-4 w-4 text-green-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -360,26 +350,24 @@ const PaymentQRPage: React.FC = () => {
                 ))}
               </div>
 
-              {/* Hướng dẫn sử dụng */}
               <div className="bg-blue-50 dark:bg-blue-900/20 rounded-xl p-4">
                 <h4 className="text-sm font-semibold text-blue-800 dark:text-blue-300 mb-2 flex items-center gap-1">
-                  <span>📖</span> Hướng dẫn sử dụng thẻ test
+                  <span>📖</span> {t('paymentQR.guide')}
                 </h4>
                 <ol className="text-xs text-blue-700 dark:text-blue-400 space-y-1 list-decimal list-inside">
-                  <li>Chọn thẻ test ở trên, nhấn <strong>"Thanh toán qua VNPay"</strong></li>
-                  <li>Trên trang VNPay: chọn <strong>"Thanh toán thẻ nội địa / ATM"</strong></li>
-                  <li>Nhập thông tin thẻ từ bảng trên (click 📋 để copy nhanh)</li>
-                  <li>Nhập OTP: <strong>123456</strong> khi được yêu cầu</li>
-                  <li>Hoàn tất thanh toán và hệ thống tự động cập nhật</li>
+                  <li dangerouslySetInnerHTML={{ __html: t('paymentQR.guide1') }} />
+                  <li dangerouslySetInnerHTML={{ __html: t('paymentQR.guide2') }} />
+                  <li>{t('paymentQR.guide3')}</li>
+                  <li><strong>{t('paymentQR.guide4')}</strong></li>
+                  <li>{t('paymentQR.guide5')}</li>
                 </ol>
               </div>
             </div>
 
-            {/* Nhãn bảo mật */}
             <div className="flex items-center justify-center gap-6 text-xs text-neutral-400 dark:text-neutral-500">
-              <span className="flex items-center gap-1"><span>🔐</span> SSL Encrypted</span>
-              <span className="flex items-center gap-1"><span>🛡️</span> PCI DSS Compliant</span>
-              <span className="flex items-center gap-1"><span>✅</span> VNPay Certified</span>
+              <span className="flex items-center gap-1"><span>🔐</span> {t('paymentQR.sslEncrypted')}</span>
+              <span className="flex items-center gap-1"><span>🛡️</span> {t('paymentQR.pciDss')}</span>
+              <span className="flex items-center gap-1"><span>✅</span> {t('paymentQR.vnpayCertified')}</span>
             </div>
           </div>
         </div>

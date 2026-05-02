@@ -189,7 +189,7 @@ const ShopPage: React.FC = () => {
   const filterGroups = [
     {
       id: 'categories',
-      name: 'Danh mục',
+      name: t('filters.category'),
       options:
         (((categoriesData as any)?.data || categoriesData || []) as any[]).map((category: any) => ({
           id: category.id,
@@ -198,7 +198,7 @@ const ShopPage: React.FC = () => {
     },
     {
       id: 'brand',
-      name: 'Thương hiệu',
+      name: t('filters.brand'),
       options:
         brandsData?.data?.map((brand: any) => ({
           id: brand.id,
@@ -207,7 +207,7 @@ const ShopPage: React.FC = () => {
     },
     {
       id: 'collection',
-      name: 'Bộ sưu tập',
+      name: t('filters.collection'),
       options:
         collectionsData?.data?.map((collection: any) => ({
           id: collection.id,
@@ -259,7 +259,7 @@ const ShopPage: React.FC = () => {
                     ? 'bg-primary-500 text-white'
                     : 'text-neutral-600 dark:text-neutral-400'
                 }`}
-                aria-label="Grid view"
+                aria-label={t('shop.gridView')}
               >
                 <svg
                   className="h-4 w-4"
@@ -282,7 +282,7 @@ const ShopPage: React.FC = () => {
                     ? 'bg-primary-500 text-white'
                     : 'text-neutral-600 dark:text-neutral-400'
                 }`}
-                aria-label="List view"
+                aria-label={t('shop.listView')}
               >
                 <svg
                   className="h-4 w-4"
@@ -361,7 +361,7 @@ const ShopPage: React.FC = () => {
                         ? 'bg-primary-500 text-white'
                         : 'text-neutral-600 dark:text-neutral-400 hover:text-neutral-800 dark:hover:text-neutral-200'
                     }`}
-                    aria-label="Grid view"
+                    aria-label={t('shop.gridView')}
                   >
                     <svg
                       className="h-4 w-4"
@@ -384,7 +384,7 @@ const ShopPage: React.FC = () => {
                         ? 'bg-primary-500 text-white'
                         : 'text-neutral-600 dark:text-neutral-400 hover:text-neutral-800 dark:hover:text-neutral-200'
                     }`}
-                    aria-label="List view"
+                    aria-label={t('shop.listView')}
                   >
                     <svg
                       className="h-4 w-4"

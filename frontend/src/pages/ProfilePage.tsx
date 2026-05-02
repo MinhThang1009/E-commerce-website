@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useSelector, useDispatch } from 'react-redux';
 import { Link } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import Input from '@/components/common/Input';
 import { RootState } from '@/store';
 import { updateUser } from '@/features/auth/authSlice';
@@ -16,6 +17,7 @@ import { formatPrice } from '@/utils/format';
 type TabKey = 'info' | 'password' | 'orders' | 'loyalty';
 
 const ProfilePage: React.FC = () => {
+  const { t } = useTranslation();
   const { user } = useSelector((state: RootState) => state.auth);
   const dispatch = useDispatch();
   const [activeTab, setActiveTab] = useState<TabKey>('info');
@@ -58,21 +60,21 @@ const ProfilePage: React.FC = () => {
 
   const validateInfoForm = () => {
     const newErrors: Record<string, string> = {};
-    if (!formData.firstName) newErrors.firstName = 'Vui lòng nhập tên';
-    if (!formData.lastName) newErrors.lastName = 'Vui lòng nhập họ';
-    if (!formData.email) newErrors.email = 'Vui lòng nhập email';
-    else if (!/\S+@\S+\.\S+/.test(formData.email)) newErrors.email = 'Email không hợp lệ';
+    if (!formData.firstName) newErrors.firstName = t('profile.validation.firstNameRequired');
+    if (!formData.lastName) newErrors.lastName = t('profile.validation.lastNameRequired');
+    if (!formData.email) newErrors.email = t('profile.validation.emailRequired');
+    else if (!/\S+@\S+\.\S+/.test(formData.email)) newErrors.email = t('profile.validation.emailInvalid');
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
 
   const validatePasswordForm = () => {
     const newErrors: Record<string, string> = {};
-    if (!formData.currentPassword) newErrors.currentPassword = 'Vui lòng nhập mật khẩu hiện tại';
-    if (!formData.newPassword) newErrors.newPassword = 'Vui lòng nhập mật khẩu mới';
-    else if (formData.newPassword.length < 6) newErrors.newPassword = 'Mật khẩu tối thiểu 6 ký tự';
-    if (!formData.confirmPassword) newErrors.confirmPassword = 'Vui lòng xác nhận mật khẩu mới';
-    else if (formData.newPassword !== formData.confirmPassword) newErrors.confirmPassword = 'Mật khẩu xác nhận không khớp';
+    if (!formData.currentPassword) newErrors.currentPassword = t('profile.validation.currentPasswordRequired');
+    if (!formData.newPassword) newErrors.newPassword = t('profile.validation.newPasswordRequired');
+    else if (formData.newPassword.length < 6) newErrors.newPassword = t('profile.validation.newPasswordMin');
+    if (!formData.confirmPassword) newErrors.confirmPassword = t('profile.validation.confirmPasswordRequired');
+    else if (formData.newPassword !== formData.confirmPassword) newErrors.confirmPassword = t('profile.validation.passwordMismatch');
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
@@ -87,10 +89,10 @@ const ProfilePage: React.FC = () => {
         phone: formData.phone,
       }).unwrap();
       dispatch(updateUser({ firstName: updatedUser.firstName, lastName: updatedUser.lastName, phone: updatedUser.phone, avatar: updatedUser.avatar }));
-      dispatch(addNotification({ type: 'success', message: 'Cập nhật hồ sơ thành công!', duration: 3000 }));
+      dispatch(addNotification({ type: 'success', message: t('profile.info.updateSuccess'), duration: 3000 }));
       setIsEditing(false);
     } catch (error: any) {
-      dispatch(addNotification({ type: 'error', message: error.data?.message || 'Cập nhật thất bại', duration: 5000 }));
+      dispatch(addNotification({ type: 'error', message: error.data?.message || t('profile.info.updateError'), duration: 5000 }));
     }
   };
 
@@ -99,20 +101,20 @@ const ProfilePage: React.FC = () => {
     if (!validatePasswordForm()) return;
     try {
       await changePassword({ currentPassword: formData.currentPassword, newPassword: formData.newPassword, confirmPassword: formData.confirmPassword }).unwrap();
-      dispatch(addNotification({ type: 'success', message: 'Đổi mật khẩu thành công!', duration: 3000 }));
+      dispatch(addNotification({ type: 'success', message: t('profile.password.changeSuccess'), duration: 3000 }));
       setFormData((prev) => ({ ...prev, currentPassword: '', newPassword: '', confirmPassword: '' }));
     } catch (error: any) {
-      dispatch(addNotification({ type: 'error', message: error.data?.message || 'Đổi mật khẩu thất bại', duration: 5000 }));
+      dispatch(addNotification({ type: 'error', message: error.data?.message || t('profile.password.changeError'), duration: 5000 }));
     }
   };
 
-  const displayName = `${formData.firstName} ${formData.lastName}`.trim() || 'Người dùng';
+  const displayName = `${formData.firstName} ${formData.lastName}`.trim() || t('profile.defaultName');
   const initials = `${formData.firstName?.[0] || ''}${formData.lastName?.[0] || ''}`.toUpperCase() || 'U';
 
   const tabs: { key: TabKey; label: string; icon: React.ReactNode }[] = [
     {
       key: 'info',
-      label: 'Thông tin cá nhân',
+      label: t('profile.tabs.info'),
       icon: (
         <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
@@ -121,7 +123,7 @@ const ProfilePage: React.FC = () => {
     },
     {
       key: 'password',
-      label: 'Đổi mật khẩu',
+      label: t('profile.tabs.password'),
       icon: (
         <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
@@ -130,7 +132,7 @@ const ProfilePage: React.FC = () => {
     },
     {
       key: 'orders',
-      label: 'Đơn hàng',
+      label: t('profile.tabs.orders'),
       icon: (
         <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z" />
@@ -139,7 +141,7 @@ const ProfilePage: React.FC = () => {
     },
     {
       key: 'loyalty',
-      label: 'Điểm tích lũy',
+      label: t('profile.tabs.loyalty'),
       icon: (
         <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
@@ -153,7 +155,7 @@ const ProfilePage: React.FC = () => {
       <div className="min-h-screen flex items-center justify-center">
         <div className="flex flex-col items-center gap-4">
           <div className="animate-spin rounded-full h-14 w-14 border-4 border-primary-200 border-t-primary-600"></div>
-          <p className="text-neutral-500 dark:text-neutral-400 text-sm">Đang tải hồ sơ...</p>
+          <p className="text-neutral-500 dark:text-neutral-400 text-sm">{t('profile.loading')}</p>
         </div>
       </div>
     );
@@ -190,12 +192,12 @@ const ProfilePage: React.FC = () => {
               <div className="flex flex-wrap gap-2 mt-3 justify-center sm:justify-start">
                 <span className="inline-flex items-center gap-1.5 text-xs font-medium bg-primary-50 dark:bg-primary-900/30 text-primary-700 dark:text-primary-300 px-3 py-1 rounded-full border border-primary-200 dark:border-primary-800">
                   <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20"><path fillRule="evenodd" d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z" clipRule="evenodd" /></svg>
-                  Khách hàng
+                  {t('profile.roleCustomer')}
                 </span>
                 {user?.isEmailVerified && (
                   <span className="inline-flex items-center gap-1.5 text-xs font-medium bg-emerald-50 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-300 px-3 py-1 rounded-full border border-emerald-200 dark:border-emerald-800">
                     <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20"><path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" /></svg>
-                    Đã xác minh
+                    {t('profile.emailVerified')}
                   </span>
                 )}
               </div>
@@ -205,14 +207,14 @@ const ProfilePage: React.FC = () => {
             <div className="flex gap-2">
               <Link to="/orders" className="flex items-center gap-2 px-4 py-2.5 rounded-xl border border-neutral-200 dark:border-neutral-700 text-neutral-600 dark:text-neutral-300 hover:bg-neutral-50 dark:hover:bg-neutral-800 text-sm font-medium transition-colors">
                 <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z" /></svg>
-                Đơn hàng
+                {t('profile.quickLinks.orders')}
               </Link>
-              <button 
+              <button
                 onClick={() => setActiveTab('loyalty')}
                 className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-amber-50 dark:bg-amber-900/20 text-amber-700 dark:text-amber-300 hover:bg-amber-100 dark:hover:bg-amber-800/30 text-sm font-medium transition-colors border border-amber-200 dark:border-amber-800"
               >
                 <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
-                {loyaltyData?.data?.points || 0} Điểm
+                {t('profile.loyalty.pointsDisplay', { points: loyaltyData?.data?.points || 0 })}
               </button>
             </div>
           </div>
@@ -241,8 +243,8 @@ const ProfilePage: React.FC = () => {
           <div className="bg-white dark:bg-neutral-900 rounded-2xl shadow-sm border border-neutral-100 dark:border-neutral-800 p-6">
             <div className="flex items-center justify-between mb-6">
               <div>
-                <h2 className="text-lg font-semibold text-neutral-900 dark:text-white">Thông tin cá nhân</h2>
-                <p className="text-sm text-neutral-500 dark:text-neutral-400 mt-0.5">Quản lý thông tin hồ sơ của bạn</p>
+                <h2 className="text-lg font-semibold text-neutral-900 dark:text-white">{t('profile.info.title')}</h2>
+                <p className="text-sm text-neutral-500 dark:text-neutral-400 mt-0.5">{t('profile.info.subtitle')}</p>
               </div>
               {!isEditing && (
                 <button
@@ -250,7 +252,7 @@ const ProfilePage: React.FC = () => {
                   className="flex items-center gap-2 px-4 py-2 rounded-lg border border-neutral-200 dark:border-neutral-700 text-neutral-700 dark:text-neutral-200 hover:bg-neutral-50 dark:hover:bg-neutral-800 text-sm font-medium transition-colors"
                 >
                   <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" /></svg>
-                  Chỉnh sửa
+                  {t('profile.info.edit')}
                 </button>
               )}
             </div>
@@ -258,7 +260,7 @@ const ProfilePage: React.FC = () => {
             <form onSubmit={handleUpdateInfo}>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
                 <div className="space-y-1.5">
-                  <label className="text-sm font-medium text-neutral-700 dark:text-neutral-300">Họ</label>
+                  <label className="text-sm font-medium text-neutral-700 dark:text-neutral-300">{t('profile.info.firstName')}</label>
                   <input
                     name="firstName"
                     value={formData.firstName}
@@ -274,7 +276,7 @@ const ProfilePage: React.FC = () => {
                 </div>
 
                 <div className="space-y-1.5">
-                  <label className="text-sm font-medium text-neutral-700 dark:text-neutral-300">Tên</label>
+                  <label className="text-sm font-medium text-neutral-700 dark:text-neutral-300">{t('profile.info.lastName')}</label>
                   <input
                     name="lastName"
                     value={formData.lastName}
@@ -292,7 +294,7 @@ const ProfilePage: React.FC = () => {
                 <div className="space-y-1.5">
                   <label className="text-sm font-medium text-neutral-700 dark:text-neutral-300">
                     Email
-                    <span className="ml-2 text-xs text-neutral-400 dark:text-neutral-500 font-normal">(không thể thay đổi)</span>
+                    <span className="ml-2 text-xs text-neutral-400 dark:text-neutral-500 font-normal">{t('profile.info.emailReadOnly')}</span>
                   </label>
                   <input
                     name="email"
@@ -304,13 +306,13 @@ const ProfilePage: React.FC = () => {
                 </div>
 
                 <div className="space-y-1.5">
-                  <label className="text-sm font-medium text-neutral-700 dark:text-neutral-300">Số điện thoại</label>
+                  <label className="text-sm font-medium text-neutral-700 dark:text-neutral-300">{t('profile.info.phone')}</label>
                   <input
                     name="phone"
                     value={formData.phone}
                     onChange={handleChange}
                     disabled={!isEditing || isUpdating}
-                    placeholder="Chưa cập nhật"
+                    placeholder={t('profile.info.phonePlaceholder')}
                     className={`w-full px-4 py-2.5 rounded-xl border text-sm transition-colors ${
                       isEditing
                         ? 'border-neutral-300 dark:border-neutral-600 bg-white dark:bg-neutral-800 focus:border-primary-500 focus:ring-2 focus:ring-primary-500/20 outline-none'
@@ -336,7 +338,7 @@ const ProfilePage: React.FC = () => {
                     }}
                     className="px-5 py-2.5 rounded-xl border border-neutral-200 dark:border-neutral-700 text-neutral-700 dark:text-neutral-200 hover:bg-neutral-50 dark:hover:bg-neutral-800 text-sm font-medium transition-colors"
                   >
-                    Hủy
+                    {t('common.cancel')}
                   </button>
                   <button
                     type="submit"
@@ -346,12 +348,12 @@ const ProfilePage: React.FC = () => {
                     {isUpdating ? (
                       <>
                         <div className="animate-spin rounded-full h-4 w-4 border-2 border-white/30 border-t-white"></div>
-                        Đang lưu...
+                        {t('profile.info.saving')}
                       </>
                     ) : (
                       <>
                         <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" /></svg>
-                        Lưu thay đổi
+                        {t('profile.info.save')}
                       </>
                     )}
                   </button>
@@ -364,13 +366,13 @@ const ProfilePage: React.FC = () => {
         {activeTab === 'password' && (
           <div className="bg-white dark:bg-neutral-900 rounded-2xl shadow-sm border border-neutral-100 dark:border-neutral-800 p-6">
             <div className="mb-6">
-              <h2 className="text-lg font-semibold text-neutral-900 dark:text-white">Đổi mật khẩu</h2>
-              <p className="text-sm text-neutral-500 dark:text-neutral-400 mt-0.5">Đảm bảo mật khẩu của bạn đủ mạnh và an toàn</p>
+              <h2 className="text-lg font-semibold text-neutral-900 dark:text-white">{t('profile.password.title')}</h2>
+              <p className="text-sm text-neutral-500 dark:text-neutral-400 mt-0.5">{t('profile.password.subtitle')}</p>
             </div>
 
             <form onSubmit={handleChangePassword} className="max-w-md space-y-5">
               <div className="space-y-1.5">
-                <label className="text-sm font-medium text-neutral-700 dark:text-neutral-300">Mật khẩu hiện tại</label>
+                <label className="text-sm font-medium text-neutral-700 dark:text-neutral-300">{t('profile.password.currentPassword')}</label>
                 <input
                   name="currentPassword"
                   type="password"
@@ -383,26 +385,26 @@ const ProfilePage: React.FC = () => {
               </div>
 
               <div className="space-y-1.5">
-                <label className="text-sm font-medium text-neutral-700 dark:text-neutral-300">Mật khẩu mới</label>
+                <label className="text-sm font-medium text-neutral-700 dark:text-neutral-300">{t('profile.password.newPassword')}</label>
                 <input
                   name="newPassword"
                   type="password"
                   value={formData.newPassword}
                   onChange={handleChange}
-                  placeholder="Tối thiểu 6 ký tự"
+                  placeholder={t('profile.password.newPasswordPlaceholder')}
                   className={`w-full px-4 py-2.5 rounded-xl border text-sm bg-white dark:bg-neutral-800 focus:ring-2 focus:ring-primary-500/20 outline-none transition-colors ${errors.newPassword ? 'border-red-400' : 'border-neutral-300 dark:border-neutral-600 focus:border-primary-500'}`}
                 />
                 {errors.newPassword && <p className="text-xs text-red-500">{errors.newPassword}</p>}
               </div>
 
               <div className="space-y-1.5">
-                <label className="text-sm font-medium text-neutral-700 dark:text-neutral-300">Xác nhận mật khẩu mới</label>
+                <label className="text-sm font-medium text-neutral-700 dark:text-neutral-300">{t('profile.password.confirmPassword')}</label>
                 <input
                   name="confirmPassword"
                   type="password"
                   value={formData.confirmPassword}
                   onChange={handleChange}
-                  placeholder="Nhập lại mật khẩu mới"
+                  placeholder={t('profile.password.confirmPasswordPlaceholder')}
                   className={`w-full px-4 py-2.5 rounded-xl border text-sm bg-white dark:bg-neutral-800 focus:ring-2 focus:ring-primary-500/20 outline-none transition-colors ${errors.confirmPassword ? 'border-red-400' : 'border-neutral-300 dark:border-neutral-600 focus:border-primary-500'}`}
                 />
                 {errors.confirmPassword && <p className="text-xs text-red-500">{errors.confirmPassword}</p>}
@@ -417,12 +419,12 @@ const ProfilePage: React.FC = () => {
                   {isChangingPassword ? (
                     <>
                       <div className="animate-spin rounded-full h-4 w-4 border-2 border-white/30 border-t-white"></div>
-                      Đang xử lý...
+                      {t('common.processing')}
                     </>
                   ) : (
                     <>
                       <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" /></svg>
-                      Đổi mật khẩu
+                      {t('profile.password.change')}
                     </>
                   )}
                 </button>
@@ -434,17 +436,17 @@ const ProfilePage: React.FC = () => {
         {activeTab === 'orders' && (
           <div className="bg-white dark:bg-neutral-900 rounded-2xl shadow-sm border border-neutral-100 dark:border-neutral-800 p-6">
             <div className="mb-6">
-              <h2 className="text-lg font-semibold text-neutral-900 dark:text-white">Đơn hàng của bạn</h2>
-              <p className="text-sm text-neutral-500 dark:text-neutral-400 mt-0.5">Theo dõi lịch sử mua hàng của bạn</p>
+              <h2 className="text-lg font-semibold text-neutral-900 dark:text-white">{t('profile.orders.title')}</h2>
+              <p className="text-sm text-neutral-500 dark:text-neutral-400 mt-0.5">{t('profile.orders.subtitle')}</p>
             </div>
             <div className="text-center py-12">
               <div className="w-16 h-16 bg-neutral-100 dark:bg-neutral-800 rounded-2xl flex items-center justify-center mx-auto mb-4">
                 <svg className="w-8 h-8 text-neutral-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z" /></svg>
               </div>
-              <p className="text-neutral-500 dark:text-neutral-400 mb-4">Xem toàn bộ lịch sử đơn hàng của bạn</p>
+              <p className="text-neutral-500 dark:text-neutral-400 mb-4">{t('profile.orders.description')}</p>
               <Link to="/orders" className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-primary-600 hover:bg-primary-700 text-white text-sm font-medium transition-colors">
                 <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" /></svg>
-                Xem đơn hàng
+                {t('profile.orders.viewAll')}
               </Link>
             </div>
           </div>
@@ -454,11 +456,11 @@ const ProfilePage: React.FC = () => {
           <div className="bg-white dark:bg-neutral-900 rounded-2xl shadow-sm border border-neutral-100 dark:border-neutral-800 p-6">
             <div className="flex items-center justify-between mb-8">
               <div>
-                <h2 className="text-lg font-semibold text-neutral-900 dark:text-white">Điểm tích lũy</h2>
-                <p className="text-sm text-neutral-500 dark:text-neutral-400 mt-0.5">Lịch sử tích lũy và sử dụng điểm của bạn</p>
+                <h2 className="text-lg font-semibold text-neutral-900 dark:text-white">{t('profile.loyalty.title')}</h2>
+                <p className="text-sm text-neutral-500 dark:text-neutral-400 mt-0.5">{t('profile.loyalty.subtitle')}</p>
               </div>
               <div className="bg-amber-50 dark:bg-amber-900/20 px-6 py-3 rounded-2xl border border-amber-200 dark:border-amber-800 text-center">
-                <span className="block text-xs text-amber-600 dark:text-amber-400 font-medium uppercase tracking-wider mb-1">Tổng điểm hiện tại</span>
+                <span className="block text-xs text-amber-600 dark:text-amber-400 font-medium uppercase tracking-wider mb-1">{t('profile.loyalty.totalPoints')}</span>
                 <span className="text-2xl font-bold text-amber-700 dark:text-amber-300">{loyaltyData?.data?.points || 0}</span>
               </div>
             </div>
@@ -467,10 +469,10 @@ const ProfilePage: React.FC = () => {
               <table className="w-full text-left">
                 <thead>
                   <tr className="border-b border-neutral-100 dark:border-neutral-800">
-                    <th className="pb-4 text-xs font-semibold text-neutral-400 uppercase tracking-wider">Ngày</th>
-                    <th className="pb-4 text-xs font-semibold text-neutral-400 uppercase tracking-wider">Loại</th>
-                    <th className="pb-4 text-xs font-semibold text-neutral-400 uppercase tracking-wider text-right">Số điểm</th>
-                    <th className="pb-4 text-xs font-semibold text-neutral-400 uppercase tracking-wider pl-8">Mô tả</th>
+                    <th className="pb-4 text-xs font-semibold text-neutral-400 uppercase tracking-wider">{t('profile.loyalty.tableDate')}</th>
+                    <th className="pb-4 text-xs font-semibold text-neutral-400 uppercase tracking-wider">{t('profile.loyalty.tableType')}</th>
+                    <th className="pb-4 text-xs font-semibold text-neutral-400 uppercase tracking-wider text-right">{t('profile.loyalty.tablePoints')}</th>
+                    <th className="pb-4 text-xs font-semibold text-neutral-400 uppercase tracking-wider pl-8">{t('profile.loyalty.tableDesc')}</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-neutral-100 dark:divide-neutral-800">
@@ -487,9 +489,9 @@ const ProfilePage: React.FC = () => {
                             item.type === 'refund' ? 'bg-blue-50 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300' :
                             'bg-neutral-100 text-neutral-700 dark:bg-neutral-800 dark:text-neutral-300'
                           }`}>
-                            {item.type === 'earn' ? 'Tích điểm' : 
-                             item.type === 'spend' ? 'Sử dụng' : 
-                             item.type === 'refund' ? 'Hoàn điểm' : 'Điều chỉnh'}
+                            {item.type === 'earn' ? t('profile.loyalty.typeEarn') :
+                             item.type === 'spend' ? t('profile.loyalty.typeSpend') :
+                             item.type === 'refund' ? t('profile.loyalty.typeRefund') : t('profile.loyalty.typeAdjust')}
                           </span>
                         </td>
                         <td className={`py-4 text-sm font-bold text-right ${item.points >= 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-amber-600 dark:text-amber-400'}`}>
@@ -503,23 +505,23 @@ const ProfilePage: React.FC = () => {
                   ) : (
                     <tr>
                       <td colSpan={4} className="py-12 text-center text-neutral-400 dark:text-neutral-500 italic">
-                        Chưa có lịch sử giao dịch điểm
+                        {t('profile.loyalty.noHistory')}
                       </td>
                     </tr>
                   )}
                 </tbody>
               </table>
             </div>
-            
+
             <div className="mt-8 p-4 bg-neutral-50 dark:bg-neutral-800/50 rounded-2xl border border-neutral-100 dark:border-neutral-800">
               <h4 className="text-sm font-semibold text-neutral-700 dark:text-neutral-300 mb-2 flex items-center gap-1.5">
                 <svg className="w-4 h-4 text-amber-500" fill="currentColor" viewBox="0 0 20 20"><path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" /></svg>
-                Chính sách tích điểm
+                {t('profile.loyalty.policyTitle')}
               </h4>
               <ul className="text-xs text-neutral-500 dark:text-neutral-400 space-y-1.5 list-disc list-inside">
-                <li>Tích lũy 1 điểm cho mỗi 100,000đ giá trị đơn hàng khi giao hàng thành công.</li>
-                <li>Mỗi 1 điểm tương ứng với 1,000đ khi sử dụng để thanh toán đơn hàng.</li>
-                <li>Điểm không có giá trị quy đổi thành tiền mặt.</li>
+                <li>{t('profile.loyalty.policy1')}</li>
+                <li>{t('profile.loyalty.policy2')}</li>
+                <li>{t('profile.loyalty.policy3')}</li>
               </ul>
             </div>
           </div>

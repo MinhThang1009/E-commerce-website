@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import ReviewSummary from './ReviewSummary';
 import ReviewSection from './ReviewSection';
 
@@ -13,6 +14,7 @@ const ProductReviews: React.FC<ProductReviewsProps> = ({
   averageRating = 0,
   totalReviews = 0,
 }) => {
+  const { t } = useTranslation();
   const [activeTab, setActiveTab] = useState<'summary' | 'reviews'>('summary');
 
   return (
@@ -28,7 +30,7 @@ const ProductReviews: React.FC<ProductReviewsProps> = ({
                 : 'border-transparent text-neutral-500 dark:text-neutral-400 hover:text-neutral-700 dark:hover:text-neutral-300'
             }`}
           >
-            Tổng quan đánh giá
+            {t('review.tabs.summary')}
           </button>
           <button
             onClick={() => setActiveTab('reviews')}
@@ -38,7 +40,7 @@ const ProductReviews: React.FC<ProductReviewsProps> = ({
                 : 'border-transparent text-neutral-500 dark:text-neutral-400 hover:text-neutral-700 dark:hover:text-neutral-300'
             }`}
           >
-            Tất cả đánh giá ({totalReviews})
+            {t('review.tabs.all', { count: totalReviews })}
           </button>
         </nav>
       </div>

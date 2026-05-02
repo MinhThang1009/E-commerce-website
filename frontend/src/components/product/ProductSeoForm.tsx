@@ -1,15 +1,18 @@
 import React from 'react';
 import { Form, Input, Row, Col, Alert } from 'antd';
+import { useTranslation } from 'react-i18next';
 
 const { TextArea } = Input;
 
 const ProductSeoForm: React.FC = () => {
+  const { t } = useTranslation();
+
   return (
     <Row gutter={[24, 16]}>
       <Col span={24}>
-        <Form.Item name="seoTitle" label="Tiêu đề SEO">
+        <Form.Item name="seoTitle" label={t('admin.products.seo.titleLabel')}>
           <Input
-            placeholder="Tiêu đề hiển thị trên search engine"
+            placeholder={t('admin.products.seo.titlePlaceholder')}
             maxLength={60}
             showCount
           />
@@ -17,10 +20,10 @@ const ProductSeoForm: React.FC = () => {
       </Col>
 
       <Col span={24}>
-        <Form.Item name="seoDescription" label="Mô tả SEO">
+        <Form.Item name="seoDescription" label={t('admin.products.seo.descLabel')}>
           <TextArea
             rows={3}
-            placeholder="Mô tả ngắn hiển thị trên search engine"
+            placeholder={t('admin.products.seo.descPlaceholder')}
             maxLength={160}
             showCount
           />
@@ -28,10 +31,10 @@ const ProductSeoForm: React.FC = () => {
       </Col>
 
       <Col span={24}>
-        <Form.Item name="seoKeywords" label="Từ khóa SEO">
+        <Form.Item name="seoKeywords" label={t('admin.products.seo.keywordsLabel')}>
           <TextArea
             rows={2}
-            placeholder="Các từ khóa SEO, cách nhau bằng dấu phẩy"
+            placeholder={t('admin.products.seo.keywordsPlaceholder')}
             maxLength={200}
             showCount
           />
@@ -40,13 +43,13 @@ const ProductSeoForm: React.FC = () => {
 
       <Col span={24}>
         <Alert
-          message="Tối ưu SEO"
+          message={t('admin.products.seo.alertTitle')}
           description={
             <div>
-              <p>• Tiêu đề SEO nên từ 50-60 ký tự</p>
-              <p>• Mô tả SEO nên từ 150-160 ký tự</p>
-              <p>• Sử dụng từ khóa liên quan đến sản phẩm</p>
-              <p>• Hệ thống sẽ tự tạo nếu để trống</p>
+              <p>• {t('admin.products.seo.tip1')}</p>
+              <p>• {t('admin.products.seo.tip2')}</p>
+              <p>• {t('admin.products.seo.tip3')}</p>
+              <p>• {t('admin.products.seo.tip4')}</p>
             </div>
           }
           type="info"

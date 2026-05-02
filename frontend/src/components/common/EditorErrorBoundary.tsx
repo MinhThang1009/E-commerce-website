@@ -1,4 +1,5 @@
 import React, { Component, ReactNode } from 'react';
+import i18next from 'i18next';
 
 interface Props {
   children: ReactNode;
@@ -36,10 +37,12 @@ class EditorErrorBoundary extends Component<Props, State> {
 
       const {
         height = 200,
-        placeholder = 'Nhập nội dung...',
+        placeholder,
         value = '',
         onChange,
       } = this.props;
+
+      const resolvedPlaceholder = placeholder ?? i18next.t('editor.placeholder');
 
       return (
         <div
@@ -52,14 +55,12 @@ class EditorErrorBoundary extends Component<Props, State> {
             color: '#ff4d4f',
           }}
         >
-          <p>
-            ❌ Rich Text Editor gặp lỗi. Đang sử dụng editor đơn giản thay thế.
-          </p>
+          <p>❌ {i18next.t('editor.errorFallback')}</p>
           <p style={{ fontSize: '12px', color: '#999' }}>
-            Lỗi: {this.state.error?.message || 'Unknown error'}
+            {i18next.t('editor.error', { message: this.state.error?.message || i18next.t('errors.unknown') })}
           </p>
           <textarea
-            placeholder={placeholder}
+            placeholder={resolvedPlaceholder}
             value={value}
             onChange={(e) => onChange?.(e.target.value)}
             style={{

@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useSelector } from 'react-redux';
 import { RootState } from '@/store';
 import {
@@ -14,9 +15,8 @@ interface ReviewListProps {
 }
 
 const ReviewList: React.FC<ReviewListProps> = ({ productId }) => {
-  const { isAuthenticated, user } = useSelector(
-    (state: RootState) => state.auth
-  );
+  const { t } = useTranslation();
+  const { isAuthenticated } = useSelector((state: RootState) => state.auth);
   const [markReviewHelpful] = useMarkReviewHelpfulMutation();
 
   const [filters, setFilters] = useState<ReviewFilters>({
@@ -41,27 +41,25 @@ const ReviewList: React.FC<ReviewListProps> = ({ productId }) => {
   };
 
   const handleLoadMore = () => {
-    if (reviewsData && filters.page < reviewsData.data.pages) {
-      setFilters((prev) => ({ ...prev, page: prev.page! + 1 }));
+    if (reviewsData && (filters.page ?? 1) < reviewsData.data.pages) {
+      setFilters((prev) => ({ ...prev, page: (prev.page ?? 1) + 1 }));
     }
   };
 
   const handleMarkHelpful = async (reviewId: string, helpful: boolean) => {
     if (!isAuthenticated) {
-      // Chuyển hướng đến trang đăng nhập
       window.location.href = '/login';
       return;
     }
 
     try {
-      // Truyền productId vào mutation để invalidate cache cho danh sách review của sản phẩm
       await markReviewHelpful({
         id: reviewId,
         helpful,
         productId,
       }).unwrap();
     } catch (error) {
-      console.error('Lỗi đánh dấu đánh giá hữu ích:', error);
+      console.error('Error marking review helpful:', error);
     }
   };
 
@@ -100,7 +98,7 @@ const ReviewList: React.FC<ReviewListProps> = ({ productId }) => {
     return (
       <div className="bg-white dark:bg-neutral-800 rounded-lg shadow-sm p-6">
         <div className="text-center text-red-600 dark:text-red-400">
-          <p>Có lỗi xảy ra khi tải đánh giá. Vui lòng thử lại sau.</p>
+          <p>{t('review.list.error')}</p>
         </div>
       </div>
     );
@@ -113,23 +111,20 @@ const ReviewList: React.FC<ReviewListProps> = ({ productId }) => {
     <div className="bg-white dark:bg-neutral-800 rounded-lg shadow-sm p-6">
       <div className="flex items-center justify-between mb-6">
         <h3 className="text-xl font-semibold text-neutral-900 dark:text-white">
-          Đánh giá sản phẩm ({totalReviews})
+          {t('review.list.title', { count: totalReviews })}
         </h3>
 
-        {/* Filter controls */}
         <div className="flex items-center space-x-4">
           <select
             value={filters.sort}
-            onChange={(e) =>
-              handleFilterChange({ sort: e.target.value as any })
-            }
+            onChange={(e) => handleFilterChange({ sort: e.target.value as any })}
             className="px-3 py-2 border border-neutral-300 dark:border-neutral-600 rounded-lg bg-white dark:bg-neutral-700 text-neutral-900 dark:text-white text-sm"
           >
-            <option value="newest">Mới nhất</option>
-            <option value="oldest">Cũ nhất</option>
-            <option value="highest_rating">Đánh giá cao nhất</option>
-            <option value="lowest_rating">Đánh giá thấp nhất</option>
-            <option value="most_helpful">Hữu ích nhất</option>
+            <option value="newest">{t('review.list.sortNewest')}</option>
+            <option value="oldest">{t('review.list.sortOldest')}</option>
+            <option value="highest_rating">{t('review.list.sortHighest')}</option>
+            <option value="lowest_rating">{t('review.list.sortLowest')}</option>
+            <option value="most_helpful">{t('review.list.sortHelpful')}</option>
           </select>
 
           <select
@@ -141,33 +136,22 @@ const ReviewList: React.FC<ReviewListProps> = ({ productId }) => {
             }
             className="px-3 py-2 border border-neutral-300 dark:border-neutral-600 rounded-lg bg-white dark:bg-neutral-700 text-neutral-900 dark:text-white text-sm"
           >
-            <option value="">Tất cả sao</option>
-            <option value="5">5 sao</option>
-            <option value="4">4 sao</option>
-            <option value="3">3 sao</option>
-            <option value="2">2 sao</option>
-            <option value="1">1 sao</option>
+            <option value="">{t('review.list.allStars')}</option>
+            <option value="5">{t('review.list.stars', { count: 5 })}</option>
+            <option value="4">{t('review.list.stars', { count: 4 })}</option>
+            <option value="3">{t('review.list.stars', { count: 3 })}</option>
+            <option value="2">{t('review.list.stars', { count: 2 })}</option>
+            <option value="1">{t('review.list.stars', { count: 1 })}</option>
           </select>
         </div>
       </div>
 
       {reviews.length === 0 ? (
         <div className="text-center py-8 text-neutral-500 dark:text-neutral-400">
-          <svg
-            xmlns="http://www.w3.org/2000/svg"
-            className="h-12 w-12 mx-auto mb-3"
-            fill="none"
-            viewBox="0 0 24 24"
-            stroke="currentColor"
-          >
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              strokeWidth={2}
-              d="M7 8h10M7 12h4m1 8l-4-4H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-1l-4 4z"
-            />
+          <svg xmlns="http://www.w3.org/2000/svg" className="h-12 w-12 mx-auto mb-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 8h10M7 12h4m1 8l-4-4H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-1l-4 4z" />
           </svg>
-          <p>Chưa có đánh giá nào cho sản phẩm này.</p>
+          <p>{t('review.list.empty')}</p>
         </div>
       ) : (
         <div className="space-y-6">
@@ -177,7 +161,6 @@ const ReviewList: React.FC<ReviewListProps> = ({ productId }) => {
               className="border-b border-neutral-200 dark:border-neutral-700 pb-6 last:border-b-0"
             >
               <div className="flex items-start space-x-4">
-                {/* Ảnh đại diện người dùng */}
                 <div className="flex-shrink-0">
                   <div className="w-10 h-10 bg-primary-500 rounded-full flex items-center justify-center text-white font-medium">
                     {review.user?.firstName?.charAt(0) || 'U'}
@@ -185,7 +168,6 @@ const ReviewList: React.FC<ReviewListProps> = ({ productId }) => {
                 </div>
 
                 <div className="flex-1 min-w-0">
-                  {/* Thông tin người dùng và đánh giá */}
                   <div className="flex items-center justify-between mb-2">
                     <div>
                       <h4 className="text-sm font-medium text-neutral-900 dark:text-white">
@@ -198,43 +180,32 @@ const ReviewList: React.FC<ReviewListProps> = ({ productId }) => {
                         </span>
                         {review.isVerified && (
                           <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200">
-                            <svg
-                              className="w-3 h-3 mr-1"
-                              fill="currentColor"
-                              viewBox="0 0 20 20"
-                            >
-                              <path
-                                fillRule="evenodd"
-                                d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z"
-                                clipRule="evenodd"
-                              />
+                            <svg className="w-3 h-3 mr-1" fill="currentColor" viewBox="0 0 20 20">
+                              <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
                             </svg>
-                            Đã mua hàng
+                            {t('review.list.verified')}
                           </span>
                         )}
                       </div>
                     </div>
                   </div>
 
-                  {/* Tiêu đề đánh giá */}
                   {review.title && (
                     <h5 className="text-sm font-medium text-neutral-900 dark:text-white mb-2">
                       {review.title}
                     </h5>
                   )}
 
-                  {/* Nội dung đánh giá */}
                   <p className="text-sm text-neutral-700 dark:text-neutral-300 mb-3">
                     {review.content}
                   </p>
 
-                  {/* Hình ảnh đánh giá */}
                   {(() => {
                     try {
                       const parsedImages = typeof review.images === 'string'
                         ? JSON.parse(review.images)
                         : Array.isArray(review.images) ? review.images : [];
-                      
+
                       return Array.isArray(parsedImages) && parsedImages.length > 0 ? (
                         <div className="flex flex-wrap gap-2 mb-3">
                           {parsedImages.map((image: string, index: number) => (
@@ -243,59 +214,35 @@ const ReviewList: React.FC<ReviewListProps> = ({ productId }) => {
                               src={image}
                               alt={`Review image ${index + 1}`}
                               className="w-16 h-16 object-cover rounded-lg cursor-pointer hover:opacity-80 transition-opacity"
-                              onClick={() => {
-                                window.open(image, '_blank');
-                              }}
+                              onClick={() => { window.open(image, '_blank'); }}
                             />
                           ))}
                         </div>
                       ) : null;
                     } catch (e) {
-                      console.error('Phân tích ảnh đánh giá thất bại', e);
                       return null;
                     }
                   })()}
 
-                  {/* Nút hữu ích */}
                   <div className="flex items-center space-x-4 text-sm">
                     <button
                       onClick={() => handleMarkHelpful(review.id, true)}
                       className="flex items-center space-x-1 text-neutral-500 dark:text-neutral-400 hover:text-green-600 dark:hover:text-green-400 transition-colors"
                     >
-                      <svg
-                        className="w-4 h-4"
-                        fill="none"
-                        stroke="currentColor"
-                        viewBox="0 0 24 24"
-                      >
-                        <path
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                          strokeWidth={2}
-                          d="M14 10h4.764a2 2 0 011.789 2.894l-3.5 7A2 2 0 0115.263 21h-4.017c-.163 0-.326-.02-.485-.06L7 20m7-10V5a2 2 0 00-2-2h-.095c-.5 0-.905.405-.905.905 0 .714-.211 1.412-.608 2.006L7 11v9m7-10h-2M7 20H5a2 2 0 01-2-2v-6a2 2 0 012-2h2.5"
-                        />
+                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14 10h4.764a2 2 0 011.789 2.894l-3.5 7A2 2 0 0115.263 21h-4.017c-.163 0-.326-.02-.485-.06L7 20m7-10V5a2 2 0 00-2-2h-.095c-.5 0-.905.405-.905.905 0 .714-.211 1.412-.608 2.006L7 11v9m7-10h-2M7 20H5a2 2 0 01-2-2v-6a2 2 0 012-2h2.5" />
                       </svg>
-                      <span>Hữu ích ({review.likes})</span>
+                      <span>{t('review.list.helpful', { count: review.likes })}</span>
                     </button>
 
                     <button
                       onClick={() => handleMarkHelpful(review.id, false)}
                       className="flex items-center space-x-1 text-neutral-500 dark:text-neutral-400 hover:text-red-600 dark:hover:text-red-400 transition-colors"
                     >
-                      <svg
-                        className="w-4 h-4"
-                        fill="none"
-                        stroke="currentColor"
-                        viewBox="0 0 24 24"
-                      >
-                        <path
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                          strokeWidth={2}
-                          d="M10 14H5.236a2 2 0 01-1.789-2.894l3.5-7A2 2 0 018.736 3h4.018c.163 0 .326.02.485.06L17 4m-7 10v2a2 2 0 002 2h.095c.5 0 .905-.405.905-.905 0-.714.211-1.412.608-2.006L17 13V4m-7 10h2m5-10H5a2 2 0 00-2 2v6a2 2 0 002 2h2.5"
-                        />
+                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 14H5.236a2 2 0 01-1.789-2.894l3.5-7A2 2 0 018.736 3h4.018c.163 0 .326.02.485.06L17 4m-7 10v2a2 2 0 002 2h.095c.5 0 .905-.405.905-.905 0-.714.211-1.412.608-2.006L17 13V4m-7 10h2m5-10H5a2 2 0 00-2 2v6a2 2 0 002 2h2.5" />
                       </svg>
-                      <span>Không hữu ích ({review.dislikes})</span>
+                      <span>{t('review.list.notHelpful', { count: review.dislikes })}</span>
                     </button>
                   </div>
                 </div>
@@ -303,14 +250,13 @@ const ReviewList: React.FC<ReviewListProps> = ({ productId }) => {
             </div>
           ))}
 
-          {/* Nút tải thêm */}
-          {reviewsData && filters.page < reviewsData.data.pages && (
+          {reviewsData && (filters.page ?? 1) < reviewsData.data.pages && (
             <div className="text-center pt-4">
               <button
                 onClick={handleLoadMore}
                 className="px-6 py-2 border border-neutral-300 dark:border-neutral-600 text-neutral-700 dark:text-neutral-300 rounded-lg hover:bg-neutral-50 dark:hover:bg-neutral-700 transition-colors"
               >
-                Xem thêm đánh giá
+                {t('review.list.loadMore')}
               </button>
             </div>
           )}

@@ -36,14 +36,14 @@ const ChatInput: React.FC<ChatInputProps> = ({
   const handleClearChat = () => {
     if (
       onClearChat &&
-      window.confirm('Bạn có chắc muốn xóa toàn bộ cuộc trò chuyện này?')
+      window.confirm(t('chat.confirmClearChat'))
     ) {
       onClearChat();
     }
   };
 
   const handleHelpClick = () => {
-    onSendMessage('Tôi cần trợ giúp về cách sử dụng chatbot');
+    onSendMessage(t('chat.helpRequest'));
   };
 
   return (
@@ -56,7 +56,7 @@ const ChatInput: React.FC<ChatInputProps> = ({
             <span className="w-1.5 h-1.5 bg-primary-500 rounded-full animate-bounce" style={{ animationDelay: '150ms' }}></span>
             <span className="w-1.5 h-1.5 bg-primary-500 rounded-full animate-bounce" style={{ animationDelay: '300ms' }}></span>
           </div>
-          <span>Trợ lý đang soạn câu trả lời...</span>
+          <span>{t('chat.assistantTyping')}</span>
         </div>
       )}
 
@@ -66,7 +66,7 @@ const ChatInput: React.FC<ChatInputProps> = ({
             type="text"
             value={input}
             onChange={(e) => setInput(e.target.value)}
-            placeholder={t('chat.placeholder') || 'Bạn cần hỗ trợ gì không?'}
+            placeholder={t('chat.placeholder')}
             className="w-full bg-neutral-100 dark:bg-neutral-800 border-2 border-transparent focus:border-primary-500/20 rounded-2xl pl-4 pr-12 py-3 text-sm focus:ring-4 focus:ring-primary-500/10 focus:outline-none text-neutral-900 dark:text-white placeholder-neutral-500 dark:placeholder-neutral-400 transition-all duration-300 shadow-sm group-hover:bg-neutral-200/50 dark:group-hover:bg-neutral-700/50"
             disabled={isLoading}
             autoComplete="off"

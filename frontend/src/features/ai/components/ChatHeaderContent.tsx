@@ -35,7 +35,7 @@ const ChatHeaderContent: React.FC<ChatHeaderContentProps> = ({
                 <span className="relative inline-flex rounded-full h-2 w-2 bg-green-500"></span>
               </span>
               <p className="text-[11px] text-white/80 font-medium uppercase tracking-wider">
-                Sẵn sàng hỗ trợ
+                {t('chat.readyToHelp')}
               </p>
             </div>
           </div>

@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useSelector } from 'react-redux';
 import { RootState } from '@/store';
 import { io, Socket } from 'socket.io-client';
@@ -9,6 +10,7 @@ import { v4 as uuidv4 } from 'uuid';
 const SOCKET_URL = (import.meta.env.VITE_API_URL || 'http://localhost:8888/api').replace(/\/api$/, '');
 
 const SupportChat: React.FC = () => {
+  const { t } = useTranslation();
   const [isOpen, setIsOpen] = useState(false);
   const [message, setMessage] = useState('');
   const [messages, setMessages] = useState<ChatMessage[]>([]);
@@ -192,8 +194,8 @@ const SupportChat: React.FC = () => {
           <div className="bg-gradient-to-r from-primary-600 to-primary-500 text-white p-4 rounded-t-2xl flex items-center justify-between">
             <div className="flex items-center gap-2">
               <div className={`h-3 w-3 rounded-full ${isAdminOnline ? 'bg-green-400 animate-pulse' : 'bg-neutral-400'}`}></div>
-              <h3 className="font-semibold">Hỗ trợ trực tuyến</h3>
-              {isAdminOnline && <span className="text-[10px] bg-white/20 px-1.5 rounded uppercase font-bold tracking-wider">Online</span>}
+              <h3 className="font-semibold">{t('support.title')}</h3>
+              {isAdminOnline && <span className="text-[10px] bg-white/20 px-1.5 rounded uppercase font-bold tracking-wider">{t('common.online')}</span>}
             </div>
             <button onClick={() => setIsOpen(false)} className="hover:text-neutral-200">
               <XMarkIcon className="h-5 w-5" />
@@ -203,9 +205,9 @@ const SupportChat: React.FC = () => {
           {/* Phần nội dung tin nhắn */}
           <div className="flex-1 p-4 overflow-y-auto max-h-96 min-h-[300px] flex flex-col gap-3">
             {isLoading ? (
-              <p className="text-center text-neutral-400 text-sm">Đang tải...</p>
+              <p className="text-center text-neutral-400 text-sm">{t('common.loading')}</p>
             ) : messages.length === 0 ? (
-              <p className="text-center text-neutral-400 text-sm mt-4">Chào bạn, chúng tôi có thể giúp gì?</p>
+              <p className="text-center text-neutral-400 text-sm mt-4">{t('support.greeting')}</p>
             ) : (
               messages.map((msg, idx) => {
                 const isMe = !msg.isFromAdmin;
@@ -234,7 +236,7 @@ const SupportChat: React.FC = () => {
                  <span className="h-1 w-1 bg-neutral-400 rounded-full animate-bounce [animation-delay:0.2s]"></span>
                  <span className="h-1 w-1 bg-neutral-400 rounded-full animate-bounce [animation-delay:0.4s]"></span>
                </div>
-               Admin đang soạn tin...
+               {t('support.adminTyping')}
             </div>
           )}
 
@@ -247,7 +249,7 @@ const SupportChat: React.FC = () => {
                 setMessage(e.currentTarget.value);
                 handleTyping();
               }}
-              placeholder="Nhập tin nhắn..."
+              placeholder={t('chat.typeSomething')}
               className="flex-1 bg-neutral-100 dark:bg-neutral-800 text-neutral-800 dark:text-neutral-100 rounded-xl px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500"
             />
             <button

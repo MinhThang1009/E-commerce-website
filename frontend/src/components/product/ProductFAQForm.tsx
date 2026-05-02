@@ -1,17 +1,20 @@
 import React from 'react';
 import { Form, Input, Button, Space, Card, Typography } from 'antd';
 import { MinusCircleOutlined, PlusOutlined } from '@ant-design/icons';
+import { useTranslation } from 'react-i18next';
 
 const { Text } = Typography;
 
 const ProductFAQForm: React.FC = () => {
+  const { t } = useTranslation();
+
   return (
     <div className="p-4">
       <Card
-        title="Câu hỏi thường gặp"
+        title={t('admin.products.faq.title')}
         extra={
           <Text type="secondary" className="text-xs">
-            Thêm các câu hỏi và câu trả lời thường gặp cho sản phẩm này
+            {t('admin.products.faq.subtitle')}
           </Text>
         }
       >
@@ -31,22 +34,22 @@ const ProductFAQForm: React.FC = () => {
                     <Form.Item
                       {...restField}
                       name={[name, 'question']}
-                      label="Câu hỏi"
-                      rules={[{ required: true, message: 'Vui lòng nhập câu hỏi' }]}
+                      label={t('admin.products.faq.questionLabel')}
+                      rules={[{ required: true, message: t('admin.products.faq.questionRequired') }]}
                     >
-                      <Input placeholder="Ví dụ: Chính sách bảo hành như thế nào?" />
+                      <Input placeholder={t('admin.products.faq.questionPlaceholder')} />
                     </Form.Item>
                     <Form.Item
                       {...restField}
                       name={[name, 'answer']}
-                      label="Câu trả lời"
+                      label={t('admin.products.faq.answerLabel')}
                       rules={[
-                        { required: true, message: 'Vui lòng nhập câu trả lời' },
+                        { required: true, message: t('admin.products.faq.answerRequired') },
                       ]}
                     >
                       <Input.TextArea
                         rows={3}
-                        placeholder="Nhập câu trả lời chi tiết tại đây..."
+                        placeholder={t('admin.products.faq.answerPlaceholder')}
                       />
                     </Form.Item>
                   </Space>
@@ -66,7 +69,7 @@ const ProductFAQForm: React.FC = () => {
                   block
                   icon={<PlusOutlined />}
                 >
-                  Thêm câu hỏi mới
+                  {t('admin.products.faq.addButton')}
                 </Button>
               </Form.Item>
             </>

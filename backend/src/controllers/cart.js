@@ -816,9 +816,9 @@ const validateCart = async (req, res, next) => {
     const cartItems = await CartItem.findAll({
       where: { cartId: cart.id },
       include: [
-        { 
-          model: Product, 
-          attributes: ['id', 'name', ['basePrice', 'price']],
+        {
+          model: Product,
+          attributes: ['id', 'name', 'basePrice'],
           include: [{ association: 'defaultVariant', attributes: ['stockQuantity'] }]
         },
         { model: ProductVariant, attributes: ['id', ['variant_name', 'name'], 'price', 'stockQuantity'] },
@@ -837,7 +837,7 @@ const validateCart = async (req, res, next) => {
         };
       }
       
-      const currentPrice = item.ProductVariant ? item.ProductVariant.price : item.Product.price;
+      const currentPrice = item.ProductVariant ? item.ProductVariant.price : item.Product.basePrice;
       const baseStockQuantity = item.Product.defaultVariant ? item.Product.defaultVariant.stockQuantity : 0;
       const currentStock = item.ProductVariant
         ? item.ProductVariant.stockQuantity

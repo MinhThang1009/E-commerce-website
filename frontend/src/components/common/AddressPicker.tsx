@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import axios from 'axios';
+import { useTranslation } from 'react-i18next';
 import Input from './Input';
 
 interface LocationSuggestion {
@@ -17,12 +18,14 @@ interface AddressPickerProps {
 }
 
 const AddressPicker: React.FC<AddressPickerProps> = ({
-  label = "Địa chỉ giao hàng",
+  label,
   value,
   onChange,
   error,
   required
 }) => {
+  const { t } = useTranslation();
+  const labelText = label ?? t('addressPicker.label');
   const [suggestions, setSuggestions] = useState<LocationSuggestion[]>([]);
   const [loading, setLoading] = useState(false);
   const [showDropdown, setShowDropdown] = useState(false);
@@ -74,7 +77,7 @@ const AddressPicker: React.FC<AddressPickerProps> = ({
   return (
     <div className="relative w-full" ref={wrapperRef}>
       <Input
-        label={label}
+        label={labelText}
         value={value}
         onChange={(e) => {
           onChange(e.target.value);
@@ -82,13 +85,13 @@ const AddressPicker: React.FC<AddressPickerProps> = ({
         }}
         error={error}
         required={required}
-        placeholder="Ví dụ: Số 123, Phường A, Quận B, Hà Nội"
+        placeholder={t('addressPicker.placeholder')}
         autoComplete="off"
       />
       
       {showDropdown && suggestions.length > 0 && (
         <ul className="absolute z-50 w-full bg-white dark:bg-neutral-800 border border-neutral-200 dark:border-neutral-700 rounded-md shadow-lg max-h-60 overflow-auto top-full -mt-2">
-          {loading && <li className="px-4 py-2 text-neutral-500">Đang tìm kiếm...</li>}
+          {loading && <li className="px-4 py-2 text-neutral-500">{t('addressPicker.searching')}</li>}
           {!loading && suggestions.map((item, index) => (
             <li
               key={index}

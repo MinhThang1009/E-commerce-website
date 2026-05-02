@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
 import {
   PencilIcon,
@@ -37,6 +38,7 @@ interface CategoryFormData {
 }
 
 const CategoryPage: React.FC = () => {
+  const { t } = useTranslation();
   const navigate = useNavigate();
   const [messageApi, contextHolder] = message.useMessage();
 
@@ -108,7 +110,7 @@ const CategoryPage: React.FC = () => {
     const newErrors: Record<string, string> = {};
 
     if (!formData.name.trim()) {
-      newErrors.name = 'Tên danh mục không được để trống';
+      newErrors.name = t('adminCategory.nameRequired');
     }
 
     setErrors(newErrors);
@@ -156,11 +158,11 @@ const CategoryPage: React.FC = () => {
 
     try {
       await createCategory(formData).unwrap();
-      messageApi.success('Tạo danh mục thành công');
+      messageApi.success(t('adminCategory.createSuccess'));
       setIsCreateModalOpen(false);
       refetch();
     } catch (error: any) {
-      messageApi.error(error.data?.message || 'Có lỗi xảy ra khi tạo danh mục');
+      messageApi.error(error.data?.message || t('adminCategory.createError'));
     }
   };
 
@@ -173,12 +175,12 @@ const CategoryPage: React.FC = () => {
         id: selectedCategory.id,
         ...formData,
       }).unwrap();
-      messageApi.success('Cập nhật danh mục thành công');
+      messageApi.success(t('adminCategory.updateSuccess'));
       setIsEditModalOpen(false);
       refetch();
     } catch (error: any) {
       messageApi.error(
-        error.data?.message || 'Có lỗi xảy ra khi cập nhật danh mục'
+        error.data?.message || t('adminCategory.updateError')
       );
     }
   };
@@ -189,11 +191,11 @@ const CategoryPage: React.FC = () => {
 
     try {
       await deleteCategory(selectedCategory.id).unwrap();
-      messageApi.success('Xóa danh mục thành công');
+      messageApi.success(t('adminCategory.deleteSuccess'));
       setIsDeleteModalOpen(false);
       refetch();
     } catch (error: any) {
-      messageApi.error(error.data?.message || 'Có lỗi xảy ra khi xóa danh mục');
+      messageApi.error(error.data?.message || t('adminCategory.deleteError'));
     }
   };
 
@@ -244,29 +246,29 @@ const CategoryPage: React.FC = () => {
               </span>
             ) : (
               <span className="text-gray-400 dark:text-gray-500">
-                Không có mô tả
+                {t('adminCategory.noDesc')}
               </span>
             )}
           </td>
           <td className="px-4 py-3 text-sm">
             {category.parentId ? (
               <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800 dark:bg-blue-900/50 dark:text-blue-300">
-                Danh mục con
+                {t('adminCategory.typeChild')}
               </span>
             ) : (
               <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800 dark:bg-green-900/50 dark:text-green-300">
-                Danh mục gốc
+                {t('adminCategory.typeRoot')}
               </span>
             )}
           </td>
           <td className="px-4 py-3 text-sm text-center">
             {category.isActive ? (
               <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800 dark:bg-green-900/50 dark:text-green-300">
-                Hoạt động
+                {t('adminCategory.statusActive')}
               </span>
             ) : (
               <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800 dark:bg-red-900/50 dark:text-red-300">
-                Ẩn
+                {t('adminCategory.statusHidden')}
               </span>
             )}
           </td>
@@ -278,14 +280,14 @@ const CategoryPage: React.FC = () => {
               <button
                 onClick={() => handleOpenEditModal(category)}
                 className="p-2 text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded-lg transition-all duration-200"
-                title="Chỉnh sửa"
+                title={t('adminCategory.editModal')}
               >
                 <PencilIcon className="w-5 h-5" />
               </button>
               <button
                 onClick={() => handleOpenDeleteModal(category)}
                 className="p-2 text-red-600 hover:text-red-800 dark:text-red-400 dark:hover:text-red-300 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-all duration-200"
-                title="Xóa"
+                title={t('adminCategory.deleteModal')}
               >
                 <TrashIcon className="w-5 h-5" />
               </button>
@@ -371,14 +373,14 @@ const CategoryPage: React.FC = () => {
               <button
                 onClick={() => handleOpenEditModal(category)}
                 className="p-2 text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded-lg transition-all duration-200"
-                title="Chỉnh sửa"
+                title={t('adminCategory.editModal')}
               >
                 <PencilIcon className="w-5 h-5" />
               </button>
               <button
                 onClick={() => handleOpenDeleteModal(category)}
                 className="p-2 text-red-600 hover:text-red-800 dark:text-red-400 dark:hover:text-red-300 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-all duration-200"
-                title="Xóa"
+                title={t('adminCategory.deleteModal')}
               >
                 <TrashIcon className="w-5 h-5" />
               </button>
@@ -389,37 +391,37 @@ const CategoryPage: React.FC = () => {
           <div className="grid grid-cols-2 gap-4 text-sm">
             <div>
               <span className="text-gray-500 dark:text-gray-400 block mb-1">
-                Loại:
+                {t('adminCategory.typeLabel')}:
               </span>
               {category.parentId ? (
                 <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800 dark:bg-blue-900/50 dark:text-blue-300">
-                  Danh mục con
+                  {t('adminCategory.typeChild')}
                 </span>
               ) : (
                 <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800 dark:bg-green-900/50 dark:text-green-300">
-                  Danh mục gốc
+                  {t('adminCategory.typeRoot')}
                 </span>
               )}
             </div>
 
             <div>
               <span className="text-gray-500 dark:text-gray-400 block mb-1">
-                Trạng thái:
+                {t('adminCategory.statusLabel')}:
               </span>
               {category.isActive ? (
                 <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800 dark:bg-green-900/50 dark:text-green-300">
-                  Hoạt động
+                  {t('adminCategory.statusActive')}
                 </span>
               ) : (
                 <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800 dark:bg-red-900/50 dark:text-red-300">
-                  Ẩn
+                  {t('adminCategory.statusHidden')}
                 </span>
               )}
             </div>
 
             <div>
               <span className="text-gray-500 dark:text-gray-400 block mb-1">
-                Thứ tự:
+                {t('adminCategory.sortLabel')}:
               </span>
               <span className="text-gray-700 dark:text-gray-300 font-medium">
                 {category.sortOrder || 0}
@@ -476,15 +478,15 @@ const CategoryPage: React.FC = () => {
                 <div className="flex items-center space-x-2 mt-1">
                   {category.parentId ? (
                     <span className="inline-flex items-center px-1.5 py-0.5 rounded text-xs font-medium bg-blue-100 text-blue-800 dark:bg-blue-900/50 dark:text-blue-300">
-                      Con
+                      {t('adminCategory.typeChildShort')}
                     </span>
                   ) : (
                     <span className="inline-flex items-center px-1.5 py-0.5 rounded text-xs font-medium bg-green-100 text-green-800 dark:bg-green-900/50 dark:text-green-300">
-                      Gốc
+                      {t('adminCategory.typeRootShort')}
                     </span>
                   )}
                   <span className="text-xs text-gray-500 dark:text-gray-400">
-                    Thứ tự: {category.sortOrder || 0}
+                    {t('adminCategory.sortDisplay', { order: category.sortOrder || 0 })}
                   </span>
                 </div>
               </div>
@@ -493,11 +495,11 @@ const CategoryPage: React.FC = () => {
           <td className="px-4 py-3 text-sm text-center">
             {category.isActive ? (
               <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800 dark:bg-green-900/50 dark:text-green-300">
-                Hoạt động
+                {t('adminCategory.statusActive')}
               </span>
             ) : (
               <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800 dark:bg-red-900/50 dark:text-red-300">
-                Ẩn
+                {t('adminCategory.statusHidden')}
               </span>
             )}
           </td>
@@ -506,14 +508,14 @@ const CategoryPage: React.FC = () => {
               <button
                 onClick={() => handleOpenEditModal(category)}
                 className="p-2 text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded-lg transition-all duration-200"
-                title="Chỉnh sửa"
+                title={t('adminCategory.editModal')}
               >
                 <PencilIcon className="w-5 h-5" />
               </button>
               <button
                 onClick={() => handleOpenDeleteModal(category)}
                 className="p-2 text-red-600 hover:text-red-800 dark:text-red-400 dark:hover:text-red-300 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-all duration-200"
-                title="Xóa"
+                title={t('adminCategory.deleteModal')}
               >
                 <TrashIcon className="w-5 h-5" />
               </button>
@@ -542,11 +544,11 @@ const CategoryPage: React.FC = () => {
                 <div className="space-y-2">
                   <h1 className="text-xl sm:text-2xl font-bold text-gray-900 dark:text-white flex items-center">
                     <FolderIcon className="w-6 h-6 sm:w-7 sm:h-7 mr-2 text-primary-500 dark:text-primary-400" />
-                    <span className="hidden sm:inline">Quản lý danh mục</span>
-                    <span className="sm:hidden">Danh mục</span>
+                    <span className="hidden sm:inline">{t('adminCategory.pageTitle')}</span>
+                    <span className="sm:hidden">{t('adminCategory.pageTitleShort')}</span>
                   </h1>
                   <p className="text-sm sm:text-base text-gray-600 dark:text-gray-300 hidden sm:block">
-                    Tạo và quản lý các danh mục sản phẩm trong cửa hàng của bạn
+                    {t('adminCategory.pageDesc')}
                   </p>
                 </div>
 
@@ -560,8 +562,8 @@ const CategoryPage: React.FC = () => {
                     }
                   >
                     <span className="relative z-10">
-                      <span className="sm:hidden">Thêm</span>
-                      <span className="hidden sm:inline">Thêm danh mục</span>
+                      <span className="sm:hidden">{t('adminCategory.addBtnShort')}</span>
+                      <span className="hidden sm:inline">{t('adminCategory.addBtn')}</span>
                     </span>
                     <span className="absolute inset-0 bg-white/20 transform translate-y-full group-hover:translate-y-0 transition-transform duration-300"></span>
                   </Button>
@@ -574,7 +576,7 @@ const CategoryPage: React.FC = () => {
           <div className="bg-white/80 dark:bg-slate-800/80 backdrop-blur-sm rounded-2xl shadow-xl border border-white/20 dark:border-slate-700/30 p-4 sm:p-6 relative z-10 overflow-visible">
             <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4 mb-6">
               <h2 className="text-lg sm:text-xl font-semibold text-gray-800 dark:text-white">
-                Danh sách danh mục
+                {t('adminCategory.listTitle')}
               </h2>
               <Button
                 variant="outline"
@@ -582,8 +584,7 @@ const CategoryPage: React.FC = () => {
                 className="flex items-center justify-center text-primary-600 dark:text-primary-400 border-primary-200 dark:border-primary-700 w-full sm:w-auto"
                 leftIcon={<ArrowPathIcon className="w-4 h-4" />}
               >
-                <span className="sm:hidden">Làm mới</span>
-                <span className="hidden sm:inline">Làm mới</span>
+                {t('adminCategory.refresh')}
               </Button>
             </div>
 
@@ -595,10 +596,10 @@ const CategoryPage: React.FC = () => {
               <div className="text-center py-12 sm:py-20 bg-gray-50 dark:bg-gray-800 rounded-xl border border-dashed border-gray-300 dark:border-gray-700">
                 <FolderIcon className="w-12 h-12 sm:w-16 sm:h-16 mx-auto text-gray-400 dark:text-gray-500" />
                 <h3 className="mt-4 text-base sm:text-lg font-medium text-gray-900 dark:text-white">
-                  Chưa có danh mục nào
+                  {t('adminCategory.emptyTitle')}
                 </h3>
                 <p className="mt-2 text-sm sm:text-base text-gray-500 dark:text-gray-400 px-4">
-                  Bắt đầu bằng cách tạo danh mục đầu tiên cho cửa hàng của bạn
+                  {t('adminCategory.emptyDesc')}
                 </p>
                 <Button
                   variant="primary"
@@ -608,7 +609,7 @@ const CategoryPage: React.FC = () => {
                     <FolderPlusIcon className="w-5 h-5 sm:w-6 sm:h-6 group-hover:scale-110 transition-transform duration-300" />
                   }
                 >
-                  <span className="relative z-10">Tạo danh mục đầu tiên</span>
+                  <span className="relative z-10">{t('adminCategory.createFirst')}</span>
                   <span className="absolute inset-0 bg-white/20 transform translate-y-full group-hover:translate-y-0 transition-transform duration-300"></span>
                 </Button>
               </div>
@@ -623,37 +624,37 @@ const CategoryPage: React.FC = () => {
                           scope="col"
                           className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider"
                         >
-                          Tên danh mục
+                          {t('adminCategory.colName')}
                         </th>
                         <th
                           scope="col"
                           className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider"
                         >
-                          Mô tả
+                          {t('adminCategory.colDesc')}
                         </th>
                         <th
                           scope="col"
                           className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider"
                         >
-                          Loại
+                          {t('adminCategory.colType')}
                         </th>
                         <th
                           scope="col"
                           className="px-4 py-3 text-center text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider"
                         >
-                          Trạng thái
+                          {t('adminCategory.colStatus')}
                         </th>
                         <th
                           scope="col"
                           className="px-4 py-3 text-center text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider"
                         >
-                          Thứ tự
+                          {t('adminCategory.colSortOrder')}
                         </th>
                         <th
                           scope="col"
                           className="px-4 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider"
                         >
-                          Thao tác
+                          {t('adminCategory.colActions')}
                         </th>
                       </tr>
                     </thead>
@@ -672,19 +673,19 @@ const CategoryPage: React.FC = () => {
                           scope="col"
                           className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider"
                         >
-                          Tên danh mục
+                          {t('adminCategory.colName')}
                         </th>
                         <th
                           scope="col"
                           className="px-4 py-3 text-center text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider"
                         >
-                          Trạng thái
+                          {t('adminCategory.colStatus')}
                         </th>
                         <th
                           scope="col"
                           className="px-4 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider"
                         >
-                          Thao tác
+                          {t('adminCategory.colActions')}
                         </th>
                       </tr>
                     </thead>
@@ -707,7 +708,7 @@ const CategoryPage: React.FC = () => {
         <Modal
           isOpen={isCreateModalOpen}
           onClose={() => setIsCreateModalOpen(false)}
-          title="Tạo danh mục mới"
+          title={t('adminCategory.createModal')}
           size="lg"
           footer={
             <div className="flex justify-end gap-2">
@@ -717,7 +718,7 @@ const CategoryPage: React.FC = () => {
                 disabled={isCreating}
                 className="text-neutral-700 dark:text-neutral-300 hover:bg-gray-100 dark:hover:bg-gray-800 px-5 py-2.5 rounded-xl font-medium transition-all duration-300"
               >
-                <span className="inline-block">Hủy</span>
+                <span className="inline-block">{t('common.cancel')}</span>
               </Button>
               <Button
                 variant="primary"
@@ -728,11 +729,11 @@ const CategoryPage: React.FC = () => {
                 {isCreating ? (
                   <div className="flex items-center gap-2 relative z-10">
                     <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
-                    <span className="inline-block">Đang xử lý...</span>
+                    <span className="inline-block">{t('adminCategory.processing')}</span>
                   </div>
                 ) : (
                   <>
-                    <span className="relative z-10">Tạo danh mục</span>
+                    <span className="relative z-10">{t('adminCategory.createBtn')}</span>
                     <span className="absolute inset-0 bg-white/20 transform translate-y-full group-hover:translate-y-0 transition-transform duration-300"></span>
                   </>
                 )}
@@ -743,65 +744,65 @@ const CategoryPage: React.FC = () => {
           <div className="space-y-4">
             <div>
               <label className="block font-medium mb-1 text-neutral-700 dark:text-neutral-300">
-                Tên danh mục <span className="text-red-500">*</span>
+                {t('adminCategory.nameLabel')} <span className="text-red-500">*</span>
               </label>
               <Input
                 value={formData.name}
                 onChange={(e) => handleInputChange('name', e.target.value)}
                 error={errors.name}
-                placeholder="Nhập tên danh mục"
+                placeholder={t('adminCategory.namePlaceholder')}
               />
             </div>
 
             <div>
               <label className="block font-medium mb-1 text-neutral-700 dark:text-neutral-300">
-                Mô tả
+                {t('adminCategory.descLabel')}
               </label>
               <Textarea
                 value={formData.description}
                 onChange={(e) =>
                   handleInputChange('description', e.target.value)
                 }
-                placeholder="Nhập mô tả cho danh mục"
+                placeholder={t('adminCategory.descPlaceholder')}
                 rows={3}
               />
             </div>
 
             <div>
               <label className="block font-medium mb-1 text-neutral-700 dark:text-neutral-300">
-                Hình ảnh
+                {t('adminCategory.imageLabel')}
               </label>
               <Input
                 value={formData.image}
                 onChange={(e) => handleInputChange('image', e.target.value)}
-                placeholder="Nhập URL hình ảnh"
+                placeholder={t('adminCategory.imagePlaceholder')}
               />
               <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
-                Nhập URL hình ảnh đại diện cho danh mục
+                {t('adminCategory.imageHint')}
               </p>
             </div>
 
             <div>
               <label className="block font-medium mb-1 text-neutral-700 dark:text-neutral-300">
-                Danh mục cha
+                {t('adminCategory.parentLabel')}
               </label>
               <Select
                 options={[
-                  { value: '', label: 'Không có (Danh mục gốc)' },
+                  { value: '', label: t('adminCategory.noParent') },
                   ...buildCategoryOptions(categories),
                 ]}
                 value={formData.parentId || ''}
                 onChange={(value) =>
                   handleInputChange('parentId', value === '' ? null : value)
                 }
-                placeholder="Chọn danh mục cha"
+                placeholder={t('adminCategory.parentPlaceholder')}
               />
             </div>
 
             <div className="flex flex-col sm:flex-row gap-4">
               <div className="flex-1">
                 <label className="block font-medium mb-1 text-neutral-700 dark:text-neutral-300">
-                  Thứ tự sắp xếp
+                  {t('adminCategory.sortOrderLabel')}
                 </label>
                 <Input
                   type="number"
@@ -818,7 +819,7 @@ const CategoryPage: React.FC = () => {
               </div>
               <div className="flex-1">
                 <label className="block font-medium mb-1 text-neutral-700 dark:text-neutral-300">
-                  Trạng thái
+                  {t('adminCategory.statusLabel')}
                 </label>
                 <div className="mt-2">
                   <Checkbox
@@ -826,7 +827,7 @@ const CategoryPage: React.FC = () => {
                     onChange={(e) =>
                       handleInputChange('isActive', e.target.checked)
                     }
-                    label="Hiển thị danh mục"
+                    label={t('adminCategory.activeCheckbox')}
                   />
                 </div>
               </div>
@@ -838,7 +839,7 @@ const CategoryPage: React.FC = () => {
         <Modal
           isOpen={isEditModalOpen}
           onClose={() => setIsEditModalOpen(false)}
-          title="Chỉnh sửa danh mục"
+          title={t('adminCategory.editModal')}
           size="lg"
           footer={
             <div className="flex justify-end gap-2">
@@ -848,7 +849,7 @@ const CategoryPage: React.FC = () => {
                 disabled={isUpdating}
                 className="text-neutral-700 dark:text-neutral-300 hover:bg-gray-100 dark:hover:bg-gray-800 px-5 py-2.5 rounded-xl font-medium transition-all duration-300"
               >
-                <span className="inline-block">Hủy</span>
+                <span className="inline-block">{t('common.cancel')}</span>
               </Button>
               <Button
                 variant="primary"
@@ -859,11 +860,11 @@ const CategoryPage: React.FC = () => {
                 {isUpdating ? (
                   <div className="flex items-center gap-2 relative z-10">
                     <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
-                    <span className="inline-block">Đang xử lý...</span>
+                    <span className="inline-block">{t('adminCategory.processing')}</span>
                   </div>
                 ) : (
                   <>
-                    <span className="relative z-10">Cập nhật</span>
+                    <span className="relative z-10">{t('adminCategory.updateBtn')}</span>
                     <span className="absolute inset-0 bg-white/20 transform translate-y-full group-hover:translate-y-0 transition-transform duration-300"></span>
                   </>
                 )}
@@ -874,65 +875,65 @@ const CategoryPage: React.FC = () => {
           <div className="space-y-4">
             <div>
               <label className="block font-medium mb-1 text-neutral-700 dark:text-neutral-300">
-                Tên danh mục <span className="text-red-500">*</span>
+                {t('adminCategory.nameLabel')} <span className="text-red-500">*</span>
               </label>
               <Input
                 value={formData.name}
                 onChange={(e) => handleInputChange('name', e.target.value)}
                 error={errors.name}
-                placeholder="Nhập tên danh mục"
+                placeholder={t('adminCategory.namePlaceholder')}
               />
             </div>
 
             <div>
               <label className="block font-medium mb-1 text-neutral-700 dark:text-neutral-300">
-                Mô tả
+                {t('adminCategory.descLabel')}
               </label>
               <Textarea
                 value={formData.description}
                 onChange={(e) =>
                   handleInputChange('description', e.target.value)
                 }
-                placeholder="Nhập mô tả cho danh mục"
+                placeholder={t('adminCategory.descPlaceholder')}
                 rows={3}
               />
             </div>
 
             <div>
               <label className="block font-medium mb-1 text-neutral-700 dark:text-neutral-300">
-                Hình ảnh
+                {t('adminCategory.imageLabel')}
               </label>
               <Input
                 value={formData.image}
                 onChange={(e) => handleInputChange('image', e.target.value)}
-                placeholder="Nhập URL hình ảnh"
+                placeholder={t('adminCategory.imagePlaceholder')}
               />
               <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
-                Nhập URL hình ảnh đại diện cho danh mục
+                {t('adminCategory.imageHint')}
               </p>
             </div>
 
             <div>
               <label className="block font-medium mb-1 text-neutral-700 dark:text-neutral-300">
-                Danh mục cha
+                {t('adminCategory.parentLabel')}
               </label>
               <Select
                 options={[
-                  { value: '', label: 'Không có (Danh mục gốc)' },
+                  { value: '', label: t('adminCategory.noParent') },
                   ...buildCategoryOptions(categories, 0, selectedCategory?.id),
                 ]}
                 value={formData.parentId || ''}
                 onChange={(value) =>
                   handleInputChange('parentId', value === '' ? null : value)
                 }
-                placeholder="Chọn danh mục cha"
+                placeholder={t('adminCategory.parentPlaceholder')}
               />
             </div>
 
             <div className="flex flex-col sm:flex-row gap-4">
               <div className="flex-1">
                 <label className="block font-medium mb-1 text-neutral-700 dark:text-neutral-300">
-                  Thứ tự sắp xếp
+                  {t('adminCategory.sortOrderLabel')}
                 </label>
                 <Input
                   type="number"
@@ -949,7 +950,7 @@ const CategoryPage: React.FC = () => {
               </div>
               <div className="flex-1">
                 <label className="block font-medium mb-1 text-neutral-700 dark:text-neutral-300">
-                  Trạng thái
+                  {t('adminCategory.statusLabel')}
                 </label>
                 <div className="mt-2">
                   <Checkbox
@@ -957,7 +958,7 @@ const CategoryPage: React.FC = () => {
                     onChange={(e) =>
                       handleInputChange('isActive', e.target.checked)
                     }
-                    label="Hiển thị danh mục"
+                    label={t('adminCategory.activeCheckbox')}
                   />
                 </div>
               </div>
@@ -969,7 +970,7 @@ const CategoryPage: React.FC = () => {
         <Modal
           isOpen={isDeleteModalOpen}
           onClose={() => setIsDeleteModalOpen(false)}
-          title="Xác nhận xóa danh mục"
+          title={t('adminCategory.deleteModal')}
           size="md"
           footer={
             <div className="flex justify-end gap-2">
@@ -979,7 +980,7 @@ const CategoryPage: React.FC = () => {
                 disabled={isDeleting}
                 className="text-neutral-700 dark:text-neutral-300 hover:bg-gray-100 dark:hover:bg-gray-800 px-5 py-2.5 rounded-xl font-medium transition-all duration-300"
               >
-                <span className="inline-block">Hủy</span>
+                <span className="inline-block">{t('common.cancel')}</span>
               </Button>
               <Button
                 variant="danger"
@@ -990,10 +991,10 @@ const CategoryPage: React.FC = () => {
                 {isDeleting ? (
                   <div className="flex items-center gap-2">
                     <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
-                    <span className="inline-block">Đang xử lý...</span>
+                    <span className="inline-block">{t('adminCategory.processing')}</span>
                   </div>
                 ) : (
-                  <span className="inline-block">Xóa danh mục</span>
+                  <span className="inline-block">{t('adminCategory.deleteBtn')}</span>
                 )}
               </Button>
             </div>
@@ -1004,22 +1005,19 @@ const CategoryPage: React.FC = () => {
               <TrashIcon className="h-6 w-6 text-red-600 dark:text-red-400" />
             </div>
             <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-2">
-              Bạn có chắc chắn muốn xóa danh mục này?
+              {t('adminCategory.deleteConfirm')}
             </h3>
             <p className="text-gray-500 dark:text-gray-400">
-              Danh mục{' '}
-              <span className="font-semibold text-gray-700 dark:text-gray-300">
-                {selectedCategory?.name}
-              </span>{' '}
-              sẽ bị xóa vĩnh viễn. Hành động này không thể hoàn tác.
+              {t('adminCategory.deleteWarning', { name: selectedCategory?.name })}
             </p>
             <div className="mt-4 p-4 bg-yellow-50 dark:bg-yellow-900/20 rounded-lg border border-yellow-200 dark:border-yellow-800/50 text-left">
               <p className="text-sm text-yellow-700 dark:text-yellow-400">
-                <strong>Lưu ý:</strong> Bạn không thể xóa danh mục nếu:
+                <strong>{t('adminCategory.deleteNote')}:</strong>{' '}
+                {t('adminCategory.deleteRestrict')}
               </p>
               <ul className="mt-2 text-sm text-yellow-700 dark:text-yellow-400 list-disc list-inside">
-                <li>Danh mục có chứa danh mục con</li>
-                <li>Danh mục có chứa sản phẩm</li>
+                <li>{t('adminCategory.deleteRestrict1')}</li>
+                <li>{t('adminCategory.deleteRestrict2')}</li>
               </ul>
             </div>
           </div>

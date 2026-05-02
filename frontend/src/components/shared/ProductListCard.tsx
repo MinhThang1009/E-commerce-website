@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useDispatch, useSelector } from 'react-redux';
+import { useTranslation } from 'react-i18next';
 import { Product } from '@/types/product.types';
 import { addItem, setServerCart } from '@/features/cart/cartSlice';
 import { addNotification } from '@/features/ui/uiSlice';
@@ -30,6 +31,7 @@ const ProductListCard: React.FC<ProductListCardProps> = ({
   variants,
   enableVariantPricing = false, // Mặc định tắt để tránh quá nhiều API calls
 }) => {
+  const { t } = useTranslation();
   const dispatch = useDispatch();
   const navigate = useNavigate();
   const [isAddingToCart, setIsAddingToCart] = useState(false);
@@ -87,7 +89,7 @@ const ProductListCard: React.FC<ProductListCardProps> = ({
 
       dispatch(
         addNotification({
-          message: `${name} đã được thêm vào giỏ hàng`,
+          message: t('product.addedToCartMsg', { name }),
           type: 'success',
           duration: 3000,
         })
@@ -96,7 +98,7 @@ const ProductListCard: React.FC<ProductListCardProps> = ({
       console.error('Thêm vào giỏ hàng thất bại:', error);
       dispatch(
         addNotification({
-          message: error?.data?.message || 'Có lỗi xảy ra khi thêm vào giỏ hàng',
+          message: error?.data?.message || t('product.addToCartError'),
           type: 'error',
           duration: 3000,
         })
@@ -150,7 +152,7 @@ const ProductListCard: React.FC<ProductListCardProps> = ({
             )}
             {isNew && (
               <div className="bg-gradient-to-r from-emerald-500 via-emerald-600 to-emerald-700 text-white text-xs font-bold px-3 py-1.5 rounded-xl shadow-xl backdrop-blur-sm border border-white/20">
-                <span className="drop-shadow-sm">MỚI</span>
+                <span className="drop-shadow-sm">{t('product.new')}</span>
               </div>
             )}
           </div>
@@ -214,22 +216,18 @@ const ProductListCard: React.FC<ProductListCardProps> = ({
                 </span>
                 {compareAtPrice && compareAtPrice > priceInfo.basePrice && (
                   <span className="text-lg text-neutral-400 dark:text-neutral-500 line-through font-medium">
-                    {compareAtPrice.toLocaleString('vi-VN')}đ
+                    {compareAtPrice.toLocaleString('vi-VN')}{t('common.currencySymbol')}
                   </span>
                 )}
               </div>
               {compareAtPrice && compareAtPrice > priceInfo.basePrice && (
                 <div className="flex items-center gap-3">
                   <span className="text-base text-emerald-600 dark:text-emerald-400 font-bold">
-                    Tiết kiệm{' '}
-                    {(compareAtPrice - priceInfo.basePrice).toLocaleString(
-                      'vi-VN'
-                    )}
-                    đ
+                    {t('product.savings', { amount: `${(compareAtPrice - priceInfo.basePrice).toLocaleString('vi-VN')}${t('common.currencySymbol')}` })}
                   </span>
                   <div className="h-1.5 w-1.5 bg-neutral-300 dark:bg-neutral-600 rounded-full"></div>
                   <span className="text-base text-emerald-600 dark:text-emerald-400 font-bold">
-                    {discount}% OFF
+                    {discount}%
                   </span>
                 </div>
               )}
@@ -248,7 +246,7 @@ const ProductListCard: React.FC<ProductListCardProps> = ({
                 ) : (
                   <ShoppingCartIcon className="h-6 w-6 transition-transform duration-200 group-hover/buynow:scale-110" />
                 )}
-                <span>MUA NGAY - GIAO TẬN NHÀ</span>
+                <span>{t('product.buyNowDelivery')}</span>
               </button>
 
               <div className="flex items-center gap-4">
@@ -278,7 +276,7 @@ const ProductListCard: React.FC<ProductListCardProps> = ({
                       </svg>
                     )}
                     <span className="font-medium">
-                      {isAddingToCart ? 'Đang thêm...' : 'Thêm vào giỏ'}
+                      {isAddingToCart ? t('product.adding') : t('product.addToCart')}
                     </span>
                   </div>
                 </button>
@@ -309,7 +307,7 @@ const ProductListCard: React.FC<ProductListCardProps> = ({
                         d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"
                       />
                     </svg>
-                    <span className="font-medium">Xem chi tiết</span>
+                    <span className="font-medium">{t('product.viewDetails')}</span>
                   </div>
                 </Link>
               </div>

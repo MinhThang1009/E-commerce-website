@@ -26,14 +26,14 @@ export const HomeNewsSection: React.FC = () => {
 
   return (
     <PageSection
-      title="Tin tức & Sự kiện"
+      title={t('home.newsTitle')}
       className="py-16 bg-neutral-50 dark:bg-neutral-900"
       headerActions={
-        <Link 
-          to="/news" 
+        <Link
+          to="/news"
           className="group flex items-center gap-2 text-primary-600 dark:text-primary-400 font-bold hover:text-primary-700 transition-colors"
         >
-          Xem tất cả
+          {t('common.viewAll')}
           <span className="group-hover:translate-x-1 transition-transform">→</span>
         </Link>
       }
@@ -70,7 +70,7 @@ export const HomeNewsSection: React.FC = () => {
                <div className="absolute inset-0 p-6 md:p-8 flex flex-col justify-end">
                  <div className="transform translate-y-4 group-hover:translate-y-0 transition-transform duration-300">
                     <span className="inline-block px-3 py-1 bg-white/20 backdrop-blur-md border border-white/30 text-white text-xs font-bold rounded-full mb-3 uppercase tracking-wider">
-                      {item.category || 'Tin tức'}
+                      {item.category || t('home.newsDefaultCategory')}
                     </span>
                     <h3 className={`font-bold text-white mb-2 leading-tight ${isLarge ? 'text-2xl md:text-3xl' : 'text-xl'} line-clamp-2`}>
                       {item.title}

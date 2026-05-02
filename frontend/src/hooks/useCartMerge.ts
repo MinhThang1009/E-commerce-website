@@ -1,4 +1,5 @@
 import { useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useDispatch, useSelector } from 'react-redux';
 import {
   useMergeCartMutation,
@@ -14,6 +15,7 @@ export const useCartMerge = (
   isAuthenticated: boolean,
   justLoggedIn: boolean
 ) => {
+  const { t } = useTranslation();
   const dispatch = useDispatch();
   const [mergeCart] = useMergeCartMutation();
   const [addToCart] = useAddToCartMutation();
@@ -96,7 +98,7 @@ export const useCartMerge = (
             if (addedItemsCount > 0) {
               dispatch(
                 addNotification({
-                  message: `Đã thêm ${addedItemsCount} sản phẩm vào giỏ hàng của bạn`,
+                  message: t('cart.itemsAdded', { count: addedItemsCount }),
                   type: 'success',
                   duration: 3000,
                 })
@@ -118,7 +120,7 @@ export const useCartMerge = (
             if (mergedCart.totalItems > 0) {
               dispatch(
                 addNotification({
-                  message: `Đã gộp ${mergedCart.totalItems} sản phẩm vào giỏ hàng của bạn`,
+                  message: t('cart.itemsMerged', { count: mergedCart.totalItems }),
                   type: 'success',
                   duration: 3000,
                 })
@@ -140,7 +142,7 @@ export const useCartMerge = (
           // Hiển thị lỗi cho người dùng
           dispatch(
             addNotification({
-              message: 'Không thể gộp giỏ hàng. Vui lòng thử lại sau.',
+              message: t('cart.mergeFailed'),
               type: 'error',
               duration: 3000,
             })

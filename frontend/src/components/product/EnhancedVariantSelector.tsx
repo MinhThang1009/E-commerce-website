@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Space, Tag, Button, Typography, Alert, Skeleton, Tooltip } from 'antd';
 import {
   BulbOutlined,
@@ -47,6 +48,7 @@ const EnhancedVariantSelector: React.FC<EnhancedVariantSelectorProps> = ({
   onNameUpdate,
   disabled = false,
 }) => {
+  const { t } = useTranslation();
   const [nameAffectingAttributes, setNameAffectingAttributes] = useState<
     Set<string>
   >(new Set());
@@ -145,7 +147,7 @@ const EnhancedVariantSelector: React.FC<EnhancedVariantSelectorProps> = ({
       {/* Name Preview Alert */}
       {previewName && previewName !== product.name && (
         <Alert
-          message="Tên sản phẩm được cập nhật"
+          message={t('product.nameUpdated')}
           description={
             <Space direction="vertical" size="small">
               <Text strong style={{ color: '#1890ff' }}>
@@ -185,9 +187,9 @@ const EnhancedVariantSelector: React.FC<EnhancedVariantSelectorProps> = ({
                   </h3>
 
                   {isNameAffecting && (
-                    <Tooltip title="Thuộc tính này ảnh hưởng đến tên sản phẩm">
+                    <Tooltip title={t('product.affectsNameAttr')}>
                       <Tag color="blue" size="small" icon={<BulbOutlined />}>
-                        Tên động
+                        {t('product.dynamicName')}
                       </Tag>
                     </Tooltip>
                   )}
@@ -195,7 +197,7 @@ const EnhancedVariantSelector: React.FC<EnhancedVariantSelectorProps> = ({
 
                 {selectedAttributes[attribute.name] && (
                   <Text type="secondary" style={{ fontSize: 11 }}>
-                    Click để bỏ chọn
+                    {t('product.clickToDeselect')}
                   </Text>
                 )}
               </div>
@@ -249,7 +251,7 @@ const EnhancedVariantSelector: React.FC<EnhancedVariantSelectorProps> = ({
 
                           {!available && (
                             <Text type="secondary" style={{ fontSize: 10 }}>
-                              (Hết hàng)
+                              ({t('product.outOfStock')})
                             </Text>
                           )}
                         </Space>
@@ -284,14 +286,14 @@ const EnhancedVariantSelector: React.FC<EnhancedVariantSelectorProps> = ({
               <div className="mt-2">
                 {selectedAttributes[attribute.name] && (
                   <Text type="secondary" style={{ fontSize: 11 }}>
-                    Đã chọn:{' '}
+                    {t('product.selectedLabel')}{' '}
                     <Text strong>{selectedAttributes[attribute.name]}</Text>
                     {(() => {
                       const selectedVal = attributeValuesWithStock.find(
                         (v) => v.value === selectedAttributes[attribute.name]
                       );
                       return selectedVal
-                        ? ` • Còn ${selectedVal.stock} sản phẩm`
+                        ? ` • ${t('product.stockAvailable', { count: selectedVal.stock })}`
                         : '';
                     })()}
                   </Text>
@@ -306,7 +308,7 @@ const EnhancedVariantSelector: React.FC<EnhancedVariantSelectorProps> = ({
       {Object.keys(selectedAttributes).length > 0 && (
         <div className="p-3 bg-blue-50 dark:bg-blue-900/20 rounded-lg">
           <Text strong style={{ fontSize: 12 }}>
-            Cấu hình đã chọn:
+            {t('product.selectedConfig')}
           </Text>
           <div className="mt-2 flex flex-wrap gap-1">
             {Object.entries(selectedAttributes).map(([attrName, value]) => {
@@ -340,8 +342,7 @@ const EnhancedVariantSelector: React.FC<EnhancedVariantSelectorProps> = ({
             <Space>
               <InfoCircleOutlined />
               <Text style={{ fontSize: 12 }}>
-                Thuộc tính có dấu <BulbOutlined style={{ color: '#52c41a' }} />{' '}
-                sẽ ảnh hưởng đến tên sản phẩm
+                {t('product.productNameAffected')}
               </Text>
             </Space>
           }

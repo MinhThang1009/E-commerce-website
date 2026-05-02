@@ -13,6 +13,10 @@ module.exports = {
       timestamps: true,
       underscored: true,
     },
+    dialectOptions: {
+      timezone: '+07:00',
+    },
+    timezone: '+07:00',
   },
   test: {
     username: process.env.DB_USER,
@@ -26,6 +30,10 @@ module.exports = {
       timestamps: true,
       underscored: true,
     },
+    dialectOptions: {
+      timezone: '+07:00',
+    },
+    timezone: '+07:00',
   },
   production: {
     username: process.env.DB_USER,
@@ -44,7 +52,9 @@ module.exports = {
         require: true,
         rejectUnauthorized: false,
       } : false,
+      timezone: '+07:00',
     },
+    timezone: '+07:00',
     pool: {
       max: 5,
       min: 0,

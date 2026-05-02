@@ -73,7 +73,7 @@ const HomePage: React.FC = () => {
 
   const handleNewsletterSubmit = async () => {
     if (!newsletterEmail) {
-      message.error(t('homepage.newsletter.emailRequired') || 'Vui lòng nhập email');
+      message.error(t('homepage.newsletter.emailRequired'));
       return;
     }
 
@@ -82,7 +82,7 @@ const HomePage: React.FC = () => {
       message.success(response.message);
       setNewsletterEmail('');
     } catch (error: any) {
-      message.error(error?.data?.message || 'Có lỗi xảy ra khi đăng ký. Vui lòng thử lại sau.');
+      message.error(error?.data?.message || t('homepage.newsletter.subscribeError'));
     }
   };
 
@@ -102,9 +102,9 @@ const HomePage: React.FC = () => {
 
   return (
     <PageLayout
-      title="Trang chủ"
-      description="Khám phá các sản phẩm chất lượng với giá cả tốt nhất"
-      keywords="mua sắm, sản phẩm chất lượng, giá tốt"
+      title={t('homepage.pageTitle')}
+      description={t('homepage.pageDescription')}
+      keywords={t('homepage.keywords')}
       showContainer={false}
     >
       {/* Hero Banners */}
@@ -148,12 +148,12 @@ const HomePage: React.FC = () => {
           <ErrorState
             error={featuredProducts.error}
             onRetry={featuredProducts.retry}
-            retryText="Thử lại"
+            retryText={t('common.tryAgain')}
           />
         ) : featuredProducts.isEmpty ? (
           <EmptyState
-            title="Không có sản phẩm nổi bật"
-            description="Hiện tại chưa có sản phẩm nổi bật nào để hiển thị."
+            title={t('homepage.featured.emptyTitle')}
+            description={t('homepage.featured.emptyDescription')}
           />
         ) : (
           <ProductGrid>
@@ -185,12 +185,12 @@ const HomePage: React.FC = () => {
           <ErrorState
             error={categories.error}
             onRetry={categories.retry}
-            retryText="Thử lại"
+            retryText={t('common.tryAgain')}
           />
         ) : categories.isEmpty ? (
           <EmptyState
-            title="Không có danh mục"
-            description="Hiện tại chưa có danh mục nào để hiển thị."
+            title={t('homepage.categories.emptyTitle')}
+            description={t('homepage.categories.emptyDescription')}
           />
         ) : (
           <CategoryGrid>
@@ -310,12 +310,11 @@ const HomePage: React.FC = () => {
                       {collection.name}
                     </h3>
                     <p className="text-neutral-200 mb-6 max-w-xs drop-shadow-md">
-                      {collection.description ||
-                        'Khám phá bộ sưu tập mới nhất với phong cách độc đáo.'}
+                      {collection.description || t('homepage.collections.fallbackDescription')}
                     </p>
                     <div>
                       <span className="inline-flex items-center px-6 py-3 rounded-full bg-white text-neutral-900 font-bold hover:bg-neutral-100 transition-colors">
-                        Khám phá ngay
+                        {t('homepage.collections.exploreButton')}
                         <svg
                           xmlns="http://www.w3.org/2000/svg"
                           className="h-5 w-5 ml-2"

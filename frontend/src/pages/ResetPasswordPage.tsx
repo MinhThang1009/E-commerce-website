@@ -118,7 +118,7 @@ const ResetPasswordPage: React.FC = () => {
                 {t('auth.resetPassword.successMessage')}
               </p>
               <p className="text-sm text-neutral-500 dark:text-neutral-400 mb-4">
-                Đang chuyển đến trang đăng nhập...
+                {t('auth.resetPassword.redirecting')}
               </p>
               <Link
                 to="/login"

@@ -22,15 +22,6 @@ import { toast } from '@/utils/toast';
 import ReviewModal from '@/components/reviews/ReviewModal';
 import OrderDetails from '@/components/orders/OrderDetails';
 
-// Biến thể badge trạng thái đơn hàng
-const statusVariants: Record<string, { variant: BadgeVariant; label: string }> =
-{
-  pending: { variant: 'warning', label: 'Pending' },
-  processing: { variant: 'info', label: 'Processing' },
-  shipped: { variant: 'primary', label: 'Shipped' },
-  delivered: { variant: 'success', label: 'Delivered' },
-  cancelled: { variant: 'error', label: 'Cancelled' },
-};
 
 // Màu sắc trạng thái thanh toán
 const paymentStatusColors: Record<string, string> = {
@@ -43,6 +34,14 @@ const paymentStatusColors: Record<string, string> = {
 
 const OrdersPage: React.FC = () => {
   const { t } = useTranslation();
+
+  const statusVariants: Record<string, { variant: BadgeVariant; label: string }> = {
+    pending: { variant: 'warning', label: t('order.status.pending') },
+    processing: { variant: 'info', label: t('order.status.processing') },
+    shipped: { variant: 'primary', label: t('order.status.shipped') },
+    delivered: { variant: 'success', label: t('order.status.delivered') },
+    cancelled: { variant: 'error', label: t('order.status.cancelled') },
+  };
   const navigate = useNavigate();
   const location = useLocation();
   const dispatch = useDispatch();
@@ -489,8 +488,7 @@ const OrdersPage: React.FC = () => {
                         </div>
                         <div>
                           <p className="text-sm font-medium text-neutral-800 dark:text-neutral-200">
-                            {order.items.length}{' '}
-                            {order.items.length === 1 ? 'item' : 'items'}
+                            {t('orders.items', { count: order.items.length })}
                           </p>
                           <p className="text-xs text-neutral-500 dark:text-neutral-400">
                             {order.items
@@ -504,7 +502,7 @@ const OrdersPage: React.FC = () => {
                     ) : (
                       <div className="text-center py-4">
                         <p className="text-neutral-500 dark:text-neutral-400">
-                          No items found
+                          {t('orders.noItemsFound')}
                         </p>
                       </div>
                     )}
@@ -516,7 +514,7 @@ const OrdersPage: React.FC = () => {
                           {order.trackingNumber && (
                             <div>
                               <span className="text-neutral-500 dark:text-neutral-400">
-                                Tracking:{' '}
+                                {t('orders.tracking')}:{' '}
                               </span>
                               <span className="font-medium text-neutral-800 dark:text-neutral-200">
                                 {order.trackingNumber}
@@ -526,7 +524,7 @@ const OrdersPage: React.FC = () => {
                           {order.estimatedDelivery && (
                             <div>
                               <span className="text-neutral-500 dark:text-neutral-400">
-                                Est. Delivery:{' '}
+                                {t('orders.estimatedDelivery')}:{' '}
                               </span>
                               <span className="font-medium text-neutral-800 dark:text-neutral-200">
                                 {formatDate(order.estimatedDelivery)}
@@ -560,7 +558,7 @@ const OrdersPage: React.FC = () => {
                   onClick={() => handlePageChange(currentPage - 1)}
                   disabled={currentPage === 1}
                 >
-                  Previous
+                  {t('common.previous')}
                 </Button>
                 {Array.from({ length: totalPages }, (_, i) => i + 1)
                   .filter(
@@ -589,7 +587,7 @@ const OrdersPage: React.FC = () => {
                   onClick={() => handlePageChange(currentPage + 1)}
                   disabled={currentPage === totalPages}
                 >
-                  Next
+                  {t('common.next')}
                 </Button>
               </div>
             </div>

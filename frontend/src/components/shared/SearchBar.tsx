@@ -380,20 +380,16 @@ const SearchBar: React.FC<SearchBarProps> = ({
                 {isFetching ? (
                   <div className="p-4 text-center text-neutral-500 dark:text-neutral-400">
                     <div className="inline-block animate-spin rounded-full h-5 w-5 border-t-2 border-neutral-500 dark:border-neutral-400 border-r-2 border-neutral-500 dark:border-neutral-400 mr-2"></div>
-                    {i18n.language === 'vi' ? 'Đang tải...' : 'Loading...'}
+                    {t('search.loading')}
                   </div>
                 ) : isError ? (
                   <div className="p-4 text-center text-red-500">
-                    {i18n.language === 'vi'
-                      ? 'Đã xảy ra lỗi'
-                      : 'An error occurred'}
+                    {t('search.error')}
                   </div>
                 ) : suggestions.length === 0 &&
                   debouncedSearchTerm.length > 1 ? (
                   <div className="p-4 text-center text-neutral-500 dark:text-neutral-400">
-                    {i18n.language === 'vi'
-                      ? 'Không tìm thấy kết quả'
-                      : 'No results found'}
+                    {t('search.noResults')}
                   </div>
                 ) : (
                   <ul>
@@ -457,9 +453,7 @@ const SearchBar: React.FC<SearchBarProps> = ({
                           onClick={handleSearchSubmit}
                           className="w-full text-center px-4 py-3 text-primary-600 dark:text-primary-400 font-medium hover:bg-neutral-100 dark:hover:bg-neutral-700 transition-colors"
                         >
-                          {i18n.language === 'vi'
-                            ? 'Xem tất cả kết quả'
-                            : 'View all results'}
+                          {t('search.viewAll')}
                         </button>
                       </li>
                     )}
@@ -473,16 +467,14 @@ const SearchBar: React.FC<SearchBarProps> = ({
             <div className="border-t border-neutral-200 dark:border-neutral-700 p-4">
               <div className="flex justify-between items-center mb-2">
                 <h3 className="text-sm font-medium text-neutral-500 dark:text-neutral-400">
-                  {i18n.language === 'vi'
-                    ? 'Tìm kiếm gần đây'
-                    : 'Recent searches'}
+                  {t('search.recentTitle')}
                 </h3>
                 {recentSearches.length > 0 && (
                   <button
                     onClick={clearRecentSearches}
                     className="text-xs text-red-500 hover:text-red-700 dark:text-red-400 dark:hover:text-red-300"
                   >
-                    {i18n.language === 'vi' ? 'Xóa tất cả' : 'Clear all'}
+                    {t('search.clearAll')}
                   </button>
                 )}
               </div>
@@ -501,7 +493,7 @@ const SearchBar: React.FC<SearchBarProps> = ({
                         removeSearchTerm(term);
                       }}
                       className="p-1 bg-neutral-200 dark:bg-neutral-600 rounded-r-full text-neutral-500 dark:text-neutral-400 hover:bg-neutral-300 dark:hover:bg-neutral-500 transition-colors"
-                      aria-label={i18n.language === 'vi' ? 'Xóa' : 'Remove'}
+                      aria-label={t('search.remove')}
                     >
                       <svg
                         xmlns="http://www.w3.org/2000/svg"
@@ -520,9 +512,7 @@ const SearchBar: React.FC<SearchBarProps> = ({
                 ))}
                 {recentSearches.length === 0 && (
                   <p className="text-sm text-neutral-500 dark:text-neutral-400">
-                    {i18n.language === 'vi'
-                      ? 'Không có tìm kiếm gần đây'
-                      : 'No recent searches'}
+                    {t('search.noRecent')}
                   </p>
                 )}
               </div>

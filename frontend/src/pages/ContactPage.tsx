@@ -210,7 +210,7 @@ const ContactPage: React.FC = () => {
                   {t('contact.info.phone.title')}
                 </h3>
                 <p className="text-neutral-600 dark:text-neutral-400 mt-1">
-                  +1 (555) 123-4567
+                  {t('contact.info.phone.number')}
                 </p>
                 <p className="text-neutral-600 dark:text-neutral-400">
                   {t('contact.info.phone.hours')}
@@ -240,7 +240,7 @@ const ContactPage: React.FC = () => {
                   {t('contact.info.email.title')}
                 </h3>
                 <p className="text-neutral-600 dark:text-neutral-400 mt-1">
-                  support@shopmini.com
+                  {t('contact.info.email.address')}
                 </p>
                 <p className="text-neutral-600 dark:text-neutral-400">
                   {t('contact.info.email.responseTime')}

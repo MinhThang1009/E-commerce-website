@@ -1,4 +1,5 @@
-﻿import { store } from '@/store';
+﻿import i18next from 'i18next';
+import { store } from '@/store';
 import { logout } from '@/features/auth/authSlice';
 import { toast } from '@/utils/toast';
 
@@ -38,9 +39,10 @@ const logoutManager = LogoutManager.getInstance();
  * @param redirectDelay - Thời gian chờ trước khi chuyển hướng về trang đăng nhập (mili giây)
  */
 export const handleAutoLogout = (
-  errorMessage: string = 'Phiên đăng nhập đã hết hạn',
+  errorMessage?: string,
   redirectDelay: number = 1000
 ) => {
+  const resolvedMessage = errorMessage ?? i18next.t('auth.errors.sessionExpired');
   console.log('🚪 handleAutoLogout được gọi với:', errorMessage);
 
   // Ngăn chặn đăng xuất trùng lặp
@@ -53,7 +55,7 @@ export const handleAutoLogout = (
   logoutManager.setLoggingOut(true);
 
   // Hiển thị thông báo cho người dùng
-  toast.warning(errorMessage, 4);
+  toast.warning(resolvedMessage, 4);
 
   // Dispatch action đăng xuất để xóa trạng thái xác thực
   store.dispatch(logout());
@@ -86,7 +88,7 @@ export const handleUnauthorizedError = (error: any): boolean => {
     console.log('✅ Xác nhận 401, đang gọi handleAutoLogout');
     const errorMessage =
       error?.data?.message ||
-      'Tài khoản của bạn đã bị khóa. Vui lòng liên hệ quản trị viên';
+      i18next.t('auth.errors.accountLocked');
 
     handleAutoLogout(errorMessage);
     return true;
@@ -114,5 +116,5 @@ export const getErrorMessage = (error: any): string => {
     return error.message;
   }
 
-  return 'Đã xảy ra lỗi không xác định';
+  return i18next.t('errors.unknown');
 };

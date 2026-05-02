@@ -1,6 +1,7 @@
 ﻿require('dotenv').config();
 const { Product, Category } = require('../src/models');
 const vectorStoreService = require('../src/services/ai/vectorStore');
+const viEmbeddingService = require('../src/services/ai/viEmbedding');
 const sequelize = require('../src/config/sequelize');
 
 /**
@@ -22,6 +23,7 @@ const indexAllProducts = async () => {
     });
 
     console.log(`Found ${products.length} products to index.`);
+    console.log(`🌐 Vietnamese embedding: ${viEmbeddingService.isAvailable() ? '✅ Khả dụng' : '⚠️ Chưa cấu hình (chỉ tạo English vectors)'}`);
 
     // 2. Clear old index before starting fresh
     console.log('🧹 Clearing old vector store...');

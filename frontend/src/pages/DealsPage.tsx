@@ -1,35 +1,33 @@
-﻿import { useState, useMemo } from 'react';
+import { useState, useMemo } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useGetDealsQuery } from '@/services/productApi';
 import ProductCard from '@/components/shared/ProductCard';
 import ProductListCard from '@/components/shared/ProductListCard';
 import LoadingSpinner from '@/components/common/LoadingSpinner';
 import Select from '@/components/common/Select';
-import Pagination from '@/components/common/Pagination';
 import { Product } from '@/types/product.types';
 
 const DealsPage: React.FC = () => {
+  const { t } = useTranslation();
   const [sortOption, setSortOption] = useState('discount_desc');
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
 
   const limit = 12;
 
-  // Lấy sản phẩm có giảm giá > 50%, sắp xếp theo phần trăm giảm giá
   const {
     data: dealsData,
     isLoading,
     error,
   } = useGetDealsQuery({
-    minDiscount: 50, // Chỉ lấy sản phẩm có ít nhất 50% giảm giá
+    minDiscount: 50,
     sort: sortOption,
     limit,
   });
 
-  // Chuyển đổi dữ liệu từ API thành định dạng phù hợp với component ProductCard
   const formattedProducts = useMemo(() => {
     if (!dealsData?.data) return [];
 
     return dealsData.data.map((item) => {
-      // Chuyển đổi chuỗi giá thành số
       const price =
         typeof item.price === 'string' ? parseFloat(item.price) : item.price;
       const compareAtPrice =
@@ -37,13 +35,11 @@ const DealsPage: React.FC = () => {
           ? parseFloat(item.compareAtPrice)
           : item.compareAtPrice;
 
-      // Tạo đối tượng ratings nếu không có
       const ratings = {
-        average: 4.5, // Giá trị mặc định
+        average: 4.5,
         count: 10,
       };
 
-      // Trả về đối tượng phù hợp với interface Product
       return {
         ...item,
         price,
@@ -52,7 +48,7 @@ const DealsPage: React.FC = () => {
         isNew:
           item.createdAt &&
           new Date(item.createdAt) >
-            new Date(Date.now() - 7 * 24 * 60 * 60 * 1000), // Sản phẩm mới nếu được tạo trong 7 ngày qua
+            new Date(Date.now() - 7 * 24 * 60 * 60 * 1000),
         categoryName: item.categories?.[0]?.name || 'Uncategorized',
         stock: item.stockQuantity || 0,
       } as Product;
@@ -60,10 +56,10 @@ const DealsPage: React.FC = () => {
   }, [dealsData]);
 
   const sortOptions = [
-    { value: 'discount_desc', label: 'Giảm giá cao nhất' },
-    { value: 'price_asc', label: 'Giá: Thấp đến cao' },
-    { value: 'price_desc', label: 'Giá: Cao đến thấp' },
-    { value: 'newest', label: 'Mới nhất' },
+    { value: 'discount_desc', label: t('deals.sortDiscount') },
+    { value: 'price_asc', label: t('deals.sortPriceAsc') },
+    { value: 'price_desc', label: t('deals.sortPriceDesc') },
+    { value: 'newest', label: t('deals.sortNewest') },
   ];
 
   const handleSortChange = (value: string) => {
@@ -82,11 +78,10 @@ const DealsPage: React.FC = () => {
     return (
       <div className="container mx-auto px-4 py-16 text-center">
         <h1 className="text-2xl font-bold text-red-600 mb-4">
-          Lỗi khi tải sản phẩm giảm giá
+          {t('deals.errorTitle')}
         </h1>
         <p className="text-neutral-600 dark:text-neutral-400">
-          Đã xảy ra lỗi khi tải danh sách sản phẩm giảm giá. Vui lòng thử lại
-          sau.
+          {t('deals.errorDesc')}
         </p>
       </div>
     );
@@ -95,33 +90,28 @@ const DealsPage: React.FC = () => {
   return (
     <div className="min-h-screen bg-gradient-to-br from-neutral-50 to-neutral-100 dark:from-neutral-900 dark:to-neutral-950">
       <div className="container mx-auto px-4 py-8 animate-fadeIn">
-        {/* Phần hero */}
         <div className="bg-gradient-to-r from-primary-600 to-secondary-500 rounded-xl p-8 mb-8 text-white text-center">
           <h1 className="text-4xl font-bold mb-4">
-            Siêu Giảm Giá - Trên 50% OFF
+            {t('deals.heroTitle')}
           </h1>
           <p className="text-lg max-w-2xl mx-auto mb-6">
-            Khám phá các sản phẩm giảm giá sốc với mức giảm trên 50%. Cơ hội có
-            hạn, mua ngay kẻo lỡ!
+            {t('deals.heroDesc')}
           </p>
           <div className="inline-block bg-white text-primary-600 font-bold py-3 px-6 rounded-full text-lg">
-            GIẢM GIÁ TRÊN 50%
+            {t('deals.heroBadge')}
           </div>
         </div>
 
-        {/* Tiêu đề trang - Đã xóa tiêu đề bị lặp */}
         <div className="mb-8 text-center">
           <p className="text-neutral-600 dark:text-neutral-400 text-lg">
             {formattedProducts.length > 0
-              ? `Hiển thị ${formattedProducts.length} sản phẩm giảm giá trên 50%`
-              : 'Khám phá các sản phẩm giảm giá sốc'}
+              ? t('deals.showing', { count: formattedProducts.length })
+              : t('deals.explore')}
           </p>
         </div>
 
-        {/* Điều khiển sắp xếp và chế độ xem */}
         <div className="flex flex-col md:flex-row justify-between items-center mb-8">
           <div className="flex items-center gap-4 mb-4 md:mb-0">
-            {/* Chuyển đổi chế độ hiển thị */}
             <div className="flex items-center bg-white dark:bg-neutral-800 rounded-lg p-1 border border-neutral-200 dark:border-neutral-700">
               <button
                 onClick={() => setViewMode('grid')}
@@ -130,20 +120,10 @@ const DealsPage: React.FC = () => {
                     ? 'bg-primary-500 text-white'
                     : 'text-neutral-600 dark:text-neutral-400 hover:text-neutral-800 dark:hover:text-neutral-200'
                 }`}
-                aria-label="Grid view"
+                aria-label={t('shop.gridView')}
               >
-                <svg
-                  className="h-4 w-4"
-                  fill="none"
-                  viewBox="0 0 24 24"
-                  stroke="currentColor"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z"
-                  />
+                <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z" />
                 </svg>
               </button>
               <button
@@ -153,20 +133,10 @@ const DealsPage: React.FC = () => {
                     ? 'bg-primary-500 text-white'
                     : 'text-neutral-600 dark:text-neutral-400 hover:text-neutral-800 dark:hover:text-neutral-200'
                 }`}
-                aria-label="List view"
+                aria-label={t('shop.listView')}
               >
-                <svg
-                  className="h-4 w-4"
-                  fill="none"
-                  viewBox="0 0 24 24"
-                  stroke="currentColor"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M4 6h16M4 12h16M4 18h16"
-                  />
+                <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
                 </svg>
               </button>
             </div>
@@ -177,64 +147,47 @@ const DealsPage: React.FC = () => {
               options={sortOptions}
               value={sortOption}
               onChange={handleSortChange}
-              placeholder="Sắp xếp theo"
+              placeholder={t('deals.sortBy')}
             />
           </div>
         </div>
 
-        {/* Lưới sản phẩm */}
         {formattedProducts.length === 0 ? (
           <div className="text-center py-12 bg-neutral-50 dark:bg-neutral-800 rounded-lg">
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              className="h-12 w-12 mx-auto text-neutral-400 mb-4"
-              fill="none"
-              viewBox="0 0 24 24"
-              stroke="currentColor"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M9.172 16.172a4 4 0 015.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
-              />
+            <svg xmlns="http://www.w3.org/2000/svg" className="h-12 w-12 mx-auto text-neutral-400 mb-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.172 16.172a4 4 0 015.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
             </svg>
             <h3 className="text-xl font-semibold text-neutral-700 dark:text-neutral-300 mb-2">
-              Không có sản phẩm giảm giá trên 50%
+              {t('deals.empty')}
             </h3>
             <p className="text-neutral-500 dark:text-neutral-400 mb-6">
-              Vui lòng quay lại sau để xem các ưu đãi mới
+              {t('deals.emptyHint')}
             </p>
           </div>
         ) : (
-          <>
-            <div
-              className={
-                viewMode === 'grid'
-                  ? 'grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8 xl:gap-10 auto-rows-fr'
-                  : 'space-y-8'
-              }
-            >
-              {formattedProducts.map((product) =>
-                viewMode === 'grid' ? (
-                  <ProductCard
-                    key={product.id}
-                    {...product}
-                    // Đảm bảo hiển thị đúng phần trăm giảm giá nếu API trả về
-                    discountPercentage={product.discountPercentage}
-                  />
-                ) : (
-                  <ProductListCard
-                    key={product.id}
-                    {...product}
-                    discountPercentage={product.discountPercentage}
-                  />
-                )
-              )}
-            </div>
-
-            {/* Phân trang - Lưu ý: API deals chưa hỗ trợ phân trang */}
-          </>
+          <div
+            className={
+              viewMode === 'grid'
+                ? 'grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8 xl:gap-10 auto-rows-fr'
+                : 'space-y-8'
+            }
+          >
+            {formattedProducts.map((product) =>
+              viewMode === 'grid' ? (
+                <ProductCard
+                  key={product.id}
+                  {...product}
+                  discountPercentage={product.discountPercentage}
+                />
+              ) : (
+                <ProductListCard
+                  key={product.id}
+                  {...product}
+                  discountPercentage={product.discountPercentage}
+                />
+              )
+            )}
+          </div>
         )}
       </div>
     </div>

@@ -1,5 +1,6 @@
 import React from 'react';
 import { Form, Input, Select, Row, Col, Button, Alert } from 'antd';
+import { useTranslation } from 'react-i18next';
 import { ProductFormData } from '@/types';
 import EnhancedRichTextEditor from '@/components/common/EnhancedRichTextEditor';
 import SimpleRichTextEditor from '@/components/common/SimpleRichTextEditor';
@@ -19,6 +20,7 @@ const ProductBasicInfoForm: React.FC<ProductBasicInfoFormProps> = ({
   fillExampleData,
   productId,
 }) => {
+  const { t } = useTranslation();
   const form = Form.useFormInstance();
   const description = Form.useWatch('description', form) || '';
 
@@ -35,19 +37,19 @@ const ProductBasicInfoForm: React.FC<ProductBasicInfoFormProps> = ({
       <Col span={24}>
         <Form.Item
           name="name"
-          label="Tên sản phẩm"
-          rules={[{ required: true, message: 'Vui lòng nhập tên sản phẩm!' }]}
+          label={t('admin.products.form.name')}
+          rules={[{ required: true, message: t('admin.products.form.nameRequired') }]}
         >
-          <Input placeholder="Nhập tên sản phẩm" size="large" />
+          <Input placeholder={t('admin.products.form.namePlaceholder')} size="large" />
         </Form.Item>
       </Col>
 
       <Col span={24}>
-        <Form.Item name="status" label="Trạng thái">
-          <Select placeholder="Chọn trạng thái">
-            <Option value="active">✅ Hoạt động</Option>
-            <Option value="inactive">⏸️ Không hoạt động</Option>
-            <Option value="draft">📝 Bản nháp</Option>
+        <Form.Item name="status" label={t('admin.products.form.status')}>
+          <Select placeholder={t('admin.products.form.statusPlaceholder')}>
+            <Option value="active">{t('admin.products.form.statusActive')}</Option>
+            <Option value="inactive">{t('admin.products.form.statusInactive')}</Option>
+            <Option value="draft">{t('admin.products.form.statusDraft')}</Option>
           </Select>
         </Form.Item>
       </Col>
@@ -55,15 +57,15 @@ const ProductBasicInfoForm: React.FC<ProductBasicInfoFormProps> = ({
       <Col span={24}>
         <Form.Item
           name="shortDescription"
-          label="Mô tả ngắn"
+          label={t('admin.products.form.shortDescription')}
           rules={[
-            { required: true, message: 'Vui lòng nhập mô tả ngắn!' },
-            { min: 5, message: 'Mô tả ngắn phải có ít nhất 5 ký tự' },
+            { required: true, message: t('admin.products.form.shortDescriptionRequired') },
+            { min: 5, message: t('admin.products.form.shortDescriptionMin') },
           ]}
         >
           <TextArea
             rows={3}
-            placeholder="Nhập mô tả ngắn về sản phẩm"
+            placeholder={t('admin.products.form.shortDescriptionPlaceholder')}
             showCount
             maxLength={200}
           />
@@ -73,14 +75,14 @@ const ProductBasicInfoForm: React.FC<ProductBasicInfoFormProps> = ({
       <Col span={24}>
         <Form.Item
           name="description"
-          label="Mô tả chi tiết"
+          label={t('admin.products.form.description')}
           rules={[
-            { required: true, message: 'Vui lòng nhập mô tả chi tiết!' },
-            { min: 10, message: 'Mô tả phải có ít nhất 10 ký tự' },
+            { required: true, message: t('admin.products.form.descriptionRequired') },
+            { min: 10, message: t('admin.products.form.descriptionMin') },
           ]}
         >
           <SimpleRichTextEditor
-            placeholder="Nhập mô tả chi tiết về sản phẩm. Bạn có thể thêm hình ảnh, định dạng văn bản, danh sách..."
+            placeholder={t('admin.products.form.descriptionPlaceholder')}
             height={300}
           />
         </Form.Item>
@@ -89,17 +91,17 @@ const ProductBasicInfoForm: React.FC<ProductBasicInfoFormProps> = ({
 
       <Col span={24}>
         <Alert
-          message="Mẹo tạo sản phẩm"
+          message={t('admin.products.form.tipTitle')}
           description={
             <div>
-              <p>• Chỉ cần điền các trường bắt buộc để tạo sản phẩm nhanh</p>
-              <p>• Để trống SKU để hệ thống tự tạo mã duy nhất</p>
+              <p>• {t('admin.products.form.tipLine1')}</p>
+              <p>• {t('admin.products.form.tipLine2')}</p>
               <p>
-                • Bạn có thể{' '}
+                •{' '}
                 <Button type="link" size="small" onClick={handleFillSampleData}>
-                  điền dữ liệu MacBook Pro M3 Max
+                  {t('admin.products.form.tipFillData')}
                 </Button>{' '}
-                để xem ví dụ
+                {t('admin.products.form.tipFillDataSuffix')}
               </p>
             </div>
           }

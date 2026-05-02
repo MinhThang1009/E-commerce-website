@@ -1,4 +1,5 @@
 ﻿import React from 'react';
+import { useTranslation } from 'react-i18next';
 import { Product } from '@/services/productApi';
 import ProductCard from '@/components/shared/ProductCard';
 
@@ -13,6 +14,7 @@ const ProductGrid: React.FC<ProductGridProps> = ({
   loading = false,
   columns = 3,
 }) => {
+  const { t } = useTranslation();
   // Xác định class số cột lưới
   const gridClass = {
     2: 'grid-cols-1 sm:grid-cols-2',
@@ -58,10 +60,10 @@ const ProductGrid: React.FC<ProductGridProps> = ({
           />
         </svg>
         <h3 className="text-lg font-medium text-neutral-700 dark:text-neutral-300 mb-1">
-          Không tìm thấy sản phẩm
+          {t('products.notFound')}
         </h3>
         <p className="text-neutral-500 dark:text-neutral-400">
-          Vui lòng thử lại với bộ lọc khác
+          {t('products.tryDifferentFilters')}
         </p>
       </div>
     );

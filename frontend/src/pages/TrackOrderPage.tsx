@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import Button from '@/components/common/Button';
 
 interface TrackingStep {
@@ -19,6 +20,7 @@ interface TrackingResult {
 }
 
 const TrackOrderPage: React.FC = () => {
+  const { t } = useTranslation();
   const [orderNumber, setOrderNumber] = useState('');
   const [email, setEmail] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -41,60 +43,20 @@ const TrackOrderPage: React.FC = () => {
         setTrackingResult({
           orderNumber: '10058429',
           trackingNumber: 'TRK7891234567',
-          carrier: 'Express Shipping Co.',
-          estimatedDelivery: 'June 15, 2023',
-          currentStatus: 'In Transit',
+          carrier: t('trackOrder.demo.carrier'),
+          estimatedDelivery: t('trackOrder.demo.estimatedDelivery'),
+          currentStatus: t('trackOrder.demo.step4.status'),
           steps: [
-            {
-              status: 'Order Placed',
-              date: 'June 10, 2023 - 10:23 AM',
-              location: 'Online',
-              description:
-                'Your order has been received and payment confirmed.',
-              completed: true,
-            },
-            {
-              status: 'Processing',
-              date: 'June 11, 2023 - 9:45 AM',
-              location: 'Warehouse',
-              description: 'Your order is being prepared for shipment.',
-              completed: true,
-            },
-            {
-              status: 'Shipped',
-              date: 'June 12, 2023 - 2:30 PM',
-              location: 'Distribution Center',
-              description: 'Your order has been shipped and is on its way.',
-              completed: true,
-            },
-            {
-              status: 'In Transit',
-              date: 'June 13, 2023 - 11:15 AM',
-              location: 'Regional Sorting Facility',
-              description:
-                'Your package is in transit to the delivery location.',
-              completed: true,
-            },
-            {
-              status: 'Out for Delivery',
-              date: 'Pending',
-              location: 'Local Delivery Center',
-              description: 'Your package is out for delivery.',
-              completed: false,
-            },
-            {
-              status: 'Delivered',
-              date: 'Pending',
-              location: 'Delivery Address',
-              description: 'Your package has been delivered.',
-              completed: false,
-            },
+            { status: t('trackOrder.demo.step1.status'), date: t('trackOrder.demo.step1.date'), location: t('trackOrder.demo.step1.location'), description: t('trackOrder.demo.step1.desc'), completed: true },
+            { status: t('trackOrder.demo.step2.status'), date: t('trackOrder.demo.step2.date'), location: t('trackOrder.demo.step2.location'), description: t('trackOrder.demo.step2.desc'), completed: true },
+            { status: t('trackOrder.demo.step3.status'), date: t('trackOrder.demo.step3.date'), location: t('trackOrder.demo.step3.location'), description: t('trackOrder.demo.step3.desc'), completed: true },
+            { status: t('trackOrder.demo.step4.status'), date: t('trackOrder.demo.step4.date'), location: t('trackOrder.demo.step4.location'), description: t('trackOrder.demo.step4.desc'), completed: true },
+            { status: t('trackOrder.demo.step5.status'), date: t('trackOrder.demo.pending'), location: t('trackOrder.demo.step5.location'), description: t('trackOrder.demo.step5.desc'), completed: false },
+            { status: t('trackOrder.demo.step6.status'), date: t('trackOrder.demo.pending'), location: t('trackOrder.demo.step6.location'), description: t('trackOrder.demo.step6.desc'), completed: false },
           ],
         });
       } else {
-        setError(
-          'We couldn&apos;t find tracking information for the provided order number and email. Please check your information and try again.'
-        );
+        setError(t('trackOrder.notFound'));
       }
     }, 1500);
   };
@@ -104,11 +66,10 @@ const TrackOrderPage: React.FC = () => {
       {/* Phần hero */}
       <div className="text-center mb-16">
         <h1 className="text-4xl font-bold text-neutral-900 dark:text-white mb-4">
-          Track Your Order
+          {t('trackOrder.title')}
         </h1>
         <p className="text-lg text-neutral-600 dark:text-neutral-400 max-w-3xl mx-auto">
-          Enter your order details below to check the current status of your
-          shipment.
+          {t('trackOrder.subtitle')}
         </p>
       </div>
 
@@ -116,7 +77,7 @@ const TrackOrderPage: React.FC = () => {
         {!trackingResult ? (
           <div className="bg-white dark:bg-neutral-800 rounded-xl shadow-sm p-8">
             <h2 className="text-2xl font-bold text-neutral-900 dark:text-white mb-6">
-              Enter Order Information
+              {t('trackOrder.formTitle')}
             </h2>
 
             {error && (
@@ -131,20 +92,19 @@ const TrackOrderPage: React.FC = () => {
                   htmlFor="orderNumber"
                   className="block text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-1"
                 >
-                  Order Number
+                  {t('trackOrder.orderNumberLabel')}
                 </label>
                 <input
                   type="text"
                   id="orderNumber"
                   value={orderNumber}
                   onChange={(e) => setOrderNumber(e.target.value)}
-                  placeholder="e.g., 10058429"
+                  placeholder={t('trackOrder.orderNumberPlaceholder')}
                   required
                   className="w-full px-4 py-2 rounded-lg border border-neutral-300 dark:border-neutral-600 bg-white dark:bg-neutral-700 text-neutral-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary-500"
                 />
                 <p className="text-xs text-neutral-500 dark:text-neutral-400 mt-1">
-                  Your order number can be found in your order confirmation
-                  email.
+                  {t('trackOrder.orderNumberHint')}
                 </p>
               </div>
 
@@ -153,14 +113,14 @@ const TrackOrderPage: React.FC = () => {
                   htmlFor="email"
                   className="block text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-1"
                 >
-                  Email Address
+                  {t('trackOrder.emailLabel')}
                 </label>
                 <input
                   type="email"
                   id="email"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
-                  placeholder="The email used for your order"
+                  placeholder={t('trackOrder.emailPlaceholder')}
                   required
                   className="w-full px-4 py-2 rounded-lg border border-neutral-300 dark:border-neutral-600 bg-white dark:bg-neutral-700 text-neutral-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary-500"
                 />
@@ -168,10 +128,10 @@ const TrackOrderPage: React.FC = () => {
 
               <div className="flex items-center justify-between">
                 <p className="text-sm text-neutral-500 dark:text-neutral-400">
-                  For demo, use order number: 10058429
+                  {t('trackOrder.demoHint')}
                 </p>
                 <Button type="submit" variant="primary" disabled={isSubmitting}>
-                  {isSubmitting ? 'Tracking...' : 'Track Order'}
+                  {isSubmitting ? t('trackOrder.tracking') : t('trackOrder.trackButton')}
                 </Button>
               </div>
             </form>
@@ -181,13 +141,13 @@ const TrackOrderPage: React.FC = () => {
             <div className="flex justify-between items-start mb-8">
               <div>
                 <h2 className="text-2xl font-bold text-neutral-900 dark:text-white mb-2">
-                  Order #{trackingResult.orderNumber}
+                  {t('trackOrder.orderTitle', { number: trackingResult.orderNumber })}
                 </h2>
                 <p className="text-neutral-600 dark:text-neutral-400">
-                  Tracking Number: {trackingResult.trackingNumber}
+                  {t('trackOrder.trackingNumber', { number: trackingResult.trackingNumber })}
                 </p>
                 <p className="text-neutral-600 dark:text-neutral-400">
-                  Carrier: {trackingResult.carrier}
+                  {t('trackOrder.carrier', { carrier: trackingResult.carrier })}
                 </p>
               </div>
               <div className="text-right">
@@ -195,7 +155,7 @@ const TrackOrderPage: React.FC = () => {
                   {trackingResult.currentStatus}
                 </div>
                 <p className="text-neutral-600 dark:text-neutral-400">
-                  Estimated Delivery: {trackingResult.estimatedDelivery}
+                  {t('trackOrder.estimatedDelivery', { date: trackingResult.estimatedDelivery })}
                 </p>
               </div>
             </div>
@@ -297,11 +257,11 @@ const TrackOrderPage: React.FC = () => {
                   }}
                   className="mb-4 sm:mb-0 text-primary-600 dark:text-primary-400 hover:text-primary-700 dark:hover:text-primary-300 transition-colors"
                 >
-                  Track Another Order
+                  {t('trackOrder.trackAnother')}
                 </button>
                 <div className="flex space-x-4">
-                  <Button variant="outline">Contact Support</Button>
-                  <Button variant="primary">View Order Details</Button>
+                  <Button variant="outline">{t('trackOrder.contactSupport')}</Button>
+                  <Button variant="primary">{t('trackOrder.viewOrderDetails')}</Button>
                 </div>
               </div>
             </div>
@@ -311,11 +271,10 @@ const TrackOrderPage: React.FC = () => {
         {/* Phần hỗ trợ */}
         <div className="mt-12 bg-neutral-50 dark:bg-neutral-800 rounded-lg p-6">
           <h3 className="text-lg font-semibold text-neutral-900 dark:text-white mb-4">
-            Need Help?
+            {t('trackOrder.needHelp')}
           </h3>
           <p className="text-neutral-600 dark:text-neutral-400 mb-4">
-            If you&apos;re having trouble tracking your order or have questions
-            about your shipment, our customer service team is here to help.
+            {t('trackOrder.helpDesc')}
           </p>
           <div className="flex flex-col sm:flex-row gap-4">
             <div className="flex items-center">
@@ -334,7 +293,7 @@ const TrackOrderPage: React.FC = () => {
                 />
               </svg>
               <span className="text-neutral-700 dark:text-neutral-300">
-                support@shopmini.com
+                {t('trackOrder.supportEmail')}
               </span>
             </div>
             <div className="flex items-center">
@@ -353,7 +312,7 @@ const TrackOrderPage: React.FC = () => {
                 />
               </svg>
               <span className="text-neutral-700 dark:text-neutral-300">
-                +1 (555) 123-4567
+                {t('trackOrder.supportPhone')}
               </span>
             </div>
           </div>

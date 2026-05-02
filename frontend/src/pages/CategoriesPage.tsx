@@ -1,39 +1,26 @@
 import React, { useState, useMemo } from 'react';
 import { Link } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { useGetAllCategoriesQuery } from '@/services/categoryApi';
 import { Category } from '@/types/category.types';
 
 const CATEGORY_ICONS: Record<string, string> = {
-  audio: '🎧',
-  wearables: '⌚',
-  computers: '💻',
-  accessories: '🔌',
-  'tvs-home-theater': '📺',
-  cameras: '📷',
-  gaming: '🎮',
+  'dien-thoai': '📱',
+  tablet: '🖥️',
   laptop: '💻',
-  'giay-dep': '👟',
-  'thoi-trang-nam': '👔',
-  'thoi-trang-nu': '👗',
-  'o-to-xe-may': '🚗',
 };
 
 const getIcon = (slug?: string, name?: string) => {
   if (slug && CATEGORY_ICONS[slug]) return CATEGORY_ICONS[slug];
   const n = name?.toLowerCase() || '';
-  if (n.includes('laptop') || n.includes('máy tính')) return '💻';
-  if (n.includes('giày') || n.includes('dép')) return '👟';
-  if (n.includes('thời trang nam')) return '👔';
-  if (n.includes('thời trang nữ') || n.includes('nu')) return '👗';
-  if (n.includes('audio') || n.includes('âm thanh')) return '🎧';
-  if (n.includes('camera')) return '📷';
-  if (n.includes('game') || n.includes('gaming')) return '🎮';
-  if (n.includes('ô tô') || n.includes('xe máy')) return '🚗';
-  if (n.includes('phụ kiện') || n.includes('accessories')) return '🔌';
+  if (n.includes('điện thoại') || n.includes('phone')) return '📱';
+  if (n.includes('tablet') || n.includes('máy tính bảng')) return '🖥️';
+  if (n.includes('laptop') || n.includes('máy tính xách tay')) return '💻';
   return '📦';
 };
 
 const CategoriesPage: React.FC = () => {
+  const { t } = useTranslation();
   const { data: categoriesData, isLoading } = useGetAllCategoriesQuery();
   const [searchTerm, setSearchTerm] = useState('');
 
@@ -45,18 +32,8 @@ const CategoriesPage: React.FC = () => {
     cat.name.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
-  const groupedCategories = filteredCategories.reduce<Record<string, Category[]>>((acc, cat) => {
-    const letter = cat.name.charAt(0).toUpperCase();
-    if (!acc[letter]) acc[letter] = [];
-    acc[letter].push(cat);
-    return acc;
-  }, {});
-
-  const sortedLetters = groupedCategories ? Object.keys(groupedCategories).sort() : [];
-
   return (
     <div className="min-h-screen bg-neutral-50 dark:bg-neutral-950">
-      {/* Tiêu đề hero */}
       <div className="relative bg-gradient-to-br from-primary-700 via-primary-600 to-primary-500 text-white overflow-hidden">
         <div className="absolute inset-0 opacity-10 select-none pointer-events-none">
           {['💻', '👗', '👟', '🎧', '📷', '🎮', '⌚', '🔌'].map((icon, i) => (
@@ -77,12 +54,11 @@ const CategoriesPage: React.FC = () => {
           <div className="inline-flex items-center justify-center w-16 h-16 bg-white/20 backdrop-blur-sm rounded-2xl border border-white/30 text-3xl mb-5 shadow-md">
             🗂️
           </div>
-          <h1 className="text-3xl md:text-4xl font-bold mb-2">Tất cả danh mục</h1>
+          <h1 className="text-3xl md:text-4xl font-bold mb-2">{t('categories.heroTitle')}</h1>
           <p className="text-white/80 text-sm md:text-base max-w-md mx-auto">
-            Khám phá hàng ngàn sản phẩm trong {categories?.length || 0} danh mục đa dạng
+            {t('categories.heroDesc', { count: categories?.length || 0 })}
           </p>
 
-          {/* Thanh tìm kiếm */}
           <div className="mt-8 max-w-md mx-auto">
             <div className="relative">
               <svg className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-white/60" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -92,7 +68,7 @@ const CategoriesPage: React.FC = () => {
                 type="text"
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                placeholder="Tìm kiếm danh mục..."
+                placeholder={t('categories.searchPlaceholder')}
                 className="w-full pl-12 pr-4 py-3 rounded-xl bg-white/20 backdrop-blur-sm border border-white/30 text-white placeholder-white/60 focus:outline-none focus:bg-white/30 focus:border-white/50 transition-all text-sm"
               />
             </div>
@@ -115,19 +91,11 @@ const CategoriesPage: React.FC = () => {
           <div className="text-center py-16 bg-white dark:bg-neutral-900 rounded-2xl border border-neutral-100 dark:border-neutral-800">
             <div className="text-5xl mb-4">🔍</div>
             <h3 className="text-lg font-semibold text-neutral-700 dark:text-neutral-300 mb-2">
-              Không tìm thấy danh mục
+              {t('categories.noResults')}
             </h3>
-            <p className="text-neutral-500 dark:text-neutral-400 text-sm">Hãy thử từ khóa khác</p>
-          </div>
-        ) : searchTerm ? (
-          /* Kết quả tìm kiếm */
-          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
-            {filteredCategories?.map((cat) => (
-              <CategoryCard key={cat.id} category={cat} />
-            ))}
+            <p className="text-neutral-500 dark:text-neutral-400 text-sm">{t('categories.noResultsHint')}</p>
           </div>
         ) : (
-          /* Lưới phẳng - tất cả danh mục */
           <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
             {filteredCategories?.map((cat) => (
               <CategoryCard key={cat.id} category={cat} />
@@ -140,6 +108,7 @@ const CategoriesPage: React.FC = () => {
 };
 
 const CategoryCard: React.FC<{ category: Category }> = ({ category }) => {
+  const { t } = useTranslation();
   const icon = getIcon(category.slug, category.name);
   return (
     <Link
@@ -153,10 +122,10 @@ const CategoryCard: React.FC<{ category: Category }> = ({ category }) => {
         {category.name}
       </h3>
       <p className="text-xs text-neutral-400 dark:text-neutral-500 mt-1">
-        {category.productCount || 0} sản phẩm
+        {t('categories.productCount', { count: category.productCount || 0 })}
       </p>
       <div className="mt-3 flex items-center gap-1 text-xs text-primary-600 dark:text-primary-400 opacity-0 group-hover:opacity-100 transition-opacity">
-        <span>Xem ngay</span>
+        <span>{t('categories.viewNow')}</span>
         <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
         </svg>

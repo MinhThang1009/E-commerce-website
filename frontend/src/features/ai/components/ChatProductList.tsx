@@ -1,4 +1,5 @@
 import React from 'react';
+import { useTranslation } from 'react-i18next';
 import { ProductRecommendation } from '../services/chatbotApi';
 import ChatProductCard from './ChatProductCard';
 
@@ -15,6 +16,7 @@ const ChatProductList: React.FC<ChatProductListProps> = ({
   title,
   onProductClick,
 }) => {
+  const { t } = useTranslation();
   if (!products || products.length === 0) {
     return null;
   }
@@ -42,7 +44,7 @@ const ChatProductList: React.FC<ChatProductListProps> = ({
       {products.length > 4 && (
         <div className="mt-4 text-center">
           <button className="text-primary-600 dark:text-primary-400 hover:text-primary-700 dark:hover:text-primary-300 text-sm font-medium">
-            Xem thêm sản phẩm →
+            {t('chat.viewMoreProducts')} →
           </button>
         </div>
       )}

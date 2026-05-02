@@ -1,170 +1,117 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
+import { useGetNewsQuery, useDeleteNewsMutation } from '@/services/newsApi';
 import {
-  useGetNewsQuery,
-  useDeleteNewsMutation,
-} from '@/services/newsApi';
-import {
-  Table,
-  Button,
-  Input,
-  Select,
-  Card,
-  Space,
-  Tag,
-  Pagination,
-  Row,
-  Col,
-  Typography,
-  Image,
-  Popconfirm,
-  message,
-  Spin,
-  Alert,
+  Table, Button, Input, Select, Card, Space, Tag, Pagination, Row, Col, Typography, Image, Popconfirm, message, Spin, Alert,
 } from 'antd';
-import {
-  PlusOutlined,
-  SearchOutlined,
-  EditOutlined,
-  DeleteOutlined,
-} from '@ant-design/icons';
+import { PlusOutlined, SearchOutlined, EditOutlined, DeleteOutlined } from '@ant-design/icons';
 
 const { Title } = Typography;
 
 const NewsPage: React.FC = () => {
+  const { t } = useTranslation();
   const navigate = useNavigate();
 
-  // Trạng thái bộ lọc
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('all');
   const [currentPage, setCurrentPage] = useState(1);
 
-  // Các query API
-  const {
-    data: newsResponse,
-    error,
-    isLoading,
-    refetch,
-  } = useGetNewsQuery({
+  const { data: newsResponse, error, isLoading, refetch } = useGetNewsQuery({
     page: currentPage,
     limit: 10,
     search: searchTerm || undefined,
     isPublished: statusFilter !== 'all' ? (statusFilter === 'published') : undefined,
   });
 
-  const [deleteNews, { isLoading: isDeleting }] = useDeleteNewsMutation();
+  const [deleteNews] = useDeleteNewsMutation();
 
   const newsList = newsResponse?.news || [];
   const totalItems = newsResponse?.count || 0;
   const totalPages = newsResponse?.totalPages || 0;
 
-  // Xử lý xóa
   const handleDelete = async (id: string) => {
     try {
       await deleteNews(id).unwrap();
-      message.success('Xóa bài viết thành công');
+      message.success(t('admin.news.messages.deleteSuccess'));
       refetch();
     } catch (error) {
-      message.error('Xóa bài viết thất bại');
-      console.error('Xóa bài viết thất bại:', error);
+      message.error(t('admin.news.messages.deleteError'));
     }
   };
 
-  // Debounce tìm kiếm
   useEffect(() => {
-    const timeoutId = setTimeout(() => {
-      setCurrentPage(1);
-    }, 300);
+    const timeoutId = setTimeout(() => { setCurrentPage(1); }, 300);
     return () => clearTimeout(timeoutId);
   }, [searchTerm, statusFilter]);
 
   const columns = [
     {
-      title: 'Hình ảnh',
+      title: t('admin.news.table.image') || t('admin.categories.table.image'),
       dataIndex: 'thumbnail',
       key: 'thumbnail',
       width: 80,
       render: (thumbnail: string) => (
-        <Image
-          width={50}
-          height={50}
-          src={thumbnail || '/placeholder-image.jpg'}
-          alt="Thumbnail"
-          style={{ objectFit: 'cover', borderRadius: 4 }}
-          fallback="/placeholder-image.jpg"
-        />
+        <Image width={50} height={50} src={thumbnail || '/placeholder-image.jpg'} alt={t('admin.news.form.thumbnail')}
+          style={{ objectFit: 'cover', borderRadius: 4 }} fallback="/placeholder-image.jpg" />
       ),
     },
     {
-      title: 'Tiêu đề',
+      title: t('admin.news.table.title'),
       dataIndex: 'title',
       key: 'title',
-      render: (text: string) => (
-        <div style={{ fontWeight: 500 }}>{text}</div>
-      ),
+      render: (text: string) => <div style={{ fontWeight: 500 }}>{text}</div>,
     },
     {
-      title: 'Slug',
+      title: t('admin.news.table.slug'),
       dataIndex: 'slug',
       key: 'slug',
     },
     {
-      title: 'Chuyên mục',
+      title: t('admin.news.table.category'),
       dataIndex: 'category',
       key: 'category',
-      render: (category: string) => (
-        <Tag color="blue">{category || 'Tin tức'}</Tag>
-      ),
+      render: (category: string) => <Tag color="blue">{category || t('admin.news.status.published')}</Tag>,
     },
     {
-      title: 'Lượt xem',
+      title: t('admin.news.table.views'),
       dataIndex: 'viewCount',
       key: 'viewCount',
       width: 100,
       render: (count: number) => count || 0,
     },
     {
-      title: 'Trạng thái',
+      title: t('common.status'),
       dataIndex: 'isPublished',
       key: 'isPublished',
       render: (isPublished: boolean) => (
         <Tag color={isPublished ? 'green' : 'orange'}>
-          {isPublished ? 'Đã xuất bản' : 'Bản nháp'}
+          {isPublished ? t('admin.news.status.published') : t('admin.news.status.draft')}
         </Tag>
       ),
     },
     {
-      title: 'Ngày tạo',
+      title: t('admin.news.table.createdAt'),
       dataIndex: 'createdAt',
       key: 'createdAt',
       render: (date: string) => new Date(date).toLocaleDateString('vi-VN'),
     },
     {
-      title: 'Hành động',
+      title: t('admin.common.actions'),
       key: 'actions',
       width: 150,
       render: (_: any, record: any) => (
         <Space>
-          <Button
-            type="link"
-            icon={<EditOutlined />}
-            onClick={() => navigate(`/admin/news/edit/${record.id}`)}
-            size="small"
-          />
+          <Button type="link" icon={<EditOutlined />} onClick={() => navigate(`/admin/news/edit/${record.id}`)} size="small" />
           <Popconfirm
-            title="Xóa bài viết"
-            description="Bạn có chắc chắn muốn xóa bài viết này?"
+            title={t('admin.news.deleteTitle')}
+            description={t('admin.news.deleteConfirm')}
             onConfirm={() => handleDelete(record.id)}
-            okText="Xóa"
-            cancelText="Hủy"
+            okText={t('common.delete')}
+            cancelText={t('common.cancel')}
             okButtonProps={{ danger: true }}
           >
-            <Button
-              type="link"
-              danger
-              icon={<DeleteOutlined />}
-              size="small"
-            />
+            <Button type="link" danger icon={<DeleteOutlined />} size="small" />
           </Popconfirm>
         </Space>
       ),
@@ -175,8 +122,8 @@ const NewsPage: React.FC = () => {
     return (
       <div style={{ padding: 24 }}>
         <Alert
-          message="Lỗi tải dữ liệu"
-          description="Không thể tải danh sách tin tức."
+          message={t('common.error')}
+          description={t('admin.news.messages.loadError')}
           type="error"
           showIcon
         />
@@ -190,20 +137,15 @@ const NewsPage: React.FC = () => {
         <Row justify="space-between" align="middle" gutter={[16, 16]}>
           <Col xs={24} sm={12}>
             <Title level={2} className="text-xl md:text-2xl" style={{ margin: 0 }}>
-              Quản lý Tin tức
+              {t('admin.news.title')}
             </Title>
             <p className="mt-2 text-sm text-neutral-600">
-              {totalItems} bài viết • {totalPages} trang
+              {t('admin.news.pageStats', { total: totalItems, pages: totalPages })}
             </p>
           </Col>
           <Col xs={24} sm={12} className="flex justify-start sm:justify-end">
-            <Button
-              type="primary"
-              icon={<PlusOutlined />}
-              onClick={() => navigate('/admin/news/create')}
-              size="large"
-            >
-              Thêm bài viết
+            <Button type="primary" icon={<PlusOutlined />} onClick={() => navigate('/admin/news/create')} size="large">
+              {t('admin.news.addArticle')}
             </Button>
           </Col>
         </Row>
@@ -213,7 +155,7 @@ const NewsPage: React.FC = () => {
         <Row gutter={[16, 16]}>
           <Col xs={24} md={12}>
             <Input
-              placeholder="Tìm kiếm tiêu đề..."
+              placeholder={t('admin.news.searchPlaceholder') || t('admin.common.search')}
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
               allowClear
@@ -226,9 +168,9 @@ const NewsPage: React.FC = () => {
               value={statusFilter}
               onChange={setStatusFilter}
               options={[
-                { value: 'all', label: 'Tất cả trạng thái' },
-                { value: 'published', label: 'Đã xuất bản' },
-                { value: 'draft', label: 'Bản nháp' },
+                { value: 'all', label: t('common.all') },
+                { value: 'published', label: t('admin.news.status.published') },
+                { value: 'draft', label: t('admin.news.status.draft') },
               ]}
             />
           </Col>
@@ -237,22 +179,11 @@ const NewsPage: React.FC = () => {
 
       <Card>
         <Spin spinning={isLoading}>
-          <Table
-            columns={columns}
-            dataSource={newsList}
-            rowKey="id"
-            pagination={false}
-            scroll={{ x: 800 }}
-          />
+          <Table columns={columns} dataSource={newsList} rowKey="id" pagination={false} scroll={{ x: 800 }} />
         </Spin>
         {totalItems > 0 && (
           <div className="mt-4 text-center">
-            <Pagination
-              current={currentPage}
-              total={totalItems}
-              pageSize={10}
-              onChange={setCurrentPage}
-            />
+            <Pagination current={currentPage} total={totalItems} pageSize={10} onChange={setCurrentPage} />
           </div>
         )}
       </Card>

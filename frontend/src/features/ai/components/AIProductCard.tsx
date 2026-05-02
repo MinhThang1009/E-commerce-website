@@ -1,5 +1,6 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { ProductRecommendation } from '../services/chatbotApi';
 import { EyeIcon, ImageIcon, StarIcon } from './icons';
 
@@ -11,6 +12,7 @@ interface ProductCardProps {
  * Component hiển thị thông tin sản phẩm trong chat
  */
 const ProductCard: React.FC<ProductCardProps> = ({ product }) => {
+  const { t } = useTranslation();
   // Format giá tiền với dấu chấm ngăn cách hàng nghìn
   const formatPrice = (price: number): string => {
     return new Intl.NumberFormat('vi-VN', {
@@ -112,7 +114,7 @@ const ProductCard: React.FC<ProductCardProps> = ({ product }) => {
                 : 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400'
             }`}
           >
-            {product.inStock ? 'Còn hàng' : 'Hết hàng'}
+            {product.inStock ? t('product.inStock') : t('product.outOfStock')}
           </span>
         </div>
       </div>

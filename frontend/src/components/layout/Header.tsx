@@ -158,7 +158,7 @@ const Header: React.FC = () => {
               {t('header.brand')}
             </span>
             <div className="text-xs text-neutral-500 dark:text-neutral-400 font-medium hidden sm:block">
-              E-Commerce
+              {t('header.tagline')}
             </div>
           </div>
         </Link>

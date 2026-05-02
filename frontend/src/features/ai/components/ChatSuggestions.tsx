@@ -1,4 +1,5 @@
 import React from 'react';
+import { useTranslation } from 'react-i18next';
 
 interface ChatSuggestionsProps {
   suggestions: string[];
@@ -9,6 +10,7 @@ const ChatSuggestions: React.FC<ChatSuggestionsProps> = ({
   suggestions,
   onSuggestionClick,
 }) => {
+  const { t } = useTranslation();
   if (!suggestions || suggestions.length === 0) return null;
 
   return (
@@ -24,7 +26,7 @@ const ChatSuggestions: React.FC<ChatSuggestionsProps> = ({
           </svg>
         </div>
         <div className="text-xs text-neutral-600 dark:text-neutral-400 font-semibold">
-          Gợi ý cho bạn
+          {t('chat.suggestionsLabel')}
         </div>
       </div>
       <div className="flex flex-wrap gap-2.5">

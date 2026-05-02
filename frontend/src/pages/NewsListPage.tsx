@@ -1,18 +1,26 @@
 import { useState } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { useGetNewsQuery } from '@/services/newsApi';
 import LoadingSpinner from '@/components/common/LoadingSpinner';
 import Pagination from '@/components/common/Pagination';
 import dayjs from 'dayjs';
 
-const CATEGORIES = ['Tất cả', 'Tin tức', 'Đánh giá', 'Tư vấn', 'Thủ thuật'];
-
 const NewsListPage: React.FC = () => {
+  const { t } = useTranslation();
   const [searchParams, setSearchParams] = useSearchParams();
   const page = searchParams.get('page') ? Number(searchParams.get('page')) : 1;
   const search = searchParams.get('search') || '';
-  const currentCategory = searchParams.get('category') || 'Tất cả';
+  const currentCategory = searchParams.get('category') || t('news.categories.all');
   const limit = 15;
+
+  const CATEGORIES = [
+    t('news.categories.all'),
+    t('news.categories.news'),
+    t('news.categories.review'),
+    t('news.categories.advice'),
+    t('news.categories.tips'),
+  ];
 
   const { data: newsData, isLoading } = useGetNewsQuery({
     page,
@@ -30,7 +38,7 @@ const NewsListPage: React.FC = () => {
 
   const handleCategoryChange = (category: string) => {
     const updatedParams = new URLSearchParams(searchParams);
-    if (category === 'Tất cả') {
+    if (category === t('news.categories.all')) {
       updatedParams.delete('category');
     } else {
       updatedParams.set('category', category);
@@ -42,8 +50,8 @@ const NewsListPage: React.FC = () => {
   if (isLoading) return <LoadingSpinner fullScreen />;
 
   const allNews = newsData?.news || [];
-  const showFeatured = page === 1 && currentCategory === 'Tất cả' && allNews.length >= 3;
-  
+  const showFeatured = page === 1 && currentCategory === t('news.categories.all') && allNews.length >= 3;
+
   const featuredPost = showFeatured ? allNews[0] : null;
   const gridPosts = showFeatured ? allNews.slice(1, 5) : [];
   const listPosts = showFeatured ? allNews.slice(5) : allNews;
@@ -52,7 +60,6 @@ const NewsListPage: React.FC = () => {
   return (
     <div className="min-h-screen bg-white dark:bg-neutral-900 py-12 pt-28">
       <div className="container mx-auto px-4">
-        {/* Bộ lọc danh mục */}
         <div className="flex flex-wrap gap-3 mb-12 overflow-x-auto pb-2 no-scrollbar">
           {CATEGORIES.map((cat) => (
             <button
@@ -75,27 +82,25 @@ const NewsListPage: React.FC = () => {
 
         {allNews.length === 0 ? (
           <div className="text-center py-20 bg-neutral-50 dark:bg-neutral-800 rounded-3xl">
-             <p className="text-neutral-500 text-lg">Chưa có bài viết nào trong chuyên mục này.</p>
+             <p className="text-neutral-500 text-lg">{t('news.empty')}</p>
           </div>
         ) : (
           <div className="space-y-12">
-            {/* Layout trên: Bài nổi bật + Lưới (Chỉ hiển thị ở trang 1 và danh mục "Tất cả") */}
             {showFeatured && (
               <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
-                {/* Bài viết nổi bật */}
-                <Link 
+                <Link
                   to={`/news/${featuredPost!.slug}`}
                   className="lg:col-span-8 group relative overflow-hidden rounded-3xl bg-neutral-100 aspect-[16/9] lg:aspect-auto"
                 >
-                  <img 
-                    src={featuredPost!.thumbnail || '/placeholder-news.jpg'} 
+                  <img
+                    src={featuredPost!.thumbnail || '/placeholder-news.jpg'}
                     alt={featuredPost!.title}
                     className="absolute inset-0 w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"
                   />
                   <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent" />
                   <div className="absolute bottom-0 left-0 p-8 w-full">
                      <span className="inline-block px-3 py-1 bg-primary-600 text-white text-xs font-bold rounded-full mb-4">
-                        {featuredPost!.category || 'Tin tức'}
+                        {featuredPost!.category || t('news.defaultCategory')}
                      </span>
                      <h2 className="text-2xl md:text-4xl font-bold text-white mb-4 line-clamp-2 leading-tight group-hover:text-primary-400 transition-colors">
                         {featuredPost!.title}
@@ -108,25 +113,24 @@ const NewsListPage: React.FC = () => {
                   </div>
                 </Link>
 
-                {/* Các bài viết dạng lưới */}
                 {gridPosts.length > 0 && (
                   <div className="lg:col-span-4 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-1 gap-6">
                     {gridPosts.map((post: any) => (
-                      <Link 
-                        key={post.id} 
+                      <Link
+                        key={post.id}
                         to={`/news/${post.slug}`}
                         className="group flex gap-4 h-[120px]"
                       >
                         <div className="w-[120px] h-[120px] rounded-2xl overflow-hidden flex-shrink-0">
-                          <img 
-                            src={post.thumbnail || '/placeholder-news.jpg'} 
+                          <img
+                            src={post.thumbnail || '/placeholder-news.jpg'}
                             alt={post.title}
                             className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
                           />
                         </div>
                         <div className="flex flex-col justify-center">
                           <span className="text-primary-600 text-xs font-bold mb-1 uppercase tracking-wider">
-                            {post.category || 'Tin tức'}
+                            {post.category || t('news.defaultCategory')}
                           </span>
                           <h3 className="text-sm font-bold text-neutral-800 dark:text-neutral-100 line-clamp-2 group-hover:text-primary-600 transition-colors leading-snug">
                             {post.title}
@@ -142,23 +146,22 @@ const NewsListPage: React.FC = () => {
               </div>
             )}
 
-            {/* Layout danh sách: Lưới mặc định */}
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-10">
               {listPosts.map((item: any) => (
-                <Link 
-                  key={item.id} 
+                <Link
+                  key={item.id}
                   to={`/news/${item.slug}`}
                   className="group flex flex-col"
                 >
                   <div className="relative aspect-[16/10] rounded-3xl overflow-hidden mb-6 shadow-sm">
-                    <img 
-                      src={item.thumbnail || '/placeholder-news.jpg'} 
+                    <img
+                      src={item.thumbnail || '/placeholder-news.jpg'}
                       alt={item.title}
                       className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
                     />
                     <div className="absolute top-4 left-4">
                        <span className="px-3 py-1 bg-white/90 dark:bg-neutral-800/90 text-primary-600 text-[10px] font-extrabold rounded-full uppercase tracking-tighter shadow-sm border border-neutral-100 dark:border-neutral-700">
-                          {item.category || 'Tin tức'}
+                          {item.category || t('news.defaultCategory')}
                        </span>
                     </div>
                   </div>
@@ -186,7 +189,7 @@ const NewsListPage: React.FC = () => {
 
             {totalPages > 1 && (
               <div className="mt-16 flex justify-center">
-                <Pagination 
+                <Pagination
                   currentPage={page}
                   totalPages={totalPages}
                   onPageChange={handlePageChange}

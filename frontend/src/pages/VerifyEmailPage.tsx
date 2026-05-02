@@ -1,9 +1,11 @@
 import React, { useState, useRef } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { useVerifyOtpMutation, useResendVerificationMutation } from '@/services/authApi';
 import Button from '@/components/common/Button';
 
 const VerifyEmailPage: React.FC = () => {
+  const { t } = useTranslation();
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
   const emailFromQuery = searchParams.get('email') || '';
@@ -47,19 +49,19 @@ const VerifyEmailPage: React.FC = () => {
 
   const handleVerify = async () => {
     if (!email || !/\S+@\S+\.\S+/.test(email)) {
-      setEmailError('Vui lòng nhập đúng địa chỉ email');
+      setEmailError(t('verifyEmail.emailError'));
       return;
     }
     const otp = otpValues.join('');
-    if (otp.length < 6) { setOtpError('Vui lòng nhập đủ 6 chữ số OTP'); return; }
+    if (otp.length < 6) { setOtpError(t('verifyEmail.otpError')); return; }
     setOtpError('');
     setEmailError('');
     try {
       await verifyOtp({ email, otp }).unwrap();
-      setOtpSuccess('Xác thực thành công!');
+      setOtpSuccess(t('verifyEmail.successTitle'));
       setTimeout(() => navigate('/login', { replace: true }), 2000);
     } catch (err: any) {
-      setOtpError(err?.data?.message || 'Mã OTP không đúng hoặc đã hết hạn');
+      setOtpError(err?.data?.message || t('verifyEmail.defaultOtpError'));
     }
   };
 
@@ -74,7 +76,7 @@ const VerifyEmailPage: React.FC = () => {
         setResendCooldown(c => { if (c <= 1) { clearInterval(timer); return 0; } return c - 1; });
       }, 1000);
     } catch (err: any) {
-      setOtpError(err?.data?.message || 'Không thể gửi lại OTP');
+      setOtpError(err?.data?.message || t('verifyEmail.resendError'));
     }
   };
 
@@ -88,9 +90,9 @@ const VerifyEmailPage: React.FC = () => {
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
               </svg>
             </div>
-            <h2 className="text-2xl font-bold text-gray-900 dark:text-neutral-100 mb-2">Xác thực thành công!</h2>
-            <p className="text-gray-600 dark:text-neutral-400 mb-6">Tài khoản của bạn đã được kích hoạt. Đang chuyển đến trang đăng nhập...</p>
-            <Button onClick={() => navigate('/login')} className="w-full" variant="primary">Đăng nhập ngay</Button>
+            <h2 className="text-2xl font-bold text-gray-900 dark:text-neutral-100 mb-2">{t('verifyEmail.successTitle')}</h2>
+            <p className="text-gray-600 dark:text-neutral-400 mb-6">{t('verifyEmail.successDesc')}</p>
+            <Button onClick={() => navigate('/login')} className="w-full" variant="primary">{t('verifyEmail.loginNow')}</Button>
           </div>
         ) : (
           <>
@@ -100,28 +102,26 @@ const VerifyEmailPage: React.FC = () => {
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
                 </svg>
               </div>
-              <h2 className="text-2xl font-bold text-gray-900 dark:text-neutral-100 mb-1">Xác thực tài khoản</h2>
-              <p className="text-sm text-gray-600 dark:text-neutral-400">Nhập mã OTP 6 số được gửi đến email của bạn</p>
+              <h2 className="text-2xl font-bold text-gray-900 dark:text-neutral-100 mb-1">{t('verifyEmail.title')}</h2>
+              <p className="text-sm text-gray-600 dark:text-neutral-400">{t('verifyEmail.subtitle')}</p>
             </div>
 
-            {/* Email input nếu chưa có */}
             {!emailFromQuery && (
               <div className="mb-6">
-                <label className="block text-sm font-medium text-gray-700 dark:text-neutral-300 mb-1">Địa chỉ email</label>
+                <label className="block text-sm font-medium text-gray-700 dark:text-neutral-300 mb-1">{t('verifyEmail.emailLabel')}</label>
                 <input
                   type="email"
                   value={email}
                   onChange={e => { setEmail(e.target.value); setEmailError(''); }}
-                  placeholder="Nhập email đã đăng ký"
+                  placeholder={t('verifyEmail.emailPlaceholder')}
                   className={`w-full px-4 py-2.5 border rounded-lg outline-none focus:ring-2 focus:ring-blue-500 dark:bg-neutral-700 dark:text-white dark:border-neutral-600 ${emailError ? 'border-red-400' : 'border-gray-300'}`}
                 />
                 {emailError && <p className="mt-1 text-sm text-red-600 dark:text-red-400">{emailError}</p>}
               </div>
             )}
 
-            {/* OTP input boxes */}
             <div className="mb-2">
-              <label className="block text-sm font-medium text-gray-700 dark:text-neutral-300 mb-3 text-center">Mã OTP 6 số</label>
+              <label className="block text-sm font-medium text-gray-700 dark:text-neutral-300 mb-3 text-center">{t('verifyEmail.otpLabel')}</label>
               <div className="flex justify-center gap-3" onPaste={handleOtpPaste}>
                 {otpValues.map((val, i) => (
                   <input
@@ -145,31 +145,30 @@ const VerifyEmailPage: React.FC = () => {
             {otpError && <p className="text-center text-sm text-red-600 dark:text-red-400 mb-4">{otpError}</p>}
 
             <div className="mt-6 space-y-3">
-              <Button
-                onClick={handleVerify}
-                className="w-full"
-                variant="primary"
-                disabled={isVerifying}
-              >
-                {isVerifying ? 'Đang xác thực...' : 'Xác nhận OTP'}
+              <Button onClick={handleVerify} className="w-full" variant="primary" disabled={isVerifying}>
+                {isVerifying ? t('verifyEmail.verifying') : t('verifyEmail.verify')}
               </Button>
 
               <div className="text-center">
                 <p className="text-sm text-gray-600 dark:text-neutral-400">
-                  Không nhận được mã?{' '}
+                  {t('verifyEmail.noCode')}{' '}
                   <button
                     onClick={handleResend}
                     disabled={isResending || resendCooldown > 0 || !email}
                     className="text-blue-600 dark:text-blue-400 hover:underline disabled:opacity-50 disabled:cursor-not-allowed font-medium"
                   >
-                    {resendCooldown > 0 ? `Gửi lại sau ${resendCooldown}s` : isResending ? 'Đang gửi...' : 'Gửi lại OTP'}
+                    {resendCooldown > 0
+                      ? t('verifyEmail.resendCooldown', { count: resendCooldown })
+                      : isResending
+                        ? t('verifyEmail.resending')
+                        : t('verifyEmail.resend')}
                   </button>
                 </p>
               </div>
 
               <div className="text-center">
                 <button onClick={() => navigate('/login')} className="text-sm text-gray-500 dark:text-neutral-400 hover:text-gray-700 dark:hover:text-neutral-200">
-                  ← Về trang đăng nhập
+                  {t('verifyEmail.backToLogin')}
                 </button>
               </div>
             </div>

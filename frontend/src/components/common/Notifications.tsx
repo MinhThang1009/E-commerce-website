@@ -1,5 +1,6 @@
 import { useEffect } from 'react';
 import { useSelector, useDispatch } from 'react-redux';
+import { useTranslation } from 'react-i18next';
 import { RootState } from '@/store';
 import { removeNotification } from '@/features/ui/uiSlice';
 import type { Notification as NotificationType } from '@/types/ui.types';
@@ -8,6 +9,7 @@ const Notification: React.FC<{ notification: NotificationType }> = ({
   notification,
 }) => {
   const dispatch = useDispatch();
+  const { t } = useTranslation();
 
   // Tự động ẩn thông báo sau khoảng thời gian
   useEffect(() => {
@@ -121,7 +123,7 @@ const Notification: React.FC<{ notification: NotificationType }> = ({
         type="button"
         className="ml-4 text-neutral-400 hover:text-neutral-500 dark:text-neutral-500 dark:hover:text-neutral-400"
         onClick={() => dispatch(removeNotification(notification.id))}
-        aria-label="Close"
+        aria-label={t('common.close')}
       >
         <svg
           xmlns="http://www.w3.org/2000/svg"

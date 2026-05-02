@@ -1,4 +1,5 @@
-﻿import { useState } from 'react';
+import { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useGetProductsQuery } from '@/services/productApi';
 import ProductCard from '@/components/shared/ProductCard';
 import LoadingSpinner from '@/components/common/LoadingSpinner';
@@ -6,11 +7,11 @@ import Select from '@/components/common/Select';
 import Pagination from '@/components/common/Pagination';
 
 const NewArrivalsPage: React.FC = () => {
+  const { t } = useTranslation();
   const [sortOption, setSortOption] = useState('newest');
   const [currentPage, setCurrentPage] = useState(1);
   const limit = 12;
 
-  // Lấy sản phẩm mới nhất
   const {
     data: productsData,
     isLoading,
@@ -19,14 +20,14 @@ const NewArrivalsPage: React.FC = () => {
     sort: sortOption,
     page: currentPage,
     limit,
-    newArrivals: true, // Đây sẽ là tham số trong API thực tế để lọc sản phẩm mới về
+    newArrivals: true,
   });
 
   const sortOptions = [
-    { value: 'newest', label: 'Newest First' },
-    { value: 'price_asc', label: 'Price: Low to High' },
-    { value: 'price_desc', label: 'Price: High to Low' },
-    { value: 'popular', label: 'Most Popular' },
+    { value: 'newest', label: t('newArrivals.sortNewest') },
+    { value: 'price_asc', label: t('newArrivals.sortPriceAsc') },
+    { value: 'price_desc', label: t('newArrivals.sortPriceDesc') },
+    { value: 'popular', label: t('newArrivals.sortPopular') },
   ];
 
   const handleSortChange = (value: string) => {
@@ -36,7 +37,6 @@ const NewArrivalsPage: React.FC = () => {
 
   const handlePageChange = (page: number) => {
     setCurrentPage(page);
-    // Cuộn lên đầu trang khi chuyển trang
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
@@ -52,11 +52,10 @@ const NewArrivalsPage: React.FC = () => {
     return (
       <div className="container mx-auto px-4 py-16 text-center">
         <h1 className="text-2xl font-bold text-red-600 mb-4">
-          Error Loading Products
+          {t('newArrivals.errorTitle')}
         </h1>
         <p className="text-neutral-600 dark:text-neutral-400">
-          We encountered an error while loading the new arrivals. Please try
-          again later.
+          {t('newArrivals.errorDesc')}
         </p>
       </div>
     );
@@ -64,57 +63,42 @@ const NewArrivalsPage: React.FC = () => {
 
   return (
     <div className="container mx-auto px-4 py-16">
-      {/* Phần hero */}
       <div className="bg-gradient-to-r from-blue-600 to-indigo-500 rounded-xl p-8 mb-12 text-white text-center">
-        <h1 className="text-4xl font-bold mb-4">New Arrivals</h1>
+        <h1 className="text-4xl font-bold mb-4">{t('newArrivals.heroTitle')}</h1>
         <p className="text-lg max-w-2xl mx-auto mb-6">
-          Discover our latest products and stay ahead of the trends with our
-          newest collection.
+          {t('newArrivals.heroDesc')}
         </p>
         <div className="inline-block bg-white text-blue-600 font-bold py-3 px-6 rounded-full text-lg">
-          Fresh & Exciting
+          {t('newArrivals.heroBadge')}
         </div>
       </div>
 
-      {/* Sắp xếp và số kết quả */}
       <div className="flex flex-col md:flex-row justify-between items-center mb-8">
         <p className="text-neutral-600 dark:text-neutral-400 mb-4 md:mb-0">
           {productsData?.total
-            ? `Showing ${productsData.products.length} of ${productsData.total} products`
-            : 'Browse our newest products'}
+            ? t('newArrivals.showing', { shown: productsData.products.length, total: productsData.total })
+            : t('newArrivals.browse')}
         </p>
         <div className="w-full md:w-48">
           <Select
             options={sortOptions}
             value={sortOption}
             onChange={handleSortChange}
-            placeholder="Sort By"
+            placeholder={t('newArrivals.sortBy')}
           />
         </div>
       </div>
 
-      {/* Lưới sản phẩm */}
       {productsData?.products.length === 0 ? (
         <div className="text-center py-12 bg-neutral-50 dark:bg-neutral-800 rounded-lg">
-          <svg
-            xmlns="http://www.w3.org/2000/svg"
-            className="h-12 w-12 mx-auto text-neutral-400 mb-4"
-            fill="none"
-            viewBox="0 0 24 24"
-            stroke="currentColor"
-          >
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              strokeWidth={2}
-              d="M9.172 16.172a4 4 0 015.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
-            />
+          <svg xmlns="http://www.w3.org/2000/svg" className="h-12 w-12 mx-auto text-neutral-400 mb-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.172 16.172a4 4 0 015.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
           </svg>
           <h3 className="text-xl font-semibold text-neutral-700 dark:text-neutral-300 mb-2">
-            No new products available
+            {t('newArrivals.empty')}
           </h3>
           <p className="text-neutral-500 dark:text-neutral-400 mb-6">
-            Check back soon for new arrivals
+            {t('newArrivals.emptyHint')}
           </p>
         </div>
       ) : (
@@ -125,7 +109,6 @@ const NewArrivalsPage: React.FC = () => {
             ))}
           </div>
 
-          {/* Phân trang */}
           {productsData && productsData.totalPages > 1 && (
             <Pagination
               currentPage={currentPage}

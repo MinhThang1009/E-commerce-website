@@ -30,6 +30,7 @@ const EmailCampaign = sequelize.define(
   {
     tableName: 'email_campaigns',
     timestamps: true,
+    underscored: false,
   }
 );
 

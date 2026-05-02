@@ -4,6 +4,7 @@
  */
 
 import React from 'react';
+import { useTranslation } from 'react-i18next';
 
 interface LoadingStateProps {
   size?: 'sm' | 'md' | 'lg';
@@ -183,11 +184,12 @@ export const LoadingState: React.FC<LoadingStateProps> = ({
  * Component loading toàn trang
  */
 export const FullPageLoading: React.FC<{ message?: string }> = ({
-  message = 'Đang tải...',
+  message,
 }) => {
+  const { t } = useTranslation();
   return (
     <div className="fixed inset-0 bg-white dark:bg-neutral-900 flex items-center justify-center z-50">
-      <LoadingSpinner size="lg" text={message} />
+      <LoadingSpinner size="lg" text={message ?? t('common.loading')} />
     </div>
   );
 };
@@ -198,10 +200,11 @@ export const FullPageLoading: React.FC<{ message?: string }> = ({
 export const SectionLoading: React.FC<{
   message?: string;
   className?: string;
-}> = ({ message = 'Đang tải...', className = '' }) => {
+}> = ({ message, className = '' }) => {
+  const { t } = useTranslation();
   return (
     <div className={`flex justify-center items-center py-20 ${className}`}>
-      <LoadingSpinner size="md" text={message} />
+      <LoadingSpinner size="md" text={message ?? t('common.loading')} />
     </div>
   );
 };

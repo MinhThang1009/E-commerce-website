@@ -1,4 +1,5 @@
 import React from 'react';
+import { useTranslation } from 'react-i18next';
 import { Message } from '../types/Message';
 import ProductCard from './AIProductCard';
 import { Link } from 'react-router-dom';
@@ -16,6 +17,7 @@ const MessageBubble: React.FC<MessageBubbleProps> = ({
   message,
   onSuggestionClick,
 }) => {
+  const { t } = useTranslation();
   return (
     <div
       className={`max-w-[85%] rounded-2xl p-3.5 chat-bubble ${
@@ -50,7 +52,7 @@ const MessageBubble: React.FC<MessageBubbleProps> = ({
             <div className="mt-4 space-y-3">
               <p className="font-medium text-xs text-neutral-500 dark:text-neutral-400 flex items-center">
                 <GridIcon className="mr-1.5" />
-                <span>Sản phẩm gợi ý cho bạn</span>
+                <span>{t('chat.suggestedProducts')}</span>
               </p>
               <div className="grid grid-cols-1 gap-3">
                 {message.products.map((product) => (

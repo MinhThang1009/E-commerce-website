@@ -1,4 +1,5 @@
 ﻿import React from 'react';
+import { useTranslation } from 'react-i18next';
 import { useGetRecentlyViewedQuery } from '@/services/productApi';
 import ProductCard from '@/components/shared/ProductCard';
 
@@ -11,16 +12,18 @@ interface RecentlyViewedProductsProps {
   title?: string;
 }
 
-const RecentlyViewedProducts: React.FC<RecentlyViewedProductsProps> = ({ 
-  limit = 10, 
-  title = "Sản phẩm đã xem" 
+const RecentlyViewedProducts: React.FC<RecentlyViewedProductsProps> = ({
+  limit = 10,
+  title,
 }) => {
+  const { t } = useTranslation();
+  const resolvedTitle = title ?? t('product.recentlyViewed');
   const { data, isLoading, error } = useGetRecentlyViewedQuery({ limit });
 
   if (isLoading) {
     return (
       <div className="py-8">
-        <h2 className="text-2xl font-bold mb-6">{title}</h2>
+        <h2 className="text-2xl font-bold mb-6">{resolvedTitle}</h2>
         <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
           {[...Array(5)].map((_, i) => (
             <SkeletonPulse key={i} />
@@ -38,7 +41,7 @@ const RecentlyViewedProducts: React.FC<RecentlyViewedProductsProps> = ({
 
   return (
     <div className="py-8">
-      <h2 className="text-2xl font-bold mb-6">{title}</h2>
+      <h2 className="text-2xl font-bold mb-6">{resolvedTitle}</h2>
       <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
         {products.map((product: any) => (
           <ProductCard key={product.id} {...product} />

@@ -1,11 +1,38 @@
-const { Product, Category, Order, OrderItem, User } = require('../models');
+const { Product, Category, Brand, Order, OrderItem, User } = require('../../models');
 const { Op } = require('sequelize');
 
+// Alias tĩnh cho các từ viết tắt/tên thay thế — chỉ cần cập nhật khi thêm LOẠI sản phẩm hoàn toàn mới
+// Tên danh mục (key) phải khớp chính xác với tên trong DB (lowercase)
+const CATEGORY_ALIASES = {
+  'điện thoại': ['phone', 'smartphone', 'mobile', 'dt', 'dtdd'],
+  'tablet': ['máy tính bảng', 'tab', 'pad', 'mtb', 'ipad'],
+  'laptop': ['máy tính xách tay', 'lap', 'notebook', 'macbook'],
+};
+
 class ChatbotService {
+  constructor() {
+    this._brandsCache = null;
+    this._categoriesCache = null;
+    this._cacheExpiry = 0;
+  }
+
+  // Load brands và categories từ DB, cache 5 phút
+  // Tự động nhận tất cả thương hiệu/danh mục mới khi chúng được thêm vào DB
+  async _ensureCatalogCache() {
+    if (this._brandsCache && Date.now() < this._cacheExpiry) return;
+    const [brands, categories] = await Promise.all([
+      Brand.findAll({ attributes: ['name'], raw: true }),
+      Category.findAll({ attributes: ['name'], raw: true }),
+    ]);
+    this._brandsCache = brands.map(b => b.name.toLowerCase());
+    this._categoriesCache = categories.map(c => c.name);
+    this._cacheExpiry = Date.now() + 5 * 60 * 1000;
+  }
   /**
    * Phân tích ý định của người dùng từ tin nhắn
    */
   async analyzeIntent(message) {
+    await this._ensureCatalogCache();
     const lowerMessage = message.toLowerCase();
 
     // Ý định tìm kiếm sản phẩm
@@ -129,20 +156,14 @@ class ChatbotService {
     const lowerMessage = message.toLowerCase();
     const params = {};
 
-    // Trích xuất danh mục sản phẩm
-    const categoryKeywords = {
-      áo: ['áo', 'shirt', 'top', 'blouse'],
-      quần: ['quần', 'pants', 'jeans', 'trousers'],
-      giày: ['giày', 'shoes', 'sneaker', 'boots'],
-      túi: ['túi', 'bag', 'backpack', 'handbag'],
-      'phụ kiện': ['phụ kiện', 'accessories', 'jewelry', 'watch'],
-    };
-
-    for (const [category, keywords] of Object.entries(categoryKeywords)) {
-      if (keywords.some((keyword) => lowerMessage.includes(keyword))) {
-        params.category = category;
-        break;
-      }
+    // Trích xuất danh mục — tên từ DB (cache) + alias tĩnh
+    // Thêm thương hiệu/danh mục vào DB là đủ; chỉ cần cập nhật CATEGORY_ALIASES khi thêm loại hàng hoàn toàn mới
+    const categories = this._categoriesCache || [];
+    for (const catName of categories) {
+      const key = catName.toLowerCase();
+      if (lowerMessage.includes(key)) { params.category = catName; break; }
+      const aliases = CATEGORY_ALIASES[key] || [];
+      if (aliases.some(alias => lowerMessage.includes(alias))) { params.category = catName; break; }
     }
 
     // Trích xuất khoảng giá
@@ -173,8 +194,8 @@ class ChatbotService {
       }
     }
 
-    // Trích xuất thương hiệu
-    const brands = ['nike', 'adidas', 'zara', 'h&m', 'uniqlo'];
+    // Trích xuất thương hiệu — dynamic từ DB (cache), tự nhận thương hiệu mới
+    const brands = this._brandsCache || [];
     for (const brand of brands) {
       if (lowerMessage.includes(brand)) {
         params.brand = brand;

@@ -1,3 +1,4 @@
+import i18next from 'i18next';
 import { ProductVariant } from '@/types/product.types';
 
 export interface PriceInfo {
@@ -25,7 +26,7 @@ export const calculatePriceRange = (
       priceText:
         minPrice === maxPrice
           ? `${minPrice.toLocaleString('vi-VN')}đ`
-          : `Từ ${minPrice.toLocaleString('vi-VN')}đ`,
+          : i18next.t('product.priceFrom', { price: `${minPrice.toLocaleString('vi-VN')}đ` }),
       basePrice: minPrice,
     };
   }

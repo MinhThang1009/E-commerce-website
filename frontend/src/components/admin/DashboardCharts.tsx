@@ -67,7 +67,7 @@ const DashboardCharts: React.FC = () => {
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
         {[...Array(2)].map((_, index) => (
           <div key={index} className="bg-white dark:bg-neutral-800 rounded-lg p-6 shadow-sm border border-neutral-200 dark:border-neutral-700 animate-pulse h-80 flex items-center justify-center">
-            <div className="text-neutral-400">Đang tải dữ liệu...</div>
+            <div className="text-neutral-400">{t('common.loading')}</div>
           </div>
         ))}
       </div>
@@ -92,7 +92,7 @@ const DashboardCharts: React.FC = () => {
       {/* Header bộ lọc */}
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 bg-white dark:bg-neutral-800 p-4 rounded-lg border border-neutral-200 dark:border-neutral-700">
         <h2 className="text-lg font-semibold text-neutral-800 dark:text-neutral-100">
-          Biểu đồ Thống kê
+          {t('admin.charts.title')}
         </h2>
         
         <div className="flex items-center gap-2">
@@ -102,9 +102,9 @@ const DashboardCharts: React.FC = () => {
             onChange={(e) => setPeriod(e.target.value as any)}
             className="px-3 py-1.5 border border-neutral-300 dark:border-neutral-600 bg-white dark:bg-neutral-700 text-sm rounded-md shadow-sm focus:ring-primary-500 focus:border-primary-500 text-neutral-800 dark:text-neutral-100"
           >
-            <option value="7d">7 ngày qua</option>
-            <option value="30d">30 ngày qua</option>
-            <option value="90d">90 ngày qua</option>
+            <option value="7d">{t('admin.charts.last7Days')}</option>
+            <option value="30d">{t('admin.charts.last30Days')}</option>
+            <option value="90d">{t('admin.charts.last90Days')}</option>
           </select>
 
           {/* Bộ chọn nhóm theo */}
@@ -113,9 +113,9 @@ const DashboardCharts: React.FC = () => {
             onChange={(e) => setGroupBy(e.target.value as any)}
             className="px-3 py-1.5 border border-neutral-300 dark:border-neutral-600 bg-white dark:bg-neutral-700 text-sm rounded-md shadow-sm focus:ring-primary-500 focus:border-primary-500 text-neutral-800 dark:text-neutral-100"
           >
-            <option value="day">Theo ngày</option>
-            <option value="week">Theo tuần</option>
-            <option value="month">Theo tháng</option>
+            <option value="day">{t('admin.charts.byDay')}</option>
+            <option value="week">{t('admin.charts.byWeek')}</option>
+            <option value="month">{t('admin.charts.byMonth')}</option>
           </select>
         </div>
       </div>
@@ -124,7 +124,9 @@ const DashboardCharts: React.FC = () => {
         {/* Biểu đồ doanh thu */}
         <div className="bg-white dark:bg-neutral-800 rounded-lg p-6 shadow-sm border border-neutral-200 dark:border-neutral-700">
           <h3 className="text-sm font-medium text-neutral-500 dark:text-neutral-400 mb-4">
-            Doanh thu {period === '7d' ? '7 ngày' : period === '30d' ? '30 ngày' : '90 ngày'} (Trạng thái: Delivered)
+            {t('admin.charts.revenue', {
+              period: period === '7d' ? t('admin.charts.period7d') : period === '30d' ? t('admin.charts.period30d') : t('admin.charts.period90d'),
+            })}
           </h3>
           <div className="h-64">
             <ResponsiveContainer width="100%" height="100%">
@@ -159,7 +161,7 @@ const DashboardCharts: React.FC = () => {
         {/* Biểu đồ số lượng đơn hàng */}
         <div className="bg-white dark:bg-neutral-800 rounded-lg p-6 shadow-sm border border-neutral-200 dark:border-neutral-700">
           <h3 className="text-sm font-medium text-neutral-500 dark:text-neutral-400 mb-4">
-            Số lượng Đơn hàng
+            {t('admin.charts.orderCount')}
           </h3>
           <div className="h-64">
             <ResponsiveContainer width="100%" height="100%">

@@ -5,6 +5,7 @@
 
 import React from 'react';
 import { Helmet } from 'react-helmet-async';
+import { useTranslation } from 'react-i18next';
 import { FullPageLoading } from '@/components/common/LoadingState';
 import { ErrorState } from '@/components/common/ErrorState';
 
@@ -42,11 +43,12 @@ export const PageHeader: React.FC<PageHeaderProps> = ({
   actions,
   className = '',
 }) => {
+  const { t } = useTranslation();
   return (
     <div className={`mb-8 ${className}`}>
       {/* Đường dẫn */}
       {breadcrumbs && breadcrumbs.length > 0 && (
-        <nav className="flex mb-4" aria-label="Breadcrumb">
+        <nav className="flex mb-4" aria-label={t('common.breadcrumb')}>
           <ol className="flex items-center space-x-2">
             {breadcrumbs.map((breadcrumb, index) => (
               <li key={index} className="flex items-center">

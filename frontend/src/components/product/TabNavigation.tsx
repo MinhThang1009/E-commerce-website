@@ -1,4 +1,5 @@
 import React from 'react';
+import { useTranslation } from 'react-i18next';
 import { Button, Space, Alert } from 'antd';
 import {
   ArrowRightOutlined,
@@ -26,22 +27,23 @@ const TabNavigation: React.FC<TabNavigationProps> = ({
   completedSteps = {},
   onSubmit,
   isSubmitting = false,
-  submitText = 'Tạo sản phẩm',
-  loadingText = 'Đang tạo...',
+  submitText,
+  loadingText,
 }) => {
+  const { t } = useTranslation();
+  const resolvedSubmitText = submitText ?? t('product.createProduct');
+  const resolvedLoadingText = loadingText ?? t('product.creating');
+
   const currentIndex = tabOrder.indexOf(activeTab);
   const nextTab =
     currentIndex < tabOrder.length - 1 ? tabOrder[currentIndex + 1] : null;
-
   const prevTab = currentIndex > 0 ? tabOrder[currentIndex - 1] : null;
 
   const handleNext = () => {
-    // Chỉ cho phép chuyển sang bước tiếp theo nếu bước hiện tại đã hoàn thành
     if (nextTab && completedSteps[activeTab]) {
       setActiveTab(nextTab);
     } else if (nextTab) {
-      // Hiển thị thông báo nếu bước hiện tại chưa hoàn thành
-      alert('Vui lòng hoàn thành bước hiện tại trước khi tiếp tục');
+      alert(t('product.completeCurrentStep'));
     }
   };
 
@@ -51,29 +53,23 @@ const TabNavigation: React.FC<TabNavigationProps> = ({
     }
   };
 
-  // Kiểm tra xem tất cả các step đã hoàn thành chưa
   const allStepsCompleted = Object.values(completedSteps).every((step) => step);
 
-  // Nếu là tab cuối cùng, hiển thị button tạo sản phẩm nếu tất cả step hoàn thành
   if (isLastTab || !nextTab) {
     if (isLastTab && allStepsCompleted && onSubmit) {
       return (
         <div style={{ marginTop: 24, textAlign: 'right' }}>
           <Alert
-            message="Tất cả các bước đã hoàn thành"
-            description="Bạn có thể tạo sản phẩm ngay bây giờ."
+            message={t('product.allStepsComplete')}
+            description={t('product.canCreateNow')}
             type="success"
             showIcon
             style={{ marginBottom: 16 }}
           />
           <Space>
             {prevTab && (
-              <Button
-                onClick={handlePrev}
-                icon={<ArrowLeftOutlined />}
-                size="large"
-              >
-                Quay lại
+              <Button onClick={handlePrev} icon={<ArrowLeftOutlined />} size="large">
+                {t('common.back')}
               </Button>
             )}
             <Button
@@ -85,7 +81,7 @@ const TabNavigation: React.FC<TabNavigationProps> = ({
               disabled={isSubmitting}
               style={{ minWidth: 150 }}
             >
-              {isSubmitting ? loadingText : submitText}
+              {isSubmitting ? resolvedLoadingText : resolvedSubmitText}
             </Button>
           </Space>
         </div>
@@ -94,7 +90,6 @@ const TabNavigation: React.FC<TabNavigationProps> = ({
     return null;
   }
 
-  // Kiểm tra xem bước hiện tại đã hoàn thành chưa
   const isCurrentStepCompleted = completedSteps[activeTab] || false;
 
   return (
@@ -102,13 +97,13 @@ const TabNavigation: React.FC<TabNavigationProps> = ({
       <Alert
         message={
           isCurrentStepCompleted
-            ? 'Bước này đã hoàn thành'
-            : 'Hoàn thành bước này trước khi tiếp tục'
+            ? t('product.stepComplete')
+            : t('product.completeStepFirst')
         }
         description={
           isCurrentStepCompleted
-            ? 'Bạn có thể tiếp tục sang bước tiếp theo.'
-            : 'Vui lòng điền đầy đủ thông tin ở bước này trước khi chuyển sang bước tiếp theo.'
+            ? t('product.canContinueStep')
+            : t('product.fillRequiredFirst')
         }
         type={isCurrentStepCompleted ? 'success' : 'info'}
         showIcon
@@ -116,12 +111,8 @@ const TabNavigation: React.FC<TabNavigationProps> = ({
       />
       <Space>
         {prevTab && (
-          <Button
-            onClick={handlePrev}
-            icon={<ArrowLeftOutlined />}
-            size="large"
-          >
-            Quay lại
+          <Button onClick={handlePrev} icon={<ArrowLeftOutlined />} size="large">
+            {t('common.back')}
           </Button>
         )}
         <Button
@@ -131,7 +122,7 @@ const TabNavigation: React.FC<TabNavigationProps> = ({
           size="large"
           disabled={!isCurrentStepCompleted}
         >
-          Tiếp theo
+          {t('common.nextStep')}
         </Button>
       </Space>
     </div>

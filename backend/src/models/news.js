@@ -58,7 +58,7 @@ const News = sequelize.define(
   {
     tableName: 'news',
     timestamps: true,
-    underscored: true,
+    underscored: false,
   }
 );
 

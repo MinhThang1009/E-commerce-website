@@ -1,4 +1,5 @@
 import React, { useMemo, useEffect, useState, useRef } from 'react';
+import { useTranslation } from 'react-i18next';
 import ReactQuill from 'react-quill';
 import 'quill/dist/quill.snow.css';
 
@@ -14,7 +15,7 @@ interface RichTextEditorProps {
 }
 
 // Hàm tiện ích chuyển đổi chuỗi base64 thành thẻ img
-const convertBase64ToImages = (content: string): string => {
+const convertBase64ToImages = (content: string, altText = 'Product image'): string => {
   if (!content) return '';
 
   let convertedContent = content;
@@ -42,7 +43,7 @@ const convertBase64ToImages = (content: string): string => {
     }
 
     // Chưa được bao bọc, tạo thẻ img
-    return `<img src="${match}" alt="Product image" style="max-width: 100%; height: auto;" />`;
+    return `<img src="${match}" alt="${altText}" style="max-width: 100%; height: auto;" />`;
   });
 
   return convertedContent;
@@ -51,10 +52,12 @@ const convertBase64ToImages = (content: string): string => {
 const RichTextEditor: React.FC<RichTextEditorProps> = ({
   value = '',
   onChange,
-  placeholder = 'Nhập nội dung...',
+  placeholder,
   height = 200,
   readonly = false,
 }) => {
+  const { t } = useTranslation();
+  const resolvedPlaceholder = placeholder ?? t('editor.placeholder');
   const [displayValue, setDisplayValue] = useState('');
   const quillRef = useRef<ReactQuill>(null);
 
@@ -62,7 +65,7 @@ const RichTextEditor: React.FC<RichTextEditorProps> = ({
   useEffect(() => {
     console.log('RichTextEditor - Nhận props:', { value, readonly });
     console.log('RichTextEditor - Giá trị gốc:', value);
-    const converted = convertBase64ToImages(value);
+    const converted = convertBase64ToImages(value, t('product.imageAlt'));
     console.log('RichTextEditor - Giá trị sau chuyển đổi:', converted);
     setDisplayValue(converted);
   }, [value]);
@@ -172,7 +175,7 @@ const RichTextEditor: React.FC<RichTextEditorProps> = ({
         onChange={handleChange}
         modules={modules}
         formats={formats}
-        placeholder={placeholder}
+        placeholder={resolvedPlaceholder}
         readOnly={readonly}
         style={{ height: `${height}px`, marginBottom: '50px' }}
       />

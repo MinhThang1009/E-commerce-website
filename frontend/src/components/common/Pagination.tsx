@@ -1,4 +1,5 @@
 import React from 'react';
+import { useTranslation } from 'react-i18next';
 
 interface PaginationProps {
   currentPage: number;
@@ -13,6 +14,7 @@ const Pagination: React.FC<PaginationProps> = ({
   onPageChange,
   siblingCount = 1,
 }) => {
+  const { t } = useTranslation();
   // Tạo danh sách số trang để hiển thị
   const generatePagination = () => {
     // Luôn hiển thị trang đầu và trang cuối
@@ -65,7 +67,7 @@ const Pagination: React.FC<PaginationProps> = ({
   if (totalPages <= 1) return null;
 
   return (
-    <nav className="flex justify-center mt-8" aria-label="Pagination">
+    <nav className="flex justify-center mt-8" aria-label={t('common.pagination')}>
       <ul className="flex space-x-1">
         {/* Nút trang trước */}
         <li>
@@ -77,7 +79,7 @@ const Pagination: React.FC<PaginationProps> = ({
                 ? 'text-neutral-400 cursor-not-allowed'
                 : 'text-neutral-700 hover:bg-neutral-100 dark:text-neutral-300 dark:hover:bg-neutral-800'
             }`}
-            aria-label="Previous page"
+            aria-label={t('common.prevPage')}
           >
             <svg
               xmlns="http://www.w3.org/2000/svg"
@@ -133,7 +135,7 @@ const Pagination: React.FC<PaginationProps> = ({
                 ? 'text-neutral-400 cursor-not-allowed'
                 : 'text-neutral-700 hover:bg-neutral-100 dark:text-neutral-300 dark:hover:bg-neutral-800'
             }`}
-            aria-label="Next page"
+            aria-label={t('common.nextPage')}
           >
             <svg
               xmlns="http://www.w3.org/2000/svg"

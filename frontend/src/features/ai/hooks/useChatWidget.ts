@@ -1,8 +1,10 @@
 import { useState, useRef, useEffect, useCallback } from 'react';
-import { CHAT_WIDGET_CONFIG, GREETING_MESSAGE } from '../constants/chatWidget';
+import { useTranslation } from 'react-i18next';
+import { CHAT_WIDGET_CONFIG, getGreetingMessage } from '../constants/chatWidget';
 import { Message } from '../components/ChatWidget';
 
 export const useChatWidget = () => {
+  const { t } = useTranslation();
   const [isOpen, setIsOpen] = useState(false);
   const [position, setPosition] = useState({ x: 0, y: 0 });
   const [size, setSize] = useState(CHAT_WIDGET_CONFIG.DEFAULT_SIZE);
@@ -30,7 +32,7 @@ export const useChatWidget = () => {
   useEffect(() => {
     if (messages.length === 0) {
       const greeting = {
-        ...GREETING_MESSAGE,
+        ...getGreetingMessage(),
         id: Date.now().toString(),
       };
       setMessages([greeting]);
@@ -106,9 +108,9 @@ export const useChatWidget = () => {
 
     const confirmMessage: Message = {
       id: Date.now().toString(),
-      text: 'Đã áp dụng thay đổi! Kích thước cửa sổ chat đã được lưu.',
+      text: t('chat.sizeApplied'),
       sender: 'ai',
-      suggestions: ['Cảm ơn', 'Tùy chỉnh thêm'],
+      suggestions: [t('chat.suggestions.thanks'), t('chat.suggestions.customizeMore')],
     };
 
     addMessage(confirmMessage);

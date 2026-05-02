@@ -1,3 +1,4 @@
+import i18next from 'i18next';
 import { store } from '@/store';
 import { updateTokens, logout } from '@/features/auth/authSlice';
 import { handleAutoLogout, logoutManager } from '@/utils/authUtils';
@@ -58,7 +59,7 @@ export const refreshTokenIfNeeded = async (): Promise<string | null> => {
         const errorData = await response.json().catch(() => ({}));
         const errorMessage =
           errorData?.message ||
-          'Tài khoản của bạn đã bị khóa. Vui lòng liên hệ quản trị viên';
+          i18next.t('auth.errors.accountLocked');
 
         // Dùng hàm xử lý tự động đăng xuất tập trung
         handleAutoLogout(errorMessage);

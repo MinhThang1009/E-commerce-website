@@ -1,22 +1,24 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { useGetCollectionsQuery } from '@/services/collectionApi';
 import { PageLayout } from '@/components/layout/PageLayout';
 import { ErrorState } from '@/components/common/ErrorState';
 
 const CollectionsPage: React.FC = () => {
+    const { t } = useTranslation();
     const { data: collectionsData, isLoading, error, refetch } = useGetCollectionsQuery({ isActive: true });
     const collections = collectionsData?.data || [];
 
     return (
-        <PageLayout title="Bộ sưu tập" description="Khám phá các bộ sưu tập đặc biệt của chúng tôi">
+        <PageLayout title={t('collections.pageTitle')} description={t('collections.pageDescription')}>
             <div className="py-10">
                 <div className="mb-14 text-center">
                     <h1 className="text-5xl font-black text-neutral-900 dark:text-white mb-6 tracking-tight">
-                        Bộ Sưu Tập Của Chúng Tôi
+                        {t('collections.title')}
                     </h1>
                     <p className="text-lg text-neutral-600 dark:text-neutral-400 max-w-2xl mx-auto leading-relaxed">
-                        Mỗi bộ sưu tập là một câu chuyện riêng, mang phong cách và cá tính độc đáo dành cho bạn.
+                        {t('collections.description')}
                     </p>
                 </div>
 
@@ -31,8 +33,8 @@ const CollectionsPage: React.FC = () => {
                 ) : collections.length === 0 ? (
                     <div className="text-center py-20">
                          <div className="text-6xl mb-4">🎨</div>
-                        <h3 className="text-xl font-bold">Chưa có bộ sưu tập nào</h3>
-                        <p className="text-neutral-500">Quay lại sau để khám phá những bộ sưu tập mới</p>
+                        <h3 className="text-xl font-bold">{t('collections.empty')}</h3>
+                        <p className="text-neutral-500">{t('collections.emptyHint')}</p>
                     </div>
                 ) : (
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-10">
@@ -53,11 +55,11 @@ const CollectionsPage: React.FC = () => {
                                             {collection.name}
                                         </h3>
                                         <p className="text-neutral-300 text-lg mb-8 max-w-md line-clamp-2 opacity-0 group-hover:opacity-100 transition-opacity duration-700">
-                                            {collection.description || 'Khám phá bộ sưu tập phong cách mới nhất.'}
+                                            {collection.description || t('collections.defaultDesc')}
                                         </p>
                                         <div className="flex items-center gap-3 text-white font-bold group-hover:gap-5 transition-all">
                                             <span className="bg-white text-black px-8 py-4 rounded-full hover:bg-neutral-100 transition-colors">
-                                                Khám phá ngay
+                                                {t('collections.explore')}
                                             </span>
                                             <div className="w-12 h-12 rounded-full border border-white/30 flex items-center justify-center backdrop-blur-sm group-hover:bg-white group-hover:text-black transition-all">
                                                 <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">

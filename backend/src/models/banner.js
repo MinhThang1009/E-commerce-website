@@ -40,6 +40,7 @@ const Banner = sequelize.define(
   {
     tableName: 'banners',
     timestamps: true,
+    underscored: false,
   }
 );
 

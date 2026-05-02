@@ -109,12 +109,12 @@ const OrdersPage: React.FC = () => {
 
   // Tùy chọn trạng thái cho bộ lọc và form
   const statusOptions = [
-    { value: '', label: 'Tất cả trạng thái' },
-    { value: 'pending', label: 'Chờ xử lý' },
-    { value: 'processing', label: 'Đang xử lý' },
-    { value: 'shipped', label: 'Đã giao cho vận chuyển' },
-    { value: 'delivered', label: 'Đã giao hàng' },
-    { value: 'cancelled', label: 'Đã hủy' },
+    { value: '', label: t('admin.orders.allStatus') },
+    { value: 'pending', label: t('admin.orders.status.pending') },
+    { value: 'processing', label: t('admin.orders.status.processing') },
+    { value: 'shipped', label: t('admin.orders.status.shipped') },
+    { value: 'delivered', label: t('admin.orders.status.delivered') },
+    { value: 'cancelled', label: t('admin.orders.status.cancelled') },
   ];
 
   const updateStatusOptions = statusOptions.filter(
@@ -195,7 +195,7 @@ const OrdersPage: React.FC = () => {
   // Cấu hình các cột bảng
   const columns: ColumnsType<AdminOrder> = [
     {
-      title: 'Mã đơn hàng',
+      title: t('admin.orders.table.orderNumber'),
       dataIndex: 'number',
       key: 'number',
       width: 120,
@@ -204,13 +204,13 @@ const OrdersPage: React.FC = () => {
           <Text strong>#{number}</Text>
           <br />
           <Text type="secondary" style={{ fontSize: '12px' }}>
-            {`${record.items?.length || 0} sản phẩm`}
+            {t('admin.orders.table.itemCount', { count: record.items?.length || 0 })}
           </Text>
         </div>
       ),
     },
     {
-      title: 'Khách hàng',
+      title: t('admin.orders.table.customer'),
       key: 'customer',
       width: 200,
       render: (_, record: AdminOrder) => (
@@ -228,7 +228,7 @@ const OrdersPage: React.FC = () => {
       ),
     },
     {
-      title: 'Ngày đặt',
+      title: t('admin.orders.table.createdAt'),
       dataIndex: 'createdAt',
       key: 'createdAt',
       width: 140,
@@ -240,7 +240,7 @@ const OrdersPage: React.FC = () => {
       ),
     },
     {
-      title: 'Tổng tiền',
+      title: t('admin.orders.table.total'),
       dataIndex: 'total',
       key: 'total',
       width: 120,
@@ -254,7 +254,7 @@ const OrdersPage: React.FC = () => {
       ),
     },
     {
-      title: 'Trạng thái',
+      title: t('common.status'),
       dataIndex: 'status',
       key: 'status',
       width: 120,
@@ -269,7 +269,7 @@ const OrdersPage: React.FC = () => {
       },
     },
     {
-      title: 'Thanh toán',
+      title: t('admin.orders.table.payment'),
       dataIndex: 'paymentStatus',
       key: 'paymentStatus',
       width: 120,
@@ -299,7 +299,7 @@ const OrdersPage: React.FC = () => {
       },
     },
     {
-      title: 'Hành động',
+      title: t('admin.common.actions'),
       key: 'actions',
       width: 120,
       fixed: 'right',

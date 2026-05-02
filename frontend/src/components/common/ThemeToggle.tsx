@@ -1,9 +1,11 @@
 import React from 'react';
 import { useSelector, useDispatch } from 'react-redux';
+import { useTranslation } from 'react-i18next';
 import { RootState } from '@/store';
 import { setTheme } from '@/features/ui/uiSlice';
 
 const ThemeToggle: React.FC = () => {
+  const { t } = useTranslation();
   const dispatch = useDispatch();
   const theme = useSelector((state: RootState) => state.ui.theme);
 
@@ -15,9 +17,7 @@ const ThemeToggle: React.FC = () => {
     <button
       onClick={toggleTheme}
       className="p-2 rounded-full bg-neutral-100 dark:bg-neutral-800 text-neutral-800 dark:text-neutral-200 hover:bg-neutral-200 dark:hover:bg-neutral-700 transition-colors"
-      aria-label={
-        theme === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'
-      }
+      aria-label={theme === 'dark' ? t('common.switchToLight') : t('common.switchToDark')}
     >
       {theme === 'dark' ? (
         <svg

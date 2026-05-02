@@ -1,3 +1,4 @@
+import { useTranslation } from 'react-i18next';
 import { useGetProductReviewsQuery } from '@/services/reviewApi';
 import { Rating } from '@/components/common/Rating';
 
@@ -12,6 +13,7 @@ const ReviewSummary: React.FC<ReviewSummaryProps> = ({
   averageRating = 0,
   totalReviews = 0,
 }) => {
+  const { t } = useTranslation();
   const { data: reviewsData } = useGetProductReviewsQuery(
     {
       productId,
@@ -35,7 +37,7 @@ const ReviewSummary: React.FC<ReviewSummaryProps> = ({
   return (
     <div className="bg-white dark:bg-neutral-800 rounded-lg shadow-sm p-6 mb-6">
       <h3 className="text-lg font-semibold text-neutral-900 dark:text-white mb-4">
-        Tổng quan đánh giá
+        {t('review.summary.title')}
       </h3>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -46,7 +48,7 @@ const ReviewSummary: React.FC<ReviewSummaryProps> = ({
           </div>
           <Rating value={averageRating} size="large" readonly />
           <p className="text-sm text-neutral-600 dark:text-neutral-400 mt-2">
-            {totalReviews} đánh giá
+            {t('review.summary.totalReviews', { count: totalReviews })}
           </p>
         </div>
 
@@ -55,7 +57,7 @@ const ReviewSummary: React.FC<ReviewSummaryProps> = ({
           {ratingDistribution.map(({ rating, count, percentage }) => (
             <div key={rating} className="flex items-center space-x-3">
               <span className="text-sm text-neutral-600 dark:text-neutral-400 w-8">
-                {rating} sao
+                {t('review.summary.stars', { rating })}
               </span>
               <div className="flex-1 bg-neutral-200 dark:bg-neutral-700 rounded-full h-2">
                 <div
@@ -85,7 +87,7 @@ const ReviewSummary: React.FC<ReviewSummaryProps> = ({
                 %
               </div>
               <div className="text-xs text-neutral-600 dark:text-neutral-400">
-                Hài lòng
+                {t('review.summary.satisfied')}
               </div>
             </div>
             <div>
@@ -95,7 +97,7 @@ const ReviewSummary: React.FC<ReviewSummaryProps> = ({
                   .reduce((sum, r) => sum + r.count, 0)}
               </div>
               <div className="text-xs text-neutral-600 dark:text-neutral-400">
-                4+ sao
+                {t('review.summary.fourPlus')}
               </div>
             </div>
 
@@ -105,7 +107,7 @@ const ReviewSummary: React.FC<ReviewSummaryProps> = ({
                   .length || 0}
               </div>
               <div className="text-xs text-neutral-600 dark:text-neutral-400">
-                Đã mua hàng
+                {t('review.list.verified')}
               </div>
             </div>
           </div>

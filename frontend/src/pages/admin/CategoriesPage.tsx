@@ -15,9 +15,9 @@ import {
   Image,
   Card,
   Typography,
-  Upload,
 } from 'antd';
 import type { ColumnsType } from 'antd/es/table';
+import { useTranslation } from 'react-i18next';
 import {
   PlusOutlined,
   EditOutlined,
@@ -47,88 +47,62 @@ interface CategoryFormData {
 }
 
 const CategoriesPage: React.FC = () => {
+  const { t } = useTranslation();
   const [form] = Form.useForm();
   const [isModalVisible, setIsModalVisible] = useState(false);
   const [editingCategory, setEditingCategory] = useState<Category | null>(null);
 
-  // Các API hooks
-  const {
-    data: categoriesData,
-    isLoading,
-    refetch,
-  } = useGetAllCategoriesQuery();
-
-  const [createCategory, { isLoading: isCreating }] =
-    useCreateCategoryMutation();
-  const [updateCategory, { isLoading: isUpdating }] =
-    useUpdateCategoryMutation();
-  const [deleteCategory, { isLoading: isDeleting }] =
-    useDeleteCategoryMutation();
+  const { data: categoriesData, isLoading, refetch } = useGetAllCategoriesQuery();
+  const [createCategory, { isLoading: isCreating }] = useCreateCategoryMutation();
+  const [updateCategory, { isLoading: isUpdating }] = useUpdateCategoryMutation();
+  const [deleteCategory] = useDeleteCategoryMutation();
 
   const categories = React.useMemo(() => {
     if (!categoriesData?.data) return [];
-    if (Array.isArray(categoriesData.data)) {
-      return categoriesData.data;
-    }
+    if (Array.isArray(categoriesData.data)) return categoriesData.data;
     return [categoriesData.data];
   }, [categoriesData]);
 
-  // Tạo danh sách tùy chọn danh mục cha
-  const getParentOptions = (excludeId?: string) => {
-    return categories
-      .filter((cat) => cat.id !== excludeId && !cat.parentId) // Chỉ lấy danh mục gốc
-      .map((cat) => ({
-        value: cat.id,
-        label: cat.name,
-      }));
-  };
+  const getParentOptions = (excludeId?: string) =>
+    categories
+      .filter((cat) => cat.id !== excludeId && !cat.parentId)
+      .map((cat) => ({ value: cat.id, label: cat.name }));
 
-  // Xử lý tạo/chỉnh sửa danh mục
   const handleSubmit = async (values: CategoryFormData) => {
     try {
       if (editingCategory) {
-        await updateCategory({
-          id: editingCategory.id,
-          ...values,
-        }).unwrap();
-        message.success('Cập nhật danh mục thành công!');
+        await updateCategory({ id: editingCategory.id, ...values }).unwrap();
+        message.success(t('admin.categories.messages.editSuccess'));
       } else {
         await createCategory(values).unwrap();
-        message.success('Tạo danh mục thành công!');
+        message.success(t('admin.categories.messages.addSuccess'));
       }
-
       setIsModalVisible(false);
       setEditingCategory(null);
       form.resetFields();
       refetch();
     } catch (error: any) {
-      message.error(error?.data?.message || 'Có lỗi xảy ra!');
+      message.error(error?.data?.message || t('common.errorOccurred'));
     }
   };
 
-  // Xử lý xóa danh mục
   const handleDelete = async (id: string) => {
     try {
       await deleteCategory(id).unwrap();
-      message.success('Xóa danh mục thành công!');
+      message.success(t('admin.categories.messages.deleteSuccess'));
       refetch();
     } catch (error: any) {
-      message.error(error?.data?.message || 'Không thể xóa danh mục!');
+      message.error(error?.data?.message || t('admin.categories.messages.deleteError'));
     }
   };
 
-  // Mở modal tạo mới
   const handleCreate = () => {
     setEditingCategory(null);
     setIsModalVisible(true);
     form.resetFields();
-    form.setFieldsValue({
-      isActive: true,
-      sortOrder: 0,
-    });
+    form.setFieldsValue({ isActive: true, sortOrder: 0 });
   };
 
-  // Mở modal chỉnh sửa
   const handleEdit = (category: Category) => {
     setEditingCategory(category);
     setIsModalVisible(true);
@@ -140,29 +114,17 @@ const CategoriesPage: React.FC = () => {
       isActive: category.isActive,
       sortOrder: category.sortOrder || 0,
     });
-
-    if (category.image) {
-      // Logic xử lý ImageUpload có thể thêm vào đây nếu cần
-    }
   };
 
-  // Các cột của bảng
   const columns: ColumnsType<Category> = [
     {
-      title: 'Hình ảnh',
+      title: t('admin.categories.table.image'),
       dataIndex: 'image',
       key: 'image',
       width: 80,
       render: (image: string, record: Category) =>
         image ? (
-          <Image
-            src={image}
-            alt={record.name}
-            width={50}
-            height={50}
-            style={{ objectFit: 'cover', borderRadius: 4 }}
-            fallback="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAMIAAADDCAYAAADQvc6UAAABRWlDQ1BJQ0MgUHJvZmlsZQAAKJFjYGASSSwoyGFhYGDIzSspCnJ3UoiIjFJgf8LAwSDCIMogwMCcmFxc4BgQ4ANUwgCjUcG3awyMIPqyLsis7PPOq3QdDFcvjV3jOD1boQVTPQrgSkktTgbSf4A4LbmgqISBgTEFyFYuLykAsTuAbJEioKOA7DkgdjqEvQHEToKwj4DVhAQ5A9k3gGyB5IxEoBmML4BsnSQk8XQkNtReEOBxcfXxUQg1Mjc0dyHgXNJBSWpFCYh2zi+oLMpMzyhRcASGUqqCZ16yno6CkYGRAQMDKMwhqj/fAIcloxgHQqxAjIHBEugw5sUIsSQpBobtQPdLciLEVJYzMPBHMDBsayhILEqEO4DxG0txmrERhM29nYGBddr//5/DGRjYNRkY/l7////39v///y4Dmn+LgeHANwDrkl1AuO+pmgAAADhlWElmTU0AKgAAAAgAAYdpAAQAAAABAAAAGgAAAAAAAqACAAQAAAABAAAAwqADAAQAAAABAAAAwwAAAAD9b/HnAAAHlklEQVR4Ae3dP3Ik1RnG4W+FgYxN"
-          />
+          <Image src={image} alt={record.name} width={50} height={50} style={{ objectFit: 'cover', borderRadius: 4 }} />
         ) : (
           <div className="w-12 h-12 bg-gray-100 rounded flex items-center justify-center">
             <FolderOutlined className="text-gray-400" />
@@ -170,7 +132,7 @@ const CategoriesPage: React.FC = () => {
         ),
     },
     {
-      title: 'Tên danh mục',
+      title: t('admin.categories.table.name'),
       dataIndex: 'name',
       key: 'name',
       render: (name: string, record: Category) => (
@@ -181,69 +143,56 @@ const CategoriesPage: React.FC = () => {
       ),
     },
     {
-      title: 'Mô tả',
+      title: t('admin.brands.form.description'),
       dataIndex: 'description',
       key: 'description',
       render: (description?: string) =>
         description ? (
-          <div className="max-w-xs truncate" title={description}>
-            {description}
-          </div>
+          <div className="max-w-xs truncate" title={description}>{description}</div>
         ) : (
           <span className="text-gray-400">—</span>
         ),
     },
     {
-      title: 'Danh mục cha',
+      title: t('admin.categories.table.parent'),
       dataIndex: 'parentId',
       key: 'parentId',
       render: (parentId?: string | null) => {
-        if (!parentId) {
-          return <Tag color="green">Danh mục gốc</Tag>;
-        }
+        if (!parentId) return <Tag color="green">{t('admin.categories.table.root')}</Tag>;
         const parent = categories.find((cat) => cat.id === parentId);
-        return parent ? (
-          <Tag color="blue">{parent.name}</Tag>
-        ) : (
-          <span className="text-gray-400">—</span>
-        );
+        return parent ? <Tag color="blue">{parent.name}</Tag> : <span className="text-gray-400">—</span>;
       },
     },
     {
-      title: 'Trạng thái',
+      title: t('common.status'),
       dataIndex: 'isActive',
       key: 'isActive',
       render: (isActive: boolean) => (
         <Tag color={isActive ? 'success' : 'error'}>
-          {isActive ? 'Hoạt động' : 'Ẩn'}
+          {isActive ? t('common.active') : t('admin.common.hidden')}
         </Tag>
       ),
     },
     {
-      title: 'Thứ tự',
+      title: t('admin.categories.table.order'),
       dataIndex: 'sortOrder',
       key: 'sortOrder',
       width: 80,
       render: (sortOrder?: number) => sortOrder || 0,
     },
     {
-      title: 'Hành động',
+      title: t('admin.common.actions'),
       key: 'actions',
       width: 120,
       render: (_, record: Category) => (
         <Space>
-          <Button
-            type="link"
-            icon={<EditOutlined />}
-            onClick={() => handleEdit(record)}
-            size="small"
-          />
+          <Button type="link" icon={<EditOutlined />} onClick={() => handleEdit(record)} size="small" />
           <Popconfirm
-            title="Xóa danh mục"
-            description="Bạn có chắc chắn muốn xóa danh mục này?"
+            title={t('admin.categories.deleteTitle')}
+            description={t('admin.categories.deleteConfirm')}
             onConfirm={() => handleDelete(record.id)}
-            okText="Xóa"
-            cancelText="Hủy"
+            okText={t('common.delete')}
+            cancelText={t('common.cancel')}
             okButtonProps={{ danger: true }}
           >
             <Button type="link" icon={<DeleteOutlined />} danger size="small" />
@@ -258,31 +207,19 @@ const CategoriesPage: React.FC = () => {
       <Card className="dark:bg-neutral-800">
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 gap-4">
           <div>
-            <Title
-              level={2}
-              className="!mb-1 text-xl md:text-2xl dark:text-white"
-            >
-              Quản lý danh mục
+            <Title level={2} className="!mb-1 text-xl md:text-2xl dark:text-white">
+              {t('admin.categories.title')}
             </Title>
             <p className="text-neutral-600 dark:text-neutral-400">
-              Quản lý danh mục sản phẩm của cửa hàng
+              {t('admin.categories.subtitle')}
             </p>
           </div>
           <Space className="flex-wrap">
-            <Button
-              icon={<ReloadOutlined />}
-              onClick={() => refetch()}
-              loading={isLoading}
-              className="dark:text-neutral-300"
-            >
-              Làm mới
+            <Button icon={<ReloadOutlined />} onClick={() => refetch()} loading={isLoading} className="dark:text-neutral-300">
+              {t('common.refresh')}
             </Button>
-            <Button
-              type="primary"
-              icon={<PlusOutlined />}
-              onClick={handleCreate}
-            >
-              Thêm danh mục
+            <Button type="primary" icon={<PlusOutlined />} onClick={handleCreate}>
+              {t('admin.categories.addCategory')}
             </Button>
           </Space>
         </div>
@@ -301,121 +238,67 @@ const CategoriesPage: React.FC = () => {
               showSizeChanger: true,
               showQuickJumper: true,
               responsive: true,
-              showTotal: (total, range) =>
-                `${range[0]}-${range[1]} của ${total} danh mục`,
+              showTotal: (total, range) => t('admin.categories.totalItems', { range0: range[0], range1: range[1], total }),
             }}
           />
         </div>
 
         <Modal
-          title={editingCategory ? 'Chỉnh sửa danh mục' : 'Thêm danh mục mới'}
+          title={editingCategory ? t('admin.categories.editCategory') : t('admin.categories.addCategoryModal')}
           open={isModalVisible}
-          onCancel={() => {
-            setIsModalVisible(false);
-            setEditingCategory(null);
-            form.resetFields();
-          }}
+          onCancel={() => { setIsModalVisible(false); setEditingCategory(null); form.resetFields(); }}
           footer={null}
           width={600}
-          className="dark:ant-modal-dark"
         >
-          <Form
-            form={form}
-            layout="vertical"
-            onFinish={handleSubmit}
-            initialValues={{
-              isActive: true,
-              sortOrder: 0,
-            }}
-            className="dark:text-neutral-300"
-          >
+          <Form form={form} layout="vertical" onFinish={handleSubmit} initialValues={{ isActive: true, sortOrder: 0 }}>
             <Form.Item
               name="name"
-              label={
-                <span className="dark:text-neutral-300">Tên danh mục</span>
-              }
+              label={t('admin.categories.table.name')}
               rules={[
-                { required: true, message: 'Vui lòng nhập tên danh mục!' },
-                { min: 2, message: 'Tên danh mục phải có ít nhất 2 ký tự!' },
+                { required: true, message: t('admin.categories.form.nameRequired') },
+                { min: 2, message: t('admin.categories.form.nameMinLength') || 'Min 2 characters' },
               ]}
             >
-              <Input placeholder="Nhập tên danh mục" />
+              <Input placeholder={t('admin.categories.form.namePlaceholder') || ''} />
             </Form.Item>
 
-            <Form.Item
-              name="description"
-              label={<span className="dark:text-neutral-300">Mô tả</span>}
-            >
-              <TextArea
-                rows={3}
-                placeholder="Nhập mô tả cho danh mục (không bắt buộc)"
-              />
+            <Form.Item name="description" label={t('admin.brands.form.description')}>
+              <TextArea rows={3} placeholder={t('admin.brands.form.descriptionPlaceholder')} />
             </Form.Item>
 
-            <Form.Item
-              name="image"
-              label={<span className="dark:text-neutral-300">Hình ảnh</span>}
-            >
+            <Form.Item name="image" label={t('admin.categories.table.image')}>
               <ImageUpload
                 type="categories"
                 multiple={false}
                 value={form.getFieldValue('image')}
-                onChange={(val) => {
-                  form.setFieldsValue({ image: val });
-                }}
+                onChange={(val) => form.setFieldsValue({ image: val })}
               />
             </Form.Item>
 
-            <Form.Item
-              name="parentId"
-              label={
-                <span className="dark:text-neutral-300">Danh mục cha</span>
-              }
-            >
+            <Form.Item name="parentId" label={t('admin.categories.form.parentCategory')}>
               <Select
-                placeholder="Chọn danh mục cha (để trống nếu là danh mục gốc)"
+                placeholder={t('admin.categories.form.selectParent')}
                 allowClear
                 options={getParentOptions(editingCategory?.id)}
               />
             </Form.Item>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <Form.Item
-                name="sortOrder"
-                label={
-                  <span className="dark:text-neutral-300">Thứ tự sắp xếp</span>
-                }
-              >
+              <Form.Item name="sortOrder" label={t('admin.categories.form.displayOrder')}>
                 <InputNumber min={0} placeholder="0" className="w-full" />
               </Form.Item>
 
-              <Form.Item
-                name="isActive"
-                label={
-                  <span className="dark:text-neutral-300">Trạng thái</span>
-                }
-                valuePropName="checked"
-              >
-                <Switch checkedChildren="Hoạt động" unCheckedChildren="Ẩn" />
+              <Form.Item name="isActive" label={t('common.status')} valuePropName="checked">
+                <Switch checkedChildren={t('common.active')} unCheckedChildren={t('admin.common.hidden')} />
               </Form.Item>
             </div>
 
             <div className="flex flex-wrap justify-end gap-2 mt-6">
-              <Button
-                onClick={() => {
-                  setIsModalVisible(false);
-                  setEditingCategory(null);
-                  form.resetFields();
-                }}
-              >
-                Hủy
+              <Button onClick={() => { setIsModalVisible(false); setEditingCategory(null); form.resetFields(); }}>
+                {t('common.cancel')}
               </Button>
-              <Button
-                type="primary"
-                htmlType="submit"
-                loading={isCreating || isUpdating}
-              >
-                {editingCategory ? 'Cập nhật' : 'Tạo mới'}
+              <Button type="primary" htmlType="submit" loading={isCreating || isUpdating}>
+                {editingCategory ? t('common.update') : t('common.create')}
               </Button>
             </div>
           </Form>

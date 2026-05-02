@@ -31,6 +31,7 @@ import {
   EyeOutlined,
 } from '@ant-design/icons';
 import { useNavigate } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import {
   useGetAllUsersQuery,
   useUpdateUserMutation,
@@ -52,6 +53,7 @@ interface UserFormData {
 }
 
 const UsersPage: React.FC = () => {
+  const { t } = useTranslation();
   const navigate = useNavigate();
   const [form] = Form.useForm();
   const [isModalVisible, setIsModalVisible] = useState(false);
@@ -65,45 +67,35 @@ const UsersPage: React.FC = () => {
     sortOrder: 'DESC',
   });
 
-  // Các API hooks
   const { data: usersData, isLoading, refetch } = useGetAllUsersQuery(filters);
-
   const [updateUser, { isLoading: isUpdating }] = useUpdateUserMutation();
   const [deleteUser] = useDeleteUserMutation();
 
   const users = usersData?.data?.users || [];
   const pagination = usersData?.data?.pagination;
 
-  // Xử lý cập nhật người dùng
   const handleSubmit = async (values: UserFormData) => {
     if (!editingUser) return;
-
     try {
-      await updateUser({
-        id: editingUser.id,
-        ...values,
-      }).unwrap();
-
-      message.success('Cập nhật người dùng thành công!');
+      await updateUser({ id: editingUser.id, ...values }).unwrap();
+      message.success(t('admin.users.messages.editSuccess'));
       setIsModalVisible(false);
       setEditingUser(null);
       form.resetFields();
     } catch (error: any) {
-      message.error(error?.data?.message || 'Có lỗi xảy ra!');
+      message.error(error?.data?.message || t('admin.users.messages.editError'));
     }
   };
 
-  // Xử lý xóa người dùng
   const handleDelete = async (id: string) => {
     try {
       await deleteUser(id).unwrap();
-      message.success('Xóa người dùng thành công!');
+      message.success(t('admin.users.messages.deleteSuccess'));
     } catch (error: any) {
-      message.error(error?.data?.message || 'Không thể xóa người dùng!');
+      message.error(error?.data?.message || t('admin.users.messages.deleteError'));
     }
   };
 
-  // Mở modal chỉnh sửa
   const handleEdit = (user: User) => {
     setEditingUser(user);
     setIsModalVisible(true);
@@ -117,61 +109,53 @@ const UsersPage: React.FC = () => {
     });
   };
 
-  // Xử lý tìm kiếm
   const handleSearch = (value: string) => {
     setFilters((prev) => ({ ...prev, search: value, page: 1 }));
   };
 
-  // Xử lý thay đổi bộ lọc
   const handleFilterChange = (key: keyof UserFilters, value: any) => {
     setFilters((prev) => ({ ...prev, [key]: value, page: 1 }));
   };
 
-  // Xử lý thay đổi phân trang
   const handleTableChange = (page: number, pageSize: number) => {
     setFilters((prev) => ({ ...prev, page, limit: pageSize }));
   };
 
-  // Lấy màu sắc theo vai trò
   const getRoleColor = (role: string) => {
     switch (role) {
-      case 'admin':
-        return 'red';
-      case 'manager':
-        return 'orange';
-      case 'customer':
-        return 'blue';
-      default:
-        return 'default';
+      case 'admin': return 'red';
+      case 'manager': return 'orange';
+      case 'customer': return 'blue';
+      default: return 'default';
     }
   };
 
-  // Lấy icon theo vai trò
   const getRoleIcon = (role: string) => {
     switch (role) {
-      case 'admin':
-        return <CrownOutlined />;
-      case 'manager':
-        return <TeamOutlined />;
-      case 'customer':
-        return <UserOutlined />;
-      default:
-        return <UserOutlined />;
+      case 'admin': return <CrownOutlined />;
+      case 'manager': return <TeamOutlined />;
+      default: return <UserOutlined />;
     }
   };
 
-  // Các cột của bảng
+  const getRoleLabel = (role: string) => {
+    switch (role) {
+      case 'admin': return t('admin.users.roles.admin');
+      case 'manager': return t('admin.users.roles.manager');
+      case 'customer': return t('admin.users.roles.customer');
+      default: return role;
+    }
+  };
+
   const columns = [
     {
-      title: 'Người dùng',
+      title: t('admin.users.table.user'),
       key: 'user',
       render: (_: any, record: User) => (
         <div className="flex items-center gap-3">
           <Avatar src={record.avatar} icon={<UserOutlined />} size={48} />
           <div>
-            <div className="font-medium">
-              {record.firstName} {record.lastName}
-            </div>
+            <div className="font-medium">{record.firstName} {record.lastName}</div>
             <div className="text-sm text-gray-500 flex items-center gap-1">
               <MailOutlined className="text-xs" />
               {record.email}
@@ -187,70 +171,56 @@ const UsersPage: React.FC = () => {
       ),
     },
     {
-      title: 'Vai trò',
+      title: t('admin.users.table.role'),
       dataIndex: 'role',
       key: 'role',
       width: 120,
       render: (role: string) => (
         <Tag color={getRoleColor(role)} icon={getRoleIcon(role)}>
-          {role === 'admin'
-            ? 'Quản trị viên'
-            : role === 'manager'
-              ? 'Quản lý'
-              : 'Khách hàng'}
+          {getRoleLabel(role)}
         </Tag>
       ),
     },
     {
-      title: 'Trạng thái',
+      title: t('common.status'),
       key: 'status',
       width: 150,
       render: (_: any, record: User) => (
         <div className="space-y-1">
           <div>
             <Tag color={record.isActive ? 'success' : 'error'}>
-              {record.isActive ? 'Hoạt động' : 'Bị khóa'}
+              {record.isActive ? t('admin.users.status.active') : t('admin.users.status.locked')}
             </Tag>
           </div>
           <div>
             <Tag color={record.isEmailVerified ? 'processing' : 'warning'}>
-              {record.isEmailVerified ? 'Email đã xác minh' : 'Chưa xác minh'}
+              {record.isEmailVerified ? t('admin.users.table.verified') : t('admin.users.table.notVerified')}
             </Tag>
           </div>
         </div>
       ),
     },
     {
-      title: 'Ngày tạo',
+      title: t('admin.users.table.createdAt'),
       dataIndex: 'createdAt',
       key: 'createdAt',
       width: 120,
       render: (date: string) => new Date(date).toLocaleDateString('vi-VN'),
     },
     {
-      title: 'Hành động',
+      title: t('admin.common.actions'),
       key: 'actions',
       width: 120,
       render: (_: any, record: User) => (
         <Space>
-          <Button
-            type="link"
-            icon={<EyeOutlined />}
-            onClick={() => navigate(`/admin/users/${record.id}`)}
-            size="small"
-          />
-          <Button
-            type="link"
-            icon={<EditOutlined />}
-            onClick={() => handleEdit(record)}
-            size="small"
-          />
+          <Button type="link" icon={<EyeOutlined />} onClick={() => navigate(`/admin/users/${record.id}`)} size="small" />
+          <Button type="link" icon={<EditOutlined />} onClick={() => handleEdit(record)} size="small" />
           <Popconfirm
-            title="Xóa người dùng"
-            description="Bạn có chắc chắn muốn xóa người dùng này?"
+            title={t('admin.users.deleteTitle')}
+            description={t('admin.users.deleteConfirm')}
             onConfirm={() => handleDelete(record.id)}
-            okText="Xóa"
-            cancelText="Hủy"
+            okText={t('common.delete')}
+            cancelText={t('common.cancel')}
             okButtonProps={{ danger: true }}
           >
             <Button type="link" icon={<DeleteOutlined />} danger size="small" />
@@ -260,7 +230,6 @@ const UsersPage: React.FC = () => {
     },
   ];
 
-  // Tính toán thống kê
   const totalUsers = pagination?.totalItems || 0;
   const adminCount = users.filter((u) => u.role === 'admin').length;
   const customerCount = users.filter((u) => u.role === 'customer').length;
@@ -270,25 +239,19 @@ const UsersPage: React.FC = () => {
     <div className="p-2 sm:p-4 md:p-6">
       <Card className="dark:bg-neutral-800">
         <div className="mb-6">
-          <Title
-            level={2}
-            className="!mb-1 text-xl md:text-2xl dark:text-white"
-          >
-            Quản lý người dùng
+          <Title level={2} className="!mb-1 text-xl md:text-2xl dark:text-white">
+            {t('admin.users.title')}
           </Title>
           <p className="text-neutral-600 dark:text-neutral-400">
-            Quản lý tất cả người dùng trong hệ thống
+            {t('admin.users.subtitle')}
           </p>
         </div>
 
-        {/* Thống kê */}
         <Row gutter={[16, 16]} className="mb-6">
           <Col xs={24} sm={12} md={6}>
             <Card className="dark:bg-neutral-700">
               <Statistic
-                title={
-                  <span className="dark:text-neutral-300">Tổng người dùng</span>
-                }
+                title={<span className="dark:text-neutral-300">{t('admin.users.stats.total')}</span>}
                 value={totalUsers}
                 prefix={<UserOutlined />}
                 valueStyle={{ color: '#1890ff' }}
@@ -298,9 +261,7 @@ const UsersPage: React.FC = () => {
           <Col xs={24} sm={12} md={6}>
             <Card className="dark:bg-neutral-700">
               <Statistic
-                title={
-                  <span className="dark:text-neutral-300">Quản trị viên</span>
-                }
+                title={<span className="dark:text-neutral-300">{t('admin.users.stats.admins')}</span>}
                 value={adminCount}
                 prefix={<CrownOutlined />}
                 valueStyle={{ color: '#f5222d' }}
@@ -310,9 +271,7 @@ const UsersPage: React.FC = () => {
           <Col xs={24} sm={12} md={6}>
             <Card className="dark:bg-neutral-700">
               <Statistic
-                title={
-                  <span className="dark:text-neutral-300">Khách hàng</span>
-                }
+                title={<span className="dark:text-neutral-300">{t('admin.users.stats.customers')}</span>}
                 value={customerCount}
                 prefix={<TeamOutlined />}
                 valueStyle={{ color: '#52c41a' }}
@@ -322,11 +281,7 @@ const UsersPage: React.FC = () => {
           <Col xs={24} sm={12} md={6}>
             <Card className="dark:bg-neutral-700">
               <Statistic
-                title={
-                  <span className="dark:text-neutral-300">
-                    Đã xác minh email
-                  </span>
-                }
+                title={<span className="dark:text-neutral-300">{t('admin.users.stats.verified')}</span>}
                 value={verifiedCount}
                 prefix={<MailOutlined />}
                 valueStyle={{ color: '#722ed1' }}
@@ -335,12 +290,11 @@ const UsersPage: React.FC = () => {
           </Col>
         </Row>
 
-        {/* Bộ lọc */}
         <div className="mb-4 p-4 bg-gray-50 dark:bg-neutral-700 rounded-lg">
           <Row gutter={[16, 16]} align="middle">
             <Col xs={24} md={12} lg={8}>
               <Input
-                placeholder="Tìm kiếm theo tên, email, số điện thoại..."
+                placeholder={t('admin.users.searchPlaceholder')}
                 value={filters.search}
                 onChange={(e) => handleSearch(e.target.value)}
                 suffix={<SearchOutlined style={{ color: 'rgba(0,0,0,.45)' }} />}
@@ -349,39 +303,39 @@ const UsersPage: React.FC = () => {
             </Col>
             <Col xs={12} sm={8} md={6} lg={4}>
               <Select
-                placeholder="Vai trò"
+                placeholder={t('admin.users.filter.role')}
                 value={filters.role}
                 onChange={(value) => handleFilterChange('role', value)}
                 style={{ width: '100%' }}
                 allowClear
               >
-                <Option value="">Tất cả</Option>
-                <Option value="admin">Quản trị viên</Option>
-                <Option value="manager">Quản lý</Option>
-                <Option value="customer">Khách hàng</Option>
+                <Option value="">{t('common.all')}</Option>
+                <Option value="admin">{t('admin.users.roles.admin')}</Option>
+                <Option value="manager">{t('admin.users.roles.manager')}</Option>
+                <Option value="customer">{t('admin.users.roles.customer')}</Option>
               </Select>
             </Col>
             <Col xs={12} sm={8} md={6} lg={4}>
               <Select
-                placeholder="Sắp xếp theo"
+                placeholder={t('admin.users.filter.sortBy')}
                 value={filters.sortBy}
                 onChange={(value) => handleFilterChange('sortBy', value)}
                 style={{ width: '100%' }}
               >
-                <Option value="createdAt">Ngày tạo</Option>
-                <Option value="firstName">Tên</Option>
-                <Option value="email">Email</Option>
+                <Option value="createdAt">{t('admin.users.filter.sortByDate')}</Option>
+                <Option value="firstName">{t('admin.users.filter.sortByName')}</Option>
+                <Option value="email">{t('admin.users.filter.sortByEmail')}</Option>
               </Select>
             </Col>
             <Col xs={12} sm={8} md={6} lg={4}>
               <Select
-                placeholder="Thứ tự"
+                placeholder={t('admin.users.filter.sortOrder')}
                 value={filters.sortOrder}
                 onChange={(value) => handleFilterChange('sortOrder', value)}
                 style={{ width: '100%' }}
               >
-                <Option value="DESC">Giảm dần</Option>
-                <Option value="ASC">Tăng dần</Option>
+                <Option value="DESC">{t('admin.users.filter.desc')}</Option>
+                <Option value="ASC">{t('admin.users.filter.asc')}</Option>
               </Select>
             </Col>
             <Col xs={12} sm={8} md={6} lg={4}>
@@ -392,13 +346,12 @@ const UsersPage: React.FC = () => {
                 style={{ width: '100%' }}
                 className="dark:text-neutral-300"
               >
-                Làm mới
+                {t('common.refresh')}
               </Button>
             </Col>
           </Row>
         </div>
 
-        {/* Bảng dữ liệu */}
         <div className="overflow-x-auto">
           <Table
             columns={columns}
@@ -412,23 +365,17 @@ const UsersPage: React.FC = () => {
               pageSize: pagination?.itemsPerPage,
               showSizeChanger: true,
               showQuickJumper: true,
-              showTotal: (total, range) =>
-                `${range[0]}-${range[1]} của ${total} người dùng`,
+              showTotal: (total, range) => t('admin.users.totalItems', { range0: range[0], range1: range[1], total }),
               onChange: handleTableChange,
             }}
             scroll={{ x: 800 }}
           />
         </div>
 
-        {/* Modal chỉnh sửa */}
         <Modal
-          title="Chỉnh sửa người dùng"
+          title={t('admin.users.editUser')}
           open={isModalVisible}
-          onCancel={() => {
-            setIsModalVisible(false);
-            setEditingUser(null);
-            form.resetFields();
-          }}
+          onCancel={() => { setIsModalVisible(false); setEditingUser(null); form.resetFields(); }}
           footer={null}
           width={600}
         >
@@ -437,78 +384,64 @@ const UsersPage: React.FC = () => {
               <Col span={12}>
                 <Form.Item
                   name="firstName"
-                  label="Tên"
-                  rules={[{ required: true, message: 'Vui lòng nhập tên!' }]}
+                  label={t('admin.users.form.firstName')}
+                  rules={[{ required: true, message: t('admin.users.form.firstNameRequired') }]}
                 >
-                  <Input placeholder="Nhập tên" />
+                  <Input placeholder={t('admin.users.form.firstNamePlaceholder')} />
                 </Form.Item>
               </Col>
               <Col span={12}>
                 <Form.Item
                   name="lastName"
-                  label="Họ"
-                  rules={[{ required: true, message: 'Vui lòng nhập họ!' }]}
+                  label={t('admin.users.form.lastName')}
+                  rules={[{ required: true, message: t('admin.users.form.lastNameRequired') }]}
                 >
-                  <Input placeholder="Nhập họ" />
+                  <Input placeholder={t('admin.users.form.lastNamePlaceholder')} />
                 </Form.Item>
               </Col>
             </Row>
 
-            <Form.Item name="phone" label="Số điện thoại">
-              <Input placeholder="Nhập số điện thoại" />
+            <Form.Item name="phone" label={t('admin.users.form.phone')}>
+              <Input placeholder={t('admin.users.form.phonePlaceholder')} />
             </Form.Item>
 
             <Form.Item
               name="role"
-              label="Vai trò"
-              rules={[{ required: true, message: 'Vui lòng chọn vai trò!' }]}
+              label={t('admin.users.form.role')}
+              rules={[{ required: true, message: t('admin.users.form.roleRequired') }]}
             >
-              <Select placeholder="Chọn vai trò">
-                <Option value="customer">Khách hàng</Option>
-                <Option value="manager">Quản lý</Option>
-                <Option value="admin">Quản trị viên</Option>
+              <Select placeholder={t('admin.users.form.rolePlaceholder')}>
+                <Option value="customer">{t('admin.users.roles.customer')}</Option>
+                <Option value="manager">{t('admin.users.roles.manager')}</Option>
+                <Option value="admin">{t('admin.users.roles.admin')}</Option>
               </Select>
             </Form.Item>
 
             <Row gutter={16}>
               <Col span={12}>
-                <Form.Item
-                  name="isEmailVerified"
-                  label="Trạng thái email"
-                  valuePropName="checked"
-                >
+                <Form.Item name="isEmailVerified" label={t('admin.users.form.emailStatus')} valuePropName="checked">
                   <Switch
-                    checkedChildren="Đã xác minh"
-                    unCheckedChildren="Chưa xác minh"
+                    checkedChildren={t('admin.users.form.emailVerified')}
+                    unCheckedChildren={t('admin.users.form.emailNotVerified')}
                   />
                 </Form.Item>
               </Col>
               <Col span={12}>
-                <Form.Item
-                  name="isActive"
-                  label="Trạng thái tài khoản"
-                  valuePropName="checked"
-                >
+                <Form.Item name="isActive" label={t('admin.users.form.accountStatus')} valuePropName="checked">
                   <Switch
-                    checkedChildren="Hoạt động"
-                    unCheckedChildren="Bị khóa"
+                    checkedChildren={t('admin.users.status.active')}
+                    unCheckedChildren={t('admin.users.status.locked')}
                   />
                 </Form.Item>
               </Col>
             </Row>
 
             <div className="flex justify-end gap-2 mt-6">
-              <Button
-                onClick={() => {
-                  setIsModalVisible(false);
-                  setEditingUser(null);
-                  form.resetFields();
-                }}
-              >
-                Hủy
+              <Button onClick={() => { setIsModalVisible(false); setEditingUser(null); form.resetFields(); }}>
+                {t('common.cancel')}
               </Button>
               <Button type="primary" htmlType="submit" loading={isUpdating}>
-                Cập nhật
+                {t('common.update')}
               </Button>
             </div>
           </Form>

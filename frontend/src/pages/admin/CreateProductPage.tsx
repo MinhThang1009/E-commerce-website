@@ -12,6 +12,8 @@ import {
 } from 'antd';
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
+import i18next from 'i18next';
 
 // Custom hooks
 import { useProductAttributes } from '@/hooks/useProductAttributes';
@@ -52,34 +54,17 @@ import {
 
 const { Title, Text } = Typography;
 
-const DEFAULT_FAQS = [
-  {
-    question: 'Chính sách bảo hành khi mua sản phẩm này tại cửa hàng như thế nào?',
-    answer: 'Sản phẩm được bảo hành chính hãng 12 tháng. Trong 15 ngày đầu, nếu có lỗi từ nhà sản xuất, quý khách sẽ được đổi sản phẩm mới hoặc hoàn tiền 100%.',
-  },
-  {
-    question: 'Tôi có thể thanh toán qua những hình thức nào?',
-    answer: 'Chúng tôi hỗ trợ đa dạng các hình thức thanh toán bao gồm: Tiền mặt khi nhận hàng (COD), Chuyển khoản ngân hàng, và Thanh toán qua thẻ tín dụng/thẻ ghi nợ.',
-  },
-  {
-    question: 'Cửa hàng có chính sách trả góp khi mua sản phẩm này không?',
-    answer: 'Có, chúng tôi hỗ trợ trả góp 0% lãi suất qua thẻ tín dụng của hơn 20 ngân hàng liên kết. Thủ tục nhanh gọn, xét duyệt trong 15 phút.',
-  },
-  {
-    question: 'So với phiên bản cũ, sản phẩm này có gì khác biệt?',
-    answer: 'Sản phẩm thế hệ mới được nâng cấp đáng kể về hiệu năng, thời lượng pin và thiết kế mỏng nhẹ hơn. Đặc biệt là hệ thống tản nhiệt được cải tiến giúp máy hoạt động mát mẻ hơn.',
-  },
-  {
-    question: 'Ai nên mua sản phẩm này?',
-    answer: 'Sản phẩm phù hợp với doanh nhân, nhân viên văn phòng, lập trình viên và những người làm công việc sáng tạo nội dung cần một chiếc máy mạnh mẽ, bền bỉ và di động.',
-  },
-  {
-    question: 'Sản phẩm này có bền không?',
-    answer: 'Sản phẩm đạt tiêu chuẩn độ bền quân đội MIL-STD-810H, chịu được va đập, rung lắc, nhiệt độ khắc nghiệt và độ ẩm cao. Vỏ máy được làm từ sợi carbon và hợp kim magie siêu bền.',
-  },
+const getDefaultFaqs = () => [
+  { question: i18next.t('admin.products.faq.defaults.q1'), answer: i18next.t('admin.products.faq.defaults.a1') },
+  { question: i18next.t('admin.products.faq.defaults.q2'), answer: i18next.t('admin.products.faq.defaults.a2') },
+  { question: i18next.t('admin.products.faq.defaults.q3'), answer: i18next.t('admin.products.faq.defaults.a3') },
+  { question: i18next.t('admin.products.faq.defaults.q4'), answer: i18next.t('admin.products.faq.defaults.a4') },
+  { question: i18next.t('admin.products.faq.defaults.q5'), answer: i18next.t('admin.products.faq.defaults.a5') },
+  { question: i18next.t('admin.products.faq.defaults.q6'), answer: i18next.t('admin.products.faq.defaults.a6') },
 ];
 
 const CreateProductPage: React.FC = () => {
+  const { t } = useTranslation();
   const navigate = useNavigate();
   const [form] = Form.useForm();
 
@@ -161,7 +146,7 @@ const CreateProductPage: React.FC = () => {
       images: '',
       thumbnail: '',
       condition: 'new',
-      faqs: DEFAULT_FAQS,
+      faqs: getDefaultFaqs(),
     });
   }, [form]);
 
@@ -441,7 +426,7 @@ const CreateProductPage: React.FC = () => {
           },
         });
         await createProduct(productData).unwrap();
-        message.success('Tạo sản phẩm thành công!');
+        message.success(t('admin.products.messages.createSuccess'));
         navigate('/admin/products');
       } catch (error: any) {
         console.error('Failed to create product:', error);
@@ -462,22 +447,22 @@ const CreateProductPage: React.FC = () => {
       if (error.data.errors.length === 1) {
         return (
           error.data.errors[0].message ||
-          `${error.data.errors[0].field}: Lỗi validation`
+          `${error.data.errors[0].field}: ${t('admin.products.messages.validationError')}`
         );
       }
 
       // Multiple errors - format nicely
       const errorList = error.data.errors
-        .map((err: any) => err.message || `${err.field}: Lỗi validation`)
+        .map((err: any) => err.message || `${err.field}: ${t('admin.products.messages.validationError')}`)
         .join('\n• ');
-      return `Có ${error.data.errors.length} lỗi cần khắc phục:\n• ${errorList}`;
+      return `${t('admin.products.messages.multipleErrors', { count: error.data.errors.length })}:\n• ${errorList}`;
     }
 
     if (error?.message) {
       return error.message;
     }
 
-    return 'Tạo sản phẩm thất bại. Vui lòng thử lại.';
+    return t('admin.products.messages.createFailed');
   };
 
   const categoriesList = categories || [];
@@ -518,7 +503,7 @@ const CreateProductPage: React.FC = () => {
   const handleTabChange = (key: string) => {
     if (!isTabAccessible(key)) {
       // Hiển thị thông báo nếu tab chưa được phép truy cập
-      alert('Vui lòng hoàn thành các bước trước đó trước khi truy cập tab này');
+      alert(t('admin.products.tabs.incompleteWarning'));
       return;
     }
     setActiveTab(key);
@@ -537,7 +522,7 @@ const CreateProductPage: React.FC = () => {
                 : '#999',
           }}
         >
-          1. Thông tin cơ bản {completedSteps.basic ? '✓' : ''}
+          {t('admin.products.tabs.basic')} {completedSteps.basic ? '✓' : ''}
         </span>
       ),
       disabled: !isTabAccessible('basic'),
@@ -568,7 +553,7 @@ const CreateProductPage: React.FC = () => {
                 : '#999',
           }}
         >
-          2. Thông số kỹ thuật <span style={{ color: '#ff4d4f' }}>*</span>{' '}
+          {t('admin.products.tabs.specifications')} <span style={{ color: '#ff4d4f' }}>*</span>{' '}
           {completedSteps.specifications ? '✓' : ''}
         </span>
       ),
@@ -597,7 +582,7 @@ const CreateProductPage: React.FC = () => {
                 : '#999',
           }}
         >
-          3. Thuộc tính <span style={{ color: '#ff4d4f' }}>*</span>{' '}
+          {t('admin.products.tabs.attributes')} <span style={{ color: '#ff4d4f' }}>*</span>{' '}
           {completedSteps.attributes ? '✓' : ''}
         </span>
       ),
@@ -631,7 +616,7 @@ const CreateProductPage: React.FC = () => {
                 : '#999',
           }}
         >
-          4. Biến thể <span style={{ color: '#ff4d4f' }}>*</span>{' '}
+          {t('admin.products.tabs.variants')} <span style={{ color: '#ff4d4f' }}>*</span>{' '}
           {completedSteps.variants ? '✓' : ''}
         </span>
       ),
@@ -665,7 +650,7 @@ const CreateProductPage: React.FC = () => {
                 : '#999',
           }}
         >
-          5. Giá & Kho hàng {completedSteps.pricing ? '✓' : ''}
+          {t('admin.products.tabs.pricing')} {completedSteps.pricing ? '✓' : ''}
         </span>
       ),
       disabled: !isTabAccessible('pricing'),
@@ -693,7 +678,7 @@ const CreateProductPage: React.FC = () => {
                 : '#999',
           }}
         >
-          6. Phân loại {completedSteps.category ? '✓' : ''}
+          {t('admin.products.tabs.category')} {completedSteps.category ? '✓' : ''}
         </span>
       ),
       disabled: !isTabAccessible('category'),
@@ -724,7 +709,7 @@ const CreateProductPage: React.FC = () => {
                 : '#999',
           }}
         >
-          7. Hình ảnh {completedSteps.images ? '✓' : ''}
+          {t('admin.products.tabs.images')} {completedSteps.images ? '✓' : ''}
         </span>
       ),
       disabled: !isTabAccessible('images'),
@@ -752,7 +737,7 @@ const CreateProductPage: React.FC = () => {
                 : '#999',
           }}
         >
-          8. Bảo hành {completedSteps.warranty ? '✓' : ''}
+          {t('admin.products.tabs.warranty')} {completedSteps.warranty ? '✓' : ''}
         </span>
       ),
       disabled: !isTabAccessible('warranty'),
@@ -780,7 +765,7 @@ const CreateProductPage: React.FC = () => {
                 : '#999',
           }}
         >
-          9. FAQ {completedSteps.faqs ? '✓' : ''}
+          {t('admin.products.tabs.faqs')} {completedSteps.faqs ? '✓' : ''}
         </span>
       ),
       disabled: !isTabAccessible('faqs'),
@@ -808,7 +793,7 @@ const CreateProductPage: React.FC = () => {
                 : '#999',
           }}
         >
-          10. SEO {completedSteps.seo ? '✓' : ''}
+          {t('admin.products.tabs.seo')} {completedSteps.seo ? '✓' : ''}
         </span>
       ),
       disabled: !isTabAccessible('seo'),
@@ -823,8 +808,8 @@ const CreateProductPage: React.FC = () => {
             isLastTab={true}
             onSubmit={() => handleSubmit(form.getFieldsValue())}
             isSubmitting={isCreating}
-            submitText="Tạo sản phẩm"
-            loadingText="Đang tạo..."
+            submitText={t('admin.products.submit.create')}
+            loadingText={t('admin.products.submit.creating')}
           />
         </>
       ),
@@ -838,10 +823,10 @@ const CreateProductPage: React.FC = () => {
         <Row justify="space-between" align="middle">
           <Col>
             <Title level={2} style={{ margin: 0 }}>
-              Tạo sản phẩm mới
+              {t('admin.products.create.title')}
             </Title>
             <Text type="secondary">
-              Tạo sản phẩm mới với thông tin chi tiết
+              {t('admin.products.create.subtitle')}
             </Text>
           </Col>
           <Col>
@@ -850,7 +835,7 @@ const CreateProductPage: React.FC = () => {
               onClick={() => navigate('/admin/products')}
               style={{ marginRight: 8 }}
             >
-              Quay lại
+              {t('admin.products.backButton')}
             </Button>
           </Col>
         </Row>

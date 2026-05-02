@@ -1,9 +1,10 @@
 import React, { useState, useEffect } from 'react';
-import { Table, Button, Space, Modal, Form, Input, Card, List, Typography, message, Popconfirm, Tag } from 'antd';
+import { Table, Button, Space, Modal, Form, Input, Card, Typography, message, Popconfirm, Tag } from 'antd';
 import { PlusOutlined, SendOutlined, DeleteOutlined } from '@ant-design/icons';
+import { useTranslation } from 'react-i18next';
 import apiClient from '@/services/apiClient';
 
-const { Title, Text } = Typography;
+const { Text } = Typography;
 
 interface Campaign {
   id: string;
@@ -15,6 +16,7 @@ interface Campaign {
 }
 
 const EmailCampaignsPage: React.FC = () => {
+  const { t } = useTranslation();
   const [campaigns, setCampaigns] = useState<Campaign[]>([]);
   const [loading, setLoading] = useState(false);
   const [isModalVisible, setIsModalVisible] = useState(false);
@@ -28,7 +30,7 @@ const EmailCampaignsPage: React.FC = () => {
       const response = await apiClient.get('/email-campaigns');
       setCampaigns(response.data.data);
     } catch (error) {
-      message.error('Failed to fetch campaigns');
+      message.error(t('emailCampaigns.fetchError'));
     } finally {
       setLoading(false);
     }
@@ -46,21 +48,21 @@ const EmailCampaignsPage: React.FC = () => {
   const handleDelete = async (id: string) => {
     try {
       await apiClient.delete(`/email-campaigns/${id}`);
-      message.success('Campaign deleted successfully');
+      message.success(t('emailCampaigns.deleteSuccess'));
       fetchCampaigns();
     } catch (error) {
-      message.error('Failed to delete campaign');
+      message.error(t('emailCampaigns.deleteError'));
     }
   };
 
   const handleSend = async (id: string) => {
     try {
-      message.loading({ content: 'Sending campaign...', key: 'send_campaign' });
+      message.loading({ content: t('emailCampaigns.sending'), key: 'send_campaign' });
       await apiClient.post(`/email-campaigns/${id}/send`);
-      message.success({ content: 'Campaign sent successfully!', key: 'send_campaign' });
+      message.success({ content: t('emailCampaigns.sendSuccess'), key: 'send_campaign' });
       fetchCampaigns();
     } catch (error) {
-      message.error({ content: 'Failed to send campaign', key: 'send_campaign' });
+      message.error({ content: t('emailCampaigns.sendError'), key: 'send_campaign' });
     }
   };
 
@@ -68,11 +70,11 @@ const EmailCampaignsPage: React.FC = () => {
     try {
       const values = await form.validateFields();
       await apiClient.post('/email-campaigns', values);
-      message.success('Campaign created successfully');
+      message.success(t('emailCampaigns.createSuccess'));
       setIsModalVisible(false);
       fetchCampaigns();
     } catch (error) {
-      message.error('Failed to create campaign');
+      message.error(t('emailCampaigns.createError'));
     }
   };
 
@@ -83,12 +85,12 @@ const EmailCampaignsPage: React.FC = () => {
 
   const columns = [
     {
-      title: 'Subject',
+      title: t('emailCampaigns.colSubject'),
       dataIndex: 'subject',
       key: 'subject',
     },
     {
-      title: 'Status',
+      title: t('emailCampaigns.colStatus'),
       dataIndex: 'status',
       key: 'status',
       render: (status: string) => (
@@ -98,43 +100,43 @@ const EmailCampaignsPage: React.FC = () => {
       ),
     },
     {
-      title: 'Sent At',
+      title: t('emailCampaigns.colSentAt'),
       dataIndex: 'sentAt',
       key: 'sentAt',
       render: (date: string) => date ? new Date(date).toLocaleString() : '-',
     },
     {
-      title: 'Created At',
+      title: t('emailCampaigns.colCreatedAt'),
       dataIndex: 'createdAt',
       key: 'createdAt',
       render: (date: string) => new Date(date).toLocaleString(),
     },
     {
-      title: 'Action',
+      title: t('emailCampaigns.colAction'),
       key: 'action',
       render: (_: any, record: Campaign) => (
         <Space size="middle">
-          <Button onClick={() => handlePreview(record)}>Preview</Button>
+          <Button onClick={() => handlePreview(record)}>{t('emailCampaigns.preview')}</Button>
           {record.status === 'draft' && (
             <Popconfirm
-              title="Send this campaign to all subscribers?"
+              title={t('emailCampaigns.sendConfirm')}
               onConfirm={() => handleSend(record.id)}
-              okText="Yes"
-              cancelText="No"
+              okText={t('emailCampaigns.yes')}
+              cancelText={t('emailCampaigns.no')}
             >
               <Button type="primary" icon={<SendOutlined />}>
-                Send
+                {t('emailCampaigns.send')}
               </Button>
             </Popconfirm>
           )}
           <Popconfirm
-            title="Are you sure to delete this campaign?"
+            title={t('emailCampaigns.deleteConfirm')}
             onConfirm={() => handleDelete(record.id)}
-            okText="Yes"
-            cancelText="No"
+            okText={t('emailCampaigns.yes')}
+            cancelText={t('emailCampaigns.no')}
           >
             <Button icon={<DeleteOutlined />} danger>
-              Delete
+              {t('emailCampaigns.delete')}
             </Button>
           </Popconfirm>
         </Space>
@@ -145,9 +147,9 @@ const EmailCampaignsPage: React.FC = () => {
   return (
     <div style={{ padding: 24 }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 16 }}>
-        <h2>Email Campaigns</h2>
+        <h2>{t('emailCampaigns.title')}</h2>
         <Button type="primary" icon={<PlusOutlined />} onClick={handleCreate}>
-          Create Campaign
+          {t('emailCampaigns.create')}
         </Button>
       </div>
 
@@ -159,25 +161,25 @@ const EmailCampaignsPage: React.FC = () => {
       />
 
       <Modal
-        title="Create Email Campaign"
-        visible={isModalVisible}
+        title={t('emailCampaigns.modalTitle')}
+        open={isModalVisible}
         onOk={handleModalOk}
         onCancel={() => setIsModalVisible(false)}
         width={800}
       >
         <Form form={form} layout="vertical">
-          <Form.Item name="subject" label="Subject" rules={[{ required: true }]}>
-            <Input placeholder="Enter email subject" />
+          <Form.Item name="subject" label={t('emailCampaigns.subjectLabel')} rules={[{ required: true }]}>
+            <Input placeholder={t('emailCampaigns.subjectPlaceholder')} />
           </Form.Item>
-          <Form.Item name="content" label="HTML Content" rules={[{ required: true }]}>
-            <Input.TextArea rows={10} placeholder="Enter email content (HTML allowed)" />
+          <Form.Item name="content" label={t('emailCampaigns.contentLabel')} rules={[{ required: true }]}>
+            <Input.TextArea rows={10} placeholder={t('emailCampaigns.contentPlaceholder')} />
           </Form.Item>
         </Form>
       </Modal>
 
       <Modal
-        title="Campaign Preview"
-        visible={isPreviewVisible}
+        title={t('emailCampaigns.previewTitle')}
+        open={isPreviewVisible}
         onCancel={() => setIsPreviewVisible(false)}
         footer={null}
         width={800}
@@ -185,7 +187,7 @@ const EmailCampaignsPage: React.FC = () => {
         {selectedCampaign && (
           <div>
             <div style={{ marginBottom: 16 }}>
-              <Text strong>Subject: </Text>
+              <Text strong>{t('emailCampaigns.subjectPrefix')}</Text>
               <Text>{selectedCampaign.subject}</Text>
             </div>
             <Card>

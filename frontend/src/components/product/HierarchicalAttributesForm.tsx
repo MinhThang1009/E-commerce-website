@@ -1,4 +1,5 @@
 ﻿import React, { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import {
   Card,
   Typography,
@@ -48,6 +49,7 @@ interface HierarchicalAttributesFormProps {
 const HierarchicalAttributesForm: React.FC<HierarchicalAttributesFormProps> = ({
   onAttributeGroupsChange,
 }) => {
+  const { t } = useTranslation();
   const [form] = Form.useForm();
   const [isModalVisible, setIsModalVisible] = useState(false);
   const [modalType, setModalType] = useState<'group' | 'value'>('group');
@@ -130,11 +132,11 @@ const HierarchicalAttributesForm: React.FC<HierarchicalAttributesFormProps> = ({
             id: editingItem.id,
             data: values,
           }).unwrap();
-          message.success('Cập nhật nhóm thuộc tính thành công!');
+          message.success(t('attr.groupUpdated'));
         } else {
           // Tạo nhóm
           await createAttributeGroup(values).unwrap();
-          message.success('Tạo nhóm thuộc tính thành công!');
+          message.success(t('attr.groupCreated'));
         }
       } else {
         if (editingItem) {
@@ -143,14 +145,14 @@ const HierarchicalAttributesForm: React.FC<HierarchicalAttributesFormProps> = ({
             id: editingItem.id,
             data: values,
           }).unwrap();
-          message.success('Cập nhật giá trị thuộc tính thành công!');
+          message.success(t('attr.valueUpdated'));
         } else {
           // Tạo giá trị
           await addAttributeValue({
             attributeGroupId: selectedGroup!.id,
             data: values,
           }).unwrap();
-          message.success('Thêm giá trị thuộc tính thành công!');
+          message.success(t('attr.valueAdded'));
         }
       }
 
@@ -158,7 +160,7 @@ const HierarchicalAttributesForm: React.FC<HierarchicalAttributesFormProps> = ({
       refetch();
       onAttributeGroupsChange?.(attributeGroups);
     } catch (error: any) {
-      message.error(error?.data?.message || 'Có lỗi xảy ra!');
+      message.error(error?.data?.message || t('attr.error'));
     }
   };
 
@@ -166,22 +168,22 @@ const HierarchicalAttributesForm: React.FC<HierarchicalAttributesFormProps> = ({
   const handleDeleteGroup = async (groupId: string) => {
     try {
       await deleteAttributeGroup(groupId).unwrap();
-      message.success('Xóa nhóm thuộc tính thành công!');
+      message.success(t('attr.groupDeleted'));
       refetch();
       onAttributeGroupsChange?.(attributeGroups);
     } catch (error: any) {
-      message.error(error?.data?.message || 'Có lỗi xảy ra!');
+      message.error(error?.data?.message || t('attr.error'));
     }
   };
 
   const handleDeleteValue = async (valueId: string) => {
     try {
       await deleteAttributeValue(valueId).unwrap();
-      message.success('Xóa giá trị thuộc tính thành công!');
+      message.success(t('attr.valueDeleted'));
       refetch();
       onAttributeGroupsChange?.(attributeGroups);
     } catch (error: any) {
-      message.error(error?.data?.message || 'Có lỗi xảy ra!');
+      message.error(error?.data?.message || t('attr.error'));
     }
   };
 
@@ -212,7 +214,7 @@ const HierarchicalAttributesForm: React.FC<HierarchicalAttributesFormProps> = ({
                 handleCreateValue(group);
               }}
             >
-              Thêm giá trị
+              {t('attr.addValue')}
             </Button>
             <Button
               size="small"
@@ -223,14 +225,14 @@ const HierarchicalAttributesForm: React.FC<HierarchicalAttributesFormProps> = ({
               }}
             />
             <Popconfirm
-              title="Xóa nhóm thuộc tính?"
-              description="Bạn có chắc chắn muốn xóa nhóm thuộc tính này?"
+              title={t('attr.deleteGroup')}
+              description={t('attr.deleteGroupDesc')}
               onConfirm={(e) => {
                 e?.stopPropagation();
                 handleDeleteGroup(group.id);
               }}
-              okText="Xóa"
-              cancelText="Hủy"
+              okText={t('attr.deleteConfirm')}
+              cancelText={t('attr.cancelBtn')}
             >
               <Button
                 size="small"
@@ -270,7 +272,7 @@ const HierarchicalAttributesForm: React.FC<HierarchicalAttributesFormProps> = ({
               {value.priceAdjustment !== 0 && (
                 <Text type={value.priceAdjustment > 0 ? 'success' : 'danger'}>
                   {value.priceAdjustment > 0 ? '+' : ''}
-                  {value.priceAdjustment.toLocaleString()}đ
+                  {value.priceAdjustment.toLocaleString()}{t('common.currencySymbol')}
                 </Text>
               )}
             </Space>
@@ -284,14 +286,14 @@ const HierarchicalAttributesForm: React.FC<HierarchicalAttributesFormProps> = ({
                 }}
               />
               <Popconfirm
-                title="Xóa giá trị thuộc tính?"
-                description="Bạn có chắc chắn muốn xóa giá trị thuộc tính này?"
+                title={t('attr.deleteValue')}
+                description={t('attr.deleteValueDesc')}
                 onConfirm={(e) => {
                   e?.stopPropagation();
                   handleDeleteValue(value.id);
                 }}
-                okText="Xóa"
-                cancelText="Hủy"
+                okText={t('attr.deleteConfirm')}
+                cancelText={t('attr.cancelBtn')}
               >
                 <Button
                   size="small"
@@ -310,12 +312,12 @@ const HierarchicalAttributesForm: React.FC<HierarchicalAttributesFormProps> = ({
   return (
     <Card>
       <Title level={4}>
-        <FolderOutlined /> Thuộc tính phân cấp
+        <FolderOutlined /> {t('attr.title')}
       </Title>
 
       <Alert
-        message="Thông tin"
-        description="Tạo nhóm thuộc tính cha (như Màu sắc, Cấu hình) và thêm các giá trị con vào mỗi nhóm. Các thuộc tính này sẽ được sử dụng để tạo biến thể sản phẩm."
+        message={t('attr.info')}
+        description={t('attr.infoDesc')}
         type="info"
         showIcon
         icon={<InfoCircleOutlined />}
@@ -328,7 +330,7 @@ const HierarchicalAttributesForm: React.FC<HierarchicalAttributesFormProps> = ({
         onClick={handleCreateGroup}
         style={{ marginBottom: 16 }}
       >
-        Tạo nhóm thuộc tính
+        {t('attr.createGroup')}
       </Button>
 
       <Spin spinning={isLoading}>
@@ -342,10 +344,7 @@ const HierarchicalAttributesForm: React.FC<HierarchicalAttributesFormProps> = ({
           />
         ) : (
           <Card style={{ textAlign: 'center', padding: '40px 0' }}>
-            <Text type="secondary">
-              Chưa có nhóm thuộc tính nào. Nhấn nút "Tạo nhóm thuộc tính" để bắt
-              đầu.
-            </Text>
+            <Text type="secondary">{t('attr.emptyText')}</Text>
           </Card>
         )}
       </Spin>
@@ -355,17 +354,17 @@ const HierarchicalAttributesForm: React.FC<HierarchicalAttributesFormProps> = ({
         title={
           modalType === 'group'
             ? editingItem
-              ? 'Sửa nhóm thuộc tính'
-              : 'Tạo nhóm thuộc tính'
+              ? t('attr.editGroupModal')
+              : t('attr.createGroupModal')
             : editingItem
-              ? 'Sửa giá trị thuộc tính'
-              : 'Thêm giá trị thuộc tính'
+              ? t('attr.editValueModal')
+              : t('attr.addValueModal')
         }
         open={isModalVisible}
         onOk={handleSubmit}
         onCancel={() => setIsModalVisible(false)}
-        okText={editingItem ? 'Cập nhật' : 'Tạo'}
-        cancelText="Hủy"
+        okText={editingItem ? t('attr.updateBtn') : t('attr.createBtn')}
+        cancelText={t('attr.cancelBtn')}
       >
         <Form form={form} layout="vertical">
           {modalType === 'group' ? (
@@ -373,44 +372,44 @@ const HierarchicalAttributesForm: React.FC<HierarchicalAttributesFormProps> = ({
             <>
               <Form.Item
                 name="name"
-                label="Tên nhóm"
-                rules={[{ required: true, message: 'Vui lòng nhập tên nhóm!' }]}
+                label={t('attr.groupName')}
+                rules={[{ required: true, message: t('attr.groupNameRequired') }]}
               >
-                <Input placeholder="Ví dụ: Màu sắc, Cấu hình..." />
+                <Input placeholder={t('attr.groupNamePlaceholder')} />
               </Form.Item>
 
-              <Form.Item name="description" label="Mô tả">
-                <Input.TextArea placeholder="Mô tả về nhóm thuộc tính..." />
+              <Form.Item name="description" label={t('attr.groupDesc')}>
+                <Input.TextArea placeholder={t('attr.groupDescPlaceholder')} />
               </Form.Item>
 
               <Form.Item
                 name="type"
-                label="Loại thuộc tính"
-                rules={[{ required: true, message: 'Vui lòng chọn loại!' }]}
+                label={t('attr.groupType')}
+                rules={[{ required: true, message: t('attr.groupTypeRequired') }]}
               >
-                <Select placeholder="Chọn loại thuộc tính">
-                  <Option value="color">Màu sắc</Option>
-                  <Option value="config">Cấu hình</Option>
-                  <Option value="storage">Dung lượng</Option>
-                  <Option value="size">Kích thước</Option>
-                  <Option value="custom">Tùy chỉnh</Option>
+                <Select placeholder={t('attr.groupTypePlaceholder')}>
+                  <Option value="color">{t('attr.typeColor')}</Option>
+                  <Option value="config">{t('attr.typeConfig')}</Option>
+                  <Option value="storage">{t('attr.typeStorage')}</Option>
+                  <Option value="size">{t('attr.typeSize')}</Option>
+                  <Option value="custom">{t('attr.typeCustom')}</Option>
                 </Select>
               </Form.Item>
 
               <Form.Item
                 name="isRequired"
-                label="Bắt buộc"
+                label={t('attr.isRequired')}
                 initialValue={false}
               >
                 <Select>
-                  <Option value={true}>Có</Option>
-                  <Option value={false}>Không</Option>
+                  <Option value={true}>{t('attr.yes')}</Option>
+                  <Option value={false}>{t('attr.no')}</Option>
                 </Select>
               </Form.Item>
 
               <Form.Item
                 name="sortOrder"
-                label="Thứ tự sắp xếp"
+                label={t('attr.sortOrder')}
                 initialValue={0}
               >
                 <InputNumber min={0} style={{ width: '100%' }} />
@@ -421,31 +420,31 @@ const HierarchicalAttributesForm: React.FC<HierarchicalAttributesFormProps> = ({
             <>
               <Form.Item
                 name="name"
-                label="Tên giá trị"
+                label={t('attr.valueName')}
                 rules={[
-                  { required: true, message: 'Vui lòng nhập tên giá trị!' },
+                  { required: true, message: t('attr.valueNameRequired') },
                 ]}
               >
-                <Input placeholder="Ví dụ: Đen, Trắng, i7/16GB/512GB..." />
+                <Input placeholder={t('attr.valueNamePlaceholder')} />
               </Form.Item>
 
               <Form.Item
                 name="value"
-                label="Giá trị"
-                rules={[{ required: true, message: 'Vui lòng nhập giá trị!' }]}
+                label={t('attr.valueField')}
+                rules={[{ required: true, message: t('attr.valueRequired') }]}
               >
-                <Input placeholder="Ví dụ: black, white, i7-16gb-512gb..." />
+                <Input placeholder={t('attr.valuePlaceholder')} />
               </Form.Item>
 
               {selectedGroup?.type === 'color' && (
-                <Form.Item name="colorCode" label="Mã màu">
+                <Form.Item name="colorCode" label={t('attr.colorCode')}>
                   <Input placeholder="#FF0000" />
                 </Form.Item>
               )}
 
               <Form.Item
                 name="priceAdjustment"
-                label="Điều chỉnh giá"
+                label={t('attr.priceAdjustment')}
                 initialValue={0}
               >
                 <InputNumber
@@ -460,7 +459,7 @@ const HierarchicalAttributesForm: React.FC<HierarchicalAttributesFormProps> = ({
 
               <Form.Item
                 name="sortOrder"
-                label="Thứ tự sắp xếp"
+                label={t('attr.sortOrder')}
                 initialValue={0}
               >
                 <InputNumber min={0} style={{ width: '100%' }} />

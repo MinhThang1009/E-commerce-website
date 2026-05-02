@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useSelector } from 'react-redux';
 import { RootState } from '@/store';
 import ReviewForm from './ReviewForm';
@@ -10,6 +11,7 @@ interface ReviewSectionProps {
 }
 
 const ReviewSection: React.FC<ReviewSectionProps> = ({ productId }) => {
+  const { t } = useTranslation();
   const { isAuthenticated } = useSelector((state: RootState) => state.auth);
   const [showReviewForm, setShowReviewForm] = useState(false);
   const [refreshKey, setRefreshKey] = useState(0);
@@ -27,7 +29,7 @@ const ReviewSection: React.FC<ReviewSectionProps> = ({ productId }) => {
       <div className="bg-white dark:bg-neutral-800 rounded-lg shadow-sm p-6">
         <div className="flex items-center justify-between mb-4">
           <h3 className="text-lg font-semibold text-neutral-900 dark:text-white">
-            Đánh giá sản phẩm
+            {t('review.section.title')}
           </h3>
 
           {isAuthenticated && !showReviewForm && (
@@ -35,7 +37,7 @@ const ReviewSection: React.FC<ReviewSectionProps> = ({ productId }) => {
               onClick={() => setShowReviewForm(true)}
               className="px-4 py-2 bg-primary-500 text-white rounded-lg hover:bg-primary-600 transition-colors font-medium"
             >
-              Viết đánh giá
+              {t('review.section.writeReview')}
             </button>
           )}
         </div>
@@ -68,7 +70,7 @@ const ReviewSection: React.FC<ReviewSectionProps> = ({ productId }) => {
                 />
               </svg>
               <p className="text-sm mb-3">
-                Đăng nhập để viết đánh giá cho sản phẩm này
+                {t('review.section.loginPrompt')}
               </p>
               <div className="flex flex-col sm:flex-row gap-2 justify-center">
                 <button
@@ -77,7 +79,7 @@ const ReviewSection: React.FC<ReviewSectionProps> = ({ productId }) => {
                   }}
                   className="px-4 py-2 bg-primary-500 text-white rounded-lg hover:bg-primary-600 transition-colors text-sm"
                 >
-                  Đăng nhập
+                  {t('review.loginRequired.login')}
                 </button>
                 <button
                   onClick={() => {
@@ -85,7 +87,7 @@ const ReviewSection: React.FC<ReviewSectionProps> = ({ productId }) => {
                   }}
                   className="px-4 py-2 border border-neutral-300 dark:border-neutral-600 text-neutral-700 dark:text-neutral-300 rounded-lg hover:bg-neutral-50 dark:hover:bg-neutral-700 transition-colors text-sm"
                 >
-                  Đăng ký
+                  {t('review.loginRequired.register')}
                 </button>
               </div>
             </div>

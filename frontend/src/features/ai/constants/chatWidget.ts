@@ -36,14 +36,16 @@ export const RESIZE_HANDLE_CLASSES = {
   topLeft: 'bg-transparent hover:bg-primary-500/20 transition-colors',
 } as const;
 
-export const GREETING_MESSAGE = {
+import i18n from '@/config/i18n';
+
+export const getGreetingMessage = () => ({
   id: 'greeting',
-  text: 'Chào bạn! Tôi là trợ lý AI của Shopmini! 😊 Tôi có thể giúp bạn tìm sản phẩm, xem khuyến mãi và hỗ trợ mua hàng. Bạn cần gì nhỉ?',
+  text: i18n.t('chat.greeting'),
   sender: 'ai' as const,
   suggestions: [
-    'Tìm sản phẩm hot 🔥',
-    'Xem khuyến mãi 🎉',
-    'Sản phẩm bán chạy ⭐',
-    'Hỗ trợ mua hàng 💬',
+    i18n.t('chat.suggestions.hotProducts'),
+    i18n.t('chat.suggestions.viewPromotions'),
+    i18n.t('chat.suggestions.bestSellers'),
+    i18n.t('chat.suggestions.shoppingSupport'),
   ],
-} as const;
+});

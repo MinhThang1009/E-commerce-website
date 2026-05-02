@@ -1,4 +1,5 @@
 import { message } from 'antd';
+import i18next from 'i18next';
 
 export interface ProcessDescriptionOptions {
   productId?: string;
@@ -61,7 +62,7 @@ export const processDescriptionImages = async (
   // Hiển thị thông báo đang tải
   const loadingKey = 'converting-images';
   message.loading({
-    content: `Đang convert ${base64Images.length} ảnh base64 thành file...`,
+    content: i18next.t('descProcessor.converting', { count: base64Images.length }),
     key: loadingKey,
     duration: 0,
   });
@@ -76,7 +77,7 @@ export const processDescriptionImages = async (
 
         // Cập nhật thông báo đang tải
         message.loading({
-          content: `Đang convert ảnh ${i + 1}/${base64Images.length}...`,
+          content: i18next.t('descProcessor.convertingItem', { current: i + 1, total: base64Images.length }),
           key: loadingKey,
           duration: 0,
         });
@@ -134,15 +135,15 @@ export const processDescriptionImages = async (
     if (uploadedImages.length > 0) {
       if (hasErrors) {
         message.warning(
-          `Đã convert ${uploadedImages.length}/${base64Images.length} ảnh thành công. Một số ảnh không thể convert.`
+          i18next.t('descProcessor.partialSuccess', { uploaded: uploadedImages.length, total: base64Images.length })
         );
       } else {
         message.success(
-          `Đã convert thành công ${uploadedImages.length} ảnh base64 thành file!`
+          i18next.t('descProcessor.fullSuccess', { count: uploadedImages.length })
         );
       }
     } else if (hasErrors) {
-      message.error('Không thể convert ảnh base64 nào. Vui lòng thử lại.');
+      message.error(i18next.t('descProcessor.allFailed'));
     }
 
     return {
@@ -153,7 +154,7 @@ export const processDescriptionImages = async (
   } catch (error) {
     message.destroy(loadingKey);
     console.error('Lỗi khi xử lý ảnh trong mô tả:', error);
-    message.error('Có lỗi xảy ra khi convert ảnh base64');
+    message.error(i18next.t('descProcessor.error'));
 
     return {
       processedDescription: description, // Trả về bản gốc nếu có lỗi

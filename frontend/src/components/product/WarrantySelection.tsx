@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import {
   SafetyOutlined,
   CheckCircleOutlined,
@@ -17,6 +18,7 @@ const WarrantySelection: React.FC<WarrantySelectionProps> = ({
   onWarrantyChange,
   selectedPackages,
 }) => {
+  const { t } = useTranslation();
   const [expandedPackages, setExpandedPackages] = useState<string[]>([]);
 
   const formatPrice = (price: number) => {
@@ -28,10 +30,8 @@ const WarrantySelection: React.FC<WarrantySelectionProps> = ({
 
   const togglePackage = (packageId: string) => {
     if (selectedPackages.includes(packageId)) {
-      // Bỏ chọn gói
       onWarrantyChange(selectedPackages.filter((id) => id !== packageId));
     } else {
-      // Thêm gói
       onWarrantyChange([...selectedPackages, packageId]);
     }
   };
@@ -59,7 +59,7 @@ const WarrantySelection: React.FC<WarrantySelectionProps> = ({
       <div className="flex items-center mb-4">
         <SafetyOutlined className="text-primary-500 dark:text-primary-400 text-lg mr-2" />
         <h3 className="text-lg font-semibold text-neutral-800 dark:text-neutral-200">
-          Chọn gói bảo hành
+          {t('product.warrantyTitle')}
         </h3>
       </div>
 
@@ -87,7 +87,7 @@ const WarrantySelection: React.FC<WarrantySelectionProps> = ({
                       {pkg.name}
                     </h4>
                     <span className="text-sm font-semibold text-primary-600 dark:text-primary-400">
-                      {pkg.price === 0 ? 'Miễn phí' : formatPrice(pkg.price)}
+                      {pkg.price === 0 ? t('product.warrantyFree') : formatPrice(pkg.price)}
                     </span>
                   </div>
 
@@ -97,16 +97,10 @@ const WarrantySelection: React.FC<WarrantySelectionProps> = ({
 
                   <div className="flex items-center gap-2 mt-2">
                     <span className="text-xs text-neutral-500 dark:text-neutral-400">
-                      Thời gian: {pkg.durationMonths} tháng
+                      {t('product.warrantyDuration', { months: pkg.durationMonths })}
                     </span>
-                    {/* {(pkg.productWarranty?.isDefault || pkg.price === 0) && (
-                      <span className="text-xs bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200 px-2 py-1 rounded">
-                        Mặc định
-                      </span>
-                    )} */}
                   </div>
 
-                  {/* Coverage list */}
                   {pkg.coverage && pkg.coverage.length > 0 && (
                     <div className="mt-2">
                       <button
@@ -115,17 +109,14 @@ const WarrantySelection: React.FC<WarrantySelectionProps> = ({
                       >
                         <InfoCircleOutlined />
                         {expandedPackages.includes(pkg.id)
-                          ? 'Thu gọn'
-                          : 'Xem chi tiết'}
+                          ? t('product.warrantyCollapse')
+                          : t('product.warrantyExpand')}
                       </button>
 
                       {expandedPackages.includes(pkg.id) && (
                         <div className="mt-2 space-y-1">
                           {pkg.coverage.map((item, index) => (
-                            <div
-                              key={index}
-                              className="flex items-center gap-2"
-                            >
+                            <div key={index} className="flex items-center gap-2">
                               <CheckCircleOutlined className="text-green-500 text-xs" />
                               <span className="text-xs text-neutral-600 dark:text-neutral-400">
                                 {item}
@@ -143,12 +134,11 @@ const WarrantySelection: React.FC<WarrantySelectionProps> = ({
         ))}
       </div>
 
-      {/* Total warranty price */}
       {calculateTotalWarrantyPrice() > 0 && (
         <div className="mt-4 pt-3 border-t border-neutral-200 dark:border-neutral-700">
           <div className="flex justify-between items-center">
             <span className="text-sm font-medium text-neutral-700 dark:text-neutral-300">
-              Tổng tiền bảo hành:
+              {t('product.warrantyTotal')}
             </span>
             <span className="text-sm font-semibold text-primary-600 dark:text-primary-400">
               {formatPrice(calculateTotalWarrantyPrice())}
@@ -157,14 +147,11 @@ const WarrantySelection: React.FC<WarrantySelectionProps> = ({
         </div>
       )}
 
-      {/* Information note */}
       <div className="mt-4 p-3 bg-blue-50 dark:bg-blue-900/20 rounded-lg">
         <div className="flex items-start gap-2">
           <InfoCircleOutlined className="text-blue-500 text-sm mt-0.5" />
           <p className="text-xs text-blue-700 dark:text-blue-300">
-            Gói bảo hành cơ bản được bao gồm miễn phí với mọi sản phẩm. Các gói
-            bảo hành khác là tùy chọn bổ sung để tăng cường bảo vệ sản phẩm của
-            bạn.
+            {t('product.warrantyNote')}
           </p>
         </div>
       </div>

@@ -1,6 +1,7 @@
 import React from 'react';
 import { Form, Select, Input, Row, Col, Alert } from 'antd';
-import { Category } from '@/types/product';
+import { useTranslation } from 'react-i18next';
+import { Category } from '@/types/category.types';
 
 const { TextArea } = Input;
 const { Option } = Select;
@@ -14,22 +15,24 @@ const ProductCategoryForm: React.FC<ProductCategoryFormProps> = ({
   categories,
   isLoading,
 }) => {
+  const { t } = useTranslation();
+
   return (
     <Row gutter={[24, 16]}>
       <Col span={24}>
         <Form.Item
           name="categoryIds"
-          label="Danh mục"
+          label={t('admin.products.category.label')}
           rules={[
             {
               required: true,
-              message: 'Vui lòng chọn ít nhất một danh mục!',
+              message: t('admin.products.category.required'),
             },
           ]}
         >
           <Select
             mode="multiple"
-            placeholder="Chọn danh mục sản phẩm"
+            placeholder={t('admin.products.category.placeholder')}
             loading={isLoading}
             showSearch
             optionFilterProp="children"
@@ -44,10 +47,10 @@ const ProductCategoryForm: React.FC<ProductCategoryFormProps> = ({
       </Col>
 
       <Col span={24}>
-        <Form.Item name="searchKeywords" label="Từ khóa tìm kiếm">
+        <Form.Item name="searchKeywords" label={t('admin.products.category.keywordsLabel')}>
           <TextArea
             rows={2}
-            placeholder="Nhập các từ khóa liên quan, cách nhau bằng dấu phẩy"
+            placeholder={t('admin.products.category.keywordsPlaceholder')}
             showCount
             maxLength={500}
           />
@@ -56,8 +59,8 @@ const ProductCategoryForm: React.FC<ProductCategoryFormProps> = ({
 
       <Col span={24}>
         <Alert
-          message="Lưu ý danh mục"
-          description="Chọn danh mục phù hợp để khách hàng dễ dàng tìm thấy sản phẩm. Có thể chọn nhiều danh mục."
+          message={t('admin.products.category.alertMessage')}
+          description={t('admin.products.category.alertDesc')}
           type="info"
           showIcon
         />

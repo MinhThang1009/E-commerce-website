@@ -1,4 +1,5 @@
 import React from 'react';
+import { useTranslation } from 'react-i18next';
 import { Button, Row, Col, Typography, Table, Space, Tag, Alert } from 'antd';
 import { PlusOutlined, EditOutlined, DeleteOutlined } from '@ant-design/icons';
 import { ProductVariant } from '@/types/product';
@@ -18,19 +19,21 @@ const ProductVariantsSection: React.FC<ProductVariantsSectionProps> = ({
   onEditVariant,
   onDeleteVariant,
 }) => {
+  const { t } = useTranslation();
+
   const variantColumns = [
     {
-      title: 'Tên biến thể',
+      title: t('productSection.variants.nameColumn'),
       dataIndex: 'name',
       key: 'name',
     },
     {
-      title: 'Thuộc tính',
+      title: t('productSection.variants.attrColumn'),
       dataIndex: 'attributes',
       key: 'attributes',
       render: (attributes: Record<string, string>) => {
         if (!attributes || Object.keys(attributes).length === 0) {
-          return <Text type="secondary">Không có</Text>;
+          return <Text type="secondary">{t('productSection.variants.noAttrValue')}</Text>;
         }
         return (
           <div>
@@ -44,23 +47,23 @@ const ProductVariantsSection: React.FC<ProductVariantsSectionProps> = ({
       },
     },
     {
-      title: 'Giá',
+      title: t('productSection.variants.priceColumn'),
       dataIndex: 'price',
       key: 'price',
-      render: (price: number) => `${price.toLocaleString()}đ`,
+      render: (price: number) => `${price.toLocaleString()}${t('common.currencySymbol')}`,
     },
     {
-      title: 'Tồn kho',
+      title: t('productSection.variants.stockColumn'),
       dataIndex: 'stock',
       key: 'stock',
     },
     {
-      title: 'SKU',
+      title: t('productSection.variants.skuColumn'),
       dataIndex: 'sku',
       key: 'sku',
     },
     {
-      title: 'Hành động',
+      title: t('productSection.variants.actionsColumn'),
       key: 'actions',
       width: 120,
       render: (_: any, record: ProductVariant) => (
@@ -96,16 +99,14 @@ const ProductVariantsSection: React.FC<ProductVariantsSectionProps> = ({
           >
             <div>
               <Title level={5}>
-                Biến thể sản phẩm <Text type="danger">*</Text>
+                {t('productSection.variants.sectionTitle')} <Text type="danger">*</Text>
               </Title>
               <Text type="secondary">
-                Tạo các biến thể khác nhau của sản phẩm (giá, kích thước, màu
-                sắc...)
+                {t('productSection.variants.sectionDesc')}
               </Text>
               <div style={{ marginTop: 8 }}>
                 <Text type="warning">
-                  <strong>Lưu ý:</strong> Giá và số lượng tồn kho của sản phẩm
-                  sẽ phụ thuộc vào các biến thể.
+                  <strong>{t('common.note')}:</strong> {t('productSection.variants.note')}
                 </Text>
               </div>
             </div>
@@ -114,7 +115,7 @@ const ProductVariantsSection: React.FC<ProductVariantsSectionProps> = ({
               icon={<PlusOutlined />}
               onClick={onAddVariant}
             >
-              Thêm biến thể
+              {t('productSection.variants.addButton')}
             </Button>
           </div>
         </Col>
@@ -122,8 +123,8 @@ const ProductVariantsSection: React.FC<ProductVariantsSectionProps> = ({
 
       {variants.length === 0 && (
         <Alert
-          message="Cần có ít nhất 1 biến thể"
-          description="Vui lòng thêm ít nhất một biến thể cho sản phẩm trước khi tiếp tục."
+          message={t('productSection.variants.emptyError')}
+          description={t('productSection.variants.emptyErrorDesc')}
           type="error"
           showIcon
           style={{ marginBottom: 16 }}
@@ -135,7 +136,7 @@ const ProductVariantsSection: React.FC<ProductVariantsSectionProps> = ({
         columns={variantColumns}
         rowKey="id"
         pagination={false}
-        locale={{ emptyText: 'Chưa có biến thể nào' }}
+        locale={{ emptyText: t('productSection.variants.emptyTable') }}
       />
     </div>
   );

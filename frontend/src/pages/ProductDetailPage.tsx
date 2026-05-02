@@ -261,7 +261,7 @@ const ProductDetailPage: React.FC = () => {
       dispatch(
         addNotification({
           type: 'error',
-          message: `Chỉ còn ${availableStock} sản phẩm trong kho`,
+          message: t('product.stockLimited', { count: availableStock }),
         })
       );
       return;
@@ -282,7 +282,7 @@ const ProductDetailPage: React.FC = () => {
 
         dispatch(
           addNotification({
-            message: `${product.name} đã được thêm vào giỏ hàng`,
+            message: t('cart.addedToCart', { name: product.name }),
             type: 'success',
             duration: 3000,
           })
@@ -350,7 +350,7 @@ const ProductDetailPage: React.FC = () => {
 
       dispatch(
         addNotification({
-          message: t('cart.notifications.cleared'), // Tái sử dụng thông báo "đã xóa" tạm thời - nên dùng "Đã thêm vào giỏ hàng"
+          message: t('cart.notifications.addedSuccess'),
           type: 'success',
           duration: 3000,
         })
@@ -411,7 +411,7 @@ const ProductDetailPage: React.FC = () => {
       console.error('Lỗi khi mua ngay:', error);
       dispatch(
         addNotification({
-          message: error?.data?.message || 'Có lỗi xảy ra khi mua ngay',
+          message: error?.data?.message || t('productDetail.buyNow.error'),
           type: 'error',
           duration: 3000,
         })
@@ -544,7 +544,7 @@ const ProductDetailPage: React.FC = () => {
                       {parseFloat(currentPrice.toString()).toLocaleString(
                         'vi-VN'
                       )}
-                      đ
+                      {t('common.currencySymbol')}
                     </span>
 
                     {comparePrice && comparePrice > currentPrice && (
@@ -552,16 +552,13 @@ const ProductDetailPage: React.FC = () => {
                         {parseFloat(comparePrice.toString()).toLocaleString(
                           'vi-VN'
                         )}
-                        đ
+                        {t('common.currencySymbol')}
                       </span>
                     )}
 
                     {comparePrice && comparePrice > currentPrice && (
                       <Badge variant="secondary" className="ml-3">
-                        {Math.round(
-                          ((comparePrice - currentPrice) / comparePrice) * 100
-                        )}
-                        % OFF
+                        {t('product.discountOff', { percent: Math.round(((comparePrice - currentPrice) / comparePrice) * 100) })}
                       </Badge>
                     )}
                   </>
@@ -650,10 +647,7 @@ const ProductDetailPage: React.FC = () => {
                 return (
                   <div key={attribute.id || attribute.name || index} className="mb-4">
                     <h3 className="text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-2">
-                      {attribute.name.toLowerCase() === 'storage' ? 'Dung lượng' : 
-                       attribute.name.toLowerCase() === 'color' ? 'Màu sắc' : 
-                       attribute.name.toLowerCase() === 'ram' ? 'Bộ nhớ (RAM)' :
-                       attribute.name}
+                      {t(`productDetail.attributes.${attribute.name.toLowerCase()}`, { defaultValue: attribute.name })}
                     </h3>
 
                     <div className="flex flex-wrap gap-2">
@@ -780,7 +774,7 @@ const ProductDetailPage: React.FC = () => {
                         <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
                         </svg>
-                        Vui lòng chọn đầy đủ các thuộc tính để mua hàng
+                        {t('product.selectAttributesRequired')}
                       </p>
                     </div>
                   )}
@@ -795,7 +789,7 @@ const ProductDetailPage: React.FC = () => {
                     disabled={isDisabled}
                     className={`w-full h-14 ${!allSelected ? 'opacity-60 grayscale-[0.5]' : ''}`}
                   >
-                    MUA NGAY
+                    {t('productDetail.buyNow.label')}
                   </PremiumButton>
 
                   <PremiumButton

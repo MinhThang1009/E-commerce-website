@@ -1,4 +1,5 @@
 import React from 'react';
+import { useTranslation } from 'react-i18next';
 
 interface LoadingSpinnerProps {
   size?: 'sm' | 'md' | 'lg' | 'small' | 'medium' | 'large';
@@ -11,6 +12,7 @@ const LoadingSpinner: React.FC<LoadingSpinnerProps> = ({
   color = 'primary',
   fullScreen = false,
 }) => {
+  const { t } = useTranslation();
   const sizeClasses = {
     sm: 'w-5 h-5',
     md: 'w-8 h-8',
@@ -65,7 +67,7 @@ const LoadingSpinner: React.FC<LoadingSpinnerProps> = ({
             ></path>
           </svg>
           <p className="mt-3 text-neutral-600 dark:text-neutral-300">
-            Loading...
+            {t('common.loading')}
           </p>
         </div>
       </div>

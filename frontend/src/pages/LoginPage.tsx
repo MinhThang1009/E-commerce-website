@@ -83,16 +83,16 @@ const LoginPage: React.FC = () => {
 
   const handleResendVerification = async () => {
     if (!email) {
-      setResendError('Vui lòng nhập email của bạn trước');
+      setResendError(t('auth.login.emailRequired'));
       return;
     }
     setResendSuccess('');
     setResendError('');
     try {
       await resendVerification({ email }).unwrap();
-      setResendSuccess('Đã gửi mã OTP mới đến email của bạn!');
+      setResendSuccess(t('auth.login.resendOtpSuccess'));
     } catch (err: any) {
-      setResendError(err?.data?.message || 'Không thể gửi lại OTP');
+      setResendError(err?.data?.message || t('auth.login.resendOtpError'));
     }
   };
 
@@ -163,7 +163,7 @@ const LoginPage: React.FC = () => {
                 size="large"
                 iconType="arrow-right"
                 isProcessing={isLoading}
-                processingText="Đang đăng nhập..."
+                processingText={t('auth.login.signingIn')}
                 onClick={handleButtonClick}
                 className="w-full h-12"
               >
@@ -189,7 +189,7 @@ const LoginPage: React.FC = () => {
             </div>
             <div className="relative flex justify-center text-sm">
               <span className="px-2 bg-white dark:bg-neutral-800 text-neutral-500">
-                Hoặc
+                {t('common.or')}
               </span>
             </div>
           </div>
@@ -214,7 +214,7 @@ const LoginPage: React.FC = () => {
                       onClick={handleGoToOtp}
                       className="w-full py-2 px-4 bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium rounded-lg transition-colors"
                     >
-                      📩 Nhập mã OTP xác thực
+                      📩 {t('auth.login.enterOtp')}
                     </button>
                     {/* Nút gửi lại OTP */}
                     <button
@@ -223,7 +223,7 @@ const LoginPage: React.FC = () => {
                       disabled={isResending}
                       className="w-full py-2 px-4 border border-current text-sm font-medium rounded-lg hover:bg-error-200 dark:hover:bg-error-900/50 disabled:opacity-50 transition-colors"
                     >
-                      {isResending ? 'Đang gửi...' : 'Gửi lại email xác minh'}
+                      {isResending ? t('auth.login.resending') : t('auth.login.resendVerification')}
                     </button>
                   </div>
                 )}
@@ -243,7 +243,7 @@ const LoginPage: React.FC = () => {
                     onClick={handleGoToOtp}
                     className="mt-1 text-sm underline hover:no-underline"
                   >
-                    Nhập mã OTP ngay →
+                    {t('auth.login.enterOtpNow')}
                   </button>
                 </div>
               </div>

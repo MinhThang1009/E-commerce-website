@@ -1,4 +1,5 @@
 import React from 'react';
+import { useTranslation } from 'react-i18next';
 import { Collapse } from 'antd';
 import { PlusOutlined, MinusOutlined } from '@ant-design/icons';
 
@@ -14,12 +15,13 @@ interface ProductFAQSectionProps {
 }
 
 const ProductFAQSection: React.FC<ProductFAQSectionProps> = ({ faqs }) => {
+  const { t } = useTranslation();
   if (!faqs || faqs.length === 0) return null;
 
   return (
     <div className="mt-12 bg-white dark:bg-neutral-900 rounded-2xl p-6 md:p-8">
       <h2 className="text-2xl font-bold text-neutral-900 dark:text-white mb-6">
-        Câu hỏi thường gặp
+        {t('product.faq')}
       </h2>
       
       <Collapse

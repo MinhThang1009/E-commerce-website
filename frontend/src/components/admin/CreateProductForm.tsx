@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useCreateProductMutation } from '@/services/adminProductApi';
 import { useGetCategoriesQuery } from '@/services/categoryApi';
 import Button from '@/components/common/Button';
@@ -24,12 +25,6 @@ interface CreateProductFormProps {
   onSuccess?: () => void;
 }
 
-const statusOptions = [
-  { value: 'active', label: '✅ Đang bán' },
-  { value: 'inactive', label: '⏸️ Tạm dừng' },
-  { value: 'draft', label: '📝 Bản nháp' },
-];
-
 interface Attribute {
   id: string;
   name: string;
@@ -48,10 +43,17 @@ const CreateProductForm: React.FC<CreateProductFormProps> = ({
   onClose,
   onSuccess,
 }) => {
+  const { t } = useTranslation();
   const [createProduct, { isLoading }] = useCreateProductMutation();
   const { data: categories, isLoading: isCategoriesLoading } =
     useGetCategoriesQuery();
   const [activeTab, setActiveTab] = useState('basic');
+
+  const statusOptions = [
+    { value: 'active', label: t('createProduct.statusActive') },
+    { value: 'inactive', label: t('createProduct.statusInactive') },
+    { value: 'draft', label: t('createProduct.statusDraft') },
+  ];
 
   // Trạng thái form
   const [formData, setFormData] = useState({
@@ -152,31 +154,31 @@ const CreateProductForm: React.FC<CreateProductFormProps> = ({
     const newErrors: Record<string, string> = {};
 
     if (!formData.name.trim()) {
-      newErrors.name = 'Vui lòng nhập tên sản phẩm';
+      newErrors.name = t('createProduct.nameRequired');
     }
 
     if (!formData.description.trim()) {
-      newErrors.description = 'Vui lòng nhập mô tả sản phẩm';
+      newErrors.description = t('createProduct.descRequired');
     }
 
     if (!formData.shortDescription.trim()) {
-      newErrors.shortDescription = 'Vui lòng nhập mô tả ngắn';
+      newErrors.shortDescription = t('createProduct.shortDescRequired');
     }
 
     if (!formData.price || Number(formData.price) <= 0) {
-      newErrors.price = 'Giá sản phẩm phải lớn hơn 0';
+      newErrors.price = t('createProduct.priceRequired');
     }
 
     if (!formData.stock || Number(formData.stock) < 0) {
-      newErrors.stock = 'Số lượng tồn kho không được âm';
+      newErrors.stock = t('createProduct.stockRequired');
     }
 
     if (!formData.sku.trim()) {
-      newErrors.sku = 'Vui lòng nhập mã SKU';
+      newErrors.sku = t('createProduct.skuRequired');
     }
 
     if (formData.categoryIds.length === 0) {
-      newErrors.categoryIds = 'Vui lòng chọn ít nhất một danh mục';
+      newErrors.categoryIds = t('createProduct.categoryRequired');
     }
 
     setErrors(newErrors);
@@ -282,7 +284,6 @@ const CreateProductForm: React.FC<CreateProductFormProps> = ({
       onClose();
     } catch (error: any) {
       console.error('Tạo sản phẩm thất bại:', error);
-      // Xử lý lỗi từ API
       if (error?.data?.errors) {
         const apiErrors: Record<string, string> = {};
         error.data.errors.forEach((err: any) => {
@@ -297,37 +298,37 @@ const CreateProductForm: React.FC<CreateProductFormProps> = ({
   const tabs = [
     {
       id: 'basic',
-      label: 'Thông tin cơ bản',
+      label: t('createProduct.tabBasic'),
       icon: <DocumentTextIcon className="w-5 h-5" />,
     },
     {
       id: 'pricing',
-      label: 'Giá & Kho hàng',
+      label: t('createProduct.tabPricing'),
       icon: <CurrencyDollarIcon className="w-5 h-5" />,
     },
     {
       id: 'categories',
-      label: 'Phân loại',
+      label: t('createProduct.tabCategories'),
       icon: <TagIcon className="w-5 h-5" />,
     },
     {
       id: 'images',
-      label: 'Hình ảnh',
+      label: t('createProduct.tabImages'),
       icon: <PhotoIcon className="w-5 h-5" />,
     },
     {
       id: 'seo',
-      label: 'SEO',
+      label: t('createProduct.tabSeo'),
       icon: <MagnifyingGlassIcon className="w-5 h-5" />,
     },
     {
       id: 'attributes',
-      label: 'Thuộc tính',
+      label: t('createProduct.tabAttributes'),
       icon: <SwatchIcon className="w-5 h-5" />,
     },
     {
       id: 'variants',
-      label: 'Biến thể',
+      label: t('createProduct.tabVariants'),
       icon: <Square2StackIcon className="w-5 h-5" />,
     },
   ];
@@ -336,7 +337,7 @@ const CreateProductForm: React.FC<CreateProductFormProps> = ({
     <Modal
       isOpen={isOpen}
       onClose={onClose}
-      title="Tạo sản phẩm mới"
+      title={t('createProduct.modalTitle')}
       size="xl"
       footer={
         <div className="flex justify-end gap-2">
@@ -346,7 +347,7 @@ const CreateProductForm: React.FC<CreateProductFormProps> = ({
             disabled={isLoading}
             className="text-neutral-700 dark:text-neutral-300"
           >
-            <span className="inline-block">Hủy</span>
+            <span className="inline-block">{t('common.cancel')}</span>
           </Button>
           <Button
             variant="primary"
@@ -357,10 +358,10 @@ const CreateProductForm: React.FC<CreateProductFormProps> = ({
             {isLoading ? (
               <div className="flex items-center gap-2">
                 <LoadingSpinner size="small" />
-                <span className="inline-block">Đang xử lý...</span>
+                <span className="inline-block">{t('createProduct.processing')}</span>
               </div>
             ) : (
-              <span className="inline-block">Tạo sản phẩm</span>
+              <span className="inline-block">{t('createProduct.createBtn')}</span>
             )}
           </Button>
         </div>
@@ -393,37 +394,37 @@ const CreateProductForm: React.FC<CreateProductFormProps> = ({
             <div className="p-4 bg-gray-50 dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700">
               <h3 className="font-medium text-lg mb-4 text-neutral-800 dark:text-neutral-200 flex items-center">
                 <DocumentTextIcon className="w-5 h-5 mr-2 text-primary-500" />
-                Thông tin cơ bản
+                {t('createProduct.basicTitle')}
               </h3>
 
               <div className="space-y-4">
                 <div>
                   <label className="block font-medium mb-1 text-neutral-700 dark:text-neutral-300">
-                    Tên sản phẩm <span className="text-red-500">*</span>
+                    {t('createProduct.nameLabel')} <span className="text-red-500">*</span>
                   </label>
                   <Input
                     value={formData.name}
                     onChange={(e) => handleInputChange('name', e.target.value)}
                     error={errors.name}
-                    placeholder="Nhập tên sản phẩm"
+                    placeholder={t('createProduct.namePlaceholder')}
                   />
                 </div>
 
                 <div>
                   <label className="block font-medium mb-1 text-neutral-700 dark:text-neutral-300">
-                    Mã SKU <span className="text-red-500">*</span>
+                    {t('createProduct.skuLabel')} <span className="text-red-500">*</span>
                   </label>
                   <Input
                     value={formData.sku}
                     onChange={(e) => handleInputChange('sku', e.target.value)}
                     error={errors.sku}
-                    placeholder="Nhập mã SKU"
+                    placeholder={t('createProduct.skuPlaceholder')}
                   />
                 </div>
 
                 <div>
                   <label className="block font-medium mb-1 text-neutral-700 dark:text-neutral-300">
-                    Mô tả ngắn <span className="text-red-500">*</span>
+                    {t('createProduct.shortDescLabel')} <span className="text-red-500">*</span>
                   </label>
                   <div className="relative">
                     <textarea
@@ -434,7 +435,7 @@ const CreateProductForm: React.FC<CreateProductFormProps> = ({
                       rows={2}
                       maxLength={200}
                       className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-primary-500 focus:border-primary-500 dark:bg-gray-700 dark:text-white text-neutral-800 dark:text-neutral-200"
-                      placeholder="Mô tả ngắn gọn về sản phẩm (tối đa 200 ký tự)"
+                      placeholder={t('createProduct.shortDescPlaceholder')}
                     />
                     <div className="absolute bottom-2 right-2 text-xs text-gray-500 dark:text-gray-400">
                       {formData.shortDescription.length}/200
@@ -449,7 +450,7 @@ const CreateProductForm: React.FC<CreateProductFormProps> = ({
 
                 <div>
                   <label className="block font-medium mb-1 text-neutral-700 dark:text-neutral-300">
-                    Mô tả chi tiết <span className="text-red-500">*</span>
+                    {t('createProduct.detailDescLabel')} <span className="text-red-500">*</span>
                   </label>
                   <textarea
                     value={formData.description}
@@ -458,7 +459,7 @@ const CreateProductForm: React.FC<CreateProductFormProps> = ({
                     }
                     rows={4}
                     className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-primary-500 focus:border-primary-500 dark:bg-gray-700 dark:text-white text-neutral-800 dark:text-neutral-200"
-                    placeholder="Mô tả chi tiết về sản phẩm"
+                    placeholder={t('createProduct.detailDescPlaceholder')}
                   />
                   {errors.description && (
                     <p className="mt-1 text-sm text-red-500">
@@ -481,7 +482,7 @@ const CreateProductForm: React.FC<CreateProductFormProps> = ({
                     htmlFor="featured"
                     className="ml-2 block text-sm text-gray-700 dark:text-gray-300"
                   >
-                    Đánh dấu là sản phẩm nổi bật
+                    {t('createProduct.featuredLabel')}
                   </label>
                 </div>
               </div>
@@ -495,13 +496,13 @@ const CreateProductForm: React.FC<CreateProductFormProps> = ({
             <div className="p-4 bg-gray-50 dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700">
               <h3 className="font-medium text-lg mb-4 text-neutral-800 dark:text-neutral-200 flex items-center">
                 <CurrencyDollarIcon className="w-5 h-5 mr-2 text-primary-500" />
-                Giá & Kho hàng
+                {t('createProduct.pricingTitle')}
               </h3>
 
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 <div>
                   <label className="block font-medium mb-1 text-neutral-700 dark:text-neutral-300">
-                    Giá bán <span className="text-red-500">*</span>
+                    {t('createProduct.salePriceLabel')} <span className="text-red-500">*</span>
                   </label>
                   <Input
                     type="number"
@@ -515,7 +516,7 @@ const CreateProductForm: React.FC<CreateProductFormProps> = ({
 
                 <div>
                   <label className="block font-medium mb-1 text-neutral-700 dark:text-neutral-300">
-                    Giá gốc
+                    {t('createProduct.originalPriceLabel')}
                   </label>
                   <Input
                     type="number"
@@ -527,13 +528,13 @@ const CreateProductForm: React.FC<CreateProductFormProps> = ({
                     min="0"
                   />
                   <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
-                    Hiển thị như giá gạch ngang
+                    {t('createProduct.originalPriceHint')}
                   </p>
                 </div>
 
                 <div>
                   <label className="block font-medium mb-1 text-neutral-700 dark:text-neutral-300">
-                    Số lượng <span className="text-red-500">*</span>
+                    {t('createProduct.qtyLabel')} <span className="text-red-500">*</span>
                   </label>
                   <Input
                     type="number"
@@ -560,20 +561,16 @@ const CreateProductForm: React.FC<CreateProductFormProps> = ({
                       clipRule="evenodd"
                     />
                   </svg>
-                  Mẹo về giá
+                  {t('createProduct.priceTipTitle')}
                 </h4>
                 <ul className="text-sm text-blue-600 dark:text-blue-300 space-y-1">
                   <li className="flex items-start">
                     <span className="text-green-500 mr-1">✓</span>
-                    <span>
-                      Đặt giá gốc cao hơn giá bán để tạo cảm giác giảm giá
-                    </span>
+                    <span>{t('createProduct.priceTip1')}</span>
                   </li>
                   <li className="flex items-start">
                     <span className="text-green-500 mr-1">✓</span>
-                    <span>
-                      Giá bán nên kết thúc bằng 9 hoặc 5 (ví dụ: 199.000đ)
-                    </span>
+                    <span>{t('createProduct.priceTip2')}</span>
                   </li>
                 </ul>
               </div>
@@ -587,13 +584,13 @@ const CreateProductForm: React.FC<CreateProductFormProps> = ({
             <div className="p-4 bg-gray-50 dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700">
               <h3 className="font-medium text-lg mb-4 text-neutral-800 dark:text-neutral-200 flex items-center">
                 <TagIcon className="w-5 h-5 mr-2 text-primary-500" />
-                Phân loại & Trạng thái
+                {t('createProduct.catSectionTitle')}
               </h3>
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
                   <label className="block font-medium mb-1 text-neutral-700 dark:text-neutral-300">
-                    Danh mục <span className="text-red-500">*</span>
+                    {t('createProduct.catLabel')} <span className="text-red-500">*</span>
                   </label>
                   <select
                     multiple
@@ -609,7 +606,7 @@ const CreateProductForm: React.FC<CreateProductFormProps> = ({
                     size={5}
                   >
                     {isCategoriesLoading ? (
-                      <option disabled>Đang tải danh mục...</option>
+                      <option disabled>{t('createProduct.catLoading')}</option>
                     ) : categories && categories.length > 0 ? (
                       categories.map((category) => (
                         <option key={category.id} value={category.id}>
@@ -617,7 +614,7 @@ const CreateProductForm: React.FC<CreateProductFormProps> = ({
                         </option>
                       ))
                     ) : (
-                      <option disabled>Không có danh mục nào</option>
+                      <option disabled>{t('createProduct.catEmpty')}</option>
                     )}
                   </select>
                   {errors.categoryIds && (
@@ -626,14 +623,14 @@ const CreateProductForm: React.FC<CreateProductFormProps> = ({
                     </p>
                   )}
                   <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
-                    Giữ Ctrl/Cmd để chọn nhiều danh mục
+                    {t('createProduct.catHint')}
                   </p>
                 </div>
 
                 <div className="space-y-4">
                   <div>
                     <label className="block font-medium mb-1 text-neutral-700 dark:text-neutral-300">
-                      Trạng thái
+                      {t('createProduct.statusLabel')}
                     </label>
                     <Select
                       options={statusOptions}
@@ -644,17 +641,17 @@ const CreateProductForm: React.FC<CreateProductFormProps> = ({
 
                   <div>
                     <label className="block font-medium mb-1 text-neutral-700 dark:text-neutral-300">
-                      Từ khóa tìm kiếm
+                      {t('createProduct.searchKwLabel')}
                     </label>
                     <Input
                       value={formData.searchKeywords}
                       onChange={(e) =>
                         handleInputChange('searchKeywords', e.target.value)
                       }
-                      placeholder="Từ khóa cách nhau bởi dấu phẩy"
+                      placeholder={t('createProduct.searchKwPlaceholder')}
                     />
                     <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
-                      VD: điện thoại, smartphone, iphone
+                      {t('createProduct.searchKwHint')}
                     </p>
                   </div>
                 </div>
@@ -664,7 +661,7 @@ const CreateProductForm: React.FC<CreateProductFormProps> = ({
               {formData.categoryIds.length > 0 && (
                 <div className="mt-4 p-3 bg-blue-50 dark:bg-blue-900/20 rounded-lg border border-blue-100 dark:border-blue-800/50">
                   <h4 className="font-medium text-blue-700 dark:text-blue-300 mb-2">
-                    Danh mục đã chọn:
+                    {t('createProduct.catSelectedLabel')}
                   </h4>
                   <div className="flex flex-wrap gap-2">
                     {formData.categoryIds.map((categoryId) => {
@@ -693,13 +690,13 @@ const CreateProductForm: React.FC<CreateProductFormProps> = ({
             <div className="p-4 bg-gray-50 dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700">
               <h3 className="font-medium text-lg mb-4 text-neutral-800 dark:text-neutral-200 flex items-center">
                 <PhotoIcon className="w-5 h-5 mr-2 text-primary-500" />
-                Hình ảnh sản phẩm
+                {t('createProduct.imagesSectionTitle')}
               </h3>
 
               <div className="space-y-4">
                 <div>
                   <label className="block font-medium mb-1 text-neutral-700 dark:text-neutral-300">
-                    URLs hình ảnh
+                    {t('createProduct.imageUrlsLabel')}
                   </label>
                   <textarea
                     value={formData.images}
@@ -711,13 +708,13 @@ const CreateProductForm: React.FC<CreateProductFormProps> = ({
                     placeholder="https://example.com/image1.jpg, https://example.com/image2.jpg"
                   />
                   <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
-                    Nhập các URL hình ảnh, cách nhau bằng dấu phẩy
+                    {t('createProduct.imageUrlsHint')}
                   </p>
                 </div>
 
                 <div>
                   <label className="block font-medium mb-1 text-neutral-700 dark:text-neutral-300">
-                    URL hình ảnh đại diện (thumbnail)
+                    {t('createProduct.thumbnailLabel')}
                   </label>
                   <Input
                     value={formData.thumbnail}
@@ -727,7 +724,7 @@ const CreateProductForm: React.FC<CreateProductFormProps> = ({
                     placeholder="https://example.com/thumbnail.jpg"
                   />
                   <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
-                    Để trống sẽ sử dụng hình ảnh đầu tiên làm thumbnail
+                    {t('createProduct.thumbnailHint')}
                   </p>
                 </div>
               </div>
@@ -736,7 +733,7 @@ const CreateProductForm: React.FC<CreateProductFormProps> = ({
               {formData.images && (
                 <div className="mt-4 p-3 bg-gray-100 dark:bg-gray-700 rounded-lg">
                   <h4 className="font-medium text-gray-700 dark:text-gray-300 mb-2">
-                    Xem trước:
+                    {t('createProduct.imagePreviewLabel')}
                   </h4>
                   <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2">
                     {formData.images.split(',').map((url, index) => (
@@ -768,13 +765,13 @@ const CreateProductForm: React.FC<CreateProductFormProps> = ({
             <div className="p-4 bg-gray-50 dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700">
               <h3 className="font-medium text-lg mb-4 text-neutral-800 dark:text-neutral-200 flex items-center">
                 <MagnifyingGlassIcon className="w-5 h-5 mr-2 text-primary-500" />
-                Tối ưu tìm kiếm (SEO)
+                {t('createProduct.seoSectionTitle')}
               </h3>
 
               <div className="space-y-4">
                 <div>
                   <label className="block font-medium mb-1 text-neutral-700 dark:text-neutral-300">
-                    Tiêu đề SEO
+                    {t('createProduct.seoTitleLabel')}
                   </label>
                   <div className="relative">
                     <Input
@@ -782,18 +779,18 @@ const CreateProductForm: React.FC<CreateProductFormProps> = ({
                       onChange={(e) =>
                         handleInputChange('seoTitle', e.target.value)
                       }
-                      placeholder="Tiêu đề hiển thị trên kết quả tìm kiếm"
+                      placeholder={t('createProduct.seoTitlePlaceholder')}
                       maxLength={60}
                     />
                     <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
-                      {formData.seoTitle.length}/60 ký tự (tối ưu: 50-60)
+                      {t('createProduct.seoTitleHint', { count: formData.seoTitle.length })}
                     </p>
                   </div>
                 </div>
 
                 <div>
                   <label className="block font-medium mb-1 text-neutral-700 dark:text-neutral-300">
-                    Mô tả SEO
+                    {t('createProduct.seoDescLabel')}
                   </label>
                   <div className="relative">
                     <textarea
@@ -804,28 +801,27 @@ const CreateProductForm: React.FC<CreateProductFormProps> = ({
                       rows={3}
                       maxLength={160}
                       className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-primary-500 focus:border-primary-500 dark:bg-gray-700 dark:text-white text-neutral-800 dark:text-neutral-200"
-                      placeholder="Mô tả ngắn hiển thị trên kết quả tìm kiếm"
+                      placeholder={t('createProduct.seoDescPlaceholder')}
                     />
                     <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
-                      {formData.seoDescription.length}/160 ký tự (tối ưu:
-                      150-160)
+                      {t('createProduct.seoDescHint', { count: formData.seoDescription.length })}
                     </p>
                   </div>
                 </div>
 
                 <div>
                   <label className="block font-medium mb-1 text-neutral-700 dark:text-neutral-300">
-                    Từ khóa SEO
+                    {t('createProduct.seoKwLabel')}
                   </label>
                   <Input
                     value={formData.seoKeywords}
                     onChange={(e) =>
                       handleInputChange('seoKeywords', e.target.value)
                     }
-                    placeholder="Các từ khóa cách nhau bởi dấu phẩy"
+                    placeholder={t('createProduct.seoKwPlaceholder')}
                   />
                   <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
-                    VD: iPhone, điện thoại, Apple, smartphone
+                    {t('createProduct.seoKwHint')}
                   </p>
                 </div>
               </div>
@@ -833,11 +829,11 @@ const CreateProductForm: React.FC<CreateProductFormProps> = ({
               {/* Xem trước SEO */}
               <div className="mt-6 p-4 bg-white dark:bg-gray-900 rounded-lg border border-gray-200 dark:border-gray-700">
                 <h4 className="font-medium text-gray-700 dark:text-gray-300 mb-3">
-                  Xem trước kết quả tìm kiếm:
+                  {t('createProduct.seoPreviewLabel')}
                 </h4>
                 <div className="space-y-1">
                   <div className="text-blue-600 dark:text-blue-400 text-lg font-medium line-clamp-1">
-                    {formData.seoTitle || formData.name || 'Tiêu đề sản phẩm'}
+                    {formData.seoTitle || formData.name || t('createProduct.seoDefaultTitle')}
                   </div>
                   <div className="text-green-700 dark:text-green-500 text-sm">
                     www.yourdomain.com/products/
@@ -852,7 +848,7 @@ const CreateProductForm: React.FC<CreateProductFormProps> = ({
                     {formData.seoDescription ||
                       formData.shortDescription ||
                       formData.description ||
-                      'Mô tả sản phẩm sẽ hiển thị ở đây. Hãy viết mô tả hấp dẫn để thu hút khách hàng click vào sản phẩm của bạn.'}
+                      t('createProduct.seoDefaultDesc')}
                   </div>
                 </div>
               </div>
@@ -867,7 +863,7 @@ const CreateProductForm: React.FC<CreateProductFormProps> = ({
               <div className="flex items-center justify-between mb-4">
                 <h3 className="font-medium text-lg text-neutral-800 dark:text-neutral-200 flex items-center">
                   <SwatchIcon className="w-5 h-5 mr-2 text-primary-500" />
-                  Thuộc tính sản phẩm
+                  {t('createProduct.attrSectionTitle')}
                 </h3>
                 <Button
                   type="button"
@@ -877,19 +873,19 @@ const CreateProductForm: React.FC<CreateProductFormProps> = ({
                   className="text-primary-500 dark:text-primary-400 border-primary-500 dark:border-primary-400"
                 >
                   <PlusIcon className="h-4 w-4 mr-1" />
-                  <span className="inline-block">Thêm thuộc tính</span>
+                  <span className="inline-block">{t('createProduct.addAttrBtn')}</span>
                 </Button>
               </div>
 
               {attributes.length === 0 ? (
                 <div className="text-center py-6 text-gray-500 dark:text-gray-400 bg-gray-100 dark:bg-gray-700 rounded-md border border-dashed border-gray-300 dark:border-gray-600">
-                  <p>Chưa có thuộc tính nào</p>
+                  <p>{t('createProduct.attrsEmpty')}</p>
                   <button
                     type="button"
                     onClick={addAttribute}
                     className="mt-2 text-primary-500 dark:text-primary-400 hover:underline text-sm font-medium"
                   >
-                    + Thêm thuộc tính mới
+                    {t('createProduct.addAttrLink')}
                   </button>
                 </div>
               ) : (
@@ -898,10 +894,10 @@ const CreateProductForm: React.FC<CreateProductFormProps> = ({
                     <div key={attribute.id} className="flex gap-3 items-end">
                       <div className="flex-1">
                         <label className="block font-medium mb-1 text-neutral-700 dark:text-neutral-300">
-                          Tên thuộc tính
+                          {t('createProduct.attrNameLabel')}
                         </label>
                         <Input
-                          placeholder="Ví dụ: Màu sắc"
+                          placeholder={t('createProduct.attrNamePlaceholder')}
                           value={attribute.name}
                           onChange={(e) =>
                             updateAttribute(
@@ -914,10 +910,10 @@ const CreateProductForm: React.FC<CreateProductFormProps> = ({
                       </div>
                       <div className="flex-1">
                         <label className="block font-medium mb-1 text-neutral-700 dark:text-neutral-300">
-                          Giá trị
+                          {t('createProduct.attrValueLabel')}
                         </label>
                         <Input
-                          placeholder="Ví dụ: Đỏ"
+                          placeholder={t('createProduct.attrValuePlaceholder')}
                           value={attribute.value}
                           onChange={(e) =>
                             updateAttribute(
@@ -936,7 +932,7 @@ const CreateProductForm: React.FC<CreateProductFormProps> = ({
                         className="text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 border border-red-200 dark:border-red-800"
                       >
                         <TrashIcon className="h-4 w-4" />
-                        <span className="sr-only">Xóa thuộc tính</span>
+                        <span className="sr-only">{t('createProduct.removeAttrSr')}</span>
                       </Button>
                     </div>
                   ))}
@@ -953,7 +949,7 @@ const CreateProductForm: React.FC<CreateProductFormProps> = ({
               <div className="flex items-center justify-between mb-4">
                 <h3 className="font-medium text-lg text-neutral-800 dark:text-neutral-200 flex items-center">
                   <Square2StackIcon className="w-5 h-5 mr-2 text-primary-500" />
-                  Biến thể sản phẩm
+                  {t('createProduct.variantSectionTitle')}
                 </h3>
                 <Button
                   type="button"
@@ -963,19 +959,19 @@ const CreateProductForm: React.FC<CreateProductFormProps> = ({
                   className="text-primary-500 dark:text-primary-400 border-primary-500 dark:border-primary-400"
                 >
                   <PlusIcon className="h-4 w-4 mr-1" />
-                  <span className="inline-block">Thêm biến thể</span>
+                  <span className="inline-block">{t('createProduct.addVariantBtn')}</span>
                 </Button>
               </div>
 
               {variants.length === 0 ? (
                 <div className="text-center py-6 text-gray-500 dark:text-gray-400 bg-gray-100 dark:bg-gray-700 rounded-md border border-dashed border-gray-300 dark:border-gray-600">
-                  <p>Chưa có biến thể nào</p>
+                  <p>{t('createProduct.variantsEmpty')}</p>
                   <button
                     type="button"
                     onClick={addVariant}
                     className="mt-2 text-primary-500 dark:text-primary-400 hover:underline text-sm font-medium"
                   >
-                    + Thêm biến thể mới
+                    {t('createProduct.addVariantLink')}
                   </button>
                 </div>
               ) : (
@@ -987,10 +983,10 @@ const CreateProductForm: React.FC<CreateProductFormProps> = ({
                     >
                       <div>
                         <label className="block font-medium mb-1 text-neutral-700 dark:text-neutral-300">
-                          Tên biến thể
+                          {t('createProduct.variantNameLabel')}
                         </label>
                         <Input
-                          placeholder="Ví dụ: Size M"
+                          placeholder={t('createProduct.variantNamePlaceholder')}
                           value={variant.name}
                           onChange={(e) =>
                             updateVariant(variant.id, 'name', e.target.value)
@@ -999,7 +995,7 @@ const CreateProductForm: React.FC<CreateProductFormProps> = ({
                       </div>
                       <div>
                         <label className="block font-medium mb-1 text-neutral-700 dark:text-neutral-300">
-                          Giá
+                          {t('createProduct.variantPriceLabel')}
                         </label>
                         <Input
                           type="number"
@@ -1017,7 +1013,7 @@ const CreateProductForm: React.FC<CreateProductFormProps> = ({
                       </div>
                       <div>
                         <label className="block font-medium mb-1 text-neutral-700 dark:text-neutral-300">
-                          Số lượng
+                          {t('createProduct.variantStockLabel')}
                         </label>
                         <Input
                           type="number"
@@ -1041,7 +1037,7 @@ const CreateProductForm: React.FC<CreateProductFormProps> = ({
                         className="text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 border border-red-200 dark:border-red-800"
                       >
                         <TrashIcon className="h-4 w-4" />
-                        <span className="sr-only">Xóa biến thể</span>
+                        <span className="sr-only">{t('createProduct.removeVariantSr')}</span>
                       </Button>
                     </div>
                   ))}

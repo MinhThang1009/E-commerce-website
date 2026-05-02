@@ -1,6 +1,7 @@
 import React from 'react';
 import { Button, Space } from 'antd';
 import { SaveOutlined } from '@ant-design/icons';
+import { useTranslation } from 'react-i18next';
 
 interface FormActionsProps {
   isFormValid: boolean;
@@ -17,9 +18,10 @@ const FormActions: React.FC<FormActionsProps> = ({
   submitText,
   loadingText,
   onCancel,
-  visible = true, // Mặc định là hiển thị
+  visible = true,
 }) => {
-  // Nếu không hiển thị, trả về null
+  const { t } = useTranslation();
+
   if (!visible) {
     return null;
   }
@@ -28,7 +30,7 @@ const FormActions: React.FC<FormActionsProps> = ({
     <div style={{ textAlign: 'right' }}>
       <Space>
         <Button onClick={onCancel} size="large" style={{ minWidth: 120 }}>
-          Hủy
+          {t('common.cancel')}
         </Button>
         <Button
           type="primary"

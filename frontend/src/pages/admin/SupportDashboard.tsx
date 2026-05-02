@@ -7,10 +7,12 @@ import LoadingSpinner from '@/components/common/LoadingSpinner';
 import { PaperAirplaneIcon, EnvelopeIcon } from '@heroicons/react/24/outline';
 import { api } from '@/services/api'; // Trả fetcher cho REST methods nếu cần
 import { useDispatch } from 'react-redux';
+import { useTranslation } from 'react-i18next';
 
 const SOCKET_URL = (import.meta.env.VITE_API_URL || 'http://localhost:8888/api').replace(/\/api$/, '');
 
 const SupportDashboard: React.FC = () => {
+  const { t } = useTranslation();
   const [selectedUser, setSelectedUser] = useState<AdminChatListResponse | null>(null);
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [chatList, setChatList] = useState<AdminChatListResponse[]>([]);
@@ -192,12 +194,12 @@ const SupportDashboard: React.FC = () => {
         <div className="p-4 border-b border-neutral-200 dark:border-neutral-800">
           <h2 className="text-lg font-bold text-neutral-800 dark:text-neutral-100 flex items-center gap-2">
             <EnvelopeIcon className="h-5 w-5 text-primary-500" />
-            Hỗ trợ khách hàng
+            {t('admin.support.title')}
           </h2>
         </div>
         <div className="flex-1 overflow-y-auto">
           {chatList.length === 0 ? (
-            <p className="p-4 text-center text-neutral-400 text-sm">Chưa có người nhắn tin</p>
+            <p className="p-4 text-center text-neutral-400 text-sm">{t('admin.support.noChats')}</p>
           ) : (
             chatList.map((item) => {
               const isOnline = onlineUsers.includes(item.sessionId) || onlineUsers.includes(item.userId);
@@ -219,7 +221,7 @@ const SupportDashboard: React.FC = () => {
                     </div>
                     <div className="text-left">
                       <p className="font-semibold text-neutral-800 dark:text-neutral-100 text-sm">
-                        {item.user ? `${item.user.firstName} ${item.user.lastName}` : `Khách (${item.sessionId.substring(0, 5)})`}
+                        {item.user ? `${item.user.firstName} ${item.user.lastName}` : t('admin.support.guestUser', { id: item.sessionId.substring(0, 5) })}
                       </p>
                       <p className="text-xs text-neutral-500 truncate max-w-[150px]">{item.lastMessage}</p>
                     </div>
@@ -257,7 +259,7 @@ const SupportDashboard: React.FC = () => {
               <div className="flex items-center gap-2">
                 <div className={`h-2.5 w-2.5 rounded-full ${(onlineUsers.includes(selectedUser.sessionId) || onlineUsers.includes(selectedUser.userId)) ? 'bg-green-500' : 'bg-neutral-300'}`}></div>
                 <span className="text-xs font-medium text-neutral-500 uppercase tracking-wider">
-                  {(onlineUsers.includes(selectedUser.sessionId) || onlineUsers.includes(selectedUser.userId)) ? 'Online' : 'Offline'}
+                  {(onlineUsers.includes(selectedUser.sessionId) || onlineUsers.includes(selectedUser.userId)) ? t('common.online') : t('common.offline')}
                 </span>
               </div>
             </div>
@@ -290,7 +292,7 @@ const SupportDashboard: React.FC = () => {
                   <span className="h-1 w-1 bg-neutral-400 rounded-full animate-bounce [animation-delay:0.2s]"></span>
                   <span className="h-1 w-1 bg-neutral-400 rounded-full animate-bounce [animation-delay:0.4s]"></span>
                 </div>
-                Người dùng đang soạn tin...
+                {t('admin.support.typing')}
               </div>
             )}
 
@@ -303,7 +305,7 @@ const SupportDashboard: React.FC = () => {
                   setNewMessage(e.currentTarget.value);
                   handleTyping();
                 }}
-                placeholder="Nhập câu trả lời..."
+                placeholder={t('admin.support.inputPlaceholder')}
                 className="flex-1 bg-neutral-100 dark:bg-neutral-800 text-neutral-800 dark:text-neutral-100 rounded-xl px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500"
               />
               <button
@@ -318,7 +320,7 @@ const SupportDashboard: React.FC = () => {
         ) : (
           <div className="flex flex-col items-center justify-center h-full text-neutral-400">
             <EnvelopeIcon className="h-16 w-16 mb-2 opacity-30" />
-            <p className="text-sm">Chọn một cuộc trò chuyện để bắt đầu</p>
+            <p className="text-sm">{t('admin.support.selectConversation')}</p>
           </div>
         )}
       </div>

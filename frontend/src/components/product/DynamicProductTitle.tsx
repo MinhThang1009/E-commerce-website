@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Typography, Space, Tag, Skeleton, Alert } from 'antd';
 import { BulbOutlined, LoadingOutlined } from '@ant-design/icons';
 import { useDebounce } from '@/hooks/useDebounce';
@@ -28,6 +29,7 @@ const DynamicProductTitle: React.FC<DynamicProductTitleProps> = ({
   level = 1,
   style,
 }) => {
+  const { t } = useTranslation();
   const [dynamicName, setDynamicName] = useState<string>(product.name);
   const [loading, setLoading] = useState(false);
   const [attributeDetails, setAttributeDetails] = useState<any[]>([]);
@@ -68,7 +70,7 @@ const DynamicProductTitle: React.FC<DynamicProductTitleProps> = ({
       }
     } catch (err: any) {
       console.error('Lỗi tạo tên động:', err);
-      setError('Không thể tạo tên động');
+      setError(t('product.dynamicNameError'));
       setDynamicName(product.name); // Dự phòng về tên gốc
     } finally {
       setLoading(false);
@@ -176,7 +178,7 @@ const DynamicProductTitle: React.FC<DynamicProductTitleProps> = ({
               display: 'block',
             }}
           >
-            Tên gốc: {product.name}
+            {t('product.originalNamePrefix', { name: product.name })}
           </Typography.Text>
         )}
       </Space>

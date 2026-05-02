@@ -1,4 +1,5 @@
 import React, { useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useDispatch, useSelector } from 'react-redux';
 import { RootState } from '@/store';
 import { useGetCurrentUserQuery } from '@/services/authApi';
@@ -19,6 +20,7 @@ interface AuthProviderProps {
  * 4. Xử lý trường hợp token không hợp lệ
  */
 const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
+  const { t } = useTranslation();
   const dispatch = useDispatch();
   const { token, isAuthenticated, user } = useSelector(
     (state: RootState) => state.auth
@@ -77,7 +79,7 @@ const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         <div className="text-center">
           <LoadingSpinner size="large" />
           <p className="mt-4 text-neutral-600 dark:text-neutral-400">
-            Đang tải thông tin người dùng...
+            {t('auth.loading')}
           </p>
         </div>
       </div>

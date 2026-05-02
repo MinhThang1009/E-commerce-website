@@ -16,12 +16,12 @@ const WishlistPage: React.FC = () => {
   const [clearWishlist, { isLoading: isClearing }] = useClearWishlistMutation();
 
   const handleClearWishlist = async () => {
-    if (window.confirm('Bạn có chắc chắn muốn xóa tất cả sản phẩm yêu thích?')) {
+    if (window.confirm(t('wishlist.confirmClear'))) {
       try {
         dispatch(clearWishlistLocal());
         await clearWishlist().unwrap();
       } catch (error) {
-        console.error('Không thể xóa danh sách yêu thích:', error);
+        console.error('Failed to clear wishlist:', error);
       }
     }
   };
@@ -46,7 +46,7 @@ const WishlistPage: React.FC = () => {
             disabled={isClearing}
             className="text-sm font-medium text-red-600 hover:text-red-700 dark:text-red-400 dark:hover:text-red-300 transition-colors"
           >
-            {isClearing ? 'Đang xóa...' : 'Xóa tất cả'}
+            {isClearing ? t('wishlist.clearing') : t('wishlist.clearAll')}
           </button>
         )}
       </div>
@@ -57,16 +57,16 @@ const WishlistPage: React.FC = () => {
             <HeartIcon className="h-10 w-10 text-neutral-400 dark:text-neutral-500" />
           </div>
           <h2 className="text-xl font-semibold text-neutral-800 dark:text-neutral-200 mb-2">
-            Danh sách yêu thích trống
-          </h2 >
+            {t('wishlist.emptyTitle')}
+          </h2>
           <p className="text-neutral-600 dark:text-neutral-400 mb-6">
-            Bạn chưa thêm sản phẩm nào vào danh sách yêu thích.
+            {t('wishlist.emptyDesc')}
           </p>
           <Link
             to="/shop"
             className="inline-flex items-center justify-center bg-primary-600 hover:bg-primary-700 text-white rounded-xl py-2.5 px-6 font-semibold transition-colors"
           >
-            Tiếp tục mua sắm
+            {t('wishlist.continueShopping')}
           </Link>
         </div>
       ) : (

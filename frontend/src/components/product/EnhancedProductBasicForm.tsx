@@ -1,4 +1,5 @@
 ﻿import React, { useState, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import {
   Form,
   Input,
@@ -43,6 +44,7 @@ const EnhancedProductBasicForm: React.FC<EnhancedProductBasicFormProps> = ({
   selectedAttributes = {},
   onNameGenerated,
 }) => {
+  const { t } = useTranslation();
   const form = Form.useFormInstance();
   const [dynamicNamingEnabled, setDynamicNamingEnabled] = useState(true);
   const [showAdvanced, setShowAdvanced] = useState(false);
@@ -96,7 +98,7 @@ const EnhancedProductBasicForm: React.FC<EnhancedProductBasicFormProps> = ({
             >
               <Space>
                 <BulbOutlined style={{ color: '#1890ff' }} />
-                <Text strong>Tạo tên sản phẩm tự động</Text>
+                <Text strong>{t('productForm.autoName')}</Text>
                 <Switch
                   checked={dynamicNamingEnabled}
                   onChange={setDynamicNamingEnabled}
@@ -109,7 +111,7 @@ const EnhancedProductBasicForm: React.FC<EnhancedProductBasicFormProps> = ({
                 icon={<SettingOutlined />}
                 onClick={() => setShowAdvanced(!showAdvanced)}
               >
-                {showAdvanced ? 'Ẩn' : 'Nâng cao'}
+                {showAdvanced ? t('productForm.hide') : t('productForm.advanced')}
               </Button>
             </Space>
 
@@ -118,8 +120,7 @@ const EnhancedProductBasicForm: React.FC<EnhancedProductBasicFormProps> = ({
                 type="secondary"
                 style={{ fontSize: 12, display: 'block', marginTop: 8 }}
               >
-                Tên sản phẩm sẽ được tạo tự động dựa trên tên cơ bản và thuộc
-                tính đã chọn
+                {t('productForm.autoNameDesc')}
               </Text>
             )}
           </div>
@@ -129,16 +130,16 @@ const EnhancedProductBasicForm: React.FC<EnhancedProductBasicFormProps> = ({
         <Col span={24}>
           <Form.Item
             name="name"
-            label="Tên sản phẩm"
-            rules={[{ required: true, message: 'Vui lòng nhập tên sản phẩm!' }]}
+            label={t('productForm.nameLabel')}
+            rules={[{ required: true, message: t('productForm.nameRequired') }]}
             extra={
               dynamicNamingEnabled
-                ? 'Tên này sẽ được cập nhật tự động khi bạn chọn thuộc tính'
+                ? t('productForm.nameAutoUpdate')
                 : undefined
             }
           >
             <Input
-              placeholder="Nhập tên sản phẩm"
+              placeholder={t('productForm.namePlaceholder')}
               size="large"
               disabled={
                 dynamicNamingEnabled &&
@@ -155,13 +156,13 @@ const EnhancedProductBasicForm: React.FC<EnhancedProductBasicFormProps> = ({
               name="baseName"
               label={
                 <Space>
-                  <span>Tên cơ bản</span>
-                  <InfoCircleOutlined title="Tên cơ bản sẽ được dùng để tạo tên cho các variant" />
+                  <span>{t('productForm.baseNameLabel')}</span>
+                  <InfoCircleOutlined title={t('productForm.baseNameTooltip')} />
                 </Space>
               }
-              extra="Ví dụ: 'ThinkPad X1 Carbon' sẽ tạo ra 'ThinkPad X1 Carbon i7 16GB'"
+              extra={t('productForm.baseNameExtra')}
             >
-              <Input placeholder="Nhập tên cơ bản cho sản phẩm" size="large" />
+              <Input placeholder={t('productForm.baseNamePlaceholder')} size="large" />
             </Form.Item>
           </Col>
         )}
@@ -171,7 +172,7 @@ const EnhancedProductBasicForm: React.FC<EnhancedProductBasicFormProps> = ({
           <Col span={24}>
             <Form.Item
               name="isVariantProduct"
-              label="Sản phẩm có variants"
+              label={t('productForm.isVariant')}
               valuePropName="checked"
             >
               <Switch />
@@ -194,11 +195,11 @@ const EnhancedProductBasicForm: React.FC<EnhancedProductBasicFormProps> = ({
 
         {/* Status Field */}
         <Col span={24}>
-          <Form.Item name="status" label="Trạng thái" initialValue="active">
-            <Select placeholder="Chọn trạng thái" size="large">
-              <Option value="active">✅ Hoạt động</Option>
-              <Option value="inactive">⏸️ Không hoạt động</Option>
-              <Option value="draft">📝 Bản nháp</Option>
+          <Form.Item name="status" label={t('productForm.statusLabel')} initialValue="active">
+            <Select placeholder={t('productForm.statusPlaceholder')} size="large">
+              <Option value="active">{t('productForm.statusActive')}</Option>
+              <Option value="inactive">{t('productForm.statusInactive')}</Option>
+              <Option value="draft">{t('productForm.statusDraft')}</Option>
             </Select>
           </Form.Item>
         </Col>
@@ -207,12 +208,12 @@ const EnhancedProductBasicForm: React.FC<EnhancedProductBasicFormProps> = ({
         <Col span={24}>
           <Form.Item
             name="shortDescription"
-            label="Mô tả ngắn"
-            rules={[{ required: true, message: 'Vui lòng nhập mô tả ngắn!' }]}
+            label={t('productForm.shortDescLabel')}
+            rules={[{ required: true, message: t('productForm.shortDescRequired') }]}
           >
             <TextArea
               rows={3}
-              placeholder="Nhập mô tả ngắn về sản phẩm (hiển thị trong danh sách sản phẩm)"
+              placeholder={t('productForm.shortDescPlaceholder')}
               maxLength={200}
               showCount
               size="large"
@@ -224,7 +225,7 @@ const EnhancedProductBasicForm: React.FC<EnhancedProductBasicFormProps> = ({
         <Col span={24}>
           <Form.Item
             name="featured"
-            label="Sản phẩm nổi bật"
+            label={t('productForm.featuredLabel')}
             valuePropName="checked"
           >
             <Switch />
@@ -239,7 +240,7 @@ const EnhancedProductBasicForm: React.FC<EnhancedProductBasicFormProps> = ({
             icon={<SyncOutlined />}
             block
           >
-            Điền dữ liệu mẫu (ThinkPad X1 Carbon)
+            {t('productForm.fillSampleData')}
           </Button>
         </Col>
 
@@ -251,13 +252,13 @@ const EnhancedProductBasicForm: React.FC<EnhancedProductBasicFormProps> = ({
         <Col span={24}>
           <Form.Item
             name="description"
-            label="Mô tả chi tiết"
+            label={t('productForm.descLabel')}
             rules={[
-              { required: true, message: 'Vui lòng nhập mô tả chi tiết!' },
+              { required: true, message: t('productForm.descRequired') },
             ]}
           >
             <EnhancedRichTextEditor
-              placeholder="Nhập mô tả chi tiết về sản phẩm..."
+              placeholder={t('productForm.descPlaceholder')}
             />
           </Form.Item>
           <Base64ImageWarning description={description} />

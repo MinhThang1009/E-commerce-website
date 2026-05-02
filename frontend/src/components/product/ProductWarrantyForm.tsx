@@ -13,20 +13,22 @@ import {
 import {
   SafetyOutlined,
   CheckCircleOutlined,
-  DollarOutlined,
 } from '@ant-design/icons';
+import { useTranslation } from 'react-i18next';
 import { useGetWarrantyPackagesQuery } from '@/services/warrantyApi';
 import { WarrantyPackage } from '@/types/product.types';
 
 const { Title, Text } = Typography;
 
 interface ProductWarrantyFormProps {
-  form?: any; // Instance form tùy chọn được truyền từ component cha
+  form?: any;
 }
 
 const ProductWarrantyForm: React.FC<ProductWarrantyFormProps> = ({
   form: parentForm,
 }) => {
+  const { t } = useTranslation();
+
   const {
     data: warrantyData,
     isLoading,
@@ -37,7 +39,6 @@ const ProductWarrantyForm: React.FC<ProductWarrantyFormProps> = ({
 
   const warrantyPackages = warrantyData?.data?.warrantyPackages || [];
 
-  // Auto-select free warranty packages
   useEffect(() => {
     if (warrantyPackages.length > 0 && parentForm) {
       const currentValue = parentForm.getFieldValue('warrantyPackageIds') || [];
@@ -45,7 +46,6 @@ const ProductWarrantyForm: React.FC<ProductWarrantyFormProps> = ({
         .filter((pkg) => pkg.price === 0)
         .map((pkg) => pkg.id);
 
-      // Chỉ cập nhật nếu giá trị hiện tại chưa bao gồm gói miễn phí
       const needsUpdate = freePackageIds.some(
         (id) => !currentValue.includes(id)
       );
@@ -54,7 +54,6 @@ const ProductWarrantyForm: React.FC<ProductWarrantyFormProps> = ({
           new Set([...currentValue, ...freePackageIds])
         );
         parentForm.setFieldValue('warrantyPackageIds', newValue);
-        console.log('Tự động chọn gói bảo hành miễn phí:', freePackageIds);
       }
     }
   }, [warrantyPackages, parentForm]);
@@ -67,10 +66,14 @@ const ProductWarrantyForm: React.FC<ProductWarrantyFormProps> = ({
   };
 
   const formatDuration = (months: number) => {
-    if (months === 0) return 'Theo sản phẩm';
-    if (months < 12) return `${months} tháng`;
-    if (months === 12) return '1 năm';
-    return `${Math.floor(months / 12)} năm ${months % 12 > 0 ? `${months % 12} tháng` : ''}`;
+    if (months === 0) return t('admin.products.warranty.followProduct');
+    if (months < 12) return t('admin.products.warranty.months', { count: months });
+    if (months === 12) return t('admin.products.warranty.year');
+    const years = Math.floor(months / 12);
+    const rem = months % 12;
+    return rem > 0
+      ? t('admin.products.warranty.yearsMonths', { years, months: rem })
+      : t('admin.products.warranty.yearsOnly', { years });
   };
 
   if (isLoading) {
@@ -78,7 +81,7 @@ const ProductWarrantyForm: React.FC<ProductWarrantyFormProps> = ({
       <Card>
         <div style={{ textAlign: 'center', padding: '40px 0' }}>
           <Spin size="large" />
-          <div style={{ marginTop: 16 }}>Đang tải gói bảo hành...</div>
+          <div style={{ marginTop: 16 }}>{t('admin.products.warranty.loading')}</div>
         </div>
       </Card>
     );
@@ -88,8 +91,8 @@ const ProductWarrantyForm: React.FC<ProductWarrantyFormProps> = ({
     return (
       <Card>
         <Alert
-          message="Lỗi tải dữ liệu"
-          description="Không thể tải danh sách gói bảo hành. Vui lòng thử lại sau."
+          message={t('admin.products.warranty.loadError')}
+          description={t('admin.products.warranty.loadErrorDesc')}
           type="error"
           showIcon
         />
@@ -100,12 +103,12 @@ const ProductWarrantyForm: React.FC<ProductWarrantyFormProps> = ({
   return (
     <Card>
       <Title level={4}>
-        <SafetyOutlined /> Gói bảo hành
+        <SafetyOutlined /> {t('admin.products.warranty.title')}
       </Title>
 
       <Alert
-        message="Thông tin bảo hành"
-        description="Khách hàng có thể chọn nhiều gói bảo hành để tăng cường bảo vệ sản phẩm"
+        message={t('admin.products.warranty.infoAlert')}
+        description={t('admin.products.warranty.infoAlertDesc')}
         type="info"
         showIcon
         style={{ marginBottom: 16 }}
@@ -113,13 +116,13 @@ const ProductWarrantyForm: React.FC<ProductWarrantyFormProps> = ({
 
       {warrantyPackages.length === 0 ? (
         <Alert
-          message="Chưa có gói bảo hành"
-          description="Hiện tại chưa có gói bảo hành nào được cấu hình. Vui lòng liên hệ quản trị viên để thêm gói bảo hành."
+          message={t('admin.products.warranty.emptyAlert')}
+          description={t('admin.products.warranty.emptyAlertDesc')}
           type="warning"
           showIcon
         />
       ) : (
-        <Form.Item name="warrantyPackageIds" label="Chọn gói bảo hành">
+        <Form.Item name="warrantyPackageIds" label={t('admin.products.warranty.selectLabel')}>
           <Checkbox.Group style={{ width: '100%' }}>
             <Row gutter={[16, 16]}>
               {warrantyPackages.map((pkg: WarrantyPackage) => (
@@ -154,14 +157,14 @@ const ProductWarrantyForm: React.FC<ProductWarrantyFormProps> = ({
                           <Text strong>{pkg.name}</Text>
                           <Text type="success" strong>
                             {pkg.price === 0
-                              ? 'Miễn phí'
+                              ? t('admin.products.warranty.free')
                               : formatPrice(pkg.price)}
                           </Text>
                         </div>
 
                         <div style={{ marginBottom: 8 }}>
                           <Text type="secondary" style={{ fontSize: 12 }}>
-                            Thời hạn: {formatDuration(pkg.durationMonths)}
+                            {t('admin.products.warranty.durationLabel')} {formatDuration(pkg.durationMonths)}
                           </Text>
                         </div>
 
@@ -204,8 +207,8 @@ const ProductWarrantyForm: React.FC<ProductWarrantyFormProps> = ({
       )}
 
       <Alert
-        message="Lưu ý"
-        description="Gói bảo hành cơ bản được bao gồm mặc định. Các gói khác là tùy chọn bổ sung."
+        message={t('admin.products.warranty.noteAlert')}
+        description={t('admin.products.warranty.noteAlertDesc')}
         type="warning"
         showIcon
         style={{ marginTop: 16 }}

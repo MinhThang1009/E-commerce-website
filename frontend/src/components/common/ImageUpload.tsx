@@ -1,5 +1,6 @@
 import React, { useState, useRef } from 'react';
-import { PhotoIcon, XMarkIcon, CloudArrowUpIcon, LinkIcon } from '@heroicons/react/24/outline';
+import { XMarkIcon, CloudArrowUpIcon, LinkIcon } from '@heroicons/react/24/outline';
+import { useTranslation } from 'react-i18next';
 import { toast } from '@/utils/toast';
 
 interface ImageUploadProps {
@@ -19,6 +20,7 @@ const ImageUpload: React.FC<ImageUploadProps> = ({
   label,
   maxFiles = 5
 }) => {
+  const { t } = useTranslation();
   const [isUploading, setIsUploading] = useState(false);
   const [showUrlInput, setShowUrlInput] = useState(false);
   const [urlInput, setUrlInput] = useState('');
@@ -38,12 +40,12 @@ const ImageUpload: React.FC<ImageUploadProps> = ({
     if (!files || files.length === 0) return;
 
     if (!multiple && files.length > 1) {
-      toast.error('Chỉ được tải lên 1 hình ảnh');
+      toast.error(t('imageUpload.singleOnly'));
       return;
     }
 
     if (multiple && images.length + files.length > maxFiles) {
-      toast.error(`Chỉ được tải lên tối đa ${maxFiles} hình ảnh`);
+      toast.error(t('imageUpload.maxFiles', { max: maxFiles }));
       return;
     }
 
@@ -80,13 +82,13 @@ const ImageUpload: React.FC<ImageUploadProps> = ({
         
         const finalUrls = [...images, ...newUrls];
         onChange(multiple ? finalUrls : finalUrls[0]);
-        toast.success('Tải ảnh lên thành công');
+        toast.success(t('imageUpload.uploadSuccess'));
       } else {
         throw new Error(result.message || 'Upload failed');
       }
     } catch (error: any) {
       console.error('Lỗi tải ảnh lên server:', error);
-      toast.error(error.message || 'Lỗi tải ảnh lên server');
+      toast.error(error.message || t('imageUpload.uploadError'));
     } finally {
       setIsUploading(false);
       if (fileInputRef.current) fileInputRef.current.value = '';
@@ -137,7 +139,7 @@ const ImageUpload: React.FC<ImageUploadProps> = ({
             </button>
             <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center pointer-events-none">
               <span className="text-[10px] text-white font-medium px-2 py-1 bg-black/60 rounded-full">
-                Sản phẩm {idx + 1}
+                {t('imageUpload.imageLabel', { index: idx + 1 })}
               </span>
             </div>
           </div>
@@ -158,7 +160,7 @@ const ImageUpload: React.FC<ImageUploadProps> = ({
             ) : (
               <>
                 <CloudArrowUpIcon className="w-8 h-8 text-neutral-400 mb-2" />
-                <span className="text-xs font-medium text-neutral-500 dark:text-neutral-400">Tải ảnh lên</span>
+                <span className="text-xs font-medium text-neutral-500 dark:text-neutral-400">{t('imageUpload.uploadButton')}</span>
               </>
             )}
           </div>
@@ -173,11 +175,11 @@ const ImageUpload: React.FC<ImageUploadProps> = ({
           className="text-sm text-primary-600 dark:text-primary-400 flex items-center gap-1.5 hover:underline font-medium"
         >
           <LinkIcon className="w-4 h-4" />
-          {showUrlInput ? 'Ẩn nhập URL' : 'Nhập URL hình ảnh'}
+          {showUrlInput ? t('imageUpload.hideUrl') : t('imageUpload.showUrl')}
         </button>
         
         <span className="text-xs text-neutral-500">
-          Chấp nhận: JPG, PNG, WEBP (Tối đa 5MB)
+          {t('imageUpload.acceptedFormats')}
         </span>
       </div>
 
@@ -187,7 +189,7 @@ const ImageUpload: React.FC<ImageUploadProps> = ({
             type="text"
             value={urlInput}
             onChange={(e) => setUrlInput(e.target.value)}
-            placeholder="Dán URL hình ảnh vào đây..."
+            placeholder={t('imageUpload.urlPlaceholder')}
             className="flex-1 bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-700 rounded-lg px-3 py-1.5 text-sm focus:ring-2 focus:ring-primary-500 outline-none transition-all dark:text-white"
             onKeyDown={(e) => e.key === 'Enter' && handleUrlSubmit()}
           />
@@ -196,7 +198,7 @@ const ImageUpload: React.FC<ImageUploadProps> = ({
             onClick={handleUrlSubmit}
             className="px-4 py-1.5 bg-neutral-800 dark:bg-neutral-700 text-white text-sm font-semibold rounded-lg hover:bg-neutral-900 transition-colors"
           >
-            Thêm
+            {t('imageUpload.addButton')}
           </button>
         </div>
       )}

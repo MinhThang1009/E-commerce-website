@@ -1,6 +1,7 @@
 import React from 'react';
 import { Form, InputNumber, Switch, Row, Col, Alert, Space } from 'antd';
 import { InfoCircleOutlined } from '@ant-design/icons';
+import { useTranslation } from 'react-i18next';
 
 interface ProductPricingFormProps {
   hasVariants?: boolean;
@@ -9,27 +10,28 @@ interface ProductPricingFormProps {
 const ProductPricingForm: React.FC<ProductPricingFormProps> = ({
   hasVariants = false,
 }) => {
+  const { t } = useTranslation();
+
   return (
     <Row gutter={[24, 16]}>
       {hasVariants && (
         <Col span={24}>
           <Alert
-            message="Sản phẩm có biến thể"
+            message={t('admin.products.pricing.variantAlert')}
             description={
               <div>
                 <p>
-                  <strong>Lưu ý quan trọng:</strong> Sản phẩm này có biến thể.
-                  Số lượng tồn kho sẽ được tính dựa trên các biến thể.
+                  <strong>{t('admin.products.pricing.variantImportantNote')}</strong>{' '}
+                  {t('admin.products.pricing.variantStockDesc')}
                 </p>
                 <ul style={{ marginBottom: 0, paddingLeft: 20 }}>
                   <li>
-                    <strong>Số lượng tồn kho:</strong> Tổng số lượng của tất cả
-                    biến thể (được tính tự động)
+                    <strong>{t('admin.products.pricing.variantStockLabel')}</strong>{' '}
+                    {t('admin.products.pricing.variantStockAuto')}
                   </li>
                 </ul>
                 <p style={{ marginTop: 8, color: '#ff4d4f' }}>
-                  Bạn nên quay lại tab "Biến thể" để cập nhật giá và số lượng
-                  cho từng biến thể.
+                  {t('admin.products.pricing.variantGoBack')}
                 </p>
               </div>
             }
@@ -40,14 +42,11 @@ const ProductPricingForm: React.FC<ProductPricingFormProps> = ({
         </Col>
       )}
 
-      {/* Hiển thị trường giá bán */}
       <Col span={12}>
         <Form.Item
-          label="Giá bán"
+          label={t('admin.products.pricing.priceLabel')}
           required
-          tooltip={
-            hasVariants ? 'Đây là giá mặc định khi không chọn biến thể' : ''
-          }
+          tooltip={hasVariants ? t('admin.products.pricing.priceTooltipVariant') : ''}
         >
           <Space.Compact style={{ width: '100%' }}>
             <Form.Item
@@ -56,11 +55,11 @@ const ProductPricingForm: React.FC<ProductPricingFormProps> = ({
               rules={
                 hasVariants
                   ? []
-                  : [{ required: true, message: 'Vui lòng nhập giá bán!' }]
+                  : [{ required: true, message: t('admin.products.pricing.priceRequired') }]
               }
             >
               <InputNumber
-                placeholder="Nhập giá bán"
+                placeholder={t('admin.products.pricing.pricePlaceholder')}
                 style={{ width: '100%' }}
                 formatter={(value) =>
                   value ? `${value}`.replace(/\B(?=(\d{3})+(?!\d))/g, ',') : ''
@@ -70,15 +69,15 @@ const ProductPricingForm: React.FC<ProductPricingFormProps> = ({
                 disabled={hasVariants}
               />
             </Form.Item>
-            <div className="ant-input-group-addon">đ</div>
+            <div className="ant-input-group-addon">{t('common.currencySymbol')}</div>
           </Space.Compact>
         </Form.Item>
       </Col>
 
       <Col span={12}>
         <Form.Item
-          label="Giá so sánh"
-          tooltip="Giá gốc trước khi giảm giá (nếu có)"
+          label={t('admin.products.pricing.comparePriceLabel')}
+          tooltip={t('admin.products.pricing.comparePriceTooltip')}
         >
           <Space.Compact style={{ width: '100%' }}>
             <Form.Item name="compareAtPrice" noStyle>
@@ -92,7 +91,7 @@ const ProductPricingForm: React.FC<ProductPricingFormProps> = ({
                 min={0}
               />
             </Form.Item>
-            <div className="ant-input-group-addon">đ</div>
+            <div className="ant-input-group-addon">{t('common.currencySymbol')}</div>
           </Space.Compact>
         </Form.Item>
       </Col>
@@ -100,18 +99,14 @@ const ProductPricingForm: React.FC<ProductPricingFormProps> = ({
       <Col span={12}>
         <Form.Item
           name="stockQuantity"
-          label={hasVariants ? 'Tổng số lượng tồn kho' : 'Số lượng tồn kho'}
-          rules={[{ required: true, message: 'Vui lòng nhập số lượng!' }]}
+          label={hasVariants ? t('admin.products.pricing.stockLabelVariant') : t('admin.products.pricing.stockLabel')}
+          rules={[{ required: true, message: t('admin.products.pricing.stockRequired') }]}
           tooltip={
             hasVariants
-              ? 'Đây là tổng số lượng của tất cả biến thể. Hệ thống sẽ tự động cập nhật dựa trên số lượng của các biến thể.'
-              : 'Số lượng sản phẩm có sẵn để bán'
+              ? t('admin.products.pricing.stockTooltipVariant')
+              : t('admin.products.pricing.stockTooltip')
           }
-          extra={
-            hasVariants
-              ? 'Số lượng này sẽ được tự động cập nhật dựa trên tổng số lượng của các biến thể'
-              : ''
-          }
+          extra={hasVariants ? t('admin.products.pricing.stockAutoUpdate') : ''}
         >
           <InputNumber
             placeholder="0"
@@ -125,20 +120,20 @@ const ProductPricingForm: React.FC<ProductPricingFormProps> = ({
       <Col span={12}>
         <Form.Item
           name="featured"
-          label="Sản phẩm nổi bật"
+          label={t('admin.products.pricing.featuredLabel')}
           valuePropName="checked"
         >
           <Switch
-            checkedChildren="Có"
-            unCheckedChildren="Không"
+            checkedChildren={t('admin.products.pricing.featuredYes')}
+            unCheckedChildren={t('admin.products.pricing.featuredNo')}
           />
         </Form.Item>
       </Col>
 
       <Col span={24}>
         <Alert
-          message="Thông tin giá"
-          description="Giá so sánh dùng để hiển thị giá gốc khi sản phẩm đang giảm giá. Để trống nếu không có giảm giá. Giá chính sẽ được tính từ giá biến thể thấp nhất."
+          message={t('admin.products.pricing.infoAlert')}
+          description={t('admin.products.pricing.infoAlertDesc')}
           type="info"
           icon={<InfoCircleOutlined />}
           showIcon

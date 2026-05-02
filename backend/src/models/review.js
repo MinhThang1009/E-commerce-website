@@ -53,6 +53,7 @@ const Review = sequelize.define(
   {
     tableName: 'reviews',
     timestamps: true,
+    underscored: false,
   }
 );
 

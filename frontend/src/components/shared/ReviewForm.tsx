@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { toast } from '@/utils/toast';
 import { useSelector } from 'react-redux';
 import { RootState } from '@/store';
@@ -15,6 +16,7 @@ const ReviewForm: React.FC<ReviewFormProps> = ({
   onSubmitSuccess,
   onCancel,
 }) => {
+  const { t } = useTranslation();
   const { isAuthenticated, user } = useSelector(
     (state: RootState) => state.auth
   );
@@ -25,33 +27,31 @@ const ReviewForm: React.FC<ReviewFormProps> = ({
     title: '',
     comment: '',
   });
-  const [errors, setErrors] = useState<{ [key: string]: string }>({});
+  const [errors, setErrors] = useState<{ [key: string]: string | undefined }>({});
 
-  // Kiểm tra hợp lệ form
   const validateForm = () => {
-    const newErrors: { [key: string]: string } = {};
+    const newErrors: { [key: string]: string | undefined } = {};
 
     if (formData.rating === 0) {
-      newErrors.rating = 'Vui lòng chọn số sao đánh giá';
+      newErrors.rating = t('review.form.ratingRequired');
     }
 
     if (!formData.title.trim()) {
-      newErrors.title = 'Vui lòng nhập tiêu đề đánh giá';
+      newErrors.title = t('review.form.titleRequired');
     } else if (formData.title.length < 5 || formData.title.length > 100) {
-      newErrors.title = 'Tiêu đề phải từ 5-100 ký tự';
+      newErrors.title = t('review.form.titleLength');
     }
 
     if (!formData.comment.trim()) {
-      newErrors.comment = 'Vui lòng nhập nội dung đánh giá';
+      newErrors.comment = t('review.form.commentRequired');
     } else if (formData.comment.length < 10 || formData.comment.length > 1000) {
-      newErrors.comment = 'Nội dung phải từ 10-1000 ký tự';
+      newErrors.comment = t('review.form.commentLength');
     }
 
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
 
-  // Xử lý gửi form
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
@@ -67,9 +67,8 @@ const ReviewForm: React.FC<ReviewFormProps> = ({
         comment: formData.comment,
       }).unwrap();
 
-      toast.success('Đánh giá của bạn đã được gửi thành công!');
+      toast.success(t('review.form.submitSuccess'));
 
-      // Đặt lại form
       setFormData({
         rating: 0,
         title: '',
@@ -81,20 +80,29 @@ const ReviewForm: React.FC<ReviewFormProps> = ({
         onSubmitSuccess();
       }
     } catch (error: any) {
-      console.error('Lỗi tạo đánh giá:', error);
+      console.error('Review submission error:', error);
 
-      // Xử lý thông báo lỗi cụ thể
       if (error?.data?.message) {
         toast.error(error.data.message);
       } else if (error?.message) {
         toast.error(error.message);
       } else {
-        toast.error('Có lỗi xảy ra khi gửi đánh giá. Vui lòng thử lại.');
+        toast.error(t('review.form.submitError'));
       }
     }
   };
 
-  // Nếu người dùng chưa đăng nhập, hiển thị yêu cầu đăng nhập
+  const getStarLabel = (rating: number) => {
+    switch (rating) {
+      case 1: return t('review.form.star1');
+      case 2: return t('review.form.star2');
+      case 3: return t('review.form.star3');
+      case 4: return t('review.form.star4');
+      case 5: return t('review.form.star5');
+      default: return '';
+    }
+  };
+
   if (!isAuthenticated) {
     return (
       <div className="bg-white dark:bg-neutral-800 rounded-lg shadow-sm p-6 text-center">
@@ -114,29 +122,23 @@ const ReviewForm: React.FC<ReviewFormProps> = ({
             />
           </svg>
           <h3 className="text-lg font-medium text-neutral-900 dark:text-white mb-2">
-            Đăng nhập để đánh giá sản phẩm
+            {t('review.loginRequired.title')}
           </h3>
           <p className="text-sm text-neutral-600 dark:text-neutral-400 mb-4">
-            Bạn cần đăng nhập để có thể viết đánh giá cho sản phẩm này
+            {t('review.loginRequired.message')}
           </p>
           <div className="flex flex-col sm:flex-row gap-3 justify-center">
             <button
-              onClick={() => {
-                // Chuyển đến trang đăng nhập
-                window.location.href = '/login';
-              }}
+              onClick={() => { window.location.href = '/login'; }}
               className="px-6 py-2 bg-primary-500 text-white rounded-lg hover:bg-primary-600 transition-colors font-medium"
             >
-              Đăng nhập
+              {t('review.loginRequired.login')}
             </button>
             <button
-              onClick={() => {
-                // Chuyển đến trang đăng ký
-                window.location.href = '/register';
-              }}
+              onClick={() => { window.location.href = '/register'; }}
               className="px-6 py-2 border border-neutral-300 dark:border-neutral-600 text-neutral-700 dark:text-neutral-300 rounded-lg hover:bg-neutral-50 dark:hover:bg-neutral-700 transition-colors font-medium"
             >
-              Đăng ký
+              {t('review.loginRequired.register')}
             </button>
           </div>
         </div>
@@ -147,14 +149,14 @@ const ReviewForm: React.FC<ReviewFormProps> = ({
   return (
     <div className="bg-white dark:bg-neutral-800 rounded-lg shadow-sm p-6 mb-8">
       <h3 className="text-xl font-semibold mb-4 text-neutral-900 dark:text-white">
-        Viết đánh giá của bạn
+        {t('review.form.title')}
       </h3>
 
       <form onSubmit={handleSubmit} className="space-y-4">
-        {/* Đánh giá sao */}
+        {/* Star rating */}
         <div>
           <label className="block text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-2">
-            Đánh giá sao *
+            {t('review.form.ratingLabel')}
           </label>
           <div className="flex items-center space-x-1">
             {[1, 2, 3, 4, 5].map((star) => (
@@ -163,7 +165,6 @@ const ReviewForm: React.FC<ReviewFormProps> = ({
                 type="button"
                 onClick={() => {
                   setFormData({ ...formData, rating: star });
-                  // Xóa lỗi khi người dùng chọn rating
                   setErrors((prev) => ({ ...prev, rating: undefined }));
                 }}
                 className={`w-8 h-8 ${
@@ -185,12 +186,8 @@ const ReviewForm: React.FC<ReviewFormProps> = ({
             <span className="ml-3 text-sm text-neutral-600 dark:text-neutral-400">
               {formData.rating > 0 && (
                 <>
-                  {formData.rating} sao
-                  {formData.rating === 1 && ' - Rất tệ'}
-                  {formData.rating === 2 && ' - Tệ'}
-                  {formData.rating === 3 && ' - Trung bình'}
-                  {formData.rating === 4 && ' - Tốt'}
-                  {formData.rating === 5 && ' - Tuyệt vời'}
+                  {t('review.form.stars', { count: formData.rating })}
+                  {getStarLabel(formData.rating)}
                 </>
               )}
             </span>
@@ -200,13 +197,13 @@ const ReviewForm: React.FC<ReviewFormProps> = ({
           )}
         </div>
 
-        {/* Tiêu đề */}
+        {/* Title */}
         <div>
           <label
             htmlFor="title"
             className="block text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-2"
           >
-            Tiêu đề đánh giá *
+            {t('review.form.titleLabel')}
           </label>
           <input
             type="text"
@@ -214,10 +211,9 @@ const ReviewForm: React.FC<ReviewFormProps> = ({
             value={formData.title}
             onChange={(e) => {
               setFormData({ ...formData, title: e.target.value });
-              // Xóa lỗi khi người dùng nhập title
               setErrors((prev) => ({ ...prev, title: undefined }));
             }}
-            placeholder="Nhập tiêu đề cho đánh giá của bạn"
+            placeholder={t('review.form.titlePlaceholder')}
             className="w-full px-3 py-2 border border-neutral-300 dark:border-neutral-600 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 dark:bg-neutral-700 dark:text-white"
             maxLength={100}
           />
@@ -231,23 +227,22 @@ const ReviewForm: React.FC<ReviewFormProps> = ({
           </div>
         </div>
 
-        {/* Nội dung nhận xét */}
+        {/* Comment */}
         <div>
           <label
             htmlFor="comment"
             className="block text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-2"
           >
-            Nội dung đánh giá *
+            {t('review.form.commentLabel')}
           </label>
           <textarea
             id="comment"
             value={formData.comment}
             onChange={(e) => {
               setFormData({ ...formData, comment: e.target.value });
-              // Xóa lỗi khi người dùng nhập comment
               setErrors((prev) => ({ ...prev, comment: undefined }));
             }}
-            placeholder="Chia sẻ trải nghiệm của bạn về sản phẩm này..."
+            placeholder={t('review.form.commentPlaceholder')}
             rows={4}
             className="w-full px-3 py-2 border border-neutral-300 dark:border-neutral-600 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 dark:bg-neutral-700 dark:text-white resize-none"
             maxLength={1000}
@@ -262,7 +257,7 @@ const ReviewForm: React.FC<ReviewFormProps> = ({
           </div>
         </div>
 
-        {/* Các nút hành động */}
+        {/* Actions */}
         <div className="flex flex-col sm:flex-row gap-3 pt-4">
           <button
             type="submit"
@@ -291,10 +286,10 @@ const ReviewForm: React.FC<ReviewFormProps> = ({
                     d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
                   ></path>
                 </svg>
-                Đang gửi...
+                {t('review.form.submitting')}
               </span>
             ) : (
-              'Gửi đánh giá'
+              t('review.form.submit')
             )}
           </button>
           {onCancel && (
@@ -303,7 +298,7 @@ const ReviewForm: React.FC<ReviewFormProps> = ({
               onClick={onCancel}
               className="px-6 py-3 border border-neutral-300 dark:border-neutral-600 text-neutral-700 dark:text-neutral-300 rounded-lg hover:bg-neutral-50 dark:hover:bg-neutral-700 transition-colors font-medium"
             >
-              Hủy
+              {t('common.cancel')}
             </button>
           )}
         </div>

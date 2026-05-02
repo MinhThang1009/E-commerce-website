@@ -1,33 +1,12 @@
 import React, { useState } from 'react';
 import {
-  Table,
-  Button,
-  Modal,
-  Form,
-  Input,
-  Switch,
-  Space,
-  message,
-  Popconfirm,
-  Tag,
-  Image,
-  Card,
-  Typography,
-  Select,
+  Table, Button, Modal, Form, Input, Switch, Space, message, Popconfirm, Tag, Image, Card, Typography, Select,
 } from 'antd';
+import { useTranslation } from 'react-i18next';
 import ImageUpload from '@/components/common/ImageUpload';
+import { PlusOutlined, EditOutlined, DeleteOutlined, ReloadOutlined, AppstoreOutlined } from '@ant-design/icons';
 import {
-  PlusOutlined,
-  EditOutlined,
-  DeleteOutlined,
-  ReloadOutlined,
-  AppstoreOutlined,
-} from '@ant-design/icons';
-import {
-  useGetCollectionsQuery,
-  useCreateCollectionMutation,
-  useUpdateCollectionMutation,
-  useDeleteCollectionMutation,
+  useGetCollectionsQuery, useCreateCollectionMutation, useUpdateCollectionMutation, useDeleteCollectionMutation,
 } from '@/services/collectionApi';
 import { useGetProductsQuery } from '@/services/productApi';
 
@@ -43,80 +22,56 @@ interface CollectionFormData {
 }
 
 const CollectionsPage: React.FC = () => {
+  const { t } = useTranslation();
   const [form] = Form.useForm();
   const [isModalVisible, setIsModalVisible] = useState(false);
   const [editingCollection, setEditingCollection] = useState<any | null>(null);
-  const [fileList, setFileList] = useState<any[]>([]);
 
-  // Các API hooks
-  const {
-    data: collectionsData,
-    isLoading,
-    refetch,
-  } = useGetCollectionsQuery();
-
+  const { data: collectionsData, isLoading, refetch } = useGetCollectionsQuery();
   const { data: productsData } = useGetProductsQuery({ limit: 100 });
-
   const [createCollection, { isLoading: isCreating }] = useCreateCollectionMutation();
   const [updateCollection, { isLoading: isUpdating }] = useUpdateCollectionMutation();
-  const [deleteCollection, { isLoading: isDeleting }] = useDeleteCollectionMutation();
+  const [deleteCollection] = useDeleteCollectionMutation();
 
   const collections = collectionsData?.data || [];
   const products = productsData?.data?.products || [];
+  const productOptions = products.map((p: any) => ({ label: p.name, value: p.id }));
 
-  const productOptions = products.map((p: any) => ({
-    label: p.name,
-    value: p.id,
-  }));
-
-  // Xử lý tạo/chỉnh sửa bộ sưu tập
   const handleSubmit = async (values: CollectionFormData) => {
     try {
       if (editingCollection) {
-        await updateCollection({
-          id: editingCollection.id,
-          body: values,
-        }).unwrap();
-        message.success('Cập nhật bộ sưu tập thành công!');
+        await updateCollection({ id: editingCollection.id, body: values }).unwrap();
+        message.success(t('admin.collections.messages.editSuccess'));
       } else {
         await createCollection(values).unwrap();
-        message.success('Tạo bộ sưu tập thành công!');
+        message.success(t('admin.collections.messages.addSuccess'));
       }
-
       setIsModalVisible(false);
       setEditingCollection(null);
       form.resetFields();
-      setFileList([]);
       refetch();
     } catch (error: any) {
-      message.error(error?.data?.message || 'Có lỗi xảy ra!');
+      message.error(error?.data?.message || t('common.errorOccurred'));
     }
   };
 
-  // Xử lý xóa bộ sưu tập
   const handleDelete = async (id: string) => {
     try {
       await deleteCollection(id).unwrap();
-      message.success('Xóa bộ sưu tập thành công!');
+      message.success(t('admin.collections.messages.deleteSuccess'));
       refetch();
     } catch (error: any) {
-      message.error(error?.data?.message || 'Không thể xóa bộ sưu tập!');
+      message.error(error?.data?.message || t('admin.collections.messages.deleteError'));
     }
   };
 
-  // Mở modal tạo mới
   const handleCreate = () => {
     setEditingCollection(null);
     setIsModalVisible(true);
     form.resetFields();
-    setFileList([]);
-    form.setFieldsValue({
-      isActive: true,
-      productIds: [],
-    });
+    form.setFieldsValue({ isActive: true, productIds: [] });
   };
 
-  // Mở modal chỉnh sửa
   const handleEdit = (collection: any) => {
     setEditingCollection(collection);
     setIsModalVisible(true);
@@ -125,13 +80,10 @@ const CollectionsPage: React.FC = () => {
       description: collection.description,
       thumbnail: collection.thumbnail,
       isActive: collection.isActive,
-      // Cần fetch collection riêng lẻ với danh sách product ID hoặc đã có trong record
-      // Hiện tại giả định chúng có thể có trong record, ngược lại cần gọi API thêm
       productIds: collection.Products?.map((p: any) => p.id) || [],
     });
   };
 
-  // Hàm helper lấy URL ảnh đầy đủ
   const getFullImageUrl = (url: string) => {
     if (!url) return '';
     if (url.startsWith('http')) return url;
@@ -139,22 +91,15 @@ const CollectionsPage: React.FC = () => {
     return `${baseUrl}${url.startsWith('/') ? '' : '/'}${url}`;
   };
 
-  // Các cột của bảng
   const columns = [
     {
-      title: 'Ảnh đại diện',
+      title: t('admin.collections.table.thumbnail'),
       dataIndex: 'thumbnail',
       key: 'thumbnail',
       width: 100,
       render: (thumbnail: string, record: any) =>
         thumbnail ? (
-          <Image
-            src={getFullImageUrl(thumbnail)}
-            alt={record.name}
-            width={60}
-            height={40}
-            style={{ objectFit: 'cover', borderRadius: 4 }}
-          />
+          <Image src={getFullImageUrl(thumbnail)} alt={record.name} width={60} height={40} style={{ objectFit: 'cover', borderRadius: 4 }} />
         ) : (
           <div className="w-16 h-10 bg-gray-100 rounded flex items-center justify-center">
             <AppstoreOutlined className="text-gray-400" />
@@ -162,7 +107,7 @@ const CollectionsPage: React.FC = () => {
         ),
     },
     {
-      title: 'Tên bộ sưu tập',
+      title: t('admin.collections.title'),
       dataIndex: 'name',
       key: 'name',
       render: (name: string, record: any) => (
@@ -173,38 +118,33 @@ const CollectionsPage: React.FC = () => {
       ),
     },
     {
-      title: 'Sản phẩm',
+      title: t('admin.collections.table.productCount'),
       key: 'productCount',
-      render: (_: any, record: any) => `${record.Products?.length || 0} sản phẩm`,
+      render: (_: any, record: any) => t('admin.collections.table.productCountLabel', { count: record.Products?.length || 0 }),
     },
     {
-      title: 'Trạng thái',
+      title: t('common.status'),
       dataIndex: 'isActive',
       key: 'isActive',
       render: (isActive: boolean) => (
         <Tag color={isActive ? 'success' : 'error'}>
-          {isActive ? 'Hoạt động' : 'Ẩn'}
+          {isActive ? t('common.active') : t('admin.common.hidden')}
         </Tag>
       ),
     },
     {
-      title: 'Hành động',
+      title: t('admin.common.actions'),
       key: 'actions',
       width: 120,
       render: (_: any, record: any) => (
         <Space>
-          <Button
-            type="link"
-            icon={<EditOutlined />}
-            onClick={() => handleEdit(record)}
-            size="small"
-          />
+          <Button type="link" icon={<EditOutlined />} onClick={() => handleEdit(record)} size="small" />
           <Popconfirm
-            title="Xóa bộ sưu tập"
-            description="Bạn có chắc chắn muốn xóa bộ sưu tập này?"
+            title={t('admin.collections.deleteTitle')}
+            description={t('admin.collections.deleteConfirm')}
             onConfirm={() => handleDelete(record.id)}
-            okText="Xóa"
-            cancelText="Hủy"
+            okText={t('common.delete')}
+            cancelText={t('common.cancel')}
             okButtonProps={{ danger: true }}
           >
             <Button type="link" icon={<DeleteOutlined />} danger size="small" />
@@ -219,31 +159,19 @@ const CollectionsPage: React.FC = () => {
       <Card className="dark:bg-neutral-800">
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 gap-4">
           <div>
-            <Title
-              level={2}
-              className="!mb-1 text-xl md:text-2xl dark:text-white"
-            >
-              Quản lý bộ sưu tập
+            <Title level={2} className="!mb-1 text-xl md:text-2xl dark:text-white">
+              {t('admin.collections.title')}
             </Title>
             <p className="text-neutral-600 dark:text-neutral-400">
-              Quản lý danh mục các bộ sưu tập sản phẩm (Summer Sale, Winter,...)
+              {t('admin.collections.subtitle')}
             </p>
           </div>
           <Space className="flex-wrap">
-            <Button
-              icon={<ReloadOutlined />}
-              onClick={() => refetch()}
-              loading={isLoading}
-              className="dark:text-neutral-300"
-            >
-              Làm mới
+            <Button icon={<ReloadOutlined />} onClick={() => refetch()} loading={isLoading} className="dark:text-neutral-300">
+              {t('common.refresh')}
             </Button>
-            <Button
-              type="primary"
-              icon={<PlusOutlined />}
-              onClick={handleCreate}
-            >
-              Thêm bộ sưu tập
+            <Button type="primary" icon={<PlusOutlined />} onClick={handleCreate}>
+              {t('admin.collections.addCollection')}
             </Button>
           </Space>
         </div>
@@ -258,51 +186,32 @@ const CollectionsPage: React.FC = () => {
             pagination={{
               pageSize: 10,
               showSizeChanger: true,
-              showTotal: (total) => `Tổng cộng ${total} bộ sưu tập`,
+              showTotal: (total) => t('admin.collections.totalItems', { total }),
             }}
           />
         </div>
 
         <Modal
-          title={editingCollection ? 'Chỉnh sửa bộ sưu tập' : 'Thêm bộ sưu tập mới'}
+          title={editingCollection ? t('admin.collections.editCollection') : t('admin.collections.addCollectionModal')}
           open={isModalVisible}
-          onCancel={() => {
-            setIsModalVisible(false);
-            setEditingCollection(null);
-            form.resetFields();
-          }}
+          onCancel={() => { setIsModalVisible(false); setEditingCollection(null); form.resetFields(); }}
           footer={null}
           width={700}
         >
-          <Form
-            form={form}
-            layout="vertical"
-            onFinish={handleSubmit}
-          >
+          <Form form={form} layout="vertical" onFinish={handleSubmit}>
             <Form.Item
               name="name"
-              label="Tên bộ sưu tập"
-              rules={[
-                { required: true, message: 'Vui lòng nhập tên bộ sưu tập!' },
-              ]}
+              label={t('admin.collections.form.name')}
+              rules={[{ required: true, message: t('admin.collections.form.nameRequired') }]}
             >
-              <Input placeholder="Nhập tên bộ sưu tập (VD: Summer Collection 2026)" />
+              <Input placeholder={t('admin.collections.form.namePlaceholder') || ''} />
             </Form.Item>
 
-            <Form.Item
-              name="description"
-              label="Mô tả"
-            >
-              <TextArea
-                rows={3}
-                placeholder="Nhập mô tả bộ sưu tập"
-              />
+            <Form.Item name="description" label={t('admin.brands.form.description')}>
+              <TextArea rows={3} placeholder={t('admin.brands.form.descriptionPlaceholder')} />
             </Form.Item>
 
-            <Form.Item
-              name="thumbnail"
-              label="Ảnh bìa bộ sưu tập"
-            >
+            <Form.Item name="thumbnail" label={t('admin.collections.form.thumbnail') || t('admin.collections.table.thumbnail')}>
               <ImageUpload
                 type="collections"
                 multiple={false}
@@ -311,15 +220,12 @@ const CollectionsPage: React.FC = () => {
               />
             </Form.Item>
 
-            <Form.Item
-              name="productIds"
-              label="Thêm sản phẩm vào bộ sưu tập"
-            >
+            <Form.Item name="productIds" label={t('admin.collections.form.addProducts') || t('admin.collections.table.productCount')}>
               <Select
                 mode="multiple"
                 allowClear
                 style={{ width: '100%' }}
-                placeholder="Chọn các sản phẩm cho bộ sưu tập này"
+                placeholder={t('admin.collections.form.selectProducts') || ''}
                 options={productOptions}
                 filterOption={(input, option) =>
                   (option?.label as string ?? '').toLowerCase().includes(input.toLowerCase())
@@ -327,24 +233,14 @@ const CollectionsPage: React.FC = () => {
               />
             </Form.Item>
 
-            <Form.Item
-              name="isActive"
-              label="Trạng thái"
-              valuePropName="checked"
-            >
-              <Switch checkedChildren="Hoạt động" unCheckedChildren="Ẩn" />
+            <Form.Item name="isActive" label={t('common.status')} valuePropName="checked">
+              <Switch checkedChildren={t('common.active')} unCheckedChildren={t('admin.common.hidden')} />
             </Form.Item>
 
             <div className="flex justify-end gap-2 mt-6">
-              <Button onClick={() => setIsModalVisible(false)}>
-                Hủy
-              </Button>
-              <Button
-                type="primary"
-                htmlType="submit"
-                loading={isCreating || isUpdating}
-              >
-                {editingCollection ? 'Cập nhật' : 'Tạo mới'}
+              <Button onClick={() => setIsModalVisible(false)}>{t('common.cancel')}</Button>
+              <Button type="primary" htmlType="submit" loading={isCreating || isUpdating}>
+                {editingCollection ? t('common.update') : t('common.create')}
               </Button>
             </div>
           </Form>

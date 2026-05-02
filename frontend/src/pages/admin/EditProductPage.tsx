@@ -1,5 +1,6 @@
 ﻿import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import {
   Form,
   Card,
@@ -53,6 +54,7 @@ import {
 const { Title, Text } = Typography;
 
 const EditProductPage: React.FC = () => {
+  const { t } = useTranslation();
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const [form] = Form.useForm();
@@ -205,7 +207,7 @@ const EditProductPage: React.FC = () => {
 
         console.log('Updating product with data:', productData);
         await updateProduct(productData).unwrap();
-        message.success('Cập nhật sản phẩm thành công!');
+        message.success(t('admin.products.messages.updateSuccess'));
         navigate('/admin/products');
       } catch (error: any) {
         console.error('Failed to update product:', error);
@@ -253,7 +255,7 @@ const EditProductPage: React.FC = () => {
           .filter((img: any) => img.includes('data:image'))
           .map(
             (img: any) =>
-              `<img src="${img}" alt="Product image" style="max-width: 100%; height: auto;" />`
+              `<img src="${img}" alt="${t('product.imageAlt')}" style="max-width: 100%; height: auto;" />`
           )
           .join('<br/>');
 
@@ -402,22 +404,22 @@ const EditProductPage: React.FC = () => {
       if (error.data.errors.length === 1) {
         return (
           error.data.errors[0].message ||
-          `${error.data.errors[0].field}: Lỗi validation`
+          t('admin.products.messages.fieldValidationError', { field: error.data.errors[0].field })
         );
       }
 
       // Nhiều lỗi - định dạng gọn gàng
       const errorList = error.data.errors
-        .map((err: any) => err.message || `${err.field}: Lỗi validation`)
+        .map((err: any) => err.message || t('admin.products.messages.fieldValidationError', { field: err.field }))
         .join('\n• ');
-      return `Có ${error.data.errors.length} lỗi cần khắc phục:\n• ${errorList}`;
+      return `${t('admin.products.messages.multipleErrors', { count: error.data.errors.length })}:\n• ${errorList}`;
     }
 
     if (error?.message) {
       return error.message;
     }
 
-    return 'Cập nhật sản phẩm thất bại. Vui lòng thử lại.';
+    return t('admin.products.messages.updateFailed');
   };
 
   const categories: any[] = Array.isArray(categoriesResponse?.data) 
@@ -430,7 +432,7 @@ const EditProductPage: React.FC = () => {
   if (isLoadingProduct) {
     return (
       <div style={{ padding: '24px', textAlign: 'center' }}>
-        <Spin size="large" tip="Đang tải thông tin sản phẩm..." />
+        <Spin size="large" tip={t('admin.products.loadingText')} />
       </div>
     );
   }
@@ -439,15 +441,15 @@ const EditProductPage: React.FC = () => {
     return (
       <Result
         status="error"
-        title="Không thể tải thông tin sản phẩm"
-        subTitle="Có lỗi xảy ra khi tải thông tin sản phẩm hoặc sản phẩm không tồn tại."
+        title={t('admin.products.errors.loadFailed')}
+        subTitle={t('admin.products.errors.loadFailedDesc')}
         extra={[
           <Button
             type="primary"
             key="back"
             onClick={() => navigate('/admin/products')}
           >
-            Quay lại danh sách
+            {t('admin.products.backToList')}
           </Button>,
         ]}
       />
@@ -457,12 +459,12 @@ const EditProductPage: React.FC = () => {
   const tabItems = [
     {
       key: 'basic',
-      label: '1. Thông tin cơ bản',
+      label: t('admin.products.editTabs.basic'),
       children: <ProductBasicInfoForm fillExampleData={fillExampleData} />,
     },
     {
       key: 'attributes',
-      label: '2. Thuộc tính',
+      label: t('admin.products.editTabs.attributes'),
       children: (
         <ProductAttributesSection
           attributes={attributes}
@@ -474,7 +476,7 @@ const EditProductPage: React.FC = () => {
     },
     {
       key: 'variants',
-      label: '3. Biến thể',
+      label: t('admin.products.editTabs.variants'),
       children: (
         <ProductVariantsSection
           variants={variants}
@@ -486,19 +488,19 @@ const EditProductPage: React.FC = () => {
     },
     {
       key: 'specifications',
-      label: '4. Thông số kỹ thuật',
+      label: t('admin.products.editTabs.specifications'),
       children: (
         <ProductSpecificationsForm initialSpecifications={specifications} />
       ),
     },
     {
       key: 'pricing',
-      label: '5. Giá & Kho hàng',
+      label: t('admin.products.editTabs.pricing'),
       children: <ProductPricingForm hasVariants={variants.length > 0} />,
     },
     {
       key: 'category',
-      label: '6. Phân loại',
+      label: t('admin.products.editTabs.category'),
       children: (
         <ProductCategoryForm
           categories={categories}
@@ -508,22 +510,22 @@ const EditProductPage: React.FC = () => {
     },
     {
       key: 'images',
-      label: '7. Hình ảnh',
+      label: t('admin.products.editTabs.images'),
       children: <ProductImagesForm />,
     },
     {
       key: 'warranty',
-      label: '8. Bảo hành',
+      label: t('admin.products.editTabs.warranty'),
       children: <ProductWarrantyForm form={form} />,
     },
     {
       key: 'seo',
-      label: '9. SEO',
+      label: t('admin.products.editTabs.seo'),
       children: <ProductSeoForm />,
     },
     {
       key: 'faqs',
-      label: '10. FAQ',
+      label: t('admin.products.tabs.faqs'),
       children: <ProductFAQForm />,
     },
   ];
@@ -535,9 +537,9 @@ const EditProductPage: React.FC = () => {
         <Row justify="space-between" align="middle">
           <Col>
             <Title level={2} style={{ margin: 0 }}>
-              Chỉnh sửa sản phẩm
+              {t('admin.products.edit.title')}
             </Title>
-            <Text type="secondary">Cập nhật thông tin sản phẩm</Text>
+            <Text type="secondary">{t('admin.products.edit.subtitle')}</Text>
           </Col>
           <Col>
             <Button
@@ -545,7 +547,7 @@ const EditProductPage: React.FC = () => {
               onClick={() => navigate('/admin/products')}
               style={{ marginRight: 8 }}
             >
-              Quay lại
+              {t('admin.products.backButton')}
             </Button>
           </Col>
         </Row>
@@ -576,8 +578,8 @@ const EditProductPage: React.FC = () => {
           <FormActions
             isFormValid={isFormValid}
             isSubmitting={isUpdating}
-            submitText="Cập nhật sản phẩm"
-            loadingText="Đang cập nhật..."
+            submitText={t('admin.products.submit.update')}
+            loadingText={t('admin.products.submit.updating')}
             onCancel={() => navigate('/admin/products')}
           />
         </Form>

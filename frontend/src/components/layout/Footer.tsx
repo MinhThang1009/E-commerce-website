@@ -109,28 +109,28 @@ const Footer: React.FC = () => {
             <div className="space-y-6">
               <div>
                 <h4 className="font-bold text-neutral-900 dark:text-neutral-100 text-base mb-3">
-                  Cửa hàng Hà Nội
+                  {t('footer.hanoiStore')}
                 </h4>
                 <div className="text-sm text-neutral-600 dark:text-neutral-400 space-y-2">
                   <div className="flex items-start gap-2">
                     <span className="mt-1">🏪</span>
-                    <p>53 Thái Hà, Trung Liệt, Đống Đa ({t('footer.directions')})</p>
+                    <p>{t('footer.hanoiAddress')} ({t('footer.directions')})</p>
                   </div>
                 </div>
               </div>
 
               <div>
                 <h4 className="font-bold text-neutral-900 dark:text-neutral-100 text-base mb-3">
-                  Cửa hàng TP. HCM
+                  {t('footer.hcmStore')}
                 </h4>
                 <div className="text-sm text-neutral-600 dark:text-neutral-400 space-y-2">
                   <div className="flex items-start gap-2">
                     <span className="mt-1">🏪</span>
-                    <p>5 - 7 Nguyễn Huy Tưởng, P.6, Q.Bình Thạnh ({t('footer.directions')})</p>
+                    <p>{t('footer.hcmAddress1')} ({t('footer.directions')})</p>
                   </div>
                   <div className="flex items-start gap-2">
                     <span className="mt-1">🏪</span>
-                    <p>95 Trần Thiện Chánh, P.12, Q.10 ({t('footer.directions')})</p>
+                    <p>{t('footer.hcmAddress2')} ({t('footer.directions')})</p>
                   </div>
                 </div>
               </div>
@@ -140,25 +140,25 @@ const Footer: React.FC = () => {
           {/* Thông tin hữu ích */}
           <div>
             <h4 className="font-bold text-neutral-900 dark:text-neutral-100 text-lg mb-6">
-              Thông tin hữu ích
+              {t('footer.usefulInfo')}
             </h4>
             <ul className="space-y-3">
               {[
-                'Chính sách bảo hành',
-                'Chính sách đổi trả',
-                'Chính sách vận chuyển',
-                'Chính sách bảo mật',
-                'Chính sách thanh toán',
-                'Chính sách kiểm hàng',
-                'Hướng dẫn mua hàng online',
-                'Về chúng tôi',
-              ].map((item) => (
-                <li key={item}>
+                'footer.usefulLinks.warranty',
+                'footer.usefulLinks.returns',
+                'footer.usefulLinks.shipping',
+                'footer.usefulLinks.privacy',
+                'footer.usefulLinks.payment',
+                'footer.usefulLinks.inspection',
+                'footer.usefulLinks.guide',
+                'footer.usefulLinks.about',
+              ].map((key) => (
+                <li key={key}>
                   <Link
                     to="/"
                     className="text-sm text-neutral-600 dark:text-neutral-400 hover:text-primary-600 dark:hover:text-primary-400 transition-colors block"
                   >
-                    {item}
+                    {t(key)}
                   </Link>
                 </li>
               ))}
@@ -168,7 +168,7 @@ const Footer: React.FC = () => {
           {/* Phản hồi */}
           <div>
             <h4 className="font-bold text-neutral-900 dark:text-neutral-100 text-lg mb-6">
-              Phản hồi, góp ý
+              {t('footer.feedbackTitle')}
             </h4>
             <div className="bg-neutral-50 dark:bg-neutral-800/50 rounded-2xl p-6 border border-neutral-100 dark:border-neutral-800">
               <p className="text-sm text-neutral-600 dark:text-neutral-400 mb-6 leading-relaxed">
@@ -212,18 +212,16 @@ const Footer: React.FC = () => {
                 &copy; {new Date().getFullYear()} {t('header.brand')}. {t('footer.copyright')}
               </p>
               <p className="mb-1">
-                Công ty TNHH Công nghệ Think Việt Nam - GPĐKKD: 0107273909 do sở
-                KH & ĐT TP Hà Nội cấp ngày 09/03/2020
+                {t('footer.companyName')}
               </p>
               <p>
-                Địa chỉ: 105/562 Đường Láng, Phường Láng Hạ, Quận Đống Đa, Hà
-                Nội. Điện thoại: 1900633579
+                {t('footer.companyAddress')}
               </p>
             </div>
             <div className="flex items-end justify-start md:justify-end gap-2">
-              <div className="bg-blue-500 text-white px-2 py-1 text-xs font-bold rounded">dmca PROTECTED</div>
-              <div className="bg-blue-600 text-white px-2 py-1 text-xs font-bold rounded">ĐÃ THÔNG BÁO - BCT</div>
-              <div className="bg-red-600 text-white px-2 py-1 text-xs font-bold rounded">ĐÃ ĐĂNG KÝ - BCT</div>
+              <div className="bg-blue-500 text-white px-2 py-1 text-xs font-bold rounded">{t('footer.dmcaProtected')}</div>
+              <div className="bg-blue-600 text-white px-2 py-1 text-xs font-bold rounded">{t('footer.bctNotified')}</div>
+              <div className="bg-red-600 text-white px-2 py-1 text-xs font-bold rounded">{t('footer.bctRegistered')}</div>
             </div>
           </div>
         </div>

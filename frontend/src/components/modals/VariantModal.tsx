@@ -1,13 +1,7 @@
-import React, { useState, useEffect } from 'react';
+import React, { useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Modal, Form, Input, InputNumber, Select, Button, Space } from 'antd';
 import { SaveOutlined, CloseOutlined } from '@ant-design/icons';
-
-interface Attribute {
-  id: string;
-  name: string;
-  value?: string;
-  values?: string[];
-}
 
 interface Variant {
   id?: string;
@@ -35,6 +29,7 @@ const VariantModal: React.FC<VariantModalProps> = ({
   onSave,
   attributes,
 }) => {
+  const { t } = useTranslation();
   const [form] = Form.useForm();
 
   useEffect(() => {
@@ -54,7 +49,6 @@ const VariantModal: React.FC<VariantModalProps> = ({
   const handleSubmit = (values: any) => {
     const { name, price, stock, sku, ...attributeValues } = values;
 
-    // Lọc ra các thuộc tính có giá trị (không null/undefined)
     const filteredAttributes: Record<string, string> = {};
     Object.keys(attributeValues).forEach((key) => {
       if (
@@ -75,7 +69,6 @@ const VariantModal: React.FC<VariantModalProps> = ({
       attributes: filteredAttributes,
     };
 
-    console.log('Lưu biến thể:', variantData);
     onSave(variantData);
     handleClose();
   };
@@ -87,7 +80,7 @@ const VariantModal: React.FC<VariantModalProps> = ({
 
   return (
     <Modal
-      title={variant ? '🎭 Chỉnh sửa biến thể' : '🎭 Thêm biến thể mới'}
+      title={variant ? t('variantModal.editTitle') : t('variantModal.addTitle')}
       open={visible}
       onCancel={handleClose}
       footer={null}
@@ -113,19 +106,19 @@ const VariantModal: React.FC<VariantModalProps> = ({
           }}
         >
           <Form.Item
-            label="🏷️ Tên biến thể"
+            label={t('variantModal.nameLabel')}
             name="name"
-            rules={[{ required: true, message: 'Vui lòng nhập tên biến thể' }]}
+            rules={[{ required: true, message: t('variantModal.nameRequired') }]}
           >
-            <Input placeholder="VD: Size M - Màu Đỏ" />
+            <Input placeholder={t('variantModal.namePlaceholder')} />
           </Form.Item>
 
           <Form.Item
-            label="📦 Mã SKU"
+            label={t('variantModal.skuLabel')}
             name="sku"
-            tooltip="Để trống để hệ thống tự tạo mã SKU"
+            tooltip={t('variantModal.skuTooltip')}
           >
-            <Input placeholder="Để trống để tự tạo" />
+            <Input placeholder={t('variantModal.skuPlaceholder')} />
           </Form.Item>
         </div>
 
@@ -137,17 +130,17 @@ const VariantModal: React.FC<VariantModalProps> = ({
           }}
         >
           <Form.Item
-            label="💰 Giá (VNĐ)"
+            label={t('variantModal.priceLabel')}
             required
-            tooltip="Giá của biến thể này"
+            tooltip={t('variantModal.priceTooltip')}
           >
             <Space.Compact style={{ width: '100%' }}>
               <Form.Item
                 name="price"
                 noStyle
                 rules={[
-                  { required: true, message: 'Vui lòng nhập giá' },
-                  { type: 'number', min: 0, message: 'Giá phải lớn hơn 0' },
+                  { required: true, message: t('variantModal.priceRequired') },
+                  { type: 'number', min: 0, message: t('variantModal.priceMustBePositive') },
                 ]}
               >
                 <InputNumber
@@ -161,12 +154,12 @@ const VariantModal: React.FC<VariantModalProps> = ({
                   parser={(value) => (value ? Number(value.replace(/\$\s?|(,*)/g, '')) : undefined) as any}
                 />
               </Form.Item>
-              <div className="ant-input-group-addon">₫</div>
+              <div className="ant-input-group-addon">{t('common.currencySymbol')}</div>
             </Space.Compact>
           </Form.Item>
 
           <Form.Item
-            label="📦 Số lượng tồn kho"
+            label={t('variantModal.stockLabel')}
             required
           >
             <Space.Compact style={{ width: '100%' }}>
@@ -174,8 +167,8 @@ const VariantModal: React.FC<VariantModalProps> = ({
                 name="stock"
                 noStyle
                 rules={[
-                  { required: true, message: 'Vui lòng nhập số lượng' },
-                  { type: 'number', min: 0, message: 'Số lượng không được âm' },
+                  { required: true, message: t('variantModal.stockRequired') },
+                  { type: 'number', min: 0, message: t('variantModal.stockMustBeNonNeg') },
                 ]}
               >
                 <InputNumber
@@ -188,7 +181,7 @@ const VariantModal: React.FC<VariantModalProps> = ({
                   parser={(value) => (value ? Number(value.replace(/\$\s?|(,*)/g, '')) : undefined) as any}
                 />
               </Form.Item>
-              <div className="ant-input-group-addon">sp</div>
+              <div className="ant-input-group-addon">{t('common.unitProduct')}</div>
             </Space.Compact>
           </Form.Item>
         </div>
@@ -202,7 +195,7 @@ const VariantModal: React.FC<VariantModalProps> = ({
               marginTop: '16px',
             }}
           >
-            <h3 style={{ marginBottom: '16px' }}>🎨 Thuộc tính biến thể</h3>
+            <h3 style={{ marginBottom: '16px' }}>{t('variantModal.attrSectionTitle')}</h3>
             <div
               style={{
                 display: 'grid',
@@ -211,7 +204,6 @@ const VariantModal: React.FC<VariantModalProps> = ({
               }}
             >
               {attributes.map((attr) => {
-                // Kiểm tra attr.value có tồn tại không trước khi gọi split
                 const values = attr.value
                   ? (attr.value as string)
                       .split(',')
@@ -220,7 +212,7 @@ const VariantModal: React.FC<VariantModalProps> = ({
                   : [];
                 return (
                   <Form.Item key={attr.id} label={attr.name} name={attr.name}>
-                    <Select placeholder={`Chọn ${attr.name}`} allowClear>
+                    <Select placeholder={t('variantModal.selectAttr', { name: attr.name })} allowClear>
                       {values.map((value: string) => (
                         <Select.Option key={value} value={value}>
                           {value}
@@ -238,10 +230,10 @@ const VariantModal: React.FC<VariantModalProps> = ({
         <div style={{ textAlign: 'right', marginTop: '24px' }}>
           <Space>
             <Button onClick={handleClose} icon={<CloseOutlined />}>
-              Hủy
+              {t('common.cancel')}
             </Button>
             <Button type="primary" htmlType="submit" icon={<SaveOutlined />}>
-              {variant ? 'Cập nhật biến thể' : 'Thêm biến thể'}
+              {variant ? t('variantModal.updateBtn') : t('variantModal.addBtn')}
             </Button>
           </Space>
         </div>

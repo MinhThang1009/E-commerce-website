@@ -182,7 +182,7 @@ const getProductsByCategory = async (req, res, next) => {
       limit = 10,
       sort = 'createdAt',
       order = 'DESC',
-      status = 'Đang kinh doanh',
+      status = 'active',
     } = req.query;
 
     let category = await Category.findByPk(id);

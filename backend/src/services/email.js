@@ -1,5 +1,5 @@
 const nodemailer = require('nodemailer');
-const logger = require('../../utils/logger');
+const logger = require('../utils/logger');
 
 // Tạo transporter với connection pooling để tối ưu hiệu năng
 const createTransporter = () => {

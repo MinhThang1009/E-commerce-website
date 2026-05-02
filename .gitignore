@@ -17,6 +17,9 @@ out/
 
 # Logs
 *.log
+
+# Runtime-generated data
+backend/data/vectorDb.json
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*

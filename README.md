@@ -1,29 +1,105 @@
-# 🛒 E-Commerce Website - Hướng dẫn cài đặt & chạy dự án
+# E-Commerce Website — Hướng dẫn cài đặt & chạy dự án
 
-## 📦 Yêu cầu phần mềm
+## Giới thiệu
+
+Website thương mại điện tử bán thiết bị công nghệ, xây dựng theo mô hình full-stack với backend REST API và frontend SPA.
+
+**Công nghệ sử dụng:**
+
+| Thành phần | Công nghệ |
+|---|---|
+| Backend | Node.js, Express.js, Sequelize ORM |
+| Frontend | React 18, TypeScript, Vite |
+| Database | MySQL 8.0 |
+| UI Library | Ant Design, Tailwind CSS |
+| Thanh toán | Stripe, VNPay, MoMo |
+| AI Chatbot | Google Gemini API |
+| Realtime | Socket.IO |
+| Email | Nodemailer (Gmail SMTP) |
+
+---
+
+## Cấu trúc thư mục
+
+```
+.
+├── backend/          # Server Node.js + Express
+│   ├── src/
+│   │   ├── app.js               # Khởi tạo Express app
+│   │   ├── server.js            # Entry point khởi động server
+│   │   ├── config/              # Cấu hình database, socket, swagger
+│   │   ├── controllers/         # Xử lý request/response (26 controllers)
+│   │   ├── models/              # Định nghĩa bảng database - Sequelize (38 models)
+│   │   ├── routes/              # Khai báo API routes (27 files)
+│   │   ├── services/            # Business logic, tích hợp bên ngoài (13 services)
+│   │   ├── middlewares/         # Auth, error handler, rate limiter (6 files)
+│   │   ├── validators/          # Validation schema cho request (9 files)
+│   │   ├── migrations/          # Lịch sử thay đổi schema database (19 files)
+│   │   └── utils/               # Tiện ích dùng chung
+│   ├── data/                    # Dữ liệu database (SQL schema, seed data)
+│   │   ├── migration_full.sql   # Script tạo toàn bộ schema
+│   │   └── data_new.sql         # Dữ liệu mẫu (45 sản phẩm)
+│   ├── scripts/                 # Script quản lý database (seed, cleanup, verify)
+│   ├── uploads/                 # Ảnh upload từ người dùng
+│   ├── .env                     # Biến môi trường (không commit lên git)
+│   └── package.json
+│
+├── frontend/         # Giao diện React + TypeScript
+│   ├── src/
+│   │   ├── App.tsx              # Root component
+│   │   ├── main.tsx             # Entry point
+│   │   ├── components/          # Các component tái sử dụng
+│   │   │   ├── admin/           # Component dành cho trang quản trị
+│   │   │   ├── auth/            # Component xác thực (login, protected route)
+│   │   │   ├── common/          # Component dùng chung (Button, Modal, Input...)
+│   │   │   ├── features/        # Component theo tính năng (ProductCard, FilterPanel...)
+│   │   │   ├── layout/          # Header, Footer, MainLayout
+│   │   │   ├── product/         # Form tạo/sửa sản phẩm
+│   │   │   └── payment/         # Form thanh toán Stripe, QR chuyển khoản
+│   │   ├── pages/               # Các trang của website (54 trang)
+│   │   │   ├── admin/           # Trang quản trị (dashboard, sản phẩm, đơn hàng...)
+│   │   │   └── *.tsx            # Trang người dùng (home, shop, cart, checkout...)
+│   │   ├── services/            # Gọi API backend (20+ files)
+│   │   ├── hooks/               # Custom React hooks (16 hooks)
+│   │   ├── store/               # Redux state management
+│   │   ├── routes/              # Cấu hình React Router
+│   │   ├── types/               # TypeScript type definitions
+│   │   ├── contexts/            # React contexts
+│   │   ├── locales/             # File dịch đa ngôn ngữ (i18n)
+│   │   └── styles/              # CSS toàn cục
+│   ├── .env                     # Biến môi trường frontend
+│   ├── vite.config.ts
+│   ├── tailwind.config.js
+│   └── package.json
+│
+└── README.md
+```
+
+---
+
+## Yêu cầu phần mềm
 
 | Phần mềm | Phiên bản | Ghi chú |
-|----------|-----------|---------|
-| [Node.js](https://nodejs.org) | v18+ | Bắt buộc |
-| [MySQL](https://dev.mysql.com/downloads/) | v8.0+ | Bắt buộc |
-| [Redis](https://redis.io) | v7+ | Bắt buộc (Windows dùng [Memurai](https://www.memurai.com/)) |
+|---|---|---|
+| Node.js | v18+ | Bắt buộc |
+| MySQL | v8.0+ | Bắt buộc |
 | pnpm | Latest | `npm install -g pnpm` |
 
 ---
 
-## 🗄️ 1. Cài đặt Database (MySQL)
+## Cài đặt & chạy
 
-### Tạo database
+### 1. Tạo database
 
-Mở MySQL client (MySQL Workbench, HeidiSQL, hoặc terminal) và chạy:
+Mở MySQL client và chạy:
 
 ```sql
 CREATE DATABASE techstore;
 ```
 
-### Cấu hình kết nối
+### 2. Cấu hình môi trường Backend
 
-Mở file `be/.env` và điền thông tin MySQL của bạn:
+Mở file `backend/.env` và điền thông tin MySQL:
 
 ```env
 DB_USER=root
@@ -33,57 +109,75 @@ DB_HOST=127.0.0.1
 DB_PORT=3306
 ```
 
----
-
-## 🔧 2. Cài đặt & chạy Backend
+### 3. Chạy Backend
 
 ```powershell
-# Di chuyển vào thư mục backend
-cd be
+cd backend
 
-# Cài dependencies
 pnpm install
 
-# Chạy migration để tạo bảng
+# Tạo bảng từ migration
 pnpm db:migrate
 
-# Xóa dữ liệu cũ (nếu có) và nạp dữ liệu mẫu mới (70 sản phẩm + 150 biến thể đa dạng)
-npm run db:cleanup    # Dọn dẹp dữ liệu cũ (Sản phẩm, Đơn hàng, Tin tức...)
-npm run db:seed       # Nạp 70 sản phẩm mẫu (iPhone, Samsung, MacBook, RTX Laptop, v.v.)
-npm run db:verify     # Kiểm tra lại số lượng dữ liệu sau khi seed
+# Nạp dữ liệu mẫu
+npm run db:seed
 
-# Hoặc dùng lệnh gộp (Reset toàn bộ dữ liệu về trạng thái mẫu)
-npm run db:reset
-
-# Khởi động server (development)
+# Khởi động server
 pnpm dev
 ```
 
-> ✅ Backend chạy tại: `http://localhost:8888`  
-> 📖 API Docs (Swagger): `http://localhost:8888/api-docs`
+> Backend chạy tại: `http://localhost:8888`  
+> API Docs (Swagger): `http://localhost:8888/api-docs`
 
-### Tài khoản Admin mặc định
+**Tài khoản Admin mặc định:**
 
 | | |
-|--|--|
+|---|---|
 | Email | `admin@example.com` |
 | Mật khẩu | `Admin@123` |
 
----
-
-## 🎨 3. Cài đặt & chạy Frontend
+### 4. Chạy Frontend
 
 ```powershell
-# Di chuyển vào thư mục frontend
-cd fe
+cd frontend
 
-# Cài dependencies
 pnpm install
 
-# Khởi động dev server
 pnpm dev
 ```
 
-> ✅ Frontend chạy tại: `http://localhost:5175`
-# E-commerce-wesbite
-# E-commerce-wesbite
+> Frontend chạy tại: `http://localhost:5175`
+
+---
+
+## Các tính năng chính
+
+**Người dùng:**
+- Đăng ký, đăng nhập (JWT), đăng nhập Google OAuth
+- Xem sản phẩm, tìm kiếm, lọc theo danh mục / thương hiệu
+- Giỏ hàng, thanh toán (Stripe, VNPay, MoMo, chuyển khoản)
+- Theo dõi đơn hàng, đánh giá sản phẩm
+- Danh sách yêu thích, tích điểm thành viên
+- Chat hỗ trợ với AI (Google Gemini)
+
+**Quản trị (Admin):**
+- Dashboard thống kê doanh thu, đơn hàng, người dùng
+- Quản lý sản phẩm (CRUD, biến thể, hình ảnh, bảo hành)
+- Quản lý đơn hàng, người dùng, danh mục, thương hiệu
+- Quản lý banner, tin tức, mã giảm giá
+- Gửi email marketing, theo dõi hỗ trợ khách hàng
+
+---
+
+## Biến môi trường quan trọng
+
+| Biến | Mô tả |
+|---|---|
+| `DB_NAME` | Tên database MySQL |
+| `JWT_SECRET` | Khóa bí mật ký JWT token |
+| `STRIPE_SECRET_KEY` | API key Stripe (test key) |
+| `GEMINI_API_KEY` | API key Google Gemini AI |
+| `VNP_TMN_CODE` | Mã merchant VNPay |
+| `MOMO_PARTNER_CODE` | Mã partner MoMo |
+| `EMAIL_USERNAME` | Gmail dùng gửi email |
+| `FRONTEND_URL` | URL frontend (mặc định: http://localhost:5175) |

@@ -1,0 +1,40 @@
+const Joi = require('joi');
+
+// Schema kiểm tra dữ liệu đánh giá sản phẩm
+const reviewSchema = Joi.object({
+  productId: Joi.alternatives().try(
+    Joi.number().integer(),
+    Joi.string()
+  ).required().messages({
+    'any.required': 'ID sản phẩm là trường bắt buộc',
+  }),
+  rating: Joi.number().integer().min(1).max(5).required().messages({
+    'number.base': 'Đánh giá phải là số',
+    'number.integer': 'Đánh giá phải là số nguyên',
+    'number.min': 'Đánh giá phải từ 1 đến 5',
+    'number.max': 'Đánh giá phải từ 1 đến 5',
+    'any.required': 'Đánh giá là trường bắt buộc',
+  }),
+  title: Joi.string().required().messages({
+    'string.empty': 'Tiêu đề không được để trống',
+    'any.required': 'Tiêu đề là trường bắt buộc',
+  }),
+  comment: Joi.string().required().messages({
+    'string.empty': 'Nội dung đánh giá không được để trống',
+    'any.required': 'Nội dung đánh giá là trường bắt buộc',
+  }),
+  images: Joi.array().items(Joi.string().uri()).optional(),
+});
+
+// Schema kiểm tra dữ liệu đánh dấu đánh giá hữu ích
+const reviewHelpfulSchema = Joi.object({
+  helpful: Joi.boolean().required().messages({
+    'boolean.base': 'Giá trị helpful phải là boolean',
+    'any.required': 'Giá trị helpful là trường bắt buộc',
+  }),
+});
+
+module.exports = {
+  reviewSchema,
+  reviewHelpfulSchema,
+};

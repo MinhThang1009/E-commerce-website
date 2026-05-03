@@ -75,7 +75,7 @@ Sau khi tất cả Acceptance Criteria của một phase PASS, **phải** thực
 3. `git push origin main`
 - **Lý do:** Log commit tiếng Việt + body chi tiết giúp trace lại từng phase; format chuẩn GitHub giúp render đẹp trên GitHub UI.
 - **Lưu ý bảo mật:** Kiểm tra kỹ không commit API key, token, password vào code hoặc plan.md trước khi push (GitHub Push Protection sẽ block nếu phát hiện secret).
-- **Git commit user bắt buộc:** Tên tác giả commit phải là `MinhThang1009` (chủ repo). Kiểm tra bằng `git config user.name` trước khi commit; nếu sai → chạy `git config user.name "MinhThang1009"` để sửa. **Không dùng tên khác** (ví dụ: toanhoc29-tech hay bất kỳ alias nào khác).
+- **Git commit user bắt buộc:** Tên tác giả commit phải là `MinhThang1009` (chủ repo). Kiểm tra bằng `git config user.name` trước khi commit; nếu sai → chạy `git config user.name "MinhThang1009"` để sửa. **Không dùng tên khác hay bất kỳ alias nào khác.**
 - **NGHIÊM CẤM thêm `Co-Authored-By: Claude`** vào commit message — Claude Code mặc định thêm dòng này nhưng phải xóa trước khi push.
 
 ### 5. Quản lý context khi file plan dài
@@ -161,7 +161,7 @@ Khi đổi tên bất kỳ thứ gì — key trong object/JSON, chuỗi string, 
 3. Verify lại bằng `Grep` lần nữa để chắc chắn không còn reference nào dùng tên cũ
 
 **Ví dụ nguy hiểm nếu bỏ sót:**
-- Đổi `price` → `unitPrice` trong model nhưng quên sửa controller → runtime error khi tạo order
+- Đổi tên field trong model nhưng quên sửa controller → runtime error khi tạo order
 - Đổi route `/api/products` → `/api/v2/products` nhưng quên sửa frontend API call → 404
 - Đổi tên column DB nhưng quên tạo migration → crash server khi query
 
@@ -230,6 +230,327 @@ Khi phase thêm/sửa/xóa cột, bảng, hoặc quan hệ trong DB:
 - Chạy migration: `npm run db:migrate`
 
 **Cách kiểm tra:** Không có `down` trong migration → không thể rollback khi có lỗi production.
+
+### 16. Transaction cho mọi multi-step DB write (BẮT BUỘC)
+Khi một operation thực hiện ghi vào ≥2 bảng hoặc ≥2 câu INSERT/UPDATE/DELETE có quan hệ logic với nhau:
+- **BẮT BUỘC:** bọc toàn bộ trong `sequelize.transaction(async (t) => { ... })`
+- **BẮT BUỘC:** truyền `{ transaction: t }` vào **mọi** query bên trong block
+- Nếu bất kỳ bước nào throw → Sequelize tự động rollback toàn bộ — không partial data
+- **NGHIÊM CẤM:** ghi từng bước riêng lẻ rồi xử lý lỗi thủ công — không atomic, dễ để lại partial data khi có lỗi
+
+**Ví dụ:**
+```js
+await sequelize.transaction(async (t) => {
+  await ModelA.create({ ... }, { transaction: t });
+  await ModelB.update({ ... }, { where: { ... }, transaction: t });
+  // Nếu dòng này throw → cả 2 lệnh trên đều rollback tự động
+});
+```
+
+**Concurrent read-then-write (dấu hiệu: nhiều request có thể đọc cùng 1 record rồi sửa):**
+- **BẮT BUỘC thêm** `lock: t.LOCK.UPDATE` khi read record mà kết quả đọc ảnh hưởng đến quyết định ghi — ngăn 2 request đọc cùng giá trị rồi cùng ghi đè
+```js
+await sequelize.transaction(async (t) => {
+  const record = await ModelA.findByPk(id, { lock: t.LOCK.UPDATE, transaction: t });
+  if (record.quantity < requested) throw new AppError('...', 400);
+  await record.decrement('quantity', { by: requested, transaction: t });
+});
+```
+
+**Cách phát hiện vi phạm:** Grep `\.create\|\.update\|\.destroy\|\.bulkCreate` trong controllers xử lý business logic phức tạp — nếu ≥2 calls liên quan mà không có `transaction:` → cần wrap lại. Nếu có pattern đọc giá trị → kiểm tra → ghi lại mà không có `lock: t.LOCK.UPDATE` → race condition.
+
+### 17. NGHIÊM CẤM log sensitive data (BẮT BUỘC)
+Trong mọi file server (controllers, services, middleware, routes):
+- **NGHIÊM CẤM:** `console.log`, `console.error`, hoặc bất kỳ logger nào với data chứa: password, token, OTP, secret key, thông tin thanh toán, hoặc PII (email, số điện thoại, địa chỉ)
+- **NGHIÊM CẤM:** log toàn bộ `req.body` hoặc `req.headers` — có thể chứa Authorization header hoặc password field
+- **BẮT BUỘC:** nếu cần log request để debug → whitelist từng field không nhạy cảm, không log cả object
+
+**Ví dụ sai:**
+```js
+console.log('request:', req.body);    // có thể chứa password
+console.log('user:', user);           // có thể chứa token
+console.log('headers:', req.headers); // có thể chứa Authorization
+```
+
+**Ví dụ đúng:**
+```js
+console.log('userId:', req.body.userId);   // chỉ log field không nhạy cảm
+console.log('action:', req.body.action);
+```
+
+**Cách phát hiện:** `grep -rn "console\.log\|console\.error" backend/src/` → review từng kết quả, xác nhận không log sensitive data.
+
+### 18. Dùng eager loading, tránh N+1 query (BẮT BUỘC)
+Khi cần lấy data kèm associations, **KHÔNG BAO GIỜ** query trong vòng lặp — dùng `include:` để eager load trong một query duy nhất.
+
+- **NGHIÊM CẤM:** gọi query DB bên trong `for`, `forEach`, `.map()`, `Promise.all` với mảng records
+- **BẮT BUỘC:** dùng `include: [{ model: RelatedModel }]` trong `findAll`/`findOne`
+- **Ngoại lệ:** khi cần filter phức tạp không thể dùng `include` → dùng một query `WHERE id IN (ids)` duy nhất, không phải query từng record
+
+**Ví dụ sai (N+1):**
+```js
+const items = await ModelA.findAll();
+for (const item of items) {
+  item.related = await ModelB.findAll({ where: { ... } }); // N queries
+}
+```
+
+**Ví dụ đúng:**
+```js
+const items = await ModelA.findAll({
+  include: [{ model: ModelB }], // 1 query với JOIN
+});
+```
+
+**Cách phát hiện:** Grep `findAll\|findOne` trong `backend/src/` — nếu nằm bên trong vòng lặp hoặc `.map()` callback → vi phạm.
+
+### 19. Pagination bắt buộc cho mọi list endpoint (BẮT BUỘC)
+Mọi endpoint trả về danh sách records user-facing phải có giới hạn số lượng — KHÔNG để unbounded query khi data tăng.
+
+- **BẮT BUỘC:** mọi `findAll`/`findAndCountAll` trong controller trả response ra client phải có `limit` + `offset`
+- **BẮT BUỘC:** `limit` lấy từ query param với default và max cap — KHÔNG để client tự set limit không giới hạn
+- **NGHIÊM CẤM:** `findAll({})` hoặc `findAll({ where: ... })` không có `limit` trong controller user-facing
+- **Ngoại lệ:** internal/admin queries lấy toàn bộ data cho export/report — phải comment rõ lý do không paginate
+
+**Ví dụ đúng:**
+```js
+const page   = parseInt(req.query.page)  || 1;
+const limit  = Math.min(parseInt(req.query.limit) || 20, 100); // default + max cap
+const offset = (page - 1) * limit;
+const { rows, count } = await ModelA.findAndCountAll({ where: { ... }, limit, offset });
+res.json({ data: rows, total: count, page, limit });
+```
+
+**Cách phát hiện vi phạm:** Grep `findAll\|findAndCountAll` trong `backend/src/controllers/` — nếu không có `limit:` trong options và là user-facing endpoint → vi phạm.
+
+### 20. Async error handling — mọi route handler phải dùng try/catch (BẮT BUỘC)
+Mọi async route handler trong `backend/src/` phải bắt lỗi và chuyển sang error middleware — không để unhandled rejection làm Express trả 500 thay vì status code đúng.
+
+- **BẮT BUỘC:** mọi `async (req, res` trong controllers/routes phải có `next` tham số và bọc trong try/catch
+- **BẮT BUỘC:** trong catch block phải gọi `next(err)` — không tự `res.status(500)` trực tiếp
+- **Ngoại lệ chấp nhận được:** dùng `asyncHandler` wrapper utility thay cho try/catch thủ công
+
+**Ví dụ sai:**
+```js
+router.get('/path', async (req, res) => {
+  const data = await ModelA.findByPk(req.params.id); // nếu throw → unhandled rejection → 500
+  res.json(data);
+});
+```
+
+**Ví dụ đúng:**
+```js
+router.get('/path', async (req, res, next) => {
+  try {
+    const data = await ModelA.findByPk(req.params.id);
+    res.json(data);
+  } catch (err) { next(err); }
+});
+```
+
+**Cách phát hiện vi phạm:** Grep `async \(req, res\)` (không có `, next`) trong `backend/src/controllers/` → mọi kết quả cần thêm `next` và try/catch.
+
+### 21. Validate input tại API boundaries trước khi xử lý (BẮT BUỘC)
+Mọi data từ `req.body`, `req.params`, `req.query` đều không tin cậy — phải validate trước khi đưa vào business logic hoặc DB.
+
+- **BẮT BUỘC:** kiểm tra required fields tồn tại và đúng kiểu trước khi dùng — return 400/422 nếu thiếu hoặc sai
+- **NGHIÊM CẤM:** truyền trực tiếp `req.body.*` vào query DB hoặc logic phức tạp mà không check
+- **BẮT BUỘC:** validate kiểu dữ liệu — parseInt cho số, trim cho string, check array không rỗng — trước khi dùng
+
+**Ví dụ sai:**
+```js
+const { field1, field2 } = req.body;
+await ModelA.create({ field1, field2 }); // nếu field1 undefined → DB error → 500 thay vì 400
+```
+
+**Ví dụ đúng:**
+```js
+const { field1, field2 } = req.body;
+if (!field1 || !field2) return res.status(400).json({ message: '...' });
+await ModelA.create({ field1, field2 });
+```
+
+**Cách phát hiện vi phạm:** Grep `req\.body\.\|req\.params\.\|req\.query\.` trong controllers — nếu field được dùng ngay trong query/create mà không có kiểm tra trước đó → cần thêm validation.
+
+### 22. Test isolation — mỗi test tự setup và teardown (BẮT BUỘC)
+Không có test nào được phụ thuộc vào data từ test khác — mọi test phải pass khi chạy đơn lẻ VÀ khi chạy cùng toàn bộ suite.
+
+- **BẮT BUỘC:** dùng `beforeEach`/`afterEach` (hoặc `beforeAll`/`afterAll` nếu phù hợp) để seed và cleanup test data
+- **NGHIÊM CẤM:** test đọc data mà test khác tạo ra mà không có cleanup giữa các tests
+- **NGHIÊM CẤM:** test phụ thuộc vào thứ tự chạy — thứ tự test trong Jest không được đảm bảo
+
+**Ví dụ sai:**
+```js
+it('creates a record', async () => { await ModelA.create({ ... }); });
+it('reads a record', async () => {
+  const r = await ModelA.findOne(); // fail nếu test trước bị skip hoặc rollback
+});
+```
+
+**Ví dụ đúng:**
+```js
+beforeEach(async () => { await seedTestData(); });
+afterEach(async () => { await cleanupTestData(); });
+it('reads a record', async () => {
+  const r = await ModelA.findOne(); // luôn có data vì beforeEach đã seed
+});
+```
+
+**Cách phát hiện:** Chạy một test file riêng lẻ (`jest path/to/test.js`) — nếu pass; sau đó chạy toàn bộ suite (`npm test`) — nếu fail → vi phạm test isolation.
+
+### 23. API response format nhất quán (BẮT BUỘC)
+Mọi endpoint mới phải dùng cùng response format với phần còn lại của codebase — không tự đặt ra format riêng.
+
+- **TRƯỚC KHI** viết endpoint mới: `Grep "res\.json\|res\.status" backend/src/controllers/` để xác định format convention hiện tại
+- **BẮT BUỘC:** dùng đúng format đó cho mọi success response và error response mới
+- **NGHIÊM CẤM:** tự đặt ra response structure khác với phần còn lại (ví dụ: `{ result }` trong khi codebase dùng `{ data }`, hoặc thiếu `status` field nếu codebase có)
+
+**Ví dụ sai:**
+```js
+res.json({ result: items, count: total }); // format khác với convention codebase
+```
+
+**Ví dụ đúng:**
+```js
+// Grep codebase trước → xác định format → dùng đúng format đó
+res.json({ status: 'success', data: items }); // chỉ đúng nếu đây là convention của project
+```
+
+**Cách phát hiện vi phạm:** Grep `res\.json(` trong `backend/src/controllers/` — nếu structure của response object không nhất quán giữa các endpoints → fix về một format chung.
+
+### 24. Idempotency cho external callback handlers (BẮT BUỘC)
+Khi viết handler nhận callback từ hệ thống bên ngoài (payment webhook, email bounce, push notification callback…):
+- **BẮT BUỘC:** check idempotency trước khi xử lý — dùng external reference ID (do hệ thống ngoài cấp) để xác định event đã được xử lý chưa
+- **BẮT BUỘC:** nếu đã xử lý → return sớm, không xử lý lại
+- **NGHIÊM CẤM:** xử lý callback dựa chỉ vào trạng thái hiện tại của record — trạng thái có thể chưa được cập nhật bởi request khác đang chạy song song
+
+**Ví dụ đúng:**
+```js
+const handler = async (externalRefId, payload) => {
+  // Kiểm tra đã xử lý event này chưa (dùng external ID, không dùng status nội bộ)
+  const existing = await ModelA.findOne({ where: { externalRefId } });
+  if (existing) return; // đã xử lý → bỏ qua, không xử lý lại
+
+  await sequelize.transaction(async (t) => {
+    // xử lý và lưu externalRefId để mark là đã xử lý
+    await ModelA.create({ externalRefId, ... }, { transaction: t });
+    await ModelB.update({ ... }, { transaction: t });
+  });
+};
+```
+
+**Khi nào áp dụng:** Bất kỳ handler nào nhận request từ hệ thống ngoài mà có thể được gọi nhiều lần với cùng event (retry logic, network duplicate, manual replay).
+
+**Cách phát hiện:** Grep `webhook\|callback\|notify` trong `backend/src/controllers/` và `backend/src/routes/` — mọi handler không có idempotency check ở đầu → vi phạm.
+
+### 25. Raw SQL phải dùng đúng MySQL syntax (BẮT BUỘC)
+Khi viết `sequelize.query()`, `sequelize.literal()`, hoặc bất kỳ raw SQL nào — chỉ dùng MySQL syntax. Các operator PostgreSQL-specific compile bình thường nhưng crash lúc runtime.
+
+**NGHIÊM CẤM dùng trong MySQL project:**
+- `ILIKE` → dùng `LIKE` hoặc `LOWER(field) LIKE LOWER(?)`
+- `::type` casting (`::integer`, `::text`, `::boolean`) → dùng `CAST(field AS UNSIGNED)`, `CAST(field AS CHAR)`
+- `RETURNING` clause → dùng `LAST_INSERT_ID()` hoặc Sequelize `returning: true`
+- `||` để nối chuỗi → dùng `CONCAT(a, b)`
+- `date1 - date2` cho date diff → dùng `DATEDIFF(date1, date2)`
+
+**Cách phát hiện:** `grep -rn "ILIKE\|::[a-z]\|RETURNING\|sequelize\.query\|sequelize\.literal" backend/src/` → review từng kết quả xem có PostgreSQL-specific syntax không.
+
+### 26. Cache invalidation sau mọi write operation (BẮT BUỘC)
+Khi codebase có caching layer (bất kỳ loại nào — Redis, in-memory, CDN cache…), mọi write operation vào DB phải kèm invalidation cache entries liên quan — không để client đọc stale data.
+
+- **Dấu hiệu cần áp dụng:** function có `cache.get`/`cache.set`, hoặc read endpoint có cache trong khi write endpoint tương ứng không invalidate
+- **BẮT BUỘC:** sau mọi create/update/delete → xác định cache keys nào chứa data vừa thay đổi → xóa/invalidate
+- **NGHIÊM CẤM:** thêm cache cho read endpoint mà không đồng thời thêm invalidation vào tất cả write endpoints tương ứng
+
+**Ví dụ đúng:**
+```js
+// Write operation
+await ModelA.update({ ... }, { where: { id } });
+await cache.del(`modelA:${id}`);       // invalidate cache entry cụ thể
+await cache.del('modelA:list');        // invalidate cache list nếu có
+```
+
+**Cách phát hiện:** `grep -rn "cache\.set\|redis\.set\|\.setex" backend/src/` → với mỗi cache key được set, tìm write endpoints liên quan → kiểm tra có `cache.del` tương ứng không.
+
+### 27. Bắt buộc await mọi async write (BẮT BUỘC)
+Mọi lời gọi async có side effect (ghi DB, ghi file, gọi external service, enqueue message) đều phải được `await` — không fire-and-forget trừ khi kết quả thực sự không quan trọng và có comment giải thích rõ.
+
+- **NGHIÊM CẤM:** gọi async function ghi dữ liệu mà không `await` — test sẽ assert trước khi write hoàn thành → flaky test, data loss
+- **BẮT BUỘC:** mọi `service.save()`, `service.write()`, `service.delete()`, `service.update()`, `repository.create()` đều phải có `await`
+- **Ngoại lệ chấp nhận được:** fire-and-forget analytics/logging không critical — phải có comment `// fire-and-forget: không cần đợi kết quả` giải thích lý do
+
+**Ví dụ sai:**
+```js
+// SAI: không await → test assert trước khi ghi xong → flaky test
+someService.saveData(payload);
+res.json({ status: 'success' });
+```
+
+**Ví dụ đúng:**
+```js
+// ĐÚNG: await đảm bảo ghi xong trước khi response
+await someService.saveData(payload);
+res.json({ status: 'success' });
+```
+
+**Cách phát hiện vi phạm:** Grep `^\s*[a-zA-Z].*Service\.[a-zA-Z]*\(` trong `backend/src/` — nếu dòng không bắt đầu bằng `await` và là write operation → vi phạm. Đặc biệt chú ý các call trong Sequelize hooks và event listeners.
+
+### 28. ORM static method vs instance method — hook behavior khác nhau (BẮT BUỘC)
+Trong Sequelize, `Model.update()` (class/static method) và `instance.update()`/`instance.save()` có behavior khác nhau quan trọng với hooks — dùng sai loại khiến hooks không chạy, data không đồng bộ.
+
+- **`Model.update({ ... }, { where })`** — static/bulk method: **KHÔNG trigger** `beforeUpdate`/`afterUpdate` hooks theo mặc định
+- **`instance.update({ ... })`** hoặc **`instance.save()`** — instance method: trigger hooks bình thường
+- **Nếu logic quan trọng nằm trong hooks** (search index update, cache invalidation, audit log, computed field recalculation) → **BẮT BUỘC dùng instance method**, không dùng static bulk update
+
+**Ví dụ sai (hooks bị bỏ qua):**
+```js
+// SAI: beforeUpdate/afterUpdate hooks KHÔNG chạy với static update
+await ModelA.update({ field1: value }, { where: { id } });
+// → hook tính lại computed field không chạy → data không nhất quán
+```
+
+**Ví dụ đúng:**
+```js
+// ĐÚNG: instance.update() trigger hooks bình thường
+const record = await ModelA.findByPk(id);
+await record.update({ field1: value });
+// → hook chạy → computed field được cập nhật đúng
+```
+
+**Ngoại lệ:** static bulk update chấp nhận được khi (1) không có hooks quan trọng trên model đó, HOẶC (2) cần update hàng loạt records và đã manually trigger hook logic sau. Phải có comment giải thích lý do không dùng instance method.
+
+**Cách phát hiện:** Grep `Model\.update\(` (static calls) trong `backend/src/` — với mỗi model có hooks → kiểm tra hook logic có bị bỏ qua không.
+
+### 29. External service calls phải có timeout và graceful fallback (BẮT BUỘC)
+Mọi lời gọi ra ngoài process (HTTP API, email service, message queue, cache server, AI/ML API…) có thể treo vô thời hạn hoặc fail — phải set timeout và xử lý fallback để tránh làm treo toàn bộ request.
+
+- **BẮT BUỘC:** mọi HTTP call ra ngoài phải có `timeout` tường minh trong config (axios, fetch, node-http…) — không để giá trị mặc định (thường là vô hạn)
+- **BẮT BUỘC:** bọc call trong try/catch, trong catch phải có một trong hai: (a) fallback value, hoặc (b) propagate lỗi rõ ràng với AppError — không để silent failure
+- **NGHIÊM CẤM:** gọi external service mà không có timeout → một service chậm có thể treo toàn bộ request pool
+- **NGHIÊM CẤM:** bắt lỗi rồi return `null` / `undefined` / `[]` mà không log warning — silent fallback che giấu lỗi
+
+**Ví dụ sai:**
+```js
+// SAI: không timeout, không fallback rõ ràng
+const result = await axios.post(externalUrl, payload);
+return result.data;
+```
+
+**Ví dụ đúng:**
+```js
+// ĐÚNG: có timeout + fallback có log
+try {
+  const result = await axios.post(externalUrl, payload, { timeout: 10000 });
+  return result.data;
+} catch (err) {
+  console.warn('External service không phản hồi:', err.message); // log warning, không log sensitive data
+  return fallbackValue; // hoặc throw new AppError('...', 503) nếu không có fallback
+}
+```
+
+**Khi nào áp dụng:** Bất kỳ `axios.get/post`, `fetch()`, `nodemailer.sendMail()`, `client.connect()`, `queue.publish()` — mọi I/O ra ngoài process đều áp dụng.
+
+**Cách phát hiện vi phạm:** Grep `axios\.\|fetch(\|nodemailer\|\.connect(\|\.publish(` trong `backend/src/` — nếu không có `timeout:` trong config object và không có try/catch bao ngoài → vi phạm.
 
 ---
 

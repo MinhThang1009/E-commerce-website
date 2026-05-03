@@ -4,8 +4,8 @@ import { Message } from '../types/Message';
 const STORAGE_KEY_MESSAGES = 'chat_messages';
 const STORAGE_KEY_SESSION = 'chat_session_id';
 
-// Tạo sessionId mới cho phiên trò chuyện
-const createSessionId = () =>
+// Tạo sessionId mới cho phiên trò chuyện — gọi từ ngoài reducer, truyền vào qua payload
+export const createSessionId = () =>
   typeof crypto !== 'undefined' && crypto.randomUUID
     ? crypto.randomUUID()
     : `session_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`;
@@ -69,11 +69,10 @@ const chatSlice = createSlice({
     setMessages: (state, action: PayloadAction<Message[]>) => {
       state.messages = action.payload;
     },
-    clearMessages: (state) => {
+    // Nhận newSessionId từ payload — non-deterministic calls (Date.now, Math.random) phải ở ngoài reducer
+    clearMessages: (state, action: PayloadAction<string>) => {
       state.messages = [];
-      // Tạo sessionId mới khi xóa lịch sử — backend bắt đầu context mới
-      // Việc persist sessionId vào localStorage do component xử lý qua useEffect (tránh side effect trong reducer)
-      state.sessionId = createSessionId();
+      state.sessionId = action.payload;
     },
     toggleChat: (state) => {
       state.isOpen = !state.isOpen;

@@ -6,7 +6,7 @@ const { validateRequest } = require('../middlewares/validateRequest');
 const { saveSearchSchema } = require('../validators/searchHistory');
 
 // Khách có thể lưu tìm kiếm — validate query trước khi xử lý
-router.post('/', validateRequest(saveSearchSchema), (req, res, next) => {
+router.post('/', validateRequest(saveSearchSchema, 422), (req, res, next) => {
   // Thử xác thực nhưng không báo lỗi nếu chưa đăng nhập
   authenticate(req, res, () => {
     searchHistoryController.saveSearch(req, res, next);

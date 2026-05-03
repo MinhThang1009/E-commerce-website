@@ -1,8 +1,8 @@
 const Joi = require('joi');
 
-// Schema kiểm tra query lưu lịch sử tìm kiếm
+// Schema kiểm tra keyword lưu lịch sử tìm kiếm — field phải khớp với controller (keyword, không phải query)
 const saveSearchSchema = Joi.object({
-  query: Joi.string()
+  keyword: Joi.string()
     .trim()
     .min(1)
     .max(500)

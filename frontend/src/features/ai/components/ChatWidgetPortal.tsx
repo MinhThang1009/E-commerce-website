@@ -9,6 +9,7 @@ import {
   clearMessages as clearMessagesAction,
   saveMessagesToStorage,
   saveSessionIdToStorage,
+  createSessionId,
 } from '../store/chatSlice';
 import { useSendChatbotMessageMutation } from '../services/chatbotApi';
 import { geminiService } from '../services/geminiApi';
@@ -195,9 +196,9 @@ const ChatWidgetPortal: React.FC = () => {
     handleSendMessage(suggestion);
   };
 
-  // Xóa tất cả tin nhắn và tạo sessionId mới
+  // Xóa tất cả tin nhắn và tạo sessionId mới — ID tạo ở đây, không trong reducer
   const handleClearChat = () => {
-    dispatch(clearMessagesAction());
+    dispatch(clearMessagesAction(createSessionId()));
   };
 
   // Mở/đóng chatbot

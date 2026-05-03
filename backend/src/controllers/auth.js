@@ -37,8 +37,12 @@ const register = async (req, res, next) => {
       otpExpires,
     });
 
-    // Gửi email chứa mã OTP
-    await emailService.sendOtpEmail(user.email, otpCode);
+    // Gửi email chứa mã OTP — không block đăng ký nếu email thất bại
+    try {
+      await emailService.sendOtpEmail(user.email, otpCode);
+    } catch (emailErr) {
+      logger.error(`[Auth] Gửi OTP email thất bại cho ${user.email}: ${emailErr.message}`);
+    }
 
     res.status(201).json({
       status: 'success',
@@ -294,8 +298,12 @@ const resendVerification = async (req, res, next) => {
     user.otpExpires = otpExpires;
     await user.save();
 
-    // Gửi email chứa mã OTP
-    await emailService.sendOtpEmail(user.email, otpCode);
+    // Gửi email chứa mã OTP — không block response nếu email thất bại
+    try {
+      await emailService.sendOtpEmail(user.email, otpCode);
+    } catch (emailErr) {
+      logger.error(`[Auth] Gửi lại OTP email thất bại cho ${user.email}: ${emailErr.message}`);
+    }
 
     res.status(200).json({
       status: 'success',
@@ -356,32 +364,35 @@ const refreshToken = async (req, res, next) => {
 };
 
 // Quên mật khẩu
+// Trả về cùng response dù email tồn tại hay không — tránh user enumeration attack
 const forgotPassword = async (req, res, next) => {
   try {
     const { email } = req.body;
 
     // Tìm user theo email
     const user = await User.findOne({ where: { email } });
-    if (!user) {
-      throw new AppError('Không tìm thấy tài khoản với email này', 404);
+    if (user) {
+      // Tạo token đặt lại mật khẩu, hết hạn sau 15 phút
+      const resetToken = crypto.randomBytes(32).toString('hex');
+      const resetTokenExpires = Date.now() + 15 * 60 * 1000;
+
+      // Lưu token vào database
+      user.resetPasswordToken = resetToken;
+      user.resetPasswordExpires = new Date(resetTokenExpires);
+      await user.save();
+
+      // Gửi email đặt lại mật khẩu — không block response nếu email thất bại
+      try {
+        await emailService.sendResetPasswordEmail(user.email, resetToken);
+      } catch (emailErr) {
+        logger.error(`[Auth] Gửi reset password email thất bại cho ${user.email}: ${emailErr.message}`);
+      }
     }
 
-    // Tạo token đặt lại mật khẩu, hết hạn sau 1 giờ
-    const resetToken = crypto.randomBytes(32).toString('hex');
-    const resetTokenExpires = Date.now() + 3600000;
-
-    // Lưu token vào database
-    user.resetPasswordToken = resetToken;
-    user.resetPasswordExpires = new Date(resetTokenExpires);
-    await user.save();
-
-    // Gửi email đặt lại mật khẩu
-    await emailService.sendResetPasswordEmail(user.email, resetToken);
-
+    // Luôn trả về cùng message dù email có tồn tại hay không
     res.status(200).json({
       status: 'success',
-      message:
-        'Đã gửi email đặt lại mật khẩu. Vui lòng kiểm tra email của bạn.',
+      message: 'Đã gửi email đặt lại mật khẩu. Vui lòng kiểm tra email của bạn.',
     });
   } catch (error) {
     next(error);
@@ -403,21 +414,6 @@ const resetPassword = async (req, res, next) => {
     });
 
     if (!user) {
-      // Debug: kiểm tra lý do token không hợp lệ
-      logger.info('Token:', token);
-      const debugUser = await User.findOne({
-        where: { resetPasswordToken: token }
-      });
-      if (debugUser) {
-        logger.info('Tìm thấy user nhưng token đã hết hạn:', {
-          resetPasswordExpires: debugUser.resetPasswordExpires,
-          currentDate: new Date(),
-          isExpired: debugUser.resetPasswordExpires < new Date()
-        });
-      } else {
-        logger.info('Không tìm thấy user với token này');
-      }
-
       throw new AppError('Token không hợp lệ hoặc đã hết hạn', 400);
     }
 

@@ -1,6 +1,7 @@
 'use strict';
 
 module.exports = {
+  // Tạo bảng inventory_logs để lưu audit trail mọi thay đổi tồn kho
   async up(queryInterface, Sequelize) {
     await queryInterface.createTable('inventory_logs', {
       id: {
@@ -81,6 +82,7 @@ module.exports = {
     });
   },
 
+  // Rollback: xóa bảng inventory_logs (và ENUM type đi kèm)
   async down(queryInterface) {
     await queryInterface.dropTable('inventory_logs');
   },

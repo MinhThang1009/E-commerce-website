@@ -4,18 +4,17 @@ const sequelize = require('../config/sequelize');
 const ProductCategory = sequelize.define(
   'ProductCategory',
   {
-    id: {
-      type: DataTypes.INTEGER,
-      autoIncrement: true,
-      primaryKey: true,
-    },
     productId: {
       type: DataTypes.INTEGER,
       allowNull: false,
+      primaryKey: true,
+      field: 'product_id',
     },
     categoryId: {
       type: DataTypes.INTEGER,
       allowNull: false,
+      primaryKey: true,
+      field: 'category_id',
     },
   },
   {

@@ -822,15 +822,15 @@ Khi `underscored: true` được bật trong Sequelize model options, tất cả
 - Tạo migration để rename các column đang sai (nếu có) để đồng bộ DB với model
 
 ### ✅ Acceptance Criteria Phase 8
-- [ ] `SHOW CREATE TABLE products` — tất cả columns là snake_case, price fields là `DECIMAL(15,2)`, có `idx_products_status` và `idx_products_category_id`
-- [ ] `SHOW CREATE TABLE orders` — có `UNIQUE KEY uq_orders_number`, có `CONSTRAINT fk_orders_users` với `ON DELETE RESTRICT`
-- [ ] `SHOW CREATE TABLE order_items` — có `CONSTRAINT fk_order_items_orders` với `ON DELETE CASCADE`, `CONSTRAINT fk_order_items_products` với `ON DELETE RESTRICT`
-- [ ] `SHOW CREATE TABLE product_categories` — có composite `PRIMARY KEY (product_id, category_id)`, cả 2 FKs có `ON DELETE CASCADE`
-- [ ] `EXPLAIN SELECT * FROM products WHERE status = 'active' ORDER BY created_at DESC LIMIT 20` — type = `ref`, key = `idx_products_status`
-- [ ] `EXPLAIN SELECT * FROM orders WHERE user_id = 1` — dùng index
-- [ ] `INSERT INTO users (email, ...) VALUES ('test@test.com', ...)` 2 lần → lần 2 bị lỗi `Duplicate entry` (unique constraint hoạt động)
-- [ ] `npm run db:seed` chạy 2 lần liên tiếp — không tạo duplicate records
-- [ ] Tất cả 21 migration files có hàm `down()` hợp lệ, không có INSERT data trong migration files
+- [x] `SHOW CREATE TABLE products` — tất cả columns là snake_case, price fields là `DECIMAL(15,2)`, có `idx_products_status` và `idx_products_category_id`
+- [x] `SHOW CREATE TABLE orders` — có `UNIQUE KEY uq_orders_number`, có `CONSTRAINT fk_orders_users` với `ON DELETE RESTRICT`
+- [x] `SHOW CREATE TABLE order_items` — có `CONSTRAINT fk_order_items_orders` với `ON DELETE CASCADE`, `CONSTRAINT fk_order_items_products` với `ON DELETE RESTRICT`
+- [x] `SHOW CREATE TABLE product_categories` — có composite `PRIMARY KEY (product_id, category_id)`, cả 2 FKs có `ON DELETE CASCADE`
+- [x] `EXPLAIN SELECT * FROM products WHERE status = 'active' ORDER BY created_at DESC LIMIT 20` — type = `ref`, key = `idx_products_status`
+- [x] `EXPLAIN SELECT * FROM orders WHERE user_id = 1` — dùng index
+- [x] `INSERT INTO users (email, ...) VALUES ('test@test.com', ...)` 2 lần → lần 2 bị lỗi `Duplicate entry` (unique constraint hoạt động)
+- [x] `npm run db:seed` chạy 2 lần liên tiếp — không tạo duplicate records
+- [x] Tất cả 21 migration files có hàm `down()` hợp lệ, không có INSERT data trong migration files
 
 ---
 

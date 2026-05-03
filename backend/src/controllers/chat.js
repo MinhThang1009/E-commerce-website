@@ -147,7 +147,6 @@ const sendMessage = async (req, res, next) => {
 
     // Yêu cầu định danh: phải có userId (đã đăng nhập) hoặc sessionId (guest)
     if (!userId && !sessionId) {
-      const { AppError } = require('../middlewares/errorHandler');
       throw new AppError('Cần cung cấp sessionId cho guest chat', 400);
     }
 

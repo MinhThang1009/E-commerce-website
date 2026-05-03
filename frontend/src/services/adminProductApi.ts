@@ -164,6 +164,8 @@ export const adminProductApi = api.injectEndpoints({
       invalidatesTags: (result, error, { id }) => [
         { type: 'Product', id },
         { type: 'Product', id: 'ADMIN_LIST' },
+        // Invalidate public product list cache để frontend user thấy thay đổi ngay
+        { type: 'Product', id: 'LIST' },
       ],
     }),
 
@@ -176,6 +178,8 @@ export const adminProductApi = api.injectEndpoints({
       invalidatesTags: (result, error, id) => [
         { type: 'Product', id },
         { type: 'Product', id: 'ADMIN_LIST' },
+        // Invalidate public product list cache để sản phẩm bị xóa biến mất ngay
+        { type: 'Product', id: 'LIST' },
       ],
     }),
 

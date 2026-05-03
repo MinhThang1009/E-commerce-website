@@ -1,14 +1,23 @@
 import { useState, useRef, useEffect, useCallback } from 'react';
+import { useSelector, useDispatch } from 'react-redux';
 import { useTranslation } from 'react-i18next';
 import { CHAT_WIDGET_CONFIG, getGreetingMessage } from '../constants/chatWidget';
 import { Message } from '../components/ChatWidget';
+import {
+  addMessage as addMessageAction,
+  setMessages as setMessagesAction,
+} from '../store/chatSlice';
+import type { RootState } from '@/store';
 
 export const useChatWidget = () => {
   const { t } = useTranslation();
+  const dispatch = useDispatch();
   const [isOpen, setIsOpen] = useState(false);
   const [position, setPosition] = useState({ x: 0, y: 0 });
   const [size, setSize] = useState(CHAT_WIDGET_CONFIG.DEFAULT_SIZE);
-  const [messages, setMessages] = useState<Message[]>([]);
+
+  // Messages từ Redux — single source of truth, persist qua navigation
+  const messages = useSelector((state: RootState) => state.chat.messages) as Message[];
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const chatWidgetRef = useRef<HTMLDivElement>(null);
@@ -23,21 +32,21 @@ export const useChatWidget = () => {
       if (savedSize) {
         setSize(JSON.parse(savedSize));
       }
-    } catch (error) {
-      console.error('Lỗi khi tải kích thước chat widget đã lưu:', error);
+    } catch {
+      // Bỏ qua lỗi parse localStorage
     }
   }, []);
 
-  // Khởi tạo tin nhắn chào mừng
+  // Khởi tạo tin nhắn chào mừng nếu chưa có lịch sử
   useEffect(() => {
     if (messages.length === 0) {
       const greeting = {
         ...getGreetingMessage(),
         id: Date.now().toString(),
       };
-      setMessages([greeting]);
+      dispatch(setMessagesAction([greeting]));
     }
-  }, [messages.length]);
+  }, [messages.length, dispatch]);
 
   // Tự động cuộn xuống cuối khi có tin nhắn mới
   useEffect(() => {
@@ -84,21 +93,25 @@ export const useChatWidget = () => {
   }, []);
 
   const addMessage = useCallback((message: Message) => {
-    setMessages((prev) => [...prev, message]);
-  }, []);
+    dispatch(addMessageAction(message));
+  }, [dispatch]);
 
   const removeMessage = useCallback((messageId: string) => {
-    setMessages((prev) => prev.filter((msg) => msg.id !== messageId));
-  }, []);
+    dispatch(setMessagesAction(messages.filter((msg) => msg.id !== messageId)));
+  }, [dispatch, messages]);
 
   const updateMessage = useCallback(
     (messageId: string, updates: Partial<Message>) => {
-      setMessages((prev) =>
-        prev.map((msg) => (msg.id === messageId ? { ...msg, ...updates } : msg))
-      );
+      dispatch(setMessagesAction(
+        messages.map((msg) => (msg.id === messageId ? { ...msg, ...updates } : msg))
+      ));
     },
-    []
+    [dispatch, messages]
   );
+
+  const setMessages = useCallback((newMessages: Message[]) => {
+    dispatch(setMessagesAction(newMessages));
+  }, [dispatch]);
 
   const applyChanges = useCallback(() => {
     localStorage.setItem(
@@ -114,7 +127,7 @@ export const useChatWidget = () => {
     };
 
     addMessage(confirmMessage);
-  }, [size, addMessage]);
+  }, [size, addMessage, t]);
 
   return {
     // State (trạng thái)

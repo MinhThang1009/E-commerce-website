@@ -1,15 +1,54 @@
 import { createSlice, PayloadAction } from '@reduxjs/toolkit';
 import { Message } from '../types/Message';
 
+const STORAGE_KEY_MESSAGES = 'chat_messages';
+const STORAGE_KEY_SESSION = 'chat_session_id';
+
+// Tạo sessionId mới cho phiên trò chuyện
+const createSessionId = () =>
+  typeof crypto !== 'undefined' && crypto.randomUUID
+    ? crypto.randomUUID()
+    : `session_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`;
+
+// Tải messages đã lưu từ localStorage để khôi phục lịch sử khi reload
+const loadMessagesFromStorage = (): Message[] => {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY_MESSAGES);
+    return raw ? (JSON.parse(raw) as Message[]) : [];
+  } catch {
+    return [];
+  }
+};
+
+// Tải sessionId từ localStorage — dùng lại nếu đã có để backend giữ context
+const loadSessionId = (): string => {
+  try {
+    const saved = localStorage.getItem(STORAGE_KEY_SESSION);
+    if (saved) return saved;
+  } catch {}
+  const newId = createSessionId();
+  try { localStorage.setItem(STORAGE_KEY_SESSION, newId); } catch {}
+  return newId;
+};
+
+// Lưu messages vào localStorage để persist qua navigation
+export const saveMessagesToStorage = (messages: Message[]): void => {
+  try {
+    localStorage.setItem(STORAGE_KEY_MESSAGES, JSON.stringify(messages));
+  } catch {}
+};
+
 interface ChatState {
   messages: Message[];
   isOpen: boolean;
+  sessionId: string;
   chatHistory: Record<string, Message[]>; // userId -> danh sách tin nhắn
 }
 
 const initialState: ChatState = {
-  messages: [],
+  messages: loadMessagesFromStorage(),
   isOpen: false,
+  sessionId: loadSessionId(),
   chatHistory: {},
 };
 
@@ -25,6 +64,10 @@ const chatSlice = createSlice({
     },
     clearMessages: (state) => {
       state.messages = [];
+      // Tạo sessionId mới khi xóa lịch sử — backend bắt đầu context mới
+      const newId = createSessionId();
+      state.sessionId = newId;
+      try { localStorage.setItem(STORAGE_KEY_SESSION, newId); } catch {}
     },
     toggleChat: (state) => {
       state.isOpen = !state.isOpen;

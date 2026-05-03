@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import Button from '@/components/common/Button';
 import { PremiumButton } from '@/components/common';
+import { useSendFeedbackMutation } from '@/services/contactApi';
 
 interface FormData {
   name: string;
@@ -19,9 +19,11 @@ const ContactPage: React.FC = () => {
     message: '',
   });
 
-  const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitSuccess, setSubmitSuccess] = useState(false);
   const [submitError, setSubmitError] = useState('');
+
+  // Gọi API thực — data lưu vào DB qua POST /api/contact/feedback
+  const [sendFeedback, { isLoading: isSubmitting }] = useSendFeedbackMutation();
 
   const handleChange = (
     e: React.ChangeEvent<
@@ -35,27 +37,27 @@ const ContactPage: React.FC = () => {
     }));
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setIsSubmitting(true);
     setSubmitError('');
 
-    // Giả lập gọi API
-    setTimeout(() => {
-      setIsSubmitting(false);
+    try {
+      // Backend dùng field `content`, không phải `message`
+      await sendFeedback({
+        name: formData.name,
+        email: formData.email,
+        subject: formData.subject,
+        content: formData.message,
+      }).unwrap();
+
       setSubmitSuccess(true);
-      setFormData({
-        name: '',
-        email: '',
-        subject: '',
-        message: '',
-      });
+      setFormData({ name: '', email: '', subject: '', message: '' });
 
       // Ẩn thông báo thành công sau 5 giây
-      setTimeout(() => {
-        setSubmitSuccess(false);
-      }, 5000);
-    }, 1500);
+      setTimeout(() => setSubmitSuccess(false), 5000);
+    } catch {
+      setSubmitError(t('contact.form.error'));
+    }
   };
 
   return (

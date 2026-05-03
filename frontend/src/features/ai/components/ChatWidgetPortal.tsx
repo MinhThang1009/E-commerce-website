@@ -1,9 +1,14 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { useSelector } from 'react-redux';
+import { useSelector, useDispatch } from 'react-redux';
 import { useTranslation } from 'react-i18next';
-import { Link } from 'react-router-dom';
 import { RootState } from '@/store';
 import { Message } from '../types/Message';
+import {
+  addMessage as addMessageAction,
+  setMessages as setMessagesAction,
+  clearMessages as clearMessagesAction,
+  saveMessagesToStorage,
+} from '../store/chatSlice';
 import { useSendChatbotMessageMutation } from '../services/chatbotApi';
 import { geminiService } from '../services/geminiApi';
 import ChatHeader from './ChatHeader';
@@ -20,21 +25,25 @@ import './ChatWidget.css';
  */
 const ChatWidgetPortal: React.FC = () => {
   const { t } = useTranslation();
+  const dispatch = useDispatch();
   const [isOpen, setIsOpen] = useState(false);
-  const [messages, setMessages] = useState<Message[]>([]);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const chatContainerRef = useRef<HTMLDivElement>(null);
   const { isAuthenticated, user } = useSelector(
     (state: RootState) => state.auth
   );
 
+  // Lấy messages và sessionId từ Redux — single source of truth, persist qua navigation
+  const messages = useSelector((state: RootState) => state.chat.messages);
+  const sessionId = useSelector((state: RootState) => state.chat.sessionId);
+
+  // Persist messages vào localStorage mỗi khi danh sách thay đổi
+  useEffect(() => {
+    saveMessagesToStorage(messages);
+  }, [messages]);
+
   // Hook mutation gọi API
   const [sendChatbotMessage, { isLoading }] = useSendChatbotMessageMutation();
-
-  // Tạo session ID cho chat
-  const [sessionId] = useState<string>(
-    () => `session_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`
-  );
 
   // Hiển thị tin nhắn chào mừng khi mở chatbot
   useEffect(() => {
@@ -54,9 +63,9 @@ const ChatWidgetPortal: React.FC = () => {
           t('chat.suggestions.returnPolicy'),
         ],
       };
-      setMessages([greeting]);
+      dispatch(setMessagesAction([greeting]));
     }
-  }, [isOpen, messages.length, isAuthenticated, user, t]);
+  }, [isOpen, messages.length, isAuthenticated, user, t, dispatch]);
 
   // Cuộn xuống tin nhắn mới nhất
   useEffect(() => {
@@ -89,79 +98,59 @@ const ChatWidgetPortal: React.FC = () => {
       sender: 'user',
     };
 
-    setMessages((prev) => [...prev, userMessage]);
+    dispatch(addMessageAction(userMessage));
 
-    // Thêm tin nhắn "đang nhập" tạm thời - chỉ hiển thị một dấu ba chấm
+    // Thêm tin nhắn "đang nhập" tạm thời — sẽ bị xóa khi có response
     const loadingId = (Date.now() + 1).toString();
-    setMessages((prev) => [
-      ...prev,
-      {
-        id: loadingId,
-        text: '',
-        sender: 'ai',
-        isLoading: true,
-      },
-    ]);
+    dispatch(addMessageAction({
+      id: loadingId,
+      text: '',
+      sender: 'ai',
+      isLoading: true,
+    }));
 
     try {
-      console.log('Đang gửi tin nhắn đến AI:', text);
-
       // Thêm timeout để tránh treo UI nếu API quá chậm
       const timeoutPromise = new Promise((_, reject) => {
         setTimeout(() => reject(new Error('Request timeout')), 10000);
       });
 
-      // Gọi API với timeout và xử lý lỗi
-      let response;
-      try {
-        response = await Promise.race([
-          sendChatbotMessage({
-            message: text,
-            userId: user?.id,
-            sessionId: sessionId,
-            context: {
-              isAuthenticated,
-              currentPage: window.location.pathname,
-              userAgent: navigator.userAgent,
-              timestamp: new Date().toISOString(),
-            },
-          }).unwrap(),
-          timeoutPromise,
-        ]);
-      } catch (innerError: any) {
-        console.error('Lỗi xảy ra trong quá trình gọi API:', innerError);
-        throw innerError;
-      }
+      const response = await Promise.race([
+        sendChatbotMessage({
+          message: text,
+          userId: user?.id,
+          sessionId,
+          context: {
+            isAuthenticated,
+            currentPage: window.location.pathname,
+            userAgent: navigator.userAgent,
+            timestamp: new Date().toISOString(),
+          },
+        }).unwrap(),
+        timeoutPromise,
+      ]) as any;
 
-      console.log('Đã nhận phản hồi từ AI:', response);
-
-      // Xóa tin nhắn "đang nhập" và thêm phản hồi từ API
+      // Xóa loading, thêm response vào Redux state
       if (response.status === 'success' && response.data) {
-        setMessages((prev) => {
-          const filtered = prev.filter((msg) => msg.id !== loadingId);
-          return [
-            ...filtered,
-            {
-              id: (Date.now() + 2).toString(),
-              text: response.data.response,
-              sender: 'ai',
-              suggestions: response.data.suggestions || [
-                t('chat.suggestions.findMore'),
-                t('chat.suggestions.viewCart'),
-                t('chat.suggestions.askMore'),
-              ],
-              products: response.data.products,
-              actions: response.data.actions,
-            },
-          ];
-        });
+        const nextMessages = messages
+          .filter((msg) => msg.id !== loadingId)
+          .concat({
+            id: (Date.now() + 2).toString(),
+            text: response.data.response,
+            sender: 'ai' as const,
+            suggestions: response.data.suggestions || [
+              t('chat.suggestions.findMore'),
+              t('chat.suggestions.viewCart'),
+              t('chat.suggestions.askMore'),
+            ],
+            products: response.data.products,
+            actions: response.data.actions,
+          });
+        dispatch(setMessagesAction(nextMessages));
       } else {
         throw new Error(response.message || t('errors.unknown'));
       }
     } catch (error: any) {
-      console.error('Lỗi khi tạo phản hồi AI:', error);
-
-      // Xác định thông báo lỗi phù hợp
       let errorMessage = t('chat.errors.general');
 
       if (error.message === 'Request timeout') {
@@ -174,23 +163,20 @@ const ChatWidgetPortal: React.FC = () => {
         errorMessage = t('chat.errors.serverError');
       }
 
-      // Xóa tin nhắn "đang nhập" và thêm thông báo lỗi
-      setMessages((prev) => {
-        const filtered = prev.filter((msg) => msg.id !== loadingId);
-        return [
-          ...filtered,
-          {
-            id: (Date.now() + 2).toString(),
-            text: errorMessage,
-            sender: 'ai',
-            suggestions: [
-              t('chat.suggestions.tryAgain'),
-              t('chat.suggestions.findProducts'),
-              t('chat.suggestions.contactSupport'),
-            ],
-          },
-        ];
-      });
+      // Xóa loading, thêm thông báo lỗi
+      const errorMessages = messages
+        .filter((msg) => msg.id !== loadingId)
+        .concat({
+          id: (Date.now() + 2).toString(),
+          text: errorMessage,
+          sender: 'ai' as const,
+          suggestions: [
+            t('chat.suggestions.tryAgain'),
+            t('chat.suggestions.findProducts'),
+            t('chat.suggestions.contactSupport'),
+          ],
+        });
+      dispatch(setMessagesAction(errorMessages));
     }
   };
 
@@ -199,9 +185,9 @@ const ChatWidgetPortal: React.FC = () => {
     handleSendMessage(suggestion);
   };
 
-  // Xóa tất cả tin nhắn
+  // Xóa tất cả tin nhắn và tạo sessionId mới
   const handleClearChat = () => {
-    setMessages([]);
+    dispatch(clearMessagesAction());
   };
 
   // Mở/đóng chatbot

@@ -511,7 +511,12 @@ const ProductDetailPage: React.FC = () => {
         <div>
           <ProductImageGallery
             images={product.images ? product.images.map((img: any) => typeof img === 'string' ? img : img.url).filter(Boolean) : []}
-            thumbnail={product.thumbnail}
+            thumbnail={
+              // Ưu tiên thumbnail của variant đang chọn để gallery switch đúng ảnh khi đổi variant
+              (product.isVariantProduct && product.currentVariant?.thumbnail)
+                ? product.currentVariant.thumbnail
+                : product.thumbnail
+            }
             productName={product.name}
           />
         </div>

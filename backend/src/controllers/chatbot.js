@@ -30,6 +30,14 @@ class ChatbotController {
         });
       }
 
+      // Giới hạn độ dài để tránh overflow LLM context window và tốn API token
+      if (message.length > 2000) {
+        return res.status(400).json({
+          status: 'error',
+          message: 'Tin nhắn quá dài (tối đa 2000 ký tự)',
+        });
+      }
+
       // Sử dụng Gemini AI để tạo phản hồi thông minh
       const response = await geminiChatbotService.handleMessage(message, userId || null, sessionId || null, context);
 

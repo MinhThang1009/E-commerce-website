@@ -26,7 +26,10 @@ async function clearProductCache(productId, productSlug) {
     if (productId) ops.push(redis.del(`product:detail:${productId}`));
     if (productSlug) ops.push(redis.del(`product:detail:${productSlug}`));
     await Promise.all(ops);
-  } catch {}
+  } catch (err) {
+    // Cache invalidation failure không nên block write operation — chỉ log warning
+    logger.warn('clearProductCache thất bại (cache có thể stale):', err.message);
+  }
 }
 
 // Lấy danh sách sản phẩm có phân trang

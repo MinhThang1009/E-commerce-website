@@ -364,7 +364,8 @@
                                 "demoMode":  "I\u0027m switching to demo mode. You can still chat with me but will receive sample responses.",
                                 "noResponse":  "Sorry, I didn\u0027t receive a response.",
                                 "busy":  "Hello! The AI system is a bit busy. You can try again later or contact support directly.",
-                                "emptyMessage":  "Please enter your question"
+                                "emptyMessage":  "Please enter your question",
+                                "unavailable":  "Chatbot is temporarily unavailable"
                             },
                  "clearConfirm":  "Clear conversation?",
                  "clearButton":  "Clear",
@@ -2149,7 +2150,8 @@
                                               },
                                  "messageLabel":  "Message",
                                  "sendButton":  "Send Message",
-                                 "sending":  "Sending..."
+                                 "sending":  "Sending...",
+                                 "error":  "An error occurred. Please try again."
                              },
                     "info":  {
                                  "title":  "Contact Information",

@@ -395,8 +395,8 @@ const CheckoutPage: React.FC = () => {
       newErrors.email = t('checkout.validation.emailInvalid');
     }
 
-    // Kiểm tra định dạng số điện thoại
-    if (formData.phone && !/^\d{10}$/.test(formData.phone.replace(/\D/g, ''))) {
+    // Kiểm tra định dạng số điện thoại VN: 0XXXXXXXXX hoặc +84XXXXXXXXX
+    if (formData.phone && !/^(0|\+84)[0-9]{9}$/.test(formData.phone.trim())) {
       newErrors.phone = t('checkout.validation.phoneInvalid');
     }
 
@@ -531,7 +531,7 @@ const CheckoutPage: React.FC = () => {
         notes: formData.notes,
         discountCode: appliedDiscount ? appliedDiscount.code : undefined,
         pointsToUse: pointsToUse,
-        shippingCost: shippingCost,
+        // shippingCost KHÔNG gửi lên backend — backend tự tính theo Phase 7.3
         items: isBuyNow && buyNowItem ? [{
           productId: buyNowItem.productId,
           variantId: buyNowItem.variantId,

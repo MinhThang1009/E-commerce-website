@@ -8,6 +8,7 @@ import { RootState } from '@/store';
 import AppRoutes from '@/routes/AppRoutes';
 import Notifications from '@/components/common/Notifications';
 import { ChatWidgetPortal } from '@/features/ai';
+import ChatbotErrorBoundary from '@/features/ai/components/ChatbotErrorBoundary';
 import SupportChat from '@/components/chat/SupportChat';
 import { useTokenRefresh } from '@/hooks/useTokenRefresh';
 import LoginSuccess from '@/components/auth/LoginSuccess';
@@ -67,7 +68,9 @@ const AppContent: React.FC = () => {
           <Notifications />
           <LoginSuccess />
           <AppRoutes />
-          <ChatWidgetPortal />
+          <ChatbotErrorBoundary>
+            <ChatWidgetPortal />
+          </ChatbotErrorBoundary>
           {<SupportChat />}
         </StripeProvider>
       </AuthProvider>

@@ -364,7 +364,8 @@
                                 "demoMode":  "Tôi đang chuyển sang chế độ demo. Bạn vẫn có thể chat với tôi nhưng sẽ nhận được phản hồi mẫu.",
                                 "noResponse":  "Xin lỗi, tôi không nhận được phản hồi.",
                                 "busy":  "Xin chào! Hệ thống AI đang bận một chút. Bạn có thể thử lại sau hoặc liên hệ hỗ trợ trực tiếp nhé.",
-                                "emptyMessage":  "Vui lòng nhập câu hỏi"
+                                "emptyMessage":  "Vui lòng nhập câu hỏi",
+                                "unavailable":  "Chatbot tạm thời không khả dụng"
                             },
                  "clearConfirm":  "Xóa hội thoại?",
                  "clearButton":  "Xóa",
@@ -2263,7 +2264,8 @@
                                               },
                                  "messageLabel":  "Tin nhắn",
                                  "sendButton":  "Gửi tin nhắn",
-                                 "sending":  "Đang gửi..."
+                                 "sending":  "Đang gửi...",
+                                 "error":  "Đã xảy ra lỗi. Vui lòng thử lại."
                              },
                     "info":  {
                                  "title":  "Thông tin liên hệ",

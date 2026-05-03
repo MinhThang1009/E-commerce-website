@@ -27,7 +27,8 @@ const PaymentQRPage: React.FC = () => {
   const [showSuccessMessage, setShowSuccessMessage] = useState(false);
   const [countdown, setCountdown] = useState(3);
 
-  const TEST_CARDS = [
+  // Chỉ expose test card numbers trong development — production build sẽ tree-shake mảng này
+  const TEST_CARDS = import.meta.env.DEV ? [
     {
       bank: t('paymentQR.card1bank'),
       logo: '🏦',
@@ -61,7 +62,7 @@ const PaymentQRPage: React.FC = () => {
       note: t('paymentQR.card3note'),
       type: 'success',
     },
-  ];
+  ] : [];
 
   const [createVnpayUrl] = useCreateVNPayUrlMutation();
   const [cancelOrder, { isLoading: isCancelling }] = useCancelOrderMutation();
@@ -144,15 +145,16 @@ const PaymentQRPage: React.FC = () => {
     }
   };
 
-  const card = TEST_CARDS[selectedCard];
+  // card và cardFields chỉ dùng trong DEV panel — null-safe vì panel bị ẩn khi production
+  const card = TEST_CARDS[selectedCard] ?? null;
   const formatVND = (n: number) => new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(n);
 
-  const cardFields = [
+  const cardFields = card ? [
     { label: t('paymentQR.cardNumberField'), value: card.cardNumber, field: 'cardNumber' },
     { label: t('paymentQR.cardHolderLabel'), value: card.cardHolder, field: 'cardHolder' },
     { label: t('paymentQR.expiryField'), value: card.expiry, field: 'expiry' },
     { label: 'OTP', value: card.otp, field: 'otp' },
-  ];
+  ] : [];
 
   if (!orderId || !amountParam) {
     return (
@@ -270,6 +272,8 @@ const PaymentQRPage: React.FC = () => {
             )}
           </div>
 
+          {/* Panel test cards — chỉ hiển thị trong development, ẩn khỏi production bundle */}
+          {import.meta.env.DEV && (
           <div className="lg:col-span-3 space-y-4">
             <div className="bg-white dark:bg-neutral-800 rounded-2xl shadow-md p-6">
               <div className="flex items-center justify-between mb-5">
@@ -295,6 +299,7 @@ const PaymentQRPage: React.FC = () => {
                 ))}
               </div>
 
+              {card && (
               <div className={`bg-gradient-to-br ${card.color} rounded-2xl p-6 text-white mb-5 shadow-lg relative overflow-hidden`}>
                 <div className="absolute top-0 right-0 w-48 h-48 bg-white/5 rounded-full -translate-y-16 translate-x-16" />
                 <div className="absolute bottom-0 left-0 w-32 h-32 bg-white/5 rounded-full translate-y-12 -translate-x-8" />
@@ -325,6 +330,7 @@ const PaymentQRPage: React.FC = () => {
                   </div>
                 </div>
               </div>
+              )}
 
               <div className="space-y-2 mb-5">
                 {cardFields.map(({ label, value, field }) => (
@@ -370,6 +376,7 @@ const PaymentQRPage: React.FC = () => {
               <span className="flex items-center gap-1"><span>✅</span> {t('paymentQR.vnpayCertified')}</span>
             </div>
           </div>
+          )}
         </div>
       </div>
     </div>

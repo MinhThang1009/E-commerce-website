@@ -43,15 +43,10 @@ export const handleAutoLogout = (
   redirectDelay: number = 1000
 ) => {
   const resolvedMessage = errorMessage ?? i18next.t('auth.errors.sessionExpired');
-  console.log('🚪 handleAutoLogout được gọi với:', errorMessage);
 
   // Ngăn chặn đăng xuất trùng lặp
-  if (logoutManager.isLoggingOut) {
-    console.log('⏸️ Đang trong quá trình đăng xuất, bỏ qua');
-    return;
-  }
+  if (logoutManager.isLoggingOut) return;
 
-  console.log('🔄 Bắt đầu quá trình đăng xuất');
   logoutManager.setLoggingOut(true);
 
   // Hiển thị thông báo cho người dùng
@@ -63,14 +58,18 @@ export const handleAutoLogout = (
   // logout action trong authSlice đã xóa token, refreshToken, user, cartItems
   // Không dùng localStorage.clear() để tránh xóa mất theme, language, và preferences khác
 
-  // Chuyển hướng sau một khoảng trễ ngắn để đảm bảo Redux state đã được cập nhật
+  // Chuyển hướng sau delay ngắn để Redux state cập nhật xong
   setTimeout(() => {
-    // Đặt lại cờ trạng thái
     logoutManager.setLoggingOut(false);
 
-    // Buộc tải lại trang về login để tránh vấn đề trạng thái React Router
-    window.location.href = '/login';
-  }, 100); // Delay ngắn để đảm bảo Redux state đã cập nhật
+    // Dùng React Router navigate để tránh full page reload, giữ nguyên app state
+    // Fallback về window.location.href nếu navigateToLogin chưa được inject (edge case: App chưa mount)
+    if (navigateToLogin) {
+      navigateToLogin();
+    } else {
+      window.location.href = '/login';
+    }
+  }, 100);
 };
 
 // Export logout manager để dùng ở các module khác
@@ -82,10 +81,7 @@ export { logoutManager };
  * @returns boolean - true nếu lỗi 401 đã được xử lý
  */
 export const handleUnauthorizedError = (error: any): boolean => {
-  console.log('🔍 handleUnauthorizedError được gọi với:', error);
-
   if (error?.status === 401) {
-    console.log('✅ Xác nhận 401, đang gọi handleAutoLogout');
     const errorMessage =
       error?.data?.message ||
       i18next.t('auth.errors.accountLocked');
@@ -93,8 +89,6 @@ export const handleUnauthorizedError = (error: any): boolean => {
     handleAutoLogout(errorMessage);
     return true;
   }
-
-  console.log('❌ Không phải 401, status:', error?.status);
   return false;
 };
 

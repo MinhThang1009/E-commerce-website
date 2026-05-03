@@ -190,7 +190,9 @@ export const orderApi = api.injectEndpoints({
       }),
       invalidatesTags: [
         { type: 'Order', id: 'LIST' },
+        // Invalidate cả Cart và CartCount để giỏ hàng reset ngay sau khi đặt hàng
         { type: 'Cart', id: 'LIST' },
+        'CartCount',
       ],
     }),
 

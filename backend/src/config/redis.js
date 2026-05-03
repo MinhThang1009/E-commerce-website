@@ -1,18 +1,29 @@
 const { createClient } = require('redis');
 const logger = require('../utils/logger');
 
-// In-memory fallback when Redis is unavailable (dev environment)
-const memBlacklist = new Map();
+// Fallback in-memory khi Redis không khả dụng (môi trường dev)
+const memStore = new Map();
 const memClient = {
   setEx: (key, ttl, val) => {
-    memBlacklist.set(key, val);
-    setTimeout(() => memBlacklist.delete(key), ttl * 1000);
+    memStore.set(key, val);
+    setTimeout(() => memStore.delete(key), ttl * 1000);
     return Promise.resolve();
   },
-  get: (key) => Promise.resolve(memBlacklist.get(key) || null),
+  get: (key) => Promise.resolve(memStore.get(key) ?? null),
+  del: (key) => { memStore.delete(key); return Promise.resolve(); },
+  set: (key, val, opts) => {
+    memStore.set(key, val);
+    if (opts?.EX) setTimeout(() => memStore.delete(key), opts.EX * 1000);
+    return Promise.resolve();
+  },
+  // Hỗ trợ pattern glob đơn giản (chỉ dùng * làm wildcard)
+  keys: (pattern) => {
+    const regex = new RegExp('^' + pattern.replace(/\*/g, '.*') + '$');
+    return Promise.resolve([...memStore.keys()].filter(k => regex.test(k)));
+  },
 };
 
-// Promise-based singleton — all callers await the same initialization
+// Singleton dạng Promise — mọi caller await cùng một lần khởi tạo
 let initPromise = null;
 
 const getRedisClient = () => {
@@ -22,7 +33,7 @@ const getRedisClient = () => {
         url: process.env.REDIS_URL || 'redis://localhost:6379',
         socket: {
           connectTimeout: 1500,
-          reconnectStrategy: false, // no retries — fail fast
+          reconnectStrategy: false, // không retry — fail nhanh để dùng fallback
         },
       });
       client.on('error', () => {});

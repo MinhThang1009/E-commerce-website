@@ -11,10 +11,33 @@
 const { AppError } = require('../middlewares/errorHandler');
 const logger = require('../utils/logger');
 const { Op } = require('sequelize');
+const { getRedisClient } = require('../config/redis');
+
+const CACHE_TTL_PRODUCT_LIST = 10 * 60;   // 10 phút
+const CACHE_TTL_PRODUCT_DETAIL = 10 * 60; // 10 phút
+
+// Xóa toàn bộ cache sản phẩm (list + detail cụ thể)
+async function clearProductCache(productId) {
+  try {
+    const redis = await getRedisClient();
+    const listKeys = await redis.keys('products:list:*');
+    await Promise.all([
+      ...listKeys.map(k => redis.del(k)),
+      productId ? redis.del(`product:detail:${productId}`) : Promise.resolve(),
+    ]);
+  } catch {}
+}
 
 // Lấy danh sách sản phẩm có phân trang
 const getAllProducts = async (req, res, next) => {
   try {
+    const redis = await getRedisClient();
+    const listCacheKey = `products:list:${req.url}`;
+    const cachedList = await redis.get(listCacheKey);
+    if (cachedList) {
+      return res.status(200).json(JSON.parse(cachedList));
+    }
+
     const {
       page = 1,
       sort = 'createdAt',
@@ -259,13 +282,15 @@ const getAllProducts = async (req, res, next) => {
       };
     });
 
-    res.status(200).json({
+    const listPayload = {
       status: 'success',
       data: products,
       total: count,
       page: parseInt(page),
       limit: parseInt(limit),
-    });
+    };
+    await redis.setEx(listCacheKey, CACHE_TTL_PRODUCT_LIST, JSON.stringify(listPayload));
+    res.status(200).json(listPayload);
   } catch (error) {
     next(error);
   }
@@ -276,6 +301,21 @@ const getProductById = async (req, res, next) => {
   try {
     const { id } = req.params;
     const { skuId } = req.query;
+
+    // Cache chỉ cho request không có variant params (phổ biến nhất)
+    const isBaseRequest = !skuId && !req.query.color && !req.query['Màu sắc'];
+    const detailCacheKey = isBaseRequest ? `product:detail:${id}` : null;
+
+    if (detailCacheKey) {
+      const redis = await getRedisClient();
+      const cachedDetail = await redis.get(detailCacheKey);
+      if (cachedDetail) {
+        if (req.user) {
+          RecentlyViewed.upsert({ userId: req.user.id, productId: parseInt(id) || 0, viewedAt: new Date() }).catch(() => {});
+        }
+        return res.status(200).json(JSON.parse(cachedDetail));
+      }
+    }
 
     let product = await Product.findByPk(id, {
       include: [
@@ -530,10 +570,13 @@ const getProductById = async (req, res, next) => {
       }
     }
 
-    return res.status(200).json({
-      status: 'success',
-      data: responseData,
-    });
+    const detailPayload = { status: 'success', data: responseData };
+    if (detailCacheKey) {
+      const redis = await getRedisClient();
+      await redis.setEx(detailCacheKey, CACHE_TTL_PRODUCT_DETAIL, JSON.stringify(detailPayload));
+    }
+
+    return res.status(200).json(detailPayload);
   } catch (error) {
     next(error);
   }
@@ -894,6 +937,8 @@ const createProduct = async (req, res, next) => {
       ],
     });
 
+    await clearProductCache(null);
+
     res.status(201).json({
       status: 'success',
       data: createdProduct,
@@ -1087,6 +1132,8 @@ const updateProduct = async (req, res, next) => {
       ],
     });
 
+    await clearProductCache(id);
+
     res.status(200).json({
       status: 'success',
       data: updatedProduct,
@@ -1110,6 +1157,7 @@ const deleteProduct = async (req, res, next) => {
 
     // Xóa sản phẩm
     await product.destroy();
+    await clearProductCache(id);
 
     res.status(200).json({
       status: 'success',
@@ -1587,93 +1635,76 @@ const getBestSellers = async (req, res, next) => {
 // Lấy sản phẩm đang khuyến mãi
 const getDeals = async (req, res, next) => {
   try {
-    const { minDiscount = 5, limit = 12, sort = 'discount_desc' } = req.query;
+    const parsedLimit = Math.min(parseInt(req.query.limit) || 12, 100);
+    const parsedMinDiscount = parseFloat(req.query.minDiscount) || 5;
+    const sort = req.query.sort || 'discount_desc';
 
-    // Lấy tất cả sản phẩm có compareAtPrice
-    const allProducts = await Product.findAll({
-      where: {
-        compareAtPrice: { [Op.ne]: null },
-      },
-      include: [
-        { association: 'category' },
-        { association: 'reviews' },
-        { association: 'productImages' },
-        { association: 'variants' },
-      ],
-    });
-
-    // Tính % giảm giá và lọc sản phẩm
-    const discountedProducts = allProducts
-      .map((product) => {
-        const price = parseFloat(product.price);
-        const compareAtPrice = parseFloat(product.compareAtPrice);
-        const discountPercentage =
-          ((compareAtPrice - price) / compareAtPrice) * 100;
-
-        // Tính điểm đánh giá trung bình
-        const ratings = {
-          average: 0,
-          count: 0,
-        };
-
-        if (product.reviews && product.reviews.length > 0) {
-          const totalRating = product.reviews.reduce(
-            (sum, review) => sum + review.rating,
-            0
-          );
-          ratings.average = parseFloat(
-            (totalRating / product.reviews.length).toFixed(1)
-          );
-          ratings.count = product.reviews.length;
-        }
-
-        const productJson = product.toJSON();
-        productJson.price = productJson.basePrice;
-        if (productJson.productImages && productJson.productImages.length > 0) {
-          productJson.images = productJson.productImages.map(img => ({
-            id: img.id, url: img.imageUrl, alt: img.altText, isThumbnail: img.isThumbnail, displayOrder: img.displayOrder, variantId: img.variantId,
-          }));
-          const primaryImg = productJson.productImages.find(img => img.isThumbnail) || productJson.productImages[0];
-          productJson.thumbnail = primaryImg.imageUrl;
-        } else {
-          productJson.images = [];
-          productJson.thumbnail = null;
-        }
-        delete productJson.productImages;
-        delete productJson.reviews;
-
-        return {
-          ...productJson,
-          discountPercentage,
-          ratings,
-        };
-      })
-      .filter(
-        (product) => product.discountPercentage >= parseFloat(minDiscount)
-      );
-
-    // Sắp xếp sản phẩm
-    let sortedProducts;
-    switch (sort) {
-      case 'price_asc':
-        sortedProducts = discountedProducts.sort((a, b) => a.price - b.price);
-        break;
-      case 'price_desc':
-        sortedProducts = discountedProducts.sort((a, b) => b.price - a.price);
-        break;
-      case 'discount_desc':
-      default:
-        sortedProducts = discountedProducts.sort(
-          (a, b) => b.discountPercentage - a.discountPercentage
-        );
+    // Xác định ORDER BY trước khi truy vấn
+    let orderClause;
+    if (sort === 'price_asc') {
+      orderClause = [['basePrice', 'ASC']];
+    } else if (sort === 'price_desc') {
+      orderClause = [['basePrice', 'DESC']];
+    } else {
+      // discount_desc: sort theo % giảm giá cao nhất trước
+      orderClause = [[sequelize.literal('(compare_at_price - base_price) / compare_at_price'), 'DESC']];
     }
 
-    // Giới hạn kết quả
-    const limitedProducts = sortedProducts.slice(0, parseInt(limit));
+    // Lọc và sắp xếp tại DB — không load toàn bộ bảng vào memory
+    const products = await Product.findAll({
+      where: {
+        compareAtPrice: { [Op.ne]: null },
+        [Op.and]: [
+          sequelize.where(
+            sequelize.literal('(compare_at_price - base_price) / compare_at_price * 100'),
+            { [Op.gte]: parsedMinDiscount }
+          ),
+        ],
+      },
+      include: [
+        { association: 'category', required: false, attributes: ['id', 'name', 'slug'] },
+        { association: 'reviews', required: false, where: { isVerified: true }, attributes: ['rating'] },
+        { association: 'productImages', required: false, attributes: ['id', 'imageUrl', 'altText', 'isThumbnail', 'displayOrder', 'variantId'] },
+        { association: 'variants', required: false, attributes: ['id', 'price', 'stockQuantity', 'sku', 'color', 'size'] },
+      ],
+      order: orderClause,
+      limit: parsedLimit,
+    });
+
+    const data = products.map((product) => {
+      const compareAtPrice = parseFloat(product.compareAtPrice);
+      const basePrice = parseFloat(product.basePrice);
+      const discountPercentage = ((compareAtPrice - basePrice) / compareAtPrice) * 100;
+
+      const ratings = { average: 0, count: 0 };
+      if (product.reviews && product.reviews.length > 0) {
+        const totalRating = product.reviews.reduce((sum, r) => sum + r.rating, 0);
+        ratings.average = parseFloat((totalRating / product.reviews.length).toFixed(1));
+        ratings.count = product.reviews.length;
+      }
+
+      const productJson = product.toJSON();
+      productJson.price = basePrice;
+      if (productJson.productImages && productJson.productImages.length > 0) {
+        productJson.images = productJson.productImages.map(img => ({
+          id: img.id, url: img.imageUrl, alt: img.altText, isThumbnail: img.isThumbnail,
+          displayOrder: img.displayOrder, variantId: img.variantId,
+        }));
+        const primaryImg = productJson.productImages.find(img => img.isThumbnail) || productJson.productImages[0];
+        productJson.thumbnail = primaryImg.imageUrl;
+      } else {
+        productJson.images = [];
+        productJson.thumbnail = null;
+      }
+      delete productJson.productImages;
+      delete productJson.reviews;
+
+      return { ...productJson, discountPercentage, ratings };
+    });
 
     res.status(200).json({
       status: 'success',
-      data: limitedProducts,
+      data,
     });
   } catch (error) {
     next(error);
@@ -1843,6 +1874,7 @@ const getProductFilters = async (req, res, next) => {
         name: 'brand',
         ...(actualCategoryId ? productFilter : {}),
       },
+      limit: 500,
       raw: true,
     });
 
@@ -1853,6 +1885,7 @@ const getProductFilters = async (req, res, next) => {
         name: 'color',
         ...(actualCategoryId ? productFilter : {}),
       },
+      limit: 500,
       raw: true,
     });
 
@@ -1863,6 +1896,7 @@ const getProductFilters = async (req, res, next) => {
         name: 'size',
         ...(actualCategoryId ? productFilter : {}),
       },
+      limit: 500,
       raw: true,
     });
 
@@ -1874,6 +1908,7 @@ const getProductFilters = async (req, res, next) => {
         ...(actualCategoryId ? productFilter : {}),
       },
       group: ['name', 'values'],
+      limit: 500,
       raw: true,
     });
 

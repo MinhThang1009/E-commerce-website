@@ -1,10 +1,20 @@
 ﻿const { Category, Product, sequelize } = require('../models');
 const { AppError } = require('../middlewares/errorHandler');
 const { Op } = require('sequelize');
+const { getRedisClient } = require('../config/redis');
+
+const CACHE_TTL_CATEGORIES = 30 * 60; // 30 phút
 
 // Lấy tất cả danh mục
 const getAllCategories = async (req, res, next) => {
   try {
+    const redis = await getRedisClient();
+    const cacheKey = 'categories:all';
+    const cached = await redis.get(cacheKey);
+    if (cached) {
+      return res.status(200).json(JSON.parse(cached));
+    }
+
     const categories = await Category.findAll({
       order: [['name', 'ASC']],
     });
@@ -26,10 +36,10 @@ const getAllCategories = async (req, res, next) => {
       return categoryData;
     });
 
-    res.status(200).json({
-      status: 'success',
-      data: categoriesWithCount,
-    });
+    const payload = { status: 'success', data: categoriesWithCount };
+    await redis.setEx(cacheKey, CACHE_TTL_CATEGORIES, JSON.stringify(payload));
+
+    res.status(200).json(payload);
   } catch (error) {
     next(error);
   }
@@ -109,6 +119,9 @@ const createCategory = async (req, res, next) => {
       description,
     });
 
+    const redis = await getRedisClient();
+    await redis.del('categories:all');
+
     res.status(201).json({
       status: 'success',
       data: category,
@@ -133,6 +146,9 @@ const updateCategory = async (req, res, next) => {
       name: name !== undefined ? name : category.name,
       description: description !== undefined ? description : category.description,
     });
+
+    const redis = await getRedisClient();
+    await redis.del('categories:all');
 
     res.status(200).json({
       status: 'success',
@@ -163,6 +179,9 @@ const deleteCategory = async (req, res, next) => {
     }
 
     await category.destroy();
+
+    const redis = await getRedisClient();
+    await redis.del('categories:all');
 
     res.status(200).json({
       status: 'success',

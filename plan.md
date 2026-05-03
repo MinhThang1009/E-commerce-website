@@ -6,7 +6,7 @@
 - **ID convention:** INT AUTO_INCREMENT (không dùng UUID)
 - **Data:** 45 sản phẩm trong `backend/data/seed_data.sql`
 - **Quy tắc làm việc:** Hoàn thành và PASS toàn bộ Acceptance Criteria của Phase N trước khi bắt đầu Phase N+1
-- **Quy tắc về sai sót trong plan:** Trong quá trình implement, nếu phát hiện bất kỳ chỗ nào trong plan này có thông tin sai, mô tả không chính xác, hoặc hướng dẫn có thể gây lỗi — **phải dừng lại, chủ động báo cho user ngay, giải thích sai ở đâu và tại sao, rồi fix plan.md trước khi tiếp tục implement.**
+- **Quy tắc về sai sót trong plan hoặc codebase:** Trong quá trình implement, nếu phát hiện bất kỳ chỗ nào trong plan này có thông tin sai, mô tả không chính xác, hoặc hướng dẫn có thể gây lỗi — **hoặc phát hiện bug/sai sót trong codebase không thuộc phase hiện tại** — phải: (1) dừng lại, chủ động báo cho user ngay, giải thích sai ở đâu và tại sao; (2) fix plan.md và/hoặc codebase luôn; (3) thêm ✅ Acceptance Criteria tương ứng vào phase liên quan; (4) double-check 100% AC pass trước khi push lên GitHub và trước khi sang phase mới.
 - **Quy tắc i18n (bắt buộc toàn bộ codebase):** Trong quá trình implement bất kỳ phase nào, **NGHIÊM CẤM hardcode string user-visible** bằng tiếng Việt hoặc tiếng Anh trực tiếp vào code. Mọi text hiển thị ra UI phải đi qua `t('key')` (trong React component) hoặc `i18next.t('key')` (ngoài React). Khi thêm string mới: (1) thêm key vào `frontend/src/locales/en.json`, (2) thêm cùng key vào `frontend/src/locales/vi.json`, (3) dùng `t('key')` trong code. Xem chi tiết tại **PHASE 37**.
 
 ---
@@ -37,15 +37,20 @@ Sau khi tất cả Acceptance Criteria của một phase PASS, **phải** thực
 1. `git add` các file liên quan (không dùng `git add -A` bừa bãi — tránh commit file nhạy cảm như `.env`)
 2. `git commit` theo **chuẩn GitHub Commit Standard** — format bắt buộc:
    ```
-   Phase N — <tên phase ngắn gọn>
-   
-   - <mô tả thay đổi 1>
-   - <mô tả thay đổi 2>
-   - <lý do / context nếu cần>
+   Hoàn thành Phase N — <tên phase ngắn gọn>
+
+   N.1. <nhóm thay đổi 1>
+   - <thay đổi cụ thể>
+   - <thay đổi cụ thể>
+
+   N.2. <nhóm thay đổi 2>
+   - <thay đổi cụ thể>
+   - <thay đổi cụ thể>
    ```
-   - **Subject line (dòng 1):** tối đa 50 ký tự, tiếng Việt, không có dấu chấm cuối
+   - **Subject line (dòng 1):** tối đa 50 ký tự, tiếng Việt, không có dấu chấm cuối; prefix `Hoàn thành` cho phase completion commit
    - **Dòng 2:** để trống (bắt buộc theo chuẩn git)
-   - **Body (từ dòng 3):** bullet points `-` mô tả từng thay đổi quan trọng; wrap ở 72 ký tự/dòng
+   - **Body (từ dòng 3):** chia thành subsections `N.X.` theo từng nhóm thay đổi, mỗi nhóm có bullet points `-`; nếu body ngắn (≤3 items, không cần nhóm) thì dùng thẳng bullet points
+   - **Wrap:** 72 ký tự/dòng
    - **Mục đích:** `git log --oneline` cho ra title gọn; `git log -1` cho ra full context — dễ trace và dễ in log sau này
 3. `git push origin main`
 - **Lý do:** Log commit tiếng Việt + body chi tiết giúp trace lại từng phase; format chuẩn GitHub giúp render đẹp trên GitHub UI.

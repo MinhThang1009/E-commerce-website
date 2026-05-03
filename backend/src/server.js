@@ -19,6 +19,8 @@ if (missingVars.length > 0) {
 const app = require('./app');
 const sequelize = require('./config/sequelize');
 const logger = require('./utils/logger');
+const { exec } = require('child_process');
+const { Server } = require('socket.io');
 
 // Load tất cả model trước (chưa có quan hệ)
 const models = [
@@ -123,6 +125,7 @@ const ensureColumns = async () => {
 // Kiểm tra và tự động rebuild vector store nếu lệch > 5% so với DB
 const checkVectorStoreSync = async () => {
   try {
+    // Lazy require sau khi connectDB() xong để đảm bảo associations đã được setup
     const { Product } = require('./models');
     const vectorStoreService = require('./services/ai/vectorStore');
     // Đợi vector store load xong trước khi so sánh
@@ -133,8 +136,7 @@ const checkVectorStoreSync = async () => {
     const deviation = Math.abs(activeCount - vectorCount) / activeCount;
     if (deviation > 0.05) {
       logger.warn(`⚠️ Vector store lệch >5% so với DB (DB: ${activeCount}, vector: ${vectorCount}). Tự động rebuild...`);
-      // Dùng exec (async) thay execSync để không block event loop trong lúc rebuild
-      const { exec } = require('child_process');
+      // Dùng exec (async) để không block event loop trong lúc rebuild
       exec('npm run ai:rebuild-vectors', { cwd: __dirname + '/..', timeout: 120000 }, (rebuildErr) => {
         if (rebuildErr) {
           logger.error('❌ Rebuild vector store thất bại:', rebuildErr.message);
@@ -166,7 +168,6 @@ const startServer = async () => {
   checkVectorStoreSync().catch(err => logger.warn('Vector store check failed:', err.message));
 
   // Khởi tạo Socket.io
-  const { Server } = require('socket.io');
   const io = new Server(server, {
     cors: {
       origin: process.env.CORS_ORIGIN || '*',

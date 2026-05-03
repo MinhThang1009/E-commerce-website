@@ -3,6 +3,7 @@
   AttributeValue,
   ProductAttributeGroup,
   Product,
+  ProductVariant,
 } = require('../models');
 const productNameGeneratorService = require('../services/ai/productNameGenerator');
 const logger = require('../utils/logger');
@@ -489,8 +490,6 @@ const generateNameRealTime = async (req, res) => {
 // Hàm hỗ trợ lấy các tổ hợp thuộc tính phổ biến
 async function getPopularAttributeCombinations(productId) {
   try {
-    const { ProductVariant } = require('../models');
-
     // Lấy các variant hiện có của sản phẩm để gợi ý tổ hợp phổ biến
     const existingVariants = await ProductVariant.findAll({
       where: { productId },

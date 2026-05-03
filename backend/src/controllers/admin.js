@@ -1,4 +1,5 @@
 ﻿const {
+  sequelize,
   User,
   Product,
   Order,
@@ -9,7 +10,11 @@
   ProductVariant,
   ProductSpecification,
   ProductImage,
+  ProductWarranty,
+  ProductCategory,
   WarrantyPackage,
+  CartItem,
+  Wishlist,
   Address,
   LoyaltyHistory,
   SearchHistory,
@@ -27,6 +32,7 @@ const {
   validateVariantAttributes,
   generateVariantSku,
 } = require('../utils/productHelpers');
+const vectorStoreService = require('../services/ai/vectorStore');
 
 /**
  * Đệ quy parse chuỗi JSON để xử lý tình huống stringify nhiều lần.
@@ -525,7 +531,7 @@ const getProductById = catchAsync(async (req, res) => {
         as: 'productSpecifications',
       },
       {
-        model: require('../models').WarrantyPackage,
+        model: WarrantyPackage,
         as: 'warrantyPackages',
         through: {
           attributes: ['isDefault'],
@@ -657,7 +663,6 @@ const createProduct = catchAsync(async (req, res) => {
   // Cập nhật compareAtPrice riêng bằng truy vấn SQL trực tiếp nếu có
   logger.info('comparePrice từ request:', comparePrice);
   if (comparePrice !== undefined) {
-    const { sequelize } = require('../models');
     await sequelize.query(
       'UPDATE products SET compare_at_price = :comparePrice WHERE id = :id',
       {
@@ -678,7 +683,6 @@ const createProduct = catchAsync(async (req, res) => {
     try {
       // Kiểm tra xem có cần tạo category không (dùng cho demo/phát triển)
       // Trong môi trường production, thường chỉ validate với categories đã có
-      const { Category } = require('../models');
 
       // Với mỗi category ID, tìm kiếm hoặc tạo placeholder
       const categoryPromises = categoryIds.map(async (catId) => {
@@ -853,7 +857,6 @@ const createProduct = catchAsync(async (req, res) => {
           variantId: img.variantId || null,
         };
       });
-      const ProductImage = require('../models/productImage');
       await ProductImage.bulkCreate(imageData);
       logger.info(`Đã tạo ${images.length} ảnh cho sản phẩm ${product.id}`);
     } catch (error) {
@@ -868,8 +871,6 @@ const createProduct = catchAsync(async (req, res) => {
     specifications.length > 0
   ) {
     try {
-      const { ProductSpecification } = require('../models');
-
       const specificationData = specifications.map((spec, index) => ({
         productId: product.id,
         name: spec.name,
@@ -896,7 +897,6 @@ const createProduct = catchAsync(async (req, res) => {
   ) {
     try {
       logger.info('Đang tạo warranty packages:', warrantyPackageIds);
-      const { ProductWarranty, WarrantyPackage } = require('../models');
 
       // Kiểm tra xem các warranty packages có tồn tại không
       logger.info(
@@ -951,7 +951,7 @@ const createProduct = catchAsync(async (req, res) => {
         as: 'productSpecifications',
       },
       {
-        model: require('../models').WarrantyPackage,
+        model: WarrantyPackage,
         as: 'warrantyPackages',
         through: {
           attributes: ['isDefault'],
@@ -964,7 +964,6 @@ const createProduct = catchAsync(async (req, res) => {
 
   // Đồng bộ vector store thủ công — Product.update() cập nhật inStock/stockQuantity bypass Sequelize hooks
   try {
-    const vectorStoreService = require('../services/ai/vectorStore');
     await vectorStoreService.loadPromise;
     if (productWithRelations.status === 'active' && productWithRelations.inStock) {
       await vectorStoreService.addProduct(productWithRelations.toJSON());
@@ -1022,9 +1021,6 @@ const updateProduct = catchAsync(async (req, res) => {
     condition,
   } = req.body;
 
-  const { sequelize, Category, ProductAttribute, ProductVariant, ProductSpecification, ProductWarranty, WarrantyPackage } = require('../models');
-  const { generateVariantSku, calculateTotalStock } = require('../utils/productHelpers');
-  
   // Dùng transaction để đảm bảo tính nguyên tử
   const transaction = await sequelize.transaction();
 
@@ -1332,7 +1328,6 @@ const updateProduct = catchAsync(async (req, res) => {
 
     // Đồng bộ vector store thủ công — Product.update() cập nhật inStock/stockQuantity bypass Sequelize hooks
     try {
-      const vectorStoreService = require('../services/ai/vectorStore');
       await vectorStoreService.loadPromise;
       if (finalProduct && finalProduct.status === 'active' && finalProduct.inStock) {
         await vectorStoreService.addProduct(finalProduct.toJSON());
@@ -1360,15 +1355,6 @@ const updateProduct = catchAsync(async (req, res) => {
  */
 const deleteProduct = catchAsync(async (req, res) => {
   const { id } = req.params;
-  const {
-    CartItem,
-    OrderItem,
-    Wishlist,
-    ProductAttribute,
-    ProductVariant,
-    ProductCategory,
-    sequelize,
-  } = require('../models');
 
   const product = await Product.findByPk(id);
   if (!product) {
@@ -1797,14 +1783,6 @@ const updateOrderStatus = catchAsync(async (req, res) => {
  */
 const cloneProduct = catchAsync(async (req, res) => {
   const { id } = req.params;
-  const {
-    ProductCategory,
-    ProductAttribute,
-    ProductVariant,
-    ProductSpecification,
-    ProductWarranty,
-    sequelize,
-  } = require('../models');
 
   // 1. Tìm sản phẩm gốc với đầy đủ các quan hệ
   const originalProduct = await Product.findByPk(id, {
@@ -1814,7 +1792,7 @@ const cloneProduct = catchAsync(async (req, res) => {
       { model: ProductVariant, as: 'variants' },
       { model: ProductSpecification, as: 'productSpecifications' },
       {
-        model: require('../models').WarrantyPackage,
+        model: WarrantyPackage,
         as: 'warrantyPackages',
         through: { attributes: ['isDefault'] },
       },

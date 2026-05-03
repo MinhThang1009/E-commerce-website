@@ -261,15 +261,16 @@ async function seedFull() {
   try {
     console.log('🚀 Bắt đầu seed 45 sản phẩm mới...');
 
-    // Xóa dữ liệu cũ
+    // Xóa dữ liệu cũ — paranoid models (Product, ProductVariant, Category, Brand) phải dùng
+    // force: true để hard-delete, tránh soft-delete gây lỗi unique slug/sku khi chạy lại
     await OrderItem.destroy({ where: {} });
     await CartItem.destroy({ where: {} });
-    await ProductVariant.destroy({ where: {} });
+    await ProductVariant.destroy({ where: {}, force: true });
     await ProductAttribute.destroy({ where: {} });
     await ProductSpecification.destroy({ where: {} });
-    await Product.destroy({ where: {} });
-    await Category.destroy({ where: {} });
-    await Brand.destroy({ where: {} });
+    await Product.destroy({ where: {}, force: true });
+    await Category.destroy({ where: {}, force: true });
+    await Brand.destroy({ where: {}, force: true });
 
     // Tạo categories
     const categories = await Category.bulkCreate(

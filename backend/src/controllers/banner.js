@@ -19,8 +19,10 @@ const getAllBanners = catchAsync(async (req, res) => {
   const isActiveOnlyQuery = isActive === 'true' && !position;
   const cacheKey = isActiveOnlyQuery ? 'banners:active' : null;
 
+  // Lấy redis client 1 lần dùng chung cho cả read và write cache
+  const redis = await getRedisClient();
+
   if (cacheKey) {
-    const redis = await getRedisClient();
     const cached = await redis.get(cacheKey);
     if (cached) {
       return res.status(200).json(JSON.parse(cached));
@@ -35,7 +37,6 @@ const getAllBanners = catchAsync(async (req, res) => {
   const payload = { status: 'success', results: banners.length, data: banners };
 
   if (cacheKey) {
-    const redis = await getRedisClient();
     await redis.setEx(cacheKey, CACHE_TTL_BANNERS, JSON.stringify(payload));
   }
 

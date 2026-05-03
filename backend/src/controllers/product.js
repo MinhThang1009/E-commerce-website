@@ -1668,6 +1668,7 @@ const getDeals = async (req, res, next) => {
     const products = await Product.findAll({
       where: {
         compareAtPrice: { [Op.ne]: null },
+        status: 'active',
         [Op.and]: [
           // discountPercentage là computed field — không có column thật nên phải dùng literal
           // parsedMinDiscount đã được parseFloat trước → không có SQL injection

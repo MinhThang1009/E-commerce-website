@@ -583,7 +583,7 @@ Không phải mọi phase đều cần automated test file. Trước khi bắt �
 Phase có thêm/sửa controller, service, route, middleware xử lý business logic quan trọng.
 Ví dụ: Phase 1 (security), Phase 2 (data integrity), Phase 3 (payments), Phase 7 (loyalty),
 Phase 9-10 (chatbot, chat), Phase 11 (performance), Phase 13 (security completeness),
-Phase 14 (email), Phase 16-19 (error handling, search, file, logging).
+Phase 14 (email), Phase 16-19 (error handling, search, file, logging), Phase 35 (caching strategy).
 
 Checklist Loại A:
 - [ ] Có file `*.phase{N}.test.js` trong `backend/src/__tests__/`
@@ -603,8 +603,8 @@ Checklist Loại B:
 Phase sửa DB schema, naming convention, config, dependency, code quality.
 Nếu có thêm endpoint mới → áp dụng Loại A; nếu chỉ refactor không thêm route → Layer 2 đủ.
 Ví dụ: Phase 4 (API consistency), Phase 6 (schema naming), Phase 8 (SQL standards),
-Phase 15 (SQL query), Phase 22-23 (code quality, dependencies), Phase 31 (DB migration),
-Phase 38 (MySQL naming).
+Phase 12 (frontend audit), Phase 15 (SQL query), Phase 22-23 (code quality, dependencies),
+Phase 25 (testing strategy), Phase 31 (DB migration), Phase 38 (MySQL naming).
 
 Checklist Loại C:
 - [ ] Nếu thêm endpoint mới → áp dụng Loại A
@@ -612,7 +612,7 @@ Checklist Loại C:
 
 **Loại D — Feature completeness / audit / reporting → Layer 2 + manual demo**
 Phase kiểm tra toàn bộ feature set, chuẩn bị demo, hoặc audit tổng thể.
-Ví dụ: Phase 25-27, Phase 30, Phase 32-36, Phase 39.
+Ví dụ: Phase 26-27, Phase 30, Phase 32-34, Phase 36, Phase 39.
 
 Checklist Loại D:
 - [ ] `npm test` pass (regression check)

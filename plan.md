@@ -552,6 +552,82 @@ try {
 
 **Cách phát hiện vi phạm:** Grep `axios\.\|fetch(\|nodemailer\|\.connect(\|\.publish(` trong `backend/src/` — nếu không có `timeout:` trong config object và không có try/catch bao ngoài → vi phạm.
 
+### 30. Test bắt buộc cho mọi API endpoint mới (BẮT BUỘC)
+
+Bất kỳ phase nào thêm hoặc sửa API endpoint đều phải có test HTTP tương ứng trong `backend/src/__tests__/` — không phân biệt endpoint đơn giản hay phức tạp.
+
+- **BẮT BUỘC:** mỗi endpoint mới → thêm ít nhất 3 test cases: happy path (200/201), input không hợp lệ (400/422), và unauthorized nếu có auth (401/403)
+- **BẮT BUỘC:** nếu endpoint có validation đặc biệt (giới hạn độ dài, format, range…) → phải test TỪNG validation boundary
+- **BẮT BUỘC:** phải test edge case quan trọng: resource không tồn tại (404), conflict (409), rate limit (429) — tùy endpoint
+- **NGHIÊM CẤM:** commit endpoint mới mà không có test
+
+**Cách kiểm tra:** Grep tên route path trong `backend/src/__tests__/` — nếu không tìm thấy test nào → vi phạm.
+
+### 31. Verify 2 lớp trước khi commit (BẮT BUỘC)
+
+**Lớp 1 — Automated tests:**
+- `cd backend && npm test` → phải pass 100%
+- `cd frontend && npx tsc --noEmit` → phải pass 0 TypeScript errors mới
+- Nếu bất kỳ test nào fail → bắt buộc fix trước, không được commit
+
+**Lớp 2 — Đọc lại code thực tế (35 checks — A1→A25, B1→B6, C1→C4):**
+Xem chi tiết 35 checks trong memory file `project_plan_rules.md`. Áp dụng với **mọi file đã sửa hoặc tạo mới** trong phase.
+
+**Chỉ sau khi cả 2 lớp pass hoàn toàn** → mới được commit và push lên GitHub.
+
+### 32. Phân loại phase — mức độ test bắt buộc (BẮT BUỘC ĐỌC TRƯỚC MỖI PHASE)
+
+Không phải mọi phase đều cần automated test file. Trước khi bắt đầu phase, xác định loại:
+
+**Loại A — Backend logic / API endpoints → BẮT BUỘC có test file (.test.js)**
+Phase có thêm/sửa controller, service, route, middleware xử lý business logic quan trọng.
+Ví dụ: Phase 1 (security), Phase 2 (data integrity), Phase 3 (payments), Phase 7 (loyalty),
+Phase 9-10 (chatbot, chat), Phase 11 (performance), Phase 13 (security completeness),
+Phase 14 (email), Phase 16-19 (error handling, search, file, logging).
+
+Checklist Loại A:
+- [ ] Có file `*.phase{N}.test.js` trong `backend/src/__tests__/`
+- [ ] Cover ≥3 test cases mỗi endpoint: happy path, validation, auth
+- [ ] `npm test` pass 100%
+
+**Loại B — UI / i18n / design / SEO → Layer 2 đủ, không cần test file Jest**
+Phase chỉ thay đổi frontend component, CSS, i18n keys, SEO tags, responsive layout.
+Ví dụ: Phase 5 (TypeScript), Phase 20-21 (i18n, SEO), Phase 24 (mobile),
+Phase 28-29 (dark mode, i18n full), Phase 37 (bilingual standard).
+
+Checklist Loại B:
+- [ ] `npx tsc --noEmit` pass 0 errors mới
+- [ ] Layer 2 đọc lại code (B1-B6, C1-C4) đủ
+
+**Loại C — Schema / config / migration / infra → test case-by-case**
+Phase sửa DB schema, naming convention, config, dependency, code quality.
+Nếu có thêm endpoint mới → áp dụng Loại A; nếu chỉ refactor không thêm route → Layer 2 đủ.
+Ví dụ: Phase 4 (API consistency), Phase 6 (schema naming), Phase 8 (SQL standards),
+Phase 15 (SQL query), Phase 22-23 (code quality, dependencies), Phase 31 (DB migration),
+Phase 38 (MySQL naming).
+
+Checklist Loại C:
+- [ ] Nếu thêm endpoint mới → áp dụng Loại A
+- [ ] Nếu chỉ refactor → `npm test` pass (không có regression), Layer 2 đủ
+
+**Loại D — Feature completeness / audit / reporting → Layer 2 + manual demo**
+Phase kiểm tra toàn bộ feature set, chuẩn bị demo, hoặc audit tổng thể.
+Ví dụ: Phase 25-27, Phase 30, Phase 32-36, Phase 39.
+
+Checklist Loại D:
+- [ ] `npm test` pass (regression check)
+- [ ] Manual demo các AC quan trọng
+- [ ] Layer 2 cho mọi file đã sửa
+
+---
+
+**Tóm tắt nhanh (dán vào đầu mỗi phase khi implement):**
+```
+Phase N — Loại: [A/B/C/D]
+Layer 1: [test file bắt buộc / tsc check / regression only]
+Layer 2: [A1-A25, B1-B6, C1-C4]
+```
+
 ---
 
 ## PHASE 1 — Critical Security Vulnerabilities

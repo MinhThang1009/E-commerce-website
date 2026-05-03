@@ -3047,6 +3047,12 @@ wishlist.*        — danh sách yêu thích
 search.*          — trang tìm kiếm
 ```
 
+### ✅ Acceptance Criteria Phase 37
+- [x] Bug B2 fix: `CheckoutPage.tsx` — `defaultState`/`defaultCity` dùng `''` thay vì `t()` để tránh backend validation fail khi EN
+- [x] `en.json` và `vi.json` đồng bộ hoàn toàn (0 key lệch nhau)
+- [x] Switch sang EN → giỏ hàng, admin dashboard vẫn hiển thị đúng số liệu VND (không chuyển sang USD)
+- [x] Checkout với ngôn ngữ EN → không bị backend validation fail do giá trị địa lý dịch sai
+
 ---
 
 ## PHASE 20 — i18n & Localization Consistency

@@ -32,7 +32,7 @@ const Header: React.FC = () => {
   const dispatch = useDispatch();
   const { t } = useTranslation();
 
-  // Hook x�c th?c
+  // Hook xác thực và lấy thông tin user
   const {
     isAuthenticated,
     user,
@@ -41,17 +41,17 @@ const Header: React.FC = () => {
     getUserFullName,
   } = useAuth();
 
-  // L?y tr?ng th�i UI t? Redux store
+  // Lấy trạng thái menu mobile và search từ Redux store
   const isMobileMenuOpen = useSelector(
     (state: RootState) => state.ui.isMobileMenuOpen
   );
   const isSearchOpen = useSelector((state: RootState) => state.ui.isSearchOpen);
 
-  // L?y s? lu?ng gi? h�ng t? server API (ch? cho user d� dang nh?p)
+  // Lấy số lượng item trong cart từ server (n?u authenticated) hoặc localStorage (n?u chưa authenticated)
   const { data: serverCartCount } = useGetCartCountQuery(undefined, {
-    // Ch? g?i API n?u user d� dang nh?p
+    // Chỉ lấy count khi đã xác thực, tránh gọi API không cần thiết cho khách
     skip: !isAuthenticated,
-    // Ch? refetch khi c?n, kh�ng refetch m?i l?n focus/reconnect
+    // Không tự động refetch khi focus hoặc reconnect để tránh nhảy số lượng trên header, sẽ refetch thủ công sau khi merge cart
     refetchOnFocus: false,
     refetchOnReconnect: false,
   });
@@ -59,14 +59,14 @@ const Header: React.FC = () => {
     (state: RootState) => state.cart?.totalItems || 0
   );
 
-  // D�ng count t? server cho user d� dang nh?p, count local cho kh�ch
+  // Nếu đã xác thực, ưu tiên lấy số lượng từ server (đã merge), nếu chưa thì lấy từ localStorage
   const cartItemsCount = isAuthenticated
     ? serverCartCount !== undefined
       ? serverCartCount
       : localCartCount
     : localCartCount;
 
-  // Logic wishlist cho badge tr�n header
+  // Lấy số lượng item trong wishlist từ Redux store và server (n?u authenticated)
   const wishlistItems = useSelector((state: RootState) => state.wishlist.items);
   const wishlistCount = wishlistItems.length;
 
@@ -78,12 +78,12 @@ const Header: React.FC = () => {
 
   useEffect(() => {
     if (serverWishlist && serverWishlist.data) {
-      // Chuy?n danh s�ch s?n ph?m th�nh m?ng ID
+      // Cập nhật wishlist trong Redux store với dữ liệu từ server sau khi xác thực
       dispatch(setWishlist(serverWishlist.data.map((p: any) => p.id)));
     }
   }, [serverWishlist, dispatch]);
 
-  // X�a localStorage khi server tr? v? count = 0 v� c?p nh?t state Redux (ch? cho authenticated users)
+  // Sau khi đăng nhập, nếu server cart count là 0 thì xóa cart cục bộ để tránh giữ lại cart cũ không hợp lệ, đồng thời khởi tạo lại state cart từ localStorage (nếu có) để hiển thị đúng số lượng trên header
   useEffect(() => {
     if (isAuthenticated && serverCartCount === 0) {
       localStorage.removeItem('cartItems');
@@ -92,7 +92,7 @@ const Header: React.FC = () => {
     }
   }, [isAuthenticated, serverCartCount, dispatch]);
 
-  // Ph�t hi?n scroll
+  // Hiệu ứng để thay đổi giao diện header khi cuộn trang
   useEffect(() => {
     const handleScroll = () => {
       setIsScrolled(window.scrollY > 10);
@@ -102,7 +102,7 @@ const Header: React.FC = () => {
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
 
-  // X? l� click ra ngo�i dropdown
+  // Hiệu ứng để đóng dropdown khi click ra ngoài
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       if (
@@ -117,7 +117,7 @@ const Header: React.FC = () => {
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
-  // X? l� click v�o h? so ngu?i d�ng
+  // Xử lý click vào nút người dùng
   const handleUserClick = () => {
     if (isAuthenticated) {
       setShowUserDropdown(!showUserDropdown);
@@ -126,13 +126,13 @@ const Header: React.FC = () => {
     }
   };
 
-  // X? l� dang xu?t k�m di?u hu?ng
+  // Xử lý click vào nút đăng xuất
   const handleLogoutClick = async () => {
     await handleLogout();
     navigate('/', { replace: true });
   };
 
-  // X? l� click v�o gi? h�ng
+  // Xử lý click vào giỏ hàng
   const handleCartClick = () => {
     navigate('/cart');
   };
@@ -163,7 +163,7 @@ const Header: React.FC = () => {
           </div>
         </Link>
 
-        {/* �i?u hu?ng desktop */}
+        {/* Điều hướng desktop */}
         <nav className="hidden lg:flex items-center space-x-1 flex-1 max-w-lg justify-center">
           {[
             { key: 'home' as NavigationIconKey, path: '/' },
@@ -196,7 +196,7 @@ const Header: React.FC = () => {
 
         {/* Actions */}
         <div className="flex items-center space-x-1 sm:space-x-2">
-          {/* T�m ki?m - ?n tr�n mobile d? tr�nh l?i b? c?c */}
+          {/* Tìm kiếm - chỉ hiển thị trên mobile để tránh bị che */}
           <div className="hidden md:block">
             <SearchBar
               isExpanded={isSearchOpen}
@@ -205,17 +205,17 @@ const Header: React.FC = () => {
             />
           </div>
 
-          {/* Language Switcher - ?n tr�n m�n h�nh mobile nh? */}
+          {/* Chuyển đổi ngôn ngữ */}
           <div className="hidden xsm:block p-1 sm:p-2 rounded-xl hover:bg-neutral-100 dark:hover:bg-neutral-800 transition-colors">
             <LanguageSwitcher />
           </div>
 
-          {/* Chuy?n giao di?n s�ng/t?i */}
+          {/* Chuyển đổi giao diện */}
           {/* <div className="p-1 sm:p-2 rounded-xl hover:bg-neutral-100 dark:hover:bg-neutral-800 transition-colors">
             <ThemeToggle />
           </div> */}
 
-          {/* Ngu?i d�ng */}
+          {/* Người dùng */}
           <div className="relative" ref={userDropdownRef}>
             <button
               onClick={handleUserClick}
@@ -234,7 +234,7 @@ const Header: React.FC = () => {
               )}
             </button>
 
-            {/* Dropdown ngu?i d�ng */}
+            {/* Dropdown người dùng */}
             {isAuthenticated && showUserDropdown && (
               <div className="absolute right-0 mt-2 w-48 bg-white dark:bg-neutral-800 rounded-lg shadow-lg border border-neutral-200 dark:border-neutral-700 z-50">
                 <div className="py-2">
@@ -271,7 +271,7 @@ const Header: React.FC = () => {
                     {t('header.dropdown.wishlist')}
                   </Link>
 
-                  {/* Li�n k?t Admin Panel - ch? hi?n th? cho admin */}
+                  {/* Liên kết Admin Panel - chỉ hiển thị cho admin */}
                   {isAdmin() && (
                     <>
                       <div className="border-t border-neutral-200 dark:border-neutral-700 my-2"></div>
@@ -317,7 +317,7 @@ const Header: React.FC = () => {
             )}
           </div>
 
-          {/* Wishlist (danh s�ch y�u th�ch) */}
+          {/* Wishlist (danh sách yêu thích) */}
           <button
             onClick={() => navigate('/wishlist')}
             className={`group relative p-1.5 sm:p-2 rounded-xl transition-all duration-300 ${wishlistCount > 0
@@ -336,7 +336,7 @@ const Header: React.FC = () => {
             )}
           </button>
 
-          {/* Gi? h�ng */}
+          {/* Giỏ hàng */}
           <button
             onClick={handleCartClick}
             className={`group relative p-1.5 sm:p-2 rounded-xl transition-all duration-300 ${cartItemsCount > 0
@@ -378,7 +378,7 @@ const Header: React.FC = () => {
       {/* Menu mobile */}
       {isMobileMenuOpen && (
         <div className="lg:hidden absolute top-full left-0 right-0 bg-white dark:bg-neutral-900 shadow-lg py-4 px-4 sm:px-6 space-y-4 animate-slideInTop border-b border-neutral-200 dark:border-neutral-700">
-          {/* T�m ki?m mobile */}
+          {/* Tìm kiếm mobile */}
           <div className="pb-4">
             <div className="relative">
               <form
@@ -387,7 +387,7 @@ const Header: React.FC = () => {
                   const input = e.currentTarget.querySelector('input');
                   const searchTerm = input?.value?.trim();
                   if (searchTerm) {
-                    // Luu v�o localStorage
+                    // Lưu từ khóa tìm kiếm vào localStorage để hiển thị trong phần recent searches (nếu có)
                     try {
                       const recentSearches =
                         localStorage.getItem('recentSearches');
@@ -403,10 +403,10 @@ const Header: React.FC = () => {
                         JSON.stringify(updatedSearches)
                       );
                     } catch (error) {
-                      console.error('L?i khi luu t? kh�a t�m ki?m:', error);
+                      console.error('Lỗi khi lưu từ khóa tìm kiếm:', error);
                     }
 
-                    // �i?u hu?ng d?n trang k?t qu? t�m ki?m
+                    // Điều hướng đến trang kết quả tim kiếm
                     navigate(`/shop?search=${encodeURIComponent(searchTerm)}`);
                     dispatch(toggleMobileMenu());
                   }
@@ -482,7 +482,7 @@ const Header: React.FC = () => {
 
 
 
-          {/* Language Switcher mobile */}
+          {/* Language Switcher Mobile */}
           <div className="pt-4 border-t border-neutral-200 dark:border-neutral-700">
             <div className="flex items-center justify-between">
               <span className="text-sm font-medium text-neutral-700 dark:text-neutral-300">

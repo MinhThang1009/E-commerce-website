@@ -22,8 +22,6 @@ const statusColors: Record<string, string> = {
 const DashboardPage: React.FC = () => {
   const { t, i18n } = useTranslation();
 
-  // Log debug
-
   // Lấy thống kê dashboard
   const {
     data: dashboardData,

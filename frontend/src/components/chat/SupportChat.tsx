@@ -60,7 +60,9 @@ const SupportChat: React.FC = () => {
   useEffect(() => {
     if (!currentIdentifier) return;
 
-    const socket = io(SOCKET_URL);
+    const socket = io(SOCKET_URL, {
+      auth: { token: localStorage.getItem('token') || '' },
+    });
     socketRef.current = socket;
 
     socket.on('connect', () => {

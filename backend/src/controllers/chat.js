@@ -4,9 +4,10 @@ const { AppError } = require('../middlewares/errorHandler');
 // Lấy lịch sử trò chuyện theo session hoặc người dùng cụ thể
 const getChatHistory = async (req, res, next) => {
   try {
-    const { identifier } = req.params; // Có thể là userId hoặc sessionId
-    const currentUserId = req.user.id;
-    const isAdmin = req.user.role === 'admin';
+    const { identifier } = req.params;
+    // req.user có thể là null với guest (optionalAuthenticate)
+    const currentUserId = req.user?.id ?? null;
+    const isAdmin = req.user?.role === 'admin';
 
     // Lấy các tin nhắn có sessionId hoặc userId trùng với identifier
     const messages = await ChatMessage.findAll({
@@ -19,9 +20,18 @@ const getChatHistory = async (req, res, next) => {
       order: [['createdAt', 'ASC']],
     });
 
-    // Kiểm tra quyền truy cập
+    // Kiểm tra quyền truy cập — ngăn chặn enumeration session của người khác
     if (!isAdmin) {
-      const isOwner = messages.every(m => !m.userId || m.userId === currentUserId);
+      // Trả về 404 nếu không tìm thấy session thay vì [] — ngăn brute-force enumeration
+      if (messages.length === 0) {
+        throw new AppError('Không tìm thấy cuộc trò chuyện', 404);
+      }
+      // Guest: identifier phải là sessionId của chính họ (UUID đủ entropy để không đoán được)
+      // User đăng nhập: identifier là userId của mình, hoặc ít nhất 1 message có userId của mình
+      const isOwner = currentUserId
+        ? String(currentUserId) === identifier ||
+          messages.some((m) => m.userId === currentUserId)
+        : messages.every((m) => m.sessionId === identifier && !m.userId);
       if (!isOwner) {
         throw new AppError('Không có quyền xem cuộc trò chuyện này', 403);
       }
@@ -91,13 +101,13 @@ const getAdminChatList = async (req, res, next) => {
         });
 
         const unreadCount = await ChatMessage.count({
-          where: { 
+          where: {
             [sequelize.Sequelize.Op.or]: [
               { sessionId: item.sessionId || item.userId },
               { userId: item.userId }
             ],
-            isFromAdmin: false, 
-            isRead: false 
+            isFromAdmin: false,
+            isRead: false
           },
         });
 
@@ -132,7 +142,8 @@ const getAdminChatList = async (req, res, next) => {
 const markAsRead = async (req, res, next) => {
   try {
     const { identifier } = req.params;
-    const isAdmin = req.user.role === 'admin';
+    // req.user có thể là null với guest (optionalAuthenticate)
+    const isAdmin = req.user?.role === 'admin';
 
     if (isAdmin) {
       await ChatMessage.update(

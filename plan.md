@@ -1,19 +1,19 @@
 ﻿# Audit & Fix Plan — E-Commerce Codebase (Phased)
 
 ## Project Context
-- **Backend:** Node.js + Express + Sequelize ORM + MySQL — 38 models, 27 routes
-- **Frontend:** React 18 + TypeScript + Vite + Redux Toolkit — 54+ pages
+- **Backend:** Node.js + Express + Sequelize ORM + MySQL (nhiều models, nhiều routes — đọc code để biết số chính xác)
+- **Frontend:** React 18 + TypeScript + Vite + Redux Toolkit (nhiều pages — đọc code để biết số chính xác)
 - **ID convention:** INT AUTO_INCREMENT (không dùng UUID)
-- **Data:** 45 sản phẩm trong `backend/data/seed_data.sql`
+- **Data:** Dữ liệu sản phẩm trong `backend/data/seed_data.sql` — đọc file để biết số lượng thực tế hiện tại
 - **Quy tắc làm việc:** Hoàn thành và PASS toàn bộ Acceptance Criteria của Phase N trước khi bắt đầu Phase N+1
 - **Quy tắc về sai sót trong plan hoặc codebase:** Trong quá trình implement, nếu phát hiện bất kỳ chỗ nào trong plan này có thông tin sai, mô tả không chính xác, hoặc hướng dẫn có thể gây lỗi — **hoặc phát hiện bug/sai sót trong codebase không thuộc phase hiện tại** — phải: (1) dừng lại, chủ động báo cho user ngay, giải thích sai ở đâu và tại sao; (2) fix plan.md và/hoặc codebase luôn; (3) thêm ✅ Acceptance Criteria tương ứng vào phase liên quan; (4) double-check 100% AC pass trước khi push lên GitHub và trước khi sang phase mới.
-- **Quy tắc i18n (bắt buộc toàn bộ codebase):** Trong quá trình implement bất kỳ phase nào, **NGHIÊM CẤM hardcode string user-visible** bằng tiếng Việt hoặc tiếng Anh trực tiếp vào code. Mọi text hiển thị ra UI phải đi qua `t('key')` (trong React component) hoặc `i18next.t('key')` (ngoài React). Khi thêm string mới: (1) thêm key vào `frontend/src/locales/en.json`, (2) thêm cùng key vào `frontend/src/locales/vi.json`, (3) dùng `t('key')` trong code. Xem chi tiết tại **PHASE 37**.
+- **Quy tắc i18n (bắt buộc toàn bộ codebase):** Trong quá trình implement bất kỳ phase nào, **NGHIÊM CẤM hardcode string user-visible** bằng tiếng Việt hoặc tiếng Anh trực tiếp vào code. Mọi text hiển thị ra UI phải đi qua `t('key')` (trong React component) hoặc `i18next.t('key')` (ngoài React). Khi thêm string mới: (1) thêm key vào `frontend/src/locales/en.json`, (2) thêm cùng key vào `frontend/src/locales/vi.json`, (3) dùng `t('key')` trong code. Xem chi tiết tại section i18n trong plan.md (dùng `Grep "PHASE.*i18n\|i18n.*Full"` để tìm đúng phase).
 
 ---
 
 ## AGENT EXECUTION GUIDELINES — Tránh Context Window Overflow
 
-> Áp dụng cho Claude Code CLI. Double-check bắt buộc trước khi chuyển phase.
+> **Áp dụng cho mọi phase và mọi session** — không phải chỉ session hiện tại. Double-check bắt buộc trước khi chuyển phase.
 
 ### 1. Quy tắc đọc file — tối thiểu hóa token
 - **Luôn dùng `Grep`/`Glob` trước** để xác định file + dòng cụ thể trước khi đọc
@@ -31,7 +31,7 @@ Trước khi implement bất kỳ phase nào, **phải đọc lại toàn bộ p
 
 **Bắt buộc đọc ĐẦY ĐỦ — không được bỏ sót rule nào:**
 - Đọc lần lượt từ rule 1 đến rule cuối cùng trong AGENT EXECUTION GUIDELINES
-- Đọc toàn bộ Project Context (rules 1–5 trong phần đầu plan.md)
+- Đọc toàn bộ Project Context (tất cả items trong phần đầu plan.md trước PHASE 1)
 - Nếu plan.md dài → đọc từng đoạn 100–150 dòng cho đến khi đọc hết phần GUIDELINES
 - **Không được tắt tắt hay bỏ qua bất kỳ rule nào** dù cảm thấy rule đó không liên quan đến phase đang làm — một rule bị bỏ sót có thể gây bug hàng loạt
 
@@ -41,11 +41,13 @@ Trước khi đánh dấu một phase PASS, thực hiện theo đúng thứ tự
 **Bước 1 — Self-review bắt buộc (TRƯỚC khi chạy AC):**
 Với mỗi file đã sửa trong phase này:
 - [ ] **Comments & i18n:** quét toàn bộ file tìm comment tiếng Anh thuần và hardcoded user-visible strings — fix ngay nếu có
-- [ ] **Data flow consistency:** mọi function nhận data từ nhiều nguồn (DB, vector store, API) → grep field names ở từng nguồn, xác nhận dùng `??` fallback hoặc normalize
+- [ ] **Data flow consistency:** mọi function nhận data từ nhiều nguồn (DB + external API, DB + cache, DB + webhook payload…) → grep field names ở TỪNG nguồn, xác nhận dùng `??` fallback (xem Rule 11)
 - [ ] **HTTP status codes:** mọi endpoint mới → grep code thực tế, so sánh số status code với AC (ví dụ: AC nói 404 thì code phải `res.status(404)`, không phải 400)
 - [ ] **TypeScript required fields:** mọi `required field` (không có `?`) trong interface frontend → grep backend xác nhận trường đó LUÔN được gán, không bao giờ `undefined`
 - [ ] **Code paths đầy đủ:** mọi feature mới có nhiều nhánh (happy path, error path, fallback) → trace từng nhánh end-to-end, không chỉ verify nhánh chính
-- [ ] **Không có blocking I/O:** `execSync`, `readFileSync`, `writeFileSync` trong server process → phải là async
+- [ ] **Không có blocking I/O:** `grep -rn "execSync\|spawnSync\|readFileSync\|writeFileSync\|appendFileSync" backend/src/` → phải = 0 kết quả
+- [ ] **Backend tests pass:** nếu phase thêm/sửa endpoint → chạy `cd backend && npm test`, phải pass 100%
+- [ ] **Frontend TypeScript:** nếu phase thay đổi frontend types/components → chạy `cd frontend && npx tsc --noEmit`, phải pass 0 errors
 
 **Bước 2 — Chạy AC checks:**
 Chạy tất cả lệnh verify trong phần "Acceptance Criteria" của phase đó. Nếu bất kỳ check nào fail → fix trước, không chuyển phase tiếp theo.
@@ -74,6 +76,7 @@ Sau khi tất cả Acceptance Criteria của một phase PASS, **phải** thực
 - **Lý do:** Log commit tiếng Việt + body chi tiết giúp trace lại từng phase; format chuẩn GitHub giúp render đẹp trên GitHub UI.
 - **Lưu ý bảo mật:** Kiểm tra kỹ không commit API key, token, password vào code hoặc plan.md trước khi push (GitHub Push Protection sẽ block nếu phát hiện secret).
 - **Git commit user bắt buộc:** Tên tác giả commit phải là `MinhThang1009` (chủ repo). Kiểm tra bằng `git config user.name` trước khi commit; nếu sai → chạy `git config user.name "MinhThang1009"` để sửa. **Không dùng tên khác** (ví dụ: toanhoc29-tech hay bất kỳ alias nào khác).
+- **NGHIÊM CẤM thêm `Co-Authored-By: Claude`** vào commit message — Claude Code mặc định thêm dòng này nhưng phải xóa trước khi push.
 
 ### 5. Quản lý context khi file plan dài
 - Sau mỗi phase hoàn thành: dùng `/compact` trong Claude Code CLI để nén history (giữ code changes, xóa read output)
@@ -175,18 +178,19 @@ Trong quá trình implement, nếu phát hiện **bất kỳ loại bug nào** �
 **Nguyên tắc:** Một bug được phát hiện sớm trong phase N dễ fix hơn 10 lần so với phát hiện ở phase N+5 sau khi code đã được build lên trên.
 
 ### 11. Data flow consistency — kiểm tra field names qua nhiều tầng (BẮT BUỘC)
-Khi một function có thể nhận data từ nhiều nguồn khác nhau (ví dụ: vector store vs DB vs API response), **field names thường khác nhau** cho cùng một khái niệm:
-- DB query → `basePrice`, `compareAtPrice`, `inStock`
-- Vector store metadata → `price` (= basePrice), `compareAtPrice`
-- Frontend API response → `price`, `discount`
+Khi function nhận data từ **nhiều nguồn** (DB + external API, DB + cache, DB + webhook payload…), cùng một khái niệm thường có **field name khác nhau** tùy nguồn — silent bug rất khó detect.
 
-**Quy trình bắt buộc:**
-1. Trước khi viết code: list tất cả data sources có thể vào function
-2. Grep field names ở TỪNG nguồn (không giả định chúng giống nhau)
-3. Tại mọi điểm dùng field → dùng `??` fallback: `product.price ?? product.basePrice`
-4. Verify: chạy lại với dữ liệu từ cả 2 nguồn (không chỉ nguồn chính)
+**Dấu hiệu cần áp dụng rule này (nhận ra một trong hai):**
+- Code có `|| fallback`, `catch` block, hoặc logic "nếu X fail → dùng Y"
+- Function nhận data từ cả DB lẫn một nguồn ngoài (external API / cache / queue message) trong cùng flow
 
-**Dấu hiệu cần kiểm tra ngay:** function có `|| fallback`, `catch` block, hoặc "nếu X fail thì dùng Y" → hai nhánh đó dùng data từ nguồn khác nhau → phải verify field names ở cả hai nhánh.
+**Quy trình bắt buộc khi gặp dấu hiệu trên:**
+1. Liệt kê tất cả data sources mà function có thể nhận data
+2. Grep field names ở TỪNG nguồn — không giả định tên giống nhau
+3. Tại mọi điểm dùng field → dùng `??` fallback: `obj.fieldA ?? obj.fieldB`
+4. Verify cả 2 nhánh (nguồn chính + fallback đều chạy đúng)
+
+**Pattern hay gặp:** cùng khái niệm nhưng DB và external source (vector store, cache, external API) dùng tên field khác nhau. Luôn Grep từng nguồn để xác nhận tên field trước khi dùng — không giả định giống nhau.
 
 ### 12. TypeScript interface completeness — backend phải satisfy interface frontend (BẮT BUỘC)
 Khi backend tạo response gửi về frontend:
@@ -197,7 +201,7 @@ Khi backend tạo response gửi về frontend:
 
 **Ví dụ thường gặp:**
 - Interface có `discount: number` (required) nhưng backend không tính → frontend nhận `undefined`, badge không hiển thị
-- Interface có `products?: ProductRecommendation[]` nhưng backend trả `products: null` → component crash khi `.map()`
+- Optional array field nhưng backend trả `null` thay vì `[]` → component crash khi `.map()`
 
 ### 13. Không dùng blocking I/O trên server main thread (BẮT BUỘC)
 Trong bất kỳ file nào được load bởi server process (routes, controllers, services, models, middleware, server.js):
@@ -205,7 +209,27 @@ Trong bất kỳ file nào được load bởi server process (routes, controlle
 - **BẮT BUỘC dùng:** `exec` + callback, `fs.promises.readFile`, `fs.promises.writeFile`
 - **Exception:** standalone scripts trong `backend/scripts/*.js` — không chạy trong server process, blocking I/O được phép
 
-**Cách phát hiện:** `grep -rn "execSync\|readFileSync\|writeFileSync" backend/src/` — mọi kết quả là vi phạm.
+**Cách phát hiện:** `grep -rn "execSync\|spawnSync\|readFileSync\|writeFileSync\|appendFileSync" backend/src/` — mọi kết quả là vi phạm.
+
+### 14. Integration tests cho endpoint/service mới (BẮT BUỘC)
+Mỗi khi phase thêm endpoint HTTP mới hoặc service logic quan trọng:
+1. Thêm test vào `backend/src/__tests__/` — unit test cho pure functions, controller test cho HTTP endpoints
+2. Chạy `cd backend && npm test` — phải pass 100% trước khi commit
+3. Test phải cover: happy path, error path (404/400/401/403), edge cases của logic mới
+
+**Không cần test cho:** file config, migration, seed data, code paths đã có coverage từ phase trước.
+
+**Framework:** Jest + Supertest (đã cài sẵn). Xem các file test hiện có trong `backend/src/__tests__/` làm mẫu.
+
+### 15. DB schema changes phải dùng migration (BẮT BUỘC)
+Khi phase thêm/sửa/xóa cột, bảng, hoặc quan hệ trong DB:
+- **BẮT BUỘC:** tạo migration file trong `backend/src/migrations/` — format tên: `YYYYMMDDnn-mô-tả-ngắn.js`; migration phải có cả `up` (apply) và `down` (rollback)
+- **CŨNG BẮT BUỘC:** cập nhật `backend/data/migration_full.sql` (file SQL schema tổng hợp dùng để rebuild DB từ đầu) — convention thực tế của project này
+- **NGHIÊM CẤM:** bật lại `sequelize.sync()` trong server.js — đã bị tắt vì lỗi "Too many keys" (MySQL giới hạn 64 keys/bảng)
+- **NGHIÊM CẤM:** sửa schema trực tiếp bằng `ALTER TABLE` thủ công không có migration tương ứng
+- Chạy migration: `npm run db:migrate`
+
+**Cách kiểm tra:** Không có `down` trong migration → không thể rollback khi có lỗi production.
 
 ---
 
@@ -2063,13 +2087,14 @@ test('afterCreate hook không thêm vào vector store khi inStock=false', async 
   - Sau khi user login, migrate sessionId chat sang userId — không để session chat orphaned
 
 ### ✅ Acceptance Criteria Phase 10
-- [ ] Connect Socket.IO mà không có JWT → nhận `Unauthorized` error, không connect được
-- [ ] User A và User B đều đang chat với admin → Message của A không bị lộ sang B's chat window
-- [ ] Admin offline → User gửi message → Admin online lại → nhận notification badge với số tin nhắn chưa đọc
-- [ ] `GET /api/admin/chat/conversations` trả về list đúng với `unreadCount` per conversation
-- [ ] Message được lưu trong `chat_messages` table với đúng `sender`, `status`, `timestamp`
-- [ ] Admin gửi message → customer nhận trong < 1 giây (realtime)
-- [ ] `GET /api/chat/random-uuid-that-doesnt-exist/messages` → `404`, không thể enumerate sessions
+- [x] Socket.IO dùng soft-auth: guest chat không cần JWT, admin operations (`adminJoin`) yêu cầu JWT có role = 'admin' — thiếu/sai JWT khi gọi `adminJoin` → emit error, không vào admin-room
+- [x] User A và User B đều đang chat với admin → Message của A không bị lộ sang B's chat window
+- [x] Admin offline → User gửi message → Admin online lại → nhận notification badge với số tin nhắn chưa đọc
+- [x] `GET /api/chat/admin/list` trả về list đúng với `unreadCount` per conversation
+- [x] Message được lưu trong `chat_messages` table với đúng `sender`, `status`, `timestamp`
+- [x] Admin gửi message → customer nhận trong < 1 giây (realtime)
+- [x] `GET /api/chat/random-uuid-that-doesnt-exist` với user đã login → `404`, không thể enumerate sessions
+- [x] Guest có thể tải lịch sử chat của chính mình qua `GET /api/chat/:sessionId` (không cần token)
 
 ---
 

@@ -1,19 +1,17 @@
-﻿const express = require('express');
+const express = require('express');
 const router = express.Router();
 const chatController = require('../controllers/chat');
-const { authenticate } = require('../middlewares/authenticate');
+const { authenticate, optionalAuthenticate } = require('../middlewares/authenticate');
 const { adminAuthenticate } = require('../middlewares/adminAuth');
+const { chatLimiter } = require('../middlewares/rateLimiter');
 
-// Tất cả route yêu cầu xác thực
-router.use(authenticate);
+// Admin lấy danh sách chat — bắt buộc xác thực + quyền admin
+router.get('/admin/list', authenticate, adminAuthenticate, chatController.getAdminChatList);
 
-// Admin lấy danh sách chat (đặt trước :userId để tránh xung đột routing)
-router.get('/admin/list', adminAuthenticate, chatController.getAdminChatList);
+// Lấy lịch sử chat — optionalAuthenticate để guest dùng được; chatLimiter chống enumeration
+router.get('/:identifier', chatLimiter, optionalAuthenticate, chatController.getChatHistory);
 
-// Người dùng/Admin lấy lịch sử chat
-router.get('/:identifier', chatController.getChatHistory);
-
-// Đánh dấu cuộc hội thoại là đã đọc
-router.patch('/read/:identifier', chatController.markAsRead);
+// Đánh dấu cuộc hội thoại là đã đọc — optionalAuthenticate để guest dùng được
+router.patch('/read/:identifier', optionalAuthenticate, chatController.markAsRead);
 
 module.exports = router;

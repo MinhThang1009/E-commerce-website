@@ -34,6 +34,35 @@ const ChatMessage = sequelize.define(
       type: DataTypes.BOOLEAN,
       defaultValue: false,
     },
+    // Trạng thái gửi/nhận tin nhắn (sent → delivered → read)
+    status: {
+      type: DataTypes.ENUM('sent', 'delivered', 'read'),
+      defaultValue: 'sent',
+    },
+    // Loại nội dung tin nhắn (text, hình ảnh, product card)
+    contentType: {
+      type: DataTypes.ENUM('text', 'image', 'product_card'),
+      defaultValue: 'text',
+      field: 'content_type',
+    },
+    // URL đính kèm khi contentType = 'image'
+    attachmentUrl: {
+      type: DataTypes.STRING,
+      allowNull: true,
+      field: 'attachment_url',
+    },
+    // FK tới products khi contentType = 'product_card' (admin chia sẻ sản phẩm)
+    productId: {
+      type: DataTypes.INTEGER,
+      allowNull: true,
+      field: 'product_id',
+    },
+    // Thời điểm tin nhắn được đọc
+    readAt: {
+      type: DataTypes.DATE,
+      allowNull: true,
+      field: 'read_at',
+    },
     // Phân biệt tin nhắn của user hay AI assistant
     role: {
       type: DataTypes.ENUM('user', 'assistant'),

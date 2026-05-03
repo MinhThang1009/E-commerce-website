@@ -68,7 +68,9 @@ const SupportDashboard: React.FC = () => {
 
   // Kết nối socket một lần khi component mount
   useEffect(() => {
-    socketRef.current = io(SOCKET_URL);
+    socketRef.current = io(SOCKET_URL, {
+      auth: { token: localStorage.getItem('token') || '' },
+    });
     socketRef.current.on('connect', () => {
       socketRef.current?.emit('adminJoin');
       socketRef.current?.emit('getOnlineUsers');

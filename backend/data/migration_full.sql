@@ -442,13 +442,34 @@ CREATE TABLE `chat_messages` (
     `id` INT AUTO_INCREMENT PRIMARY KEY,
     `userId` INT NULL,
     `sessionId` VARCHAR(255) NOT NULL,
-    `senderId` INT NOT NULL,
+    `senderId` INT NULL,
     `content` TEXT NOT NULL,
     `isFromAdmin` TINYINT(1) DEFAULT 0,
     `isRead` TINYINT(1) DEFAULT 0,
+    -- Trạng thái gửi/nhận (sent → delivered → read)
+    `status` ENUM('sent', 'delivered', 'read') NOT NULL DEFAULT 'sent',
+    -- Loại nội dung tin nhắn
+    `content_type` ENUM('text', 'image', 'product_card') NOT NULL DEFAULT 'text',
+    -- URL đính kèm khi content_type = 'image'
+    `attachment_url` VARCHAR(255) NULL,
+    -- FK tới products khi content_type = 'product_card'
+    `product_id` INT NULL,
+    -- Thời điểm tin nhắn được đọc
+    `read_at` DATETIME NULL,
+    -- Phân biệt tin nhắn user hay AI assistant
+    `role` ENUM('user', 'assistant') NULL,
+    -- Phân biệt AI chatbot vs support chat
+    `message_type` ENUM('ai_chatbot', 'support_chat') NOT NULL DEFAULT 'support_chat',
+    -- Intent phân loại từ user message (product_search, general, off_topic...)
+    `intent` VARCHAR(50) NULL,
+    -- Thời gian xử lý RAG pipeline (ms)
+    `response_time_ms` INT UNSIGNED NULL,
+    -- Đánh dấu fallback mode thay vì dùng LLM
+    `is_fallback` TINYINT(1) NOT NULL DEFAULT 0,
     `createdAt` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
     `updatedAt` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-    CONSTRAINT `fk_chat_messages_user` FOREIGN KEY (`userId`) REFERENCES `users`(`id`) ON DELETE SET NULL ON UPDATE CASCADE
+    CONSTRAINT `fk_chat_messages_user` FOREIGN KEY (`userId`) REFERENCES `users`(`id`) ON DELETE SET NULL ON UPDATE CASCADE,
+    CONSTRAINT `fk_chat_messages_product` FOREIGN KEY (`product_id`) REFERENCES `products`(`id`) ON DELETE SET NULL ON UPDATE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- ----- BẢNG 22: banners (Banner quảng cáo) -----

@@ -49,9 +49,22 @@ const chatbotLimiter = rateLimit({
   },
 });
 
+// Rate limiter cho chat history — chống brute-force enumeration sessionId
+const chatLimiter = rateLimit({
+  windowMs: 5 * 60 * 1000, // 5 phút
+  max: 30,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: {
+    status: 'error',
+    message: 'Quá nhiều yêu cầu, vui lòng thử lại sau.',
+  },
+});
+
 module.exports = {
   apiLimiter,
   authLimiter,
   otpLimiter,
   chatbotLimiter,
+  chatLimiter,
 };

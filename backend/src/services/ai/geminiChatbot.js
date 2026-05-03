@@ -1,7 +1,10 @@
-﻿const axios = require('axios');
-const { Product, Category, Brand, sequelize } = require('../../models');
+const axios = require('axios');
+const { Product, Category, Brand, ChatMessage, sequelize } = require('../../models');
 const { Op } = require('sequelize');
 const vectorStoreService = require('./vectorStore');
+
+// Số lượt hội thoại tối đa giữ trong bộ nhớ (10 turns = 20 messages: user + assistant)
+const MAX_HISTORY_TURNS = 10;
 
 class GeminiChatbotService {
   constructor() {
@@ -11,6 +14,9 @@ class GeminiChatbotService {
     this._brandsCache = null;
     this._categoriesCache = null;
     this._catalogCacheExpiry = 0;
+    // Lịch sử hội thoại lưu theo sessionId (in-memory Map)
+    // Reset khi server restart — đủ cho demo, production dùng Redis
+    this.conversationHistory = new Map();
     this.initializeChatbot();
   }
 
@@ -29,59 +35,120 @@ class GeminiChatbotService {
   initializeChatbot() {
     try {
       if (this.apiKey && this.apiKey !== 'demo-key') {
-        console.info(
-          `✅ OpenRouter AI khởi tạo thành công với model: ${this.model} `
-        );
+        console.info(`✅ OpenRouter AI khởi tạo thành công với model: ${this.model}`);
       } else {
         console.warn('⚠️  Không tìm thấy OpenRouter API key, sử dụng phản hồi dự phòng');
       }
     } catch (error) {
-      console.error(
-        '❌ Khởi tạo Chatbot thất bại:',
-        error.message || error
-      );
+      console.error('❌ Khởi tạo Chatbot thất bại:', error.message || error);
     }
   }
 
-  /**
-   * Xử lý tin nhắn chính với trí tuệ AI (Kiến trúc RAG)
-   */
-  async handleMessage(message, context = {}) {
+  // Gộp phân loại intent + chuẩn hóa query thành 1 LLM call — nếu off_topic, trả về ngay không cần gọi thêm
+  async preprocessMessage(message) {
+    if (!this.apiKey || this.apiKey === 'demo-key') {
+      return { rewrittenQuery: message, intent: 'general' };
+    }
     try {
-      // Bước 0: VIẾT LẠI câu truy vấn (Sửa lỗi & Mở rộng)
+      const response = await axios.post(
+        this.apiUrl,
+        {
+          model: this.model,
+          messages: [
+            {
+              role: 'system',
+              content: `Xử lý câu hỏi mua sắm tiếng Việt cho cửa hàng công nghệ. Thực hiện 2 nhiệm vụ và trả về JSON:
+1. Chuẩn hóa câu hỏi: sửa lỗi chính tả, mở rộng từ viết tắt (ip→iPhone, pm→Pro Max, ss→Samsung, mb→MacBook, xl→Xiaomi, op→OPPO, rl→realme, r5→AMD Ryzen 5, r7→AMD Ryzen 7, sp→sản phẩm, bh→bảo hành, đh→đơn hàng)
+2. Phân loại intent: product_search|pricing|order_inquiry|policy|support|general|off_topic
+Format bắt buộc: {"rewrittenQuery": "câu đã chuẩn hóa", "intent": "product_search"}`
+            },
+            { role: 'user', content: message }
+          ],
+          response_format: { type: 'json_object' },
+          temperature: 0,
+          max_tokens: 200,
+        },
+        {
+          headers: {
+            'Authorization': `Bearer ${this.apiKey}`,
+            'Content-Type': 'application/json',
+          },
+          timeout: 15000,
+        }
+      );
+      const content = response.data.choices?.[0]?.message?.content;
+      if (!content) return { rewrittenQuery: message, intent: 'general' };
+      const result = JSON.parse(content);
+      return {
+        rewrittenQuery: result.rewrittenQuery || message,
+        intent: result.intent || 'general',
+      };
+    } catch (error) {
+      console.error('❌ Lỗi preprocessMessage:', error.message);
+      return { rewrittenQuery: message, intent: 'general' };
+    }
+  }
+
+  async handleMessage(message, userId = null, sessionId = null, context = {}) {
+    const startTime = Date.now(); // Đo thời gian xử lý cho analytics
+    try {
+      // Bước 0: Chuẩn hóa query + phân loại intent (1 LLM call)
       console.log(`📝 Câu truy vấn gốc: "${message}"`);
-      const rewrittenQuery = await this.rewriteQuery(message);
+      const { rewrittenQuery, intent } = await this.preprocessMessage(message);
       const searchMessage = rewrittenQuery || message;
 
       if (rewrittenQuery && rewrittenQuery.toLowerCase() !== message.toLowerCase()) {
-        console.log(`✨ Câu truy vấn đã viết lại: "${rewrittenQuery}"`);
+        console.log(`✨ Câu truy vấn đã viết lại: "${rewrittenQuery}" (intent: ${intent})`);
       }
 
-      // Bước 1: TÌM KIẾM trong Vector Database (Retrieval)
-      console.log(`🔍 Tìm kiếm trong Vector Store với: "${searchMessage}"`);
+      // Bước 0.5: Nếu off_topic → trả về ngay, không tốn thêm 2 API call
+      if (intent === 'off_topic') {
+        const fallback = this.getFallbackResponse(message);
+        await this._persistMessages(sessionId, userId, message, fallback.response, intent, Date.now() - startTime, true);
+        return { ...fallback, intent: 'off_topic' };
+      }
+
+      // Bước 1: Load lịch sử hội thoại theo sessionId
+      const history = sessionId ? (this.conversationHistory.get(sessionId) || []) : [];
+
+      // Bước 2: Tìm kiếm sản phẩm liên quan qua Vector Store (Retrieval)
+      console.log(`🔍 Tìm kiếm Vector Store với: "${searchMessage}"`);
       let relevantProducts = [];
       try {
         const searchResults = await vectorStoreService.search(searchMessage, 10);
-        relevantProducts = searchResults.map(res => ({
-          ...res.metadata,
-          score: res.score
-        }));
+        relevantProducts = searchResults.map(res => ({ ...res.metadata, score: res.score }));
       } catch (vectorError) {
-        console.warn('⚠️ Tìm kiếm vector store thất bại, chuyển sang danh sách sản phẩm cơ bản:', vectorError.message);
-        relevantProducts = await this.getAllProducts();
-        relevantProducts = relevantProducts.slice(0, 10);
+        console.warn('⚠️ Vector store fail, fallback getAllProducts:', vectorError.message);
+        const allProducts = await this.getAllProducts();
+        relevantProducts = allProducts.slice(0, 10);
       }
 
       if (process.env.NODE_ENV !== 'production') {
         console.log(`📦 Tìm thấy ${relevantProducts.length} sản phẩm liên quan qua RAG`);
       }
 
-      // Bước 2: Dùng AI với CHỈ các sản phẩm liên quan (Augmentation & Generation)
+      // Bước 3: Gọi LLM với RAG context + lịch sử hội thoại (Generation)
       const aiResponse = await this.getAIResponse(
         searchMessage,
         relevantProducts,
-        { ...context, originalMessage: message }
+        { ...context, originalMessage: message },
+        history
       );
+
+      // Bước 4: Lưu lịch sử hội thoại
+      if (sessionId) {
+        const updatedHistory = [
+          ...history,
+          { role: 'user', content: message },
+          { role: 'assistant', content: aiResponse.response || '' },
+        ];
+        // Giới hạn tối đa MAX_HISTORY_TURNS turns (2 messages/turn)
+        const trimmed = updatedHistory.slice(-(MAX_HISTORY_TURNS * 2));
+        this.conversationHistory.set(sessionId, trimmed);
+      }
+
+      const responseTimeMs = Date.now() - startTime;
+      await this._persistMessages(sessionId, userId, message, aiResponse.response || '', intent, responseTimeMs, false);
 
       return aiResponse;
     } catch (error) {
@@ -90,361 +157,256 @@ class GeminiChatbotService {
     }
   }
 
-  /**
-   * Lấy phản hồi AI thông qua OpenRouter
-   */
-  async getAIResponse(userMessage, products, context) {
+  // Lưu cặp user/assistant message vào DB để tracking analytics và conversation history
+  async _persistMessages(sessionId, userId, userMessage, assistantReply, intent, responseTimeMs, isFallback) {
+    try {
+      if (!sessionId) return;
+      await ChatMessage.bulkCreate([
+        {
+          sessionId,
+          userId: userId || null,
+          senderId: null,
+          content: userMessage,
+          role: 'user',
+          messageType: 'ai_chatbot',
+          intent,
+          isFallback: false,
+        },
+        {
+          sessionId,
+          userId: userId || null,
+          senderId: null,
+          content: assistantReply,
+          role: 'assistant',
+          messageType: 'ai_chatbot',
+          intent,
+          responseTimeMs,
+          isFallback,
+        },
+      ]);
+    } catch (dbError) {
+      // Không để lỗi DB ảnh hưởng flow chính — chỉ log cảnh báo
+      console.warn('⚠️ Không thể lưu chatbot messages vào DB:', dbError.message);
+    }
+  }
+
+  // Lấy phản hồi AI thông qua OpenRouter với RAG context + lịch sử hội thoại
+  async getAIResponse(userMessage, products, context, history = []) {
     if (!this.apiKey || this.apiKey === 'demo-key') {
       return this.getFallbackResponse(userMessage);
     }
 
     try {
       await this._ensureCatalogCache();
-      // Tạo prompt đầy đủ cho AI
-      const prompt = this.createPrompt(userMessage, products, context);
+
+      // Sanitize trước khi đưa vào prompt — ngăn user override system instruction qua newline injection
+      const sanitizedMessage = userMessage
+        .replace(/"/g, "'")         // Thay double quotes thành single
+        .replace(/\n{2,}/g, '\n')   // Giới hạn consecutive newlines (max 1)
+        .trim()
+        .substring(0, 1000);        // Hard cap phòng user gửi quá dài
+
+      // Prompt hướng dẫn + RAG context (được đưa vào user message cuối)
+      const ragContextMessage = this.createPrompt(sanitizedMessage, products, context);
+
+      const systemContent = `Bạn là nhân viên tư vấn của TechStore — cửa hàng công nghệ chuyên điện thoại, máy tính bảng và laptop.
+QUY TẮC BẮT BUỘC:
+1. CHỈ tư vấn sản phẩm có trong DANH SÁCH SẢN PHẨM được cung cấp trong tin nhắn.
+2. TUYỆT ĐỐI không bịa tên sản phẩm, giá, hoặc thông số kỹ thuật ngoài danh sách.
+3. Nếu sản phẩm không có trong danh sách, nói rõ: "Cửa hàng hiện chưa có [tên sản phẩm] ạ."
+4. Trả lời bằng tiếng Việt, thân thiện (mình/em - bạn/anh/chị).
+5. Trả về đúng định dạng JSON được yêu cầu trong tin nhắn.
+6. Danh mục: ${(this._categoriesCache || []).join(', ')} — Thương hiệu: ${(this._brandsCache || []).join(', ')}`;
+
+      // History nằm giữa system prompt và user message để LLM có ngữ cảnh các lượt chat trước
+      const messages = [
+        { role: 'system', content: systemContent },
+        ...history,
+        { role: 'user', content: ragContextMessage },
+      ];
+
       if (process.env.NODE_ENV !== 'production') {
-        console.log('🤖 Đang gửi yêu cầu đến OpenRouter API (chế độ RAG)...');
+        console.log('🤖 Đang gửi yêu cầu đến OpenRouter API (RAG + history)...');
       }
 
       const response = await axios.post(
         this.apiUrl,
         {
           model: this.model,
-          messages: [
-            {
-              role: 'system',
-              content: 'Bạn là nhân viên tư vấn của TechStore — cửa hàng công nghệ chuyên điện thoại, máy tính bảng và laptop. Bạn am hiểu sâu về thông số kỹ thuật, chip, RAM, màn hình, pin của các thiết bị. Tư vấn trung thực dựa trên nhu cầu thực tế. Chỉ giới thiệu sản phẩm có trong danh sách được cung cấp, không bịa thêm.'
-            },
-            {
-              role: 'user',
-              content: prompt
-            }
-          ],
-          response_format: { type: 'json_object' }
+          messages,
+          response_format: { type: 'json_object' },
+          temperature: 0.3,
+          max_tokens: 800,
         },
         {
           headers: {
-            'Authorization': `Bearer ${this.apiKey} `,
+            'Authorization': `Bearer ${this.apiKey}`,
             'HTTP-Referer': process.env.FRONTEND_URL || 'http://localhost:5173',
             'X-Title': 'TechStore Chatbot',
-            'Content-Type': 'application/json'
+            'Content-Type': 'application/json',
           },
           timeout: 30000,
         }
       );
 
-      const aiText = response.data.choices[0].message.content;
+      // choices[] có thể rỗng khi OpenRouter content filter kích hoạt
+      const aiText = response.data.choices?.[0]?.message?.content;
+      if (!aiText) {
+        console.warn('⚠️ OpenRouter trả về choices rỗng — dùng fallback response');
+        return this.getFallbackResponse(userMessage);
+      }
 
       if (process.env.NODE_ENV !== 'production') {
         console.log('✅ Đã nhận phản hồi từ OpenRouter API');
       }
 
       // Phân tích phản hồi AI để trích xuất gợi ý sản phẩm
-      const parsedResponse = this.parseAIResponse(aiText, products, userMessage);
-
-      return parsedResponse;
+      return this.parseAIResponse(aiText, products, userMessage);
     } catch (error) {
       console.error('❌ Chi tiết lỗi OpenRouter API:', error.response?.data || error.message);
-
-      // Dự phòng: dùng khớp từ khóa cục bộ nếu AI thất bại
       return this.simpleKeywordMatch(userMessage, products);
     }
   }
 
-  /**
-   * Viết lại/làm sạch câu truy vấn để xử lý lỗi chính tả và từ viết tắt
-   */
-  async rewriteQuery(message) {
-    if (!this.apiKey || this.apiKey === 'demo-key') return message;
-
-    try {
-      const response = await axios.post(
-        this.apiUrl,
-        {
-          model: this.model,
-          messages: [
-            {
-              role: 'system',
-              content: `Bạn là trợ lý ảo hỗ trợ chuẩn hóa câu hỏi mua sắm tiếng Việt. 
-                Nhiệm vụ: 
-                1. Sửa lỗi chính tả.
-                2. Mở rộng từ viết tắt phổ biến trong ngành công nghệ Việt Nam:
-                   - Điện thoại: "ip" -> "iPhone", "pm" -> "Pro Max", "ip17" -> "iPhone 17", "ss" -> "Samsung", "xl" -> "Xiaomi", "rm" -> "Redmi", "op" -> "OPPO", "rl" -> "realme"
-                   - Máy tính bảng: "mtb" -> "máy tính bảng", "tab" -> "máy tính bảng", "pad" -> "máy tính bảng"
-                   - Laptop: "lap" -> "laptop", "mb" -> "MacBook", "mac" -> "MacBook", "vivo" -> "Asus Vivobook", "del" -> "Dell Inspiron", "len" -> "Lenovo IdeaPad"
-                   - Cấu hình: "i5/i7/i3" -> giữ nguyên, "r5/r7" -> "AMD Ryzen 5/7", "rtx" -> giữ nguyên, "ssd" -> "ổ cứng SSD"
-                   - Chung: "đh" -> "đơn hàng", "giá bn" -> "giá bao nhiêu", "sp" -> "sản phẩm", "bh" -> "bảo hành"
-                3. Chuyển thành câu chuẩn, mạch lạc, dễ hiểu nhưng TUYỆT ĐỐI không thay đổi ý định của khách hàng.
-                Nếu câu hỏi đã chuẩn, hãy giữ nguyên. 
-                Trả về DUY NHẤT một chuỗi kết quả (câu chuẩn nhất), không giải thích thêm.`
-            },
-            {
-              role: 'user',
-              content: `Chuẩn hóa câu hỏi sau: "${message}"`
-            }
-          ],
-          temperature: 0,
-          max_tokens: 150
-        },
-        {
-          headers: {
-            'Authorization': `Bearer ${this.apiKey} `,
-            'Content-Type': 'application/json'
-          },
-          timeout: 15000,
-        }
-      );
-
-      let rewritten = response.data.choices[0].message.content.trim().replace(/^"|"$/g, '');
-      
-      // Làm sạch kết quả sau khi nhận
-      if (rewritten.endsWith('.')) rewritten = rewritten.slice(0, -1);
-      
-      return rewritten;
-    } catch (error) {
-      console.error('❌ Lỗi khi viết lại câu truy vấn:', error.message);
-      return message;
-    }
-  }
-
-  /**
-   * Phân loại ý định của người dùng một cách rõ ràng
-   */
-  async classifyIntent(message, context = {}) {
-    if (!this.apiKey || this.apiKey === 'demo-key') return 'general';
-
-    try {
-      const response = await axios.post(
-        this.apiUrl,
-        {
-          model: this.model,
-          messages: [
-            {
-              role: 'system',
-              content: `Bạn là trợ lý ảo hỗ trợ phân loại ý định (intent) của khách hàng cho hệ thống thương mại điện tử.
-                Hãy phân loại câu hỏi vào một trong các nhãn sau:
-                - product_search: tìm kiếm sản phẩm, hỏi về cấu hình, thông số, so sánh sản phẩm.
-                - pricing: hỏi về giá cả, khuyến mãi, giảm giá.
-                - order_inquiry: hỏi về đơn hàng, tình trạng giao hàng, cách mua hàng, thanh toán.
-                - policy: hỏi về chính sách bảo hành, đổi trả, vận chuyển.
-                - support: cần hỗ trợ kỹ thuật, khiếu nại, gặp nhân viên.
-                - general: chào hỏi, cảm ơn, khen ngợi, hoặc các câu hỏi xã giao khác.
-                - off_topic: các câu hỏi không liên quan đến cửa hàng hoặc mua sắm.
-
-                Trả về DUY NHẤT nhãn intent, không giải thích thêm.`
-            },
-            {
-              role: 'user',
-              content: `Phân loại ý định của câu sau: "${message}"`
-            }
-          ],
-          temperature: 0,
-          max_tokens: 20
-        },
-        {
-          headers: {
-            'Authorization': `Bearer ${this.apiKey} `,
-            'Content-Type': 'application/json'
-          },
-          timeout: 15000,
-        }
-      );
-
-      const intent = response.data.choices[0].message.content.trim().toLowerCase().replace(/[^\w]/g, '');
-      return intent || 'general';
-    } catch (error) {
-      console.error('❌ Lỗi khi phân loại ý định:', error.message);
-      return 'general';
-    }
-  }
-
-  /**
-   * Tạo prompt đầy đủ cho AI
-   */
+  // Tạo prompt đầy đủ với product list và hướng dẫn JSON response
   createPrompt(userMessage, products, context) {
     const productList = products
       .map(
         (p) =>
-          `- ${p.name} (${p.category || 'Sản phẩm'}): ${p.shortDescription || 'Mô tả đang cập nhật'} - Giá: ${p.price?.toLocaleString('vi-VN')} đ - Còn lại: ${p.stockQuantity !== undefined ? p.stockQuantity : (p.inStock ? 'Còn hàng' : 'Hết hàng')}`
+          // p.price: từ vector store metadata; p.basePrice: từ getAllProducts() fallback — cần hỗ trợ cả 2
+          `- ${p.name} (${p.category || p.categories?.[0]?.name || 'Sản phẩm'}): ${p.shortDescription || 'Mô tả đang cập nhật'} - Giá: ${(p.price ?? p.basePrice)?.toLocaleString('vi-VN')} đ - Còn lại: ${p.stockQuantity !== undefined ? p.stockQuantity : (p.inStock ? 'Còn hàng' : 'Hết hàng')}`
       )
       .join('\n');
 
     return `
-Nhiệm vụ của bạn là hỗ trợ khách hàng tìm kiếm sản phẩm, giải đáp thắc mắc và tư vấn bán hàng dựa trên dữ liệu thực tế.
-
-KHẢ NĂNG CỦA BẠN:
-1. Tra cứu và gợi ý sản phẩm chính xác từ danh sách được cung cấp.
-2. Tư vấn sản phẩm phù hợp với nhu cầu của khách hàng.
-3. Giải đáp thắc mắc về giá cả, tình trạng hàng hóa.
-4. Trò chuyện tự nhiên, lịch sự như một nhân viên thực thụ.
-5. Xử lý các câu hỏi ngoài lề một cách khéo léo, vui vẻ đưa câu chuyện về sản phẩm của cửa hàng.
-
-DANH SÁCH SẢN PHẨM HIỆN CÓ(Dữ liệu thực tế):
+DANH SÁCH SẢN PHẨM HIỆN CÓ (Dữ liệu thực tế):
 ${productList}
 
 THÔNG TIN CỬA HÀNG (TechStore):
-- Danh mục: ${(this._categoriesCache || []).join(', ')} — Thương hiệu: ${(this._brandsCache || []).join(', ')}
-- Bảo hành: 12 tháng chính hãng, hỗ trợ bảo hành tại trung tâm
+- Bảo hành: 12 tháng chính hãng, hỗ trợ tại trung tâm
 - Giao hàng: Miễn phí toàn quốc, giao nhanh nội thành
-- Đổi trả: 30 ngày nếu lỗi từ nhà sản xuất
-- Hỗ trợ kỹ thuật: Tư vấn cấu hình, so sánh sản phẩm, hỗ trợ sau mua hàng
+- Đổi trả: 30 ngày nếu lỗi nhà sản xuất
+- Hỗ trợ kỹ thuật: Tư vấn cấu hình, so sánh, hỗ trợ sau mua hàng
 
 TIN NHẮN KHÁCH HÀNG: "${userMessage}"
-CONTEXT: ${JSON.stringify(context)}
 
-HƯỚNG DẪN TRẢ LỜI CỰC KỲ QUAN TRỌNG (BẮT BUỘC):
-1. TRẢ LỜI BẰNG TIẾNG VIỆT.
-2. QUY TẮC SO KHỚP SẢN PHẨM (áp dụng cho mọi danh mục):
-   A. ĐIỆN THOẠI: Thương hiệu + Dòng sản phẩm + Hậu tố phiên bản là 3 yếu tố phân biệt.
-      - Bản thường, Pro, Pro Max, Plus, Ultra, e, Lite là các sản phẩm KHÁC NHAU HOÀN TOÀN.
-      - Số thế hệ/đời (13, 14, 15, 16, 17…) là các thế hệ KHÁC NHAU HOÀN TOÀN.
-      - Cùng tên dòng nhưng khác đuôi (VD: A37 vs A57) → KHÁC NHAU.
-   B. MÁY TÍNH BẢNG: Thương hiệu + Model + Loại kết nối là 3 yếu tố phân biệt.
-      - WiFi, 4G, 5G cùng model → KHÁC NHAU (giá và tính năng kết nối khác).
-      - Bản thường vs Pro cùng dòng → KHÁC NHAU.
-   C. LAPTOP: Thương hiệu + Tên model + Cấu hình chip là 3 yếu tố phân biệt.
-      - Cùng tên model nhưng khác chip (i3/i5/i7, R5/R7, Ultra 5/Ultra 7, M3/M4/M5) → KHÁC NHAU.
-      - Laptop gaming (có card đồ họa rời RTX/RX) khác laptop văn phòng (đồ họa tích hợp).
-   → Quy tắc này áp dụng cho bất kỳ danh mục sản phẩm nào trong danh sách, kể cả khi có danh mục mới.
-3. QUY TRÌNH KIỂM TRA & PHẢN HỒI:
-   - Bước 1: Xác định nhóm sản phẩm (điện thoại / tablet / laptop).
-   - Bước 2: Kiểm tra xem sản phẩm khách hỏi có KHỚP với sản phẩm trong "DANH SÁCH SẢN PHẨM HIỆN CÓ" hay không.
-   - Bước 3:
-     + Nếu KHỚP: Tư vấn trực tiếp sản phẩm đó (nêu điểm nổi bật, giá, tình trạng hàng).
-     + Nếu KHÔNG KHỚP: Bắt đầu bằng "Tiếc quá, hiện tại bên mình chưa có [tên sản phẩm] ạ", sau đó gợi ý sản phẩm gần nhất cùng thương hiệu hoặc cùng tầm giá.
-     + Nếu khách hỏi chung chung (VD: "laptop tầm 15 triệu"): Gợi ý 2-3 sản phẩm phù hợp từ danh sách với lý do rõ ràng.
-4. VÍ DỤ MẪU (BẮT BUỘC HỌC THEO):
-   ĐIỆN THOẠI:
-   - "ip17" | List có "iPhone 17", "iPhone 17 Pro", "iPhone 17 Pro Max", "iPhone 17e" -> "Bên mình đang có đủ dòng iPhone 17 nè: iPhone 17 thường, 17e, 17 Pro và 17 Pro Max. Bạn đang cân nhắc bản nào ạ?"
-   - "ss a57" | List chỉ có "Samsung Galaxy A57" -> Tư vấn trực tiếp Samsung Galaxy A57.
-   - "oppo find x7" | List chỉ có "OPPO Find X8 Pro" -> "Tiếc quá, bên mình chưa có Find X7 ạ. Nhưng mình đang có OPPO Find X8 Pro — đời mới nhất, cấu hình vượt trội hơn, bạn muốn xem không?"
-   MÁY TÍNH BẢNG:
-   - "ipad wifi" | List có "iPad A16 WiFi" và "iPad A16 5G" -> Tư vấn iPad A16 WiFi, hỏi thêm có cần dùng SIM 5G không để gợi ý thêm bản 5G.
-   - "samsung tab s11" | List có 3 bản S11 -> "Dòng Samsung Galaxy Tab S11 bên mình có 3 bản: WiFi, 5G và Ultra 5G. Bạn ưu tiên dùng ở nhà hay mang đi nhiều ạ?"
-   LAPTOP:
-   - "macbook" | List có 3 MacBook -> "TechStore đang có 3 mẫu MacBook: Air 13 inch M4, Air 15 inch M4 và Pro 14 inch M5. Bạn cần dùng cho công việc gì để mình tư vấn phù hợp ạ?"
-   - "laptop gaming tầm 20 triệu" | List có Acer Gaming Nitro V -> Gợi ý Acer Gaming Nitro V (có RTX), nêu cấu hình và giá.
-   - "dell i5" | List có 2 Dell i5 (3520 và 3530) -> "Dell Inspiron i5 bên mình có 2 mẫu: Inspiron 15 3520 và 3530, khác nhau ở chip thế hệ. Bạn cần dùng cho văn phòng hay học tập ạ?"
-5. KHÔNG TỰ BỊA: Tuyệt đối không bịa tên, giá, cấu hình hay thông tin sản phẩm ngoài danh sách.
-6. PHONG CÁCH: Thân thiện, chuyên nghiệp (mình/em - bạn/anh/chị). Khi tư vấn laptop/tablet nên hỏi thêm nhu cầu sử dụng để gợi ý chính xác.
+QUY TẮC SO KHỚP SẢN PHẨM (BẮT BUỘC):
+1. Thương hiệu + Dòng sản phẩm + Hậu tố phiên bản là 3 yếu tố phân biệt.
+   - Bản thường, Pro, Pro Max, Plus, Ultra, e, Lite → KHÁC NHAU HOÀN TOÀN.
+   - Số thế hệ (13, 14, 15, 16, 17…) → KHÁC NHAU HOÀN TOÀN.
+2. Máy tính bảng: WiFi, 4G, 5G cùng model → KHÁC NHAU.
+3. Laptop: Cùng tên nhưng khác chip (i3/i5/i7, R5/R7, M3/M4/M5) → KHÁC NHAU.
+4. NẾU KHÔNG CÓ trong danh sách: Nói rõ "chưa có" rồi gợi ý tương đương.
+5. KHÔNG BỊA tên, giá, thông số ngoài danh sách.
 
-Hãy trả lời THEO ĐÚNG ĐỊNH DẠNG JSON SAU:
+Trả về ĐÚNG định dạng JSON sau:
 {
-  "response": "Câu trả lời đúng quy trình trên (dùng emoji phù hợp)",
-  "matchedProducts": ["Tên chính xác sản phẩm trong danh sách (VD: 'Điện thoại iPhone 17 Pro')"],
+  "response": "Câu trả lời thân thiện (dùng emoji phù hợp)",
+  "matchedProducts": ["Tên chính xác sản phẩm trong danh sách"],
   "suggestions": ["Gợi ý câu tiếp theo"],
-  "intent": "product_search|pricing|policy|support|complaint|general|off_topic"
-}
-`;
+  "intent": "product_search|pricing|policy|support|general|off_topic"
+}`;
   }
 
-  /**
-   * Phân tích phản hồi AI và khớp với sản phẩm thực tế
-   */
+  // Phân tích phản hồi AI và khớp với sản phẩm thực tế
   parseAIResponse(aiText, products, userMessage) {
     try {
-      // Thử phân tích JSON trong phản hồi từ AI
-      const jsonMatch = aiText.match(/\{[\s\S]*\}/);
-      if (jsonMatch) {
-        const parsed = JSON.parse(jsonMatch[0]);
+      // response_format: json_object đảm bảo valid JSON — strip code fences phòng model wrap bằng markdown
+      const clean = aiText.replace(/^```(?:json)?\n?|\n?```$/g, '').trim();
+      const parsed = JSON.parse(clean);
 
-        // Tìm đối tượng sản phẩm thực tế dựa trên gợi ý của AI
-        const matchedProducts = [];
-        if (parsed.matchedProducts && Array.isArray(parsed.matchedProducts)) {
-          parsed.matchedProducts.forEach((productName) => {
-            // Khớp chặt chẽ: tên sản phẩm phải rất giống hoặc bằng với tên được gợi ý
-            const product = products.find((p) => {
-              const pName = p.name.toLowerCase();
-              const rName = productName.toLowerCase();
+      // Tìm sản phẩm thực tế từ tên LLM đề xuất
+      const matchedProducts = [];
+      if (parsed.matchedProducts && Array.isArray(parsed.matchedProducts)) {
+        parsed.matchedProducts.forEach((productName) => {
+          const product = products.find((p) => {
+            const pName = p.name.toLowerCase();
+            const rName = productName.toLowerCase();
 
-              // Khớp chính xác hoặc gần đúng
-              if (pName === rName) return true;
+            // Exact match trước
+            if (pName === rName) return true;
 
-              // Khớp từ khóa phiên bản chặt chẽ (Pro, Max, Plus, v.v.)
-              const versionKeywords = ['pro', 'max', 'plus', 'ultra', 'mini', 'se', 'ti', 'super'];
-              const rVersions = versionKeywords.filter(v => rName.includes(v));
-              const pVersions = versionKeywords.filter(v => pName.includes(v));
-
-              // Phải có cùng số lượng và giống nhau về từ khóa phiên bản
-              if (rVersions.length !== pVersions.length || !rVersions.every(v => pVersions.includes(v))) {
-                return false;
-              }
-
-              // Kiểm tra số phiên bản chính (ví dụ: 13, 14, 15)
-              const numbersP = pName.match(/\d+/g);
-              const numbersR = rName.match(/\d+/g);
-
-              if (numbersP && numbersR) {
-                // Nếu số thế hệ khác nhau thì là sản phẩm thuộc thế hệ khác
-                if (numbersP[0] !== numbersR[0]) return false;
-              }
-
-              return pName.includes(rName) || rName.includes(pName);
-            });
-
-            if (product) {
-              matchedProducts.push({
-                id: product.id,
-                name: product.name,
-                price: product.price,
-                compareAtPrice: product.compareAtPrice,
-                thumbnail: product.thumbnail,
-                inStock: product.inStock !== undefined ? product.inStock : true,
-                stockQuantity: product.stockQuantity,
-                rating: 4.5,
-              });
+            // Phải có cùng từ khóa phiên bản (pro, max, plus, ultra...)
+            const versionKeywords = ['pro', 'max', 'plus', 'ultra', 'mini', 'se', 'ti', 'super'];
+            const rVersions = versionKeywords.filter(v => rName.includes(v));
+            const pVersions = versionKeywords.filter(v => pName.includes(v));
+            if (rVersions.length !== pVersions.length || !rVersions.every(v => pVersions.includes(v))) {
+              return false;
             }
-          });
-        }
 
-        return {
-          response:
-            parsed.response || 'Tôi có thể giúp bạn tìm sản phẩm phù hợp!',
-          products: matchedProducts,
-          suggestions: parsed.suggestions || [
-            'Xem tất cả sản phẩm',
-            'Sản phẩm khuyến mãi',
-            'Hỗ trợ mua hàng',
-            'Liên hệ tư vấn',
-          ],
-          intent: parsed.intent || 'general',
-        };
+            // Kiểm tra số phiên bản chính — so sánh bằng word boundary, tránh "15" match "150"
+            const numbersP = pName.match(/\b\d+\b/g);
+            const numbersR = rName.match(/\b\d+\b/g);
+            if (numbersP && numbersR && numbersP[0] !== numbersR[0]) return false;
+
+            // So khớp theo từng từ để tránh "iPhone 15" match nhầm "iPhone 150"
+            const pWords = new Set(pName.split(/\s+/));
+            const rWords = new Set(rName.split(/\s+/));
+            const intersection = [...pWords].filter(w => rWords.has(w) && w.length > 1);
+            const minSize = Math.min(pWords.size, rWords.size);
+            return minSize > 0 && intersection.length >= minSize * 0.8;
+          });
+
+          if (product) {
+            // product.price: từ vector store metadata; product.basePrice: từ getAllProducts() fallback
+            const resolvedPrice = product.price ?? product.basePrice;
+            const resolvedCompare = product.compareAtPrice;
+            matchedProducts.push({
+              id: product.id,
+              name: product.name,
+              slug: product.slug,
+              price: resolvedPrice,
+              compareAtPrice: resolvedCompare,
+              thumbnail: product.thumbnail,
+              inStock: product.inStock !== undefined ? product.inStock : true,
+              stockQuantity: product.stockQuantity,
+              rating: null,  // Tính từ review table thực tế khi cần hiển thị
+              discount: resolvedCompare && resolvedCompare > resolvedPrice
+                ? Math.round((resolvedCompare - resolvedPrice) / resolvedCompare * 100)
+                : 0,
+            });
+          } else {
+            // Hallucination detection: LLM đề xuất sản phẩm không có trong retrieved context
+            console.warn(`[RAG] Hallucination detected: LLM đề xuất "${productName}" nhưng không có trong retrieved context`);
+          }
+        });
       }
+
+      return {
+        response: parsed.response || 'Tôi có thể giúp bạn tìm sản phẩm phù hợp!',
+        products: matchedProducts,
+        suggestions: parsed.suggestions || [
+          'Xem tất cả sản phẩm',
+          'Sản phẩm khuyến mãi',
+          'Hỗ trợ mua hàng',
+          'Liên hệ tư vấn',
+        ],
+        intent: parsed.intent || 'general',
+      };
     } catch (error) {
-      console.error('Không thể phân tích phản hồi AI:', error.message || error);
+      console.error('[RAG] parseAIResponse JSON.parse failed:', error.message);
     }
 
     // Dự phòng: dùng khớp từ khóa đơn giản
     return this.simpleKeywordMatch(userMessage, products);
   }
 
-  /**
-   * Khớp từ khóa đơn giản (dùng khi AI không khả dụng)
-   */
+  // Khớp từ khóa đơn giản (dùng khi AI không khả dụng hoặc parseAIResponse fail)
   simpleKeywordMatch(userMessage, products) {
     const lowerMessage = userMessage.toLowerCase().trim();
     let matchedProducts = [];
 
-    // Trích xuất từ khóa tìm kiếm từ tin nhắn người dùng
-    const searchTerms = lowerMessage
-      .split(' ')
-      .filter((term) => term.length > 2); // Loại bỏ từ quá ngắn
+    const searchTerms = lowerMessage.split(' ').filter((term) => term.length > 2);
     searchTerms.push(lowerMessage);
 
-    // Duyệt qua danh sách sản phẩm để tìm kiếm
     products.forEach((product) => {
       let matchScore = 0;
       const productName = product.name?.toLowerCase() || '';
       const productDesc = product.shortDescription?.toLowerCase() || '';
 
-      // Khớp trực tiếp
       searchTerms.forEach((term) => {
-        if (productName.includes(term)) {
-          matchScore += 10;
-        }
-        if (productDesc.includes(term)) {
-          matchScore += 5;
-        }
+        if (productName.includes(term)) matchScore += 10;
+        if (productDesc.includes(term)) matchScore += 5;
       });
 
       if (matchScore > 0) {
@@ -452,42 +414,41 @@ Hãy trả lời THEO ĐÚNG ĐỊNH DẠNG JSON SAU:
       }
     });
 
-    // Sắp xếp theo điểm khớp
     matchedProducts.sort((a, b) => b.matchScore - a.matchScore);
 
-    // Loại bỏ trùng lặp
     const uniqueProducts = matchedProducts.filter(
-      (product, index, self) =>
-        index === self.findIndex((p) => p.id === product.id)
+      (product, index, self) => index === self.findIndex((p) => p.id === product.id)
     );
 
     if (uniqueProducts.length > 0) {
       const topProducts = uniqueProducts.slice(0, 5);
       const productList = topProducts
-        .map((p) => `• ${p.name} - ${p.price?.toLocaleString('vi-VN')} đ`)
+        .map((p) => `• ${p.name} - ${(p.price ?? p.basePrice)?.toLocaleString('vi-VN')} đ`)
         .join('\n');
 
       return {
-        response: `🔍 Mình tìm thấy một số sản phẩm phù hợp với yêu cầu của bạn nè: \n\n${productList} \n\nBạn muốn xem kỹ hơn sản phẩm nào không ? `,
-        products: topProducts.slice(0, 3).map((product) => ({
-          id: product.id,
-          name: product.name,
-          price: product.price,
-          compareAtPrice: product.compareAtPrice,
-          thumbnail: product.thumbnail,
-          inStock: product.inStock,
-          rating: 4.5,
-        })),
-        suggestions: [
-          'Xem chi tiết',
-          'Sản phẩm khác',
-          'Tư vấn thêm',
-        ],
+        response: `🔍 Mình tìm thấy một số sản phẩm phù hợp với yêu cầu của bạn nè: \n\n${productList} \n\nBạn muốn xem kỹ hơn sản phẩm nào không?`,
+        products: topProducts.slice(0, 3).map((product) => {
+          const p = product.price ?? product.basePrice;
+          const c = product.compareAtPrice;
+          return {
+            id: product.id,
+            name: product.name,
+            slug: product.slug,
+            price: p,
+            compareAtPrice: c,
+            thumbnail: product.thumbnail,
+            inStock: product.inStock,
+            rating: null,
+            discount: c && c > p ? Math.round((c - p) / c * 100) : 0,
+          };
+        }),
+        suggestions: ['Xem chi tiết', 'Sản phẩm khác', 'Tư vấn thêm'],
         intent: 'product_search',
       };
     }
 
-    // Kiểm tra ý định "sản phẩm mới"
+    // Query "hàng mới" cần sort theo ngày tạo, không phải similarity score
     if (
       lowerMessage.includes('sản phẩm mới') ||
       lowerMessage.includes('hàng mới') ||
@@ -498,28 +459,33 @@ Hãy trả lời THEO ĐÚNG ĐỊNH DẠNG JSON SAU:
         console.log('✅ Đã nhận diện ý định "sản phẩm mới"');
       }
 
-      const newProducts = products.slice(0, 5); // Giả định sản phẩm đã được sắp xếp theo createdAt DESC
+      // Sort theo createdAt mới nhất — products từ vector store có createdAt trong metadata
+      const newProducts = [...products]
+        .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))
+        .slice(0, 5);
 
       const productList = newProducts
-        .map((p) => `• ${p.name} - ${p.price?.toLocaleString('vi-VN')} đ`)
+        .map((p) => `• ${p.name} - ${(p.price ?? p.basePrice)?.toLocaleString('vi-VN')} đ`)
         .join('\n');
 
       return {
-        response: `🌟 Đây là những sản phẩm mới nhất vừa cập bến cửa hàng mình nè: \n\n${productList} \n\nBạn ưng ý mẫu nào không ? `,
-        products: newProducts.slice(0, 3).map((product) => ({
-          id: product.id,
-          name: product.name,
-          price: product.price,
-          compareAtPrice: product.compareAtPrice,
-          thumbnail: product.thumbnail,
-          inStock: product.inStock,
-          rating: 4.5,
-        })),
-        suggestions: [
-          'Xem chi tiết',
-          'Sản phẩm khuyến mãi',
-          'Tư vấn thêm',
-        ],
+        response: `🌟 Đây là những sản phẩm mới nhất vừa cập bến cửa hàng mình nè: \n\n${productList} \n\nBạn ưng ý mẫu nào không?`,
+        products: newProducts.slice(0, 3).map((product) => {
+          const p = product.price ?? product.basePrice;
+          const c = product.compareAtPrice;
+          return {
+            id: product.id,
+            name: product.name,
+            slug: product.slug,
+            price: p,
+            compareAtPrice: c,
+            thumbnail: product.thumbnail,
+            inStock: product.inStock,
+            rating: null,
+            discount: c && c > p ? Math.round((c - p) / c * 100) : 0,
+          };
+        }),
+        suggestions: ['Xem chi tiết', 'Sản phẩm khuyến mãi', 'Tư vấn thêm'],
         intent: 'product_search',
       };
     }
@@ -527,36 +493,29 @@ Hãy trả lời THEO ĐÚNG ĐỊNH DẠNG JSON SAU:
     return this.getFallbackResponse(userMessage);
   }
 
-  /**
-   * Lấy tất cả sản phẩm từ database (dùng khi cần dự phòng)
-   */
+  // Lấy tất cả sản phẩm từ database (fallback khi vector store fail)
   async getAllProducts() {
     try {
       const products = await Product.findAll({
-        where: {
-          status: 'active',
-          inStock: true,
-        },
+        where: { status: 'active', inStock: true },
         include: [
-          {
-            model: Category,
-            attributes: ['name'],
-            as: 'categories', // Alias phải khớp với định nghĩa trong model
-          },
+          { model: Category, attributes: ['name'], as: 'categories' },
         ],
         attributes: [
           'id',
           'name',
           'shortDescription',
           'description',
-          'price',
+          'basePrice',
           'compareAtPrice',
           'thumbnail',
           'inStock',
+          'stockQuantity',
+          'slug',
           'searchKeywords',
           'createdAt',
         ],
-        limit: 100,
+        limit: 200,
         order: [['createdAt', 'DESC']],
       });
 
@@ -567,13 +526,11 @@ Hãy trả lời THEO ĐÚNG ĐỊNH DẠNG JSON SAU:
     }
   }
 
-  /**
-   * Phản hồi dự phòng cho các tình huống khác nhau
-   */
+  // Phản hồi dự phòng khi AI không khả dụng hoặc câu hỏi ngoài scope
   getFallbackResponse(userMessage) {
     return {
       response:
-        'Chào bạn! Mình là nhân viên hỗ trợ của cửa hàng. Mình có thể giúp gì cho bạn hôm nay? Bạn đang tìm kiếm sản phẩm nào hay cần tư vấn gì không nè? 😊',
+        'Chào bạn! Mình là nhân viên hỗ trợ của TechStore. Mình có thể giúp gì cho bạn hôm nay? Bạn đang tìm kiếm sản phẩm nào hay cần tư vấn gì không nè? 😊',
       suggestions: [
         'Xem sản phẩm mới',
         'Sản phẩm khuyến mãi',

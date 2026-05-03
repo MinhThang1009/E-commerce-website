@@ -37,8 +37,21 @@ const otpLimiter = rateLimit({
   },
 });
 
+// Rate limiter riêng cho chatbot (chống spam API key)
+const chatbotLimiter = rateLimit({
+  windowMs: 60 * 1000, // 1 phút
+  max: 20,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: {
+    status: 'error',
+    message: 'Quá nhiều yêu cầu chatbot, vui lòng thử lại sau.',
+  },
+});
+
 module.exports = {
   apiLimiter,
   authLimiter,
   otpLimiter,
+  chatbotLimiter,
 };

@@ -962,6 +962,18 @@ const createProduct = catchAsync(async (req, res) => {
     ],
   });
 
+  // Đồng bộ vector store thủ công — Product.update() cập nhật inStock/stockQuantity bypass Sequelize hooks
+  try {
+    const vectorStoreService = require('../services/ai/vectorStore');
+    await vectorStoreService.loadPromise;
+    if (productWithRelations.status === 'active' && productWithRelations.inStock) {
+      await vectorStoreService.addProduct(productWithRelations.toJSON());
+      await vectorStoreService.save();
+    }
+  } catch (syncErr) {
+    logger.error('Lỗi đồng bộ vector store sau khi tạo sản phẩm:', syncErr.message);
+  }
+
   // Ghi audit log
   logger.info('req.user trong createProduct:', req.user);
   AdminAuditService.logProductAction(
@@ -1309,14 +1321,28 @@ const updateProduct = catchAsync(async (req, res) => {
         { model: ProductAttribute, as: 'productAttributes' },
         { model: ProductVariant, as: 'variants' },
         { model: ProductSpecification, as: 'productSpecifications' },
-        { 
-          model: WarrantyPackage, 
+        {
+          model: WarrantyPackage,
           as: 'warrantyPackages',
           through: { attributes: ['isDefault'], as: 'productWarranty' },
           required: false
         }
       ]
     });
+
+    // Đồng bộ vector store thủ công — Product.update() cập nhật inStock/stockQuantity bypass Sequelize hooks
+    try {
+      const vectorStoreService = require('../services/ai/vectorStore');
+      await vectorStoreService.loadPromise;
+      if (finalProduct && finalProduct.status === 'active' && finalProduct.inStock) {
+        await vectorStoreService.addProduct(finalProduct.toJSON());
+      } else if (finalProduct) {
+        vectorStoreService.items = vectorStoreService.items.filter(item => item.metadata.id !== finalProduct.id);
+      }
+      await vectorStoreService.save();
+    } catch (syncErr) {
+      logger.error('Lỗi đồng bộ vector store sau khi cập nhật sản phẩm:', syncErr.message);
+    }
 
     res.status(200).json({
       status: 'success',

@@ -65,12 +65,19 @@ const getChatHistory = async (req, res, next) => {
 const getAdminChatList = async (req, res, next) => {
   try {
     // Lấy các sessionId duy nhất, nhóm theo thời gian tin nhắn cuối cùng
+    // Chỉ lấy support chat — loại trừ AI chatbot messages (message_type = 'ai_chatbot')
     const sessions = await ChatMessage.findAll({
       attributes: [
         'sessionId',
         'userId',
         [sequelize.fn('MAX', sequelize.col('createdAt')), 'lastMessageAt'],
       ],
+      where: {
+        [sequelize.Sequelize.Op.or]: [
+          { messageType: 'support_chat' },
+          { messageType: null },
+        ],
+      },
       group: ['sessionId', 'userId'],
       order: [[sequelize.literal('MAX(createdAt)'), 'DESC']],
     });

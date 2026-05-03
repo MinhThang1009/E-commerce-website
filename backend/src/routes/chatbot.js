@@ -1,7 +1,8 @@
 ﻿const express = require('express');
 const router = express.Router();
 const ChatbotController = require('../controllers/chatbot');
-const { authenticate } = require('../middlewares/authenticate');
+const { authenticate, optionalAuthenticate } = require('../middlewares/authenticate');
+const { chatbotLimiter } = require('../middlewares/rateLimiter');
 
 const chatbotController = new ChatbotController();
 
@@ -71,7 +72,7 @@ const chatbotController = new ChatbotController();
  *                       type: string
  *                       description: ID phiên chat
  */
-router.post('/message', (req, res) =>
+router.post('/message', chatbotLimiter, optionalAuthenticate, (req, res) =>
   chatbotController.handleMessage(req, res)
 );
 
@@ -137,7 +138,7 @@ router.post('/products/search', (req, res) =>
  *       200:
  *         description: Gợi ý sản phẩm
  */
-router.get('/recommendations', (req, res) =>
+router.get('/recommendations', optionalAuthenticate, (req, res) =>
   chatbotController.getRecommendations(req, res)
 );
 
@@ -171,7 +172,7 @@ router.get('/recommendations', (req, res) =>
  *       200:
  *         description: Ghi nhận analytics thành công
  */
-router.post('/analytics', (req, res) =>
+router.post('/analytics', authenticate, (req, res) =>
   chatbotController.trackAnalytics(req, res)
 );
 
@@ -207,42 +208,6 @@ router.post('/analytics', (req, res) =>
  */
 router.post('/cart/add', authenticate, (req, res) =>
   chatbotController.addToCart(req, res)
-);
-
-// Endpoint kiểm tra
-router.get('/test', (req, res) => {
-  res.json({
-    status: 'success',
-    message: 'Chatbot API is working!',
-    timestamp: new Date().toISOString(),
-  });
-});
-
-// Endpoint kiểm tra tin nhắn đơn giản
-router.post('/test-message', async (req, res) => {
-  try {
-    const { message } = req.body;
-
-    // Phản hồi đơn giản không cần logic phức tạp
-    res.json({
-      status: 'success',
-      data: {
-        response: `Bạn vừa nói: "${message}". Tôi đã nhận được tin nhắn! 😊`,
-        suggestions: ['Tìm sản phẩm', 'Xem khuyến mãi', 'Liên hệ hỗ trợ'],
-      },
-    });
-  } catch (error) {
-    console.error('Test message error:', error);
-    res.status(500).json({
-      status: 'error',
-      message: 'Test failed',
-    });
-  }
-});
-
-// Tin nhắn đơn giản qua controller
-router.post('/simple-message', (req, res) =>
-  chatbotController.handleSimpleMessage(req, res)
 );
 
 module.exports = router;

@@ -166,21 +166,21 @@ class ChatbotService {
       if (aliases.some(alias => lowerMessage.includes(alias))) { params.category = catName; break; }
     }
 
-    // Trích xuất khoảng giá
-    const priceMatch = lowerMessage.match(/(\d+)(?:k|000|triệu)?/g);
-    if (priceMatch) {
-      const prices = priceMatch.map((p) => {
-        if (p.includes('k')) return parseInt(p) * 1000;
-        if (p.includes('triệu')) return parseInt(p) * 1000000;
-        return parseInt(p);
+    // Chỉ match số kèm đơn vị tiền tệ — tránh "iphone 14" bị extract "14" thành giá
+    const pricePattern = /(\d+(?:[.,]\d+)?)\s*(?:k|nghìn|triệu|tr|đồng|vnd|vnđ|000)\b/gi;
+    const priceMatches = lowerMessage.match(pricePattern);
+    if (priceMatches) {
+      const prices = priceMatches.map((p) => {
+        const num = parseFloat(p.replace(/[.,]/g, ''));
+        if (/triệu|tr/i.test(p)) return num * 1000000;
+        if (/nghìn|k/i.test(p)) return num * 1000;
+        if (/000/.test(p)) return num;
+        return num;
       });
 
-      if (lowerMessage.includes('dưới') || lowerMessage.includes('under')) {
+      if (lowerMessage.includes('dưới') || lowerMessage.includes('under') || lowerMessage.includes('tối đa')) {
         params.maxPrice = Math.max(...prices);
-      } else if (
-        lowerMessage.includes('trên') ||
-        lowerMessage.includes('over')
-      ) {
+      } else if (lowerMessage.includes('trên') || lowerMessage.includes('over') || lowerMessage.includes('từ')) {
         params.minPrice = Math.min(...prices);
       }
     }
@@ -254,11 +254,11 @@ class ChatbotService {
                 (categoryPreferences[cat.name] || 0) + 1;
             });
 
-            // Theo dõi khoảng giá
-            if (item.Product.price < priceRange.min)
-              priceRange.min = item.Product.price;
-            if (item.Product.price > priceRange.max)
-              priceRange.max = item.Product.price;
+            // Theo dõi khoảng giá — dùng basePrice (product.price không tồn tại)
+            if (item.Product.basePrice < priceRange.min)
+              priceRange.min = item.Product.basePrice;
+            if (item.Product.basePrice > priceRange.max)
+              priceRange.max = item.Product.basePrice;
           }
         });
       });
@@ -351,14 +351,15 @@ class ChatbotService {
       return products.slice(0, limit).map((product) => ({
         id: product.id,
         name: product.name,
-        price: product.price,
+        slug: product.slug,
+        price: product.basePrice,
         compareAtPrice: product.compareAtPrice,
         thumbnail: product.thumbnail,
         inStock: product.inStock,
-        rating: 4.5, // TODO: Tính từ dữ liệu đánh giá thực tế
+        rating: null,
         discount: product.compareAtPrice
           ? Math.round(
-              ((product.compareAtPrice - product.price) /
+              ((product.compareAtPrice - product.basePrice) /
                 product.compareAtPrice) *
                 100
             )
@@ -408,7 +409,7 @@ class ChatbotService {
         case 'value':
           products = bestDeals.slice(0, 3);
           const totalSavings = products.reduce(
-            (sum, p) => sum + (p.compareAtPrice - p.price),
+            (sum, p) => sum + (p.compareAtPrice - p.basePrice),
             0
           );
           pitch = pitch.replace('{savings}', this.formatPrice(totalSavings));

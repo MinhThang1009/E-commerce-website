@@ -120,6 +120,36 @@ const ensureColumns = async () => {
   }
 };
 
+// Kiểm tra và tự động rebuild vector store nếu lệch > 5% so với DB
+const checkVectorStoreSync = async () => {
+  try {
+    const { Product } = require('./models');
+    const vectorStoreService = require('./services/ai/vectorStore');
+    // Đợi vector store load xong trước khi so sánh
+    await vectorStoreService.loadPromise;
+    const activeCount = await Product.count({ where: { status: 'active', inStock: true } });
+    const vectorCount = vectorStoreService.items.length;
+    if (activeCount === 0) return; // Chưa có dữ liệu — bỏ qua
+    const deviation = Math.abs(activeCount - vectorCount) / activeCount;
+    if (deviation > 0.05) {
+      logger.warn(`⚠️ Vector store lệch >5% so với DB (DB: ${activeCount}, vector: ${vectorCount}). Tự động rebuild...`);
+      // Dùng exec (async) thay execSync để không block event loop trong lúc rebuild
+      const { exec } = require('child_process');
+      exec('npm run ai:rebuild-vectors', { cwd: __dirname + '/..', timeout: 120000 }, (rebuildErr) => {
+        if (rebuildErr) {
+          logger.error('❌ Rebuild vector store thất bại:', rebuildErr.message);
+        } else {
+          logger.info('✅ Đã rebuild vector store tự động.');
+        }
+      });
+    } else {
+      logger.info(`✅ Vector store OK: ${vectorCount} vectors / ${activeCount} sản phẩm active.`);
+    }
+  } catch (err) {
+    logger.warn('⚠️ Không thể kiểm tra vector store sync:', err.message);
+  }
+};
+
 // Khởi động server
 const startServer = async () => {
   await connectDB();
@@ -131,6 +161,9 @@ const startServer = async () => {
       `Server đang chạy ở chế độ ${process.env.NODE_ENV} trên cổng ${PORT}`
     );
   });
+
+  // Kiểm tra vector store sync sau khi server start (không block startup)
+  checkVectorStoreSync().catch(err => logger.warn('Vector store check failed:', err.message));
 
   // Khởi tạo Socket.io
   const { Server } = require('socket.io');

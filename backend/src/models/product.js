@@ -209,13 +209,13 @@ const Product = sequelize.define(
         );
       },
     },
-    // SEO Title
+    // Tiêu đề SEO (hiển thị trên tab trình duyệt, kết quả tìm kiếm)
     seoTitle: {
       type: DataTypes.STRING(500),
       allowNull: true,
       field: 'seo_title',
     },
-    // SEO Description
+    // Mô tả SEO (meta description dùng cho công cụ tìm kiếm)
     seoDescription: {
       type: DataTypes.TEXT,
       allowNull: true,
@@ -273,36 +273,46 @@ const Product = sequelize.define(
       // Cập nhật vector store khi tạo sản phẩm mới
       afterCreate: async (product) => {
         try {
-          if (vectorStoreService && product.status === 'active') {
-            await vectorStoreService.addProduct(product.toJSON());
-            vectorStoreService.save();
+          // Chỉ index khi active VÀ còn hàng — hàng hết không được hiện trong chatbot
+          if (vectorStoreService && product.status === 'active' && product.inStock) {
+            // Fetch lại product kèm categories vì instance trong hook không có associations
+            const Category = require('./category');
+            const fullProduct = await Product.findByPk(product.id, {
+              include: [{ model: Category, as: 'categories', attributes: ['name'] }],
+            });
+            if (fullProduct) {
+              await vectorStoreService.addProduct(fullProduct.toJSON());
+              await vectorStoreService.save(); // Phải await sau khi save() thành async
+            }
           }
         } catch (error) {
-          console.error(
-            'Lỗi cập nhật vector store sau khi tạo sản phẩm:',
-            error
-          );
+          console.error('Lỗi cập nhật vector store sau khi tạo sản phẩm:', error);
         }
       },
       // Cập nhật vector store khi sửa sản phẩm
       afterUpdate: async (product) => {
         try {
           if (vectorStoreService) {
-            if (product.status === 'active') {
-              await vectorStoreService.addProduct(product.toJSON());
-              vectorStoreService.save();
+            // Chỉ index khi active VÀ còn hàng — hết hàng hoặc inactive thì xóa khỏi vector store
+            if (product.status === 'active' && product.inStock) {
+              // Fetch lại product kèm categories
+              const Category = require('./category');
+              const fullProduct = await Product.findByPk(product.id, {
+                include: [{ model: Category, as: 'categories', attributes: ['name'] }],
+              });
+              if (fullProduct) {
+                await vectorStoreService.addProduct(fullProduct.toJSON());
+                await vectorStoreService.save(); // Phải await
+              }
             } else {
               vectorStoreService.items = vectorStoreService.items.filter(
                 (item) => item.metadata.id !== product.id
               );
-              vectorStoreService.save();
+              await vectorStoreService.save(); // Phải await
             }
           }
         } catch (error) {
-          console.error(
-            'Lỗi cập nhật vector store sau khi sửa sản phẩm:',
-            error
-          );
+          console.error('Lỗi cập nhật vector store sau khi sửa sản phẩm:', error);
         }
       },
       // Xóa khỏi vector store khi xóa sản phẩm
@@ -312,13 +322,10 @@ const Product = sequelize.define(
             vectorStoreService.items = vectorStoreService.items.filter(
               (item) => item.metadata.id !== product.id
             );
-            vectorStoreService.save();
+            await vectorStoreService.save(); // Phải await
           }
         } catch (error) {
-          console.error(
-            'Lỗi cập nhật vector store sau khi xóa sản phẩm:',
-            error
-          );
+          console.error('Lỗi cập nhật vector store sau khi xóa sản phẩm:', error);
         }
       },
     },

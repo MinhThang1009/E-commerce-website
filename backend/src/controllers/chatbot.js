@@ -31,11 +31,7 @@ class ChatbotController {
       }
 
       // Sử dụng Gemini AI để tạo phản hồi thông minh
-      const response = await geminiChatbotService.handleMessage(message, {
-        userId,
-        sessionId,
-        ...context,
-      });
+      const response = await geminiChatbotService.handleMessage(message, userId || null, sessionId || null, context);
 
       res.json({
         status: 'success',
@@ -77,11 +73,13 @@ class ChatbotController {
       const productCards = products.slice(0, 5).map((product) => ({
         id: product.id,
         name: product.name,
+        slug: product.slug,
         price: product.basePrice,
         compareAtPrice: product.compareAtPrice,
         thumbnail: product.thumbnail,
         inStock: product.inStock,
-        rating: product.rating || 4.5,
+        stockQuantity: product.stockQuantity,
+        rating: product.ratingAverage || null,
         discount: product.compareAtPrice
           ? Math.round(
               ((product.compareAtPrice - product.basePrice) /
@@ -393,6 +391,21 @@ class ChatbotController {
         cart = await Cart.create({ userId });
       }
 
+      // Kiểm tra sản phẩm tồn tại trước (404), sau đó kiểm tra còn hàng (400)
+      const product = await Product.findByPk(productId);
+      if (!product) {
+        return res.status(404).json({
+          status: 'error',
+          message: 'Sản phẩm không tồn tại',
+        });
+      }
+      if (product.status !== 'active' || !product.inStock) {
+        return res.status(400).json({
+          status: 'error',
+          message: 'Sản phẩm đã hết hàng hoặc ngừng kinh doanh',
+        });
+      }
+
       // Thêm sản phẩm vào giỏ hàng
       const cartItem = await CartItem.create({
         cartId: cart.id,
@@ -485,19 +498,19 @@ class ChatbotController {
       where.basePrice = { ...where.basePrice, [Op.lte]: searchParams.maxPrice };
     }
 
+    const categoryInclude = {
+      model: Category,
+      as: 'categories',
+      through: { attributes: [] },
+    };
     if (searchParams.category) {
-      // Thêm logic lọc theo danh mục
+      categoryInclude.where = { name: { [Op.like]: `%${searchParams.category}%` } };
+      categoryInclude.required = true;
     }
 
     const products = await Product.findAll({
       where,
-      include: [
-        {
-          model: Category,
-          as: 'categories',
-          through: { attributes: [] },
-        },
-      ],
+      include: [categoryInclude],
       limit: searchParams.limit || 20,
       order: [['createdAt', 'DESC']],
     });
@@ -530,7 +543,7 @@ class ChatbotController {
       where: {
         status: 'active',
         inStock: true,
-        featured: true,
+        isFeatured: true,
       },
       limit: 10,
       order: [['createdAt', 'DESC']],
@@ -561,46 +574,6 @@ class ChatbotController {
     return templates[Math.floor(Math.random() * templates.length)];
   }
 
-  /**
-   * Xử lý tin nhắn đơn giản (dùng để kiểm thử)
-   */
-  async handleSimpleMessage(req, res) {
-    try {
-      const { message, userId, sessionId, context = {} } = req.body;
-      if (process.env.NODE_ENV !== 'production') {
-        logger.info('Nhận tin nhắn đơn giản:', { message, userId, sessionId });
-      }
-
-      if (!message?.trim()) {
-        return res.status(400).json({
-          status: 'error',
-          message: 'Tin nhắn không được để trống',
-        });
-      }
-
-      // Phản hồi đơn giản
-      const response = {
-        response: `Chào bạn! Bạn vừa nói: "${message}". Tôi là trợ lý AI của TechStore! 😊`,
-        suggestions: [
-          'Tìm sản phẩm hot 🔥',
-          'Xem khuyến mãi 🎉',
-          'Sản phẩm bán chạy ⭐',
-          'Hỗ trợ mua hàng 💬',
-        ],
-      };
-
-      res.json({
-        status: 'success',
-        data: response,
-      });
-    } catch (error) {
-      logger.error('Lỗi xử lý tin nhắn đơn giản:', error.message || error);
-      res.status(500).json({
-        status: 'error',
-        message: 'Xử lý tin nhắn đơn giản thất bại',
-      });
-    }
-  }
 }
 
 module.exports = ChatbotController;

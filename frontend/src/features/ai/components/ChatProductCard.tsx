@@ -8,6 +8,7 @@ import {
 } from '../services/chatbotApi';
 import { useSelector } from 'react-redux';
 import { RootState } from '@/store';
+import { toast } from '@/utils/toast';
 
 interface ChatProductCardProps {
   product: ProductRecommendation;
@@ -27,7 +28,6 @@ const ChatProductCard: React.FC<ChatProductCardProps> = ({
   const [addToCart] = useAddToCartViaChatbotMutation();
 
   const handleProductClick = async () => {
-    // Ghi nhận analytics click sản phẩm
     await trackAnalytics({
       event: 'product_clicked',
       userId: user?.id,
@@ -37,33 +37,42 @@ const ChatProductCard: React.FC<ChatProductCardProps> = ({
     });
 
     onProductClick?.(product);
-    navigate(`/products/${product.id}`);
+    navigate(product.slug ? `/products/${product.slug}` : `/products/${product.id}`);
   };
 
   const handleAddToCart = async (e: React.MouseEvent) => {
     e.stopPropagation();
-
+    if (!user) {
+      navigate('/login');
+      return;
+    }
     try {
-      await addToCart({
-        productId: product.id,
-        quantity: 1,
-        sessionId,
-      }).unwrap();
-
-      // Ghi nhận analytics thêm vào giỏ hàng
+      await addToCart({ productId: product.id, quantity: 1, sessionId }).unwrap();
       await trackAnalytics({
         event: 'product_added_to_cart',
-        userId: user?.id,
+        userId: user.id,
         sessionId,
         productId: product.id,
         value: product.price,
         metadata: { source: 'chatbot_recommendation' },
       });
-
-      // TODO: có thể thêm toast notification thông báo thành công
-      console.log('Đã thêm sản phẩm vào giỏ hàng thành công');
+      toast.success(t('product.addedToCart'));
     } catch (error) {
-      console.error('Lỗi khi thêm sản phẩm vào giỏ hàng:', error);
+      toast.error(t('product.addToCartError'));
+    }
+  };
+
+  const handleBuyNow = async (e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (!user) {
+      navigate('/login');
+      return;
+    }
+    try {
+      await addToCart({ productId: product.id, quantity: 1, sessionId }).unwrap();
+      navigate('/checkout');
+    } catch (error) {
+      toast.error(t('product.buyNowFailed'));
     }
   };
 
@@ -124,12 +133,12 @@ const ChatProductCard: React.FC<ChatProductCardProps> = ({
         </h4>
 
         {/* Đánh giá */}
-        <div className="flex items-center mb-2">
-          {renderStars(product.rating)}
-          <span className="text-xs text-neutral-500 ml-1">
-            ({product.rating})
-          </span>
-        </div>
+        {product.rating !== null && product.rating !== undefined && (
+          <div className="flex items-center mb-2">
+            {renderStars(product.rating)}
+            <span className="text-xs text-neutral-500 ml-1">({product.rating})</span>
+          </div>
+        )}
 
         {/* Giá sản phẩm */}
         <div className="flex items-center justify-between mb-3">
@@ -147,20 +156,29 @@ const ChatProductCard: React.FC<ChatProductCardProps> = ({
         </div>
 
         {/* Nút hành động */}
-        <div className="flex space-x-2">
-          <button
-            onClick={handleProductClick}
-            className="flex-1 bg-neutral-100 dark:bg-neutral-700 text-neutral-800 dark:text-neutral-200 px-3 py-2 rounded-lg text-xs font-medium hover:bg-neutral-200 dark:hover:bg-neutral-600 transition-colors"
-          >
-            {t('product.viewDetails')}
-          </button>
-
+        <div className="flex flex-col space-y-1">
+          <div className="flex space-x-2">
+            <button
+              onClick={handleProductClick}
+              className="flex-1 bg-neutral-100 dark:bg-neutral-700 text-neutral-800 dark:text-neutral-200 px-3 py-2 rounded-lg text-xs font-medium hover:bg-neutral-200 dark:hover:bg-neutral-600 transition-colors"
+            >
+              {t('product.viewDetails')}
+            </button>
+            {product.inStock && (
+              <button
+                onClick={handleAddToCart}
+                className="flex-1 bg-primary-500 hover:bg-primary-600 text-white px-3 py-2 rounded-lg text-xs font-medium transition-colors"
+              >
+                🛒 {t('product.addToCart')}
+              </button>
+            )}
+          </div>
           {product.inStock && (
             <button
-              onClick={handleAddToCart}
-              className="flex-1 bg-primary-500 hover:bg-primary-600 text-white px-3 py-2 rounded-lg text-xs font-medium transition-colors"
+              onClick={handleBuyNow}
+              className="w-full bg-orange-500 hover:bg-orange-600 text-white px-3 py-2 rounded-lg text-xs font-medium transition-colors"
             >
-              🛒 {t('product.addToCart')}
+              ⚡ {t('product.buyNow')}
             </button>
           )}
         </div>

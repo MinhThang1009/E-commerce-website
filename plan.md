@@ -36,7 +36,19 @@ Trước khi implement bất kỳ phase nào, **phải đọc lại toàn bộ p
 - **Không được tắt tắt hay bỏ qua bất kỳ rule nào** dù cảm thấy rule đó không liên quan đến phase đang làm — một rule bị bỏ sót có thể gây bug hàng loạt
 
 ### 4. Double-check gate (bắt buộc mỗi phase)
-Trước khi đánh dấu một phase PASS, chạy tất cả lệnh verify trong phần "Acceptance Criteria" của phase đó. Nếu bất kỳ check nào fail → fix trước, không chuyển phase tiếp theo.
+Trước khi đánh dấu một phase PASS, thực hiện theo đúng thứ tự sau:
+
+**Bước 1 — Self-review bắt buộc (TRƯỚC khi chạy AC):**
+Với mỗi file đã sửa trong phase này:
+- [ ] **Comments & i18n:** quét toàn bộ file tìm comment tiếng Anh thuần và hardcoded user-visible strings — fix ngay nếu có
+- [ ] **Data flow consistency:** mọi function nhận data từ nhiều nguồn (DB, vector store, API) → grep field names ở từng nguồn, xác nhận dùng `??` fallback hoặc normalize
+- [ ] **HTTP status codes:** mọi endpoint mới → grep code thực tế, so sánh số status code với AC (ví dụ: AC nói 404 thì code phải `res.status(404)`, không phải 400)
+- [ ] **TypeScript required fields:** mọi `required field` (không có `?`) trong interface frontend → grep backend xác nhận trường đó LUÔN được gán, không bao giờ `undefined`
+- [ ] **Code paths đầy đủ:** mọi feature mới có nhiều nhánh (happy path, error path, fallback) → trace từng nhánh end-to-end, không chỉ verify nhánh chính
+- [ ] **Không có blocking I/O:** `execSync`, `readFileSync`, `writeFileSync` trong server process → phải là async
+
+**Bước 2 — Chạy AC checks:**
+Chạy tất cả lệnh verify trong phần "Acceptance Criteria" của phase đó. Nếu bất kỳ check nào fail → fix trước, không chuyển phase tiếp theo.
 
 ### 4.1 Git commit & push sau mỗi phase (BẮT BUỘC)
 Sau khi tất cả Acceptance Criteria của một phase PASS, **phải** thực hiện:
@@ -124,6 +136,15 @@ Mọi code được thêm mới hoặc sửa đổi **phải có comment đầy 
 - Điều kiện lồng nhau ≥ 2 cấp: **bắt buộc** comment giải thích flow
 - Mọi `sequelize.literal()`, raw SQL, regex phức tạp: **bắt buộc** comment lý do
 
+**Không ghi số bug/phase trong ngoặc đơn — BẮT BUỘC:**
+- **KHÔNG** thêm `(Fix 9.xx)`, `(Fix Phase X)`, `(SỬA:)`, `// Lỗi X` vào comment
+- **PHẢI GIỮ** nội dung giải thích đầy đủ — chỉ bỏ phần tham chiếu số trong ngoặc
+- Lý do: số phase/bug rot nhanh (không ai nhớ "Fix 9.8 L1" là gì sau vài tuần), làm comment khó đọc hơn
+- Ví dụ **sai:** `// Phải await để đảm bảo ghi file xong (Fix 9.8 L1)`
+- Ví dụ **đúng:** `// Phải await để đảm bảo ghi file xong trước khi process tiếp theo đọc`
+- Ví dụ **sai:** `rating: null, // Không hardcode 4.5 (Fix 9.7)`
+- Ví dụ **đúng:** `rating: null, // Tính từ review table thực tế khi cần hiển thị`
+
 **Không cần comment:**
 - Code đã tự giải thích qua tên biến/hàm rõ ràng (ví dụ: `const isLoggedIn = !!user`)
 - Getter/setter đơn giản, import statements
@@ -152,6 +173,39 @@ Trong quá trình implement, nếu phát hiện **bất kỳ loại bug nào** �
 6. **Không tiếp tục phase mới** khi còn bug chưa được fix và verify
 
 **Nguyên tắc:** Một bug được phát hiện sớm trong phase N dễ fix hơn 10 lần so với phát hiện ở phase N+5 sau khi code đã được build lên trên.
+
+### 11. Data flow consistency — kiểm tra field names qua nhiều tầng (BẮT BUỘC)
+Khi một function có thể nhận data từ nhiều nguồn khác nhau (ví dụ: vector store vs DB vs API response), **field names thường khác nhau** cho cùng một khái niệm:
+- DB query → `basePrice`, `compareAtPrice`, `inStock`
+- Vector store metadata → `price` (= basePrice), `compareAtPrice`
+- Frontend API response → `price`, `discount`
+
+**Quy trình bắt buộc:**
+1. Trước khi viết code: list tất cả data sources có thể vào function
+2. Grep field names ở TỪNG nguồn (không giả định chúng giống nhau)
+3. Tại mọi điểm dùng field → dùng `??` fallback: `product.price ?? product.basePrice`
+4. Verify: chạy lại với dữ liệu từ cả 2 nguồn (không chỉ nguồn chính)
+
+**Dấu hiệu cần kiểm tra ngay:** function có `|| fallback`, `catch` block, hoặc "nếu X fail thì dùng Y" → hai nhánh đó dùng data từ nguồn khác nhau → phải verify field names ở cả hai nhánh.
+
+### 12. TypeScript interface completeness — backend phải satisfy interface frontend (BẮT BUỘC)
+Khi backend tạo response gửi về frontend:
+1. Tìm TypeScript interface tương ứng (grep tên type trong `frontend/src/`)
+2. Liệt kê mọi **required field** (không có `?`) trong interface
+3. Grep backend code xác nhận từng required field LUÔN được gán — không bao giờ `undefined`
+4. Sau khi thay đổi interface hoặc backend response shape: chạy `cd frontend && npx tsc --noEmit 2>&1 | head -50` để phát hiện type errors sớm
+
+**Ví dụ thường gặp:**
+- Interface có `discount: number` (required) nhưng backend không tính → frontend nhận `undefined`, badge không hiển thị
+- Interface có `products?: ProductRecommendation[]` nhưng backend trả `products: null` → component crash khi `.map()`
+
+### 13. Không dùng blocking I/O trên server main thread (BẮT BUỘC)
+Trong bất kỳ file nào được load bởi server process (routes, controllers, services, models, middleware, server.js):
+- **NGHIÊM CẤM:** `execSync`, `spawnSync`, `readFileSync`, `writeFileSync`, `appendFileSync` — một call duy nhất có thể freeze toàn bộ server 30–120 giây, drop mọi request trong thời gian đó
+- **BẮT BUỘC dùng:** `exec` + callback, `fs.promises.readFile`, `fs.promises.writeFile`
+- **Exception:** standalone scripts trong `backend/scripts/*.js` — không chạy trong server process, blocking I/O được phép
+
+**Cách phát hiện:** `grep -rn "execSync\|readFileSync\|writeFileSync" backend/src/` — mọi kết quả là vi phạm.
 
 ---
 
@@ -1813,6 +1867,117 @@ vectorDb.json: 47 items
   **Lưu ý:** Fix này cần 2 embedding API calls khi `useViModel=true`. Embedding cache (9.13 Lỗi 3) sẽ giảm overhead — implement 9.13 Lỗi 3 trước.
 - **Acceptance Criteria:**
   - [ ] Xóa `vectorVi` của 1 sản phẩm trong vectorDb.json → restart server → query tiếng Việt liên quan đến sản phẩm đó → sản phẩm VẪN xuất hiện trong kết quả (không bị silently excluded do dim mismatch)
+
+---
+
+## PHASE 9.18 — Integration Tests cho Chatbot Pipeline
+
+> **Mục tiêu:** Thêm automated tests cho các code paths phức tạp nhất của Phase 9 để phát hiện regression sớm. Không cần 100% coverage — chỉ cover các paths có rủi ro cao nhất.
+
+### Stack
+- **Backend tests:** Jest + Supertest (đã có trong devDependencies)
+- **File:** `backend/src/__tests__/chatbot.test.js`
+- **Chạy:** `npm test` trong `backend/`
+
+### 9.18.1 — Tests bắt buộc (HIGH priority)
+
+**A. `simpleKeywordMatch` — price field consistency**
+```js
+// Verify không bị undefined khi products từ vector store (field: price) vs DB (field: basePrice)
+test('simpleKeywordMatch trả về price đúng cho vector store products', () => {
+  const products = [{ id: 1, name: 'iPhone 15', price: 25000000, inStock: true }]; // vector store format
+  const result = service.simpleKeywordMatch('iphone', products);
+  expect(result.products[0].price).toBeDefined();
+  expect(result.products[0].price).not.toBeNaN();
+});
+
+test('simpleKeywordMatch trả về price đúng cho DB products', () => {
+  const products = [{ id: 1, name: 'iPhone 15', basePrice: 25000000, inStock: true }]; // DB format
+  const result = service.simpleKeywordMatch('iphone', products);
+  expect(result.products[0].price).toBeDefined();
+  expect(result.products[0].price).not.toBeNaN();
+});
+```
+
+**B. `parseAIResponse` — discount calculation**
+```js
+test('parseAIResponse tính discount đúng khi có compareAtPrice', () => {
+  // product trong retrieved context có price + compareAtPrice
+  const products = [{ id: 1, name: 'iPhone 15', basePrice: 20000000, compareAtPrice: 25000000, ... }];
+  const aiText = JSON.stringify({ response: 'OK', matchedProducts: ['iPhone 15'], suggestions: [] });
+  const result = service.parseAIResponse(aiText, products, 'iphone');
+  expect(result.products[0].discount).toBe(20); // (25M-20M)/25M = 20%
+});
+
+test('parseAIResponse discount = 0 khi không có compareAtPrice', () => {
+  const products = [{ id: 1, name: 'iPhone 15', basePrice: 20000000, compareAtPrice: null, ... }];
+  const aiText = JSON.stringify({ response: 'OK', matchedProducts: ['iPhone 15'], suggestions: [] });
+  const result = service.parseAIResponse(aiText, products, 'iphone');
+  expect(result.products[0].discount).toBe(0);
+});
+```
+
+**C. `POST /api/chatbot/cart/add` — HTTP status codes**
+```js
+test('addToCart trả 404 khi productId không tồn tại', async () => {
+  const res = await request(app)
+    .post('/api/chatbot/cart/add')
+    .set('Authorization', `Bearer ${validToken}`)
+    .send({ productId: 99999, quantity: 1, sessionId: 'test-session' });
+  expect(res.status).toBe(404);
+});
+
+test('addToCart trả 400 khi sản phẩm hết hàng', async () => {
+  // Tạo product với inStock: false trong test DB
+  const res = await request(app)
+    .post('/api/chatbot/cart/add')
+    .set('Authorization', `Bearer ${validToken}`)
+    .send({ productId: outOfStockProductId, quantity: 1, sessionId: 'test-session' });
+  expect(res.status).toBe(400);
+});
+```
+
+**D. `extractSearchParams` — không extract model number thành giá**
+```js
+test('extractSearchParams không lấy số model làm giá', () => {
+  const result = service.extractSearchParams('iPhone 14 dưới 15 triệu');
+  expect(result.maxPrice).toBe(15000000);
+  expect(result.minPrice).toBeUndefined(); // "14" không bị extract
+});
+```
+
+**E. `NaN guard` trong vector search**
+```js
+test('cosineSimilarity trả 0 khi vector chứa NaN', () => {
+  const v1 = [NaN, 0.5, 0.3];
+  const v2 = [0.4, 0.5, 0.3];
+  expect(vectorStore.cosineSimilarity(v1, v2)).toBe(0);
+});
+```
+
+**F. Hooks không index sản phẩm hết hàng**
+```js
+test('afterCreate hook không thêm vào vector store khi inStock=false', async () => {
+  const spy = jest.spyOn(vectorStoreService, 'addProduct');
+  await Product.create({ name: 'Test', status: 'active', inStock: false, ... });
+  expect(spy).not.toHaveBeenCalled();
+});
+```
+
+### 9.18.2 — Tests bổ sung (MEDIUM priority)
+
+- `GET /api/admin/chat/conversations` chỉ trả `support_chat` messages (không lẫn `ai_chatbot`)
+- `POST /api/chatbot/message` trả 429 sau 20 requests trong 1 phút (rate limiter)
+- `POST /api/chatbot/analytics` trả 401 khi không có token
+- Conversation history isolation: session A không thấy history của session B
+
+### ✅ Acceptance Criteria Phase 9.18
+
+- [ ] `npm test` trong `backend/` chạy thành công, không có test nào fail
+- [ ] Coverage cho `geminiChatbot.js` `simpleKeywordMatch` và `parseAIResponse` đạt ≥ 80%
+- [ ] Test C (HTTP 404/400) pass với DB thật (không mock Sequelize)
+- [ ] Test D (extractSearchParams) pass
+- [ ] CI có thể chạy `npm test` tự động khi push
 
 ---
 

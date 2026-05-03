@@ -1,53 +1,70 @@
-﻿require('dotenv').config();
+require('dotenv').config();
+const path = require('path');
+const fs = require('fs');
 const { Product, Category } = require('../src/models');
 const vectorStoreService = require('../src/services/ai/vectorStore');
 const viEmbeddingService = require('../src/services/ai/viEmbedding');
-const sequelize = require('../src/config/sequelize');
 
-/**
- * Script to index all products into the vector store
- */
+// Script index tất cả sản phẩm vào vector store
+// Chạy: node scripts/indexProducts.js hoặc npm run ai:rebuild-vectors
 const indexAllProducts = async () => {
   try {
-    // 1. Fetch all active products with categories
-    console.log('📦 Fetching products from database...');
+    // Đảm bảo vectorStore đã load xong trước khi thao tác
+    await vectorStoreService.loadPromise;
+
+    console.log('📦 Đang lấy sản phẩm từ database...');
     const products = await Product.findAll({
-      where: { status: 'active' },
+      where: { status: 'active', inStock: true },
       include: [
         {
           model: Category,
           as: 'categories',
-          through: { attributes: [] }
-        }
-      ]
+          through: { attributes: [] },
+          attributes: ['name'],
+        },
+      ],
     });
 
-    console.log(`Found ${products.length} products to index.`);
+    console.log(`Tìm thấy ${products.length} sản phẩm cần index.`);
     console.log(`🌐 Vietnamese embedding: ${viEmbeddingService.isAvailable() ? '✅ Khả dụng' : '⚠️ Chưa cấu hình (chỉ tạo English vectors)'}`);
 
-    // 2. Clear old index before starting fresh
-    console.log('🧹 Clearing old vector store...');
-    vectorStoreService.clear();
-
-    // 3. Index each product
-    for (let i = 0; i < products.length; i++) {
-        const product = products[i];
-        console.log(`[${i + 1}/${products.length}] Indexing: ${product.name}...`);
-        try {
-            await vectorStoreService.addProduct(product.toJSON());
-        } catch (err) {
-            console.error(`Failed to index product ${product.id}:`, err.message);
-        }
+    // Backup trước khi clear — nếu script crash giữa chừng còn file để restore
+    const storagePath = vectorStoreService.storagePath;
+    if (fs.existsSync(storagePath)) {
+      const backupPath = storagePath + '.bak';
+      fs.copyFileSync(storagePath, backupPath);
+      console.log(`✅ Đã backup vectorDb.json → vectorDb.json.bak`);
     }
 
-    // 3. Save the vector store
-    console.log('💾 Saving vector store to disk...');
+    // 3. Xóa index cũ — bắt đầu lại từ đầu
+    console.log('🧹 Đang xóa vector store cũ...');
+    vectorStoreService.clear();
+
+    // 4. Index từng sản phẩm (tuần tự để dễ debug lỗi từng cái)
+    const failedIds = [];
+    for (let i = 0; i < products.length; i++) {
+      const product = products[i];
+      process.stdout.write(`[${i + 1}/${products.length}] Indexing: ${product.name}... `);
+      try {
+        await vectorStoreService.addProduct(product.toJSON());
+        process.stdout.write('✅\n');
+      } catch (err) {
+        process.stdout.write(`❌ ${err.message}\n`);
+        failedIds.push(product.id);
+      }
+    }
+
+    console.log('💾 Đang lưu vector store...');
     await vectorStoreService.save();
-    
-    console.log('✅ Indexing complete!');
+
+    // 6. Report kết quả
+    if (failedIds.length > 0) {
+      console.warn(`⚠️ Không thể index ${failedIds.length} sản phẩm: ID [${failedIds.join(', ')}]`);
+    }
+    console.log(`✅ Hoàn thành! Đã index ${products.length - failedIds.length}/${products.length} sản phẩm.`);
     process.exit(0);
   } catch (error) {
-    console.error('❌ Indexing failed:', error);
+    console.error('❌ Index thất bại:', error);
     process.exit(1);
   }
 };

@@ -1,4 +1,4 @@
-// Components
+// Giao diện
 export { default as ChatWidget } from './components/ChatWidget';
 export { default as ChatWidgetSimple } from './components/ChatWidgetSimple';
 export { default as ChatWidgetPortal } from './components/ChatWidgetPortal';
@@ -7,13 +7,12 @@ export { default as ChatInput } from './components/ChatInput';
 export { default as ChatSuggestions } from './components/ChatSuggestions';
 
 // Hooks
-export { default as useChat } from './hooks/useChat';
 export { useSpeechRecognition } from './hooks/useSpeechRecognition';
 
-// Services
-export { useSendMessageMutation } from './services/chatbotApi';
+// Dịch vụ API
+export { useSendChatbotMessageMutation } from './services/chatbotApi';
 
-// Store
+// Store Redux
 export {
   addMessage,
   setMessages,

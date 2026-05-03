@@ -214,6 +214,12 @@ Với mỗi query trả Model ra `res.json()` — nếu model chứa sensitive d
 grep -n "findByPk\|findAll\|findOne" <file vừa sửa>
 ```
 
+**A26. Error message chứa internal details trả về API response:**
+```
+grep -n "res\.json.*err\.\|err\.message.*res\.\|err\.stack" <file vừa sửa>
+```
+Không được trả trực tiếp `err.message`, `err.stack`, hay Sequelize error text ra `res.json()` — lộ tên bảng, tên cột, internal paths. Pattern đúng: dùng `next(err)` để chuyển sang error middleware, hoặc trả message chung. Exception: `process.env.NODE_ENV !== 'production'` guard cho dev debug.
+
 ---
 
 #### B. Frontend — components, pages, hooks, slices, utils
@@ -304,25 +310,6 @@ Mọi data từ `req.body`, `req.params`, `req.query` đều không tin cậy �
 
 **Cách phát hiện vi phạm:** Grep `req\.body\.\|req\.params\.\|req\.query\.` trong controllers — nếu field được dùng ngay trong query/create mà không có kiểm tra trước đó → cần thêm validation.
 
-## Rule 16 — Transaction cho mọi multi-step DB write (BẮT BUỘC)
-
-Khi một operation thực hiện ghi vào ≥2 bảng hoặc ≥2 câu INSERT/UPDATE/DELETE có quan hệ logic với nhau:
-- **BẮT BUỘC:** bọc toàn bộ trong `sequelize.transaction(async (t) => { ... })`
-- **BẮT BUỘC:** truyền `{ transaction: t }` vào **mọi** query bên trong block
-
-**Concurrent read-then-write:** thêm `lock: t.LOCK.UPDATE` khi `findByPk`/`findOne` bên trong transaction để tránh race condition.
-
-## Rule 25 — Raw SQL phải dùng đúng MySQL syntax (BẮT BUỘC)
-
-**NGHIÊM CẤM dùng trong MySQL project:**
-- `ILIKE` → dùng `LIKE` hoặc `LOWER(field) LIKE LOWER(?)`
-- `::type` casting → dùng `CAST(field AS UNSIGNED)`, `CAST(field AS CHAR)`
-- `RETURNING` clause → dùng `LAST_INSERT_ID()`
-- `||` để nối chuỗi → dùng `CONCAT(a, b)`
-- `date1 - date2` → dùng `DATEDIFF(date1, date2)`
-
-**Cách phát hiện:** `grep -rn "ILIKE\|::[a-z]\|RETURNING\|sequelize\.query\|sequelize\.literal" backend/src/`
-
 ---
 
 ## P2 — Data Integrity (silent data loss nếu vi phạm)
@@ -333,6 +320,14 @@ Khi một operation thực hiện ghi vào ≥2 bảng hoặc ≥2 câu INSERT/U
 - **CŨNG BẮT BUỘC:** cập nhật `backend/data/migration_full.sql`
 - **NGHIÊM CẤM:** bật lại `sequelize.sync()` trong server.js (đã tắt vì lỗi "Too many keys")
 - **NGHIÊM CẤM:** sửa schema bằng `ALTER TABLE` thủ công không có migration
+
+## Rule 16 — Transaction cho mọi multi-step DB write (BẮT BUỘC)
+
+Khi một operation thực hiện ghi vào ≥2 bảng hoặc ≥2 câu INSERT/UPDATE/DELETE có quan hệ logic với nhau:
+- **BẮT BUỘC:** bọc toàn bộ trong `sequelize.transaction(async (t) => { ... })`
+- **BẮT BUỘC:** truyền `{ transaction: t }` vào **mọi** query bên trong block
+
+**Concurrent read-then-write:** thêm `lock: t.LOCK.UPDATE` khi `findByPk`/`findOne` bên trong transaction để tránh race condition.
 
 ## Rule 27 — Bắt buộc await mọi async write (BẮT BUỘC)
 
@@ -442,6 +437,17 @@ Mọi `findAll`/`findAndCountAll` trong user-facing controller phải có `limit
 ```js
 const limit = Math.min(parseInt(req.query.limit) || 20, 100);
 ```
+
+## Rule 25 — Raw SQL phải dùng đúng MySQL syntax (BẮT BUỘC)
+
+**NGHIÊM CẤM dùng trong MySQL project:**
+- `ILIKE` → dùng `LIKE` hoặc `LOWER(field) LIKE LOWER(?)`
+- `::type` casting → dùng `CAST(field AS UNSIGNED)`, `CAST(field AS CHAR)`
+- `RETURNING` clause → dùng `LAST_INSERT_ID()`
+- `||` để nối chuỗi → dùng `CONCAT(a, b)`
+- `date1 - date2` → dùng `DATEDIFF(date1, date2)`
+
+**Cách phát hiện:** `grep -rn "ILIKE\|::[a-z]\|RETURNING\|sequelize\.query\|sequelize\.literal" backend/src/`
 
 ## Rule 20 — Async error handling: mọi route handler phải dùng try/catch (BẮT BUỘC)
 

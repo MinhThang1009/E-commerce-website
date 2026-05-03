@@ -191,3 +191,4 @@ export const generateResponsiveImageSrcSet = (
     .map((size) => `${optimizeImageUrl(baseUrl, { width: size })} ${size}w`)
     .join(', ');
 };
+

@@ -63,7 +63,6 @@ const PAYMENT_STATUS_CONFIG = {
 };
 
 const OrdersPage: React.FC = () => {
-  console.log('OrdersPage: Component đang render');
   const { t } = useTranslation();
   const [form] = Form.useForm();
 
@@ -327,13 +326,6 @@ const OrdersPage: React.FC = () => {
   // Lấy đơn hàng và phân trang từ response API
   const orders = ordersData?.data?.orders || [];
   const pagination = ordersData?.data?.pagination;
-
-  console.log('OrdersPage: Trạng thái render', {
-    isLoading,
-    error,
-    orders,
-    pagination,
-  });
 
   // Component loading
   if (isLoading) {
@@ -763,3 +755,4 @@ const OrdersPage: React.FC = () => {
 };
 
 export default OrdersPage;
+

@@ -1,3 +1,4 @@
+const logger = require('../utils/logger');
 const jwt = require('jsonwebtoken');
 const { User } = require('../models');
 const { AppError } = require('./errorHandler');
@@ -10,7 +11,7 @@ const adminAuthenticate = async (req, res, next) => {
   try {
     // Lấy token từ header
     const authHeader = req.headers.authorization;
-    console.info(`>>> [AUTH] adminAuthenticate: hasHeader=${!!authHeader}`);
+    logger.info(`>>> [AUTH] adminAuthenticate: hasHeader=${!!authHeader}`);
     if (!authHeader || !authHeader.startsWith('Bearer ')) {
       return next(
         new AppError('Cần token xác thực để truy cập admin panel', 401)
@@ -79,3 +80,4 @@ module.exports = {
   adminAuthenticate,
   requireSuperAdmin,
 };
+

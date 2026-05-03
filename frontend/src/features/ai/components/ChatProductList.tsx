@@ -53,3 +53,4 @@ const ChatProductList: React.FC<ChatProductListProps> = ({
 };
 
 export default ChatProductList;
+

@@ -57,3 +57,4 @@ const ChatHeaderContent: React.FC<ChatHeaderContentProps> = ({
 };
 
 export default ChatHeaderContent;
+

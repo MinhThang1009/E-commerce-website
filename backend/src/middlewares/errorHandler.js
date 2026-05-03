@@ -1,3 +1,5 @@
+const logger = require('../utils/logger');
+
 // Class lỗi tùy chỉnh
 class AppError extends Error {
   constructor(message, statusCode) {
@@ -30,7 +32,7 @@ const sendErrorProd = (err, res) => {
     });
   } else {
     // Lỗi lập trình hoặc lỗi không xác định: không để lộ chi tiết
-    console.error('ERROR 💥', err);
+    logger.error('ERROR 💥', err);
     res.status(500).json({
       status: 'error',
       message: 'Đã xảy ra lỗi. Vui lòng thử lại sau.',

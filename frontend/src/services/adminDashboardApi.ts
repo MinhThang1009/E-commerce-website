@@ -97,3 +97,4 @@ export const adminDashboardApi = api.injectEndpoints({
 
 export const { useGetDashboardStatsQuery, useGetDetailedStatsQuery } =
   adminDashboardApi;
+

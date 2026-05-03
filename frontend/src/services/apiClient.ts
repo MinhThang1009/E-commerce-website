@@ -34,15 +34,6 @@ apiClient.interceptors.response.use(
     return response;
   },
   (error) => {
-    // Ghi log lỗi trong môi trường development
-    if (import.meta.env.DEV) {
-      console.group('🚨 Lỗi API Client');
-      console.log('URL:', error.config?.url);
-      console.log('Status:', error.response?.status);
-      console.log('Data:', error.response?.data);
-      console.groupEnd();
-    }
-
     // Xử lý lỗi 401
     if (error.response?.status === 401) {
       handleUnauthorizedError({
@@ -56,3 +47,4 @@ apiClient.interceptors.response.use(
 );
 
 export default apiClient;
+

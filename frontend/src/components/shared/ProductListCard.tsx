@@ -323,3 +323,4 @@ const ProductListCard: React.FC<ProductListCardProps> = ({
 };
 
 export default ProductListCard;
+

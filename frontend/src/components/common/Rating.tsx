@@ -128,3 +128,4 @@ const Star: React.FC<StarProps> = ({
     </svg>
   );
 };
+

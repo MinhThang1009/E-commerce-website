@@ -1,16 +1,16 @@
-﻿import i18next from 'i18next';
+import i18next from 'i18next';
 import { store } from '@/store';
 import { logout } from '@/features/auth/authSlice';
 import { toast } from '@/utils/toast';
 
-// Hàm điều hướng - sẽ được thiết lập bởi component App
+// H�m di?u hu?ng - s? du?c thi?t l?p b?i component App
 let navigateToLogin: (() => void) | null = null;
 
 export const setNavigateFunction = (navigate: () => void) => {
   navigateToLogin = navigate;
 };
 
-// Singleton quản lý trạng thái đăng xuất
+// Singleton qu?n l� tr?ng th�i dang xu?t
 class LogoutManager {
   private static instance: LogoutManager;
   private _isLoggingOut = false;
@@ -34,9 +34,9 @@ class LogoutManager {
 const logoutManager = LogoutManager.getInstance();
 
 /**
- * Xử lý đăng xuất tự động khi tài khoản người dùng bị vô hiệu hóa hoặc không được phép
- * @param errorMessage - Thông báo lỗi tùy chỉnh để hiển thị
- * @param redirectDelay - Thời gian chờ trước khi chuyển hướng về trang đăng nhập (mili giây)
+ * X? l� dang xu?t t? d?ng khi t�i kho?n ngu?i d�ng b? v� hi?u h�a ho?c kh�ng du?c ph�p
+ * @param errorMessage - Th�ng b�o l?i t�y ch?nh d? hi?n th?
+ * @param redirectDelay - Th?i gian ch? tru?c khi chuy?n hu?ng v? trang dang nh?p (mili gi�y)
  */
 export const handleAutoLogout = (
   errorMessage?: string,
@@ -44,26 +44,26 @@ export const handleAutoLogout = (
 ) => {
   const resolvedMessage = errorMessage ?? i18next.t('auth.errors.sessionExpired');
 
-  // Ngăn chặn đăng xuất trùng lặp
+  // Ngan ch?n dang xu?t tr�ng l?p
   if (logoutManager.isLoggingOut) return;
 
   logoutManager.setLoggingOut(true);
 
-  // Hiển thị thông báo cho người dùng
+  // Hi?n th? th�ng b�o cho ngu?i d�ng
   toast.warning(resolvedMessage, 4);
 
-  // Dispatch action đăng xuất để xóa trạng thái xác thực
+  // Dispatch action dang xu?t d? x�a tr?ng th�i x�c th?c
   store.dispatch(logout());
 
-  // logout action trong authSlice đã xóa token, refreshToken, user, cartItems
-  // Không dùng localStorage.clear() để tránh xóa mất theme, language, và preferences khác
+  // logout action trong authSlice d� x�a token, refreshToken, user, cartItems
+  // Kh�ng d�ng localStorage.clear() d? tr�nh x�a m?t theme, language, v� preferences kh�c
 
-  // Chuyển hướng sau delay ngắn để Redux state cập nhật xong
+  // Chuy?n hu?ng sau delay ng?n d? Redux state c?p nh?t xong
   setTimeout(() => {
     logoutManager.setLoggingOut(false);
 
-    // Dùng React Router navigate để tránh full page reload, giữ nguyên app state
-    // Fallback về window.location.href nếu navigateToLogin chưa được inject (edge case: App chưa mount)
+    // D�ng React Router navigate d? tr�nh full page reload, gi? nguy�n app state
+    // Fallback v? window.location.href n?u navigateToLogin chua du?c inject (edge case: App chua mount)
     if (navigateToLogin) {
       navigateToLogin();
     } else {
@@ -72,13 +72,13 @@ export const handleAutoLogout = (
   }, redirectDelay);
 };
 
-// Export logout manager để dùng ở các module khác
+// Export logout manager d? d�ng ? c�c module kh�c
 export { logoutManager };
 
 /**
- * Kiểm tra lỗi có phải 401 Unauthorized và xử lý tự động đăng xuất
- * @param error - Đối tượng lỗi từ response API
- * @returns boolean - true nếu lỗi 401 đã được xử lý
+ * Ki?m tra l?i c� ph?i 401 Unauthorized v� x? l� t? d?ng dang xu?t
+ * @param error - �?i tu?ng l?i t? response API
+ * @returns boolean - true n?u l?i 401 d� du?c x? l�
  */
 export const handleUnauthorizedError = (error: any): boolean => {
   if (error?.status === 401) {
@@ -93,9 +93,9 @@ export const handleUnauthorizedError = (error: any): boolean => {
 };
 
 /**
- * Trích xuất thông báo lỗi từ các định dạng lỗi khác nhau
- * @param error - Đối tượng lỗi
- * @returns string - Thông báo lỗi đã định dạng
+ * Tr�ch xu?t th�ng b�o l?i t? c�c d?nh d?ng l?i kh�c nhau
+ * @param error - �?i tu?ng l?i
+ * @returns string - Th�ng b�o l?i d� d?nh d?ng
  */
 export const getErrorMessage = (error: any): string => {
   if (typeof error === 'string') {
@@ -112,3 +112,4 @@ export const getErrorMessage = (error: any): string => {
 
   return i18next.t('errors.unknown');
 };
+

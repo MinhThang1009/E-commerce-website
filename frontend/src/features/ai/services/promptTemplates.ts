@@ -87,3 +87,4 @@ export const getFaqPrompt = (query: string) => {
   Answer based on common information about the store, policies, and purchasing process.
   Keep the response concise, accurate, and helpful.`;
 };
+

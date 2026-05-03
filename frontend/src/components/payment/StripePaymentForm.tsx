@@ -71,10 +71,6 @@ const PaymentForm: React.FC<StripePaymentFormProps> = ({
         console.error('Lỗi xác nhận thanh toán:', error);
         onError?.(error.message || t('payment.errors.paymentFailed'));
       } else if (paymentIntent) {
-        console.log(
-          'Thanh toán Stripe thành công, đang xác nhận với backend...',
-          paymentIntent.id
-        );
 
         // Xác nhận thanh toán trên backend
         try {
@@ -82,7 +78,6 @@ const PaymentForm: React.FC<StripePaymentFormProps> = ({
             paymentIntentId: paymentIntent.id,
           }).unwrap();
 
-          console.log('Xác nhận backend thành công:', confirmResponse);
           onSuccess?.(confirmResponse.data.paymentIntent);
         } catch (backendError) {
           console.error('Lỗi xác nhận backend:', backendError);
@@ -249,3 +244,4 @@ const StripePaymentForm: React.FC<StripePaymentFormProps> = (props) => {
 };
 
 export default StripePaymentForm;
+

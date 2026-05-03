@@ -88,3 +88,4 @@ const ProductPickerModal: React.FC<ProductPickerModalProps> = ({ open, onCancel,
 };
 
 export default ProductPickerModal;
+

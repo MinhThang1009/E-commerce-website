@@ -1,3 +1,4 @@
+const logger = require('../../utils/logger');
 const crypto = require('crypto');
 const axios = require('axios');
 const { v4: uuidv4 } = require('uuid');
@@ -8,7 +9,7 @@ class MoMoService {
     this.accessKey = process.env.DEV_ACCESS_KEY || process.env.MOMO_ACCESS_KEY;
     this.secretKey = process.env.DEV_SECRET_KEY || process.env.MOMO_SECRET_KEY;
     if (!this.partnerCode || !this.accessKey || !this.secretKey) {
-      console.warn('[MoMo] MOMO_PARTNER_CODE, MOMO_ACCESS_KEY, MOMO_SECRET_KEY chưa được set — thanh toán MoMo sẽ thất bại');
+      logger.warn('[MoMo] MOMO_PARTNER_CODE, MOMO_ACCESS_KEY, MOMO_SECRET_KEY chưa được set — thanh toán MoMo sẽ thất bại');
     }
     // Endpoint gốc: https://test-payment.momo.vn/v2/gateway/api
     this.apiEndpoint = process.env.DEV_MOMO_ENDPOINT ? `${process.env.DEV_MOMO_ENDPOINT}/create` : (process.env.MOMO_API_ENDPOINT || 'https://test-payment.momo.vn/v2/gateway/api/create');
@@ -55,7 +56,7 @@ class MoMoService {
       const response = await axios.post(this.apiEndpoint, requestBody, { timeout: 30000 });
       return response.data;
     } catch (error) {
-      console.error('Lỗi tạo thanh toán MoMo:', error.response?.data || error.message);
+      logger.error('Lỗi tạo thanh toán MoMo:', error.response?.data || error.message);
       throw new Error(JSON.stringify(error.response?.data || error.message));
     }
   }
@@ -89,3 +90,4 @@ class MoMoService {
 }
 
 module.exports = new MoMoService();
+

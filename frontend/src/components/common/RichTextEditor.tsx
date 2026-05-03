@@ -64,10 +64,7 @@ const RichTextEditor: React.FC<RichTextEditorProps> = ({
 
   // Chuyển đổi ảnh base64 khi value thay đổi
   useEffect(() => {
-    console.log('RichTextEditor - Nhận props:', { value, readonly });
-    console.log('RichTextEditor - Giá trị gốc:', value);
     const converted = convertBase64ToImages(value, t('product.imageAlt'));
-    console.log('RichTextEditor - Giá trị sau chuyển đổi:', converted);
     setDisplayValue(converted);
   }, [value]);
 
@@ -78,7 +75,6 @@ const RichTextEditor: React.FC<RichTextEditorProps> = ({
         const quill = quillRef.current?.getEditor();
         if (quill) {
           if (displayValue.includes('<img')) {
-            console.log('Đang chèn nội dung HTML vào Quill ở chế độ chỉnh sửa...');
             // Xóa nội dung editor trước
             quill.setText('');
             // Sau đó dán nội dung HTML
@@ -209,3 +205,4 @@ const RichTextEditor: React.FC<RichTextEditorProps> = ({
 };
 
 export default RichTextEditor;
+

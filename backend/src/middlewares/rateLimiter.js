@@ -1,4 +1,5 @@
 const rateLimit = require('express-rate-limit');
+const logger = require('../utils/logger');
 
 // Rate limiter chung cho API
 const apiLimiter = rateLimit({
@@ -21,6 +22,11 @@ const authLimiter = rateLimit({
   message: {
     status: 'error',
     message: 'Quá nhiều lần đăng nhập thất bại, vui lòng thử lại sau.',
+  },
+  // Ghi business event log khi IP bị rate limit để monitoring brute force
+  handler: (req, res, _next, options) => {
+    logger.warn('[AUTH] Rate limited', { ip: req.ip, email: req.body?.email });
+    res.status(options.statusCode).json(options.message);
   },
 });
 

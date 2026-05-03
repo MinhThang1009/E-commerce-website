@@ -1,4 +1,4 @@
-﻿// Kiểu dữ liệu xác thực
+// Ki?u d? li?u x�c th?c
 import { User } from './user.types';
 
 export interface AuthState {
@@ -29,3 +29,4 @@ export interface AuthResponse {
   token: string;
   refreshToken: string;
 }
+

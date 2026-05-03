@@ -233,3 +233,4 @@ export const {
 } = productApi;
 
 export type { Product } from '@/types/product.types';
+

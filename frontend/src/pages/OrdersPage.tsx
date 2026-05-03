@@ -86,7 +86,6 @@ const OrdersPage: React.FC = () => {
   useEffect(() => {
     const params = new URLSearchParams(location.search);
     if (params.get('payment') === 'success') {
-      console.log('Phát hiện thanh toán thành công trong URL, đang xóa giỏ hàng cục bộ...');
       dispatch(clearCart());
       dispatch(cartApi.util.invalidateTags(['Cart', 'CartCount']));
 
@@ -612,3 +611,4 @@ const OrdersPage: React.FC = () => {
 };
 
 export default OrdersPage;
+

@@ -287,3 +287,4 @@ export const getStockStatusColor = (stock: number): string => {
   if (stock < 10) return 'text-orange-500';
   return 'text-green-500';
 };
+

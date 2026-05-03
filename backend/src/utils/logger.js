@@ -1,42 +1,48 @@
 const winston = require('winston');
 
-// Định nghĩa định dạng log
-const logFormat = winston.format.printf(({ level, message, timestamp }) => {
-  return `${timestamp} ${level}: ${message}`;
-});
+// Định dạng log đơn giản cho development (human-readable)
+const devFormat = winston.format.combine(
+  winston.format.colorize(),
+  winston.format.timestamp({ format: 'YYYY-MM-DD HH:mm:ss' }),
+  winston.format.errors({ stack: true }),
+  winston.format.printf(({ level, message, timestamp, stack }) => {
+    return stack
+      ? `${timestamp} ${level}: ${message}\n${stack}`
+      : `${timestamp} ${level}: ${message}`;
+  })
+);
 
-// Tạo logger
+// Định dạng JSON cho production (dễ parse bởi log aggregator như ELK, Datadog)
+const prodFormat = winston.format.combine(
+  winston.format.timestamp(),
+  winston.format.errors({ stack: true }),
+  winston.format.splat(),
+  winston.format.json()
+);
+
 const logger = winston.createLogger({
-  level: process.env.NODE_ENV === 'development' ? 'debug' : 'info',
-  format: winston.format.combine(
-    winston.format.timestamp({ format: 'YYYY-MM-DD HH:mm:ss' }),
-    winston.format.errors({ stack: true }),
-    winston.format.splat(),
-    logFormat
-  ),
+  // LOG_LEVEL env var để override từ bên ngoài, fallback theo môi trường
+  level: process.env.LOG_LEVEL || (process.env.NODE_ENV === 'production' ? 'info' : 'debug'),
+  format: process.env.NODE_ENV === 'production' ? prodFormat : devFormat,
   defaultMeta: { service: 'api' },
   transports: [
-    // Transport ghi ra console
-    new winston.transports.Console({
-      format: winston.format.combine(
-        winston.format.colorize(),
-        winston.format.timestamp({ format: 'YYYY-MM-DD HH:mm:ss' }),
-        logFormat
-      ),
-    }),
-    // Transport ghi file cho lỗi
-    new winston.transports.File({
-      filename: 'logs/error.log',
-      level: 'error',
-      maxsize: 5242880, // 5MB
-      maxFiles: 5,
-    }),
-    // Transport ghi file cho toàn bộ log
-    new winston.transports.File({
-      filename: 'logs/combined.log',
-      maxsize: 5242880, // 5MB
-      maxFiles: 5,
-    }),
+    new winston.transports.Console(),
+    // Chỉ ghi file ở production — tránh tạo file log không cần thiết trong dev/test
+    ...(process.env.NODE_ENV === 'production'
+      ? [
+          new winston.transports.File({
+            filename: 'logs/error.log',
+            level: 'error',
+            maxsize: 10485760, // 10MB
+            maxFiles: 5,
+          }),
+          new winston.transports.File({
+            filename: 'logs/combined.log',
+            maxsize: 10485760, // 10MB
+            maxFiles: 5,
+          }),
+        ]
+      : []),
   ],
 });
 

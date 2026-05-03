@@ -2,6 +2,7 @@ const axios = require('axios');
 const { Product, Category, Brand, ChatMessage, sequelize } = require('../../models');
 const { Op } = require('sequelize');
 const vectorStoreService = require('./vectorStore');
+const logger = require('../../utils/logger');
 
 // Số lượt hội thoại tối đa giữ trong bộ nhớ (10 turns = 20 messages: user + assistant)
 const MAX_HISTORY_TURNS = 10;
@@ -35,12 +36,12 @@ class GeminiChatbotService {
   initializeChatbot() {
     try {
       if (this.apiKey && this.apiKey !== 'demo-key') {
-        console.info(`✅ OpenRouter AI khởi tạo thành công với model: ${this.model}`);
+        logger.info(`✅ OpenRouter AI khởi tạo thành công với model: ${this.model}`);
       } else {
-        console.warn('⚠️  Không tìm thấy OpenRouter API key, sử dụng phản hồi dự phòng');
+        logger.warn('⚠️  Không tìm thấy OpenRouter API key, sử dụng phản hồi dự phòng');
       }
     } catch (error) {
-      console.error('❌ Khởi tạo Chatbot thất bại:', error.message || error);
+      logger.error('❌ Khởi tạo Chatbot thất bại:', error.message || error);
     }
   }
 
@@ -84,7 +85,7 @@ Format bắt buộc: {"rewrittenQuery": "câu đã chuẩn hóa", "intent": "pro
         intent: result.intent || 'general',
       };
     } catch (error) {
-      console.error('❌ Lỗi preprocessMessage:', error.message);
+      logger.error('❌ Lỗi preprocessMessage:', error.message);
       return { rewrittenQuery: message, intent: 'general' };
     }
   }
@@ -93,12 +94,12 @@ Format bắt buộc: {"rewrittenQuery": "câu đã chuẩn hóa", "intent": "pro
     const startTime = Date.now(); // Đo thời gian xử lý cho analytics
     try {
       // Bước 0: Chuẩn hóa query + phân loại intent (1 LLM call)
-      console.log(`📝 Câu truy vấn gốc: "${message}"`);
+      logger.debug(`📝 Câu truy vấn gốc: "${message}"`);
       const { rewrittenQuery, intent } = await this.preprocessMessage(message);
       const searchMessage = rewrittenQuery || message;
 
       if (rewrittenQuery && rewrittenQuery.toLowerCase() !== message.toLowerCase()) {
-        console.log(`✨ Câu truy vấn đã viết lại: "${rewrittenQuery}" (intent: ${intent})`);
+        logger.debug(`✨ Câu truy vấn đã viết lại: "${rewrittenQuery}" (intent: ${intent})`);
       }
 
       // Bước 0.5: Nếu off_topic → trả về ngay, không tốn thêm 2 API call
@@ -112,19 +113,19 @@ Format bắt buộc: {"rewrittenQuery": "câu đã chuẩn hóa", "intent": "pro
       const history = sessionId ? (this.conversationHistory.get(sessionId) || []) : [];
 
       // Bước 2: Tìm kiếm sản phẩm liên quan qua Vector Store (Retrieval)
-      console.log(`🔍 Tìm kiếm Vector Store với: "${searchMessage}"`);
+      logger.debug(`🔍 Tìm kiếm Vector Store với: "${searchMessage}"`);
       let relevantProducts = [];
       try {
         const searchResults = await vectorStoreService.search(searchMessage, 10);
         relevantProducts = searchResults.map(res => ({ ...res.metadata, score: res.score }));
       } catch (vectorError) {
-        console.warn('⚠️ Vector store fail, fallback getAllProducts:', vectorError.message);
+        logger.warn('⚠️ Vector store fail, fallback getAllProducts:', vectorError.message);
         const allProducts = await this.getAllProducts();
         relevantProducts = allProducts.slice(0, 10);
       }
 
       if (process.env.NODE_ENV !== 'production') {
-        console.log(`📦 Tìm thấy ${relevantProducts.length} sản phẩm liên quan qua RAG`);
+        logger.debug(`📦 Tìm thấy ${relevantProducts.length} sản phẩm liên quan qua RAG`);
       }
 
       // Bước 3: Gọi LLM với RAG context + lịch sử hội thoại (Generation)
@@ -152,7 +153,7 @@ Format bắt buộc: {"rewrittenQuery": "câu đã chuẩn hóa", "intent": "pro
 
       return aiResponse;
     } catch (error) {
-      console.error('Lỗi chatbot:', error);
+      logger.error('Lỗi chatbot:', error);
       return this.getFallbackResponse(message);
     }
   }
@@ -186,7 +187,7 @@ Format bắt buộc: {"rewrittenQuery": "câu đã chuẩn hóa", "intent": "pro
       ]);
     } catch (dbError) {
       // Không để lỗi DB ảnh hưởng flow chính — chỉ log cảnh báo
-      console.warn('⚠️ Không thể lưu chatbot messages vào DB:', dbError.message);
+      logger.warn('⚠️ Không thể lưu chatbot messages vào DB:', dbError.message);
     }
   }
 
@@ -226,7 +227,7 @@ QUY TẮC BẮT BUỘC:
       ];
 
       if (process.env.NODE_ENV !== 'production') {
-        console.log('🤖 Đang gửi yêu cầu đến OpenRouter API (RAG + history)...');
+        logger.debug('🤖 Đang gửi yêu cầu đến OpenRouter API (RAG + history)...');
       }
 
       const response = await axios.post(
@@ -252,18 +253,18 @@ QUY TẮC BẮT BUỘC:
       // choices[] có thể rỗng khi OpenRouter content filter kích hoạt
       const aiText = response.data.choices?.[0]?.message?.content;
       if (!aiText) {
-        console.warn('⚠️ OpenRouter trả về choices rỗng — dùng fallback response');
+        logger.warn('⚠️ OpenRouter trả về choices rỗng — dùng fallback response');
         return this.getFallbackResponse(userMessage);
       }
 
       if (process.env.NODE_ENV !== 'production') {
-        console.log('✅ Đã nhận phản hồi từ OpenRouter API');
+        logger.debug('✅ Đã nhận phản hồi từ OpenRouter API');
       }
 
       // Phân tích phản hồi AI để trích xuất gợi ý sản phẩm
       return this.parseAIResponse(aiText, products, userMessage);
     } catch (error) {
-      console.error('❌ Chi tiết lỗi OpenRouter API:', error.response?.data || error.message);
+      logger.error('❌ Chi tiết lỗi OpenRouter API:', error.response?.data || error.message);
       return this.simpleKeywordMatch(userMessage, products);
     }
   }
@@ -367,7 +368,7 @@ Trả về ĐÚNG định dạng JSON sau:
             });
           } else {
             // Hallucination detection: LLM đề xuất sản phẩm không có trong retrieved context
-            console.warn(`[RAG] Hallucination detected: LLM đề xuất "${productName}" nhưng không có trong retrieved context`);
+            logger.warn(`[RAG] Hallucination detected: LLM đề xuất "${productName}" nhưng không có trong retrieved context`);
           }
         });
       }
@@ -384,7 +385,7 @@ Trả về ĐÚNG định dạng JSON sau:
         intent: parsed.intent || 'general',
       };
     } catch (error) {
-      console.error('[RAG] parseAIResponse JSON.parse failed:', error.message);
+      logger.error('[RAG] parseAIResponse JSON.parse failed:', error.message);
     }
 
     // Dự phòng: dùng khớp từ khóa đơn giản
@@ -456,7 +457,7 @@ Trả về ĐÚNG định dạng JSON sau:
       lowerMessage.includes('new')
     ) {
       if (process.env.NODE_ENV !== 'production') {
-        console.log('✅ Đã nhận diện ý định "sản phẩm mới"');
+        logger.debug('✅ Đã nhận diện ý định "sản phẩm mới"');
       }
 
       // Sort theo createdAt mới nhất — products từ vector store có createdAt trong metadata
@@ -521,7 +522,7 @@ Trả về ĐÚNG định dạng JSON sau:
 
       return products.map((p) => p.toJSON());
     } catch (error) {
-      console.error('Lỗi khi lấy danh sách sản phẩm:', error);
+      logger.error('Lỗi khi lấy danh sách sản phẩm:', error);
       return [];
     }
   }

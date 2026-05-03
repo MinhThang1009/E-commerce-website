@@ -173,3 +173,4 @@ const BankTransferQR: React.FC<BankTransferQRProps> = ({
 };
 
 export default BankTransferQR;
+

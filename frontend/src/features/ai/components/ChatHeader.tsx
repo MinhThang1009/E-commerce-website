@@ -81,3 +81,4 @@ const ChatHeader: React.FC<ChatHeaderProps> = ({ onClose, geminiService }) => {
 };
 
 export default ChatHeader;
+

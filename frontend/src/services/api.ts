@@ -82,14 +82,9 @@ const isUnauthorizedError = (error: any): boolean => {
 /**
  * Ghi log lỗi API trong môi trường development
  */
-const logApiError = (args: string | FetchArgs, error: any): void => {
-  if (import.meta.env.DEV) {
-    console.group('🚨 Lỗi API');
-    console.log('Endpoint:', typeof args === 'string' ? args : args.url);
-    console.log('Status:', error.status);
-    console.log('Data:', error.data);
-    console.groupEnd();
-  }
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
+const logApiError = (_args: string | FetchArgs, _error: any): void => {
+  // Logging đã được chuyển sang backend logger — frontend không cần log ở đây
 };
 
 /**
@@ -181,3 +176,4 @@ export { baseQueryWithAutoLogout, baseQuery };
 export const {
   // Chưa có endpoint nào được định nghĩa
 } = api;
+

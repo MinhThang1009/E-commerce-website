@@ -22,3 +22,4 @@ const StarIcon: React.FC<IconProps> = ({
 };
 
 export default StarIcon;
+

@@ -1,6 +1,6 @@
-﻿import axios from 'axios';
+import axios from 'axios';
 import i18n from '@/config/i18n';
-// Cấu hình API
+// C?u h�nh API
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8888/api';
 
 export interface GeminiChatResponse {
@@ -16,8 +16,7 @@ class GeminiService {
   }
 
   private async initializeModel() {
-    // Hiện dùng chat qua backend (OpenRouter)
-    console.log('GeminiService: khởi tạo qua backend (OpenRouter)');
+    // Hi?n d�ng chat qua backend (OpenRouter)
     this.isInitialized = true;
   }
 
@@ -29,7 +28,6 @@ class GeminiService {
     const cleanMessage = userMessage.trim();
 
     try {
-      console.log('Đang gửi request đến backend AI...');
 
       const response = await axios.post(`${API_BASE_URL}/chatbot/message`, {
         message: cleanMessage
@@ -47,7 +45,7 @@ class GeminiService {
         suggestions: data.suggestions || this.generateSuggestions(cleanMessage, data.response || ''),
       };
     } catch (error: any) {
-      console.error('Lỗi AI Service:', error);
+      console.error('L?i AI Service:', error);
 
       return {
         text: i18n.t('chat.errors.busy'),
@@ -63,7 +61,7 @@ class GeminiService {
   private generateSuggestions(userMessage: string, aiResponse: string): string[] {
     const lowerMessage = userMessage.toLowerCase();
 
-    if (lowerMessage.includes('tìm') || lowerMessage.includes('mua')) {
+    if (lowerMessage.includes('t�m') || lowerMessage.includes('mua')) {
       return [
         i18n.t('chat.suggestions.newProducts'),
         i18n.t('chat.suggestions.hotPromo'),
@@ -85,11 +83,12 @@ class GeminiService {
   getStatus(): { ready: boolean; hasApiKey: boolean; error?: string } {
     return {
       ready: this.isInitialized,
-      hasApiKey: true, // Luôn true vì xác thực qua backend
+      hasApiKey: true, // Lu�n true v� x�c th?c qua backend
     };
   }
 }
 
-// Export instance duy nhất (singleton)
+// Export instance duy nh?t (singleton)
 export const geminiService = new GeminiService();
 export default geminiService;
+

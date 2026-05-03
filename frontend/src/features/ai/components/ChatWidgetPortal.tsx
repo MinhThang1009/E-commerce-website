@@ -301,3 +301,4 @@ const ChatWidgetPortal: React.FC = () => {
 };
 
 export default ChatWidgetPortal;
+

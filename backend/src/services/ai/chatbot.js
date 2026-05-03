@@ -1,5 +1,6 @@
 const { Product, Category, Brand, Order, OrderItem, User } = require('../../models');
 const { Op } = require('sequelize');
+const logger = require('../../utils/logger');
 
 // Alias tĩnh cho các từ viết tắt/tên thay thế — chỉ cần cập nhật khi thêm LOẠI sản phẩm hoàn toàn mới
 // Tên danh mục (key) phải khớp chính xác với tên trong DB (lowercase)
@@ -274,7 +275,7 @@ class ChatbotService {
         isVip: (user.orders?.length || 0) >= 5,
       };
     } catch (error) {
-      console.error('Error getting user profile:', error);
+      logger.error('Lỗi lấy hồ sơ người dùng:', error);
       return null;
     }
   }
@@ -366,7 +367,7 @@ class ChatbotService {
           : 0,
       }));
     } catch (error) {
-      console.error('Error getting recommendations:', error);
+      logger.error('Lỗi lấy gợi ý sản phẩm:', error);
       return [];
     }
   }
@@ -428,7 +429,7 @@ class ChatbotService {
         type: pitchType,
       };
     } catch (error) {
-      console.error('Error generating sales pitch:', error);
+      logger.error('Lỗi tạo nội dung tư vấn bán hàng:', error);
       return {
         text: '🌟 Chúng tôi có nhiều sản phẩm tuyệt vời đang được khuyến mãi! Bạn có muốn xem không?',
         products: bestDeals.slice(0, 3),
@@ -487,17 +488,17 @@ class ChatbotService {
   async trackConversation(data) {
     try {
       // Trong triển khai thực tế, dữ liệu này sẽ được lưu vào bảng theo dõi hội thoại
-      console.log('Tracking conversation:', {
+      logger.debug('Tracking conversation', {
         userId: data.userId,
-        message: data.message,
         intent: data.intent,
         products: data.products?.length || 0,
         timestamp: data.timestamp,
+        // Không log message — có thể chứa thông tin cá nhân
       });
 
       // Có thể lưu vào model ChatbotConversation
     } catch (error) {
-      console.error('Error tracking conversation:', error);
+      logger.error('Lỗi theo dõi hội thoại chatbot:', error);
     }
   }
 
@@ -507,11 +508,11 @@ class ChatbotService {
   async trackAnalytics(data) {
     try {
       // Trong triển khai thực tế, dữ liệu này sẽ được lưu vào bảng analytics
-      console.log('Tracking analytics:', data);
+      logger.debug('Tracking analytics', { eventType: data?.eventType, userId: data?.userId });
 
       // Có thể lưu vào model ChatbotAnalytics
     } catch (error) {
-      console.error('Error tracking analytics:', error);
+      logger.error('Lỗi theo dõi analytics chatbot:', error);
     }
   }
 

@@ -26,3 +26,4 @@ const CloseIcon: React.FC<IconProps> = ({ className = '', size = 16 }) => {
 };
 
 export default CloseIcon;
+

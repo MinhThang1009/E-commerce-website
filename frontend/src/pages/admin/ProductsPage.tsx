@@ -126,18 +126,15 @@ const ProductsPage: React.FC = () => {
   // Log dữ liệu sản phẩm để debug
   useEffect(() => {
     if (products.length > 0) {
-      console.log('Products data:', products);
       // Kiểm tra xem sản phẩm có biến thể không
       const hasVariants = products.some(
         (product) => product.variants && product.variants.length > 0
       );
-      console.log('Sản phẩm có biến thể:', hasVariants);
       if (hasVariants) {
         // Log sản phẩm đầu tiên có biến thể
         const productWithVariants = products.find(
           (product) => product.variants && product.variants.length > 0
         );
-        console.log('Ví dụ sản phẩm có biến thể:', productWithVariants);
       }
     }
   }, [products]);
@@ -145,7 +142,6 @@ const ProductsPage: React.FC = () => {
   // Log dữ liệu danh mục để debug
   useEffect(() => {
     if (apiCategories.length > 0) {
-      console.log('Categories data:', apiCategories);
     }
   }, [apiCategories]);
 
@@ -367,7 +363,6 @@ const ProductsPage: React.FC = () => {
             type="link"
             icon={<EditOutlined />}
             onClick={() => {
-              console.log('Nút chỉnh sửa được nhấn, record.id:', record.id);
               navigate(`/admin/products/edit/${record.id}`);
             }}
             title={t('admin.products.actions.edit')}
@@ -677,3 +672,4 @@ const ProductsPage: React.FC = () => {
 };
 
 export default ProductsPage;
+

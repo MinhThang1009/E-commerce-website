@@ -1,4 +1,4 @@
-﻿import React from 'react';
+import React from 'react';
 import { message } from 'antd';
 import { HeroSection, HomeNewsSection } from '@/components/sections';
 import {
@@ -29,7 +29,7 @@ import { PremiumButton, BannerDisplay } from '@/components/common';
 const HomePage: React.FC = () => {
   const { t } = useTranslation();
 
-  // Các API query với quản lý state nâng cao
+  // C�c API query v?i qu?n l� state n�ng cao
   const featuredProductsQuery = useGetFeaturedProductsQuery({ limit: 4 });
   const categoriesQuery = useGetCategoriesQuery();
 
@@ -67,7 +67,7 @@ const HomePage: React.FC = () => {
     isArray: true,
   });
 
-  // Đăng ký nhận bản tin
+  // �ang k� nh?n b?n tin
   const [newsletterEmail, setNewsletterEmail] = React.useState('');
   const [subscribeNewsletter, { isLoading: isSubscribing }] = useSubscribeNewsletterMutation();
 
@@ -86,7 +86,7 @@ const HomePage: React.FC = () => {
     }
   };
 
-  // Chuyển đổi danh mục để hiển thị
+  // Chuy?n d?i danh m?c d? hi?n th?
   const displayCategories =
     categories.data?.slice(0, 6).map((category: any) => ({
       id: category.id,
@@ -384,3 +384,4 @@ const HomePage: React.FC = () => {
 };
 
 export default HomePage;
+

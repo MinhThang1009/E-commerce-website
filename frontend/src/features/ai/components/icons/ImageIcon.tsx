@@ -23,3 +23,4 @@ const ImageIcon: React.FC<IconProps> = ({ className = 'w-12 h-12' }) => {
 };
 
 export default ImageIcon;
+

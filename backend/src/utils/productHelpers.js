@@ -1,3 +1,4 @@
+const logger = require('./logger');
 /**
  * Các hàm hỗ trợ cho sản phẩm
  * Tiện ích quản lý tồn kho và biến thể sản phẩm
@@ -43,7 +44,7 @@ const updateProductTotalStock = async (productId, Product) => {
 
     return totalStock;
   } catch (error) {
-    console.error('Lỗi khi cập nhật tổng tồn kho sản phẩm:', error);
+    logger.error('Lỗi khi cập nhật tổng tồn kho sản phẩm:', error);
     throw error;
   }
 };
@@ -71,7 +72,7 @@ const validateVariantAttributes = (productAttributes, variantAttributes) => {
     if (productAttr.values && Array.isArray(productAttr.values)) {
       // Kiểm tra nếu giá trị biến thể không nằm trong danh sách giá trị cho phép
       if (!productAttr.values.includes(variantValue)) {
-        console.log(
+        logger.debug(
           `Giá trị biến thể không hợp lệ: ${variantValue} không nằm trong ${productAttr.values.join(', ')}`
         );
         return false;
@@ -148,3 +149,4 @@ module.exports = {
   getVariantStock,
   findVariantByAttributes,
 };
+

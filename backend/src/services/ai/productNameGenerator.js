@@ -1,3 +1,4 @@
+const logger = require('../../utils/logger');
 const { AttributeValue, AttributeGroup } = require('../../models');
 
 // Định nghĩa association nếu chưa tồn tại
@@ -76,7 +77,7 @@ class ProductNameGeneratorService {
 
       return nameParts.join(separator);
     } catch (error) {
-      console.error('Error generating product name:', error);
+      logger.error('Error generating product name:', error);
       throw error;
     }
   }
@@ -103,7 +104,7 @@ class ProductNameGeneratorService {
         separator
       );
     } catch (error) {
-      console.error('Error generating variant name:', error);
+      logger.error('Error generating variant name:', error);
       throw error;
     }
   }
@@ -160,7 +161,7 @@ class ProductNameGeneratorService {
 
       return result;
     } catch (error) {
-      console.error('Error previewing product name:', error);
+      logger.error('Error previewing product name:', error);
       throw error;
     }
   }
@@ -195,7 +196,7 @@ class ProductNameGeneratorService {
 
       return attributeValues;
     } catch (error) {
-      console.error('Error getting name affecting attributes:', error);
+      logger.error('Error getting name affecting attributes:', error);
       throw error;
     }
   }
@@ -228,10 +229,11 @@ class ProductNameGeneratorService {
 
       return results;
     } catch (error) {
-      console.error('Error batch generating names:', error);
+      logger.error('Error batch generating names:', error);
       throw error;
     }
   }
 }
 
 module.exports = new ProductNameGeneratorService();
+

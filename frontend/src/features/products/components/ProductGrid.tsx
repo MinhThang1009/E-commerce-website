@@ -1,4 +1,4 @@
-﻿import React from 'react';
+import React from 'react';
 import { useTranslation } from 'react-i18next';
 import { Product } from '@/services/productApi';
 import ProductCard from '@/components/shared/ProductCard';
@@ -15,14 +15,14 @@ const ProductGrid: React.FC<ProductGridProps> = ({
   columns = 3,
 }) => {
   const { t } = useTranslation();
-  // Xác định class số cột lưới
+  // X�c d?nh class s? c?t lu?i
   const gridClass = {
     2: 'grid-cols-1 sm:grid-cols-2',
     3: 'grid-cols-1 sm:grid-cols-2 lg:grid-cols-3',
     4: 'grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4',
   }[columns];
 
-  // Hiển thị skeleton khi đang tải
+  // Hi?n th? skeleton khi dang t?i
   if (loading) {
     return (
       <div className={`grid ${gridClass} gap-4 md:gap-6`}>
@@ -41,7 +41,7 @@ const ProductGrid: React.FC<ProductGridProps> = ({
     );
   }
 
-  // Không tìm thấy sản phẩm
+  // Kh�ng t�m th?y s?n ph?m
   if (products.length === 0) {
     return (
       <div className="text-center py-12">
@@ -69,7 +69,7 @@ const ProductGrid: React.FC<ProductGridProps> = ({
     );
   }
 
-  // Lưới sản phẩm
+  // Lu?i s?n ph?m
   return (
     <div className={`grid ${gridClass} gap-4 md:gap-6`}>
       {products.map((product) => (
@@ -80,3 +80,4 @@ const ProductGrid: React.FC<ProductGridProps> = ({
 };
 
 export default ProductGrid;
+

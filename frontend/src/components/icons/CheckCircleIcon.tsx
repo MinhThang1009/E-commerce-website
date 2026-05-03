@@ -19,3 +19,4 @@ const CheckCircleIcon: React.FC<IconProps> = ({
 };
 
 export default CheckCircleIcon;
+

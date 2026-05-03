@@ -49,3 +49,4 @@ export const getGreetingMessage = () => ({
     i18n.t('chat.suggestions.shoppingSupport'),
   ],
 });
+

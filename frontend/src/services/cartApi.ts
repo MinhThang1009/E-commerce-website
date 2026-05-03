@@ -1,7 +1,7 @@
-﻿import { api } from './api';
+import { api } from './api';
 import { RootState } from '@/store';
 
-// Kiểu dữ liệu giỏ hàng từ backend
+// Ki?u d? li?u gi? h�ng t? backend
 export interface BackendCartItem {
   id: string;
   cartId: string;
@@ -68,7 +68,7 @@ export interface CartCountResponse {
   };
 }
 
-// Sử dụng api.injectEndpoints để thêm các endpoints vào API service chính
+// S? d?ng api.injectEndpoints d? th�m c�c endpoints v�o API service ch�nh
 export const cartApi = api.injectEndpoints({
   endpoints: (builder) => ({
     getCart: builder.query<BackendCart, void>({
@@ -178,3 +178,4 @@ export const {
   useMergeCartMutation,
   useValidateCartQuery,
 } = cartApi;
+

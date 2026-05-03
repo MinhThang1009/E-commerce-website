@@ -1,4 +1,4 @@
-﻿import { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useSelector, useDispatch } from 'react-redux';
 import { useTranslation } from 'react-i18next';
@@ -46,25 +46,25 @@ const CheckoutPage: React.FC = () => {
     return isBuyNowFlow && itemStr ? JSON.parse(itemStr) : null;
   });
 
-  // Thống nhất danh sách items hiển thị
+  // Th?ng nh?t danh s�ch items hi?n th?
   const items = isBuyNow && buyNowItem ? [buyNowItem] : cartItems;
 
-  // Đảm bảo giỏ hàng được khởi tạo khi trang được tải
+  // �?m b?o gi? h�ng du?c kh?i t?o khi trang du?c t?i
   useEffect(() => {
-    // Kiểm tra xem URL có chứa tham số
+    // Ki?m tra xem URL c� ch?a tham s?
     const searchParams = new URLSearchParams(window.location.search);
     const isBuyNow = searchParams.get('buyNow') === 'true';
 
-    // Kiểm tra cả hai loại URL (cũ và mới)
+    // Ki?m tra c? hai lo?i URL (cu v� m?i)
     const repayOrderId =
       searchParams.get('repayOrder') || searchParams.get('orderId');
     const repayAmount = searchParams.get('amount');
 
-    // Kiểm tra xem URL có phải là URL cũ không (/checkout/payment)
+    // Ki?m tra xem URL c� ph?i l� URL cu kh�ng (/checkout/payment)
     const isOldPaymentUrl =
       window.location.pathname.includes('/checkout/payment');
 
-    // Nếu là URL cũ, chuyển hướng đến URL mới
+    // N?u l� URL cu, chuy?n hu?ng d?n URL m?i
     if (isOldPaymentUrl && repayOrderId && repayAmount) {
       navigate(`/checkout?repayOrder=${repayOrderId}&amount=${repayAmount}`, {
         replace: true,
@@ -72,17 +72,17 @@ const CheckoutPage: React.FC = () => {
       return;
     }
 
-    // Kiểm tra xem người dùng đang thanh toán lại đơn hàng hay không
+    // Ki?m tra xem ngu?i d�ng dang thanh to�n l?i don h�ng hay kh�ng
     if (repayOrderId && repayAmount) {
-      // Đặt thông tin đơn hàng hiện tại để thanh toán
+      // �?t th�ng tin don h�ng hi?n t?i d? thanh to�n
       setCurrentOrder({
         id: repayOrderId,
         total: parseFloat(repayAmount),
         isRepay: true,
       });
 
-      // Với đơn hàng thanh toán lại, mặc định dùng stripe
-      // Sau này có thể đặt theo phương thức thanh toán gốc của đơn hàng
+      // V?i don h�ng thanh to�n l?i, m?c d?nh d�ng stripe
+      // Sau n�y c� th? d?t theo phuong th?c thanh to�n g?c c?a don h�ng
       setFormData((prev) => ({
         ...prev,
         paymentMethod: 'stripe',
@@ -91,19 +91,19 @@ const CheckoutPage: React.FC = () => {
       return;
     }
 
-    // Kiểm tra xem người dùng vừa thực hiện hành động "Mua ngay" hay không
+    // Ki?m tra xem ngu?i d�ng v?a th?c hi?n h�nh d?ng "Mua ngay" hay kh�ng
     const isBuyNowAction = sessionStorage.getItem('buyNowAction') === 'true';
 
-    // Nếu người dùng vừa thực hiện hành động "Mua ngay", không chuyển hướng
+    // N?u ngu?i d�ng v?a th?c hi?n h�nh d?ng "Mua ngay", kh�ng chuy?n hu?ng
     if (isBuyNow || isBuyNowAction) {
       setIsBuyNow(true);
-      // Xóa cờ sau khi đã sử dụng
+      // X�a c? sau khi d� s? d?ng
       sessionStorage.removeItem('buyNowAction');
 
-      // Đảm bảo giỏ hàng được khởi tạo
+      // �?m b?o gi? h�ng du?c kh?i t?o
       dispatch(initializeCart());
 
-      // Lấy thông tin sản phẩm mua ngay từ sessionStorage
+      // L?y th�ng tin s?n ph?m mua ngay t? sessionStorage
       const buyNowItemStr = sessionStorage.getItem('buyNowItem');
       if (buyNowItemStr) {
         try {
@@ -117,11 +117,11 @@ const CheckoutPage: React.FC = () => {
       return;
     }
 
-    // Khởi tạo giỏ hàng
+    // Kh?i t?o gi? h�ng
     dispatch(initializeCart());
 
-    // Kiểm tra localStorage trực tiếp để đảm bảo không có dữ liệu giỏ hàng cũ
-    // Chỉ chuyển hướng nếu không phải đang thanh toán lại đơn hàng
+    // Ki?m tra localStorage tr?c ti?p d? d?m b?o kh�ng c� d? li?u gi? h�ng cu
+    // Ch? chuy?n hu?ng n?u kh�ng ph?i dang thanh to�n l?i don h�ng
     const cartItemsStore = localStorage.getItem('cartItems');
     if ((!cartItemsStore || cartItemsStore === '[]') && !repayOrderId && !isBuyNow) {
       navigate('/shop');
@@ -138,10 +138,10 @@ const CheckoutPage: React.FC = () => {
   const [createMomoUrl] = useCreateMomoUrlMutation();
   const [createVNPayUrl] = useCreateVNPayUrlMutation();
 
-  // Lấy số lượng giỏ hàng từ server
+  // L?y s? lu?ng gi? h�ng t? server
   const { data: serverCartCount } = useGetCartCountQuery();
 
-  // Dữ liệu điểm tích lũy
+  // D? li?u di?m t�ch luy
   const { data: loyaltyData } = useGetLoyaltyInfoQuery(undefined, {
     skip: !user,
   });
@@ -149,7 +149,7 @@ const CheckoutPage: React.FC = () => {
   const [pointsToUse, setPointsToUse] = useState<number>(0);
   const [pointsError, setPointsError] = useState('');
 
-  // Các phương thức thanh toán
+  // C�c phuong th?c thanh to�n
   const paymentMethods = [
     { value: 'cod', label: t('checkout.paymentMethod.cod') },
     { value: 'vnpay', label: t('checkout.paymentMethod.vnpay') },
@@ -157,7 +157,7 @@ const CheckoutPage: React.FC = () => {
     { value: 'installment', label: t('checkout.paymentMethod.installment') },
   ];
 
-  // Các phương thức vận chuyển
+  // C�c phuong th?c v?n chuy?n
   const shippingMethods = [
     {
       value: 'standard',
@@ -176,25 +176,25 @@ const CheckoutPage: React.FC = () => {
     },
   ];
 
-  // Trạng thái form
+  // Tr?ng th�i form
   const [formData, setFormData] = useState({
     firstName: user?.firstName || '',
     lastName: user?.lastName || '',
     email: user?.email || '',
-    phone: user?.phone || '', // Sử dụng số điện thoại của người dùng nếu có
-    addressDetail: '', // Số nhà, tên đường
+    phone: user?.phone || '', // S? d?ng s? di?n tho?i c?a ngu?i d�ng n?u c�
+    addressDetail: '', // S? nh�, t�n du?ng
     ward: '',
-    district: '', // Lưu tên quận/huyện
-    province: '', // Lưu tên tỉnh/thành
+    district: '', // Luu t�n qu?n/huy?n
+    province: '', // Luu t�n t?nh/th�nh
     address: '', // = addressDetail + ward
     city: '', // = district
     state: '', // = province
     zipCode: '',
     country: 'VN',
     shippingMethod: 'standard',
-    paymentMethod: 'cod', // Mặc định thanh toán khi nhận hàng
+    paymentMethod: 'cod', // M?c d?nh thanh to�n khi nh?n h�ng
     notes: '',
-    // Địa chỉ thanh toán (mặc định giống địa chỉ giao hàng)
+    // �?a ch? thanh to�n (m?c d?nh gi?ng d?a ch? giao h�ng)
     billingFirstName: user?.firstName || '',
     billingLastName: user?.lastName || '',
     billingAddress: '',
@@ -202,7 +202,7 @@ const CheckoutPage: React.FC = () => {
     billingState: '',
     billingZipCode: '',
     billingCountry: 'VN',
-    billingPhone: user?.phone || '', // Sử dụng số điện thoại của người dùng nếu có
+    billingPhone: user?.phone || '', // S? d?ng s? di?n tho?i c?a ngu?i d�ng n?u c�
     sameAsShipping: true,
   });
 
@@ -211,15 +211,15 @@ const CheckoutPage: React.FC = () => {
   const [currentOrder, setCurrentOrder] = useState<any>(null);
   const [isInstallmentModalOpen, setIsInstallmentModalOpen] = useState(false);
 
-  // Đã xóa hook lấy danh sách tỉnh/thành
+  // �� x�a hook l?y danh s�ch t?nh/th�nh
 
-  // Trạng thái mã giảm giá
+  // Tr?ng th�i m� gi?m gi�
   const [discountCodeInput, setDiscountCodeInput] = useState('');
   const [appliedDiscount, setAppliedDiscount] = useState<{ code: string; amount: number } | null>(null);
   const [discountError, setDiscountError] = useState('');
   const [applyDiscountCode, { isLoading: isValidatingCode }] = useApplyDiscountCodeMutation();
 
-  // Cột bảng trả góp
+  // C?t b?ng tr? g�p
   const installmentColumns = [
     {
       title: t('checkout.installment.bankColumn'),
@@ -250,14 +250,14 @@ const CheckoutPage: React.FC = () => {
     { key: '6', bank: 'TPBank', terms: `3, 6, 9, 12 ${mo}`, fee: '0%' },
   ];
 
-  // Mở modal khi chọn thanh toán trả góp
+  // M? modal khi ch?n thanh to�n tr? g�p
   useEffect(() => {
     if (formData.paymentMethod === 'installment') {
       setIsInstallmentModalOpen(true);
     }
   }, [formData.paymentMethod]);
 
-  // Danh sách quốc gia
+  // Danh s�ch qu?c gia
   const countries = [
     { value: 'VN', label: t('checkout.countries.VN') },
     { value: 'US', label: t('checkout.countries.US') },
@@ -273,13 +273,13 @@ const CheckoutPage: React.FC = () => {
     0
   );
 
-  // Tính tổng phí bảo hành
+  // T�nh t?ng ph� b?o h�nh
   const warrantyTotal = items.reduce((sum: number, item: any) => {
     const itemWarrantyPrice = item.warrantyPackages?.reduce((wSum: number, pkg: any) => wSum + pkg.price, 0) || 0;
     return sum + (itemWarrantyPrice * item.quantity);
   }, 0);
 
-  // Tính phí vận chuyển tự động theo khoảng cách tuyến tính sử dụng API LocationIQ
+  // T�nh ph� v?n chuy?n t? d?ng theo kho?ng c�ch tuy?n t�nh s? d?ng API LocationIQ
   let shippingCost = 0;
   let finalDistance = 0;
 
@@ -302,38 +302,38 @@ const CheckoutPage: React.FC = () => {
       };
 
       const calculateShippingFee = (distanceInKm: number) => {
-        if (distanceInKm <= 3) return 15000; // 3km đầu tiên đồng giá 15k
-        const fee = 15000 + Math.ceil(distanceInKm - 3) * 5000; // km thứ 4 trở đi cộng thêm 5k/km
+        if (distanceInKm <= 3) return 15000; // 3km d?u ti�n d?ng gi� 15k
+        const fee = 15000 + Math.ceil(distanceInKm - 3) * 5000; // km th? 4 tr? di c?ng th�m 5k/km
         return Math.min(fee, 100000); // max 100k
       };
 
-      // Tọa độ gốc cửa hàng: 144 Đ. Xuân Thủy, Cầu Giấy, HN (21.0378, 105.7827)
+      // T?a d? g?c c?a h�ng: 144 �. Xu�n Th?y, C?u Gi?y, HN (21.0378, 105.7827)
       finalDistance = calculateDistance(21.0378, 105.7827, parseFloat(lat), parseFloat(lon));
       shippingCost = calculateShippingFee(finalDistance);
     }
   }
 
-  const tax = 0; // Thuế 0% - không áp dụng thuế theo yêu cầu
+  const tax = 0; // Thu? 0% - kh�ng �p d?ng thu? theo y�u c?u
   const discountAmount = appliedDiscount ? appliedDiscount.amount : 0;
   
-  // Tính giảm giá theo điểm (1 điểm = 1.000 VND)
+  // T�nh gi?m gi� theo di?m (1 di?m = 1.000 VND)
   const pointsDiscount = pointsToUse * 1000;
   
   const total = subtotal + warrantyTotal + shippingCost + tax - discountAmount - pointsDiscount;
 
-  // Xử lý thay đổi input trong form
+  // X? l� thay d?i input trong form
   const handleInputChange = (name: string, value: string) => {
     setFormData((prev) => {
       const updated = { ...prev, [name]: value };
 
-      // Tự động điền các trường phụ để vượt qua validation phía backend
+      // T? d?ng di?n c�c tru?ng ph? d? vu?t qua validation ph�a backend
       if (name === 'address') {
         let parts = value.split(',');
         updated.state = parts.length > 2 ? parts[parts.length - 2].trim() : t('checkout.defaultState');
         updated.city = parts.length > 3 ? parts[parts.length - 3].trim() : t('checkout.defaultCity');
       }
 
-      // Tự động điền địa chỉ thanh toán nếu giống địa chỉ giao hàng
+      // T? d?ng di?n d?a ch? thanh to�n n?u gi?ng d?a ch? giao h�ng
       if (updated.sameAsShipping && name.startsWith('shipping')) {
         const billingField = name.replace('shipping', 'billing');
         updated[billingField as keyof typeof updated] = value as never;
@@ -342,7 +342,7 @@ const CheckoutPage: React.FC = () => {
       return updated;
     });
 
-    // Xóa lỗi khi người dùng bắt đầu nhập
+    // X�a l?i khi ngu?i d�ng b?t d?u nh?p
     if (errors[name]) {
       setErrors((prev) => ({
         ...prev,
@@ -351,9 +351,9 @@ const CheckoutPage: React.FC = () => {
     }
   };
 
-  // Đã xóa các handler tỉnh/thành cũ
+  // �� x�a c�c handler t?nh/th�nh cu
 
-  // Xử lý checkbox "giống địa chỉ giao hàng"
+  // X? l� checkbox "gi?ng d?a ch? giao h�ng"
   const handleSameAsShipping = (checked: boolean) => {
     setFormData((prev) => ({
       ...prev,
@@ -371,11 +371,11 @@ const CheckoutPage: React.FC = () => {
     }));
   };
 
-  // Validate form đầu vào
+  // Validate form d?u v�o
   const validateForm = () => {
     const newErrors: Record<string, string> = {};
 
-    // Các trường bắt buộc
+    // C�c tru?ng b?t bu?c
     const requiredFields = [
       'firstName',
       'lastName',
@@ -390,17 +390,17 @@ const CheckoutPage: React.FC = () => {
       }
     });
 
-    // Kiểm tra định dạng email
+    // Ki?m tra d?nh d?ng email
     if (formData.email && !/\S+@\S+\.\S+/.test(formData.email)) {
       newErrors.email = t('checkout.validation.emailInvalid');
     }
 
-    // Kiểm tra định dạng số điện thoại VN: 0XXXXXXXXX hoặc +84XXXXXXXXX
+    // Ki?m tra d?nh d?ng s? di?n tho?i VN: 0XXXXXXXXX ho?c +84XXXXXXXXX
     if (formData.phone && !/^(0|\+84)[0-9]{9}$/.test(formData.phone.trim())) {
       newErrors.phone = t('checkout.validation.phoneInvalid');
     }
 
-    // Kiểm tra địa chỉ thanh toán nếu khác địa chỉ giao hàng
+    // Ki?m tra d?a ch? thanh to�n n?u kh�c d?a ch? giao h�ng
     if (!formData.sameAsShipping) {
       const billingFields = [
         'billingFirstName',
@@ -423,7 +423,7 @@ const CheckoutPage: React.FC = () => {
     return Object.keys(newErrors).length === 0;
   };
 
-  // Xử lý áp dụng mã giảm giá
+  // X? l� �p d?ng m� gi?m gi�
   const handleApplyDiscount = async () => {
     if (!discountCodeInput.trim()) {
       setDiscountError(t('checkout.discountCode.required'));
@@ -481,7 +481,7 @@ const CheckoutPage: React.FC = () => {
     setPointsError('');
   };
 
-  // Tạo đơn hàng
+  // T?o don h�ng
   const handleCreateOrder = async () => {
     if (!validateForm()) {
       const firstError = document.querySelector('[aria-invalid="true"]');
@@ -491,7 +491,7 @@ const CheckoutPage: React.FC = () => {
       return null;
     }
 
-    setIsProcessing(true); // Bật trạng thái loading
+    setIsProcessing(true); // B?t tr?ng th�i loading
 
     try {
       const orderData = {
@@ -531,7 +531,7 @@ const CheckoutPage: React.FC = () => {
         notes: formData.notes,
         discountCode: appliedDiscount ? appliedDiscount.code : undefined,
         pointsToUse: pointsToUse,
-        // shippingCost KHÔNG gửi lên backend — backend tự tính theo Phase 7.3
+        // shippingCost KH�NG g?i l�n backend � backend t? t�nh theo Phase 7.3
         items: isBuyNow && buyNowItem ? [{
           productId: buyNowItem.productId,
           variantId: buyNowItem.variantId,
@@ -543,7 +543,7 @@ const CheckoutPage: React.FC = () => {
       const response = await createOrder(orderData).unwrap();
       return response.data.order;
     } catch (error) {
-      console.error('Tạo đơn hàng thất bại:', error);
+      console.error('T?o don h�ng th?t b?i:', error);
       dispatch(
         addNotification({
           type: 'error',
@@ -553,11 +553,11 @@ const CheckoutPage: React.FC = () => {
       );
       return null;
     } finally {
-      setIsProcessing(false); // Tắt trạng thái loading
+      setIsProcessing(false); // T?t tr?ng th�i loading
     }
   };
 
-  // Xử lý thanh toán thành công
+  // X? l� thanh to�n th�nh c�ng
   const handlePaymentSuccess = async (paymentIntent: any) => {
     dispatch(
       addNotification({
@@ -567,17 +567,17 @@ const CheckoutPage: React.FC = () => {
       })
     );
 
-    // Xóa giỏ hàng
+    // X�a gi? h�ng
     dispatch(clearCart());
 
-    // Làm mới số lượng giỏ hàng để cập nhật badge trên header
+    // L�m m?i s? lu?ng gi? h�ng d? c?p nh?t badge tr�n header
     dispatch(cartApi.util.invalidateTags(['CartCount']));
 
-    // Chuyển hướng đến trang đơn hàng
+    // Chuy?n hu?ng d?n trang don h�ng
     navigate('/orders');
   };
 
-  // Xử lý lỗi thanh toán
+  // X? l� l?i thanh to�n
   const handlePaymentError = (error: string) => {
     dispatch(
       addNotification({
@@ -588,12 +588,12 @@ const CheckoutPage: React.FC = () => {
     );
   };
 
-  // Xử lý trạng thái đang thanh toán
+  // X? l� tr?ng th�i dang thanh to�n
   const handlePaymentProcessing = (processing: boolean) => {
     setIsProcessing(processing);
   };
 
-  // Tạo đơn hàng cho thanh toán Stripe
+  // T?o don h�ng cho thanh to�n Stripe
   const handleStripeOrderCreation = async () => {
     const order = await handleCreateOrder();
     if (order) {
@@ -601,24 +601,24 @@ const CheckoutPage: React.FC = () => {
     }
   };
 
-  // Xử lý submit form cho tất cả các phương thức thanh toán
+  // X? l� submit form cho t?t c? c�c phuong th?c thanh to�n
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
     if (formData.paymentMethod === 'stripe') {
-      // Với Stripe, tạo đơn hàng trước rồi hiển thị form thanh toán
+      // V?i Stripe, t?o don h�ng tru?c r?i hi?n th? form thanh to�n
       await handleStripeOrderCreation();
       return;
     }
 
     if (formData.paymentMethod === 'bank_transfer') {
-      // Với chuyển khoản ngân hàng, tạo đơn hàng và chuyển hướng đến trang thanh toán QR
+      // V?i chuy?n kho?n ng�n h�ng, t?o don h�ng v� chuy?n hu?ng d?n trang thanh to�n QR
       const order = await handleCreateOrder();
       if (order) {
         dispatch(clearCart());
         dispatch(cartApi.util.invalidateTags(['CartCount']));
 
-        // Chuyển hướng đến trang thanh toán QR kèm thông tin đơn hàng
+        // Chuy?n hu?ng d?n trang thanh to�n QR k�m th�ng tin don h�ng
         navigate(
           `/payment-qr?orderId=${order.id}&amount=${order.total}&numberOrder=${order.number}`
         );
@@ -629,7 +629,7 @@ const CheckoutPage: React.FC = () => {
     if (formData.paymentMethod === 'vnpay') {
       let order = currentOrder;
 
-      // Nếu chưa có order (thanh toán mới), tạo order mới
+      // N?u chua c� order (thanh to�n m?i), t?o order m?i
       if (!order) {
         order = await handleCreateOrder();
       }
@@ -645,7 +645,7 @@ const CheckoutPage: React.FC = () => {
             return;
           }
         } catch (error) {
-          console.error('Tạo URL thanh toán VNPay thất bại', error);
+          console.error('T?o URL thanh to�n VNPay th?t b?i', error);
           dispatch(
             addNotification({
               type: 'error',
@@ -661,7 +661,7 @@ const CheckoutPage: React.FC = () => {
     if (formData.paymentMethod === 'momo') {
       let order = currentOrder;
 
-      // Nếu chưa có order (thanh toán mới), tạo order mới
+      // N?u chua c� order (thanh to�n m?i), t?o order m?i
       if (!order) {
         order = await handleCreateOrder();
       }
@@ -677,7 +677,7 @@ const CheckoutPage: React.FC = () => {
             return;
           }
         } catch (error) {
-          console.error('Tạo URL thanh toán MoMo thất bại', error);
+          console.error('T?o URL thanh to�n MoMo th?t b?i', error);
           dispatch(
             addNotification({
               type: 'error',
@@ -690,7 +690,7 @@ const CheckoutPage: React.FC = () => {
       return;
     }
 
-    // Với các phương thức thanh toán khác, tạo đơn hàng và chuyển hướng
+    // V?i c�c phuong th?c thanh to�n kh�c, t?o don h�ng v� chuy?n hu?ng
     const order = await handleCreateOrder();
     if (order) {
       dispatch(
@@ -704,38 +704,38 @@ const CheckoutPage: React.FC = () => {
       sessionStorage.removeItem('buyNowItem');
       sessionStorage.removeItem('buyNowAction');
 
-      // Làm mới số lượng giỏ hàng để cập nhật badge trên header
+      // L�m m?i s? lu?ng gi? h�ng d? c?p nh?t badge tr�n header
       dispatch(cartApi.util.invalidateTags(['CartCount']));
 
       navigate('/orders');
     }
   };
 
-  // Trạng thái loading cho giỏ hàng
+  // Tr?ng th�i loading cho gi? h�ng
   const [isCartLoading, setIsCartLoading] = useState(true);
 
-  // Kiểm tra giỏ hàng sau khi đã khởi tạo
+  // Ki?m tra gi? h�ng sau khi d� kh?i t?o
   useEffect(() => {
-    // Kiểm tra xem URL có chứa tham số
+    // Ki?m tra xem URL c� ch?a tham s?
     const searchParams = new URLSearchParams(window.location.search);
     const isBuyNow = searchParams.get('buyNow') === 'true';
     const repayOrderId =
       searchParams.get('repayOrder') || searchParams.get('orderId');
 
-    // Kiểm tra xem người dùng vừa thực hiện hành động "Mua ngay" hay không
+    // Ki?m tra xem ngu?i d�ng v?a th?c hi?n h�nh d?ng "Mua ngay" hay kh�ng
     const isBuyNowAction = sessionStorage.getItem('buyNowAction') === 'true';
 
-    // Đặt một timeout dài hơn để đảm bảo giỏ hàng đã được khởi tạo và API đã cập nhật
+    // �?t m?t timeout d�i hon d? d?m b?o gi? h�ng d� du?c kh?i t?o v� API d� c?p nh?t
     const timer = setTimeout(() => {
       setIsCartLoading(false);
 
-      // Nếu người dùng vừa thực hiện hành động "Mua ngay" hoặc đang thanh toán lại đơn hàng, không chuyển hướng
+      // N?u ngu?i d�ng v?a th?c hi?n h�nh d?ng "Mua ngay" ho?c dang thanh to�n l?i don h�ng, kh�ng chuy?n hu?ng
       if (isBuyNow || isBuyNowAction || repayOrderId) {
         setIsBuyNow(true);
-        // Xóa cờ sau khi đã sử dụng
+        // X�a c? sau khi d� s? d?ng
         sessionStorage.removeItem('buyNowAction');
 
-        // Lấy thông tin sản phẩm mua ngay từ sessionStorage
+        // L?y th�ng tin s?n ph?m mua ngay t? sessionStorage
         const buyNowItemStr = sessionStorage.getItem('buyNowItem');
         if (buyNowItemStr) {
           try {
@@ -749,20 +749,20 @@ const CheckoutPage: React.FC = () => {
         return;
       }
 
-      // Kiểm tra cả serverCartCount và items trong Redux store
-      // Chỉ chuyển hướng nếu cả hai đều trống và không phải đang thanh toán lại đơn hàng
+      // Ki?m tra c? serverCartCount v� items trong Redux store
+      // Ch? chuy?n hu?ng n?u c? hai d?u tr?ng v� kh�ng ph?i dang thanh to�n l?i don h�ng
       if (
         serverCartCount === 0 &&
         (!items || items.length === 0) &&
         !repayOrderId
       ) {
-        // Xóa dữ liệu giỏ hàng trong localStorage để đảm bảo không có dữ liệu cũ
+        // X�a d? li?u gi? h�ng trong localStorage d? d?m b?o kh�ng c� d? li?u cu
         localStorage.removeItem('cartItems');
 
-        // Cập nhật state Redux
+        // C?p nh?t state Redux
         dispatch(initializeCart());
 
-        // Chuyển hướng về trang shop
+        // Chuy?n hu?ng v? trang shop
         navigate('/shop');
         dispatch(
           addNotification({
@@ -771,12 +771,12 @@ const CheckoutPage: React.FC = () => {
           })
         );
       }
-    }, 800); // Tăng thời gian chờ để đảm bảo API có đủ thời gian cập nhật
+    }, 800); // Tang th?i gian ch? d? d?m b?o API c� d? th?i gian c?p nh?t
 
     return () => clearTimeout(timer);
   }, [items, serverCartCount, navigate, dispatch, t]);
 
-  // Hiển thị loading trong khi kiểm tra giỏ hàng
+  // Hi?n th? loading trong khi ki?m tra gi? h�ng
   if (isCartLoading) {
     return (
       <div className="container mx-auto px-4 py-16 text-center">
@@ -788,9 +788,9 @@ const CheckoutPage: React.FC = () => {
     );
   }
 
-  // Không cần kiểm tra giỏ hàng trống ở đây nữa vì đã chuyển hướng trong useEffect
+  // Kh�ng c?n ki?m tra gi? h�ng tr?ng ? d�y n?a v� d� chuy?n hu?ng trong useEffect
 
-  // Kiểm tra xem có phải đang thanh toán lại đơn hàng không
+  // Ki?m tra xem c� ph?i dang thanh to�n l?i don h�ng kh�ng
   const isRepayingOrder = currentOrder && currentOrder.isRepay;
 
   return (
@@ -800,9 +800,9 @@ const CheckoutPage: React.FC = () => {
       </h1>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-        {/* Cột trái - Các form */}
+        {/* C?t tr�i - C�c form */}
         <div className="space-y-8">
-          {/* Shipping Information - Ẩn khi thanh toán lại */}
+          {/* Shipping Information - ?n khi thanh to�n l?i */}
           {!isRepayingOrder && (
             <div className="bg-white dark:bg-neutral-800 rounded-lg shadow-sm p-6">
               <h2 className="text-xl font-semibold text-neutral-800 dark:text-neutral-100 mb-6">
@@ -861,9 +861,9 @@ const CheckoutPage: React.FC = () => {
             </div>
           )}
 
-          {/* Đã xóa phương thức giao hàng tĩnh theo yêu cầu, phí giao hàng được tính tự động. */}
+          {/* �� x�a phuong th?c giao h�ng tinh theo y�u c?u, ph� giao h�ng du?c t�nh t? d?ng. */}
 
-          {/* Chọn phương thức thanh toán */}
+          {/* Ch?n phuong th?c thanh to�n */}
           <div className="bg-white dark:bg-neutral-800 rounded-lg shadow-sm p-6">
             <h2 className="text-xl font-semibold text-neutral-800 dark:text-neutral-100 mb-4">
               {t('checkout.paymentMethod.title')}
@@ -894,7 +894,7 @@ const CheckoutPage: React.FC = () => {
               ))}
             </div>
 
-            {/* Modal thông tin trả góp */}
+            {/* Modal th�ng tin tr? g�p */}
             <Modal
               title={
                 <div className="flex items-center space-x-2 text-xl text-primary-600">
@@ -938,7 +938,7 @@ const CheckoutPage: React.FC = () => {
             </Modal>
           </div>
 
-          {/* Ghi chú đơn hàng */}
+          {/* Ghi ch� don h�ng */}
           <div className="bg-white dark:bg-neutral-800 rounded-lg shadow-sm p-6">
             <h2 className="text-xl font-semibold text-neutral-800 dark:text-neutral-100 mb-4">
               {t('checkout.orderNotes.title')}
@@ -953,15 +953,15 @@ const CheckoutPage: React.FC = () => {
           </div>
         </div>
 
-        {/* Cột phải - Tóm tắt đơn hàng */}
+        {/* C?t ph?i - T�m t?t don h�ng */}
         <div className="space-y-6">
-          {/* Tóm tắt đơn hàng */}
+          {/* T�m t?t don h�ng */}
           <div className="bg-white dark:bg-neutral-800 rounded-lg shadow-sm p-6 sticky top-4">
             <h2 className="text-xl font-semibold text-neutral-800 dark:text-neutral-100 mb-6">
               {t('checkout.orderSummary.title')}
             </h2>
 
-            {/* Sản phẩm trong giỏ hoặc đơn hàng thanh toán lại */}
+            {/* S?n ph?m trong gi? ho?c don h�ng thanh to�n l?i */}
             {isRepayingOrder ? (
               <div className="space-y-4 mb-6">
                 <div className="p-4 bg-blue-50 dark:bg-blue-900/20 rounded-lg">
@@ -991,7 +991,7 @@ const CheckoutPage: React.FC = () => {
               </div>
             )}
 
-            {/* Phần mã giảm giá */}
+            {/* Ph?n m� gi?m gi� */}
             {!isRepayingOrder && (
               <div className="mb-6 border-t border-neutral-200 dark:border-neutral-700 pt-4">
                 <div className="flex space-x-2 items-end">
@@ -1024,7 +1024,7 @@ const CheckoutPage: React.FC = () => {
               </div>
             )}
 
-            {/* Phần điểm tích lũy */}
+            {/* Ph?n di?m t�ch luy */}
             {user && availablePoints > 0 && !isRepayingOrder && (
               <div className="mb-6 border-t border-neutral-200 dark:border-neutral-700 pt-4">
                 <div className="flex justify-between items-center mb-2">
@@ -1064,7 +1064,7 @@ const CheckoutPage: React.FC = () => {
               </div>
             )}
 
-            {/* Tổng cộng */}
+            {/* T?ng c?ng */}
             <div className="border-t border-neutral-200 dark:border-neutral-700 pt-4 space-y-2">
               {!isRepayingOrder ? (
                 <>
@@ -1124,7 +1124,7 @@ const CheckoutPage: React.FC = () => {
               )}
             </div>
 
-            {/* Nút tương ứng với từng phương thức thanh toán */}
+            {/* N�t tuong ?ng v?i t?ng phuong th?c thanh to�n */}
             {formData.paymentMethod === 'stripe' && !currentOrder && (
               <PremiumButton
                 variant="primary"
@@ -1153,7 +1153,7 @@ const CheckoutPage: React.FC = () => {
               </PremiumButton>
             )}
 
-            {/* Form thanh toán Stripe (hiển thị sau khi tạo đơn hàng) */}
+            {/* Form thanh to�n Stripe (hi?n th? sau khi t?o don h�ng) */}
             {formData.paymentMethod === 'stripe' && currentOrder && (
               <div className="mt-6">
                 <StripePaymentForm
@@ -1166,10 +1166,10 @@ const CheckoutPage: React.FC = () => {
               </div>
             )}
 
-            {/* Phần thanh toán QR chuyển khoản (hiển thị sau khi tạo đơn hàng) - Chuyển hướng đến trang QR */}
+            {/* Ph?n thanh to�n QR chuy?n kho?n (hi?n th? sau khi t?o don h�ng) - Chuy?n hu?ng d?n trang QR */}
             {formData.paymentMethod === 'bank_transfer' && currentOrder && (
               <div className="mt-6">
-                {/* Tự động chuyển hướng đến trang thanh toán QR */}
+                {/* T? d?ng chuy?n hu?ng d?n trang thanh to�n QR */}
                 <div className="text-center py-4">
                   <p className="text-lg text-neutral-700 dark:text-neutral-300">
                     {t('checkout.redirectingToPayment')}
@@ -1179,7 +1179,7 @@ const CheckoutPage: React.FC = () => {
               </div>
             )}
 
-            {/* Thông báo bảo mật */}
+            {/* Th�ng b�o b?o m?t */}
             <div className="mt-6 p-4 bg-green-50 dark:bg-green-900/20 rounded-lg">
               <div className="flex items-center text-green-800 dark:text-green-200">
                 <svg
@@ -1213,3 +1213,4 @@ const CheckoutPage: React.FC = () => {
 };
 
 export default CheckoutPage;
+

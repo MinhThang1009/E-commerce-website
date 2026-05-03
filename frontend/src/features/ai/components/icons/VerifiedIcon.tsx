@@ -24,3 +24,4 @@ const VerifiedIcon: React.FC<IconProps> = ({ className = '', size = 14 }) => {
 };
 
 export default VerifiedIcon;
+

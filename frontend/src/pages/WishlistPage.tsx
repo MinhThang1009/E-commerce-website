@@ -1,4 +1,4 @@
-﻿import React from 'react';
+import React from 'react';
 import { useTranslation } from 'react-i18next';
 import { Link } from 'react-router-dom';
 import { useGetWishlistQuery, useClearWishlistMutation } from '@/services/wishlistApi';
@@ -81,3 +81,4 @@ const WishlistPage: React.FC = () => {
 };
 
 export default WishlistPage;
+

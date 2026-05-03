@@ -1,4 +1,4 @@
-﻿import React from 'react';
+import React from 'react';
 import { useTranslation } from 'react-i18next';
 import { useGetRecentlyViewedQuery } from '@/services/productApi';
 import ProductCard from '@/components/shared/ProductCard';
@@ -52,3 +52,4 @@ const RecentlyViewedProducts: React.FC<RecentlyViewedProductsProps> = ({
 };
 
 export default RecentlyViewedProducts;
+

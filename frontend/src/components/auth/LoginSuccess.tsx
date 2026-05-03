@@ -36,3 +36,4 @@ const LoginSuccess: React.FC = () => {
 };
 
 export default LoginSuccess;
+

@@ -1,4 +1,4 @@
-﻿// Kiểu dữ liệu danh mục
+// Ki?u d? li?u danh m?c
 export interface Category {
   id: string;
   name: string;
@@ -25,3 +25,4 @@ export interface CategoryFilters {
   isActive?: boolean;
   search?: string;
 }
+

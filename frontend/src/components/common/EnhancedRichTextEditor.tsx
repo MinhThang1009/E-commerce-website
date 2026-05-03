@@ -265,3 +265,4 @@ const EnhancedRichTextEditor: React.FC<EnhancedRichTextEditorProps> = ({
 };
 
 export default EnhancedRichTextEditor;
+

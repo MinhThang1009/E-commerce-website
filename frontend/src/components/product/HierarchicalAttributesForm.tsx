@@ -1,4 +1,4 @@
-﻿import React, { useState } from 'react';
+import React, { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import {
   Card,
@@ -61,7 +61,7 @@ const HierarchicalAttributesForm: React.FC<HierarchicalAttributesFormProps> = ({
   );
   const [expandedKeys, setExpandedKeys] = useState<React.Key[]>([]);
 
-  // Các API hook
+  // C�c API hook
   const {
     data: attributeGroupsData,
     isLoading,
@@ -76,7 +76,7 @@ const HierarchicalAttributesForm: React.FC<HierarchicalAttributesFormProps> = ({
 
   const attributeGroups = attributeGroupsData?.data || [];
 
-  // Xử lý tạo/chỉnh sửa nhóm
+  // X? l� t?o/ch?nh s?a nh�m
   const handleCreateGroup = () => {
     setModalType('group');
     setEditingItem(null);
@@ -97,7 +97,7 @@ const HierarchicalAttributesForm: React.FC<HierarchicalAttributesFormProps> = ({
     });
   };
 
-  // Xử lý tạo/chỉnh sửa giá trị
+  // X? l� t?o/ch?nh s?a gi� tr?
   const handleCreateValue = (group: AttributeGroup) => {
     setModalType('value');
     setEditingItem(null);
@@ -120,34 +120,34 @@ const HierarchicalAttributesForm: React.FC<HierarchicalAttributesFormProps> = ({
     });
   };
 
-  // Xử lý submit modal
+  // X? l� submit modal
   const handleSubmit = async () => {
     try {
       const values = await form.validateFields();
 
       if (modalType === 'group') {
         if (editingItem) {
-          // Cập nhật nhóm
+          // C?p nh?t nh�m
           await updateAttributeGroup({
             id: editingItem.id,
             data: values,
           }).unwrap();
           message.success(t('attr.groupUpdated'));
         } else {
-          // Tạo nhóm
+          // T?o nh�m
           await createAttributeGroup(values).unwrap();
           message.success(t('attr.groupCreated'));
         }
       } else {
         if (editingItem) {
-          // Cập nhật giá trị
+          // C?p nh?t gi� tr?
           await updateAttributeValue({
             id: editingItem.id,
             data: values,
           }).unwrap();
           message.success(t('attr.valueUpdated'));
         } else {
-          // Tạo giá trị
+          // T?o gi� tr?
           await addAttributeValue({
             attributeGroupId: selectedGroup!.id,
             data: values,
@@ -164,7 +164,7 @@ const HierarchicalAttributesForm: React.FC<HierarchicalAttributesFormProps> = ({
     }
   };
 
-  // Xử lý xóa
+  // X? l� x�a
   const handleDeleteGroup = async (groupId: string) => {
     try {
       await deleteAttributeGroup(groupId).unwrap();
@@ -187,7 +187,7 @@ const HierarchicalAttributesForm: React.FC<HierarchicalAttributesFormProps> = ({
     }
   };
 
-  // Xây dựng dữ liệu dạng cây
+  // X�y d?ng d? li?u d?ng c�y
   const buildTreeData = () => {
     return attributeGroups.map((group) => ({
       key: `group-${group.id}`,
@@ -349,7 +349,7 @@ const HierarchicalAttributesForm: React.FC<HierarchicalAttributesFormProps> = ({
         )}
       </Spin>
 
-      {/* Modal tạo/chỉnh sửa */}
+      {/* Modal t?o/ch?nh s?a */}
       <Modal
         title={
           modalType === 'group'
@@ -368,7 +368,7 @@ const HierarchicalAttributesForm: React.FC<HierarchicalAttributesFormProps> = ({
       >
         <Form form={form} layout="vertical">
           {modalType === 'group' ? (
-            // Form nhóm
+            // Form nh�m
             <>
               <Form.Item
                 name="name"
@@ -416,7 +416,7 @@ const HierarchicalAttributesForm: React.FC<HierarchicalAttributesFormProps> = ({
               </Form.Item>
             </>
           ) : (
-            // Form giá trị
+            // Form gi� tr?
             <>
               <Form.Item
                 name="name"
@@ -473,3 +473,4 @@ const HierarchicalAttributesForm: React.FC<HierarchicalAttributesFormProps> = ({
 };
 
 export default HierarchicalAttributesForm;
+

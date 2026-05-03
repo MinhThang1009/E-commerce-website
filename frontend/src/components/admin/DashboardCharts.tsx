@@ -195,3 +195,4 @@ const DashboardCharts: React.FC = () => {
 };
 
 export default DashboardCharts;
+

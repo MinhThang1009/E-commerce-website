@@ -37,3 +37,4 @@ const SparkleIcon: React.FC<SparkleIconProps> = ({
 };
 
 export default SparkleIcon;
+

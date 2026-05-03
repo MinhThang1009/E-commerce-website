@@ -121,3 +121,4 @@ const SimpleRichTextEditor: React.FC<SimpleRichTextEditorProps> = ({
 };
 
 export default SimpleRichTextEditor;
+

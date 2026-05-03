@@ -1,4 +1,4 @@
-﻿import { useState } from 'react';
+import { useState } from 'react';
 import { useGetProductsQuery } from '@/services/productApi';
 import ProductCard from '@/components/shared/ProductCard';
 import LoadingSpinner from '@/components/common/LoadingSpinner';
@@ -13,7 +13,7 @@ const BestSellersPage: React.FC = () => {
   const [currentPage, setCurrentPage] = useState(1);
   const limit = 12;
 
-  // Lấy danh sách sản phẩm bán chạy
+  // L?y danh s�ch s?n ph?m b�n ch?y
   const {
     data: productsData,
     isLoading,
@@ -22,7 +22,7 @@ const BestSellersPage: React.FC = () => {
     sort: sortOption,
     page: currentPage,
     limit,
-    bestSellers: true, // Đây sẽ là tham số trong API thực tế để lọc sản phẩm bán chạy
+    bestSellers: true, // ��y s? l� tham s? trong API th?c t? d? l?c s?n ph?m b�n ch?y
   });
 
   const sortOptions = [
@@ -39,7 +39,7 @@ const BestSellersPage: React.FC = () => {
 
   const handlePageChange = (page: number) => {
     setCurrentPage(page);
-    // Cuộn lên đầu trang khi chuyển trang
+    // Cu?n l�n d?u trang khi chuy?n trang
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
@@ -66,7 +66,7 @@ const BestSellersPage: React.FC = () => {
 
   return (
     <div className="container mx-auto px-4 py-16">
-      {/* Phần hero */}
+      {/* Ph?n hero */}
       <div className="bg-gradient-to-r from-amber-500 to-orange-500 rounded-xl p-8 mb-12 text-white text-center">
         <h1 className="text-4xl font-bold mb-4">{t('bestSellers.title')}</h1>
         <p className="text-lg max-w-2xl mx-auto mb-6">
@@ -77,7 +77,7 @@ const BestSellersPage: React.FC = () => {
         </div>
       </div>
 
-      {/* Sắp xếp và số kết quả */}
+      {/* S?p x?p v� s? k?t qu? */}
       <div className="flex flex-col md:flex-row justify-between items-center mb-8">
         <p className="text-neutral-600 dark:text-neutral-400 mb-4 md:mb-0">
           {productsData?.total
@@ -94,7 +94,7 @@ const BestSellersPage: React.FC = () => {
         </div>
       </div>
 
-      {/* Lưới sản phẩm */}
+      {/* Lu?i s?n ph?m */}
       {productsData?.data?.length === 0 ? (
         <div className="text-center py-12 bg-neutral-50 dark:bg-neutral-800 rounded-lg">
           <svg
@@ -126,7 +126,7 @@ const BestSellersPage: React.FC = () => {
             ))}
           </div>
 
-          {/* Phân trang */}
+          {/* Ph�n trang */}
           {productsData?.total && Math.ceil(productsData.total / productsData.limit) > 1 && (
             <Pagination
               currentPage={currentPage}
@@ -141,3 +141,4 @@ const BestSellersPage: React.FC = () => {
 };
 
 export default BestSellersPage;
+

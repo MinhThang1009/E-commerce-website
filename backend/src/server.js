@@ -1,6 +1,9 @@
 ﻿require('dotenv').config();
 // Kích hoạt nodemon restart khi thay đổi .env
 
+// Import logger trước validation để startup error có cùng định dạng với mọi log khác
+const logger = require('./utils/logger');
+
 // Fail fast nếu thiếu biến môi trường bắt buộc — server sẽ exit(1) thay vì crash âm thầm khi xử lý request
 const REQUIRED_ENV_VARS = [
   'DB_HOST', 'DB_USER', 'DB_PASSWORD', 'DB_NAME',
@@ -12,14 +15,13 @@ const REQUIRED_ENV_VARS = [
 
 const missingVars = REQUIRED_ENV_VARS.filter((key) => !process.env[key]);
 if (missingVars.length > 0) {
-  console.error(`[STARTUP ERROR] Thiếu biến môi trường bắt buộc: ${missingVars.join(', ')}`);
-  console.error('Hãy kiểm tra file .env (xem .env.example để biết danh sách đầy đủ).');
+  logger.error(`[STARTUP ERROR] Thiếu biến môi trường bắt buộc: ${missingVars.join(', ')}`);
+  logger.error('Hãy kiểm tra file .env (xem .env.example để biết danh sách đầy đủ).');
   process.exit(1);
 }
 
 const app = require('./app');
 const sequelize = require('./config/sequelize');
-const logger = require('./utils/logger');
 const { exec } = require('child_process');
 const { Server } = require('socket.io');
 

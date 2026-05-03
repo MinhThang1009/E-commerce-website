@@ -27,7 +27,7 @@ class AdminAuditService {
   // Log hoạt động trên user (ban, role change, delete)
   static logUserAction(adminUser, action, targetUserId, changes = {}, ip = null) {
     if (!adminUser) {
-      console.error('AdminAuditService.logUserAction: adminUser is undefined');
+      logger.error('AdminAuditService.logUserAction: adminUser is undefined');
       return;
     }
 
@@ -53,7 +53,7 @@ class AdminAuditService {
   // changes là object tùy ý mô tả thay đổi — được lưu nguyên vào newValue dưới dạng JSON
   static logProductAction(adminUser, action, productId, productName, changes = {}, ip = null) {
     if (!adminUser) {
-      console.error('AdminAuditService.logProductAction: adminUser is undefined');
+      logger.error('AdminAuditService.logProductAction: adminUser is undefined');
       return;
     }
 
@@ -81,7 +81,7 @@ class AdminAuditService {
   // changes là object tùy ý mô tả thay đổi
   static logOrderAction(adminUser, action, orderId, orderCode, changes = {}, ip = null) {
     if (!adminUser) {
-      console.error('AdminAuditService.logOrderAction: adminUser is undefined');
+      logger.error('AdminAuditService.logOrderAction: adminUser is undefined');
       return;
     }
 
@@ -107,7 +107,7 @@ class AdminAuditService {
   // Log hoạt động trên discount code (create, delete, deactivate)
   static logDiscountCodeAction(adminUser, action, discountId, code, changes = {}, ip = null) {
     if (!adminUser) {
-      console.error('AdminAuditService.logDiscountCodeAction: adminUser is undefined');
+      logger.error('AdminAuditService.logDiscountCodeAction: adminUser is undefined');
       return;
     }
 
@@ -133,7 +133,7 @@ class AdminAuditService {
   // Log hoạt động xóa review
   static logReviewAction(adminUser, action, reviewId, userId, productId, ip = null) {
     if (!adminUser) {
-      console.error('AdminAuditService.logReviewAction: adminUser is undefined');
+      logger.error('AdminAuditService.logReviewAction: adminUser is undefined');
       return;
     }
 

@@ -47,3 +47,4 @@ export const {
   useDeleteSearchHistoryMutation,
   useClearAllSearchHistoryMutation,
 } = searchHistoryApi;
+

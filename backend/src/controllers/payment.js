@@ -314,6 +314,12 @@ const handleWebhook = async (req, res, next) => {
     const payload = req.body;
     const event = await stripeService.handleWebhook(payload, signature);
 
+    // Ghi business event log để audit trail mọi webhook nhận được
+    logger.info('[PAYMENT] Webhook received', {
+      event: event.type,
+      orderId: event.data?.object?.metadata?.orderId,
+    });
+
     switch (event.type) {
       case 'payment_intent.succeeded':
         await handlePaymentSucceeded(event.data.object);

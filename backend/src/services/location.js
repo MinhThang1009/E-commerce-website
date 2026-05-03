@@ -1,3 +1,4 @@
+const logger = require('../../utils/logger');
 const axios = require('axios');
 
 class LocationService {
@@ -21,7 +22,7 @@ class LocationService {
       });
       return response.data;
     } catch (error) {
-      console.error('Lỗi trong getAddressFromCoords:', error.message);
+      logger.error('Lỗi trong getAddressFromCoords:', error.message);
       return { error: 'Không thể lấy địa chỉ' };
     }
   }
@@ -41,7 +42,7 @@ class LocationService {
       });
       return response.data;
     } catch (error) {
-      console.error('Lỗi trong getCoordsFromAddress:', error.message);
+      logger.error('Lỗi trong getCoordsFromAddress:', error.message);
       return [];
     }
   }
@@ -61,10 +62,11 @@ class LocationService {
       });
       return response.data;
     } catch (error) {
-      console.error('Lỗi trong searchAutocomplete:', error.message);
+      logger.error('Lỗi trong searchAutocomplete:', error.message);
       return [];
     }
   }
 }
 
 module.exports = new LocationService();
+

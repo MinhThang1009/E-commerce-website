@@ -97,6 +97,9 @@ const login = async (req, res, next) => {
       { expiresIn: process.env.JWT_REFRESH_EXPIRES_IN }
     );
 
+    // Ghi business event log để monitoring login thành công
+    logger.info('[AUTH] Login success', { userId: user.id, email: user.email });
+
     // Ghi audit log cho admin — không chặn response nếu ghi log lỗi
     if (user.role === 'admin') {
       AdminAuditService.logSuccessfulLogin(user, req.ip);

@@ -1,4 +1,4 @@
-﻿import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import ThemeToggle from '@/components/common/ThemeToggle';
@@ -32,7 +32,7 @@ const Header: React.FC = () => {
   const dispatch = useDispatch();
   const { t } = useTranslation();
 
-  // Hook xác thực
+  // Hook x�c th?c
   const {
     isAuthenticated,
     user,
@@ -41,17 +41,17 @@ const Header: React.FC = () => {
     getUserFullName,
   } = useAuth();
 
-  // Lấy trạng thái UI từ Redux store
+  // L?y tr?ng th�i UI t? Redux store
   const isMobileMenuOpen = useSelector(
     (state: RootState) => state.ui.isMobileMenuOpen
   );
   const isSearchOpen = useSelector((state: RootState) => state.ui.isSearchOpen);
 
-  // Lấy số lượng giỏ hàng từ server API (chỉ cho user đã đăng nhập)
+  // L?y s? lu?ng gi? h�ng t? server API (ch? cho user d� dang nh?p)
   const { data: serverCartCount } = useGetCartCountQuery(undefined, {
-    // Chỉ gọi API nếu user đã đăng nhập
+    // Ch? g?i API n?u user d� dang nh?p
     skip: !isAuthenticated,
-    // Chỉ refetch khi cần, không refetch mỗi lần focus/reconnect
+    // Ch? refetch khi c?n, kh�ng refetch m?i l?n focus/reconnect
     refetchOnFocus: false,
     refetchOnReconnect: false,
   });
@@ -59,14 +59,14 @@ const Header: React.FC = () => {
     (state: RootState) => state.cart?.totalItems || 0
   );
 
-  // Dùng count từ server cho user đã đăng nhập, count local cho khách
+  // D�ng count t? server cho user d� dang nh?p, count local cho kh�ch
   const cartItemsCount = isAuthenticated
     ? serverCartCount !== undefined
       ? serverCartCount
       : localCartCount
     : localCartCount;
 
-  // Logic wishlist cho badge trên header
+  // Logic wishlist cho badge tr�n header
   const wishlistItems = useSelector((state: RootState) => state.wishlist.items);
   const wishlistCount = wishlistItems.length;
 
@@ -78,21 +78,21 @@ const Header: React.FC = () => {
 
   useEffect(() => {
     if (serverWishlist && serverWishlist.data) {
-      // Chuyển danh sách sản phẩm thành mảng ID
+      // Chuy?n danh s�ch s?n ph?m th�nh m?ng ID
       dispatch(setWishlist(serverWishlist.data.map((p: any) => p.id)));
     }
   }, [serverWishlist, dispatch]);
 
-  // Xóa localStorage khi server trả về count = 0 và cập nhật state Redux (chỉ cho authenticated users)
+  // X�a localStorage khi server tr? v? count = 0 v� c?p nh?t state Redux (ch? cho authenticated users)
   useEffect(() => {
     if (isAuthenticated && serverCartCount === 0) {
       localStorage.removeItem('cartItems');
-      // Cập nhật state Redux để đồng bộ với localStorage
+      // C?p nh?t state Redux d? d?ng b? v?i localStorage
       dispatch(initializeCart());
     }
   }, [isAuthenticated, serverCartCount, dispatch]);
 
-  // Phát hiện scroll
+  // Ph�t hi?n scroll
   useEffect(() => {
     const handleScroll = () => {
       setIsScrolled(window.scrollY > 10);
@@ -102,7 +102,7 @@ const Header: React.FC = () => {
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
 
-  // Xử lý click ra ngoài dropdown
+  // X? l� click ra ngo�i dropdown
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       if (
@@ -117,7 +117,7 @@ const Header: React.FC = () => {
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
-  // Xử lý click vào hồ sơ người dùng
+  // X? l� click v�o h? so ngu?i d�ng
   const handleUserClick = () => {
     if (isAuthenticated) {
       setShowUserDropdown(!showUserDropdown);
@@ -126,13 +126,13 @@ const Header: React.FC = () => {
     }
   };
 
-  // Xử lý đăng xuất kèm điều hướng
+  // X? l� dang xu?t k�m di?u hu?ng
   const handleLogoutClick = async () => {
     await handleLogout();
     navigate('/', { replace: true });
   };
 
-  // Xử lý click vào giỏ hàng
+  // X? l� click v�o gi? h�ng
   const handleCartClick = () => {
     navigate('/cart');
   };
@@ -163,7 +163,7 @@ const Header: React.FC = () => {
           </div>
         </Link>
 
-        {/* Điều hướng desktop */}
+        {/* �i?u hu?ng desktop */}
         <nav className="hidden lg:flex items-center space-x-1 flex-1 max-w-lg justify-center">
           {[
             { key: 'home' as NavigationIconKey, path: '/' },
@@ -196,7 +196,7 @@ const Header: React.FC = () => {
 
         {/* Actions */}
         <div className="flex items-center space-x-1 sm:space-x-2">
-          {/* Tìm kiếm - Ẩn trên mobile để tránh lỗi bố cục */}
+          {/* T�m ki?m - ?n tr�n mobile d? tr�nh l?i b? c?c */}
           <div className="hidden md:block">
             <SearchBar
               isExpanded={isSearchOpen}
@@ -205,17 +205,17 @@ const Header: React.FC = () => {
             />
           </div>
 
-          {/* Language Switcher - Ẩn trên màn hình mobile nhỏ */}
+          {/* Language Switcher - ?n tr�n m�n h�nh mobile nh? */}
           <div className="hidden xsm:block p-1 sm:p-2 rounded-xl hover:bg-neutral-100 dark:hover:bg-neutral-800 transition-colors">
             <LanguageSwitcher />
           </div>
 
-          {/* Chuyển giao diện sáng/tối */}
+          {/* Chuy?n giao di?n s�ng/t?i */}
           {/* <div className="p-1 sm:p-2 rounded-xl hover:bg-neutral-100 dark:hover:bg-neutral-800 transition-colors">
             <ThemeToggle />
           </div> */}
 
-          {/* Người dùng */}
+          {/* Ngu?i d�ng */}
           <div className="relative" ref={userDropdownRef}>
             <button
               onClick={handleUserClick}
@@ -234,7 +234,7 @@ const Header: React.FC = () => {
               )}
             </button>
 
-            {/* Dropdown người dùng */}
+            {/* Dropdown ngu?i d�ng */}
             {isAuthenticated && showUserDropdown && (
               <div className="absolute right-0 mt-2 w-48 bg-white dark:bg-neutral-800 rounded-lg shadow-lg border border-neutral-200 dark:border-neutral-700 z-50">
                 <div className="py-2">
@@ -271,7 +271,7 @@ const Header: React.FC = () => {
                     {t('header.dropdown.wishlist')}
                   </Link>
 
-                  {/* Liên kết Admin Panel - chỉ hiển thị cho admin */}
+                  {/* Li�n k?t Admin Panel - ch? hi?n th? cho admin */}
                   {isAdmin() && (
                     <>
                       <div className="border-t border-neutral-200 dark:border-neutral-700 my-2"></div>
@@ -317,7 +317,7 @@ const Header: React.FC = () => {
             )}
           </div>
 
-          {/* Wishlist (danh sách yêu thích) */}
+          {/* Wishlist (danh s�ch y�u th�ch) */}
           <button
             onClick={() => navigate('/wishlist')}
             className={`group relative p-1.5 sm:p-2 rounded-xl transition-all duration-300 ${wishlistCount > 0
@@ -336,7 +336,7 @@ const Header: React.FC = () => {
             )}
           </button>
 
-          {/* Giỏ hàng */}
+          {/* Gi? h�ng */}
           <button
             onClick={handleCartClick}
             className={`group relative p-1.5 sm:p-2 rounded-xl transition-all duration-300 ${cartItemsCount > 0
@@ -356,7 +356,7 @@ const Header: React.FC = () => {
             )}
           </button>
 
-          {/* Nút menu mobile */}
+          {/* N�t menu mobile */}
           <button
             className="lg:hidden group p-1.5 sm:p-2 rounded-xl text-neutral-700 dark:text-neutral-300 hover:bg-neutral-100 dark:hover:bg-neutral-800 transition-all duration-300 border border-transparent hover:border-neutral-200 dark:hover:border-neutral-700"
             onClick={() => dispatch(toggleMobileMenu())}
@@ -378,7 +378,7 @@ const Header: React.FC = () => {
       {/* Menu mobile */}
       {isMobileMenuOpen && (
         <div className="lg:hidden absolute top-full left-0 right-0 bg-white dark:bg-neutral-900 shadow-lg py-4 px-4 sm:px-6 space-y-4 animate-slideInTop border-b border-neutral-200 dark:border-neutral-700">
-          {/* Tìm kiếm mobile */}
+          {/* T�m ki?m mobile */}
           <div className="pb-4">
             <div className="relative">
               <form
@@ -387,7 +387,7 @@ const Header: React.FC = () => {
                   const input = e.currentTarget.querySelector('input');
                   const searchTerm = input?.value?.trim();
                   if (searchTerm) {
-                    // Lưu vào localStorage
+                    // Luu v�o localStorage
                     try {
                       const recentSearches =
                         localStorage.getItem('recentSearches');
@@ -402,15 +402,11 @@ const Header: React.FC = () => {
                         'recentSearches',
                         JSON.stringify(updatedSearches)
                       );
-                      console.log(
-                        'Tìm kiếm mobile - đã lưu lịch sử:',
-                        updatedSearches
-                      );
                     } catch (error) {
-                      console.error('Lỗi khi lưu từ khóa tìm kiếm:', error);
+                      console.error('L?i khi luu t? kh�a t�m ki?m:', error);
                     }
 
-                    // Điều hướng đến trang kết quả tìm kiếm
+                    // �i?u hu?ng d?n trang k?t qu? t�m ki?m
                     navigate(`/shop?search=${encodeURIComponent(searchTerm)}`);
                     dispatch(toggleMobileMenu());
                   }
@@ -502,3 +498,4 @@ const Header: React.FC = () => {
 };
 
 export default Header;
+

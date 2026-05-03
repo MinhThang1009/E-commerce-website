@@ -51,3 +51,4 @@ const ResizeIcon: React.FC<ResizeIconProps> = ({
 };
 
 export default ResizeIcon;
+

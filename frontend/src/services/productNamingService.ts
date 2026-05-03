@@ -168,3 +168,4 @@ class SimpleNamingService {
 
 export const simpleNamingService = new SimpleNamingService();
 export default simpleNamingService;
+

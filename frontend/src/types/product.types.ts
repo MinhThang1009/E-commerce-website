@@ -233,3 +233,4 @@ export interface ProductWithVariants extends Product {
     sku: string;
   }>;
 }
+

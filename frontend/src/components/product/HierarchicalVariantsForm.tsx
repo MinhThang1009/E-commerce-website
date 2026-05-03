@@ -447,3 +447,4 @@ const HierarchicalVariantsForm: React.FC<HierarchicalVariantsFormProps> = ({
 };
 
 export default HierarchicalVariantsForm;
+

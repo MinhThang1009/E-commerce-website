@@ -26,3 +26,4 @@ const TrashIcon: React.FC<IconProps> = ({ className = '', size = 14 }) => {
 };
 
 export default TrashIcon;
+

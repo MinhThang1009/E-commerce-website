@@ -14,7 +14,6 @@ const GoogleLoginButton: React.FC = () => {
 
   const handleGoogleSuccess = async (tokenResponse: any) => {
     try {
-      console.log('Đăng nhập Google phía client thành công, đang gửi lên backend...');
 
       // Luồng implicit cấp access_token.
       // Truyền token này lên backend để backend lấy thông tin người dùng.
@@ -80,3 +79,4 @@ const GoogleLoginButton: React.FC = () => {
 };
 
 export default GoogleLoginButton;
+

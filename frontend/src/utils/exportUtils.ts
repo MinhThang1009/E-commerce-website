@@ -50,3 +50,4 @@ export const exportToCSV = (data: any[], fileName: string) => {
     document.body.removeChild(link);
   }
 };
+

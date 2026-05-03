@@ -30,3 +30,4 @@ export const useProductPriceRange = (basePrice: number, variants?: any[]) => {
     hasVariants: priceInfo.hasVariants,
   };
 };
+

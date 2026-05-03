@@ -42,7 +42,6 @@ export const refreshTokenIfNeeded = async (): Promise<string | null> => {
     // Xác định URL API chính xác
     const baseUrl = import.meta.env.VITE_API_URL || 'http://localhost:8888/api';
     const apiUrl = baseUrl.endsWith('/api') ? baseUrl : `${baseUrl}/api`;
-    console.log('Đang làm mới token bằng URL:', `${apiUrl}/auth/refresh`);
 
     const response = await fetch(`${apiUrl}/auth/refresh`, {
       method: 'POST',
@@ -121,9 +120,9 @@ export const getValidToken = async (): Promise<string | null> => {
   }
 
   if (isTokenExpired(token)) {
-    console.log('🔄 Access token đã hết hạn, đang làm mới...');
     return await refreshTokenIfNeeded();
   }
 
   return token;
 };
+

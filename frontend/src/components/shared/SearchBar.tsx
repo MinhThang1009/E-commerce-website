@@ -89,7 +89,6 @@ const SearchBar: React.FC<SearchBarProps> = ({
         const storedSearches = localStorage.getItem('recentSearches');
         if (storedSearches) {
           const parsedSearches = JSON.parse(storedSearches);
-          console.log('Tải lại lịch sử tìm kiếm khi active:', parsedSearches);
           setRecentSearches(parsedSearches);
         }
       } catch (error) {
@@ -183,7 +182,6 @@ const SearchBar: React.FC<SearchBarProps> = ({
         await clearAllSearch().unwrap();
       }
       
-      console.log('Đã xóa tất cả lịch sử tìm kiếm');
     } catch (error) {
       console.error('Lỗi xóa lịch sử tìm kiếm:', error);
     }
@@ -205,7 +203,6 @@ const SearchBar: React.FC<SearchBarProps> = ({
         }
       }
 
-      console.log('Đã xóa từ khóa tìm kiếm:', termToRemove);
     } catch (error) {
       console.error('Lỗi xóa từ khóa tìm kiếm:', error);
     }
@@ -216,7 +213,6 @@ const SearchBar: React.FC<SearchBarProps> = ({
     try {
       const recentSearches = localStorage.getItem('recentSearches');
       const parsedSearches = recentSearches ? JSON.parse(recentSearches) : [];
-      console.log('Đã lấy lịch sử tìm kiếm gần đây:', parsedSearches);
       return parsedSearches;
     } catch (error) {
       console.error('Lỗi lấy lịch sử tìm kiếm:', error);
@@ -525,3 +521,4 @@ const SearchBar: React.FC<SearchBarProps> = ({
 };
 
 export default SearchBar;
+

@@ -37,3 +37,4 @@ export interface SingleNewsResponse {
   success: boolean;
   news: News;
 }
+

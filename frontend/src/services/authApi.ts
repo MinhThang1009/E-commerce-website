@@ -395,7 +395,6 @@ export const authApi = api.injectEndpoints({
       transformResponse: (response: any) => {
         // Xử lý response từ API theo format thật từ backend
         if (response?.status === 'success') {
-          console.log('✅ Trả về dữ liệu người dùng:', response.data);
           return response.data; // API trả về user trong response.data
         }
 
@@ -423,4 +422,5 @@ export const {
   useForgotPasswordMutation,
   useGoogleLoginMutation,
 } = authApi;
+
 

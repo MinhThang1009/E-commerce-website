@@ -282,3 +282,4 @@ export const generateProductTags = (
 
   return [{ type: 'Product', id: tagType }];
 };
+

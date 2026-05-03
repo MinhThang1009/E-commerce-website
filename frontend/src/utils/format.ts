@@ -52,3 +52,4 @@ export const parsePrice = (price: string | number): number => {
   const parsed = parseFloat(price);
   return isNaN(parsed) ? 0 : parsed;
 };
+

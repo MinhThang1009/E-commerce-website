@@ -45,9 +45,6 @@ const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   useEffect(() => {
     // Nếu API trả về user successfully, cập nhật Redux state
     if (isSuccess && currentUser && token) {
-      console.log('✅ Lấy thông tin người dùng thành công:', currentUser);
-      console.log('👤 Quyền người dùng:', currentUser.role);
-      console.log('🔐 Token:', token);
 
       dispatch(
         loginSuccess({
@@ -57,15 +54,12 @@ const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         })
       );
 
-      console.log('📦 Đã dispatch loginSuccess với dữ liệu người dùng');
     }
   }, [isSuccess, currentUser, token, dispatch]);
 
   useEffect(() => {
     // Nếu API trả về lỗi (token không hợp lệ), logout user
     if (isError && error) {
-      console.log('❌ Lấy thông tin người dùng thất bại:', error);
-      console.log('🔐 Đăng xuất do token không hợp lệ...');
 
       // Xóa trạng thái xác thực
       dispatch(logout());
@@ -90,3 +84,4 @@ const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 };
 
 export default AuthProvider;
+

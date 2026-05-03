@@ -26,3 +26,4 @@ const SendIcon: React.FC<IconProps> = ({ className = '', size = 20 }) => {
 };
 
 export default SendIcon;
+

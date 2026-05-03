@@ -43,3 +43,4 @@ const StatusIcon: React.FC<StatusIconProps> = ({
 };
 
 export default StatusIcon;
+

@@ -1,3 +1,4 @@
+const logger = require('../../utils/logger');
 const Stripe = require('stripe');
 const { AppError } = require('../../middlewares/errorHandler');
 
@@ -18,7 +19,7 @@ class StripeService {
       const stripeAmount =
         currency === 'vnd' ? Math.round(amount) : Math.round(amount * 100);
 
-      console.log('Đang tạo Stripe payment intent với tham số:', {
+      logger.debug('Đang tạo Stripe payment intent với tham số:', {
         amount: stripeAmount,
         currency,
         metadata,
@@ -39,8 +40,8 @@ class StripeService {
         paymentIntentId: paymentIntent.id,
       };
     } catch (error) {
-      console.error('Lỗi Stripe createPaymentIntent:', error);
-      console.error('Chi tiết lỗi:', {
+      logger.error('Lỗi Stripe createPaymentIntent:', error);
+      logger.error('Chi tiết lỗi:', {
         message: error.message,
         type: error.type,
         code: error.code,
@@ -65,7 +66,7 @@ class StripeService {
         await stripe.paymentIntents.retrieve(paymentIntentId);
       return paymentIntent;
     } catch (error) {
-      console.error('Lỗi Stripe confirmPaymentIntent:', error);
+      logger.error('Lỗi Stripe confirmPaymentIntent:', error);
       throw new AppError('Failed to confirm payment intent', 500);
     }
   }
@@ -88,7 +89,7 @@ class StripeService {
 
       return customer;
     } catch (error) {
-      console.error('Lỗi Stripe createCustomer:', error);
+      logger.error('Lỗi Stripe createCustomer:', error);
       throw new AppError('Failed to create customer', 500);
     }
   }
@@ -103,7 +104,7 @@ class StripeService {
       const customer = await stripe.customers.retrieve(customerId);
       return customer;
     } catch (error) {
-      console.error('Lỗi Stripe getCustomer:', error);
+      logger.error('Lỗi Stripe getCustomer:', error);
       throw new AppError('Failed to retrieve customer', 500);
     }
   }
@@ -134,7 +135,7 @@ class StripeService {
       const refund = await stripe.refunds.create(refundData);
       return refund;
     } catch (error) {
-      console.error('Lỗi Stripe createRefund:', error);
+      logger.error('Lỗi Stripe createRefund:', error);
       throw new AppError('Failed to create refund', 500);
     }
   }
@@ -155,7 +156,7 @@ class StripeService {
 
       return event;
     } catch (error) {
-      console.error('Lỗi Stripe webhook:', error);
+      logger.error('Lỗi Stripe webhook:', error);
       throw new AppError('Invalid webhook signature', 400);
     }
   }
@@ -174,7 +175,7 @@ class StripeService {
 
       return paymentMethods.data;
     } catch (error) {
-      console.error('Lỗi Stripe getPaymentMethods:', error);
+      logger.error('Lỗi Stripe getPaymentMethods:', error);
       throw new AppError('Failed to retrieve payment methods', 500);
     }
   }
@@ -196,10 +197,11 @@ class StripeService {
         setupIntentId: setupIntent.id,
       };
     } catch (error) {
-      console.error('Lỗi Stripe createSetupIntent:', error);
+      logger.error('Lỗi Stripe createSetupIntent:', error);
       throw new AppError('Failed to create setup intent', 500);
     }
   }
 }
 
 module.exports = new StripeService();
+

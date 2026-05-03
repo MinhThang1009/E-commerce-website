@@ -1,3 +1,4 @@
+const logger = require('../../utils/logger');
 const sharp = require('sharp');
 const path = require('path');
 const fs = require('fs').promises;
@@ -25,7 +26,7 @@ class ImageService {
       try {
         await fs.mkdir(dir, { recursive: true });
       } catch (error) {
-        console.error(`Không thể tạo thư mục ${dir}:`, error);
+        logger.error(`Không thể tạo thư mục ${dir}:`, error);
       }
     }
   }
@@ -55,7 +56,7 @@ class ImageService {
         height: metadata.height,
       };
     } catch (error) {
-      console.error('Lỗi khi lấy kích thước ảnh:', error);
+      logger.error('Lỗi khi lấy kích thước ảnh:', error);
       return { width: null, height: null };
     }
   }
@@ -97,7 +98,7 @@ class ImageService {
 
       return outputPath;
     } catch (error) {
-      console.error('Lỗi khi xử lý ảnh:', error);
+      logger.error('Lỗi khi xử lý ảnh:', error);
       throw new AppError('Failed to process image', 500);
     }
   }
@@ -116,7 +117,7 @@ class ImageService {
 
       return outputPath;
     } catch (error) {
-      console.error('Lỗi khi xử lý ảnh sản phẩm:', error);
+      logger.error('Lỗi khi xử lý ảnh sản phẩm:', error);
       throw new AppError('Failed to process product image', 500);
     }
   }
@@ -149,7 +150,7 @@ class ImageService {
           fileName: thumbFileName,
         });
       } catch (error) {
-        console.error(`Lỗi khi tạo thumbnail ${size.name}:`, error);
+        logger.error(`Lỗi khi tạo thumbnail ${size.name}:`, error);
       }
     }
 
@@ -159,7 +160,7 @@ class ImageService {
   // Upload và xử lý ảnh đơn
   async uploadImage(file, options = {}) {
     try {
-      console.log('📤 Bắt đầu upload ảnh:', {
+      logger.debug('📤 Bắt đầu upload ảnh:', {
         originalname: file.originalname,
         mimetype: file.mimetype,
         size: file.size,
@@ -224,7 +225,7 @@ class ImageService {
       try {
         await fs.unlink(file.path);
       } catch (error) {
-        console.error('Lỗi khi xóa file tạm:', error);
+        logger.error('Lỗi khi xóa file tạm:', error);
       }
 
       return {
@@ -239,7 +240,7 @@ class ImageService {
         category,
       };
     } catch (error) {
-      console.error('Lỗi khi upload ảnh:', error);
+      logger.error('Lỗi khi upload ảnh:', error);
       throw new AppError('Failed to upload image', 500);
     }
   }
@@ -295,7 +296,7 @@ class ImageService {
       try {
         await fs.unlink(fullPath);
       } catch (error) {
-        console.error('Lỗi khi xóa file:', error);
+        logger.error('Lỗi khi xóa file:', error);
       }
 
       // Xóa thumbnail nếu tồn tại
@@ -393,7 +394,7 @@ class ImageService {
         category,
       };
     } catch (error) {
-      console.error('Lỗi khi chuyển đổi base64 thành file:', error);
+      logger.error('Lỗi khi chuyển đổi base64 thành file:', error);
       throw new AppError('Failed to convert base64 to file', 500);
     }
   }
@@ -422,9 +423,9 @@ class ImageService {
       for (const filePath of orphanedFiles) {
         try {
           await fs.unlink(filePath);
-          console.log(`Đã xóa file không còn tham chiếu: ${filePath}`);
+          logger.debug(`Đã xóa file không còn tham chiếu: ${filePath}`);
         } catch (error) {
-          console.error(`Lỗi khi xóa file không còn tham chiếu ${filePath}:`, error);
+          logger.error(`Lỗi khi xóa file không còn tham chiếu ${filePath}:`, error);
         }
       }
 
@@ -435,7 +436,7 @@ class ImageService {
         deletedFiles: orphanedFiles.length,
       };
     } catch (error) {
-      console.error('Lỗi khi dọn dẹp file không còn tham chiếu:', error);
+      logger.error('Lỗi khi dọn dẹp file không còn tham chiếu:', error);
       throw new AppError('Failed to cleanup orphaned files', 500);
     }
   }
@@ -460,3 +461,4 @@ class ImageService {
 }
 
 module.exports = new ImageService();
+

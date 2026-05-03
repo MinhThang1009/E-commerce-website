@@ -47,3 +47,4 @@ export const chatApi = api.injectEndpoints({
 });
 
 export const { useGetChatHistoryQuery, useGetAdminChatListQuery } = chatApi;
+

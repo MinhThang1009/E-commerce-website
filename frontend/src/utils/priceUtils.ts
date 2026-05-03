@@ -63,3 +63,4 @@ export const calculateDiscountPercentage = (
   if (originalPrice <= salePrice) return 0;
   return Math.round(((originalPrice - salePrice) / originalPrice) * 100);
 };
+

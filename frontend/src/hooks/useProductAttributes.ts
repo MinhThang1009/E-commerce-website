@@ -12,7 +12,6 @@ export const useProductAttributes = (
 
   // Các handler cho thuộc tính
   const handleAddAttribute = (attribute: ProductAttribute) => {
-    console.log('handleAddAttribute được gọi với:', attribute);
 
     if (editingAttribute) {
       // Cập nhật thuộc tính đã tồn tại
@@ -20,10 +19,6 @@ export const useProductAttributes = (
         attr.id === editingAttribute.id
           ? { ...attribute, id: editingAttribute.id }
           : attr
-      );
-      console.log(
-        'Cập nhật thuộc tính hiện có. Mảng thuộc tính mới:',
-        updatedAttributes
       );
       setAttributes(updatedAttributes);
     } else {
@@ -33,7 +28,6 @@ export const useProductAttributes = (
         ...attributes,
         { ...attribute, id: attribute.id || newId },
       ];
-      console.log('Thêm thuộc tính mới. Mảng thuộc tính mới:', newAttributes);
       setAttributes(newAttributes);
     }
 
@@ -69,3 +63,4 @@ export const useProductAttributes = (
     closeAttributeModal,
   };
 };
+

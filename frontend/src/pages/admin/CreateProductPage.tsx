@@ -1,4 +1,4 @@
-﻿import { ArrowLeftOutlined } from '@ant-design/icons';
+import { ArrowLeftOutlined } from '@ant-design/icons';
 import {
   Button,
   Card,
@@ -20,7 +20,7 @@ import { useProductAttributes } from '@/hooks/useProductAttributes';
 import { useProductForm } from '@/hooks/useProductForm';
 import { useProductVariants } from '@/hooks/useProductVariants';
 
-// Các API hook
+// C�c API hook
 import { useCreateProductMutation } from '@/services/adminProductApi';
 import { useGetCategoriesQuery } from '@/services/categoryApi';
 import { useConvertBase64ToImageMutation, useDeleteImageMutation } from '@/services/imageApi';
@@ -68,7 +68,7 @@ const CreateProductPage: React.FC = () => {
   const navigate = useNavigate();
   const [form] = Form.useForm();
 
-  // State để theo dõi các bước đã hoàn thành
+  // State d? theo d�i c�c bu?c d� ho�n th�nh
   const [completedSteps, setCompletedSteps] = useState<Record<string, boolean>>(
     {
       basic: false,
@@ -84,12 +84,12 @@ const CreateProductPage: React.FC = () => {
     }
   );
 
-  // State cho hierarchical attributes và variants
+  // State cho hierarchical attributes v� variants
   const [attributeGroups, setAttributeGroups] = useState<AttributeGroup[]>([]);
   const [hierarchicalVariants, setHierarchicalVariants] = useState<any[]>([]);
   const [specifications, setSpecifications] = useState<any[]>([]);
 
-  // Các API hook
+  // C�c API hook
   const { data: categories, isLoading: isCategoriesLoading } =
     useGetCategoriesQuery();
   const { data: warrantyData, isLoading: isWarrantyLoading } =
@@ -120,20 +120,18 @@ const CreateProductPage: React.FC = () => {
 
   // Debug: Log attributes whenever they change
   useEffect(() => {
-    console.log('Current attributes in CreateProductPage:', attributes);
   }, [attributes]);
 
   // Debug: Log variants whenever they change
   useEffect(() => {
-    console.log('Current variants in CreateProductPage:', variants);
 
-    // Tự động set price = 0 khi có variants
+    // T? d?ng set price = 0 khi c� variants
     if (variants.length > 0) {
       form.setFieldValue('price', 0);
     }
   }, [variants, form]);
 
-  // Đặt giá trị mặc định cho form
+  // �?t gi� tr? m?c d?nh cho form
   useEffect(() => {
     form.setFieldsValue({
       price: 0,
@@ -177,16 +175,16 @@ const CreateProductPage: React.FC = () => {
       }));
     },
     onSubmit: async (values: ProductFormData) => {
-      // Theo dõi ID ảnh description đã upload để rollback nếu createProduct thất bại
+      // Theo d�i ID ?nh description d� upload d? rollback n?u createProduct th?t b?i
       const uploadedDescImageIds: string[] = [];
 
       try {
-        // Lấy tất cả giá trị từ form để đảm bảo không bị thiếu
+        // L?y t?t c? gi� tr? t? form d? d?m b?o kh�ng b? thi?u
         const allFormValues = form.getFieldsValue();
 
         const hasVariants = variants.length > 0;
 
-        // Xử lý mô tả: chuyển ảnh base64 thành file đã upload
+        // X? l� m� t?: chuy?n ?nh base64 th�nh file d� upload
         let processedDescription =
           allFormValues.description || values.description || '';
 
@@ -204,7 +202,7 @@ const CreateProductPage: React.FC = () => {
 
           if (result.hasChanges) {
             processedDescription = result.processedDescription;
-            // Lưu lại ID để rollback nếu tạo sản phẩm thất bại
+            // Luu l?i ID d? rollback n?u t?o s?n ph?m th?t b?i
             result.uploadedImages.forEach((img) => {
               if (img.imageId) uploadedDescImageIds.push(img.imageId);
             });
@@ -221,7 +219,7 @@ const CreateProductPage: React.FC = () => {
           shortDescription:
             allFormValues.shortDescription || values.shortDescription,
           description: processedDescription,
-          // Sản phẩm có biến thể: đặt giá về 0
+          // S?n ph?m c� bi?n th?: d?t gi� v? 0
           price: hasVariants
             ? 0
             : parseFloat(
@@ -247,7 +245,7 @@ const CreateProductPage: React.FC = () => {
                 ? parseFloat(compareAtPrice.toString())
                 : undefined;
             })(),
-          // Sản phẩm có biến thể: đặt tồn kho về 0
+          // S?n ph?m c� bi?n th?: d?t t?n kho v? 0
           stock: hasVariants
             ? 0
             : parseInt(
@@ -291,7 +289,7 @@ const CreateProductPage: React.FC = () => {
             values.thumbnail ||
             ''
           ).substring(0, 1000),
-          // Các trường bổ sung
+          // C�c tru?ng b? sung
           condition: allFormValues.condition || values.condition || 'new',
           inStock: hasVariants
             ? true
@@ -349,14 +347,14 @@ const CreateProductPage: React.FC = () => {
               stockQuantity: parseInt((variant as any).stockQuantity?.toString() || variant.stock?.toString() || '0') || 0,
               stock: parseInt(variant.stock?.toString() || (variant as any).stockQuantity?.toString() || '0') || 0,
               sku: variant.sku || `VAR-${Date.now()}-${index + 1}`,
-              isDefault: index === 0, // Biến thể đầu tiên là mặc định
+              isDefault: index === 0, // Bi?n th? d?u ti�n l� m?c d?nh
               isAvailable: true,
               attributes: variant.attributes || {},
               specifications: variant.specifications || {},
               images: variant.images || [],
             }))
             : [],
-          // Thêm các trường SEO - chỉ thêm nếu có giá trị
+          // Th�m c�c tru?ng SEO - ch? th�m n?u c� gi� tr?
           ...(allFormValues.seoTitle || values.seoTitle
             ? {
               seoTitle: (allFormValues.seoTitle || values.seoTitle).substring(
@@ -387,51 +385,12 @@ const CreateProductPage: React.FC = () => {
           })(),
         };
 
-        console.log('Sending product data to server:', productData);
-        console.log('Product data type check:', {
-          searchKeywords: {
-            type: typeof productData.searchKeywords,
-            isArray: Array.isArray(productData.searchKeywords),
-          },
-          seoKeywords: {
-            type: typeof productData.seoKeywords,
-            isArray: Array.isArray(productData.seoKeywords),
-          },
-          specifications: {
-            type: typeof productData.specifications,
-            isArray: Array.isArray(productData.specifications),
-          },
-          categoryIds: {
-            type: typeof productData.categoryIds,
-            isArray: Array.isArray(productData.categoryIds),
-          },
-          warrantyPackageIds: {
-            type: typeof productData.warrantyPackageIds,
-            isArray: Array.isArray(productData.warrantyPackageIds),
-          },
-          attributes: {
-            type: typeof productData.attributes,
-            isArray: Array.isArray(productData.attributes),
-          },
-          variants: {
-            type: typeof productData.variants,
-            isArray: Array.isArray(productData.variants),
-          },
-          images: {
-            type: typeof productData.images,
-            isArray: Array.isArray(productData.images),
-          },
-          thumbnail: {
-            type: typeof productData.thumbnail,
-            value: productData.thumbnail,
-          },
-        });
         await createProduct(productData).unwrap();
         message.success(t('admin.products.messages.createSuccess'));
         navigate('/admin/products');
       } catch (error: any) {
-        // Rollback: xóa ảnh description đã upload nếu tạo sản phẩm thất bại
-        // Tránh orphaned files khi form bị lỗi validation sau khi ảnh đã được upload
+        // Rollback: x�a ?nh description d� upload n?u t?o s?n ph?m th?t b?i
+        // Tr�nh orphaned files khi form b? l?i validation sau khi ?nh d� du?c upload
         if (uploadedDescImageIds.length > 0) {
           await Promise.allSettled(
             uploadedDescImageIds.map((id) => deleteImage(id).unwrap().catch(() => {}))
@@ -444,7 +403,7 @@ const CreateProductPage: React.FC = () => {
     isSubmitting: isCreating,
   });
 
-  // Hàm hỗ trợ định dạng thông báo lỗi
+  // H�m h? tr? d?nh d?ng th�ng b�o l?i
   const formatErrorMessage = (error: any): string => {
     if (error?.data?.message) {
       return error.data.message;
@@ -461,8 +420,8 @@ const CreateProductPage: React.FC = () => {
       // Multiple errors - format nicely
       const errorList = error.data.errors
         .map((err: any) => err.message || `${err.field}: ${t('admin.products.messages.validationError')}`)
-        .join('\n• ');
-      return `${t('admin.products.messages.multipleErrors', { count: error.data.errors.length })}:\n• ${errorList}`;
+        .join('\n� ');
+      return `${t('admin.products.messages.multipleErrors', { count: error.data.errors.length })}:\n� ${errorList}`;
     }
 
     if (error?.message) {
@@ -474,7 +433,7 @@ const CreateProductPage: React.FC = () => {
 
   const categoriesList = categories || [];
 
-  // Thứ tự tab cố định
+  // Th? t? tab c? d?nh
   const TAB_ORDER = [
     'basic',
     'specifications',
@@ -488,14 +447,14 @@ const CreateProductPage: React.FC = () => {
     'seo',
   ];
 
-  // Hàm kiểm tra xem tab có được phép truy cập không
+  // H�m ki?m tra xem tab c� du?c ph�p truy c?p kh�ng
   const isTabAccessible = (tabKey: string): boolean => {
     const targetIndex = TAB_ORDER.indexOf(tabKey);
 
-    // Tab đầu tiên luôn có thể truy cập
+    // Tab d?u ti�n lu�n c� th? truy c?p
     if (targetIndex === 0) return true;
 
-    // Kiểm tra xem tất cả các tab trước đó đã hoàn thành chưa
+    // Ki?m tra xem t?t c? c�c tab tru?c d� d� ho�n th�nh chua
     for (let i = 0; i < targetIndex; i++) {
       const stepKey = TAB_ORDER[i];
       if (!completedSteps[stepKey]) {
@@ -506,10 +465,10 @@ const CreateProductPage: React.FC = () => {
     return true;
   };
 
-  // Hàm xử lý khi thay đổi tab
+  // H�m x? l� khi thay d?i tab
   const handleTabChange = (key: string) => {
     if (!isTabAccessible(key)) {
-      // Hiển thị thông báo nếu tab chưa được phép truy cập
+      // Hi?n th? th�ng b�o n?u tab chua du?c ph�p truy c?p
       alert(t('admin.products.tabs.incompleteWarning'));
       return;
     }
@@ -529,7 +488,7 @@ const CreateProductPage: React.FC = () => {
                 : '#999',
           }}
         >
-          {t('admin.products.tabs.basic')} {completedSteps.basic ? '✓' : ''}
+          {t('admin.products.tabs.basic')} {completedSteps.basic ? '?' : ''}
         </span>
       ),
       disabled: !isTabAccessible('basic'),
@@ -561,7 +520,7 @@ const CreateProductPage: React.FC = () => {
           }}
         >
           {t('admin.products.tabs.specifications')} <span style={{ color: '#ff4d4f' }}>*</span>{' '}
-          {completedSteps.specifications ? '✓' : ''}
+          {completedSteps.specifications ? '?' : ''}
         </span>
       ),
       disabled: !isTabAccessible('specifications'),
@@ -590,7 +549,7 @@ const CreateProductPage: React.FC = () => {
           }}
         >
           {t('admin.products.tabs.attributes')} <span style={{ color: '#ff4d4f' }}>*</span>{' '}
-          {completedSteps.attributes ? '✓' : ''}
+          {completedSteps.attributes ? '?' : ''}
         </span>
       ),
       disabled: !isTabAccessible('attributes'),
@@ -624,7 +583,7 @@ const CreateProductPage: React.FC = () => {
           }}
         >
           {t('admin.products.tabs.variants')} <span style={{ color: '#ff4d4f' }}>*</span>{' '}
-          {completedSteps.variants ? '✓' : ''}
+          {completedSteps.variants ? '?' : ''}
         </span>
       ),
       disabled: !isTabAccessible('variants'),
@@ -657,7 +616,7 @@ const CreateProductPage: React.FC = () => {
                 : '#999',
           }}
         >
-          {t('admin.products.tabs.pricing')} {completedSteps.pricing ? '✓' : ''}
+          {t('admin.products.tabs.pricing')} {completedSteps.pricing ? '?' : ''}
         </span>
       ),
       disabled: !isTabAccessible('pricing'),
@@ -685,7 +644,7 @@ const CreateProductPage: React.FC = () => {
                 : '#999',
           }}
         >
-          {t('admin.products.tabs.category')} {completedSteps.category ? '✓' : ''}
+          {t('admin.products.tabs.category')} {completedSteps.category ? '?' : ''}
         </span>
       ),
       disabled: !isTabAccessible('category'),
@@ -716,7 +675,7 @@ const CreateProductPage: React.FC = () => {
                 : '#999',
           }}
         >
-          {t('admin.products.tabs.images')} {completedSteps.images ? '✓' : ''}
+          {t('admin.products.tabs.images')} {completedSteps.images ? '?' : ''}
         </span>
       ),
       disabled: !isTabAccessible('images'),
@@ -744,7 +703,7 @@ const CreateProductPage: React.FC = () => {
                 : '#999',
           }}
         >
-          {t('admin.products.tabs.warranty')} {completedSteps.warranty ? '✓' : ''}
+          {t('admin.products.tabs.warranty')} {completedSteps.warranty ? '?' : ''}
         </span>
       ),
       disabled: !isTabAccessible('warranty'),
@@ -772,7 +731,7 @@ const CreateProductPage: React.FC = () => {
                 : '#999',
           }}
         >
-          {t('admin.products.tabs.faqs')} {completedSteps.faqs ? '✓' : ''}
+          {t('admin.products.tabs.faqs')} {completedSteps.faqs ? '?' : ''}
         </span>
       ),
       disabled: !isTabAccessible('faqs'),
@@ -800,7 +759,7 @@ const CreateProductPage: React.FC = () => {
                 : '#999',
           }}
         >
-          {t('admin.products.tabs.seo')} {completedSteps.seo ? '✓' : ''}
+          {t('admin.products.tabs.seo')} {completedSteps.seo ? '?' : ''}
         </span>
       ),
       disabled: !isTabAccessible('seo'),
@@ -873,10 +832,10 @@ const CreateProductPage: React.FC = () => {
 
           <ValidationAlerts
             isFormValid={isFormValid}
-            missingFields={[]} // getMissingFields() hiện không cần thiết vì ValidationAlerts trả về null
+            missingFields={[]} // getMissingFields() hi?n kh�ng c?n thi?t v� ValidationAlerts tr? v? null
           />
 
-          {/* FormActions bị ẩn vì button tạo sản phẩm đã được chuyển vào TabNavigation */}
+          {/* FormActions b? ?n v� button t?o s?n ph?m d� du?c chuy?n v�o TabNavigation */}
         </Form>
       </Card>
 
@@ -904,3 +863,4 @@ const CreateProductPage: React.FC = () => {
 };
 
 export default CreateProductPage;
+

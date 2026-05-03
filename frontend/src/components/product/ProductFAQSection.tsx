@@ -70,3 +70,4 @@ const ProductFAQSection: React.FC<ProductFAQSectionProps> = ({ faqs }) => {
 };
 
 export default ProductFAQSection;
+

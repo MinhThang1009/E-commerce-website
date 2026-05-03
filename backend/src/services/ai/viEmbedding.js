@@ -1,3 +1,4 @@
+const logger = require('../../utils/logger');
 const axios = require('axios');
 
 class VietnameseEmbeddingService {
@@ -7,9 +8,9 @@ class VietnameseEmbeddingService {
     this.apiUrl = 'https://router.huggingface.co/hf-inference/models/intfloat/multilingual-e5-large';
     this.EXPECTED_DIM = 1024;
     if (this.apiKey) {
-      console.info('✅ Vietnamese Embedding Service khởi tạo thành công (multilingual-e5-large via HuggingFace)');
+      logger.info('✅ Vietnamese Embedding Service khởi tạo thành công (multilingual-e5-large via HuggingFace)');
     } else {
-      console.warn('⚠️ HF_API_KEY chưa được cấu hình — Vietnamese embedding sẽ fallback sang English model');
+      logger.warn('⚠️ HF_API_KEY chưa được cấu hình — Vietnamese embedding sẽ fallback sang English model');
     }
   }
 
@@ -48,10 +49,10 @@ class VietnameseEmbeddingService {
       } catch (error) {
         const isLastAttempt = attempt > maxRetries;
         if (!isLastAttempt) {
-          console.warn(`⚠️ VI embedding thất bại (lần ${attempt}/${maxRetries + 1}), thử lại sau ${backoffMs[attempt - 1]}ms...`);
+          logger.warn(`⚠️ VI embedding thất bại (lần ${attempt}/${maxRetries + 1}), thử lại sau ${backoffMs[attempt - 1]}ms...`);
           await new Promise(resolve => setTimeout(resolve, backoffMs[attempt - 1]));
         } else {
-          console.error('❌ VI embedding thất bại sau', maxRetries + 1, 'lần thử:', error.message);
+          logger.error('❌ VI embedding thất bại sau', maxRetries + 1, 'lần thử:', error.message);
           throw error;
         }
       }
@@ -60,3 +61,4 @@ class VietnameseEmbeddingService {
 }
 
 module.exports = new VietnameseEmbeddingService();
+

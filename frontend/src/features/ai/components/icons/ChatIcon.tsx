@@ -51,3 +51,4 @@ const ChatIcon: React.FC<IconProps> = ({ className = 'w-7 h-7' }) => {
 };
 
 export default ChatIcon;
+

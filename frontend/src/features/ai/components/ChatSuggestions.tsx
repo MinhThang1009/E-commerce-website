@@ -60,3 +60,4 @@ const ChatSuggestions: React.FC<ChatSuggestionsProps> = ({
 };
 
 export default ChatSuggestions;
+

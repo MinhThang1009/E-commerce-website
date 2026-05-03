@@ -89,3 +89,4 @@ export const HomeNewsSection: React.FC = () => {
     </PageSection>
   );
 };
+

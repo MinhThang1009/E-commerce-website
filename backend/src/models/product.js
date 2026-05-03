@@ -1,6 +1,7 @@
 ﻿const { DataTypes } = require('sequelize');
 const slugify = require('slugify');
 const sequelize = require('../config/sequelize');
+const logger = require('../utils/logger');
 
 // Thử load vectorStore service, nếu không có thì bỏ qua
 let vectorStoreService;
@@ -286,7 +287,7 @@ const Product = sequelize.define(
             }
           }
         } catch (error) {
-          console.error('Lỗi cập nhật vector store sau khi tạo sản phẩm:', error);
+          logger.error('Lỗi cập nhật vector store sau khi tạo sản phẩm:', error);
         }
       },
       // Cập nhật vector store khi sửa sản phẩm
@@ -312,7 +313,7 @@ const Product = sequelize.define(
             }
           }
         } catch (error) {
-          console.error('Lỗi cập nhật vector store sau khi sửa sản phẩm:', error);
+          logger.error('Lỗi cập nhật vector store sau khi sửa sản phẩm:', error);
         }
       },
       // Xóa khỏi vector store khi xóa sản phẩm
@@ -325,7 +326,7 @@ const Product = sequelize.define(
             await vectorStoreService.save(); // Phải await
           }
         } catch (error) {
-          console.error('Lỗi cập nhật vector store sau khi xóa sản phẩm:', error);
+          logger.error('Lỗi cập nhật vector store sau khi xóa sản phẩm:', error);
         }
       },
     },

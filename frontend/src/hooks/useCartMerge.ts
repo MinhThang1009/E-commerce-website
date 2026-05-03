@@ -33,7 +33,6 @@ export const useCartMerge = (
     const performCartMerge = async () => {
       if (isAuthenticated && justLoggedIn) {
         try {
-          console.log('🔄 Kiểm tra các cart item cục bộ để gộp...');
 
           // Kiểm tra xem có item nào trong localStorage không
           const localItems = JSON.parse(
@@ -41,13 +40,11 @@ export const useCartMerge = (
           );
 
           if (localItems.length > 0) {
-            console.log('🛒 Tìm thấy cart item cục bộ:', localItems);
 
             // Trước tiên, lấy server cart hiện tại
             await refetch();
 
             // Thêm từng item cục bộ vào server cart
-            console.log('🔄 Đang thêm item cục bộ vào server cart...');
 
             // Theo dõi số item đã thêm để hiển thị thông báo
             let addedItemsCount = 0;
@@ -62,7 +59,6 @@ export const useCartMerge = (
                 }).unwrap();
 
                 addedItemsCount += item.quantity;
-                console.log(`✅ Đã thêm sản phẩm ${item.name} vào giỏ hàng`);
               } catch (itemError) {
                 console.error(
                   `❌ Không thể thêm sản phẩm ${item.name} vào giỏ hàng:`,
@@ -77,14 +73,9 @@ export const useCartMerge = (
               if (result && result.data) {
                 // Cập nhật Redux store với cart mới nhất
                 dispatch(setServerCart(result.data));
-                console.log('✅ Gộp giỏ hàng thành công:', result.data);
               } else if (serverCart) {
                 // Dự phòng dùng serverCart hiện tại nếu refetch không trả dữ liệu mới
                 dispatch(setServerCart(serverCart));
-                console.log(
-                  '✅ Gộp giỏ hàng thành công (dùng dữ liệu hiện tại):',
-                  serverCart
-                );
               }
             } catch (refetchError) {
               console.error('❌ Không thể refetch giỏ hàng:', refetchError);
@@ -106,15 +97,11 @@ export const useCartMerge = (
             }
           } else {
             // Không có item cục bộ, chỉ gộp session cart trên server
-            console.log(
-              '🔄 Không có item cục bộ, đang kiểm tra session cart trên server...'
-            );
             const mergedCart = await mergeCart().unwrap();
 
             // Cập nhật Redux store với cart đã gộp
             dispatch(setServerCart(mergedCart));
 
-            console.log('✅ Gộp server cart thành công:', mergedCart);
 
             // Hiển thị thông báo nếu có item được gộp
             if (mergedCart.totalItems > 0) {
@@ -162,3 +149,4 @@ export const useCartMerge = (
     // items,
   ]);
 };
+

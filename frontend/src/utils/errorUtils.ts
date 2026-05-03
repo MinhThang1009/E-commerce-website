@@ -143,13 +143,6 @@ export const createErrorHandler = (onError?: (error: AppError) => void) => {
   return (error: any) => {
     const parsedError = parseError(error);
 
-    if (import.meta.env.DEV) {
-      console.group('🚨 Error Handler');
-      console.log('Lỗi gốc:', error);
-      console.log('Lỗi sau khi phân tích:', parsedError);
-      console.groupEnd();
-    }
-
     if (onError) {
       onError(parsedError);
     }
@@ -216,3 +209,4 @@ export const formatErrorForLogging = (error: any): string => {
     2
   );
 };
+

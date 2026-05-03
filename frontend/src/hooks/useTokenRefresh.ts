@@ -18,11 +18,9 @@ export const useTokenRefresh = () => {
     // Kiểm tra tính hợp lệ của token mỗi 5 phút
     const checkTokenValidity = async () => {
       if (isTokenExpired(token)) {
-        console.log('🔄 Token đã hết hạn, đang thử làm mới...');
         const newToken = await refreshTokenIfNeeded();
 
         if (!newToken) {
-          console.log('❌ Làm mới token thất bại, đang đăng xuất...');
           dispatch(logout());
         }
       }
@@ -52,3 +50,4 @@ export const useTokenRefresh = () => {
       document.removeEventListener('visibilitychange', handleVisibilityChange);
   }, [token, isAuthenticated]);
 };
+

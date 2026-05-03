@@ -2781,13 +2781,13 @@ COMMIT;
 - **Chú ý:** `tokenManager.ts` và `apiClient.ts` có nhiều debug log nhất — ưu tiên dọn 2 file này trước
 
 ### ✅ Acceptance Criteria Phase 19
-- [ ] `POST /api/auth/login` thành công → log `[AUTH] Login success { userId, email }`
-- [ ] `POST /api/auth/login` sai password 5 lần → log `[AUTH] Rate limited { ip, email }`
-- [ ] Payment webhook nhận được → log `[PAYMENT] Webhook received { event, orderId }`
-- [ ] Log files không chứa bất kỳ password hay token nào (grep `logs/` tìm `password`)
-- [ ] `backend/logs/` không trong git tracking
-- [ ] `grep -rn "console\.log" backend/src/ --include="*.js"` → 0 kết quả trong controllers/ và services/ (trừ migration/seed scripts)
-- [ ] `grep -rn "console\.log" frontend/src/ --include="*.ts" --include="*.tsx"` → 0 kết quả trong production code
+- [x] `POST /api/auth/login` thành công → log `[AUTH] Login success { userId, email }`
+- [x] `POST /api/auth/login` sai password 5 lần → log `[AUTH] Rate limited { ip, email }`
+- [x] Payment webhook nhận được → log `[PAYMENT] Webhook received { event, orderId }`
+- [x] Log files không chứa bất kỳ password hay token nào (grep `logs/` tìm `password`)
+- [x] `backend/logs/` không trong git tracking
+- [x] `grep -rn "console\.log" backend/src/ --include="*.js"` → 0 kết quả trong controllers/ và services/ (trừ migration/seed scripts)
+- [x] `grep -rn "console\.log" frontend/src/ --include="*.ts" --include="*.tsx"` → 0 kết quả trong production code
 
 ---
 

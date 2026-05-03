@@ -23,9 +23,6 @@ const DashboardPage: React.FC = () => {
   const { t, i18n } = useTranslation();
 
   // Log debug
-  console.log('DashboardPage - i18n sẵn sàng:', i18n.isInitialized);
-  console.log('DashboardPage - ngôn ngữ hiện tại:', i18n.language);
-  console.log('DashboardPage - kiểm tra dịch:', t('admin.dashboard.title'));
 
   // Lấy thống kê dashboard
   const {
@@ -564,3 +561,4 @@ const DashboardPage: React.FC = () => {
 };
 
 export default DashboardPage;
+

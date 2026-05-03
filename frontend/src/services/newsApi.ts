@@ -74,3 +74,4 @@ export const {
   useUpdateNewsMutation,
   useDeleteNewsMutation,
 } = newsApi;
+

@@ -18,7 +18,6 @@ export const userApi = api.injectEndpoints({
   endpoints: (builder) => ({
     updateProfile: builder.mutation<User, UpdateProfileRequest>({
       query: (userData) => {
-        console.log('Đang gửi request cập nhật thông tin hồ sơ:', userData);
         return {
           url: '/users/profile',
           method: 'PUT',
@@ -26,7 +25,6 @@ export const userApi = api.injectEndpoints({
         };
       },
       transformResponse: (response: any) => {
-        console.log('Phản hồi thô từ API cập nhật hồ sơ:', response);
         if (response?.status === 'success') {
           return response.data;
         }
@@ -142,3 +140,4 @@ export const {
   useDeleteAddressMutation,
   useSetDefaultAddressMutation,
 } = userApi;
+

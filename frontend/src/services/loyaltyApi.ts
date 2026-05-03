@@ -21,3 +21,4 @@ export const loyaltyApi = api.injectEndpoints({
 });
 
 export const { useGetLoyaltyInfoQuery } = loyaltyApi;
+

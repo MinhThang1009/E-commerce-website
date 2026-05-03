@@ -17,6 +17,8 @@ out/
 
 # Logs
 *.log
+backend/logs/
+!backend/logs/.gitkeep
 
 # Runtime-generated data
 backend/data/vectorDb.json

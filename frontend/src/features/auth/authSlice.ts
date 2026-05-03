@@ -14,7 +14,6 @@ const getStoredToken = (): string | null => {
   try {
     return localStorage.getItem('token');
   } catch (error) {
-    console.warn('Không thể truy cập localStorage:', error);
     return null;
   }
 };
@@ -23,7 +22,6 @@ const getStoredRefreshToken = (): string | null => {
   try {
     return localStorage.getItem('refreshToken');
   } catch (error) {
-    console.warn('Không thể truy cập localStorage:', error);
     return null;
   }
 };
@@ -33,7 +31,6 @@ const getStoredUser = (): User | null => {
     const userStr = localStorage.getItem('user');
     return userStr ? JSON.parse(userStr) : null;
   } catch (error) {
-    console.warn('Không thể truy cập localStorage:', error);
     return null;
   }
 };
@@ -118,3 +115,4 @@ export const {
 } = authSlice.actions;
 
 export default authSlice.reducer;
+

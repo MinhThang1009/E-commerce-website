@@ -23,3 +23,4 @@ export const bannerApi = createApi({
 });
 
 export const { useGetBannersQuery } = bannerApi;
+

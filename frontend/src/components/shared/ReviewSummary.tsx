@@ -118,3 +118,4 @@ const ReviewSummary: React.FC<ReviewSummaryProps> = ({
 };
 
 export default ReviewSummary;
+

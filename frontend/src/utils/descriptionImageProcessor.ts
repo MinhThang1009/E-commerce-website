@@ -53,7 +53,6 @@ export const processDescriptionImages = async (
     };
   }
 
-  console.log(`Tìm thấy ${base64Images.length} ảnh base64 cần chuyển đổi`);
 
   let processedDescription = description;
   const uploadedImages: ProcessDescriptionResult['uploadedImages'] = [];
@@ -73,7 +72,6 @@ export const processDescriptionImages = async (
       const base64Data = base64Images[i];
 
       try {
-        console.log(`Đang chuyển đổi ảnh ${i + 1}/${base64Images.length}`);
 
         // Cập nhật thông báo đang tải
         message.loading({
@@ -107,10 +105,6 @@ export const processDescriptionImages = async (
             uploadedUrl,
             imageId: result.data.id,
           });
-
-          console.log(
-            `Chuyển đổi thành công ảnh ${i + 1}: ${result.data.fileName}`
-          );
         } else {
           console.error(
             `Chuyển đổi ảnh ${i + 1} thất bại: Không có dữ liệu trong response`
@@ -186,3 +180,4 @@ export const countBase64Images = (description: string): number => {
   const matches = description.match(base64ImageRegex);
   return matches ? matches.length : 0;
 };
+

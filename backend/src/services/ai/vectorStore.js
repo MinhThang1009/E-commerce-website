@@ -1,3 +1,4 @@
+const logger = require('../../utils/logger');
 const embeddingService = require('./embedding');
 const viEmbeddingService = require('./viEmbedding');
 const path = require('path');
@@ -42,11 +43,11 @@ class SimpleVectorStore {
         const content = await fs.promises.readFile(this.storagePath, 'utf8');
         if (content && content.trim()) {
           this.items = JSON.parse(content);
-          console.log(`✅ Đã tải ${this.items.length} vector từ ổ đĩa`);
+          logger.debug(`✅ Đã tải ${this.items.length} vector từ ổ đĩa`);
         }
       }
     } catch (e) {
-      console.error('Lỗi khi tải vector db:', e);
+      logger.error('Lỗi khi tải vector db:', e);
       this.items = [];
     }
   }
@@ -57,17 +58,17 @@ class SimpleVectorStore {
       const dataDir = path.dirname(this.storagePath);
       if (!fs.existsSync(dataDir)) fs.mkdirSync(dataDir, { recursive: true });
 
-      console.log(`💾 Đang lưu ${this.items.length} mục vào ${this.storagePath}...`);
+      logger.debug(`💾 Đang lưu ${this.items.length} mục vào ${this.storagePath}...`);
       await fs.promises.writeFile(this.storagePath, JSON.stringify(this.items, null, 2));
-      console.log('✅ Lưu file thành công');
+      logger.debug('✅ Lưu file thành công');
     } catch (e) {
-      console.error('❌ Lỗi khi lưu vector store:', e);
+      logger.error('❌ Lỗi khi lưu vector store:', e);
     }
   }
 
   clear() {
     this.items = [];
-    console.log('🗑️ Đã xóa toàn bộ vector store');
+    logger.debug('🗑️ Đã xóa toàn bộ vector store');
   }
 
   // Thêm hoặc cập nhật sản phẩm vào vector store
@@ -92,11 +93,11 @@ class SimpleVectorStore {
         try {
           vectorVi = await viEmbeddingService.generateEmbedding(textToEmbed);
           if (vectorVi && vectorVi.length !== EXPECTED_DIM_VI) {
-            console.warn(`⚠️ vectorVi sai chiều cho "${product.name}": ${vectorVi.length} (mong đợi ${EXPECTED_DIM_VI})`);
+            logger.warn(`⚠️ vectorVi sai chiều cho "${product.name}": ${vectorVi.length} (mong đợi ${EXPECTED_DIM_VI})`);
             vectorVi = null;
           }
         } catch (err) {
-          console.warn(`⚠️ Không thể tạo Vietnamese vector cho "${product.name}": ${err.message}`);
+          logger.warn(`⚠️ Không thể tạo Vietnamese vector cho "${product.name}": ${err.message}`);
         }
       }
 
@@ -123,7 +124,7 @@ class SimpleVectorStore {
         },
       });
     } catch (error) {
-      console.error(`Lỗi khi thêm sản phẩm ${product.id} vào vector store:`, error.message);
+      logger.error(`Lỗi khi thêm sản phẩm ${product.id} vào vector store:`, error.message);
       throw error;
     }
   }
@@ -156,7 +157,7 @@ class SimpleVectorStore {
         && viEmbeddingService.isAvailable()
         && this.items.some(item => item.vectorVi);
 
-      console.log(`[SEARCH] lang=${lang}, useViModel=${useViModel}`);
+      logger.debug(`[SEARCH] lang=${lang}, useViModel=${useViModel}`);
 
       // Chuẩn bị cả 2 query vectors khi dùng VI model để fallback đúng pair
       // cho sản phẩm không có vectorVi (indexed khi HF API fail)
@@ -190,10 +191,11 @@ class SimpleVectorStore {
         .sort((a, b) => b.score - a.score)
         .slice(0, limit);
     } catch (error) {
-      console.error('Lỗi tìm kiếm vector:', error.message);
+      logger.error('Lỗi tìm kiếm vector:', error.message);
       return [];
     }
   }
 }
 
 module.exports = new SimpleVectorStore();
+

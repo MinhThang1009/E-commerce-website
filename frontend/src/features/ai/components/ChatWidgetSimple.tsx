@@ -464,3 +464,4 @@ const ChatWidgetSimple: React.FC = () => {
 };
 
 export default ChatWidgetSimple;
+

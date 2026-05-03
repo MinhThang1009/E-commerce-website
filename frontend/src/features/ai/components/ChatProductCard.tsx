@@ -188,3 +188,4 @@ const ChatProductCard: React.FC<ChatProductCardProps> = ({
 };
 
 export default ChatProductCard;
+

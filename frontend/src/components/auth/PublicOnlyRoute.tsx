@@ -23,3 +23,4 @@ const PublicOnlyRoute: React.FC<PublicOnlyRouteProps> = ({
 };
 
 export default PublicOnlyRoute;
+

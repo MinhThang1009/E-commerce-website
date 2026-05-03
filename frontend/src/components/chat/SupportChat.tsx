@@ -269,3 +269,4 @@ const SupportChat: React.FC = () => {
 };
 
 export default SupportChat;
+

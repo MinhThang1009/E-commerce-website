@@ -22,7 +22,6 @@ class ChatbotErrorBoundary extends React.Component<Props, State> {
 
   componentDidCatch(error: Error, info: React.ErrorInfo) {
     // Log lỗi để debug — không log sensitive data
-    console.warn('Chatbot gặp lỗi không mong muốn:', error.message, info.componentStack?.split('\n')[1]);
   }
 
   render() {
@@ -42,3 +41,4 @@ class ChatbotErrorBoundary extends React.Component<Props, State> {
 }
 
 export default ChatbotErrorBoundary;
+

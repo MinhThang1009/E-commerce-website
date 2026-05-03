@@ -116,3 +116,4 @@ export interface CheckoutData {
   paymentMethod: PaymentMethod;
   notes?: string;
 }
+

@@ -46,3 +46,4 @@ const BotIcon: React.FC<BotIconProps> = ({ className = '', size = 24 }) => {
 };
 
 export default BotIcon;
+

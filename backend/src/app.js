@@ -13,6 +13,7 @@ const { errorHandler } = require('./middlewares/errorHandler');
 const path = require('path');
 const cron = require('node-cron');
 const fs = require('fs').promises;
+const logger = require('./utils/logger');
 
 // Khởi tạo ứng dụng Express
 const app = express();
@@ -33,7 +34,7 @@ cron.schedule('0 2 * * *', async () => {
           const stat = await fs.stat(filePath);
           if (Date.now() - stat.mtimeMs > maxAge) {
             await fs.unlink(filePath);
-            console.log(`[CLEANUP] Xóa file tạm cũ: ${file}`);
+            logger.info(`[CLEANUP] Xóa file tạm cũ: ${file}`);
           }
         } catch {
           // Bỏ qua file không đọc được hoặc đã bị xóa bởi process khác
@@ -42,7 +43,7 @@ cron.schedule('0 2 * * *', async () => {
     );
   } catch (err) {
     // tempDir chưa tồn tại hoặc không có quyền đọc — bỏ qua
-    console.warn('[CLEANUP] Không thể dọn dẹp uploads/temp:', err.message);
+    logger.warn('[CLEANUP] Không thể dọn dẹp uploads/temp:', err.message);
   }
 });
 
@@ -153,9 +154,15 @@ app.use((req, res, next) => {
   next();
 });
 
-// Ghi log request trong môi trường development
-if (process.env.NODE_ENV === 'development') {
-  app.use(morgan('dev'));
+// Ghi log HTTP request — bỏ qua health check để tránh noise, không log sensitive body
+// Dùng Morgan cho cả dev lẫn production; format 'combined' cung cấp đủ context để debug
+if (process.env.NODE_ENV !== 'test') {
+  app.use(
+    morgan(':method :url :status :response-time ms', {
+      // Bỏ qua /health endpoint để tránh log noise từ uptime monitoring
+      skip: (req) => req.url === '/health' || req.url === '/api/health',
+    })
+  );
 }
 
 // Giới hạn auth endpoints (áp dụng mọi môi trường để chặn brute force)

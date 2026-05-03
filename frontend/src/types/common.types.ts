@@ -38,3 +38,4 @@ export interface WishlistItem {
 export interface WishlistState {
   items: WishlistItem[];
 }
+

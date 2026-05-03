@@ -52,7 +52,6 @@ export const useCartSync = () => {
           // Cập nhật Redux store với response từ server
           dispatch(setServerCart(syncedCart));
 
-          console.log('✅ Đồng bộ giỏ hàng lên server thành công');
         } catch (error) {
           console.error('❌ Không thể đồng bộ giỏ hàng lên server:', error);
         }
@@ -93,3 +92,4 @@ export const useCartSync = () => {
 };
 
 export default useCartSync;
+

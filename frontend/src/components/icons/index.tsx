@@ -280,3 +280,4 @@ export const NAVIGATION_ICONS = {
 } as const;
 
 export type NavigationIconKey = keyof typeof NAVIGATION_ICONS;
+

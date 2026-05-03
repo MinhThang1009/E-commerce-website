@@ -127,3 +127,4 @@ export const {
 } = categoryApi;
 
 export type { Category } from '@/types/category.types';
+

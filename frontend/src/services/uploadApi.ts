@@ -80,3 +80,4 @@ export const {
   useUploadMultipleMutation,
   useDeleteFileMutation,
 } = uploadApi;
+

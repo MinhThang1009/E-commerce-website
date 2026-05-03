@@ -1,4 +1,9 @@
-import { ProductFilters } from '@/types/product.types';
+import {
+  ProductFilters,
+  ProductListApiResponse,
+  ProductDetailApiResponse,
+  ProductArrayApiResponse,
+} from '@/types/product.types';
 import { api } from './api';
 import {
   createProductFiltersParams,
@@ -8,7 +13,7 @@ import {
 
 export const productApi = api.injectEndpoints({
   endpoints: (builder) => ({
-    getProducts: builder.query<any, ProductFilters | void>({
+    getProducts: builder.query<ProductListApiResponse, ProductFilters | void>({
       query: (filters = {}) => {
         const params = createProductFiltersParams(filters);
         return {
@@ -20,7 +25,7 @@ export const productApi = api.injectEndpoints({
       providesTags: (result) => generateProductTags(result, 'LIST'),
     }),
 
-    getProductById: builder.query<any, string | { id: string; skuId?: string; color?: string }>(
+    getProductById: builder.query<ProductDetailApiResponse, string | { id: string; skuId?: string; color?: string }>(
       {
         query: (arg) => {
           const id = typeof arg === 'string' ? arg : arg.id;
@@ -44,7 +49,7 @@ export const productApi = api.injectEndpoints({
       }
     ),
 
-    getProductBySlug: builder.query<any, { slug: string; skuId?: string; color?: string }>({
+    getProductBySlug: builder.query<ProductDetailApiResponse, { slug: string; skuId?: string; color?: string }>({
       query: ({ slug, skuId, color }) => {
         const params = new URLSearchParams();
         if (skuId) params.append('skuId', skuId);
@@ -59,7 +64,7 @@ export const productApi = api.injectEndpoints({
       providesTags: (result) => generateProductTags(result, 'SLUG'),
     }),
 
-    getFeaturedProducts: builder.query<any, { limit?: number } | void>({
+    getFeaturedProducts: builder.query<ProductArrayApiResponse, { limit?: number } | void>({
       query: (params) => {
         const queryParams = new URLSearchParams();
         if (params && typeof params === 'object' && 'limit' in params && params.limit) {
@@ -75,7 +80,7 @@ export const productApi = api.injectEndpoints({
       providesTags: (result) => generateProductTags(result, 'FEATURED'),
     }),
 
-    getNewArrivals: builder.query<any, { limit?: number } | void>({
+    getNewArrivals: builder.query<ProductArrayApiResponse, { limit?: number } | void>({
       query: (params) => {
         const queryParams = new URLSearchParams();
         if (params && typeof params === 'object' && 'limit' in params && params.limit) {
@@ -92,7 +97,7 @@ export const productApi = api.injectEndpoints({
     }),
 
     getBestSellers: builder.query<
-      any,
+      ProductArrayApiResponse,
       { limit?: number; period?: string } | void
     >({
       query: (params) => {
@@ -110,7 +115,7 @@ export const productApi = api.injectEndpoints({
     }),
 
     getDeals: builder.query<
-      any,
+      ProductArrayApiResponse,
       { minDiscount?: number; limit?: number; sort?: string } | void
     >({
       query: (params) => {
@@ -129,7 +134,7 @@ export const productApi = api.injectEndpoints({
       providesTags: (result) => generateProductTags(result, 'DEALS'),
     }),
 
-    getRelatedProducts: builder.query<any, string>({
+    getRelatedProducts: builder.query<ProductArrayApiResponse, string>({
       query: (productId) => ({
         url: `/products/${productId}/related`,
         method: 'GET',
@@ -159,7 +164,7 @@ export const productApi = api.injectEndpoints({
     }),
 
     searchProducts: builder.query<
-      any,
+      ProductListApiResponse,
       { q: string; page?: number; limit?: number }
     >({
       query: ({ q, page = 1, limit = 10 }) => {
@@ -193,7 +198,7 @@ export const productApi = api.injectEndpoints({
       },
       providesTags: ['Product'],
     }),
-    getRecentlyViewed: builder.query<any, { limit?: number } | void>({
+    getRecentlyViewed: builder.query<ProductArrayApiResponse, { limit?: number } | void>({
       query: (params = {}) => {
         const queryParams = new URLSearchParams();
         if (params && 'limit' in params && params.limit) {

@@ -3,6 +3,7 @@ import {
   CartItem,
   CartState,
   ServerCart,
+  ServerCartItem,
   UpdateCartItemPayload,
 } from '@/types/cart.types';
 
@@ -25,7 +26,7 @@ const initialState: CartState = {
 };
 
 // Hàm chuyển đổi cart item từ server sang định dạng cart item cục bộ
-const convertServerCartItem = (serverItem: any): CartItem => ({
+const convertServerCartItem = (serverItem: ServerCartItem): CartItem => ({
   id: serverItem.id,
   productId: serverItem.productId,
   name: serverItem.Product.name,

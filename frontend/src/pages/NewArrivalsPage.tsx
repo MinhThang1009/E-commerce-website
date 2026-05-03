@@ -8,7 +8,7 @@ import Pagination from '@/components/common/Pagination';
 
 const NewArrivalsPage: React.FC = () => {
   const { t } = useTranslation();
-  const [sortOption, setSortOption] = useState('newest');
+  const [sortOption, setSortOption] = useState<'price_asc' | 'price_desc' | 'newest' | 'popular'>('newest');
   const [currentPage, setCurrentPage] = useState(1);
   const limit = 12;
 
@@ -31,7 +31,7 @@ const NewArrivalsPage: React.FC = () => {
   ];
 
   const handleSortChange = (value: string) => {
-    setSortOption(value);
+    setSortOption(value as 'price_asc' | 'price_desc' | 'newest' | 'popular');
     setCurrentPage(1);
   };
 
@@ -75,8 +75,8 @@ const NewArrivalsPage: React.FC = () => {
 
       <div className="flex flex-col md:flex-row justify-between items-center mb-8">
         <p className="text-neutral-600 dark:text-neutral-400 mb-4 md:mb-0">
-          {productsData?.total
-            ? t('newArrivals.showing', { shown: productsData.products.length, total: productsData.total })
+          {productsData?.data?.total
+            ? t('newArrivals.showing', { shown: productsData.data.products.length, total: productsData.data.total })
             : t('newArrivals.browse')}
         </p>
         <div className="w-full md:w-48">
@@ -89,7 +89,7 @@ const NewArrivalsPage: React.FC = () => {
         </div>
       </div>
 
-      {productsData?.products.length === 0 ? (
+      {productsData?.data?.products.length === 0 ? (
         <div className="text-center py-12 bg-neutral-50 dark:bg-neutral-800 rounded-lg">
           <svg xmlns="http://www.w3.org/2000/svg" className="h-12 w-12 mx-auto text-neutral-400 mb-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.172 16.172a4 4 0 015.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
@@ -104,15 +104,15 @@ const NewArrivalsPage: React.FC = () => {
       ) : (
         <>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-            {productsData?.products.map((product) => (
+            {productsData?.data?.products.map((product) => (
               <ProductCard key={product.id} {...product} />
             ))}
           </div>
 
-          {productsData && productsData.totalPages > 1 && (
+          {productsData && productsData.data.pages > 1 && (
             <Pagination
               currentPage={currentPage}
-              totalPages={productsData.totalPages}
+              totalPages={productsData.data.pages}
               onPageChange={handlePageChange}
             />
           )}

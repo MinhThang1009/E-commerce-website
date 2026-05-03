@@ -49,8 +49,8 @@ const DealsPage: React.FC = () => {
           item.createdAt &&
           new Date(item.createdAt) >
             new Date(Date.now() - 7 * 24 * 60 * 60 * 1000),
-        categoryName: item.categories?.[0]?.name || 'Uncategorized',
-        stock: item.stockQuantity || 0,
+        categoryName: item.categoryName || item.category?.name || 'Uncategorized',
+        stock: item.stock || 0,
       } as Product;
     });
   }, [dealsData]);

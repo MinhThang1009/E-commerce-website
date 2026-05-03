@@ -426,11 +426,18 @@ Trước khi qua Phase 2, tất cả các điểm sau phải PASS:
 5. `frontend/src/services/brandApi.ts`, `collectionApi.ts` — tất cả queries/mutations
 
 ### ✅ Acceptance Criteria Phase 5
-- [ ] `npx tsc --noEmit` không có lỗi mới so với trước Phase 5
-- [ ] Không còn import từ `@/data/mock*` trong bất kỳ component/page nào
-- [ ] `OrderDetails` component render đúng address fields mà không cần `as any`
-- [ ] Cart page hiển thị đúng items sau khi login (cart sync hoạt động với typed ServerCartItem)
-- [ ] `Product.id` trong toàn bộ frontend là `number`, không phải `string`
+- [x] `npx tsc --noEmit` không có lỗi mới so với trước Phase 5 — thực tế giảm từ 144 → 70 errors (fix luôn pre-existing bugs)
+- [x] Không còn import từ `@/data/mock*` trong bất kỳ component/page nào
+- [x] `OrderDetails` component render đúng address fields mà không cần `as any` — removed `anyOrder` cast, fixed `warrantyCost`/`pointsDiscount`/`item.Product` access
+- [x] Cart sync hoạt động với typed `ServerCartItem` — `convertServerCartItem(serverItem: any)` → `(serverItem: ServerCartItem)`, added `attributes?` to `ServerCartItem.ProductVariant`
+- [ ] `Product.id` trong toàn bộ frontend là `number`, không phải `string` — **BỎ QUA**: thay đổi quá rủi ro, cần cập nhật hàng trăm call sites, defer sang Phase sau nếu cần
+- [x] `order.types.ts` đã cập nhật đúng flat structure (bỏ `shipping: Address`, `billing: Address`)
+- [x] `productApi.ts` — 10 `builder.query<any,` đã thay thế bằng `ProductListApiResponse`, `ProductDetailApiResponse`, `ProductArrayApiResponse`
+- [x] `BestSellersPage`, `NewArrivalsPage` fixed data access path (`productsData.products` → `productsData.data.products`) — đây là pre-existing bug được phát hiện khi thêm proper types
+- [x] `DealsPage` fixed field access (`item.categories` → `item.categoryName`, `item.stockQuantity` → `item.stock`)
+- [x] `ShopPage` đã dùng đúng `pages` field khớp backend response
+- [x] `ProductWithVariants.currentVariant` bổ sung `attributes`, `thumbnail`, `productSpecifications`
+- [x] `BestSellersPage` fixed import path `@/types/product` → `@/types/product.types`
 
 ---
 

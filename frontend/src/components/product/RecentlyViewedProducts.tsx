@@ -33,7 +33,7 @@ const RecentlyViewedProducts: React.FC<RecentlyViewedProductsProps> = ({
     );
   }
 
-  const products = Array.isArray(data?.data) ? data.data : data?.data?.products || [];
+  const products = data?.data || [];
 
   if (error || !products || products.length === 0) {
     return null;

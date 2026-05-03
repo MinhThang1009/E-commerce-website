@@ -57,6 +57,7 @@ export interface ServerCartItem {
     name: string;
     price: number;
     stockQuantity: number;
+    attributes?: Record<string, string>;
   };
 }
 

@@ -2,6 +2,8 @@
 import { Address } from './user.types';
 
 export interface OrderItem {
+  id: string;
+  orderId?: string;
   productId: string;
   variantId?: string;
   name: string;
@@ -9,8 +11,17 @@ export interface OrderItem {
   price: number;
   quantity: number;
   subtotal: number;
-  image: string;
-  attributes?: Record<string, string>;
+  image?: string;
+  attributes?: Record<string, any>;
+  createdAt?: string;
+  updatedAt?: string;
+  Product?: {
+    id: string;
+    name: string;
+    images: string[];
+    price: number;
+    thumbnail?: string;
+  };
 }
 
 export interface PaymentDetails {
@@ -39,18 +50,44 @@ export interface Order {
   number: string;
   userId: string;
   status: OrderStatus;
-  items: OrderItem[];
-  shipping: Address;
-  billing: Address;
-  paymentMethod: PaymentMethod;
+  shippingFirstName: string;
+  shippingLastName: string;
+  shippingCompany?: string;
+  shippingAddress1: string;
+  shippingAddress2?: string;
+  shippingCity: string;
+  shippingState: string;
+  shippingZip: string;
+  shippingCountry: string;
+  shippingPhone?: string;
+  billingFirstName: string;
+  billingLastName: string;
+  billingCompany?: string;
+  billingAddress1: string;
+  billingAddress2?: string;
+  billingCity: string;
+  billingState: string;
+  billingZip: string;
+  billingCountry: string;
+  billingPhone?: string;
+  paymentMethod: string;
   paymentStatus: PaymentStatus;
-  paymentDetails?: PaymentDetails;
+  paymentTransactionId?: string;
+  paymentProvider?: string;
   subtotal: number;
   tax: number;
   shippingCost: number;
   discount: number;
   total: number;
+  warrantyCost?: number;
   notes?: string;
+  trackingNumber?: string;
+  shippingProvider?: string;
+  estimatedDelivery?: string;
+  pointsEarned?: number;
+  pointsUsed?: number;
+  pointsDiscount?: number;
+  items?: OrderItem[];
   createdAt: string;
   updatedAt: string;
 }

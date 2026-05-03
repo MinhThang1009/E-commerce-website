@@ -5,7 +5,7 @@ import LoadingSpinner from '@/components/common/LoadingSpinner';
 import Select from '@/components/common/Select';
 import Pagination from '@/components/common/Pagination';
 import { useTranslation } from 'react-i18next';
-import { Product } from '@/types/product';
+import { Product } from '@/types/product.types';
 
 const BestSellersPage: React.FC = () => {
   const { t } = useTranslation();
@@ -80,8 +80,8 @@ const BestSellersPage: React.FC = () => {
       {/* Sắp xếp và số kết quả */}
       <div className="flex flex-col md:flex-row justify-between items-center mb-8">
         <p className="text-neutral-600 dark:text-neutral-400 mb-4 md:mb-0">
-          {productsData?.total
-            ? t('bestSellers.stats', { current: productsData.products.length, total: productsData.total })
+          {productsData?.data?.total
+            ? t('bestSellers.stats', { current: productsData.data.products.length, total: productsData.data.total })
             : t('bestSellers.browse')}
         </p>
         <div className="w-full md:w-48">
@@ -95,7 +95,7 @@ const BestSellersPage: React.FC = () => {
       </div>
 
       {/* Lưới sản phẩm */}
-      {productsData?.products.length === 0 ? (
+      {productsData?.data?.products.length === 0 ? (
         <div className="text-center py-12 bg-neutral-50 dark:bg-neutral-800 rounded-lg">
           <svg
             xmlns="http://www.w3.org/2000/svg"
@@ -121,16 +121,16 @@ const BestSellersPage: React.FC = () => {
       ) : (
         <>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-            {productsData?.products.map((product: Product) => (
+            {productsData?.data?.products.map((product: Product) => (
               <ProductCard key={product.id} {...product} />
             ))}
           </div>
 
           {/* Phân trang */}
-          {productsData && productsData.totalPages > 1 && (
+          {productsData && productsData.data.pages > 1 && (
             <Pagination
               currentPage={currentPage}
-              totalPages={productsData.totalPages}
+              totalPages={productsData.data.pages}
               onPageChange={handlePageChange}
             />
           )}

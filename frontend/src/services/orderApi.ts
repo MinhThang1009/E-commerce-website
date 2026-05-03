@@ -20,6 +20,7 @@ export interface OrderItem {
     name: string;
     images: string[];
     price: number;
+    thumbnail?: string;
   };
 }
 

@@ -38,7 +38,6 @@ const OrderDetails: React.FC<OrderDetailsProps> = ({ orderId, onOpenReview }) =>
   }
 
   const order = response.data;
-  const anyOrder = order as any; // Ép kiểu cho các trường chưa được định nghĩa đầy đủ trong TS nhưng có trong API
 
   // Logic thanh tiến trình
   const steps = ['pending', 'processing', 'shipped', 'delivered'];
@@ -148,7 +147,7 @@ const OrderDetails: React.FC<OrderDetailsProps> = ({ orderId, onOpenReview }) =>
               <p className="flex justify-between items-center pb-2 border-b border-neutral-200 dark:border-neutral-700/50">
                 <span className="text-neutral-500">{t('orders.phone')}:</span>
                 <span className="font-semibold text-neutral-800 dark:text-neutral-100">
-                  {order.shippingPhone || anyOrder.user?.phone || t('orders.notProvided')}
+                  {order.shippingPhone || t('orders.notProvided')}
                 </span>
               </p>
               <div className="flex flex-col pt-1">
@@ -211,9 +210,9 @@ const OrderDetails: React.FC<OrderDetailsProps> = ({ orderId, onOpenReview }) =>
                 <div key={item.id} className="grid grid-cols-1 md:grid-cols-12 gap-4 p-4 items-center hover:bg-neutral-50/50 dark:hover:bg-neutral-800/50 transition-colors">
                   <div className="col-span-1 md:col-span-6 flex gap-4 items-center">
                     <div className="w-20 h-20 rounded-xl overflow-hidden shadow-sm bg-neutral-100 dark:bg-neutral-800 border border-neutral-200 dark:border-neutral-700 flex-shrink-0">
-                      {(item as any).Product?.thumbnail || (item as any).Product?.images?.[0] || item.image ? (
+                      {item.Product?.thumbnail || item.Product?.images?.[0] || item.image ? (
                         <img
-                          src={(item as any).Product?.thumbnail || (item as any).Product?.images?.[0] || item.image}
+                          src={item.Product?.thumbnail || item.Product?.images?.[0] || item.image}
                           alt={item.name}
                           className="w-full h-full object-cover transition-transform hover:scale-110"
                         />
@@ -257,9 +256,9 @@ const OrderDetails: React.FC<OrderDetailsProps> = ({ orderId, onOpenReview }) =>
                     <p className="font-bold text-primary-600 dark:text-primary-500 text-lg">
                       {formatPrice(item.subtotal)}
                     </p>
-                    {order.status === 'delivered' && (item as any).Product && onOpenReview && (
+                    {order.status === 'delivered' && item.Product && onOpenReview && (
                       <button
-                        onClick={() => onOpenReview((item as any).Product.id, (item as any).Product.name)}
+                        onClick={() => onOpenReview(item.Product?.id ?? '', item.Product?.name ?? '')}
                         className="text-xs px-3 py-1.5 border border-primary-500 text-primary-600 rounded-md hover:bg-primary-50 dark:hover:bg-primary-900/40 font-medium transition-colors"
                       >
                         {t('orders.writeReview')}
@@ -287,10 +286,10 @@ const OrderDetails: React.FC<OrderDetailsProps> = ({ orderId, onOpenReview }) =>
                 <span className="font-medium">{order.shippingCost === 0 ? t('orders.freeShipping') : formatPrice(order.shippingCost)}</span>
               </div>
 
-              {anyOrder.warrantyCost > 0 && (
+              {(order.warrantyCost ?? 0) > 0 && (
                 <div className="flex justify-between items-center text-neutral-600 dark:text-neutral-300 pt-2 pb-2 border-b border-neutral-200 dark:border-neutral-700 border-dashed">
                   <span>{t('orders.warrantyCost')}</span>
-                  <span className="font-medium">{formatPrice(anyOrder.warrantyCost)}</span>
+                  <span className="font-medium">{formatPrice(order.warrantyCost!)}</span>
                 </div>
               )}
 
@@ -306,7 +305,7 @@ const OrderDetails: React.FC<OrderDetailsProps> = ({ orderId, onOpenReview }) =>
                 </div>
               )}
 
-              {anyOrder.pointsDiscount > 0 && (
+              {(order.pointsDiscount ?? 0) > 0 && (
                 <div className="flex justify-between items-center text-amber-600 dark:text-amber-400 pt-2">
                   <span className="flex items-center gap-2">
                     <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -314,7 +313,7 @@ const OrderDetails: React.FC<OrderDetailsProps> = ({ orderId, onOpenReview }) =>
                     </svg>
                     {t('orders.pointsDiscount')}
                   </span>
-                  <span className="font-bold">-{formatPrice(anyOrder.pointsDiscount)}</span>
+                  <span className="font-bold">-{formatPrice(order.pointsDiscount!)}</span>
                 </div>
               )}
 

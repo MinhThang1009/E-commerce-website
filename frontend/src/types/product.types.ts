@@ -30,6 +30,11 @@ export interface Product {
   faqs?: FAQ[];
   createdAt: string;
   updatedAt: string;
+  // Fields added by transformProduct at runtime
+  categorySlug?: string;
+  category?: { id: string; name: string; slug?: string };
+  productSpecifications?: Array<{ name: string; value: string }>;
+  discountPercentage?: number;
 }
 
 export interface FAQ {
@@ -182,6 +187,26 @@ export interface ProductSpecification {
   sortOrder?: number;
 }
 
+export interface ProductListApiResponse {
+  status: string;
+  data: {
+    products: Product[];
+    total: number;
+    pages: number;
+    currentPage: number;
+  };
+}
+
+export interface ProductDetailApiResponse {
+  status: string;
+  data: ProductWithVariants;
+}
+
+export interface ProductArrayApiResponse {
+  status: string;
+  data: Product[];
+}
+
 // Interface Product nâng cao hỗ trợ biến thể
 export interface ProductWithVariants extends Product {
   baseName?: string;
@@ -194,8 +219,11 @@ export interface ProductWithVariants extends Product {
     compareAtPrice?: number;
     sku: string;
     stockQuantity: number;
-    specifications: Record<string, any>;
+    specifications?: Record<string, any>;
     images: string[];
+    attributes?: Record<string, string>;
+    thumbnail?: string;
+    productSpecifications?: Array<{ name: string; value: string }>;
   };
   availableVariants?: Array<{
     id: string;

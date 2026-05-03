@@ -69,7 +69,7 @@ Sau khi tất cả Acceptance Criteria của một phase PASS, **phải** thực
    ```
    - **Subject line (dòng 1):** tối đa 50 ký tự, tiếng Việt, không có dấu chấm cuối; prefix `Hoàn thành` cho phase completion commit
    - **Dòng 2:** để trống (bắt buộc theo chuẩn git)
-   - **Body (từ dòng 3):** chia thành subsections `N.X.` theo từng nhóm thay đổi, mỗi nhóm có bullet points `-`; nếu body ngắn (≤3 items, không cần nhóm) thì dùng thẳng bullet points
+   - **Body (từ dòng 3):** chia thành subsections `N.X.` theo từng nhóm thay đổi, mỗi nhóm có bullet points `-`; nếu body ngắn (≤3 items, không cần nhóm) thì dùng thẳng bullet points; **commit nhỏ (Bugfix/Fix/Cập nhật/Thêm/Bổ sung):** dùng số thứ tự `1.` `2.` `3.` thay cho `-` để dễ reference từng thay đổi
    - **Wrap:** 72 ký tự/dòng
    - **Mục đích:** `git log --oneline` cho ra title gọn; `git log -1` cho ra full context — dễ trace và dễ in log sau này
 3. `git push origin main`

@@ -16,15 +16,16 @@ const { getRedisClient } = require('../config/redis');
 const CACHE_TTL_PRODUCT_LIST = 10 * 60;   // 10 phút
 const CACHE_TTL_PRODUCT_DETAIL = 10 * 60; // 10 phút
 
-// Xóa toàn bộ cache sản phẩm (list + detail cụ thể)
-async function clearProductCache(productId) {
+// Xóa toàn bộ cache sản phẩm (list + detail theo id số và slug)
+// productSlug cần thiết vì getProductById cache bằng cả id số lẫn slug
+async function clearProductCache(productId, productSlug) {
   try {
     const redis = await getRedisClient();
     const listKeys = await redis.keys('products:list:*');
-    await Promise.all([
-      ...listKeys.map(k => redis.del(k)),
-      productId ? redis.del(`product:detail:${productId}`) : Promise.resolve(),
-    ]);
+    const ops = listKeys.map(k => redis.del(k));
+    if (productId) ops.push(redis.del(`product:detail:${productId}`));
+    if (productSlug) ops.push(redis.del(`product:detail:${productSlug}`));
+    await Promise.all(ops);
   } catch {}
 }
 
@@ -310,16 +311,17 @@ const getProductById = async (req, res, next) => {
       const redis = await getRedisClient();
       const cachedDetail = await redis.get(detailCacheKey);
       if (cachedDetail) {
+        // Parse một lần duy nhất — dùng lại cho cả recently-viewed và response
+        const cachedData = JSON.parse(cachedDetail);
         if (req.user) {
           // Lấy productId từ cache payload thay vì parseInt(id) — id có thể là slug
-          const cachedData = JSON.parse(cachedDetail);
           const cachedProductId = cachedData?.data?.id;
           if (cachedProductId) {
             // fire-and-forget: ghi lịch sử xem không ảnh hưởng response, lỗi bỏ qua
             RecentlyViewed.upsert({ userId: req.user.id, productId: cachedProductId, viewedAt: new Date() }).catch(() => {});
           }
         }
-        return res.status(200).json(JSON.parse(cachedDetail));
+        return res.status(200).json(cachedData);
       }
     }
 
@@ -994,6 +996,8 @@ const updateProduct = async (req, res, next) => {
     if (!product) {
       throw new AppError('Không tìm thấy sản phẩm', 404);
     }
+    // Lưu slug trước khi update vì slug có thể thay đổi sau khi save
+    const originalSlug = product.slug;
 
     // Cập nhật sản phẩm - chỉ cập nhật các trường có trong request
     const updateData = {};
@@ -1138,7 +1142,7 @@ const updateProduct = async (req, res, next) => {
       ],
     });
 
-    await clearProductCache(id);
+    await clearProductCache(id, originalSlug);
 
     res.status(200).json({
       status: 'success',
@@ -1161,9 +1165,12 @@ const deleteProduct = async (req, res, next) => {
       throw new AppError('Không tìm thấy sản phẩm', 404);
     }
 
+    // Lưu slug trước khi destroy vì instance vẫn còn trong memory sau destroy
+    const productSlug = product.slug;
+
     // Xóa sản phẩm
     await product.destroy();
-    await clearProductCache(id);
+    await clearProductCache(id, productSlug);
 
     res.status(200).json({
       status: 'success',

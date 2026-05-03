@@ -2,6 +2,7 @@
 const { AppError } = require('../middlewares/errorHandler');
 const { Op } = require('sequelize');
 const { getRedisClient } = require('../config/redis');
+const logger = require('../utils/logger');
 
 const CACHE_TTL_CATEGORIES = 30 * 60; // 30 phút
 
@@ -119,8 +120,13 @@ const createCategory = async (req, res, next) => {
       description,
     });
 
-    const redis = await getRedisClient();
-    await redis.del('categories:all');
+    try {
+      const redis = await getRedisClient();
+      await redis.del('categories:all');
+    } catch (err) {
+      // Cache invalidation failure không nên block write thành công — chỉ log warning
+      logger.warn('Xóa cache categories:all thất bại sau createCategory:', err.message);
+    }
 
     res.status(201).json({
       status: 'success',
@@ -147,8 +153,13 @@ const updateCategory = async (req, res, next) => {
       description: description !== undefined ? description : category.description,
     });
 
-    const redis = await getRedisClient();
-    await redis.del('categories:all');
+    try {
+      const redis = await getRedisClient();
+      await redis.del('categories:all');
+    } catch (err) {
+      // Cache invalidation failure không nên block write thành công — chỉ log warning
+      logger.warn('Xóa cache categories:all thất bại sau updateCategory:', err.message);
+    }
 
     res.status(200).json({
       status: 'success',
@@ -180,8 +191,13 @@ const deleteCategory = async (req, res, next) => {
 
     await category.destroy();
 
-    const redis = await getRedisClient();
-    await redis.del('categories:all');
+    try {
+      const redis = await getRedisClient();
+      await redis.del('categories:all');
+    } catch (err) {
+      // Cache invalidation failure không nên block write thành công — chỉ log warning
+      logger.warn('Xóa cache categories:all thất bại sau deleteCategory:', err.message);
+    }
 
     res.status(200).json({
       status: 'success',

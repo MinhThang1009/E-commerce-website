@@ -2,6 +2,7 @@
 const { catchAsync } = require('../utils/catchAsync');
 const { AppError } = require('../middlewares/errorHandler');
 const { getRedisClient } = require('../config/redis');
+const logger = require('../utils/logger');
 
 const CACHE_TTL_BANNERS = 60 * 60; // 1 giờ
 
@@ -64,8 +65,13 @@ const getBannerById = catchAsync(async (req, res) => {
  */
 const createBanner = catchAsync(async (req, res) => {
   const banner = await Banner.create(req.body);
-  const redis = await getRedisClient();
-  await redis.del('banners:active');
+  try {
+    const redis = await getRedisClient();
+    await redis.del('banners:active');
+  } catch (err) {
+    // Cache invalidation failure không nên block write thành công — chỉ log warning
+    logger.warn('Xóa cache banners:active thất bại sau createBanner:', err.message);
+  }
   res.status(201).json({
     status: 'success',
     data: banner,
@@ -83,8 +89,13 @@ const updateBanner = catchAsync(async (req, res) => {
   }
 
   await banner.update(req.body);
-  const redis = await getRedisClient();
-  await redis.del('banners:active');
+  try {
+    const redis = await getRedisClient();
+    await redis.del('banners:active');
+  } catch (err) {
+    // Cache invalidation failure không nên block write thành công — chỉ log warning
+    logger.warn('Xóa cache banners:active thất bại sau updateBanner:', err.message);
+  }
 
   res.status(200).json({
     status: 'success',
@@ -103,8 +114,13 @@ const deleteBanner = catchAsync(async (req, res) => {
   }
 
   await banner.destroy();
-  const redis = await getRedisClient();
-  await redis.del('banners:active');
+  try {
+    const redis = await getRedisClient();
+    await redis.del('banners:active');
+  } catch (err) {
+    // Cache invalidation failure không nên block write thành công — chỉ log warning
+    logger.warn('Xóa cache banners:active thất bại sau deleteBanner:', err.message);
+  }
 
   res.status(204).json({
     status: 'success',

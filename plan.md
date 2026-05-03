@@ -3143,10 +3143,10 @@ COMMIT;
 - **Fix:** Search action → `SearchHistory.create({ userId, query })` (nếu user đã login); deduplicate — không lưu cùng 1 query 2 lần trong 1 giờ
 
 ### ✅ Acceptance Criteria Phase 17
-- [ ] Search "iphone" (lowercase) và "iPhone" trả về cùng kết quả
-- [ ] Search "điện thoại" trả về products thuộc category điện thoại
-- [ ] Search + filter `price_min=5000000&price_max=15000000` chỉ trả về products trong khoảng giá
-- [ ] `GET /api/products/suggestions?q=lap` trả về tối đa 10 suggestions trong < 100ms
+- [x] Search "iphone" (lowercase) và "iPhone" trả về cùng kết quả
+- [x] Search "điện thoại" trả về products thuộc category điện thoại
+- [x] Search + filter `minPrice=5000000&maxPrice=15000000` chỉ trả về products trong khoảng giá
+- [x] `GET /api/products/suggestions?q=lap` trả về tối đa 10 suggestions trong < 100ms
 
 ---
 

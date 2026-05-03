@@ -333,6 +333,9 @@ router.get('/filters', productController.getProductFilters);
  */
 router.get('/search', productController.searchProducts);
 
+// GET /api/products/suggestions?q=... — Gợi ý tên sản phẩm theo prefix, trả về tối đa 10 kết quả
+router.get('/suggestions', productController.getProductSuggestions);
+
 /**
  * @swagger
  * /api/products/slug/{slug}:

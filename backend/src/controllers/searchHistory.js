@@ -1,7 +1,8 @@
 const { SearchHistory } = require('../models');
+const { Op } = require('sequelize');
 const { AppError } = require('../middlewares/errorHandler');
 
-// Lưu lịch sử tìm kiếm
+// Lưu lịch sử tìm kiếm — bỏ qua nếu cùng keyword đã được lưu trong 1 giờ qua (tránh duplicate)
 const saveSearch = async (req, res, next) => {
   try {
     const { keyword, resultsCount, sessionId } = req.body;
@@ -9,6 +10,24 @@ const saveSearch = async (req, res, next) => {
 
     if (!keyword) {
       return res.status(200).json({ status: 'success' }); // Không báo lỗi để đảm bảo tính nhất quán UI
+    }
+
+    // Kiểm tra duplicate: không lưu cùng keyword 2 lần trong 1 giờ cho cùng user/session
+    const oneHourAgo = new Date(Date.now() - 60 * 60 * 1000);
+    const duplicateWhere = {
+      keyword,
+      createdAt: { [Op.gte]: oneHourAgo },
+    };
+    if (userId) {
+      duplicateWhere.userId = userId;
+    } else if (sessionId) {
+      duplicateWhere.sessionId = sessionId;
+    }
+
+    const existing = await SearchHistory.findOne({ where: duplicateWhere });
+    if (existing) {
+      // Đã tồn tại trong 1 giờ qua — không lưu lại, trả 200 idempotent
+      return res.status(200).json({ status: 'success', data: existing });
     }
 
     const searchHistory = await SearchHistory.create({

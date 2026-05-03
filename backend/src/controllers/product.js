@@ -6,6 +6,7 @@
   ProductSpecification,
   Review,
   RecentlyViewed,
+  WarrantyPackage,
   sequelize,
 } = require('../models');
 const { AppError } = require('../middlewares/errorHandler');
@@ -63,13 +64,13 @@ const getAllProducts = async (req, res, next) => {
     const whereConditions = {};
     const includeConditions = [];
 
-    // Lọc theo từ khóa tìm kiếm
+    // Lọc theo từ khóa tìm kiếm — dùng LOWER() để so sánh không phân biệt hoa/thường (tiếng Anh lẫn tiếng Việt)
     if (search) {
+      const lowerSearch = search.toLowerCase();
       whereConditions[Op.or] = [
-        { name: { [Op.like]: `%${search}%` } },
-        { description: { [Op.like]: `%${search}%` } },
-        { shortDescription: { [Op.like]: `%${search}%` } },
-        { slug: { [Op.like]: `%${search}%` } },
+        sequelize.where(sequelize.fn('LOWER', sequelize.col('Product.name')), { [Op.like]: `%${lowerSearch}%` }),
+        sequelize.where(sequelize.fn('LOWER', sequelize.col('Product.description')), { [Op.like]: `%${lowerSearch}%` }),
+        sequelize.where(sequelize.fn('LOWER', sequelize.col('Product.short_description')), { [Op.like]: `%${lowerSearch}%` }),
       ];
     }
 
@@ -107,7 +108,6 @@ const getAllProducts = async (req, res, next) => {
         whereConditions.categoryId = category;
       } else {
         // Tìm bằng slug
-        const { Category } = require('../models');
         const cat = await Category.findOne({ where: { slug: category } });
         if (cat) {
           whereConditions.categoryId = cat.id;
@@ -904,7 +904,7 @@ const createProduct = async (req, res, next) => {
 
     // Liên kết gói bảo hành
     if (warrantyPackageIds && warrantyPackageIds.length > 0) {
-      const { WarrantyPackage } = require('../models');
+
       const warranties = await WarrantyPackage.findAll({
         where: { id: { [Op.in]: warrantyPackageIds } },
       });
@@ -1089,7 +1089,7 @@ const updateProduct = async (req, res, next) => {
 
       if (warrantyPackageIds && warrantyPackageIds.length > 0) {
         // Kiểm tra gói bảo hành tồn tại
-        const { WarrantyPackage } = require('../models');
+  
         const warranties = await WarrantyPackage.findAll({
           where: { id: { [Op.in]: warrantyPackageIds } },
         });
@@ -1418,14 +1418,15 @@ const searchProducts = async (req, res, next) => {
       throw new AppError('Từ khóa tìm kiếm là bắt buộc', 400);
     }
 
+    // Dùng LOWER() để tìm kiếm không phân biệt hoa/thường (tiếng Anh lẫn tiếng Việt)
+    const lowerQ = q.toLowerCase();
     const { count, rows: productsRaw } = await Product.findAndCountAll({
       where: {
         [Op.or]: [
-          { name: { [Op.like]: `%${q}%` } },
-          { description: { [Op.like]: `%${q}%` } },
-          { shortDescription: { [Op.like]: `%${q}%` } },
-          // { tags: { [Op.contains]: [q] } },
-          { tags: { [Op.like]: `%${q}%` } },
+          sequelize.where(sequelize.fn('LOWER', sequelize.col('Product.name')), { [Op.like]: `%${lowerQ}%` }),
+          sequelize.where(sequelize.fn('LOWER', sequelize.col('Product.description')), { [Op.like]: `%${lowerQ}%` }),
+          sequelize.where(sequelize.fn('LOWER', sequelize.col('Product.short_description')), { [Op.like]: `%${lowerQ}%` }),
+          sequelize.where(sequelize.fn('LOWER', sequelize.col('Product.tags')), { [Op.like]: `%${lowerQ}%` }),
         ],
       },
       include: [
@@ -2058,6 +2059,49 @@ const getRecentlyViewed = async (req, res, next) => {
   }
 };
 
+// GET /api/products/suggestions?q=... — Gợi ý tên sản phẩm theo prefix (autocomplete)
+const getProductSuggestions = async (req, res, next) => {
+  try {
+    const { q } = req.query;
+    // Trả về mảng rỗng khi không có query hoặc query quá ngắn
+    if (!q || q.trim().length < 1) {
+      return res.status(200).json({ status: 'success', data: [] });
+    }
+    const lowerQ = q.toLowerCase().trim();
+
+    // Dùng prefix match (q%) thay vì full contains (%q%) để tận dụng index
+    const products = await Product.findAll({
+      where: sequelize.where(
+        sequelize.fn('LOWER', sequelize.col('name')),
+        { [Op.like]: `${lowerQ}%` }
+      ),
+      attributes: ['id', 'name', 'slug'],
+      include: [{
+        association: 'productImages',
+        attributes: ['imageUrl', 'isThumbnail', 'displayOrder'],
+        required: false,
+      }],
+      limit: 10,
+      order: [['name', 'ASC']],
+    });
+
+    const suggestions = products.map((p) => {
+      const pJson = p.toJSON();
+      const primaryImg = pJson.productImages?.find((img) => img.isThumbnail) || pJson.productImages?.[0];
+      return {
+        id: pJson.id,
+        name: pJson.name,
+        slug: pJson.slug,
+        thumbnail: primaryImg?.imageUrl || null,
+      };
+    });
+
+    res.status(200).json({ status: 'success', data: suggestions });
+  } catch (error) {
+    next(error);
+  }
+};
+
 module.exports = {
   getAllProducts,
   getProductById,
@@ -2069,6 +2113,7 @@ module.exports = {
   getFeaturedProducts,
   getRelatedProducts,
   searchProducts,
+  getProductSuggestions,
   getNewArrivals,
   getBestSellers,
   getDeals,

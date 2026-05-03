@@ -4997,3 +4997,410 @@ search.*          — trang tìm kiếm
 - [ ] `SHOW CREATE TABLE` cho mọi bảng không có warning hoặc constraint unnamed
 
 **Tổng kết:** 3,018 keys × 2 ngôn ngữ = toàn bộ UI text đã được bản địa hóa hoàn chỉnh.
+
+---
+
+## PHASE 39 — Architecture Audit: Layered (Backend) + Hybrid (Frontend)
+
+> **Mục tiêu:** Kiểm tra toàn bộ cấu trúc thư mục và phân tách trách nhiệm. Backend theo chuẩn Layered Architecture (MVC + Service Layer). Frontend theo chuẩn Hybrid Architecture (Layered + Feature-based). Chỉ ra chính xác file/folder nào đặt sai, vi phạm separation of concerns, naming không nhất quán — và fix từng cái.
+
+---
+
+### BACKEND AUDIT
+
+#### 39.B1 — File đặt sai vị trí
+
+**Vấn đề:** `backend/src/data/vectorDb.json` nằm trong `src/` — đây là dữ liệu runtime, không phải source code.
+
+- **Fix:** Di chuyển sang `backend/data/vectorDb.json` (cùng cấp với `migration_full.sql`, `seed_data.sql`)
+- Cập nhật path trong `backend/src/services/ai/vectorStore.js` (hoặc file nào đang import nó)
+
+#### 39.B2 — Services Layer không nhất quán
+
+**Hiện trạng:**
+```
+backend/src/services/
+├── email.js          ← flat, root level
+├── image.js          ← flat, root level
+├── location.js       ← flat, root level
+├── admin/
+│   └── adminAudit.js ← subfolder nhưng chỉ 1 file
+├── ai/
+│   ├── chatbot.js
+│   ├── geminiChatbot.js  ← trùng tên, 2 chatbot service
+│   ├── embedding.js
+│   ├── productNameGenerator.js
+│   ├── vectorStore.js
+│   └── viEmbedding.js
+└── payment/
+    ├── momo.js
+    ├── stripe.js
+    └── vnpay.js
+```
+
+**Vấn đề 1:** `admin/adminAudit.js` — subfolder chỉ có 1 file, tên folder và file thừa prefix. Nếu không có kế hoạch thêm admin service nào khác → flatten thành `services/adminAudit.js`.
+
+**Vấn đề 2:** `services/ai/chatbot.js` và `services/ai/geminiChatbot.js` — 2 service tên gần giống nhau. Grep để xác định cái nào đang được dùng bởi controller:
+```bash
+grep -r "chatbot\|geminiChatbot" backend/src/controllers/ --include="*.js" -l
+```
+→ Nếu chỉ 1 cái được dùng, xóa cái còn lại. Nếu cả 2, đổi tên rõ hơn: `openRouterChatbot.js` và `geminiChatbot.js`.
+
+**Vấn đề 3:** `services/ai/embedding.js` và `services/ai/viEmbedding.js` — tương tự, 2 embedding service. Xác định cái nào đang dùng.
+
+- **Fix chung:** Sau khi cleanup, cấu trúc services nên là:
+```
+services/
+├── email.js
+├── image.js
+├── location.js
+├── adminAudit.js     ← flatten từ admin/adminAudit.js
+├── ai/
+│   └── (chỉ giữ những file đang được dùng)
+└── payment/
+    ├── momo.js
+    ├── stripe.js
+    └── vnpay.js
+```
+
+#### 39.B3 — Fat Controllers vi phạm Service Layer
+
+**Vấn đề:** Nhiều controller chứa trực tiếp Sequelize ORM calls thay vì delegate qua service layer. Đây là vi phạm Layered Architecture — Controller phải chỉ: (1) parse request, (2) gọi service, (3) format response.
+
+**Check:** Các controller "fat" nhất (dựa trên phân tích):
+- `backend/src/controllers/payment.js` — chứa cả business logic thanh toán, stock deduction, loyalty points
+- `backend/src/controllers/order.js` — chứa order workflow, stock check, loyalty calculation
+- `backend/src/controllers/admin.js` — chứa analytics queries, aggregation logic
+- `backend/src/controllers/product.js` — chứa search logic với Sequelize subqueries phức tạp
+
+**Verify:**
+```bash
+# Đếm dòng từng controller — >300 dòng là dấu hiệu fat controller
+wc -l backend/src/controllers/*.js | sort -rn | head -10
+```
+
+**Fix (ưu tiên theo Phase):**
+- Phase 3 đã có kế hoạch tách `payment.js` — áp dụng pattern tương tự cho `order.js`, `admin.js`
+- Nguyên tắc: Mọi `Model.findAll()`, `Model.create()`, `sequelize.transaction()` nên ở trong service, controller chỉ gọi `await service.doSomething(params)`
+- **Không cần refactor toàn bộ trong Phase 39** — chỉ đánh dấu và tạo skeleton service files cho những controller fat nhất
+
+#### 39.B4 — Naming conflict: `image.js` ở 3 layer khác nhau
+
+**Vấn đề:** 3 file tên `image.js` ở 3 tầng:
+- `backend/src/controllers/image.js`
+- `backend/src/services/image.js`
+- `backend/src/models/image.js`
+
+Trong Layered Architecture điều này không sai về cấu trúc, nhưng khi grep hay trace lỗi rất dễ nhầm.
+
+**Check:** Verify mỗi file có đúng trách nhiệm không:
+```bash
+head -30 backend/src/controllers/image.js
+head -30 backend/src/services/image.js
+head -30 backend/src/models/image.js
+```
+
+**Fix nếu service/image.js chứa controller logic:** Tách đúng vai trò. Không cần đổi tên nếu mỗi file đúng layer của nó.
+
+#### 39.B5 — `controllers/chat.js` vs `controllers/chatbot.js` — Naming mơ hồ
+
+**Vấn đề:** 2 controller tên gần giống:
+- `chat.js` — realtime chat giữa user và support (Socket.IO)
+- `chatbot.js` — AI chatbot (OpenRouter/Gemini)
+
+Với developer mới, dễ nhầm. Nên đổi tên thành:
+- `chat.js` → `supportChat.js` (human support chat)
+- `chatbot.js` → `aiChatbot.js` (AI chatbot)
+
+Cập nhật tương ứng trong `routes/chat.js`, `routes/chatbot.js`, và `routes/index.js`.
+
+#### 39.B6 — `backend/scripts/` — Duplicate và cleanup scripts
+
+**Vấn đề:** 11 scripts, một số có thể trùng chức năng:
+- `rebuildDb.js` vs `rebuildDbFinal.js` — 2 rebuild scripts
+- `syncProducts.js` vs `syncAll.js` — 2 sync scripts
+- `exportProductsJson.js` vs `exportSeed.js` — 2 export scripts
+
+**Check:**
+```bash
+head -10 backend/scripts/rebuildDb.js backend/scripts/rebuildDbFinal.js
+head -10 backend/scripts/syncProducts.js backend/scripts/syncAll.js
+```
+
+**Fix:** Xóa script cũ nếu có script mới thay thế. Comment trong script production-ready giải thích khi nào dùng cái nào.
+
+---
+
+### FRONTEND AUDIT
+
+#### 39.F1 — Auth logic bị split giữa `components/auth/` và `features/auth/`
+
+**Hiện trạng:**
+```
+components/auth/
+├── AuthProvider.tsx        ← context provider
+├── GoogleLoginButton.tsx   ← UI component
+├── LoginSuccess.tsx        ← callback page component
+├── ProtectedRoute.tsx      ← route guard
+└── PublicOnlyRoute.tsx     ← route guard
+
+features/auth/
+└── authSlice.ts            ← Redux state
+```
+
+**Vấn đề:** Trong Hybrid Architecture, tất cả những gì thuộc về một feature nên co-located. `AuthProvider`, `ProtectedRoute`, `PublicOnlyRoute` là logic của auth feature — không phải generic component.
+
+**Fix:** Di chuyển `components/auth/` → `features/auth/components/`:
+```
+features/auth/
+├── components/
+│   ├── AuthProvider.tsx
+│   ├── GoogleLoginButton.tsx
+│   ├── LoginSuccess.tsx
+│   ├── ProtectedRoute.tsx
+│   └── PublicOnlyRoute.tsx
+└── authSlice.ts
+```
+Cập nhật tất cả import paths trong `routes/AppRoutes.tsx`, `main.tsx`, `App.tsx`.
+
+#### 39.F2 — Review components bị split giữa 3 folder
+
+**Hiện trạng:**
+```
+components/reviews/
+└── ReviewModal.tsx
+
+components/shared/
+├── ProductReviews.tsx   ← review list wrapper
+├── ReviewForm.tsx       ← review submission form
+├── ReviewList.tsx       ← list of reviews
+├── ReviewSection.tsx    ← section container
+└── ReviewSummary.tsx    ← rating summary
+```
+
+**Vấn đề:** 6 review components nằm ở 2 folder khác nhau, không có feature folder thống nhất.
+
+**Fix (Option A — Layered, không tạo feature):** Gom tất cả review components vào `components/reviews/`:
+```
+components/reviews/
+├── ReviewModal.tsx
+├── ProductReviews.tsx
+├── ReviewForm.tsx
+├── ReviewList.tsx
+├── ReviewSection.tsx
+└── ReviewSummary.tsx
+```
+Xóa các file review khỏi `components/shared/`.
+
+**Fix (Option B — Feature-based):** Tạo `features/reviews/components/` và di chuyển tất cả vào đó (phù hợp hơn nếu plan có review-specific hooks hoặc store sau này).
+
+**Khuyến nghị: Option A** — đơn giản hơn, không cần tạo thêm feature folder chỉ cho components.
+
+#### 39.F3 — `components/chat/SupportChat.tsx` tách khỏi `features/ai/`
+
+**Hiện trạng:**
+- `components/chat/SupportChat.tsx` — standalone, chỉ 1 file
+- `features/ai/` — có toàn bộ chat widget (20+ components, hooks, services, store, types)
+
+**Vấn đề:** `SupportChat.tsx` có thể là human support chat (khác AI chatbot), nhưng folder `components/chat/` chỉ có 1 file — không đủ để tồn tại như 1 folder riêng.
+
+**Check:** Xem SupportChat.tsx làm gì:
+```bash
+head -50 frontend/src/components/chat/SupportChat.tsx
+```
+- Nếu dùng Socket.IO (support chat) → di chuyển vào `features/chat/` mới hoặc để trong `components/shared/`
+- Nếu dùng AI API → di chuyển vào `features/ai/components/`
+- **Fix:** Dù là trường hợp nào, xóa folder `components/chat/` chỉ có 1 file — move file vào nơi phù hợp
+
+#### 39.F4 — `components/orders/` chỉ có 1 file
+
+**Hiện trạng:** `components/orders/OrderDetails.tsx` — 1 file, 1 folder.
+
+**Vấn đề:** Folder với 1 file duy nhất không có giá trị tổ chức.
+
+**Fix:** Di chuyển `OrderDetails.tsx` vào `components/shared/` (nếu dùng nhiều nơi) hoặc `pages/` (nếu chỉ dùng trong OrdersPage). Xóa folder `components/orders/`.
+
+#### 39.F5 — `components/payment/` nên ở trong features
+
+**Hiện trạng:**
+```
+components/payment/
+├── BankTransferQR.tsx
+└── StripePaymentForm.tsx
+```
+
+**Vấn đề:** Payment components là feature-specific, không phải generic components — giống như auth components.
+
+**Fix:** Di chuyển vào `features/checkout/components/payment/` hoặc tạo `features/payment/components/`:
+```
+features/payment/
+└── components/
+    ├── BankTransferQR.tsx
+    └── StripePaymentForm.tsx
+```
+Nếu project chưa có `features/payment/`, tạo folder mới. Cập nhật imports trong `pages/CheckoutPage.tsx`, `pages/PaymentQRPage.tsx`.
+
+#### 39.F6 — Product components split giữa `components/product/` và `features/products/components/`
+
+**Hiện trạng:**
+```
+components/product/    ← 30+ files: form components, selectors, display components
+features/products/
+├── components/
+│   ├── ProductFilters.tsx
+│   ├── ProductGallery.tsx
+│   └── ProductGrid.tsx
+├── index.ts
+└── productsSlice.ts
+```
+
+**Vấn đề:** Không có quy tắc rõ ràng nào phân biệt product component nào vào `components/product/` và cái nào vào `features/products/components/`. Đây là technical debt lớn nhất trên frontend.
+
+**Nguyên tắc phân biệt cần áp dụng:**
+- `components/product/` → các form/UI component dùng trong **admin** (CreateProductForm, EditProduct): `ProductBasicInfoForm`, `ProductPricingForm`, `ProductImagesForm`, `ProductVariantsSection`, v.v.
+- `features/products/components/` → các component dùng trong **user-facing product browsing**: `ProductGrid`, `ProductGallery`, `ProductFilters`
+
+**Fix:** Audit từng file trong `components/product/` — nếu là admin-only form component → di chuyển vào `components/admin/` hoặc `pages/admin/` scope. Nếu là user-facing display → di chuyển vào `features/products/components/`.
+
+#### 39.F7 — Contexts feature-specific không nằm trong feature
+
+**Hiện trạng:**
+```
+contexts/
+├── ProductFormContext.tsx  ← chỉ dùng trong admin product form
+├── StripeContext.tsx       ← chỉ dùng trong checkout/payment
+└── ThemeContext.tsx        ← dùng globally ✅
+```
+
+**Vấn đề:** `ThemeContext` là cross-cutting concern, hợp lý ở root `contexts/`. Nhưng `ProductFormContext` và `StripeContext` là feature-specific.
+
+**Fix:**
+- `ProductFormContext.tsx` → `features/products/contexts/ProductFormContext.tsx` hoặc `components/admin/ProductFormContext.tsx`
+- `StripeContext.tsx` → `features/payment/contexts/StripeContext.tsx`
+- `ThemeContext.tsx` → giữ nguyên trong `contexts/`
+
+#### 39.F8 — `services/` flat với 30+ files, naming không nhất quán
+
+**Vấn đề 1 — `api.ts` vs `apiClient.ts`:**
+```
+services/api.ts          ← Axios instance config?
+services/apiClient.ts    ← Axios instance config?
+```
+Hai files tên gần giống, chức năng có thể trùng. Check:
+```bash
+head -30 frontend/src/services/api.ts
+head -30 frontend/src/services/apiClient.ts
+```
+Nếu cả 2 đều setup Axios baseURL + interceptors → merge thành 1 file `apiClient.ts`, xóa `api.ts`.
+
+**Vấn đề 2 — `productNamingService.ts` phá convention `*Api.ts`:**
+Tất cả API services dùng suffix `Api.ts` (`productApi.ts`, `orderApi.ts`, v.v.). `productNamingService.ts` dùng suffix `Service.ts`.
+- Nếu nó gọi backend API → đổi tên thành `productNamingApi.ts`
+- Nếu nó là local logic (pure function) → di chuyển vào `utils/productHelpers.ts`
+
+**Vấn đề 3 — 30+ flat files không nhóm:**
+Khi project lớn hơn, consider nhóm theo domain:
+```
+services/
+├── admin/
+│   ├── adminDashboardApi.ts
+│   ├── adminOrderApi.ts
+│   ├── adminProductApi.ts
+│   └── adminUserApi.ts
+├── payment/
+│   ├── momoApi.ts
+│   ├── stripeApi.ts
+│   └── vnpayApi.ts
+└── (domain files còn lại ở root)
+```
+**Không bắt buộc trong Phase 39** — chỉ fix 2 vấn đề trên (naming conflict + convention).
+
+#### 39.F9 — `utils/sampleDataHelper.ts` trong production utils
+
+**Vấn đề:** File có tên "sampleData" gợi ý đây là helper cho test/dev data, không nên ở `utils/` production.
+
+**Check:**
+```bash
+head -30 frontend/src/utils/sampleDataHelper.ts
+```
+- Nếu chỉ dùng trong development/test → xóa hoặc di chuyển vào `__tests__/` hoặc `dev/`
+- Nếu vẫn đang được import bởi component nào đó → đổi tên thành tên mô tả chức năng thực
+
+#### 39.F10 — `public/images/` có 2 thư mục payment trùng nhau
+
+**Hiện trạng:**
+```
+frontend/public/images/
+├── payment/
+│   ├── applepay.svg
+│   ├── mastercard.svg
+│   ├── momo.svg
+│   ├── paypal.svg
+│   ├── visa.svg
+│   └── zalopay.svg
+└── payment-icons/
+    ├── applepay.png
+    ├── mastercard.png
+    ├── momo.png
+    ├── paypal.png
+    ├── visa.png
+    └── zalopay.png
+```
+
+**Vấn đề:** 2 folder chứa cùng payment icons, 1 là SVG 1 là PNG.
+
+**Fix:** Gộp thành 1 folder `payment-icons/`, giữ format nào đang được dùng thực tế (SVG ưu tiên vì scalable):
+```bash
+grep -r "payment/" frontend/src/ --include="*.tsx" --include="*.ts" -l
+grep -r "payment-icons/" frontend/src/ --include="*.tsx" --include="*.ts" -l
+```
+Xóa folder không dùng (hoặc folder PNG nếu SVG đủ).
+
+#### 39.F11 — `features/ai/components/ChatWidget.css` — plain CSS trong Tailwind project
+
+**Vấn đề:** Project dùng Tailwind CSS toàn bộ, nhưng `ChatWidget.css` là plain CSS file.
+
+**Check:** Xem CSS có gì đặc biệt không cần với Tailwind:
+```bash
+cat frontend/src/features/ai/components/ChatWidget.css
+```
+- Nếu chỉ là utility classes → migrate sang Tailwind classes inline
+- Nếu có animation/keyframe phức tạp → đổi thành `ChatWidget.module.css` cho CSS Modules, hoặc dùng `tailwind.config.js` extend
+
+#### 39.F12 — `routes/AdminRoute.tsx` nên ở trong auth feature
+
+**Hiện trạng:**
+```
+routes/
+├── AdminRoute.tsx   ← route guard cho admin
+└── AppRoutes.tsx    ← main routing
+```
+
+**Vấn đề:** `AdminRoute.tsx` là auth/authorization guard — cùng loại với `ProtectedRoute.tsx` và `PublicOnlyRoute.tsx`. Sau khi fix 39.F1 (auth components vào `features/auth/`), `AdminRoute.tsx` cũng nên ở đó.
+
+**Fix:** Di chuyển `AdminRoute.tsx` → `features/auth/components/AdminRoute.tsx`. Cập nhật import trong `routes/AppRoutes.tsx`.
+
+---
+
+### Acceptance Criteria Phase 39
+
+**Backend:**
+- [ ] `backend/src/data/vectorDb.json` đã được di chuyển ra `backend/data/vectorDb.json`, path trong code đã cập nhật
+- [ ] `services/admin/adminAudit.js` đã flatten thành `services/adminAudit.js` (hoặc quyết định giữ subfolder có lý do rõ)
+- [ ] `services/ai/chatbot.js` vs `services/ai/geminiChatbot.js` — chỉ còn 1 hoặc đổi tên rõ ràng phân biệt
+- [ ] `controllers/chat.js` và `controllers/chatbot.js` đã đổi tên rõ ràng (`supportChat.js` / `aiChatbot.js`) hoặc có comment giải thích sự khác biệt
+- [ ] Scripts duplicate (`rebuildDb.js` vs `rebuildDbFinal.js`) đã cleanup
+
+**Frontend:**
+- [ ] `components/auth/` đã move vào `features/auth/components/`, không còn `components/auth/` folder
+- [ ] Review components (6 files) đã gom vào 1 folder duy nhất, không còn split giữa `components/reviews/` và `components/shared/`
+- [ ] `components/chat/SupportChat.tsx` đã di chuyển ra khỏi singleton folder, folder `components/chat/` đã xóa
+- [ ] `components/orders/` folder đã xóa, `OrderDetails.tsx` đã di chuyển
+- [ ] `components/payment/` đã di chuyển vào feature folder phù hợp
+- [ ] `contexts/ProductFormContext.tsx` và `contexts/StripeContext.tsx` đã di chuyển vào feature tương ứng
+- [ ] `services/api.ts` vs `services/apiClient.ts` — chỉ còn 1 file hoặc mỗi file có comment rõ vai trò
+- [ ] `services/productNamingService.ts` đã đổi tên theo convention (`*Api.ts` hoặc vào `utils/`)
+- [ ] `utils/sampleDataHelper.ts` đã xử lý (xóa hoặc đổi tên)
+- [ ] `public/images/payment/` và `public/images/payment-icons/` đã gộp thành 1 folder
+- [ ] `npm run build` không có broken import sau khi di chuyển file
+- [ ] `npx tsc --noEmit` không có type error sau khi di chuyển

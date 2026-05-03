@@ -8,6 +8,7 @@ const googleClient = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
 const { Op } = require('sequelize');
 const crypto = require('crypto');
 const axios = require('axios');
+const { getRedisClient } = require('../config/redis');
 
 // Đăng ký người dùng mới
 const register = async (req, res, next) => {
@@ -21,7 +22,7 @@ const register = async (req, res, next) => {
     }
 
     // Tạo mã OTP 6 chữ số, hết hạn sau 10 phút
-    const otpCode = String(Math.floor(100000 + Math.random() * 900000));
+    const otpCode = String(crypto.randomInt(100000, 1000000));
     const otpExpires = new Date(Date.now() + 10 * 60 * 1000);
 
     // Tạo người dùng mới
@@ -79,7 +80,7 @@ const login = async (req, res, next) => {
 
     // Tạo JWT access token
     const token = jwt.sign(
-      { id: user.id, role: user.role },
+      { id: user.id, role: user.role, jti: crypto.randomUUID() },
       process.env.JWT_SECRET,
       { expiresIn: process.env.JWT_EXPIRES_IN }
     );
@@ -169,7 +170,7 @@ const googleLogin = async (req, res, next) => {
 
     // Tạo JWT access token
     const accessToken = jwt.sign(
-      { id: user.id, role: user.role },
+      { id: user.id, role: user.role, jti: crypto.randomUUID() },
       process.env.JWT_SECRET,
       { expiresIn: process.env.JWT_EXPIRES_IN }
     );
@@ -195,7 +196,24 @@ const googleLogin = async (req, res, next) => {
 // Đăng xuất
 const logout = async (req, res, next) => {
   try {
-    // Token không bị invalidate phía server — nên dùng blacklist (Redis) trong production
+    const authHeader = req.headers.authorization;
+    if (authHeader && authHeader.startsWith('Bearer ')) {
+      const token = authHeader.split(' ')[1];
+      try {
+        const decoded = jwt.verify(token, process.env.JWT_SECRET);
+        if (decoded.jti && decoded.exp) {
+          const remainingTTL = decoded.exp - Math.floor(Date.now() / 1000);
+          if (remainingTTL > 0) {
+            const redis = await getRedisClient();
+            if (redis) {
+              await redis.setEx(`bl:${decoded.jti}`, remainingTTL, '1');
+            }
+          }
+        }
+      } catch (_) {
+        // token already expired or invalid — no need to blacklist
+      }
+    }
     res.status(204).send();
   } catch (error) {
     next(error);
@@ -262,7 +280,7 @@ const resendVerification = async (req, res, next) => {
     }
 
     // Tạo mã OTP mới, hết hạn sau 10 phút
-    const otpCode = String(Math.floor(100000 + Math.random() * 900000));
+    const otpCode = String(crypto.randomInt(100000, 1000000));
     const otpExpires = new Date(Date.now() + 10 * 60 * 1000);
 
     // Cập nhật user
@@ -309,7 +327,7 @@ const refreshToken = async (req, res, next) => {
 
     // Tạo access token mới
     const token = jwt.sign(
-      { id: user.id, role: user.role },
+      { id: user.id, role: user.role, jti: crypto.randomUUID() },
       process.env.JWT_SECRET,
       { expiresIn: process.env.JWT_EXPIRES_IN }
     );

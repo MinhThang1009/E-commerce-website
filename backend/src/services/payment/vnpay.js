@@ -34,7 +34,7 @@ class VNPayService {
 
     const signData = querystring.stringify(vnp_Params, { encode: false });
     const hmac = crypto.createHmac('sha512', this.secretKey);
-    const signed = hmac.update(new Buffer(signData, 'utf-8')).digest('hex');
+    const signed = hmac.update(Buffer.from(signData, 'utf-8')).digest('hex');
     vnp_Params['vnp_SecureHash'] = signed;
 
     const queryUrl = querystring.stringify(vnp_Params, { encode: false });
@@ -52,7 +52,7 @@ class VNPayService {
 
     const signData = querystring.stringify(vnp_Params, { encode: false });
     const hmac = crypto.createHmac('sha512', this.secretKey);
-    const signed = hmac.update(new Buffer(signData, 'utf-8')).digest('hex');
+    const signed = hmac.update(Buffer.from(signData, 'utf-8')).digest('hex');
 
     return secureHash === signed;
   }
@@ -109,7 +109,7 @@ class VNPayService {
       vnp_OrderInfo;
 
     const hmac = crypto.createHmac('sha512', secretKey);
-    const vnp_SecureHash = hmac.update(new Buffer(data, 'utf-8')).digest('hex');
+    const vnp_SecureHash = hmac.update(Buffer.from(data, 'utf-8')).digest('hex');
 
     const dataObj = {
       vnp_RequestId,

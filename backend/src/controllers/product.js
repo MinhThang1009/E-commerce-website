@@ -1525,10 +1525,11 @@ const getBestSellers = async (req, res, next) => {
 
     // Lấy danh sách ID sản phẩm
     const productIds = bestSellers.map((product) => product.id);
+    const safeProductIds = productIds.map(id => parseInt(id, 10)).filter(id => !isNaN(id));
 
     // Lấy thông tin đầy đủ sản phẩm
     const productsRaw = await Product.findAll({
-      where: { id: { [Op.in]: productIds } },
+      where: { id: { [Op.in]: safeProductIds } },
       include: [
         { association: 'category' },
         { association: 'productImages' },
@@ -1537,7 +1538,7 @@ const getBestSellers = async (req, res, next) => {
       order: [
         [
           sequelize.literal(
-            `CASE ${productIds
+            `CASE ${safeProductIds
               .map((id, index) => `WHEN id = ${id} THEN ${index}`)
               .join(' ')} END`
           ),
@@ -1794,9 +1795,13 @@ const getProductFilters = async (req, res, next) => {
     // Lấy category ID thực tế nếu có
     let actualCategoryId = null;
     if (categoryId) {
-      const isNumericId = !isNaN(categoryId) && String(categoryId).trim() !== '';
-      if (isNumericId) {
-        actualCategoryId = categoryId;
+      const isStrictInt = /^\d+$/.test(String(categoryId).trim());
+      const isSlug = /^[a-z0-9-]+$/.test(String(categoryId).trim());
+      if (!isStrictInt && !isSlug) {
+        throw new AppError('categoryId không hợp lệ', 400);
+      }
+      if (isStrictInt) {
+        actualCategoryId = parseInt(categoryId, 10);
       } else {
         const category = await Category.findOne({
           where: { slug: categoryId },
@@ -1813,7 +1818,7 @@ const getProductFilters = async (req, res, next) => {
       productFilter = {
         productId: {
           [Op.in]: sequelize.literal(
-            `(SELECT product_id FROM product_categories WHERE category_id = '${actualCategoryId}')`
+            `(SELECT product_id FROM product_categories WHERE category_id = ${actualCategoryId})`
           ),
         },
       };

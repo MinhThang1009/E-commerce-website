@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Table, Button, Space, Modal, Form, Input, Card, Typography, message, Popconfirm, Tag } from 'antd';
 import { PlusOutlined, SendOutlined, DeleteOutlined } from '@ant-design/icons';
 import { useTranslation } from 'react-i18next';
+import DOMPurify from 'dompurify';
 import apiClient from '@/services/apiClient';
 
 const { Text } = Typography;
@@ -191,7 +192,7 @@ const EmailCampaignsPage: React.FC = () => {
               <Text>{selectedCampaign.subject}</Text>
             </div>
             <Card>
-              <div dangerouslySetInnerHTML={{ __html: selectedCampaign.content }} />
+              <div dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(selectedCampaign.content) }} />
             </Card>
           </div>
         )}

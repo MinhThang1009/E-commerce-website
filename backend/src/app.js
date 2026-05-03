@@ -84,8 +84,9 @@ app.use(express.urlencoded({ extended: true, limit: '50mb' }));
 // Xử lý cookie
 app.use(cookieParser());
 
-// // Sanitize dữ liệu chống XSS
-// app.use(xss()); // Đã tắt để cho phép HTML trong nội dung tin tức
+// Sanitize input chống XSS (xss-clean không hỗ trợ per-field whitelist;
+// DOMPurify ở frontend bảo vệ khi render HTML từ API)
+app.use(xss());
 
 // Nén response để tăng hiệu năng
 app.use(compression());

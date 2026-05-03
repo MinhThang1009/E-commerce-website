@@ -1,5 +1,6 @@
 import React, { useMemo, useEffect, useState, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
+import DOMPurify from 'dompurify';
 import ReactQuill from 'react-quill';
 import 'quill/dist/quill.snow.css';
 
@@ -139,7 +140,7 @@ const RichTextEditor: React.FC<RichTextEditorProps> = ({
       <div className="rich-text-editor readonly-mode">
         <div
           className="ql-editor"
-          dangerouslySetInnerHTML={{ __html: displayValue }}
+          dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(displayValue) }}
           style={{
             minHeight: `${height - 42}px`,
             border: '1px solid #ccc',

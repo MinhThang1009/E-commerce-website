@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { useTranslation } from 'react-i18next';
+import DOMPurify from 'dompurify';
 import { Card, Button, Modal } from 'antd';
 import { CaretDownOutlined, CloseOutlined } from '@ant-design/icons';
 import '@/styles/description.css';
@@ -22,15 +23,17 @@ const ProductDetailsSection: React.FC<ProductDetailsSectionProps> = ({
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isSpecModalOpen, setIsSpecModalOpen] = useState(false);
 
-  const cleanDescription = description
-    .replace(/&lt;/g, '<')
-    .replace(/&gt;/g, '>')
-    .replace(/&amp;/g, '&')
-    .replace(/&nbsp;/g, ' ')
-    .replace(
-      /http:\/\/localhost:8888\/api\/uploads/g,
-      'http://localhost:8888/uploads'
-    );
+  const cleanDescription = DOMPurify.sanitize(
+    description
+      .replace(/&lt;/g, '<')
+      .replace(/&gt;/g, '>')
+      .replace(/&amp;/g, '&')
+      .replace(/&nbsp;/g, ' ')
+      .replace(
+        /http:\/\/localhost:8888\/api\/uploads/g,
+        'http://localhost:8888/uploads'
+      )
+  );
 
   return (
     <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 mt-12">

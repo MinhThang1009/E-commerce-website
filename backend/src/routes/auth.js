@@ -10,6 +10,7 @@ const {
   emailSchema,
 } = require('../validators/user');
 const { authenticate } = require('../middlewares/authenticate');
+const { otpLimiter } = require('../middlewares/rateLimiter');
 
 /**
  * @swagger
@@ -159,7 +160,7 @@ router.post('/logout', authenticate, authController.logout);
  *       400:
  *         description: OTP không hợp lệ hoặc đã hết hạn
  */
-router.post('/verify-otp', authController.verifyOtp);
+router.post('/verify-otp', otpLimiter, authController.verifyOtp);
 
 /**
  * @swagger
@@ -242,6 +243,7 @@ router.post('/refresh-token', authController.refreshToken);
  */
 router.post(
   '/forgot-password',
+  otpLimiter,
   validateRequest(forgotPasswordSchema),
   authController.forgotPassword
 );

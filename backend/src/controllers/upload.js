@@ -167,13 +167,30 @@ const uploadMultiple = async (req, res, next) => {
 // Xóa file đã upload
 const deleteFile = async (req, res, next) => {
   try {
-    const { type, filename } = req.params;
+    const { type } = req.params;
+
+    // Chỉ admin mới được phép xóa file
+    if (!req.user || req.user.role !== 'admin') {
+      throw new AppError('Truy cập bị từ chối', 403);
+    }
 
     if (!uploadDirs[type]) {
       throw new AppError('Loại file không hợp lệ', 400);
     }
 
-    const filePath = path.join(uploadDirs[type], filename);
+    // Kiểm tra tên file có hợp lệ không (chỉ cho phép tên file, không chứa đường dẫn)
+    const filename = path.basename(req.params.filename);
+    if (filename !== req.params.filename) {
+      throw new AppError('Tên file không hợp lệ', 400);
+    }
+
+    const uploadDir = path.resolve(uploadDirs[type]);
+    const filePath = path.join(uploadDir, filename);
+
+    // Kiểm tra đường dẫn file có nằm trong thư mục upload hay không để tránh path traversal
+    if (!filePath.startsWith(uploadDir + path.sep) && filePath !== uploadDir) {
+      throw new AppError('Truy cập bị từ chối', 403);
+    }
 
     // Kiểm tra file có tồn tại không
     if (!fs.existsSync(filePath)) {
@@ -196,5 +213,5 @@ module.exports = {
   uploadSingle,
   uploadMultiple,
   deleteFile,
-  upload, // Export instance multer để dùng trong các controller khác
+  upload, // export cả cấu hình multer để có thể sử dụng lại nếu cần
 };

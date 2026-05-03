@@ -1,6 +1,7 @@
 const jwt = require('jsonwebtoken');
 const { User } = require('../models');
 const { AppError } = require('./errorHandler');
+const { getRedisClient } = require('../config/redis');
 
 // Middleware xác thực người dùng
 const authenticate = async (req, res, next) => {
@@ -15,6 +16,17 @@ const authenticate = async (req, res, next) => {
 
     // Xác thực token
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
+
+    // Kiểm tra token có trong blacklist không
+    if (decoded.jti) {
+      const redis = await getRedisClient();
+      if (redis) {
+        const isBlacklisted = await redis.get(`bl:${decoded.jti}`);
+        if (isBlacklisted) {
+          return next(new AppError('Token is invalid', 401));
+        }
+      }
+    }
 
     // Tìm người dùng
     const user = await User.findByPk(decoded.id);

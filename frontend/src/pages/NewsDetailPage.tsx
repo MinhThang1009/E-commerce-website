@@ -1,5 +1,6 @@
 import { useParams, Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
+import DOMPurify from 'dompurify';
 import { useGetNewsBySlugQuery, useGetNewsQuery, useGetRelatedNewsQuery } from '@/services/newsApi';
 import LoadingSpinner from '@/components/common/LoadingSpinner';
 import dayjs from 'dayjs';
@@ -123,7 +124,7 @@ const NewsDetailPage: React.FC = () => {
                 prose-p:text-neutral-700 dark:prose-p:text-neutral-300
                 prose-a:text-primary-600 hover:prose-a:text-primary-700
                 prose-img:rounded-3xl prose-img:shadow-xl"
-              dangerouslySetInnerHTML={{ __html: item.content }}
+              dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(item.content) }}
             />
 
             {item.tags && (

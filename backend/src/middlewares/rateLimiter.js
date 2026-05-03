@@ -24,7 +24,21 @@ const authLimiter = rateLimit({
   },
 });
 
+// Rate limiter riêng cho OTP/password-reset (chống brute force)
+const otpLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 phút
+  max: 5,
+  standardHeaders: true,
+  legacyHeaders: false,
+  keyGenerator: (req) => req.body.email || req.ip,
+  message: {
+    status: 'error',
+    message: 'Quá nhiều yêu cầu, vui lòng thử lại sau 15 phút.',
+  },
+});
+
 module.exports = {
   apiLimiter,
   authLimiter,
+  otpLimiter,
 };

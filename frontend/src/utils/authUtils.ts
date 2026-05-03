@@ -69,7 +69,7 @@ export const handleAutoLogout = (
     } else {
       window.location.href = '/login';
     }
-  }, 100);
+  }, redirectDelay);
 };
 
 // Export logout manager để dùng ở các module khác

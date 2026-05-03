@@ -91,6 +91,46 @@ app.use('/api/chatbot', chatbotRouter);
 const request = supertest(app);
 
 // ============================================================
+// POST /api/chatbot/message
+// ============================================================
+
+describe('POST /api/chatbot/message', () => {
+  test('400 khi message rỗng', async () => {
+    const res = await request
+      .post('/api/chatbot/message')
+      .send({ message: '   ' });
+    expect(res.status).toBe(400);
+    expect(res.body.status).toBe('error');
+  });
+
+  test('400 khi message vượt 2000 ký tự', async () => {
+    const res = await request
+      .post('/api/chatbot/message')
+      .send({ message: 'a'.repeat(2001) });
+    expect(res.status).toBe(400);
+    expect(res.body.status).toBe('error');
+    expect(res.body.message).toMatch(/2000/);
+  });
+
+  test('200 khi message đúng 2000 ký tự', async () => {
+    const res = await request
+      .post('/api/chatbot/message')
+      .send({ message: 'a'.repeat(2000) });
+    expect(res.status).toBe(200);
+    expect(res.body.status).toBe('success');
+  });
+
+  test('200 khi gửi message bình thường', async () => {
+    const res = await request
+      .post('/api/chatbot/message')
+      .send({ message: 'Sản phẩm nào đang giảm giá?' });
+    expect(res.status).toBe(200);
+    expect(res.body.status).toBe('success');
+    expect(res.body.data).toHaveProperty('response');
+  });
+});
+
+// ============================================================
 // POST /api/chatbot/cart/add
 // ============================================================
 

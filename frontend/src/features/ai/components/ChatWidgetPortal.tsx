@@ -37,6 +37,10 @@ const ChatWidgetPortal: React.FC = () => {
   const messages = useSelector((state: RootState) => state.chat.messages);
   const sessionId = useSelector((state: RootState) => state.chat.sessionId);
 
+  // Ref luôn giữ messages mới nhất — tránh stale closure trong async handlers
+  const messagesRef = useRef(messages);
+  useEffect(() => { messagesRef.current = messages; }, [messages]);
+
   // Persist messages vào localStorage mỗi khi danh sách thay đổi
   useEffect(() => {
     saveMessagesToStorage(messages);
@@ -131,8 +135,9 @@ const ChatWidgetPortal: React.FC = () => {
       ]) as any;
 
       // Xóa loading, thêm response vào Redux state
+      // Dùng messagesRef.current thay vì messages để tránh stale closure sau await
       if (response.status === 'success' && response.data) {
-        const nextMessages = messages
+        const nextMessages = messagesRef.current
           .filter((msg) => msg.id !== loadingId)
           .concat({
             id: (Date.now() + 2).toString(),
@@ -164,7 +169,7 @@ const ChatWidgetPortal: React.FC = () => {
       }
 
       // Xóa loading, thêm thông báo lỗi
-      const errorMessages = messages
+      const errorMessages = messagesRef.current
         .filter((msg) => msg.id !== loadingId)
         .concat({
           id: (Date.now() + 2).toString(),

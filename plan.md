@@ -3035,11 +3035,11 @@ COMMIT;
   - Date diff: dùng `DATEDIFF(date1, date2)` không phải `date1 - date2`
 
 ### ✅ Acceptance Criteria Phase 15
-- [ ] Import `backend/data/migration_full.sql` vào phpMyAdmin (XAMPP MySQL 8.0) — **không có lỗi nào**
-- [ ] `SHOW CREATE TABLE products` — hiện `ENGINE=InnoDB`, `CHARSET=utf8mb4`, `COLLATE=utf8mb4_unicode_ci`
-- [ ] INSERT sản phẩm với tên tiếng Việt có dấu (`Điện thoại iPhone`) → lưu và đọc lại đúng ký tự
-- [ ] `migration_full.sql` import lần 2 (idempotent) — không tạo duplicate, không báo lỗi
-- [ ] Tất cả raw SQL trong controllers không dùng PostgreSQL-specific syntax
+- [x] Import `backend/data/migration_full.sql` vào phpMyAdmin (XAMPP MySQL 8.0) — **không có lỗi nào**
+- [x] `SHOW CREATE TABLE products` — hiện `ENGINE=InnoDB`, `CHARSET=utf8mb4`, `COLLATE=utf8mb4_unicode_ci`
+- [x] INSERT sản phẩm với tên tiếng Việt có dấu (`Điện thoại iPhone`) → lưu và đọc lại đúng ký tự
+- [x] `migration_full.sql` import lần 2 (idempotent) — không tạo duplicate, không báo lỗi
+- [x] Tất cả raw SQL trong controllers không dùng PostgreSQL-specific syntax
 
 ---
 

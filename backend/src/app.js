@@ -11,9 +11,40 @@ const swaggerSpec = require('./config/swagger');
 const routes = require('./routes');
 const { errorHandler } = require('./middlewares/errorHandler');
 const path = require('path');
+const cron = require('node-cron');
+const fs = require('fs').promises;
 
 // Khởi tạo ứng dụng Express
 const app = express();
+
+// Dọn dẹp file tạm trong uploads/temp/ mỗi ngày lúc 2:00 AM
+// File cũ hơn 24 giờ sẽ bị xóa — tránh tích lũy orphaned files khi user upload nhưng không save
+cron.schedule('0 2 * * *', async () => {
+  const tempDir = path.join(__dirname, '../uploads/temp');
+  const maxAge = 24 * 60 * 60 * 1000; // 24 giờ tính bằng milliseconds
+
+  try {
+    const files = await fs.readdir(tempDir);
+
+    await Promise.allSettled(
+      files.map(async (file) => {
+        const filePath = path.join(tempDir, file);
+        try {
+          const stat = await fs.stat(filePath);
+          if (Date.now() - stat.mtimeMs > maxAge) {
+            await fs.unlink(filePath);
+            console.log(`[CLEANUP] Xóa file tạm cũ: ${file}`);
+          }
+        } catch {
+          // Bỏ qua file không đọc được hoặc đã bị xóa bởi process khác
+        }
+      })
+    );
+  } catch (err) {
+    // tempDir chưa tồn tại hoặc không có quyền đọc — bỏ qua
+    console.warn('[CLEANUP] Không thể dọn dẹp uploads/temp:', err.message);
+  }
+});
 
 // // Tin tưởng reverse proxy headers khi chạy sau Nginx/PM2
 // if (process.env.NODE_ENV === 'production') {

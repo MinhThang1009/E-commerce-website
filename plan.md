@@ -3246,12 +3246,12 @@ COMMIT;
 - **Fix (backend):** Phase 35.5 cleanup job xóa orphaned files hàng tuần đã cover phần còn lại
 
 ### ✅ Acceptance Criteria Phase 18
-- [ ] Upload file `.exe` disguised as `.jpg` → nhận `400 Only JPG, PNG, WEBP allowed`
-- [ ] Upload ảnh 10MB → nhận `413 File too large`
-- [ ] Upload ảnh JPEG có EXIF → file lưu xuống không còn EXIF metadata
-- [ ] File trong `uploads/temp/` sau 24 giờ tự bị xóa
-- [ ] `backend/uploads/` không xuất hiện trong `git status`
-- [ ] Tạo product, upload 3 ảnh, rồi submit với product name bị thiếu → form fail → 3 ảnh đã upload được xóa khỏi server (không orphaned)
+- [x] Upload file `.exe` disguised as `.jpg` → nhận `400 Only JPG, PNG, WEBP allowed`
+- [x] Upload ảnh 10MB → nhận `413 File too large`
+- [x] Upload ảnh JPEG có EXIF → file lưu xuống không còn EXIF metadata
+- [x] File trong `uploads/temp/` sau 24 giờ tự bị xóa
+- [x] `backend/uploads/` không xuất hiện trong `git status`
+- [x] Tạo product, upload 3 ảnh, rồi submit với product name bị thiếu → form fail → 3 ảnh đã upload được xóa khỏi server (không orphaned)
 
 ---
 
@@ -3325,6 +3325,264 @@ COMMIT;
 - [ ] `backend/logs/` không trong git tracking
 - [ ] `grep -rn "console\.log" backend/src/ --include="*.js"` → 0 kết quả trong controllers/ và services/ (trừ migration/seed scripts)
 - [ ] `grep -rn "console\.log" frontend/src/ --include="*.ts" --include="*.tsx"` → 0 kết quả trong production code
+
+---
+
+## PHASE 37 — I18n (Bilingual) Standard
+
+> **Trạng thái:** ⚠️ KEYS đồng bộ (3,018 keys mỗi file), nhưng còn 5 bugs trong implementation — Phase chỉ PASS sau khi fix hết 5 bugs dưới đây.
+
+### 37.0 Bugs Chưa Fix (Phát hiện trong Simplify Audit — Audit Round 8 ĐÃ ĐÍNH CHÍNH)
+
+> **⚠️ Audit Round 8 verified:** 5/6 bugs đã được fix (B1, B3, B4, B5, B6). Chỉ còn B2 chưa fix.
+
+| Bug | File | Chi tiết | Status |
+|-----|------|----------|--------|
+| ~~B1~~ | ~~DashboardCharts.tsx~~ | ~~chart data key vỡ~~ | ✅ FIXED — `useMemo` + stable keys (lines 88-95) |
+| **B2 — CheckoutPage domain value** | `frontend/src/pages/CheckoutPage.tsx` lines 332-333 | `defaultState/defaultCity` dùng bản dịch `t()` → backend validation fail | ❌ STILL BUG |
+| ~~B3~~ | ~~priceUtils.ts~~ | ~~duplicate khai báo~~ | ✅ FIXED — locale/currencySymbol hoisted lines 19-20 |
+| ~~B4~~ | ~~DynamicAttributeSelector.tsx~~ | ~~thiếu locale arg~~ | ✅ FIXED — line 155 `toLocaleString(getLocale())` |
+| ~~B5~~ | ~~EnhancedVariantSelector.tsx~~ | ~~thiếu locale arg~~ | ✅ FIXED — line 249 `toLocaleString(getLocale())` |
+| ~~B6~~ | ~~format.ts~~ | ~~missing getLocale() helper~~ | ✅ FIXED — `getLocale()` helper exists |
+
+**Fix B2 — stable fallback không dịch (CHỈ BUG CÒN LẠI):**
+```tsx
+state: '',   // Không dùng t('checkout.defaultState')
+city:  '',
+```
+
+---
+
+### 37.1 Overview & Stack
+
+| Thành phần | Chi tiết |
+|---|---|
+| Thư viện | `react-i18next` + `i18next` |
+| Locale files | `frontend/src/locales/en.json` và `vi.json` |
+| Số keys | 3,018 keys mỗi file (đồng bộ hoàn hảo) |
+| Cấu hình | `frontend/src/config/i18n.ts` |
+| Ngôn ngữ mặc định | `vi` (Vietnamese) — lấy từ `localStorage` trước |
+| Fallback | `vi` |
+
+**Cấu hình i18n (`frontend/src/config/i18n.ts`):**
+```ts
+i18n.use(initReactI18next).init({
+  resources: { en: { translation: enTranslations }, vi: { translation: viTranslations } },
+  lng: localStorage.getItem('language') || 'vi',
+  fallbackLng: 'vi',
+  interpolation: { escapeValue: false },
+  detection: { order: ['localStorage', 'navigator', 'htmlTag'], caches: ['localStorage'] },
+});
+```
+
+---
+
+### 37.2 Core Usage Rules
+
+**Rule 1 — KHÔNG BAO GIỜ hardcode text user-visible.** Tất cả text hiển thị ra UI phải đi qua `t()`.
+
+**Trong React component:**
+```tsx
+const { t, i18n } = useTranslation();
+// Luôn destructure cả i18n khi cần format số/ngày
+<span>{t('common.loading')}</span>
+```
+
+**Ngoài React (utils, services, non-hook files):**
+```ts
+import i18next from 'i18next';
+const label = i18next.t('product.specNames.cpu');
+const locale = i18next.language === 'vi' ? 'vi-VN' : 'en-US';
+```
+
+---
+
+### 37.3 Key Patterns
+
+#### 37.3.1 Ký hiệu tiền tệ
+```tsx
+// ĐÚNG
+{amount.toLocaleString(i18n.language === 'vi' ? 'vi-VN' : 'en-US')}{t('common.currencySymbol')}
+
+// SAI — hardcode ký tự
+{amount.toLocaleString('vi-VN')}₫
+```
+- `t('common.currencySymbol')` → `₫` ở cả EN lẫn VI
+- `t('product.currencyCode')` → `VND`
+
+#### 37.3.2 Định dạng số / ngày tháng
+```ts
+// ĐÚNG — dynamic locale
+const locale = i18n.language === 'vi' ? 'vi-VN' : 'en-US';
+number.toLocaleString(locale)
+date.toLocaleDateString(locale)
+
+// SAI — hardcode locale
+number.toLocaleString('vi-VN')
+```
+
+#### 37.3.3 DB-compat dropdowns (danh mục lưu vào DB bằng tiếng Việt)
+```tsx
+// ĐÚNG — DB value = tiếng Việt, UI label = translated
+const categories = [
+  { value: 'Hiệu năng', label: t('admin.products.specs.categories.performance') },
+  { value: 'Màn hình',  label: t('admin.products.specs.categories.display') },
+];
+<Select.Option key={cat.value} value={cat.value}>{cat.label}</Select.Option>
+
+// SAI — hardcode label
+<Select.Option value="Hiệu năng">Hiệu năng</Select.Option>
+```
+
+#### 37.3.4 Spec names kỹ thuật sản phẩm
+File `frontend/src/utils/productTransform.ts`:
+```ts
+import i18next from 'i18next';
+const getSpecLabel = (key: string) => {
+  const tKey = `product.specNames.${key.toLowerCase()}`;
+  const translated = i18next.t(tKey);
+  return translated !== tKey ? translated : key;
+};
+```
+81 spec keys trong `product.specNames.*` (cpu, ram, display, battery…)
+
+#### 37.3.5 AI Prompt Templates
+File `frontend/src/features/ai/services/promptTemplates.ts`:
+```ts
+import i18n from '@/config/i18n';
+const isVi = () => i18n.language === 'vi';
+
+export const getProductSuggestionPrompt = (query: string) => {
+  if (isVi()) return `Bạn là trợ lý mua sắm... "${query}"...`;
+  return `You are a helpful shopping assistant... "${query}"...`;
+};
+```
+
+---
+
+### 37.4 Translation File Rules
+
+1. **EN và VI files phải luôn có key giống hệt nhau** — số lượng và tên key đồng bộ 100%
+2. **Thêm key vào CẢ HAI file cùng lúc** — không thêm một file trước
+3. **Đặt tên key:** dot-notation, namespace theo feature
+   ```
+   common.loading           admin.users.form.firstName
+   product.addToCart        checkout.defaultState
+   payment.errors.failed    admin.charts.revenueLabel
+   ```
+4. **Không đặt text trực tiếp vào code** — luôn tạo key trong locale file trước
+
+---
+
+### 37.5 Cách thêm Translation Key mới
+
+```
+Bước 1: Thêm key vào frontend/src/locales/en.json
+"myFeature": { "newKey": "English text here" }
+
+Bước 2: Thêm cùng key vào frontend/src/locales/vi.json
+"myFeature": { "newKey": "Tiếng Việt ở đây" }
+
+Bước 3: Dùng trong component
+const { t } = useTranslation();
+<span>{t('myFeature.newKey')}</span>
+```
+
+**Verify sync sau khi thêm (PowerShell):**
+```powershell
+function Get-AllKeys($obj, $prefix = "") {
+  $keys = @()
+  foreach ($k in $obj.PSObject.Properties.Name) {
+    $full = if ($prefix) { "$prefix.$k" } else { $k }
+    $v = $obj.$k
+    if ($v -is [PSCustomObject]) { $keys += Get-AllKeys $v $full } else { $keys += $full }
+  }
+  return $keys
+}
+$en = Get-AllKeys (Get-Content "frontend/src/locales/en.json" -Raw -Encoding UTF8 | ConvertFrom-Json) | Sort-Object
+$vi = Get-AllKeys (Get-Content "frontend/src/locales/vi.json" -Raw -Encoding UTF8 | ConvertFrom-Json) | Sort-Object
+$diff = Compare-Object $en $vi
+if ($diff) { Write-Host "OUT OF SYNC:"; $diff } else { Write-Host "In sync — $($en.Count) keys" }
+```
+
+---
+
+### 37.6 Audit Script (chạy định kỳ để phát hiện regression)
+
+```powershell
+$srcDir = "D:\...\frontend\src"
+$issues = @()
+$viChars = '[àáâãèéêìíòóôõùúýăđơưạảấầẩẫậắằẳẵặẹẻẽếềểễệỉịọỏốồổỗộớờởỡợụủứừửữựỳỵỷỹ]'
+
+$files = Get-ChildItem $srcDir -Recurse -Include "*.tsx","*.ts" |
+  Where-Object { $_.FullName -notmatch "\\locales\\" }
+
+foreach ($file in $files) {
+  $lines = Get-Content $file.FullName -Encoding UTF8
+  $inBlock = $false; $n = 0
+  foreach ($line in $lines) {
+    $n++; $t = $line.Trim()
+    if ($t -match '/\*' -and $t -notmatch '\*/') { $inBlock = $true }
+    if ($inBlock) { if ($t -match '\*/') { $inBlock = $false }; continue }
+    if ($t -match '/\*.*\*/') { continue }
+    if ($t -eq '' -or $t -match '^//' -or $t -match '^import ') { continue }
+    $rel = $file.FullName.Replace($srcDir, "")
+    if ($line -match 'currencySymbol') { continue }
+    if ($line -match '₫') { $issues += "[DONG] ${rel}:$n" }
+    if ($line -match "toLocaleString\('vi-VN'\)") { $issues += "[LOCALE] ${rel}:$n" }
+    if ($t -match ('>[^<{]*' + $viChars + '[^<{]*<') -and $line -notmatch "\bt\('") {
+      $issues += "[JSX-VI] ${rel}:$n"
+    }
+  }
+}
+
+if ($issues.Count -eq 0) { Write-Host "I18N CLEAN" -ForegroundColor Green }
+else { Write-Host "Issues: $($issues.Count)"; $issues | ForEach-Object { Write-Host "  $_" } }
+```
+
+---
+
+### 37.7 Acceptable Exceptions (False Positives)
+
+Các pattern sau đây **không cần fix** — đây là thiết kế đúng:
+
+| File | Pattern | Lý do |
+|---|---|---|
+| `LanguageSwitcher.tsx` | `name: 'Tiếng Việt'` | Tên ngôn ngữ hiển thị bằng chính ngôn ngữ đó — chuẩn i18n quốc tế |
+| `ProductSpecificationsForm.tsx` | `category: 'Thông số chung'` | DB value trong pattern `{value, label}` — đúng thiết kế |
+| `chatbotApi.ts` | `includes('tìm')`, `includes('mua')` | Keyword matching NLP — không render ra UI |
+| `data/mock*.ts` | Vietnamese names | Mock seed data — content data, không phải UI label |
+| `sampleDataHelper.ts` | HTML tiếng Việt | Sample content cho rich-text editor |
+| `textUtils.ts` | Vietnamese stopwords | Thuật toán NLP — không render |
+| Multi-line `console.log()` args | Vietnamese strings | Dev-only logs — không render |
+| `promptTemplates.ts` (isVi branch) | `Bạn là trợ lý...` | Intentional — AI prompt theo ngôn ngữ UI |
+
+---
+
+### 37.8 Translation Key Namespace Map
+
+Top-level namespaces hiện có trong locale files:
+
+```
+common.*          — buttons, status, errors chung
+header.*          — navigation, brand, actions
+homepage.*        — hero, sections trang chủ
+product.*         — product detail, cart actions, specNames.* (81 spec keys)
+productDetail.*   — chi tiết sản phẩm, tabs
+admin.*           — toàn bộ admin panel (users, orders, products, charts, banners, news…)
+auth.*            — login, register, forgot password
+checkout.*        — checkout flow, payment methods, address
+orders.*          — order list, order detail, status labels
+payment.*         — stripe, bank transfer, errors
+cart.*            — giỏ hàng
+profile.*         — trang profile, edit info, addresses
+shop.*            — trang danh sách sản phẩm, filters
+categories.*      — trang danh mục
+chat.*            — AI chatbot widget, suggestions, errors
+news.*            — trang tin tức, tags, categories
+wishlist.*        — danh sách yêu thích
+search.*          — trang tìm kiếm
+```
 
 ---
 
@@ -4051,6 +4309,99 @@ COMMIT;
 
 ---
 
+## PHASE 38 — MySQL Naming Standards & Constraint Audit
+
+> **Mục tiêu:** Kiểm tra toàn bộ tên bảng, tên cột, tên index/key, tên constraint, tên foreign key trong DB có tuân thủ 100% quy chuẩn MySQL trên XAMPP/phpMyAdmin cho một dự án e-commerce cá nhân hay không. Phát hiện và sửa mọi sai lệch trước khi deploy.
+
+### Quy chuẩn cần kiểm tra
+
+#### 38.1 Tên bảng (Table names)
+- **Chuẩn:** `snake_case`, số nhiều, tiếng Anh, viết thường hoàn toàn
+- **Đúng:** `products`, `order_items`, `product_variants`, `discount_codes`
+- **Sai:** `Products`, `orderItem`, `ProductVariant`, `discountCode`, `DiscountCodes`
+- **Check:** Grep tất cả `tableName:` trong models, so khớp với SHOW TABLES
+
+#### 38.2 Tên cột (Column names)
+- **Chuẩn:** `snake_case`, viết thường, mô tả rõ ràng, không viết tắt mơ hồ
+- **Đúng:** `first_name`, `created_at`, `is_active`, `brand_id`, `stock_quantity`
+- **Sai:** `firstName`, `createdAt`, `isActive`, `brandId` (trong DB — OK trong Sequelize model JS)
+- **Check:** `DESCRIBE <table>` cho từng bảng — cột nào còn camelCase trong DB thực tế?
+- **Ngoại lệ:** Sequelize `underscored: false` → cột trong DB sẽ là camelCase (như bảng `users` có `firstName`, `lastName`, `isActive`) — đây là lựa chọn thiết kế có chủ ý, KHÔNG phải lỗi nếu model khai báo `underscored: false`
+
+#### 38.3 Tên Primary Key
+- **Chuẩn:** `id` (INT AUTO_INCREMENT) cho tất cả bảng — dự án dùng INT PK (không UUID)
+- **Check:** Mọi bảng đều có `id INT AUTO_INCREMENT PRIMARY KEY`
+- **Ngoại lệ hợp lệ:** Junction tables không cần `id` riêng nếu dùng composite PK (e.g., `product_categories(product_id, category_id)`)
+
+#### 38.4 Tên Foreign Key columns
+- **Chuẩn:** `{referenced_table_singular}_id` — ví dụ: `product_id`, `user_id`, `category_id`
+- **Check:** Mọi FK column phải kết thúc bằng `_id`, tham chiếu đúng bảng đúng cột
+
+#### 38.5 Tên Constraint / Foreign Key Constraint
+- **Chuẩn MySQL/phpMyAdmin:** `fk_{table}_{referenced_table}` hoặc `fk_{table}_{column}`
+- **Ví dụ:** `fk_products_category`, `fk_order_items_product`, `fk_product_variants_product`
+- **Check:** `SHOW CREATE TABLE <table>` — constraint nào thiếu tên hoặc dùng tên auto-generated dài?
+
+#### 38.6 Tên Index / Key
+- **Chuẩn:** `idx_{table}_{column(s)}` cho index thường; `uq_{table}_{column}` cho unique index
+- **Ví dụ:** `idx_products_status`, `idx_orders_user_id`, `uq_users_email`
+- **Sai:** Auto-generated names như `products_status_brand_id_...` (quá dài, khó đọc trong phpMyAdmin)
+- **Check:** `SHOW INDEX FROM <table>` — index nào chưa đặt tên chuẩn?
+
+#### 38.7 ENUM values
+- **Chuẩn:** `lowercase`, không có space, dùng gạch ngang nếu cần — `'active'`, `'in-stock'`, `'bank-transfer'`
+- **Check:** Tìm tất cả `DataTypes.ENUM` trong models — value nào viết hoa hoặc có space?
+
+#### 38.8 Tên bảng junction (many-to-many)
+- **Chuẩn:** `{table1}_{table2}` theo thứ tự alphabet hoặc logical — `product_categories`, `product_collections`, `brand_categories`
+- **Check:** Các bảng junction có đặt tên đúng thứ tự không?
+
+#### 38.9 Độ dài tên (MySQL limit)
+- **Chuẩn MySQL:** Tên bảng/cột tối đa 64 ký tự; tên constraint/index tối đa 64 ký tự
+- **Check:** Có tên nào vượt 64 ký tự không?
+
+#### 38.10 Kiểu dữ liệu phù hợp với phpMyAdmin/XAMPP
+- **Chuẩn:**
+  - Giá tiền: `DECIMAL(15,2)` — KHÔNG dùng `FLOAT` (mất precision)
+  - Ngày giờ: `TIMESTAMP` hoặc `DATETIME` — KHÔNG dùng `VARCHAR` cho date
+  - Boolean: `TINYINT(1)` (MySQL không có native BOOLEAN — XAMPP hiển thị là TINYINT(1))
+  - Text dài: `TEXT` hoặc `LONGTEXT` — không hardcode VARCHAR quá nhỏ cho description
+  - JSON: `LONGTEXT` hoặc `JSON` type (MySQL 5.7.8+ hỗ trợ JSON native)
+  - ID: `INT(11)` AUTO_INCREMENT — không dùng UUID làm PK (đã là quy ước dự án này)
+
+### Quy trình kiểm tra
+
+```
+1. SHOW TABLES → liệt kê tất cả tên bảng → check naming
+2. DESCRIBE {table} → từng cột → check snake_case, kiểu dữ liệu
+3. SHOW INDEX FROM {table} → check index names
+4. SHOW CREATE TABLE {table} → check constraint names, FK names
+5. Grep models/ tìm DataTypes.ENUM → check ENUM values
+6. So sánh model field names vs actual DB column names
+```
+
+### Fix nếu tìm thấy sai lệch
+
+- Tên cột sai → `ALTER TABLE {table} CHANGE {old} {new} ...` + cập nhật Sequelize model + tạo migration
+- Tên index sai → `ALTER TABLE DROP INDEX {old}, ADD INDEX {new_name} ({columns})`
+- Tên constraint sai → `ALTER TABLE DROP FOREIGN KEY {old}, ADD CONSTRAINT {new_name} FOREIGN KEY ...`
+- ENUM value sai → `ALTER TABLE MODIFY COLUMN {col} ENUM(...)` + update seed_data.sql + migration
+
+### ✅ Acceptance Criteria Phase 38
+
+- [ ] Tất cả tên bảng là `snake_case`, số nhiều, viết thường
+- [ ] Tất cả cột tuân thủ `snake_case` hoặc có lý do chủ ý (underscored: false trong model)
+- [ ] Mọi FK column kết thúc bằng `_id` và tham chiếu đúng bảng
+- [ ] Mọi constraint/index có tên rõ ràng (không phải auto-generated hash)
+- [ ] Tất cả ENUM values là lowercase, không có khoảng trắng
+- [ ] Giá tiền dùng `DECIMAL(15,2)`, boolean dùng `TINYINT(1)`, không có `FLOAT` cho tiền
+- [ ] Không có tên bảng/cột/index nào vượt 64 ký tự
+- [ ] `SHOW CREATE TABLE` cho mọi bảng không có warning hoặc constraint unnamed
+
+**Tổng kết:** 3,018 keys × 2 ngôn ngữ = toàn bộ UI text đã được bản địa hóa hoàn chỉnh.
+
+---
+
 ## PHASE 31 — Database Migration Workflow & Product Import
 > **Quy trình chuẩn để migrate DB, seed data, và thêm sản phẩm mới — cả qua file lẫn qua giao diện admin.**
 
@@ -4435,85 +4786,377 @@ spec_cpu,spec_ram,spec_storage,spec_display,spec_battery
 
 ---
 
-## PHASE 36 — Coverage Completion: 5% Còn Lại
-> **Audit thực tế phát hiện 4 nhóm feature có file tồn tại nhưng chưa được cover trong bất kỳ phase nào. Phase này đưa coverage từ ~95% lên ~100%.**
+## PHASE 34 — Các Gap Còn Lại (Phát Hiện Từ Audit Thực Tế)
+> **Các vấn đề này phát hiện sau khi audit đầy đủ 38 models + 27 routes + 54 pages. Coverage sau phase này: ~99%.**
 
-### 36.1 Recently Viewed Products
-- **Files:** `backend/src/models/recentlyViewed.js`, logic trong `backend/src/controllers/product.js` (getRecentlyViewed), frontend component/hook
-- **Kiểm tra:**
-  - Model `recentlyViewed.js` có đủ fields: `userId`, `productId`, `viewedAt` không
-  - Controller có endpoint `GET /api/products/recently-viewed` không — có giới hạn N items không
-  - Khi user xem product detail → có ghi vào `recently_viewed` không (POST hoặc tự động)
-  - Khi product bị xóa → recently viewed record có bị cascade delete không (FK `ON DELETE CASCADE`)
-  - Frontend: component "Sản phẩm đã xem" trên ProductDetailPage hoặc ProfilePage có load data thật không
-  - **Cleanup:** `recentlyViewed` records cũ hơn 90 ngày phải được xóa trong cleanup job (Phase 35.5 — thêm vào)
-- **Fix nếu thiếu:**
-  - Thêm endpoint nếu chưa có
-  - Giới hạn 20 items per user (xóa oldest khi vượt)
-  - Thêm vào cleanup job: `RecentlyViewed.destroy({ where: { viewedAt: { [Op.lt]: ninetyDaysAgo } } })`
+### 34.1 Validators Còn Thiếu — 12+ Model Không Có Validation
+- **Vấn đề (audit thực tế):** Chỉ có 9 validators: `user, product, order, review, cart, category, discountCode, address, admin`. Thiếu validators cho các route đang active:
+  - `backend/src/validators/banner.js` — POST/PUT `/api/admin/banners` không validate
+  - `backend/src/validators/news.js` — POST/PUT `/api/admin/news` không validate
+  - `backend/src/validators/feedback.js` — POST `/api/feedback` không validate
+  - `backend/src/validators/newsletter.js` — POST `/api/newsletter/subscribe` không validate
+  - `backend/src/validators/emailCampaign.js` — POST `/api/admin/email-campaigns` không validate
+  - `backend/src/validators/warranty.js` — CRUD warranty packages không validate
+  - `backend/src/validators/brand.js` — POST/PUT `/api/admin/brands` không validate
+  - `backend/src/validators/collection.js` — POST/PUT `/api/admin/collections` không validate
+  - **`backend/src/routes/payment.js` — 0 validation middleware (audit thực tế):** Routes `/create-payment-intent`, `/confirm-payment`, `/vnpay/callback`, `/momo/callback` nhận raw `req.body` không qua schema — invalid data crash handlers với lỗi không rõ ràng
+  - `backend/src/validators/payment.js` — cần tạo validator cho: `{ amount: Joi.number().positive().required(), orderId: Joi.number().integer().required(), paymentMethod: Joi.string().valid('stripe','vnpay','momo','cod').required() }`
+- **Fix:** Tạo Joi validator cho từng entity trên. Mỗi validator cần schema cho `create` và `update`:
+  ```js
+  // Ví dụ: backend/src/validators/banner.js
+  const Joi = require('joi');
+  const createBannerSchema = Joi.object({
+    title:    Joi.string().max(255).required(),
+    imageUrl: Joi.string().uri().required(),
+    linkUrl:  Joi.string().uri().allow('', null),
+    sortOrder:Joi.number().integer().min(0).default(0),
+    isActive: Joi.boolean().default(true),
+  });
+  ```
+- **Apply vào routes:** `validateRequest(schema)` middleware trước mỗi POST/PUT handler
 
-### 36.2 AI Product Name Generator
-- **Files:** `backend/src/services/ai/productNameGenerator.js`, `frontend/src/services/productNamingService.ts`
-- **Chức năng:** Admin nhập thông tin sản phẩm → AI gợi ý tên sản phẩm tự động
-- **Kiểm tra:**
-  - Service có đang gọi Gemini API không — có xử lý rate limit / API key missing không
-  - Nếu Gemini API key không set → có fallback graceful không (không crash server)
-  - Frontend: nút "Gợi ý tên AI" trong `CreateProductPage.tsx` có hoạt động không
-  - Response có được sanitize trước khi hiển thị không (XSS prevention cho AI output)
-  - Có log lại AI requests không (cost tracking)
-- **Fix nếu thiếu:**
-  - Wrap trong try/catch, trả về 503 nếu API key missing hoặc rate limited
-  - Validate AI output: trim whitespace, max length 255, no HTML tags
-  - Thêm `[AI_NAME_GEN]` log entry để track usage
+### 34.2 Newsletter & Feedback — Backend Có Model, Frontend Thiếu Logic
+- **Models tồn tại:** `backend/src/models/newsletterSubscriber.js`, `backend/src/models/feedback.js`
+- **Vấn đề:**
+  - Newsletter subscribe: form trên homepage có UI nhưng chưa chắc gọi đúng endpoint
+  - Feedback (contact form): `ContactPage.tsx` submit form → cần verify endpoint hoạt động
+  - Admin chưa có trang xem danh sách subscribers và feedback
+- **Fix:**
+  - Verify `POST /api/newsletter/subscribe` → lưu vào `newsletter_subscribers` table, trả 201
+  - Verify `POST /api/feedback` (hoặc `/api/contact`) → lưu vào `feedback` table + email thông báo cho admin
+  - Admin: thêm tab "Newsletter" trong EmailCampaignsPage hiển thị danh sách subscribers với export CSV
+  - Admin: thêm trang "Phản hồi khách hàng" hoặc bảng trong Dashboard hiển thị feedback mới nhất
 
-### 36.3 Attribute Management System
-- **Files:** `backend/src/controllers/attribute.js`, `backend/src/models/attributeGroup.js`, `backend/src/models/attributeValue.js`, `frontend/src/services/attributeApi.ts`, `frontend/src/hooks/useProductAttributes.ts`
-- **Chức năng:** Quản lý thuộc tính sản phẩm (màu sắc, size, v.v.) — dùng trong product variant creation
-- **Kiểm tra:**
-  - `GET /api/attributes` → trả về attribute groups với values
-  - `POST /api/admin/attributes` → tạo attribute group mới (có validator không — Phase 34.1)
-  - `useProductAttributes.ts` hook: có handle loading/error state không
-  - Khi xóa AttributeGroup → các AttributeValue liên quan có bị cascade delete không
-  - `CreateProductPage.tsx` dùng attributes để tạo variants — flow có hoạt động end-to-end không
-- **Fix nếu thiếu:**
-  - Thêm Joi validator cho attribute CRUD (covered trong Phase 34.1 — verify đã có chưa)
-  - Thêm cascade delete constraint: `FK_attribute_values_group ON DELETE CASCADE`
-  - `useProductAttributes.ts`: thêm error boundary nếu API fails
+### 34.3 Location/Geocoding Service — Checkout Address Autocomplete
+- **Vấn đề:** `backend/src/services/location.js` có đầy đủ geocoding/autocomplete nhưng chưa được dùng ở `CheckoutPage.tsx`
+- **Routes tồn tại:** `GET /api/location/search`, `GET /api/location/forward`, `GET /api/location/reverse`
+- **Fix:**
+  - `CheckoutPage.tsx` — field "Địa chỉ" có autocomplete: khi user gõ → debounce 300ms → gọi `GET /api/location/search?q=...` → dropdown suggestions
+  - Khi chọn suggestion → tự điền `province`, `district`, `ward` fields
+  - Tương tự cho `ProfilePage.tsx` (address book form) và `UserDetailPage.tsx` (admin)
 
-### 36.4 User-Facing Brands & Collections Pages
-- **Files:** `frontend/src/pages/BrandsPage.tsx`, `frontend/src/pages/CollectionsPage.tsx`
-- **Kiểm tra:**
-  - `BrandsPage.tsx`: load danh sách brands từ `GET /api/brands` — có hiển thị logo, product count không
-  - Click brand → navigate đến ShopPage với filter `brand=X` đã pre-applied
-  - `CollectionsPage.tsx`: load collections từ `GET /api/collections` — có hiển thị đúng không
-  - Click collection → navigate đến trang collection detail với sản phẩm trong collection
-  - Cả 2 trang: có route trong `AppRoutes.tsx` không, có link từ Header/Footer không
-  - Pagination/infinite scroll nếu có nhiều brands/collections
-- **Fix nếu thiếu:**
-  - Đảm bảo route tồn tại và được link trong navigation
-  - Empty state khi không có data (không blank page)
-  - SEO: `<title>` và meta description cho từng trang
+### 34.4 Audit Log DB Persistence
+- **Vấn đề (audit thực tế):** `backend/src/services/admin/adminAudit.js` ghi log ra file, không có DB table → không query/filter được trong Phase 33 audit log viewer
+- **Fix:**
+  - Tạo model `AuditLog` (hoặc dùng table `admin_audit_logs` nếu đã có trong `migration_full.sql`)
+  - `adminAudit.js` phải ghi vào DB thay vì (hoặc ngoài) file log:
+    ```js
+    await AuditLog.create({
+      adminId, action, entityType, entityId,
+      oldValue: JSON.stringify(oldValue),
+      newValue: JSON.stringify(newValue),
+      ipAddress: req.ip,
+    });
+    ```
+  - **Endpoint:** `GET /api/admin/audit-logs` đọc từ DB (Phase 33.2 phụ thuộc vào fix này)
 
-### 36.5 Static Info Pages — Nội Dung & Links
-- **Files:** `AboutPage.tsx`, `FAQsPage.tsx`, `PrivacyPolicyPage.tsx`, `TermsPage.tsx`, `ShippingReturnsPage.tsx`
-- **Mức độ:** Thấp — nhưng cần kiểm tra nhanh
-- **Kiểm tra (5 phút):**
-  - Tất cả 5 trang có route không, không trả về 404
-  - Footer có link đến Privacy Policy và Terms không (required cho e-commerce)
-  - Content có placeholder text `[PLACEHOLDER]` hay lorem ipsum không — cần nội dung thực
-  - FAQ content có đúng với project TechStore không (không phải template mẫu)
+### 34.5 SupportDashboard.tsx — Làm Rõ Mục Đích & Fix Overlap
+- **Vấn đề:** `frontend/src/pages/admin/SupportDashboard.tsx` tồn tại nhưng không rõ khác gì `ChatPage` hay phần chat trong admin
+- **Fix:**
+  - Đọc file và xác định: đây là trang xem tất cả conversations của tất cả users (admin perspective) hay là giao diện chat trực tiếp?
+  - Nếu trùng với Phase 33.1 (admin chat) → merge/cleanup
+  - Nếu là dashboard thống kê chat (số conversations, thời gian phản hồi trung bình) → implement đúng
+  - Route phải được mount rõ ràng trong sidebar admin và `AppRoutes.tsx`
 
-### ✅ Acceptance Criteria Phase 36
-- [ ] `GET /api/products/recently-viewed` (authenticated) → trả về ≤20 sản phẩm đã xem gần nhất
-- [ ] Xem product detail → record trong `recently_viewed` table được tạo với đúng `userId` + `productId`
-- [ ] Admin CreateProductPage: click "Gợi ý tên AI" → nhận gợi ý trong <3s; nếu API key missing → hiển thị error toast, không crash
-- [ ] `GET /api/attributes` → trả về attribute groups với values, dùng được trong variant creation
-- [ ] Admin tạo sản phẩm với variants (chọn attributes) → flow hoạt động end-to-end
-- [ ] `BrandsPage` load → hiển thị đúng danh sách brands với logo
-- [ ] Click brand → navigate đến ShopPage với filter brand đã applied
-- [ ] `CollectionsPage` load → hiển thị đúng collections
-- [ ] `GET /privacy-policy` → không 404, có nội dung thực (không phải lorem ipsum)
-- [ ] Footer có link "Chính sách bảo mật" và "Điều khoản sử dụng"
+### 34.6 Dual Seed Mechanism — Cleanup `seedProductsV2.js`
+- **Vấn đề (audit thực tế):** `backend/scripts/seedProductsV2.js` hardcode 45 sản phẩm bằng JavaScript — tách biệt với `seed_data.sql`
+- **Fix:**
+  - Chuyển `npm run db:seed` thành chạy `rebuildDb.js` (import SQL) thay vì `seedProductsV2.js`
+  - Giữ `seedProductsV2.js` như là legacy/backup, không chạy trong production workflow
+  - Verify rằng `rebuildDb.js` + `seed_data.sql` cho ra đúng 45 sản phẩm sau khi fix INSERT IGNORE (Phase 31.3)
+
+### ✅ Acceptance Criteria Phase 34
+- [ ] `POST /api/newsletter/subscribe` với email hợp lệ → 201, email lưu trong DB
+- [ ] `POST /api/newsletter/subscribe` với email đã subscribe → 400 hoặc 200 (no duplicate)
+- [ ] `POST /api/feedback` với đủ thông tin → lưu vào DB, admin nhận email notification
+- [ ] Trang checkout: gõ "123 Nguyễn Văn" → dropdown địa chỉ gợi ý xuất hiện sau 300ms
+- [ ] `GET /api/admin/audit-logs` → trả về dữ liệu từ DB (không phải file), paginated
+- [ ] `POST /api/admin/banners` với thiếu `imageUrl` → nhận `422 Validation Error`
+- [ ] `POST /api/admin/news` với thiếu `title` → nhận `422 Validation Error`
+- [ ] SupportDashboard route được mount trong admin sidebar, không blank page
+- [ ] `npm run db:seed` chạy `rebuildDb.js` (SQL import), không chạy `seedProductsV2.js`
+
+---
+
+## PHASE 33 — Admin & User Pages: Tính Năng Còn Thiếu
+> **Bám sát danh sách trang đã audit — fix những trang hiện đang stub hoặc thiếu logic backend.**
+
+### 33.1 Admin — Email Campaigns (hiện chỉ có page, không có backend)
+- **File:** `frontend/src/pages/admin/EmailCampaignsPage.tsx`
+- **Vấn đề:** Page tồn tại nhưng không có API endpoint nào cho email campaigns trong `admin.js`
+- **Cần implement:**
+  - **Model `EmailCampaign`** đã có (`backend/src/models/emailCampaign.js`) — kiểm tra có đầy đủ fields không
+- **HTML Injection trong Email (audit thực tế):** `backend/src/services/email.js` line ~110 interpolates `${content}` trực tiếp vào HTML template gửi cho user subscribers:
+  ```js
+  html: `<div>${content}</div>`  // content từ campaign.content — user-controlled via admin UI
+  ```
+  Nếu admin account bị compromise → attacker có thể gửi email với JavaScript/phishing HTML đến toàn bộ subscriber list
+  - **Fix:** Sanitize campaign content trước khi đưa vào HTML email — dùng DOMPurify (server-side: `dompurify` + `jsdom`) hoặc `sanitize-html` package với allowlist tags (chỉ cho phép `p`, `b`, `i`, `a`, `img`, `h1`-`h3`)
+  - **Backend endpoints:**
+    - `GET  /api/admin/email-campaigns` — danh sách với status (draft/sent/scheduled)
+    - `POST /api/admin/email-campaigns` — tạo campaign mới
+    - `POST /api/admin/email-campaigns/:id/send` — gửi ngay
+    - `POST /api/admin/email-campaigns/:id/schedule` — lên lịch gửi
+  - **Logic gửi:** lấy danh sách subscribers từ `newsletter_subscribers` table → batch send via `emailService`
+  - **Rate limit:** không gửi quá 50 email/phút (tránh spam filter)
+  - **Frontend:** form tạo campaign (subject, html body với WYSIWYG editor), danh sách campaigns với status badge, nút Gửi ngay / Lên lịch
+
+### 33.2 Admin — Audit Log Viewer (backend có, frontend chưa có)
+- **Vấn đề:** `backend/src/services/admin/adminAudit.js` đang log vào DB nhưng không có trang xem
+- **Cần thêm:**
+  - **Endpoint:** `GET /api/admin/audit-logs?page=&limit=&adminId=&action=&startDate=&endDate=`
+  - **Frontend:** tạo `frontend/src/pages/admin/AuditLogPage.tsx`:
+    - Bảng: Thời gian | Admin | Hành động | Đối tượng | ID | Chi tiết
+    - Filter: theo admin, theo loại action, theo date range
+    - Click vào row → modal hiện `oldValue` vs `newValue` (JSON diff)
+  - **Route admin:** thêm link "Nhật ký hệ thống" vào sidebar
+
+### 33.3 Admin — Order Management: Tính Năng Còn Thiếu
+- **File:** `frontend/src/pages/admin/OrdersPage.tsx`
+- **Hiện có:** list orders, update status
+- **Cần thêm:**
+  - **Cancel order + hoàn stock:** `PUT /api/admin/orders/:id/cancel` → cập nhật status + cộng lại `stockQuantity`
+  - **Filter nâng cao:** filter theo ngày, theo payment method, theo status — hiện chỉ có text search
+  - **Export orders:** `GET /api/admin/orders/export?startDate=&endDate=&format=csv`
+  - **Invoice/receipt:** `GET /api/admin/orders/:id/invoice` → PDF hoặc print-ready HTML
+  - **Order detail modal:** click vào order → modal/drawer hiện: items (tên, qty, giá), địa chỉ, payment info, timeline trạng thái
+
+### 33.4 Admin — Review Management: Approve/Feature Workflow
+- **File:** `frontend/src/pages/admin/` (review management nằm trong ProductsPage hoặc riêng)
+- **Hiện có:** chỉ `DELETE /api/admin/reviews/:id`
+- **Cần thêm:**
+  - `PATCH /api/admin/reviews/:id/approve` — duyệt review (nếu có cơ chế moderation)
+  - `PATCH /api/admin/reviews/:id/feature` — đánh dấu "review nổi bật" hiển thị trên trang chủ
+  - Filter: theo sản phẩm, theo rating, theo trạng thái (approved/pending)
+  - **Frontend:** trang reviews riêng hoặc tab trong admin, có thể reply to review
+
+### 33.5 Admin — Inventory Management
+- **Vấn đề:** không có trang nào để xem tổng tồn kho, lịch sử nhập/xuất kho
+- **Cần thêm:**
+  - **Inventory list page:** `frontend/src/pages/admin/InventoryPage.tsx`
+    - Bảng: Sản phẩm | SKU | Tồn kho hiện tại | Threshold | Status (OK/Low/Out)
+    - Filter: chỉ hiện low/out of stock
+    - Inline edit: click vào số tồn kho → nhập số mới → save (gọi `PATCH /api/admin/products/:id/stock`)
+  - **Bulk stock update:** upload CSV với cột `sku`, `stock_quantity`
+  - **Endpoint:** `PATCH /api/admin/products/:id/stock` — update `stockQuantity` trực tiếp
+
+### 33.6 User — TrackOrderPage (hiện tại stub)
+- **File:** `frontend/src/pages/TrackOrderPage.tsx`
+- **Fix:** Hiển thị timeline trạng thái đơn hàng bằng stepper component:
+  ```
+  ✅ Đặt hàng → ✅ Xác nhận thanh toán → 🔄 Đang chuẩn bị → ⬜ Đang giao → ⬜ Đã nhận
+  ```
+- **Backend:** `GET /api/orders/:orderNumber/track` (public, chỉ cần order number + email) hoặc `GET /api/orders/:id` (authenticated)
+- **Data hiển thị:** timeline stepper, estimated delivery date, shipping info, order items summary
+
+### 33.7 User — DealsPage (hiện tải data không đúng)
+- **File:** `frontend/src/pages/DealsPage.tsx`
+- **Fix:** Fetch sản phẩm có discount code đang active hoặc có sale price:
+  - `GET /api/products?hasDiscount=true` hoặc filter `salePrice < basePrice`
+  - Hiển thị: giá gốc (gạch ngang), giá giảm, % giảm badge, countdown timer nếu có expiry
+
+### 33.8 User — NewArrivalsPage & BestSellersPage
+- **Files:** `frontend/src/pages/NewArrivalsPage.tsx`, `frontend/src/pages/BestSellersPage.tsx`
+- **Vấn đề:** hai trang này có thể đang dùng mock data hoặc gọi API sai
+- **Fix:**
+  - `GET /api/products?sort=newest&limit=20` — sản phẩm mới nhất theo `createdAt DESC`
+  - `GET /api/products?sort=bestselling&limit=20` — sản phẩm bán chạy theo `soldCount DESC`
+  - Backend: thêm sort options này vào product controller nếu chưa có
+
+### 33.9 User — PaymentQRPage (VNPay/MoMo QR)
+- **File:** `frontend/src/pages/PaymentQRPage.tsx`
+- **Fix:**
+  - Nhận `qrCodeUrl` và `orderId` từ query params hoặc state
+  - Hiển thị QR code image + countdown timer (QR hết hạn sau N phút)
+  - **Polling**: `GET /api/orders/:id/payment-status` mỗi 5 giây → khi `paymentStatus === 'paid'` → redirect đến order confirmation
+  - Fallback: nút "Tôi đã thanh toán" để manual check
+
+### 33.10 User — Loyalty Points Page
+- **Vấn đề:** loyalty points chỉ hiển thị số dư trong profile, không có trang riêng với lịch sử
+- **Cần thêm:**
+  - `GET /api/loyalty/history` → list transactions (earn/redeem) with orderId, points, date
+  - `frontend/src/pages/LoyaltyPage.tsx` (hoặc tab trong ProfilePage):
+    - KPI: Tổng điểm | Điểm đã dùng | Điểm còn lại
+    - Bảng: Ngày | Loại (Nhận/Đổi) | Điểm | Liên kết đơn hàng
+    - Nút "Đổi điểm" nếu đủ điều kiện
+
+### 33.11 Admin — Warranty Packages (WarrantyPackagesPage.tsx)
+- **Kiểm tra:** trang đã có nhưng cần verify:
+  - CRUD warranty packages hoạt động đầy đủ
+  - Warranty có thể được assign cho sản phẩm cụ thể
+  - User sau khi mua có thể xem warranty info trong Order Detail
+
+### ✅ Acceptance Criteria Phase 33
+- [ ] `POST /api/admin/email-campaigns/:id/send` → gửi email tới tất cả subscribers, log count
+- [ ] `GET /api/admin/audit-logs` → trả về paginated list với đúng format `{ adminId, action, entityType, entityId }`
+- [ ] Admin cancel order → `GET /api/products/:id` → stockQuantity tăng đúng số lượng trong order
+- [ ] TrackOrderPage hiển thị stepper đúng bước hiện tại của đơn hàng
+- [ ] NewArrivalsPage load → sản phẩm có `createdAt` mới nhất xuất hiện đầu tiên
+- [ ] DealsPage: chỉ hiện sản phẩm có giá sale thực sự < giá gốc
+- [ ] PaymentQRPage: polling mỗi 5s, khi thanh toán xong → tự redirect không cần user click
+- [ ] Inventory page: sản phẩm stock=0 hiển thị badge đỏ "Hết hàng"
+
+---
+
+## PHASE 32 — Admin Dashboard: Complete Analytics & Charts
+> **Dựa trên `DashboardPage.tsx` hiện tại (Recharts) — bổ sung các chart và KPI card còn thiếu, thêm backend endpoints tương ứng.**
+
+### Trạng thái hiện tại (audit thực tế)
+- **DashboardPage.tsx đang có:** Area Chart (revenue 7d/30d/90d), Bar Chart (order count), Period selector
+- **getDashboardStats() đang trả về:** total counts, monthly data, growth %, top 5 products (by count only)
+- **Còn thiếu hoàn toàn:** order status pie chart, category revenue chart, user growth chart, AOV metric, payment method breakdown, low-stock alerts
+
+### 32.1 KPI Cards — Bổ Sung
+- **File:** `frontend/src/pages/admin/DashboardPage.tsx`
+- **Hiện có 4 cards:** Total Users, Total Products, Total Orders, Total Revenue
+- **Cần thêm 3 cards:**
+  | Card | Formula | Backend field |
+  |------|---------|---------------|
+  | **AOV** (Average Order Value) | `totalRevenue / totalOrders` | Tính trong `getDashboardStats()` |
+  | **Đơn hủy tháng này** | Số orders có `status='cancelled'` trong tháng hiện tại | `cancelledOrdersMonth` |
+  | **Sản phẩm sắp hết hàng** | Số sản phẩm có `stockQuantity <= 5` | `lowStockCount` (link → bảng phía dưới) |
+
+- **Fix `backend/src/controllers/admin.js` `getDashboardStats()`:** thêm 3 trường trên vào response
+
+### 32.2 Pie/Donut Chart — Phân Bổ Trạng Thái Đơn Hàng
+- **File:** `frontend/src/pages/admin/DashboardPage.tsx`
+- **Endpoint cần thêm:** `GET /api/admin/analytics/order-status`
+  ```js
+  // Response:
+  { data: [
+    { status: 'pending',    count: 12, label: 'Chờ xử lý' },
+    { status: 'processing', count:  8, label: 'Đang xử lý' },
+    { status: 'shipped',    count: 25, label: 'Đang giao' },
+    { status: 'delivered',  count: 145, label: 'Đã giao' },
+    { status: 'cancelled',  count:  6, label: 'Đã hủy' },
+  ]}
+  ```
+- **Frontend:** Recharts `<PieChart>` + `<Legend>` — hiển thị bên phải của Area Chart
+- **SQL backend:**
+  ```js
+  const statusDist = await Order.findAll({
+    attributes: ['status', [sequelize.fn('COUNT', sequelize.col('id')), 'count']],
+    group: ['status'],
+    where: { createdAt: { [Op.gte]: startDate } },
+    raw: true,
+  });
+  ```
+
+### 32.3 Bar Chart — Top 5 Sản Phẩm Theo Doanh Thu
+- **Vấn đề hiện tại:** `getDashboardStats()` trả về top5 theo `soldCount` — **không có trường revenue per product**
+- **Fix backend:** thêm endpoint `GET /api/admin/analytics/top-products?metric=revenue&limit=5`
+  ```js
+  const topByRevenue = await OrderItem.findAll({
+    attributes: [
+      'productId',
+      [sequelize.fn('SUM', sequelize.col('unit_price')), 'revenue'],
+      [sequelize.fn('SUM', sequelize.col('quantity')), 'soldCount'],
+    ],
+    include: [{ model: Product, attributes: ['name', 'thumbnail'] }],
+    group: ['productId'],
+    order: [[sequelize.literal('revenue'), 'DESC']],
+    limit: 5,
+    where: { '$Order.payment_status$': 'paid' },
+    raw: true,
+  });
+  ```
+- **Frontend:** Recharts `<BarChart horizontal>` với tooltip hiển thị cả revenue lẫn sold count
+- **Tab selector** trên chart: "Doanh thu" / "Số lượng bán" — switch metric
+
+### 32.4 Bar Chart — Doanh Thu Theo Danh Mục
+- **Endpoint cần thêm:** `GET /api/admin/analytics/revenue-by-category?startDate=&endDate=`
+  ```js
+  // JOIN orders → order_items → product_categories → categories
+  // GROUP BY category_id
+  // WHERE order.payment_status = 'paid'
+  ```
+- **Frontend:** Recharts `<BarChart vertical>` — top 8 categories, có color coding
+- **Đặt dưới** Top Products chart, cùng khu vực analytics
+
+### 32.5 Line Chart — Tăng Trưởng Người Dùng
+- **Endpoint cần thêm:** `GET /api/admin/analytics/user-growth?startDate=&endDate=&groupBy=day`
+  ```js
+  const userGrowth = await User.findAll({
+    attributes: [
+      [sequelize.fn('DATE', sequelize.col('created_at')), 'date'],
+      [sequelize.fn('COUNT', sequelize.col('id')), 'newUsers'],
+    ],
+    where: { createdAt: { [Op.between]: [startDate, endDate] } },
+    group: [sequelize.fn('DATE', sequelize.col('created_at'))],
+    raw: true,
+  });
+  ```
+- **Frontend:** Recharts `<LineChart>` — đặt song song với Revenue chart, có thể toggle hiển thị
+
+### 32.6 Pie Chart — Phân Bổ Phương Thức Thanh Toán
+- **Endpoint cần thêm:** `GET /api/admin/analytics/payment-methods`
+  ```js
+  // GROUP BY payment_method WHERE payment_status = 'paid'
+  // { method: 'cod', count: 45, revenue: 23000000 },
+  // { method: 'stripe', count: 30, revenue: 58000000 },
+  // { method: 'vnpay', count: 20, revenue: 31000000 },
+  ```
+- **Frontend:** Recharts `<PieChart>` nhỏ — đặt trong section "Thống kê thanh toán"
+
+### 32.7 Low Stock Alert Widget
+- **Endpoint cần thêm:** `GET /api/admin/analytics/low-stock?threshold=10`
+  ```js
+  // Trả về products (hoặc variants) có stockQuantity <= threshold
+  // { id, name, sku, stockQuantity, thumbnail }
+  // Sắp xếp: stockQuantity ASC (hết hàng nhất lên đầu)
+  ```
+- **Frontend widget:** Bảng nhỏ ở cuối dashboard — cột: Sản phẩm, SKU, Tồn kho, Action (link đến edit product)
+- **Badge đỏ** trên KPI card "Sắp hết hàng" link thẳng xuống widget này
+
+### 32.8 Date Range Picker cho Tất Cả Charts
+- **Hiện tại:** chỉ có preset "7d / 30d / 90d"
+- **Fix:** Thêm date range picker (có thể dùng `react-datepicker` hoặc native `<input type="date">`)
+- **Khi chọn custom range:** tất cả charts và KPI cards đều re-fetch với `startDate` + `endDate` mới
+- **Persist selection** trong URL query params (`?from=2026-01-01&to=2026-01-31`) để có thể share link
+
+### 32.9 Export Report
+- **Nút "Xuất báo cáo" trên DashboardPage:**
+  - `GET /api/admin/reports/export?type=orders&startDate=&endDate=&format=csv`
+  - `GET /api/admin/reports/export?type=products&format=csv`
+  - Backend: dùng `fast-csv` hoặc `json2csv` package để generate CSV stream
+  - Frontend: click nút → trigger download (không cần open new tab)
+
+### 32.X Chatbot Analytics Admin Dashboard (audit thực tế — bổ sung từ Phase 9.16)
+
+**Vấn đề:** Analytics tracking trong chatbot service chỉ `console.log`, không lưu DB, không có UI admin.
+
+**Backend — Thêm fields vào chat analytics khi lưu DB (Phase 9.12):**
+- `intent VARCHAR(50)` — classified intent của mỗi turn
+- `responseTimeMs INT` — thời gian xử lý từ request đến response
+- `isFallback BOOLEAN` — true nếu `simpleKeywordMatch()` được dùng thay LLM
+- `sessionId VARCHAR(100)` — group theo session
+
+**Backend — Endpoint:** `GET /api/admin/chatbot/stats?startDate=&endDate=` (admin only):
+```json
+{
+  "totalSessions": 142,
+  "totalMessages": 867,
+  "avgMessagesPerSession": 6.1,
+  "intentBreakdown": { "product_search": 45, "pricing": 20, "off_topic": 20 },
+  "fallbackRate": 0.12,
+  "avgResponseTimeMs": 1840
+}
+```
+
+**Frontend — Thêm tab "AI Chatbot" trong DashboardPage.tsx:**
+- KPI cards: Total Sessions, Avg Messages/Session, Fallback Rate, Avg Response Time
+- Pie chart: Intent Breakdown
+- Line chart: Daily active sessions (7d/30d)
+
+### ✅ Acceptance Criteria Phase 32
+- [ ] DashboardPage load → hiển thị đủ 7 chart/widget: Revenue Area, Order Bar, Order Status Pie, Top Products Bar, Category Bar, User Growth Line, Payment Methods Pie
+- [ ] KPI cards hiển thị đúng AOV: tạo 2 orders (100k + 200k) → AOV = 150k
+- [ ] Low stock widget hiển thị product có stock = 3 (dưới threshold 10)
+- [ ] Chọn date range tùy chỉnh → tất cả charts cập nhật data theo range đó
+- [ ] Nút "Xuất báo cáo" → download được file CSV với đúng data
+- [ ] Chart order status: tổng số trong pie = tổng orders trong DB
+- [ ] Tab "AI Chatbot" trong Dashboard → hiển thị Total Sessions, Fallback Rate, Intent Breakdown
+- [ ] `GET /api/admin/chatbot/stats` trả về 401 nếu không có admin token
 
 ---
 
@@ -4835,383 +5478,91 @@ const warmCache = async () => {
 
 ---
 
-## PHASE 32 — Admin Dashboard: Complete Analytics & Charts
-> **Dựa trên `DashboardPage.tsx` hiện tại (Recharts) — bổ sung các chart và KPI card còn thiếu, thêm backend endpoints tương ứng.**
+## PHASE 36 — Coverage Completion: 5% Còn Lại
+> **Audit thực tế phát hiện 4 nhóm feature có file tồn tại nhưng chưa được cover trong bất kỳ phase nào. Phase này đưa coverage từ ~95% lên ~100%.**
 
-### Trạng thái hiện tại (audit thực tế)
-- **DashboardPage.tsx đang có:** Area Chart (revenue 7d/30d/90d), Bar Chart (order count), Period selector
-- **getDashboardStats() đang trả về:** total counts, monthly data, growth %, top 5 products (by count only)
-- **Còn thiếu hoàn toàn:** order status pie chart, category revenue chart, user growth chart, AOV metric, payment method breakdown, low-stock alerts
+### 36.1 Recently Viewed Products
+- **Files:** `backend/src/models/recentlyViewed.js`, logic trong `backend/src/controllers/product.js` (getRecentlyViewed), frontend component/hook
+- **Kiểm tra:**
+  - Model `recentlyViewed.js` có đủ fields: `userId`, `productId`, `viewedAt` không
+  - Controller có endpoint `GET /api/products/recently-viewed` không — có giới hạn N items không
+  - Khi user xem product detail → có ghi vào `recently_viewed` không (POST hoặc tự động)
+  - Khi product bị xóa → recently viewed record có bị cascade delete không (FK `ON DELETE CASCADE`)
+  - Frontend: component "Sản phẩm đã xem" trên ProductDetailPage hoặc ProfilePage có load data thật không
+  - **Cleanup:** `recentlyViewed` records cũ hơn 90 ngày phải được xóa trong cleanup job (Phase 35.5 — thêm vào)
+- **Fix nếu thiếu:**
+  - Thêm endpoint nếu chưa có
+  - Giới hạn 20 items per user (xóa oldest khi vượt)
+  - Thêm vào cleanup job: `RecentlyViewed.destroy({ where: { viewedAt: { [Op.lt]: ninetyDaysAgo } } })`
 
-### 32.1 KPI Cards — Bổ Sung
-- **File:** `frontend/src/pages/admin/DashboardPage.tsx`
-- **Hiện có 4 cards:** Total Users, Total Products, Total Orders, Total Revenue
-- **Cần thêm 3 cards:**
-  | Card | Formula | Backend field |
-  |------|---------|---------------|
-  | **AOV** (Average Order Value) | `totalRevenue / totalOrders` | Tính trong `getDashboardStats()` |
-  | **Đơn hủy tháng này** | Số orders có `status='cancelled'` trong tháng hiện tại | `cancelledOrdersMonth` |
-  | **Sản phẩm sắp hết hàng** | Số sản phẩm có `stockQuantity <= 5` | `lowStockCount` (link → bảng phía dưới) |
+### 36.2 AI Product Name Generator
+- **Files:** `backend/src/services/ai/productNameGenerator.js`, `frontend/src/services/productNamingService.ts`
+- **Chức năng:** Admin nhập thông tin sản phẩm → AI gợi ý tên sản phẩm tự động
+- **Kiểm tra:**
+  - Service có đang gọi Gemini API không — có xử lý rate limit / API key missing không
+  - Nếu Gemini API key không set → có fallback graceful không (không crash server)
+  - Frontend: nút "Gợi ý tên AI" trong `CreateProductPage.tsx` có hoạt động không
+  - Response có được sanitize trước khi hiển thị không (XSS prevention cho AI output)
+  - Có log lại AI requests không (cost tracking)
+- **Fix nếu thiếu:**
+  - Wrap trong try/catch, trả về 503 nếu API key missing hoặc rate limited
+  - Validate AI output: trim whitespace, max length 255, no HTML tags
+  - Thêm `[AI_NAME_GEN]` log entry để track usage
 
-- **Fix `backend/src/controllers/admin.js` `getDashboardStats()`:** thêm 3 trường trên vào response
+### 36.3 Attribute Management System
+- **Files:** `backend/src/controllers/attribute.js`, `backend/src/models/attributeGroup.js`, `backend/src/models/attributeValue.js`, `frontend/src/services/attributeApi.ts`, `frontend/src/hooks/useProductAttributes.ts`
+- **Chức năng:** Quản lý thuộc tính sản phẩm (màu sắc, size, v.v.) — dùng trong product variant creation
+- **Kiểm tra:**
+  - `GET /api/attributes` → trả về attribute groups với values
+  - `POST /api/admin/attributes` → tạo attribute group mới (có validator không — Phase 34.1)
+  - `useProductAttributes.ts` hook: có handle loading/error state không
+  - Khi xóa AttributeGroup → các AttributeValue liên quan có bị cascade delete không
+  - `CreateProductPage.tsx` dùng attributes để tạo variants — flow có hoạt động end-to-end không
+- **Fix nếu thiếu:**
+  - Thêm Joi validator cho attribute CRUD (covered trong Phase 34.1 — verify đã có chưa)
+  - Thêm cascade delete constraint: `FK_attribute_values_group ON DELETE CASCADE`
+  - `useProductAttributes.ts`: thêm error boundary nếu API fails
 
-### 32.2 Pie/Donut Chart — Phân Bổ Trạng Thái Đơn Hàng
-- **File:** `frontend/src/pages/admin/DashboardPage.tsx`
-- **Endpoint cần thêm:** `GET /api/admin/analytics/order-status`
-  ```js
-  // Response:
-  { data: [
-    { status: 'pending',    count: 12, label: 'Chờ xử lý' },
-    { status: 'processing', count:  8, label: 'Đang xử lý' },
-    { status: 'shipped',    count: 25, label: 'Đang giao' },
-    { status: 'delivered',  count: 145, label: 'Đã giao' },
-    { status: 'cancelled',  count:  6, label: 'Đã hủy' },
-  ]}
-  ```
-- **Frontend:** Recharts `<PieChart>` + `<Legend>` — hiển thị bên phải của Area Chart
-- **SQL backend:**
-  ```js
-  const statusDist = await Order.findAll({
-    attributes: ['status', [sequelize.fn('COUNT', sequelize.col('id')), 'count']],
-    group: ['status'],
-    where: { createdAt: { [Op.gte]: startDate } },
-    raw: true,
-  });
-  ```
+### 36.4 User-Facing Brands & Collections Pages
+- **Files:** `frontend/src/pages/BrandsPage.tsx`, `frontend/src/pages/CollectionsPage.tsx`
+- **Kiểm tra:**
+  - `BrandsPage.tsx`: load danh sách brands từ `GET /api/brands` — có hiển thị logo, product count không
+  - Click brand → navigate đến ShopPage với filter `brand=X` đã pre-applied
+  - `CollectionsPage.tsx`: load collections từ `GET /api/collections` — có hiển thị đúng không
+  - Click collection → navigate đến trang collection detail với sản phẩm trong collection
+  - Cả 2 trang: có route trong `AppRoutes.tsx` không, có link từ Header/Footer không
+  - Pagination/infinite scroll nếu có nhiều brands/collections
+- **Fix nếu thiếu:**
+  - Đảm bảo route tồn tại và được link trong navigation
+  - Empty state khi không có data (không blank page)
+  - SEO: `<title>` và meta description cho từng trang
 
-### 32.3 Bar Chart — Top 5 Sản Phẩm Theo Doanh Thu
-- **Vấn đề hiện tại:** `getDashboardStats()` trả về top5 theo `soldCount` — **không có trường revenue per product**
-- **Fix backend:** thêm endpoint `GET /api/admin/analytics/top-products?metric=revenue&limit=5`
-  ```js
-  const topByRevenue = await OrderItem.findAll({
-    attributes: [
-      'productId',
-      [sequelize.fn('SUM', sequelize.col('unit_price')), 'revenue'],
-      [sequelize.fn('SUM', sequelize.col('quantity')), 'soldCount'],
-    ],
-    include: [{ model: Product, attributes: ['name', 'thumbnail'] }],
-    group: ['productId'],
-    order: [[sequelize.literal('revenue'), 'DESC']],
-    limit: 5,
-    where: { '$Order.payment_status$': 'paid' },
-    raw: true,
-  });
-  ```
-- **Frontend:** Recharts `<BarChart horizontal>` với tooltip hiển thị cả revenue lẫn sold count
-- **Tab selector** trên chart: "Doanh thu" / "Số lượng bán" — switch metric
+### 36.5 Static Info Pages — Nội Dung & Links
+- **Files:** `AboutPage.tsx`, `FAQsPage.tsx`, `PrivacyPolicyPage.tsx`, `TermsPage.tsx`, `ShippingReturnsPage.tsx`
+- **Mức độ:** Thấp — nhưng cần kiểm tra nhanh
+- **Kiểm tra (5 phút):**
+  - Tất cả 5 trang có route không, không trả về 404
+  - Footer có link đến Privacy Policy và Terms không (required cho e-commerce)
+  - Content có placeholder text `[PLACEHOLDER]` hay lorem ipsum không — cần nội dung thực
+  - FAQ content có đúng với project TechStore không (không phải template mẫu)
 
-### 32.4 Bar Chart — Doanh Thu Theo Danh Mục
-- **Endpoint cần thêm:** `GET /api/admin/analytics/revenue-by-category?startDate=&endDate=`
-  ```js
-  // JOIN orders → order_items → product_categories → categories
-  // GROUP BY category_id
-  // WHERE order.payment_status = 'paid'
-  ```
-- **Frontend:** Recharts `<BarChart vertical>` — top 8 categories, có color coding
-- **Đặt dưới** Top Products chart, cùng khu vực analytics
-
-### 32.5 Line Chart — Tăng Trưởng Người Dùng
-- **Endpoint cần thêm:** `GET /api/admin/analytics/user-growth?startDate=&endDate=&groupBy=day`
-  ```js
-  const userGrowth = await User.findAll({
-    attributes: [
-      [sequelize.fn('DATE', sequelize.col('created_at')), 'date'],
-      [sequelize.fn('COUNT', sequelize.col('id')), 'newUsers'],
-    ],
-    where: { createdAt: { [Op.between]: [startDate, endDate] } },
-    group: [sequelize.fn('DATE', sequelize.col('created_at'))],
-    raw: true,
-  });
-  ```
-- **Frontend:** Recharts `<LineChart>` — đặt song song với Revenue chart, có thể toggle hiển thị
-
-### 32.6 Pie Chart — Phân Bổ Phương Thức Thanh Toán
-- **Endpoint cần thêm:** `GET /api/admin/analytics/payment-methods`
-  ```js
-  // GROUP BY payment_method WHERE payment_status = 'paid'
-  // { method: 'cod', count: 45, revenue: 23000000 },
-  // { method: 'stripe', count: 30, revenue: 58000000 },
-  // { method: 'vnpay', count: 20, revenue: 31000000 },
-  ```
-- **Frontend:** Recharts `<PieChart>` nhỏ — đặt trong section "Thống kê thanh toán"
-
-### 32.7 Low Stock Alert Widget
-- **Endpoint cần thêm:** `GET /api/admin/analytics/low-stock?threshold=10`
-  ```js
-  // Trả về products (hoặc variants) có stockQuantity <= threshold
-  // { id, name, sku, stockQuantity, thumbnail }
-  // Sắp xếp: stockQuantity ASC (hết hàng nhất lên đầu)
-  ```
-- **Frontend widget:** Bảng nhỏ ở cuối dashboard — cột: Sản phẩm, SKU, Tồn kho, Action (link đến edit product)
-- **Badge đỏ** trên KPI card "Sắp hết hàng" link thẳng xuống widget này
-
-### 32.8 Date Range Picker cho Tất Cả Charts
-- **Hiện tại:** chỉ có preset "7d / 30d / 90d"
-- **Fix:** Thêm date range picker (có thể dùng `react-datepicker` hoặc native `<input type="date">`)
-- **Khi chọn custom range:** tất cả charts và KPI cards đều re-fetch với `startDate` + `endDate` mới
-- **Persist selection** trong URL query params (`?from=2026-01-01&to=2026-01-31`) để có thể share link
-
-### 32.9 Export Report
-- **Nút "Xuất báo cáo" trên DashboardPage:**
-  - `GET /api/admin/reports/export?type=orders&startDate=&endDate=&format=csv`
-  - `GET /api/admin/reports/export?type=products&format=csv`
-  - Backend: dùng `fast-csv` hoặc `json2csv` package để generate CSV stream
-  - Frontend: click nút → trigger download (không cần open new tab)
-
-### 32.X Chatbot Analytics Admin Dashboard (audit thực tế — bổ sung từ Phase 9.16)
-
-**Vấn đề:** Analytics tracking trong chatbot service chỉ `console.log`, không lưu DB, không có UI admin.
-
-**Backend — Thêm fields vào chat analytics khi lưu DB (Phase 9.12):**
-- `intent VARCHAR(50)` — classified intent của mỗi turn
-- `responseTimeMs INT` — thời gian xử lý từ request đến response
-- `isFallback BOOLEAN` — true nếu `simpleKeywordMatch()` được dùng thay LLM
-- `sessionId VARCHAR(100)` — group theo session
-
-**Backend — Endpoint:** `GET /api/admin/chatbot/stats?startDate=&endDate=` (admin only):
-```json
-{
-  "totalSessions": 142,
-  "totalMessages": 867,
-  "avgMessagesPerSession": 6.1,
-  "intentBreakdown": { "product_search": 45, "pricing": 20, "off_topic": 20 },
-  "fallbackRate": 0.12,
-  "avgResponseTimeMs": 1840
-}
-```
-
-**Frontend — Thêm tab "AI Chatbot" trong DashboardPage.tsx:**
-- KPI cards: Total Sessions, Avg Messages/Session, Fallback Rate, Avg Response Time
-- Pie chart: Intent Breakdown
-- Line chart: Daily active sessions (7d/30d)
-
-### ✅ Acceptance Criteria Phase 32
-- [ ] DashboardPage load → hiển thị đủ 7 chart/widget: Revenue Area, Order Bar, Order Status Pie, Top Products Bar, Category Bar, User Growth Line, Payment Methods Pie
-- [ ] KPI cards hiển thị đúng AOV: tạo 2 orders (100k + 200k) → AOV = 150k
-- [ ] Low stock widget hiển thị product có stock = 3 (dưới threshold 10)
-- [ ] Chọn date range tùy chỉnh → tất cả charts cập nhật data theo range đó
-- [ ] Nút "Xuất báo cáo" → download được file CSV với đúng data
-- [ ] Chart order status: tổng số trong pie = tổng orders trong DB
-- [ ] Tab "AI Chatbot" trong Dashboard → hiển thị Total Sessions, Fallback Rate, Intent Breakdown
-- [ ] `GET /api/admin/chatbot/stats` trả về 401 nếu không có admin token
-
----
-
-## PHASE 33 — Admin & User Pages: Tính Năng Còn Thiếu
-> **Bám sát danh sách trang đã audit — fix những trang hiện đang stub hoặc thiếu logic backend.**
-
-### 33.1 Admin — Email Campaigns (hiện chỉ có page, không có backend)
-- **File:** `frontend/src/pages/admin/EmailCampaignsPage.tsx`
-- **Vấn đề:** Page tồn tại nhưng không có API endpoint nào cho email campaigns trong `admin.js`
-- **Cần implement:**
-  - **Model `EmailCampaign`** đã có (`backend/src/models/emailCampaign.js`) — kiểm tra có đầy đủ fields không
-- **HTML Injection trong Email (audit thực tế):** `backend/src/services/email.js` line ~110 interpolates `${content}` trực tiếp vào HTML template gửi cho user subscribers:
-  ```js
-  html: `<div>${content}</div>`  // content từ campaign.content — user-controlled via admin UI
-  ```
-  Nếu admin account bị compromise → attacker có thể gửi email với JavaScript/phishing HTML đến toàn bộ subscriber list
-  - **Fix:** Sanitize campaign content trước khi đưa vào HTML email — dùng DOMPurify (server-side: `dompurify` + `jsdom`) hoặc `sanitize-html` package với allowlist tags (chỉ cho phép `p`, `b`, `i`, `a`, `img`, `h1`-`h3`)
-  - **Backend endpoints:**
-    - `GET  /api/admin/email-campaigns` — danh sách với status (draft/sent/scheduled)
-    - `POST /api/admin/email-campaigns` — tạo campaign mới
-    - `POST /api/admin/email-campaigns/:id/send` — gửi ngay
-    - `POST /api/admin/email-campaigns/:id/schedule` — lên lịch gửi
-  - **Logic gửi:** lấy danh sách subscribers từ `newsletter_subscribers` table → batch send via `emailService`
-  - **Rate limit:** không gửi quá 50 email/phút (tránh spam filter)
-  - **Frontend:** form tạo campaign (subject, html body với WYSIWYG editor), danh sách campaigns với status badge, nút Gửi ngay / Lên lịch
-
-### 33.2 Admin — Audit Log Viewer (backend có, frontend chưa có)
-- **Vấn đề:** `backend/src/services/admin/adminAudit.js` đang log vào DB nhưng không có trang xem
-- **Cần thêm:**
-  - **Endpoint:** `GET /api/admin/audit-logs?page=&limit=&adminId=&action=&startDate=&endDate=`
-  - **Frontend:** tạo `frontend/src/pages/admin/AuditLogPage.tsx`:
-    - Bảng: Thời gian | Admin | Hành động | Đối tượng | ID | Chi tiết
-    - Filter: theo admin, theo loại action, theo date range
-    - Click vào row → modal hiện `oldValue` vs `newValue` (JSON diff)
-  - **Route admin:** thêm link "Nhật ký hệ thống" vào sidebar
-
-### 33.3 Admin — Order Management: Tính Năng Còn Thiếu
-- **File:** `frontend/src/pages/admin/OrdersPage.tsx`
-- **Hiện có:** list orders, update status
-- **Cần thêm:**
-  - **Cancel order + hoàn stock:** `PUT /api/admin/orders/:id/cancel` → cập nhật status + cộng lại `stockQuantity`
-  - **Filter nâng cao:** filter theo ngày, theo payment method, theo status — hiện chỉ có text search
-  - **Export orders:** `GET /api/admin/orders/export?startDate=&endDate=&format=csv`
-  - **Invoice/receipt:** `GET /api/admin/orders/:id/invoice` → PDF hoặc print-ready HTML
-  - **Order detail modal:** click vào order → modal/drawer hiện: items (tên, qty, giá), địa chỉ, payment info, timeline trạng thái
-
-### 33.4 Admin — Review Management: Approve/Feature Workflow
-- **File:** `frontend/src/pages/admin/` (review management nằm trong ProductsPage hoặc riêng)
-- **Hiện có:** chỉ `DELETE /api/admin/reviews/:id`
-- **Cần thêm:**
-  - `PATCH /api/admin/reviews/:id/approve` — duyệt review (nếu có cơ chế moderation)
-  - `PATCH /api/admin/reviews/:id/feature` — đánh dấu "review nổi bật" hiển thị trên trang chủ
-  - Filter: theo sản phẩm, theo rating, theo trạng thái (approved/pending)
-  - **Frontend:** trang reviews riêng hoặc tab trong admin, có thể reply to review
-
-### 33.5 Admin — Inventory Management
-- **Vấn đề:** không có trang nào để xem tổng tồn kho, lịch sử nhập/xuất kho
-- **Cần thêm:**
-  - **Inventory list page:** `frontend/src/pages/admin/InventoryPage.tsx`
-    - Bảng: Sản phẩm | SKU | Tồn kho hiện tại | Threshold | Status (OK/Low/Out)
-    - Filter: chỉ hiện low/out of stock
-    - Inline edit: click vào số tồn kho → nhập số mới → save (gọi `PATCH /api/admin/products/:id/stock`)
-  - **Bulk stock update:** upload CSV với cột `sku`, `stock_quantity`
-  - **Endpoint:** `PATCH /api/admin/products/:id/stock` — update `stockQuantity` trực tiếp
-
-### 33.6 User — TrackOrderPage (hiện tại stub)
-- **File:** `frontend/src/pages/TrackOrderPage.tsx`
-- **Fix:** Hiển thị timeline trạng thái đơn hàng bằng stepper component:
-  ```
-  ✅ Đặt hàng → ✅ Xác nhận thanh toán → 🔄 Đang chuẩn bị → ⬜ Đang giao → ⬜ Đã nhận
-  ```
-- **Backend:** `GET /api/orders/:orderNumber/track` (public, chỉ cần order number + email) hoặc `GET /api/orders/:id` (authenticated)
-- **Data hiển thị:** timeline stepper, estimated delivery date, shipping info, order items summary
-
-### 33.7 User — DealsPage (hiện tải data không đúng)
-- **File:** `frontend/src/pages/DealsPage.tsx`
-- **Fix:** Fetch sản phẩm có discount code đang active hoặc có sale price:
-  - `GET /api/products?hasDiscount=true` hoặc filter `salePrice < basePrice`
-  - Hiển thị: giá gốc (gạch ngang), giá giảm, % giảm badge, countdown timer nếu có expiry
-
-### 33.8 User — NewArrivalsPage & BestSellersPage
-- **Files:** `frontend/src/pages/NewArrivalsPage.tsx`, `frontend/src/pages/BestSellersPage.tsx`
-- **Vấn đề:** hai trang này có thể đang dùng mock data hoặc gọi API sai
-- **Fix:**
-  - `GET /api/products?sort=newest&limit=20` — sản phẩm mới nhất theo `createdAt DESC`
-  - `GET /api/products?sort=bestselling&limit=20` — sản phẩm bán chạy theo `soldCount DESC`
-  - Backend: thêm sort options này vào product controller nếu chưa có
-
-### 33.9 User — PaymentQRPage (VNPay/MoMo QR)
-- **File:** `frontend/src/pages/PaymentQRPage.tsx`
-- **Fix:**
-  - Nhận `qrCodeUrl` và `orderId` từ query params hoặc state
-  - Hiển thị QR code image + countdown timer (QR hết hạn sau N phút)
-  - **Polling**: `GET /api/orders/:id/payment-status` mỗi 5 giây → khi `paymentStatus === 'paid'` → redirect đến order confirmation
-  - Fallback: nút "Tôi đã thanh toán" để manual check
-
-### 33.10 User — Loyalty Points Page
-- **Vấn đề:** loyalty points chỉ hiển thị số dư trong profile, không có trang riêng với lịch sử
-- **Cần thêm:**
-  - `GET /api/loyalty/history` → list transactions (earn/redeem) with orderId, points, date
-  - `frontend/src/pages/LoyaltyPage.tsx` (hoặc tab trong ProfilePage):
-    - KPI: Tổng điểm | Điểm đã dùng | Điểm còn lại
-    - Bảng: Ngày | Loại (Nhận/Đổi) | Điểm | Liên kết đơn hàng
-    - Nút "Đổi điểm" nếu đủ điều kiện
-
-### 33.11 Admin — Warranty Packages (WarrantyPackagesPage.tsx)
-- **Kiểm tra:** trang đã có nhưng cần verify:
-  - CRUD warranty packages hoạt động đầy đủ
-  - Warranty có thể được assign cho sản phẩm cụ thể
-  - User sau khi mua có thể xem warranty info trong Order Detail
-
-### ✅ Acceptance Criteria Phase 33
-- [ ] `POST /api/admin/email-campaigns/:id/send` → gửi email tới tất cả subscribers, log count
-- [ ] `GET /api/admin/audit-logs` → trả về paginated list với đúng format `{ adminId, action, entityType, entityId }`
-- [ ] Admin cancel order → `GET /api/products/:id` → stockQuantity tăng đúng số lượng trong order
-- [ ] TrackOrderPage hiển thị stepper đúng bước hiện tại của đơn hàng
-- [ ] NewArrivalsPage load → sản phẩm có `createdAt` mới nhất xuất hiện đầu tiên
-- [ ] DealsPage: chỉ hiện sản phẩm có giá sale thực sự < giá gốc
-- [ ] PaymentQRPage: polling mỗi 5s, khi thanh toán xong → tự redirect không cần user click
-- [ ] Inventory page: sản phẩm stock=0 hiển thị badge đỏ "Hết hàng"
-
----
-
-## PHASE 34 — Các Gap Còn Lại (Phát Hiện Từ Audit Thực Tế)
-> **Các vấn đề này phát hiện sau khi audit đầy đủ 38 models + 27 routes + 54 pages. Coverage sau phase này: ~99%.**
-
-### 34.1 Validators Còn Thiếu — 12+ Model Không Có Validation
-- **Vấn đề (audit thực tế):** Chỉ có 9 validators: `user, product, order, review, cart, category, discountCode, address, admin`. Thiếu validators cho các route đang active:
-  - `backend/src/validators/banner.js` — POST/PUT `/api/admin/banners` không validate
-  - `backend/src/validators/news.js` — POST/PUT `/api/admin/news` không validate
-  - `backend/src/validators/feedback.js` — POST `/api/feedback` không validate
-  - `backend/src/validators/newsletter.js` — POST `/api/newsletter/subscribe` không validate
-  - `backend/src/validators/emailCampaign.js` — POST `/api/admin/email-campaigns` không validate
-  - `backend/src/validators/warranty.js` — CRUD warranty packages không validate
-  - `backend/src/validators/brand.js` — POST/PUT `/api/admin/brands` không validate
-  - `backend/src/validators/collection.js` — POST/PUT `/api/admin/collections` không validate
-  - **`backend/src/routes/payment.js` — 0 validation middleware (audit thực tế):** Routes `/create-payment-intent`, `/confirm-payment`, `/vnpay/callback`, `/momo/callback` nhận raw `req.body` không qua schema — invalid data crash handlers với lỗi không rõ ràng
-  - `backend/src/validators/payment.js` — cần tạo validator cho: `{ amount: Joi.number().positive().required(), orderId: Joi.number().integer().required(), paymentMethod: Joi.string().valid('stripe','vnpay','momo','cod').required() }`
-- **Fix:** Tạo Joi validator cho từng entity trên. Mỗi validator cần schema cho `create` và `update`:
-  ```js
-  // Ví dụ: backend/src/validators/banner.js
-  const Joi = require('joi');
-  const createBannerSchema = Joi.object({
-    title:    Joi.string().max(255).required(),
-    imageUrl: Joi.string().uri().required(),
-    linkUrl:  Joi.string().uri().allow('', null),
-    sortOrder:Joi.number().integer().min(0).default(0),
-    isActive: Joi.boolean().default(true),
-  });
-  ```
-- **Apply vào routes:** `validateRequest(schema)` middleware trước mỗi POST/PUT handler
-
-### 34.2 Newsletter & Feedback — Backend Có Model, Frontend Thiếu Logic
-- **Models tồn tại:** `backend/src/models/newsletterSubscriber.js`, `backend/src/models/feedback.js`
-- **Vấn đề:**
-  - Newsletter subscribe: form trên homepage có UI nhưng chưa chắc gọi đúng endpoint
-  - Feedback (contact form): `ContactPage.tsx` submit form → cần verify endpoint hoạt động
-  - Admin chưa có trang xem danh sách subscribers và feedback
-- **Fix:**
-  - Verify `POST /api/newsletter/subscribe` → lưu vào `newsletter_subscribers` table, trả 201
-  - Verify `POST /api/feedback` (hoặc `/api/contact`) → lưu vào `feedback` table + email thông báo cho admin
-  - Admin: thêm tab "Newsletter" trong EmailCampaignsPage hiển thị danh sách subscribers với export CSV
-  - Admin: thêm trang "Phản hồi khách hàng" hoặc bảng trong Dashboard hiển thị feedback mới nhất
-
-### 34.3 Location/Geocoding Service — Checkout Address Autocomplete
-- **Vấn đề:** `backend/src/services/location.js` có đầy đủ geocoding/autocomplete nhưng chưa được dùng ở `CheckoutPage.tsx`
-- **Routes tồn tại:** `GET /api/location/search`, `GET /api/location/forward`, `GET /api/location/reverse`
-- **Fix:**
-  - `CheckoutPage.tsx` — field "Địa chỉ" có autocomplete: khi user gõ → debounce 300ms → gọi `GET /api/location/search?q=...` → dropdown suggestions
-  - Khi chọn suggestion → tự điền `province`, `district`, `ward` fields
-  - Tương tự cho `ProfilePage.tsx` (address book form) và `UserDetailPage.tsx` (admin)
-
-### 34.4 Audit Log DB Persistence
-- **Vấn đề (audit thực tế):** `backend/src/services/admin/adminAudit.js` ghi log ra file, không có DB table → không query/filter được trong Phase 33 audit log viewer
-- **Fix:**
-  - Tạo model `AuditLog` (hoặc dùng table `admin_audit_logs` nếu đã có trong `migration_full.sql`)
-  - `adminAudit.js` phải ghi vào DB thay vì (hoặc ngoài) file log:
-    ```js
-    await AuditLog.create({
-      adminId, action, entityType, entityId,
-      oldValue: JSON.stringify(oldValue),
-      newValue: JSON.stringify(newValue),
-      ipAddress: req.ip,
-    });
-    ```
-  - **Endpoint:** `GET /api/admin/audit-logs` đọc từ DB (Phase 33.2 phụ thuộc vào fix này)
-
-### 34.5 SupportDashboard.tsx — Làm Rõ Mục Đích & Fix Overlap
-- **Vấn đề:** `frontend/src/pages/admin/SupportDashboard.tsx` tồn tại nhưng không rõ khác gì `ChatPage` hay phần chat trong admin
-- **Fix:**
-  - Đọc file và xác định: đây là trang xem tất cả conversations của tất cả users (admin perspective) hay là giao diện chat trực tiếp?
-  - Nếu trùng với Phase 33.1 (admin chat) → merge/cleanup
-  - Nếu là dashboard thống kê chat (số conversations, thời gian phản hồi trung bình) → implement đúng
-  - Route phải được mount rõ ràng trong sidebar admin và `AppRoutes.tsx`
-
-### 34.6 Dual Seed Mechanism — Cleanup `seedProductsV2.js`
-- **Vấn đề (audit thực tế):** `backend/scripts/seedProductsV2.js` hardcode 45 sản phẩm bằng JavaScript — tách biệt với `seed_data.sql`
-- **Fix:**
-  - Chuyển `npm run db:seed` thành chạy `rebuildDb.js` (import SQL) thay vì `seedProductsV2.js`
-  - Giữ `seedProductsV2.js` như là legacy/backup, không chạy trong production workflow
-  - Verify rằng `rebuildDb.js` + `seed_data.sql` cho ra đúng 45 sản phẩm sau khi fix INSERT IGNORE (Phase 31.3)
-
-### ✅ Acceptance Criteria Phase 34
-- [ ] `POST /api/newsletter/subscribe` với email hợp lệ → 201, email lưu trong DB
-- [ ] `POST /api/newsletter/subscribe` với email đã subscribe → 400 hoặc 200 (no duplicate)
-- [ ] `POST /api/feedback` với đủ thông tin → lưu vào DB, admin nhận email notification
-- [ ] Trang checkout: gõ "123 Nguyễn Văn" → dropdown địa chỉ gợi ý xuất hiện sau 300ms
-- [ ] `GET /api/admin/audit-logs` → trả về dữ liệu từ DB (không phải file), paginated
-- [ ] `POST /api/admin/banners` với thiếu `imageUrl` → nhận `422 Validation Error`
-- [ ] `POST /api/admin/news` với thiếu `title` → nhận `422 Validation Error`
-- [ ] SupportDashboard route được mount trong admin sidebar, không blank page
-- [ ] `npm run db:seed` chạy `rebuildDb.js` (SQL import), không chạy `seedProductsV2.js`
+### ✅ Acceptance Criteria Phase 36
+- [ ] `GET /api/products/recently-viewed` (authenticated) → trả về ≤20 sản phẩm đã xem gần nhất
+- [ ] Xem product detail → record trong `recently_viewed` table được tạo với đúng `userId` + `productId`
+- [ ] Admin CreateProductPage: click "Gợi ý tên AI" → nhận gợi ý trong <3s; nếu API key missing → hiển thị error toast, không crash
+- [ ] `GET /api/attributes` → trả về attribute groups với values, dùng được trong variant creation
+- [ ] Admin tạo sản phẩm với variants (chọn attributes) → flow hoạt động end-to-end
+- [ ] `BrandsPage` load → hiển thị đúng danh sách brands với logo
+- [ ] Click brand → navigate đến ShopPage với filter brand đã applied
+- [ ] `CollectionsPage` load → hiển thị đúng collections
+- [ ] `GET /privacy-policy` → không 404, có nội dung thực (không phải lorem ipsum)
+- [ ] Footer có link "Chính sách bảo mật" và "Điều khoản sử dụng"
 
 ---
 
 ## WORKFLOW CHECKLIST
 
-> ⚠️ **QUAN TRỌNG — Thứ tự phase trong file này KHÔNG theo thứ tự số** (do các phase được thêm vào nhiều đợt khác nhau). Thứ tự thực tế trong file sau Phase 31: **36 → 35 → 32 → 33 → 34**. Luôn follow bảng dưới đây và tìm đến đúng section bằng cách tìm kiếm `## PHASE X —` trong file, KHÔNG cuộn theo thứ tự file.
+> Tìm đúng section bằng cách tìm kiếm `## PHASE X —` trong file.
 
 ```
 Phase 1  Security              → [AUDIT] → [FIX] → [VERIFY] → ✅ PASS → Phase 2
@@ -5232,27 +5583,30 @@ Phase 15 SQL Query Standards   → [AUDIT] → [FIX] → [VERIFY] → ✅ PASS �
 Phase 16 Error Handling        → [AUDIT] → [FIX] → [VERIFY] → ✅ PASS → Phase 17
 Phase 17 Product Search        → [AUDIT] → [FIX] → [VERIFY] → ✅ PASS → Phase 18
 Phase 18 Image/File Handling   → [AUDIT] → [FIX] → [VERIFY] → ✅ PASS → Phase 19
-Phase 19 Logging               → [AUDIT] → [FIX] → [VERIFY] → ✅ PASS → Phase 20
+Phase 19 Logging               → [AUDIT] → [FIX] → [VERIFY] → ✅ PASS → Phase 37
+Phase 37 i18n Standard Rules   → [FIX B2] → [VERIFY] → ✅ PASS → Phase 20
 Phase 20 i18n & Localization   → [AUDIT] → [FIX] → [VERIFY] → ✅ PASS → Phase 21
 Phase 21 SEO Standards         → [AUDIT] → [FIX] → [VERIFY] → ✅ PASS → Phase 22
 Phase 22 Code Quality          → [AUDIT] → [FIX] → [VERIFY] → ✅ PASS → Phase 23
 Phase 23 Dependencies          → [AUDIT] → [FIX] → [VERIFY] → ✅ PASS → Phase 24
 Phase 24 Mobile & Responsive   → [AUDIT] → [FIX] → [VERIFY] → ✅ PASS → Phase 25
 Phase 25 Testing Strategy      → [AUDIT] → [FIX] → [VERIFY] → ✅ PASS → Phase 26
-Phase 26 User Features          → [AUDIT] → [FIX] → [VERIFY] → ✅ PASS → Phase 27
-Phase 27 Admin Features         → [AUDIT] → [FIX] → [VERIFY] → ✅ PASS → Phase 28
-Phase 28 Light/Dark Mode        → [AUDIT] → [FIX] → [VERIFY] → ✅ PASS → Phase 29
-Phase 29 i18n Full Coverage     → [AUDIT] → [FIX] → [VERIFY] → ✅ PASS → Phase 30
-Phase 30 Thesis Defense Gate    → [VERIFY ALL] → ✅ PASS → Phase 31
-Phase 31 DB Migration & Import  → [AUDIT] → [FIX] → [VERIFY] → ✅ PASS → Phase 32
-Phase 32 Admin Analytics        → [AUDIT] → [FIX] → [VERIFY] → ✅ PASS → Phase 33
-Phase 33 Missing Features       → [AUDIT] → [FIX] → [VERIFY] → ✅ PASS → Phase 34
-Phase 34 Audit Gaps             → [AUDIT] → [FIX] → [VERIFY] → ✅ PASS → Phase 35
+Phase 26 User Features         → [AUDIT] → [FIX] → [VERIFY] → ✅ PASS → Phase 27
+Phase 27 Admin Features        → [AUDIT] → [FIX] → [VERIFY] → ✅ PASS → Phase 28
+Phase 28 Light/Dark Mode       → [AUDIT] → [FIX] → [VERIFY] → ✅ PASS → Phase 29
+Phase 29 i18n Full Coverage    → [AUDIT] → [FIX] → [VERIFY] → ✅ PASS → Phase 30
+Phase 30 Thesis Defense Gate   → [VERIFY ALL] → ✅ PASS → Phase 38
+Phase 38 MySQL Naming Standards → [AUDIT] → [FIX] → [VERIFY] → ✅ PASS → Phase 31
+Phase 31 DB Migration & Import → [AUDIT] → [FIX] → [VERIFY] → ✅ PASS → Phase 34
+Phase 34 Audit Gaps            → [AUDIT] → [FIX] → [VERIFY] → ✅ PASS → Phase 33
+Phase 33 Missing Features      → [AUDIT] → [FIX] → [VERIFY] → ✅ PASS → Phase 32
+Phase 32 Admin Analytics       → [AUDIT] → [FIX] → [VERIFY] → ✅ PASS → Phase 35
 Phase 35 Caching & Data Cleanup → [AUDIT] → [FIX] → [VERIFY] → ✅ PASS → Phase 36
-Phase 36 Coverage Completion    → [AUDIT] → [FIX] → [VERIFY] → ✅ READY TO DEFEND (100%)
+Phase 36 Coverage Completion   → [AUDIT] → [FIX] → [VERIFY] → ✅ PASS → Phase 39
+Phase 39 Architecture Audit    → [AUDIT] → [FIX] → [VERIFY] → ✅ READY TO DEFEND (100%)
 ```
 
-**🎓 THESIS DEFENSE CHECKLIST (Phase 36 = FINAL gate):**
+**🎓 THESIS DEFENSE CHECKLIST (Phase 39 = FINAL gate):**
 1. `cd backend && npm run dev` — không có error
 2. `cd frontend && npm run build` — 0 TypeScript error
 3. Demo flow: Register → Browse → Cart → Checkout → Confirm → Admin update status
@@ -5265,360 +5619,10 @@ Phase 36 Coverage Completion    → [AUDIT] → [FIX] → [VERIFY] → ✅ READY
 10. Import 5 sản phẩm qua CSV → xuất hiện trên shop ngay lập tức
 11. `GET /api/products` lần 2 → response time giảm rõ rệt (Redis cache hit)
 12. Sau 30 ngày không hoạt động: cart abandoned được purge tự động
+13. Tất cả tên bảng/cột/index trong DB đúng chuẩn (Phase 38 pass)
+14. Không còn folder nào trong frontend/backend đặt sai layer (Phase 39 pass)
 
 ---
-
-## PHASE 37 — I18n (Bilingual) Standard
-
-> **Trạng thái:** ⚠️ KEYS đồng bộ (3,018 keys mỗi file), nhưng còn 5 bugs trong implementation — Phase chỉ PASS sau khi fix hết 5 bugs dưới đây.
-
-### 37.0 Bugs Chưa Fix (Phát hiện trong Simplify Audit — Audit Round 8 ĐÃ ĐÍNH CHÍNH)
-
-> **⚠️ Audit Round 8 verified:** 5/6 bugs đã được fix (B1, B3, B4, B5, B6). Chỉ còn B2 chưa fix.
-
-| Bug | File | Chi tiết | Status |
-|-----|------|----------|--------|
-| ~~B1~~ | ~~DashboardCharts.tsx~~ | ~~chart data key vỡ~~ | ✅ FIXED — `useMemo` + stable keys (lines 88-95) |
-| **B2 — CheckoutPage domain value** | `frontend/src/pages/CheckoutPage.tsx` lines 332-333 | `defaultState/defaultCity` dùng bản dịch `t()` → backend validation fail | ❌ STILL BUG |
-| ~~B3~~ | ~~priceUtils.ts~~ | ~~duplicate khai báo~~ | ✅ FIXED — locale/currencySymbol hoisted lines 19-20 |
-| ~~B4~~ | ~~DynamicAttributeSelector.tsx~~ | ~~thiếu locale arg~~ | ✅ FIXED — line 155 `toLocaleString(getLocale())` |
-| ~~B5~~ | ~~EnhancedVariantSelector.tsx~~ | ~~thiếu locale arg~~ | ✅ FIXED — line 249 `toLocaleString(getLocale())` |
-| ~~B6~~ | ~~format.ts~~ | ~~missing getLocale() helper~~ | ✅ FIXED — `getLocale()` helper exists |
-
-**Fix B2 — stable fallback không dịch (CHỈ BUG CÒN LẠI):**
-```tsx
-state: '',   // Không dùng t('checkout.defaultState')
-city:  '',
-```
-
----
-
-### 37.1 Overview & Stack
-
-| Thành phần | Chi tiết |
-|---|---|
-| Thư viện | `react-i18next` + `i18next` |
-| Locale files | `frontend/src/locales/en.json` và `vi.json` |
-| Số keys | 3,018 keys mỗi file (đồng bộ hoàn hảo) |
-| Cấu hình | `frontend/src/config/i18n.ts` |
-| Ngôn ngữ mặc định | `vi` (Vietnamese) — lấy từ `localStorage` trước |
-| Fallback | `vi` |
-
-**Cấu hình i18n (`frontend/src/config/i18n.ts`):**
-```ts
-i18n.use(initReactI18next).init({
-  resources: { en: { translation: enTranslations }, vi: { translation: viTranslations } },
-  lng: localStorage.getItem('language') || 'vi',
-  fallbackLng: 'vi',
-  interpolation: { escapeValue: false },
-  detection: { order: ['localStorage', 'navigator', 'htmlTag'], caches: ['localStorage'] },
-});
-```
-
----
-
-### 37.2 Core Usage Rules
-
-**Rule 1 — KHÔNG BAO GIỜ hardcode text user-visible.** Tất cả text hiển thị ra UI phải đi qua `t()`.
-
-**Trong React component:**
-```tsx
-const { t, i18n } = useTranslation();
-// Luôn destructure cả i18n khi cần format số/ngày
-<span>{t('common.loading')}</span>
-```
-
-**Ngoài React (utils, services, non-hook files):**
-```ts
-import i18next from 'i18next';
-const label = i18next.t('product.specNames.cpu');
-const locale = i18next.language === 'vi' ? 'vi-VN' : 'en-US';
-```
-
----
-
-### 37.3 Key Patterns
-
-#### 37.3.1 Ký hiệu tiền tệ
-```tsx
-// ĐÚNG
-{amount.toLocaleString(i18n.language === 'vi' ? 'vi-VN' : 'en-US')}{t('common.currencySymbol')}
-
-// SAI — hardcode ký tự
-{amount.toLocaleString('vi-VN')}₫
-```
-- `t('common.currencySymbol')` → `₫` ở cả EN lẫn VI
-- `t('product.currencyCode')` → `VND`
-
-#### 37.3.2 Định dạng số / ngày tháng
-```ts
-// ĐÚNG — dynamic locale
-const locale = i18n.language === 'vi' ? 'vi-VN' : 'en-US';
-number.toLocaleString(locale)
-date.toLocaleDateString(locale)
-
-// SAI — hardcode locale
-number.toLocaleString('vi-VN')
-```
-
-#### 37.3.3 DB-compat dropdowns (danh mục lưu vào DB bằng tiếng Việt)
-```tsx
-// ĐÚNG — DB value = tiếng Việt, UI label = translated
-const categories = [
-  { value: 'Hiệu năng', label: t('admin.products.specs.categories.performance') },
-  { value: 'Màn hình',  label: t('admin.products.specs.categories.display') },
-];
-<Select.Option key={cat.value} value={cat.value}>{cat.label}</Select.Option>
-
-// SAI — hardcode label
-<Select.Option value="Hiệu năng">Hiệu năng</Select.Option>
-```
-
-#### 37.3.4 Spec names kỹ thuật sản phẩm
-File `frontend/src/utils/productTransform.ts`:
-```ts
-import i18next from 'i18next';
-const getSpecLabel = (key: string) => {
-  const tKey = `product.specNames.${key.toLowerCase()}`;
-  const translated = i18next.t(tKey);
-  return translated !== tKey ? translated : key;
-};
-```
-81 spec keys trong `product.specNames.*` (cpu, ram, display, battery…)
-
-#### 37.3.5 AI Prompt Templates
-File `frontend/src/features/ai/services/promptTemplates.ts`:
-```ts
-import i18n from '@/config/i18n';
-const isVi = () => i18n.language === 'vi';
-
-export const getProductSuggestionPrompt = (query: string) => {
-  if (isVi()) return `Bạn là trợ lý mua sắm... "${query}"...`;
-  return `You are a helpful shopping assistant... "${query}"...`;
-};
-```
-
----
-
-### 37.4 Translation File Rules
-
-1. **EN và VI files phải luôn có key giống hệt nhau** — số lượng và tên key đồng bộ 100%
-2. **Thêm key vào CẢ HAI file cùng lúc** — không thêm một file trước
-3. **Đặt tên key:** dot-notation, namespace theo feature
-   ```
-   common.loading           admin.users.form.firstName
-   product.addToCart        checkout.defaultState
-   payment.errors.failed    admin.charts.revenueLabel
-   ```
-4. **Không đặt text trực tiếp vào code** — luôn tạo key trong locale file trước
-
----
-
-### 37.5 Cách thêm Translation Key mới
-
-```
-Bước 1: Thêm key vào frontend/src/locales/en.json
-"myFeature": { "newKey": "English text here" }
-
-Bước 2: Thêm cùng key vào frontend/src/locales/vi.json
-"myFeature": { "newKey": "Tiếng Việt ở đây" }
-
-Bước 3: Dùng trong component
-const { t } = useTranslation();
-<span>{t('myFeature.newKey')}</span>
-```
-
-**Verify sync sau khi thêm (PowerShell):**
-```powershell
-function Get-AllKeys($obj, $prefix = "") {
-  $keys = @()
-  foreach ($k in $obj.PSObject.Properties.Name) {
-    $full = if ($prefix) { "$prefix.$k" } else { $k }
-    $v = $obj.$k
-    if ($v -is [PSCustomObject]) { $keys += Get-AllKeys $v $full } else { $keys += $full }
-  }
-  return $keys
-}
-$en = Get-AllKeys (Get-Content "frontend/src/locales/en.json" -Raw -Encoding UTF8 | ConvertFrom-Json) | Sort-Object
-$vi = Get-AllKeys (Get-Content "frontend/src/locales/vi.json" -Raw -Encoding UTF8 | ConvertFrom-Json) | Sort-Object
-$diff = Compare-Object $en $vi
-if ($diff) { Write-Host "OUT OF SYNC:"; $diff } else { Write-Host "In sync — $($en.Count) keys" }
-```
-
----
-
-### 37.6 Audit Script (chạy định kỳ để phát hiện regression)
-
-```powershell
-$srcDir = "D:\...\frontend\src"
-$issues = @()
-$viChars = '[àáâãèéêìíòóôõùúýăđơưạảấầẩẫậắằẳẵặẹẻẽếềểễệỉịọỏốồổỗộớờởỡợụủứừửữựỳỵỷỹ]'
-
-$files = Get-ChildItem $srcDir -Recurse -Include "*.tsx","*.ts" |
-  Where-Object { $_.FullName -notmatch "\\locales\\" }
-
-foreach ($file in $files) {
-  $lines = Get-Content $file.FullName -Encoding UTF8
-  $inBlock = $false; $n = 0
-  foreach ($line in $lines) {
-    $n++; $t = $line.Trim()
-    if ($t -match '/\*' -and $t -notmatch '\*/') { $inBlock = $true }
-    if ($inBlock) { if ($t -match '\*/') { $inBlock = $false }; continue }
-    if ($t -match '/\*.*\*/') { continue }
-    if ($t -eq '' -or $t -match '^//' -or $t -match '^import ') { continue }
-    $rel = $file.FullName.Replace($srcDir, "")
-    if ($line -match 'currencySymbol') { continue }
-    if ($line -match '₫') { $issues += "[DONG] ${rel}:$n" }
-    if ($line -match "toLocaleString\('vi-VN'\)") { $issues += "[LOCALE] ${rel}:$n" }
-    if ($t -match ('>[^<{]*' + $viChars + '[^<{]*<') -and $line -notmatch "\bt\('") {
-      $issues += "[JSX-VI] ${rel}:$n"
-    }
-  }
-}
-
-if ($issues.Count -eq 0) { Write-Host "I18N CLEAN" -ForegroundColor Green }
-else { Write-Host "Issues: $($issues.Count)"; $issues | ForEach-Object { Write-Host "  $_" } }
-```
-
----
-
-### 37.7 Acceptable Exceptions (False Positives)
-
-Các pattern sau đây **không cần fix** — đây là thiết kế đúng:
-
-| File | Pattern | Lý do |
-|---|---|---|
-| `LanguageSwitcher.tsx` | `name: 'Tiếng Việt'` | Tên ngôn ngữ hiển thị bằng chính ngôn ngữ đó — chuẩn i18n quốc tế |
-| `ProductSpecificationsForm.tsx` | `category: 'Thông số chung'` | DB value trong pattern `{value, label}` — đúng thiết kế |
-| `chatbotApi.ts` | `includes('tìm')`, `includes('mua')` | Keyword matching NLP — không render ra UI |
-| `data/mock*.ts` | Vietnamese names | Mock seed data — content data, không phải UI label |
-| `sampleDataHelper.ts` | HTML tiếng Việt | Sample content cho rich-text editor |
-| `textUtils.ts` | Vietnamese stopwords | Thuật toán NLP — không render |
-| Multi-line `console.log()` args | Vietnamese strings | Dev-only logs — không render |
-| `promptTemplates.ts` (isVi branch) | `Bạn là trợ lý...` | Intentional — AI prompt theo ngôn ngữ UI |
-
----
-
-### 37.8 Translation Key Namespace Map
-
-Top-level namespaces hiện có trong locale files:
-
-```
-common.*          — buttons, status, errors chung
-header.*          — navigation, brand, actions
-homepage.*        — hero, sections trang chủ
-product.*         — product detail, cart actions, specNames.* (81 spec keys)
-productDetail.*   — chi tiết sản phẩm, tabs
-admin.*           — toàn bộ admin panel (users, orders, products, charts, banners, news…)
-auth.*            — login, register, forgot password
-checkout.*        — checkout flow, payment methods, address
-orders.*          — order list, order detail, status labels
-payment.*         — stripe, bank transfer, errors
-cart.*            — giỏ hàng
-profile.*         — trang profile, edit info, addresses
-shop.*            — trang danh sách sản phẩm, filters
-categories.*      — trang danh mục
-chat.*            — AI chatbot widget, suggestions, errors
-news.*            — trang tin tức, tags, categories
-wishlist.*        — danh sách yêu thích
-search.*          — trang tìm kiếm
-```
-
----
-
-## PHASE 38 — MySQL Naming Standards & Constraint Audit
-
-> **Mục tiêu:** Kiểm tra toàn bộ tên bảng, tên cột, tên index/key, tên constraint, tên foreign key trong DB có tuân thủ 100% quy chuẩn MySQL trên XAMPP/phpMyAdmin cho một dự án e-commerce cá nhân hay không. Phát hiện và sửa mọi sai lệch trước khi deploy.
-
-### Quy chuẩn cần kiểm tra
-
-#### 38.1 Tên bảng (Table names)
-- **Chuẩn:** `snake_case`, số nhiều, tiếng Anh, viết thường hoàn toàn
-- **Đúng:** `products`, `order_items`, `product_variants`, `discount_codes`
-- **Sai:** `Products`, `orderItem`, `ProductVariant`, `discountCode`, `DiscountCodes`
-- **Check:** Grep tất cả `tableName:` trong models, so khớp với SHOW TABLES
-
-#### 38.2 Tên cột (Column names)
-- **Chuẩn:** `snake_case`, viết thường, mô tả rõ ràng, không viết tắt mơ hồ
-- **Đúng:** `first_name`, `created_at`, `is_active`, `brand_id`, `stock_quantity`
-- **Sai:** `firstName`, `createdAt`, `isActive`, `brandId` (trong DB — OK trong Sequelize model JS)
-- **Check:** `DESCRIBE <table>` cho từng bảng — cột nào còn camelCase trong DB thực tế?
-- **Ngoại lệ:** Sequelize `underscored: false` → cột trong DB sẽ là camelCase (như bảng `users` có `firstName`, `lastName`, `isActive`) — đây là lựa chọn thiết kế có chủ ý, KHÔNG phải lỗi nếu model khai báo `underscored: false`
-
-#### 38.3 Tên Primary Key
-- **Chuẩn:** `id` (INT AUTO_INCREMENT) cho tất cả bảng — dự án dùng INT PK (không UUID)
-- **Check:** Mọi bảng đều có `id INT AUTO_INCREMENT PRIMARY KEY`
-- **Ngoại lệ hợp lệ:** Junction tables không cần `id` riêng nếu dùng composite PK (e.g., `product_categories(product_id, category_id)`)
-
-#### 38.4 Tên Foreign Key columns
-- **Chuẩn:** `{referenced_table_singular}_id` — ví dụ: `product_id`, `user_id`, `category_id`
-- **Check:** Mọi FK column phải kết thúc bằng `_id`, tham chiếu đúng bảng đúng cột
-
-#### 38.5 Tên Constraint / Foreign Key Constraint
-- **Chuẩn MySQL/phpMyAdmin:** `fk_{table}_{referenced_table}` hoặc `fk_{table}_{column}`
-- **Ví dụ:** `fk_products_category`, `fk_order_items_product`, `fk_product_variants_product`
-- **Check:** `SHOW CREATE TABLE <table>` — constraint nào thiếu tên hoặc dùng tên auto-generated dài?
-
-#### 38.6 Tên Index / Key
-- **Chuẩn:** `idx_{table}_{column(s)}` cho index thường; `uq_{table}_{column}` cho unique index
-- **Ví dụ:** `idx_products_status`, `idx_orders_user_id`, `uq_users_email`
-- **Sai:** Auto-generated names như `products_status_brand_id_...` (quá dài, khó đọc trong phpMyAdmin)
-- **Check:** `SHOW INDEX FROM <table>` — index nào chưa đặt tên chuẩn?
-
-#### 38.7 ENUM values
-- **Chuẩn:** `lowercase`, không có space, dùng gạch ngang nếu cần — `'active'`, `'in-stock'`, `'bank-transfer'`
-- **Check:** Tìm tất cả `DataTypes.ENUM` trong models — value nào viết hoa hoặc có space?
-
-#### 38.8 Tên bảng junction (many-to-many)
-- **Chuẩn:** `{table1}_{table2}` theo thứ tự alphabet hoặc logical — `product_categories`, `product_collections`, `brand_categories`
-- **Check:** Các bảng junction có đặt tên đúng thứ tự không?
-
-#### 38.9 Độ dài tên (MySQL limit)
-- **Chuẩn MySQL:** Tên bảng/cột tối đa 64 ký tự; tên constraint/index tối đa 64 ký tự
-- **Check:** Có tên nào vượt 64 ký tự không?
-
-#### 38.10 Kiểu dữ liệu phù hợp với phpMyAdmin/XAMPP
-- **Chuẩn:**
-  - Giá tiền: `DECIMAL(15,2)` — KHÔNG dùng `FLOAT` (mất precision)
-  - Ngày giờ: `TIMESTAMP` hoặc `DATETIME` — KHÔNG dùng `VARCHAR` cho date
-  - Boolean: `TINYINT(1)` (MySQL không có native BOOLEAN — XAMPP hiển thị là TINYINT(1))
-  - Text dài: `TEXT` hoặc `LONGTEXT` — không hardcode VARCHAR quá nhỏ cho description
-  - JSON: `LONGTEXT` hoặc `JSON` type (MySQL 5.7.8+ hỗ trợ JSON native)
-  - ID: `INT(11)` AUTO_INCREMENT — không dùng UUID làm PK (đã là quy ước dự án này)
-
-### Quy trình kiểm tra
-
-```
-1. SHOW TABLES → liệt kê tất cả tên bảng → check naming
-2. DESCRIBE {table} → từng cột → check snake_case, kiểu dữ liệu
-3. SHOW INDEX FROM {table} → check index names
-4. SHOW CREATE TABLE {table} → check constraint names, FK names
-5. Grep models/ tìm DataTypes.ENUM → check ENUM values
-6. So sánh model field names vs actual DB column names
-```
-
-### Fix nếu tìm thấy sai lệch
-
-- Tên cột sai → `ALTER TABLE {table} CHANGE {old} {new} ...` + cập nhật Sequelize model + tạo migration
-- Tên index sai → `ALTER TABLE DROP INDEX {old}, ADD INDEX {new_name} ({columns})`
-- Tên constraint sai → `ALTER TABLE DROP FOREIGN KEY {old}, ADD CONSTRAINT {new_name} FOREIGN KEY ...`
-- ENUM value sai → `ALTER TABLE MODIFY COLUMN {col} ENUM(...)` + update seed_data.sql + migration
-
-### ✅ Acceptance Criteria Phase 38
-
-- [ ] Tất cả tên bảng là `snake_case`, số nhiều, viết thường
-- [ ] Tất cả cột tuân thủ `snake_case` hoặc có lý do chủ ý (underscored: false trong model)
-- [ ] Mọi FK column kết thúc bằng `_id` và tham chiếu đúng bảng
-- [ ] Mọi constraint/index có tên rõ ràng (không phải auto-generated hash)
-- [ ] Tất cả ENUM values là lowercase, không có khoảng trắng
-- [ ] Giá tiền dùng `DECIMAL(15,2)`, boolean dùng `TINYINT(1)`, không có `FLOAT` cho tiền
-- [ ] Không có tên bảng/cột/index nào vượt 64 ký tự
-- [ ] `SHOW CREATE TABLE` cho mọi bảng không có warning hoặc constraint unnamed
-
-**Tổng kết:** 3,018 keys × 2 ngôn ngữ = toàn bộ UI text đã được bản địa hóa hoàn chỉnh.
-
----
-
 ## PHASE 39 — Architecture Audit: Layered (Backend) + Hybrid (Frontend)
 
 > **Mục tiêu:** Kiểm tra toàn bộ cấu trúc thư mục và phân tách trách nhiệm. Backend theo chuẩn Layered Architecture (MVC + Service Layer). Frontend theo chuẩn Hybrid Architecture (Layered + Feature-based). Chỉ ra chính xác file/folder nào đặt sai, vi phạm separation of concerns, naming không nhất quán — và fix từng cái.

@@ -60,10 +60,13 @@ class ImageService {
     }
   }
 
-  // Xử lý và tối ưu hóa ảnh
+  // Xử lý và tối ưu hóa ảnh — resize, chuyển WebP, strip EXIF
   async processImage(inputPath, outputPath, options = {}) {
     try {
       let sharpInstance = sharp(inputPath);
+
+      // Xoay đúng chiều theo EXIF orientation trước khi strip metadata
+      sharpInstance = sharpInstance.rotate();
 
       // Thay đổi kích thước nếu được chỉ định
       if (options.width || options.height) {
@@ -75,7 +78,7 @@ class ImageService {
         });
       }
 
-      // Áp dụng cài đặt chất lượng
+      // Áp dụng cài đặt chất lượng theo định dạng đầu ra
       if (options.quality) {
         if (outputPath.endsWith('.jpg') || outputPath.endsWith('.jpeg')) {
           sharpInstance = sharpInstance.jpeg({ quality: options.quality });
@@ -86,19 +89,35 @@ class ImageService {
         }
       }
 
-      // Tự động xoay ảnh theo dữ liệu EXIF
-      sharpInstance = sharpInstance.rotate();
+      // Strip toàn bộ EXIF metadata — tránh lộ GPS location và thông tin cá nhân
+      sharpInstance = sharpInstance.withMetadata(false);
 
-      // Đảm bảo thư mục đầu ra tồn tại
       await fs.mkdir(path.dirname(outputPath), { recursive: true });
-
-      // Lưu ảnh đã xử lý
       await sharpInstance.toFile(outputPath);
 
       return outputPath;
     } catch (error) {
       console.error('Lỗi khi xử lý ảnh:', error);
       throw new AppError('Failed to process image', 500);
+    }
+  }
+
+  // Pipeline chuẩn cho ảnh sản phẩm — resize max 800x800, chuyển WebP, strip EXIF
+  async processProductImage(inputPath, outputPath) {
+    try {
+      await fs.mkdir(path.dirname(outputPath), { recursive: true });
+
+      await sharp(inputPath)
+        .rotate() // Xoay đúng chiều theo EXIF orientation trước khi strip
+        .resize(800, 800, { fit: 'inside', withoutEnlargement: true })
+        .webp({ quality: 85 })
+        .withMetadata(false) // Strip EXIF — tránh lộ GPS location
+        .toFile(outputPath);
+
+      return outputPath;
+    } catch (error) {
+      console.error('Lỗi khi xử lý ảnh sản phẩm:', error);
+      throw new AppError('Failed to process product image', 500);
     }
   }
 

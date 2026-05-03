@@ -23,7 +23,7 @@ import { useProductVariants } from '@/hooks/useProductVariants';
 // Các API hook
 import { useCreateProductMutation } from '@/services/adminProductApi';
 import { useGetCategoriesQuery } from '@/services/categoryApi';
-import { useConvertBase64ToImageMutation } from '@/services/imageApi';
+import { useConvertBase64ToImageMutation, useDeleteImageMutation } from '@/services/imageApi';
 import { useGetWarrantyPackagesQuery } from '@/services/warrantyApi';
 
 // Components
@@ -96,6 +96,7 @@ const CreateProductPage: React.FC = () => {
     useGetWarrantyPackagesQuery({ isActive: true });
   const [createProduct, { isLoading: isCreating }] = useCreateProductMutation();
   const [convertBase64ToImage] = useConvertBase64ToImageMutation();
+  const [deleteImage] = useDeleteImageMutation();
 
   const {
     attributes,
@@ -176,11 +177,12 @@ const CreateProductPage: React.FC = () => {
       }));
     },
     onSubmit: async (values: ProductFormData) => {
+      // Theo dõi ID ảnh description đã upload để rollback nếu createProduct thất bại
+      const uploadedDescImageIds: string[] = [];
+
       try {
         // Lấy tất cả giá trị từ form để đảm bảo không bị thiếu
         const allFormValues = form.getFieldsValue();
-        console.log('Form values received:', values);
-        console.log('All form values:', allFormValues);
 
         const hasVariants = variants.length > 0;
 
@@ -189,8 +191,6 @@ const CreateProductPage: React.FC = () => {
           allFormValues.description || values.description || '';
 
         if (hasBase64Images(processedDescription)) {
-          console.log('Found base64 images in description, converting...');
-
           const result = await processDescriptionImages(processedDescription, {
             productId: undefined,
             category: 'product' as any,
@@ -204,9 +204,10 @@ const CreateProductPage: React.FC = () => {
 
           if (result.hasChanges) {
             processedDescription = result.processedDescription;
-            console.log(
-              `Converted ${result.uploadedImages.length} base64 images to uploaded files`
-            );
+            // Lưu lại ID để rollback nếu tạo sản phẩm thất bại
+            result.uploadedImages.forEach((img) => {
+              if (img.imageId) uploadedDescImageIds.push(img.imageId);
+            });
           }
         }
 
@@ -429,7 +430,13 @@ const CreateProductPage: React.FC = () => {
         message.success(t('admin.products.messages.createSuccess'));
         navigate('/admin/products');
       } catch (error: any) {
-        console.error('Failed to create product:', error);
+        // Rollback: xóa ảnh description đã upload nếu tạo sản phẩm thất bại
+        // Tránh orphaned files khi form bị lỗi validation sau khi ảnh đã được upload
+        if (uploadedDescImageIds.length > 0) {
+          await Promise.allSettled(
+            uploadedDescImageIds.map((id) => deleteImage(id).unwrap().catch(() => {}))
+          );
+        }
         const errorMessage = formatErrorMessage(error);
         message.error(errorMessage);
       }

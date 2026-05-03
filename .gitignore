@@ -20,6 +20,10 @@ out/
 
 # Runtime-generated data
 backend/data/vectorDb.json
+
+# Upload files — không commit binary files vào git
+backend/uploads/*
+!backend/uploads/.gitkeep
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*

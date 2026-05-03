@@ -1,6 +1,5 @@
-import { ProductFormData } from '@/types';
 
-export const sampleLaptopData: Partial<ProductFormData> = {
+export const sampleLaptopData: Record<string, any> = {
   // Thông tin cơ bản
   name: 'MacBook Pro 16-inch M3 Max',
   slug: 'macbook-pro-16-inch-m3-max',

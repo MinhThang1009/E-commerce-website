@@ -96,8 +96,10 @@ export const reviewApi = api.injectEndpoints({
         body: reviewData,
       }),
       invalidatesTags: (result, error, { productId }) => [
-        { type: 'Review', id: `product-${productId}` },
-        ...(productId ? [{ type: 'Product', id: productId }] : []),
+        ...(productId ? [
+          { type: 'Review' as const, id: `product-${productId}` },
+          { type: 'Product' as const, id: productId },
+        ] : [{ type: 'Review' as const, id: 'LIST' }]),
       ],
     }),
 
@@ -121,8 +123,8 @@ export const reviewApi = api.injectEndpoints({
         body: { helpful },
       }),
       invalidatesTags: (result, error, { id, productId }) => [
-        { type: 'Review', id },
-        ...(productId ? [{ type: 'Review', id: `product-${productId}` }] : []),
+        { type: 'Review' as const, id },
+        ...(productId ? [{ type: 'Review' as const, id: `product-${productId}` }] : []),
       ],
     }),
 

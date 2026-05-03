@@ -35,9 +35,20 @@ Trước khi đánh dấu một phase PASS, chạy tất cả lệnh verify tron
 ### 4.1 Git commit & push sau mỗi phase (BẮT BUỘC)
 Sau khi tất cả Acceptance Criteria của một phase PASS, **phải** thực hiện:
 1. `git add` các file liên quan (không dùng `git add -A` bừa bãi — tránh commit file nhạy cảm như `.env`)
-2. `git commit` với message **tiếng Việt**, format: `Hoàn thành Phase N — <mô tả ngắn gọn>`
+2. `git commit` theo **chuẩn GitHub Commit Standard** — format bắt buộc:
+   ```
+   Phase N — <tên phase ngắn gọn>
+   
+   - <mô tả thay đổi 1>
+   - <mô tả thay đổi 2>
+   - <lý do / context nếu cần>
+   ```
+   - **Subject line (dòng 1):** tối đa 50 ký tự, tiếng Việt, không có dấu chấm cuối
+   - **Dòng 2:** để trống (bắt buộc theo chuẩn git)
+   - **Body (từ dòng 3):** bullet points `-` mô tả từng thay đổi quan trọng; wrap ở 72 ký tự/dòng
+   - **Mục đích:** `git log --oneline` cho ra title gọn; `git log -1` cho ra full context — dễ trace và dễ in log sau này
 3. `git push origin main`
-- **Lý do:** Log commit tiếng Việt giúp dễ trace lại từng phase trong lịch sử git; push ngay tránh mất code nếu session crash.
+- **Lý do:** Log commit tiếng Việt + body chi tiết giúp trace lại từng phase; format chuẩn GitHub giúp render đẹp trên GitHub UI.
 - **Lưu ý bảo mật:** Kiểm tra kỹ không commit API key, token, password vào code hoặc plan.md trước khi push (GitHub Push Protection sẽ block nếu phát hiện secret).
 
 ### 5. Quản lý context khi file plan dài

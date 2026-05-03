@@ -237,9 +237,7 @@ router.post('/refresh-token', authController.refreshToken);
  *                 format: email
  *     responses:
  *       200:
- *         description: Email đặt lại mật khẩu đã được gửi
- *       404:
- *         description: Không tìm thấy người dùng
+ *         description: Luôn trả 200 dù email tồn tại hay không — tránh user enumeration
  */
 router.post(
   '/forgot-password',

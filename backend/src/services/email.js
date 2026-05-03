@@ -1,6 +1,18 @@
 const nodemailer = require('nodemailer');
 const logger = require('../utils/logger');
 
+// Escape các ký tự HTML đặc biệt trong data người dùng nhập trước khi đưa vào email HTML
+// Ngăn XSS nếu dữ liệu chứa thẻ HTML độc hại
+const escapeHtml = (str) => {
+  if (str === null || str === undefined) return '';
+  return String(str)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#x27;');
+};
+
 // Tạo transporter với connection pooling để tối ưu hiệu năng
 const createTransporter = () => {
   const isGmail = process.env.EMAIL_HOST === 'smtp.gmail.com';
@@ -149,11 +161,11 @@ const sendBulkCampaignEmail = async (emails, subject, content) => {
   return results;
 };
 
-// Gửi email xác thực OTP
+// Gửi email xác thực OTP — subject chứa mã OTP để khách hàng thấy ngay trong preview
 const sendOtpEmail = async (email, otp) => {
   await sendEmail({
     email,
-    subject: 'Mã xác thực tài khoản của bạn',
+    subject: `Mã xác thực đăng nhập TechStore - ${otp}`,
     html: `
       <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; background: #f9f9f9; padding: 20px; border-radius: 8px;">
         <div style="background: white; padding: 32px; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.08);">
@@ -191,44 +203,50 @@ const sendResetPasswordEmail = async (email, token) => {
           </a>
         </p>
         <p>Nếu bạn không thực hiện yêu cầu này, vui lòng bỏ qua email này.</p>
-        <p>Liên kết này sẽ hết hạn sau 1 giờ.</p>
+        <p>Liên kết này sẽ hết hạn sau 15 phút.</p>
       </div>
     `,
   });
 };
 
-// Gửi email xác nhận đơn hàng
+// Gửi email xác nhận đơn hàng sau khi thanh toán thành công
+// order phải có: orderNumber, orderDate, subtotal, shippingCost, total, items[], shippingAddress, estimatedDelivery
 const sendOrderConfirmationEmail = async (email, order) => {
-  const { orderNumber, orderDate, total, items, shippingAddress } = order;
+  const { orderNumber, orderDate, subtotal, shippingCost, total, items, shippingAddress, estimatedDelivery } = order;
 
-  // Tạo HTML danh sách sản phẩm
+  // Tạo HTML danh sách sản phẩm — escape tên sản phẩm để ngăn XSS
   const itemsHtml = items
     .map(
       (item) => `
       <tr>
-        <td style="padding: 10px; border-bottom: 1px solid #eee;">${item.name}</td>
+        <td style="padding: 10px; border-bottom: 1px solid #eee;">${escapeHtml(item.name)}</td>
         <td style="padding: 10px; border-bottom: 1px solid #eee; text-align: center;">${item.quantity}</td>
-        <td style="padding: 10px; border-bottom: 1px solid #eee; text-align: right;">${item.price.toLocaleString('vi-VN')}đ</td>
-        <td style="padding: 10px; border-bottom: 1px solid #eee; text-align: right;">${item.subtotal.toLocaleString('vi-VN')}đ</td>
+        <td style="padding: 10px; border-bottom: 1px solid #eee; text-align: right;">${parseFloat(item.price).toLocaleString('vi-VN')}đ</td>
+        <td style="padding: 10px; border-bottom: 1px solid #eee; text-align: right;">${parseFloat(item.subtotal).toLocaleString('vi-VN')}đ</td>
       </tr>
     `
     )
     .join('');
 
+  // Tạo dòng ngày giao hàng dự kiến nếu có
+  const estimatedDeliveryHtml = estimatedDelivery
+    ? `<p><strong>Ngày giao dự kiến:</strong> ${new Date(estimatedDelivery).toLocaleDateString('vi-VN')}</p>`
+    : '';
+
   await sendEmail({
     email,
-    subject: `Xác nhận đơn hàng #${orderNumber}`,
+    subject: `Xác nhận đơn hàng #${escapeHtml(orderNumber)}`,
     html: `
       <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
         <h2>Xác nhận đơn hàng</h2>
-        <p>Cảm ơn bạn đã đặt hàng. Đơn hàng của bạn đã được xác nhận.</p>
-        
+        <p>Cảm ơn bạn đã đặt hàng. Đơn hàng của bạn đã được xác nhận và đang được xử lý.</p>
+
         <div style="background-color: #f9f9f9; padding: 15px; margin: 20px 0; border-radius: 4px;">
-          <p><strong>Mã đơn hàng:</strong> #${orderNumber}</p>
+          <p><strong>Mã đơn hàng:</strong> #${escapeHtml(orderNumber)}</p>
           <p><strong>Ngày đặt hàng:</strong> ${new Date(orderDate).toLocaleDateString('vi-VN')}</p>
-          <p><strong>Tổng tiền:</strong> ${total.toLocaleString('vi-VN')}đ</p>
+          ${estimatedDeliveryHtml}
         </div>
-        
+
         <h3>Chi tiết đơn hàng</h3>
         <table style="width: 100%; border-collapse: collapse;">
           <thead>
@@ -244,21 +262,29 @@ const sendOrderConfirmationEmail = async (email, order) => {
           </tbody>
           <tfoot>
             <tr>
+              <td colspan="3" style="padding: 10px; text-align: right;">Tạm tính:</td>
+              <td style="padding: 10px; text-align: right;">${parseFloat(subtotal).toLocaleString('vi-VN')}đ</td>
+            </tr>
+            <tr>
+              <td colspan="3" style="padding: 10px; text-align: right;">Phí vận chuyển:</td>
+              <td style="padding: 10px; text-align: right;">${parseFloat(shippingCost).toLocaleString('vi-VN')}đ</td>
+            </tr>
+            <tr>
               <td colspan="3" style="padding: 10px; text-align: right;"><strong>Tổng cộng:</strong></td>
-              <td style="padding: 10px; text-align: right;"><strong>${total.toLocaleString('vi-VN')}đ</strong></td>
+              <td style="padding: 10px; text-align: right;"><strong>${parseFloat(total).toLocaleString('vi-VN')}đ</strong></td>
             </tr>
           </tfoot>
         </table>
-        
+
         <h3>Địa chỉ giao hàng</h3>
         <div style="background-color: #f9f9f9; padding: 15px; margin: 20px 0; border-radius: 4px;">
-          <p>${shippingAddress.name}</p>
-          <p>${shippingAddress.address1}</p>
-          ${shippingAddress.address2 ? `<p>${shippingAddress.address2}</p>` : ''}
-          <p>${shippingAddress.city}, ${shippingAddress.state} ${shippingAddress.zip}</p>
-          <p>${shippingAddress.country}</p>
+          <p>${escapeHtml(shippingAddress.name)}</p>
+          <p>${escapeHtml(shippingAddress.address1)}</p>
+          ${shippingAddress.address2 ? `<p>${escapeHtml(shippingAddress.address2)}</p>` : ''}
+          <p>${escapeHtml(shippingAddress.city)}, ${escapeHtml(shippingAddress.state)} ${escapeHtml(shippingAddress.zip || '')}</p>
+          <p>${escapeHtml(shippingAddress.country || '')}</p>
         </div>
-        
+
         <p>Chúng tôi sẽ thông báo cho bạn khi đơn hàng được giao.</p>
         <p>Nếu bạn có bất kỳ câu hỏi nào, vui lòng liên hệ với chúng tôi.</p>
       </div>

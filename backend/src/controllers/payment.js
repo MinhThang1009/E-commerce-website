@@ -2,11 +2,61 @@
 const logger = require('../utils/logger');
 const momoService = require('../services/payment/momo');
 const vnpayService = require('../services/payment/vnpay');
+const emailService = require('../services/email');
 const { Order, User, OrderItem, Product, ProductVariant, Cart, CartItem, DiscountCode } = require('../models');
 const { AppError } = require('../middlewares/errorHandler');
 const { Op } = require('sequelize');
 const sequelize = require('../config/sequelize');
 const moment = require('moment');
+
+// Tải toàn bộ dữ liệu đơn hàng và gửi email xác nhận — không block flow thanh toán nếu email thất bại
+const sendOrderConfirmationEmailSafe = async (orderId) => {
+  try {
+    const order = await Order.findByPk(orderId, {
+      include: [
+        {
+          model: OrderItem,
+          as: 'items',
+          attributes: ['name', 'quantity', 'unitPrice', 'subtotal'],
+        },
+        {
+          model: User,
+          attributes: ['email'],
+        },
+      ],
+    });
+
+    if (!order || !order.User) return;
+
+    const items = (order.items || []).map((item) => ({
+      name: item.name,
+      quantity: item.quantity,
+      price: parseFloat(item.unitPrice),
+      subtotal: parseFloat(item.subtotal),
+    }));
+
+    await emailService.sendOrderConfirmationEmail(order.User.email, {
+      orderNumber: order.number,
+      orderDate: order.createdAt,
+      subtotal: parseFloat(order.subtotal),
+      shippingCost: parseFloat(order.shippingCost),
+      total: parseFloat(order.total),
+      items,
+      shippingAddress: {
+        name: `${order.shippingFirstName} ${order.shippingLastName}`,
+        address1: order.shippingAddress1,
+        address2: order.shippingAddress2,
+        city: order.shippingCity,
+        state: order.shippingState,
+        zip: order.shippingZip,
+        country: order.shippingCountry,
+      },
+      estimatedDelivery: order.estimatedDelivery,
+    });
+  } catch (err) {
+    logger.error(`[Payment] Gửi email xác nhận đơn hàng ${orderId} thất bại: ${err.message}`);
+  }
+};
 
 /**
  * Tăng usedCount của discount code khi thanh toán thành công.
@@ -122,6 +172,8 @@ const confirmPayment = async (req, res, next) => {
 
         logger.info(`Đã cập nhật trạng thái đơn hàng ${existingOrder.id} sang paid`);
         await clearUserCart(existingOrder.userId);
+        // Gửi email xác nhận đơn hàng — không block response nếu email thất bại
+        await sendOrderConfirmationEmailSafe(existingOrder.id);
       } else if (!existingOrder) {
         logger.info('Không tìm thấy đơn hàng với ID:', paymentIntent.metadata.orderId);
       } else {
@@ -322,6 +374,8 @@ const handlePaymentSucceeded = async (paymentIntent) => {
     });
 
     await clearUserCart(order.userId);
+    // Gửi email xác nhận đơn hàng — không block webhook response nếu email thất bại
+    await sendOrderConfirmationEmailSafe(orderId);
     logger.info(`Webhook: cập nhật trạng thái thanh toán thành công cho đơn hàng ${orderId}`);
   } catch (error) {
     logger.error('Lỗi xử lý thanh toán thành công:', error);
@@ -797,11 +851,9 @@ const handleSePayWebhook = async (req, res, next) => {
 
       // Xóa giỏ hàng đang hoạt động của user (ngoài transaction — không rollback nếu xóa thất bại)
       await clearUserCart(order.userId);
+      // Gửi email xác nhận đơn hàng — không block webhook response nếu email thất bại
+      await sendOrderConfirmationEmailSafe(order.id);
 
-      // Tùy chọn: có thể emit event hoặc gửi thông báo tại đây
-      // Ví dụ: gửi email xác nhận thanh toán thành công cho khách hàng
-      // await emailService.sendPaymentConfirmation(order.userId, order.id);
-      
     } else {
       logger.info('Đơn hàng đã được xử lý trước đó:', {
         orderId: order.id,
@@ -879,6 +931,8 @@ const momoReturn = async (req, res, next) => {
           // Tăng usedCount của discount code sau khi MoMo xác nhận thanh toán
           await incrementDiscountCodeUsage(order.id);
           await clearUserCart(order.userId);
+          // Gửi email xác nhận đơn hàng — không block redirect nếu email thất bại
+          await sendOrderConfirmationEmailSafe(order.id);
         }
       }
       return res.redirect(`${process.env.FRONTEND_URL}/orders?payment=success`);
@@ -917,6 +971,8 @@ const momoIPN = async (req, res, next) => {
           updatedAt: new Date(),
         });
         await clearUserCart(order.userId);
+        // Gửi email xác nhận đơn hàng — không block IPN response nếu email thất bại
+        await sendOrderConfirmationEmailSafe(order.id);
       }
     }
 
@@ -987,6 +1043,8 @@ const vnpayReturn = async (req, res, next) => {
         // Tăng usedCount của discount code sau khi VNPay return xác nhận
         await incrementDiscountCodeUsage(order.id);
         await clearUserCart(order.userId);
+        // Gửi email xác nhận đơn hàng — không block redirect nếu email thất bại
+        await sendOrderConfirmationEmailSafe(order.id);
       }
       return res.redirect(`${process.env.FRONTEND_URL}/orders?payment=success&order=${orderNumber}`);
     } else {
@@ -1038,6 +1096,8 @@ const vnpayIPN = async (req, res, next) => {
       // Tăng usedCount của discount code sau khi VNPay IPN xác nhận
       await incrementDiscountCodeUsage(order.id);
       await clearUserCart(order.userId);
+      // Gửi email xác nhận đơn hàng — không block IPN response nếu email thất bại
+      await sendOrderConfirmationEmailSafe(order.id);
       return res.status(200).json({ RspCode: '00', Message: 'Confirm Success' });
     } else {
       // Thanh toán thất bại

@@ -2,7 +2,7 @@
 
 module.exports = {
   async up(queryInterface, Sequelize) {
-    // Check if sku column exists, if not add it
+    // Kiểm tra cột sku đã tồn tại chưa — nếu chưa thì thêm
     const [results] = await queryInterface.sequelize.query(
       `SELECT column_name FROM information_schema.columns WHERE table_name='products' AND column_name='sku';`
     );
@@ -15,42 +15,34 @@ module.exports = {
       });
     }
 
-    // Check if status column exists, if not add it
+    // Kiểm tra cột status đã tồn tại chưa — nếu chưa thì thêm
     const [statusResults] = await queryInterface.sequelize.query(
       `SELECT column_name FROM information_schema.columns WHERE table_name='products' AND column_name='status';`
     );
 
     if (statusResults.length === 0) {
-      // Create ENUM type first
-      await queryInterface.sequelize.query(`
-        CREATE TYPE enum_products_status AS ENUM ('active', 'inactive', 'draft');
-      `);
-
+      // MySQL: ENUM là inline trong column definition, không cần CREATE TYPE riêng
       await queryInterface.addColumn('products', 'status', {
         type: Sequelize.ENUM('active', 'inactive', 'draft'),
         defaultValue: 'active',
         allowNull: false,
       });
 
-      // Set default values for existing products
+      // Gán giá trị mặc định cho sản phẩm cũ — dùng MySQL syntax (backtick, không casting)
       await queryInterface.sequelize.query(`
-        UPDATE products 
-        SET status = CASE 
-          WHEN "in_stock" = true THEN 'active'::enum_products_status
-          ELSE 'inactive'::enum_products_status
+        UPDATE \`products\`
+        SET \`status\` = CASE
+          WHEN \`in_stock\` = 1 THEN 'active'
+          ELSE 'inactive'
         END
-        WHERE status IS NULL
+        WHERE \`status\` IS NULL
       `);
     }
   },
 
   async down(queryInterface, Sequelize) {
     await queryInterface.removeColumn('products', 'sku');
+    // Sequelize tự xóa ENUM column trong MySQL — không cần DROP TYPE riêng
     await queryInterface.removeColumn('products', 'status');
-
-    // Drop the ENUM type
-    await queryInterface.sequelize.query(
-      'DROP TYPE IF EXISTS "enum_products_status";'
-    );
   },
 };

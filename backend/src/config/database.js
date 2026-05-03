@@ -12,9 +12,13 @@ module.exports = {
     define: {
       timestamps: true,
       underscored: true,
+      charset: 'utf8mb4',
+      collate: 'utf8mb4_unicode_ci',
     },
     dialectOptions: {
       timezone: '+07:00',
+      charset: 'utf8mb4',
+      collate: 'utf8mb4_unicode_ci',
     },
     timezone: '+07:00',
   },
@@ -29,9 +33,13 @@ module.exports = {
     define: {
       timestamps: true,
       underscored: true,
+      charset: 'utf8mb4',
+      collate: 'utf8mb4_unicode_ci',
     },
     dialectOptions: {
       timezone: '+07:00',
+      charset: 'utf8mb4',
+      collate: 'utf8mb4_unicode_ci',
     },
     timezone: '+07:00',
   },
@@ -46,6 +54,8 @@ module.exports = {
     define: {
       timestamps: true,
       underscored: true,
+      charset: 'utf8mb4',
+      collate: 'utf8mb4_unicode_ci',
     },
     dialectOptions: {
       ssl: process.env.DB_SSL === 'true' ? {
@@ -53,6 +63,8 @@ module.exports = {
         rejectUnauthorized: false,
       } : false,
       timezone: '+07:00',
+      charset: 'utf8mb4',
+      collate: 'utf8mb4_unicode_ci',
     },
     timezone: '+07:00',
     pool: {

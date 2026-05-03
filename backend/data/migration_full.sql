@@ -2,7 +2,7 @@
 -- MIGRATION_FULL.SQL - CƠ SỞ DỮ LIỆU E-COMMERCE HOÀN CHỈNH
 -- Phiên bản: 2.0 (INT AUTO_INCREMENT)
 -- Ngày tạo: 2026-03-30
--- Mô tả: Schema đầy đủ cho 37 bảng + seed data cơ bản
+-- Mô tả: Schema đầy đủ cho 38 bảng + seed data cơ bản
 -- Tương thích: Backend Sequelize models hiện tại
 -- =====================================================
 -- HƯỚNG DẪN SỬ DỤNG:
@@ -15,6 +15,7 @@ SET NAMES utf8mb4;
 SET CHARACTER SET utf8mb4;
 SET FOREIGN_KEY_CHECKS = 0;
 SET SQL_MODE = 'NO_AUTO_VALUE_ON_ZERO';
+SET time_zone = '+07:00';
 
 -- =====================================================
 -- PHẦN 1: XÓA CÁC BẢNG CŨ (nếu tồn tại)
@@ -54,6 +55,7 @@ DROP TABLE IF EXISTS `warranty_packages`;
 DROP TABLE IF EXISTS `attribute_values`;
 DROP TABLE IF EXISTS `attribute_groups`;
 DROP TABLE IF EXISTS `discount_codes`;
+DROP TABLE IF EXISTS `audit_logs`;
 DROP TABLE IF EXISTS `products`;
 DROP TABLE IF EXISTS `brands`;
 DROP TABLE IF EXISTS `categories`;
@@ -671,6 +673,7 @@ CREATE TABLE IF NOT EXISTS `recently_viewed` (
     CONSTRAINT `fk_rv_product` FOREIGN KEY (`product_id`) REFERENCES `products`(`id`) ON DELETE CASCADE ON UPDATE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
+-- ----- BẢNG 38: audit_logs (Nhật ký kiểm toán admin) -----
 CREATE TABLE IF NOT EXISTS `audit_logs` (
     `id` INT AUTO_INCREMENT PRIMARY KEY,
     `admin_id` INT NOT NULL,

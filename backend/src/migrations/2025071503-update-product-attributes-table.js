@@ -50,14 +50,8 @@ module.exports = {
     );
 
     if (tableDefinition.type) {
+      // MySQL tự xóa ENUM definition khi removeColumn — không cần DROP TYPE riêng
       await queryInterface.removeColumn('product_attributes', 'type');
-      try {
-        await queryInterface.sequelize.query(
-          'DROP TYPE IF EXISTS "enum_product_attributes_type";'
-        );
-      } catch (err) {
-        // MySQL không có ENUM type riêng biệt — lỗi này là bình thường và có thể bỏ qua
-      }
     }
 
     if (tableDefinition.required) {

@@ -74,6 +74,47 @@ Ctrl+C            — Interrupt command đang chạy quá lâu
 - Nếu không chắc logic đúng → dừng, mô tả vấn đề cho user, không đoán mò
 - Nếu context đã >80% dùng `/compact` ngay, không chờ đầy mới compact
 
+### 8. Comment code (BẮT BUỘC khi viết/sửa code)
+Mọi code được thêm mới hoặc sửa đổi **phải có comment đầy đủ** để dễ đọc, dễ hiểu và dễ trace bug sau này.
+
+**Quy tắc comment bắt buộc:**
+- **Function/method:** comment ngắn gọn trên đầu mô tả *mục đích* (không phải mô tả lại code đã rõ)
+  ```js
+  // Tính tổng tiền đơn hàng sau khi áp dụng coupon và phí ship
+  function calculateOrderTotal(items, coupon, shippingFee) { ... }
+  ```
+- **Logic phức tạp / không hiển nhiên:** comment giải thích *tại sao* làm vậy, không phải *làm gì*
+  ```js
+  // Phải parseInt vì productIds từ query string là string, FIELD() trong MySQL cần integer
+  const safeIds = productIds.map(id => parseInt(id, 10));
+  ```
+- **Workaround / hack / constraint ẩn:** comment rõ lý do và issue liên quan
+  ```js
+  // Sequelize không hỗ trợ FIELD() natively — dùng literal để giữ đúng thứ tự sort
+  order: sequelize.literal(`FIELD(id, ${safeIds.join(',')})`)
+  ```
+- **API endpoint (route handler):** comment method + path + mô tả ngắn ở đầu controller
+  ```js
+  // GET /api/products/:id — Lấy chi tiết sản phẩm kèm variants và ảnh
+  ```
+- **Type / interface phức tạp (TypeScript):** comment từng field không tự giải thích được
+  ```ts
+  interface OrderSummary {
+    subtotal: number;       // Tổng tiền hàng trước discount
+    discountAmount: number; // Số tiền được giảm (từ coupon hoặc sale)
+    finalTotal: number;     // Số tiền thực tế khách phải trả
+  }
+  ```
+
+**Ngưỡng bắt buộc:**
+- Function ≥ 5 dòng: **bắt buộc** có comment mục đích
+- Điều kiện lồng nhau ≥ 2 cấp: **bắt buộc** comment giải thích flow
+- Mọi `sequelize.literal()`, raw SQL, regex phức tạp: **bắt buộc** comment lý do
+
+**Không cần comment:**
+- Code đã tự giải thích qua tên biến/hàm rõ ràng (ví dụ: `const isLoggedIn = !!user`)
+- Getter/setter đơn giản, import statements
+
 ---
 
 ## PHASE 1 — Critical Security Vulnerabilities

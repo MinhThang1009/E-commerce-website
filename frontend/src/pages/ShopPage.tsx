@@ -225,8 +225,8 @@ const ShopPage: React.FC = () => {
             {t('shop.title')}
           </h1>
           <p className="text-neutral-600 dark:text-neutral-400 text-lg">
-            {productsData?.data?.total
-              ? t('shop.stats', { current: productsData.data.products?.length || 0, total: productsData.data.total })
+            {productsData?.total
+              ? t('shop.stats', { current: productsData.data?.length || 0, total: productsData.total })
               : t('shop.subtitle')}
           </p>
         </div>
@@ -346,8 +346,8 @@ const ShopPage: React.FC = () => {
             {/* Sắp xếp và số kết quả - Desktop */}
             <div className="hidden lg:flex justify-between items-center mb-6">
               <p className="text-neutral-600 dark:text-neutral-400">
-                {productsData?.data?.total
-                  ? t('shop.stats', { current: productsData.data.products?.length || 0, total: productsData.data.total })
+                {productsData?.total
+                  ? t('shop.stats', { current: productsData.data?.length || 0, total: productsData.total })
                   : t('shop.subtitle')}
               </p>
 
@@ -418,8 +418,8 @@ const ShopPage: React.FC = () => {
               <div className="flex justify-center items-center h-64">
                 <LoadingSpinner size="lg" />
               </div>
-            ) : !productsData?.data?.products ||
-              productsData.data.products.length === 0 ? (
+            ) : !productsData?.data ||
+              productsData.data.length === 0 ? (
               <div className="text-center py-12 bg-neutral-50 dark:bg-neutral-800 rounded-lg">
                 <svg
                   xmlns="http://www.w3.org/2000/svg"
@@ -458,7 +458,7 @@ const ShopPage: React.FC = () => {
                       : 'space-y-8'
                   }
                 >
-                  {productsData?.data?.products?.map((product: Product) =>
+                  {productsData?.data?.map((product: Product) =>
                     viewMode === 'grid' ? (
                       <ProductCard key={product.id} {...product} />
                     ) : (
@@ -468,11 +468,11 @@ const ShopPage: React.FC = () => {
                 </div>
 
                 {/* Phân trang */}
-                {productsData?.data && productsData.data.pages > 1 && (
+                {productsData?.total && Math.ceil(productsData.total / productsData.limit) > 1 && (
                   <div className="mt-12 flex justify-center">
                     <Pagination
                       currentPage={page}
-                      totalPages={productsData.data.pages}
+                      totalPages={Math.ceil(productsData.total / productsData.limit)}
                       onPageChange={handlePageChange}
                     />
                   </div>

@@ -73,12 +73,10 @@ export interface Order {
 
 export interface OrdersResponse {
   status: string;
-  data: {
-    total: number;
-    pages: number;
-    currentPage: number;
-    orders: Order[];
-  };
+  data: Order[];
+  total: number;
+  page: number;
+  limit: number;
 }
 
 export interface CreateOrderRequest {
@@ -154,9 +152,9 @@ export const orderApi = api.injectEndpoints({
         params: { page, limit },
       }),
       providesTags: (result) =>
-        result?.data.orders
+        result?.data
           ? [
-              ...result.data.orders.map(({ id }) => ({
+              ...result.data.map(({ id }) => ({
                 type: 'Order' as const,
                 id,
               })),

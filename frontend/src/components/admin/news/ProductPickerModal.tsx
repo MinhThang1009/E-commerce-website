@@ -20,7 +20,7 @@ const ProductPickerModal: React.FC<ProductPickerModalProps> = ({ open, onCancel,
     limit: 10,
   });
 
-  const products = productsData?.data?.products || [];
+  const products = productsData?.data || [];
 
   const handleSearch = (value: string) => {
     setSearchTerm(value);

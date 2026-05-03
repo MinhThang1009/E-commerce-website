@@ -461,7 +461,7 @@ const createOrder = async (req, res, next) => {
           variantId: variant ? variant.id : null,
           name: product.name,
           sku: variant ? variant.sku : product.sku,
-          price,
+          unitPrice: price,
           quantity: item.quantity,
           subtotal,
           image: product.thumbnail,
@@ -513,7 +513,7 @@ const createOrder = async (req, res, next) => {
       items: orderItems.map((item) => ({
         name: item.name,
         quantity: item.quantity,
-        price: item.price,
+        price: item.unitPrice,
         subtotal: item.subtotal,
       })),
       shippingAddress: {
@@ -590,12 +590,10 @@ const getUserOrders = async (req, res, next) => {
 
     res.status(200).json({
       status: 'success',
-      data: {
-        total: count,
-        pages: Math.ceil(count / limit),
-        currentPage: parseInt(page),
-        orders,
-      },
+      data: orders,
+      total: count,
+      page: parseInt(page),
+      limit: parseInt(limit),
     });
   } catch (error) {
     next(error);
@@ -841,12 +839,10 @@ const getAllOrders = async (req, res, next) => {
 
     res.status(200).json({
       status: 'success',
-      data: {
-        total: count,
-        pages: Math.ceil(count / limit),
-        currentPage: parseInt(page),
-        orders,
-      },
+      data: orders,
+      total: count,
+      page: parseInt(page),
+      limit: parseInt(limit),
     });
   } catch (error) {
     next(error);

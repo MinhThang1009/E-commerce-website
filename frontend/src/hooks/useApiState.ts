@@ -96,11 +96,7 @@ export const usePaginatedApiState = <T = any>({
   const items = useMemo(() => {
     if (!data || typeof data !== 'object') return [];
 
-    // Xử lý các cấu trúc response phân trang khác nhau
-    if ('data' in data && 'products' in (data as any).data) {
-      return (data as any).data.products;
-    }
-
+    // Xử lý các cấu trúc response phân trang (data là mảng trực tiếp)
     if ('data' in data && Array.isArray((data as any).data)) {
       return (data as any).data;
     }

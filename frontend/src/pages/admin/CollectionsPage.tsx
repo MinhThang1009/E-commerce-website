@@ -34,7 +34,7 @@ const CollectionsPage: React.FC = () => {
   const [deleteCollection] = useDeleteCollectionMutation();
 
   const collections = collectionsData?.data || [];
-  const products = productsData?.data?.products || [];
+  const products = productsData?.data || [];
   const productOptions = products.map((p: any) => ({ label: p.name, value: p.id }));
 
   const handleSubmit = async (values: CollectionFormData) => {

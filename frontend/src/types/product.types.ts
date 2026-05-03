@@ -189,12 +189,10 @@ export interface ProductSpecification {
 
 export interface ProductListApiResponse {
   status: string;
-  data: {
-    products: Product[];
-    total: number;
-    pages: number;
-    currentPage: number;
-  };
+  data: Product[];
+  total: number;
+  page: number;
+  limit: number;
 }
 
 export interface ProductDetailApiResponse {

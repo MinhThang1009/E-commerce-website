@@ -345,7 +345,7 @@ const addToCart = async (req, res, next) => {
           productId,
           variantId: variantId || null,
           quantity,
-          price: variantId ? variant.price : product.basePrice,
+          unitPrice: variantId ? variant.price : product.basePrice,
           warrantyPackageIds: validWarrantyPackageIds,
         },
         { transaction }
@@ -654,7 +654,7 @@ const syncCart = async (req, res, next) => {
               productId,
               variantId,
               quantity: actualQuantity,
-              price: variant.price,
+              unitPrice: variant.price,
             },
             { transaction }
           );
@@ -668,7 +668,7 @@ const syncCart = async (req, res, next) => {
               cartId: cart.id,
               productId,
               quantity: actualQuantity,
-              price: product.basePrice || 0,
+              unitPrice: product.basePrice || 0,
             },
             { transaction }
           );
@@ -848,7 +848,7 @@ const validateCart = async (req, res, next) => {
         ? item.ProductVariant.stockQuantity
         : baseStockQuantity;
       const isInStock = currentStock > 0;
-      const priceChanged = parseFloat(currentPrice) !== parseFloat(item.price);
+      const priceChanged = parseFloat(currentPrice) !== parseFloat(item.unitPrice);
       const outOfStock = !isInStock;
       const quantityExceedsStock = isInStock && item.quantity > currentStock;
 
@@ -857,7 +857,7 @@ const validateCart = async (req, res, next) => {
         productId: item.productId,
         variantId: item.variantId,
         name: item.ProductVariant ? `${item.Product.name} - ${item.ProductVariant.name}` : item.Product.name,
-        savedPrice: parseFloat(item.price),
+        savedPrice: parseFloat(item.unitPrice),
         currentPrice: parseFloat(currentPrice),
         quantity: item.quantity,
         maxStock: currentStock,

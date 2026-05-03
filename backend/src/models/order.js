@@ -179,6 +179,30 @@ const Order = sequelize.define(
       defaultValue: 0,
       field: 'warranty_cost',
     },
+    // FK tới discount_codes — biết mã nào đã áp dụng, phục vụ audit trail
+    discountCodeId: {
+      type: DataTypes.INTEGER,
+      allowNull: true,
+      field: 'discount_code_id',
+    },
+    // Timestamp khi order bị huỷ (null nếu chưa huỷ)
+    cancelledAt: {
+      type: DataTypes.DATE,
+      allowNull: true,
+      field: 'cancelled_at',
+    },
+    // Timestamp khi order được hoàn tiền
+    refundedAt: {
+      type: DataTypes.DATE,
+      allowNull: true,
+      field: 'refunded_at',
+    },
+    // Số tiền được hoàn (có thể hoàn một phần)
+    refundAmount: {
+      type: DataTypes.DECIMAL(19, 2),
+      allowNull: true,
+      field: 'refund_amount',
+    },
   },
   {
     tableName: 'orders',

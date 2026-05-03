@@ -259,12 +259,10 @@ const getAllProducts = async (req, res, next) => {
 
     res.status(200).json({
       status: 'success',
-      data: {
-        total: count,
-        pages: Math.ceil(count / limit),
-        currentPage: parseInt(page),
-        products,
-      },
+      data: products,
+      total: count,
+      page: parseInt(page),
+      limit: parseInt(limit),
     });
   } catch (error) {
     next(error);
@@ -1393,12 +1391,10 @@ const searchProducts = async (req, res, next) => {
 
     res.status(200).json({
       status: 'success',
-      data: {
-        total: count,
-        pages: Math.ceil(count / limit),
-        currentPage: parseInt(page),
-        products,
-      },
+      data: products,
+      total: count,
+      page: parseInt(page),
+      limit: parseInt(limit),
     });
   } catch (error) {
     next(error);

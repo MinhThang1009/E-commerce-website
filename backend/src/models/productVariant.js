@@ -78,6 +78,16 @@ const ProductVariant = sequelize.define(
         );
       },
     },
+    // Cân nặng tính theo kg — dùng để tính phí ship chính xác
+    weight: {
+      type: DataTypes.DECIMAL(10, 3),
+      allowNull: true,
+    },
+    // Kích thước { length, width, height } tính theo cm — dùng để tính phí ship
+    dimensions: {
+      type: DataTypes.JSON,
+      allowNull: true,
+    },
     // Xóa mềm (soft delete)
     deletedAt: {
       type: DataTypes.DATE,

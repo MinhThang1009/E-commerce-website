@@ -117,7 +117,7 @@ const SearchBar: React.FC<SearchBarProps> = ({
   );
 
   // Lấy gợi ý từ kết quả tìm kiếm
-  const suggestions = searchResults?.data?.products || [];
+  const suggestions = searchResults?.data || [];
 
   // Xử lý click bên ngoài để đóng thanh tìm kiếm
   useEffect(() => {
@@ -253,7 +253,7 @@ const SearchBar: React.FC<SearchBarProps> = ({
     e.preventDefault();
     if (searchTerm.trim()) {
       const term = searchTerm.trim();
-      const resultsCount = searchResults?.data?.total || 0;
+      const resultsCount = searchResults?.total || 0;
       
       // Lưu từ khóa tìm kiếm
       saveSearchTerm(term, resultsCount);

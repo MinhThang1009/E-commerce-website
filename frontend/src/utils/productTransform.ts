@@ -162,14 +162,11 @@ export const transformProductsResponse = (response: any): any => {
     };
   }
 
-  // Xử lý response phân trang
-  if (response.data.products && Array.isArray(response.data.products)) {
+  // Xử lý response phân trang (data là mảng trực tiếp)
+  if (Array.isArray(response.data)) {
     return {
       ...response,
-      data: {
-        ...response.data,
-        products: transformProducts(response.data.products),
-      },
+      data: transformProducts(response.data),
     };
   }
 
@@ -269,9 +266,9 @@ export const generateProductTags = (
     ];
   }
 
-  if (result.data.products && Array.isArray(result.data.products)) {
+  if (Array.isArray(result.data)) {
     return [
-      ...result.data.products.map(({ id }: any) => ({
+      ...result.data.map(({ id }: any) => ({
         type: 'Product' as const,
         id,
       })),

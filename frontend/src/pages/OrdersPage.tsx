@@ -309,8 +309,8 @@ const OrdersPage: React.FC = () => {
     );
   }
 
-  const orders = ordersResponse?.data.orders || [];
-  const totalPages = ordersResponse?.data.pages || 1;
+  const orders = ordersResponse?.data || [];
+  const totalPages = ordersResponse ? Math.ceil(ordersResponse.total / ordersResponse.limit) : 1;
 
   return (
     <div className="container mx-auto px-4 py-8">
@@ -319,7 +319,7 @@ const OrdersPage: React.FC = () => {
           {t('orders.title')}
         </h1>
         <div className="text-sm text-neutral-500 dark:text-neutral-400">
-          {ordersResponse?.data.total || 0} {t('orders.ordersTotal')}
+          {ordersResponse?.total || 0} {t('orders.ordersTotal')}
         </div>
       </div>
 

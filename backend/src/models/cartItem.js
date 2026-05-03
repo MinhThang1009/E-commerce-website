@@ -29,9 +29,11 @@ const CartItem = sequelize.define(
         min: 1,
       },
     },
-    price: {
+    // Giá của 1 unit tại thời điểm thêm vào giỏ (snapshot giá, không đổi khi giá SP thay đổi)
+    unitPrice: {
       type: DataTypes.DECIMAL(19, 2),
       allowNull: false,
+      field: 'unit_price',
       validate: {
         min: 0,
       },

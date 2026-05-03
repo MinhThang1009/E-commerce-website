@@ -29,9 +29,18 @@ const OrderItem = sequelize.define(
       type: DataTypes.STRING,
       allowNull: true
     },
-    price: {
+    // Giá của 1 unit tại thời điểm đặt hàng (snapshot giá)
+    unitPrice: {
       type: DataTypes.DECIMAL(19, 2),
-      allowNull: false
+      allowNull: false,
+      field: 'unit_price',
+    },
+    // Số tiền giảm giá áp dụng cho item này (ví dụ: từ sale, coupon cấp item)
+    discountAmount: {
+      type: DataTypes.DECIMAL(19, 2),
+      allowNull: false,
+      defaultValue: 0,
+      field: 'discount_amount',
     },
     quantity: {
       type: DataTypes.INTEGER,

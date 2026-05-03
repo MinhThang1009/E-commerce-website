@@ -10,7 +10,7 @@ import { PlusOutlined, SearchOutlined, EditOutlined, DeleteOutlined } from '@ant
 const { Title } = Typography;
 
 const NewsPage: React.FC = () => {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const navigate = useNavigate();
 
   const [searchTerm, setSearchTerm] = useState('');
@@ -94,7 +94,7 @@ const NewsPage: React.FC = () => {
       title: t('admin.news.table.createdAt'),
       dataIndex: 'createdAt',
       key: 'createdAt',
-      render: (date: string) => new Date(date).toLocaleDateString('vi-VN'),
+      render: (date: string) => new Date(date).toLocaleDateString(i18n.language === 'vi' ? 'vi-VN' : 'en-US'),
     },
     {
       title: t('admin.common.actions'),

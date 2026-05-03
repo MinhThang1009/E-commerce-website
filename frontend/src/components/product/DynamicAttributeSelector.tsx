@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
+import { getLocale } from '@/utils/format';
 import {
   Form,
   Select,
@@ -151,7 +152,7 @@ const DynamicAttributeSelector: React.FC<DynamicAttributeSelectorProps> = ({
             {value.priceAdjustment !== 0 && (
               <Text type="secondary" style={{ marginLeft: 8 }}>
                 {value.priceAdjustment > 0 ? '+' : ''}
-                {value.priceAdjustment.toLocaleString()}₫
+                {value.priceAdjustment.toLocaleString(getLocale())}{t('common.currencySymbol')}
               </Text>
             )}
           </span>

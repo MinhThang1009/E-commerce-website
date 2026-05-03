@@ -17,7 +17,7 @@ import { formatPrice } from '@/utils/format';
 type TabKey = 'info' | 'password' | 'orders' | 'loyalty';
 
 const ProfilePage: React.FC = () => {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const { user } = useSelector((state: RootState) => state.auth);
   const dispatch = useDispatch();
   const [activeTab, setActiveTab] = useState<TabKey>('info');
@@ -480,7 +480,7 @@ const ProfilePage: React.FC = () => {
                     loyaltyData.data.history.items.map((item: any) => (
                       <tr key={item.id} className="group hover:bg-neutral-50 dark:hover:bg-neutral-800/40 transition-colors">
                         <td className="py-4 text-sm text-neutral-600 dark:text-neutral-400">
-                          {new Date(item.createdAt).toLocaleDateString('vi-VN')}
+                          {new Date(item.createdAt).toLocaleDateString(i18n.language === 'vi' ? 'vi-VN' : 'en-US')}
                         </td>
                         <td className="py-4">
                           <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${

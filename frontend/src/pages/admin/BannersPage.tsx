@@ -99,7 +99,12 @@ const BannersPage: React.FC = () => {
       key: 'position',
       render: (pos: string) => {
         const colors: Record<string, string> = { home_hero: 'blue', home_middle: 'green', sidebar: 'orange' };
-        return <span style={{ color: colors[pos] || 'black' }}>{pos}</span>;
+        const labels: Record<string, string> = {
+          home_hero: t('admin.banners.positions.homeHero'),
+          home_middle: t('admin.banners.positions.homeMiddle'),
+          sidebar: t('admin.banners.positions.sidebar'),
+        };
+        return <span style={{ color: colors[pos] || 'black' }}>{labels[pos] || pos}</span>;
       },
     },
     {

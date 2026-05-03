@@ -148,7 +148,7 @@ const PaymentForm: React.FC<StripePaymentFormProps> = ({
           t('payment.payNow', {
             amount:
               currency === 'vnd'
-                ? `${Math.round(displayAmount).toLocaleString('vi-VN')} ₫`
+                ? `${Math.round(displayAmount).toLocaleString(i18n.language === 'vi' ? 'vi-VN' : 'en-US')} ${t('common.currencySymbol')}`
                 : `$${(displayAmount * 0.00004).toFixed(2)}`, // Chuyển đổi VNĐ sang USD để hiển thị
           })
         )}
@@ -180,7 +180,7 @@ const PaymentForm: React.FC<StripePaymentFormProps> = ({
 
 // Component chính tạo wrapper Elements với clientSecret
 const StripePaymentForm: React.FC<StripePaymentFormProps> = (props) => {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const [clientSecret, setClientSecret] = useState<string>('');
   const [createPaymentIntent] = useCreatePaymentIntentMutation();
 

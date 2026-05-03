@@ -1,7 +1,4 @@
-/**
- * Các tiện ích chuyển đổi dữ liệu sản phẩm
- * Tập trung logic chuyển đổi dữ liệu sản phẩm để tránh trùng lặp code
- */
+import i18next from 'i18next';
 
 export interface RawProduct {
   id: string;
@@ -35,89 +32,11 @@ export interface TransformedProduct {
   [key: string]: any;
 }
 
-// Từ điển ánh xạ sang nhãn tiếng Việt
-const specMapping: Record<string, string> = {
-  cpu: 'Vi xử lý (CPU)',
-  chipset: 'Chipset',
-  cpu_speed: 'Tốc độ CPU',
-  ram: 'Bộ nhớ (RAM)',
-  ram_type: 'Loại RAM',
-  ram_max: 'Hỗ trợ tối đa RAM',
-  gpu: 'Đồ họa (GPU)',
-  graphics: 'Đồ họa (GPU)',
-  graphic_card: 'Card rời',
-  storage: 'Dung lượng (Storage)',
-  hard_drive: 'Ổ cứng/Lưu trữ',
-  rom: 'Bộ nhớ trong (ROM)',
-  display: 'Màn hình',
-  screen: 'Màn hình',
-  display_tech: 'Công nghệ màn hình',
-  resolution: 'Độ phân giải',
-  refresh_rate: 'Tần số quét',
-  brightness: 'Độ sáng',
-  battery: 'Dung lượng PIN',
-  battery_type: 'Loại PIN',
-  charger: 'Công nghệ sạc',
-  charging_port: 'Cổng sạc',
-  charging_tech: 'Công nghệ sạc',
-  charging_speed: 'Tốc độ sạc',
-  os: 'Hệ điều hành',
-  operating_system: 'Hệ điều hành',
-  weight: 'Trọng lượng',
-  weight_kg: 'Trọng lượng (kg)',
-  dimensions: 'Kích thước',
-  dimensions_w: 'Chiều rộng',
-  dimensions_h: 'Chiều cao',
-  dimensions_d: 'Chiều dày',
-  dimensions_weight: 'Kích thước & Trọng lượng',
-  camera: 'Hệ thống Camera',
-  front_camera: 'Camera trước',
-  rear_camera: 'Camera sau',
-  rear_camera_features: 'Tính năng camera',
-  video: 'Quay phim',
-  webcam: 'Webcam/Camera',
-  network: 'Kết nối mạng',
-  mobile_network: 'Hỗ trợ mạng di động',
-  sim: 'Loại SIM',
-  connectivity: 'Kết nối không dây',
-  wifi: 'Wi-Fi',
-  bluetooth: 'Bluetooth',
-  gps: 'Định vị GPS',
-  port: 'Cổng kết nối',
-  ports: 'Cổng kết nối',
-  audio_jack: 'Cổng tai nghe 3.5mm',
-  audio: 'Công nghệ âm thanh',
-  material: 'Chất liệu thiết kế',
-  build_material: 'Chất liệu vỏ',
-  color: 'Màu sắc',
-  special_features: 'Tính năng đặc biệt',
-  release_year: 'Năm ra mắt',
-  warranty: 'Chế độ bảo hành',
-  card_reader: 'Khe cắm thẻ nhớ',
-  keyboard_backlight: 'Đèn bàn phím',
-  security: 'Tính năng bảo mật',
-  cooling_system: 'Hệ thống tản nhiệt',
-  panel_type: 'Loại tấm nền',
-  contrast_ratio: 'Tỷ lệ tương phản',
-  color_gamut: 'Độ phủ màu',
-  keyboard: 'Bàn phím',
-  touchpad: 'Bàn di chuột (Touchpad)',
-  speaker: 'Loa/Âm thanh',
-  microphone: 'Microphone',
-  warranty_info: 'Thông tin bảo hành',
-  accessories: 'Phụ kiện đi kèm',
-  made_in: 'Xuất xứ',
-  brand_origin: 'Thương hiệu của',
-  back_camera: 'Camera sau',
-  front_camera_features: 'Tính năng camera trước',
-  display_specs: 'Thông số màn hình',
-  processor_chipset: 'Vi xử lý (Chipset)',
-  graphics_processor: 'Đồ họa (GPU)',
-  ram_capacity: 'Bộ nhớ (RAM)',
-  storage_capacity: 'Dung lượng (Storage)',
-  network_connectivity: 'Kết nối mạng/Không dây',
-  sim_slots: 'Khe cắm SIM',
-  other_features: 'Tiện ích khác',
+const getSpecLabel = (key: string): string => {
+  const lowerKey = key.toLowerCase();
+  const tKey = `product.specNames.${lowerKey}`;
+  const translated = i18next.t(tKey);
+  return translated !== tKey ? translated : key;
 };
 
 const transformSpecs = (specs: any, attributes: any = {}) => {
@@ -146,7 +65,7 @@ const transformSpecs = (specs: any, attributes: any = {}) => {
 
   // 3. Chuyển thành mảng và bản địa hóa
   return Object.entries(mergedSpecs).map(([name, value]) => ({
-    name: specMapping[name.toLowerCase()] || name,
+    name: getSpecLabel(name),
     value: String(value),
   }));
 };

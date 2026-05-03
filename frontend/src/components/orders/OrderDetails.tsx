@@ -10,7 +10,7 @@ interface OrderDetailsProps {
 }
 
 const OrderDetails: React.FC<OrderDetailsProps> = ({ orderId, onOpenReview }) => {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
 
   const statusVariants: Record<string, { variant: BadgeVariant; label: string }> = {
     pending: { variant: 'warning', label: t('orders.status.pending') },
@@ -56,7 +56,7 @@ const OrderDetails: React.FC<OrderDetailsProps> = ({ orderId, onOpenReview }) =>
             {t('orders.detailTitle', { number: order.number })}
           </h2>
           <p className="text-sm text-neutral-500 dark:text-neutral-400 mt-1">
-            {t('orders.placedAt', { date: new Date(order.createdAt).toLocaleString('vi-VN') })}
+            {t('orders.placedAt', { date: new Date(order.createdAt).toLocaleString(i18n.language === 'vi' ? 'vi-VN' : 'en-US') })}
           </p>
         </div>
         <div className="flex items-center gap-3">

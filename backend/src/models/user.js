@@ -119,6 +119,7 @@ User.prototype.toJSON = function () {
   delete values.otpExpires;
   delete values.resetPasswordToken;
   delete values.resetPasswordExpires;
+  delete values.stripeCustomerId;
   return values;
 };
 

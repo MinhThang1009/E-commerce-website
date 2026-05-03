@@ -31,7 +31,7 @@ const ProductListCard: React.FC<ProductListCardProps> = ({
   variants,
   enableVariantPricing = false, // Mặc định tắt để tránh quá nhiều API calls
 }) => {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const dispatch = useDispatch();
   const navigate = useNavigate();
   const [isAddingToCart, setIsAddingToCart] = useState(false);
@@ -216,14 +216,14 @@ const ProductListCard: React.FC<ProductListCardProps> = ({
                 </span>
                 {compareAtPrice && compareAtPrice > priceInfo.basePrice && (
                   <span className="text-lg text-neutral-400 dark:text-neutral-500 line-through font-medium">
-                    {compareAtPrice.toLocaleString('vi-VN')}{t('common.currencySymbol')}
+                    {compareAtPrice.toLocaleString(i18n.language === 'vi' ? 'vi-VN' : 'en-US')}{t('common.currencySymbol')}
                   </span>
                 )}
               </div>
               {compareAtPrice && compareAtPrice > priceInfo.basePrice && (
                 <div className="flex items-center gap-3">
                   <span className="text-base text-emerald-600 dark:text-emerald-400 font-bold">
-                    {t('product.savings', { amount: `${(compareAtPrice - priceInfo.basePrice).toLocaleString('vi-VN')}${t('common.currencySymbol')}` })}
+                    {t('product.savings', { amount: `${(compareAtPrice - priceInfo.basePrice).toLocaleString(i18n.language === 'vi' ? 'vi-VN' : 'en-US')}${t('common.currencySymbol')}` })}
                   </span>
                   <div className="h-1.5 w-1.5 bg-neutral-300 dark:bg-neutral-600 rounded-full"></div>
                   <span className="text-base text-emerald-600 dark:text-emerald-400 font-bold">

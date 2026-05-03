@@ -42,7 +42,7 @@ const indexAllProducts = async () => {
 
     // 3. Save the vector store
     console.log('💾 Saving vector store to disk...');
-    vectorStoreService.save();
+    await vectorStoreService.save();
     
     console.log('✅ Indexing complete!');
     process.exit(0);

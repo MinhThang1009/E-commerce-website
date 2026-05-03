@@ -164,6 +164,12 @@ const Product = sequelize.define(
         );
       },
     },
+    // Số lượng tồn kho (cho sản phẩm không có variant)
+    stockQuantity: {
+      type: DataTypes.INTEGER,
+      defaultValue: 0,
+      allowNull: false,
+    },
     // Số lượng đã bán
     soldCount: {
       type: DataTypes.INTEGER,

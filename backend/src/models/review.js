@@ -13,6 +13,10 @@ const Review = sequelize.define(
       type: DataTypes.INTEGER,
       allowNull: false
     },
+    variantId: {
+      type: DataTypes.INTEGER,
+      allowNull: true
+    },
     userId: {
       type: DataTypes.INTEGER,
       allowNull: false
@@ -53,6 +57,7 @@ const Review = sequelize.define(
   {
     tableName: 'reviews',
     timestamps: true,
+    paranoid: true,
     underscored: false,
   }
 );

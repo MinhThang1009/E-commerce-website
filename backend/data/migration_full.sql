@@ -154,6 +154,7 @@ CREATE TABLE `products` (
     `sold_count` INT DEFAULT 0,
     `view_count` INT DEFAULT 0,
     `rating_average` DECIMAL(3,2) DEFAULT 0.00,
+    `stock_quantity` INT NOT NULL DEFAULT 0,
     `shipping_info` LONGTEXT NULL,
     `seo_title` VARCHAR(500) NULL COMMENT 'SEO title cho trang sản phẩm',
     `seo_description` TEXT NULL COMMENT 'SEO meta description',
@@ -161,6 +162,8 @@ CREATE TABLE `products` (
     `created_at` TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP,
     `updated_at` TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     `deleted_at` TIMESTAMP NULL,
+    `brand` VARCHAR(255) NULL,
+    `sku` VARCHAR(255) NULL,
     CONSTRAINT `fk_products_category` FOREIGN KEY (`category_id`) REFERENCES `categories`(`id`) ON DELETE SET NULL,
     CONSTRAINT `fk_products_brand` FOREIGN KEY (`brand_id`) REFERENCES `brands`(`id`) ON DELETE SET NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
@@ -180,6 +183,8 @@ CREATE TABLE `product_variants` (
     `created_at` TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP,
     `updated_at` TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     `deleted_at` TIMESTAMP NULL,
+    `sort_order` INT DEFAULT 0,
+    `is_available` TINYINT(1) DEFAULT 1,
     CONSTRAINT `fk_variants_product` FOREIGN KEY (`product_id`) REFERENCES `products`(`id`) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 

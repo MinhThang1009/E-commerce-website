@@ -35,7 +35,6 @@ const Banner = require('./banner');
 const EmailCampaign = require('./emailCampaign');
 // Models mới theo data_new.sql
 const ProductImage = require('./productImage');
-const ProductReview = require('./productReview');
 const BrandCategory = require('./brandCategory');
 
 // =============================================
@@ -99,13 +98,6 @@ ProductSpecification.belongsTo(Product, { foreignKey: 'productId' });
 Product.hasMany(ProductImage, { foreignKey: 'productId', as: 'productImages' });
 ProductImage.belongsTo(Product, { foreignKey: 'productId' });
 
-// Product - ProductReview (MỚI - theo data_new.sql)
-Product.hasMany(ProductReview, { foreignKey: 'productId', as: 'productReviews' });
-ProductReview.belongsTo(Product, { foreignKey: 'productId' });
-ProductVariant.hasMany(ProductReview, { foreignKey: 'variantId', as: 'reviews' });
-ProductReview.belongsTo(ProductVariant, { foreignKey: 'variantId' });
-User.hasMany(ProductReview, { foreignKey: 'userId', as: 'productReviews' });
-ProductReview.belongsTo(User, { foreignKey: 'userId', as: 'user' });
 // Biến thể - Hình ảnh (MỚI)
 ProductVariant.hasMany(ProductImage, { foreignKey: 'variantId', as: 'images' });
 ProductImage.belongsTo(ProductVariant, { foreignKey: 'variantId', as: 'variant' });
@@ -303,6 +295,5 @@ module.exports = {
   EmailCampaign,
   // Models mới
   ProductImage,
-  ProductReview,
   BrandCategory,
 };

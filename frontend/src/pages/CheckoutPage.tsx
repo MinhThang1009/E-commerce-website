@@ -29,7 +29,7 @@ import { useCreateVNPayUrlMutation } from '@/services/vnpayApi';
 import { useGetLoyaltyInfoQuery } from '@/services/loyaltyApi';
 
 const CheckoutPage: React.FC = () => {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const { items: cartItems } = useSelector((state: RootState) => state.cart);
   const { user } = useSelector((state: RootState) => state.auth);
   const dispatch = useDispatch();
@@ -329,8 +329,8 @@ const CheckoutPage: React.FC = () => {
       // Tự động điền các trường phụ để vượt qua validation phía backend
       if (name === 'address') {
         let parts = value.split(',');
-        updated.state = parts.length > 2 ? parts[parts.length - 2].trim() : 'Việt Nam';
-        updated.city = parts.length > 3 ? parts[parts.length - 3].trim() : 'Thành phố';
+        updated.state = parts.length > 2 ? parts[parts.length - 2].trim() : t('checkout.defaultState');
+        updated.city = parts.length > 3 ? parts[parts.length - 3].trim() : t('checkout.defaultCity');
       }
 
       // Tự động điền địa chỉ thanh toán nếu giống địa chỉ giao hàng

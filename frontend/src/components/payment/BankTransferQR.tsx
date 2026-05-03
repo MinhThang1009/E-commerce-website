@@ -12,7 +12,7 @@ const BankTransferQR: React.FC<BankTransferQRProps> = ({
   amount,
   numberOrder,
 }) => {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const [copiedField, setCopiedField] = useState<string | null>(null);
 
   // Làm tròn số tiền để đảm bảo là số nguyên cho API
@@ -121,7 +121,7 @@ const BankTransferQR: React.FC<BankTransferQRProps> = ({
                 {t('checkout.bankTransfer.amount')}
               </span>
               <span className="font-medium text-red-600 dark:text-red-400">
-                {roundedAmount.toLocaleString('vi-VN')} {t('product.currencyCode')}
+                {roundedAmount.toLocaleString(i18n.language === 'vi' ? 'vi-VN' : 'en-US')} {t('product.currencyCode')}
               </span>
             </div>
 

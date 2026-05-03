@@ -4,7 +4,6 @@ import { useTranslation } from 'react-i18next';
 import { useGetCategoryBySlugQuery, useGetProductsByCategoryQuery } from '@/services/categoryApi';
 import { useGetAllCategoriesQuery } from '@/services/categoryApi';
 import ProductCard from '@/components/shared/ProductCard';
-import { getCategoryBySlug } from '@/data/mockCategories';
 
 type SortOption = 'newest' | 'price-asc' | 'price-desc' | 'popular';
 
@@ -30,14 +29,12 @@ const CategoryPage: React.FC = () => {
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
 
   const { data: categoryData, isLoading: categoryLoading } = useGetCategoryBySlugQuery(slug || '', { skip: !slug });
-  const mockInfo = getCategoryBySlug(slug || '');
-
   const categoryInfo = useMemo(() => {
     if (categoryData?.data && !Array.isArray(categoryData.data)) {
       return categoryData.data;
     }
-    return mockInfo as any;
-  }, [categoryData, mockInfo]);
+    return null;
+  }, [categoryData]);
 
   const { sort, order } = sortOrderMap[sortBy];
   const {

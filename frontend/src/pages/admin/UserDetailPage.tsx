@@ -38,7 +38,7 @@ import LoadingSpinner from '@/components/common/LoadingSpinner';
 const { Title, Text } = Typography;
 
 const UserDetailPage: React.FC = () => {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const { id } = useParams<{ id: string }>();
   const { data: userData, isLoading, error } = useGetUserByIdQuery(id || '');
 
@@ -86,7 +86,7 @@ const UserDetailPage: React.FC = () => {
       title: t('admin.userDetail.orderColumns.createdAt'),
       dataIndex: 'createdAt',
       key: 'createdAt',
-      render: (date: string) => new Date(date).toLocaleDateString('vi-VN'),
+      render: (date: string) => new Date(date).toLocaleDateString(i18n.language === 'vi' ? 'vi-VN' : 'en-US'),
     },
     {
       title: t('common.status'),
@@ -109,7 +109,7 @@ const UserDetailPage: React.FC = () => {
       title: t('admin.userDetail.orderColumns.total'),
       dataIndex: 'total',
       key: 'total',
-      render: (total: number) => <Text strong>{total.toLocaleString('vi-VN')}{t('common.currencySymbol')}</Text>,
+      render: (total: number) => <Text strong>{total.toLocaleString(i18n.language === 'vi' ? 'vi-VN' : 'en-US')}{t('common.currencySymbol')}</Text>,
     },
   ];
 
@@ -178,7 +178,7 @@ const UserDetailPage: React.FC = () => {
                   {user.phone || t('admin.userDetail.notUpdated')}
                 </Descriptions.Item>
                 <Descriptions.Item label={<CalendarOutlined />}>
-                  {t('admin.userDetail.joinedDate', { date: new Date(user.createdAt).toLocaleDateString('vi-VN') })}
+                  {t('admin.userDetail.joinedDate', { date: new Date(user.createdAt).toLocaleDateString(i18n.language === 'vi' ? 'vi-VN' : 'en-US') })}
                 </Descriptions.Item>
               </Descriptions>
             </Card>
@@ -274,12 +274,12 @@ const UserDetailPage: React.FC = () => {
                         ...(user.loyaltyHistories || []).map((h: any) => ({
                           color: h.type === 'earn' ? 'green' : 'gold',
                           date: new Date(h.createdAt),
-                          children: `${new Date(h.createdAt).toLocaleString('vi-VN')}: ${h.type === 'earn' ? t('admin.userDetail.activity.earn') : t('admin.userDetail.activity.use')} ${h.points} ${t('admin.userDetail.activity.points')} - ${h.description || 'N/A'}`,
+                          children: `${new Date(h.createdAt).toLocaleString(i18n.language === 'vi' ? 'vi-VN' : 'en-US')}: ${h.type === 'earn' ? t('admin.userDetail.activity.earn') : t('admin.userDetail.activity.use')} ${h.points} ${t('admin.userDetail.activity.points')} - ${h.description || 'N/A'}`,
                         })),
                         ...(user.searchHistories || []).map((s: any) => ({
                           color: 'blue',
                           date: new Date(s.createdAt),
-                          children: `${new Date(s.createdAt).toLocaleString('vi-VN')}: ${t('admin.userDetail.activity.search')} "${s.keyword || s.query || 'N/A'}"`,
+                          children: `${new Date(s.createdAt).toLocaleString(i18n.language === 'vi' ? 'vi-VN' : 'en-US')}: ${t('admin.userDetail.activity.search')} "${s.keyword || s.query || 'N/A'}"`,
                         })),
                       ]
                         .sort((a: any, b: any) => b.date.getTime() - a.date.getTime())

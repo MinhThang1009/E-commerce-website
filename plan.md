@@ -1,4 +1,4 @@
-# Audit & Fix Plan — E-Commerce Codebase (Phased)
+﻿# Audit & Fix Plan — E-Commerce Codebase (Phased)
 
 ## Project Context
 - **Backend:** Node.js + Express + Sequelize ORM + MySQL — 38 models, 27 routes
@@ -7,6 +7,7 @@
 - **Data:** 45 sản phẩm trong `backend/data/seed_data.sql`
 - **Quy tắc làm việc:** Hoàn thành và PASS toàn bộ Acceptance Criteria của Phase N trước khi bắt đầu Phase N+1
 - **Quy tắc về sai sót trong plan:** Trong quá trình implement, nếu phát hiện bất kỳ chỗ nào trong plan này có thông tin sai, mô tả không chính xác, hoặc hướng dẫn có thể gây lỗi — **phải dừng lại, chủ động báo cho user ngay, giải thích sai ở đâu và tại sao, rồi fix plan.md trước khi tiếp tục implement.**
+- **Quy tắc i18n (bắt buộc toàn bộ codebase):** Trong quá trình implement bất kỳ phase nào, **NGHIÊM CẤM hardcode string user-visible** bằng tiếng Việt hoặc tiếng Anh trực tiếp vào code. Mọi text hiển thị ra UI phải đi qua `t('key')` (trong React component) hoặc `i18next.t('key')` (ngoài React). Khi thêm string mới: (1) thêm key vào `frontend/src/locales/en.json`, (2) thêm cùng key vào `frontend/src/locales/vi.json`, (3) dùng `t('key')` trong code. Xem chi tiết tại **PHASE 37**.
 
 ---
 
@@ -25,15 +26,26 @@ Grep (tìm vị trí) → Read offset/limit (đọc đoạn cụ thể) → Edit
 ```
 Không đọc nhiều file cùng lúc rồi tổng hợp — dễ nhầm line number, dễ apply sai patch.
 
-### 3. Double-check gate (bắt buộc mỗi phase)
+### 3. Đọc rules trước khi bắt đầu mỗi phase (BẮT BUỘC)
+Trước khi implement bất kỳ phase nào, **phải đọc lại toàn bộ phần này (AGENT EXECUTION GUIDELINES)** và các quy tắc trong Project Context (quy tắc làm việc, quy tắc sai sót, quy tắc i18n). Không được bắt đầu code khi chưa đọc xong. Đây là bước đầu tiên, không phải tùy chọn.
+
+### 4. Double-check gate (bắt buộc mỗi phase)
 Trước khi đánh dấu một phase PASS, chạy tất cả lệnh verify trong phần "Acceptance Criteria" của phase đó. Nếu bất kỳ check nào fail → fix trước, không chuyển phase tiếp theo.
 
-### 4. Quản lý context khi file plan dài
+### 4.1 Git commit & push sau mỗi phase (BẮT BUỘC)
+Sau khi tất cả Acceptance Criteria của một phase PASS, **phải** thực hiện:
+1. `git add` các file liên quan (không dùng `git add -A` bừa bãi — tránh commit file nhạy cảm như `.env`)
+2. `git commit` với message **tiếng Việt**, format: `Hoàn thành Phase N — <mô tả ngắn gọn>`
+3. `git push origin main`
+- **Lý do:** Log commit tiếng Việt giúp dễ trace lại từng phase trong lịch sử git; push ngay tránh mất code nếu session crash.
+- **Lưu ý bảo mật:** Kiểm tra kỹ không commit API key, token, password vào code hoặc plan.md trước khi push (GitHub Push Protection sẽ block nếu phát hiện secret).
+
+### 5. Quản lý context khi file plan dài
 - Sau mỗi phase hoàn thành: dùng `/compact` trong Claude Code CLI để nén history (giữ code changes, xóa read output)
 - Khi bắt đầu session mới cho phase tiếp theo: paste đúng section "PHASE X" từ plan.md vào, kèm WORKFLOW CHECKLIST hiện tại
 - Không cần paste toàn bộ plan.md vào chat mới — chỉ paste phase đang làm
 
-### 5. Lệnh Claude Code CLI hữu ích
+### 6. Lệnh Claude Code CLI hữu ích
 ```
 /compact          — Nén context khi sắp đầy (giữ edits, xóa output thừa)
 /clear            — Xóa toàn bộ context (dùng khi bắt đầu phase hoàn toàn mới)
@@ -41,7 +53,7 @@ Ctrl+C            — Interrupt command đang chạy quá lâu
 /cost             — Xem token usage hiện tại
 ```
 
-### 6. Khi gặp blocker
+### 7. Khi gặp blocker
 - Nếu một fix làm server crash → revert file đó ngay (`git checkout -- <file>`) trước khi tiếp tục
 - Nếu không chắc logic đúng → dừng, mô tả vấn đề cho user, không đoán mò
 - Nếu context đã >80% dùng `/compact` ngay, không chờ đầy mới compact
@@ -67,7 +79,7 @@ Ctrl+C            — Interrupt command đang chạy quá lâu
 ### 1.2 XSS Protection — Backend bị tắt + Frontend chưa sanitize
 - **Backend — File:** `backend/src/app.js` line ~88
 - **Vấn đề:** `app.use(xss())` bị comment out để "cho phép HTML trong tin tức"
-- **Fix backend:** Bật lại xss middleware với cấu hình allowlist tag (`whiteList`) cho phép các tag HTML cơ bản trong trường `content` của News. Không tắt toàn bộ.
+- **Fix backend:** Bật lại `app.use(xss())` globally. **⚠️ CORRECTION (audit thực tế):** `xss-clean` dùng `xss-filters` nội bộ, **không hỗ trợ per-field whitelist tag** — không thể cấu hình allowlist cho riêng trường `content` của News qua middleware này. Re-enable global middleware là đủ; DOMPurify ở frontend bảo vệ khi render HTML. Nếu cần preserve HTML trong news content, xử lý ở tầng controller (không dùng middleware level).
 - **Frontend — `dangerouslySetInnerHTML` không có DOMPurify (audit thực tế — 4 nơi):**
   - `frontend/src/pages/NewsDetailPage.tsx` — render HTML từ API
   - `frontend/src/components/product/ProductDetailsSection.tsx` — render product description HTML
@@ -85,9 +97,11 @@ Ctrl+C            — Interrupt command đang chạy quá lâu
 ### 1.3 JWT Token không bị invalidate khi logout
 - **File:** `backend/src/controllers/auth.js` lines ~196-203
 - **Vấn đề:** Logout chỉ trả `res.status(204).send()` — token vẫn còn hiệu lực sau khi logout
-- **Fix:** Implement token blacklist dùng Redis (đã có sẵn trong project):
-  - Khi logout: `await redis.setex('bl:' + jti, remainingTTL, '1')` (dùng JWT `jti` claim)
+- **Fix:** Implement token blacklist dùng Redis:
+  - Khi logout: `await redis.setEx('bl:' + jti, remainingTTL, '1')` (dùng JWT `jti` claim)
   - Trong middleware `authenticate`: sau khi verify token, check `await redis.get('bl:' + decoded.jti)` — nếu có thì throw 401
+  - **⚠️ CORRECTION (audit thực tế):** Redis **không được cài sẵn** trong project/máy dev. Package `redis` có trong `package.json` nhưng server Redis chưa được cài. Cần cài Redis trước khi test AC5. Thêm in-memory fallback (`Map`) để blacklist hoạt động khi Redis chưa có, giúp test được trên local dev.
+  - `config/redis.js` đã được tạo với graceful fallback + in-memory Map.
 
 ### 1.4 OTP không cryptographically secure + `new Buffer()` deprecated
 - **File:** `backend/src/controllers/auth.js` lines ~24, ~265
@@ -102,7 +116,6 @@ Ctrl+C            — Interrupt command đang chạy quá lâu
   hmac.update(Buffer.from(signData, 'utf-8')).digest('hex')
   ```
   Apply cho cả 3 dòng trong vnpay.js
-- **Fix:** Thay bằng `require('crypto').randomInt(100000, 1000000)`
 
 ### 1.5 Brute force OTP và Password Reset
 - **Files:** `backend/src/routes/auth.js`, `backend/src/controllers/auth.js`
@@ -189,7 +202,7 @@ Trước khi qua Phase 2, tất cả các điểm sau phải PASS:
 - **Kết quả:**
   1. ✅ Đúng 45 `INSERT INTO products`
   2. ✅ Columns trong INSERT đúng với snake_case DB: `base_price`, `compare_at_price`, `is_featured`, `deleted_at`, v.v.
-  3. ✅ `status` trong seed là `'Đang kinh doanh'` — không phải `'active'`
+  3. ✅ `status` trong seed đã được migrate về `'active'` qua migration `2026050201`
   4. ⚠️ `rating_average` trong seed = `4.5` hardcoded cho mọi sản phẩm — đây chính là Phase 9.7 (hardcoded rating). Khi implement Phase 9.7, cần update lại seed về `0` hoặc `NULL`.
   5. ⚠️ Không có `stock_quantity` column trong INSERT — consistent với Phase 2.2 (field chưa có trong model). Sau khi add column (Phase 2.2), cần update seed để include `stock_quantity`.
 - **Không cần check thêm về column mapping** — seed và model đã align (underscored: true trong Sequelize).
@@ -590,7 +603,7 @@ Các field quan trọng theo chuẩn e-commerce đang thiếu:
 - **Check:** Dùng `EXPLAIN SELECT` trên các query thường dùng — nếu không dùng index thì tạo migration thêm index
 
 ### 8.6 Migration File Standards
-- **Chuẩn đặt tên migration:** `YYYYMMDDHHMMSS-action-entity.js` (ví dụ: `20260502120000-add-stock-quantity-to-products.js`)
+- **Chuẩn đặt tên migration:** `YYYYMMDDNN-action-entity.js` (ví dụ: `2026050201-add-stock-quantity-to-products.js`)
 - **Mỗi migration phải có cả `up()` và `down()`** — `down()` phải undo chính xác những gì `up()` đã làm
 - **Check `backend/src/migrations/`:** Tất cả 21 migration files có `down()` function không hay chỉ có `up()`; có migration nào chứa hardcoded data (INSERT) không — data thuộc seeders không thuộc migrations
 
@@ -743,20 +756,13 @@ Khi `underscored: true` được bật trong Sequelize model options, tất cả
     await vectorStoreService.addProduct(fullProduct.toJSON());
     ```
 
-- **Bug B (MỚI — Audit v2): Wrong status check trong `afterCreate` và `afterUpdate` hooks**
+- **Bug B: `afterCreate` và `afterUpdate` hooks dùng đúng `status === 'active'` ✅**
   - **File:** `backend/src/models/product.js` dòng 270 và 285
-  - `afterCreate` dòng 270: `product.status === 'active'` — không bao giờ true (DB dùng `'Đang kinh doanh'`)
-  - `afterUpdate` dòng 285: `product.status === 'active'` — không bao giờ true
-  - **Impact:** Auto-indexing hoàn toàn không hoạt động qua hooks. Kết hợp với bulk `Product.update()` bypass hooks (Phase 9.8), vector store chỉ cập nhật khi chạy tay `indexProducts.js`.
-  - **Fix:** Thay cả 2 chỗ `=== 'active'` thành `=== 'Đang kinh doanh'`:
-    ```js
-    // dòng 270 — afterCreate:
-    if (vectorStoreService && product.status === 'Đang kinh doanh') { ... }
-    // dòng 285 — afterUpdate:
-    if (product.status === 'Đang kinh doanh') { ... }
-    ```
+  - Hooks check `product.status === 'active'` — đây là **ĐÚNG** sau migration `2026050201` (convert DB từ `'Đang kinh doanh'` → `'active'`).
+  - **Impact thực tế:** Auto-indexing hoạt động qua hooks khi status = 'active'. Vấn đề chính còn lại là bulk `Product.update()` bypass hooks hoàn toàn (Phase 9.8) — cần fix riêng.
+  - **Không cần đổi** `=== 'active'` — `'active'` là canonical status value.
 
-- **Startup check:** Khi server khởi động (trong `server.js`), so sánh `vectorDb.json` số items với `Product.count({ where: { status: 'Đang kinh doanh' } })` — nếu lệch > 5% thì tự trigger `npm run ai:rebuild-vectors`
+- **Startup check:** Khi server khởi động (trong `server.js`), so sánh `vectorDb.json` số items với `Product.count({ where: { status: 'active' } })` — nếu lệch > 5% thì tự trigger `npm run ai:rebuild-vectors`
 - **Script:** Package.json đã có `db:index` (alias `node scripts/indexProducts.js`). Thêm alias: `"ai:rebuild-vectors": "node scripts/indexProducts.js"` để đúng theo naming convention trong plan
 - **Cleanup dead dependencies:** Xóa `vector-storage: ^1.0.55` khỏi `backend/package.json` (package không được import ở đâu). Xóa `@google/generative-ai` nếu tất cả AI calls đều qua OpenRouter (tránh nhầm lẫn với `GEMINI_API_KEY` trong .env cũng không được dùng).
 
@@ -802,14 +808,22 @@ Khi `underscored: true` được bật trong Sequelize model options, tất cả
 - **File:** `frontend/src/features/ai/` — check `ChatProductCard.tsx` có nhận đúng data structure không
 
 ### 9.7 Fix: Hardcoded Rating trong Chatbot Response
-- **File:** `backend/src/services/ai/chatbot.js` line ~337
-- **Vấn đề (audit thực tế):** `rating: 4.5, // TODO: Tính từ dữ liệu đánh giá thực tế` — rating hardcode thay vì lấy từ DB
-- **Fix:** Trong query lấy product context cho chatbot, JOIN với bảng reviews để tính average rating:
+
+> **⚠️ CORRECTION (audit Round 6 — đọc trực tiếp code):** Rating 4.5 hardcode xuất hiện ở **4 vị trí**, không phải 1. Mô tả cũ chỉ đề cập `chatbot.js` line ~337, bỏ sót 3 vị trí trong `geminiChatbot.js` là production flow thực tế.
+
+| File | Dòng | Hàm | Mức độ |
+|------|------|-----|--------|
+| `backend/src/services/ai/geminiChatbot.js` | 394 | `parseAIResponse()` | **PRODUCTION — đường đi chính khi LLM trả kết quả** |
+| `backend/src/services/ai/geminiChatbot.js` | 479 | `simpleKeywordMatch()` | **PRODUCTION — fallback khi LLM fail** |
+| `backend/src/services/ai/geminiChatbot.js` | 516 | `simpleKeywordMatch()` nhánh "sản phẩm mới" | **PRODUCTION** |
+| `backend/src/services/ai/chatbot.js` | 358 | `getPersonalizedRecommendations()` | Recommendation service |
+
+- **Fix:** Trong query lấy product context cho chatbot, JOIN với bảng reviews để tính average rating. Ưu tiên fix `geminiChatbot.js` trước vì 3 vị trí đang trên production flow.
   ```js
   const products = await Product.findAll({
     attributes: [
-      'id', 'name', 'price', 'slug', 'thumbnail',
-      [sequelize.fn('AVG', sequelize.col('reviews.rating')), 'rating'],
+      'id', 'name', 'basePrice', 'slug', 'thumbnail',
+      [sequelize.fn('AVG', sequelize.col('reviews.ratingValue')), 'rating'],
       [sequelize.fn('COUNT', sequelize.col('reviews.id')), 'reviewCount'],
     ],
     include: [{ model: ProductReview, as: 'reviews', attributes: [] }],
@@ -861,6 +875,7 @@ Khi `underscored: true` được bật trong Sequelize model options, tất cả
   await vectorStoreService.save();  // ADD await
   ```
   **Kiểm tra thêm:** Grep `vectorStoreService.save()` trong toàn bộ `backend/src/` để tìm tất cả callers cần thêm `await`.
+  - **THÊM MỚI (audit Round 6): `backend/scripts/indexProducts.js` line 45** cũng gọi `vectorStoreService.save()` không có `await`. Sau khi save() chuyển sang async (Fix 1), script gọi `process.exit(0)` (line 48) TRƯỚC KHI save() hoàn thành → vectorDb.json không được ghi, mất toàn bộ kết quả index. **Fix:** `await vectorStoreService.save()` tại line 45.
 
 **Layer 2 — embedding.js (No Retry Logic + Missing Timeout on Batch)**
 - **File:** `backend/src/services/ai/embedding.js` lines 32-52, 66-82
@@ -895,32 +910,32 @@ Khi `underscored: true` được bật trong Sequelize model options, tất cả
     max_tokens: 800,    // Giới hạn độ dài response hợp lý
     ```
 
-**Layer 4 — admin.js (Bulk `Product.update()` Bypasses Sequelize Hooks — MỚI Audit v2)**
+**Layer 4 — admin.js (Bulk `Product.update()` Bypasses Sequelize Hooks — MỚI Audit v2, ĐÃ ĐÍNH CHÍNH Round 7)**
 - **File:** `backend/src/controllers/admin.js`
-- **Vấn đề:** `Product.update({ ... }, { where: { id } })` là static bulk method — **KHÔNG trigger** `afterUpdate` hook, ngay cả sau khi fix Bug B trong 9.2. Tìm thấy **5 chỗ** trong admin.js:
+- **Vấn đề:** `Product.update({ ... }, { where: { id } })` là static bulk method — **KHÔNG trigger** `afterUpdate` hook. Tìm thấy **3 chỗ thực sự bulk** trong admin.js (audit Round 7 đính chính: trước đây ghi 5 chỗ là sai — 2 chỗ là `instance.update()` ĐÃ trigger hooks):
 
-  | Dòng | Context | Loại update |
-  |------|---------|------------|
-  | ~817–823 | `createProduct` | Sync tổng stock từ variants |
-  | ~1046 | `updateProduct` | Update thông tin cơ bản |
-  | ~1222–1225 | `updateProduct` | Sync stock từ variants (có transaction) |
-  | ~1228–1234 | `updateProduct` | Update stockQuantity basic (có transaction) |
-  | ~1945 | `toggleProductStatus` | Đổi status sản phẩm |
+  | Dòng | Context | Loại update | Có bypass hook? |
+  |------|---------|------------|-----------------|
+  | ~817–823 | `createProduct` | Sync tổng stock từ variants | ✗ BYPASS (bulk static `Product.update`) |
+  | ~1222–1225 | `updateProduct` | Sync stock từ variants (có transaction) | ✗ BYPASS (bulk static `Product.update`) |
+  | ~1228–1234 | `updateProduct` | Update stockQuantity basic (có transaction) | ✗ BYPASS (bulk static `Product.update`) |
+  | ~1046 | `updateProduct` | Update thông tin cơ bản | ✓ HOOKS FIRE — `product.update(...)` instance method |
+  | ~1945 | `toggleProductStatus` | Đổi status sản phẩm | ✓ HOOKS FIRE — `product.update({ status })` instance method |
 
-- **Impact đặc biệt của dòng ~1945:** `toggleProductStatus` dùng `Product.update()` → hook không fire → khi admin tắt sản phẩm, nó KHÔNG bị xóa khỏi vector store → chatbot tiếp tục đề xuất sản phẩm đã dừng kinh doanh.
-- **Fix:** Sau mỗi bulk update, fetch product và manual sync:
+- **Impact thực tế:** Chỉ 3 chỗ stock-sync logic (817, 1222, 1228) bypass hooks. `toggleProductStatus` (1945) ĐÚNG là sẽ trigger hook → admin tắt sản phẩm → hook fire → vector store update đúng. **KHÔNG có bug "chatbot đề xuất sản phẩm đã tắt"** như audit cũ ghi.
+- **Fix:** Sau mỗi bulk update (3 chỗ), fetch product và manual sync:
   ```js
   const updatedProduct = await Product.findByPk(id, {
     include: [{ model: Category, as: 'categories', attributes: ['name'] }]
   });
-  if (updatedProduct.status === 'Đang kinh doanh') {
+  if (updatedProduct.status === 'active') {
     await vectorStoreService.addProduct(updatedProduct.toJSON());
   } else {
     vectorStoreService.items = vectorStoreService.items.filter(i => i.metadata.id !== id);
   }
   vectorStoreService.save();
   ```
-  Áp dụng cho cả 5 chỗ, đặc biệt quan trọng là dòng ~1945 (status toggle).
+  Áp dụng cho 3 chỗ stock-sync (lines 817, 1222, 1228). Lines 1046 và 1945 không cần manual sync (hooks đã handle).
 
 ### 9.9 Feature: Add to Cart + Buy Now từ Chatbot Product Cards
 
@@ -984,8 +999,8 @@ Khi `underscored: true` được bật trong Sequelize model options, tất cả
 
 > Đây là lỗi nghiêm trọng nhất trong RAG pipeline. Mỗi lượt chat là stateless — LLM không biết gì về những gì user đã nói trước đó.
 
-- **File:** `backend/src/services/ai/geminiChatbot.js` hàm `handleMessage()` lines 34-76
-- **Vấn đề (audit thực tế):** Hàm `handleMessage(message, userId, sessionId, context)` chỉ truyền `message` hiện tại vào `getAIResponse()`. Toàn bộ lịch sử hội thoại không được đưa vào prompt → LLM không nhớ context giữa các turns.
+- **File:** `backend/src/services/ai/geminiChatbot.js` hàm `handleMessage()` line 49 (audit Round 7 verified)
+- **Vấn đề (audit thực tế):** Signature thực tế là `handleMessage(message, context = {})` — KHÔNG nhận `userId`/`sessionId` làm separate params. Hàm chỉ truyền `message` hiện tại vào `getAIResponse()`. Toàn bộ lịch sử hội thoại không được đưa vào prompt → LLM không nhớ context giữa các turns. Phase 9.10b chỉ rõ phải refactor signature này.
 - **Ví dụ lỗi thực tế:** User hỏi "Cho tôi xem iPhone 15" → LLM trả về sản phẩm. User tiếp theo hỏi "So sánh với cái kia đi" → LLM không biết "cái kia" là gì vì không có lịch sử.
 - **RAG chuẩn phải là:**
   ```
@@ -1077,13 +1092,12 @@ Khi `underscored: true` được bật trong Sequelize model options, tất cả
   if (intersection.length >= Math.min(pWords.size, rWords.size) * 0.8) return product;
   ```
 
-**Lỗi 5b (MỚI — Audit v2) — `getAllProducts()` fallback dùng sai status + sai attribute name (CRITICAL)**
+**Lỗi 5b (MỚI — Audit v2) — `getAllProducts()` fallback dùng sai attribute name (CRITICAL)**
 - **File:** `backend/src/services/ai/geminiChatbot.js` hàm `getAllProducts()` ~dòng 494–519
-- **Vấn đề A:** `where: { status: 'active', inStock: true }` — `'active'` không tồn tại trong DB → query trả về `[]` → chatbot không có sản phẩm nào khi vector search thất bại.
-- **Vấn đề B:** `attributes` list có `'price'` — field này không tồn tại trong Sequelize model (đúng là `basePrice`) → tất cả sản phẩm trong fallback có `price: undefined`.
+- **Vấn đề:** `attributes` list có `'price'` — field này không tồn tại trong Sequelize model (đúng là `basePrice`) → tất cả sản phẩm trong fallback có `price: undefined`. (Status `'active'` là ĐÚNG sau migration — không cần đổi.)
 - **Fix:**
   ```js
-  where: { status: 'Đang kinh doanh', inStock: true },
+  where: { status: 'active', inStock: true },
   attributes: ['id','name','shortDescription','description',
     'basePrice','compareAtPrice','thumbnail','inStock','searchKeywords','createdAt']
   ```
@@ -1092,14 +1106,15 @@ Khi `underscored: true` được bật trong Sequelize model options, tất cả
 - **Root cause (audit thực tế):** `Product` model Sequelize định nghĩa field là `basePrice` (DB column: `base_price`) — **KHÔNG có field `price`**. Tuy nhiên, toàn bộ AI service layer dùng `product.price` → trả về `undefined`. Tất cả giá trong chatbot response sẽ là `undefined`.
 - **Các file và dòng cần fix (toàn bộ occurrences):**
 
+  > **⚠️ Audit Round 7 (verified):** `vectorStore.js` line 78 ĐÃ FIX rồi (`price: product.basePrice`). Đã xóa khỏi bảng. Các tham chiếu "fix vectorStore.js line 63" trong note phía dưới giờ là "fix line 78 đã có sẵn".
+
   | File | Dòng | Hiện tại | Sửa thành |
   |------|------|----------|-----------|
-  | `backend/src/services/ai/vectorStore.js` | 63 | `price: product.price` | `price: product.basePrice` |
-  | `backend/src/services/ai/geminiChatbot.js` | 247 | `p.price?.toLocaleString(...)` | `p.price?.toLocaleString(...)` *(p.price đọc từ vectorStore metadata — fix vectorStore.js line 63 để có đúng giá)* |
+  | `backend/src/services/ai/geminiChatbot.js` | 247 | `p.price?.toLocaleString(...)` | *(không cần sửa — `p.price` đọc từ vectorStore metadata, đã có giá đúng từ `basePrice`)* |
   | `backend/src/services/ai/geminiChatbot.js` | 348 | `price: product.price` | `price: product.basePrice` |
-  | `backend/src/services/ai/geminiChatbot.js` | 426 | `p.price?.toLocaleString(...)` | `p.price?.toLocaleString(...)` *(đọc từ vectorStore metadata — fix line 63)* |
+  | `backend/src/services/ai/geminiChatbot.js` | 426 | `p.price?.toLocaleString(...)` | *(không cần sửa — đọc từ vectorStore metadata)* |
   | `backend/src/services/ai/geminiChatbot.js` | 434 | `price: product.price` | `price: product.basePrice` |
-  | `backend/src/services/ai/geminiChatbot.js` | 463 | `p.price?.toLocaleString(...)` | `p.price?.toLocaleString(...)` *(đọc từ vectorStore metadata — fix line 63)* |
+  | `backend/src/services/ai/geminiChatbot.js` | 463 | `p.price?.toLocaleString(...)` | *(không cần sửa — đọc từ vectorStore metadata)* |
   | `backend/src/services/ai/geminiChatbot.js` | 471 | `price: product.price` | `price: product.basePrice` |
   | `backend/src/services/ai/chatbot.js` | 237 | `item.Product.price < priceRange.min` | `item.Product.basePrice < priceRange.min` |
   | `backend/src/services/ai/chatbot.js` | 240 | `item.Product.price > priceRange.max` | `item.Product.basePrice > priceRange.max` |
@@ -1107,7 +1122,7 @@ Khi `underscored: true` được bật trong Sequelize model options, tất cả
   | `backend/src/services/ai/chatbot.js` | 340 | `product.compareAtPrice - product.price` | `product.compareAtPrice - product.basePrice` |
   | `backend/src/services/ai/chatbot.js` | 390 | `p.compareAtPrice - p.price` | `p.compareAtPrice - p.basePrice` |
 
-- **Ưu tiên fix:** `vectorStore.js` line 63 trước (root cause — fix 1 chỗ này giải quyết lines 247, 426, 463 của geminiChatbot). Sau đó fix các response mapping lines 348, 434, 471 và chatbot.js lines 333/340/390.
+- **Ưu tiên fix:** Còn 8 vị trí cần fix (geminiChatbot 348/434/471, chatbot.js 237/240/333/340/390). vectorStore.js line 78 đã đúng (root cause đã fix).
 - **Lưu ý Phase 9.14 Fix 3:** Code snippet tại Phase 9.14 có `price: product.price` trong metadata — phải sửa thành `price: product.basePrice` khi implement.
 
 **Lỗi 3 — Category filtering NOT IMPLEMENTED**
@@ -1166,18 +1181,15 @@ Khi `underscored: true` được bật trong Sequelize model options, tất cả
   - [ ] `grep -n '\.match.*{.*\\\\S' backend/src/services/ai/geminiChatbot.js` → no match trong `parseAIResponse()` (đã xóa regex)
   - [ ] OpenRouter trả về response chứa nested JSON objects → chatbot parse thành công, không rơi vào `simpleKeywordMatch()`
 
-**Lỗi 7 — `status: 'active'` lan rộng sang nhiều hàm active + dead-code (CORRECTION — audit trực tiếp routes)**
-- **Vấn đề:** Ngoài `getAllProducts()` đã ghi ở Lỗi 5b, **4 hàm khác** cũng dùng `status: 'active'` sai — 2 hàm đang **ĐƯỢC GỌI TỪ ACTIVE ENDPOINTS** (severity HIGH), 2 hàm là dead code:
+**Lỗi 7 — `featured: true` sai field và dead code trong chatbot endpoints**
+- **Vấn đề:** `status: 'active'` là ĐÚNG sau migration. Vấn đề thực tế là:
 
-  | File | Hàm | Dòng | Trạng thái thực tế |
-  |------|-----|------|-------------------|
-  | `backend/src/controllers/chatbot.js` | `searchProducts()` | ~431 | **ACTIVE** — gọi từ `aiProductSearch()` → route `POST /products/search` |
-  | `backend/src/services/ai/chatbot.js` | `getPersonalizedRecommendations()` | ~281, ~311 | **ACTIVE** — gọi từ `getRecommendations()` → route `GET /recommendations` |
+  | File | Hàm | Dòng | Vấn đề thực tế |
+  |------|-----|------|----------------|
+  | `backend/src/controllers/chatbot.js` | `getTrendingProducts()` | ~530 | Dead code + dùng `featured: true` sai field (phải là `isFeatured`) |
   | `backend/src/controllers/chatbot.js` | `getBestDeals()` | ~511 | Dead code (handleSalesPitch không được wire) |
-  | `backend/src/controllers/chatbot.js` | `getTrendingProducts()` | ~530 | Dead code (`featured: true` sai field, phải là `isFeatured`) |
 
-- **Impact thực tế:** `POST /products/search` và `GET /recommendations` **đang hoạt động trong production** nhưng query sai status → luôn trả về `[]`. Đây là bug HIGH severity, không phải chỉ "cần fix khi wire intent routing".
-- **Fix:** Thay `status: 'active'` → `status: 'Đang kinh doanh'` ở 4 chỗ. Ưu tiên `searchProducts()` và `getPersonalizedRecommendations()` trước vì đang trên active endpoints.
+- **Fix:** Sửa `featured: true` → `isFeatured: true` trong `getTrendingProducts()`. Xóa dead code nếu không wire vào intent routing.
 
 **Lỗi 8 — `chatbot.js` service dùng từ khóa danh mục/thương hiệu của thời trang, không phải tech store (audit thực tế)**
 - **File:** `backend/src/services/ai/chatbot.js` — `extractSearchParams()` (lines 133–183) và `searchProducts()` trong controller (lines 438–457)
@@ -1262,6 +1274,7 @@ Khi `underscored: true` được bật trong Sequelize model options, tất cả
 - **Vấn đề:** User hỏi cùng câu 10 lần → 10 API calls tới OpenRouter tốn token. Không có cache.
 - **Thêm (audit thực tế):** `vectorStore.search(query, limit)` tại line 97 tự gọi `embeddingService.generateEmbedding(query)` nội bộ — nghĩa là MỖII search = 1 embedding call. Cache phải được implement trong `embedding.js` (layer thấp nhất) để tự động cover CẢ 2 path: (1) direct calls từ geminiChatbot.js và (2) indirect calls qua vectorStore.search().
 - **Fix (đơn giản cho khóa luận):** Dùng `Map<string, number[]>` in-memory với TTL 5 phút. Key = `text.toLowerCase().trim()`, value = embedding vector. Giới hạn cache size 1000 entries (LRU hoặc FIFO). Đặt cache trong `generateEmbedding()` của `embedding.js` — không cần thêm ở nơi khác.
+  - ⚠️ **Xem Phase 35.7 cho spec mới nhất:** TTL 10 phút, max 500 entries. Phase 35.7 bổ sung thêm Query Result Cache via Redis (cache toàn bộ chatbot response).
 
 **Lỗi 4 — `getAllProducts()` hardcoded limit 100**
 - **File:** `backend/src/services/ai/geminiChatbot.js` hàm `getAllProducts()` line 518
@@ -1334,16 +1347,21 @@ Khi `underscored: true` được bật trong Sequelize model options, tất cả
 - **Fix 5 — indexProducts.js safety issues (audit thực tế):**
   - **Vấn đề A — Data loss risk:** Script gọi `vectorStoreService.clear()` TRƯỚC khi re-index. Nếu script crash sau `clear()` nhưng trước `save()` (ví dụ: embedding API timeout sau product #10), toàn bộ vectors bị mất, server không có gì để search cho đến khi chạy lại script.
     - **Fix:** Backup file trước khi clear: `fs.copyFileSync(storagePath, storagePath + '.bak')` — nếu script thất bại, file backup còn đó để restore.
-  - **Vấn đề B — Out-of-stock products indexed:** `indexProducts.js` đã fix status thành `'Đang kinh doanh'` (✅ confirmed in Audit v2) nhưng chưa filter `inStock`. Products hết hàng nhưng chưa deactivate vẫn được index → chatbot đề xuất sản phẩm hết hàng.
-    - **Fix:** Thêm `inStock: true` vào WHERE clause trong `Product.findAll()` của indexProducts.js.
+  - **Vấn đề B — Out-of-stock products indexed:**
+    `indexProducts.js` dùng `status: 'active'` — đây là ĐÚNG (canonical value sau migration). Cần thêm filter `inStock: true` để loại sản phẩm hết hàng ra khỏi vector store.
+    - **Fix:** Thêm `inStock: true` vào WHERE clause (line 15):
+      ```js
+      where: { status: 'active', inStock: true },
+      ```
   - **Vấn đề C — No error recovery:** Nếu embedding fail ở product #25, toàn bộ loop vẫn chạy nhưng `save()` chỉ có products #1-24. Không có retry hay report danh sách products thất bại.
     - **Fix:** Collect failed product IDs; sau khi loop xong, log warning: `"⚠️ Không thể index ${failedIds.length} sản phẩm: ${failedIds.join(', ')}"`
 
 ### 9.15 Fix: System Prompt & Retrieval Validation — Thiếu RAG Constraint
 
-**Lỗi 1 — System prompt quá generic (CRITICAL)**
-- **File:** `backend/src/services/ai/geminiChatbot.js` lines 97-106
-- **Vấn đề (audit thực tế):** System prompt chỉ 1 câu: `"Bạn là một nhân viên bán hàng chuyên nghiệp, thân thiện và am hiểu của cửa hàng chúng tôi."` — không có RAG constraint nào.
+**Lỗi 1 — Detailed matching rules để sai vị trí (CRITICAL)**
+- **File:** `backend/src/services/ai/geminiChatbot.js` line 116 (system prompt), lines 298-338 (user message rules)
+- **⚠️ CORRECTION (audit Round 6):** Mô tả cũ SAI. System prompt hiện tại (line 116) **ĐÃ CÓ** RAG constraint: `"...Chỉ giới thiệu sản phẩm có trong danh sách được cung cấp, không bịa thêm."` — không phải generic 1 câu như đã ghi.
+- **Vấn đề thực sự:** Toàn bộ quy tắc matching chi tiết (phân biệt Pro/Max/Plus/Ultra, ví dụ mẫu theo từng danh mục điện thoại/tablet/laptop — lines 298-338 trong `createPrompt()`) nằm trong **USER message**, không phải system prompt. Đây là anti-pattern: user message có thể bị override qua prompt injection; quy tắc quan trọng phải ở system prompt để luôn được enforce.
 - **Vấn đề:** Detailed instructions về product matching nằm trong USER message (createPrompt, line 261) — đây là anti-pattern. System prompt phải chứa các ràng buộc nền tảng, không để trong user message.
 - **Fix:** Nâng cấp system prompt:
   ```js
@@ -1460,7 +1478,7 @@ Khi `underscored: true` được bật trong Sequelize model options, tất cả
 - [ ] Chatbot đề xuất sản phẩm có rating = average của DB reviews thực, không phải `4.5` hardcode
 
 **Audit v2 — Hooks & Fallback (CRITICAL):**
-- [ ] `grep -n "status.*active" backend/src/models/product.js` → no match (hooks đã dùng `'Đang kinh doanh'`)
+- [ ] `grep -n "status.*active" backend/src/models/product.js` → có match trong hooks (dùng `'active'` là ĐÚNG sau migration)
 - [ ] Tắt vector store (đổi tên vectorDb.json) → gửi tin nhắn chatbot → chatbot vẫn trả về sản phẩm qua `getAllProducts()` fallback (status fix hoạt động)
 - [ ] `grep -n "'price'" backend/src/services/ai/geminiChatbot.js` trong `getAllProducts()` attributes → no match (đã đổi thành `'basePrice'`)
 - [ ] Sản phẩm trong chatbot prompt hiển thị description thực (không phải `undefined`) — `shortDescription` có trong metadata vector store
@@ -1482,7 +1500,7 @@ Khi `underscored: true` được bật trong Sequelize model options, tất cả
 **Product Matching & Field Consistency (9.11):**
 - [ ] Hỏi "điện thoại Samsung" → chatbot chỉ trả về sản phẩm thuộc category "Điện thoại" (category filter hoạt động)
 - [ ] Giá sản phẩm trong chatbot response không bao giờ là `undefined` — `grep -n "product\.price\b" backend/src/services/ai/` → no match (tất cả đã đổi sang `basePrice`)
-- [ ] `vectorDb.json` sau rebuild: mỗi item có `"price": <số thực>` không phải `null`/`undefined` (vectorStore.js line 63 đã dùng `basePrice`)
+- [ ] `vectorDb.json` sau rebuild: mỗi item có `"price": <số thực>` không phải `null`/`undefined` (vectorStore.js line 78 đã dùng `basePrice`)
 - [ ] Hỏi "Samsung mới nhất" → `getTrendingProducts()` trả về sản phẩm có `isFeatured: true`
 - [ ] Hỏi câu hoàn toàn không liên quan (ví dụ "1+1 bằng mấy") → chatbot không trả về sản phẩm (similarity threshold lọc được 0 kết quả từ vector store)
 - [ ] Hỏi "iPhone 14 dưới 15 triệu" → `extractSearchParams()` chỉ trả về `maxPrice ≈ 15000000`, KHÔNG có `minPrice = 14` (regex không extract model number là giá)
@@ -1510,6 +1528,7 @@ Khi `underscored: true` được bật trong Sequelize model options, tất cả
 - [ ] `package.json` có script `ai:rebuild-vectors`; `db:reset` vẫn hoạt động
 - [ ] Chạy `npm run ai:rebuild-vectors` → nếu embedding API fail ở giữa chừng, file `vectorDb.json.bak` còn nguyên (không mất toàn bộ data)
 - [ ] `vectorDb.json` sau rebuild không chứa sản phẩm có `inStock: false` (out-of-stock products không được index)
+- [ ] Sau rebuild: số items trong `vectorDb.json` = `SELECT COUNT(*) FROM products WHERE status='active' AND in_stock=1` (không có vector stale — audit Round 6: hiện 47 items nhưng chỉ 45 sản phẩm active)
 
 **System Prompt & Validation (9.15 — CRITICAL):**
 - [ ] System prompt trong `geminiChatbot.js` line 99 chứa rule "CHỈ tư vấn sản phẩm có trong danh sách"
@@ -1612,8 +1631,8 @@ Khi `underscored: true` được bật trong Sequelize model options, tất cả
 |------|----------|
 | `backend/src/services/ai/viEmbedding.js` | TẠO MỚI — HF router wrapper cho `multilingual-e5-large` |
 | `backend/src/services/ai/vectorStore.js` | Dual-vector storage + language routing + fix `product.price` → `product.basePrice` |
-| `backend/scripts/indexProducts.js` | Fix status `'active'` → `'Đang kinh doanh'` + log Vi embedding status |
-| `backend/.env` | `HF_API_KEY=hf_xxxxxxxxxxxxxxxxxxxxxxxxxxxx` (mật khẩu) |
+| `backend/scripts/indexProducts.js` | `status: 'active'` ở WHERE clause là **ĐÚNG** (canonical sau migration 2026050201). Còn cần thêm `inStock: true` filter — xem Phase 9.14 Fix 5 Vấn đề B |
+| `backend/.env` | `HF_API_KEY=hf_****` (xem .env thực tế) |
 
 #### viEmbedding.js — thực tế đã implement
 ```js
@@ -1793,7 +1812,7 @@ vectorDb.json: 47 items
 - **Fix:** Dùng eager loading đúng cách:
   ```js
   Product.findAll({
-    where: { status: 'Đang kinh doanh' },  // KHÔNG phải 'active'
+    where: { status: 'active' },
     include: [
       { model: ProductVariant, as: 'variants', where: { isDefault: true }, required: false,
         attributes: ['id', 'price', 'stockQuantity', 'sku'] },
@@ -1921,7 +1940,7 @@ vectorDb.json: 47 items
 
 ### 12.Y PaymentQRPage — DEV MODE không được lên Production
 - **File:** `frontend/src/pages/PaymentQRPage.tsx` lines ~10-44
-- **Vấn đề (audit thực tế):** Mảng `TEST_CARDS` hardcode 3 số thẻ test + label "DEV MODE" hiển thị trực tiếp trên UI — nếu build production sẽ lộ thông tin test
+- **Vấn đề (audit thực tế — Round 8 đính chính):** Mảng `TEST_CARDS` hardcode 3 số thẻ test. Labels đã được translated qua `t()` (lines 32, 39, 43, 50). Vẫn cần wrap toàn bộ trong `import.meta.env.DEV` guard để production build không expose test card numbers (mặc dù labels đã i18n).
 - **Fix:**
   ```tsx
   // Chỉ hiển thị test cards khi development
@@ -1934,7 +1953,7 @@ vectorDb.json: 47 items
   Wrap toàn bộ `TEST_CARDS` array và "DEV MODE" label trong `import.meta.env.DEV` guard
 
 ### 12.Z `window.location.href` trong authUtils — Full Page Reload khi 401
-- **File:** `frontend/src/utils/authUtils.ts` line 70
+- **File:** `frontend/src/utils/authUtils.ts` line 72
 - **Vấn đề:** `window.location.href = '/login'` khi token hết hạn → full page reload, mất toàn bộ app state, user mất form đang điền
 - **Fix:** Thay bằng React Router navigate (inject vào tokenManager hoặc dùng history object từ router):
   ```ts
@@ -2704,6 +2723,7 @@ COMMIT;
 - **FAQsPage.tsx — hardcode tiếng Anh (audit thực tế):** `frontend/src/pages/FAQsPage.tsx` lines ~14+ có mảng FAQ objects với content tiếng Anh cứng trong component — không qua `t()` → khi switch sang VI không đổi được
 - **Fix FAQsPage:** Extract FAQ content ra `vi.json`/`en.json` dưới key `faqs.items`, component render `{(t('faqs.items', { returnObjects: true }) as FAQ[]).map(...)}`
 - **vi.json vs en.json size gap (audit thực tế):** `vi.json` ~1008 dòng, `en.json` ~817 dòng → ~191 key tiếng Anh còn thiếu. Phải về 0 sau Phase này.
+  - **UPDATE (Phase 37):** Gap đã được đóng — cả 2 file hiện có 3,018 keys đồng bộ hoàn toàn. Tuy nhiên còn 5 bugs trong implementation — xem Phase 37.0.
 
 ### 20.3 Date & Currency Formatting
 - **Check `frontend/src/`:** Giá tiền có được format theo locale không (VND: `1.000.000 ₫` thay vì `1000000`); ngày có dùng `Intl.DateTimeFormat` hoặc `dayjs` với locale không
@@ -2824,7 +2844,7 @@ COMMIT;
   - `backend/src/controllers/order.js:954` — `|| 'http://localhost:5175'` → đổi thành `|| process.env.FRONTEND_URL`
   - `backend/src/services/payment/momo.js:14-15` — redirectUrl default `localhost` → `process.env.FRONTEND_URL`
   - `backend/src/utils/imageUrl.js:1,34-35` — `DEFAULT_LOCAL_BASE = 'http://localhost:8888'` → `process.env.BACKEND_URL || 'http://localhost:8888'`
-  - `backend/src/services/ai/geminiChatbot.js:112` — fallback `localhost:5173` → `process.env.FRONTEND_URL`
+  - `backend/src/services/ai/geminiChatbot.js:128` — fallback `localhost:5173` → `process.env.FRONTEND_URL`
   - **Fix tổng quát:** Grep `localhost:[0-9]` trong toàn bộ `backend/src/` — thay tất cả bằng env variable với localhost làm default value cho dev
 - **Hardcoded MoMo test credentials (audit thực tế):**
   - `backend/src/services/payment/momo.js:7-9` — `|| 'MOMOLRJZ20181206'` fallback test partnerCode nếu env var missing
@@ -2872,7 +2892,7 @@ COMMIT;
 - **Deprecated Ant Design prop (cùng 2 file):** Dùng `visible=` (deprecated trong Ant Design v5) thay vì `open=` → đổi lại cho đúng
 
 ### 22.6 Sequelize Migration Files — Cleanup
-- **Check `backend/src/migrations/`:** Các migration có tên đúng format `YYYYMMDDHHMMSS-verb-entity.js` không (ví dụ: `20260502-create-products.js` → sai; `20260502000000-create-products.js` → đúng)
+- **Check `backend/src/migrations/`:** Các migration có tên đúng format `YYYYMMDDNN-verb-entity.js` không (ví dụ: `20260502-create-products.js` → sai; `2026050201-create-products.js` → đúng)
 - **Fix:** Rename các file migration không đúng format; đảm bảo thứ tự timestamp khớp với thứ tự cần chạy
 
 ### ✅ Acceptance Criteria Phase 22
@@ -3358,8 +3378,8 @@ COMMIT;
 
 ---
 
-## PHASE 30 — Thesis Defense Readiness Gate
-> **Cổng cuối — pass hết 29 phase trước khi đi bảo vệ khóa luận.**
+## PHASE 30 — Thesis Defense — Pre-Final Gate (Phase 1-29)
+> **Pre-final gate — pass hết Phase 1-29 (~95% scope). Phase 36 mới là Final Gate (100%) sau khi pass thêm Phase 31-37.**
 
 ### 30.1 Security Checklist
 - [ ] Không có SQL injection (Phase 1.1 ✓)
@@ -3417,7 +3437,7 @@ COMMIT;
 
 ### 31.1 Sequelize Migration File Standards
 - **Files:** `backend/src/migrations/`
-- **Chuẩn đặt tên:** `YYYYMMDDHHMMSS-verb-entity.js` — ví dụ: `20260502000001-create-products.js`
+- **Chuẩn đặt tên:** `YYYYMMDDNN-verb-entity.js` — ví dụ: `2026050201-create-products.js`
 - **Mỗi migration phải có đủ `up()` và `down()`:**
   ```js
   module.exports = {
@@ -3745,7 +3765,7 @@ spec_cpu,spec_ram,spec_storage,spec_display,spec_battery
 | `backend/src/config/sequelize.js`, `backend/src/app.js` | 11 | Redis cache, query optimization, DB indexes |
 | `frontend/src/pages/ProductDetailPage.tsx` | 12 | Variant selection, stock display, gallery |
 | `frontend/src/pages/CheckoutPage.tsx` | 12 | Form validation, address save, payment UI |
-| `backend/src/middleware/auth.js` | 13 | CSP headers, CSRF protection |
+| `backend/src/middlewares/` + `backend/src/app.js` | 13 | CSP headers, CSRF protection |
 | `backend/src/services/email.js` | 14 | Email templates, error isolation |
 | `backend/data/migration_full.sql`, `backend/data/seed_data.sql` | 15 | utf8mb4, backticks, idempotency |
 | `backend/src/middleware/errorHandler.js` | 16 | Global error format, stack trace leak |
@@ -3769,7 +3789,6 @@ spec_cpu,spec_ram,spec_storage,spec_display,spec_battery
 | `frontend/src/pages/admin/ProductImportPage.tsx` | 31 | Upload → Preview → Confirm → Result UI |
 | `backend/scripts/exportToSeed.js` (mới) | 31 | Export DB → seed_data.sql mechanism |
 | `backend/src/models/importLog.js` | 31 | Import history table & audit |
-| `backend/scripts/exportToSeed.js` (mới) | 31 | Export DB → seed_data.sql mechanism |
 | `frontend/src/pages/admin/DashboardPage.tsx` | 32 | Missing charts, KPI cards, low-stock widget |
 | `backend/src/controllers/admin.js` (analytics) | 32 | New analytics endpoints for charts |
 | `frontend/src/pages/admin/EmailCampaignsPage.tsx` | 33 | No backend — needs full implementation |
@@ -4627,3 +4646,354 @@ Phase 36 Coverage Completion    → [AUDIT] → [FIX] → [VERIFY] → ✅ READY
 10. Import 5 sản phẩm qua CSV → xuất hiện trên shop ngay lập tức
 11. `GET /api/products` lần 2 → response time giảm rõ rệt (Redis cache hit)
 12. Sau 30 ngày không hoạt động: cart abandoned được purge tự động
+
+---
+
+## PHASE 37 — I18n (Bilingual) Standard
+
+> **Trạng thái:** ⚠️ KEYS đồng bộ (3,018 keys mỗi file), nhưng còn 5 bugs trong implementation — Phase chỉ PASS sau khi fix hết 5 bugs dưới đây.
+
+### 37.0 Bugs Chưa Fix (Phát hiện trong Simplify Audit — Audit Round 8 ĐÃ ĐÍNH CHÍNH)
+
+> **⚠️ Audit Round 8 verified:** 5/6 bugs đã được fix (B1, B3, B4, B5, B6). Chỉ còn B2 chưa fix.
+
+| Bug | File | Chi tiết | Status |
+|-----|------|----------|--------|
+| ~~B1~~ | ~~DashboardCharts.tsx~~ | ~~chart data key vỡ~~ | ✅ FIXED — `useMemo` + stable keys (lines 88-95) |
+| **B2 — CheckoutPage domain value** | `frontend/src/pages/CheckoutPage.tsx` lines 332-333 | `defaultState/defaultCity` dùng bản dịch `t()` → backend validation fail | ❌ STILL BUG |
+| ~~B3~~ | ~~priceUtils.ts~~ | ~~duplicate khai báo~~ | ✅ FIXED — locale/currencySymbol hoisted lines 19-20 |
+| ~~B4~~ | ~~DynamicAttributeSelector.tsx~~ | ~~thiếu locale arg~~ | ✅ FIXED — line 155 `toLocaleString(getLocale())` |
+| ~~B5~~ | ~~EnhancedVariantSelector.tsx~~ | ~~thiếu locale arg~~ | ✅ FIXED — line 249 `toLocaleString(getLocale())` |
+| ~~B6~~ | ~~format.ts~~ | ~~missing getLocale() helper~~ | ✅ FIXED — `getLocale()` helper exists |
+
+**Fix B2 — stable fallback không dịch (CHỈ BUG CÒN LẠI):**
+```tsx
+state: '',   // Không dùng t('checkout.defaultState')
+city:  '',
+```
+
+---
+
+### 37.1 Overview & Stack
+
+| Thành phần | Chi tiết |
+|---|---|
+| Thư viện | `react-i18next` + `i18next` |
+| Locale files | `frontend/src/locales/en.json` và `vi.json` |
+| Số keys | 3,018 keys mỗi file (đồng bộ hoàn hảo) |
+| Cấu hình | `frontend/src/config/i18n.ts` |
+| Ngôn ngữ mặc định | `vi` (Vietnamese) — lấy từ `localStorage` trước |
+| Fallback | `vi` |
+
+**Cấu hình i18n (`frontend/src/config/i18n.ts`):**
+```ts
+i18n.use(initReactI18next).init({
+  resources: { en: { translation: enTranslations }, vi: { translation: viTranslations } },
+  lng: localStorage.getItem('language') || 'vi',
+  fallbackLng: 'vi',
+  interpolation: { escapeValue: false },
+  detection: { order: ['localStorage', 'navigator', 'htmlTag'], caches: ['localStorage'] },
+});
+```
+
+---
+
+### 37.2 Core Usage Rules
+
+**Rule 1 — KHÔNG BAO GIỜ hardcode text user-visible.** Tất cả text hiển thị ra UI phải đi qua `t()`.
+
+**Trong React component:**
+```tsx
+const { t, i18n } = useTranslation();
+// Luôn destructure cả i18n khi cần format số/ngày
+<span>{t('common.loading')}</span>
+```
+
+**Ngoài React (utils, services, non-hook files):**
+```ts
+import i18next from 'i18next';
+const label = i18next.t('product.specNames.cpu');
+const locale = i18next.language === 'vi' ? 'vi-VN' : 'en-US';
+```
+
+---
+
+### 37.3 Key Patterns
+
+#### 37.3.1 Ký hiệu tiền tệ
+```tsx
+// ĐÚNG
+{amount.toLocaleString(i18n.language === 'vi' ? 'vi-VN' : 'en-US')}{t('common.currencySymbol')}
+
+// SAI — hardcode ký tự
+{amount.toLocaleString('vi-VN')}₫
+```
+- `t('common.currencySymbol')` → `₫` ở cả EN lẫn VI
+- `t('product.currencyCode')` → `VND`
+
+#### 37.3.2 Định dạng số / ngày tháng
+```ts
+// ĐÚNG — dynamic locale
+const locale = i18n.language === 'vi' ? 'vi-VN' : 'en-US';
+number.toLocaleString(locale)
+date.toLocaleDateString(locale)
+
+// SAI — hardcode locale
+number.toLocaleString('vi-VN')
+```
+
+#### 37.3.3 DB-compat dropdowns (danh mục lưu vào DB bằng tiếng Việt)
+```tsx
+// ĐÚNG — DB value = tiếng Việt, UI label = translated
+const categories = [
+  { value: 'Hiệu năng', label: t('admin.products.specs.categories.performance') },
+  { value: 'Màn hình',  label: t('admin.products.specs.categories.display') },
+];
+<Select.Option key={cat.value} value={cat.value}>{cat.label}</Select.Option>
+
+// SAI — hardcode label
+<Select.Option value="Hiệu năng">Hiệu năng</Select.Option>
+```
+
+#### 37.3.4 Spec names kỹ thuật sản phẩm
+File `frontend/src/utils/productTransform.ts`:
+```ts
+import i18next from 'i18next';
+const getSpecLabel = (key: string) => {
+  const tKey = `product.specNames.${key.toLowerCase()}`;
+  const translated = i18next.t(tKey);
+  return translated !== tKey ? translated : key;
+};
+```
+81 spec keys trong `product.specNames.*` (cpu, ram, display, battery…)
+
+#### 37.3.5 AI Prompt Templates
+File `frontend/src/features/ai/services/promptTemplates.ts`:
+```ts
+import i18n from '@/config/i18n';
+const isVi = () => i18n.language === 'vi';
+
+export const getProductSuggestionPrompt = (query: string) => {
+  if (isVi()) return `Bạn là trợ lý mua sắm... "${query}"...`;
+  return `You are a helpful shopping assistant... "${query}"...`;
+};
+```
+
+---
+
+### 37.4 Translation File Rules
+
+1. **EN và VI files phải luôn có key giống hệt nhau** — số lượng và tên key đồng bộ 100%
+2. **Thêm key vào CẢ HAI file cùng lúc** — không thêm một file trước
+3. **Đặt tên key:** dot-notation, namespace theo feature
+   ```
+   common.loading           admin.users.form.firstName
+   product.addToCart        checkout.defaultState
+   payment.errors.failed    admin.charts.revenueLabel
+   ```
+4. **Không đặt text trực tiếp vào code** — luôn tạo key trong locale file trước
+
+---
+
+### 37.5 Cách thêm Translation Key mới
+
+```
+Bước 1: Thêm key vào frontend/src/locales/en.json
+"myFeature": { "newKey": "English text here" }
+
+Bước 2: Thêm cùng key vào frontend/src/locales/vi.json
+"myFeature": { "newKey": "Tiếng Việt ở đây" }
+
+Bước 3: Dùng trong component
+const { t } = useTranslation();
+<span>{t('myFeature.newKey')}</span>
+```
+
+**Verify sync sau khi thêm (PowerShell):**
+```powershell
+function Get-AllKeys($obj, $prefix = "") {
+  $keys = @()
+  foreach ($k in $obj.PSObject.Properties.Name) {
+    $full = if ($prefix) { "$prefix.$k" } else { $k }
+    $v = $obj.$k
+    if ($v -is [PSCustomObject]) { $keys += Get-AllKeys $v $full } else { $keys += $full }
+  }
+  return $keys
+}
+$en = Get-AllKeys (Get-Content "frontend/src/locales/en.json" -Raw -Encoding UTF8 | ConvertFrom-Json) | Sort-Object
+$vi = Get-AllKeys (Get-Content "frontend/src/locales/vi.json" -Raw -Encoding UTF8 | ConvertFrom-Json) | Sort-Object
+$diff = Compare-Object $en $vi
+if ($diff) { Write-Host "OUT OF SYNC:"; $diff } else { Write-Host "In sync — $($en.Count) keys" }
+```
+
+---
+
+### 37.6 Audit Script (chạy định kỳ để phát hiện regression)
+
+```powershell
+$srcDir = "D:\...\frontend\src"
+$issues = @()
+$viChars = '[àáâãèéêìíòóôõùúýăđơưạảấầẩẫậắằẳẵặẹẻẽếềểễệỉịọỏốồổỗộớờởỡợụủứừửữựỳỵỷỹ]'
+
+$files = Get-ChildItem $srcDir -Recurse -Include "*.tsx","*.ts" |
+  Where-Object { $_.FullName -notmatch "\\locales\\" }
+
+foreach ($file in $files) {
+  $lines = Get-Content $file.FullName -Encoding UTF8
+  $inBlock = $false; $n = 0
+  foreach ($line in $lines) {
+    $n++; $t = $line.Trim()
+    if ($t -match '/\*' -and $t -notmatch '\*/') { $inBlock = $true }
+    if ($inBlock) { if ($t -match '\*/') { $inBlock = $false }; continue }
+    if ($t -match '/\*.*\*/') { continue }
+    if ($t -eq '' -or $t -match '^//' -or $t -match '^import ') { continue }
+    $rel = $file.FullName.Replace($srcDir, "")
+    if ($line -match 'currencySymbol') { continue }
+    if ($line -match '₫') { $issues += "[DONG] ${rel}:$n" }
+    if ($line -match "toLocaleString\('vi-VN'\)") { $issues += "[LOCALE] ${rel}:$n" }
+    if ($t -match ('>[^<{]*' + $viChars + '[^<{]*<') -and $line -notmatch "\bt\('") {
+      $issues += "[JSX-VI] ${rel}:$n"
+    }
+  }
+}
+
+if ($issues.Count -eq 0) { Write-Host "I18N CLEAN" -ForegroundColor Green }
+else { Write-Host "Issues: $($issues.Count)"; $issues | ForEach-Object { Write-Host "  $_" } }
+```
+
+---
+
+### 37.7 Acceptable Exceptions (False Positives)
+
+Các pattern sau đây **không cần fix** — đây là thiết kế đúng:
+
+| File | Pattern | Lý do |
+|---|---|---|
+| `LanguageSwitcher.tsx` | `name: 'Tiếng Việt'` | Tên ngôn ngữ hiển thị bằng chính ngôn ngữ đó — chuẩn i18n quốc tế |
+| `ProductSpecificationsForm.tsx` | `category: 'Thông số chung'` | DB value trong pattern `{value, label}` — đúng thiết kế |
+| `chatbotApi.ts` | `includes('tìm')`, `includes('mua')` | Keyword matching NLP — không render ra UI |
+| `data/mock*.ts` | Vietnamese names | Mock seed data — content data, không phải UI label |
+| `sampleDataHelper.ts` | HTML tiếng Việt | Sample content cho rich-text editor |
+| `textUtils.ts` | Vietnamese stopwords | Thuật toán NLP — không render |
+| Multi-line `console.log()` args | Vietnamese strings | Dev-only logs — không render |
+| `promptTemplates.ts` (isVi branch) | `Bạn là trợ lý...` | Intentional — AI prompt theo ngôn ngữ UI |
+
+---
+
+### 37.8 Translation Key Namespace Map
+
+Top-level namespaces hiện có trong locale files:
+
+```
+common.*          — buttons, status, errors chung
+header.*          — navigation, brand, actions
+homepage.*        — hero, sections trang chủ
+product.*         — product detail, cart actions, specNames.* (81 spec keys)
+productDetail.*   — chi tiết sản phẩm, tabs
+admin.*           — toàn bộ admin panel (users, orders, products, charts, banners, news…)
+auth.*            — login, register, forgot password
+checkout.*        — checkout flow, payment methods, address
+orders.*          — order list, order detail, status labels
+payment.*         — stripe, bank transfer, errors
+cart.*            — giỏ hàng
+profile.*         — trang profile, edit info, addresses
+shop.*            — trang danh sách sản phẩm, filters
+categories.*      — trang danh mục
+chat.*            — AI chatbot widget, suggestions, errors
+news.*            — trang tin tức, tags, categories
+wishlist.*        — danh sách yêu thích
+search.*          — trang tìm kiếm
+```
+
+---
+
+## PHASE 38 — MySQL Naming Standards & Constraint Audit
+
+> **Mục tiêu:** Kiểm tra toàn bộ tên bảng, tên cột, tên index/key, tên constraint, tên foreign key trong DB có tuân thủ 100% quy chuẩn MySQL trên XAMPP/phpMyAdmin cho một dự án e-commerce cá nhân hay không. Phát hiện và sửa mọi sai lệch trước khi deploy.
+
+### Quy chuẩn cần kiểm tra
+
+#### 38.1 Tên bảng (Table names)
+- **Chuẩn:** `snake_case`, số nhiều, tiếng Anh, viết thường hoàn toàn
+- **Đúng:** `products`, `order_items`, `product_variants`, `discount_codes`
+- **Sai:** `Products`, `orderItem`, `ProductVariant`, `discountCode`, `DiscountCodes`
+- **Check:** Grep tất cả `tableName:` trong models, so khớp với SHOW TABLES
+
+#### 38.2 Tên cột (Column names)
+- **Chuẩn:** `snake_case`, viết thường, mô tả rõ ràng, không viết tắt mơ hồ
+- **Đúng:** `first_name`, `created_at`, `is_active`, `brand_id`, `stock_quantity`
+- **Sai:** `firstName`, `createdAt`, `isActive`, `brandId` (trong DB — OK trong Sequelize model JS)
+- **Check:** `DESCRIBE <table>` cho từng bảng — cột nào còn camelCase trong DB thực tế?
+- **Ngoại lệ:** Sequelize `underscored: false` → cột trong DB sẽ là camelCase (như bảng `users` có `firstName`, `lastName`, `isActive`) — đây là lựa chọn thiết kế có chủ ý, KHÔNG phải lỗi nếu model khai báo `underscored: false`
+
+#### 38.3 Tên Primary Key
+- **Chuẩn:** `id` (INT AUTO_INCREMENT) cho tất cả bảng — dự án dùng INT PK (không UUID)
+- **Check:** Mọi bảng đều có `id INT AUTO_INCREMENT PRIMARY KEY`
+- **Ngoại lệ hợp lệ:** Junction tables không cần `id` riêng nếu dùng composite PK (e.g., `product_categories(product_id, category_id)`)
+
+#### 38.4 Tên Foreign Key columns
+- **Chuẩn:** `{referenced_table_singular}_id` — ví dụ: `product_id`, `user_id`, `category_id`
+- **Check:** Mọi FK column phải kết thúc bằng `_id`, tham chiếu đúng bảng đúng cột
+
+#### 38.5 Tên Constraint / Foreign Key Constraint
+- **Chuẩn MySQL/phpMyAdmin:** `fk_{table}_{referenced_table}` hoặc `fk_{table}_{column}`
+- **Ví dụ:** `fk_products_category`, `fk_order_items_product`, `fk_product_variants_product`
+- **Check:** `SHOW CREATE TABLE <table>` — constraint nào thiếu tên hoặc dùng tên auto-generated dài?
+
+#### 38.6 Tên Index / Key
+- **Chuẩn:** `idx_{table}_{column(s)}` cho index thường; `uq_{table}_{column}` cho unique index
+- **Ví dụ:** `idx_products_status`, `idx_orders_user_id`, `uq_users_email`
+- **Sai:** Auto-generated names như `products_status_brand_id_...` (quá dài, khó đọc trong phpMyAdmin)
+- **Check:** `SHOW INDEX FROM <table>` — index nào chưa đặt tên chuẩn?
+
+#### 38.7 ENUM values
+- **Chuẩn:** `lowercase`, không có space, dùng gạch ngang nếu cần — `'active'`, `'in-stock'`, `'bank-transfer'`
+- **Check:** Tìm tất cả `DataTypes.ENUM` trong models — value nào viết hoa hoặc có space?
+
+#### 38.8 Tên bảng junction (many-to-many)
+- **Chuẩn:** `{table1}_{table2}` theo thứ tự alphabet hoặc logical — `product_categories`, `product_collections`, `brand_categories`
+- **Check:** Các bảng junction có đặt tên đúng thứ tự không?
+
+#### 38.9 Độ dài tên (MySQL limit)
+- **Chuẩn MySQL:** Tên bảng/cột tối đa 64 ký tự; tên constraint/index tối đa 64 ký tự
+- **Check:** Có tên nào vượt 64 ký tự không?
+
+#### 38.10 Kiểu dữ liệu phù hợp với phpMyAdmin/XAMPP
+- **Chuẩn:**
+  - Giá tiền: `DECIMAL(15,2)` — KHÔNG dùng `FLOAT` (mất precision)
+  - Ngày giờ: `TIMESTAMP` hoặc `DATETIME` — KHÔNG dùng `VARCHAR` cho date
+  - Boolean: `TINYINT(1)` (MySQL không có native BOOLEAN — XAMPP hiển thị là TINYINT(1))
+  - Text dài: `TEXT` hoặc `LONGTEXT` — không hardcode VARCHAR quá nhỏ cho description
+  - JSON: `LONGTEXT` hoặc `JSON` type (MySQL 5.7.8+ hỗ trợ JSON native)
+  - ID: `INT(11)` AUTO_INCREMENT — không dùng UUID làm PK (đã là quy ước dự án này)
+
+### Quy trình kiểm tra
+
+```
+1. SHOW TABLES → liệt kê tất cả tên bảng → check naming
+2. DESCRIBE {table} → từng cột → check snake_case, kiểu dữ liệu
+3. SHOW INDEX FROM {table} → check index names
+4. SHOW CREATE TABLE {table} → check constraint names, FK names
+5. Grep models/ tìm DataTypes.ENUM → check ENUM values
+6. So sánh model field names vs actual DB column names
+```
+
+### Fix nếu tìm thấy sai lệch
+
+- Tên cột sai → `ALTER TABLE {table} CHANGE {old} {new} ...` + cập nhật Sequelize model + tạo migration
+- Tên index sai → `ALTER TABLE DROP INDEX {old}, ADD INDEX {new_name} ({columns})`
+- Tên constraint sai → `ALTER TABLE DROP FOREIGN KEY {old}, ADD CONSTRAINT {new_name} FOREIGN KEY ...`
+- ENUM value sai → `ALTER TABLE MODIFY COLUMN {col} ENUM(...)` + update seed_data.sql + migration
+
+### ✅ Acceptance Criteria Phase 38
+
+- [ ] Tất cả tên bảng là `snake_case`, số nhiều, viết thường
+- [ ] Tất cả cột tuân thủ `snake_case` hoặc có lý do chủ ý (underscored: false trong model)
+- [ ] Mọi FK column kết thúc bằng `_id` và tham chiếu đúng bảng
+- [ ] Mọi constraint/index có tên rõ ràng (không phải auto-generated hash)
+- [ ] Tất cả ENUM values là lowercase, không có khoảng trắng
+- [ ] Giá tiền dùng `DECIMAL(15,2)`, boolean dùng `TINYINT(1)`, không có `FLOAT` cho tiền
+- [ ] Không có tên bảng/cột/index nào vượt 64 ký tự
+- [ ] `SHOW CREATE TABLE` cho mọi bảng không có warning hoặc constraint unnamed
+
+**Tổng kết:** 3,018 keys × 2 ngôn ngữ = toàn bộ UI text đã được bản địa hóa hoàn chỉnh.

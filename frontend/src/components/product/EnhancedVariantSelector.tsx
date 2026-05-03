@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
+import { getLocale } from '@/utils/format';
 import { Space, Tag, Button, Typography, Alert, Skeleton, Tooltip } from 'antd';
 import {
   BulbOutlined,
@@ -245,7 +246,7 @@ const EnhancedVariantSelector: React.FC<EnhancedVariantSelectorProps> = ({
                               style={{ fontSize: 10 }}
                             >
                               {priceAdjustment! > 0 ? '+' : ''}
-                              {priceAdjustment!.toLocaleString()}₫
+                              {priceAdjustment!.toLocaleString(getLocale())}{t('common.currencySymbol')}
                             </Text>
                           )}
 

@@ -1,8 +1,5 @@
 ﻿import axios from 'axios';
 import i18n from '@/config/i18n';
-import { mockProducts } from '@/data/mockProducts';
-import { mockCategories } from '@/data/mockCategories';
-
 // Cấu hình API
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8888/api';
 
@@ -22,28 +19,6 @@ class GeminiService {
     // Hiện dùng chat qua backend (OpenRouter)
     console.log('GeminiService: khởi tạo qua backend (OpenRouter)');
     this.isInitialized = true;
-  }
-
-  private getProductsContext(): string {
-    // Tạo context từ dữ liệu sản phẩm (để dự phòng)
-    const productsInfo = mockProducts.slice(0, 20).map((product) => ({
-      id: product.id,
-      name: product.name,
-      price: `${product.price.toLocaleString('vi-VN')}đ`,
-      category: product.categoryName || 'Không xác định',
-      description: product.description,
-      inStock: product.stock > 0,
-    }));
-
-    const categoriesInfo = mockCategories.map((cat) => ({
-      id: cat.id,
-      name: cat.name,
-    }));
-
-    return `
-DANH MỤC: ${categoriesInfo.map(c => c.name).join(', ')}
-SẢN PHẨM: ${productsInfo.map(p => p.name).join(', ')}
-`;
   }
 
   async sendMessage(userMessage: string): Promise<GeminiChatResponse> {

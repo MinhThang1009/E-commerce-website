@@ -1,5 +1,6 @@
 import i18next from 'i18next';
 import { ProductVariant } from '@/types/product.types';
+import { getLocale } from './format';
 
 export interface PriceInfo {
   minPrice: number;
@@ -15,6 +16,9 @@ export const calculatePriceRange = (
   basePrice: number,
   variants?: ProductVariant[]
 ): PriceInfo => {
+  const locale = getLocale();
+  const currencySymbol = i18next.t('common.currencySymbol');
+
   if (variants && variants.length > 0) {
     const prices = variants.map((variant) => variant.price);
     const minPrice = Math.min(...prices);
@@ -25,8 +29,8 @@ export const calculatePriceRange = (
       maxPrice,
       priceText:
         minPrice === maxPrice
-          ? `${minPrice.toLocaleString('vi-VN')}đ`
-          : i18next.t('product.priceFrom', { price: `${minPrice.toLocaleString('vi-VN')}đ` }),
+          ? `${minPrice.toLocaleString(locale)}${currencySymbol}`
+          : i18next.t('product.priceFrom', { price: `${minPrice.toLocaleString(locale)}${currencySymbol}` }),
       basePrice: minPrice,
     };
   }
@@ -34,7 +38,7 @@ export const calculatePriceRange = (
   return {
     minPrice: basePrice,
     maxPrice: basePrice,
-    priceText: `${basePrice.toLocaleString('vi-VN')}đ`,
+    priceText: `${basePrice.toLocaleString(locale)}${currencySymbol}`,
     basePrice: basePrice,
   };
 };

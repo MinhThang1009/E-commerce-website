@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useGetDetailedStatsQuery } from '@/services/adminDashboardApi';
 import {
@@ -80,12 +80,19 @@ const DashboardCharts: React.FC = () => {
 
   const { orders = [], users = [] } = data.data;
 
-  // Chuẩn hóa dữ liệu cho biểu đồ
-  const orderDataForChart = orders.map((o) => ({
-    name: formatPeriodLabel(o.period),
-    Revenue: o.revenue,
-    Orders: o.orderCount,
-  }));
+  const revenueLabel = t('admin.charts.revenueLabel');
+  const ordersLabel = t('admin.charts.ordersLabel');
+
+  // Stable keys 'revenue'/'orderCount' so chart survives language switch;
+  // translated labels only used in Recharts name/tooltip props below.
+  const orderDataForChart = useMemo(
+    () => orders.map((o) => ({
+      name: formatPeriodLabel(o.period),
+      revenue: o.revenue,
+      orderCount: o.orderCount,
+    })),
+    [orders, groupBy]
+  );
 
   return (
     <div className="space-y-6 mb-8">
@@ -152,7 +159,7 @@ const DashboardCharts: React.FC = () => {
                     color: '#1f2937'
                   }} 
                 />
-                <Area type="monotone" dataKey="Revenue" stroke="#3b82f6" fillOpacity={1} fill="url(#colorRevenue)" strokeWidth={2} />
+                <Area type="monotone" dataKey="revenue" name={revenueLabel} stroke="#3b82f6" fillOpacity={1} fill="url(#colorRevenue)" strokeWidth={2} />
               </AreaChart>
             </ResponsiveContainer>
           </div>
@@ -177,7 +184,7 @@ const DashboardCharts: React.FC = () => {
                     color: '#1f2937'
                   }} 
                 />
-                <Bar dataKey="Orders" fill="#10b981" radius={[4, 4, 0, 0]} />
+                <Bar dataKey="orderCount" name={ordersLabel} fill="#10b981" radius={[4, 4, 0, 0]} />
               </BarChart>
             </ResponsiveContainer>
           </div>

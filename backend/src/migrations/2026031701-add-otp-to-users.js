@@ -2,19 +2,23 @@
 
 module.exports = {
   async up(queryInterface, Sequelize) {
-    // Add otpCode column
-    await queryInterface.addColumn('users', 'otpCode', {
-      type: Sequelize.STRING(6),
-      allowNull: true,
-      defaultValue: null,
-    });
+    const tableDesc = await queryInterface.describeTable('users');
 
-    // Add otpExpires column
-    await queryInterface.addColumn('users', 'otpExpires', {
-      type: Sequelize.DATE,
-      allowNull: true,
-      defaultValue: null,
-    });
+    if (!tableDesc.otpCode) {
+      await queryInterface.addColumn('users', 'otpCode', {
+        type: Sequelize.STRING(6),
+        allowNull: true,
+        defaultValue: null,
+      });
+    }
+
+    if (!tableDesc.otpExpires) {
+      await queryInterface.addColumn('users', 'otpExpires', {
+        type: Sequelize.DATE,
+        allowNull: true,
+        defaultValue: null,
+      });
+    }
 
     // Remove old verificationToken column if it exists
     try {

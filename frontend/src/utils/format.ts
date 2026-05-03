@@ -1,17 +1,17 @@
-/**
- * Định dạng giá sang tiền tệ Việt Nam
- * @param price - Giá cần định dạng (có thể là chuỗi hoặc số)
- * @returns Chuỗi giá đã định dạng
- */
+import i18next from 'i18next';
+
+export const getLocale = (): 'vi-VN' | 'en-US' =>
+  i18next.language === 'vi' ? 'vi-VN' : 'en-US';
+
 export const formatPrice = (price: string | number): string => {
   const numPrice = typeof price === 'string' ? parseFloat(price) : price;
 
   // Xử lý giá không hợp lệ
   if (isNaN(numPrice)) {
-    return '0đ';
+    return `0${i18next.t('common.currencySymbol')}`;
   }
 
-  return `${numPrice.toLocaleString('vi-VN')}đ`;
+  return `${numPrice.toLocaleString(getLocale())}${i18next.t('common.currencySymbol')}`;
 };
 
 /**
@@ -31,12 +31,12 @@ export const formatPriceUSD = (price: string | number): string => {
 };
 
 /**
- * Định dạng số theo locale Việt Nam
+ * Định dạng số theo locale hiện tại
  * @param num - Số cần định dạng
  * @returns Chuỗi số đã định dạng
  */
 export const formatNumber = (num: number): string => {
-  return num.toLocaleString('vi-VN');
+  return num.toLocaleString(getLocale());
 };
 
 /**

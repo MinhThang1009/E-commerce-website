@@ -53,7 +53,7 @@ interface UserFormData {
 }
 
 const UsersPage: React.FC = () => {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const navigate = useNavigate();
   const [form] = Form.useForm();
   const [isModalVisible, setIsModalVisible] = useState(false);
@@ -205,7 +205,7 @@ const UsersPage: React.FC = () => {
       dataIndex: 'createdAt',
       key: 'createdAt',
       width: 120,
-      render: (date: string) => new Date(date).toLocaleDateString('vi-VN'),
+      render: (date: string) => new Date(date).toLocaleDateString(i18n.language === 'vi' ? 'vi-VN' : 'en-US'),
     },
     {
       title: t('admin.common.actions'),

@@ -37,6 +37,7 @@ const EmailCampaign = require('./emailCampaign');
 const ProductImage = require('./productImage');
 const BrandCategory = require('./brandCategory');
 const InventoryLog = require('./inventoryLog');
+const AuditLog = require('./AuditLog');
 
 // =============================================
 // QUAN HỆ USER
@@ -311,4 +312,5 @@ module.exports = {
   ProductImage,
   BrandCategory,
   InventoryLog,
+  AuditLog,
 };

@@ -25,6 +25,26 @@ app.use(
   helmet({
     crossOriginResourcePolicy: { policy: 'cross-origin' },
     crossOriginOpenerPolicy: { policy: 'unsafe-none' },
+    // Content Security Policy — chỉ cho phép script từ các domain tin cậy,
+    // không cho phép unsafe-eval để giảm thiểu rủi ro XSS code injection
+    contentSecurityPolicy: {
+      directives: {
+        defaultSrc: ["'self'"],
+        scriptSrc: [
+          "'self'",
+          'https://js.stripe.com',
+          'https://accounts.google.com',
+        ],
+        // unsafe-inline cần thiết cho Ant Design và inline styles của React
+        styleSrc: ["'self'", "'unsafe-inline'"],
+        imgSrc: ["'self'", 'data:', 'https:', 'blob:'],
+        connectSrc: ["'self'", 'https://api.stripe.com'],
+        frameSrc: [
+          'https://js.stripe.com',
+          'https://hooks.stripe.com',
+        ],
+      },
+    },
   })
 );
 

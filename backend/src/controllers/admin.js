@@ -1404,6 +1404,9 @@ const deleteProduct = catchAsync(async (req, res) => {
     // Commit transaction nếu tất cả thành công
     await transaction.commit();
 
+    // Ghi audit log sau khi commit thành công
+    AdminAuditService.logProductAction(req.user, 'DELETE', id, product.name);
+
     res.status(200).json({
       status: 'success',
       message: 'Xóa sản phẩm thành công',

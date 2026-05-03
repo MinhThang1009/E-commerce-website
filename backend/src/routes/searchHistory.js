@@ -2,9 +2,11 @@
 const router = express.Router();
 const searchHistoryController = require('../controllers/searchHistory');
 const { authenticate } = require('../middlewares/authenticate');
+const { validateRequest } = require('../middlewares/validateRequest');
+const { saveSearchSchema } = require('../validators/searchHistory');
 
-// Khách có thể lưu tìm kiếm (nếu có sessionId hoặc để im lặng)
-router.post('/', (req, res, next) => {
+// Khách có thể lưu tìm kiếm — validate query trước khi xử lý
+router.post('/', validateRequest(saveSearchSchema), (req, res, next) => {
   // Thử xác thực nhưng không báo lỗi nếu chưa đăng nhập
   authenticate(req, res, () => {
     searchHistoryController.saveSearch(req, res, next);

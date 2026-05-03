@@ -138,6 +138,36 @@ const getAdminChatList = async (req, res, next) => {
   }
 };
 
+// POST /api/chat — Gửi tin nhắn hỗ trợ (user/guest → admin)
+// content đã được validate bởi sendMessageSchema (max 2000 ký tự) trước khi vào đây
+const sendMessage = async (req, res, next) => {
+  try {
+    const { content, sessionId } = req.body;
+    const userId = req.user?.id ?? null;
+
+    // Yêu cầu định danh: phải có userId (đã đăng nhập) hoặc sessionId (guest)
+    if (!userId && !sessionId) {
+      const { AppError } = require('../middlewares/errorHandler');
+      throw new AppError('Cần cung cấp sessionId cho guest chat', 400);
+    }
+
+    const message = await ChatMessage.create({
+      userId,
+      sessionId: sessionId || null,
+      content,
+      isFromAdmin: false,
+      isRead: false,
+    });
+
+    res.status(201).json({
+      status: 'success',
+      data: message,
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
 // Đánh dấu cuộc trò chuyện là đã đọc
 const markAsRead = async (req, res, next) => {
   try {
@@ -182,4 +212,5 @@ module.exports = {
   getChatHistory,
   getAdminChatList,
   markAsRead,
+  sendMessage,
 };

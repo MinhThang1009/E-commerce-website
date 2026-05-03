@@ -612,14 +612,6 @@ const createOrder = async (req, res, next) => {
     });
   } catch (error) {
     logger.error('[LỖI] Tạo đơn hàng thất bại:', error);
-    try {
-      const fs = require('fs');
-      const path = require('path');
-      const errorLogPath = path.join(__dirname, '../../error_checkout.log');
-      fs.appendFileSync(errorLogPath, `[${new Date().toISOString()}] Checkout Error: ${error.message}\nStack: ${error.stack}\n\n`);
-    } catch (logError) {
-      logger.error('Không thể ghi file error log:', logError);
-    }
     if (transaction) await transaction.rollback();
     next(error);
   }

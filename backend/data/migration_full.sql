@@ -671,6 +671,22 @@ CREATE TABLE `recently_viewed` (
     CONSTRAINT `fk_rv_product` FOREIGN KEY (`product_id`) REFERENCES `products`(`id`) ON DELETE CASCADE ON UPDATE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
+CREATE TABLE `audit_logs` (
+    `id` INT AUTO_INCREMENT PRIMARY KEY,
+    `admin_id` INT NOT NULL,
+    `action` VARCHAR(50) NOT NULL,
+    `entity_type` VARCHAR(50) NOT NULL,
+    `entity_id` INT NULL,
+    `old_value` TEXT NULL,
+    `new_value` TEXT NULL,
+    `ip` VARCHAR(45) NULL,
+    `created_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    `updated_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    INDEX `idx_audit_admin_id` (`admin_id`),
+    INDEX `idx_audit_entity` (`entity_type`, `entity_id`),
+    INDEX `idx_audit_created_at` (`created_at`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
 -- =====================================================
 -- PHẦN 3: SEED DATA CƠ BẢN
 -- =====================================================

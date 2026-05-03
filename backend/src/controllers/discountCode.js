@@ -2,6 +2,7 @@
 const { Op } = require('sequelize');
 const { catchAsync } = require('../utils/catchAsync');
 const { AppError } = require('../middlewares/errorHandler');
+const { AdminAuditService } = require('../services/admin/adminAudit');
 
 /**
  * Admin: Lấy danh sách mã giảm giá
@@ -101,6 +102,9 @@ const createDiscountCode = catchAsync(async (req, res) => {
     description,
   });
 
+  // Ghi audit log tạo mã giảm giá
+  AdminAuditService.logDiscountCodeAction(req.user, 'CREATE', discountCode.id, code);
+
   res.status(201).json({
     status: 'success',
     message: 'Tạo mã giảm giá thành công',
@@ -138,6 +142,8 @@ const updateDiscountCode = catchAsync(async (req, res) => {
     }
   }
 
+  const wasActive = discountCode.isActive;
+
   await discountCode.update({
     code: code || discountCode.code,
     type: type || discountCode.type,
@@ -150,6 +156,10 @@ const updateDiscountCode = catchAsync(async (req, res) => {
     isActive: isActive !== undefined ? isActive : discountCode.isActive,
     description: description || discountCode.description,
   });
+
+  // Phân biệt DEACTIVATE và UPDATE thông thường để audit log rõ ràng hơn
+  const action = isActive === false && wasActive ? 'DEACTIVATE' : 'UPDATE';
+  AdminAuditService.logDiscountCodeAction(req.user, action, id, discountCode.code);
 
   res.status(200).json({
     status: 'success',
@@ -170,6 +180,9 @@ const deleteDiscountCode = catchAsync(async (req, res) => {
   }
 
   await discountCode.destroy();
+
+  // Ghi audit log xóa mã giảm giá
+  AdminAuditService.logDiscountCodeAction(req.user, 'DELETE', id, discountCode.code);
 
   res.status(200).json({
     status: 'success',

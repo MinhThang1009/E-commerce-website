@@ -8,6 +8,7 @@ const googleClient = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
 const { Op } = require('sequelize');
 const crypto = require('crypto');
 const axios = require('axios');
+const { AdminAuditService } = require('../services/admin/adminAudit');
 const { getRedisClient } = require('../config/redis');
 
 // Đăng ký người dùng mới
@@ -91,6 +92,11 @@ const login = async (req, res, next) => {
       process.env.JWT_REFRESH_SECRET,
       { expiresIn: process.env.JWT_REFRESH_EXPIRES_IN }
     );
+
+    // Ghi audit log cho admin — không chặn response nếu ghi log lỗi
+    if (user.role === 'admin') {
+      AdminAuditService.logSuccessfulLogin(user, req.ip);
+    }
 
     res.status(200).json({
       status: 'success',

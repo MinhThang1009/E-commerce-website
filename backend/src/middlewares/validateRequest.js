@@ -2,7 +2,8 @@ const { validationResult } = require('express-validator');
 const { AppError } = require('./errorHandler');
 
 // Middleware kiểm tra request body theo Joi schema
-const validateRequest = (schema) => {
+// statusCode mặc định 400; dùng 422 cho các endpoint có semantic validation (RFC 4918)
+const validateRequest = (schema, statusCode = 400) => {
   return (req, res, next) => {
     const { error } = schema.validate(req.body, {
       abortEarly: false,
@@ -13,7 +14,7 @@ const validateRequest = (schema) => {
       const errorMessage = error.details
         .map((detail) => detail.message)
         .join(', ');
-      return next(new AppError(errorMessage, 400));
+      return next(new AppError(errorMessage, statusCode));
     }
 
     next();

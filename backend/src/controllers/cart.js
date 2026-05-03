@@ -195,14 +195,6 @@ const getCart = async (req, res, next) => {
     });
   } catch (error) {
     logger.error('[LỖI] getCart thất bại:', error);
-    try {
-      const fs = require('fs');
-      const path = require('path');
-      const errorLogPath = path.join(__dirname, '../../error_cart.log');
-      fs.appendFileSync(errorLogPath, `[${new Date().toISOString()}] Lỗi giỏ hàng: ${error.message}\nStack: ${error.stack}\n\n`);
-    } catch (logError) {
-      logger.error('Không thể ghi vào file log lỗi:', logError);
-    }
     next(error);
   }
 };

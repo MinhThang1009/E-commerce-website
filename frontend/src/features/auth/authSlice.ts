@@ -2,6 +2,13 @@ import { createSlice, PayloadAction } from '@reduxjs/toolkit';
 import { User } from '@/types/user.types';
 import { AuthState, AuthResponse } from '@/types/auth.types';
 
+// Token lưu trong localStorage để persist qua page reload.
+// Trade-off đã đánh giá: XSS script có thể đọc localStorage, nhưng rủi ro được
+// giảm thiểu bởi xss-clean middleware + DOMPurify ở frontend (Phase 1).
+// Chuyển sang httpOnly cookie sẽ an toàn hơn nhưng cần sửa CORS + backend set-cookie
+// — đây là cải thiện có thể làm sau khi project scale lên production.
+// KHÔNG log token ra console (Rule 17).
+
 // Lấy token từ localStorage một cách an toàn
 const getStoredToken = (): string | null => {
   try {
@@ -56,6 +63,7 @@ const authSlice = createSlice({
       state.token = action.payload.token;
       state.refreshToken = action.payload.refreshToken;
       state.justLoggedIn = true;
+      // Lưu token vào localStorage — xem comment ở đầu file về trade-off bảo mật
       localStorage.setItem('token', action.payload.token);
       localStorage.setItem('refreshToken', action.payload.refreshToken);
       localStorage.setItem('user', JSON.stringify(action.payload.user));

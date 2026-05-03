@@ -2,6 +2,8 @@
 const router = express.Router();
 const loyaltyController = require('../controllers/loyalty');
 const { authenticate } = require('../middlewares/authenticate');
+const { validateRequest } = require('../middlewares/validateRequest');
+const { redeemPointsSchema } = require('../validators/loyalty');
 
 /**
  * @swagger
@@ -34,5 +36,13 @@ const { authenticate } = require('../middlewares/authenticate');
  *         description: Thông tin điểm tích lũy
  */
 router.get('/', authenticate, loyaltyController.getLoyaltyInfo);
+
+// Đổi điểm tích lũy — validate points (số nguyên dương, không âm), trả 422 nếu sai
+router.post(
+  '/redeem',
+  authenticate,
+  validateRequest(redeemPointsSchema, 422),
+  loyaltyController.redeemPoints
+);
 
 module.exports = router;

@@ -245,16 +245,21 @@ Trước khi qua Phase 2, tất cả các điểm sau phải PASS:
 ### 3.1 Double Stock Deduction (CRITICAL)
 - **File:** `backend/src/controllers/payment.js`
 - **Vấn đề:** Cả `confirmPayment()` (lines ~121-145) VÀ `handlePaymentSucceeded()` webhook (lines ~326-348) đều gọi `ProductVariant.decrement({ stockQuantity })` — stock bị trừ 2 lần mỗi khi Stripe payment success
-- **Fix:**
-  1. Xóa stock deduction khỏi `confirmPayment()` — chỉ update `paymentStatus = 'paid'` và `status = 'processing'`
-  2. Giữ stock deduction duy nhất trong webhook handler
-  3. Thêm idempotency guard trong webhook: `if (order.paymentStatus === 'paid') return res.json({ received: true })` trước khi deduct
-  4. Wrap stock deduction trong Sequelize transaction
+- **⚠️ CORRECTION (audit thực tế):** Plan cũ đề xuất idempotency guard `if (order.paymentStatus === 'paid') return` trong webhook — **SAI**: nếu confirmPayment() đã set `paymentStatus = 'paid'` trước, webhook sẽ luôn return sớm → stock không bao giờ được trừ. Phải dùng `paymentTransactionId` làm idempotency key.
+- **Fix đúng:**
+  1. `confirmPayment()`: wrap toàn bộ xử lý (update order + deduct stock) trong `sequelize.transaction()` → atomic, là **source of truth** cho Stripe flow
+  2. `handlePaymentSucceeded()` webhook: idempotency guard bằng `paymentTransactionId`:
+     ```js
+     const order = await Order.findByPk(orderId);
+     if (!order || order.paymentTransactionId === paymentIntent.id) return; // đã xử lý
+     // Nếu chưa: update order + deduct stock trong transaction (fallback case)
+     ```
+  3. Wrap toàn bộ webhook handler trong `sequelize.transaction()` với `FOR UPDATE` lock
 
 ### 3.2 Payment Failure không Rollback Stock
 - **File:** `backend/src/controllers/payment.js` `handlePaymentFailed()` (lines ~366-385)
-- **Vấn đề:** Khi payment fail, chỉ update `paymentStatus = 'failed'` — không restore stock (dù theo thiết kế stock chưa bị trừ khi tạo order, nhưng nếu partial flow xảy ra thì không có recovery)
-- **Fix:** Thêm explicit check và restore nếu stock đã bị trừ trước đó (check bằng flag hoặc audit log)
+- **Vấn đề:** Khi payment fail, chỉ update `paymentStatus = 'failed'`. Sau khi fix 3.1, stock chỉ bị trừ trong `confirmPayment()` (thành công) hoặc `handlePaymentSucceeded()` (webhook). Nếu payment fail → không có hàm nào deduct stock → không cần restore. Tuy nhiên cần thêm comment rõ ràng và guard phòng trường hợp partial flow.
+- **Fix:** Thêm comment giải thích + log rõ ràng trong `handlePaymentFailed()`. Không cần restore stock vì stock chưa bị trừ khi payment fail.
 
 ### 3.3 Order Number Race Condition
 - **File:** `backend/src/controllers/order.js` lines ~364-368

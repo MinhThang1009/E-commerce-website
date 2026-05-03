@@ -13,6 +13,7 @@
 } = require('../models');
 const { AppError } = require('../middlewares/errorHandler');
 const logger = require('../utils/logger');
+const crypto = require('crypto');
 const emailService = require('../services/email');
 
 // Cấu hình điểm tích lũy loyalty
@@ -252,32 +253,41 @@ const createOrder = async (req, res, next) => {
 
     for (const item of itemsToProcess) {
       const product = item.Product;
-      const variant = item.ProductVariant;
 
       // Kiểm tra sản phẩm còn kinh doanh không
       if (product.status !== 'active') {
         throw new AppError(`Sản phẩm "${product.name}" hiện không kinh doanh`, 400);
       }
 
-      // Kiểm tra tồn kho
-      if (variant) {
-        if (variant.stockQuantity < item.quantity) {
+      // Kiểm tra và trừ tồn kho với FOR UPDATE lock (ngăn oversell concurrent)
+      if (item.variantId) {
+        const lockedVariant = await ProductVariant.findByPk(item.variantId, {
+          lock: transaction.LOCK.UPDATE,
+          transaction,
+        });
+        if (!lockedVariant || lockedVariant.stockQuantity < item.quantity) {
           throw new AppError(
-            `Biến thể "${variant.name}" của sản phẩm "${product.name}" chỉ còn ${variant.stockQuantity} sản phẩm`,
+            `Sản phẩm "${product.name}" chỉ còn ${lockedVariant ? lockedVariant.stockQuantity : 0} sản phẩm`,
             400
           );
         }
+        await lockedVariant.decrement('stockQuantity', { by: item.quantity, transaction });
       } else {
-        const stock = product.defaultVariant ? product.defaultVariant.stockQuantity : 0;
-        if (stock < item.quantity) {
+        const lockedProduct = await Product.findByPk(item.productId, {
+          lock: transaction.LOCK.UPDATE,
+          transaction,
+        });
+        if (!lockedProduct || lockedProduct.stockQuantity < item.quantity) {
           throw new AppError(
-            `Sản phẩm "${product.name}" chỉ còn ${stock} sản phẩm`,
+            `Sản phẩm "${product.name}" chỉ còn ${lockedProduct ? lockedProduct.stockQuantity : 0} sản phẩm`,
             400
           );
         }
+        await lockedProduct.decrement('stockQuantity', { by: item.quantity, transaction });
       }
 
       // Tính giá sản phẩm
+      const variant = item.ProductVariant;
       const price = variant ? variant.price : product.basePrice;
       subtotal += price * item.quantity;
 
@@ -364,8 +374,8 @@ const createOrder = async (req, res, next) => {
     const date = new Date();
     const year = date.getFullYear().toString().substr(-2);
     const month = (date.getMonth() + 1).toString().padStart(2, '0');
-    const count = await Order.count();
-    const orderNumber = `ORD-${year}${month}-${(count + 1).toString().padStart(5, '0')}`;
+    const rand = crypto.randomBytes(4).toString('hex').toUpperCase();
+    const orderNumber = `ORD-${year}${month}-${Date.now()}-${rand}`;
 
     // Hủy đơn pending cũ — mỗi tài khoản chỉ có 1 đơn pending tại một thời điểm
     await Order.update(
@@ -875,7 +885,7 @@ const updateOrderStatus = async (req, res, next) => {
 
     // Trao điểm tích lũy khi trạng thái chuyển sang đã giao
     if (status === 'delivered' && previousStatus !== 'delivered') {
-      const pointsEarned = Math.floor(parseFloat(order.total) / POINTS_EARN_RATE);
+      const pointsEarned = Math.floor(parseFloat(order.subtotal) / POINTS_EARN_RATE);
       if (pointsEarned > 0) {
         const user = await User.findByPk(order.userId);
         if (user) {
@@ -1015,7 +1025,7 @@ const confirmReceived = async (req, res, next) => {
 
     // Trao điểm tích lũy nếu chưa được trao (pointsEarned = 0 nghĩa là chưa xử lý)
     if (earnedPointsTotal === 0) {
-      const orderTotal = parseFloat(order.total);
+      const orderTotal = parseFloat(order.subtotal);
       newPointsAwarded = Math.floor(orderTotal / POINTS_EARN_RATE);
 
       if (newPointsAwarded > 0) {

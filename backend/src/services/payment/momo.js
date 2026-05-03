@@ -4,9 +4,12 @@ const { v4: uuidv4 } = require('uuid');
 
 class MoMoService {
   constructor() {
-    this.partnerCode = process.env.DEV_PARTNER_CODE || process.env.MOMO_PARTNER_CODE || 'MOMOLRJZ20181206';
-    this.accessKey = process.env.DEV_ACCESS_KEY || process.env.MOMO_ACCESS_KEY || 'mTCKt9W3eU1m39TW';
-    this.secretKey = process.env.DEV_SECRET_KEY || process.env.MOMO_SECRET_KEY || 'SetA5RDnLHvt51AULf51DyauxUo3kDU6';
+    this.partnerCode = process.env.DEV_PARTNER_CODE || process.env.MOMO_PARTNER_CODE;
+    this.accessKey = process.env.DEV_ACCESS_KEY || process.env.MOMO_ACCESS_KEY;
+    this.secretKey = process.env.DEV_SECRET_KEY || process.env.MOMO_SECRET_KEY;
+    if (!this.partnerCode || !this.accessKey || !this.secretKey) {
+      console.warn('[MoMo] MOMO_PARTNER_CODE, MOMO_ACCESS_KEY, MOMO_SECRET_KEY chưa được set — thanh toán MoMo sẽ thất bại');
+    }
     // Endpoint gốc: https://test-payment.momo.vn/v2/gateway/api
     this.apiEndpoint = process.env.DEV_MOMO_ENDPOINT ? `${process.env.DEV_MOMO_ENDPOINT}/create` : (process.env.MOMO_API_ENDPOINT || 'https://test-payment.momo.vn/v2/gateway/api/create');
 

@@ -96,7 +96,7 @@ const getDashboardStats = catchAsync(async (req, res) => {
   const totalOrders = await Order.count();
   logger.info('>>> [DASHBOARD] Lấy totalOrders:', totalOrders);
   const totalRevenue = await Order.sum('total', {
-    where: { status: 'delivered' },
+    where: { status: 'delivered', paymentStatus: { [Op.notIn]: ['refunded', 'failed'] } },
   });
   logger.info('>>> [DASHBOARD] Lấy totalRevenue:', totalRevenue);
 
@@ -115,6 +115,7 @@ const getDashboardStats = catchAsync(async (req, res) => {
   const monthlyRevenue = await Order.sum('total', {
     where: {
       status: 'delivered',
+      paymentStatus: { [Op.notIn]: ['refunded', 'failed'] },
       createdAt: { [Op.gte]: startOfMonth },
     },
   });
@@ -142,6 +143,7 @@ const getDashboardStats = catchAsync(async (req, res) => {
   const lastMonthRevenue = await Order.sum('total', {
     where: {
       status: 'delivered',
+      paymentStatus: { [Op.notIn]: ['refunded', 'failed'] },
       createdAt: {
         [Op.gte]: startOfLastMonth,
         [Op.lte]: endOfLastMonth,

@@ -86,67 +86,21 @@ const confirmPayment = async (req, res, next) => {
       );
 
       if (existingOrder && paymentIntent.status === 'succeeded') {
-        const updateResult = await Order.update(
+        // Stock đã được trừ tại thời điểm tạo đơn hàng (order.js createOrder)
+        // confirmPayment chỉ cập nhật trạng thái thanh toán
+        await Order.update(
           {
-            status: 'processing', // Cập nhật trạng thái đơn hàng
-            paymentStatus: 'paid', // Cập nhật trạng thái thanh toán
+            status: 'processing',
+            paymentStatus: 'paid',
             paymentTransactionId: paymentIntent.id,
             paymentProvider: 'stripe',
             updatedAt: new Date(),
           },
-          {
-            where: { id: paymentIntent.metadata.orderId },
-          }
+          { where: { id: paymentIntent.metadata.orderId } }
         );
-        logger.info('Kết quả cập nhật đơn hàng:', updateResult);
 
-        // Xác minh kết quả cập nhật
-        const updatedOrder = await Order.findByPk(
-          paymentIntent.metadata.orderId
-        );
-        logger.info(
-          'Đơn hàng sau khi cập nhật:',
-          updatedOrder
-            ? {
-                id: updatedOrder.id,
-                number: updatedOrder.number,
-                status: updatedOrder.status, // Trạng thái đơn hàng
-                paymentStatus: updatedOrder.paymentStatus, // Trạng thái thanh toán
-                paymentTransactionId: updatedOrder.paymentTransactionId,
-              }
-            : 'Không tìm thấy đơn hàng sau khi cập nhật'
-        );
-        
-        // Trừ tồn kho sau khi thanh toán Stripe được xác nhận
-        if (updatedOrder) {
-          const { OrderItem, Product, ProductVariant } = require('../models');
-
-          // Lấy danh sách mặt hàng để trừ tồn kho
-          const orderItems = await OrderItem.findAll({
-            where: { orderId: updatedOrder.id }
-          });
-
-          for (const item of orderItems) {
-            if (item.variantId) {
-              // Trừ tồn kho theo biến thể sản phẩm
-              await ProductVariant.decrement(
-                { stockQuantity: item.quantity },
-                { where: { id: item.variantId } }
-              );
-            } else {
-              // Trừ tồn kho theo sản phẩm
-              await Product.decrement(
-                { stockQuantity: item.quantity },
-                { where: { id: item.productId } }
-              );
-            }
-          }
-
-          logger.info(`Đã trừ tồn kho cho đơn hàng ${updatedOrder.id} sau khi xác nhận thanh toán Stripe`);
-
-          // Xóa giỏ hàng đang hoạt động của người dùng
-          await clearUserCart(updatedOrder.userId);
-        }
+        logger.info(`Đã cập nhật trạng thái đơn hàng ${existingOrder.id} sang paid`);
+        await clearUserCart(existingOrder.userId);
       } else if (!existingOrder) {
         logger.info('Không tìm thấy đơn hàng với ID:', paymentIntent.metadata.orderId);
       } else {
@@ -310,76 +264,64 @@ const handleWebhook = async (req, res, next) => {
 // Hàm xử lý khi thanh toán thành công
 const handlePaymentSucceeded = async (paymentIntent) => {
   try {
-    if (paymentIntent.metadata.orderId) {
+    const orderId = paymentIntent.metadata?.orderId;
+    if (!orderId) return;
+
+    const order = await Order.findByPk(orderId);
+    if (!order) return;
+
+    // Idempotency guard: confirmPayment() đã xử lý nếu paymentTransactionId khớp
+    if (order.paymentTransactionId === paymentIntent.id) {
+      logger.info(`Webhook payment.succeeded: order ${orderId} đã xử lý bởi confirmPayment — bỏ qua`);
+      return;
+    }
+
+    // Fallback: confirmPayment chưa chạy (ví dụ: client disconnect) — cập nhật order status
+    // Stock đã trừ tại order creation, không trừ lại ở đây
+    await sequelize.transaction(async (t) => {
+      const lockedOrder = await Order.findByPk(orderId, {
+        lock: t.LOCK.UPDATE,
+        transaction: t,
+      });
+
+      if (!lockedOrder || lockedOrder.paymentTransactionId === paymentIntent.id) return;
+
       await Order.update(
         {
-          status: 'processing', // Cập nhật trạng thái đơn hàng
-          paymentStatus: 'paid', // Cập nhật trạng thái thanh toán
+          status: 'processing',
+          paymentStatus: 'paid',
           paymentTransactionId: paymentIntent.id,
           paymentProvider: 'stripe',
         },
-        {
-          where: { id: paymentIntent.metadata.orderId },
-        }
+        { where: { id: orderId }, transaction: t }
       );
-      
-      // Trừ tồn kho sau khi thanh toán được xác nhận qua Stripe webhook
-      const { OrderItem, Product, ProductVariant } = require('../models');
+    });
 
-      // Lấy danh sách mặt hàng để trừ tồn kho
-      const orderItems = await OrderItem.findAll({
-        where: { orderId: paymentIntent.metadata.orderId }
-      });
-
-      for (const item of orderItems) {
-        if (item.variantId) {
-          // Trừ tồn kho theo biến thể sản phẩm
-          await ProductVariant.decrement(
-            { stockQuantity: item.quantity },
-            { where: { id: item.variantId } }
-          );
-        } else {
-          // Trừ tồn kho theo sản phẩm
-          await Product.decrement(
-            { stockQuantity: item.quantity },
-            { where: { id: item.productId } }
-          );
-        }
-      }
-
-      logger.info(
-        `Thanh toán thành công và đã trừ tồn kho cho đơn hàng: ${paymentIntent.metadata.orderId}`
-      );
-
-      // Xóa giỏ hàng đang hoạt động của người dùng
-      const order = await Order.findByPk(paymentIntent.metadata.orderId);
-      if (order) {
-        await clearUserCart(order.userId);
-      }
-    }
+    await clearUserCart(order.userId);
+    logger.info(`Webhook: cập nhật trạng thái thanh toán thành công cho đơn hàng ${orderId}`);
   } catch (error) {
     logger.error('Lỗi xử lý thanh toán thành công:', error);
   }
 };
 
 // Hàm xử lý khi thanh toán thất bại
+// Stock không cần restore vì stock chỉ bị trừ khi payment succeeded
+// (trong confirmPayment transaction hoặc handlePaymentSucceeded webhook).
+// Khi payment failed, cả hai hàm trên chưa chạy → stock nguyên vẹn.
 const handlePaymentFailed = async (paymentIntent) => {
   try {
-    if (paymentIntent.metadata.orderId) {
-      await Order.update(
-        {
-          paymentStatus: 'failed',
-          paymentTransactionId: paymentIntent.id,
-          paymentProvider: 'stripe',
-        },
-        {
-          where: { id: paymentIntent.metadata.orderId },
-        }
-      );
-      logger.info(
-        `Thanh toán thất bại cho đơn hàng: ${paymentIntent.metadata.orderId}`
-      );
-    }
+    const orderId = paymentIntent.metadata?.orderId;
+    if (!orderId) return;
+
+    await Order.update(
+      {
+        paymentStatus: 'failed',
+        paymentTransactionId: paymentIntent.id,
+        paymentProvider: 'stripe',
+      },
+      { where: { id: orderId } }
+    );
+    logger.info(`Thanh toán thất bại cho đơn hàng: ${orderId}`);
   } catch (error) {
     logger.error('Lỗi xử lý thanh toán thất bại:', error);
   }
@@ -805,43 +747,17 @@ const handleSePayWebhook = async (req, res, next) => {
 
     // Cập nhật trạng thái đơn hàng thành paid và processing nếu chưa xử lý
     if (order.paymentStatus === 'pending' || order.paymentStatus === 'unpaid') {
-      const t = await sequelize.transaction();
-      try {
-        await Order.update(
-          {
-            status: 'processing',
-            paymentStatus: 'paid',
-            paymentTransactionId: id.toString(),
-            paymentProvider: 'sepay',
-            updatedAt: new Date(),
-          },
-          { where: { id: order.id }, transaction: t }
-        );
-
-        const orderItems = await OrderItem.findAll({
-          where: { orderId: order.id },
-          transaction: t,
-        });
-
-        for (const item of orderItems) {
-          if (item.variantId) {
-            await ProductVariant.decrement(
-              { stockQuantity: item.quantity },
-              { where: { id: item.variantId }, transaction: t }
-            );
-          } else {
-            await Product.decrement(
-              { stockQuantity: item.quantity },
-              { where: { id: item.productId }, transaction: t }
-            );
-          }
-        }
-
-        await t.commit();
-      } catch (txError) {
-        await t.rollback();
-        throw txError;
-      }
+      // Stock đã trừ tại order creation — chỉ cập nhật trạng thái
+      await Order.update(
+        {
+          status: 'processing',
+          paymentStatus: 'paid',
+          paymentTransactionId: id.toString(),
+          paymentProvider: 'sepay',
+          updatedAt: new Date(),
+        },
+        { where: { id: order.id } }
+      );
 
       logger.info('Đã cập nhật đơn hàng thành công:', {
         orderId: order.id,
@@ -926,29 +842,13 @@ const momoReturn = async (req, res, next) => {
       if (orderId) {
         const order = await Order.findByPk(orderId);
         if (order && order.paymentStatus !== 'paid') {
-          const t = await sequelize.transaction();
-          try {
-            await order.update({
-              status: 'processing',
-              paymentStatus: 'paid',
-              paymentProvider: 'momo',
-              updatedAt: new Date(),
-            }, { transaction: t });
-
-            const orderItems = await OrderItem.findAll({ where: { orderId: order.id }, transaction: t });
-            for (const item of orderItems) {
-              if (item.variantId) {
-                await ProductVariant.decrement({ stockQuantity: item.quantity }, { where: { id: item.variantId }, transaction: t });
-              } else {
-                await Product.decrement({ stockQuantity: item.quantity }, { where: { id: item.productId }, transaction: t });
-              }
-            }
-            await t.commit();
-          } catch (txError) {
-            await t.rollback();
-            throw txError;
-          }
-
+          // Stock đã trừ tại order creation — chỉ cập nhật trạng thái
+          await order.update({
+            status: 'processing',
+            paymentStatus: 'paid',
+            paymentProvider: 'momo',
+            updatedAt: new Date(),
+          });
           await clearUserCart(order.userId);
         }
       }
@@ -979,30 +879,14 @@ const momoIPN = async (req, res, next) => {
     if (resultCode == 0 && orderId) {
       const order = await Order.findByPk(orderId);
       if (order && order.paymentStatus !== 'paid') {
-        const t = await sequelize.transaction();
-        try {
-          await order.update({
-            status: 'processing',
-            paymentStatus: 'paid',
-            paymentTransactionId: transId,
-            paymentProvider: 'momo',
-            updatedAt: new Date(),
-          }, { transaction: t });
-
-          const orderItems = await OrderItem.findAll({ where: { orderId: order.id }, transaction: t });
-          for (const item of orderItems) {
-            if (item.variantId) {
-              await ProductVariant.decrement({ stockQuantity: item.quantity }, { where: { id: item.variantId }, transaction: t });
-            } else {
-              await Product.decrement({ stockQuantity: item.quantity }, { where: { id: item.productId }, transaction: t });
-            }
-          }
-          await t.commit();
-        } catch (txError) {
-          await t.rollback();
-          throw txError;
-        }
-
+        // Stock đã trừ tại order creation — chỉ cập nhật trạng thái
+        await order.update({
+          status: 'processing',
+          paymentStatus: 'paid',
+          paymentTransactionId: transId,
+          paymentProvider: 'momo',
+          updatedAt: new Date(),
+        });
         await clearUserCart(order.userId);
       }
     }
@@ -1063,30 +947,14 @@ const vnpayReturn = async (req, res, next) => {
     if (responseCode === '00') {
       const order = await Order.findOne({ where: { number: orderNumber } });
       if (order && order.paymentStatus !== 'paid') {
-        const t = await sequelize.transaction();
-        try {
-          await order.update({
-            status: 'processing',
-            paymentStatus: 'paid',
-            paymentProvider: 'vnpay',
-            paymentTransactionId: vnp_Params['vnp_TransactionNo'],
-            updatedAt: new Date(),
-          }, { transaction: t });
-
-          const orderItems = await OrderItem.findAll({ where: { orderId: order.id }, transaction: t });
-          for (const item of orderItems) {
-            if (item.variantId) {
-              await ProductVariant.decrement({ stockQuantity: item.quantity }, { where: { id: item.variantId }, transaction: t });
-            } else {
-              await Product.decrement({ stockQuantity: item.quantity }, { where: { id: item.productId }, transaction: t });
-            }
-          }
-          await t.commit();
-        } catch (txError) {
-          await t.rollback();
-          throw txError;
-        }
-
+        // Stock đã trừ tại order creation — chỉ cập nhật trạng thái
+        await order.update({
+          status: 'processing',
+          paymentStatus: 'paid',
+          paymentProvider: 'vnpay',
+          paymentTransactionId: vnp_Params['vnp_TransactionNo'],
+          updatedAt: new Date(),
+        });
         await clearUserCart(order.userId);
       }
       return res.redirect(`${process.env.FRONTEND_URL}/orders?payment=success&order=${orderNumber}`);
@@ -1128,30 +996,14 @@ const vnpayIPN = async (req, res, next) => {
     }
 
     if (responseCode === '00') {
-      const t = await sequelize.transaction();
-      try {
-        await order.update({
-          status: 'processing',
-          paymentStatus: 'paid',
-          paymentProvider: 'vnpay',
-          paymentTransactionId: vnp_Params['vnp_TransactionNo'],
-          updatedAt: new Date(),
-        }, { transaction: t });
-
-        const orderItems = await OrderItem.findAll({ where: { orderId: order.id }, transaction: t });
-        for (const item of orderItems) {
-          if (item.variantId) {
-            await ProductVariant.decrement({ stockQuantity: item.quantity }, { where: { id: item.variantId }, transaction: t });
-          } else {
-            await Product.decrement({ stockQuantity: item.quantity }, { where: { id: item.productId }, transaction: t });
-          }
-        }
-        await t.commit();
-      } catch (txError) {
-        await t.rollback();
-        throw txError;
-      }
-
+      // Stock đã trừ tại order creation — chỉ cập nhật trạng thái
+      await order.update({
+        status: 'processing',
+        paymentStatus: 'paid',
+        paymentProvider: 'vnpay',
+        paymentTransactionId: vnp_Params['vnp_TransactionNo'],
+        updatedAt: new Date(),
+      });
       await clearUserCart(order.userId);
       return res.status(200).json({ RspCode: '00', Message: 'Confirm Success' });
     } else {

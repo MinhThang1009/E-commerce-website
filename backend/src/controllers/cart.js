@@ -732,12 +732,12 @@ const mergeCart = async (req, res, next) => {
       include: [
         {
           model: Product,
-          attributes: ['id'],
-          include: [{ association: 'defaultVariant', attributes: ['stockQuantity'] }]
+          attributes: ['id', 'basePrice'],
+          include: [{ association: 'defaultVariant', attributes: ['id', 'stockQuantity', 'price'] }]
         },
         {
           model: ProductVariant,
-          attributes: ['id', 'stockQuantity'],
+          attributes: ['id', 'stockQuantity', 'price'],
         },
       ],
       transaction,
@@ -755,6 +755,11 @@ const mergeCart = async (req, res, next) => {
         transaction,
       });
 
+      // Lấy giá hiện tại từ variant hoặc product (tránh stale price)
+      const currentPrice = sessionItem.ProductVariant
+        ? parseFloat(sessionItem.ProductVariant.price)
+        : parseFloat(sessionItem.Product.basePrice);
+
       if (existingUserItem) {
         // Gộp số lượng
         const newQuantity = existingUserItem.quantity + sessionItem.quantity;
@@ -766,15 +771,15 @@ const mergeCart = async (req, res, next) => {
         const finalQuantity = Math.min(newQuantity, maxStock);
 
         await existingUserItem.update(
-          { quantity: finalQuantity },
+          { quantity: finalQuantity, price: currentPrice },
           { transaction }
         );
 
         // Xóa mục session sau khi gộp xong
         await sessionItem.destroy({ transaction });
       } else {
-        // Chuyển mục sang giỏ hàng người dùng
-        await sessionItem.update({ cartId: userCart.id }, { transaction });
+        // Chuyển mục sang giỏ hàng người dùng, refresh giá
+        await sessionItem.update({ cartId: userCart.id, price: currentPrice }, { transaction });
       }
     }
 

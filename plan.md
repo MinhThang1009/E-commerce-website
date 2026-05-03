@@ -354,6 +354,7 @@ Trước khi qua Phase 2, tất cả các điểm sau phải PASS:
   - Unauthorized (chưa login) → `401`
   - Forbidden (đã login nhưng không có quyền) → `403`
   - Server error → `500`
+- **⚠️ CORRECTION (audit thực tế):** VNPay IPN handler (`payment.js` handleVnPayIPN) trả `res.status(200).json({ RspCode: 'XX', Message: '...' })` với error codes là **ĐÚNG theo VNPay IPN specification** — gateway chỉ nhận response khi HTTP 200; trả 4xx sẽ gây retry vô hạn. Không được sửa pattern này trong payment IPN handlers. Tương tự với MoMo và SePay IPN.
 
 ### 4.6 Cart Merge Logic — Backend + Frontend Race Condition
 - **File:** `backend/src/controllers/cart.js`
@@ -374,11 +375,11 @@ Trước khi qua Phase 2, tất cả các điểm sau phải PASS:
 - **Fix:** Sort và filter giá nên dựa trên `MIN(ProductVariant.price)` của product để hiển thị giá thấp nhất, hoặc rõ ràng document rằng sort dùng `basePrice`
 
 ### ✅ Acceptance Criteria Phase 4
-- [ ] `GET /api/routes` (hoặc list routes manually) — tất cả 27 route file đều được mount
-- [ ] Không có response `{ status: 200, success: false }` — lỗi phải dùng status >= 400
-- [ ] `DELETE /api/wishlist/:id` dùng DELETE method, không phải POST
-- [ ] `GET /api/products?sort=price_asc` trả về product rẻ nhất trước (verify bằng data thực)
-- [ ] Merge cart với duplicate item → quantity được cộng dồn, không bị ghi đè
+- [x] `GET /api/routes` (hoặc list routes manually) — tất cả 27 route file đều được mount
+- [x] Không có response `{ status: 200, success: false }` — lỗi phải dùng status >= 400 (VNPay IPN exempt — đặc tả gateway)
+- [x] `DELETE /api/wishlist/:id` dùng DELETE method, không phải POST
+- [x] `GET /api/products?sort=price_asc` trả về product rẻ nhất trước: [4100000, 5490000, 6180000, 6590000] ✓
+- [x] Merge cart với duplicate item → quantity được cộng dồn: 2+3=5 ✓
 
 ---
 

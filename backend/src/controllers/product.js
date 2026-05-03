@@ -168,6 +168,16 @@ const getAllProducts = async (req, res, next) => {
       required: false,
     });
 
+    // Xử lý sort: price_asc/price_desc map sang basePrice column
+    let orderClause;
+    if (sort === 'price_asc') {
+      orderClause = [['basePrice', 'ASC']];
+    } else if (sort === 'price_desc') {
+      orderClause = [['basePrice', 'DESC']];
+    } else {
+      orderClause = [[sort, order]];
+    }
+
     // Truy vấn danh sách sản phẩm
     const { count, rows: productsRaw } = await Product.findAndCountAll({
       where: whereConditions,
@@ -175,7 +185,7 @@ const getAllProducts = async (req, res, next) => {
       distinct: true,
       limit: parseInt(limit),
       offset: (parseInt(page) - 1) * parseInt(limit),
-      order: [[sort, order]],
+      order: orderClause,
     });
 
     // Xử lý kết quả, thêm thông tin đánh giá

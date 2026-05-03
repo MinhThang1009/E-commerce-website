@@ -13,6 +13,7 @@ export const useCartSync = () => {
   const dispatch = useDispatch();
   const { isAuthenticated } = useAuth();
   const localCartItems = useSelector((state: RootState) => state.cart.items);
+  const justLoggedIn = useSelector((state: RootState) => state.auth.justLoggedIn);
 
   // Lấy server cart cho người dùng đã xác thực
   const {
@@ -31,7 +32,8 @@ export const useCartSync = () => {
   // Đồng bộ giỏ hàng cục bộ lên server khi người dùng đăng nhập
   useEffect(() => {
     const syncLocalCartToServer = async () => {
-      if (isAuthenticated && localCartItems.length > 0) {
+      // Bỏ qua nếu justLoggedIn — useCartMerge sẽ xử lý merge khi login
+      if (isAuthenticated && localCartItems.length > 0 && !justLoggedIn) {
         try {
           // Chuyển đổi cart item cục bộ sang định dạng server
           const itemsToSync = localCartItems.map((item) => ({
@@ -58,7 +60,7 @@ export const useCartSync = () => {
     };
 
     syncLocalCartToServer();
-  }, [isAuthenticated, dispatch, syncCart]); // Không bao gồm localCartItems để tránh vòng lặp vô hạn
+  }, [isAuthenticated, justLoggedIn, dispatch, syncCart]); // Không bao gồm localCartItems để tránh vòng lặp vô hạn
 
   // Cập nhật Redux store khi server cart thay đổi
   useEffect(() => {

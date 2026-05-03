@@ -29,7 +29,7 @@ import { PremiumButton, BannerDisplay } from '@/components/common';
 const HomePage: React.FC = () => {
   const { t } = useTranslation();
 
-  // C�c API query v?i qu?n l� state n�ng cao
+  // Các API query với quản lý state nâng cao
   const featuredProductsQuery = useGetFeaturedProductsQuery({ limit: 4 });
   const categoriesQuery = useGetCategoriesQuery();
 
@@ -67,7 +67,7 @@ const HomePage: React.FC = () => {
     isArray: true,
   });
 
-  // �ang k� nh?n b?n tin
+  // Chuyển đổi danh mục để hiển thị
   const [newsletterEmail, setNewsletterEmail] = React.useState('');
   const [subscribeNewsletter, { isLoading: isSubscribing }] = useSubscribeNewsletterMutation();
 
@@ -86,7 +86,7 @@ const HomePage: React.FC = () => {
     }
   };
 
-  // Chuy?n d?i danh m?c d? hi?n th?
+  // Đăng ký nhận bản tin
   const displayCategories =
     categories.data?.slice(0, 6).map((category: any) => ({
       id: category.id,

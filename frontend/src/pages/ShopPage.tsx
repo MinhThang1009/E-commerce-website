@@ -16,7 +16,7 @@ import { useGetBrandsQuery } from '@/services/brandApi';
 import { useGetCollectionsQuery } from '@/services/collectionApi';
 import { useTranslation } from 'react-i18next';
 
-// T�y ch?n s?p x?p s? du?c x? l� b�n trong component do d�ng hooks
+// Tùy chọn sắp xếp sẽ được xử lý bên trong component do dùng hooks
 
 const ShopPage: React.FC = () => {
   const { t } = useTranslation();
@@ -31,7 +31,7 @@ const ShopPage: React.FC = () => {
   const [isMobileFilterOpen, setIsMobileFilterOpen] = useState(false);
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
 
-  // L?y gi� tr? b? l?c t? URL
+  // Lấy giá trị bộ lọc từ URL
   const categoryId = searchParams.get('category') || undefined;
   const brandId = searchParams.getAll('brand');
   const collectionId = searchParams.getAll('collection');
@@ -46,7 +46,7 @@ const ShopPage: React.FC = () => {
   const page = searchParams.get('page') ? Number(searchParams.get('page')) : 1;
   const limit = 12;
 
-  // B? l?c d� ch?n cho panel l?c
+  // Bộ lọc đã chọn cho panel lọc
   const [selectedFilters, setSelectedFilters] = useState<
     Record<string, string[]>
   >({
@@ -55,13 +55,13 @@ const ShopPage: React.FC = () => {
     collection: collectionId,
   });
 
-  // Kho?ng gi� cho panel l?c
+  // Khoảng giá cho panel lọc
   const [priceRange, setPriceRange] = useState({
     min: minPrice || 0,
-    max: maxPrice || 10000000, // 10 tri?u VND
+    max: maxPrice || 10000000, // 10 triệu VND
   });
 
-  // S? d?ng RTK Query hooks
+  // Sử dụng RTK Query hooks
   const {
     data: productsData,
     isLoading: isProductsLoading,
@@ -83,13 +83,13 @@ const ShopPage: React.FC = () => {
 
   const { data: brandsData, isLoading: isBrandsLoading } = useGetBrandsQuery({
     isActive: true,
-    categoryId: categoryId, // T? d?ng l?c thuong hi?u theo danh m?c dang ch?n
+    categoryId: categoryId, // Tự động lọc thương hiệu theo danh mục đang chọn
   });
 
   const { data: collectionsData, isLoading: isCollectionsLoading } =
     useGetCollectionsQuery({ isActive: true });
 
-  // C?p nh?t b? l?c d� ch?n khi tham s? URL thay d?i
+  // Cập nhật bộ lọc đã chọn khi tham số URL thay đổi
   useEffect(() => {
     setSelectedFilters({
       categories: categoryId ? [categoryId] : [],
@@ -99,15 +99,15 @@ const ShopPage: React.FC = () => {
 
     setPriceRange({
       min: minPrice || 0,
-      max: maxPrice || 10000000, // 10 tri?u VND
+      max: maxPrice || 10000000, // 10 triệu VND
     });
   }, [categoryId, searchParams, minPrice, maxPrice]);
 
-  // C?p nh?t URL khi b? l?c thay d?i
+  // Cập nhật URL khi bộ lọc thay đổi
   const updateFilters = (newFilters: Partial<ProductFilters>) => {
     const updatedParams = new URLSearchParams(searchParams);
 
-    // C?p nh?t ho?c x�a t?ng tham s? b? l?c
+    // Cập nhật hoặc xóa từng tham số bộ lọc
     Object.entries(newFilters).forEach(([key, value]) => {
       if (value === undefined || value === '') {
         updatedParams.delete(key);
@@ -116,7 +116,7 @@ const ShopPage: React.FC = () => {
       }
     });
 
-    // �?t l?i v? trang 1 khi b? l?c thay d?i
+    // Đặt lại về trang 1 khi bộ lọc thay đổi
     if (Object.keys(newFilters).some((key) => key !== 'page')) {
       updatedParams.set('page', '1');
     }
@@ -124,22 +124,22 @@ const ShopPage: React.FC = () => {
     setSearchParams(updatedParams);
   };
 
-  // X? l� thay d?i s?p x?p
+  // Xử lý thay đổi sắp xếp
   const handleSortChange = (value: string) => {
     updateFilters({ sort: value as ProductFilters['sort'] });
   };
 
-  // X? l� chuy?n trang
+  // Xử lý chuyển trang
   const handlePageChange = (newPage: number) => {
     updateFilters({ page: newPage });
   };
 
-  // X? l� thay d?i kho?ng gi�
+  // Xử lý thay đổi khoảng giá
   const handlePriceRangeChange = (range: { min: number; max: number }) => {
     updateFilters({ minPrice: range.min, maxPrice: range.max });
   };
 
-  // X? l� thay d?i b? l?c
+  // Xử lý thay đổi bộ lọc
   const handleFilterChange = (
     groupId: string,
     optionId: string,
@@ -167,13 +167,13 @@ const ShopPage: React.FC = () => {
       }
     }
 
-    // �?t l?i v? trang 1 khi b? l?c thay d?i
+    // Đặt lại về trang 1 khi bộ lọc thay đổi
     updatedParams.set('page', '1');
 
     setSearchParams(updatedParams);
   };
 
-  // X? l� x�a b? l?c
+  // Xử lý xóa bộ lọc
   const handleClearFilters = () => {
     const updatedParams = new URLSearchParams();
     if (search) updatedParams.set('search', search);
@@ -182,10 +182,10 @@ const ShopPage: React.FC = () => {
     setSearchParams(updatedParams);
   };
 
-  // X�c d?nh tr?ng th�i dang t?i
+  // Xác định trạng thái đang tải
   const isLoading = isProductsLoading || isCategoriesLoading;
 
-  // Chu?n b? c�c nh�m b? l?c cho panel l?c
+  // Chuẩn bị các nhóm bộ lọc cho panel lọc
   const filterGroups = [
     {
       id: 'categories',
@@ -219,7 +219,7 @@ const ShopPage: React.FC = () => {
   return (
     <div className="min-h-screen bg-gradient-to-br from-neutral-50 to-neutral-100 dark:from-neutral-900 dark:to-neutral-950">
       <div className="container mx-auto px-4 py-8 animate-fadeIn">
-        {/* Ti�u d? trang */}
+        {/* Tiêu đề trang */}
         <div className="mb-8 text-center">
           <h1 className="text-4xl font-bold text-neutral-800 dark:text-neutral-100 mb-3">
             {t('shop.title')}
@@ -231,7 +231,7 @@ const ShopPage: React.FC = () => {
           </p>
         </div>
 
-        {/* N�t l?c tr�n mobile */}
+        {/* Nút lọc trên mobile */}
         <div className="lg:hidden mb-4">
           <PremiumButton
             variant="outline"
@@ -244,9 +244,9 @@ const ShopPage: React.FC = () => {
           </PremiumButton>
         </div>
 
-        {/* �i?u khi?n tr�n mobile */}
+        {/* Điều khiển trên mobile */}
         <div className="lg:hidden mb-6 space-y-4">
-          {/* Chuy?n ch? d? hi?n th? - Mobile */}
+          {/* Chuyển chế độ hiển thị - Mobile */}
           <div className="flex items-center justify-between">
             <span className="text-sm font-medium text-neutral-700 dark:text-neutral-300">
               {t('shop.viewMode')}:
@@ -310,7 +310,7 @@ const ShopPage: React.FC = () => {
         </div>
 
         <div className="flex flex-col lg:flex-row gap-8">
-          {/* B? l?c - Desktop */}
+          {/* Bộ lọc - Desktop */}
           <div className="hidden lg:block w-64 flex-shrink-0">
             <FilterPanel
               priceRange={priceRange}
@@ -321,11 +321,11 @@ const ShopPage: React.FC = () => {
               onClearFilters={handleClearFilters}
             />
             
-            {/* Banner b�n c?nh */}
+            {/* Banner bên cạnh */}
             <BannerDisplay position="sidebar" className="mt-8" />
           </div>
 
-          {/* B? l?c - Mobile */}
+          {/* Bộ lọc - Mobile */}
           {isMobileFilterOpen && (
             <div className="lg:hidden">
               <FilterPanel
@@ -341,9 +341,9 @@ const ShopPage: React.FC = () => {
             </div>
           )}
 
-          {/* S?n ph?m */}
+          {/* Sản phẩm */}
           <div className="flex-grow">
-            {/* S?p x?p v� s? k?t qu? - Desktop */}
+            {/* Sắp xếp và số kết quả - Desktop */}
             <div className="hidden lg:flex justify-between items-center mb-6">
               <p className="text-neutral-600 dark:text-neutral-400">
                 {productsData?.total
@@ -352,7 +352,7 @@ const ShopPage: React.FC = () => {
               </p>
 
               <div className="flex items-center gap-4">
-                {/* Chuy?n ch? d? hi?n th? */}
+                {/* Chuyển chế độ hiển thị */}
                 <div className="flex items-center bg-white dark:bg-neutral-800 rounded-lg p-1 border border-neutral-200 dark:border-neutral-700">
                   <button
                     onClick={() => setViewMode('grid')}
@@ -413,7 +413,7 @@ const ShopPage: React.FC = () => {
               </div>
             </div>
 
-            {/* Lu?i s?n ph?m */}
+            {/* Lưới sản phẩm */}
             {isLoading ? (
               <div className="flex justify-center items-center h-64">
                 <LoadingSpinner size="lg" />
@@ -467,7 +467,7 @@ const ShopPage: React.FC = () => {
                   )}
                 </div>
 
-                {/* Ph�n trang */}
+                {/* Phân trang */}
                 {productsData?.total && Math.ceil(productsData.total / productsData.limit) > 1 && (
                   <div className="mt-12 flex justify-center">
                     <Pagination

@@ -1,6 +1,6 @@
 import axios from 'axios';
 import i18n from '@/config/i18n';
-// C?u hình API
+// Cáº¥u hÃ¬nh API
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8888/api';
 
 export interface GeminiChatResponse {
@@ -16,7 +16,7 @@ class GeminiService {
   }
 
   private async initializeModel() {
-    // Hi?n dùng chat qua backend (OpenRouter)
+    // Hiá»‡n dÃ¹ng chat qua backend (OpenRouter)
     this.isInitialized = true;
   }
 
@@ -45,7 +45,7 @@ class GeminiService {
         suggestions: data.suggestions || this.generateSuggestions(cleanMessage, data.response || ''),
       };
     } catch (error: any) {
-      console.error('L?i AI Service:', error);
+      console.error('Lá»—i AI Service:', error);
 
       return {
         text: i18n.t('chat.errors.busy'),
@@ -61,7 +61,7 @@ class GeminiService {
   private generateSuggestions(userMessage: string, aiResponse: string): string[] {
     const lowerMessage = userMessage.toLowerCase();
 
-    if (lowerMessage.includes('tìm') || lowerMessage.includes('mua')) {
+    if (lowerMessage.includes('tÃ¬m') || lowerMessage.includes('mua')) {
       return [
         i18n.t('chat.suggestions.newProducts'),
         i18n.t('chat.suggestions.hotPromo'),
@@ -83,12 +83,12 @@ class GeminiService {
   getStatus(): { ready: boolean; hasApiKey: boolean; error?: string } {
     return {
       ready: this.isInitialized,
-      hasApiKey: true, // Luôn true vì xác th?c qua backend
+      hasApiKey: true, // LuÃ´n true vÃ¬ xÃ¡c thá»±c qua backend
     };
   }
 }
 
-// Export instance duy nh?t (singleton)
+// Export instance duy nháº¥t (singleton)
 export const geminiService = new GeminiService();
 export default geminiService;
 

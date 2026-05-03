@@ -1,4 +1,4 @@
-// Export to�n b? ki?u d? li?u t? file n�y
+// Export toàn bộ kiểu dữ liệu từ file này
 export * from './product.types';
 export * from './user.types';
 export * from './cart.types';

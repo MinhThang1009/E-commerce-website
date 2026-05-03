@@ -33,7 +33,7 @@ const CartPage: React.FC = () => {
   const dispatch = useDispatch();
   const navigate = useNavigate();
 
-  // Tr?ng th�i voucher
+  // Trạng thái voucher
   const [voucherCode, setVoucherCode] = useState('');
   const [appliedVoucher, setAppliedVoucher] = useState<{
     code: string;
@@ -44,21 +44,21 @@ const CartPage: React.FC = () => {
 
   const [applyDiscount, { isLoading: applyingVoucher }] = useApplyDiscountCodeMutation();
 
-  // API hooks - ch? g?i khi d� x�c th?c
+  // API hooks - chỉ gọi khi đã xác thực
   const {
     data: serverCart,
     error: cartError,
     isLoading: cartLoading,
   } = useGetCartQuery(isAuthenticated ? undefined : skipToken);
 
-  // Ki?m tra gi? h�ng (ki?m tra t?n kho/thay d?i gi�) - ch? khi d� x�c th?c
+  // Kiểm tra giỏ hàng (kiểm tra tồn kho/thay đổi giá) - chỉ khi đã xác thực
   const { data: cartValidation } = useValidateCartQuery(
     isAuthenticated ? undefined : skipToken
   );
 
   const [clearServerCart, { isLoading: clearingCart }] = useClearCartMutation();
 
-  // X? l� khi MoMo redirect v? th�nh c�ng
+  // Xử lý khi MoMo redirect về thành công
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
     const status = params.get('status');
@@ -68,7 +68,7 @@ const CartPage: React.FC = () => {
       dispatch(clearCart());
       dispatch(cartApi.util.invalidateTags(['Cart', 'CartCount']));
       
-      // Cung th? x�a gi? h�ng tr�n server tr?c ti?p d? ch?c ch?n 100%
+      // Cũng thử xóa giỏ hàng trên server trực tiếp để chắc chắn 100%
       if (isAuthenticated) {
         clearServerCart();
       }
@@ -81,7 +81,7 @@ const CartPage: React.FC = () => {
     }
   }, [dispatch, navigate, t]);
 
-  // Kh?i t?o gi? h�ng khi component mount
+  // Khởi tạo giỏ hàng khi component mount
   useEffect(() => {
     if (isAuthenticated && serverCart) {
       dispatch(setServerCart(serverCart));
@@ -90,25 +90,25 @@ const CartPage: React.FC = () => {
     }
   }, [dispatch, isAuthenticated, serverCart, cartLoading]);
 
-  // X? l� l?i gi? h�ng
+  // Xử lý lỗi giỏ hàng
   useEffect(() => {
     if (cartError) {
-      console.error('L?i gi? h�ng:', cartError);
+      console.error('Lỗi giỏ hàng:', cartError);
       toast.error(t('cart.notifications.loadError'));
       dispatch(initializeCart());
     }
   }, [cartError, dispatch, t]);
 
-  // T? d?ng h?y voucher n?u t?ng ph? gi?m xu?ng du?i minOrderAmount
+  // Tự động hủy voucher nếu tổng phụ giảm xuống dưới minOrderAmount
   useEffect(() => {
     if (appliedVoucher && subtotal < 1) {
-      // �?t l?i n?u gi? h�ng tr?ng
+      // Đặt lại nếu giỏ hàng trống
       setAppliedVoucher(null);
       setVoucherCode('');
     }
   }, [subtotal, appliedVoucher]);
 
-  // �p d?ng voucher
+  // Áp dụng voucher
   const handleApplyVoucher = async () => {
     if (!voucherCode.trim()) return;
     setVoucherError('');
@@ -139,7 +139,7 @@ const CartPage: React.FC = () => {
     toast.success(t('cart.voucher.removedSuccess'));
   };
 
-  // T�nh l?i n?u t?ng don h�ng thay d?i v� voucher dang du?c �p d?ng
+  // Tính lại nếu tổng đơn hàng thay đổi và voucher đang được áp dụng
   const handleVoucherRevalidate = async () => {
     if (!appliedVoucher) return;
     try {
@@ -153,7 +153,7 @@ const CartPage: React.FC = () => {
         discountCodeId: result.data.discountCodeId,
       });
     } catch (err: any) {
-      // Voucher kh�ng c�n h?p l? v?i gi� tr? gi? h�ng hi?n t?i
+      // Voucher không còn hợp lệ với giá trị giỏ hàng hiện tại
       const msg = err?.data?.message || '';
       toast.warning(t('cart.voucher.cancelled', { message: msg }));
       setAppliedVoucher(null);
@@ -162,7 +162,7 @@ const CartPage: React.FC = () => {
     }
   };
 
-  // Ki?m tra l?i voucher khi t?ng ph? thay d?i
+  // Kiểm tra lại voucher khi tổng phụ thay đổi
   useEffect(() => {
     if (appliedVoucher) {
       handleVoucherRevalidate();
@@ -170,11 +170,11 @@ const CartPage: React.FC = () => {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [subtotal]);
 
-  // T?ng ti?n
+  // Tổng tiền
   const discount = appliedVoucher?.discountAmount || 0;
   const total = Math.max(0, subtotal - discount);
 
-  // X? l� thanh to�n - truy?n d? li?u voucher v�o state
+  // Xử lý thanh toán - truyền dữ liệu voucher vào state
   const handleCheckout = () => {
     navigate('/checkout', {
       state: appliedVoucher
@@ -187,7 +187,7 @@ const CartPage: React.FC = () => {
     });
   };
 
-  // X? l� x�a to�n b? gi? h�ng
+  // Xử lý xóa toàn bộ giỏ hàng
   const handleClearCart = async () => {
     if (!window.confirm(t('cart.clearCartConfirm'))) return;
     try {
@@ -206,7 +206,7 @@ const CartPage: React.FC = () => {
     }
   };
 
-  // Nh�m c�c v?n d? trong gi? h�ng
+  // Nhóm các vấn đề trong giỏ hàng
   const issueItems = cartValidation?.items.filter((i) => i.hasIssue) || [];
 
   if ((isAuthenticated && cartLoading) || isLoading) {
@@ -225,7 +225,7 @@ const CartPage: React.FC = () => {
         {t('cart.title')}
       </h1>
 
-      {/* Tr?ng th�i d?ng b? */}
+      {/* Trạng thái đồng bộ */}
       {isAuthenticated && serverCart && serverCart.id && (
         <div className="mb-4 p-3 bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-lg">
           <div className="flex items-center text-green-700 dark:text-green-300">
@@ -244,11 +244,11 @@ const CartPage: React.FC = () => {
         </div>
       )}
 
-      {/* ?? Stock / Price issues banner */}
+      {/* ⚠️ Stock / Price issues banner */}
       {issueItems.length > 0 && (
         <div className="mb-6 p-4 bg-amber-50 dark:bg-amber-900/20 border border-amber-300 dark:border-amber-700 rounded-xl shadow-sm">
           <div className="flex items-start gap-3">
-            <span className="text-2xl">??</span>
+            <span className="text-2xl">⚠️</span>
             <div className="flex-1">
               <p className="font-semibold text-amber-800 dark:text-amber-300 mb-2">
                 {t('cart.validation.stockIssues')}
@@ -256,7 +256,7 @@ const CartPage: React.FC = () => {
               <ul className="space-y-1.5">
                 {issueItems.map((issue) => (
                   <li key={issue.id} className="text-sm text-amber-700 dark:text-amber-400 flex flex-col gap-0.5">
-                    <span className="font-medium">� {issue.name}</span>
+                    <span className="font-medium">› {issue.name}</span>
                     {issue.outOfStock && (
                       <span className="text-red-600 dark:text-red-400 ml-3">
                         {t('cart.validation.outOfStockAction')}
@@ -308,7 +308,7 @@ const CartPage: React.FC = () => {
         </div>
       ) : (
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-          {/* C�c s?n ph?m trong gi? h�ng */}
+          {/* Các sản phẩm trong giỏ hàng */}
           <div className="lg:col-span-2">
             <div className="bg-white dark:bg-neutral-800 rounded-lg shadow-sm p-6">
               <div className="flex justify-between items-center mb-6">
@@ -346,17 +346,17 @@ const CartPage: React.FC = () => {
             </div>
           </div>
 
-          {/* T�m t?t don h�ng */}
+          {/* Tóm tắt đơn hàng */}
           <div className="lg:col-span-1">
             <div className="bg-white dark:bg-neutral-800 rounded-lg shadow-sm p-6 sticky top-24 space-y-6">
               <h2 className="text-xl font-semibold text-neutral-800 dark:text-neutral-100">
                 {t('cart.orderSummary')}
               </h2>
 
-              {/* -- � nh?p voucher -- */}
+              {/* -- Ô nhập voucher -- */}
               <div>
                 <label className="block text-sm font-medium text-neutral-600 dark:text-neutral-400 mb-2">
-                  ??? {t('cart.voucher.title')}
+                  🏷️ {t('cart.voucher.title')}
                 </label>
                 {appliedVoucher ? (
                   <div className="flex items-center justify-between gap-2 bg-green-50 dark:bg-green-900/20 border border-green-300 dark:border-green-700 rounded-lg px-3 py-2">
@@ -406,7 +406,7 @@ const CartPage: React.FC = () => {
                 )}
               </div>
 
-              {/* T?ng ti?n */}
+              {/* Tổng tiền */}
               <div className="space-y-3">
                 <div className="flex justify-between text-sm">
                   <span className="text-neutral-600 dark:text-neutral-400">{t('cart.subtotal')}</span>

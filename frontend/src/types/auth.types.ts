@@ -1,4 +1,4 @@
-// Ki?u d? li?u x�c th?c
+// Kiểu dữ liệu xác thực
 import { User } from './user.types';
 
 export interface AuthState {

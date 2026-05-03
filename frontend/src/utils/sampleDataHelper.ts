@@ -1,73 +1,73 @@
 import { ProductFormData } from '@/types';
 
 export const sampleLaptopData: Partial<ProductFormData> = {
-  // Th�ng tin co b?n
+  // Thông tin cơ bản
   name: 'MacBook Pro 16-inch M3 Max',
   slug: 'macbook-pro-16-inch-m3-max',
   shortDescription:
-    'Laptop cao c?p v?i chip M3 Max m?nh m?, m�n h�nh Liquid Retina XDR 16 inch, pin 22 gi?. Ho�n h?o cho chuy�n gia s�ng t?o v� l?p tr�nh vi�n.',
+    'Laptop cao cấp với chip M3 Max mạnh mẽ, màn hình Liquid Retina XDR 16 inch, pin 22 giờ. Hoàn hảo cho chuyên gia sáng tạo và lập trình viên.',
   description: `
-    <h2>?? MacBook Pro 16-inch M3 Max - S?c m?nh vu?t tr?i cho chuy�n gia</h2>
-    <p>MacBook Pro 16-inch v?i chip M3 Max l� d?nh cao c?a c�ng ngh? Apple, du?c thi?t k? d�nh cho nh?ng chuy�n gia d�i h?i hi?u nang t?i da.</p>
+    <h2>💻 MacBook Pro 16-inch M3 Max - Sức mạnh vượt trội cho chuyên gia</h2>
+    <p>MacBook Pro 16-inch với chip M3 Max là đỉnh cao của công nghệ Apple, được thiết kế dành cho những chuyên gia đòi hỏi hiệu năng tối đa.</p>
     
-    <h3>? Hi?u nang d?t ph� v?i chip M3 Max</h3>
-    <p>Chip M3 Max v?i 16 nh�n CPU v� 40 nh�n GPU mang l?i hi?u nang vu?t tr?i:</p>
+    <h3>⚡ Hiệu năng đột phá với chip M3 Max</h3>
+    <p>Chip M3 Max với 16 nhân CPU và 40 nhân GPU mang lại hiệu năng vượt trội:</p>
     <ul>
-      <li>X? l� video 8K ProRes mu?t m�</li>
-      <li>Render 3D nhanh g?p 2.5 l?n th? h? tru?c</li>
-      <li>Multitasking mu?t m� v?i h�ng tram tab Chrome</li>
-      <li>Compile code nhanh ch�ng v?i Xcode</li>
+      <li>Xử lý video 8K ProRes mượt mà</li>
+      <li>Render 3D nhanh gấp 2.5 lần thế hệ trước</li>
+      <li>Multitasking mượt mà với hàng trăm tab Chrome</li>
+      <li>Compile code nhanh chóng với Xcode</li>
     </ul>
     
-    <h3>??? M�n h�nh Liquid Retina XDR tuy?t d?p</h3>
-    <p>M�n h�nh 16.2 inch v?i c�ng ngh? mini-LED:</p>
+    <h3>🖥️ Màn hình Liquid Retina XDR tuyệt đẹp</h3>
+    <p>Màn hình 16.2 inch với công nghệ mini-LED:</p>
     <ul>
-      <li>�? ph�n gi?i 3456 x 2234 pixels</li>
-      <li>�? s�ng 1000 nits (1600 nits peak HDR)</li>
-      <li>T? l? tuong ph?n 1,000,000:1</li>
+      <li>Độ phân giải 3456 x 2234 pixels</li>
+      <li>Độ sáng 1000 nits (1600 nits peak HDR)</li>
+      <li>Tỷ lệ tương phản 1,000,000:1</li>
       <li>H? tr? P3 wide color gamut</li>
-      <li>ProMotion v?i t?n s? qu�t l�n d?n 120Hz</li>
+      <li>ProMotion với tần số quét lên đến 120Hz</li>
     </ul>
     
-    <h3>?? Pin b?n b? c? ng�y d�i</h3>
-    <p>Pin lithium-polymer 100Wh cung c?p:</p>
+    <h3>🔋 Pin bền bỉ cả ngày dài</h3>
+    <p>Pin lithium-polymer 100Wh cung cấp:</p>
     <ul>
-      <li>L�n d?n 22 gi? ph�t video</li>
-      <li>18 gi? duy?t web kh�ng d�y</li>
-      <li>S?c nhanh v?i adapter 140W USB-C</li>
+      <li>Lên đến 22 giờ phát video</li>
+      <li>18 giờ duyệt web không dây</li>
+      <li>Sạc nhanh với adapter 140W USB-C</li>
     </ul>
     
-    <h3>?? �m thanh d?nh cao</h3>
-    <p>H? th?ng �m thanh 6 loa v?i:</p>
+    <h3>🔊 Âm thanh đỉnh cao</h3>
+    <p>Hệ thống âm thanh 6 loa với:</p>
     <ul>
       <li>Woofers force-cancelling</li>
-      <li>�m thanh kh�ng gian v?i Dolby Atmos</li>
+      <li>Âm thanh không gian với Dolby Atmos</li>
       <li>3 micro array v?i beamforming</li>
     </ul>
     
-    <h3>?? K?t n?i da d?ng</h3>
+    <h3>🔌 Kết nối đa dạng</h3>
     <ul>
-      <li>3 c?ng Thunderbolt 4 (USB-C)</li>
-      <li>1 c?ng HDMI</li>
-      <li>1 khe th? SDXC</li>
-      <li>1 c?ng MagSafe 3</li>
+      <li>3 cổng Thunderbolt 4 (USB-C)</li>
+      <li>1 cổng HDMI</li>
+      <li>1 khe thẻ SDXC</li>
+      <li>1 cổng MagSafe 3</li>
       <li>Jack tai nghe 3.5mm</li>
     </ul>
     
-    <h3>??? B?o m?t t?i uu</h3>
+    <h3>🔐 Bảo mật tối ưu</h3>
     <ul>
-      <li>Touch ID t�ch h?p</li>
+      <li>Touch ID tích hợp</li>
       <li>Secure Enclave</li>
       <li>Camera FaceTime HD 1080p</li>
     </ul>
     
-    <p><strong>L� do ch?n MacBook Pro 16-inch M3 Max:</strong></p>
+    <p><strong>Lý do chọn MacBook Pro 16-inch M3 Max:</strong></p>
     <ul>
-      <li>? Hi?u nang d?nh cao cho m?i t�c v?</li>
-      <li>? M�n h�nh chuy�n nghi?p</li>
-      <li>? Pin b?n b?</li>
-      <li>? Thi?t k? premium</li>
-      <li>? H? sinh th�i Apple ho�n h?o</li>
+      <li>✅ Hiệu năng đỉnh cao cho mọi tác vụ</li>
+      <li>✅ Màn hình chuyên nghiệp</li>
+      <li>✅ Pin bền bỉ</li>
+      <li>✅ Thiết kế premium</li>
+      <li>✅ Hệ sinh thái Apple hoàn hảo</li>
     </ul>
   `,
 
@@ -95,11 +95,11 @@ export const sampleLaptopData: Partial<ProductFormData> = {
 
   // SEO
   metaTitle:
-    'MacBook Pro 16-inch M3 Max - Laptop cao c?p cho chuy�n gia | TechStore',
+    'MacBook Pro 16-inch M3 Max - Laptop cao cấp cho chuyên gia | TechStore',
   metaDescription:
-    'MacBook Pro 16-inch M3 Max v?i chip M3 Max m?nh m?, m�n h�nh Liquid Retina XDR, pin 22 gi?. Gi� t?t nh?t, b?o h�nh ch�nh h�ng. Mua ngay!',
+    'MacBook Pro 16-inch M3 Max với chip M3 Max mạnh mẽ, màn hình Liquid Retina XDR, pin 22 giờ. Giá tốt nhất, bảo hành chính hãng. Mua ngay!',
   metaKeywords:
-    'macbook pro 16, m3 max, laptop apple, macbook pro 2024, laptop cao c?p',
+    'macbook pro 16, m3 max, laptop apple, macbook pro 2024, laptop cao cấp',
 
   // Shipping
   freeShipping: true,
@@ -108,28 +108,28 @@ export const sampleLaptopData: Partial<ProductFormData> = {
   // Warranty
   warrantyPeriod: 12,
   warrantyType: 'manufacturer',
-  warrantyDescription: 'B?o h�nh ch�nh h�ng Apple 12 th�ng to�n c?u',
+  warrantyDescription: 'Bảo hành chính hãng Apple 12 tháng toàn cầu',
 };
 
 export const sampleLaptopAttributes = [
   {
-    groupName: 'Th�ng s? k? thu?t',
+    groupName: 'Thông số kỹ thuật',
     attributes: [
-      { name: 'Chip x? l�', value: 'Apple M3 Max (16-core CPU, 40-core GPU)' },
+      { name: 'Chip xử lý', value: 'Apple M3 Max (16-core CPU, 40-core GPU)' },
       { name: 'RAM', value: '36GB Unified Memory' },
-      { name: '? c?ng', value: '1TB SSD' },
-      { name: 'M�n h�nh', value: '16.2-inch Liquid Retina XDR (3456 x 2234)' },
-      { name: 'Card d? h?a', value: '40-core GPU t�ch h?p' },
-      { name: 'H? di?u h�nh', value: 'macOS Sonoma' },
+      { name: 'Ổ cứng', value: '1TB SSD' },
+      { name: 'Màn hình', value: '16.2-inch Liquid Retina XDR (3456 x 2234)' },
+      { name: 'Card đồ họa', value: '40-core GPU tích hợp' },
+      { name: 'Hệ điều hành', value: 'macOS Sonoma' },
       { name: 'Pin', value: '100Wh lithium-polymer' },
-      { name: 'Tr?ng lu?ng', value: '2.16 kg' },
+      { name: 'Trọng lượng', value: '2.16 kg' },
     ],
   },
   {
-    groupName: 'K?t n?i',
+    groupName: 'Kết nối',
     attributes: [
       {
-        name: 'C?ng k?t n?i',
+        name: 'Cổng kết nối',
         value: '3x Thunderbolt 4, 1x HDMI, 1x SDXC, MagSafe 3',
       },
       { name: 'Wireless', value: 'Wi-Fi 6E, Bluetooth 5.3' },
@@ -138,11 +138,11 @@ export const sampleLaptopAttributes = [
     ],
   },
   {
-    groupName: 'Thi?t k?',
+    groupName: 'Thiết kế',
     attributes: [
-      { name: 'Ch?t li?u', value: '100% recycled aluminum' },
-      { name: 'M�u s?c', value: 'Space Gray, Silver' },
-      { name: 'B�n ph�m', value: 'Magic Keyboard with Touch ID' },
+      { name: 'Chất liệu', value: '100% recycled aluminum' },
+      { name: 'Màu sắc', value: 'Space Gray, Silver' },
+      { name: 'Bàn phím', value: 'Magic Keyboard with Touch ID' },
       { name: 'Trackpad', value: 'Force Touch trackpad' },
     ],
   },

@@ -15,18 +15,18 @@ import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import i18next from 'i18next';
 
-// Custom hooks
+// Hooks tùy chỉnh cho form sản phẩm, attributes và variants
 import { useProductAttributes } from '@/hooks/useProductAttributes';
 import { useProductForm } from '@/hooks/useProductForm';
 import { useProductVariants } from '@/hooks/useProductVariants';
 
-// C�c API hook
+// Các API hook cần thiết
 import { useCreateProductMutation } from '@/services/adminProductApi';
 import { useGetCategoriesQuery } from '@/services/categoryApi';
 import { useConvertBase64ToImageMutation, useDeleteImageMutation } from '@/services/imageApi';
 import { useGetWarrantyPackagesQuery } from '@/services/warrantyApi';
 
-// Components
+// Các component con cho từng phần của form
 import AttributeModal from '@/components/modals/AttributeModal';
 import VariantModal from '@/components/modals/VariantModal';
 import ProductAttributesSection from '@/components/product/ProductAttributesSection';
@@ -42,11 +42,11 @@ import TabNavigation from '@/components/product/TabNavigation';
 import ValidationAlerts from '@/components/product/ValidationAlerts';
 import ProductFAQForm from '@/components/product/ProductFAQForm';
 
-// Types
+// Types và utils
 import { AttributeGroup } from '@/services/attributeApi';
 import { ProductFormData } from '@/types';
 
-// Utils
+// Utils xử lý ảnh trong mô tả sản phẩm (base64 -> file đã upload)
 import {
   hasBase64Images,
   processDescriptionImages,
@@ -68,7 +68,7 @@ const CreateProductPage: React.FC = () => {
   const navigate = useNavigate();
   const [form] = Form.useForm();
 
-  // State d? theo d�i c�c bu?c d� ho�n th�nh
+  // State để theo dõi các bước đã hoàn thành trong quy trình tạo sản phẩm
   const [completedSteps, setCompletedSteps] = useState<Record<string, boolean>>(
     {
       basic: false,
@@ -84,12 +84,12 @@ const CreateProductPage: React.FC = () => {
     }
   );
 
-  // State cho hierarchical attributes v� variants
+  // State cho hierarchical attributes và variants nếu cần thiết trong tương lai
   const [attributeGroups, setAttributeGroups] = useState<AttributeGroup[]>([]);
   const [hierarchicalVariants, setHierarchicalVariants] = useState<any[]>([]);
   const [specifications, setSpecifications] = useState<any[]>([]);
 
-  // C�c API hook
+  // Các API hook cần thiết
   const { data: categories, isLoading: isCategoriesLoading } =
     useGetCategoriesQuery();
   const { data: warrantyData, isLoading: isWarrantyLoading } =
@@ -118,20 +118,20 @@ const CreateProductPage: React.FC = () => {
     closeVariantModal,
   } = useProductVariants([], form);
 
-  // Debug: Log attributes whenever they change
+  // Debug: Log attributes whenever they change - đặc biệt là để theo dõi khi xóa thuộc tính (vì thuộc tính bị xóa sẽ ảnh hưởng đến biến thể)
   useEffect(() => {
   }, [attributes]);
 
-  // Debug: Log variants whenever they change
+  // Debug: Log variants whenever they change - đặc biệt là để theo dõi khi xóa biến thể
   useEffect(() => {
 
-    // T? d?ng set price = 0 khi c� variants
+    // Tự động set price = 0 khi có variants để tránh lỗi validation khi tạo sản phẩm có variants mà chưa nhập giá cho variants
     if (variants.length > 0) {
       form.setFieldValue('price', 0);
     }
   }, [variants, form]);
 
-  // �?t gi� tr? m?c d?nh cho form
+  // Đặt giá trị mặc định cho form khi component được mount để tránh lỗi "undefined" khi truy cập các trường chưa được điền
   useEffect(() => {
     form.setFieldsValue({
       price: 0,
@@ -149,7 +149,7 @@ const CreateProductPage: React.FC = () => {
     });
   }, [form]);
 
-  // Custom hooks
+  // Custom hooks cho form sản phẩm sẽ trả về các trạng thái và hàm cần thiết để quản lý form, validation, và submit
   const {
     isFormValid,
     activeTab,
@@ -175,16 +175,16 @@ const CreateProductPage: React.FC = () => {
       }));
     },
     onSubmit: async (values: ProductFormData) => {
-      // Theo d�i ID ?nh description d� upload d? rollback n?u createProduct th?t b?i
+      // Theo dõi ID ảnh description đã upload để rollback nếu createProduct thất bại
       const uploadedDescImageIds: string[] = [];
 
       try {
-        // L?y t?t c? gi� tr? t? form d? d?m b?o kh�ng b? thi?u
+        // Lấy tất cả giá trị từ form để đảm bảo không bị thiếu
         const allFormValues = form.getFieldsValue();
 
         const hasVariants = variants.length > 0;
 
-        // X? l� m� t?: chuy?n ?nh base64 th�nh file d� upload
+        // Xử lý mô tả: chuyển ảnh base64 thành file đã upload
         let processedDescription =
           allFormValues.description || values.description || '';
 
@@ -202,7 +202,7 @@ const CreateProductPage: React.FC = () => {
 
           if (result.hasChanges) {
             processedDescription = result.processedDescription;
-            // Luu l?i ID d? rollback n?u t?o s?n ph?m th?t b?i
+            // Lưu lại ID để rollback nếu tạo sản phẩm thất bại
             result.uploadedImages.forEach((img) => {
               if (img.imageId) uploadedDescImageIds.push(img.imageId);
             });
@@ -219,7 +219,7 @@ const CreateProductPage: React.FC = () => {
           shortDescription:
             allFormValues.shortDescription || values.shortDescription,
           description: processedDescription,
-          // S?n ph?m c� bi?n th?: d?t gi� v? 0
+          // Sản phẩm có biến thể: đặt giá về 0
           price: hasVariants
             ? 0
             : parseFloat(
@@ -245,7 +245,7 @@ const CreateProductPage: React.FC = () => {
                 ? parseFloat(compareAtPrice.toString())
                 : undefined;
             })(),
-          // S?n ph?m c� bi?n th?: d?t t?n kho v? 0
+          // Sản phẩm có biến thể: đặt tồn kho về 0
           stock: hasVariants
             ? 0
             : parseInt(
@@ -289,7 +289,7 @@ const CreateProductPage: React.FC = () => {
             values.thumbnail ||
             ''
           ).substring(0, 1000),
-          // C�c tru?ng b? sung
+          // Các trường bổ sung
           condition: allFormValues.condition || values.condition || 'new',
           inStock: hasVariants
             ? true
@@ -347,14 +347,14 @@ const CreateProductPage: React.FC = () => {
               stockQuantity: parseInt((variant as any).stockQuantity?.toString() || variant.stock?.toString() || '0') || 0,
               stock: parseInt(variant.stock?.toString() || (variant as any).stockQuantity?.toString() || '0') || 0,
               sku: variant.sku || `VAR-${Date.now()}-${index + 1}`,
-              isDefault: index === 0, // Bi?n th? d?u ti�n l� m?c d?nh
+              isDefault: index === 0, // Biến thể đầu tiên là mặc định
               isAvailable: true,
               attributes: variant.attributes || {},
               specifications: variant.specifications || {},
               images: variant.images || [],
             }))
             : [],
-          // Th�m c�c tru?ng SEO - ch? th�m n?u c� gi� tr?
+          // Thêm các trường SEO - chỉ thêm nếu có giá trị
           ...(allFormValues.seoTitle || values.seoTitle
             ? {
               seoTitle: (allFormValues.seoTitle || values.seoTitle).substring(
@@ -389,8 +389,8 @@ const CreateProductPage: React.FC = () => {
         message.success(t('admin.products.messages.createSuccess'));
         navigate('/admin/products');
       } catch (error: any) {
-        // Rollback: x�a ?nh description d� upload n?u t?o s?n ph?m th?t b?i
-        // Tr�nh orphaned files khi form b? l?i validation sau khi ?nh d� du?c upload
+        // Rollback: xóa ảnh description đã upload nếu tạo sản phẩm thất bại
+        // Tránh orphaned files khi form bị lỗi validation sau khi ảnh đã được upload
         if (uploadedDescImageIds.length > 0) {
           await Promise.allSettled(
             uploadedDescImageIds.map((id) => deleteImage(id).unwrap().catch(() => {}))
@@ -403,7 +403,7 @@ const CreateProductPage: React.FC = () => {
     isSubmitting: isCreating,
   });
 
-  // H�m h? tr? d?nh d?ng th�ng b�o l?i
+  // Hàm hỗ trợ định dạng thông báo lỗi
   const formatErrorMessage = (error: any): string => {
     if (error?.data?.message) {
       return error.data.message;
@@ -420,8 +420,8 @@ const CreateProductPage: React.FC = () => {
       // Multiple errors - format nicely
       const errorList = error.data.errors
         .map((err: any) => err.message || `${err.field}: ${t('admin.products.messages.validationError')}`)
-        .join('\n� ');
-      return `${t('admin.products.messages.multipleErrors', { count: error.data.errors.length })}:\n� ${errorList}`;
+        .join('\n• ');
+      return `${t('admin.products.messages.multipleErrors', { count: error.data.errors.length })}:\n• ${errorList}`;
     }
 
     if (error?.message) {
@@ -433,7 +433,7 @@ const CreateProductPage: React.FC = () => {
 
   const categoriesList = categories || [];
 
-  // Th? t? tab c? d?nh
+  // Thứ tự tab cố định
   const TAB_ORDER = [
     'basic',
     'specifications',
@@ -447,14 +447,14 @@ const CreateProductPage: React.FC = () => {
     'seo',
   ];
 
-  // H�m ki?m tra xem tab c� du?c ph�p truy c?p kh�ng
+  // Hàm kiểm tra xem tab có được phép truy cập không
   const isTabAccessible = (tabKey: string): boolean => {
     const targetIndex = TAB_ORDER.indexOf(tabKey);
 
-    // Tab d?u ti�n lu�n c� th? truy c?p
+    // Tab đầu tiên luôn có thể truy cập
     if (targetIndex === 0) return true;
 
-    // Ki?m tra xem t?t c? c�c tab tru?c d� d� ho�n th�nh chua
+    // Kiểm tra xem tất cả các tab trước đó đã hoàn thành chưa
     for (let i = 0; i < targetIndex; i++) {
       const stepKey = TAB_ORDER[i];
       if (!completedSteps[stepKey]) {
@@ -465,10 +465,10 @@ const CreateProductPage: React.FC = () => {
     return true;
   };
 
-  // H�m x? l� khi thay d?i tab
+  // Hàm xử lý khi thay đổi tab
   const handleTabChange = (key: string) => {
     if (!isTabAccessible(key)) {
-      // Hi?n th? th�ng b�o n?u tab chua du?c ph�p truy c?p
+      // Hiển thị thông báo nếu tab chưa được phép truy cập
       alert(t('admin.products.tabs.incompleteWarning'));
       return;
     }
@@ -832,10 +832,10 @@ const CreateProductPage: React.FC = () => {
 
           <ValidationAlerts
             isFormValid={isFormValid}
-            missingFields={[]} // getMissingFields() hi?n kh�ng c?n thi?t v� ValidationAlerts tr? v? null
+            missingFields={[]} // getMissingFields() hiện không cần thiết vì ValidationAlerts trả về null
           />
 
-          {/* FormActions b? ?n v� button t?o s?n ph?m d� du?c chuy?n v�o TabNavigation */}
+          {/* FormActions bị ẩn vì button tạo sản phẩm đã được chuyển vào TabNavigation */}
         </Form>
       </Card>
 

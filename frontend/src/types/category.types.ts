@@ -1,4 +1,4 @@
-// Ki?u d? li?u danh m?c
+// Kiểu dữ liệu danh mục
 export interface Category {
   id: string;
   name: string;

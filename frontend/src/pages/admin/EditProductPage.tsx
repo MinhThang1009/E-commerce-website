@@ -21,7 +21,7 @@ import { useProductForm } from '@/hooks/useProductForm';
 import { useProductAttributes } from '@/hooks/useProductAttributes';
 import { useProductVariants } from '@/hooks/useProductVariants';
 
-// C�c API hook
+// Các API hook
 import { useUpdateProductMutation, useGetAdminProductByIdQuery } from '@/services/adminProductApi';
 import { useGetAllCategoriesQuery } from '@/services/categoryApi';
 import { useConvertBase64ToImageMutation } from '@/services/imageApi';
@@ -59,7 +59,7 @@ const EditProductPage: React.FC = () => {
   const navigate = useNavigate();
   const [form] = Form.useForm();
 
-  // C�c API hook
+  // Các API hook
   const {
     data: productResponse,
     isLoading: isLoadingProduct,
@@ -94,7 +94,7 @@ const EditProductPage: React.FC = () => {
     closeVariantModal,
   } = useProductVariants([], form);
 
-  // State th�ng s? k? thu?t
+  // State thông số kỹ thuật
   const [specifications, setSpecifications] = useState<any[]>([]);
 
   const {
@@ -108,7 +108,7 @@ const EditProductPage: React.FC = () => {
     handleSubmit,
   } = useProductForm({
     form,
-    isEditMode: true, // Th�m prop d? b�o l� edit mode
+    isEditMode: true, // Thêm prop để báo là edit mode
     attributes,
     variants,
     onSubmit: async (values: ProductFormData) => {
@@ -118,7 +118,7 @@ const EditProductPage: React.FC = () => {
         const formValues = form.getFieldsValue(true);
         const hasVariants = variants.length > 0;
 
-        // X? l� m� t?: chuy?n ?nh base64 n?u c?n
+        // Xử lý mô tả: chuyển ảnh base64 nếu cần
         let processedDescription = formValues.description || '';
         if (hasBase64Images(processedDescription)) {
           const result = await processDescriptionImages(processedDescription, {
@@ -136,7 +136,7 @@ const EditProductPage: React.FC = () => {
           }
         }
 
-        // X�y d?ng d?i tu?ng c?p nh?t d?y d?
+        // Xây dựng đối tượng cập nhật đầy đủ
         const productData: any = {
           id,
           name: formValues.name,
@@ -167,7 +167,7 @@ const EditProductPage: React.FC = () => {
           })),
         };
 
-        // Logic gi� v� t?n kho
+        // Logic giá và tồn kho
         if (hasVariants) {
           productData.price = 0;
           productData.stock = 0;
@@ -178,12 +178,12 @@ const EditProductPage: React.FC = () => {
           productData.stockQuantity = parseInt(formValues.stockQuantity?.toString()) || 0;
         }
 
-        // Gi� so s�nh
+        // Giá so sánh
         const compareAtPrice = parseFloat(formValues.compareAtPrice?.toString()) || 0;
         productData.compareAtPrice = compareAtPrice > 0 ? compareAtPrice : null;
         productData.comparePrice = compareAtPrice > 0 ? compareAtPrice : null;
 
-        // Thu?c t�nh v� bi?n th? - lu�n g?i n?u c� d? an to�n
+        // Thuộc tính và biến thể - luôn gửi nếu có để an toàn
         productData.attributes = attributes.map((attr: any) => ({
           name: attr.name,
           value: Array.isArray((attr as any).values) 
@@ -217,19 +217,19 @@ const EditProductPage: React.FC = () => {
     isSubmitting: isUpdating,
   });
 
-  // State d? theo d�i qu� tr�nh t?i d? li?u
+  // State để theo dõi quá trình tải dữ liệu
   const [isDataLoaded, setIsDataLoaded] = useState(false);
 
-  // N?p d? li?u s?n ph?m v�o form
+  // Nạp dữ liệu sản phẩm vào form
   useEffect(() => {
     if (productResponse?.data) {
-      // X? l� c? format { product } v� raw product
+      // Xử lý cả format { product } và raw product
       const product = (productResponse.data as any).product || productResponse.data;
 
-      // X? l� m� t?: x? l� ?nh base64
+      // Xử lý mô tả: xử lý ảnh base64
       let processedDescription = product.description || '';
 
-      // N?u m� t? l� chu?i JSON, parse tru?c
+      // Nếu mô tả là chuỗi JSON, parse trước
       if (
         typeof processedDescription === 'string' &&
         processedDescription.startsWith('[')
@@ -240,11 +240,11 @@ const EditProductPage: React.FC = () => {
             processedDescription = parsedDescription.join('');
           }
         } catch (e) {
-          // N?u parse th?t b?i, gi? nguy�n
+          // Nếu parse thất bại, giữ nguyên
         }
       }
 
-      // Tru?ng h?p kh�c: m� t? r?ng nhung c� m?ng images, th? t?o t? images
+      // Trường hợp khác: mô tả rỗng nhưng có mảng images, thử tạo từ images
       if (
         !processedDescription &&
         product.images &&
@@ -263,7 +263,7 @@ const EditProductPage: React.FC = () => {
         }
       }
 
-      // G�n gi� tr? cho form
+      // Gán giá trị cho form
       form.setFieldsValue({
         name: product.baseName || product.name,
         description: processedDescription,
@@ -287,7 +287,7 @@ const EditProductPage: React.FC = () => {
           product.warrantyPackages?.map((wp: any) => wp.id) || [],
         faqs: product.faqs || [],
         specifications: (() => {
-          // T?i th�ng s? t? b?ng productSpecifications
+          // Tải thông số từ bảng productSpecifications
           if (
             product.productSpecifications &&
             Array.isArray(product.productSpecifications)
@@ -307,7 +307,7 @@ const EditProductPage: React.FC = () => {
         })(),
       });
 
-      // C?p nh?t state th�ng s? k? thu?t
+      // Cập nhật state thông số kỹ thuật
       if (
         product.productSpecifications &&
         product.productSpecifications.length > 0
@@ -315,13 +315,13 @@ const EditProductPage: React.FC = () => {
         setSpecifications(product.productSpecifications);
       }
 
-      // G�n thu?c t�nh v� bi?n th?
+      // Gán thuộc tính và biến thể
       if (product.attributes) {
         const formattedAttributes: ProductAttribute[] = product.attributes.map(
           (attr: any, index: number) => ({
             id: attr.id || `attr-${index}`,
             name: attr.name,
-            // N?u values l� m?ng, chuy?n th�nh chu?i ngan c�ch b?i d?u ph?y
+          // Nếu values là mảng, chuyển thành chuỗi ngăn cách bởi dấu phẩy
             value: Array.isArray(attr.values)
               ? attr.values.join(', ')
               : attr.value || '',
@@ -336,7 +336,7 @@ const EditProductPage: React.FC = () => {
             id: variant.id || `var-${index}`,
             name: variant.name,
             price: parseFloat(variant.price) || 0,
-            // S? d?ng stockQuantity thay v� stock d? d�ng v?i d? li?u API
+        // Sử dụng stockQuantity thay vì stock để dùng với dữ liệu API
             stock: variant.stockQuantity || variant.stock || 0,
             sku: variant.sku || '',
             attributes: variant.attributes || {},
@@ -345,13 +345,13 @@ const EditProductPage: React.FC = () => {
         setVariants(formattedVariants);
       }
 
-      // Validate form sau khi t?i d? li?u (kh�ng th�m validateForm v�o dependencies)
+      // Validate form sau khi tải dữ liệu (không thêm validateForm vào dependencies)
       setTimeout(() => {
-        // Validate th? c�ng, kh�ng d�ng h�m validateForm
+        // Validate thủ công, không dùng hàm validateForm
         const values = form.getFieldsValue();
         const errors = form.getFieldsError();
 
-        // Ki?m tra t?t c? tru?ng b?t bu?c d� di?n chua
+        // Kiểm tra tất cả trường bắt buộc đã điền chưa
         const requiredFields = [
           'name',
           'shortDescription',
@@ -382,7 +382,7 @@ const EditProductPage: React.FC = () => {
           );
         });
 
-        // Ki?m tra c� l?i validation n�o kh�ng
+        // Kiểm tra có lỗi validation nào không
         const hasErrors = errors.some(
           (error) => error.errors && error.errors.length > 0
         );
@@ -393,7 +393,7 @@ const EditProductPage: React.FC = () => {
     }
   }, [productResponse, form, setAttributes, setVariants, setIsFormValid]);
 
-  // H�m h? tr? d?nh d?ng th�ng b�o l?i
+  // Hàm hỗ trợ định dạng thông báo lỗi
   const formatErrorMessage = (error: any): string => {
     if (error?.data?.message) {
       return error.data.message;
@@ -407,11 +407,11 @@ const EditProductPage: React.FC = () => {
         );
       }
 
-      // Nhi?u l?i - d?nh d?ng g?n g�ng
+      // Nhiều lỗi - định dạng gọn gàng
       const errorList = error.data.errors
         .map((err: any) => err.message || t('admin.products.messages.fieldValidationError', { field: err.field }))
-        .join('\n� ');
-      return `${t('admin.products.messages.multipleErrors', { count: error.data.errors.length })}:\n� ${errorList}`;
+        .join('\n• ');
+      return `${t('admin.products.messages.multipleErrors', { count: error.data.errors.length })}:\n• ${errorList}`;
     }
 
     if (error?.message) {
@@ -427,7 +427,7 @@ const EditProductPage: React.FC = () => {
       ? [categoriesResponse.data] 
       : [];
 
-  // X? l� tr?ng th�i loading v� error
+  // Xử lý trạng thái loading và error
   if (isLoadingProduct) {
     return (
       <div style={{ padding: '24px', textAlign: 'center' }}>

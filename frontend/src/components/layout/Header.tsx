@@ -47,7 +47,7 @@ const Header: React.FC = () => {
   );
   const isSearchOpen = useSelector((state: RootState) => state.ui.isSearchOpen);
 
-  // Lấy số lượng item trong cart từ server (n?u authenticated) hoặc localStorage (n?u chưa authenticated)
+  // Lấy số lượng item trong cart từ server (nếu authenticated) hoặc localStorage (nếu chưa authenticated)
   const { data: serverCartCount } = useGetCartCountQuery(undefined, {
     // Chỉ lấy count khi đã xác thực, tránh gọi API không cần thiết cho khách
     skip: !isAuthenticated,
@@ -66,7 +66,7 @@ const Header: React.FC = () => {
       : localCartCount
     : localCartCount;
 
-  // Lấy số lượng item trong wishlist từ Redux store và server (n?u authenticated)
+  // Lấy số lượng item trong wishlist từ Redux store và server (nếu authenticated)
   const wishlistItems = useSelector((state: RootState) => state.wishlist.items);
   const wishlistCount = wishlistItems.length;
 
@@ -87,7 +87,7 @@ const Header: React.FC = () => {
   useEffect(() => {
     if (isAuthenticated && serverCartCount === 0) {
       localStorage.removeItem('cartItems');
-      // C?p nh?t state Redux d? d?ng b? v?i localStorage
+      // Cập nhật state Redux để đồng bộ với localStorage
       dispatch(initializeCart());
     }
   }, [isAuthenticated, serverCartCount, dispatch]);
@@ -356,7 +356,7 @@ const Header: React.FC = () => {
             )}
           </button>
 
-          {/* N�t menu mobile */}
+          {/* Nút menu mobile */}
           <button
             className="lg:hidden group p-1.5 sm:p-2 rounded-xl text-neutral-700 dark:text-neutral-300 hover:bg-neutral-100 dark:hover:bg-neutral-800 transition-all duration-300 border border-transparent hover:border-neutral-200 dark:hover:border-neutral-700"
             onClick={() => dispatch(toggleMobileMenu())}

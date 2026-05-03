@@ -47,12 +47,12 @@ const ProductDetailPage: React.FC = () => {
   const navigate = useNavigate();
   const dispatch = useDispatch();
 
-  // L?y th�ng tin dang nh?p t? Redux store
+  // Lấy thông tin đăng nhập từ Redux store
   const isAuthenticated = useSelector(
     (state: RootState) => state.auth.isAuthenticated
   );
 
-  // L?y skuId t? URL params
+  // Lấy skuId từ URL params
   const skuId = searchParams.get('skuId') || undefined;
 
   const [quantity, setQuantity] = useState(1);
@@ -65,9 +65,9 @@ const ProductDetailPage: React.FC = () => {
     Record<string, string>
   >({});
 
-  const colorParam = (selectedAttributes.color || selectedAttributes['M�u s?c'] || selectedAttributes['m�u s?c']) || undefined;
+  const colorParam = (selectedAttributes.color || selectedAttributes['Màu sắc'] || selectedAttributes['màu sắc']) || undefined;
 
-  // C�c API hooks
+  // Các API hooks
   const {
     data: productData,
     isLoading,
@@ -99,8 +99,8 @@ const ProductDetailPage: React.FC = () => {
     }
   }, [error, navigate]);
 
-  // �� b? t? d?ng ch?n bi?n th? d?u ti�n theo y�u c?u d? b?t bu?c ch?n th? c�ng
-  // NHUNG v?n c?n d?ng b? state n?u bi?n th? d� du?c ch?n s?n qua URL (skuId)
+  // Đã bỏ tự động chọn biến thể đầu tiên theo yêu cầu để bắt buộc chọn thủ công
+  // NHƯNG vẫn cần đồng bộ state nếu biến thể đã được chọn sẵn qua URL (skuId)
   useEffect(() => {
     if (product && product.isVariantProduct && product.currentVariant && product.currentVariant.attributes) {
       if (Object.keys(selectedAttributes).length === 0) {
@@ -110,25 +110,25 @@ const ProductDetailPage: React.FC = () => {
     }
   }, [product, selectedAttributes]);
 
-  // �?t bi?n th? m?c d?nh v� reset state khi s?n ph?m thay d?i
+  // Đặt biến thể mặc định và reset state khi sản phẩm thay đổi
   useEffect(() => {
     if (product) {
-      // X�a c�c g�i b?o h�nh d� ch?n tru?c d�
+      // Xóa các gói bảo hành đã chọn trước đó
       setSelectedWarranties([]);
       
-      // T? d?ng ch?n thu?c t�nh bi?n th? m?c d?nh n?u l� s?n ph?m c� bi?n th?
+      // Tự động chọn thuộc tính biến thể mặc định nếu là sản phẩm có biến thể
       if (product.isVariantProduct && product.currentVariant && product.currentVariant.attributes) {
         setSelectedAttributes(product.currentVariant.attributes);
         setMappedAttributes(product.currentVariant.attributes);
       } else {
-        // Reset thu?c t�nh cho s?n ph?m kh�ng c� bi?n th?
+        // Reset thuộc tính cho sản phẩm không có biến thể
         setSelectedAttributes({});
         setMappedAttributes({});
       }
     }
-  }, [product?.id]); // K�ch ho?t khi ID s?n ph?m thay d?i (t?i l?n d?u ho?c di?u hu?ng)
+  }, [product?.id]); // Kích hoạt khi ID sản phẩm thay đổi (tải lần đầu hoặc điều hướng)
 
-  // X? l� thay d?i s? lu?ng
+  // Xử lý thay đổi số lượng
   const handleQuantityChange = (newQuantity: number) => {
     if (newQuantity >= 1 && newQuantity <= (product?.stock || 99)) {
       setQuantity(newQuantity);
@@ -136,34 +136,34 @@ const ProductDetailPage: React.FC = () => {
   };
 
 
-  // X? l� ch?n thu?c t�nh v?i ch?c nang b?t/t?t
+  // Xử lý chọn thuộc tính với chức năng bật/tắt
   const handleAttributeChange = (name: string, value: string) => {
     setSelectedAttributes((prev) => {
       const newAttributes = { ...prev };
 
-      // N?u nh?p v�o c�ng gi� tr?, b? ch?n
+      // Nếu nhấp vào cùng giá trị, bỏ chọn
       if (newAttributes[name] === value) {
         delete newAttributes[name];
       } else {
-        // Ngu?c l?i, ch?n gi� tr? m?i
+        // Ngược lại, chọn giá trị mới
         newAttributes[name] = value;
       }
 
       setMappedAttributes(newAttributes);
 
-      // T? d?ng t�m v� c?p nh?t skuId n?u t?t c? thu?c t�nh d� du?c ch?n
+      // Tự động tìm và cập nhật skuId nếu tất cả thuộc tính đã được chọn
       if (product && hasVariants(product) && product.attributes) {
         const allSelected = areAllAttributesSelected(product.attributes, newAttributes);
         if (allSelected) {
           const matchingVariant = findVariantByAttributes(product.variants || [], newAttributes);
           if (matchingVariant) {
-            // C?p nh?t URL v?i skuId m?i (d?ng b? v?i logic handleVariantChange)
+          // Cập nhật URL với skuId mới (đồng bộ với logic handleVariantChange)
             const newSearchParams = new URLSearchParams(searchParams);
             newSearchParams.set('skuId', matchingVariant.id);
             setSearchParams(newSearchParams);
           }
         } else if (skuId) {
-          // X�a skuId n?u l?a ch?n chua d?y d?
+          // Xóa skuId nếu lựa chọn chưa đầy đủ
           const newSearchParams = new URLSearchParams(searchParams);
           newSearchParams.delete('skuId');
           setSearchParams(newSearchParams);
@@ -173,7 +173,7 @@ const ProductDetailPage: React.FC = () => {
       return newAttributes;
     });
 
-    // Reset s? lu?ng v? 1 khi thay d?i thu?c t�nh
+    // Reset số lượng về 1 khi thay đổi thuộc tính
     setQuantity(1);
   };
 
@@ -181,39 +181,39 @@ const ProductDetailPage: React.FC = () => {
     setDynamicProductName(newName);
   };
 
-  // X? l� ch?n g�i b?o h�nh
+  // Xử lý chọn gói bảo hành
   const handleWarrantyChange = (packageIds: string[]) => {
     setSelectedWarranties(packageIds);
   };
 
-  // X? l� ch?n bi?n th?
+  // Xử lý chọn biến thể
   const handleVariantChange = (variantId: string) => {
-    // C?p nh?t URL v?i skuId m?i
+    // Cập nhật URL với skuId mới
     const newSearchParams = new URLSearchParams(searchParams);
     newSearchParams.set('skuId', variantId);
     setSearchParams(newSearchParams);
 
-    // Reset s? lu?ng v� l?a ch?n ?nh
+    // Reset số lượng và lựa chọn ảnh
     setQuantity(1);
 
-    // T?i l?i d? li?u s?n ph?m v?i bi?n th? m?i
+    // Tải lại dữ liệu sản phẩm với biến thể mới
     refetch();
   };
 
-  // Th�m v�o gi? h�ng
+  // Thêm vào giỏ hàng
   const handleAddToCart = async () => {
     if (!product) return;
 
-    // V?i s?n ph?m c� bi?n th?, s? d?ng bi?n th? hi?n t?i
+    // Với sản phẩm có biến thể, sử dụng biến thể hiện tại
     let variantId: string | undefined;
     let availableStock: number;
 
     if (product.isVariantProduct && product.currentVariant) {
-      // S? d?ng bi?n th? hi?n t?i t? response API
+      // Sử dụng biến thể hiện tại từ response API
       variantId = product.currentVariant.id;
       availableStock = product.currentVariant.stockQuantity;
     } else {
-      // Ch?n bi?n th? theo thu?c t�nh ki?u cu (legacy)
+      // Chọn biến thể theo thuộc tính kiểu cũ (legacy)
       if (product.attributes && product.attributes.length > 0) {
         const allSelected = areAllAttributesSelected(
           product.attributes,
@@ -234,7 +234,7 @@ const ProductDetailPage: React.FC = () => {
         }
       }
 
-      // Ki?m tra t?n kho cho s?n ph?m ki?u cu (legacy)
+      // Kiểm tra tồn kho cho sản phẩm kiểu cũ (legacy)
       availableStock = getVariantStock(product, selectedAttributes);
 
       if (hasVariants(product) && Object.keys(selectedAttributes).length > 0) {
@@ -246,7 +246,7 @@ const ProductDetailPage: React.FC = () => {
       }
     }
 
-    // Ki?m tra t?n kho
+    // Kiểm tra tồn kho
     if (availableStock === 0) {
       dispatch(
         addNotification({
@@ -268,7 +268,7 @@ const ProductDetailPage: React.FC = () => {
     }
 
     if (isAuthenticated) {
-      // N?u d� dang nh?p, s? d?ng API
+      // Nếu đã đăng nhập, sử dụng API
       try {
         const serverCart = await addToCart({
           productId: product.id,
@@ -277,7 +277,7 @@ const ProductDetailPage: React.FC = () => {
           warrantyPackageIds: selectedWarranties,
         }).unwrap();
 
-        // C?p nh?t Redux store v?i response t? server
+        // Cập nhật Redux store với response từ server
         dispatch(setServerCart(serverCart));
 
         dispatch(
@@ -288,9 +288,9 @@ const ProductDetailPage: React.FC = () => {
           })
         );
       } catch (error: any) {
-        console.error('? API th?t b?i:', error);
+        console.error('❌ API thất bại:', error);
 
-        // D? ph�ng luu localStorage n?u API th?t b?i
+        // Dự phòng lưu localStorage nếu API thất bại
         const newItem = {
           id: uuidv4(),
           productId: product.id,
@@ -324,7 +324,7 @@ const ProductDetailPage: React.FC = () => {
         );
       }
     } else {
-      // N?u chua dang nh?p, KH�NG g?i API, ch? luu v�o localStorage
+      // Nếu chưa đăng nhập, KHÔNG gọi API, chỉ lưu vào localStorage
       const newItem = {
         id: uuidv4(),
         productId: product.id,
@@ -345,7 +345,7 @@ const ProductDetailPage: React.FC = () => {
         warrantyPackages: product.warrantyPackages?.filter((p: any) => selectedWarranties.includes(p.id)) || [],
       };
 
-      // Ch? th�m v�o Redux store, cartSlice s? t? d?ng c?p nh?t localStorage
+      // Chỉ thêm vào Redux store, cartSlice sẽ tự động cập nhật localStorage
       dispatch(addItem(newItem));
 
       dispatch(
@@ -366,7 +366,7 @@ const ProductDetailPage: React.FC = () => {
       if (!product) return;
       setIsBuying(true);
 
-      // T�m variant ID d?a tr�n thu?c t�nh d� ch?n
+      // Tìm variant ID dựa trên thuộc tính đã chọn
       let variantId: string | undefined;
       if (product.variants && Object.keys(selectedAttributes).length > 0) {
         const selectedVariant = product.variants.find((variant: any) => {
@@ -378,7 +378,7 @@ const ProductDetailPage: React.FC = () => {
         variantId = selectedVariant?.id;
       }
 
-      // T?o d?i tu?ng s?n ph?m d? mua ngay
+      // Tạo đối tượng sản phẩm để mua ngay
       const price = product.isVariantProduct && product.currentVariant
         ? product.currentVariant.price
         : getVariantPrice(product, selectedAttributes);
@@ -400,15 +400,15 @@ const ProductDetailPage: React.FC = () => {
         warrantyPackages: product.warrantyPackages?.filter((p: any) => selectedWarranties.includes(p.id)) || [],
       };
 
-      // 3. Luu th�ng tin s?n ph?m v�o sessionStorage d? CheckoutPage s? d?ng
-      // Kh�ng g?i addToCart hay dispatch(addItem) d? tr�nh di qua gi? h�ng ch�nh
+      // 3. Lưu thông tin sản phẩm vào sessionStorage để CheckoutPage sử dụng
+      // Không gọi addToCart hay dispatch(addItem) để tránh đi qua giỏ hàng chính
       sessionStorage.setItem('buyNowItem', JSON.stringify(buyNowItem));
       sessionStorage.setItem('buyNowAction', 'true');
 
-      // 4. Chuy?n hu?ng ngay l?p t?c d?n checkout
+      // 4. Chuyển hướng ngay lập tức đến checkout
       navigate('/checkout?buyNow=true');
     } catch (error: any) {
-      console.error('L?i khi mua ngay:', error);
+      console.error('Lỗi khi mua ngay:', error);
       dispatch(
         addNotification({
           message: error?.data?.message || t('productDetail.buyNow.error'),
@@ -452,7 +452,7 @@ const ProductDetailPage: React.FC = () => {
 
   return (
     <div className="container mx-auto px-4 py-8">
-      {/* �u?ng d?n di?u hu?ng */}
+      {/* Đường dẫn điều hướng */}
       <nav className="mb-8">
         <ol className="flex text-sm">
           <li className="flex items-center">
@@ -505,14 +505,14 @@ const ProductDetailPage: React.FC = () => {
         </ol>
       </nav>
 
-      {/* Chi ti?t s?n ph?m */}
+      {/* Chi tiết sản phẩm */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mb-16">
-        {/* H�nh ?nh s?n ph?m */}
+        {/* Hình ảnh sản phẩm */}
         <div>
           <ProductImageGallery
             images={product.images ? product.images.map((img: any) => typeof img === 'string' ? img : img.url).filter(Boolean) : []}
             thumbnail={
-              // Uu ti�n thumbnail c?a variant dang ch?n d? gallery switch d�ng ?nh khi d?i variant
+            // Ưu tiên thumbnail của variant đang chọn để gallery switch đúng ảnh khi đổi variant
               (product.isVariantProduct && product.currentVariant?.thumbnail)
                 ? product.currentVariant.thumbnail
                 : product.thumbnail
@@ -521,17 +521,17 @@ const ProductDetailPage: React.FC = () => {
           />
         </div>
 
-        {/* Th�ng tin s?n ph?m */}
+        {/* Thông tin sản phẩm */}
         <div>
-            {/* Ti�u d? s?n ph?m ti�u chu?n */}
+            {/* Tiêu đề sản phẩm tiêu chuẩn */}
             <h1 className="text-3xl font-bold text-neutral-900 dark:text-white mb-2">
               {product.name}
             </h1>
 
-            {/* Gi� */}
+            {/* Giá */}
             <div className="flex items-center mb-4">
               {(() => {
-                // D�ng gi� bi?n th? hi?n t?i n?u c�, ngu?c l?i d�ng logic cu
+                // Dùng giá biến thể hiện tại nếu có, ngược lại dùng logic cũ
                 let currentPrice: number;
                 let comparePrice: number | null = null;
 
@@ -571,7 +571,7 @@ const ProductDetailPage: React.FC = () => {
               })()}
             </div>
 
-            {/* ��nh gi� */}
+            {/* Đánh giá */}
             {product.ratings && (
               <div className="flex items-center mb-4">
                 <Rating
@@ -588,10 +588,10 @@ const ProductDetailPage: React.FC = () => {
               </div>
             )}
 
-            {/* Tr?ng th�i t?n kho */}
+            {/* Trạng thái tồn kho */}
             <div className="mb-4">
               {(() => {
-                // D�ng t?n kho bi?n th? hi?n t?i n?u c�, n?u kh�ng th� fallback sang logic cu
+                // Dùng tồn kho biến thể hiện tại nếu có, nếu không thì fallback sang logic cũ
                 let availableStock: number;
 
                 if (product.isVariantProduct && product.currentVariant) {
@@ -621,14 +621,14 @@ const ProductDetailPage: React.FC = () => {
               })()}
             </div>
 
-            {/* M� t? ng?n */}
+            {/* Mô tả ngắn */}
             <p className="text-neutral-600 dark:text-neutral-400 mb-6">
               {product.shortDescription ||
                 product.description.substring(0, 150) + '...'}
             </p>
 
 
-          {/* B? ch?n bi?n th? s?n ph?m - �� x�a theo y�u c?u v� tr�ng l?p v?i b? ch?n thu?c t�nh */}
+          {/* Bộ chọn biến thể sản phẩm - Đã xóa theo yêu cầu vì trùng lặp với bộ chọn thuộc tính */}
           {/* {product.isVariantProduct && (
             <div className="mb-6">
               <ProductVariantSelector
@@ -639,7 +639,7 @@ const ProductDetailPage: React.FC = () => {
             </div>
           )} */}
 
-          {/* B? ch?n thu?c t�nh d?ng */}
+          {/* Bộ chọn thuộc tính động */}
           {product.attributes && product.attributes.length > 0 && (
             <div className="mb-6">
               {product.attributes.map((attribute: any, index: number) => {
@@ -691,7 +691,7 @@ const ProductDetailPage: React.FC = () => {
             </div>
           )}
 
-          {/* S? lu?ng */}
+          {/* Số lượng */}
           <div className="mb-6">
             <h3 className="text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-2">
               {t('productDetail.quantityLabel')}
@@ -756,14 +756,14 @@ const ProductDetailPage: React.FC = () => {
             })()}
           </div>
 
-          {/* Ch?n g�i b?o h�nh */}
+          {/* Chọn gói bảo hành */}
           <WarrantySelection
             warrantyPackages={warrantyPackages}
             onWarrantyChange={handleWarrantyChange}
             selectedPackages={selectedWarranties}
           />
 
-          {/* C�c n�t h�nh d?ng */}
+          {/* Các nút hành động */}
           <div className="flex flex-col gap-4 mb-8">
             {(() => {
               const allSelected = product && areAllAttributesSelected(product.attributes || [], selectedAttributes);
@@ -784,7 +784,7 @@ const ProductDetailPage: React.FC = () => {
                     </div>
                   )}
 
-                  {/* N�t mua ngay */}
+                  {/* Nút mua ngay */}
                   <PremiumButton
                     variant="secondary"
                     size="large"
@@ -815,7 +815,7 @@ const ProductDetailPage: React.FC = () => {
           </div>
         </div>
 
-          {/* Th�ng tin b? sung */}
+          {/* Thông tin bổ sung */}
           {/* <div className="border-t border-neutral-200 dark:border-neutral-700 pt-6 space-y-4">
             <div className="flex">
               <svg
@@ -877,22 +877,22 @@ const ProductDetailPage: React.FC = () => {
           </div> */}
         </div>
         
-      {/* Ph?n chi ti?t s?n ph?m */}
+      {/* Phần chi tiết sản phẩm */}
       <ProductDetailsSection
         description={product.description}
         specifications={product.currentVariant?.productSpecifications || product.productSpecifications || []}
       />
 
-      {/* Ph?n c�u h?i thu?ng g?p */}
+      {/* Phần câu hỏi thường gặp */}
       <ProductFAQSection faqs={product.faqs || []} />
 
-      {/* Ph?n d�nh gi� */}
+      {/* Phần đánh giá */}
       <div id="reviews" className="mb-16 mt-20 scroll-mt-24">
         <h2 className="text-2xl font-bold text-neutral-800 dark:text-neutral-100 mb-6">
           {t('productDetail.customerReviews')}
         </h2>
 
-        {/* Ph?n d�nh gi� */}
+        {/* Phần đánh giá */}
         {product?.id && (
           <ProductReviews
             productId={product.id}
@@ -902,7 +902,7 @@ const ProductDetailPage: React.FC = () => {
         )}
       </div>
 
-      {/* S?n ph?m li�n quan */}
+      {/* Sản phẩm liên quan */}
       {relatedProducts && relatedProducts.length > 0 && (
         <div>
           <h2 className="text-2xl font-bold text-neutral-800 dark:text-neutral-100 mb-6">
@@ -916,7 +916,7 @@ const ProductDetailPage: React.FC = () => {
         </div>
       )}
 
-      {/* S?n ph?m d� xem g?n d�y */}
+      {/* Sản phẩm đã xem gần đây */}
       {isAuthenticated && (
         <div className="mt-16">
           <RecentlyViewedProducts limit={5} />

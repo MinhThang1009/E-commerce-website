@@ -49,7 +49,7 @@ const EnhancedProductBasicForm: React.FC<EnhancedProductBasicFormProps> = ({
   const [dynamicNamingEnabled, setDynamicNamingEnabled] = useState(true);
   const [showAdvanced, setShowAdvanced] = useState(false);
 
-  // Theo d�i gi� tr? form d? t? d?ng t?o t�n
+  // Theo dõi giá trị form để tự động tạo tên
   const productName = Form.useWatch('name', form);
   const baseName = Form.useWatch('baseName', form);
   const isVariantProduct = Form.useWatch('isVariantProduct', form);
@@ -69,7 +69,7 @@ const EnhancedProductBasicForm: React.FC<EnhancedProductBasicFormProps> = ({
     fillExampleData();
   };
 
-  // T? d?ng d?t baseName khi t�n s?n ph?m thay d?i (n?u chua d?t th? c�ng)
+  // Tự động đặt baseName khi tên sản phẩm thay đổi (nếu chưa đặt thủ công)
   useEffect(() => {
     if (productName && !baseName && isVariantProduct) {
       form.setFieldValue('baseName', productName);

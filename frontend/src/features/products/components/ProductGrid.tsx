@@ -15,14 +15,14 @@ const ProductGrid: React.FC<ProductGridProps> = ({
   columns = 3,
 }) => {
   const { t } = useTranslation();
-  // X�c d?nh class s? c?t lu?i
+  // Xác định class số cột lưới
   const gridClass = {
     2: 'grid-cols-1 sm:grid-cols-2',
     3: 'grid-cols-1 sm:grid-cols-2 lg:grid-cols-3',
     4: 'grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4',
   }[columns];
 
-  // Hi?n th? skeleton khi dang t?i
+  // Hiển thị skeleton khi đang tải
   if (loading) {
     return (
       <div className={`grid ${gridClass} gap-4 md:gap-6`}>
@@ -41,7 +41,7 @@ const ProductGrid: React.FC<ProductGridProps> = ({
     );
   }
 
-  // Kh�ng t�m th?y s?n ph?m
+  // Không tìm thấy sản phẩm
   if (products.length === 0) {
     return (
       <div className="text-center py-12">
@@ -69,7 +69,7 @@ const ProductGrid: React.FC<ProductGridProps> = ({
     );
   }
 
-  // Lu?i s?n ph?m
+  // Lưới sản phẩm
   return (
     <div className={`grid ${gridClass} gap-4 md:gap-6`}>
       {products.map((product) => (

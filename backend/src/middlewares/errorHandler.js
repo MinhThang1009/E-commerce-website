@@ -38,22 +38,24 @@ const sendErrorProd = (err, res) => {
   }
 };
 
-// Xử lý các loại lỗi cụ thể
+// Xử lý lỗi CastError (giá trị không hợp lệ)
 const handleCastErrorDB = (err) => {
   const message = `Giá trị không hợp lệ: ${err.value}`;
   return new AppError(message, 400);
 };
 
+// Xử lý lỗi duplicate key (MongoDB legacy — dùng cho compatibility)
 const handleDuplicateFieldsDB = (err) => {
   const value = err.errmsg.match(/(["'])(\\?.)*?\1/)[0];
   const message = `Giá trị trùng lặp: ${value}. Vui lòng sử dụng giá trị khác!`;
-  return new AppError(message, 400);
+  return new AppError(message, 409);
 };
 
+// Xử lý lỗi validation (Mongoose legacy — dùng cho compatibility)
 const handleValidationErrorDB = (err) => {
   const errors = Object.values(err.errors).map((el) => el.message);
   const message = `Dữ liệu không hợp lệ. ${errors.join('. ')}`;
-  return new AppError(message, 400);
+  return new AppError(message, 422);
 };
 
 const handleJWTError = () =>
@@ -62,38 +64,65 @@ const handleJWTError = () =>
 const handleJWTExpiredError = () =>
   new AppError('Token đã hết hạn. Vui lòng đăng nhập lại!', 401);
 
-// Xử lý lỗi unique constraint của Sequelize
+// Xử lý lỗi unique constraint của Sequelize — trả 409 Conflict
 const handleSequelizeUniqueConstraintError = (err) => {
-  // Lấy tên field và giá trị từ lỗi
-  const field = err.errors[0]?.path;
-  const value = err.errors[0]?.value;
-  const message = `Giá trị '${value}' đã tồn tại cho trường '${field}'. Vui lòng sử dụng giá trị khác!`;
+  const field = err.errors && err.errors[0]?.path;
+  const value = err.errors && err.errors[0]?.value;
+  const message = field
+    ? `Giá trị '${value}' đã tồn tại cho trường '${field}'. Vui lòng sử dụng giá trị khác!`
+    : 'Dữ liệu đã tồn tại. Vui lòng sử dụng giá trị khác!';
+  return new AppError(message, 409);
+};
 
-  return new AppError(message, 400);
+// Xử lý lỗi validation của Sequelize — trả 422 Unprocessable Entity
+const handleSequelizeValidationError = (err) => {
+  const errors = err.errors ? err.errors.map((e) => e.message) : [err.message];
+  const message = `Dữ liệu không hợp lệ: ${errors.join('. ')}`;
+  return new AppError(message, 422);
+};
+
+// Xử lý lỗi upload file của Multer
+const handleMulterError = (err) => {
+  if (err.code === 'LIMIT_FILE_SIZE') {
+    return new AppError('File tải lên vượt quá kích thước cho phép.', 400);
+  }
+  if (err.code === 'LIMIT_UNEXPECTED_FILE') {
+    return new AppError('Trường file không hợp lệ hoặc quá nhiều file.', 400);
+  }
+  return new AppError(`Lỗi upload file: ${err.message}`, 400);
+};
+
+// Chuẩn hóa loại lỗi thành AppError — áp dụng cho cả development và production
+const normalizeError = (err) => {
+  let error = Object.assign(Object.create(Object.getPrototypeOf(err)), err);
+  error.message = err.message;
+
+  if (error.name === 'CastError') return handleCastErrorDB(error);
+  // Lỗi duplicate key của MongoDB legacy (code 11000)
+  if (error.code === 11000) return handleDuplicateFieldsDB(error);
+  if (error.name === 'ValidationError') return handleValidationErrorDB(error);
+  if (error.name === 'JsonWebTokenError') return handleJWTError();
+  if (error.name === 'TokenExpiredError') return handleJWTExpiredError();
+  if (error.name === 'SequelizeUniqueConstraintError') return handleSequelizeUniqueConstraintError(error);
+  if (error.name === 'SequelizeValidationError') return handleSequelizeValidationError(error);
+  // MulterError được nhận dạng qua instanceof nên truyền err gốc vào
+  if (err.name === 'MulterError') return handleMulterError(err);
+
+  return error;
 };
 
 // Middleware xử lý lỗi chính
 const errorHandler = (err, req, res, next) => {
-  err.statusCode = err.statusCode || 500;
-  err.status = err.status || 'error';
+  // Chuẩn hóa lỗi Sequelize/JWT/Multer trước khi kiểm tra môi trường
+  const normalizedErr = normalizeError(err);
+  normalizedErr.statusCode = normalizedErr.statusCode || 500;
+  normalizedErr.status = normalizedErr.status || 'error';
 
   if (process.env.NODE_ENV === 'development') {
-    sendErrorDev(err, res);
-  } else if (process.env.NODE_ENV === 'production') {
-    let error = { ...err };
-    error.message = err.message;
-
-    if (error.name === 'CastError') error = handleCastErrorDB(error);
-    if (error.code === 11000) error = handleDuplicateFieldsDB(error);
-    if (error.name === 'ValidationError')
-      error = handleValidationErrorDB(error);
-    if (error.name === 'JsonWebTokenError') error = handleJWTError();
-    if (error.name === 'TokenExpiredError') error = handleJWTExpiredError();
-    // Xử lý lỗi unique constraint của Sequelize
-    if (error.name === 'SequelizeUniqueConstraintError')
-      error = handleSequelizeUniqueConstraintError(error);
-
-    sendErrorProd(error, res);
+    sendErrorDev(normalizedErr, res);
+  } else {
+    // Production và mọi môi trường khác: ẩn stack trace
+    sendErrorProd(normalizedErr, res);
   }
 };
 

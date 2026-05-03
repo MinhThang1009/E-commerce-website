@@ -3106,10 +3106,10 @@ COMMIT;
   ```
 
 ### ✅ Acceptance Criteria Phase 16
-- [ ] Xóa `JWT_SECRET` khỏi `.env` → server không start, in ra lỗi rõ ràng
-- [ ] Tắt MySQL → server log `Cannot connect to database` và exit, không hang
-- [ ] `POST /api/products` với `name` trùng slug → nhận `409 Conflict` (không phải 500 SequelizeUniqueConstraintError)
-- [ ] Không có async route handler nào thiếu try-catch hoặc asyncHandler wrapper
+- [x] Xóa `JWT_SECRET` khỏi `.env` → server không start, in ra lỗi rõ ràng
+- [x] Tắt MySQL → server log `Cannot connect to database` và exit, không hang
+- [x] `POST /api/products` với `name` trùng slug → nhận `409 Conflict` (không phải 500 SequelizeUniqueConstraintError)
+- [x] Không có async route handler nào thiếu try-catch hoặc asyncHandler wrapper
 
 ---
 

@@ -1,12 +1,13 @@
 ﻿require('dotenv').config();
 // Kích hoạt nodemon restart khi thay đổi .env
 
-// Fail fast nếu thiếu biến môi trường bắt buộc
+// Fail fast nếu thiếu biến môi trường bắt buộc — server sẽ exit(1) thay vì crash âm thầm khi xử lý request
 const REQUIRED_ENV_VARS = [
-  'JWT_SECRET',
-  'JWT_REFRESH_SECRET',
-  'DB_NAME',
-  'DB_HOST',
+  'DB_HOST', 'DB_USER', 'DB_PASSWORD', 'DB_NAME',
+  'JWT_SECRET', 'JWT_REFRESH_SECRET',
+  'STRIPE_SECRET_KEY',
+  'GEMINI_API_KEY',
+  'EMAIL_USERNAME', 'EMAIL_PASSWORD',
 ];
 
 const missingVars = REQUIRED_ENV_VARS.filter((key) => !process.env[key]);

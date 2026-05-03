@@ -311,7 +311,13 @@ const getProductById = async (req, res, next) => {
       const cachedDetail = await redis.get(detailCacheKey);
       if (cachedDetail) {
         if (req.user) {
-          RecentlyViewed.upsert({ userId: req.user.id, productId: parseInt(id) || 0, viewedAt: new Date() }).catch(() => {});
+          // Lấy productId từ cache payload thay vì parseInt(id) — id có thể là slug
+          const cachedData = JSON.parse(cachedDetail);
+          const cachedProductId = cachedData?.data?.id;
+          if (cachedProductId) {
+            // fire-and-forget: ghi lịch sử xem không ảnh hưởng response, lỗi bỏ qua
+            RecentlyViewed.upsert({ userId: req.user.id, productId: cachedProductId, viewedAt: new Date() }).catch(() => {});
+          }
         }
         return res.status(200).json(JSON.parse(cachedDetail));
       }

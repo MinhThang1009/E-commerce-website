@@ -31,7 +31,7 @@ class ChatbotErrorBoundary extends React.Component<Props, State> {
       return (
         <div className="fixed bottom-4 right-4 sm:bottom-6 sm:right-6 z-50">
           <div className="bg-neutral-100 dark:bg-neutral-800 text-neutral-500 dark:text-neutral-400 text-xs px-3 py-2 rounded-full shadow">
-            {i18next.t('chat.errors.unavailable', 'Chatbot tạm thời không khả dụng')}
+            {i18next.t('chat.errors.unavailable')}
           </div>
         </div>
       );

@@ -8,6 +8,7 @@ import {
   setMessages as setMessagesAction,
   clearMessages as clearMessagesAction,
   saveMessagesToStorage,
+  saveSessionIdToStorage,
 } from '../store/chatSlice';
 import { useSendChatbotMessageMutation } from '../services/chatbotApi';
 import { geminiService } from '../services/geminiApi';
@@ -41,10 +42,14 @@ const ChatWidgetPortal: React.FC = () => {
   const messagesRef = useRef(messages);
   useEffect(() => { messagesRef.current = messages; }, [messages]);
 
-  // Persist messages vào localStorage mỗi khi danh sách thay đổi
+  // Persist messages và sessionId vào localStorage — side effects ra khỏi reducer, xử lý tại đây
   useEffect(() => {
     saveMessagesToStorage(messages);
   }, [messages]);
+
+  useEffect(() => {
+    saveSessionIdToStorage(sessionId);
+  }, [sessionId]);
 
   // Hook mutation gọi API
   const [sendChatbotMessage, { isLoading }] = useSendChatbotMessageMutation();

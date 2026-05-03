@@ -38,6 +38,13 @@ export const saveMessagesToStorage = (messages: Message[]): void => {
   } catch {}
 };
 
+// Lưu sessionId vào localStorage — gọi từ component qua useEffect, không gọi trong reducer
+export const saveSessionIdToStorage = (sessionId: string): void => {
+  try {
+    localStorage.setItem(STORAGE_KEY_SESSION, sessionId);
+  } catch {}
+};
+
 interface ChatState {
   messages: Message[];
   isOpen: boolean;
@@ -65,9 +72,8 @@ const chatSlice = createSlice({
     clearMessages: (state) => {
       state.messages = [];
       // Tạo sessionId mới khi xóa lịch sử — backend bắt đầu context mới
-      const newId = createSessionId();
-      state.sessionId = newId;
-      try { localStorage.setItem(STORAGE_KEY_SESSION, newId); } catch {}
+      // Việc persist sessionId vào localStorage do component xử lý qua useEffect (tránh side effect trong reducer)
+      state.sessionId = createSessionId();
     },
     toggleChat: (state) => {
       state.isOpen = !state.isOpen;

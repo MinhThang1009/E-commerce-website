@@ -36,7 +36,7 @@ export default defineConfig({
     port: 5175,
     strictPort: false, // Cho phép tìm cổng khác nếu 5175 đã được sử dụng
     proxy: {
-      // Proxy API requests to avoid CORS issues
+      // Proxy /api/* sang backend để tránh CORS khi dev
       '/api': {
         target: process.env.VITE_API_URL || 'http://localhost:8888',
         changeOrigin: true,
@@ -48,7 +48,7 @@ export default defineConfig({
       'Cross-Origin-Opener-Policy': 'unsafe-none',
     },
     fs: {
-      // Allow serving files from one level up to the project root
+      // Cho phép serve file từ thư mục cha (cần thiết cho monorepo)
       allow: ['..'],
     },
   },

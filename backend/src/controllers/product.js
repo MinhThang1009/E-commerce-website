@@ -1647,6 +1647,7 @@ const getDeals = async (req, res, next) => {
       orderClause = [['basePrice', 'DESC']];
     } else {
       // discount_desc: sort theo % giảm giá cao nhất trước
+      // Sequelize không có built-in expression sort — dùng literal để tính trực tiếp trong ORDER BY
       orderClause = [[sequelize.literal('(compare_at_price - base_price) / compare_at_price'), 'DESC']];
     }
 
@@ -1655,6 +1656,8 @@ const getDeals = async (req, res, next) => {
       where: {
         compareAtPrice: { [Op.ne]: null },
         [Op.and]: [
+          // discountPercentage là computed field — không có column thật nên phải dùng literal
+          // parsedMinDiscount đã được parseFloat trước → không có SQL injection
           sequelize.where(
             sequelize.literal('(compare_at_price - base_price) / compare_at_price * 100'),
             { [Op.gte]: parsedMinDiscount }

@@ -2,7 +2,7 @@
 
 Toàn bộ 32 rules bắt buộc áp dụng **mọi phase và mọi session**. Được tổ chức theo thứ tự ưu tiên P0→P6 — đọc từ đầu đến cuối trước khi bắt đầu bất kỳ phase nào.
 
-> **Nguồn gốc:** rules này được trích từ AGENT EXECUTION GUIDELINES trong plan.md (Rules 1–32). plan.md là authoritative source theo số thứ tự; file này là bản priority-organized cho agent.
+> **Nguồn gốc:** rules này được trích từ AGENT EXECUTION GUIDELINES trong plan.md (Rules 1–32) và sau đó mở rộng thêm. **AGENT_RULES.md là authoritative source** — plan.md chỉ còn pointer 1 dòng trỏ đến file này.
 
 ---
 
@@ -53,7 +53,7 @@ Checklist: [ ] npm test pass; [ ] manual demo AC quan trọng; [ ] Layer 2.
 
 File này (AGENT_RULES.md) chứa đầy đủ toàn bộ 32 rules với full content — **không cần đọc AGENT EXECUTION GUIDELINES trong plan.md**. Đọc hết file này từ P0 đến P6 là đủ. Không bỏ sót rule nào — đây là bước đầu tiên, không phải tùy chọn.
 
-Nếu cần tra cứu thêm chi tiết một rule cụ thể theo số (ví dụ cross-reference "xem Rule 11"): dùng `Grep "### 11\." plan.md` để tìm đúng section trong plan.md.
+Nếu cần tra cứu thêm chi tiết một rule cụ thể theo số (ví dụ cross-reference "xem Rule 11"): dùng `Grep "## Rule 11" AGENT_RULES.md` để tìm đúng section trong file này.
 
 **Không được bỏ qua bất kỳ rule nào dù cảm thấy rule đó không liên quan đến phase đang làm — một rule bị bỏ sót có thể gây bug hàng loạt.**
 

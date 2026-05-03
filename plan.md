@@ -84,6 +84,12 @@ Ctrl+C            — Interrupt command đang chạy quá lâu
 ### 8. Comment code (BẮT BUỘC khi viết/sửa code)
 Mọi code được thêm mới hoặc sửa đổi **phải có comment đầy đủ** để dễ đọc, dễ hiểu và dễ trace bug sau này.
 
+**Ngôn ngữ comment — BẮT BUỘC tiếng Việt:**
+- **Tất cả comment phải viết bằng tiếng Việt** — không dùng tiếng Anh trong comment mới
+- **Khi đọc/sửa file có comment tiếng Anh hiện tại:** chủ động dịch sang tiếng Việt ngay trong cùng lần chỉnh sửa đó (không để lại comment tiếng Anh cũ)
+- **Nếu comment tiếng Anh cũ sai nội dung hoặc lỗi thời:** sửa nội dung đồng thời với việc dịch sang tiếng Việt
+- **Lý do:** codebase này là dự án cá nhân tiếng Việt; comment tiếng Việt giúp đọc code nhanh hơn, trace bug dễ hơn, và nhất quán toàn codebase
+
 **Quy tắc comment bắt buộc:**
 - **Function/method:** comment ngắn gọn trên đầu mô tả *mục đích* (không phải mô tả lại code đã rõ)
   ```js

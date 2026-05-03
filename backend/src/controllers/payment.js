@@ -954,7 +954,7 @@ const momoReturn = async (req, res, next) => {
 // Xử lý MoMo IPN (POST)
 const momoIPN = async (req, res, next) => {
   try {
-    logger.info('Đã nhận MoMo IPN:', req.body);
+    logger.info('Đã nhận MoMo IPN:', { resultCode: req.body.resultCode, orderId: req.body.orderId, transId: req.body.transId });
     const isValid = momoService.verifySignature(req.body);
     
     if (!isValid) {

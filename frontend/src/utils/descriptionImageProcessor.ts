@@ -100,6 +100,7 @@ export const processDescriptionImages = async (
             uploadedUrl
           );
 
+          // Lưu thông tin ảnh đã tải lên
           uploadedImages.push({
             originalBase64: base64Data,
             uploadedUrl,

@@ -64,7 +64,7 @@ DROP TABLE IF EXISTS `users`;
 -- =====================================================
 
 -- ----- BẢNG 1: users (Người dùng) -----
-CREATE TABLE `users` (
+CREATE TABLE IF NOT EXISTS `users` (
     `id` INT AUTO_INCREMENT PRIMARY KEY,
     `email` VARCHAR(255) NOT NULL,
     `password` VARCHAR(255) NULL,
@@ -87,7 +87,7 @@ CREATE TABLE `users` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- ----- BẢNG 2: addresses (Địa chỉ giao hàng) -----
-CREATE TABLE `addresses` (
+CREATE TABLE IF NOT EXISTS `addresses` (
     `id` INT AUTO_INCREMENT PRIMARY KEY,
     `userId` INT NOT NULL,
     `name` VARCHAR(255) NULL,
@@ -108,7 +108,7 @@ CREATE TABLE `addresses` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- ----- BẢNG 3: categories (Danh mục sản phẩm) -----
-CREATE TABLE `categories` (
+CREATE TABLE IF NOT EXISTS `categories` (
     `id` INT AUTO_INCREMENT PRIMARY KEY,
     `name` VARCHAR(100) UNIQUE NOT NULL,
     `slug` VARCHAR(255) UNIQUE NOT NULL,
@@ -119,7 +119,7 @@ CREATE TABLE `categories` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- ----- BẢNG 4: brands (Thương hiệu) -----
-CREATE TABLE `brands` (
+CREATE TABLE IF NOT EXISTS `brands` (
     `id` INT AUTO_INCREMENT PRIMARY KEY,
     `name` VARCHAR(100) UNIQUE NOT NULL,
     `slug` VARCHAR(255) UNIQUE NOT NULL,
@@ -131,7 +131,7 @@ CREATE TABLE `brands` (
 -- Lưu ý: brand.js dùng underscored: true → Sequelize tự map createdAt→created_at
 
 -- ----- BẢNG 5: products (Sản phẩm) -----
-CREATE TABLE `products` (
+CREATE TABLE IF NOT EXISTS `products` (
     `id` INT AUTO_INCREMENT PRIMARY KEY,
     `category_id` INT NULL,
     `brand_id` INT NULL,
@@ -169,7 +169,7 @@ CREATE TABLE `products` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- ----- BẢNG 6: product_variants (Biến thể sản phẩm) -----
-CREATE TABLE `product_variants` (
+CREATE TABLE IF NOT EXISTS `product_variants` (
     `id` INT AUTO_INCREMENT PRIMARY KEY,
     `product_id` INT NOT NULL,
     `sku` VARCHAR(100) UNIQUE NOT NULL,
@@ -189,7 +189,7 @@ CREATE TABLE `product_variants` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- ----- BẢNG 7: product_images (Ảnh sản phẩm) -----
-CREATE TABLE `product_images` (
+CREATE TABLE IF NOT EXISTS `product_images` (
     `id` INT AUTO_INCREMENT PRIMARY KEY,
     `product_id` INT NOT NULL,
     `variant_id` INT NULL,
@@ -204,7 +204,7 @@ CREATE TABLE `product_images` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- ----- BẢNG 8: product_reviews (Đánh giá sản phẩm - theo data_new.sql) -----
-CREATE TABLE `product_reviews` (
+CREATE TABLE IF NOT EXISTS `product_reviews` (
     `id` INT AUTO_INCREMENT PRIMARY KEY,
     `product_id` INT NOT NULL,
     `variant_id` INT NULL,
@@ -219,7 +219,7 @@ CREATE TABLE `product_reviews` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- ----- BẢNG 9: orders (Đơn hàng) -----
-CREATE TABLE `orders` (
+CREATE TABLE IF NOT EXISTS `orders` (
     `id` INT AUTO_INCREMENT PRIMARY KEY,
     `number` VARCHAR(255) NOT NULL,
     `userId` INT NOT NULL,
@@ -269,7 +269,7 @@ CREATE TABLE `orders` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- ----- BẢNG 10: order_items (Chi tiết đơn hàng) -----
-CREATE TABLE `order_items` (
+CREATE TABLE IF NOT EXISTS `order_items` (
     `id` INT AUTO_INCREMENT PRIMARY KEY,
     `orderId` INT NOT NULL,
     `productId` INT NOT NULL,
@@ -289,7 +289,7 @@ CREATE TABLE `order_items` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- ----- BẢNG 11: carts (Giỏ hàng) -----
-CREATE TABLE `carts` (
+CREATE TABLE IF NOT EXISTS `carts` (
     `id` INT AUTO_INCREMENT PRIMARY KEY,
     `userId` INT NULL,
     `sessionId` VARCHAR(255) NULL,
@@ -300,7 +300,7 @@ CREATE TABLE `carts` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- ----- BẢNG 12: cart_items (Items trong giỏ hàng) -----
-CREATE TABLE `cart_items` (
+CREATE TABLE IF NOT EXISTS `cart_items` (
     `id` INT AUTO_INCREMENT PRIMARY KEY,
     `cartId` INT NOT NULL,
     `productId` INT NOT NULL,
@@ -315,7 +315,7 @@ CREATE TABLE `cart_items` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- ----- BẢNG 13: discount_codes (Mã giảm giá) -----
-CREATE TABLE `discount_codes` (
+CREATE TABLE IF NOT EXISTS `discount_codes` (
     `id` INT AUTO_INCREMENT PRIMARY KEY,
     `code` VARCHAR(50) NOT NULL UNIQUE,
     `type` ENUM('percent', 'fixed') NOT NULL DEFAULT 'fixed',
@@ -333,7 +333,7 @@ CREATE TABLE `discount_codes` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- ----- BẢNG 14: reviews (Đánh giá - bảng cũ) -----
-CREATE TABLE `reviews` (
+CREATE TABLE IF NOT EXISTS `reviews` (
     `id` INT AUTO_INCREMENT PRIMARY KEY,
     `productId` INT NOT NULL,
     `userId` INT NOT NULL,
@@ -351,7 +351,7 @@ CREATE TABLE `reviews` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- ----- BẢNG 15: review_feedbacks (Phản hồi đánh giá) -----
-CREATE TABLE `review_feedbacks` (
+CREATE TABLE IF NOT EXISTS `review_feedbacks` (
     `id` INT AUTO_INCREMENT PRIMARY KEY,
     `reviewId` INT NOT NULL,
     `userId` INT NOT NULL,
@@ -363,7 +363,7 @@ CREATE TABLE `review_feedbacks` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- ----- BẢNG 16: wishlists (Danh sách yêu thích) -----
-CREATE TABLE `wishlists` (
+CREATE TABLE IF NOT EXISTS `wishlists` (
     `id` INT AUTO_INCREMENT PRIMARY KEY,
     `userId` INT NOT NULL,
     `productId` INT NOT NULL,
@@ -374,7 +374,7 @@ CREATE TABLE `wishlists` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- ----- BẢNG 17: images (Quản lý ảnh hệ thống) -----
-CREATE TABLE `images` (
+CREATE TABLE IF NOT EXISTS `images` (
     `id` INT AUTO_INCREMENT PRIMARY KEY,
     `original_name` VARCHAR(255) NOT NULL,
     `file_name` VARCHAR(255) NOT NULL UNIQUE,
@@ -398,7 +398,7 @@ CREATE TABLE `images` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- ----- BẢNG 18: news (Tin tức / Blog) -----
-CREATE TABLE `news` (
+CREATE TABLE IF NOT EXISTS `news` (
     `id` INT AUTO_INCREMENT PRIMARY KEY,
     `title` VARCHAR(255) NOT NULL,
     `slug` VARCHAR(255) NOT NULL,
@@ -416,7 +416,7 @@ CREATE TABLE `news` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- ----- BẢNG 19: newsletter_subscribers (Đăng ký nhận tin) -----
-CREATE TABLE `newsletter_subscribers` (
+CREATE TABLE IF NOT EXISTS `newsletter_subscribers` (
     `id` INT AUTO_INCREMENT PRIMARY KEY,
     `email` VARCHAR(255) NOT NULL,
     `status` ENUM('active', 'unsubscribed') DEFAULT 'active',
@@ -425,7 +425,7 @@ CREATE TABLE `newsletter_subscribers` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- ----- BẢNG 20: feedbacks (Phản hồi liên hệ) -----
-CREATE TABLE `feedbacks` (
+CREATE TABLE IF NOT EXISTS `feedbacks` (
     `id` INT AUTO_INCREMENT PRIMARY KEY,
     `name` VARCHAR(255) NOT NULL,
     `email` VARCHAR(255) NOT NULL,
@@ -438,7 +438,7 @@ CREATE TABLE `feedbacks` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- ----- BẢNG 21: chat_messages (Tin nhắn chat) -----
-CREATE TABLE `chat_messages` (
+CREATE TABLE IF NOT EXISTS `chat_messages` (
     `id` INT AUTO_INCREMENT PRIMARY KEY,
     `userId` INT NULL,
     `sessionId` VARCHAR(255) NOT NULL,
@@ -473,7 +473,7 @@ CREATE TABLE `chat_messages` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- ----- BẢNG 22: banners (Banner quảng cáo) -----
-CREATE TABLE `banners` (
+CREATE TABLE IF NOT EXISTS `banners` (
     `id` INT AUTO_INCREMENT PRIMARY KEY,
     `title` VARCHAR(255) NOT NULL,
     `image_url` VARCHAR(255) NOT NULL,
@@ -486,7 +486,7 @@ CREATE TABLE `banners` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- ----- BẢNG 23: email_campaigns (Chiến dịch email) -----
-CREATE TABLE `email_campaigns` (
+CREATE TABLE IF NOT EXISTS `email_campaigns` (
     `id` INT AUTO_INCREMENT PRIMARY KEY,
     `subject` VARCHAR(255) NOT NULL,
     `content` TEXT NOT NULL,
@@ -497,7 +497,7 @@ CREATE TABLE `email_campaigns` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- ----- BẢNG 24: collections (Bộ sưu tập) -----
-CREATE TABLE `collections` (
+CREATE TABLE IF NOT EXISTS `collections` (
     `id` INT AUTO_INCREMENT PRIMARY KEY,
     `name` VARCHAR(255) NOT NULL,
     `slug` VARCHAR(255) NOT NULL UNIQUE,
@@ -509,7 +509,7 @@ CREATE TABLE `collections` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- ----- BẢNG 25: product_collections (Liên kết sản phẩm - bộ sưu tập) -----
-CREATE TABLE `product_collections` (
+CREATE TABLE IF NOT EXISTS `product_collections` (
     `productId` INT NOT NULL,
     `collectionId` INT NOT NULL,
     PRIMARY KEY (`productId`, `collectionId`),
@@ -518,7 +518,7 @@ CREATE TABLE `product_collections` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- ----- BẢNG 26: product_categories (Liên kết sản phẩm - danh mục) -----
-CREATE TABLE `product_categories` (
+CREATE TABLE IF NOT EXISTS `product_categories` (
     `id` INT AUTO_INCREMENT PRIMARY KEY,
     `productId` INT NOT NULL,
     `categoryId` INT NOT NULL,
@@ -529,7 +529,7 @@ CREATE TABLE `product_categories` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- ----- BẢNG 27: brand_categories (Liên kết thương hiệu - danh mục) -----
-CREATE TABLE `brand_categories` (
+CREATE TABLE IF NOT EXISTS `brand_categories` (
     `brand_id` INT NOT NULL,
     `category_id` INT NOT NULL,
     PRIMARY KEY (`brand_id`, `category_id`),
@@ -538,7 +538,7 @@ CREATE TABLE `brand_categories` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- ----- BẢNG 28: attribute_groups (Nhóm thuộc tính) -----
-CREATE TABLE `attribute_groups` (
+CREATE TABLE IF NOT EXISTS `attribute_groups` (
     `id` INT AUTO_INCREMENT PRIMARY KEY,
     `name` VARCHAR(255) NOT NULL,
     `description` TEXT NULL,
@@ -551,7 +551,7 @@ CREATE TABLE `attribute_groups` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- ----- BẢNG 29: attribute_values (Giá trị thuộc tính) -----
-CREATE TABLE `attribute_values` (
+CREATE TABLE IF NOT EXISTS `attribute_values` (
     `id` INT AUTO_INCREMENT PRIMARY KEY,
     `attribute_group_id` INT NOT NULL,
     `name` VARCHAR(255) NOT NULL,
@@ -569,7 +569,7 @@ CREATE TABLE `attribute_values` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- ----- BẢNG 30: product_attribute_groups (Liên kết SP - nhóm thuộc tính) -----
-CREATE TABLE `product_attribute_groups` (
+CREATE TABLE IF NOT EXISTS `product_attribute_groups` (
     `id` INT AUTO_INCREMENT PRIMARY KEY,
     `product_id` INT NOT NULL,
     `attribute_group_id` INT NOT NULL,
@@ -582,7 +582,7 @@ CREATE TABLE `product_attribute_groups` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- ----- BẢNG 31: product_attributes (Thuộc tính sản phẩm) -----
-CREATE TABLE `product_attributes` (
+CREATE TABLE IF NOT EXISTS `product_attributes` (
     `id` INT AUTO_INCREMENT PRIMARY KEY,
     `product_id` INT NOT NULL,
     `name` VARCHAR(255) NOT NULL,
@@ -596,7 +596,7 @@ CREATE TABLE `product_attributes` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- ----- BẢNG 32: product_specifications (Thông số kỹ thuật) -----
-CREATE TABLE `product_specifications` (
+CREATE TABLE IF NOT EXISTS `product_specifications` (
     `id` INT AUTO_INCREMENT PRIMARY KEY,
     `product_id` INT NOT NULL,
     `name` VARCHAR(255) NOT NULL,
@@ -609,7 +609,7 @@ CREATE TABLE `product_specifications` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- ----- BẢNG 33: warranty_packages (Gói bảo hành) -----
-CREATE TABLE `warranty_packages` (
+CREATE TABLE IF NOT EXISTS `warranty_packages` (
     `id` INT AUTO_INCREMENT PRIMARY KEY,
     `name` VARCHAR(255) NOT NULL,
     `description` TEXT NULL,
@@ -624,7 +624,7 @@ CREATE TABLE `warranty_packages` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- ----- BẢNG 34: product_warranties (Liên kết SP - gói bảo hành) -----
-CREATE TABLE `product_warranties` (
+CREATE TABLE IF NOT EXISTS `product_warranties` (
     `id` INT AUTO_INCREMENT PRIMARY KEY,
     `product_id` INT NOT NULL,
     `warranty_package_id` INT NOT NULL,
@@ -636,7 +636,7 @@ CREATE TABLE `product_warranties` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- ----- BẢNG 35: loyalty_histories (Lịch sử điểm thưởng) -----
-CREATE TABLE `loyalty_histories` (
+CREATE TABLE IF NOT EXISTS `loyalty_histories` (
     `id` INT AUTO_INCREMENT PRIMARY KEY,
     `user_id` INT NOT NULL,
     `order_id` INT NULL,
@@ -650,7 +650,7 @@ CREATE TABLE `loyalty_histories` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- ----- BẢNG 36: search_history (Lịch sử tìm kiếm) -----
-CREATE TABLE `search_history` (
+CREATE TABLE IF NOT EXISTS `search_history` (
     `id` INT AUTO_INCREMENT PRIMARY KEY,
     `user_id` INT NULL,
     `session_id` VARCHAR(255) NULL,
@@ -660,7 +660,7 @@ CREATE TABLE `search_history` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- ----- BẢNG 37: recently_viewed (Sản phẩm xem gần đây) -----
-CREATE TABLE `recently_viewed` (
+CREATE TABLE IF NOT EXISTS `recently_viewed` (
     `id` INT AUTO_INCREMENT PRIMARY KEY,
     `user_id` INT NOT NULL,
     `product_id` INT NOT NULL,
@@ -671,7 +671,7 @@ CREATE TABLE `recently_viewed` (
     CONSTRAINT `fk_rv_product` FOREIGN KEY (`product_id`) REFERENCES `products`(`id`) ON DELETE CASCADE ON UPDATE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
-CREATE TABLE `audit_logs` (
+CREATE TABLE IF NOT EXISTS `audit_logs` (
     `id` INT AUTO_INCREMENT PRIMARY KEY,
     `admin_id` INT NOT NULL,
     `action` VARCHAR(50) NOT NULL,

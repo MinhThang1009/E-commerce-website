@@ -84,6 +84,44 @@ app.use(cors(corsOptions));
 // Xử lý preflight requests
 app.options('*', cors());
 
+// CSRF Protection — defense-in-depth cho endpoints nhận cookie
+//
+// Tại sao API này ít bị CSRF hơn session-based auth:
+//   - Access token lưu trong localStorage → browser KHÔNG tự gửi qua cross-site request
+//   - Authorization header phải được JavaScript đặt tường minh → attacker không thể làm được
+//
+// Tuy nhiên sessionId cookie (guest cart) vẫn bị browser tự gửi → cần bảo vệ.
+// Cách bảo vệ hiện tại:
+//   1. sessionId cookie đã có SameSite=Strict → chặn hoàn toàn cross-site cookie gửi
+//   2. Middleware dưới đây verify Origin header cho mọi POST/PUT/PATCH/DELETE từ browser
+//      có Origin (request từ Postman/curl không có Origin → được phép để không break tooling)
+app.use((req, res, next) => {
+  const { method, headers } = req;
+  const stateChangingMethods = ['POST', 'PUT', 'PATCH', 'DELETE'];
+
+  if (!stateChangingMethods.includes(method)) return next();
+
+  const origin = headers.origin;
+  // Không có Origin = request từ server-to-server, Postman, mobile app → được phép
+  if (!origin) return next();
+
+  // Xây danh sách allowed origins từ cùng config CORS
+  const allowedOrigins = Array.isArray(corsOptions.origin)
+    ? corsOptions.origin
+    : corsOptions.origin === '*'
+      ? null                    // wildcard → không kiểm tra
+      : [corsOptions.origin];
+
+  if (allowedOrigins && !allowedOrigins.includes(origin)) {
+    return res.status(403).json({
+      status: 'fail',
+      message: 'CSRF: Origin không hợp lệ',
+    });
+  }
+
+  next();
+});
+
 // Ghi log request trong môi trường development
 if (process.env.NODE_ENV === 'development') {
   app.use(morgan('dev'));

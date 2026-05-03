@@ -128,6 +128,9 @@ router.patch(
   adminController.toggleProductStatus
 );
 
+// POST /api/admin/products/:productId/restock — Nhập hàng cho sản phẩm hoặc biến thể
+router.post('/products/:productId/restock', adminController.restockProduct);
+
 /**
  * REVIEW MANAGEMENT ROUTES
  */

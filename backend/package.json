@@ -13,6 +13,7 @@
     "db:seed": "node scripts/seedProductsV2.js",
     "db:verify": "node scripts/dbVerify.js",
     "db:index": "node scripts/indexProducts.js",
+    "ai:rebuild-vectors": "node scripts/indexProducts.js",
     "db:import": "node scripts/importProducts.js",
     "db:sync": "node scripts/syncProducts.js",
     "db:sync:dry": "node scripts/syncProducts.js --dry-run",

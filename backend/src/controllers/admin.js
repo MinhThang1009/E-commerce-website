@@ -14,6 +14,7 @@
   LoyaltyHistory,
   SearchHistory,
   RecentlyViewed,
+  InventoryLog,
 } = require('../models');
 const { Op, Sequelize } = require('sequelize');
 const logger = require('../utils/logger');
@@ -196,14 +197,17 @@ const getDashboardStats = catchAsync(async (req, res) => {
     // Tiếp tục mà không có top products nếu lấy thất bại
   }
 
-  // Đơn hàng gần đây cần xử lý
-  const pendingOrders = await Order.count({
-    where: { status: 'pending' },
+  // Breakdown số đơn hàng theo từng trạng thái
+  const orderStatusCounts = await Order.findAll({
+    attributes: ['status', [Sequelize.fn('COUNT', Sequelize.col('id')), 'count']],
+    group: ['status'],
+    raw: true,
   });
-
-  const processingOrders = await Order.count({
-    where: { status: 'processing' },
-  });
+  // Chuyển sang object { pending: N, processing: N, ... } để dễ đọc
+  const ordersByStatus = orderStatusCounts.reduce((acc, row) => {
+    acc[row.status] = parseInt(row.count, 10);
+    return acc;
+  }, { pending: 0, processing: 0, shipped: 0, delivered: 0, cancelled: 0 });
 
   res.status(200).json({
     status: 'success',
@@ -213,8 +217,7 @@ const getDashboardStats = catchAsync(async (req, res) => {
         totalProducts,
         totalOrders,
         totalRevenue: totalRevenue || 0,
-        pendingOrders,
-        processingOrders,
+        ordersByStatus,
       },
       monthly: {
         users: monthlyUsers,
@@ -348,13 +351,13 @@ const getDetailedStats = catchAsync(async (req, res) => {
 const getAllUsers = catchAsync(async (req, res) => {
   const {
     page = 1,
-    limit = 10,
     search = '',
     role = '',
     sortBy = 'createdAt',
     sortOrder = 'DESC',
     isEmailVerified,
   } = req.query;
+  const limit = Math.min(parseInt(req.query.limit) || 20, 100);
 
   const offset = (page - 1) * limit;
   const whereClause = {};
@@ -1392,7 +1395,6 @@ const deleteProduct = catchAsync(async (req, res) => {
 const getAllProducts = catchAsync(async (req, res) => {
   const {
     page = 1,
-    limit = 10,
     search = '',
     category = '',
     status = '',
@@ -1403,6 +1405,7 @@ const getAllProducts = catchAsync(async (req, res) => {
     stockMin,
     stockMax,
   } = req.query;
+  const limit = Math.min(parseInt(req.query.limit) || 20, 100);
 
   const offset = (page - 1) * limit;
   const whereClause = {};
@@ -1551,12 +1554,12 @@ const getAllProducts = catchAsync(async (req, res) => {
 const getAllReviews = catchAsync(async (req, res) => {
   const {
     page = 1,
-    limit = 10,
     productId = '',
     rating = '',
     sortBy = 'createdAt',
     sortOrder = 'DESC',
   } = req.query;
+  const limit = Math.min(parseInt(req.query.limit) || 20, 100);
 
   const offset = (page - 1) * limit;
   const whereClause = {};
@@ -1628,7 +1631,6 @@ const deleteReview = catchAsync(async (req, res) => {
 const getAllOrders = catchAsync(async (req, res) => {
   const {
     page = 1,
-    limit = 10,
     status = '',
     search = '',
     sortBy = 'createdAt',
@@ -1636,6 +1638,7 @@ const getAllOrders = catchAsync(async (req, res) => {
     startDate,
     endDate,
   } = req.query;
+  const limit = Math.min(parseInt(req.query.limit) || 20, 100);
 
   const offset = (page - 1) * limit;
   const whereClause = {};
@@ -1961,6 +1964,64 @@ const toggleProductStatus = catchAsync(async (req, res) => {
   });
 });
 
+// POST /api/admin/products/:productId/restock — Nhập hàng, tăng stock và ghi InventoryLog
+const restockProduct = catchAsync(async (req, res) => {
+  const { productId } = req.params;
+  const { variantId, quantity, note } = req.body;
+  const qty = parseInt(quantity, 10);
+
+  if (!qty || qty <= 0) {
+    throw new AppError('Số lượng nhập phải là số nguyên dương', 400);
+  }
+
+  const product = await Product.findByPk(productId);
+  if (!product) throw new AppError('Không tìm thấy sản phẩm', 404);
+
+  let prevStock, newStock;
+
+  if (variantId) {
+    // Nhập hàng cho biến thể cụ thể
+    const variant = await ProductVariant.findOne({ where: { id: variantId, productId } });
+    if (!variant) throw new AppError('Không tìm thấy biến thể', 404);
+
+    prevStock = variant.stockQuantity;
+    newStock = prevStock + qty;
+    await variant.update({ stockQuantity: newStock, isAvailable: true });
+
+    // Cập nhật tổng stock và trạng thái inStock của product
+    const total = await ProductVariant.sum('stockQuantity', { where: { productId } });
+    await product.update({ stockQuantity: total || 0, inStock: (total || 0) > 0 });
+  } else {
+    // Nhập hàng cho sản phẩm không có variant
+    prevStock = product.stockQuantity;
+    newStock = prevStock + qty;
+    await product.update({ stockQuantity: newStock, inStock: true });
+  }
+
+  // Ghi lịch sử nhập hàng
+  const log = await InventoryLog.create({
+    productId: parseInt(productId, 10),
+    variantId: variantId ? parseInt(variantId, 10) : null,
+    changeType: 'restock',
+    changeAmount: qty,
+    previousStock: prevStock,
+    newStock,
+    note: note || null,
+    createdBy: req.user.id,
+  });
+
+  res.status(200).json({
+    data: {
+      productId: parseInt(productId, 10),
+      variantId: variantId || null,
+      previousStock: prevStock,
+      newStock,
+      quantity: qty,
+      log,
+    },
+  });
+});
+
 module.exports = {
   getDashboardStats,
   getDetailedStats,
@@ -1979,4 +2040,5 @@ module.exports = {
   deleteReview,
   getAllOrders,
   updateOrderStatus,
+  restockProduct,
 };

@@ -36,6 +36,7 @@ const EmailCampaign = require('./emailCampaign');
 // Models mới theo data_new.sql
 const ProductImage = require('./productImage');
 const BrandCategory = require('./brandCategory');
+const InventoryLog = require('./inventoryLog');
 
 // =============================================
 // QUAN HỆ USER
@@ -234,6 +235,19 @@ Collection.belongsToMany(Product, {
 });
 
 // =============================================
+// QUAN HỆ INVENTORY LOG
+// =============================================
+
+Product.hasMany(InventoryLog, { foreignKey: 'productId', as: 'inventoryLogs' });
+InventoryLog.belongsTo(Product, { foreignKey: 'productId' });
+ProductVariant.hasMany(InventoryLog, { foreignKey: 'variantId', as: 'inventoryLogs' });
+InventoryLog.belongsTo(ProductVariant, { foreignKey: 'variantId' });
+Order.hasMany(InventoryLog, { foreignKey: 'orderId', as: 'inventoryLogs' });
+InventoryLog.belongsTo(Order, { foreignKey: 'orderId' });
+User.hasMany(InventoryLog, { foreignKey: 'createdBy', as: 'inventoryLogs' });
+InventoryLog.belongsTo(User, { foreignKey: 'createdBy', as: 'creator' });
+
+// =============================================
 // QUAN HỆ KHÁC
 // =============================================
 
@@ -296,4 +310,5 @@ module.exports = {
   // Models mới
   ProductImage,
   BrandCategory,
+  InventoryLog,
 };

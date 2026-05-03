@@ -2,11 +2,29 @@
 const logger = require('../utils/logger');
 const momoService = require('../services/payment/momo');
 const vnpayService = require('../services/payment/vnpay');
-const { Order, User, OrderItem, Product, ProductVariant, Cart, CartItem } = require('../models');
+const { Order, User, OrderItem, Product, ProductVariant, Cart, CartItem, DiscountCode } = require('../models');
 const { AppError } = require('../middlewares/errorHandler');
 const { Op } = require('sequelize');
 const sequelize = require('../config/sequelize');
 const moment = require('moment');
+
+/**
+ * Tăng usedCount của discount code khi thanh toán thành công.
+ * Dùng chung cho tất cả payment methods (stripe, vnpay, momo, sepay).
+ * Idempotent — order.discountCodeId null thì không làm gì.
+ */
+async function incrementDiscountCodeUsage(orderId, transactionInstance) {
+  const options = transactionInstance ? { transaction: transactionInstance } : {};
+  const order = await Order.findByPk(orderId, {
+    attributes: ['id', 'discountCodeId'],
+    ...options,
+  });
+  if (!order || !order.discountCodeId) return;
+  await DiscountCode.increment('usedCount', {
+    where: { id: order.discountCodeId },
+    ...options,
+  });
+}
 
 // Tạo payment intent
 const createPaymentIntent = async (req, res, next) => {
@@ -98,6 +116,9 @@ const confirmPayment = async (req, res, next) => {
           },
           { where: { id: paymentIntent.metadata.orderId } }
         );
+
+        // Tăng usedCount của discount code sau khi payment xác nhận thành công
+        await incrementDiscountCodeUsage(existingOrder.id);
 
         logger.info(`Đã cập nhật trạng thái đơn hàng ${existingOrder.id} sang paid`);
         await clearUserCart(existingOrder.userId);
@@ -295,6 +316,9 @@ const handlePaymentSucceeded = async (paymentIntent) => {
         },
         { where: { id: orderId }, transaction: t }
       );
+
+      // Tăng usedCount của discount code (fallback path — confirmPayment chưa chạy)
+      await incrementDiscountCodeUsage(orderId, t);
     });
 
     await clearUserCart(order.userId);
@@ -768,6 +792,9 @@ const handleSePayWebhook = async (req, res, next) => {
         paymentDate: parsedTransactionDate
       });
 
+      // Tăng usedCount của discount code sau khi SePay xác nhận thanh toán
+      await incrementDiscountCodeUsage(order.id);
+
       // Xóa giỏ hàng đang hoạt động của user (ngoài transaction — không rollback nếu xóa thất bại)
       await clearUserCart(order.userId);
 
@@ -849,6 +876,8 @@ const momoReturn = async (req, res, next) => {
             paymentProvider: 'momo',
             updatedAt: new Date(),
           });
+          // Tăng usedCount của discount code sau khi MoMo xác nhận thanh toán
+          await incrementDiscountCodeUsage(order.id);
           await clearUserCart(order.userId);
         }
       }
@@ -955,6 +984,8 @@ const vnpayReturn = async (req, res, next) => {
           paymentTransactionId: vnp_Params['vnp_TransactionNo'],
           updatedAt: new Date(),
         });
+        // Tăng usedCount của discount code sau khi VNPay return xác nhận
+        await incrementDiscountCodeUsage(order.id);
         await clearUserCart(order.userId);
       }
       return res.redirect(`${process.env.FRONTEND_URL}/orders?payment=success&order=${orderNumber}`);
@@ -1004,6 +1035,8 @@ const vnpayIPN = async (req, res, next) => {
         paymentTransactionId: vnp_Params['vnp_TransactionNo'],
         updatedAt: new Date(),
       });
+      // Tăng usedCount của discount code sau khi VNPay IPN xác nhận
+      await incrementDiscountCodeUsage(order.id);
       await clearUserCart(order.userId);
       return res.status(200).json({ RspCode: '00', Message: 'Confirm Success' });
     } else {

@@ -17,7 +17,6 @@ const getAllProducts = async (req, res, next) => {
   try {
     const {
       page = 1,
-      limit = 10,
       sort = 'createdAt',
       order = 'DESC',
       category,
@@ -30,6 +29,8 @@ const getAllProducts = async (req, res, next) => {
       brand,
       collection,
     } = req.query;
+    // Mặc định 20 sản phẩm/trang, tối đa 100 để tránh trả toàn bộ data
+    const limit = Math.min(parseInt(req.query.limit) || 20, 100);
 
     // Xây dựng điều kiện lọc
     const whereConditions = {};
@@ -162,10 +163,11 @@ const getAllProducts = async (req, res, next) => {
       required: false,
     });
 
-    // Include đánh giá để tính điểm
+    // Chỉ include verified reviews để tính rating — tránh spam/fake review làm lệch điểm
     includeConditions.push({
       association: 'reviews',
       required: false,
+      where: { isVerified: true },
     });
 
     // Xử lý sort: price_asc/price_desc map sang basePrice column
@@ -385,21 +387,25 @@ const getProductById = async (req, res, next) => {
       productJson.thumbnail = null;
     }
 
-    // Tính điểm đánh giá trung bình
+    // Tính điểm đánh giá trung bình — chỉ đếm verified reviews để tránh spam
     const ratings = {
       average: 0,
       count: 0,
+      totalCount: productJson.reviews ? productJson.reviews.length : 0,
     };
 
     if (productJson.reviews && productJson.reviews.length > 0) {
-      const totalRating = productJson.reviews.reduce(
-        (sum, review) => sum + review.rating,
-        0
-      );
-      ratings.average = parseFloat(
-        (totalRating / productJson.reviews.length).toFixed(1)
-      );
-      ratings.count = productJson.reviews.length;
+      const verifiedReviews = productJson.reviews.filter(r => r.isVerified);
+      if (verifiedReviews.length > 0) {
+        const totalRating = verifiedReviews.reduce(
+          (sum, review) => sum + review.rating,
+          0
+        );
+        ratings.average = parseFloat(
+          (totalRating / verifiedReviews.length).toFixed(1)
+        );
+        ratings.count = verifiedReviews.length;
+      }
     }
 
     // Xử lý sản phẩm có biến thể

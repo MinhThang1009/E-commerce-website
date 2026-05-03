@@ -16,6 +16,9 @@ router.post(
   validateRequest(createOrderSchema),
   orderController.createOrder
 );
+
+// GET /api/orders/shipping-estimate?subtotal=N&weight=N — Ước tính phí ship (frontend dùng để hiển thị)
+router.get('/shipping-estimate', orderController.estimateShipping);
 router.get('/', orderController.getUserOrders);
 router.get('/number/:number', orderController.getOrderByNumber);
 router.get('/:id', orderController.getOrderById);

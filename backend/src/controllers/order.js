@@ -8,6 +8,7 @@
   User,
   ChatMessage,
   LoyaltyHistory,
+  InventoryLog,
   sequelize,
   WarrantyPackage,
 } = require('../models');
@@ -19,6 +20,34 @@ const emailService = require('../services/email');
 // Cấu hình điểm tích lũy loyalty
 const POINTS_EARN_RATE = 100000; // 1 point per 100,000 VND spent
 const POINTS_VALUE = 1000; // 1 point = 1,000 VND discount
+
+// Cấu hình tính phí ship
+const SHIPPING_FREE_THRESHOLD = 2000000; // Miễn phí ship nếu subtotal >= 2,000,000 VND
+const SHIPPING_BASE_RATE = 30000; // Phí ship cơ bản (VND)
+const SHIPPING_WEIGHT_RATE = 5000; // Thêm 5,000 VND mỗi kg vượt quá 2kg
+const SHIPPING_WEIGHT_THRESHOLD = 2; // Ngưỡng kg tính thêm phí
+
+/**
+ * Tính phí ship dựa trên tổng tiền hàng và tổng trọng lượng đơn hàng.
+ * Backend tự tính — không nhận từ client để tránh bị manipulate.
+ * @param {number} subtotal - Tổng tiền hàng (VND)
+ * @param {number} totalWeightKg - Tổng trọng lượng (kg)
+ * @returns {number} Phí ship (VND)
+ */
+function calculateShippingCost(subtotal, totalWeightKg) {
+  // Miễn phí ship cho đơn hàng đủ ngưỡng
+  if (subtotal >= SHIPPING_FREE_THRESHOLD) return 0;
+
+  let cost = SHIPPING_BASE_RATE;
+
+  // Tính thêm phí nếu tổng trọng lượng vượt ngưỡng
+  if (totalWeightKg > SHIPPING_WEIGHT_THRESHOLD) {
+    const extraKg = totalWeightKg - SHIPPING_WEIGHT_THRESHOLD;
+    cost += Math.ceil(extraKg) * SHIPPING_WEIGHT_RATE;
+  }
+
+  return cost;
+}
 
 /**
  * Xóa giỏ hàng của user sau khi tạo đơn hàng / thanh toán thành công
@@ -87,7 +116,7 @@ const createOrder = async (req, res, next) => {
       discountCode,
       items: providedItems, // Hỗ trợ mua ngay không qua giỏ hàng
       pointsToUse = 0,
-      shippingCost: clientShippingCost = 0,
+      // shippingCost từ client bị bỏ qua — backend tự tính để tránh bị manipulate
     } = req.body;
 
     let itemsToProcess = [];
@@ -246,10 +275,12 @@ const createOrder = async (req, res, next) => {
 
     // Kiểm tra tồn kho và tính tổng tiền
     let subtotal = 0;
+    let totalWeightKg = 0; // Tổng trọng lượng để tính phí ship
     const tax = 0; // Chưa áp dụng thuế
-    const shippingCost = parseFloat(clientShippingCost) || 0; // Nhận từ client
     let discount = 0; // Áp dụng mã giảm giá
     let totalWarrantyCost = 0;
+    // Thu thập dữ liệu inventory log — tạo sau khi có orderId
+    const pendingInventoryLogs = [];
 
     for (const item of itemsToProcess) {
       const product = item.Product;
@@ -271,7 +302,17 @@ const createOrder = async (req, res, next) => {
             400
           );
         }
+        const prevStock = lockedVariant.stockQuantity;
         await lockedVariant.decrement('stockQuantity', { by: item.quantity, transaction });
+        // Lưu để tạo log sau khi có orderId
+        pendingInventoryLogs.push({
+          productId: item.productId,
+          variantId: item.variantId,
+          changeType: 'sale',
+          changeAmount: -item.quantity,
+          previousStock: prevStock,
+          newStock: prevStock - item.quantity,
+        });
       } else {
         const lockedProduct = await Product.findByPk(item.productId, {
           lock: transaction.LOCK.UPDATE,
@@ -283,13 +324,27 @@ const createOrder = async (req, res, next) => {
             400
           );
         }
+        const prevStock = lockedProduct.stockQuantity;
         await lockedProduct.decrement('stockQuantity', { by: item.quantity, transaction });
+        // Lưu để tạo log sau khi có orderId
+        pendingInventoryLogs.push({
+          productId: item.productId,
+          variantId: null,
+          changeType: 'sale',
+          changeAmount: -item.quantity,
+          previousStock: prevStock,
+          newStock: prevStock - item.quantity,
+        });
       }
 
       // Tính giá sản phẩm
       const variant = item.ProductVariant;
       const price = variant ? variant.price : product.basePrice;
       subtotal += price * item.quantity;
+
+      // Tích lũy trọng lượng — dùng weight của variant nếu có, không thì bỏ qua (0)
+      const itemWeight = parseFloat(variant?.weight) || 0;
+      totalWeightKg += itemWeight * item.quantity;
 
       // Tính phí bảo hành nếu có
       if (item.warrantyPackageIds && item.warrantyPackageIds.length > 0) {
@@ -348,8 +403,13 @@ const createOrder = async (req, res, next) => {
       }
       discountCodeId = codeData.id;
 
-      // Tăng lượt sử dụng
-      await codeData.update({ usedCount: codeData.usedCount + 1 }, { transaction });
+      // Tăng usedCount ngay cho thanh toán thủ công (COD, chuyển khoản, trả góp).
+      // Với online payment (stripe, vnpay, momo, sepay), tăng sau khi payment xác nhận
+      // để tránh discount code bị "dùng" mà đơn hàng chưa được thanh toán.
+      const manualMethods = ['cod', 'bank_transfer', 'installment'];
+      if (manualMethods.includes(paymentMethod)) {
+        await codeData.increment('usedCount', { transaction });
+      }
     }
 
     // Tính giảm giá từ điểm tích lũy
@@ -366,6 +426,9 @@ const createOrder = async (req, res, next) => {
         // Điều chỉnh nếu giảm giá vượt quá số tiền còn lại
       }
     }
+
+    // Tính phí ship — backend tự tính để tránh client manipulate
+    const shippingCost = calculateShippingCost(subtotal, totalWeightKg);
 
     // Tính tổng tiền
     const total = subtotal + tax + shippingCost + totalWarrantyCost - discount - pointsDiscount;
@@ -480,7 +543,15 @@ const createOrder = async (req, res, next) => {
 
       orderItems.push(orderItem);
 
-      // Tồn kho KHÔNG bị trừ ở đây — chỉ trừ sau khi thanh toán thành công (webhook)
+      // Tồn kho KHÔNG bị trừ ở đây — đã trừ trong vòng lặp kiểm tra tồn kho phía trên
+    }
+
+    // Tạo inventory log cho tất cả items sau khi có orderId
+    if (pendingInventoryLogs.length > 0) {
+      await InventoryLog.bulkCreate(
+        pendingInventoryLogs.map(log => ({ ...log, orderId: order.id })),
+        { transaction }
+      );
     }
 
     // Với thanh toán online (vnpay, momo, stripe): giỏ hàng chưa xóa ở đây,
@@ -558,7 +629,8 @@ const createOrder = async (req, res, next) => {
 const getUserOrders = async (req, res, next) => {
   try {
     const userId = req.user.id;
-    const { page = 1, limit = 10 } = req.query;
+    const page = parseInt(req.query.page) || 1;
+    const limit = Math.min(parseInt(req.query.limit) || 20, 100);
 
     const { count, rows: orders } = await Order.findAndCountAll({
       where: { userId },
@@ -817,7 +889,9 @@ const cancelOrder = async (req, res, next) => {
 // Admin: Lấy tất cả đơn hàng
 const getAllOrders = async (req, res, next) => {
   try {
-    const { page = 1, limit = 10, status } = req.query;
+    const page = parseInt(req.query.page) || 1;
+    const limit = Math.min(parseInt(req.query.limit) || 20, 100);
+    const { status } = req.query;
 
     const whereConditions = {};
     if (status) {
@@ -1065,6 +1139,14 @@ const confirmReceived = async (req, res, next) => {
   }
 };
 
+// GET /api/orders/shipping-estimate — Trả phí ship ước tính để frontend hiển thị trước khi tạo đơn
+const estimateShipping = (req, res) => {
+  const subtotal = parseFloat(req.query.subtotal) || 0;
+  const weight = parseFloat(req.query.weight) || 0;
+  const shippingCost = calculateShippingCost(subtotal, weight);
+  res.status(200).json({ data: { shippingCost, freeShippingThreshold: SHIPPING_FREE_THRESHOLD } });
+};
+
 module.exports = {
   createOrder,
   getUserOrders,
@@ -1075,5 +1157,6 @@ module.exports = {
   updateOrderStatus,
   repayOrder,
   confirmReceived,
+  estimateShipping,
   clearUserCart, // Dùng trong payment controller
 };

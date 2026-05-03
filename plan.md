@@ -29,6 +29,12 @@ Không đọc nhiều file cùng lúc rồi tổng hợp — dễ nhầm line nu
 ### 3. Đọc rules trước khi bắt đầu mỗi phase (BẮT BUỘC)
 Trước khi implement bất kỳ phase nào, **phải đọc lại toàn bộ phần này (AGENT EXECUTION GUIDELINES)** và các quy tắc trong Project Context (quy tắc làm việc, quy tắc sai sót, quy tắc i18n). Không được bắt đầu code khi chưa đọc xong. Đây là bước đầu tiên, không phải tùy chọn.
 
+**Bắt buộc đọc ĐẦY ĐỦ — không được bỏ sót rule nào:**
+- Đọc lần lượt từ rule 1 đến rule cuối cùng trong AGENT EXECUTION GUIDELINES
+- Đọc toàn bộ Project Context (rules 1–5 trong phần đầu plan.md)
+- Nếu plan.md dài → đọc từng đoạn 100–150 dòng cho đến khi đọc hết phần GUIDELINES
+- **Không được tắt tắt hay bỏ qua bất kỳ rule nào** dù cảm thấy rule đó không liên quan đến phase đang làm — một rule bị bỏ sót có thể gây bug hàng loạt
+
 ### 4. Double-check gate (bắt buộc mỗi phase)
 Trước khi đánh dấu một phase PASS, chạy tất cả lệnh verify trong phần "Acceptance Criteria" của phase đó. Nếu bất kỳ check nào fail → fix trước, không chuyển phase tiếp theo.
 
@@ -55,6 +61,7 @@ Sau khi tất cả Acceptance Criteria của một phase PASS, **phải** thực
 3. `git push origin main`
 - **Lý do:** Log commit tiếng Việt + body chi tiết giúp trace lại từng phase; format chuẩn GitHub giúp render đẹp trên GitHub UI.
 - **Lưu ý bảo mật:** Kiểm tra kỹ không commit API key, token, password vào code hoặc plan.md trước khi push (GitHub Push Protection sẽ block nếu phát hiện secret).
+- **Git commit user bắt buộc:** Tên tác giả commit phải là `MinhThang1009` (chủ repo). Kiểm tra bằng `git config user.name` trước khi commit; nếu sai → chạy `git config user.name "MinhThang1009"` để sửa. **Không dùng tên khác** (ví dụ: toanhoc29-tech hay bất kỳ alias nào khác).
 
 ### 5. Quản lý context khi file plan dài
 - Sau mỗi phase hoàn thành: dùng `/compact` trong Claude Code CLI để nén history (giữ code changes, xóa read output)
@@ -114,6 +121,31 @@ Mọi code được thêm mới hoặc sửa đổi **phải có comment đầy 
 **Không cần comment:**
 - Code đã tự giải thích qua tên biến/hàm rõ ràng (ví dụ: `const isLoggedIn = !!user`)
 - Getter/setter đơn giản, import statements
+
+### 9. Cập nhật toàn bộ references khi đổi tên (BẮT BUỘC)
+Khi đổi tên bất kỳ thứ gì — key trong object/JSON, chuỗi string, câu lệnh SQL, tên biến, tên hàm, tên field DB, tên route, tên component, tên file — **phải** cập nhật **tất cả** nơi tham chiếu đến tên cũ trong toàn bộ project, không chỉ file đang sửa.
+
+**Quy trình bắt buộc sau mỗi lần đổi tên:**
+1. `Grep` toàn bộ `backend/src/` và `frontend/src/` tìm tên cũ
+2. Cập nhật từng reference — controller, service, model, migration, route, frontend type, frontend component, test, email template, v.v.
+3. Verify lại bằng `Grep` lần nữa để chắc chắn không còn reference nào dùng tên cũ
+
+**Ví dụ nguy hiểm nếu bỏ sót:**
+- Đổi `price` → `unitPrice` trong model nhưng quên sửa controller → runtime error khi tạo order
+- Đổi route `/api/products` → `/api/v2/products` nhưng quên sửa frontend API call → 404
+- Đổi tên column DB nhưng quên tạo migration → crash server khi query
+
+### 10. Phát hiện bug → fix ngay, cập nhật plan.md (BẮT BUỘC)
+Trong quá trình implement, nếu phát hiện **bất kỳ loại bug nào** — logic sai, code sai, syntax error, fix sai, hoặc side effect của thay đổi hiện tại:
+
+1. **Dừng ngay** công việc đang làm
+2. **Báo cáo ngay cho user** — mô tả bug ở đâu, tại sao sai, mức độ ảnh hưởng
+3. **Cập nhật plan.md** — thêm mô tả bug và fix vào phase liên quan (hoặc tạo sub-task mới nếu cần)
+4. **Fix bug hoàn toàn** — không để "fix tạm" hay "TODO: fix sau"
+5. **Verify 100%** — chạy lại tất cả AC của phase đang làm để đảm bảo không có regression
+6. **Không tiếp tục phase mới** khi còn bug chưa được fix và verify
+
+**Nguyên tắc:** Một bug được phát hiện sớm trong phase N dễ fix hơn 10 lần so với phát hiện ở phase N+5 sau khi code đã được build lên trên.
 
 ---
 
@@ -520,11 +552,11 @@ Các field quan trọng theo chuẩn e-commerce đang thiếu:
 - **Fix:** Tạo migration để add indexes cho các column thiếu
 
 ### ✅ Acceptance Criteria Phase 6
-- [ ] `CartItem.unitPrice`, `OrderItem.unitPrice`, `OrderItem.discountAmount` tồn tại trong DB
-- [ ] `Order.discountCodeId` FK hợp lệ, `DiscountCode.minimumOrderAmount` tồn tại
-- [ ] `GET /api/products` và `GET /api/orders` đều trả cùng response shape `{ data: [...], total, page, limit }`
-- [ ] `EXPLAIN SELECT * FROM products WHERE status = 'active'` sử dụng index
-- [ ] Apply discount code với order total thấp hơn `minimumOrderAmount` → nhận lỗi validation
+- [x] `CartItem.unitPrice`, `OrderItem.unitPrice`, `OrderItem.discountAmount` tồn tại trong DB
+- [x] `Order.discountCodeId` FK hợp lệ, `DiscountCode.minimumOrderAmount` tồn tại (field `minOrderAmount`)
+- [x] `GET /api/products` và `GET /api/orders` đều trả cùng response shape `{ data: [...], total, page, limit }`
+- [x] `EXPLAIN SELECT * FROM products WHERE status = 'active'` sử dụng index (migration 2026050402)
+- [x] Apply discount code với order total thấp hơn `minimumOrderAmount` → nhận lỗi validation
 
 ---
 
@@ -569,11 +601,11 @@ Các field quan trọng theo chuẩn e-commerce đang thiếu:
 - **Fix:** Tất cả list endpoints phải có `page` và `limit` params với giá trị default hợp lý (limit max = 100)
 
 ### ✅ Acceptance Criteria Phase 7
-- [ ] Tạo order với discount code chưa đủ `minimumOrderAmount` → nhận `400 Minimum order amount not met`
-- [ ] Restock 10 sản phẩm → `InventoryLog` có 1 record mới với `changeType = 'restock'`
-- [ ] Admin dashboard revenue không bao gồm refunded/cancelled orders
-- [ ] `GET /api/products` có `page` và `limit` params, default `limit = 20`, max `limit = 100`
-- [ ] Sau khi thêm sản phẩm mới → AI chatbot tìm được sản phẩm đó trong next query
+- [x] Tạo order với discount code chưa đủ `minimumOrderAmount` → nhận `400` (order.js kiểm tra `codeData.minOrderAmount`)
+- [x] Restock 10 sản phẩm → `InventoryLog` có 1 record mới với `changeType = 'restock'` (POST /api/admin/products/:id/restock)
+- [x] Admin dashboard revenue không bao gồm refunded/cancelled orders (paymentStatus NOT IN refunded,failed)
+- [x] `GET /api/products` có `page` và `limit` params, default `limit = 20`, max `limit = 100`
+- [x] Sau khi thêm sản phẩm mới → AI chatbot tìm được sản phẩm đó (model hooks afterCreate/afterUpdate)
 
 ---
 

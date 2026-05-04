@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Form, FormInstance, message } from 'antd';
-import { ProductFormData } from '@/types/product';
+import { ProductFormData } from '@/types';
 
 interface UseProductFormProps {
   form: FormInstance;

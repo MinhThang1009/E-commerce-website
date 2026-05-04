@@ -74,19 +74,19 @@ const ProductCard: React.FC<ProductCardProps> = ({ product }) => {
         </h4>
 
         {/* Đánh giá */}
-        {product.rating > 0 && (
+        {product.rating !== null && product.rating > 0 && (
           <div className="flex items-center mt-1.5 mb-1">
             <div className="flex">
               {[...Array(5)].map((_, i) => (
                 <StarIcon
                   key={i}
-                  className={`w-3 h-3 ${i < Math.floor(product.rating) ? 'text-yellow-400' : 'text-neutral-300 dark:text-neutral-600'}`}
-                  filled={i < Math.floor(product.rating)}
+                  className={`w-3 h-3 ${i < Math.floor(product.rating ?? 0) ? 'text-yellow-400' : 'text-neutral-300 dark:text-neutral-600'}`}
+                  filled={i < Math.floor(product.rating ?? 0)}
                 />
               ))}
             </div>
             <span className="text-xs text-neutral-500 dark:text-neutral-400 ml-1">
-              ({product.rating.toFixed(1)})
+              ({product.rating?.toFixed(1)})
             </span>
           </div>
         )}

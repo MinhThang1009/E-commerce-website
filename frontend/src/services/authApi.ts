@@ -51,9 +51,9 @@ export const authApi = api.injectEndpoints({
           if (data?.status === 'success') {
             return {
               data: {
-                user: data.user,
-                token: data.token,
-                refreshToken: data.refreshToken,
+                user: data.user!,
+                token: data.token!,
+                refreshToken: data.refreshToken!,
               },
             };
           }
@@ -92,9 +92,9 @@ export const authApi = api.injectEndpoints({
           if (data?.status === 'success') {
             return {
               data: {
-                user: data.user,
-                token: data.token,
-                refreshToken: data.refreshToken,
+                user: data.user!,
+                token: data.token!,
+                refreshToken: data.refreshToken!,
               },
             };
           }
@@ -177,15 +177,15 @@ export const authApi = api.injectEndpoints({
           if (data?.status === 'success') {
             return {
               data: {
-                user: data.user,
-                token: data.token,
-                refreshToken: data.refreshToken,
+                user: data.user!,
+                token: data.token!,
+                refreshToken: data.refreshToken!,
               },
             };
           }
 
           // Fallback nếu format khác
-          return { data: data as AuthResponse };
+          return { data: data as unknown as AuthResponse };
         } catch (error) {
           console.error('Lỗi mạng khi đăng ký:', error);
           return {
@@ -207,17 +207,18 @@ export const authApi = api.injectEndpoints({
         method: 'POST',
         body: { refreshToken: localStorage.getItem('refreshToken') },
       }),
-      transformResponse: (response: BackendResponse) => {
-        if (response?.status === 'success') {
+      transformResponse: (response: unknown) => {
+        const r = response as BackendResponse;
+        if (r?.status === 'success') {
           return {
-            token: response.token,
-            refreshToken: response.refreshToken,
+            token: r.token!,
+            refreshToken: r.refreshToken!,
           };
         }
 
-        return response;
+        return r as unknown as { token: string; refreshToken: string };
       },
-      transformErrorResponse: (response: { data?: BackendResponse; status?: number }) => {
+      transformErrorResponse: (response: any) => {
         // Xóa tokens nếu refresh token đã hết hạn
         localStorage.removeItem('token');
         localStorage.removeItem('refreshToken');

@@ -32,14 +32,14 @@ export const useSpeechRecognition = (): SpeechRecognitionResult => {
     recognitionInstance.interimResults = true;
     recognitionInstance.lang = 'vi-VN'; // Ngôn ngữ tiếng Việt
 
-    recognitionInstance.onresult = (event) => {
+    recognitionInstance.onresult = (event: any) => {
       const current = event.resultIndex;
       const result = event.results[current];
       const transcriptValue = result[0].transcript;
       setTranscript(transcriptValue);
     };
 
-    recognitionInstance.onerror = (event) => {
+    recognitionInstance.onerror = (event: any) => {
       console.error('Lỗi nhận dạng giọng nói', event.error);
       setIsListening(false);
     };

@@ -197,8 +197,8 @@ const ChatWidget: React.FC = () => {
     position: any
   ) => {
     setSize({
-      width: ref.offsetWidth,
-      height: ref.offsetHeight,
+      width: ref.offsetWidth as 384,
+      height: ref.offsetHeight as 600,
     });
   };
 

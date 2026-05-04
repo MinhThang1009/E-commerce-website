@@ -39,7 +39,7 @@ const PaymentForm: React.FC<StripePaymentFormProps> = ({
   onError,
   onProcessing,
 }) => {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const stripe = useStripe();
   const elements = useElements();
 

@@ -1,4 +1,4 @@
-import { ProductVariant } from '@/types/product';
+import { ProductVariant } from '@/types';
 import { useEffect, useState } from 'react';
 
 export const useProductVariants = (

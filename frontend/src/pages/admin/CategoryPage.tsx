@@ -759,7 +759,7 @@ const CategoryPage: React.FC = () => {
                 {t('adminCategory.descLabel')}
               </label>
               <Textarea
-                value={formData.description}
+                value={formData.description || ''}
                 onChange={(e) =>
                   handleInputChange('description', e.target.value)
                 }
@@ -806,7 +806,7 @@ const CategoryPage: React.FC = () => {
                 </label>
                 <Input
                   type="number"
-                  value={formData.sortOrder.toString()}
+                  value={(formData.sortOrder ?? 0).toString()}
                   onChange={(e) =>
                     handleInputChange(
                       'sortOrder',
@@ -823,7 +823,7 @@ const CategoryPage: React.FC = () => {
                 </label>
                 <div className="mt-2">
                   <Checkbox
-                    checked={formData.isActive}
+                    checked={formData.isActive ?? false}
                     onChange={(e) =>
                       handleInputChange('isActive', e.target.checked)
                     }
@@ -890,7 +890,7 @@ const CategoryPage: React.FC = () => {
                 {t('adminCategory.descLabel')}
               </label>
               <Textarea
-                value={formData.description}
+                value={formData.description || ''}
                 onChange={(e) =>
                   handleInputChange('description', e.target.value)
                 }
@@ -937,7 +937,7 @@ const CategoryPage: React.FC = () => {
                 </label>
                 <Input
                   type="number"
-                  value={formData.sortOrder.toString()}
+                  value={(formData.sortOrder ?? 0).toString()}
                   onChange={(e) =>
                     handleInputChange(
                       'sortOrder',
@@ -954,7 +954,7 @@ const CategoryPage: React.FC = () => {
                 </label>
                 <div className="mt-2">
                   <Checkbox
-                    checked={formData.isActive}
+                    checked={formData.isActive ?? false}
                     onChange={(e) =>
                       handleInputChange('isActive', e.target.checked)
                     }

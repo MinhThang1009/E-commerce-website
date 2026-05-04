@@ -45,6 +45,7 @@ export interface AttributeGroup {
   isRequired?: boolean;
   sortOrder?: number;
   isActive?: boolean;
+  values?: AttributeValue[]; // Danh sách giá trị lồng bên trong nhóm (từ API getAttributeGroups)
 }
 
 export interface AttributeValue {

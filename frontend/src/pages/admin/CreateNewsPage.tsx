@@ -25,7 +25,7 @@ import i18n from 'i18next';
 import ProductPickerModal from '@/components/admin/news/ProductPickerModal';
 
 // --- Custom Quill Blot for Product Card ---
-const BlockEmbed = Quill.import('blots/block/embed');
+const BlockEmbed = Quill.import('blots/block/embed') as any;
 
 class ProductCardBlot extends BlockEmbed {
   static create(value: any) {
@@ -103,9 +103,9 @@ class ProductCardBlot extends BlockEmbed {
   }
 }
 
-ProductCardBlot.blotName = 'productCard';
-ProductCardBlot.tagName = 'div';
-ProductCardBlot.className = 'product-embed-card';
+(ProductCardBlot as any).blotName = 'productCard';
+(ProductCardBlot as any).tagName = 'div';
+(ProductCardBlot as any).className = 'product-embed-card';
 
 Quill.register(ProductCardBlot as any);
 // ---------------------------------------------

@@ -149,10 +149,10 @@ const DynamicAttributeSelector: React.FC<DynamicAttributeSelectorProps> = ({
         <Space style={{ width: '100%', justifyContent: 'space-between' }}>
           <span>
             {value.name}
-            {value.priceAdjustment !== 0 && (
+            {(value.priceAdjustment ?? 0) !== 0 && (
               <Text type="secondary" style={{ marginLeft: 8 }}>
-                {value.priceAdjustment > 0 ? '+' : ''}
-                {value.priceAdjustment.toLocaleString(getLocale())}{t('common.currencySymbol')}
+                {(value.priceAdjustment ?? 0) > 0 ? '+' : ''}
+                {(value.priceAdjustment ?? 0).toLocaleString(getLocale())}{t('common.currencySymbol')}
               </Text>
             )}
           </span>
@@ -160,7 +160,7 @@ const DynamicAttributeSelector: React.FC<DynamicAttributeSelectorProps> = ({
             <Tooltip
               title={t('product.affectsNameTemplate', { template: value.nameTemplate || value.name })}
             >
-              <Tag color="blue" size="small">
+              <Tag color="blue">
                 {value.nameTemplate || 'NAME'}
               </Tag>
             </Tooltip>
@@ -259,7 +259,7 @@ const DynamicAttributeSelector: React.FC<DynamicAttributeSelectorProps> = ({
                     {group.isRequired && <Text type="danger">*</Text>}
                     {group.values.some((v) => v.affectsName) && (
                       <Tooltip title={t('product.affectsNameTooltip')}>
-                        <Tag color="blue" size="small">
+                        <Tag color="blue">
                           <BulbOutlined style={{ fontSize: 10 }} />
                         </Tag>
                       </Tooltip>

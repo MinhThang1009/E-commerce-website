@@ -32,7 +32,7 @@ export const ErrorState: React.FC<ErrorStateProps> = ({
   language = 'vi',
 }) => {
   const { t } = useTranslation();
-  const errorMessage = getErrorMessage(error, language);
+  const errorMessage = getErrorMessage(error);
   const effectiveRetryText = retryText || t('common.tryAgain');
 
   const sizeClasses = {

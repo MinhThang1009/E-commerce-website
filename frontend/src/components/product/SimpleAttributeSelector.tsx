@@ -140,7 +140,7 @@ const SimpleAttributeSelector: React.FC<SimpleAttributeSelectorProps> = ({
                 {attributeType}
               </Title>
               {selectedAttributes[attributeType] && (
-                <Tag color="green" size="small">
+                <Tag color="green">
                   ✓{' '}
                   {getShortName(
                     attributeType,

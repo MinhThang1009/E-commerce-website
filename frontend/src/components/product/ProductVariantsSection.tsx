@@ -2,7 +2,7 @@ import React from 'react';
 import { useTranslation } from 'react-i18next';
 import { Button, Row, Col, Typography, Table, Space, Tag, Alert } from 'antd';
 import { PlusOutlined, EditOutlined, DeleteOutlined } from '@ant-design/icons';
-import { ProductVariant } from '@/types/product';
+import { ProductVariant } from '@/types';
 
 const { Title, Text } = Typography;
 

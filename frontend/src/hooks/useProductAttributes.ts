@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { ProductAttribute } from '@/types/product';
+import { ProductAttribute } from '@/types';
 
 export const useProductAttributes = (
   initialAttributes: ProductAttribute[] = []

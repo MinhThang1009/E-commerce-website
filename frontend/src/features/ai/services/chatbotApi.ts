@@ -18,11 +18,18 @@ export interface ProductRecommendation {
   stockQuantity?: number;
 }
 
+export interface ChatAction {
+  type: string;
+  label: string;
+  url?: string;
+  data?: Record<string, any>;
+}
+
 export interface ChatbotResponse {
   response: string;
   suggestions?: string[];
   products?: ProductRecommendation[];
-  actions?: Array<{ type: string; label: string; url?: string; data?: Record<string, any> }>;
+  actions?: ChatAction[];
   sessionId?: string;
 }
 

@@ -107,7 +107,7 @@ const HierarchicalVariantsForm: React.FC<HierarchicalVariantsFormProps> = ({
           const value = group?.values?.find((v) => v.id === valueId);
           if (value) {
             attributeNames.push(value.name);
-            basePrice += value.priceAdjustment;
+            basePrice += value.priceAdjustment ?? 0;
           }
         });
 
@@ -423,15 +423,15 @@ const HierarchicalVariantsForm: React.FC<HierarchicalVariantsFormProps> = ({
                   {group.values?.map((value) => (
                     <Option key={value.id} value={value.id}>
                       {value.name}
-                      {value.priceAdjustment !== 0 && (
+                      {(value.priceAdjustment ?? 0) !== 0 && (
                         <span
                           style={{
-                            color: value.priceAdjustment > 0 ? 'green' : 'red',
+                            color: (value.priceAdjustment ?? 0) > 0 ? 'green' : 'red',
                           }}
                         >
                           {' '}
-                          ({value.priceAdjustment > 0 ? '+' : ''}
-                          {value.priceAdjustment.toLocaleString()}{t('common.currencySymbol')})
+                          ({(value.priceAdjustment ?? 0) > 0 ? '+' : ''}
+                          {(value.priceAdjustment ?? 0).toLocaleString()}{t('common.currencySymbol')})
                         </span>
                       )}
                     </Option>

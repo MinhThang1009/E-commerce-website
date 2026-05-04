@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
 import {
   Card,
@@ -28,13 +28,7 @@ import {
   InfoCircleOutlined,
 } from '@ant-design/icons';
 import {
-  useGetAttributeGroupsQuery,
-  useCreateAttributeGroupMutation,
-  useUpdateAttributeGroupMutation,
-  useDeleteAttributeGroupMutation,
-  useAddAttributeValueMutation,
-  useUpdateAttributeValueMutation,
-  useDeleteAttributeValueMutation,
+  attributeService,
   AttributeGroup,
   AttributeValue,
 } from '@/services/attributeApi';
@@ -61,20 +55,45 @@ const HierarchicalAttributesForm: React.FC<HierarchicalAttributesFormProps> = ({
   );
   const [expandedKeys, setExpandedKeys] = useState<React.Key[]>([]);
 
-  // Các API hook
-  const {
-    data: attributeGroupsData,
-    isLoading,
-    refetch,
-  } = useGetAttributeGroupsQuery();
-  const [createAttributeGroup] = useCreateAttributeGroupMutation();
-  const [updateAttributeGroup] = useUpdateAttributeGroupMutation();
-  const [deleteAttributeGroup] = useDeleteAttributeGroupMutation();
-  const [addAttributeValue] = useAddAttributeValueMutation();
-  const [updateAttributeValue] = useUpdateAttributeValueMutation();
-  const [deleteAttributeValue] = useDeleteAttributeValueMutation();
+  // State thay thế cho RTK Query hooks (attributeApi dùng class-based service)
+  const [attributeGroups, setAttributeGroups] = useState<AttributeGroup[]>([]);
+  const [isLoading, setIsLoading] = useState(false);
 
-  const attributeGroups = attributeGroupsData?.data || [];
+  const refetch = useCallback(async () => {
+    setIsLoading(true);
+    try {
+      const res = await attributeService.getAttributeGroups();
+      if (res.success) setAttributeGroups(res.data);
+    } catch (err) {
+      console.error('Lỗi tải nhóm thuộc tính:', err);
+    } finally {
+      setIsLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    refetch();
+  }, [refetch]);
+
+  // Wrapper functions để giữ nguyên call-site (unwrap pattern)
+  const createAttributeGroup = (data: any) => ({
+    unwrap: () => attributeService.createAttributeGroup(data).then((r) => r.data),
+  });
+  const updateAttributeGroup = (payload: { id: string; data: any }) => ({
+    unwrap: () => attributeService.updateAttributeGroup(payload.id, payload.data).then((r) => r.data),
+  });
+  const deleteAttributeGroup = (id: string) => ({
+    unwrap: () => attributeService.deleteAttributeGroup(id).then((r) => r.data),
+  });
+  const addAttributeValue = (payload: { attributeGroupId: string; data: any }) => ({
+    unwrap: () => attributeService.addAttributeValue(payload.attributeGroupId, payload.data).then((r) => r.data),
+  });
+  const updateAttributeValue = (payload: { id: string; data: any }) => ({
+    unwrap: () => attributeService.updateAttributeValue(payload.id, payload.data).then((r) => r.data),
+  });
+  const deleteAttributeValue = (id: string) => ({
+    unwrap: () => attributeService.deleteAttributeValue(id).then((r) => r.data),
+  });
 
   // Xử lý tạo/chỉnh sửa nhóm
   const handleCreateGroup = () => {
@@ -269,10 +288,10 @@ const HierarchicalAttributesForm: React.FC<HierarchicalAttributesFormProps> = ({
                   }}
                 />
               )}
-              {value.priceAdjustment !== 0 && (
-                <Text type={value.priceAdjustment > 0 ? 'success' : 'danger'}>
-                  {value.priceAdjustment > 0 ? '+' : ''}
-                  {value.priceAdjustment.toLocaleString()}{t('common.currencySymbol')}
+              {(value.priceAdjustment ?? 0) !== 0 && (
+                <Text type={(value.priceAdjustment ?? 0) > 0 ? 'success' : 'danger'}>
+                  {(value.priceAdjustment ?? 0) > 0 ? '+' : ''}
+                  {(value.priceAdjustment ?? 0).toLocaleString()}{t('common.currencySymbol')}
                 </Text>
               )}
             </Space>

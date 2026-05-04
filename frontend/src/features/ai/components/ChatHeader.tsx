@@ -1,7 +1,10 @@
 import React from 'react';
 import { useTranslation } from 'react-i18next';
 import { CloseIcon, LightningIcon } from './icons/index';
-import { GeminiServiceType } from '../services/geminiApi';
+import { geminiService } from '../services/geminiApi';
+
+// Dùng kiểu của instance singleton vì geminiApi không export kiểu riêng
+type GeminiServiceType = typeof geminiService;
 
 interface ChatHeaderProps {
   onClose: () => void;

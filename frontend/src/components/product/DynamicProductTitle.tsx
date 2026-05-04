@@ -107,7 +107,6 @@ const DynamicProductTitle: React.FC<DynamicProductTitleProps> = ({
         <Alert
           message={error}
           type="error"
-          size="small"
           showIcon
           style={{ marginTop: 8 }}
         />
@@ -136,7 +135,6 @@ const DynamicProductTitle: React.FC<DynamicProductTitleProps> = ({
           {hasAttributeChanges && (
             <Tag
               color="blue"
-              size="small"
               icon={<BulbOutlined />}
               style={{
                 position: 'absolute',

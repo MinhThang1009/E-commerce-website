@@ -40,11 +40,7 @@ interface NamePreview {
     groupName: string;
     groupType: string;
   }>;
-  suggestions?: Array<{
-    attributeValues: Record<string, string>;
-    displayName: string;
-    fullName: string;
-  }>;
+  suggestions?: string[];
 }
 
 const DynamicProductName: React.FC<DynamicProductNameProps> = ({
@@ -84,7 +80,7 @@ const DynamicProductName: React.FC<DynamicProductNameProps> = ({
 
     try {
       const response = await attributeService.generateNameRealTime({
-        baseName: debouncedBaseName,
+        baseName: debouncedBaseName || '',
         attributeValues: debouncedAttributes,
         productId,
       });
@@ -273,7 +269,7 @@ const DynamicProductName: React.FC<DynamicProductNameProps> = ({
                   // Có thể triển khai click để áp dụng gợi ý
                 }}
               >
-                {suggestion.displayName}
+                {suggestion}
               </Tag>
             ))}
           </Space>

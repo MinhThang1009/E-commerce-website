@@ -37,6 +37,7 @@ const logoutManager = LogoutManager.getInstance();
  * Xử lý đăng xuất tự động khi tài khoản người dùng bị vô hiệu hóa hoặc không được phép
  * @param errorMessage - Thông báo lỗi tùy chọn để hiển thị
  * @param redirectDelay - Thời gian chờ trước khi chuyển hướng về trang đăng nhập (mili giây)
+ */
 export const handleAutoLogout = (
   errorMessage?: string,
   redirectDelay: number = 1000

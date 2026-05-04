@@ -1094,7 +1094,21 @@
         "totalUsers": "Tổng Người Dùng",
         "totalProducts": "Tổng Sản Phẩm",
         "activeProducts": "Sản phẩm đang hoạt động",
-        "fromLastMonth": "so với tháng trước"
+        "fromLastMonth": "so với tháng trước",
+        "aov": "GTTB",
+        "averageOrderValue": "Giá trị trung bình đơn hàng",
+        "cancelledThisMonth": "Đơn Hủy Tháng Này",
+        "ordersThisMonth": "đơn hàng bị hủy",
+        "lowStock": "Sắp Hết Hàng",
+        "productsLowStock": "sản phẩm sắp hết hàng"
+      },
+      "lowStock": {
+        "title": "Cảnh Báo Sắp Hết Hàng",
+        "product": "Sản Phẩm",
+        "sku": "SKU",
+        "stock": "Tồn Kho",
+        "action": "Thao Tác",
+        "edit": "Sửa"
       },
       "alerts": {
         "pendingOrders": "Bạn có {{count}} đơn hàng chờ xử lý cần chú ý",
@@ -2067,9 +2081,30 @@
       "period7d": "7 ngày",
       "period30d": "30 ngày",
       "period90d": "90 ngày",
+      "periodCustom": "tùy chỉnh",
       "orderCount": "Số lượng Đơn hàng",
       "revenueLabel": "Doanh thu",
-      "ordersLabel": "Đơn hàng"
+      "ordersLabel": "Đơn hàng",
+      "apply": "Áp dụng",
+      "orderStatusDist": "Phân bổ trạng thái đơn hàng",
+      "userGrowth": "Tăng trưởng người dùng",
+      "newUsers": "Người dùng mới",
+      "topProducts": "Top sản phẩm",
+      "byRevenue": "Theo doanh thu",
+      "bySoldCount": "Theo số lượng",
+      "soldCount": "Số lượng bán",
+      "revenueByCategory": "Doanh thu theo danh mục",
+      "paymentMethods": "Phương thức thanh toán",
+      "exportOrders": "Xuất đơn hàng",
+      "exportProducts": "Xuất sản phẩm"
+    },
+    "chatbot": {
+      "tab": "AI Chatbot",
+      "totalSessions": "Tổng phiên",
+      "avgMessages": "TB tin nhắn/phiên",
+      "fallbackRate": "Tỷ lệ fallback",
+      "avgResponseTime": "TB thời gian phản hồi",
+      "intentBreakdown": "Phân loại ý định"
     }
   },
   "product": {

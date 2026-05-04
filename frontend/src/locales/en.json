@@ -976,7 +976,21 @@
         "totalUsers": "Total Users",
         "totalProducts": "Total Products",
         "activeProducts": "Active products",
-        "fromLastMonth": "from last month"
+        "fromLastMonth": "from last month",
+        "aov": "AOV",
+        "averageOrderValue": "Average Order Value",
+        "cancelledThisMonth": "Cancelled This Month",
+        "ordersThisMonth": "cancelled orders",
+        "lowStock": "Low Stock",
+        "productsLowStock": "products low stock"
+      },
+      "lowStock": {
+        "title": "Low Stock Alert",
+        "product": "Product",
+        "sku": "SKU",
+        "stock": "Stock",
+        "action": "Action",
+        "edit": "Edit"
       },
       "alerts": {
         "pendingOrders": "You have {{count}} pending orders that need attention",
@@ -1949,9 +1963,30 @@
       "period7d": "7 days",
       "period30d": "30 days",
       "period90d": "90 days",
+      "periodCustom": "custom range",
       "orderCount": "Order Count",
       "revenueLabel": "Revenue",
-      "ordersLabel": "Orders"
+      "ordersLabel": "Orders",
+      "apply": "Apply",
+      "orderStatusDist": "Order Status Distribution",
+      "userGrowth": "User Growth",
+      "newUsers": "New Users",
+      "topProducts": "Top Products",
+      "byRevenue": "By Revenue",
+      "bySoldCount": "By Quantity",
+      "soldCount": "Quantity Sold",
+      "revenueByCategory": "Revenue by Category",
+      "paymentMethods": "Payment Methods",
+      "exportOrders": "Export Orders",
+      "exportProducts": "Export Products"
+    },
+    "chatbot": {
+      "tab": "AI Chatbot",
+      "totalSessions": "Total Sessions",
+      "avgMessages": "Avg Messages/Session",
+      "fallbackRate": "Fallback Rate",
+      "avgResponseTime": "Avg Response Time",
+      "intentBreakdown": "Intent Breakdown"
     }
   },
   "product": {

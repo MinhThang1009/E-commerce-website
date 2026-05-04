@@ -277,6 +277,39 @@ router.put('/news/:id', validateRequest(updateNewsSchema, 422), newsController.u
 router.delete('/news/:id', newsController.deleteNews);
 
 /**
+ * ANALYTICS ROUTES — Phase 32
+ */
+// GET /api/admin/analytics/order-status — Phân bổ trạng thái đơn hàng
+router.get('/analytics/order-status', adminController.getOrderStatusAnalytics);
+
+// GET /api/admin/analytics/top-products — Top sản phẩm theo doanh thu/số lượng
+router.get('/analytics/top-products', adminController.getTopProductsAnalytics);
+
+// GET /api/admin/analytics/revenue-by-category — Doanh thu theo danh mục
+router.get('/analytics/revenue-by-category', adminController.getRevenueByCategoryAnalytics);
+
+// GET /api/admin/analytics/user-growth — Tăng trưởng user
+router.get('/analytics/user-growth', adminController.getUserGrowthAnalytics);
+
+// GET /api/admin/analytics/payment-methods — Phân bổ phương thức thanh toán
+router.get('/analytics/payment-methods', adminController.getPaymentMethodsAnalytics);
+
+// GET /api/admin/analytics/low-stock — Sản phẩm sắp hết hàng
+router.get('/analytics/low-stock', adminController.getLowStockAnalytics);
+
+/**
+ * REPORT EXPORT ROUTES
+ */
+// GET /api/admin/reports/export — Xuất báo cáo CSV (orders/products)
+router.get('/reports/export', adminController.exportReport);
+
+/**
+ * CHATBOT ANALYTICS ROUTES
+ */
+// GET /api/admin/chatbot/stats — Thống kê AI chatbot
+router.get('/chatbot/stats', adminController.getChatbotStats);
+
+/**
  * AUDIT LOG ROUTES
  */
 // GET /api/admin/audit-logs — xem lịch sử thao tác admin (phân trang)

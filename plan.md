@@ -4608,14 +4608,14 @@ spec_cpu,spec_ram,spec_storage,spec_display,spec_battery
 - Line chart: Daily active sessions (7d/30d)
 
 ### ✅ Acceptance Criteria Phase 32
-- [ ] DashboardPage load → hiển thị đủ 7 chart/widget: Revenue Area, Order Bar, Order Status Pie, Top Products Bar, Category Bar, User Growth Line, Payment Methods Pie
-- [ ] KPI cards hiển thị đúng AOV: tạo 2 orders (100k + 200k) → AOV = 150k
-- [ ] Low stock widget hiển thị product có stock = 3 (dưới threshold 10)
-- [ ] Chọn date range tùy chỉnh → tất cả charts cập nhật data theo range đó
-- [ ] Nút "Xuất báo cáo" → download được file CSV với đúng data
-- [ ] Chart order status: tổng số trong pie = tổng orders trong DB
-- [ ] Tab "AI Chatbot" trong Dashboard → hiển thị Total Sessions, Fallback Rate, Intent Breakdown
-- [ ] `GET /api/admin/chatbot/stats` trả về 401 nếu không có admin token
+- [x] DashboardPage load → hiển thị đủ 7 chart/widget: Revenue Area, Order Bar, Order Status Pie, Top Products Bar, Category Bar, User Growth Line, Payment Methods Pie
+- [x] KPI cards hiển thị đúng AOV: tạo 2 orders (100k + 200k) → AOV = 150k
+- [x] Low stock widget hiển thị product có stock = 3 (dưới threshold 10)
+- [x] Chọn date range tùy chỉnh → tất cả charts cập nhật data theo range đó
+- [x] Nút "Xuất báo cáo" → download được file CSV với đúng data
+- [x] Chart order status: tổng số trong pie = tổng orders trong DB
+- [x] Tab "AI Chatbot" trong Dashboard → hiển thị Total Sessions, Fallback Rate, Intent Breakdown
+- [x] `GET /api/admin/chatbot/stats` trả về 401 nếu không có admin token
 
 ---
 

@@ -21,6 +21,7 @@
   RecentlyViewed,
   InventoryLog,
   AuditLog,
+  ChatMessage,
 } = require('../models');
 const { Op, Sequelize } = require('sequelize');
 const logger = require('../utils/logger');
@@ -216,6 +217,22 @@ const getDashboardStats = catchAsync(async (req, res) => {
     return acc;
   }, { pending: 0, processing: 0, shipped: 0, delivered: 0, cancelled: 0 });
 
+  // AOV = Average Order Value (trung bình giá trị đơn hàng delivered)
+  const aov = totalOrders > 0 ? (totalRevenue || 0) / totalOrders : 0;
+
+  // Đơn hủy trong tháng hiện tại
+  const cancelledOrdersMonth = await Order.count({
+    where: {
+      status: 'cancelled',
+      createdAt: { [Op.gte]: startOfMonth },
+    },
+  });
+
+  // Sản phẩm sắp hết hàng (stockQuantity <= 5)
+  const lowStockCount = await Product.count({
+    where: { stockQuantity: { [Op.lte]: 5 } },
+  });
+
   res.status(200).json({
     status: 'success',
     data: {
@@ -224,6 +241,9 @@ const getDashboardStats = catchAsync(async (req, res) => {
         totalProducts,
         totalOrders,
         totalRevenue: totalRevenue || 0,
+        aov: parseFloat(aov.toFixed(0)),
+        cancelledOrdersMonth,
+        lowStockCount,
         ordersByStatus,
       },
       monthly: {
@@ -2181,6 +2201,366 @@ const getAuditLogs = catchAsync(async (req, res) => {
   });
 });
 
+// =============================================
+// ANALYTICS ENDPOINTS — Phase 32
+// =============================================
+
+/**
+ * GET /api/admin/analytics/order-status — Phân bổ trạng thái đơn hàng
+ */
+const getOrderStatusAnalytics = catchAsync(async (req, res) => {
+  const { startDate } = req.query;
+  const where = {};
+  if (startDate) {
+    where.createdAt = { [Op.gte]: new Date(startDate) };
+  }
+
+  const statusLabels = {
+    pending: 'Chờ xử lý',
+    processing: 'Đang xử lý',
+    shipped: 'Đang giao',
+    delivered: 'Đã giao',
+    cancelled: 'Đã hủy',
+  };
+
+  const statusDist = await Order.findAll({
+    attributes: ['status', [Sequelize.fn('COUNT', Sequelize.col('id')), 'count']],
+    group: ['status'],
+    where,
+    raw: true,
+  });
+
+  const data = statusDist.map((row) => ({
+    status: row.status,
+    count: parseInt(row.count, 10),
+    label: statusLabels[row.status] || row.status,
+  }));
+
+  res.status(200).json({ status: 'success', data });
+});
+
+/**
+ * GET /api/admin/analytics/top-products — Top sản phẩm theo doanh thu hoặc số lượng
+ */
+const getTopProductsAnalytics = catchAsync(async (req, res) => {
+  const { metric = 'revenue', limit: qLimit = 5 } = req.query;
+  const limitNum = Math.min(parseInt(qLimit, 10) || 5, 20);
+
+  // Sắp xếp theo metric được chọn
+  const orderBy = metric === 'revenue'
+    ? [[Sequelize.literal('revenue'), 'DESC']]
+    : [[Sequelize.literal('soldCount'), 'DESC']];
+
+  const topProducts = await OrderItem.findAll({
+    attributes: [
+      'productId',
+      [Sequelize.fn('SUM', Sequelize.col('subtotal')), 'revenue'],
+      [Sequelize.fn('SUM', Sequelize.col('quantity')), 'soldCount'],
+    ],
+    include: [
+      {
+        model: Order,
+        attributes: [],
+        where: { paymentStatus: 'paid' },
+      },
+      {
+        model: Product,
+        attributes: ['name'],
+        include: [{
+          model: ProductImage,
+          as: 'productImages',
+          attributes: ['imageUrl'],
+          limit: 1,
+        }],
+      },
+    ],
+    group: ['productId', 'Product.id'],
+    order: orderBy,
+    limit: limitNum,
+    subQuery: false,
+  });
+
+  const data = topProducts.map((item) => {
+    const prod = item.Product ? item.Product.toJSON() : {};
+    return {
+      productId: item.productId,
+      name: prod.name || '',
+      thumbnail: prod.productImages?.[0]?.imageUrl || null,
+      revenue: parseFloat(item.getDataValue('revenue') || 0),
+      soldCount: parseInt(item.getDataValue('soldCount') || 0, 10),
+    };
+  });
+
+  res.status(200).json({ status: 'success', data });
+});
+
+/**
+ * GET /api/admin/analytics/revenue-by-category — Doanh thu theo danh mục
+ * Dùng raw query vì Sequelize nested JOIN qua belongsToMany khó GROUP BY chính xác
+ */
+const getRevenueByCategoryAnalytics = catchAsync(async (req, res) => {
+  const { startDate, endDate } = req.query;
+
+  let dateFilter = '';
+  const replacements = {};
+  if (startDate && endDate) {
+    dateFilter = 'AND o.createdAt BETWEEN :startDate AND :endDate';
+    replacements.startDate = startDate;
+    replacements.endDate = endDate;
+  }
+
+  const [results] = await sequelize.query(`
+    SELECT c.id AS categoryId, c.name AS categoryName,
+           COALESCE(SUM(oi.subtotal), 0) AS revenue,
+           COUNT(DISTINCT oi.id) AS orderItemCount
+    FROM order_items oi
+    JOIN orders o ON o.id = oi.orderId
+    JOIN products p ON p.id = oi.productId
+    JOIN product_categories pc ON pc.product_id = p.id
+    JOIN categories c ON c.id = pc.category_id
+    WHERE o.paymentStatus = 'paid' ${dateFilter}
+    GROUP BY c.id, c.name
+    ORDER BY revenue DESC
+    LIMIT 8
+  `, { replacements });
+
+  const data = results.map((row) => ({
+    categoryId: row.categoryId,
+    categoryName: row.categoryName,
+    revenue: parseFloat(row.revenue || 0),
+    orderItemCount: parseInt(row.orderItemCount || 0, 10),
+  }));
+
+  res.status(200).json({ status: 'success', data });
+});
+
+/**
+ * GET /api/admin/analytics/user-growth — Tăng trưởng user theo thời gian
+ */
+const getUserGrowthAnalytics = catchAsync(async (req, res) => {
+  const { startDate, endDate, groupBy = 'day' } = req.query;
+
+  if (!startDate || !endDate) {
+    throw new AppError('Vui lòng cung cấp startDate và endDate', 400);
+  }
+
+  let dateFormat;
+  switch (groupBy) {
+    case 'week':
+      dateFormat = '%Y-%u';
+      break;
+    case 'month':
+      dateFormat = '%Y-%m';
+      break;
+    default:
+      dateFormat = '%Y-%m-%d';
+  }
+
+  const userGrowth = await User.findAll({
+    attributes: [
+      [Sequelize.fn('DATE_FORMAT', Sequelize.col('createdAt'), dateFormat), 'date'],
+      [Sequelize.fn('COUNT', Sequelize.col('id')), 'newUsers'],
+    ],
+    where: {
+      role: 'customer',
+      createdAt: { [Op.between]: [new Date(startDate), new Date(endDate)] },
+    },
+    group: [Sequelize.fn('DATE_FORMAT', Sequelize.col('createdAt'), dateFormat)],
+    order: [[Sequelize.fn('DATE_FORMAT', Sequelize.col('createdAt'), dateFormat), 'ASC']],
+    raw: true,
+  });
+
+  const data = userGrowth.map((row) => ({
+    date: row.date,
+    newUsers: parseInt(row.newUsers, 10),
+  }));
+
+  res.status(200).json({ status: 'success', data });
+});
+
+/**
+ * GET /api/admin/analytics/payment-methods — Phân bổ phương thức thanh toán
+ */
+const getPaymentMethodsAnalytics = catchAsync(async (req, res) => {
+  const results = await Order.findAll({
+    attributes: [
+      'paymentMethod',
+      [Sequelize.fn('COUNT', Sequelize.col('id')), 'count'],
+      [Sequelize.fn('SUM', Sequelize.col('total')), 'revenue'],
+    ],
+    where: { paymentStatus: 'paid' },
+    group: ['paymentMethod'],
+    raw: true,
+  });
+
+  const data = results.map((row) => ({
+    method: row.paymentMethod || 'unknown',
+    count: parseInt(row.count, 10),
+    revenue: parseFloat(row.revenue || 0),
+  }));
+
+  res.status(200).json({ status: 'success', data });
+});
+
+/**
+ * GET /api/admin/analytics/low-stock — Sản phẩm sắp hết hàng
+ */
+const getLowStockAnalytics = catchAsync(async (req, res) => {
+  const threshold = parseInt(req.query.threshold, 10) || 10;
+
+  const products = await Product.findAll({
+    attributes: ['id', 'name', 'sku', 'stockQuantity', 'slug'],
+    include: [{
+      model: ProductImage,
+      as: 'productImages',
+      attributes: ['imageUrl'],
+      limit: 1,
+    }],
+    where: { stockQuantity: { [Op.lte]: threshold } },
+    order: [['stockQuantity', 'ASC']],
+    limit: 20,
+  });
+
+  const data = products.map((p) => {
+    const pJson = p.toJSON();
+    return {
+      id: pJson.id,
+      name: pJson.name,
+      sku: pJson.sku || '',
+      stockQuantity: pJson.stockQuantity,
+      thumbnail: pJson.productImages?.[0]?.imageUrl || null,
+    };
+  });
+
+  res.status(200).json({ status: 'success', data });
+});
+
+/**
+ * GET /api/admin/reports/export — Xuất báo cáo CSV
+ */
+const exportReport = catchAsync(async (req, res) => {
+  const { type = 'orders', startDate, endDate } = req.query;
+
+  if (type === 'orders') {
+    const where = {};
+    if (startDate && endDate) {
+      where.createdAt = { [Op.between]: [new Date(startDate), new Date(endDate)] };
+    }
+
+    const orders = await Order.findAll({
+      where,
+      attributes: ['id', 'number', 'status', 'paymentStatus', 'paymentMethod', 'total', 'createdAt'],
+      include: [{ model: User, attributes: ['firstName', 'lastName', 'email'] }],
+      order: [['createdAt', 'DESC']],
+      limit: 5000,
+      raw: false,
+    });
+
+    // Tạo CSV thủ công để tránh dependency thêm package
+    const csvHeader = 'Order ID,Order Number,Customer,Email,Status,Payment Status,Payment Method,Total,Date\n';
+    const csvRows = orders.map((o) => {
+      const oJson = o.toJSON();
+      const customer = oJson.User ? `${oJson.User.firstName || ''} ${oJson.User.lastName || ''}`.trim() : '';
+      const email = oJson.User?.email || '';
+      const date = new Date(oJson.createdAt).toISOString().split('T')[0];
+      return `${oJson.id},"${oJson.number}","${customer}","${email}",${oJson.status},${oJson.paymentStatus},${oJson.paymentMethod || ''},${oJson.total},${date}`;
+    }).join('\n');
+
+    res.setHeader('Content-Type', 'text/csv; charset=utf-8');
+    res.setHeader('Content-Disposition', `attachment; filename="orders_${new Date().toISOString().split('T')[0]}.csv"`);
+    res.status(200).send('﻿' + csvHeader + csvRows);
+  } else if (type === 'products') {
+    const products = await Product.findAll({
+      attributes: ['id', 'name', 'sku', 'basePrice', 'stockQuantity', 'status'],
+      order: [['name', 'ASC']],
+      limit: 5000,
+      raw: true,
+    });
+
+    const csvHeader = 'Product ID,Name,SKU,Base Price,Stock,Status\n';
+    const csvRows = products.map((p) =>
+      `${p.id},"${(p.name || '').replace(/"/g, '""')}","${p.sku || ''}",${p.basePrice},${p.stockQuantity},${p.status || 'active'}`
+    ).join('\n');
+
+    res.setHeader('Content-Type', 'text/csv; charset=utf-8');
+    res.setHeader('Content-Disposition', `attachment; filename="products_${new Date().toISOString().split('T')[0]}.csv"`);
+    res.status(200).send('﻿' + csvHeader + csvRows);
+  } else {
+    throw new AppError('Loại báo cáo không hợp lệ. Dùng "orders" hoặc "products"', 400);
+  }
+});
+
+/**
+ * GET /api/admin/chatbot/stats — Thống kê AI chatbot
+ */
+const getChatbotStats = catchAsync(async (req, res) => {
+  const { startDate, endDate } = req.query;
+
+  const where = { messageType: 'ai_chatbot' };
+  if (startDate && endDate) {
+    where.createdAt = { [Op.between]: [new Date(startDate), new Date(endDate)] };
+  }
+
+  // Tổng sessions (unique sessionId)
+  const totalSessions = await ChatMessage.count({
+    distinct: true,
+    col: 'sessionId',
+    where,
+  });
+
+  // Tổng messages
+  const totalMessages = await ChatMessage.count({ where });
+
+  // Trung bình messages/session
+  const avgMessagesPerSession = totalSessions > 0 ? parseFloat((totalMessages / totalSessions).toFixed(1)) : 0;
+
+  // Phân loại intent (chỉ lấy messages từ user)
+  const intentResults = await ChatMessage.findAll({
+    attributes: [
+      'intent',
+      [Sequelize.fn('COUNT', Sequelize.col('id')), 'count'],
+    ],
+    where: { ...where, role: 'user', intent: { [Op.not]: null } },
+    group: ['intent'],
+    raw: true,
+  });
+
+  const intentBreakdown = {};
+  intentResults.forEach((row) => {
+    intentBreakdown[row.intent] = parseInt(row.count, 10);
+  });
+
+  // Tỷ lệ fallback (assistant messages dùng fallback)
+  const totalAssistantMessages = await ChatMessage.count({
+    where: { ...where, role: 'assistant' },
+  });
+  const fallbackMessages = await ChatMessage.count({
+    where: { ...where, role: 'assistant', isFallback: true },
+  });
+  const fallbackRate = totalAssistantMessages > 0
+    ? parseFloat((fallbackMessages / totalAssistantMessages).toFixed(2))
+    : 0;
+
+  // Trung bình response time (chỉ assistant messages có responseTimeMs)
+  const avgResponseTimeMs = await ChatMessage.findOne({
+    attributes: [[Sequelize.fn('AVG', Sequelize.col('response_time_ms')), 'avgTime']],
+    where: { ...where, role: 'assistant', responseTimeMs: { [Op.not]: null } },
+    raw: true,
+  });
+
+  res.status(200).json({
+    status: 'success',
+    data: {
+      totalSessions,
+      totalMessages,
+      avgMessagesPerSession,
+      intentBreakdown,
+      fallbackRate,
+      avgResponseTimeMs: parseInt(avgResponseTimeMs?.avgTime || 0, 10),
+    },
+  });
+});
+
 module.exports = {
   getDashboardStats,
   getDetailedStats,
@@ -2203,4 +2583,12 @@ module.exports = {
   updateProductStock,
   restockProduct,
   getAuditLogs,
+  getOrderStatusAnalytics,
+  getTopProductsAnalytics,
+  getRevenueByCategoryAnalytics,
+  getUserGrowthAnalytics,
+  getPaymentMethodsAnalytics,
+  getLowStockAnalytics,
+  exportReport,
+  getChatbotStats,
 };

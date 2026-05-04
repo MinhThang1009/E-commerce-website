@@ -15,7 +15,7 @@ interface Variant {
 }
 
 interface VariantModalProps {
-  visible: boolean;
+  open: boolean;
   onClose: () => void;
   variant?: any;
   onSave: (variant: any) => void;
@@ -23,7 +23,7 @@ interface VariantModalProps {
 }
 
 const VariantModal: React.FC<VariantModalProps> = ({
-  visible,
+  open,
   onClose,
   variant,
   onSave,
@@ -44,7 +44,7 @@ const VariantModal: React.FC<VariantModalProps> = ({
     } else {
       form.resetFields();
     }
-  }, [variant, form, visible]);
+  }, [variant, form, open]);
 
   const handleSubmit = (values: any) => {
     const { name, price, stock, sku, ...attributeValues } = values;
@@ -81,7 +81,7 @@ const VariantModal: React.FC<VariantModalProps> = ({
   return (
     <Modal
       title={variant ? t('variantModal.editTitle') : t('variantModal.addTitle')}
-      open={visible}
+      open={open}
       onCancel={handleClose}
       footer={null}
       width={800}
@@ -143,7 +143,7 @@ const VariantModal: React.FC<VariantModalProps> = ({
                   { type: 'number', min: 0, message: t('variantModal.priceMustBePositive') },
                 ]}
               >
-                <InputNumber
+                <InputNumber<number>
                   placeholder="1,000,000"
                   min={0}
                   step={1000}
@@ -151,7 +151,7 @@ const VariantModal: React.FC<VariantModalProps> = ({
                   formatter={(value) =>
                     value ? `${value}`.replace(/\B(?=(\d{3})+(?!\d))/g, ',') : ''
                   }
-                  parser={(value) => (value ? Number(value.replace(/\$\s?|(,*)/g, '')) : undefined) as any}
+                  parser={(value) => Number(value?.replace(/\$\s?|(,*)/g, '') ?? '')}
                 />
               </Form.Item>
               <div className="ant-input-group-addon">{t('common.currencySymbol')}</div>
@@ -171,14 +171,14 @@ const VariantModal: React.FC<VariantModalProps> = ({
                   { type: 'number', min: 0, message: t('variantModal.stockMustBeNonNeg') },
                 ]}
               >
-                <InputNumber
+                <InputNumber<number>
                   placeholder="50"
                   min={0}
                   style={{ width: '100%' }}
                   formatter={(value) =>
                     value ? `${value}`.replace(/\B(?=(\d{3})+(?!\d))/g, ',') : ''
                   }
-                  parser={(value) => (value ? Number(value.replace(/\$\s?|(,*)/g, '')) : undefined) as any}
+                  parser={(value) => Number(value?.replace(/\$\s?|(,*)/g, '') ?? '')}
                 />
               </Form.Item>
               <div className="ant-input-group-addon">{t('common.unitProduct')}</div>

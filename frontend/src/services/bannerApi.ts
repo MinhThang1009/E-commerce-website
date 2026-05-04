@@ -1,26 +1,51 @@
-import { createApi, fetchBaseQuery } from '@reduxjs/toolkit/query/react';
+import { api } from './api';
 
-export const bannerApi = createApi({
-  reducerPath: 'bannerApi',
-  baseQuery: fetchBaseQuery({
-    baseUrl: import.meta.env.VITE_API_URL || 'http://localhost:8888/api',
-    prepareHeaders: (headers) => {
-      const token = localStorage.getItem('token');
-      if (token) {
-        headers.set('Authorization', `Bearer ${token}`);
-      }
-      return headers;
-    },
-  }),
+export interface Banner {
+  id: string;
+  title: string;
+  imageUrl: string;
+  linkUrl: string;
+  position: 'home_hero' | 'home_middle' | 'sidebar';
+  isActive: boolean;
+  priority: number;
+}
+
+interface BannersResponse { status: string; data: Banner[] }
+interface BannerResponse  { status: string; data: Banner }
+
+interface BannerPayload {
+  title: string;
+  imageUrl: string;
+  linkUrl?: string;
+  position: 'home_hero' | 'home_middle' | 'sidebar';
+  isActive: boolean;
+  priority: number;
+}
+
+export const bannerApi = api.injectEndpoints({
   endpoints: (builder) => ({
-    getBanners: builder.query<any, { position?: string; isActive?: boolean }>({
-      query: (params) => ({
-        url: '/banners',
-        params,
-      }),
+    getBanners: builder.query<BannersResponse, { position?: string; isActive?: boolean } | void>({
+      query: (params) => ({ url: '/banners', params: params ?? {} }),
+      providesTags: ['Banner'],
+    }),
+    createBanner: builder.mutation<BannerResponse, BannerPayload>({
+      query: (body) => ({ url: '/banners', method: 'POST', body }),
+      invalidatesTags: ['Banner'],
+    }),
+    updateBanner: builder.mutation<BannerResponse, { id: string } & Partial<BannerPayload>>({
+      query: ({ id, ...body }) => ({ url: `/banners/${id}`, method: 'PATCH', body }),
+      invalidatesTags: ['Banner'],
+    }),
+    deleteBanner: builder.mutation<{ status: string }, string>({
+      query: (id) => ({ url: `/banners/${id}`, method: 'DELETE' }),
+      invalidatesTags: ['Banner'],
     }),
   }),
 });
 
-export const { useGetBannersQuery } = bannerApi;
-
+export const {
+  useGetBannersQuery,
+  useCreateBannerMutation,
+  useUpdateBannerMutation,
+  useDeleteBannerMutation,
+} = bannerApi;

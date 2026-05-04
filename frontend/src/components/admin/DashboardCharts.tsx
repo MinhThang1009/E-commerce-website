@@ -62,6 +62,21 @@ const DashboardCharts: React.FC = () => {
     return label;
   };
 
+  const revenueLabel = t('admin.charts.revenueLabel');
+  const ordersLabel = t('admin.charts.ordersLabel');
+
+  // Phải khai báo trước early return — hooks không được gọi có điều kiện
+  // Stable keys 'revenue'/'orderCount' so chart survives language switch;
+  // translated labels only used in Recharts name/tooltip props below.
+  const orderDataForChart = useMemo(
+    () => (data?.data?.orders ?? []).map((o) => ({
+      name: formatPeriodLabel(o.period),
+      revenue: o.revenue,
+      orderCount: o.orderCount,
+    })),
+    [data?.data?.orders, groupBy]
+  );
+
   if (isLoading) {
     return (
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
@@ -80,20 +95,6 @@ const DashboardCharts: React.FC = () => {
 
   const { orders = [], users = [] } = data.data;
 
-  const revenueLabel = t('admin.charts.revenueLabel');
-  const ordersLabel = t('admin.charts.ordersLabel');
-
-  // Stable keys 'revenue'/'orderCount' so chart survives language switch;
-  // translated labels only used in Recharts name/tooltip props below.
-  const orderDataForChart = useMemo(
-    () => orders.map((o) => ({
-      name: formatPeriodLabel(o.period),
-      revenue: o.revenue,
-      orderCount: o.orderCount,
-    })),
-    [orders, groupBy]
-  );
-
   return (
     <div className="space-y-6 mb-8">
       {/* Header bộ lọc */}
@@ -106,7 +107,7 @@ const DashboardCharts: React.FC = () => {
           {/* Bộ chọn khoảng thời gian */}
           <select
             value={period}
-            onChange={(e) => setPeriod(e.target.value as any)}
+            onChange={(e) => setPeriod(e.target.value as '7d' | '30d' | '90d')}
             className="px-3 py-1.5 border border-neutral-300 dark:border-neutral-600 bg-white dark:bg-neutral-700 text-sm rounded-md shadow-sm focus:ring-primary-500 focus:border-primary-500 text-neutral-800 dark:text-neutral-100"
           >
             <option value="7d">{t('admin.charts.last7Days')}</option>
@@ -117,7 +118,7 @@ const DashboardCharts: React.FC = () => {
           {/* Bộ chọn nhóm theo */}
           <select
             value={groupBy}
-            onChange={(e) => setGroupBy(e.target.value as any)}
+            onChange={(e) => setGroupBy(e.target.value as 'hour' | 'day' | 'week' | 'month')}
             className="px-3 py-1.5 border border-neutral-300 dark:border-neutral-600 bg-white dark:bg-neutral-700 text-sm rounded-md shadow-sm focus:ring-primary-500 focus:border-primary-500 text-neutral-800 dark:text-neutral-100"
           >
             <option value="day">{t('admin.charts.byDay')}</option>

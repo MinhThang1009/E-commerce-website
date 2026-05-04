@@ -11,7 +11,9 @@ import {
   saveSessionIdToStorage,
   createSessionId,
 } from '../store/chatSlice';
-import { useSendChatbotMessageMutation } from '../services/chatbotApi';
+import { useSendChatbotMessageMutation, ChatbotResponse } from '../services/chatbotApi';
+
+type ChatbotApiEnvelope = { status: string; data: ChatbotResponse; message?: string };
 import { geminiService } from '../services/geminiApi';
 import ChatHeader from './ChatHeader';
 import ChatMessages from './ChatMessages';
@@ -138,7 +140,7 @@ const ChatWidgetPortal: React.FC = () => {
           },
         }).unwrap(),
         timeoutPromise,
-      ]) as any;
+      ]) as ChatbotApiEnvelope;
 
       // Xóa loading, thêm response vào Redux state
       // Dùng messagesRef.current thay vì messages để tránh stale closure sau await

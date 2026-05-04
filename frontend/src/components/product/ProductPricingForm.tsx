@@ -58,13 +58,13 @@ const ProductPricingForm: React.FC<ProductPricingFormProps> = ({
                   : [{ required: true, message: t('admin.products.pricing.priceRequired') }]
               }
             >
-              <InputNumber
+              <InputNumber<number>
                 placeholder={t('admin.products.pricing.pricePlaceholder')}
                 style={{ width: '100%' }}
                 formatter={(value) =>
                   value ? `${value}`.replace(/\B(?=(\d{3})+(?!\d))/g, ',') : ''
                 }
-                parser={(value) => (value ? Number(value.replace(/\$\s?|(,*)/g, '')) : undefined) as any}
+                parser={(value) => Number(value?.replace(/\$\s?|(,*)/g, '') ?? '')}
                 min={0}
                 disabled={hasVariants}
               />
@@ -81,13 +81,13 @@ const ProductPricingForm: React.FC<ProductPricingFormProps> = ({
         >
           <Space.Compact style={{ width: '100%' }}>
             <Form.Item name="compareAtPrice" noStyle>
-              <InputNumber
+              <InputNumber<number>
                 placeholder="0"
                 style={{ width: '100%' }}
                 formatter={(value) =>
                   value ? `${value}`.replace(/\B(?=(\d{3})+(?!\d))/g, ',') : ''
                 }
-                parser={(value) => (value ? Number(value.replace(/\$\s?|(,*)/g, '')) : undefined) as any}
+                parser={(value) => Number(value?.replace(/\$\s?|(,*)/g, '') ?? '')}
                 min={0}
               />
             </Form.Item>

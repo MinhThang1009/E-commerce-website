@@ -473,7 +473,7 @@ const HierarchicalAttributesForm: React.FC<HierarchicalAttributesFormProps> = ({
                   formatter={(value) =>
                     value ? `${value}`.replace(/\B(?=(\d{3})+(?!\d))/g, ',') : ''
                   }
-                  parser={(value) => (value ? Number(value.replace(/\$\s?|(,*)/g, '')) : undefined) as any}
+                  parser={(value) => Number(value?.replace(/\$\s?|(,*)/g, '') ?? '')}
                 />
               </Form.Item>
 

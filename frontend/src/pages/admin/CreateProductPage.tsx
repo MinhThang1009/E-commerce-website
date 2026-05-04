@@ -842,7 +842,7 @@ const CreateProductPage: React.FC = () => {
       {/* Modals */}
       {attributeModalVisible && (
         <AttributeModal
-          visible={attributeModalVisible}
+          open={attributeModalVisible}
           onClose={closeAttributeModal}
           attribute={editingAttribute}
           onSave={handleAddAttribute}
@@ -851,7 +851,7 @@ const CreateProductPage: React.FC = () => {
 
       {variantModalVisible && (
         <VariantModal
-          visible={variantModalVisible}
+          open={variantModalVisible}
           onClose={closeVariantModal}
           variant={editingVariant}
           onSave={handleAddVariant}

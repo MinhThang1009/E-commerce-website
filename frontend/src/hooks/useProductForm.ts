@@ -38,7 +38,7 @@ export const useProductForm = ({
       let isStepValid = false;
 
       switch (step) {
-        case 'basic':
+        case 'basic': {
           const basicRequiredFields = [
             'name',
             'shortDescription',
@@ -54,6 +54,7 @@ export const useProductForm = ({
             return isValid;
           });
           break;
+        }
         case 'specifications':
           // Specifications không bắt buộc, luôn valid
           isStepValid = true;
@@ -66,7 +67,7 @@ export const useProductForm = ({
           // Variants không bắt buộc, luôn valid
           isStepValid = true;
           break;
-        case 'pricing':
+        case 'pricing': {
           // Nếu có variants, stockQuantity có thể = 0 (vì variants sẽ có stock riêng)
           // Nếu không có variants, cần kiểm tra cả price và stockQuantity
           const hasVariants = variants.length > 0;
@@ -99,13 +100,15 @@ export const useProductForm = ({
           }
 
           break;
-        case 'category':
+        }
+        case 'category': {
           const categoryValue = values['categoryIds'];
           isStepValid =
             categoryValue &&
             Array.isArray(categoryValue) &&
             categoryValue.length > 0;
           break;
+        }
         case 'images':
           // Images không bắt buộc
           isStepValid = true;

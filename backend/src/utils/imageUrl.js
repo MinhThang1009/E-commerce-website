@@ -1,4 +1,4 @@
-const DEFAULT_LOCAL_BASE = 'http://localhost:8888';
+const DEFAULT_LOCAL_BASE = process.env.BACKEND_URL || '';
 
 const trimToNull = (value) => {
   if (typeof value !== 'string') {
@@ -31,7 +31,7 @@ const assetBase =
   ) || DEFAULT_LOCAL_BASE;
 
 const prefixesToStrip = [
-  normalizeBaseUrl('http://localhost:8888'),
+  normalizeBaseUrl(process.env.BACKEND_URL),
   normalizeBaseUrl('http://127.0.0.1:8888'),
   apiUrl,
   apiRoot,

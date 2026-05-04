@@ -17,14 +17,14 @@ const logger = require('../utils/logger');
 const crypto = require('crypto');
 const emailService = require('../services/email');
 
-// Cấu hình điểm tích lũy loyalty
-const POINTS_EARN_RATE = 100000; // 1 point per 100,000 VND spent
-const POINTS_VALUE = 1000; // 1 point = 1,000 VND discount
-
-// Cấu hình tính phí ship
-const SHIPPING_FREE_THRESHOLD = 2000000; // Miễn phí ship nếu subtotal >= 2,000,000 VND
-const SHIPPING_BASE_RATE = 30000; // Phí ship cơ bản (VND)
-const SHIPPING_WEIGHT_RATE = 5000; // Thêm 5,000 VND mỗi kg vượt quá 2kg
+// Import hằng số từ constants/index.js — không hardcode trong controller
+const {
+  POINTS_EARN_RATE,
+  POINTS_VALUE,
+  SHIPPING_FREE_THRESHOLD,
+  SHIPPING_BASE_RATE,
+  SHIPPING_WEIGHT_RATE,
+} = require('../constants');
 const SHIPPING_WEIGHT_THRESHOLD = 2; // Ngưỡng kg tính thêm phí
 
 /**
@@ -1023,7 +1023,7 @@ const repayOrder = async (req, res, next) => {
     });
 
     // Lấy origin từ request header để tạo URL thanh toán động
-    const origin = req.get('origin') || 'http://localhost:5175';
+    const origin = req.get('origin') || process.env.FRONTEND_URL;
 
     // Tạo URL thanh toán giả lập
     // Trong thực tế, bạn sẽ tích hợp với cổng thanh toán thực tế ở đây

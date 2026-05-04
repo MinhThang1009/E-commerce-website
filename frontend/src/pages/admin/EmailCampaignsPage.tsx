@@ -1,45 +1,31 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { Table, Button, Space, Modal, Form, Input, Card, Typography, message, Popconfirm, Tag } from 'antd';
 import { PlusOutlined, SendOutlined, DeleteOutlined } from '@ant-design/icons';
 import { useTranslation } from 'react-i18next';
 import DOMPurify from 'dompurify';
-import apiClient from '@/services/apiClient';
+import {
+  useGetEmailCampaignsQuery,
+  useCreateEmailCampaignMutation,
+  useDeleteEmailCampaignMutation,
+  useSendEmailCampaignMutation,
+  Campaign,
+} from '@/services/emailCampaignsApi';
 
 const { Text } = Typography;
 
-interface Campaign {
-  id: string;
-  subject: string;
-  content: string;
-  status: 'draft' | 'sent';
-  sentAt: string | null;
-  createdAt: string;
-}
-
 const EmailCampaignsPage: React.FC = () => {
   const { t } = useTranslation();
-  const [campaigns, setCampaigns] = useState<Campaign[]>([]);
-  const [loading, setLoading] = useState(false);
   const [isModalVisible, setIsModalVisible] = useState(false);
   const [isPreviewVisible, setIsPreviewVisible] = useState(false);
   const [selectedCampaign, setSelectedCampaign] = useState<Campaign | null>(null);
   const [form] = Form.useForm();
 
-  const fetchCampaigns = async () => {
-    setLoading(true);
-    try {
-      const response = await apiClient.get('/email-campaigns');
-      setCampaigns(response.data.data);
-    } catch (error) {
-      message.error(t('emailCampaigns.fetchError'));
-    } finally {
-      setLoading(false);
-    }
-  };
+  const { data, isLoading } = useGetEmailCampaignsQuery();
+  const [createEmailCampaign] = useCreateEmailCampaignMutation();
+  const [deleteEmailCampaign] = useDeleteEmailCampaignMutation();
+  const [sendEmailCampaign] = useSendEmailCampaignMutation();
 
-  useEffect(() => {
-    fetchCampaigns();
-  }, []);
+  const campaigns = data?.data ?? [];
 
   const handleCreate = () => {
     form.resetFields();
@@ -48,10 +34,9 @@ const EmailCampaignsPage: React.FC = () => {
 
   const handleDelete = async (id: string) => {
     try {
-      await apiClient.delete(`/email-campaigns/${id}`);
+      await deleteEmailCampaign(id).unwrap();
       message.success(t('emailCampaigns.deleteSuccess'));
-      fetchCampaigns();
-    } catch (error) {
+    } catch {
       message.error(t('emailCampaigns.deleteError'));
     }
   };
@@ -59,10 +44,9 @@ const EmailCampaignsPage: React.FC = () => {
   const handleSend = async (id: string) => {
     try {
       message.loading({ content: t('emailCampaigns.sending'), key: 'send_campaign' });
-      await apiClient.post(`/email-campaigns/${id}/send`);
+      await sendEmailCampaign(id).unwrap();
       message.success({ content: t('emailCampaigns.sendSuccess'), key: 'send_campaign' });
-      fetchCampaigns();
-    } catch (error) {
+    } catch {
       message.error({ content: t('emailCampaigns.sendError'), key: 'send_campaign' });
     }
   };
@@ -70,11 +54,10 @@ const EmailCampaignsPage: React.FC = () => {
   const handleModalOk = async () => {
     try {
       const values = await form.validateFields();
-      await apiClient.post('/email-campaigns', values);
+      await createEmailCampaign(values).unwrap();
       message.success(t('emailCampaigns.createSuccess'));
       setIsModalVisible(false);
-      fetchCampaigns();
-    } catch (error) {
+    } catch {
       message.error(t('emailCampaigns.createError'));
     }
   };
@@ -115,7 +98,7 @@ const EmailCampaignsPage: React.FC = () => {
     {
       title: t('emailCampaigns.colAction'),
       key: 'action',
-      render: (_: any, record: Campaign) => (
+      render: (_: unknown, record: Campaign) => (
         <Space size="middle">
           <Button onClick={() => handlePreview(record)}>{t('emailCampaigns.preview')}</Button>
           {record.status === 'draft' && (
@@ -158,7 +141,7 @@ const EmailCampaignsPage: React.FC = () => {
         columns={columns}
         dataSource={campaigns}
         rowKey="id"
-        loading={loading}
+        loading={isLoading}
       />
 
       <Modal
@@ -202,4 +185,3 @@ const EmailCampaignsPage: React.FC = () => {
 };
 
 export default EmailCampaignsPage;
-

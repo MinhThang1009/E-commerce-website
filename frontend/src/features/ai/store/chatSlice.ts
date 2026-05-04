@@ -25,9 +25,9 @@ const loadSessionId = (): string => {
   try {
     const saved = localStorage.getItem(STORAGE_KEY_SESSION);
     if (saved) return saved;
-  } catch {}
+  } catch { /* bỏ qua lỗi localStorage */ }
   const newId = createSessionId();
-  try { localStorage.setItem(STORAGE_KEY_SESSION, newId); } catch {}
+  try { localStorage.setItem(STORAGE_KEY_SESSION, newId); } catch { /* bỏ qua lỗi localStorage */ }
   return newId;
 };
 
@@ -35,14 +35,14 @@ const loadSessionId = (): string => {
 export const saveMessagesToStorage = (messages: Message[]): void => {
   try {
     localStorage.setItem(STORAGE_KEY_MESSAGES, JSON.stringify(messages));
-  } catch {}
+  } catch { /* bỏ qua lỗi localStorage */ }
 };
 
 // Lưu sessionId vào localStorage — gọi từ component qua useEffect, không gọi trong reducer
 export const saveSessionIdToStorage = (sessionId: string): void => {
   try {
     localStorage.setItem(STORAGE_KEY_SESSION, sessionId);
-  } catch {}
+  } catch { /* bỏ qua lỗi localStorage */ }
 };
 
 interface ChatState {

@@ -78,7 +78,7 @@ const Button = forwardRef<HTMLButtonElement, ButtonProps>(
     // Nếu button cần render dạng Link từ react-router-dom
     if (as === Link && to) {
       return (
-        <Link to={to} className={allClasses} {...(props as any)}>
+        <Link to={to} className={allClasses} {...(props as Omit<React.ComponentProps<typeof Link>, 'to' | 'className'>)}>
           {content}
         </Link>
       );

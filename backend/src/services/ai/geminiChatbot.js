@@ -242,7 +242,7 @@ QUY TẮC BẮT BUỘC:
         {
           headers: {
             'Authorization': `Bearer ${this.apiKey}`,
-            'HTTP-Referer': process.env.FRONTEND_URL || 'http://localhost:5173',
+            'HTTP-Referer': process.env.FRONTEND_URL,
             'X-Title': 'TechStore Chatbot',
             'Content-Type': 'application/json',
           },

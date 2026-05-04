@@ -33,7 +33,7 @@ const BestSellersPage: React.FC = () => {
   ];
 
   const handleSortChange = (value: string) => {
-    setSortOption(value as any);
+    setSortOption(value as 'popular' | 'price_asc' | 'price_desc' | 'newest');
     setCurrentPage(1);
   };
 

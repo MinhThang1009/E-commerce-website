@@ -140,10 +140,9 @@ const ProductsPage: React.FC = () => {
     }
   }, [products]);
 
-  // Log dữ liệu danh mục để debug
+  // Effect này giữ lại để theo dõi thay đổi apiCategories nếu cần debug sau này
   useEffect(() => {
-    if (apiCategories.length > 0) {
-    }
+    // Placeholder — thêm logic khi cần xử lý sau khi categories load xong
   }, [apiCategories]);
 
   // Xử lý xóa sản phẩm

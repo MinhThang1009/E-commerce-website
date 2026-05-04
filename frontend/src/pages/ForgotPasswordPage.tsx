@@ -5,6 +5,8 @@ import Button from '@/components/common/Button';
 import Input from '@/components/common/Input';
 import { useForgotPasswordMutation } from '@/services/authApi';
 
+type ApiError = { data?: { message?: string }; message?: string };
+
 const ForgotPasswordPage: React.FC = () => {
   const { t } = useTranslation();
   const [email, setEmail] = useState('');
@@ -124,7 +126,7 @@ const ForgotPasswordPage: React.FC = () => {
               <div className="p-4 bg-error-100 dark:bg-error-900/30 text-error-700 dark:text-error-400 rounded-lg">
                 {typeof error === 'string' 
                   ? error 
-                  : (error as any)?.data?.message || (error as any)?.message || t('auth.forgotPassword.errors.sendFailed')}
+                  : (error as ApiError)?.data?.message || (error as ApiError)?.message || t('auth.forgotPassword.errors.sendFailed')}
               </div>
             )}
           </div>

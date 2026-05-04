@@ -17,14 +17,14 @@ interface Attribute {
 }
 
 interface AttributeModalProps {
-  visible: boolean;
+  open: boolean;
   onClose: () => void;
   attribute?: any;
   onSave: (attribute: any) => void;
 }
 
 const AttributeModal: React.FC<AttributeModalProps> = ({
-  visible,
+  open,
   onClose,
   attribute,
   onSave,
@@ -43,7 +43,7 @@ const AttributeModal: React.FC<AttributeModalProps> = ({
     } else {
       form.resetFields();
     }
-  }, [attribute, form, visible]);
+  }, [attribute, form, open]);
 
   const handleSubmit = (values: any) => {
     const attributeData: Attribute = {
@@ -70,7 +70,7 @@ const AttributeModal: React.FC<AttributeModalProps> = ({
   return (
     <Modal
       title={attribute ? t('attrModal.editTitle') : t('attrModal.addTitle')}
-      open={visible}
+      open={open}
       onCancel={handleClose}
       footer={null}
       width={700}

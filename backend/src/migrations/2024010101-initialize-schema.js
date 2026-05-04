@@ -1,6 +1,7 @@
 'use strict';
 
 const sequelize = require('../config/sequelize');
+const logger = require('../utils/logger');
 
 // Ensure all models are registered before syncing
 require('../models');
@@ -29,16 +30,16 @@ module.exports = {
             .then(tables => tables.includes(model.tableName));
           
           if (!tableExists) {
-            console.log(`Creating table: ${model.tableName}`);
+            logger.info(`Creating table: ${model.tableName}`);
             await queryInterface.createTable(model.tableName, model.rawAttributes, model.options);
           }
         } catch (error) {
           // Table might already exist or other error - continue
-          console.log(`Table ${model.tableName} check: ${error.message}`);
+          logger.warn(`Table ${model.tableName} check: ${error.message}`);
         }
       }
     } catch (error) {
-      console.log('Migration up: Models created or already exist');
+      logger.info('Migration up: Models created or already exist');
       // This is OK - tables might already exist from previous migrations
     }
   },
@@ -52,7 +53,7 @@ module.exports = {
     try {
       await queryInterface.dropAllTables();
     } catch (error) {
-      console.log('Migration down: Error dropping tables (may already be gone)');
+      logger.warn('Migration down: Error dropping tables (may already be gone)');
     }
   },
 };

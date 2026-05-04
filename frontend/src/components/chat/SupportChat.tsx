@@ -158,14 +158,18 @@ const SupportChat: React.FC = () => {
       isFromAdmin: false,
     };
 
-    // Cập nhật lạc quan (optimistic update)
+    // Cập nhật giao diện ngay lập tức với tin nhắn ảo có ID tạm thời để tránh trùng lặp khi server trả về tin nhắn thực tế
     const tempId = `temp_${Date.now()}`;
     const optimisticMessage: ChatMessage = {
       id: tempId,
-      ...messageData,
+      userId: userId || '',
+      sessionId,
+      senderId: userId || `guest_${sessionId.substring(0, 8)}`,
+      content,
+      isFromAdmin: false,
       createdAt: new Date().toISOString(),
       isRead: false,
-    } as any;
+    };
 
     setMessages((prev) => [...prev, optimisticMessage]);
 

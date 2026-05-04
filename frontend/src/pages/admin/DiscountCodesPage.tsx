@@ -301,12 +301,12 @@ const DiscountCodesPage: React.FC = () => {
                       label={type === 'percent' ? t('admin.discountCodes.form.valuePercent') : t('admin.discountCodes.form.valueFixed')}
                       rules={[{ required: true, message: t('admin.discountCodes.form.valueRequired') }]}
                     >
-                      <InputNumber
+                      <InputNumber<number>
                         min={0}
                         max={type === 'percent' ? 100 : undefined}
                         style={{ width: '100%' }}
                         formatter={type === 'fixed' ? (value) => `${value}`.replace(/\B(?=(\d{3})+(?!\d))/g, ',') : undefined}
-                        parser={type === 'fixed' ? (value) => value!.replace(/\$\s?|(,*)/g, '') as any : undefined}
+                        parser={type === 'fixed' ? (value) => Number(value?.replace(/\$\s?|(,*)/g, '') ?? '') : undefined}
                       />
                     </Form.Item>
                   </Col>
@@ -317,11 +317,11 @@ const DiscountCodesPage: React.FC = () => {
                         label={t('admin.discountCodes.form.maxDiscount')}
                         tooltip={t('admin.discountCodes.form.maxDiscountTooltip')}
                       >
-                        <InputNumber
+                        <InputNumber<number>
                           min={0}
                           style={{ width: '100%' }}
                           formatter={(value) => `${value}`.replace(/\B(?=(\d{3})+(?!\d))/g, ',')}
-                          parser={(value) => value!.replace(/\$\s?|(,*)/g, '') as any}
+                          parser={(value) => Number(value?.replace(/\$\s?|(,*)/g, '') ?? '')}
                         />
                       </Form.Item>
                     </Col>
@@ -334,11 +334,11 @@ const DiscountCodesPage: React.FC = () => {
           <Row gutter={16}>
             <Col span={12}>
               <Form.Item name="minOrderAmount" label={t('admin.discountCodes.form.minOrder')}>
-                <InputNumber
+                <InputNumber<number>
                   min={0}
                   style={{ width: '100%' }}
                   formatter={(value) => `${value}`.replace(/\B(?=(\d{3})+(?!\d))/g, ',')}
-                  parser={(value) => value!.replace(/\$\s?|(,*)/g, '') as any}
+                  parser={(value) => Number(value?.replace(/\$\s?|(,*)/g, '') ?? '')}
                 />
               </Form.Item>
             </Col>

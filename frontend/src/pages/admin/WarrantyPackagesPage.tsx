@@ -275,12 +275,12 @@ const WarrantyPackagesPage: React.FC = () => {
                 label={t('admin.warrantyPackages.form.price')}
                 rules={[{ required: true, message: t('admin.warrantyPackages.form.priceRequired') }]}
               >
-                <InputNumber
+                <InputNumber<number>
                   min={0}
                   placeholder="0"
                   style={{ width: '100%' }}
                   formatter={(value) => `${value}`.replace(/\B(?=(\d{3})+(?!\d))/g, ',')}
-                  parser={(value) => (value ? value.replace(/\$\s?|(,*)/g, '') : '') as any}
+                  parser={(value) => Number(value?.replace(/\$\s?|(,*)/g, '') ?? '')}
                 />
               </Form.Item>
             </Col>

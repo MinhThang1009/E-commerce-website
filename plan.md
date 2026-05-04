@@ -3236,13 +3236,13 @@ search.*          — trang tìm kiếm
 - **Fix:** Rename các file migration không đúng format; đảm bảo thứ tự timestamp khớp với thứ tự cần chạy
 
 ### ✅ Acceptance Criteria Phase 22
-- [ ] Grep `console.log` trong `backend/src/` → 0 kết quả (trừ `server.js` startup message)
-- [ ] `npx eslint frontend/src --ext .ts,.tsx` → 0 errors (warnings chấp nhận)
-- [ ] `POINTS_EARN_RATE` được define trong constants file, không hardcode trong controller
-- [ ] Grep `as any` trong `frontend/src/` giảm đáng kể so với Phase 5
-- [ ] Grep `localhost:[0-9]` trong `backend/src/` (trừ `.env.example`) → 0 kết quả
-- [ ] `BannersPage.tsx` và `EmailCampaignsPage.tsx` không còn import `apiClient` trực tiếp — dùng RTK Query hooks
-- [ ] Grep `visible=` trong `frontend/src/pages/admin/` → 0 kết quả (đã đổi thành `open=`)
+- [x] Grep `console.log` trong `backend/src/` → 0 kết quả (trừ `server.js` startup message)
+- [x] `npx eslint frontend/src --ext .ts,.tsx` → 0 errors (warnings chấp nhận)
+- [x] `POINTS_EARN_RATE` được define trong constants file, không hardcode trong controller
+- [x] Grep `as any` trong `frontend/src/` giảm đáng kể so với Phase 5
+- [x] Grep `localhost:[0-9]` trong `backend/src/` (trừ `.env.example`) → 0 kết quả
+- [x] `BannersPage.tsx` và `EmailCampaignsPage.tsx` không còn import `apiClient` trực tiếp — dùng RTK Query hooks
+- [x] Grep `visible=` trong `frontend/src/pages/admin/` → 0 kết quả (đã đổi thành `open=`)
 
 ---
 

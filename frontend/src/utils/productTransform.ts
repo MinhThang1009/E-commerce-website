@@ -121,7 +121,7 @@ export const transformProduct = (product: any): any => {
           return { ...attr, values };
         })
       : Object.entries(product.attributes || {}).map(([key, value]) => {
-          let values = Array.isArray(value) ? value : [value];
+          const values = Array.isArray(value) ? value : [value];
           return { name: key, values };
         }),
     

@@ -1,43 +1,28 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { Table, Button, Space, Modal, Form, Input, Select, Switch, message, Popconfirm } from 'antd';
 import { PlusOutlined, EditOutlined, DeleteOutlined } from '@ant-design/icons';
 import { useTranslation } from 'react-i18next';
-import apiClient from '@/services/apiClient';
+import {
+  useGetBannersQuery,
+  useCreateBannerMutation,
+  useUpdateBannerMutation,
+  useDeleteBannerMutation,
+  Banner,
+} from '@/services/bannerApi';
 import ImageUpload from '@/components/common/ImageUpload';
-
-interface Banner {
-  id: string;
-  title: string;
-  imageUrl: string;
-  linkUrl: string;
-  position: 'home_hero' | 'home_middle' | 'sidebar';
-  isActive: boolean;
-  priority: number;
-}
 
 const BannersPage: React.FC = () => {
   const { t } = useTranslation();
-  const [banners, setBanners] = useState<Banner[]>([]);
-  const [loading, setLoading] = useState(false);
   const [isModalVisible, setIsModalVisible] = useState(false);
   const [editingBanner, setEditingBanner] = useState<Banner | null>(null);
   const [form] = Form.useForm();
 
-  const fetchBanners = async () => {
-    setLoading(true);
-    try {
-      const response = await apiClient.get('/banners');
-      setBanners(response.data.data);
-    } catch (error) {
-      message.error(t('admin.banners.messages.fetchError'));
-    } finally {
-      setLoading(false);
-    }
-  };
+  const { data, isLoading } = useGetBannersQuery();
+  const [createBanner] = useCreateBannerMutation();
+  const [updateBanner] = useUpdateBannerMutation();
+  const [deleteBanner] = useDeleteBannerMutation();
 
-  useEffect(() => {
-    fetchBanners();
-  }, []);
+  const banners = data?.data ?? [];
 
   const handleCreate = () => {
     setEditingBanner(null);
@@ -53,10 +38,9 @@ const BannersPage: React.FC = () => {
 
   const handleDelete = async (id: string) => {
     try {
-      await apiClient.delete(`/banners/${id}`);
+      await deleteBanner(id).unwrap();
       message.success(t('admin.banners.messages.deleteSuccess'));
-      fetchBanners();
-    } catch (error) {
+    } catch {
       message.error(t('admin.banners.messages.deleteError'));
     }
   };
@@ -65,15 +49,14 @@ const BannersPage: React.FC = () => {
     try {
       const values = await form.validateFields();
       if (editingBanner) {
-        await apiClient.patch(`/banners/${editingBanner.id}`, values);
+        await updateBanner({ id: editingBanner.id, ...values }).unwrap();
         message.success(t('admin.banners.messages.editSuccess'));
       } else {
-        await apiClient.post('/banners', values);
+        await createBanner(values).unwrap();
         message.success(t('admin.banners.messages.createSuccess'));
       }
       setIsModalVisible(false);
-      fetchBanners();
-    } catch (error) {
+    } catch {
       message.error(t('admin.banners.messages.saveError'));
     }
   };
@@ -89,7 +72,7 @@ const BannersPage: React.FC = () => {
       dataIndex: 'imageUrl',
       key: 'imageUrl',
       render: (url: string) => {
-        const fullUrl = url?.startsWith('http') ? url : `${import.meta.env.VITE_API_URL || 'http://localhost:8888'}${url?.startsWith('/') ? '' : '/'}${url}`;
+        const fullUrl = url?.startsWith('http') ? url : `${import.meta.env.VITE_API_URL || ''}${url?.startsWith('/') ? '' : '/'}${url}`;
         return <img src={fullUrl} alt={t('admin.banners.table.image')} style={{ width: 100, borderRadius: 4 }} />;
       },
     },
@@ -121,7 +104,7 @@ const BannersPage: React.FC = () => {
     {
       title: t('admin.common.actions'),
       key: 'action',
-      render: (_: any, record: Banner) => (
+      render: (_: unknown, record: Banner) => (
         <Space size="middle">
           <Button icon={<EditOutlined />} onClick={() => handleEdit(record)}>
             {t('common.edit')}
@@ -151,7 +134,7 @@ const BannersPage: React.FC = () => {
         </Button>
       </div>
 
-      <Table columns={columns} dataSource={banners} rowKey="id" loading={loading} />
+      <Table columns={columns} dataSource={banners} rowKey="id" loading={isLoading} />
 
       <Modal
         title={editingBanner ? t('admin.banners.editBanner') : t('admin.banners.createBannerModal')}

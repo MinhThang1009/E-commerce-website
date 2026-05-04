@@ -17,12 +17,7 @@ const AdminRoute: React.FC<AdminRouteProps> = ({ children }) => {
   );
   const location = useLocation();
 
-  // Nếu không có token, chuyển hướng đến trang đăng nhập
-  if (!token) {
-    return <Navigate to="/login" state={{ from: location }} replace />;
-  }
-
-  // Nếu có token nhưng chưa có thông tin user, tải thông tin user
+  // Nếu có token nhưng chưa có thông tin user, cần gọi API lấy user — phải khai báo hook trước early return
   const shouldFetchUser = token && !user;
   const {
     data: currentUser,
@@ -31,6 +26,11 @@ const AdminRoute: React.FC<AdminRouteProps> = ({ children }) => {
   } = useGetCurrentUserQuery(undefined, {
     skip: !shouldFetchUser,
   });
+
+  // Nếu không có token, chuyển hướng đến trang đăng nhập
+  if (!token) {
+    return <Navigate to="/login" state={{ from: location }} replace />;
+  }
 
   // Hiển thị loading khi đang tải thông tin user
   if (shouldFetchUser && isLoading) {

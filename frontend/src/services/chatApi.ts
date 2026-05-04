@@ -33,7 +33,7 @@ export const chatApi = api.injectEndpoints({
         url: `/chat/${identifier}`,
         method: 'GET',
       }),
-      providesTags: (result, error, identifier) => [{ type: 'Chat' as any, id: identifier }],
+      providesTags: (result, error, identifier) => [{ type: 'Chat', id: identifier }],
     }),
 
     getAdminChatList: builder.query<{ status: string; data: AdminChatListResponse[] }, void>({
@@ -41,7 +41,7 @@ export const chatApi = api.injectEndpoints({
         url: '/chat/admin/list',
         method: 'GET',
       }),
-      providesTags: ['Chat' as any],
+      providesTags: ['Chat'],
     }),
   }),
 });

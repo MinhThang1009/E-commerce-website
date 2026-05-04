@@ -192,7 +192,7 @@ const ShopPage: React.FC = () => {
       id: 'categories',
       name: t('filters.category'),
       options:
-        (((categoriesData as any)?.data || categoriesData || []) as any[]).map((category: any) => ({
+        (categoriesData || []).map((category: Category) => ({
           id: category.id,
           name: `${category.name} (${category.productCount || 0})`,
         })),

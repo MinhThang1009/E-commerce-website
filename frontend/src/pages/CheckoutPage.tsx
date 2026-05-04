@@ -204,6 +204,8 @@ const CheckoutPage: React.FC = () => {
     billingCountry: 'VN',
     billingPhone: user?.phone || '', // Sử dụng số điện thoại của người dùng nếu có
     sameAsShipping: true,
+    lat: null as number | string | null,
+    lon: null as number | string | null,
   });
 
   const [errors, setErrors] = useState<Record<string, string>>({});
@@ -284,8 +286,8 @@ const CheckoutPage: React.FC = () => {
   let finalDistance = 0;
 
   if (formData.address) {
-    const lat = (formData as any).lat;
-    const lon = (formData as any).lon;
+    const lat = formData.lat;
+    const lon = formData.lon;
     
     if (lat && lon) {
       const calculateDistance = (lat1: number, lon1: number, lat2: number, lon2: number) => {
@@ -308,7 +310,7 @@ const CheckoutPage: React.FC = () => {
       };
 
       // Tọa độ gốc của hàng: 144 Đ. Xuân Thủy, Cầu Giấy, HN (21.0378, 105.7827)
-      finalDistance = calculateDistance(21.0378, 105.7827, parseFloat(lat), parseFloat(lon));
+      finalDistance = calculateDistance(21.0378, 105.7827, Number(lat), Number(lon));
       shippingCost = calculateShippingFee(finalDistance);
     }
   }
@@ -328,7 +330,7 @@ const CheckoutPage: React.FC = () => {
 
       // Tự động điền các trường phụ để vượt qua validation phía backend
       if (name === 'address') {
-        let parts = value.split(',');
+        const parts = value.split(',');
         // Dùng chuỗi rỗng thay vì t() — giá trị dịch sẽ gây backend validation fail khi ngôn ngữ EN
         updated.state = parts.length > 2 ? parts[parts.length - 2].trim() : '';
         updated.city = parts.length > 3 ? parts[parts.length - 3].trim() : '';

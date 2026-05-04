@@ -12,6 +12,9 @@ import {
 import { loginSuccess } from '@/features/auth/authSlice';
 import GoogleLoginButton from '@/components/auth/GoogleLoginButton';
 
+interface LocationState { from?: { pathname: string } }
+type ApiError = { data?: { message?: string }; message?: string };
+
 const LoginPage: React.FC = () => {
   const { t } = useTranslation();
   const [email, setEmail] = useState('');
@@ -31,7 +34,7 @@ const LoginPage: React.FC = () => {
     useResendVerificationMutation();
 
   // Lấy đường dẫn redirect từ location state hoặc mặc định về trang chủ
-  const from = (location.state as any)?.from?.pathname || '/';
+  const from = (location.state as LocationState | null)?.from?.pathname || '/';
 
   const validateForm = () => {
     const newErrors: { email?: string; password?: string } = {};
@@ -202,11 +205,11 @@ const LoginPage: React.FC = () => {
                 <p className="text-sm font-medium">
                   {typeof error === 'string'
                     ? error
-                    : (error as any)?.data?.message ||
-                      (error as any)?.message ||
+                    : (error as ApiError)?.data?.message ||
+                      (error as ApiError)?.message ||
                       t('auth.login.errors.invalidCredentials')}
                 </p>
-                {(error as any)?.data?.message?.includes('Vui lòng xác thực email') && (
+                {(error as ApiError)?.data?.message?.includes('Vui lòng xác thực email') && (
                   <div className="mt-3 flex flex-col gap-2">
                     {/* Nút nhập OTP */}
                     <button

@@ -7,6 +7,7 @@ import Input from '@/components/common/Input';
 import { useRegisterMutation, useVerifyOtpMutation, useResendVerificationMutation } from '@/services/authApi';
 
 type Step = 'form' | 'otp';
+type ApiError = { data?: { message?: string }; message?: string };
 
 const RegisterPage: React.FC = () => {
   const { t } = useTranslation();
@@ -353,7 +354,7 @@ const RegisterPage: React.FC = () => {
               <div className="p-4 bg-error-100 dark:bg-error-900/30 text-error-700 dark:text-error-400 rounded-lg">
                 {typeof registerError === 'string'
                   ? registerError
-                  : (registerError as any)?.data?.message || (registerError as any)?.message || t('auth.register.errors.registrationFailed')}
+                  : (registerError as ApiError)?.data?.message || (registerError as ApiError)?.message || t('auth.register.errors.registrationFailed')}
               </div>
             )}
           </div>

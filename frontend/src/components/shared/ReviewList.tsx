@@ -118,7 +118,7 @@ const ReviewList: React.FC<ReviewListProps> = ({ productId }) => {
         <div className="flex items-center space-x-4">
           <select
             value={filters.sort}
-            onChange={(e) => handleFilterChange({ sort: e.target.value as any })}
+            onChange={(e) => handleFilterChange({ sort: e.target.value as ReviewFilters['sort'] })}
             className="px-3 py-2 border border-neutral-300 dark:border-neutral-600 rounded-lg bg-white dark:bg-neutral-700 text-neutral-900 dark:text-white text-sm"
           >
             <option value="newest">{t('review.list.sortNewest')}</option>

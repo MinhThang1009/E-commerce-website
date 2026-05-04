@@ -15,8 +15,8 @@ class MoMoService {
     this.apiEndpoint = process.env.DEV_MOMO_ENDPOINT ? `${process.env.DEV_MOMO_ENDPOINT}/create` : (process.env.MOMO_API_ENDPOINT || 'https://test-payment.momo.vn/v2/gateway/api/create');
 
     // Đặt URL backend để nhận và xử lý kết quả thanh toán
-    this.redirectUrl = process.env.MOMO_REDIRECT_URL || 'http://localhost:8888/api/payment/momo/return';
-    this.ipnUrl = process.env.MOMO_IPN_URL || 'http://localhost:8888/api/payment/momo/ipn';
+    this.redirectUrl = process.env.MOMO_REDIRECT_URL;
+    this.ipnUrl = process.env.MOMO_IPN_URL;
   }
 
   async createPaymentUrl({ orderId, amount, orderInfo, extraData = '' }) {

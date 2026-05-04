@@ -124,7 +124,7 @@ export const adminProductApi = api.injectEndpoints({
     >({
       query: (filters = {}) => ({
         url: '/admin/products',
-        params: (filters as any) || {},
+        params: (filters as AdminProductsFilter | undefined) ?? {},
       }),
       providesTags: (result) =>
         result

@@ -97,8 +97,8 @@ export const usePaginatedApiState = <T = any>({
     if (!data || typeof data !== 'object') return [];
 
     // Xử lý các cấu trúc response phân trang (data là mảng trực tiếp)
-    if ('data' in data && Array.isArray((data as any).data)) {
-      return (data as any).data;
+    if ('data' in data && Array.isArray((data as Record<string, unknown>).data)) {
+      return (data as Record<string, unknown>).data as T[];
     }
 
     if (Array.isArray(data)) {
@@ -111,7 +111,7 @@ export const usePaginatedApiState = <T = any>({
   const pagination = useMemo(() => {
     if (!data || typeof data !== 'object') return null;
 
-    const responseData = (data as any).data || data;
+    const responseData = ((data as Record<string, unknown>).data || data) as Record<string, unknown>;
 
     return {
       currentPage: responseData.currentPage || 1,

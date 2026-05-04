@@ -31,8 +31,7 @@ const getBaseUrl = (): string => {
  * Ghi log cấu hình API trong môi trường development
  */
 const logApiConfig = (): void => {
-  if (import.meta.env.DEV) {
-  }
+  // Placeholder — log cấu hình khi cần debug (xóa body tránh lint error)
 };
 
 // Khởi tạo cấu hình API
@@ -149,6 +148,9 @@ export const api = createApi({
     'News',
     'DiscountCodes',
     'Wishlist',
+    'Chat',
+    'Banner',
+    'EmailCampaign',
   ],
   endpoints: () => ({}),
 });
@@ -172,8 +174,5 @@ export const createPrefixedBaseQuery = (
 // Export baseQueryWithAutoLogout để tái sử dụng ở các API service khác
 export { baseQueryWithAutoLogout, baseQuery };
 
-// Export hooks dùng trong các component
-export const {
-  // Chưa có endpoint nào được định nghĩa
-} = api;
+// api object không có endpoint — export trực tiếp khi cần dùng hooks
 

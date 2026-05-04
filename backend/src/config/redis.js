@@ -30,7 +30,7 @@ const getRedisClient = () => {
   if (!initPromise) {
     initPromise = (async () => {
       const client = createClient({
-        url: process.env.REDIS_URL || 'redis://localhost:6379',
+        url: process.env.REDIS_URL,
         socket: {
           connectTimeout: 1500,
           reconnectStrategy: false, // không retry — fail nhanh để dùng fallback

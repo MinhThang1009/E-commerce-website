@@ -176,10 +176,14 @@ const SupportDashboard: React.FC = () => {
     const tempId = `temp_${Date.now()}`;
     const optimisticMessage: ChatMessage = {
       id: tempId,
-      ...messageData,
+      userId: selectedUser.userId,
+      sessionId: selectedUser.sessionId,
+      senderId: user?.id || '',
+      content,
+      isFromAdmin: true,
       createdAt: new Date().toISOString(),
       isRead: false,
-    } as any;
+    };
 
     setMessages(prev => [...prev, optimisticMessage]);
 

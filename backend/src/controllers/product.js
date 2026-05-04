@@ -41,6 +41,7 @@ const getAllProducts = async (req, res, next) => {
     const listCacheKey = `products:list:${req.url}`;
     const cachedList = await redis.get(listCacheKey);
     if (cachedList) {
+      res.setHeader('X-Cache', 'HIT');
       return res.status(200).json(JSON.parse(cachedList));
     }
 
@@ -299,6 +300,7 @@ const getAllProducts = async (req, res, next) => {
       limit: parseInt(limit),
     };
     await redis.setEx(listCacheKey, CACHE_TTL_PRODUCT_LIST, JSON.stringify(listPayload));
+    res.setHeader('X-Cache', 'MISS');
     res.status(200).json(listPayload);
   } catch (error) {
     next(error);
@@ -329,6 +331,7 @@ const getProductById = async (req, res, next) => {
             RecentlyViewed.upsert({ userId: req.user.id, productId: cachedProductId, viewedAt: new Date() }).catch(() => {});
           }
         }
+        res.setHeader('X-Cache', 'HIT');
         return res.status(200).json(cachedData);
       }
     }
@@ -592,6 +595,7 @@ const getProductById = async (req, res, next) => {
       await redis.setEx(detailCacheKey, CACHE_TTL_PRODUCT_DETAIL, JSON.stringify(detailPayload));
     }
 
+    res.setHeader('X-Cache', 'MISS');
     return res.status(200).json(detailPayload);
   } catch (error) {
     next(error);

@@ -49,6 +49,15 @@ Checklist: [ ] npm test pass; [ ] manual demo AC quan trọng; [ ] Layer 2.
 
 **How to apply:** Khi bắt đầu phase N, xác định loại A/B/C/D → áp dụng checklist tương ứng thay vì áp dụng Rule 30+31 đồng đều cho mọi phase.
 
+**Tạo file test mới hay cập nhật file hiện có?**
+
+Quy tắc áp dụng cho Loại A (và Loại C có endpoint mới):
+
+- **Endpoint/service mới hoàn toàn** → tạo file mới `<area>.phase{N}.test.js` (ví dụ: `order.phase26.test.js`)
+- **Endpoint cũ bị sửa logic** → cập nhật file test gần nhất của area đó (ví dụ: sửa logic order ở phase 26 → cập nhật `order.phase25.test.js` hoặc file test mới nhất của order); KHÔNG tạo file mới nếu chỉ sửa behavior cũ
+- **File quá lớn (>15 test cases)** → tạo thêm `<area>.phase{N}b.test.js` (suffix `b`, `c`...)
+- **NGHIÊM CẤM** sửa test file từ phase cũ hơn nếu không cần thiết — tránh làm xáo trộn coverage history và có thể vô tình break suite cũ
+
 ## Rule 3 — Đọc toàn bộ rules trước mỗi phase (BẮT BUỘC)
 
 File này (AGENT_RULES.md) chứa đầy đủ toàn bộ 32 rules với full content — **không cần đọc AGENT EXECUTION GUIDELINES trong plan.md**. Đọc hết file này từ P0 đến P6 là đủ. Không bỏ sót rule nào — đây là bước đầu tiên, không phải tùy chọn.

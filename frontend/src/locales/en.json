@@ -2508,6 +2508,10 @@
                               "price_asc":  "Price: Low to High",
                               "price_desc":  "Price: High to Low"
                           },
+                 "seo":  {
+                             "title":  "Shop | TechStore",
+                             "description":  "Browse our full range of smartphones, tablets, laptops and accessories at TechStore."
+                         },
                  "sortBy":  "Sort By",
                  "stats":  "Showing {{count}} products",
                  "subtitle":  "Discover our full product range",

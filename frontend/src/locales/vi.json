@@ -583,6 +583,10 @@
                  "removeItem":  "Xóa sản phẩm"
              },
     "shop":  {
+                 "seo":  {
+                             "title":  "Cửa Hàng | TechStore",
+                             "description":  "Khám phá đầy đủ danh mục điện thoại, máy tính bảng, laptop và phụ kiện tại TechStore."
+                         },
                  "title":  "Cửa Hàng Sản Phẩm",
                  "subtitle":  "Khám phá bộ sưu tập sản phẩm của chúng tôi",
                  "stats":  "Hiển thị {{current}} trong tổng số {{total}} sản phẩm",

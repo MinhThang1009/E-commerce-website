@@ -1,6 +1,7 @@
 import { useState, useMemo, useEffect } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
+import { Helmet } from 'react-helmet-async';
 import { useGetCategoryBySlugQuery, useGetProductsByCategoryQuery } from '@/services/categoryApi';
 import { useGetAllCategoriesQuery } from '@/services/categoryApi';
 import ProductCard from '@/components/shared/ProductCard';
@@ -81,8 +82,25 @@ const CategoryPage: React.FC = () => {
     { value: 'popular', label: t('category.sortPopular') },
   ];
 
+  // URL ảnh đầy đủ cho og:image
+  const categoryImageUrl = categoryInfo.image
+    ? categoryInfo.image.startsWith('http')
+      ? categoryInfo.image
+      : `${import.meta.env.VITE_API_URL || 'http://localhost:8888'}${categoryInfo.image}`
+    : '';
+
   return (
     <div className="min-h-screen bg-neutral-50 dark:bg-neutral-950">
+      {/* Thẻ meta SEO cho trang danh mục */}
+      <Helmet>
+        <title>{`${categoryInfo.name} | TechStore`}</title>
+        <meta name="description" content={categoryInfo.description || categoryInfo.name} />
+        <meta property="og:title" content={categoryInfo.name} />
+        <meta property="og:description" content={categoryInfo.description || categoryInfo.name} />
+        {categoryImageUrl && <meta property="og:image" content={categoryImageUrl} />}
+        <meta property="og:type" content="website" />
+        <link rel="canonical" href={`${import.meta.env.VITE_SITE_URL || 'https://techstore.vn'}/categories/${slug}`} />
+      </Helmet>
       {/* Banner hero */}
       <div className="relative overflow-hidden bg-gradient-to-r from-primary-800 via-primary-700 to-primary-600 text-white">
         {categoryInfo.image && (

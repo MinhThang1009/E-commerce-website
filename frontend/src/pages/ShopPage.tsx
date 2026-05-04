@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useSearchParams } from 'react-router-dom';
+import { Helmet } from 'react-helmet-async';
 import ProductCard from '@/components/shared/ProductCard';
 import ProductListCard from '@/components/shared/ProductListCard';
 import FilterPanel from '@/components/shared/FilterPanel';
@@ -218,6 +219,15 @@ const ShopPage: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-neutral-50 to-neutral-100 dark:from-neutral-900 dark:to-neutral-950">
+      {/* Thẻ meta SEO cho trang cửa hàng */}
+      <Helmet>
+        <title>{t('shop.seo.title')}</title>
+        <meta name="description" content={t('shop.seo.description')} />
+        <meta property="og:title" content={t('shop.seo.title')} />
+        <meta property="og:description" content={t('shop.seo.description')} />
+        <meta property="og:type" content="website" />
+        <link rel="canonical" href={`${import.meta.env.VITE_SITE_URL || 'https://techstore.vn'}/shop`} />
+      </Helmet>
       <div className="container mx-auto px-4 py-8 animate-fadeIn">
         {/* Tiêu đề trang */}
         <div className="mb-8 text-center">

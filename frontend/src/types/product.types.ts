@@ -28,6 +28,9 @@ export interface Product {
   specifications?: Record<string, any>;
   warrantyPackages?: WarrantyPackage[];
   faqs?: FAQ[];
+  // SEO — có thể null nếu admin chưa điền
+  seoTitle?: string | null;
+  seoDescription?: string | null;
   createdAt: string;
   updatedAt: string;
   // Fields added by transformProduct at runtime

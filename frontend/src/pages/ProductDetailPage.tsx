@@ -1,3 +1,4 @@
+import { Helmet } from 'react-helmet-async';
 import { PremiumButton } from '@/components/common';
 import Badge from '@/components/common/Badge';
 import LoadingSpinner from '@/components/common/LoadingSpinner';
@@ -450,8 +451,52 @@ const ProductDetailPage: React.FC = () => {
     );
   }
 
+  // Giá hiển thị: ưu tiên biến thể đang chọn, fallback sang giá cơ sở
+  const displayPrice = product.currentVariant?.price ?? product.price;
+  const stockCount = product.currentVariant?.stockQuantity ?? product.stock ?? 0;
+  const seoTitleText = product.seoTitle || `${product.name} | TechStore`;
+  const seoDescText = product.seoDescription || product.shortDescription || '';
+  const jsonLd = {
+    '@context': 'https://schema.org/',
+    '@type': 'Product',
+    name: product.name,
+    image: product.thumbnail,
+    description: seoDescText,
+    ...(product.currentVariant?.sku ? { sku: product.currentVariant.sku } : {}),
+    offers: {
+      '@type': 'Offer',
+      price: displayPrice,
+      priceCurrency: 'VND',
+      availability:
+        stockCount > 0
+          ? 'https://schema.org/InStock'
+          : 'https://schema.org/OutOfStock',
+    },
+    // aggregateRating chỉ đưa vào khi có ít nhất 1 đánh giá — schema.org yêu cầu reviewCount ≥ 1
+    ...((product.ratings?.count ?? 0) > 0
+      ? {
+          aggregateRating: {
+            '@type': 'AggregateRating',
+            ratingValue: product.ratings!.average,
+            reviewCount: product.ratings!.count,
+          },
+        }
+      : {}),
+  };
+
   return (
     <div className="container mx-auto px-4 py-8">
+      {/* Thẻ meta SEO — react-helmet-async */}
+      <Helmet>
+        <title>{seoTitleText}</title>
+        <meta name="description" content={seoDescText} />
+        <meta property="og:title" content={product.name} />
+        <meta property="og:description" content={seoDescText} />
+        <meta property="og:image" content={product.thumbnail} />
+        <meta property="og:type" content="product" />
+        <link rel="canonical" href={`${import.meta.env.VITE_SITE_URL || 'https://techstore.vn'}/products/${product.slug}`} />
+        <script type="application/ld+json">{JSON.stringify(jsonLd)}</script>
+      </Helmet>
       {/* Đường dẫn điều hướng */}
       <nav className="mb-8">
         <ol className="flex text-sm">

@@ -3155,11 +3155,11 @@ search.*          — trang tìm kiếm
   - Backend: `GET /sitemap.xml` endpoint generate sitemap từ products + categories + news
 
 ### ✅ Acceptance Criteria Phase 21
-- [ ] `curl -I https://localhost:3000/products/iphone-16-pro` — response có `<title>iPhone 16 Pro | TechStore</title>`
-- [ ] `<head>` của ProductDetailPage có `og:image` và `og:description`
-- [ ] ProductDetailPage có JSON-LD `@type: Product` với `offers.price` và `aggregateRating`
-- [ ] `GET /robots.txt` — trả về file block `/admin` và `/api`
-- [ ] Slug của tất cả 45 sản phẩm không chứa ký tự tiếng Việt có dấu
+- [x] `curl -I https://localhost:3000/products/iphone-16-pro` — response có `<title>iPhone 16 Pro | TechStore</title>`
+- [x] `<head>` của ProductDetailPage có `og:image` và `og:description`
+- [x] ProductDetailPage có JSON-LD `@type: Product` với `offers.price` và `aggregateRating`
+- [x] `GET /robots.txt` — trả về file block `/admin` và `/api`
+- [x] Slug của tất cả 45 sản phẩm không chứa ký tự tiếng Việt có dấu
 
 ---
 

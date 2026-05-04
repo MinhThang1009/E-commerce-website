@@ -24,6 +24,7 @@ const app = require('./app');
 const sequelize = require('./config/sequelize');
 const { exec } = require('child_process');
 const { Server } = require('socket.io');
+const { getRedisClient } = require('./config/redis');
 
 // Load tất cả model trước (chưa có quan hệ)
 const models = [
@@ -155,10 +156,41 @@ const checkVectorStoreSync = async () => {
   }
 };
 
+// Pre-load dữ liệu ít thay đổi vào Redis cache để request đầu tiên không bị cold miss
+const warmCache = async () => {
+  try {
+    const redis = await getRedisClient();
+    const { Category, Brand } = require('./models');
+
+    const categories = await Category.findAll({ order: [['name', 'ASC']] });
+    if (categories.length > 0) {
+      await redis.setEx('categories:all', 1800, JSON.stringify({
+        status: 'success',
+        data: categories,
+      }));
+      logger.info(`[Cache] Warmed: ${categories.length} categories`);
+    }
+
+    const brands = await Brand.findAll({ order: [['name', 'ASC']] });
+    if (brands.length > 0) {
+      await redis.setEx('cache:brands:all', 1800, JSON.stringify({
+        status: 'success',
+        data: brands,
+      }));
+      logger.info(`[Cache] Warmed: ${brands.length} brands`);
+    }
+  } catch (err) {
+    logger.warn('[Cache] Warming thất bại:', err.message);
+  }
+};
+
 // Khởi động server
 const startServer = async () => {
   await connectDB();
   await ensureColumns();
+
+  // Khởi tạo Redis client sớm — nếu Redis không khả dụng thì dùng in-memory fallback
+  await getRedisClient();
 
   const PORT = process.env.PORT || 8888;
   const server = app.listen(PORT, '0.0.0.0', () => {
@@ -169,6 +201,9 @@ const startServer = async () => {
 
   // Kiểm tra vector store sync sau khi server start (không block startup)
   checkVectorStoreSync().catch(err => logger.warn('Vector store check failed:', err.message));
+
+  // Cache warming — pre-load categories và brands vào Redis sau khi DB sẵn sàng
+  warmCache().catch(err => logger.warn('Cache warming failed:', err.message));
 
   // Khởi tạo Socket.io
   const io = new Server(server, {

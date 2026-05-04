@@ -5,6 +5,7 @@ const { validateRequest } = require('../middlewares/validateRequest');
 const { productSchema } = require('../validators/product');
 const { authenticate } = require('../middlewares/authenticate');
 const { authorize } = require('../middlewares/authorize');
+const { httpCacheHeaders } = require('../middlewares/cache');
 
 /**
  * @swagger
@@ -161,7 +162,7 @@ const { authorize } = require('../middlewares/authorize');
  *                       items:
  *                         $ref: '#/components/schemas/Product'
  */
-router.get('/', productController.getAllProducts);
+router.get('/', httpCacheHeaders(60), productController.getAllProducts);
 
 /**
  * @swagger
@@ -203,7 +204,7 @@ router.get('/recently-viewed', authenticate, productController.getRecentlyViewed
  *       200:
  *         description: Danh sách sản phẩm nổi bật
  */
-router.get('/featured', productController.getFeaturedProducts);
+router.get('/featured', httpCacheHeaders(600), productController.getFeaturedProducts);
 
 /**
  * @swagger
@@ -222,7 +223,7 @@ router.get('/featured', productController.getFeaturedProducts);
  *       200:
  *         description: Danh sách sản phẩm mới về
  */
-router.get('/new-arrivals', productController.getNewArrivals);
+router.get('/new-arrivals', httpCacheHeaders(300), productController.getNewArrivals);
 
 /**
  * @swagger
@@ -355,7 +356,7 @@ router.get('/suggestions', productController.getProductSuggestions);
  *       404:
  *         description: Không tìm thấy sản phẩm
  */
-router.get('/slug/:slug', productController.getProductBySlug);
+router.get('/slug/:slug', httpCacheHeaders(300), productController.getProductBySlug);
 
 /**
  * @swagger
@@ -445,7 +446,7 @@ router.get('/:id/reviews-summary', productController.getProductReviewsSummary);
  *       404:
  *         description: Không tìm thấy sản phẩm
  */
-router.get('/:id', productController.getProductById);
+router.get('/:id', httpCacheHeaders(300), productController.getProductById);
 
 /**
  * @swagger

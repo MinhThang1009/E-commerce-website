@@ -93,6 +93,13 @@ const ChatMessage = sequelize.define(
       defaultValue: false,
       field: 'is_fallback',
     },
+    // Đánh dấu tin nhắn đã được archive (cleanup job đặt true cho messages cũ hơn 90 ngày)
+    isArchived: {
+      type: DataTypes.BOOLEAN,
+      allowNull: false,
+      defaultValue: false,
+      field: 'is_archived',
+    },
   },
   {
     tableName: 'chat_messages',

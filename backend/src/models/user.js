@@ -90,6 +90,7 @@ const User = sequelize.define(
   {
     tableName: 'users',
     timestamps: true,
+    paranoid: true,
     underscored: false,
     hooks: {
       beforeCreate: async (user) => {

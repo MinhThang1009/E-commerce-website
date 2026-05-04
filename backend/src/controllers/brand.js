@@ -1,6 +1,8 @@
 ﻿const { Brand, Product, sequelize } = require('../models');
 const { AppError } = require('../middlewares/errorHandler');
 const { Op } = require('sequelize');
+const { invalidateCache } = require('../middlewares/cache');
+const logger = require('../utils/logger');
 
 // Lấy tất cả thương hiệu
 const getAllBrands = async (req, res, next) => {
@@ -76,6 +78,8 @@ const createBrand = async (req, res, next) => {
       logoUrl,
     });
 
+    await invalidateCache('cache:brands:*');
+
     res.status(201).json({
       status: 'success',
       data: brand,
@@ -96,6 +100,7 @@ const updateBrand = async (req, res, next) => {
     }
 
     await brand.update(req.body);
+    await invalidateCache('cache:brands:*');
 
     res.status(200).json({
       status: 'success',
@@ -123,6 +128,7 @@ const deleteBrand = async (req, res, next) => {
     }
 
     await brand.destroy();
+    await invalidateCache('cache:brands:*');
 
     res.status(200).json({
       status: 'success',

@@ -8,12 +8,14 @@ const {
 } = require('../validators/order');
 const { authenticate } = require('../middlewares/authenticate');
 const { authorize } = require('../middlewares/authorize');
+const { httpCacheHeaders } = require('../middlewares/cache');
 
 // GET /api/orders/track?orderNumber=X&email=Y — Tra cứu đơn hàng công khai (không cần đăng nhập)
-router.get('/track', orderController.trackOrder);
+router.get('/track', httpCacheHeaders(0, { noStore: true }), orderController.trackOrder);
 
-// Route của người dùng (yêu cầu xác thực)
+// Route của người dùng (yêu cầu xác thực) — không cache user data
 router.use(authenticate);
+router.use(httpCacheHeaders(0, { noStore: true }));
 router.post(
   '/',
   validateRequest(createOrderSchema),

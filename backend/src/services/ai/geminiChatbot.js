@@ -3,6 +3,12 @@ const { Product, Category, Brand, ChatMessage, sequelize } = require('../../mode
 const { Op } = require('sequelize');
 const vectorStoreService = require('./vectorStore');
 const logger = require('../../utils/logger');
+const { getRedisClient } = require('../../config/redis');
+
+// Cache TTL cho chatbot query result (5 phút)
+const CHATBOT_CACHE_TTL = 5 * 60;
+// Chỉ cache intent tìm sản phẩm — KHÔNG cache order_inquiry, support (data realtime)
+const CACHEABLE_INTENTS = ['product_search', 'recommendation'];
 
 // Số lượt hội thoại tối đa giữ trong bộ nhớ (10 turns = 20 messages: user + assistant)
 const MAX_HISTORY_TURNS = 10;
@@ -109,6 +115,23 @@ Format bắt buộc: {"rewrittenQuery": "câu đã chuẩn hóa", "intent": "pro
         return { ...fallback, intent: 'off_topic' };
       }
 
+      // Bước 0.6: Kiểm tra query result cache (chỉ cho intent product_search/recommendation)
+      if (CACHEABLE_INTENTS.includes(intent)) {
+        try {
+          const redis = await getRedisClient();
+          const cacheKey = `chatbot:${(userId || 'anon')}:${searchMessage.toLowerCase().trim()}`;
+          const cached = await redis.get(cacheKey);
+          if (cached) {
+            logger.debug('[Chatbot] Cache HIT — trả kết quả từ cache');
+            const cachedResult = JSON.parse(cached);
+            await this._persistMessages(sessionId, userId, message, cachedResult.response || '', intent, Date.now() - startTime, false);
+            return cachedResult;
+          }
+        } catch {
+          // Cache miss hoặc Redis lỗi → tiếp tục pipeline bình thường
+        }
+      }
+
       // Bước 1: Load lịch sử hội thoại theo sessionId
       const history = sessionId ? (this.conversationHistory.get(sessionId) || []) : [];
 
@@ -150,6 +173,17 @@ Format bắt buộc: {"rewrittenQuery": "câu đã chuẩn hóa", "intent": "pro
 
       const responseTimeMs = Date.now() - startTime;
       await this._persistMessages(sessionId, userId, message, aiResponse.response || '', intent, responseTimeMs, false);
+
+      // Cache kết quả cho intent product_search/recommendation
+      if (CACHEABLE_INTENTS.includes(intent)) {
+        try {
+          const redis = await getRedisClient();
+          const cacheKey = `chatbot:${(userId || 'anon')}:${searchMessage.toLowerCase().trim()}`;
+          await redis.setEx(cacheKey, CHATBOT_CACHE_TTL, JSON.stringify(aiResponse));
+        } catch {
+          // Cache write thất bại → bỏ qua, không ảnh hưởng response
+        }
+      }
 
       return aiResponse;
     } catch (error) {

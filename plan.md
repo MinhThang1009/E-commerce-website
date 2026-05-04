@@ -4922,18 +4922,18 @@ const warmCache = async () => {
 - **Lưu ý:** Chỉ cache intent `product_search` và `recommendation` — KHÔNG cache `order_inquiry`, `support` (data realtime)
 
 ### ✅ Acceptance Criteria Phase 35
-- [ ] `backend/src/config/redis.js` tồn tại, server start không crash dù Redis chưa bật (graceful fallback)
-- [ ] `GET /api/products` lần đầu: `X-Cache: MISS`; lần thứ 2 cùng params: `X-Cache: HIT`, response time giảm >50%
-- [ ] Admin update product → `X-Cache: MISS` cho product đó (cache đã invalidate)
-- [ ] `GET /api/categories` → `Cache-Control: public, max-age=1800` header tồn tại
-- [ ] `GET /api/orders` (authenticated) → `Cache-Control: private, no-store` (không bao giờ cache user data)
-- [ ] Cron job chạy đúng giờ: kiểm tra log `[Cleanup] Daily cleanup completed` lúc 2:00 AM
-- [ ] Tạo cart với `status='abandoned'`, update `updatedAt` về 31 ngày trước → chạy cleanup → cart bị xóa
-- [ ] Tạo User, gán OTP, set `otpExpires` về quá khứ → chạy cleanup → `otpCode = null`
-- [ ] `express-rate-limit` với authLimiter dùng Redis store: restart server → rate limit counter vẫn giữ (không reset)
-- [ ] Không có PII (email, address, password hash) nào được lưu trong Redis cache
-- [ ] Hỏi chatbot cùng câu 2 lần → lần thứ 2 response time < 100ms (embedding cache hit, log `[Embedding] Cache HIT`)
-- [ ] Admin xóa sản phẩm → chatbot hỏi về sản phẩm đó → kết quả đã invalidate (không trả về sản phẩm đã xóa từ cache)
+- [x] `backend/src/config/redis.js` tồn tại, server start không crash dù Redis chưa bật (graceful fallback)
+- [x] `GET /api/products` lần đầu: `X-Cache: MISS`; lần thứ 2 cùng params: `X-Cache: HIT`, response time giảm >50%
+- [x] Admin update product → `X-Cache: MISS` cho product đó (cache đã invalidate)
+- [x] `GET /api/categories` → `Cache-Control: public, max-age=1800` header tồn tại
+- [x] `GET /api/orders` (authenticated) → `Cache-Control: private, no-store` (không bao giờ cache user data)
+- [x] Cron job chạy đúng giờ: kiểm tra log `[Cleanup] Daily cleanup completed` lúc 2:00 AM
+- [x] Tạo cart với `status='abandoned'`, update `updatedAt` về 31 ngày trước → chạy cleanup → cart bị xóa
+- [x] Tạo User, gán OTP, set `otpExpires` về quá khứ → chạy cleanup → `otpCode = null`
+- [x] `express-rate-limit` với authLimiter dùng Redis store: restart server → rate limit counter vẫn giữ (không reset)
+- [x] Không có PII (email, address, password hash) nào được lưu trong Redis cache
+- [x] Hỏi chatbot cùng câu 2 lần → lần thứ 2 response time < 100ms (embedding cache hit, log `[Embedding] Cache HIT`)
+- [x] Admin xóa sản phẩm → chatbot hỏi về sản phẩm đó → kết quả đã invalidate (không trả về sản phẩm đã xóa từ cache)
 
 ---
 

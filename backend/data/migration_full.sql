@@ -86,7 +86,8 @@ CREATE TABLE IF NOT EXISTS `users` (
     `stripe_customer_id` VARCHAR(255) NULL,
     `loyaltyPoints` INT DEFAULT 0,
     `createdAt` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    `updatedAt` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+    `updatedAt` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    `deletedAt` DATETIME NULL DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- ----- BẢNG 2: addresses (Địa chỉ giao hàng) -----
@@ -265,8 +266,12 @@ CREATE TABLE IF NOT EXISTS `orders` (
     `pointsDiscount` DECIMAL(19,2) DEFAULT 0.00,
     `warranty_cost` DECIMAL(19,2) DEFAULT 0.00,
     `discountCodeId` INT NULL COMMENT 'FK tới bảng discount_codes - Sequelize tạo qua association',
+    `cancelled_at` DATETIME NULL DEFAULT NULL,
+    `refunded_at` DATETIME NULL DEFAULT NULL,
+    `refund_amount` DECIMAL(19,2) NULL DEFAULT NULL,
     `createdAt` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
     `updatedAt` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    `deletedAt` DATETIME NULL DEFAULT NULL,
     CONSTRAINT `fk_orders_user` FOREIGN KEY (`userId`) REFERENCES `users`(`id`) ON DELETE CASCADE ON UPDATE CASCADE,
     CONSTRAINT `fk_orders_discount` FOREIGN KEY (`discountCodeId`) REFERENCES `discount_codes`(`id`) ON DELETE SET NULL ON UPDATE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
@@ -332,7 +337,8 @@ CREATE TABLE IF NOT EXISTS `discount_codes` (
     `isActive` TINYINT(1) DEFAULT 1,
     `description` VARCHAR(255) NULL,
     `createdAt` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    `updatedAt` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+    `updatedAt` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    `deletedAt` DATETIME NULL DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- ----- BẢNG 14: reviews (Đánh giá - bảng cũ) -----
@@ -469,6 +475,8 @@ CREATE TABLE IF NOT EXISTS `chat_messages` (
     `response_time_ms` INT UNSIGNED NULL,
     -- Đánh dấu fallback mode thay vì dùng LLM
     `is_fallback` TINYINT(1) NOT NULL DEFAULT 0,
+    -- Đánh dấu tin nhắn đã được archive (cleanup job xử lý)
+    `is_archived` TINYINT(1) NOT NULL DEFAULT 0,
     `createdAt` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
     `updatedAt` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     CONSTRAINT `fk_chat_messages_user` FOREIGN KEY (`userId`) REFERENCES `users`(`id`) ON DELETE SET NULL ON UPDATE CASCADE,

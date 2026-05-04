@@ -11,41 +11,13 @@ const swaggerSpec = require('./config/swagger');
 const routes = require('./routes');
 const { errorHandler } = require('./middlewares/errorHandler');
 const path = require('path');
-const cron = require('node-cron');
-const fs = require('fs').promises;
 const logger = require('./utils/logger');
 
 // Khởi tạo ứng dụng Express
 const app = express();
 
-// Dọn dẹp file tạm trong uploads/temp/ mỗi ngày lúc 2:00 AM
-// File cũ hơn 24 giờ sẽ bị xóa — tránh tích lũy orphaned files khi user upload nhưng không save
-cron.schedule('0 2 * * *', async () => {
-  const tempDir = path.join(__dirname, '../uploads/temp');
-  const maxAge = 24 * 60 * 60 * 1000; // 24 giờ tính bằng milliseconds
-
-  try {
-    const files = await fs.readdir(tempDir);
-
-    await Promise.allSettled(
-      files.map(async (file) => {
-        const filePath = path.join(tempDir, file);
-        try {
-          const stat = await fs.stat(filePath);
-          if (Date.now() - stat.mtimeMs > maxAge) {
-            await fs.unlink(filePath);
-            logger.info(`[CLEANUP] Xóa file tạm cũ: ${file}`);
-          }
-        } catch {
-          // Bỏ qua file không đọc được hoặc đã bị xóa bởi process khác
-        }
-      })
-    );
-  } catch (err) {
-    // tempDir chưa tồn tại hoặc không có quyền đọc — bỏ qua
-    logger.warn('[CLEANUP] Không thể dọn dẹp uploads/temp:', err.message);
-  }
-});
+// Đăng ký scheduled cleanup jobs (cron) — abandoned carts, expired OTP, search history, v.v.
+require('./jobs/cleanup');
 
 // // Tin tưởng reverse proxy headers khi chạy sau Nginx/PM2
 // if (process.env.NODE_ENV === 'production') {
@@ -178,8 +150,11 @@ app.use(xss());
 // Nén response để tăng hiệu năng
 app.use(compression());
 
-// Phục vụ file upload tĩnh
-app.use('/uploads', express.static(path.join(__dirname, '../uploads')));
+// Phục vụ file upload tĩnh — cache 1 năm vì filename chứa hash/timestamp
+app.use('/uploads', express.static(path.join(__dirname, '../uploads'), {
+  maxAge: '365d',
+  immutable: true,
+}));
 
 // Định nghĩa các API routes
 app.use('/api', routes);

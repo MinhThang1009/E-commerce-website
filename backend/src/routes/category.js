@@ -5,6 +5,7 @@ const { validateRequest } = require('../middlewares/validateRequest');
 const { categorySchema } = require('../validators/category');
 const { authenticate } = require('../middlewares/authenticate');
 const { authorize } = require('../middlewares/authorize');
+const { httpCacheHeaders } = require('../middlewares/cache');
 
 /**
  * @swagger
@@ -93,7 +94,7 @@ const { authorize } = require('../middlewares/authorize');
  *       200:
  *         description: Danh sách danh mục
  */
-router.get('/', categoryController.getAllCategories);
+router.get('/', httpCacheHeaders(1800), categoryController.getAllCategories);
 
 /**
  * @swagger
@@ -105,7 +106,7 @@ router.get('/', categoryController.getAllCategories);
  *       200:
  *         description: Cây phân cấp danh mục
  */
-router.get('/tree', categoryController.getCategoryTree);
+router.get('/tree', httpCacheHeaders(1800), categoryController.getCategoryTree);
 
 /**
  * @swagger
@@ -117,7 +118,7 @@ router.get('/tree', categoryController.getCategoryTree);
  *       200:
  *         description: Danh sách danh mục nổi bật
  */
-router.get('/featured', categoryController.getFeaturedCategories);
+router.get('/featured', httpCacheHeaders(1800), categoryController.getFeaturedCategories);
 
 /**
  * @swagger

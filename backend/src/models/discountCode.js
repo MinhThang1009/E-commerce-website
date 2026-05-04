@@ -66,6 +66,7 @@ const DiscountCode = sequelize.define(
   {
     tableName: 'discount_codes',
     timestamps: true,
+    paranoid: true,
     underscored: false,
   }
 );

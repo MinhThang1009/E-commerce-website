@@ -23,7 +23,8 @@ async function clearProductCache(productId, productSlug) {
   try {
     const redis = await getRedisClient();
     const listKeys = await redis.keys('products:list:*');
-    const ops = listKeys.map(k => redis.del(k));
+    const chatbotKeys = await redis.keys('chatbot:*');
+    const ops = [...listKeys, ...chatbotKeys].map(k => redis.del(k));
     if (productId) ops.push(redis.del(`product:detail:${productId}`));
     if (productSlug) ops.push(redis.del(`product:detail:${productSlug}`));
     await Promise.all(ops);

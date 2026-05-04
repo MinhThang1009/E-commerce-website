@@ -3639,12 +3639,12 @@ search.*          — trang tìm kiếm
   ```
 
 ### ✅ Acceptance Criteria Phase 28
-- [ ] Click toggle → toàn bộ trang chuyển sang dark mode, không có element nào vẫn hiển thị màu trắng (text trên nền trắng)
-- [ ] Refresh trang trong dark mode → vẫn giữ dark mode (localStorage persist)
-- [ ] ProductCard trong dark mode: text đọc được, không bị mất (white-on-white)
-- [ ] Admin dashboard charts hiển thị đúng trong dark mode
-- [ ] Chrome DevTools → Accessibility audit → không có contrast ratio error
-- [ ] OS dark mode preference được detect đúng khi user chưa toggle thủ công
+- [x] Click toggle → toàn bộ trang chuyển sang dark mode, không có element nào vẫn hiển thị màu trắng (text trên nền trắng)
+- [x] Refresh trang trong dark mode → vẫn giữ dark mode (localStorage persist)
+- [x] ProductCard trong dark mode: text đọc được, không bị mất (white-on-white)
+- [x] Admin dashboard charts hiển thị đúng trong dark mode
+- [x] Chrome DevTools → Accessibility audit → không có contrast ratio error
+- [x] OS dark mode preference được detect đúng khi user chưa toggle thủ công
 
 ---
 

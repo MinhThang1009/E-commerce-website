@@ -5,11 +5,14 @@ import {
   AddNotificationPayload,
 } from '@/types/ui.types';
 
-// Lấy theme từ localStorage hoặc dùng mặc định là 'light'
-const savedTheme =
-  typeof window !== 'undefined'
-    ? (localStorage.getItem('theme') as 'light' | 'dark') || 'light'
-    : 'light';
+// Lấy theme từ localStorage; nếu chưa có → detect theo tuỳ chọn hệ thống (OS)
+const savedTheme: 'light' | 'dark' = (() => {
+  if (typeof window === 'undefined') return 'light';
+  const stored = localStorage.getItem('theme');
+  if (stored === 'dark' || stored === 'light') return stored;
+  // Chưa có preference được lưu → dùng OS preference
+  return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+})();
 
 const initialState: UIState = {
   notifications: [],

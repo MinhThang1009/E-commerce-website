@@ -4,6 +4,30 @@
 @tailwind components;
 @tailwind utilities;
 
+/* CSS variables cho color token system — light/dark mode */
+:root {
+  --color-bg-primary:     #ffffff;
+  --color-bg-secondary:   #f8fafc;
+  --color-text-primary:   #0f172a;
+  --color-text-secondary: #64748b;
+  --color-border:         #e2e8f0;
+  --color-accent:         #2aaca7;   /* primary-500 */
+  --color-accent-hover:   #229a96;   /* primary-600 */
+  --color-danger:         #ef4444;
+  --color-success:        #22c55e;
+}
+
+/* Overrides khi dark class được thêm vào <html> */
+.dark {
+  --color-bg-primary:     #0f172a;   /* slate-900 */
+  --color-bg-secondary:   #1e293b;   /* slate-800 */
+  --color-text-primary:   #f1f5f9;   /* slate-100 */
+  --color-text-secondary: #94a3b8;   /* slate-400 */
+  --color-border:         #334155;   /* slate-700 */
+  --color-accent:         #4bbcb8;   /* primary-400 */
+  --color-accent-hover:   #70ccc9;   /* primary-300 */
+}
+
 /* Professional Product Description Theme */
 .description-content {
   /* Base Typography */

@@ -326,6 +326,7 @@ Mọi data từ `req.body`, `req.params`, `req.query` đều không tin cậy �
 ## Rule 15 — DB schema changes phải dùng migration (BẮT BUỘC)
 
 - **BẮT BUỘC:** tạo migration file trong `backend/src/migrations/` — format: `YYYYMMDDnn-mô-tả-ngắn.js`; phải có cả `up` và `down`
+- **BẮT BUỘC:** `YYYYMMDD` = ngày thực tế hôm nay (không phải ngày mai hay ngày tương lai); `nn` = số thứ tự 2 chữ số tăng dần trong cùng ngày (01, 02, 03…). Nếu đã có `2026050405` thì tiếp theo là `2026050406` — KHÔNG nhảy sang `2026050501`
 - **CŨNG BẮT BUỘC:** cập nhật `backend/data/migration_full.sql`
 - **NGHIÊM CẤM:** bật lại `sequelize.sync()` trong server.js (đã tắt vì lỗi "Too many keys")
 - **NGHIÊM CẤM:** sửa schema bằng `ALTER TABLE` thủ công không có migration

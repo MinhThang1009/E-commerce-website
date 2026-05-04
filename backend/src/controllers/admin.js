@@ -1757,7 +1757,17 @@ const updateOrderStatus = catchAsync(async (req, res) => {
   const { id } = req.params;
   const { status, paymentStatus, note } = req.body;
 
-  const order = await Order.findByPk(id);
+  // Khi hủy đơn: cần load items để hoàn tồn kho
+  const order = await Order.findByPk(id, {
+    include: status === 'cancelled' ? [{
+      model: OrderItem,
+      as: 'items',
+      include: [
+        { model: Product },
+        { model: ProductVariant },
+      ],
+    }] : [],
+  });
   if (!order) {
     throw new AppError('Không tìm thấy đơn hàng', 404);
   }
@@ -1771,6 +1781,28 @@ const updateOrderStatus = catchAsync(async (req, res) => {
   // Tự động cập nhật trạng thái thanh toán thành 'paid' nếu đơn hàng đã giao thành công và thanh toán bằng COD
   if (status === 'delivered' && order.paymentMethod === 'cod') {
     updateData.paymentStatus = 'paid';
+  }
+
+  // Khi chuyển sang cancelled: hoàn tồn kho trong transaction
+  if (status === 'cancelled' && order.status !== 'cancelled') {
+    await sequelize.transaction(async (t) => {
+      await order.update(updateData, { transaction: t });
+      for (const item of order.items || []) {
+        if (item.variantId && item.ProductVariant) {
+          await item.ProductVariant.update(
+            { stockQuantity: item.ProductVariant.stockQuantity + item.quantity },
+            { transaction: t }
+          );
+        } else if (item.Product) {
+          await item.Product.update(
+            { stockQuantity: item.Product.stockQuantity + item.quantity },
+            { transaction: t }
+          );
+        }
+      }
+    });
+    const updatedOrder = await Order.findByPk(id);
+    return res.status(200).json({ status: 'success', data: { order: updatedOrder } });
   }
 
   const updatedOrder = await order.update(updateData);

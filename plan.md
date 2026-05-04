@@ -5486,3 +5486,2130 @@ routes/
 - [ ] `public/images/payment/` và `public/images/payment-icons/` đã gộp thành 1 folder
 - [ ] `npm run build` không có broken import sau khi di chuyển file
 - [ ] `npx tsc --noEmit` không có type error sau khi di chuyển
+
+---
+
+## PHASE 40 — Full MySQL Standard Compliance (Schema Naming + Indexes + Constraints + Data Types)
+
+> **Mục tiêu:** Đạt 100% MySQL standard compliance cho toàn bộ schema. Bao gồm:
+> - **40.1-40.16:** Snake_case columns + FK fixes + DECIMAL unify + drop redundant + missing FKs
+> - **40.17:** Index audit & standardization (`idx_*`, `uq_*` patterns + thêm indexes thiếu trên FK columns)
+> - **40.18:** FK constraint naming cleanup (`fk_{table}_{ref}` pattern)
+> - **40.19:** ENUM values audit (đã 100% chuẩn — verify only)
+> - **40.20:** DEFAULT value standardization (DECIMAL, BOOLEAN, ENUM)
+> - **40.21:** NULL/NOT NULL consistency (address fields)
+> - **40.22:** CHECK constraints expansion (rating, stock, prices, totals)
+> - **40.23:** Soft delete policy & 3 missing tables
+> - **40.24:** VARCHAR length standardization (email 254, phone 20, names 100, etc.)
+> - **40.25:** Comprehensive MySQL compliance verification (11 SQL queries)
+>
+> Hiện tại 26/40 model dùng `underscored: false` → cột trong DB là camelCase (`userId`, `firstName`, `createdAt`...). Phase này chuyển toàn bộ sang `underscored: true` để DB columns nhất quán là `snake_case`, đồng thời giữ nguyên JS-level attribute names là camelCase (Sequelize auto-map).
+>
+> **Chiến lược cốt lõi:** Sequelize `underscored: true` tự động map `userId` (JS) → `user_id` (DB), `createdAt` (JS) → `created_at` (DB). Nghĩa là: **backend controllers, services, frontend code KHÔNG cần đổi** — chúng vẫn dùng `userId`, `createdAt` trong JS. Chỉ cần đổi: (1) model options (`underscored: true`), (2) xóa explicit `field:` mappings (cả Nhóm A redundant lẫn Nhóm B), (3) verify association `foreignKey` strings vẫn dùng camelCase JS attribute name (KHÔNG thêm `field:` — Sequelize auto-maps khi `underscored: true`), (4) raw SQL queries, (5) migration rename columns trong DB, (6) SQL dump file.
+>
+> **Rủi ro chính:** Nếu sót 1 chỗ, Sequelize sẽ tìm column `user_id` trong DB nhưng column thực tế vẫn là `userId` → crash. Phải migration rename columns trước khi deploy model mới.
+
+---
+
+### 40.0 Phân loại Models theo trạng thái hiện tại
+
+#### Nhóm A — Đã `underscored: true` (14 models, KHÔNG cần đổi model option, NHƯNG cần xóa redundant `field:` mappings — xem 40.2.27)
+| # | Model | Table | Ghi chú |
+|---|-------|-------|---------|
+| 1 | Product | `products` | underscored: true ✓, có 16 redundant `field:` mappings cần xóa |
+| 2 | ProductVariant | `product_variants` | underscored: true ✓, có 7 redundant `field:` mappings |
+| 3 | Brand | `brands` | underscored: true ✓, có 2 redundant `field:` mappings |
+| 4 | Category | `categories` | underscored: true ✓, có 1 redundant `field:` mapping |
+| 5 | ProductImage | `product_images` | underscored: true ✓, có 5 redundant `field:` mappings |
+| 6 | ProductReview | `product_reviews` | underscored: true ✓, có 5 redundant `field:` mappings |
+| 7 | AuditLog | `audit_logs` | underscored: true ✓, có 5 redundant `field:` mappings |
+| 8 | Image | `images` | underscored: true ✓, có 10 redundant `field:` mappings (cả `created_at`, `updated_at`) |
+| 9 | Collection | `collections` | underscored: true ✓, có 1 redundant `field:` mapping |
+| 10 | BrandCategory | `brand_categories` | underscored: true ✓, timestamps: false, có 2 redundant `field:` mappings |
+| 11 | LoyaltyHistory | `loyalty_histories` | underscored: true ✓, có 2 redundant `field:` mappings |
+| 12 | SearchHistory | `search_histories` | underscored: true ✓, có 3 redundant `field:` mappings |
+| 13 | RecentlyViewed | `recently_viewed` | underscored: true ✓, có 3 redundant `field:` mappings |
+| 14 | InventoryLog | `inventory_logs` | underscored: true ✓, có 8 redundant `field:` mappings |
+
+#### Nhóm B — `underscored: false` (26 models, CẦN migrate)
+| # | Model | Table | camelCase columns trong DB hiện tại |
+|---|-------|-------|-------------------------------------|
+| 1 | **User** | `users` | `firstName`, `lastName`, `isEmailVerified`, `otpCode`, `otpExpires`, `resetPasswordToken`, `resetPasswordExpires`, `createdAt`, `updatedAt`, `deletedAt` (+ `google_id`, `stripe_customer_id` đã snake_case qua `field:`) — **⚠️ `isActive` có `field: 'isActive'` và `loyaltyPoints` có `field: 'loyaltyPoints'` (camelCase→camelCase, ép DB giữ camelCase) — PHẢI xóa khi chuyển `underscored: true`** |
+| 2 | **Order** | `orders` | `userId`, `shippingFirstName`, `shippingLastName`, `shippingCompany`, `shippingAddress1`, `shippingAddress2`, `shippingCity`, `shippingState`, `shippingZip`, `shippingCountry`, `shippingPhone`, `billingFirstName`, `billingLastName`, `billingCompany`, `billingAddress1`, `billingAddress2`, `billingCity`, `billingState`, `billingZip`, `billingCountry`, `billingPhone`, `paymentMethod`, `paymentStatus`, `paymentTransactionId`, `paymentProvider`, `shippingCost`, `trackingNumber`, `shippingProvider`, `estimatedDelivery`, `createdAt`, `updatedAt`, `deletedAt` (+ `warranty_cost`, `cancelled_at`, `refunded_at`, `refund_amount`, `discount_code_id` đã snake_case qua `field:`) — **⚠️ `pointsEarned` có `field: 'pointsEarned'`, `pointsUsed` có `field: 'pointsUsed'`, `pointsDiscount` có `field: 'pointsDiscount'` (camelCase→camelCase, ép DB giữ camelCase) — PHẢI xóa khi chuyển `underscored: true`** |
+| 3 | **OrderItem** | `order_items` | `orderId`, `productId`, `variantId`, `createdAt`, `updatedAt` (+ `unit_price`, `discount_amount`, `warranty_package_ids` đã snake_case qua `field:`) |
+| 4 | **Cart** | `carts` | `userId`, `sessionId`, `createdAt`, `updatedAt` |
+| 5 | **CartItem** | `cart_items` | `cartId`, `productId`, `variantId`, `createdAt`, `updatedAt` (+ `unit_price`, `warranty_package_ids` đã snake_case qua `field:`) |
+| 6 | **Address** | `addresses` | `userId`, `firstName`, `lastName`, `isDefault`, `createdAt`, `updatedAt` |
+| 7 | **Review** | `reviews` | `productId`, `variantId`, `userId`, `isVerified`, `createdAt`, `updatedAt`, `deletedAt` |
+| 8 | **ReviewFeedback** | `review_feedbacks` | `reviewId`, `userId`, `isHelpful`, `createdAt`, `updatedAt` |
+| 9 | **DiscountCode** | `discount_codes` | `minOrderAmount`, `maxDiscountAmount`, `startDate`, `endDate`, `usageLimit`, `usedCount`, `isActive`, `createdAt`, `updatedAt`, `deletedAt` |
+| 10 | **Wishlist** | `wishlists` | `userId`, `productId`, `createdAt`, `updatedAt` |
+| 11 | **News** | `news` | `viewCount`, `isPublished`, `userId`, `createdAt`, `updatedAt` |
+| 12 | **NewsletterSubscriber** | `newsletter_subscribers` | `createdAt`, `updatedAt` |
+| 13 | **Feedback** | `feedbacks` | `createdAt`, `updatedAt` |
+| 14 | **ChatMessage** | `chat_messages` | `userId`, `sessionId`, `senderId`, `isFromAdmin`, `isRead`, `createdAt`, `updatedAt` (+ `content_type`, `attachment_url`, `product_id`, `read_at`, `message_type`, `response_time_ms`, `is_fallback`, `is_archived` đã snake_case qua `field:`) |
+| 15 | **Banner** | `banners` | `createdAt`, `updatedAt` (+ `image_url`, `link_url`, `is_active` đã snake_case qua `field:`) |
+| 16 | **EmailCampaign** | `email_campaigns` | `createdAt`, `updatedAt` (+ `sent_at` đã snake_case qua `field:`) |
+| 17 | **AttributeGroup** | `attribute_groups` | `createdAt`, `updatedAt` (+ `is_required`, `sort_order`, `is_active` đã snake_case qua `field:`) |
+| 18 | **AttributeValue** | `attribute_values` | `createdAt`, `updatedAt` (+ `attribute_group_id`, `color_code`, `image_url`, `price_adjustment`, `sort_order`, `is_active`, `affects_name`, `name_template` đã snake_case qua `field:`) |
+| 19 | **ProductAttribute** | `product_attributes` | `createdAt`, `updatedAt` (+ `product_id`, `sort_order` đã snake_case qua `field:`) |
+| 20 | **ProductAttributeGroup** | `product_attribute_groups` | `createdAt`, `updatedAt` (+ `product_id`, `attribute_group_id`, `is_required`, `sort_order` đã snake_case qua `field:`) |
+| 21 | **ProductSpecification** | `product_specifications` | `createdAt`, `updatedAt` (+ `product_id`, `sort_order` đã snake_case qua `field:`) |
+| 22 | **WarrantyPackage** | `warranty_packages` | `createdAt`, `updatedAt` (+ `duration_months`, `is_active`, `sort_order` đã snake_case qua `field:`) |
+| 23 | **ProductWarranty** | `product_warranties` | `createdAt`, `updatedAt` (+ `product_id`, `warranty_package_id`, `is_default` đã snake_case qua `field:`) |
+| 24 | **ProductCategory** | `product_categories` | `createdAt`, `updatedAt` (+ `product_id`, `category_id` đã snake_case qua `field:`) |
+| 25 | **ProductCollection** | `product_collections` | `productId`, `collectionId` (timestamps: false) |
+| 26 | **ImportLog** | `import_logs` | underscored not set (defaults to false), timestamps: false, tất cả columns đã explicit `field:` snake_case |
+
+#### Nhóm C — Cần sửa thêm (ngoài model option)
+| Vấn đề | Chi tiết |
+|---------|----------|
+| `import_logs.id` là `INT UNSIGNED` | Tất cả bảng khác dùng `INT` (signed) → FK type mismatch |
+| `import_logs.admin_id` là `INT UNSIGNED` | References `users.id` (INT signed) → MySQL FK type error |
+| `products.brand` VARCHAR(255) | Redundant với `brand_id` FK — cần xóa nếu không dùng |
+| DECIMAL precision không thống nhất | `(15,2)` vs `(19,2)` vs `(12,2)` cho monetary columns |
+| Missing FK constraints (6) | `audit_logs.admin_id` (có index nhưng thiếu FK), `search_histories.user_id`, `chat_messages.sender_id`, `order_items.variant_id`, `cart_items.variant_id`, `product_reviews.user_id` (tên columns hiển thị ở dạng final snake_case sau migration) |
+
+---
+
+### 40.1 Tạo Sequelize Migration — Rename Columns (DB level)
+
+> **Đây là bước QUAN TRỌNG NHẤT.** Migration phải chạy trước khi deploy model mới. Rename tất cả camelCase columns trong DB sang snake_case.
+
+**File:** `backend/src/migrations/2026050501-phase40-rename-columns-to-snake-case.js`
+
+**Phương pháp:** Dùng `queryInterface.renameColumn()` cho từng column. Wrap toàn bộ trong transaction.
+
+**Danh sách columns cần rename (theo từng bảng):**
+
+#### Bảng `users` (12 columns)
+```
+firstName       → first_name
+lastName        → last_name
+isEmailVerified → is_email_verified
+isActive        → is_active
+otpCode         → otp_code
+otpExpires      → otp_expires
+resetPasswordToken  → reset_password_token
+resetPasswordExpires → reset_password_expires
+loyaltyPoints   → loyalty_points
+createdAt       → created_at
+updatedAt       → updated_at
+deletedAt       → deleted_at
+```
+*Lưu ý: `google_id`, `stripe_customer_id` đã snake_case — KHÔNG đổi.*
+
+#### Bảng `addresses` (6 columns)
+```
+userId     → user_id
+firstName  → first_name
+lastName   → last_name
+isDefault  → is_default
+createdAt  → created_at
+updatedAt  → updated_at
+```
+*Lưu ý: `address1`, `address2`, `city`, `state`, `zip`, `country`, `phone`, `company`, `name` — đã OK (1 từ hoặc không có camelCase).*
+
+#### Bảng `orders` (36 columns — bảng nặng nhất)
+```
+userId                → user_id
+shippingFirstName     → shipping_first_name
+shippingLastName      → shipping_last_name
+shippingCompany       → shipping_company
+shippingAddress1      → shipping_address1
+shippingAddress2      → shipping_address2
+shippingCity          → shipping_city
+shippingState         → shipping_state
+shippingZip           → shipping_zip
+shippingCountry       → shipping_country
+shippingPhone         → shipping_phone
+billingFirstName      → billing_first_name
+billingLastName       → billing_last_name
+billingCompany        → billing_company
+billingAddress1       → billing_address1
+billingAddress2       → billing_address2
+billingCity           → billing_city
+billingState          → billing_state
+billingZip            → billing_zip
+billingCountry        → billing_country
+billingPhone          → billing_phone
+paymentMethod         → payment_method
+paymentStatus         → payment_status
+paymentTransactionId  → payment_transaction_id
+paymentProvider       → payment_provider
+shippingCost          → shipping_cost
+trackingNumber        → tracking_number
+shippingProvider      → shipping_provider
+estimatedDelivery     → estimated_delivery
+pointsEarned          → points_earned
+pointsUsed            → points_used
+pointsDiscount        → points_discount
+discountCodeId        → discount_code_id
+createdAt             → created_at
+updatedAt             → updated_at
+deletedAt             → deleted_at
+```
+*Lưu ý: `warranty_cost`, `cancelled_at`, `refunded_at`, `refund_amount` — đã snake_case.*
+
+#### Bảng `order_items` (5 columns)
+```
+orderId    → order_id
+productId  → product_id
+variantId  → variant_id
+createdAt  → created_at
+updatedAt  → updated_at
+```
+*Lưu ý: `unit_price`, `discount_amount`, `warranty_package_ids` — đã snake_case.*
+
+#### Bảng `carts` (4 columns)
+```
+userId     → user_id
+sessionId  → session_id
+createdAt  → created_at
+updatedAt  → updated_at
+```
+
+#### Bảng `cart_items` (5 columns)
+```
+cartId     → cart_id
+productId  → product_id
+variantId  → variant_id
+createdAt  → created_at
+updatedAt  → updated_at
+```
+*Lưu ý: `unit_price`, `warranty_package_ids` — đã snake_case.*
+
+#### Bảng `discount_codes` (10 columns)
+```
+minOrderAmount    → min_order_amount
+maxDiscountAmount → max_discount_amount
+startDate         → start_date
+endDate           → end_date
+usageLimit        → usage_limit
+usedCount         → used_count
+isActive          → is_active
+createdAt         → created_at
+updatedAt         → updated_at
+deletedAt         → deleted_at
+```
+
+#### Bảng `reviews` (7 columns)
+```
+productId  → product_id
+variantId  → variant_id
+userId     → user_id
+isVerified → is_verified
+createdAt  → created_at
+updatedAt  → updated_at
+deletedAt  → deleted_at
+```
+
+#### Bảng `review_feedbacks` (5 columns)
+```
+reviewId   → review_id
+userId     → user_id
+isHelpful  → is_helpful
+createdAt  → created_at
+updatedAt  → updated_at
+```
+
+#### Bảng `wishlists` (4 columns)
+```
+userId     → user_id
+productId  → product_id
+createdAt  → created_at
+updatedAt  → updated_at
+```
+
+#### Bảng `news` (5 columns)
+```
+viewCount    → view_count
+isPublished  → is_published
+userId       → user_id
+createdAt    → created_at
+updatedAt    → updated_at
+```
+
+#### Bảng `newsletter_subscribers` (2 columns)
+```
+createdAt  → created_at
+updatedAt  → updated_at
+```
+
+#### Bảng `feedbacks` (2 columns)
+```
+createdAt  → created_at
+updatedAt  → updated_at
+```
+
+#### Bảng `chat_messages` (7 columns)
+```
+userId      → user_id
+sessionId   → session_id
+senderId    → sender_id
+isFromAdmin → is_from_admin
+isRead      → is_read
+createdAt   → created_at
+updatedAt   → updated_at
+```
+*Lưu ý: `content_type`, `attachment_url`, `product_id`, `read_at`, `message_type`, `response_time_ms`, `is_fallback`, `is_archived` — đã snake_case.*
+
+#### Bảng `banners` (2 columns)
+```
+createdAt  → created_at
+updatedAt  → updated_at
+```
+*Lưu ý: `image_url`, `link_url`, `is_active` — đã snake_case.*
+
+#### Bảng `email_campaigns` (2 columns)
+```
+createdAt  → created_at
+updatedAt  → updated_at
+```
+*Lưu ý: `sent_at` — đã snake_case.*
+
+#### Bảng `attribute_groups` (2 columns)
+```
+createdAt  → created_at
+updatedAt  → updated_at
+```
+*Lưu ý: `is_required`, `sort_order`, `is_active` — đã snake_case.*
+
+#### Bảng `attribute_values` (2 columns)
+```
+createdAt  → created_at
+updatedAt  → updated_at
+```
+*Lưu ý: tất cả data columns đã snake_case qua explicit `field:`.*
+
+#### Bảng `product_attributes` (2 columns)
+```
+createdAt  → created_at
+updatedAt  → updated_at
+```
+
+#### Bảng `product_attribute_groups` (2 columns)
+```
+createdAt  → created_at
+updatedAt  → updated_at
+```
+
+#### Bảng `product_specifications` (2 columns)
+```
+createdAt  → created_at
+updatedAt  → updated_at
+```
+
+#### Bảng `warranty_packages` (2 columns)
+```
+createdAt  → created_at
+updatedAt  → updated_at
+```
+
+#### Bảng `product_warranties` (2 columns)
+```
+createdAt  → created_at
+updatedAt  → updated_at
+```
+
+#### Bảng `product_categories` (2 columns)
+```
+createdAt  → created_at
+updatedAt  → updated_at
+```
+
+#### Bảng `product_collections` (2 columns)
+```
+productId    → product_id
+collectionId → collection_id
+```
+*Lưu ý: Junction table, timestamps: false. Cần ALTER composite PK + FK constraints.*
+
+**Tổng:** ~130 columns cần rename across 26 bảng.
+
+**⚠️ Migration Safety — Columns có thể đã snake_case:**
+
+Một số columns có `field:` mapping sang snake_case trong model (VD: `orders.discount_code_id`, `orders.warranty_cost`, `order_items.unit_price`). Tuỳ cách DB được tạo (SQL file vs Sequelize sync), column thực tế có thể ĐANG là camelCase HOẶC ĐÃ là snake_case.
+
+**Phát hiện từ audit migrations cũ — các columns đã được rename trước đó:**
+- Migration `2026050401-phase6-schema-naming-standards.js` đã rename: `cart_items.price → unit_price`, `order_items.price → unit_price`
+- Migration `2026050404-phase8-schema-standards.js` đã rename: `product_categories.productId → product_id`, `product_categories.categoryId → category_id`
+- Phase 9 đã rename `chat_messages.senderId → sender_id` (theo `plan.md:1009`)
+- → Migration 40.1 PHẢI dùng try/catch vì các columns này đã không còn ở dạng camelCase trong DB.
+
+**Giải pháp:** Mỗi rename phải wrap trong try/catch:
+```js
+async function safeRename(queryInterface, table, oldCol, newCol) {
+  try {
+    await queryInterface.renameColumn(table, oldCol, newCol);
+  } catch (err) {
+    // Column có thể đã được rename trước đó — skip
+    console.log(`Skip rename ${table}.${oldCol}: ${err.message}`);
+  }
+}
+```
+
+**Columns cần try/catch đặc biệt (có thể đã snake_case):**
+- `orders`: `warranty_cost`, `discount_code_id`, `cancelled_at`, `refunded_at`, `refund_amount` — model đã có `field:` mapping sang snake_case
+- `order_items`: `unit_price`, `discount_amount`, `warranty_package_ids` — model đã có `field:` mapping
+- `cart_items`: `unit_price`, `warranty_package_ids` — model đã có `field:` mapping
+- `chat_messages`: `content_type`, `attachment_url`, `product_id`, `read_at`, `message_type`, `response_time_ms`, `is_fallback`, `is_archived` — model đã có `field:` mapping
+
+**Quy trình migration:**
+1. `SET FOREIGN_KEY_CHECKS = 0` (tránh lỗi FK khi rename)
+2. Rename từng column bằng `ALTER TABLE ... CHANGE COLUMN` (wrap try/catch)
+3. Rename FK constraints nếu tên constraint reference cột cũ
+4. `SET FOREIGN_KEY_CHECKS = 1`
+5. Migration `down()` phải reverse rename (snake_case → camelCase)
+
+---
+
+### 40.2 Update Sequelize Models — Thêm `underscored: true`
+
+**Nguyên tắc:**
+- Thêm `underscored: true` vào model options
+- Xóa tất cả explicit `field:` mappings (vì `underscored: true` tự động map)
+- Giữ nguyên JS attribute names (camelCase) — Sequelize auto-map sang snake_case DB columns
+- Timestamps tự động: `createdAt` (JS) → `created_at` (DB), `updatedAt` → `updated_at`, `deletedAt` → `deleted_at`
+
+**Danh sách 26 models cần update (Nhóm B):**
+
+#### 40.2.1 User model (`backend/src/models/user.js`)
+```js
+// TRƯỚC:
+{ tableName: 'users', underscored: false, paranoid: true }
+// SAU:
+{ tableName: 'users', underscored: true, paranoid: true }
+```
+- Xóa `field: 'google_id'` ở googleId (underscored tự map)
+- Xóa `field: 'stripe_customer_id'` ở stripeCustomerId (underscored tự map)
+- **⚠️ CRITICAL — Xóa `field: 'isActive'`** ở isActive — mapping hiện tại ép DB column giữ camelCase `isActive`, nếu không xóa thì sau migration rename `isActive → is_active` sẽ crash vì model vẫn tìm column `isActive` (đã bị rename)
+- **⚠️ CRITICAL — Xóa `field: 'loyaltyPoints'`** ở loyaltyPoints — mapping hiện tại ép DB column giữ camelCase `loyaltyPoints`, cùng lý do như trên. Sau khi xóa, `underscored: true` sẽ auto map sang `loyalty_points`
+
+#### 40.2.2 Order model (`backend/src/models/Order.js`)
+```js
+// TRƯỚC:
+{ tableName: 'orders', underscored: false, paranoid: true }
+// SAU:
+{ tableName: 'orders', underscored: true, paranoid: true }
+```
+- **⚠️ CRITICAL — Xóa `field: 'pointsEarned'`** ở pointsEarned — mapping hiện tại ép DB column giữ camelCase, sau migration rename `pointsEarned → points_earned` sẽ crash nếu không xóa
+- **⚠️ CRITICAL — Xóa `field: 'pointsUsed'`** ở pointsUsed — cùng lý do
+- **⚠️ CRITICAL — Xóa `field: 'pointsDiscount'`** ở pointsDiscount — cùng lý do
+- Xóa `field: 'warranty_cost'` ở warrantyCost (auto map)
+- Xóa `field: 'cancelled_at'` ở cancelledAt (auto map)
+- Xóa `field: 'refunded_at'` ở refundedAt (auto map)
+- Xóa `field: 'refund_amount'` ở refundAmount (auto map)
+- Xóa `field: 'discount_code_id'` ở discountCodeId (auto map)
+- **⚠️ Chú ý đặc biệt:** `shippingAddress1` → auto maps to `shipping_address1` — verify migration rename khớp
+
+#### 40.2.3 OrderItem model (`backend/src/models/OrderItem.js`)
+```js
+// TRƯỚC:
+{ tableName: 'order_items', underscored: false }
+// SAU:
+{ tableName: 'order_items', underscored: true }
+```
+- Xóa `field: 'unit_price'`, `field: 'discount_amount'`, `field: 'warranty_package_ids'`
+
+#### 40.2.4 Cart model (`backend/src/models/cart.js`)
+```js
+// TRƯỚC:
+{ tableName: 'carts', underscored: false }
+// SAU:
+{ tableName: 'carts', underscored: true }
+```
+
+#### 40.2.5 CartItem model (`backend/src/models/CartItem.js`)
+```js
+// TRƯỚC:
+{ tableName: 'cart_items', underscored: false }
+// SAU:
+{ tableName: 'cart_items', underscored: true }
+```
+- Xóa `field: 'unit_price'`, `field: 'warranty_package_ids'`
+
+#### 40.2.6 Address model (`backend/src/models/address.js`)
+```js
+// TRƯỚC:
+{ tableName: 'addresses', underscored: false }
+// SAU:
+{ tableName: 'addresses', underscored: true }
+```
+
+#### 40.2.7 Review model (`backend/src/models/review.js`)
+```js
+// TRƯỚC:
+{ tableName: 'reviews', underscored: false, paranoid: true }
+// SAU:
+{ tableName: 'reviews', underscored: true, paranoid: true }
+```
+
+#### 40.2.8 ReviewFeedback model (`backend/src/models/reviewFeedback.js`)
+```js
+// TRƯỚC:
+{ tableName: 'review_feedbacks', underscored: false }
+// SAU:
+{ tableName: 'review_feedbacks', underscored: true }
+```
+
+#### 40.2.9 DiscountCode model (`backend/src/models/discountCode.js`)
+```js
+// TRƯỚC:
+{ tableName: 'discount_codes', underscored: false, paranoid: true }
+// SAU:
+{ tableName: 'discount_codes', underscored: true, paranoid: true }
+```
+
+#### 40.2.10 Wishlist model (`backend/src/models/wishlist.js`)
+```js
+// TRƯỚC:
+{ tableName: 'wishlists', underscored: false }
+// SAU:
+{ tableName: 'wishlists', underscored: true }
+```
+
+#### 40.2.11 News model (`backend/src/models/news.js`)
+```js
+// TRƯỚC:
+{ tableName: 'news', underscored: false }
+// SAU:
+{ tableName: 'news', underscored: true }
+```
+
+#### 40.2.12 NewsletterSubscriber model (`backend/src/models/newsletterSubscriber.js`)
+```js
+// TRƯỚC:
+{ tableName: 'newsletter_subscribers', underscored: false }
+// SAU:
+{ tableName: 'newsletter_subscribers', underscored: true }
+```
+
+#### 40.2.13 Feedback model (`backend/src/models/feedback.js`)
+```js
+// TRƯỚC:
+{ tableName: 'feedbacks', underscored: false }
+// SAU:
+{ tableName: 'feedbacks', underscored: true }
+```
+
+#### 40.2.14 ChatMessage model (`backend/src/models/chatMessage.js`)
+```js
+// TRƯỚC:
+{ tableName: 'chat_messages', underscored: false }
+// SAU:
+{ tableName: 'chat_messages', underscored: true }
+```
+- Xóa tất cả explicit `field:` mappings (`content_type`, `attachment_url`, `product_id`, `read_at`, `message_type`, `response_time_ms`, `is_fallback`, `is_archived`)
+
+#### 40.2.15 Banner model (`backend/src/models/banner.js`)
+```js
+// TRƯỚC:
+{ tableName: 'banners', underscored: false }
+// SAU:
+{ tableName: 'banners', underscored: true }
+```
+- Xóa `field: 'image_url'`, `field: 'link_url'`, `field: 'is_active'`
+
+#### 40.2.16 EmailCampaign model (`backend/src/models/emailCampaign.js`)
+```js
+// TRƯỚC:
+{ tableName: 'email_campaigns', underscored: false }
+// SAU:
+{ tableName: 'email_campaigns', underscored: true }
+```
+- Xóa `field: 'sent_at'`
+
+#### 40.2.17 AttributeGroup model (`backend/src/models/attributeGroup.js`)
+```js
+// TRƯỚC:
+{ tableName: 'attribute_groups', underscored: false }
+// SAU:
+{ tableName: 'attribute_groups', underscored: true }
+```
+- Xóa `field: 'is_required'`, `field: 'sort_order'`, `field: 'is_active'`
+
+#### 40.2.18 AttributeValue model (`backend/src/models/attributeValue.js`)
+```js
+// TRƯỚC:
+{ tableName: 'attribute_values', underscored: false }
+// SAU:
+{ tableName: 'attribute_values', underscored: true }
+```
+- Xóa tất cả explicit `field:` mappings
+
+#### 40.2.19 ProductAttribute model (`backend/src/models/productAttribute.js`)
+```js
+// TRƯỚC:
+{ tableName: 'product_attributes', underscored: false }
+// SAU:
+{ tableName: 'product_attributes', underscored: true }
+```
+- Xóa `field: 'product_id'`, `field: 'sort_order'`
+
+#### 40.2.20 ProductAttributeGroup model (`backend/src/models/productAttributeGroup.js`)
+```js
+// TRƯỚC:
+{ tableName: 'product_attribute_groups', underscored: false }
+// SAU:
+{ tableName: 'product_attribute_groups', underscored: true }
+```
+- Xóa tất cả explicit `field:` mappings
+
+#### 40.2.21 ProductSpecification model (`backend/src/models/productSpecification.js`)
+```js
+// TRƯỚC:
+{ tableName: 'product_specifications', underscored: false }
+// SAU:
+{ tableName: 'product_specifications', underscored: true }
+```
+- Xóa `field: 'product_id'`, `field: 'sort_order'`
+
+#### 40.2.22 WarrantyPackage model (`backend/src/models/warrantyPackage.js`)
+```js
+// TRƯỚC:
+{ tableName: 'warranty_packages', underscored: false }
+// SAU:
+{ tableName: 'warranty_packages', underscored: true }
+```
+- Xóa `field: 'duration_months'`, `field: 'is_active'`, `field: 'sort_order'`
+
+#### 40.2.23 ProductWarranty model (`backend/src/models/productWarranty.js`)
+```js
+// TRƯỚC:
+{ tableName: 'product_warranties', underscored: false }
+// SAU:
+{ tableName: 'product_warranties', underscored: true }
+```
+- Xóa `field: 'product_id'`, `field: 'warranty_package_id'`, `field: 'is_default'`
+
+#### 40.2.24 ProductCategory model (`backend/src/models/productCategory.js`)
+```js
+// TRƯỚC:
+{ tableName: 'product_categories', underscored: false }
+// SAU:
+{ tableName: 'product_categories', underscored: true }
+```
+- Xóa `field: 'product_id'`, `field: 'category_id'` (cả 2 ĐANG tồn tại trong model — đã verify)
+
+#### 40.2.25 ProductCollection model (`backend/src/models/productCollection.js`)
+```js
+// TRƯỚC:
+{ tableName: 'product_collections', underscored: false, timestamps: false }
+// SAU:
+{ tableName: 'product_collections', underscored: true, timestamps: false }
+```
+- `productId` → auto maps to `product_id`, `collectionId` → auto maps to `collection_id`
+
+#### 40.2.26 ImportLog model (`backend/src/models/importLog.js`)
+```js
+// TRƯỚC:
+{ tableName: 'import_logs' } // underscored not set
+// SAU:
+{ tableName: 'import_logs', underscored: true, timestamps: false }
+```
+- Xóa tất cả explicit `field:` mappings
+- **⚠️ Đồng thời fix INT UNSIGNED → INT** (xem 40.4)
+
+#### 40.2.27 Cleanup Redundant `field:` Mappings ở Group A (14 models đã `underscored: true`)
+
+**Vấn đề:** Group A models đã có `underscored: true` nhưng vẫn còn nhiều explicit `field:` mappings — đây là REDUNDANT (không phá vỡ, nhưng acceptance criteria yêu cầu 0 `field:` trong models). Vì `underscored: true` tự auto-map `categoryId` → `category_id`, nên có thể xóa hết các `field:` mappings này.
+
+**An toàn để xóa** — DB column name cuối cùng không đổi (auto-map cho ra kết quả y hệt explicit mapping).
+
+**Models cần cleanup:**
+
+| Model | File | `field:` mappings cần xóa |
+|-------|------|---------------------------|
+| AuditLog | `AuditLog.js` | `admin_id`, `entity_type`, `entity_id`, `old_value`, `new_value` |
+| Product | `product.js` | `category_id`, `brand_id`, `base_name`, `base_price`, `compare_at_price`, `short_description`, `is_featured`, `warranty_months`, `sold_count`, `view_count`, `rating_average`, `shipping_info`, `seo_title`, `seo_description`, `seo_keywords`, `deleted_at` |
+| ProductVariant | `ProductVariant.js` | `product_id`, `variant_name`, `display_name`, `compare_at_price`, `stock_quantity`, `is_default`, `deleted_at` |
+| Brand | `brand.js` | `logo_url`, `deleted_at` |
+| Category | `category.js` | `deleted_at` |
+| ProductImage | `productImage.js` | `product_id`, `variant_id`, `image_url`, `is_thumbnail`, `deleted_at` |
+| ProductReview | `productReview.js` | `product_id`, `variant_id`, `user_id`, `rating_value`, `deleted_at` |
+| Image | `image.js` | `original_name`, `file_name`, `file_path`, `file_size`, `mime_type`, `product_id`, `user_id`, `is_active`, `created_at`, `updated_at` |
+| Collection | `collection.js` | `is_active` |
+| BrandCategory | `brandCategory.js` | `brand_id`, `category_id` |
+| InventoryLog | `inventoryLog.js` | `product_id`, `variant_id`, `change_type`, `change_amount`, `previous_stock`, `new_stock`, `order_id`, `created_by` |
+| LoyaltyHistory | `loyaltyHistory.js` | `user_id`, `order_id` |
+| SearchHistory | `searchHistory.js` | `user_id`, `session_id`, `results_count` |
+| RecentlyViewed | `recentlyViewed.js` | `user_id`, `product_id`, `viewed_at` |
+
+**Tổng:** 70 `field:` mappings redundant trong Group A (đã verify bằng `grep -c "field:"` từng file) — xóa hết để đáp ứng AC "Grep field: → 0 results".
+
+---
+
+### 40.3 Update Associations (`backend/src/models/index.js`)
+
+**Nguyên tắc:** Khi model dùng `underscored: true`, Sequelize auto-converts foreignKey camelCase → snake_case DB column. Nhưng association `foreignKey` strings vẫn nên dùng camelCase (Sequelize attribute name), **KHÔNG** cần `field:` override nếu model đã `underscored: true`.
+
+**Check toàn bộ associations:**
+
+Danh sách associations cần verify (không cần đổi code nếu foreignKey đã là camelCase JS attribute name):
+
+```js
+// Ví dụ — ĐÃ ĐÚNG, không cần đổi:
+User.hasMany(Address, { foreignKey: 'userId', as: 'addresses' });
+// Sequelize sẽ tự map userId → user_id trong DB vì Address model có underscored: true
+```
+
+**⚠️ Trường hợp đặc biệt cần check:**
+1. `InventoryLog` associations dùng `foreignKey: 'createdBy'` → auto maps to `created_by` ✓
+2. `ImportLog` associations dùng `foreignKey: 'adminId'` → auto maps to `admin_id` ✓
+3. `AuditLog` associations dùng `foreignKey: 'adminId'` → auto maps to `admin_id` ✓
+4. `Product.hasOne(ProductVariant, { ..., scope: { isDefault: true } })` — scope dùng JS attribute name `isDefault`, Sequelize sẽ auto translate sang `is_default` trong query WHERE ✓
+
+**Hành động:** Đọc toàn bộ `index.js`, verify không có association nào dùng snake_case string trực tiếp cho foreignKey (vì Sequelize sẽ double-convert: `user_id` → `user__id`). Tất cả foreignKey phải dùng camelCase JS name.
+
+---
+
+### 40.4 Fix INT UNSIGNED Mismatch — `import_logs`
+
+**Migration file:** Nằm trong cùng migration 40.1 hoặc tách migration riêng.
+
+```sql
+-- import_logs.id: INT UNSIGNED → INT (match users.id)
+ALTER TABLE import_logs MODIFY COLUMN id INT NOT NULL AUTO_INCREMENT;
+-- import_logs.admin_id: INT UNSIGNED → INT (match users.id FK)
+ALTER TABLE import_logs MODIFY COLUMN admin_id INT NOT NULL;
+```
+
+**Update model `importLog.js`:** Xóa `type: DataTypes.INTEGER.UNSIGNED` → dùng `DataTypes.INTEGER`.
+
+---
+
+### 40.5 Fix Missing FK Constraints
+
+**Migration file:** `2026050502-phase40-add-missing-fk-constraints.js`
+
+```sql
+-- 1. audit_logs.admin_id → users(id)
+ALTER TABLE audit_logs ADD CONSTRAINT fk_audit_logs_user
+  FOREIGN KEY (admin_id) REFERENCES users(id) ON DELETE RESTRICT ON UPDATE CASCADE;
+
+-- 2. search_histories.user_id → users(id)
+ALTER TABLE search_histories ADD CONSTRAINT fk_search_histories_user
+  FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE SET NULL ON UPDATE CASCADE;
+
+-- 3. chat_messages.sender_id → users(id)  (sau rename từ senderId)
+ALTER TABLE chat_messages ADD CONSTRAINT fk_chat_messages_sender
+  FOREIGN KEY (sender_id) REFERENCES users(id) ON DELETE SET NULL ON UPDATE CASCADE;
+
+-- 4. order_items.variant_id → product_variants(id)  (sau rename từ variantId)
+ALTER TABLE order_items ADD CONSTRAINT fk_order_items_variant
+  FOREIGN KEY (variant_id) REFERENCES product_variants(id) ON DELETE SET NULL ON UPDATE CASCADE;
+
+-- 5. cart_items.variant_id → product_variants(id)  (sau rename từ variantId)
+ALTER TABLE cart_items ADD CONSTRAINT fk_cart_items_variant
+  FOREIGN KEY (variant_id) REFERENCES product_variants(id) ON DELETE SET NULL ON UPDATE CASCADE;
+
+-- 6. product_reviews.user_id → users(id)
+ALTER TABLE product_reviews ADD CONSTRAINT fk_product_reviews_user
+  FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE ON UPDATE CASCADE;
+```
+
+---
+
+### 40.6 Thống nhất DECIMAL Precision
+
+**Migration file:** `2026050503-phase40-unify-decimal-precision.js`
+
+**Quyết định:** Dùng `DECIMAL(15,2)` cho tất cả monetary columns (đủ cho VND — max 999,999,999,999,999.99).
+
+**Columns cần thay đổi:**
+
+| Table | Column | Hiện tại | Sau |
+|-------|--------|----------|-----|
+| `orders` | `subtotal`, `tax`, `shipping_cost`, `discount`, `total`, `points_discount`, `warranty_cost`, `refund_amount` | DECIMAL(19,2) | DECIMAL(15,2) |
+| `order_items` | `price` (`unit_price`), `subtotal`, `discount_amount` | DECIMAL(19,2) | DECIMAL(15,2) |
+| `cart_items` | `price` (`unit_price`) | DECIMAL(19,2) | DECIMAL(15,2) |
+| `discount_codes` | `value`, `min_order_amount`, `max_discount_amount` | DECIMAL(19,2) | DECIMAL(15,2) |
+| `attribute_values` | `price_adjustment` | DECIMAL(12,2) | DECIMAL(15,2) |
+| `warranty_packages` | `price` | DECIMAL(12,2) | DECIMAL(15,2) |
+
+---
+
+### 40.7 Xóa Column Redundant `products.brand`
+
+**Migration:**
+```sql
+ALTER TABLE products DROP COLUMN brand;
+```
+
+**Kết quả audit:** Column `products.brand` VARCHAR(255) đã được xác nhận KHÔNG DÙNG:
+- Product model (`models/product.js`) KHÔNG define field `brand` — chỉ có `brandId` (FK)
+- Không có controller/service nào đọc hoặc ghi `product.brand` string field
+- `adminImport.js` đọc `row.brand` từ CSV → chuyển thành `brandId`, KHÔNG lưu vào column `brand`
+- Frontend KHÔNG có TypeScript type nào define `brand: string` cho product
+- Association `Product.belongsTo(Brand, { as: 'brand' })` trả về Brand object, KHÔNG phải VARCHAR column
+- **Kết luận:** Safe to DROP — zero impact.
+
+---
+
+### 40.8 Update Raw SQL Queries trong Backend
+
+**Nguyên tắc:** Mọi raw SQL (trong `sequelize.literal()`, `sequelize.query()`, `Sequelize.literal()`) phải dùng snake_case column names.
+
+**Cách tìm:**
+```bash
+grep -rn "sequelize.literal\|sequelize.query\|Sequelize.literal\|Sequelize.query" backend/src/ --include="*.js" --exclude-dir=__tests__ --exclude-dir=migrations
+```
+
+#### Kết quả audit — 4 queries cần sửa (7 chỗ camelCase):
+
+**1. `backend/src/controllers/product.js` — `getBestSellers()` (~line 1581-1605)**
+```sql
+-- HIỆN TẠI (camelCase):
+JOIN order_items oi ON p.id = oi.productId   -- ❌
+JOIN orders o ON oi.orderId = o.id            -- ❌
+WHERE o.createdAt >= :startDate               -- ❌
+-- SAU:
+JOIN order_items oi ON p.id = oi.product_id   -- ✓
+JOIN orders o ON oi.order_id = o.id           -- ✓
+WHERE o.created_at >= :startDate              -- ✓
+```
+
+**2. `backend/src/controllers/admin.js` — revenue by category (~line 2312-2325)**
+```sql
+-- HIỆN TẠI (camelCase):
+JOIN orders o ON o.id = oi.orderId            -- ❌
+JOIN products p ON p.id = oi.productId        -- ❌
+WHERE o.paymentStatus = 'paid'                -- ❌
+-- SAU:
+JOIN orders o ON o.id = oi.order_id           -- ✓
+JOIN products p ON p.id = oi.product_id       -- ✓
+WHERE o.payment_status = 'paid'               -- ✓
+```
+
+**3. `backend/src/controllers/chat.js` — session list (~line 92)**
+```js
+// HIỆN TẠI:
+order: [[sequelize.literal('MAX(createdAt)'), 'DESC']]   // ❌
+// SAU:
+order: [[sequelize.literal('MAX(created_at)'), 'DESC']]  // ✓
+```
+
+**4. `backend/src/controllers/admin.js` — top products (~line 2251-2252)**
+```js
+// Check: Sequelize.literal('soldCount') — nếu đây là computed alias thì OK, không phải DB column.
+// Verify tại runtime — nếu là alias từ SUM/COUNT thì không cần đổi.
+```
+
+#### Đã safe (không cần đổi):
+- `product.js`: `sequelize.literal('(compare_at_price - base_price) ...')` — đã snake_case ✓
+- `admin.js`: `sequelize.query('UPDATE products SET compare_at_price = ...')` — đã snake_case ✓
+- `category.js`: `SELECT category_id, COUNT(*) ...` — đã snake_case ✓
+- `chatbot.js`: `sequelize.literal('((compare_at_price - base_price) ...')` — đã snake_case ✓
+- `jobs/cleanup.js`: `DELETE FROM search_histories WHERE ...` — đã snake_case ✓
+- `server.js`: DDL queries — đã dùng snake_case column names ✓
+
+---
+
+### 40.9 Update `migration_full.sql` (SQL Dump File)
+
+**File:** `backend/data/migration_full.sql`
+
+Rewrite toàn bộ CREATE TABLE statements với snake_case column names. Đây là file dùng cho fresh install (import vào phpMyAdmin).
+
+**⚠️ Pre-existing SQL file mismatches phải sửa luôn:**
+- `order_items`: SQL file có `price` DECIMAL(19,2) nhưng model dùng `unitPrice` → `field: 'unit_price'` — SQL file phải đổi sang `unit_price`
+- `order_items`: SQL file thiếu column `discount_amount` — model có nhưng SQL file chưa có
+- `cart_items`: SQL file có `price` DECIMAL(19,2) nhưng model dùng `unitPrice` → `field: 'unit_price'` — SQL file phải đổi sang `unit_price`
+- `orders.discountCodeId`: SQL file dùng camelCase nhưng model `field:` → `discount_code_id` — phải thống nhất
+- `migration_full.sql` bị outdated ở nhiều chỗ — rewrite phải dựa trên model definitions, KHÔNG dựa trên file SQL cũ
+
+**Quyết định TIMESTAMP vs DATETIME:**
+- Nhóm A (products, brands, categories, variants, images, product_reviews, collections, etc.) dùng `TIMESTAMP`
+- Nhóm B (users, orders, carts, reviews, etc.) dùng `DATETIME`
+- **Quyết định:** Thống nhất dùng `DATETIME` cho tất cả — `DATETIME` không bị ảnh hưởng bởi timezone conversion, phù hợp hơn với Sequelize default behavior. Các bảng Nhóm A khi rewrite SQL file chuyển từ TIMESTAMP → DATETIME.
+
+**Checklist:**
+- [ ] Tất cả column names là snake_case
+- [ ] Tất cả FK constraint names theo pattern `fk_{table}_{ref}`
+- [ ] Tất cả timestamps dùng `DATETIME` + `created_at` / `updated_at` / `deleted_at` (thống nhất)
+- [ ] DECIMAL precision thống nhất `(15,2)`
+- [ ] `import_logs.id` và `admin_id` dùng `INT` (không UNSIGNED)
+- [ ] Không còn column `products.brand` VARCHAR
+- [ ] Tất cả missing FK constraints đã được thêm
+- [ ] Seed data INSERT statements cập nhật column names mới
+- [ ] `order_items.price` → đổi thành `unit_price` (match model)
+- [ ] `cart_items.price` → đổi thành `unit_price` (match model)
+- [ ] Tất cả `TIMESTAMP` columns → đổi thành `DATETIME`
+
+---
+
+### 40.10 Update `seed_data.sql`
+
+**File:** `backend/data/seed_data.sql`
+
+Cập nhật tất cả INSERT statements dùng snake_case column names. Ví dụ:
+```sql
+-- TRƯỚC:
+INSERT INTO users (firstName, lastName, isActive, createdAt, ...)
+-- SAU:
+INSERT INTO users (first_name, last_name, is_active, created_at, ...)
+```
+
+---
+
+### 40.11 Update Existing Migration Files (Reference Only)
+
+**KHÔNG sửa migration files cũ** — chúng đã chạy rồi. Migration mới (40.1) sẽ rename columns. Nhưng cần verify:
+- Migration files cũ có chỗ nào tạo column mới bằng camelCase không? Nếu có, migration 40.1 phải cover rename cho columns đó.
+- Check tất cả migration files trong `backend/src/migrations/` → list columns mà chúng ADD → đảm bảo migration 40.1 rename hết.
+
+---
+
+### 40.12 Update Frontend — API Response Field Names
+
+**⚠️ QUAN TRỌNG:** Vì Sequelize trả về JS attribute names (camelCase) trong JSON response, **frontend KHÔNG cần thay đổi** nếu backend serialization giữ nguyên camelCase.
+
+**Verify bằng cách:**
+1. Sau khi deploy model changes, gọi `GET /api/products/1` → response vẫn có `categoryId`, `basePrice`, `createdAt` (camelCase)
+2. Gọi `GET /api/users/profile` → response vẫn có `firstName`, `lastName`, `isActive`
+
+**Nếu response đúng camelCase → Frontend KHÔNG cần sửa gì.**
+
+**⚠️ Ngoại lệ — Chỗ nào backend dùng raw query trả result trực tiếp:**
+- Raw `sequelize.query('SELECT user_id FROM ...')` → kết quả trả field name `user_id` (snake_case) KHÔNG phải `userId`
+- Nếu frontend nhận result trực tiếp từ raw query → field names sẽ là snake_case
+- Phải grep tất cả `sequelize.query` và check xem result có được gửi trực tiếp ra API response không
+- Fix: dùng alias `SELECT user_id AS userId` hoặc `{ type: QueryTypes.SELECT, mapToModel: true, model: ModelName }`
+
+**Các raw queries đã biết cần check output format:**
+1. `product.js:getBestSellers()` — raw query result có `sales_count`, `units_sold` aliases → verify frontend expects these names
+2. `admin.js:revenueByCategory()` — raw query result có `categoryId`, `categoryName` aliases (AS) → OK, aliases giữ camelCase
+3. `category.js:getCategories()` — raw query result có `product_count` alias → verify frontend
+
+---
+
+### 40.13 Update Test Files
+
+**Scope:** Tất cả test files trong `backend/src/__tests__/`
+
+**Nguyên tắc:** Tests dùng Sequelize models (camelCase JS attributes) → **KHÔNG cần đổi** phần lớn. Nhưng tests có raw SQL hoặc direct DB assertions cần update.
+
+**Cách tìm:**
+```bash
+grep -rn "sequelize.query\|queryInterface\|\.query(" backend/src/__tests__/ --include="*.js"
+```
+
+---
+
+### 40.14 Update Socket.IO Config
+
+**File:** `backend/src/config/socket.js`
+
+File này có ~15 references đến `userId`, `sessionId`. Vì đây là JS-level Sequelize queries → KHÔNG cần đổi (Sequelize auto-maps). Nhưng verify không có raw SQL.
+
+---
+
+### 40.15 Update Jobs / Cron
+
+**File:** `backend/src/jobs/cleanup.js` (và các job khác nếu có)
+
+Check raw SQL queries trong cleanup jobs — thường dùng `sequelize.query()` cho bulk operations.
+
+---
+
+### 40.17 Index Audit & Standardization
+
+> **Mục tiêu:** Đảm bảo mọi FK column và high-traffic query column có index, tên theo chuẩn `idx_{table}_{col}` hoặc `uq_{table}_{col}`.
+
+#### Vấn đề hiện tại (audit thực tế)
+- Chỉ có **9 explicit named indexes** trên `images`, `import_logs`, `audit_logs`
+- **Hầu hết FK columns thiếu index** (orders.user_id, cart_items.cart_id, reviews.product_id, v.v.) — JOIN performance kém
+- **UNIQUE constraints inline không có tên explicit** — phpMyAdmin auto-generate tên như `users_google_id_unique`
+
+#### Migration: `2026050504-phase40-index-standardization.js`
+
+**A. Rename UNIQUE indexes thành `uq_{table}_{col}` pattern:**
+```sql
+-- users
+ALTER TABLE users DROP INDEX google_id, ADD UNIQUE KEY uq_users_google_id (google_id);
+ALTER TABLE users DROP INDEX email, ADD UNIQUE KEY uq_users_email (email);
+-- categories
+ALTER TABLE categories DROP INDEX name, ADD UNIQUE KEY uq_categories_name (name);
+ALTER TABLE categories DROP INDEX slug, ADD UNIQUE KEY uq_categories_slug (slug);
+-- brands
+ALTER TABLE brands DROP INDEX name, ADD UNIQUE KEY uq_brands_name (name);
+ALTER TABLE brands DROP INDEX slug, ADD UNIQUE KEY uq_brands_slug (slug);
+-- products
+ALTER TABLE products DROP INDEX slug, ADD UNIQUE KEY uq_products_slug (slug);
+-- product_variants
+ALTER TABLE product_variants DROP INDEX sku, ADD UNIQUE KEY uq_product_variants_sku (sku);
+-- discount_codes
+ALTER TABLE discount_codes DROP INDEX code, ADD UNIQUE KEY uq_discount_codes_code (code);
+-- collections
+ALTER TABLE collections DROP INDEX slug, ADD UNIQUE KEY uq_collections_slug (slug);
+-- images
+ALTER TABLE images DROP INDEX file_name, ADD UNIQUE KEY uq_images_file_name (file_name);
+```
+
+**B. Thêm indexes mới (audit thực tế: bỏ các indexes đã tồn tại):**
+
+⚠️ **Phát hiện audit:** ~14 indexes đã tồn tại từ Phase 6/8 — KHÔNG được CREATE lại (sẽ duplicate key error). Phải dùng try/catch pattern.
+
+**Indexes ĐÃ TỒN TẠI (KHÔNG cần CREATE):**
+- `idx_orders_user_id`, `idx_orders_status`, `idx_orders_payment_status`, `idx_orders_created_at` (Phase 6/8)
+- `idx_order_items_order_id`, `idx_order_items_product_id` (Phase 8)
+- `idx_cart_items_cart_id`, `idx_cart_items_product_id` (Phase 6)
+- `idx_product_variants_product_id` (Phase 6)
+- `idx_products_category_id`, `idx_products_brand_id`, `idx_products_is_featured`, `idx_products_status`, `idx_products_created_at` (Phase 6/8)
+- `idx_inventory_logs_product_id`, `idx_inventory_logs_variant_id`, `idx_inventory_logs_order_id`, `idx_inventory_logs_change_type` (migration `2026050403`)
+- `idx_users_role` (Phase 8)
+- `idx_images_product_id`, `idx_images_user_id`, `idx_images_category`, `idx_images_is_active`, `idx_images_created_at` (migration `2025071801`)
+- `idx_audit_admin_id`, `idx_audit_entity`, `idx_audit_created_at` (migration `2026050408`)
+- `idx_import_logs_admin_id`, `idx_import_logs_imported_at` (migration `2026050411`)
+- `idx_product_categories_category_id` (Phase 8)
+- `recently_viewed_user_product_unique` (migration `2026031802` — UNIQUE composite, cần rename thành `uq_*` ở 40.17.D)
+
+**Indexes THỰC SỰ MỚI cần CREATE (~25 indexes — wrap try/catch):**
+```sql
+-- orders: deleted_at filter
+CREATE INDEX idx_orders_deleted_at ON orders(deleted_at);
+-- order_items: variant FK (sau rename ở 40.1)
+CREATE INDEX idx_order_items_variant_id ON order_items(variant_id);
+-- carts
+CREATE INDEX idx_carts_user_id ON carts(user_id);
+CREATE INDEX idx_carts_session_id ON carts(session_id);
+-- cart_items: variant FK (sau rename)
+CREATE INDEX idx_cart_items_variant_id ON cart_items(variant_id);
+-- addresses
+CREATE INDEX idx_addresses_user_id ON addresses(user_id);
+-- reviews
+CREATE INDEX idx_reviews_product_id ON reviews(product_id);
+CREATE INDEX idx_reviews_user_id ON reviews(user_id);
+CREATE INDEX idx_reviews_deleted_at ON reviews(deleted_at);
+-- chat_messages
+CREATE INDEX idx_chat_messages_session_id ON chat_messages(session_id);
+CREATE INDEX idx_chat_messages_user_id ON chat_messages(user_id);
+CREATE INDEX idx_chat_messages_created_at ON chat_messages(created_at);
+-- search_histories
+CREATE INDEX idx_search_histories_user_id ON search_histories(user_id);
+CREATE INDEX idx_search_histories_created_at ON search_histories(created_at);
+-- loyalty_histories
+CREATE INDEX idx_loyalty_histories_user_id ON loyalty_histories(user_id);
+CREATE INDEX idx_loyalty_histories_order_id ON loyalty_histories(order_id);
+-- recently_viewed
+CREATE INDEX idx_recently_viewed_user_id ON recently_viewed(user_id);
+CREATE INDEX idx_recently_viewed_viewed_at ON recently_viewed(viewed_at);
+-- news
+CREATE INDEX idx_news_user_id ON news(user_id);
+CREATE INDEX idx_news_slug ON news(slug);
+CREATE INDEX idx_news_is_published ON news(is_published);
+-- products: deleted_at + composite
+CREATE INDEX idx_products_deleted_at ON products(deleted_at);
+CREATE INDEX idx_products_status_deleted_at ON products(status, deleted_at);
+-- product_variants
+CREATE INDEX idx_product_variants_deleted_at ON product_variants(deleted_at);
+-- product_images
+CREATE INDEX idx_product_images_product_id ON product_images(product_id);
+CREATE INDEX idx_product_images_variant_id ON product_images(variant_id);
+-- product_reviews
+CREATE INDEX idx_product_reviews_product_id ON product_reviews(product_id);
+CREATE INDEX idx_product_reviews_user_id ON product_reviews(user_id);
+-- wishlists composite
+CREATE INDEX idx_wishlists_user_product ON wishlists(user_id, product_id);
+-- inventory_logs.created_at chưa có
+CREATE INDEX idx_inventory_logs_created_at ON inventory_logs(created_at);
+```
+
+**Helper function trong migration:**
+```js
+async function safeCreateIndex(queryInterface, sql) {
+  try {
+    await queryInterface.sequelize.query(sql);
+  } catch (err) {
+    if (!err.message.includes('Duplicate key name')) throw err;
+    console.log(`Skip (already exists): ${sql.match(/idx_\w+/)?.[0]}`);
+  }
+}
+```
+
+**C. Composite indexes cho common queries:**
+```sql
+-- Filter products by category + status (shop page)
+CREATE INDEX idx_products_status_category ON products(status, category_id);
+-- Order list by user + created_at desc
+CREATE INDEX idx_orders_user_created ON orders(user_id, created_at DESC);
+-- Reviews by product + rating
+CREATE INDEX idx_product_reviews_product_rating ON product_reviews(product_id, rating_value);
+```
+
+**D. Rename `*_idx` suffix indexes thành `idx_*` prefix (16 indexes):**
+
+⚠️ **Phát hiện audit:** Một số migration cũ (Phase 2024-2025) đã tạo indexes với suffix-style naming (Sequelize default) thay vì prefix-style. Cần rename để thống nhất.
+
+```sql
+-- products
+ALTER TABLE products DROP INDEX products_brand_idx, ADD INDEX idx_products_brand (brand);
+ALTER TABLE products DROP INDEX products_model_idx, ADD INDEX idx_products_model (model);
+ALTER TABLE products DROP INDEX products_condition_idx, ADD INDEX idx_products_condition (`condition`);
+-- product_variants
+ALTER TABLE product_variants DROP INDEX product_variants_is_default_idx, ADD INDEX idx_product_variants_is_default (is_default);
+ALTER TABLE product_variants DROP INDEX product_variants_is_available_idx, ADD INDEX idx_product_variants_is_available (is_available);
+-- product_warranties
+ALTER TABLE product_warranties DROP INDEX product_warranties_product_id_idx, ADD INDEX idx_product_warranties_product_id (product_id);
+ALTER TABLE product_warranties DROP INDEX product_warranties_warranty_package_id_idx, ADD INDEX idx_product_warranties_warranty_package_id (warranty_package_id);
+ALTER TABLE product_warranties DROP INDEX product_warranties_is_default_idx, ADD INDEX idx_product_warranties_is_default (is_default);
+ALTER TABLE product_warranties DROP INDEX unique_product_warranty, ADD UNIQUE KEY uq_product_warranties_product_warranty (product_id, warranty_package_id);
+-- product_specifications
+ALTER TABLE product_specifications DROP INDEX product_specifications_product_id_idx, ADD INDEX idx_product_specifications_product_id (product_id);
+ALTER TABLE product_specifications DROP INDEX product_specifications_category_idx, ADD INDEX idx_product_specifications_category (category);
+ALTER TABLE product_specifications DROP INDEX product_specifications_sort_order_idx, ADD INDEX idx_product_specifications_sort_order (sort_order);
+-- product_attributes
+ALTER TABLE product_attributes DROP INDEX product_attributes_type_idx, ADD INDEX idx_product_attributes_type (type);
+ALTER TABLE product_attributes DROP INDEX product_attributes_required_idx, ADD INDEX idx_product_attributes_required (required);
+ALTER TABLE product_attributes DROP INDEX product_attributes_sort_order_idx, ADD INDEX idx_product_attributes_sort_order (sort_order);
+-- warranty_packages
+ALTER TABLE warranty_packages DROP INDEX warranty_packages_is_active_idx, ADD INDEX idx_warranty_packages_is_active (is_active);
+ALTER TABLE warranty_packages DROP INDEX warranty_packages_sort_order_idx, ADD INDEX idx_warranty_packages_sort_order (sort_order);
+-- recently_viewed unique
+ALTER TABLE recently_viewed DROP INDEX recently_viewed_user_product_unique, ADD UNIQUE KEY uq_recently_viewed_user_product (user_id, product_id);
+-- images.file_name (đã có idx_images_file_name? verify) — nếu có name khác thì rename thành uq_*
+```
+
+⚠️ **CẢNH BÁO:** Phải verify indexes thực tế tồn tại trước khi DROP — dùng `SHOW INDEX FROM <table>` để check tên hiện tại. Tên có thể khác nếu Sequelize auto-generate khác convention.
+
+**Lưu ý:** Toàn bộ migration phải wrap try/catch như `safeCreateIndex` ở trên — vì state DB phụ thuộc vào việc các migration cũ đã chạy hay chưa.
+
+---
+
+### 40.18 FK Constraint Naming Cleanup
+
+> **Mục tiêu:** Đổi tên 4 FK constraints dùng plural reference (sai pattern `fk_{table}_{singular_ref}`).
+
+#### Pattern chuẩn
+- `fk_{source_table}_{singular_referenced_entity}`
+- ✅ Đúng: `fk_orders_user` (refs users(id), singular = "user")
+- ❌ Sai: `fk_images_users` (plural "users")
+
+#### Constraints CẦN rename (4 cái — audit thực tế)
+
+| Constraint hiện tại | Bảng | Reference | Tên mới |
+|---|---|---|---|
+| `fk_product_images_products` | product_images | products(id) | `fk_product_images_product` |
+| `fk_product_images_variants` | product_images | product_variants(id) | `fk_product_images_variant` |
+| `fk_images_products` | images | products(id) | `fk_images_product` |
+| `fk_images_users` | images | users(id) | `fk_images_user` |
+
+#### Constraints ĐÃ ĐÚNG (không cần đổi)
+`fk_addresses_user`, `fk_products_category`, `fk_products_brand`, `fk_variants_product`, `fk_product_reviews_product`, `fk_product_reviews_variant`, `fk_orders_user`, `fk_orders_discount`, `fk_order_items_order`, `fk_order_items_product`, `fk_carts_user`, `fk_cart_items_cart`, `fk_cart_items_product`, `fk_reviews_product`, `fk_reviews_user`, `fk_review_feedbacks_review`, `fk_review_feedbacks_user`, `fk_wishlists_user`, `fk_wishlists_product`, `fk_news_user`, `fk_chat_messages_user`, `fk_chat_messages_product`, `fk_import_logs_admin` — đều theo pattern `fk_{table}_{singular_ref}`.
+
+#### Junction tables — abbreviation pattern (chấp nhận)
+`fk_pc_*`, `fk_pcat_*`, `fk_bc_*`, `fk_pag_*`, `fk_pa_*`, `fk_ps_*`, `fk_pw_*`, `fk_lh_*`, `fk_rv_*`, `fk_attr_val_*` — abbreviation cần thiết vì tên full sẽ vượt 64-char MySQL limit khi cả 2 tên bảng dài (vd: `fk_product_attribute_groups_attribute_groups` = 47 chars, OK; nhưng có cases khác dài hơn). Document trong rewritten SQL file.
+
+**Migration: `2026050505-phase40-fk-constraint-renames.js`**
+
+⚠️ **Chỉ rename 4 FK** — wrap try/catch vì có thể FK đã được rename hoặc không tồn tại tuỳ DB state:
+```sql
+-- 1. product_images.fk_product_images_products → fk_product_images_product
+ALTER TABLE product_images
+  DROP FOREIGN KEY fk_product_images_products,
+  ADD CONSTRAINT fk_product_images_product
+    FOREIGN KEY (product_id) REFERENCES products(id) ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- 2. product_images.fk_product_images_variants → fk_product_images_variant
+ALTER TABLE product_images
+  DROP FOREIGN KEY fk_product_images_variants,
+  ADD CONSTRAINT fk_product_images_variant
+    FOREIGN KEY (variant_id) REFERENCES product_variants(id) ON DELETE SET NULL ON UPDATE CASCADE;
+
+-- 3. images.fk_images_products → fk_images_product
+ALTER TABLE images
+  DROP FOREIGN KEY fk_images_products,
+  ADD CONSTRAINT fk_images_product
+    FOREIGN KEY (product_id) REFERENCES products(id) ON DELETE SET NULL ON UPDATE CASCADE;
+
+-- 4. images.fk_images_users → fk_images_user
+ALTER TABLE images
+  DROP FOREIGN KEY fk_images_users,
+  ADD CONSTRAINT fk_images_user
+    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE SET NULL ON UPDATE CASCADE;
+```
+
+---
+
+### 40.19 ENUM Values Audit (đã 100% chuẩn — chỉ verify)
+
+> **Kết quả audit:** Tất cả 16 ENUM columns đã tuân thủ standard:
+> - 100% lowercase
+> - Multi-word dùng snake_case (vd: `home_hero`, `product_card`, `support_chat`)
+> - 0 violations
+
+**Acceptance:** Không cần sửa, chỉ document trong rewrite SQL file để verify không có ENUM uppercase mới được thêm vào.
+
+---
+
+### 40.20 DEFAULT Value Standardization
+
+> **Mục tiêu:** Tất cả DECIMAL pricing columns có DEFAULT 0.00; boolean columns có DEFAULT 0/1 rõ ràng; status columns có DEFAULT enum value.
+
+#### Migration: `2026050506-phase40-default-values.js`
+
+**A. DECIMAL columns thiếu DEFAULT (~10 columns):**
+```sql
+-- products: pricing fields default 0.00
+ALTER TABLE products MODIFY COLUMN base_price DECIMAL(15,2) NULL DEFAULT 0.00;
+ALTER TABLE products MODIFY COLUMN compare_at_price DECIMAL(15,2) NULL DEFAULT 0.00;
+
+-- product_variants: pricing fields
+ALTER TABLE product_variants MODIFY COLUMN price DECIMAL(15,2) NULL DEFAULT 0.00;
+ALTER TABLE product_variants MODIFY COLUMN compare_at_price DECIMAL(15,2) NULL DEFAULT 0.00;
+
+-- order_items: required fields với DEFAULT 0.00 (NOT NULL)
+ALTER TABLE order_items MODIFY COLUMN unit_price DECIMAL(15,2) NOT NULL DEFAULT 0.00;
+ALTER TABLE order_items MODIFY COLUMN subtotal DECIMAL(15,2) NOT NULL DEFAULT 0.00;
+ALTER TABLE order_items MODIFY COLUMN discount_amount DECIMAL(15,2) NOT NULL DEFAULT 0.00;
+
+-- cart_items
+ALTER TABLE cart_items MODIFY COLUMN unit_price DECIMAL(15,2) NOT NULL DEFAULT 0.00;
+
+-- orders
+ALTER TABLE orders MODIFY COLUMN subtotal DECIMAL(15,2) NOT NULL DEFAULT 0.00;
+ALTER TABLE orders MODIFY COLUMN tax DECIMAL(15,2) NOT NULL DEFAULT 0.00;
+ALTER TABLE orders MODIFY COLUMN shipping_cost DECIMAL(15,2) NOT NULL DEFAULT 0.00;
+ALTER TABLE orders MODIFY COLUMN total DECIMAL(15,2) NOT NULL DEFAULT 0.00;
+
+-- discount_codes: value cần required, không default
+-- (giữ nguyên — discount value phải explicit khi tạo code)
+
+-- warranty_packages
+ALTER TABLE warranty_packages MODIFY COLUMN price DECIMAL(15,2) NOT NULL DEFAULT 0.00;
+```
+
+**B. Boolean columns thiếu DEFAULT:**
+```sql
+-- wishlists: thường không có isDefault, nhưng nếu có column boolean thì check
+-- (Sequelize Wishlist model không có isDefault — bỏ qua)
+```
+
+**C. Status/Type columns đã có đầy đủ DEFAULT (verified) — không sửa.**
+
+---
+
+### 40.21 NULL/NOT NULL Standardization
+
+> **Mục tiêu:** Đồng bộ NULL/NOT NULL cho các column cùng mục đích across tables.
+
+#### Vấn đề hiện tại (audit)
+
+| Column | Vấn đề | Quyết định |
+|---|---|---|
+| `orders.shipping_zip`, `orders.shipping_country` | NULL nhưng `addresses.zip`, `addresses.country` NOT NULL | **Đổi thành NOT NULL** — shipping address phải đầy đủ |
+| `orders.billing_zip`, `orders.billing_country` | NULL trong khi billing fields khác NOT NULL | **Đổi thành NOT NULL** |
+| `loyalty_histories.user_id` (NOT NULL) vs `search_histories.user_id` (NULL) | search_histories cho phép anonymous → giữ NULL | OK — different use case, không sửa |
+| `carts.session_id` (NULL) vs `chat_messages.session_id` (NOT NULL) | Different use cases | OK — không sửa |
+
+**Migration: `2026050507-phase40-null-consistency.js`**
+```sql
+-- Shipping address fields phải đầy đủ khi tạo order
+ALTER TABLE orders MODIFY COLUMN shipping_zip VARCHAR(20) NOT NULL DEFAULT '';
+ALTER TABLE orders MODIFY COLUMN shipping_country VARCHAR(100) NOT NULL DEFAULT 'Vietnam';
+ALTER TABLE orders MODIFY COLUMN billing_zip VARCHAR(20) NOT NULL DEFAULT '';
+ALTER TABLE orders MODIFY COLUMN billing_country VARCHAR(100) NOT NULL DEFAULT 'Vietnam';
+-- Lưu ý: dùng DEFAULT để tránh fail trên rows cũ chưa có giá trị
+```
+
+---
+
+### 40.22 CHECK Constraints Expansion
+
+> **Mục tiêu:** Thêm CHECK constraints để enforce business rules ở DB level.
+
+#### Vấn đề hiện tại
+- Chỉ 1 CHECK constraint trên toàn schema (`product_reviews.rating_value` 1-5)
+- Nhiều numeric columns thiếu validation: stock_quantity có thể âm, prices có thể âm, v.v.
+
+#### Migration: `2026050508-phase40-check-constraints.js`
+
+```sql
+-- Rating averages: 0-5
+ALTER TABLE products ADD CONSTRAINT chk_products_rating_average
+  CHECK (rating_average >= 0.00 AND rating_average <= 5.00);
+
+-- Stock quantities: >= 0
+ALTER TABLE products ADD CONSTRAINT chk_products_stock_quantity
+  CHECK (stock_quantity >= 0);
+ALTER TABLE product_variants ADD CONSTRAINT chk_product_variants_stock_quantity
+  CHECK (stock_quantity >= 0);
+
+-- Quantities: >= 1
+ALTER TABLE cart_items ADD CONSTRAINT chk_cart_items_quantity
+  CHECK (quantity >= 1);
+ALTER TABLE order_items ADD CONSTRAINT chk_order_items_quantity
+  CHECK (quantity >= 1);
+
+-- Prices >= 0
+ALTER TABLE products ADD CONSTRAINT chk_products_base_price
+  CHECK (base_price IS NULL OR base_price >= 0);
+ALTER TABLE product_variants ADD CONSTRAINT chk_product_variants_price
+  CHECK (price IS NULL OR price >= 0);
+ALTER TABLE order_items ADD CONSTRAINT chk_order_items_unit_price
+  CHECK (unit_price >= 0);
+ALTER TABLE order_items ADD CONSTRAINT chk_order_items_subtotal
+  CHECK (subtotal >= 0);
+ALTER TABLE cart_items ADD CONSTRAINT chk_cart_items_unit_price
+  CHECK (unit_price >= 0);
+ALTER TABLE warranty_packages ADD CONSTRAINT chk_warranty_packages_price
+  CHECK (price >= 0);
+
+-- Order totals >= 0
+ALTER TABLE orders ADD CONSTRAINT chk_orders_subtotal
+  CHECK (subtotal >= 0);
+ALTER TABLE orders ADD CONSTRAINT chk_orders_tax
+  CHECK (tax >= 0);
+ALTER TABLE orders ADD CONSTRAINT chk_orders_total
+  CHECK (total >= 0);
+ALTER TABLE orders ADD CONSTRAINT chk_orders_discount
+  CHECK (discount >= 0);
+
+-- Loyalty points >= 0
+ALTER TABLE users ADD CONSTRAINT chk_users_loyalty_points
+  CHECK (loyalty_points >= 0);
+
+-- Discount value >= 0
+ALTER TABLE discount_codes ADD CONSTRAINT chk_discount_codes_value
+  CHECK (value >= 0);
+
+-- Warranty duration >= 1 month
+ALTER TABLE warranty_packages ADD CONSTRAINT chk_warranty_packages_duration
+  CHECK (duration_months >= 1);
+ALTER TABLE products ADD CONSTRAINT chk_products_warranty_months
+  CHECK (warranty_months >= 0);
+
+-- Used count <= usage limit (when limit is set)
+-- (skip — complex CHECK with NULL handling, enforce ở app level)
+```
+
+**Lưu ý:** MySQL 8.0+ enforces CHECK constraints. MySQL 5.7 chấp nhận syntax nhưng KHÔNG enforce. Project dùng XAMPP nên kiểm tra version trước khi rely on CHECK.
+
+---
+
+### 40.23 Soft Delete Policy & Standardization
+
+> **Mục tiêu:** Document rõ table nào dùng soft delete, table nào hard delete; thống nhất column `deleted_at` (snake_case, đã cover trong 40.1).
+
+#### Phân loại tables (theo nature)
+
+**A. Business entities CẦN soft delete (audit trail):**
+- ✅ Đã có: users, products, product_variants, product_images, product_reviews, categories, brands, orders, discount_codes, reviews
+- ❌ Đang thiếu: **collections, news, addresses** — cân nhắc thêm
+
+**B. Junction/bridge tables KHÔNG cần soft delete (hard delete OK):**
+- product_categories, product_collections, brand_categories, product_warranties, product_attribute_groups, wishlist (nếu cần lịch sử thì tách bảng)
+
+**C. Log/history tables KHÔNG cần soft delete (append-only):**
+- audit_logs, import_logs, inventory_logs, loyalty_histories, search_histories, recently_viewed, chat_messages (dùng `is_archived` thay)
+
+**D. Configuration/lookup tables KHÔNG cần (manage qua admin):**
+- attribute_groups, attribute_values, warranty_packages, banners, email_campaigns, newsletter_subscribers, feedbacks
+
+#### Migration: `2026050509-phase40-add-missing-soft-delete.js`
+
+```sql
+-- Thêm soft delete cho 3 tables thiếu
+ALTER TABLE collections ADD COLUMN deleted_at DATETIME NULL DEFAULT NULL;
+ALTER TABLE news ADD COLUMN deleted_at DATETIME NULL DEFAULT NULL;
+ALTER TABLE addresses ADD COLUMN deleted_at DATETIME NULL DEFAULT NULL;
+
+-- Index trên deleted_at cho query performance
+CREATE INDEX idx_collections_deleted_at ON collections(deleted_at);
+CREATE INDEX idx_news_deleted_at ON news(deleted_at);
+CREATE INDEX idx_addresses_deleted_at ON addresses(deleted_at);
+```
+
+**Update Sequelize models tương ứng:**
+- `collection.js`: thêm `paranoid: true`
+- `news.js`: thêm `paranoid: true`
+- `address.js`: thêm `paranoid: true`
+
+---
+
+### 40.24 VARCHAR Length Standardization
+
+> **Mục tiêu:** Tối ưu VARCHAR sizes — không quá lớn (waste storage) hoặc quá nhỏ (truncate data).
+
+#### Standard lengths (MySQL/RFC standards)
+
+| Column type | Length | Lý do |
+|---|---|---|
+| `email` | VARCHAR(254) | RFC 5321 max |
+| `phone` | VARCHAR(20) | E.164 international max + format chars |
+| `firstName`, `lastName` | VARCHAR(100) | Đủ cho mọi tên |
+| `password` (bcrypt hash) | VARCHAR(255) | Bcrypt $2b$ format ~60 chars, dự phòng |
+| `otp_code` | VARCHAR(6) | Fixed 6 digits |
+| `reset_password_token` | VARCHAR(255) | Crypto hash length |
+| `session_id` | VARCHAR(128) | UUID/session hash |
+| `slug` | VARCHAR(100) | URL-friendly, đủ cho SEO |
+| `sku` | VARCHAR(100) | Industry standard |
+| `code` (discount) | VARCHAR(50) | Discount code length |
+| `status`, `type` (non-ENUM) | VARCHAR(50) | Đủ cho mọi status string |
+| `name` (entity) | VARCHAR(100) | Sản phẩm, brand, category |
+| `title` | VARCHAR(255) | News/review titles |
+| `address1`, `address2` | VARCHAR(255) | Đủ cho địa chỉ chi tiết |
+| `city`, `state`, `country` | VARCHAR(100) | Tên địa danh |
+| `zip` | VARCHAR(20) | International postal codes |
+| `image_url`, `link_url` | VARCHAR(500) | URL với query params |
+| `description` (short) | TEXT | Long content |
+| `seo_title`, `seo_description` | VARCHAR(255) / TEXT | Meta tags |
+
+#### Migration: `2026050510-phase40-varchar-lengths.js`
+
+```sql
+-- users
+ALTER TABLE users MODIFY COLUMN email VARCHAR(254) NOT NULL;
+ALTER TABLE users MODIFY COLUMN phone VARCHAR(20) NULL;
+ALTER TABLE users MODIFY COLUMN first_name VARCHAR(100) NOT NULL;
+ALTER TABLE users MODIFY COLUMN last_name VARCHAR(100) NOT NULL;
+
+-- addresses
+ALTER TABLE addresses MODIFY COLUMN first_name VARCHAR(100) NOT NULL;
+ALTER TABLE addresses MODIFY COLUMN last_name VARCHAR(100) NOT NULL;
+ALTER TABLE addresses MODIFY COLUMN phone VARCHAR(20) NULL;
+ALTER TABLE addresses MODIFY COLUMN city VARCHAR(100) NOT NULL;
+ALTER TABLE addresses MODIFY COLUMN state VARCHAR(100) NOT NULL;
+ALTER TABLE addresses MODIFY COLUMN zip VARCHAR(20) NOT NULL;
+ALTER TABLE addresses MODIFY COLUMN country VARCHAR(100) NOT NULL;
+
+-- orders shipping/billing — phone, zip, country, city, state
+ALTER TABLE orders MODIFY COLUMN shipping_phone VARCHAR(20) NULL;
+ALTER TABLE orders MODIFY COLUMN shipping_zip VARCHAR(20) NOT NULL DEFAULT '';
+ALTER TABLE orders MODIFY COLUMN shipping_country VARCHAR(100) NOT NULL DEFAULT 'Vietnam';
+ALTER TABLE orders MODIFY COLUMN shipping_city VARCHAR(100) NOT NULL;
+ALTER TABLE orders MODIFY COLUMN shipping_state VARCHAR(100) NOT NULL;
+ALTER TABLE orders MODIFY COLUMN billing_phone VARCHAR(20) NULL;
+ALTER TABLE orders MODIFY COLUMN billing_zip VARCHAR(20) NOT NULL DEFAULT '';
+ALTER TABLE orders MODIFY COLUMN billing_country VARCHAR(100) NOT NULL DEFAULT 'Vietnam';
+ALTER TABLE orders MODIFY COLUMN billing_city VARCHAR(100) NOT NULL;
+ALTER TABLE orders MODIFY COLUMN billing_state VARCHAR(100) NOT NULL;
+ALTER TABLE orders MODIFY COLUMN shipping_first_name VARCHAR(100) NOT NULL;
+ALTER TABLE orders MODIFY COLUMN shipping_last_name VARCHAR(100) NOT NULL;
+ALTER TABLE orders MODIFY COLUMN billing_first_name VARCHAR(100) NOT NULL;
+ALTER TABLE orders MODIFY COLUMN billing_last_name VARCHAR(100) NOT NULL;
+ALTER TABLE orders MODIFY COLUMN payment_method VARCHAR(50) NOT NULL;
+
+-- categories, brands, collections names
+ALTER TABLE categories MODIFY COLUMN slug VARCHAR(100) NOT NULL;
+ALTER TABLE brands MODIFY COLUMN slug VARCHAR(100) NOT NULL;
+ALTER TABLE collections MODIFY COLUMN slug VARCHAR(100) NOT NULL;
+ALTER TABLE products MODIFY COLUMN slug VARCHAR(100) NOT NULL;
+
+-- chat_messages
+ALTER TABLE chat_messages MODIFY COLUMN session_id VARCHAR(128) NOT NULL;
+ALTER TABLE chat_messages MODIFY COLUMN intent VARCHAR(50) NULL;
+
+-- carts
+ALTER TABLE carts MODIFY COLUMN session_id VARCHAR(128) NULL;
+
+-- search_histories
+ALTER TABLE search_histories MODIFY COLUMN session_id VARCHAR(128) NULL;
+
+-- products status (already snake_case)
+ALTER TABLE products MODIFY COLUMN status VARCHAR(50) DEFAULT 'active';
+ALTER TABLE products MODIFY COLUMN condition VARCHAR(50) DEFAULT 'new';
+ALTER TABLE products MODIFY COLUMN visibility VARCHAR(50) DEFAULT 'public';
+
+-- attribute_groups type
+ALTER TABLE attribute_groups MODIFY COLUMN type VARCHAR(50) NOT NULL DEFAULT 'custom';
+```
+
+**⚠️ Cẩn trọng:** Trước khi shrink VARCHAR, query `SELECT MAX(CHAR_LENGTH(col)) FROM table` để verify không có data nào dài hơn target length. Nếu có → giữ size cũ hoặc truncate có chủ ý.
+
+---
+
+### 40.25 Comprehensive MySQL Compliance Verification
+
+> **Mục tiêu:** Final checklist đảm bảo schema 100% MySQL standard compliant.
+
+#### Verification queries
+
+```sql
+-- 1. Tất cả tables dùng InnoDB engine
+SELECT table_name, engine FROM information_schema.tables
+WHERE table_schema = DATABASE() AND engine != 'InnoDB';
+-- Expected: 0 rows
+
+-- 2. Tất cả tables dùng utf8mb4
+SELECT table_name, table_collation FROM information_schema.tables
+WHERE table_schema = DATABASE() AND table_collation NOT LIKE 'utf8mb4%';
+-- Expected: 0 rows
+
+-- 3. Tất cả columns snake_case (không có chữ hoa)
+SELECT table_name, column_name FROM information_schema.columns
+WHERE table_schema = DATABASE() AND column_name REGEXP '[A-Z]';
+-- Expected: 0 rows
+
+-- 4. Tất cả FK constraint names theo pattern fk_*
+SELECT constraint_name, table_name FROM information_schema.table_constraints
+WHERE table_schema = DATABASE() AND constraint_type = 'FOREIGN KEY'
+  AND constraint_name NOT REGEXP '^fk_';
+-- Expected: 0 rows
+
+-- 5. Tất cả index names theo pattern idx_* hoặc uq_* hoặc PRIMARY
+SELECT table_name, index_name FROM information_schema.statistics
+WHERE table_schema = DATABASE()
+  AND index_name NOT IN ('PRIMARY')
+  AND index_name NOT REGEXP '^(idx_|uq_|fk_)';
+-- Expected: 0 rows (các index từ FK auto-create vẫn được phép nếu prefix fk_)
+
+-- 6. FK type matching (UNSIGNED check)
+SELECT table_name, column_name, column_type FROM information_schema.columns
+WHERE table_schema = DATABASE() AND column_type LIKE '%unsigned%'
+  AND column_name LIKE '%_id';
+-- Expected: 0 rows (không có FK column nào UNSIGNED nếu users.id là signed)
+
+-- 7. Tất cả monetary DECIMAL = (15,2)
+SELECT table_name, column_name, column_type FROM information_schema.columns
+WHERE table_schema = DATABASE()
+  AND column_type LIKE 'decimal%'
+  AND column_name REGEXP '(price|amount|cost|value|total|subtotal|tax|discount|fee)'
+  AND column_type != 'decimal(15,2)';
+-- Expected: 0 rows
+
+-- 8. ENUM values lowercase
+SELECT table_name, column_name, column_type FROM information_schema.columns
+WHERE table_schema = DATABASE()
+  AND data_type = 'enum'
+  AND column_type REGEXP "[A-Z]'";
+-- Expected: 0 rows
+
+-- 9. Tables có timestamps đầy đủ (created_at, updated_at)
+SELECT t.table_name FROM information_schema.tables t
+WHERE t.table_schema = DATABASE()
+  AND t.table_name NOT IN (
+    SELECT table_name FROM information_schema.columns
+    WHERE table_schema = DATABASE() AND column_name = 'created_at'
+  );
+-- Expected: chỉ junction tables (product_collections, brand_categories) — verify accept
+
+-- 10. No table/column names exceed 64 chars
+SELECT table_name FROM information_schema.tables
+WHERE table_schema = DATABASE() AND CHAR_LENGTH(table_name) > 64;
+SELECT table_name, column_name FROM information_schema.columns
+WHERE table_schema = DATABASE() AND CHAR_LENGTH(column_name) > 64;
+-- Expected: 0 rows
+
+-- 11. No constraint names exceed 64 chars
+SELECT constraint_name FROM information_schema.table_constraints
+WHERE constraint_schema = DATABASE() AND CHAR_LENGTH(constraint_name) > 64;
+-- Expected: 0 rows
+```
+
+---
+
+### Thứ tự thực hiện (CRITICAL — phải theo đúng order)
+
+```
+Step 1: Tạo migration file rename columns (40.1)
+Step 2: Tạo migration fix INT UNSIGNED (40.4)
+Step 3: Tạo migration add missing FKs (40.5)
+Step 4: Tạo migration unify DECIMAL (40.6)
+Step 5: Tạo migration drop products.brand (40.7)
+Step 6: Tạo migration index standardization (40.17)
+Step 7: Tạo migration FK constraint renames (40.18)
+Step 8: Tạo migration default values (40.20)
+Step 9: Tạo migration NULL/NOT NULL consistency (40.21)
+Step 10: Tạo migration CHECK constraints (40.22)
+Step 11: Tạo migration add missing soft delete (40.23)
+Step 12: Tạo migration VARCHAR lengths (40.24)
+        ↓
+Step 13: Chạy migrations trên DB dev (run theo thứ tự 40.1 → 40.24)
+        ↓
+Step 14: Update 26 model files Nhóm B (40.2.1 - 40.2.26) — thêm underscored: true, xóa field: mappings
+Step 15: Cleanup 14 model files Nhóm A (40.2.27) — xóa 70 redundant field: mappings
+Step 16: Update Sequelize models cho 3 tables soft delete mới (collection.js, news.js, address.js — paranoid: true)
+Step 17: Verify associations trong index.js (40.3)
+Step 18: Update raw SQL queries (40.8)
+Step 19: Update migration_full.sql (40.9) — bao gồm tất cả index, FK, CHECK, VARCHAR sizes mới
+Step 20: Update seed_data.sql (40.10)
+        ↓
+Step 21: Khởi động server, test manual các endpoint chính
+Step 22: Chạy verification queries (40.25) — verify tất cả 11 SQL checks pass
+Step 23: Chạy test suite, fix failures
+Step 24: Verify frontend hoạt động bình thường
+        ↓
+Step 25: Double-check toàn bộ (40.16) + Final compliance check (40.25)
+```
+
+---
+
+### 40.16 Double-Check Checklist (Chạy sau khi hoàn thành tất cả steps)
+
+#### A. Database Level
+- [ ] `SHOW TABLES` → tất cả table names snake_case, plural ✓
+- [ ] `DESCRIBE {table}` cho MỌI bảng → không còn column nào camelCase
+- [ ] `SHOW CREATE TABLE {table}` cho MỌI bảng → FK constraints đúng tên, đúng reference
+- [ ] Không có `INT UNSIGNED` nào mismatch với FK target
+- [ ] Tất cả DECIMAL columns cho tiền = `(15,2)`
+- [ ] Column `products.brand` (VARCHAR) đã bị xóa
+
+#### B. Model Level
+- [ ] Grep `underscored: false` trong `backend/src/models/` → 0 results
+- [ ] Grep `underscored` not set → 0 results (tất cả models phải explicit set `underscored: true`)
+- [ ] Grep `field:` trong `backend/src/models/` → 0 results (tất cả explicit field mappings đã xóa — đặc biệt verify User.isActive, User.loyaltyPoints, Order.pointsEarned/Used/Discount không còn `field:` camelCase-to-camelCase)
+- [ ] `node -e "require('./backend/src/models')"` → không có error
+- [ ] Grep `INTEGER.UNSIGNED` trong models → chỉ còn `chatMessage.js:responseTimeMs` (hợp lệ vì là duration counter, KHÔNG phải FK); `importLog.js` đã fix về `INTEGER` (signed) để khớp `users.id`
+
+#### C. Runtime Level
+- [ ] Server khởi động không có error/warning
+- [ ] `GET /api/products` → trả đúng data, field names camelCase trong JSON
+- [ ] `GET /api/users/profile` → `firstName`, `lastName` vẫn có trong response
+- [ ] `POST /api/orders` → tạo order thành công, data lưu đúng trong DB
+- [ ] `GET /api/admin/orders` → admin query hoạt động
+- [ ] `GET /api/products?categoryId=1` → filter hoạt động
+- [ ] Chat messages gửi/nhận bình thường
+- [ ] Search history lưu/truy xuất đúng
+
+#### D. Test Level
+- [ ] `npm test` (backend) → tất cả tests PASS
+- [ ] `npm run build` (frontend) → build thành công
+- [ ] `npx tsc --noEmit` (frontend) → không type errors
+
+#### E. SQL File Level
+- [ ] `migration_full.sql` importable vào DB trống mà không lỗi
+- [ ] `seed_data.sql` importable sau migration_full.sql mà không lỗi
+- [ ] Sau import cả 2 file → server khởi động và hoạt động bình thường
+
+---
+
+### ✅ Acceptance Criteria Phase 40
+
+#### Schema Consistency
+- [ ] `DESCRIBE` cho tất cả 39+ bảng → 0 columns nào còn camelCase
+- [ ] `SHOW CREATE TABLE` cho tất cả bảng → FK constraint names theo pattern `fk_{table}_{ref}`
+- [ ] Tất cả monetary DECIMAL columns = `(15,2)` thống nhất
+- [ ] `import_logs.id` và `admin_id` là `INT` (không UNSIGNED)
+- [ ] Column `products.brand` (VARCHAR redundant) đã bị xóa
+- [ ] 6 missing FK constraints đã được thêm (audit_logs, search_histories, chat_messages.sender_id, order_items.variant_id, cart_items.variant_id, product_reviews.user_id)
+
+#### Model Consistency
+- [ ] `grep -r "underscored: false" backend/src/models/` → 0 results
+- [ ] `grep -r "field:" backend/src/models/ | grep -v node_modules | grep -v __tests__` → 0 results (tất cả explicit field mappings đã xóa)
+- [ ] Tất cả 40 models có `underscored: true` (bao gồm cả BrandCategory và ImportLog dù timestamps: false)
+- [ ] **CRITICAL VERIFY:** `models/user.js` KHÔNG còn `field: 'isActive'` hoặc `field: 'loyaltyPoints'`
+- [ ] **CRITICAL VERIFY:** `models/Order.js` KHÔNG còn `field: 'pointsEarned'`, `field: 'pointsUsed'`, `field: 'pointsDiscount'`
+- [ ] `grep -r "INTEGER.UNSIGNED" backend/src/models/` → chỉ còn 1 result: `chatMessage.js:responseTimeMs` (legitimate, không phải FK); importLog.js KHÔNG còn UNSIGNED
+
+#### Runtime Verification
+- [ ] Server khởi động KHÔNG có Sequelize warning/error
+- [ ] `GET /api/products` response → fields vẫn camelCase (`categoryId`, `basePrice`, `createdAt`)
+- [ ] `GET /api/users/profile` response → fields vẫn camelCase (`firstName`, `lastName`)
+- [ ] `POST /api/auth/login` → hoạt động bình thường
+- [ ] `POST /api/orders` → tạo order thành công, lưu DB đúng snake_case
+- [ ] `GET /api/admin/dashboard` → analytics query hoạt động
+- [ ] Frontend load tất cả pages chính không bị lỗi data
+
+#### Test & Build
+- [ ] `npm test` (backend) → all tests PASS
+- [ ] `npm run build` (frontend) → thành công
+- [ ] `npx tsc --noEmit` (frontend) → 0 errors
+
+#### SQL Files
+- [ ] `migration_full.sql` có thể import vào MySQL trống → 0 errors
+- [ ] Sau import → `DESCRIBE users` hiển thị `first_name`, `last_name`, `is_active`, `created_at` (snake_case)
+- [ ] Sau import → `DESCRIBE orders` hiển thị `user_id`, `shipping_first_name`, `payment_method`, `created_at` (snake_case)
+- [ ] Seed data INSERT → 0 errors, data hiển thị đúng
+
+#### Index & Constraint Standards (40.17, 40.18)
+- [ ] Tất cả UNIQUE indexes có tên `uq_{table}_{col}` (verify: `SHOW INDEX FROM <table>`)
+- [ ] Tất cả FK columns có index `idx_{table}_{col}` (verify performance query)
+- [ ] Tất cả FK constraint names theo pattern `fk_{table}_{ref}` HOẶC abbreviation pattern documented (junction tables) — KHÔNG có constraint name nào > 64 ký tự
+- [ ] 10 FK constraints có tên non-standard đã được rename (40.18)
+- [ ] `SHOW INDEX FROM <every_table>` không có index name nào auto-generated (như `users_google_id_unique`)
+
+#### DEFAULT Values (40.20)
+- [ ] Tất cả monetary DECIMAL columns có DEFAULT 0.00 (trừ `discount_codes.value` cố ý required)
+- [ ] Tất cả TINYINT(1) boolean columns có DEFAULT 0 hoặc 1 explicit
+- [ ] Tất cả ENUM status columns có DEFAULT enum value
+
+#### NULL/NOT NULL Consistency (40.21)
+- [ ] `orders.shipping_zip`, `orders.shipping_country`, `orders.billing_zip`, `orders.billing_country` đã chuyển NOT NULL (match addresses table)
+- [ ] Address fields giữa `addresses` và `orders.shipping_*`, `orders.billing_*` consistent
+
+#### CHECK Constraints (40.22)
+- [ ] `chk_products_rating_average` exists (rating 0-5)
+- [ ] `chk_products_stock_quantity`, `chk_product_variants_stock_quantity` exists (>= 0)
+- [ ] `chk_cart_items_quantity`, `chk_order_items_quantity` exists (>= 1)
+- [ ] CHECK constraints cho prices (>= 0) ở products, product_variants, order_items, cart_items, warranty_packages
+- [ ] CHECK cho order totals (>= 0): subtotal, tax, total, discount
+- [ ] `chk_users_loyalty_points` (>= 0)
+- [ ] `chk_warranty_packages_duration` (>= 1)
+- [ ] **Note:** Verify MySQL version — MySQL 5.7 không enforce CHECK; cần MySQL 8.0+ để enforce. XAMPP cần kiểm tra version.
+
+#### Soft Delete Policy (40.23)
+- [ ] `collections`, `news`, `addresses` đã có column `deleted_at`
+- [ ] Sequelize models tương ứng có `paranoid: true`
+- [ ] Index `idx_*_deleted_at` đã tạo cho query performance
+
+#### VARCHAR Length Standardization (40.24)
+- [ ] `email` columns = VARCHAR(254)
+- [ ] `phone` columns = VARCHAR(20)
+- [ ] `firstName`/`lastName` columns = VARCHAR(100)
+- [ ] `slug` columns = VARCHAR(100)
+- [ ] `session_id` columns = VARCHAR(128)
+- [ ] `status`, `type`, `condition`, `visibility` non-ENUM = VARCHAR(50)
+- [ ] `city`, `state`, `country` = VARCHAR(100)
+- [ ] `zip` = VARCHAR(20)
+- [ ] Pre-flight check: `SELECT MAX(CHAR_LENGTH(col))` không vượt target length
+
+#### Final MySQL Compliance Verification (40.25)
+- [ ] Query 1: Tất cả tables = InnoDB engine
+- [ ] Query 2: Tất cả tables = utf8mb4 collation
+- [ ] Query 3: Không có column name nào có chữ hoa (camelCase eliminated)
+- [ ] Query 4: Tất cả FK constraints có prefix `fk_`
+- [ ] Query 5: Tất cả non-PK indexes có prefix `idx_`/`uq_`/`fk_`
+- [ ] Query 6: Không có FK column nào UNSIGNED (trừ chatMessage.response_time_ms)
+- [ ] Query 7: Tất cả monetary DECIMAL = (15,2)
+- [ ] Query 8: Tất cả ENUM values lowercase
+- [ ] Query 9: Tables có timestamps đầy đủ (trừ junction tables)
+- [ ] Query 10: Không có table/column name > 64 chars
+- [ ] Query 11: Không có constraint name > 64 chars
+- [ ] **Tất cả 11 verification queries trả về 0 rows (hoặc expected exceptions documented)**
+
+---
+
+## PHASE 41 — Code-Level Naming Consistency (File / Folder / API URL / Frontend Structure)
+
+> **Mục tiêu:** Chuẩn hoá naming convention ở tầng CODE (file system, folder structure, API URL, frontend organization). Phase này **độc lập với Phase 40** — Phase 40 lo DB schema (column/table/FK names), Phase 41 lo code structure. Có thể chạy song song hoặc tách biệt.
+>
+> **Lý do tách phase:** Phase 40 đã rất nặng (130 columns rename + 11 migrations DB-level). Trộn naming code-level vào Phase 40 sẽ làm phase quá lớn, mất focus, khó verify.
+>
+> **Phân loại Rule 32:** **Loại B (Mixed Backend + Frontend)** — cần backend integration tests cho route changes + frontend smoke test cho component reorganize + manual test cross-page.
+>
+> **Phạm vi triển khai:** Project chạy local Windows + có thể deploy lên server (Linux/Windows Server). Phase 41 vẫn fix case-sensitivity vì là **deploy-readiness** — tránh deploy lần đầu mới phát hiện crash.
+>
+> **Rủi ro chính:**
+> 1. Backend model file rename (PascalCase→camelCase) — local Windows không thấy lỗi (case-insensitive FS), nhưng nếu deploy lên Linux server sẽ crash. Fix sớm = an toàn.
+> 2. API URL rename là **breaking change cho external clients** (nếu có mobile app/third-party). Project hiện tại chỉ có web frontend → safe rename, không cần backward-compat alias.
+> 3. Frontend folder reorganize touch ~37 component files + tất cả import — Vite build sẽ catch lỗi ngay khi `npm run build`.
+
+---
+
+### 41.0 Tổng quan Audit hiện tại
+
+#### Vấn đề 1 — Backend models: file naming KHÔNG CONSISTENT (deploy-readiness)
+**Hiện trạng** (`backend/src/models/`):
+- 5 files PascalCase: `Order.js`, `OrderItem.js`, `CartItem.js`, `ProductVariant.js`, `AuditLog.js`
+- 36 files camelCase: `cart.js`, `product.js`, `productImage.js`, ...
+
+**Tình trạng:** `backend/src/models/index.js` require với lowercase strings (`./cartItem`, `./order`, `./orderItem`, `./productVariant`) trong khi file thật PascalCase. Trên Windows local (case-insensitive FS) chạy bình thường — không thấy lỗi. Nhưng khi deploy lên Linux server sẽ crash ngay startup vì FS case-sensitive. Fix trước = tránh đêm trước demo phát hiện bug.
+
+#### Vấn đề 2 — Backend API URL plural inconsistency
+**Hiện trạng** (`backend/src/routes/index.js:34-60`):
+- ✅ Plural: `/users`, `/products`, `/orders`, `/categories`, `/brands`, `/collections`, `/reviews`, `/banners`, `/images`, `/discount-codes`, `/warranty-packages`, `/email-campaigns`
+- ❌ Singular nhưng là collection: `/wishlist`, `/payment`, `/upload`, `/location`, `/search-history`, `/loyalty`
+- ✅ Singular hợp lệ (singleton resource): `/cart` (user có 1 cart), `/auth`, `/admin`, `/contact`, `/newsletter`, `/chatbot`, `/chat`
+
+#### Vấn đề 3 — Frontend services file naming inconsistency
+**Hiện trạng** (`frontend/src/services/`):
+- 30/31 file singular: `productApi.ts`, `categoryApi.ts`, `orderApi.ts`...
+- 1 outlier plural: `emailCampaignsApi.ts`
+
+#### Vấn đề 4 — Frontend components folder overlap (`common/` vs `shared/`)
+**Hiện trạng**:
+- `components/common/` (27 files): Button, Card, Input, Modal, Pagination, Notifications, ImageUpload...
+- `components/shared/` (10 files): CartItem, ProductCard, ProductReviews, ReviewForm, FilterPanel, SearchBar...
+
+**Vấn đề**: Không có rule rõ ràng tại sao `Card.tsx` ở `common/` còn `ProductCard.tsx` ở `shared/`. Cả 2 folder đều là "reusable components". Confusing cho developer mới.
+
+#### Vấn đề 5 — Frontend partial feature-sliced
+**Hiện trạng**: Có `features/auth/`, `features/cart/`, `features/products/`, `features/wishlist/`, `features/ai/`, `features/ui/` (chỉ chứa slice). Nhưng product/auth/cart components vẫn nằm `components/product/`, `components/auth/`, `components/shared/CartItem.tsx`.
+
+**Quyết định Phase 41**: KHÔNG di chuyển component sang `features/` (scope lớn, ROI thấp). Chỉ chuẩn hoá `common/` + `shared/` → `ui/` + `domain/`.
+
+---
+
+### 41.1 Backend Model File Naming Standardization
+
+> **Quyết định convention:** `camelCase.js` cho file models (match style của controllers, routes, validators, middlewares — đã consistent toàn backend).
+
+**Action — rename 5 PascalCase files sang camelCase:**
+
+| Hiện tại | Đổi thành | Class/export name (giữ nguyên PascalCase) |
+|---|---|---|
+| `Order.js` | `order.js` | `Order` |
+| `OrderItem.js` | `orderItem.js` | `OrderItem` |
+| `CartItem.js` | `cartItem.js` | `CartItem` |
+| `ProductVariant.js` | `productVariant.js` | `ProductVariant` |
+| `AuditLog.js` | `auditLog.js` | `AuditLog` |
+
+**Quy trình rename trên Windows (case-insensitive FS chú ý):**
+```bash
+# Trên Windows, git mv qua tên trung gian để tránh case-only rename không nhận diện
+git mv Order.js _order.js && git mv _order.js order.js
+git mv OrderItem.js _orderItem.js && git mv _orderItem.js orderItem.js
+git mv CartItem.js _cartItem.js && git mv _cartItem.js cartItem.js
+git mv ProductVariant.js _productVariant.js && git mv _productVariant.js productVariant.js
+git mv AuditLog.js _auditLog.js && git mv _auditLog.js auditLog.js
+```
+
+**Update `backend/src/models/index.js`:**
+- Line 40: `require('./AuditLog')` → `require('./auditLog')` (chỉ chỗ này còn PascalCase, các chỗ khác đã lowercase sẵn — sẽ tự khớp file mới)
+
+**Verify:** `grep -rn "require.*['\"]\\./[A-Z]" backend/src/models/` → 0 results
+
+**Conflict với Phase 40:** KHÔNG conflict — Phase 40.2.x reference các file model bằng đường dẫn (vd `backend/src/models/Order.js`). Khi Phase 41 chạy trước Phase 40, document trong Phase 40 cần update path. Khi Phase 40 chạy trước Phase 41, file path trong Phase 40 vẫn đúng (file chưa rename), Phase 41 sẽ fix sau.
+
+**Recommendation:** Chạy Phase 41 TRƯỚC Phase 40 — vì Phase 40 sẽ touch toàn bộ models, tốt hơn rename file rồi mới sửa nội dung.
+
+---
+
+### 41.2 Backend API URL Plural Consistency
+
+> **Quyết định convention:** Collection resources dùng **plural kebab-case**. Singleton resources (1-per-user) giữ singular. Action endpoints (auth, upload action) giữ singular.
+
+**Action — rename 6 routes:**
+
+| Hiện tại | Đổi thành | Lý do |
+|---|---|---|
+| `/wishlist` | `/wishlists` | Mỗi user có 1 wishlist nhưng admin query nhiều → collection |
+| `/payment` | `/payments` | Có nhiều payment transactions/methods |
+| `/upload` | `/uploads` | Có nhiều files upload |
+| `/location` | `/locations` | Locations là collection (provinces, districts...) |
+| `/search-history` | `/search-histories` | Đã có nhiều records |
+| `/loyalty` | `/loyalty` (giữ) | Đây là feature/concept, không phải collection — giữ |
+
+**Final decision:** Rename 5 routes (loyalty giữ nguyên vì là concept/feature endpoint).
+
+**Files cần update:**
+
+#### Backend
+1. `backend/src/routes/index.js` line 42, 43, 45, 56, 60: đổi mount path
+2. `backend/src/app.js` (nếu có rate limiter scoped theo path): update path matchers
+3. `backend/src/__tests__/*.test.js`: update endpoint URLs trong supertest calls
+
+#### Frontend (services dùng các endpoint này)
+1. `frontend/src/services/wishlistApi.ts`: đổi base URL
+2. `frontend/src/services/uploadApi.ts`: đổi base URL  
+3. `frontend/src/services/momoApi.ts`, `vnpayApi.ts`, `stripeApi.ts`: nếu dùng `/payment` prefix
+4. `frontend/src/services/searchHistoryApi.ts`: đổi base URL
+5. Bất kỳ component nào hardcode URL (grep `/wishlist\|/payment\|/upload\|/location\|/search-history`)
+
+**Backward compatibility (nếu có mobile app/external client):**
+```js
+// Express alias để giữ backward compat 6 tháng:
+router.use('/wishlist', wishlistRoutes); // deprecated alias
+router.use('/wishlists', wishlistRoutes); // canonical
+```
+Nếu không có external client → bỏ alias, chỉ dùng plural mới.
+
+**Test:** Smoke test mọi endpoint sau rename:
+```bash
+curl http://localhost:5000/api/wishlists/me
+curl http://localhost:5000/api/payments/methods
+curl -X POST http://localhost:5000/api/uploads/image -F file=@test.jpg
+curl http://localhost:5000/api/locations/provinces
+curl http://localhost:5000/api/search-histories/recent
+```
+
+---
+
+### 41.3 Frontend Services File Naming
+
+> **Quyết định convention:** `{singularEntity}Api.ts` camelCase singular.
+
+**Action — rename 1 file:**
+
+| Hiện tại | Đổi thành |
+|---|---|
+| `frontend/src/services/emailCampaignsApi.ts` | `emailCampaignApi.ts` |
+
+**Update imports:**
+```bash
+# Tìm tất cả import emailCampaignsApi
+grep -rn "from.*emailCampaignsApi" frontend/src/
+```
+
+Update trong các file tìm được — đổi import path.
+
+**Quyết định về `api.ts` vs `apiClient.ts`:** Audit nội dung 2 file để xem có duplicate/confusing không:
+- Nếu `api.ts` là RTK Query base API + `apiClient.ts` là Axios instance → giữ cả 2, document rõ trong header comment
+- Nếu cùng concept → merge thành `apiClient.ts` duy nhất
+
+---
+
+### 41.4 Frontend Components Folder Reorganize
+
+> **Quyết định convention:**
+> - `components/ui/` — pure presentational, không phụ thuộc business domain (Button, Input, Modal, Card, Pagination, Spinner...)
+> - `components/domain/{feature}/` — gắn với business entity (product/, order/, review/, cart/, auth/...)
+> - **Bỏ** `common/` và `shared/` — gây confusion.
+
+**Action — di chuyển files:**
+
+#### A. `components/common/` (27 files) → phân loại
+**→ `components/ui/`** (pure presentational, 25 files):
+- Badge, BannerDisplay, Button, ButtonGroup, Card, Checkbox, EditorErrorBoundary, EnhancedRichTextEditor, ErrorState, IconButton, ImageUpload, Input, LanguageSwitcher, LoadingSpinner, LoadingState, Modal, Notifications, Pagination, PremiumButton, Rating, RichTextEditor, Select, SimpleRichTextEditor, Textarea, ThemeToggle
+
+**→ `components/domain/feedback/`** (1 file):
+- FeedbackModal.tsx (có business logic feedback)
+
+**→ `components/domain/address/`** (1 file):
+- AddressPicker.tsx (có business logic address — provinces API)
+
+#### B. `components/shared/` (10 files) → phân loại
+**→ `components/ui/`** (1 file):
+- SearchBar.tsx (presentational)
+
+**→ `components/domain/cart/`** (1 file):
+- CartItem.tsx
+
+**→ `components/domain/product/`** (3 files):
+- ProductCard.tsx, ProductListCard.tsx, FilterPanel.tsx
+
+**→ `components/domain/review/`** (5 files):
+- ProductReviews.tsx, ReviewForm.tsx, ReviewList.tsx, ReviewSection.tsx, ReviewSummary.tsx
+
+#### C. Existing `components/{feature}/` folders (giữ nguyên, đổi path under `domain/`):
+- `components/admin/` → `components/domain/admin/`
+- `components/auth/` → `components/domain/auth/`
+- `components/chat/` → `components/domain/chat/`
+- `components/orders/` → `components/domain/order/` (đổi sang singular)
+- `components/payment/` → `components/domain/payment/`
+- `components/product/` → `components/domain/product/` (merge với files từ shared/)
+- `components/reviews/` → `components/domain/review/` (merge với files từ shared/, đổi sang singular)
+
+#### D. Folders đặc biệt (giữ nguyên, không vào ui/ hay domain/):
+- `components/icons/` — icons primitive, giữ nguyên
+- `components/layout/` — page layouts (Footer, MainLayout...), giữ nguyên
+- `components/modals/` — global modals, giữ nguyên
+- `components/sections/` — page sections (HeroSection, HomeNewsSection), giữ nguyên
+
+**Update imports — quy trình:**
+```bash
+# 1. Tìm tất cả import từ common/ và shared/
+grep -rn "from.*components/common" frontend/src/ > /tmp/common_imports.txt
+grep -rn "from.*components/shared" frontend/src/ > /tmp/shared_imports.txt
+
+# 2. Move files theo phân loại trên
+# 3. Find-and-replace import paths:
+#    @/components/common/Button → @/components/ui/Button
+#    @/components/shared/ProductCard → @/components/domain/product/ProductCard
+#    ... (theo mapping trong A, B)
+
+# 4. Update barrel exports (frontend/src/components/common/index.ts)
+#    → tạo barrel mới: components/ui/index.ts với cùng exports
+```
+
+**Verify:**
+- `npm run build` (Vite) → 0 import errors
+- `npx tsc --noEmit` → 0 type errors
+- Manual smoke test: mở 5 page chính (Home, Shop, ProductDetail, Cart, Checkout) — render không lỗi
+
+---
+
+### 41.5 Tạo NAMING_CONVENTION.md Reference Doc
+
+**File:** `docs/NAMING_CONVENTION.md` (tạo folder `docs/` ở root nếu chưa có)
+
+**Nội dung (template):**
+
+```markdown
+# Naming Convention — E-Commerce Codebase
+
+## Backend (Node.js + Express + Sequelize)
+
+### File naming
+| Layer | Convention | Ví dụ |
+|---|---|---|
+| Models | `camelCase.js` | `product.js`, `orderItem.js` |
+| Controllers | `camelCase.js` | `auth.js`, `product.js` |
+| Routes | `camelCase.js` | `discountCode.js` |
+| Validators | `camelCase.js` | `user.js` |
+| Middlewares | `camelCase.js` | `authenticate.js` |
+| Services | `camelCase.js` | `vnpay.js`, `email.js` |
+| Utils | `camelCase.js` | `catchAsync.js` |
+| Migrations | `YYYYMMDDHHmm-kebab-description.js` | `2026050501-rename-columns.js` |
+| Tests | `{name}.test.js` hoặc `{name}.unit.test.js` | `chatbot.unit.test.js` |
+
+### JavaScript code
+- Variables, functions: `camelCase` (`getUserById`)
+- Classes, Sequelize models: `PascalCase` (`Product`, `OrderItem`)
+- Constants: `UPPER_SNAKE_CASE` (`MAX_RETRY_COUNT`)
+- Booleans: prefix `is*/has*/can*` (`isActive`, `hasDiscount`)
+- Async functions: KHÔNG bắt buộc suffix Async, để TS/JSDoc detect
+
+### Database (Phase 40 chuẩn)
+- Tables: `snake_case` plural (`order_items`)
+- Columns: `snake_case` (`created_at`, `points_earned`)
+- FK constraints: `fk_{table}_{singular_ref}` (`fk_orders_user`)
+- Indexes: `idx_{table}_{col}` hoặc `uq_{table}_{col}`
+- ENUM values: lowercase, multi-word `snake_case`
+
+### API URL
+- Base: `/api/v1/` (hoặc `/api/`)
+- Collection resources: kebab-case plural (`/products`, `/discount-codes`)
+- Singleton resources: singular (`/cart`, `/auth`)
+- Action endpoints: verb-style chấp nhận (`/auth/login`, `/upload`)
+- Path params: camelCase trong code, kebab trong URL nếu multi-word (`/orders/:orderId/items/:itemId`)
+
+## Frontend (React + TS + Vite + Redux Toolkit)
+
+### File naming
+| Layer | Convention | Ví dụ |
+|---|---|---|
+| Pages | `*Page.tsx` PascalCase | `HomePage.tsx`, `CheckoutPage.tsx` |
+| UI components | `PascalCase.tsx` | `Button.tsx`, `Card.tsx` |
+| Domain components | `PascalCase.tsx` under `domain/{feature}/` | `domain/product/ProductCard.tsx` |
+| Hooks | `use*.ts` camelCase | `useAuth.ts`, `useDebounce.ts` |
+| Services | `{singularEntity}Api.ts` camelCase | `productApi.ts`, `emailCampaignApi.ts` |
+| Types | `{entity}.types.ts` lowercase | `product.types.ts` |
+| Store slices | `{entity}Slice.ts` camelCase | `authSlice.ts`, `cartSlice.ts` |
+| Utils | `camelCase.ts` | `format.ts`, `priceUtils.ts` |
+| Contexts | `*Context.tsx` PascalCase | `StripeContext.tsx` |
+| i18n locales | `{lang}.json` | `vi.json`, `en.json` |
+
+### Folder structure
+```
+frontend/src/
+├── components/
+│   ├── ui/              # Pure presentational (Button, Input, Modal...)
+│   ├── domain/          # Domain-specific
+│   │   ├── product/
+│   │   ├── cart/
+│   │   ├── order/
+│   │   ├── review/
+│   │   └── ...
+│   ├── icons/           # SVG icon components
+│   ├── layout/          # MainLayout, Footer, Grid
+│   ├── modals/          # Global modals
+│   └── sections/        # Page sections (Hero, HomeNews)
+├── features/            # Redux slices + feature-scoped components
+│   ├── auth/, cart/, products/, ...
+├── pages/               # Top-level route components
+├── hooks/, services/, store/, types/, utils/, contexts/, locales/
+```
+
+### TypeScript code
+- Variables, functions: `camelCase`
+- Types, interfaces, enums: `PascalCase` (`User`, `OrderStatus`)
+- React components: `PascalCase`
+- Component props interface: `{ComponentName}Props` (`ButtonProps`)
+- Constants: `UPPER_SNAKE_CASE`
+- Booleans: `is*/has*/can*` prefix
+- Event handlers: `handle{Event}` (`handleSubmit`)
+- Callbacks: `on{Event}` (`onSubmit` cho prop)
+
+## Git
+- Branch: `phase-{N}-{kebab-description}` (vd `phase-41-naming-consistency`)
+- Commit: tuân Rule 4.1 plan.md (prefix + em dash + tiếng Việt)
+
+## Env vars
+- `UPPER_SNAKE_CASE` (`DATABASE_URL`, `JWT_SECRET`)
+```
+
+---
+
+### 41.6 Verification & Double-Check
+
+#### A. Backend
+- [ ] `grep -rn "^const.*= require.*['\"]\\./[A-Z]" backend/src/models/index.js` → 0 results (không còn require PascalCase)
+- [ ] `ls backend/src/models/` → 0 files PascalCase (trừ `index.js` lowercase)
+- [ ] `node -e "require('./backend/src/models')"` → no error trên Windows local
+- [ ] (Optional cho deploy-readiness) Verify trên Linux khi đã có server thật: `node backend/src/server.js` boot OK
+- [ ] Smoke test mọi route đã rename trong 41.2: trả 200 OK
+- [ ] `npm test` (backend) → pass
+
+#### B. Frontend
+- [ ] `npm run build` → success, 0 import errors
+- [ ] `npx tsc --noEmit` → 0 errors
+- [ ] `ls frontend/src/components/` → KHÔNG có `common/` và `shared/`, có `ui/` và `domain/`
+- [ ] `ls frontend/src/services/` → KHÔNG có `emailCampaignsApi.ts`, có `emailCampaignApi.ts`
+- [ ] Manual smoke test 7 pages chính: Home, Shop, ProductDetail, Cart, Checkout, OrderHistory, Profile — render OK, không console error
+
+#### C. Cross-cutting
+- [ ] `docs/NAMING_CONVENTION.md` exists, đầy đủ section
+- [ ] `MEMORY.md` cập nhật reference đến naming convention nếu cần
+- [ ] Plan.md nội dung Phase 40 (`backend/src/models/Order.js` paths) đã được update sang `order.js` nếu Phase 41 chạy trước
+
+#### D. 35-check verification (Rule 31, A1→A25, B1→B6, C1→C4)
+- [ ] **A1-A25:** Tất cả route mới hoạt động, response format đúng, pagination/filter còn work
+- [ ] **B1-B6:** Frontend pages render đầy đủ, no broken imports, build pass, type check pass
+- [ ] **C1-C4:** Git commit format đúng Rule 4.1, không Co-Authored-By Claude, comment WHY giữ nguyên không kèm `(Fix X.X)`
+
+---
+
+### 41.7 Thứ tự thực hiện
+
+```
+Step 1: Tạo branch phase-41-naming-consistency
+Step 2: 41.1 — Rename 5 backend model files (camelCase) + update require trong index.js
+        → Verify: node -e "require('./backend/src/models')" pass
+        → Commit: "Phase 41.1 — Chuẩn hóa file naming backend models sang camelCase"
+Step 3: 41.2 — Rename 5 backend API URL routes (plural) + update test files
+        → Verify: backend tests pass, smoke curl mọi endpoint đã rename
+        → Commit: "Phase 41.2 — Chuẩn hóa API URL plural cho collection resources"
+Step 4: 41.2 (frontend side) — Update frontend services dùng URL mới
+        → Verify: npm run build pass, manual smoke test các page dùng wishlist/payment/upload/location
+        → Commit: "Phase 41.2 — Update frontend services theo API URL plural mới"
+Step 5: 41.3 — Rename emailCampaignsApi.ts + update imports
+        → Verify: build pass
+        → Commit: "Phase 41.3 — Chuẩn hóa frontend services singular naming"
+Step 6: 41.4 — Reorganize components/common + shared → ui + domain
+        → Step nhỏ: tạo folder mới, di chuyển files theo từng nhóm, update imports từng batch
+        → Verify từng batch: build + smoke test
+        → Commit từng batch: "Phase 41.4 — Move <X> components sang ui/" / "domain/<feature>/"
+Step 7: 41.5 — Tạo docs/NAMING_CONVENTION.md
+        → Commit: "Phase 41.5 — Thêm tài liệu NAMING_CONVENTION.md"
+Step 8: 41.6 — Chạy full verification A-D
+        → Fix bất kỳ issue nào phát hiện
+        → Final commit nếu có fix
+Step 9: Merge branch vào main, push GitHub
+```
+
+---
+
+### ✅ Acceptance Criteria Phase 41
+
+#### Backend File Naming (41.1)
+- [ ] `backend/src/models/Order.js` → renamed `order.js`
+- [ ] `backend/src/models/OrderItem.js` → renamed `orderItem.js`
+- [ ] `backend/src/models/CartItem.js` → renamed `cartItem.js`
+- [ ] `backend/src/models/ProductVariant.js` → renamed `productVariant.js`
+- [ ] `backend/src/models/AuditLog.js` → renamed `auditLog.js`
+- [ ] `backend/src/models/index.js` line 40: `require('./auditLog')` (đã lowercase)
+- [ ] `grep "require.*['\"]\\./[A-Z]" backend/src/models/index.js` → 0 matches
+- [ ] Backend boot OK trên Windows local (`cd backend && npm run dev` không có error)
+- [ ] (Verify khi deploy server thật, không bắt buộc lúc dev) Boot OK trên Linux server
+
+#### Backend API URL (41.2)
+- [ ] `GET /api/wishlists` 200 OK (was `/wishlist`)
+- [ ] `GET /api/payments/methods` 200 OK (was `/payment/methods`)
+- [ ] `POST /api/uploads/image` 200 OK (was `/upload/image`)
+- [ ] `GET /api/locations/provinces` 200 OK (was `/location/provinces`)
+- [ ] `GET /api/search-histories/recent` 200 OK (was `/search-history/recent`)
+- [ ] Tất cả backend integration tests pass với endpoint URL mới
+- [ ] Backward-compat aliases (nếu có) document rõ trong route file comment
+
+#### Frontend Services (41.3)
+- [ ] File `frontend/src/services/emailCampaignsApi.ts` không còn tồn tại
+- [ ] File `frontend/src/services/emailCampaignApi.ts` exists, export đầy đủ API endpoints
+- [ ] `grep -rn "emailCampaignsApi" frontend/src/` → 0 matches
+- [ ] Admin Email Campaigns page hoạt động bình thường
+
+#### Frontend Components (41.4)
+- [ ] Folder `frontend/src/components/common/` không còn tồn tại
+- [ ] Folder `frontend/src/components/shared/` không còn tồn tại
+- [ ] Folder `frontend/src/components/ui/` exists với ~26 files presentational
+- [ ] Folder `frontend/src/components/domain/` exists với subfolders: `product/`, `cart/`, `order/`, `review/`, `auth/`, `admin/`, `chat/`, `payment/`, `feedback/`, `address/`
+- [ ] `grep -rn "from.*components/common" frontend/src/` → 0 matches
+- [ ] `grep -rn "from.*components/shared" frontend/src/` → 0 matches
+- [ ] `npm run build` (frontend) → success
+- [ ] `npx tsc --noEmit` → 0 errors
+- [ ] 7 pages chính render OK trên dev server: Home, Shop, ProductDetail, Cart, Checkout, OrderHistory, Profile
+
+#### Documentation (41.5)
+- [ ] File `docs/NAMING_CONVENTION.md` exists
+- [ ] Doc cover đầy đủ: backend file/JS/DB/API, frontend file/folder/TS, git, env vars
+- [ ] Doc reference Phase 40 (DB schema) và Phase 41 (code structure)
+
+#### Cross-cutting (41.6)
+- [ ] Backend `npm test` pass
+- [ ] Frontend `npm run build` pass
+- [ ] Frontend `npx tsc --noEmit` pass
+- [ ] Manual smoke test pass A1→A25 (admin pages), B1→B6 (user pages), C1→C4 (chat/payment/upload)
+- [ ] Tất cả commit tuân Rule 4.1: prefix hợp lệ + ` — ` (em dash) + tiếng Việt + KHÔNG Co-Authored-By Claude
+- [ ] Plan.md các path reference `Order.js`, `OrderItem.js`, `CartItem.js`, `ProductVariant.js`, `AuditLog.js` đã được update (nếu Phase 41 chạy trước Phase 40)

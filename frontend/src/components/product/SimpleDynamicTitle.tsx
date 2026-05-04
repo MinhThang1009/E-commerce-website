@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Typography, Space, Tag, Button } from 'antd';
 import { BulbOutlined, ReloadOutlined } from '@ant-design/icons';
-import { simpleNamingService } from '@/services/productNamingService';
+import { simpleNamingService } from '@/utils/productNaming';
 
 const { Title, Text } = Typography;
 

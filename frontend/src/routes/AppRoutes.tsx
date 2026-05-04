@@ -3,9 +3,9 @@ import { Routes, Route, Navigate } from 'react-router-dom';
 import MainLayout from '@/components/layout/MainLayout';
 import AdminLayout from '@/components/admin/AdminLayout';
 import LoadingSpinner from '@/components/common/LoadingSpinner';
-import ProtectedRoute from '@/components/auth/ProtectedRoute';
-import PublicOnlyRoute from '@/components/auth/PublicOnlyRoute';
-import AdminRoute from './AdminRoute';
+import ProtectedRoute from '@/features/auth/components/ProtectedRoute';
+import PublicOnlyRoute from '@/features/auth/components/PublicOnlyRoute';
+import AdminRoute from '@/features/auth/components/AdminRoute';
 
 // Các trang được tải theo yêu cầu (lazy-loaded)
 const HomePage = lazy(() => import('@/pages/HomePage'));

@@ -20,7 +20,7 @@ import { formatPrice, getLocale } from '@/utils/format';
 import { RootState } from '@/store';
 import { toast } from '@/utils/toast';
 import ReviewModal from '@/components/reviews/ReviewModal';
-import OrderDetails from '@/components/orders/OrderDetails';
+import OrderDetails from '@/components/shared/OrderDetails';
 
 
 // Màu sắc trạng thái thanh toán

@@ -9,11 +9,11 @@ import AppRoutes from '@/routes/AppRoutes';
 import Notifications from '@/components/common/Notifications';
 import { ChatWidgetPortal } from '@/features/ai';
 import ChatbotErrorBoundary from '@/features/ai/components/ChatbotErrorBoundary';
-import SupportChat from '@/components/chat/SupportChat';
+import SupportChat from '@/features/chat/components/SupportChat';
 import { useTokenRefresh } from '@/hooks/useTokenRefresh';
-import LoginSuccess from '@/components/auth/LoginSuccess';
-import AuthProvider from '@/components/auth/AuthProvider';
-import StripeProvider from '@/contexts/StripeContext';
+import LoginSuccess from '@/features/auth/components/LoginSuccess';
+import AuthProvider from '@/features/auth/components/AuthProvider';
+import StripeProvider from '@/features/payment/contexts/StripeContext';
 import { useAntdToast } from '@/hooks/useAntdToast';
 import { setNavigateFunction } from '@/utils/authUtils';
 // Khởi tạo cấu hình i18n

@@ -1,3 +1,7 @@
+// services/api.ts — RTK Query base API (createApi).
+// Dùng cho mọi endpoint cache-aware: useQuery/useMutation hooks, auto-invalidation, normalized cache.
+// Khác với services/apiClient.ts (Axios instance) — dùng cho one-off calls không cần RTK cache (file upload, OAuth callback).
+
 import { createApi, fetchBaseQuery } from '@reduxjs/toolkit/query/react';
 import { getValidToken } from '@/utils/tokenManager';
 import { handleUnauthorizedError } from '@/utils/authUtils';

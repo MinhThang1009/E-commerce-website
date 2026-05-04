@@ -1,3 +1,7 @@
+// services/apiClient.ts — Plain Axios instance.
+// Dùng cho calls không qua RTK cache: file upload (multipart/form-data), OAuth flow, raw HTTP.
+// Khác với services/api.ts (RTK Query) — dùng cho mọi endpoint có cache + hook React.
+
 import axios from 'axios';
 import { getValidToken } from '@/utils/tokenManager';
 import { handleUnauthorizedError } from '@/utils/authUtils';

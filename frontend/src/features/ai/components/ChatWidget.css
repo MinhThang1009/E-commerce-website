@@ -1,4 +1,10 @@
-/* Modern Chat Widget Styles */
+/* Modern Chat Widget Styles
+ * Plain CSS được giữ vì:
+ * 1. Tailwind không có scrollbar utilities native (cần plugin tailwindcss-scrollbar)
+ * 2. Keyframes custom (chatFadeIn, slideUp) — đơn giản hơn extend tailwind.config.js cho 2 animation
+ * 3. Style scoped đủ qua tên class chuyên biệt (.chat-*, .custom-scrollbar) — không leak global
+ */
+
 
 /* Base container animations */
 @keyframes chatFadeIn {

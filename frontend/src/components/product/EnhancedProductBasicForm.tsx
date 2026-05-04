@@ -25,7 +25,7 @@ import SimpleRichTextEditor from '@/components/common/SimpleRichTextEditor';
 import EditorErrorBoundary from '@/components/common/EditorErrorBoundary';
 import Base64ImageWarning from './Base64ImageWarning';
 import DynamicProductName from './DynamicProductName';
-import { sampleLaptopData } from '@/utils/sampleDataHelper';
+import { sampleLaptopData } from '@/utils/sampleProductData';
 
 const { TextArea } = Input;
 const { Option } = Select;

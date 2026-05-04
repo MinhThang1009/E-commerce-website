@@ -10,7 +10,7 @@ import {
   useResendVerificationMutation,
 } from '@/services/authApi';
 import { loginSuccess } from '@/features/auth/authSlice';
-import GoogleLoginButton from '@/components/auth/GoogleLoginButton';
+import GoogleLoginButton from '@/features/auth/components/GoogleLoginButton';
 
 interface LocationState { from?: { pathname: string } }
 type ApiError = { data?: { message?: string }; message?: string };

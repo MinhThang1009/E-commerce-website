@@ -162,17 +162,14 @@ const Order = sequelize.define(
     pointsEarned: {
       type: DataTypes.INTEGER,
       defaultValue: 0,
-      field: 'pointsEarned',
     },
     pointsUsed: {
       type: DataTypes.INTEGER,
       defaultValue: 0,
-      field: 'pointsUsed',
     },
     pointsDiscount: {
       type: DataTypes.DECIMAL(19, 2),
       defaultValue: 0,
-      field: 'pointsDiscount',
     },
     warrantyCost: {
       type: DataTypes.DECIMAL(19, 2),
@@ -208,7 +205,7 @@ const Order = sequelize.define(
     tableName: 'orders',
     timestamps: true,
     paranoid: true,
-    underscored: false,
+    underscored: true,
   }
 );
 

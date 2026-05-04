@@ -24,7 +24,7 @@ const NewsletterSubscriber = sequelize.define(
   {
     tableName: 'newsletter_subscribers',
     timestamps: true,
-    underscored: false,
+    underscored: true,
   }
 );
 

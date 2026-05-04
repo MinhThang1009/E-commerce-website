@@ -52,7 +52,7 @@ const WarrantyPackage = sequelize.define(
   {
     tableName: 'warranty_packages',
     timestamps: true,
-    underscored: false,
+    underscored: true,
   }
 );
 

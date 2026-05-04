@@ -58,7 +58,6 @@ const User = sequelize.define(
     isActive: {
       type: DataTypes.BOOLEAN,
       defaultValue: true,
-      field: 'isActive', // Dùng camelCase trực tiếp trong database
     },
     otpCode: {
       type: DataTypes.STRING(6),
@@ -84,14 +83,13 @@ const User = sequelize.define(
     loyaltyPoints: {
       type: DataTypes.INTEGER,
       defaultValue: 0,
-      field: 'loyaltyPoints',
     },
   },
   {
     tableName: 'users',
     timestamps: true,
     paranoid: true,
-    underscored: false,
+    underscored: true,
     hooks: {
       beforeCreate: async (user) => {
         if (user.password) {

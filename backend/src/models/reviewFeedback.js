@@ -25,7 +25,7 @@ const ReviewFeedback = sequelize.define(
   {
     tableName: 'review_feedbacks',
     timestamps: true,
-    underscored: false,
+    underscored: true,
   }
 );
 

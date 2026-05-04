@@ -3430,70 +3430,70 @@ search.*          — trang tìm kiếm
 > **Mỗi chức năng dành cho user phải hoạt động đầu cuối — không crash, không 404, không spinner vô hạn.**
 
 ### 26.1 Homepage
-- [ ] Hero banner hiển thị đúng, autoplay/click link hoạt động
-- [ ] Featured products load từ API (không phải mock), click vào sản phẩm → đi đến ProductDetailPage
-- [ ] Category grid hiển thị đúng 45 sản phẩm phân loại
-- [ ] Newsletter signup: nhập email → submit → nhận toast thành công
-- [ ] Không có lỗi 404 / 500 trong Network tab
+- [x] Hero banner hiển thị đúng, autoplay/click link hoạt động
+- [x] Featured products load từ API (không phải mock), click vào sản phẩm → đi đến ProductDetailPage
+- [x] Category grid hiển thị đúng 45 sản phẩm phân loại
+- [x] Newsletter signup: nhập email → submit → nhận toast thành công
+- [x] Không có lỗi 404 / 500 trong Network tab
 
 ### 26.2 Product Listing / Shop Page
-- [ ] Filter theo danh mục, thương hiệu, giá hoạt động → URL query params cập nhật
-- [ ] Sort theo giá tăng/giảm, mới nhất → danh sách thay đổi đúng
-- [ ] Pagination hoặc infinite scroll hoạt động, không duplicate sản phẩm
-- [ ] Filter kết hợp nhiều tiêu chí cùng lúc → kết quả đúng
-- [ ] Khi không có kết quả → hiển thị "Không tìm thấy sản phẩm" thay vì blank
+- [x] Filter theo danh mục, thương hiệu, giá hoạt động → URL query params cập nhật
+- [x] Sort theo giá tăng/giảm, mới nhất → danh sách thay đổi đúng
+- [x] Pagination hoặc infinite scroll hoạt động, không duplicate sản phẩm
+- [x] Filter kết hợp nhiều tiêu chí cùng lúc → kết quả đúng
+- [x] Khi không có kết quả → hiển thị "Không tìm thấy sản phẩm" thay vì blank
 
 ### 26.3 Product Detail Page
-- [ ] Gallery ảnh: thumbnail click đổi main image
-- [ ] Variant selector: chọn color/size → giá cập nhật, stock status đúng
-- [ ] Nút "Thêm vào giỏ" → disabled khi hết hàng, enabled khi còn hàng
-- [ ] Tab Reviews: load đúng, submit review (sau khi mua) hoạt động với ảnh upload
-- [ ] Related products hiển thị đúng danh mục
+- [x] Gallery ảnh: thumbnail click đổi main image
+- [x] Variant selector: chọn color/size → giá cập nhật, stock status đúng
+- [x] Nút "Thêm vào giỏ" → disabled khi hết hàng, enabled khi còn hàng
+- [x] Tab Reviews: load đúng, submit review (sau khi mua) hoạt động với ảnh upload
+- [x] Related products hiển thị đúng danh mục
 
 ### 26.4 Cart
-- [ ] Add to cart → số lượng badge trên header cập nhật ngay lập tức
-- [ ] Tăng/giảm số lượng trong cart → subtotal tính lại đúng
-- [ ] Xóa item khỏi cart → item biến mất, total cập nhật
-- [ ] Nhập discount code hợp lệ → giảm giá được áp dụng đúng
-- [ ] Guest cart (chưa login) → sau khi login → cart được merge
-- [ ] Cart persist khi refresh trang (localStorage hoặc server)
+- [x] Add to cart → số lượng badge trên header cập nhật ngay lập tức
+- [x] Tăng/giảm số lượng trong cart → subtotal tính lại đúng
+- [x] Xóa item khỏi cart → item biến mất, total cập nhật
+- [x] Nhập discount code hợp lệ → giảm giá được áp dụng đúng
+- [x] Guest cart (chưa login) → sau khi login → cart được merge
+- [x] Cart persist khi refresh trang (localStorage hoặc server)
 
 ### 26.5 Checkout
-- [ ] Form địa chỉ: validate required fields, save địa chỉ mới vào address book
-- [ ] Chọn địa chỉ đã lưu → form tự điền
-- [ ] Shipping options load với phí đúng
-- [ ] Payment: Stripe card form render đúng, submit → redirect đến order confirmation
-- [ ] COD payment → order tạo thành công, status = pending
-- [ ] Nhận email xác nhận đơn hàng sau khi thanh toán thành công
+- [x] Form địa chỉ: validate required fields, save địa chỉ mới vào address book
+- [x] Chọn địa chỉ đã lưu → form tự điền
+- [x] Shipping options load với phí đúng
+- [x] Payment: Stripe card form render đúng, submit → redirect đến order confirmation
+- [x] COD payment → order tạo thành công, status = pending
+- [x] Nhận email xác nhận đơn hàng sau khi thanh toán thành công
 
 ### 26.6 User Account
-- [ ] Trang Profile: update họ tên, SĐT → save → hiển thị lại đúng
-- [ ] Đổi mật khẩu: nhập password cũ sai → báo lỗi; đúng → đổi thành công
-- [ ] Address Book: thêm/sửa/xóa địa chỉ, set default address
-- [ ] Order History: list orders, click order → xem order detail với đúng items
-- [ ] Wishlist: add từ product detail → hiển thị trong wishlist; remove hoạt động
-- [ ] Loyalty points: số điểm hiển thị đúng; điểm tăng sau khi đơn hàng hoàn thành
+- [x] Trang Profile: update họ tên, SĐT → save → hiển thị lại đúng
+- [x] Đổi mật khẩu: nhập password cũ sai → báo lỗi; đúng → đổi thành công
+- [x] Address Book: thêm/sửa/xóa địa chỉ, set default address
+- [x] Order History: list orders, click order → xem order detail với đúng items
+- [x] Wishlist: add từ product detail → hiển thị trong wishlist; remove hoạt động
+- [x] Loyalty points: số điểm hiển thị đúng; điểm tăng sau khi đơn hàng hoàn thành
 
 ### 26.7 Chatbot AI
-- [ ] Hỏi về sản phẩm → trả lời có thông tin sản phẩm từ RAG
-- [ ] Hỏi câu ngoài phạm vi → trả lời fallback hợp lý, không crash
-- [ ] Conversation history hiển thị đúng trong UI
+- [x] Hỏi về sản phẩm → trả lời có thông tin sản phẩm từ RAG
+- [x] Hỏi câu ngoài phạm vi → trả lời fallback hợp lý, không crash
+- [x] Conversation history hiển thị đúng trong UI
 
 ### 26.8 Real-time Support Chat
-- [ ] User gửi message → admin thấy ngay (Socket.IO)
-- [ ] Admin reply → user thấy ngay
-- [ ] Badge "tin nhắn chưa đọc" cập nhật đúng
+- [x] User gửi message → admin thấy ngay (Socket.IO)
+- [x] Admin reply → user thấy ngay
+- [x] Badge "tin nhắn chưa đọc" cập nhật đúng
 
 ### 26.9 Các trang phụ
-- [ ] News/Blog: list bài viết, click → xem chi tiết với HTML content render đúng
-- [ ] Contact page: submit form → admin nhận thông báo hoặc email
-- [ ] 404 page hiển thị khi truy cập route không tồn tại
+- [x] News/Blog: list bài viết, click → xem chi tiết với HTML content render đúng
+- [x] Contact page: submit form → admin nhận thông báo hoặc email
+- [x] 404 page hiển thị khi truy cập route không tồn tại
 
 ### ✅ Acceptance Criteria Phase 26
-- [ ] Toàn bộ 26.1–26.9: không có trang nào crash (white screen / unhandled exception)
-- [ ] Network tab của Chrome DevTools: không có request nào trả về 404 hoặc 500 trong happy path
-- [ ] Flow mua hàng đầu cuối hoạt động: đăng ký → duyệt sản phẩm → giỏ hàng → checkout → xác nhận
-- [ ] Logout → dùng token cũ → nhận 401
+- [x] Toàn bộ 26.1–26.9: không có trang nào crash (white screen / unhandled exception)
+- [x] Network tab của Chrome DevTools: không có request nào trả về 404 hoặc 500 trong happy path
+- [x] Flow mua hàng đầu cuối hoạt động: đăng ký → duyệt sản phẩm → giỏ hàng → checkout → xác nhận
+- [x] Logout → dùng token cũ → nhận 401
 
 ---
 

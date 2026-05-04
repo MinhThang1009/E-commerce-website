@@ -22,11 +22,15 @@ const NewsListPage: React.FC = () => {
     t('news.categories.tips'),
   ];
 
+  // Chỉ truyền category khi đã chọn cụ thể — tránh bug khi app chạy tiếng Anh:
+  // t('news.categories.all') = 'All' nhưng backend chỉ loại trừ 'Tất cả',
+  // nên 'All' sẽ vọt qua thành filter không hợp lệ → trả về 0 bài viết.
+  const categoryParam = searchParams.get('category') || undefined;
   const { data: newsData, isLoading } = useGetNewsQuery({
     page,
     limit,
     search,
-    category: currentCategory,
+    category: categoryParam,
     isPublished: true,
   });
 

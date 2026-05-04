@@ -27,6 +27,8 @@ import { cartApi, useGetCartCountQuery } from '@/services/cartApi';
 import { useCreateMomoUrlMutation } from '@/services/momoApi';
 import { useCreateVNPayUrlMutation } from '@/services/vnpayApi';
 import { useGetLoyaltyInfoQuery } from '@/services/loyaltyApi';
+import { useGetAddressesQuery } from '@/services/userApi';
+import { Address } from '@/types/user.types';
 
 const CheckoutPage: React.FC = () => {
   const { t, i18n } = useTranslation();
@@ -146,6 +148,11 @@ const CheckoutPage: React.FC = () => {
     skip: !user,
   });
   const availablePoints = loyaltyData?.data?.points || 0;
+
+  // Địa chỉ đã lưu để tự động điền vào form khi người dùng chọn
+  const { data: savedAddresses } = useGetAddressesQuery(undefined, {
+    skip: !user,
+  });
   const [pointsToUse, setPointsToUse] = useState<number>(0);
   const [pointsError, setPointsError] = useState('');
 
@@ -811,6 +818,41 @@ const CheckoutPage: React.FC = () => {
               <h2 className="text-xl font-semibold text-neutral-800 dark:text-neutral-100 mb-6">
                 {t('checkout.shippingInfo.title')}
               </h2>
+
+              {/* Chọn địa chỉ đã lưu để tự động điền vào form */}
+              {savedAddresses && savedAddresses.length > 0 && (
+                <div className="mb-6">
+                  <label className="block text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-2">
+                    {t('checkout.shippingInfo.savedAddresses')}
+                  </label>
+                  <select
+                    className="w-full px-4 py-2.5 rounded-lg border border-neutral-300 dark:border-neutral-600 bg-white dark:bg-neutral-700 text-sm focus:ring-2 focus:ring-primary-500/20 focus:border-primary-500 outline-none"
+                    defaultValue=""
+                    onChange={(e) => {
+                      const addrId = e.target.value;
+                      if (!addrId) return;
+                      const addr = savedAddresses.find((a: Address) => a.id === addrId);
+                      if (!addr) return;
+                      // Tự động điền form từ địa chỉ đã chọn
+                      setFormData(prev => ({
+                        ...prev,
+                        firstName: addr.firstName || prev.firstName,
+                        lastName: addr.lastName || prev.lastName,
+                        phone: addr.phone || prev.phone,
+                        address: addr.address1 + (addr.address2 ? `, ${addr.address2}` : ''),
+                      }));
+                    }}
+                  >
+                    <option value="">{t('checkout.shippingInfo.selectSaved')}</option>
+                    {savedAddresses.map((addr: Address) => (
+                      <option key={addr.id} value={addr.id}>
+                        {addr.isDefault ? `★ ` : ''}{addr.name ? `${addr.name}: ` : ''}{addr.firstName} {addr.lastName} — {addr.address1}, {addr.city}
+                      </option>
+                    ))}
+                  </select>
+                  <p className="text-xs text-neutral-500 dark:text-neutral-400 mt-1">{t('checkout.shippingInfo.orEnterNew')}</p>
+                </div>
+              )}
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <Input

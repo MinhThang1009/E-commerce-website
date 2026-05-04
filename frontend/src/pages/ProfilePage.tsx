@@ -9,12 +9,45 @@ import { addNotification } from '@/features/ui/uiSlice';
 import {
   useUpdateProfileMutation,
   useChangePasswordMutation,
+  useGetAddressesQuery,
+  useAddAddressMutation,
+  useUpdateAddressMutation,
+  useDeleteAddressMutation,
+  useSetDefaultAddressMutation,
 } from '@/services/userApi';
+import { Address } from '@/types/user.types';
 import { useGetCurrentUserQuery } from '@/services/authApi';
 import { useGetLoyaltyInfoQuery } from '@/services/loyaltyApi';
 import { formatPrice } from '@/utils/format';
 
-type TabKey = 'info' | 'password' | 'orders' | 'loyalty';
+type TabKey = 'info' | 'password' | 'orders' | 'addresses' | 'loyalty';
+
+// Form trạng thái địa chỉ
+interface AddressForm {
+  name: string;
+  firstName: string;
+  lastName: string;
+  phone: string;
+  address1: string;
+  address2: string;
+  city: string;
+  state: string;
+  zip: string;
+  country: string;
+}
+
+const emptyAddressForm: AddressForm = {
+  name: '',
+  firstName: '',
+  lastName: '',
+  phone: '',
+  address1: '',
+  address2: '',
+  city: '',
+  state: '',
+  zip: '',
+  country: '',
+};
 
 const ProfilePage: React.FC = () => {
   const { t, i18n } = useTranslation();
@@ -26,6 +59,18 @@ const ProfilePage: React.FC = () => {
   const { data: loyaltyData } = useGetLoyaltyInfoQuery();
   const [updateProfile, { isLoading: isUpdating }] = useUpdateProfileMutation();
   const [changePassword, { isLoading: isChangingPassword }] = useChangePasswordMutation();
+
+  // Hooks địa chỉ
+  const { data: addressesData, isLoading: isLoadingAddresses } = useGetAddressesQuery();
+  const [addAddress, { isLoading: isAddingAddress }] = useAddAddressMutation();
+  const [updateAddress, { isLoading: isUpdatingAddress }] = useUpdateAddressMutation();
+  const [deleteAddress] = useDeleteAddressMutation();
+  const [setDefaultAddress] = useSetDefaultAddressMutation();
+
+  // Trạng thái UI quản lý địa chỉ
+  const [showAddressForm, setShowAddressForm] = useState(false);
+  const [editingAddressId, setEditingAddressId] = useState<string | null>(null);
+  const [addressForm, setAddressForm] = useState<AddressForm>(emptyAddressForm);
 
   const [formData, setFormData] = useState({
     firstName: user?.firstName || '',
@@ -108,6 +153,71 @@ const ProfilePage: React.FC = () => {
     }
   };
 
+  // Xử lý mở form thêm địa chỉ mới
+  const handleOpenAddAddress = () => {
+    setEditingAddressId(null);
+    setAddressForm(emptyAddressForm);
+    setShowAddressForm(true);
+  };
+
+  // Xử lý mở form sửa địa chỉ
+  const handleOpenEditAddress = (addr: Address) => {
+    setEditingAddressId(addr.id);
+    setAddressForm({
+      name: addr.name || '',
+      firstName: addr.firstName,
+      lastName: addr.lastName,
+      phone: addr.phone || '',
+      address1: addr.address1,
+      address2: addr.address2 || '',
+      city: addr.city,
+      state: addr.state,
+      zip: addr.zip,
+      country: addr.country,
+    });
+    setShowAddressForm(true);
+  };
+
+  // Xử lý lưu địa chỉ (thêm mới hoặc cập nhật)
+  const handleSaveAddress = async (e: React.FormEvent) => {
+    e.preventDefault();
+    try {
+      if (editingAddressId) {
+        await updateAddress({ id: editingAddressId, ...addressForm }).unwrap();
+        dispatch(addNotification({ type: 'success', message: t('profile.addresses.updateSuccess'), duration: 3000 }));
+      } else {
+        await addAddress(addressForm as Omit<Address, 'id'>).unwrap();
+        dispatch(addNotification({ type: 'success', message: t('profile.addresses.addSuccess'), duration: 3000 }));
+      }
+      setShowAddressForm(false);
+      setEditingAddressId(null);
+      setAddressForm(emptyAddressForm);
+    } catch (err: any) {
+      dispatch(addNotification({ type: 'error', message: err?.data?.message || t('common.error'), duration: 5000 }));
+    }
+  };
+
+  // Xử lý xóa địa chỉ
+  const handleDeleteAddress = async (id: string) => {
+    if (!window.confirm(t('profile.addresses.confirmDelete'))) return;
+    try {
+      await deleteAddress(id).unwrap();
+      dispatch(addNotification({ type: 'success', message: t('profile.addresses.deleteSuccess'), duration: 3000 }));
+    } catch (err: any) {
+      dispatch(addNotification({ type: 'error', message: err?.data?.message || t('common.error'), duration: 5000 }));
+    }
+  };
+
+  // Xử lý đặt địa chỉ mặc định
+  const handleSetDefault = async (id: string) => {
+    try {
+      await setDefaultAddress(id).unwrap();
+      dispatch(addNotification({ type: 'success', message: t('profile.addresses.defaultSuccess'), duration: 3000 }));
+    } catch (err: any) {
+      dispatch(addNotification({ type: 'error', message: err?.data?.message || t('common.error'), duration: 5000 }));
+    }
+  };
+
   const displayName = `${formData.firstName} ${formData.lastName}`.trim() || t('profile.defaultName');
   const initials = `${formData.firstName?.[0] || ''}${formData.lastName?.[0] || ''}`.toUpperCase() || 'U';
 
@@ -136,6 +246,16 @@ const ProfilePage: React.FC = () => {
       icon: (
         <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z" />
+        </svg>
+      ),
+    },
+    {
+      key: 'addresses',
+      label: t('profile.tabs.addresses'),
+      icon: (
+        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
         </svg>
       ),
     },
@@ -449,6 +569,195 @@ const ProfilePage: React.FC = () => {
                 {t('profile.orders.viewAll')}
               </Link>
             </div>
+          </div>
+        )}
+
+        {activeTab === 'addresses' && (
+          <div className="bg-white dark:bg-neutral-900 rounded-2xl shadow-sm border border-neutral-100 dark:border-neutral-800 p-6">
+            <div className="flex items-center justify-between mb-6">
+              <div>
+                <h2 className="text-lg font-semibold text-neutral-900 dark:text-white">{t('profile.addresses.title')}</h2>
+                <p className="text-sm text-neutral-500 dark:text-neutral-400 mt-0.5">{t('profile.addresses.subtitle')}</p>
+              </div>
+              {!showAddressForm && (
+                <button
+                  onClick={handleOpenAddAddress}
+                  className="flex items-center gap-2 px-4 py-2 rounded-lg bg-primary-600 hover:bg-primary-700 text-white text-sm font-medium transition-colors"
+                >
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+                  </svg>
+                  {t('profile.addresses.addNew')}
+                </button>
+              )}
+            </div>
+
+            {/* Form thêm/sửa địa chỉ */}
+            {showAddressForm && (
+              <form onSubmit={handleSaveAddress} className="mb-8 p-5 bg-neutral-50 dark:bg-neutral-800 rounded-xl border border-neutral-200 dark:border-neutral-700">
+                <h3 className="text-base font-semibold text-neutral-800 dark:text-neutral-100 mb-5">
+                  {editingAddressId ? t('profile.addresses.editTitle') : t('profile.addresses.addTitle')}
+                </h3>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="md:col-span-2">
+                    <label className="block text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-1">{t('profile.addresses.labelName')}</label>
+                    <input
+                      value={addressForm.name}
+                      onChange={(e) => setAddressForm(p => ({ ...p, name: e.target.value }))}
+                      placeholder={t('profile.addresses.labelName')}
+                      className="w-full px-4 py-2.5 rounded-xl border border-neutral-300 dark:border-neutral-600 bg-white dark:bg-neutral-700 text-sm focus:ring-2 focus:ring-primary-500/20 focus:border-primary-500 outline-none"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-1">{t('profile.addresses.labelFirstName')} *</label>
+                    <input
+                      required
+                      value={addressForm.firstName}
+                      onChange={(e) => setAddressForm(p => ({ ...p, firstName: e.target.value }))}
+                      className="w-full px-4 py-2.5 rounded-xl border border-neutral-300 dark:border-neutral-600 bg-white dark:bg-neutral-700 text-sm focus:ring-2 focus:ring-primary-500/20 focus:border-primary-500 outline-none"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-1">{t('profile.addresses.labelLastName')} *</label>
+                    <input
+                      required
+                      value={addressForm.lastName}
+                      onChange={(e) => setAddressForm(p => ({ ...p, lastName: e.target.value }))}
+                      className="w-full px-4 py-2.5 rounded-xl border border-neutral-300 dark:border-neutral-600 bg-white dark:bg-neutral-700 text-sm focus:ring-2 focus:ring-primary-500/20 focus:border-primary-500 outline-none"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-1">{t('profile.addresses.labelPhone')}</label>
+                    <input
+                      type="tel"
+                      value={addressForm.phone}
+                      onChange={(e) => setAddressForm(p => ({ ...p, phone: e.target.value }))}
+                      className="w-full px-4 py-2.5 rounded-xl border border-neutral-300 dark:border-neutral-600 bg-white dark:bg-neutral-700 text-sm focus:ring-2 focus:ring-primary-500/20 focus:border-primary-500 outline-none"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-1">{t('profile.addresses.labelCity')} *</label>
+                    <input
+                      required
+                      value={addressForm.city}
+                      onChange={(e) => setAddressForm(p => ({ ...p, city: e.target.value }))}
+                      className="w-full px-4 py-2.5 rounded-xl border border-neutral-300 dark:border-neutral-600 bg-white dark:bg-neutral-700 text-sm focus:ring-2 focus:ring-primary-500/20 focus:border-primary-500 outline-none"
+                    />
+                  </div>
+                  <div className="md:col-span-2">
+                    <label className="block text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-1">{t('profile.addresses.labelAddress')} *</label>
+                    <input
+                      required
+                      value={addressForm.address1}
+                      onChange={(e) => setAddressForm(p => ({ ...p, address1: e.target.value }))}
+                      className="w-full px-4 py-2.5 rounded-xl border border-neutral-300 dark:border-neutral-600 bg-white dark:bg-neutral-700 text-sm focus:ring-2 focus:ring-primary-500/20 focus:border-primary-500 outline-none"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-1">{t('profile.addresses.labelState')}</label>
+                    <input
+                      value={addressForm.state}
+                      onChange={(e) => setAddressForm(p => ({ ...p, state: e.target.value }))}
+                      className="w-full px-4 py-2.5 rounded-xl border border-neutral-300 dark:border-neutral-600 bg-white dark:bg-neutral-700 text-sm focus:ring-2 focus:ring-primary-500/20 focus:border-primary-500 outline-none"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-1">{t('profile.addresses.labelZip')}</label>
+                    <input
+                      value={addressForm.zip}
+                      onChange={(e) => setAddressForm(p => ({ ...p, zip: e.target.value }))}
+                      className="w-full px-4 py-2.5 rounded-xl border border-neutral-300 dark:border-neutral-600 bg-white dark:bg-neutral-700 text-sm focus:ring-2 focus:ring-primary-500/20 focus:border-primary-500 outline-none"
+                    />
+                  </div>
+                </div>
+                <div className="flex justify-end gap-3 mt-5 pt-4 border-t border-neutral-200 dark:border-neutral-700">
+                  <button
+                    type="button"
+                    onClick={() => { setShowAddressForm(false); setEditingAddressId(null); setAddressForm(emptyAddressForm); }}
+                    className="px-4 py-2 rounded-lg border border-neutral-300 dark:border-neutral-600 text-neutral-700 dark:text-neutral-300 text-sm font-medium hover:bg-neutral-50 dark:hover:bg-neutral-800 transition-colors"
+                  >
+                    {t('profile.addresses.cancel')}
+                  </button>
+                  <button
+                    type="submit"
+                    disabled={isAddingAddress || isUpdatingAddress}
+                    className="flex items-center gap-2 px-5 py-2 rounded-lg bg-primary-600 hover:bg-primary-700 text-white text-sm font-medium transition-colors disabled:opacity-60"
+                  >
+                    {(isAddingAddress || isUpdatingAddress) && (
+                      <div className="animate-spin rounded-full h-4 w-4 border-2 border-white/30 border-t-white" />
+                    )}
+                    {t('profile.addresses.saveBtn')}
+                  </button>
+                </div>
+              </form>
+            )}
+
+            {/* Danh sách địa chỉ */}
+            {isLoadingAddresses ? (
+              <div className="py-8 flex justify-center">
+                <div className="animate-spin rounded-full h-8 w-8 border-2 border-primary-200 border-t-primary-600" />
+              </div>
+            ) : !addressesData || addressesData.length === 0 ? (
+              <div className="text-center py-12">
+                <div className="w-16 h-16 bg-neutral-100 dark:bg-neutral-800 rounded-2xl flex items-center justify-center mx-auto mb-4">
+                  <svg className="w-8 h-8 text-neutral-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+                  </svg>
+                </div>
+                <p className="text-neutral-500 dark:text-neutral-400 mb-1">{t('profile.addresses.empty')}</p>
+                <p className="text-neutral-400 dark:text-neutral-500 text-xs">{t('profile.addresses.emptyHint')}</p>
+              </div>
+            ) : (
+              <div className="space-y-3">
+                {addressesData.map((addr: Address) => (
+                  <div
+                    key={addr.id}
+                    className={`relative p-4 rounded-xl border transition-colors ${
+                      addr.isDefault
+                        ? 'border-primary-400 dark:border-primary-600 bg-primary-50 dark:bg-primary-900/10'
+                        : 'border-neutral-200 dark:border-neutral-700 bg-white dark:bg-neutral-800/50'
+                    }`}
+                  >
+                    {addr.isDefault && (
+                      <span className="absolute top-3 right-3 inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-semibold bg-primary-100 dark:bg-primary-900/30 text-primary-700 dark:text-primary-300">
+                        <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20"><path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" /></svg>
+                        {t('profile.addresses.labelDefault')}
+                      </span>
+                    )}
+                    {addr.name && (
+                      <p className="text-xs font-semibold uppercase tracking-wider text-neutral-400 dark:text-neutral-500 mb-1">{addr.name}</p>
+                    )}
+                    <p className="text-sm font-semibold text-neutral-800 dark:text-neutral-100">{addr.firstName} {addr.lastName}</p>
+                    <p className="text-sm text-neutral-600 dark:text-neutral-400 mt-0.5">{addr.address1}{addr.address2 ? `, ${addr.address2}` : ''}</p>
+                    <p className="text-sm text-neutral-600 dark:text-neutral-400">{[addr.city, addr.state, addr.zip, addr.country].filter(Boolean).join(', ')}</p>
+                    {addr.phone && <p className="text-sm text-neutral-500 dark:text-neutral-500 mt-0.5">{addr.phone}</p>}
+                    <div className="flex gap-3 mt-3 pt-3 border-t border-neutral-100 dark:border-neutral-700">
+                      {!addr.isDefault && (
+                        <button
+                          onClick={() => handleSetDefault(addr.id)}
+                          className="text-xs text-primary-600 dark:text-primary-400 hover:underline font-medium"
+                        >
+                          {t('profile.addresses.setDefault')}
+                        </button>
+                      )}
+                      <button
+                        onClick={() => handleOpenEditAddress(addr)}
+                        className="text-xs text-neutral-600 dark:text-neutral-400 hover:text-neutral-900 dark:hover:text-white font-medium"
+                      >
+                        {t('profile.addresses.edit')}
+                      </button>
+                      <button
+                        onClick={() => handleDeleteAddress(addr.id)}
+                        className="text-xs text-red-500 hover:text-red-700 dark:text-red-400 dark:hover:text-red-300 font-medium"
+                      >
+                        {t('profile.addresses.delete')}
+                      </button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
         )}
 

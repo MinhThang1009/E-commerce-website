@@ -13,6 +13,7 @@ import {
   useClearAllSearchHistoryMutation
 } from '@/services/searchHistoryApi';
 import { v4 as uuidv4 } from 'uuid';
+import { getLocale } from '@/utils/format';
 
 interface SearchBarProps {
   className?: string;
@@ -416,7 +417,7 @@ const SearchBar: React.FC<SearchBarProps> = ({
                                 {product.categoryName}
                               </p>
                               <p className="text-primary-600 dark:text-primary-400 font-medium">
-                                {new Intl.NumberFormat('vi-VN', {
+                                {new Intl.NumberFormat(getLocale(), {
                                   style: 'currency',
                                   currency: 'VND',
                                   maximumFractionDigits: 0,

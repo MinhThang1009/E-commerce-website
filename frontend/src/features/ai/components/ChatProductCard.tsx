@@ -1,6 +1,7 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
+import { getLocale } from '@/utils/format';
 import { ProductRecommendation } from '../services/chatbotApi';
 import {
   useTrackChatbotAnalyticsMutation,
@@ -76,8 +77,9 @@ const ChatProductCard: React.FC<ChatProductCardProps> = ({
     }
   };
 
+  // Luôn VND — locale động theo ngôn ngữ UI
   const formatPrice = (price: number) => {
-    return new Intl.NumberFormat('vi-VN', {
+    return new Intl.NumberFormat(getLocale(), {
       style: 'currency',
       currency: 'VND',
     }).format(price);

@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Modal, Input, List, Image, Button, Spin } from 'antd';
 import { useGetProductsQuery } from '@/services/productApi';
+import { getLocale } from '@/utils/format';
 
 const { Search } = Input;
 
@@ -69,7 +70,7 @@ const ProductPickerModal: React.FC<ProductPickerModalProps> = ({ open, onCancel,
                 description={
                   <div>
                     <span className="text-primary-600 font-bold">
-                      {new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(item.price)}
+                      {new Intl.NumberFormat(getLocale(), { style: 'currency', currency: 'VND' }).format(item.price)}
                     </span>
                     {item.stockQuantity > 0 ? (
                        <span className="ml-2 text-xs text-green-500">{t('product.inStock')}</span>

@@ -33,13 +33,12 @@ const DashboardPage: React.FC = () => {
   const { data: ordersData, isLoading: isOrdersLoading } =
     useGetAdminOrdersQuery({ page: 1, limit: 5 });
 
-  // Định dạng tiền tệ
+  // Định dạng tiền tệ — luôn dùng VND (trang thương mại Việt Nam)
   const formatCurrency = (amount: number) => {
     const locale = i18n.language === 'vi' ? 'vi-VN' : 'en-US';
-    const currency = i18n.language === 'vi' ? 'VND' : 'USD';
     return new Intl.NumberFormat(locale, {
       style: 'currency',
-      currency: currency,
+      currency: 'VND',
     }).format(amount);
   };
 

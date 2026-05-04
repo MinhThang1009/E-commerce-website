@@ -45,11 +45,11 @@ const DashboardCharts: React.FC = () => {
   });
 
   const formatCurrency = (amount: number) => {
+    // Luôn dùng VND — trang thương mại Việt Nam, không đổi sang USD khi chuyển EN
     const locale = i18n.language === 'vi' ? 'vi-VN' : 'en-US';
-    const currency = i18n.language === 'vi' ? 'VND' : 'USD';
     return new Intl.NumberFormat(locale, {
       style: 'currency',
-      currency: currency,
+      currency: 'VND',
       maximumFractionDigits: 0,
     }).format(amount);
   };

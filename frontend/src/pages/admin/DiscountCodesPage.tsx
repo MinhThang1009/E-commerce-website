@@ -29,6 +29,7 @@ import {
 } from '@ant-design/icons';
 import dayjs from 'dayjs';
 import { useTranslation } from 'react-i18next';
+import { getLocale } from '@/utils/format';
 import {
   useGetDiscountCodesQuery,
   useCreateDiscountCodeMutation,
@@ -118,10 +119,11 @@ const DiscountCodesPage: React.FC = () => {
     }
   };
 
+  // Luôn VND — locale động theo ngôn ngữ UI
   const formatPrice = (price: any) => {
     const num = parseFloat(price);
     if (isNaN(num)) return `0${t('common.currencySymbol')}`;
-    return new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(num);
+    return new Intl.NumberFormat(getLocale(), { style: 'currency', currency: 'VND' }).format(num);
   };
 
   const columns = [

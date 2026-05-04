@@ -25,6 +25,7 @@ import {
   InfoCircleOutlined,
 } from '@ant-design/icons';
 import { AttributeGroup, AttributeValue } from '@/services/attributeApi';
+import { getLocale } from '@/utils/format';
 
 const { Title, Text } = Typography;
 const { Option } = Select;
@@ -242,7 +243,7 @@ const HierarchicalVariantsForm: React.FC<HierarchicalVariantsFormProps> = ({
       title: t('variants.colPrice'),
       dataIndex: 'price',
       key: 'price',
-      render: (price: number) => `${price.toLocaleString()}${t('common.currencySymbol')}`,
+      render: (price: number) => `${price.toLocaleString(getLocale())}${t('common.currencySymbol')}`,
     },
     {
       title: t('variants.colStock'),
@@ -431,7 +432,7 @@ const HierarchicalVariantsForm: React.FC<HierarchicalVariantsFormProps> = ({
                         >
                           {' '}
                           ({(value.priceAdjustment ?? 0) > 0 ? '+' : ''}
-                          {(value.priceAdjustment ?? 0).toLocaleString()}{t('common.currencySymbol')})
+                          {(value.priceAdjustment ?? 0).toLocaleString(getLocale())}{t('common.currencySymbol')})
                         </span>
                       )}
                     </Option>

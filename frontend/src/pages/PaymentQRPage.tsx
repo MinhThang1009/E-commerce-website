@@ -6,6 +6,7 @@ import { useState, useEffect } from 'react';
 import { useSelector, useDispatch } from 'react-redux';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
+import { getLocale } from '@/utils/format';
 
 const PaymentQRPage: React.FC = () => {
   const { t } = useTranslation();
@@ -147,7 +148,8 @@ const PaymentQRPage: React.FC = () => {
 
   // card và cardFields chỉ dùng trong DEV panel — null-safe vì panel bị ẩn khi production
   const card = TEST_CARDS[selectedCard] ?? null;
-  const formatVND = (n: number) => new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(n);
+  // Luôn VND — locale động theo ngôn ngữ UI
+  const formatVND = (n: number) => new Intl.NumberFormat(getLocale(), { style: 'currency', currency: 'VND' }).format(n);
 
   const cardFields = card ? [
     { label: t('paymentQR.cardNumberField'), value: card.cardNumber, field: 'cardNumber' },

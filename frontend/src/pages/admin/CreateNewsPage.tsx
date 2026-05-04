@@ -23,6 +23,7 @@ import 'react-quill/dist/quill.snow.css';
 import { useTranslation } from 'react-i18next';
 import i18n from 'i18next';
 import ProductPickerModal from '@/components/admin/news/ProductPickerModal';
+import { getLocale } from '@/utils/format';
 
 // --- Custom Quill Blot for Product Card ---
 const BlockEmbed = Quill.import('blots/block/embed') as any;
@@ -171,8 +172,8 @@ const CreateNewsPage: React.FC = () => {
     const quill = quillRef.current.getEditor();
     const range = quill.getSelection(true);
 
-    const price = new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(product.price);
-    const oldPrice = new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(product.price * 1.2);
+    const price = new Intl.NumberFormat(getLocale(), { style: 'currency', currency: 'VND' }).format(product.price);
+    const oldPrice = new Intl.NumberFormat(getLocale(), { style: 'currency', currency: 'VND' }).format(product.price * 1.2);
     const imageUrl = product.images?.[0] || '/placeholder-image.jpg';
 
     const productData = { id: product.id, name: product.name, price, oldPrice, imageUrl, viewDetailsText: t('product.viewDetails') };

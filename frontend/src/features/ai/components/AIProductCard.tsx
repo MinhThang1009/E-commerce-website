@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { ProductRecommendation } from '../services/chatbotApi';
 import { EyeIcon, ImageIcon, StarIcon } from './icons';
+import { getLocale } from '@/utils/format';
 
 interface ProductCardProps {
   product: ProductRecommendation;
@@ -13,9 +14,9 @@ interface ProductCardProps {
  */
 const ProductCard: React.FC<ProductCardProps> = ({ product }) => {
   const { t } = useTranslation();
-  // Format giá tiền với dấu chấm ngăn cách hàng nghìn
+  // Format giá tiền — luôn VND, locale động theo ngôn ngữ UI
   const formatPrice = (price: number): string => {
-    return new Intl.NumberFormat('vi-VN', {
+    return new Intl.NumberFormat(getLocale(), {
       style: 'currency',
       currency: 'VND',
       minimumFractionDigits: 0,

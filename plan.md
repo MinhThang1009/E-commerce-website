@@ -3083,9 +3083,9 @@ search.*          — trang tìm kiếm
 - **Fix:** Chọn 1 ngôn ngữ thống nhất cho backend error messages (khuyến nghị: tiếng Anh cho error codes/keys, tiếng Việt cho user-facing messages trong validators)
 
 ### ✅ Acceptance Criteria Phase 20
-- [ ] Chuyển ngôn ngữ sang English → tất cả UI text hiển thị tiếng Anh, không còn text tiếng Việt hardcode
-- [ ] Giá sản phẩm hiển thị dạng `1.299.000 ₫` (không phải `1299000`)
-- [ ] Không có key nào xuất hiện trong `vi.json` mà thiếu trong `en.json` hoặc ngược lại
+- [x] Chuyển ngôn ngữ sang English → tất cả UI text hiển thị tiếng Anh, không còn text tiếng Việt hardcode
+- [x] Giá sản phẩm hiển thị dạng `1.299.000 ₫` (không phải `1299000`)
+- [x] Không có key nào xuất hiện trong `vi.json` mà thiếu trong `en.json` hoặc ngược lại
 
 ---
 

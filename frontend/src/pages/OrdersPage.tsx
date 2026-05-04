@@ -16,7 +16,7 @@ import {
   useConfirmReceivedMutation,
 } from '@/services/orderApi';
 import { cartApi, useClearCartMutation } from '@/services/cartApi';
-import { formatPrice } from '@/utils/format';
+import { formatPrice, getLocale } from '@/utils/format';
 import { RootState } from '@/store';
 import { toast } from '@/utils/toast';
 import ReviewModal from '@/components/reviews/ReviewModal';
@@ -182,17 +182,17 @@ const OrdersPage: React.FC = () => {
     setSelectedOrder(null);
   };
 
-  // Định dạng tiền tệ
+  // Định dạng tiền tệ — luôn VND, locale động theo ngôn ngữ UI
   const formatCurrency = (amount: number) => {
-    return new Intl.NumberFormat('vi-VN', {
+    return new Intl.NumberFormat(getLocale(), {
       style: 'currency',
       currency: 'VND',
     }).format(amount);
   };
 
-  // Định dạng ngày giờ
+  // Định dạng ngày giờ theo locale hiện tại
   const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString('vi-VN', {
+    return new Date(dateString).toLocaleDateString(getLocale(), {
       year: 'numeric',
       month: '2-digit',
       day: '2-digit',

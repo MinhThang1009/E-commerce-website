@@ -3,6 +3,7 @@ import { useTranslation } from 'react-i18next';
 import { Button, Row, Col, Typography, Table, Space, Tag, Alert } from 'antd';
 import { PlusOutlined, EditOutlined, DeleteOutlined } from '@ant-design/icons';
 import { ProductVariant } from '@/types';
+import { getLocale } from '@/utils/format';
 
 const { Title, Text } = Typography;
 
@@ -50,7 +51,7 @@ const ProductVariantsSection: React.FC<ProductVariantsSectionProps> = ({
       title: t('productSection.variants.priceColumn'),
       dataIndex: 'price',
       key: 'price',
-      render: (price: number) => `${price.toLocaleString()}${t('common.currencySymbol')}`,
+      render: (price: number) => `${price.toLocaleString(getLocale())}${t('common.currencySymbol')}`,
     },
     {
       title: t('productSection.variants.stockColumn'),

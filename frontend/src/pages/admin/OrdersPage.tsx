@@ -41,6 +41,7 @@ import {
 } from '@/services/adminOrderApi';
 import styles from './OrdersPage.module.css';
 import { useTranslation } from 'react-i18next';
+import { getLocale } from '@/utils/format';
 
 const { Option } = Select;
 const { TextArea } = Input;
@@ -93,9 +94,9 @@ const OrdersPage: React.FC = () => {
   const [updateOrderStatus, { isLoading: isUpdating }] =
     useUpdateOrderStatusMutation();
 
-  // Định dạng tiền tệ
+  // Định dạng tiền tệ — luôn VND, locale động theo ngôn ngữ UI
   const formatCurrency = useCallback((amount: number) => {
-    return new Intl.NumberFormat('vi-VN', {
+    return new Intl.NumberFormat(getLocale(), {
       style: 'currency',
       currency: 'VND',
     }).format(amount);

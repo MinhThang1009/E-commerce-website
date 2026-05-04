@@ -6,6 +6,7 @@ import {
   InfoCircleOutlined,
 } from '@ant-design/icons';
 import { WarrantyPackage } from '@/types/product.types';
+import { getLocale } from '@/utils/format';
 
 interface WarrantySelectionProps {
   warrantyPackages: WarrantyPackage[];
@@ -22,10 +23,8 @@ const WarrantySelection: React.FC<WarrantySelectionProps> = ({
   const [expandedPackages, setExpandedPackages] = useState<string[]>([]);
 
   const formatPrice = (price: number) => {
-    return new Intl.NumberFormat('vi-VN', {
-      style: 'currency',
-      currency: 'VND',
-    }).format(price);
+    // Luôn dùng VND — dùng locale động để format dấu phân tách
+    return `${price.toLocaleString(getLocale())}${t('common.currencySymbol')}`;
   };
 
   const togglePackage = (packageId: string) => {

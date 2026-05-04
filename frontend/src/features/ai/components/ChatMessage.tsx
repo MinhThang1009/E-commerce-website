@@ -1,13 +1,12 @@
 import React from 'react';
-import { useTranslation } from 'react-i18next';
 import { Message } from '../types/Message';
+import { getLocale } from '@/utils/format';
 
 interface ChatMessageProps {
   message: Message;
 }
 
 const ChatMessage: React.FC<ChatMessageProps> = ({ message }) => {
-  const { t } = useTranslation();
   const { sender, text, isLoading } = message;
 
   const isAI = sender === 'ai';
@@ -111,7 +110,7 @@ const ChatMessage: React.FC<ChatMessageProps> = ({ message }) => {
                 clipRule="evenodd"
               />
             </svg>
-            {new Date().toLocaleTimeString('vi-VN', {
+            {new Date().toLocaleTimeString(getLocale(), {
               hour: '2-digit',
               minute: '2-digit',
             })}

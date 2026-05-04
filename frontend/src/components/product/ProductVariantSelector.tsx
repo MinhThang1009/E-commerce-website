@@ -3,6 +3,7 @@ import { useTranslation } from 'react-i18next';
 import { Card, Button, Space, Typography, Tag, Divider } from 'antd';
 import { CheckOutlined } from '@ant-design/icons';
 import { ProductWithVariants } from '@/types/product.types';
+import { getLocale } from '@/utils/format';
 
 const { Text } = Typography;
 
@@ -30,10 +31,8 @@ const ProductVariantSelector: React.FC<ProductVariantSelectorProps> = ({
   }
 
   const formatPrice = (price: number) => {
-    return new Intl.NumberFormat('vi-VN', {
-      style: 'currency',
-      currency: 'VND',
-    }).format(price);
+    // Luôn dùng VND — dùng locale động để format dấu phân tách (vi: dấu chấm, en: dấu phẩy)
+    return `${price.toLocaleString(getLocale())}${t('common.currencySymbol')}`;
   };
 
   const currentVariant = product.currentVariant;

@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useSelector } from 'react-redux';
+import { getLocale } from '@/utils/format';
 import { RootState } from '@/store';
 import {
   useGetProductReviewsQuery,
@@ -64,7 +65,7 @@ const ReviewList: React.FC<ReviewListProps> = ({ productId }) => {
   };
 
   const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString('vi-VN', {
+    return new Date(dateString).toLocaleDateString(getLocale(), {
       year: 'numeric',
       month: 'long',
       day: 'numeric',

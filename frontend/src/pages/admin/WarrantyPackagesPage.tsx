@@ -26,6 +26,7 @@ import {
   StopOutlined,
 } from '@ant-design/icons';
 import { useTranslation } from 'react-i18next';
+import { getLocale } from '@/utils/format';
 import {
   useGetWarrantyPackagesQuery,
   useCreateWarrantyPackageMutation,
@@ -97,8 +98,9 @@ const WarrantyPackagesPage: React.FC = () => {
     }
   };
 
+  // Luôn VND — locale động theo ngôn ngữ UI
   const formatPrice = (price: number) =>
-    new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(price);
+    new Intl.NumberFormat(getLocale(), { style: 'currency', currency: 'VND' }).format(price);
 
   const columns = [
     {

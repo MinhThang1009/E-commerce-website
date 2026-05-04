@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useDispatch, useSelector } from 'react-redux';
+import { getLocale } from '@/utils/format';
 import { RootState } from '@/store';
 import {
   setPriceRange,
@@ -78,8 +79,9 @@ const ProductFilters: React.FC<ProductFiltersProps> = ({
     if (isMobile && onClose) onClose();
   };
 
+  // Luôn VND — locale động theo ngôn ngữ UI
   const formatPrice = (price: number) => {
-    return new Intl.NumberFormat('vi-VN', {
+    return new Intl.NumberFormat(getLocale(), {
       style: 'currency',
       currency: 'VND',
       maximumFractionDigits: 0,

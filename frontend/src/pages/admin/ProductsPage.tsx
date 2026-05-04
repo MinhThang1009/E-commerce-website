@@ -11,6 +11,7 @@ import { useGetAllCategoriesQuery } from '@/services/categoryApi';
 import { useTranslation } from 'react-i18next';
 import ProductExportModal from '@/components/admin/ProductExportModal';
 import { calculatePriceRange } from '@/utils/priceUtils';
+import { getLocale } from '@/utils/format';
 import {
   Table,
   Button,
@@ -209,9 +210,9 @@ const ProductsPage: React.FC = () => {
     return () => clearTimeout(timeoutId);
   }, [searchTerm, categoryFilter, statusFilter]);
 
-  // Định dạng tiền tệ
+  // Định dạng tiền tệ — luôn VND, locale động theo ngôn ngữ UI
   const formatCurrency = (amount: number) => {
-    return new Intl.NumberFormat('vi-VN', {
+    return new Intl.NumberFormat(getLocale(), {
       style: 'currency',
       currency: 'VND',
     }).format(amount);

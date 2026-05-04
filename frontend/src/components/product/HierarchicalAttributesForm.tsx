@@ -32,6 +32,7 @@ import {
   AttributeGroup,
   AttributeValue,
 } from '@/services/attributeApi';
+import { getLocale } from '@/utils/format';
 
 const { Title, Text } = Typography;
 const { Option } = Select;
@@ -291,7 +292,7 @@ const HierarchicalAttributesForm: React.FC<HierarchicalAttributesFormProps> = ({
               {(value.priceAdjustment ?? 0) !== 0 && (
                 <Text type={(value.priceAdjustment ?? 0) > 0 ? 'success' : 'danger'}>
                   {(value.priceAdjustment ?? 0) > 0 ? '+' : ''}
-                  {(value.priceAdjustment ?? 0).toLocaleString()}{t('common.currencySymbol')}
+                  {(value.priceAdjustment ?? 0).toLocaleString(getLocale())}{t('common.currencySymbol')}
                 </Text>
               )}
             </Space>

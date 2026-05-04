@@ -52,6 +52,17 @@ const auditLogApi = api.injectEndpoints({
 
 const { useGetAuditLogsQuery } = auditLogApi;
 
+// oldValue/newValue được lưu dưới dạng JSON string trong DB — parse trước khi stringify để pretty-print
+const prettyJson = (val: any): string => {
+  if (!val) return '';
+  try {
+    const parsed = typeof val === 'string' ? JSON.parse(val) : val;
+    return JSON.stringify(parsed, null, 2);
+  } catch {
+    return String(val);
+  }
+};
+
 const AuditLogPage: React.FC = () => {
   const { t } = useTranslation();
   const [page, setPage] = useState(1);
@@ -184,13 +195,13 @@ const AuditLogPage: React.FC = () => {
             <div style={{ marginBottom: 16 }}>
               <strong>{t('auditLog.oldValue')}:</strong>
               <pre style={{ background: '#f5f5f5', padding: 8, borderRadius: 4, marginTop: 4, overflow: 'auto' }}>
-                {detailRecord.oldValue ? JSON.stringify(detailRecord.oldValue, null, 2) : t('auditLog.noData')}
+                {detailRecord.oldValue ? prettyJson(detailRecord.oldValue) : t('auditLog.noData')}
               </pre>
             </div>
             <div>
               <strong>{t('auditLog.newValue')}:</strong>
               <pre style={{ background: '#f5f5f5', padding: 8, borderRadius: 4, marginTop: 4, overflow: 'auto' }}>
-                {detailRecord.newValue ? JSON.stringify(detailRecord.newValue, null, 2) : t('auditLog.noData')}
+                {detailRecord.newValue ? prettyJson(detailRecord.newValue) : t('auditLog.noData')}
               </pre>
             </div>
           </div>

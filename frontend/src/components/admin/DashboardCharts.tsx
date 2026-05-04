@@ -1,5 +1,7 @@
 import React, { useState, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
+import { useSelector } from 'react-redux';
+import { RootState } from '@/store';
 import { useGetDetailedStatsQuery } from '@/services/adminDashboardApi';
 import {
   ResponsiveContainer,
@@ -16,7 +18,10 @@ import dayjs from 'dayjs';
 
 const DashboardCharts: React.FC = () => {
   const { t, i18n } = useTranslation();
-  
+  // Đọc theme để điều chỉnh màu chart — Recharts không hỗ trợ Tailwind dark: trực tiếp
+  const theme = useSelector((state: RootState) => state.ui.theme);
+  const isDark = theme === 'dark';
+
   // Trạng thái bộ lọc
   const [period, setPeriod] = useState<'7d' | '30d' | '90d'>('30d');
   const [groupBy, setGroupBy] = useState<'hour' | 'day' | 'week' | 'month'>('day');
@@ -146,19 +151,19 @@ const DashboardCharts: React.FC = () => {
                   </linearGradient>
                 </defs>
                 <CartesianGrid strokeDasharray="3 3" className="stroke-neutral-200 dark:stroke-neutral-700" />
-                <XAxis dataKey="name" className="text-xs text-neutral-500 fill-neutral-500" />
-                <YAxis 
+                <XAxis dataKey="name" tick={{ fill: isDark ? '#9ca3af' : '#6b7280', fontSize: 12 }} />
+                <YAxis
                   tickFormatter={(v) => v >= 1000000 ? `${v/1000000}M` : v >= 1000 ? `${v/1000}K` : v}
-                  className="text-xs text-neutral-500 fill-neutral-500" 
+                  tick={{ fill: isDark ? '#9ca3af' : '#6b7280', fontSize: 12 }}
                 />
-                <Tooltip 
+                <Tooltip
                   formatter={(value: any) => formatCurrency(value)}
-                  contentStyle={{ 
-                    backgroundColor: 'rgba(255, 255, 255, 0.95)', 
-                    borderColor: '#e5e7eb',
+                  contentStyle={{
+                    backgroundColor: isDark ? '#1e293b' : 'rgba(255,255,255,0.95)',
+                    borderColor: isDark ? '#334155' : '#e5e7eb',
                     borderRadius: '0.375rem',
-                    color: '#1f2937'
-                  }} 
+                    color: isDark ? '#f1f5f9' : '#1f2937',
+                  }}
                 />
                 <Area type="monotone" dataKey="revenue" name={revenueLabel} stroke="#3b82f6" fillOpacity={1} fill="url(#colorRevenue)" strokeWidth={2} />
               </AreaChart>
@@ -175,15 +180,15 @@ const DashboardCharts: React.FC = () => {
             <ResponsiveContainer width="100%" height="100%">
               <BarChart data={orderDataForChart} margin={{ top: 10, right: 10, left: -10, bottom: 0 }}>
                 <CartesianGrid strokeDasharray="3 3" className="stroke-neutral-200 dark:stroke-neutral-700"  />
-                <XAxis dataKey="name" className="text-xs text-neutral-500 fill-neutral-500" />
-                <YAxis allowDecimals={false} className="text-xs text-neutral-500 fill-neutral-500" />
-                <Tooltip 
-                  contentStyle={{ 
-                    backgroundColor: 'rgba(255, 255, 255, 0.95)', 
-                    borderColor: '#e5e7eb',
+                <XAxis dataKey="name" tick={{ fill: isDark ? '#9ca3af' : '#6b7280', fontSize: 12 }} />
+                <YAxis allowDecimals={false} tick={{ fill: isDark ? '#9ca3af' : '#6b7280', fontSize: 12 }} />
+                <Tooltip
+                  contentStyle={{
+                    backgroundColor: isDark ? '#1e293b' : 'rgba(255,255,255,0.95)',
+                    borderColor: isDark ? '#334155' : '#e5e7eb',
                     borderRadius: '0.375rem',
-                    color: '#1f2937'
-                  }} 
+                    color: isDark ? '#f1f5f9' : '#1f2937',
+                  }}
                 />
                 <Bar dataKey="orderCount" name={ordersLabel} fill="#10b981" radius={[4, 4, 0, 0]} />
               </BarChart>

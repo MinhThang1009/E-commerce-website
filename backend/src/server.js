@@ -131,11 +131,24 @@ const ensureColumns = async () => {
 const checkVectorStoreSync = async () => {
   try {
     // Lazy require sau khi connectDB() xong để đảm bảo associations đã được setup
-    const { Product } = require('./models');
+    const { Product, ProductVariant } = require('./models');
     const vectorStoreService = require('./services/ai/vectorStore');
     // Đợi vector store load xong trước khi so sánh
     await vectorStoreService.loadPromise;
-    const activeCount = await Product.count({ where: { status: 'active', inStock: true } });
+    // Fix: `inStock` không phải column/VIRTUAL.
+    // "Còn hàng" = product có ít nhất 1 variant với stock_quantity > 0 (stock thực ở variant level)
+    const { Op } = require('sequelize');
+    const activeCount = await Product.count({
+      where: { status: 'active' },
+      include: [{
+        model: ProductVariant,
+        as: 'variants',
+        where: { stockQuantity: { [Op.gt]: 0 } },
+        required: true,
+        attributes: [],
+      }],
+      distinct: true,
+    });
     const vectorCount = vectorStoreService.items.length;
     if (activeCount === 0) return; // Chưa có dữ liệu — bỏ qua
     const deviation = Math.abs(activeCount - vectorCount) / activeCount;

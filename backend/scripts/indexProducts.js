@@ -13,8 +13,10 @@ const indexAllProducts = async () => {
     await vectorStoreService.loadPromise;
 
     console.log('📦 Đang lấy sản phẩm từ database...');
+    // Fix: `inStock` không tồn tại. Index mọi product status='active'.
+    // (Stock thực ở variant level — chatbot post-filter khi search.)
     const products = await Product.findAll({
-      where: { status: 'active', inStock: true },
+      where: { status: 'active' },
       include: [
         {
           model: Category,

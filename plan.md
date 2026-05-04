@@ -3848,14 +3848,14 @@ search.*          — trang tìm kiếm
 
 ### ✅ Acceptance Criteria Phase 38
 
-- [ ] Tất cả tên bảng là `snake_case`, số nhiều, viết thường
-- [ ] Tất cả cột tuân thủ `snake_case` hoặc có lý do chủ ý (underscored: false trong model)
-- [ ] Mọi FK column kết thúc bằng `_id` và tham chiếu đúng bảng
-- [ ] Mọi constraint/index có tên rõ ràng (không phải auto-generated hash)
-- [ ] Tất cả ENUM values là lowercase, không có khoảng trắng
-- [ ] Giá tiền dùng `DECIMAL(15,2)`, boolean dùng `TINYINT(1)`, không có `FLOAT` cho tiền
-- [ ] Không có tên bảng/cột/index nào vượt 64 ký tự
-- [ ] `SHOW CREATE TABLE` cho mọi bảng không có warning hoặc constraint unnamed
+- [x] Tất cả tên bảng là `snake_case`, số nhiều, viết thường
+- [x] Tất cả cột tuân thủ `snake_case` hoặc có lý do chủ ý (underscored: false trong model)
+- [x] Mọi FK column kết thúc bằng `_id` và tham chiếu đúng bảng
+- [x] Mọi constraint/index có tên rõ ràng (không phải auto-generated hash)
+- [x] Tất cả ENUM values là lowercase, không có khoảng trắng
+- [x] Giá tiền dùng `DECIMAL(15,2)`, boolean dùng `TINYINT(1)`, không có `FLOAT` cho tiền
+- [x] Không có tên bảng/cột/index nào vượt 64 ký tự
+- [x] `SHOW CREATE TABLE` cho mọi bảng không có warning hoặc constraint unnamed
 
 **Tổng kết:** 3,018 keys × 2 ngôn ngữ = toàn bộ UI text đã được bản địa hóa hoàn chỉnh.
 

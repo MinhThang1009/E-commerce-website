@@ -3758,13 +3758,13 @@ search.*          — trang tìm kiếm
 - [ ] Không có `TODO` comment còn lại trong production code (chỉ trong test files)
 
 ### ✅ Acceptance Criteria Phase 30 (= THESIS DEFENSE READY)
-- [ ] Tất cả 29 phase trước đều PASS (Phase 31 — DB Import — là phase độc lập, có thể làm song song)
-- [ ] Demo flow 5 phút không có lỗi nào hiển thị trên giao diện
-- [ ] Không có `console.error` trong DevTools khi chạy demo
-- [ ] TypeScript build thành công
-- [ ] `npm audit --audit-level=high` → 0 vulnerabilities
-- [ ] Dark mode và i18n hoạt động live, không cần reload
-- [ ] README.md có đủ hướng dẫn setup từ đầu
+- [x] Tất cả 29 phase trước đều PASS (Phase 31 — DB Import — là phase độc lập, có thể làm song song)
+- [x] Demo flow 5 phút không có lỗi nào hiển thị trên giao diện
+- [x] Không có `console.error` trong DevTools khi chạy demo
+- [x] TypeScript build thành công
+- [x] `npm audit --audit-level=high` → 0 vulnerabilities
+- [x] Dark mode và i18n hoạt động live, không cần reload
+- [x] README.md có đủ hướng dẫn setup từ đầu
 
 ---
 

@@ -73,7 +73,7 @@ jest.mock('../services/email', () => ({
   sendOtpEmail: jest.fn().mockResolvedValue(true),
 }));
 
-jest.mock('../services/admin/adminAudit', () => ({
+jest.mock('../services/adminAudit', () => ({
   AdminAuditService: {
     logSuccessfulLogin: jest.fn(),
   },

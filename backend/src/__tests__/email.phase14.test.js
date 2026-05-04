@@ -77,7 +77,7 @@ jest.mock('google-auth-library', () => ({
   })),
 }));
 
-jest.mock('../services/admin/adminAudit', () => ({
+jest.mock('../services/adminAudit', () => ({
   AdminAuditService: {
     logSuccessfulLogin: jest.fn(),
   },

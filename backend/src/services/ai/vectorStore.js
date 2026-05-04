@@ -31,7 +31,7 @@ function generateProductText(product) {
 
 class SimpleVectorStore {
   constructor() {
-    this.storagePath = path.join(__dirname, '../../data/vectorDb.json');
+    this.storagePath = path.join(__dirname, '../../../data/vectorDb.json');
     this.items = [];
     // Fire-and-forget khi khởi động — server không block chờ load xong
     this.loadPromise = this.load();

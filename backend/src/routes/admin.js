@@ -13,7 +13,7 @@ const newsController = require('../controllers/news');
 // Khai báo middlewares
 const { adminAuthenticate } = require('../middlewares/adminAuth');
 const { validate, validateRequest } = require('../middlewares/validateRequest');
-const { auditMiddleware } = require('../services/admin/adminAudit');
+const { auditMiddleware } = require('../services/adminAudit');
 
 // Khai báo validators
 const {

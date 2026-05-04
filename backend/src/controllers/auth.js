@@ -8,7 +8,7 @@ const googleClient = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
 const { Op } = require('sequelize');
 const crypto = require('crypto');
 const axios = require('axios');
-const { AdminAuditService } = require('../services/admin/adminAudit');
+const { AdminAuditService } = require('../services/adminAudit');
 const { getRedisClient } = require('../config/redis');
 
 // Đăng ký người dùng mới

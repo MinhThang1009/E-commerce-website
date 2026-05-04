@@ -54,7 +54,7 @@ jest.mock('../services/ai/viEmbedding', () => ({
 // ---------- Require sau khi mock đã đăng ký ----------
 
 const geminiService = require('../services/ai/geminiChatbot');
-const chatbotService = require('../services/ai/chatbot');
+const chatbotService = require('../services/ai/ruleBasedChatbot');
 
 // ============================================================
 // GeminiChatbotService.simpleKeywordMatch

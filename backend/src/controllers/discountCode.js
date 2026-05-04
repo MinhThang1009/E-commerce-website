@@ -2,7 +2,7 @@
 const { Op } = require('sequelize');
 const { catchAsync } = require('../utils/catchAsync');
 const { AppError } = require('../middlewares/errorHandler');
-const { AdminAuditService } = require('../services/admin/adminAudit');
+const { AdminAuditService } = require('../services/adminAudit');
 
 /**
  * Admin: Lấy danh sách mã giảm giá

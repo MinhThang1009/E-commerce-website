@@ -1,3 +1,7 @@
+// Controller: REALTIME SUPPORT CHAT giữa user và admin/staff qua Socket.IO.
+// KHÔNG phải AI chatbot — file đó là controllers/chatbot.js.
+// Endpoint chính: GET /api/chat/history/:identifier, POST /api/chat/send
+
 const { ChatMessage, User, sequelize } = require('../models');
 const { AppError } = require('../middlewares/errorHandler');
 

@@ -32,7 +32,7 @@ jest.mock('../utils/logger', () => ({
   warn: jest.fn(),
 }));
 
-jest.mock('../services/ai/chatbot', () => ({
+jest.mock('../services/ai/ruleBasedChatbot', () => ({
   trackAnalytics: jest.fn().mockResolvedValue(undefined),
   extractSearchParams: jest.fn().mockReturnValue({ keyword: 'test' }),
   getPersonalizedRecommendations: jest.fn().mockResolvedValue([]),
@@ -82,7 +82,7 @@ const express = require('express');
 const supertest = require('supertest');
 const chatbotRouter = require('../routes/chatbot');
 const { Product, Cart, CartItem } = require('../models');
-const chatbotService = require('../services/ai/chatbot');
+const chatbotService = require('../services/ai/ruleBasedChatbot');
 
 // App Express tối giản chỉ có chatbot routes
 const app = express();

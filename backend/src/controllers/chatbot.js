@@ -1,4 +1,8 @@
-﻿const {
+﻿// Controller: AI CHATBOT (LLM via OpenRouter Gemini + rule-based fallback).
+// KHÔNG phải support chat giữa user-admin — file đó là controllers/chat.js.
+// Endpoint chính: POST /api/chatbot/message
+
+const {
   Product,
   Category,
   Order,
@@ -10,7 +14,7 @@
 } = require('../models');
 const { Op } = require('sequelize');
 const logger = require('../utils/logger');
-const chatbotService = require('../services/ai/chatbot');
+const chatbotService = require('../services/ai/ruleBasedChatbot');
 const geminiChatbotService = require('../services/ai/geminiChatbot');
 
 

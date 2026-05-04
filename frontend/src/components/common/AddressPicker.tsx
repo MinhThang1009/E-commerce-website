@@ -64,7 +64,7 @@ const AddressPicker: React.FC<AddressPickerProps> = ({
 
     const delayDebounceFn = setTimeout(() => {
       if (showDropdown) fetchSuggestions();
-    }, 500);
+    }, 300);
 
     return () => clearTimeout(delayDebounceFn);
   }, [value, showDropdown]);

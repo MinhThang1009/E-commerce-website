@@ -20,6 +20,7 @@
   SearchHistory,
   RecentlyViewed,
   InventoryLog,
+  AuditLog,
 } = require('../models');
 const { Op, Sequelize } = require('sequelize');
 const logger = require('../utils/logger');
@@ -2031,6 +2032,53 @@ const restockProduct = catchAsync(async (req, res) => {
   });
 });
 
+/**
+ * GET /api/admin/audit-logs — Lấy lịch sử thao tác admin từ DB
+ * Query: page, limit, adminId, action, startDate, endDate
+ */
+const getAuditLogs = catchAsync(async (req, res) => {
+  const page     = Math.max(1, parseInt(req.query.page, 10)  || 1);
+  const limit    = Math.min(100, parseInt(req.query.limit, 10) || 20);
+  const offset   = (page - 1) * limit;
+
+  // Điều kiện lọc tuỳ chọn
+  const where = {};
+  if (req.query.adminId)  where.adminId    = parseInt(req.query.adminId, 10);
+  if (req.query.action)   where.action     = req.query.action;
+  if (req.query.entityType) where.entityType = req.query.entityType;
+  if (req.query.startDate || req.query.endDate) {
+    where.createdAt = {};
+    if (req.query.startDate) where.createdAt[Op.gte] = new Date(req.query.startDate);
+    if (req.query.endDate)   where.createdAt[Op.lte] = new Date(req.query.endDate);
+  }
+
+  const { rows, count } = await AuditLog.findAndCountAll({
+    where,
+    limit,
+    offset,
+    order: [['createdAt', 'DESC']],
+    include: [
+      {
+        model: User,
+        as: 'admin',
+        attributes: ['id', 'firstName', 'lastName', 'email'],
+        required: false,
+      },
+    ],
+  });
+
+  res.status(200).json({
+    status: 'success',
+    data: {
+      logs: rows,
+      total: count,
+      page,
+      limit,
+      totalPages: Math.ceil(count / limit),
+    },
+  });
+});
+
 module.exports = {
   getDashboardStats,
   getDetailedStats,
@@ -2050,4 +2098,5 @@ module.exports = {
   getAllOrders,
   updateOrderStatus,
   restockProduct,
+  getAuditLogs,
 };

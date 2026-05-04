@@ -52,6 +52,10 @@ Address.belongsTo(User, { foreignKey: 'userId' });
 User.hasMany(ImportLog, { foreignKey: 'adminId', as: 'importLogs' });
 ImportLog.belongsTo(User, { foreignKey: 'adminId', as: 'admin' });
 
+// User - AuditLog (admin - nhật ký thao tác)
+User.hasMany(AuditLog, { foreignKey: 'adminId', as: 'auditLogs' });
+AuditLog.belongsTo(User, { foreignKey: 'adminId', as: 'admin' });
+
 // User - News (người dùng - bài viết)
 User.hasMany(News, { foreignKey: 'userId', as: 'news' });
 News.belongsTo(User, { foreignKey: 'userId', as: 'author' });

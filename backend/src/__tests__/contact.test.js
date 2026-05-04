@@ -45,7 +45,8 @@ jest.mock('../middlewares/rateLimiter', () => ({
 
 // email service: fire-and-forget trong controller, không cần thực sự gửi
 jest.mock('../services/email', () => ({
-  sendNewsletterWelcomeEmail: jest.fn().mockResolvedValue(undefined),
+  sendNewsletterWelcomeEmail:       jest.fn().mockResolvedValue(undefined),
+  sendAdminFeedbackNotification:    jest.fn().mockResolvedValue(undefined),
 }));
 
 // ---------- Require sau mock ----------
@@ -89,14 +90,15 @@ describe('POST /api/contact/newsletter — subscribeNewsletter', () => {
 
   // --- Happy path ---
 
-  test('200 happy path — đăng ký mới thành công', async () => {
+  // Người dùng mới (created = true) → 201 theo REST convention
+  test('201 happy path — đăng ký mới thành công', async () => {
     const mockSubscriber = { email: 'test@example.com', status: 'active' };
     NewsletterSubscriber.findOrCreate.mockResolvedValue([mockSubscriber, true]);
 
     const res = await request
       .post('/api/contact/newsletter')
       .send({ email: 'test@example.com' });
-    expect(res.status).toBe(200);
+    expect(res.status).toBe(201);
     expect(res.body.status).toBe('success');
   });
 

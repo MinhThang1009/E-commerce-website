@@ -353,6 +353,43 @@ const sendOrderCancellationEmail = async (email, order) => {
   });
 };
 
+// Gửi email thông báo phản hồi mới từ khách hàng đến admin
+// feedback phải có: name, email, subject, content
+const sendAdminFeedbackNotification = async (adminEmail, feedback) => {
+  const { name, email, subject, content } = feedback;
+
+  await sendEmail({
+    email: adminEmail,
+    subject: `[Phản hồi mới] ${escapeHtml(subject)}`,
+    html: `
+      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; background: #f9f9f9; padding: 20px; border-radius: 8px;">
+        <div style="background: white; padding: 32px; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.08);">
+          <h2 style="color: #e74c3c; margin-bottom: 8px; font-size: 20px;">Phản hồi mới từ khách hàng</h2>
+          <table style="width: 100%; border-collapse: collapse; margin-top: 16px;">
+            <tr>
+              <td style="padding: 8px; font-weight: bold; color: #555; width: 120px;">Họ tên:</td>
+              <td style="padding: 8px; color: #333;">${escapeHtml(name)}</td>
+            </tr>
+            <tr style="background: #f9f9f9;">
+              <td style="padding: 8px; font-weight: bold; color: #555;">Email:</td>
+              <td style="padding: 8px; color: #333;">${escapeHtml(email)}</td>
+            </tr>
+            <tr>
+              <td style="padding: 8px; font-weight: bold; color: #555;">Tiêu đề:</td>
+              <td style="padding: 8px; color: #333;">${escapeHtml(subject)}</td>
+            </tr>
+          </table>
+          <div style="margin-top: 16px; padding: 16px; background: #f0f4ff; border-radius: 8px; border-left: 4px solid #4f6ef7;">
+            <p style="color: #555; font-weight: bold; margin-bottom: 8px;">Nội dung:</p>
+            <p style="color: #333; white-space: pre-wrap;">${escapeHtml(content)}</p>
+          </div>
+          <p style="color: #aaa; font-size: 12px; text-align: center; margin-top: 24px;">Email này được gửi tự động khi có phản hồi mới từ khách hàng.</p>
+        </div>
+      </div>
+    `,
+  });
+};
+
 module.exports = {
   sendEmail,
   sendOtpEmail,
@@ -362,5 +399,6 @@ module.exports = {
   sendOrderCancellationEmail,
   sendNewsletterWelcomeEmail,
   sendBulkCampaignEmail,
+  sendAdminFeedbackNotification,
 };
 

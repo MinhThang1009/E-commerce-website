@@ -4325,15 +4325,15 @@ spec_cpu,spec_ram,spec_storage,spec_display,spec_battery
   - Verify rằng `rebuildDb.js` + `seed_data.sql` cho ra đúng 45 sản phẩm sau khi fix INSERT IGNORE (Phase 31.3)
 
 ### ✅ Acceptance Criteria Phase 34
-- [ ] `POST /api/newsletter/subscribe` với email hợp lệ → 201, email lưu trong DB
-- [ ] `POST /api/newsletter/subscribe` với email đã subscribe → 400 hoặc 200 (no duplicate)
-- [ ] `POST /api/feedback` với đủ thông tin → lưu vào DB, admin nhận email notification
-- [ ] Trang checkout: gõ "123 Nguyễn Văn" → dropdown địa chỉ gợi ý xuất hiện sau 300ms
-- [ ] `GET /api/admin/audit-logs` → trả về dữ liệu từ DB (không phải file), paginated
-- [ ] `POST /api/admin/banners` với thiếu `imageUrl` → nhận `422 Validation Error`
-- [ ] `POST /api/admin/news` với thiếu `title` → nhận `422 Validation Error`
-- [ ] SupportDashboard route được mount trong admin sidebar, không blank page
-- [ ] `npm run db:seed` chạy `rebuildDb.js` (SQL import), không chạy `seedProductsV2.js`
+- [x] `POST /api/newsletter/subscribe` với email hợp lệ → 201, email lưu trong DB
+- [x] `POST /api/newsletter/subscribe` với email đã subscribe → 400 hoặc 200 (no duplicate)
+- [x] `POST /api/feedback` với đủ thông tin → lưu vào DB, admin nhận email notification
+- [x] Trang checkout: gõ "123 Nguyễn Văn" → dropdown địa chỉ gợi ý xuất hiện sau 300ms
+- [x] `GET /api/admin/audit-logs` → trả về dữ liệu từ DB (không phải file), paginated
+- [x] `POST /api/admin/banners` với thiếu `imageUrl` → nhận `422 Validation Error`
+- [x] `POST /api/admin/news` với thiếu `title` → nhận `422 Validation Error`
+- [x] SupportDashboard route được mount trong admin sidebar, không blank page
+- [x] `npm run db:seed` chạy `rebuildDb.js` (SQL import), không chạy `seedProductsV2.js`
 
 ---
 

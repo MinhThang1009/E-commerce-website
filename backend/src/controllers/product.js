@@ -17,6 +17,26 @@ const { getRedisClient } = require('../config/redis');
 const CACHE_TTL_PRODUCT_LIST = 10 * 60;   // 10 phút
 const CACHE_TTL_PRODUCT_DETAIL = 10 * 60; // 10 phút
 
+// Số lượng tối đa recently_viewed records giữ lại per user.
+// Tránh bảng phình to vô hạn — kết hợp cleanup job 90 ngày để cap cả lượng và tuổi.
+const RECENTLY_VIEWED_MAX_PER_USER = 20;
+
+// Ghi nhận user vừa xem product. Upsert + cap 20 items/user (xóa oldest khi vượt).
+// Fire-and-forget từ caller — lỗi không block response detail.
+async function trackRecentlyViewed(userId, productId) {
+  await RecentlyViewed.upsert({ userId, productId, viewedAt: new Date() });
+  // Lấy id của các record vượt quá top-20 (sắp xếp viewed_at DESC) rồi xóa.
+  const stale = await RecentlyViewed.findAll({
+    where: { userId },
+    order: [['viewedAt', 'DESC']],
+    attributes: ['id'],
+    offset: RECENTLY_VIEWED_MAX_PER_USER,
+  });
+  if (stale.length > 0) {
+    await RecentlyViewed.destroy({ where: { id: stale.map(r => r.id) } });
+  }
+}
+
 // Xóa toàn bộ cache sản phẩm (list + detail theo id số và slug)
 // productSlug cần thiết vì getProductById cache bằng cả id số lẫn slug
 async function clearProductCache(productId, productSlug) {
@@ -328,7 +348,7 @@ const getProductById = async (req, res, next) => {
           const cachedProductId = cachedData?.data?.id;
           if (cachedProductId) {
             // fire-and-forget: ghi lịch sử xem không ảnh hưởng response, lỗi bỏ qua
-            RecentlyViewed.upsert({ userId: req.user.id, productId: cachedProductId, viewedAt: new Date() }).catch(() => {});
+            trackRecentlyViewed(req.user.id, cachedProductId).catch(() => {});
           }
         }
         res.setHeader('X-Cache', 'HIT');
@@ -579,11 +599,7 @@ const getProductById = async (req, res, next) => {
     // Ghi nhận lịch sử xem sản phẩm nếu user đã đăng nhập
     if (req.user) {
       try {
-        await RecentlyViewed.upsert({
-          userId: req.user.id,
-          productId: product.id,
-          viewedAt: new Date(),
-        });
+        await trackRecentlyViewed(req.user.id, product.id);
       } catch (err) {
         logger.error('Lỗi ghi lịch sử xem sản phẩm:', err);
       }
@@ -758,11 +774,7 @@ const getProductBySlug = async (req, res, next) => {
     // Ghi nhận lịch sử xem sản phẩm nếu user đã đăng nhập
     if (req.user) {
       try {
-        await RecentlyViewed.upsert({
-          userId: req.user.id,
-          productId: product.id,
-          viewedAt: new Date(),
-        });
+        await trackRecentlyViewed(req.user.id, product.id);
       } catch (err) {
         logger.error('Lỗi ghi lịch sử xem sản phẩm:', err);
       }

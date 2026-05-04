@@ -137,28 +137,28 @@ const Footer: React.FC = () => {
             </div>
           </div>
 
-          {/* Thông tin hữu ích */}
+          {/* Thông tin hữu ích — link đến trang static & khám phá */}
           <div>
             <h4 className="font-bold text-neutral-900 dark:text-neutral-100 text-lg mb-6">
               {t('footer.usefulInfo')}
             </h4>
             <ul className="space-y-3">
               {[
-                'footer.usefulLinks.warranty',
-                'footer.usefulLinks.returns',
-                'footer.usefulLinks.shipping',
-                'footer.usefulLinks.privacy',
-                'footer.usefulLinks.payment',
-                'footer.usefulLinks.inspection',
-                'footer.usefulLinks.guide',
-                'footer.usefulLinks.about',
-              ].map((key) => (
-                <li key={key}>
+                { labelKey: 'footer.usefulLinks.shipping', path: '/shipping-returns' },
+                { labelKey: 'footer.usefulLinks.returns', path: '/shipping-returns' },
+                { labelKey: 'footer.usefulLinks.privacy', path: '/privacy-policy' },
+                { labelKey: 'footer.usefulLinks.terms', path: '/terms' },
+                { labelKey: 'footer.usefulLinks.guide', path: '/faqs' },
+                { labelKey: 'footer.usefulLinks.about', path: '/about' },
+                { labelKey: 'footer.usefulLinks.brands', path: '/brands' },
+                { labelKey: 'footer.usefulLinks.collections', path: '/collections' },
+              ].map((item) => (
+                <li key={item.labelKey}>
                   <Link
-                    to="/"
+                    to={item.path}
                     className="text-sm text-neutral-600 dark:text-neutral-400 hover:text-primary-600 dark:hover:text-primary-400 transition-colors block"
                   >
-                    {t(key)}
+                    {t(item.labelKey)}
                   </Link>
                 </li>
               ))}

@@ -20,6 +20,11 @@ coverage/
 backend/coverage/
 frontend/coverage/
 
+# DB backups (Phase 40+ pre-migration mysqldump) — không commit
+backups/
+*.sql.bak
+backend/data/vectorDb.json.bak
+
 # Logs
 *.log
 backend/logs/

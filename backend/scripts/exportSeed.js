@@ -1,9 +1,11 @@
 /**
- * Export seed data from DB → seed_data.sql
- * Usage: npm run db:export
+ * Export seed data từ DB → seed_data.sql
+ * Dùng: npm run db:export-seed
  *
- * Dumps: categories, brands, products, product_variants, product_images
- * Output: backend/data/seed_data.sql (overwrites existing)
+ * Dump theo thứ tự FK dependency:
+ *   categories → brands → products → product_variants → product_images
+ *   → product_categories → product_specifications
+ * Output: backend/data/seed_data.sql (overwrite)
  */
 require('dotenv').config();
 const path = require('path');
@@ -12,13 +14,15 @@ const sequelize = require('../src/config/sequelize');
 
 const OUTPUT = path.join(__dirname, '../data/seed_data.sql');
 
-// Thứ tự dump phải theo dependency (FK constraints)
+// Thứ tự dump phải theo dependency FK — bảng phụ thuộc phải đứng sau bảng gốc
 const TABLES = [
   'categories',
   'brands',
   'products',
   'product_variants',
   'product_images',
+  'product_categories',
+  'product_specifications',
 ];
 
 function toMysqlDatetime(d) {
@@ -29,20 +33,21 @@ function toMysqlDatetime(d) {
 
 function escapeValue(val) {
   if (val === null || val === undefined) return 'NULL';
-  if (typeof val === 'boolean') return val ? 'true' : 'false';
+  if (typeof val === 'boolean') return val ? '1' : '0';
   if (typeof val === 'number') return String(val);
   if (val instanceof Date) return `'${toMysqlDatetime(val)}'`;
-  // String: escape single quotes, backslashes
+  // Chuỗi: escape dấu nháy đơn và backslash
   const s = String(val)
     .replace(/\\/g, '\\\\')
     .replace(/'/g, "\\'");
   return `'${s}'`;
 }
 
-function rowToInsert(table, columns, row) {
+function rowToInsertIgnore(table, columns, row) {
   const cols = columns.map(c => `\`${c}\``).join(', ');
   const vals = columns.map(c => escapeValue(row[c])).join(', ');
-  return `INSERT INTO ${table} (${cols}) VALUES (${vals});`;
+  // Dùng INSERT IGNORE để không crash khi chạy lại (duplicate PK/UNIQUE)
+  return `INSERT IGNORE INTO \`${table}\` (${cols}) VALUES (${vals});`;
 }
 
 async function exportTable(table) {
@@ -50,7 +55,7 @@ async function exportTable(table) {
   if (rows.length === 0) return `-- (bảng ${table} trống)\n`;
 
   const columns = Object.keys(rows[0]);
-  const lines = rows.map(row => rowToInsert(table, columns, row));
+  const lines = rows.map(row => rowToInsertIgnore(table, columns, row));
   return lines.join('\n') + '\n';
 }
 
@@ -62,7 +67,7 @@ async function run() {
     let output = '';
     output += `-- seed_data.sql — tự động tạo bởi exportSeed.js\n`;
     output += `-- Ngày: ${new Date().toISOString()}\n`;
-    output += `-- KHÔNG EDIT TAY — dùng "npm run db:export" để cập nhật\n\n`;
+    output += `-- KHÔNG EDIT TAY — dùng "npm run db:export-seed" để cập nhật\n\n`;
     output += `SET NAMES utf8mb4;\n`;
     output += `SET CHARACTER SET utf8mb4;\n`;
     output += `SET FOREIGN_KEY_CHECKS = 0;\n\n`;
@@ -82,7 +87,7 @@ async function run() {
     console.log(`\n✅ Đã ghi ${OUTPUT}`);
 
     const totalInserts = (output.match(/^INSERT/gm) || []).length;
-    console.log(`   Tổng: ${totalInserts} INSERT statements`);
+    console.log(`   Tổng: ${totalInserts} INSERT IGNORE statements`);
 
     process.exit(0);
   } catch (err) {

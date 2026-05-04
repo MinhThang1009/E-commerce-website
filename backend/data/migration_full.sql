@@ -2,7 +2,7 @@
 -- MIGRATION_FULL.SQL - CƠ SỞ DỮ LIỆU E-COMMERCE HOÀN CHỈNH
 -- Phiên bản: 2.0 (INT AUTO_INCREMENT)
 -- Ngày tạo: 2026-03-30
--- Mô tả: Schema đầy đủ cho 38 bảng + seed data cơ bản
+-- Mô tả: Schema đầy đủ cho 39 bảng + seed data cơ bản
 -- Tương thích: Backend Sequelize models hiện tại
 -- =====================================================
 -- HƯỚNG DẪN SỬ DỤNG:
@@ -55,6 +55,7 @@ DROP TABLE IF EXISTS `warranty_packages`;
 DROP TABLE IF EXISTS `attribute_values`;
 DROP TABLE IF EXISTS `attribute_groups`;
 DROP TABLE IF EXISTS `discount_codes`;
+DROP TABLE IF EXISTS `import_logs`;
 DROP TABLE IF EXISTS `audit_logs`;
 DROP TABLE IF EXISTS `products`;
 DROP TABLE IF EXISTS `brands`;
@@ -674,6 +675,23 @@ CREATE TABLE IF NOT EXISTS `recently_viewed` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- ----- BẢNG 38: audit_logs (Nhật ký kiểm toán admin) -----
+-- ----- BẢNG 39: import_logs (Lịch sử import sản phẩm) -----
+CREATE TABLE IF NOT EXISTS `import_logs` (
+    `id`           INT UNSIGNED  NOT NULL AUTO_INCREMENT,
+    `admin_id`     INT UNSIGNED  NOT NULL,
+    `filename`     VARCHAR(255)  NOT NULL,
+    `total_rows`   INT           NOT NULL DEFAULT 0,
+    `success_rows` INT           NOT NULL DEFAULT 0,
+    `failed_rows`  INT           NOT NULL DEFAULT 0,
+    `error_detail` JSON          NULL,
+    `imported_at`  DATETIME      NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    PRIMARY KEY (`id`),
+    INDEX `idx_import_logs_admin_id` (`admin_id`),
+    INDEX `idx_import_logs_imported_at` (`imported_at`),
+    CONSTRAINT `fk_import_logs_admin` FOREIGN KEY (`admin_id`) REFERENCES `users` (`id`)
+        ON DELETE RESTRICT ON UPDATE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
 CREATE TABLE IF NOT EXISTS `audit_logs` (
     `id` INT AUTO_INCREMENT PRIMARY KEY,
     `admin_id` INT NOT NULL,

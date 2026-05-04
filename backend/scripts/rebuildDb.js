@@ -57,7 +57,7 @@ async function rebuild() {
 
     await conn.query('SET FOREIGN_KEY_CHECKS = 1');
 
-    console.log(`\n🎉 HOÀN TẤT! Tất cả 37 bảng và dữ liệu mẫu đã được nạp chuẩn xác.`);
+    console.log(`\n🎉 HOÀN TẤT! Tất cả 39 bảng và dữ liệu mẫu đã được nạp chuẩn xác.`);
     process.exit(0);
   } catch (err) {
     console.error('\n❌ TIẾN TRÌNH THẤT BẠI:', err);

@@ -4149,14 +4149,14 @@ spec_cpu,spec_ram,spec_storage,spec_display,spec_battery
 - **Hiển thị trong admin:** trang `ProductImportPage` có tab "Lịch sử import" với bảng log
 
 ### ✅ Acceptance Criteria Phase 31
-- [ ] `npm run db:reset` chạy thành công từ đầu, không có error, DB có đủ 45 sản phẩm
-- [ ] `npm run db:fresh` (drop + rebuild từ `migration_full.sql` + seed) → không có error trong phpMyAdmin
-- [ ] Import CSV 5 sản phẩm mới qua admin UI → tất cả 5 xuất hiện trong shop frontend
-- [ ] Import CSV với 1 dòng thiếu `name` → response trả về error chi tiết cho dòng đó, 4 dòng còn lại vẫn import thành công
-- [ ] `GET /api/admin/products/import-template` → download file CSV mẫu với đúng headers
-- [ ] Sau khi import sản phẩm mới → hỏi chatbot về sản phẩm đó → nhận câu trả lời có thông tin đúng (vector sync worked)
-- [ ] `GET /api/admin/products/import-history` → thấy record import vừa thực hiện với đúng số lượng success/failed
-- [ ] `GET /api/admin/products/export?format=csv` → download file CSV có đủ 50 sản phẩm
+- [x] `npm run db:reset` chạy thành công từ đầu, không có error, DB có đủ 45 sản phẩm
+- [x] `npm run db:fresh` (drop + rebuild từ `migration_full.sql` + seed) → không có error trong phpMyAdmin
+- [x] Import CSV 5 sản phẩm mới qua admin UI → tất cả 5 xuất hiện trong shop frontend
+- [x] Import CSV với 1 dòng thiếu `name` → response trả về error chi tiết cho dòng đó, 4 dòng còn lại vẫn import thành công
+- [x] `GET /api/admin/products/import-template` → download file CSV mẫu với đúng headers
+- [x] Sau khi import sản phẩm mới → hỏi chatbot về sản phẩm đó → nhận câu trả lời có thông tin đúng (vector sync worked)
+- [x] `GET /api/admin/products/import-history` → thấy record import vừa thực hiện với đúng số lượng success/failed
+- [x] `GET /api/admin/products/export?format=csv` → download file CSV có đủ 50 sản phẩm
 
 ---
 

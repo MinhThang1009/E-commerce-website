@@ -3,6 +3,7 @@ const router = express.Router();
 
 // Khai báo controllers
 const adminController = require('../controllers/admin');
+const adminImportController = require('../controllers/adminImport');
 const discountCodeController = require('../controllers/discountCode');
 const brandController = require('../controllers/brand');
 const collectionController = require('../controllers/collection');
@@ -85,6 +86,26 @@ router.get(
   validate(paginationValidation),
   adminController.getAllProducts
 );
+
+/**
+ * PRODUCT IMPORT/EXPORT ROUTES
+ * Phải đặt trước /products/:id để không bị nhầm lẫn params
+ */
+// GET /api/admin/products/import-template — Download file CSV mẫu
+router.get('/products/import-template', adminImportController.getImportTemplate);
+
+// POST /api/admin/products/import — Upload CSV/JSON để import hàng loạt
+router.post(
+  '/products/import',
+  adminImportController.uploadImportFile,
+  adminImportController.importProducts
+);
+
+// GET /api/admin/products/import-history — Lịch sử import
+router.get('/products/import-history', adminImportController.getImportHistory);
+
+// GET /api/admin/products/export — Export tất cả sản phẩm (?format=csv|json)
+router.get('/products/export', adminImportController.exportProducts);
 
 // GET /api/admin/products/:id - Lấy chi tiết sản phẩm
 router.get(

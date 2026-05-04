@@ -10,7 +10,9 @@
     "lint:fix": "eslint . --fix",
     "db:migrate": "sequelize-cli db:migrate",
     "db:cleanup": "node scripts/dbCleanup.js",
-    "db:seed": "node scripts/seedProductsV2.js",
+    "db:seed": "node scripts/rebuildDb.js",
+    "db:fresh": "node scripts/rebuildDb.js",
+    "db:reset": "node scripts/rebuildDb.js",
     "db:verify": "node scripts/dbVerify.js",
     "db:index": "node scripts/indexProducts.js",
     "ai:rebuild-vectors": "node scripts/indexProducts.js",
@@ -18,8 +20,8 @@
     "db:sync": "node scripts/syncProducts.js",
     "db:sync:dry": "node scripts/syncProducts.js --dry-run",
     "db:export": "node scripts/exportSeed.js",
-    "db:export:json": "node scripts/exportProductsJson.js",
-    "db:reset": "npm run db:cleanup && npm run db:seed && npm run db:index"
+    "db:export-seed": "node scripts/exportSeed.js",
+    "db:export:json": "node scripts/exportProductsJson.js"
   },
   "keywords": [
     "ecommerce",

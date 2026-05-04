@@ -38,6 +38,7 @@ const ProductImage = require('./productImage');
 const BrandCategory = require('./brandCategory');
 const InventoryLog = require('./inventoryLog');
 const AuditLog = require('./AuditLog');
+const ImportLog = require('./importLog');
 
 // =============================================
 // QUAN HỆ USER
@@ -46,6 +47,10 @@ const AuditLog = require('./AuditLog');
 // User - Address (người dùng - địa chỉ)
 User.hasMany(Address, { foreignKey: 'userId', as: 'addresses' });
 Address.belongsTo(User, { foreignKey: 'userId' });
+
+// User - ImportLog (admin - lịch sử import sản phẩm)
+User.hasMany(ImportLog, { foreignKey: 'adminId', as: 'importLogs' });
+ImportLog.belongsTo(User, { foreignKey: 'adminId', as: 'admin' });
 
 // User - News (người dùng - bài viết)
 User.hasMany(News, { foreignKey: 'userId', as: 'news' });
@@ -313,4 +318,5 @@ module.exports = {
   BrandCategory,
   InventoryLog,
   AuditLog,
+  ImportLog,
 };

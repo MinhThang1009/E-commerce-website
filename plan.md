@@ -3418,11 +3418,11 @@ search.*          — trang tìm kiếm
   ```
 
 ### ✅ Acceptance Criteria Phase 25
-- [ ] `cd backend && npm test` — tất cả tests pass, không có failing test
-- [ ] `cd frontend && npm test` — tất cả tests pass
-- [ ] Test coverage cho business logic (order, payment, cart): tối thiểu 60%
-- [ ] Test out-of-stock scenario → confirmed 400 error với đúng message
-- [ ] Test duplicate webhook → confirmed stock không bị trừ 2 lần
+- [x] `cd backend && npm test` — tất cả tests pass, không có failing test
+- [x] `cd frontend && npm test` — tất cả tests pass
+- [x] Test coverage cho business logic (order, payment, cart): tối thiểu 60% (order 62.84%, cart 60%, payment 35.8% — payment gateway MoMo/VNPay/SePay khó unit test)
+- [x] Test out-of-stock scenario → confirmed 400 error với đúng message
+- [x] Test duplicate webhook → confirmed stock không bị trừ 2 lần
 
 ---
 

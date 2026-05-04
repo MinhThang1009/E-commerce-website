@@ -3706,11 +3706,11 @@ search.*          — trang tìm kiếm
   ```
 
 ### ✅ Acceptance Criteria Phase 29
-- [ ] Chuyển sang English → tất cả UI text là tiếng Anh, không còn tiếng Việt nào hardcode
-- [ ] Script `check-i18n.js` → output `Missing in en: []` và `Missing in vi: []`
-- [ ] Giá 1.299.000 hiển thị đúng `1.299.000 ₫` (không phải `1299000 đ` hay `₫1,299,000`)
-- [ ] Submit form checkout với field trống → validation message hiển thị đúng ngôn ngữ đang active
-- [ ] Chuyển ngôn ngữ → trang không reload, text đổi ngay tức thì
+- [x] Chuyển sang English → tất cả UI text là tiếng Anh, không còn tiếng Việt nào hardcode
+- [x] Script `check-i18n.js` → output `Missing in en: []` và `Missing in vi: []`
+- [x] Giá 1.299.000 hiển thị đúng `1.299.000 ₫` (không phải `1299000 đ` hay `₫1,299,000`)
+- [x] Submit form checkout với field trống → validation message hiển thị đúng ngôn ngữ đang active
+- [x] Chuyển ngôn ngữ → trang không reload, text đổi ngay tức thì
 
 ---
 

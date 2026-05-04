@@ -8,10 +8,16 @@ export const formatPrice = (price: string | number): string => {
 
   // Xử lý giá không hợp lệ
   if (isNaN(numPrice)) {
-    return `0${i18next.t('common.currencySymbol')}`;
+    return `0 ${i18next.t('common.currencySymbol')}`;
   }
 
-  return `${numPrice.toLocaleString(getLocale())}${i18next.t('common.currencySymbol')}`;
+  // Luôn dùng vi-VN locale cho VND — trang thương mại Việt Nam, en-US trả về ₫1,299,000 (prefix) không đúng
+  // vi-VN trả về "1.299.000 ₫" (suffix với khoảng trắng)
+  return new Intl.NumberFormat('vi-VN', {
+    style: 'currency',
+    currency: 'VND',
+    maximumFractionDigits: 0,
+  }).format(numPrice);
 };
 
 /**
@@ -37,6 +43,12 @@ export const formatPriceUSD = (price: string | number): string => {
  */
 export const formatNumber = (num: number): string => {
   return num.toLocaleString(getLocale());
+};
+
+// Định dạng ngày theo locale hiện tại — dùng chung thay cho các formatDate local trong từng component
+export const formatDate = (d: string | Date, options?: Intl.DateTimeFormatOptions): string => {
+  const date = typeof d === 'string' ? new Date(d) : d;
+  return new Intl.DateTimeFormat(getLocale(), options ?? { dateStyle: 'medium' }).format(date);
 };
 
 /**

@@ -15,6 +15,11 @@ build/
 out/
 .output/
 
+# Test coverage reports — generated bởi jest --coverage / vitest run --coverage
+coverage/
+backend/coverage/
+frontend/coverage/
+
 # Logs
 *.log
 backend/logs/

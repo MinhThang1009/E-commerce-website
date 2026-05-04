@@ -2793,26 +2793,20 @@ COMMIT;
 
 ## PHASE 37 — I18n (Bilingual) Standard
 
-> **Trạng thái:** ⚠️ KEYS đồng bộ (3,018 keys mỗi file), nhưng còn 5 bugs trong implementation — Phase chỉ PASS sau khi fix hết 5 bugs dưới đây.
+> **Trạng thái:** ✅ PASS — 6/6 bugs đã fix, 3,020 keys đồng bộ hoàn toàn.
 
-### 37.0 Bugs Chưa Fix (Phát hiện trong Simplify Audit — Audit Round 8 ĐÃ ĐÍNH CHÍNH)
+### 37.0 Bugs (Phát hiện trong Simplify Audit — Tất cả đã fix)
 
-> **⚠️ Audit Round 8 verified:** 5/6 bugs đã được fix (B1, B3, B4, B5, B6). Chỉ còn B2 chưa fix.
+> **✅ Tất cả 6 bugs đã được fix.** B2 fix tại commit `0d0fb8b`.
 
 | Bug | File | Chi tiết | Status |
 |-----|------|----------|--------|
 | ~~B1~~ | ~~DashboardCharts.tsx~~ | ~~chart data key vỡ~~ | ✅ FIXED — `useMemo` + stable keys (lines 88-95) |
-| **B2 — CheckoutPage domain value** | `frontend/src/pages/CheckoutPage.tsx` lines 332-333 | `defaultState/defaultCity` dùng bản dịch `t()` → backend validation fail | ❌ STILL BUG |
+| ~~B2~~ | ~~CheckoutPage.tsx~~ | ~~`defaultState/defaultCity` dùng `t()` → backend fail~~ | ✅ FIXED — `state: ''`, `city: ''` (lines 333-334) |
 | ~~B3~~ | ~~priceUtils.ts~~ | ~~duplicate khai báo~~ | ✅ FIXED — locale/currencySymbol hoisted lines 19-20 |
 | ~~B4~~ | ~~DynamicAttributeSelector.tsx~~ | ~~thiếu locale arg~~ | ✅ FIXED — line 155 `toLocaleString(getLocale())` |
 | ~~B5~~ | ~~EnhancedVariantSelector.tsx~~ | ~~thiếu locale arg~~ | ✅ FIXED — line 249 `toLocaleString(getLocale())` |
 | ~~B6~~ | ~~format.ts~~ | ~~missing getLocale() helper~~ | ✅ FIXED — `getLocale()` helper exists |
-
-**Fix B2 — stable fallback không dịch (CHỈ BUG CÒN LẠI):**
-```tsx
-state: '',   // Không dùng t('checkout.defaultState')
-city:  '',
-```
 
 ---
 

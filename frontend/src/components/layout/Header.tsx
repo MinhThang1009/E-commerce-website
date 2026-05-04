@@ -219,7 +219,7 @@ const Header: React.FC = () => {
           <div className="relative" ref={userDropdownRef}>
             <button
               onClick={handleUserClick}
-              className={`group relative p-1.5 sm:p-2 rounded-xl transition-all duration-300 ${isAuthenticated
+              className={`group relative min-h-[44px] min-w-[44px] flex items-center justify-center p-1.5 sm:p-2 rounded-xl transition-all duration-300 ${isAuthenticated
                 ? 'bg-gradient-to-r from-primary-100 to-primary-50 dark:from-primary-900/20 dark:to-primary-800/10 text-primary-600 dark:text-primary-400 hover:from-primary-200 hover:to-primary-100 dark:hover:from-primary-900/30 dark:hover:to-primary-800/20 border border-primary-200/50 dark:border-primary-700/30'
                 : 'text-neutral-700 dark:text-neutral-300 hover:bg-neutral-100 dark:hover:bg-neutral-800 border border-transparent hover:border-neutral-200 dark:hover:border-neutral-700'
                 }`}
@@ -320,7 +320,7 @@ const Header: React.FC = () => {
           {/* Wishlist (danh sách yêu thích) */}
           <button
             onClick={() => navigate('/wishlist')}
-            className={`group relative p-1.5 sm:p-2 rounded-xl transition-all duration-300 ${wishlistCount > 0
+            className={`group relative min-h-[44px] min-w-[44px] flex items-center justify-center p-1.5 sm:p-2 rounded-xl transition-all duration-300 ${wishlistCount > 0
               ? 'bg-gradient-to-r from-rose-100 to-rose-50 dark:from-rose-900/20 dark:to-rose-800/10 text-rose-600 dark:text-rose-400 hover:from-rose-200 hover:to-rose-100 dark:hover:from-rose-900/30 dark:hover:to-rose-800/20 border border-rose-200/50 dark:border-rose-700/30'
               : 'text-neutral-700 dark:text-neutral-300 hover:bg-neutral-100 dark:hover:bg-neutral-800 border border-transparent hover:border-neutral-200 dark:hover:border-neutral-700'
               }`}
@@ -339,7 +339,7 @@ const Header: React.FC = () => {
           {/* Giỏ hàng */}
           <button
             onClick={handleCartClick}
-            className={`group relative p-1.5 sm:p-2 rounded-xl transition-all duration-300 ${cartItemsCount > 0
+            className={`group relative min-h-[44px] min-w-[44px] flex items-center justify-center p-1.5 sm:p-2 rounded-xl transition-all duration-300 ${cartItemsCount > 0
               ? 'bg-gradient-to-r from-secondary-100 to-secondary-50 dark:from-secondary-900/20 dark:to-secondary-800/10 text-secondary-600 dark:text-secondary-400 hover:from-secondary-200 hover:to-secondary-100 dark:hover:from-secondary-900/30 dark:hover:to-secondary-800/20 border border-secondary-200/50 dark:border-secondary-700/30'
               : 'text-neutral-700 dark:text-neutral-300 hover:bg-neutral-100 dark:hover:bg-neutral-800 border border-transparent hover:border-neutral-200 dark:hover:border-neutral-700'
               }`}
@@ -358,7 +358,7 @@ const Header: React.FC = () => {
 
           {/* Nút menu mobile */}
           <button
-            className="lg:hidden group p-1.5 sm:p-2 rounded-xl text-neutral-700 dark:text-neutral-300 hover:bg-neutral-100 dark:hover:bg-neutral-800 transition-all duration-300 border border-transparent hover:border-neutral-200 dark:hover:border-neutral-700"
+            className="lg:hidden group min-h-[44px] min-w-[44px] flex items-center justify-center p-1.5 sm:p-2 rounded-xl text-neutral-700 dark:text-neutral-300 hover:bg-neutral-100 dark:hover:bg-neutral-800 transition-all duration-300 border border-transparent hover:border-neutral-200 dark:hover:border-neutral-700"
             onClick={() => dispatch(toggleMobileMenu())}
             aria-label={
               isMobileMenuOpen

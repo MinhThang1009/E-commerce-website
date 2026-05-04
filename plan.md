@@ -3345,10 +3345,10 @@ search.*          — trang tìm kiếm
 - **Fix:** Tất cả product images dùng `className="w-full h-full object-cover"`
 
 ### ✅ Acceptance Criteria Phase 24
-- [ ] Chrome DevTools → iPhone SE (375px) → ShopPage không có horizontal scroll
-- [ ] ProductDetailPage trên mobile: "Add to Cart" button ở vị trí dễ tap (không bị ẩn)
-- [ ] CheckoutPage: tap vào field phone → keyboard số hiện lên (không phải keyboard chữ)
-- [ ] Tất cả icon buttons có tap area tối thiểu 44x44px
+- [x] Chrome DevTools → iPhone SE (375px) → ShopPage không có horizontal scroll
+- [x] ProductDetailPage trên mobile: "Add to Cart" button ở vị trí dễ tap (không bị ẩn)
+- [x] CheckoutPage: tap vào field phone → keyboard số hiện lên (không phải keyboard chữ)
+- [x] Tất cả icon buttons có tap area tối thiểu 44x44px
 
 ---
 

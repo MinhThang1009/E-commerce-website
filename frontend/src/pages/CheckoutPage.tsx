@@ -834,6 +834,7 @@ const CheckoutPage: React.FC = () => {
                 <Input
                   label={t('checkout.shippingInfo.email')}
                   type="email"
+                  autoComplete="email"
                   value={formData.email}
                   onChange={(e) => handleInputChange('email', e.target.value)}
                   error={errors.email}
@@ -841,6 +842,9 @@ const CheckoutPage: React.FC = () => {
                 />
                 <Input
                   label={t('checkout.shippingInfo.phone')}
+                  type="tel"
+                  inputMode="numeric"
+                  autoComplete="tel"
                   value={formData.phone}
                   onChange={(e) => handleInputChange('phone', e.target.value)}
                   error={errors.phone}

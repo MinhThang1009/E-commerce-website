@@ -125,7 +125,7 @@ const PaymentQRPage: React.FC = () => {
       await navigator.clipboard.writeText(text);
       setCopiedField(field);
       setTimeout(() => setCopiedField(null), 2000);
-    } catch {}
+    } catch { /* clipboard API không khả dụng — bỏ qua */ }
   };
 
   const handleVnpayPayment = async () => {
@@ -262,7 +262,7 @@ const PaymentQRPage: React.FC = () => {
                     try {
                       await cancelOrder(orderId).unwrap();
                       dispatch(addNotification({ type: 'success', message: t('paymentQR.cancelSuccess'), duration: 3000 }));
-                    } catch {}
+                    } catch { /* lỗi huỷ đơn — tiếp tục navigate */ }
                     navigate('/orders');
                   }
                 }}

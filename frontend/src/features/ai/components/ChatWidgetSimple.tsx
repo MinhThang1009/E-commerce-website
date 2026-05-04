@@ -155,7 +155,7 @@ const ChatWidgetSimple: React.FC = () => {
       console.error('Lỗi khi tạo phản hồi AI:', error);
 
       // Xử lý lỗi
-      let errorMessage = t('chat.errors.general');
+      const errorMessage = t('chat.errors.general');
 
       // Xóa tin nhắn "đang nhập" và thêm thông báo lỗi
       setMessages((prev) => {

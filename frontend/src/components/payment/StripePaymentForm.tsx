@@ -188,7 +188,7 @@ const StripePaymentForm: React.FC<StripePaymentFormProps> = (props) => {
         // Chuyển đổi VNĐ sang USD theo tỷ giá xấp xỉ
         const VND_TO_USD_RATE = 0.00004; // Tỷ giá xấp xỉ: 1 VNĐ = 0.00004 USD (1 USD ≈ 25,000 VNĐ)
 
-        let usdAmount = props.amount * VND_TO_USD_RATE;
+        const usdAmount = props.amount * VND_TO_USD_RATE;
 
         // Stripe yêu cầu số tiền theo cents cho USD
         const amountInCents = Math.round(usdAmount * 100);

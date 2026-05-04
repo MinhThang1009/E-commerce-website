@@ -9,6 +9,9 @@ const {
 const { authenticate } = require('../middlewares/authenticate');
 const { authorize } = require('../middlewares/authorize');
 
+// GET /api/orders/track?orderNumber=X&email=Y — Tra cứu đơn hàng công khai (không cần đăng nhập)
+router.get('/track', orderController.trackOrder);
+
 // Route của người dùng (yêu cầu xác thực)
 router.use(authenticate);
 router.post(

@@ -197,12 +197,16 @@ const getAllProducts = async (req, res, next) => {
       where: { isVerified: true },
     });
 
-    // Xử lý sort: price_asc/price_desc map sang basePrice column
+    // Xử lý sort: map các alias sang column thực tế tránh Sequelize lỗi column không tồn tại
     let orderClause;
     if (sort === 'price_asc') {
       orderClause = [['basePrice', 'ASC']];
     } else if (sort === 'price_desc') {
       orderClause = [['basePrice', 'DESC']];
+    } else if (sort === 'newest') {
+      orderClause = [['createdAt', 'DESC']];
+    } else if (sort === 'bestselling' || sort === 'popular') {
+      orderClause = [['soldCount', 'DESC']];
     } else {
       orderClause = [[sort, order]];
     }

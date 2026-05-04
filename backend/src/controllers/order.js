@@ -1131,6 +1131,52 @@ const confirmReceived = async (req, res, next) => {
   }
 };
 
+// GET /api/orders/track?orderNumber=X&email=Y — Tra cứu công khai, không cần đăng nhập
+const trackOrder = async (req, res, next) => {
+  try {
+    const { orderNumber, email } = req.query;
+
+    if (!orderNumber || !email) {
+      return res.status(400).json({ status: 'error', message: 'Vui lòng cung cấp mã đơn hàng và email' });
+    }
+
+    const order = await Order.findOne({
+      where: { number: orderNumber },
+      include: [{ model: User, attributes: ['email'] }],
+    });
+
+    // Kiểm tra email khớp để tránh liệt kê đơn hàng của người khác
+    if (!order || order.User?.email?.toLowerCase() !== email.toLowerCase()) {
+      return res.status(404).json({ status: 'error', message: 'Không tìm thấy đơn hàng với thông tin đã cung cấp' });
+    }
+
+    // Map trạng thái đơn hàng sang danh sách các bước stepper
+    const STATUS_ORDER = ['pending', 'processing', 'shipped', 'delivered'];
+    const currentIndex = STATUS_ORDER.indexOf(order.status);
+
+    const steps = [
+      { key: 'pending',    label: 'Đã đặt hàng',          completed: currentIndex >= 0 && order.status !== 'cancelled' },
+      { key: 'processing', label: 'Đang chuẩn bị',         completed: currentIndex >= 1 },
+      { key: 'shipped',    label: 'Đang giao',              completed: currentIndex >= 2 },
+      { key: 'delivered',  label: 'Đã nhận hàng',           completed: currentIndex >= 3 },
+    ];
+
+    res.status(200).json({
+      status: 'success',
+      data: {
+        orderNumber: order.number,
+        currentStatus: order.status,
+        steps,
+        isCancelled: order.status === 'cancelled',
+        createdAt: order.createdAt,
+        updatedAt: order.updatedAt,
+      },
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
 // GET /api/orders/shipping-estimate — Trả phí ship ước tính để frontend hiển thị trước khi tạo đơn
 const estimateShipping = (req, res) => {
   const subtotal = parseFloat(req.query.subtotal) || 0;
@@ -1150,5 +1196,6 @@ module.exports = {
   repayOrder,
   confirmReceived,
   estimateShipping,
+  trackOrder,
   clearUserCart, // Dùng trong payment controller
 };

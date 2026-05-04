@@ -60,6 +60,8 @@ const AdminBannersPage = lazy(() => import('@/pages/admin/BannersPage'));
 const AdminEmailCampaignsPage = lazy(
   () => import('@/pages/admin/EmailCampaignsPage')
 );
+const AdminInventoryPage = lazy(() => import('@/pages/admin/InventoryPage'));
+const AdminAuditLogPage = lazy(() => import('@/pages/admin/AuditLogPage'));
 
 const PaymentQRPage = lazy(() => import('@/pages/PaymentQRPage'));
 
@@ -243,6 +245,8 @@ const AppRoutes: React.FC = () => {
             path="email-campaigns"
             element={<AdminEmailCampaignsPage />}
           />
+          <Route path="inventory" element={<AdminInventoryPage />} />
+          <Route path="audit-log" element={<AdminAuditLogPage />} />
 
         </Route>
       </Routes>

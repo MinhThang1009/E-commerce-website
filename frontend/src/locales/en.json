@@ -963,7 +963,9 @@
       "discounts": "Discount Codes",
       "email": "Email Campaigns",
       "support": "Online Support",
-      "banners": "Banner Management"
+      "banners": "Banner Management",
+      "inventory": "Inventory",
+      "auditLog": "Audit Log"
     },
     "dashboard": {
       "title": "Admin Dashboard",
@@ -2932,6 +2934,8 @@
     "needHelp": "Need Help?",
     "helpDesc": "If you're having trouble tracking your order or have questions about your shipment, our customer service team is here to help.",
     "notFound": "We couldn't find tracking information for the provided order number and email. Please check your information and try again.",
+    "cancelled": "Cancelled",
+    "cancelledDesc": "This order has been cancelled. Please contact support if you need further information.",
     "supportEmail": "support@techstore.vn",
     "supportPhone": "1900 1234",
     "demo": {
@@ -3860,5 +3864,43 @@
     "exportingCsv": "Exporting CSV...",
     "invalidFileType": "Only CSV or JSON files are accepted",
     "fileTooLarge": "File exceeds 5MB limit"
+  },
+  "inventory": {
+    "title": "Inventory Management",
+    "searchPlaceholder": "Search products...",
+    "colProduct": "Product",
+    "colSku": "SKU",
+    "colStock": "Stock",
+    "colStatus": "Status",
+    "colAction": "Action",
+    "outOfStock": "Out of Stock",
+    "lowStock": "Low Stock",
+    "inStock": "In Stock",
+    "editStock": "Edit stock",
+    "save": "Save",
+    "cancel": "Cancel",
+    "invalidQty": "Invalid quantity",
+    "updateSuccess": "Stock updated successfully",
+    "updateError": "Failed to update stock"
+  },
+  "auditLog": {
+    "title": "System Audit Log",
+    "filterAdminId": "Filter by Admin ID",
+    "filterAction": "Filter by action",
+    "startDate": "From date",
+    "endDate": "To date",
+    "colTime": "Time",
+    "colAdmin": "Admin",
+    "colAction": "Action",
+    "colEntity": "Entity",
+    "colId": "ID",
+    "colDetail": "Details",
+    "view": "View",
+    "total": "records",
+    "detailTitle": "Change Details",
+    "oldValue": "Old Value",
+    "newValue": "New Value",
+    "noData": "(no data)",
+    "close": "Close"
   }
 }

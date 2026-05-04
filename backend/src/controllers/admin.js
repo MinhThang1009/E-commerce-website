@@ -1782,6 +1782,76 @@ const updateOrderStatus = catchAsync(async (req, res) => {
 });
 
 /**
+ * Quản lý Orders - Admin hủy đơn hàng và hoàn tồn kho
+ */
+const adminCancelOrder = catchAsync(async (req, res) => {
+  const { id } = req.params;
+
+  const order = await Order.findByPk(id, {
+    include: [{
+      model: OrderItem,
+      as: 'items',
+      include: [
+        { model: Product },
+        { model: ProductVariant },
+      ],
+    }],
+  });
+
+  if (!order) throw new AppError('Không tìm thấy đơn hàng', 404);
+  if (order.status === 'cancelled') throw new AppError('Đơn hàng đã bị hủy trước đó', 400);
+  if (order.status === 'delivered') throw new AppError('Không thể hủy đơn hàng đã giao', 400);
+
+  await sequelize.transaction(async (t) => {
+    await order.update({ status: 'cancelled' }, { transaction: t });
+
+    // Hoàn tồn kho cho từng sản phẩm trong đơn
+    for (const item of order.items) {
+      if (item.variantId && item.ProductVariant) {
+        await item.ProductVariant.update(
+          { stockQuantity: item.ProductVariant.stockQuantity + item.quantity },
+          { transaction: t }
+        );
+      } else if (item.Product) {
+        await item.Product.update(
+          { stockQuantity: item.Product.stockQuantity + item.quantity },
+          { transaction: t }
+        );
+      }
+    }
+  });
+
+  res.status(200).json({
+    status: 'success',
+    message: 'Đã hủy đơn hàng và hoàn tồn kho thành công',
+    data: { orderId: parseInt(id), status: 'cancelled' },
+  });
+});
+
+/**
+ * Quản lý Products - Cập nhật tồn kho trực tiếp (dùng cho trang Inventory)
+ */
+const updateProductStock = catchAsync(async (req, res) => {
+  const { id } = req.params;
+  const { stockQuantity } = req.body;
+
+  const qty = parseInt(stockQuantity, 10);
+  if (isNaN(qty) || qty < 0) {
+    throw new AppError('Số lượng tồn kho phải là số nguyên không âm', 400);
+  }
+
+  const product = await Product.findByPk(id);
+  if (!product) throw new AppError('Không tìm thấy sản phẩm', 404);
+
+  await product.update({ stockQuantity: qty });
+
+  res.status(200).json({
+    status: 'success',
+    data: { id: product.id, stockQuantity: qty },
+  });
+});
+
+/**
  * Quản lý Products - Clone sản phẩm
  */
 const cloneProduct = catchAsync(async (req, res) => {
@@ -2097,6 +2167,8 @@ module.exports = {
   deleteReview,
   getAllOrders,
   updateOrderStatus,
+  adminCancelOrder,
+  updateProductStock,
   restockProduct,
   getAuditLogs,
 };

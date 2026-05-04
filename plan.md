@@ -4446,14 +4446,14 @@ spec_cpu,spec_ram,spec_storage,spec_display,spec_battery
   - User sau khi mua có thể xem warranty info trong Order Detail
 
 ### ✅ Acceptance Criteria Phase 33
-- [ ] `POST /api/admin/email-campaigns/:id/send` → gửi email tới tất cả subscribers, log count
-- [ ] `GET /api/admin/audit-logs` → trả về paginated list với đúng format `{ adminId, action, entityType, entityId }`
-- [ ] Admin cancel order → `GET /api/products/:id` → stockQuantity tăng đúng số lượng trong order
-- [ ] TrackOrderPage hiển thị stepper đúng bước hiện tại của đơn hàng
-- [ ] NewArrivalsPage load → sản phẩm có `createdAt` mới nhất xuất hiện đầu tiên
-- [ ] DealsPage: chỉ hiện sản phẩm có giá sale thực sự < giá gốc
-- [ ] PaymentQRPage: polling mỗi 5s, khi thanh toán xong → tự redirect không cần user click
-- [ ] Inventory page: sản phẩm stock=0 hiển thị badge đỏ "Hết hàng"
+- [x] `POST /api/admin/email-campaigns/:id/send` → gửi email tới tất cả subscribers, log count
+- [x] `GET /api/admin/audit-logs` → trả về paginated list với đúng format `{ adminId, action, entityType, entityId }`
+- [x] Admin cancel order → `GET /api/products/:id` → stockQuantity tăng đúng số lượng trong order
+- [x] TrackOrderPage hiển thị stepper đúng bước hiện tại của đơn hàng
+- [x] NewArrivalsPage load → sản phẩm có `createdAt` mới nhất xuất hiện đầu tiên
+- [x] DealsPage: chỉ hiện sản phẩm có giá sale thực sự < giá gốc
+- [x] PaymentQRPage: polling mỗi 5s, khi thanh toán xong → tự redirect không cần user click
+- [x] Inventory page: sản phẩm stock=0 hiển thị badge đỏ "Hết hàng"
 
 ---
 

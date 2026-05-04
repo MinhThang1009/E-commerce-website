@@ -158,6 +158,9 @@ router.patch(
 // POST /api/admin/products/:productId/restock — Nhập hàng cho sản phẩm hoặc biến thể
 router.post('/products/:productId/restock', adminController.restockProduct);
 
+// PATCH /api/admin/products/:id/stock — Cập nhật trực tiếp số lượng tồn kho (dùng cho trang Inventory)
+router.patch('/products/:id/stock', adminController.updateProductStock);
+
 /**
  * REVIEW MANAGEMENT ROUTES
  */
@@ -191,6 +194,9 @@ router.put(
   validate(updateOrderStatusValidation),
   adminController.updateOrderStatus
 );
+
+// PUT /api/admin/orders/:id/cancel - Hủy đơn hàng + hoàn tồn kho
+router.put('/orders/:id/cancel', adminController.adminCancelOrder);
 
 /**
  * DISCOUNT CODE MANAGEMENT ROUTES

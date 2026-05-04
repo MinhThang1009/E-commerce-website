@@ -13,6 +13,24 @@ const escapeHtml = (str) => {
     .replace(/'/g, '&#x27;');
 };
 
+// Loại bỏ các thẻ HTML nguy hiểm khỏi nội dung chiến dịch email để chặn XSS
+// Chỉ xóa script/iframe/object/form và event handler — giữ lại định dạng p/b/i/a/img/h1-h3
+const sanitizeCampaignHtml = (html) => {
+  if (!html) return '';
+  return String(html)
+    // Xóa thẻ script (kể cả nội dung bên trong)
+    .replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, '')
+    // Xóa thẻ iframe, object, embed, form
+    .replace(/<(iframe|object|embed|form|base|meta|link)[^>]*>.*?<\/\1>/gi, '')
+    .replace(/<(iframe|object|embed|form|base|meta|link)[^>]*\/?>/gi, '')
+    // Xóa inline event handler (onclick, onload, onerror, ...)
+    .replace(/\s+on\w+\s*=\s*(['"])[^'"]*\1/gi, '')
+    .replace(/\s+on\w+\s*=\s*[^>\s]*/gi, '')
+    // Xóa javascript: trong href/src
+    .replace(/href\s*=\s*(['"])\s*javascript:[^'"]*\1/gi, 'href="#"')
+    .replace(/src\s*=\s*(['"])\s*javascript:[^'"]*\1/gi, 'src=""');
+};
+
 // Tạo transporter với connection pooling để tối ưu hiệu năng
 const createTransporter = () => {
   const isGmail = process.env.EMAIL_HOST === 'smtp.gmail.com';
@@ -100,6 +118,8 @@ const sendNewsletterWelcomeEmail = async (email) => {
 
 // Gửi email chiến dịch hàng loạt theo lô để tránh vượt giới hạn tần suất
 const sendBulkCampaignEmail = async (emails, subject, content) => {
+  // Sanitize nội dung trước khi đưa vào HTML email — ngăn XSS nếu admin account bị compromise
+  const safeContent = sanitizeCampaignHtml(content);
   const transporter = getTransporter();
   logger.info(`[EmailService] Bắt đầu gửi email hàng loạt đến ${emails.length} người nhận theo lô...`);
 
@@ -119,7 +139,7 @@ const sendBulkCampaignEmail = async (emails, subject, content) => {
         html: `
           <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; background: #f9f9f9; padding: 20px; border-radius: 8px;">
             <div style="background: white; padding: 20px; border-radius: 8px; border: 1px solid #eee;">
-              ${content}
+              ${safeContent}
             </div>
             <div style="margin-top: 20px; text-align: center; color: #888; font-size: 12px;">
               <p>Bạn nhận được email này vì bạn là thành viên của hệ thống chúng tôi.</p>

@@ -1081,7 +1081,9 @@
       "discounts": "Mã giảm giá",
       "email": "Chiến dịch Email",
       "support": "Hỗ trợ trực tuyến",
-      "banners": "Quản lý Banner"
+      "banners": "Quản lý Banner",
+      "inventory": "Quản lý kho",
+      "auditLog": "Nhật ký hệ thống"
     },
     "dashboard": {
       "title": "Bảng Điều Khiển Admin",
@@ -2932,6 +2934,8 @@
     "needHelp": "Cần hỗ trợ?",
     "helpDesc": "Nếu bạn gặp khó khăn khi tra cứu đơn hàng, đội ngũ hỗ trợ khách hàng của chúng tôi luôn sẵn sàng giúp đỡ.",
     "notFound": "Không tìm thấy thông tin theo dõi cho mã đơn hàng và email này. Vui lòng kiểm tra lại.",
+    "cancelled": "Đã hủy",
+    "cancelledDesc": "Đơn hàng này đã bị hủy. Vui lòng liên hệ bộ phận hỗ trợ nếu bạn cần thêm thông tin.",
     "supportEmail": "support@techstore.vn",
     "supportPhone": "1900 1234",
     "demo": {
@@ -3860,5 +3864,43 @@
     "exportingCsv": "Đang xuất CSV...",
     "invalidFileType": "Chỉ chấp nhận file CSV hoặc JSON",
     "fileTooLarge": "File vượt quá giới hạn 5MB"
+  },
+  "inventory": {
+    "title": "Quản lý kho hàng",
+    "searchPlaceholder": "Tìm kiếm sản phẩm...",
+    "colProduct": "Sản phẩm",
+    "colSku": "SKU",
+    "colStock": "Tồn kho",
+    "colStatus": "Trạng thái",
+    "colAction": "Thao tác",
+    "outOfStock": "Hết hàng",
+    "lowStock": "Sắp hết",
+    "inStock": "Còn hàng",
+    "editStock": "Chỉnh sửa tồn kho",
+    "save": "Lưu",
+    "cancel": "Hủy",
+    "invalidQty": "Số lượng không hợp lệ",
+    "updateSuccess": "Cập nhật tồn kho thành công",
+    "updateError": "Cập nhật tồn kho thất bại"
+  },
+  "auditLog": {
+    "title": "Nhật ký hoạt động hệ thống",
+    "filterAdminId": "Lọc theo Admin ID",
+    "filterAction": "Lọc theo hành động",
+    "startDate": "Từ ngày",
+    "endDate": "Đến ngày",
+    "colTime": "Thời gian",
+    "colAdmin": "Quản trị viên",
+    "colAction": "Hành động",
+    "colEntity": "Đối tượng",
+    "colId": "ID",
+    "colDetail": "Chi tiết",
+    "view": "Xem",
+    "total": "bản ghi",
+    "detailTitle": "Chi tiết thay đổi",
+    "oldValue": "Giá trị cũ",
+    "newValue": "Giá trị mới",
+    "noData": "(không có dữ liệu)",
+    "close": "Đóng"
   }
 }

@@ -283,7 +283,7 @@ const getDetailedStats = catchAsync(async (req, res) => {
       dateFormat = '%Y-%m-%d';
   }
 
-  // Thống kê đơn hàng theo thời gian
+  // Thống kê đơn hàng theo thời gian — loại trừ đơn hủy và thanh toán thất bại
   const orderStats = await Order.findAll({
     attributes: [
       [
@@ -297,6 +297,8 @@ const getDetailedStats = catchAsync(async (req, res) => {
       createdAt: {
         [Op.between]: [start, end],
       },
+      status: { [Op.notIn]: ['cancelled'] },
+      paymentStatus: { [Op.notIn]: ['refunded', 'failed'] },
     },
     group: [
       Sequelize.fn('DATE_FORMAT', Sequelize.col('createdAt'), dateFormat),

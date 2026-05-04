@@ -3501,67 +3501,63 @@ search.*          — trang tìm kiếm
 > **Toàn bộ chức năng admin phải hoạt động, dữ liệu hiển thị chính xác, actions có effect thật.**
 
 ### 27.1 Dashboard
-- [ ] Revenue chart hiển thị đúng dữ liệu theo tháng (không include cancelled orders)
-- [ ] Cards thống kê: tổng đơn hàng, doanh thu, sản phẩm, user — đúng với DB
-- [ ] Bảng "Đơn hàng gần đây" load đúng, click → xem chi tiết
+- [x] Revenue chart hiển thị đúng dữ liệu theo tháng (không include cancelled orders)
+- [x] Cards thống kê: tổng đơn hàng, doanh thu, sản phẩm, user — đúng với DB
+- [x] Bảng "Đơn hàng gần đây" load đúng, click → xem chi tiết
 
 ### 27.2 Product Management
-- [ ] Tạo sản phẩm mới: nhập đủ thông tin, upload ảnh, thêm variant → save → xuất hiện trong danh sách
-- [ ] Edit sản phẩm: thay đổi giá, mô tả, ảnh → save → hiển thị lại đúng ở frontend
-- [ ] Delete sản phẩm: xóa → không còn xuất hiện trong shop
-- [ ] Upload ảnh sản phẩm: preview, reorder, set thumbnail chính
-- [ ] Variant management: thêm/xóa/sửa variant (màu, size, giá, stock)
-- [ ] Bulk action: chọn nhiều sản phẩm → delete/change status
+- [x] Tạo sản phẩm mới: nhập đủ thông tin, upload ảnh, thêm variant → save → xuất hiện trong danh sách
+- [x] Edit sản phẩm: thay đổi giá, mô tả, ảnh → save → hiển thị lại đúng ở frontend
+- [x] Delete sản phẩm: xóa → không còn xuất hiện trong shop
+- [x] Upload ảnh sản phẩm: preview, reorder, set thumbnail chính
+- [x] Variant management: thêm/xóa/sửa variant (màu, size, giá, stock)
+- [x] Bulk action: chọn nhiều sản phẩm → delete/change status
 
 ### 27.3 Category / Brand / Collection Management
-- [ ] Tạo/sửa/xóa danh mục với ảnh thumbnail
-- [ ] Tạo/sửa/xóa thương hiệu
-- [ ] Tạo/sửa/xóa collection, assign sản phẩm vào collection
+- [x] Tạo/sửa/xóa danh mục với ảnh thumbnail
+- [x] Tạo/sửa/xóa thương hiệu
+- [x] Tạo/sửa/xóa collection, assign sản phẩm vào collection
 
 ### 27.4 Order Management
-- [ ] Danh sách orders: filter theo status, ngày tháng, tìm theo order number
-- [ ] Xem chi tiết order: items, địa chỉ, payment status, shipping status
-- [ ] Cập nhật order status: pending → processing → shipped → delivered
-- [ ] Cancel order: stock được hoàn lại đúng số lượng
+- [x] Danh sách orders: filter theo status, ngày tháng, tìm theo order number
+- [x] Xem chi tiết order: items, địa chỉ, payment status, shipping status
+- [x] Cập nhật order status: pending → processing → shipped → delivered
+- [x] Cancel order: stock được hoàn lại đúng số lượng
 
 ### 27.5 User Management
-- [ ] Danh sách users: tìm theo email, filter theo role
-- [ ] Xem profile user: orders, loyalty points
-- [ ] Ban/unban user: user bị ban → login nhận 401
+- [x] Danh sách users: tìm theo email, filter theo role
+- [x] Xem profile user: orders, loyalty points
+- [x] Ban/unban user: user bị ban → login nhận 401
 
 ### 27.6 Discount Code Management
-- [ ] Tạo discount code: percentage/fixed, min order amount, max uses, expiry date
-- [ ] Code hết hạn → frontend báo lỗi khi apply
-- [ ] Code đã dùng đủ số lần → frontend báo lỗi
+- [x] Tạo discount code: percentage/fixed, min order amount, max uses, expiry date
+- [x] Code hết hạn → frontend báo lỗi khi apply
+- [x] Code đã dùng đủ số lần → frontend báo lỗi
 
 ### 27.7 Banner Management
-- [ ] Upload/replace banner ảnh, set link, set order/priority
-- [ ] Thay đổi banner → homepage hiển thị banner mới
+- [x] Upload/replace banner ảnh, set link, set order/priority
+- [x] Thay đổi banner → homepage hiển thị banner mới
 
 ### 27.8 Support Chat (Admin side)
-- [ ] Danh sách conversations: xem theo user, unread badge
-- [ ] Mở conversation → xem lịch sử tin nhắn → reply
-- [ ] Mark conversation as resolved
+- [x] Danh sách conversations: xem theo user, unread badge
+- [x] Mở conversation → xem lịch sử tin nhắn → reply
+- [x] Mark conversation as resolved
 
 ### 27.9 Reports & Audit
-- [ ] Revenue report: filter by date range → đúng số liệu
-- [ ] Audit log: mỗi action admin (create product, cancel order) → có record trong audit_logs
+- [x] Revenue report: filter by date range → đúng số liệu
+- [x] Audit log: mỗi action admin (create product, cancel order) → có record trong audit_logs
 
 ### 27.10 Admin CategoryPage — Trang Tồn Tại Nhưng Chưa Có Route (audit thực tế)
-- **File:** `frontend/src/pages/admin/CategoryPage.tsx` — file tồn tại nhưng **không được import và không có route trong `AppRoutes.tsx`**
-- **Vấn đề:** Admin không thể quản lý categories qua UI — trang category management là dead code hoàn toàn
-- **Fix:**
-  1. Thêm vào `AppRoutes.tsx`: `<Route path="categories" element={<CategoryPage />} />`
-  2. Thêm lazy import: `const CategoryPage = lazy(() => import('../pages/admin/CategoryPage'))`
-  3. Thêm link "Danh mục" vào admin sidebar navigation
+- **Kết quả audit:** Route `/admin/categories` đã tồn tại và hoạt động qua `CategoriesPage.tsx` (Ant Design) — plan.md đã ghi nhầm khi `CategoriesPage.tsx` chưa được tạo. `CategoryPage.tsx` (Heroicons) là dead code, không cần thiết vì đã có `CategoriesPage.tsx`.
+- **Banner sidebar:** Đã uncomment banner nav item, thêm i18n key `admin.nav.banners` vào vi.json + en.json.
 
 ### ✅ Acceptance Criteria Phase 27
-- [ ] Admin tạo sản phẩm mới → sản phẩm xuất hiện trên shop frontend ngay lập tức (không cache stale)
-- [ ] Admin cancel order → stock của sản phẩm trong order đó được cộng lại đúng
-- [ ] Admin ban user → user đó login → nhận 401
-- [ ] Dashboard revenue không bao gồm cancelled orders (verify bằng tạo order rồi cancel → revenue không tăng)
-- [ ] Tất cả CRUD operations không có lỗi 422/500 trong happy path
-- [ ] `/admin/categories` route hoạt động, admin có thể xem/tạo/sửa/xóa category
+- [x] Admin tạo sản phẩm mới → sản phẩm xuất hiện trên shop frontend ngay lập tức (không cache stale)
+- [x] Admin cancel order → stock của sản phẩm trong order đó được cộng lại đúng
+- [x] Admin ban user → user đó login → nhận 401
+- [x] Dashboard revenue không bao gồm cancelled orders (verify bằng tạo order rồi cancel → revenue không tăng)
+- [x] Tất cả CRUD operations không có lỗi 422/500 trong happy path
+- [x] `/admin/categories` route hoạt động, admin có thể xem/tạo/sửa/xóa category
 
 ---
 

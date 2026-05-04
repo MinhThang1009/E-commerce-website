@@ -962,7 +962,8 @@
       "warranty": "Warranty Packages",
       "discounts": "Discount Codes",
       "email": "Email Campaigns",
-      "support": "Online Support"
+      "support": "Online Support",
+      "banners": "Banner Management"
     },
     "dashboard": {
       "title": "Admin Dashboard",

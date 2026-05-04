@@ -1080,7 +1080,8 @@
       "warranty": "Gói bảo hành",
       "discounts": "Mã giảm giá",
       "email": "Chiến dịch Email",
-      "support": "Hỗ trợ trực tuyến"
+      "support": "Hỗ trợ trực tuyến",
+      "banners": "Quản lý Banner"
     },
     "dashboard": {
       "title": "Bảng Điều Khiển Admin",

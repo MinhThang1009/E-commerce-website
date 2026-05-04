@@ -3302,10 +3302,10 @@ search.*          — trang tìm kiếm
 - **Fix:** Nếu không có — chạy `npm install` để generate; thêm vào git; không add vào `.gitignore`
 
 ### ✅ Acceptance Criteria Phase 23
-- [ ] `npm audit --audit-level=high` trong backend → exit code 0 (không có high/critical)
-- [ ] `npm audit --audit-level=high` trong frontend → exit code 0
-- [ ] `backend/.env.example` tồn tại với đủ tất cả required keys
-- [ ] `package-lock.json` tồn tại trong cả backend và frontend
+- [x] `npm audit --audit-level=high` trong backend → exit code 0 (không có high/critical)
+- [x] `npm audit --audit-level=high` trong frontend → exit code 0
+- [x] `backend/.env.example` tồn tại với đủ tất cả required keys
+- [x] `package-lock.json` tồn tại trong cả backend và frontend
 
 ---
 

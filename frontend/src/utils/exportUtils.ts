@@ -1,16 +1,35 @@
-import * as XLSX from 'xlsx';
+import ExcelJS from 'exceljs';
 
 /**
- * Xuất dữ liệu ra file Excel (.xlsx)
+ * Xuất dữ liệu ra file Excel (.xlsx) — dùng exceljs thay xlsx (bảo mật hơn)
  * @param data Mảng đối tượng cần xuất
  * @param fileName Tên file (không có phần mở rộng)
  * @param sheetName Tên trang tính
  */
-export const exportToExcel = (data: any[], fileName: string, sheetName: string = 'Sheet1') => {
-  const ws = XLSX.utils.json_to_sheet(data);
-  const wb = XLSX.utils.book_new();
-  XLSX.utils.book_append_sheet(wb, ws, sheetName);
-  XLSX.writeFile(wb, `${fileName}.xlsx`);
+export const exportToExcel = async (data: any[], fileName: string, sheetName: string = 'Sheet1') => {
+  if (data.length === 0) return;
+
+  const wb = new ExcelJS.Workbook();
+  const ws = wb.addWorksheet(sheetName);
+
+  // Lấy headers từ keys của object đầu tiên
+  const headers = Object.keys(data[0]);
+  ws.columns = headers.map((h) => ({ header: h, key: h, width: 20 }));
+
+  // Thêm các hàng dữ liệu
+  ws.addRows(data);
+
+  // Tạo blob và trigger download
+  const buffer = await wb.xlsx.writeBuffer();
+  const blob = new Blob([buffer], {
+    type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+  });
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement('a');
+  link.href = url;
+  link.download = `${fileName}.xlsx`;
+  link.click();
+  URL.revokeObjectURL(url);
 };
 
 /**
@@ -39,7 +58,7 @@ export const exportToCSV = (data: any[], fileName: string) => {
   const csvContent = csvRows.join('\n');
   const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
   const link = document.createElement('a');
-  
+
   if (link.download !== undefined) {
     const url = URL.createObjectURL(blob);
     link.setAttribute('href', url);
@@ -50,4 +69,3 @@ export const exportToCSV = (data: any[], fileName: string) => {
     document.body.removeChild(link);
   }
 };
-

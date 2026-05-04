@@ -93,7 +93,7 @@ const ProductExportModal: React.FC<ProductExportModalProps> = ({
       const fileName = `products_export_${new Date().getTime()}`;
 
       if (format === 'xlsx') {
-        exportToExcel(transformedData, fileName, 'Products');
+        await exportToExcel(transformedData, fileName, 'Products');
       } else {
         exportToCSV(transformedData, fileName);
       }

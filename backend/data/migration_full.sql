@@ -40,7 +40,7 @@ DROP TABLE IF EXISTS `cart_items`;
 DROP TABLE IF EXISTS `carts`;
 DROP TABLE IF EXISTS `wishlists`;
 DROP TABLE IF EXISTS `recently_viewed`;
-DROP TABLE IF EXISTS `search_history`;
+DROP TABLE IF EXISTS `search_histories`;
 DROP TABLE IF EXISTS `loyalty_histories`;
 DROP TABLE IF EXISTS `chat_messages`;
 DROP TABLE IF EXISTS `newsletter_subscribers`;
@@ -651,8 +651,8 @@ CREATE TABLE IF NOT EXISTS `loyalty_histories` (
     CONSTRAINT `fk_lh_order` FOREIGN KEY (`order_id`) REFERENCES `orders`(`id`) ON DELETE SET NULL ON UPDATE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
--- ----- BẢNG 36: search_history (Lịch sử tìm kiếm) -----
-CREATE TABLE IF NOT EXISTS `search_history` (
+-- ----- BẢNG 36: search_histories (Lịch sử tìm kiếm) -----
+CREATE TABLE IF NOT EXISTS `search_histories` (
     `id` INT AUTO_INCREMENT PRIMARY KEY,
     `user_id` INT NULL,
     `session_id` VARCHAR(255) NULL,

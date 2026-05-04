@@ -30,7 +30,7 @@ const SearchHistory = sequelize.define(
     },
   },
   {
-    tableName: 'search_history',
+    tableName: 'search_histories',
     timestamps: true,
     updatedAt: false,
     underscored: true,

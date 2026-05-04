@@ -13,7 +13,8 @@ const REQUIRED_ENV_VARS = [
   'EMAIL_USERNAME', 'EMAIL_PASSWORD',
 ];
 
-const missingVars = REQUIRED_ENV_VARS.filter((key) => !process.env[key]);
+// Check undefined thay vì falsy — DB_PASSWORD có thể là empty string trên XAMPP local dev
+const missingVars = REQUIRED_ENV_VARS.filter((key) => process.env[key] === undefined);
 if (missingVars.length > 0) {
   logger.error(`[STARTUP ERROR] Thiếu biến môi trường bắt buộc: ${missingVars.join(', ')}`);
   logger.error('Hãy kiểm tra file .env (xem .env.example để biết danh sách đầy đủ).');

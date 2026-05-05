@@ -34,6 +34,7 @@ const buildWishlistModule = require('./modules/wishlist/module');
 const buildReviewsModule = require('./modules/reviews/module');
 const buildLoyaltyModule = require('./modules/loyalty/module');
 const buildContentModule = require('./modules/content/module');
+const buildUploadModule = require('./modules/upload/module');
 
 const authModule = buildAuthModule({
   User,
@@ -82,6 +83,9 @@ const contentModule = buildContentModule({
   eventBus, logger,
 });
 contentModule.subscribeEvents();
+
+const uploadModule = buildUploadModule({ eventBus, logger });
+uploadModule.subscribeEvents();
 
 // Khởi tạo ứng dụng Express
 const app = express();
@@ -237,6 +241,7 @@ app.use('/api' + loyaltyModule.basePath, loyaltyModule.router);
 contentModule.mounts.forEach(({ basePath, router }) => {
   app.use('/api' + basePath, router);
 });
+app.use('/api' + uploadModule.basePath, uploadModule.router);
 
 // Định nghĩa các API routes
 app.use('/api', routes);

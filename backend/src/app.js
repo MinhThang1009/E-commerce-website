@@ -22,6 +22,7 @@ const {
   Wishlist,
   Review, ReviewFeedback, Order, OrderItem,
   LoyaltyHistory,
+  Banner, News, EmailCampaign, NewsletterSubscriber, Feedback,
 } = require('./models');
 const emailService = require('./services/email');
 const { AdminAuditService } = require('./services/adminAudit');
@@ -32,6 +33,7 @@ const buildCartModule = require('./modules/cart/module');
 const buildWishlistModule = require('./modules/wishlist/module');
 const buildReviewsModule = require('./modules/reviews/module');
 const buildLoyaltyModule = require('./modules/loyalty/module');
+const buildContentModule = require('./modules/content/module');
 
 const authModule = buildAuthModule({
   User,
@@ -72,6 +74,14 @@ const loyaltyModule = buildLoyaltyModule({
   User, LoyaltyHistory, sequelize, eventBus, logger,
 });
 loyaltyModule.subscribeEvents();
+
+const contentModule = buildContentModule({
+  Banner, News, EmailCampaign, NewsletterSubscriber, Feedback, User,
+  emailService,
+  redisClient: getRedisClient,
+  eventBus, logger,
+});
+contentModule.subscribeEvents();
 
 // Khởi tạo ứng dụng Express
 const app = express();
@@ -224,6 +234,9 @@ app.use('/api' + cartModule.basePath, cartModule.router);
 app.use('/api' + wishlistModule.basePath, wishlistModule.router);
 app.use('/api' + reviewsModule.basePath, reviewsModule.router);
 app.use('/api' + loyaltyModule.basePath, loyaltyModule.router);
+contentModule.mounts.forEach(({ basePath, router }) => {
+  app.use('/api' + basePath, router);
+});
 
 // Định nghĩa các API routes
 app.use('/api', routes);

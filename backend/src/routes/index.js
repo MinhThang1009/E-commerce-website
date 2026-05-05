@@ -18,14 +18,9 @@ const chatRoutes = require('./chat');
 const warrantyPackageRoutes = require('./warrantyPackage');
 const attributeRoutes = require('./attribute');
 const imageRoutes = require('./image');
-const newsRoutes = require('./news');
-const contactRoutes = require('./contact');
-const newsletterRoutes = require('./newsletter');
 const brandRoutes = require('./brand');
 const collectionRoutes = require('./collection');
 const searchHistoryRoutes = require('./searchHistory');
-const bannerRoutes = require('./banner');
-const emailCampaignRoutes = require('./emailCampaign');
 const locationRoutes = require('./location');
 
 // Các route API
@@ -41,14 +36,9 @@ router.use('/chat', chatRoutes);
 router.use('/warranty-packages', warrantyPackageRoutes);
 router.use('/attributes', attributeRoutes);
 router.use('/images', imageRoutes);
-router.use('/news', newsRoutes);
-router.use('/contact', contactRoutes);
-router.use('/newsletter', newsletterRoutes);
 router.use('/brands', brandRoutes);
 router.use('/collections', collectionRoutes);
 router.use('/search-histories', searchHistoryRoutes);
-router.use('/banners', bannerRoutes);
-router.use('/email-campaigns', emailCampaignRoutes);
 router.use('/locations', locationRoutes);
 
 // Route kiểm tra trạng thái hệ thống — Phase 45.2.4 enhanced

@@ -35,7 +35,7 @@ const OrderItem = sequelize.define(
       allowNull: false,
       field: 'unit_price',
     },
-    // Số tiền giảm giá áp dụng cho item này (ví dụ: từ sale, coupon cấp item)
+    // Số tiền giảm giá áp dụng cho item này (ví dụ: từ sale, discountCode cấp item)
     discountAmount: {
       type: DataTypes.DECIMAL(15, 2),
       allowNull: false,

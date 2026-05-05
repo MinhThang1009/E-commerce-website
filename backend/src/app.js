@@ -21,6 +21,7 @@ const {
   Cart, CartItem, Product, ProductVariant, WarrantyPackage,
   Wishlist,
   Review, ReviewFeedback, Order, OrderItem,
+  LoyaltyHistory,
 } = require('./models');
 const emailService = require('./services/email');
 const { AdminAuditService } = require('./services/adminAudit');
@@ -30,6 +31,7 @@ const buildUsersModule = require('./modules/users/module');
 const buildCartModule = require('./modules/cart/module');
 const buildWishlistModule = require('./modules/wishlist/module');
 const buildReviewsModule = require('./modules/reviews/module');
+const buildLoyaltyModule = require('./modules/loyalty/module');
 
 const authModule = buildAuthModule({
   User,
@@ -65,6 +67,11 @@ const reviewsModule = buildReviewsModule({
   eventBus, logger,
 });
 reviewsModule.subscribeEvents();
+
+const loyaltyModule = buildLoyaltyModule({
+  User, LoyaltyHistory, sequelize, eventBus, logger,
+});
+loyaltyModule.subscribeEvents();
 
 // Khởi tạo ứng dụng Express
 const app = express();
@@ -216,6 +223,7 @@ app.use('/api' + usersModule.basePath, usersModule.router);
 app.use('/api' + cartModule.basePath, cartModule.router);
 app.use('/api' + wishlistModule.basePath, wishlistModule.router);
 app.use('/api' + reviewsModule.basePath, reviewsModule.router);
+app.use('/api' + loyaltyModule.basePath, loyaltyModule.router);
 
 // Định nghĩa các API routes
 app.use('/api', routes);

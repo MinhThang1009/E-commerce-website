@@ -23,6 +23,7 @@ const {
   Review, ReviewFeedback, Order, OrderItem,
   LoyaltyHistory,
   Banner, News, EmailCampaign, NewsletterSubscriber, Feedback,
+  Category, Brand, Collection, ProductCollection,
 } = require('./models');
 const emailService = require('./services/email');
 const { AdminAuditService } = require('./services/adminAudit');
@@ -35,6 +36,7 @@ const buildReviewsModule = require('./modules/reviews/module');
 const buildLoyaltyModule = require('./modules/loyalty/module');
 const buildContentModule = require('./modules/content/module');
 const buildUploadModule = require('./modules/upload/module');
+const buildCatalogModule = require('./modules/catalog/module');
 
 const authModule = buildAuthModule({
   User,
@@ -86,6 +88,14 @@ contentModule.subscribeEvents();
 
 const uploadModule = buildUploadModule({ eventBus, logger });
 uploadModule.subscribeEvents();
+
+const catalogModule = buildCatalogModule({
+  Category, Brand, Collection, ProductCollection, Product,
+  sequelize,
+  redisClient: getRedisClient,
+  eventBus, logger,
+});
+catalogModule.subscribeEvents();
 
 // Khởi tạo ứng dụng Express
 const app = express();
@@ -242,6 +252,9 @@ contentModule.mounts.forEach(({ basePath, router }) => {
   app.use('/api' + basePath, router);
 });
 app.use('/api' + uploadModule.basePath, uploadModule.router);
+catalogModule.mounts.forEach(({ basePath, router }) => {
+  app.use('/api' + basePath, router);
+});
 
 // Định nghĩa các API routes
 app.use('/api', routes);

@@ -144,6 +144,35 @@ Threshold dưới baseline ~2% để CI không vỡ khi thêm file mới chưa t
 
 **Nâng threshold khi:** team viết thêm unit test (Phase 44 roadmap), update threshold theo measurement.
 
+## ⚠️ Frontend test config — known limitation
+
+`frontend/jest.config.cjs` testMatch CHỈ match `*.test.cjs`. **File `.test.ts` / `.test.tsx` sẽ bị silent skip** — không lỗi, không chạy.
+
+**Hiện tại (2026-05-05):**
+- 1 test file `frontend/src/__tests__/utils.test.cjs` (20 tests, pure CommonJS, JSON parsing logic)
+- 0 React component test
+- 0 hook test
+
+**Nếu thêm React component test (Phase 44.3 plan deferred):**
+1. `npm i -D ts-jest @testing-library/react @testing-library/jest-dom jest-environment-jsdom`
+2. Update `jest.config.cjs`:
+   ```js
+   testEnvironment: 'jsdom',
+   testMatch: ['**/__tests__/**/*.test.{cjs,ts,tsx}'],
+   transform: { '^.+\\.(ts|tsx)$': 'ts-jest' },
+   ```
+3. Pattern mock theo BE `__tests__/*.unit.test.js` (12 + 11 + 11 + 9 + 6 + 23 + 25 + 24 unit tests đã có).
+
+**Lý do tạm chấp nhận giới hạn này:** Plan section 44.3 đã đánh dấu FE component test là deferred (cần Vitest/RTL setup phức tạp + thesis ROI thấp). 411 tests hiện tại đã đủ defense talking point.
+
+## CI behavior — quan trọng nhớ
+
+`.github/workflows/ci.yml` trigger trên `push` + `pull_request` vào `main`:
+
+- **CI chạy 1 lần per push, KHÔNG mỗi commit.** Nếu push 5 commits cùng lúc, chỉ test HEAD state (code sau commit cuối) — bug ở commit giữa có thể "ẩn" nếu commit sau fix.
+- BE coverage threshold guard: 25/12/18/25. Drop dưới → CI fail.
+- FE không có coverage threshold (1 test file đơn giản, không tạo threshold).
+
 ## Cập nhật baseline
 
 Khi thêm test mới, re-run + update file này:

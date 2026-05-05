@@ -3,11 +3,10 @@ const sequelize = require('../config/sequelize');
 const pkg = require('../../package.json');
 const router = express.Router();
 
-// Phase 42.2 — Auth route mounted trực tiếp trong app.js qua modules/auth (Modular
-// Monolith). routes/auth.js (legacy) còn lại chỉ phục vụ unit/integration test
-// nội bộ và sẽ xóa ở Phase 5 cleanup.
+// Phase 42.2+ — auth + users mount trực tiếp trong app.js qua modules/* (Modular
+// Monolith). routes/auth.js + routes/user.js (legacy) còn lại chỉ phục vụ
+// unit/integration test nội bộ và sẽ xóa ở Phase 5 cleanup.
 const discountCodeRoutes = require('./discountCode');
-const userRoutes = require('./user');
 const categoryRoutes = require('./category');
 const productRoutes = require('./product');
 const cartRoutes = require('./cart');
@@ -35,7 +34,6 @@ const locationRoutes = require('./location');
 
 // Các route API
 router.use('/discount-codes', discountCodeRoutes);
-router.use('/users', userRoutes);
 router.use('/categories', categoryRoutes);
 router.use('/products', productRoutes);
 router.use('/cart', cartRoutes);

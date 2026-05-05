@@ -13,7 +13,7 @@ interface CampaignsResponse { status: string; data: Campaign[] }
 interface CampaignResponse  { status: string; data: Campaign }
 interface CreateCampaignRequest { subject: string; content: string }
 
-export const emailCampaignsApi = api.injectEndpoints({
+export const emailCampaignApi = api.injectEndpoints({
   endpoints: (builder) => ({
     getEmailCampaigns: builder.query<CampaignsResponse, void>({
       query: () => '/email-campaigns',
@@ -39,4 +39,4 @@ export const {
   useCreateEmailCampaignMutation,
   useDeleteEmailCampaignMutation,
   useSendEmailCampaignMutation,
-} = emailCampaignsApi;
+} = emailCampaignApi;

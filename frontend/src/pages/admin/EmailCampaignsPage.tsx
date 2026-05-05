@@ -9,7 +9,7 @@ import {
   useDeleteEmailCampaignMutation,
   useSendEmailCampaignMutation,
   Campaign,
-} from '@/services/emailCampaignsApi';
+} from '@/services/emailCampaignApi';
 
 const { Text } = Typography;
 

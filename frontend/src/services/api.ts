@@ -85,7 +85,6 @@ const isUnauthorizedError = (error: any): boolean => {
 /**
  * Ghi log lỗi API trong môi trường development
  */
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
 const logApiError = (_args: string | FetchArgs, _error: any): void => {
   // Logging đã được chuyển sang backend logger — frontend không cần log ở đây
 };

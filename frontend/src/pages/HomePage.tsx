@@ -12,7 +12,7 @@ import { useGetCategoriesQuery } from '@/features/catalog';
 import { useGetFeaturedProductsQuery } from '@/features/catalog';
 import { useGetBrandsQuery } from '@/features/catalog';
 import { useGetCollectionsQuery } from '@/features/catalog';
-import { useSubscribeNewsletterMutation } from '@/services/contactApi';
+import { useSubscribeNewsletterMutation } from '@/features/content';
 import { useApiState } from '@/hooks/useApiState';
 import {
   getCategoryImage,

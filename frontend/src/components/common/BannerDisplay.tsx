@@ -1,6 +1,6 @@
 import React from 'react';
 import { useTranslation } from 'react-i18next';
-import { useGetBannersQuery } from '@/services/bannerApi';
+import { useGetBannersQuery } from '@/features/content';
 import { Carousel, Skeleton } from 'antd';
 import { Link } from 'react-router-dom';
 

@@ -10,6 +10,8 @@ export * from '@/features/orders/types/order.types';
 // Kiểu review đã chuyển sang features/reviews (Phase 42 Sprint 17)
 export * from '@/features/reviews/types/review.types';
 export * from './common.types';
+// Kiểu news đã chuyển sang features/content (Phase 42 Sprint 18)
+export * from '@/features/content/types/news.types';
 // Kiểu auth đã chuyển sang features/auth (Phase 42 Sprint 12)
 export * from '@/features/auth/types/auth.types';
 export * from './ui.types';

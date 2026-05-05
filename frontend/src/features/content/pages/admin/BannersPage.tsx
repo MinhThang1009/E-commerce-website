@@ -8,7 +8,7 @@ import {
   useUpdateBannerMutation,
   useDeleteBannerMutation,
   Banner,
-} from '@/services/bannerApi';
+} from '../../api/bannerApi';
 import ImageUpload from '@/components/common/ImageUpload';
 
 const BannersPage: React.FC = () => {

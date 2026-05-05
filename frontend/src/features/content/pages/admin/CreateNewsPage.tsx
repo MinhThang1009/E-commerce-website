@@ -4,7 +4,7 @@ import {
   useGetNewsByIdQuery,
   useCreateNewsMutation,
   useUpdateNewsMutation,
-} from '@/services/newsApi';
+} from '../../api/newsApi';
 import {
   Form,
   Input,
@@ -22,7 +22,7 @@ import ReactQuill, { Quill } from 'react-quill';
 import 'react-quill/dist/quill.snow.css';
 import { useTranslation } from 'react-i18next';
 import i18n from 'i18next';
-import ProductPickerModal from '@/components/admin/news/ProductPickerModal';
+import ProductPickerModal from '../../components/ProductPickerModal';
 import { getLocale } from '@/utils/format';
 
 // --- Custom Quill Blot for Product Card ---

@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
-import { useGetNewsQuery } from '@/services/newsApi';
+import { useGetNewsQuery } from '../api/newsApi';
 import LoadingSpinner from '@/components/common/LoadingSpinner';
 import Pagination from '@/components/common/Pagination';
 import dayjs from 'dayjs';

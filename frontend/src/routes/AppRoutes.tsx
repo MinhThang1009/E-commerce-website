@@ -29,7 +29,7 @@ const DealsPage = lazy(() => import('@/features/catalog/pages/DealsPage'));
 const NewArrivalsPage = lazy(() => import('@/features/catalog/pages/NewArrivalsPage'));
 const BestSellersPage = lazy(() => import('@/features/catalog/pages/BestSellersPage'));
 const AboutPage = lazy(() => import('@/pages/AboutPage'));
-const ContactPage = lazy(() => import('@/pages/ContactPage'));
+const ContactPage = lazy(() => import('@/features/content/pages/ContactPage'));
 const FAQsPage = lazy(() => import('@/pages/FAQsPage'));
 const ShippingReturnsPage = lazy(() => import('@/pages/ShippingReturnsPage'));
 const TrackOrderPage = lazy(() => import('@/features/orders/pages/TrackOrderPage'));
@@ -53,12 +53,12 @@ const AdminDiscountCodesPage = lazy(
 );
 const AdminBrandsPage = lazy(() => import('@/features/catalog/pages/admin/BrandsPage'));
 const AdminCollectionsPage = lazy(() => import('@/features/catalog/pages/admin/CollectionsPage'));
-const AdminNewsPage = lazy(() => import('@/pages/admin/NewsPage'));
-const CreateNewsPage = lazy(() => import('@/pages/admin/CreateNewsPage'));
+const AdminNewsPage = lazy(() => import('@/features/content/pages/admin/NewsPage'));
+const CreateNewsPage = lazy(() => import('@/features/content/pages/admin/CreateNewsPage'));
 const SupportDashboard = lazy(() => import('@/pages/admin/SupportDashboard'));
-const AdminBannersPage = lazy(() => import('@/pages/admin/BannersPage'));
+const AdminBannersPage = lazy(() => import('@/features/content/pages/admin/BannersPage'));
 const AdminEmailCampaignsPage = lazy(
-  () => import('@/pages/admin/EmailCampaignsPage')
+  () => import('@/features/content/pages/admin/EmailCampaignsPage')
 );
 const AdminInventoryPage = lazy(() => import('@/pages/admin/InventoryPage'));
 const AdminAuditLogPage = lazy(() => import('@/pages/admin/AuditLogPage'));
@@ -69,8 +69,8 @@ const PaymentQRPage = lazy(() => import('@/features/payment/pages/PaymentQRPage'
 const UnauthorizedPage = lazy(() => import('@/pages/UnauthorizedPage'));
 const NotFoundPage = lazy(() => import('@/pages/NotFoundPage'));
 
-const NewsListPage = lazy(() => import('@/pages/NewsListPage'));
-const NewsDetailPage = lazy(() => import('@/pages/NewsDetailPage'));
+const NewsListPage = lazy(() => import('@/features/content/pages/NewsListPage'));
+const NewsDetailPage = lazy(() => import('@/features/content/pages/NewsDetailPage'));
 
 const AppRoutes: React.FC = () => {
   return (

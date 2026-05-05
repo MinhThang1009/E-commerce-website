@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
-import { useGetNewsQuery, useDeleteNewsMutation } from '@/services/newsApi';
+import { useGetNewsQuery, useDeleteNewsMutation } from '../../api/newsApi';
 import {
   Table, Button, Input, Select, Card, Space, Tag, Pagination, Row, Col, Typography, Image, Popconfirm, message, Spin, Alert,
 } from 'antd';

@@ -9,7 +9,7 @@ import AppRoutes from '@/routes/AppRoutes';
 import Notifications from '@/components/common/Notifications';
 import { ChatWidgetPortal } from '@/features/ai';
 import ChatbotErrorBoundary from '@/features/ai/components/ChatbotErrorBoundary';
-import SupportChat from '@/features/chat/components/SupportChat';
+import { SupportChat } from '@/features/chat';
 import { useTokenRefresh } from '@/hooks/useTokenRefresh';
 import { LoginSuccess, AuthProvider } from '@/features/auth';
 import { StripeProvider } from '@/features/payment';

@@ -2,7 +2,7 @@ import React from 'react';
 import { Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import dayjs from 'dayjs';
-import { useGetNewsQuery } from '@/services/newsApi';
+import { useGetNewsQuery } from '@/features/content';
 import { PageSection } from '@/components/layout/PageLayout';
 import { SectionLoading } from '@/components/common/LoadingState';
 

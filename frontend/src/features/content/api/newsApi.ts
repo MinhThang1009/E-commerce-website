@@ -1,5 +1,5 @@
-import { api } from './api';
-import { News, NewsFilters, NewsResponse, SingleNewsResponse } from '@/types/news.types';
+import { api } from '@/services/api';
+import { News, NewsFilters, NewsResponse, SingleNewsResponse } from '../types/news.types';
 
 export const newsApi = api.injectEndpoints({
   endpoints: (builder) => ({

@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { useSelector } from 'react-redux';
 import { RootState } from '@/store';
 import { io, Socket } from 'socket.io-client';
-import { useGetAdminChatListQuery, ChatMessage, AdminChatListResponse } from '@/services/chatApi';
+import { useGetAdminChatListQuery, ChatMessage, AdminChatListResponse } from '@/features/chat';
 import LoadingSpinner from '@/components/common/LoadingSpinner';
 import { PaperAirplaneIcon, EnvelopeIcon } from '@heroicons/react/24/outline';
 import { api } from '@/services/api'; // Trả fetcher cho REST methods nếu cần

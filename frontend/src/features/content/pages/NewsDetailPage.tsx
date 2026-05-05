@@ -1,7 +1,7 @@
 import { useParams, Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import DOMPurify from 'dompurify';
-import { useGetNewsBySlugQuery, useGetNewsQuery, useGetRelatedNewsQuery } from '@/services/newsApi';
+import { useGetNewsBySlugQuery, useGetNewsQuery, useGetRelatedNewsQuery } from '../api/newsApi';
 import LoadingSpinner from '@/components/common/LoadingSpinner';
 import dayjs from 'dayjs';
 

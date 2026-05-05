@@ -3,7 +3,7 @@ import { useTranslation } from 'react-i18next';
 import { useSelector } from 'react-redux';
 import { RootState } from '@/store';
 import { io, Socket } from 'socket.io-client';
-import { useGetChatHistoryQuery, ChatMessage } from '@/services/chatApi';
+import { useGetChatHistoryQuery, ChatMessage } from '../api/chatApi';
 import { ChatBubbleLeftRightIcon, XMarkIcon, PaperAirplaneIcon } from '@heroicons/react/24/outline';
 import { v4 as uuidv4 } from 'uuid';
 

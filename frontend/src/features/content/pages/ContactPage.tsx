@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { PremiumButton } from '@/components/common';
-import { useSendFeedbackMutation } from '@/services/contactApi';
+import { useSendFeedbackMutation } from '../api/contactApi';
 
 interface FormData {
   name: string;

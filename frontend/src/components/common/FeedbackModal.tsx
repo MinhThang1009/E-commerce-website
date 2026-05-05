@@ -1,7 +1,7 @@
 import React from 'react';
 import { Modal, Form, Input, Select, message } from 'antd';
 import { useTranslation } from 'react-i18next';
-import { useSendFeedbackMutation } from '@/services/contactApi';
+import { useSendFeedbackMutation } from '@/features/content';
 
 interface FeedbackModalProps {
   visible: boolean;

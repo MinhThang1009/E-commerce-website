@@ -42,6 +42,7 @@ const buildUploadModule = require('./modules/upload/module');
 const buildCatalogModule = require('./modules/catalog/module');
 const buildOrdersModule = require('./modules/orders/module');
 const buildPaymentModule = require('./modules/payment/module');
+const buildInventoryModule = require('./modules/inventory/module');
 const stripeService = require('./services/payment/stripe');
 const momoService = require('./services/payment/momo');
 const vnpayService = require('./services/payment/vnpay');
@@ -121,6 +122,12 @@ const paymentModule = buildPaymentModule({
   stripeService, momoService, vnpayService, emailService,
 });
 paymentModule.subscribeEvents();
+
+const inventoryModule = buildInventoryModule({
+  Product, ProductVariant, InventoryLog, User,
+  eventBus, logger,
+});
+inventoryModule.subscribeEvents();
 
 // Khởi tạo ứng dụng Express
 const app = express();
@@ -284,6 +291,7 @@ app.use('/api' + ordersModule.basePath, ordersModule.router);
 // Payment module mount TRƯỚC routes/index.js — Express fall-through cho
 // /sepay-webhook (legacy routes/payment.js still mounted via routes/index).
 app.use('/api' + paymentModule.basePath, paymentModule.router);
+app.use('/api' + inventoryModule.basePath, inventoryModule.router);
 
 // Định nghĩa các API routes
 app.use('/api', routes);

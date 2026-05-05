@@ -1,8 +1,34 @@
 # E-Commerce Website — Hướng dẫn cài đặt & chạy dự án
 
+[![CI](https://github.com/MinhThang1009/E-commerce-website/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/MinhThang1009/E-commerce-website/actions/workflows/ci.yml)
+
 ## Giới thiệu
 
-Website thương mại điện tử bán thiết bị công nghệ, xây dựng theo mô hình full-stack với backend REST API và frontend SPA.
+Website thương mại điện tử bán thiết bị công nghệ, xây dựng theo mô hình full-stack với backend REST API và frontend SPA. Dự án khóa luận tốt nghiệp — single-instance deployment, đánh giá qua demo + defense.
+
+## Status
+
+| Hạng mục | State | Chi tiết |
+|---|---|---|
+| **Schema compliance** | ✅ 100% | MySQL standard: snake_case, fk_*/uq_*/idx_* naming, 19 CHECK constraints, DECIMAL(15,2) unified, soft delete cho 13 tables |
+| **Test suite** | 411 tests | BE 391 (jest, 31 suites, ~13s) + FE 20 (jest CommonJS) |
+| **BE coverage** | 31.67% overall | services/payment 88%, utils 99%, routes 99% integration |
+| **CI/CD** | ✅ GitHub Actions | Lint + typecheck + test + build trên mỗi push |
+| **Security** | npm audit: 0 high/critical | Helmet CSP, rate limit 5 levels, JWT + OTP 2FA |
+| **Architecture tooling** | ✅ Modular Monolith ready | Module generator, pre-commit hook audit, ESLint custom rules (Phase 42 Step 19) |
+
+## Documentation
+
+Tài liệu chuyên đề trong [`docs/`](docs/):
+- [`NAMING_CONVENTION.md`](docs/NAMING_CONVENTION.md) — naming standard backend/frontend/DB/API/git
+- [`naming/BASIC.md`](docs/naming/BASIC.md), [`MODERN_TS_2025.md`](docs/naming/MODERN_TS_2025.md), [`DOMAIN_GLOSSARY.md`](docs/naming/DOMAIN_GLOSSARY.md) — 3 file con
+- [`GLOSSARY_EXCEPTIONS.md`](docs/GLOSSARY_EXCEPTIONS.md) — false positives + nuanced cases
+- [`PRODUCTION_RUNBOOK.md`](docs/PRODUCTION_RUNBOOK.md) — backup/restore/deploy/rollback runbook + bundle size notes
+- [`TESTING_COVERAGE_BASELINE.md`](docs/TESTING_COVERAGE_BASELINE.md) — coverage snapshot + Phase 44 roadmap
+
+`AGENT_RULES.md` — 35 rules áp dụng mọi phase (đọc đầu mỗi session).
+
+
 
 **Công nghệ sử dụng:**
 

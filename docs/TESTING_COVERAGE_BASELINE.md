@@ -65,6 +65,40 @@ Per `plan.md` Section 44:
 
 **Effort:** 1-2 tuần solo.
 
+## Test naming policy (Phase 43.2.16 decision)
+
+Plan section 43.2.16 đề xuất `it('should ...')` English pattern. Project quyết định **giữ Vietnamese description** trong test cases vì:
+
+- **Project policy** (plan.md Rule + memory): comment + naming Vietnamese-first cho thesis context.
+- **Reviewer Vietnamese**: defense board đọc test description hiểu được context bug — quan trọng hơn convention English.
+- **Pattern hiện tại consistent**: 270 tests đều dùng Vietnamese, rename hàng loạt = churn vô nghĩa.
+
+**Examples chấp nhận:**
+```js
+test('Email không tồn tại → 401', async () => { ... });
+test('trả về X-Cache: MISS lần đầu và cache response', async () => { ... });
+describe('POST /api/payments/webhook — Stripe webhook handler', () => { ... });
+```
+
+**Vẫn cấm** (anti-patterns):
+- `test('test X', ...)` — `test` redundant với function name `test()`.
+- `it('X works', ...)` — không mô tả behavior cụ thể.
+- `describe('TestX')` — viết dính.
+
+## Coverage threshold — Phase 44 partial
+
+`backend/jest.config.js` đã thêm `coverageThreshold` lock baseline làm floor:
+
+```js
+coverageThreshold: {
+  global: { statements: 25, branches: 12, functions: 18, lines: 25 },
+}
+```
+
+Threshold dưới baseline ~2% để CI không vỡ khi thêm file mới chưa test. CI `.github/workflows/ci.yml` chạy `npm test` → fail nếu coverage giảm dưới threshold.
+
+**Nâng threshold khi:** team viết thêm unit test (Phase 44 roadmap), update threshold theo measurement.
+
 ## Cập nhật baseline
 
 Khi thêm test mới, re-run + update file này:

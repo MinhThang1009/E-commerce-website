@@ -28,7 +28,7 @@ const ProductWarranty = sequelize.define(
   {
     tableName: 'product_warranties',
     timestamps: true,
-    underscored: false,
+    underscored: true,
   }
 );
 

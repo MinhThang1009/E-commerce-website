@@ -104,7 +104,7 @@ const ChatMessage = sequelize.define(
   {
     tableName: 'chat_messages',
     timestamps: true,
-    underscored: false,
+    underscored: true,
   }
 );
 

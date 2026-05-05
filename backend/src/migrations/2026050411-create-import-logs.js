@@ -1,16 +1,17 @@
 // Migration: tạo bảng import_logs để lưu lịch sử import sản phẩm của admin
+// Fix Phase 40 Group C: INT UNSIGNED → INT (signed) để FK match users.id (INT signed)
 module.exports = {
   up: async (queryInterface, Sequelize) => {
     await queryInterface.createTable('import_logs', {
       id: {
-        type: Sequelize.INTEGER.UNSIGNED,
+        type: Sequelize.INTEGER,
         autoIncrement: true,
         primaryKey: true,
         allowNull: false,
       },
-      // Admin thực hiện import
+      // Admin thực hiện import (INT signed để match users.id)
       admin_id: {
-        type: Sequelize.INTEGER.UNSIGNED,
+        type: Sequelize.INTEGER,
         allowNull: false,
         references: { model: 'users', key: 'id' },
         onDelete: 'RESTRICT',

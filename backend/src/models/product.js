@@ -274,8 +274,10 @@ const Product = sequelize.define(
       // Cập nhật vector store khi tạo sản phẩm mới
       afterCreate: async (product) => {
         try {
-          // Chỉ index khi active VÀ còn hàng — hàng hết không được hiện trong chatbot
-          if (vectorStoreService && product.status === 'active' && product.inStock) {
+          // Chỉ index khi product active. Stock check không làm ở hook vì stock ở variant level
+          // (product.stockQuantity luôn 0 — variants chưa tồn tại tại thời điểm afterCreate).
+          // Chatbot service tự filter out-of-stock khi search vector.
+          if (vectorStoreService && product.status === 'active') {
             // Fetch lại product kèm categories vì instance trong hook không có associations
             const Category = require('./category');
             const fullProduct = await Product.findByPk(product.id, {
@@ -294,8 +296,10 @@ const Product = sequelize.define(
       afterUpdate: async (product) => {
         try {
           if (vectorStoreService) {
-            // Chỉ index khi active VÀ còn hàng — hết hàng hoặc inactive thì xóa khỏi vector store
-            if (product.status === 'active' && product.inStock) {
+            // Chỉ index khi active — inactive thì xóa khỏi vector store.
+            // Stock check không làm ở hook (product.stockQuantity luôn 0 — stock thực ở variant level).
+            // Chatbot service tự filter out-of-stock khi search vector.
+            if (product.status === 'active') {
               // Fetch lại product kèm categories
               const Category = require('./category');
               const fullProduct = await Product.findByPk(product.id, {

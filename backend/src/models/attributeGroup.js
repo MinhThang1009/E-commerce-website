@@ -44,7 +44,7 @@ const AttributeGroup = sequelize.define(
   {
     tableName: 'attribute_groups',
     timestamps: true,
-    underscored: false,
+    underscored: true,
   }
 );
 

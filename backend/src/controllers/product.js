@@ -1599,13 +1599,13 @@ const getBestSellers = async (req, res, next) => {
         p.base_price as price,
         p.compare_at_price,
         p.is_featured as isFeatured,
-        COUNT(oi.productId) as sales_count,
+        COUNT(oi.product_id) as sales_count,
         SUM(oi.quantity) as units_sold
       FROM products p
-      JOIN order_items oi ON p.id = oi.productId
-      JOIN orders o ON oi.orderId = o.id
+      JOIN order_items oi ON p.id = oi.product_id
+      JOIN orders o ON oi.order_id = o.id
       WHERE o.status != 'cancelled'
-      AND o.createdAt >= :startDate
+      AND o.created_at >= :startDate
       GROUP BY p.id
       ORDER BY units_sold DESC
       LIMIT :limit

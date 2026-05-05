@@ -65,7 +65,8 @@ const Address = sequelize.define(
   {
     tableName: 'addresses',
     timestamps: true,
-    underscored: false,
+    paranoid: true,
+    underscored: true,
   }
 );
 

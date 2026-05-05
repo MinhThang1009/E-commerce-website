@@ -1,9 +1,19 @@
 -- =====================================================
 -- MIGRATION_FULL.SQL - CƠ SỞ DỮ LIỆU E-COMMERCE HOÀN CHỈNH
--- Phiên bản: 2.0 (INT AUTO_INCREMENT)
--- Ngày tạo: 2026-03-30
+-- Phiên bản: 3.0 (Phase 40 — MySQL Standard Compliance)
+-- Ngày tạo: 2026-05-05
 -- Mô tả: Schema đầy đủ cho 39 bảng + seed data cơ bản
 -- Tương thích: Backend Sequelize models hiện tại
+--
+-- Phase 40 changes (so với v2.0):
+--   - Toàn bộ column names đổi sang snake_case (Phase 40.1)
+--   - Tất cả timestamps unified DATETIME (bỏ TIMESTAMP cho Group A)
+--   - Tất cả DECIMAL monetary columns unified DECIMAL(15,2) (Phase 40.6)
+--   - Drop column products.brand redundant (Phase 40.7)
+--   - order_items.price → unit_price + thêm discount_amount
+--   - cart_items.price → unit_price
+--   - import_logs.id và admin_id: INT UNSIGNED → INT (Phase 40.4)
+--   - Thêm 6 FK constraints (Phase 40.5: audit_logs, search_histories, chat_messages.sender_id, order_items.variant_id, cart_items.variant_id, product_reviews.user_id)
 -- =====================================================
 -- HƯỚNG DẪN SỬ DỤNG:
 -- Bước 1: Tạo database mới trong phpMyAdmin (VD: techstore_db)
@@ -57,6 +67,7 @@ DROP TABLE IF EXISTS `attribute_groups`;
 DROP TABLE IF EXISTS `discount_codes`;
 DROP TABLE IF EXISTS `import_logs`;
 DROP TABLE IF EXISTS `audit_logs`;
+DROP TABLE IF EXISTS `inventory_logs`;
 DROP TABLE IF EXISTS `products`;
 DROP TABLE IF EXISTS `brands`;
 DROP TABLE IF EXISTS `categories`;
@@ -72,31 +83,32 @@ CREATE TABLE IF NOT EXISTS `users` (
     `email` VARCHAR(255) NOT NULL,
     `password` VARCHAR(255) NULL,
     `google_id` VARCHAR(255) NULL UNIQUE,
-    `firstName` VARCHAR(255) NOT NULL,
-    `lastName` VARCHAR(255) NOT NULL,
+    `first_name` VARCHAR(255) NOT NULL,
+    `last_name` VARCHAR(255) NOT NULL,
     `phone` VARCHAR(255) NULL,
     `avatar` VARCHAR(255) NULL,
     `role` ENUM('customer', 'admin', 'manager') DEFAULT 'customer',
-    `isEmailVerified` TINYINT(1) DEFAULT 0,
-    `isActive` TINYINT(1) DEFAULT 1,
-    `otpCode` VARCHAR(6) NULL,
-    `otpExpires` DATETIME NULL,
-    `resetPasswordToken` VARCHAR(255) NULL,
-    `resetPasswordExpires` DATETIME NULL,
+    `is_email_verified` TINYINT(1) DEFAULT 0,
+    `is_active` TINYINT(1) DEFAULT 1,
+    `otp_code` VARCHAR(6) NULL,
+    `otp_expires` DATETIME NULL,
+    `reset_password_token` VARCHAR(255) NULL,
+    `reset_password_expires` DATETIME NULL,
     `stripe_customer_id` VARCHAR(255) NULL,
-    `loyaltyPoints` INT DEFAULT 0,
-    `createdAt` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    `updatedAt` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-    `deletedAt` DATETIME NULL DEFAULT NULL
+    `loyalty_points` INT DEFAULT 0,
+    `created_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    `updated_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    `deleted_at` DATETIME NULL DEFAULT NULL,
+    UNIQUE KEY `uq_users_email` (`email`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- ----- BẢNG 2: addresses (Địa chỉ giao hàng) -----
 CREATE TABLE IF NOT EXISTS `addresses` (
     `id` INT AUTO_INCREMENT PRIMARY KEY,
-    `userId` INT NOT NULL,
+    `user_id` INT NOT NULL,
     `name` VARCHAR(255) NULL,
-    `firstName` VARCHAR(255) NOT NULL,
-    `lastName` VARCHAR(255) NOT NULL,
+    `first_name` VARCHAR(255) NOT NULL,
+    `last_name` VARCHAR(255) NOT NULL,
     `company` VARCHAR(255) NULL,
     `address1` VARCHAR(255) NOT NULL,
     `address2` VARCHAR(255) NULL,
@@ -105,34 +117,37 @@ CREATE TABLE IF NOT EXISTS `addresses` (
     `zip` VARCHAR(255) NOT NULL,
     `country` VARCHAR(255) NOT NULL,
     `phone` VARCHAR(255) NULL,
-    `isDefault` TINYINT(1) DEFAULT 0,
-    `createdAt` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    `updatedAt` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-    CONSTRAINT `fk_addresses_user` FOREIGN KEY (`userId`) REFERENCES `users`(`id`) ON DELETE CASCADE ON UPDATE CASCADE
+    `is_default` TINYINT(1) DEFAULT 0,
+    `created_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    `updated_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    CONSTRAINT `fk_addresses_user` FOREIGN KEY (`user_id`) REFERENCES `users`(`id`) ON DELETE CASCADE ON UPDATE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- ----- BẢNG 3: categories (Danh mục sản phẩm) -----
 CREATE TABLE IF NOT EXISTS `categories` (
     `id` INT AUTO_INCREMENT PRIMARY KEY,
-    `name` VARCHAR(100) UNIQUE NOT NULL,
-    `slug` VARCHAR(255) UNIQUE NOT NULL,
+    `name` VARCHAR(100) NOT NULL,
+    `slug` VARCHAR(255) NOT NULL,
     `description` TEXT NULL,
-    `created_at` TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP,
-    `updated_at` TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-    `deleted_at` TIMESTAMP NULL
+    `created_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    `updated_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    `deleted_at` DATETIME NULL,
+    UNIQUE KEY `uq_categories_name` (`name`),
+    UNIQUE KEY `uq_categories_slug` (`slug`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- ----- BẢNG 4: brands (Thương hiệu) -----
 CREATE TABLE IF NOT EXISTS `brands` (
     `id` INT AUTO_INCREMENT PRIMARY KEY,
-    `name` VARCHAR(100) UNIQUE NOT NULL,
-    `slug` VARCHAR(255) UNIQUE NOT NULL,
+    `name` VARCHAR(100) NOT NULL,
+    `slug` VARCHAR(255) NOT NULL,
     `logo_url` VARCHAR(500) NULL,
-    `created_at` TIMESTAMP NULL,
-    `updated_at` TIMESTAMP NULL,
-    `deleted_at` TIMESTAMP NULL
+    `created_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    `updated_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    `deleted_at` DATETIME NULL,
+    UNIQUE KEY `uq_brands_name` (`name`),
+    UNIQUE KEY `uq_brands_slug` (`slug`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
--- Lưu ý: brand.js dùng underscored: true → Sequelize tự map createdAt→created_at
 
 -- ----- BẢNG 5: products (Sản phẩm) -----
 CREATE TABLE IF NOT EXISTS `products` (
@@ -140,7 +155,7 @@ CREATE TABLE IF NOT EXISTS `products` (
     `category_id` INT NULL,
     `brand_id` INT NULL,
     `name` VARCHAR(255) NOT NULL,
-    `slug` VARCHAR(255) UNIQUE NOT NULL,
+    `slug` VARCHAR(255) NOT NULL,
     `base_name` VARCHAR(255) NULL COMMENT 'Tên gốc sản phẩm (không bao gồm biến thể)',
     `model` VARCHAR(255) NULL,
     `base_price` DECIMAL(15,2) NULL,
@@ -163,11 +178,11 @@ CREATE TABLE IF NOT EXISTS `products` (
     `seo_title` VARCHAR(500) NULL COMMENT 'SEO title cho trang sản phẩm',
     `seo_description` TEXT NULL COMMENT 'SEO meta description',
     `seo_keywords` LONGTEXT NULL COMMENT 'SEO keywords (JSON array)',
-    `created_at` TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP,
-    `updated_at` TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-    `deleted_at` TIMESTAMP NULL,
-    `brand` VARCHAR(255) NULL,
+    `created_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    `updated_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    `deleted_at` DATETIME NULL,
     `sku` VARCHAR(255) NULL,
+    UNIQUE KEY `uq_products_slug` (`slug`),
     CONSTRAINT `fk_products_category` FOREIGN KEY (`category_id`) REFERENCES `categories`(`id`) ON DELETE SET NULL,
     CONSTRAINT `fk_products_brand` FOREIGN KEY (`brand_id`) REFERENCES `brands`(`id`) ON DELETE SET NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
@@ -176,7 +191,7 @@ CREATE TABLE IF NOT EXISTS `products` (
 CREATE TABLE IF NOT EXISTS `product_variants` (
     `id` INT AUTO_INCREMENT PRIMARY KEY,
     `product_id` INT NOT NULL,
-    `sku` VARCHAR(100) UNIQUE NOT NULL,
+    `sku` VARCHAR(100) NOT NULL,
     `variant_name` VARCHAR(255) NOT NULL,
     `display_name` VARCHAR(255) NULL,
     `price` DECIMAL(15,2) NULL,
@@ -184,11 +199,12 @@ CREATE TABLE IF NOT EXISTS `product_variants` (
     `stock_quantity` INT DEFAULT 0,
     `is_default` TINYINT(1) DEFAULT 0,
     `attributes` LONGTEXT NULL,
-    `created_at` TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP,
-    `updated_at` TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-    `deleted_at` TIMESTAMP NULL,
+    `created_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    `updated_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    `deleted_at` DATETIME NULL,
     `sort_order` INT DEFAULT 0,
     `is_available` TINYINT(1) DEFAULT 1,
+    UNIQUE KEY `uq_product_variants_sku` (`sku`),
     CONSTRAINT `fk_variants_product` FOREIGN KEY (`product_id`) REFERENCES `products`(`id`) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
@@ -200,14 +216,14 @@ CREATE TABLE IF NOT EXISTS `product_images` (
     `image_url` VARCHAR(1000) NOT NULL,
     `is_thumbnail` TINYINT(1) DEFAULT 0,
     `color` VARCHAR(100) NULL,
-    `created_at` TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP,
-    `updated_at` TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-    `deleted_at` TIMESTAMP NULL,
+    `created_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    `updated_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    `deleted_at` DATETIME NULL,
     CONSTRAINT `fk_product_images_products` FOREIGN KEY (`product_id`) REFERENCES `products`(`id`) ON DELETE CASCADE ON UPDATE CASCADE,
     CONSTRAINT `fk_product_images_variants` FOREIGN KEY (`variant_id`) REFERENCES `product_variants`(`id`) ON DELETE SET NULL ON UPDATE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
--- ----- BẢNG 8: product_reviews (Đánh giá sản phẩm - theo data_new.sql) -----
+-- ----- BẢNG 8: product_reviews (Đánh giá sản phẩm) -----
 CREATE TABLE IF NOT EXISTS `product_reviews` (
     `id` INT AUTO_INCREMENT PRIMARY KEY,
     `product_id` INT NOT NULL,
@@ -215,178 +231,183 @@ CREATE TABLE IF NOT EXISTS `product_reviews` (
     `user_id` INT NOT NULL,
     `rating_value` INT NULL CHECK (`rating_value` >= 1 AND `rating_value` <= 5),
     `content` TEXT NULL,
-    `created_at` TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP,
-    `updated_at` TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-    `deleted_at` TIMESTAMP NULL,
+    `created_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    `updated_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    `deleted_at` DATETIME NULL,
     CONSTRAINT `fk_product_reviews_product` FOREIGN KEY (`product_id`) REFERENCES `products`(`id`) ON DELETE CASCADE,
-    CONSTRAINT `fk_product_reviews_variant` FOREIGN KEY (`variant_id`) REFERENCES `product_variants`(`id`) ON DELETE SET NULL
+    CONSTRAINT `fk_product_reviews_variant` FOREIGN KEY (`variant_id`) REFERENCES `product_variants`(`id`) ON DELETE SET NULL,
+    CONSTRAINT `fk_product_reviews_user` FOREIGN KEY (`user_id`) REFERENCES `users`(`id`) ON DELETE CASCADE ON UPDATE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
--- ----- BẢNG 9: orders (Đơn hàng) -----
+-- ----- BẢNG 9: discount_codes (Mã giảm giá) — đặt trước orders vì orders FK tới đây -----
+CREATE TABLE IF NOT EXISTS `discount_codes` (
+    `id` INT AUTO_INCREMENT PRIMARY KEY,
+    `code` VARCHAR(50) NOT NULL,
+    `type` ENUM('percent', 'fixed') NOT NULL DEFAULT 'fixed',
+    `value` DECIMAL(15,2) NOT NULL,
+    `min_order_amount` DECIMAL(15,2) NULL DEFAULT 0.00,
+    `max_discount_amount` DECIMAL(15,2) NULL,
+    `start_date` DATETIME NULL,
+    `end_date` DATETIME NULL,
+    `usage_limit` INT NULL,
+    `used_count` INT DEFAULT 0,
+    `is_active` TINYINT(1) DEFAULT 1,
+    `description` VARCHAR(255) NULL,
+    `created_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    `updated_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    `deleted_at` DATETIME NULL DEFAULT NULL,
+    UNIQUE KEY `uq_discount_codes_code` (`code`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- ----- BẢNG 10: orders (Đơn hàng) -----
 CREATE TABLE IF NOT EXISTS `orders` (
     `id` INT AUTO_INCREMENT PRIMARY KEY,
     `number` VARCHAR(255) NOT NULL,
-    `userId` INT NOT NULL,
+    `user_id` INT NOT NULL,
     `status` ENUM('pending', 'processing', 'shipped', 'delivered', 'cancelled') DEFAULT 'pending',
-    `shippingFirstName` VARCHAR(255) NOT NULL,
-    `shippingLastName` VARCHAR(255) NOT NULL,
-    `shippingCompany` VARCHAR(255) NULL,
-    `shippingAddress1` VARCHAR(255) NOT NULL,
-    `shippingAddress2` VARCHAR(255) NULL,
-    `shippingCity` VARCHAR(255) NOT NULL,
-    `shippingState` VARCHAR(255) NOT NULL,
-    `shippingZip` VARCHAR(255) NULL,
-    `shippingCountry` VARCHAR(255) NULL,
-    `shippingPhone` VARCHAR(255) NULL,
-    `billingFirstName` VARCHAR(255) NOT NULL,
-    `billingLastName` VARCHAR(255) NOT NULL,
-    `billingCompany` VARCHAR(255) NULL,
-    `billingAddress1` VARCHAR(255) NOT NULL,
-    `billingAddress2` VARCHAR(255) NULL,
-    `billingCity` VARCHAR(255) NOT NULL,
-    `billingState` VARCHAR(255) NOT NULL,
-    `billingZip` VARCHAR(255) NULL,
-    `billingCountry` VARCHAR(255) NULL,
-    `billingPhone` VARCHAR(255) NULL,
-    `paymentMethod` VARCHAR(255) NOT NULL,
-    `paymentStatus` ENUM('pending', 'paid', 'failed', 'refunded') DEFAULT 'pending',
-    `paymentTransactionId` VARCHAR(255) NULL,
-    `paymentProvider` VARCHAR(255) NULL,
-    `subtotal` DECIMAL(19,2) NOT NULL,
-    `tax` DECIMAL(19,2) NOT NULL,
-    `shippingCost` DECIMAL(19,2) NOT NULL,
-    `discount` DECIMAL(19,2) DEFAULT 0.00,
-    `total` DECIMAL(19,2) NOT NULL,
+    `shipping_first_name` VARCHAR(255) NOT NULL,
+    `shipping_last_name` VARCHAR(255) NOT NULL,
+    `shipping_company` VARCHAR(255) NULL,
+    `shipping_address1` VARCHAR(255) NOT NULL,
+    `shipping_address2` VARCHAR(255) NULL,
+    `shipping_city` VARCHAR(255) NOT NULL,
+    `shipping_state` VARCHAR(255) NOT NULL,
+    `shipping_zip` VARCHAR(255) NULL,
+    `shipping_country` VARCHAR(255) NULL,
+    `shipping_phone` VARCHAR(255) NULL,
+    `billing_first_name` VARCHAR(255) NOT NULL,
+    `billing_last_name` VARCHAR(255) NOT NULL,
+    `billing_company` VARCHAR(255) NULL,
+    `billing_address1` VARCHAR(255) NOT NULL,
+    `billing_address2` VARCHAR(255) NULL,
+    `billing_city` VARCHAR(255) NOT NULL,
+    `billing_state` VARCHAR(255) NOT NULL,
+    `billing_zip` VARCHAR(255) NULL,
+    `billing_country` VARCHAR(255) NULL,
+    `billing_phone` VARCHAR(255) NULL,
+    `payment_method` VARCHAR(255) NOT NULL,
+    `payment_status` ENUM('pending', 'paid', 'failed', 'refunded') DEFAULT 'pending',
+    `payment_transaction_id` VARCHAR(255) NULL,
+    `payment_provider` VARCHAR(255) NULL,
+    `subtotal` DECIMAL(15,2) NOT NULL,
+    `tax` DECIMAL(15,2) NOT NULL,
+    `shipping_cost` DECIMAL(15,2) NOT NULL,
+    `discount` DECIMAL(15,2) DEFAULT 0.00,
+    `total` DECIMAL(15,2) NOT NULL,
     `notes` TEXT NULL,
-    `trackingNumber` VARCHAR(255) NULL,
-    `shippingProvider` VARCHAR(255) NULL,
-    `estimatedDelivery` DATETIME NULL,
-    `pointsEarned` INT DEFAULT 0,
-    `pointsUsed` INT DEFAULT 0,
-    `pointsDiscount` DECIMAL(19,2) DEFAULT 0.00,
-    `warranty_cost` DECIMAL(19,2) DEFAULT 0.00,
-    `discountCodeId` INT NULL COMMENT 'FK tới bảng discount_codes - Sequelize tạo qua association',
+    `tracking_number` VARCHAR(255) NULL,
+    `shipping_provider` VARCHAR(255) NULL,
+    `estimated_delivery` DATETIME NULL,
+    `points_earned` INT DEFAULT 0,
+    `points_used` INT DEFAULT 0,
+    `points_discount` DECIMAL(15,2) DEFAULT 0.00,
+    `warranty_cost` DECIMAL(15,2) DEFAULT 0.00,
+    `discount_code_id` INT NULL COMMENT 'FK tới discount_codes',
     `cancelled_at` DATETIME NULL DEFAULT NULL,
     `refunded_at` DATETIME NULL DEFAULT NULL,
-    `refund_amount` DECIMAL(19,2) NULL DEFAULT NULL,
-    `createdAt` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    `updatedAt` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-    `deletedAt` DATETIME NULL DEFAULT NULL,
-    CONSTRAINT `fk_orders_user` FOREIGN KEY (`userId`) REFERENCES `users`(`id`) ON DELETE CASCADE ON UPDATE CASCADE,
-    CONSTRAINT `fk_orders_discount` FOREIGN KEY (`discountCodeId`) REFERENCES `discount_codes`(`id`) ON DELETE SET NULL ON UPDATE CASCADE
+    `refund_amount` DECIMAL(15,2) NULL DEFAULT NULL,
+    `created_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    `updated_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    `deleted_at` DATETIME NULL DEFAULT NULL,
+    CONSTRAINT `fk_orders_user` FOREIGN KEY (`user_id`) REFERENCES `users`(`id`) ON DELETE CASCADE ON UPDATE CASCADE,
+    CONSTRAINT `fk_orders_discount` FOREIGN KEY (`discount_code_id`) REFERENCES `discount_codes`(`id`) ON DELETE SET NULL ON UPDATE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
--- ----- BẢNG 10: order_items (Chi tiết đơn hàng) -----
+-- ----- BẢNG 11: order_items (Chi tiết đơn hàng) -----
 CREATE TABLE IF NOT EXISTS `order_items` (
     `id` INT AUTO_INCREMENT PRIMARY KEY,
-    `orderId` INT NOT NULL,
-    `productId` INT NOT NULL,
-    `variantId` INT NULL,
+    `order_id` INT NOT NULL,
+    `product_id` INT NOT NULL,
+    `variant_id` INT NULL,
     `name` VARCHAR(255) NOT NULL,
     `sku` VARCHAR(255) NULL,
-    `price` DECIMAL(19,2) NOT NULL,
+    `unit_price` DECIMAL(15,2) NOT NULL,
+    `discount_amount` DECIMAL(15,2) NOT NULL DEFAULT 0.00 COMMENT 'Giảm giá áp dụng riêng cho item này',
     `quantity` INT NOT NULL,
-    `subtotal` DECIMAL(19,2) NOT NULL,
+    `subtotal` DECIMAL(15,2) NOT NULL,
     `image` VARCHAR(255) NULL,
     `attributes` JSON DEFAULT (JSON_OBJECT()),
     `warranty_package_ids` JSON NULL,
-    `createdAt` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    `updatedAt` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-    CONSTRAINT `fk_order_items_order` FOREIGN KEY (`orderId`) REFERENCES `orders`(`id`) ON DELETE CASCADE ON UPDATE CASCADE,
-    CONSTRAINT `fk_order_items_product` FOREIGN KEY (`productId`) REFERENCES `products`(`id`) ON DELETE CASCADE ON UPDATE CASCADE
+    `created_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    `updated_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    CONSTRAINT `fk_order_items_orders` FOREIGN KEY (`order_id`) REFERENCES `orders`(`id`) ON DELETE CASCADE ON UPDATE CASCADE,
+    CONSTRAINT `fk_order_items_products` FOREIGN KEY (`product_id`) REFERENCES `products`(`id`) ON DELETE CASCADE ON UPDATE CASCADE,
+    CONSTRAINT `fk_order_items_variant` FOREIGN KEY (`variant_id`) REFERENCES `product_variants`(`id`) ON DELETE SET NULL ON UPDATE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
--- ----- BẢNG 11: carts (Giỏ hàng) -----
+-- ----- BẢNG 12: carts (Giỏ hàng) -----
 CREATE TABLE IF NOT EXISTS `carts` (
     `id` INT AUTO_INCREMENT PRIMARY KEY,
-    `userId` INT NULL,
-    `sessionId` VARCHAR(255) NULL,
+    `user_id` INT NULL,
+    `session_id` VARCHAR(255) NULL,
     `status` ENUM('active', 'merged', 'converted', 'abandoned') DEFAULT 'active',
-    `createdAt` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    `updatedAt` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-    CONSTRAINT `fk_carts_user` FOREIGN KEY (`userId`) REFERENCES `users`(`id`) ON DELETE SET NULL ON UPDATE CASCADE
+    `created_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    `updated_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    CONSTRAINT `fk_carts_user` FOREIGN KEY (`user_id`) REFERENCES `users`(`id`) ON DELETE SET NULL ON UPDATE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
--- ----- BẢNG 12: cart_items (Items trong giỏ hàng) -----
+-- ----- BẢNG 13: cart_items (Items trong giỏ hàng) -----
 CREATE TABLE IF NOT EXISTS `cart_items` (
     `id` INT AUTO_INCREMENT PRIMARY KEY,
-    `cartId` INT NOT NULL,
-    `productId` INT NOT NULL,
-    `variantId` INT NULL,
+    `cart_id` INT NOT NULL,
+    `product_id` INT NOT NULL,
+    `variant_id` INT NULL,
     `quantity` INT NOT NULL DEFAULT 1,
-    `price` DECIMAL(19,2) NOT NULL,
+    `unit_price` DECIMAL(15,2) NOT NULL,
     `warranty_package_ids` JSON NULL DEFAULT (JSON_ARRAY()),
-    `createdAt` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    `updatedAt` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-    CONSTRAINT `fk_cart_items_cart` FOREIGN KEY (`cartId`) REFERENCES `carts`(`id`) ON DELETE CASCADE ON UPDATE CASCADE,
-    CONSTRAINT `fk_cart_items_product` FOREIGN KEY (`productId`) REFERENCES `products`(`id`) ON DELETE CASCADE ON UPDATE CASCADE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
-
--- ----- BẢNG 13: discount_codes (Mã giảm giá) -----
-CREATE TABLE IF NOT EXISTS `discount_codes` (
-    `id` INT AUTO_INCREMENT PRIMARY KEY,
-    `code` VARCHAR(50) NOT NULL UNIQUE,
-    `type` ENUM('percent', 'fixed') NOT NULL DEFAULT 'fixed',
-    `value` DECIMAL(19,2) NOT NULL,
-    `minOrderAmount` DECIMAL(19,2) NULL DEFAULT 0.00,
-    `maxDiscountAmount` DECIMAL(19,2) NULL,
-    `startDate` DATETIME NULL,
-    `endDate` DATETIME NULL,
-    `usageLimit` INT NULL,
-    `usedCount` INT DEFAULT 0,
-    `isActive` TINYINT(1) DEFAULT 1,
-    `description` VARCHAR(255) NULL,
-    `createdAt` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    `updatedAt` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-    `deletedAt` DATETIME NULL DEFAULT NULL
+    `created_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    `updated_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    CONSTRAINT `fk_cart_items_cart` FOREIGN KEY (`cart_id`) REFERENCES `carts`(`id`) ON DELETE CASCADE ON UPDATE CASCADE,
+    CONSTRAINT `fk_cart_items_product` FOREIGN KEY (`product_id`) REFERENCES `products`(`id`) ON DELETE CASCADE ON UPDATE CASCADE,
+    CONSTRAINT `fk_cart_items_variant` FOREIGN KEY (`variant_id`) REFERENCES `product_variants`(`id`) ON DELETE SET NULL ON UPDATE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- ----- BẢNG 14: reviews (Đánh giá - bảng cũ) -----
 CREATE TABLE IF NOT EXISTS `reviews` (
     `id` INT AUTO_INCREMENT PRIMARY KEY,
-    `productId` INT NOT NULL,
-    `userId` INT NOT NULL,
+    `product_id` INT NOT NULL,
+    `user_id` INT NOT NULL,
     `rating` INT NOT NULL,
     `title` VARCHAR(255) NULL,
     `content` TEXT NOT NULL,
-    `isVerified` TINYINT(1) DEFAULT 0,
+    `is_verified` TINYINT(1) DEFAULT 0,
     `likes` INT DEFAULT 0,
     `dislikes` INT DEFAULT 0,
     `images` JSON DEFAULT (JSON_ARRAY()),
-    `createdAt` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    `updatedAt` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-    CONSTRAINT `fk_reviews_product` FOREIGN KEY (`productId`) REFERENCES `products`(`id`) ON DELETE CASCADE ON UPDATE CASCADE,
-    CONSTRAINT `fk_reviews_user` FOREIGN KEY (`userId`) REFERENCES `users`(`id`) ON DELETE CASCADE ON UPDATE CASCADE
+    `created_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    `updated_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    CONSTRAINT `fk_reviews_product` FOREIGN KEY (`product_id`) REFERENCES `products`(`id`) ON DELETE CASCADE ON UPDATE CASCADE,
+    CONSTRAINT `fk_reviews_user` FOREIGN KEY (`user_id`) REFERENCES `users`(`id`) ON DELETE CASCADE ON UPDATE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- ----- BẢNG 15: review_feedbacks (Phản hồi đánh giá) -----
 CREATE TABLE IF NOT EXISTS `review_feedbacks` (
     `id` INT AUTO_INCREMENT PRIMARY KEY,
-    `reviewId` INT NOT NULL,
-    `userId` INT NOT NULL,
-    `isHelpful` TINYINT(1) NOT NULL,
-    `createdAt` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    `updatedAt` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-    CONSTRAINT `fk_review_feedbacks_review` FOREIGN KEY (`reviewId`) REFERENCES `reviews`(`id`) ON DELETE CASCADE ON UPDATE CASCADE,
-    CONSTRAINT `fk_review_feedbacks_user` FOREIGN KEY (`userId`) REFERENCES `users`(`id`) ON DELETE CASCADE ON UPDATE CASCADE
+    `review_id` INT NOT NULL,
+    `user_id` INT NOT NULL,
+    `is_helpful` TINYINT(1) NOT NULL,
+    `created_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    `updated_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    CONSTRAINT `fk_review_feedbacks_review` FOREIGN KEY (`review_id`) REFERENCES `reviews`(`id`) ON DELETE CASCADE ON UPDATE CASCADE,
+    CONSTRAINT `fk_review_feedbacks_user` FOREIGN KEY (`user_id`) REFERENCES `users`(`id`) ON DELETE CASCADE ON UPDATE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- ----- BẢNG 16: wishlists (Danh sách yêu thích) -----
 CREATE TABLE IF NOT EXISTS `wishlists` (
     `id` INT AUTO_INCREMENT PRIMARY KEY,
-    `userId` INT NOT NULL,
-    `productId` INT NOT NULL,
-    `createdAt` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    `updatedAt` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-    CONSTRAINT `fk_wishlists_user` FOREIGN KEY (`userId`) REFERENCES `users`(`id`) ON DELETE CASCADE ON UPDATE CASCADE,
-    CONSTRAINT `fk_wishlists_product` FOREIGN KEY (`productId`) REFERENCES `products`(`id`) ON DELETE CASCADE ON UPDATE CASCADE
+    `user_id` INT NOT NULL,
+    `product_id` INT NOT NULL,
+    `created_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    `updated_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    CONSTRAINT `fk_wishlists_user` FOREIGN KEY (`user_id`) REFERENCES `users`(`id`) ON DELETE CASCADE ON UPDATE CASCADE,
+    CONSTRAINT `fk_wishlists_product` FOREIGN KEY (`product_id`) REFERENCES `products`(`id`) ON DELETE CASCADE ON UPDATE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- ----- BẢNG 17: images (Quản lý ảnh hệ thống) -----
 CREATE TABLE IF NOT EXISTS `images` (
     `id` INT AUTO_INCREMENT PRIMARY KEY,
     `original_name` VARCHAR(255) NOT NULL,
-    `file_name` VARCHAR(255) NOT NULL UNIQUE,
+    `file_name` VARCHAR(255) NOT NULL,
     `file_path` VARCHAR(500) NOT NULL,
     `file_size` INT NOT NULL,
     `mime_type` VARCHAR(100) NOT NULL,
@@ -398,6 +419,7 @@ CREATE TABLE IF NOT EXISTS `images` (
     `is_active` TINYINT(1) DEFAULT 1,
     `created_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
     `updated_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    UNIQUE KEY `uq_images_file_name` (`file_name`),
     INDEX `idx_images_product_id` (`product_id`),
     INDEX `idx_images_user_id` (`user_id`),
     INDEX `idx_images_category` (`category`),
@@ -415,13 +437,13 @@ CREATE TABLE IF NOT EXISTS `news` (
     `thumbnail` VARCHAR(255) NULL,
     `description` TEXT NULL,
     `category` VARCHAR(255) NULL DEFAULT 'Tin tức',
-    `viewCount` INT DEFAULT 0,
+    `view_count` INT DEFAULT 0,
     `tags` VARCHAR(255) NULL,
-    `isPublished` TINYINT(1) DEFAULT 1,
-    `userId` INT NULL,
-    `createdAt` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    `updatedAt` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-    CONSTRAINT `fk_news_user` FOREIGN KEY (`userId`) REFERENCES `users`(`id`) ON DELETE SET NULL ON UPDATE CASCADE
+    `is_published` TINYINT(1) DEFAULT 1,
+    `user_id` INT NULL,
+    `created_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    `updated_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    CONSTRAINT `fk_news_user` FOREIGN KEY (`user_id`) REFERENCES `users`(`id`) ON DELETE SET NULL ON UPDATE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- ----- BẢNG 19: newsletter_subscribers (Đăng ký nhận tin) -----
@@ -429,8 +451,8 @@ CREATE TABLE IF NOT EXISTS `newsletter_subscribers` (
     `id` INT AUTO_INCREMENT PRIMARY KEY,
     `email` VARCHAR(255) NOT NULL,
     `status` ENUM('active', 'unsubscribed') DEFAULT 'active',
-    `createdAt` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    `updatedAt` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+    `created_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    `updated_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- ----- BẢNG 20: feedbacks (Phản hồi liên hệ) -----
@@ -442,44 +464,34 @@ CREATE TABLE IF NOT EXISTS `feedbacks` (
     `subject` VARCHAR(255) NOT NULL,
     `content` TEXT NOT NULL,
     `status` ENUM('pending', 'reviewed', 'resolved') DEFAULT 'pending',
-    `createdAt` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    `updatedAt` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+    `created_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    `updated_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- ----- BẢNG 21: chat_messages (Tin nhắn chat) -----
 CREATE TABLE IF NOT EXISTS `chat_messages` (
     `id` INT AUTO_INCREMENT PRIMARY KEY,
-    `userId` INT NULL,
-    `sessionId` VARCHAR(255) NOT NULL,
-    `senderId` INT NULL,
+    `user_id` INT NULL,
+    `session_id` VARCHAR(255) NOT NULL,
+    `sender_id` INT NULL,
     `content` TEXT NOT NULL,
-    `isFromAdmin` TINYINT(1) DEFAULT 0,
-    `isRead` TINYINT(1) DEFAULT 0,
-    -- Trạng thái gửi/nhận (sent → delivered → read)
+    `is_from_admin` TINYINT(1) DEFAULT 0,
+    `is_read` TINYINT(1) DEFAULT 0,
     `status` ENUM('sent', 'delivered', 'read') NOT NULL DEFAULT 'sent',
-    -- Loại nội dung tin nhắn
     `content_type` ENUM('text', 'image', 'product_card') NOT NULL DEFAULT 'text',
-    -- URL đính kèm khi content_type = 'image'
     `attachment_url` VARCHAR(255) NULL,
-    -- FK tới products khi content_type = 'product_card'
     `product_id` INT NULL,
-    -- Thời điểm tin nhắn được đọc
     `read_at` DATETIME NULL,
-    -- Phân biệt tin nhắn user hay AI assistant
     `role` ENUM('user', 'assistant') NULL,
-    -- Phân biệt AI chatbot vs support chat
     `message_type` ENUM('ai_chatbot', 'support_chat') NOT NULL DEFAULT 'support_chat',
-    -- Intent phân loại từ user message (product_search, general, off_topic...)
     `intent` VARCHAR(50) NULL,
-    -- Thời gian xử lý RAG pipeline (ms)
     `response_time_ms` INT UNSIGNED NULL,
-    -- Đánh dấu fallback mode thay vì dùng LLM
     `is_fallback` TINYINT(1) NOT NULL DEFAULT 0,
-    -- Đánh dấu tin nhắn đã được archive (cleanup job xử lý)
     `is_archived` TINYINT(1) NOT NULL DEFAULT 0,
-    `createdAt` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    `updatedAt` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-    CONSTRAINT `fk_chat_messages_user` FOREIGN KEY (`userId`) REFERENCES `users`(`id`) ON DELETE SET NULL ON UPDATE CASCADE,
+    `created_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    `updated_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    CONSTRAINT `fk_chat_messages_user` FOREIGN KEY (`user_id`) REFERENCES `users`(`id`) ON DELETE SET NULL ON UPDATE CASCADE,
+    CONSTRAINT `fk_chat_messages_sender` FOREIGN KEY (`sender_id`) REFERENCES `users`(`id`) ON DELETE SET NULL ON UPDATE CASCADE,
     CONSTRAINT `fk_chat_messages_product` FOREIGN KEY (`product_id`) REFERENCES `products`(`id`) ON DELETE SET NULL ON UPDATE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
@@ -492,8 +504,8 @@ CREATE TABLE IF NOT EXISTS `banners` (
     `position` ENUM('home_hero', 'home_middle', 'sidebar') DEFAULT 'home_hero',
     `is_active` TINYINT(1) DEFAULT 1,
     `priority` INT DEFAULT 0,
-    `createdAt` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    `updatedAt` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+    `created_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    `updated_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- ----- BẢNG 23: email_campaigns (Chiến dịch email) -----
@@ -503,40 +515,41 @@ CREATE TABLE IF NOT EXISTS `email_campaigns` (
     `content` TEXT NOT NULL,
     `status` ENUM('draft', 'sent') DEFAULT 'draft',
     `sent_at` DATETIME NULL,
-    `createdAt` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    `updatedAt` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+    `created_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    `updated_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- ----- BẢNG 24: collections (Bộ sưu tập) -----
 CREATE TABLE IF NOT EXISTS `collections` (
     `id` INT AUTO_INCREMENT PRIMARY KEY,
     `name` VARCHAR(255) NOT NULL,
-    `slug` VARCHAR(255) NOT NULL UNIQUE,
+    `slug` VARCHAR(255) NOT NULL,
     `description` TEXT NULL,
     `thumbnail` VARCHAR(255) NULL,
     `is_active` TINYINT(1) DEFAULT 1,
     `created_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    `updated_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+    `updated_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    UNIQUE KEY `uq_collections_slug` (`slug`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- ----- BẢNG 25: product_collections (Liên kết sản phẩm - bộ sưu tập) -----
 CREATE TABLE IF NOT EXISTS `product_collections` (
-    `productId` INT NOT NULL,
-    `collectionId` INT NOT NULL,
-    PRIMARY KEY (`productId`, `collectionId`),
-    CONSTRAINT `fk_pc_product` FOREIGN KEY (`productId`) REFERENCES `products`(`id`) ON DELETE CASCADE ON UPDATE CASCADE,
-    CONSTRAINT `fk_pc_collection` FOREIGN KEY (`collectionId`) REFERENCES `collections`(`id`) ON DELETE CASCADE ON UPDATE CASCADE
+    `product_id` INT NOT NULL,
+    `collection_id` INT NOT NULL,
+    PRIMARY KEY (`product_id`, `collection_id`),
+    CONSTRAINT `fk_pc_product` FOREIGN KEY (`product_id`) REFERENCES `products`(`id`) ON DELETE CASCADE ON UPDATE CASCADE,
+    CONSTRAINT `fk_pc_collection` FOREIGN KEY (`collection_id`) REFERENCES `collections`(`id`) ON DELETE CASCADE ON UPDATE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- ----- BẢNG 26: product_categories (Liên kết sản phẩm - danh mục) -----
 CREATE TABLE IF NOT EXISTS `product_categories` (
     `id` INT AUTO_INCREMENT PRIMARY KEY,
-    `productId` INT NOT NULL,
-    `categoryId` INT NOT NULL,
-    `createdAt` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    `updatedAt` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-    CONSTRAINT `fk_pcat_product` FOREIGN KEY (`productId`) REFERENCES `products`(`id`) ON DELETE CASCADE ON UPDATE CASCADE,
-    CONSTRAINT `fk_pcat_category` FOREIGN KEY (`categoryId`) REFERENCES `categories`(`id`) ON DELETE CASCADE ON UPDATE CASCADE
+    `product_id` INT NOT NULL,
+    `category_id` INT NOT NULL,
+    `created_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    `updated_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    CONSTRAINT `fk_pcat_product` FOREIGN KEY (`product_id`) REFERENCES `products`(`id`) ON DELETE CASCADE ON UPDATE CASCADE,
+    CONSTRAINT `fk_pcat_category` FOREIGN KEY (`category_id`) REFERENCES `categories`(`id`) ON DELETE CASCADE ON UPDATE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- ----- BẢNG 27: brand_categories (Liên kết thương hiệu - danh mục) -----
@@ -557,8 +570,8 @@ CREATE TABLE IF NOT EXISTS `attribute_groups` (
     `is_required` TINYINT(1) DEFAULT 0,
     `sort_order` INT DEFAULT 0,
     `is_active` TINYINT(1) DEFAULT 1,
-    `createdAt` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    `updatedAt` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+    `created_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    `updated_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- ----- BẢNG 29: attribute_values (Giá trị thuộc tính) -----
@@ -569,13 +582,13 @@ CREATE TABLE IF NOT EXISTS `attribute_values` (
     `value` VARCHAR(255) NOT NULL,
     `color_code` VARCHAR(255) NULL,
     `image_url` TEXT NULL,
-    `price_adjustment` DECIMAL(12,2) DEFAULT 0.00,
+    `price_adjustment` DECIMAL(15,2) DEFAULT 0.00,
     `sort_order` INT DEFAULT 0,
     `is_active` TINYINT(1) DEFAULT 1,
     `affects_name` TINYINT(1) DEFAULT 0,
     `name_template` VARCHAR(255) NULL COMMENT 'Template cho tên sản phẩm (VD: I9, RTX 4080, 32GB)',
-    `createdAt` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    `updatedAt` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    `created_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    `updated_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     CONSTRAINT `fk_attr_val_group` FOREIGN KEY (`attribute_group_id`) REFERENCES `attribute_groups`(`id`) ON DELETE CASCADE ON UPDATE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
@@ -586,8 +599,8 @@ CREATE TABLE IF NOT EXISTS `product_attribute_groups` (
     `attribute_group_id` INT NOT NULL,
     `is_required` TINYINT(1) DEFAULT 0,
     `sort_order` INT DEFAULT 0,
-    `createdAt` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    `updatedAt` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    `created_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    `updated_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     CONSTRAINT `fk_pag_product` FOREIGN KEY (`product_id`) REFERENCES `products`(`id`) ON DELETE CASCADE ON UPDATE CASCADE,
     CONSTRAINT `fk_pag_group` FOREIGN KEY (`attribute_group_id`) REFERENCES `attribute_groups`(`id`) ON DELETE CASCADE ON UPDATE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
@@ -601,8 +614,8 @@ CREATE TABLE IF NOT EXISTS `product_attributes` (
     `values` JSON NOT NULL DEFAULT (JSON_ARRAY()),
     `required` TINYINT(1) DEFAULT 0,
     `sort_order` INT DEFAULT 0,
-    `createdAt` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    `updatedAt` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    `created_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    `updated_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     CONSTRAINT `fk_pa_product` FOREIGN KEY (`product_id`) REFERENCES `products`(`id`) ON DELETE CASCADE ON UPDATE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
@@ -614,8 +627,8 @@ CREATE TABLE IF NOT EXISTS `product_specifications` (
     `value` TEXT NOT NULL,
     `category` VARCHAR(255) NULL DEFAULT 'General',
     `sort_order` INT DEFAULT 0,
-    `createdAt` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    `updatedAt` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    `created_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    `updated_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     CONSTRAINT `fk_ps_product` FOREIGN KEY (`product_id`) REFERENCES `products`(`id`) ON DELETE CASCADE ON UPDATE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
@@ -625,13 +638,13 @@ CREATE TABLE IF NOT EXISTS `warranty_packages` (
     `name` VARCHAR(255) NOT NULL,
     `description` TEXT NULL,
     `duration_months` INT NOT NULL,
-    `price` DECIMAL(12,2) NOT NULL DEFAULT 0.00,
+    `price` DECIMAL(15,2) NOT NULL DEFAULT 0.00,
     `terms` JSON DEFAULT (JSON_OBJECT()),
     `coverage` JSON DEFAULT (JSON_ARRAY()),
     `is_active` TINYINT(1) DEFAULT 1,
     `sort_order` INT DEFAULT 0,
-    `createdAt` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    `updatedAt` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+    `created_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    `updated_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- ----- BẢNG 34: product_warranties (Liên kết SP - gói bảo hành) -----
@@ -640,8 +653,8 @@ CREATE TABLE IF NOT EXISTS `product_warranties` (
     `product_id` INT NOT NULL,
     `warranty_package_id` INT NOT NULL,
     `is_default` TINYINT(1) DEFAULT 0,
-    `createdAt` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    `updatedAt` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    `created_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    `updated_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     CONSTRAINT `fk_pw_product` FOREIGN KEY (`product_id`) REFERENCES `products`(`id`) ON DELETE CASCADE ON UPDATE CASCADE,
     CONSTRAINT `fk_pw_warranty` FOREIGN KEY (`warranty_package_id`) REFERENCES `warranty_packages`(`id`) ON DELETE CASCADE ON UPDATE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
@@ -667,7 +680,8 @@ CREATE TABLE IF NOT EXISTS `search_histories` (
     `session_id` VARCHAR(255) NULL,
     `keyword` VARCHAR(255) NOT NULL,
     `results_count` INT DEFAULT 0,
-    `created_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
+    `created_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    CONSTRAINT `fk_search_histories_user` FOREIGN KEY (`user_id`) REFERENCES `users`(`id`) ON DELETE SET NULL ON UPDATE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- ----- BẢNG 37: recently_viewed (Sản phẩm xem gần đây) -----
@@ -682,11 +696,10 @@ CREATE TABLE IF NOT EXISTS `recently_viewed` (
     CONSTRAINT `fk_rv_product` FOREIGN KEY (`product_id`) REFERENCES `products`(`id`) ON DELETE CASCADE ON UPDATE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
--- ----- BẢNG 38: audit_logs (Nhật ký kiểm toán admin) -----
--- ----- BẢNG 39: import_logs (Lịch sử import sản phẩm) -----
+-- ----- BẢNG 38: import_logs (Lịch sử import sản phẩm) -----
 CREATE TABLE IF NOT EXISTS `import_logs` (
-    `id`           INT UNSIGNED  NOT NULL AUTO_INCREMENT,
-    `admin_id`     INT UNSIGNED  NOT NULL,
+    `id`           INT           NOT NULL AUTO_INCREMENT,
+    `admin_id`     INT           NOT NULL,
     `filename`     VARCHAR(255)  NOT NULL,
     `total_rows`   INT           NOT NULL DEFAULT 0,
     `success_rows` INT           NOT NULL DEFAULT 0,
@@ -700,6 +713,7 @@ CREATE TABLE IF NOT EXISTS `import_logs` (
         ON DELETE RESTRICT ON UPDATE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
+-- ----- BẢNG 39: audit_logs (Nhật ký kiểm toán admin) -----
 CREATE TABLE IF NOT EXISTS `audit_logs` (
     `id` INT AUTO_INCREMENT PRIMARY KEY,
     `admin_id` INT NOT NULL,
@@ -713,7 +727,31 @@ CREATE TABLE IF NOT EXISTS `audit_logs` (
     `updated_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     INDEX `idx_audit_admin_id` (`admin_id`),
     INDEX `idx_audit_entity` (`entity_type`, `entity_id`),
-    INDEX `idx_audit_created_at` (`created_at`)
+    INDEX `idx_audit_created_at` (`created_at`),
+    CONSTRAINT `fk_audit_logs_user` FOREIGN KEY (`admin_id`) REFERENCES `users`(`id`) ON DELETE RESTRICT ON UPDATE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- ----- BẢNG 40: inventory_logs (Lịch sử thay đổi tồn kho) -----
+CREATE TABLE IF NOT EXISTS `inventory_logs` (
+    `id` INT AUTO_INCREMENT PRIMARY KEY,
+    `product_id` INT NOT NULL,
+    `variant_id` INT NULL COMMENT 'null = sản phẩm không có variant; có giá trị = biến thể cụ thể',
+    `change_type` ENUM('sale', 'restock', 'adjustment', 'return') NOT NULL,
+    `change_amount` INT NOT NULL COMMENT 'Số lượng thay đổi (dương = tăng, âm = giảm)',
+    `previous_stock` INT NOT NULL,
+    `new_stock` INT NOT NULL,
+    `order_id` INT NULL COMMENT 'null = thay đổi không liên quan đơn hàng (nhập hàng, điều chỉnh)',
+    `note` VARCHAR(500) NULL,
+    `created_by` INT NULL COMMENT 'null = hành động tự động bởi hệ thống',
+    `created_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    INDEX `idx_inventory_logs_product_id` (`product_id`),
+    INDEX `idx_inventory_logs_variant_id` (`variant_id`),
+    INDEX `idx_inventory_logs_order_id` (`order_id`),
+    INDEX `idx_inventory_logs_change_type` (`change_type`),
+    CONSTRAINT `fk_inventory_logs_product` FOREIGN KEY (`product_id`) REFERENCES `products`(`id`) ON DELETE CASCADE ON UPDATE CASCADE,
+    CONSTRAINT `fk_inventory_logs_variant` FOREIGN KEY (`variant_id`) REFERENCES `product_variants`(`id`) ON DELETE SET NULL ON UPDATE CASCADE,
+    CONSTRAINT `fk_inventory_logs_order` FOREIGN KEY (`order_id`) REFERENCES `orders`(`id`) ON DELETE SET NULL ON UPDATE CASCADE,
+    CONSTRAINT `fk_inventory_logs_user` FOREIGN KEY (`created_by`) REFERENCES `users`(`id`) ON DELETE SET NULL ON UPDATE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- =====================================================
@@ -722,16 +760,16 @@ CREATE TABLE IF NOT EXISTS `audit_logs` (
 
 -- ----- 3.1: Tài khoản Admin & Customer mẫu -----
 -- Mật khẩu: admin123 (đã hash bằng bcrypt)
-INSERT INTO `users` (`id`, `email`, `password`, `firstName`, `lastName`, `phone`, `role`, `isEmailVerified`, `isActive`, `loyaltyPoints`, `createdAt`, `updatedAt`) VALUES
+INSERT INTO `users` (`id`, `email`, `password`, `first_name`, `last_name`, `phone`, `role`, `is_email_verified`, `is_active`, `loyalty_points`, `created_at`, `updated_at`) VALUES
 (1, 'admin@techstore.vn', '$2b$10$8K1p/a0dR1xqM/wWFN.JnOFuB9p6J0N6U6IALj3eAeLz9Y2wVXJSq', 'Admin', 'TechStore', '0901234567', 'admin', 1, 1, 0, NOW(), NOW()),
 (2, 'customer@techstore.vn', '$2b$10$8K1p/a0dR1xqM/wWFN.JnOFuB9p6J0N6U6IALj3eAeLz9Y2wVXJSq', 'Nguyễn', 'Văn A', '0912345678', 'customer', 1, 1, 500, NOW(), NOW());
 
 -- ----- 3.2: Địa chỉ mẫu cho customer -----
-INSERT INTO `addresses` (`userId`, `name`, `firstName`, `lastName`, `address1`, `city`, `state`, `zip`, `country`, `phone`, `isDefault`) VALUES
+INSERT INTO `addresses` (`user_id`, `name`, `first_name`, `last_name`, `address1`, `city`, `state`, `zip`, `country`, `phone`, `is_default`) VALUES
 (2, 'Nhà riêng', 'Nguyễn', 'Văn A', '123 Nguyễn Huệ', 'Hồ Chí Minh', 'Quận 1', '700000', 'Việt Nam', '0912345678', 1);
 
 -- ----- 3.3: Mã giảm giá mẫu -----
-INSERT INTO `discount_codes` (`code`, `type`, `value`, `minOrderAmount`, `maxDiscountAmount`, `startDate`, `endDate`, `usageLimit`, `usedCount`, `isActive`, `description`) VALUES
+INSERT INTO `discount_codes` (`code`, `type`, `value`, `min_order_amount`, `max_discount_amount`, `start_date`, `end_date`, `usage_limit`, `used_count`, `is_active`, `description`) VALUES
 ('WELCOME10', 'percent', 10.00, 500000.00, 2000000.00, NOW(), DATE_ADD(NOW(), INTERVAL 365 DAY), 1000, 0, 1, 'Giảm 10% cho khách hàng mới, tối đa 2 triệu'),
 ('TECHSTORE50K', 'fixed', 50000.00, 200000.00, NULL, NOW(), DATE_ADD(NOW(), INTERVAL 180 DAY), 500, 0, 1, 'Giảm 50,000đ cho đơn từ 200,000đ'),
 ('SUMMER2026', 'percent', 15.00, 1000000.00, 5000000.00, NOW(), DATE_ADD(NOW(), INTERVAL 90 DAY), 200, 0, 1, 'Khuyến mãi hè 2026 - Giảm 15% tối đa 5 triệu');

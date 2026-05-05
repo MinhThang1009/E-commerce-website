@@ -31,7 +31,7 @@ const CartItem = sequelize.define(
     },
     // Giá của 1 unit tại thời điểm thêm vào giỏ (snapshot giá, không đổi khi giá SP thay đổi)
     unitPrice: {
-      type: DataTypes.DECIMAL(19, 2),
+      type: DataTypes.DECIMAL(15, 2),
       allowNull: false,
       field: 'unit_price',
       validate: {
@@ -48,7 +48,7 @@ const CartItem = sequelize.define(
   {
     tableName: 'cart_items',
     timestamps: true,
-    underscored: false,
+    underscored: true,
   }
 );
 

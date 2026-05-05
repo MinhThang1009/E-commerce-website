@@ -40,7 +40,7 @@ const AttributeValue = sequelize.define(
       field: 'image_url',
     },
     priceAdjustment: {
-      type: DataTypes.DECIMAL(12, 2),
+      type: DataTypes.DECIMAL(15, 2),
       defaultValue: 0,
       field: 'price_adjustment',
     },
@@ -71,7 +71,7 @@ const AttributeValue = sequelize.define(
   {
     tableName: 'attribute_values',
     timestamps: true,
-    underscored: false,
+    underscored: true,
   }
 );
 

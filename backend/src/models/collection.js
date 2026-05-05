@@ -36,6 +36,7 @@ const Collection = sequelize.define(
   {
     tableName: 'collections',
     timestamps: true,
+    paranoid: true,
     underscored: true,
     hooks: {
       beforeValidate: (collection) => {

@@ -5576,9 +5576,36 @@ routes/
 
 > **Đây là bước QUAN TRỌNG NHẤT.** Migration phải chạy trước khi deploy model mới. Rename tất cả camelCase columns trong DB sang snake_case.
 
+**⚠️ Pre-flight BẮT BUỘC trước khi chạy migration:**
+```bash
+# Backup full DB — chạy 1 lệnh, mất ~30 giây, là cứu cánh duy nhất nếu migration fail giữa chừng
+mysqldump -u root techstore > backups/phase40-pre-migration-$(date +%Y%m%d-%H%M%S).sql
+```
+Verify file backup ≥ size hợp lý trước khi tiếp tục. Nếu fail, restore: `mysql -u root techstore < backups/phase40-pre-migration-*.sql`.
+
 **File:** `backend/src/migrations/2026050501-phase40-rename-columns-to-snake-case.js`
 
-**Phương pháp:** Dùng `queryInterface.renameColumn()` cho từng column. Wrap toàn bộ trong transaction.
+**⚠️ Phương pháp đúng (KHÔNG single-transaction wrap):**
+- **MySQL DDL `ALTER TABLE` auto-commit** — KHÔNG support transaction rollback. Wrap trong `sequelize.transaction()` cho ảo giác safety: nếu rename #50/130 fail, columns 1-49 đã commit. KHÔNG rollback được.
+- **Pattern đúng — Idempotent rerunnable:** mỗi `renameColumn()` check `INFORMATION_SCHEMA.COLUMNS` trước, skip nếu đã rename. Nếu fail giữa chừng, fix issue rồi rerun script — chỗ đã rename sẽ skip.
+  ```js
+  async function safeRenameColumn(queryInterface, table, oldName, newName) {
+    const [rows] = await queryInterface.sequelize.query(
+      `SELECT COLUMN_NAME FROM INFORMATION_SCHEMA.COLUMNS 
+       WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = ? AND COLUMN_NAME = ?`,
+      { replacements: [table, oldName] }
+    );
+    if (rows.length === 0) return; // Already renamed, skip
+    await queryInterface.renameColumn(table, oldName, newName);
+  }
+  ```
+- **`SET FOREIGN_KEY_CHECKS = 0` chỉ scope theo connection.** Sequelize có connection pool — `SET` ở connection A không ảnh hưởng connection B. Cách đúng: chạy `await sequelize.query('SET FOREIGN_KEY_CHECKS=0')` trên CÙNG connection (qua `sequelize.connectionManager.getConnection()` hoặc gọi tuần tự trong cùng `sequelize.query` chain). Hoặc đơn giản hơn: TẠM disable check ở MySQL session level trước khi chạy migration:
+  ```bash
+  mysql -u root techstore -e "SET GLOBAL foreign_key_checks=0;"
+  npx sequelize-cli db:migrate
+  mysql -u root techstore -e "SET GLOBAL foreign_key_checks=1;"
+  ```
+  (Chỉ chạy 1 lần, single-instance dev — KHÔNG dùng cho prod multi-tenant.)
 
 **Danh sách columns cần rename (theo từng bảng):**
 
@@ -6183,6 +6210,33 @@ ALTER TABLE import_logs MODIFY COLUMN admin_id INT NOT NULL;
 
 **Migration file:** `2026050502-phase40-add-missing-fk-constraints.js`
 
+**⚠️ Pre-flight BẮT BUỘC trước migration:** kiểm tra constraint name hiện tại (tránh duplicate name nếu migration cũ `2026050408` đã tạo với tên khác):
+```sql
+-- Trên phpMyAdmin hoặc MySQL CLI, chạy 6 query sau và đọc output:
+SHOW CREATE TABLE audit_logs;
+SHOW CREATE TABLE search_histories;
+SHOW CREATE TABLE chat_messages;
+SHOW CREATE TABLE order_items;
+SHOW CREATE TABLE cart_items;
+SHOW CREATE TABLE product_reviews;
+```
+- Nếu có FK constraint nào đã tồn tại với tên KHÁC `fk_<table>_<ref>` (vd auto-generated `audit_logs_admin_id_foreign`) → trong migration THÊM `DROP FOREIGN KEY <oldName>` TRƯỚC `ADD CONSTRAINT`.
+- Nếu constraint đã có với tên ĐÚNG (`fk_audit_logs_user`, etc.) → SKIP `ADD` cho table đó (idempotent).
+- Implement helper trong migration:
+  ```js
+  async function safeAddFk(qi, table, oldFkPattern, addSql) {
+    const [rows] = await qi.sequelize.query(
+      `SELECT CONSTRAINT_NAME FROM INFORMATION_SCHEMA.TABLE_CONSTRAINTS 
+       WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = ? AND CONSTRAINT_TYPE = 'FOREIGN KEY' AND CONSTRAINT_NAME LIKE ?`,
+      { replacements: [table, oldFkPattern] }
+    );
+    for (const row of rows) {
+      await qi.sequelize.query(`ALTER TABLE ${table} DROP FOREIGN KEY ${row.CONSTRAINT_NAME}`);
+    }
+    await qi.sequelize.query(addSql);
+  }
+  ```
+
 ```sql
 -- 1. audit_logs.admin_id → users(id)
 ALTER TABLE audit_logs ADD CONSTRAINT fk_audit_logs_user
@@ -6215,7 +6269,21 @@ ALTER TABLE product_reviews ADD CONSTRAINT fk_product_reviews_user
 
 **Migration file:** `2026050503-phase40-unify-decimal-precision.js`
 
-**Quyết định:** Dùng `DECIMAL(15,2)` cho tất cả monetary columns (đủ cho VND — max 999,999,999,999,999.99).
+**Quyết định:** Dùng `DECIMAL(15,2)` cho tất cả monetary columns (đủ cho VND — max 999,999,999,999,999.99 ≈ 10^15 đồng).
+
+**⚠️ Pre-flight BẮT BUỘC trước migration shrink:** kiểm tra giá trị MAX hiện tại không vượt ngưỡng `(15,2)` (10^13 thực tế = 9,999,999,999,999.99). Nếu vượt → migration sẽ FAIL hoặc TRUNCATE silent.
+```sql
+-- Chạy 6 query, mỗi query phải trả về giá trị < 9999999999999.99 (max DECIMAL(15,2)):
+SELECT MAX(subtotal), MAX(tax), MAX(shipping_cost), MAX(discount), MAX(total), 
+       MAX(points_discount), MAX(warranty_cost), MAX(refund_amount) FROM orders;
+SELECT MAX(unit_price), MAX(subtotal), MAX(discount_amount) FROM order_items;
+SELECT MAX(unit_price) FROM cart_items;
+SELECT MAX(value), MAX(min_order_amount), MAX(max_discount_amount) FROM discount_codes;
+SELECT MAX(price_adjustment) FROM attribute_values;
+SELECT MAX(price) FROM warranty_packages;
+```
+- Nếu mọi MAX < 10^13 → safe to shrink. (Thực tế thesis VND không vượt ngưỡng này.)
+- Nếu có column nào vượt → KHÔNG shrink column đó, giữ DECIMAL(19,2).
 
 **Columns cần thay đổi:**
 
@@ -6542,38 +6610,158 @@ CREATE INDEX idx_product_reviews_product_rating ON product_reviews(product_id, r
 
 ⚠️ **Phát hiện audit:** Một số migration cũ (Phase 2024-2025) đã tạo indexes với suffix-style naming (Sequelize default) thay vì prefix-style. Cần rename để thống nhất.
 
+**⚠️ Pre-flight BẮT BUỘC trước migration rename indexes:** index name có thể auto-generate khác hardcode dưới đây. Verify từng table:
 ```sql
--- products
-ALTER TABLE products DROP INDEX products_brand_idx, ADD INDEX idx_products_brand (brand);
-ALTER TABLE products DROP INDEX products_model_idx, ADD INDEX idx_products_model (model);
-ALTER TABLE products DROP INDEX products_condition_idx, ADD INDEX idx_products_condition (`condition`);
--- product_variants
-ALTER TABLE product_variants DROP INDEX product_variants_is_default_idx, ADD INDEX idx_product_variants_is_default (is_default);
-ALTER TABLE product_variants DROP INDEX product_variants_is_available_idx, ADD INDEX idx_product_variants_is_available (is_available);
--- product_warranties
-ALTER TABLE product_warranties DROP INDEX product_warranties_product_id_idx, ADD INDEX idx_product_warranties_product_id (product_id);
-ALTER TABLE product_warranties DROP INDEX product_warranties_warranty_package_id_idx, ADD INDEX idx_product_warranties_warranty_package_id (warranty_package_id);
-ALTER TABLE product_warranties DROP INDEX product_warranties_is_default_idx, ADD INDEX idx_product_warranties_is_default (is_default);
-ALTER TABLE product_warranties DROP INDEX unique_product_warranty, ADD UNIQUE KEY uq_product_warranties_product_warranty (product_id, warranty_package_id);
--- product_specifications
-ALTER TABLE product_specifications DROP INDEX product_specifications_product_id_idx, ADD INDEX idx_product_specifications_product_id (product_id);
-ALTER TABLE product_specifications DROP INDEX product_specifications_category_idx, ADD INDEX idx_product_specifications_category (category);
-ALTER TABLE product_specifications DROP INDEX product_specifications_sort_order_idx, ADD INDEX idx_product_specifications_sort_order (sort_order);
+SHOW INDEX FROM products;
+SHOW INDEX FROM product_variants;
+SHOW INDEX FROM product_warranties;
+SHOW INDEX FROM product_specifications;
+SHOW INDEX FROM product_attributes;
+SHOW INDEX FROM warranty_packages;
+SHOW INDEX FROM recently_viewed;
+```
+- Đối chiếu `Key_name` thực tế với hardcode dưới. Nếu khác → cập nhật DROP INDEX statement với name thực.
+- Implement helper trong migration:
+  ```js
+  async function safeRenameIndex(qi, table, oldKeyPattern, newName, indexCols, isUnique = false) {
+    const [rows] = await qi.sequelize.query(
+      `SELECT INDEX_NAME FROM INFORMATION_SCHEMA.STATISTICS
+       WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = ? AND INDEX_NAME LIKE ?`,
+      { replacements: [table, oldKeyPattern] }
+    );
+    const oldName = [...new Set(rows.map(r => r.INDEX_NAME))][0];
+    if (!oldName) return; // Already renamed or never existed
+    if (oldName === newName) return; // Already correct
+    await qi.sequelize.query(`ALTER TABLE ${table} DROP INDEX \`${oldName}\``);
+    const unique = isUnique ? 'UNIQUE' : '';
+    await qi.sequelize.query(`ALTER TABLE ${table} ADD ${unique} INDEX \`${newName}\` (${indexCols})`);
+  }
+  // Usage: await safeRenameIndex(qi, 'products', '%brand%idx', 'idx_products_brand', '`brand`');
+  ```
+- SQL block bên dưới chỉ là **expected output**. Migration thực tế phải gọi `safeRenameIndex` với pattern dynamic.
+
+**Danh sách thực tế từ pre-flight DB `techstore` (MariaDB 10.4) — 35 indexes cần rename:**
+
+```sql
+-- ============================================================================
+-- POST-Phase 40.1 (sau khi columns đã rename camelCase → snake_case)
+-- Index name vẫn còn cũ (DROP INDEX dùng OLD name, ADD INDEX dùng NEW snake_case column)
+-- Tất cả ALTER dùng safeRenameIndex() helper để skip if not exists
+-- ============================================================================
+
+-- A. Plain indexes (column name as INDEX_NAME) → idx_*
+-- (sau Phase 40.1, column đã snake_case, nhưng INDEX_NAME còn camelCase từ trước)
+
+-- addresses
+ALTER TABLE addresses DROP INDEX userId, ADD INDEX idx_addresses_user_id (user_id);
+
+-- attribute_values
+ALTER TABLE attribute_values DROP INDEX attribute_group_id, ADD INDEX idx_attribute_values_attribute_group_id (attribute_group_id);
+
+-- brand_categories
+ALTER TABLE brand_categories DROP INDEX category_id, ADD INDEX idx_brand_categories_category_id (category_id);
+
+-- carts
+ALTER TABLE carts DROP INDEX userId, ADD INDEX idx_carts_user_id (user_id);
+
+-- chat_messages
+ALTER TABLE chat_messages DROP INDEX userId, ADD INDEX idx_chat_messages_user_id (user_id);
+
+-- inventory_logs
+ALTER TABLE inventory_logs DROP INDEX created_by, ADD INDEX idx_inventory_logs_created_by (created_by);
+
+-- loyalty_histories (2 index)
+ALTER TABLE loyalty_histories DROP INDEX order_id, ADD INDEX idx_loyalty_histories_order_id (order_id);
+ALTER TABLE loyalty_histories DROP INDEX user_id, ADD INDEX idx_loyalty_histories_user_id (user_id);
+
+-- news
+ALTER TABLE news DROP INDEX userId, ADD INDEX idx_news_user_id (user_id);
+
 -- product_attributes
-ALTER TABLE product_attributes DROP INDEX product_attributes_type_idx, ADD INDEX idx_product_attributes_type (type);
-ALTER TABLE product_attributes DROP INDEX product_attributes_required_idx, ADD INDEX idx_product_attributes_required (required);
-ALTER TABLE product_attributes DROP INDEX product_attributes_sort_order_idx, ADD INDEX idx_product_attributes_sort_order (sort_order);
--- warranty_packages
-ALTER TABLE warranty_packages DROP INDEX warranty_packages_is_active_idx, ADD INDEX idx_warranty_packages_is_active (is_active);
-ALTER TABLE warranty_packages DROP INDEX warranty_packages_sort_order_idx, ADD INDEX idx_warranty_packages_sort_order (sort_order);
--- recently_viewed unique
-ALTER TABLE recently_viewed DROP INDEX recently_viewed_user_product_unique, ADD UNIQUE KEY uq_recently_viewed_user_product (user_id, product_id);
--- images.file_name (đã có idx_images_file_name? verify) — nếu có name khác thì rename thành uq_*
+ALTER TABLE product_attributes DROP INDEX product_id, ADD INDEX idx_product_attributes_product_id (product_id);
+
+-- product_attribute_groups (2 index)
+ALTER TABLE product_attribute_groups DROP INDEX attribute_group_id, ADD INDEX idx_product_attribute_groups_attribute_group_id (attribute_group_id);
+ALTER TABLE product_attribute_groups DROP INDEX product_id, ADD INDEX idx_product_attribute_groups_product_id (product_id);
+
+-- product_collections (camelCase → snake_case sau 40.1: collectionId → collection_id)
+ALTER TABLE product_collections DROP INDEX collectionId, ADD INDEX idx_product_collections_collection_id (collection_id);
+
+-- product_reviews (2 index)
+ALTER TABLE product_reviews DROP INDEX product_id, ADD INDEX idx_product_reviews_product_id (product_id);
+ALTER TABLE product_reviews DROP INDEX variant_id, ADD INDEX idx_product_reviews_variant_id (variant_id);
+
+-- product_specifications
+ALTER TABLE product_specifications DROP INDEX product_id, ADD INDEX idx_product_specifications_product_id (product_id);
+
+-- product_warranties (2 index)
+ALTER TABLE product_warranties DROP INDEX product_id, ADD INDEX idx_product_warranties_product_id (product_id);
+ALTER TABLE product_warranties DROP INDEX warranty_package_id, ADD INDEX idx_product_warranties_warranty_package_id (warranty_package_id);
+
+-- recently_viewed (2 index)
+ALTER TABLE recently_viewed DROP INDEX product_id, ADD INDEX idx_recently_viewed_product_id (product_id);
+ALTER TABLE recently_viewed DROP INDEX user_id, ADD INDEX idx_recently_viewed_user_id (user_id);
+
+-- reviews (camelCase → snake_case sau 40.1: productId/userId → product_id/user_id)
+ALTER TABLE reviews DROP INDEX productId, ADD INDEX idx_reviews_product_id (product_id);
+ALTER TABLE reviews DROP INDEX userId, ADD INDEX idx_reviews_user_id (user_id);
+
+-- review_feedbacks (camelCase → snake_case)
+ALTER TABLE review_feedbacks DROP INDEX reviewId, ADD INDEX idx_review_feedbacks_review_id (review_id);
+ALTER TABLE review_feedbacks DROP INDEX userId, ADD INDEX idx_review_feedbacks_user_id (user_id);
+
+-- wishlists (camelCase → snake_case)
+ALTER TABLE wishlists DROP INDEX productId, ADD INDEX idx_wishlists_product_id (product_id);
+ALTER TABLE wishlists DROP INDEX userId, ADD INDEX idx_wishlists_user_id (user_id);
+
+-- B. Auto-gen prefix-suffix style → simplify
+
+-- audit_logs (3 index)
+ALTER TABLE audit_logs DROP INDEX audit_logs_admin_id, ADD INDEX idx_audit_logs_admin_id (admin_id);
+ALTER TABLE audit_logs DROP INDEX audit_logs_created_at, ADD INDEX idx_audit_logs_created_at (created_at);
+ALTER TABLE audit_logs DROP INDEX audit_logs_entity_type_entity_id, ADD INDEX idx_audit_logs_entity_type_entity_id (entity_type, entity_id);
+
+-- chat_messages
+ALTER TABLE chat_messages DROP INDEX chat_messages_product_id_foreign_idx, ADD INDEX idx_chat_messages_product_id (product_id);
+
+-- orders
+ALTER TABLE orders DROP INDEX orders_discount_code_id_foreign_idx, ADD INDEX idx_orders_discount_code_id (discount_code_id);
+
+-- C. UNIQUE constraints → uq_*
+
+-- brands (2 unique)
+ALTER TABLE brands DROP INDEX name, ADD UNIQUE KEY uq_brands_name (name);
+ALTER TABLE brands DROP INDEX slug, ADD UNIQUE KEY uq_brands_slug (slug);
+
+-- categories (2 unique)
+ALTER TABLE categories DROP INDEX name, ADD UNIQUE KEY uq_categories_name (name);
+ALTER TABLE categories DROP INDEX slug, ADD UNIQUE KEY uq_categories_slug (slug);
+
+-- collections (1 unique)
+ALTER TABLE collections DROP INDEX slug, ADD UNIQUE KEY uq_collections_slug (slug);
+
+-- discount_codes (1 unique)
+ALTER TABLE discount_codes DROP INDEX code, ADD UNIQUE KEY uq_discount_codes_code (code);
+
+-- images (1 unique)
+ALTER TABLE images DROP INDEX file_name, ADD UNIQUE KEY uq_images_file_name (file_name);
+
+-- product_variants (1 unique — verify duplicate trước: SHOW INDEX FROM product_variants;
+-- Nếu có CẢ `sku` (UNIQUE) VÀ `idx_product_variants_sku` (NON_UNIQUE) → DROP `sku` + ADD `uq_product_variants_sku`, GIỮ idx_product_variants_sku.
+-- Nếu chỉ có `sku` → rename normally:
+ALTER TABLE product_variants DROP INDEX sku, ADD UNIQUE KEY uq_product_variants_sku (sku);
+
+-- users (1 unique)
+ALTER TABLE users DROP INDEX google_id, ADD UNIQUE KEY uq_users_google_id (google_id);
+
+-- D. SKIP — Sequelize internal table:
+-- sequelizemeta.name — KHÔNG đụng, đây là table Sequelize CLI tự quản lý
 ```
 
-⚠️ **CẢNH BÁO:** Phải verify indexes thực tế tồn tại trước khi DROP — dùng `SHOW INDEX FROM <table>` để check tên hiện tại. Tên có thể khác nếu Sequelize auto-generate khác convention.
-
-**Lưu ý:** Toàn bộ migration phải wrap try/catch như `safeCreateIndex` ở trên — vì state DB phụ thuộc vào việc các migration cũ đã chạy hay chưa.
+⚠️ **CẢNH BÁO:**
+- **Toàn bộ migration PHẢI gọi qua `safeRenameIndex()` helper** (đã định nghĩa ở section trên). KHÔNG hardcode raw `ALTER TABLE DROP INDEX` mà không check exists trước.
+- Tổng cộng **~35 ALTER statement**. Nếu chạy thẳng SQL block này có 1 cái fail → migration halt giữa chừng. Helper đảm bảo idempotent.
+- Verify post-migration: `SELECT TABLE_NAME, INDEX_NAME FROM INFORMATION_SCHEMA.STATISTICS WHERE TABLE_SCHEMA = 'techstore' AND INDEX_NAME != 'PRIMARY' AND INDEX_NAME NOT LIKE 'idx_%' AND INDEX_NAME NOT LIKE 'uq_%' AND INDEX_NAME NOT LIKE 'fk_%' AND TABLE_NAME != 'sequelizemeta';` → 0 result.
 
 ---
 
@@ -6698,19 +6886,26 @@ ALTER TABLE warranty_packages MODIFY COLUMN price DECIMAL(15,2) NOT NULL DEFAULT
 
 | Column | Vấn đề | Quyết định |
 |---|---|---|
-| `orders.shipping_zip`, `orders.shipping_country` | NULL nhưng `addresses.zip`, `addresses.country` NOT NULL | **Đổi thành NOT NULL** — shipping address phải đầy đủ |
-| `orders.billing_zip`, `orders.billing_country` | NULL trong khi billing fields khác NOT NULL | **Đổi thành NOT NULL** |
+| `orders.shipping_zip` | NULL — không match `addresses.zip` NOT NULL | **GIỮ NULLABLE** (Vietnam shipping không bắt buộc zip; empty string `''` gây fail validation FE) |
+| `orders.shipping_country` | NULL nhưng country bắt buộc | **Đổi NOT NULL DEFAULT 'Vietnam'** |
+| `orders.billing_zip` | NULL | **GIỮ NULLABLE** (lý do giống shipping_zip) |
+| `orders.billing_country` | NULL | **Đổi NOT NULL DEFAULT 'Vietnam'** |
 | `loyalty_histories.user_id` (NOT NULL) vs `search_histories.user_id` (NULL) | search_histories cho phép anonymous → giữ NULL | OK — different use case, không sửa |
 | `carts.session_id` (NULL) vs `chat_messages.session_id` (NOT NULL) | Different use cases | OK — không sửa |
 
+**⚠️ Lý do GIỮ zip nullable** (sửa từ quyết định cũ "NOT NULL DEFAULT ''"):
+- Vietnam shipping không bắt buộc zip code (đa số order không có).
+- DEFAULT `''` (empty string) sẽ fail validator FE/BE downstream nếu logic check `if (zip) {...}` (empty string is falsy nhưng vẫn pass NOT NULL constraint).
+- Backfill empty từ existing rows có thể overwrite zip thực tế của address khác (cross-row contamination nếu UPDATE phức tạp).
+- Frontend FE đã có `<Form.Item name="zip" rules={[]}>` không required — tương ứng với nullable backend.
+
 **Migration: `2026050507-phase40-null-consistency.js`**
 ```sql
--- Shipping address fields phải đầy đủ khi tạo order
-ALTER TABLE orders MODIFY COLUMN shipping_zip VARCHAR(20) NOT NULL DEFAULT '';
+-- Shipping country bắt buộc (mọi order Vietnam)
 ALTER TABLE orders MODIFY COLUMN shipping_country VARCHAR(100) NOT NULL DEFAULT 'Vietnam';
-ALTER TABLE orders MODIFY COLUMN billing_zip VARCHAR(20) NOT NULL DEFAULT '';
 ALTER TABLE orders MODIFY COLUMN billing_country VARCHAR(100) NOT NULL DEFAULT 'Vietnam';
--- Lưu ý: dùng DEFAULT để tránh fail trên rows cũ chưa có giá trị
+-- Zip code GIỮ NULLABLE — không sửa
+-- ALTER TABLE orders MODIFY COLUMN shipping_zip VARCHAR(20) NULL; -- (giữ nguyên, không cần migration)
 ```
 
 ---
@@ -6784,7 +6979,7 @@ ALTER TABLE products ADD CONSTRAINT chk_products_warranty_months
 -- (skip — complex CHECK with NULL handling, enforce ở app level)
 ```
 
-**Lưu ý:** MySQL 8.0+ enforces CHECK constraints. MySQL 5.7 chấp nhận syntax nhưng KHÔNG enforce. Project dùng XAMPP nên kiểm tra version trước khi rely on CHECK.
+**Lưu ý:** Dự án này chạy **MariaDB 10.4.32** (XAMPP) — đã verify pre-flight. MariaDB 10.2+ enforces CHECK constraints đầy đủ (khác MySQL 5.7 chỉ accept syntax). Phase 40.22 áp dụng được cho MariaDB 10.4. (Reference: tham khảo MySQL 8.0 docs cho syntax tương đương.)
 
 ---
 
@@ -6874,14 +7069,14 @@ ALTER TABLE addresses MODIFY COLUMN state VARCHAR(100) NOT NULL;
 ALTER TABLE addresses MODIFY COLUMN zip VARCHAR(20) NOT NULL;
 ALTER TABLE addresses MODIFY COLUMN country VARCHAR(100) NOT NULL;
 
--- orders shipping/billing — phone, zip, country, city, state
+-- orders shipping/billing — phone, country, city, state (zip GIỮ NULLABLE — xem 40.21)
 ALTER TABLE orders MODIFY COLUMN shipping_phone VARCHAR(20) NULL;
-ALTER TABLE orders MODIFY COLUMN shipping_zip VARCHAR(20) NOT NULL DEFAULT '';
+-- shipping_zip giữ NULLABLE (Vietnam không bắt buộc zip; xem 40.21)
 ALTER TABLE orders MODIFY COLUMN shipping_country VARCHAR(100) NOT NULL DEFAULT 'Vietnam';
 ALTER TABLE orders MODIFY COLUMN shipping_city VARCHAR(100) NOT NULL;
 ALTER TABLE orders MODIFY COLUMN shipping_state VARCHAR(100) NOT NULL;
 ALTER TABLE orders MODIFY COLUMN billing_phone VARCHAR(20) NULL;
-ALTER TABLE orders MODIFY COLUMN billing_zip VARCHAR(20) NOT NULL DEFAULT '';
+-- billing_zip giữ NULLABLE
 ALTER TABLE orders MODIFY COLUMN billing_country VARCHAR(100) NOT NULL DEFAULT 'Vietnam';
 ALTER TABLE orders MODIFY COLUMN billing_city VARCHAR(100) NOT NULL;
 ALTER TABLE orders MODIFY COLUMN billing_state VARCHAR(100) NOT NULL;
@@ -7126,7 +7321,7 @@ Step 25: Double-check toàn bộ (40.16) + Final compliance check (40.25)
 - [ ] Tất cả ENUM status columns có DEFAULT enum value
 
 #### NULL/NOT NULL Consistency (40.21)
-- [ ] `orders.shipping_zip`, `orders.shipping_country`, `orders.billing_zip`, `orders.billing_country` đã chuyển NOT NULL (match addresses table)
+- [ ] `orders.shipping_country`, `orders.billing_country` đã chuyển NOT NULL DEFAULT 'Vietnam'. `orders.shipping_zip`, `orders.billing_zip` GIỮ NULLABLE (Vietnam không bắt buộc zip).
 - [ ] Address fields giữa `addresses` và `orders.shipping_*`, `orders.billing_*` consistent
 
 #### CHECK Constraints (40.22)
@@ -7137,7 +7332,7 @@ Step 25: Double-check toàn bộ (40.16) + Final compliance check (40.25)
 - [ ] CHECK cho order totals (>= 0): subtotal, tax, total, discount
 - [ ] `chk_users_loyalty_points` (>= 0)
 - [ ] `chk_warranty_packages_duration` (>= 1)
-- [ ] **Note:** Verify MySQL version — MySQL 5.7 không enforce CHECK; cần MySQL 8.0+ để enforce. XAMPP cần kiểm tra version.
+- [x] **Verified:** XAMPP local đang chạy **MariaDB 10.4.32** — MariaDB 10.2+ enforces CHECK constraints đầy đủ. Safe to apply 40.22 trên DB hiện tại.
 
 #### Soft Delete Policy (40.23)
 - [ ] `collections`, `news`, `addresses` đã có column `deleted_at`
@@ -7236,24 +7431,25 @@ Step 25: Double-check toàn bộ (40.16) + Final compliance check (40.25)
 | `ProductVariant.js` | `productVariant.js` | `ProductVariant` |
 | `AuditLog.js` | `auditLog.js` | `AuditLog` |
 
-**Quy trình rename trên Windows (case-insensitive FS chú ý):**
+**⚠️ Quy trình rename trên Windows — BẮT BUỘC bật `core.ignorecase=false` trước:**
 ```bash
-# Trên Windows, git mv qua tên trung gian để tránh case-only rename không nhận diện
-git mv Order.js _order.js && git mv _order.js order.js
-git mv OrderItem.js _orderItem.js && git mv _orderItem.js orderItem.js
-git mv CartItem.js _cartItem.js && git mv _cartItem.js cartItem.js
-git mv ProductVariant.js _productVariant.js && git mv _productVariant.js productVariant.js
-git mv AuditLog.js _auditLog.js && git mv _auditLog.js auditLog.js
+# Bước 1: Disable case-insensitive Git locally — nếu giữ default true, lệnh git mv thứ hai sẽ no-op vì Git tưởng cùng file
+git config core.ignorecase false
+
+# Bước 2: git mv qua tên trung gian (Windows FS case-insensitive nhưng Git đã bật case-sensitive sẽ track 2 commits)
+git mv Order.js _order.js && git commit -m "Rename Phase 41.1 — Order.js → tên trung gian (bước 1/2)"
+git mv _order.js order.js && git commit -m "Rename Phase 41.1 — _order.js → order.js (bước 2/2 hoàn tất)"
+# Lặp tương tự cho 4 file còn lại (OrderItem, CartItem, ProductVariant, AuditLog)
 ```
+
+**⚠️ Verify rename thành công:** `git ls-files | grep -E "^backend/src/models/(Order|OrderItem|CartItem|ProductVariant|AuditLog)\.js$"` → 0 result. Nếu còn file PascalCase trong git index → rename không thành công, đọc lại bước 1.
 
 **Update `backend/src/models/index.js`:**
 - Line 40: `require('./AuditLog')` → `require('./auditLog')` (chỉ chỗ này còn PascalCase, các chỗ khác đã lowercase sẵn — sẽ tự khớp file mới)
 
 **Verify:** `grep -rn "require.*['\"]\\./[A-Z]" backend/src/models/` → 0 results
 
-**Conflict với Phase 40:** KHÔNG conflict — Phase 40.2.x reference các file model bằng đường dẫn (vd `backend/src/models/Order.js`). Khi Phase 41 chạy trước Phase 40, document trong Phase 40 cần update path. Khi Phase 40 chạy trước Phase 41, file path trong Phase 40 vẫn đúng (file chưa rename), Phase 41 sẽ fix sau.
-
-**Recommendation:** Chạy Phase 41 TRƯỚC Phase 40 — vì Phase 40 sẽ touch toàn bộ models, tốt hơn rename file rồi mới sửa nội dung.
+**Thứ tự với Phase 40 — quyết định cuối:** **Chạy Phase 40 TRƯỚC Phase 41** (Phase 40 đụng schema DB, Phase 41 chỉ đụng tên file JS — Phase 40 hoàn tất + verify trước khi đổi tên file để tránh confusion khi debug migration). Phase 42 then đụng cả 2 layer. → Thứ tự bắt buộc: **Phase 39 ✅ → Phase 40 → Phase 41 → Phase 42**.
 
 ---
 
@@ -7399,13 +7595,40 @@ grep -rn "from.*components/shared" frontend/src/ > /tmp/shared_imports.txt
 - `npx tsc --noEmit` → 0 type errors
 - Manual smoke test: mở 5 page chính (Home, Shop, ProductDetail, Cart, Checkout) — render không lỗi
 
+**⚠️ Batch rollback strategy** (vì touch ~37 file):
+- Chia 41.4 thành **6 batch nhỏ**, mỗi batch 5-7 file move + 1 commit:
+  1. Batch 1: `common/` UI primitives (Button, Card, Input, Modal, Pagination) → `components/ui/`. Build verify. Commit.
+  2. Batch 2: `common/` còn lại (Notifications, ImageUpload, LoadingSpinner, ...) → `components/ui/`. Build verify. Commit.
+  3. Batch 3: `shared/CartItem, FilterPanel, OrderDetails` → `components/domain/{cart,product,order}/`. Build verify. Commit.
+  4. Batch 4: `shared/Product*` (ProductCard, ProductListCard, ProductReviews) → `components/domain/product/`. Build verify. Commit.
+  5. Batch 5: `shared/Review*` → `components/domain/review/`. Build verify. Commit.
+  6. Batch 6: existing `components/{auth,admin,...}/` → `components/domain/{...}/`. Build verify. Commit.
+- **Nếu batch nào fail build:** revert batch đó (`git revert HEAD` hoặc `git reset --hard HEAD~1`), debug, redo. KHÔNG cộng dồn lỗi.
+- Find-and-replace import path: dùng IDE find-replace với regex, KHÔNG sed thủ công (Windows path quirks).
+
 ---
 
 ### 41.5 Tạo NAMING_CONVENTION.md Reference Doc
 
-**File:** `docs/NAMING_CONVENTION.md` (tạo folder `docs/` ở root nếu chưa có)
+**Files:** `docs/NAMING_CONVENTION.md` (index) + 3 file con (split để reviewer dễ navigate, mỗi file <150 lines):
+- `docs/naming/BASIC.md` — file/folder, JS/TS code, DB, API URL, git, env (~80 lines)
+- `docs/naming/MODERN_TS_2025.md` — Type vs Interface, no I prefix, generic, type-only imports, export style, path alias, import order, component suffix, hook return shape, Redux Toolkit, DTO suffix, service/repo verbs (~120 lines)
+- `docs/naming/DOMAIN_GLOSSARY.md` — Number unit suffix, date naming, **Domain Glossary 21 concept** (term DUY NHẤT vs cấm), i18n key namespace, folder casing, CSS, test naming (~100 lines)
 
-**Nội dung (template):**
+`docs/NAMING_CONVENTION.md` chính chỉ là **index** ~30 lines:
+```markdown
+# Naming Convention — E-Commerce Codebase
+
+Naming convention chia 3 file để dễ reference:
+
+1. **[BASIC.md](naming/BASIC.md)** — file/folder, JS/TS code, DB, API URL, git, env vars.
+2. **[MODERN_TS_2025.md](naming/MODERN_TS_2025.md)** — Modern TypeScript 2025 conventions: type/interface, generic, exports, imports, hook patterns, Redux Toolkit, DTO, service/repository method verbs.
+3. **[DOMAIN_GLOSSARY.md](naming/DOMAIN_GLOSSARY.md)** — E-commerce domain terms (Ubiquitous Language) — 21 concept với term duy nhất vs cấm dùng; number unit suffix; date naming; i18n; CSS; test naming.
+
+Mọi code mới PHẢI tuân 3 file trên. Phase 43 audit + Phase 42 Step 19 tooling enforce.
+```
+
+**Nội dung 3 file template (chia từ section đã viết bên dưới):**
 
 ```markdown
 # Naming Convention — E-Commerce Codebase
@@ -7499,6 +7722,245 @@ frontend/src/
 
 ## Env vars
 - `UPPER_SNAKE_CASE` (`DATABASE_URL`, `JWT_SECRET`)
+
+---
+
+## Modern TypeScript / JavaScript Conventions (2025-2026)
+
+> Áp dụng cho mọi code TS/JS mới. Code cũ migrate dần khi có cơ hội (không bắt buộc rewrite hàng loạt).
+
+### Type vs Interface
+- `interface` cho object shape có khả năng extend (props, model, DTO):
+  ```ts
+  interface UserProps { id: number; name: string; }
+  interface AdminUserProps extends UserProps { role: 'admin'; }
+  ```
+- `type` cho union, intersection, utility, primitive alias:
+  ```ts
+  type OrderStatus = 'pending' | 'paid' | 'shipped' | 'delivered';
+  type PartialUser = Partial<User>;
+  ```
+- KHÔNG dùng `I` prefix: `User` không phải `IUser` (Hungarian notation đã obsolete trong TS modern).
+
+### Generic types
+- Single letter cho generic đơn giản: `<T>`, `<K, V>`.
+- Descriptive prefix `T` cho generic phức tạp/cụ thể: `<TUser>`, `<TPayload>`, `<TQueryParams>`.
+- KHÔNG dùng tên type thường (như `User`) làm generic param → conflict với type thật.
+
+### Type-only imports (TS 4.5+)
+Dùng `import type` cho symbol chỉ là type — tree-shake tốt hơn, build nhanh hơn:
+```ts
+import type { Product } from '@/types';
+import type { ReactNode } from 'react';
+import { fetchProducts } from '@/services/productApi';
+```
+
+### Export style
+- **Backend (CommonJS):** chỉ named export — `module.exports = { funcA, funcB }`. KHÔNG `module.exports = funcA` (default).
+- **Frontend (ESM):**
+  - **Component**: `export default` cho lazy-loadable (page, modal lớn) — `export default function HomePage() {}`.
+  - **Hook, util, service, type**: named export — `export function useAuth() {}`, `export const formatPrice = ...`.
+  - **Re-export trong `index.ts` barrel**: dùng named — `export { default as Button } from './Button'`.
+- **Tránh mixed default + named** trong cùng file (gây confuse).
+
+### Path alias
+- Frontend: `@/*` map tới `frontend/src/*` (đã config trong `tsconfig.json` + `vite.config.ts`).
+- Backend: relative path `../` (Node.js + CommonJS không alias mặc định, không cần TypeScript path mapping).
+- Quy tắc: trong cùng folder/feature dùng relative `./`; cross-feature/cross-layer dùng `@/`.
+
+### Import grouping order (FE)
+```ts
+// 1. React + framework
+import { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
+
+// 2. External libraries (alphabetical trong nhóm)
+import { Button } from 'antd';
+import dayjs from 'dayjs';
+
+// 3. Internal absolute (@/)
+import { useAuth } from '@/features/auth';
+import { ProductCard } from '@/components/domain/product';
+
+// 4. Internal relative
+import { useProductForm } from '../hooks/useProductForm';
+import type { ProductFormProps } from './types';
+
+// 5. Styles (last)
+import './ProductForm.module.css';
+```
+Có blank line giữa mỗi nhóm. Optional: ESLint rule `import/order` enforce.
+
+### Component file suffix conventions
+| Suffix | Khi nào dùng | Ví dụ |
+|---|---|---|
+| `*Page.tsx` | Top-level route component | `CheckoutPage.tsx`, `HomePage.tsx` |
+| `*Layout.tsx` | Layout wrapper | `MainLayout.tsx`, `AdminLayout.tsx` |
+| `*Modal.tsx` | Modal/Dialog | `ConfirmModal.tsx`, `ReviewModal.tsx` |
+| `*Form.tsx` | Form container | `ProductForm.tsx`, `LoginForm.tsx` |
+| `*Provider.tsx` | Context provider | `AuthProvider.tsx`, `ThemeProvider.tsx` |
+| `*Section.tsx` | Page section | `HeroSection.tsx`, `HomeNewsSection.tsx` |
+| `*Card.tsx` | Card-style display | `ProductCard.tsx`, `OrderCard.tsx` |
+| `*List.tsx` | List rendering | `ReviewList.tsx`, `OrderList.tsx` |
+| `*Item.tsx` | Single item trong list | `CartItem.tsx`, `ReviewItem.tsx` |
+| `*Button.tsx` | Specialized button | `LoadingButton.tsx`, `IconButton.tsx` |
+| `with*.tsx` | Higher-order component | `withAuth.tsx`, `withErrorBoundary.tsx` |
+
+### Boolean props (React + HTML)
+- **Custom prop**: `is*/has*/can*` prefix — `<Modal isOpen={true} />`, `<Form hasError={false} />`.
+- **HTML attribute reflect**: giữ nguyên tên HTML — `<button disabled>` không `<button isDisabled>`; `<input readOnly>` không `<input isReadOnly>`. (React JSX dùng camelCase cho HTML attr: `readOnly`, `tabIndex`, `onClick`.)
+
+### Custom hook return shape
+- **2 element** (state + setter): tuple — `const [value, setValue] = useToggle()`.
+- **3+ element**: object — `const { data, isLoading, error } = useGetProductQuery()`.
+- Tuân theo pattern `useState` (tuple) và RTK Query (object) để consistent.
+
+### Redux Toolkit
+| Item | Convention | Ví dụ |
+|---|---|---|
+| Slice name | feature plural hoặc concept singular | `cart`, `auth`, `products`, `wishlist` |
+| Action verb | imperative present | `setX`, `clearX`, `addX`, `removeX`, `toggleX`, `fetchX` |
+| Selector | prefix `select` + camelCase | `selectCurrentUser`, `selectCartTotal`, `selectIsAuthenticated` |
+| Thunk (createAsyncThunk) | verb + entity, KHÔNG suffix `Thunk` | `fetchProductById`, `submitOrder` |
+| RTK Query endpoint | verb + entity | `getProducts`, `createOrder`, `updateUser` |
+| RTK Query hook (auto) | `use{Endpoint}{Query|Mutation}` | `useGetProductsQuery`, `useCreateOrderMutation` |
+
+### DTO / Payload / Response naming
+- Request body: `{Action}{Entity}Dto` — `CreateUserDto`, `UpdateProductDto`, `LoginRequestDto`.
+- Response: `{Entity}ResponseDto` hoặc `{Entity}Dto` (nếu chỉ có 1 shape) — `OrderResponseDto`, `UserDto`.
+- Query params: `{Action}{Entity}QueryDto` — `ListProductsQueryDto`, `SearchProductsQueryDto`.
+- File location: `dtos/{entity}Dto.js` (BE), `types/{entity}.types.ts` (FE shared types match BE DTO).
+
+### Service method verbs (Backend)
+| Verb | Semantic | Return |
+|---|---|---|
+| `getX(id)` | Lấy 1 record, MUST exist | Entity hoặc throw `AppError(404)` |
+| `findX(id)` | Tìm 1 record, có thể null | Entity hoặc `null` |
+| `listX(filters, pagination)` | Liệt kê collection có filter | `{ items, total, page, limit }` |
+| `searchX(query)` | Full-text / fuzzy search | `{ items, total }` |
+| `createX(payload)` | Tạo mới | Entity vừa tạo |
+| `updateX(id, patch)` | Sửa partial | Entity sau update |
+| `replaceX(id, full)` | Sửa toàn bộ (PUT) | Entity sau replace |
+| `deleteX(id)` | Xóa (soft hoặc hard tùy entity) | `void` hoặc `{ deletedId }` |
+| `processX(payload)` | Action có side-effect (payment, email, webhook) | Result object |
+| `validateX(payload)` | Validate, throw nếu fail | `void` (throw) hoặc `boolean` |
+
+### Repository method verbs (Backend)
+- `findOneById(id, options)` — by primary key.
+- `findOneBy{Field}(value, options)` — by other unique field (vd `findOneByEmail`).
+- `findManyBy{Field}(value, options)` — by non-unique field.
+- `findAll(filter, pagination)` — collection.
+- `upsert(payload)` — insert hoặc update (UNIQUE conflict).
+- `bulkInsert(rows)` — multi insert.
+- `softDelete(id)`, `hardDelete(id)`, `restore(id)` — delete variants.
+- KHÔNG chứa business logic — chỉ wrap ORM call có cache/options.
+
+---
+
+## Domain-Specific Conventions (E-Commerce)
+
+### Number unit suffix
+Tránh ambiguous, e-commerce có nhiều unit:
+- **Tiền:** trong dự án này dùng `DECIMAL(15,2)` cho VND và GIỮ NGUYÊN tên `base_price`, `unit_price`, `total_amount`, `shipping_cost`, etc. (đã chuẩn ở Phase 40). KHÔNG đổi thêm suffix `Vnd` vì project chỉ có 1 currency — thêm suffix sẽ rename ~30 column DB và ~50 file FE/BE, ROI thấp. Convention `priceVnd`/`priceInCents` chỉ áp dụng nếu sau này có multi-currency.
+- **Thời gian:** `timeoutMs`, `delayMs`, `ttlSeconds`, `expiresInDays`, `cacheTtlMin`.
+- **Khối lượng:** `weightKg`, `weightG`.
+- **Kích thước:** `widthCm`, `heightCm`, `lengthCm`, `diagonalInch`.
+- **Phần trăm:** `discountPercent` (0-100), `taxPercent` — tránh `discount` mơ hồ.
+
+### Date field naming
+- **Timestamp** (ISO 8601 datetime): suffix `At` — `createdAt`, `updatedAt`, `deletedAt`.
+- **Date-only** (không có time): suffix `Date` — `birthDate`, `expirationDate`, `releaseDate`.
+- **Action timestamp**: `cancelledAt`, `paidAt`, `shippedAt`, `deliveredAt`, `refundedAt`, `verifiedAt`.
+- KHÔNG dùng: `createDate`, `dateCreated`, `created_date` (dù DB là snake_case `created_at`, JS-level luôn `createdAt`).
+
+### Domain Glossary (Ubiquitous Language)
+> **Quan trọng nhất với Modular Monolith.** 1 thuật ngữ duy nhất cho mỗi concept — KHÔNG mix.
+
+| Concept | Term DUY NHẤT dùng | KHÔNG dùng |
+|---|---|---|
+| Người mua hàng | `user` | `customer`, `buyer`, `client`, `account` |
+| Sản phẩm chính | `product` | `item`, `goods`, `merchandise` |
+| Biến thể sản phẩm | `productVariant` (DB: `product_variants`) | `variant`, `sku`, `productItem` |
+| Mã giảm giá | `discountCode` | `coupon`, `promoCode`, `voucher` |
+| Đơn hàng | `order` | `purchase`, `transaction` (transaction = payment record) |
+| Mục trong đơn | `orderItem` | `lineItem`, `purchaseItem` |
+| Mục trong giỏ | `cartItem` | `basketItem` |
+| Đánh giá sản phẩm | `review` | `rating`, `feedback` |
+| Phản hồi liên hệ | `feedback` (form contact) | KHÔNG dùng cho review |
+| Bảo hành | `warrantyPackage` | `warranty`, `guaranteePlan` |
+| Tích điểm | `loyaltyPoints` | `rewardPoints`, `cashback` |
+| Lịch sử điểm | `loyaltyHistory` | `pointsLog`, `rewardLog` |
+| Thông báo (system) | `notification` | `alert`, `message` (message = chat) |
+| Tin nhắn chat | `chatMessage` | `notification`, `dm` |
+| Banner trang chủ | `banner` | `slide`, `hero` (hero là section name) |
+| Tin tức / blog | `news` | `post`, `article`, `blog` |
+| Bộ sưu tập | `collection` | `series`, `bundle`, `pack` |
+| Thuộc tính sản phẩm | `productAttribute` (color, size...) | `option`, `feature`, `spec` |
+| Nhóm thuộc tính | `attributeGroup` | `attributeCategory`, `attributeType` |
+| Vận chuyển | `shipping` | `delivery` (giữ nhất quán với DB `shipping_*`) |
+| Thanh toán | `payment` | `checkout` (checkout = process), `transaction` |
+
+**Quy tắc khi thêm feature mới:** bắt buộc check glossary trước; bổ sung term mới vào table này nếu thật sự là concept mới (không trùng existing).
+
+### Translation key namespace (i18n)
+- **Pattern:** `{feature}.{section}.{key}` — nested object, không flat:
+  ```json
+  // ✅ Đúng
+  {
+    "checkout": {
+      "summary": { "title": "Tóm tắt đơn hàng", "subtotal": "Tạm tính" },
+      "address": { "title": "Địa chỉ giao hàng" }
+    }
+  }
+  // ❌ Sai (flat)
+  { "checkoutSummaryTitle": "..." }
+  ```
+- **Key casing:** **camelCase** trong JSON — `addToCart`, `subtotal`, không `add_to_cart`.
+- **Value:** tiếng tự nhiên có dấu (vi.json) hoặc plain English (en.json).
+- **Tên file:** `{lang}.json` — `vi.json`, `en.json`.
+- **Common keys** dùng chung nhiều feature: namespace `common.*` — `common.save`, `common.cancel`, `common.confirm`.
+
+### Folder casing
+- **Project root folders:** lowercase — `backend/`, `frontend/`, `docs/`, `node_modules/`.
+- **Source folders** (within `src/`):
+  - BE: lowercase — `controllers/`, `services/`, `repositories/`, `modules/`.
+  - FE: lowercase — `components/`, `features/`, `pages/`, `hooks/`.
+- **Feature/domain folders**:
+  - `features/{plural}/` — match REST resource (`features/products/`, `features/orders/`).
+  - `components/domain/{singular}/` — match noun (`components/domain/product/`, `components/domain/order/`).
+- **Component-as-folder** (component có sub-files: index, styles, test): PascalCase folder match component name — `Button/{index.tsx, Button.module.css, Button.test.tsx}`. Mặc định project hiện tại: 1 file/component, không cần folder.
+- **KHÔNG mix kebab + camelCase + Pascal** trong cùng level.
+
+### CSS / Styling
+- **Default: Tailwind utility-first** — class trực tiếp trong JSX.
+- **Custom CSS:** chỉ khi Tailwind không express được (animation phức tạp, third-party override) — dùng CSS Modules: `Component.module.css` co-located với component.
+- **Inline style:** chỉ cho dynamic value runtime (vd `style={{ width: progress + '%' }}`) — KHÔNG cho static value.
+- **Theme:** dùng `tailwind.config.js` `extend` cho color/spacing/font/breakpoint — KHÔNG hardcode hex trong className.
+- **Class naming custom CSS:** kebab-case (CSS standard) — `.product-card`, `.checkout-summary`. KHÔNG dùng `.productCard` (BEM hoặc kebab, nhất quán toàn project).
+- **Ant Design:** override qua `theme` token trong ConfigProvider thay vì CSS hack.
+
+### Test naming pattern
+- **File:** `{Subject}.test.{ts|tsx|js}` co-located với source file. Vd `Button.test.tsx` cùng folder với `Button.tsx`.
+- **Unit-only (BE):** `{Subject}.unit.test.js`.
+- **Integration (BE):** `{flow}.integration.test.js` (vd `checkoutFlow.integration.test.js`).
+- **E2E (nếu có):** `{flow}.e2e.test.js`.
+- **Mocks folder:** `__mocks__/` cùng cấp với module được mock.
+- **Fixtures:** `__fixtures__/` cho test data shared.
+- **Snapshot:** `__snapshots__/` (Jest auto-generate).
+- **describe/it pattern:**
+  ```ts
+  describe('ProductCard', () => {
+    describe('when product is in stock', () => {
+      it('should display the price', () => { ... });
+      it('should enable the add-to-cart button', () => { ... });
+    });
+    describe('when product is out of stock', () => {
+      it('should display "Out of stock" badge', () => { ... });
+      it('should disable the add-to-cart button', () => { ... });
+    });
+  });
+  ```
+- **KHÔNG** dùng `"test X"` hay `"X works"` — phải mô tả behavior cụ thể với `"should ..."`.
 ```
 
 ---
@@ -7603,8 +8065,11 @@ Step 9: Merge branch vào main, push GitHub
 
 #### Documentation (41.5)
 - [ ] File `docs/NAMING_CONVENTION.md` exists
-- [ ] Doc cover đầy đủ: backend file/JS/DB/API, frontend file/folder/TS, git, env vars
+- [ ] Doc cover đầy đủ Cơ bản: backend file/JS/DB/API, frontend file/folder/TS, git, env vars
+- [ ] Doc cover đầy đủ Modern TS/JS Conventions 2025-2026: type vs interface choice, no `I` prefix, generic naming, type-only imports, export style (BE CommonJS named-only / FE default vs named), path alias `@/`, import grouping order, component file suffix (`*Page/Layout/Modal/Form/Provider/Section/Card/List/Item/Button/with*`), boolean props (custom is/has/can vs HTML attr reflect), custom hook return shape (tuple vs object), Redux Toolkit (slice/action/selector/thunk + RTK Query endpoint/hook), DTO suffix pattern, service method verbs (get/find/list/search/create/update/replace/delete/process/validate), repository method verbs (findOneById/findManyBy/upsert/bulkInsert/softDelete)
+- [ ] Doc cover đầy đủ Domain-Specific Conventions: number unit suffix (priceVnd, timeoutMs, weightKg, discountPercent), date field naming (createdAt/updatedAt/deletedAt + actionAt + xxxDate), Domain Glossary / Ubiquitous Language (≥21 term với term DUY NHẤT vs cấm dùng), translation key namespace (feature.section.key nested + camelCase), folder casing (lowercase src + plural feature + singular domain), CSS/Styling (Tailwind-first + CSS Modules fallback + theme extend), test naming pattern (file co-located + describe/it should + __mocks__/__fixtures__)
 - [ ] Doc reference Phase 40 (DB schema) và Phase 41 (code structure)
+- [ ] Doc có note "Áp dụng cho code mới; code cũ migrate dần khi có cơ hội" — tránh hiểu lầm là phải rewrite hàng loạt
 
 #### Cross-cutting (41.6)
 - [ ] Backend `npm test` pass
@@ -7612,4 +8077,1743 @@ Step 9: Merge branch vào main, push GitHub
 - [ ] Frontend `npx tsc --noEmit` pass
 - [ ] Manual smoke test pass A1→A25 (admin pages), B1→B6 (user pages), C1→C4 (chat/payment/upload)
 - [ ] Tất cả commit tuân Rule 4.1: prefix hợp lệ + ` — ` (em dash) + tiếng Việt + KHÔNG Co-Authored-By Claude
-- [ ] Plan.md các path reference `Order.js`, `OrderItem.js`, `CartItem.js`, `ProductVariant.js`, `AuditLog.js` đã được update (nếu Phase 41 chạy trước Phase 40)
+
+---
+
+## PHASE 42 — Modular Monolith + 3-Layer + Repository (DDD-lite cho module phức tạp)
+
+> **Mục tiêu chung:** Refactor codebase đạt **Modular Monolith + 3-layer Architecture (Controller → Service → Repository) + Repository Pattern**. Áp dụng **DDD-lite chỉ cho 5 module phức tạp** (orders, payment, ai, inventory, chat) — phần còn lại (10 module) giữ 3-layer thuần. Phase 42 + 40 + 41 = **architectural baseline** cho project khóa luận: kiến trúc sạch, dễ maintain, đủ chuẩn production, KHÔNG enterprise over-engineering.
+>
+> **Tại sao KHÔNG full DDD?** Đây là project khóa luận tốt nghiệp — không phải hệ thống enterprise lớn. Full DDD (Entity/VO/AggregateRoot base class cho mọi module + UseCase 1-file-1-class + Mapper class chuyên dụng + Application/Domain/Infrastructure layer split mọi nơi) sẽ:
+> - Tăng số file lên 3-4x mà giá trị nghiệp vụ không đổi (CRUD đơn giản KHÔNG cần aggregate).
+> - Làm reviewer khóa luận khó đánh giá — code rối, navigate khó.
+> - Không đủ thời gian thực thi nghiêm túc trong scope khóa luận.
+>
+> **Quyết định nguyên tắc (scope thực tế):**
+> - **Modular Monolith — FULL:** **16 module** độc lập (auth, users, catalog, cart, orders, payment, reviews, wishlist, shipping, inventory, loyalty, notifications, content, chat, ai, upload). KHÔNG còn `controllers/`, `services/`, `models/`, `routes/` chung ở `backend/src/`.
+> - **3-Layer Architecture — FULL:** Mọi module có Controller (HTTP) → Service (business logic) → Repository (data access).
+> - **Repository Pattern — FULL:** Mọi module có repository interface + impl Sequelize. Service gọi qua repository, KHÔNG `Model.findAll()` trực tiếp.
+> - **DTO — Light:** DTO là plain factory function `toXDto(model)` trong file `dtos/{X}Dto.js`. KHÔNG tạo Mapper class chuyên dụng.
+> - **DDD-lite SCOPED — chỉ 5 module phức tạp:**
+>   - **orders** — `domain/aggregates/OrderAggregate` (rich method: cancel, ship, deliver, markAsPaid) + Domain Event (OrderCreated/Cancelled/Paid/Shipped/Delivered).
+>   - **payment** — `domain/policies/PaymentPolicy` (refund eligibility, retry rule) + multiple `infrastructure/gateways/` (port-adapter cho VnPay/MoMo/Stripe).
+>   - **ai** — `domain/RagPipeline` orchestrator (intent → search → retrieve → LLM) + `IConversationStore`/`IVectorStore`/`ILlmGateway` interface (port-adapter).
+>   - **inventory** — `domain/aggregates/InventoryAggregate` (concurrent stock deduction, restore) + Domain Event subscriber (OrderCreated/Cancelled).
+>   - **chat** — `domain/ChatSession` aggregate (message threading, presence) + Socket abstraction adapter.
+> - **10 module simple** (auth, users, catalog, cart, reviews, wishlist, loyalty, notifications, content, shipping, upload): CHỈ Controller + Service + Repository + Model + Route + Validator + DTO factory + module.js. KHÔNG có `domain/` folder, KHÔNG Aggregate, KHÔNG UseCase class file riêng.
+> - **Domain Event:** in-process `eventBus` (light pub-sub) cho cross-module communication. KHÔNG full Saga, KHÔNG message queue.
+> - **Catalog:** xử lý 3-layer thuần. Nếu sau implement thấy Product CRUD admin có ≥3 bước (variants + images + attributes) cần consistency → có thể PROMOTE lên DDD-lite (thêm `domain/`). Default: 3-layer.
+>
+> **Phase 42 + 40 + 41 = "architectural baseline":** mọi feature mới sau 3 phase này phải follow Modular Monolith + 3-layer + Repository. Module phức tạp mới (≥3 entity quan hệ + business rule nhiều bước) THÊM `domain/` folder với Aggregate/Event/Policy. `docs/ARCHITECTURE.md` + `docs/MODULE_GUIDE.md` + `docs/MODULE_TEMPLATE.md` + `docs/NAMING_CONVENTION.md` = nguồn chuẩn.
+>
+> **Phân loại Rule 32:** **Loại B (Mixed BE+FE)** — cần BE integration test + FE smoke test + manual end-to-end + 35-check Rule 31 sau mỗi step.
+>
+> **Phạm vi định lượng (đã giảm từ full DDD scope):**
+> - 27 controller + 13 service + 41 model + 28 route → **16 module** Modular Monolith self-contained.
+> - 11 simple module: ~8-12 file/module.
+> - 5 complex module: ~12-20 file/module (thêm `domain/`).
+> - ~15 repository interface + impl (giảm từ ~40 trong full DDD vì gom theo aggregate).
+> - ~20-30 DTO factory function (giảm từ ~30-50 vì không có Mapper class).
+> - 0 Entity/VO/AggregateRoot base class chung — chỉ Aggregate cụ thể trong 5 complex module.
+> - Frontend: giữ nguyên 30 file `components/product/` move + **16 feature** barrel + pages → feature.
+> - Tổng ~350 file touched (giảm từ ~520 full DDD), ~30 commit. Ước tính **1.5-2 tuần** thực thi.
+>
+> **Rủi ro chính:**
+> 1. Scope còn lớn (350 file) — risk regression. Mitigation: 1 module 1 commit boundary; test sau mỗi module.
+> 2. DDD-lite vs simple module quyết định sai — risk over-engineer module thực ra simple, hoặc under-engineer module thực ra phức tạp. Mitigation: bắt đầu mọi module 3-layer; chỉ promote lên DDD-lite khi rõ ràng cần (Aggregate boundary thực sự + business rule nhiều bước).
+> 3. Cross-module event handler → risk circular dep nếu quá nhiều subscriber. Mitigation: limit ≤3 handler/event, document trong module README.
+> 4. Repository interface vs impl — nếu chỉ 1 impl Sequelize thì interface có vẻ thừa. Mitigation: giữ interface (giúp test mock + thay impl tương lai), boilerplate ít vì pattern lặp lại.
+>
+> **Quan hệ với phase trước:**
+> - Phase 39 ✅ đã xong (folder/file cleanup).
+> - Phase 40 phải xong trước (DB schema chuẩn) — entity dùng snake_case columns mapping.
+> - Phase 41 phải xong trước (file naming + API URL plural + components ui+domain) — Phase 42 dùng path/naming từ Phase 41.
+> - **Bắt buộc thứ tự: Phase 39 ✅ → Phase 40 → Phase 41 → Phase 42.**
+
+---
+
+### 42.0 Architecture đích (Modular Monolith + 3-Layer + Repository, DDD-lite scoped)
+
+#### 42.0.1 Backend đích
+
+```
+backend/
+├── data/                          # Static data (vectorDb.json, seed_data.sql)
+├── migrations/                    # Sequelize migrations (Phase 40 chuẩn)
+├── jobs/                          # Cron jobs (cleanup, ...)
+├── src/
+│   ├── server.js                  # Bootstrap: load modules, start HTTP + Socket
+│   ├── app.js                     # Express app: global middleware, mount module routers
+│   ├── shared/                    # Cross-module foundation (LIGHT — không có Entity/VO/AggregateRoot base class chung)
+│   │   ├── errors/                # AppError, DomainError, ValidationError, NotFoundError
+│   │   ├── result.js              # Result wrapper (success/failure) — optional, tiện cho error handling
+│   │   ├── eventBus.js            # In-process pub-sub (publish/subscribe) cho cross-module
+│   │   ├── persistence/
+│   │   │   ├── sequelize.js       # Sequelize init
+│   │   │   └── unitOfWork.js      # Transaction helper
+│   │   ├── cache/redisClient.js   # Redis abstraction (đã có Phase 1)
+│   │   ├── http/
+│   │   │   └── middlewares/       # authenticate, validateRequest, errorHandler (move từ middlewares/)
+│   │   ├── socket/index.js        # io setup + JWT auth + namespace mount
+│   │   ├── logger.js              # Winston wrapper
+│   │   ├── mailer.js              # Nodemailer wrapper
+│   │   └── utils/                 # Pure helpers (catchAsync, ...)
+│   └── modules/
+│       ├── auth/                  # Simple (3-layer)
+│       ├── users/                 # Simple
+│       ├── catalog/               # Simple — Product + Category + Brand + Collection
+│       ├── cart/                  # Simple
+│       ├── orders/                # ⭐ DDD-lite (OrderAggregate + Events)
+│       ├── payment/               # ⭐ DDD-lite (PaymentPolicy + Gateway adapters)
+│       ├── reviews/               # Simple
+│       ├── wishlist/              # Simple
+│       ├── shipping/              # Simple
+│       ├── inventory/             # ⭐ DDD-lite (InventoryAggregate + concurrent stock)
+│       ├── loyalty/               # Simple
+│       ├── notifications/         # Simple
+│       ├── content/               # Simple — Banner + News + EmailCampaign
+│       ├── chat/                  # ⭐ DDD-lite (ChatSession + Socket adapter)
+│       ├── ai/                    # ⭐ DDD-lite (RagPipeline + port-adapter LLM/Vector/ConversationStore)
+│       └── upload/                # Simple
+└── package.json
+```
+
+#### Module template — SIMPLE (11 modules: auth, users, catalog, cart, reviews, wishlist, loyalty, notifications, content, shipping, upload)
+
+```
+modules/{module-name}/
+├── controllers/{X}Controller.js              # Parse req → service → format res
+├── services/{X}Service.js                    # Business logic (transaction wrap)
+├── repositories/
+│   ├── I{X}Repository.js                     # Interface (method signatures)
+│   └── Sequelize{X}Repository.js             # Sequelize impl
+├── models/{X}Model.js                        # Sequelize model (move từ src/models/)
+├── routes.js                                 # Express router
+├── validators/{action}Validator.js           # Joi schema
+├── dtos/{X}Dto.js                            # Plain factory: toXDto(model) → { id, ... }
+└── module.js                                 # DI wire: build repo → service → controller → router
+```
+
+**Đặc điểm SIMPLE module:**
+- Service method = use case (vd `userService.createUser`, `cartService.addItem`). KHÔNG tách `application/use-cases/CreateUserUseCase.js` riêng.
+- DTO là factory function `toUserDto(user)`, KHÔNG class Mapper.
+- Repository chỉ wrap Sequelize (find, save, delete). Service chứa business logic.
+- Transaction trong service (`sequelize.transaction(async (t) => {})`) qua `shared/persistence/unitOfWork`.
+
+#### Module template — DDD-LITE (5 modules: orders, payment, ai, inventory, chat)
+
+```
+modules/{module-name}/
+├── controllers/, services/, repositories/, models/, routes.js, validators/, dtos/, module.js   # Same as simple
+└── domain/                                   # ⭐ Thêm domain folder cho complex
+    ├── aggregates/{X}Aggregate.js            # Rich domain method (vd order.cancel(), order.markAsPaid())
+    ├── events/{X}{Action}Event.js            # Domain Event (publish qua eventBus)
+    ├── policies/{X}Policy.js                 # Pure business rule (vd RefundPolicy, StockReservationPolicy)
+    └── (specific cho module phức tạp)
+        ├── ports/I{ExternalService}Gateway.js  # Interface cho external (LLM, Payment Gateway)
+        └── orchestrators/{X}Pipeline.js        # Multi-step coordination (vd RagPipeline)
+```
+
+**Đặc điểm DDD-LITE module:**
+- `domain/aggregates/` — Aggregate root chứa rich method (orders cancel/ship/markAsPaid; inventory deductStock/restoreStock với concurrent control). KHÔNG có Entity/VO base class chung.
+- `domain/events/` — Plain object event (`{ type, payload, occurredAt }`) publish qua `eventBus`.
+- `domain/policies/` — Pure function rules (vd `canRefund(payment, requestAmount)`).
+- `domain/ports/` — Interface cho external service (LLM, payment gateway). Impl ở `infrastructure/gateways/`.
+- Service vẫn là entry point, dùng Aggregate cho rich behavior.
+
+**Khi nào promote từ Simple lên DDD-lite?**
+- Module có ≥3 entity quan hệ với nhau (orders → orderItems → variant stock).
+- Business rule có ≥3 bước hoặc state transition (order: pending → paid → shipped → delivered).
+- Có integration với multiple external service (payment: VnPay + MoMo + Stripe).
+- Có concurrent/race condition cần coordinate (inventory stock deduction).
+
+**Cross-module rule (giữ nguyên cho cả simple + DDD-lite):**
+- Module A gọi module B → qua public service interface (truyền qua DI trong `module.js`), KHÔNG `require` trực tiếp internal của B.
+- Hoặc qua Domain Event (publish từ A, subscribe trong B).
+- Ví dụ: `orderService.createOrder` publish `OrderCreatedEvent` → `inventoryService` (DDD-lite) subscribe + deduct stock.
+
+#### 42.0.2 Frontend đích (Strict Layered Feature-Based)
+
+```
+frontend/src/
+├── App.tsx, main.tsx
+├── shared/                        # Cross-feature foundation
+│   ├── ui/                        # Pure UI primitives (Button, Input, Modal, Card, ...)
+│   ├── components/                # Cross-feature reusable (icons, layout, modals, sections)
+│   ├── hooks/                     # Generic hooks (useDebounce, useScrollToTop, useMediaQuery, ...)
+│   ├── api/                       # rtkApi.ts (RTK base) + axiosClient.ts + tokenManager.ts
+│   ├── utils/                     # Generic helpers ONLY (cn, format, textUtils, errorUtils, ...)
+│   ├── types/                     # Shared types (ApiResponse, Pagination, ErrorResponse)
+│   ├── i18n/                      # Locale loader + namespace registry
+│   ├── routing/                   # Route guard helpers
+│   └── theme/                     # Theme context, design tokens
+├── features/                      # Mỗi feature self-contained
+│   ├── auth/
+│   ├── users/
+│   ├── catalog/                   # Browse + search + detail + admin
+│   ├── cart/
+│   ├── checkout/
+│   ├── orders/
+│   ├── payment/
+│   ├── reviews/
+│   ├── wishlist/
+│   ├── loyalty/
+│   ├── notifications/
+│   ├── content/                   # News + banners + email campaigns
+│   ├── chat/                      # Realtime support
+│   ├── ai/                        # Chatbot widget
+│   ├── admin/                     # Admin dashboard cross-cutting
+│   └── upload/
+├── pages/                         # CHỈ giữ generic page (HomePage, AboutPage, ContactPage, FAQs, NotFound, Unauthorized, Deals)
+├── routes/AppRoutes.tsx           # Centralized routing (composition root)
+└── store/index.ts                 # Combine slices từ features
+```
+
+**Cấu trúc chuẩn 1 feature:**
+```
+features/{feature-name}/
+├── components/                    # Feature-specific components
+├── hooks/                         # Feature-specific hooks
+├── api/{entity}Api.ts             # RTK Query endpoints
+├── store/{entity}Slice.ts         # Redux slice (nếu có local state)
+├── services/{x}Logic.ts           # Domain logic (FE — pure TS, không API call)
+├── types/{entity}.types.ts        # Feature types
+├── pages/{X}Page.tsx              # Feature-owned pages
+├── admin/                         # (nếu feature có admin sub-feature)
+│   ├── components/, hooks/, pages/
+└── index.ts                       # Public API barrel — export named only
+```
+
+**Quyết định FE:**
+- **Pages thuộc về feature** (vd `LoginPage` ở `features/auth/pages/`) thay vì gom hết `pages/`. `pages/` cấp root chỉ giữ generic.
+- **API service trong feature** — `productApi.ts` ở `features/catalog/api/`.
+- **Types feature-specific trong feature** — chỉ types shared (ApiResponse) ở `shared/types/`.
+- **Routing centralized** — `routes/AppRoutes.tsx` import từ feature barrel để không bị cyclic.
+
+#### 42.0.3 Tóm tắt phạm vi
+
+| Layer | Refactor | File ảnh hưởng |
+|---|---|---|
+| BE shared foundation (LIGHT) | errors/, result.js, eventBus.js, persistence/, cache/, http/middlewares/, socket/, logger.js, mailer.js, utils/ | ~12 file mới |
+| BE 10 simple modules | controllers/, services/, repositories/, models/, routes.js, validators/, dtos/, module.js (~8-10 file/module) | ~90 file |
+| BE 5 DDD-lite modules | + domain/{aggregates, events, policies, ports} (~12-18 file/module) | ~75 file |
+| BE delete legacy | controllers/, services/, routes/, models/, validators/, middlewares/ chung | ~120 file delete |
+| FE shared foundation | shared/{ui, hooks, api, utils, types, i18n, routing, theme} | ~30 file move |
+| FE 16 features | self-contained per feature | ~150 file move |
+| FE pages → feature | 30+ page sang feature | ~40 file move |
+| Doc | NAMING + ARCHITECTURE + MODULE_GUIDE + MODULE_TEMPLATE | 4 file |
+
+**Tổng:** ~350 file (giảm từ ~520 full DDD). ~30 commit. **1.5-2 tuần** thực thi.
+
+---
+
+### 42.1 Step 1 — Pre-flight: Foundation + Documentation
+
+**Action:**
+1. Tạo branch `phase-42-modular-monolith-refactor`.
+2. Baseline: `npm test` (BE), `npm run build` + `npx tsc --noEmit` (FE) — log baseline.
+3. Tạo `docs/ARCHITECTURE.md` (5 section): Overview (Modular Monolith diagram), Layer Responsibilities (3-layer), Module Template (simple vs DDD-lite), Data Flow (HTTP + Socket + Event), AI/RAG Pipeline.
+4. Tạo `docs/MODULE_GUIDE.md` (thay thế DDD_GUIDE — phù hợp scope khóa luận):
+   - Module simple vs DDD-lite — checklist khi nào áp dụng cái nào.
+   - 3-layer pattern: Controller → Service → Repository.
+   - Service method = use case (1 method = 1 business operation), wrap transaction.
+   - Repository interface + Sequelize impl pattern.
+   - DTO factory function pattern (`toXDto(model) → plain object`).
+   - DDD-lite (chỉ orders/payment/ai/inventory/chat): Aggregate rich method, Domain Event qua eventBus, Policy pure function.
+   - Anti-patterns: tạo Entity/VO base class chung, UseCase 1-file-1-class cho CRUD đơn giản, Mapper class, Domain layer cho module simple.
+5. Tạo `docs/MODULE_TEMPLATE.md`:
+   - Cấu trúc folder cho simple module (10 modules).
+   - Cấu trúc folder cho DDD-lite module (5 modules).
+   - File `module.js` (DI wire) pattern + ví dụ.
+   - Cross-module call qua public service interface (DI) hoặc Domain Event.
+6. Tạo `backend/src/shared/` (LIGHT scope — không có Entity/VO/AggregateRoot base class chung):
+   - `errors/{AppError, DomainError, ValidationError, NotFoundError}.js`.
+   - `result.js` — Result wrapper (optional, dùng cho service trả `Result.ok(data)` hoặc `Result.fail(error)`).
+   - `eventBus.js` — In-process pub-sub (publish/subscribe + on/emit) cho cross-module Domain Event.
+   - `persistence/{sequelize.js, unitOfWork.js}` — Sequelize init + transaction helper.
+   - `cache/redisClient.js` — Redis abstraction (Phase 1 đã có).
+   - `http/middlewares/` — move từ `backend/src/middlewares/` (authenticate, validateRequest, errorHandler, rateLimit).
+   - `socket/index.js` — io setup + JWT auth + namespace mount.
+   - `logger.js`, `mailer.js`.
+   - `utils/` — catchAsync, AppError (move từ `backend/src/utils/`).
+7. Tạo `frontend/src/shared/`:
+   - Move `services/{api.ts → rtkApi.ts, apiClient.ts → axiosClient.ts, tokenManager.ts}` → `shared/api/`.
+   - Move generic `utils/`, generic `hooks/` → `shared/`.
+   - Move `contexts/ThemeContext` → `shared/theme/`.
+   - Move `types/{common, ui}` → `shared/types/`.
+   - Move `config/i18n.ts`, `locales/` → `shared/i18n/`.
+8. Bổ sung `docs/NAMING_CONVENTION.md` section "Module + Repository + Aggregate Naming":
+   - Repository: `I{X}Repository` interface + `Sequelize{X}Repository` impl (`I` prefix là EXCEPTION với rule "no I prefix" — clean architecture convention).
+   - Service: `{X}Service.js` với method verb pattern (get/find/list/search/create/update/delete/process).
+   - DTO factory: `to{X}Dto(model)` trong `dtos/{X}Dto.js`.
+   - Aggregate (DDD-lite): `{X}Aggregate.js` với rich method (vd `order.cancel()`, `inventory.deduct()`).
+   - Domain Event: `{X}{Action}Event` (vd `OrderCreatedEvent`).
+   - Policy: `{X}Policy.js` với pure function (vd `RefundPolicy.canRefund(payment, amount)`).
+
+**Risk:** Thấp (chỉ tạo foundation + move generic).
+
+**Validation:**
+- [ ] 3 doc tồn tại: `ARCHITECTURE.md`, `MODULE_GUIDE.md`, `MODULE_TEMPLATE.md`.
+- [ ] `backend/src/shared/` exists với cấu trúc đã list (KHÔNG có Entity/VO/AggregateRoot base class — verify `ls shared/` không có folder `domain/`).
+- [ ] `frontend/src/shared/{api, ui, components, hooks, utils, types, i18n, theme}/` exists.
+- [ ] BE test + FE build vẫn pass.
+
+**Commit:** 3 commit (doc, BE shared, FE shared).
+
+---
+
+### 42.2 Step 2 — Module: `auth` (SIMPLE — TEMPLATE Reference)
+
+> Build `modules/auth/` theo template SIMPLE 3-layer. Module này làm **TEMPLATE** cho 9 module simple còn lại (users, cart, reviews, wishlist, loyalty, notifications, content, shipping, upload + catalog).
+
+**Tasks:**
+
+1. **Folder structure** (theo template SIMPLE):
+   ```
+   modules/auth/
+   ├── controllers/AuthController.js
+   ├── services/AuthService.js
+   ├── repositories/{ISessionRepository.js, SequelizeSessionRepository.js}
+   ├── models/SessionModel.js                # move từ src/models/Session.js (nếu có)
+   ├── routes.js
+   ├── validators/{loginValidator, registerValidator, otpValidator, passwordResetValidator}.js
+   ├── dtos/AuthDto.js                       # toLoginResponseDto, toUserDto factory
+   └── module.js                             # DI: build SequelizeSessionRepository → AuthService → AuthController → router
+   ```
+2. **AuthService** chứa 8 method = 8 use case: `login(credentials)`, `register(payload)`, `verifyOtp(payload)`, `forgotPassword(email)`, `resetPassword(payload)`, `logout(token)`, `refreshToken(token)`, `googleLogin(googleToken)`. KHÔNG tách 8 file UseCase riêng.
+3. **AuthController** parse req → `await authService.login(req.body)` → `res.json(toLoginResponseDto(...))`.
+4. **Migrate:** `app.js` thay `app.use('/api/auth', require('./routes/auth'))` bằng `app.use('/api/auth', authModule.router)`.
+5. **Delete legacy:** `controllers/auth.js`, `routes/auth.js`, `validators/auth.js`.
+
+**Risk:** Cao (auth = entry point).
+
+**Validation:**
+- [ ] Module structure khớp `MODULE_TEMPLATE.md` (template SIMPLE — KHÔNG có folder `domain/`).
+- [ ] `grep -rn "Sequelize\|Model\.find\|Model\.create" backend/src/modules/auth/services/` → 0 (service chỉ qua repo).
+- [ ] Service method test pass (mock repo).
+- [ ] Smoke: login, register, OTP, forgot/reset, logout, refresh, Google — tất cả 200 OK.
+- [ ] `grep -rn "controllers/auth\|routes/auth" backend/src/` → 0 (legacy đã xóa).
+
+**Commit:** 3 commit (repository + service, controller + routes, integration + cleanup).
+
+---
+
+### 42.3 Step 3 — Module: `users` (SIMPLE)
+
+**Tasks:**
+- Folder template SIMPLE: controllers/, services/, repositories/, models/, routes.js, validators/, dtos/, module.js.
+- `UserService` ~10 method: createUser, getUserProfile, updateProfile, changePassword, banUser, deleteUser, listUsersAdmin, addAddress, updateAddress, deleteAddress, listAddresses.
+- `IUserRepository` + `IAddressRepository` + Sequelize impl.
+- `UserDto`, `AddressDto` factory function.
+- Auth module reference qua `IUserRepository` (DI).
+
+**Validation:** 
+- [ ] Folder template SIMPLE (không `domain/`).
+- [ ] Profile + address + admin user mgmt OK.
+- [ ] Service không touch Sequelize trực tiếp.
+
+**Commit:** 3 commit.
+
+---
+
+### 42.4 Step 4 — Module: `catalog` (SIMPLE — lớn nhất nhưng vẫn 3-layer)
+
+> **Quyết định:** Catalog xử lý 3-layer thuần. Product CRUD admin có nhiều bước (variant + image + attribute) nhưng đa phần là eager loading, không cần Aggregate rich method. Service `productService.createProduct(payload)` wrap transaction là đủ.
+
+**Tasks:**
+- Folder template SIMPLE.
+- `CatalogService` (hoặc tách `ProductService, CategoryService, BrandService, CollectionService` nếu file >500 lines).
+- ~14 method/use case: listProducts, getProductDetail, searchProducts, createProduct (transaction), updateProduct (transaction), deleteProduct, getRecentlyViewed, addRecentlyViewed, getRelatedProducts, listCategories, getCategoryTree, listBrands, listCollections, importProducts.
+- ~8 Repository: `IProductRepository`, `ICategoryRepository`, `IBrandRepository`, `ICollectionRepository`, `IProductImageRepository`, `IProductAttributeRepository`, `IWarrantyPackageRepository`, `IRecentlyViewedRepository`.
+- DTO factory: `toProductListItemDto, toProductDetailDto, toCategoryDto, toBrandDto, toCollectionDto`.
+- Cross-module event: `productService.createProduct` publish `product.created` event qua `eventBus` → `aiService` subscribe → upsert vector (Step 11).
+
+**Validation:**
+
+**Validation:**
+- [ ] CRUD product/category/brand/collection OK.
+- [ ] Search (text + filter + sort) work.
+- [ ] RecentlyViewed cap 20/user (Phase 36 baseline).
+- [ ] `eventBus.publish('product.created')` → AI subscribe → upsert vector OK.
+- [ ] `grep -rn "controllers/product\|routes/product" backend/src/` → 0 (legacy đã xóa).
+
+**Commit:** 4 commit (repository batch, service, controller + routes, integration).
+
+---
+
+### 42.5 Step 5 — Module: `cart` (SIMPLE)
+
+**Tasks:**
+- Folder template SIMPLE.
+- `CartService` 6 method: getCart, addToCart, updateCartItem, removeCartItem, clearCart, mergeGuestCart.
+- `ICartRepository` + Sequelize impl.
+- Cross-module: addToCart validate stock qua `IProductRepository` (DI inject từ catalog module).
+
+**Validation:** Cart user + guest + merge OK; stock validation; race condition prevention (Phase 35 baseline).
+
+**Commit:** 2 commit.
+
+---
+
+### 42.6 Step 6 — Module: `orders` + `payment` (DDD-LITE — gắn chặt qua Domain Event)
+
+> **2 module DDD-lite — đây là core e-commerce flow phức tạp nhất.**
+
+**Aggregate boundary giữa Order và Payment:**
+- 2 aggregate khác nhau → CHỈ liên kết qua `paymentTransactionId` reference (eventual consistency).
+- KHÔNG transaction cross-aggregate. Dùng Domain Event.
+
+#### 42.6.1 — `orders` (DDD-LITE)
+
+```
+modules/orders/
+├── controllers/, services/, repositories/, models/, routes.js, validators/, dtos/, module.js
+└── domain/
+    ├── aggregates/OrderAggregate.js     # Rich method: cancel(), markAsPaid(), markAsShipped(), markAsDelivered()
+    ├── events/{OrderCreatedEvent, OrderCancelledEvent, OrderShippedEvent, OrderDeliveredEvent, OrderPaidEvent}.js
+    └── policies/OrderCancellationPolicy.js  # canCancel(order) → boolean (rule: trạng thái + thời gian)
+```
+
+- `OrderAggregate.cancel()` validate qua `OrderCancellationPolicy.canCancel`, throw nếu fail. Service gọi `aggregate.cancel()` rồi `repository.save(aggregate)`.
+- Service `OrderService` 7 method: createOrder (transaction + publish OrderCreatedEvent), getOrderById, listUserOrders, cancelOrder (qua aggregate + publish event), trackOrder, updateOrderStatus, generateOrderInvoice.
+- Cross-module event handler (subscribe trong `module.js`):
+  - `'order.created'` → inventoryService.deductStock + paymentService.initiate.
+  - `'order.cancelled'` → inventoryService.restoreStock + loyaltyService.revokePoints.
+  - `'order.paid'` → loyaltyService.addPoints + notificationsService.sendOrderConfirmation.
+
+**⚠️ EventBus implementation pattern — Best-effort eventual consistency:**
+```js
+// shared/eventBus.js — Phase 42 Step 1
+class EventBus {
+  constructor(logger) {
+    this.handlers = new Map();
+    this.logger = logger;
+  }
+  subscribe(eventName, handler, handlerName = handler.name) {
+    if (!this.handlers.has(eventName)) this.handlers.set(eventName, []);
+    this.handlers.get(eventName).push({ handler, handlerName });
+  }
+  async publish(eventName, payload) {
+    const handlers = this.handlers.get(eventName) || [];
+    if (handlers.length === 0) return;
+    // Promise.allSettled: KHÔNG abort các handler khác nếu 1 handler fail.
+    // Single-instance best-effort consistency. KHÔNG retry tự động cho thesis scope.
+    const results = await Promise.allSettled(
+      handlers.map(({ handler }) => handler(payload))
+    );
+    results.forEach((result, idx) => {
+      if (result.status === 'rejected') {
+        this.logger.error(`Event handler failed`, {
+          eventName,
+          handlerName: handlers[idx].handlerName,
+          payload,
+          error: result.reason.message,
+          stack: result.reason.stack,
+        });
+        // KHÔNG throw — best-effort. Operation gốc đã commit (vd Order đã tạo).
+        // Subscriber bị skip cần manual reconcile (vd query Order missing inventory deduction).
+      }
+    });
+  }
+}
+```
+
+**Trade-off documented trong `docs/MODULE_GUIDE.md`:**
+- ✅ Single-instance, in-process, sync-ish — đủ cho thesis demo + single-server production.
+- ✅ KHÔNG abort partial commit nếu 1 subscriber fail (vd inventory deduct fail nhưng payment vẫn initiate) — order vẫn tạo, tài liệu rõ "best-effort eventual consistency".
+- ❌ KHÔNG có retry/outbox/dead-letter queue (đó là enterprise pattern).
+- 📝 Reconciliation: nếu subscriber failure log xuất hiện → admin manual fix qua API admin (vd POST `/api/admin/inventory/reconcile/:orderId`).
+
+#### 42.6.2 — `payment` (DDD-LITE)
+
+```
+modules/payment/
+├── controllers/, services/, repositories/, models/, routes.js, validators/, dtos/, module.js
+├── domain/
+│   ├── policies/{RefundPolicy, RetryPolicy}.js      # Pure rule: canRefund, shouldRetry
+│   └── ports/IPaymentGateway.js                     # Interface cho external gateway
+└── gateways/                                         # impl IPaymentGateway
+    ├── VnPayGateway.js, MomoGateway.js, StripeGateway.js, BankTransferGateway.js
+```
+
+- `PaymentService` 7 method: initiate (chọn gateway theo method), confirm, handleVnPayIPN, handleMomoIPN, handleStripeWebhook, refund (qua RefundPolicy), getPaymentStatus.
+- Webhook idempotency: `handleVnPayIPN` check `paymentRepo.findByTransactionId` trước update — Phase 1 + 4 đã có note, Phase 42 chuẩn hoá pattern.
+
+**Validation:**
+- [ ] Full flow: createOrder → paymentURL → IPN → orderPaid → loyaltyAdded.
+- [ ] CancelOrder qua `OrderAggregate.cancel()` + `OrderCancellationPolicy` → stockRestored + pointsRevoked.
+- [ ] IPN replay idempotent (cùng transactionId 2 lần → process 1 lần).
+- [ ] `domain/aggregates/OrderAggregate.js` exists với rich method.
+- [ ] `domain/policies/{OrderCancellationPolicy, RefundPolicy, RetryPolicy}.js` exists.
+
+**Commit:** 5 commit (orders 3-layer + domain, payment 3-layer + domain + gateways, integration event handlers).
+
+---
+
+### 42.7 Step 7 — Module: `reviews` (SIMPLE)
+
+**Tasks:**
+- Folder template SIMPLE.
+- `ReviewService` 6 method: createReview (verify purchase qua orders), listByProduct, listAllAdmin, markHelpful, deleteReview, approveReview.
+- `IReviewRepository` + Sequelize impl. Rating handled by `Rating` plain object hoặc validator (không cần VO class).
+
+**Validation:** CRUD + helpful count + admin moderation OK.
+
+**Commit:** 2 commit.
+
+---
+
+### 42.8 Step 8 — Module: `shipping` + `inventory` + `loyalty`
+
+#### 42.8.1 — `shipping` (SIMPLE)
+- Folder template SIMPLE.
+- `ShippingService` method: calculateFee (input: items, address, method → output: amount), listMethods, getProvinces, getDistricts, getWards.
+- LocationApiAdapter trong `gateways/` (gọi external hoặc local data file).
+
+#### 42.8.2 — `inventory` (DDD-LITE)
+> **DDD-lite vì:** stock deduction có concurrent issue (2 user mua cùng lúc), cần coordinate.
+
+```
+modules/inventory/
+├── controllers/, services/, repositories/, models/, routes.js, validators/, dtos/, module.js
+└── domain/
+    ├── aggregates/InventoryAggregate.js           # deduct(productId, quantity), restore(productId, quantity)
+    ├── events/{StockDeductedEvent, LowStockEvent}.js
+    └── policies/StockReservationPolicy.js         # canDeduct(currentStock, requested) → boolean
+```
+
+- `InventoryAggregate.deduct(productId, quantity)` dùng `SELECT ... FOR UPDATE` qua repo (Phase 35) + check `StockReservationPolicy`.
+- Service 5 method: deductStock, restoreStock, getLowStock, adjustStock, getInventoryHistory.
+- Event handler subscribe `order.created` (deduct) + `order.cancelled` (restore). Publish `low-stock` event khi <=threshold → notifications subscribe.
+
+#### 42.8.3 — `loyalty` (SIMPLE)
+- Folder template SIMPLE.
+- `LoyaltyService` 4 method: addPoints, redeemPoints, getLoyaltyHistory, getPointsBalance.
+- Event handler subscribe `order.paid` (add) + `order.cancelled` (revoke).
+
+**Validation:** End-to-end order flow event-driven cross-module work; concurrent stock deduction không double-spend.
+
+**Commit:** 3 commit (shipping, inventory + domain, loyalty).
+
+---
+
+### 42.9 Step 9 — Module: `notifications` + `content` (SIMPLE)
+
+#### 42.9.1 — `notifications` (SIMPLE)
+- Folder template SIMPLE.
+- `NotificationService` method: sendEmail, sendInApp, getUserNotifications, markAsRead.
+- Channel adapters trong `gateways/`: `EmailChannel` (Nodemailer wrap), `InAppChannel` (DB write + socket emit).
+- Event handler subscribe: `order.paid` → sendOrderConfirmationEmail; `low-stock` → sendAdminAlert.
+
+#### 42.9.2 — `content` (SIMPLE)
+- Folder template SIMPLE.
+- `ContentService` method: listBanners, getActiveBanners, CRUD news, listCampaigns, sendCampaign.
+
+**Commit:** 2 commit.
+
+---
+
+### 42.10 Step 10 — Module: `chat` (DDD-LITE — Realtime Support)
+
+> **DDD-lite vì:** realtime với Socket.IO + presence + message threading.
+
+```
+modules/chat/
+├── controllers/                  # REST cho chat history
+├── services/ChatService.js
+├── repositories/{IChatMessageRepository, SequelizeChatMessageRepository, IPresenceRepository, RedisOrInMemoryPresenceRepository}.js
+├── models/ChatMessageModel.js
+├── routes.js                     # REST endpoints
+├── validators/, dtos/, module.js
+├── domain/
+│   ├── ChatSession.js            # Aggregate: addMessage(sender, content), getUnreadCount(userId)
+│   └── events/{ChatMessageSentEvent, AdminJoinedEvent}.js
+├── socket/
+│   ├── handlers/{ChatHandler, PresenceHandler}.js
+│   └── socketIoAdapter.js        # Wrap io.on/io.emit
+```
+
+**Tasks:**
+- ChatService 5 method: sendMessage (DB write + emit), getConversation, markAsRead, listAdminConversations, getUnreadCount.
+- Move `backend/src/config/socket.js` (~163 lines) split:
+  - `shared/socket/index.js` (io setup + JWT auth).
+  - `modules/chat/socket/handlers/` (event handlers gọi ChatService).
+- Presence repository: `RedisPresenceRepository` (production-ready) hoặc `InMemoryPresenceRepository` (single-instance default).
+
+**Validation:** 2-tab realtime OK; presence count đúng; typing indicator; admin join.
+
+**Commit:** 3 commit.
+
+---
+
+### 42.11 Step 11 — Module: `ai` (DDD-LITE — Chatbot + RAG)
+
+> **DDD-lite vì:** RAG pipeline đa bước + multiple external service (LLM, Vector, Embedding) + stateful conversation.
+
+```
+modules/ai/
+├── controllers/AiChatbotController.js
+├── services/{AiChatbotService, ProductNameService}.js
+├── repositories/                                    # Persistence (catalog query, conversation persistence)
+├── routes.js, validators/, dtos/, module.js
+├── domain/
+│   ├── ports/{IConversationStore, IVectorStore, ILlmGateway, IEmbeddingGateway}.js  # Interface
+│   ├── orchestrators/RagPipeline.js                 # intent → search → retrieve → LLM → response
+│   └── policies/{IntentClassifier, ConversationLimitPolicy}.js  # Pure rules
+├── persistence/                                     # Impl IConversationStore + IVectorStore
+│   ├── InMemoryConversationStore.js                 # Default (single-instance)
+│   ├── RedisConversationStore.js                    # Optional (multi-instance)
+│   └── JsonFileVectorStore.js                       # backend/data/vectorDb.json
+└── gateways/                                        # Impl ILlmGateway, IEmbeddingGateway
+    ├── GeminiAdapter.js, OpenRouterAdapter.js, RuleBasedFallbackAdapter.js
+    └── OpenRouterEmbeddingAdapter.js, HuggingFaceEmbeddingAdapter.js
+```
+
+**Tasks:**
+- `AiChatbotService.sendMessage` gọi `RagPipeline.run(message, sessionId)`.
+- `RagPipeline` step: classify intent → search vector store → retrieve product context (gọi catalog qua ICatalogReadPort hoặc service) → call LLM → format response.
+- Conversation history limit qua `ConversationLimitPolicy.shouldTruncate(history)` — Phase 42 default 10 turn.
+- Event handler subscribe `product.created` → `IVectorStore.upsert`; `product.deleted` → `IVectorStore.remove`.
+- Move `services/ai/{geminiChatbot, ruleBasedChatbot, vectorStore, embedding, viEmbedding, productNameGenerator}.js` vào module folder tương ứng.
+
+**Validation:** Chat AI work; RAG context đúng; vector search < 500ms; conversation limit 10 turn áp dụng; product create → vector upsert OK.
+
+**Commit:** 4 commit (gateways + persistence, RagPipeline + service, controller + routes, integration event handlers).
+
+---
+
+### 42.12 Step 12 — Module: `upload` (SIMPLE)
+
+**Tasks:**
+- Folder template SIMPLE.
+- `UploadService` 4 method: uploadImage, deleteUploadedFile (ownership check + path traversal block từ Phase 1), getUploadedFile, listUserUploads.
+- Storage adapter trong `gateways/`: `LocalDiskAdapter` (current `backend/uploads/`), `S3Adapter` (interface ready, optional impl).
+- File validation qua plain function trong service (KHÔNG cần FileValidationDomainService class).
+
+**Validation:** Upload OK; delete có ownership check; path traversal blocked.
+
+**Commit:** 2 commit.
+
+---
+
+### 42.13 Step 13 — Backend Cleanup Legacy + Bootstrap Wire
+
+**Tasks:**
+1. Verify mọi module work độc lập (Step 2-12 done).
+2. Xóa hoàn toàn:
+   - `backend/src/controllers/`, `services/`, `routes/`, `models/`, `validators/`, `middlewares/`.
+3. `backend/src/server.js` bootstrap (light DI, không framework):
+   ```js
+   const express = require('express');
+   const helmet = require('helmet');
+   const cors = require('cors');
+   const cookieParser = require('cookie-parser');
+
+   const sequelize = require('./shared/persistence/sequelize');
+   const redis = require('./shared/cache/redisClient');
+   const logger = require('./shared/logger');
+   const mailer = require('./shared/mailer');
+   const eventBus = require('./shared/eventBus');
+   const errorHandler = require('./shared/http/middlewares/errorHandler');
+   const rateLimiter = require('./shared/http/middlewares/rateLimiter');
+
+   const app = express();
+
+   // ⚠️ ORDERING QUAN TRỌNG: Global middleware PHẢI set TRƯỚC khi mount module routers.
+   // Nếu mount module trước, request đến module sẽ bypass cors/helmet/parser → bug.
+   app.use(helmet());                                          // 1. Security headers
+   app.use(cors({ origin: process.env.CORS_ORIGIN, credentials: true }));  // 2. CORS
+   app.use(express.json({ limit: '10mb' }));                   // 3. Body parser JSON
+   app.use(express.urlencoded({ extended: true, limit: '10mb' }));  // 4. Body parser URL-encoded
+   app.use(cookieParser());                                    // 5. Cookie parser
+   app.use(rateLimiter);                                       // 6. Global rate limit
+   // (auth middleware NOT global — applied per-module qua module.js)
+
+   // 7. Health check (TRƯỚC modules, không qua auth)
+   app.get('/api/health', (req, res) => res.json({ 
+     status: 'ok', 
+     uptime: process.uptime(), 
+     version: process.env.APP_VERSION || 'dev' 
+   }));
+
+   // 8. Mount 16 modules
+   const deps = { sequelize, redis, logger, mailer, eventBus };
+   const modules = [
+     require('./modules/auth/module')(deps),
+     require('./modules/users/module')(deps),
+     require('./modules/catalog/module')(deps),
+     require('./modules/cart/module')(deps),
+     require('./modules/orders/module')(deps),
+     require('./modules/payment/module')(deps),
+     require('./modules/reviews/module')(deps),
+     require('./modules/wishlist/module')(deps),
+     require('./modules/shipping/module')(deps),
+     require('./modules/inventory/module')(deps),
+     require('./modules/loyalty/module')(deps),
+     require('./modules/notifications/module')(deps),
+     require('./modules/content/module')(deps),
+     require('./modules/chat/module')(deps),
+     require('./modules/ai/module')(deps),
+     require('./modules/upload/module')(deps),
+   ];
+   modules.forEach(m => app.use(m.basePath, m.router));
+   modules.forEach(m => m.subscribeEvents?.(eventBus));
+
+   // 9. 404 handler (sau modules)
+   app.use((req, res) => res.status(404).json({ error: 'Not Found', path: req.path }));
+
+   // 10. Global error handler (cuối cùng)
+   app.use(errorHandler);
+
+   // 11. Socket.IO setup (qua shared/socket/index.js)
+   const httpServer = require('http').createServer(app);
+   require('./shared/socket')(httpServer, deps);
+
+   const PORT = process.env.PORT || 5000;
+   httpServer.listen(PORT, () => logger.info(`Server listening on ${PORT}`));
+   ```
+
+**Lý do ordering quan trọng:**
+- helmet/cors/parser TRƯỚC modules → mọi request đến module đều có headers + body parsed.
+- rateLimiter TRƯỚC modules → tránh DDoS đến module endpoint.
+- /api/health TRƯỚC modules + KHÔNG qua auth → orchestrator deploy script ping được.
+- 404 handler SAU modules → catch route không match.
+- errorHandler CUỐI CÙNG → catch mọi async error throw từ module.
+- Socket.IO setup SAU app routes (để chia sẻ HTTP server).
+
+**Validation:**
+- [ ] `ls backend/src/` chỉ còn: app.js, server.js, shared/, modules/, __tests__/, constants/ (nếu giữ), jobs/ (nếu giữ).
+- [ ] 16 module bootstrap OK.
+- [ ] `curl http://localhost:5000/api/health` → 200 OK + JSON.
+- [ ] Smoke test 5 endpoint random: response có CORS header (Access-Control-Allow-Origin), helmet header (X-Frame-Options).
+- [ ] Throw test error trong service → error handler trả 500 + log.
+- [ ] Mọi smoke test (Rule 31 35-check) pass.
+
+**Commit:** 2 commit.
+
+---
+
+### 42.14 Step 14 — Frontend: Pages → Feature
+
+**Tasks:**
+- `pages/{Login, Register, ForgotPassword, ResetPassword, VerifyEmail}Page` → `features/auth/pages/`.
+- `pages/{Profile, Addresses}Page` → `features/users/pages/`.
+- `pages/{Shop, ProductDetail}Page` → `features/catalog/pages/`.
+- `pages/admin/{CreateProduct, EditProduct, AdminCategories, AdminBrands, AdminCollections}Page` → `features/catalog/admin/pages/`.
+- `pages/CartPage` → `features/cart/pages/`.
+- `pages/{Orders, OrderDetail, TrackOrder}Page` → `features/orders/pages/`.
+- `pages/{Checkout, PaymentQR}Page` → `features/checkout/pages/`.
+- `pages/WishlistPage` → `features/wishlist/pages/`.
+- `pages/admin/{News, Banners, EmailCampaigns, ...}Page` → `features/content/admin/pages/`.
+- Giữ ở `pages/`: HomePage, ContactPage, NotFoundPage, UnauthorizedPage, AboutPage, FaqsPage, DealsPage.
+- Update `routes/AppRoutes.tsx` import path.
+
+**Validation:** 7 user page + 15 admin page render OK.
+
+**Commit:** 5 commit.
+
+---
+
+### 42.15 Step 15 — Frontend: API Service → Feature + Slice Co-location
+
+**Tasks:**
+- Move ~31 file `services/{X}Api.ts` vào feature respective:
+  - `productApi, categoryApi, brandApi, collectionApi` → `features/catalog/api/`.
+  - `orderApi` → `features/orders/api/`.
+  - `cartApi` → `features/cart/api/`.
+  - `authApi` → `features/auth/api/`. `userApi` → `features/users/api/`.
+  - `reviewApi` → `features/reviews/api/`.
+  - `wishlistApi` → `features/wishlist/api/`. `loyaltyApi` → `features/loyalty/api/`.
+  - `newsApi, bannerApi, emailCampaignApi, contactApi` → `features/content/api/` (lưu ý `emailCampaignApi` đã rename singular ở Phase 41.3, KHÔNG còn `emailCampaignsApi`).
+  - `chatApi` → `features/chat/api/`. `chatbotApi, geminiApi` → `features/ai/api/`.
+  - `momoApi, vnpayApi, stripeApi` → `features/payment/api/`.
+  - `uploadApi, imageApi` → `features/upload/api/`.
+  - `adminDashboardApi, adminOrderApi, adminProductApi, adminUserApi` → `features/admin/api/`.
+  - `searchHistoryApi, warrantyApi, discountCodeApi` → feature respective.
+- Sau đó `frontend/src/services/` xóa, chỉ giữ `shared/api/`.
+- Slice co-location: confirm mọi slice ở `features/{X}/store/` (đồng nhất nested), update `store/index.ts`.
+
+**Validation:** Build pass; 0 broken import; smoke test 7+15 page.
+
+**Commit:** 6 commit.
+
+---
+
+### 42.16 Step 16 — Frontend: Container/Hook + Component Move + Domain Logic
+
+**Tasks:**
+
+#### 42.16.1 — `components/product/` (30 file) → `features/catalog/admin/components/`
++ 4 hook product-specific → `features/catalog/admin/hooks/`.
+
+#### 42.16.2 — Container/Hook full
+- Page > 200 lines → tách `useXPage` hook.
+- Mục tiêu cụ thể:
+  - `LoginPage, RegisterPage` — `useAuthForm`.
+  - `ProductDetailPage` — `useProductDetail`.
+  - `CheckoutPage` — `useCheckoutFlow` (cart init + sessionStorage + repayment + payment URL).
+  - `CartPage` — `useCartManagement`.
+  - `OrdersPage, OrderDetailPage` — `useOrders, useOrderDetail`.
+  - `AdminDashboardPage` — `useDashboardAnalytics`.
+
+#### 42.16.3 — Domain logic ra khỏi `utils/`
+- `utils/productHelpers, priceUtils, productNaming, productTransform, descriptionImageProcessor` → `features/catalog/services/{productLogic, priceLogic, productNaming, productTransform, descriptionProcessor}.ts`.
+- `utils/sampleProductData` audit, xóa hoặc → `__tests__/fixtures/`.
+
+#### 42.16.4 — `shared/utils/` cleanup
+- Chỉ giữ generic: cn, format, textUtils, errorUtils, htmlProcessor, imageUtils, exportUtils, toast, tokenManager.
+- `grep -E "Product|Order|Cart|Review" frontend/src/shared/utils/*.ts` → 0.
+
+**Validation:**
+- [ ] `wc -l features/checkout/pages/CheckoutPage.tsx` < 200.
+- [ ] `wc -l features/catalog/pages/ProductDetailPage.tsx` < 200.
+- [ ] Manual test 7+15 page.
+
+**Commit:** 6 commit.
+
+---
+
+### 42.17 Step 17 — Frontend: Feature Public API Barrel + Final Cleanup
+
+**Tasks:**
+1. Mỗi feature có `index.ts` exporting public API:
+   ```ts
+   // features/catalog/index.ts
+   export { default as ProductCard } from './components/ProductCard';
+   export { default as ProductGrid } from './components/ProductGrid';
+   export { default as ProductDetailPage } from './pages/ProductDetailPage';
+   export * as Admin from './admin';
+   export * from './hooks';
+   export * from './store/productsSlice';
+   export type * from './types/product.types';
+   ```
+2. Find-replace deep import `from '@/features/X/{components,pages,hooks}/Y'` → `from '@/features/X'`.
+3. `routes/AppRoutes.tsx` + `App.tsx` import từ feature barrel.
+4. Verify `grep -rn "from.*'@/features/.*\/(components|pages|hooks)" frontend/src/` → 0 (trừ test).
+
+**Validation:**
+- [ ] 16 feature đều có `index.ts`.
+- [ ] Build + tsc pass.
+- [ ] 35-check pass.
+
+**Commit:** 2 commit.
+
+---
+
+### 42.18 Step 18 — Final Verification + Documentation Sync
+
+**Tasks:**
+1. Full test: BE `npm test` + FE `npm run build` + `tsc --noEmit`.
+2. 35-check Rule 31 (A1-A25 + B1-B6 + C1-C4) end-to-end.
+3. Update `docs/ARCHITECTURE.md` đối chiếu reality.
+4. Update `docs/MODULE_GUIDE.md` lessons learned (template SIMPLE vs DDD-lite, khi nào promote).
+5. **Đề xuất user thêm rule vào `MEMORY.md`** (file MEMORY.md user tự quản lý — KHÔNG tự động edit):
+   - Rule "Module mới mặc định template SIMPLE (3-layer + Repository); chỉ promote DDD-lite khi có ≥3 entity quan hệ + business rule nhiều bước".
+   - Rule "Cross-module call qua DI hoặc eventBus; KHÔNG deep import từ module khác".
+   - Rule "Repository interface ở `modules/{X}/repositories/I{X}Repository.js`, impl `Sequelize{X}Repository.js` cùng folder; service KHÔNG touch Sequelize trực tiếp".
+6. Tạo `docs/PHASE_42_COMPLETION_REPORT.md` với metrics: file count BE/FE before/after, module LOC, test count, latency benchmark.
+7. Merge `phase-42-modular-monolith-refactor` → `main` chỉ khi mọi AC pass.
+
+**Commit:** 2 commit.
+
+---
+
+### 42.19 Step 19 — Convention Sustainability Tooling (Module Generator + Pre-commit Hook + ESLint Custom)
+
+> **Mục tiêu:** Tự động hóa việc giữ convention sau Phase 42. Khi user thêm feature/module/code mới về sau, tooling chặn được ~70% case drift quan trọng nhất (service import Sequelize, controller chứa ORM, DTO bị skip, deep import barrel).
+>
+> **Lý do tách Step riêng (không gộp Step 18):** đây là code thực tế (script + hook + ESLint config) chứ không phải doc. Cần verify tooling hoạt động trước khi treat Phase 42 done.
+>
+> **Effort: 3-4h. Có thể làm sau khi merge Phase 42 main như follow-up commit cũng OK.**
+
+**Tasks:**
+
+#### 42.19.1 — Module generator script
+File `scripts/new-module.mjs`:
+```js
+#!/usr/bin/env node
+// Usage: node scripts/new-module.mjs --name=referrals --type=simple
+// Hoặc:  node scripts/new-module.mjs --name=subscriptions --type=ddd-lite
+```
+- Parse arg `--name` (kebab hoặc camelCase) + `--type` (simple|ddd-lite).
+- Validate name không trùng `backend/src/modules/{name}/` existing.
+- Validate name không trong Domain Glossary cấm dùng (parse từ `docs/NAMING_CONVENTION.md`) — vd reject `customer`, `coupon`, `voucher`. Cảnh báo nếu name không match concept đã có (vd `userAccount` → suggest `users`).
+- Tạo folder + file template từ `docs/MODULE_TEMPLATE.md`:
+  - SIMPLE: `controllers/{Name}Controller.js`, `services/{Name}Service.js`, `repositories/{I,Sequelize}{Name}Repository.js`, `models/{Name}Model.js`, `routes.js`, `validators/`, `dtos/{Name}Dto.js`, `module.js`.
+  - DDD-LITE: + `domain/{aggregates,events,policies,ports}/`.
+- Mỗi file có placeholder code sẵn (header comment + minimal class/function skeleton + `TODO: implement`).
+- `module.js` skeleton DI wire pre-filled với `(deps) => ({ basePath, router, subscribeEvents })`.
+- Output console hướng dẫn next step: "Add `require('./modules/{name}/module')(deps)` vào `server.js`".
+
+#### 42.19.2 — Pre-commit hook
+File `.husky/pre-commit`:
+```bash
+#!/usr/bin/env sh
+. "$(dirname -- "$0")/_/husky.sh"
+
+bash scripts/audit-architecture.sh
+```
+
+File `scripts/audit-architecture.sh`:
+```bash
+#!/usr/bin/env bash
+set -e
+
+echo "🔍 Audit architecture rules..."
+
+# RULE 1: Services không được import Sequelize hoặc Model.X trực tiếp
+VIOLATIONS=$(git diff --cached --name-only --diff-filter=ACM | \
+  grep -E 'backend/src/modules/.*/services/.*\.js$' | \
+  xargs -I {} grep -l -E "require.*['\"]sequelize['\"]|Model\.(findAll|findOne|findByPk|create|update|destroy|bulkCreate)" {} 2>/dev/null || true)
+if [ -n "$VIOLATIONS" ]; then
+  echo "❌ BLOCKED: Service không được import Sequelize hoặc Model.X trực tiếp."
+  echo "$VIOLATIONS"
+  echo "→ Tạo/dùng repository thay vì truy cập Model trực tiếp."
+  exit 1
+fi
+
+# RULE 2: Controllers không được import Sequelize hoặc gọi Model.X
+VIOLATIONS=$(git diff --cached --name-only --diff-filter=ACM | \
+  grep -E 'backend/src/modules/.*/controllers/.*\.js$' | \
+  xargs -I {} grep -l -E "require.*['\"]sequelize['\"]|Model\.(findAll|findOne|findByPk|create|update|destroy)" {} 2>/dev/null || true)
+if [ -n "$VIOLATIONS" ]; then
+  echo "❌ BLOCKED: Controller không được touch ORM. Delegate sang service."
+  echo "$VIOLATIONS"
+  exit 1
+fi
+
+# RULE 3: Cross-module deep import (require từ '../../{otherModule}/services|repositories|domain' bị block)
+VIOLATIONS=$(git diff --cached --name-only --diff-filter=ACM | \
+  grep -E 'backend/src/modules/.*\.js$' | \
+  xargs -I {} grep -l -E "require\(['\"]\.\./\.\./[a-z]+/(services|repositories|domain|models)['\"]" {} 2>/dev/null || true)
+if [ -n "$VIOLATIONS" ]; then
+  echo "❌ BLOCKED: Cross-module deep import. Dùng DI hoặc eventBus."
+  echo "$VIOLATIONS"
+  exit 1
+fi
+
+# RULE 4: Frontend deep import bypass barrel
+VIOLATIONS=$(git diff --cached --name-only --diff-filter=ACM | \
+  grep -E 'frontend/src/.*\.(ts|tsx)$' | grep -v '__tests__' | \
+  xargs -I {} grep -l -E "from ['\"]@/features/[a-z-]+/(components|pages|hooks|api|store)" {} 2>/dev/null || true)
+if [ -n "$VIOLATIONS" ]; then
+  echo "⚠️  WARN: FE deep import bypass barrel — nên import từ '@/features/{name}' thay vì internal path."
+  echo "$VIOLATIONS"
+  # Warn only, không block (1 số case test setup hoặc lazy load có thể cần)
+fi
+
+echo "✅ Architecture audit pass."
+```
+
+Setup:
+```bash
+npm install -D husky
+npx husky init
+chmod +x scripts/audit-architecture.sh
+```
+
+#### 42.19.3 — ESLint custom rules
+Bổ sung vào `eslint.config.js` (BE) hoặc dùng `eslint-plugin-import` rules có sẵn:
+
+```js
+// backend/eslint.config.js
+import noRestrictedImports from 'eslint-plugin-import';
+export default [
+  // ... existing config
+  {
+    files: ['backend/src/modules/*/services/**/*.js'],
+    rules: {
+      'no-restricted-imports': ['error', {
+        paths: [
+          { name: 'sequelize', message: 'Service không được import Sequelize. Dùng repository.' },
+        ],
+        patterns: ['*/models/*'],
+      }],
+    },
+  },
+  {
+    files: ['backend/src/modules/*/controllers/**/*.js'],
+    rules: {
+      'no-restricted-imports': ['error', {
+        paths: [{ name: 'sequelize', message: 'Controller không được import Sequelize.' }],
+        patterns: ['*/models/*', '*/repositories/*'],
+      }],
+    },
+  },
+];
+```
+
+Frontend `eslint.config.js`:
+```js
+{
+  files: ['frontend/src/**/*.{ts,tsx}'],
+  ignores: ['**/__tests__/**'],
+  rules: {
+    'no-restricted-imports': ['warn', {
+      patterns: [
+        { group: ['@/features/*/components', '@/features/*/pages', '@/features/*/hooks'], 
+          message: 'Import từ @/features/{name} barrel thay vì deep path.' },
+        { group: ['@/services'], message: 'services/ đã move vào @/shared/api hoặc @/features/{name}/api sau Phase 42.' },
+      ],
+    }],
+  },
+},
+```
+
+#### 42.19.4 — AGENT_RULES.md update
+Thêm 3 rule vào `AGENT_RULES.md`:
+- **Rule N+1**: Khi tạo module mới — DÙNG `node scripts/new-module.mjs --name=X --type=simple|ddd-lite`. KHÔNG copy thủ công folder.
+- **Rule N+2**: Pre-commit hook KHÔNG được skip qua `git commit --no-verify` trừ khi user explicit yêu cầu (vd hot-fix production khẩn). Nếu hook fail, fix root cause trước.
+- **Rule N+3**: Khi thêm pattern kiến trúc mới (vd thêm CQRS, Event Sourcing) — UPDATE `docs/NAMING_CONVENTION.md` + `docs/MODULE_GUIDE.md` + thêm ESLint rule tương ứng. Không "smuggle" pattern mới mà không document.
+
+#### 42.19.5 — Memory entry mới
+Tạo `convention_sustainability.md` (xem cuối Step 19) — Claude future session sẽ:
+- Khi user request "thêm module/feature" → suggest dùng `scripts/new-module.mjs`.
+- Khi review code mới → check 3 rule pre-commit + ESLint trước khi commit.
+- Khi pattern mới phát sinh → đề xuất update doc + tooling.
+
+**Files affected (Step 19):**
+- `scripts/new-module.mjs` (mới, ~150 lines)
+- `scripts/audit-architecture.sh` (mới, ~50 lines)
+- `.husky/pre-commit` (mới, 3 lines)
+- `backend/eslint.config.js` + `frontend/eslint.config.js` (bổ sung ~20 lines mỗi file)
+- `package.json` (thêm `husky` devDep + `prepare` script)
+- `AGENT_RULES.md` (bổ sung 3 rule)
+- Memory `convention_sustainability.md` (mới)
+
+**Risk:** Thấp. Tooling không đụng business code; chỉ enforce future commits.
+
+**Validation:**
+- [ ] `node scripts/new-module.mjs --name=test-module --type=simple` tạo đúng cấu trúc folder + file. Verify rồi xóa folder test.
+- [ ] `node scripts/new-module.mjs --name=test-ddd --type=ddd-lite` tạo thêm `domain/` folder. Verify rồi xóa.
+- [ ] `node scripts/new-module.mjs --name=customer --type=simple` reject với cảnh báo Domain Glossary (term `customer` cấm dùng).
+- [ ] Pre-commit hook block thật: tạo file fake `backend/src/modules/auth/services/test.js` chứa `require('sequelize')`, `git add`, `git commit` → bị block với message rõ.
+- [ ] ESLint chạy: `cd backend && npm run lint` báo error trên file fake trên.
+- [ ] FE deep import warn: tạo file `frontend/src/pages/Test.tsx` import `from '@/features/auth/components/AuthProvider'` → ESLint warn.
+- [ ] Husky setup OK: `git commit --allow-empty -m "test"` chạy hook.
+
+**Commit:** 2 commit:
+- `Refactor Phase 42.19 — Tạo module generator script + pre-commit hook audit architecture`
+- `Refactor Phase 42.19 — Thêm ESLint custom rules + cập nhật AGENT_RULES sustainability`
+
+---
+
+### 42.20 Order of Execution & Thesis Scope Priority
+
+```
+Step 1  (Foundation + Doc)                     → 0 risk    | DEFENSE-MUST
+Step 2  (auth — TEMPLATE)                      → cao       | DEFENSE-MUST (entry point)
+Step 3  (users)                                → trung     | DEFENSE-MUST
+Step 4  (catalog — lớn nhất)                   → cao       | DEFENSE-MUST (main demo flow)
+Step 5  (cart)                                 → trung     | DEFENSE-MUST
+Step 6  (orders + payment)                     → cao       | DEFENSE-MUST (core e-commerce)
+Step 7  (reviews)                              → thấp      | DEFENSE-MUST
+Step 8  (shipping + inventory + loyalty)       → trung     | DEFENSE-MUST (inventory cross-module)
+Step 9  (notifications + content)              → thấp      | DEFENSE-MUST
+Step 10 (chat — Socket.IO)                     → cao       | OPTIONAL-bonus (defer được)
+Step 11 (ai — RAG + LLM full refactor)         → trung     | OPTIONAL-bonus (defer được)
+Step 12 (upload)                               → thấp      | DEFENSE-MUST
+Step 13 (BE cleanup + bootstrap)               → cao       | DEFENSE-MUST
+Step 14 (FE pages → feature)                   → trung     | DEFENSE-MUST
+Step 15 (FE API → feature)                     → trung     | DEFENSE-MUST
+Step 16 (FE container/hook + components/product) → cao     | DEFENSE-MUST
+Step 17 (FE barrel + cleanup)                  → thấp      | DEFENSE-MUST
+Step 18 (Final verify + doc + merge)           → 0 risk    | DEFENSE-MUST
+Step 19 (Convention sustainability tooling)    → thấp     | DEFENSE-MUST (3-4h, có thể follow-up sau merge)
+```
+
+**Scope thesis pragmatic — Step 10 + 11 OPTIONAL:**
+- Chat (Step 10) + AI (Step 11) là 2 module phức tạp nhất, nếu thời gian eo hẹp có thể giữ HIỆN TẠI (services/ai + config/socket.js cũ) và viết comment `// TODO Phase 42 — refactor sang module pattern`. Defense vẫn pass vì 13/16 module đã follow pattern + doc đầy đủ — reviewer thấy rõ kiến trúc đích.
+- Khi nào skip Step 10+11: nếu sau Step 9 còn <5 ngày trước demo deadline.
+- Khi đã skip, AC check `modules/chat/, modules/ai/` exists → đánh dấu deferred trong PHASE_42_COMPLETION_REPORT.md.
+
+**Rollback rule:** Mỗi step độc lập có thể merge/revert riêng. Step 2 (auth) fail → halt. Step 13 cleanup CHỈ khi mọi module Step 2-12 pass (hoặc Step 10+11 đã được defer rõ ràng và config/socket.js + services/ai/ vẫn giữ làm legacy).
+
+**Realistic timeline cho thesis (1 sinh viên):**
+- Step 1-9: 7-10 ngày (5 ngày BE module + 3-5 ngày test + smoke).
+- Step 10-11 (nếu làm): +3-5 ngày.
+- Step 12: 1 ngày.
+- Step 13: 1 ngày.
+- Step 14-18 (FE): 4-5 ngày.
+- Step 19 (Convention tooling): 3-4h (~0.5 ngày).
+- **Tổng: 2-3 tuần solo nếu skip Step 10+11; 3-4 tuần nếu làm đủ.**
+
+---
+
+### ✅ Acceptance Criteria Phase 42 (Modular Monolith + 3-Layer + DDD-lite)
+
+#### Backend Foundation (Step 1)
+- [ ] `docs/ARCHITECTURE.md`, `MODULE_GUIDE.md`, `MODULE_TEMPLATE.md` exists.
+- [ ] `backend/src/shared/` exists với cấu trúc LIGHT (chỉ errors/, result.js, eventBus.js, persistence/, cache/, http/middlewares/, socket/, logger.js, mailer.js, utils/).
+- [ ] `backend/src/shared/` KHÔNG có folder `domain/` chung (verify `ls backend/src/shared/` không có `domain/`).
+- [ ] KHÔNG có file `Entity.js`, `ValueObject.js`, `AggregateRoot.js`, `UseCase.js`, `Mapper.js` ở `shared/`.
+- [ ] `shared/eventBus.js` exists với API `publish(eventName, payload)` + `subscribe(eventName, handler)`.
+
+#### Backend Modules — 15 module (Step 2-12)
+- [ ] `backend/src/modules/{auth, users, catalog, cart, orders, payment, reviews, wishlist, shipping, inventory, loyalty, notifications, content, chat, ai, upload}/` tồn tại (16 module).
+
+**SIMPLE module (11 modules: auth, users, catalog, cart, reviews, wishlist, loyalty, notifications, content, shipping, upload):**
+- [ ] Mỗi simple module có cấu trúc: `controllers/, services/, repositories/, models/, routes.js, validators/, dtos/, module.js`.
+- [ ] Mỗi simple module KHÔNG có folder `domain/` (verify `ls backend/src/modules/{simple_module}/` không có `domain/`).
+- [ ] Mỗi simple module có ≥1 service file với method = use case (không có `application/use-cases/{X}UseCase.js`).
+- [ ] Mỗi simple module có DTO factory function `to{X}Dto(model)` trong `dtos/{X}Dto.js` (không có Mapper class).
+
+**DDD-LITE module (5 modules: orders, payment, ai, inventory, chat):**
+- [ ] Mỗi DDD-lite module có cấu trúc cơ bản giống simple + thêm folder `domain/`.
+- [ ] `modules/orders/domain/aggregates/OrderAggregate.js` exists với rich method (`cancel`, `markAsPaid`, `markAsShipped`).
+- [ ] `modules/orders/domain/events/{OrderCreated, OrderCancelled, OrderPaid, OrderShipped, OrderDelivered}Event.js` exists.
+- [ ] `modules/orders/domain/policies/OrderCancellationPolicy.js` exists.
+- [ ] `modules/payment/domain/policies/{RefundPolicy, RetryPolicy}.js` exists.
+- [ ] `modules/payment/domain/ports/IPaymentGateway.js` exists; `gateways/{VnPay, Momo, Stripe, BankTransfer}Gateway.js` impl.
+- [ ] `modules/inventory/domain/aggregates/InventoryAggregate.js` exists.
+- [ ] `modules/inventory/domain/policies/StockReservationPolicy.js` exists.
+- [ ] `modules/chat/domain/ChatSession.js` exists; `socket/handlers/` exists.
+- [ ] `modules/ai/domain/orchestrators/RagPipeline.js` exists; `domain/ports/{ILlmGateway, IConversationStore, IVectorStore, IEmbeddingGateway}.js` exists.
+
+**Cross-module rule (cho cả simple + DDD-lite):**
+- [ ] Service không touch Sequelize trực tiếp: `grep -rn "Model\.findAll\|Model\.create\|Model\.update\|sequelize\.\|require.*sequelize" backend/src/modules/*/services/` → 0.
+- [ ] Repository chỉ tồn tại trong `modules/*/repositories/`, không trong service: pattern check.
+- [ ] Cross-module communication không deep import: `grep -rn "require.*'\.\./\.\./[a-z]\+/(services|repositories|models|domain)'" backend/src/modules/*/` → 0.
+- [ ] Cross-module communication qua DI (truyền vào constructor) hoặc Event Bus (`eventBus.publish/subscribe`).
+
+#### Backend Cleanup (Step 13)
+- [ ] `backend/src/{controllers, services, routes, models, validators, middlewares}/` không tồn tại.
+- [ ] `ls backend/src/` chỉ còn: app.js, server.js, shared/, modules/, __tests__/, constants/ (nếu giữ), jobs/ (nếu giữ).
+- [ ] `server.js` bootstrap 16 module qua DI pattern (`require('./modules/X/module')(deps)`).
+
+#### Backend DTO + Domain Event
+- [ ] Mọi response endpoint trả DTO (qua factory function). Smoke 5 endpoint nhạy cảm (login, getUser, getOrder, getProduct, getReview) — không leak field internal (`password_hash`, `verification_token`, `internal_notes`).
+- [ ] Cross-module event hoạt động:
+  - [ ] `eventBus.publish('order.created')` → inventory deductStock + payment initiate.
+  - [ ] `eventBus.publish('order.paid')` → loyalty addPoints + notifications sendOrderConfirmation.
+  - [ ] `eventBus.publish('order.cancelled')` → inventory restoreStock + loyalty revokePoints.
+  - [ ] `eventBus.publish('product.created')` → ai upsertVector.
+- [ ] Webhook idempotency: VNPay/MoMo IPN, Stripe webhook replay không double-process.
+
+#### Backend Transaction Discipline
+- [ ] Transaction trong **service** (không controller, không repository).
+- [ ] Service wrap transaction qua `shared/persistence/unitOfWork`.
+- [ ] 0 multi-step write thiếu transaction (audit `git grep "Model\.update\|Model\.create"` trong services).
+- [ ] `afterCreate` hook side-effect cross-module (vd Product → vector sync) move ra service explicit call sau commit hoặc Domain Event.
+
+#### Frontend Foundation (Step 1)
+- [ ] `frontend/src/shared/{ui, components, hooks, api, utils, types, i18n, routing, theme}/` tồn tại.
+- [ ] `shared/api/{rtkApi.ts, axiosClient.ts, tokenManager.ts}` exists.
+- [ ] `services/api.ts`, `services/apiClient.ts` không tồn tại (rename + move).
+
+#### Frontend Features — 16 features (Step 14-17)
+- [ ] `frontend/src/features/{auth, users, catalog, cart, checkout, orders, payment, reviews, wishlist, loyalty, notifications, content, chat, ai, admin, upload}/` exists.
+- [ ] 16 feature đều có `index.ts` barrel.
+- [ ] Mỗi feature có `pages/` (nếu có UI route), `components/`, `hooks/`, `api/`, `store/` (nếu có), `types/`.
+- [ ] `frontend/src/components/product/` không tồn tại.
+- [ ] `frontend/src/services/` không tồn tại.
+- [ ] `frontend/src/pages/` chỉ còn: Home, Contact, NotFound, Unauthorized, About, Faqs, Deals.
+- [ ] `frontend/src/utils/` không tồn tại (move sang `shared/utils/` + feature service).
+- [ ] `grep -rn "from.*'@/features/.*\/(components|pages|hooks)" frontend/src/ --include="*.tsx" | grep -v __tests__` → 0.
+- [ ] `grep -rn "from.*'@/services" frontend/src/` → 0.
+
+#### Frontend UI/Logic Separation
+- [ ] `wc -l` các page mục tiêu < 200: CheckoutPage, ProductDetailPage, ShopPage.
+- [ ] `useCheckoutFlow, useProductDetail, useProductSearch` hook tồn tại.
+- [ ] Page admin không định nghĩa formatX inline.
+
+#### Cross-cutting (Step 18)
+- [ ] BE `npm test` pass với count ≥ baseline.
+- [ ] FE `npm run build` + `tsc --noEmit` pass.
+- [ ] 35-check Rule 31 (A1-A25 + B1-B6 + C1-C4) pass.
+- [ ] 0 console error 7 user + 15 admin page.
+- [ ] `docs/PHASE_42_COMPLETION_REPORT.md` exists với metrics (file count BE/FE before/after, module size).
+- [ ] **Đề xuất** user thêm rule vào `MEMORY.md` (file user tự quản — đề xuất qua console output, KHÔNG tự edit):
+  - "Module mới mặc định template SIMPLE; chỉ promote DDD-lite khi có ≥3 entity quan hệ + business rule nhiều bước."
+  - "Cross-module call qua DI hoặc eventBus, KHÔNG deep import."
+  - "Service không touch Sequelize trực tiếp; qua repository."
+
+#### Convention Sustainability Tooling (Step 19)
+- [ ] `scripts/new-module.mjs` tồn tại + chạy được. Test: `node scripts/new-module.mjs --name=test-simple --type=simple` tạo đúng cấu trúc folder + 8 file (controllers, services, repositories, models, routes, validators, dtos, module.js); `node scripts/new-module.mjs --name=test-ddd --type=ddd-lite` tạo thêm `domain/{aggregates,events,policies,ports}/`. Cleanup folder test sau verify.
+- [ ] `scripts/new-module.mjs` reject Domain Glossary cấm dùng (test: `--name=customer` báo lỗi cảnh báo).
+- [ ] `.husky/pre-commit` exists + executable; `scripts/audit-architecture.sh` exists.
+- [ ] Pre-commit hook block thật: tạo file fake `backend/src/modules/auth/services/test-violation.js` chứa `require('sequelize')`, `git add`, `git commit -m "test"` → **bị block** với message rõ ràng. Cleanup file fake.
+- [ ] Pre-commit hook block thật: thêm `Order.findAll()` vào file controller, `git commit` → bị block.
+- [ ] Pre-commit hook block thật: deep import cross-module (`require('../../catalog/services/...')`) → bị block.
+- [ ] ESLint custom rules pass: `cd backend && npm run lint` 0 error trên codebase đã refactor; thêm violation file fake → ESLint báo error đúng.
+- [ ] FE ESLint warn: file `frontend/src/pages/Test.tsx` import `from '@/features/auth/components/AuthProvider'` → ESLint warn (không block, vì 1 số case test/lazy có thể cần).
+- [ ] `package.json` có `husky` devDep + `prepare: "husky install"` script.
+- [ ] `AGENT_RULES.md` cập nhật 3 rule mới (dùng module generator, không skip pre-commit, document pattern mới khi phát sinh).
+
+#### Phase Independence
+- [ ] Phase 42 không invalidate Phase 39 ✅.
+- [ ] Phase 42 dùng Phase 40 + 41 (cả 2 phải xong trước).
+- [ ] Phase 42 đặt baseline cho Phase 43-45.
+
+#### Commit Quality
+- [ ] Tất cả commit Rule 4.1.
+- [ ] Mỗi step ≥1 commit boundary.
+- [ ] ~32 commit tổng (Phase 42 scope: ~30 commit cho 18 step + 2 commit Step 19 tooling).
+
+---
+
+## PHASE 43 — Modern Naming Compliance Audit & Code Fix
+
+> **Mục tiêu:** Verify codebase (sau Phase 42) tuân thủ `docs/NAMING_CONVENTION.md` (đã extend Modern TS/JS 2025-2026 + Domain-Specific). Audit + fix code violation, đặc biệt Domain Glossary. KHÔNG tạo standard mới — enforce existing.
+>
+> **Phân loại Rule 32:** **Loại C (Code Quality)**.
+>
+> **Tiền điều kiện:** Phase 39 ✅ + 40 + 41 + 42 done.
+
+---
+
+### 43.1 Domain Glossary Compliance Audit
+
+**Mục tiêu:** Mọi term dùng trong code khớp Domain Glossary `NAMING_CONVENTION.md` (21 concept).
+
+**Steps:**
+1. Grep từng term cấm + check context:
+   ```bash
+   grep -rn "\bcustomer\|\bbuyer\|\bclient\b" backend/src/ --include="*.js"
+   grep -rn "\bitem\b\|\bgoods\|\bmerchandise" backend/src/ --include="*.js"
+   grep -rn "\bcoupon\|\bvoucher\|\bpromoCode" backend/src/ --include="*.js"
+   grep -rn "\bpurchase\b" backend/src/ --include="*.js"
+   # ... 21 term từ glossary
+   ```
+2. Mỗi match: phân loại false positive (axios `client`, Stripe `customer` library) vs true violation.
+3. Frontend tương tự với `*.ts`, `*.tsx`.
+
+**21 concept (từ Phase 41.5 NAMING_CONVENTION.md):** user, product, productVariant, discountCode, order, orderItem, cartItem, review, feedback, warrantyPackage, loyaltyPoints, loyaltyHistory, notification, chatMessage, banner, news, collection, productAttribute, attributeGroup, shipping, payment.
+
+**Action:** Mỗi violation → file rename + variable rename + import update.
+
+**Validation:**
+- [ ] 21 term cấm grep → 0 result trong `backend/src/`, `frontend/src/` (trừ false positive).
+- [ ] `docs/GLOSSARY_EXCEPTIONS.md` exists với false positive + lý do.
+- [ ] `npm run build` + `npm test` pass sau rename.
+
+---
+
+### 43.2 Modern TS/JS Convention Audit (19 item)
+
+#### 43.2.1 — Type vs Interface choice
+- Grep `interface` cho union/intersection → đổi `type`.
+
+#### 43.2.2 — No `I` prefix on interface (trừ Repository — exception document Phase 42 Step 1)
+- Grep `interface I[A-Z]` ngoài `modules/*/repositories/` (BE) hoặc `modules/*/domain/ports/` (DDD-lite) → đổi tên bỏ `I`. Repository interface giữ `I` prefix là EXCEPTION (clean architecture convention).
+
+#### 43.2.3 — Type-only imports
+- Grep `import { X }` mà X chỉ là type → `import type`. Automate qua ESLint `@typescript-eslint/consistent-type-imports`.
+
+#### 43.2.4 — Default vs named export
+- BE CommonJS: grep `module.exports = function|class|(` → đổi `module.exports = { funcName }`.
+- FE ESM: hook/util/service phải named export → audit + fix.
+
+#### 43.2.5 — Component file suffix
+- File `.tsx` không có suffix (Page/Layout/Modal/Form/Provider/Section/Card/List/Item/Button/with*) → review case-by-case.
+
+#### 43.2.6 — Boolean naming
+- Variable boolean không `is*/has*/can*` → rename.
+
+#### 43.2.7 — Hook return shape
+- Hook return >2 element dùng tuple → đổi object.
+
+#### 43.2.8 — Redux Toolkit selector/action
+- Selector không `select` prefix → rename.
+- Action không imperative verb → rename (`userLoggedIn` → `setLoggedIn`).
+
+#### 43.2.9 — RTK Query endpoint
+- Endpoint không verb-entity pattern → rename.
+
+#### 43.2.10 — Service method verbs (BE)
+- `getX` có thể null → `findX`. `findX` luôn throw → `getX`. `doX` chung chung → process/handle/validate.
+
+#### 43.2.11 — Repository method verbs
+- `findUser` → `findOneByEmail` hoặc `findOneById`.
+
+#### 43.2.12 — DTO suffix
+- File DTO không `Dto` suffix → rename.
+
+#### 43.2.13 — Number unit suffix
+- **SKIP `price` rename**: project single-currency VND, đã có `base_price`, `unit_price`, `total_amount` chuẩn. Không thêm suffix `Vnd`.
+- `timeout` → `timeoutMs`, `delay` → `delayMs`, `expires` → `expiresAt`/`expiresInDays` tùy ngữ cảnh.
+- `weight` → `weightKg` (nếu có shipping calculation), `width/height/length` → `widthCm/heightCm/lengthCm`.
+
+#### 43.2.14 — Date field naming
+- `createDate, dateCreated` → `createdAt`. `birthDay` → `birthDate`.
+
+#### 43.2.15 — i18n key namespace + casing
+- Flat key (`checkoutSummaryTitle`) → nested `checkout.summary.title`.
+- snake_case key → camelCase.
+
+#### 43.2.16 — Test describe/it pattern
+- `describe('test X')` → `describe('X')`.
+- `it('X works')` → `it('should ...')`.
+
+#### 43.2.17 — Import grouping order
+- Audit qua ESLint `import/order` rule.
+
+#### 43.2.18 — Folder casing
+- Mọi folder trong `src/` lowercase. Verify.
+
+#### 43.2.19 — CSS class naming custom CSS
+- camelCase → kebab-case.
+
+**Action per item:** grep + fix + commit theo nhóm.
+
+---
+
+### 43.3 PHASE_43_NAMING_VIOLATIONS_REPORT.md
+
+**Mục tiêu:** Sau audit, generate report violation đã fix + lessons.
+
+**File:** `docs/PHASE_43_NAMING_VIOLATIONS_REPORT.md`
+
+**Nội dung:**
+- Số violation per item (43.1, 43.2.1-43.2.19).
+- File/line đã fix (kèm commit hash).
+- False positive document (3rd-party API field name conflict).
+- Lessons learned: rule cần thêm/thay vào `NAMING_CONVENTION.md`.
+
+---
+
+### ✅ Acceptance Criteria Phase 43
+
+#### Domain Glossary (43.1)
+- [ ] 21 term cấm grep → 0 result trong `backend/src/`, `frontend/src/` (trừ exception document).
+- [ ] `docs/GLOSSARY_EXCEPTIONS.md` exists.
+- [ ] File rename hợp lệ — build + test pass.
+
+#### Modern TS/JS Convention (43.2)
+- [ ] 19 audit item đều có pass evidence.
+- [ ] ESLint `@typescript-eslint/consistent-type-imports` enable + 0 error.
+- [ ] ESLint `import/order` enable + 0 error.
+
+#### Documentation (43.3)
+- [ ] `docs/PHASE_43_NAMING_VIOLATIONS_REPORT.md` exists.
+- [ ] `MEMORY.md` cập nhật nếu có rule mới.
+- [ ] `docs/NAMING_CONVENTION.md` cập nhật nếu có exception/clarification.
+
+#### Cross-cutting
+- [ ] BE `npm test` pass.
+- [ ] FE `npm run build` + `tsc --noEmit` pass.
+- [ ] 35-check pass (chỉ rename, không đổi behavior).
+- [ ] Commit Rule 4.1 prefix `Refactor`.
+
+---
+
+## PHASE 44 — Test Coverage Push (≥70% Critical Path)
+
+> **Mục tiêu:** Đẩy test coverage critical path (auth, payment, order, cart, catalog read) lên ≥70%. Phase 25 chỉ định hướng strategy; Phase 44 thực thi.
+>
+> **Phân loại Rule 32:** **Loại D (Test-only)**.
+>
+> **Tiền điều kiện:** Phase 42 + 43 done.
+
+---
+
+### 44.0 Coverage Target
+
+| Module | Target | Loại test |
+|---|---|---|
+| `auth` | ≥80% | Unit (use case) + Integration (HTTP) |
+| `payment` | ≥80% | Unit + Integration + IPN replay test |
+| `orders` | ≥75% | Unit + Integration + cross-module event |
+| `cart` | ≥70% | Unit + Integration + race condition |
+| `catalog` (read) | ≥70% | Unit + Integration |
+| `catalog` (write/admin) | ≥60% | Unit + Integration |
+| FE `features/checkout` | ≥60% | Component + hook test |
+| FE `features/catalog` | ≥60% | Component test |
+| FE `features/auth` | ≥70% | Component + hook test |
+
+**Non-critical (≥40%):** reviews, wishlist, loyalty, notifications, content, chat, ai, upload, shipping, inventory, users.
+
+---
+
+### 44.1 Backend Unit Test (Use Case Layer)
+
+#### 44.1.1 — Setup
+- Verify Jest + supertest config.
+- `backend/jest.config.js` coverage threshold (thesis-realistic — relaxed từ enterprise):
+  ```js
+  coverageThreshold: {
+    global: { branches: 50, functions: 50, lines: 50, statements: 50 },
+    './src/modules/auth/services/': { lines: 75 },
+    './src/modules/payment/services/': { lines: 70 },     // Giảm từ 80 — gateway mock phức tạp
+    './src/modules/orders/services/': { lines: 70 },      // Giảm từ 75
+    './src/modules/orders/domain/': { lines: 70 },        // DDD-lite aggregate + policy
+    './src/modules/payment/domain/': { lines: 70 },       // Policy refund + retry
+    './src/modules/inventory/domain/': { lines: 70 },
+  }
+  ```
+- Mock factory: `__tests__/mocks/repositoryMock.js`.
+
+**⚠️ Test database choice:**
+- **KHÔNG dùng SQLite in-memory cho integration test** — Sequelize models của Phase 40 dùng MySQL-specific (CHECK constraints, INTEGER UNSIGNED, ENUM cụ thể) sẽ không tương thích.
+- **Đúng:** dùng MySQL Docker container hoặc local MySQL test DB:
+  ```bash
+  docker run -d --name mysql-test -e MYSQL_ROOT_PASSWORD=test -e MYSQL_DATABASE=ecommerce_test -p 3307:3306 mysql:8.0
+  ```
+  Hoặc tạo DB `ecommerce_test` trên XAMPP MySQL local.
+- Test setup (`__tests__/setup/testDb.js`) connect tới `ecommerce_test`, migrate trước mỗi test suite.
+
+#### 44.1.2 — Auth ~8 service method (SIMPLE module)
+Test `authService.{login, register, verifyOtp, logout, refreshToken, forgotPassword, resetPassword, googleLogin}` — mỗi method = 1 use case test suite (happy + edge cases).
+
+#### 44.1.3 — Payment ~7 service method + 2 policy (DDD-LITE module)
+- Service: `paymentService.{initiate, confirm, handleVnPayIPN, handleMomoIPN, handleStripeWebhook, refund, getPaymentStatus}`.
+- Domain policy test: `RefundPolicy.canRefund(payment, amount)` happy + edge; `RetryPolicy.shouldRetry(transaction)`.
+- IPN replay idempotency test cho cả 3 gateway.
+
+#### 44.1.4 — Orders ~7 service method + Aggregate + event handlers (DDD-LITE module)
+- Service: `orderService.{createOrder, cancelOrder, listUserOrders, getOrderById, trackOrder, updateOrderStatus, generateInvoice}`.
+- Aggregate test: `OrderAggregate.cancel()` (qua policy), `markAsPaid()`, `markAsShipped()`, `markAsDelivered()`.
+- Policy: `OrderCancellationPolicy.canCancel(order)` rule + edge cases.
+- Event handler test: subscriber `'order.created'` (deduct stock + initiate payment), `'order.cancelled'` (restore + revoke), `'order.paid'` (add points + send email).
+
+#### 44.1.5 — Cart ~6 service method (SIMPLE module)
+Test `cartService.{getCart, addToCart, updateCartItem, removeCartItem, clearCart, mergeGuestCart}`. AddToCart phải mock `IProductRepository` để test stock validation.
+
+#### 44.1.6 — Catalog ~14 service method (SIMPLE module)
+Test `catalogService.{listProducts, getProductDetail, searchProducts, createProduct (transaction), updateProduct (transaction), deleteProduct, getRecentlyViewed, addRecentlyViewed, getRelatedProducts, listCategories, getCategoryTree, listBrands, listCollections, importProducts}`.
+
+#### 44.1.7 — Inventory + AI + Chat (DDD-LITE) — bonus
+- `InventoryAggregate.deduct/restore` test với concurrent simulation.
+- `RagPipeline` test với mock LLM/Vector gateway.
+- `ChatSession` aggregate test.
+
+**Validation:** Mỗi module `npm test -- modules/X/` đạt coverage target.
+
+**Commit:** 6 commit (1/module).
+
+---
+
+### 44.2 Backend Integration Test (HTTP Endpoint)
+
+#### 44.2.1 — Setup
+- DB: SQLite in-memory hoặc test MySQL instance.
+- `__tests__/setup/{testDb, testApp}.js` — migrate + seed mỗi suite.
+
+#### 44.2.2 — Auth endpoint ~10 test
+POST `/api/auth/{register, login, verify-otp, logout, refresh, forgot-password, reset-password, google}`.
+
+#### 44.2.3 — Payment + Order flow e2e
+- Full flow: register → login → addToCart → createOrder → initiatePayment → mockIPN → orderPaid → loyaltyAdded.
+- Cancel: createOrder → cancelOrder → stockRestored → pointsRevoked.
+- IPN replay: mockIPN twice → process once.
+
+#### 44.2.4 — Cart + Catalog
+- Browse → addToCart (stock check) → updateQuantity → mergeGuestCart on login.
+
+**Commit:** 4 commit.
+
+---
+
+### 44.3 Frontend Component + Hook Test
+
+#### 44.3.1 — Setup
+- React Testing Library config (đã có).
+- `frontend/jest.config.cjs` coverage threshold.
+
+#### 44.3.2 — Auth feature
+- LoginPage.test.tsx (render, submit valid/invalid, OTP step).
+- useAuth.test.ts (token refresh, logout cleanup).
+- ProtectedRoute.test.tsx (redirect unauthenticated).
+
+#### 44.3.3 — Catalog feature
+- ProductCard, ProductGrid, ProductDetailPage.test.tsx.
+- useProductDetail.test.ts.
+
+#### 44.3.4 — Checkout feature
+- CheckoutPage.test.tsx (render summary, select payment, submit).
+- useCheckoutFlow.test.ts (buy-now flow, repayment flow).
+
+#### 44.3.5 — Cart feature
+- CartItem, CartPage.test.tsx.
+- useCartManagement.test.ts.
+
+**Commit:** 4 commit.
+
+---
+
+### 44.4 E2E Test (Optional)
+
+> Default SKIP Phase 44 (heavyweight setup). Defer Phase 45 hoặc separate phase.
+
+5 user journey nếu thực thi: Register OTP, Browse Cart Checkout COD, Browse BuyNow VNPay IPN, Cancel Order Stock Restore, Admin Login Update Order.
+
+---
+
+### ✅ Acceptance Criteria Phase 44
+
+#### Backend Coverage
+- [ ] `npm test -- --coverage` pass với threshold đã set.
+- [ ] auth ≥75%, payment ≥70%, orders ≥70%, cart ≥65%, catalog read ≥65%, catalog write ≥55% (thesis-realistic; relaxed từ enterprise).
+- [ ] Webhook idempotency test pass cho VNPay/MoMo/Stripe.
+- [ ] Cross-aggregate event handler test pass (OrderCreated → DeductStock + InitiatePayment).
+
+#### Frontend Coverage
+- [ ] `npm test -- --coverage` pass.
+- [ ] features/auth ≥70%, catalog ≥60%, checkout ≥60%, cart ≥60%.
+
+#### Documentation
+- [ ] `docs/TESTING_GUIDE.md` exists — pattern unit/integration/e2e, mock factory, test data builder.
+- [ ] `MEMORY.md` rule "PR mới phải kèm test cho use case mới".
+
+#### Cross-cutting
+- [ ] CI test pass (nếu Phase 45 setup CI).
+- [ ] Test runtime < 5 phút local.
+- [ ] Commit Rule 4.1.
+
+---
+
+## PHASE 45 — Defense Hardening (45a MUST) + Production Operations (45b OPTIONAL)
+
+> **Mục tiêu:** Đưa project lên mức **defense-ready cho khóa luận** (Phase 45a — BẮT BUỘC) và optionally lên **production-ready** (Phase 45b — bonus, có thể skip).
+>
+> **Phân loại Rule 32:** **Loại E (Operations + Infrastructure)**.
+>
+> **Tiền điều kiện:** Phase 42 + 43 + 44 done.
+>
+> **Thesis scope split — quan trọng:**
+> - **Phase 45a (DEFENSE-MUST):** CI cơ bản (lint + typecheck + test + build), Helmet headers, `npm audit` clean, health check endpoint, `mysqldump` thủ công document trong runbook, Lighthouse a11y ≥ 80 trên 3 page (Home + ProductDetail + Checkout), basic alt text + form label fixes. **Tổng thời gian: 3-5 ngày.**
+> - **Phase 45b (BONUS-OPTIONAL):** Sentry free tier, Dependabot, k6 load test 1-shot screenshot, multi-instance Redis-backed (CHỈ nếu deploy multi-instance — thesis default single-instance nên SKIP), full WCAG AA audit, Prometheus APM, alerting webhook, S3 backup automation, staging environment, deploy-production workflow với manual approval. **Cảnh báo: 45b có thể tốn 1-2 tuần — chỉ làm nếu có dư thời gian sau defense pass.**
+>
+> **Lý do split:** Project là khóa luận tốt nghiệp single-instance, đánh giá bằng demo + defense, không có real users để monitor/alert/backup-drill. Phase 45b là enterprise pattern, không cần thiết cho defense pass nhưng tốt cho CV/showcase.
+
+---
+
+### 45.1 CI/CD Pipeline (GitHub Actions)
+
+#### 45.1.1 — `.github/workflows/ci.yml` [45a MUST]
+Trigger: push, PR. Job: lint (ESLint + Prettier), typecheck (`tsc --noEmit` FE), test BE, test FE, build FE. Coverage upload Codecov/Coveralls **OPTIONAL** (nice-to-have badge).
+
+#### 45.1.2 — `.github/workflows/deploy-staging.yml` [45b OPTIONAL]
+Trigger: push `staging`. Build + deploy staging server. Smoke test post-deploy. SKIP nếu chỉ 1 deploy target.
+
+#### 45.1.3 — `.github/workflows/deploy-production.yml` [45b OPTIONAL]
+Trigger: tag `v*.*.*`. Manual approval gate. Build → backup DB → migrate → deploy → smoke → rollback nếu fail. SKIP cho thesis (deploy thủ công OK).
+
+**Validation:** CI < 10 phút. PR merge block nếu CI fail.
+
+---
+
+### 45.2 Monitoring & Alerting
+
+#### 45.2.1 — Application logs [45a MUST]
+Phase 19 đã setup Winston. Phase 45a verify:
+- Log level chuẩn (error, warn, info, debug).
+- Structured JSON (production mode).
+- Rotation: daily, retain 30 ngày.
+- Sensitive field redact (password, token, card number).
+
+#### 45.2.2 — Error tracking (Sentry) [45b OPTIONAL]
+- Sentry SDK BE + FE (free tier).
+- Capture unhandled exception + manual `Sentry.captureException` trong critical use case.
+- Source map upload từ Vite build.
+- Setup ~1 giờ. ROI cho thesis: trung bình (reviewer thấy production-mindset).
+
+#### 45.2.3 — Performance monitoring (APM) [45b OPTIONAL — SKIP cho thesis]
+- BE: `prom-client` Prometheus metrics — request latency, RPS, error rate.
+- FE: Web Vitals (LCP, FID, CLS) → analytics.
+- **Lý do skip:** Thesis không có real traffic để monitor; reviewer sẽ không pull metrics. Setup tốn 4-8h, ROI gần 0.
+- `/metrics` endpoint admin-only.
+
+#### 45.2.4 — Health check [45a MUST]
+- BE: `GET /api/health` → `{ status, db, redis, uptime, version }`. Useful cho deploy script + manual smoke.
+
+#### 45.2.5 — Alerting rule [45b OPTIONAL — SKIP cho thesis]
+- Error rate > 1% trong 5 phút; p95 latency > 2s; DB/Redis fail; disk > 80%.
+- Channel: email admin, Slack/Discord webhook.
+- **Lý do skip:** Không có real users để alert. Thesis demo defense không cần real-time alerting.
+
+**Validation 45.2:** [MUST] Health check 200 + structured. [OPTIONAL] Sentry test event work; Prometheus `/metrics` accessible; Alert trigger manual → admin nhận.
+
+---
+
+### 45.3 Backup & Disaster Recovery
+
+#### 45.3.1 — Manual DB backup [45a MUST] — đơn giản, chỉ document
+- `mysqldump` thủ công trước mỗi deploy lớn (hoặc trước demo defense). Document trong `docs/PRODUCTION_RUNBOOK.md`:
+  ```bash
+  mysqldump -u root techstore > backups/$(date +%Y%m%d-%H%M%S).sql
+  ```
+- KHÔNG cần cron + S3 cho thesis (single-instance, không có real users).
+
+#### 45.3.2 — Cron backup automation + S3 [45b OPTIONAL — SKIP cho thesis]
+- Cron `backup-db.sh` daily 02:00: `mysqldump` → gzip → S3/GCS. Retention: 30/12/12.
+
+#### 45.3.3 — Uploaded file backup [45b OPTIONAL]
+- `backend/uploads/` rsync → S3 daily, hoặc migrate `S3Adapter`.
+
+#### 45.3.4 — Disaster recovery drill [45b OPTIONAL]
+- `docs/DISASTER_RECOVERY.md` runbook + restore drill thực tế.
+- **RTO/RPO target không áp dụng cho thesis** — không có SLA real users.
+
+**Validation 45.3:** [MUST] `docs/PRODUCTION_RUNBOOK.md` exists có lệnh `mysqldump` + restore. [OPTIONAL] Backup daily auto, restore drill pass.
+
+---
+
+### 45.4 Staging Environment [45b OPTIONAL — SKIP cho thesis]
+
+> SKIP cho thesis: 1 deploy target (server demo) là đủ. Setup staging tốn 1-2 ngày, ROI gần 0 cho defense.
+- Staging server (Hostinger/Vercel/Railway/VPS).
+- DNS subdomain. Auto-deploy từ branch `staging`. Smoke gate.
+
+---
+
+### 45.5 Performance Benchmark
+
+#### 45.5.1 — BE load test [45b OPTIONAL — single-shot screenshot OK]
+- Tool: k6 hoặc Apache Bench.
+- Scenario: 100 concurrent user browse + addToCart + checkout.
+- Target: p95 latency < 500ms, error rate < 0.1%.
+- **Cho thesis:** chạy 1 lần, screenshot kết quả vào slides defense — không cần CI integration.
+
+#### 45.5.2 — FE bundle optimization [45a MUST — đơn giản]
+- Code-splitting per route (`lazy()` đã có).
+- Bundle analyzer: `vite-bundle-visualizer`.
+- Target: main bundle < 250KB gzipped (relaxed cho thesis), route chunks < 150KB.
+
+#### 45.5.3 — Image optimization [45a MUST — basic]
+- WebP/AVIF tự động khi có cơ hội. Responsive `srcset` cho ProductCard.
+- CDN (CloudFlare/Cloudinary) **OPTIONAL** — local serve OK cho thesis.
+
+#### 45.5.4 — DB query benchmark [45a MUST — đã có Phase 11/40]
+- Verify 0 query > 100ms trên dashboard load.
+- EXPLAIN critical path query (Phase 11 đã làm phần lớn).
+
+**Validation 45.5:** [MUST] Bundle size pass, no slow query > 100ms. [OPTIONAL] k6 load test screenshot.
+
+---
+
+### 45.6 Accessibility (a11y) Audit — RELAXED cho thesis
+
+#### 45.6.1 — Automated a11y [45a MUST]
+- Lighthouse run thủ công trên 3 page chính (Home + ProductDetail + Checkout).
+- Target: Lighthouse a11y score ≥ **80** (relaxed từ 90, vì Ant Design admin pages khó đạt 90 mà không rework lớn).
+- `axe-core` integration `npm test` **OPTIONAL**.
+
+#### 45.6.2 — Basic a11y fixes [45a MUST]
+- Image missing `alt` → add (grep `<img` không có `alt=`).
+- Form input missing `<label>` → add (Ant Design Form item phải có `label` prop).
+- Button icon-only missing `aria-label` → add.
+- Keyboard navigation: tab order hợp lý cho 3 page chính.
+
+#### 45.6.3 — Full WCAG AA + screen reader [45b OPTIONAL — SKIP cho thesis]
+- Manual NVDA/JAWS test 5 page, color contrast WCAG AA, modal focus trap full.
+- **Lý do skip:** Full WCAG AA audit tốn 1-2 tuần, ROI thesis trung bình.
+
+**Validation 45.6:** [MUST] Lighthouse a11y ≥ 80 trên 3 page, alt + label + aria-label cơ bản. [OPTIONAL] Lighthouse ≥ 90 trên 7 page + screen reader pass.
+
+---
+
+### 45.7 Security Hardening (Beyond Phase 1, 13, 23)
+
+#### 45.7.1 — HTTPS enforce + Helmet [45a MUST]
+- Helmet config: HSTS, CSP, X-Frame-Options, X-Content-Type-Options.
+- HTTP → HTTPS redirect (chỉ apply khi deploy production server).
+
+#### 45.7.2 — Secret management [45a MUST]
+- `.env` không commit (Phase 23 đã có `.env.example`).
+- Production secret qua env var của hosting platform.
+- **Rotation 90 ngày là OPTIONAL cho thesis** (không có team, không có risk leakage thật).
+
+#### 45.7.3 — Dependency security [45a MUST]
+- `npm audit` zero high/critical (cả BE + FE).
+- Dependabot enable trên GitHub repo (1-click setup).
+
+#### 45.7.4 — Rate limiting [45a MUST — basic in-memory đủ; Redis-backed OPTIONAL]
+- Phase 1 đã có rate limit basic in-memory. Phase 45a:
+  - Per-route limit (auth 5/15min, API 100/15min, public 1000/15min) — config thêm là đủ.
+- Redis-backed [45b OPTIONAL] — chỉ cần khi multi-instance (thesis SKIP).
+
+**Validation 45.7:** [MUST] Helmet header check pass, `npm audit` clean, per-route rate limit work. [OPTIONAL] Redis-backed rate limit, secret rotation.
+
+---
+
+### 45.8 Multi-Instance Readiness [45b OPTIONAL — SKIP cho thesis]
+
+> **SKIP hoàn toàn cho thesis** — project là single-instance theo project context (XAMPP local + 1 server). Section này document để biết, không thực thi.
+- AI conversation history → `RedisConversationStore` (Phase 42 interface ready).
+- Chat presence → `RedisPresenceRepository`.
+- Catalog cache → Redis instead of in-memory `Map`.
+- Session store → Redis.
+- Sticky session config (Socket.IO multi-instance).
+
+**Validation:** N/A cho thesis.
+
+---
+
+### ✅ Acceptance Criteria Phase 45
+
+#### Phase 45a — DEFENSE-MUST (BẮT BUỘC cho thesis defense pass)
+
+**CI/CD (45.1)**
+- [ ] `.github/workflows/ci.yml` exists, run trên PR.
+- [ ] Test + lint + build CI pass.
+- [ ] CI < 10 phút, PR merge block nếu CI fail.
+
+**Monitoring (45.2)**
+- [ ] Health check `GET /api/health` → 200 + structured `{ status, db, redis?, uptime, version }`.
+- [ ] Application log structured (Phase 19 đã setup) — verify rotation + sensitive field redact.
+
+**Backup (45.3)**
+- [ ] `docs/PRODUCTION_RUNBOOK.md` exists có lệnh `mysqldump` + restore step-by-step.
+
+**Performance (45.5)**
+- [ ] FE main bundle < 250KB gzipped (relaxed thesis target).
+- [ ] 0 query > 100ms trên dashboard load (Phase 11/40 đã optimize, verify).
+- [ ] Image alt text + responsive srcset cho ProductCard.
+
+**Accessibility (45.6)**
+- [ ] Lighthouse a11y ≥ 80 trên 3 page chính (Home + ProductDetail + Checkout).
+- [ ] Image missing `alt` đã add. Form input missing `<label>` đã add. Button icon-only có `aria-label`.
+
+**Security (45.7)**
+- [ ] Helmet config: HSTS, CSP, X-Frame-Options, X-Content-Type-Options.
+- [ ] `npm audit` 0 high/critical (BE + FE).
+- [ ] Per-route rate limit cấu hình (auth 5/15min, API 100/15min, public 1000/15min).
+- [ ] `.env` không commit; production secret qua env var.
+
+**Documentation**
+- [ ] `docs/PRODUCTION_RUNBOOK.md` exists.
+
+#### Phase 45b — BONUS-OPTIONAL (KHÔNG bắt buộc, làm nếu dư thời gian)
+
+**Bonus CI/CD**
+- [ ] `.github/workflows/deploy-staging.yml` hoặc `deploy-production.yml`.
+- [ ] Coverage badge Codecov/Coveralls.
+
+**Bonus Monitoring**
+- [ ] Sentry SDK BE + FE integrated, capture work, source map upload.
+- [ ] Prometheus `/metrics` endpoint.
+- [ ] Alert rule cấu hình + test trigger.
+
+**Bonus Backup + DR**
+- [ ] Cron backup daily, ≥30 ngày artifact, S3/GCS upload.
+- [ ] `backend/uploads/` rsync hoặc S3Adapter migrate.
+- [ ] `docs/DISASTER_RECOVERY.md` runbook + restore drill 1 lần pass.
+
+**Bonus Staging**
+- [ ] Staging accessible, auto-deploy.
+
+**Bonus Performance**
+- [ ] BE load test k6 p95 < 500ms, error rate < 0.1% — screenshot vào defense slides.
+- [ ] CDN setup (CloudFlare/Cloudinary).
+- [ ] `docs/PERF_BENCHMARK.md` exists.
+
+**Bonus a11y**
+- [ ] Lighthouse a11y ≥ 90 trên 7 page.
+- [ ] Manual NVDA/JAWS screen reader test pass 5 page.
+- [ ] WCAG AA color contrast full audit.
+
+**Bonus Security**
+- [ ] Dependabot enable.
+- [ ] Rate limit Redis-backed (chỉ khi multi-instance).
+
+**Bonus Multi-Instance (45.8 — chỉ khi deploy multi-instance)**
+- [ ] RedisConversationStore + RedisPresenceRepository pass test.
+- [ ] 2-instance load balancer test: state persist.
+
+#### Cross-cutting (cả 45a + 45b)
+- [ ] All previous phase test still pass.
+- [ ] Commit Rule 4.1.
+- [ ] Defense-MUST AC 100% pass; Bonus AC tracked nhưng KHÔNG block merge.
+
+---

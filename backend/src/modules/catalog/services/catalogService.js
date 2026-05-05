@@ -310,9 +310,9 @@ class CatalogService {
       productJson.images = productJson.productImages.map((img) => ({
         id: img.id,
         url: img.imageUrl,
-        alt: img.altText,
+        // ProductImage model không có cột altText/displayOrder — fallback từ name/id
+        alt: productJson.name || '',
         isThumbnail: img.isThumbnail,
-        displayOrder: img.displayOrder,
         variantId: img.variantId,
         color: img.color,
       }));

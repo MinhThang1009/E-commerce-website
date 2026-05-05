@@ -40,6 +40,7 @@ const Banner = sequelize.define(
   {
     tableName: 'banners',
     timestamps: true,
+    paranoid: true, // Soft-delete để admin có thể restore banner đã xóa
     underscored: true,
   }
 );

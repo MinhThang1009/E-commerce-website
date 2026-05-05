@@ -55,6 +55,11 @@ const Product = sequelize.define(
       type: DataTypes.STRING(255),
       allowNull: true,
     },
+    // SKU cho non-variant product (variant product dùng ProductVariant.sku)
+    sku: {
+      type: DataTypes.STRING(255),
+      allowNull: true,
+    },
     // Giá gốc
     basePrice: {
       type: DataTypes.DECIMAL(15, 2),

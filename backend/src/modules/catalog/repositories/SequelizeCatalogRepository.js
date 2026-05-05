@@ -396,7 +396,7 @@ class SequelizeCatalogRepository extends ICatalogRepository {
       attributes: ['id', 'name', 'slug'],
       include: [{
         association: 'productImages',
-        attributes: ['imageUrl', 'isThumbnail', 'displayOrder'],
+        attributes: ['imageUrl', 'isThumbnail'],
         required: false,
       }],
       limit, order: [['name', 'ASC']],
@@ -465,16 +465,19 @@ class SequelizeCatalogRepository extends ICatalogRepository {
     if (sort === 'price_asc') orderClause = [['basePrice', 'ASC']];
     else if (sort === 'price_desc') orderClause = [['basePrice', 'DESC']];
     else {
-      orderClause = [[this.sequelize.literal('(compare_at_price - base_price) / compare_at_price'), 'DESC']];
+      // Khi có JOIN, MySQL yêu cầu qualifier table name. Dùng alias `Product` (Sequelize default).
+      orderClause = [[this.sequelize.literal('(`Product`.`compare_at_price` - `Product`.`base_price`) / `Product`.`compare_at_price`'), 'DESC']];
     }
 
+    // subQuery: false để ORDER BY literal expression không bị wrap trong subquery (gây lỗi
+    // "Unknown column 'Product.compare_at_price' in order clause" với MySQL underscore mode).
     return this.Product.findAll({
       where: {
         compareAtPrice: { [Op.ne]: null },
         status: 'active',
         [Op.and]: [
           this.sequelize.where(
-            this.sequelize.literal('(compare_at_price - base_price) / compare_at_price * 100'),
+            this.sequelize.literal('(`Product`.`compare_at_price` - `Product`.`base_price`) / `Product`.`compare_at_price` * 100'),
             { [Op.gte]: minDiscount }
           ),
         ],
@@ -482,11 +485,12 @@ class SequelizeCatalogRepository extends ICatalogRepository {
       include: [
         { association: 'category', required: false, attributes: ['id', 'name', 'slug'] },
         { association: 'reviews', required: false, where: { isVerified: true }, attributes: ['rating'] },
-        { association: 'productImages', required: false, attributes: ['id', 'imageUrl', 'altText', 'isThumbnail', 'displayOrder', 'variantId'] },
-        { association: 'variants', required: false, attributes: ['id', 'price', 'stockQuantity', 'sku', 'color', 'size'] },
+        { association: 'productImages', required: false, attributes: ['id', 'imageUrl', 'isThumbnail', 'variantId'] },
+        { association: 'variants', required: false, attributes: ['id', 'price', 'stockQuantity', 'sku', 'attributes'] },
       ],
       order: orderClause,
       limit,
+      subQuery: false,
     });
   }
 

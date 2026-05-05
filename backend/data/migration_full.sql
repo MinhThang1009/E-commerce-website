@@ -120,6 +120,8 @@ CREATE TABLE IF NOT EXISTS `addresses` (
     `is_default` TINYINT(1) DEFAULT 0,
     `created_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
     `updated_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    `deleted_at` DATETIME NULL DEFAULT NULL,
+    INDEX `idx_addresses_deleted_at` (`deleted_at`),
     CONSTRAINT `fk_addresses_user` FOREIGN KEY (`user_id`) REFERENCES `users`(`id`) ON DELETE CASCADE ON UPDATE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
@@ -199,11 +201,14 @@ CREATE TABLE IF NOT EXISTS `product_variants` (
     `stock_quantity` INT DEFAULT 0,
     `is_default` TINYINT(1) DEFAULT 0,
     `attributes` LONGTEXT NULL,
+    `weight` DECIMAL(10,3) NULL,
+    `dimensions` JSON NULL,
+    `sort_order` INT DEFAULT 0,
+    `is_available` TINYINT(1) DEFAULT 1,
     `created_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
     `updated_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     `deleted_at` DATETIME NULL,
-    `sort_order` INT DEFAULT 0,
-    `is_available` TINYINT(1) DEFAULT 1,
+    INDEX `idx_product_variants_deleted_at` (`deleted_at`),
     UNIQUE KEY `uq_product_variants_sku` (`sku`),
     CONSTRAINT `fk_variants_product` FOREIGN KEY (`product_id`) REFERENCES `products`(`id`) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
@@ -374,10 +379,14 @@ CREATE TABLE IF NOT EXISTS `reviews` (
     `likes` INT DEFAULT 0,
     `dislikes` INT DEFAULT 0,
     `images` JSON DEFAULT (JSON_ARRAY()),
+    `variant_id` INT NULL,
     `created_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
     `updated_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    `deleted_at` DATETIME NULL DEFAULT NULL,
+    INDEX `idx_reviews_deleted_at` (`deleted_at`),
     CONSTRAINT `fk_reviews_product` FOREIGN KEY (`product_id`) REFERENCES `products`(`id`) ON DELETE CASCADE ON UPDATE CASCADE,
-    CONSTRAINT `fk_reviews_user` FOREIGN KEY (`user_id`) REFERENCES `users`(`id`) ON DELETE CASCADE ON UPDATE CASCADE
+    CONSTRAINT `fk_reviews_user` FOREIGN KEY (`user_id`) REFERENCES `users`(`id`) ON DELETE CASCADE ON UPDATE CASCADE,
+    CONSTRAINT `fk_reviews_variant` FOREIGN KEY (`variant_id`) REFERENCES `product_variants`(`id`) ON DELETE SET NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- ----- BẢNG 15: review_feedbacks (Phản hồi đánh giá) -----
@@ -443,6 +452,8 @@ CREATE TABLE IF NOT EXISTS `news` (
     `user_id` INT NULL,
     `created_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
     `updated_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    `deleted_at` DATETIME NULL DEFAULT NULL,
+    INDEX `idx_news_deleted_at` (`deleted_at`),
     CONSTRAINT `fk_news_user` FOREIGN KEY (`user_id`) REFERENCES `users`(`id`) ON DELETE SET NULL ON UPDATE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
@@ -505,7 +516,9 @@ CREATE TABLE IF NOT EXISTS `banners` (
     `is_active` TINYINT(1) DEFAULT 1,
     `priority` INT DEFAULT 0,
     `created_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    `updated_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+    `updated_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    `deleted_at` DATETIME NULL DEFAULT NULL,
+    INDEX `idx_banners_deleted_at` (`deleted_at`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- ----- BẢNG 23: email_campaigns (Chiến dịch email) -----
@@ -529,6 +542,8 @@ CREATE TABLE IF NOT EXISTS `collections` (
     `is_active` TINYINT(1) DEFAULT 1,
     `created_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
     `updated_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    `deleted_at` DATETIME NULL DEFAULT NULL,
+    INDEX `idx_collections_deleted_at` (`deleted_at`),
     UNIQUE KEY `uq_collections_slug` (`slug`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 

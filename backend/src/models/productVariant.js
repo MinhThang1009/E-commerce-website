@@ -88,6 +88,18 @@ const ProductVariant = sequelize.define(
       type: DataTypes.JSON,
       allowNull: true,
     },
+    // Thứ tự hiển thị variant trong UI (admin tự sắp xếp)
+    sortOrder: {
+      type: DataTypes.INTEGER,
+      defaultValue: 0,
+      field: 'sort_order',
+    },
+    // Variant có còn được bán không (admin tạm ngưng sản phẩm)
+    isAvailable: {
+      type: DataTypes.BOOLEAN,
+      defaultValue: true,
+      field: 'is_available',
+    },
     // Xóa mềm (soft delete)
     deletedAt: {
       type: DataTypes.DATE,

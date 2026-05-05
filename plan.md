@@ -9817,3 +9817,219 @@ Phase 19 đã setup Winston. Phase 45a verify:
 - [ ] Defense-MUST AC 100% pass; Bonus AC tracked nhưng KHÔNG block merge.
 
 ---
+
+## PHASE 46 — Schema Drift Audit & Auto-validation (Model ↔ DB ↔ Repository)
+
+> **Mục tiêu:** Fix triệt để class lỗi "Model declares column X nhưng DB không có" + "Repository SELECT cột không tồn tại trong Model" — phát hiện trong session demo Phase 42 (7 cột thiếu trong DB + 5 attribute query sai trong repo). Sau Phase 46, mọi `db:reset` sẽ tạo DB khớp 100% với model + mọi `Model.findAll()/findOne()` không bao giờ throw `Unknown column`.
+>
+> **Phân loại Rule 32:** **Loại C (Code Quality + Data Integrity)**.
+>
+> **Tiền điều kiện:** Phase 40 ✅ + 42 ✅ done. Models + DB hiện tại đã có drift.
+>
+> **Bug class này gây**: production bug âm thầm (chỉ throw khi specific endpoint hit), SQL injection rủi ro (raw literal không qualified), runtime 500 error trên customer-facing pages.
+
+---
+
+### 46.1 Schema Drift Discovery — generate diff report
+
+#### 46.1.1 — Write `scripts/auditSchemaDrift.js`
+Script scan toàn bộ `backend/src/models/*.js` (24 model), so sánh với DB thực tế qua `INFORMATION_SCHEMA.COLUMNS`. Output 4 loại drift:
+
+| Loại | Mô tả | Ví dụ phát hiện trong demo |
+|---|---|---|
+| **A. Model column ∉ DB** | Sequelize define col nhưng DB không có → INSERT fail | `ProductVariant.weight`, `ProductVariant.dimensions` |
+| **B. Model paranoid ∉ DB.deleted_at** | `paranoid: true` cần `deleted_at` nhưng DB không có → SELECT fail | `Collection`, `News`, `Banner`, `Review` (4 tables) |
+| **C. DB column ∉ Model** | DB có cột nhưng Sequelize không declare → orphan, ko fail nhưng waste | `product_variants.sort_order`, `is_available` |
+| **D. Type/Null/Default mismatch** | Model `INTEGER NOT NULL` vs DB `INT NULL` → silent corrupt | (chưa biết, cần audit) |
+
+Output format:
+```
+backend/scripts/auditSchemaDrift.js → docs/SCHEMA_DRIFT_REPORT.md
+```
+
+#### 46.1.2 — Run audit, ghi report đầy đủ vào `docs/SCHEMA_DRIFT_REPORT.md`
+
+#### 46.1.3 — Phân loại priority
+- **P0 (block production):** loại A + B → fix trong 46.2
+- **P1 (cleanup):** loại C → loose, fix nếu touch model
+- **P2 (correctness):** loại D → audit ALL, fix nghiêm ngặt
+
+---
+
+### 46.2 Fix DB Schema — Add missing columns + update migration_full.sql
+
+#### 46.2.1 — Tạo migration mới: `2026MMDDHH-fix-schema-drift.js`
+
+Add các cột thiếu (đã phát hiện trong demo + thêm từ 46.1):
+```sql
+-- Soft-delete cho 4 paranoid models
+ALTER TABLE collections ADD COLUMN deleted_at DATETIME NULL;
+ALTER TABLE news ADD COLUMN deleted_at DATETIME NULL;
+ALTER TABLE banners ADD COLUMN deleted_at DATETIME NULL;
+ALTER TABLE reviews ADD COLUMN deleted_at DATETIME NULL;
+
+-- Reviews thiếu variant_id (Phase 42 reviews module reference)
+ALTER TABLE reviews ADD COLUMN variant_id INT NULL,
+  ADD CONSTRAINT fk_reviews_variant FOREIGN KEY (variant_id)
+    REFERENCES product_variants(id) ON DELETE SET NULL;
+
+-- ProductVariant thiếu shipping fields
+ALTER TABLE product_variants ADD COLUMN weight DECIMAL(10,3) NULL;
+ALTER TABLE product_variants ADD COLUMN dimensions JSON NULL;
+
+-- Index cho deleted_at (paranoid query performance)
+CREATE INDEX idx_collections_deleted_at ON collections(deleted_at);
+CREATE INDEX idx_news_deleted_at ON news(deleted_at);
+CREATE INDEX idx_banners_deleted_at ON banners(deleted_at);
+CREATE INDEX idx_reviews_deleted_at ON reviews(deleted_at);
+```
+
+#### 46.2.2 — Cập nhật `backend/data/migration_full.sql`
+Để `npm run db:reset` (rebuildDb.js) tạo DB **khớp 100%** với model. Tránh gặp lại drift sau reset.
+
+Tất cả `CREATE TABLE` cho 4 paranoid table phải có:
+```sql
+deleted_at DATETIME NULL DEFAULT NULL,
+INDEX idx_{table}_deleted_at (deleted_at),
+```
+
+`product_variants` table phải có thêm `weight`, `dimensions`. `reviews` table phải có thêm `variant_id` + FK.
+
+#### 46.2.3 — Verify
+```bash
+npm run db:reset       # Drop + recreate from migration_full.sql + seed_data
+npm run dev            # Boot BE
+curl /api/products/deals?limit=2  # Phải trả 200, không 500
+node scripts/auditSchemaDrift.js  # Re-run, drift count = 0
+```
+
+---
+
+### 46.3 Fix Repository Attribute Drift — query đúng cột
+
+#### 46.3.1 — Audit Phase 42 modules
+
+Run AST audit trên `backend/src/modules/*/repositories/*.js`:
+```bash
+node scripts/auditRepoAttributes.js
+```
+
+Script parse mọi `attributes: ['col1', 'col2', ...]` trong `include[]` + `findAll`/`findOne` options, so với model attributes. Drift detected:
+
+**Đã fix trong demo session:**
+| Repo | Bug | Fix |
+|---|---|---|
+| `SequelizeCatalogRepository.js:485` | `attributes: [..., 'altText', 'displayOrder']` | Bỏ 2 cột, fallback `productJson.name` cho alt |
+| `SequelizeCatalogRepository.js:486` | `attributes: [..., 'color', 'size']` | Đổi `'attributes'` (JSON field) |
+| `SequelizeCatalogRepository.js:399` | `attributes: [..., 'displayOrder']` | Bỏ |
+| `SequelizeCatalogRepository.js:468,477` | ORDER BY/WHERE literal `compare_at_price` ko qualified | Add `\`Product\`.` prefix + `subQuery: false` |
+
+**Cần audit thêm:** orders/payment/inventory/chat/ai modules — có thể có drift tương tự.
+
+#### 46.3.2 — Fix tất cả drift phát hiện ở 46.3.1
+
+#### 46.3.3 — Service mapping fallback
+Nếu drop column khỏi attributes (vd `altText`), service mapping (`catalogService._mapProductImages`) cần fallback hợp lý (đã làm: `alt: productJson.name`).
+
+---
+
+### 46.4 Add Sequelize Model ↔ DB CI Check
+
+#### 46.4.1 — Tạo `__tests__/integration/schemaDrift.integration.test.js`
+
+Test boots Sequelize + connects DB + iterate all models:
+```js
+describe('Schema drift integration check', () => {
+  for (const model of Object.values(sequelize.models)) {
+    test(`${model.name}: model attrs ⊆ DB columns`, async () => {
+      const dbCols = await getDbColumns(model.tableName);
+      for (const [attrName, attr] of Object.entries(model.rawAttributes)) {
+        const dbColName = attr.field || attrName;
+        expect(dbCols).toContain(dbColName);
+      }
+    });
+
+    if (model.options.paranoid) {
+      test(`${model.name}: paranoid → deleted_at exists in DB`, async () => {
+        const dbCols = await getDbColumns(model.tableName);
+        expect(dbCols).toContain('deleted_at');
+      });
+    }
+  }
+});
+```
+
+#### 46.4.2 — Chạy trong CI (chỉ khi DB env available)
+Add `test:integration` script + GitHub Action job (skip nếu PR docs-only).
+
+---
+
+### 46.5 Add Repository Attribute ↔ Model CI Check
+
+#### 46.5.1 — `__tests__/unit/repoAttributesDrift.unit.test.js`
+
+Test mocks Sequelize, parses attribute arrays trong source code, verify mỗi cột tồn tại trong tương ứng model:
+
+```js
+const sourceFiles = glob.sync('backend/src/modules/**/repositories/*.js');
+for (const file of sourceFiles) {
+  const ast = parse(fs.readFileSync(file, 'utf8'));
+  // Find: attributes: ['col1', 'col2'] in object literals
+  const queries = extractAttributeArrays(ast);
+  for (const { modelAlias, attributes, line } of queries) {
+    const model = resolveModel(modelAlias);
+    for (const attr of attributes) {
+      expect(model.rawAttributes[attr]).toBeDefined();
+    }
+  }
+}
+```
+
+Catch bug `attributes: ['altText']` ngay lập tức trong jest, không phải runtime.
+
+---
+
+### 46.6 Generate `migration_full.sql` từ models — single source of truth
+
+#### 46.6.1 — Script `npm run db:export-migration`
+Reverse `db:export-seed` (đã có): generate `migration_full.sql` từ Sequelize sync output, không phải dump từ DB. Đảm bảo migration_full luôn match models.
+
+#### 46.6.2 — Pre-commit hook
+Khi diff có touch `backend/src/models/*.js` mà KHÔNG có touch `backend/data/migration_full.sql` → pre-commit warn "Model changed → regenerate migration_full.sql".
+
+---
+
+### ✅ Acceptance Criteria Phase 46
+
+#### 46.1 Discovery
+- [ ] `scripts/auditSchemaDrift.js` exists, runs, produces `docs/SCHEMA_DRIFT_REPORT.md`.
+- [ ] Report list 4 loại drift (A/B/C/D) với count cụ thể.
+
+#### 46.2 DB Fix
+- [ ] Migration mới `2026MMDDHH-fix-schema-drift.js` tạo + apply.
+- [ ] `migration_full.sql` cập nhật với 7 cột missing đã add.
+- [ ] `npm run db:reset` từ scratch → re-run audit script → drift A+B = 0.
+
+#### 46.3 Repo Fix
+- [ ] `scripts/auditRepoAttributes.js` run → drift = 0 cho tất cả modules.
+- [ ] Tất cả endpoint `/api/products/*`, `/api/categories`, `/api/brands`, `/api/collections`, `/api/news`, `/api/banners`, `/api/cart` trả 200 (không 500).
+- [ ] Service mapping fallback hợp lý cho cột đã drop khỏi attributes.
+
+#### 46.4 Integration test
+- [ ] `schemaDrift.integration.test.js` exists, all models pass.
+- [ ] CI skip nếu DB không available; chạy local + PR `db/`-touching.
+
+#### 46.5 Repo attribute test
+- [ ] `repoAttributesDrift.unit.test.js` exists, all repository queries pass.
+- [ ] Test detect drift được khi cố ý break (1 file pass, 1 file fail expected).
+
+#### 46.6 Single source of truth
+- [ ] `npm run db:export-migration` exists, generates `migration_full.sql` từ models.
+- [ ] Pre-commit warn khi model touch nhưng migration_full không touch.
+
+#### Cross-cutting
+- [ ] All previous phase test still pass.
+- [ ] Browser load `http://localhost:5175/` không có 500 nào trong Network tab.
+- [ ] Commit Rule 4.1.
+
+---

@@ -1,5 +1,5 @@
 import { api } from './api';
-import { WarrantyPackage } from '@/types/product.types';
+import { WarrantyPackage } from '@/features/catalog';
 
 // Kiểu dữ liệu phản hồi
 export interface WarrantyPackagesResponse {

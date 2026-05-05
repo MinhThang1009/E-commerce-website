@@ -1,5 +1,5 @@
 import { addNotification } from '@/features/ui/uiSlice';
-import { Product } from '@/types/product.types';
+import { Product } from '@/features/catalog';
 import { calculatePriceRange } from '@/utils/priceUtils';
 import React, { useState } from 'react';
 import { useTranslation } from 'react-i18next';

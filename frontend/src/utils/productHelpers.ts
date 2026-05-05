@@ -4,7 +4,7 @@ import {
   Product,
   ProductVariant,
   ProductAttribute,
-} from '@/types/product.types';
+} from '@/features/catalog';
 
 /**
  * Lấy tồn kho khả dụng cho tổ hợp thuộc tính cụ thể

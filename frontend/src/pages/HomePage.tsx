@@ -8,10 +8,10 @@ import {
 import { ErrorState, EmptyState } from '@/components/common/ErrorState';
 import { ProductGrid, CategoryGrid } from '@/components/layout/Grid';
 import { PageLayout, PageSection } from '@/components/layout/PageLayout';
-import { useGetCategoriesQuery } from '@/services/categoryApi';
-import { useGetFeaturedProductsQuery } from '@/services/productApi';
-import { useGetBrandsQuery } from '@/services/brandApi';
-import { useGetCollectionsQuery } from '@/services/collectionApi';
+import { useGetCategoriesQuery } from '@/features/catalog';
+import { useGetFeaturedProductsQuery } from '@/features/catalog';
+import { useGetBrandsQuery } from '@/features/catalog';
+import { useGetCollectionsQuery } from '@/features/catalog';
 import { useSubscribeNewsletterMutation } from '@/services/contactApi';
 import { useApiState } from '@/hooks/useApiState';
 import {

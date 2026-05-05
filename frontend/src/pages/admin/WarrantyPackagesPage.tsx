@@ -33,7 +33,7 @@ import {
   useUpdateWarrantyPackageMutation,
   useDeleteWarrantyPackageMutation,
 } from '@/services/warrantyApi';
-import { WarrantyPackage } from '@/types/product.types';
+import { WarrantyPackage } from '@/features/catalog';
 
 const { TextArea } = Input;
 

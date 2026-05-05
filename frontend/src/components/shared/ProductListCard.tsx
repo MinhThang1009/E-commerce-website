@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useDispatch, useSelector } from 'react-redux';
 import { useTranslation } from 'react-i18next';
-import { Product } from '@/types/product.types';
+import { Product } from '@/features/catalog';
 import { addItem, setServerCart } from '@/features/cart/cartSlice';
 import { addNotification } from '@/features/ui/uiSlice';
 import { useAddToCartMutation } from '@/services/cartApi';

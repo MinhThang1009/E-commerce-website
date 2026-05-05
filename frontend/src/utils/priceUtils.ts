@@ -1,5 +1,5 @@
 import i18next from 'i18next';
-import { ProductVariant } from '@/types/product.types';
+import { ProductVariant } from '@/features/catalog';
 import { getLocale } from './format';
 
 export interface PriceInfo {

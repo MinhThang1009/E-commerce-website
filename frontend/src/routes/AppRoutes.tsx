@@ -7,8 +7,9 @@ import { ProtectedRoute, PublicOnlyRoute, AdminRoute } from '@/features/auth';
 
 // Các trang được tải theo yêu cầu (lazy-loaded)
 const HomePage = lazy(() => import('@/pages/HomePage'));
-const ShopPage = lazy(() => import('@/pages/ShopPage'));
-const ProductDetailPage = lazy(() => import('@/pages/ProductDetailPage'));
+// Trang catalog (BE module catalog) — deep import giữ code splitting riêng từng page
+const ShopPage = lazy(() => import('@/features/catalog/pages/ShopPage'));
+const ProductDetailPage = lazy(() => import('@/features/catalog/pages/ProductDetailPage'));
 const CartPage = lazy(() => import('@/pages/CartPage'));
 const CheckoutPage = lazy(() => import('@/pages/CheckoutPage'));
 // Trang xác thực — deep import giữ code splitting riêng từng page
@@ -20,13 +21,13 @@ const VerifyEmailPage = lazy(() => import('@/features/auth/pages/VerifyEmailPage
 const ProfilePage = lazy(() => import('@/pages/ProfilePage'));
 const OrdersPage = lazy(() => import('@/pages/OrdersPage'));
 const WishlistPage = lazy(() => import('@/pages/WishlistPage'));
-const CategoriesPage = lazy(() => import('@/pages/CategoriesPage'));
-const CategoryPage = lazy(() => import('@/pages/CategoryPage'));
-const BrandsPage = lazy(() => import('@/pages/BrandsPage'));
-const CollectionsPage = lazy(() => import('@/pages/CollectionsPage'));
-const DealsPage = lazy(() => import('@/pages/DealsPage'));
-const NewArrivalsPage = lazy(() => import('@/pages/NewArrivalsPage'));
-const BestSellersPage = lazy(() => import('@/pages/BestSellersPage'));
+const CategoriesPage = lazy(() => import('@/features/catalog/pages/CategoriesPage'));
+const CategoryPage = lazy(() => import('@/features/catalog/pages/CategoryPage'));
+const BrandsPage = lazy(() => import('@/features/catalog/pages/BrandsPage'));
+const CollectionsPage = lazy(() => import('@/features/catalog/pages/CollectionsPage'));
+const DealsPage = lazy(() => import('@/features/catalog/pages/DealsPage'));
+const NewArrivalsPage = lazy(() => import('@/features/catalog/pages/NewArrivalsPage'));
+const BestSellersPage = lazy(() => import('@/features/catalog/pages/BestSellersPage'));
 const AboutPage = lazy(() => import('@/pages/AboutPage'));
 const ContactPage = lazy(() => import('@/pages/ContactPage'));
 const FAQsPage = lazy(() => import('@/pages/FAQsPage'));
@@ -37,21 +38,21 @@ const TermsPage = lazy(() => import('@/pages/TermsPage'));
 
 // Các trang dành cho Admin
 const AdminDashboardPage = lazy(() => import('@/pages/admin/DashboardPage'));
-const AdminProductsPage = lazy(() => import('@/pages/admin/ProductsPage'));
-const CreateProductPage = lazy(() => import('@/pages/admin/CreateProductPage'));
-const EditProductPage = lazy(() => import('@/pages/admin/EditProductPage'));
+const AdminProductsPage = lazy(() => import('@/features/catalog/pages/admin/ProductsPage'));
+const CreateProductPage = lazy(() => import('@/features/catalog/pages/admin/CreateProductPage'));
+const EditProductPage = lazy(() => import('@/features/catalog/pages/admin/EditProductPage'));
 const AdminOrdersPage = lazy(() => import('@/pages/admin/OrdersPage'));
 const AdminUsersPage = lazy(() => import('@/pages/admin/UsersPage'));
 const AdminUserDetailPage = lazy(() => import('@/pages/admin/UserDetailPage'));
-const AdminCategoriesPage = lazy(() => import('@/pages/admin/CategoriesPage'));
+const AdminCategoriesPage = lazy(() => import('@/features/catalog/pages/admin/CategoriesPage'));
 const AdminWarrantyPackagesPage = lazy(
   () => import('@/pages/admin/WarrantyPackagesPage')
 );
 const AdminDiscountCodesPage = lazy(
   () => import('@/pages/admin/DiscountCodesPage')
 );
-const AdminBrandsPage = lazy(() => import('@/pages/admin/BrandsPage'));
-const AdminCollectionsPage = lazy(() => import('@/pages/admin/CollectionsPage'));
+const AdminBrandsPage = lazy(() => import('@/features/catalog/pages/admin/BrandsPage'));
+const AdminCollectionsPage = lazy(() => import('@/features/catalog/pages/admin/CollectionsPage'));
 const AdminNewsPage = lazy(() => import('@/pages/admin/NewsPage'));
 const CreateNewsPage = lazy(() => import('@/pages/admin/CreateNewsPage'));
 const SupportDashboard = lazy(() => import('@/pages/admin/SupportDashboard'));

@@ -5,25 +5,25 @@
 
 ## Tổng quan
 
-- **Test suites:** 29 PASS / 29 total
-- **Tests:** 342 PASS / 342 total (270 integration + 72 unit Phase 44 partial)
+- **Test suites:** 31 PASS / 31 total
+- **Tests:** 391 PASS / 391 total (270 integration + 121 unit Phase 44 partial)
 - **Test runtime:** ~13 giây
-- **Coverage type:** unit (StripeService 12, AdminAuditService 11, VNPayService 11, MoMoService 9, LocationService 6, productHelpers 23) + integration (HTTP supertest 270)
+- **Coverage type:** unit (StripeService 12, AdminAuditService 11, VNPayService 11, MoMoService 9, LocationService 6, productHelpers 23, imageUrl 25, ruleBasedChatbot 24) + integration (HTTP supertest 270)
 
 ## Coverage by category
 
 | Category | Stmts | Branch | Funcs | Lines | Note |
 |---|---|---|---|---|---|
-| **All files** | 30.01% | 20.15% | 25.40% | 30.53% | Sau Phase 44 partial round 3 (6 unit suites) |
+| **All files** | 31.67% | 21.86% | 28.36% | 32.02% | Sau Phase 44 partial round 4 (8 unit suites) |
 | `validators/` | 100% | 100% | 100% | 100% | ✓ Joi schemas full coverage |
 | `routes/` | 99.19% | 100% | 71.42% | 99.19% | ✓ Excellent route-level integration |
 | `middlewares/` | 66.52% | 54.23% | 60.86% | 68.01% | OK — error handler + auth tested |
 | `controllers/` | 31.28% | 19.33% | 23.7% | 32.25% | Gap — Phase 44 target |
-| `services/ai/` | 28.07% | 19.45% | 26.13% | 29.14% | Gap — RAG pipeline khó test (LLM mock complex) |
+| `services/ai/` | **31.96%** | **25.06%** | **32.63%** | **31.53%** | ⬆️ ruleBasedChatbot pure helpers covered (intent classification + price parsing); RAG geminiChatbot vẫn untested |
 | `services/payment/` | **88.74%** | **94.28%** | **81.25%** | **88.74%** | ⬆️⬆️ Phase 44 round 2: Stripe+VNPay+MoMo all covered. Vượt target 70% (Phase 44 plan) |
 | `services/` (toàn bộ) | 16.04% | 27.20% | 20.33% | 16.22% | LocationService added; AI submodule (28%) vẫn untested |
 | `models/` | 24.21% | 0% | 5% | 25.55% | Hooks chưa test riêng — chạy qua integration |
-| `utils/` | **42.75%** | **43.18%** | **53.33%** | **42.40%** | ⬆️ +9% từ productHelpers unit tests (23 tests, pure func coverage) |
+| `utils/` | **98.55%** | **82.95%** | **100%** | **99.20%** | ⬆️⬆️ Round 4: imageUrl 25 tests + productHelpers 23 + catchAsync + logger. Near-complete coverage. |
 
 ## Phân tích
 

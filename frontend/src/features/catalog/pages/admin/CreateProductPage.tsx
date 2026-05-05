@@ -21,10 +21,10 @@ import { useProductForm } from '../../hooks/useProductForm';
 import { useProductVariants } from '../../hooks/useProductVariants';
 
 // Các API hook cần thiết
-import { useCreateProductMutation } from '@/services/adminProductApi';
+import { useCreateProductMutation } from '@/features/admin';
 import { useGetCategoriesQuery } from '../../api/categoryApi';
-import { useConvertBase64ToImageMutation, useDeleteImageMutation } from '@/services/imageApi';
-import { useGetWarrantyPackagesQuery } from '@/services/warrantyApi';
+import { useConvertBase64ToImageMutation, useDeleteImageMutation } from '@/features/upload';
+import { useGetWarrantyPackagesQuery } from '@/features/admin';
 
 // Các component con cho từng phần của form
 import AttributeModal from '@/components/modals/AttributeModal';

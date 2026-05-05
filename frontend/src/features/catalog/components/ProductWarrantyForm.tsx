@@ -15,7 +15,7 @@ import {
   CheckCircleOutlined,
 } from '@ant-design/icons';
 import { useTranslation } from 'react-i18next';
-import { useGetWarrantyPackagesQuery } from '@/services/warrantyApi';
+import { useGetWarrantyPackagesQuery } from '@/features/admin';
 import { WarrantyPackage } from '../types/product.types';
 import { getLocale } from '@/utils/format';
 

@@ -38,7 +38,7 @@ import {
   useDeleteUserMutation,
   type User,
   type UserFilters,
-} from '@/services/adminUserApi';
+} from '../api/adminUserApi';
 
 const { Title } = Typography;
 const { Option } = Select;

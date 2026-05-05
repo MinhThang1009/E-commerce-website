@@ -7,7 +7,7 @@ import Quill from 'quill';
 import 'quill/dist/quill.snow.css';
 import { message } from 'antd';
 import { useTranslation } from 'react-i18next';
-import { useUploadImageMutation } from '@/services/imageApi';
+import { useUploadImageMutation } from '@/features/upload';
 import EditorErrorBoundary from './EditorErrorBoundary';
 
 interface EnhancedRichTextEditorProps {

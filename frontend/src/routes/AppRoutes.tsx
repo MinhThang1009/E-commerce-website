@@ -1,7 +1,7 @@
 import { lazy, Suspense } from 'react';
 import { Routes, Route, Navigate } from 'react-router-dom';
 import MainLayout from '@/components/layout/MainLayout';
-import AdminLayout from '@/components/admin/AdminLayout';
+import { AdminLayout } from '@/features/admin';
 import LoadingSpinner from '@/components/common/LoadingSpinner';
 import { ProtectedRoute, PublicOnlyRoute, AdminRoute } from '@/features/auth';
 
@@ -37,31 +37,31 @@ const PrivacyPolicyPage = lazy(() => import('@/pages/PrivacyPolicyPage'));
 const TermsPage = lazy(() => import('@/pages/TermsPage'));
 
 // Các trang dành cho Admin
-const AdminDashboardPage = lazy(() => import('@/pages/admin/DashboardPage'));
+const AdminDashboardPage = lazy(() => import('@/features/admin/pages/DashboardPage'));
 const AdminProductsPage = lazy(() => import('@/features/catalog/pages/admin/ProductsPage'));
 const CreateProductPage = lazy(() => import('@/features/catalog/pages/admin/CreateProductPage'));
 const EditProductPage = lazy(() => import('@/features/catalog/pages/admin/EditProductPage'));
 const AdminOrdersPage = lazy(() => import('@/features/orders/pages/admin/OrdersPage'));
-const AdminUsersPage = lazy(() => import('@/pages/admin/UsersPage'));
-const AdminUserDetailPage = lazy(() => import('@/pages/admin/UserDetailPage'));
+const AdminUsersPage = lazy(() => import('@/features/admin/pages/UsersPage'));
+const AdminUserDetailPage = lazy(() => import('@/features/admin/pages/UserDetailPage'));
 const AdminCategoriesPage = lazy(() => import('@/features/catalog/pages/admin/CategoriesPage'));
 const AdminWarrantyPackagesPage = lazy(
-  () => import('@/pages/admin/WarrantyPackagesPage')
+  () => import('@/features/admin/pages/WarrantyPackagesPage')
 );
 const AdminDiscountCodesPage = lazy(
-  () => import('@/pages/admin/DiscountCodesPage')
+  () => import('@/features/admin/pages/DiscountCodesPage')
 );
 const AdminBrandsPage = lazy(() => import('@/features/catalog/pages/admin/BrandsPage'));
 const AdminCollectionsPage = lazy(() => import('@/features/catalog/pages/admin/CollectionsPage'));
 const AdminNewsPage = lazy(() => import('@/features/content/pages/admin/NewsPage'));
 const CreateNewsPage = lazy(() => import('@/features/content/pages/admin/CreateNewsPage'));
-const SupportDashboard = lazy(() => import('@/pages/admin/SupportDashboard'));
+const SupportDashboard = lazy(() => import('@/features/admin/pages/SupportDashboard'));
 const AdminBannersPage = lazy(() => import('@/features/content/pages/admin/BannersPage'));
 const AdminEmailCampaignsPage = lazy(
   () => import('@/features/content/pages/admin/EmailCampaignsPage')
 );
-const AdminInventoryPage = lazy(() => import('@/pages/admin/InventoryPage'));
-const AdminAuditLogPage = lazy(() => import('@/pages/admin/AuditLogPage'));
+const AdminInventoryPage = lazy(() => import('@/features/admin/pages/InventoryPage'));
+const AdminAuditLogPage = lazy(() => import('@/features/admin/pages/AuditLogPage'));
 
 const PaymentQRPage = lazy(() => import('@/features/payment/pages/PaymentQRPage'));
 

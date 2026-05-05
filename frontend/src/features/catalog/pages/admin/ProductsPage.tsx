@@ -6,10 +6,10 @@ import {
   useCloneProductMutation,
   useUpdateProductStatusMutation,
   useLazyGetAdminProductsQuery,
-} from '@/services/adminProductApi';
+} from '@/features/admin';
 import { useGetAllCategoriesQuery } from '../../api/categoryApi';
 import { useTranslation } from 'react-i18next';
-import ProductExportModal from '@/components/admin/ProductExportModal';
+import { ProductExportModal } from '@/features/admin';
 import { calculatePriceRange } from '@/utils/priceUtils';
 import { getLocale } from '@/utils/format';
 import {

@@ -1,4 +1,4 @@
-import { api } from './api';
+import { api } from '@/services/api';
 import { WarrantyPackage } from '@/features/catalog';
 
 // Kiểu dữ liệu phản hồi

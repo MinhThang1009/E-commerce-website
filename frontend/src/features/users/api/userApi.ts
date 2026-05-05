@@ -1,4 +1,4 @@
-import { api } from './api';
+import { api } from '@/services/api';
 import { User, Address } from '@/types/user.types';
 
 export interface UpdateProfileRequest {

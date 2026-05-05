@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
-import { useCreateProductMutation } from '@/services/adminProductApi';
+import { useCreateProductMutation } from '../api/adminProductApi';
 import { useGetCategoriesQuery } from '@/features/catalog';
 import Button from '@/components/common/Button';
 import Input from '@/components/common/Input';

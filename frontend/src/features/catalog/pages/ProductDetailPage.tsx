@@ -12,7 +12,7 @@ import SimpleDynamicTitle from '../components/SimpleDynamicTitle';
 import ProductDetailsSection from '../components/ProductDetailsSection';
 import ProductFAQSection from '../components/ProductFAQSection';
 import { productApi } from '../api/productApi';
-import { useGetWarrantyPackagesQuery } from '@/services/warrantyApi';
+import { useGetWarrantyPackagesQuery } from '@/features/admin';
 import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useDispatch, useSelector } from 'react-redux';

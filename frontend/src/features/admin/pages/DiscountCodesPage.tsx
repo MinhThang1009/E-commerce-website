@@ -35,7 +35,7 @@ import {
   useCreateDiscountCodeMutation,
   useUpdateDiscountCodeMutation,
   useDeleteDiscountCodeMutation,
-} from '@/services/discountCodeApi';
+} from '../api/discountCodeApi';
 import { DiscountCode } from '@/types/discount.types';
 
 const { TextArea } = Input;

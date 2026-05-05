@@ -27,7 +27,7 @@ import { cartApi, useGetCartCountQuery } from '@/features/cart';
 import { useCreateMomoUrlMutation } from '@/features/payment';
 import { useCreateVNPayUrlMutation } from '@/features/payment';
 import { useGetLoyaltyInfoQuery } from '@/features/loyalty';
-import { useGetAddressesQuery } from '@/services/userApi';
+import { useGetAddressesQuery } from '@/features/users';
 import { Address } from '@/types/user.types';
 
 const CheckoutPage: React.FC = () => {

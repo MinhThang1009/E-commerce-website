@@ -1,4 +1,4 @@
-import { api } from './api';
+import { api } from '@/services/api';
 
 // Kiểu dữ liệu cho Dashboard
 export interface DashboardOverview {

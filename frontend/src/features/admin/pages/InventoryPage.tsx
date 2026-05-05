@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { Table, Input, Button, Tag, Space, Tooltip, message } from 'antd';
 import { EditOutlined, SaveOutlined, CloseOutlined, SearchOutlined } from '@ant-design/icons';
 import { useTranslation } from 'react-i18next';
-import { useGetAdminProductsQuery } from '@/services/adminProductApi';
+import { useGetAdminProductsQuery } from '../api/adminProductApi';
 
 interface ProductRow {
   id: number;

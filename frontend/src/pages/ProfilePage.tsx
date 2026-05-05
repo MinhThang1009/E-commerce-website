@@ -14,7 +14,7 @@ import {
   useUpdateAddressMutation,
   useDeleteAddressMutation,
   useSetDefaultAddressMutation,
-} from '@/services/userApi';
+} from '@/features/users';
 import { Address } from '@/types/user.types';
 import { useGetLoyaltyInfoQuery } from '@/features/loyalty';
 import { formatPrice } from '@/utils/format';

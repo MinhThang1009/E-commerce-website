@@ -22,9 +22,9 @@ import { useProductAttributes } from '../../hooks/useProductAttributes';
 import { useProductVariants } from '../../hooks/useProductVariants';
 
 // Các API hook
-import { useUpdateProductMutation, useGetAdminProductByIdQuery } from '@/services/adminProductApi';
+import { useUpdateProductMutation, useGetAdminProductByIdQuery } from '@/features/admin';
 import { useGetAllCategoriesQuery } from '../../api/categoryApi';
-import { useConvertBase64ToImageMutation } from '@/services/imageApi';
+import { useConvertBase64ToImageMutation } from '@/features/upload';
 
 // Components
 import ProductBasicInfoForm from '../../components/ProductBasicInfoForm';

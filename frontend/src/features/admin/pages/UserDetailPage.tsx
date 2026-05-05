@@ -32,7 +32,7 @@ import {
   CloseCircleOutlined,
 } from '@ant-design/icons';
 import { useTranslation } from 'react-i18next';
-import { useGetUserByIdQuery } from '@/services/adminUserApi';
+import { useGetUserByIdQuery } from '../api/adminUserApi';
 import LoadingSpinner from '@/components/common/LoadingSpinner';
 
 const { Title, Text } = Typography;

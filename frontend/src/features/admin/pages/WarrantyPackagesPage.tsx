@@ -32,7 +32,7 @@ import {
   useCreateWarrantyPackageMutation,
   useUpdateWarrantyPackageMutation,
   useDeleteWarrantyPackageMutation,
-} from '@/services/warrantyApi';
+} from '../api/warrantyApi';
 import { WarrantyPackage } from '@/features/catalog';
 
 const { TextArea } = Input;

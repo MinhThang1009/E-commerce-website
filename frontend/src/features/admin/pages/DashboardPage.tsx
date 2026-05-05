@@ -4,10 +4,10 @@ import { useTranslation } from 'react-i18next';
 import {
   useGetDashboardStatsQuery,
   useGetLowStockAnalyticsQuery,
-} from '@/services/adminDashboardApi';
-import { useGetAdminOrdersQuery } from '@/services/adminOrderApi';
+} from '../api/adminDashboardApi';
+import { useGetAdminOrdersQuery } from '../api/adminOrderApi';
 import { formatPrice } from '@/utils/format';
-import DashboardCharts from '@/components/admin/DashboardCharts';
+import DashboardCharts from '../components/DashboardCharts';
 
 // Màu sắc badge trạng thái
 const statusColors: Record<string, string> = {

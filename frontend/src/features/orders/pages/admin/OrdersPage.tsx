@@ -38,7 +38,7 @@ import {
   useGetAdminOrdersQuery,
   useUpdateOrderStatusMutation,
   AdminOrder,
-} from '@/services/adminOrderApi';
+} from '@/features/admin';
 import styles from './OrdersPage.module.css';
 import { useTranslation } from 'react-i18next';
 import { getLocale } from '@/utils/format';

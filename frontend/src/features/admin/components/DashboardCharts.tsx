@@ -11,7 +11,7 @@ import {
   useGetUserGrowthAnalyticsQuery,
   useGetPaymentMethodsAnalyticsQuery,
   useGetChatbotStatsQuery,
-} from '@/services/adminDashboardApi';
+} from '../api/adminDashboardApi';
 import {
   ResponsiveContainer,
   AreaChart,

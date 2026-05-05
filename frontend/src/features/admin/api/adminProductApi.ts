@@ -1,5 +1,5 @@
-import { api } from './api';
-import apiClient from './apiClient';
+import { api } from '@/services/api';
+import apiClient from '@/services/apiClient';
 
 // Kiểu dữ liệu cho quản lý sản phẩm admin
 export interface CreateProductRequest {

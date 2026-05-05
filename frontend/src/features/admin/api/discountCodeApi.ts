@@ -1,4 +1,4 @@
-import { api } from './api';
+import { api } from '@/services/api';
 import { DiscountCode } from '@/types/discount.types';
 
 export interface DiscountCodesResponse {

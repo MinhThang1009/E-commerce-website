@@ -37,7 +37,7 @@ const EmailCampaign = require('./emailCampaign');
 const ProductImage = require('./productImage');
 const BrandCategory = require('./brandCategory');
 const InventoryLog = require('./inventoryLog');
-const AuditLog = require('./AuditLog');
+const AuditLog = require('./auditLog');
 const ImportLog = require('./importLog');
 
 // =============================================

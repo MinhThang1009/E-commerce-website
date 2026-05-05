@@ -1,0 +1,7 @@
+// Barrel export feature checkout — public surface
+// Checkout flow gộp cart → addresses → payment, dùng nhiều cross-feature
+// (cart, payment, orders, catalog) nên feature này chủ yếu là 1 page
+// orchestrator + small helper. State chính của checkout (cart) ở features/cart;
+// payment flow ở features/payment; orders flow ở features/orders.
+
+export { default as CheckoutPage } from './pages/CheckoutPage';

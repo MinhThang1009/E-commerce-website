@@ -26,5 +26,14 @@ module.exports = {
     '@typescript-eslint/no-redeclare': 'warn',
     // Ngăn console.log tái xuất hiện trong code mới — chỉ giữ console.error
     'no-console': ['warn', { allow: ['error', 'warn'] }],
+    // Phase 42.19.3 — Architecture guardrails: warn deep import bypass barrel
+    'no-restricted-imports': ['warn', {
+      patterns: [
+        {
+          group: ['@/features/*/components/*', '@/features/*/pages/*', '@/features/*/hooks/*', '@/features/*/api/*', '@/features/*/store/*'],
+          message: 'Import từ @/features/{name} barrel thay vì deep path (sau Phase 42 modular structure).',
+        },
+      ],
+    }],
   },
 };

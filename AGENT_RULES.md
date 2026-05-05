@@ -537,3 +537,30 @@ Sau mỗi phase: `/compact`. Session mới: paste đúng section "PHASE X" từ 
 ## Rule 7 — Khi gặp blocker
 
 Server crash → `git checkout -- <file>` ngay. Không chắc → dừng, hỏi user. Context >80% → `/compact`.
+
+## Rule 33 — Module mới phải dùng generator (Phase 42 sustainability)
+
+Khi cần thêm module backend mới (vd `referrals`, `subscriptions`): **DÙNG `node scripts/new-module.mjs --name=<name> --type=simple|ddd-lite`**. KHÔNG copy thủ công folder hoặc tạo tay từng file.
+
+- Generator validate trùng module name + Domain Glossary forbidden term + tạo cấu trúc 3-layer chuẩn (controllers, services, repositories với interface + impl, models, routes, validators, dtos, module.js).
+- `--type=ddd-lite` thêm `domain/{aggregates, events, policies}/` cho 5 module phức tạp (orders/payment/ai/inventory/chat).
+- Sau generate: implement TODO trong files, viết integration test theo Rule 30, mount module router trong `server.js` theo hướng dẫn console output.
+
+## Rule 34 — Pre-commit hook KHÔNG được bypass (`--no-verify`)
+
+Hook `.husky/pre-commit` chạy `scripts/audit-architecture.sh` block 3 violation: service import Sequelize/Model, controller touch ORM, cross-module deep import.
+
+- Nếu hook fail: **fix root cause**, KHÔNG bypass `git commit --no-verify`.
+- Exception duy nhất: hot-fix production khẩn cấp khi user explicit yêu cầu — phải document lý do trong commit message.
+- Bypass mà không có lý do = vi phạm Rule 4 double-check gate.
+
+## Rule 35 — Pattern kiến trúc mới phải document + tooling
+
+Khi thêm pattern mới (vd CQRS, Event Sourcing, GraphQL layer):
+
+1. UPDATE `docs/NAMING_CONVENTION.md` (hoặc 1 trong 3 file con `docs/naming/*.md`) với convention.
+2. UPDATE `docs/MODULE_GUIDE.md` (nếu có) hoặc tạo mới với folder structure đích.
+3. THÊM ESLint rule tương ứng vào `backend/eslint.config.js` hoặc `frontend/.eslintrc.cjs`.
+4. THÊM check vào `scripts/audit-architecture.sh` nếu enforce được qua git diff.
+
+KHÔNG "smuggle" pattern mới mà không document — code reviewer/future-self không biết intent → drift sẽ xảy ra ngay.

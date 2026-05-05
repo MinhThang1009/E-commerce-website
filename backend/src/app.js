@@ -25,7 +25,9 @@ const {
   Banner, News, EmailCampaign, NewsletterSubscriber, Feedback,
   Category, Brand, Collection, ProductCollection,
   ProductAttribute, ProductSpecification, RecentlyViewed,
+  DiscountCode, InventoryLog,
 } = require('./models');
+const constants = require('./constants');
 const emailService = require('./services/email');
 const { AdminAuditService } = require('./services/adminAudit');
 const { getRedisClient } = require('./config/redis');
@@ -38,6 +40,7 @@ const buildLoyaltyModule = require('./modules/loyalty/module');
 const buildContentModule = require('./modules/content/module');
 const buildUploadModule = require('./modules/upload/module');
 const buildCatalogModule = require('./modules/catalog/module');
+const buildOrdersModule = require('./modules/orders/module');
 
 const authModule = buildAuthModule({
   User,
@@ -99,6 +102,14 @@ const catalogModule = buildCatalogModule({
   eventBus, logger,
 });
 catalogModule.subscribeEvents();
+
+const ordersModule = buildOrdersModule({
+  Order, OrderItem, Cart, CartItem, Product, ProductVariant, User,
+  DiscountCode, LoyaltyHistory, InventoryLog, WarrantyPackage,
+  sequelize, eventBus, logger,
+  emailService, constants,
+});
+ordersModule.subscribeEvents();
 
 // Khởi tạo ứng dụng Express
 const app = express();
@@ -258,6 +269,7 @@ app.use('/api' + uploadModule.basePath, uploadModule.router);
 catalogModule.mounts.forEach(({ basePath, router }) => {
   app.use('/api' + basePath, router);
 });
+app.use('/api' + ordersModule.basePath, ordersModule.router);
 
 // Định nghĩa các API routes
 app.use('/api', routes);

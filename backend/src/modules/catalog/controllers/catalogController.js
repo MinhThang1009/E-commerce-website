@@ -157,6 +157,143 @@ class CatalogController {
       res.status(200).json({ status: 'success', data });
     } catch (err) { next(err); }
   };
+
+  // ---------- Product (Sprint 6b) ----------
+
+  getAllProducts = async (req, res, next) => {
+    try {
+      const { payload, cacheHit } = await this.catalogService.getAllProducts({
+        ...req.query, cacheUrl: req.url,
+      });
+      res.setHeader('X-Cache', cacheHit ? 'HIT' : 'MISS');
+      res.status(200).json(payload);
+    } catch (err) { next(err); }
+  };
+
+  getProductById = async (req, res, next) => {
+    try {
+      const { payload, cacheHit } = await this.catalogService.getProductById({
+        id: req.params.id,
+        skuId: req.query.skuId,
+        queryColor: req.query.color || req.query['Màu sắc'],
+        userId: req.user?.id,
+      });
+      res.setHeader('X-Cache', cacheHit ? 'HIT' : 'MISS');
+      res.status(200).json(payload);
+    } catch (err) { next(err); }
+  };
+
+  getProductBySlug = async (req, res, next) => {
+    try {
+      const data = await this.catalogService.getProductBySlug({
+        slug: req.params.slug,
+        skuId: req.query.skuId,
+        queryColor: req.query.color || req.query['Màu sắc'],
+        userId: req.user?.id,
+      });
+      res.status(200).json({ status: 'success', data });
+    } catch (err) { next(err); }
+  };
+
+  getRecentlyViewed = async (req, res, next) => {
+    try {
+      const data = await this.catalogService.getRecentlyViewed({
+        userId: req.user.id, ...req.query,
+      });
+      res.status(200).json({ status: 'success', data });
+    } catch (err) { next(err); }
+  };
+
+  getFeaturedProducts = async (req, res, next) => {
+    try {
+      const data = await this.catalogService.getFeaturedProducts(req.query);
+      res.status(200).json({ status: 'success', data });
+    } catch (err) { next(err); }
+  };
+
+  getRelatedProducts = async (req, res, next) => {
+    try {
+      const data = await this.catalogService.getRelatedProducts({ id: req.params.id, ...req.query });
+      res.status(200).json({ status: 'success', data });
+    } catch (err) { next(err); }
+  };
+
+  searchProducts = async (req, res, next) => {
+    try {
+      const result = await this.catalogService.searchProducts(req.query);
+      res.status(200).json({ status: 'success', ...result });
+    } catch (err) { next(err); }
+  };
+
+  getProductSuggestions = async (req, res, next) => {
+    try {
+      const data = await this.catalogService.getProductSuggestions(req.query);
+      res.status(200).json({ status: 'success', data });
+    } catch (err) { next(err); }
+  };
+
+  getNewArrivals = async (req, res, next) => {
+    try {
+      const data = await this.catalogService.getNewArrivals(req.query);
+      res.status(200).json({ status: 'success', data });
+    } catch (err) { next(err); }
+  };
+
+  getBestSellers = async (req, res, next) => {
+    try {
+      const data = await this.catalogService.getBestSellers(req.query);
+      res.status(200).json({ status: 'success', data });
+    } catch (err) { next(err); }
+  };
+
+  getDeals = async (req, res, next) => {
+    try {
+      const data = await this.catalogService.getDeals(req.query);
+      res.status(200).json({ status: 'success', data });
+    } catch (err) { next(err); }
+  };
+
+  getProductVariants = async (req, res, next) => {
+    try {
+      const data = await this.catalogService.getProductVariants({ id: req.params.id });
+      res.status(200).json({ status: 'success', data });
+    } catch (err) { next(err); }
+  };
+
+  getProductReviewsSummary = async (req, res, next) => {
+    try {
+      const data = await this.catalogService.getProductReviewsSummary({ id: req.params.id });
+      res.status(200).json({ status: 'success', data });
+    } catch (err) { next(err); }
+  };
+
+  getProductFilters = async (req, res, next) => {
+    try {
+      const data = await this.catalogService.getProductFilters(req.query);
+      res.status(200).json({ status: 'success', data });
+    } catch (err) { next(err); }
+  };
+
+  createProduct = async (req, res, next) => {
+    try {
+      const data = await this.catalogService.createProduct({ payload: req.body });
+      res.status(201).json({ status: 'success', data });
+    } catch (err) { next(err); }
+  };
+
+  updateProduct = async (req, res, next) => {
+    try {
+      const data = await this.catalogService.updateProduct({ id: req.params.id, patch: req.body });
+      res.status(200).json({ status: 'success', data });
+    } catch (err) { next(err); }
+  };
+
+  deleteProduct = async (req, res, next) => {
+    try {
+      const result = await this.catalogService.deleteProduct({ id: req.params.id });
+      res.status(200).json({ status: 'success', message: result.message });
+    } catch (err) { next(err); }
+  };
 }
 
 module.exports = CatalogController;

@@ -1,5 +1,5 @@
 const express = require('express');
-const { authenticate } = require('../../shared/http/middlewares/authenticate');
+const { authenticate, optionalAuthenticate } = require('../../shared/http/middlewares/authenticate');
 const { authorize } = require('../../shared/http/middlewares/authorize');
 const { validateRequest } = require('../../shared/http/middlewares/validateRequest');
 const { httpCacheHeaders } = require('../../shared/http/middlewares/cache');
@@ -7,12 +7,11 @@ const {
   categorySchema,
   createBrandSchema, updateBrandSchema,
   createCollectionSchema, updateCollectionSchema,
+  productSchema,
 } = require('./validators/catalogValidator');
 
-// Catalog module routes — Sprint 6a: 3 sub-router (categories, brands,
-// collections). Sprint 6b sẽ thêm 1 router product.
-//
-// URL không đổi so với routes/category.js + brand.js + collection.js cũ.
+// Catalog module routes — 4 sub-router (categories, brands, collections, products).
+// URL không đổi so với routes/category.js + brand.js + collection.js + product.js cũ.
 module.exports = ({ catalogController }) => {
   const categories = express.Router();
   categories.get('/', httpCacheHeaders(1800), catalogController.getAllCategories);
@@ -41,5 +40,26 @@ module.exports = ({ catalogController }) => {
   collections.put('/:id', authenticate, authorize('admin'), validateRequest(updateCollectionSchema), catalogController.updateCollection);
   collections.delete('/:id', authenticate, authorize('admin'), catalogController.deleteCollection);
 
-  return { categories, brands, collections };
+  // Product router — order matters: GET / + named paths trước /:id để
+  // /:id không catch /featured, /deals, etc.
+  const products = express.Router();
+  products.get('/', httpCacheHeaders(60), catalogController.getAllProducts);
+  products.get('/recently-viewed', authenticate, catalogController.getRecentlyViewed);
+  products.get('/featured', httpCacheHeaders(600), catalogController.getFeaturedProducts);
+  products.get('/new-arrivals', httpCacheHeaders(300), catalogController.getNewArrivals);
+  products.get('/best-sellers', catalogController.getBestSellers);
+  products.get('/deals', catalogController.getDeals);
+  products.get('/filters', catalogController.getProductFilters);
+  products.get('/search', catalogController.searchProducts);
+  products.get('/suggestions', catalogController.getProductSuggestions);
+  products.get('/slug/:slug', httpCacheHeaders(300), optionalAuthenticate, catalogController.getProductBySlug);
+  products.get('/:id/related', catalogController.getRelatedProducts);
+  products.get('/:id/variants', catalogController.getProductVariants);
+  products.get('/:id/reviews-summary', catalogController.getProductReviewsSummary);
+  products.get('/:id', httpCacheHeaders(300), optionalAuthenticate, catalogController.getProductById);
+  products.post('/', authenticate, authorize('admin'), validateRequest(productSchema), catalogController.createProduct);
+  products.put('/:id', authenticate, authorize('admin'), validateRequest(productSchema), catalogController.updateProduct);
+  products.delete('/:id', authenticate, authorize('admin'), catalogController.deleteProduct);
+
+  return { categories, brands, collections, products };
 };

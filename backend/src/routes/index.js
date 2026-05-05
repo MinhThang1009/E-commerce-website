@@ -7,7 +7,6 @@ const router = express.Router();
 // (Modular Monolith). routes/auth.js + routes/user.js + routes/cart.js (legacy)
 // còn lại chỉ phục vụ unit/integration test nội bộ, xóa ở Phase 5 cleanup.
 const discountCodeRoutes = require('./discountCode');
-const productRoutes = require('./product');
 const orderRoutes = require('./order');
 const adminRoutes = require('./admin');
 const paymentRoutes = require('./payment');
@@ -21,7 +20,6 @@ const locationRoutes = require('./location');
 
 // Các route API
 router.use('/discount-codes', discountCodeRoutes);
-router.use('/products', productRoutes);
 router.use('/orders', orderRoutes);
 router.use('/admin', adminRoutes);
 router.use('/payments', paymentRoutes);

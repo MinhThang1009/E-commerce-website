@@ -35,8 +35,40 @@ class ICatalogRepository {
   async setCollectionProducts(_collectionId, _productIds, _options) { throw new Error('not implemented'); }
   async findProductsByCollectionId(_collectionId, _options) { throw new Error('not implemented'); }
 
-  // -------- Product (Sprint 6b sẽ mở rộng) --------
-  // Reserved space — Sprint 6b add: searchProducts, findFeatured, findNewArrivals, ...
+  // -------- Product (Sprint 6b) --------
+  async findProductsList(_options) { throw new Error('not implemented'); }
+  async findProductByIdWithFullDetails(_id) { throw new Error('not implemented'); }
+  async findProductBySlugWithFullDetails(_slug) { throw new Error('not implemented'); }
+  async findProductByPk(_id) { throw new Error('not implemented'); }
+  async findFeaturedProducts(_limit) { throw new Error('not implemented'); }
+  async findRelatedProducts(_excludeId, _limit) { throw new Error('not implemented'); }
+  async searchProducts(_options) { throw new Error('not implemented'); }
+  async findProductSuggestions(_prefix, _limit) { throw new Error('not implemented'); }
+  async findNewArrivals(_limit) { throw new Error('not implemented'); }
+  async findBestSellersRaw(_options) { throw new Error('not implemented'); }
+  async findProductsByIdsOrdered(_ids) { throw new Error('not implemented'); }
+  async findDeals(_options) { throw new Error('not implemented'); }
+  async findProductVariantsByProductId(_productId) { throw new Error('not implemented'); }
+  async findProductRatingsRows(_productId) { throw new Error('not implemented'); }
+  async getProductPriceRange(_options) { throw new Error('not implemented'); }
+  async findAttributeValuesByName(_name, _options) { throw new Error('not implemented'); }
+  async findOtherAttributes(_options) { throw new Error('not implemented'); }
+  async findRecentlyViewedByUser(_userId, _limit) { throw new Error('not implemented'); }
+  async upsertRecentlyViewed(_userId, _productId) { throw new Error('not implemented'); }
+  async pruneRecentlyViewed(_userId, _maxKeep) { throw new Error('not implemented'); }
+  async createProduct(_payload, _options) { throw new Error('not implemented'); }
+  async saveProduct(_product, _options) { throw new Error('not implemented'); }
+  async deleteProduct(_product) { throw new Error('not implemented'); }
+  async findCategoriesByIds(_ids) { throw new Error('not implemented'); }
+  async findWarrantyPackagesByIds(_ids) { throw new Error('not implemented'); }
+  async setProductCategories(_product, _categories, _options) { throw new Error('not implemented'); }
+  async setProductWarrantyPackages(_product, _warranties, _options) { throw new Error('not implemented'); }
+  async createProductSpecifications(_rows, _options) { throw new Error('not implemented'); }
+  async clearProductAttributes(_productId, _options) { throw new Error('not implemented'); }
+  async createProductAttributes(_rows, _options) { throw new Error('not implemented'); }
+  async clearProductVariants(_productId, _options) { throw new Error('not implemented'); }
+  async createProductVariants(_rows, _options) { throw new Error('not implemented'); }
+  async runInTransaction(_work) { throw new Error('not implemented'); }
 }
 
 module.exports = ICatalogRepository;

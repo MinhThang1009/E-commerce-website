@@ -24,6 +24,7 @@ const {
   LoyaltyHistory,
   Banner, News, EmailCampaign, NewsletterSubscriber, Feedback,
   Category, Brand, Collection, ProductCollection,
+  ProductAttribute, ProductSpecification, RecentlyViewed,
 } = require('./models');
 const emailService = require('./services/email');
 const { AdminAuditService } = require('./services/adminAudit');
@@ -91,6 +92,8 @@ uploadModule.subscribeEvents();
 
 const catalogModule = buildCatalogModule({
   Category, Brand, Collection, ProductCollection, Product,
+  ProductAttribute, ProductVariant, ProductSpecification,
+  Review, RecentlyViewed, WarrantyPackage,
   sequelize,
   redisClient: getRedisClient,
   eventBus, logger,

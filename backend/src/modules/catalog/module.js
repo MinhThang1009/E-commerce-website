@@ -7,6 +7,8 @@ const buildRoutes = require('./routes');
 // (Sprint 6b). Trả `mounts` array để app.js mount nhiều base path khác nhau.
 module.exports = ({
   Category, Brand, Collection, ProductCollection, Product,
+  ProductAttribute, ProductVariant, ProductSpecification,
+  Review, RecentlyViewed, WarrantyPackage,
   sequelize, redisClient, eventBus, logger,
 }) => {
   if (!Category) throw new Error('catalog module: Category model bắt buộc');
@@ -17,7 +19,10 @@ module.exports = ({
   if (!sequelize) throw new Error('catalog module: sequelize bắt buộc');
 
   const catalogRepository = new SequelizeCatalogRepository({
-    Category, Brand, Collection, ProductCollection, Product, sequelize,
+    Category, Brand, Collection, ProductCollection, Product,
+    ProductAttribute, ProductVariant, ProductSpecification,
+    Review, RecentlyViewed, WarrantyPackage,
+    sequelize,
   });
 
   // Adapter: Redis → CacheStore port. delPattern wrap keys() + multiple del.
@@ -57,6 +62,7 @@ module.exports = ({
       { basePath: '/categories', router: routes.categories },
       { basePath: '/brands', router: routes.brands },
       { basePath: '/collections', router: routes.collections },
+      { basePath: '/products', router: routes.products },
     ],
     subscribeEvents() {},
   };

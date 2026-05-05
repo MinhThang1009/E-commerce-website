@@ -19,6 +19,8 @@ const sequelize = require('./config/sequelize');
 const {
   User, Address,
   Cart, CartItem, Product, ProductVariant, WarrantyPackage,
+  Wishlist,
+  Review, ReviewFeedback, Order, OrderItem,
 } = require('./models');
 const emailService = require('./services/email');
 const { AdminAuditService } = require('./services/adminAudit');
@@ -26,6 +28,8 @@ const { getRedisClient } = require('./config/redis');
 const buildAuthModule = require('./modules/auth/module');
 const buildUsersModule = require('./modules/users/module');
 const buildCartModule = require('./modules/cart/module');
+const buildWishlistModule = require('./modules/wishlist/module');
+const buildReviewsModule = require('./modules/reviews/module');
 
 const authModule = buildAuthModule({
   User,
@@ -50,6 +54,17 @@ const cartModule = buildCartModule({
   sequelize, eventBus, logger,
 });
 cartModule.subscribeEvents();
+
+const wishlistModule = buildWishlistModule({
+  Wishlist, Product, eventBus, logger,
+});
+wishlistModule.subscribeEvents();
+
+const reviewsModule = buildReviewsModule({
+  Review, ReviewFeedback, Product, User, Order, OrderItem,
+  eventBus, logger,
+});
+reviewsModule.subscribeEvents();
 
 // Khởi tạo ứng dụng Express
 const app = express();
@@ -199,6 +214,8 @@ app.use('/uploads', express.static(path.join(__dirname, '../uploads'), {
 app.use('/api' + authModule.basePath, authModule.router);
 app.use('/api' + usersModule.basePath, usersModule.router);
 app.use('/api' + cartModule.basePath, cartModule.router);
+app.use('/api' + wishlistModule.basePath, wishlistModule.router);
+app.use('/api' + reviewsModule.basePath, reviewsModule.router);
 
 // Định nghĩa các API routes
 app.use('/api', routes);

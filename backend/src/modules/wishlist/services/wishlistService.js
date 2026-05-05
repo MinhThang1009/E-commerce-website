@@ -1,0 +1,72 @@
+const { AppError } = require('../../../shared/errors');
+
+// Wishlist Service — danh sách yêu thích của user. KHÔNG truy cập Sequelize
+// hoặc Model trực tiếp.
+class WishlistService {
+  constructor({ wishlistRepository, eventBus, logger }) {
+    this.wishlistRepository = wishlistRepository;
+    this.eventBus = eventBus;
+    this.logger = logger;
+  }
+
+  async getWishlist({ userId }) {
+    const items = await this.wishlistRepository.findByUserIdWithProducts(userId);
+    const products = items.map((item) => {
+      const p = item.Product.toJSON();
+      p.stockQuantity = p.defaultVariant ? p.defaultVariant.stockQuantity : 0;
+      p.inStock = p.stockQuantity > 0;
+
+      if (p.productImages && p.productImages.length > 0) {
+        p.images = p.productImages.map((img) => ({
+          id: img.id, url: img.imageUrl, alt: img.altText, isPrimary: img.isPrimary,
+        }));
+        const primary = p.productImages.find((img) => img.isPrimary) || p.productImages[0];
+        p.thumbnail = primary.imageUrl;
+      } else {
+        p.images = [];
+        p.thumbnail = null;
+      }
+      delete p.productImages;
+      delete p.defaultVariant;
+      return p;
+    });
+    return { products };
+  }
+
+  async addToWishlist({ userId, productId }) {
+    const product = await this.wishlistRepository.findProductById(productId);
+    if (!product) {
+      throw new AppError('Sản phẩm không tồn tại', 404);
+    }
+
+    const existing = await this.wishlistRepository.findItem(userId, productId);
+    if (existing) {
+      return { message: 'Sản phẩm đã có trong danh sách yêu thích', alreadyExists: true };
+    }
+
+    await this.wishlistRepository.createItem({ userId, productId });
+    return { message: 'Đã thêm sản phẩm vào danh sách yêu thích', alreadyExists: false };
+  }
+
+  async removeFromWishlist({ userId, productId }) {
+    const item = await this.wishlistRepository.findItem(userId, productId);
+    if (!item) {
+      throw new AppError('Sản phẩm không có trong danh sách yêu thích', 404);
+    }
+
+    await this.wishlistRepository.deleteItem(item);
+    return { message: 'Đã xóa sản phẩm khỏi danh sách yêu thích' };
+  }
+
+  async checkWishlist({ userId, productId }) {
+    const item = await this.wishlistRepository.findItem(userId, productId);
+    return { inWishlist: !!item };
+  }
+
+  async clearWishlist({ userId }) {
+    await this.wishlistRepository.clearByUserId(userId);
+    return { message: 'Đã xóa tất cả sản phẩm trong danh sách yêu thích' };
+  }
+}
+
+module.exports = WishlistService;

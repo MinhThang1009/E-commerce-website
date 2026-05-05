@@ -1,0 +1,212 @@
+const { AppError } = require('../../../shared/errors');
+
+// Reviews Service — review của user cho product. Business rules:
+//   - Verified purchase: user phải có order delivered chứa product trước khi review
+//   - 1 user / 1 product = 1 review (update nếu đã tồn tại)
+//   - Mark helpful: user khác không thể vote cho review của chính mình
+//   - Tự động tính avg rating + reviewCount cho product khi review CRUD
+class ReviewsService {
+  constructor({ reviewsRepository, eventBus, logger }) {
+    this.reviewsRepository = reviewsRepository;
+    this.eventBus = eventBus;
+    this.logger = logger;
+  }
+
+  // Helper: cập nhật rating của product sau khi review CRUD
+  async _refreshProductRating(productId, includeCount = true) {
+    const { avg, count } = await this.reviewsRepository.getProductRatingsAggregate(productId);
+    if (includeCount) {
+      await this.reviewsRepository.updateProductRating(productId, avg, count);
+    } else {
+      await this.reviewsRepository.updateProductRating(productId, avg);
+    }
+    return { avg, count };
+  }
+
+  async createReview({ userId, productId, rating, title, comment, images }) {
+    const product = await this.reviewsRepository.findProductById(productId);
+    if (!product) {
+      throw new AppError('Sản phẩm không tồn tại', 404);
+    }
+
+    const hasPurchased = await this.reviewsRepository.hasUserPurchasedProduct(userId, productId);
+    if (!hasPurchased) {
+      throw new AppError('Bạn cần mua sản phẩm trước khi đánh giá', 403);
+    }
+
+    const existing = await this.reviewsRepository.findReviewByUserAndProduct(userId, productId);
+
+    let review;
+    if (existing) {
+      Object.assign(existing, { rating, title, content: comment, images: images || [], isVerified: true });
+      review = await this.reviewsRepository.saveReview(existing);
+    } else {
+      review = await this.reviewsRepository.createReview({
+        productId, userId, rating, title,
+        content: comment, images: images || [], isVerified: true,
+      });
+    }
+
+    const created = await this.reviewsRepository.findReviewByPkWithUser(review.id);
+    await this._refreshProductRating(productId);
+
+    return { review: created };
+  }
+
+  async updateReview({ userId, reviewId, patch }) {
+    const review = await this.reviewsRepository.findReviewByIdAndUserId(reviewId, userId);
+    if (!review) {
+      throw new AppError('Không tìm thấy đánh giá', 404);
+    }
+
+    if (patch.rating !== undefined) review.rating = patch.rating;
+    if (patch.title !== undefined) review.title = patch.title;
+    if (patch.comment !== undefined) review.content = patch.comment;
+    if (patch.images !== undefined) review.images = patch.images;
+    review.isVerified = true;
+
+    await this.reviewsRepository.saveReview(review);
+
+    const updated = await this.reviewsRepository.findReviewByPkWithUser(review.id);
+    await this._refreshProductRating(review.productId, false);
+
+    return { review: updated };
+  }
+
+  async deleteReview({ userId, reviewId }) {
+    const review = await this.reviewsRepository.findReviewByIdAndUserId(reviewId, userId);
+    if (!review) {
+      throw new AppError('Không tìm thấy đánh giá', 404);
+    }
+
+    const productId = review.productId;
+    await this.reviewsRepository.deleteReview(review);
+    await this._refreshProductRating(productId);
+
+    return { message: 'Xóa đánh giá thành công' };
+  }
+
+  async getProductReviews({ productId, page = 1, limit = 10, sort = 'newest', rating, verified }) {
+    const sortMapping = {
+      newest: ['createdAt', 'DESC'],
+      oldest: ['createdAt', 'ASC'],
+      highest_rating: ['rating', 'DESC'],
+      lowest_rating: ['rating', 'ASC'],
+      most_helpful: ['likes', 'DESC'],
+    };
+    const [sortColumn, sortOrder] = sortMapping[sort] || ['createdAt', 'DESC'];
+
+    const product = await this.reviewsRepository.findProductById(productId);
+    if (!product) {
+      throw new AppError('Sản phẩm không tồn tại', 404);
+    }
+
+    const whereClause = {};
+    if (rating) whereClause.rating = parseInt(rating, 10);
+    if (verified !== undefined) whereClause.isVerified = verified === 'true';
+
+    const { count, rows } = await this.reviewsRepository.findProductReviews(productId, {
+      whereClause,
+      limit: parseInt(limit, 10),
+      offset: (parseInt(page, 10) - 1) * parseInt(limit, 10),
+      sortColumn, sortOrder,
+    });
+
+    return {
+      total: count,
+      pages: Math.ceil(count / limit),
+      currentPage: parseInt(page, 10),
+      reviews: rows,
+    };
+  }
+
+  async getUserReviews({ userId, page = 1, limit = 10 }) {
+    const { count, rows } = await this.reviewsRepository.findUserReviews(userId, {
+      limit: parseInt(limit, 10),
+      offset: (parseInt(page, 10) - 1) * parseInt(limit, 10),
+    });
+
+    return {
+      total: count,
+      pages: Math.ceil(count / limit),
+      currentPage: parseInt(page, 10),
+      reviews: rows,
+    };
+  }
+
+  async getAllReviews({ page = 1, limit = 10, verified }) {
+    const whereConditions = {};
+    if (verified !== undefined) whereConditions.isVerified = verified === 'true';
+
+    const { count, rows } = await this.reviewsRepository.findAllReviews({
+      whereConditions,
+      limit: parseInt(limit, 10),
+      offset: (parseInt(page, 10) - 1) * parseInt(limit, 10),
+    });
+
+    return {
+      total: count,
+      pages: Math.ceil(count / limit),
+      currentPage: parseInt(page, 10),
+      reviews: rows,
+    };
+  }
+
+  async verifyReview({ reviewId, isVerified }) {
+    const review = await this.reviewsRepository.findReviewByPk(reviewId);
+    if (!review) {
+      throw new AppError('Không tìm thấy đánh giá', 404);
+    }
+
+    review.isVerified = isVerified;
+    await this.reviewsRepository.saveReview(review);
+
+    return {
+      message: isVerified ? 'Đánh giá đã được xác nhận' : 'Đánh giá đã bị từ chối',
+      data: { id: review.id, isVerified },
+    };
+  }
+
+  async markReviewHelpful({ userId, reviewId, helpful }) {
+    const review = await this.reviewsRepository.findReviewByPk(reviewId);
+    if (!review) {
+      throw new AppError('Không tìm thấy đánh giá', 404);
+    }
+
+    if (review.userId === userId) {
+      throw new AppError('Bạn không thể đánh giá đánh giá của chính mình', 400);
+    }
+
+    const existing = await this.reviewsRepository.findFeedback(reviewId, userId);
+
+    if (existing) {
+      if (existing.isHelpful !== helpful) {
+        if (helpful) {
+          await this.reviewsRepository.incrementReview(review, 'likes');
+          await this.reviewsRepository.decrementReview(review, 'dislikes');
+        } else {
+          await this.reviewsRepository.decrementReview(review, 'likes');
+          await this.reviewsRepository.incrementReview(review, 'dislikes');
+        }
+        existing.isHelpful = helpful;
+        await this.reviewsRepository.saveFeedback(existing);
+      }
+    } else {
+      await this.reviewsRepository.createFeedback({ reviewId, userId, isHelpful: helpful });
+      if (helpful) {
+        await this.reviewsRepository.incrementReview(review, 'likes');
+      } else {
+        await this.reviewsRepository.incrementReview(review, 'dislikes');
+      }
+    }
+
+    const updated = await this.reviewsRepository.findReviewByPk(reviewId);
+
+    return {
+      message: helpful ? 'Đã đánh dấu đánh giá là hữu ích' : 'Đã đánh dấu đánh giá là không hữu ích',
+      data: { id: updated.id, likes: updated.likes, dislikes: updated.dislikes },
+    };
+  }
+}
+
+module.exports = ReviewsService;

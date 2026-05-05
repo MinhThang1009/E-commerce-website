@@ -1,9 +1,9 @@
 import React from 'react';
 import { useGoogleLogin } from '@react-oauth/google';
-import { useGoogleLoginMutation } from '@/services/authApi';
+import { useGoogleLoginMutation } from '../api/authApi';
 import { useDispatch } from 'react-redux';
 import { useTranslation } from 'react-i18next';
-import { loginSuccess } from '@/features/auth/authSlice';
+import { loginSuccess } from '../store/authSlice';
 import { addNotification } from '@/features/ui/uiSlice';
 import { PremiumButton } from '@/components/common';
 

@@ -4,7 +4,7 @@ import { useTranslation } from 'react-i18next';
 import Button from '@/components/common/Button';
 import { PremiumButton } from '@/components/common';
 import Input from '@/components/common/Input';
-import { useRegisterMutation, useVerifyOtpMutation, useResendVerificationMutation } from '@/services/authApi';
+import { useRegisterMutation, useVerifyOtpMutation, useResendVerificationMutation } from '../api/authApi';
 
 type Step = 'form' | 'otp';
 type ApiError = { data?: { message?: string }; message?: string };

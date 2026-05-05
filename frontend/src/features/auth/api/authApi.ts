@@ -1,10 +1,10 @@
-import { api, baseQuery } from './api';
+import { api, baseQuery } from '@/services/api';
 import { User } from '@/types/user.types';
 import {
   AuthResponse,
   LoginCredentials,
   RegisterData,
-} from '@/types/auth.types';
+} from '../types/auth.types';
 
 type BackendResponse = {
   status?: string;

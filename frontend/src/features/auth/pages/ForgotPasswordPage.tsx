@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import Button from '@/components/common/Button';
 import Input from '@/components/common/Input';
-import { useForgotPasswordMutation } from '@/services/authApi';
+import { useForgotPasswordMutation } from '../api/authApi';
 
 type ApiError = { data?: { message?: string }; message?: string };
 

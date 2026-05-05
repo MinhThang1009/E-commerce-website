@@ -3,7 +3,7 @@ import { Navigate, useLocation } from 'react-router-dom';
 import { useSelector } from 'react-redux';
 import { useTranslation } from 'react-i18next';
 import { RootState } from '@/store';
-import { useGetCurrentUserQuery } from '@/services/authApi';
+import { useGetCurrentUserQuery } from '../api/authApi';
 import LoadingSpinner from '@/components/common/LoadingSpinner';
 
 interface AdminRouteProps {

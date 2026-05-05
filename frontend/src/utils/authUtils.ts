@@ -1,6 +1,6 @@
 import i18next from 'i18next';
 import { store } from '@/store';
-import { logout } from '@/features/auth/authSlice';
+import { logout } from '@/features/auth';
 import { toast } from '@/utils/toast';
 
 // Hàm điều hướng - sẽ được thiết lập bởi component App

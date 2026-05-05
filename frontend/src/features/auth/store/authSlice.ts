@@ -1,6 +1,6 @@
 import { createSlice, PayloadAction } from '@reduxjs/toolkit';
 import { User } from '@/types/user.types';
-import { AuthState, AuthResponse } from '@/types/auth.types';
+import { AuthState, AuthResponse } from '../types/auth.types';
 
 // Token lưu trong localStorage để persist qua page reload.
 // Trade-off đã đánh giá: XSS script có thể đọc localStorage, nhưng rủi ro được

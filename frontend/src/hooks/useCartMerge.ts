@@ -8,7 +8,7 @@ import {
 } from '@/services/cartApi';
 import { setServerCart } from '@/features/cart/cartSlice';
 import { addNotification } from '@/features/ui/uiSlice';
-import { clearJustLoggedIn } from '@/features/auth/authSlice';
+import { clearJustLoggedIn } from '@/features/auth';
 import { RootState } from '@/store';
 
 export const useCartMerge = (

@@ -1,7 +1,7 @@
 import { useEffect } from 'react';
 import { useSelector, useDispatch } from 'react-redux';
 import { RootState } from '@/store';
-import { useAuth } from './useAuth';
+import { useAuth } from '@/features/auth';
 import { useGetCartQuery, useSyncCartMutation } from '@/services/cartApi';
 import { setServerCart, clearCart } from '@/features/cart/cartSlice';
 

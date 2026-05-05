@@ -5,7 +5,7 @@ import { useDebounce } from '@/hooks/useDebounce';
 import { useDispatch } from 'react-redux';
 import { toggleSearch } from '@/features/ui/uiSlice';
 import { useSearchProductsQuery, Product } from '@/services/productApi';
-import { useAuth } from '@/hooks/useAuth';
+import { useAuth } from '@/features/auth';
 import { 
   useSaveSearchMutation, 
   useGetSearchHistoryQuery,

@@ -1,5 +1,5 @@
 // Kiểu dữ liệu xác thực
-import { User } from './user.types';
+import { User } from '@/types/user.types';
 
 export interface AuthState {
   user: User | null;

@@ -6,6 +6,7 @@ export * from './order.types';
 export * from './category.types';
 export * from './review.types';
 export * from './common.types';
-export * from './auth.types';
+// Kiểu dữ liệu auth đã chuyển sang features/auth — re-export để giữ tương thích
+export * from '@/features/auth/types/auth.types';
 export * from './ui.types';
 

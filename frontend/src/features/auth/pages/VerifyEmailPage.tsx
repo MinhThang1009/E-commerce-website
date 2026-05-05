@@ -1,7 +1,7 @@
 import React, { useState, useRef } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
-import { useVerifyOtpMutation, useResendVerificationMutation } from '@/services/authApi';
+import { useVerifyOtpMutation, useResendVerificationMutation } from '../api/authApi';
 import Button from '@/components/common/Button';
 
 const VerifyEmailPage: React.FC = () => {

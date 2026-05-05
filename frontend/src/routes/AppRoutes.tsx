@@ -3,9 +3,7 @@ import { Routes, Route, Navigate } from 'react-router-dom';
 import MainLayout from '@/components/layout/MainLayout';
 import AdminLayout from '@/components/admin/AdminLayout';
 import LoadingSpinner from '@/components/common/LoadingSpinner';
-import ProtectedRoute from '@/features/auth/components/ProtectedRoute';
-import PublicOnlyRoute from '@/features/auth/components/PublicOnlyRoute';
-import AdminRoute from '@/features/auth/components/AdminRoute';
+import { ProtectedRoute, PublicOnlyRoute, AdminRoute } from '@/features/auth';
 
 // Các trang được tải theo yêu cầu (lazy-loaded)
 const HomePage = lazy(() => import('@/pages/HomePage'));
@@ -13,11 +11,12 @@ const ShopPage = lazy(() => import('@/pages/ShopPage'));
 const ProductDetailPage = lazy(() => import('@/pages/ProductDetailPage'));
 const CartPage = lazy(() => import('@/pages/CartPage'));
 const CheckoutPage = lazy(() => import('@/pages/CheckoutPage'));
-const LoginPage = lazy(() => import('@/pages/LoginPage'));
-const RegisterPage = lazy(() => import('@/pages/RegisterPage'));
-const ForgotPasswordPage = lazy(() => import('@/pages/ForgotPasswordPage'));
-const ResetPasswordPage = lazy(() => import('@/pages/ResetPasswordPage'));
-const VerifyEmailPage = lazy(() => import('@/pages/VerifyEmailPage'));
+// Trang xác thực — deep import giữ code splitting riêng từng page
+const LoginPage = lazy(() => import('@/features/auth/pages/LoginPage'));
+const RegisterPage = lazy(() => import('@/features/auth/pages/RegisterPage'));
+const ForgotPasswordPage = lazy(() => import('@/features/auth/pages/ForgotPasswordPage'));
+const ResetPasswordPage = lazy(() => import('@/features/auth/pages/ResetPasswordPage'));
+const VerifyEmailPage = lazy(() => import('@/features/auth/pages/VerifyEmailPage'));
 const ProfilePage = lazy(() => import('@/pages/ProfilePage'));
 const OrdersPage = lazy(() => import('@/pages/OrdersPage'));
 const WishlistPage = lazy(() => import('@/pages/WishlistPage'));

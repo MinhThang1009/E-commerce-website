@@ -8,9 +8,9 @@ import Input from '@/components/common/Input';
 import {
   useLoginMutation,
   useResendVerificationMutation,
-} from '@/services/authApi';
-import { loginSuccess } from '@/features/auth/authSlice';
-import GoogleLoginButton from '@/features/auth/components/GoogleLoginButton';
+} from '../api/authApi';
+import { loginSuccess } from '../store/authSlice';
+import GoogleLoginButton from '../components/GoogleLoginButton';
 
 interface LocationState { from?: { pathname: string } }
 type ApiError = { data?: { message?: string }; message?: string };

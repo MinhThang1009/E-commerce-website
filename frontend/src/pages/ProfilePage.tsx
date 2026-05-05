@@ -4,7 +4,7 @@ import { Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import Input from '@/components/common/Input';
 import { RootState } from '@/store';
-import { updateUser } from '@/features/auth/authSlice';
+import { updateUser, useGetCurrentUserQuery } from '@/features/auth';
 import { addNotification } from '@/features/ui/uiSlice';
 import {
   useUpdateProfileMutation,
@@ -16,7 +16,6 @@ import {
   useSetDefaultAddressMutation,
 } from '@/services/userApi';
 import { Address } from '@/types/user.types';
-import { useGetCurrentUserQuery } from '@/services/authApi';
 import { useGetLoyaltyInfoQuery } from '@/services/loyaltyApi';
 import { formatPrice } from '@/utils/format';
 

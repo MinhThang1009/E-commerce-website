@@ -2,8 +2,8 @@ import React, { useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useDispatch, useSelector } from 'react-redux';
 import { RootState } from '@/store';
-import { useGetCurrentUserQuery } from '@/services/authApi';
-import { loginSuccess, logout } from '@/features/auth/authSlice';
+import { useGetCurrentUserQuery } from '../api/authApi';
+import { loginSuccess, logout } from '../store/authSlice';
 import LoadingSpinner from '@/components/common/LoadingSpinner';
 
 interface AuthProviderProps {

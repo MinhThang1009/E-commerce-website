@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Link, useLocation, Outlet, useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
-import { useAuth } from '@/hooks/useAuth';
+import { useAuth } from '@/features/auth';
 import { useSelector, useDispatch } from 'react-redux';
 import { RootState } from '@/store';
 import { setTheme } from '@/features/ui/uiSlice';

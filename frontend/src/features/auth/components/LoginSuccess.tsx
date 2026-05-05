@@ -3,7 +3,7 @@ import { useSelector, useDispatch } from 'react-redux';
 import { RootState } from '@/store';
 import { useNotifications } from '@/hooks/useNotifications';
 import { useTranslation } from 'react-i18next';
-import { clearJustLoggedIn } from '@/features/auth/authSlice';
+import { clearJustLoggedIn } from '../store/authSlice';
 
 const LoginSuccess: React.FC = () => {
   const { t } = useTranslation();

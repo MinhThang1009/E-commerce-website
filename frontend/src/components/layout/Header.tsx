@@ -7,7 +7,7 @@ import SearchBar from '@/components/shared/SearchBar';
 import { useSelector, useDispatch } from 'react-redux';
 import { RootState } from '@/store';
 import { toggleMobileMenu, toggleSearch } from '@/features/ui/uiSlice';
-import { useAuth } from '@/hooks/useAuth';
+import { useAuth } from '@/features/auth';
 import { useGetCartCountQuery } from '@/services/cartApi';
 import { initializeCart } from '@/features/cart/cartSlice';
 import { useGetWishlistQuery } from '@/services/wishlistApi';

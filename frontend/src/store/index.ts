@@ -1,5 +1,5 @@
 import chatReducer from '@/features/ai/store/chatSlice';
-import authReducer from '@/features/auth/authSlice';
+import { authReducer } from '@/features/auth';
 import cartReducer from '@/features/cart/cartSlice';
 import productsReducer from '@/features/products/productsSlice';
 import uiReducer from '@/features/ui/uiSlice';

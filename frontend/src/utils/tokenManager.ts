@@ -1,6 +1,6 @@
 import i18next from 'i18next';
 import { store } from '@/store';
-import { updateTokens, logout } from '@/features/auth/authSlice';
+import { updateTokens, logout } from '@/features/auth';
 import { handleAutoLogout, logoutManager } from '@/utils/authUtils';
 
 let isRefreshing = false;

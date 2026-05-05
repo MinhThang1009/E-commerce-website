@@ -3,7 +3,7 @@ import { Link, useSearchParams, useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import Button from '@/components/common/Button';
 import Input from '@/components/common/Input';
-import { useResetPasswordMutation } from '@/services/authApi';
+import { useResetPasswordMutation } from '../api/authApi';
 
 const ResetPasswordPage: React.FC = () => {
   const { t } = useTranslation();

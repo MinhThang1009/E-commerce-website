@@ -3,13 +3,37 @@ name: CI
 on:
   push:
     branches: [main, 'phase-*']
+    paths-ignore:
+      - '**.md'
+      - 'docs/**'
+      - '.github/ISSUE_TEMPLATE/**'
+      - '.gitignore'
+      - 'LICENSE'
   pull_request:
     branches: [main]
+    paths-ignore:
+      - '**.md'
+      - 'docs/**'
+
+# Least privilege — chỉ cần read code để clone + run tests
+permissions:
+  contents: read
+
+# Cancel duplicate runs trên cùng branch khi push liên tục (tiết kiệm CI minutes)
+# Branch main giữ run hiện tại; PR cancel run cũ khi commit mới push
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' || !contains(github.ref, 'refs/heads/main') }}
+
+defaults:
+  run:
+    shell: bash
 
 jobs:
   backend:
     name: Backend (lint + test)
     runs-on: ubuntu-latest
+    timeout-minutes: 15
     steps:
       - uses: actions/checkout@v4
 
@@ -44,6 +68,7 @@ jobs:
   frontend:
     name: Frontend (lint + typecheck + test + build)
     runs-on: ubuntu-latest
+    timeout-minutes: 15
     steps:
       - uses: actions/checkout@v4
 

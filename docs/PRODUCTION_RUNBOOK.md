@@ -132,7 +132,30 @@ Demo defense có sự cố:
 
 ---
 
-## 8. Pre-defense checklist
+## 8. FE bundle size — accepted technical debt
+
+**Đo ngày 2026-05-05 (Phase 45.5.2):** `cd frontend && npm run build`
+
+| Chunk | Raw | Gzipped | Note |
+|---|---|---|---|
+| `index-*.js` (main shell) | 1,350 KB | **432 KB** | Eager: React + Redux Toolkit + RTK Query base + Ant Design ConfigProvider + i18next + all slices |
+| `ProductsPage-*.js` (admin) | 953 KB | 276 KB | Lazy-loaded — admin only |
+| `DashboardPage-*.js` (admin) | 448 KB | 114 KB | Lazy-loaded — admin only |
+| `Table-*.js` (Ant Design) | 202 KB | 62 KB | Shared admin chunk |
+| Public routes (Home/Shop/Cart/Checkout/ProductDetail) | <70 KB each | <17 KB each | ✓ excellent code-split |
+
+**Status:** Main shell vượt target 250KB gzipped (Phase 45.5.2 plan target). Accepted cho thesis scope vì:
+- Public user routes (Home, Shop, ProductDetail, Cart, Checkout) đều <17KB gzip — cached sau initial load.
+- Admin routes 276KB+ chỉ load khi admin login — user thường không gặp.
+- Optimize main shell <250KB cần refactor RTK Query injection pattern + i18next lazy-load + AntD tree-shake (~1+ ngày). ROI thấp cho thesis defense.
+
+**Future optimization (post-defense):**
+1. Lazy-load `services/*Api.ts` injectEndpoints — chỉ inject khi route dùng (RTK Query supports `injectEndpoints` post-mount).
+2. i18next dynamic locale loading — chỉ load `vi.json` ban đầu, fetch `en.json` khi user toggle.
+3. Ant Design babel-plugin tree-shaking thay vì barrel import.
+4. Vite manualChunks config: tách vendor (react, antd) khỏi app code.
+
+## 9. Pre-defense checklist
 
 - [ ] DB backup `backups/pre-defense-<date>.sql` exists.
 - [ ] CI green trên main.

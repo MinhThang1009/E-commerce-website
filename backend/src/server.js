@@ -229,6 +229,11 @@ const startServer = async () => {
 
   require('./config/socket')(io);
 
+  // Phase 42.14 — Bind Socket.IO vào chat module để service emit realtime
+  if (app.locals.chatModule && typeof app.locals.chatModule.bindSocketIO === 'function') {
+    app.locals.chatModule.bindSocketIO(io);
+  }
+
   // Xử lý promise rejection không được bắt
   process.on('unhandledRejection', (err) => {
     logger.error('Promise rejection không được xử lý — đang dừng server...');

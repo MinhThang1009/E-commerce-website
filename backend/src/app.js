@@ -26,6 +26,7 @@ const {
   Category, Brand, Collection, ProductCollection,
   ProductAttribute, ProductSpecification, RecentlyViewed,
   DiscountCode, InventoryLog,
+  ChatMessage,
 } = require('./models');
 const constants = require('./constants');
 const emailService = require('./services/email');
@@ -43,6 +44,7 @@ const buildCatalogModule = require('./modules/catalog/module');
 const buildOrdersModule = require('./modules/orders/module');
 const buildPaymentModule = require('./modules/payment/module');
 const buildInventoryModule = require('./modules/inventory/module');
+const buildChatModule = require('./modules/chat/module');
 const stripeService = require('./services/payment/stripe');
 const momoService = require('./services/payment/momo');
 const vnpayService = require('./services/payment/vnpay');
@@ -128,6 +130,13 @@ const inventoryModule = buildInventoryModule({
   eventBus, logger,
 });
 inventoryModule.subscribeEvents();
+
+const chatModule = buildChatModule({
+  ChatMessage, User,
+  // io binding deferred — server.js gọi chatModule.bindSocketIO(io) sau .listen
+  eventBus, logger,
+});
+chatModule.subscribeEvents();
 
 // Khởi tạo ứng dụng Express
 const app = express();
@@ -292,6 +301,7 @@ app.use('/api' + ordersModule.basePath, ordersModule.router);
 // /sepay-webhook (legacy routes/payment.js still mounted via routes/index).
 app.use('/api' + paymentModule.basePath, paymentModule.router);
 app.use('/api' + inventoryModule.basePath, inventoryModule.router);
+app.use('/api' + chatModule.basePath, chatModule.router);
 
 // Định nghĩa các API routes
 app.use('/api', routes);
@@ -313,5 +323,8 @@ app.use('*', (req, res) => {
 
 // Middleware xử lý lỗi toàn cục
 app.use(errorHandler);
+
+// Expose chatModule trên app.locals để server.js bind Socket.IO sau khi listen
+app.locals.chatModule = chatModule;
 
 module.exports = app;

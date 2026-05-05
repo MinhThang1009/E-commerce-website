@@ -95,7 +95,11 @@ describe('validateMagicBytes — kiểm tra bytes thực tế của file', () =>
     return filePath;
   }
 
-  const { validateMagicBytes } = require('../controllers/upload');
+  // Phase 42 modules/upload expose validateMagicBytes wrapper qua module instance
+  const buildUploadModuleForUnit = require('../modules/upload/module');
+  const eventBusUnit = require('../shared/eventBus');
+  const loggerUnit = require('../utils/logger');
+  const { validateMagicBytes } = buildUploadModuleForUnit({ eventBus: eventBusUnit, logger: loggerUnit });
 
   test('JPEG hợp lệ → trả true', async () => {
     const p = await writeTempFile('valid.jpg', JPEG_MAGIC);
@@ -139,11 +143,14 @@ describe('POST /api/uploads/:type/single — upload endpoint', () => {
   let uploadedFiles = [];
 
   beforeAll(() => {
-    // Require upload route sau khi mocks đã được thiết lập
-    const uploadRouter = require('../routes/upload');
+    // Phase 42 modules/upload thay routes/upload
+    const buildUploadModule = require('../modules/upload/module');
+    const eventBus = require('../shared/eventBus');
+    const logger = require('../utils/logger');
+    const uploadModule = buildUploadModule({ eventBus, logger });
     app = express();
     app.use(express.json());
-    app.use('/api/uploads', uploadRouter);
+    app.use('/api/uploads', uploadModule.router);
     app.use(errorHandler);
   });
 
@@ -226,7 +233,7 @@ describe('POST /api/uploads/:type/single — upload endpoint', () => {
     expect(res.body.data.url).toMatch(/^\/uploads\/products\//);
     // Lưu lại đường dẫn để dọn dẹp sau test
     if (res.body.data.filename) {
-      const { uploadDirs } = require('../controllers/upload');
+      const uploadDirs = require('../modules/upload/module')({ eventBus: require('../shared/eventBus'), logger: require('../utils/logger') })._uploadDirs;
       uploadedFiles.push(path.join(uploadDirs.products, res.body.data.filename));
     }
   });
@@ -239,7 +246,7 @@ describe('POST /api/uploads/:type/single — upload endpoint', () => {
     expect(res.status).toBe(200);
     expect(res.body.status).toBe('success');
     if (res.body.data?.filename) {
-      const { uploadDirs } = require('../controllers/upload');
+      const uploadDirs = require('../modules/upload/module')({ eventBus: require('../shared/eventBus'), logger: require('../utils/logger') })._uploadDirs;
       uploadedFiles.push(path.join(uploadDirs.products, res.body.data.filename));
     }
   });
@@ -252,7 +259,7 @@ describe('POST /api/uploads/:type/single — upload endpoint', () => {
     expect(res.status).toBe(200);
     expect(res.body.status).toBe('success');
     if (res.body.data?.filename) {
-      const { uploadDirs } = require('../controllers/upload');
+      const uploadDirs = require('../modules/upload/module')({ eventBus: require('../shared/eventBus'), logger: require('../utils/logger') })._uploadDirs;
       uploadedFiles.push(path.join(uploadDirs.products, res.body.data.filename));
     }
   });
@@ -278,15 +285,17 @@ describe('DELETE /api/uploads/:type/:filename — xóa file', () => {
   let tempFile;
 
   beforeAll(async () => {
-    const uploadRouter = require('../routes/upload');
+    const buildUploadModule = require('../modules/upload/module');
+    const eventBus = require('../shared/eventBus');
+    const logger = require('../utils/logger');
+    const uploadModule = buildUploadModule({ eventBus, logger });
     app = express();
     app.use(express.json());
-    app.use('/api/uploads', uploadRouter);
+    app.use('/api/uploads', uploadModule.router);
     app.use(errorHandler);
 
-    // Tạo file test thực sự trong thư mục products
-    const { uploadDirs } = require('../controllers/upload');
-    tempFile = path.join(uploadDirs.products, 'test-delete-phase18.jpg');
+    // Tạo file test thực sự trong thư mục products (dùng _uploadDirs từ module)
+    tempFile = path.join(uploadModule._uploadDirs.products, 'test-delete-phase18.jpg');
     await fs.writeFile(tempFile, JPEG_MAGIC);
   });
 

@@ -132,10 +132,14 @@ jest.mock('../models', () => {
     SearchHistory: { findAll: jest.fn().mockResolvedValue([]) },
     Category: { findAll: jest.fn().mockResolvedValue([]) },
     sequelize: {
-      transaction: jest.fn().mockResolvedValue({
-        LOCK: { UPDATE: 'UPDATE' },
-        commit: jest.fn().mockResolvedValue(undefined),
-        rollback: jest.fn().mockResolvedValue(undefined),
+      // Phase 42 modules/cart dùng callback form: sequelize.transaction(async (tx) => {...})
+      transaction: jest.fn().mockImplementation(async (cb) => {
+        const tx = {
+          LOCK: { UPDATE: 'UPDATE' },
+          commit: jest.fn().mockResolvedValue(undefined),
+          rollback: jest.fn().mockResolvedValue(undefined),
+        };
+        return typeof cb === 'function' ? cb(tx) : tx;
       }),
       fn: jest.fn(),
       col: jest.fn(),
@@ -152,13 +156,21 @@ jest.mock('../models', () => {
 
 const express = require('express');
 const supertest = require('supertest');
-const cartRouter = require('../routes/cart');
+const buildCartModule = require('../modules/cart/module');
+const { Cart, CartItem, Product, ProductVariant, WarrantyPackage, sequelize } = require('../models');
+const eventBus = require('../shared/eventBus');
+const logger = require('../utils/logger');
 const { errorHandler } = require('../middlewares/errorHandler');
+
+const cartModule = buildCartModule({
+  Cart, CartItem, Product, ProductVariant, WarrantyPackage,
+  sequelize, eventBus, logger,
+});
 
 const app = express();
 app.use(express.json());
 app.use((req, _res, next) => { req.cookies = {}; next(); });
-app.use('/api/cart', cartRouter);
+app.use('/api/cart', cartModule.router);
 app.use(errorHandler);
 const request = supertest(app);
 
@@ -349,10 +361,11 @@ describe('PUT /api/cart/items/:id — cập nhật số lượng', () => {
     expect(res.body.message).toMatch(/tồn kho/i);
   });
 
-  test('Số lượng hợp lệ → update được gọi → 200', async () => {
+  test('Số lượng hợp lệ → save được gọi với quantity mới → 200', async () => {
     const { CartItem } = require('../models');
 
-    const mockUpdateFn = jest.fn().mockResolvedValue(undefined);
+    // Phase 42 modules/cart dùng item.save() sau khi mutate quantity (thay vì item.update)
+    const mockSaveFn = jest.fn().mockResolvedValue(undefined);
     const mockItem = {
       id: 5,
       Cart: { id: 10, userId: 1 },
@@ -361,7 +374,8 @@ describe('PUT /api/cart/items/:id — cập nhật số lượng', () => {
         defaultVariant: { stockQuantity: 10 },
       },
       ProductVariant: null,
-      update: mockUpdateFn,
+      quantity: 1,
+      save: mockSaveFn,
     };
     CartItem.findByPk.mockResolvedValue(mockItem);
 
@@ -370,7 +384,8 @@ describe('PUT /api/cart/items/:id — cập nhật số lượng', () => {
       .set('Authorization', 'Bearer test-token')
       .send({ quantity: 3 });
 
-    expect(mockUpdateFn).toHaveBeenCalledWith({ quantity: 3 });
+    expect(mockSaveFn).toHaveBeenCalled();
+    expect(mockItem.quantity).toBe(3);
     expect(res.status).toBe(200);
   });
 });
@@ -459,10 +474,14 @@ describe('POST /api/cart/sync — đồng bộ giỏ hàng', () => {
     Cart.findOne.mockResolvedValue(null);
     CartItem.findAll.mockResolvedValue([]);
     CartItem.destroy.mockResolvedValue(1);
-    sequelize.transaction.mockResolvedValue({
-      LOCK: { UPDATE: 'UPDATE' },
-      commit: jest.fn().mockResolvedValue(undefined),
-      rollback: jest.fn().mockResolvedValue(undefined),
+    // Phase 42 modules/cart dùng callback form: sequelize.transaction(async (tx) => {...})
+    sequelize.transaction.mockImplementation(async (cb) => {
+      const tx = {
+        LOCK: { UPDATE: 'UPDATE' },
+        commit: jest.fn().mockResolvedValue(undefined),
+        rollback: jest.fn().mockResolvedValue(undefined),
+      };
+      return typeof cb === 'function' ? cb(tx) : tx;
     });
   });
 

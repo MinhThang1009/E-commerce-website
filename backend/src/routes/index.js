@@ -3,9 +3,10 @@ const sequelize = require('../config/sequelize');
 const pkg = require('../../package.json');
 const router = express.Router();
 
-// Phase 42.2+ — auth + users + cart mount trực tiếp trong app.js qua modules/*
-// (Modular Monolith). routes/auth.js + routes/user.js + routes/cart.js (legacy)
-// còn lại chỉ phục vụ unit/integration test nội bộ, xóa ở Phase 5 cleanup.
+// Phase 42.24 cleanup — Tất cả legacy routes đã migrate sang modules/* (Sprint 1-19)
+// hoặc đã xóa orphan (Phase 5 batch 1+2). Các route còn lại là module CHƯA migrate
+// (admin/discount-codes/payments-legacy/chatbot/warranty/attribute/image/search-history/
+// locations) — sẽ migrate sang modules/* khi cần.
 const discountCodeRoutes = require('./discountCode');
 const adminRoutes = require('./admin');
 const paymentRoutes = require('./payment');

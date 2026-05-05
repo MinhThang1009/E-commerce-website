@@ -181,8 +181,23 @@ jest.mock('../models', () => {
 
 const express = require('express');
 const supertest = require('supertest');
-const paymentRouter = require('../routes/payment');
+const buildPaymentModule = require('../modules/payment/module');
+const {
+  Order, OrderItem, User, Cart, CartItem, DiscountCode, sequelize,
+} = require('../models');
+const eventBus = require('../shared/eventBus');
+const logger = require('../utils/logger');
+const emailService = require('../services/email');
+const stripeService = require('../services/payment/stripe');
+const momoService = require('../services/payment/momo');
+const vnpayService = require('../services/payment/vnpay');
 const { errorHandler } = require('../middlewares/errorHandler');
+
+const paymentModule = buildPaymentModule({
+  Order, OrderItem, User, Cart, CartItem, DiscountCode,
+  sequelize, eventBus, logger,
+  stripeService, momoService, vnpayService, emailService,
+});
 
 const app = express();
 // Webhook route cần raw body — parse trước rồi mount router
@@ -194,7 +209,7 @@ app.use((req, _res, next) => {
 });
 app.use(express.json());
 app.use((req, _res, next) => { req.cookies = {}; next(); });
-app.use('/api/payments', paymentRouter);
+app.use('/api/payments', paymentModule.router);
 app.use(errorHandler);
 const request = supertest(app);
 
@@ -365,7 +380,8 @@ describe('POST /api/payments/create-customer', () => {
       firstName: 'Test',
       lastName: 'User',
       stripeCustomerId: null,
-      update: jest.fn().mockResolvedValue(undefined),
+      // Phase 42 modules/payment dùng user.save() thay vì user.update()
+      save: jest.fn().mockResolvedValue(undefined),
     });
     stripeService.createCustomer.mockResolvedValue({ id: 'cus_new_abc', email: 'test@example.com' });
 

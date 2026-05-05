@@ -80,6 +80,8 @@ jest.mock('../middlewares/rateLimiter', () => ({
 
 const express = require('express');
 const supertest = require('supertest');
+// /cart/add và /analytics endpoints chưa migrate sang modules/ai (Phase 42).
+// Giữ legacy routes/chatbot.js cho 2 endpoints này — sẽ migrate khi cần.
 const chatbotRouter = require('../routes/chatbot');
 const { Product, Cart, CartItem } = require('../models');
 const chatbotService = require('../services/ai/ruleBasedChatbot');

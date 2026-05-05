@@ -72,13 +72,17 @@ jest.mock('../middlewares/adminAuth', () => ({
 
 const express = require('express');
 const supertest = require('supertest');
-const chatRouter = require('../routes/chat');
+const buildChatModule = require('../modules/chat/module');
 const { ChatMessage, User } = require('../models');
+const eventBus = require('../shared/eventBus');
+const logger = require('../utils/logger');
+
+const chatModule = buildChatModule({ ChatMessage, User, io: null, eventBus, logger });
 
 // App test với error handler đơn giản để bắt next(error)
 const app = express();
 app.use(express.json());
-app.use('/api/chat', chatRouter);
+app.use('/api/chat', chatModule.router);
 app.use((err, _req, res, _next) => {
   res.status(err.statusCode || 500).json({ status: 'error', message: err.message });
 });
@@ -137,7 +141,10 @@ describe('GET /api/chat/admin/list', () => {
 
     // WHERE phải có Op.or key
     expect(callOptions.where).toBeDefined();
-    const whereConditions = callOptions.where[mockOpOr];
+    // Phase 42 modules/chat repo import Op từ 'sequelize' package thật,
+    // không dùng mock symbol — lấy Op.or từ Sequelize package trong test
+    const { Op } = require('sequelize');
+    const whereConditions = callOptions.where[Op.or];
 
     expect(whereConditions).toBeDefined();
     expect(whereConditions).toBeInstanceOf(Array);

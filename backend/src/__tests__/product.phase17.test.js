@@ -26,9 +26,17 @@ jest.mock('../models', () => {
       findOne: mockFn(),
       destroy: mockFn(),
     },
-    Category: { findOne: mockFn() },
-    Review: {},
-    RecentlyViewed: { upsert: mockFn() },
+    // Phase 42 modules/catalog yêu cầu đầy đủ models — stub cho cái không test
+    Category: { findOne: mockFn(), findAll: mockFn(), findByPk: mockFn() },
+    Brand: { findAll: mockFn(), findByPk: mockFn() },
+    Collection: { findAll: mockFn(), findByPk: mockFn() },
+    ProductCollection: { findAll: mockFn() },
+    ProductAttribute: { findAll: mockFn() },
+    ProductSpecification: { findAll: mockFn() },
+    WarrantyPackage: { findAll: mockFn() },
+    ProductVariant: { findAll: mockFn() },
+    Review: { findAll: mockFn() },
+    RecentlyViewed: { upsert: mockFn(), findAll: mockFn(), findOne: mockFn(), create: mockFn() },
     sequelize: {
       fn: jest.fn((fnName, col) => ({ fn: fnName, col })),
       col: jest.fn((name) => ({ col: name })),
@@ -79,8 +87,12 @@ jest.mock('../middlewares/authorize', () => ({
   authorize: () => (_req, _res, next) => next(),
 }));
 
-jest.mock('../validators/product', () => ({
+// Phase 42 modules/catalog dùng validators riêng — mock cũng cần đổi path
+jest.mock('../modules/catalog/validators/catalogValidator', () => ({
   productSchema: { validate: jest.fn().mockReturnValue({ error: null }) },
+  brandSchema: { validate: jest.fn().mockReturnValue({ error: null }) },
+  collectionSchema: { validate: jest.fn().mockReturnValue({ error: null }) },
+  categorySchema: { validate: jest.fn().mockReturnValue({ error: null }) },
 }));
 
 jest.mock('../middlewares/validateRequest', () => ({
@@ -91,13 +103,29 @@ jest.mock('../middlewares/validateRequest', () => ({
 
 const express = require('express');
 const supertest = require('supertest');
-const productRouter = require('../routes/product');
+const buildCatalogModule = require('../modules/catalog/module');
 const { errorHandler } = require('../middlewares/errorHandler');
-const { Product } = require('../models');
+const {
+  Product, Category, Brand, Collection, ProductCollection,
+  ProductAttribute, ProductVariant, ProductSpecification,
+  Review, RecentlyViewed, WarrantyPackage,
+  sequelize,
+} = require('../models');
+const eventBus = require('../shared/eventBus');
+const logger = require('../utils/logger');
+const { getRedisClient } = require('../config/redis');
+
+const catalogModule = buildCatalogModule({
+  Category, Brand, Collection, ProductCollection, Product,
+  ProductAttribute, ProductVariant, ProductSpecification,
+  Review, RecentlyViewed, WarrantyPackage,
+  sequelize, redisClient: getRedisClient, eventBus, logger,
+});
+const productMount = catalogModule.mounts.find((m) => m.basePath === '/products');
 
 const app = express();
 app.use(express.json());
-app.use('/api/products', productRouter);
+app.use('/api/products', productMount.router);
 app.use(errorHandler);
 
 const request = supertest(app);

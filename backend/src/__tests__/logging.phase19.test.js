@@ -116,10 +116,24 @@ describe('[AUTH] Login success được log khi đăng nhập thành công', () 
 
   beforeAll(() => {
     mockUserFindOne = validUser;
-    const authRoutes = require('../routes/auth');
+    const buildAuthModule = require('../modules/auth/module');
+    const { User } = require('../models');
+    const eventBus = require('../shared/eventBus');
+    const logger = require('../utils/logger');
+    const emailService = require('../services/email');
+    const { AdminAuditService } = require('../services/adminAudit');
+    const { getRedisClient } = require('../config/redis');
+    const authModule = buildAuthModule({
+      User,
+      eventBus,
+      logger,
+      emailService,
+      auditService: AdminAuditService,
+      redisClient: getRedisClient,
+    });
     app = express();
     app.use(express.json());
-    app.use('/api/auth', authRoutes);
+    app.use('/api/auth', authModule.router);
     app.use(errorHandler);
   });
 
@@ -251,11 +265,27 @@ describe('[PAYMENT] Webhook received được log khi webhook nhận được', 
 
   beforeAll(() => {
     stripeService = require('../services/payment/stripe');
-    const paymentRoutes = require('../routes/payment');
+    const buildPaymentModule = require('../modules/payment/module');
+    const { Order, sequelize } = require('../models');
+    const eventBus = require('../shared/eventBus');
+    const logger = require('../utils/logger');
+    const emailService = require('../services/email');
+    const momoService = require('../services/payment/momo');
+    const vnpayService = require('../services/payment/vnpay');
+    const paymentModule = buildPaymentModule({
+      Order, OrderItem: { findAll: jest.fn() }, User: {}, Cart: {}, CartItem: {}, DiscountCode: {},
+      sequelize,
+      eventBus,
+      logger,
+      stripeService,
+      momoService,
+      vnpayService,
+      emailService,
+    });
     app = express();
     // Raw body middleware — cần thiết cho Stripe webhook signature
     app.use('/api/payments', express.json());
-    app.use('/api/payments', paymentRoutes);
+    app.use('/api/payments', paymentModule.router);
     app.use(errorHandler);
   });
 

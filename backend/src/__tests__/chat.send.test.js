@@ -61,12 +61,16 @@ jest.mock('../middlewares/rateLimiter', () => ({
 
 const express = require('express');
 const supertest = require('supertest');
-const chatRouter = require('../routes/chat');
-const { ChatMessage } = require('../models');
+const buildChatModule = require('../modules/chat/module');
+const { ChatMessage, User } = require('../models');
+const eventBus = require('../shared/eventBus');
+const logger = require('../utils/logger');
+
+const chatModule = buildChatModule({ ChatMessage, User, io: null, eventBus, logger });
 
 const app = express();
 app.use(express.json());
-app.use('/api/chat', chatRouter);
+app.use('/api/chat', chatModule.router);
 // Error handler đơn giản bắt next(error)
 app.use((err, _req, res, _next) => {
   res.status(err.statusCode || 500).json({ status: 'error', message: err.message });

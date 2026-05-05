@@ -174,8 +174,10 @@ jest.mock('../models', () => {
     Review: { findAll: jest.fn().mockResolvedValue([]) },
     Category: { findAll: jest.fn().mockResolvedValue([]) },
     sequelize: {
-      // createOrder dùng: const transaction = await sequelize.transaction() — non-callback
-      transaction: jest.fn().mockResolvedValue(mockTx),
+      // Phase 42 modules/orders dùng callback form: sequelize.transaction(async (tx) => {...})
+      transaction: jest.fn().mockImplementation(async (cb) => {
+        return typeof cb === 'function' ? cb(mockTx) : mockTx;
+      }),
       fn: jest.fn(),
       col: jest.fn(),
       where: jest.fn(),
@@ -191,14 +193,29 @@ jest.mock('../models', () => {
 
 const express = require('express');
 const supertest = require('supertest');
-const orderRouter = require('../routes/order');
+const buildOrdersModule = require('../modules/orders/module');
+const {
+  Order, OrderItem, Cart, CartItem, Product, ProductVariant, User,
+  DiscountCode, LoyaltyHistory, InventoryLog, WarrantyPackage,
+  sequelize,
+} = require('../models');
+const eventBus = require('../shared/eventBus');
+const logger = require('../utils/logger');
+const emailService = require('../services/email');
+const constants = require('../constants');
 const { errorHandler } = require('../middlewares/errorHandler');
+
+const ordersModule = buildOrdersModule({
+  Order, OrderItem, Cart, CartItem, Product, ProductVariant, User,
+  DiscountCode, LoyaltyHistory, InventoryLog, WarrantyPackage,
+  sequelize, eventBus, logger, emailService, constants,
+});
 
 const app = express();
 app.use(express.json());
 // Khởi tạo req.cookies = {} để createOrder không throw TypeError khi đọc sessionId từ cookie
 app.use((req, _res, next) => { req.cookies = {}; next(); });
-app.use('/api/orders', orderRouter);
+app.use('/api/orders', ordersModule.router);
 app.use(errorHandler);
 const request = supertest(app);
 
@@ -243,7 +260,7 @@ describe('POST /api/orders — out-of-stock scenarios', () => {
       commit: jest.fn().mockResolvedValue(undefined),
       rollback: jest.fn().mockResolvedValue(undefined),
     };
-    sequelize.transaction.mockResolvedValue(mockTx);
+    sequelize.transaction.mockImplementation(async (cb) => typeof cb === 'function' ? cb(mockTx) : mockTx);
   });
 
   test('Variant stockQuantity = 0 → 400 với message tồn kho', async () => {
@@ -315,7 +332,7 @@ describe('POST /api/orders — discount code validation', () => {
       commit: jest.fn().mockResolvedValue(undefined),
       rollback: jest.fn().mockResolvedValue(undefined),
     };
-    sequelize.transaction.mockResolvedValue(mockTx);
+    sequelize.transaction.mockImplementation(async (cb) => typeof cb === 'function' ? cb(mockTx) : mockTx);
 
     // Variant đủ hàng (5 items); lockedVariant cần có decrement()
     mockProductFindByPkImpl.mockResolvedValue(ACTIVE_PRODUCT);
@@ -441,7 +458,7 @@ describe('POST /api/orders — happy path', () => {
       commit: jest.fn().mockResolvedValue(undefined),
       rollback: jest.fn().mockResolvedValue(undefined),
     };
-    sequelize.transaction.mockResolvedValue(mockTx);
+    sequelize.transaction.mockImplementation(async (cb) => typeof cb === 'function' ? cb(mockTx) : mockTx);
   });
 
   test('Đặt hàng COD thành công với variant đủ hàng → 201', async () => {
@@ -504,7 +521,7 @@ describe('POST /api/orders — cart-based flow', () => {
       commit: jest.fn().mockResolvedValue(undefined),
       rollback: jest.fn().mockResolvedValue(undefined),
     };
-    sequelize.transaction.mockResolvedValue(mockTx);
+    sequelize.transaction.mockImplementation(async (cb) => typeof cb === 'function' ? cb(mockTx) : mockTx);
   });
 
   test('Đặt hàng từ giỏ hàng (không truyền items) — cart có 1 item đủ hàng → 201', async () => {
@@ -601,10 +618,12 @@ describe('POST /api/orders — cart-based flow', () => {
     OrderItem.create.mockResolvedValue({ id: 3 });
     InventoryLog.bulkCreate.mockResolvedValue([]);
 
-    // clearUserCart: có 1 giỏ hàng đang hoạt động → phải update và destroy items
+    // clearUserCart: có 1 giỏ hàng đang hoạt động → phải set status converted và save + destroy items
+    // Phase 42 modules/orders dùng cart.status = 'converted' + cart.save() (thay vì update)
     const mockActiveCart = {
       id: 22,
-      update: jest.fn().mockResolvedValue(undefined),
+      status: 'active',
+      save: jest.fn().mockResolvedValue(undefined),
     };
     Cart.findAll.mockResolvedValue([mockActiveCart]);
     CartItem.destroy.mockResolvedValue(1);
@@ -615,8 +634,9 @@ describe('POST /api/orders — cart-based flow', () => {
       .send(BASE_ORDER_BODY);
 
     expect(res.status).toBe(201);
-    // clearUserCart phải đánh dấu giỏ hàng là 'converted'
-    expect(mockActiveCart.update).toHaveBeenCalledWith({ status: 'converted' });
+    // clearUserCart phải đánh dấu giỏ hàng là 'converted' (qua mutation + save)
+    expect(mockActiveCart.save).toHaveBeenCalled();
+    expect(mockActiveCart.status).toBe('converted');
     expect(CartItem.destroy).toHaveBeenCalled();
   });
 });

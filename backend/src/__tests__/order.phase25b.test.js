@@ -163,13 +163,28 @@ jest.mock('../models', () => {
 
 const express = require('express');
 const supertest = require('supertest');
-const orderRouter = require('../routes/order');
+const buildOrdersModule = require('../modules/orders/module');
+const {
+  Order, OrderItem, Cart, CartItem, Product, ProductVariant, User,
+  DiscountCode, LoyaltyHistory, InventoryLog, WarrantyPackage,
+  sequelize,
+} = require('../models');
+const eventBus = require('../shared/eventBus');
+const logger = require('../utils/logger');
+const emailService = require('../services/email');
+const constants = require('../constants');
 const { errorHandler } = require('../middlewares/errorHandler');
+
+const ordersModule = buildOrdersModule({
+  Order, OrderItem, Cart, CartItem, Product, ProductVariant, User,
+  DiscountCode, LoyaltyHistory, InventoryLog, WarrantyPackage,
+  sequelize, eventBus, logger, emailService, constants,
+});
 
 const app = express();
 app.use(express.json());
 app.use((req, _res, next) => { req.cookies = {}; next(); });
-app.use('/api/orders', orderRouter);
+app.use('/api/orders', ordersModule.router);
 app.use(errorHandler);
 const request = supertest(app);
 
@@ -356,10 +371,14 @@ describe('POST /api/orders/:id/cancel — hủy đơn hàng', () => {
   beforeEach(() => {
     jest.clearAllMocks();
     const { sequelize } = require('../models');
-    sequelize.transaction.mockResolvedValue({
-      LOCK: { UPDATE: 'UPDATE' },
-      commit: jest.fn().mockResolvedValue(undefined),
-      rollback: jest.fn().mockResolvedValue(undefined),
+    // Phase 42 modules/orders dùng callback form sequelize.transaction(async (tx) => {...})
+    sequelize.transaction.mockImplementation(async (cb) => {
+      const tx = {
+        LOCK: { UPDATE: 'UPDATE' },
+        commit: jest.fn().mockResolvedValue(undefined),
+        rollback: jest.fn().mockResolvedValue(undefined),
+      };
+      return typeof cb === 'function' ? cb(tx) : tx;
     });
   });
 
@@ -375,7 +394,9 @@ describe('POST /api/orders/:id/cancel — hủy đơn hàng', () => {
     expect(res.body.message).toMatch(/không tìm thấy/i);
   });
 
-  test('Đơn hàng status = delivered → không thể hủy → 400', async () => {
+  test('Đơn hàng status = delivered → không thể hủy → 422 (DomainError)', async () => {
+    // Phase 42 modules/orders dùng OrderAggregate.cancel() throw DomainError → 422
+    // (semantic violation, request well-formed nhưng vi phạm invariant)
     const { Order } = require('../models');
     Order.findOne = jest.fn().mockResolvedValue({
       id: 1,
@@ -391,14 +412,15 @@ describe('POST /api/orders/:id/cancel — hủy đơn hàng', () => {
       .post('/api/orders/1/cancel')
       .set('Authorization', 'Bearer test-token');
 
-    expect(res.status).toBe(400);
+    expect(res.status).toBe(422);
     expect(res.body.message).toMatch(/không thể hủy/i);
   });
 
   test('Đơn hàng pending, không có items, không có loyalty → hủy thành công → 200', async () => {
     const { Order } = require('../models');
 
-    const mockUpdateFn = jest.fn().mockResolvedValue(undefined);
+    // Phase 42 modules/orders dùng order.save() (qua OrderAggregate mutation) thay vì update()
+    const mockSaveFn = jest.fn().mockResolvedValue(undefined);
     Order.findOne = jest.fn().mockResolvedValue({
       id: 1,
       userId: 1,
@@ -408,14 +430,14 @@ describe('POST /api/orders/:id/cancel — hủy đơn hàng', () => {
       pointsUsed: 0,
       pointsEarned: 0,
       createdAt: new Date(),
-      update: mockUpdateFn,
+      save: mockSaveFn,
     });
 
     const res = await request
       .post('/api/orders/1/cancel')
       .set('Authorization', 'Bearer test-token');
 
-    expect(mockUpdateFn).toHaveBeenCalledWith({ status: 'cancelled' }, expect.anything());
+    expect(mockSaveFn).toHaveBeenCalled();
     expect(res.status).toBe(200);
     expect(res.body.message).toMatch(/đã được hủy/i);
   });

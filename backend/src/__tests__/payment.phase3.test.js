@@ -215,9 +215,23 @@ describe('handlePaymentSucceeded — idempotency guard (paymentTransactionId)', 
   let app;
 
   beforeAll(() => {
-    const paymentRouter = require('../routes/payment');
+    const buildPaymentModule = require('../modules/payment/module');
+    const {
+      Order, OrderItem, User, Cart, CartItem, DiscountCode, sequelize,
+    } = require('../models');
+    const eventBus = require('../shared/eventBus');
+    const logger = require('../utils/logger');
+    const emailService = require('../services/email');
+    const stripeService = require('../services/payment/stripe');
+    const momoService = require('../services/payment/momo');
+    const vnpayService = require('../services/payment/vnpay');
+    const paymentModule = buildPaymentModule({
+      Order, OrderItem, User, Cart, CartItem, DiscountCode,
+      sequelize, eventBus, logger,
+      stripeService, momoService, vnpayService, emailService,
+    });
     app = express();
-    app.use('/api/payments', express.raw({ type: '*/*' }), paymentRouter);
+    app.use('/api/payments', express.raw({ type: '*/*' }), paymentModule.router);
     app.use(errorHandler);
   });
 
@@ -258,7 +272,8 @@ describe('handlePaymentSucceeded — idempotency guard (paymentTransactionId)', 
   test('Webhook với paymentTransactionId mới → gọi sequelize.transaction (fallback path)', async () => {
     const PI_ID = 'pi_new_456';
     const stripeService = require('../services/payment/stripe');
-    const sequelizeConfig = require('../config/sequelize');
+    // Phase 42 modules/payment dùng sequelize từ models DI (không phải config/sequelize)
+    const { sequelize: sequelizeConfig } = require('../models');
 
     const mockOrder = {
       id: 1,
@@ -341,10 +356,23 @@ describe('updateOrderStatus → loyalty points = floor(subtotal / 100000)', () =
   const POINTS_EARN_RATE = 100000;
 
   beforeAll(() => {
-    const orderRouter = require('../routes/order');
+    const buildOrdersModule = require('../modules/orders/module');
+    const {
+      Order, OrderItem, Cart, CartItem, Product, ProductVariant, User,
+      DiscountCode, LoyaltyHistory, InventoryLog, WarrantyPackage, sequelize,
+    } = require('../models');
+    const eventBus = require('../shared/eventBus');
+    const logger = require('../utils/logger');
+    const emailService = require('../services/email');
+    const constants = require('../constants');
+    const ordersModule = buildOrdersModule({
+      Order, OrderItem, Cart, CartItem, Product, ProductVariant, User,
+      DiscountCode, LoyaltyHistory, InventoryLog, WarrantyPackage,
+      sequelize, eventBus, logger, emailService, constants,
+    });
     app = express();
     app.use(express.json());
-    app.use('/api/orders', orderRouter);
+    app.use('/api/orders', ordersModule.router);
     app.use(errorHandler);
   });
 
@@ -356,10 +384,11 @@ describe('updateOrderStatus → loyalty points = floor(subtotal / 100000)', () =
 
     const { Order, User, LoyaltyHistory } = require('../models');
 
+    // Phase 42 modules/orders dùng user.save() + mutation thay vì update()
     const mockUserInstance = {
       id: 2,
       loyaltyPoints: INITIAL_POINTS,
-      update: jest.fn().mockResolvedValue(undefined),
+      save: jest.fn().mockResolvedValue(undefined),
     };
 
     const mockOrderInstance = {
@@ -372,7 +401,7 @@ describe('updateOrderStatus → loyalty points = floor(subtotal / 100000)', () =
       paymentMethod: 'stripe',
       user: { id: 2, email: 'user@test.com', firstName: 'Test', lastName: 'User' },
       createdAt: new Date(),
-      update: jest.fn().mockResolvedValue(undefined),
+      save: jest.fn().mockResolvedValue(undefined),
     };
 
     // Override mock implementations trực tiếp trên mock objects
@@ -385,10 +414,9 @@ describe('updateOrderStatus → loyalty points = floor(subtotal / 100000)', () =
       .set('x-test-admin', 'true')
       .send({ status: 'delivered' });
 
-    // Verify user.update được gọi với loyaltyPoints đúng
-    expect(mockUserInstance.update).toHaveBeenCalledWith(
-      expect.objectContaining({ loyaltyPoints: EXPECTED_POINTS }) // 105
-    );
+    // Verify loyaltyPoints được mutate đúng + save được gọi
+    expect(mockUserInstance.save).toHaveBeenCalled();
+    expect(mockUserInstance.loyaltyPoints).toBe(EXPECTED_POINTS); // 105
 
     // Đảm bảo KHÔNG tính sai bằng total (106 điểm)
     const wrongPoints = INITIAL_POINTS + Math.floor(TOTAL / POINTS_EARN_RATE);

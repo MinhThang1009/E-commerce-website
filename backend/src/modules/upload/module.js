@@ -78,5 +78,8 @@ module.exports = ({ uploadsBaseDir, eventBus, logger } = {}) => {
     // Expose internals cho test/legacy compat
     _uploadDirs: uploadDirs,
     _uploadEngine: uploadEngine,
+    // Pure helpers cho unit test (validateMagicBytes/deleteFile được wrap thành function)
+    validateMagicBytes: (filePath) => uploadService.validateMagicBytes(filePath),
+    deleteFile: (req, res, next) => uploadController.deleteFile(req, res, next),
   };
 };

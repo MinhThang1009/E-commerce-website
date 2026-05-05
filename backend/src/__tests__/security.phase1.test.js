@@ -263,7 +263,11 @@ describe('User.prototype.toJSON — không trả về các field nhạy cảm', 
 // ============================================================
 
 describe('deleteFile controller — ngăn chặn path traversal trong filename', () => {
-  const { deleteFile } = require('../controllers/upload');
+  // Phase 42 modules/upload expose deleteFile handler qua module instance
+  const buildUploadModule = require('../modules/upload/module');
+  const eventBus = require('../shared/eventBus');
+  const logger = require('../utils/logger');
+  const { deleteFile } = buildUploadModule({ eventBus, logger });
 
   function mockReqRes(type, filename, role = 'admin') {
     const req = {

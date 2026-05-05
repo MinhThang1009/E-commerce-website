@@ -73,12 +73,18 @@ jest.mock('../middlewares/rateLimiter', () => ({
 
 const express = require('express');
 const supertest = require('supertest');
-const loyaltyRouter = require('../routes/loyalty');
-const { User, LoyaltyHistory } = require('../models');
+const buildLoyaltyModule = require('../modules/loyalty/module');
+const { User, LoyaltyHistory, sequelize } = require('../models');
+const eventBus = require('../shared/eventBus');
+const logger = require('../utils/logger');
+
+const loyaltyModule = buildLoyaltyModule({
+  User, LoyaltyHistory, sequelize, eventBus, logger,
+});
 
 const app = express();
 app.use(express.json());
-app.use('/api/loyalty', loyaltyRouter);
+app.use('/api/loyalty', loyaltyModule.router);
 app.use((err, _req, res, _next) => {
   res.status(err.statusCode || 500).json({ status: 'error', message: err.message });
 });

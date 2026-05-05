@@ -45,7 +45,16 @@ jest.mock('../models', () => ({
   Category: {
     findOne: jest.fn().mockResolvedValue(null),
     findAll: jest.fn().mockResolvedValue([]),
+    findByPk: jest.fn().mockResolvedValue(null),
   },
+  // Phase 42 modules/catalog yêu cầu đầy đủ models — stub cho cái không test
+  Brand: { findAll: jest.fn().mockResolvedValue([]), findByPk: jest.fn() },
+  Collection: { findAll: jest.fn().mockResolvedValue([]), findByPk: jest.fn() },
+  ProductCollection: { findAll: jest.fn().mockResolvedValue([]) },
+  ProductAttribute: { findAll: jest.fn().mockResolvedValue([]) },
+  ProductSpecification: { findAll: jest.fn().mockResolvedValue([]) },
+  RecentlyViewed: { findAll: jest.fn().mockResolvedValue([]), findOne: jest.fn(), create: jest.fn() },
+  WarrantyPackage: { findAll: jest.fn().mockResolvedValue([]) },
   ProductVariant: {
     findAll: jest.fn().mockResolvedValue([]),
   },
@@ -167,10 +176,39 @@ describe('GET /api/products — pagination limit và offset', () => {
   const { Product } = require('../models');
 
   beforeAll(() => {
-    const productRouter = require('../routes/product');
+    // Phase 42 modules/catalog mounts /products router. Build module với DI.
+    const buildCatalogModule = require('../modules/catalog/module');
+    const {
+      Category, Brand, Collection, ProductCollection,
+      ProductAttribute, ProductSpecification, RecentlyViewed, WarrantyPackage,
+      ProductVariant, Review, sequelize,
+    } = require('../models');
+    const eventBus = require('../shared/eventBus');
+    const logger = require('../utils/logger');
+    const { getRedisClient } = require('../config/redis');
+
+    // Stub các model chưa có trong test mock — module yêu cầu Category/Brand/Collection
+    const _Brand = Brand || { findAll: jest.fn(), findByPk: jest.fn() };
+    const _Collection = Collection || { findAll: jest.fn(), findByPk: jest.fn() };
+    const _ProductCollection = ProductCollection || { findAll: jest.fn() };
+    const _ProductAttribute = ProductAttribute || { findAll: jest.fn() };
+    const _ProductSpecification = ProductSpecification || { findAll: jest.fn() };
+    const _RecentlyViewed = RecentlyViewed || { findAll: jest.fn() };
+    const _WarrantyPackage = WarrantyPackage || { findAll: jest.fn() };
+
+    const catalogModule = buildCatalogModule({
+      Category, Brand: _Brand, Collection: _Collection, ProductCollection: _ProductCollection,
+      Product,
+      ProductAttribute: _ProductAttribute, ProductVariant,
+      ProductSpecification: _ProductSpecification,
+      Review, RecentlyViewed: _RecentlyViewed, WarrantyPackage: _WarrantyPackage,
+      sequelize, redisClient: getRedisClient, eventBus, logger,
+    });
+    const productMount = catalogModule.mounts.find((m) => m.basePath === '/products');
+
     app = express();
     app.use(express.json());
-    app.use('/api/products', productRouter);
+    app.use('/api/products', productMount.router);
     app.use(errorHandler);
   });
 

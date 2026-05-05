@@ -10,7 +10,8 @@ module.exports = ({ chatController }) => {
   const router = express.Router();
 
   router.get('/admin/list', authenticate, adminAuthenticate, chatController.getAdminChatList);
-  router.post('/', optionalAuthenticate, validateRequest(sendMessageSchema), chatController.sendMessage);
+  // Validate trả 422 (Unprocessable Entity) cho content vượt giới hạn — giữ tương thích API legacy
+  router.post('/', optionalAuthenticate, validateRequest(sendMessageSchema, 422), chatController.sendMessage);
   router.get('/:identifier', chatLimiter, optionalAuthenticate, chatController.getChatHistory);
   router.patch('/read/:identifier', optionalAuthenticate, chatController.markAsRead);
 

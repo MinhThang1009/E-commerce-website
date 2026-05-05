@@ -20,12 +20,18 @@
 // ---------- Mocks ----------
 
 jest.mock('../models', () => ({
+  // Phase 42 modules/content yêu cầu đầy đủ 6 models cho DI; chỉ sub-domain
+  // newsletter/feedback dùng → các model khác stub rỗng để không crash module init.
+  Banner: { findAll: jest.fn(), findByPk: jest.fn() },
+  News: { findAll: jest.fn(), findByPk: jest.fn(), findOne: jest.fn() },
+  EmailCampaign: { findAll: jest.fn(), findByPk: jest.fn(), create: jest.fn() },
   NewsletterSubscriber: {
     findOrCreate: jest.fn(),
   },
   Feedback: {
     create: jest.fn(),
   },
+  User: { findAll: jest.fn(), findByPk: jest.fn() },
   sequelize: {
     Sequelize: { Op: {} },
   },
@@ -53,12 +59,27 @@ jest.mock('../services/email', () => ({
 
 const express = require('express');
 const supertest = require('supertest');
-const contactRouter = require('../routes/contact');
-const { NewsletterSubscriber, Feedback } = require('../models');
+const buildContentModule = require('../modules/content/module');
+const {
+  Banner, News, EmailCampaign, NewsletterSubscriber, Feedback, User,
+} = require('../models');
+const emailService = require('../services/email');
+const eventBus = require('../shared/eventBus');
+const logger = require('../utils/logger');
+
+const contentModule = buildContentModule({
+  Banner, News, EmailCampaign, NewsletterSubscriber, Feedback, User,
+  emailService,
+  redisClient: null,
+  eventBus, logger,
+});
+
+// Tìm contact router trong mounts (Phase 42 module trả về mounts array)
+const contactMount = contentModule.mounts.find((m) => m.basePath === '/contact');
 
 const app = express();
 app.use(express.json());
-app.use('/api/contact', contactRouter);
+app.use('/api/contact', contactMount.router);
 app.use((err, _req, res, _next) => {
   res.status(err.statusCode || 500).json({ status: 'error', message: err.message });
 });

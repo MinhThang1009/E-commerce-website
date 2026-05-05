@@ -127,12 +127,27 @@ jest.mock('../services/ai/vectorStore', () => ({
 
 const express = require('express');
 const supertest = require('supertest');
-const authRouter = require('../routes/auth');
+const buildAuthModule = require('../modules/auth/module');
+const { User } = require('../models');
+const eventBus = require('../shared/eventBus');
+const logger = require('../utils/logger');
+const emailService = require('../services/email');
+const { AdminAuditService } = require('../services/adminAudit');
+const { getRedisClient } = require('../config/redis');
 const { errorHandler } = require('../middlewares/errorHandler');
+
+const authModule = buildAuthModule({
+  User,
+  eventBus,
+  logger,
+  emailService,
+  auditService: AdminAuditService,
+  redisClient: getRedisClient,
+});
 
 const app = express();
 app.use(express.json());
-app.use('/api/auth', authRouter);
+app.use('/api/auth', authModule.router);
 app.use(errorHandler);
 const request = supertest(app);
 

@@ -63,7 +63,8 @@ jest.mock('../middlewares/validateRequest', () => ({
   validateRequest: () => (_req, _res, next) => next(),
 }));
 
-jest.mock('../validators/user', () => ({
+// Phase 42 modules/auth dùng validators/authValidator riêng — mock cho test
+jest.mock('../modules/auth/validators/authValidator', () => ({
   registerSchema: {},
   loginSchema: {},
   forgotPasswordSchema: {},
@@ -91,13 +92,26 @@ jest.mock('../config/redis', () => ({
 
 const express = require('express');
 const supertest = require('supertest');
-const authRouter = require('../routes/auth');
+const buildAuthModule = require('../modules/auth/module');
 const emailService = require('../services/email');
 const { User } = require('../models');
+const eventBus = require('../shared/eventBus');
+const logger = require('../utils/logger');
+const { AdminAuditService } = require('../services/adminAudit');
+const { getRedisClient } = require('../config/redis');
+
+const authModule = buildAuthModule({
+  User,
+  eventBus,
+  logger,
+  emailService,
+  auditService: AdminAuditService,
+  redisClient: getRedisClient,
+});
 
 const app = express();
 app.use(express.json());
-app.use('/api/auth', authRouter);
+app.use('/api/auth', authModule.router);
 app.use((err, _req, res, _next) => {
   res.status(err.statusCode || 500).json({ status: 'error', message: err.message });
 });

@@ -23,19 +23,19 @@ const DiscountCode = sequelize.define(
       defaultValue: 'fixed',
     },
     value: {
-      type: DataTypes.DECIMAL(19, 2),
+      type: DataTypes.DECIMAL(15, 2),
       allowNull: false,
       validate: {
         min: 0,
       },
     },
     minOrderAmount: {
-      type: DataTypes.DECIMAL(19, 2),
+      type: DataTypes.DECIMAL(15, 2),
       allowNull: true,
       defaultValue: 0,
     },
     maxDiscountAmount: {
-      type: DataTypes.DECIMAL(19, 2),
+      type: DataTypes.DECIMAL(15, 2),
       allowNull: true, // Giới hạn tối đa áp dụng cho loại giảm theo phần trăm
     },
     startDate: {

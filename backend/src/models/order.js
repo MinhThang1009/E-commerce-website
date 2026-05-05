@@ -124,23 +124,23 @@ const Order = sequelize.define(
       allowNull: true,
     },
     subtotal: {
-      type: DataTypes.DECIMAL(19, 2),
+      type: DataTypes.DECIMAL(15, 2),
       allowNull: false,
     },
     tax: {
-      type: DataTypes.DECIMAL(19, 2),
+      type: DataTypes.DECIMAL(15, 2),
       allowNull: false,
     },
     shippingCost: {
-      type: DataTypes.DECIMAL(19, 2),
+      type: DataTypes.DECIMAL(15, 2),
       allowNull: false,
     },
     discount: {
-      type: DataTypes.DECIMAL(19, 2),
+      type: DataTypes.DECIMAL(15, 2),
       defaultValue: 0,
     },
     total: {
-      type: DataTypes.DECIMAL(19, 2),
+      type: DataTypes.DECIMAL(15, 2),
       allowNull: false,
     },
     notes: {
@@ -168,11 +168,11 @@ const Order = sequelize.define(
       defaultValue: 0,
     },
     pointsDiscount: {
-      type: DataTypes.DECIMAL(19, 2),
+      type: DataTypes.DECIMAL(15, 2),
       defaultValue: 0,
     },
     warrantyCost: {
-      type: DataTypes.DECIMAL(19, 2),
+      type: DataTypes.DECIMAL(15, 2),
       defaultValue: 0,
       field: 'warranty_cost',
     },
@@ -196,7 +196,7 @@ const Order = sequelize.define(
     },
     // Số tiền được hoàn (có thể hoàn một phần)
     refundAmount: {
-      type: DataTypes.DECIMAL(19, 2),
+      type: DataTypes.DECIMAL(15, 2),
       allowNull: true,
       field: 'refund_amount',
     },

@@ -31,13 +31,13 @@ const OrderItem = sequelize.define(
     },
     // Giá của 1 unit tại thời điểm đặt hàng (snapshot giá)
     unitPrice: {
-      type: DataTypes.DECIMAL(19, 2),
+      type: DataTypes.DECIMAL(15, 2),
       allowNull: false,
       field: 'unit_price',
     },
     // Số tiền giảm giá áp dụng cho item này (ví dụ: từ sale, coupon cấp item)
     discountAmount: {
-      type: DataTypes.DECIMAL(19, 2),
+      type: DataTypes.DECIMAL(15, 2),
       allowNull: false,
       defaultValue: 0,
       field: 'discount_amount',
@@ -47,7 +47,7 @@ const OrderItem = sequelize.define(
       allowNull: false
     },
     subtotal: {
-      type: DataTypes.DECIMAL(19, 2),
+      type: DataTypes.DECIMAL(15, 2),
       allowNull: false
     },
     image: {

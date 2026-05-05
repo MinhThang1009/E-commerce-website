@@ -9,11 +9,11 @@ import { RootState } from '@/store';
 import { 
   useAddToWishlistMutation, 
   useRemoveFromWishlistMutation 
-} from '@/services/wishlistApi';
+} from '@/features/wishlist';
 import { 
   addToWishlistLocal, 
   removeFromWishlistLocal 
-} from '@/features/wishlist/wishlistSlice';
+} from '@/features/wishlist';
 import { HeartIcon } from '@heroicons/react/24/outline';
 import { HeartIcon as HeartIconSolid } from '@heroicons/react/24/solid';
 import { useAddToCartMutation } from '@/features/cart';

@@ -10,8 +10,8 @@ import { toggleMobileMenu, toggleSearch } from '@/features/ui/uiSlice';
 import { useAuth } from '@/features/auth';
 import { useGetCartCountQuery } from '@/features/cart';
 import { initializeCart } from '@/features/cart';
-import { useGetWishlistQuery } from '@/services/wishlistApi';
-import { setWishlist } from '@/features/wishlist/wishlistSlice';
+import { useGetWishlistQuery } from '@/features/wishlist';
+import { setWishlist } from '@/features/wishlist';
 import { HeartIcon } from '@heroicons/react/24/outline';
 import {
   NAVIGATION_ICONS,

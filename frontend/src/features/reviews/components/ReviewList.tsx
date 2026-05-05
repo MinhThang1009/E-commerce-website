@@ -8,7 +8,7 @@ import {
   useMarkReviewHelpfulMutation,
   Review,
   ReviewFilters,
-} from '@/services/reviewApi';
+} from '../api/reviewApi';
 import { Rating } from '@/components/common/Rating';
 
 interface ReviewListProps {

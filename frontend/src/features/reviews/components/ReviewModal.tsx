@@ -3,7 +3,7 @@ import { useTranslation } from 'react-i18next';
 import Modal from '@/components/common/Modal';
 import { Rating } from '@/components/common/Rating';
 import { PremiumButton } from '@/components/common';
-import { useCreateReviewMutation } from '@/services/reviewApi';
+import { useCreateReviewMutation } from '../api/reviewApi';
 import { toast } from '@/utils/toast';
 
 interface ReviewModalProps {

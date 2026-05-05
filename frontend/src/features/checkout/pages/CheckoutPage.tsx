@@ -26,7 +26,7 @@ import { useCreateOrderMutation, useApplyDiscountCodeMutation } from '@/features
 import { cartApi, useGetCartCountQuery } from '@/features/cart';
 import { useCreateMomoUrlMutation } from '@/features/payment';
 import { useCreateVNPayUrlMutation } from '@/features/payment';
-import { useGetLoyaltyInfoQuery } from '@/services/loyaltyApi';
+import { useGetLoyaltyInfoQuery } from '@/features/loyalty';
 import { useGetAddressesQuery } from '@/services/userApi';
 import { Address } from '@/types/user.types';
 

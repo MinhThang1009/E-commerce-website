@@ -2,7 +2,7 @@ import { useSelector, useDispatch } from 'react-redux';
 import { RootState } from '@/store';
 import { logout as logoutAction } from '../store/authSlice';
 import { useLogoutMutation } from '../api/authApi';
-import { clearWishlistLocal } from '@/features/wishlist/wishlistSlice';
+import { clearWishlistLocal } from '@/features/wishlist';
 import { initializeCart } from '@/features/cart';
 import { api } from '@/services/api';
 

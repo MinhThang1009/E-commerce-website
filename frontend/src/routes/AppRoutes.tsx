@@ -20,7 +20,7 @@ const ResetPasswordPage = lazy(() => import('@/features/auth/pages/ResetPassword
 const VerifyEmailPage = lazy(() => import('@/features/auth/pages/VerifyEmailPage'));
 const ProfilePage = lazy(() => import('@/pages/ProfilePage'));
 const OrdersPage = lazy(() => import('@/features/orders/pages/OrdersPage'));
-const WishlistPage = lazy(() => import('@/pages/WishlistPage'));
+const WishlistPage = lazy(() => import('@/features/wishlist/pages/WishlistPage'));
 const CategoriesPage = lazy(() => import('@/features/catalog/pages/CategoriesPage'));
 const CategoryPage = lazy(() => import('@/features/catalog/pages/CategoryPage'));
 const BrandsPage = lazy(() => import('@/features/catalog/pages/BrandsPage'));

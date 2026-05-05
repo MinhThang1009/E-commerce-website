@@ -1,5 +1,5 @@
 import { useTranslation } from 'react-i18next';
-import { useGetProductReviewsQuery } from '@/services/reviewApi';
+import { useGetProductReviewsQuery } from '../api/reviewApi';
 import { Rating } from '@/components/common/Rating';
 
 interface ReviewSummaryProps {

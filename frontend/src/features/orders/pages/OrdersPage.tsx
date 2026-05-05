@@ -19,7 +19,7 @@ import { cartApi, useClearCartMutation } from '@/features/cart';
 import { formatPrice, getLocale } from '@/utils/format';
 import { RootState } from '@/store';
 import { toast } from '@/utils/toast';
-import ReviewModal from '@/components/reviews/ReviewModal';
+import { ReviewModal } from '@/features/reviews';
 import OrderDetails from '@/components/shared/OrderDetails';
 
 

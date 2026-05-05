@@ -3,7 +3,7 @@ import { useTranslation } from 'react-i18next';
 import { toast } from '@/utils/toast';
 import { useSelector } from 'react-redux';
 import { RootState } from '@/store';
-import { useCreateReviewMutation } from '@/services/reviewApi';
+import { useCreateReviewMutation } from '../api/reviewApi';
 
 interface ReviewFormProps {
   productId: string;

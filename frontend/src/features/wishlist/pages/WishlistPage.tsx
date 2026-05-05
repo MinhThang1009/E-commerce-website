@@ -1,12 +1,12 @@
 import React from 'react';
 import { useTranslation } from 'react-i18next';
 import { Link } from 'react-router-dom';
-import { useGetWishlistQuery, useClearWishlistMutation } from '@/services/wishlistApi';
+import { useGetWishlistQuery, useClearWishlistMutation } from '../api/wishlistApi';
 import ProductCard from '@/components/shared/ProductCard';
 import LoadingSpinner from '@/components/common/LoadingSpinner';
 import { HeartIcon } from '@heroicons/react/24/outline';
 import { useDispatch } from 'react-redux';
-import { clearWishlistLocal } from '@/features/wishlist/wishlistSlice';
+import { clearWishlistLocal } from '../store/wishlistSlice';
 
 const WishlistPage: React.FC = () => {
   const { t } = useTranslation();

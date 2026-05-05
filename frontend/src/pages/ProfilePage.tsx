@@ -16,7 +16,7 @@ import {
   useSetDefaultAddressMutation,
 } from '@/services/userApi';
 import { Address } from '@/types/user.types';
-import { useGetLoyaltyInfoQuery } from '@/services/loyaltyApi';
+import { useGetLoyaltyInfoQuery } from '@/features/loyalty';
 import { formatPrice } from '@/utils/format';
 
 type TabKey = 'info' | 'password' | 'orders' | 'addresses' | 'loyalty';

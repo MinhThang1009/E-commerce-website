@@ -4,7 +4,7 @@ import Badge from '@/components/common/Badge';
 import LoadingSpinner from '@/components/common/LoadingSpinner';
 import { Rating } from '@/components/common/Rating';
 import ProductCard from '@/components/shared/ProductCard';
-import ProductReviews from '@/components/reviews/ProductReviews';
+import { ProductReviews } from '@/features/reviews';
 import WarrantySelection from '../components/WarrantySelection';
 import ProductVariantSelector from '../components/ProductVariantSelector';
 import DynamicProductTitle from '../components/DynamicProductTitle';

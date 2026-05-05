@@ -1,4 +1,4 @@
-import { api } from './api';
+import { api } from '@/services/api';
 import { Product } from '@/features/catalog';
 
 export interface WishlistResponse {

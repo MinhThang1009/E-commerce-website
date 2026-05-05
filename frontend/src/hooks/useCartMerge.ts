@@ -5,8 +5,8 @@ import {
   useMergeCartMutation,
   useAddToCartMutation,
   useGetCartQuery,
-} from '@/services/cartApi';
-import { setServerCart } from '@/features/cart/cartSlice';
+} from '@/features/cart';
+import { setServerCart } from '@/features/cart';
 import { addNotification } from '@/features/ui/uiSlice';
 import { clearJustLoggedIn } from '@/features/auth';
 import { RootState } from '@/store';

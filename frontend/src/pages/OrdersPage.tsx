@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { useDispatch, useSelector } from 'react-redux';
-import { clearCart } from '@/features/cart/cartSlice';
+import { clearCart } from '@/features/cart';
 import Button from '@/components/common/Button';
 import {
   ShoppingBagIcon,
@@ -15,7 +15,7 @@ import {
   useRepayOrderMutation,
   useConfirmReceivedMutation,
 } from '@/services/orderApi';
-import { cartApi, useClearCartMutation } from '@/services/cartApi';
+import { cartApi, useClearCartMutation } from '@/features/cart';
 import { formatPrice, getLocale } from '@/utils/format';
 import { RootState } from '@/store';
 import { toast } from '@/utils/toast';

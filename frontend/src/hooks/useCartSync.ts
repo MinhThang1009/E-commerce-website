@@ -2,8 +2,8 @@ import { useEffect } from 'react';
 import { useSelector, useDispatch } from 'react-redux';
 import { RootState } from '@/store';
 import { useAuth } from '@/features/auth';
-import { useGetCartQuery, useSyncCartMutation } from '@/services/cartApi';
-import { setServerCart, clearCart } from '@/features/cart/cartSlice';
+import { useGetCartQuery, useSyncCartMutation } from '@/features/cart';
+import { setServerCart, clearCart } from '@/features/cart';
 
 /**
  * Hook đồng bộ dữ liệu giỏ hàng giữa local storage và server

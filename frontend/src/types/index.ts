@@ -3,7 +3,8 @@
 export * from '@/features/catalog/types/product.types';
 export * from '@/features/catalog/types/category.types';
 export * from './user.types';
-export * from './cart.types';
+// Kiểu cart đã chuyển sang features/cart (Phase 42 Sprint 14)
+export * from '@/features/cart/types/cart.types';
 export * from './order.types';
 export * from './review.types';
 export * from './common.types';

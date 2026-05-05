@@ -1,4 +1,4 @@
-import { api } from './api';
+import { api } from '@/services/api';
 import { RootState } from '@/store';
 
 // Kiểu dữ liệu giỏ hàng từ backend

@@ -3,9 +3,9 @@ import { Link, useNavigate } from 'react-router-dom';
 import { useDispatch, useSelector } from 'react-redux';
 import { useTranslation } from 'react-i18next';
 import { Product } from '@/features/catalog';
-import { addItem, setServerCart } from '@/features/cart/cartSlice';
+import { addItem, setServerCart } from '@/features/cart';
 import { addNotification } from '@/features/ui/uiSlice';
-import { useAddToCartMutation } from '@/services/cartApi';
+import { useAddToCartMutation } from '@/features/cart';
 import {
   calculatePriceRange,
   calculateDiscountPercentage,

@@ -10,7 +10,7 @@ const HomePage = lazy(() => import('@/pages/HomePage'));
 // Trang catalog (BE module catalog) — deep import giữ code splitting riêng từng page
 const ShopPage = lazy(() => import('@/features/catalog/pages/ShopPage'));
 const ProductDetailPage = lazy(() => import('@/features/catalog/pages/ProductDetailPage'));
-const CartPage = lazy(() => import('@/pages/CartPage'));
+const CartPage = lazy(() => import('@/features/cart/pages/CartPage'));
 const CheckoutPage = lazy(() => import('@/pages/CheckoutPage'));
 // Trang xác thực — deep import giữ code splitting riêng từng page
 const LoginPage = lazy(() => import('@/features/auth/pages/LoginPage'));

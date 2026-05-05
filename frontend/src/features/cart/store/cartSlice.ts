@@ -5,7 +5,7 @@ import {
   ServerCart,
   ServerCartItem,
   UpdateCartItemPayload,
-} from '@/types/cart.types';
+} from '../types/cart.types';
 
 const getSavedCartItems = (): CartItem[] => {
   try {

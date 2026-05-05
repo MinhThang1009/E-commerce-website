@@ -3,13 +3,13 @@ import { Link } from 'react-router-dom';
 import { useDispatch, useSelector } from 'react-redux';
 import { useTranslation } from 'react-i18next';
 import { toast } from '@/utils/toast';
-import { updateQuantity, removeItem } from '@/features/cart/cartSlice';
+import { updateQuantity, removeItem } from '../store/cartSlice';
 import {
   useUpdateCartItemMutation,
   useRemoveCartItemMutation,
-} from '@/services/cartApi';
+} from '../api/cartApi';
 import { RootState } from '@/store';
-import type { CartItem as CartItemType } from '@/types/cart.types';
+import type { CartItem as CartItemType } from '../types/cart.types';
 import { formatPrice, parsePrice } from '@/utils/format';
 
 interface CartItemProps {

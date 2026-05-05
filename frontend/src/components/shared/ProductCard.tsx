@@ -16,8 +16,8 @@ import {
 } from '@/features/wishlist/wishlistSlice';
 import { HeartIcon } from '@heroicons/react/24/outline';
 import { HeartIcon as HeartIconSolid } from '@heroicons/react/24/solid';
-import { useAddToCartMutation } from '@/services/cartApi';
-import { addItem } from '@/features/cart/cartSlice';
+import { useAddToCartMutation } from '@/features/cart';
+import { addItem } from '@/features/cart';
 import { ShoppingCartIcon } from '@heroicons/react/24/outline';
 
 // Mở rộng interface Product để hỗ trợ discountPercentage từ API

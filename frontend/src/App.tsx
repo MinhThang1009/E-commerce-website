@@ -1,8 +1,8 @@
 import { useEffect } from 'react';
 import { BrowserRouter as Router, useNavigate, useLocation } from 'react-router-dom';
 import { useDispatch, useSelector } from 'react-redux';
-import { clearCart } from '@/features/cart/cartSlice';
-import { cartApi } from '@/services/cartApi';
+import { clearCart } from '@/features/cart';
+import { cartApi } from '@/features/cart';
 import { HelmetProvider } from 'react-helmet-async';
 import { RootState } from '@/store';
 import AppRoutes from '@/routes/AppRoutes';

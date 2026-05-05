@@ -1,19 +1,19 @@
 import { PremiumButton } from '@/components/common';
 import Button from '@/components/common/Button';
-import CartItem from '@/components/shared/CartItem';
+import CartItem from '../components/CartItem';
 import CheckCircleIcon from '@/components/icons/CheckCircleIcon';
 import PlusCircleIcon from '@/components/icons/PlusCircleIcon';
 import {
   clearCart,
   initializeCart,
   setServerCart,
-} from '@/features/cart/cartSlice';
+} from '../store/cartSlice';
 import {
   useClearCartMutation,
   useGetCartQuery,
   useValidateCartQuery,
   cartApi,
-} from '@/services/cartApi';
+} from '../api/cartApi';
 import { useApplyDiscountCodeMutation } from '@/services/orderApi';
 import { RootState } from '@/store';
 import { formatPrice } from '@/utils/format';

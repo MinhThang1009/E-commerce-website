@@ -27,9 +27,9 @@ import { v4 as uuidv4 } from 'uuid';
 import ProductImageGallery from '../components/ProductImageGallery';
 import RecentlyViewedProducts from '../components/RecentlyViewedProducts';
 
-import { addItem, setServerCart } from '@/features/cart/cartSlice';
+import { addItem, setServerCart } from '@/features/cart';
 import { addNotification } from '@/features/ui/uiSlice';
-import { useAddToCartMutation } from '@/services/cartApi';
+import { useAddToCartMutation } from '@/features/cart';
 import {
   getVariantStock,
   findVariantByAttributes,

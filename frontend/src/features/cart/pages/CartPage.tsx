@@ -14,7 +14,7 @@ import {
   useValidateCartQuery,
   cartApi,
 } from '../api/cartApi';
-import { useApplyDiscountCodeMutation } from '@/services/orderApi';
+import { useApplyDiscountCodeMutation } from '@/features/orders';
 import { RootState } from '@/store';
 import { formatPrice } from '@/utils/format';
 import { toast } from '@/utils/toast';

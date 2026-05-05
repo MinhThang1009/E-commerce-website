@@ -19,7 +19,7 @@ const ForgotPasswordPage = lazy(() => import('@/features/auth/pages/ForgotPasswo
 const ResetPasswordPage = lazy(() => import('@/features/auth/pages/ResetPasswordPage'));
 const VerifyEmailPage = lazy(() => import('@/features/auth/pages/VerifyEmailPage'));
 const ProfilePage = lazy(() => import('@/pages/ProfilePage'));
-const OrdersPage = lazy(() => import('@/pages/OrdersPage'));
+const OrdersPage = lazy(() => import('@/features/orders/pages/OrdersPage'));
 const WishlistPage = lazy(() => import('@/pages/WishlistPage'));
 const CategoriesPage = lazy(() => import('@/features/catalog/pages/CategoriesPage'));
 const CategoryPage = lazy(() => import('@/features/catalog/pages/CategoryPage'));
@@ -32,7 +32,7 @@ const AboutPage = lazy(() => import('@/pages/AboutPage'));
 const ContactPage = lazy(() => import('@/pages/ContactPage'));
 const FAQsPage = lazy(() => import('@/pages/FAQsPage'));
 const ShippingReturnsPage = lazy(() => import('@/pages/ShippingReturnsPage'));
-const TrackOrderPage = lazy(() => import('@/pages/TrackOrderPage'));
+const TrackOrderPage = lazy(() => import('@/features/orders/pages/TrackOrderPage'));
 const PrivacyPolicyPage = lazy(() => import('@/pages/PrivacyPolicyPage'));
 const TermsPage = lazy(() => import('@/pages/TermsPage'));
 
@@ -41,7 +41,7 @@ const AdminDashboardPage = lazy(() => import('@/pages/admin/DashboardPage'));
 const AdminProductsPage = lazy(() => import('@/features/catalog/pages/admin/ProductsPage'));
 const CreateProductPage = lazy(() => import('@/features/catalog/pages/admin/CreateProductPage'));
 const EditProductPage = lazy(() => import('@/features/catalog/pages/admin/EditProductPage'));
-const AdminOrdersPage = lazy(() => import('@/pages/admin/OrdersPage'));
+const AdminOrdersPage = lazy(() => import('@/features/orders/pages/admin/OrdersPage'));
 const AdminUsersPage = lazy(() => import('@/pages/admin/UsersPage'));
 const AdminUserDetailPage = lazy(() => import('@/pages/admin/UserDetailPage'));
 const AdminCategoriesPage = lazy(() => import('@/features/catalog/pages/admin/CategoriesPage'));
@@ -63,7 +63,7 @@ const AdminEmailCampaignsPage = lazy(
 const AdminInventoryPage = lazy(() => import('@/pages/admin/InventoryPage'));
 const AdminAuditLogPage = lazy(() => import('@/pages/admin/AuditLogPage'));
 
-const PaymentQRPage = lazy(() => import('@/pages/PaymentQRPage'));
+const PaymentQRPage = lazy(() => import('@/features/payment/pages/PaymentQRPage'));
 
 // Các trang lỗi
 const UnauthorizedPage = lazy(() => import('@/pages/UnauthorizedPage'));

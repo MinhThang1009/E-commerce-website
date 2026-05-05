@@ -1,4 +1,4 @@
-import { api } from './api';
+import { api } from '@/services/api';
 
 // Kiểu dữ liệu đơn hàng dựa theo backend API
 export interface OrderItem {

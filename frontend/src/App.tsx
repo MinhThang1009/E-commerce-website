@@ -12,7 +12,7 @@ import ChatbotErrorBoundary from '@/features/ai/components/ChatbotErrorBoundary'
 import SupportChat from '@/features/chat/components/SupportChat';
 import { useTokenRefresh } from '@/hooks/useTokenRefresh';
 import { LoginSuccess, AuthProvider } from '@/features/auth';
-import StripeProvider from '@/features/payment/contexts/StripeContext';
+import { StripeProvider } from '@/features/payment';
 import { useAntdToast } from '@/hooks/useAntdToast';
 import { setNavigateFunction } from '@/utils/authUtils';
 // Khởi tạo cấu hình i18n

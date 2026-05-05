@@ -1,5 +1,5 @@
 // Các kiểu dữ liệu đơn hàng
-import { Address } from './user.types';
+import { Address } from '@/types/user.types';
 
 export interface OrderItem {
   id: string;

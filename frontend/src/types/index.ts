@@ -5,7 +5,8 @@ export * from '@/features/catalog/types/category.types';
 export * from './user.types';
 // Kiểu cart đã chuyển sang features/cart (Phase 42 Sprint 14)
 export * from '@/features/cart/types/cart.types';
-export * from './order.types';
+// Kiểu order đã chuyển sang features/orders (Phase 42 Sprint 16)
+export * from '@/features/orders/types/order.types';
 export * from './review.types';
 export * from './common.types';
 // Kiểu auth đã chuyển sang features/auth (Phase 42 Sprint 12)

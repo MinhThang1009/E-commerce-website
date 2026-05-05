@@ -14,7 +14,7 @@ import {
   useCancelOrderMutation,
   useRepayOrderMutation,
   useConfirmReceivedMutation,
-} from '@/services/orderApi';
+} from '../api/orderApi';
 import { cartApi, useClearCartMutation } from '@/features/cart';
 import { formatPrice, getLocale } from '@/utils/format';
 import { RootState } from '@/store';

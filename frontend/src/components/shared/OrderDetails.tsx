@@ -1,6 +1,6 @@
 import React from 'react';
 import { useTranslation } from 'react-i18next';
-import { useGetOrderByIdQuery } from '@/services/orderApi';
+import { useGetOrderByIdQuery } from '@/features/orders';
 import { formatPrice } from '@/utils/format';
 import Badge, { BadgeVariant } from '@/components/common/Badge';
 

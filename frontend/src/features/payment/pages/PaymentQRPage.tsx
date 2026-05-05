@@ -1,5 +1,5 @@
-import { useGetOrderByIdQuery, useCancelOrderMutation } from '@/services/orderApi';
-import { useCreateVNPayUrlMutation } from '@/services/vnpayApi';
+import { useGetOrderByIdQuery, useCancelOrderMutation } from '@/features/orders';
+import { useCreateVNPayUrlMutation } from '../api/vnpayApi';
 import { addNotification } from '@/features/ui/uiSlice';
 import { RootState } from '@/store';
 import { useState, useEffect } from 'react';

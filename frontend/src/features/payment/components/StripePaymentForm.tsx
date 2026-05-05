@@ -12,7 +12,7 @@ import Button from '@/components/common/Button';
 import {
   useCreatePaymentIntentMutation,
   useConfirmPaymentMutation,
-} from '@/services/stripeApi';
+} from '../api/stripeApi';
 
 // Tải Stripe
 const stripePromise = loadStripe(

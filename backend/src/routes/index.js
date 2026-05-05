@@ -3,8 +3,9 @@ const sequelize = require('../config/sequelize');
 const pkg = require('../../package.json');
 const router = express.Router();
 
-// Import các module route
-const authRoutes = require('./auth');
+// Phase 42.2 — Auth route mounted trực tiếp trong app.js qua modules/auth (Modular
+// Monolith). routes/auth.js (legacy) còn lại chỉ phục vụ unit/integration test
+// nội bộ và sẽ xóa ở Phase 5 cleanup.
 const discountCodeRoutes = require('./discountCode');
 const userRoutes = require('./user');
 const categoryRoutes = require('./category');
@@ -33,7 +34,6 @@ const emailCampaignRoutes = require('./emailCampaign');
 const locationRoutes = require('./location');
 
 // Các route API
-router.use('/auth', authRoutes);
 router.use('/discount-codes', discountCodeRoutes);
 router.use('/users', userRoutes);
 router.use('/categories', categoryRoutes);

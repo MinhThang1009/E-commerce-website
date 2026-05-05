@@ -13,6 +13,24 @@ const { errorHandler } = require('./middlewares/errorHandler');
 const path = require('path');
 const logger = require('./utils/logger');
 
+// Phase 42.2 — Auth module pilot. DI deps cho Modular Monolith pattern.
+const eventBus = require('./shared/eventBus');
+const { User } = require('./models');
+const emailService = require('./services/email');
+const { AdminAuditService } = require('./services/adminAudit');
+const { getRedisClient } = require('./config/redis');
+const buildAuthModule = require('./modules/auth/module');
+
+const authModule = buildAuthModule({
+  User,
+  eventBus,
+  logger,
+  emailService,
+  auditService: AdminAuditService,
+  redisClient: getRedisClient,
+});
+authModule.subscribeEvents();
+
 // Khởi tạo ứng dụng Express
 const app = express();
 
@@ -155,6 +173,10 @@ app.use('/uploads', express.static(path.join(__dirname, '../uploads'), {
   maxAge: '365d',
   immutable: true,
 }));
+
+// Phase 42.2 — Mount auth module trước routes/index để new module thắng path
+// /api/auth (routes/index.js đã tháo old authRoutes mount).
+app.use('/api' + authModule.basePath, authModule.router);
 
 // Định nghĩa các API routes
 app.use('/api', routes);

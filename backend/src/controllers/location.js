@@ -2,7 +2,7 @@
 const { catchAsync } = require('../utils/catchAsync');
 
 class LocationController {
-  // GET /api/location/reverse?lat=X&lon=Y — tra cứu địa chỉ từ tọa độ
+  // GET /api/locations/reverse?lat=X&lon=Y — tra cứu địa chỉ từ tọa độ
   getAddress = catchAsync(async (req, res) => {
     const { lat, lon } = req.query;
     if (!lat || !lon) {
@@ -12,7 +12,7 @@ class LocationController {
     res.status(200).json({ status: 'success', data: result });
   });
 
-  // GET /api/location/forward?address=X — tra cứu tọa độ từ địa chỉ
+  // GET /api/locations/forward?address=X — tra cứu tọa độ từ địa chỉ
   getCoords = catchAsync(async (req, res) => {
     const { address } = req.query;
     if (!address) {
@@ -22,7 +22,7 @@ class LocationController {
     res.status(200).json({ status: 'success', data: result });
   });
 
-  // GET /api/location/search?text=X — tìm kiếm địa điểm tự động hoàn thành
+  // GET /api/locations/search?text=X — tìm kiếm địa điểm tự động hoàn thành
   searchAutocomplete = catchAsync(async (req, res) => {
     const { text } = req.query;
     if (!text) {

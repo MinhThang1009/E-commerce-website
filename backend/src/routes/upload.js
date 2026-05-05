@@ -33,7 +33,7 @@ const { authenticate } = require('../middlewares/authenticate');
 
 /**
  * @swagger
- * /api/upload/{type}/single:
+ * /api/uploads/{type}/single:
  *   post:
  *     summary: Tải lên một file
  *     tags: [Upload]
@@ -81,7 +81,7 @@ router.post('/:type/single', authenticate, uploadController.uploadSingle);
 
 /**
  * @swagger
- * /api/upload/{type}/multiple:
+ * /api/uploads/{type}/multiple:
  *   post:
  *     summary: Tải lên nhiều file
  *     tags: [Upload]
@@ -140,7 +140,7 @@ router.post('/:type/multiple', authenticate, uploadController.uploadMultiple);
 
 /**
  * @swagger
- * /api/upload/{type}/{filename}:
+ * /api/uploads/{type}/{filename}:
  *   delete:
  *     summary: Xóa file đã tải lên
  *     tags: [Upload]

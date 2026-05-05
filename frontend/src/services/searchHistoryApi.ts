@@ -4,7 +4,7 @@ export const searchHistoryApi = api.injectEndpoints({
   endpoints: (builder) => ({
     saveSearch: builder.mutation<any, { keyword: string; resultsCount?: number; sessionId?: string }>({
       query: (body) => ({
-        url: '/search-history',
+        url: '/search-histories',
         method: 'POST',
         body,
       }),
@@ -16,7 +16,7 @@ export const searchHistoryApi = api.injectEndpoints({
         const queryParams = new URLSearchParams();
         if (params?.limit) queryParams.append('limit', params.limit.toString());
         return {
-          url: `/search-history?${queryParams.toString()}`,
+          url: `/search-histories?${queryParams.toString()}`,
           method: 'GET',
         };
       },
@@ -25,7 +25,7 @@ export const searchHistoryApi = api.injectEndpoints({
 
     deleteSearchHistory: builder.mutation<any, string>({
       query: (id) => ({
-        url: `/search-history/${id}`,
+        url: `/search-histories/${id}`,
         method: 'DELETE',
       }),
       invalidatesTags: ['User'],
@@ -33,7 +33,7 @@ export const searchHistoryApi = api.injectEndpoints({
 
     clearAllSearchHistory: builder.mutation<any, void>({
       query: () => ({
-        url: '/search-history',
+        url: '/search-histories',
         method: 'DELETE',
       }),
       invalidatesTags: ['User'],

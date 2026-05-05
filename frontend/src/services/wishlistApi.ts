@@ -18,7 +18,7 @@ export const wishlistApi = api.injectEndpoints({
     // Lấy danh sách yêu thích của người dùng
     getWishlist: builder.query<WishlistResponse, void>({
       query: () => ({
-        url: '/wishlist',
+        url: '/wishlists',
         method: 'GET',
       }),
       providesTags: ['Wishlist'],
@@ -27,7 +27,7 @@ export const wishlistApi = api.injectEndpoints({
     // Thêm sản phẩm vào danh sách yêu thích
     addToWishlist: builder.mutation<any, { productId: string }>({
       query: (body) => ({
-        url: '/wishlist',
+        url: '/wishlists',
         method: 'POST',
         body,
       }),
@@ -37,7 +37,7 @@ export const wishlistApi = api.injectEndpoints({
     // Kiểm tra sản phẩm có trong danh sách yêu thích không
     checkWishlist: builder.query<CheckWishlistResponse, string>({
       query: (productId) => ({
-        url: `/wishlist/check/${productId}`,
+        url: `/wishlists/check/${productId}`,
         method: 'GET',
       }),
       providesTags: (result, error, productId) => [
@@ -48,7 +48,7 @@ export const wishlistApi = api.injectEndpoints({
     // Xóa sản phẩm khỏi danh sách yêu thích
     removeFromWishlist: builder.mutation<any, string>({
       query: (productId) => ({
-        url: `/wishlist/${productId}`,
+        url: `/wishlists/${productId}`,
         method: 'DELETE',
       }),
       invalidatesTags: (result, error, productId) => [
@@ -60,7 +60,7 @@ export const wishlistApi = api.injectEndpoints({
     // Xóa toàn bộ danh sách yêu thích
     clearWishlist: builder.mutation<any, void>({
       query: () => ({
-        url: '/wishlist',
+        url: '/wishlists',
         method: 'DELETE',
       }),
       invalidatesTags: ['Wishlist'],

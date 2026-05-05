@@ -3,12 +3,12 @@
  *
  * Bao gồm:
  * - validateMagicBytes — phát hiện file giả mạo qua nội dung bytes thực tế
- * - POST /api/upload/:type/single — từ chối MIME type không được phép
- * - POST /api/upload/:type/single — giới hạn kích thước 5MB (413)
- * - POST /api/upload/:type/single — từ chối file có magic bytes không hợp lệ
- * - POST /api/upload/:type/single — chấp nhận JPEG/PNG/WebP hợp lệ
- * - DELETE /api/upload/:type/:filename — từ chối non-admin (403)
- * - DELETE /api/upload/:type/:filename — trả 404 khi file không tồn tại
+ * - POST /api/uploads/:type/single — từ chối MIME type không được phép
+ * - POST /api/uploads/:type/single — giới hạn kích thước 5MB (413)
+ * - POST /api/uploads/:type/single — từ chối file có magic bytes không hợp lệ
+ * - POST /api/uploads/:type/single — chấp nhận JPEG/PNG/WebP hợp lệ
+ * - DELETE /api/uploads/:type/:filename — từ chối non-admin (403)
+ * - DELETE /api/uploads/:type/:filename — trả 404 khi file không tồn tại
  */
 
 const os = require('os');
@@ -131,10 +131,10 @@ describe('validateMagicBytes — kiểm tra bytes thực tế của file', () =>
 });
 
 // ============================================================
-// Endpoint tests: POST /api/upload/:type/single
+// Endpoint tests: POST /api/uploads/:type/single
 // ============================================================
 
-describe('POST /api/upload/:type/single — upload endpoint', () => {
+describe('POST /api/uploads/:type/single — upload endpoint', () => {
   let app;
   let uploadedFiles = [];
 
@@ -143,7 +143,7 @@ describe('POST /api/upload/:type/single — upload endpoint', () => {
     const uploadRouter = require('../routes/upload');
     app = express();
     app.use(express.json());
-    app.use('/api/upload', uploadRouter);
+    app.use('/api/uploads', uploadRouter);
     app.use(errorHandler);
   });
 
@@ -162,7 +162,7 @@ describe('POST /api/upload/:type/single — upload endpoint', () => {
     // GIF87a magic bytes
     const gifBuffer = Buffer.from([0x47, 0x49, 0x46, 0x38, 0x37, 0x61]);
     const res = await request()
-      .post('/api/upload/products/single')
+      .post('/api/uploads/products/single')
       .attach('file', gifBuffer, { filename: 'test.gif', contentType: 'image/gif' });
 
     // 4xx AppError trả về status: 'fail' theo convention errorHandler
@@ -174,7 +174,7 @@ describe('POST /api/upload/:type/single — upload endpoint', () => {
   test('400 khi upload file PDF (MIME type không được phép)', async () => {
     const pdfBuffer = Buffer.from([0x25, 0x50, 0x44, 0x46]);
     const res = await request()
-      .post('/api/upload/products/single')
+      .post('/api/uploads/products/single')
       .attach('file', pdfBuffer, { filename: 'doc.pdf', contentType: 'application/pdf' });
 
     expect(res.status).toBe(400);
@@ -191,7 +191,7 @@ describe('POST /api/upload/:type/single — upload endpoint', () => {
       Buffer.alloc(5 * 1024 * 1024 + 1, 0),
     ]);
     const res = await request()
-      .post('/api/upload/products/single')
+      .post('/api/uploads/products/single')
       .attach('file', bigBuffer, { filename: 'big.jpg', contentType: 'image/jpeg' });
 
     expect(res.status).toBe(413);
@@ -202,7 +202,7 @@ describe('POST /api/upload/:type/single — upload endpoint', () => {
   test('400 khi upload file exe giả mạo jpg (magic bytes không hợp lệ)', async () => {
     // MIME type là image/jpeg nhưng bytes là MZ (EXE header) → qua fileFilter, bị chặn tại magic bytes check
     const res = await request()
-      .post('/api/upload/products/single')
+      .post('/api/uploads/products/single')
       .attach('file', FAKE_EXE_MAGIC, { filename: 'malicious.jpg', contentType: 'image/jpeg' });
 
     expect(res.status).toBe(400);
@@ -214,7 +214,7 @@ describe('POST /api/upload/:type/single — upload endpoint', () => {
 
   test('200 khi upload JPEG hợp lệ', async () => {
     const res = await request()
-      .post('/api/upload/products/single')
+      .post('/api/uploads/products/single')
       .attach('file', JPEG_MAGIC, { filename: 'photo.jpg', contentType: 'image/jpeg' });
 
     expect(res.status).toBe(200);
@@ -233,7 +233,7 @@ describe('POST /api/upload/:type/single — upload endpoint', () => {
 
   test('200 khi upload PNG hợp lệ', async () => {
     const res = await request()
-      .post('/api/upload/products/single')
+      .post('/api/uploads/products/single')
       .attach('file', PNG_MAGIC, { filename: 'image.png', contentType: 'image/png' });
 
     expect(res.status).toBe(200);
@@ -246,7 +246,7 @@ describe('POST /api/upload/:type/single — upload endpoint', () => {
 
   test('200 khi upload WebP hợp lệ', async () => {
     const res = await request()
-      .post('/api/upload/products/single')
+      .post('/api/uploads/products/single')
       .attach('file', WEBP_MAGIC, { filename: 'image.webp', contentType: 'image/webp' });
 
     expect(res.status).toBe(200);
@@ -261,7 +261,7 @@ describe('POST /api/upload/:type/single — upload endpoint', () => {
     // Gửi multipart form hợp lệ (có boundary) nhưng không có field 'file'
     // Dùng .field() để trigger multipart parsing mà không kèm file
     const res = await request()
-      .post('/api/upload/products/single')
+      .post('/api/uploads/products/single')
       .field('dummy', 'value');
 
     expect(res.status).toBe(400);
@@ -270,10 +270,10 @@ describe('POST /api/upload/:type/single — upload endpoint', () => {
 });
 
 // ============================================================
-// Endpoint tests: DELETE /api/upload/:type/:filename
+// Endpoint tests: DELETE /api/uploads/:type/:filename
 // ============================================================
 
-describe('DELETE /api/upload/:type/:filename — xóa file', () => {
+describe('DELETE /api/uploads/:type/:filename — xóa file', () => {
   let app;
   let tempFile;
 
@@ -281,7 +281,7 @@ describe('DELETE /api/upload/:type/:filename — xóa file', () => {
     const uploadRouter = require('../routes/upload');
     app = express();
     app.use(express.json());
-    app.use('/api/upload', uploadRouter);
+    app.use('/api/uploads', uploadRouter);
     app.use(errorHandler);
 
     // Tạo file test thực sự trong thư mục products
@@ -299,7 +299,7 @@ describe('DELETE /api/upload/:type/:filename — xóa file', () => {
 
   test('403 khi user thường cố xóa file (không phải admin)', async () => {
     const res = await request()
-      .delete('/api/upload/products/test-delete-phase18.jpg');
+      .delete('/api/uploads/products/test-delete-phase18.jpg');
     // authenticate mock đặt role = 'user' khi không có x-test-admin header
 
     expect(res.status).toBe(403);
@@ -307,7 +307,7 @@ describe('DELETE /api/upload/:type/:filename — xóa file', () => {
 
   test('404 khi admin xóa file không tồn tại', async () => {
     const res = await request()
-      .delete('/api/upload/products/nonexistent-file.jpg')
+      .delete('/api/uploads/products/nonexistent-file.jpg')
       .set('x-test-admin', 'true');
 
     expect(res.status).toBe(404);
@@ -315,7 +315,7 @@ describe('DELETE /api/upload/:type/:filename — xóa file', () => {
 
   test('200 khi admin xóa file tồn tại', async () => {
     const res = await request()
-      .delete('/api/upload/products/test-delete-phase18.jpg')
+      .delete('/api/uploads/products/test-delete-phase18.jpg')
       .set('x-test-admin', 'true');
 
     expect(res.status).toBe(200);
@@ -327,7 +327,7 @@ describe('DELETE /api/upload/:type/:filename — xóa file', () => {
 
   test('400 khi loại upload không hợp lệ', async () => {
     const res = await request()
-      .delete('/api/upload/invalidtype/somefile.jpg')
+      .delete('/api/uploads/invalidtype/somefile.jpg')
       .set('x-test-admin', 'true');
 
     expect(res.status).toBe(400);

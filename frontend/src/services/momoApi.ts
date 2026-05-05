@@ -4,7 +4,7 @@ export const momoApi = api.injectEndpoints({
   endpoints: (builder) => ({
     createMomoUrl: builder.mutation<any, { orderId: string }>({
       query: (body) => ({
-        url: '/payment/momo/create-url',
+        url: '/payments/momo/create-url',
         method: 'POST',
         body,
       }),

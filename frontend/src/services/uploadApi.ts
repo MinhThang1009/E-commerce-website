@@ -39,7 +39,7 @@ export const uploadApi = api.injectEndpoints({
         const formData = new FormData();
         formData.append('file', file);
         return {
-          url: `/upload/${type}/single`,
+          url: `/uploads/${type}/single`,
           method: 'POST',
           body: formData,
         };
@@ -56,7 +56,7 @@ export const uploadApi = api.injectEndpoints({
           formData.append('files', file);
         });
         return {
-          url: `/upload/${type}/multiple`,
+          url: `/uploads/${type}/multiple`,
           method: 'POST',
           body: formData,
         };
@@ -68,7 +68,7 @@ export const uploadApi = api.injectEndpoints({
       { type: string; filename: string }
     >({
       query: ({ type, filename }) => ({
-        url: `/upload/${type}/${filename}`,
+        url: `/uploads/${type}/${filename}`,
         method: 'DELETE',
       }),
     }),

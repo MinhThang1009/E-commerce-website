@@ -1,5 +1,5 @@
 /**
- * Test POST /api/search-history — saveSearch
+ * Test POST /api/search-histories — saveSearch
  *
  * Rule 30: endpoint mới bắt buộc có test happy path, validation boundary, auth.
  *
@@ -64,7 +64,7 @@ const { SearchHistory } = require('../models');
 
 const app = express();
 app.use(express.json());
-app.use('/api/search-history', searchHistoryRouter);
+app.use('/api/search-histories', searchHistoryRouter);
 app.use((err, _req, res, _next) => {
   res.status(err.statusCode || 500).json({ status: 'error', message: err.message });
 });
@@ -72,10 +72,10 @@ app.use((err, _req, res, _next) => {
 const request = supertest(app);
 
 // ============================================================
-// POST /api/search-history — saveSearch
+// POST /api/search-histories — saveSearch
 // ============================================================
 
-describe('POST /api/search-history — saveSearch', () => {
+describe('POST /api/search-histories — saveSearch', () => {
   beforeEach(() => {
     jest.clearAllMocks();
     SearchHistory.create.mockResolvedValue({
@@ -90,7 +90,7 @@ describe('POST /api/search-history — saveSearch', () => {
 
   test('422 khi thiếu keyword', async () => {
     const res = await request
-      .post('/api/search-history')
+      .post('/api/search-histories')
       .set('Authorization', 'Bearer token')
       .send({});
     expect(res.status).toBe(422);
@@ -98,7 +98,7 @@ describe('POST /api/search-history — saveSearch', () => {
 
   test('422 khi keyword rỗng', async () => {
     const res = await request
-      .post('/api/search-history')
+      .post('/api/search-histories')
       .set('Authorization', 'Bearer token')
       .send({ keyword: '' });
     expect(res.status).toBe(422);
@@ -106,7 +106,7 @@ describe('POST /api/search-history — saveSearch', () => {
 
   test('422 khi keyword > 500 ký tự', async () => {
     const res = await request
-      .post('/api/search-history')
+      .post('/api/search-histories')
       .set('Authorization', 'Bearer token')
       .send({ keyword: 'a'.repeat(501) });
     expect(res.status).toBe(422);
@@ -114,7 +114,7 @@ describe('POST /api/search-history — saveSearch', () => {
 
   test('201 khi keyword đúng 500 ký tự (boundary hợp lệ)', async () => {
     const res = await request
-      .post('/api/search-history')
+      .post('/api/search-histories')
       .set('Authorization', 'Bearer token')
       .send({ keyword: 'a'.repeat(500) });
     expect(res.status).toBe(201);
@@ -124,7 +124,7 @@ describe('POST /api/search-history — saveSearch', () => {
 
   test('201 happy path — user đã đăng nhập', async () => {
     const res = await request
-      .post('/api/search-history')
+      .post('/api/search-histories')
       .set('Authorization', 'Bearer token')
       .send({ keyword: 'áo thun nam' });
     expect(res.status).toBe(201);
@@ -136,7 +136,7 @@ describe('POST /api/search-history — saveSearch', () => {
 
   test('201 happy path — guest không có token (auth tùy chọn)', async () => {
     const res = await request
-      .post('/api/search-history')
+      .post('/api/search-histories')
       .send({ keyword: 'giày sneaker', sessionId: 'guest-session-123' });
     expect(res.status).toBe(201);
     expect(SearchHistory.create).toHaveBeenCalledWith(

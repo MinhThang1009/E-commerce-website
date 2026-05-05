@@ -65,7 +65,7 @@ const ImageUpload: React.FC<ImageUploadProps> = ({
     }
 
     try {
-      const response = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:8888'}/api/upload/${type}/${endpoint}`, {
+      const response = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:8888'}/api/uploads/${type}/${endpoint}`, {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${localStorage.getItem('token')}`

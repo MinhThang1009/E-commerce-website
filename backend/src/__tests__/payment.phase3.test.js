@@ -217,7 +217,7 @@ describe('handlePaymentSucceeded — idempotency guard (paymentTransactionId)', 
   beforeAll(() => {
     const paymentRouter = require('../routes/payment');
     app = express();
-    app.use('/api/payment', express.raw({ type: '*/*' }), paymentRouter);
+    app.use('/api/payments', express.raw({ type: '*/*' }), paymentRouter);
     app.use(errorHandler);
   });
 
@@ -245,7 +245,7 @@ describe('handlePaymentSucceeded — idempotency guard (paymentTransactionId)', 
     });
 
     const res = await supertest(app)
-      .post('/api/payment/webhook')
+      .post('/api/payments/webhook')
       .set('stripe-signature', 'test-sig')
       .set('Content-Type', 'application/json')
       .send(JSON.stringify({ type: 'payment_intent.succeeded' }));
@@ -276,7 +276,7 @@ describe('handlePaymentSucceeded — idempotency guard (paymentTransactionId)', 
     });
 
     const res = await supertest(app)
-      .post('/api/payment/webhook')
+      .post('/api/payments/webhook')
       .set('stripe-signature', 'test-sig')
       .set('Content-Type', 'application/json')
       .send(JSON.stringify({ type: 'payment_intent.succeeded' }));

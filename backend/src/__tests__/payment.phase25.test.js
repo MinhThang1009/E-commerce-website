@@ -2,10 +2,10 @@
  * Tests Phase 25 — Payment Business Logic
  *
  * Bao gồm:
- * - POST /api/payment/webhook (sandbox — không có STRIPE_WEBHOOK_SECRET) → 200
+ * - POST /api/payments/webhook (sandbox — không có STRIPE_WEBHOOK_SECRET) → 200
  * - Webhook duplicate event: paymentTransactionId đã tồn tại → stock không bị trừ lần 2
- * - POST /api/payment/create-payment-intent — amount không hợp lệ → 400
- * - POST /api/payment/create-payment-intent — hợp lệ → 200
+ * - POST /api/payments/create-payment-intent — amount không hợp lệ → 400
+ * - POST /api/payments/create-payment-intent — hợp lệ → 200
  */
 
 process.env.NODE_ENV = 'test';
@@ -194,15 +194,15 @@ app.use((req, _res, next) => {
 });
 app.use(express.json());
 app.use((req, _res, next) => { req.cookies = {}; next(); });
-app.use('/api/payment', paymentRouter);
+app.use('/api/payments', paymentRouter);
 app.use(errorHandler);
 const request = supertest(app);
 
 // ============================================================
-// POST /api/payment/webhook — Stripe webhook
+// POST /api/payments/webhook — Stripe webhook
 // ============================================================
 
-describe('POST /api/payment/webhook — Stripe webhook handler', () => {
+describe('POST /api/payments/webhook — Stripe webhook handler', () => {
   beforeEach(() => {
     jest.clearAllMocks();
     // Đảm bảo không có STRIPE_WEBHOOK_SECRET → sandbox mode
@@ -211,7 +211,7 @@ describe('POST /api/payment/webhook — Stripe webhook handler', () => {
 
   test('Sandbox mode (không có STRIPE_WEBHOOK_SECRET) → 200 { received: true }', async () => {
     const res = await request
-      .post('/api/payment/webhook')
+      .post('/api/payments/webhook')
       .set('Content-Type', 'application/json')
       .send('{}');
 
@@ -221,17 +221,17 @@ describe('POST /api/payment/webhook — Stripe webhook handler', () => {
 });
 
 // ============================================================
-// POST /api/payment/create-payment-intent — tạo payment intent
+// POST /api/payments/create-payment-intent — tạo payment intent
 // ============================================================
 
-describe('POST /api/payment/create-payment-intent', () => {
+describe('POST /api/payments/create-payment-intent', () => {
   beforeEach(() => {
     jest.clearAllMocks();
   });
 
   test('Amount không hợp lệ (0) → 400', async () => {
     const res = await request
-      .post('/api/payment/create-payment-intent')
+      .post('/api/payments/create-payment-intent')
       .set('Authorization', 'Bearer test-token')
       .send({ amount: 0, currency: 'usd' });
 
@@ -248,7 +248,7 @@ describe('POST /api/payment/create-payment-intent', () => {
     });
 
     const res = await request
-      .post('/api/payment/create-payment-intent')
+      .post('/api/payments/create-payment-intent')
       .set('Authorization', 'Bearer test-token')
       .send({ amount: 500000, currency: 'vnd', orderId: 42 });
 
@@ -277,13 +277,13 @@ describe('Idempotency — duplicate webhook không trừ stock 2 lần', () => {
 
     // Gửi webhook lần 1
     const res1 = await request
-      .post('/api/payment/webhook')
+      .post('/api/payments/webhook')
       .set('Content-Type', 'application/json')
       .send('{}');
 
     // Gửi webhook lần 2 (duplicate)
     const res2 = await request
-      .post('/api/payment/webhook')
+      .post('/api/payments/webhook')
       .set('Content-Type', 'application/json')
       .send('{}');
 
@@ -297,17 +297,17 @@ describe('Idempotency — duplicate webhook không trừ stock 2 lần', () => {
 });
 
 // ============================================================
-// POST /api/payment/confirm-payment
+// POST /api/payments/confirm-payment
 // ============================================================
 
-describe('POST /api/payment/confirm-payment', () => {
+describe('POST /api/payments/confirm-payment', () => {
   beforeEach(() => {
     jest.clearAllMocks();
   });
 
   test('Thiếu paymentIntentId → 400', async () => {
     const res = await request
-      .post('/api/payment/confirm-payment')
+      .post('/api/payments/confirm-payment')
       .set('Authorization', 'Bearer test-token')
       .send({});
 
@@ -326,7 +326,7 @@ describe('POST /api/payment/confirm-payment', () => {
     });
 
     const res = await request
-      .post('/api/payment/confirm-payment')
+      .post('/api/payments/confirm-payment')
       .set('Authorization', 'Bearer test-token')
       .send({ paymentIntentId: 'pi_test_123' });
 
@@ -336,10 +336,10 @@ describe('POST /api/payment/confirm-payment', () => {
 });
 
 // ============================================================
-// POST /api/payment/create-customer
+// POST /api/payments/create-customer
 // ============================================================
 
-describe('POST /api/payment/create-customer', () => {
+describe('POST /api/payments/create-customer', () => {
   beforeEach(() => {
     jest.clearAllMocks();
   });
@@ -349,7 +349,7 @@ describe('POST /api/payment/create-customer', () => {
     User.findByPk.mockResolvedValue(null);
 
     const res = await request
-      .post('/api/payment/create-customer')
+      .post('/api/payments/create-customer')
       .set('Authorization', 'Bearer test-token');
 
     expect(res.status).toBe(404);
@@ -370,7 +370,7 @@ describe('POST /api/payment/create-customer', () => {
     stripeService.createCustomer.mockResolvedValue({ id: 'cus_new_abc', email: 'test@example.com' });
 
     const res = await request
-      .post('/api/payment/create-customer')
+      .post('/api/payments/create-customer')
       .set('Authorization', 'Bearer test-token');
 
     expect(res.status).toBe(201);
@@ -390,7 +390,7 @@ describe('POST /api/payment/create-customer', () => {
     stripeService.getCustomer.mockResolvedValue({ id: 'cus_existing_123' });
 
     const res = await request
-      .post('/api/payment/create-customer')
+      .post('/api/payments/create-customer')
       .set('Authorization', 'Bearer test-token');
 
     expect(res.status).toBe(200);
@@ -399,10 +399,10 @@ describe('POST /api/payment/create-customer', () => {
 });
 
 // ============================================================
-// GET /api/payment/payment-methods
+// GET /api/payments/payment-methods
 // ============================================================
 
-describe('GET /api/payment/payment-methods', () => {
+describe('GET /api/payments/payment-methods', () => {
   beforeEach(() => {
     jest.clearAllMocks();
   });
@@ -415,7 +415,7 @@ describe('GET /api/payment/payment-methods', () => {
     });
 
     const res = await request
-      .get('/api/payment/payment-methods')
+      .get('/api/payments/payment-methods')
       .set('Authorization', 'Bearer test-token');
 
     expect(res.status).toBe(200);
@@ -433,7 +433,7 @@ describe('GET /api/payment/payment-methods', () => {
     stripeService.getPaymentMethods.mockResolvedValue([{ id: 'pm_123', type: 'card' }]);
 
     const res = await request
-      .get('/api/payment/payment-methods')
+      .get('/api/payments/payment-methods')
       .set('Authorization', 'Bearer test-token');
 
     expect(res.status).toBe(200);
@@ -442,10 +442,10 @@ describe('GET /api/payment/payment-methods', () => {
 });
 
 // ============================================================
-// POST /api/payment/create-setup-intent
+// POST /api/payments/create-setup-intent
 // ============================================================
 
-describe('POST /api/payment/create-setup-intent', () => {
+describe('POST /api/payments/create-setup-intent', () => {
   beforeEach(() => {
     jest.clearAllMocks();
   });
@@ -455,7 +455,7 @@ describe('POST /api/payment/create-setup-intent', () => {
     User.findByPk.mockResolvedValue(null);
 
     const res = await request
-      .post('/api/payment/create-setup-intent')
+      .post('/api/payments/create-setup-intent')
       .set('Authorization', 'Bearer test-token');
 
     expect(res.status).toBe(404);
@@ -476,7 +476,7 @@ describe('POST /api/payment/create-setup-intent', () => {
     stripeService.createSetupIntent.mockResolvedValue({ clientSecret: 'seti_test_secret_abc' });
 
     const res = await request
-      .post('/api/payment/create-setup-intent')
+      .post('/api/payments/create-setup-intent')
       .set('Authorization', 'Bearer test-token');
 
     expect(res.status).toBe(200);
@@ -485,10 +485,10 @@ describe('POST /api/payment/create-setup-intent', () => {
 });
 
 // ============================================================
-// POST /api/payment/confirm-payment — với orderId (happy path)
+// POST /api/payments/confirm-payment — với orderId (happy path)
 // ============================================================
 
-describe('POST /api/payment/confirm-payment — với orderId hợp lệ', () => {
+describe('POST /api/payments/confirm-payment — với orderId hợp lệ', () => {
   beforeEach(() => {
     jest.clearAllMocks();
   });
@@ -524,7 +524,7 @@ describe('POST /api/payment/confirm-payment — với orderId hợp lệ', () =>
     Order.update.mockResolvedValue([1]);
 
     const res = await request
-      .post('/api/payment/confirm-payment')
+      .post('/api/payments/confirm-payment')
       .set('Authorization', 'Bearer test-token')
       .send({ paymentIntentId: 'pi_test_success' });
 
@@ -555,7 +555,7 @@ describe('POST /api/payment/confirm-payment — với orderId hợp lệ', () =>
     });
 
     const res = await request
-      .post('/api/payment/confirm-payment')
+      .post('/api/payments/confirm-payment')
       .set('Authorization', 'Bearer test-token')
       .send({ paymentIntentId: 'pi_test_pending' });
 
@@ -565,10 +565,10 @@ describe('POST /api/payment/confirm-payment — với orderId hợp lệ', () =>
 });
 
 // ============================================================
-// POST /api/payment/webhook — với STRIPE_WEBHOOK_SECRET (non-sandbox)
+// POST /api/payments/webhook — với STRIPE_WEBHOOK_SECRET (non-sandbox)
 // ============================================================
 
-describe('POST /api/payment/webhook — với STRIPE_WEBHOOK_SECRET', () => {
+describe('POST /api/payments/webhook — với STRIPE_WEBHOOK_SECRET', () => {
   beforeEach(() => {
     jest.clearAllMocks();
     process.env.STRIPE_WEBHOOK_SECRET = 'test-webhook-secret';
@@ -594,7 +594,7 @@ describe('POST /api/payment/webhook — với STRIPE_WEBHOOK_SECRET', () => {
     Order.update.mockResolvedValue([1]);
 
     const res = await request
-      .post('/api/payment/webhook')
+      .post('/api/payments/webhook')
       .set('stripe-signature', 'test-sig')
       .set('Content-Type', 'application/json')
       .send('{}');
@@ -616,7 +616,7 @@ describe('POST /api/payment/webhook — với STRIPE_WEBHOOK_SECRET', () => {
     });
 
     const res = await request
-      .post('/api/payment/webhook')
+      .post('/api/payments/webhook')
       .set('stripe-signature', 'test-sig')
       .set('Content-Type', 'application/json')
       .send('{}');
@@ -651,7 +651,7 @@ describe('POST /api/payment/webhook — với STRIPE_WEBHOOK_SECRET', () => {
     sequelize.transaction.mockImplementation(async (cb) => cb(mockT));
 
     const res = await request
-      .post('/api/payment/webhook')
+      .post('/api/payments/webhook')
       .set('stripe-signature', 'test-sig')
       .set('Content-Type', 'application/json')
       .send('{}');

@@ -208,12 +208,12 @@ const { SearchHistory } = require('../models');
 
 const appHistory = express();
 appHistory.use(express.json());
-appHistory.use('/api/search-history', searchHistoryRouter);
+appHistory.use('/api/search-histories', searchHistoryRouter);
 appHistory.use(errorHandler);
 
 const requestHistory = supertest(appHistory);
 
-describe('POST /api/search-history — deduplication (Phase 17.4)', () => {
+describe('POST /api/search-histories — deduplication (Phase 17.4)', () => {
   beforeEach(() => {
     jest.clearAllMocks();
   });
@@ -229,7 +229,7 @@ describe('POST /api/search-history — deduplication (Phase 17.4)', () => {
     });
 
     const res = await requestHistory
-      .post('/api/search-history')
+      .post('/api/search-histories')
       .set('Authorization', 'Bearer token')
       .send({ keyword: 'điện thoại samsung' });
 
@@ -247,7 +247,7 @@ describe('POST /api/search-history — deduplication (Phase 17.4)', () => {
     });
 
     const res = await requestHistory
-      .post('/api/search-history')
+      .post('/api/search-histories')
       .set('Authorization', 'Bearer token')
       .send({ keyword: 'điện thoại samsung' });
 
@@ -261,7 +261,7 @@ describe('POST /api/search-history — deduplication (Phase 17.4)', () => {
     SearchHistory.create.mockResolvedValue({ id: 1, keyword: 'laptop' });
 
     await requestHistory
-      .post('/api/search-history')
+      .post('/api/search-histories')
       .set('Authorization', 'Bearer token')
       .send({ keyword: 'laptop' });
 

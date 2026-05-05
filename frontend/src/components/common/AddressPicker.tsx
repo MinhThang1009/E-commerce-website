@@ -50,7 +50,7 @@ const AddressPicker: React.FC<AddressPickerProps> = ({
       setLoading(true);
       try {
         const apiBase = import.meta.env.VITE_API_URL || 'http://localhost:8888/api';
-        const res = await axios.get(`${apiBase}/location/search?text=${encodeURIComponent(value)}`);
+        const res = await axios.get(`${apiBase}/locations/search?text=${encodeURIComponent(value)}`);
         if (res.data?.data) {
           setSuggestions(res.data.data);
           setShowDropdown(true);

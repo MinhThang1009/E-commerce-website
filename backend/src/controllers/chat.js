@@ -84,7 +84,7 @@ const getAdminChatList = async (req, res, next) => {
       attributes: [
         'sessionId',
         'userId',
-        [sequelize.fn('MAX', sequelize.col('createdAt')), 'lastMessageAt'],
+        [sequelize.fn('MAX', sequelize.col('created_at')), 'lastMessageAt'],
       ],
       where: {
         [sequelize.Sequelize.Op.or]: [
@@ -93,7 +93,7 @@ const getAdminChatList = async (req, res, next) => {
         ],
       },
       group: ['sessionId', 'userId'],
-      order: [[sequelize.literal('MAX(createdAt)'), 'DESC']],
+      order: [[sequelize.literal('MAX(created_at)'), 'DESC']],
     });
 
     // Bổ sung nội dung tin nhắn cuối cùng cho mỗi phiên

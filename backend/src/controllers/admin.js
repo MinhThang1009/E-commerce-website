@@ -2304,7 +2304,7 @@ const getRevenueByCategoryAnalytics = catchAsync(async (req, res) => {
   let dateFilter = '';
   const replacements = {};
   if (startDate && endDate) {
-    dateFilter = 'AND o.createdAt BETWEEN :startDate AND :endDate';
+    dateFilter = 'AND o.created_at BETWEEN :startDate AND :endDate';
     replacements.startDate = startDate;
     replacements.endDate = endDate;
   }
@@ -2314,11 +2314,11 @@ const getRevenueByCategoryAnalytics = catchAsync(async (req, res) => {
            COALESCE(SUM(oi.subtotal), 0) AS revenue,
            COUNT(DISTINCT oi.id) AS orderItemCount
     FROM order_items oi
-    JOIN orders o ON o.id = oi.orderId
-    JOIN products p ON p.id = oi.productId
+    JOIN orders o ON o.id = oi.order_id
+    JOIN products p ON p.id = oi.product_id
     JOIN product_categories pc ON pc.product_id = p.id
     JOIN categories c ON c.id = pc.category_id
-    WHERE o.paymentStatus = 'paid' ${dateFilter}
+    WHERE o.payment_status = 'paid' ${dateFilter}
     GROUP BY c.id, c.name
     ORDER BY revenue DESC
     LIMIT 8

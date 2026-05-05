@@ -45,6 +45,9 @@ const buildOrdersModule = require('./modules/orders/module');
 const buildPaymentModule = require('./modules/payment/module');
 const buildInventoryModule = require('./modules/inventory/module');
 const buildChatModule = require('./modules/chat/module');
+const buildAiModule = require('./modules/ai/module');
+const geminiChatbotService = require('./services/ai/geminiChatbot');
+const ruleBasedChatbot = require('./services/ai/ruleBasedChatbot');
 const stripeService = require('./services/payment/stripe');
 const momoService = require('./services/payment/momo');
 const vnpayService = require('./services/payment/vnpay');
@@ -137,6 +140,13 @@ const chatModule = buildChatModule({
   eventBus, logger,
 });
 chatModule.subscribeEvents();
+
+const aiModule = buildAiModule({
+  Product, Category,
+  geminiChatbotService, ruleBasedChatbot,
+  sequelize, eventBus, logger,
+});
+aiModule.subscribeEvents();
 
 // Khởi tạo ứng dụng Express
 const app = express();
@@ -302,6 +312,9 @@ app.use('/api' + ordersModule.basePath, ordersModule.router);
 app.use('/api' + paymentModule.basePath, paymentModule.router);
 app.use('/api' + inventoryModule.basePath, inventoryModule.router);
 app.use('/api' + chatModule.basePath, chatModule.router);
+// AI chatbot mount TRƯỚC routes/index — fall-through cho /analytics + /cart/add
+// qua legacy routes/chatbot.js đến Phase 5 cleanup.
+app.use('/api' + aiModule.basePath, aiModule.router);
 
 // Định nghĩa các API routes
 app.use('/api', routes);

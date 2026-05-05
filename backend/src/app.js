@@ -15,12 +15,17 @@ const logger = require('./utils/logger');
 
 // Phase 42.2+ — Modular Monolith modules. DI deps build trung tâm tại đây.
 const eventBus = require('./shared/eventBus');
-const { User, Address } = require('./models');
+const sequelize = require('./config/sequelize');
+const {
+  User, Address,
+  Cart, CartItem, Product, ProductVariant, WarrantyPackage,
+} = require('./models');
 const emailService = require('./services/email');
 const { AdminAuditService } = require('./services/adminAudit');
 const { getRedisClient } = require('./config/redis');
 const buildAuthModule = require('./modules/auth/module');
 const buildUsersModule = require('./modules/users/module');
+const buildCartModule = require('./modules/cart/module');
 
 const authModule = buildAuthModule({
   User,
@@ -39,6 +44,12 @@ const usersModule = buildUsersModule({
   logger,
 });
 usersModule.subscribeEvents();
+
+const cartModule = buildCartModule({
+  Cart, CartItem, Product, ProductVariant, WarrantyPackage,
+  sequelize, eventBus, logger,
+});
+cartModule.subscribeEvents();
 
 // Khởi tạo ứng dụng Express
 const app = express();
@@ -187,6 +198,7 @@ app.use('/uploads', express.static(path.join(__dirname, '../uploads'), {
 // thắng path mặc định (routes/index.js đã tháo các route cũ tương ứng).
 app.use('/api' + authModule.basePath, authModule.router);
 app.use('/api' + usersModule.basePath, usersModule.router);
+app.use('/api' + cartModule.basePath, cartModule.router);
 
 // Định nghĩa các API routes
 app.use('/api', routes);

@@ -38,7 +38,7 @@ Tài liệu chuyên đề trong [`docs/`](docs/):
 | Frontend | React 18, TypeScript, Vite |
 | Database | MySQL 8.0 |
 | UI Library | Ant Design, Tailwind CSS |
-| Thanh toán | Stripe, VNPay, MoMo |
+| Thanh toán | VNPay, MoMo |
 | AI Chatbot | Google Gemini API |
 | Realtime | Socket.IO |
 | Email | Nodemailer (Gmail SMTP) |
@@ -81,7 +81,7 @@ Tài liệu chuyên đề trong [`docs/`](docs/):
 │   │   │   ├── features/        # Component theo tính năng (ProductCard, FilterPanel...)
 │   │   │   ├── layout/          # Header, Footer, MainLayout
 │   │   │   ├── product/         # Form tạo/sửa sản phẩm
-│   │   │   └── payment/         # Form thanh toán Stripe, QR chuyển khoản
+│   │   │   └── payment/         # Form thanh toán QR chuyển khoản
 │   │   ├── pages/               # Các trang của website (54 trang)
 │   │   │   ├── admin/           # Trang quản trị (dashboard, sản phẩm, đơn hàng...)
 │   │   │   └── *.tsx            # Trang người dùng (home, shop, cart, checkout...)
@@ -181,7 +181,7 @@ pnpm dev
 **Người dùng:**
 - Đăng ký, đăng nhập (JWT), đăng nhập Google OAuth
 - Xem sản phẩm, tìm kiếm, lọc theo danh mục / thương hiệu
-- Giỏ hàng, thanh toán (Stripe, VNPay, MoMo, chuyển khoản)
+- Giỏ hàng, thanh toán (VNPay, MoMo, chuyển khoản)
 - Theo dõi đơn hàng, đánh giá sản phẩm
 - Danh sách yêu thích, tích điểm thành viên
 - Chat hỗ trợ với AI (Google Gemini)
@@ -201,7 +201,6 @@ pnpm dev
 |---|---|
 | `DB_NAME` | Tên database MySQL |
 | `JWT_SECRET` | Khóa bí mật ký JWT token |
-| `STRIPE_SECRET_KEY` | API key Stripe (test key) |
 | `GEMINI_API_KEY` | API key Google Gemini AI |
 | `VNP_TMN_CODE` | Mã merchant VNPay |
 | `MOMO_PARTNER_CODE` | Mã partner MoMo |

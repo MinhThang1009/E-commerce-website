@@ -218,7 +218,7 @@ grep -rn "new Buffer(" backend/src/
 → phải = 0 kết quả. Thay bằng `Buffer.from(data, encoding)`.
 
 **A25. Sensitive fields bị trả về trong API response:**
-Với mỗi query trả Model ra `res.json()` — nếu model chứa sensitive data (password, token, OTP, secret key, stripeCustomerId…) → phải có `attributes: { exclude: [...] }` hoặc `.toSafeJSON()` tường minh.
+Với mỗi query trả Model ra `res.json()` — nếu model chứa sensitive data (password, token, OTP, secret key…) → phải có `attributes: { exclude: [...] }` hoặc `.toSafeJSON()` tường minh.
 ```
 grep -n "findByPk\|findAll\|findOne" <file vừa sửa>
 ```

@@ -8,7 +8,7 @@
 - **Test suites:** 31 PASS / 31 total
 - **Tests:** 391 PASS / 391 total (270 integration + 121 unit Phase 44 partial)
 - **Test runtime:** ~13 giây
-- **Coverage type:** unit (StripeService 12, AdminAuditService 11, VNPayService 11, MoMoService 9, LocationService 6, productHelpers 23, imageUrl 25, ruleBasedChatbot 24) + integration (HTTP supertest 270)
+- **Coverage type:** unit (AdminAuditService 11, VNPayService 11, MoMoService 9, LocationService 6, productHelpers 23, imageUrl 25, ruleBasedChatbot 24) + integration (HTTP supertest 270)
 
 ## Coverage by category
 
@@ -20,7 +20,7 @@
 | `middlewares/` | 66.52% | 54.23% | 60.86% | 68.01% | OK — error handler + auth tested |
 | `controllers/` | 31.28% | 19.33% | 23.7% | 32.25% | Gap — Phase 44 target |
 | `services/ai/` | **31.96%** | **25.06%** | **32.63%** | **31.53%** | ⬆️ ruleBasedChatbot pure helpers covered (intent classification + price parsing); RAG geminiChatbot vẫn untested |
-| `services/payment/` | **88.74%** | **94.28%** | **81.25%** | **88.74%** | ⬆️⬆️ Phase 44 round 2: Stripe+VNPay+MoMo all covered. Vượt target 70% (Phase 44 plan) |
+| `services/payment/` | **88.74%** | **94.28%** | **81.25%** | **88.74%** | ⬆️⬆️ Phase 44 round 2: VNPay+MoMo covered. Stripe đã xóa |
 | `services/` (toàn bộ) | 16.04% | 27.20% | 20.33% | 16.22% | LocationService added; AI submodule (28%) vẫn untested |
 | `models/` | 24.21% | 0% | 5% | 25.55% | Hooks chưa test riêng — chạy qua integration |
 | `utils/` | **98.55%** | **82.95%** | **100%** | **99.20%** | ⬆️⬆️ Round 4: imageUrl 25 tests + productHelpers 23 + catchAsync + logger. Near-complete coverage. |
@@ -33,7 +33,7 @@
 - **270 tests pass**: Stable test suite, runtime ngắn (14s).
 
 ### Gaps (Phase 44 target ≥70% critical path)
-- **Payment service 21%**: VNPay/Momo/Stripe gateway logic chưa có unit test với mock gateway response.
+- **Payment service 21%**: VNPay/MoMo gateway logic chưa có unit test với mock gateway response.
 - **AI services 28%**: RAG pipeline (geminiChatbot, vectorStore, ruleBasedChatbot) chưa cover edge case fallback.
 - **Controllers 31%**: Business logic trong controllers chưa unit test riêng — chỉ chạy qua integration.
 - **Models hooks 0% branch**: Sequelize hooks (afterCreate, beforeValidate) chưa test isolated.
@@ -60,30 +60,7 @@ Khi defense board hỏi "test coverage là bao nhiêu":
 
 Tham khảo 2 file mới để viết unit test cho service layer:
 
-### 1. `__tests__/stripeService.unit.test.js` (12 tests)
-Pattern: mock `stripe` SDK module + test StripeService methods directly.
-
-```js
-// Set env trước require
-process.env.STRIPE_SECRET_KEY = 'sk_test_dummy';
-
-// Mock SDK
-const mockStripeSdk = {
-  paymentIntents: { create: jest.fn(), ... },
-  webhooks: { constructEvent: jest.fn() },
-  // ...
-};
-jest.mock('stripe', () => jest.fn(() => mockStripeSdk));
-
-// Mock logger
-jest.mock('../utils/logger', () => ({ debug: jest.fn(), info: jest.fn(), error: jest.fn() }));
-
-const stripeService = require('../services/payment/stripe');
-```
-
-Cover: amount conversion (USD * 100, VND giữ nguyên), error wrap → AppError, signature verify webhook.
-
-### 2. `__tests__/adminAuditService.unit.test.js` (11 tests)
+### 1. `__tests__/adminAuditService.unit.test.js` (11 tests)
 Pattern: mock logger + mock `models` module (lazy require pattern).
 
 ```js
@@ -122,7 +99,7 @@ Plan section 43.2.16 đề xuất `it('should ...')` English pattern. Project qu
 ```js
 test('Email không tồn tại → 401', async () => { ... });
 test('trả về X-Cache: MISS lần đầu và cache response', async () => { ... });
-describe('POST /api/payments/webhook — Stripe webhook handler', () => { ... });
+describe('POST /api/payments/momo/ipn — MoMo IPN handler', () => { ... });
 ```
 
 **Vẫn cấm** (anti-patterns):

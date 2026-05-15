@@ -65,7 +65,7 @@ backend/src/
 | Domain Event | `{Name}{Action}Event.js` | `OrderCreatedEvent.js`, `PaymentSucceededEvent.js` |
 | Domain Policy | `{Name}Policy.js` | `RefundPolicy.js`, `OrderStatusPolicy.js` |
 | Domain Port | `I{ServiceName}.js` interface | `ILlmGateway.js`, `ISocketBridge.js` |
-| Infrastructure Gateway | `{Name}Gateway.js` impl của port | `StripeGateway.js`, `MomoGateway.js` |
+| Infrastructure Gateway | `{Name}Gateway.js` impl của port | `MomoGateway.js`, `VnPayGateway.js` |
 | Models | `camelCase.js` | `product.js`, `orderItem.js` |
 | Middlewares | `camelCase.js` | `authenticate.js` |
 | Migrations | `YYYYMMDDHHmm-kebab-description.js` | `2026050501-rename-columns.js` |
@@ -114,7 +114,7 @@ frontend/src/
 │   │   │   └── admin/          # *Page.tsx admin sub-routes (nếu có)
 │   │   ├── store/              # {entity}Slice.ts — Redux Toolkit slice
 │   │   ├── types/              # {entity}.types.ts
-│   │   ├── contexts/           # *Context.tsx (nếu có, vd payment/StripeContext)
+│   │   ├── contexts/           # *Context.tsx (nếu có)
 │   │   └── index.ts            # Barrel export — public surface của feature
 │
 ├── components/                 # Cross-cutting UI (KHÔNG feature-specific)
@@ -154,7 +154,7 @@ frontend/src/
 | Types | `{entity}.types.ts` lowercase | `product.types.ts`, `auth.types.ts` |
 | Store slices | `{entity}Slice.ts` camelCase | `authSlice.ts`, `cartSlice.ts` |
 | Utils | `camelCase.ts` | `format.ts`, `priceUtils.ts` |
-| Contexts | `*Context.tsx` PascalCase | `StripeContext.tsx` |
+| Contexts | `*Context.tsx` PascalCase | `ThemeContext.tsx` |
 | i18n locales | `{lang}.json` | `vi.json`, `en.json` |
 | Tests | `{name}.test.ts(x)` | `cartUtils.test.ts` |
 
@@ -165,7 +165,7 @@ frontend/src/
 | `*Layout.tsx` | layout wrapper | `MainLayout`, `AdminLayout` |
 | `*Modal.tsx` | modal/dialog | `ReviewModal`, `ConfirmModal` |
 | `*Form.tsx` | form container | `ProductForm`, `LoginForm` |
-| `*Provider.tsx` | context provider | `AuthProvider`, `StripeProvider` |
+| `*Provider.tsx` | context provider | `AuthProvider`, `ThemeProvider` |
 | `*Section.tsx` | page section | `HeroSection`, `HomeNewsSection` |
 | `*Card.tsx` | card display | `ProductCard`, `OrderCard` |
 | `*List.tsx` | list rendering | `ReviewList` |
@@ -199,6 +199,6 @@ frontend/src/
   - `Bugfix Phase 12 — stale closure trong ChatWidgetPortal`
 
 ## Env vars
-- `UPPER_SNAKE_CASE` (`DATABASE_URL`, `JWT_SECRET`, `STRIPE_SECRET_KEY`)
+- `UPPER_SNAKE_CASE` (`DATABASE_URL`, `JWT_SECRET`, `GEMINI_API_KEY`)
 - Required vars validate lúc startup (Rule 22)
 - Optional vars có fallback: `process.env.X || 'default'`

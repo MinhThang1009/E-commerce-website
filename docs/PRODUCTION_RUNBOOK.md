@@ -163,4 +163,4 @@ Demo defense có sự cố:
 - [ ] Frontend `npm run build` không error/warning.
 - [ ] Lighthouse a11y score ≥ 80 trên Home + ProductDetail + Checkout (Phase 45.6).
 - [ ] Demo accounts ready: admin (`admin@techstore.vn`), customer (`customer@techstore.vn`) — password trong seed_data.sql.
-- [ ] Sandbox payment test cards/accounts: VNPay sandbox, MoMo test merchant, Stripe test cards.
+- [ ] Sandbox payment test accounts: VNPay sandbox, MoMo test merchant.

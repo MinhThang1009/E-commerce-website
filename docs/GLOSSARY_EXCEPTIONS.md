@@ -16,7 +16,7 @@
 | `alert` | `role="alert"` ARIA attribute trong `Notifications.tsx` | HTML/ARIA standard, không phải domain entity |
 | `alert` | `alert(t('...'))` browser dialog | JavaScript built-in API |
 | `client` | axios `apiClient`, `httpClient` | Generic HTTP client variable, không phải user concept |
-| `customer` | Stripe SDK `stripe.customers.create()` | Third-party API field name (Stripe domain ≠ our domain) |
+| `customer` | Payment SDK customer concept | Third-party API field name (payment domain ≠ our domain) |
 | `transaction` | `sequelize.transaction(async (t) => {})` | DB transaction, không phải payment record |
 | `option` | HTML `<option>` element, dropdown options | HTML/UI element, không phải productAttribute |
 | `feature` | `features/` folder, feature flag | Code organization term, không phải product spec |
@@ -59,7 +59,7 @@
 
 Khi grep Domain Glossary forbidden term, classify:
 1. **HTML/ARIA/standard library** → false positive, không đổi.
-2. **Third-party SDK/API field** (Stripe, Google, etc.) → false positive.
+2. **Third-party SDK/API field** (Google, VNPay, MoMo, etc.) → false positive.
 3. **Code-level technical concept** (DB transaction, HTTP client, build bundle) → false positive.
 4. **Verb form** (purchase as action) → false positive.
 5. **UI section/component name** đã document trong glossary → false positive.

@@ -284,20 +284,7 @@ const CreateProductPage: React.FC = () => {
             }
             return [];
           })(),
-          thumbnail: (
-            allFormValues.thumbnail ||
-            values.thumbnail ||
-            ''
-          ).substring(0, 1000),
-          // Các trường bổ sung
           condition: allFormValues.condition || values.condition || 'new',
-          inStock: hasVariants
-            ? true
-            : allFormValues.inStock !== undefined
-              ? allFormValues.inStock
-              : values.inStock !== undefined
-                ? values.inStock
-                : true,
           specifications: (() => {
             const specs = allFormValues.specifications || values.specifications;
             if (!specs) return [];
@@ -312,21 +299,6 @@ const CreateProductPage: React.FC = () => {
           })(),
           warrantyPackageIds:
             allFormValues.warrantyPackageIds || values.warrantyPackageIds || [],
-          searchKeywords: (() => {
-            const keywords =
-              allFormValues.searchKeywords || values.searchKeywords;
-            if (!keywords) return [];
-            if (typeof keywords === 'string') {
-              return keywords
-                .split(',')
-                .map((kw) => kw.trim())
-                .filter((kw) => kw.length > 0);
-            }
-            if (Array.isArray(keywords)) {
-              return keywords;
-            }
-            return [];
-          })(),
           attributes:
             attributes.length > 0
               ? attributes.map((attr) => ({

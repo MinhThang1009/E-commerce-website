@@ -131,7 +131,7 @@ const ProductDetailPage: React.FC = () => {
 
   // Xử lý thay đổi số lượng
   const handleQuantityChange = (newQuantity: number) => {
-    if (newQuantity >= 1 && newQuantity <= (product?.stock || 99)) {
+    if (newQuantity >= 1 && newQuantity <= (product?.stock ?? 99)) {
       setQuantity(newQuantity);
     }
   };

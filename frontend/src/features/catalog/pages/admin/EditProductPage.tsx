@@ -146,9 +146,6 @@ const EditProductPage: React.FC = () => {
           status: formValues.status,
           featured: formValues.featured,
           categoryIds: formValues.categoryIds || [],
-          searchKeywords: typeof formValues.searchKeywords === 'string'
-            ? formValues.searchKeywords.split(',').map((kw: string) => kw.trim()).filter((kw: string) => kw)
-            : formValues.searchKeywords || [],
           seoTitle: formValues.seoTitle,
           seoDescription: formValues.seoDescription,
           seoKeywords: typeof formValues.seoKeywords === 'string'
@@ -156,7 +153,6 @@ const EditProductPage: React.FC = () => {
             : formValues.seoKeywords || [],
           warrantyPackageIds: formValues.warrantyPackageIds || [],
           faqs: formValues.faqs || [],
-          thumbnail: formValues.thumbnail || '',
           images: typeof formValues.images === 'string'
             ? formValues.images.split('\n').filter((img: string) => img.trim())
             : Array.isArray(formValues.images) ? formValues.images : [],
@@ -277,9 +273,6 @@ const EditProductPage: React.FC = () => {
         categoryIds: product.categories?.map((cat: any) => cat.id) || [],
         images: product.images?.join('\n') || '',
         thumbnail: product.thumbnail || '',
-        searchKeywords: Array.isArray(product.searchKeywords)
-          ? product.searchKeywords.join(', ')
-          : product.searchKeywords || '',
         seoTitle: product.seoTitle || '',
         seoDescription: product.seoDescription || '',
         seoKeywords: product.seoKeywords || '',

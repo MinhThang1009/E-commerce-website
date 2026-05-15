@@ -67,9 +67,7 @@ const CreateProductForm: React.FC<CreateProductFormProps> = ({
     status: 'active',
     categoryIds: [] as string[],
     images: '',
-    thumbnail: '',
     featured: false,
-    searchKeywords: '',
     seoTitle: '',
     seoDescription: '',
     seoKeywords: '',
@@ -226,13 +224,7 @@ const CreateProductForm: React.FC<CreateProductFormProps> = ({
         images: formData.images
           ? formData.images.split(',').map((img) => img.trim())
           : [],
-        thumbnail:
-          formData.thumbnail ||
-          (formData.images ? formData.images.split(',')[0]?.trim() : ''),
         featured: formData.featured,
-        searchKeywords: formData.searchKeywords
-          ? formData.searchKeywords.split(',').map((kw) => kw.trim())
-          : [],
         seoTitle: formData.seoTitle || formData.name.trim(),
         seoDescription:
           formData.seoDescription || formData.shortDescription.trim(),
@@ -268,9 +260,7 @@ const CreateProductForm: React.FC<CreateProductFormProps> = ({
         status: 'active',
         categoryIds: [],
         images: '',
-        thumbnail: '',
         featured: false,
-        searchKeywords: '',
         seoTitle: '',
         seoDescription: '',
         seoKeywords: '',
@@ -639,21 +629,6 @@ const CreateProductForm: React.FC<CreateProductFormProps> = ({
                     />
                   </div>
 
-                  <div>
-                    <label className="block font-medium mb-1 text-neutral-700 dark:text-neutral-300">
-                      {t('createProduct.searchKwLabel')}
-                    </label>
-                    <Input
-                      value={formData.searchKeywords}
-                      onChange={(e) =>
-                        handleInputChange('searchKeywords', e.target.value)
-                      }
-                      placeholder={t('createProduct.searchKwPlaceholder')}
-                    />
-                    <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
-                      {t('createProduct.searchKwHint')}
-                    </p>
-                  </div>
                 </div>
               </div>
 
@@ -712,21 +687,6 @@ const CreateProductForm: React.FC<CreateProductFormProps> = ({
                   </p>
                 </div>
 
-                <div>
-                  <label className="block font-medium mb-1 text-neutral-700 dark:text-neutral-300">
-                    {t('createProduct.thumbnailLabel')}
-                  </label>
-                  <Input
-                    value={formData.thumbnail}
-                    onChange={(e) =>
-                      handleInputChange('thumbnail', e.target.value)
-                    }
-                    placeholder="https://example.com/thumbnail.jpg"
-                  />
-                  <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
-                    {t('createProduct.thumbnailHint')}
-                  </p>
-                </div>
               </div>
 
               {/* Xem trước ảnh */}

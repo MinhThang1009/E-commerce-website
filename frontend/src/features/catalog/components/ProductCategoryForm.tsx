@@ -46,16 +46,6 @@ const ProductCategoryForm: React.FC<ProductCategoryFormProps> = ({
         </Form.Item>
       </Col>
 
-      <Col span={24}>
-        <Form.Item name="searchKeywords" label={t('admin.products.category.keywordsLabel')}>
-          <TextArea
-            rows={2}
-            placeholder={t('admin.products.category.keywordsPlaceholder')}
-            showCount
-            maxLength={500}
-          />
-        </Form.Item>
-      </Col>
 
       <Col span={24}>
         <Alert

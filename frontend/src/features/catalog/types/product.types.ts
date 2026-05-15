@@ -125,11 +125,9 @@ export interface ProductFormData {
 
   // Tồn kho (dành cho sản phẩm không có biến thể)
   stockQuantity?: number;
-  inStock?: boolean;
 
   // Hình ảnh/Media
   images: string[];
-  thumbnail?: string;
 
   // Danh mục
   categoryIds: string[];
@@ -143,7 +141,6 @@ export interface ProductFormData {
   seoTitle?: string;
   seoDescription?: string;
   seoKeywords?: string[];
-  searchKeywords?: string[];
 
   // Thông số kỹ thuật
   specifications?: ProductSpecification[];

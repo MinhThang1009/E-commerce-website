@@ -942,7 +942,7 @@
       "initializationFailed": "Failed to initialize payment. Please try again.",
       "paymentFailed": "Payment failed. Please try again.",
       "confirmationFailed": "Payment confirmation failed. Please contact support."
-    },
+    }
   },
   "admin": {
     "title": "Admin Dashboard",

@@ -1060,7 +1060,7 @@
       "initializationFailed": "Không thể khởi tạo thanh toán. Vui lòng thử lại.",
       "paymentFailed": "Thanh toán thất bại. Vui lòng thử lại.",
       "confirmationFailed": "Xác nhận thanh toán thất bại. Vui lòng liên hệ hỗ trợ."
-    },
+    }
   },
   "admin": {
     "title": "Bảng quản trị",

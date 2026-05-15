@@ -1,7 +1,8 @@
 const axios = require('axios');
-const { Product, Category, Brand, ChatMessage, sequelize } = require('../../models');
+const { Product, Category, Brand, ChatMessage, ProductImage, sequelize } = require('../../models');
 const { Op } = require('sequelize');
 const vectorStoreService = require('./vectorStore');
+const { enrichProductData } = require('./vectorStore');
 const logger = require('../../utils/logger');
 const { getRedisClient } = require('../../config/redis');
 
@@ -532,9 +533,11 @@ Trả về ĐÚNG định dạng JSON sau:
   async getAllProducts() {
     try {
       const products = await Product.findAll({
-        where: { status: 'active', inStock: true },
+        where: { status: 'active', stockQuantity: { [Op.gt]: 0 } },
         include: [
           { model: Category, attributes: ['name'], as: 'categories' },
+          { model: Category, attributes: ['name'], as: 'category' },
+          { model: ProductImage, as: 'productImages', attributes: ['imageUrl', 'isThumbnail'], required: false },
         ],
         attributes: [
           'id',
@@ -543,18 +546,15 @@ Trả về ĐÚNG định dạng JSON sau:
           'description',
           'basePrice',
           'compareAtPrice',
-          'thumbnail',
-          'inStock',
           'stockQuantity',
           'slug',
-          'searchKeywords',
           'createdAt',
         ],
         limit: 200,
         order: [['createdAt', 'DESC']],
       });
 
-      return products.map((p) => p.toJSON());
+      return products.map((p) => enrichProductData(p.toJSON()));
     } catch (error) {
       logger.error('Lỗi khi lấy danh sách sản phẩm:', error);
       return [];

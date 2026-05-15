@@ -620,11 +620,8 @@ const createProduct = catchAsync(async (req, res) => {
     sku,
     status = 'active',
     images,
-    thumbnail,
-    inStock = true,
     stockQuantity = 0,
     featured = false,
-    searchKeywords = [],
     seoTitle,
     seoDescription,
     seoKeywords = [],
@@ -668,12 +665,10 @@ const createProduct = catchAsync(async (req, res) => {
     basePrice: price,
     // Tạm thời bỏ qua compareAtPrice, sẽ cập nhật riêng
     compareAtPrice: null,
-    inStock: status === 'active',
     stockQuantity: stock || stockQuantity || 0,
     sku: uniqueSku,
     status,
     isFeatured: featured,
-    searchKeywords: searchKeywords || [],
     seoTitle: seoTitle || name,
     seoDescription: seoDescription || description,
     seoKeywords: seoKeywords || [],
@@ -847,10 +842,7 @@ const createProduct = catchAsync(async (req, res) => {
       // Cập nhật tổng tồn kho của sản phẩm từ các variants
       const totalStock = calculateTotalStock(createdVariants);
       await Product.update(
-        {
-          stockQuantity: totalStock,
-          inStock: totalStock > 0,
-        },
+        { stockQuantity: totalStock },
         { where: { id: product.id } }
       );
     } catch (error) {
@@ -985,11 +977,11 @@ const createProduct = catchAsync(async (req, res) => {
     ],
   });
 
-  // Đồng bộ vector store thủ công — Product.update() cập nhật inStock/stockQuantity bypass Sequelize hooks
   try {
+    const { enrichProductData } = require('../services/ai/vectorStore');
     await vectorStoreService.loadPromise;
-    if (productWithRelations.status === 'active' && productWithRelations.inStock) {
-      await vectorStoreService.addProduct(productWithRelations.toJSON());
+    if (productWithRelations.status === 'active') {
+      await vectorStoreService.addProduct(enrichProductData(productWithRelations.toJSON()));
       await vectorStoreService.save();
     }
   } catch (syncErr) {
@@ -1025,13 +1017,10 @@ const updateProduct = catchAsync(async (req, res) => {
     compareAtPrice,
     comparePrice,
     images,
-    thumbnail,
-    inStock,
     stockQuantity,
     sku,
     status,
         isFeatured: featured,
-    searchKeywords,
     seoTitle,
     seoDescription,
     seoKeywords,
@@ -1066,13 +1055,11 @@ const updateProduct = catchAsync(async (req, res) => {
     if (req.body.hasOwnProperty('description')) updateData.description = description;
     if (req.body.hasOwnProperty('shortDescription')) updateData.shortDescription = shortDescription;
     if (req.body.hasOwnProperty('price')) updateData.basePrice = parseFloat(price?.toString()) || 0;
-    if (req.body.hasOwnProperty('inStock')) updateData.inStock = inStock;
     if (req.body.hasOwnProperty('stockQuantity')) updateData.stockQuantity = parseInt(stockQuantity?.toString()) || 0;
     if (req.body.hasOwnProperty('sku')) updateData.sku = sku;
     if (req.body.hasOwnProperty('status')) updateData.status = status;
     if (req.body.hasOwnProperty('featured')) updateData.isFeatured = featured;
     if (req.body.hasOwnProperty('condition')) updateData.condition = condition;
-    if (req.body.hasOwnProperty('searchKeywords')) updateData.searchKeywords = searchKeywords;
     if (req.body.hasOwnProperty('seoTitle')) updateData.seoTitle = seoTitle;
     if (req.body.hasOwnProperty('seoDescription')) updateData.seoDescription = seoDescription;
     if (req.body.hasOwnProperty('seoKeywords')) updateData.seoKeywords = seoKeywords;
@@ -1256,16 +1243,13 @@ const updateProduct = catchAsync(async (req, res) => {
       // Đồng bộ tổng tồn kho nếu có variants
       const totalStock = calculateTotalStock(finalVariants);
       await Product.update(
-        { stockQuantity: totalStock, inStock: totalStock > 0 },
+        { stockQuantity: totalStock },
         { where: { id }, transaction }
       );
     } else if (req.body.hasOwnProperty('stockQuantity')) {
       // Nếu không có variants, dùng tồn kho cơ bản
       await Product.update(
-        { 
-          stockQuantity: parseInt(stockQuantity?.toString()) || 0, 
-          inStock: (parseInt(stockQuantity?.toString()) || 0) > 0 
-        },
+        { stockQuantity: parseInt(stockQuantity?.toString()) || 0 },
         { where: { id }, transaction }
       );
     }
@@ -1349,11 +1333,11 @@ const updateProduct = catchAsync(async (req, res) => {
       ]
     });
 
-    // Đồng bộ vector store thủ công — Product.update() cập nhật inStock/stockQuantity bypass Sequelize hooks
     try {
+      const { enrichProductData } = require('../services/ai/vectorStore');
       await vectorStoreService.loadPromise;
-      if (finalProduct && finalProduct.status === 'active' && finalProduct.inStock) {
-        await vectorStoreService.addProduct(finalProduct.toJSON());
+      if (finalProduct && finalProduct.status === 'active') {
+        await vectorStoreService.addProduct(enrichProductData(finalProduct.toJSON()));
       } else if (finalProduct) {
         vectorStoreService.items = vectorStoreService.items.filter(item => item.metadata.id !== finalProduct.id);
       }
@@ -2120,14 +2104,14 @@ const restockProduct = catchAsync(async (req, res) => {
     newStock = prevStock + qty;
     await variant.update({ stockQuantity: newStock, isAvailable: true });
 
-    // Cập nhật tổng stock và trạng thái inStock của product
+    // Cập nhật tổng stock của product
     const total = await ProductVariant.sum('stockQuantity', { where: { productId } });
-    await product.update({ stockQuantity: total || 0, inStock: (total || 0) > 0 });
+    await product.update({ stockQuantity: total || 0 });
   } else {
     // Nhập hàng cho sản phẩm không có variant
     prevStock = product.stockQuantity;
     newStock = prevStock + qty;
-    await product.update({ stockQuantity: newStock, inStock: true });
+    await product.update({ stockQuantity: newStock });
   }
 
   // Ghi lịch sử nhập hàng

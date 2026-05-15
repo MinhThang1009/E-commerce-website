@@ -12,7 +12,7 @@ class SequelizeAiRepository extends IAiRepository {
   }
 
   async searchProducts({ keyword, minPrice, maxPrice, categoryName, limit } = {}) {
-    const where = { status: 'active', inStock: true };
+    const where = { status: 'active', stockQuantity: { [Op.gt]: 0 } };
 
     if (keyword) {
       const keywordMapping = {
@@ -65,7 +65,7 @@ class SequelizeAiRepository extends IAiRepository {
 
   async findActiveDeals(limit = 10) {
     return this.Product.findAll({
-      where: { status: 'active', inStock: true, compareAtPrice: { [Op.gt]: 0 } },
+      where: { status: 'active', stockQuantity: { [Op.gt]: 0 }, compareAtPrice: { [Op.gt]: 0 } },
       order: [
         [literal('((compare_at_price - base_price) / compare_at_price) DESC')],
       ],
@@ -75,7 +75,7 @@ class SequelizeAiRepository extends IAiRepository {
 
   async findFeaturedProducts(limit = 10) {
     return this.Product.findAll({
-      where: { status: 'active', inStock: true, isFeatured: true },
+      where: { status: 'active', stockQuantity: { [Op.gt]: 0 }, isFeatured: true },
       limit, order: [['createdAt', 'DESC']],
     });
   }

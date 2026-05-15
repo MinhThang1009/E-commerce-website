@@ -24,7 +24,7 @@ function generateProductText(product) {
     // Strip HTML tags từ description để không embed HTML markup
     product.description ? product.description.replace(/<[^>]*>/g, '').substring(0, 500) : '',
     product.basePrice ? `Giá: ${product.basePrice.toLocaleString('vi-VN')} đồng` : '',
-    product.inStock ? 'Còn hàng' : 'Hết hàng',
+    product.stockQuantity > 0 ? 'Còn hàng' : 'Hết hàng',
   ];
   return parts.filter(Boolean).join('. ').substring(0, 1500);
 }
@@ -117,7 +117,7 @@ class SimpleVectorStore {
           thumbnail: product.thumbnail,
           inStock: product.inStock,
           stockQuantity: product.stockQuantity,
-          category: product.categories?.[0]?.name || 'Sản phẩm',
+          category: product.categories?.[0]?.name || product.category?.name || 'Sản phẩm',
           baseName: product.baseName,
           shortDescription: product.shortDescription || '', // createPrompt() dùng p.shortDescription
           createdAt: product.createdAt,                     // simpleKeywordMatch "hàng mới" sort theo ngày
@@ -197,5 +197,15 @@ class SimpleVectorStore {
   }
 }
 
-module.exports = new SimpleVectorStore();
+// Compute thumbnail + inStock từ product associations — dùng chung cho indexProducts, model hooks, chatbot fallback
+function enrichProductData(productData) {
+  const thumbImg = productData.productImages?.find(img => img.isThumbnail);
+  productData.thumbnail = thumbImg?.imageUrl || productData.productImages?.[0]?.imageUrl || null;
+  productData.inStock = productData.stockQuantity > 0;
+  return productData;
+}
+
+const vectorStoreInstance = new SimpleVectorStore();
+module.exports = vectorStoreInstance;
+module.exports.enrichProductData = enrichProductData;
 

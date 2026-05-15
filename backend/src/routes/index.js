@@ -43,13 +43,16 @@ router.get('/health', async (req, res) => {
   // (Phase 1 dùng Redis qua ioredis; check nếu RedisClient có method ping.)
   let redisStatus = 'not_configured';
   try {
-    const redis = require('../config/redis');
-    if (redis && typeof redis.ping === 'function') {
-      const pong = await redis.ping();
+    const { getRedisClient } = require('../config/redis');
+    const redisClient = await getRedisClient();
+    if (redisClient && typeof redisClient.ping === 'function') {
+      const pong = await redisClient.ping();
       redisStatus = pong === 'PONG' ? 'ok' : 'error';
+    } else {
+      redisStatus = 'memory_fallback';
     }
   } catch {
-    redisStatus = 'not_configured';
+    redisStatus = 'error';
   }
   const overallOk = dbStatus === 'ok';
   res.status(overallOk ? 200 : 503).json({

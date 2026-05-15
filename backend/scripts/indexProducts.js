@@ -1,8 +1,9 @@
 require('dotenv').config();
 const path = require('path');
 const fs = require('fs');
-const { Product, Category } = require('../src/models');
+const { Product, Category, ProductImage } = require('../src/models');
 const vectorStoreService = require('../src/services/ai/vectorStore');
+const { enrichProductData } = vectorStoreService;
 const viEmbeddingService = require('../src/services/ai/viEmbedding');
 
 // Script index tất cả sản phẩm vào vector store
@@ -18,12 +19,9 @@ const indexAllProducts = async () => {
     const products = await Product.findAll({
       where: { status: 'active' },
       include: [
-        {
-          model: Category,
-          as: 'categories',
-          through: { attributes: [] },
-          attributes: ['name'],
-        },
+        { model: Category, as: 'categories', through: { attributes: [] }, attributes: ['name'] },
+        { model: Category, as: 'category', attributes: ['name'] },
+        { model: ProductImage, as: 'productImages', attributes: ['imageUrl', 'isThumbnail'], required: false },
       ],
     });
 
@@ -48,7 +46,7 @@ const indexAllProducts = async () => {
       const product = products[i];
       process.stdout.write(`[${i + 1}/${products.length}] Indexing: ${product.name}... `);
       try {
-        await vectorStoreService.addProduct(product.toJSON());
+        await vectorStoreService.addProduct(enrichProductData(product.toJSON()));
         process.stdout.write('✅\n');
       } catch (err) {
         process.stdout.write(`❌ ${err.message}\n`);

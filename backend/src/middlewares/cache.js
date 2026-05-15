@@ -19,7 +19,9 @@ const cacheMiddleware = (ttlSeconds, keyFn) => async (req, res, next) => {
     res.json = (data) => {
       if (res.statusCode === 200) {
         // fire-and-forget: res.json phải return đồng bộ, cache write chạy nền
-        redis.setEx(key, ttlSeconds, JSON.stringify(data)).catch(() => {});
+        redis.setEx(key, ttlSeconds, JSON.stringify(data)).catch((err) => {
+          logger.warn('Cache write failed:', err.message);
+        });
       }
       res.setHeader('X-Cache', 'MISS');
       return originalJson(data);

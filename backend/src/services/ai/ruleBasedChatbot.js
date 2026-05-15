@@ -301,7 +301,7 @@ class ChatbotService {
           products = await Product.findAll({
             where: {
               status: 'active',
-              inStock: true,
+              stockQuantity: { [Op.gt]: 0 },
             },
             include: [
               {
@@ -332,7 +332,7 @@ class ChatbotService {
         const fallbackProducts = await Product.findAll({
           where: {
             status: 'active',
-            inStock: true,
+            stockQuantity: { [Op.gt]: 0 },
             [Op.or]: [
               { isFeatured: true },
               { compareAtPrice: { [Op.gt]: 0 } }, // Sản phẩm đang giảm giá
@@ -356,7 +356,7 @@ class ChatbotService {
         price: product.basePrice,
         compareAtPrice: product.compareAtPrice,
         thumbnail: product.thumbnail,
-        inStock: product.inStock,
+        inStock: product.stockQuantity > 0,
         rating: null,
         discount: product.compareAtPrice
           ? Math.round(

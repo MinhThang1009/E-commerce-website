@@ -113,6 +113,9 @@ async function auditModel(model) {
     modelDbColNames.add('updated_at');
   }
 
+  // Sequelize default PK: model không khai báo explicit `id` nhưng DB luôn có
+  modelDbColNames.add('id');
+
   // Loại C: DB col ∉ Model
   for (const [dbColName] of dbCols.entries()) {
     if (!modelDbColNames.has(dbColName)) {

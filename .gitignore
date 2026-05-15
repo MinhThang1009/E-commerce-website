@@ -56,6 +56,9 @@ temp/
 # Claude Code
 .claude/
 
+# Temp commit-rewrite files
+scripts/msg*.txt
+
 # Analysis files
 ANALYSIS_INDEX.md
 ANALYSIS_REPORT.md

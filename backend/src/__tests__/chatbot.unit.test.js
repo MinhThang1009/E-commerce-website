@@ -71,10 +71,10 @@ describe('GeminiChatbotService.simpleKeywordMatch', () => {
     compareAtPrice: null,
     thumbnail: 'iphone.jpg',
     inStock: true,
+    stockQuantity: 10,
     slug: 'iphone-15-pro',
   };
 
-  // Sản phẩm mẫu: giả lập dữ liệu từ DB getAllProducts() (có basePrice, không có price)
   const productFromDB = {
     id: 2,
     name: 'Samsung Galaxy S24',
@@ -84,6 +84,7 @@ describe('GeminiChatbotService.simpleKeywordMatch', () => {
     compareAtPrice: null,
     thumbnail: 'samsung.jpg',
     inStock: true,
+    stockQuantity: 5,
     slug: 'samsung-galaxy-s24',
   };
 
@@ -96,6 +97,7 @@ describe('GeminiChatbotService.simpleKeywordMatch', () => {
     compareAtPrice: 50000000,
     thumbnail: 'macbook.jpg',
     inStock: true,
+    stockQuantity: 3,
     slug: 'macbook-pro-14',
   };
 
@@ -230,6 +232,7 @@ describe('GeminiChatbotService.parseAIResponse', () => {
         compareAtPrice: null,
         thumbnail: 'a.jpg',
         inStock: true,
+        stockQuantity: 5,
       },
     ];
     // Chuỗi không phải JSON → JSON.parse throw → rơi vào simpleKeywordMatch

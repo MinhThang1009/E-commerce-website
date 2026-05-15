@@ -53,7 +53,6 @@ describe('InventoryService', () => {
       });
 
       expect(product.stockQuantity).toBe(30);
-      expect(product.inStock).toBe(true);
       expect(repo.createInventoryLog).toHaveBeenCalledWith(
         expect.objectContaining({
           productId: 1, variantId: null,
@@ -78,7 +77,6 @@ describe('InventoryService', () => {
       expect(variant.stockQuantity).toBe(15);
       expect(variant.isAvailable).toBe(true);
       expect(product.stockQuantity).toBe(15);
-      expect(product.inStock).toBe(true);
     });
 
     test('restock publish StockRestockedEvent', async () => {

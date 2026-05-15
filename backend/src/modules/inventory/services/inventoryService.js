@@ -41,13 +41,10 @@ class InventoryService {
       stockable.isAvailable = true;
       await this.repo.saveStockable(stockable);
 
-      // Sync tổng stock + inStock của parent product
       const total = await this.repo.sumVariantStockByProductId(productId);
       product.stockQuantity = total || 0;
-      product.inStock = (total || 0) > 0;
       await this.repo.saveStockable(product);
     } else {
-      stockable.inStock = true;
       await this.repo.saveStockable(stockable);
     }
 

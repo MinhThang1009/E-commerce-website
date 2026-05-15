@@ -849,7 +849,6 @@ class CatalogService {
         basePrice: isVariantProduct ? 0 : payload.price,
         compareAtPrice: isVariantProduct ? null : payload.compareAtPrice,
         images: payload.images || [],
-        thumbnail: payload.thumbnail,
         stockQuantity: isVariantProduct ? 0 : payload.stockQuantity,
         isFeatured: payload.featured,
         tags: payload.tags || [],
@@ -942,8 +941,6 @@ class CatalogService {
       setIfPresent('price', patch.price);
       setIfPresent('compareAtPrice', patch.compareAtPrice);
       setIfPresent('images', patch.images);
-      setIfPresent('thumbnail', patch.thumbnail);
-      setIfPresent('inStock', patch.inStock);
       setIfPresent('stockQuantity', patch.stockQuantity);
       setIfPresent('featured', patch.featured);
       setIfPresent('tags', patch.tags);

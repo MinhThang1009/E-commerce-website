@@ -89,7 +89,7 @@ class ChatbotController {
         price: product.basePrice,
         compareAtPrice: product.compareAtPrice,
         thumbnail: product.thumbnail,
-        inStock: product.inStock,
+        inStock: product.stockQuantity > 0,
         stockQuantity: product.stockQuantity,
         rating: product.ratingAverage || null,
         discount: product.compareAtPrice
@@ -411,7 +411,7 @@ class ChatbotController {
           message: 'Sản phẩm không tồn tại',
         });
       }
-      if (product.status !== 'active' || !product.inStock) {
+      if (product.status !== 'active' || product.stockQuantity <= 0) {
         return res.status(400).json({
           status: 'error',
           message: 'Sản phẩm đã hết hàng hoặc ngừng kinh doanh',
@@ -454,7 +454,7 @@ class ChatbotController {
   async searchProducts(searchParams) {
     const where = {
       status: 'active',
-      inStock: true,
+      stockQuantity: { [Op.gt]: 0 },
     };
 
     // Thêm điều kiện tìm kiếm
@@ -534,7 +534,7 @@ class ChatbotController {
     return await Product.findAll({
       where: {
         status: 'active',
-        inStock: true,
+        stockQuantity: { [Op.gt]: 0 },
         compareAtPrice: { [Op.gt]: 0 },
       },
       order: [
@@ -554,7 +554,7 @@ class ChatbotController {
     return await Product.findAll({
       where: {
         status: 'active',
-        inStock: true,
+        stockQuantity: { [Op.gt]: 0 },
         isFeatured: true,
       },
       limit: 10,

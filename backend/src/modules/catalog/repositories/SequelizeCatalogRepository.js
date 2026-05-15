@@ -241,6 +241,10 @@ class SequelizeCatalogRepository extends ICatalogRepository {
     if (filter.brandIdsIn && filter.brandIdsIn.length > 0) {
       where.brandId = { [Op.in]: filter.brandIdsIn };
     }
+    if (filter.inStock !== undefined) {
+      const wantInStock = filter.inStock === 'true' || filter.inStock === true;
+      where.stockQuantity = wantInStock ? { [Op.gt]: 0 } : 0;
+    }
     return where;
   }
 

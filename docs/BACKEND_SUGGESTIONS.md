@@ -84,13 +84,15 @@ params.append('status', 'active');
 
 ```json
 {
-  "stockQuantity": 25, // Tổng stock từ tất cả variants
-  "stockStatus": "inStock", // "inStock", "lowStock", "outOfStock"
+  "stockQuantity": 25,
+  "inStock": true,
   "variants": [
     {
       "stockQuantity": 10,
-      "stockStatus": "inStock"
+      "isAvailable": true
     }
   ]
 }
 ```
+
+> **Ghi chú:** `inStock` là computed property (`stockQuantity > 0`), không phải DB column. Variant dùng `isAvailable` (DB column).

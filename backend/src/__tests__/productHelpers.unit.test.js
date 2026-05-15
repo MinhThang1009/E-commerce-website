@@ -48,7 +48,7 @@ describe('calculateTotalStock', () => {
 });
 
 describe('updateProductTotalStock', () => {
-  test('Update Product với tổng stock + inStock=true khi stock > 0', async () => {
+  test('Update Product với tổng stock khi stock > 0', async () => {
     ProductVariant.findAll.mockResolvedValue([
       { stockQuantity: 5 },
       { stockQuantity: 7 },
@@ -59,19 +59,19 @@ describe('updateProductTotalStock', () => {
 
     expect(result).toBe(12);
     expect(Product.update).toHaveBeenCalledWith(
-      { stockQuantity: 12, inStock: true },
+      { stockQuantity: 12 },
       { where: { id: 42 } }
     );
   });
 
-  test('inStock=false khi stock = 0', async () => {
+  test('stockQuantity = 0 khi không có stock', async () => {
     ProductVariant.findAll.mockResolvedValue([{ stockQuantity: 0 }]);
     const Product = { update: jest.fn().mockResolvedValue([1]) };
 
     await updateProductTotalStock(1, Product);
 
     expect(Product.update).toHaveBeenCalledWith(
-      { stockQuantity: 0, inStock: false },
+      { stockQuantity: 0 },
       { where: { id: 1 } }
     );
   });

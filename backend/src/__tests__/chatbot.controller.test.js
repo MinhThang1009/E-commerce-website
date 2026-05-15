@@ -140,7 +140,7 @@ describe('POST /api/chatbot/cart/add', () => {
   beforeEach(() => {
     // Mặc định: giỏ hàng tồn tại, sản phẩm active và còn hàng
     Cart.findOne.mockResolvedValue({ id: 1 });
-    Product.findByPk.mockResolvedValue({ id: 1, status: 'active', inStock: true });
+    Product.findByPk.mockResolvedValue({ id: 1, status: 'active', stockQuantity: 10 });
     CartItem.create.mockResolvedValue({ id: 10, cartId: 1, productId: 1, quantity: 1 });
     chatbotService.trackAnalytics.mockResolvedValue(undefined);
   });
@@ -165,8 +165,8 @@ describe('POST /api/chatbot/cart/add', () => {
     expect(res.body.status).toBe('error');
   });
 
-  test('400 khi sản phẩm hết hàng (inStock = false)', async () => {
-    Product.findByPk.mockResolvedValue({ id: 1, status: 'active', inStock: false });
+  test('400 khi sản phẩm hết hàng (stockQuantity = 0)', async () => {
+    Product.findByPk.mockResolvedValue({ id: 1, status: 'active', stockQuantity: 0 });
 
     const res = await request
       .post('/api/chatbot/cart/add')
@@ -179,7 +179,7 @@ describe('POST /api/chatbot/cart/add', () => {
   });
 
   test('400 khi sản phẩm không active (status !== active)', async () => {
-    Product.findByPk.mockResolvedValue({ id: 1, status: 'inactive', inStock: true });
+    Product.findByPk.mockResolvedValue({ id: 1, status: 'inactive', stockQuantity: 10 });
 
     const res = await request
       .post('/api/chatbot/cart/add')

@@ -283,14 +283,19 @@ const Product = sequelize.define(
           // (product.stockQuantity luôn 0 — variants chưa tồn tại tại thời điểm afterCreate).
           // Chatbot service tự filter out-of-stock khi search vector.
           if (vectorStoreService && product.status === 'active') {
-            // Fetch lại product kèm categories vì instance trong hook không có associations
             const Category = require('./category');
+            const ProductImage = require('./productImage');
+            const { enrichProductData } = require('../services/ai/vectorStore');
             const fullProduct = await Product.findByPk(product.id, {
-              include: [{ model: Category, as: 'categories', attributes: ['name'] }],
+              include: [
+                { model: Category, as: 'categories', attributes: ['name'] },
+                { model: Category, as: 'category', attributes: ['name'] },
+                { model: ProductImage, as: 'productImages', attributes: ['imageUrl', 'isThumbnail'], required: false },
+              ],
             });
             if (fullProduct) {
-              await vectorStoreService.addProduct(fullProduct.toJSON());
-              await vectorStoreService.save(); // Phải await sau khi save() thành async
+              await vectorStoreService.addProduct(enrichProductData(fullProduct.toJSON()));
+              await vectorStoreService.save();
             }
           }
         } catch (error) {
@@ -305,14 +310,19 @@ const Product = sequelize.define(
             // Stock check không làm ở hook (product.stockQuantity luôn 0 — stock thực ở variant level).
             // Chatbot service tự filter out-of-stock khi search vector.
             if (product.status === 'active') {
-              // Fetch lại product kèm categories
               const Category = require('./category');
+              const ProductImage = require('./productImage');
+              const { enrichProductData } = require('../services/ai/vectorStore');
               const fullProduct = await Product.findByPk(product.id, {
-                include: [{ model: Category, as: 'categories', attributes: ['name'] }],
+                include: [
+                  { model: Category, as: 'categories', attributes: ['name'] },
+                  { model: Category, as: 'category', attributes: ['name'] },
+                  { model: ProductImage, as: 'productImages', attributes: ['imageUrl', 'isThumbnail'], required: false },
+                ],
               });
               if (fullProduct) {
-                await vectorStoreService.addProduct(fullProduct.toJSON());
-                await vectorStoreService.save(); // Phải await
+                await vectorStoreService.addProduct(enrichProductData(fullProduct.toJSON()));
+                await vectorStoreService.save();
               }
             } else {
               vectorStoreService.items = vectorStoreService.items.filter(

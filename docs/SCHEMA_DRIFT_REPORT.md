@@ -1,6 +1,6 @@
 # Schema Drift Report — Phase 46.1
 
-> Generated: 2026-05-05T16:10:54.654Z
+> Generated: 2026-05-05T16:16:50.610Z
 > Models audited: 39
 
 ## Tổng kết

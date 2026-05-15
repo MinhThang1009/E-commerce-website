@@ -28,13 +28,9 @@ module.exports = {
         allowNull: false,
       });
 
-      // Gán giá trị mặc định cho sản phẩm cũ — dùng MySQL syntax (backtick, không casting)
       await queryInterface.sequelize.query(`
         UPDATE \`products\`
-        SET \`status\` = CASE
-          WHEN \`in_stock\` = 1 THEN 'active'
-          ELSE 'inactive'
-        END
+        SET \`status\` = 'draft'
         WHERE \`status\` IS NULL
       `);
     }

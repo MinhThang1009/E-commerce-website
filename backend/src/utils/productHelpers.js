@@ -35,10 +35,7 @@ const updateProductTotalStock = async (productId, Product) => {
     const totalStock = calculateTotalStock(variants);
 
     await Product.update(
-      {
-        stockQuantity: totalStock,
-        inStock: totalStock > 0,
-      },
+      { stockQuantity: totalStock },
       { where: { id: productId } }
     );
 

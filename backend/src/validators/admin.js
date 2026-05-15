@@ -30,22 +30,12 @@ const createProductValidation = [
     .isInt({ min: 0 })
     .withMessage('Số lượng tồn kho phải là số nguyên không âm'),
 
-  body('inStock')
-    .optional()
-    .isBoolean()
-    .withMessage('inStock phải là true/false'),
-
   body('featured')
     .optional()
     .isBoolean()
     .withMessage('featured phải là true/false'),
 
   body('images').optional().isArray().withMessage('Hình ảnh phải là một mảng'),
-
-  body('searchKeywords')
-    .optional()
-    .isArray()
-    .withMessage('Từ khóa tìm kiếm phải là một mảng'),
 
   body('seoKeywords')
     .optional()
@@ -95,22 +85,12 @@ const updateProductValidation = [
     .isInt({ min: 0 })
     .withMessage('Số lượng tồn kho phải là số nguyên không âm'),
 
-  body('inStock')
-    .optional()
-    .isBoolean()
-    .withMessage('inStock phải là true/false'),
-
   body('featured')
     .optional()
     .isBoolean()
     .withMessage('featured phải là true/false'),
 
   body('images').optional().isArray().withMessage('Hình ảnh phải là một mảng'),
-
-  body('searchKeywords')
-    .optional()
-    .isArray()
-    .withMessage('Từ khóa tìm kiếm phải là một mảng'),
 
   body('seoKeywords')
     .optional()

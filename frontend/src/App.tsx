@@ -12,7 +12,6 @@ import ChatbotErrorBoundary from '@/features/ai/components/ChatbotErrorBoundary'
 import { SupportChat } from '@/features/chat';
 import { useTokenRefresh } from '@/hooks/useTokenRefresh';
 import { LoginSuccess, AuthProvider } from '@/features/auth';
-import { StripeProvider } from '@/features/payment';
 import { useAntdToast } from '@/hooks/useAntdToast';
 import { setNavigateFunction } from '@/utils/authUtils';
 // Khởi tạo cấu hình i18n
@@ -62,7 +61,6 @@ const AppContent: React.FC = () => {
   return (
     <HelmetProvider>
       <AuthProvider>
-        <StripeProvider>
           {contextHolder}
           <Notifications />
           <LoginSuccess />
@@ -71,7 +69,6 @@ const AppContent: React.FC = () => {
             <ChatWidgetPortal />
           </ChatbotErrorBoundary>
           {<SupportChat />}
-        </StripeProvider>
       </AuthProvider>
     </HelmetProvider>
   );

@@ -60,12 +60,6 @@ describe('Payment Domain', () => {
       expect(result.reason).toMatch(/momo/);
     });
 
-    test('provider=stripe → allowed', () => {
-      expect(PaymentPolicy.canRefund({
-        paymentTransactionId: 'tx-1', paymentProvider: 'stripe',
-      })).toEqual({ allowed: true });
-    });
-
     test('provider=vnpay → allowed', () => {
       expect(PaymentPolicy.canRefund({
         paymentTransactionId: 'tx-1', paymentProvider: 'vnpay',
@@ -74,10 +68,11 @@ describe('Payment Domain', () => {
   });
 
   describe('SUPPORTED_REFUND_PROVIDERS', () => {
-    test('liệt kê stripe + vnpay', () => {
+    test('liệt kê vnpay', () => {
       expect(PaymentPolicy.SUPPORTED_REFUND_PROVIDERS).toEqual(
-        expect.arrayContaining(['stripe', 'vnpay'])
+        expect.arrayContaining(['vnpay'])
       );
+      expect(PaymentPolicy.SUPPORTED_REFUND_PROVIDERS).not.toContain('stripe');
     });
   });
 });

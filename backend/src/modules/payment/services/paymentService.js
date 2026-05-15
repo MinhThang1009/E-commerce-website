@@ -4,18 +4,17 @@ const PaymentPolicy = require('../domain/policies/PaymentPolicy');
 const PaymentSucceededEvent = require('../domain/events/PaymentSucceededEvent');
 const PaymentFailedEvent = require('../domain/events/PaymentFailedEvent');
 
-// Payment Service — orchestrate Stripe/MoMo/VNPay gateway + Order updates.
+// Payment Service — orchestrate MoMo/VNPay gateway + Order updates.
 // Mọi gateway access qua interface (IPaymentGateway), repository wrap Order/User/Cart.
 //
 // Idempotency: PaymentPolicy.canProcessPayment check transactionId + paymentStatus
 // để webhook duplicate không double-process.
 class PaymentService {
   constructor({
-    paymentRepository, stripeGateway, momoGateway, vnpayGateway,
+    paymentRepository, momoGateway, vnpayGateway,
     emailGateway, eventBus, logger, frontendUrl,
   }) {
     this.repo = paymentRepository;
-    this.stripeGateway = stripeGateway;
     this.momoGateway = momoGateway;
     this.vnpayGateway = vnpayGateway;
     this.emailGateway = emailGateway;
@@ -83,199 +82,6 @@ class PaymentService {
     }
   }
 
-  // ---------- Stripe use cases ----------
-
-  async createPaymentIntent({ amount, currency = 'usd', orderId, userId }) {
-    if (!amount || amount <= 0) throw new AppError('Số tiền không hợp lệ', 400);
-
-    this.logger.info('Đang tạo payment intent kèm metadata:', { userId, orderId: orderId || '' });
-    const paymentIntent = await this.stripeGateway.createPaymentIntent({
-      amount, currency,
-      metadata: { userId, orderId: orderId || '' },
-    });
-    this.logger.info('Đã tạo payment intent:', { id: paymentIntent.paymentIntentId, metadata: paymentIntent.metadata });
-    return paymentIntent;
-  }
-
-  async confirmPayment({ paymentIntentId }) {
-    if (!paymentIntentId) throw new AppError('Payment intent ID là bắt buộc', 400);
-
-    const paymentIntent = await this.stripeGateway.confirmPaymentIntent(paymentIntentId);
-    this.logger.info('Đã lấy payment intent:', {
-      id: paymentIntent.id, status: paymentIntent.status, metadata: paymentIntent.metadata,
-    });
-
-    const orderId = paymentIntent.metadata.orderId;
-    if (orderId) {
-      const order = await this.repo.findOrderByPk(orderId);
-      if (order && paymentIntent.status === 'succeeded'
-        && PaymentPolicy.canProcessPayment(order, paymentIntent.id)) {
-        await this.repo.updateOrderPayment(orderId, {
-          status: 'processing',
-          paymentStatus: 'paid',
-          paymentTransactionId: paymentIntent.id,
-          paymentProvider: 'stripe',
-          updatedAt: new Date(),
-        });
-        await this._incrementDiscountCodeUsage(orderId);
-        this.logger.info(`Đã cập nhật trạng thái đơn hàng ${order.id} sang paid`);
-        await this._clearUserCart(order.userId);
-        await this._sendOrderConfirmationEmailSafe(order.id);
-
-        await this.eventBus.publish(PaymentSucceededEvent({
-          orderId: order.id, orderNumber: order.number,
-          transactionId: paymentIntent.id, provider: 'stripe',
-          amount: paymentIntent.amount,
-        }));
-      }
-    }
-
-    return {
-      paymentIntent: {
-        id: paymentIntent.id,
-        status: paymentIntent.status,
-        amount: paymentIntent.currency === 'vnd' ? paymentIntent.amount : paymentIntent.amount / 100,
-        currency: paymentIntent.currency,
-      },
-    };
-  }
-
-  async createCustomer({ userId }) {
-    const user = await this.repo.findUserById(userId);
-    if (!user) throw new AppError('Không tìm thấy người dùng', 404);
-
-    if (user.stripeCustomerId) {
-      const customer = await this.stripeGateway.getCustomer(user.stripeCustomerId);
-      return { customer, isNew: false };
-    }
-
-    const customer = await this.stripeGateway.createCustomer({
-      email: user.email,
-      name: `${user.firstName} ${user.lastName}`,
-      metadata: { userId: user.id },
-    });
-    user.stripeCustomerId = customer.id;
-    await this.repo.saveUser(user);
-    return { customer, isNew: true };
-  }
-
-  async getPaymentMethods({ userId }) {
-    const user = await this.repo.findUserById(userId);
-    if (!user || !user.stripeCustomerId) return { paymentMethods: [] };
-    const paymentMethods = await this.stripeGateway.getPaymentMethods(user.stripeCustomerId);
-    return { paymentMethods };
-  }
-
-  async createSetupIntent({ userId }) {
-    const user = await this.repo.findUserById(userId);
-    if (!user) throw new AppError('Không tìm thấy người dùng', 404);
-
-    let customerId = user.stripeCustomerId;
-    if (!customerId) {
-      const customer = await this.stripeGateway.createCustomer({
-        email: user.email,
-        name: `${user.firstName} ${user.lastName}`,
-        metadata: { userId: user.id },
-      });
-      customerId = customer.id;
-      user.stripeCustomerId = customerId;
-      await this.repo.saveUser(user);
-    }
-
-    return this.stripeGateway.createSetupIntent(customerId);
-  }
-
-  async handleStripeWebhook({ payload, signature, hasSecret }) {
-    if (!hasSecret) {
-      this.logger.info('Webhook nhận trong chế độ sandbox (không có STRIPE_WEBHOOK_SECRET)');
-      return { received: true };
-    }
-
-    const event = await this.stripeGateway.handleWebhook(payload, signature);
-    this.logger.info('[PAYMENT] Webhook received', {
-      event: event.type,
-      orderId: event.data?.object?.metadata?.orderId,
-    });
-
-    if (event.type === 'payment_intent.succeeded') {
-      await this._handleStripePaymentSucceeded(event.data.object);
-    } else if (event.type === 'payment_intent.payment_failed') {
-      await this._handleStripePaymentFailed(event.data.object);
-    } else if (event.type === 'customer.created') {
-      this.logger.info('Đã tạo customer:', event.data.object.id);
-    } else {
-      this.logger.info(`Loại sự kiện chưa được xử lý: ${event.type}`);
-    }
-    return { received: true };
-  }
-
-  async _handleStripePaymentSucceeded(paymentIntent) {
-    try {
-      const orderId = paymentIntent.metadata?.orderId;
-      if (!orderId) return;
-
-      const order = await this.repo.findOrderByPk(orderId);
-      if (!order) return;
-
-      // Idempotency guard — confirmPayment có thể đã xử lý
-      if (order.paymentTransactionId === paymentIntent.id) {
-        this.logger.info(`Webhook payment.succeeded: order ${orderId} đã xử lý — bỏ qua`);
-        return;
-      }
-
-      await this.repo.runInTransaction(async (t) => {
-        const lockedOrder = await this.repo.lockOrder(orderId, t);
-        if (!lockedOrder || lockedOrder.paymentTransactionId === paymentIntent.id) return;
-
-        await this.repo.updateOrderPayment(orderId, {
-          status: 'processing',
-          paymentStatus: 'paid',
-          paymentTransactionId: paymentIntent.id,
-          paymentProvider: 'stripe',
-        }, { transaction: t });
-
-        await this._incrementDiscountCodeUsage(orderId, { transaction: t });
-      });
-
-      await this._clearUserCart(order.userId);
-      await this._sendOrderConfirmationEmailSafe(orderId);
-      this.logger.info(`Webhook: cập nhật thành công order ${orderId}`);
-
-      await this.eventBus.publish(PaymentSucceededEvent({
-        orderId: order.id, orderNumber: order.number,
-        transactionId: paymentIntent.id, provider: 'stripe',
-        amount: paymentIntent.amount,
-      }));
-    } catch (err) {
-      this.logger.error('Lỗi xử lý thanh toán thành công:', err);
-    }
-  }
-
-  async _handleStripePaymentFailed(paymentIntent) {
-    try {
-      const orderId = paymentIntent.metadata?.orderId;
-      if (!orderId) return;
-
-      await this.repo.updateOrderPayment(orderId, {
-        paymentStatus: 'failed',
-        paymentTransactionId: paymentIntent.id,
-        paymentProvider: 'stripe',
-      });
-      this.logger.info(`Thanh toán thất bại cho đơn hàng: ${orderId}`);
-
-      const order = await this.repo.findOrderByPk(orderId);
-      if (order) {
-        await this.eventBus.publish(PaymentFailedEvent({
-          orderId: order.id, orderNumber: order.number,
-          transactionId: paymentIntent.id, provider: 'stripe',
-          reason: paymentIntent.last_payment_error?.message,
-        }));
-      }
-    } catch (err) {
-      this.logger.error('Lỗi xử lý thanh toán thất bại:', err);
-    }
-  }
-
   // ---------- MoMo ----------
 
   async createMomoUrl({ orderId }) {
@@ -290,7 +96,7 @@ class PaymentService {
     });
   }
 
-  async handleMomoReturn({ resultCode, extraData }) {
+  async handleMomoReturn({ resultCode, extraData, amount }) {
     const orderIdMatch = extraData.match(/orderId=([^&]+)/);
     const orderId = orderIdMatch ? orderIdMatch[1] : null;
 
@@ -299,6 +105,10 @@ class PaymentService {
       redirectStatus = 'success';
       if (orderId) {
         const order = await this.repo.findOrderByPk(orderId);
+        if (order && amount && Math.abs(order.total - amount) > 0.01) {
+          this.logger.warn('MoMo return amount mismatch', { expected: order.total, received: amount, orderId });
+          return `${this.frontendUrl}/orders?payment=failed&reason=amount_mismatch`;
+        }
         if (order && PaymentPolicy.canProcessPayment(order, null)) {
           order.status = 'processing';
           order.paymentStatus = 'paid';
@@ -326,7 +136,14 @@ class PaymentService {
 
     if (resultCode == 0 && orderId) {
       const order = await this.repo.findOrderByPk(orderId);
-      if (order && PaymentPolicy.canProcessPayment(order, transId)) {
+      if (!order) return { valid: false };
+
+      if (body.amount && Math.abs(order.total - body.amount) > 0.01) {
+        this.logger.warn('MoMo IPN amount mismatch', { expected: order.total, received: body.amount, orderId });
+        return { valid: false };
+      }
+
+      if (PaymentPolicy.canProcessPayment(order, transId)) {
         order.status = 'processing';
         order.paymentStatus = 'paid';
         order.paymentTransactionId = transId;
@@ -435,11 +252,7 @@ class PaymentService {
     }
 
     let refund;
-    if (order.paymentProvider === 'stripe') {
-      refund = await this.stripeGateway.createRefund({
-        paymentIntentId: order.paymentTransactionId, amount, reason,
-      });
-    } else if (order.paymentProvider === 'vnpay') {
+    if (order.paymentProvider === 'vnpay') {
       refund = await this.vnpayGateway.refund({
         orderId: order.number,
         amount: amount || order.total,

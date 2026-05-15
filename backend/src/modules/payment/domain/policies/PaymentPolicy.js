@@ -4,7 +4,7 @@
 //   - canProcessPayment: idempotency check (order chưa paid + transactionId mới)
 //   - canRefund: order đã paid + có transactionId + provider hỗ trợ refund
 
-const SUPPORTED_REFUND_PROVIDERS = ['stripe', 'vnpay'];
+const SUPPORTED_REFUND_PROVIDERS = ['vnpay'];
 
 function canProcessPayment(order, transactionId) {
   if (!order) return false;

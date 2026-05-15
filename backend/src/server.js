@@ -8,7 +8,6 @@ const logger = require('./utils/logger');
 const REQUIRED_ENV_VARS = [
   'DB_HOST', 'DB_USER', 'DB_PASSWORD', 'DB_NAME',
   'JWT_SECRET', 'JWT_REFRESH_SECRET',
-  'STRIPE_SECRET_KEY',
   'GEMINI_API_KEY',
   'EMAIL_USERNAME', 'EMAIL_PASSWORD',
 ];
@@ -81,13 +80,6 @@ const connectDB = async () => {
 // Thêm các cột còn thiếu nếu chưa tồn tại
 const ensureColumns = async () => {
   try {
-    // Thêm cột stripe vào bảng users
-    try {
-      await sequelize.query('ALTER TABLE users ADD COLUMN stripe_customer_id VARCHAR(255);');
-    } catch (e) {
-      // Cột có thể đã tồn tại
-    }
-
     try {
       await sequelize.query('ALTER TABLE users ADD COLUMN google_id VARCHAR(255);');
     } catch (e) {

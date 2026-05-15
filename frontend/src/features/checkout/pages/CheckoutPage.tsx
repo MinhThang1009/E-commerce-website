@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { useSelector, useDispatch } from 'react-redux';
 import { useTranslation } from 'react-i18next';
 import {
@@ -16,7 +16,6 @@ import Input from '@/components/common/Input';
 import Select from '@/components/common/Select';
 import AddressPicker from '@/components/common/AddressPicker';
 import { CartItem } from '@/features/cart';
-import StripePaymentForm from '@/features/payment/components/StripePaymentForm';
 import BankTransferQR from '@/features/payment/components/BankTransferQR';
 import { RootState } from '@/store';
 import { clearCart, initializeCart, addItem } from '@/features/cart';
@@ -36,6 +35,7 @@ const CheckoutPage: React.FC = () => {
   const { user } = useSelector((state: RootState) => state.auth);
   const dispatch = useDispatch();
   const navigate = useNavigate();
+  const location = useLocation();
 
   const [isBuyNow, setIsBuyNow] = useState(() => {
     const searchParams = new URLSearchParams(window.location.search);
@@ -83,11 +83,9 @@ const CheckoutPage: React.FC = () => {
         isRepay: true,
       });
 
-      // Đặt phương thức thanh toán mặc định là Stripe cho trường hợp thanh toán lại đơn hàng để tận dụng form thanh toán tích hợp sẵn, có thể thay đổi sau nếu muốn hỗ trợ các phương thức khác
-      // Nếu muốn giữ nguyên phương thức thanh toán cũ, có thể cần gọi API để lấy thông tin đơn hàng và thiết lập formData.paymentMethod tương ứng
       setFormData((prev) => ({
         ...prev,
-        paymentMethod: 'stripe',
+        paymentMethod: 'vnpay',
       }));
 
       return;
@@ -227,6 +225,15 @@ const CheckoutPage: React.FC = () => {
   const [appliedDiscount, setAppliedDiscount] = useState<{ code: string; amount: number } | null>(null);
   const [discountError, setDiscountError] = useState('');
   const [applyDiscountCode, { isLoading: isValidatingCode }] = useApplyDiscountCodeMutation();
+
+  useEffect(() => {
+    const state = location.state as { voucherCode?: string; discountAmount?: number } | null;
+    if (state?.voucherCode && !appliedDiscount) {
+      setDiscountCodeInput(state.voucherCode);
+      setAppliedDiscount({ code: state.voucherCode, amount: state.discountAmount ?? 0 });
+      navigate(location.pathname + location.search, { replace: true, state: undefined });
+    }
+  }, [location.state]);
 
   // Cột bảng trả góp
   const installmentColumns = [
@@ -405,8 +412,8 @@ const CheckoutPage: React.FC = () => {
       newErrors.email = t('checkout.validation.emailInvalid');
     }
 
-    // Kiểm tra định dạng số điện thoại VN: 0XXXXXXXXX hoặc +84XXXXXXXXX
-    if (formData.phone && !/^(0|\+84)[0-9]{9}$/.test(formData.phone.trim())) {
+    const phoneDigits = formData.phone?.trim().replace(/[\s.-]/g, '') || '';
+    if (phoneDigits && !/^(0|\+84)[0-9]{9}$/.test(phoneDigits)) {
       newErrors.phone = t('checkout.validation.phoneInvalid');
     }
 
@@ -603,23 +610,9 @@ const CheckoutPage: React.FC = () => {
     setIsProcessing(processing);
   };
 
-  // Tạo đơn hàng cho thanh toán Stripe
-  const handleStripeOrderCreation = async () => {
-    const order = await handleCreateOrder();
-    if (order) {
-      setCurrentOrder(order);
-    }
-  };
-
   // Xử lý submit form cho tất cả các phương thức thanh toán
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-
-    if (formData.paymentMethod === 'stripe') {
-      // Với Stripe, tạo đơn hàng trước rồi hiển thị form thanh toán
-      await handleStripeOrderCreation();
-      return;
-    }
 
     if (formData.paymentMethod === 'bank_transfer') {
       // Với chuyển khoản ngân hàng, tạo đơn hàng và chuyển hướng đến trang thanh toán QR
@@ -1174,20 +1167,6 @@ const CheckoutPage: React.FC = () => {
             </div>
 
             {/* Nút tương ứng với từng phương thức thanh toán */}
-            {formData.paymentMethod === 'stripe' && !currentOrder && (
-              <PremiumButton
-                variant="primary"
-                size="large"
-                iconType="arrow-right"
-                isProcessing={isProcessing}
-                processingText={t('common.processing')}
-                onClick={handleStripeOrderCreation}
-                className="w-full mt-6 h-14 text-lg font-semibold"
-              >
-                {t('checkout.buttons.processPayment')}
-              </PremiumButton>
-            )}
-
             {(['bank_transfer', 'vnpay', 'momo', 'installment', 'cod'].includes(formData.paymentMethod)) && (!currentOrder || ['vnpay', 'momo'].includes(formData.paymentMethod)) && (
               <PremiumButton
                 variant="primary"
@@ -1200,19 +1179,6 @@ const CheckoutPage: React.FC = () => {
               >
                 {t('checkout.buttons.continueToPayment')}
               </PremiumButton>
-            )}
-
-            {/* Form thanh toán Stripe (hiển thị sau khi tạo đơn hàng) */}
-            {formData.paymentMethod === 'stripe' && currentOrder && (
-              <div className="mt-6">
-                <StripePaymentForm
-                  amount={currentOrder.total}
-                  orderId={currentOrder.id}
-                  onSuccess={handlePaymentSuccess}
-                  onError={handlePaymentError}
-                  onProcessing={handlePaymentProcessing}
-                />
-              </div>
             )}
 
             {/* Phần thanh toán QR chuyển khoản (hiển thị sau khi tạo đơn hàng) - Chuyển hướng đến trang QR */}

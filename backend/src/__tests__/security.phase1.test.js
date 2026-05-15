@@ -6,7 +6,7 @@
  * - authenticate middleware — token hợp lệ không bị chặn
  * - authenticate middleware — thiếu Authorization header → 401
  * - otpLimiter — chặn sau 5 request trong 15 phút (lần thứ 6 → 429)
- * - User.prototype.toJSON — không trả về password, otpCode, stripeCustomerId
+ * - User.prototype.toJSON — không trả về password, otpCode
  * - deleteFile controller — từ chối filename chứa path traversal (../)
  */
 
@@ -225,7 +225,6 @@ describe('User.prototype.toJSON — không trả về các field nhạy cảm', 
     otpExpires: new Date(),
     resetPasswordToken: 'reset-token-abc123',
     resetPasswordExpires: new Date(),
-    stripeCustomerId: 'cus_stripe_secret',
     loyaltyPoints: 100,
   };
 
@@ -237,11 +236,6 @@ describe('User.prototype.toJSON — không trả về các field nhạy cảm', 
   test('otpCode bị xóa khỏi kết quả toJSON()', () => {
     const result = User.prototype.toJSON.call({ get: () => ({ ...sensitiveData }) });
     expect(result.otpCode).toBeUndefined();
-  });
-
-  test('stripeCustomerId bị xóa khỏi kết quả toJSON()', () => {
-    const result = User.prototype.toJSON.call({ get: () => ({ ...sensitiveData }) });
-    expect(result.stripeCustomerId).toBeUndefined();
   });
 
   test('resetPasswordToken bị xóa khỏi kết quả toJSON()', () => {

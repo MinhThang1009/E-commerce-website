@@ -75,11 +75,6 @@ const User = sequelize.define(
       type: DataTypes.DATE,
       allowNull: true,
     },
-    stripeCustomerId: {
-      type: DataTypes.STRING,
-      allowNull: true,
-      field: 'stripe_customer_id',
-    },
     loyaltyPoints: {
       type: DataTypes.INTEGER,
       defaultValue: 0,
@@ -119,7 +114,6 @@ User.prototype.toJSON = function () {
   delete values.otpExpires;
   delete values.resetPasswordToken;
   delete values.resetPasswordExpires;
-  delete values.stripeCustomerId;
   return values;
 };
 

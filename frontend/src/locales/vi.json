@@ -748,8 +748,7 @@
       "bankTransfer": "Chuyển Khoản Ngân Hàng",
       "cod": "Thanh toán khi nhận hàng (COD)",
       "momo": "Thanh toán MoMo",
-      "installment": "Trả góp 0% qua thẻ tín dụng",
-      "stripe": "Thanh toán qua Stripe"
+      "installment": "Trả góp 0% qua thẻ tín dụng"
     },
     "creditCard": {
       "cardNumber": "Số Thẻ",
@@ -1062,7 +1061,6 @@
       "paymentFailed": "Thanh toán thất bại. Vui lòng thử lại.",
       "confirmationFailed": "Xác nhận thanh toán thất bại. Vui lòng liên hệ hỗ trợ."
     },
-    "stripeSuccessConfirming": "Thanh toán Stripe thành công, đang xác nhận với backend..."
   },
   "admin": {
     "title": "Bảng quản trị",
@@ -3122,9 +3120,6 @@
     "catHint": "Giữ Ctrl/Cmd để chọn nhiều danh mục",
     "catSelectedLabel": "Danh mục đã chọn:",
     "statusLabel": "Trạng thái",
-    "searchKwLabel": "Từ khóa tìm kiếm",
-    "searchKwPlaceholder": "Từ khóa cách nhau bởi dấu phẩy",
-    "searchKwHint": "VD: điện thoại, smartphone, iphone",
     "imagesSectionTitle": "Hình ảnh sản phẩm",
     "imageUrlsLabel": "URLs hình ảnh",
     "imageUrlsHint": "Nhập các URL hình ảnh, cách nhau bằng dấu phẩy",

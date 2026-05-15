@@ -48,7 +48,6 @@ const buildChatModule = require('./modules/chat/module');
 const buildAiModule = require('./modules/ai/module');
 const geminiChatbotService = require('./services/ai/geminiChatbot');
 const ruleBasedChatbot = require('./services/ai/ruleBasedChatbot');
-const stripeService = require('./services/payment/stripe');
 const momoService = require('./services/payment/momo');
 const vnpayService = require('./services/payment/vnpay');
 
@@ -124,7 +123,7 @@ ordersModule.subscribeEvents();
 const paymentModule = buildPaymentModule({
   Order, OrderItem, User, Cart, CartItem, DiscountCode,
   sequelize, eventBus, logger,
-  stripeService, momoService, vnpayService, emailService,
+  momoService, vnpayService, emailService,
 });
 paymentModule.subscribeEvents();
 
@@ -171,17 +170,12 @@ app.use(
         defaultSrc: ["'self'"],
         scriptSrc: [
           "'self'",
-          'https://js.stripe.com',
           'https://accounts.google.com',
         ],
-        // unsafe-inline cần thiết cho Ant Design và inline styles của React
         styleSrc: ["'self'", "'unsafe-inline'"],
         imgSrc: ["'self'", 'data:', 'https:', 'blob:'],
-        connectSrc: ["'self'", 'https://api.stripe.com'],
-        frameSrc: [
-          'https://js.stripe.com',
-          'https://hooks.stripe.com',
-        ],
+        connectSrc: ["'self'"],
+        frameSrc: ["'self'"],
       },
     },
   })

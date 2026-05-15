@@ -1,6 +1,6 @@
 // IPaymentRepository — interface data access cho payment module.
 // Cover Order updates (paymentStatus/paymentTransactionId/paymentProvider) +
-// User stripeCustomerId + DiscountCode usedCount + Cart cleanup.
+// DiscountCode usedCount + Cart cleanup.
 
 class IPaymentRepository {
   // Order

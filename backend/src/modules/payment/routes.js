@@ -11,20 +11,14 @@ module.exports = ({ paymentController }) => {
   const router = express.Router();
 
   // Public — webhooks (gateway signature verification trong service)
-  router.post('/webhook', paymentController.handleWebhook);
   router.get('/momo/return', paymentController.momoReturn);
   router.post('/momo/ipn', paymentController.momoIPN);
   router.get('/vnpay/return', paymentController.vnpayReturn);
   router.get('/vnpay/ipn', paymentController.vnpayIPN);
 
-  // Authenticated routes — middleware per-route để fall-through không bị block
-  router.post('/create-payment-intent', authenticate, paymentController.createPaymentIntent);
-  router.post('/confirm-payment', authenticate, paymentController.confirmPayment);
+  // Authenticated routes
   router.post('/momo/create-url', authenticate, paymentController.createMomoUrl);
   router.post('/vnpay/create-url', authenticate, paymentController.createVNPayUrl);
-  router.post('/create-customer', authenticate, paymentController.createCustomer);
-  router.get('/payment-methods', authenticate, paymentController.getPaymentMethods);
-  router.post('/create-setup-intent', authenticate, paymentController.createSetupIntent);
 
   // Admin
   router.post('/refund', authenticate, authorize('admin'), paymentController.createRefund);

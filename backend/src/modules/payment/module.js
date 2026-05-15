@@ -1,12 +1,11 @@
 const PaymentController = require('./controllers/paymentController');
 const PaymentService = require('./services/paymentService');
 const SequelizePaymentRepository = require('./repositories/SequelizePaymentRepository');
-const StripeGateway = require('./infrastructure/StripeGateway');
 const MomoGateway = require('./infrastructure/MomoGateway');
 const VnPayGateway = require('./infrastructure/VnPayGateway');
 const buildRoutes = require('./routes');
 
-// Payment module — DDD-lite. 3 gateway adapter (Stripe/MoMo/VNPay) wrap
+// Payment module — DDD-lite. 2 gateway adapter (MoMo/VNPay) wrap
 // services/payment/*; service phụ thuộc IPaymentGateway interface.
 //
 // SePay webhook (controllers/payment.js handleSePayWebhook) giữ legacy đến
@@ -14,11 +13,10 @@ const buildRoutes = require('./routes');
 module.exports = ({
   Order, OrderItem, User, Cart, CartItem, DiscountCode,
   sequelize, eventBus, logger,
-  stripeService, momoService, vnpayService, emailService,
+  momoService, vnpayService, emailService,
   frontendUrl,
 }) => {
   if (!Order) throw new Error('payment module: Order model bắt buộc');
-  if (!stripeService) throw new Error('payment module: stripeService bắt buộc');
   if (!momoService) throw new Error('payment module: momoService bắt buộc');
   if (!vnpayService) throw new Error('payment module: vnpayService bắt buộc');
 
@@ -26,7 +24,6 @@ module.exports = ({
     Order, OrderItem, User, Cart, CartItem, DiscountCode, sequelize,
   });
 
-  const stripeGateway = new StripeGateway({ stripeService });
   const momoGateway = new MomoGateway({ momoService });
   const vnpayGateway = new VnPayGateway({ vnpayService });
 
@@ -36,7 +33,7 @@ module.exports = ({
 
   const paymentService = new PaymentService({
     paymentRepository,
-    stripeGateway, momoGateway, vnpayGateway,
+    momoGateway, vnpayGateway,
     emailGateway, eventBus, logger,
     frontendUrl: frontendUrl || process.env.FRONTEND_URL,
   });

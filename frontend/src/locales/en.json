@@ -630,8 +630,7 @@
       "bankTransfer": "Bank Transfer",
       "cod": "Cash on Delivery (COD)",
       "momo": "MoMo Payment",
-      "installment": "0% Installment via Credit Card",
-      "stripe": "Pay with Stripe"
+      "installment": "0% Installment via Credit Card"
     },
     "creditCard": {
       "cardNumber": "Card Number",
@@ -944,7 +943,6 @@
       "paymentFailed": "Payment failed. Please try again.",
       "confirmationFailed": "Payment confirmation failed. Please contact support."
     },
-    "stripeSuccessConfirming": "Stripe payment successful, confirming with backend..."
   },
   "admin": {
     "title": "Admin Dashboard",
@@ -3122,9 +3120,6 @@
     "catHint": "Hold Ctrl/Cmd to select multiple categories",
     "catSelectedLabel": "Selected categories:",
     "statusLabel": "Status",
-    "searchKwLabel": "Search Keywords",
-    "searchKwPlaceholder": "Keywords separated by commas",
-    "searchKwHint": "E.g.: phone, smartphone, iphone",
     "imagesSectionTitle": "Product Images",
     "imageUrlsLabel": "Image URLs",
     "imageUrlsHint": "Enter image URLs separated by commas",

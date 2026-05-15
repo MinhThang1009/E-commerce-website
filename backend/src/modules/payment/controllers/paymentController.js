@@ -1,4 +1,4 @@
-// Payment Controller — 13 handler. Trả response shape giữ nguyên cũ.
+// Payment Controller — handler cho MoMo/VNPay/Refund.
 // Note: SePay webhook giữ ở legacy controllers/payment.js đến Phase 5 cleanup
 // (logic SePay phức tạp, ít touch, defer scope).
 class PaymentController {
@@ -6,55 +6,6 @@ class PaymentController {
     this.paymentService = paymentService;
     this.logger = logger;
   }
-
-  createPaymentIntent = async (req, res, next) => {
-    try {
-      const data = await this.paymentService.createPaymentIntent({
-        ...req.body, userId: req.user.id,
-      });
-      res.status(200).json({ status: 'success', data });
-    } catch (err) { next(err); }
-  };
-
-  confirmPayment = async (req, res, next) => {
-    try {
-      const data = await this.paymentService.confirmPayment(req.body);
-      res.status(200).json({ status: 'success', data });
-    } catch (err) { next(err); }
-  };
-
-  createCustomer = async (req, res, next) => {
-    try {
-      const result = await this.paymentService.createCustomer({ userId: req.user.id });
-      const status = result.isNew ? 201 : 200;
-      res.status(status).json({ status: 'success', data: { customer: result.customer } });
-    } catch (err) { next(err); }
-  };
-
-  getPaymentMethods = async (req, res, next) => {
-    try {
-      const data = await this.paymentService.getPaymentMethods({ userId: req.user.id });
-      res.status(200).json({ status: 'success', data });
-    } catch (err) { next(err); }
-  };
-
-  createSetupIntent = async (req, res, next) => {
-    try {
-      const data = await this.paymentService.createSetupIntent({ userId: req.user.id });
-      res.status(200).json({ status: 'success', data });
-    } catch (err) { next(err); }
-  };
-
-  handleWebhook = async (req, res, next) => {
-    try {
-      const result = await this.paymentService.handleStripeWebhook({
-        payload: req.body,
-        signature: req.headers['stripe-signature'],
-        hasSecret: !!process.env.STRIPE_WEBHOOK_SECRET,
-      });
-      res.status(200).json(result);
-    } catch (err) { next(err); }
-  };
 
   createRefund = async (req, res, next) => {
     try {

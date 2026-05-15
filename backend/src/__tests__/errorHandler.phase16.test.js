@@ -180,19 +180,14 @@ describe('REQUIRED_ENV_VARS validation logic', () => {
   const REQUIRED_VARS = [
     'DB_HOST', 'DB_USER', 'DB_PASSWORD', 'DB_NAME',
     'JWT_SECRET', 'JWT_REFRESH_SECRET',
-    'STRIPE_SECRET_KEY',
     'GEMINI_API_KEY',
     'EMAIL_USERNAME', 'EMAIL_PASSWORD',
   ];
 
   test('tất cả required vars đều có trong process.env của test', () => {
-    // Test này xác nhận rằng setup.js và .env đã đặt đủ các biến bắt buộc
-    // STRIPE_SECRET_KEY, GEMINI_API_KEY, EMAIL_USERNAME, EMAIL_PASSWORD có thể undefined trong test env
-    // — quan trọng là danh sách phải đúng theo plan
     expect(REQUIRED_VARS).toContain('JWT_SECRET');
     expect(REQUIRED_VARS).toContain('JWT_REFRESH_SECRET');
     expect(REQUIRED_VARS).toContain('DB_HOST');
-    expect(REQUIRED_VARS).toContain('STRIPE_SECRET_KEY');
     expect(REQUIRED_VARS).toContain('GEMINI_API_KEY');
     expect(REQUIRED_VARS).toContain('EMAIL_USERNAME');
     expect(REQUIRED_VARS).toContain('EMAIL_PASSWORD');
@@ -206,7 +201,6 @@ describe('REQUIRED_ENV_VARS validation logic', () => {
       DB_NAME: 'mydb',
       JWT_SECRET: 'secret',
       // JWT_REFRESH_SECRET bị thiếu
-      STRIPE_SECRET_KEY: 'sk_test_xxx',
       GEMINI_API_KEY: 'ai-key',
       EMAIL_USERNAME: 'user@example.com',
       EMAIL_PASSWORD: 'pass',
@@ -224,7 +218,6 @@ describe('REQUIRED_ENV_VARS validation logic', () => {
       DB_NAME: 'mydb',
       JWT_SECRET: 'secret',
       JWT_REFRESH_SECRET: 'refresh-secret',
-      STRIPE_SECRET_KEY: 'sk_test_xxx',
       GEMINI_API_KEY: 'ai-key',
       EMAIL_USERNAME: 'user@example.com',
       EMAIL_PASSWORD: 'pass',

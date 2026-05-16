@@ -2555,7 +2555,9 @@
     "stats": "Showing {{count}} products",
     "subtitle": "Discover our full product range",
     "title": "Shop",
-    "viewMode": "View Mode"
+    "viewMode": "View Mode",
+    "gridView": "Grid View",
+    "listView": "List View"
   },
   "profile": {
     "loading": "Loading profile...",

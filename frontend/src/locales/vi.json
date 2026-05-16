@@ -592,6 +592,8 @@
     "stats": "Hiển thị {{current}} trong tổng số {{total}} sản phẩm",
     "filtersButton": "Bộ lọc sản phẩm",
     "viewMode": "Chế độ xem",
+    "gridView": "Dạng lưới",
+    "listView": "Dạng danh sách",
     "sortBy": "Sắp xếp theo",
     "noProducts": {
       "title": "Không tìm thấy sản phẩm",

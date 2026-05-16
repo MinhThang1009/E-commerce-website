@@ -48,9 +48,9 @@ jobs:
         working-directory: backend
         run: npm ci
 
-      - name: Lint backend
+      - name: Lint backend (strict — zero warnings)
         working-directory: backend
-        run: npm run lint --if-present
+        run: npm run lint:strict
 
       - name: Run backend tests
         working-directory: backend
@@ -83,9 +83,9 @@ jobs:
         working-directory: frontend
         run: npm ci
 
-      - name: Lint frontend
+      - name: Lint frontend (strict — zero warnings)
         working-directory: frontend
-        run: npm run lint --if-present
+        run: npm run lint
 
       - name: Typecheck frontend
         working-directory: frontend

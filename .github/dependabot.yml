@@ -1,0 +1,47 @@
+# Dependabot — tự động mở PR khi có dependency update
+# Docs: https://docs.github.com/en/code-security/dependabot/dependabot-version-updates
+
+version: 2
+updates:
+  # Frontend dependencies
+  - package-ecosystem: npm
+    directory: /frontend
+    schedule:
+      interval: weekly
+      day: monday
+    open-pull-requests-limit: 5
+    labels:
+      - dependencies
+      - frontend
+    # Gom minor/patch updates vào 1 PR để giảm noise
+    groups:
+      minor-and-patch:
+        update-types:
+          - minor
+          - patch
+
+  # Backend dependencies
+  - package-ecosystem: npm
+    directory: /backend
+    schedule:
+      interval: weekly
+      day: monday
+    open-pull-requests-limit: 5
+    labels:
+      - dependencies
+      - backend
+    groups:
+      minor-and-patch:
+        update-types:
+          - minor
+          - patch
+
+  # GitHub Actions
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly
+    open-pull-requests-limit: 3
+    labels:
+      - dependencies
+      - ci

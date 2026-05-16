@@ -1,0 +1,50 @@
+#!/usr/bin/env sh
+
+# Commit message validation — đảm bảo tuân theo Conventional Commits format
+# Types: feat|fix|docs|style|refactor|perf|test|build|ci|chore|revert
+
+commit_msg=$(cat "$1")
+
+# Cho phép merge commits (tự động từ git merge)
+if echo "$commit_msg" | grep -qE "^Merge "; then
+  exit 0
+fi
+
+# Cho phép revert commits (tự động từ git revert)
+if echo "$commit_msg" | grep -qE "^Revert "; then
+  exit 0
+fi
+
+# Validate Conventional Commits: type(scope): description
+# Scope là optional, description ít nhất 1 ký tự
+pattern="^(feat|fix|docs|style|refactor|perf|test|build|ci|chore|revert)(\(.+\))?: .{1,}"
+
+if ! echo "$commit_msg" | head -1 | grep -qE "$pattern"; then
+  echo ""
+  echo "❌ Commit message không đúng Conventional Commits format!"
+  echo ""
+  echo "Format: <type>(<scope>): <mô tả>"
+  echo ""
+  echo "Types: feat | fix | docs | style | refactor | perf | test | build | ci | chore | revert"
+  echo ""
+  echo "Ví dụ đúng:"
+  echo "  feat(auth): thêm đăng nhập bằng Google OAuth"
+  echo "  fix(api): sửa lỗi 500 khi user không có avatar"
+  echo "  refactor(cart): tách CartService thành module riêng"
+  echo "  chore: cập nhật dependencies"
+  echo ""
+  echo "Message hiện tại: $commit_msg"
+  echo ""
+  exit 1
+fi
+
+# Kiểm tra subject line không quá 72 ký tự (best practice)
+subject=$(echo "$commit_msg" | head -1)
+length=${#subject}
+if [ "$length" -gt 72 ]; then
+  echo ""
+  echo "⚠️  Subject line quá dài ($length ký tự, tối đa 72)."
+  echo "  → Rút gọn mô tả hoặc chuyển chi tiết vào body."
+  echo ""
+  # Chỉ warn, không block — 72 chars là convention, không phải hard rule
+fi

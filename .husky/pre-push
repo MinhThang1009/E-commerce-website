@@ -1,0 +1,37 @@
+#!/usr/bin/env sh
+
+# Pre-push hook — chặn push khi build hoặc test fail
+# Chạy tự động trước mỗi git push
+
+ROOT="$(git rev-parse --show-toplevel)"
+
+echo "🔍 Pre-push: kiểm tra build + tests..."
+
+# 1. Frontend build check — đảm bảo production build không lỗi
+echo "📦 Frontend build check..."
+cd "$ROOT/frontend" && npm run build 2>/dev/null
+if [ $? -ne 0 ]; then
+  echo "❌ Frontend build failed. Fix lỗi build trước khi push."
+  exit 1
+fi
+echo "✅ Frontend build OK"
+
+# 2. Backend tests — đảm bảo tests pass
+echo "🧪 Backend tests..."
+cd "$ROOT/backend" && npm test 2>/dev/null
+if [ $? -ne 0 ]; then
+  echo "❌ Backend tests failed. Fix tests trước khi push."
+  exit 1
+fi
+echo "✅ Backend tests OK"
+
+# 3. Frontend tests — đảm bảo tests pass
+echo "🧪 Frontend tests..."
+cd "$ROOT/frontend" && npm test 2>/dev/null
+if [ $? -ne 0 ]; then
+  echo "❌ Frontend tests failed. Fix tests trước khi push."
+  exit 1
+fi
+echo "✅ Frontend tests OK"
+
+echo "✅ Pre-push checks passed. Pushing..."

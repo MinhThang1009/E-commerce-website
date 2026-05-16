@@ -10,12 +10,15 @@
     "dev": "vite",
     "build": "vite build",
     "lint": "eslint src/ --max-warnings 0",
+    "lint:strict": "eslint src/ --max-warnings 0",
     "lint:fix": "eslint src/ --fix --max-warnings 0",
     "format": "prettier --write src/",
     "format:check": "prettier --check src/",
     "typecheck": "tsc --noEmit",
     "preview": "vite preview",
+    "build:check": "vite build --mode production",
     "test": "jest --config jest.config.cjs",
+    "test:ci": "jest --config jest.config.cjs --ci --coverage --forceExit",
     "test:coverage": "jest --config jest.config.cjs --coverage"
   },
   "dependencies": {

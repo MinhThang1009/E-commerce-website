@@ -1,4 +1,5 @@
-import { api } from '@/services/api';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import apiClient from '@/services/apiClient';
 import { Product } from '@/features/catalog';
 
 export interface WishlistResponse {
@@ -13,66 +14,88 @@ export interface CheckWishlistResponse {
   };
 }
 
-export const wishlistApi = api.injectEndpoints({
-  endpoints: (builder) => ({
-    // Lấy danh sách yêu thích của người dùng
-    getWishlist: builder.query<WishlistResponse, void>({
-      query: () => ({
-        url: '/wishlists',
-        method: 'GET',
-      }),
-      providesTags: ['Wishlist'],
-    }),
+// === Query Keys ===
 
-    // Thêm sản phẩm vào danh sách yêu thích
-    addToWishlist: builder.mutation<any, { productId: string }>({
-      query: (body) => ({
-        url: '/wishlists',
-        method: 'POST',
-        body,
-      }),
-      invalidatesTags: ['Wishlist'],
-    }),
+export const wishlistKeys = {
+  all: ['wishlist'] as const,
+  list: () => [...wishlistKeys.all, 'list'] as const,
+  check: (productId: string) => [...wishlistKeys.all, 'check', productId] as const,
+};
 
-    // Kiểm tra sản phẩm có trong danh sách yêu thích không
-    checkWishlist: builder.query<CheckWishlistResponse, string>({
-      query: (productId) => ({
-        url: `/wishlists/check/${productId}`,
-        method: 'GET',
-      }),
-      providesTags: (result, error, productId) => [
-        { type: 'Wishlist', id: `CHECK-${productId}` },
-      ],
-    }),
+// === Query Hooks ===
 
-    // Xóa sản phẩm khỏi danh sách yêu thích
-    removeFromWishlist: builder.mutation<any, string>({
-      query: (productId) => ({
-        url: `/wishlists/${productId}`,
-        method: 'DELETE',
-      }),
-      invalidatesTags: (result, error, productId) => [
-        'Wishlist',
-        { type: 'Wishlist', id: `CHECK-${productId}` },
-      ],
-    }),
+export function useGetWishlistQuery(
+  _arg?: undefined,
+  options?: { enabled?: boolean; skip?: boolean; refetchOnFocus?: boolean; refetchOnReconnect?: boolean }
+) {
+  // Ưu tiên enabled nếu có, fallback sang skip (compat), mặc định true
+  const isEnabled = options?.enabled !== undefined
+    ? options.enabled
+    : options?.skip !== undefined ? !options.skip : true;
 
-    // Xóa toàn bộ danh sách yêu thích
-    clearWishlist: builder.mutation<any, void>({
-      query: () => ({
-        url: '/wishlists',
-        method: 'DELETE',
-      }),
-      invalidatesTags: ['Wishlist'],
-    }),
-  }),
-});
+  return useQuery<WishlistResponse>({
+    queryKey: wishlistKeys.list(),
+    queryFn: async () => {
+      const { data } = await apiClient.get('/wishlists');
+      return data;
+    },
+    enabled: isEnabled,
+    refetchOnWindowFocus: options?.refetchOnFocus,
+    refetchOnReconnect: options?.refetchOnReconnect,
+  });
+}
 
-export const {
-  useGetWishlistQuery,
-  useAddToWishlistMutation,
-  useCheckWishlistQuery,
-  useRemoveFromWishlistMutation,
-  useClearWishlistMutation,
-} = wishlistApi;
+export function useCheckWishlistQuery(
+  productId: string,
+  options?: { enabled?: boolean; skip?: boolean }
+) {
+  return useQuery<CheckWishlistResponse>({
+    queryKey: wishlistKeys.check(productId),
+    queryFn: async () => {
+      const { data } = await apiClient.get(`/wishlists/check/${productId}`);
+      return data;
+    },
+    enabled: options?.skip !== undefined ? !options.skip : !!productId,
+  });
+}
 
+// === Mutation Hooks ===
+
+export function useAddToWishlistMutation() {
+  const queryClient = useQueryClient();
+  return useMutation<any, Error, { productId: string }>({
+    mutationFn: async (body) => {
+      const { data } = await apiClient.post('/wishlists', body);
+      return data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: wishlistKeys.all });
+    },
+  });
+}
+
+export function useRemoveFromWishlistMutation() {
+  const queryClient = useQueryClient();
+  return useMutation<any, Error, string>({
+    mutationFn: async (productId) => {
+      const { data } = await apiClient.delete(`/wishlists/${productId}`);
+      return data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: wishlistKeys.all });
+    },
+  });
+}
+
+export function useClearWishlistMutation() {
+  const queryClient = useQueryClient();
+  return useMutation<any, Error, void>({
+    mutationFn: async () => {
+      const { data } = await apiClient.delete('/wishlists');
+      return data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: wishlistKeys.all });
+    },
+  });
+}

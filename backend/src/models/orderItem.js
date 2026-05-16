@@ -22,7 +22,7 @@ const OrderItem = sequelize.define(
       allowNull: true
     },
     name: {
-      type: DataTypes.STRING,
+      type: DataTypes.STRING(200),
       allowNull: false
     },
     sku: {
@@ -33,14 +33,12 @@ const OrderItem = sequelize.define(
     unitPrice: {
       type: DataTypes.DECIMAL(15, 2),
       allowNull: false,
-      field: 'unit_price',
     },
     // Số tiền giảm giá áp dụng cho item này (ví dụ: từ sale, discountCode cấp item)
     discountAmount: {
       type: DataTypes.DECIMAL(15, 2),
       allowNull: false,
       defaultValue: 0,
-      field: 'discount_amount',
     },
     quantity: {
       type: DataTypes.INTEGER,
@@ -61,7 +59,6 @@ const OrderItem = sequelize.define(
     warrantyPackageIds: {
       type: DataTypes.JSON,
       allowNull: true,
-      field: 'warranty_package_ids'
     },
   },
   {

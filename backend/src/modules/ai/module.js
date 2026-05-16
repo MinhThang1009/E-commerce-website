@@ -10,14 +10,14 @@ const buildRoutes = require('./routes');
 // Hiện tại VectorStore + ConversationStore defer đến Phase 5 (legacy services
 // dùng đủ).
 module.exports = ({
-  Product, Category,
+  Product, ProductVariant, Category,
   geminiChatbotService, ruleBasedChatbot,
   sequelize, eventBus, logger,
 }) => {
   if (!Product) throw new Error('ai module: Product model bắt buộc');
   if (!geminiChatbotService) throw new Error('ai module: geminiChatbotService bắt buộc');
 
-  const aiRepository = new SequelizeAiRepository({ Product, Category, sequelize });
+  const aiRepository = new SequelizeAiRepository({ Product, ProductVariant, Category, sequelize });
   const llmGateway = new GeminiLlmGateway({ geminiChatbotService });
   const ragPipeline = new RagPipeline({ llmGateway });
 

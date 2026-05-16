@@ -23,7 +23,7 @@ const ContactPage: React.FC = () => {
   const [submitError, setSubmitError] = useState('');
 
   // Gọi API thực — data lưu vào DB qua POST /api/contact/feedback
-  const [sendFeedback, { isLoading: isSubmitting }] = useSendFeedbackMutation();
+  const { mutateAsync: sendFeedback, isPending: isSubmitting } = useSendFeedbackMutation();
 
   const handleChange = (
     e: React.ChangeEvent<
@@ -48,7 +48,7 @@ const ContactPage: React.FC = () => {
         email: formData.email,
         subject: formData.subject,
         content: formData.message,
-      }).unwrap();
+      });
 
       setSubmitSuccess(true);
       setFormData({ name: '', email: '', subject: '', message: '' });

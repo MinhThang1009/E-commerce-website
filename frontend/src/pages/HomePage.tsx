@@ -18,10 +18,12 @@ import {
   getCategoryImage,
   createCategoryImageErrorHandler,
 } from '@/utils/imageUtils';
+import { getUploadUrl } from '@/utils/uploadUrl';
 import { useTranslation } from 'react-i18next';
 import { Link } from 'react-router-dom';
 import ProductCard from '@/components/shared/ProductCard';
 import { PremiumButton, BannerDisplay } from '@/components/common';
+import { ROUTES, buildRoute } from '@/routes/paths';
 
 /**
  * HomePage component - Main landing page with hero, featured products, and categories
@@ -69,7 +71,7 @@ const HomePage: React.FC = () => {
 
   // Chuyển đổi danh mục để hiển thị
   const [newsletterEmail, setNewsletterEmail] = React.useState('');
-  const [subscribeNewsletter, { isLoading: isSubscribing }] = useSubscribeNewsletterMutation();
+  const { mutateAsync: subscribeNewsletter, isPending: isSubscribing } = useSubscribeNewsletterMutation();
 
   const handleNewsletterSubmit = async () => {
     if (!newsletterEmail) {
@@ -78,7 +80,7 @@ const HomePage: React.FC = () => {
     }
 
     try {
-      const response = await subscribeNewsletter({ email: newsletterEmail }).unwrap();
+      const response = await subscribeNewsletter({ email: newsletterEmail });
       message.success(response.message);
       setNewsletterEmail('');
     } catch (error: any) {
@@ -92,9 +94,7 @@ const HomePage: React.FC = () => {
       id: category.id,
       name: category.name,
       image: category.image
-        ? category.image.startsWith('http')
-          ? category.image
-          : `${import.meta.env.VITE_API_URL || 'http://localhost:8888'}${category.image}`
+        ? getUploadUrl(category.image)
         : getCategoryImage(category.name, category.slug),
       count: category.productCount || 0,
       slug: category.slug,
@@ -119,7 +119,7 @@ const HomePage: React.FC = () => {
         className="py-12 bg-neutral-50 dark:bg-neutral-900"
         headerActions={
           <Link
-            to="/shop"
+            to={ROUTES.SHOP}
             className="text-primary-600 dark:text-primary-400 hover:text-primary-700 dark:hover:text-primary-300 font-medium flex items-center"
           >
             {t('homepage.featuredProducts.viewAll')}
@@ -197,7 +197,7 @@ const HomePage: React.FC = () => {
             {displayCategories.map((category) => (
               <Link
                 key={category.id}
-                to={`/shop?category=${category.slug}`}
+                to={buildRoute.shopCategory(category.slug)}
                 className="group relative overflow-hidden rounded-xl shadow-lg hover:shadow-xl transition-all duration-300"
               >
                 <div className="aspect-w-3 aspect-h-2 bg-neutral-100 dark:bg-neutral-700">
@@ -229,7 +229,7 @@ const HomePage: React.FC = () => {
         className="py-12 bg-neutral-50 dark:bg-neutral-900"
         headerActions={
           <Link
-            to="/shop"
+            to={ROUTES.SHOP}
             className="text-primary-600 dark:text-primary-400 hover:text-primary-700 dark:hover:text-primary-300 font-medium flex items-center"
           >
             {t('homepage.brands.viewAll')}
@@ -259,7 +259,7 @@ const HomePage: React.FC = () => {
             : brands.data?.map((brand: any) => (
                 <Link
                   key={brand.id}
-                  to={`/shop?brand=${brand.id}`}
+                  to={buildRoute.shopBrand(brand.id)}
                   className="bg-white dark:bg-neutral-800 p-6 rounded-xl shadow-sm hover:shadow-md transition-all flex items-center justify-center border border-neutral-100 dark:border-neutral-700 group"
                 >
                   {brand.logo ? (
@@ -294,7 +294,7 @@ const HomePage: React.FC = () => {
             : collections.data?.slice(0, 2).map((collection: any) => (
                 <Link
                   key={collection.id}
-                  to={`/shop?collection=${collection.id}`}
+                  to={buildRoute.shopCollection(collection.id)}
                   className="group relative h-80 overflow-hidden rounded-2xl shadow-xl"
                 >
                   <img

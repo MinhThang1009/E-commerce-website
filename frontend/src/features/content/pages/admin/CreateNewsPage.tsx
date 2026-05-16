@@ -14,8 +14,6 @@ import {
   message,
   Space,
   Spin,
-  Typography,
-  Divider,
 } from 'antd';
 import { ArrowLeftOutlined, SaveOutlined, PlusSquareOutlined } from '@ant-design/icons';
 import ReactQuill, { Quill } from 'react-quill';
@@ -111,7 +109,6 @@ class ProductCardBlot extends BlockEmbed {
 Quill.register(ProductCardBlot as any);
 // ---------------------------------------------
 
-const { Title } = Typography;
 const { Option } = Select;
 
 const CreateNewsPage: React.FC = () => {
@@ -125,11 +122,11 @@ const CreateNewsPage: React.FC = () => {
   const [isProductPickerOpen, setIsProductPickerOpen] = useState(false);
 
   const { data: newsData, isLoading: isFetching } = useGetNewsByIdQuery(id!, {
-    skip: !isEditMode,
+    enabled: isEditMode,
   });
 
-  const [createNews, { isLoading: isCreating }] = useCreateNewsMutation();
-  const [updateNews, { isLoading: isUpdating }] = useUpdateNewsMutation();
+  const { mutateAsync: createNews, isPending: isCreating } = useCreateNewsMutation();
+  const { mutateAsync: updateNews, isPending: isUpdating } = useUpdateNewsMutation();
 
   const isLoading = isFetching || isCreating || isUpdating;
 
@@ -142,10 +139,10 @@ const CreateNewsPage: React.FC = () => {
   const onFinish = async (values: any) => {
     try {
       if (isEditMode) {
-        await updateNews({ id: id!, data: values }).unwrap();
+        await updateNews({ id: id!, data: values });
         message.success(t('admin.news.messages.editSuccess'));
       } else {
-        await createNews(values).unwrap();
+        await createNews(values);
         message.success(t('admin.news.messages.createSuccess'));
       }
       navigate('/admin/news');

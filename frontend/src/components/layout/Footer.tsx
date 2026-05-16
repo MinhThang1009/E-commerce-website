@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { ShopIcon } from '@/components/icons';
 import FeedbackModal from '@/components/common/FeedbackModal';
+import { ROUTES } from '@/routes/paths';
 
 const Footer: React.FC = () => {
   const { t } = useTranslation();
@@ -54,7 +55,7 @@ const Footer: React.FC = () => {
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8 mb-12">
           {/* Thương hiệu & Mạng xã hội */}
           <div className="space-y-6">
-            <Link to="/" className="flex items-center group">
+            <Link to={ROUTES.HOME} className="flex items-center group">
               <div className="relative">
                 <div className="absolute inset-0 bg-gradient-to-r from-primary-500 to-secondary-500 rounded-lg blur opacity-20 group-hover:opacity-40 transition-opacity duration-300"></div>
                 <div className="relative bg-gradient-to-r from-primary-500 to-secondary-500 p-1.5 rounded-lg">

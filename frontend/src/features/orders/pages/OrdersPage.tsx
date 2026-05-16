@@ -1,12 +1,11 @@
 import { useState, useEffect } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
-import { useDispatch, useSelector } from 'react-redux';
-import { clearCart } from '@/features/cart';
+import { ROUTES, buildRoute } from '@/routes/paths';
+import { useQueryClient } from '@tanstack/react-query';
+import { useCartStore } from '@/stores/cartStore';
+import { useAuthStore } from '@/stores/authStore';
 import Button from '@/components/common/Button';
-import {
-  ShoppingBagIcon,
-} from '@heroicons/react/24/outline';
 import Badge, { BadgeVariant } from '@/components/common/Badge';
 import PremiumButton from '@/components/common/PremiumButton';
 import {
@@ -15,9 +14,8 @@ import {
   useRepayOrderMutation,
   useConfirmReceivedMutation,
 } from '../api/orderApi';
-import { cartApi, useClearCartMutation } from '@/features/cart';
-import { formatPrice, getLocale } from '@/utils/format';
-import { RootState } from '@/store';
+import { cartKeys, useClearCartMutation } from '@/features/cart';
+import { getLocale } from '@/utils/format';
 import { toast } from '@/utils/toast';
 import { ReviewModal } from '@/features/reviews';
 import OrderDetails from '@/components/shared/OrderDetails';
@@ -44,12 +42,13 @@ const OrdersPage: React.FC = () => {
   };
   const navigate = useNavigate();
   const location = useLocation();
-  const dispatch = useDispatch();
-  const { user } = useSelector((state: RootState) => state.auth);
+  const clearLocalCart = useCartStore((s) => s.clearLocalCart);
+  const user = useAuthStore((s) => s.user);
+  const queryClient = useQueryClient();
   const [selectedOrder, setSelectedOrder] = useState<string | null>(null);
   const [currentPage, setCurrentPage] = useState(1);
   const [cancellingOrder, setCancellingOrder] = useState<string | null>(null);
-  const [repayingOrder, setRepayingOrder] = useState<string | null>(null);
+  const [_repayingOrder, setRepayingOrder] = useState<string | null>(null);
   const [confirmingOrder, setConfirmingOrder] = useState<string | null>(null);
 
   // Trạng thái modal đánh giá
@@ -66,28 +65,29 @@ const OrdersPage: React.FC = () => {
     data: ordersResponse,
     isLoading,
     isError,
-    error,
+    error: _error,
     refetch,
-  } = useGetUserOrdersQuery({ page: currentPage, limit: 10 }, { skip: !user });
+  } = useGetUserOrdersQuery({ page: currentPage, limit: 10 }, { enabled: !!user });
 
   // Mutation hủy đơn hàng
-  const [cancelOrder] = useCancelOrderMutation();
+  const { mutateAsync: cancelOrder } = useCancelOrderMutation();
 
   // Mutation thanh toán lại đơn hàng
-  const [repayOrder] = useRepayOrderMutation();
+  const { mutateAsync: repayOrder } = useRepayOrderMutation();
 
   // Mutation xác nhận đã nhận hàng
-  const [confirmReceived] = useConfirmReceivedMutation();
+  const { mutateAsync: confirmReceived } = useConfirmReceivedMutation();
 
   // Mutation xóa giỏ hàng trên server (dự phòng)
-  const [clearServerCart] = useClearCartMutation();
+  const { mutate: clearServerCart } = useClearCartMutation();
 
   // Xử lý thanh toán thành công từ URL redirect (VNPay, MoMo)
   useEffect(() => {
     const params = new URLSearchParams(location.search);
     if (params.get('payment') === 'success') {
-      dispatch(clearCart());
-      dispatch(cartApi.util.invalidateTags(['Cart', 'CartCount']));
+      clearLocalCart();
+      queryClient.invalidateQueries({ queryKey: cartKeys.all });
+      queryClient.invalidateQueries({ queryKey: cartKeys.count });
 
       // Cũng gọi clearServerCart mutation để chắc chắn
       clearServerCart();
@@ -101,7 +101,7 @@ const OrdersPage: React.FC = () => {
       toast.error(t('payment.errors.failed'));
       navigate('/orders', { replace: true });
     }
-  }, [location.search, dispatch, navigate, t]);
+  }, [location.search, navigate, t, clearLocalCart, queryClient, clearServerCart]);
 
   // Bật/tắt chi tiết đơn hàng
   const toggleOrderDetails = (orderId: string) => {
@@ -114,7 +114,7 @@ const OrdersPage: React.FC = () => {
 
     setCancellingOrder(orderId);
     try {
-      await cancelOrder(orderId).unwrap();
+      await cancelOrder(orderId);
       refetch();
     } catch (error) {
       console.error('Không thể hủy đơn hàng:', error);
@@ -125,17 +125,17 @@ const OrdersPage: React.FC = () => {
   };
 
   // Xử lý thanh toán lại đơn hàng
-  const handleRepayOrder = async (orderId: string) => {
+  const _handleRepayOrder = async (orderId: string) => {
     if (!confirm(t('orders.repayConfirm'))) return;
 
     setRepayingOrder(orderId);
     try {
-      const response = await repayOrder(orderId).unwrap();
+      const response = await repayOrder(orderId);
 
       // Kiểm tra nếu đơn hàng dùng phương thức chuyển khoản và chuyển hướng đến trang PaymentQR
       if (response.data?.order?.paymentMethod === 'bank_transfer' || response.data?.order?.paymentMethod === 'bank_transfer_qr') {
         // Điều hướng đến trang PaymentQR với thông tin đơn hàng
-        navigate(`/payment-qr?orderId=${response.data.order.id}&amount=${response.data.order.total}&numberOrder=${response.data.order.number}`);
+        navigate(buildRoute.paymentQr(response.data.order.id, response.data.order.total, response.data.order.number));
       } else if (response.data?.paymentUrl) {
         // Với các phương thức thanh toán khác, dùng URL thanh toán do API trả về
         window.location.href = response.data.paymentUrl;
@@ -159,7 +159,7 @@ const OrdersPage: React.FC = () => {
 
     setConfirmingOrder(orderId);
     try {
-      const response = await confirmReceived(orderId).unwrap();
+      const response = await confirmReceived(orderId);
       const points = response.pointsEarned || 0;
 
       if (points > 0) {
@@ -346,7 +346,7 @@ const OrdersPage: React.FC = () => {
           <p className="text-neutral-500 dark:text-neutral-400 mb-8 max-w-md mx-auto">
             {t('orders.empty.message')}
           </p>
-          <Button variant="primary" as={Link} to="/shop" size="lg">
+          <Button variant="primary" as={Link} to={ROUTES.SHOP} size="lg">
             {t('orders.empty.startShopping')}
           </Button>
         </div>

@@ -1,6 +1,6 @@
 import React from 'react';
 import { useTranslation } from 'react-i18next';
-import { geminiService } from '../services/geminiApi';
+
 
 interface QuickAction {
   id: string;

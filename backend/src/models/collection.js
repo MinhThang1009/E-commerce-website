@@ -11,11 +11,11 @@ const Collection = sequelize.define(
       primaryKey: true,
     },
     name: {
-      type: DataTypes.STRING,
+      type: DataTypes.STRING(200),
       allowNull: false,
     },
     slug: {
-      type: DataTypes.STRING,
+      type: DataTypes.STRING(100),
       allowNull: false,
       unique: true,
     },
@@ -24,13 +24,12 @@ const Collection = sequelize.define(
       allowNull: true,
     },
     thumbnail: {
-      type: DataTypes.STRING,
+      type: DataTypes.STRING(512),
       allowNull: true,
     },
     isActive: {
       type: DataTypes.BOOLEAN,
       defaultValue: true,
-      field: 'is_active',
     },
   },
   {

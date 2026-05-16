@@ -1,6 +1,5 @@
 import { message } from 'antd';
-import { useSelector } from 'react-redux';
-import { RootState } from '@/store';
+import { useUiStore } from '@/stores/uiStore';
 
 type ToastType = 'success' | 'error' | 'info' | 'warning' | 'loading';
 
@@ -10,7 +9,7 @@ interface ToastOptions {
 }
 
 export const useAntdToast = () => {
-  const theme = useSelector((state: RootState) => state.ui.theme);
+  const theme = useUiStore((s) => s.theme);
 
   // Cấu hình mặc định cho toast
   const defaultOptions: ToastOptions = {

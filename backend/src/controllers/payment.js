@@ -417,31 +417,8 @@ const handleSePayWebhook = async (req, res, next) => {
         }
       }
 
-      // Nếu vẫn không tìm thấy, thử khớp theo phần số trong trường 'number'
-      // Một số hệ thống dùng mã đơn thuần số như "12345"
-      if (!order) {
-        const numericPart = parseInt(orderId.replace(/\D/g, ''));
-        if (!isNaN(numericPart)) {
-          // Thử khớp trong trường number nếu chứa phần số
-          order = await Order.findOne({
-            where: {
-              number: { [Op.like]: `%${numericPart}%` }
-            }
-          });
-        }
-      }
-
-      // Nếu vẫn chưa tìm thấy, thử tìm kiếm mở rộng hơn
-      if (!order) {
-        // Thử khớp một phần với order ID gốc
-        order = await Order.findOne({
-          where: {
-            [Op.or]: [
-              { number: { [Op.like]: `%${orderId}%` } },  // Khớp một phần trong mã đơn
-            ]
-          }
-        });
-      }
+      // Đã loại bỏ fuzzy LIKE matching — chỉ exact match + format variants ở trên.
+      // LIKE '%...%' có thể match nhầm order khác, gây risk payment hijacking.
     } catch (error) {
       logger.error('Lỗi database khi tìm đơn hàng:', error);
       return res.status(500).json({ error: 'Lỗi xử lý đơn hàng' });

@@ -20,6 +20,16 @@ if (missingVars.length > 0) {
   process.exit(1);
 }
 
+// JWT secret phải đủ mạnh — reject các giá trị placeholder/yếu
+const MIN_SECRET_LENGTH = 32;
+['JWT_SECRET', 'JWT_REFRESH_SECRET'].forEach((key) => {
+  const val = process.env[key];
+  if (val && val.length < MIN_SECRET_LENGTH) {
+    logger.error(`[STARTUP ERROR] ${key} quá ngắn (${val.length} ký tự, tối thiểu ${MIN_SECRET_LENGTH}). Tạo mới: node -e "console.log(require('crypto').randomBytes(64).toString('hex'))"`);
+    process.exit(1);
+  }
+});
+
 const app = require('./app');
 const sequelize = require('./config/sequelize');
 const { exec } = require('child_process');
@@ -77,47 +87,9 @@ const connectDB = async () => {
   }
 };
 
-// Thêm các cột còn thiếu nếu chưa tồn tại
-const ensureColumns = async () => {
-  try {
-    try {
-      await sequelize.query('ALTER TABLE users ADD COLUMN google_id VARCHAR(255);');
-    } catch (e) {
-      // Cột có thể đã tồn tại
-    }
-    
-    // Thêm cột bảo hành vào bảng orders
-    try {
-      await sequelize.query(`ALTER TABLE orders ADD COLUMN warranty_cost DECIMAL(19, 2) DEFAULT 0;`);
-    } catch (e) {
-      // Cột có thể đã tồn tại
-    }
-
-    // Thêm cột bảo hành vào bảng order_items
-    try {
-      await sequelize.query(`ALTER TABLE order_items ADD COLUMN warranty_package_ids JSON DEFAULT NULL;`);
-    } catch (e) {
-      // Cột có thể đã tồn tại
-    }
-    
-    // Thêm cột session_id vào bảng chat_messages
-    try {
-      await sequelize.query('ALTER TABLE chat_messages ADD COLUMN session_id VARCHAR(255);');
-    } catch (e) {
-      // Cột có thể đã tồn tại
-    }
-
-    try {
-      await sequelize.query('ALTER TABLE chat_messages MODIFY COLUMN user_id INT NULL;');
-    } catch (e) {
-      // Cột có thể đã tồn tại hoặc không phải kiểu UUID/CHAR
-    }
-    
-    logger.info('Các cột còn thiếu đã được đảm bảo tồn tại.');
-  } catch (error) {
-    logger.error('Lỗi khi kiểm tra cột:', error.message);
-  }
-};
+// Legacy ensureColumns đã xóa — các cột (google_id, warranty_cost,
+// warranty_package_ids, session_id, user_id nullable) đã có trong
+// migration_full.sql và migrations 2026050501+. Không cần ALTER inline.
 
 // Kiểm tra và tự động rebuild vector store nếu lệch > 5% so với DB
 const checkVectorStoreSync = async () => {
@@ -193,7 +165,6 @@ const warmCache = async () => {
 // Khởi động server
 const startServer = async () => {
   await connectDB();
-  await ensureColumns();
 
   // Khởi tạo Redis client sớm — nếu Redis không khả dụng thì dùng in-memory fallback
   await getRedisClient();
@@ -211,10 +182,12 @@ const startServer = async () => {
   // Cache warming — pre-load categories và brands vào Redis sau khi DB sẵn sàng
   warmCache().catch(err => logger.warn('Cache warming failed:', err.message));
 
-  // Khởi tạo Socket.io
+  // Khởi tạo Socket.io — fallback về CORS_ORIGINS_DEV thay vì '*' để tránh open CORS
+  const socketOrigin = process.env.CORS_ORIGIN
+    || (process.env.CORS_ORIGINS_DEV || '').split(',').map(o => o.trim()).filter(Boolean);
   const io = new Server(server, {
     cors: {
-      origin: process.env.CORS_ORIGIN || '*',
+      origin: socketOrigin.length ? socketOrigin : '*',
       methods: ['GET', 'POST'],
     },
   });

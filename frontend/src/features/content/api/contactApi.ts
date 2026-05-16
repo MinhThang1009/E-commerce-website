@@ -1,4 +1,5 @@
-import { api } from '@/services/api';
+import { useMutation } from '@tanstack/react-query';
+import apiClient from '@/services/apiClient';
 
 export interface NewsletterSubscriptionRequest {
   email: string;
@@ -18,27 +19,22 @@ export interface ContactResponse {
   data?: any;
 }
 
-export const contactApi = api.injectEndpoints({
-  endpoints: (builder) => ({
-    subscribeNewsletter: builder.mutation<ContactResponse, NewsletterSubscriptionRequest>({
-      query: (body) => ({
-        url: '/contact/newsletter',
-        method: 'POST',
-        body,
-      }),
-    }),
-    sendFeedback: builder.mutation<ContactResponse, FeedbackRequest>({
-      query: (body) => ({
-        url: '/contact/feedback',
-        method: 'POST',
-        body,
-      }),
-    }),
-  }),
-});
+// === Mutation Hooks ===
 
-export const {
-  useSubscribeNewsletterMutation,
-  useSendFeedbackMutation,
-} = contactApi;
+export function useSubscribeNewsletterMutation() {
+  return useMutation<ContactResponse, Error, NewsletterSubscriptionRequest>({
+    mutationFn: async (body) => {
+      const { data } = await apiClient.post('/contact/newsletter', body);
+      return data;
+    },
+  });
+}
 
+export function useSendFeedbackMutation() {
+  return useMutation<ContactResponse, Error, FeedbackRequest>({
+    mutationFn: async (body) => {
+      const { data } = await apiClient.post('/contact/feedback', body);
+      return data;
+    },
+  });
+}

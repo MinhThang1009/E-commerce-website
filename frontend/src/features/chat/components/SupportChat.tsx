@@ -1,7 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
-import { useSelector } from 'react-redux';
-import { RootState } from '@/store';
+import { useAuthStore } from '@/stores/authStore';
 import { io, Socket } from 'socket.io-client';
 import { useGetChatHistoryQuery, ChatMessage } from '../api/chatApi';
 import { ChatBubbleLeftRightIcon, XMarkIcon, PaperAirplaneIcon } from '@heroicons/react/24/outline';
@@ -17,16 +16,15 @@ const SupportChat: React.FC = () => {
   const [unreadCount, setUnreadCount] = useState(0);
   const [isAdminOnline, setIsAdminOnline] = useState(false);
   const [isAdminTyping, setIsAdminTyping] = useState(false);
-  
+
   const socketRef = useRef<Socket | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const isOpenRef = useRef(isOpen);
   const typingTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
-  const { user } = useSelector((state: RootState) => state.auth);
+  const user = useAuthStore((s) => s.user);
   const userId = user?.id;
 
-  // Khởi tạo session ID
   const [sessionId] = useState(() => {
     let saved = localStorage.getItem('support_chat_session_id');
     if (!saved) {
@@ -45,9 +43,8 @@ const SupportChat: React.FC = () => {
     }
   }, [isOpen]);
 
-  // Tải lịch sử chat
   const { data: historyData, isLoading } = useGetChatHistoryQuery(currentIdentifier, {
-    skip: !isOpen || !currentIdentifier,
+    enabled: isOpen && !!currentIdentifier,
   });
 
   useEffect(() => {
@@ -56,12 +53,11 @@ const SupportChat: React.FC = () => {
     }
   }, [historyData]);
 
-  // Kết nối Socket
   useEffect(() => {
     if (!currentIdentifier) return;
 
     const socket = io(SOCKET_URL, {
-      auth: { token: localStorage.getItem('token') || '' },
+      auth: { token: useAuthStore.getState().token || '' },
     });
     socketRef.current = socket;
 
@@ -92,23 +88,23 @@ const SupportChat: React.FC = () => {
       if (newMessage.sessionId === sessionId || (userId && newMessage.userId === userId)) {
         setMessages((prev) => {
           if (prev.some(m => m.id === newMessage.id)) return prev;
-          
+
           const isFromMe = !newMessage.isFromAdmin;
           if (isFromMe) {
             const filtered = prev.filter(m => !(m.id.startsWith('temp_') && m.content === newMessage.content));
             return [...filtered, newMessage];
           }
-          
+
           return [...prev, newMessage];
         });
 
-        // Thông báo server rằng đã đọc tin nhắn khi cửa sổ chat đang mở
         if (isOpenRef.current && newMessage.isFromAdmin) {
+          const token = useAuthStore.getState().token;
           fetch(`${SOCKET_URL}/api/chat/read/${currentIdentifier}`, {
             method: 'PATCH',
             headers: {
-              'Authorization': `Bearer ${localStorage.getItem('token')}`
-            }
+              ...(token ? { 'Authorization': `Bearer ${token}` } : {}),
+            },
           });
         }
       }
@@ -124,7 +120,6 @@ const SupportChat: React.FC = () => {
     };
   }, [userId, sessionId, currentIdentifier]);
 
-  // Cuộn xuống cuối danh sách tin nhắn
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages, isOpen, isAdminTyping]);
@@ -132,9 +127,9 @@ const SupportChat: React.FC = () => {
   const handleTyping = () => {
     if (!socketRef.current) return;
     socketRef.current.emit('typing', { targetId: 'admin' });
-    
+
     if (typingTimeoutRef.current) clearTimeout(typingTimeoutRef.current);
-    
+
     typingTimeoutRef.current = setTimeout(() => {
       socketRef.current?.emit('stopTyping', { targetId: 'admin' });
     }, 2000);
@@ -158,7 +153,6 @@ const SupportChat: React.FC = () => {
       isFromAdmin: false,
     };
 
-    // Cập nhật giao diện ngay lập tức với tin nhắn ảo có ID tạm thời để tránh trùng lặp khi server trả về tin nhắn thực tế
     const tempId = `temp_${Date.now()}`;
     const optimisticMessage: ChatMessage = {
       id: tempId,
@@ -179,7 +173,6 @@ const SupportChat: React.FC = () => {
 
   return (
     <div className="fixed bottom-6 right-24 z-50">
-      {/* Nút mở/đóng chat */}
       {!isOpen && (
         <button
           onClick={() => setIsOpen(true)}
@@ -193,10 +186,8 @@ const SupportChat: React.FC = () => {
           )}
         </button>
       )}
-      {/* Cửa sổ chat */}
       {isOpen && (
         <div className="bg-white dark:bg-neutral-900 rounded-2xl shadow-2xl w-80 sm:w-96 flex flex-col border border-neutral-200 dark:border-neutral-800 animate-slideIn">
-          {/* Thanh tiêu đề chat */}
           <div className="bg-gradient-to-r from-primary-600 to-primary-500 text-white p-4 rounded-t-2xl flex items-center justify-between">
             <div className="flex items-center gap-2">
               <div className={`h-3 w-3 rounded-full ${isAdminOnline ? 'bg-green-400 animate-pulse' : 'bg-neutral-400'}`}></div>
@@ -208,7 +199,6 @@ const SupportChat: React.FC = () => {
             </button>
           </div>
 
-          {/* Phần nội dung tin nhắn */}
           <div className="flex-1 p-4 overflow-y-auto max-h-96 min-h-[300px] flex flex-col gap-3">
             {isLoading ? (
               <p className="text-center text-neutral-400 text-sm">{t('common.loading')}</p>
@@ -234,7 +224,6 @@ const SupportChat: React.FC = () => {
             <div ref={messagesEndRef}></div>
           </div>
 
-          {/* Chỉ báo đang gõ */}
           {isAdminTyping && (
             <div className="px-4 py-2 text-xs text-neutral-400 italic flex items-center gap-1">
                <div className="flex gap-1">
@@ -246,7 +235,6 @@ const SupportChat: React.FC = () => {
             </div>
           )}
 
-          {/* Ô nhập tin nhắn */}
           <form onSubmit={handleSendMessage} className="p-4 border-t border-neutral-200 dark:border-neutral-800 flex gap-2">
             <input
               type="text"
@@ -273,4 +261,3 @@ const SupportChat: React.FC = () => {
 };
 
 export default SupportChat;
-

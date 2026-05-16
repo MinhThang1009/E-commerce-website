@@ -448,14 +448,21 @@ const updateUser = catchAsync(async (req, res) => {
     throw new AppError('Không tìm thấy người dùng', 404);
   }
 
+  const numericId = Number(id);
+
   // Không cho phép user tự update role của chính mình
-  if (req.user.id === id && role && role !== user.role) {
+  if (req.user.id === numericId && role && role !== user.role) {
     throw new AppError('Không thể thay đổi role của chính mình', 403);
   }
 
   // Không cho phép user tự deactivate tài khoản của chính mình
-  if (req.user.id === id && isActive === false) {
+  if (req.user.id === numericId && isActive === false) {
     throw new AppError('Không thể vô hiệu hóa tài khoản của chính mình', 403);
+  }
+
+  // Chỉ admin mới được thay đổi role — manager không có quyền
+  if (role && role !== user.role && req.user.role !== 'admin') {
+    throw new AppError('Chỉ admin mới có quyền thay đổi role', 403);
   }
 
   const updatedUser = await user.update({
@@ -635,26 +642,10 @@ const createProduct = catchAsync(async (req, res) => {
     faqs = [],
   } = req.body;
 
-  // Tạo SKU duy nhất nếu không được cung cấp
+  // SKU đã chuyển sang product_variants — column products.sku đã drop
+  // Giữ uniqueSku cho variant SKU generation
   const uniqueSku =
     sku || `SKU-${Date.now()}-${Math.floor(Math.random() * 1000)}`;
-
-  // Kiểm tra xem SKU đã tồn tại chưa nếu người dùng cung cấp SKU
-  if (sku) {
-    const existingProduct = await Product.findOne({ where: { sku } });
-    if (existingProduct) {
-      return res.status(400).json({
-        status: 'fail',
-        message: `Mã SKU '${sku}' đã tồn tại. Vui lòng sử dụng mã SKU khác.`,
-        errors: [
-          {
-            field: 'sku',
-            message: `Mã SKU '${sku}' đã tồn tại. Vui lòng sử dụng mã SKU khác.`,
-          },
-        ],
-      });
-    }
-  }
 
   // Tạo sản phẩm mới
   const product = await Product.create({
@@ -666,7 +657,6 @@ const createProduct = catchAsync(async (req, res) => {
     // Tạm thời bỏ qua compareAtPrice, sẽ cập nhật riêng
     compareAtPrice: null,
     stockQuantity: stock || stockQuantity || 0,
-    sku: uniqueSku,
     status,
     isFeatured: featured,
     seoTitle: seoTitle || name,
@@ -1056,7 +1046,7 @@ const updateProduct = catchAsync(async (req, res) => {
     if (req.body.hasOwnProperty('shortDescription')) updateData.shortDescription = shortDescription;
     if (req.body.hasOwnProperty('price')) updateData.basePrice = parseFloat(price?.toString()) || 0;
     if (req.body.hasOwnProperty('stockQuantity')) updateData.stockQuantity = parseInt(stockQuantity?.toString()) || 0;
-    if (req.body.hasOwnProperty('sku')) updateData.sku = sku;
+    // SKU đã chuyển sang product_variants — không set trên products nữa
     if (req.body.hasOwnProperty('status')) updateData.status = status;
     if (req.body.hasOwnProperty('featured')) updateData.isFeatured = featured;
     if (req.body.hasOwnProperty('condition')) updateData.condition = condition;
@@ -1203,7 +1193,7 @@ const updateProduct = catchAsync(async (req, res) => {
       const variantPromises = variants.map(async (variant, index) => {
         const variantAttributes = deepParseJSON(variant.attributes || variant.attributeValues);
 
-        const variantSku = variant.sku || generateVariantSku(product.sku || sku || 'PROD', variantAttributes);
+        const variantSku = variant.sku || generateVariantSku(sku || 'PROD', variantAttributes);
         
         const variantData = {
           name: variant.name,

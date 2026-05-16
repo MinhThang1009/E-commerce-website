@@ -12,17 +12,14 @@ const ProductWarranty = sequelize.define(
     productId: {
       type: DataTypes.INTEGER,
       allowNull: false,
-      field: 'product_id',
     },
     warrantyPackageId: {
       type: DataTypes.INTEGER,
       allowNull: false,
-      field: 'warranty_package_id',
     },
     isDefault: {
       type: DataTypes.BOOLEAN,
       defaultValue: false,
-      field: 'is_default',
     },
   },
   {

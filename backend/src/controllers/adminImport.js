@@ -422,7 +422,7 @@ const getImportHistory = catchAsync(async (req, res) => {
   const offset = (page - 1) * limit;
 
   const { rows, count } = await ImportLog.findAndCountAll({
-    order: [['imported_at', 'DESC']],
+    order: [['importedAt', 'DESC']],
     limit,
     offset,
     attributes: {

@@ -70,6 +70,7 @@ module.exports = ({ authController }) => {
    */
   router.post(
     '/resend-verification',
+    otpLimiter,
     validateRequest(emailSchema),
     authController.resendVerification
   );

@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Link, useSearchParams, useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
+import { ROUTES } from '@/routes/paths';
 import Button from '@/components/common/Button';
 import Input from '@/components/common/Input';
 import { useResetPasswordMutation } from '../api/authApi';
@@ -19,7 +20,7 @@ const ResetPasswordPage: React.FC = () => {
     confirmPassword?: string;
   }>({});
 
-  const [resetPassword] = useResetPasswordMutation();
+  const { mutateAsync: resetPassword } = useResetPasswordMutation();
 
   const token = searchParams.get('token');
 
@@ -74,7 +75,7 @@ const ResetPasswordPage: React.FC = () => {
       await resetPassword({
         token: token!,
         password,
-      }).unwrap();
+      });
 
       // Thành công: hiển thị thông báo và chuyển hướng
       setIsSuccess(true);
@@ -121,7 +122,7 @@ const ResetPasswordPage: React.FC = () => {
                 {t('auth.resetPassword.redirecting')}
               </p>
               <Link
-                to="/login"
+                to={ROUTES.LOGIN}
                 className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-primary-600 dark:text-primary-400 bg-primary-100 dark:bg-primary-900/30 hover:bg-primary-200 dark:hover:bg-primary-900/50 transition-colors"
               >
                 <svg
@@ -222,7 +223,7 @@ const ResetPasswordPage: React.FC = () => {
 
           <div className="text-center">
             <Link
-              to="/login"
+              to={ROUTES.LOGIN}
               className="inline-flex items-center text-sm text-primary-600 dark:text-primary-400 hover:text-primary-700 dark:hover:text-primary-300"
             >
               <svg

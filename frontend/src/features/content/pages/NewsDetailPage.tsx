@@ -1,5 +1,6 @@
 import { useParams, Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
+import { ROUTES, buildRoute } from '@/routes/paths';
 import DOMPurify from 'dompurify';
 import { useGetNewsBySlugQuery, useGetNewsQuery, useGetRelatedNewsQuery } from '../api/newsApi';
 import LoadingSpinner from '@/components/common/LoadingSpinner';
@@ -15,7 +16,7 @@ const RelatedNewsList: React.FC<{ slug: string }> = ({ slug }) => {
   return (
     <>
       {data.news.map((n: any) => (
-        <Link key={n.id} to={`/news/${n.slug}`} className="group block bg-neutral-50 dark:bg-neutral-800 rounded-3xl overflow-hidden shadow-sm hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1">
+        <Link key={n.id} to={buildRoute.newsDetail(n.slug)} className="group block bg-neutral-50 dark:bg-neutral-800 rounded-3xl overflow-hidden shadow-sm hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1">
           <div className="aspect-[16/10] overflow-hidden relative">
             <img
               src={n.thumbnail || '/placeholder-news.jpg'}
@@ -55,7 +56,7 @@ const NewsDetailPage: React.FC = () => {
   if (!newsItem) return (
     <div className="min-h-screen flex flex-col justify-center items-center">
       <h1 className="text-2xl font-bold mb-4 font-heading">{t('news.notFound')}</h1>
-      <Link to="/news" className="text-primary-600 hover:underline">{t('news.backToList')}</Link>
+      <Link to={ROUTES.NEWS} className="text-primary-600 hover:underline">{t('news.backToList')}</Link>
     </div>
   );
 
@@ -67,9 +68,9 @@ const NewsDetailPage: React.FC = () => {
     <div className="min-h-screen bg-white dark:bg-neutral-900 pt-28 pb-20">
       <div className="container mx-auto px-4">
         <nav className="mb-8 text-sm text-neutral-500 font-medium overflow-x-auto whitespace-nowrap no-scrollbar">
-          <Link to="/" className="hover:text-primary-600">{t('news.home')}</Link>
+          <Link to={ROUTES.HOME} className="hover:text-primary-600">{t('news.home')}</Link>
           <span className="mx-2">/</span>
-          <Link to="/news" className="hover:text-primary-600">{t('news.newsLink')}</Link>
+          <Link to={ROUTES.NEWS} className="hover:text-primary-600">{t('news.newsLink')}</Link>
           <span className="mx-2">/</span>
           <span className="hover:text-primary-600 cursor-pointer">{item.category || t('news.defaultCategory')}</span>
           <span className="mx-2">/</span>
@@ -170,7 +171,7 @@ const NewsDetailPage: React.FC = () => {
               </h3>
               <div className="space-y-8">
                 {recentNewsResponse?.news?.filter((n: any) => n.id !== item.id).slice(0, 4).map((n: any) => (
-                  <Link key={n.id} to={`/news/${n.slug}`} className="group flex gap-4">
+                  <Link key={n.id} to={buildRoute.newsDetail(n.slug)} className="group flex gap-4">
                     <div className="w-24 h-24 flex-shrink-0 rounded-2xl overflow-hidden shadow-sm">
                       <img
                         src={n.thumbnail || '/placeholder-news.jpg'}

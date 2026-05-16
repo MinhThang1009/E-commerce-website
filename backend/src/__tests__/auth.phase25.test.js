@@ -189,7 +189,15 @@ describe('POST /api/auth/login — đăng nhập', () => {
     expect(res.status).toBe(200);
     expect(res.body.status).toBe('success');
     expect(res.body).toHaveProperty('token');
-    expect(res.body).toHaveProperty('refreshToken');
+    expect(res.body).not.toHaveProperty('refreshToken');
+    // Refresh token gửi qua httpOnly cookie
+    const cookies = res.headers['set-cookie'];
+    expect(cookies).toBeDefined();
+    const refreshCookie = Array.isArray(cookies)
+      ? cookies.find(c => c.startsWith('refreshToken='))
+      : (cookies.startsWith('refreshToken=') ? cookies : null);
+    expect(refreshCookie).toBeDefined();
+    expect(refreshCookie).toMatch(/HttpOnly/i);
     expect(res.body.user).toHaveProperty('id');
   });
 

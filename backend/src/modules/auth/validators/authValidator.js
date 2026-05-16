@@ -9,8 +9,9 @@ const registerSchema = Joi.object({
     'string.empty': 'Email không được để trống',
     'any.required': 'Email là trường bắt buộc',
   }),
-  password: Joi.string().min(6).required().messages({
+  password: Joi.string().min(8).pattern(/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)/).required().messages({
     'string.min': 'Mật khẩu phải có ít nhất {#limit} ký tự',
+    'string.pattern.base': 'Mật khẩu phải chứa ít nhất 1 chữ hoa, 1 chữ thường và 1 chữ số',
     'string.empty': 'Mật khẩu không được để trống',
     'any.required': 'Mật khẩu là trường bắt buộc',
   }),
@@ -50,8 +51,9 @@ const resetPasswordSchema = Joi.object({
     'string.empty': 'Token không được để trống',
     'any.required': 'Token là trường bắt buộc',
   }),
-  password: Joi.string().min(6).required().messages({
+  password: Joi.string().min(8).pattern(/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)/).required().messages({
     'string.min': 'Mật khẩu phải có ít nhất {#limit} ký tự',
+    'string.pattern.base': 'Mật khẩu phải chứa ít nhất 1 chữ hoa, 1 chữ thường và 1 chữ số',
     'string.empty': 'Mật khẩu không được để trống',
     'any.required': 'Mật khẩu là trường bắt buộc',
   }),

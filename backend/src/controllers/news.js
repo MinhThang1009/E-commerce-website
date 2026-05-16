@@ -33,7 +33,7 @@ exports.getAllNews = async (req, res) => {
     });
 
     res.json({
-      success: true,
+      status: 'success',
       count,
       totalPages: Math.ceil(count / limit),
       currentPage: parseInt(page),
@@ -41,7 +41,7 @@ exports.getAllNews = async (req, res) => {
     });
   } catch (error) {
     logger.error('Lỗi lấy danh sách tin tức:', error);
-    res.status(500).json({ success: false, message: 'Lỗi máy chủ' });
+    res.status(500).json({ status: 'error', message: 'Lỗi máy chủ' });
   }
 };
 
@@ -60,15 +60,15 @@ exports.getNewsBySlug = async (req, res) => {
     });
 
     if (!news) {
-      return res.status(404).json({ success: false, message: 'Không tìm thấy tin tức' });
+      return res.status(404).json({ status: 'error', message: 'Không tìm thấy tin tức' });
     }
 
     await news.increment('viewCount');
 
-    res.json({ success: true, news });
+    res.json({ status: 'success', news });
   } catch (error) {
     logger.error('Lỗi lấy tin tức theo slug:', error);
-    res.status(500).json({ success: false, message: 'Lỗi máy chủ' });
+    res.status(500).json({ status: 'error', message: 'Lỗi máy chủ' });
   }
 };
 
@@ -83,7 +83,7 @@ exports.getRelatedNews = async (req, res) => {
     });
 
     if (!currentNews) {
-      return res.status(404).json({ success: false, message: 'Không tìm thấy tin tức' });
+      return res.status(404).json({ status: 'error', message: 'Không tìm thấy tin tức' });
     }
 
     // 2. Tìm tin tức liên quan
@@ -116,10 +116,10 @@ exports.getRelatedNews = async (req, res) => {
       relatedNews = [...relatedNews, ...moreNews];
     }
 
-    res.json({ success: true, news: relatedNews });
+    res.json({ status: 'success', news: relatedNews });
   } catch (error) {
     logger.error('Lỗi lấy tin tức liên quan:', error);
-    res.status(500).json({ success: false, message: 'Lỗi máy chủ' });
+    res.status(500).json({ status: 'error', message: 'Lỗi máy chủ' });
   }
 };
 
@@ -137,13 +137,13 @@ exports.getNewsById = async (req, res) => {
     });
 
     if (!news) {
-      return res.status(404).json({ success: false, message: 'Không tìm thấy tin tức' });
+      return res.status(404).json({ status: 'error', message: 'Không tìm thấy tin tức' });
     }
 
-    res.json({ success: true, news });
+    res.json({ status: 'success', news });
   } catch (error) {
     logger.error('Lỗi lấy tin tức theo id:', error);
-    res.status(500).json({ success: false, message: 'Lỗi máy chủ' });
+    res.status(500).json({ status: 'error', message: 'Lỗi máy chủ' });
   }
 };
 
@@ -154,7 +154,7 @@ exports.createNews = async (req, res) => {
     // Kiểm tra slug đã tồn tại chưa
     const existing = await News.findOne({ where: { slug } });
     if (existing) {
-      return res.status(400).json({ success: false, message: 'Slug đã tồn tại' });
+      return res.status(400).json({ status: 'error', message: 'Slug đã tồn tại' });
     }
 
     const news = await News.create({
@@ -169,10 +169,10 @@ exports.createNews = async (req, res) => {
       userId: req.user.id, // Giả định auth middleware đã gán req.user
     });
 
-    res.status(201).json({ success: true, news });
+    res.status(201).json({ status: 'success', news });
   } catch (error) {
     logger.error('Lỗi tạo tin tức:', error);
-    res.status(500).json({ success: false, message: 'Lỗi máy chủ' });
+    res.status(500).json({ status: 'error', message: 'Lỗi máy chủ' });
   }
 };
 
@@ -183,14 +183,14 @@ exports.updateNews = async (req, res) => {
 
     const news = await News.findByPk(id);
     if (!news) {
-      return res.status(404).json({ success: false, message: 'Không tìm thấy tin tức' });
+      return res.status(404).json({ status: 'error', message: 'Không tìm thấy tin tức' });
     }
 
     // Kiểm tra tính duy nhất của slug nếu có thay đổi
     if (slug && slug !== news.slug) {
        const existing = await News.findOne({ where: { slug } });
        if (existing) {
-         return res.status(400).json({ success: false, message: 'Slug đã tồn tại' });
+         return res.status(400).json({ status: 'error', message: 'Slug đã tồn tại' });
        }
     }
 
@@ -205,10 +205,10 @@ exports.updateNews = async (req, res) => {
       isPublished,
     });
 
-    res.json({ success: true, news });
+    res.json({ status: 'success', news });
   } catch (error) {
     logger.error('Lỗi cập nhật tin tức:', error);
-    res.status(500).json({ success: false, message: 'Lỗi máy chủ' });
+    res.status(500).json({ status: 'error', message: 'Lỗi máy chủ' });
   }
 };
 
@@ -218,14 +218,14 @@ exports.deleteNews = async (req, res) => {
     const news = await News.findByPk(id);
     
     if (!news) {
-      return res.status(404).json({ success: false, message: 'Không tìm thấy tin tức' });
+      return res.status(404).json({ status: 'error', message: 'Không tìm thấy tin tức' });
     }
 
     await news.destroy();
 
-    res.json({ success: true, message: 'Tin tức đã được xóa thành công' });
+    res.json({ status: 'success', message: 'Tin tức đã được xóa thành công' });
   } catch (error) {
     logger.error('Lỗi xóa tin tức:', error);
-    res.status(500).json({ success: false, message: 'Lỗi máy chủ' });
+    res.status(500).json({ status: 'error', message: 'Lỗi máy chủ' });
   }
 };

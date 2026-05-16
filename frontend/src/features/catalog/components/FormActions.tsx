@@ -13,7 +13,7 @@ interface FormActionsProps {
 }
 
 const FormActions: React.FC<FormActionsProps> = ({
-  isFormValid,
+  isFormValid: _isFormValid,
   isSubmitting,
   submitText,
   loadingText,

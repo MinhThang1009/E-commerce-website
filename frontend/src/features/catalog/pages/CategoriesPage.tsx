@@ -1,22 +1,40 @@
 import React, { useState, useMemo } from 'react';
 import { Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
+import { buildRoute } from '@/routes/paths';
 import { useGetAllCategoriesQuery } from '../api/categoryApi';
 import { Category } from '../types/category.types';
+import {
+  Smartphone,
+  Tablet,
+  Laptop,
+  Watch,
+  Clock,
+  Package,
+  LayoutGrid,
+  Search,
+  ChevronRight,
+  SearchX,
+  type LucideIcon,
+} from 'lucide-react';
 
-const CATEGORY_ICONS: Record<string, string> = {
-  'dien-thoai': '📱',
-  tablet: '🖥️',
-  laptop: '💻',
+const CATEGORY_ICONS: Record<string, LucideIcon> = {
+  'dien-thoai': Smartphone,
+  tablet: Tablet,
+  laptop: Laptop,
+  smartwatch: Watch,
+  'dong-ho': Clock,
 };
 
-const getIcon = (slug?: string, name?: string) => {
+const getIcon = (slug?: string, name?: string): LucideIcon => {
   if (slug && CATEGORY_ICONS[slug]) return CATEGORY_ICONS[slug];
   const n = name?.toLowerCase() || '';
-  if (n.includes('điện thoại') || n.includes('phone')) return '📱';
-  if (n.includes('tablet') || n.includes('máy tính bảng')) return '🖥️';
-  if (n.includes('laptop') || n.includes('máy tính xách tay')) return '💻';
-  return '📦';
+  if (n.includes('điện thoại') || n.includes('phone')) return Smartphone;
+  if (n.includes('tablet') || n.includes('máy tính bảng')) return Tablet;
+  if (n.includes('laptop') || n.includes('máy tính xách tay')) return Laptop;
+  if (n.includes('smartwatch') || n.includes('thông minh')) return Watch;
+  if (n.includes('đồng hồ') || n.includes('watch')) return Clock;
+  return Package;
 };
 
 const CategoriesPage: React.FC = () => {
@@ -35,24 +53,9 @@ const CategoriesPage: React.FC = () => {
   return (
     <div className="min-h-screen bg-neutral-50 dark:bg-neutral-950">
       <div className="relative bg-gradient-to-br from-primary-700 via-primary-600 to-primary-500 text-white overflow-hidden">
-        <div className="absolute inset-0 opacity-10 select-none pointer-events-none">
-          {['💻', '👗', '👟', '🎧', '📷', '🎮', '⌚', '🔌'].map((icon, i) => (
-            <span
-              key={i}
-              className="absolute text-5xl"
-              style={{
-                top: `${[10, 50, 20, 70, 5, 40, 60, 80][i]}%`,
-                left: `${[5, 15, 40, 55, 70, 80, 90, 30][i]}%`,
-                transform: `rotate(${[-10, 15, -5, 20, -15, 8, -20, 12][i]}deg)`,
-              }}
-            >
-              {icon}
-            </span>
-          ))}
-        </div>
         <div className="relative container mx-auto px-4 py-14 text-center">
-          <div className="inline-flex items-center justify-center w-16 h-16 bg-white/20 backdrop-blur-sm rounded-2xl border border-white/30 text-3xl mb-5 shadow-md">
-            🗂️
+          <div className="inline-flex items-center justify-center w-16 h-16 bg-white/20 backdrop-blur-sm rounded-2xl border border-white/30 mb-5 shadow-md">
+            <LayoutGrid className="w-8 h-8" />
           </div>
           <h1 className="text-3xl md:text-4xl font-bold mb-2">{t('categories.heroTitle')}</h1>
           <p className="text-white/80 text-sm md:text-base max-w-md mx-auto">
@@ -61,9 +64,7 @@ const CategoriesPage: React.FC = () => {
 
           <div className="mt-8 max-w-md mx-auto">
             <div className="relative">
-              <svg className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-white/60" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-              </svg>
+              <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-white/60" />
               <input
                 type="text"
                 value={searchTerm}
@@ -89,7 +90,7 @@ const CategoriesPage: React.FC = () => {
           </div>
         ) : filteredCategories?.length === 0 ? (
           <div className="text-center py-16 bg-white dark:bg-neutral-900 rounded-2xl border border-neutral-100 dark:border-neutral-800">
-            <div className="text-5xl mb-4">🔍</div>
+            <SearchX className="w-12 h-12 text-neutral-300 dark:text-neutral-600 mx-auto mb-4" />
             <h3 className="text-lg font-semibold text-neutral-700 dark:text-neutral-300 mb-2">
               {t('categories.noResults')}
             </h3>
@@ -109,14 +110,14 @@ const CategoriesPage: React.FC = () => {
 
 const CategoryCard: React.FC<{ category: Category }> = ({ category }) => {
   const { t } = useTranslation();
-  const icon = getIcon(category.slug, category.name);
+  const Icon = getIcon(category.slug, category.name);
   return (
     <Link
-      to={`/shop?category=${category.id}`}
+      to={buildRoute.shopCategory(category.id)}
       className="group bg-white dark:bg-neutral-900 rounded-2xl p-5 border border-neutral-100 dark:border-neutral-800 hover:border-primary-300 dark:hover:border-primary-700 hover:shadow-md transition-all duration-200"
     >
-      <div className="w-12 h-12 bg-primary-50 dark:bg-primary-900/20 rounded-xl flex items-center justify-center text-2xl mb-3 group-hover:scale-110 transition-transform duration-200">
-        {icon}
+      <div className="w-12 h-12 bg-primary-50 dark:bg-primary-900/20 rounded-xl flex items-center justify-center mb-3 group-hover:scale-110 transition-transform duration-200">
+        <Icon className="w-6 h-6 text-primary-600 dark:text-primary-400" />
       </div>
       <h3 className="font-semibold text-neutral-900 dark:text-white text-sm leading-snug group-hover:text-primary-700 dark:group-hover:text-primary-300 transition-colors line-clamp-2">
         {category.name}
@@ -126,9 +127,7 @@ const CategoryCard: React.FC<{ category: Category }> = ({ category }) => {
       </p>
       <div className="mt-3 flex items-center gap-1 text-xs text-primary-600 dark:text-primary-400 opacity-0 group-hover:opacity-100 transition-opacity">
         <span>{t('categories.viewNow')}</span>
-        <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-        </svg>
+        <ChevronRight className="w-3 h-3" />
       </div>
     </Link>
   );

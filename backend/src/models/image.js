@@ -12,28 +12,23 @@ const Image = sequelize.define(
     originalName: {
       type: DataTypes.STRING(255),
       allowNull: false,
-      field: 'original_name',
     },
     fileName: {
       type: DataTypes.STRING(255),
       allowNull: false,
       unique: true,
-      field: 'file_name',
     },
     filePath: {
       type: DataTypes.STRING(500),
       allowNull: false,
-      field: 'file_path',
     },
     fileSize: {
       type: DataTypes.INTEGER,
       allowNull: false,
-      field: 'file_size',
     },
     mimeType: {
       type: DataTypes.STRING(100),
       allowNull: false,
-      field: 'mime_type',
     },
     width: {
       type: DataTypes.INTEGER,
@@ -51,7 +46,6 @@ const Image = sequelize.define(
     productId: {
       type: DataTypes.INTEGER,
       allowNull: true,
-      field: 'product_id',
       references: {
         model: 'products',
         key: 'id',
@@ -60,7 +54,6 @@ const Image = sequelize.define(
     userId: {
       type: DataTypes.INTEGER,
       allowNull: true,
-      field: 'user_id',
       references: {
         model: 'users',
         key: 'id',
@@ -69,17 +62,14 @@ const Image = sequelize.define(
     isActive: {
       type: DataTypes.BOOLEAN,
       defaultValue: true,
-      field: 'is_active',
     },
     createdAt: {
       type: DataTypes.DATE,
       defaultValue: DataTypes.NOW,
-      field: 'created_at',
     },
     updatedAt: {
       type: DataTypes.DATE,
       defaultValue: DataTypes.NOW,
-      field: 'updated_at',
     },
   },
   {

@@ -1,7 +1,6 @@
 import React from 'react';
 import { Outlet } from 'react-router-dom';
-import { useSelector } from 'react-redux';
-import { RootState } from '@/store';
+import { useAuthStore } from '@/stores/authStore';
 import Header from './Header';
 import Footer from './Footer';
 // Không cần import ChatWidget ở đây nữa vì đã được thêm vào App.tsx
@@ -13,9 +12,8 @@ const MainLayout: React.FC = () => {
   useScrollToTop();
 
   // Lấy trạng thái xác thực để gộp giỏ hàng
-  const { isAuthenticated, justLoggedIn } = useSelector(
-    (state: RootState) => state.auth
-  );
+  const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
+  const justLoggedIn = useAuthStore((s) => s.justLoggedIn);
 
   // Gộp giỏ hàng khi user đăng nhập
   useCartMerge(isAuthenticated, justLoggedIn);
@@ -35,4 +33,3 @@ const MainLayout: React.FC = () => {
 };
 
 export default MainLayout;
-

@@ -1,81 +1,107 @@
-import { api } from '@/services/api';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import apiClient from '@/services/apiClient';
 import { transformProductsResponse } from '@/utils/productTransform';
 
-export const brandApi = api.injectEndpoints({
-  endpoints: (builder) => ({
-    getBrands: builder.query<any, { isActive?: boolean; categoryId?: string } | void>({
-      query: (params) => {
-        const queryParams = new URLSearchParams();
-        if (params?.isActive !== undefined) {
-          queryParams.append('isActive', params.isActive.toString());
-        }
-        if (params?.categoryId) {
-          queryParams.append('categoryId', params.categoryId);
-        }
-        return {
-          url: `/brands?${queryParams.toString()}`,
-          method: 'GET',
-        };
-      },
-      providesTags: ['Product'],
-    }),
+// === Query Keys ===
 
-    getBrandBySlug: builder.query<any, string>({
-      query: (slug) => ({
-        url: `/brands/slug/${slug}`,
-        method: 'GET',
-      }),
-      providesTags: (result, error, slug) => [{ type: 'Product', id: `BRAND_${slug}` }],
-    }),
+export const brandKeys = {
+  all: ['brands'] as const,
+  list: (params?: any) => [...brandKeys.all, 'list', params] as const,
+  slug: (slug: string) => [...brandKeys.all, 'slug', slug] as const,
+  products: (slug: string, params?: any) => [...brandKeys.all, 'products', slug, params] as const,
+};
 
-    getProductsByBrand: builder.query<any, { slug: string; page?: number; limit?: number }>({
-      query: ({ slug, page = 1, limit = 12 }) => {
-        const params = new URLSearchParams();
-        params.append('page', page.toString());
-        params.append('limit', limit.toString());
-        return {
-          url: `/brands/slug/${slug}/products?${params.toString()}`,
-          method: 'GET',
-        };
-      },
-      transformResponse: transformProductsResponse,
-      providesTags: (result, error, { slug }) => [{ type: 'Product', id: `BRAND_PRODUCTS_${slug}` }],
-    }),
+// === Query Hooks ===
 
-    createBrand: builder.mutation<any, any>({
-      query: (body) => ({
-        url: '/admin/brands',
-        method: 'POST',
-        body,
-      }),
-      invalidatesTags: ['Product'],
-    }),
+export function useGetBrandsQuery(
+  params?: { isActive?: boolean; categoryId?: string } | void,
+  options?: { enabled?: boolean; skip?: boolean }
+) {
+  return useQuery({
+    queryKey: brandKeys.list(params),
+    queryFn: async () => {
+      const queryParams = new URLSearchParams();
+      if (params?.isActive !== undefined) {
+        queryParams.append('isActive', params.isActive.toString());
+      }
+      if (params?.categoryId) {
+        queryParams.append('categoryId', params.categoryId);
+      }
+      const { data } = await apiClient.get(`/brands?${queryParams.toString()}`);
+      return data;
+    },
+    enabled: options?.skip !== undefined ? !options.skip : true,
+  });
+}
 
-    updateBrand: builder.mutation<any, { id: string; body: any }>({
-      query: ({ id, body }) => ({
-        url: `/admin/brands/${id}`,
-        method: 'PUT',
-        body,
-      }),
-      invalidatesTags: ['Product'],
-    }),
+export function useGetBrandBySlugQuery(
+  slug: string,
+  options?: { enabled?: boolean; skip?: boolean }
+) {
+  return useQuery({
+    queryKey: brandKeys.slug(slug),
+    queryFn: async () => {
+      const { data } = await apiClient.get(`/brands/slug/${slug}`);
+      return data;
+    },
+    enabled: options?.skip !== undefined ? !options.skip : !!slug,
+  });
+}
 
-    deleteBrand: builder.mutation<any, string>({
-      query: (id) => ({
-        url: `/admin/brands/${id}`,
-        method: 'DELETE',
-      }),
-      invalidatesTags: ['Product'],
-    }),
-  }),
-});
+export function useGetProductsByBrandQuery(
+  params: { slug: string; page?: number; limit?: number },
+  options?: { enabled?: boolean; skip?: boolean }
+) {
+  return useQuery({
+    queryKey: brandKeys.products(params.slug, params),
+    queryFn: async () => {
+      const urlParams = new URLSearchParams();
+      urlParams.append('page', (params.page || 1).toString());
+      urlParams.append('limit', (params.limit || 12).toString());
+      const { data } = await apiClient.get(
+        `/brands/slug/${params.slug}/products?${urlParams.toString()}`
+      );
+      return transformProductsResponse(data);
+    },
+    enabled: options?.skip !== undefined ? !options.skip : !!params.slug,
+  });
+}
 
-export const {
-  useGetBrandsQuery,
-  useGetBrandBySlugQuery,
-  useGetProductsByBrandQuery,
-  useCreateBrandMutation,
-  useUpdateBrandMutation,
-  useDeleteBrandMutation,
-} = brandApi;
+export function useCreateBrandMutation() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (body: any) => {
+      const { data } = await apiClient.post('/admin/brands', body);
+      return data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: brandKeys.all });
+    },
+  });
+}
 
+export function useUpdateBrandMutation() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ id, body }: { id: string; body: any }) => {
+      const { data } = await apiClient.put(`/admin/brands/${id}`, body);
+      return data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: brandKeys.all });
+    },
+  });
+}
+
+export function useDeleteBrandMutation() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (id: string) => {
+      const { data } = await apiClient.delete(`/admin/brands/${id}`);
+      return data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: brandKeys.all });
+    },
+  });
+}

@@ -1,3 +1,5 @@
+// Barrel export feature AI — public surface
+
 // Giao diện
 export { default as ChatWidget } from './components/ChatWidget';
 export { default as ChatWidgetSimple } from './components/ChatWidgetSimple';
@@ -9,18 +11,5 @@ export { default as ChatSuggestions } from './components/ChatSuggestions';
 // Hooks
 export { useSpeechRecognition } from './hooks/useSpeechRecognition';
 
-// Dịch vụ API
+// Dịch vụ API (TanStack Query)
 export { useSendChatbotMessageMutation } from './services/chatbotApi';
-
-// Store Redux
-export {
-  addMessage,
-  setMessages,
-  clearMessages,
-  toggleChat,
-  openChat,
-  closeChat,
-  saveChatHistory,
-  loadChatHistory,
-} from './store/chatSlice';
-

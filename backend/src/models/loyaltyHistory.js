@@ -12,12 +12,10 @@ const LoyaltyHistory = sequelize.define(
     userId: {
       type: DataTypes.INTEGER,
       allowNull: false,
-      field: 'user_id',
     },
     orderId: {
       type: DataTypes.INTEGER,
       allowNull: true,
-      field: 'order_id',
     },
     points: {
       type: DataTypes.INTEGER,

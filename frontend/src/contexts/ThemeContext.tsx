@@ -1,7 +1,5 @@
 import { createContext, useEffect, ReactNode } from 'react';
-import { useSelector, useDispatch } from 'react-redux';
-import { RootState } from '@/store';
-import { setTheme } from '@/features/ui/uiSlice';
+import { useUiStore } from '@/stores/uiStore';
 
 type ThemeContextType = {
   theme: 'light' | 'dark';
@@ -18,11 +16,11 @@ type ThemeProviderProps = {
 };
 
 export const ThemeProvider: React.FC<ThemeProviderProps> = ({ children }) => {
-  const dispatch = useDispatch();
-  const theme = useSelector((state: RootState) => state.ui.theme);
+  const theme = useUiStore((s) => s.theme);
+  const setTheme = useUiStore((s) => s.setTheme);
 
   // Cập nhật class của document khi theme thay đổi
-  // (OS preference và localStorage persist được xử lý trong uiSlice initialState)
+  // (OS preference và localStorage persist được xử lý trong uiStore initialState)
   useEffect(() => {
     if (theme === 'dark') {
       document.documentElement.classList.add('dark');
@@ -33,7 +31,7 @@ export const ThemeProvider: React.FC<ThemeProviderProps> = ({ children }) => {
 
   // Hàm chuyển đổi theme
   const toggleTheme = () => {
-    dispatch(setTheme(theme === 'light' ? 'dark' : 'light'));
+    setTheme(theme === 'light' ? 'dark' : 'light');
   };
 
   return (

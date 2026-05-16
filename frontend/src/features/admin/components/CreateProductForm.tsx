@@ -44,7 +44,7 @@ const CreateProductForm: React.FC<CreateProductFormProps> = ({
   onSuccess,
 }) => {
   const { t } = useTranslation();
-  const [createProduct, { isLoading }] = useCreateProductMutation();
+  const { mutateAsync: createProduct, isPending: isLoading } = useCreateProductMutation();
   const { data: categories, isLoading: isCategoriesLoading } =
     useGetCategoriesQuery();
   const [activeTab, setActiveTab] = useState('basic');
@@ -94,6 +94,7 @@ const CreateProductForm: React.FC<CreateProductFormProps> = ({
         shortDescription: prev.description.substring(0, 200),
       }));
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- Chỉ auto-fill SEO khi name/description thay đổi, không khi các trường SEO thay đổi (tránh ghi đè user input)
   }, [formData.name, formData.description]);
 
   // Các hàm xử lý form
@@ -246,7 +247,7 @@ const CreateProductForm: React.FC<CreateProductFormProps> = ({
           })),
       };
 
-      await createProduct(productData).unwrap();
+      await createProduct(productData);
 
       // Đặt lại form về trạng thái ban đầu
       setFormData({

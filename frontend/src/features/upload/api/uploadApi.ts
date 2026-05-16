@@ -1,5 +1,5 @@
-import { api } from '@/services/api';
-import { RootState } from '@/store';
+import { useMutation } from '@tanstack/react-query';
+import apiClient from '@/services/apiClient';
 
 export interface UploadResponse {
   status: string;
@@ -28,56 +28,41 @@ export interface MultipleUploadResponse {
   };
 }
 
-// Sử dụng api.injectEndpoints để thêm các endpoints vào API service chính
-export const uploadApi = api.injectEndpoints({
-  endpoints: (builder) => ({
-    uploadSingle: builder.mutation<
-      UploadResponse,
-      { type: string; file: File }
-    >({
-      query: ({ type, file }) => {
-        const formData = new FormData();
-        formData.append('file', file);
-        return {
-          url: `/uploads/${type}/single`,
-          method: 'POST',
-          body: formData,
-        };
-      },
-    }),
+// === Mutation Hooks ===
 
-    uploadMultiple: builder.mutation<
-      MultipleUploadResponse,
-      { type: string; files: File[] }
-    >({
-      query: ({ type, files }) => {
-        const formData = new FormData();
-        files.forEach((file) => {
-          formData.append('files', file);
-        });
-        return {
-          url: `/uploads/${type}/multiple`,
-          method: 'POST',
-          body: formData,
-        };
-      },
-    }),
+export function useUploadSingleMutation() {
+  return useMutation<UploadResponse, Error, { type: string; file: File }>({
+    mutationFn: async ({ type, file }) => {
+      const formData = new FormData();
+      formData.append('file', file);
+      const { data } = await apiClient.post(`/uploads/${type}/single`, formData, {
+        headers: { 'Content-Type': 'multipart/form-data' },
+      });
+      return data;
+    },
+  });
+}
 
-    deleteFile: builder.mutation<
-      { status: string; message: string },
-      { type: string; filename: string }
-    >({
-      query: ({ type, filename }) => ({
-        url: `/uploads/${type}/${filename}`,
-        method: 'DELETE',
-      }),
-    }),
-  }),
-});
+export function useUploadMultipleMutation() {
+  return useMutation<MultipleUploadResponse, Error, { type: string; files: File[] }>({
+    mutationFn: async ({ type, files }) => {
+      const formData = new FormData();
+      files.forEach((file) => {
+        formData.append('files', file);
+      });
+      const { data } = await apiClient.post(`/uploads/${type}/multiple`, formData, {
+        headers: { 'Content-Type': 'multipart/form-data' },
+      });
+      return data;
+    },
+  });
+}
 
-export const {
-  useUploadSingleMutation,
-  useUploadMultipleMutation,
-  useDeleteFileMutation,
-} = uploadApi;
-
+export function useDeleteFileMutation() {
+  return useMutation<{ status: string; message: string }, Error, { type: string; filename: string }>({
+    mutationFn: async ({ type, filename }) => {
+      const { data } = await apiClient.delete(`/uploads/${type}/${filename}`);
+      return data;
+    },
+  });
+}

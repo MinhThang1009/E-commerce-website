@@ -1,32 +1,50 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { useDispatch, useSelector } from 'react-redux';
-import { RootState } from '@/store';
+import { useAuthStore } from '@/stores/authStore';
 import { useGetCurrentUserQuery } from '../api/authApi';
-import { loginSuccess, logout } from '../store/authSlice';
+import { refreshTokenIfNeeded } from '@/utils/tokenManager';
 import LoadingSpinner from '@/components/common/LoadingSpinner';
 
 interface AuthProviderProps {
   children: React.ReactNode;
 }
 
-/**
- * AuthProvider Component
- *
- * Nhiệm vụ:
- * 1. Kiểm tra token trong localStorage khi app khởi động
- * 2. Nếu có token, gọi API để lấy thông tin user hiện tại
- * 3. Cập nhật Redux state với thông tin user
- * 4. Xử lý trường hợp token không hợp lệ
- */
 const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const { t } = useTranslation();
-  const dispatch = useDispatch();
-  const { token, isAuthenticated, user } = useSelector(
-    (state: RootState) => state.auth
-  );
+  const token = useAuthStore((s) => s.token);
+  const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
+  const user = useAuthStore((s) => s.user);
+  const [isHydrating, setIsHydrating] = useState(true);
 
-  // Chỉ gọi API khi có token nhưng chưa có user info
+  // Silent refresh khi app mount — access token mất khi reload, dùng httpOnly cookie để lấy lại
+  useEffect(() => {
+    const silentRefresh = async () => {
+      if (token) {
+        setIsHydrating(false);
+        return;
+      }
+
+      const storedUser = localStorage.getItem('user');
+      if (storedUser) {
+        try {
+          const newToken = await refreshTokenIfNeeded();
+          if (newToken) {
+            useAuthStore.getState().loginSuccess({
+              user: JSON.parse(storedUser),
+              token: newToken,
+            });
+          }
+        } catch {
+          localStorage.removeItem('user');
+        }
+      }
+      setIsHydrating(false);
+    };
+
+    silentRefresh();
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- Silent refresh chỉ chạy một lần khi app mount
+  }, []);
+
   const shouldFetchUser = token && !user && isAuthenticated;
 
   const {
@@ -35,39 +53,26 @@ const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     isLoading,
     isSuccess,
     isError,
-  } = useGetCurrentUserQuery(undefined, {
-    // Chỉ gọi API khi cần thiết
-    skip: !shouldFetchUser,
-    // Refetch khi component mount lại
-    refetchOnMountOrArgChange: true,
+  } = useGetCurrentUserQuery({
+    enabled: !!shouldFetchUser,
   });
 
   useEffect(() => {
-    // Nếu API trả về user successfully, cập nhật Redux state
     if (isSuccess && currentUser && token) {
-
-      dispatch(
-        loginSuccess({
-          user: currentUser,
-          token: token,
-          refreshToken: localStorage.getItem('refreshToken') || '',
-        })
-      );
-
+      useAuthStore.getState().loginSuccess({
+        user: currentUser,
+        token: token,
+      });
     }
-  }, [isSuccess, currentUser, token, dispatch]);
+  }, [isSuccess, currentUser, token]);
 
   useEffect(() => {
-    // Nếu API trả về lỗi (token không hợp lệ), logout user
     if (isError && error) {
-
-      // Xóa trạng thái xác thực
-      dispatch(logout());
+      useAuthStore.getState().logout();
     }
-  }, [isError, error, dispatch]);
+  }, [isError, error]);
 
-  // Hiển thị loading khi đang fetch user info
-  if (shouldFetchUser && isLoading) {
+  if (isHydrating || (shouldFetchUser && isLoading)) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-neutral-50 dark:bg-neutral-900">
         <div className="text-center">
@@ -84,4 +89,3 @@ const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 };
 
 export default AuthProvider;
-

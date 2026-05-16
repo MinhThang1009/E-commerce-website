@@ -1,10 +1,7 @@
 import React from 'react';
 import { Form, Input, Select, Row, Col, Button, Alert } from 'antd';
 import { useTranslation } from 'react-i18next';
-import { ProductFormData } from '@/types';
-import EnhancedRichTextEditor from '@/components/common/EnhancedRichTextEditor';
 import SimpleRichTextEditor from '@/components/common/SimpleRichTextEditor';
-import EditorErrorBoundary from '@/components/common/EditorErrorBoundary';
 import Base64ImageWarning from './Base64ImageWarning';
 import { sampleLaptopData } from '@/utils/sampleProductData';
 
@@ -18,15 +15,11 @@ interface ProductBasicInfoFormProps {
 
 const ProductBasicInfoForm: React.FC<ProductBasicInfoFormProps> = ({
   fillExampleData,
-  productId,
+  productId: _productId,
 }) => {
   const { t } = useTranslation();
   const form = Form.useFormInstance();
   const description = Form.useWatch('description', form) || '';
-
-  const handleDescriptionChange = (value: string) => {
-    form.setFieldValue('description', value);
-  };
 
   const handleFillSampleData = () => {
     form.setFieldsValue(sampleLaptopData);
@@ -96,13 +89,15 @@ const ProductBasicInfoForm: React.FC<ProductBasicInfoFormProps> = ({
             <div>
               <p>• {t('admin.products.form.tipLine1')}</p>
               <p>• {t('admin.products.form.tipLine2')}</p>
-              <p>
-                •{' '}
-                <Button type="link" size="small" onClick={handleFillSampleData}>
-                  {t('admin.products.form.tipFillData')}
-                </Button>{' '}
-                {t('admin.products.form.tipFillDataSuffix')}
-              </p>
+              {import.meta.env.DEV && (
+                <p>
+                  •{' '}
+                  <Button type="link" size="small" onClick={handleFillSampleData}>
+                    {t('admin.products.form.tipFillData')}
+                  </Button>{' '}
+                  {t('admin.products.form.tipFillDataSuffix')}
+                </p>
+              )}
             </div>
           }
           type="info"

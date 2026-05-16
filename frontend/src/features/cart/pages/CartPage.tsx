@@ -4,34 +4,31 @@ import CartItem from '../components/CartItem';
 import CheckCircleIcon from '@/components/icons/CheckCircleIcon';
 import PlusCircleIcon from '@/components/icons/PlusCircleIcon';
 import {
-  clearCart,
-  initializeCart,
-  setServerCart,
-} from '../store/cartSlice';
-import {
   useClearCartMutation,
   useGetCartQuery,
   useValidateCartQuery,
-  cartApi,
 } from '../api/cartApi';
+import { useCartStore } from '@/stores/cartStore';
+import { useAuthStore } from '@/stores/authStore';
 import { useApplyDiscountCodeMutation } from '@/features/orders';
-import { RootState } from '@/store';
 import { formatPrice } from '@/utils/format';
 import { toast } from '@/utils/toast';
-import { skipToken } from '@reduxjs/toolkit/query';
 import React, { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { useDispatch, useSelector } from 'react-redux';
 import { Link, useNavigate } from 'react-router-dom';
+import { useQueryClient } from '@tanstack/react-query';
+import { ROUTES } from '@/routes/paths';
+import { cartKeys } from '../api/cartApi';
 
 const CartPage: React.FC = () => {
   const { t } = useTranslation();
-  const { items, subtotal, totalItems, isLoading } = useSelector(
-    (state: RootState) => state.cart
-  );
-  const { isAuthenticated } = useSelector((state: RootState) => state.auth);
-  const dispatch = useDispatch();
+  const { items, subtotal, totalItems, isLoading } = useCartStore();
+  const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
+  const setServerCart = useCartStore((s) => s.setServerCart);
+  const initializeCart = useCartStore((s) => s.initializeCart);
+  const clearLocalCart = useCartStore((s) => s.clearLocalCart);
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
 
   // Trạng thái voucher
   const [voucherCode, setVoucherCode] = useState('');
@@ -42,21 +39,21 @@ const CartPage: React.FC = () => {
   } | null>(null);
   const [voucherError, setVoucherError] = useState('');
 
-  const [applyDiscount, { isLoading: applyingVoucher }] = useApplyDiscountCodeMutation();
+  const { mutateAsync: applyDiscount, isPending: applyingVoucher } = useApplyDiscountCodeMutation();
 
   // API hooks - chỉ gọi khi đã xác thực
   const {
     data: serverCart,
     error: cartError,
     isLoading: cartLoading,
-  } = useGetCartQuery(isAuthenticated ? undefined : skipToken);
+  } = useGetCartQuery({ enabled: isAuthenticated });
 
   // Kiểm tra giỏ hàng (kiểm tra tồn kho/thay đổi giá) - chỉ khi đã xác thực
-  const { data: cartValidation } = useValidateCartQuery(
-    isAuthenticated ? undefined : skipToken
-  );
+  const { data: cartValidation } = useValidateCartQuery({
+    enabled: isAuthenticated,
+  });
 
-  const [clearServerCart, { isLoading: clearingCart }] = useClearCartMutation();
+  const { mutateAsync: clearServerCart, isPending: clearingCart } = useClearCartMutation();
 
   // Xử lý khi MoMo redirect về thành công
   useEffect(() => {
@@ -65,39 +62,40 @@ const CartPage: React.FC = () => {
     const resultCode = params.get('resultCode');
 
     if (status === 'momo-return' && resultCode === '0') {
-      dispatch(clearCart());
-      dispatch(cartApi.util.invalidateTags(['Cart', 'CartCount']));
-      
+      clearLocalCart();
+      queryClient.invalidateQueries({ queryKey: cartKeys.all });
+      queryClient.invalidateQueries({ queryKey: cartKeys.count });
+
       // Cũng thử xóa giỏ hàng trên server trực tiếp để chắc chắn 100%
       if (isAuthenticated) {
         clearServerCart();
       }
-      
+
       toast.success(t('checkout.success.message'));
-      navigate('/orders', { replace: true });
+      navigate(ROUTES.ORDERS, { replace: true });
     } else if (status === 'momo-return' && resultCode !== '0') {
       toast.error(t('payment.errors.failed'));
-      navigate('/cart', { replace: true });
+      navigate(ROUTES.CART, { replace: true });
     }
-  }, [dispatch, navigate, t]);
+  }, [navigate, t, clearLocalCart, clearServerCart, isAuthenticated, queryClient]);
 
   // Khởi tạo giỏ hàng khi component mount
   useEffect(() => {
     if (isAuthenticated && serverCart) {
-      dispatch(setServerCart(serverCart));
+      setServerCart(serverCart);
     } else if (!isAuthenticated || (!cartLoading && !serverCart)) {
-      dispatch(initializeCart());
+      initializeCart();
     }
-  }, [dispatch, isAuthenticated, serverCart, cartLoading]);
+  }, [isAuthenticated, serverCart, cartLoading, setServerCart, initializeCart]);
 
   // Xử lý lỗi giỏ hàng
   useEffect(() => {
     if (cartError) {
       console.error('Lỗi giỏ hàng:', cartError);
       toast.error(t('cart.notifications.loadError'));
-      dispatch(initializeCart());
+      initializeCart();
     }
-  }, [cartError, dispatch, t]);
+  }, [cartError, t, initializeCart]);
 
   // Tự động hủy voucher nếu tổng phụ giảm xuống dưới minOrderAmount
   useEffect(() => {
@@ -117,7 +115,7 @@ const CartPage: React.FC = () => {
       const result = await applyDiscount({
         code: voucherCode.trim().toUpperCase(),
         orderAmount: subtotal,
-      }).unwrap();
+      });
 
       setAppliedVoucher({
         code: result.data.code,
@@ -146,7 +144,7 @@ const CartPage: React.FC = () => {
       const result = await applyDiscount({
         code: appliedVoucher.code,
         orderAmount: subtotal,
-      }).unwrap();
+      });
       setAppliedVoucher({
         code: result.data.code,
         discountAmount: result.data.discountAmount,
@@ -176,7 +174,7 @@ const CartPage: React.FC = () => {
 
   // Xử lý thanh toán - truyền dữ liệu voucher vào state
   const handleCheckout = () => {
-    navigate('/checkout', {
+    navigate(ROUTES.CHECKOUT, {
       state: appliedVoucher
         ? {
             voucherCode: appliedVoucher.code,
@@ -192,16 +190,16 @@ const CartPage: React.FC = () => {
     if (!window.confirm(t('cart.clearCartConfirm'))) return;
     try {
       if (isAuthenticated) {
-        await clearServerCart().unwrap();
+        await clearServerCart();
         toast.success(t('cart.notifications.cleared'));
       } else {
-        dispatch(clearCart());
+        clearLocalCart();
         toast.success(t('cart.notifications.cleared'));
       }
       setAppliedVoucher(null);
       setVoucherCode('');
     } catch (error: any) {
-      dispatch(clearCart());
+      clearLocalCart();
       toast.error(t('cart.notifications.serverError'));
     }
   };
@@ -244,7 +242,7 @@ const CartPage: React.FC = () => {
         </div>
       )}
 
-      {/* ⚠️ Stock / Price issues banner */}
+      {/* Stock / Price issues banner */}
       {issueItems.length > 0 && (
         <div className="mb-6 p-4 bg-amber-50 dark:bg-amber-900/20 border border-amber-300 dark:border-amber-700 rounded-xl shadow-sm">
           <div className="flex items-start gap-3">
@@ -302,7 +300,7 @@ const CartPage: React.FC = () => {
           <p className="text-neutral-500 dark:text-neutral-400 mb-6">
             {t('cart.emptyCart.message')}
           </p>
-          <Button variant="primary" as={Link} to="/shop">
+          <Button variant="primary" as={Link} to={ROUTES.SHOP}>
             {t('cart.emptyCart.startShopping')}
           </Button>
         </div>
@@ -447,7 +445,7 @@ const CartPage: React.FC = () => {
               <PremiumButton
                 variant="outline"
                 size="large"
-                onClick={() => navigate('/shop')}
+                onClick={() => navigate(ROUTES.SHOP)}
                 className="w-full h-12"
               >
                 {t('cart.continueShopping')}
@@ -476,4 +474,3 @@ const CartPage: React.FC = () => {
 };
 
 export default CartPage;
-

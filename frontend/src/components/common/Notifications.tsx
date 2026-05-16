@@ -1,24 +1,22 @@
 import { useEffect } from 'react';
-import { useSelector, useDispatch } from 'react-redux';
 import { useTranslation } from 'react-i18next';
-import { RootState } from '@/store';
-import { removeNotification } from '@/features/ui/uiSlice';
+import { useUiStore } from '@/stores/uiStore';
 import type { Notification as NotificationType } from '@/types/ui.types';
 
 const Notification: React.FC<{ notification: NotificationType }> = ({
   notification,
 }) => {
-  const dispatch = useDispatch();
+  const removeNotification = useUiStore((s) => s.removeNotification);
   const { t } = useTranslation();
 
   // Tự động ẩn thông báo sau khoảng thời gian
   useEffect(() => {
     const timer = setTimeout(() => {
-      dispatch(removeNotification(notification.id));
+      removeNotification(notification.id);
     }, notification.duration || 5000);
 
     return () => clearTimeout(timer);
-  }, [notification, dispatch]);
+  }, [notification, removeNotification]);
 
   // Lấy icon theo loại thông báo
   const getIcon = () => {
@@ -122,7 +120,7 @@ const Notification: React.FC<{ notification: NotificationType }> = ({
       <button
         type="button"
         className="ml-4 text-neutral-400 hover:text-neutral-500 dark:text-neutral-500 dark:hover:text-neutral-400"
-        onClick={() => dispatch(removeNotification(notification.id))}
+        onClick={() => removeNotification(notification.id)}
         aria-label={t('common.close')}
       >
         <svg
@@ -145,7 +143,7 @@ const Notification: React.FC<{ notification: NotificationType }> = ({
 };
 
 const Notifications: React.FC = () => {
-  const { notifications } = useSelector((state: RootState) => state.ui);
+  const notifications = useUiStore((s) => s.notifications);
 
   if (notifications.length === 0) return null;
 

@@ -1,26 +1,32 @@
 const { DataTypes } = require('sequelize');
 const sequelize = require('../config/sequelize');
 
+// DB có id auto_increment PK + unique(product_id, category_id).
+// Model phải khớp: id là PK, productId/categoryId là FK bình thường.
 const ProductCategory = sequelize.define(
   'ProductCategory',
   {
+    id: {
+      type: DataTypes.INTEGER,
+      autoIncrement: true,
+      primaryKey: true,
+    },
     productId: {
       type: DataTypes.INTEGER,
       allowNull: false,
-      primaryKey: true,
-      field: 'product_id',
     },
     categoryId: {
       type: DataTypes.INTEGER,
       allowNull: false,
-      primaryKey: true,
-      field: 'category_id',
     },
   },
   {
     tableName: 'product_categories',
     timestamps: true,
     underscored: true,
+    indexes: [
+      { name: 'uq_pcat_product_category', unique: true, fields: ['product_id', 'category_id'] },
+    ],
   }
 );
 

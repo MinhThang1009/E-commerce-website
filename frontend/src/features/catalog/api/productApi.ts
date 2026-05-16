@@ -1,236 +1,277 @@
+import { useQuery } from '@tanstack/react-query';
+import apiClient from '@/services/apiClient';
 import {
   ProductFilters,
   ProductListApiResponse,
   ProductDetailApiResponse,
   ProductArrayApiResponse,
 } from '../types/product.types';
-import { api } from '@/services/api';
 import {
   createProductFiltersParams,
   transformProductsResponse,
-  generateProductTags,
 } from '@/utils/productTransform';
 
-export const productApi = api.injectEndpoints({
-  endpoints: (builder) => ({
-    getProducts: builder.query<ProductListApiResponse, ProductFilters | void>({
-      query: (filters = {}) => {
-        const params = createProductFiltersParams(filters);
-        return {
-          url: `/products?${params.toString()}`,
-          method: 'GET',
-        };
-      },
-      transformResponse: transformProductsResponse,
-      providesTags: (result) => generateProductTags(result, 'LIST'),
-    }),
+// === Query Keys ===
 
-    getProductById: builder.query<ProductDetailApiResponse, string | { id: string; skuId?: string; color?: string }>(
-      {
-        query: (arg) => {
-          const id = typeof arg === 'string' ? arg : arg.id;
-          const skuId = typeof arg === 'object' ? arg.skuId : undefined;
-          const color = typeof arg === 'object' ? arg.color : undefined;
+export const productKeys = {
+  all: ['products'] as const,
+  lists: () => [...productKeys.all, 'list'] as const,
+  list: (filters: any) => [...productKeys.lists(), filters] as const,
+  details: () => [...productKeys.all, 'detail'] as const,
+  detail: (id: string) => [...productKeys.details(), id] as const,
+  slug: (slug: string) => [...productKeys.all, 'slug', slug] as const,
+  featured: (params?: any) => [...productKeys.all, 'featured', params] as const,
+  newArrivals: (params?: any) => [...productKeys.all, 'new-arrivals', params] as const,
+  bestSellers: (params?: any) => [...productKeys.all, 'best-sellers', params] as const,
+  deals: (params?: any) => [...productKeys.all, 'deals', params] as const,
+  related: (id: string) => [...productKeys.all, 'related', id] as const,
+  variants: (id: string) => [...productKeys.all, 'variants', id] as const,
+  reviewsSummary: (id: string) => [...productKeys.all, 'reviews-summary', id] as const,
+  search: (params: any) => [...productKeys.all, 'search', params] as const,
+  filters: (params?: any) => [...productKeys.all, 'filters', params] as const,
+  recentlyViewed: (params?: any) => [...productKeys.all, 'recently-viewed', params] as const,
+};
 
-          const params = new URLSearchParams();
-          if (skuId) params.append('skuId', skuId);
-          if (color) params.append('color', color);
+// === Query Hooks ===
 
-          return {
-            url: `/products/${id}${params.toString() ? `?${params.toString()}` : ''}`,
-            method: 'GET',
-          };
-        },
-        transformResponse: transformProductsResponse,
-        providesTags: (result, error, arg) => {
-          const id = typeof arg === 'string' ? arg : arg.id;
-          return [{ type: 'Product', id }];
-        },
+export function useGetProductsQuery(
+  filters: ProductFilters | void = {},
+  options?: { enabled?: boolean; skip?: boolean }
+) {
+  const filterObj = filters || {};
+  return useQuery<ProductListApiResponse>({
+    queryKey: productKeys.list(filterObj),
+    queryFn: async () => {
+      const params = createProductFiltersParams(filterObj);
+      const { data } = await apiClient.get(`/products?${params.toString()}`);
+      return transformProductsResponse(data);
+    },
+    enabled: options?.skip !== undefined ? !options.skip : true,
+  });
+}
+
+export function useGetProductByIdQuery(
+  arg: string | { id: string; skuId?: string; color?: string },
+  options?: { enabled?: boolean; skip?: boolean }
+) {
+  const id = typeof arg === 'string' ? arg : arg.id;
+  const skuId = typeof arg === 'object' ? arg.skuId : undefined;
+  const color = typeof arg === 'object' ? arg.color : undefined;
+
+  return useQuery<ProductDetailApiResponse>({
+    queryKey: productKeys.detail(JSON.stringify({ id, skuId, color })),
+    queryFn: async () => {
+      const params = new URLSearchParams();
+      if (skuId) params.append('skuId', skuId);
+      if (color) params.append('color', color);
+
+      const url = `/products/${id}${params.toString() ? `?${params.toString()}` : ''}`;
+      const { data } = await apiClient.get(url);
+      return transformProductsResponse(data);
+    },
+    enabled: options?.skip !== undefined ? !options.skip : !!id,
+  });
+}
+
+export function useGetProductBySlugQuery(
+  params: { slug: string; skuId?: string; color?: string },
+  options?: { enabled?: boolean; skip?: boolean }
+) {
+  return useQuery<ProductDetailApiResponse>({
+    queryKey: productKeys.slug(JSON.stringify(params)),
+    queryFn: async () => {
+      const urlParams = new URLSearchParams();
+      if (params.skuId) urlParams.append('skuId', params.skuId);
+      if (params.color) urlParams.append('color', params.color);
+
+      const url = `/products/slug/${params.slug}${urlParams.toString() ? `?${urlParams.toString()}` : ''}`;
+      const { data } = await apiClient.get(url);
+      return transformProductsResponse(data);
+    },
+    enabled: options?.skip !== undefined ? !options.skip : !!params.slug,
+  });
+}
+
+export function useGetFeaturedProductsQuery(
+  params?: { limit?: number } | void,
+  options?: { enabled?: boolean; skip?: boolean }
+) {
+  const resolvedParams = params && typeof params === 'object' ? params : {};
+  return useQuery<ProductArrayApiResponse>({
+    queryKey: productKeys.featured(resolvedParams),
+    queryFn: async () => {
+      const queryParams = new URLSearchParams();
+      if (resolvedParams.limit) {
+        queryParams.append('limit', resolvedParams.limit.toString());
       }
-    ),
+      const { data } = await apiClient.get(`/products/featured?${queryParams.toString()}`);
+      return transformProductsResponse(data);
+    },
+    enabled: options?.skip !== undefined ? !options.skip : true,
+  });
+}
 
-    getProductBySlug: builder.query<ProductDetailApiResponse, { slug: string; skuId?: string; color?: string }>({
-      query: ({ slug, skuId, color }) => {
-        const params = new URLSearchParams();
-        if (skuId) params.append('skuId', skuId);
-        if (color) params.append('color', color);
+export function useGetNewArrivalsQuery(
+  params?: { limit?: number } | void,
+  options?: { enabled?: boolean; skip?: boolean }
+) {
+  const resolvedParams = params && typeof params === 'object' ? params : {};
+  return useQuery<ProductArrayApiResponse>({
+    queryKey: productKeys.newArrivals(resolvedParams),
+    queryFn: async () => {
+      const queryParams = new URLSearchParams();
+      if (resolvedParams.limit) {
+        queryParams.append('limit', resolvedParams.limit.toString());
+      }
+      const { data } = await apiClient.get(`/products/new-arrivals?${queryParams.toString()}`);
+      return transformProductsResponse(data);
+    },
+    enabled: options?.skip !== undefined ? !options.skip : true,
+  });
+}
 
-        return {
-          url: `/products/slug/${slug}${params.toString() ? `?${params.toString()}` : ''}`,
-          method: 'GET',
-        };
-      },
-      transformResponse: transformProductsResponse,
-      providesTags: (result) => generateProductTags(result, 'SLUG'),
-    }),
+export function useGetBestSellersQuery(
+  params?: { limit?: number; period?: string } | void,
+  options?: { enabled?: boolean; skip?: boolean }
+) {
+  return useQuery<ProductArrayApiResponse>({
+    queryKey: productKeys.bestSellers(params),
+    queryFn: async () => {
+      const queryParams = new URLSearchParams();
+      if (params?.limit) queryParams.append('limit', params.limit.toString());
+      if (params?.period) queryParams.append('period', params.period);
+      const { data } = await apiClient.get(`/products/best-sellers?${queryParams.toString()}`);
+      return transformProductsResponse(data);
+    },
+    enabled: options?.skip !== undefined ? !options.skip : true,
+  });
+}
 
-    getFeaturedProducts: builder.query<ProductArrayApiResponse, { limit?: number } | void>({
-      query: (params) => {
-        const queryParams = new URLSearchParams();
-        if (params && typeof params === 'object' && 'limit' in params && params.limit) {
-          queryParams.append('limit', params.limit.toString());
-        }
+export function useGetDealsQuery(
+  params?: { minDiscount?: number; limit?: number; sort?: string } | void,
+  options?: { enabled?: boolean; skip?: boolean }
+) {
+  return useQuery<ProductArrayApiResponse>({
+    queryKey: productKeys.deals(params),
+    queryFn: async () => {
+      const queryParams = new URLSearchParams();
+      if (params?.minDiscount)
+        queryParams.append('minDiscount', params.minDiscount.toString());
+      if (params?.limit) queryParams.append('limit', params.limit.toString());
+      if (params?.sort) queryParams.append('sort', params.sort);
+      const { data } = await apiClient.get(`/products/deals?${queryParams.toString()}`);
+      return transformProductsResponse(data);
+    },
+    enabled: options?.skip !== undefined ? !options.skip : true,
+  });
+}
 
-        return {
-          url: `/products/featured?${queryParams.toString()}`,
-          method: 'GET',
-        };
-      },
-      transformResponse: transformProductsResponse,
-      providesTags: (result) => generateProductTags(result, 'FEATURED'),
-    }),
+export function useGetRelatedProductsQuery(
+  productId: string,
+  options?: { enabled?: boolean; skip?: boolean }
+) {
+  return useQuery<ProductArrayApiResponse>({
+    queryKey: productKeys.related(productId),
+    queryFn: async () => {
+      const { data } = await apiClient.get(`/products/${productId}/related`);
+      return transformProductsResponse(data);
+    },
+    enabled: options?.skip !== undefined ? !options.skip : !!productId,
+  });
+}
 
-    getNewArrivals: builder.query<ProductArrayApiResponse, { limit?: number } | void>({
-      query: (params) => {
-        const queryParams = new URLSearchParams();
-        if (params && typeof params === 'object' && 'limit' in params && params.limit) {
-          queryParams.append('limit', params.limit.toString());
-        }
+export function useGetProductVariantsQuery(
+  productId: string,
+  options?: { enabled?: boolean; skip?: boolean }
+) {
+  return useQuery({
+    queryKey: productKeys.variants(productId),
+    queryFn: async () => {
+      const { data } = await apiClient.get(`/products/${productId}/variants`);
+      return data;
+    },
+    enabled: options?.skip !== undefined ? !options.skip : !!productId,
+  });
+}
 
-        return {
-          url: `/products/new-arrivals?${queryParams.toString()}`,
-          method: 'GET',
-        };
-      },
-      transformResponse: transformProductsResponse,
-      providesTags: (result) => generateProductTags(result, 'NEW_ARRIVALS'),
-    }),
+export function useGetProductReviewsSummaryQuery(
+  productId: string,
+  options?: { enabled?: boolean; skip?: boolean }
+) {
+  return useQuery({
+    queryKey: productKeys.reviewsSummary(productId),
+    queryFn: async () => {
+      const { data } = await apiClient.get(`/products/${productId}/reviews-summary`);
+      return data;
+    },
+    enabled: options?.skip !== undefined ? !options.skip : !!productId,
+  });
+}
 
-    getBestSellers: builder.query<
-      ProductArrayApiResponse,
-      { limit?: number; period?: string } | void
-    >({
-      query: (params) => {
-        const queryParams = new URLSearchParams();
-        if (params?.limit) queryParams.append('limit', params.limit.toString());
-        if (params?.period) queryParams.append('period', params.period);
+export function useSearchProductsQuery(
+  params: { q: string; page?: number; limit?: number },
+  options?: { enabled?: boolean; skip?: boolean; staleTime?: number }
+) {
+  // Ưu tiên enabled nếu có, fallback sang skip (compat), mặc định true
+  const isEnabled = options?.enabled !== undefined
+    ? options.enabled
+    : options?.skip !== undefined ? !options.skip : true;
 
-        return {
-          url: `/products/best-sellers?${queryParams.toString()}`,
-          method: 'GET',
-        };
-      },
-      transformResponse: transformProductsResponse,
-      providesTags: (result) => generateProductTags(result, 'BEST_SELLERS'),
-    }),
+  return useQuery<ProductListApiResponse>({
+    queryKey: productKeys.search(params),
+    queryFn: async () => {
+      const urlParams = new URLSearchParams();
+      urlParams.append('q', params.q);
+      urlParams.append('page', (params.page || 1).toString());
+      urlParams.append('limit', (params.limit || 10).toString());
+      const { data } = await apiClient.get(`/products/search?${urlParams.toString()}`);
+      return transformProductsResponse(data);
+    },
+    enabled: isEnabled,
+    staleTime: options?.staleTime,
+  });
+}
 
-    getDeals: builder.query<
-      ProductArrayApiResponse,
-      { minDiscount?: number; limit?: number; sort?: string } | void
-    >({
-      query: (params) => {
-        const queryParams = new URLSearchParams();
-        if (params?.minDiscount)
-          queryParams.append('minDiscount', params.minDiscount.toString());
-        if (params?.limit) queryParams.append('limit', params.limit.toString());
-        if (params?.sort) queryParams.append('sort', params.sort);
+export function useGetProductFiltersQuery(
+  params: { categoryId?: string } = {},
+  options?: { enabled?: boolean; skip?: boolean }
+) {
+  return useQuery({
+    queryKey: productKeys.filters(params),
+    queryFn: async () => {
+      const queryParams = new URLSearchParams();
+      if (params.categoryId) queryParams.append('categoryId', params.categoryId);
+      const { data } = await apiClient.get(`/products/filters?${queryParams.toString()}`);
+      // transformResponse: response.data — extract .data từ backend wrapper
+      return data.data;
+    },
+    enabled: options?.skip !== undefined ? !options.skip : true,
+  });
+}
 
-        return {
-          url: `/products/deals?${queryParams.toString()}`,
-          method: 'GET',
-        };
-      },
-      transformResponse: transformProductsResponse,
-      providesTags: (result) => generateProductTags(result, 'DEALS'),
-    }),
+export function useGetRecentlyViewedQuery(
+  params?: { limit?: number } | void,
+  options?: { enabled?: boolean; skip?: boolean }
+) {
+  const resolvedParams = params && typeof params === 'object' ? params : {};
+  return useQuery<ProductArrayApiResponse>({
+    queryKey: productKeys.recentlyViewed(resolvedParams),
+    queryFn: async () => {
+      const queryParams = new URLSearchParams();
+      if (resolvedParams.limit) {
+        queryParams.append('limit', resolvedParams.limit.toString());
+      }
+      const { data } = await apiClient.get(`/products/recently-viewed?${queryParams.toString()}`);
+      return transformProductsResponse(data);
+    },
+    enabled: options?.skip !== undefined ? !options.skip : true,
+  });
+}
 
-    getRelatedProducts: builder.query<ProductArrayApiResponse, string>({
-      query: (productId) => ({
-        url: `/products/${productId}/related`,
-        method: 'GET',
-      }),
-      transformResponse: transformProductsResponse,
-      providesTags: (result) => generateProductTags(result, 'RELATED'),
-    }),
-
-    getProductVariants: builder.query<any, string>({
-      query: (productId) => ({
-        url: `/products/${productId}/variants`,
-        method: 'GET',
-      }),
-      providesTags: (result, error, productId) => [
-        { type: 'Product', id: `${productId}_VARIANTS` },
-      ],
-    }),
-
-    getProductReviewsSummary: builder.query<any, string>({
-      query: (productId) => ({
-        url: `/products/${productId}/reviews-summary`,
-        method: 'GET',
-      }),
-      providesTags: (result, error, productId) => [
-        { type: 'Product', id: `${productId}_REVIEWS` },
-      ],
-    }),
-
-    searchProducts: builder.query<
-      ProductListApiResponse,
-      { q: string; page?: number; limit?: number }
-    >({
-      query: ({ q, page = 1, limit = 10 }) => {
-        const params = new URLSearchParams();
-        params.append('q', q);
-        params.append('page', page.toString());
-        params.append('limit', limit.toString());
-
-        return {
-          url: `/products/search?${params.toString()}`,
-          method: 'GET',
-        };
-      },
-      transformResponse: transformProductsResponse,
-      providesTags: (result) => generateProductTags(result, 'SEARCH'),
-    }),
-
-    getProductFilters: builder.query<any, { categoryId?: string }>({
-      query: (params = {}) => {
-        const queryParams = new URLSearchParams();
-        if (params.categoryId)
-          queryParams.append('categoryId', params.categoryId);
-
-        return {
-          url: `/products/filters?${queryParams.toString()}`,
-          method: 'GET',
-        };
-      },
-      transformResponse: (response: any) => {
-        return response.data;
-      },
-      providesTags: ['Product'],
-    }),
-    getRecentlyViewed: builder.query<ProductArrayApiResponse, { limit?: number } | void>({
-      query: (params = {}) => {
-        const queryParams = new URLSearchParams();
-        if (params && 'limit' in params && params.limit) {
-          queryParams.append('limit', params.limit.toString());
-        }
-
-        return {
-          url: `/products/recently-viewed?${queryParams.toString()}`,
-          method: 'GET',
-        };
-      },
-      transformResponse: transformProductsResponse,
-      providesTags: (result) => generateProductTags(result, 'RECENTLY_VIEWED'),
-    }),
-  }),
-});
-
-export const {
-  useGetProductsQuery,
+// Re-export cho backward compatibility — barrel import dùng tên này
+export const productApi = {
   useGetProductByIdQuery,
-  useGetProductBySlugQuery,
-  useGetFeaturedProductsQuery,
-  useGetNewArrivalsQuery,
-  useGetBestSellersQuery,
-  useGetDealsQuery,
   useGetRelatedProductsQuery,
-  useGetProductVariantsQuery,
-  useGetProductReviewsSummaryQuery,
-  useSearchProductsQuery,
-  useGetProductFiltersQuery,
-  useGetRecentlyViewedQuery,
-} = productApi;
+};
 
 export type { Product } from '../types/product.types';
-

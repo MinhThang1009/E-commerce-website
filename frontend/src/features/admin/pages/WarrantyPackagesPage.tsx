@@ -44,9 +44,9 @@ const WarrantyPackagesPage: React.FC = () => {
   const [form] = Form.useForm();
 
   const { data: warrantyPackagesData, isLoading } = useGetWarrantyPackagesQuery({ isActive: undefined });
-  const [createWarrantyPackage, { isLoading: isCreating }] = useCreateWarrantyPackageMutation();
-  const [updateWarrantyPackage, { isLoading: isUpdating }] = useUpdateWarrantyPackageMutation();
-  const [deleteWarrantyPackage] = useDeleteWarrantyPackageMutation();
+  const { mutateAsync: createWarrantyPackage, isPending: isCreating } = useCreateWarrantyPackageMutation();
+  const { mutateAsync: updateWarrantyPackage, isPending: isUpdating } = useUpdateWarrantyPackageMutation();
+  const { mutateAsync: deleteWarrantyPackage } = useDeleteWarrantyPackageMutation();
 
   const warrantyPackages = warrantyPackagesData?.data?.warrantyPackages || [];
 
@@ -68,7 +68,7 @@ const WarrantyPackagesPage: React.FC = () => {
 
   const handleDelete = async (id: string) => {
     try {
-      await deleteWarrantyPackage(id).unwrap();
+      await deleteWarrantyPackage(id);
       message.success(t('admin.warrantyPackages.messages.deleteSuccess'));
     } catch (error: any) {
       message.error(error?.data?.message || t('admin.warrantyPackages.messages.deleteError'));
@@ -83,10 +83,10 @@ const WarrantyPackagesPage: React.FC = () => {
       const data = { ...values, coverage: coverageArray };
 
       if (editingPackage) {
-        await updateWarrantyPackage({ id: editingPackage.id, ...data }).unwrap();
+        await updateWarrantyPackage({ id: editingPackage.id, ...data });
         message.success(t('admin.warrantyPackages.messages.editSuccess'));
       } else {
-        await createWarrantyPackage(data).unwrap();
+        await createWarrantyPackage(data);
         message.success(t('admin.warrantyPackages.messages.createSuccess'));
       }
 

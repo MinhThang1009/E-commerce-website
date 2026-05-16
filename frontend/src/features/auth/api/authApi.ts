@@ -1,4 +1,5 @@
-import { api, baseQuery } from '@/services/api';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import apiClient from '@/services/apiClient';
 import { User } from '@/types/user.types';
 import {
   AuthResponse,
@@ -11,417 +12,123 @@ type BackendResponse = {
   message?: string;
   user?: User;
   token?: string;
-  refreshToken?: string;
+  data?: User;
 };
-export const authApi = api.injectEndpoints({
-  endpoints: (builder) => ({
-    login: builder.mutation<AuthResponse, LoginCredentials>({
-      queryFn: async (credentials, api, extraOptions) => {
-        try {
-          const result = await baseQuery(
-            {
-              url: '/auth/login',
-              method: 'POST',
-              body: {
-                email: credentials.email,
-                password: credentials.password,
-              },
-            },
-            api,
-            extraOptions
-          );
 
-          if (result.error) {
-            // Không để lỗi 401 kích hoạt auto-logout khi đang đăng nhập
-            if (result.error.status === 401) {
-              return {
-                error: {
-                  status: result.error.status,
-                  data: result.error.data || 'Invalid email or password',
-                },
-              };
-            }
+function parseAuthResponse(data: BackendResponse): AuthResponse {
+  if (data?.status === 'success') {
+    return { user: data.user!, token: data.token! };
+  }
+  return data as unknown as AuthResponse;
+}
 
-            return { error: result.error };
-          }
+function parseMessageResponse(data: BackendResponse, fallback: string): { message: string } {
+  if (data?.status === 'success') {
+    return { message: data.message || fallback };
+  }
+  return { message: data?.message || fallback };
+}
 
-          const data = result.data as BackendResponse;
+export function useLoginMutation() {
+  return useMutation({
+    mutationFn: async (credentials: LoginCredentials) => {
+      const { data } = await apiClient.post<BackendResponse>('/auth/login', {
+        email: credentials.email,
+        password: credentials.password,
+      });
+      return parseAuthResponse(data);
+    },
+  });
+}
 
-          // Xử lý response từ API theo format thật từ backend
-          if (data?.status === 'success') {
-            return {
-              data: {
-                user: data.user!,
-                token: data.token!,
-                refreshToken: data.refreshToken!,
-              },
-            };
-          }
+export function useGoogleLoginMutation() {
+  return useMutation({
+    mutationFn: async ({ token }: { token: string }) => {
+      const { data } = await apiClient.post<BackendResponse>('/auth/google', { token });
+      return parseAuthResponse(data);
+    },
+  });
+}
 
-          // Fallback nếu format khác
-          return { data: data as unknown as AuthResponse };
-        } catch (error) {
-          return {
-            error: {
-              status: 'FETCH_ERROR',
-              error: 'Network error, please try again',
-            },
-          };
-        }
-      },
-    }),
+export function useVerifyOtpMutation() {
+  return useMutation({
+    mutationFn: async ({ email, otp }: { email: string; otp: string }) => {
+      const { data } = await apiClient.post<BackendResponse>('/auth/verify-otp', { email, otp });
+      return parseMessageResponse(data, 'Email verified successfully');
+    },
+  });
+}
 
-    googleLogin: builder.mutation<AuthResponse, { token: string }>({
-      queryFn: async ({ token }, api, extraOptions) => {
-        try {
-          const result = await baseQuery(
-            {
-              url: '/auth/google',
-              method: 'POST',
-              body: { token },
-            },
-            api,
-            extraOptions
-          );
+export function useRegisterMutation() {
+  return useMutation({
+    mutationFn: async (userData: RegisterData) => {
+      const { data } = await apiClient.post<BackendResponse>('/auth/register', userData);
+      return parseAuthResponse(data);
+    },
+  });
+}
 
-          if (result.error) {
-            return { error: result.error };
-          }
+export function useRefreshTokenMutation() {
+  return useMutation({
+    mutationFn: async () => {
+      const { data } = await apiClient.post<BackendResponse>('/auth/refresh-token');
+      if (data?.status === 'success') {
+        return { token: data.token! };
+      }
+      return data as unknown as { token: string };
+    },
+  });
+}
 
-          const data = result.data as BackendResponse;
-          if (data?.status === 'success') {
-            return {
-              data: {
-                user: data.user!,
-                token: data.token!,
-                refreshToken: data.refreshToken!,
-              },
-            };
-          }
-          return { data: data as unknown as AuthResponse };
-        } catch (error) {
-          return {
-            error: {
-              status: 'FETCH_ERROR',
-              error: 'Network error, please try again',
-            },
-          };
-        }
-      },
-    }),
+export function useForgotPasswordMutation() {
+  return useMutation({
+    mutationFn: async ({ email }: { email: string }) => {
+      const { data } = await apiClient.post<BackendResponse>('/auth/forgot-password', { email });
+      return parseMessageResponse(data, 'Password reset email sent');
+    },
+  });
+}
 
-    verifyOtp: builder.mutation<{ message: string }, { email: string; otp: string }>({
-      queryFn: async ({ email, otp }, api, extraOptions) => {
-        try {
-          const result = await baseQuery(
-            {
-              url: '/auth/verify-otp',
-              method: 'POST',
-              body: { email, otp },
-            },
-            api,
-            extraOptions
-          );
+export function useLogoutMutation() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async () => {
+      await apiClient.post('/auth/logout');
+    },
+    onSuccess: () => {
+      queryClient.clear();
+    },
+  });
+}
 
-          if (result.error) {
-            return { error: result.error };
-          }
+export function useResetPasswordMutation() {
+  return useMutation({
+    mutationFn: async ({ token, password }: { token: string; password: string }) => {
+      const { data } = await apiClient.post<BackendResponse>('/auth/reset-password', { token, password });
+      return parseMessageResponse(data, 'Password has been reset successfully');
+    },
+  });
+}
 
-          const data = result.data as BackendResponse;
-          return {
-            data: {
-              message: data?.message || 'Email verified successfully',
-            },
-          };
-        } catch (error) {
-          return {
-            error: {
-              status: 'FETCH_ERROR',
-              error: error instanceof Error ? error.message : 'Network error',
-            },
-          };
-        }
-      },
-    }),
+export function useResendVerificationMutation() {
+  return useMutation({
+    mutationFn: async ({ email }: { email: string }) => {
+      const { data } = await apiClient.post<BackendResponse>('/auth/resend-verification', { email });
+      return parseMessageResponse(data, 'Verification email sent successfully');
+    },
+  });
+}
 
-    register: builder.mutation<AuthResponse, RegisterData>({
-      queryFn: async (userData, api, extraOptions) => {
-        try {
-          const result = await baseQuery(
-            {
-              url: '/auth/register',
-              method: 'POST',
-              body: userData,
-            },
-            api,
-            extraOptions
-          );
-
-          if (result.error) {
-            // Không để lỗi 401 kích hoạt auto-logout khi đang đăng ký
-            if (result.error.status === 401) {
-              return {
-                error: {
-                  status: result.error.status,
-                  data: result.error.data || 'Registration failed',
-                },
-              };
-            }
-
-            return { error: result.error };
-          }
-
-          const data = result.data as BackendResponse;
-
-          // Xử lý response từ API theo format thật từ backend
-          if (data?.status === 'success') {
-            return {
-              data: {
-                user: data.user!,
-                token: data.token!,
-                refreshToken: data.refreshToken!,
-              },
-            };
-          }
-
-          // Fallback nếu format khác
-          return { data: data as unknown as AuthResponse };
-        } catch (error) {
-          console.error('Lỗi mạng khi đăng ký:', error);
-          return {
-            error: {
-              status: 'FETCH_ERROR',
-              error: 'Network error, please try again',
-            },
-          };
-        }
-      },
-    }),
-
-    refreshToken: builder.mutation<
-      { token: string; refreshToken: string },
-      void
-    >({
-      query: () => ({
-        url: '/auth/refresh-token',
-        method: 'POST',
-        body: { refreshToken: localStorage.getItem('refreshToken') },
-      }),
-      transformResponse: (response: unknown) => {
-        const r = response as BackendResponse;
-        if (r?.status === 'success') {
-          return {
-            token: r.token!,
-            refreshToken: r.refreshToken!,
-          };
-        }
-
-        return r as unknown as { token: string; refreshToken: string };
-      },
-      transformErrorResponse: (response: any) => {
-        // Xóa tokens nếu refresh token đã hết hạn
-        localStorage.removeItem('token');
-        localStorage.removeItem('refreshToken');
-
-        return response?.data || 'Token refresh failed';
-      },
-    }),
-
-    forgotPassword: builder.mutation<{ message: string }, { email: string }>({
-      queryFn: async ({ email }, api, extraOptions) => {
-        try {
-          const result = await baseQuery(
-            {
-              url: '/auth/forgot-password',
-              method: 'POST',
-              body: { email },
-            },
-            api,
-            extraOptions
-          );
-
-          if (result.error) {
-            return { error: result.error };
-          }
-
-          const data = result.data as BackendResponse;
-          return {
-            data: {
-              message: data?.message || 'Password reset email sent',
-            },
-          };
-        } catch (error) {
-          return {
-            error: {
-              status: 'FETCH_ERROR',
-              error: 'Network error, please try again',
-            },
-          };
-        }
-      },
-    }),
-
-    logout: builder.mutation<void, void>({
-      queryFn: () => {
-        try {
-          // Xóa dữ liệu trong localStorage
-          localStorage.removeItem('token');
-          localStorage.removeItem('refreshToken');
-          localStorage.removeItem('user');
-
-          return { data: undefined };
-        } catch (error) {
-          return { error: { status: 500, data: 'Logout failed' } };
-        }
-      },
-    }),
-
-    resetPassword: builder.mutation<
-      { message: string },
-      { token: string; password: string }
-    >({
-      queryFn: async ({ token, password }, api, extraOptions) => {
-        try {
-          const result = await baseQuery(
-            {
-              url: `/auth/reset-password`,
-              method: 'POST',
-              body: { token, password },
-            },
-            api,
-            extraOptions
-          );
-
-          if (result.error) {
-            // Không để lỗi 401 kích hoạt auto-logout khi đang đặt lại mật khẩu
-            if (result.error.status === 401) {
-              return {
-                error: {
-                  status: result.error.status as number,
-                  data: result.error.data || 'Password reset failed',
-                },
-              };
-            }
-
-            return { error: result.error };
-          }
-
-          const data = result.data as BackendResponse;
-
-          // Xử lý response từ API theo format thật từ backend
-          if (data?.status === 'success') {
-            return {
-              data: {
-                message:
-                  data.message || 'Password has been reset successfully',
-              },
-            };
-          }
-
-          // Fallback nếu format khác
-          return { data: { message: data?.message || 'Password has been reset successfully' } };
-        } catch (error) {
-          console.error('Lỗi mạng khi đặt lại mật khẩu:', error);
-          return {
-            error: {
-              status: 'FETCH_ERROR',
-              error: 'Network error, please try again',
-            },
-          };
-        }
-      },
-    }),
-
-    resendVerification: builder.mutation<
-      { message: string },
-      { email: string }
-    >({
-      queryFn: async ({ email }, api, extraOptions) => {
-        try {
-          const result = await baseQuery(
-            {
-              url: '/auth/resend-verification',
-              method: 'POST',
-              body: { email },
-            },
-            api,
-            extraOptions
-          );
-
-          if (result.error) {
-            // Không để lỗi 401 kích hoạt auto-logout khi đang gửi lại xác minh
-            if (result.error.status === 401) {
-              return {
-                error: {
-                  status: result.error.status as number,
-                  data:
-                    result.error.data || 'Failed to resend verification email',
-                },
-              };
-            }
-
-            return { error: result.error };
-          }
-
-          const data = result.data as BackendResponse;
-
-          // Xử lý response từ API theo format thật từ backend
-          if (data?.status === 'success') {
-            return {
-              data: {
-                message:
-                  data.message || 'Verification email sent successfully',
-              },
-            };
-          }
-
-          // Fallback nếu format khác
-          return { data: { message: data?.message || 'Verification email sent successfully' } };
-        } catch (error) {
-          return {
-            error: {
-              status: 'FETCH_ERROR',
-              error: 'Network error, please try again',
-            },
-          };
-        }
-      },
-    }),
-
-    getCurrentUser: builder.query<User, void>({
-      query: () => ({
-        url: '/auth/me',
-        method: 'GET',
-      }),
-      transformResponse: (response: any) => {
-        // Xử lý response từ API theo format thật từ backend
-        if (response?.status === 'success') {
-          return response.data; // API trả về user trong response.data
-        }
-
-        // Fallback nếu format khác
-        return response;
-      },
-      transformErrorResponse: (response: any) => {
-        // Để interceptor global xử lý lỗi 401
-        return response?.data || 'Failed to fetch user';
-      },
-      providesTags: ['CurrentUser'],
-    }),
-  }),
-});
-
-export const {
-  useLoginMutation,
-  useRegisterMutation,
-  useRefreshTokenMutation,
-  useLogoutMutation,
-  useResetPasswordMutation,
-  useResendVerificationMutation,
-  useGetCurrentUserQuery,
-  useVerifyOtpMutation,
-  useForgotPasswordMutation,
-  useGoogleLoginMutation,
-} = authApi;
-
-
+export function useGetCurrentUserQuery(options?: { enabled?: boolean }) {
+  return useQuery({
+    queryKey: ['auth', 'currentUser'],
+    queryFn: async () => {
+      const { data } = await apiClient.get<BackendResponse>('/auth/me');
+      if (data?.status === 'success') {
+        return data.data as User;
+      }
+      return data as unknown as User;
+    },
+    ...options,
+  });
+}

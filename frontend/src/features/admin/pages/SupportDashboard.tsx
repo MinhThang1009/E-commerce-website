@@ -1,12 +1,10 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { useSelector } from 'react-redux';
-import { RootState } from '@/store';
+import { useAuthStore } from '@/stores/authStore';
+import { getValidToken } from '@/utils/tokenManager';
 import { io, Socket } from 'socket.io-client';
 import { useGetAdminChatListQuery, ChatMessage, AdminChatListResponse } from '@/features/chat';
 import LoadingSpinner from '@/components/common/LoadingSpinner';
 import { PaperAirplaneIcon, EnvelopeIcon } from '@heroicons/react/24/outline';
-import { api } from '@/services/api'; // Trả fetcher cho REST methods nếu cần
-import { useDispatch } from 'react-redux';
 import { useTranslation } from 'react-i18next';
 
 const SOCKET_URL = (import.meta.env.VITE_API_URL || 'http://localhost:8888/api').replace(/\/api$/, '');
@@ -22,11 +20,9 @@ const SupportDashboard: React.FC = () => {
   const socketRef = useRef<Socket | null>(null);
   const typingTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
-  const dispatch = useDispatch();
 
-  const { user } = useSelector((state: RootState) => state.auth);
+  const user = useAuthStore((s) => s.user);
 
-  // Lấy danh sách admin
   const { data: listData, isLoading: isListLoading, refetch: refetchList } = useGetAdminChatListQuery();
 
   useEffect(() => {
@@ -35,13 +31,14 @@ const SupportDashboard: React.FC = () => {
     }
   }, [listData]);
 
-  // Lấy tin nhắn của người dùng đang chọn
   const fetchMessages = async (identifier: string) => {
     try {
+      const authToken = await getValidToken();
       const res = await fetch(`${SOCKET_URL}/api/chat/${identifier}`, {
         headers: {
-          'Authorization': `Bearer ${localStorage.getItem('token')}`
-        }
+          ...(authToken ? { 'Authorization': `Bearer ${authToken}` } : {}),
+        },
+        credentials: 'include',
       }).then(r => r.json());
       if (res.status === 'success') {
         setMessages(res.data);
@@ -58,6 +55,7 @@ const SupportDashboard: React.FC = () => {
     } else {
       setMessages([]);
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- fetchMessages là async function không wrap useCallback, chỉ chạy khi selectedUser thay đổi
   }, [selectedUser]);
 
   const selectedUserRef = useRef<AdminChatListResponse | null>(null);
@@ -66,10 +64,9 @@ const SupportDashboard: React.FC = () => {
     selectedUserRef.current = selectedUser;
   }, [selectedUser]);
 
-  // Kết nối socket một lần khi component mount
   useEffect(() => {
     socketRef.current = io(SOCKET_URL, {
-      auth: { token: localStorage.getItem('token') || '' },
+      auth: { token: useAuthStore.getState().token || '' },
     });
     socketRef.current.on('connect', () => {
       socketRef.current?.emit('adminJoin');
@@ -80,10 +77,8 @@ const SupportDashboard: React.FC = () => {
       const currentSelected = selectedUserRef.current;
       if (currentSelected && (msg.sessionId === currentSelected.sessionId || (msg.userId && msg.userId === currentSelected.userId))) {
         setMessages((prev) => {
-          // Tránh tin nhắn trùng lặp
           if (prev.some(m => m.id === msg.id)) return prev;
 
-          // Lọc bỏ tin nhắn tạm (optimistic) trùng nội dung
           if (msg.isFromAdmin) {
             const filtered = prev.filter(m => !(m.id.startsWith('temp_') && m.content === msg.content));
             return [...filtered, msg];
@@ -91,13 +86,13 @@ const SupportDashboard: React.FC = () => {
           return [...prev, msg];
         });
 
-        // Thông báo server rằng đã đọc tin nhắn vì đang active trong cuộc trò chuyện này
         const identifier = currentSelected.sessionId || currentSelected.userId;
+        const token = useAuthStore.getState().token;
         fetch(`${SOCKET_URL}/api/chat/read/${identifier}`, {
           method: 'PATCH',
           headers: {
-            'Authorization': `Bearer ${localStorage.getItem('token')}`
-          }
+            ...(token ? { 'Authorization': `Bearer ${token}` } : {}),
+          },
         }).then(() => refetchList());
       } else {
         refetchList();
@@ -137,7 +132,6 @@ const SupportDashboard: React.FC = () => {
     };
   }, [refetchList]);
 
-  // Cuộn xuống cuối danh sách tin nhắn
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages, typingUsers]);
@@ -172,7 +166,6 @@ const SupportDashboard: React.FC = () => {
       isFromAdmin: true,
     };
 
-    // Cập nhật lạc quan (optimistic update)
     const tempId = `temp_${Date.now()}`;
     const optimisticMessage: ChatMessage = {
       id: tempId,
@@ -195,7 +188,6 @@ const SupportDashboard: React.FC = () => {
 
   return (
     <div className="flex h-[calc(100vh-140px)] bg-white dark:bg-neutral-900 rounded-2xl shadow-sm border border-neutral-200 dark:border-neutral-800 overflow-hidden">
-      {/* Danh sách hội thoại */}
       <div className="w-1/3 border-r border-neutral-200 dark:border-neutral-800 flex flex-col">
         <div className="p-4 border-b border-neutral-200 dark:border-neutral-800">
           <h2 className="text-lg font-bold text-neutral-800 dark:text-neutral-100 flex items-center gap-2">
@@ -245,11 +237,9 @@ const SupportDashboard: React.FC = () => {
       </div>
 
 
-      {/* Khu vực hộp chat chính */}
       <div className="w-2/3 flex flex-col bg-neutral-50 dark:bg-zinc-900/20">
         {selectedUser ? (
           <>
-            {/* Thông tin người dùng phía trên */}
             <div className="p-4 border-b border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 flex items-center justify-between">
               <div className="flex items-center gap-3">
                 <div className="bg-primary-100 dark:bg-primary-900/30 text-primary-600 h-10 w-10 rounded-full flex items-center justify-center font-bold">
@@ -270,7 +260,6 @@ const SupportDashboard: React.FC = () => {
               </div>
             </div>
 
-            {/* Nội dung tin nhắn */}
             <div className="flex-1 p-4 overflow-y-auto flex flex-col gap-3">
               {messages.map((msg, idx) => {
                 const isMe = msg.isFromAdmin;
@@ -290,7 +279,6 @@ const SupportDashboard: React.FC = () => {
               <div ref={messagesEndRef}></div>
             </div>
 
-            {/* Hiển thị đang soạn tin */}
             {(typingUsers.includes(selectedUser.sessionId) || typingUsers.includes(selectedUser.userId)) && (
               <div className="px-4 py-2 text-xs text-neutral-400 italic bg-white dark:bg-neutral-900 flex items-center gap-1">
                 <div className="flex gap-1">
@@ -302,7 +290,6 @@ const SupportDashboard: React.FC = () => {
               </div>
             )}
 
-            {/* Ô nhập tin nhắn */}
             <form onSubmit={handleSendMessage} className="p-4 bg-white dark:bg-neutral-900 border-t border-neutral-200 dark:border-neutral-800 flex gap-2">
               <input
                 type="text"
@@ -335,4 +322,3 @@ const SupportDashboard: React.FC = () => {
 };
 
 export default SupportDashboard;
-

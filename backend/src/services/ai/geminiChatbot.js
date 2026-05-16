@@ -1,5 +1,5 @@
 const axios = require('axios');
-const { Product, Category, Brand, ChatMessage, ProductImage, sequelize } = require('../../models');
+const { Product, Category, Brand, ChatMessage, ProductImage, ProductVariant, sequelize } = require('../../models');
 const { Op } = require('sequelize');
 const vectorStoreService = require('./vectorStore');
 const { enrichProductData } = require('./vectorStore');
@@ -13,6 +13,10 @@ const CACHEABLE_INTENTS = ['product_search', 'recommendation'];
 
 // Số lượt hội thoại tối đa giữ trong bộ nhớ (10 turns = 20 messages: user + assistant)
 const MAX_HISTORY_TURNS = 10;
+// Giới hạn số sessions trong memory — evict oldest khi vượt ngưỡng
+const MAX_SESSIONS = 500;
+// Session hết hạn sau 30 phút không hoạt động
+const SESSION_TTL_MS = 30 * 60 * 1000;
 
 class GeminiChatbotService {
   constructor() {
@@ -134,7 +138,8 @@ Format bắt buộc: {"rewrittenQuery": "câu đã chuẩn hóa", "intent": "pro
       }
 
       // Bước 1: Load lịch sử hội thoại theo sessionId
-      const history = sessionId ? (this.conversationHistory.get(sessionId) || []) : [];
+      const entry = sessionId ? this.conversationHistory.get(sessionId) : null;
+      const history = entry ? entry.messages : [];
 
       // Bước 2: Tìm kiếm sản phẩm liên quan qua Vector Store (Retrieval)
       logger.debug(`🔍 Tìm kiếm Vector Store với: "${searchMessage}"`);
@@ -167,9 +172,9 @@ Format bắt buộc: {"rewrittenQuery": "câu đã chuẩn hóa", "intent": "pro
           { role: 'user', content: message },
           { role: 'assistant', content: aiResponse.response || '' },
         ];
-        // Giới hạn tối đa MAX_HISTORY_TURNS turns (2 messages/turn)
         const trimmed = updatedHistory.slice(-(MAX_HISTORY_TURNS * 2));
-        this.conversationHistory.set(sessionId, trimmed);
+        this.conversationHistory.set(sessionId, { messages: trimmed, lastAccess: Date.now() });
+        this._evictStaleSessions();
       }
 
       const responseTimeMs = Date.now() - startTime;
@@ -533,11 +538,12 @@ Trả về ĐÚNG định dạng JSON sau:
   async getAllProducts() {
     try {
       const products = await Product.findAll({
-        where: { status: 'active', stockQuantity: { [Op.gt]: 0 } },
+        where: { status: 'active' },
         include: [
           { model: Category, attributes: ['name'], as: 'categories' },
           { model: Category, attributes: ['name'], as: 'category' },
           { model: ProductImage, as: 'productImages', attributes: ['imageUrl', 'isThumbnail'], required: false },
+          { model: ProductVariant, as: 'variants', attributes: ['stockQuantity'], required: false },
         ],
         attributes: [
           'id',
@@ -558,6 +564,23 @@ Trả về ĐÚNG định dạng JSON sau:
     } catch (error) {
       logger.error('Lỗi khi lấy danh sách sản phẩm:', error);
       return [];
+    }
+  }
+
+  _evictStaleSessions() {
+    const now = Date.now();
+    for (const [key, val] of this.conversationHistory) {
+      if (now - val.lastAccess > SESSION_TTL_MS) {
+        this.conversationHistory.delete(key);
+      }
+    }
+    if (this.conversationHistory.size > MAX_SESSIONS) {
+      const sorted = [...this.conversationHistory.entries()]
+        .sort((a, b) => a[1].lastAccess - b[1].lastAccess);
+      const toRemove = sorted.length - MAX_SESSIONS;
+      for (let i = 0; i < toRemove; i++) {
+        this.conversationHistory.delete(sorted[i][0]);
+      }
     }
   }
 

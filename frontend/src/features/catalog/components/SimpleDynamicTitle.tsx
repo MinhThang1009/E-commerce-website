@@ -1,9 +1,8 @@
 import React, { useState, useEffect } from 'react';
-import { Typography, Space, Tag, Button } from 'antd';
-import { BulbOutlined, ReloadOutlined } from '@ant-design/icons';
+import { Typography } from 'antd';
 import { simpleNamingService } from '@/utils/productNaming';
 
-const { Title, Text } = Typography;
+const { Title } = Typography;
 
 interface SimpleDynamicTitleProps {
   baseName: string;
@@ -18,13 +17,13 @@ const SimpleDynamicTitle: React.FC<SimpleDynamicTitleProps> = ({
   baseName,
   selectedAttributes,
   level = 1,
-  showAddedParts = true,
+  showAddedParts: _showAddedParts = true,
   onNameChange,
   style,
 }) => {
   const [currentName, setCurrentName] = useState<string>(baseName);
-  const [addedParts, setAddedParts] = useState<string[]>([]);
-  const [hasChanges, setHasChanges] = useState(false);
+  const [_addedParts, setAddedParts] = useState<string[]>([]);
+  const [_hasChanges, setHasChanges] = useState(false);
 
   // Cập nhật tên khi thuộc tính thay đổi
   useEffect(() => {
@@ -43,7 +42,7 @@ const SimpleDynamicTitle: React.FC<SimpleDynamicTitleProps> = ({
     }
   }, [baseName, selectedAttributes, onNameChange]);
 
-  const resetToBaseName = () => {
+  const _resetToBaseName = () => {
     setCurrentName(baseName);
     setAddedParts([]);
     setHasChanges(false);

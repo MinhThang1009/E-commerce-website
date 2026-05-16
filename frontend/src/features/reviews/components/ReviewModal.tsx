@@ -25,9 +25,9 @@ const ReviewModal: React.FC<ReviewModalProps> = ({
   const [rating, setRating] = useState<number>(5);
   const [title, setTitle] = useState<string>('');
   const [comment, setComment] = useState<string>('');
-  const [images, setImages] = useState<string[]>([]);
+  const [images, _setImages] = useState<string[]>([]);
 
-  const [createReview, { isLoading }] = useCreateReviewMutation();
+  const { mutateAsync: createReview, isPending: isLoading } = useCreateReviewMutation();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -49,7 +49,7 @@ const ReviewModal: React.FC<ReviewModalProps> = ({
         title: title.trim() || t('review.modal.defaultTitle'),
         comment: comment.trim(),
         images: images.length > 0 ? images : undefined,
-      }).unwrap();
+      });
 
       toast.success(t('review.modal.submitSuccess'));
       if (onSuccess) onSuccess();

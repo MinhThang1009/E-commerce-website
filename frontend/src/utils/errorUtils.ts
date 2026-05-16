@@ -20,7 +20,7 @@ export interface AppError {
   type: ErrorType;
   message: string;
   code?: string | number;
-  details?: any;
+  details?: unknown;
 }
 
 const ERROR_TYPE_TO_KEY: Record<ErrorType, string> = {
@@ -37,7 +37,7 @@ const ERROR_TYPE_TO_KEY: Record<ErrorType, string> = {
  * Phân tích lỗi từ các nguồn khác nhau
  */
 export const parseError = (error: any): AppError => {
-  // Lỗi RTK Query
+  // Lỗi có status trực tiếp (legacy format hoặc error object tự tạo)
   if (error?.status) {
     const status = error.status;
     const message =
@@ -88,13 +88,46 @@ export const parseError = (error: any): AppError => {
       };
     }
 
-    if (status === 'FETCH_ERROR') {
+    if (status === 'ERR_NETWORK') {
       return {
         type: ErrorType.NETWORK_ERROR,
         message,
         code: status,
         details: error,
       };
+    }
+  }
+
+  // Lỗi axios (AxiosError có thuộc tính code)
+  if (error?.code === 'ERR_NETWORK' || error?.code === 'ECONNABORTED') {
+    return {
+      type: ErrorType.NETWORK_ERROR,
+      message: error.message || i18next.t('errors.network'),
+      code: error.code,
+      details: error,
+    };
+  }
+
+  // Lỗi axios với response (error.response.status)
+  if (error?.response?.status) {
+    const axiosStatus = error.response.status;
+    const axiosMessage =
+      error.response.data?.message || error.response.data?.error?.message || error.message || 'Unknown error';
+
+    if (axiosStatus === 400) {
+      return { type: ErrorType.VALIDATION_ERROR, message: axiosMessage, code: axiosStatus, details: error.response.data };
+    }
+    if (axiosStatus === 401) {
+      return { type: ErrorType.AUTHENTICATION_ERROR, message: axiosMessage, code: axiosStatus, details: error.response.data };
+    }
+    if (axiosStatus === 403) {
+      return { type: ErrorType.AUTHORIZATION_ERROR, message: axiosMessage, code: axiosStatus, details: error.response.data };
+    }
+    if (axiosStatus === 404) {
+      return { type: ErrorType.NOT_FOUND_ERROR, message: axiosMessage, code: axiosStatus, details: error.response.data };
+    }
+    if (axiosStatus >= 500) {
+      return { type: ErrorType.SERVER_ERROR, message: axiosMessage, code: axiosStatus, details: error.response.data };
     }
   }
 
@@ -159,7 +192,7 @@ export const retryWithBackoff = async <T>(
   maxRetries: number = 3,
   baseDelay: number = 1000
 ): Promise<T> => {
-  let lastError: any;
+  let lastError: unknown;
 
   for (let i = 0; i < maxRetries; i++) {
     try {

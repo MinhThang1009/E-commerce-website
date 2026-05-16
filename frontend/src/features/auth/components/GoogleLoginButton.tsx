@@ -1,46 +1,45 @@
 import React from 'react';
 import { useGoogleLogin } from '@react-oauth/google';
 import { useGoogleLoginMutation } from '../api/authApi';
-import { useDispatch } from 'react-redux';
 import { useTranslation } from 'react-i18next';
-import { loginSuccess } from '../store/authSlice';
-import { addNotification } from '@/features/ui/uiSlice';
+import { useAuthStore } from '@/stores/authStore';
+import { useUiStore } from '@/stores/uiStore';
 import { PremiumButton } from '@/components/common';
 
 const GoogleLoginButton: React.FC = () => {
-  const dispatch = useDispatch();
   const { t } = useTranslation();
-  const [googleLogin, { isLoading }] = useGoogleLoginMutation();
+  const addNotification = useUiStore((s) => s.addNotification);
+  const { mutateAsync: googleLogin, isPending: isLoading } = useGoogleLoginMutation();
 
   const handleGoogleSuccess = async (tokenResponse: any) => {
     try {
 
       // Luồng implicit cấp access_token.
       // Truyền token này lên backend để backend lấy thông tin người dùng.
-      const result = await googleLogin({ token: tokenResponse.access_token }).unwrap();
-      
-      dispatch(loginSuccess(result));
+      const result = await googleLogin({ token: tokenResponse.access_token });
 
-      dispatch(addNotification({
+      useAuthStore.getState().loginSuccess(result);
+
+      addNotification({
         message: t('auth.googleLoginSuccess'),
         type: 'success',
-      }));
+      });
     } catch (error: any) {
       console.error('Lỗi đăng nhập Google:', error);
-      dispatch(addNotification({
-        message: error?.data?.message || t('auth.googleLoginError'),
+      addNotification({
+        message: error?.data?.message || error?.message || t('auth.googleLoginError'),
         type: 'error',
-      }));
+      });
     }
   };
 
   const login = useGoogleLogin({
     onSuccess: handleGoogleSuccess,
     onError: () => {
-      dispatch(addNotification({
+      addNotification({
         message: t('auth.googleAuthFailed'),
         type: 'error',
-      }));
+      });
     },
   });
 

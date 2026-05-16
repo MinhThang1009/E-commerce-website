@@ -6,13 +6,29 @@ const logger = require('../utils/logger');
 // Lưu trữ danh sách người dùng/phiên đang trực tuyến
 const onlineUsers = new Set();
 
+// Rate limiter đơn giản cho socket events — chặn flood
+const socketRateLimits = new Map();
+const SOCKET_MSG_LIMIT = 10;
+const SOCKET_MSG_WINDOW = 10000;
+function isSocketRateLimited(socketId) {
+  const now = Date.now();
+  let entry = socketRateLimits.get(socketId);
+  if (!entry || now - entry.start > SOCKET_MSG_WINDOW) {
+    entry = { count: 1, start: now };
+    socketRateLimits.set(socketId, entry);
+    return false;
+  }
+  entry.count++;
+  return entry.count > SOCKET_MSG_LIMIT;
+}
+
 module.exports = (io) => {
   // Xác thực JWT tùy chọn — guest chat không cần token, nhưng admin phải có role = 'admin'
   io.use((socket, next) => {
     const token = socket.handshake.auth.token;
     if (token) {
       try {
-        const decoded = jwt.verify(token, process.env.JWT_SECRET);
+        const decoded = jwt.verify(token, process.env.JWT_SECRET, { algorithms: ['HS256'] });
         socket.userId = decoded.id;
         socket.userRole = decoded.role;
       } catch {
@@ -33,6 +49,11 @@ module.exports = (io) => {
       const identifier = sessionId || userId;
 
       if (userId) {
+        // Chỉ cho phép join room userId nếu JWT claims khớp — chặn impersonation
+        if (socket.userId && String(socket.userId) !== String(userId)) {
+          socket.emit('error', { message: 'Không có quyền tham gia phòng này' });
+          return;
+        }
         socket.join(userId);
         logger.info(`👤 Người dùng tham gia phòng user: ${userId}`);
       }
@@ -98,18 +119,30 @@ module.exports = (io) => {
     // Lắng nghe tin nhắn mới
     socket.on('sendMessage', async (data) => {
       try {
+        if (isSocketRateLimited(socket.id)) {
+          return socket.emit('error', { message: 'Gửi tin nhắn quá nhanh, vui lòng chờ.' });
+        }
+        if (!data || typeof data !== 'object') {
+          return socket.emit('error', { message: 'Dữ liệu không hợp lệ' });
+        }
         const { userId, senderId, content, isFromAdmin, sessionId } = data;
 
         if ((!userId && !sessionId) || !content) {
           return socket.emit('error', { message: 'Thiếu trường bắt buộc' });
         }
 
+        // Sanitize content — chặn XSS khi render ở client
+        const safeContent = String(content)
+          .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+          .replace(/"/g, '&quot;').replace(/'/g, '&#x27;')
+          .substring(0, 5000);
+
         // Lưu vào database
         const message = await ChatMessage.create({
           userId: userId || null,
           sessionId: sessionId || String(userId),
           senderId: senderId || null,
-          content,
+          content: safeContent,
           isFromAdmin: !!isFromAdmin,
           isRead: false,
         });
@@ -156,6 +189,7 @@ module.exports = (io) => {
         onlineUsers.delete(currentId);
         io.emit('userStatusChanged', { id: currentId, status: 'offline' });
       }
+      socketRateLimits.delete(socket.id);
       logger.info(`🔌 Socket đã ngắt kết nối: ${socket.id}`);
     });
   });

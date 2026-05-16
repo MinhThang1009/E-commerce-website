@@ -20,7 +20,7 @@ class ChatbotErrorBoundary extends React.Component<Props, State> {
     return { hasError: true };
   }
 
-  componentDidCatch(error: Error, info: React.ErrorInfo) {
+  componentDidCatch(_error: Error, _info: React.ErrorInfo) {
     // Log lỗi để debug — không log sensitive data
   }
 

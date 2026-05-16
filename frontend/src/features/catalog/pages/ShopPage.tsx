@@ -6,7 +6,6 @@ import ProductListCard from '@/components/shared/ProductListCard';
 import FilterPanel from '@/components/shared/FilterPanel';
 import Pagination from '@/components/common/Pagination';
 import Select from '@/components/common/Select';
-import Button from '@/components/common/Button';
 import { PremiumButton, BannerDisplay } from '@/components/common';
 import LoadingSpinner from '@/components/common/LoadingSpinner';
 import { Product, ProductFilters } from '../types/product.types';
@@ -62,11 +61,11 @@ const ShopPage: React.FC = () => {
     max: maxPrice || 10000000, // 10 triệu VND
   });
 
-  // Sử dụng RTK Query hooks
+  // Sử dụng TanStack Query hooks
   const {
     data: productsData,
     isLoading: isProductsLoading,
-    error: productsError,
+    error: _productsError,
   } = useGetProductsQuery({
     categoryId,
     brand: brandId.length > 0 ? brandId : undefined,
@@ -82,12 +81,12 @@ const ShopPage: React.FC = () => {
   const { data: categoriesData, isLoading: isCategoriesLoading } =
     useGetCategoriesQuery();
 
-  const { data: brandsData, isLoading: isBrandsLoading } = useGetBrandsQuery({
+  const { data: brandsData, isLoading: _isBrandsLoading } = useGetBrandsQuery({
     isActive: true,
     categoryId: categoryId, // Tự động lọc thương hiệu theo danh mục đang chọn
   });
 
-  const { data: collectionsData, isLoading: isCollectionsLoading } =
+  const { data: collectionsData, isLoading: _isCollectionsLoading } =
     useGetCollectionsQuery({ isActive: true });
 
   // Cập nhật bộ lọc đã chọn khi tham số URL thay đổi
@@ -102,7 +101,7 @@ const ShopPage: React.FC = () => {
       min: minPrice || 0,
       max: maxPrice || 10000000, // 10 triệu VND
     });
-  }, [categoryId, searchParams, minPrice, maxPrice]);
+  }, [categoryId, searchParams, minPrice, maxPrice, brandId, collectionId]);
 
   // Cập nhật URL khi bộ lọc thay đổi
   const updateFilters = (newFilters: Partial<ProductFilters>) => {

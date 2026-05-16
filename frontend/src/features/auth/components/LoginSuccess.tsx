@@ -1,16 +1,13 @@
 import React, { useEffect } from 'react';
-import { useSelector, useDispatch } from 'react-redux';
-import { RootState } from '@/store';
+import { useAuthStore } from '@/stores/authStore';
 import { useNotifications } from '@/hooks/useNotifications';
 import { useTranslation } from 'react-i18next';
-import { clearJustLoggedIn } from '../store/authSlice';
 
 const LoginSuccess: React.FC = () => {
   const { t } = useTranslation();
-  const dispatch = useDispatch();
-  const { user, isAuthenticated, justLoggedIn } = useSelector(
-    (state: RootState) => state.auth
-  );
+  const user = useAuthStore((s) => s.user);
+  const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
+  const justLoggedIn = useAuthStore((s) => s.justLoggedIn);
   const { showNotification } = useNotifications();
 
   useEffect(() => {
@@ -28,9 +25,9 @@ const LoginSuccess: React.FC = () => {
       });
 
       // Xóa cờ justLoggedIn sau khi hiển thị thông báo
-      dispatch(clearJustLoggedIn());
+      useAuthStore.getState().clearJustLoggedIn();
     }
-  }, [isAuthenticated, user, justLoggedIn, showNotification, t, dispatch]);
+  }, [isAuthenticated, user, justLoggedIn, showNotification, t]);
 
   return null;
 };

@@ -2,6 +2,7 @@ import React from 'react';
 import { Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import Button from '@/components/common/Button';
+import { ROUTES } from '@/routes/paths';
 
 const UnauthorizedPage: React.FC = () => {
   const { t } = useTranslation();
@@ -36,13 +37,13 @@ const UnauthorizedPage: React.FC = () => {
           </div>
 
           <div className="space-y-4">
-            <Link to="/">
+            <Link to={ROUTES.HOME}>
               <Button variant="primary" size="lg" fullWidth>
                 {t('unauthorized.goHome')}
               </Button>
             </Link>
 
-            <Link to="/login">
+            <Link to={ROUTES.LOGIN}>
               <Button variant="secondary" size="lg" fullWidth>
                 {t('unauthorized.login')}
               </Button>

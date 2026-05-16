@@ -1,4 +1,5 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useMemo } from 'react';
+import type { FormInstance } from 'antd';
 import {
   Form,
   Card,
@@ -22,7 +23,7 @@ import { getLocale } from '@/utils/format';
 const { Title, Text } = Typography;
 
 interface ProductWarrantyFormProps {
-  form?: any;
+  form?: FormInstance;
 }
 
 const ProductWarrantyForm: React.FC<ProductWarrantyFormProps> = ({
@@ -38,7 +39,10 @@ const ProductWarrantyForm: React.FC<ProductWarrantyFormProps> = ({
     isActive: true,
   });
 
-  const warrantyPackages = warrantyData?.data?.warrantyPackages || [];
+  const warrantyPackages = useMemo(
+    () => warrantyData?.data?.warrantyPackages || [],
+    [warrantyData?.data?.warrantyPackages]
+  );
 
   useEffect(() => {
     if (warrantyPackages.length > 0 && parentForm) {

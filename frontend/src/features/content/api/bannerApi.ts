@@ -1,4 +1,5 @@
-import { api } from '@/services/api';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import apiClient from '@/services/apiClient';
 
 export interface Banner {
   id: string;
@@ -22,30 +23,67 @@ interface BannerPayload {
   priority: number;
 }
 
-export const bannerApi = api.injectEndpoints({
-  endpoints: (builder) => ({
-    getBanners: builder.query<BannersResponse, { position?: string; isActive?: boolean } | void>({
-      query: (params) => ({ url: '/banners', params: params ?? {} }),
-      providesTags: ['Banner'],
-    }),
-    createBanner: builder.mutation<BannerResponse, BannerPayload>({
-      query: (body) => ({ url: '/banners', method: 'POST', body }),
-      invalidatesTags: ['Banner'],
-    }),
-    updateBanner: builder.mutation<BannerResponse, { id: string } & Partial<BannerPayload>>({
-      query: ({ id, ...body }) => ({ url: `/banners/${id}`, method: 'PATCH', body }),
-      invalidatesTags: ['Banner'],
-    }),
-    deleteBanner: builder.mutation<{ status: string }, string>({
-      query: (id) => ({ url: `/banners/${id}`, method: 'DELETE' }),
-      invalidatesTags: ['Banner'],
-    }),
-  }),
-});
+// === Query Keys ===
 
-export const {
-  useGetBannersQuery,
-  useCreateBannerMutation,
-  useUpdateBannerMutation,
-  useDeleteBannerMutation,
-} = bannerApi;
+export const bannerKeys = {
+  all: ['banners'] as const,
+  lists: () => [...bannerKeys.all, 'list'] as const,
+  list: (params: any) => [...bannerKeys.lists(), params] as const,
+};
+
+// === Query Hooks ===
+
+export function useGetBannersQuery(
+  params?: { position?: string; isActive?: boolean } | void,
+  options?: { enabled?: boolean; skip?: boolean }
+) {
+  return useQuery<BannersResponse>({
+    queryKey: bannerKeys.list(params),
+    queryFn: async () => {
+      const { data } = await apiClient.get('/banners', { params: params ?? {} });
+      return data;
+    },
+    enabled: options?.skip !== undefined ? !options.skip : true,
+  });
+}
+
+// === Mutation Hooks ===
+
+export function useCreateBannerMutation() {
+  const queryClient = useQueryClient();
+  return useMutation<BannerResponse, Error, BannerPayload>({
+    mutationFn: async (body) => {
+      const { data } = await apiClient.post('/banners', body);
+      return data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: bannerKeys.all });
+    },
+  });
+}
+
+export function useUpdateBannerMutation() {
+  const queryClient = useQueryClient();
+  return useMutation<BannerResponse, Error, { id: string } & Partial<BannerPayload>>({
+    mutationFn: async ({ id, ...body }) => {
+      const { data } = await apiClient.patch(`/banners/${id}`, body);
+      return data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: bannerKeys.all });
+    },
+  });
+}
+
+export function useDeleteBannerMutation() {
+  const queryClient = useQueryClient();
+  return useMutation<{ status: string }, Error, string>({
+    mutationFn: async (id) => {
+      const { data } = await apiClient.delete(`/banners/${id}`);
+      return data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: bannerKeys.all });
+    },
+  });
+}

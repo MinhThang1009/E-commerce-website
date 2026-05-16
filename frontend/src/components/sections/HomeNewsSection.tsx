@@ -1,6 +1,7 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
+import { ROUTES, buildRoute } from '@/routes/paths';
 import dayjs from 'dayjs';
 import { useGetNewsQuery } from '@/features/content';
 import { PageSection } from '@/components/layout/PageLayout';
@@ -30,7 +31,7 @@ export const HomeNewsSection: React.FC = () => {
       className="py-16 bg-neutral-50 dark:bg-neutral-900"
       headerActions={
         <Link
-          to="/news"
+          to={ROUTES.NEWS}
           className="group flex items-center gap-2 text-primary-600 dark:text-primary-400 font-bold hover:text-primary-700 transition-colors"
         >
           {t('common.viewAll')}
@@ -50,7 +51,7 @@ export const HomeNewsSection: React.FC = () => {
            return (
              <Link 
                key={item.id} 
-               to={`/news/${item.slug}`}
+               to={buildRoute.newsDetail(item.slug)}
                className={`group relative rounded-[32px] overflow-hidden shadow-sm hover:shadow-2xl transition-all duration-500 ${colSpan} h-64 md:h-80 lg:h-auto`}
              >
                {/* Ảnh nền */}

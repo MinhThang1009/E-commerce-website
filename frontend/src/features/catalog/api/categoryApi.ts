@@ -1,4 +1,5 @@
-import { api } from '@/services/api';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import apiClient from '@/services/apiClient';
 import { Category } from '../types/category.types';
 
 export interface CategoryResponse {
@@ -19,112 +20,161 @@ export interface UpdateCategoryRequest extends CreateCategoryRequest {
   id: string;
 }
 
-export const categoryApi = api.injectEndpoints({
-  endpoints: (builder) => ({
-    getAllCategories: builder.query<CategoryResponse, void>({
-      query: () => '/categories',
-      providesTags: ['Category'],
-    }),
+// === Query Keys ===
 
-    getCategoryTree: builder.query<CategoryResponse, void>({
-      query: () => '/categories/tree',
-      providesTags: ['Category'],
-    }),
+export const categoryKeys = {
+  all: ['categories'] as const,
+  lists: () => [...categoryKeys.all, 'list'] as const,
+  tree: () => [...categoryKeys.all, 'tree'] as const,
+  detail: (id: string) => [...categoryKeys.all, 'detail', id] as const,
+  slug: (slug: string) => [...categoryKeys.all, 'slug', slug] as const,
+  products: (id: string, params?: any) => [...categoryKeys.all, 'products', id, params] as const,
+  featured: () => [...categoryKeys.all, 'featured'] as const,
+  flat: () => [...categoryKeys.all, 'flat'] as const,
+};
 
-    getCategoryById: builder.query<CategoryResponse, string>({
-      query: (id) => `/categories/${id}`,
-      providesTags: (_, __, id) => [{ type: 'Category', id }],
-    }),
+// === Query Hooks ===
 
-    getCategoryBySlug: builder.query<CategoryResponse, string>({
-      query: (slug) => `/categories/slug/${slug}`,
-      providesTags: (_, __, slug) => [{ type: 'Category', id: slug }],
-    }),
+export function useGetAllCategoriesQuery(options?: { enabled?: boolean; skip?: boolean }) {
+  return useQuery<CategoryResponse>({
+    queryKey: categoryKeys.lists(),
+    queryFn: async () => {
+      const { data } = await apiClient.get('/categories');
+      return data;
+    },
+    enabled: options?.skip !== undefined ? !options.skip : true,
+  });
+}
 
-    createCategory: builder.mutation<CategoryResponse, CreateCategoryRequest>({
-      query: (category) => ({
-        url: '/categories',
-        method: 'POST',
-        body: category,
-      }),
-      invalidatesTags: ['Category'],
-    }),
+export function useGetCategoryTreeQuery(options?: { enabled?: boolean; skip?: boolean }) {
+  return useQuery<CategoryResponse>({
+    queryKey: categoryKeys.tree(),
+    queryFn: async () => {
+      const { data } = await apiClient.get('/categories/tree');
+      return data;
+    },
+    enabled: options?.skip !== undefined ? !options.skip : true,
+  });
+}
 
-    updateCategory: builder.mutation<CategoryResponse, UpdateCategoryRequest>({
-      query: ({ id, ...category }) => ({
-        url: `/categories/${id}`,
-        method: 'PUT',
-        body: category,
-      }),
-      invalidatesTags: (_, __, { id }) => [
-        'Category',
-        { type: 'Category', id },
-      ],
-    }),
+export function useGetCategoryByIdQuery(
+  id: string,
+  options?: { enabled?: boolean; skip?: boolean }
+) {
+  return useQuery<CategoryResponse>({
+    queryKey: categoryKeys.detail(id),
+    queryFn: async () => {
+      const { data } = await apiClient.get(`/categories/${id}`);
+      return data;
+    },
+    enabled: options?.skip !== undefined ? !options.skip : !!id,
+  });
+}
 
-    deleteCategory: builder.mutation<
-      { status: string; message: string },
-      string
-    >({
-      query: (id) => ({
-        url: `/categories/${id}`,
-        method: 'DELETE',
-      }),
-      invalidatesTags: ['Category'],
-    }),
+export function useGetCategoryBySlugQuery(
+  slug: string,
+  options?: { enabled?: boolean; skip?: boolean }
+) {
+  return useQuery<CategoryResponse>({
+    queryKey: categoryKeys.slug(slug),
+    queryFn: async () => {
+      const { data } = await apiClient.get(`/categories/slug/${slug}`);
+      return data;
+    },
+    enabled: options?.skip !== undefined ? !options.skip : !!slug,
+  });
+}
 
-    getProductsByCategory: builder.query<
-      any,
-      {
-        id: string;
-        page?: number;
-        limit?: number;
-        sort?: string;
-        order?: 'ASC' | 'DESC';
-      }
-    >({
-      query: ({
+export function useCreateCategoryMutation() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (category: CreateCategoryRequest) => {
+      const { data } = await apiClient.post('/categories', category);
+      return data as CategoryResponse;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: categoryKeys.all });
+    },
+  });
+}
+
+export function useUpdateCategoryMutation() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ id, ...category }: UpdateCategoryRequest) => {
+      const { data } = await apiClient.put(`/categories/${id}`, category);
+      return data as CategoryResponse;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: categoryKeys.all });
+    },
+  });
+}
+
+export function useDeleteCategoryMutation() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (id: string) => {
+      const { data } = await apiClient.delete(`/categories/${id}`);
+      return data as { status: string; message: string };
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: categoryKeys.all });
+    },
+  });
+}
+
+export function useGetProductsByCategoryQuery(
+  params: {
+    id: string;
+    page?: number;
+    limit?: number;
+    sort?: string;
+    order?: 'ASC' | 'DESC';
+  },
+  options?: { enabled?: boolean; skip?: boolean }
+) {
+  return useQuery({
+    queryKey: categoryKeys.products(params.id, params),
+    queryFn: async () => {
+      const {
         id,
         page = 1,
         limit = 10,
         sort = 'createdAt',
         order = 'DESC',
-      }) =>
-        `/categories/${id}/products?page=${page}&limit=${limit}&sort=${sort}&order=${order}`,
-      providesTags: (_, __, { id }) => [
-        { type: 'Product', id: `category-${id}` },
-      ],
-    }),
+      } = params;
+      const { data } = await apiClient.get(
+        `/categories/${id}/products?page=${page}&limit=${limit}&sort=${sort}&order=${order}`
+      );
+      return data;
+    },
+    enabled: options?.skip !== undefined ? !options.skip : !!params.id,
+  });
+}
 
-    getFeaturedCategories: builder.query<CategoryResponse, void>({
-      query: () => '/categories/featured',
-      providesTags: ['Category'],
-    }),
+export function useGetFeaturedCategoriesQuery(options?: { enabled?: boolean; skip?: boolean }) {
+  return useQuery<CategoryResponse>({
+    queryKey: categoryKeys.featured(),
+    queryFn: async () => {
+      const { data } = await apiClient.get('/categories/featured');
+      return data;
+    },
+    enabled: options?.skip !== undefined ? !options.skip : true,
+  });
+}
 
-    // Giữ lại các endpoint cũ để tương thích với code hiện tại
-    getCategories: builder.query<Category[], void>({
-      query: () => '/categories',
-      transformResponse: (response: CategoryResponse) => {
-        return Array.isArray(response.data) ? response.data : [response.data];
-      },
-      providesTags: ['Category'],
-    }),
-  }),
-});
-
-export const {
-  useGetAllCategoriesQuery,
-  useGetCategoryTreeQuery,
-  useGetCategoryByIdQuery,
-  useGetCategoryBySlugQuery,
-  useCreateCategoryMutation,
-  useUpdateCategoryMutation,
-  useDeleteCategoryMutation,
-  useGetProductsByCategoryQuery,
-  useGetFeaturedCategoriesQuery,
-  // Giữ lại các hooks cũ để tương thích với code hiện tại
-  useGetCategoriesQuery,
-} = categoryApi;
+// Giữ lại hook cũ để tương thích — transform response thành Category[]
+export function useGetCategoriesQuery(options?: { enabled?: boolean; skip?: boolean }) {
+  return useQuery<Category[]>({
+    queryKey: categoryKeys.flat(),
+    queryFn: async () => {
+      const { data } = await apiClient.get('/categories');
+      const response = data as CategoryResponse;
+      return Array.isArray(response.data) ? response.data : [response.data];
+    },
+    enabled: options?.skip !== undefined ? !options.skip : true,
+  });
+}
 
 export type { Category } from '../types/category.types';
-

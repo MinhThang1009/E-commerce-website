@@ -45,14 +45,27 @@ describe('Payment Domain', () => {
       expect(result.reason).toMatch(/Không tìm thấy đơn hàng/);
     });
 
+    test('paymentStatus=refunded → not allowed (chặn double refund)', () => {
+      const result = PaymentPolicy.canRefund({ paymentStatus: 'refunded' });
+      expect(result.allowed).toBe(false);
+      expect(result.reason).toMatch(/đã được hoàn tiền/);
+    });
+
+    test('paymentStatus=pending → not allowed', () => {
+      const result = PaymentPolicy.canRefund({ paymentStatus: 'pending', paymentTransactionId: 'tx-1' });
+      expect(result.allowed).toBe(false);
+      expect(result.reason).toMatch(/đã thanh toán/);
+    });
+
     test('không có paymentTransactionId → not allowed', () => {
-      const result = PaymentPolicy.canRefund({ paymentTransactionId: null });
+      const result = PaymentPolicy.canRefund({ paymentStatus: 'paid', paymentTransactionId: null });
       expect(result.allowed).toBe(false);
       expect(result.reason).toMatch(/giao dịch thanh toán/);
     });
 
     test('provider=momo → not supported', () => {
       const result = PaymentPolicy.canRefund({
+        paymentStatus: 'paid',
         paymentTransactionId: 'tx-1',
         paymentProvider: 'momo',
       });
@@ -60,8 +73,9 @@ describe('Payment Domain', () => {
       expect(result.reason).toMatch(/momo/);
     });
 
-    test('provider=vnpay → allowed', () => {
+    test('provider=vnpay + paid → allowed', () => {
       expect(PaymentPolicy.canRefund({
+        paymentStatus: 'paid',
         paymentTransactionId: 'tx-1', paymentProvider: 'vnpay',
       })).toEqual({ allowed: true });
     });

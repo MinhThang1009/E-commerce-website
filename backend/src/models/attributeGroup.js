@@ -28,17 +28,14 @@ const AttributeGroup = sequelize.define(
     isRequired: {
       type: DataTypes.BOOLEAN,
       defaultValue: false,
-      field: 'is_required',
     },
     sortOrder: {
       type: DataTypes.INTEGER,
       defaultValue: 0,
-      field: 'sort_order',
     },
     isActive: {
       type: DataTypes.BOOLEAN,
       defaultValue: true,
-      field: 'is_active',
     },
   },
   {

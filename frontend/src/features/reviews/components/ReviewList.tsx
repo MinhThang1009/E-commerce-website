@@ -1,8 +1,7 @@
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { useSelector } from 'react-redux';
+import { useAuthStore } from '@/stores/authStore';
 import { getLocale } from '@/utils/format';
-import { RootState } from '@/store';
 import {
   useGetProductReviewsQuery,
   useMarkReviewHelpfulMutation,
@@ -17,8 +16,8 @@ interface ReviewListProps {
 
 const ReviewList: React.FC<ReviewListProps> = ({ productId }) => {
   const { t } = useTranslation();
-  const { isAuthenticated } = useSelector((state: RootState) => state.auth);
-  const [markReviewHelpful] = useMarkReviewHelpfulMutation();
+  const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
+  const { mutateAsync: markReviewHelpful } = useMarkReviewHelpfulMutation();
 
   const [filters, setFilters] = useState<ReviewFilters>({
     page: 1,
@@ -33,7 +32,7 @@ const ReviewList: React.FC<ReviewListProps> = ({ productId }) => {
   } = useGetProductReviewsQuery(
     { productId, ...filters },
     {
-      skip: !productId || productId === 'undefined',
+      enabled: !!productId && productId !== 'undefined',
     }
   );
 
@@ -58,7 +57,7 @@ const ReviewList: React.FC<ReviewListProps> = ({ productId }) => {
         id: reviewId,
         helpful,
         productId,
-      }).unwrap();
+      });
     } catch (error) {
       console.error('Error marking review helpful:', error);
     }

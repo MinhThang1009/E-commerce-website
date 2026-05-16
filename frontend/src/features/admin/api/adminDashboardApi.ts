@@ -1,4 +1,5 @@
-import { api } from '@/services/api';
+import { useQuery } from '@tanstack/react-query';
+import apiClient from '@/services/apiClient';
 
 // Kiểu dữ liệu cho Dashboard
 export interface DashboardOverview {
@@ -144,106 +145,152 @@ export interface ExportQuery {
   endDate?: string;
 }
 
-export const adminDashboardApi = api.injectEndpoints({
-  endpoints: (builder) => ({
-    // Lấy thống kê dashboard
-    getDashboardStats: builder.query<DashboardResponse, void>({
-      query: () => ({
-        url: '/admin/dashboard',
-        method: 'GET',
-      }),
-      providesTags: ['AdminDashboard'],
-    }),
+// === Query Keys ===
 
-    // Lấy thống kê chi tiết
-    getDetailedStats: builder.query<DetailedStatsResponse, DetailedStatsQuery>({
-      query: (params) => ({
-        url: '/admin/stats',
-        method: 'GET',
-        params,
-      }),
-      providesTags: ['AdminStats'],
-    }),
+export const adminDashboardKeys = {
+  all: ['admin-dashboard'] as const,
+  stats: () => [...adminDashboardKeys.all, 'stats'] as const,
+  detailed: (params: any) => [...adminDashboardKeys.all, 'detailed', params] as const,
+  orderStatus: (params?: any) => [...adminDashboardKeys.all, 'order-status', params] as const,
+  topProducts: (params?: any) => [...adminDashboardKeys.all, 'top-products', params] as const,
+  revenueByCategory: (params?: any) => [...adminDashboardKeys.all, 'revenue-category', params] as const,
+  userGrowth: (params: any) => [...adminDashboardKeys.all, 'user-growth', params] as const,
+  paymentMethods: () => [...adminDashboardKeys.all, 'payment-methods'] as const,
+  lowStock: (params?: any) => [...adminDashboardKeys.all, 'low-stock', params] as const,
+  chatbotStats: (params?: any) => [...adminDashboardKeys.all, 'chatbot-stats', params] as const,
+};
 
-    // Phân bổ trạng thái đơn hàng
-    getOrderStatusAnalytics: builder.query<{ status: string; data: OrderStatusItem[] }, DateRangeQuery | void>({
-      query: (params) => ({
-        url: '/admin/analytics/order-status',
-        method: 'GET',
+// === Query Hooks ===
+
+export function useGetDashboardStatsQuery() {
+  return useQuery<DashboardResponse>({
+    queryKey: adminDashboardKeys.stats(),
+    queryFn: async () => {
+      const { data } = await apiClient.get('/admin/dashboard');
+      return data;
+    },
+  });
+}
+
+export function useGetDetailedStatsQuery(
+  params: DetailedStatsQuery,
+  options?: { enabled?: boolean; skip?: boolean }
+) {
+  return useQuery<DetailedStatsResponse>({
+    queryKey: adminDashboardKeys.detailed(params),
+    queryFn: async () => {
+      const { data } = await apiClient.get('/admin/stats', { params });
+      return data;
+    },
+    enabled: options?.skip !== undefined ? !options.skip : true,
+  });
+}
+
+export function useGetOrderStatusAnalyticsQuery(
+  params?: DateRangeQuery | void,
+  options?: { enabled?: boolean; skip?: boolean }
+) {
+  return useQuery<{ status: string; data: OrderStatusItem[] }>({
+    queryKey: adminDashboardKeys.orderStatus(params),
+    queryFn: async () => {
+      const { data } = await apiClient.get('/admin/analytics/order-status', {
         params: params || undefined,
-      }),
-      providesTags: ['AdminStats'],
-    }),
+      });
+      return data;
+    },
+    enabled: options?.skip !== undefined ? !options.skip : true,
+  });
+}
 
-    // Top sản phẩm theo doanh thu/số lượng
-    getTopProductsAnalytics: builder.query<{ status: string; data: TopProductAnalytics[] }, TopProductsQuery | void>({
-      query: (params) => ({
-        url: '/admin/analytics/top-products',
-        method: 'GET',
+export function useGetTopProductsAnalyticsQuery(
+  params?: TopProductsQuery | void,
+  options?: { enabled?: boolean; skip?: boolean }
+) {
+  return useQuery<{ status: string; data: TopProductAnalytics[] }>({
+    queryKey: adminDashboardKeys.topProducts(params),
+    queryFn: async () => {
+      const { data } = await apiClient.get('/admin/analytics/top-products', {
         params: params || undefined,
-      }),
-      providesTags: ['AdminStats'],
-    }),
+      });
+      return data;
+    },
+    enabled: options?.skip !== undefined ? !options.skip : true,
+  });
+}
 
-    // Doanh thu theo danh mục
-    getRevenueByCategoryAnalytics: builder.query<{ status: string; data: CategoryRevenue[] }, DateRangeQuery | void>({
-      query: (params) => ({
-        url: '/admin/analytics/revenue-by-category',
-        method: 'GET',
+export function useGetRevenueByCategoryAnalyticsQuery(
+  params?: DateRangeQuery | void,
+  options?: { enabled?: boolean; skip?: boolean }
+) {
+  return useQuery<{ status: string; data: CategoryRevenue[] }>({
+    queryKey: adminDashboardKeys.revenueByCategory(params),
+    queryFn: async () => {
+      const { data } = await apiClient.get('/admin/analytics/revenue-by-category', {
         params: params || undefined,
-      }),
-      providesTags: ['AdminStats'],
-    }),
+      });
+      return data;
+    },
+    enabled: options?.skip !== undefined ? !options.skip : true,
+  });
+}
 
-    // Tăng trưởng user
-    getUserGrowthAnalytics: builder.query<{ status: string; data: UserGrowthItem[] }, DetailedStatsQuery>({
-      query: (params) => ({
-        url: '/admin/analytics/user-growth',
-        method: 'GET',
-        params,
-      }),
-      providesTags: ['AdminStats'],
-    }),
+export function useGetUserGrowthAnalyticsQuery(
+  params: DetailedStatsQuery,
+  options?: { enabled?: boolean; skip?: boolean }
+) {
+  return useQuery<{ status: string; data: UserGrowthItem[] }>({
+    queryKey: adminDashboardKeys.userGrowth(params),
+    queryFn: async () => {
+      const { data } = await apiClient.get('/admin/analytics/user-growth', { params });
+      return data;
+    },
+    enabled: options?.skip !== undefined ? !options.skip : true,
+  });
+}
 
-    // Phân bổ phương thức thanh toán
-    getPaymentMethodsAnalytics: builder.query<{ status: string; data: PaymentMethodItem[] }, void>({
-      query: () => ({
-        url: '/admin/analytics/payment-methods',
-        method: 'GET',
-      }),
-      providesTags: ['AdminStats'],
-    }),
+export function useGetPaymentMethodsAnalyticsQuery() {
+  return useQuery<{ status: string; data: PaymentMethodItem[] }>({
+    queryKey: adminDashboardKeys.paymentMethods(),
+    queryFn: async () => {
+      const { data } = await apiClient.get('/admin/analytics/payment-methods');
+      return data;
+    },
+  });
+}
 
-    // Sản phẩm sắp hết hàng
-    getLowStockAnalytics: builder.query<{ status: string; data: LowStockProduct[] }, LowStockQuery | void>({
-      query: (params) => ({
-        url: '/admin/analytics/low-stock',
-        method: 'GET',
+export function useGetLowStockAnalyticsQuery(
+  params?: LowStockQuery | void,
+  options?: { enabled?: boolean; skip?: boolean }
+) {
+  return useQuery<{ status: string; data: LowStockProduct[] }>({
+    queryKey: adminDashboardKeys.lowStock(params),
+    queryFn: async () => {
+      const { data } = await apiClient.get('/admin/analytics/low-stock', {
         params: params || undefined,
-      }),
-      providesTags: ['AdminStats'],
-    }),
+      });
+      return data;
+    },
+    enabled: options?.skip !== undefined ? !options.skip : true,
+  });
+}
 
-    // Thống kê AI chatbot
-    getChatbotStats: builder.query<{ status: string; data: ChatbotStats }, DateRangeQuery | void>({
-      query: (params) => ({
-        url: '/admin/chatbot/stats',
-        method: 'GET',
+export function useGetChatbotStatsQuery(
+  params?: DateRangeQuery | void,
+  options?: { enabled?: boolean; skip?: boolean }
+) {
+  // Ưu tiên enabled nếu có, fallback sang skip (compat), mặc định true
+  const isEnabled = options?.enabled !== undefined
+    ? options.enabled
+    : options?.skip !== undefined ? !options.skip : true;
+
+  return useQuery<{ status: string; data: ChatbotStats }>({
+    queryKey: adminDashboardKeys.chatbotStats(params),
+    queryFn: async () => {
+      const { data } = await apiClient.get('/admin/chatbot/stats', {
         params: params || undefined,
-      }),
-      providesTags: ['AdminStats'],
-    }),
-  }),
-});
-
-export const {
-  useGetDashboardStatsQuery,
-  useGetDetailedStatsQuery,
-  useGetOrderStatusAnalyticsQuery,
-  useGetTopProductsAnalyticsQuery,
-  useGetRevenueByCategoryAnalyticsQuery,
-  useGetUserGrowthAnalyticsQuery,
-  useGetPaymentMethodsAnalyticsQuery,
-  useGetLowStockAnalyticsQuery,
-  useGetChatbotStatsQuery,
-} = adminDashboardApi;
+      });
+      return data;
+    },
+    enabled: isEnabled,
+  });
+}

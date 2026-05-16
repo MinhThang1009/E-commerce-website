@@ -4,15 +4,16 @@ const IAiRepository = require('./IAiRepository');
 // Sequelize impl của IAiRepository — wrap Product/Category access cho AI
 // product search + deals/trending. Repo build LIKE conditions internal.
 class SequelizeAiRepository extends IAiRepository {
-  constructor({ Product, Category, sequelize }) {
+  constructor({ Product, ProductVariant, Category, sequelize }) {
     super();
     this.Product = Product;
+    this.ProductVariant = ProductVariant;
     this.Category = Category;
     this.sequelize = sequelize;
   }
 
   async searchProducts({ keyword, minPrice, maxPrice, categoryName, limit } = {}) {
-    const where = { status: 'active', stockQuantity: { [Op.gt]: 0 } };
+    const where = { status: 'active' };
 
     if (keyword) {
       const keywordMapping = {
@@ -57,7 +58,10 @@ class SequelizeAiRepository extends IAiRepository {
 
     return this.Product.findAll({
       where,
-      include: [categoryInclude],
+      include: [
+        categoryInclude,
+        { model: this.ProductVariant, as: 'variants', attributes: ['stockQuantity'], required: false },
+      ],
       limit: limit || 20,
       order: [['createdAt', 'DESC']],
     });
@@ -65,7 +69,10 @@ class SequelizeAiRepository extends IAiRepository {
 
   async findActiveDeals(limit = 10) {
     return this.Product.findAll({
-      where: { status: 'active', stockQuantity: { [Op.gt]: 0 }, compareAtPrice: { [Op.gt]: 0 } },
+      where: { status: 'active', compareAtPrice: { [Op.gt]: 0 } },
+      include: [
+        { model: this.ProductVariant, as: 'variants', attributes: ['stockQuantity'], required: false },
+      ],
       order: [
         [literal('((compare_at_price - base_price) / compare_at_price) DESC')],
       ],
@@ -75,7 +82,10 @@ class SequelizeAiRepository extends IAiRepository {
 
   async findFeaturedProducts(limit = 10) {
     return this.Product.findAll({
-      where: { status: 'active', stockQuantity: { [Op.gt]: 0 }, isFeatured: true },
+      where: { status: 'active', isFeatured: true },
+      include: [
+        { model: this.ProductVariant, as: 'variants', attributes: ['stockQuantity'], required: false },
+      ],
       limit, order: [['createdAt', 'DESC']],
     });
   }

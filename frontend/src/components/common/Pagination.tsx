@@ -97,7 +97,7 @@ const Pagination: React.FC<PaginationProps> = ({
         </li>
 
         {/* Số trang */}
-        {pageNumbers.map((pageNumber, index) => {
+        {pageNumbers.map((pageNumber, _index) => {
           // Render dấu "..."
           if (pageNumber < 0) {
             return (

@@ -1,11 +1,10 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { useSelector, useDispatch } from 'react-redux';
 import { useTranslation } from 'react-i18next';
+import { ROUTES, buildRoute } from '@/routes/paths';
+import { useQueryClient } from '@tanstack/react-query';
 import {
-  ArrowRightOutlined,
   CheckCircleOutlined,
-  LoadingOutlined,
   InfoCircleOutlined,
 } from '@ant-design/icons';
 import { Button, Modal, Table } from 'antd';
@@ -13,16 +12,14 @@ import { Button, Modal, Table } from 'antd';
 import CustomButton from '@/components/common/Button';
 import PremiumButton from '@/components/common/PremiumButton';
 import Input from '@/components/common/Input';
-import Select from '@/components/common/Select';
 import AddressPicker from '@/components/common/AddressPicker';
 import { CartItem } from '@/features/cart';
-import BankTransferQR from '@/features/payment/components/BankTransferQR';
-import { RootState } from '@/store';
-import { clearCart, initializeCart, addItem } from '@/features/cart';
-import { addNotification } from '@/features/ui/uiSlice';
+import { useCartStore } from '@/stores/cartStore';
+import { useAuthStore } from '@/stores/authStore';
+import { useUiStore } from '@/stores/uiStore';
 import { formatPrice } from '@/utils/format';
 import { useCreateOrderMutation, useApplyDiscountCodeMutation } from '@/features/orders';
-import { cartApi, useGetCartCountQuery } from '@/features/cart';
+import { cartKeys, useGetCartCountQuery } from '@/features/cart';
 import { useCreateMomoUrlMutation } from '@/features/payment';
 import { useCreateVNPayUrlMutation } from '@/features/payment';
 import { useGetLoyaltyInfoQuery } from '@/features/loyalty';
@@ -30,12 +27,15 @@ import { useGetAddressesQuery } from '@/features/users';
 import { Address } from '@/types/user.types';
 
 const CheckoutPage: React.FC = () => {
-  const { t, i18n } = useTranslation();
-  const { items: cartItems } = useSelector((state: RootState) => state.cart);
-  const { user } = useSelector((state: RootState) => state.auth);
-  const dispatch = useDispatch();
+  const { t } = useTranslation();
+  const cartItems = useCartStore((s) => s.items);
+  const clearLocalCart = useCartStore((s) => s.clearLocalCart);
+  const initializeCart = useCartStore((s) => s.initializeCart);
+  const user = useAuthStore((s) => s.user);
   const navigate = useNavigate();
   const location = useLocation();
+  const addNotification = useUiStore((s) => s.addNotification);
+  const queryClient = useQueryClient();
 
   const [isBuyNow, setIsBuyNow] = useState(() => {
     const searchParams = new URLSearchParams(window.location.search);
@@ -49,7 +49,10 @@ const CheckoutPage: React.FC = () => {
   });
 
   // Thống nhất danh sách items hiển thị trong checkout - nếu là mua ngay thì chỉ hiển thị 1 item, còn lại hiển thị toàn bộ giỏ hàng
-  const items = isBuyNow && buyNowItem ? [buyNowItem] : cartItems;
+  const items = useMemo(
+    () => (isBuyNow && buyNowItem ? [buyNowItem] : cartItems),
+    [isBuyNow, buyNowItem, cartItems]
+  );
 
   // Kiểm tra giỏ hàng khi component mount để đảm bảo không có dữ liệu cũ hoặc người dùng truy cập sai cách
   useEffect(() => {
@@ -68,7 +71,7 @@ const CheckoutPage: React.FC = () => {
 
     // Nếu là URL cũ và có tham số repayOrder và amount, chuyển hướng sang URL mới chuẩn với thông tin thanh toán lại đơn hàng
     if (isOldPaymentUrl && repayOrderId && repayAmount) {
-      navigate(`/checkout?repayOrder=${repayOrderId}&amount=${repayAmount}`, {
+      navigate(buildRoute.checkoutRepay(repayOrderId, repayAmount), {
         replace: true,
       });
       return;
@@ -101,7 +104,7 @@ const CheckoutPage: React.FC = () => {
       sessionStorage.removeItem('buyNowAction');
 
       // Khởi tạo giỏ hàng để đảm bảo trạng thái nhất quán, dù trong trường hợp mua ngay thường sẽ không sử dụng giỏ hàng nhưng vẫn cần đảm bảo không có dữ liệu cũ nào ảnh hưởng
-      dispatch(initializeCart());
+      initializeCart();
 
       // Lấy thông tin sản phẩm mua ngay từ sessionStorage để hiển thị trong checkout, đồng thời xử lý lỗi nếu có vấn đề với dữ liệu này
       const buyNowItemStr = sessionStorage.getItem('buyNowItem');
@@ -118,38 +121,37 @@ const CheckoutPage: React.FC = () => {
     }
 
     // Khởi tạo giỏ hàng để đảm bảo không có dữ liệu cũ nào ảnh hưởng nếu người dùng truy cập trực tiếp vào trang checkout mà không qua các bước hợp lệ
-    dispatch(initializeCart());
+    initializeCart();
 
-    // Kiểm tra nếu giỏ hàng trống cả ở localStorage và Redux store, đồng thời không phải đang thanh toán lại đơn hàng hoặc mua ngay, thì chuyển
-    // Chỉ chuyển hướng nếu cả hai đều trống để tránh trường hợp dữ liệu chưa kịp cập nhật từ localStorage lên Redux store
+    // Kiểm tra nếu giỏ hàng trống cả ở localStorage và Zustand store, đồng thời không phải đang thanh toán lại đơn hàng hoặc mua ngay, thì chuyển
+    // Chỉ chuyển hướng nếu cả hai đều trống để tránh trường hợp dữ liệu chưa kịp cập nhật từ localStorage lên Zustand store
     const cartItemsStore = localStorage.getItem('cartItems');
     if ((!cartItemsStore || cartItemsStore === '[]') && !repayOrderId && !isBuyNow) {
-      navigate('/shop');
-      dispatch(
-        addNotification({
-          type: 'info',
-          message: t('checkout.emptyCart.redirectMessage'),
-        })
-      );
+      navigate(ROUTES.SHOP);
+      addNotification({
+        type: 'info',
+        message: t('checkout.emptyCart.redirectMessage'),
+      });
     }
-  }, [dispatch, navigate, t]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- Kiểm tra giỏ hàng và redirect chỉ khi mount, initializeCart là stable ref
+  }, [addNotification, navigate, t]);
 
-  const [createOrder] = useCreateOrderMutation();
-  const [createMomoUrl] = useCreateMomoUrlMutation();
-  const [createVNPayUrl] = useCreateVNPayUrlMutation();
+  const { mutateAsync: createOrder } = useCreateOrderMutation();
+  const { mutateAsync: createMomoUrl } = useCreateMomoUrlMutation();
+  const { mutateAsync: createVNPayUrl } = useCreateVNPayUrlMutation();
 
   // Lấy số lượng giỏ hàng từ server để đảm bảo đồng bộ và tránh trường hợp người dùng có thể truy cập trang checkout với giỏ hàng trống do dữ liệu cũ chưa được xóa hoặc truy cập sai cách
   const { data: serverCartCount } = useGetCartCountQuery();
 
   // Dữ liệu khách hàng và thông tin tích điểm nếu người dùng đã đăng nhập để hiển thị phần sử dụng điểm tích lũy và các ưu đãi liên quan
   const { data: loyaltyData } = useGetLoyaltyInfoQuery(undefined, {
-    skip: !user,
+    enabled: !!user,
   });
   const availablePoints = loyaltyData?.data?.points || 0;
 
   // Địa chỉ đã lưu để tự động điền vào form khi người dùng chọn
-  const { data: savedAddresses } = useGetAddressesQuery(undefined, {
-    skip: !user,
+  const { data: savedAddresses } = useGetAddressesQuery({
+    enabled: !!user,
   });
   const [pointsToUse, setPointsToUse] = useState<number>(0);
   const [pointsError, setPointsError] = useState('');
@@ -163,7 +165,7 @@ const CheckoutPage: React.FC = () => {
   ];
 
   // Các phương thức vận chuyển được hỗ trợ, có thể dễ dàng mở rộng hoặc chỉnh sửa sau này, đồng thời sử dụng i18n để hỗ trợ đa ngôn ngữ
-  const shippingMethods = [
+  const _shippingMethods = [
     {
       value: 'standard',
       label: t('checkout.shippingMethod.standard'),
@@ -224,7 +226,7 @@ const CheckoutPage: React.FC = () => {
   const [discountCodeInput, setDiscountCodeInput] = useState('');
   const [appliedDiscount, setAppliedDiscount] = useState<{ code: string; amount: number } | null>(null);
   const [discountError, setDiscountError] = useState('');
-  const [applyDiscountCode, { isLoading: isValidatingCode }] = useApplyDiscountCodeMutation();
+  const { mutateAsync: applyDiscountCode, isPending: isValidatingCode } = useApplyDiscountCodeMutation();
 
   useEffect(() => {
     const state = location.state as { voucherCode?: string; discountAmount?: number } | null;
@@ -233,6 +235,7 @@ const CheckoutPage: React.FC = () => {
       setAppliedDiscount({ code: state.voucherCode, amount: state.discountAmount ?? 0 });
       navigate(location.pathname + location.search, { replace: true, state: undefined });
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- Chỉ apply voucher từ navigation state khi state thay đổi, appliedDiscount/navigate/location dùng qua closure
   }, [location.state]);
 
   // Cột bảng trả góp
@@ -274,7 +277,7 @@ const CheckoutPage: React.FC = () => {
   }, [formData.paymentMethod]);
 
   // Danh sách quốc gia
-  const countries = [
+  const _countries = [
     { value: 'VN', label: t('checkout.countries.VN') },
     { value: 'US', label: t('checkout.countries.US') },
     { value: 'CA', label: t('checkout.countries.CA') },
@@ -371,7 +374,7 @@ const CheckoutPage: React.FC = () => {
   // Đã xóa các handler tỉnh/thành cũ
 
   // Xử lý checkbox "giống địa chỉ giao hàng"
-  const handleSameAsShipping = (checked: boolean) => {
+  const _handleSameAsShipping = (checked: boolean) => {
     setFormData((prev) => ({
       ...prev,
       sameAsShipping: checked,
@@ -451,19 +454,17 @@ const CheckoutPage: React.FC = () => {
       const res = await applyDiscountCode({
         code: discountCodeInput,
         orderAmount: subtotal,
-      }).unwrap();
+      });
 
       setAppliedDiscount({
         code: res.data.code,
         amount: res.data.discountAmount,
       });
       setDiscountError('');
-      dispatch(
-        addNotification({
-          type: 'success',
-          message: t('checkout.discountCode.success'),
-        })
-      );
+      addNotification({
+        type: 'success',
+        message: t('checkout.discountCode.success'),
+      });
     } catch (error: any) {
       setDiscountError(error.data?.message || t('checkout.discountCode.invalid'));
     }
@@ -557,17 +558,15 @@ const CheckoutPage: React.FC = () => {
         }] : undefined,
       };
 
-      const response = await createOrder(orderData).unwrap();
+      const response = await createOrder(orderData);
       return response.data.order;
     } catch (error) {
       console.error('Tạo đơn hàng thất bại:', error);
-      dispatch(
-        addNotification({
-          type: 'error',
-          message: t('checkout.errors.orderCreationFailed'),
-          duration: 5000,
-        })
-      );
+      addNotification({
+        type: 'error',
+        message: t('checkout.errors.orderCreationFailed'),
+        duration: 5000,
+      });
       return null;
     } finally {
       setIsProcessing(false); // Tắt trạng thái loading
@@ -575,38 +574,34 @@ const CheckoutPage: React.FC = () => {
   };
 
   // Xử lý thanh toán thành công
-  const handlePaymentSuccess = async (paymentIntent: any) => {
-    dispatch(
-      addNotification({
-        type: 'success',
-        message: t('checkout.success.message'),
-        duration: 5000,
-      })
-    );
+  const _handlePaymentSuccess = async (_paymentIntent: any) => {
+    addNotification({
+      type: 'success',
+      message: t('checkout.success.message'),
+      duration: 5000,
+    });
 
     // Xóa giỏ hàng
-    dispatch(clearCart());
+    clearLocalCart();
 
     // Làm mới số lượng giỏ hàng để cập nhật badge trên header
-    dispatch(cartApi.util.invalidateTags(['CartCount']));
+    queryClient.invalidateQueries({ queryKey: cartKeys.count });
 
     // Chuyển hướng đến trang đơn hàng
-    navigate('/orders');
+    navigate(ROUTES.ORDERS);
   };
 
   // Xử lý lỗi thanh toán
-  const handlePaymentError = (error: string) => {
-    dispatch(
-      addNotification({
-        type: 'error',
-        message: error,
-        duration: 5000,
-      })
-    );
+  const _handlePaymentError = (error: string) => {
+    addNotification({
+      type: 'error',
+      message: error,
+      duration: 5000,
+    });
   };
 
   // Xử lý trạng thái đang thanh toán
-  const handlePaymentProcessing = (processing: boolean) => {
+  const _handlePaymentProcessing = (processing: boolean) => {
     setIsProcessing(processing);
   };
 
@@ -618,8 +613,8 @@ const CheckoutPage: React.FC = () => {
       // Với chuyển khoản ngân hàng, tạo đơn hàng và chuyển hướng đến trang thanh toán QR
       const order = await handleCreateOrder();
       if (order) {
-        dispatch(clearCart());
-        dispatch(cartApi.util.invalidateTags(['CartCount']));
+        clearLocalCart();
+        queryClient.invalidateQueries({ queryKey: cartKeys.count });
 
         // Chuyển hướng đến trang thanh toán QR kèm thông tin đơn hàng
         navigate(
@@ -641,7 +636,7 @@ const CheckoutPage: React.FC = () => {
         try {
           const res = await createVNPayUrl({
             orderId: order.id
-          }).unwrap();
+          });
 
           if (res.data) {
             window.location.href = res.data;
@@ -649,13 +644,11 @@ const CheckoutPage: React.FC = () => {
           }
         } catch (error) {
           console.error('Tạo URL thanh toán VNPay thất bại', error);
-          dispatch(
-            addNotification({
-              type: 'error',
-              message: t('checkout.errors.vnpayFailed'),
-              duration: 5000,
-            })
-          );
+          addNotification({
+            type: 'error',
+            message: t('checkout.errors.vnpayFailed'),
+            duration: 5000,
+          });
         }
       }
       return;
@@ -673,7 +666,7 @@ const CheckoutPage: React.FC = () => {
         try {
           const res = await createMomoUrl({
             orderId: order.id
-          }).unwrap();
+          });
 
           if (res.data?.payUrl) {
             window.location.href = res.data.payUrl;
@@ -681,13 +674,11 @@ const CheckoutPage: React.FC = () => {
           }
         } catch (error) {
           console.error('Tạo URL thanh toán MoMo thất bại', error);
-          dispatch(
-            addNotification({
-              type: 'error',
-              message: t('checkout.errors.momoFailed'),
-              duration: 5000,
-            })
-          );
+          addNotification({
+            type: 'error',
+            message: t('checkout.errors.momoFailed'),
+            duration: 5000,
+          });
         }
       }
       return;
@@ -696,21 +687,19 @@ const CheckoutPage: React.FC = () => {
     // Với các phương thức thanh toán khác, tạo đơn hàng và chuyển hướng
     const order = await handleCreateOrder();
     if (order) {
-      dispatch(
-        addNotification({
-          type: 'success',
-          message: t('checkout.success.message'),
-          duration: 5000,
-        })
-      );
-      dispatch(clearCart());
+      addNotification({
+        type: 'success',
+        message: t('checkout.success.message'),
+        duration: 5000,
+      });
+      clearLocalCart();
       sessionStorage.removeItem('buyNowItem');
       sessionStorage.removeItem('buyNowAction');
 
       // Làm mới số lượng giỏ hàng để cập nhật badge trên header
-      dispatch(cartApi.util.invalidateTags(['CartCount']));
+      queryClient.invalidateQueries({ queryKey: cartKeys.count });
 
-      navigate('/orders');
+      navigate(ROUTES.ORDERS);
     }
   };
 
@@ -752,7 +741,7 @@ const CheckoutPage: React.FC = () => {
         return;
       }
 
-      // Kiểm tra cả serverCartCount và items trong Redux store
+      // Kiểm tra cả serverCartCount và items trong Zustand store
       // Chỉ chuyển hướng nếu cả hai đều trống và không phải đang thanh toán lại đơn hàng
       if (
         serverCartCount === 0 &&
@@ -762,22 +751,20 @@ const CheckoutPage: React.FC = () => {
         // Xóa dữ liệu giỏ hàng trong localStorage để đảm bảo không có dữ liệu cũ
         localStorage.removeItem('cartItems');
 
-        // Cập nhật state Redux
-        dispatch(initializeCart());
+        // Cập nhật state Zustand
+        initializeCart();
 
         // Chuyển hướng về trang shop
-        navigate('/shop');
-        dispatch(
-          addNotification({
-            type: 'info',
-            message: t('checkout.emptyCart.redirectMessage'),
-          })
-        );
+        navigate(ROUTES.SHOP);
+        addNotification({
+          type: 'info',
+          message: t('checkout.emptyCart.redirectMessage'),
+        });
       }
     }, 800); // Tăng thời gian chờ để đảm bảo API có đủ thời gian cập nhật
 
     return () => clearTimeout(timer);
-  }, [items, serverCartCount, navigate, dispatch, t]);
+  }, [items, serverCartCount, navigate, initializeCart, addNotification, t]);
 
   // Hiển thị loading trong khi kiểm tra giỏ hàng
   if (isCartLoading) {

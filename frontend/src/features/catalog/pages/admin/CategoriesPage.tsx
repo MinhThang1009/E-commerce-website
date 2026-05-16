@@ -53,9 +53,9 @@ const CategoriesPage: React.FC = () => {
   const [editingCategory, setEditingCategory] = useState<Category | null>(null);
 
   const { data: categoriesData, isLoading, refetch } = useGetAllCategoriesQuery();
-  const [createCategory, { isLoading: isCreating }] = useCreateCategoryMutation();
-  const [updateCategory, { isLoading: isUpdating }] = useUpdateCategoryMutation();
-  const [deleteCategory] = useDeleteCategoryMutation();
+  const { mutateAsync: createCategory, isPending: isCreating } = useCreateCategoryMutation();
+  const { mutateAsync: updateCategory, isPending: isUpdating } = useUpdateCategoryMutation();
+  const { mutateAsync: deleteCategory } = useDeleteCategoryMutation();
 
   const categories = React.useMemo(() => {
     if (!categoriesData?.data) return [];
@@ -71,10 +71,10 @@ const CategoriesPage: React.FC = () => {
   const handleSubmit = async (values: CategoryFormData) => {
     try {
       if (editingCategory) {
-        await updateCategory({ id: editingCategory.id, ...values }).unwrap();
+        await updateCategory({ id: editingCategory.id, ...values });
         message.success(t('admin.categories.messages.editSuccess'));
       } else {
-        await createCategory(values).unwrap();
+        await createCategory(values);
         message.success(t('admin.categories.messages.addSuccess'));
       }
       setIsModalVisible(false);
@@ -88,7 +88,7 @@ const CategoriesPage: React.FC = () => {
 
   const handleDelete = async (id: string) => {
     try {
-      await deleteCategory(id).unwrap();
+      await deleteCategory(id);
       message.success(t('admin.categories.messages.deleteSuccess'));
       refetch();
     } catch (error: any) {

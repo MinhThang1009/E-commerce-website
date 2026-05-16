@@ -13,8 +13,10 @@ class WishlistService {
     const items = await this.wishlistRepository.findByUserIdWithProducts(userId);
     const products = items.map((item) => {
       const p = item.Product.toJSON();
-      p.stockQuantity = p.defaultVariant ? p.defaultVariant.stockQuantity : 0;
-      p.inStock = p.stockQuantity > 0;
+      // Stock thực nằm ở variant level — tính tổng stock từ tất cả variants
+      const variantStock = (p.variants || []).reduce((s, v) => s + (v.stockQuantity || 0), 0);
+      p.stockQuantity = variantStock || (p.defaultVariant ? p.defaultVariant.stockQuantity : 0);
+      p.inStock = variantStock > 0 || (p.defaultVariant ? p.defaultVariant.stockQuantity > 0 : false);
 
       if (p.productImages && p.productImages.length > 0) {
         p.images = p.productImages.map((img) => ({
@@ -28,6 +30,7 @@ class WishlistService {
       }
       delete p.productImages;
       delete p.defaultVariant;
+      delete p.variants;
       return p;
     });
     return { products };

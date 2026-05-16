@@ -63,18 +63,19 @@ const DynamicAttributeSelector: React.FC<DynamicAttributeSelectorProps> = ({
   const [showOnlyNameAffecting, setShowOnlyNameAffecting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const form = Form.useFormInstance();
+  const _form = Form.useFormInstance();
 
   useEffect(() => {
     loadAttributeGroups();
     loadNameAffectingAttributes();
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- Tải dữ liệu một lần khi mount
   }, []);
 
   const loadAttributeGroups = async () => {
     try {
       setLoading(true);
       const response = await attributeService.getAttributeGroups();
-      if (response.success) {
+      if (response.status === 'success') {
         setAttributeGroups(response.data);
       }
     } catch (err: any) {
@@ -89,7 +90,7 @@ const DynamicAttributeSelector: React.FC<DynamicAttributeSelectorProps> = ({
     try {
       const response =
         await attributeService.getNameAffectingAttributes(productId);
-      if (response.success) {
+      if (response.status === 'success') {
         setNameAffectingAttributes(response.data);
       }
     } catch (err: any) {
@@ -141,7 +142,7 @@ const DynamicAttributeSelector: React.FC<DynamicAttributeSelectorProps> = ({
     return null;
   };
 
-  const renderAttributeValue = (value: AttributeValue, groupType: string) => {
+  const renderAttributeValue = (value: AttributeValue, _groupType: string) => {
     const isNameAffecting = value.affectsName;
 
     return (

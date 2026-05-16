@@ -38,7 +38,7 @@ const EnhancedRichTextEditor: React.FC<EnhancedRichTextEditorProps> = ({
   const containerRef = useRef<HTMLDivElement>(null);
   const quillRef = useRef<Quill | null>(null);
   const isInternalChange = useRef(false);
-  const [uploadImage] = useUploadImageMutation();
+  const { mutateAsync: uploadImage } = useUploadImageMutation();
   const isUploadingRef = useRef(false);
 
   // Hàm xử lý chèn ảnh tùy chỉnh cho Quill
@@ -79,11 +79,10 @@ const EnhancedRichTextEditor: React.FC<EnhancedRichTextEditorProps> = ({
             generateThumbs: true,
             optimize: true,
           },
-        }).unwrap();
+        });
 
         if (result?.data?.url) {
-          const apiBaseUrl = import.meta.env.VITE_API_URL || 'http://localhost:8888/api';
-          const domainUrl = apiBaseUrl.replace(/\/api$/, '');
+          const domainUrl = (import.meta.env.VITE_API_URL || 'http://localhost:8888/api').replace(/\/api\/?$/, '');
           const imageUrl = `${domainUrl}${result.data.url}`;
 
           const quill = quillRef.current;
@@ -107,7 +106,7 @@ const EnhancedRichTextEditor: React.FC<EnhancedRichTextEditorProps> = ({
         isUploadingRef.current = false;
       }
     };
-  }, [uploadImage, category, productId, onImageUpload]);
+  }, [uploadImage, category, productId, onImageUpload, t]);
 
   // Khởi tạo Quill
   useEffect(() => {
@@ -174,11 +173,10 @@ const EnhancedRichTextEditor: React.FC<EnhancedRichTextEditorProps> = ({
             const result = await uploadImage({
               file,
               options: { category, productId, generateThumbs: true, optimize: true },
-            }).unwrap();
+            });
 
             if (result?.data?.url) {
-              const apiBaseUrl = import.meta.env.VITE_API_URL || 'http://localhost:8888/api';
-              const domainUrl = apiBaseUrl.replace(/\/api$/, '');
+              const domainUrl = (import.meta.env.VITE_API_URL || 'http://localhost:8888/api').replace(/\/api\/?$/, '');
               const imageUrl = `${domainUrl}${result.data.url}`;
 
               const currentQuill = quillRef.current;
@@ -208,6 +206,7 @@ const EnhancedRichTextEditor: React.FC<EnhancedRichTextEditorProps> = ({
       quill.root.removeEventListener('paste', handlePaste);
       quillRef.current = null;
     };
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- Khởi tạo Quill một lần, các deps khác dùng qua ref/closure
   }, [handleImageInsert]);
 
   // Đồng bộ giá trị từ bên ngoài vào editor

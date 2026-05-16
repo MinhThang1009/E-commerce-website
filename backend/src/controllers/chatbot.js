@@ -4,6 +4,7 @@
 
 const {
   Product,
+  ProductVariant,
   Category,
   Order,
   OrderItem,
@@ -82,15 +83,19 @@ class ChatbotController {
       );
 
       // Tạo danh sách gợi ý sản phẩm
-      const productCards = products.slice(0, 5).map((product) => ({
+      const productCards = products.slice(0, 5).map((product) => {
+        // Stock thực nằm ở variant level — tính tổng stock từ tất cả variants
+        const variantStock = (product.variants || []).reduce((s, v) => s + (v.stockQuantity || 0), 0);
+        const inStock = variantStock > 0 || product.stockQuantity > 0;
+        return {
         id: product.id,
         name: product.name,
         slug: product.slug,
         price: product.basePrice,
         compareAtPrice: product.compareAtPrice,
         thumbnail: product.thumbnail,
-        inStock: product.stockQuantity > 0,
-        stockQuantity: product.stockQuantity,
+        inStock,
+        stockQuantity: variantStock || product.stockQuantity,
         rating: product.ratingAverage || null,
         discount: product.compareAtPrice
           ? Math.round(
@@ -99,7 +104,8 @@ class ChatbotController {
                 100
             )
           : 0,
-      }));
+      };
+      });
 
       return {
         response: aiResponse,
@@ -404,14 +410,18 @@ class ChatbotController {
       }
 
       // Kiểm tra sản phẩm tồn tại trước (404), sau đó kiểm tra còn hàng (400)
-      const product = await Product.findByPk(productId);
+      const product = await Product.findByPk(productId, {
+        include: [{ model: ProductVariant, as: 'variants', attributes: ['stockQuantity'], required: false }],
+      });
       if (!product) {
         return res.status(404).json({
           status: 'error',
           message: 'Sản phẩm không tồn tại',
         });
       }
-      if (product.status !== 'active' || product.stockQuantity <= 0) {
+      // Stock thực nằm ở variant level — tính tổng stock từ tất cả variants
+      const totalVariantStock = (product.variants || []).reduce((s, v) => s + (v.stockQuantity || 0), 0);
+      if (product.status !== 'active' || (totalVariantStock <= 0 && product.stockQuantity <= 0)) {
         return res.status(400).json({
           status: 'error',
           message: 'Sản phẩm đã hết hàng hoặc ngừng kinh doanh',
@@ -454,7 +464,6 @@ class ChatbotController {
   async searchProducts(searchParams) {
     const where = {
       status: 'active',
-      stockQuantity: { [Op.gt]: 0 },
     };
 
     // Thêm điều kiện tìm kiếm
@@ -522,7 +531,10 @@ class ChatbotController {
 
     const products = await Product.findAll({
       where,
-      include: [categoryInclude],
+      include: [
+        categoryInclude,
+        { model: ProductVariant, as: 'variants', attributes: ['stockQuantity'], required: false },
+      ],
       limit: searchParams.limit || 20,
       order: [['createdAt', 'DESC']],
     });
@@ -534,9 +546,11 @@ class ChatbotController {
     return await Product.findAll({
       where: {
         status: 'active',
-        stockQuantity: { [Op.gt]: 0 },
         compareAtPrice: { [Op.gt]: 0 },
       },
+      include: [
+        { model: ProductVariant, as: 'variants', attributes: ['stockQuantity'], required: false },
+      ],
       order: [
         [
           // Sắp xếp theo phần trăm giảm giá
@@ -554,9 +568,11 @@ class ChatbotController {
     return await Product.findAll({
       where: {
         status: 'active',
-        stockQuantity: { [Op.gt]: 0 },
         isFeatured: true,
       },
+      include: [
+        { model: ProductVariant, as: 'variants', attributes: ['stockQuantity'], required: false },
+      ],
       limit: 10,
       order: [['createdAt', 'DESC']],
     });

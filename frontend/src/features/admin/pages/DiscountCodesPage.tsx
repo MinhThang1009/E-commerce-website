@@ -49,9 +49,9 @@ const DiscountCodesPage: React.FC = () => {
   const [filters, setFilters] = useState({ page: 1, limit: 10, search: '' });
 
   const { data: discountCodesData, isLoading } = useGetDiscountCodesQuery(filters);
-  const [createDiscountCode, { isLoading: isCreating }] = useCreateDiscountCodeMutation();
-  const [updateDiscountCode, { isLoading: isUpdating }] = useUpdateDiscountCodeMutation();
-  const [deleteDiscountCode] = useDeleteDiscountCodeMutation();
+  const { mutateAsync: createDiscountCode, isPending: isCreating } = useCreateDiscountCodeMutation();
+  const { mutateAsync: updateDiscountCode, isPending: isUpdating } = useUpdateDiscountCodeMutation();
+  const { mutateAsync: deleteDiscountCode } = useDeleteDiscountCodeMutation();
 
   const discountCodes = discountCodesData?.data?.discountCodes || [];
 
@@ -84,7 +84,7 @@ const DiscountCodesPage: React.FC = () => {
 
   const handleDelete = async (id: string) => {
     try {
-      await deleteDiscountCode(id).unwrap();
+      await deleteDiscountCode(id);
       message.success(t('admin.discountCodes.messages.deleteSuccess'));
     } catch (error: any) {
       message.error(error?.data?.message || t('admin.discountCodes.messages.deleteError'));
@@ -104,10 +104,10 @@ const DiscountCodesPage: React.FC = () => {
       });
 
       if (editingCode) {
-        await updateDiscountCode({ id: editingCode.id, ...data }).unwrap();
+        await updateDiscountCode({ id: editingCode.id, ...data });
         message.success(t('admin.discountCodes.messages.editSuccess'));
       } else {
-        await createDiscountCode(data).unwrap();
+        await createDiscountCode(data);
         message.success(t('admin.discountCodes.messages.createSuccess'));
       }
 

@@ -1,4 +1,5 @@
-import { api } from '@/services/api';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import apiClient from '@/services/apiClient';
 import { WarrantyPackage } from '@/features/catalog';
 
 // Kiểu dữ liệu phản hồi
@@ -43,79 +44,84 @@ export interface WarrantyPackageFilters {
   isActive?: boolean;
 }
 
-// Các endpoint API
-export const warrantyApi = api.injectEndpoints({
-  endpoints: (builder) => ({
-    // Lấy tất cả gói bảo hành
-    getWarrantyPackages: builder.query<
-      WarrantyPackagesResponse,
-      WarrantyPackageFilters | void
-    >({
-      query: (filters = {}) => ({
-        url: '/warranty-packages',
-        params: filters || {},
-      }),
-      providesTags: ['WarrantyPackages'],
-    }),
+// === Query Keys ===
 
-    // Lấy gói bảo hành theo ID
-    getWarrantyPackageById: builder.query<WarrantyPackageResponse, string>({
-      query: (id) => `/warranty-packages/${id}`,
-      providesTags: (result, error, id) => [{ type: 'WarrantyPackages', id }],
-    }),
+export const warrantyKeys = {
+  all: ['warranty-packages'] as const,
+  lists: () => [...warrantyKeys.all, 'list'] as const,
+  list: (filters: any) => [...warrantyKeys.lists(), filters] as const,
+  details: () => [...warrantyKeys.all, 'detail'] as const,
+  detail: (id: string) => [...warrantyKeys.details(), id] as const,
+};
 
-    // Tạo gói bảo hành mới
-    createWarrantyPackage: builder.mutation<
-      WarrantyPackageResponse,
-      CreateWarrantyPackageRequest
-    >({
-      query: (data) => ({
-        url: '/warranty-packages',
-        method: 'POST',
-        body: data,
-      }),
-      invalidatesTags: ['WarrantyPackages'],
-    }),
+// === Query Hooks ===
 
-    // Cập nhật gói bảo hành
-    updateWarrantyPackage: builder.mutation<
-      WarrantyPackageResponse,
-      UpdateWarrantyPackageRequest
-    >({
-      query: ({ id, ...data }) => ({
-        url: `/warranty-packages/${id}`,
-        method: 'PUT',
-        body: data,
-      }),
-      invalidatesTags: (result, error, { id }) => [
-        'WarrantyPackages',
-        { type: 'WarrantyPackages', id },
-      ],
-    }),
+export function useGetWarrantyPackagesQuery(
+  filters: WarrantyPackageFilters | void = {},
+  options?: { enabled?: boolean; skip?: boolean }
+) {
+  const filterObj = (filters as WarrantyPackageFilters) ?? {};
+  return useQuery<WarrantyPackagesResponse>({
+    queryKey: warrantyKeys.list(filterObj),
+    queryFn: async () => {
+      const { data } = await apiClient.get('/warranty-packages', { params: filterObj });
+      return data;
+    },
+    enabled: options?.skip !== undefined ? !options.skip : true,
+  });
+}
 
-    // Xóa gói bảo hành
-    deleteWarrantyPackage: builder.mutation<
-      { status: string; message: string },
-      string
-    >({
-      query: (id) => ({
-        url: `/warranty-packages/${id}`,
-        method: 'DELETE',
-      }),
-      invalidatesTags: (result, error, id) => [
-        'WarrantyPackages',
-        { type: 'WarrantyPackages', id },
-      ],
-    }),
-  }),
-});
+export function useGetWarrantyPackageByIdQuery(
+  id: string,
+  options?: { enabled?: boolean; skip?: boolean }
+) {
+  return useQuery<WarrantyPackageResponse>({
+    queryKey: warrantyKeys.detail(id),
+    queryFn: async () => {
+      const { data } = await apiClient.get(`/warranty-packages/${id}`);
+      return data;
+    },
+    enabled: options?.skip !== undefined ? !options.skip : !!id,
+  });
+}
 
-// Export các hooks
-export const {
-  useGetWarrantyPackagesQuery,
-  useGetWarrantyPackageByIdQuery,
-  useCreateWarrantyPackageMutation,
-  useUpdateWarrantyPackageMutation,
-  useDeleteWarrantyPackageMutation,
-} = warrantyApi;
+// === Mutation Hooks ===
 
+export function useCreateWarrantyPackageMutation() {
+  const queryClient = useQueryClient();
+  return useMutation<WarrantyPackageResponse, Error, CreateWarrantyPackageRequest>({
+    mutationFn: async (body) => {
+      const { data } = await apiClient.post('/warranty-packages', body);
+      return data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: warrantyKeys.all });
+    },
+  });
+}
+
+export function useUpdateWarrantyPackageMutation() {
+  const queryClient = useQueryClient();
+  return useMutation<WarrantyPackageResponse, Error, UpdateWarrantyPackageRequest>({
+    mutationFn: async ({ id, ...body }) => {
+      const { data } = await apiClient.put(`/warranty-packages/${id}`, body);
+      return data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: warrantyKeys.all });
+    },
+  });
+}
+
+export function useDeleteWarrantyPackageMutation() {
+  const queryClient = useQueryClient();
+  return useMutation<{ status: string; message: string }, Error, string>({
+    mutationFn: async (id) => {
+      const { data } = await apiClient.delete(`/warranty-packages/${id}`);
+      return data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: warrantyKeys.all });
+    },
+  });
+}

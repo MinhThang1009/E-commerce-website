@@ -84,9 +84,10 @@ class PaymentService {
 
   // ---------- MoMo ----------
 
-  async createMomoUrl({ orderId }) {
+  async createMomoUrl({ orderId, userId }) {
     const order = await this.repo.findOrderByPk(orderId);
     if (!order) throw new AppError('Không tìm thấy đơn hàng', 404);
+    if (order.userId !== userId) throw new AppError('Không có quyền truy cập đơn hàng này', 403);
 
     return this.momoGateway.createPaymentUrl({
       orderId: order.number,
@@ -96,32 +97,13 @@ class PaymentService {
     });
   }
 
-  async handleMomoReturn({ resultCode, extraData, amount }) {
-    const orderIdMatch = extraData.match(/orderId=([^&]+)/);
-    const orderId = orderIdMatch ? orderIdMatch[1] : null;
-
-    let redirectStatus = 'failed';
-    if (resultCode == 0) {
-      redirectStatus = 'success';
-      if (orderId) {
-        const order = await this.repo.findOrderByPk(orderId);
-        if (order && amount && Math.abs(order.total - amount) > 0.01) {
-          this.logger.warn('MoMo return amount mismatch', { expected: order.total, received: amount, orderId });
-          return `${this.frontendUrl}/orders?payment=failed&reason=amount_mismatch`;
-        }
-        if (order && PaymentPolicy.canProcessPayment(order, null)) {
-          order.status = 'processing';
-          order.paymentStatus = 'paid';
-          order.paymentProvider = 'momo';
-          order.updatedAt = new Date();
-          await this.repo.saveOrder(order);
-          await this._incrementDiscountCodeUsage(order.id);
-          await this._clearUserCart(order.userId);
-          await this._sendOrderConfirmationEmailSafe(order.id);
-        }
-      }
-    }
-    return `${this.frontendUrl}/orders?payment=${redirectStatus}`;
+  // Return URL chỉ redirect — KHÔNG mutate state.
+  // Mọi state change (order status, discount, cart) xảy ra ở IPN handler (có signature verification).
+  async handleMomoReturn({ resultCode, extraData }) {
+    const redirectStatus = resultCode == 0 ? 'success' : 'failed';
+    const orderIdMatch = extraData?.match(/orderId=([^&]+)/);
+    const orderId = orderIdMatch ? orderIdMatch[1] : '';
+    return `${this.frontendUrl}/orders?payment=${redirectStatus}&orderId=${orderId}`;
   }
 
   async handleMomoIPN({ body }) {
@@ -135,28 +117,33 @@ class PaymentService {
     const orderId = orderIdMatch ? orderIdMatch[1] : null;
 
     if (resultCode == 0 && orderId) {
-      const order = await this.repo.findOrderByPk(orderId);
-      if (!order) return { valid: false };
+      const processed = await this.repo.runInTransaction(async (tx) => {
+        const order = await this.repo.lockOrder(orderId, tx);
+        if (!order) return false;
 
-      if (body.amount && Math.abs(order.total - body.amount) > 0.01) {
-        this.logger.warn('MoMo IPN amount mismatch', { expected: order.total, received: body.amount, orderId });
-        return { valid: false };
-      }
+        if (body.amount && Math.abs(order.total - body.amount) > 0.01) {
+          this.logger.warn('MoMo IPN amount mismatch', { expected: order.total, received: body.amount, orderId });
+          return false;
+        }
 
-      if (PaymentPolicy.canProcessPayment(order, transId)) {
+        if (!PaymentPolicy.canProcessPayment(order, transId)) return false;
+
         order.status = 'processing';
         order.paymentStatus = 'paid';
         order.paymentTransactionId = transId;
         order.paymentProvider = 'momo';
         order.updatedAt = new Date();
-        await this.repo.saveOrder(order);
-        await this._clearUserCart(order.userId);
-        await this._sendOrderConfirmationEmailSafe(order.id);
+        await this.repo.saveOrder(order, { transaction: tx });
+        return order;
+      });
 
+      if (processed) {
+        await this._clearUserCart(processed.userId);
+        await this._sendOrderConfirmationEmailSafe(processed.id);
         await this.eventBus.publish(PaymentSucceededEvent({
-          orderId: order.id, orderNumber: order.number,
+          orderId: processed.id, orderNumber: processed.number,
           transactionId: transId, provider: 'momo',
-          amount: order.total,
+          amount: processed.total,
         }));
       }
     }
@@ -165,9 +152,10 @@ class PaymentService {
 
   // ---------- VNPay ----------
 
-  async createVNPayUrl({ orderId, ipAddr }) {
+  async createVNPayUrl({ orderId, ipAddr, userId }) {
     const order = await this.repo.findOrderByPk(orderId);
     if (!order) throw new AppError('Không tìm thấy đơn hàng', 404);
+    if (order.userId !== userId) throw new AppError('Không có quyền truy cập đơn hàng này', 403);
 
     return this.vnpayGateway.createPaymentUrl({
       orderId: order.number,
@@ -187,21 +175,29 @@ class PaymentService {
     const responseCode = vnp_Params['vnp_ResponseCode'];
 
     if (responseCode === '00') {
-      const order = await this.repo.findOrderByNumber(orderNumber);
-      if (order && PaymentPolicy.canProcessPayment(order, vnp_Params['vnp_TransactionNo'])) {
+      const transNo = vnp_Params['vnp_TransactionNo'];
+      const processed = await this.repo.runInTransaction(async (tx) => {
+        const order = await this.repo.findOrderByNumber(orderNumber);
+        if (!order || !PaymentPolicy.canProcessPayment(order, transNo)) return null;
+
         order.status = 'processing';
         order.paymentStatus = 'paid';
         order.paymentProvider = 'vnpay';
-        order.paymentTransactionId = vnp_Params['vnp_TransactionNo'];
+        order.paymentTransactionId = transNo;
         order.updatedAt = new Date();
-        await this.repo.saveOrder(order);
-        await this._incrementDiscountCodeUsage(order.id);
-        await this._clearUserCart(order.userId);
-        await this._sendOrderConfirmationEmailSafe(order.id);
+        await this.repo.saveOrder(order, { transaction: tx });
+        return order;
+      });
+
+      if (processed) {
+        await this._incrementDiscountCodeUsage(processed.id);
+        await this._clearUserCart(processed.userId);
+        await this._sendOrderConfirmationEmailSafe(processed.id);
       }
       return { redirectUrl: `${this.frontendUrl}/orders?payment=success&order=${orderNumber}` };
     }
-    return { redirectUrl: `${this.frontendUrl}/orders?payment=failed&code=${responseCode}` };
+    const safeCode = /^\d{2}$/.test(responseCode) ? responseCode : 'unknown';
+    return { redirectUrl: `${this.frontendUrl}/orders?payment=failed&code=${safeCode}` };
   }
 
   async handleVnPayIPN({ vnp_Params }) {
@@ -212,32 +208,45 @@ class PaymentService {
     const responseCode = vnp_Params['vnp_ResponseCode'];
     const amount = parseInt(vnp_Params['vnp_Amount'], 10) / 100;
 
-    const order = await this.repo.findOrderByNumber(orderNumber);
-    if (!order) return { RspCode: '01', Message: 'Order not found' };
+    const transNo = vnp_Params['vnp_TransactionNo'];
 
-    if (Math.abs(order.total - amount) > 0.01) {
-      return { RspCode: '04', Message: 'Invalid amount' };
-    }
-    if (order.paymentStatus === 'paid') {
-      return { RspCode: '02', Message: 'Order already confirmed' };
+    const result = await this.repo.runInTransaction(async (tx) => {
+      const found = await this.repo.findOrderByNumber(orderNumber);
+      if (!found) return { RspCode: '01', Message: 'Order not found' };
+
+      const locked = await this.repo.lockOrder(found.id, tx);
+      if (!locked) return { RspCode: '01', Message: 'Order not found' };
+
+      if (Math.abs(locked.total - amount) > 0.01) {
+        return { RspCode: '04', Message: 'Invalid amount' };
+      }
+      if (locked.paymentStatus === 'paid') {
+        return { RspCode: '02', Message: 'Order already confirmed' };
+      }
+
+      if (responseCode === '00') {
+        locked.status = 'processing';
+        locked.paymentStatus = 'paid';
+        locked.paymentProvider = 'vnpay';
+        locked.paymentTransactionId = transNo;
+        locked.updatedAt = new Date();
+        await this.repo.saveOrder(locked, { transaction: tx });
+        return { RspCode: '00', Message: 'Confirm Success', order: locked };
+      } else {
+        locked.paymentStatus = 'failed';
+        locked.updatedAt = new Date();
+        await this.repo.saveOrder(locked, { transaction: tx });
+        return { RspCode: '00', Message: 'Confirm Success' };
+      }
+    });
+
+    if (result.order) {
+      await this._incrementDiscountCodeUsage(result.order.id);
+      await this._clearUserCart(result.order.userId);
+      await this._sendOrderConfirmationEmailSafe(result.order.id);
     }
 
-    if (responseCode === '00') {
-      order.status = 'processing';
-      order.paymentStatus = 'paid';
-      order.paymentProvider = 'vnpay';
-      order.paymentTransactionId = vnp_Params['vnp_TransactionNo'];
-      order.updatedAt = new Date();
-      await this.repo.saveOrder(order);
-      await this._incrementDiscountCodeUsage(order.id);
-      await this._clearUserCart(order.userId);
-      await this._sendOrderConfirmationEmailSafe(order.id);
-    } else {
-      order.paymentStatus = 'failed';
-      order.updatedAt = new Date();
-      await this.repo.saveOrder(order);
-    }
-    return { RspCode: '00', Message: 'Confirm Success' };
+    return { RspCode: result.RspCode, Message: result.Message };
   }
 
   // ---------- Refund ----------
@@ -251,11 +260,16 @@ class PaymentService {
       throw new AppError(policyResult.reason, order ? 400 : 404);
     }
 
+    const refundAmount = amount || order.total;
+    if (refundAmount <= 0 || refundAmount > parseFloat(order.total)) {
+      throw new AppError('Số tiền hoàn không hợp lệ (phải > 0 và <= tổng đơn hàng)', 400);
+    }
+
     let refund;
     if (order.paymentProvider === 'vnpay') {
       refund = await this.vnpayGateway.refund({
         orderId: order.number,
-        amount: amount || order.total,
+        amount: refundAmount,
         transDate: moment(order.updatedAt).format('YYYYMMDDHHmmss'),
         ipAddr,
       });

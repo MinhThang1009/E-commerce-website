@@ -2,8 +2,9 @@ import React, { useState } from 'react';
 import { Table, Input, DatePicker, Modal, Button, Space, Tag } from 'antd';
 import { SearchOutlined, EyeOutlined } from '@ant-design/icons';
 import { useTranslation } from 'react-i18next';
-import dayjs, { Dayjs } from 'dayjs';
-import { api } from '@/services/api';
+import { Dayjs } from 'dayjs';
+import { useQuery } from '@tanstack/react-query';
+import apiClient from '@/services/apiClient';
 
 const { RangePicker } = DatePicker;
 
@@ -31,28 +32,29 @@ interface AuditLogsResponse {
   };
 }
 
-// RTK Query endpoint cho audit logs — inject vào api slice chính
-const auditLogApi = api.injectEndpoints({
-  endpoints: (builder) => ({
-    getAuditLogs: builder.query<AuditLogsResponse, {
-      page?: number;
-      limit?: number;
-      adminId?: number;
-      action?: string;
-      startDate?: string;
-      endDate?: string;
-    }>({
-      query: (params = {}) => ({
-        url: '/admin/audit-logs',
-        params,
-      }),
-    }),
-  }),
-});
+// Query keys cho audit logs
+const auditLogKeys = {
+  all: ['audit-logs'] as const,
+  list: (params: any) => [...auditLogKeys.all, 'list', params] as const,
+};
 
-const { useGetAuditLogsQuery } = auditLogApi;
+function useGetAuditLogsQuery(params: {
+  page?: number;
+  limit?: number;
+  adminId?: number;
+  action?: string;
+  startDate?: string;
+  endDate?: string;
+}) {
+  return useQuery<AuditLogsResponse>({
+    queryKey: auditLogKeys.list(params),
+    queryFn: async () => {
+      const { data } = await apiClient.get('/admin/audit-logs', { params });
+      return data;
+    },
+  });
+}
 
-// oldValue/newValue được lưu dưới dạng JSON string trong DB — parse trước khi stringify để pretty-print
 const prettyJson = (val: any): string => {
   if (!val) return '';
   try {
@@ -141,7 +143,6 @@ const AuditLogPage: React.FC = () => {
         <h2 style={{ margin: 0 }}>{t('auditLog.title')}</h2>
       </div>
 
-      {/* Bộ lọc */}
       <Space wrap style={{ marginBottom: 16 }}>
         <Input
           placeholder={t('auditLog.filterAdminId')}
@@ -182,7 +183,6 @@ const AuditLogPage: React.FC = () => {
         size="small"
       />
 
-      {/* Modal chi tiết thay đổi */}
       <Modal
         title={t('auditLog.detailTitle')}
         open={!!detailRecord}

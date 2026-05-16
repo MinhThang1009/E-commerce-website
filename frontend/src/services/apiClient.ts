@@ -1,6 +1,6 @@
 // services/apiClient.ts — Plain Axios instance.
-// Dùng cho calls không qua RTK cache: file upload (multipart/form-data), OAuth flow, raw HTTP.
-// Khác với services/api.ts (RTK Query) — dùng cho mọi endpoint có cache + hook React.
+// Dùng cho calls không qua TanStack Query cache: file upload (multipart/form-data), OAuth flow, raw HTTP.
+// Các API hook (TanStack Query) dùng instance này làm base cho mọi endpoint có cache + hook React.
 
 import axios from 'axios';
 import { getValidToken } from '@/utils/tokenManager';
@@ -13,6 +13,7 @@ const API_BASE_URL =
 const apiClient = axios.create({
   baseURL: API_BASE_URL,
   timeout: 10000,
+  withCredentials: true,
   headers: {
     'Content-Type': 'application/json',
   },

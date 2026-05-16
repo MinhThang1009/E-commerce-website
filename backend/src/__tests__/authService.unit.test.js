@@ -184,18 +184,18 @@ describe('AuthService', () => {
       await expect(service.verifyOtp({ email: '', otp: '' })).rejects.toMatchObject({ statusCode: 400 });
     });
 
-    test('user không tồn tại → 404', async () => {
+    test('user không tồn tại → 400 generic (chống enumeration)', async () => {
       authRepository.findByEmail.mockResolvedValue(null);
       await expect(
         service.verifyOtp({ email: 'a@b.c', otp: '123456' })
-      ).rejects.toMatchObject({ statusCode: 404 });
+      ).rejects.toMatchObject({ statusCode: 400 });
     });
 
-    test('email đã verify → 400', async () => {
+    test('email đã verify → 400 generic (chống enumeration)', async () => {
       authRepository.findByEmail.mockResolvedValue({ isEmailVerified: true });
       await expect(
         service.verifyOtp({ email: 'a@b.c', otp: '123456' })
-      ).rejects.toMatchObject({ statusCode: 400, message: expect.stringContaining('đã được xác thực') });
+      ).rejects.toMatchObject({ statusCode: 400 });
     });
 
     test('OTP sai → 400', async () => {

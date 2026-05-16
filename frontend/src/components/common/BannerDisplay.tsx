@@ -3,6 +3,7 @@ import { useTranslation } from 'react-i18next';
 import { useGetBannersQuery } from '@/features/content';
 import { Carousel, Skeleton } from 'antd';
 import { Link } from 'react-router-dom';
+import { getUploadUrl } from '@/utils/uploadUrl';
 
 interface BannerDisplayProps {
   position: 'home_hero' | 'home_middle' | 'sidebar';
@@ -11,7 +12,7 @@ interface BannerDisplayProps {
 
 const BannerDisplay: React.FC<BannerDisplayProps> = ({ position, className }) => {
   const { t } = useTranslation();
-  const { data, isLoading, isError } = useGetBannersQuery({ position, isActive: true });
+  const { data, isLoading } = useGetBannersQuery({ position, isActive: true });
 
   if (isLoading) {
     return (
@@ -28,7 +29,7 @@ const BannerDisplay: React.FC<BannerDisplayProps> = ({ position, className }) =>
     const content = (
       <div className="relative w-full h-full overflow-hidden group cursor-pointer transition-all duration-500">
         <img
-          src={banner.imageUrl.startsWith('http') ? banner.imageUrl : `${import.meta.env.VITE_API_URL || 'http://localhost:8888'}${banner.imageUrl}`}
+          src={getUploadUrl(banner.imageUrl)}
           alt={banner.title}
           className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"
         />

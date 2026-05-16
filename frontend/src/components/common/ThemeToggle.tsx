@@ -1,16 +1,14 @@
 import React from 'react';
-import { useSelector, useDispatch } from 'react-redux';
 import { useTranslation } from 'react-i18next';
-import { RootState } from '@/store';
-import { setTheme } from '@/features/ui/uiSlice';
+import { useUiStore } from '@/stores/uiStore';
 
 const ThemeToggle: React.FC = () => {
   const { t } = useTranslation();
-  const dispatch = useDispatch();
-  const theme = useSelector((state: RootState) => state.ui.theme);
+  const theme = useUiStore((s) => s.theme);
+  const setTheme = useUiStore((s) => s.setTheme);
 
   const toggleTheme = () => {
-    dispatch(setTheme(theme === 'light' ? 'dark' : 'light'));
+    setTheme(theme === 'light' ? 'dark' : 'light');
   };
 
   return (

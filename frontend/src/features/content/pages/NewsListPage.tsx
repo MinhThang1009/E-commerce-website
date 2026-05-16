@@ -1,6 +1,6 @@
-import { useState } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
+import { buildRoute } from '@/routes/paths';
 import { useGetNewsQuery } from '../api/newsApi';
 import LoadingSpinner from '@/components/common/LoadingSpinner';
 import Pagination from '@/components/common/Pagination';
@@ -93,7 +93,7 @@ const NewsListPage: React.FC = () => {
             {showFeatured && (
               <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
                 <Link
-                  to={`/news/${featuredPost!.slug}`}
+                  to={buildRoute.newsDetail(featuredPost!.slug)}
                   className="lg:col-span-8 group relative overflow-hidden rounded-3xl bg-neutral-100 aspect-[16/9] lg:aspect-auto"
                 >
                   <img
@@ -122,7 +122,7 @@ const NewsListPage: React.FC = () => {
                     {gridPosts.map((post: any) => (
                       <Link
                         key={post.id}
-                        to={`/news/${post.slug}`}
+                        to={buildRoute.newsDetail(post.slug)}
                         className="group flex gap-4 h-[120px]"
                       >
                         <div className="w-[120px] h-[120px] rounded-2xl overflow-hidden flex-shrink-0">
@@ -154,7 +154,7 @@ const NewsListPage: React.FC = () => {
               {listPosts.map((item: any) => (
                 <Link
                   key={item.id}
-                  to={`/news/${item.slug}`}
+                  to={buildRoute.newsDetail(item.slug)}
                   className="group flex flex-col"
                 >
                   <div className="relative aspect-[16/10] rounded-3xl overflow-hidden mb-6 shadow-sm">

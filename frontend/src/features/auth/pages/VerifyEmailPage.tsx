@@ -18,8 +18,8 @@ const VerifyEmailPage: React.FC = () => {
   const [resendCooldown, setResendCooldown] = useState(0);
   const [emailError, setEmailError] = useState('');
 
-  const [verifyOtp, { isLoading: isVerifying }] = useVerifyOtpMutation();
-  const [resendVerification, { isLoading: isResending }] = useResendVerificationMutation();
+  const { mutateAsync: verifyOtp, isPending: isVerifying } = useVerifyOtpMutation();
+  const { mutateAsync: resendVerification, isPending: isResending } = useResendVerificationMutation();
 
   const handleOtpChange = (index: number, value: string) => {
     if (!/^\d*$/.test(value)) return;
@@ -57,7 +57,7 @@ const VerifyEmailPage: React.FC = () => {
     setOtpError('');
     setEmailError('');
     try {
-      await verifyOtp({ email, otp }).unwrap();
+      await verifyOtp({ email, otp });
       setOtpSuccess(t('verifyEmail.successTitle'));
       setTimeout(() => navigate('/login', { replace: true }), 2000);
     } catch (err: any) {
@@ -68,7 +68,7 @@ const VerifyEmailPage: React.FC = () => {
   const handleResend = async () => {
     if (!email || resendCooldown > 0) return;
     try {
-      await resendVerification({ email }).unwrap();
+      await resendVerification({ email });
       setOtpValues(['', '', '', '', '', '']);
       setOtpError('');
       setResendCooldown(60);

@@ -2,6 +2,7 @@ import React from 'react';
 import { Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import Button from '@/components/common/Button';
+import { ROUTES } from '@/routes/paths';
 
 const NotFoundPage: React.FC = () => {
   const { t } = useTranslation();
@@ -19,10 +20,10 @@ const NotFoundPage: React.FC = () => {
           {t('notFound.description')}
         </p>
         <div className="flex flex-col sm:flex-row gap-4 justify-center">
-          <Button variant="primary" as={Link} to="/">
+          <Button variant="primary" as={Link} to={ROUTES.HOME}>
             {t('notFound.goHome')}
           </Button>
-          <Button variant="outline" as={Link} to="/shop">
+          <Button variant="outline" as={Link} to={ROUTES.SHOP}>
             {t('notFound.browseProducts')}
           </Button>
         </div>

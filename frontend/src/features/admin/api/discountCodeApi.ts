@@ -1,4 +1,5 @@
-import { api } from '@/services/api';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import apiClient from '@/services/apiClient';
 import { DiscountCode } from '@/types/discount.types';
 
 export interface DiscountCodesResponse {
@@ -26,60 +27,84 @@ export interface DiscountCodeFilters {
   search?: string;
 }
 
-export const discountCodeApi = api.injectEndpoints({
-  endpoints: (builder) => ({
-    getDiscountCodes: builder.query<DiscountCodesResponse, DiscountCodeFilters | void>({
-      query: (filters = {}) => ({
-        url: '/admin/discount-codes',
-        params: filters || {},
-      }),
-      providesTags: ['DiscountCodes'],
-    }),
+// === Query Keys ===
 
-    getDiscountCodeById: builder.query<DiscountCodeResponse, string>({
-      query: (id) => `/admin/discount-codes/${id}`,
-      providesTags: (result, error, id) => [{ type: 'DiscountCodes', id }],
-    }),
+export const discountCodeKeys = {
+  all: ['discount-codes'] as const,
+  lists: () => [...discountCodeKeys.all, 'list'] as const,
+  list: (filters: any) => [...discountCodeKeys.lists(), filters] as const,
+  details: () => [...discountCodeKeys.all, 'detail'] as const,
+  detail: (id: string) => [...discountCodeKeys.details(), id] as const,
+};
 
-    createDiscountCode: builder.mutation<DiscountCodeResponse, Partial<DiscountCode>>({
-      query: (data) => ({
-        url: '/admin/discount-codes',
-        method: 'POST',
-        body: data,
-      }),
-      invalidatesTags: ['DiscountCodes'],
-    }),
+// === Query Hooks ===
 
-    updateDiscountCode: builder.mutation<DiscountCodeResponse, { id: string } & Partial<DiscountCode>>({
-      query: ({ id, ...data }) => ({
-        url: `/admin/discount-codes/${id}`,
-        method: 'PUT',
-        body: data,
-      }),
-      invalidatesTags: (result, error, { id }) => [
-        'DiscountCodes',
-        { type: 'DiscountCodes', id },
-      ],
-    }),
+export function useGetDiscountCodesQuery(
+  filters: DiscountCodeFilters | void = {},
+  options?: { enabled?: boolean; skip?: boolean }
+) {
+  const filterObj = (filters as DiscountCodeFilters) ?? {};
+  return useQuery<DiscountCodesResponse>({
+    queryKey: discountCodeKeys.list(filterObj),
+    queryFn: async () => {
+      const { data } = await apiClient.get('/admin/discount-codes', { params: filterObj });
+      return data;
+    },
+    enabled: options?.skip !== undefined ? !options.skip : true,
+  });
+}
 
-    deleteDiscountCode: builder.mutation<{ status: string; message: string }, string>({
-      query: (id) => ({
-        url: `/admin/discount-codes/${id}`,
-        method: 'DELETE',
-      }),
-      invalidatesTags: (result, error, id) => [
-        'DiscountCodes',
-        { type: 'DiscountCodes', id },
-      ],
-    }),
-  }),
-});
+export function useGetDiscountCodeByIdQuery(
+  id: string,
+  options?: { enabled?: boolean; skip?: boolean }
+) {
+  return useQuery<DiscountCodeResponse>({
+    queryKey: discountCodeKeys.detail(id),
+    queryFn: async () => {
+      const { data } = await apiClient.get(`/admin/discount-codes/${id}`);
+      return data;
+    },
+    enabled: options?.skip !== undefined ? !options.skip : !!id,
+  });
+}
 
-export const {
-  useGetDiscountCodesQuery,
-  useGetDiscountCodeByIdQuery,
-  useCreateDiscountCodeMutation,
-  useUpdateDiscountCodeMutation,
-  useDeleteDiscountCodeMutation,
-} = discountCodeApi;
+// === Mutation Hooks ===
 
+export function useCreateDiscountCodeMutation() {
+  const queryClient = useQueryClient();
+  return useMutation<DiscountCodeResponse, Error, Partial<DiscountCode>>({
+    mutationFn: async (body) => {
+      const { data } = await apiClient.post('/admin/discount-codes', body);
+      return data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: discountCodeKeys.all });
+    },
+  });
+}
+
+export function useUpdateDiscountCodeMutation() {
+  const queryClient = useQueryClient();
+  return useMutation<DiscountCodeResponse, Error, { id: string } & Partial<DiscountCode>>({
+    mutationFn: async ({ id, ...body }) => {
+      const { data } = await apiClient.put(`/admin/discount-codes/${id}`, body);
+      return data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: discountCodeKeys.all });
+    },
+  });
+}
+
+export function useDeleteDiscountCodeMutation() {
+  const queryClient = useQueryClient();
+  return useMutation<{ status: string; message: string }, Error, string>({
+    mutationFn: async (id) => {
+      const { data } = await apiClient.delete(`/admin/discount-codes/${id}`);
+      return data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: discountCodeKeys.all });
+    },
+  });
+}

@@ -118,11 +118,13 @@ class SequelizeCartRepository extends ICartRepository {
           include: [
             { association: 'productImages', required: false },
             { association: 'defaultVariant', required: false },
+            // Include tất cả variants để tính tổng stock (stock thực ở variant level)
+            { association: 'variants', attributes: ['stockQuantity'], required: false },
           ],
         },
         {
           model: this.ProductVariant,
-          attributes: ['id', ['variant_name', 'name'], 'price', 'stockQuantity', 'attributes'],
+          attributes: ['id', ['variantName', 'name'], 'price', 'stockQuantity', 'attributes'],
         },
       ],
     });
@@ -153,7 +155,7 @@ class SequelizeCartRepository extends ICartRepository {
         },
         {
           model: this.ProductVariant,
-          attributes: ['id', ['variant_name', 'name'], 'price', 'stockQuantity'],
+          attributes: ['id', ['variantName', 'name'], 'price', 'stockQuantity'],
         },
       ],
     });

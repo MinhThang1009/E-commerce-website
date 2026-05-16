@@ -1,6 +1,5 @@
 import i18next from 'i18next';
-import { store } from '@/store';
-import { updateTokens, logout } from '@/features/auth';
+import { useAuthStore } from '@/stores/authStore';
 import { handleAutoLogout, logoutManager } from '@/utils/authUtils';
 
 let isRefreshing = false;
@@ -22,14 +21,6 @@ const processQueue = (error: any, token: string | null = null) => {
 };
 
 export const refreshTokenIfNeeded = async (): Promise<string | null> => {
-  const state = store.getState();
-  const { refreshToken } = state.auth;
-
-  if (!refreshToken) {
-    store.dispatch(logout());
-    return null;
-  }
-
   if (isRefreshing) {
     return new Promise((resolve, reject) => {
       failedQueue.push({ resolve, reject });
@@ -39,30 +30,39 @@ export const refreshTokenIfNeeded = async (): Promise<string | null> => {
   isRefreshing = true;
 
   try {
-    // Xác định URL API chính xác
     const baseUrl = import.meta.env.VITE_API_URL || 'http://localhost:8888/api';
     const apiUrl = baseUrl.endsWith('/api') ? baseUrl : `${baseUrl}/api`;
 
-    const response = await fetch(`${apiUrl}/auth/refresh`, {
+    // Migration: nếu còn refreshToken cũ trong localStorage, gửi trong body 1 lần rồi xóa
+    const legacyRefreshToken = localStorage.getItem('refreshToken');
+    const bodyPayload = legacyRefreshToken
+      ? JSON.stringify({ refreshToken: legacyRefreshToken })
+      : undefined;
+
+    const response = await fetch(`${apiUrl}/auth/refresh-token`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
         Accept: 'application/json',
       },
-      body: JSON.stringify({ refreshToken }),
+      credentials: 'include',
+      body: bodyPayload,
     });
 
+    // Xóa legacy tokens sau khi gửi (dù thành công hay thất bại)
+    if (legacyRefreshToken) {
+      localStorage.removeItem('refreshToken');
+      localStorage.removeItem('token');
+    }
+
     if (!response.ok) {
-      // Xử lý lỗi 401 cụ thể (tài khoản bị khóa/vô hiệu hóa)
       if (response.status === 401) {
         const errorData = await response.json().catch(() => ({}));
         const errorMessage =
           errorData?.message ||
           i18next.t('auth.errors.accountLocked');
 
-        // Dùng hàm xử lý tự động đăng xuất tập trung
         handleAutoLogout(errorMessage);
-
         throw new Error(errorMessage);
       }
 
@@ -72,15 +72,8 @@ export const refreshTokenIfNeeded = async (): Promise<string | null> => {
     const data = await response.json();
 
     if (data.status === 'success') {
-      const { token, refreshToken: newRefreshToken } = data;
-
-      store.dispatch(
-        updateTokens({
-          token,
-          refreshToken: newRefreshToken,
-        })
-      );
-
+      const { token } = data;
+      useAuthStore.getState().updateAccessToken(token);
       processQueue(null, token);
       return token;
     } else {
@@ -90,9 +83,8 @@ export const refreshTokenIfNeeded = async (): Promise<string | null> => {
     console.error('Token refresh failed:', error);
     processQueue(error, null);
 
-    // Chỉ dispatch logout nếu chưa được xử lý bởi auto logout
     if (!logoutManager.isLoggingOut) {
-      store.dispatch(logout());
+      useAuthStore.getState().logout();
     }
 
     return null;
@@ -112,8 +104,7 @@ export const isTokenExpired = (token: string): boolean => {
 };
 
 export const getValidToken = async (): Promise<string | null> => {
-  const state = store.getState();
-  const { token } = state.auth;
+  const { token } = useAuthStore.getState();
 
   if (!token) {
     return null;
@@ -125,4 +116,3 @@ export const getValidToken = async (): Promise<string | null> => {
 
   return token;
 };
-

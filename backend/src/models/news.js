@@ -10,19 +10,20 @@ const News = sequelize.define(
       primaryKey: true,
     },
     title: {
-      type: DataTypes.STRING,
+      type: DataTypes.STRING(200),
       allowNull: false,
     },
     slug: {
-      type: DataTypes.STRING,
+      type: DataTypes.STRING(100),
       allowNull: false,
+      unique: true,
     },
     content: {
       type: DataTypes.TEXT,
       allowNull: false,
     },
     thumbnail: {
-      type: DataTypes.STRING,
+      type: DataTypes.STRING(512),
       allowNull: true,
     },
     description: {
@@ -30,7 +31,7 @@ const News = sequelize.define(
       allowNull: true,
     },
     category: {
-      type: DataTypes.STRING,
+      type: DataTypes.STRING(100),
       allowNull: true,
       defaultValue: 'Tin tức',
     },
@@ -39,7 +40,7 @@ const News = sequelize.define(
       defaultValue: 0,
     },
     tags: {
-        type: DataTypes.STRING, // Các tag cách nhau bằng dấu phẩy
+        type: DataTypes.STRING(500), // Các tag cách nhau bằng dấu phẩy
         allowNull: true,
     },
     isPublished: {

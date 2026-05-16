@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
+import { ROUTES } from '@/routes/paths';
 
 interface FAQ {
   question: string;
@@ -142,7 +143,7 @@ const FAQsPage: React.FC = () => {
         <p className="text-neutral-600 dark:text-neutral-400 mb-6 max-w-2xl mx-auto">
           {t('faqs.contact.desc')}
         </p>
-        <Link to="/contact" className="inline-block bg-primary-600 hover:bg-primary-700 text-white font-medium py-3 px-6 rounded-lg transition-colors">
+        <Link to={ROUTES.CONTACT} className="inline-block bg-primary-600 hover:bg-primary-700 text-white font-medium py-3 px-6 rounded-lg transition-colors">
           {t('faqs.contact.btn')}
         </Link>
       </div>

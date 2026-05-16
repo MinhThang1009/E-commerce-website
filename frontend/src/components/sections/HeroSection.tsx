@@ -3,7 +3,6 @@ import { useTranslation } from 'react-i18next';
 import {
   LightningIcon,
   CategoriesIcon,
-  ChevronDownIcon,
 } from '@/components/icons';
 
 interface HeroSectionProps {
@@ -38,32 +37,6 @@ const HERO_SLIDES = [
   },
 ] as const;
 
-const HERO_STATS = [
-  {
-    value: '10K+',
-    labelKey: 'homepage.hero.stats.products',
-    color: 'hover:text-primary-300',
-    icon: '📦',
-  },
-  {
-    value: '50K+',
-    labelKey: 'homepage.hero.stats.customers',
-    color: 'hover:text-secondary-300',
-    icon: '👥',
-  },
-  {
-    value: '99%',
-    labelKey: 'homepage.hero.stats.satisfaction',
-    color: 'hover:text-success-300',
-    icon: '⭐',
-  },
-  {
-    value: '24/7',
-    labelKey: 'homepage.hero.stats.support',
-    color: 'hover:text-info-300',
-    icon: '🛟',
-  },
-] as const;
 
 const HeroSection: React.FC<HeroSectionProps> = ({
   onShopNowClick,

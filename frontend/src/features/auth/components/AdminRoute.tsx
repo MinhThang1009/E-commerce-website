@@ -1,8 +1,8 @@
 import { ReactNode } from 'react';
 import { Navigate, useLocation } from 'react-router-dom';
-import { useSelector } from 'react-redux';
 import { useTranslation } from 'react-i18next';
-import { RootState } from '@/store';
+import { useAuthStore } from '@/stores/authStore';
+import { ROUTES } from '@/routes/paths';
 import { useGetCurrentUserQuery } from '../api/authApi';
 import LoadingSpinner from '@/components/common/LoadingSpinner';
 
@@ -12,9 +12,9 @@ interface AdminRouteProps {
 
 const AdminRoute: React.FC<AdminRouteProps> = ({ children }) => {
   const { t } = useTranslation();
-  const { isAuthenticated, user, token } = useSelector(
-    (state: RootState) => state.auth
-  );
+  const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
+  const user = useAuthStore((s) => s.user);
+  const token = useAuthStore((s) => s.token);
   const location = useLocation();
 
   // Nếu có token nhưng chưa có thông tin user, cần gọi API lấy user — phải khai báo hook trước early return
@@ -23,13 +23,13 @@ const AdminRoute: React.FC<AdminRouteProps> = ({ children }) => {
     data: currentUser,
     isLoading,
     error,
-  } = useGetCurrentUserQuery(undefined, {
-    skip: !shouldFetchUser,
+  } = useGetCurrentUserQuery({
+    enabled: !!shouldFetchUser,
   });
 
   // Nếu không có token, chuyển hướng đến trang đăng nhập
   if (!token) {
-    return <Navigate to="/login" state={{ from: location }} replace />;
+    return <Navigate to={ROUTES.LOGIN} state={{ from: location }} replace />;
   }
 
   // Hiển thị loading khi đang tải thông tin user
@@ -48,19 +48,19 @@ const AdminRoute: React.FC<AdminRouteProps> = ({ children }) => {
 
   // Nếu tải thất bại, chuyển hướng đến trang đăng nhập
   if (error) {
-    return <Navigate to="/login" state={{ from: location }} replace />;
+    return <Navigate to={ROUTES.LOGIN} state={{ from: location }} replace />;
   }
 
   // Dùng currentUser từ API nếu có, ngược lại dùng user từ state
   const userToCheck = currentUser || user;
 
   if (!isAuthenticated && !currentUser) {
-    return <Navigate to="/login" state={{ from: location }} replace />;
+    return <Navigate to={ROUTES.LOGIN} state={{ from: location }} replace />;
   }
 
   // Kiểm tra xem user có phải admin hoặc manager không
   if (userToCheck?.role !== 'admin' && userToCheck?.role !== 'manager') {
-    return <Navigate to="/unauthorized" replace />;
+    return <Navigate to={ROUTES.UNAUTHORIZED} replace />;
   }
 
   return <>{children}</>;

@@ -8,9 +8,8 @@ export { default as CartItem } from './components/CartItem';
 // Trang
 export { default as CartPage } from './pages/CartPage';
 
-// API endpoints (RTK Query)
+// API endpoints (TanStack Query)
 export {
-  cartApi,
   useGetCartQuery,
   useGetCartCountQuery,
   useAddToCartMutation,
@@ -20,6 +19,7 @@ export {
   useSyncCartMutation,
   useMergeCartMutation,
   useValidateCartQuery,
+  cartKeys,
 } from './api/cartApi';
 export type {
   BackendCartItem,
@@ -29,23 +29,11 @@ export type {
   SyncCartRequest,
   CartResponse,
   CartCountResponse,
+  CartValidationResult,
 } from './api/cartApi';
 
-// Redux store (slice + actions)
-export {
-  default as cartReducer,
-  setServerCart,
-  addItem,
-  removeItem,
-  updateQuantity,
-  clearCart,
-  toggleCart,
-  closeCart,
-  openCart,
-  setLoading,
-  initializeCart,
-  mergeWithLocalCart,
-} from './store/cartSlice';
+// Zustand store
+export { useCartStore } from '@/stores/cartStore';
 
 // Kiểu dữ liệu
 export type {

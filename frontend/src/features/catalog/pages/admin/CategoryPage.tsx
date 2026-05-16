@@ -4,7 +4,6 @@ import { useNavigate } from 'react-router-dom';
 import {
   PencilIcon,
   TrashIcon,
-  PlusIcon,
   FolderIcon,
   ArrowPathIcon,
   FolderPlusIcon,
@@ -39,7 +38,7 @@ interface CategoryFormData {
 
 const CategoryPage: React.FC = () => {
   const { t } = useTranslation();
-  const navigate = useNavigate();
+  const _navigate = useNavigate();
   const [messageApi, contextHolder] = message.useMessage();
 
   // Các API hooks
@@ -48,11 +47,11 @@ const CategoryPage: React.FC = () => {
     isLoading,
     refetch,
   } = useGetAllCategoriesQuery();
-  const [createCategory, { isLoading: isCreating }] =
+  const { mutateAsync: createCategory, isPending: isCreating } =
     useCreateCategoryMutation();
-  const [updateCategory, { isLoading: isUpdating }] =
+  const { mutateAsync: updateCategory, isPending: isUpdating } =
     useUpdateCategoryMutation();
-  const [deleteCategory, { isLoading: isDeleting }] =
+  const { mutateAsync: deleteCategory, isPending: isDeleting } =
     useDeleteCategoryMutation();
 
   // Các trạng thái
@@ -157,7 +156,7 @@ const CategoryPage: React.FC = () => {
     if (!validateForm()) return;
 
     try {
-      await createCategory(formData).unwrap();
+      await createCategory(formData);
       messageApi.success(t('adminCategory.createSuccess'));
       setIsCreateModalOpen(false);
       refetch();
@@ -174,7 +173,7 @@ const CategoryPage: React.FC = () => {
       await updateCategory({
         id: selectedCategory.id,
         ...formData,
-      }).unwrap();
+      });
       messageApi.success(t('adminCategory.updateSuccess'));
       setIsEditModalOpen(false);
       refetch();
@@ -190,7 +189,7 @@ const CategoryPage: React.FC = () => {
     if (!selectedCategory) return;
 
     try {
-      await deleteCategory(selectedCategory.id).unwrap();
+      await deleteCategory(selectedCategory.id);
       messageApi.success(t('adminCategory.deleteSuccess'));
       setIsDeleteModalOpen(false);
       refetch();

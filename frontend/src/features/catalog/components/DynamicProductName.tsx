@@ -2,7 +2,6 @@ import React, { useState, useEffect, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import {
   Form,
-  Input,
   Alert,
   Skeleton,
   Tag,
@@ -85,7 +84,7 @@ const DynamicProductName: React.FC<DynamicProductNameProps> = ({
         productId,
       });
 
-      if (response.success && response.data) {
+      if (response.status === 'success' && response.data) {
         setNamePreview(response.data);
 
         // Thông báo cho component cha
@@ -110,6 +109,7 @@ const DynamicProductName: React.FC<DynamicProductNameProps> = ({
   // Effect tạo tên khi input thay đổi
   useEffect(() => {
     generateName();
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- generateName dùng shouldGenerateName bên trong, deps đã đủ qua useMemo
   }, [shouldGenerateName]);
 
   // Đặt lại khi disabled

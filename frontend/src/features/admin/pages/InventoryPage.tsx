@@ -55,13 +55,15 @@ const InventoryPage: React.FC = () => {
     setSavingId(record.id);
     try {
       const apiBase = import.meta.env.VITE_API_URL || 'http://localhost:8888/api';
-      const token = localStorage.getItem('token');
+      const { getValidToken } = await import('@/utils/tokenManager');
+      const token = await getValidToken();
       const res = await fetch(`${apiBase}/admin/products/${record.id}/stock`, {
         method: 'PATCH',
         headers: {
           'Content-Type': 'application/json',
-          Authorization: token ? `Bearer ${token}` : '',
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
         },
+        credentials: 'include',
         body: JSON.stringify({ stockQuantity: qty }),
       });
       const resData = await res.json();

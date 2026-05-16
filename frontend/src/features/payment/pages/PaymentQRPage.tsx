@@ -1,19 +1,17 @@
 import { useGetOrderByIdQuery, useCancelOrderMutation } from '@/features/orders';
 import { useCreateVNPayUrlMutation } from '../api/vnpayApi';
-import { addNotification } from '@/features/ui/uiSlice';
-import { RootState } from '@/store';
+import { useUiStore } from '@/stores/uiStore';
 import { useState, useEffect } from 'react';
-import { useSelector, useDispatch } from 'react-redux';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
+import { ROUTES } from '@/routes/paths';
 import { getLocale } from '@/utils/format';
 
 const PaymentQRPage: React.FC = () => {
   const { t } = useTranslation();
   const navigate = useNavigate();
-  const dispatch = useDispatch();
+  const addNotification = useUiStore((s) => s.addNotification);
   const [searchParams] = useSearchParams();
-  const { isAuthenticated } = useSelector((state: RootState) => state.auth);
 
   const orderId = searchParams.get('orderId');
   const numberOrder = searchParams.get('numberOrder');
@@ -65,12 +63,12 @@ const PaymentQRPage: React.FC = () => {
     },
   ] : [];
 
-  const [createVnpayUrl] = useCreateVNPayUrlMutation();
-  const [cancelOrder, { isLoading: isCancelling }] = useCancelOrderMutation();
+  const { mutateAsync: createVnpayUrl } = useCreateVNPayUrlMutation();
+  const { mutateAsync: cancelOrder, isPending: isCancelling } = useCancelOrderMutation();
 
   const { data: orderData } = useGetOrderByIdQuery(orderId || '', {
-    pollingInterval: 5000,
-    skip: !orderId,
+    refetchInterval: 5000,
+    enabled: !!orderId,
   });
 
   useEffect(() => {
@@ -85,23 +83,23 @@ const PaymentQRPage: React.FC = () => {
       const iv = setInterval(() => {
         c--;
         setCountdown(c);
-        if (c <= 0) { clearInterval(iv); navigate('/orders'); }
+        if (c <= 0) { clearInterval(iv); navigate(ROUTES.ORDERS); }
       }, 1000);
       return () => clearInterval(iv);
     }
     if (orderData?.data?.status === 'cancelled') {
-      dispatch(addNotification({ type: 'warning', message: t('paymentQR.orderCancelled'), duration: 3000 }));
-      navigate('/orders');
+      addNotification({ type: 'warning', message: t('paymentQR.orderCancelled'), duration: 3000 });
+      navigate(ROUTES.ORDERS);
     }
-  }, [orderData, navigate, dispatch]);
+  }, [orderData, navigate, addNotification, t]);
 
   useEffect(() => {
     if (isExpired || timeLeft <= 0) {
       setIsExpired(true);
       if (orderId && !isCancelling && orderData?.data?.status !== 'cancelled') {
-        cancelOrder(orderId).unwrap()
+        cancelOrder(orderId)
           .catch(() => {})
-          .finally(() => setTimeout(() => navigate('/cart'), 1500));
+          .finally(() => setTimeout(() => navigate(ROUTES.CART), 1500));
       }
       return;
     }
@@ -112,7 +110,7 @@ const PaymentQRPage: React.FC = () => {
       });
     }, 1000);
     return () => clearInterval(timer);
-  }, [isExpired, timeLeft, orderId, cancelOrder, isCancelling, navigate]);
+  }, [isExpired, timeLeft, orderId, cancelOrder, isCancelling, navigate, orderData?.data?.status]);
 
   const formatTime = (s: number) => {
     const m = Math.floor(s / 60);
@@ -136,12 +134,12 @@ const PaymentQRPage: React.FC = () => {
         amount,
         orderId: numberOrder || orderId,
         bankCode: '',
-      }).unwrap();
+      });
       if (res.data?.paymentUrl) {
         window.location.href = res.data.paymentUrl;
       }
     } catch (err) {
-      dispatch(addNotification({ type: 'error', message: t('paymentQR.cancelError'), duration: 4000 }));
+      addNotification({ type: 'error', message: t('paymentQR.cancelError'), duration: 4000 });
       setIsRedirecting(false);
     }
   };
@@ -168,7 +166,7 @@ const PaymentQRPage: React.FC = () => {
             </svg>
           </div>
           <h2 className="text-xl font-semibold text-neutral-800 dark:text-neutral-100 mb-2">{t('paymentQR.invalidLink')}</h2>
-          <button onClick={() => navigate('/')} className="px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors">
+          <button onClick={() => navigate(ROUTES.HOME)} className="px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors">
             {t('paymentQR.backHome')}
           </button>
         </div>
@@ -260,10 +258,10 @@ const PaymentQRPage: React.FC = () => {
                 onClick={async () => {
                   if (orderId) {
                     try {
-                      await cancelOrder(orderId).unwrap();
-                      dispatch(addNotification({ type: 'success', message: t('paymentQR.cancelSuccess'), duration: 3000 }));
+                      await cancelOrder(orderId);
+                      addNotification({ type: 'success', message: t('paymentQR.cancelSuccess'), duration: 3000 });
                     } catch { /* lỗi huỷ đơn — tiếp tục navigate */ }
-                    navigate('/orders');
+                    navigate(ROUTES.ORDERS);
                   }
                 }}
                 disabled={isCancelling}

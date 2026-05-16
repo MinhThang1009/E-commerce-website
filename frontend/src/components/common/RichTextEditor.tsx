@@ -31,10 +31,6 @@ const convertBase64ToImages = (content: string, altText = 'Product image'): stri
       0,
       convertedContent.indexOf(match)
     );
-    const afterMatch = convertedContent.substring(
-      convertedContent.indexOf(match) + match.length
-    );
-
     // Kiểm tra đơn giản: nếu có <img trước và > sau, có thể đã được bao bọc
     if (
       beforeMatch.includes('<img') &&
@@ -66,7 +62,7 @@ const RichTextEditor: React.FC<RichTextEditorProps> = ({
   useEffect(() => {
     const converted = convertBase64ToImages(value, t('product.imageAlt'));
     setDisplayValue(converted);
-  }, [value]);
+  }, [value, t]);
 
   // Chèn nội dung HTML vào Quill editor khi sẵn sàng
   useEffect(() => {

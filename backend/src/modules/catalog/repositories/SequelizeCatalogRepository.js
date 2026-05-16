@@ -243,7 +243,22 @@ class SequelizeCatalogRepository extends ICatalogRepository {
     }
     if (filter.inStock !== undefined) {
       const wantInStock = filter.inStock === 'true' || filter.inStock === true;
-      where.stockQuantity = wantInStock ? { [Op.gt]: 0 } : 0;
+      // Stock thực nằm ở variant level — dùng subquery check variant stock thay vì product.stockQuantity
+      if (wantInStock) {
+        where.id = {
+          ...where.id,
+          [Op.in]: this.sequelize.literal(
+            '(SELECT DISTINCT product_id FROM product_variants WHERE stock_quantity > 0)'
+          ),
+        };
+      } else {
+        where.id = {
+          ...where.id,
+          [Op.notIn]: this.sequelize.literal(
+            '(SELECT DISTINCT product_id FROM product_variants WHERE stock_quantity > 0)'
+          ),
+        };
+      }
     }
     return where;
   }
@@ -576,7 +591,7 @@ class SequelizeCatalogRepository extends ICatalogRepository {
       limit, order: [['viewedAt', 'DESC']],
       include: [{
         model: this.Product,
-        attributes: ['id', 'name', 'slug', ['base_price', 'price'], ['compare_at_price', 'compareAtPrice']],
+        attributes: ['id', 'name', 'slug', ['basePrice', 'price'], 'compareAtPrice'],
         include: [
           { association: 'reviews' },
           { association: 'productImages', required: false },

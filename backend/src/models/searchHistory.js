@@ -12,12 +12,10 @@ const SearchHistory = sequelize.define(
     userId: {
       type: DataTypes.INTEGER,
       allowNull: true,
-      field: 'user_id',
     },
     sessionId: {
       type: DataTypes.STRING,
       allowNull: true,
-      field: 'session_id',
     },
     keyword: {
       type: DataTypes.STRING,
@@ -26,7 +24,6 @@ const SearchHistory = sequelize.define(
     resultsCount: {
       type: DataTypes.INTEGER,
       defaultValue: 0,
-      field: 'results_count',
     },
   },
   {

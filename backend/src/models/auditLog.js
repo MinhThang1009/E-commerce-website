@@ -15,7 +15,6 @@ const AuditLog = sequelize.define(
     adminId: {
       type: DataTypes.INTEGER,
       allowNull: false,
-      field: 'admin_id',
     },
     // Loại hành động: CREATE, UPDATE, DELETE, LOGIN, BAN, ROLE_CHANGE, CLONE, v.v.
     action: {
@@ -26,25 +25,21 @@ const AuditLog = sequelize.define(
     entityType: {
       type: DataTypes.STRING(50),
       allowNull: false,
-      field: 'entity_type',
     },
     // ID của entity cụ thể bị tác động
     entityId: {
       type: DataTypes.INTEGER,
       allowNull: true,
-      field: 'entity_id',
     },
     // Giá trị cũ trước khi thay đổi (JSON stringified)
     oldValue: {
       type: DataTypes.TEXT,
       allowNull: true,
-      field: 'old_value',
     },
     // Giá trị mới sau khi thay đổi (JSON stringified)
     newValue: {
       type: DataTypes.TEXT,
       allowNull: true,
-      field: 'new_value',
     },
     // IP address của admin
     ip: {

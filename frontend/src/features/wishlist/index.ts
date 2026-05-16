@@ -3,9 +3,8 @@
 // Trang
 export { default as WishlistPage } from './pages/WishlistPage';
 
-// API endpoints (RTK Query)
+// API endpoints (TanStack Query)
 export {
-  wishlistApi,
   useGetWishlistQuery,
   useAddToWishlistMutation,
   useCheckWishlistQuery,
@@ -13,13 +12,3 @@ export {
   useClearWishlistMutation,
 } from './api/wishlistApi';
 export type { WishlistResponse, CheckWishlistResponse } from './api/wishlistApi';
-
-// Redux store (slice + actions)
-export {
-  default as wishlistReducer,
-  setWishlist,
-  addToWishlistLocal,
-  removeFromWishlistLocal,
-  clearWishlistLocal,
-} from './store/wishlistSlice';
-export type { WishlistState } from './store/wishlistSlice';

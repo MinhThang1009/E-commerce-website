@@ -4,6 +4,7 @@ import {
 } from 'antd';
 import { useTranslation } from 'react-i18next';
 import ImageUpload from '@/components/common/ImageUpload';
+import { getUploadUrl } from '@/utils/uploadUrl';
 import { PlusOutlined, EditOutlined, DeleteOutlined, ReloadOutlined, AppstoreOutlined } from '@ant-design/icons';
 import {
   useGetCollectionsQuery, useCreateCollectionMutation, useUpdateCollectionMutation, useDeleteCollectionMutation,
@@ -29,9 +30,9 @@ const CollectionsPage: React.FC = () => {
 
   const { data: collectionsData, isLoading, refetch } = useGetCollectionsQuery();
   const { data: productsData } = useGetProductsQuery({ limit: 100 });
-  const [createCollection, { isLoading: isCreating }] = useCreateCollectionMutation();
-  const [updateCollection, { isLoading: isUpdating }] = useUpdateCollectionMutation();
-  const [deleteCollection] = useDeleteCollectionMutation();
+  const { mutateAsync: createCollection, isPending: isCreating } = useCreateCollectionMutation();
+  const { mutateAsync: updateCollection, isPending: isUpdating } = useUpdateCollectionMutation();
+  const { mutateAsync: deleteCollection } = useDeleteCollectionMutation();
 
   const collections = collectionsData?.data || [];
   const products = productsData?.data || [];
@@ -40,10 +41,10 @@ const CollectionsPage: React.FC = () => {
   const handleSubmit = async (values: CollectionFormData) => {
     try {
       if (editingCollection) {
-        await updateCollection({ id: editingCollection.id, body: values }).unwrap();
+        await updateCollection({ id: editingCollection.id, body: values });
         message.success(t('admin.collections.messages.editSuccess'));
       } else {
-        await createCollection(values).unwrap();
+        await createCollection(values);
         message.success(t('admin.collections.messages.addSuccess'));
       }
       setIsModalVisible(false);
@@ -57,7 +58,7 @@ const CollectionsPage: React.FC = () => {
 
   const handleDelete = async (id: string) => {
     try {
-      await deleteCollection(id).unwrap();
+      await deleteCollection(id);
       message.success(t('admin.collections.messages.deleteSuccess'));
       refetch();
     } catch (error: any) {
@@ -84,12 +85,7 @@ const CollectionsPage: React.FC = () => {
     });
   };
 
-  const getFullImageUrl = (url: string) => {
-    if (!url) return '';
-    if (url.startsWith('http')) return url;
-    const baseUrl = import.meta.env.VITE_API_URL || 'http://localhost:8888';
-    return `${baseUrl}${url.startsWith('/') ? '' : '/'}${url}`;
-  };
+  const getFullImageUrl = getUploadUrl;
 
   const columns = [
     {

@@ -1,6 +1,7 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
+import { ROUTES } from '@/routes/paths';
 
 const ShippingReturnsPage: React.FC = () => {
   const { t } = useTranslation();
@@ -158,10 +159,10 @@ const ShippingReturnsPage: React.FC = () => {
           {t('shipping.contact.desc')}
         </p>
         <div className="flex flex-col sm:flex-row justify-center gap-4">
-          <Link to="/contact" className="bg-primary-600 hover:bg-primary-700 text-white font-medium py-3 px-6 rounded-lg transition-colors">
+          <Link to={ROUTES.CONTACT} className="bg-primary-600 hover:bg-primary-700 text-white font-medium py-3 px-6 rounded-lg transition-colors">
             {t('shipping.contact.btn')}
           </Link>
-          <Link to="/faqs" className="bg-white dark:bg-neutral-800 text-primary-600 dark:text-primary-400 border border-primary-600 dark:border-primary-400 font-medium py-3 px-6 rounded-lg hover:bg-primary-50 dark:hover:bg-neutral-700 transition-colors">
+          <Link to={ROUTES.FAQS} className="bg-white dark:bg-neutral-800 text-primary-600 dark:text-primary-400 border border-primary-600 dark:border-primary-400 font-medium py-3 px-6 rounded-lg hover:bg-primary-50 dark:hover:bg-neutral-700 transition-colors">
             {t('shipping.contact.faqsBtn')}
           </Link>
         </div>

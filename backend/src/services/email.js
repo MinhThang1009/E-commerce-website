@@ -1,4 +1,5 @@
 const nodemailer = require('nodemailer');
+const sanitizeHtml = require('sanitize-html');
 const logger = require('../utils/logger');
 
 // Escape các ký tự HTML đặc biệt trong data người dùng nhập trước khi đưa vào email HTML
@@ -13,22 +14,18 @@ const escapeHtml = (str) => {
     .replace(/'/g, '&#x27;');
 };
 
-// Loại bỏ các thẻ HTML nguy hiểm khỏi nội dung chiến dịch email để chặn XSS
-// Chỉ xóa script/iframe/object/form và event handler — giữ lại định dạng p/b/i/a/img/h1-h3
+// Sanitize nội dung chiến dịch email — giữ lại formatting tags an toàn
 const sanitizeCampaignHtml = (html) => {
   if (!html) return '';
-  return String(html)
-    // Xóa thẻ script (kể cả nội dung bên trong)
-    .replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, '')
-    // Xóa thẻ iframe, object, embed, form
-    .replace(/<(iframe|object|embed|form|base|meta|link)[^>]*>.*?<\/\1>/gi, '')
-    .replace(/<(iframe|object|embed|form|base|meta|link)[^>]*\/?>/gi, '')
-    // Xóa inline event handler (onclick, onload, onerror, ...)
-    .replace(/\s+on\w+\s*=\s*(['"])[^'"]*\1/gi, '')
-    .replace(/\s+on\w+\s*=\s*[^>\s]*/gi, '')
-    // Xóa javascript: trong href/src
-    .replace(/href\s*=\s*(['"])\s*javascript:[^'"]*\1/gi, 'href="#"')
-    .replace(/src\s*=\s*(['"])\s*javascript:[^'"]*\1/gi, 'src=""');
+  return sanitizeHtml(html, {
+    allowedTags: ['p', 'b', 'i', 'strong', 'em', 'a', 'img', 'br', 'ul', 'ol', 'li', 'h1', 'h2', 'h3', 'span', 'div', 'table', 'tr', 'td', 'th', 'thead', 'tbody'],
+    allowedAttributes: {
+      a: ['href', 'target', 'rel'],
+      img: ['src', 'alt', 'width', 'height'],
+      '*': ['style'],
+    },
+    allowedSchemes: ['http', 'https', 'mailto'],
+  });
 };
 
 // Tạo transporter với connection pooling để tối ưu hiệu năng
@@ -185,7 +182,7 @@ const sendBulkCampaignEmail = async (emails, subject, content) => {
 const sendOtpEmail = async (email, otp) => {
   await sendEmail({
     email,
-    subject: `Mã xác thực đăng nhập TechStore - ${otp}`,
+    subject: 'Mã xác thực đăng nhập TechStore',
     html: `
       <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; background: #f9f9f9; padding: 20px; border-radius: 8px;">
         <div style="background: white; padding: 32px; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.08);">

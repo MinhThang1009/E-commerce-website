@@ -1,7 +1,7 @@
 import { useState, useRef } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
-import Button from '@/components/common/Button';
+import { ROUTES } from '@/routes/paths';
 import { PremiumButton } from '@/components/common';
 import Input from '@/components/common/Input';
 import { useRegisterMutation, useVerifyOtpMutation, useResendVerificationMutation } from '../api/authApi';
@@ -38,9 +38,9 @@ const RegisterPage: React.FC = () => {
   const [resendCooldown, setResendCooldown] = useState(0);
 
   const navigate = useNavigate();
-  const [register, { isLoading: isRegistering, error: registerError }] = useRegisterMutation();
-  const [verifyOtp, { isLoading: isVerifying }] = useVerifyOtpMutation();
-  const [resendVerification, { isLoading: isResending }] = useResendVerificationMutation();
+  const { mutateAsync: register, isPending: isRegistering, error: registerError } = useRegisterMutation();
+  const { mutateAsync: verifyOtp, isPending: isVerifying } = useVerifyOtpMutation();
+  const { mutateAsync: resendVerification, isPending: isResending } = useResendVerificationMutation();
 
   const validateForm = () => {
     const newErrors: typeof errors = {};
@@ -64,11 +64,11 @@ const RegisterPage: React.FC = () => {
     e?.preventDefault();
     if (!validateForm()) return;
     try {
-      await register({ email, password, firstName: firstName.trim(), lastName: lastName.trim(), phone: phone.trim() || '' }).unwrap();
+      await register({ email, password, firstName: firstName.trim(), lastName: lastName.trim(), phone: phone.trim() || '' });
       setRegisteredEmail(email);
       setStep('otp');
     } catch (err) {
-      // handled by RTK Query
+      // Lỗi đã được TanStack Query xử lý
     }
   };
 
@@ -103,7 +103,7 @@ const RegisterPage: React.FC = () => {
     if (otp.length < 6) { setOtpError(t('auth.otp.incomplete')); return; }
     setOtpError('');
     try {
-      await verifyOtp({ email: registeredEmail, otp }).unwrap();
+      await verifyOtp({ email: registeredEmail, otp });
       setOtpSuccess(t('auth.otp.success'));
       setTimeout(() => navigate('/login', { replace: true }), 2000);
     } catch (err: any) {
@@ -114,7 +114,7 @@ const RegisterPage: React.FC = () => {
   const handleResend = async () => {
     if (resendCooldown > 0) return;
     try {
-      await resendVerification({ email: registeredEmail }).unwrap();
+      await resendVerification({ email: registeredEmail });
       setOtpValues(['', '', '', '', '', '']);
       setOtpError('');
       setResendCooldown(60);
@@ -317,9 +317,9 @@ const RegisterPage: React.FC = () => {
                 />
                 <span className="ml-2 text-sm text-neutral-600 dark:text-neutral-400">
                   {t('auth.register.agreeToTerms')}{' '}
-                  <Link to="/terms" className="text-primary-600 dark:text-primary-400 hover:text-primary-700 dark:hover:text-primary-300">{t('auth.register.termsOfService')}</Link>
+                  <Link to={ROUTES.TERMS} className="text-primary-600 dark:text-primary-400 hover:text-primary-700 dark:hover:text-primary-300">{t('auth.register.termsOfService')}</Link>
                   {' '}{t('auth.register.and')}{' '}
-                  <Link to="/privacy-policy" className="text-primary-600 dark:text-primary-400 hover:text-primary-700 dark:hover:text-primary-300">{t('auth.register.privacyPolicy')}</Link>
+                  <Link to={ROUTES.PRIVACY_POLICY} className="text-primary-600 dark:text-primary-400 hover:text-primary-700 dark:hover:text-primary-300">{t('auth.register.privacyPolicy')}</Link>
                 </span>
               </label>
               {errors.acceptTerms && <p className="mt-1 text-sm text-error-600 dark:text-error-400">{errors.acceptTerms}</p>}
@@ -343,7 +343,7 @@ const RegisterPage: React.FC = () => {
           <div className="text-center">
             <p className="text-neutral-600 dark:text-neutral-400">
               {t('auth.register.haveAccount')}{' '}
-              <Link to="/login" className="text-primary-600 dark:text-primary-400 hover:text-primary-700 dark:hover:text-primary-300 font-medium">
+              <Link to={ROUTES.LOGIN} className="text-primary-600 dark:text-primary-400 hover:text-primary-700 dark:hover:text-primary-300 font-medium">
                 {t('auth.register.loginNow')}
               </Link>
             </p>

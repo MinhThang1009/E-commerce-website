@@ -1,14 +1,7 @@
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { useDispatch, useSelector } from 'react-redux';
 import { getLocale } from '@/utils/format';
-import { RootState } from '@/store';
-import {
-  setPriceRange,
-  setCategories,
-  setAttributes,
-  clearFilters,
-} from '../store/productsSlice';
+import { useCatalogStore } from '@/stores/catalogStore';
 import { Category } from '../api/categoryApi';
 import Button from '@/components/common/Button';
 
@@ -26,8 +19,11 @@ const ProductFilters: React.FC<ProductFiltersProps> = ({
   onClose,
 }) => {
   const { t } = useTranslation();
-  const dispatch = useDispatch();
-  const filters = useSelector((state: RootState) => state.products.filters);
+  const filters = useCatalogStore((s) => s.filters);
+  const storePriceRange = useCatalogStore((s) => s.setPriceRange);
+  const storeSetCategories = useCatalogStore((s) => s.setCategories);
+  const storeSetAttributes = useCatalogStore((s) => s.setAttributes);
+  const storeClearFilters = useCatalogStore((s) => s.clearFilters);
 
   const [priceRange, setPriceRangeLocal] = useState<[number, number]>(
     filters.priceRange
@@ -65,9 +61,9 @@ const ProductFilters: React.FC<ProductFiltersProps> = ({
   };
 
   const applyFilters = () => {
-    dispatch(setPriceRange(priceRange));
-    dispatch(setCategories(selectedCategories));
-    dispatch(setAttributes(selectedAttributes));
+    storePriceRange(priceRange);
+    storeSetCategories(selectedCategories);
+    storeSetAttributes(selectedAttributes);
     if (isMobile && onClose) onClose();
   };
 
@@ -75,7 +71,7 @@ const ProductFilters: React.FC<ProductFiltersProps> = ({
     setPriceRangeLocal([0, 10000000]);
     setSelectedCategoriesLocal([]);
     setSelectedAttributesLocal({});
-    dispatch(clearFilters());
+    storeClearFilters();
     if (isMobile && onClose) onClose();
   };
 

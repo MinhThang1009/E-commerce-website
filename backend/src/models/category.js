@@ -14,7 +14,7 @@ const Category = sequelize.define(
     },
     // Tên danh mục
     name: {
-      type: DataTypes.STRING(100),
+      type: DataTypes.STRING(200),
       allowNull: false,
       unique: true,
     },
@@ -33,7 +33,6 @@ const Category = sequelize.define(
     deletedAt: {
       type: DataTypes.DATE,
       allowNull: true,
-      field: 'deleted_at',
     },
   },
   {

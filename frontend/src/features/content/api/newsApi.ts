@@ -1,77 +1,123 @@
-import { api } from '@/services/api';
-import { News, NewsFilters, NewsResponse, SingleNewsResponse } from '../types/news.types';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import apiClient from '@/services/apiClient';
+import { NewsFilters, NewsResponse, SingleNewsResponse } from '../types/news.types';
 
-export const newsApi = api.injectEndpoints({
-  endpoints: (builder) => ({
-    getNews: builder.query<NewsResponse, NewsFilters | void>({
-      query: (params) => {
-        const queryParams = new URLSearchParams();
-        if (params) {
-          if (params.page) queryParams.append('page', params.page.toString());
-          if (params.limit) queryParams.append('limit', params.limit.toString());
-          if (params.search) queryParams.append('search', params.search);
-          if (params.isPublished !== undefined) queryParams.append('isPublished', params.isPublished.toString());
-          if (params.category && params.category !== 'Tất cả') queryParams.append('category', params.category);
-        }
+// === Query Keys ===
 
-        return {
-          url: `/news?${queryParams.toString()}`,
-          method: 'GET',
-        };
-      },
-      providesTags: ['News'],
-    }),
+export const newsKeys = {
+  all: ['news'] as const,
+  lists: () => [...newsKeys.all, 'list'] as const,
+  list: (filters: any) => [...newsKeys.lists(), filters] as const,
+  details: () => [...newsKeys.all, 'detail'] as const,
+  detail: (id: string) => [...newsKeys.details(), id] as const,
+  slug: (slug: string) => [...newsKeys.all, 'slug', slug] as const,
+  related: (slug: string) => [...newsKeys.all, 'related', slug] as const,
+};
 
-    getNewsById: builder.query<SingleNewsResponse, string>({
-      query: (id) => `/news/${id}`,
-      providesTags: (result, error, id) => [{ type: 'News', id }],
-    }),
+// === Query Hooks ===
 
-    getNewsBySlug: builder.query<SingleNewsResponse, string>({
-      query: (slug) => `/news/slug/${slug}`,
-      providesTags: (result, error, slug) => [{ type: 'News', id: slug }],
-    }),
+export function useGetNewsQuery(
+  params?: NewsFilters | void,
+  options?: { enabled?: boolean; skip?: boolean }
+) {
+  return useQuery<NewsResponse>({
+    queryKey: newsKeys.list(params),
+    queryFn: async () => {
+      const queryParams = new URLSearchParams();
+      if (params) {
+        if (params.page) queryParams.append('page', params.page.toString());
+        if (params.limit) queryParams.append('limit', params.limit.toString());
+        if (params.search) queryParams.append('search', params.search);
+        if (params.isPublished !== undefined) queryParams.append('isPublished', params.isPublished.toString());
+        if (params.category && params.category !== 'Tất cả') queryParams.append('category', params.category);
+      }
+      const { data } = await apiClient.get(`/news?${queryParams.toString()}`);
+      return data;
+    },
+    enabled: options?.skip !== undefined ? !options.skip : true,
+  });
+}
 
-    getRelatedNews: builder.query<NewsResponse, string>({
-      query: (slug) => `/news/slug/${slug}/related`,
-      providesTags: ['News'],
-    }),
+export function useGetNewsByIdQuery(
+  id: string,
+  options?: { enabled?: boolean; skip?: boolean }
+) {
+  return useQuery<SingleNewsResponse>({
+    queryKey: newsKeys.detail(id),
+    queryFn: async () => {
+      const { data } = await apiClient.get(`/news/${id}`);
+      return data;
+    },
+    enabled: options?.skip !== undefined ? !options.skip : !!id,
+  });
+}
 
-    createNews: builder.mutation<any, any>({
-      query: (data) => ({
-        url: '/news',
-        method: 'POST',
-        body: data,
-      }),
-      invalidatesTags: ['News'],
-    }),
+export function useGetNewsBySlugQuery(
+  slug: string,
+  options?: { enabled?: boolean; skip?: boolean }
+) {
+  return useQuery<SingleNewsResponse>({
+    queryKey: newsKeys.slug(slug),
+    queryFn: async () => {
+      const { data } = await apiClient.get(`/news/slug/${slug}`);
+      return data;
+    },
+    enabled: options?.skip !== undefined ? !options.skip : !!slug,
+  });
+}
 
-    updateNews: builder.mutation<any, { id: string; data: any }>({
-      query: ({ id, data }) => ({
-        url: `/news/${id}`,
-        method: 'PUT',
-        body: data,
-      }),
-      invalidatesTags: (result, error, { id }) => ['News', { type: 'News', id }],
-    }),
+export function useGetRelatedNewsQuery(
+  slug: string,
+  options?: { enabled?: boolean; skip?: boolean }
+) {
+  return useQuery<NewsResponse>({
+    queryKey: newsKeys.related(slug),
+    queryFn: async () => {
+      const { data } = await apiClient.get(`/news/slug/${slug}/related`);
+      return data;
+    },
+    enabled: options?.skip !== undefined ? !options.skip : !!slug,
+  });
+}
 
-    deleteNews: builder.mutation<any, string>({
-      query: (id) => ({
-        url: `/news/${id}`,
-        method: 'DELETE',
-      }),
-      invalidatesTags: ['News'],
-    }),
-  }),
-});
+// === Mutation Hooks ===
 
-export const {
-  useGetNewsQuery,
-  useGetNewsByIdQuery,
-  useGetNewsBySlugQuery,
-  useGetRelatedNewsQuery,
-  useCreateNewsMutation,
-  useUpdateNewsMutation,
-  useDeleteNewsMutation,
-} = newsApi;
+export function useCreateNewsMutation() {
+  const queryClient = useQueryClient();
+  return useMutation<any, Error, any>({
+    mutationFn: async (body) => {
+      const { data } = await apiClient.post('/news', body);
+      return data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: newsKeys.all });
+    },
+  });
+}
 
+export function useUpdateNewsMutation() {
+  const queryClient = useQueryClient();
+  return useMutation<any, Error, { id: string; data: any }>({
+    mutationFn: async ({ id, data: body }) => {
+      const { data } = await apiClient.put(`/news/${id}`, body);
+      return data;
+    },
+    onSuccess: (_data, { id }) => {
+      queryClient.invalidateQueries({ queryKey: newsKeys.all });
+      queryClient.invalidateQueries({ queryKey: newsKeys.detail(id) });
+    },
+  });
+}
+
+export function useDeleteNewsMutation() {
+  const queryClient = useQueryClient();
+  return useMutation<any, Error, string>({
+    mutationFn: async (id) => {
+      const { data } = await apiClient.delete(`/news/${id}`);
+      return data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: newsKeys.all });
+    },
+  });
+}

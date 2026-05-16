@@ -23,7 +23,6 @@ const EmailCampaign = sequelize.define(
     },
     sentAt: {
       type: DataTypes.DATE,
-      field: 'sent_at',
       allowNull: true,
     },
   },

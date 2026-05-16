@@ -1,9 +1,10 @@
 import { ProductVariant } from '@/types';
 import { useEffect, useState } from 'react';
+import type { FormInstance } from 'antd';
 
 export const useProductVariants = (
   initialVariants: ProductVariant[] = [],
-  form?: any
+  form?: FormInstance
 ) => {
   const [variants, setVariants] = useState<ProductVariant[]>(initialVariants);
   const [variantModalVisible, setVariantModalVisible] = useState(false);

@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
+import { ROUTES } from '@/routes/paths';
 import {
   Form,
   Card,
@@ -64,12 +65,12 @@ const EditProductPage: React.FC = () => {
     data: productResponse,
     isLoading: isLoadingProduct,
     error: productError,
-  } = useGetAdminProductByIdQuery(id || '', { skip: !id });
+  } = useGetAdminProductByIdQuery(id || '', { enabled: !!id });
 
   const { data: categoriesResponse, isLoading: isCategoriesLoading } =
     useGetAllCategoriesQuery();
-  const [updateProduct, { isLoading: isUpdating }] = useUpdateProductMutation();
-  const [convertBase64ToImage] = useConvertBase64ToImageMutation();
+  const { mutateAsync: updateProduct, isPending: isUpdating } = useUpdateProductMutation();
+  const { mutateAsync: convertBase64ToImage } = useConvertBase64ToImageMutation();
 
   // Custom hooks
   const {
@@ -111,7 +112,7 @@ const EditProductPage: React.FC = () => {
     isEditMode: true, // Thêm prop để báo là edit mode
     attributes,
     variants,
-    onSubmit: async (values: ProductFormData) => {
+    onSubmit: async (_values: ProductFormData) => {
       if (!id) return;
 
       try {
@@ -128,7 +129,7 @@ const EditProductPage: React.FC = () => {
               return await convertBase64ToImage({
                 base64Data,
                 options: options as any,
-              }).unwrap();
+              });
             },
           });
           if (result.hasChanges) {
@@ -201,9 +202,9 @@ const EditProductPage: React.FC = () => {
           }));
         }
 
-        await updateProduct(productData).unwrap();
+        await updateProduct(productData);
         message.success(t('admin.products.messages.updateSuccess'));
-        navigate('/admin/products');
+        navigate(ROUTES.ADMIN_PRODUCTS);
       } catch (error: any) {
         console.error('Failed to update product:', error);
         const errorMessage = formatErrorMessage(error);
@@ -214,7 +215,7 @@ const EditProductPage: React.FC = () => {
   });
 
   // State để theo dõi quá trình tải dữ liệu
-  const [isDataLoaded, setIsDataLoaded] = useState(false);
+  const [_isDataLoaded, _setIsDataLoaded] = useState(false);
 
   // Nạp dữ liệu sản phẩm vào form
   useEffect(() => {
@@ -384,7 +385,7 @@ const EditProductPage: React.FC = () => {
         setIsFormValid(isValid);
       }, 100);
     }
-  }, [productResponse, form, setAttributes, setVariants, setIsFormValid]);
+  }, [productResponse, form, setAttributes, setVariants, setIsFormValid, t]);
 
   // Hàm hỗ trợ định dạng thông báo lỗi
   const formatErrorMessage = (error: any): string => {
@@ -439,7 +440,7 @@ const EditProductPage: React.FC = () => {
           <Button
             type="primary"
             key="back"
-            onClick={() => navigate('/admin/products')}
+            onClick={() => navigate(ROUTES.ADMIN_PRODUCTS)}
           >
             {t('admin.products.backToList')}
           </Button>,
@@ -536,7 +537,7 @@ const EditProductPage: React.FC = () => {
           <Col>
             <Button
               icon={<ArrowLeftOutlined />}
-              onClick={() => navigate('/admin/products')}
+              onClick={() => navigate(ROUTES.ADMIN_PRODUCTS)}
               style={{ marginRight: 8 }}
             >
               {t('admin.products.backButton')}
@@ -572,7 +573,7 @@ const EditProductPage: React.FC = () => {
             isSubmitting={isUpdating}
             submitText={t('admin.products.submit.update')}
             loadingText={t('admin.products.submit.updating')}
-            onCancel={() => navigate('/admin/products')}
+            onCancel={() => navigate(ROUTES.ADMIN_PRODUCTS)}
           />
         </Form>
       </Card>

@@ -1,24 +1,35 @@
-import { api } from '@/services/api';
+import { useQuery } from '@tanstack/react-query';
+import apiClient from '@/services/apiClient';
 
-export const loyaltyApi = api.injectEndpoints({
-  endpoints: (builder) => ({
-    getLoyaltyInfo: builder.query<any, { page?: number; limit?: number } | void>({
-      query: (params) => {
-        const queryParams = new URLSearchParams();
-        if (params && typeof params === 'object') {
-          if ('page' in params && params.page) queryParams.append('page', params.page.toString());
-          if ('limit' in params && params.limit) queryParams.append('limit', params.limit.toString());
-        }
+// === Query Keys ===
 
-        return {
-          url: `/loyalty?${queryParams.toString()}`,
-          method: 'GET',
-        };
-      },
-      providesTags: ['User'],
-    }),
-  }),
-});
+export const loyaltyKeys = {
+  all: ['loyalty'] as const,
+  info: (params: any) => [...loyaltyKeys.all, 'info', params] as const,
+};
 
-export const { useGetLoyaltyInfoQuery } = loyaltyApi;
+// === Query Hooks ===
 
+export function useGetLoyaltyInfoQuery(
+  params?: { page?: number; limit?: number } | void,
+  options?: { enabled?: boolean; skip?: boolean }
+) {
+  // Ưu tiên enabled nếu có, fallback sang skip (compat), mặc định true
+  const isEnabled = options?.enabled !== undefined
+    ? options.enabled
+    : options?.skip !== undefined ? !options.skip : true;
+
+  return useQuery<any>({
+    queryKey: loyaltyKeys.info(params),
+    queryFn: async () => {
+      const queryParams = new URLSearchParams();
+      if (params && typeof params === 'object') {
+        if ('page' in params && params.page) queryParams.append('page', params.page.toString());
+        if ('limit' in params && params.limit) queryParams.append('limit', params.limit.toString());
+      }
+      const { data } = await apiClient.get(`/loyalty?${queryParams.toString()}`);
+      return data;
+    },
+    enabled: isEnabled,
+  });
+}

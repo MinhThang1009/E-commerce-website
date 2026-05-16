@@ -1,5 +1,5 @@
-import { api } from '@/services/api';
-import { RootState } from '@/store';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import apiClient from '@/services/apiClient';
 
 // Kiểu dữ liệu giỏ hàng từ backend
 export interface BackendCartItem {
@@ -68,114 +68,156 @@ export interface CartCountResponse {
   };
 }
 
-// Sử dụng api.injectEndpoints để thêm các endpoints vào API service chính
-export const cartApi = api.injectEndpoints({
-  endpoints: (builder) => ({
-    getCart: builder.query<BackendCart, void>({
-      query: () => '/cart',
-      transformResponse: (response: CartResponse) => response.data,
-      providesTags: ['Cart'],
-    }),
+// Kiểu dữ liệu kết quả kiểm tra giỏ hàng
+export interface CartValidationResult {
+  hasIssues: boolean;
+  items: {
+    id: string;
+    productId: string;
+    variantId?: string;
+    name: string;
+    savedPrice: number;
+    currentPrice: number;
+    quantity: number;
+    maxStock: number;
+    priceChanged: boolean;
+    outOfStock: boolean;
+    quantityExceedsStock: boolean;
+    hasIssue: boolean;
+  }[];
+}
 
-    getCartCount: builder.query<number, void>({
-      query: () => '/cart/count',
-      transformResponse: (response: CartCountResponse) => response.data.count,
-      providesTags: ['CartCount'],
-    }),
+// Query keys tập trung
+export const cartKeys = {
+  all: ['cart'] as const,
+  count: ['cart', 'count'] as const,
+  validate: ['cart', 'validate'] as const,
+};
 
-    addToCart: builder.mutation<BackendCart, AddToCartRequest>({
-      query: (data) => ({
-        url: '/cart',
-        method: 'POST',
-        body: data,
-      }),
-      transformResponse: (response: CartResponse) => response.data,
-      invalidatesTags: ['Cart', 'CartCount'],
-    }),
+// --- Query hooks ---
 
-    updateCartItem: builder.mutation<
-      BackendCart,
-      { id: string; data: UpdateCartItemRequest }
-    >({
-      query: ({ id, data }) => ({
-        url: `/cart/items/${id}`,
-        method: 'PUT',
-        body: data,
-      }),
-      transformResponse: (response: CartResponse) => response.data,
-      invalidatesTags: ['Cart', 'CartCount'],
-    }),
+export function useGetCartQuery(options?: { enabled?: boolean }) {
+  return useQuery({
+    queryKey: cartKeys.all,
+    queryFn: async () => {
+      const res = await apiClient.get<CartResponse>('/cart');
+      return res.data.data;
+    },
+    ...options,
+  });
+}
 
-    removeCartItem: builder.mutation<BackendCart, string>({
-      query: (id) => ({
-        url: `/cart/items/${id}`,
-        method: 'DELETE',
-      }),
-      transformResponse: (response: CartResponse) => response.data,
-      invalidatesTags: ['Cart', 'CartCount'],
-    }),
+export function useGetCartCountQuery(options?: {
+  enabled?: boolean;
+  refetchOnFocus?: boolean;
+  refetchOnReconnect?: boolean;
+}) {
+  const { refetchOnFocus, refetchOnReconnect, ...rest } = options || {};
+  return useQuery({
+    queryKey: cartKeys.count,
+    queryFn: async () => {
+      const res = await apiClient.get<CartCountResponse>('/cart/count');
+      return res.data.data.count;
+    },
+    refetchOnWindowFocus: refetchOnFocus,
+    refetchOnReconnect: refetchOnReconnect,
+    ...rest,
+  });
+}
 
-    clearCart: builder.mutation<BackendCart, void>({
-      query: () => ({
-        url: '/cart',
-        method: 'DELETE',
-      }),
-      transformResponse: (response: CartResponse) => response.data,
-      invalidatesTags: ['Cart', 'CartCount'],
-    }),
+export function useValidateCartQuery(options?: { enabled?: boolean }) {
+  return useQuery({
+    queryKey: cartKeys.validate,
+    queryFn: async () => {
+      const res = await apiClient.get<{ status: string; data: CartValidationResult }>('/cart/validate');
+      return res.data.data;
+    },
+    ...options,
+  });
+}
 
-    syncCart: builder.mutation<BackendCart, SyncCartRequest>({
-      query: (data) => ({
-        url: '/cart/sync',
-        method: 'POST',
-        body: data,
-      }),
-      transformResponse: (response: CartResponse) => response.data,
-      invalidatesTags: ['Cart', 'CartCount'],
-    }),
+// --- Mutation hooks ---
 
-    mergeCart: builder.mutation<BackendCart, void>({
-      query: () => ({
-        url: '/cart/merge',
-        method: 'POST',
-      }),
-      transformResponse: (response: CartResponse) => response.data,
-      invalidatesTags: ['Cart', 'CartCount'],
-    }),
+export function useAddToCartMutation() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (data: AddToCartRequest) => {
+      const res = await apiClient.post<CartResponse>('/cart', data);
+      return res.data.data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: cartKeys.all });
+      queryClient.invalidateQueries({ queryKey: cartKeys.count });
+    },
+  });
+}
 
-    validateCart: builder.query<{
-      hasIssues: boolean;
-      items: {
-        id: string;
-        productId: string;
-        variantId?: string;
-        name: string;
-        savedPrice: number;
-        currentPrice: number;
-        quantity: number;
-        maxStock: number;
-        priceChanged: boolean;
-        outOfStock: boolean;
-        quantityExceedsStock: boolean;
-        hasIssue: boolean;
-      }[];
-    }, void>({
-      query: () => '/cart/validate',
-      transformResponse: (response: any) => response.data,
-      providesTags: ['Cart'],
-    }),
-  }),
-});
+export function useUpdateCartItemMutation() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ id, data }: { id: string; data: UpdateCartItemRequest }) => {
+      const res = await apiClient.put<CartResponse>(`/cart/items/${id}`, data);
+      return res.data.data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: cartKeys.all });
+      queryClient.invalidateQueries({ queryKey: cartKeys.count });
+    },
+  });
+}
 
-export const {
-  useGetCartQuery,
-  useGetCartCountQuery,
-  useAddToCartMutation,
-  useUpdateCartItemMutation,
-  useRemoveCartItemMutation,
-  useClearCartMutation,
-  useSyncCartMutation,
-  useMergeCartMutation,
-  useValidateCartQuery,
-} = cartApi;
+export function useRemoveCartItemMutation() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (id: string) => {
+      const res = await apiClient.delete<CartResponse>(`/cart/items/${id}`);
+      return res.data.data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: cartKeys.all });
+      queryClient.invalidateQueries({ queryKey: cartKeys.count });
+    },
+  });
+}
 
+export function useClearCartMutation() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async () => {
+      const res = await apiClient.delete<CartResponse>('/cart');
+      return res.data.data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: cartKeys.all });
+      queryClient.invalidateQueries({ queryKey: cartKeys.count });
+    },
+  });
+}
+
+export function useSyncCartMutation() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (data: SyncCartRequest) => {
+      const res = await apiClient.post<CartResponse>('/cart/sync', data);
+      return res.data.data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: cartKeys.all });
+      queryClient.invalidateQueries({ queryKey: cartKeys.count });
+    },
+  });
+}
+
+export function useMergeCartMutation() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async () => {
+      const res = await apiClient.post<CartResponse>('/cart/merge');
+      return res.data.data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: cartKeys.all });
+      queryClient.invalidateQueries({ queryKey: cartKeys.count });
+    },
+  });
+}

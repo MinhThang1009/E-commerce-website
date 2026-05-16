@@ -19,9 +19,8 @@ export { useProductForm } from './hooks/useProductForm';
 export { useProductPriceRange } from './hooks/useProductPriceRange';
 export { useProductVariants } from './hooks/useProductVariants';
 
-// API endpoints (RTK Query) — Product
+// API hooks — Product
 export {
-  productApi,
   useGetProductsQuery,
   useGetProductByIdQuery,
   useGetProductBySlugQuery,
@@ -37,9 +36,8 @@ export {
   useGetRecentlyViewedQuery,
 } from './api/productApi';
 
-// API endpoints — Category
+// API hooks — Category
 export {
-  categoryApi,
   useGetAllCategoriesQuery,
   useGetCategoryTreeQuery,
   useGetCategoryByIdQuery,
@@ -52,9 +50,8 @@ export {
   useGetCategoriesQuery,
 } from './api/categoryApi';
 
-// API endpoints — Brand
+// API hooks — Brand
 export {
-  brandApi,
   useGetBrandsQuery,
   useGetBrandBySlugQuery,
   useGetProductsByBrandQuery,
@@ -63,9 +60,8 @@ export {
   useDeleteBrandMutation,
 } from './api/brandApi';
 
-// API endpoints — Collection
+// API hooks — Collection
 export {
-  collectionApi,
   useGetCollectionsQuery,
   useGetCollectionBySlugQuery,
   useGetProductsByCollectionQuery,
@@ -74,24 +70,8 @@ export {
   useDeleteCollectionMutation,
 } from './api/collectionApi';
 
-// API endpoints — Attribute (raw service, không phải RTK Query)
+// API endpoints — Attribute (raw service, không phải TanStack Query hook)
 export { default as attributeApi } from './api/attributeApi';
-
-// Redux store (slice + actions)
-export {
-  default as productsReducer,
-  addToRecentlyViewed,
-  clearRecentlyViewed,
-  addToCompareList,
-  removeFromCompareList,
-  clearCompareList,
-  setPriceRange,
-  setCategories,
-  setAttributes,
-  setSortBy,
-  clearFilters,
-  loadRecentlyViewed,
-} from './store/productsSlice';
 
 // Kiểu dữ liệu
 export type {

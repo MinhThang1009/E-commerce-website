@@ -1,4 +1,5 @@
-import { api } from '@/services/api';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import apiClient from '@/services/apiClient';
 import { User, Address } from '@/types/user.types';
 
 export interface UpdateProfileRequest {
@@ -14,130 +15,120 @@ export interface ChangePasswordRequest {
   confirmPassword: string;
 }
 
-export const userApi = api.injectEndpoints({
-  endpoints: (builder) => ({
-    updateProfile: builder.mutation<User, UpdateProfileRequest>({
-      query: (userData) => {
-        return {
-          url: '/users/profile',
-          method: 'PUT',
-          body: userData,
-        };
-      },
-      transformResponse: (response: any) => {
-        if (response?.status === 'success') {
-          return response.data;
-        }
-        return response;
-      },
-      transformErrorResponse: (response: any) => {
-        console.error('Lỗi khi cập nhật hồ sơ:', response);
-        return response.data || 'Failed to update profile';
-      },
-      invalidatesTags: ['CurrentUser'],
-    }),
+// === Query Keys ===
 
-    changePassword: builder.mutation<
-      { message: string },
-      ChangePasswordRequest
-    >({
-      query: (passwordData) => ({
-        url: '/users/change-password',
-        method: 'POST',
-        body: passwordData,
-      }),
-      transformResponse: (response: any) => {
-        if (response?.status === 'success') {
-          return { message: response.message };
-        }
-        return response;
-      },
-    }),
+export const userKeys = {
+  all: ['user'] as const,
+  addresses: () => [...userKeys.all, 'addresses'] as const,
+  currentUser: () => [...userKeys.all, 'current'] as const,
+};
 
-    getAddresses: builder.query<Address[], void>({
-      query: () => ({
-        url: '/users/addresses',
-        method: 'GET',
-      }),
-      transformResponse: (response: any) => {
-        if (response?.status === 'success') {
-          return response.data;
-        }
-        return [];
-      },
-      providesTags: ['Addresses'],
-    }),
+// === Query Hooks ===
 
-    addAddress: builder.mutation<Address, Omit<Address, 'id'>>({
-      query: (addressData) => ({
-        url: '/users/addresses',
-        method: 'POST',
-        body: addressData,
-      }),
-      transformResponse: (response: any) => {
-        if (response?.status === 'success') {
-          return response.data;
-        }
-        return response;
-      },
-      invalidatesTags: ['Addresses'],
-    }),
-
-    updateAddress: builder.mutation<Address, Partial<Address> & { id: string }>(
-      {
-        query: ({ id, ...addressData }) => ({
-          url: `/users/addresses/${id}`,
-          method: 'PUT',
-          body: addressData,
-        }),
-        transformResponse: (response: any) => {
-          if (response?.status === 'success') {
-            return response.data;
-          }
-          return response;
-        },
-        invalidatesTags: ['Addresses'],
+export function useGetAddressesQuery(options?: { enabled?: boolean; skip?: boolean }) {
+  return useQuery<Address[]>({
+    queryKey: userKeys.addresses(),
+    queryFn: async () => {
+      const { data: response } = await apiClient.get('/users/addresses');
+      if (response?.status === 'success') {
+        return response.data;
       }
-    ),
+      return [];
+    },
+    enabled: options?.skip !== undefined ? !options.skip : true,
+  });
+}
 
-    deleteAddress: builder.mutation<{ message: string }, string>({
-      query: (id) => ({
-        url: `/users/addresses/${id}`,
-        method: 'DELETE',
-      }),
-      transformResponse: (response: any) => {
-        if (response?.status === 'success') {
-          return { message: response.message };
-        }
-        return response;
-      },
-      invalidatesTags: ['Addresses'],
-    }),
+// === Mutation Hooks ===
 
-    setDefaultAddress: builder.mutation<Address, string>({
-      query: (id) => ({
-        url: `/users/addresses/${id}/default`,
-        method: 'PATCH',
-      }),
-      transformResponse: (response: any) => {
-        if (response?.status === 'success') {
-          return response.data;
-        }
-        return response;
-      },
-      invalidatesTags: ['Addresses'],
-    }),
-  }),
-  overrideExisting: false,
-});
+export function useUpdateProfileMutation() {
+  const queryClient = useQueryClient();
+  return useMutation<User, Error, UpdateProfileRequest>({
+    mutationFn: async (userData) => {
+      const { data: response } = await apiClient.put('/users/profile', userData);
+      if (response?.status === 'success') {
+        return response.data;
+      }
+      return response;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: userKeys.currentUser() });
+    },
+  });
+}
 
-export const {
-  useUpdateProfileMutation,
-  useChangePasswordMutation,
-  useGetAddressesQuery,
-  useAddAddressMutation,
-  useUpdateAddressMutation,
-  useDeleteAddressMutation,
-  useSetDefaultAddressMutation,
-} = userApi;
+export function useChangePasswordMutation() {
+  return useMutation<{ message: string }, Error, ChangePasswordRequest>({
+    mutationFn: async (passwordData) => {
+      const { data: response } = await apiClient.post('/users/change-password', passwordData);
+      if (response?.status === 'success') {
+        return { message: response.message };
+      }
+      return response;
+    },
+  });
+}
 
+export function useAddAddressMutation() {
+  const queryClient = useQueryClient();
+  return useMutation<Address, Error, Omit<Address, 'id'>>({
+    mutationFn: async (addressData) => {
+      const { data: response } = await apiClient.post('/users/addresses', addressData);
+      if (response?.status === 'success') {
+        return response.data;
+      }
+      return response;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: userKeys.addresses() });
+    },
+  });
+}
+
+export function useUpdateAddressMutation() {
+  const queryClient = useQueryClient();
+  return useMutation<Address, Error, Partial<Address> & { id: string }>({
+    mutationFn: async ({ id, ...addressData }) => {
+      const { data: response } = await apiClient.put(`/users/addresses/${id}`, addressData);
+      if (response?.status === 'success') {
+        return response.data;
+      }
+      return response;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: userKeys.addresses() });
+    },
+  });
+}
+
+export function useDeleteAddressMutation() {
+  const queryClient = useQueryClient();
+  return useMutation<{ message: string }, Error, string>({
+    mutationFn: async (id) => {
+      const { data: response } = await apiClient.delete(`/users/addresses/${id}`);
+      if (response?.status === 'success') {
+        return { message: response.message };
+      }
+      return response;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: userKeys.addresses() });
+    },
+  });
+}
+
+export function useSetDefaultAddressMutation() {
+  const queryClient = useQueryClient();
+  return useMutation<Address, Error, string>({
+    mutationFn: async (id) => {
+      const { data: response } = await apiClient.patch(`/users/addresses/${id}/default`);
+      if (response?.status === 'success') {
+        return response.data;
+      }
+      return response;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: userKeys.addresses() });
+    },
+  });
+}

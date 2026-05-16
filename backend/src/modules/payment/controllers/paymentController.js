@@ -20,7 +20,7 @@ class PaymentController {
 
   createMomoUrl = async (req, res, next) => {
     try {
-      const data = await this.paymentService.createMomoUrl(req.body);
+      const data = await this.paymentService.createMomoUrl({ ...req.body, userId: req.user.id });
       res.status(200).json({ status: 'success', data });
     } catch (err) { next(err); }
   };
@@ -44,7 +44,7 @@ class PaymentController {
       res.status(204).send();
     } catch (err) {
       this.logger.error('Lỗi MoMo IPN:', err);
-      res.status(500).json({ message: err.message });
+      res.status(500).json({ message: 'Internal server error' });
     }
   };
 
@@ -54,7 +54,7 @@ class PaymentController {
         req.headers['x-forwarded-for'] ||
         req.connection?.remoteAddress ||
         req.socket?.remoteAddress;
-      const data = await this.paymentService.createVNPayUrl({ ...req.body, ipAddr });
+      const data = await this.paymentService.createVNPayUrl({ ...req.body, ipAddr, userId: req.user.id });
       res.status(200).json({ status: 'success', data });
     } catch (err) { next(err); }
   };

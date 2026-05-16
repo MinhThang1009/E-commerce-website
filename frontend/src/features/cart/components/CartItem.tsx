@@ -1,14 +1,14 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
-import { useDispatch, useSelector } from 'react-redux';
 import { useTranslation } from 'react-i18next';
+import { buildRoute } from '@/routes/paths';
 import { toast } from '@/utils/toast';
-import { updateQuantity, removeItem } from '../store/cartSlice';
+import { useCartStore } from '@/stores/cartStore';
+import { useAuthStore } from '@/stores/authStore';
 import {
   useUpdateCartItemMutation,
   useRemoveCartItemMutation,
 } from '../api/cartApi';
-import { RootState } from '@/store';
 import type { CartItem as CartItemType } from '../types/cart.types';
 import { formatPrice, parsePrice } from '@/utils/format';
 
@@ -19,14 +19,15 @@ interface CartItemProps {
   maxStock?: number;
 }
 
-const CartItem: React.FC<CartItemProps> = ({ item, isCheckout = false, readonly = false, maxStock }) => {
+const CartItem: React.FC<CartItemProps> = ({ item, isCheckout = false, readonly: _readonly = false, maxStock }) => {
   const { t } = useTranslation();
   const effectiveMaxStock = maxStock ?? item.stockQuantity;
-  const dispatch = useDispatch();
-  const { isAuthenticated } = useSelector((state: RootState) => state.auth);
+  const updateQuantity = useCartStore((s) => s.updateQuantity);
+  const removeItem = useCartStore((s) => s.removeItem);
+  const _isAuthenticated = useAuthStore((s) => s.isAuthenticated);
 
-  const [updateCartItem, { isLoading: isUpdating }] = useUpdateCartItemMutation();
-  const [removeCartItem, { isLoading: isRemoving }] = useRemoveCartItemMutation();
+  const { mutateAsync: updateCartItem, isPending: isUpdating } = useUpdateCartItemMutation();
+  const { mutateAsync: removeCartItem, isPending: isRemoving } = useRemoveCartItemMutation();
 
   const handleQuantityChange = async (newQuantity: number) => {
     if (newQuantity <= 0 || newQuantity > 99) return;
@@ -38,15 +39,15 @@ const CartItem: React.FC<CartItemProps> = ({ item, isCheckout = false, readonly 
 
     try {
       if (item.id && typeof item.id === 'string') {
-        await updateCartItem({ id: item.id, data: { quantity: newQuantity } }).unwrap();
+        await updateCartItem({ id: item.id, data: { quantity: newQuantity } });
         toast.success(t('cart.notifications.quantityUpdated'));
       } else {
-        dispatch(updateQuantity({ id: item.id, quantity: newQuantity }));
+        updateQuantity({ id: item.id, quantity: newQuantity });
         toast.success(t('cart.notifications.quantityUpdatedOffline'));
       }
     } catch (error: any) {
       console.error('Lỗi cập nhật sản phẩm trong giỏ:', error);
-      dispatch(updateQuantity({ id: item.id, quantity: newQuantity }));
+      updateQuantity({ id: item.id, quantity: newQuantity });
       toast.error(t('cart.notifications.updateServerError'));
     }
   };
@@ -54,15 +55,15 @@ const CartItem: React.FC<CartItemProps> = ({ item, isCheckout = false, readonly 
   const handleRemove = async () => {
     try {
       if (item.id && typeof item.id === 'string') {
-        await removeCartItem(item.id).unwrap();
+        await removeCartItem(item.id);
         toast.success(t('cart.notifications.itemRemoved'));
       } else {
-        dispatch(removeItem(item.id));
+        removeItem(item.id);
         toast.success(t('cart.notifications.itemRemoved'));
       }
     } catch (error: any) {
       console.error('Lỗi xóa sản phẩm khỏi giỏ:', error);
-      dispatch(removeItem(item.id));
+      removeItem(item.id);
       toast.error(t('cart.notifications.removeServerError'));
     }
   };
@@ -71,7 +72,7 @@ const CartItem: React.FC<CartItemProps> = ({ item, isCheckout = false, readonly 
     <div className="flex py-4 border-b border-neutral-200 dark:border-neutral-700 last:border-b-0">
       {/* Product image */}
       <div className="w-20 h-20 flex-shrink-0">
-        <Link to={`/products/${item.productId}`}>
+        <Link to={buildRoute.productDetail(item.productId)}>
           <img
             src={item.image}
             alt={item.name}
@@ -84,7 +85,7 @@ const CartItem: React.FC<CartItemProps> = ({ item, isCheckout = false, readonly 
       <div className="ml-4 flex-grow">
         <div className="flex justify-between">
           <Link
-            to={`/products/${item.productId}`}
+            to={buildRoute.productDetail(item.productId)}
             className="text-neutral-800 dark:text-neutral-100 font-medium hover:text-primary-600 dark:hover:text-primary-400 transition-colors"
           >
             {item.name}

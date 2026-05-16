@@ -1,6 +1,7 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
+import { ROUTES } from '@/routes/paths';
 
 const AboutPage: React.FC = () => {
   const { t } = useTranslation();
@@ -110,10 +111,10 @@ const AboutPage: React.FC = () => {
         <h2 className="text-3xl font-bold mb-4">{t('about.ctaTitle')}</h2>
         <p className="text-white/80 max-w-2xl mx-auto mb-10 text-lg">{t('about.ctaDesc')}</p>
         <div className="flex flex-col sm:flex-row justify-center gap-6">
-          <Link to="/shop" className="bg-white text-primary-600 hover:bg-neutral-50 font-bold py-4 px-10 rounded-2xl transition-all duration-300 shadow-lg hover:shadow-xl hover:-translate-y-1">
+          <Link to={ROUTES.SHOP} className="bg-white text-primary-600 hover:bg-neutral-50 font-bold py-4 px-10 rounded-2xl transition-all duration-300 shadow-lg hover:shadow-xl hover:-translate-y-1">
             {t('about.ctaShopBtn')}
           </Link>
-          <Link to="/contact" className="bg-white/10 hover:bg-white/20 text-white border border-white/30 backdrop-blur-md font-bold py-4 px-10 rounded-2xl transition-all duration-300 hover:-translate-y-1">
+          <Link to={ROUTES.CONTACT} className="bg-white/10 hover:bg-white/20 text-white border border-white/30 backdrop-blur-md font-bold py-4 px-10 rounded-2xl transition-all duration-300 hover:-translate-y-1">
             {t('about.ctaContactBtn')}
           </Link>
         </div>

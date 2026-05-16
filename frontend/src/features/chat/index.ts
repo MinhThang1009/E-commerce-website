@@ -3,9 +3,8 @@
 // Components
 export { default as SupportChat } from './components/SupportChat';
 
-// API endpoints (RTK Query)
+// API endpoints (TanStack Query)
 export {
-  chatApi,
   useGetChatHistoryQuery,
   useGetAdminChatListQuery,
 } from './api/chatApi';

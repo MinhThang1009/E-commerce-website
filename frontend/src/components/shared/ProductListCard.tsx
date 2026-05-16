@@ -1,17 +1,16 @@
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { useDispatch, useSelector } from 'react-redux';
 import { useTranslation } from 'react-i18next';
 import { Product } from '@/features/catalog';
-import { addItem, setServerCart } from '@/features/cart';
-import { addNotification } from '@/features/ui/uiSlice';
+import { useCartStore } from '@/stores/cartStore';
+import { useAuthStore } from '@/stores/authStore';
+import { useUiStore } from '@/stores/uiStore';
 import { useAddToCartMutation } from '@/features/cart';
 import {
   calculatePriceRange,
   calculateDiscountPercentage,
 } from '@/utils/priceUtils';
 import { v4 as uuidv4 } from 'uuid';
-import { RootState } from '@/store';
 import { ShoppingCartIcon } from '@heroicons/react/24/outline';
 
 interface ProductListCardProps extends Product {
@@ -27,23 +26,23 @@ const ProductListCard: React.FC<ProductListCardProps> = ({
   shortDescription,
   ratings,
   isNew,
-  slug,
+  slug: _slug,
   variants,
-  enableVariantPricing = false, // Mặc định tắt để tránh quá nhiều API calls
+  enableVariantPricing: _enableVariantPricing = false, // Mặc định tắt để tránh quá nhiều API calls
 }) => {
   const { t, i18n } = useTranslation();
-  const dispatch = useDispatch();
   const navigate = useNavigate();
+  const addNotification = useUiStore((s) => s.addNotification);
+  const addItem = useCartStore((s) => s.addItem);
+  const setServerCart = useCartStore((s) => s.setServerCart);
   const [isAddingToCart, setIsAddingToCart] = useState(false);
   const [isBuying, setIsBuying] = useState(false);
 
-  // Lấy thông tin đăng nhập từ Redux store
-  const isAuthenticated = useSelector(
-    (state: RootState) => state.auth.isAuthenticated
-  );
+  // Lấy thông tin đăng nhập từ Zustand store
+  const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
 
-  // Chỉ khởi tạo API mutation khi đã đăng nhập
-  const [addToCart] = useAddToCartMutation();
+  // Mutation thêm vào giỏ hàng
+  const { mutateAsync: addToCart } = useAddToCartMutation();
 
   // Luôn sử dụng ID để đảm bảo API sản phẩm liên quan hoạt động đúng
   const productUrl = `/products/${id}`;
@@ -67,13 +66,13 @@ const ProductListCard: React.FC<ProductListCardProps> = ({
     try {
       if (isAuthenticated) {
         // Nếu đã đăng nhập, sử dụng API
-        const serverCart = await addToCart({
+        const serverCartData = await addToCart({
           productId: id,
           quantity: 1,
-        }).unwrap();
+        });
 
-        // Cập nhật Redux store với phản hồi từ server
-        dispatch(setServerCart(serverCart));
+        // Cập nhật Zustand store với phản hồi từ server
+        setServerCart(serverCartData);
       } else {
         // Nếu chưa đăng nhập, lưu vào localStorage
         const newItem = {
@@ -84,25 +83,21 @@ const ProductListCard: React.FC<ProductListCardProps> = ({
           quantity: 1,
           image: thumbnail,
         };
-        dispatch(addItem(newItem));
+        addItem(newItem);
       }
 
-      dispatch(
-        addNotification({
-          message: t('product.addedToCartMsg', { name }),
-          type: 'success',
-          duration: 3000,
-        })
-      );
+      addNotification({
+        message: t('product.addedToCartMsg', { name }),
+        type: 'success',
+        duration: 3000,
+      });
     } catch (error: any) {
       console.error('Thêm vào giỏ hàng thất bại:', error);
-      dispatch(
-        addNotification({
-          message: error?.data?.message || t('product.addToCartError'),
-          type: 'error',
-          duration: 3000,
-        })
-      );
+      addNotification({
+        message: error?.data?.message || t('product.addToCartError'),
+        type: 'error',
+        duration: 3000,
+      });
     } finally {
       setIsAddingToCart(false);
     }

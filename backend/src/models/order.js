@@ -10,8 +10,9 @@ const Order = sequelize.define(
       primaryKey: true,
     },
     number: {
-      type: DataTypes.STRING,
+      type: DataTypes.STRING(50),
       allowNull: false,
+      unique: true,
     },
     userId: {
       type: DataTypes.INTEGER,
@@ -108,7 +109,7 @@ const Order = sequelize.define(
       allowNull: true,
     },
     paymentMethod: {
-      type: DataTypes.STRING,
+      type: DataTypes.STRING(50),
       allowNull: false,
     },
     paymentStatus: {
@@ -174,31 +175,26 @@ const Order = sequelize.define(
     warrantyCost: {
       type: DataTypes.DECIMAL(15, 2),
       defaultValue: 0,
-      field: 'warranty_cost',
     },
     // FK tới discount_codes — biết mã nào đã áp dụng, phục vụ audit trail
     discountCodeId: {
       type: DataTypes.INTEGER,
       allowNull: true,
-      field: 'discount_code_id',
     },
     // Timestamp khi order bị huỷ (null nếu chưa huỷ)
     cancelledAt: {
       type: DataTypes.DATE,
       allowNull: true,
-      field: 'cancelled_at',
     },
     // Timestamp khi order được hoàn tiền
     refundedAt: {
       type: DataTypes.DATE,
       allowNull: true,
-      field: 'refunded_at',
     },
     // Số tiền được hoàn (có thể hoàn một phần)
     refundAmount: {
       type: DataTypes.DECIMAL(15, 2),
       allowNull: true,
-      field: 'refund_amount',
     },
   },
   {
@@ -206,6 +202,11 @@ const Order = sequelize.define(
     timestamps: true,
     paranoid: true,
     underscored: true,
+    indexes: [
+      { name: 'idx_orders_status', fields: ['status'] },
+      { name: 'idx_orders_created_at', fields: ['created_at'] },
+      { name: 'idx_orders_payment_status', fields: ['payment_status'] },
+    ],
   }
 );
 

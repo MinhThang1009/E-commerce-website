@@ -85,7 +85,8 @@ class MoMoService {
       .update(rawSignature)
       .digest('hex');
 
-    return checkSignature === signature;
+    if (!signature || checkSignature.length !== signature.length) return false;
+    return crypto.timingSafeEqual(Buffer.from(checkSignature), Buffer.from(signature));
   }
 }
 

@@ -12,7 +12,6 @@ const ProductSpecification = sequelize.define(
     productId: {
       type: DataTypes.INTEGER,
       allowNull: false,
-      field: 'product_id',
     },
     name: {
       type: DataTypes.STRING,
@@ -30,7 +29,6 @@ const ProductSpecification = sequelize.define(
     sortOrder: {
       type: DataTypes.INTEGER,
       defaultValue: 0,
-      field: 'sort_order',
     },
   },
   {

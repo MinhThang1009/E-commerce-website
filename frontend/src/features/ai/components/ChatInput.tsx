@@ -1,11 +1,8 @@
 import React, { FormEvent, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import {
-  HelpIcon,
   LoadingIcon,
   SendIcon,
-  TrashIcon,
-  VerifiedIcon,
 } from './icons/index';
 
 interface ChatInputProps {
@@ -20,7 +17,7 @@ interface ChatInputProps {
 const ChatInput: React.FC<ChatInputProps> = ({
   onSendMessage,
   isLoading,
-  onClearChat,
+  onClearChat: _onClearChat,
 }) => {
   const { t } = useTranslation();
   const [input, setInput] = useState('');
@@ -36,19 +33,6 @@ const ChatInput: React.FC<ChatInputProps> = ({
       onSendMessage(input);
       setInput('');
     }
-  };
-
-  const handleClearChat = () => {
-    if (
-      onClearChat &&
-      window.confirm(t('chat.confirmClearChat'))
-    ) {
-      onClearChat();
-    }
-  };
-
-  const handleHelpClick = () => {
-    onSendMessage(t('chat.helpRequest'));
   };
 
   return (

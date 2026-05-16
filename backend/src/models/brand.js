@@ -14,7 +14,7 @@ const Brand = sequelize.define(
     },
     // Tên thương hiệu
     name: {
-      type: DataTypes.STRING(100),
+      type: DataTypes.STRING(200),
       allowNull: false,
       unique: true,
     },
@@ -28,13 +28,11 @@ const Brand = sequelize.define(
     logoUrl: {
       type: DataTypes.STRING(500),
       allowNull: true,
-      field: 'logo_url',
     },
     // Xóa mềm (soft delete)
     deletedAt: {
       type: DataTypes.DATE,
       allowNull: true,
-      field: 'deleted_at',
     },
   },
   {

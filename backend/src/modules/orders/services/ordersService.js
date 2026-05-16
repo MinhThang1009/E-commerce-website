@@ -288,7 +288,7 @@ class OrdersService {
           productId: product.id,
           variantId: variant ? variant.id : null,
           name: product.name,
-          sku: variant ? variant.sku : product.sku,
+          sku: variant ? variant.sku : null,
           unitPrice: price,
           quantity: item.quantity,
           subtotal: itemSubtotal,

@@ -14,12 +14,12 @@ const { TextArea } = Input;
 const FeedbackModal: React.FC<FeedbackModalProps> = ({ visible, onClose }) => {
   const { t } = useTranslation();
   const [form] = Form.useForm();
-  const [sendFeedback, { isLoading }] = useSendFeedbackMutation();
+  const { mutateAsync: sendFeedback, isPending: isLoading } = useSendFeedbackMutation();
 
   const handleSubmit = async () => {
     try {
       const values = await form.validateFields();
-      await sendFeedback(values).unwrap();
+      await sendFeedback(values);
       message.success(t('feedback.successMessage'));
       form.resetFields();
       onClose();

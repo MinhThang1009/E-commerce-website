@@ -9,8 +9,7 @@ module.exports = {
   SHIPPING_BASE_RATE: 30000,         // Phí ship cơ bản (VND)
   SHIPPING_WEIGHT_RATE: 5000,        // Thêm 5,000 VND mỗi kg vượt quá 2kg
 
-  // JWT tokens
-  JWT_ACCESS_EXPIRY: '7d',
+  // JWT tokens — access expiry dùng từ env JWT_EXPIRES_IN, không cần constant
   JWT_REFRESH_EXPIRY: '30d',
 
   // Phân trang

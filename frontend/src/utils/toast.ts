@@ -1,5 +1,5 @@
 import { message } from 'antd';
-import { store } from '@/store';
+import { useUiStore } from '@/stores/uiStore';
 
 /**
  * Tiện ích toast cho toàn bộ ứng dụng
@@ -35,13 +35,12 @@ message.config({
   maxCount: 5,
 });
 
-// Hàm helper để lấy theme hiện tại từ Redux store
+// Hàm helper để lấy theme hiện tại từ Zustand store
 const isDarkMode = () => {
   try {
-    // Lấy theme từ Redux store
-    const theme = store.getState().ui.theme;
+    const theme = useUiStore.getState().theme;
 
-    // Nếu không có theme trong Redux, kiểm tra class trên document
+    // Nếu không có theme trong store, kiểm tra class trên document
     if (!theme) {
       return document.documentElement.classList.contains('dark');
     }

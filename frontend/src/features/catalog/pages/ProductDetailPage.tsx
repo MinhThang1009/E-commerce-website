@@ -6,29 +6,25 @@ import { Rating } from '@/components/common/Rating';
 import ProductCard from '@/components/shared/ProductCard';
 import { ProductReviews } from '@/features/reviews';
 import WarrantySelection from '../components/WarrantySelection';
-import ProductVariantSelector from '../components/ProductVariantSelector';
-import DynamicProductTitle from '../components/DynamicProductTitle';
-import SimpleDynamicTitle from '../components/SimpleDynamicTitle';
 import ProductDetailsSection from '../components/ProductDetailsSection';
 import ProductFAQSection from '../components/ProductFAQSection';
 import { productApi } from '../api/productApi';
-import { useGetWarrantyPackagesQuery } from '@/features/admin';
 import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { useDispatch, useSelector } from 'react-redux';
+import { useCartStore } from '@/stores/cartStore';
+import { useAuthStore } from '@/stores/authStore';
 import {
   Link,
   useNavigate,
   useParams,
   useSearchParams,
 } from 'react-router-dom';
-import { RootState } from '@/store';
+import { ROUTES, buildRoute } from '@/routes/paths';
 import { v4 as uuidv4 } from 'uuid';
 import ProductImageGallery from '../components/ProductImageGallery';
 import RecentlyViewedProducts from '../components/RecentlyViewedProducts';
 
-import { addItem, setServerCart } from '@/features/cart';
-import { addNotification } from '@/features/ui/uiSlice';
+import { useUiStore } from '@/stores/uiStore';
 import { useAddToCartMutation } from '@/features/cart';
 import {
   getVariantStock,
@@ -46,12 +42,10 @@ const ProductDetailPage: React.FC = () => {
   const { productId } = useParams<{ productId: string }>();
   const [searchParams, setSearchParams] = useSearchParams();
   const navigate = useNavigate();
-  const dispatch = useDispatch();
-
-  // Lấy thông tin đăng nhập từ Redux store
-  const isAuthenticated = useSelector(
-    (state: RootState) => state.auth.isAuthenticated
-  );
+  const addNotification = useUiStore((s) => s.addNotification);
+  const addItem = useCartStore((s) => s.addItem);
+  const setServerCart = useCartStore((s) => s.setServerCart);
+  const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
 
   // Lấy skuId từ URL params
   const skuId = searchParams.get('skuId') || undefined;
@@ -61,8 +55,8 @@ const ProductDetailPage: React.FC = () => {
     Record<string, string>
   >({});
   const [selectedWarranties, setSelectedWarranties] = useState<string[]>([]);
-  const [dynamicProductName, setDynamicProductName] = useState<string>('');
-  const [mappedAttributes, setMappedAttributes] = useState<
+  const [_dynamicProductName, setDynamicProductName] = useState<string>('');
+  const [_mappedAttributes, setMappedAttributes] = useState<
     Record<string, string>
   >({});
 
@@ -77,16 +71,16 @@ const ProductDetailPage: React.FC = () => {
   } = productApi.useGetProductByIdQuery(
     { id: productId || '', skuId, color: colorParam },
     {
-      skip: !productId,
+      enabled: !!productId,
     }
   );
 
-  const [addToCart, { isLoading: isAddingToCart }] = useAddToCartMutation();
+  const { mutateAsync: addToCart, isPending: isAddingToCart } = useAddToCartMutation();
 
   const { data: relatedProductsData } = productApi.useGetRelatedProductsQuery(
     productData?.data?.id || '',
     {
-      skip: !productData?.data?.id,
+      enabled: !!productData?.data?.id,
     }
   );
 
@@ -127,7 +121,8 @@ const ProductDetailPage: React.FC = () => {
         setMappedAttributes({});
       }
     }
-  }, [product?.id]); // Kích hoạt khi ID sản phẩm thay đổi (tải lần đầu hoặc điều hướng)
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- Reset state khi sản phẩm thay đổi, chỉ phụ thuộc vào product.id
+  }, [product?.id]);
 
   // Xử lý thay đổi số lượng
   const handleQuantityChange = (newQuantity: number) => {
@@ -178,7 +173,7 @@ const ProductDetailPage: React.FC = () => {
     setQuantity(1);
   };
 
-  const handleDynamicNameUpdate = (newName: string, details: any) => {
+  const _handleDynamicNameUpdate = (newName: string, _details: any) => {
     setDynamicProductName(newName);
   };
 
@@ -188,7 +183,7 @@ const ProductDetailPage: React.FC = () => {
   };
 
   // Xử lý chọn biến thể
-  const handleVariantChange = (variantId: string) => {
+  const _handleVariantChange = (variantId: string) => {
     // Cập nhật URL với skuId mới
     const newSearchParams = new URLSearchParams(searchParams);
     newSearchParams.set('skuId', variantId);
@@ -225,12 +220,10 @@ const ProductDetailPage: React.FC = () => {
             .filter((attr: any) => !selectedAttributes[attr.name])
             .map((attr: any) => attr.name);
 
-          dispatch(
-            addNotification({
-              type: 'error',
-              message: t('productDetail.selectVariant', { attributes: missingAttributes.join(', ') }),
-            })
-          );
+          addNotification({
+            type: 'error',
+            message: t('productDetail.selectVariant', { attributes: missingAttributes.join(', ') }),
+          });
           return;
         }
       }
@@ -249,45 +242,39 @@ const ProductDetailPage: React.FC = () => {
 
     // Kiểm tra tồn kho
     if (availableStock === 0) {
-      dispatch(
-        addNotification({
-          type: 'error',
-          message: t('productDetail.stock.outOfStock'),
-        })
-      );
+      addNotification({
+        type: 'error',
+        message: t('productDetail.stock.outOfStock'),
+      });
       return;
     }
 
     if (quantity > availableStock) {
-      dispatch(
-        addNotification({
-          type: 'error',
-          message: t('product.stockLimited', { count: availableStock }),
-        })
-      );
+      addNotification({
+        type: 'error',
+        message: t('product.stockLimited', { count: availableStock }),
+      });
       return;
     }
 
     if (isAuthenticated) {
       // Nếu đã đăng nhập, sử dụng API
       try {
-        const serverCart = await addToCart({
+        const serverCartData = await addToCart({
           productId: product.id,
           variantId,
           quantity,
           warrantyPackageIds: selectedWarranties,
-        }).unwrap();
+        });
 
-        // Cập nhật Redux store với response từ server
-        dispatch(setServerCart(serverCart));
+        // Cập nhật Zustand store với response từ server
+        setServerCart(serverCartData);
 
-        dispatch(
-          addNotification({
-            message: t('cart.addedToCart', { name: product.name }),
-            type: 'success',
-            duration: 3000,
-          })
-        );
+        addNotification({
+          message: t('cart.addedToCart', { name: product.name }),
+          type: 'success',
+          duration: 3000,
+        });
       } catch (error: any) {
         console.error('❌ API thất bại:', error);
 
@@ -312,17 +299,15 @@ const ProductDetailPage: React.FC = () => {
           warrantyPackages: product.warrantyPackages?.filter((p: any) => selectedWarranties.includes(p.id)) || [],
         };
 
-        dispatch(addItem(newItem));
+        addItem(newItem);
 
-        dispatch(
-          addNotification({
-            message:
-              error?.data?.message ||
-              t('cart.notifications.serverError'),
-            type: error?.data?.message ? 'error' : 'success',
-            duration: 3000,
-          })
-        );
+        addNotification({
+          message:
+            error?.data?.message ||
+            t('cart.notifications.serverError'),
+          type: error?.data?.message ? 'error' : 'success',
+          duration: 3000,
+        });
       }
     } else {
       // Nếu chưa đăng nhập, KHÔNG gọi API, chỉ lưu vào localStorage
@@ -346,16 +331,14 @@ const ProductDetailPage: React.FC = () => {
         warrantyPackages: product.warrantyPackages?.filter((p: any) => selectedWarranties.includes(p.id)) || [],
       };
 
-      // Chỉ thêm vào Redux store, cartSlice sẽ tự động cập nhật localStorage
-      dispatch(addItem(newItem));
+      // Chỉ thêm vào Zustand store, cartStore sẽ tự động cập nhật localStorage
+      addItem(newItem);
 
-      dispatch(
-        addNotification({
-          message: t('cart.notifications.addedSuccess'),
-          type: 'success',
-          duration: 3000,
-        })
-      );
+      addNotification({
+        message: t('cart.notifications.addedSuccess'),
+        type: 'success',
+        duration: 3000,
+      });
     }
   };
 
@@ -402,7 +385,7 @@ const ProductDetailPage: React.FC = () => {
       };
 
       // 3. Lưu thông tin sản phẩm vào sessionStorage để CheckoutPage sử dụng
-      // Không gọi addToCart hay dispatch(addItem) để tránh đi qua giỏ hàng chính
+      // Không gọi addToCart để tránh đi qua giỏ hàng chính
       sessionStorage.setItem('buyNowItem', JSON.stringify(buyNowItem));
       sessionStorage.setItem('buyNowAction', 'true');
 
@@ -410,13 +393,11 @@ const ProductDetailPage: React.FC = () => {
       navigate('/checkout?buyNow=true');
     } catch (error: any) {
       console.error('Lỗi khi mua ngay:', error);
-      dispatch(
-        addNotification({
-          message: error?.data?.message || t('productDetail.buyNow.error'),
-          type: 'error',
-          duration: 3000,
-        })
-      );
+      addNotification({
+        message: error?.data?.message || t('productDetail.buyNow.error'),
+        type: 'error',
+        duration: 3000,
+      });
     } finally {
       setIsBuying(false);
     }
@@ -502,7 +483,7 @@ const ProductDetailPage: React.FC = () => {
         <ol className="flex text-sm">
           <li className="flex items-center">
             <Link
-              to="/"
+              to={ROUTES.HOME}
               className="text-neutral-500 dark:text-neutral-400 hover:text-primary-500 dark:hover:text-primary-400"
             >
               {t('productDetail.breadcrumb.home')}
@@ -524,7 +505,7 @@ const ProductDetailPage: React.FC = () => {
           </li>
           <li className="flex items-center">
             <Link
-              to={`/categories/${product.category?.slug || product.categorySlug || product.categoryId}`}
+              to={buildRoute.category(product.category?.slug || product.categorySlug || product.categoryId)}
               className="text-neutral-500 dark:text-neutral-400 hover:text-primary-500 dark:hover:text-primary-400"
             >
               {product.category?.name || product.categoryName}
@@ -702,7 +683,7 @@ const ProductDetailPage: React.FC = () => {
 
                     <div className="flex flex-wrap gap-2">
                       {attributeValuesWithStock.map(
-                        ({ value, stock, available }) => {
+                        ({ value, stock: _stock, available }) => {
                           const isSelected =
                             selectedAttributes[attribute.name] === value;
 

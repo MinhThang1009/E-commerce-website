@@ -15,25 +15,21 @@ const ProductImage = sequelize.define(
     productId: {
       type: DataTypes.INTEGER,
       allowNull: false,
-      field: 'product_id',
     },
     // FK tới bảng product_variants (MỚI)
     variantId: {
       type: DataTypes.INTEGER,
       allowNull: true,
-      field: 'variant_id',
     },
     // URL hình ảnh
     imageUrl: {
-      type: DataTypes.STRING(1000),
+      type: DataTypes.STRING(512),
       allowNull: false,
-      field: 'image_url',
     },
     // Đánh dấu ảnh thumbnail chính
     isThumbnail: {
       type: DataTypes.BOOLEAN,
       defaultValue: false,
-      field: 'is_thumbnail',
     },
     // Màu sắc tương ứng của ảnh (nếu có)
     color: {
@@ -44,7 +40,6 @@ const ProductImage = sequelize.define(
     deletedAt: {
       type: DataTypes.DATE,
       allowNull: true,
-      field: 'deleted_at',
     },
   },
   {

@@ -52,7 +52,7 @@ class SequelizeOrdersRepository extends IOrdersRepository {
                 attributes: ['id', 'imageUrl', 'isThumbnail'],
               }],
             },
-            { model: this.ProductVariant, attributes: ['id', ['variant_name', 'name'], 'sku', 'price'] },
+            { model: this.ProductVariant, attributes: ['id', ['variantName', 'name'], 'sku', 'price'] },
           ],
         },
       ],
@@ -70,7 +70,7 @@ class SequelizeOrdersRepository extends IOrdersRepository {
             attributes: ['id', 'name', 'slug'],
             include: [{ association: 'productImages', attributes: ['id', 'imageUrl', 'isThumbnail'] }],
           },
-          { model: this.ProductVariant, attributes: ['id', ['variant_name', 'name'], 'sku', 'price'] },
+          { model: this.ProductVariant, attributes: ['id', ['variantName', 'name'], 'sku', 'price'] },
         ],
       }],
     });
@@ -94,7 +94,7 @@ class SequelizeOrdersRepository extends IOrdersRepository {
             attributes: ['id', 'name', 'basePrice', 'slug'],
             include: [{ association: 'productImages', attributes: ['id', 'imageUrl', 'isThumbnail'] }],
           },
-          { model: this.ProductVariant, attributes: ['id', ['variant_name', 'name'], 'sku', 'price'] },
+          { model: this.ProductVariant, attributes: ['id', ['variantName', 'name'], 'sku', 'price'] },
         ],
       }],
       limit, offset,
@@ -171,7 +171,7 @@ class SequelizeOrdersRepository extends IOrdersRepository {
             attributes: ['id', 'name', 'slug', 'basePrice', 'status'],
             include: [{ association: 'defaultVariant', attributes: ['id', 'stockQuantity'] }],
           },
-          { model: this.ProductVariant, attributes: ['id', ['variant_name', 'name'], 'price', 'stockQuantity', 'sku'] },
+          { model: this.ProductVariant, attributes: ['id', ['variantName', 'name'], 'price', 'stockQuantity', 'sku'] },
         ],
       }],
       ...options,
@@ -214,7 +214,7 @@ class SequelizeOrdersRepository extends IOrdersRepository {
 
   async findVariantBasic(id, options = {}) {
     return this.ProductVariant.findByPk(id, {
-      attributes: ['id', ['variant_name', 'name'], 'price', 'stockQuantity', 'sku'],
+      attributes: ['id', ['variantName', 'name'], 'price', 'stockQuantity', 'sku'],
       ...options,
     });
   }

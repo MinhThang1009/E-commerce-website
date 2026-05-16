@@ -155,23 +155,34 @@ class AuthService {
     return { token: accessToken, refreshToken, user };
   }
 
-  // Đăng xuất — blacklist jti của access token đến khi expire.
-  async logout({ accessToken }) {
-    if (!accessToken) return;
-
-    let decoded;
-    try {
-      decoded = this.tokenSigner.verifyAccessToken(accessToken);
-    } catch (_) {
-      // Token đã expired hoặc invalid — không cần blacklist
-      return;
+  // Đăng xuất — blacklist access token jti + revoke refresh token family.
+  async logout({ accessToken, refreshToken }) {
+    // Blacklist access token
+    if (accessToken) {
+      try {
+        const decoded = this.tokenSigner.verifyAccessToken(accessToken);
+        if (decoded.jti && decoded.exp) {
+          const remainingTTL = decoded.exp - Math.floor(Date.now() / 1000);
+          if (remainingTTL > 0 && this.blacklistStore) {
+            await this.blacklistStore.set(`bl:${decoded.jti}`, remainingTTL, '1');
+          }
+        }
+      } catch (_) {
+        // Token đã expired hoặc invalid — bỏ qua
+      }
     }
 
-    if (!decoded.jti || !decoded.exp) return;
-
-    const remainingTTL = decoded.exp - Math.floor(Date.now() / 1000);
-    if (remainingTTL > 0 && this.blacklistStore) {
-      await this.blacklistStore.set(`bl:${decoded.jti}`, remainingTTL, '1');
+    // Revoke refresh token family
+    if (refreshToken && this.blacklistStore) {
+      try {
+        const decoded = this.tokenSigner.verifyRefreshToken(refreshToken);
+        if (decoded.familyId) {
+          const ttl = this._refreshTtlSeconds();
+          await this.blacklistStore.set(`rt_family_revoked:${decoded.familyId}`, ttl, '1');
+        }
+      } catch (_) {
+        // Refresh token expired/invalid — bỏ qua
+      }
     }
   }
 
@@ -182,16 +193,18 @@ class AuthService {
     }
 
     const user = await this.authRepository.findByEmail(email);
-    if (!user) {
-      throw new AppError('Không tìm thấy tài khoản với email này', 404);
+    // Generic message cho cả user không tồn tại, đã xác thực, OTP sai — chống enumeration
+    const genericError = 'Mã OTP không đúng hoặc đã hết hạn';
+
+    if (!user || user.isEmailVerified) {
+      throw new AppError(genericError, 400);
     }
 
-    if (user.isEmailVerified) {
-      throw new AppError('Email đã được xác thực trước đó', 400);
-    }
-
-    if (!user.otpCode || user.otpCode !== String(otp)) {
-      throw new AppError('Mã OTP không đúng', 400);
+    const otpStr = String(otp).padStart(6, '0');
+    const storedOtp = String(user.otpCode || '').padStart(6, '0');
+    if (!user.otpCode || otpStr.length !== storedOtp.length ||
+        !crypto.timingSafeEqual(Buffer.from(otpStr), Buffer.from(storedOtp))) {
+      throw new AppError(genericError, 400);
     }
 
     if (!user.otpExpires || new Date() > user.otpExpires) {
@@ -208,13 +221,10 @@ class AuthService {
 
   // Gửi lại OTP — reset OTP mới hết hạn 10 phút.
   async resendVerification({ email }) {
+    const genericMessage = 'Nếu email này đã đăng ký, mã OTP sẽ được gửi.';
     const user = await this.authRepository.findByEmail(email);
-    if (!user) {
-      throw new AppError('Không tìm thấy tài khoản với email này', 404);
-    }
-
-    if (user.isEmailVerified) {
-      throw new AppError('Email đã được xác thực', 400);
+    if (!user || user.isEmailVerified) {
+      return { message: genericMessage };
     }
 
     const otpCode = String(crypto.randomInt(100000, 1000000));
@@ -233,7 +243,16 @@ class AuthService {
     return { message: 'Đã gửi lại mã OTP. Vui lòng kiểm tra email của bạn.' };
   }
 
-  // Làm mới access token bằng refresh token
+  _refreshTtlSeconds() {
+    const raw = process.env.JWT_REFRESH_EXPIRES_IN || '7d';
+    const match = raw.match(/^(\d+)(s|m|h|d)$/);
+    if (!match) return 7 * 24 * 3600;
+    const n = parseInt(match[1], 10);
+    const unit = { s: 1, m: 60, h: 3600, d: 86400 }[match[2]];
+    return n * unit;
+  }
+
+  // Làm mới access token bằng refresh token — rotation + reuse detection
   async refreshToken({ refreshToken }) {
     if (!refreshToken) {
       throw new AppError('Refresh token là bắt buộc', 401);
@@ -249,7 +268,26 @@ class AuthService {
       throw err;
     }
 
-    const user = await this.authRepository.findById(decoded.id);
+    const { id, jti, familyId } = decoded;
+    const ttl = this._refreshTtlSeconds();
+
+    // Reuse detection: token đã bị rotate trước đó → có thể bị đánh cắp
+    if (jti && familyId && this.blacklistStore) {
+      const alreadyUsed = await this.blacklistStore.get(`rt_used:${jti}`);
+      if (alreadyUsed) {
+        // Revoke toàn bộ family — tất cả devices/tabs sẽ bị logout
+        await this.blacklistStore.set(`rt_family_revoked:${familyId}`, ttl, '1');
+        this.logger.warn(`[Auth] Refresh token reuse detected — family ${familyId} revoked`);
+        throw new AppError('Refresh token đã được sử dụng. Vui lòng đăng nhập lại', 401);
+      }
+
+      const familyRevoked = await this.blacklistStore.get(`rt_family_revoked:${familyId}`);
+      if (familyRevoked) {
+        throw new AppError('Phiên đăng nhập đã bị vô hiệu. Vui lòng đăng nhập lại', 401);
+      }
+    }
+
+    const user = await this.authRepository.findById(id);
     if (!user) {
       throw new AppError('Refresh token không hợp lệ', 401);
     }
@@ -261,8 +299,14 @@ class AuthService {
       );
     }
 
+    // Đánh dấu token cũ đã dùng (rotation)
+    if (jti && this.blacklistStore) {
+      await this.blacklistStore.set(`rt_used:${jti}`, ttl, familyId || '1');
+    }
+
     const token = this.tokenSigner.signAccessToken({ id: user.id, role: user.role });
-    return { token };
+    const newRefreshToken = this.tokenSigner.signRefreshToken({ id: user.id, familyId });
+    return { token, refreshToken: newRefreshToken };
   }
 
   // Quên mật khẩu — luôn trả cùng response để chống user enumeration.
@@ -298,6 +342,16 @@ class AuthService {
     user.resetPasswordToken = null;
     user.resetPasswordExpires = null;
     await this.authRepository.saveUser(user);
+
+    // Invalidate mọi token cũ — dùng blacklistStore adapter (wrap Redis)
+    try {
+      if (this.blacklistStore) {
+        const nowSec = Math.floor(Date.now() / 1000);
+        await this.blacklistStore.set(`pw_changed:${user.id}`, 30 * 24 * 3600, String(nowSec));
+      }
+    } catch (err) {
+      this.logger.warn('Không thể set pw_changed key trong Redis:', err.message);
+    }
 
     return { message: 'Đặt lại mật khẩu thành công. Bạn có thể đăng nhập ngay bây giờ.' };
   }

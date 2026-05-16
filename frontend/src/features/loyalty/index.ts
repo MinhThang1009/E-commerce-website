@@ -1,4 +1,4 @@
 // Barrel export feature loyalty — public surface
 
-// API endpoints (RTK Query)
-export { loyaltyApi, useGetLoyaltyInfoQuery } from './api/loyaltyApi';
+// API endpoints (TanStack Query)
+export { useGetLoyaltyInfoQuery } from './api/loyaltyApi';

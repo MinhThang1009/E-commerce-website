@@ -1,33 +1,30 @@
 import { useEffect } from 'react';
-import { useSelector, useDispatch } from 'react-redux';
-import { RootState } from '@/store';
+import { useCartStore } from '@/stores/cartStore';
+import { useAuthStore } from '@/stores/authStore';
 import { useAuth } from '@/features/auth';
 import { useGetCartQuery, useSyncCartMutation } from '@/features/cart';
-import { setServerCart, clearCart } from '@/features/cart';
 
 /**
  * Hook đồng bộ dữ liệu giỏ hàng giữa local storage và server
  * Xử lý việc đồng bộ khi người dùng đăng nhập/đăng xuất
  */
 export const useCartSync = () => {
-  const dispatch = useDispatch();
   const { isAuthenticated } = useAuth();
-  const localCartItems = useSelector((state: RootState) => state.cart.items);
-  const justLoggedIn = useSelector((state: RootState) => state.auth.justLoggedIn);
+  const localCartItems = useCartStore((s) => s.items);
+  const setServerCart = useCartStore((s) => s.setServerCart);
+  const justLoggedIn = useAuthStore((s) => s.justLoggedIn);
 
   // Lấy server cart cho người dùng đã xác thực
   const {
     data: serverCart,
     isLoading: isLoadingCart,
     error: cartError,
-  } = useGetCartQuery(undefined, {
-    skip: !isAuthenticated,
-    // Tắt polling - cart sẽ cập nhật qua invalidatesTags khi có mutation
-    // pollingInterval: 30000, // Tắt để tránh spam API
+  } = useGetCartQuery({
+    enabled: isAuthenticated,
   });
 
   // Mutation đồng bộ giỏ hàng
-  const [syncCart, { isLoading: isSyncing }] = useSyncCartMutation();
+  const { mutateAsync: syncCart, isPending: isSyncing } = useSyncCartMutation();
 
   // Đồng bộ giỏ hàng cục bộ lên server khi người dùng đăng nhập
   useEffect(() => {
@@ -47,41 +44,40 @@ export const useCartSync = () => {
           }));
 
           // Đồng bộ lên server
-          const syncedCart = await syncCart({ items: itemsToSync }).unwrap();
+          const syncedCart = await syncCart({ items: itemsToSync });
 
-          // Cập nhật Redux store với response từ server
-          dispatch(setServerCart(syncedCart));
+          // Cập nhật Zustand store với response từ server
+          setServerCart(syncedCart);
 
         } catch (error) {
-          console.error('❌ Không thể đồng bộ giỏ hàng lên server:', error);
+          console.error('Không thể đồng bộ giỏ hàng lên server:', error);
         }
       }
     };
 
     syncLocalCartToServer();
-  }, [isAuthenticated, justLoggedIn, dispatch, syncCart]); // Không bao gồm localCartItems để tránh vòng lặp vô hạn
+  // eslint-disable-next-line react-hooks/exhaustive-deps -- Không bao gồm localCartItems để tránh vòng lặp vô hạn khi sync thay đổi cart
+  }, [isAuthenticated, justLoggedIn, syncCart, setServerCart]);
 
-  // Cập nhật Redux store khi server cart thay đổi
+  // Cập nhật Zustand store khi server cart thay đổi
   useEffect(() => {
     if (isAuthenticated && serverCart && !isSyncing) {
-      dispatch(setServerCart(serverCart));
+      setServerCart(serverCart);
     }
-  }, [serverCart, isAuthenticated, dispatch, isSyncing]);
+  }, [serverCart, isAuthenticated, setServerCart, isSyncing]);
 
   // Xóa giỏ hàng khi người dùng đăng xuất
   useEffect(() => {
     if (!isAuthenticated) {
       // Chỉ xóa dữ liệu server cart, giữ giỏ hàng cục bộ cho khách
-      dispatch(
-        setServerCart({
-          id: null,
-          items: [],
-          totalItems: 0,
-          subtotal: 0,
-        })
-      );
+      setServerCart({
+        id: null,
+        items: [],
+        totalItems: 0,
+        subtotal: 0,
+      });
     }
-  }, [isAuthenticated, dispatch]);
+  }, [isAuthenticated, setServerCart]);
 
   return {
     isLoadingCart,
@@ -92,4 +88,3 @@ export const useCartSync = () => {
 };
 
 export default useCartSync;
-

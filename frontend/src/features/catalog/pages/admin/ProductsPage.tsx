@@ -1,5 +1,6 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { buildRoute } from '@/routes/paths';
 import {
   useGetAdminProductsQuery,
   useDeleteProductMutation,
@@ -96,22 +97,28 @@ const ProductsPage: React.FC = () => {
     sortOrder,
   });
 
-  const [deleteProduct, { isLoading: isDeleting }] = useDeleteProductMutation();
-  const [cloneProduct, { isLoading: isCloning }] = useCloneProductMutation();
-  const [updateProductStatus, { isLoading: isUpdatingStatus }] = useUpdateProductStatusMutation();
-  const [triggerGetProducts, { isFetching: isFetchingForExport }] = useLazyGetAdminProductsQuery();
+  const { mutateAsync: deleteProduct, isPending: _isDeleting } = useDeleteProductMutation();
+  const { mutateAsync: cloneProduct, isPending: isCloning } = useCloneProductMutation();
+  const { mutateAsync: updateProductStatus, isPending: isUpdatingStatus } = useUpdateProductStatusMutation();
+  const { trigger: triggerGetProducts } = useLazyGetAdminProductsQuery();
+  const [isFetchingForExport, _setIsFetchingForExport] = useState(false);
 
   // Xử lý dữ liệu sản phẩm từ API
-  const products = productsResponse?.data?.products || [];
+  const products = useMemo(
+    () => productsResponse?.data?.products || [],
+    [productsResponse?.data?.products]
+  );
   const pagination = productsResponse?.data?.pagination;
 
   // Xử lý dữ liệu danh mục từ API
   const rawCategories = categoriesResponse?.data;
-  const apiCategories = Array.isArray(rawCategories)
-    ? rawCategories
-    : rawCategories
-      ? [rawCategories]
-      : [];
+  const apiCategories = useMemo(() => {
+    return Array.isArray(rawCategories)
+      ? rawCategories
+      : rawCategories
+        ? [rawCategories]
+        : [];
+  }, [rawCategories]);
 
   // Tạo options cho dropdown danh mục
   const categoryOptions = [
@@ -124,31 +131,12 @@ const ProductsPage: React.FC = () => {
       : []),
   ];
 
-  // Log dữ liệu sản phẩm để debug
-  useEffect(() => {
-    if (products.length > 0) {
-      // Kiểm tra xem sản phẩm có biến thể không
-      const hasVariants = products.some(
-        (product) => product.variants && product.variants.length > 0
-      );
-      if (hasVariants) {
-        // Log sản phẩm đầu tiên có biến thể
-        const productWithVariants = products.find(
-          (product) => product.variants && product.variants.length > 0
-        );
-      }
-    }
-  }, [products]);
-
-  // Effect này giữ lại để theo dõi thay đổi apiCategories nếu cần debug sau này
-  useEffect(() => {
-    // Placeholder — thêm logic khi cần xử lý sau khi categories load xong
-  }, [apiCategories]);
+  // Placeholder effects cho debug — hiện không dùng
 
   // Xử lý xóa sản phẩm
   const handleDeleteProduct = async (productId: string) => {
     try {
-      await deleteProduct(productId).unwrap();
+      await deleteProduct(productId);
       message.success(t('admin.products.messages.deleteSuccess'));
       refetch();
     } catch (error) {
@@ -160,7 +148,7 @@ const ProductsPage: React.FC = () => {
   // Xử lý thay đổi trạng thái sản phẩm
   const handleStatusChange = async (productId: string, newStatus: string) => {
     try {
-      await updateProductStatus({ id: productId, status: newStatus }).unwrap();
+      await updateProductStatus({ id: productId, status: newStatus });
       message.success(t('admin.products.messages.statusSuccess'));
     } catch (error) {
       message.error(t('admin.products.messages.statusError'));
@@ -171,7 +159,7 @@ const ProductsPage: React.FC = () => {
   // Xử lý nhân bản sản phẩm
   const handleCloneProduct = async (productId: string) => {
     try {
-      await cloneProduct(productId).unwrap();
+      await cloneProduct(productId);
       message.success(t('admin.products.messages.cloneSuccess'));
       refetch();
     } catch (error) {
@@ -186,7 +174,7 @@ const ProductsPage: React.FC = () => {
       const result = await triggerGetProducts({
         ...exportFilters,
         limit: 99999, // Lấy tất cả để xuất
-      }).unwrap();
+      });
       return result?.data?.products || [];
     } catch (error) {
       console.error('Lấy sản phẩm để xuất thất bại:', error);
@@ -363,7 +351,7 @@ const ProductsPage: React.FC = () => {
             type="link"
             icon={<EditOutlined />}
             onClick={() => {
-              navigate(`/admin/products/edit/${record.id}`);
+              navigate(buildRoute.adminProductEdit(record.id));
             }}
             title={t('admin.products.actions.edit')}
             size="small"
@@ -561,7 +549,7 @@ const ProductsPage: React.FC = () => {
             type="primary"
             onClick={() => {
               setIsQuickViewOpen(false);
-              navigate(`/admin/products/edit/${selectedProduct?.id}`);
+              navigate(buildRoute.adminProductEdit(selectedProduct?.id));
             }}
           >
             {t('admin.products.modal.edit')}

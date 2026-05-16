@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
+import { buildRoute } from '@/routes/paths';
 import { useGetBrandsQuery } from '../api/brandApi';
 import { PageLayout } from '@/components/layout/PageLayout';
 import { ErrorState } from '@/components/common/ErrorState';
@@ -58,7 +59,7 @@ const BrandsPage: React.FC = () => {
                         {filteredBrands.map((brand: any) => (
                             <Link
                                 key={brand.id}
-                                to={`/shop?brand=${brand.id}`}
+                                to={buildRoute.shopBrand(brand.id)}
                                 className="group bg-white dark:bg-neutral-900 border border-neutral-100 dark:border-neutral-800 rounded-2xl p-8 flex flex-col items-center justify-center text-center hover:shadow-xl hover:border-primary-500/30 transition-all duration-300"
                             >
                                 <div className="h-20 flex items-center justify-center mb-4 transition-transform group-hover:scale-110 duration-500">

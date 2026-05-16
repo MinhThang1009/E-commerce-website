@@ -92,6 +92,7 @@ const ProductSpecificationsForm: React.FC<ProductSpecificationsFormProps> = ({
       clearInterval(interval);
       clearTimeout(timeout);
     };
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- Polling form values một lần khi mount, form và specifications dùng qua closure
   }, []);
 
   const addSpecification = () => {

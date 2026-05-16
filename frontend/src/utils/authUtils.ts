@@ -1,6 +1,5 @@
 import i18next from 'i18next';
-import { store } from '@/store';
-import { logout } from '@/features/auth';
+import { useAuthStore } from '@/stores/authStore';
 import { toast } from '@/utils/toast';
 
 // Hàm điều hướng - sẽ được thiết lập bởi component App
@@ -52,13 +51,10 @@ export const handleAutoLogout = (
   // Hiển thị thông báo cho người dùng
   toast.warning(resolvedMessage, 4);
 
-  // Dispatch action đăng xuất để xóa trạng thái xác thực
-  store.dispatch(logout());
+  // Đăng xuất để xóa trạng thái xác thực
+  useAuthStore.getState().logout();
 
-  // logout action trong authSlice đã xóa token, refreshToken, user, cartItems
-  // Không dùng localStorage.clear() để tránh xóa mất theme, language, và preferences khác
-
-  // Chuyển hướng sau delay ngắn để Redux state cập nhật xong
+  // Chuyển hướng sau delay ngắn để state cập nhật xong
   setTimeout(() => {
     logoutManager.setLoggingOut(false);
 

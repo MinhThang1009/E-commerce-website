@@ -1,4 +1,5 @@
-import { api } from '@/services/api';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import apiClient from '@/services/apiClient';
 
 export interface Campaign {
   id: string;
@@ -13,30 +14,62 @@ interface CampaignsResponse { status: string; data: Campaign[] }
 interface CampaignResponse  { status: string; data: Campaign }
 interface CreateCampaignRequest { subject: string; content: string }
 
-export const emailCampaignApi = api.injectEndpoints({
-  endpoints: (builder) => ({
-    getEmailCampaigns: builder.query<CampaignsResponse, void>({
-      query: () => '/email-campaigns',
-      providesTags: ['EmailCampaign'],
-    }),
-    createEmailCampaign: builder.mutation<CampaignResponse, CreateCampaignRequest>({
-      query: (body) => ({ url: '/email-campaigns', method: 'POST', body }),
-      invalidatesTags: ['EmailCampaign'],
-    }),
-    deleteEmailCampaign: builder.mutation<{ status: string }, string>({
-      query: (id) => ({ url: `/email-campaigns/${id}`, method: 'DELETE' }),
-      invalidatesTags: ['EmailCampaign'],
-    }),
-    sendEmailCampaign: builder.mutation<{ status: string }, string>({
-      query: (id) => ({ url: `/email-campaigns/${id}/send`, method: 'POST' }),
-      invalidatesTags: ['EmailCampaign'],
-    }),
-  }),
-});
+// === Query Keys ===
 
-export const {
-  useGetEmailCampaignsQuery,
-  useCreateEmailCampaignMutation,
-  useDeleteEmailCampaignMutation,
-  useSendEmailCampaignMutation,
-} = emailCampaignApi;
+export const emailCampaignKeys = {
+  all: ['email-campaigns'] as const,
+  list: () => [...emailCampaignKeys.all, 'list'] as const,
+};
+
+// === Query Hooks ===
+
+export function useGetEmailCampaignsQuery() {
+  return useQuery<CampaignsResponse>({
+    queryKey: emailCampaignKeys.list(),
+    queryFn: async () => {
+      const { data } = await apiClient.get('/email-campaigns');
+      return data;
+    },
+  });
+}
+
+// === Mutation Hooks ===
+
+export function useCreateEmailCampaignMutation() {
+  const queryClient = useQueryClient();
+  return useMutation<CampaignResponse, Error, CreateCampaignRequest>({
+    mutationFn: async (body) => {
+      const { data } = await apiClient.post('/email-campaigns', body);
+      return data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: emailCampaignKeys.all });
+    },
+  });
+}
+
+export function useDeleteEmailCampaignMutation() {
+  const queryClient = useQueryClient();
+  return useMutation<{ status: string }, Error, string>({
+    mutationFn: async (id) => {
+      const { data } = await apiClient.delete(`/email-campaigns/${id}`);
+      return data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: emailCampaignKeys.all });
+    },
+  });
+}
+
+export function useSendEmailCampaignMutation() {
+  const queryClient = useQueryClient();
+  return useMutation<{ status: string }, Error, string>({
+    mutationFn: async (id) => {
+      const { data } = await apiClient.post(`/email-campaigns/${id}/send`);
+      return data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: emailCampaignKeys.all });
+    },
+  });
+}

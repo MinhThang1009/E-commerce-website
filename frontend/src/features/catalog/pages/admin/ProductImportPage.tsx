@@ -1,4 +1,5 @@
 import React, { useState, useRef, useCallback } from 'react';
+import { useAuthStore } from '@/stores/authStore';
 import {
   Card,
   Button,
@@ -15,7 +16,6 @@ import {
   Divider,
 } from 'antd';
 import {
-  UploadOutlined,
   DownloadOutlined,
   InboxOutlined,
   CheckCircleOutlined,
@@ -71,9 +71,8 @@ function getApiBase(): string {
   return url.endsWith('/api') ? url : `${url}/api`;
 }
 
-/** Lấy token từ localStorage để đính vào Authorization header */
 function getAuthToken(): string {
-  return localStorage.getItem('token') || '';
+  return useAuthStore.getState().token || '';
 }
 
 /** Parse đơn giản một dòng CSV — xử lý ngoặc kép */

@@ -2225,6 +2225,7 @@
       "refresh_rate": "Tần số quét",
       "brightness": "Độ sáng",
       "battery": "Dung lượng PIN",
+      "battery_capacity": "Dung lượng PIN",
       "battery_type": "Loại PIN",
       "charger": "Công nghệ sạc",
       "charging_port": "Cổng sạc",

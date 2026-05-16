@@ -32,7 +32,7 @@ export interface NamePreviewResponse {
 }
 
 export interface ApiResponse<T> {
-  success: boolean;
+  status: 'success' | 'error';
   data: T;
   message: string;
 }

@@ -1,5 +1,4 @@
 import React from 'react';
-import { Alert } from 'antd';
 
 interface ValidationAlertsProps {
   isFormValid: boolean;
@@ -7,8 +6,8 @@ interface ValidationAlertsProps {
 }
 
 const ValidationAlerts: React.FC<ValidationAlertsProps> = ({
-  isFormValid,
-  missingFields,
+  isFormValid: _isFormValid,
+  missingFields: _missingFields,
 }) => {
   // Không hiển thị bất kỳ thông báo nào
   return null;

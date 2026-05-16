@@ -32,6 +32,7 @@ import {
 } from '@ant-design/icons';
 import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
+import { buildRoute } from '@/routes/paths';
 import {
   useGetAllUsersQuery,
   useUpdateUserMutation,
@@ -68,8 +69,8 @@ const UsersPage: React.FC = () => {
   });
 
   const { data: usersData, isLoading, refetch } = useGetAllUsersQuery(filters);
-  const [updateUser, { isLoading: isUpdating }] = useUpdateUserMutation();
-  const [deleteUser] = useDeleteUserMutation();
+  const { mutateAsync: updateUser, isPending: isUpdating } = useUpdateUserMutation();
+  const { mutateAsync: deleteUser } = useDeleteUserMutation();
 
   const users = usersData?.data?.users || [];
   const pagination = usersData?.data?.pagination;
@@ -77,7 +78,7 @@ const UsersPage: React.FC = () => {
   const handleSubmit = async (values: UserFormData) => {
     if (!editingUser) return;
     try {
-      await updateUser({ id: editingUser.id, ...values }).unwrap();
+      await updateUser({ id: editingUser.id, ...values });
       message.success(t('admin.users.messages.editSuccess'));
       setIsModalVisible(false);
       setEditingUser(null);
@@ -89,7 +90,7 @@ const UsersPage: React.FC = () => {
 
   const handleDelete = async (id: string) => {
     try {
-      await deleteUser(id).unwrap();
+      await deleteUser(id);
       message.success(t('admin.users.messages.deleteSuccess'));
     } catch (error: any) {
       message.error(error?.data?.message || t('admin.users.messages.deleteError'));
@@ -213,7 +214,7 @@ const UsersPage: React.FC = () => {
       width: 120,
       render: (_: any, record: User) => (
         <Space>
-          <Button type="link" icon={<EyeOutlined />} onClick={() => navigate(`/admin/users/${record.id}`)} size="small" />
+          <Button type="link" icon={<EyeOutlined />} onClick={() => navigate(buildRoute.adminUserDetail(record.id))} size="small" />
           <Button type="link" icon={<EditOutlined />} onClick={() => handleEdit(record)} size="small" />
           <Popconfirm
             title={t('admin.users.deleteTitle')}

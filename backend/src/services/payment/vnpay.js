@@ -11,9 +11,7 @@ class VNPayService {
   }
 
   createPaymentUrl({ orderId, amount, ipAddr, orderInfo, locale = 'vn' }) {
-    process.env.TZ = 'Asia/Ho_Chi_Minh';
-    const date = new Date();
-    const createDate = moment(date).format('YYYYMMDDHHmmss');
+    const createDate = moment().utcOffset('+07:00').format('YYYYMMDDHHmmss');
 
     const currCode = 'VND';
     let vnp_Params = {};
@@ -54,7 +52,8 @@ class VNPayService {
     const hmac = crypto.createHmac('sha512', this.secretKey);
     const signed = hmac.update(Buffer.from(signData, 'utf-8')).digest('hex');
 
-    return secureHash === signed;
+    if (!secureHash || secureHash.length !== signed.length) return false;
+    return crypto.timingSafeEqual(Buffer.from(secureHash), Buffer.from(signed));
   }
 
   async refund({
@@ -65,18 +64,16 @@ class VNPayService {
     user = 'Admin',
     ipAddr,
   }) {
-    process.env.TZ = 'Asia/Ho_Chi_Minh';
-    const date = new Date();
     const vnp_Api = process.env.VNP_API;
     const vnp_TmnCode = this.tmnCode;
     const secretKey = this.secretKey;
 
-    const vnp_RequestId = moment(date).format('HHmmss');
+    const vnp_RequestId = moment().utcOffset('+07:00').format('HHmmss');
     const vnp_Version = '2.1.0';
     const vnp_Command = 'refund';
     const vnp_OrderInfo = 'Hoan tien GD ma:' + orderId;
     const vnp_Amount = Math.round(amount * 100);
-    const vnp_CreateDate = moment(date).format('YYYYMMDDHHmmss');
+    const vnp_CreateDate = moment().utcOffset('+07:00').format('YYYYMMDDHHmmss');
     const vnp_TransactionNo = '0'; // Nếu không xác định
     const vnp_TransactionDate = transDate; // Định dạng YYYYMMDDHHmmss
     const vnp_CreateBy = user;

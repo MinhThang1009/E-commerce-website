@@ -1,10 +1,12 @@
 import { useState, useMemo, useEffect } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
+import { ROUTES, buildRoute } from '@/routes/paths';
 import { Helmet } from 'react-helmet-async';
 import { useGetCategoryBySlugQuery, useGetProductsByCategoryQuery } from '../api/categoryApi';
 import { useGetAllCategoriesQuery } from '../api/categoryApi';
 import ProductCard from '@/components/shared/ProductCard';
+import { getUploadUrl } from '@/utils/uploadUrl';
 
 type SortOption = 'newest' | 'price-asc' | 'price-desc' | 'popular';
 
@@ -29,7 +31,7 @@ const CategoryPage: React.FC = () => {
   const [page, setPage] = useState(1);
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
 
-  const { data: categoryData, isLoading: categoryLoading } = useGetCategoryBySlugQuery(slug || '', { skip: !slug });
+  const { data: categoryData, isLoading: categoryLoading } = useGetCategoryBySlugQuery(slug || '', { enabled: !!slug });
   const categoryInfo = useMemo(() => {
     if (categoryData?.data && !Array.isArray(categoryData.data)) {
       return categoryData.data;
@@ -44,7 +46,7 @@ const CategoryPage: React.FC = () => {
     isFetching,
   } = useGetProductsByCategoryQuery(
     { id: categoryInfo?.id || '', page, limit: 12, sort, order },
-    { skip: !categoryInfo?.id }
+    { enabled: !!categoryInfo?.id }
   );
 
   const { data: allCatsData } = useGetAllCategoriesQuery();
@@ -83,11 +85,7 @@ const CategoryPage: React.FC = () => {
   ];
 
   // URL ảnh đầy đủ cho og:image
-  const categoryImageUrl = categoryInfo.image
-    ? categoryInfo.image.startsWith('http')
-      ? categoryInfo.image
-      : `${import.meta.env.VITE_API_URL || 'http://localhost:8888'}${categoryInfo.image}`
-    : '';
+  const categoryImageUrl = getUploadUrl(categoryInfo.image);
 
   return (
     <div className="min-h-screen bg-neutral-50 dark:bg-neutral-950">
@@ -106,7 +104,7 @@ const CategoryPage: React.FC = () => {
         {categoryInfo.image && (
           <div className="absolute inset-0 opacity-25">
             <img
-              src={categoryInfo.image.startsWith('http') ? categoryInfo.image : `${import.meta.env.VITE_API_URL || 'http://localhost:8888'}${categoryInfo.image}`}
+              src={getUploadUrl(categoryInfo.image)}
               className="w-full h-full object-cover object-center"
               alt=""
             />
@@ -123,11 +121,11 @@ const CategoryPage: React.FC = () => {
 
         <div className="relative container mx-auto px-4 py-12">
           <nav className="flex items-center gap-2 text-sm text-white/70 mb-6">
-            <Link to="/" className="hover:text-white transition-colors">{t('category.home')}</Link>
+            <Link to={ROUTES.HOME} className="hover:text-white transition-colors">{t('category.home')}</Link>
             <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
             </svg>
-            <Link to="/shop" className="hover:text-white transition-colors">{t('category.shop')}</Link>
+            <Link to={ROUTES.SHOP} className="hover:text-white transition-colors">{t('category.shop')}</Link>
             <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
             </svg>
@@ -138,7 +136,7 @@ const CategoryPage: React.FC = () => {
             <div className="w-16 h-16 bg-white/20 backdrop-blur-sm rounded-2xl flex items-center justify-center text-4xl border border-white/30 shadow-lg overflow-hidden">
               {categoryInfo.image ? (
                 <img
-                  src={categoryInfo.image.startsWith('http') ? categoryInfo.image : `${import.meta.env.VITE_API_URL || 'http://localhost:8888'}${categoryInfo.image}`}
+                  src={getUploadUrl(categoryInfo.image)}
                   alt={categoryInfo.name}
                   className="w-full h-full object-cover"
                 />
@@ -168,7 +166,7 @@ const CategoryPage: React.FC = () => {
         {relatedCategories.length > 0 && (
           <div className="mb-8 flex gap-2 overflow-x-auto pb-2 scrollbar-hide">
             <Link
-              to="/shop"
+              to={ROUTES.SHOP}
               className="flex-shrink-0 flex items-center gap-2 px-4 py-2 text-sm font-medium rounded-xl border border-neutral-200 dark:border-neutral-700 text-neutral-600 dark:text-neutral-400 hover:bg-white dark:hover:bg-neutral-800 hover:border-primary-300 dark:hover:border-primary-700 transition-all"
             >
               🛍️ {t('category.all')}
@@ -176,7 +174,7 @@ const CategoryPage: React.FC = () => {
             {relatedCategories.map((cat) => (
               <Link
                 key={cat.slug}
-                to={`/categories/${cat.slug}`}
+                to={buildRoute.category(cat.slug)}
                 className="flex-shrink-0 flex items-center gap-2 px-4 py-2 text-sm font-medium rounded-xl border border-neutral-200 dark:border-neutral-700 text-neutral-600 dark:text-neutral-400 hover:bg-white dark:hover:bg-neutral-800 hover:border-primary-300 hover:text-primary-700 dark:hover:border-primary-700 dark:hover:text-primary-300 transition-all"
               >
                 <span>{CATEGORY_ICONS[cat.slug] || '📦'}</span>
@@ -259,7 +257,7 @@ const CategoryPage: React.FC = () => {
               {t('category.noProductsDesc')}
             </p>
             <Link
-              to="/shop"
+              to={ROUTES.SHOP}
               className="inline-flex items-center gap-2 px-5 py-2.5 bg-primary-600 hover:bg-primary-700 text-white rounded-xl text-sm font-medium transition-colors"
             >
               <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">

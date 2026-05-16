@@ -1,24 +1,21 @@
-import { useDispatch } from 'react-redux';
-import {
-  addNotification,
-  removeNotification,
-  clearNotifications,
-} from '@/features/ui/uiSlice';
+import { useUiStore } from '@/stores/uiStore';
 import { AddNotificationPayload } from '@/types/ui.types';
 
 export const useNotifications = () => {
-  const dispatch = useDispatch();
+  const addNotification = useUiStore((s) => s.addNotification);
+  const removeNotification = useUiStore((s) => s.removeNotification);
+  const clearNotifications = useUiStore((s) => s.clearNotifications);
 
   const showNotification = (notification: AddNotificationPayload) => {
-    dispatch(addNotification(notification));
+    addNotification(notification);
   };
 
   const hideNotification = (id: string) => {
-    dispatch(removeNotification(id));
+    removeNotification(id);
   };
 
   const clearAllNotifications = () => {
-    dispatch(clearNotifications());
+    clearNotifications();
   };
 
   return {
@@ -27,4 +24,3 @@ export const useNotifications = () => {
     clearAllNotifications,
   };
 };
-

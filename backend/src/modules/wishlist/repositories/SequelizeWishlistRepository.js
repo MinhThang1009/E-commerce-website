@@ -19,12 +19,14 @@ class SequelizeWishlistRepository extends IWishlistRepository {
           model: this.Product,
           attributes: [
             'id', 'name', 'slug',
-            ['base_price', 'price'],
-            ['compare_at_price', 'compareAtPrice'],
+            ['basePrice', 'price'],
+            'compareAtPrice',
           ],
           include: [
             { association: 'productImages', required: false },
             { association: 'defaultVariant', required: false },
+            // Include tất cả variants để tính tổng stock (stock thực ở variant level)
+            { association: 'variants', attributes: ['stockQuantity'], required: false },
           ],
         },
       ],

@@ -8,9 +8,9 @@ export { default as ReviewModal } from './components/ReviewModal';
 export { default as ReviewSection } from './components/ReviewSection';
 export { default as ReviewSummary } from './components/ReviewSummary';
 
-// API endpoints (RTK Query)
+// API hooks (TanStack Query) + query keys
 export {
-  reviewApi,
+  reviewKeys,
   useGetProductReviewsQuery,
   useCreateReviewMutation,
   useUpdateReviewMutation,

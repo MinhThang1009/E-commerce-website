@@ -7,7 +7,6 @@ import {
   Row,
   Col,
   Button,
-  Alert,
   Switch,
   Space,
   Typography,
@@ -19,17 +18,14 @@ import {
   SettingOutlined,
   InfoCircleOutlined,
 } from '@ant-design/icons';
-import { ProductFormData } from '@/types';
 import EnhancedRichTextEditor from '@/components/common/EnhancedRichTextEditor';
-import SimpleRichTextEditor from '@/components/common/SimpleRichTextEditor';
-import EditorErrorBoundary from '@/components/common/EditorErrorBoundary';
 import Base64ImageWarning from './Base64ImageWarning';
 import DynamicProductName from './DynamicProductName';
 import { sampleLaptopData } from '@/utils/sampleProductData';
 
 const { TextArea } = Input;
 const { Option } = Select;
-const { Text, Title } = Typography;
+const { Text } = Typography;
 
 interface EnhancedProductBasicFormProps {
   fillExampleData: () => void;
@@ -54,10 +50,6 @@ const EnhancedProductBasicForm: React.FC<EnhancedProductBasicFormProps> = ({
   const baseName = Form.useWatch('baseName', form);
   const isVariantProduct = Form.useWatch('isVariantProduct', form);
   const description = Form.useWatch('description', form) || '';
-
-  const handleDescriptionChange = (value: string) => {
-    form.setFieldValue('description', value);
-  };
 
   const handleFillSampleData = () => {
     const sampleData = {
@@ -232,17 +224,19 @@ const EnhancedProductBasicForm: React.FC<EnhancedProductBasicFormProps> = ({
           </Form.Item>
         </Col>
 
-        {/* Sample Data Button */}
-        <Col span={24}>
-          <Button
-            type="dashed"
-            onClick={handleFillSampleData}
-            icon={<SyncOutlined />}
-            block
-          >
-            {t('productForm.fillSampleData')}
-          </Button>
-        </Col>
+        {/* Sample Data Button — dev only */}
+        {import.meta.env.DEV && (
+          <Col span={24}>
+            <Button
+              type="dashed"
+              onClick={handleFillSampleData}
+              icon={<SyncOutlined />}
+              block
+            >
+              {t('productForm.fillSampleData')}
+            </Button>
+          </Col>
+        )}
 
         <Col span={24}>
           <Divider />

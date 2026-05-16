@@ -1,25 +1,25 @@
 import React from 'react';
 import { useTranslation } from 'react-i18next';
 import { Link } from 'react-router-dom';
+import { ROUTES } from '@/routes/paths';
 import { useGetWishlistQuery, useClearWishlistMutation } from '../api/wishlistApi';
 import ProductCard from '@/components/shared/ProductCard';
 import LoadingSpinner from '@/components/common/LoadingSpinner';
 import { HeartIcon } from '@heroicons/react/24/outline';
-import { useDispatch } from 'react-redux';
-import { clearWishlistLocal } from '../store/wishlistSlice';
+import { useWishlistStore } from '@/stores/wishlistStore';
 
 const WishlistPage: React.FC = () => {
   const { t } = useTranslation();
-  const dispatch = useDispatch();
+  const clearWishlistLocal = useWishlistStore((s) => s.clearWishlistLocal);
 
-  const { data: wishlistData, isLoading, refetch } = useGetWishlistQuery();
-  const [clearWishlist, { isLoading: isClearing }] = useClearWishlistMutation();
+  const { data: wishlistData, isLoading } = useGetWishlistQuery();
+  const { mutateAsync: clearWishlist, isPending: isClearing } = useClearWishlistMutation();
 
   const handleClearWishlist = async () => {
     if (window.confirm(t('wishlist.confirmClear'))) {
       try {
-        dispatch(clearWishlistLocal());
-        await clearWishlist().unwrap();
+        clearWishlistLocal();
+        await clearWishlist();
       } catch (error) {
         console.error('Failed to clear wishlist:', error);
       }
@@ -63,7 +63,7 @@ const WishlistPage: React.FC = () => {
             {t('wishlist.emptyDesc')}
           </p>
           <Link
-            to="/shop"
+            to={ROUTES.SHOP}
             className="inline-flex items-center justify-center bg-primary-600 hover:bg-primary-700 text-white rounded-xl py-2.5 px-6 font-semibold transition-colors"
           >
             {t('wishlist.continueShopping')}
@@ -81,4 +81,3 @@ const WishlistPage: React.FC = () => {
 };
 
 export default WishlistPage;
-

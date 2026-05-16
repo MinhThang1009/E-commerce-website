@@ -21,9 +21,9 @@ const EmailCampaignsPage: React.FC = () => {
   const [form] = Form.useForm();
 
   const { data, isLoading } = useGetEmailCampaignsQuery();
-  const [createEmailCampaign] = useCreateEmailCampaignMutation();
-  const [deleteEmailCampaign] = useDeleteEmailCampaignMutation();
-  const [sendEmailCampaign] = useSendEmailCampaignMutation();
+  const { mutateAsync: createEmailCampaign } = useCreateEmailCampaignMutation();
+  const { mutateAsync: deleteEmailCampaign } = useDeleteEmailCampaignMutation();
+  const { mutateAsync: sendEmailCampaign } = useSendEmailCampaignMutation();
 
   const campaigns = data?.data ?? [];
 
@@ -34,7 +34,7 @@ const EmailCampaignsPage: React.FC = () => {
 
   const handleDelete = async (id: string) => {
     try {
-      await deleteEmailCampaign(id).unwrap();
+      await deleteEmailCampaign(id);
       message.success(t('emailCampaigns.deleteSuccess'));
     } catch {
       message.error(t('emailCampaigns.deleteError'));
@@ -44,7 +44,7 @@ const EmailCampaignsPage: React.FC = () => {
   const handleSend = async (id: string) => {
     try {
       message.loading({ content: t('emailCampaigns.sending'), key: 'send_campaign' });
-      await sendEmailCampaign(id).unwrap();
+      await sendEmailCampaign(id);
       message.success({ content: t('emailCampaigns.sendSuccess'), key: 'send_campaign' });
     } catch {
       message.error({ content: t('emailCampaigns.sendError'), key: 'send_campaign' });
@@ -54,7 +54,7 @@ const EmailCampaignsPage: React.FC = () => {
   const handleModalOk = async () => {
     try {
       const values = await form.validateFields();
-      await createEmailCampaign(values).unwrap();
+      await createEmailCampaign(values);
       message.success(t('emailCampaigns.createSuccess'));
       setIsModalVisible(false);
     } catch {

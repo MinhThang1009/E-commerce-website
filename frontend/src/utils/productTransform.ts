@@ -82,7 +82,10 @@ export const transformProduct = (product: any): any => {
     compareAtPrice: product.compareAtPrice
       ? parseFloat(String(product.compareAtPrice))
       : null,
-    stock: product.stockQuantity,
+    stock: product.variants?.length > 0
+      ? product.variants.reduce((sum: number, v: any) => sum + (v.stockQuantity || 0), 0)
+      : product.stockQuantity,
+    isVariantProduct: (product.variants?.length || 0) > 0,
     categoryId: product.categoryId || product.category?.id || product.categories?.[0]?.id || '',
     categoryName: product.category?.name || product.categories?.[0]?.name || '',
     categorySlug: product.category?.slug || product.categories?.[0]?.slug || '',
@@ -245,41 +248,5 @@ export const createProductFiltersParams = (
   }
 
   return params;
-};
-
-/**
- * Tạo provide tags cho caching RTK Query
- */
-export const generateProductTags = (
-  result: any,
-  tagType: string = 'LIST'
-): Array<{ type: 'Product'; id: string | number }> => {
-  if (!result?.data) return [{ type: 'Product', id: tagType }];
-
-  if (Array.isArray(result.data)) {
-    return [
-      ...result.data.map(({ id }: any) => ({
-        type: 'Product' as const,
-        id,
-      })),
-      { type: 'Product', id: tagType },
-    ];
-  }
-
-  if (Array.isArray(result.data)) {
-    return [
-      ...result.data.map(({ id }: any) => ({
-        type: 'Product' as const,
-        id,
-      })),
-      { type: 'Product', id: tagType },
-    ];
-  }
-
-  if (result.data.id) {
-    return [{ type: 'Product', id: result.data.id }];
-  }
-
-  return [{ type: 'Product', id: tagType }];
 };
 

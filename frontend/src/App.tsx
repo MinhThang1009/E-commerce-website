@@ -1,10 +1,9 @@
 import { useEffect } from 'react';
 import { BrowserRouter as Router, useNavigate, useLocation } from 'react-router-dom';
-import { useDispatch, useSelector } from 'react-redux';
-import { clearCart } from '@/features/cart';
-import { cartApi } from '@/features/cart';
+import { useQueryClient } from '@tanstack/react-query';
+import { useCartStore } from '@/stores/cartStore';
+import { cartKeys } from '@/features/cart';
 import { HelmetProvider } from 'react-helmet-async';
-import { RootState } from '@/store';
 import AppRoutes from '@/routes/AppRoutes';
 import Notifications from '@/components/common/Notifications';
 import { ChatWidgetPortal } from '@/features/ai';
@@ -14,16 +13,18 @@ import { useTokenRefresh } from '@/hooks/useTokenRefresh';
 import { LoginSuccess, AuthProvider } from '@/features/auth';
 import { useAntdToast } from '@/hooks/useAntdToast';
 import { setNavigateFunction } from '@/utils/authUtils';
+import { useUiStore } from '@/stores/uiStore';
 // Khởi tạo cấu hình i18n
 import '@/config/i18n';
 import '@/styles/index.scss';
 
 // Component con có quyền truy cập useNavigate (phải nằm trong Router)
 const AppContent: React.FC = () => {
-  const theme = useSelector((state: RootState) => state.ui.theme);
+  const theme = useUiStore((s) => s.theme);
   const { contextHolder } = useAntdToast();
-  const dispatch = useDispatch();
+  const clearLocalCart = useCartStore((s) => s.clearLocalCart);
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
 
   const location = useLocation();
 
@@ -34,12 +35,13 @@ const AppContent: React.FC = () => {
       (params.get('status') === 'momo-return' && params.get('resultCode') === '0');
 
     if (hasSuccess) {
-      // Xóa giỏ hàng khỏi storage và Redux state sau khi thanh toán thành công
+      // Xóa giỏ hàng khỏi storage và Zustand state sau khi thanh toán thành công
       localStorage.removeItem('cartItems');
-      dispatch(clearCart());
-      dispatch(cartApi.util.invalidateTags(['Cart', 'CartCount']));
+      clearLocalCart();
+      queryClient.invalidateQueries({ queryKey: cartKeys.all });
+      queryClient.invalidateQueries({ queryKey: cartKeys.count });
     }
-  }, [location.search, dispatch]);
+  }, [location.search, clearLocalCart, queryClient]);
 
   // Khởi tạo logic tự động làm mới token
   useTokenRefresh();

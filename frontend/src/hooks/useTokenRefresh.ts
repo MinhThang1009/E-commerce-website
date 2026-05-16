@@ -1,17 +1,13 @@
 import { useEffect } from 'react';
-import { useSelector, useDispatch } from 'react-redux';
-import { RootState } from '@/store';
+import { useAuthStore } from '@/stores/authStore';
 import { refreshTokenIfNeeded, isTokenExpired } from '@/utils/tokenManager';
-import { logout } from '@/features/auth';
 
 export const useTokenRefresh = () => {
-  const dispatch = useDispatch();
-  const { token, refreshToken, isAuthenticated } = useSelector(
-    (state: RootState) => state.auth
-  );
+  const token = useAuthStore((s) => s.token);
+  const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
 
   useEffect(() => {
-    if (!isAuthenticated || !token || !refreshToken) {
+    if (!isAuthenticated || !token) {
       return;
     }
 
@@ -21,7 +17,7 @@ export const useTokenRefresh = () => {
         const newToken = await refreshTokenIfNeeded();
 
         if (!newToken) {
-          dispatch(logout());
+          useAuthStore.getState().logout();
         }
       }
     };
@@ -33,7 +29,7 @@ export const useTokenRefresh = () => {
     const interval = setInterval(checkTokenValidity, 5 * 60 * 1000);
 
     return () => clearInterval(interval);
-  }, [token, refreshToken, isAuthenticated, dispatch]);
+  }, [token, isAuthenticated]);
 
   // Cũng kiểm tra khi trang được hiển thị lại
   useEffect(() => {

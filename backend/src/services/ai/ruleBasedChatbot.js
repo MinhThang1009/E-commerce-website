@@ -1,4 +1,4 @@
-const { Product, Category, Brand, Order, OrderItem, User } = require('../../models');
+const { Product, Category, Brand, Order, OrderItem, User, ProductVariant } = require('../../models');
 const { Op } = require('sequelize');
 const logger = require('../../utils/logger');
 
@@ -301,7 +301,6 @@ class ChatbotService {
           products = await Product.findAll({
             where: {
               status: 'active',
-              stockQuantity: { [Op.gt]: 0 },
             },
             include: [
               {
@@ -312,6 +311,7 @@ class ChatbotService {
                 },
                 through: { attributes: [] },
               },
+              { model: ProductVariant, as: 'variants', attributes: ['stockQuantity'], required: false },
             ],
             limit: limit * 2, // Lấy nhiều hơn để lọc sau
             order: [['createdAt', 'DESC']],
@@ -332,12 +332,14 @@ class ChatbotService {
         const fallbackProducts = await Product.findAll({
           where: {
             status: 'active',
-            stockQuantity: { [Op.gt]: 0 },
             [Op.or]: [
               { isFeatured: true },
-              { compareAtPrice: { [Op.gt]: 0 } }, // Sản phẩm đang giảm giá
+              { compareAtPrice: { [Op.gt]: 0 } },
             ],
           },
+          include: [
+            { model: ProductVariant, as: 'variants', attributes: ['stockQuantity'], required: false },
+          ],
           limit: limit - products.length,
           order: [
             ['isFeatured', 'DESC'],
@@ -356,7 +358,7 @@ class ChatbotService {
         price: product.basePrice,
         compareAtPrice: product.compareAtPrice,
         thumbnail: product.thumbnail,
-        inStock: product.stockQuantity > 0,
+        inStock: (product.variants || []).reduce((s, v) => s + (v.stockQuantity || 0), 0) > 0 || product.stockQuantity > 0,
         rating: null,
         discount: product.compareAtPrice
           ? Math.round(

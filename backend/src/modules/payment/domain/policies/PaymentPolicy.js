@@ -14,6 +14,12 @@ function canProcessPayment(order, transactionId) {
 
 function canRefund(order) {
   if (!order) return { allowed: false, reason: 'Không tìm thấy đơn hàng' };
+  if (order.paymentStatus === 'refunded') {
+    return { allowed: false, reason: 'Đơn hàng đã được hoàn tiền' };
+  }
+  if (order.paymentStatus !== 'paid') {
+    return { allowed: false, reason: 'Chỉ có thể hoàn tiền đơn hàng đã thanh toán' };
+  }
   if (!order.paymentTransactionId) {
     return { allowed: false, reason: 'Không tìm thấy giao dịch thanh toán cho đơn hàng này' };
   }

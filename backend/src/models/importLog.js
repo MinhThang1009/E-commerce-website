@@ -15,7 +15,6 @@ const ImportLog = sequelize.define(
     adminId: {
       type: DataTypes.INTEGER.UNSIGNED,
       allowNull: false,
-      field: 'admin_id',
     },
     // Tên file đã upload (csv/json)
     filename: {
@@ -27,40 +26,36 @@ const ImportLog = sequelize.define(
       type: DataTypes.INTEGER,
       allowNull: false,
       defaultValue: 0,
-      field: 'total_rows',
     },
     // Số dòng import thành công
     successRows: {
       type: DataTypes.INTEGER,
       allowNull: false,
       defaultValue: 0,
-      field: 'success_rows',
     },
     // Số dòng thất bại
     failedRows: {
       type: DataTypes.INTEGER,
       allowNull: false,
       defaultValue: 0,
-      field: 'failed_rows',
     },
     // Chi tiết lỗi từng dòng: [{ row: number, field: string, message: string }]
     errorDetail: {
       type: DataTypes.JSON,
       allowNull: true,
-      field: 'error_detail',
     },
     // Thời điểm import
     importedAt: {
       type: DataTypes.DATE,
       allowNull: false,
       defaultValue: DataTypes.NOW,
-      field: 'imported_at',
     },
   },
   {
     tableName: 'import_logs',
     // Không dùng createdAt/updatedAt — chỉ dùng imported_at
     timestamps: false,
+    underscored: true,
   }
 );
 

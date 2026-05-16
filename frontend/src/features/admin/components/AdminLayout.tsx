@@ -1,12 +1,11 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Link, useLocation, Outlet, useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
+import { ROUTES } from '@/routes/paths';
 import { useAuth } from '@/features/auth';
-import { useSelector, useDispatch } from 'react-redux';
-import { RootState } from '@/store';
-import { setTheme } from '@/features/ui/uiSlice';
+import { useUiStore } from '@/stores/uiStore';
 import { ConfigProvider, theme as antdTheme, Button, Drawer } from 'antd';
-import { MenuOutlined, CloseOutlined } from '@ant-design/icons';
+import { MenuOutlined } from '@ant-design/icons';
 import { UserIcon } from '@/components/icons';
 
 const AdminLayout: React.FC = () => {
@@ -16,10 +15,10 @@ const AdminLayout: React.FC = () => {
   const { user, getUserFullName, isAuthenticated, logout } = useAuth();
   const [showUserDropdown, setShowUserDropdown] = useState(false);
   const userDropdownRef = useRef<HTMLDivElement>(null);
-  const dispatch = useDispatch();
-  const theme = useSelector((state: RootState) => state.ui.theme);
+  const theme = useUiStore((s) => s.theme);
+  const setTheme = useUiStore((s) => s.setTheme);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-  const [windowWidth, setWindowWidth] = useState(window.innerWidth);
+  const [_windowWidth, setWindowWidth] = useState(window.innerWidth);
 
   // Xử lý thay đổi kích thước cửa sổ cho thiết kế responsive
   useEffect(() => {
@@ -63,7 +62,7 @@ const AdminLayout: React.FC = () => {
   };
 
   const toggleTheme = () => {
-    dispatch(setTheme(theme === 'light' ? 'dark' : 'light'));
+    setTheme(theme === 'light' ? 'dark' : 'light');
   };
 
   const adminNavItems = [
@@ -468,7 +467,7 @@ const AdminLayout: React.FC = () => {
                           </p>
                         </div>
                         <Link
-                          to="/"
+                          to={ROUTES.HOME}
                           className="block px-4 py-2 text-sm text-neutral-700 dark:text-neutral-300 hover:bg-neutral-100 dark:hover:bg-neutral-700 transition-colors"
                           onClick={() => setShowUserDropdown(false)}
                         >

@@ -7,8 +7,7 @@ import {
   useTrackChatbotAnalyticsMutation,
   useAddToCartViaChatbotMutation,
 } from '../services/chatbotApi';
-import { useSelector } from 'react-redux';
-import { RootState } from '@/store';
+import { useAuthStore } from '@/stores/authStore';
 import { toast } from '@/utils/toast';
 
 interface ChatProductCardProps {
@@ -24,9 +23,9 @@ const ChatProductCard: React.FC<ChatProductCardProps> = ({
 }) => {
   const { t } = useTranslation();
   const navigate = useNavigate();
-  const { user } = useSelector((state: RootState) => state.auth);
-  const [trackAnalytics] = useTrackChatbotAnalyticsMutation();
-  const [addToCart] = useAddToCartViaChatbotMutation();
+  const user = useAuthStore((s) => s.user);
+  const { mutateAsync: trackAnalytics } = useTrackChatbotAnalyticsMutation();
+  const { mutateAsync: addToCart } = useAddToCartViaChatbotMutation();
 
   const handleProductClick = async () => {
     await trackAnalytics({
@@ -48,7 +47,7 @@ const ChatProductCard: React.FC<ChatProductCardProps> = ({
       return;
     }
     try {
-      await addToCart({ productId: product.id, quantity: 1, sessionId }).unwrap();
+      await addToCart({ productId: product.id, quantity: 1, sessionId });
       await trackAnalytics({
         event: 'product_added_to_cart',
         userId: user.id,
@@ -70,14 +69,13 @@ const ChatProductCard: React.FC<ChatProductCardProps> = ({
       return;
     }
     try {
-      await addToCart({ productId: product.id, quantity: 1, sessionId }).unwrap();
+      await addToCart({ productId: product.id, quantity: 1, sessionId });
       navigate('/checkout');
     } catch (error) {
       toast.error(t('product.buyNowFailed'));
     }
   };
 
-  // Luôn VND — locale động theo ngôn ngữ UI
   const formatPrice = (price: number) => {
     return new Intl.NumberFormat(getLocale(), {
       style: 'currency',
@@ -103,7 +101,6 @@ const ChatProductCard: React.FC<ChatProductCardProps> = ({
       className="bg-white dark:bg-neutral-800 rounded-xl border border-neutral-200 dark:border-neutral-700 overflow-hidden shadow-sm hover:shadow-lg transition-all duration-300 cursor-pointer group transform hover:scale-102"
       onClick={handleProductClick}
     >
-      {/* Ảnh sản phẩm */}
       <div className="relative overflow-hidden">
         <img
           src={product.thumbnail || '/images/placeholder-product.jpg'}
@@ -111,14 +108,12 @@ const ChatProductCard: React.FC<ChatProductCardProps> = ({
           className="w-full h-32 object-cover group-hover:scale-110 transition-transform duration-300"
         />
 
-        {/* Nhãn giảm giá */}
         {product.discount > 0 && (
           <div className="absolute top-2 left-2 bg-red-500 text-white text-xs font-bold px-2 py-1 rounded-full">
             -{product.discount}%
           </div>
         )}
 
-        {/* Trạng thái tồn kho */}
         {!product.inStock && (
           <div className="absolute inset-0 bg-black/50 flex items-center justify-center">
             <span className="text-white font-semibold text-sm">
@@ -128,13 +123,11 @@ const ChatProductCard: React.FC<ChatProductCardProps> = ({
         )}
       </div>
 
-      {/* Thông tin sản phẩm */}
       <div className="p-3">
         <h4 className="font-semibold text-sm text-neutral-800 dark:text-neutral-200 line-clamp-2 mb-2">
           {product.name}
         </h4>
 
-        {/* Đánh giá */}
         {product.rating !== null && product.rating !== undefined && (
           <div className="flex items-center mb-2">
             {renderStars(product.rating)}
@@ -142,7 +135,6 @@ const ChatProductCard: React.FC<ChatProductCardProps> = ({
           </div>
         )}
 
-        {/* Giá sản phẩm */}
         <div className="flex items-center justify-between mb-3">
           <div className="flex items-center space-x-1">
             <span className="font-bold text-primary-600 dark:text-primary-400 text-sm">
@@ -157,7 +149,6 @@ const ChatProductCard: React.FC<ChatProductCardProps> = ({
           </div>
         </div>
 
-        {/* Nút hành động */}
         <div className="flex flex-col space-y-1">
           <div className="flex space-x-2">
             <button
@@ -171,7 +162,7 @@ const ChatProductCard: React.FC<ChatProductCardProps> = ({
                 onClick={handleAddToCart}
                 className="flex-1 bg-primary-500 hover:bg-primary-600 text-white px-3 py-2 rounded-lg text-xs font-medium transition-colors"
               >
-                🛒 {t('product.addToCart')}
+                {t('product.addToCart')}
               </button>
             )}
           </div>
@@ -180,7 +171,7 @@ const ChatProductCard: React.FC<ChatProductCardProps> = ({
               onClick={handleBuyNow}
               className="w-full bg-orange-500 hover:bg-orange-600 text-white px-3 py-2 rounded-lg text-xs font-medium transition-colors"
             >
-              ⚡ {t('product.buyNow')}
+              {t('product.buyNow')}
             </button>
           )}
         </div>
@@ -190,4 +181,3 @@ const ChatProductCard: React.FC<ChatProductCardProps> = ({
 };
 
 export default ChatProductCard;
-

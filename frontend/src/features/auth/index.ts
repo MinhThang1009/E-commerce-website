@@ -20,9 +20,11 @@ export { default as LoginSuccess } from './components/LoginSuccess';
 // Hook
 export { useAuth } from './hooks/useAuth';
 
-// API endpoints (RTK Query)
+// Zustand store
+export { useAuthStore } from '@/stores/authStore';
+
+// API endpoints (TanStack Query hooks)
 export {
-  authApi,
   useLoginMutation,
   useRegisterMutation,
   useRefreshTokenMutation,
@@ -34,19 +36,6 @@ export {
   useForgotPasswordMutation,
   useGoogleLoginMutation,
 } from './api/authApi';
-
-// Redux store (slice + actions)
-export {
-  default as authReducer,
-  loginStart,
-  loginSuccess,
-  loginFailure,
-  logout,
-  updateUser,
-  clearError,
-  updateTokens,
-  clearJustLoggedIn,
-} from './store/authSlice';
 
 // Kiểu dữ liệu
 export type {

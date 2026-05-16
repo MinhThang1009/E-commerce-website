@@ -1,7 +1,8 @@
 import axios from 'axios';
 import i18n from '@/config/i18n';
-// Cấu hình API
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8888/api';
+import { useAuthStore } from '@/stores/authStore';
+
+const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8888/api';
 
 export interface GeminiChatResponse {
   text: string;
@@ -16,7 +17,6 @@ class GeminiService {
   }
 
   private async initializeModel() {
-    // Hiện dùng chat qua backend (OpenRouter)
     this.isInitialized = true;
   }
 
@@ -28,13 +28,12 @@ class GeminiService {
     const cleanMessage = userMessage.trim();
 
     try {
-
       const response = await axios.post(`${API_BASE_URL}/chatbot/message`, {
         message: cleanMessage
       }, {
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${localStorage.getItem('token')}`
+          'Authorization': `Bearer ${useAuthStore.getState().token || ''}`
         }
       });
 
@@ -58,7 +57,7 @@ class GeminiService {
     }
   }
 
-  private generateSuggestions(userMessage: string, aiResponse: string): string[] {
+  private generateSuggestions(userMessage: string, _aiResponse: string): string[] {
     const lowerMessage = userMessage.toLowerCase();
 
     if (lowerMessage.includes('tìm') || lowerMessage.includes('mua')) {
@@ -83,12 +82,10 @@ class GeminiService {
   getStatus(): { ready: boolean; hasApiKey: boolean; error?: string } {
     return {
       ready: this.isInitialized,
-      hasApiKey: true, // Luôn true vì xác thực qua backend
+      hasApiKey: true,
     };
   }
 }
 
-// Export instance duy nhất (singleton)
 export const geminiService = new GeminiService();
 export default geminiService;
-

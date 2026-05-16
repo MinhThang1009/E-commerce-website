@@ -10,6 +10,7 @@ import {
   Banner,
 } from '../../api/bannerApi';
 import ImageUpload from '@/components/common/ImageUpload';
+import { getUploadUrl } from '@/utils/uploadUrl';
 
 const BannersPage: React.FC = () => {
   const { t } = useTranslation();
@@ -18,9 +19,9 @@ const BannersPage: React.FC = () => {
   const [form] = Form.useForm();
 
   const { data, isLoading } = useGetBannersQuery();
-  const [createBanner] = useCreateBannerMutation();
-  const [updateBanner] = useUpdateBannerMutation();
-  const [deleteBanner] = useDeleteBannerMutation();
+  const { mutateAsync: createBanner } = useCreateBannerMutation();
+  const { mutateAsync: updateBanner } = useUpdateBannerMutation();
+  const { mutateAsync: deleteBanner } = useDeleteBannerMutation();
 
   const banners = data?.data ?? [];
 
@@ -38,7 +39,7 @@ const BannersPage: React.FC = () => {
 
   const handleDelete = async (id: string) => {
     try {
-      await deleteBanner(id).unwrap();
+      await deleteBanner(id);
       message.success(t('admin.banners.messages.deleteSuccess'));
     } catch {
       message.error(t('admin.banners.messages.deleteError'));
@@ -49,10 +50,10 @@ const BannersPage: React.FC = () => {
     try {
       const values = await form.validateFields();
       if (editingBanner) {
-        await updateBanner({ id: editingBanner.id, ...values }).unwrap();
+        await updateBanner({ id: editingBanner.id, ...values });
         message.success(t('admin.banners.messages.editSuccess'));
       } else {
-        await createBanner(values).unwrap();
+        await createBanner(values);
         message.success(t('admin.banners.messages.createSuccess'));
       }
       setIsModalVisible(false);
@@ -72,7 +73,7 @@ const BannersPage: React.FC = () => {
       dataIndex: 'imageUrl',
       key: 'imageUrl',
       render: (url: string) => {
-        const fullUrl = url?.startsWith('http') ? url : `${import.meta.env.VITE_API_URL || ''}${url?.startsWith('/') ? '' : '/'}${url}`;
+        const fullUrl = getUploadUrl(url);
         return <img src={fullUrl} alt={t('admin.banners.table.image')} style={{ width: 100, borderRadius: 4 }} />;
       },
     },

@@ -1,29 +1,24 @@
 import { useState, useRef, useEffect, useCallback } from 'react';
-import { useSelector, useDispatch } from 'react-redux';
 import { useTranslation } from 'react-i18next';
 import { CHAT_WIDGET_CONFIG, getGreetingMessage } from '../constants/chatWidget';
 import { Message } from '../components/ChatWidget';
-import {
-  addMessage as addMessageAction,
-  setMessages as setMessagesAction,
-} from '../store/chatSlice';
-import type { RootState } from '@/store';
+import { useChatStore } from '@/stores/chatStore';
 
 export const useChatWidget = () => {
   const { t } = useTranslation();
-  const dispatch = useDispatch();
   const [isOpen, setIsOpen] = useState(false);
   const [position, setPosition] = useState({ x: 0, y: 0 });
   const [size, setSize] = useState(CHAT_WIDGET_CONFIG.DEFAULT_SIZE);
 
-  // Messages từ Redux — single source of truth, persist qua navigation
-  const messages = useSelector((state: RootState) => state.chat.messages) as Message[];
+  // Messages từ Zustand — single source of truth, persist qua navigation
+  const messages = useChatStore((s) => s.messages) as Message[];
+  const addMessageAction = useChatStore((s) => s.addMessage);
+  const setMessagesAction = useChatStore((s) => s.setMessages);
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const chatWidgetRef = useRef<HTMLDivElement>(null);
   const isOpenRef = useRef(isOpen);
 
-  // Tải kích thước đã lưu từ localStorage
   useEffect(() => {
     try {
       const savedSize = localStorage.getItem(
@@ -37,23 +32,20 @@ export const useChatWidget = () => {
     }
   }, []);
 
-  // Khởi tạo tin nhắn chào mừng nếu chưa có lịch sử
   useEffect(() => {
     if (messages.length === 0) {
       const greeting = {
         ...getGreetingMessage(),
         id: Date.now().toString(),
       };
-      dispatch(setMessagesAction([greeting]));
+      setMessagesAction([greeting]);
     }
-  }, [messages.length, dispatch]);
+  }, [messages.length, setMessagesAction]);
 
-  // Tự động cuộn xuống cuối khi có tin nhắn mới
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages]);
 
-  // Xử lý thay đổi trạng thái mở/đóng
   useEffect(() => {
     isOpenRef.current = isOpen;
 
@@ -75,7 +67,7 @@ export const useChatWidget = () => {
         event.preventDefault();
       }
 
-      if (isOpen) return; // Chỉ cho phép mở, không cho phép đóng qua toggle
+      if (isOpen) return;
 
       setIsOpen(true);
       isOpenRef.current = true;
@@ -93,25 +85,25 @@ export const useChatWidget = () => {
   }, []);
 
   const addMessage = useCallback((message: Message) => {
-    dispatch(addMessageAction(message));
-  }, [dispatch]);
+    addMessageAction(message);
+  }, [addMessageAction]);
 
   const removeMessage = useCallback((messageId: string) => {
-    dispatch(setMessagesAction(messages.filter((msg) => msg.id !== messageId)));
-  }, [dispatch, messages]);
+    setMessagesAction(messages.filter((msg) => msg.id !== messageId));
+  }, [setMessagesAction, messages]);
 
   const updateMessage = useCallback(
     (messageId: string, updates: Partial<Message>) => {
-      dispatch(setMessagesAction(
+      setMessagesAction(
         messages.map((msg) => (msg.id === messageId ? { ...msg, ...updates } : msg))
-      ));
+      );
     },
-    [dispatch, messages]
+    [setMessagesAction, messages]
   );
 
   const setMessages = useCallback((newMessages: Message[]) => {
-    dispatch(setMessagesAction(newMessages));
-  }, [dispatch]);
+    setMessagesAction(newMessages);
+  }, [setMessagesAction]);
 
   const applyChanges = useCallback(() => {
     localStorage.setItem(
@@ -130,18 +122,15 @@ export const useChatWidget = () => {
   }, [size, addMessage, t]);
 
   return {
-    // State (trạng thái)
     isOpen,
     position,
     size,
     messages,
 
-    // Refs
     messagesEndRef,
     chatWidgetRef,
     isOpenRef,
 
-    // Actions (hành động)
     toggleChat,
     closeChat,
     addMessage,
@@ -153,4 +142,3 @@ export const useChatWidget = () => {
     setMessages,
   };
 };
-

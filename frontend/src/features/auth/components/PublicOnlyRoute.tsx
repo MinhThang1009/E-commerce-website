@@ -1,7 +1,6 @@
 import React from 'react';
 import { Navigate } from 'react-router-dom';
-import { useSelector } from 'react-redux';
-import { RootState } from '@/store';
+import { useAuthStore } from '@/stores/authStore';
 
 interface PublicOnlyRouteProps {
   children: React.ReactNode;
@@ -12,7 +11,7 @@ const PublicOnlyRoute: React.FC<PublicOnlyRouteProps> = ({
   children,
   redirectTo = '/',
 }) => {
-  const { isAuthenticated } = useSelector((state: RootState) => state.auth);
+  const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
 
   if (isAuthenticated) {
     // Chuyển hướng người dùng đã đăng nhập ra khỏi các trang xác thực

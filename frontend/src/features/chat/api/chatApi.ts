@@ -1,4 +1,5 @@
-import { api } from '@/services/api';
+import { useQuery } from '@tanstack/react-query';
+import apiClient from '@/services/apiClient';
 
 export interface ChatMessage {
   id: string;
@@ -26,25 +27,36 @@ export interface AdminChatListResponse {
   unreadCount: number;
 }
 
-export const chatApi = api.injectEndpoints({
-  endpoints: (builder) => ({
-    getChatHistory: builder.query<{ status: string; data: ChatMessage[] }, string>({
-      query: (identifier) => ({
-        url: `/chat/${identifier}`,
-        method: 'GET',
-      }),
-      providesTags: (result, error, identifier) => [{ type: 'Chat', id: identifier }],
-    }),
+// === Query Keys ===
 
-    getAdminChatList: builder.query<{ status: string; data: AdminChatListResponse[] }, void>({
-      query: () => ({
-        url: '/chat/admin/list',
-        method: 'GET',
-      }),
-      providesTags: ['Chat'],
-    }),
-  }),
-});
+export const chatKeys = {
+  all: ['chat'] as const,
+  history: (identifier: string) => [...chatKeys.all, 'history', identifier] as const,
+  adminList: () => [...chatKeys.all, 'admin-list'] as const,
+};
 
-export const { useGetChatHistoryQuery, useGetAdminChatListQuery } = chatApi;
+// === Query Hooks ===
 
+export function useGetChatHistoryQuery(
+  identifier: string,
+  options?: { enabled?: boolean; skip?: boolean }
+) {
+  return useQuery<{ status: string; data: ChatMessage[] }>({
+    queryKey: chatKeys.history(identifier),
+    queryFn: async () => {
+      const { data } = await apiClient.get(`/chat/${identifier}`);
+      return data;
+    },
+    enabled: options?.skip !== undefined ? !options.skip : !!identifier,
+  });
+}
+
+export function useGetAdminChatListQuery() {
+  return useQuery<{ status: string; data: AdminChatListResponse[] }>({
+    queryKey: chatKeys.adminList(),
+    queryFn: async () => {
+      const { data } = await apiClient.get('/chat/admin/list');
+      return data;
+    },
+  });
+}

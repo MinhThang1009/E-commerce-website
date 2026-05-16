@@ -20,7 +20,7 @@ const ReviewSummary: React.FC<ReviewSummaryProps> = ({
       limit: 1000, // Lấy tất cả đánh giá để tính tổng quan
     },
     {
-      skip: !productId || productId === 'undefined',
+      enabled: !!productId && productId !== 'undefined',
     }
   );
 

@@ -2,6 +2,7 @@ import React, { useState, useRef } from 'react';
 import { XMarkIcon, CloudArrowUpIcon, LinkIcon } from '@heroicons/react/24/outline';
 import { useTranslation } from 'react-i18next';
 import { toast } from '@/utils/toast';
+import { getUploadUrl } from '@/utils/uploadUrl';
 
 interface ImageUploadProps {
   value?: string | string[];
@@ -28,12 +29,7 @@ const ImageUpload: React.FC<ImageUploadProps> = ({
 
   const images = Array.isArray(value) ? value : value ? value.split(',').map(s => s.trim()) : [];
 
-  const getFullUrl = (url: string) => {
-    if (!url) return '';
-    if (url.startsWith('http')) return url;
-    const baseUrl = import.meta.env.VITE_API_URL || 'http://localhost:8888';
-    return `${baseUrl}${url.startsWith('/') ? '' : '/'}${url}`;
-  };
+  const getFullUrl = getUploadUrl;
 
   const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files;
@@ -54,8 +50,6 @@ const ImageUpload: React.FC<ImageUploadProps> = ({
     
     // Chọn endpoint phù hợp
     const endpoint = multiple ? 'multiple' : 'single';
-    const fieldName = multiple ? 'files' : 'file';
-    
     if (multiple) {
       for (let i = 0; i < files.length; i++) {
         formData.append('files', files[i]);
@@ -65,11 +59,14 @@ const ImageUpload: React.FC<ImageUploadProps> = ({
     }
 
     try {
-      const response = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:8888'}/api/uploads/${type}/${endpoint}`, {
+      const { getValidToken } = await import('@/utils/tokenManager');
+      const authToken = await getValidToken();
+      const response = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:8888/api'}/uploads/${type}/${endpoint}`, {
         method: 'POST',
         headers: {
-          'Authorization': `Bearer ${localStorage.getItem('token')}`
+          ...(authToken ? { 'Authorization': `Bearer ${authToken}` } : {}),
         },
+        credentials: 'include',
         body: formData,
       });
 

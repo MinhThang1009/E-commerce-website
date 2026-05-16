@@ -12,7 +12,6 @@ const BrandCategory = sequelize.define(
         key: 'id',
       },
       primaryKey: true,
-      field: 'brand_id'
     },
     categoryId: {
       type: DataTypes.INTEGER,
@@ -22,7 +21,6 @@ const BrandCategory = sequelize.define(
         key: 'id',
       },
       primaryKey: true,
-      field: 'category_id'
     },
   },
   {

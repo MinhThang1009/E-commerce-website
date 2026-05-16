@@ -1,4 +1,5 @@
-import { api } from '@/services/api';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import apiClient from '@/services/apiClient';
 
 export interface Review {
   id: string;
@@ -43,114 +44,147 @@ export interface CreateReviewData {
   images?: string[];
 }
 
-export const reviewApi = api.injectEndpoints({
-  endpoints: (builder) => ({
-    // Lấy danh sách đánh giá của sản phẩm
-    getProductReviews: builder.query<
-      any,
-      { productId: string } & ReviewFilters
-    >({
-      query: ({ productId, ...filters }) => {
-        const params = new URLSearchParams();
+// Query keys tập trung
+export const reviewKeys = {
+  all: ['reviews'] as const,
+  product: (productId: string) =>
+    [...reviewKeys.all, 'product', productId] as const,
+  productFiltered: (productId: string, filters: ReviewFilters) =>
+    [...reviewKeys.product(productId), filters] as const,
+  user: (params?: { page?: number; limit?: number }) =>
+    [...reviewKeys.all, 'user', params] as const,
+};
 
-        if (filters.page) params.append('page', filters.page.toString());
-        if (filters.limit) params.append('limit', filters.limit.toString());
-        if (filters.rating) params.append('rating', filters.rating.toString());
-        if (filters.verified !== undefined)
-          params.append('verified', filters.verified.toString());
-        if (filters.withImages !== undefined)
-          params.append('withImages', filters.withImages.toString());
-        if (filters.sort) params.append('sort', filters.sort);
+// --- Query hooks ---
 
-        return {
-          url: `/reviews/product/${productId}?${params.toString()}`,
-          method: 'GET',
-        };
-      },
-      providesTags: (result, error, { productId }) => [
-        { type: 'Review', id: `product-${productId}` },
-      ],
-    }),
+/** Lấy danh sách đánh giá của sản phẩm */
+export function useGetProductReviewsQuery(
+  args: { productId: string } & ReviewFilters,
+  options?: { enabled?: boolean },
+) {
+  const { productId, ...filters } = args;
+  return useQuery<any>({
+    queryKey: reviewKeys.productFiltered(productId, filters),
+    queryFn: async () => {
+      const params = new URLSearchParams();
 
-    // Tạo đánh giá mới
-    createReview: builder.mutation<any, CreateReviewData>({
-      query: (reviewData) => ({
-        url: '/reviews',
-        method: 'POST',
-        body: reviewData,
-      }),
-      invalidatesTags: (result, error, { productId }) => [
-        { type: 'Review', id: `product-${productId}` },
-        { type: 'Product', id: productId },
-      ],
-    }),
+      if (filters.page) params.append('page', filters.page.toString());
+      if (filters.limit) params.append('limit', filters.limit.toString());
+      if (filters.rating) params.append('rating', filters.rating.toString());
+      if (filters.verified !== undefined)
+        params.append('verified', filters.verified.toString());
+      if (filters.withImages !== undefined)
+        params.append('withImages', filters.withImages.toString());
+      if (filters.sort) params.append('sort', filters.sort);
 
-    // Cập nhật đánh giá
-    updateReview: builder.mutation<
-      any,
-      { id: string } & Partial<CreateReviewData>
-    >({
-      query: ({ id, ...reviewData }) => ({
-        url: `/reviews/${id}`,
-        method: 'PUT',
-        body: reviewData,
-      }),
-      invalidatesTags: (result, error, { productId }) => [
-        ...(productId ? [
-          { type: 'Review' as const, id: `product-${productId}` },
-          { type: 'Product' as const, id: productId },
-        ] : [{ type: 'Review' as const, id: 'LIST' }]),
-      ],
-    }),
+      const res = await apiClient.get(
+        `/reviews/product/${productId}?${params.toString()}`,
+      );
+      return res.data;
+    },
+    enabled: !!productId && productId !== 'undefined',
+    ...options,
+  });
+}
 
-    // Xóa đánh giá
-    deleteReview: builder.mutation<any, string>({
-      query: (id) => ({
-        url: `/reviews/${id}`,
-        method: 'DELETE',
-      }),
-      invalidatesTags: (result) => [{ type: 'Review', id: 'LIST' }],
-    }),
+/** Lấy danh sách đánh giá của người dùng */
+export function useGetUserReviewsQuery(
+  params: { page?: number; limit?: number } = {},
+  options?: { enabled?: boolean },
+) {
+  return useQuery<any>({
+    queryKey: reviewKeys.user(params),
+    queryFn: async () => {
+      const queryParams = new URLSearchParams();
+      if (params.page) queryParams.append('page', params.page.toString());
+      if (params.limit) queryParams.append('limit', params.limit.toString());
 
-    // Đánh dấu đánh giá là hữu ích
-    markReviewHelpful: builder.mutation<
-      any,
-      { id: string; helpful: boolean; productId?: string }
-    >({
-      query: ({ id, helpful }) => ({
-        url: `/reviews/${id}/helpful`,
-        method: 'PUT',
-        body: { helpful },
-      }),
-      invalidatesTags: (result, error, { id, productId }) => [
-        { type: 'Review' as const, id },
-        ...(productId ? [{ type: 'Review' as const, id: `product-${productId}` }] : []),
-      ],
-    }),
+      const res = await apiClient.get(
+        `/reviews/user?${queryParams.toString()}`,
+      );
+      return res.data;
+    },
+    ...options,
+  });
+}
 
-    // Lấy danh sách đánh giá của người dùng
-    getUserReviews: builder.query<any, { page?: number; limit?: number }>({
-      query: (params = {}) => {
-        const queryParams = new URLSearchParams();
-        if (params.page) queryParams.append('page', params.page.toString());
-        if (params.limit) queryParams.append('limit', params.limit.toString());
+// --- Mutation hooks ---
 
-        return {
-          url: `/reviews/user?${queryParams.toString()}`,
-          method: 'GET',
-        };
-      },
-      providesTags: ['Review'],
-    }),
-  }),
-});
+/** Tạo đánh giá mới */
+export function useCreateReviewMutation() {
+  const queryClient = useQueryClient();
+  return useMutation<any, Error, CreateReviewData>({
+    mutationFn: async (reviewData) => {
+      const res = await apiClient.post('/reviews', reviewData);
+      return res.data;
+    },
+    onSuccess: (_data, variables) => {
+      queryClient.invalidateQueries({
+        queryKey: reviewKeys.product(variables.productId),
+      });
+      // Invalidate product detail để cập nhật rating trung bình
+      queryClient.invalidateQueries({
+        queryKey: ['products', 'detail', variables.productId],
+      });
+    },
+  });
+}
 
-export const {
-  useGetProductReviewsQuery,
-  useCreateReviewMutation,
-  useUpdateReviewMutation,
-  useDeleteReviewMutation,
-  useMarkReviewHelpfulMutation,
-  useGetUserReviewsQuery,
-} = reviewApi;
+/** Cập nhật đánh giá */
+export function useUpdateReviewMutation() {
+  const queryClient = useQueryClient();
+  return useMutation<any, Error, { id: string } & Partial<CreateReviewData>>({
+    mutationFn: async ({ id, ...reviewData }) => {
+      const res = await apiClient.put(`/reviews/${id}`, reviewData);
+      return res.data;
+    },
+    onSuccess: (_data, variables) => {
+      if (variables.productId) {
+        queryClient.invalidateQueries({
+          queryKey: reviewKeys.product(variables.productId),
+        });
+        queryClient.invalidateQueries({
+          queryKey: ['products', 'detail', variables.productId],
+        });
+      } else {
+        queryClient.invalidateQueries({ queryKey: reviewKeys.all });
+      }
+    },
+  });
+}
 
+/** Xóa đánh giá */
+export function useDeleteReviewMutation() {
+  const queryClient = useQueryClient();
+  return useMutation<any, Error, string>({
+    mutationFn: async (id) => {
+      const res = await apiClient.delete(`/reviews/${id}`);
+      return res.data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: reviewKeys.all });
+    },
+  });
+}
+
+/** Đánh dấu đánh giá là hữu ích */
+export function useMarkReviewHelpfulMutation() {
+  const queryClient = useQueryClient();
+  return useMutation<
+    any,
+    Error,
+    { id: string; helpful: boolean; productId?: string }
+  >({
+    mutationFn: async ({ id, helpful }) => {
+      const res = await apiClient.put(`/reviews/${id}/helpful`, { helpful });
+      return res.data;
+    },
+    onSuccess: (_data, variables) => {
+      if (variables.productId) {
+        queryClient.invalidateQueries({
+          queryKey: reviewKeys.product(variables.productId),
+        });
+      }
+    },
+  });
+}

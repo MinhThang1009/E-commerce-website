@@ -4,6 +4,7 @@ import MainLayout from '@/components/layout/MainLayout';
 import { AdminLayout } from '@/features/admin';
 import LoadingSpinner from '@/components/common/LoadingSpinner';
 import { ProtectedRoute, PublicOnlyRoute, AdminRoute } from '@/features/auth';
+import { ROUTES } from '@/routes/paths';
 
 // Các trang được tải theo yêu cầu (lazy-loaded)
 const HomePage = lazy(() => import('@/pages/HomePage'));
@@ -18,7 +19,7 @@ const RegisterPage = lazy(() => import('@/features/auth/pages/RegisterPage'));
 const ForgotPasswordPage = lazy(() => import('@/features/auth/pages/ForgotPasswordPage'));
 const ResetPasswordPage = lazy(() => import('@/features/auth/pages/ResetPasswordPage'));
 const VerifyEmailPage = lazy(() => import('@/features/auth/pages/VerifyEmailPage'));
-const ProfilePage = lazy(() => import('@/pages/ProfilePage'));
+const ProfilePage = lazy(() => import('@/features/users/pages/ProfilePage'));
 const OrdersPage = lazy(() => import('@/features/orders/pages/OrdersPage'));
 const WishlistPage = lazy(() => import('@/features/wishlist/pages/WishlistPage'));
 const CategoriesPage = lazy(() => import('@/features/catalog/pages/CategoriesPage'));
@@ -211,7 +212,7 @@ const AppRoutes: React.FC = () => {
             </AdminRoute>
           }
         >
-          <Route index element={<Navigate to="/admin/dashboard" replace />} />
+          <Route index element={<Navigate to={ROUTES.ADMIN_DASHBOARD} replace />} />
           <Route path="dashboard" element={<AdminDashboardPage />} />
 
           {/* Quản lý sản phẩm */}

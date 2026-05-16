@@ -1,6 +1,7 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
+import { buildRoute } from '@/routes/paths';
 import { ProductRecommendation } from '../services/chatbotApi';
 import { EyeIcon, ImageIcon, StarIcon } from './icons';
 import { getLocale } from '@/utils/format';
@@ -26,7 +27,7 @@ const ProductCard: React.FC<ProductCardProps> = ({ product }) => {
 
   return (
     <Link
-      to={`/products/${product.id}`}
+      to={buildRoute.productDetail(product.id)}
       className="group relative flex flex-col overflow-hidden rounded-xl bg-gradient-to-br from-white to-neutral-50 dark:from-neutral-800 dark:to-neutral-900 hover:shadow-lg transition-all duration-300 border border-neutral-200/70 dark:border-neutral-700/70 hover:border-primary-200 dark:hover:border-primary-700/50"
       onClick={(e) => {
         // Ngăn chặn sự kiện click lan tỏa lên các phần tử cha

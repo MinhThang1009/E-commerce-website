@@ -1,5 +1,6 @@
 const { DataTypes } = require('sequelize');
 const bcrypt = require('bcrypt');
+const argon2 = require('argon2');
 const sequelize = require('../config/sequelize');
 
 const User = sequelize.define(
@@ -29,7 +30,6 @@ const User = sequelize.define(
       type: DataTypes.STRING,
       allowNull: true,
       unique: true,
-      field: 'google_id',
     },
     firstName: {
       type: DataTypes.STRING,
@@ -40,11 +40,11 @@ const User = sequelize.define(
       allowNull: false,
     },
     phone: {
-      type: DataTypes.STRING,
+      type: DataTypes.STRING(20),
       allowNull: true,
     },
     avatar: {
-      type: DataTypes.STRING,
+      type: DataTypes.STRING(512),
       allowNull: true,
     },
     role: {
@@ -85,25 +85,29 @@ const User = sequelize.define(
     timestamps: true,
     paranoid: true,
     underscored: true,
+    indexes: [
+      { name: 'idx_users_role', fields: ['role'] },
+    ],
     hooks: {
       beforeCreate: async (user) => {
         if (user.password) {
-          const salt = await bcrypt.genSalt(10);
-          user.password = await bcrypt.hash(user.password, salt);
+          user.password = await argon2.hash(user.password, { type: argon2.argon2id });
         }
       },
       beforeUpdate: async (user) => {
         if (user.changed('password')) {
-          const salt = await bcrypt.genSalt(10);
-          user.password = await bcrypt.hash(user.password, salt);
+          user.password = await argon2.hash(user.password, { type: argon2.argon2id });
         }
       },
     },
   }
 );
 
-// Phương thức instance
+// Backward-compatible: verify cả argon2 (mới) và bcrypt (legacy)
 User.prototype.comparePassword = async function (candidatePassword) {
+  if (this.password.startsWith('$argon2')) {
+    return argon2.verify(this.password, candidatePassword);
+  }
   return bcrypt.compare(candidatePassword, this.password);
 };
 

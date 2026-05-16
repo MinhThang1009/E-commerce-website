@@ -1,5 +1,10 @@
 const InventoryService = require('../modules/inventory/services/inventoryService');
 
+// Mock sequelize.transaction — unit test không connect DB thật
+jest.mock('../config/sequelize', () => ({
+  transaction: jest.fn((cb) => cb({})),
+}));
+
 describe('InventoryService', () => {
   let repo;
   let eventBus;
@@ -80,7 +85,7 @@ describe('InventoryService', () => {
     });
 
     test('restock publish StockRestockedEvent', async () => {
-      const product = { id: 1, stockQuantity: 0 };
+      const product = { id: 1, stockQuantity: 0, save: jest.fn() };
       repo.findProductById.mockResolvedValue(product);
 
       await service.restockProduct({ productId: 1, quantity: 5, adminId: 9 });

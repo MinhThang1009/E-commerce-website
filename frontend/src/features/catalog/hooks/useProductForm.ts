@@ -171,6 +171,7 @@ export const useProductForm = ({
   useEffect(() => {
     // Khi tab thay đổi, kiểm tra tính hợp lệ của form
     performValidation();
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- performValidation dùng form/onStepComplete qua closure, chỉ trigger khi tab/attributes/variants thay đổi
   }, [activeTab, attributes, variants]);
 
   // Đặt giá trị khởi tạo

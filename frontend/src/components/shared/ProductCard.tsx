@@ -1,23 +1,18 @@
-import { addNotification } from '@/features/ui/uiSlice';
+import { useUiStore } from '@/stores/uiStore';
 import { Product } from '@/features/catalog';
 import { calculatePriceRange } from '@/utils/priceUtils';
 import React, { useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { useDispatch, useSelector } from 'react-redux';
 import { Link, useNavigate } from 'react-router-dom';
-import { RootState } from '@/store';
-import { 
-  useAddToWishlistMutation, 
-  useRemoveFromWishlistMutation 
-} from '@/features/wishlist';
-import { 
-  addToWishlistLocal, 
-  removeFromWishlistLocal 
+import { useAuthStore } from '@/stores/authStore';
+import { useWishlistStore } from '@/stores/wishlistStore';
+import {
+  useAddToWishlistMutation,
+  useRemoveFromWishlistMutation
 } from '@/features/wishlist';
 import { HeartIcon } from '@heroicons/react/24/outline';
 import { HeartIcon as HeartIconSolid } from '@heroicons/react/24/solid';
 import { useAddToCartMutation } from '@/features/cart';
-import { addItem } from '@/features/cart';
 import { ShoppingCartIcon } from '@heroicons/react/24/outline';
 
 // Mở rộng interface Product để hỗ trợ discountPercentage từ API
@@ -35,39 +30,38 @@ const ProductCard: React.FC<ProductCardProps> = ({
   shortDescription,
   ratings,
   isNew,
-  slug,
+  slug: _slug,
   discountPercentage,
   variants,
-  enableVariantPricing = false, // Mặc định tắt để tránh quá nhiều API calls
+  enableVariantPricing: _enableVariantPricing = false, // Mặc định tắt để tránh quá nhiều API calls
 }) => {
   const { t, i18n } = useTranslation();
-  const dispatch = useDispatch();
   const navigate = useNavigate();
+  const addNotification = useUiStore((s) => s.addNotification);
 
   // Wishlist logic
-  const wishlistItems = useSelector((state: RootState) => state.wishlist.items);
+  const wishlistItems = useWishlistStore((s) => s.items);
+  const addToWishlistLocal = useWishlistStore((s) => s.addToWishlistLocal);
+  const removeFromWishlistLocal = useWishlistStore((s) => s.removeFromWishlistLocal);
   const isWishlisted = wishlistItems.includes(id);
 
-  const [addToWishlist] = useAddToWishlistMutation();
-  const [removeFromWishlist] = useRemoveFromWishlistMutation();
-  const [addToCart] = useAddToCartMutation();
+  const { mutateAsync: addToWishlist } = useAddToWishlistMutation();
+  const { mutateAsync: removeFromWishlist } = useRemoveFromWishlistMutation();
+  const { mutateAsync: _addToCart } = useAddToCartMutation();
   const [isToggling, setIsToggling] = useState(false);
   const [isBuying, setIsBuying] = useState(false);
 
-  // Trạng thái xác thực người dùng
-  const { isAuthenticated } = useSelector((state: RootState) => state.auth);
+  const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
 
   const handleToggleWishlist = async (e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
 
     if (!isAuthenticated) {
-      dispatch(
-        addNotification({
-          type: 'info',
-          message: t('product.loginToWishlist'),
-        })
-      );
+      addNotification({
+        type: 'info',
+        message: t('product.loginToWishlist'),
+      });
       navigate('/login');
       return;
     }
@@ -77,19 +71,18 @@ const ProductCard: React.FC<ProductCardProps> = ({
 
     try {
       if (isWishlisted) {
-        dispatch(removeFromWishlistLocal(id));
-        await removeFromWishlist(id).unwrap();
+        removeFromWishlistLocal(id);
+        await removeFromWishlist(id);
       } else {
-        dispatch(addToWishlistLocal(id));
-        await addToWishlist({ productId: id }).unwrap();
+        addToWishlistLocal(id);
+        await addToWishlist({ productId: id });
       }
     } catch (error) {
       console.error('Thao tác danh sách yêu thích thất bại:', error);
-      // Hoàn tác nếu có lỗi
       if (isWishlisted) {
-        dispatch(addToWishlistLocal(id));
+        addToWishlistLocal(id);
       } else {
-        dispatch(removeFromWishlistLocal(id));
+        removeFromWishlistLocal(id);
       }
     } finally {
       setIsToggling(false);
@@ -150,10 +143,10 @@ const ProductCard: React.FC<ProductCardProps> = ({
       navigate('/checkout?buyNow=true');
     } catch (error) {
       console.error('Mua ngay thất bại:', error);
-      dispatch(addNotification({
+      addNotification({
         type: 'error',
         message: t('product.buyNowFailed'),
-      }));
+      });
     } finally {
       setIsBuying(false);
     }

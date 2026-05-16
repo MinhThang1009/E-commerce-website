@@ -70,7 +70,7 @@ const proxyStores = {
 // Rate limiter chung cho API
 const apiLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
-  max: 100,
+  max: process.env.NODE_ENV === 'development' ? 1000 : 100,
   standardHeaders: true,
   legacyHeaders: false,
   store: proxyStores.api,
@@ -83,7 +83,7 @@ const apiLimiter = rateLimit({
 // Rate limiter cho các endpoint xác thực (nghiêm ngặt hơn)
 const authLimiter = rateLimit({
   windowMs: 60 * 60 * 1000,
-  max: 10,
+  max: process.env.NODE_ENV === 'development' ? 100 : 10,
   standardHeaders: true,
   legacyHeaders: false,
   store: proxyStores.auth,

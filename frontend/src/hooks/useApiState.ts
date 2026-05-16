@@ -9,7 +9,7 @@ import { parseError, isRetryableError } from '@/utils/errorUtils';
 interface ApiStateResult<T> {
   data: T | undefined;
   isLoading: boolean;
-  error: any;
+  error: unknown;
   isError: boolean;
   isSuccess: boolean;
   isEmpty: boolean;
@@ -20,7 +20,7 @@ interface ApiStateResult<T> {
 interface UseApiStateParams<T> {
   data: T | undefined;
   isLoading: boolean;
-  error: any;
+  error: unknown;
   refetch?: () => void;
   isArray?: boolean;
 }
@@ -28,7 +28,7 @@ interface UseApiStateParams<T> {
 /**
  * Custom hook xử lý trạng thái API
  */
-export const useApiState = <T = any>({
+export const useApiState = <T = unknown>({
   data,
   isLoading,
   error,
@@ -79,7 +79,7 @@ export const useApiState = <T = any>({
 /**
  * Hook xử lý dữ liệu phân trang
  */
-export const usePaginatedApiState = <T = any>({
+export const usePaginatedApiState = <T = unknown>({
   data,
   isLoading,
   error,
@@ -137,15 +137,15 @@ export const usePaginatedApiState = <T = any>({
  */
 export const useSubmissionState = () => {
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [submitError, setSubmitError] = useState<any>(null);
+  const [submitError, setSubmitError] = useState<unknown>(null);
   const [submitSuccess, setSubmitSuccess] = useState(false);
 
   const handleSubmit = useCallback(
     async (
-      submitFn: () => Promise<any>,
+      submitFn: () => Promise<unknown>,
       options?: {
-        onSuccess?: (data: any) => void;
-        onError?: (error: any) => void;
+        onSuccess?: (data: unknown) => void;
+        onError?: (error: unknown) => void;
         resetAfter?: number;
       }
     ) => {

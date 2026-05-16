@@ -1,11 +1,10 @@
 import { useState, useEffect } from 'react';
-import { useSelector, useDispatch } from 'react-redux';
 import { Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
-import Input from '@/components/common/Input';
-import { RootState } from '@/store';
-import { updateUser, useGetCurrentUserQuery } from '@/features/auth';
-import { addNotification } from '@/features/ui/uiSlice';
+import { ROUTES } from '@/routes/paths';
+import { useAuthStore } from '@/stores/authStore';
+import { useGetCurrentUserQuery } from '@/features/auth';
+import { useUiStore } from '@/stores/uiStore';
 import {
   useUpdateProfileMutation,
   useChangePasswordMutation,
@@ -17,7 +16,6 @@ import {
 } from '@/features/users';
 import { Address } from '@/types/user.types';
 import { useGetLoyaltyInfoQuery } from '@/features/loyalty';
-import { formatPrice } from '@/utils/format';
 
 type TabKey = 'info' | 'password' | 'orders' | 'addresses' | 'loyalty';
 
@@ -50,21 +48,22 @@ const emptyAddressForm: AddressForm = {
 
 const ProfilePage: React.FC = () => {
   const { t, i18n } = useTranslation();
-  const { user } = useSelector((state: RootState) => state.auth);
-  const dispatch = useDispatch();
+  const user = useAuthStore((s) => s.user);
+  const updateUserStore = useAuthStore((s) => s.updateUser);
+  const addNotification = useUiStore((s) => s.addNotification);
   const [activeTab, setActiveTab] = useState<TabKey>('info');
 
   const { data: currentUser, isLoading: isLoadingUser } = useGetCurrentUserQuery();
   const { data: loyaltyData } = useGetLoyaltyInfoQuery();
-  const [updateProfile, { isLoading: isUpdating }] = useUpdateProfileMutation();
-  const [changePassword, { isLoading: isChangingPassword }] = useChangePasswordMutation();
+  const { mutateAsync: updateProfile, isPending: isUpdating } = useUpdateProfileMutation();
+  const { mutateAsync: changePassword, isPending: isChangingPassword } = useChangePasswordMutation();
 
   // Hooks địa chỉ
   const { data: addressesData, isLoading: isLoadingAddresses } = useGetAddressesQuery();
-  const [addAddress, { isLoading: isAddingAddress }] = useAddAddressMutation();
-  const [updateAddress, { isLoading: isUpdatingAddress }] = useUpdateAddressMutation();
-  const [deleteAddress] = useDeleteAddressMutation();
-  const [setDefaultAddress] = useSetDefaultAddressMutation();
+  const { mutateAsync: addAddress, isPending: isAddingAddress } = useAddAddressMutation();
+  const { mutateAsync: updateAddress, isPending: isUpdatingAddress } = useUpdateAddressMutation();
+  const { mutateAsync: deleteAddress } = useDeleteAddressMutation();
+  const { mutateAsync: setDefaultAddress } = useSetDefaultAddressMutation();
 
   // Trạng thái UI quản lý địa chỉ
   const [showAddressForm, setShowAddressForm] = useState(false);
@@ -131,12 +130,12 @@ const ProfilePage: React.FC = () => {
         firstName: formData.firstName,
         lastName: formData.lastName,
         phone: formData.phone,
-      }).unwrap();
-      dispatch(updateUser({ firstName: updatedUser.firstName, lastName: updatedUser.lastName, phone: updatedUser.phone, avatar: updatedUser.avatar }));
-      dispatch(addNotification({ type: 'success', message: t('profile.info.updateSuccess'), duration: 3000 }));
+      });
+      updateUserStore({ firstName: updatedUser.firstName, lastName: updatedUser.lastName, phone: updatedUser.phone, avatar: updatedUser.avatar });
+      addNotification({ type: 'success', message: t('profile.info.updateSuccess'), duration: 3000 });
       setIsEditing(false);
     } catch (error: any) {
-      dispatch(addNotification({ type: 'error', message: error.data?.message || t('profile.info.updateError'), duration: 5000 }));
+      addNotification({ type: 'error', message: error.data?.message || t('profile.info.updateError'), duration: 5000 });
     }
   };
 
@@ -144,11 +143,11 @@ const ProfilePage: React.FC = () => {
     e.preventDefault();
     if (!validatePasswordForm()) return;
     try {
-      await changePassword({ currentPassword: formData.currentPassword, newPassword: formData.newPassword, confirmPassword: formData.confirmPassword }).unwrap();
-      dispatch(addNotification({ type: 'success', message: t('profile.password.changeSuccess'), duration: 3000 }));
+      await changePassword({ currentPassword: formData.currentPassword, newPassword: formData.newPassword, confirmPassword: formData.confirmPassword });
+      addNotification({ type: 'success', message: t('profile.password.changeSuccess'), duration: 3000 });
       setFormData((prev) => ({ ...prev, currentPassword: '', newPassword: '', confirmPassword: '' }));
     } catch (error: any) {
-      dispatch(addNotification({ type: 'error', message: error.data?.message || t('profile.password.changeError'), duration: 5000 }));
+      addNotification({ type: 'error', message: error.data?.message || t('profile.password.changeError'), duration: 5000 });
     }
   };
 
@@ -182,17 +181,17 @@ const ProfilePage: React.FC = () => {
     e.preventDefault();
     try {
       if (editingAddressId) {
-        await updateAddress({ id: editingAddressId, ...addressForm }).unwrap();
-        dispatch(addNotification({ type: 'success', message: t('profile.addresses.updateSuccess'), duration: 3000 }));
+        await updateAddress({ id: editingAddressId, ...addressForm });
+        addNotification({ type: 'success', message: t('profile.addresses.updateSuccess'), duration: 3000 });
       } else {
-        await addAddress(addressForm as Omit<Address, 'id'>).unwrap();
-        dispatch(addNotification({ type: 'success', message: t('profile.addresses.addSuccess'), duration: 3000 }));
+        await addAddress(addressForm as Omit<Address, 'id'>);
+        addNotification({ type: 'success', message: t('profile.addresses.addSuccess'), duration: 3000 });
       }
       setShowAddressForm(false);
       setEditingAddressId(null);
       setAddressForm(emptyAddressForm);
     } catch (err: any) {
-      dispatch(addNotification({ type: 'error', message: err?.data?.message || t('common.error'), duration: 5000 }));
+      addNotification({ type: 'error', message: err?.data?.message || t('common.error'), duration: 5000 });
     }
   };
 
@@ -200,20 +199,20 @@ const ProfilePage: React.FC = () => {
   const handleDeleteAddress = async (id: string) => {
     if (!window.confirm(t('profile.addresses.confirmDelete'))) return;
     try {
-      await deleteAddress(id).unwrap();
-      dispatch(addNotification({ type: 'success', message: t('profile.addresses.deleteSuccess'), duration: 3000 }));
+      await deleteAddress(id);
+      addNotification({ type: 'success', message: t('profile.addresses.deleteSuccess'), duration: 3000 });
     } catch (err: any) {
-      dispatch(addNotification({ type: 'error', message: err?.data?.message || t('common.error'), duration: 5000 }));
+      addNotification({ type: 'error', message: err?.data?.message || t('common.error'), duration: 5000 });
     }
   };
 
   // Xử lý đặt địa chỉ mặc định
   const handleSetDefault = async (id: string) => {
     try {
-      await setDefaultAddress(id).unwrap();
-      dispatch(addNotification({ type: 'success', message: t('profile.addresses.defaultSuccess'), duration: 3000 }));
+      await setDefaultAddress(id);
+      addNotification({ type: 'success', message: t('profile.addresses.defaultSuccess'), duration: 3000 });
     } catch (err: any) {
-      dispatch(addNotification({ type: 'error', message: err?.data?.message || t('common.error'), duration: 5000 }));
+      addNotification({ type: 'error', message: err?.data?.message || t('common.error'), duration: 5000 });
     }
   };
 
@@ -324,7 +323,7 @@ const ProfilePage: React.FC = () => {
 
             {/* Quick links */}
             <div className="flex gap-2">
-              <Link to="/orders" className="flex items-center gap-2 px-4 py-2.5 rounded-xl border border-neutral-200 dark:border-neutral-700 text-neutral-600 dark:text-neutral-300 hover:bg-neutral-50 dark:hover:bg-neutral-800 text-sm font-medium transition-colors">
+              <Link to={ROUTES.ORDERS} className="flex items-center gap-2 px-4 py-2.5 rounded-xl border border-neutral-200 dark:border-neutral-700 text-neutral-600 dark:text-neutral-300 hover:bg-neutral-50 dark:hover:bg-neutral-800 text-sm font-medium transition-colors">
                 <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z" /></svg>
                 {t('profile.quickLinks.orders')}
               </Link>
@@ -563,7 +562,7 @@ const ProfilePage: React.FC = () => {
                 <svg className="w-8 h-8 text-neutral-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z" /></svg>
               </div>
               <p className="text-neutral-500 dark:text-neutral-400 mb-4">{t('profile.orders.description')}</p>
-              <Link to="/orders" className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-primary-600 hover:bg-primary-700 text-white text-sm font-medium transition-colors">
+              <Link to={ROUTES.ORDERS} className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-primary-600 hover:bg-primary-700 text-white text-sm font-medium transition-colors">
                 <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" /></svg>
                 {t('profile.orders.viewAll')}
               </Link>

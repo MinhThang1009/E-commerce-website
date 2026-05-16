@@ -32,13 +32,13 @@ const getAttributeGroups = async (req, res) => {
     });
 
     res.json({
-      success: true,
+      status: 'success',
       data: attributeGroups,
     });
   } catch (error) {
     logger.error('Lỗi khi lấy danh sách nhóm thuộc tính:', error);
     res.status(500).json({
-      success: false,
+      status: 'error',
       message: 'Không thể lấy danh sách nhóm thuộc tính',
       error: error.message,
     });
@@ -78,19 +78,19 @@ const getProductAttributeGroups = async (req, res) => {
 
     if (!product) {
       return res.status(404).json({
-        success: false,
+        status: 'error',
         message: 'Không tìm thấy sản phẩm',
       });
     }
 
     res.json({
-      success: true,
+      status: 'success',
       data: product.attributeGroups,
     });
   } catch (error) {
     logger.error('Lỗi khi lấy nhóm thuộc tính của sản phẩm:', error);
     res.status(500).json({
-      success: false,
+      status: 'error',
       message: 'Không thể lấy nhóm thuộc tính của sản phẩm',
       error: error.message,
     });
@@ -111,14 +111,14 @@ const createAttributeGroup = async (req, res) => {
     });
 
     res.status(201).json({
-      success: true,
+      status: 'success',
       data: attributeGroup,
       message: 'Tạo nhóm thuộc tính thành công',
     });
   } catch (error) {
     logger.error('Lỗi khi tạo nhóm thuộc tính:', error);
     res.status(500).json({
-      success: false,
+      status: 'error',
       message: 'Không thể tạo nhóm thuộc tính',
       error: error.message,
     });
@@ -153,14 +153,14 @@ const addAttributeValue = async (req, res) => {
     });
 
     res.status(201).json({
-      success: true,
+      status: 'success',
       data: attributeValue,
       message: 'Thêm giá trị thuộc tính thành công',
     });
   } catch (error) {
     logger.error('Lỗi khi thêm giá trị thuộc tính:', error);
     res.status(500).json({
-      success: false,
+      status: 'error',
       message: 'Không thể thêm giá trị thuộc tính',
       error: error.message,
     });
@@ -181,14 +181,14 @@ const assignAttributeGroupToProduct = async (req, res) => {
     });
 
     res.status(201).json({
-      success: true,
+      status: 'success',
       data: assignment,
       message: 'Gán nhóm thuộc tính cho sản phẩm thành công',
     });
   } catch (error) {
     logger.error('Lỗi khi gán nhóm thuộc tính cho sản phẩm:', error);
     res.status(500).json({
-      success: false,
+      status: 'error',
       message: 'Không thể gán nhóm thuộc tính cho sản phẩm',
       error: error.message,
     });
@@ -205,7 +205,7 @@ const updateAttributeGroup = async (req, res) => {
     const attributeGroup = await AttributeGroup.findByPk(id);
     if (!attributeGroup) {
       return res.status(404).json({
-        success: false,
+        status: 'error',
         message: 'Không tìm thấy nhóm thuộc tính',
       });
     }
@@ -220,14 +220,14 @@ const updateAttributeGroup = async (req, res) => {
     });
 
     res.json({
-      success: true,
+      status: 'success',
       data: attributeGroup,
       message: 'Cập nhật nhóm thuộc tính thành công',
     });
   } catch (error) {
     logger.error('Lỗi khi cập nhật nhóm thuộc tính:', error);
     res.status(500).json({
-      success: false,
+      status: 'error',
       message: 'Không thể cập nhật nhóm thuộc tính',
       error: error.message,
     });
@@ -253,7 +253,7 @@ const updateAttributeValue = async (req, res) => {
     const attributeValue = await AttributeValue.findByPk(id);
     if (!attributeValue) {
       return res.status(404).json({
-        success: false,
+        status: 'error',
         message: 'Không tìm thấy giá trị thuộc tính',
       });
     }
@@ -271,14 +271,14 @@ const updateAttributeValue = async (req, res) => {
     });
 
     res.json({
-      success: true,
+      status: 'success',
       data: attributeValue,
       message: 'Cập nhật giá trị thuộc tính thành công',
     });
   } catch (error) {
     logger.error('Lỗi khi cập nhật giá trị thuộc tính:', error);
     res.status(500).json({
-      success: false,
+      status: 'error',
       message: 'Không thể cập nhật giá trị thuộc tính',
       error: error.message,
     });
@@ -293,7 +293,7 @@ const deleteAttributeGroup = async (req, res) => {
     const attributeGroup = await AttributeGroup.findByPk(id);
     if (!attributeGroup) {
       return res.status(404).json({
-        success: false,
+        status: 'error',
         message: 'Không tìm thấy nhóm thuộc tính',
       });
     }
@@ -301,13 +301,13 @@ const deleteAttributeGroup = async (req, res) => {
     await attributeGroup.update({ isActive: false });
 
     res.json({
-      success: true,
+      status: 'success',
       message: 'Xóa nhóm thuộc tính thành công',
     });
   } catch (error) {
     logger.error('Lỗi khi xóa nhóm thuộc tính:', error);
     res.status(500).json({
-      success: false,
+      status: 'error',
       message: 'Không thể xóa nhóm thuộc tính',
       error: error.message,
     });
@@ -322,7 +322,7 @@ const deleteAttributeValue = async (req, res) => {
     const attributeValue = await AttributeValue.findByPk(id);
     if (!attributeValue) {
       return res.status(404).json({
-        success: false,
+        status: 'error',
         message: 'Không tìm thấy giá trị thuộc tính',
       });
     }
@@ -330,13 +330,13 @@ const deleteAttributeValue = async (req, res) => {
     await attributeValue.update({ isActive: false });
 
     res.json({
-      success: true,
+      status: 'success',
       message: 'Xóa giá trị thuộc tính thành công',
     });
   } catch (error) {
     logger.error('Lỗi khi xóa giá trị thuộc tính:', error);
     res.status(500).json({
-      success: false,
+      status: 'error',
       message: 'Không thể xóa giá trị thuộc tính',
       error: error.message,
     });
@@ -351,7 +351,7 @@ const previewProductName = async (req, res) => {
 
     if (!baseName) {
       return res.status(400).json({
-        success: false,
+        status: 'error',
         message: 'Tên cơ bản là bắt buộc',
       });
     }
@@ -366,14 +366,14 @@ const previewProductName = async (req, res) => {
     );
 
     res.json({
-      success: true,
+      status: 'success',
       data: preview,
       message: 'Tạo xem trước tên sản phẩm thành công',
     });
   } catch (error) {
     logger.error('Lỗi khi xem trước tên sản phẩm:', error);
     res.status(500).json({
-      success: false,
+      status: 'error',
       message: 'Không thể xem trước tên sản phẩm',
       error: error.message,
     });
@@ -389,14 +389,14 @@ const getNameAffectingAttributes = async (req, res) => {
       await productNameGeneratorService.getNameAffectingAttributes(productId);
 
     res.json({
-      success: true,
+      status: 'success',
       data: attributes,
       message: 'Lấy danh sách thuộc tính ảnh hưởng đến tên thành công',
     });
   } catch (error) {
     logger.error('Lỗi khi lấy thuộc tính ảnh hưởng đến tên:', error);
     res.status(500).json({
-      success: false,
+      status: 'error',
       message: 'Không thể lấy thuộc tính ảnh hưởng đến tên',
       error: error.message,
     });
@@ -410,7 +410,7 @@ const batchGenerateProductNames = async (req, res) => {
 
     if (!Array.isArray(items)) {
       return res.status(400).json({
-        success: false,
+        status: 'error',
         message: 'Tham số items phải là một mảng',
       });
     }
@@ -421,14 +421,14 @@ const batchGenerateProductNames = async (req, res) => {
     );
 
     res.json({
-      success: true,
+      status: 'success',
       data: results,
       message: 'Tạo tên sản phẩm hàng loạt thành công',
     });
   } catch (error) {
     logger.error('Lỗi khi tạo tên sản phẩm hàng loạt:', error);
     res.status(500).json({
-      success: false,
+      status: 'error',
       message: 'Không thể tạo tên sản phẩm hàng loạt',
       error: error.message,
     });
@@ -442,7 +442,7 @@ const generateNameRealTime = async (req, res) => {
 
     if (!baseName) {
       return res.status(400).json({
-        success: false,
+        status: 'error',
         message: 'Tên cơ bản là bắt buộc',
       });
     }
@@ -469,7 +469,7 @@ const generateNameRealTime = async (req, res) => {
     }
 
     res.json({
-      success: true,
+      status: 'success',
       data: {
         ...preview,
         suggestions,
@@ -480,7 +480,7 @@ const generateNameRealTime = async (req, res) => {
   } catch (error) {
     logger.error('Lỗi khi tạo tên theo thời gian thực:', error);
     res.status(500).json({
-      success: false,
+      status: 'error',
       message: 'Không thể tạo tên theo thời gian thực',
       error: error.message,
     });

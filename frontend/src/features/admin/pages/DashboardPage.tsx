@@ -1,12 +1,12 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
+import { ROUTES, buildRoute } from '@/routes/paths';
 import {
   useGetDashboardStatsQuery,
   useGetLowStockAnalyticsQuery,
 } from '../api/adminDashboardApi';
 import { useGetAdminOrdersQuery } from '../api/adminOrderApi';
-import { formatPrice } from '@/utils/format';
 import DashboardCharts from '../components/DashboardCharts';
 
 // Màu sắc badge trạng thái
@@ -326,7 +326,7 @@ const DashboardPage: React.FC = () => {
               })}
             </span>
             <Link
-              to="/admin/orders?status=pending"
+              to={buildRoute.adminOrdersPending()}
               className="ml-auto text-yellow-600 dark:text-yellow-400 hover:text-yellow-700 dark:hover:text-yellow-300 font-medium text-sm"
             >
               {t('admin.dashboard.alerts.viewOrders')} →
@@ -346,7 +346,7 @@ const DashboardPage: React.FC = () => {
               {t('admin.dashboard.sections.recentOrders')}
             </h2>
             <Link
-              to="/admin/orders"
+              to={ROUTES.ADMIN_ORDERS}
               className="text-sm text-primary-600 dark:text-primary-400 hover:text-primary-700 dark:hover:text-primary-300 font-medium"
             >
               {t('admin.dashboard.sections.viewAll')}
@@ -406,7 +406,7 @@ const DashboardPage: React.FC = () => {
               {t('admin.dashboard.sections.topProducts')}
             </h2>
             <Link
-              to="/admin/products"
+              to={ROUTES.ADMIN_PRODUCTS}
               className="text-sm text-primary-600 dark:text-primary-400 hover:text-primary-700 dark:hover:text-primary-300 font-medium"
             >
               {t('admin.dashboard.sections.viewAll')}
@@ -498,7 +498,7 @@ const DashboardPage: React.FC = () => {
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
                       <Link
-                        to={`/admin/products/${product.id}`}
+                        to={buildRoute.adminProductDetail(product.id)}
                         className="text-sm text-primary-600 dark:text-primary-400 hover:text-primary-700 dark:hover:text-primary-300 font-medium"
                       >
                         {t('admin.dashboard.lowStock.edit')}

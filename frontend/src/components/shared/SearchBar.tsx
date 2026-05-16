@@ -1,9 +1,9 @@
 import { useState, useRef, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
+import { buildRoute } from '@/routes/paths';
 import { useDebounce } from '@/hooks/useDebounce';
-import { useDispatch } from 'react-redux';
-import { toggleSearch } from '@/features/ui/uiSlice';
+import { useUiStore } from '@/stores/uiStore';
 import { useSearchProductsQuery, Product } from '@/features/catalog';
 import { useAuth } from '@/features/auth';
 import { 
@@ -11,7 +11,7 @@ import {
   useGetSearchHistoryQuery,
   useDeleteSearchHistoryMutation,
   useClearAllSearchHistoryMutation
-} from '@/services/searchHistoryApi';
+} from '@/features/catalog/api/searchHistoryApi';
 import { v4 as uuidv4 } from 'uuid';
 import { getLocale } from '@/utils/format';
 
@@ -28,25 +28,25 @@ const SearchBar: React.FC<SearchBarProps> = ({
   onClose,
   isExpanded = false,
 }) => {
-  const { t, i18n } = useTranslation();
+  const { t } = useTranslation();
   const [searchTerm, setSearchTerm] = useState('');
   const [isActive, setIsActive] = useState(isExpanded);
   const [recentSearches, setRecentSearches] = useState<string[]>([]);
   const [sessionId, setSessionId] = useState<string>('');
   
   const { isLoggedIn } = useAuth();
-  const [saveSearch] = useSaveSearchMutation();
-  const [deleteSearch] = useDeleteSearchHistoryMutation();
-  const [clearAllSearch] = useClearAllSearchHistoryMutation();
+  const { mutateAsync: saveSearch } = useSaveSearchMutation();
+  const { mutateAsync: deleteSearch } = useDeleteSearchHistoryMutation();
+  const { mutateAsync: clearAllSearch } = useClearAllSearchHistoryMutation();
   
   const { data: historyData } = useGetSearchHistoryQuery(
     { limit: 5 },
-    { skip: !isActive }
+    { enabled: isActive }
   );
   const searchRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   const navigate = useNavigate();
-  const dispatch = useDispatch();
+  const toggleSearch = useUiStore((s) => s.toggleSearch);
 
   // Tải lịch sử tìm kiếm gần đây và session ID khi render lần đầu
   useEffect(() => {
@@ -103,7 +103,7 @@ const SearchBar: React.FC<SearchBarProps> = ({
 
   const debouncedSearchTerm = useDebounce(searchTerm, 300);
 
-  // Dùng RTK Query hook để lấy kết quả tìm kiếm
+  // Dùng TanStack Query hook để lấy kết quả tìm kiếm
   const {
     data: searchResults,
     isFetching,
@@ -111,8 +111,8 @@ const SearchBar: React.FC<SearchBarProps> = ({
   } = useSearchProductsQuery(
     { q: debouncedSearchTerm, limit: 5 },
     {
-      skip: debouncedSearchTerm.length <= 1 || !isActive,
-      refetchOnMountOrArgChange: true,
+      enabled: debouncedSearchTerm.length > 1 && isActive,
+      staleTime: 0,
     }
   );
 
@@ -146,15 +146,6 @@ const SearchBar: React.FC<SearchBarProps> = ({
     }
   }, [isActive]);
 
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (searchTerm.trim()) {
-      navigate(`/shop?search=${encodeURIComponent(searchTerm.trim())}`);
-      setIsActive(false);
-      dispatch(toggleSearch());
-    }
-  };
-
   const handleSuggestionClick = (id: string) => {
     // Tìm tên sản phẩm để lưu làm từ khóa tìm kiếm
     const product = suggestions.find((p: Product) => p.id === id);
@@ -163,14 +154,14 @@ const SearchBar: React.FC<SearchBarProps> = ({
       saveSearchTerm(product.name);
     }
 
-    navigate(`/products/${id}`);
+    navigate(buildRoute.productDetail(id));
     setIsActive(false);
-    dispatch(toggleSearch());
+    toggleSearch();
   };
 
   const toggleSearchBar = () => {
     setIsActive(!isActive);
-    dispatch(toggleSearch());
+    toggleSearch();
   };
 
   // Xóa tất cả lịch sử tìm kiếm gần đây
@@ -180,7 +171,7 @@ const SearchBar: React.FC<SearchBarProps> = ({
       setRecentSearches([]);
       
       if (isLoggedIn) {
-        await clearAllSearch().unwrap();
+        await clearAllSearch();
       }
       
     } catch (error) {
@@ -200,7 +191,7 @@ const SearchBar: React.FC<SearchBarProps> = ({
       if (isLoggedIn && historyData?.data) {
         const itemToDelete = historyData.data.find((item: any) => item.keyword === termToRemove);
         if (itemToDelete) {
-          await deleteSearch(itemToDelete.id).unwrap();
+          await deleteSearch(itemToDelete.id);
         }
       }
 
@@ -238,7 +229,7 @@ const SearchBar: React.FC<SearchBarProps> = ({
         keyword: term, 
         resultsCount,
         sessionId: !isLoggedIn ? sessionId : undefined 
-      }).unwrap();
+      });
 
     } catch (error) {
       console.error('Lỗi lưu từ khóa tìm kiếm:', error);
@@ -256,9 +247,9 @@ const SearchBar: React.FC<SearchBarProps> = ({
       saveSearchTerm(term, resultsCount);
 
       // Chuyển đến kết quả tìm kiếm
-      navigate(`/shop?search=${encodeURIComponent(term)}`);
+      navigate(buildRoute.shopSearch(term));
       setIsActive(false);
-      dispatch(toggleSearch());
+      toggleSearch();
     }
   };
 
@@ -346,7 +337,7 @@ const SearchBar: React.FC<SearchBarProps> = ({
                   type="button"
                   onClick={() => {
                     setIsActive(false);
-                    dispatch(toggleSearch());
+                    toggleSearch();
                   }}
                   className="text-neutral-500 dark:text-neutral-400 hover:text-neutral-700 dark:hover:text-neutral-200"
                   aria-label={t('common.close')}

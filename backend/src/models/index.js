@@ -214,6 +214,12 @@ AttributeGroup.belongsToMany(Product, {
 // =============================================
 // QUAN HỆ IMAGE (giữ bảng images cũ)
 // =============================================
+// TODO(cleanup): Orphaned structures cần migration plan riêng:
+//   1. Bảng `images` vs `product_images` — cần data migration sang product_images rồi drop images
+//   2. Bảng `reviews` vs tên chuẩn `product_reviews` — cần rename + update tất cả references
+//   3. Column `users.stripe_customer_id` — Stripe đã bỏ, migration 2026051501 đã tạo nhưng
+//      column vẫn tồn tại trong DB. Cần verify migration đã chạy đúng rồi drop column.
+//   4. Column `products.brand` (varchar) — redundant với FK `products.brand_id` → brands table
 
 Image.belongsTo(Product, { foreignKey: 'productId', as: 'product' });
 Image.belongsTo(User, { foreignKey: 'userId', as: 'user' });

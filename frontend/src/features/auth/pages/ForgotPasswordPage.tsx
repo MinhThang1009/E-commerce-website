@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
+import { ROUTES } from '@/routes/paths';
 import Button from '@/components/common/Button';
 import Input from '@/components/common/Input';
 import { useForgotPasswordMutation } from '../api/authApi';
@@ -11,7 +12,7 @@ const ForgotPasswordPage: React.FC = () => {
   const { t } = useTranslation();
   const [email, setEmail] = useState('');
   const [emailError, setEmailError] = useState('');
-  const [forgotPassword, { isLoading, isSuccess, error }] = useForgotPasswordMutation();
+  const { mutateAsync: forgotPassword, isPending: isLoading, isSuccess, error } = useForgotPasswordMutation();
 
   const validateEmail = (email: string) => {
     if (!email) {
@@ -33,7 +34,7 @@ const ForgotPasswordPage: React.FC = () => {
     setEmailError('');
 
     try {
-      await forgotPassword({ email }).unwrap();
+      await forgotPassword({ email });
       setEmail(''); // Xóa trường email
     } catch (err) {
       console.error('Lỗi quên mật khẩu:', err);
@@ -68,7 +69,7 @@ const ForgotPasswordPage: React.FC = () => {
                 {t('auth.forgotPassword.successMessage')}
               </p>
               <Link
-                to="/login"
+                to={ROUTES.LOGIN}
                 className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-primary-600 dark:text-primary-400 bg-primary-100 dark:bg-primary-900/30 hover:bg-primary-200 dark:hover:bg-primary-900/50 transition-colors"
               >
                 <svg
@@ -159,7 +160,7 @@ const ForgotPasswordPage: React.FC = () => {
 
           <div className="text-center">
             <Link
-              to="/login"
+              to={ROUTES.LOGIN}
               className="inline-flex items-center text-sm text-primary-600 dark:text-primary-400 hover:text-primary-700 dark:hover:text-primary-300"
             >
               <svg

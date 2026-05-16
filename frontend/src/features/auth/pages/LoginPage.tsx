@@ -1,15 +1,14 @@
 import { useState } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
-import { useDispatch } from 'react-redux';
 import { useTranslation } from 'react-i18next';
-import Button from '@/components/common/Button';
+import { ROUTES, buildRoute } from '@/routes/paths';
 import { PremiumButton } from '@/components/common';
 import Input from '@/components/common/Input';
 import {
   useLoginMutation,
   useResendVerificationMutation,
 } from '../api/authApi';
-import { loginSuccess } from '../store/authSlice';
+import { useAuthStore } from '@/stores/authStore';
 import GoogleLoginButton from '../components/GoogleLoginButton';
 
 interface LocationState { from?: { pathname: string } }
@@ -25,12 +24,11 @@ const LoginPage: React.FC = () => {
   const [resendSuccess, setResendSuccess] = useState('');
   const [resendError, setResendError] = useState('');
 
-  const dispatch = useDispatch();
   const navigate = useNavigate();
   const location = useLocation();
 
-  const [login, { isLoading, error }] = useLoginMutation();
-  const [resendVerification, { isLoading: isResending }] =
+  const { mutateAsync: login, isPending: isLoading, error } = useLoginMutation();
+  const { mutateAsync: resendVerification, isPending: isResending } =
     useResendVerificationMutation();
 
   // Lấy đường dẫn redirect từ location state hoặc mặc định về trang chủ
@@ -67,10 +65,10 @@ const LoginPage: React.FC = () => {
     if (!validateForm()) return;
 
     try {
-      const result = await login({ email, password }).unwrap();
+      const result = await login({ email, password });
 
-      // Dispatch thành công vào Redux store
-      dispatch(loginSuccess(result));
+      // Cập nhật Zustand store
+      useAuthStore.getState().loginSuccess(result);
 
       // Chuyển hướng theo vai trò người dùng
       const userRole = result?.user?.role;
@@ -80,7 +78,7 @@ const LoginPage: React.FC = () => {
         navigate(from === '/admin' ? '/' : from, { replace: true });
       }
     } catch (err: any) {
-      // Lỗi đã được RTK Query xử lý và hiển thị trên UI
+      // Lỗi đã được TanStack Query xử lý và hiển thị trên UI
     }
   };
 
@@ -92,18 +90,18 @@ const LoginPage: React.FC = () => {
     setResendSuccess('');
     setResendError('');
     try {
-      await resendVerification({ email }).unwrap();
+      await resendVerification({ email });
       setResendSuccess(t('auth.login.resendOtpSuccess'));
     } catch (err: any) {
-      setResendError(err?.data?.message || t('auth.login.resendOtpError'));
+      setResendError(err?.data?.message || err?.message || t('auth.login.resendOtpError'));
     }
   };
 
   const handleGoToOtp = () => {
-    navigate(`/verify-email${email ? `?email=${encodeURIComponent(email)}` : ''}`);
+    navigate(buildRoute.verifyEmail(email || undefined));
   };
 
-  const handleButtonClick = (e: React.MouseEvent) => {
+  const handleButtonClick = (_e: React.MouseEvent) => {
     // Gọi handleSubmit không có event để tránh xung đột với hành vi mặc định
     handleSubmit();
   };
@@ -143,7 +141,7 @@ const LoginPage: React.FC = () => {
                   {t('auth.login.passwordLabel')}
                 </label>
                 <Link
-                  to="/forgot-password"
+                  to={ROUTES.FORGOT_PASSWORD}
                   className="text-sm text-primary-600 dark:text-primary-400 hover:text-primary-700 dark:hover:text-primary-300"
                 >
                   {t('auth.login.forgotPassword')}
@@ -178,7 +176,7 @@ const LoginPage: React.FC = () => {
             <p className="text-neutral-600 dark:text-neutral-400">
               {t('auth.login.noAccount')}{' '}
               <Link
-                to="/register"
+                to={ROUTES.REGISTER}
                 className="text-primary-600 dark:text-primary-400 hover:text-primary-700 dark:hover:text-primary-300 font-medium"
               >
                 {t('auth.login.signUpLink')}

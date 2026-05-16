@@ -12,23 +12,23 @@ const RecentlyViewed = sequelize.define(
     userId: {
       type: DataTypes.INTEGER,
       allowNull: false,
-      field: 'user_id',
     },
     productId: {
       type: DataTypes.INTEGER,
       allowNull: false,
-      field: 'product_id',
     },
     viewedAt: {
       type: DataTypes.DATE,
       defaultValue: DataTypes.NOW,
-      field: 'viewed_at',
     },
   },
   {
-    tableName: 'recently_viewed',
+    tableName: 'recently_viewed_products',
     timestamps: true,
     underscored: true,
+    indexes: [
+      { name: 'idx_rvp_user_product', fields: ['user_id', 'product_id'] },
+    ],
   }
 );
 

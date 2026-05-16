@@ -28,8 +28,10 @@ class CartService {
 
       if (itemData.Product) {
         const p = itemData.Product;
-        p.stockQuantity = p.defaultVariant ? p.defaultVariant.stockQuantity : 0;
-        p.inStock = p.stockQuantity > 0;
+        // Stock thực nằm ở variant level — tính tổng stock từ tất cả variants
+        const variantStock = (p.variants || []).reduce((s, v) => s + (v.stockQuantity || 0), 0);
+        p.stockQuantity = variantStock || (p.defaultVariant ? p.defaultVariant.stockQuantity : 0);
+        p.inStock = variantStock > 0 || (p.defaultVariant ? p.defaultVariant.stockQuantity > 0 : false);
 
         if (p.productImages && p.productImages.length > 0) {
           // Ưu tiên ảnh theo variantId, fallback về thumbnail chính
@@ -47,6 +49,7 @@ class CartService {
         p.price = p.basePrice;
         delete p.productImages;
         delete p.defaultVariant;
+        delete p.variants;
       }
 
       if (itemData.warrantyPackageIds && itemData.warrantyPackageIds.length > 0) {

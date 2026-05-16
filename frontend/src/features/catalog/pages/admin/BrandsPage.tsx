@@ -16,6 +16,7 @@ import {
 } from 'antd';
 import { useTranslation } from 'react-i18next';
 import ImageUpload from '@/components/common/ImageUpload';
+import { getUploadUrl } from '@/utils/uploadUrl';
 import {
   PlusOutlined,
   EditOutlined,
@@ -47,22 +48,22 @@ const BrandsPage: React.FC = () => {
   const [form] = Form.useForm();
   const [isModalVisible, setIsModalVisible] = useState(false);
   const [editingBrand, setEditingBrand] = useState<any | null>(null);
-  const [fileList, setFileList] = useState<any[]>([]);
+  const [_fileList, setFileList] = useState<any[]>([]);
 
   const { data: brandsData, isLoading, refetch } = useGetBrandsQuery();
-  const [createBrand, { isLoading: isCreating }] = useCreateBrandMutation();
-  const [updateBrand, { isLoading: isUpdating }] = useUpdateBrandMutation();
-  const [deleteBrand, { isLoading: isDeleting }] = useDeleteBrandMutation();
+  const { mutateAsync: createBrand, isPending: isCreating } = useCreateBrandMutation();
+  const { mutateAsync: updateBrand, isPending: isUpdating } = useUpdateBrandMutation();
+  const { mutateAsync: deleteBrand, isPending: _isDeleting } = useDeleteBrandMutation();
 
   const brands = brandsData?.data || [];
 
   const handleSubmit = async (values: BrandFormData) => {
     try {
       if (editingBrand) {
-        await updateBrand({ id: editingBrand.id, body: values }).unwrap();
+        await updateBrand({ id: editingBrand.id, body: values });
         message.success(t('admin.brands.messages.editSuccess'));
       } else {
-        await createBrand(values).unwrap();
+        await createBrand(values);
         message.success(t('admin.brands.messages.addSuccess'));
       }
       setIsModalVisible(false);
@@ -77,7 +78,7 @@ const BrandsPage: React.FC = () => {
 
   const handleDelete = async (id: string) => {
     try {
-      await deleteBrand(id).unwrap();
+      await deleteBrand(id);
       message.success(t('admin.brands.messages.deleteSuccess'));
       refetch();
     } catch (error: any) {
@@ -117,7 +118,7 @@ const BrandsPage: React.FC = () => {
       key: 'logo',
       width: 80,
       render: (logo: string, record: any) => {
-        const fullLogoUrl = logo?.startsWith('http') ? logo : `${import.meta.env.VITE_API_URL || 'http://localhost:8888'}${logo?.startsWith('/') ? '' : '/'}${logo}`;
+        const fullLogoUrl = getUploadUrl(logo);
         return logo ? (
           <Image
             src={fullLogoUrl}

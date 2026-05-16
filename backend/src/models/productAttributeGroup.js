@@ -12,22 +12,18 @@ const ProductAttributeGroup = sequelize.define(
     productId: {
       type: DataTypes.INTEGER,
       allowNull: false,
-      field: 'product_id',
     },
     attributeGroupId: {
       type: DataTypes.INTEGER,
       allowNull: false,
-      field: 'attribute_group_id',
     },
     isRequired: {
       type: DataTypes.BOOLEAN,
       defaultValue: false,
-      field: 'is_required',
     },
     sortOrder: {
       type: DataTypes.INTEGER,
       defaultValue: 0,
-      field: 'sort_order',
     },
   },
   {

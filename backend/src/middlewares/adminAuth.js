@@ -2,6 +2,7 @@ const logger = require('../utils/logger');
 const jwt = require('jsonwebtoken');
 const { User } = require('../models');
 const { AppError } = require('./errorHandler');
+const { getRedisClient } = require('../config/redis');
 
 /**
  * Middleware xác thực dành riêng cho admin
@@ -21,7 +22,20 @@ const adminAuthenticate = async (req, res, next) => {
     const token = authHeader.split(' ')[1];
 
     // Xác thực token
-    const decoded = jwt.verify(token, process.env.JWT_SECRET);
+    const decoded = jwt.verify(token, process.env.JWT_SECRET, { algorithms: ['HS256'] });
+
+    // Blacklist + pw_changed check
+    const redis = await getRedisClient();
+    if (redis) {
+      if (decoded.jti) {
+        const isBlacklisted = await redis.get(`bl:${decoded.jti}`);
+        if (isBlacklisted) return next(new AppError('Token không hợp lệ', 401));
+      }
+      const pwChanged = await redis.get(`pw_changed:${decoded.id}`);
+      if (pwChanged && decoded.iat && decoded.iat < parseInt(pwChanged, 10)) {
+        return next(new AppError('Mật khẩu đã thay đổi. Vui lòng đăng nhập lại', 401));
+      }
+    }
 
     // Tìm người dùng
     const user = await User.findByPk(decoded.id);

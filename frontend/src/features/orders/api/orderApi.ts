@@ -1,4 +1,6 @@
-import { api } from '@/services/api';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import apiClient from '@/services/apiClient';
+import { cartKeys } from '@/features/cart';
 
 // Kiểu dữ liệu đơn hàng dựa theo backend API
 export interface OrderItem {
@@ -139,128 +141,174 @@ export interface CreateOrderResponse {
   };
 }
 
-export const orderApi = api.injectEndpoints({
-  endpoints: (builder) => ({
-    // Lấy danh sách đơn hàng của người dùng có phân trang
-    getUserOrders: builder.query<
-      OrdersResponse,
-      { page?: number; limit?: number }
-    >({
-      query: ({ page = 1, limit = 10 } = {}) => ({
-        url: '/orders',
-        method: 'GET',
+// Query keys tập trung
+export const orderKeys = {
+  all: ['orders'] as const,
+  lists: () => [...orderKeys.all, 'list'] as const,
+  list: (params: { page?: number; limit?: number }) =>
+    [...orderKeys.lists(), params] as const,
+  details: () => [...orderKeys.all, 'detail'] as const,
+  detail: (id: string) => [...orderKeys.details(), id] as const,
+  byNumber: (number: string) => [...orderKeys.all, 'number', number] as const,
+};
+
+// --- Query hooks ---
+
+/** Lấy danh sách đơn hàng của người dùng có phân trang */
+export function useGetUserOrdersQuery(
+  params: { page?: number; limit?: number } = {},
+  options?: { enabled?: boolean },
+) {
+  const { page = 1, limit = 10 } = params;
+  return useQuery<OrdersResponse>({
+    queryKey: orderKeys.list({ page, limit }),
+    queryFn: async () => {
+      const res = await apiClient.get<OrdersResponse>('/orders', {
         params: { page, limit },
-      }),
-      providesTags: (result) =>
-        result?.data
-          ? [
-              ...result.data.map(({ id }) => ({
-                type: 'Order' as const,
-                id,
-              })),
-              { type: 'Order', id: 'LIST' },
-            ]
-          : [{ type: 'Order', id: 'LIST' }],
-    }),
+      });
+      return res.data;
+    },
+    ...options,
+  });
+}
 
-    // Lấy đơn hàng theo ID
-    getOrderById: builder.query<{ status: string; data: Order }, string>({
-      query: (id) => ({
-        url: `/orders/${id}`,
-        method: 'GET',
-      }),
-      providesTags: (result, error, id) => [{ type: 'Order', id }],
-    }),
+/** Lấy đơn hàng theo ID */
+export function useGetOrderByIdQuery(
+  id: string,
+  options?: { enabled?: boolean; refetchInterval?: number },
+) {
+  return useQuery<{ status: string; data: Order }>({
+    queryKey: orderKeys.detail(id),
+    queryFn: async () => {
+      const res = await apiClient.get<{ status: string; data: Order }>(
+        `/orders/${id}`,
+      );
+      return res.data;
+    },
+    enabled: !!id,
+    ...options,
+  });
+}
 
-    // Lấy đơn hàng theo số đơn hàng
-    getOrderByNumber: builder.query<{ status: string; data: Order }, string>({
-      query: (number) => ({
-        url: `/orders/number/${number}`,
-        method: 'GET',
-      }),
-      providesTags: (result, error, number) => [{ type: 'Order', id: number }],
-    }),
+/** Lấy đơn hàng theo số đơn hàng */
+export function useGetOrderByNumberQuery(
+  number: string,
+  options?: { enabled?: boolean },
+) {
+  return useQuery<{ status: string; data: Order }>({
+    queryKey: orderKeys.byNumber(number),
+    queryFn: async () => {
+      const res = await apiClient.get<{ status: string; data: Order }>(
+        `/orders/number/${number}`,
+      );
+      return res.data;
+    },
+    enabled: !!number,
+    ...options,
+  });
+}
 
-    // Tạo đơn hàng
-    createOrder: builder.mutation<CreateOrderResponse, CreateOrderRequest>({
-      query: (orderData) => ({
-        url: '/orders',
-        method: 'POST',
-        body: orderData,
-      }),
-      invalidatesTags: [
-        { type: 'Order', id: 'LIST' },
-        // Invalidate cả Cart và CartCount để giỏ hàng reset ngay sau khi đặt hàng
-        { type: 'Cart', id: 'LIST' },
-        'CartCount',
-      ],
-    }),
+// --- Mutation hooks ---
 
-    // Hủy đơn hàng
-    cancelOrder: builder.mutation<
-      { status: string; message: string; data: any },
-      string
-    >({
-      query: (id) => ({
-        url: `/orders/${id}/cancel`,
-        method: 'POST',
-      }),
-      invalidatesTags: (result, error, id) => [
-        { type: 'Order', id },
-        { type: 'Order', id: 'LIST' },
-      ],
-    }),
+/** Tạo đơn hàng */
+export function useCreateOrderMutation() {
+  const queryClient = useQueryClient();
+  return useMutation<CreateOrderResponse, Error, CreateOrderRequest>({
+    mutationFn: async (orderData) => {
+      const res = await apiClient.post<CreateOrderResponse>(
+        '/orders',
+        orderData,
+      );
+      return res.data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: orderKeys.all });
+      // Invalidate giỏ hàng để reset ngay sau khi đặt hàng
+      queryClient.invalidateQueries({ queryKey: cartKeys.all });
+      queryClient.invalidateQueries({ queryKey: cartKeys.count });
+    },
+  });
+}
 
-    // Thanh toán lại đơn hàng
-    repayOrder: builder.mutation<
-      { status: string; message: string; data: any },
-      string
-    >({
-      query: (id) => ({
-        url: `/orders/${id}/repay`,
-        method: 'POST',
-      }),
-      invalidatesTags: (result, error, id) => [
-        { type: 'Order', id },
-        { type: 'Order', id: 'LIST' },
-      ],
-    }),
+/** Hủy đơn hàng */
+export function useCancelOrderMutation() {
+  const queryClient = useQueryClient();
+  return useMutation<
+    { status: string; message: string; data: any },
+    Error,
+    string
+  >({
+    mutationFn: async (id) => {
+      const res = await apiClient.post<{
+        status: string;
+        message: string;
+        data: any;
+      }>(`/orders/${id}/cancel`);
+      return res.data;
+    },
+    onSuccess: (_data, id) => {
+      queryClient.invalidateQueries({ queryKey: orderKeys.detail(id) });
+      queryClient.invalidateQueries({ queryKey: orderKeys.lists() });
+    },
+  });
+}
 
-    // Áp dụng mã giảm giá
-    applyDiscountCode: builder.mutation<ApplyDiscountResponse, ApplyDiscountRequest>({
-      query: (data) => ({
-        url: '/discount-codes/apply',
-        method: 'POST',
-        body: data,
-      }),
-    }),
+/** Thanh toán lại đơn hàng */
+export function useRepayOrderMutation() {
+  const queryClient = useQueryClient();
+  return useMutation<
+    { status: string; message: string; data: any },
+    Error,
+    string
+  >({
+    mutationFn: async (id) => {
+      const res = await apiClient.post<{
+        status: string;
+        message: string;
+        data: any;
+      }>(`/orders/${id}/repay`);
+      return res.data;
+    },
+    onSuccess: (_data, id) => {
+      queryClient.invalidateQueries({ queryKey: orderKeys.detail(id) });
+      queryClient.invalidateQueries({ queryKey: orderKeys.lists() });
+    },
+  });
+}
 
-    // Xác nhận đã nhận đơn hàng
-    confirmReceived: builder.mutation<
-      { status: string; message: string; pointsEarned: number; data: any },
-      string
-    >({
-      query: (id) => ({
-        url: `/orders/${id}/receive`,
-        method: 'POST',
-      }),
-      invalidatesTags: (result, error, id) => [
-        { type: 'Order', id },
-        { type: 'Order', id: 'LIST' },
-        { type: 'User', id: 'PROFILE' },
-      ],
-    }),
-  }),
-});
+/** Áp dụng mã giảm giá */
+export function useApplyDiscountCodeMutation() {
+  return useMutation<ApplyDiscountResponse, Error, ApplyDiscountRequest>({
+    mutationFn: async (data) => {
+      const res = await apiClient.post<ApplyDiscountResponse>(
+        '/discount-codes/apply',
+        data,
+      );
+      return res.data;
+    },
+  });
+}
 
-export const {
-  useGetUserOrdersQuery,
-  useGetOrderByIdQuery,
-  useGetOrderByNumberQuery,
-  useCreateOrderMutation,
-  useCancelOrderMutation,
-  useRepayOrderMutation,
-  useApplyDiscountCodeMutation,
-  useConfirmReceivedMutation,
-} = orderApi;
-
+/** Xác nhận đã nhận đơn hàng */
+export function useConfirmReceivedMutation() {
+  const queryClient = useQueryClient();
+  return useMutation<
+    { status: string; message: string; pointsEarned: number; data: any },
+    Error,
+    string
+  >({
+    mutationFn: async (id) => {
+      const res = await apiClient.post<{
+        status: string;
+        message: string;
+        pointsEarned: number;
+        data: any;
+      }>(`/orders/${id}/receive`);
+      return res.data;
+    },
+    onSuccess: (_data, id) => {
+      queryClient.invalidateQueries({ queryKey: orderKeys.detail(id) });
+      queryClient.invalidateQueries({ queryKey: orderKeys.lists() });
+    },
+  });
+}

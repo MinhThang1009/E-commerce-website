@@ -85,18 +85,18 @@ const CreateProductPage: React.FC = () => {
   );
 
   // State cho hierarchical attributes và variants nếu cần thiết trong tương lai
-  const [attributeGroups, setAttributeGroups] = useState<AttributeGroup[]>([]);
-  const [hierarchicalVariants, setHierarchicalVariants] = useState<any[]>([]);
-  const [specifications, setSpecifications] = useState<any[]>([]);
+  const [_attributeGroups, _setAttributeGroups] = useState<AttributeGroup[]>([]);
+  const [_hierarchicalVariants, _setHierarchicalVariants] = useState<any[]>([]);
+  const [_specifications, _setSpecifications] = useState<any[]>([]);
 
   // Các API hook cần thiết
   const { data: categories, isLoading: isCategoriesLoading } =
     useGetCategoriesQuery();
-  const { data: warrantyData, isLoading: isWarrantyLoading } =
+  const { data: _warrantyData, isLoading: _isWarrantyLoading } =
     useGetWarrantyPackagesQuery({ isActive: true });
-  const [createProduct, { isLoading: isCreating }] = useCreateProductMutation();
-  const [convertBase64ToImage] = useConvertBase64ToImageMutation();
-  const [deleteImage] = useDeleteImageMutation();
+  const { mutateAsync: createProduct, isPending: isCreating } = useCreateProductMutation();
+  const { mutateAsync: convertBase64ToImage } = useConvertBase64ToImageMutation();
+  const { mutateAsync: deleteImage } = useDeleteImageMutation();
 
   const {
     attributes,
@@ -155,7 +155,7 @@ const CreateProductPage: React.FC = () => {
     activeTab,
     setActiveTab,
     validateForm,
-    getMissingFields,
+    getMissingFields: _getMissingFields,
     fillExampleData,
     handleSubmit,
   } = useProductForm({
@@ -196,7 +196,7 @@ const CreateProductPage: React.FC = () => {
               return await convertBase64ToImage({
                 base64Data,
                 options: options as any,
-              }).unwrap();
+              });
             },
           });
 
@@ -357,7 +357,7 @@ const CreateProductPage: React.FC = () => {
           })(),
         };
 
-        await createProduct(productData).unwrap();
+        await createProduct(productData);
         message.success(t('admin.products.messages.createSuccess'));
         navigate('/admin/products');
       } catch (error: any) {
@@ -365,7 +365,7 @@ const CreateProductPage: React.FC = () => {
         // Tránh orphaned files khi form bị lỗi validation sau khi ảnh đã được upload
         if (uploadedDescImageIds.length > 0) {
           await Promise.allSettled(
-            uploadedDescImageIds.map((id) => deleteImage(id).unwrap().catch(() => {}))
+            uploadedDescImageIds.map((id) => deleteImage(id).catch(() => {}))
           );
         }
         const errorMessage = formatErrorMessage(error);

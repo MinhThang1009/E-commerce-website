@@ -1,4 +1,5 @@
-import { api } from '@/services/api';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
+import apiClient from '@/services/apiClient';
 
 export interface ChatResponse {
   text: string;
@@ -56,35 +57,37 @@ export interface AddToCartViaChatbotRequest {
   variantId?: number;
 }
 
-export const chatApi = api.injectEndpoints({
-  endpoints: (builder) => ({
-    sendChatbotMessage: builder.mutation<ChatbotResponse, SendChatbotMessageRequest>({
-      query: (body) => ({
-        url: '/chatbot/message',
-        method: 'POST',
-        body,
-      }),
-    }),
-    trackChatbotAnalytics: builder.mutation<any, TrackAnalyticsRequest>({
-      query: (body) => ({
-        url: '/chatbot/analytics',
-        method: 'POST',
-        body,
-      }),
-    }),
-    addToCartViaChatbot: builder.mutation<any, AddToCartViaChatbotRequest>({
-      query: ({ productId, quantity, sessionId, variantId }) => ({
-        url: '/chatbot/cart/add',
-        method: 'POST',
-        body: { productId, quantity, sessionId, variantId },
-      }),
-      invalidatesTags: ['Cart', 'CartCount'],
-    }),
-  }),
-});
+// === Mutation Hooks ===
 
-export const {
-  useSendChatbotMessageMutation,
-  useTrackChatbotAnalyticsMutation,
-  useAddToCartViaChatbotMutation,
-} = chatApi;
+export function useSendChatbotMessageMutation() {
+  return useMutation<ChatbotResponse, Error, SendChatbotMessageRequest>({
+    mutationFn: async (body) => {
+      const { data } = await apiClient.post('/chatbot/message', body);
+      return data;
+    },
+  });
+}
+
+export function useTrackChatbotAnalyticsMutation() {
+  return useMutation<any, Error, TrackAnalyticsRequest>({
+    mutationFn: async (body) => {
+      const { data } = await apiClient.post('/chatbot/analytics', body);
+      return data;
+    },
+  });
+}
+
+export function useAddToCartViaChatbotMutation() {
+  const queryClient = useQueryClient();
+  return useMutation<any, Error, AddToCartViaChatbotRequest>({
+    mutationFn: async ({ productId, quantity, sessionId, variantId }) => {
+      const { data } = await apiClient.post('/chatbot/cart/add', {
+        productId, quantity, sessionId, variantId,
+      });
+      return data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['cart'] });
+    },
+  });
+}

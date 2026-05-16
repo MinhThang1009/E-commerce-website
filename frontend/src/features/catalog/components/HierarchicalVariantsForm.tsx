@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import {
   Card,
@@ -24,7 +24,7 @@ import {
   DeleteOutlined,
   InfoCircleOutlined,
 } from '@ant-design/icons';
-import { AttributeGroup, AttributeValue } from '../api/attributeApi';
+import { AttributeGroup } from '../api/attributeApi';
 import { getLocale } from '@/utils/format';
 
 const { Title, Text } = Typography;

@@ -10,7 +10,7 @@ const WarrantyPackage = sequelize.define(
       primaryKey: true,
     },
     name: {
-      type: DataTypes.STRING,
+      type: DataTypes.STRING(200),
       allowNull: false,
     },
     description: {
@@ -20,7 +20,6 @@ const WarrantyPackage = sequelize.define(
     durationMonths: {
       type: DataTypes.INTEGER,
       allowNull: false,
-      field: 'duration_months',
     },
     price: {
       type: DataTypes.DECIMAL(15, 2),
@@ -41,12 +40,10 @@ const WarrantyPackage = sequelize.define(
     isActive: {
       type: DataTypes.BOOLEAN,
       defaultValue: true,
-      field: 'is_active',
     },
     sortOrder: {
       type: DataTypes.INTEGER,
       defaultValue: 0,
-      field: 'sort_order',
     },
   },
   {

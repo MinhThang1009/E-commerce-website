@@ -26,7 +26,7 @@ export interface NewsFilters {
 }
 
 export interface NewsResponse {
-  success: boolean;
+  status: 'success' | 'error';
   count: number;
   totalPages: number;
   currentPage: number;
@@ -34,7 +34,7 @@ export interface NewsResponse {
 }
 
 export interface SingleNewsResponse {
-  success: boolean;
+  status: 'success' | 'error';
   news: News;
 }
 

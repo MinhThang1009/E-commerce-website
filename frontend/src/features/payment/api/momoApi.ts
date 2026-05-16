@@ -1,16 +1,12 @@
-import { api } from '@/services/api';
+import { useMutation } from '@tanstack/react-query';
+import apiClient from '@/services/apiClient';
 
-export const momoApi = api.injectEndpoints({
-  endpoints: (builder) => ({
-    createMomoUrl: builder.mutation<any, { orderId: string }>({
-      query: (body) => ({
-        url: '/payments/momo/create-url',
-        method: 'POST',
-        body,
-      }),
-    }),
-  }),
-});
-
-export const { useCreateMomoUrlMutation } = momoApi;
-
+/** Tạo URL thanh toán MoMo */
+export function useCreateMomoUrlMutation() {
+  return useMutation<any, Error, { orderId: string }>({
+    mutationFn: async (body) => {
+      const res = await apiClient.post('/payments/momo/create-url', body);
+      return res.data;
+    },
+  });
+}

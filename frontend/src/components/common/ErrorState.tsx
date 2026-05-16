@@ -29,7 +29,7 @@ export const ErrorState: React.FC<ErrorStateProps> = ({
   size = 'md',
   showRetryButton = true,
   retryText,
-  language = 'vi',
+  language: _language = 'vi',
 }) => {
   const { t } = useTranslation();
   const errorMessage = getErrorMessage(error);
@@ -162,7 +162,7 @@ export const NetworkErrorState: React.FC<Omit<ErrorStateProps, 'error'>> = (
 ) => {
   const { t } = useTranslation();
   const networkError = {
-    status: 'FETCH_ERROR',
+    code: 'ERR_NETWORK',
     message: t('common.networkError'),
   };
 

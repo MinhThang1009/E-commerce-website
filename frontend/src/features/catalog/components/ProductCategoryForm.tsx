@@ -1,9 +1,8 @@
 import React from 'react';
-import { Form, Select, Input, Row, Col, Alert } from 'antd';
+import { Form, Select, Row, Col, Alert } from 'antd';
 import { useTranslation } from 'react-i18next';
 import { Category } from '../types/category.types';
 
-const { TextArea } = Input;
 const { Option } = Select;
 
 interface ProductCategoryFormProps {

@@ -1,10 +1,9 @@
 // Barrel export feature content — public surface
-// Bao trùm BE module content: banner + news + email campaign + newsletter + contact
 
 // Components
 export { default as ProductPickerModal } from './components/ProductPickerModal';
 
-// API endpoints (RTK Query)
+// API endpoints (TanStack Query)
 export * from './api/bannerApi';
 export * from './api/contactApi';
 export * from './api/emailCampaignApi';

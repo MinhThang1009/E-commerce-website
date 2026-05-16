@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Card, Button, Space, Typography, Tag, Divider, Alert } from 'antd';
-import { CheckOutlined, PlusOutlined } from '@ant-design/icons';
+import { Card, Button, Space, Typography, Tag, Alert } from 'antd';
+import { CheckOutlined } from '@ant-design/icons';
 import { simpleNamingService } from '@/utils/productNaming';
 
 const { Text, Title } = Typography;

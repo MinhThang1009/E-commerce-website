@@ -1,5 +1,6 @@
 import React from 'react';
 import { useParams, Link } from 'react-router-dom';
+import { ROUTES, buildRoute } from '@/routes/paths';
 import {
   Card,
   Row,
@@ -48,7 +49,7 @@ const UserDetailPage: React.FC = () => {
       <div className="p-6">
         <Empty description={t('admin.userDetail.notFound')} />
         <div className="text-center mt-4">
-          <Link to="/admin/users">
+          <Link to={ROUTES.ADMIN_USERS}>
             <Button icon={<ArrowLeftOutlined />}>{t('admin.userDetail.backToList')}</Button>
           </Link>
         </div>
@@ -77,7 +78,7 @@ const UserDetailPage: React.FC = () => {
       dataIndex: 'orderNumber',
       key: 'orderNumber',
       render: (text: string, record: any) => (
-        <Link to={`/admin/orders/${record.id}`} className="font-medium">
+        <Link to={buildRoute.adminOrderDetail(record.id)} className="font-medium">
           #{text || record.id.substring(0, 8)}
         </Link>
       ),
@@ -118,7 +119,7 @@ const UserDetailPage: React.FC = () => {
       <Space direction="vertical" size="large" style={{ width: '100%' }}>
         <div className="flex items-center justify-between">
           <Space>
-            <Link to="/admin/users">
+            <Link to={ROUTES.ADMIN_USERS}>
               <Button icon={<ArrowLeftOutlined />} type="text" />
             </Link>
             <div>
@@ -283,7 +284,7 @@ const UserDetailPage: React.FC = () => {
                         })),
                       ]
                         .sort((a: any, b: any) => b.date.getTime() - a.date.getTime())
-                        .map(({ date, ...rest }) => rest)
+                        .map(({ date: _date, ...rest }) => rest)
                       }
                     />
                   ),

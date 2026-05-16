@@ -72,7 +72,7 @@ const ProductPickerModal: React.FC<ProductPickerModalProps> = ({ open, onCancel,
                     <span className="text-primary-600 font-bold">
                       {new Intl.NumberFormat(getLocale(), { style: 'currency', currency: 'VND' }).format(item.price)}
                     </span>
-                    {item.stockQuantity > 0 ? (
+                    {(item.stock > 0 || (item.variants?.length > 0 && item.variants.some((v: any) => v.stockQuantity > 0))) ? (
                        <span className="ml-2 text-xs text-green-500">{t('product.inStock')}</span>
                     ) : (
                        <span className="ml-2 text-xs text-red-500">{t('product.outOfStock')}</span>

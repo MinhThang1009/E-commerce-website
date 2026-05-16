@@ -90,8 +90,7 @@ export const processDescriptionImages = async (
         });
 
         if (result?.data) {
-          const apiBaseUrl = import.meta.env.VITE_API_URL || 'http://localhost:8888/api';
-          const domainUrl = apiBaseUrl.replace(/\/api$/, '');
+          const domainUrl = (import.meta.env.VITE_API_URL || 'http://localhost:8888/api').replace(/\/api\/?$/, '');
           const uploadedUrl = `${domainUrl}${result.data.url}`;
 
           // Thay thế base64 bằng URL đã tải lên trong mô tả

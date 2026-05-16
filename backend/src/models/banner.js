@@ -14,14 +14,12 @@ const Banner = sequelize.define(
       allowNull: false,
     },
     imageUrl: {
-      type: DataTypes.STRING,
+      type: DataTypes.STRING(512),
       allowNull: false,
-      field: 'image_url',
     },
     linkUrl: {
-      type: DataTypes.STRING,
+      type: DataTypes.STRING(512),
       allowNull: true,
-      field: 'link_url',
     },
     position: {
       type: DataTypes.ENUM('home_hero', 'home_middle', 'sidebar'),
@@ -30,7 +28,6 @@ const Banner = sequelize.define(
     isActive: {
       type: DataTypes.BOOLEAN,
       defaultValue: true,
-      field: 'is_active',
     },
     priority: {
       type: DataTypes.INTEGER,

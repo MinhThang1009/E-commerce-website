@@ -1,4 +1,5 @@
-import { api } from '@/services/api';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import apiClient from '@/services/apiClient';
 
 export interface AdminOrder {
   id: string;
@@ -78,33 +79,45 @@ export interface UpdateOrderStatusRequest {
   note?: string;
 }
 
-// Sử dụng api.injectEndpoints để thêm các endpoints vào API service chính
-export const adminOrderApi = api.injectEndpoints({
-  endpoints: (builder) => ({
-    // Lấy tất cả đơn hàng dành cho admin
-    getAdminOrders: builder.query<AdminOrdersResponse, AdminOrdersParams>({
-      query: (params) => ({
-        url: '/admin/orders',
-        params,
-      }),
-      providesTags: ['AdminOrder'],
-    }),
+// === Query Keys ===
 
-    // Cập nhật trạng thái đơn hàng
-    updateOrderStatus: builder.mutation<
-      { status: string; data: { order: AdminOrder } },
-      { id: string; data: UpdateOrderStatusRequest }
-    >({
-      query: ({ id, data }) => ({
-        url: `/admin/orders/${id}/status`,
-        method: 'PUT',
-        body: data,
-      }),
-      invalidatesTags: ['AdminOrder'],
-    }),
-  }),
-});
+export const adminOrderKeys = {
+  all: ['admin-orders'] as const,
+  lists: () => [...adminOrderKeys.all, 'list'] as const,
+  list: (params: any) => [...adminOrderKeys.lists(), params] as const,
+};
 
-export const { useGetAdminOrdersQuery, useUpdateOrderStatusMutation } =
-  adminOrderApi;
+// === Query Hooks ===
 
+export function useGetAdminOrdersQuery(
+  params: AdminOrdersParams,
+  options?: { enabled?: boolean; skip?: boolean }
+) {
+  return useQuery<AdminOrdersResponse>({
+    queryKey: adminOrderKeys.list(params),
+    queryFn: async () => {
+      const { data } = await apiClient.get('/admin/orders', { params });
+      return data;
+    },
+    enabled: options?.skip !== undefined ? !options.skip : true,
+  });
+}
+
+// === Mutation Hooks ===
+
+export function useUpdateOrderStatusMutation() {
+  const queryClient = useQueryClient();
+  return useMutation<
+    { status: string; data: { order: AdminOrder } },
+    Error,
+    { id: string; data: UpdateOrderStatusRequest }
+  >({
+    mutationFn: async ({ id, data: body }) => {
+      const { data } = await apiClient.put(`/admin/orders/${id}/status`, body);
+      return data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: adminOrderKeys.all });
+    },
+  });
+}

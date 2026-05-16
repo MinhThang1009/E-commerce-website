@@ -1,4 +1,5 @@
-import { api } from '@/services/api';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import apiClient from '@/services/apiClient';
 
 export interface User {
   id: string;
@@ -47,54 +48,80 @@ export interface UserFilters {
   isEmailVerified?: boolean;
 }
 
-export const adminUserApi = api.injectEndpoints({
-  endpoints: (builder) => ({
-    getAllUsers: builder.query<UserResponse, UserFilters>({
-      query: (params = {}) => {
-        const queryParams = new URLSearchParams();
+// === Query Keys ===
 
-        Object.entries(params).forEach(([key, value]) => {
-          if (value !== undefined && value !== null && value !== '') {
-            queryParams.append(key, value.toString());
-          }
-        });
+export const adminUserKeys = {
+  all: ['admin-users'] as const,
+  lists: () => [...adminUserKeys.all, 'list'] as const,
+  list: (filters: any) => [...adminUserKeys.lists(), filters] as const,
+  details: () => [...adminUserKeys.all, 'detail'] as const,
+  detail: (id: string) => [...adminUserKeys.details(), id] as const,
+};
 
-        return `/admin/users?${queryParams.toString()}`;
-      },
-      providesTags: ['User'],
-    }),
+// === Query Hooks ===
 
-    getUserById: builder.query<{ status: string; data: { user: any } }, string>({
-      query: (id) => `/admin/users/${id}`,
-      providesTags: (_result, _error, id) => [{ type: 'User', id }],
-    }),
+export function useGetAllUsersQuery(
+  params: UserFilters = {},
+  options?: { enabled?: boolean; skip?: boolean }
+) {
+  return useQuery<UserResponse>({
+    queryKey: adminUserKeys.list(params),
+    queryFn: async () => {
+      const queryParams = new URLSearchParams();
+      Object.entries(params).forEach(([key, value]) => {
+        if (value !== undefined && value !== null && value !== '') {
+          queryParams.append(key, value.toString());
+        }
+      });
+      const { data } = await apiClient.get(`/admin/users?${queryParams.toString()}`);
+      return data;
+    },
+    enabled: options?.skip !== undefined ? !options.skip : true,
+  });
+}
 
-    updateUser: builder.mutation<
-      { status: string; data: { user: User } },
-      UpdateUserRequest
-    >({
-      query: ({ id, ...userData }) => ({
-        url: `/admin/users/${id}`,
-        method: 'PUT',
-        body: userData,
-      }),
-      invalidatesTags: ['User'],
-    }),
+export function useGetUserByIdQuery(
+  id: string,
+  options?: { enabled?: boolean; skip?: boolean }
+) {
+  return useQuery<{ status: string; data: { user: any } }>({
+    queryKey: adminUserKeys.detail(id),
+    queryFn: async () => {
+      const { data } = await apiClient.get(`/admin/users/${id}`);
+      return data;
+    },
+    enabled: options?.skip !== undefined ? !options.skip : !!id,
+  });
+}
 
-    deleteUser: builder.mutation<{ status: string; message: string }, string>({
-      query: (id) => ({
-        url: `/admin/users/${id}`,
-        method: 'DELETE',
-      }),
-      invalidatesTags: ['User'],
-    }),
-  }),
-});
+// === Mutation Hooks ===
 
-export const {
-  useGetAllUsersQuery,
-  useGetUserByIdQuery,
-  useUpdateUserMutation,
-  useDeleteUserMutation,
-} = adminUserApi;
+export function useUpdateUserMutation() {
+  const queryClient = useQueryClient();
+  return useMutation<
+    { status: string; data: { user: User } },
+    Error,
+    UpdateUserRequest
+  >({
+    mutationFn: async ({ id, ...userData }) => {
+      const { data } = await apiClient.put(`/admin/users/${id}`, userData);
+      return data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: adminUserKeys.all });
+    },
+  });
+}
 
+export function useDeleteUserMutation() {
+  const queryClient = useQueryClient();
+  return useMutation<{ status: string; message: string }, Error, string>({
+    mutationFn: async (id) => {
+      const { data } = await apiClient.delete(`/admin/users/${id}`);
+      return data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: adminUserKeys.all });
+    },
+  });
+}

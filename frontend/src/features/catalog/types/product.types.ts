@@ -25,7 +25,7 @@ export interface Product {
   model?: string;
   condition?: 'new' | 'like-new' | 'used' | 'refurbished';
   warrantyMonths?: number;
-  specifications?: Record<string, any>;
+  specifications?: Record<string, string | number | boolean>;
   warrantyPackages?: WarrantyPackage[];
   faqs?: FAQ[];
   // SEO — có thể null nếu admin chưa điền
@@ -60,7 +60,7 @@ export interface ProductVariant {
   isAvailable?: boolean;
   stock?: number; // alias cho stockQuantity
   compareAtPrice?: number | null;
-  specifications?: Record<string, any>;
+  specifications?: Record<string, string | number | boolean>;
 }
 
 export interface ProductAttribute {
@@ -78,7 +78,7 @@ export interface WarrantyPackage {
   description?: string;
   durationMonths: number;
   price: number;
-  terms?: Record<string, any>;
+  terms?: Record<string, string | number | boolean>;
   coverage?: string[];
   isActive?: boolean;
   sortOrder?: number;
@@ -108,7 +108,7 @@ export interface ProductFilters {
   brand?: string[];
   color?: string[];
   size?: string[];
-  [key: string]: any; // Dành cho các filter thuộc tính động
+  [key: string]: string | string[] | number | boolean | undefined; // Dành cho các filter thuộc tính động
 }
 
 // Dữ liệu form để tạo/chỉnh sửa sản phẩm
@@ -173,7 +173,7 @@ export interface ProductVariantFormData {
   isAvailable?: boolean;
   attributes?: Record<string, string>;
   attributeValues?: Record<string, string>;
-  specifications?: Record<string, any>;
+  specifications?: Record<string, string | number | boolean>;
   images?: string[];
   displayName?: string;
   sortOrder?: number;
@@ -217,7 +217,7 @@ export interface ProductWithVariants extends Product {
     compareAtPrice?: number;
     sku: string;
     stockQuantity: number;
-    specifications?: Record<string, any>;
+    specifications?: Record<string, string | number | boolean>;
     images: string[];
     attributes?: Record<string, string>;
     thumbnail?: string;

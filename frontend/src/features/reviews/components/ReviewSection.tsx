@@ -1,7 +1,6 @@
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { useSelector } from 'react-redux';
-import { RootState } from '@/store';
+import { useAuthStore } from '@/stores/authStore';
 import ReviewForm from './ReviewForm';
 import ReviewList from './ReviewList';
 import { useNavigate } from 'react-router-dom';
@@ -12,7 +11,7 @@ interface ReviewSectionProps {
 
 const ReviewSection: React.FC<ReviewSectionProps> = ({ productId }) => {
   const { t } = useTranslation();
-  const { isAuthenticated } = useSelector((state: RootState) => state.auth);
+  const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
   const [showReviewForm, setShowReviewForm] = useState(false);
   const [refreshKey, setRefreshKey] = useState(0);
   const navigate = useNavigate();

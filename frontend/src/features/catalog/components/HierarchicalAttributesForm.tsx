@@ -11,8 +11,6 @@ import {
   Input,
   Select,
   InputNumber,
-  ColorPicker,
-  Upload,
   message,
   Popconfirm,
   Alert,
@@ -24,7 +22,6 @@ import {
   DeleteOutlined,
   FolderOutlined,
   TagOutlined,
-  UploadOutlined,
   InfoCircleOutlined,
 } from '@ant-design/icons';
 import {
@@ -56,7 +53,7 @@ const HierarchicalAttributesForm: React.FC<HierarchicalAttributesFormProps> = ({
   );
   const [expandedKeys, setExpandedKeys] = useState<React.Key[]>([]);
 
-  // State thay thế cho RTK Query hooks (attributeApi dùng class-based service)
+  // State nội bộ (attributeApi dùng class-based service, không phải TanStack Query hook)
   const [attributeGroups, setAttributeGroups] = useState<AttributeGroup[]>([]);
   const [isLoading, setIsLoading] = useState(false);
 
@@ -64,7 +61,7 @@ const HierarchicalAttributesForm: React.FC<HierarchicalAttributesFormProps> = ({
     setIsLoading(true);
     try {
       const res = await attributeService.getAttributeGroups();
-      if (res.success) setAttributeGroups(res.data);
+      if (res.status === 'success') setAttributeGroups(res.data);
     } catch (err) {
       console.error('Lỗi tải nhóm thuộc tính:', err);
     } finally {
@@ -151,11 +148,11 @@ const HierarchicalAttributesForm: React.FC<HierarchicalAttributesFormProps> = ({
           await updateAttributeGroup({
             id: editingItem.id,
             data: values,
-          }).unwrap();
+          });
           message.success(t('attr.groupUpdated'));
         } else {
           // Tạo nhóm
-          await createAttributeGroup(values).unwrap();
+          await createAttributeGroup(values);
           message.success(t('attr.groupCreated'));
         }
       } else {
@@ -164,14 +161,14 @@ const HierarchicalAttributesForm: React.FC<HierarchicalAttributesFormProps> = ({
           await updateAttributeValue({
             id: editingItem.id,
             data: values,
-          }).unwrap();
+          });
           message.success(t('attr.valueUpdated'));
         } else {
           // Tạo giá trị
           await addAttributeValue({
             attributeGroupId: selectedGroup!.id,
             data: values,
-          }).unwrap();
+          });
           message.success(t('attr.valueAdded'));
         }
       }
@@ -187,7 +184,7 @@ const HierarchicalAttributesForm: React.FC<HierarchicalAttributesFormProps> = ({
   // Xử lý xóa
   const handleDeleteGroup = async (groupId: string) => {
     try {
-      await deleteAttributeGroup(groupId).unwrap();
+      await deleteAttributeGroup(groupId);
       message.success(t('attr.groupDeleted'));
       refetch();
       onAttributeGroupsChange?.(attributeGroups);
@@ -198,7 +195,7 @@ const HierarchicalAttributesForm: React.FC<HierarchicalAttributesFormProps> = ({
 
   const handleDeleteValue = async (valueId: string) => {
     try {
-      await deleteAttributeValue(valueId).unwrap();
+      await deleteAttributeValue(valueId);
       message.success(t('attr.valueDeleted'));
       refetch();
       onAttributeGroupsChange?.(attributeGroups);

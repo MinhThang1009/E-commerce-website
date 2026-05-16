@@ -1,6 +1,7 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
+import { buildRoute } from '@/routes/paths';
 import { useGetCollectionsQuery } from '../api/collectionApi';
 import { PageLayout } from '@/components/layout/PageLayout';
 import { ErrorState } from '@/components/common/ErrorState';
@@ -41,7 +42,7 @@ const CollectionsPage: React.FC = () => {
                         {collections.map((collection: any) => (
                             <Link
                                 key={collection.id}
-                                to={`/shop?collection=${collection.id}`}
+                                to={buildRoute.shopCollection(collection.id)}
                                 className="group relative h-[450px] overflow-hidden rounded-[2.5rem] shadow-2xl hover:shadow-primary-500/20 transition-all duration-700"
                             >
                                 <img

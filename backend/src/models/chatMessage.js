@@ -14,7 +14,7 @@ const ChatMessage = sequelize.define(
       allowNull: true,
     },
     sessionId: {
-      type: DataTypes.STRING,
+      type: DataTypes.STRING(128),
       allowNull: false,
     },
     // Cho phép NULL để AI assistant messages không cần senderId
@@ -43,25 +43,21 @@ const ChatMessage = sequelize.define(
     contentType: {
       type: DataTypes.ENUM('text', 'image', 'product_card'),
       defaultValue: 'text',
-      field: 'content_type',
     },
     // URL đính kèm khi contentType = 'image'
     attachmentUrl: {
-      type: DataTypes.STRING,
+      type: DataTypes.STRING(512),
       allowNull: true,
-      field: 'attachment_url',
     },
     // FK tới products khi contentType = 'product_card' (admin chia sẻ sản phẩm)
     productId: {
       type: DataTypes.INTEGER,
       allowNull: true,
-      field: 'product_id',
     },
     // Thời điểm tin nhắn được đọc
     readAt: {
       type: DataTypes.DATE,
       allowNull: true,
-      field: 'read_at',
     },
     // Phân biệt tin nhắn của user hay AI assistant
     role: {
@@ -73,7 +69,6 @@ const ChatMessage = sequelize.define(
       type: DataTypes.ENUM('ai_chatbot', 'support_chat'),
       allowNull: false,
       defaultValue: 'support_chat',
-      field: 'message_type',
     },
     // Intent được phân loại từ tin nhắn user (product_search, general, off_topic...)
     intent: {
@@ -84,21 +79,18 @@ const ChatMessage = sequelize.define(
     responseTimeMs: {
       type: DataTypes.INTEGER.UNSIGNED,
       allowNull: true,
-      field: 'response_time_ms',
     },
     // Đánh dấu khi chatbot rơi vào fallback mode thay vì dùng LLM
     isFallback: {
       type: DataTypes.BOOLEAN,
       allowNull: false,
       defaultValue: false,
-      field: 'is_fallback',
     },
     // Đánh dấu tin nhắn đã được archive (cleanup job đặt true cho messages cũ hơn 90 ngày)
     isArchived: {
       type: DataTypes.BOOLEAN,
       allowNull: false,
       defaultValue: false,
-      field: 'is_archived',
     },
   },
   {

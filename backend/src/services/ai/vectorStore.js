@@ -24,7 +24,8 @@ function generateProductText(product) {
     // Strip HTML tags từ description để không embed HTML markup
     product.description ? product.description.replace(/<[^>]*>/g, '').substring(0, 500) : '',
     product.basePrice ? `Giá: ${product.basePrice.toLocaleString('vi-VN')} đồng` : '',
-    product.stockQuantity > 0 ? 'Còn hàng' : 'Hết hàng',
+    // Stock thực nằm ở variant level — dùng inStock đã compute hoặc tính từ variants
+    (product.inStock !== undefined ? product.inStock : product.stockQuantity > 0) ? 'Còn hàng' : 'Hết hàng',
   ];
   return parts.filter(Boolean).join('. ').substring(0, 1500);
 }
@@ -201,7 +202,8 @@ class SimpleVectorStore {
 function enrichProductData(productData) {
   const thumbImg = productData.productImages?.find(img => img.isThumbnail);
   productData.thumbnail = thumbImg?.imageUrl || productData.productImages?.[0]?.imageUrl || null;
-  productData.inStock = productData.stockQuantity > 0;
+  const variantStock = (productData.variants || []).reduce((sum, v) => sum + (v.stockQuantity || 0), 0);
+  productData.inStock = variantStock > 0 || productData.stockQuantity > 0;
   return productData;
 }
 

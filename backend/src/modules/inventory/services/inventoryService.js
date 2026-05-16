@@ -37,26 +37,32 @@ class InventoryService {
     const aggregate = new InventoryAggregate(stockable, kind);
     const { previous, current, change } = aggregate.restock(qty);
 
-    if (kind === 'variant') {
-      stockable.isAvailable = true;
-      await this.repo.saveStockable(stockable);
+    // Wrap stock updates + log trong transaction để đảm bảo atomicity
+    const sequelize = require('../../../config/sequelize');
+    const log = await sequelize.transaction(async (tx) => {
+      const opts = { transaction: tx };
 
-      const total = await this.repo.sumVariantStockByProductId(productId);
-      product.stockQuantity = total || 0;
-      await this.repo.saveStockable(product);
-    } else {
-      await this.repo.saveStockable(stockable);
-    }
+      if (kind === 'variant') {
+        stockable.isAvailable = true;
+        await stockable.save(opts);
 
-    const log = await this.repo.createInventoryLog({
-      productId: parseInt(productId, 10),
-      variantId: variantId ? parseInt(variantId, 10) : null,
-      changeType: 'restock',
-      changeAmount: change,
-      previousStock: previous,
-      newStock: current,
-      note: note || null,
-      createdBy: adminId,
+        const total = await this.repo.sumVariantStockByProductId(productId);
+        product.stockQuantity = total || 0;
+        await product.save(opts);
+      } else {
+        await stockable.save(opts);
+      }
+
+      return this.repo.createInventoryLog({
+        productId: parseInt(productId, 10),
+        variantId: variantId ? parseInt(variantId, 10) : null,
+        changeType: 'restock',
+        changeAmount: change,
+        previousStock: previous,
+        newStock: current,
+        note: note || null,
+        createdBy: adminId,
+      });
     });
 
     await this.eventBus.publish(StockRestockedEvent({

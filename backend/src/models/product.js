@@ -25,22 +25,20 @@ const Product = sequelize.define(
     categoryId: {
       type: DataTypes.INTEGER,
       allowNull: true,
-      field: 'category_id',
     },
     // FK tới bảng brands
     brandId: {
       type: DataTypes.INTEGER,
       allowNull: true,
-      field: 'brand_id',
     },
     // Tên sản phẩm
     name: {
-      type: DataTypes.STRING(255),
+      type: DataTypes.STRING(200),
       allowNull: false,
     },
     // Slug cho URL thân thiện
     slug: {
-      type: DataTypes.STRING(255),
+      type: DataTypes.STRING(100),
       allowNull: false,
       unique: true,
     },
@@ -48,35 +46,27 @@ const Product = sequelize.define(
     baseName: {
       type: DataTypes.STRING(255),
       allowNull: true,
-      field: 'base_name',
     },
     // Model sản phẩm (ví dụ: iPhone 16 Pro Max)
     model: {
       type: DataTypes.STRING(255),
       allowNull: true,
     },
-    // SKU cho non-variant product (variant product dùng ProductVariant.sku)
-    sku: {
-      type: DataTypes.STRING(255),
-      allowNull: true,
-    },
+    // SKU đã chuyển sang product_variants — column đã drop trong migration 2026051606
     // Giá gốc
     basePrice: {
       type: DataTypes.DECIMAL(15, 2),
       allowNull: true,
-      field: 'base_price',
     },
     // Giá so sánh (giá niêm yết / giá cũ)
     compareAtPrice: {
       type: DataTypes.DECIMAL(15, 2),
       allowNull: true,
-      field: 'compare_at_price',
     },
     // Mô tả ngắn
     shortDescription: {
       type: DataTypes.TEXT,
       allowNull: true,
-      field: 'short_description',
     },
     // Mô tả chi tiết
     description: {
@@ -85,30 +75,28 @@ const Product = sequelize.define(
     },
     // Trạng thái sản phẩm
     status: {
-      type: DataTypes.STRING(50),
+      type: DataTypes.ENUM('active', 'inactive', 'draft', 'archived'),
       defaultValue: 'active',
     },
     // Sản phẩm nổi bật
     isFeatured: {
       type: DataTypes.BOOLEAN,
       defaultValue: false,
-      field: 'is_featured',
     },
     // Tình trạng sản phẩm (mới, cũ, refurbished)
     condition: {
-      type: DataTypes.STRING(50),
+      type: DataTypes.STRING(20),
       defaultValue: 'new',
     },
     // Hiển thị (public, hidden, draft)
     visibility: {
-      type: DataTypes.STRING(50),
+      type: DataTypes.STRING(20),
       defaultValue: 'public',
     },
     // Thời gian bảo hành (tháng)
     warrantyMonths: {
       type: DataTypes.INTEGER,
       defaultValue: 12,
-      field: 'warranty_months',
     },
     // Tags / nhãn sản phẩm (JSON array)
     tags: {
@@ -180,25 +168,21 @@ const Product = sequelize.define(
     soldCount: {
       type: DataTypes.INTEGER,
       defaultValue: 0,
-      field: 'sold_count',
     },
     // Số lượt xem
     viewCount: {
       type: DataTypes.INTEGER,
       defaultValue: 0,
-      field: 'view_count',
     },
     // Điểm đánh giá trung bình
     ratingAverage: {
       type: DataTypes.DECIMAL(3, 2),
       defaultValue: 0.0,
-      field: 'rating_average',
     },
     // Thông tin vận chuyển (JSON)
     shippingInfo: {
       type: DataTypes.TEXT('long'),
       allowNull: true,
-      field: 'shipping_info',
       get() {
         const value = this.getDataValue('shippingInfo');
         if (!value) return {};
@@ -219,19 +203,16 @@ const Product = sequelize.define(
     seoTitle: {
       type: DataTypes.STRING(500),
       allowNull: true,
-      field: 'seo_title',
     },
     // Mô tả SEO (meta description dùng cho công cụ tìm kiếm)
     seoDescription: {
       type: DataTypes.TEXT,
       allowNull: true,
-      field: 'seo_description',
     },
     // SEO Keywords (JSON array)
     seoKeywords: {
       type: DataTypes.TEXT('long'),
       allowNull: true,
-      field: 'seo_keywords',
       get() {
         const value = this.getDataValue('seoKeywords');
         if (!value) return [];
@@ -252,7 +233,6 @@ const Product = sequelize.define(
     deletedAt: {
       type: DataTypes.DATE,
       allowNull: true,
-      field: 'deleted_at',
     },
   },
   {
@@ -262,6 +242,10 @@ const Product = sequelize.define(
     paranoid: true,
     // Dùng snake_case cho tên cột tự động (created_at, updated_at)
     underscored: true,
+    indexes: [
+      { name: 'idx_products_status', fields: ['status'] },
+      { name: 'idx_products_is_featured', fields: ['is_featured'] },
+    ],
     hooks: {
       // Tự động tạo slug từ tên sản phẩm
       beforeValidate: (product) => {

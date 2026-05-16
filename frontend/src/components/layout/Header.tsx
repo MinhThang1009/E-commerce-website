@@ -1,17 +1,15 @@
 import { useState, useEffect, useRef } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
-import ThemeToggle from '@/components/common/ThemeToggle';
+import { ROUTES, buildRoute } from '@/routes/paths';
 import LanguageSwitcher from '@/components/common/LanguageSwitcher';
 import SearchBar from '@/components/shared/SearchBar';
-import { useSelector, useDispatch } from 'react-redux';
-import { RootState } from '@/store';
-import { toggleMobileMenu, toggleSearch } from '@/features/ui/uiSlice';
+import { useUiStore } from '@/stores/uiStore';
+import { useCartStore } from '@/stores/cartStore';
+import { useWishlistStore } from '@/stores/wishlistStore';
 import { useAuth } from '@/features/auth';
 import { useGetCartCountQuery } from '@/features/cart';
-import { initializeCart } from '@/features/cart';
 import { useGetWishlistQuery } from '@/features/wishlist';
-import { setWishlist } from '@/features/wishlist';
 import { HeartIcon } from '@heroicons/react/24/outline';
 import {
   NAVIGATION_ICONS,
@@ -19,7 +17,6 @@ import {
   ShopIcon,
   UserIcon,
   CartIcon,
-  AdminIcon,
   MenuIcon,
   CloseIcon,
 } from '@/components/icons';
@@ -29,7 +26,6 @@ const Header: React.FC = () => {
   const [showUserDropdown, setShowUserDropdown] = useState(false);
   const userDropdownRef = useRef<HTMLDivElement>(null);
   const navigate = useNavigate();
-  const dispatch = useDispatch();
   const { t } = useTranslation();
 
   // Hook xác thực và lấy thông tin user
@@ -41,23 +37,21 @@ const Header: React.FC = () => {
     getUserFullName,
   } = useAuth();
 
-  // Lấy trạng thái menu mobile và search từ Redux store
-  const isMobileMenuOpen = useSelector(
-    (state: RootState) => state.ui.isMobileMenuOpen
-  );
-  const isSearchOpen = useSelector((state: RootState) => state.ui.isSearchOpen);
+  // Lấy trạng thái menu mobile và search từ Zustand store
+  const isMobileMenuOpen = useUiStore((s) => s.isMobileMenuOpen);
+  const isSearchOpen = useUiStore((s) => s.isSearchOpen);
+  const toggleMobileMenu = useUiStore((s) => s.toggleMobileMenu);
+  const toggleSearch = useUiStore((s) => s.toggleSearch);
 
   // Lấy số lượng item trong cart từ server (nếu authenticated) hoặc localStorage (nếu chưa authenticated)
-  const { data: serverCartCount } = useGetCartCountQuery(undefined, {
+  const { data: serverCartCount } = useGetCartCountQuery({
     // Chỉ lấy count khi đã xác thực, tránh gọi API không cần thiết cho khách
-    skip: !isAuthenticated,
+    enabled: isAuthenticated,
     // Không tự động refetch khi focus hoặc reconnect để tránh nhảy số lượng trên header, sẽ refetch thủ công sau khi merge cart
     refetchOnFocus: false,
     refetchOnReconnect: false,
   });
-  const localCartCount = useSelector(
-    (state: RootState) => state.cart?.totalItems || 0
-  );
+  const localCartCount = useCartStore((s) => s.totalItems);
 
   // Nếu đã xác thực, ưu tiên lấy số lượng từ server (đã merge), nếu chưa thì lấy từ localStorage
   const cartItemsCount = isAuthenticated
@@ -66,31 +60,31 @@ const Header: React.FC = () => {
       : localCartCount
     : localCartCount;
 
-  // Lấy số lượng item trong wishlist từ Redux store và server (nếu authenticated)
-  const wishlistItems = useSelector((state: RootState) => state.wishlist.items);
+  // Lấy số lượng item trong wishlist từ Zustand store và server (nếu authenticated)
+  const wishlistItems = useWishlistStore((s) => s.items);
   const wishlistCount = wishlistItems.length;
 
   const { data: serverWishlist } = useGetWishlistQuery(undefined, {
-    skip: !isAuthenticated,
+    enabled: isAuthenticated,
     refetchOnFocus: false,
     refetchOnReconnect: false,
   });
 
   useEffect(() => {
     if (serverWishlist && serverWishlist.data) {
-      // Cập nhật wishlist trong Redux store với dữ liệu từ server sau khi xác thực
-      dispatch(setWishlist(serverWishlist.data.map((p: any) => p.id)));
+      // Cập nhật wishlist trong Zustand store với dữ liệu từ server sau khi xác thực
+      useWishlistStore.getState().setWishlist(serverWishlist.data.map((p: any) => p.id));
     }
-  }, [serverWishlist, dispatch]);
+  }, [serverWishlist]);
 
   // Sau khi đăng nhập, nếu server cart count là 0 thì xóa cart cục bộ để tránh giữ lại cart cũ không hợp lệ, đồng thời khởi tạo lại state cart từ localStorage (nếu có) để hiển thị đúng số lượng trên header
   useEffect(() => {
     if (isAuthenticated && serverCartCount === 0) {
       localStorage.removeItem('cartItems');
-      // Cập nhật state Redux để đồng bộ với localStorage
-      dispatch(initializeCart());
+      // Cập nhật Zustand store để đồng bộ với localStorage
+      useCartStore.getState().initializeCart();
     }
-  }, [isAuthenticated, serverCartCount, dispatch]);
+  }, [isAuthenticated, serverCartCount]);
 
   // Hiệu ứng để thay đổi giao diện header khi cuộn trang
   useEffect(() => {
@@ -122,19 +116,19 @@ const Header: React.FC = () => {
     if (isAuthenticated) {
       setShowUserDropdown(!showUserDropdown);
     } else {
-      navigate('/login');
+      navigate(ROUTES.LOGIN);
     }
   };
 
   // Xử lý click vào nút đăng xuất
   const handleLogoutClick = async () => {
     await handleLogout();
-    navigate('/', { replace: true });
+    navigate(ROUTES.HOME, { replace: true });
   };
 
   // Xử lý click vào giỏ hàng
   const handleCartClick = () => {
-    navigate('/cart');
+    navigate(ROUTES.CART);
   };
 
   return (
@@ -146,7 +140,7 @@ const Header: React.FC = () => {
     >
       <div className="container mx-auto px-3 sm:px-4 md:px-6 lg:px-8 flex items-center justify-between">
         {/* Logo */}
-        <Link to="/" className="flex items-center group flex-shrink-0">
+        <Link to={ROUTES.HOME} className="flex items-center group flex-shrink-0">
           <div className="relative">
             <div className="absolute inset-0 bg-gradient-to-r from-primary-500 to-secondary-500 rounded-lg blur opacity-20 group-hover:opacity-40 transition-opacity duration-300"></div>
             <div className="relative bg-gradient-to-r from-primary-500 to-secondary-500 p-1.5 rounded-lg">
@@ -200,7 +194,7 @@ const Header: React.FC = () => {
           <div className="hidden md:block">
             <SearchBar
               isExpanded={isSearchOpen}
-              onClose={() => dispatch(toggleSearch())}
+              onClose={() => toggleSearch()}
               className="text-neutral-700 dark:text-neutral-300"
             />
           </div>
@@ -248,7 +242,7 @@ const Header: React.FC = () => {
                   </div>
 
                   <Link
-                    to="/profile"
+                    to={ROUTES.PROFILE}
                     className="block px-4 py-2 text-sm text-neutral-700 dark:text-neutral-300 hover:bg-neutral-100 dark:hover:bg-neutral-700 transition-colors"
                     onClick={() => setShowUserDropdown(false)}
                   >
@@ -256,7 +250,7 @@ const Header: React.FC = () => {
                   </Link>
 
                   <Link
-                    to="/orders"
+                    to={ROUTES.ORDERS}
                     className="block px-4 py-2 text-sm text-neutral-700 dark:text-neutral-300 hover:bg-neutral-100 dark:hover:bg-neutral-700 transition-colors"
                     onClick={() => setShowUserDropdown(false)}
                   >
@@ -264,7 +258,7 @@ const Header: React.FC = () => {
                   </Link>
 
                   <Link
-                    to="/wishlist"
+                    to={ROUTES.WISHLIST}
                     className="block px-4 py-2 text-sm text-neutral-700 dark:text-neutral-300 hover:bg-neutral-100 dark:hover:bg-neutral-700 transition-colors"
                     onClick={() => setShowUserDropdown(false)}
                   >
@@ -276,7 +270,7 @@ const Header: React.FC = () => {
                     <>
                       <div className="border-t border-neutral-200 dark:border-neutral-700 my-2"></div>
                       <Link
-                        to="/admin/dashboard"
+                        to={ROUTES.ADMIN_DASHBOARD}
                         className="block px-4 py-2 text-sm text-blue-600 dark:text-blue-400 hover:bg-neutral-100 dark:hover:bg-neutral-700 transition-colors font-medium"
                         onClick={() => setShowUserDropdown(false)}
                       >
@@ -319,7 +313,7 @@ const Header: React.FC = () => {
 
           {/* Wishlist (danh sách yêu thích) */}
           <button
-            onClick={() => navigate('/wishlist')}
+            onClick={() => navigate(ROUTES.WISHLIST)}
             className={`group relative min-h-[44px] min-w-[44px] flex items-center justify-center p-1.5 sm:p-2 rounded-xl transition-all duration-300 ${wishlistCount > 0
               ? 'bg-gradient-to-r from-rose-100 to-rose-50 dark:from-rose-900/20 dark:to-rose-800/10 text-rose-600 dark:text-rose-400 hover:from-rose-200 hover:to-rose-100 dark:hover:from-rose-900/30 dark:hover:to-rose-800/20 border border-rose-200/50 dark:border-rose-700/30'
               : 'text-neutral-700 dark:text-neutral-300 hover:bg-neutral-100 dark:hover:bg-neutral-800 border border-transparent hover:border-neutral-200 dark:hover:border-neutral-700'
@@ -359,7 +353,7 @@ const Header: React.FC = () => {
           {/* Nút menu mobile */}
           <button
             className="lg:hidden group min-h-[44px] min-w-[44px] flex items-center justify-center p-1.5 sm:p-2 rounded-xl text-neutral-700 dark:text-neutral-300 hover:bg-neutral-100 dark:hover:bg-neutral-800 transition-all duration-300 border border-transparent hover:border-neutral-200 dark:hover:border-neutral-700"
-            onClick={() => dispatch(toggleMobileMenu())}
+            onClick={() => toggleMobileMenu()}
             aria-label={
               isMobileMenuOpen
                 ? t('header.actions.closeMenu')
@@ -407,8 +401,8 @@ const Header: React.FC = () => {
                     }
 
                     // Điều hướng đến trang kết quả tim kiếm
-                    navigate(`/shop?search=${encodeURIComponent(searchTerm)}`);
-                    dispatch(toggleMobileMenu());
+                    navigate(buildRoute.shopSearch(searchTerm));
+                    toggleMobileMenu();
                   }
                 }}
               >
@@ -417,8 +411,8 @@ const Header: React.FC = () => {
                   placeholder={t('header.actions.searchPlaceholder')}
                   className="w-full py-2.5 pl-10 pr-4 rounded-lg border border-neutral-300 dark:border-neutral-600 bg-white dark:bg-neutral-700 text-neutral-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary-500"
                   onFocus={() => {
-                    dispatch(toggleMobileMenu());
-                    dispatch(toggleSearch());
+                    toggleMobileMenu();
+                    toggleSearch();
                   }}
                 />
                 <div className="absolute left-3 top-1/2 transform -translate-y-1/2 text-neutral-500 dark:text-neutral-400">
@@ -473,7 +467,7 @@ const Header: React.FC = () => {
                 key={item.key}
                 to={item.path}
                 className="block font-medium text-neutral-700 dark:text-neutral-300 hover:text-primary-500 dark:hover:text-primary-400 transition-colors py-2 whitespace-nowrap"
-                onClick={() => dispatch(toggleMobileMenu())}
+                onClick={() => toggleMobileMenu()}
               >
                 {t(`header.navigation.${item.key}`)}
               </Link>

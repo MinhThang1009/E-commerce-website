@@ -64,7 +64,7 @@ const DynamicProductTitle: React.FC<DynamicProductTitleProps> = ({
         productId: product.id,
       });
 
-      if (response.success && response.data) {
+      if (response.status === 'success' && response.data) {
         setDynamicName(response.data.generatedName);
         setAttributeDetails(response.data.affectingAttributes || []);
       }
@@ -80,6 +80,7 @@ const DynamicProductTitle: React.FC<DynamicProductTitleProps> = ({
   // Tạo tên động khi thuộc tính thay đổi
   useEffect(() => {
     generateDynamicName();
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- generateDynamicName dùng shouldGenerateDynamicName và debouncedAttributes bên trong
   }, [shouldGenerateDynamicName, debouncedAttributes]);
 
   // Hiển thị trạng thái tải

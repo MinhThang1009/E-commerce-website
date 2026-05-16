@@ -91,7 +91,7 @@ const OrdersPage: React.FC = () => {
     sortOrder: 'DESC',
   });
 
-  const [updateOrderStatus, { isLoading: isUpdating }] =
+  const { mutateAsync: updateOrderStatus, isPending: isUpdating } =
     useUpdateOrderStatusMutation();
 
   // Định dạng tiền tệ — luôn VND, locale động theo ngôn ngữ UI
@@ -154,7 +154,7 @@ const OrdersPage: React.FC = () => {
             paymentStatus: values.paymentStatus,
             note: values.note || undefined,
           },
-        }).unwrap();
+        });
 
         message.success(t('admin.orders.messages.updateSuccess'));
         setIsUpdateModalOpen(false);

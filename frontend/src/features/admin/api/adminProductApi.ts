@@ -1,4 +1,4 @@
-import { api } from '@/services/api';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import apiClient from '@/services/apiClient';
 
 // Kiểu dữ liệu cho quản lý sản phẩm admin
@@ -115,144 +115,167 @@ export interface ApiResponse<T> {
   message?: string;
 }
 
-export const adminProductApi = api.injectEndpoints({
-  endpoints: (builder) => ({
-    // Lấy danh sách sản phẩm admin có bộ lọc
-    getAdminProducts: builder.query<
-      AdminProductsResponse,
-      AdminProductsFilter | void
-    >({
-      query: (filters = {}) => ({
-        url: '/admin/products',
-        params: (filters as AdminProductsFilter | undefined) ?? {},
-      }),
-      providesTags: (result) =>
-        result
-          ? [
-              ...result.data.products.map(({ id }) => ({
-                type: 'Product' as const,
-                id,
-              })),
-              { type: 'Product', id: 'ADMIN_LIST' },
-            ]
-          : [{ type: 'Product', id: 'ADMIN_LIST' }],
-    }),
+// === Query Keys ===
 
-    // Tạo sản phẩm mới
-    createProduct: builder.mutation<
-      ApiResponse<AdminProduct>,
-      CreateProductRequest
-    >({
-      query: (productData) => ({
-        url: '/admin/products',
-        method: 'POST',
-        body: productData,
-      }),
-      invalidatesTags: [{ type: 'Product', id: 'ADMIN_LIST' }],
-    }),
+export const adminProductKeys = {
+  all: ['admin-products'] as const,
+  lists: () => [...adminProductKeys.all, 'list'] as const,
+  list: (filters: any) => [...adminProductKeys.lists(), filters] as const,
+  details: () => [...adminProductKeys.all, 'detail'] as const,
+  detail: (id: string) => [...adminProductKeys.details(), id] as const,
+};
 
-    // Cập nhật sản phẩm
-    updateProduct: builder.mutation<
-      ApiResponse<AdminProduct>,
-      UpdateProductRequest
-    >({
-      query: ({ id, ...productData }) => ({
-        url: `/admin/products/${id}`,
-        method: 'PUT',
-        body: productData,
-      }),
-      invalidatesTags: (result, error, { id }) => [
-        { type: 'Product', id },
-        { type: 'Product', id: 'ADMIN_LIST' },
-        // Invalidate public product list cache để frontend user thấy thay đổi ngay
-        { type: 'Product', id: 'LIST' },
-      ],
-    }),
+// === Query Hooks ===
 
-    // Xóa sản phẩm
-    deleteProduct: builder.mutation<ApiResponse<void>, string>({
-      query: (id) => ({
-        url: `/admin/products/${id}`,
-        method: 'DELETE',
-      }),
-      invalidatesTags: (result, error, id) => [
-        { type: 'Product', id },
-        { type: 'Product', id: 'ADMIN_LIST' },
-        // Invalidate public product list cache để sản phẩm bị xóa biến mất ngay
-        { type: 'Product', id: 'LIST' },
-      ],
-    }),
+export function useGetAdminProductsQuery(
+  filters: AdminProductsFilter | void = {},
+  options?: { enabled?: boolean; skip?: boolean }
+) {
+  const filterObj = (filters as AdminProductsFilter) ?? {};
+  return useQuery<AdminProductsResponse>({
+    queryKey: adminProductKeys.list(filterObj),
+    queryFn: async () => {
+      const { data } = await apiClient.get('/admin/products', { params: filterObj });
+      return data;
+    },
+    enabled: options?.skip !== undefined ? !options.skip : true,
+  });
+}
 
-    // Lấy thông tin một sản phẩm dành cho admin
-    getAdminProductById: builder.query<ApiResponse<AdminProduct>, string>({
-      query: (id) => `/admin/products/${id}`,
-      transformResponse: (response: any) => {
-        if (response?.data?.product) {
-          const product = response.data.product;
-          
-          // Hàm trợ giúp: parse JSON nếu value là string
-          const parseIfString = (val: any) => {
-            if (typeof val === 'string') {
-              try { return JSON.parse(val); } catch { return {}; }
-            }
-            return val || {};
-          };
+export function useLazyGetAdminProductsQuery() {
+  const queryClient = useQueryClient();
+  return {
+    trigger: async (filters: AdminProductsFilter = {}) => {
+      return queryClient.fetchQuery({
+        queryKey: adminProductKeys.list(filters),
+        queryFn: async () => {
+          const { data } = await apiClient.get('/admin/products', { params: filters });
+          return data;
+        },
+      });
+    },
+  };
+}
 
-          if (product.variants) {
-            product.variants = product.variants.map((v: any) => ({
-              ...v,
-              attributes: parseIfString(v.attributes),
-              attributeValues: parseIfString(v.attributeValues || v.attributes)
-            }));
-          }
+export function useGetAdminProductByIdQuery(
+  id: string,
+  options?: { enabled?: boolean; skip?: boolean }
+) {
+  // Ưu tiên enabled nếu có, fallback sang skip (compat), mặc định !!id
+  const isEnabled = options?.enabled !== undefined
+    ? options.enabled
+    : options?.skip !== undefined ? !options.skip : !!id;
 
-          if (product.attributes) {
-            product.attributes = product.attributes.map((attr: any) => ({
-              ...attr,
-              values: typeof attr.values === 'string' ? JSON.parse(attr.values) : (attr.values || [])
-            }));
-          }
+  return useQuery<ApiResponse<AdminProduct>>({
+    queryKey: adminProductKeys.detail(id),
+    queryFn: async () => {
+      const { data: response } = await apiClient.get(`/admin/products/${id}`);
+
+      // Hàm trợ giúp: parse JSON nếu value là string
+      const parseIfString = (val: any) => {
+        if (typeof val === 'string') {
+          try { return JSON.parse(val); } catch { return {}; }
         }
-        return response;
-      },
-      providesTags: (result, error, id) => [{ type: 'Product', id }],
-    }),
+        return val || {};
+      };
 
-    // Nhân bản sản phẩm
-    cloneProduct: builder.mutation<ApiResponse<AdminProduct>, string>({
-      query: (id) => ({
-        url: `/admin/products/${id}/clone`,
-        method: 'POST',
-      }),
-      invalidatesTags: [{ type: 'Product', id: 'ADMIN_LIST' }],
-    }),
+      if (response?.data?.product) {
+        const product = response.data.product;
+        if (product.variants) {
+          product.variants = product.variants.map((v: any) => ({
+            ...v,
+            attributes: parseIfString(v.attributes),
+            attributeValues: parseIfString(v.attributeValues || v.attributes),
+          }));
+        }
+        if (product.attributes) {
+          product.attributes = product.attributes.map((attr: any) => ({
+            ...attr,
+            values: typeof attr.values === 'string' ? JSON.parse(attr.values) : (attr.values || []),
+          }));
+        }
+      }
+      return response;
+    },
+    enabled: isEnabled,
+  });
+}
 
-    // Cập nhật trạng thái sản phẩm
-    updateProductStatus: builder.mutation<ApiResponse<AdminProduct>, { id: string; status?: string }>({
-      query: ({ id, status }) => ({
-        url: `/admin/products/${id}/status`,
-        method: 'PATCH',
-        body: { status },
-      }),
-      invalidatesTags: (result, error, { id }) => [
-        { type: 'Product', id },
-        { type: 'Product', id: 'ADMIN_LIST' },
-      ],
-    }),
-  }),
-});
+// === Mutation Hooks ===
 
-export const {
-  useGetAdminProductsQuery,
-  useCreateProductMutation,
-  useUpdateProductMutation,
-  useDeleteProductMutation,
-  useGetAdminProductByIdQuery,
-  useCloneProductMutation,
-  useUpdateProductStatusMutation,
-  useLazyGetAdminProductsQuery,
-} = adminProductApi;
+export function useCreateProductMutation() {
+  const queryClient = useQueryClient();
+  return useMutation<ApiResponse<AdminProduct>, Error, CreateProductRequest>({
+    mutationFn: async (productData) => {
+      const { data } = await apiClient.post('/admin/products', productData);
+      return data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: adminProductKeys.lists() });
+    },
+  });
+}
 
+export function useUpdateProductMutation() {
+  const queryClient = useQueryClient();
+  return useMutation<ApiResponse<AdminProduct>, Error, UpdateProductRequest>({
+    mutationFn: async ({ id, ...productData }) => {
+      const { data } = await apiClient.put(`/admin/products/${id}`, productData);
+      return data;
+    },
+    onSuccess: (_data, { id }) => {
+      queryClient.invalidateQueries({ queryKey: adminProductKeys.detail(id) });
+      queryClient.invalidateQueries({ queryKey: adminProductKeys.lists() });
+      // Invalidate public product list cache để frontend user thấy thay đổi ngay
+      queryClient.invalidateQueries({ queryKey: ['products'] });
+    },
+  });
+}
+
+export function useDeleteProductMutation() {
+  const queryClient = useQueryClient();
+  return useMutation<ApiResponse<void>, Error, string>({
+    mutationFn: async (id) => {
+      const { data } = await apiClient.delete(`/admin/products/${id}`);
+      return data;
+    },
+    onSuccess: (_data, id) => {
+      queryClient.invalidateQueries({ queryKey: adminProductKeys.detail(id) });
+      queryClient.invalidateQueries({ queryKey: adminProductKeys.lists() });
+      // Invalidate public product list cache để sản phẩm bị xóa biến mất ngay
+      queryClient.invalidateQueries({ queryKey: ['products'] });
+    },
+  });
+}
+
+export function useCloneProductMutation() {
+  const queryClient = useQueryClient();
+  return useMutation<ApiResponse<AdminProduct>, Error, string>({
+    mutationFn: async (id) => {
+      const { data } = await apiClient.post(`/admin/products/${id}/clone`);
+      return data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: adminProductKeys.lists() });
+    },
+  });
+}
+
+export function useUpdateProductStatusMutation() {
+  const queryClient = useQueryClient();
+  return useMutation<ApiResponse<AdminProduct>, Error, { id: string; status?: string }>({
+    mutationFn: async ({ id, status }) => {
+      const { data } = await apiClient.patch(`/admin/products/${id}/status`, { status });
+      return data;
+    },
+    onSuccess: (_data, { id }) => {
+      queryClient.invalidateQueries({ queryKey: adminProductKeys.detail(id) });
+      queryClient.invalidateQueries({ queryKey: adminProductKeys.lists() });
+    },
+  });
+}
+
+// Service class giữ nguyên cho các call không qua hook
 class AdminProductService {
   async createProduct(productData: CreateProductRequest) {
     const response = await apiClient.post('/admin/products', productData);
@@ -261,4 +284,3 @@ class AdminProductService {
 }
 
 export const adminProductService = new AdminProductService();
-

@@ -1,76 +1,103 @@
-import { api } from '@/services/api';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import apiClient from '@/services/apiClient';
 import { transformProductsResponse } from '@/utils/productTransform';
 
-export const collectionApi = api.injectEndpoints({
-  endpoints: (builder) => ({
-    getCollections: builder.query<any, { isActive?: boolean } | void>({
-      query: (params) => {
-        const queryParams = new URLSearchParams();
-        if (params?.isActive !== undefined) queryParams.append('isActive', params.isActive.toString());
-        return {
-          url: `/collections?${queryParams.toString()}`,
-          method: 'GET',
-        };
-      },
-      providesTags: ['Product'],
-    }),
+// === Query Keys ===
 
-    getCollectionBySlug: builder.query<any, string>({
-      query: (slug) => ({
-        url: `/collections/slug/${slug}`,
-        method: 'GET',
-      }),
-      providesTags: (result, error, slug) => [{ type: 'Product', id: `COLLECTION_${slug}` }],
-    }),
+export const collectionKeys = {
+  all: ['collections'] as const,
+  list: (params?: any) => [...collectionKeys.all, 'list', params] as const,
+  slug: (slug: string) => [...collectionKeys.all, 'slug', slug] as const,
+  products: (slug: string, params?: any) => [...collectionKeys.all, 'products', slug, params] as const,
+};
 
-    getProductsByCollection: builder.query<any, { slug: string; page?: number; limit?: number }>({
-      query: ({ slug, page = 1, limit = 12 }) => {
-        const params = new URLSearchParams();
-        params.append('page', page.toString());
-        params.append('limit', limit.toString());
-        return {
-          url: `/collections/slug/${slug}/products?${params.toString()}`,
-          method: 'GET',
-        };
-      },
-      transformResponse: transformProductsResponse,
-      providesTags: (result, error, { slug }) => [{ type: 'Product', id: `COLLECTION_PRODUCTS_${slug}` }],
-    }),
+// === Query Hooks ===
 
-    createCollection: builder.mutation<any, any>({
-      query: (body) => ({
-        url: '/admin/collections',
-        method: 'POST',
-        body,
-      }),
-      invalidatesTags: ['Product'],
-    }),
+export function useGetCollectionsQuery(
+  params?: { isActive?: boolean } | void,
+  options?: { enabled?: boolean; skip?: boolean }
+) {
+  return useQuery({
+    queryKey: collectionKeys.list(params),
+    queryFn: async () => {
+      const queryParams = new URLSearchParams();
+      if (params?.isActive !== undefined)
+        queryParams.append('isActive', params.isActive.toString());
+      const { data } = await apiClient.get(`/collections?${queryParams.toString()}`);
+      return data;
+    },
+    enabled: options?.skip !== undefined ? !options.skip : true,
+  });
+}
 
-    updateCollection: builder.mutation<any, { id: string; body: any }>({
-      query: ({ id, body }) => ({
-        url: `/admin/collections/${id}`,
-        method: 'PUT',
-        body,
-      }),
-      invalidatesTags: ['Product'],
-    }),
+export function useGetCollectionBySlugQuery(
+  slug: string,
+  options?: { enabled?: boolean; skip?: boolean }
+) {
+  return useQuery({
+    queryKey: collectionKeys.slug(slug),
+    queryFn: async () => {
+      const { data } = await apiClient.get(`/collections/slug/${slug}`);
+      return data;
+    },
+    enabled: options?.skip !== undefined ? !options.skip : !!slug,
+  });
+}
 
-    deleteCollection: builder.mutation<any, string>({
-      query: (id) => ({
-        url: `/admin/collections/${id}`,
-        method: 'DELETE',
-      }),
-      invalidatesTags: ['Product'],
-    }),
-  }),
-});
+export function useGetProductsByCollectionQuery(
+  params: { slug: string; page?: number; limit?: number },
+  options?: { enabled?: boolean; skip?: boolean }
+) {
+  return useQuery({
+    queryKey: collectionKeys.products(params.slug, params),
+    queryFn: async () => {
+      const urlParams = new URLSearchParams();
+      urlParams.append('page', (params.page || 1).toString());
+      urlParams.append('limit', (params.limit || 12).toString());
+      const { data } = await apiClient.get(
+        `/collections/slug/${params.slug}/products?${urlParams.toString()}`
+      );
+      return transformProductsResponse(data);
+    },
+    enabled: options?.skip !== undefined ? !options.skip : !!params.slug,
+  });
+}
 
-export const {
-  useGetCollectionsQuery,
-  useGetCollectionBySlugQuery,
-  useGetProductsByCollectionQuery,
-  useCreateCollectionMutation,
-  useUpdateCollectionMutation,
-  useDeleteCollectionMutation,
-} = collectionApi;
+export function useCreateCollectionMutation() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (body: any) => {
+      const { data } = await apiClient.post('/admin/collections', body);
+      return data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: collectionKeys.all });
+    },
+  });
+}
 
+export function useUpdateCollectionMutation() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ id, body }: { id: string; body: any }) => {
+      const { data } = await apiClient.put(`/admin/collections/${id}`, body);
+      return data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: collectionKeys.all });
+    },
+  });
+}
+
+export function useDeleteCollectionMutation() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (id: string) => {
+      const { data } = await apiClient.delete(`/admin/collections/${id}`);
+      return data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: collectionKeys.all });
+    },
+  });
+}

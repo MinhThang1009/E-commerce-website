@@ -1,6 +1,7 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
+import { ROUTES } from '@/routes/paths';
 
 const PrivacyPolicyPage: React.FC = () => {
   const { t } = useTranslation();
@@ -93,7 +94,7 @@ const PrivacyPolicyPage: React.FC = () => {
           {t('privacy.contactDesc')}
         </p>
         <Link
-          to="/contact"
+          to={ROUTES.CONTACT}
           className="inline-block bg-primary-600 hover:bg-primary-700 text-white font-medium py-3 px-6 rounded-lg transition-colors"
         >
           {t('privacy.contactBtn')}

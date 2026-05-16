@@ -1,8 +1,7 @@
 import React, { useState, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
-import { useSelector } from 'react-redux';
 import { useSearchParams } from 'react-router-dom';
-import { RootState } from '@/store';
+import { useUiStore } from '@/stores/uiStore';
 import {
   useGetDetailedStatsQuery,
   useGetOrderStatusAnalyticsQuery,
@@ -45,7 +44,7 @@ type TabType = 'overview' | 'chatbot';
 
 const DashboardCharts: React.FC = () => {
   const { t, i18n } = useTranslation();
-  const theme = useSelector((state: RootState) => state.ui.theme);
+  const theme = useUiStore((s) => s.theme);
   const isDark = theme === 'dark';
   const [searchParams, setSearchParams] = useSearchParams();
 
@@ -108,7 +107,7 @@ const DashboardCharts: React.FC = () => {
   const { data: paymentMethodsData } = useGetPaymentMethodsAnalyticsQuery();
   const { data: chatbotData } = useGetChatbotStatsQuery(
     activeTab === 'chatbot' ? { startDate, endDate } : undefined,
-    { skip: activeTab !== 'chatbot' }
+    { enabled: activeTab === 'chatbot' }
   );
 
   const formatCurrency = (amount: number) => {
@@ -135,6 +134,7 @@ const DashboardCharts: React.FC = () => {
       revenue: o.revenue,
       orderCount: o.orderCount,
     })),
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- formatPeriodLabel phụ thuộc vào groupBy đã có trong deps
     [detailedData?.data?.orders, groupBy]
   );
 
@@ -153,10 +153,12 @@ const DashboardCharts: React.FC = () => {
       const params = new URLSearchParams({ type });
       if (startDate) params.set('startDate', startDate);
       if (endDate) params.set('endDate', endDate);
-      const token = localStorage.getItem('token');
+      const { getValidToken } = await import('@/utils/tokenManager');
+      const token = await getValidToken();
       const baseUrl = import.meta.env.VITE_API_URL || '/api';
       const resp = await fetch(`${baseUrl}/admin/reports/export?${params.toString()}`, {
-        headers: { Authorization: `Bearer ${token}` },
+        headers: { ...(token ? { Authorization: `Bearer ${token}` } : {}) },
+        credentials: 'include',
       });
       if (!resp.ok) throw new Error('Export failed');
       const blob = await resp.blob();

@@ -33,7 +33,6 @@ const CartItem = sequelize.define(
     unitPrice: {
       type: DataTypes.DECIMAL(15, 2),
       allowNull: false,
-      field: 'unit_price',
       validate: {
         min: 0,
       },
@@ -42,7 +41,6 @@ const CartItem = sequelize.define(
       type: DataTypes.JSON,
       allowNull: true,
       defaultValue: [],
-      field: 'warranty_package_ids',
     },
   },
   {

@@ -2,7 +2,7 @@ const express = require('express');
 const cors = require('cors');
 const morgan = require('morgan');
 const helmet = require('helmet');
-const xss = require('xss-clean');
+const sanitizeHtml = require('sanitize-html');
 const cookieParser = require('cookie-parser');
 const compression = require('compression');
 const { apiLimiter, authLimiter } = require('./middlewares/rateLimiter');
@@ -141,7 +141,7 @@ const chatModule = buildChatModule({
 chatModule.subscribeEvents();
 
 const aiModule = buildAiModule({
-  Product, Category,
+  Product, ProductVariant, Category,
   geminiChatbotService, ruleBasedChatbot,
   sequelize, eventBus, logger,
 });
@@ -265,16 +265,30 @@ if (process.env.NODE_ENV === 'production') {
   app.use('/api', apiLimiter);
 }
 
-// Đọc dữ liệu từ body request vào req.body
-app.use(express.json({ limit: '50mb' }));
-app.use(express.urlencoded({ extended: true, limit: '50mb' }));
+// Đọc dữ liệu từ body request — 2mb mặc định, upload routes override riêng
+app.use(express.json({ limit: '2mb' }));
+app.use(express.urlencoded({ extended: true, limit: '2mb' }));
 
 // Xử lý cookie
 app.use(cookieParser());
 
-// Sanitize input chống XSS (xss-clean không hỗ trợ per-field whitelist;
-// DOMPurify ở frontend bảo vệ khi render HTML từ API)
-app.use(xss());
+// Sanitize string fields trong req.body — chống XSS stored attacks
+const sanitizeBody = (req, _res, next) => {
+  if (req.body && typeof req.body === 'object') {
+    const clean = (obj) => {
+      for (const key of Object.keys(obj)) {
+        if (typeof obj[key] === 'string') {
+          obj[key] = sanitizeHtml(obj[key], { allowedTags: [], allowedAttributes: {} });
+        } else if (typeof obj[key] === 'object' && obj[key] !== null) {
+          clean(obj[key]);
+        }
+      }
+    };
+    clean(req.body);
+  }
+  next();
+};
+app.use(sanitizeBody);
 
 // Nén response để tăng hiệu năng
 app.use(compression());

@@ -1,8 +1,7 @@
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { toast } from '@/utils/toast';
-import { useSelector } from 'react-redux';
-import { RootState } from '@/store';
+import { useAuthStore } from '@/stores/authStore';
 import { useCreateReviewMutation } from '../api/reviewApi';
 
 interface ReviewFormProps {
@@ -17,10 +16,9 @@ const ReviewForm: React.FC<ReviewFormProps> = ({
   onCancel,
 }) => {
   const { t } = useTranslation();
-  const { isAuthenticated, user } = useSelector(
-    (state: RootState) => state.auth
-  );
-  const [createReview, { isLoading }] = useCreateReviewMutation();
+  const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
+  const _user = useAuthStore((s) => s.user);
+  const { mutateAsync: createReview, isPending: isLoading } = useCreateReviewMutation();
 
   const [formData, setFormData] = useState({
     rating: 0,
@@ -65,7 +63,7 @@ const ReviewForm: React.FC<ReviewFormProps> = ({
         rating: formData.rating,
         title: formData.title,
         comment: formData.comment,
-      }).unwrap();
+      });
 
       toast.success(t('review.form.submitSuccess'));
 

@@ -15,7 +15,6 @@ const ProductVariant = sequelize.define(
     productId: {
       type: DataTypes.INTEGER,
       allowNull: false,
-      field: 'product_id',
     },
     // Mã SKU duy nhất
     sku: {
@@ -27,13 +26,11 @@ const ProductVariant = sequelize.define(
     variantName: {
       type: DataTypes.STRING(255),
       allowNull: false,
-      field: 'variant_name',
     },
     // Tên hiển thị
     displayName: {
       type: DataTypes.STRING(255),
       allowNull: true,
-      field: 'display_name',
     },
     // Giá biến thể
     price: {
@@ -44,19 +41,16 @@ const ProductVariant = sequelize.define(
     compareAtPrice: {
       type: DataTypes.DECIMAL(15, 2),
       allowNull: true,
-      field: 'compare_at_price',
     },
     // Số lượng tồn kho
     stockQuantity: {
       type: DataTypes.INTEGER,
       defaultValue: 0,
-      field: 'stock_quantity',
     },
     // Biến thể mặc định
     isDefault: {
       type: DataTypes.BOOLEAN,
       defaultValue: false,
-      field: 'is_default',
     },
     // Thuộc tính biến thể (JSON - storage, color, ram, v.v.)
     attributes: {
@@ -92,19 +86,16 @@ const ProductVariant = sequelize.define(
     sortOrder: {
       type: DataTypes.INTEGER,
       defaultValue: 0,
-      field: 'sort_order',
     },
     // Variant có còn được bán không (admin tạm ngưng sản phẩm)
     isAvailable: {
       type: DataTypes.BOOLEAN,
       defaultValue: true,
-      field: 'is_available',
     },
     // Xóa mềm (soft delete)
     deletedAt: {
       type: DataTypes.DATE,
       allowNull: true,
-      field: 'deleted_at',
     },
   },
   {

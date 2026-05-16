@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
+import { buildRoute } from '@/routes/paths';
 import { useGetNewsQuery, useDeleteNewsMutation } from '../../api/newsApi';
 import {
   Table, Button, Input, Select, Card, Space, Tag, Pagination, Row, Col, Typography, Image, Popconfirm, message, Spin, Alert,
@@ -24,7 +25,7 @@ const NewsPage: React.FC = () => {
     isPublished: statusFilter !== 'all' ? (statusFilter === 'published') : undefined,
   });
 
-  const [deleteNews] = useDeleteNewsMutation();
+  const { mutateAsync: deleteNews } = useDeleteNewsMutation();
 
   const newsList = newsResponse?.news || [];
   const totalItems = newsResponse?.count || 0;
@@ -32,7 +33,7 @@ const NewsPage: React.FC = () => {
 
   const handleDelete = async (id: string) => {
     try {
-      await deleteNews(id).unwrap();
+      await deleteNews(id);
       message.success(t('admin.news.messages.deleteSuccess'));
       refetch();
     } catch (error) {
@@ -102,7 +103,7 @@ const NewsPage: React.FC = () => {
       width: 150,
       render: (_: any, record: any) => (
         <Space>
-          <Button type="link" icon={<EditOutlined />} onClick={() => navigate(`/admin/news/edit/${record.id}`)} size="small" />
+          <Button type="link" icon={<EditOutlined />} onClick={() => navigate(buildRoute.adminNewsEdit(record.id))} size="small" />
           <Popconfirm
             title={t('admin.news.deleteTitle')}
             description={t('admin.news.deleteConfirm')}

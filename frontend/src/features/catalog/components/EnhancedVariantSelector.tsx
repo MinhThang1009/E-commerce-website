@@ -60,6 +60,7 @@ const EnhancedVariantSelector: React.FC<EnhancedVariantSelectorProps> = ({
   // Tải thuộc tính ảnh hưởng tên khi mount
   useEffect(() => {
     loadNameAffectingAttributes();
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- Chỉ tải một lần khi mount
   }, []);
 
   // Tạo tên xem trước khi thuộc tính thay đổi
@@ -70,6 +71,7 @@ const EnhancedVariantSelector: React.FC<EnhancedVariantSelectorProps> = ({
       setPreviewName('');
       setNameDetails(null);
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- generatePreviewName dùng selectedAttributes bên trong, chỉ cần trigger khi selectedAttributes thay đổi
   }, [selectedAttributes]);
 
   const loadNameAffectingAttributes = async () => {
@@ -78,7 +80,7 @@ const EnhancedVariantSelector: React.FC<EnhancedVariantSelectorProps> = ({
       const response = await attributeService.getNameAffectingAttributes(
         product.id
       );
-      if (response.success) {
+      if (response.status === 'success') {
         // Xây dựng tập hợp tên thuộc tính ảnh hưởng đến tên
         const affecting = new Set<string>();
         response.data.forEach((attr) => {
@@ -106,7 +108,7 @@ const EnhancedVariantSelector: React.FC<EnhancedVariantSelectorProps> = ({
         productId: product.id,
       });
 
-      if (response.success && response.data) {
+      if (response.status === 'success' && response.data) {
         setPreviewName(response.data.generatedName);
         setNameDetails(response.data);
 
@@ -207,7 +209,7 @@ const EnhancedVariantSelector: React.FC<EnhancedVariantSelectorProps> = ({
                 {attributeValuesWithStock.map(
                   ({
                     value,
-                    stock,
+                    stock: _stock,
                     available,
                     priceAdjustment,
                     isAffectingName,

@@ -8,6 +8,6 @@ export { default as BankTransferQR } from './components/BankTransferQR';
 // Trang
 export { default as PaymentQRPage } from './pages/PaymentQRPage';
 
-// API endpoints (RTK Query)
-export * from './api/momoApi';
-export * from './api/vnpayApi';
+// API hooks (TanStack Query)
+export { useCreateMomoUrlMutation } from './api/momoApi';
+export { useCreateVNPayUrlMutation } from './api/vnpayApi';

@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useEffect, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
 import Quill from 'quill';
 import 'quill/dist/quill.snow.css';
@@ -68,7 +68,8 @@ const SimpleRichTextEditor: React.FC<SimpleRichTextEditorProps> = ({
     return () => {
       quillRef.current = null;
     };
-  }, []); // Chỉ chạy một lần khi mount
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- Khởi tạo Quill một lần khi mount, các props dùng qua ref
+  }, []);
 
   // Đồng bộ value từ bên ngoài vào editor
   useEffect(() => {

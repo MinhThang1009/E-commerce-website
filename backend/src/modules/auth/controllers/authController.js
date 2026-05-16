@@ -1,3 +1,4 @@
+const ms = require('ms');
 const { toAuthUserDto } = require('../dtos/authDto');
 
 // Auth Controller — parse req → call service → format res. Mỗi handler là arrow
@@ -5,6 +6,26 @@ const { toAuthUserDto } = require('../dtos/authDto');
 class AuthController {
   constructor({ authService }) {
     this.authService = authService;
+  }
+
+  _setRefreshCookie(res, refreshToken) {
+    const maxAge = ms(process.env.JWT_REFRESH_EXPIRES_IN || '7d');
+    res.cookie('refreshToken', refreshToken, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'strict',
+      path: '/api/auth',
+      maxAge,
+    });
+  }
+
+  _clearRefreshCookie(res) {
+    res.clearCookie('refreshToken', {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'strict',
+      path: '/api/auth',
+    });
   }
 
   register = async (req, res, next) => {
@@ -25,10 +46,10 @@ class AuthController {
         password,
         ip: req.ip,
       });
+      this._setRefreshCookie(res, refreshToken);
       res.status(200).json({
         status: 'success',
         token,
-        refreshToken,
         user: toAuthUserDto(user),
       });
     } catch (err) {
@@ -40,10 +61,10 @@ class AuthController {
     try {
       const { token } = req.body;
       const result = await this.authService.googleLogin({ token });
+      this._setRefreshCookie(res, result.refreshToken);
       res.status(200).json({
         status: 'success',
         token: result.token,
-        refreshToken: result.refreshToken,
         user: toAuthUserDto(result.user),
       });
     } catch (err) {
@@ -57,7 +78,9 @@ class AuthController {
       const accessToken = authHeader && authHeader.startsWith('Bearer ')
         ? authHeader.split(' ')[1]
         : null;
-      await this.authService.logout({ accessToken });
+      const refreshToken = req.cookies?.refreshToken || null;
+      await this.authService.logout({ accessToken, refreshToken });
+      this._clearRefreshCookie(res);
       res.status(204).send();
     } catch (err) {
       next(err);
@@ -84,7 +107,10 @@ class AuthController {
 
   refreshToken = async (req, res, next) => {
     try {
-      const result = await this.authService.refreshToken(req.body);
+      // Cookie ưu tiên, fallback body cho migration period
+      const refreshTokenValue = req.cookies?.refreshToken || req.body?.refreshToken;
+      const result = await this.authService.refreshToken({ refreshToken: refreshTokenValue });
+      this._setRefreshCookie(res, result.refreshToken);
       res.status(200).json({ status: 'success', token: result.token });
     } catch (err) {
       next(err);

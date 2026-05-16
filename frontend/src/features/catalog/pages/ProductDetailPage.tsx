@@ -400,7 +400,7 @@ const ProductDetailPage: React.FC = () => {
     }
   };
 
-  if (isLoading) {
+  if (isLoading && !productData) {
     return (
       <div className="container mx-auto px-4 py-16 flex justify-center">
         <LoadingSpinner size="lg" />

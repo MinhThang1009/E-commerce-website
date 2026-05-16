@@ -24,4 +24,15 @@ module.exports = {
   testMatch: ['**/__tests__/**/*.test.cjs', '**/?(*.)+(spec|test).cjs'],
   transform: {},
   // Không cần transform — test files là CommonJS thuần
+
+  // Coverage threshold thấp (10%) — frontend hiện có ít tests (1 file .test.cjs).
+  // Tăng dần khi viết thêm tests. Backend đã có threshold 25%.
+  coverageThreshold: {
+    global: {
+      statements: 10,
+      branches: 10,
+      functions: 10,
+      lines: 10,
+    },
+  },
 };

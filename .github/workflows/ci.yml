@@ -52,12 +52,33 @@ jobs:
         working-directory: backend
         run: npm run lint:strict
 
+      - name: Security audit (backend)
+        working-directory: backend
+        run: npm audit --audit-level=high --omit=dev
+        continue-on-error: true
+
+      - name: Lint migrations (kiểm tra down() rollback)
+        run: bash scripts/lint-migrations.sh
+
       - name: Run backend tests
         working-directory: backend
         run: npm test
         env:
           NODE_ENV: test
           # Tests dùng mock — không cần real DB credentials
+          DB_NAME: techstore_test
+          DB_USER: root
+          DB_PASSWORD: ''
+          DB_HOST: localhost
+          JWT_SECRET: ci-test-secret-do-not-use-in-prod
+          JWT_REFRESH_SECRET: ci-test-refresh-secret
+
+      - name: Backend test coverage report
+        working-directory: backend
+        run: npx jest --coverage --ci --runInBand --forceExit
+        continue-on-error: true
+        env:
+          NODE_ENV: test
           DB_NAME: techstore_test
           DB_USER: root
           DB_PASSWORD: ''
@@ -91,6 +112,11 @@ jobs:
         working-directory: frontend
         run: npx tsc --noEmit
 
+      - name: Security audit (frontend)
+        working-directory: frontend
+        run: npm audit --audit-level=high --omit=dev
+        continue-on-error: true
+
       - name: Run frontend tests
         working-directory: frontend
         run: npm test
@@ -100,3 +126,13 @@ jobs:
         run: npm run build
         env:
           VITE_API_URL: http://localhost:8888/api
+
+      - name: Bundle size check
+        working-directory: frontend
+        run: |
+          BUNDLE_SIZE=$(du -sm dist/ | cut -f1)
+          echo "📏 Bundle size: ${BUNDLE_SIZE}MB"
+          if [ "$BUNDLE_SIZE" -gt 10 ]; then
+            echo "⚠️ Bundle size ${BUNDLE_SIZE}MB vượt budget 10MB"
+            exit 1
+          fi

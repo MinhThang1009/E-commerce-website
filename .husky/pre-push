@@ -34,4 +34,30 @@ if [ $? -ne 0 ]; then
 fi
 echo "✅ Frontend tests OK"
 
+# 4. npm audit — kiểm tra vulnerabilities high/critical trong production deps
+echo "🔒 Security audit..."
+cd "$ROOT/backend" && npm audit --audit-level=high --omit=dev 2>/dev/null
+BACKEND_AUDIT=$?
+cd "$ROOT/frontend" && npm audit --audit-level=high --omit=dev 2>/dev/null
+FRONTEND_AUDIT=$?
+
+if [ $BACKEND_AUDIT -ne 0 ] || [ $FRONTEND_AUDIT -ne 0 ]; then
+  echo "⚠️ npm audit phát hiện vulnerabilities severity high+. Chạy 'npm audit' để xem chi tiết."
+  echo "   Dùng 'npm audit fix' để sửa hoặc 'git push --no-verify' nếu đã review."
+  # Warn nhưng không block — audit có thể false positive hoặc chưa có fix
+fi
+
+# 5. Bundle size budget — cảnh báo nếu dist/ > 10MB
+echo "📏 Bundle size check..."
+cd "$ROOT/frontend"
+if [ -d "dist" ]; then
+  # du -sm cho size theo MB, tương thích cả Linux và Git Bash
+  BUNDLE_SIZE=$(du -sm dist/ 2>/dev/null | cut -f1)
+  if [ -n "$BUNDLE_SIZE" ] && [ "$BUNDLE_SIZE" -gt 10 ] 2>/dev/null; then
+    echo "⚠️ Bundle size ${BUNDLE_SIZE}MB vượt budget 10MB. Kiểm tra chunk splitting và tree-shaking."
+  else
+    echo "✅ Bundle size OK (${BUNDLE_SIZE:-?}MB)"
+  fi
+fi
+
 echo "✅ Pre-push checks passed. Pushing..."

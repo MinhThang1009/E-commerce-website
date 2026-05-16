@@ -1,5 +1,31 @@
 #!/usr/bin/env sh
 
+# 0. Secret scanning — block commit nếu phát hiện secrets trong staged files
+# Patterns: AWS keys, Stripe live keys, GitHub tokens, Slack tokens, private keys, hardcoded passwords
+STAGED_FILES=$(git diff --cached --name-only --diff-filter=ACM)
+if [ -n "$STAGED_FILES" ]; then
+  # Scan staged files, bỏ qua .env.example và test/mock/fixture files
+  SECRETS_FOUND=$(echo "$STAGED_FILES" | xargs grep -lE "(AKIA[0-9A-Z]{16}|sk_live_[a-zA-Z0-9]+|ghp_[a-zA-Z0-9]{36}|xox[abprs]-[a-zA-Z0-9\-]+|-----BEGIN (RSA |EC )?PRIVATE KEY|password\s*=\s*['\"][^'\"]+['\"])" 2>/dev/null | grep -vE "\.(env\.example|test|spec|mock|fixture)" || true)
+  if [ -n "$SECRETS_FOUND" ]; then
+    echo "❌ Phát hiện secrets trong staged files:"
+    echo "$SECRETS_FOUND"
+    echo ""
+    echo "Kiểm tra lại các file trên. Dùng 'git reset HEAD <file>' để unstage."
+    echo "Nếu là false positive, dùng 'git commit --no-verify' (chỉ khi chắc chắn)."
+    exit 1
+  fi
+
+  # Block .env files (trừ .env.example)
+  ENV_FILES=$(echo "$STAGED_FILES" | grep -E "^\.env$|^\.env\." | grep -v "\.env\.example" || true)
+  if [ -n "$ENV_FILES" ]; then
+    echo "❌ Không nên commit .env files:"
+    echo "$ENV_FILES"
+    echo ""
+    echo "Thêm vào .gitignore và dùng 'git reset HEAD <file>' để unstage."
+    exit 1
+  fi
+fi
+
 # 1. Architecture audit
 bash "$(git rev-parse --show-toplevel)/scripts/audit-architecture.sh"
 

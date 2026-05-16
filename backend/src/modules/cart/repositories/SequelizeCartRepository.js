@@ -1,3 +1,4 @@
+const { col } = require('sequelize');
 const ICartRepository = require('./ICartRepository');
 
 // Sequelize impl của ICartRepository — duy nhất layer truy cập Cart/CartItem/
@@ -12,7 +13,8 @@ class SequelizeCartRepository extends ICartRepository {
     if (!CartItem) throw new Error('SequelizeCartRepository: CartItem model bắt buộc');
     if (!Product) throw new Error('SequelizeCartRepository: Product model bắt buộc');
     if (!ProductVariant) throw new Error('SequelizeCartRepository: ProductVariant model bắt buộc');
-    if (!WarrantyPackage) throw new Error('SequelizeCartRepository: WarrantyPackage model bắt buộc');
+    if (!WarrantyPackage)
+      throw new Error('SequelizeCartRepository: WarrantyPackage model bắt buộc');
     if (!sequelize) throw new Error('SequelizeCartRepository: sequelize bắt buộc');
 
     this.Cart = Cart;
@@ -124,7 +126,7 @@ class SequelizeCartRepository extends ICartRepository {
         },
         {
           model: this.ProductVariant,
-          attributes: ['id', ['variantName', 'name'], 'price', 'stockQuantity', 'attributes'],
+          attributes: ['id', [col('variant_name'), 'name'], 'price', 'stockQuantity', 'attributes'],
         },
       ],
     });
@@ -155,7 +157,7 @@ class SequelizeCartRepository extends ICartRepository {
         },
         {
           model: this.ProductVariant,
-          attributes: ['id', ['variantName', 'name'], 'price', 'stockQuantity'],
+          attributes: ['id', [col('variant_name'), 'name'], 'price', 'stockQuantity'],
         },
       ],
     });
@@ -168,7 +170,9 @@ class SequelizeCartRepository extends ICartRepository {
         {
           model: this.Product,
           attributes: ['id', 'basePrice'],
-          include: [{ association: 'defaultVariant', attributes: ['id', 'stockQuantity', 'price'] }],
+          include: [
+            { association: 'defaultVariant', attributes: ['id', 'stockQuantity', 'price'] },
+          ],
         },
         {
           model: this.ProductVariant,

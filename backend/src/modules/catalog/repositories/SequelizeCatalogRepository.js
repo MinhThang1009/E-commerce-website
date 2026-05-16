@@ -1,4 +1,4 @@
-const { Op, QueryTypes } = require('sequelize');
+const { Op, QueryTypes, col } = require('sequelize');
 const ICatalogRepository = require('./ICatalogRepository');
 
 // Sequelize impl của ICatalogRepository — duy nhất layer truy cập Category/
@@ -8,9 +8,17 @@ const ICatalogRepository = require('./ICatalogRepository');
 // + product reads kèm theo). Sprint 6b mở rộng cho Product CRUD + search.
 class SequelizeCatalogRepository extends ICatalogRepository {
   constructor({
-    Category, Brand, Collection, ProductCollection, Product,
-    ProductAttribute, ProductVariant, ProductSpecification,
-    Review, RecentlyViewed, WarrantyPackage,
+    Category,
+    Brand,
+    Collection,
+    ProductCollection,
+    Product,
+    ProductAttribute,
+    ProductVariant,
+    ProductSpecification,
+    Review,
+    RecentlyViewed,
+    WarrantyPackage,
     sequelize,
   }) {
     super();
@@ -38,10 +46,12 @@ class SequelizeCatalogRepository extends ICatalogRepository {
   async getCategoryProductCounts() {
     const rows = await this.sequelize.query(
       `SELECT category_id, COUNT(*) as product_count FROM products WHERE category_id IS NOT NULL GROUP BY category_id`,
-      { type: QueryTypes.SELECT }
+      { type: QueryTypes.SELECT },
     );
     const map = {};
-    rows.forEach((r) => { map[r.category_id] = parseInt(r.product_count, 10); });
+    rows.forEach((r) => {
+      map[r.category_id] = parseInt(r.product_count, 10);
+    });
     return map;
   }
 
@@ -59,10 +69,7 @@ class SequelizeCatalogRepository extends ICatalogRepository {
     const isNumericId = !isNaN(idOrSlug) && String(idOrSlug).trim() !== '';
     return this.Category.findOne({
       where: {
-        [Op.or]: [
-          { slug: idOrSlug },
-          isNumericId ? { id: idOrSlug } : null,
-        ].filter(Boolean),
+        [Op.or]: [{ slug: idOrSlug }, isNumericId ? { id: idOrSlug } : null].filter(Boolean),
       },
     });
   }
@@ -83,7 +90,10 @@ class SequelizeCatalogRepository extends ICatalogRepository {
     return this.Product.count({ where: { categoryId } });
   }
 
-  async findProductsByCategoryId(categoryId, { status, sort = 'createdAt', order = 'DESC', limit, offset } = {}) {
+  async findProductsByCategoryId(
+    categoryId,
+    { status, sort = 'createdAt', order = 'DESC', limit, offset } = {},
+  ) {
     const where = { categoryId };
     if (status) where.status = status;
     return this.Product.findAndCountAll({
@@ -96,7 +106,8 @@ class SequelizeCatalogRepository extends ICatalogRepository {
         { association: 'reviews' },
       ],
       distinct: true,
-      limit, offset,
+      limit,
+      offset,
       order: [[sort, order]],
     });
   }
@@ -146,7 +157,8 @@ class SequelizeCatalogRepository extends ICatalogRepository {
   async findProductsByBrandId(brandId, { sort = 'createdAt', order = 'DESC', limit, offset } = {}) {
     return this.Product.findAndCountAll({
       where: { brandId },
-      limit, offset,
+      limit,
+      offset,
       order: [[sort, order]],
     });
   }
@@ -192,7 +204,10 @@ class SequelizeCatalogRepository extends ICatalogRepository {
     return this.ProductCollection.destroy({ where: { collectionId }, ...options });
   }
 
-  async findProductsByCollectionId(collectionId, { sort = 'createdAt', order = 'DESC', limit, offset } = {}) {
+  async findProductsByCollectionId(
+    collectionId,
+    { sort = 'createdAt', order = 'DESC', limit, offset } = {},
+  ) {
     return this.Product.findAndCountAll({
       include: [
         {
@@ -203,7 +218,8 @@ class SequelizeCatalogRepository extends ICatalogRepository {
       ],
       where: { status: 'active' },
       distinct: true,
-      limit, offset,
+      limit,
+      offset,
       order: [[sort, order]],
     });
   }
@@ -216,9 +232,17 @@ class SequelizeCatalogRepository extends ICatalogRepository {
     if (filter.search) {
       const lower = filter.search.toLowerCase();
       where[Op.or] = [
-        this.sequelize.where(this.sequelize.fn('LOWER', this.sequelize.col('Product.name')), { [Op.like]: `%${lower}%` }),
-        this.sequelize.where(this.sequelize.fn('LOWER', this.sequelize.col('Product.description')), { [Op.like]: `%${lower}%` }),
-        this.sequelize.where(this.sequelize.fn('LOWER', this.sequelize.col('Product.short_description')), { [Op.like]: `%${lower}%` }),
+        this.sequelize.where(this.sequelize.fn('LOWER', this.sequelize.col('Product.name')), {
+          [Op.like]: `%${lower}%`,
+        }),
+        this.sequelize.where(
+          this.sequelize.fn('LOWER', this.sequelize.col('Product.description')),
+          { [Op.like]: `%${lower}%` },
+        ),
+        this.sequelize.where(
+          this.sequelize.fn('LOWER', this.sequelize.col('Product.short_description')),
+          { [Op.like]: `%${lower}%` },
+        ),
       ];
     }
     if (filter.minPrice) {
@@ -248,14 +272,14 @@ class SequelizeCatalogRepository extends ICatalogRepository {
         where.id = {
           ...where.id,
           [Op.in]: this.sequelize.literal(
-            '(SELECT DISTINCT product_id FROM product_variants WHERE stock_quantity > 0)'
+            '(SELECT DISTINCT product_id FROM product_variants WHERE stock_quantity > 0)',
           ),
         };
       } else {
         where.id = {
           ...where.id,
           [Op.notIn]: this.sequelize.literal(
-            '(SELECT DISTINCT product_id FROM product_variants WHERE stock_quantity > 0)'
+            '(SELECT DISTINCT product_id FROM product_variants WHERE stock_quantity > 0)',
           ),
         };
       }
@@ -311,7 +335,8 @@ class SequelizeCatalogRepository extends ICatalogRepository {
       where: this._buildProductWhereConditions(filter),
       include,
       distinct: true,
-      limit, offset,
+      limit,
+      offset,
       order: this._buildProductOrderClause(sort, order),
     });
   }
@@ -320,12 +345,25 @@ class SequelizeCatalogRepository extends ICatalogRepository {
     return this.Product.findByPk(id, {
       include: [
         { association: 'category' },
-        { association: 'productAttributes', order: [['sortOrder', 'ASC'], ['id', 'ASC']] },
+        {
+          association: 'productAttributes',
+          order: [
+            ['sortOrder', 'ASC'],
+            ['id', 'ASC'],
+          ],
+        },
         { association: 'variants', required: false, order: [['id', 'ASC']] },
         { association: 'productImages', required: false },
         { association: 'productSpecifications' },
-        { association: 'reviews', include: [{ association: 'user', attributes: ['id', 'firstName', 'lastName', 'avatar'] }] },
-        { association: 'warrantyPackages', through: { attributes: ['isDefault'], as: 'productWarranty' }, required: false },
+        {
+          association: 'reviews',
+          include: [{ association: 'user', attributes: ['id', 'firstName', 'lastName', 'avatar'] }],
+        },
+        {
+          association: 'warrantyPackages',
+          through: { attributes: ['isDefault'], as: 'productWarranty' },
+          required: false,
+        },
       ],
     });
   }
@@ -335,12 +373,25 @@ class SequelizeCatalogRepository extends ICatalogRepository {
       where: { slug },
       include: [
         { association: 'category' },
-        { association: 'productAttributes', order: [['sortOrder', 'ASC'], ['id', 'ASC']] },
+        {
+          association: 'productAttributes',
+          order: [
+            ['sortOrder', 'ASC'],
+            ['id', 'ASC'],
+          ],
+        },
         { association: 'variants', required: false, order: [['id', 'ASC']] },
         { association: 'productImages', required: false },
         { association: 'productSpecifications' },
-        { association: 'reviews', include: [{ association: 'user', attributes: ['id', 'firstName', 'lastName', 'avatar'] }] },
-        { association: 'warrantyPackages', through: { attributes: ['isDefault'], as: 'productWarranty' }, required: false },
+        {
+          association: 'reviews',
+          include: [{ association: 'user', attributes: ['id', 'firstName', 'lastName', 'avatar'] }],
+        },
+        {
+          association: 'warrantyPackages',
+          through: { attributes: ['isDefault'], as: 'productWarranty' },
+          required: false,
+        },
       ],
     });
   }
@@ -359,7 +410,8 @@ class SequelizeCatalogRepository extends ICatalogRepository {
         { association: 'variants', required: false },
         { association: 'productImages', required: false },
       ],
-      limit, order: [['createdAt', 'DESC']],
+      limit,
+      order: [['createdAt', 'DESC']],
     });
   }
 
@@ -372,7 +424,8 @@ class SequelizeCatalogRepository extends ICatalogRepository {
         { association: 'variants' },
       ],
       where: { id: { [Op.ne]: excludeId } },
-      limit, order: [['createdAt', 'DESC']],
+      limit,
+      order: [['createdAt', 'DESC']],
     });
   }
 
@@ -381,7 +434,10 @@ class SequelizeCatalogRepository extends ICatalogRepository {
       include: [{ association: 'reviews' }],
       where: { id: { [Op.ne]: excludeId }, status: 'active' },
       limit,
-      order: [['isFeatured', 'DESC'], ['createdAt', 'DESC']],
+      order: [
+        ['isFeatured', 'DESC'],
+        ['createdAt', 'DESC'],
+      ],
     });
   }
 
@@ -390,17 +446,25 @@ class SequelizeCatalogRepository extends ICatalogRepository {
     return this.Product.findAndCountAll({
       where: {
         [Op.or]: [
-          this.sequelize.where(this.sequelize.fn('LOWER', this.sequelize.col('Product.name')), { [Op.like]: `%${lower}%` }),
-          this.sequelize.where(this.sequelize.fn('LOWER', this.sequelize.col('Product.description')), { [Op.like]: `%${lower}%` }),
-          this.sequelize.where(this.sequelize.fn('LOWER', this.sequelize.col('Product.short_description')), { [Op.like]: `%${lower}%` }),
-          this.sequelize.where(this.sequelize.fn('LOWER', this.sequelize.col('Product.tags')), { [Op.like]: `%${lower}%` }),
+          this.sequelize.where(this.sequelize.fn('LOWER', this.sequelize.col('Product.name')), {
+            [Op.like]: `%${lower}%`,
+          }),
+          this.sequelize.where(
+            this.sequelize.fn('LOWER', this.sequelize.col('Product.description')),
+            { [Op.like]: `%${lower}%` },
+          ),
+          this.sequelize.where(
+            this.sequelize.fn('LOWER', this.sequelize.col('Product.short_description')),
+            { [Op.like]: `%${lower}%` },
+          ),
+          this.sequelize.where(this.sequelize.fn('LOWER', this.sequelize.col('Product.tags')), {
+            [Op.like]: `%${lower}%`,
+          }),
         ],
       },
-      include: [
-        { association: 'category' },
-        { association: 'productImages', required: false },
-      ],
-      limit, offset,
+      include: [{ association: 'category' }, { association: 'productImages', required: false }],
+      limit,
+      offset,
       order: [['createdAt', 'DESC']],
     });
   }
@@ -408,17 +472,19 @@ class SequelizeCatalogRepository extends ICatalogRepository {
   async findProductSuggestions(prefix, limit = 10) {
     const lower = prefix.toLowerCase();
     return this.Product.findAll({
-      where: this.sequelize.where(
-        this.sequelize.fn('LOWER', this.sequelize.col('name')),
-        { [Op.like]: `${lower}%` }
-      ),
+      where: this.sequelize.where(this.sequelize.fn('LOWER', this.sequelize.col('name')), {
+        [Op.like]: `${lower}%`,
+      }),
       attributes: ['id', 'name', 'slug'],
-      include: [{
-        association: 'productImages',
-        attributes: ['imageUrl', 'isThumbnail'],
-        required: false,
-      }],
-      limit, order: [['name', 'ASC']],
+      include: [
+        {
+          association: 'productImages',
+          attributes: ['imageUrl', 'isThumbnail'],
+          required: false,
+        },
+      ],
+      limit,
+      order: [['name', 'ASC']],
     });
   }
 
@@ -430,7 +496,8 @@ class SequelizeCatalogRepository extends ICatalogRepository {
         { association: 'productImages' },
         { association: 'variants' },
       ],
-      limit, order: [['createdAt', 'DESC']],
+      limit,
+      order: [['createdAt', 'DESC']],
     });
   }
 
@@ -455,7 +522,7 @@ class SequelizeCatalogRepository extends ICatalogRepository {
       {
         replacements: { startDate, limit },
         type: QueryTypes.SELECT,
-      }
+      },
     );
   }
 
@@ -472,7 +539,7 @@ class SequelizeCatalogRepository extends ICatalogRepository {
       order: [
         [
           this.sequelize.literal(
-            `CASE ${safeIds.map((id, i) => `WHEN id = ${id} THEN ${i}`).join(' ')} END`
+            `CASE ${safeIds.map((id, i) => `WHEN id = ${id} THEN ${i}`).join(' ')} END`,
           ),
         ],
       ],
@@ -485,7 +552,14 @@ class SequelizeCatalogRepository extends ICatalogRepository {
     else if (sort === 'price_desc') orderClause = [['basePrice', 'DESC']];
     else {
       // Khi có JOIN, MySQL yêu cầu qualifier table name. Dùng alias `Product` (Sequelize default).
-      orderClause = [[this.sequelize.literal('(`Product`.`compare_at_price` - `Product`.`base_price`) / `Product`.`compare_at_price`'), 'DESC']];
+      orderClause = [
+        [
+          this.sequelize.literal(
+            '(`Product`.`compare_at_price` - `Product`.`base_price`) / `Product`.`compare_at_price`',
+          ),
+          'DESC',
+        ],
+      ];
     }
 
     // subQuery: false để ORDER BY literal expression không bị wrap trong subquery (gây lỗi
@@ -496,16 +570,31 @@ class SequelizeCatalogRepository extends ICatalogRepository {
         status: 'active',
         [Op.and]: [
           this.sequelize.where(
-            this.sequelize.literal('(`Product`.`compare_at_price` - `Product`.`base_price`) / `Product`.`compare_at_price` * 100'),
-            { [Op.gte]: minDiscount }
+            this.sequelize.literal(
+              '(`Product`.`compare_at_price` - `Product`.`base_price`) / `Product`.`compare_at_price` * 100',
+            ),
+            { [Op.gte]: minDiscount },
           ),
         ],
       },
       include: [
         { association: 'category', required: false, attributes: ['id', 'name', 'slug'] },
-        { association: 'reviews', required: false, where: { isVerified: true }, attributes: ['rating'] },
-        { association: 'productImages', required: false, attributes: ['id', 'imageUrl', 'isThumbnail', 'variantId'] },
-        { association: 'variants', required: false, attributes: ['id', 'price', 'stockQuantity', 'sku', 'attributes'] },
+        {
+          association: 'reviews',
+          required: false,
+          where: { isVerified: true },
+          attributes: ['rating'],
+        },
+        {
+          association: 'productImages',
+          required: false,
+          attributes: ['id', 'imageUrl', 'isThumbnail', 'variantId'],
+        },
+        {
+          association: 'variants',
+          required: false,
+          attributes: ['id', 'price', 'stockQuantity', 'sku', 'attributes'],
+        },
       ],
       order: orderClause,
       limit,
@@ -555,7 +644,7 @@ class SequelizeCatalogRepository extends ICatalogRepository {
     if (categoryId) {
       where.productId = {
         [Op.in]: this.sequelize.literal(
-          `(SELECT product_id FROM product_categories WHERE category_id = ${parseInt(categoryId, 10)})`
+          `(SELECT product_id FROM product_categories WHERE category_id = ${parseInt(categoryId, 10)})`,
         ),
       };
     }
@@ -570,7 +659,7 @@ class SequelizeCatalogRepository extends ICatalogRepository {
     if (categoryId) {
       where.productId = {
         [Op.in]: this.sequelize.literal(
-          `(SELECT product_id FROM product_categories WHERE category_id = ${parseInt(categoryId, 10)})`
+          `(SELECT product_id FROM product_categories WHERE category_id = ${parseInt(categoryId, 10)})`,
         ),
       };
     }
@@ -578,7 +667,8 @@ class SequelizeCatalogRepository extends ICatalogRepository {
       attributes: ['name', 'values'],
       where,
       group: ['name', 'values'],
-      limit: 500, raw: true,
+      limit: 500,
+      raw: true,
     });
   }
 
@@ -588,15 +678,15 @@ class SequelizeCatalogRepository extends ICatalogRepository {
     }
     return this.RecentlyViewed.findAll({
       where: { userId },
-      limit, order: [['viewedAt', 'DESC']],
-      include: [{
-        model: this.Product,
-        attributes: ['id', 'name', 'slug', ['basePrice', 'price'], 'compareAtPrice'],
-        include: [
-          { association: 'reviews' },
-          { association: 'productImages', required: false },
-        ],
-      }],
+      limit,
+      order: [['viewedAt', 'DESC']],
+      include: [
+        {
+          model: this.Product,
+          attributes: ['id', 'name', 'slug', [col('base_price'), 'price'], 'compareAtPrice'],
+          include: [{ association: 'reviews' }, { association: 'productImages', required: false }],
+        },
+      ],
     });
   }
 

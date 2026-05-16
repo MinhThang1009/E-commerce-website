@@ -1,3 +1,4 @@
+const { col } = require('sequelize');
 const IWishlistRepository = require('./IWishlistRepository');
 
 // Sequelize impl của IWishlistRepository — duy nhất layer truy cập Wishlist/
@@ -17,11 +18,7 @@ class SequelizeWishlistRepository extends IWishlistRepository {
       include: [
         {
           model: this.Product,
-          attributes: [
-            'id', 'name', 'slug',
-            ['basePrice', 'price'],
-            'compareAtPrice',
-          ],
+          attributes: ['id', 'name', 'slug', [col('base_price'), 'price'], 'compareAtPrice'],
           include: [
             { association: 'productImages', required: false },
             { association: 'defaultVariant', required: false },

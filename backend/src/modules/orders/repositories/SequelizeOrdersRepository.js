@@ -1,3 +1,4 @@
+const { col } = require('sequelize');
 const IOrdersRepository = require('./IOrdersRepository');
 
 // Sequelize impl của IOrdersRepository — duy nhất layer truy cập Order/OrderItem
@@ -7,8 +8,17 @@ const IOrdersRepository = require('./IOrdersRepository');
 // inventory module DDD-lite hoàn tất Phase 5.
 class SequelizeOrdersRepository extends IOrdersRepository {
   constructor({
-    Order, OrderItem, Cart, CartItem, Product, ProductVariant, User,
-    DiscountCode, LoyaltyHistory, InventoryLog, WarrantyPackage,
+    Order,
+    OrderItem,
+    Cart,
+    CartItem,
+    Product,
+    ProductVariant,
+    User,
+    DiscountCode,
+    LoyaltyHistory,
+    InventoryLog,
+    WarrantyPackage,
     sequelize,
   }) {
     super();
@@ -47,12 +57,17 @@ class SequelizeOrdersRepository extends IOrdersRepository {
             {
               model: this.Product,
               attributes: ['id', 'name', 'slug'],
-              include: [{
-                association: 'productImages',
-                attributes: ['id', 'imageUrl', 'isThumbnail'],
-              }],
+              include: [
+                {
+                  association: 'productImages',
+                  attributes: ['id', 'imageUrl', 'isThumbnail'],
+                },
+              ],
             },
-            { model: this.ProductVariant, attributes: ['id', ['variantName', 'name'], 'sku', 'price'] },
+            {
+              model: this.ProductVariant,
+              attributes: ['id', [col('variant_name'), 'name'], 'sku', 'price'],
+            },
           ],
         },
       ],
@@ -62,17 +77,24 @@ class SequelizeOrdersRepository extends IOrdersRepository {
   async findOrderByNumberAndUserId(number, userId) {
     return this.Order.findOne({
       where: { number, userId },
-      include: [{
-        association: 'items',
-        include: [
-          {
-            model: this.Product,
-            attributes: ['id', 'name', 'slug'],
-            include: [{ association: 'productImages', attributes: ['id', 'imageUrl', 'isThumbnail'] }],
-          },
-          { model: this.ProductVariant, attributes: ['id', ['variantName', 'name'], 'sku', 'price'] },
-        ],
-      }],
+      include: [
+        {
+          association: 'items',
+          include: [
+            {
+              model: this.Product,
+              attributes: ['id', 'name', 'slug'],
+              include: [
+                { association: 'productImages', attributes: ['id', 'imageUrl', 'isThumbnail'] },
+              ],
+            },
+            {
+              model: this.ProductVariant,
+              attributes: ['id', [col('variant_name'), 'name'], 'sku', 'price'],
+            },
+          ],
+        },
+      ],
     });
   }
 
@@ -86,40 +108,54 @@ class SequelizeOrdersRepository extends IOrdersRepository {
   async findUserOrdersWithItems(userId, { limit, offset } = {}) {
     return this.Order.findAndCountAll({
       where: { userId },
-      include: [{
-        association: 'items',
-        include: [
-          {
-            model: this.Product,
-            attributes: ['id', 'name', 'basePrice', 'slug'],
-            include: [{ association: 'productImages', attributes: ['id', 'imageUrl', 'isThumbnail'] }],
-          },
-          { model: this.ProductVariant, attributes: ['id', ['variantName', 'name'], 'sku', 'price'] },
-        ],
-      }],
-      limit, offset,
+      include: [
+        {
+          association: 'items',
+          include: [
+            {
+              model: this.Product,
+              attributes: ['id', 'name', 'basePrice', 'slug'],
+              include: [
+                { association: 'productImages', attributes: ['id', 'imageUrl', 'isThumbnail'] },
+              ],
+            },
+            {
+              model: this.ProductVariant,
+              attributes: ['id', [col('variant_name'), 'name'], 'sku', 'price'],
+            },
+          ],
+        },
+      ],
+      limit,
+      offset,
       order: [['createdAt', 'DESC']],
     });
   }
 
   async findAllOrdersWithUser({ where = {}, limit, offset } = {}) {
     return this.Order.findAndCountAll({
-      where, limit, offset,
+      where,
+      limit,
+      offset,
       order: [['createdAt', 'DESC']],
-      include: [{
-        association: 'user',
-        attributes: ['id', 'firstName', 'lastName', 'email'],
-      }],
+      include: [
+        {
+          association: 'user',
+          attributes: ['id', 'firstName', 'lastName', 'email'],
+        },
+      ],
     });
   }
 
   async findOrderForCancel(id, userId) {
     return this.Order.findOne({
       where: { id, userId },
-      include: [{
-        association: 'items',
-        include: [{ model: this.Product }, { model: this.ProductVariant }],
-      }],
+      include: [
+        {
+          association: 'items',
+          include: [{ model: this.Product }, { model: this.ProductVariant }],
+        },
+      ],
     });
   }
 
@@ -138,7 +174,7 @@ class SequelizeOrdersRepository extends IOrdersRepository {
   async cancelPendingOrdersByUser(userId, options = {}) {
     return this.Order.update(
       { status: 'cancelled' },
-      { where: { userId, status: 'pending' }, ...options }
+      { where: { userId, status: 'pending' }, ...options },
     );
   }
 
@@ -163,17 +199,22 @@ class SequelizeOrdersRepository extends IOrdersRepository {
 
   async findCartByPkWithItemsDetails(cartId, options = {}) {
     return this.Cart.findByPk(cartId, {
-      include: [{
-        association: 'items',
-        include: [
-          {
-            model: this.Product,
-            attributes: ['id', 'name', 'slug', 'basePrice', 'status'],
-            include: [{ association: 'defaultVariant', attributes: ['id', 'stockQuantity'] }],
-          },
-          { model: this.ProductVariant, attributes: ['id', ['variantName', 'name'], 'price', 'stockQuantity', 'sku'] },
-        ],
-      }],
+      include: [
+        {
+          association: 'items',
+          include: [
+            {
+              model: this.Product,
+              attributes: ['id', 'name', 'slug', 'basePrice', 'status'],
+              include: [{ association: 'defaultVariant', attributes: ['id', 'stockQuantity'] }],
+            },
+            {
+              model: this.ProductVariant,
+              attributes: ['id', [col('variant_name'), 'name'], 'price', 'stockQuantity', 'sku'],
+            },
+          ],
+        },
+      ],
       ...options,
     });
   }
@@ -214,7 +255,7 @@ class SequelizeOrdersRepository extends IOrdersRepository {
 
   async findVariantBasic(id, options = {}) {
     return this.ProductVariant.findByPk(id, {
-      attributes: ['id', ['variantName', 'name'], 'price', 'stockQuantity', 'sku'],
+      attributes: ['id', [col('variant_name'), 'name'], 'price', 'stockQuantity', 'sku'],
       ...options,
     });
   }

@@ -273,14 +273,17 @@ const CreateProductForm: React.FC<CreateProductFormProps> = ({
 
       onSuccess?.();
       onClose();
-    } catch (error: any) {
+    } catch (error) {
       console.error('Tạo sản phẩm thất bại:', error);
-      if (error?.data?.errors) {
-        const apiErrors: Record<string, string> = {};
-        error.data.errors.forEach((err: any) => {
-          apiErrors[err.field] = err.message;
-        });
-        setErrors(apiErrors);
+      if (error && typeof error === 'object' && 'data' in error) {
+        const errData = (error as Record<string, unknown>).data as Record<string, unknown> | undefined;
+        if (errData?.errors && Array.isArray(errData.errors)) {
+          const apiErrors: Record<string, string> = {};
+          errData.errors.forEach((err: Record<string, string>) => {
+            apiErrors[err.field] = err.message;
+          });
+          setErrors(apiErrors);
+        }
       }
     }
   };

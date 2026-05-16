@@ -1,16 +1,5 @@
 const logger = require('../utils/logger');
-
-// Class lỗi tùy chỉnh
-class AppError extends Error {
-  constructor(message, statusCode) {
-    super(message);
-    this.statusCode = statusCode;
-    this.status = `${statusCode}`.startsWith('4') ? 'fail' : 'error';
-    this.isOperational = true;
-
-    Error.captureStackTrace(this, this.constructor);
-  }
-}
+const AppError = require('../shared/errors/AppError');
 
 // Xử lý lỗi ở môi trường development — gửi thông tin lỗi chi tiết
 const sendErrorDev = (err, res) => {

@@ -6,7 +6,7 @@ import { toast } from '@/utils/toast';
  * Custom hook xử lý lỗi API một cách nhất quán trong toàn ứng dụng
  */
 export const useErrorHandler = () => {
-  const handleError = useCallback((error: any, showToast: boolean = true) => {
+  const handleError = useCallback((error: unknown, showToast: boolean = true) => {
     // Xử lý lỗi 401 với tự động đăng xuất
     if (handleUnauthorizedError(error)) {
       return; // Đã xử lý auto logout, không cần hiển thị toast thêm

@@ -37,7 +37,7 @@ export interface CreateProductRequest {
     isDefault?: boolean;
     isAvailable?: boolean;
     attributes?: Record<string, string>;
-    specifications?: Record<string, any>;
+    specifications?: Record<string, string | number | boolean>;
     images?: string[];
   }>;
   seoTitle?: string;
@@ -120,7 +120,7 @@ export interface ApiResponse<T> {
 export const adminProductKeys = {
   all: ['admin-products'] as const,
   lists: () => [...adminProductKeys.all, 'list'] as const,
-  list: (filters: any) => [...adminProductKeys.lists(), filters] as const,
+  list: (filters: unknown) => [...adminProductKeys.lists(), filters] as const,
   details: () => [...adminProductKeys.all, 'detail'] as const,
   detail: (id: string) => [...adminProductKeys.details(), id] as const,
 };
@@ -172,7 +172,7 @@ export function useGetAdminProductByIdQuery(
       const { data: response } = await apiClient.get(`/admin/products/${id}`);
 
       // Hàm trợ giúp: parse JSON nếu value là string
-      const parseIfString = (val: any) => {
+      const parseIfString = (val: unknown) => {
         if (typeof val === 'string') {
           try { return JSON.parse(val); } catch { return {}; }
         }
@@ -182,14 +182,14 @@ export function useGetAdminProductByIdQuery(
       if (response?.data?.product) {
         const product = response.data.product;
         if (product.variants) {
-          product.variants = product.variants.map((v: any) => ({
+          product.variants = product.variants.map((v: Record<string, unknown>) => ({
             ...v,
             attributes: parseIfString(v.attributes),
             attributeValues: parseIfString(v.attributeValues || v.attributes),
           }));
         }
         if (product.attributes) {
-          product.attributes = product.attributes.map((attr: any) => ({
+          product.attributes = product.attributes.map((attr: Record<string, unknown>) => ({
             ...attr,
             values: typeof attr.values === 'string' ? JSON.parse(attr.values) : (attr.values || []),
           }));

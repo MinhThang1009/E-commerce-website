@@ -16,7 +16,7 @@ interface PageLayoutProps {
   keywords?: string;
   className?: string;
   isLoading?: boolean;
-  error?: any;
+  error?: unknown;
   onRetry?: () => void;
   containerSize?: 'sm' | 'md' | 'lg' | 'xl' | 'full';
   showContainer?: boolean;

@@ -1,5 +1,5 @@
 import i18next from 'i18next';
-import { ProductFilters } from '@/features/catalog/types/product.types';
+import type { ProductFilters } from '../types/product.types';
 
 export interface RawProduct {
   id: string;
@@ -13,7 +13,8 @@ export interface RawProduct {
     average: number;
     count: number;
   };
-  [key: string]: unknown;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any -- Index signature cho dynamic backend fields
+  [key: string]: any;
 }
 
 export interface TransformedProduct {
@@ -30,7 +31,8 @@ export interface TransformedProduct {
     average: number;
     count: number;
   };
-  [key: string]: unknown;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any -- Index signature cho dynamic backend fields
+  [key: string]: any;
 }
 
 const getSpecLabel = (key: string): string => {
@@ -40,24 +42,24 @@ const getSpecLabel = (key: string): string => {
   return translated !== tKey ? translated : key;
 };
 
-const transformSpecs = (specs: unknown, attributes: unknown = {}) => {
+const transformSpecs = (specs: Record<string, unknown> | Array<{ name?: string; value?: unknown }> | null | undefined, attributes: Record<string, unknown> = {}) => {
   let mergedSpecs: Record<string, unknown> = {};
 
   // 1. Phục hồi từ định dạng mảng nếu tồn tại (chủ yếu cho thông số cơ bản)
   if (Array.isArray(specs)) {
-    specs.forEach((s) => {
+    specs.forEach(s => {
       if (s && s.name) {
-        mergedSpecs[s.name as string] = s.value;
+        mergedSpecs[s.name] = s.value;
       }
     });
   } else if (typeof specs === 'object' && specs !== null) {
-    mergedSpecs = { ...(specs as Record<string, unknown>) };
+    mergedSpecs = { ...specs };
   }
 
   // 2. Gộp các thuộc tính (đặc biệt cho biến thể)
   // Kiểm tra xem attributes có phải là plain object không (không phải mảng/liên kết)
   if (typeof attributes === 'object' && attributes !== null && !Array.isArray(attributes)) {
-    Object.entries(attributes as Record<string, unknown>).forEach(([key, value]) => {
+    Object.entries(attributes).forEach(([key, value]) => {
       if (!mergedSpecs[key]) {
         mergedSpecs[key] = value;
       }
@@ -72,11 +74,9 @@ const transformSpecs = (specs: unknown, attributes: unknown = {}) => {
 };
 
 /**
- * Chuyển đổi một sản phẩm từ định dạng backend sang frontend.
- * Nhận dữ liệu thô từ API (shape không cố định) nên dùng Record<string, unknown>.
+ * Chuyển đổi một sản phẩm từ định dạng backend sang frontend
  */
-// eslint-disable-next-line @typescript-eslint/no-explicit-any -- transform function xử lý response API không có type cố định
-export const transformProduct = (product: any): any => {
+export const transformProduct = (product: RawProduct): TransformedProduct | null => {
   if (!product) return null;
 
   return {
@@ -98,8 +98,7 @@ export const transformProduct = (product: any): any => {
       count: 0,
     },
     // Đảm bảo variants và attributes được truyền qua, chuẩn hóa attributes.values thành mảng
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    variants: ((product.variants || []) as any[]).map((v) => {
+    variants: (product.variants || []).map((v: Record<string, unknown>) => {
       let attrs = v.attributes;
       if (typeof attrs === 'string') {
         try {
@@ -110,7 +109,7 @@ export const transformProduct = (product: any): any => {
       }
       return { ...v, attributes: attrs || {} };
     }),
-    attributes: Array.isArray(product.attributes)
+    attributes: Array.isArray(product.attributes) 
       ? product.attributes.map((attr: Record<string, unknown>) => {
           let values = attr.values;
           if (!Array.isArray(values)) {
@@ -131,10 +130,10 @@ export const transformProduct = (product: any): any => {
           const values = Array.isArray(value) ? value : [value];
           return { name: key, values };
         }),
-
+    
     // Chuyển đổi thông số kỹ thuật (cấp ROOT)
     productSpecifications: transformSpecs(product.specifications, product.attributes_object || product.attributes),
-
+    
     // Xử lý biến thể hiện tại nếu có
     currentVariant: product.currentVariant ? {
       ...product.currentVariant,
@@ -152,29 +151,30 @@ export const transformProducts = (
   products: RawProduct[]
 ): TransformedProduct[] => {
   if (!Array.isArray(products)) return [];
-  return products.map(transformProduct);
+  return products.map(transformProduct).filter((p): p is TransformedProduct => p !== null);
 };
 
 /**
  * Chuyển đổi response API chứa mảng sản phẩm
  */
-// eslint-disable-next-line @typescript-eslint/no-explicit-any -- response API shape không cố định
-export const transformProductsResponse = (response: any): any => {
+export const transformProductsResponse = <T extends { data?: unknown }>(response: T): T => {
   if (!response?.data) return response;
 
+  const { data } = response;
+
   // Xử lý response dạng mảng (ví dụ: sản phẩm nổi bật)
-  if (Array.isArray(response.data)) {
+  if (Array.isArray(data)) {
     return {
       ...response,
-      data: transformProducts(response.data),
+      data: transformProducts(data),
     };
   }
 
   // Xử lý response sản phẩm đơn
-  if (response.data.id) {
+  if (typeof data === 'object' && data !== null && 'id' in data) {
     return {
       ...response,
-      data: transformProduct(response.data),
+      data: transformProduct(data as RawProduct),
     };
   }
 
@@ -209,9 +209,8 @@ export const createProductFiltersParams = (
   // Bộ lọc mảng
   const arrayFilters = ['brand', 'collection', 'color', 'size'];
   arrayFilters.forEach((filter) => {
-    const filterVal = filters[filter];
-    if (filterVal && Array.isArray(filterVal)) {
-      filterVal.forEach((value: string) => {
+    if (filters[filter] && Array.isArray(filters[filter])) {
+      filters[filter].forEach((value: string) => {
         params.append(filter, value);
       });
     }
@@ -219,9 +218,8 @@ export const createProductFiltersParams = (
 
   // Bộ lọc thuộc tính động
   Object.keys(filters).forEach((key) => {
-    const filterVal = filters[key];
-    if (key.startsWith('attr_') && Array.isArray(filterVal)) {
-      filterVal.forEach((value: string) => {
+    if (key.startsWith('attr_') && Array.isArray(filters[key])) {
+      filters[key].forEach((value: string) => {
         params.append(key, value);
       });
     }
@@ -248,3 +246,4 @@ export const createProductFiltersParams = (
 
   return params;
 };
+

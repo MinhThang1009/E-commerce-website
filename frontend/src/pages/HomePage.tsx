@@ -24,6 +24,7 @@ import { Link } from 'react-router-dom';
 import ProductCard from '@/components/shared/ProductCard';
 import { PremiumButton, BannerDisplay } from '@/components/common';
 import { ROUTES, buildRoute } from '@/routes/paths';
+import { getErrorMsg } from '@/utils/errorMessage';
 
 /**
  * HomePage component - Main landing page with hero, featured products, and categories
@@ -83,19 +84,19 @@ const HomePage: React.FC = () => {
       const response = await subscribeNewsletter({ email: newsletterEmail });
       message.success(response.message);
       setNewsletterEmail('');
-    } catch (error: any) {
-      message.error(error?.data?.message || t('homepage.newsletter.subscribeError'));
+    } catch (error) {
+      message.error(getErrorMsg(error, t('homepage.newsletter.subscribeError')));
     }
   };
 
   // Đăng ký nhận bản tin
   const displayCategories =
-    categories.data?.slice(0, 6).map((category: any) => ({
+    categories.data?.slice(0, 6).map((category: { id: string; name: string; slug?: string; image?: string; productCount?: number }) => ({
       id: category.id,
       name: category.name,
       image: category.image
         ? getUploadUrl(category.image)
-        : getCategoryImage(category.name, category.slug),
+        : getCategoryImage(category.name, category.slug ?? ''),
       count: category.productCount || 0,
       slug: category.slug,
     })) || [];
@@ -157,7 +158,9 @@ const HomePage: React.FC = () => {
           />
         ) : (
           <ProductGrid>
-            {featuredProducts.data?.data?.map((product: any) => (
+            {featuredProducts.data?.data
+              // eslint-disable-next-line @typescript-eslint/no-explicit-any -- API product data
+              ?.map((product: any) => (
               <ProductCard key={product.id} {...product} />
             ))}
           </ProductGrid>
@@ -197,7 +200,7 @@ const HomePage: React.FC = () => {
             {displayCategories.map((category) => (
               <Link
                 key={category.id}
-                to={buildRoute.shopCategory(category.slug)}
+                to={buildRoute.shopCategory(category.slug ?? '')}
                 className="group relative overflow-hidden rounded-xl shadow-lg hover:shadow-xl transition-all duration-300"
               >
                 <div className="aspect-w-3 aspect-h-2 bg-neutral-100 dark:bg-neutral-700">
@@ -256,7 +259,9 @@ const HomePage: React.FC = () => {
                   className="h-24 bg-neutral-200 dark:bg-neutral-700 rounded-lg animate-pulse"
                 />
               ))
-            : brands.data?.map((brand: any) => (
+            : brands.data
+              // eslint-disable-next-line @typescript-eslint/no-explicit-any
+              ?.map((brand: any) => (
                 <Link
                   key={brand.id}
                   to={buildRoute.shopBrand(brand.id)}
@@ -291,7 +296,9 @@ const HomePage: React.FC = () => {
                   className="aspect-w-16 aspect-h-9 bg-neutral-200 dark:bg-neutral-700 rounded-2xl animate-pulse"
                 />
               ))
-            : collections.data?.slice(0, 2).map((collection: any) => (
+            : collections.data?.slice(0, 2)
+              // eslint-disable-next-line @typescript-eslint/no-explicit-any
+              .map((collection: any) => (
                 <Link
                   key={collection.id}
                   to={buildRoute.shopCollection(collection.id)}

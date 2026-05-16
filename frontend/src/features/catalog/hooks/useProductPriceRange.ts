@@ -1,16 +1,25 @@
 import { useMemo } from 'react';
 import { calculatePriceRange } from '@/utils/priceUtils';
 
-export const useProductPriceRange = (basePrice: number, variants?: any[]) => {
+interface VariantInput {
+  id?: string;
+  sku?: string;
+  name?: string;
+  price: number | string;
+  stockQuantity?: number;
+  attributes?: Record<string, string>;
+}
+
+export const useProductPriceRange = (basePrice: number, variants?: VariantInput[]) => {
   const priceInfo = useMemo(() => {
     if (variants && variants.length > 0) {
-      const processedVariants = variants.map((variant: any) => ({
-        id: variant.id,
+      const processedVariants = variants.map((variant) => ({
+        id: variant.id ?? '',
         sku: variant.sku ?? '',
-        name: variant.name,
-        price: parseFloat(variant.price),
-        stockQuantity: variant.stockQuantity,
-        attributes: variant.attributes,
+        name: variant.name ?? '',
+        price: parseFloat(String(variant.price)),
+        stockQuantity: variant.stockQuantity ?? 0,
+        attributes: variant.attributes ?? {},
       }));
 
       return {

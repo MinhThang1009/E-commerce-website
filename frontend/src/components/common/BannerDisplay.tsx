@@ -1,6 +1,7 @@
 import React from 'react';
 import { useTranslation } from 'react-i18next';
 import { useGetBannersQuery } from '@/features/content';
+import type { Banner } from '@/features/content/api/bannerApi';
 import { Carousel, Skeleton } from 'antd';
 import { Link } from 'react-router-dom';
 import { getUploadUrl } from '@/utils/uploadUrl';
@@ -25,7 +26,7 @@ const BannerDisplay: React.FC<BannerDisplayProps> = ({ position, className }) =>
   const banners = data?.data || [];
   if (banners.length === 0) return null;
 
-  const renderBanner = (banner: any, wrapperClass?: string) => {
+  const renderBanner = (banner: Banner, wrapperClass?: string) => {
     const content = (
       <div className="relative w-full h-full overflow-hidden group cursor-pointer transition-all duration-500">
         <img
@@ -62,7 +63,7 @@ const BannerDisplay: React.FC<BannerDisplayProps> = ({ position, className }) =>
     return (
       <div className={`w-full mb-8 ${className}`}>
         <Carousel autoplay effect="fade" autoplaySpeed={5000} className="rounded-2xl overflow-hidden shadow-2xl">
-          {banners.map((b: any) => renderBanner(b, 'h-[300px] md:h-[500px]'))}
+          {banners.map((b) => renderBanner(b, 'h-[300px] md:h-[500px]'))}
         </Carousel>
       </div>
     );
@@ -73,7 +74,7 @@ const BannerDisplay: React.FC<BannerDisplayProps> = ({ position, className }) =>
       <div className={`w-full my-12 rounded-3xl overflow-hidden shadow-xl transform transition-transform hover:scale-[1.01] duration-500 ${className}`}>
         {banners.length > 1 ? (
           <Carousel autoplay dots={false} pauseOnHover={false} speed={1000}>
-            {banners.map((b: any) => renderBanner(b, 'h-[200px] md:h-[300px]'))}
+            {banners.map((b) => renderBanner(b, 'h-[200px] md:h-[300px]'))}
           </Carousel>
         ) : (
           renderBanner(banners[0], 'h-[200px] md:h-[300px]')
@@ -85,7 +86,7 @@ const BannerDisplay: React.FC<BannerDisplayProps> = ({ position, className }) =>
   if (position === 'sidebar') {
     return (
       <div className={`flex flex-col gap-4 ${className}`}>
-        {banners.map((banner: any) => (
+        {banners.map((banner: Banner) => (
           <div key={banner.id} className="w-full aspect-[3/4] rounded-xl overflow-hidden shadow-md hover:shadow-lg transition-all duration-300">
             {renderBanner(banner, 'h-full')}
           </div>

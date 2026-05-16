@@ -32,6 +32,7 @@ const DynamicProductTitle: React.FC<DynamicProductTitleProps> = ({
   const { t } = useTranslation();
   const [dynamicName, setDynamicName] = useState<string>(product.name);
   const [loading, setLoading] = useState(false);
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any -- AI-generated attribute details có nhiều trường dynamic
   const [attributeDetails, setAttributeDetails] = useState<any[]>([]);
   const [error, setError] = useState<string | null>(null);
 
@@ -68,7 +69,7 @@ const DynamicProductTitle: React.FC<DynamicProductTitleProps> = ({
         setDynamicName(response.data.generatedName);
         setAttributeDetails(response.data.affectingAttributes || []);
       }
-    } catch (err: any) {
+    } catch (err) {
       console.error('Lỗi tạo tên động:', err);
       setError(t('product.dynamicNameError'));
       setDynamicName(product.name); // Dự phòng về tên gốc
@@ -152,7 +153,7 @@ const DynamicProductTitle: React.FC<DynamicProductTitleProps> = ({
         {/* Attribute Tags */}
         {showAttributeTags && attributeDetails.length > 0 && (
           <Space wrap size="small">
-            {attributeDetails.map((attr: any) => (
+            {attributeDetails.map((attr) => (
               <Tag
                 key={attr.id}
                 color="blue"

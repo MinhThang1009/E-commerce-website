@@ -9,7 +9,7 @@ const { Search } = Input;
 interface ProductPickerModalProps {
   open: boolean;
   onCancel: () => void;
-  onSelect: (product: any) => void;
+  onSelect: (product: { id: string; name: string; price: number; images?: string[] }) => void;
 }
 
 const ProductPickerModal: React.FC<ProductPickerModalProps> = ({ open, onCancel, onSelect }) => {
@@ -49,6 +49,7 @@ const ProductPickerModal: React.FC<ProductPickerModalProps> = ({ open, onCancel,
         <List
           itemLayout="horizontal"
           dataSource={products}
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any -- Dynamic product data
           renderItem={(item: any) => (
             <List.Item
               actions={[
@@ -72,7 +73,7 @@ const ProductPickerModal: React.FC<ProductPickerModalProps> = ({ open, onCancel,
                     <span className="text-primary-600 font-bold">
                       {new Intl.NumberFormat(getLocale(), { style: 'currency', currency: 'VND' }).format(item.price)}
                     </span>
-                    {(item.stock > 0 || (item.variants?.length > 0 && item.variants.some((v: any) => v.stockQuantity > 0))) ? (
+                    {(item.stock > 0 || (item.variants?.length > 0 && item.variants.some((v: { stockQuantity: number }) => v.stockQuantity > 0))) ? (
                        <span className="ml-2 text-xs text-green-500">{t('product.inStock')}</span>
                     ) : (
                        <span className="ml-2 text-xs text-red-500">{t('product.outOfStock')}</span>

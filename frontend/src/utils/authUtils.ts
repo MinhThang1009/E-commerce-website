@@ -76,10 +76,17 @@ export { logoutManager };
  * @param error - Đối tượng lỗi từ response API
  * @returns boolean - true nếu lỗi 401 đã được xử lý
  */
-export const handleUnauthorizedError = (error: any): boolean => {
-  if (error?.status === 401) {
+export const handleUnauthorizedError = (error: unknown): boolean => {
+  if (
+    error &&
+    typeof error === 'object' &&
+    'status' in error &&
+    (error as Record<string, unknown>).status === 401
+  ) {
+    const e = error as Record<string, unknown>;
+    const data = e.data as Record<string, unknown> | undefined;
     const errorMessage =
-      error?.data?.message ||
+      (typeof data?.message === 'string' ? data.message : undefined) ||
       i18next.t('auth.errors.accountLocked');
 
     handleAutoLogout(errorMessage);
@@ -93,17 +100,16 @@ export const handleUnauthorizedError = (error: any): boolean => {
  * @param error - Đối tượng lỗi
  * @returns string - Thông báo lỗi đã định dạng
  */
-export const getErrorMessage = (error: any): string => {
+export const getErrorMessage = (error: unknown): string => {
   if (typeof error === 'string') {
     return error;
   }
 
-  if (error?.data?.message) {
-    return error.data.message;
-  }
-
-  if (error?.message) {
-    return error.message;
+  if (error && typeof error === 'object') {
+    const e = error as Record<string, unknown>;
+    const data = e.data as Record<string, unknown> | undefined;
+    if (typeof data?.message === 'string') return data.message;
+    if (typeof e.message === 'string') return e.message;
   }
 
   return i18next.t('errors.unknown');

@@ -32,6 +32,10 @@ export type {
   CartValidationResult,
 } from './api/cartApi';
 
+// Hooks
+export { useCartMerge } from './hooks/useCartMerge';
+export { useCartSync } from './hooks/useCartSync';
+
 // Zustand store
 export { useCartStore } from '@/stores/cartStore';
 

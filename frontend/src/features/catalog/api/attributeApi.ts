@@ -120,7 +120,7 @@ class AttributeService {
   }
 
   // Lấy tất cả nhóm thuộc tính kèm giá trị
-  async getAttributeGroups(): Promise<ApiResponse<any[]>> {
+  async getAttributeGroups(): Promise<ApiResponse<AttributeGroup[]>> {
     const response = await apiClient.get('/attributes/groups');
     return response.data;
   }
@@ -128,7 +128,7 @@ class AttributeService {
   // Lấy nhóm thuộc tính cho sản phẩm cụ thể
   async getProductAttributeGroups(
     productId: string
-  ): Promise<ApiResponse<any[]>> {
+  ): Promise<ApiResponse<AttributeGroup[]>> {
     const response = await apiClient.get(
       `/attributes/products/${productId}/groups`
     );
@@ -142,7 +142,7 @@ class AttributeService {
     description?: string;
     isRequired?: boolean;
     sortOrder?: number;
-  }): Promise<ApiResponse<any>> {
+  }): Promise<ApiResponse<Record<string, unknown>>> {
     const response = await apiClient.post('/attributes/groups', data);
     return response.data;
   }
@@ -160,7 +160,7 @@ class AttributeService {
       affectsName?: boolean;
       nameTemplate?: string;
     }
-  ): Promise<ApiResponse<any>> {
+  ): Promise<ApiResponse<Record<string, unknown>>> {
     const response = await apiClient.post(
       `/attributes/groups/${attributeGroupId}/values`,
       data
@@ -182,7 +182,7 @@ class AttributeService {
       affectsName?: boolean;
       nameTemplate?: string;
     }
-  ): Promise<ApiResponse<any>> {
+  ): Promise<ApiResponse<Record<string, unknown>>> {
     const response = await apiClient.put(`/attributes/values/${id}`, data);
     return response.data;
   }
@@ -198,19 +198,19 @@ class AttributeService {
       sortOrder?: number;
       isActive?: boolean;
     }
-  ): Promise<ApiResponse<any>> {
+  ): Promise<ApiResponse<Record<string, unknown>>> {
     const response = await apiClient.put(`/attributes/groups/${id}`, data);
     return response.data;
   }
 
   // Xóa nhóm thuộc tính
-  async deleteAttributeGroup(id: string): Promise<ApiResponse<any>> {
+  async deleteAttributeGroup(id: string): Promise<ApiResponse<Record<string, unknown>>> {
     const response = await apiClient.delete(`/attributes/groups/${id}`);
     return response.data;
   }
 
   // Xóa giá trị thuộc tính
-  async deleteAttributeValue(id: string): Promise<ApiResponse<any>> {
+  async deleteAttributeValue(id: string): Promise<ApiResponse<Record<string, unknown>>> {
     const response = await apiClient.delete(`/attributes/values/${id}`);
     return response.data;
   }
@@ -223,7 +223,7 @@ class AttributeService {
       isRequired?: boolean;
       sortOrder?: number;
     }
-  ): Promise<ApiResponse<any>> {
+  ): Promise<ApiResponse<Record<string, unknown>>> {
     const response = await apiClient.post(
       `/attributes/products/${productId}/groups/${attributeGroupId}`,
       data

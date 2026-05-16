@@ -21,7 +21,7 @@ import {
 import EnhancedRichTextEditor from '@/components/common/EnhancedRichTextEditor';
 import Base64ImageWarning from './Base64ImageWarning';
 import DynamicProductName from './DynamicProductName';
-import { sampleLaptopData } from '@/utils/sampleProductData';
+import { sampleLaptopData } from '../utils/sampleProductData';
 
 const { TextArea } = Input;
 const { Option } = Select;
@@ -31,6 +31,7 @@ interface EnhancedProductBasicFormProps {
   fillExampleData: () => void;
   productId?: string;
   selectedAttributes?: Record<string, string>;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any -- AI response details
   onNameGenerated?: (name: string, details: any) => void;
 }
 

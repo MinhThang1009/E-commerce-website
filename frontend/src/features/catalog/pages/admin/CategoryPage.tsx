@@ -26,6 +26,7 @@ import {
   useDeleteCategoryMutation,
 } from '../../api/categoryApi';
 import { Category } from '../../types/category.types';
+import { getErrorMsg } from '@/utils/errorMessage';
 
 interface CategoryFormData {
   name: string;
@@ -160,8 +161,8 @@ const CategoryPage: React.FC = () => {
       messageApi.success(t('adminCategory.createSuccess'));
       setIsCreateModalOpen(false);
       refetch();
-    } catch (error: any) {
-      messageApi.error(error.data?.message || t('adminCategory.createError'));
+    } catch (error) {
+      messageApi.error(getErrorMsg(error, t('adminCategory.createError')));
     }
   };
 
@@ -177,9 +178,9 @@ const CategoryPage: React.FC = () => {
       messageApi.success(t('adminCategory.updateSuccess'));
       setIsEditModalOpen(false);
       refetch();
-    } catch (error: any) {
+    } catch (error) {
       messageApi.error(
-        error.data?.message || t('adminCategory.updateError')
+        getErrorMsg(error, t('adminCategory.updateError'))
       );
     }
   };
@@ -193,8 +194,8 @@ const CategoryPage: React.FC = () => {
       messageApi.success(t('adminCategory.deleteSuccess'));
       setIsDeleteModalOpen(false);
       refetch();
-    } catch (error: any) {
-      messageApi.error(error.data?.message || t('adminCategory.deleteError'));
+    } catch (error) {
+      messageApi.error(getErrorMsg(error, t('adminCategory.deleteError')));
     }
   };
 

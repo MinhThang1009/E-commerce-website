@@ -30,6 +30,7 @@ import {
   AttributeValue,
 } from '../api/attributeApi';
 import { getLocale } from '@/utils/format';
+import { getErrorMsg } from '@/utils/errorMessage';
 
 const { Title, Text } = Typography;
 const { Option } = Select;
@@ -74,18 +75,22 @@ const HierarchicalAttributesForm: React.FC<HierarchicalAttributesFormProps> = ({
   }, [refetch]);
 
   // Wrapper functions để giữ nguyên call-site (unwrap pattern)
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any -- API payload
   const createAttributeGroup = (data: any) => ({
     unwrap: () => attributeService.createAttributeGroup(data).then((r) => r.data),
   });
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const updateAttributeGroup = (payload: { id: string; data: any }) => ({
     unwrap: () => attributeService.updateAttributeGroup(payload.id, payload.data).then((r) => r.data),
   });
   const deleteAttributeGroup = (id: string) => ({
     unwrap: () => attributeService.deleteAttributeGroup(id).then((r) => r.data),
   });
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const addAttributeValue = (payload: { attributeGroupId: string; data: any }) => ({
     unwrap: () => attributeService.addAttributeValue(payload.attributeGroupId, payload.data).then((r) => r.data),
   });
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const updateAttributeValue = (payload: { id: string; data: any }) => ({
     unwrap: () => attributeService.updateAttributeValue(payload.id, payload.data).then((r) => r.data),
   });
@@ -176,8 +181,8 @@ const HierarchicalAttributesForm: React.FC<HierarchicalAttributesFormProps> = ({
       setIsModalVisible(false);
       refetch();
       onAttributeGroupsChange?.(attributeGroups);
-    } catch (error: any) {
-      message.error(error?.data?.message || t('attr.error'));
+    } catch (error) {
+      message.error(getErrorMsg(error, t('attr.error')));
     }
   };
 
@@ -188,8 +193,8 @@ const HierarchicalAttributesForm: React.FC<HierarchicalAttributesFormProps> = ({
       message.success(t('attr.groupDeleted'));
       refetch();
       onAttributeGroupsChange?.(attributeGroups);
-    } catch (error: any) {
-      message.error(error?.data?.message || t('attr.error'));
+    } catch (error) {
+      message.error(getErrorMsg(error, t('attr.error')));
     }
   };
 
@@ -199,8 +204,8 @@ const HierarchicalAttributesForm: React.FC<HierarchicalAttributesFormProps> = ({
       message.success(t('attr.valueDeleted'));
       refetch();
       onAttributeGroupsChange?.(attributeGroups);
-    } catch (error: any) {
-      message.error(error?.data?.message || t('attr.error'));
+    } catch (error) {
+      message.error(getErrorMsg(error, t('attr.error')));
     }
   };
 

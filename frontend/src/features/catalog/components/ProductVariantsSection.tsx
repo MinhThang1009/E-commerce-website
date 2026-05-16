@@ -67,7 +67,7 @@ const ProductVariantsSection: React.FC<ProductVariantsSectionProps> = ({
       title: t('productSection.variants.actionsColumn'),
       key: 'actions',
       width: 120,
-      render: (_: any, record: ProductVariant) => (
+      render: (_: unknown, record: ProductVariant) => (
         <Space>
           <Button
             type="text"

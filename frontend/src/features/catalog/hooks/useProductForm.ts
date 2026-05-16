@@ -9,8 +9,9 @@ interface UseProductFormProps {
   onSubmit: (values: ProductFormData) => Promise<void>;
   isSubmitting: boolean;
   onStepComplete?: (step: string, isComplete: boolean) => void;
-  attributes?: any[];
-  variants?: any[];
+  attributes?: Array<{ name: string; value?: string; values?: string[] }>;
+  variants?: Array<{ name: string; price: number; stock?: number; stockQuantity?: number }>;
+
   isEditMode?: boolean; // Thêm prop để phân biệt edit vs create
 }
 
@@ -374,7 +375,7 @@ export const useProductForm = ({
     if (isEditMode) {
       try {
         await onSubmit(values);
-      } catch (error: any) {
+      } catch (error) {
         message.error(t('productForm.saveError'));
       }
       return;
@@ -390,7 +391,7 @@ export const useProductForm = ({
 
     try {
       await onSubmit(values);
-    } catch (error: any) {
+    } catch (error) {
       message.error(t('productForm.saveError'));
     }
   };

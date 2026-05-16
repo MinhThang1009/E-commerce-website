@@ -22,11 +22,14 @@ import { useTranslation } from 'react-i18next';
 import i18n from 'i18next';
 import ProductPickerModal from '../../components/ProductPickerModal';
 import { getLocale } from '@/utils/format';
+import { getErrorMsg } from '@/utils/errorMessage';
 
 // --- Custom Quill Blot for Product Card ---
+// eslint-disable-next-line @typescript-eslint/no-explicit-any -- Quill internal API không có type definitions đầy đủ
 const BlockEmbed = Quill.import('blots/block/embed') as any;
 
 class ProductCardBlot extends BlockEmbed {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any -- Quill blot data
   static create(value: any) {
     const node = super.create();
     node.setAttribute('contenteditable', 'false');
@@ -76,6 +79,7 @@ class ProductCardBlot extends BlockEmbed {
     return node;
   }
 
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any -- Quill DOM node access
   static value(node: any) {
     const dataAttr = node.getAttribute('data-product');
     if (dataAttr) {
@@ -102,10 +106,14 @@ class ProductCardBlot extends BlockEmbed {
   }
 }
 
+// eslint-disable-next-line @typescript-eslint/no-explicit-any -- Quill blot registration yêu cầu static props không có trong class type
 (ProductCardBlot as any).blotName = 'productCard';
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 (ProductCardBlot as any).tagName = 'div';
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 (ProductCardBlot as any).className = 'product-embed-card';
 
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 Quill.register(ProductCardBlot as any);
 // ---------------------------------------------
 
@@ -118,7 +126,7 @@ const CreateNewsPage: React.FC = () => {
   const isEditMode = !!id;
 
   const [form] = Form.useForm();
-  const quillRef = useRef<any>(null);
+  const quillRef = useRef<ReactQuill>(null);
   const [isProductPickerOpen, setIsProductPickerOpen] = useState(false);
 
   const { data: newsData, isLoading: isFetching } = useGetNewsByIdQuery(id!, {
@@ -136,6 +144,7 @@ const CreateNewsPage: React.FC = () => {
     }
   }, [newsData, form]);
 
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any -- Antd Form values
   const onFinish = async (values: any) => {
     try {
       if (isEditMode) {
@@ -146,8 +155,8 @@ const CreateNewsPage: React.FC = () => {
         message.success(t('admin.news.messages.createSuccess'));
       }
       navigate('/admin/news');
-    } catch (error: any) {
-      message.error(error?.data?.message || t('common.errorOccurred'));
+    } catch (error) {
+      message.error(getErrorMsg(error, t('common.errorOccurred')));
     }
   };
 
@@ -165,7 +174,8 @@ const CreateNewsPage: React.FC = () => {
     }
   };
 
-  const handleInsertProduct = (product: any) => {
+  const handleInsertProduct = (product: { id: string; name: string; price: number; images?: string[] }) => {
+    if (!quillRef.current) return;
     const quill = quillRef.current.getEditor();
     const range = quill.getSelection(true);
 

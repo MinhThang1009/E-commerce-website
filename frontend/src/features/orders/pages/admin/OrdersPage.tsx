@@ -143,7 +143,8 @@ const OrdersPage: React.FC = () => {
 
   // Gửi cập nhật trạng thái
   const handleStatusUpdate = useCallback(
-    async (values: any) => {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any -- Antd Form values
+          async (values: any) => {
       if (!selectedOrder) return;
 
       try {
@@ -161,7 +162,7 @@ const OrdersPage: React.FC = () => {
         form.resetFields();
         setSelectedOrder(null);
         refetch();
-      } catch (error: any) {
+      } catch (error) {
         console.error('Cập nhật trạng thái đơn hàng thất bại:', error);
         message.error(t('admin.orders.messages.updateError'));
       }

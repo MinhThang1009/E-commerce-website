@@ -5,6 +5,7 @@ import { ROUTES } from '@/routes/paths';
 import { PremiumButton } from '@/components/common';
 import Input from '@/components/common/Input';
 import { useRegisterMutation, useVerifyOtpMutation, useResendVerificationMutation } from '../api/authApi';
+import { getErrorMsg } from '@/utils/errorMessage';
 
 type Step = 'form' | 'otp';
 type ApiError = { data?: { message?: string }; message?: string };
@@ -106,8 +107,8 @@ const RegisterPage: React.FC = () => {
       await verifyOtp({ email: registeredEmail, otp });
       setOtpSuccess(t('auth.otp.success'));
       setTimeout(() => navigate('/login', { replace: true }), 2000);
-    } catch (err: any) {
-      setOtpError(err?.data?.message || t('auth.otp.invalid'));
+    } catch (err) {
+      setOtpError(getErrorMsg(err, t('auth.otp.invalid')));
     }
   };
 
@@ -121,8 +122,8 @@ const RegisterPage: React.FC = () => {
       const timer = setInterval(() => {
         setResendCooldown(c => { if (c <= 1) { clearInterval(timer); return 0; } return c - 1; });
       }, 1000);
-    } catch (err: any) {
-      setOtpError(err?.data?.message || t('auth.otp.resendError'));
+    } catch (err) {
+      setOtpError(getErrorMsg(err, t('auth.otp.resendError')));
     }
   };
 

@@ -44,6 +44,21 @@ import {
 
 const { Title } = Typography;
 
+// Kiểu sản phẩm dùng trong bảng quản trị
+interface AdminProductRow {
+  id: string;
+  name: string;
+  description?: string;
+  price: number;
+  stockQuantity?: number;
+  stock?: number;
+  status: string;
+  images?: string[];
+  categories?: Array<{ id: string; name: string }>;
+  variants?: Array<{ price: number | string; stockQuantity?: number }>;
+  [key: string]: unknown;
+}
+
 // Tùy chọn trạng thái
 // Tùy chọn trạng thái sẽ được xử lý bên trong component vì phụ thuộc hooks
 
@@ -68,13 +83,13 @@ const ProductsPage: React.FC = () => {
 
   // Trạng thái chọn hàng
   const [selectedRowKeys, setSelectedRowKeys] = useState<React.Key[]>([]);
-  const [selectedRows, setSelectedRows] = useState<any[]>([]);
+  const [selectedRows, setSelectedRows] = useState<AdminProductRow[]>([]);
 
   // Trạng thái xuất dữ liệu
   const [isExportModalOpen, setIsExportModalOpen] = useState(false);
 
   // Trạng thái modal
-  const [selectedProduct, setSelectedProduct] = useState<any>(null);
+  const [selectedProduct, setSelectedProduct] = useState<AdminProductRow | null>(null);
   const [isQuickViewOpen, setIsQuickViewOpen] = useState(false);
 
   // Lấy danh mục từ API
@@ -124,7 +139,7 @@ const ProductsPage: React.FC = () => {
   const categoryOptions = [
     { value: 'all', label: t('admin.products.filters.allCategories') },
     ...(Array.isArray(apiCategories)
-      ? apiCategories.map((cat: any) => ({
+      ? apiCategories.map((cat: { id: string; name: string }) => ({
           value: cat.id,
           label: cat.name,
         }))
@@ -169,7 +184,7 @@ const ProductsPage: React.FC = () => {
   };
 
   // Xử lý lấy dữ liệu xuất
-  const handleExportAll = async (exportFilters: any) => {
+  const handleExportAll = async (exportFilters: Record<string, unknown>) => {
     try {
       const result = await triggerGetProducts({
         ...exportFilters,
@@ -183,7 +198,7 @@ const ProductsPage: React.FC = () => {
   };
 
   // Mở modal xem nhanh
-  const openQuickView = (product: any) => {
+  const openQuickView = (product: AdminProductRow) => {
     setSelectedProduct(product);
     setIsQuickViewOpen(true);
   };
@@ -206,11 +221,11 @@ const ProductsPage: React.FC = () => {
   };
 
   // Tính giá thấp nhất từ biến thể hoặc giá cơ bản
-  const calculateDisplayPrice = (product: any) => {
+  const calculateDisplayPrice = (product: AdminProductRow) => {
     // Nếu sản phẩm có variants, hiển thị giá thấp nhất
     if (product.variants && product.variants.length > 0) {
-      const prices = product.variants.map((variant: any) =>
-        parseFloat(variant.price)
+      const prices = product.variants.map((variant) =>
+        parseFloat(String(variant.price))
       );
       const minPrice = Math.min(...prices);
 
@@ -269,7 +284,7 @@ const ProductsPage: React.FC = () => {
       title: t('admin.products.table.category'),
       dataIndex: 'categories',
       key: 'categories',
-      render: (categories: any[]) => (
+      render: (categories: Array<{ name: string }>) => (
         <>
           {categories && categories.length > 0 ? (
             categories.map((cat, index) => (
@@ -288,7 +303,7 @@ const ProductsPage: React.FC = () => {
       dataIndex: 'price',
       key: 'price',
       sorter: true,
-      render: (price: number, record: any) => (
+      render: (price: number, record: AdminProductRow) => (
         <span style={{ fontWeight: 500, color: '#52c41a' }}>
           {calculateDisplayPrice(record)}
         </span>
@@ -299,12 +314,12 @@ const ProductsPage: React.FC = () => {
       dataIndex: 'stockQuantity',
       key: 'stock',
       sorter: true,
-      render: (stockQuantity: number, record: any) => {
+      render: (stockQuantity: number, record: AdminProductRow) => {
         // Sử dụng stockQuantity từ API hoặc fallback về stock nếu có
         const stock =
           stockQuantity !== undefined ? stockQuantity : record.stock;
         return (
-          <span style={{ color: stock > 0 ? '#52c41a' : '#ff4d4f' }}>
+          <span style={{ color: (stock ?? 0) > 0 ? '#52c41a' : '#ff4d4f' }}>
             {stock}
           </span>
         );
@@ -315,7 +330,7 @@ const ProductsPage: React.FC = () => {
       dataIndex: 'status',
       key: 'status',
       width: 150,
-      render: (status: string, record: any) => (
+      render: (status: string, record: AdminProductRow) => (
         <Select
           value={status}
           style={{ width: 140 }}
@@ -338,7 +353,7 @@ const ProductsPage: React.FC = () => {
       title: t('admin.products.table.actions'),
       key: 'actions',
       width: 150,
-      render: (_: any, record: any) => (
+      render: (_: unknown, record: AdminProductRow) => (
         <Space>
           <Button
             type="link"
@@ -387,11 +402,8 @@ const ProductsPage: React.FC = () => {
   ];
 
   // Xử lý thay đổi bảng (sắp xếp, phân trang)
-  const handleTableChange = (
-    paginationInfo: any,
-    filters: any,
-    sorter: any
-  ) => {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const handleTableChange = (_paginationInfo: any, _filters: any, sorter: any) => {
     if (sorter.field) {
       setSortBy(sorter.field);
       setSortOrder(sorter.order === 'ascend' ? 'ASC' : 'DESC');
@@ -419,7 +431,7 @@ const ProductsPage: React.FC = () => {
   // Cấu hình chọn hàng
   const rowSelection = {
     selectedRowKeys,
-    onChange: (keys: React.Key[], rows: any[]) => {
+    onChange: (keys: React.Key[], rows: AdminProductRow[]) => {
       setSelectedRowKeys(keys);
       setSelectedRows(rows);
     },
@@ -506,7 +518,7 @@ const ProductsPage: React.FC = () => {
             <Table
               rowSelection={rowSelection}
               columns={columns}
-              dataSource={products}
+              dataSource={products as unknown as AdminProductRow[]}
               rowKey="id"
               pagination={false}
               onChange={handleTableChange}
@@ -549,7 +561,7 @@ const ProductsPage: React.FC = () => {
             type="primary"
             onClick={() => {
               setIsQuickViewOpen(false);
-              navigate(buildRoute.adminProductEdit(selectedProduct?.id));
+              navigate(buildRoute.adminProductEdit(selectedProduct?.id ?? ''));
             }}
           >
             {t('admin.products.modal.edit')}
@@ -582,7 +594,7 @@ const ProductsPage: React.FC = () => {
                     {selectedProduct.categories &&
                     selectedProduct.categories.length > 0 ? (
                       selectedProduct.categories.map(
-                        (cat: any, index: number) => (
+                        (cat: { name: string }, index: number) => (
                           <Tag color="blue" key={index}>
                             {cat.name}
                           </Tag>
@@ -598,7 +610,8 @@ const ProductsPage: React.FC = () => {
                       {
                         calculatePriceRange(
                           selectedProduct.price,
-                          selectedProduct.variants
+                          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                          selectedProduct.variants as any
                         ).priceText
                       }
                     </span>
@@ -608,8 +621,8 @@ const ProductsPage: React.FC = () => {
                     <span
                       style={{
                         color:
-                          (selectedProduct.stockQuantity ||
-                            selectedProduct.stock) > 0
+                          ((selectedProduct.stockQuantity ?? 0) ||
+                            (selectedProduct.stock ?? 0)) > 0
                             ? '#52c41a'
                             : '#ff4d4f',
                       }}

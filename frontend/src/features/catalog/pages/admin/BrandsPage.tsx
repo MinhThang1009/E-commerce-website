@@ -31,6 +31,7 @@ import {
   useUpdateBrandMutation,
   useDeleteBrandMutation,
 } from '../../api/brandApi';
+import { getErrorMsg } from '@/utils/errorMessage';
 
 const { Title } = Typography;
 const { TextArea } = Input;
@@ -47,8 +48,9 @@ const BrandsPage: React.FC = () => {
   const { t } = useTranslation();
   const [form] = Form.useForm();
   const [isModalVisible, setIsModalVisible] = useState(false);
-  const [editingBrand, setEditingBrand] = useState<any | null>(null);
-  const [_fileList, setFileList] = useState<any[]>([]);
+  const [editingBrand, setEditingBrand] = // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  useState<any>(null);
+  const [_fileList, setFileList] = useState<unknown[]>([]);
 
   const { data: brandsData, isLoading, refetch } = useGetBrandsQuery();
   const { mutateAsync: createBrand, isPending: isCreating } = useCreateBrandMutation();
@@ -71,8 +73,8 @@ const BrandsPage: React.FC = () => {
       form.resetFields();
       setFileList([]);
       refetch();
-    } catch (error: any) {
-      message.error(error?.data?.message || t('common.errorOccurred'));
+    } catch (error) {
+      message.error(getErrorMsg(error, t('common.errorOccurred')));
     }
   };
 
@@ -81,8 +83,8 @@ const BrandsPage: React.FC = () => {
       await deleteBrand(id);
       message.success(t('admin.brands.messages.deleteSuccess'));
       refetch();
-    } catch (error: any) {
-      message.error(error?.data?.message || t('admin.brands.messages.deleteError'));
+    } catch (error) {
+      message.error(getErrorMsg(error, t('admin.brands.messages.deleteError')));
     }
   };
 
@@ -94,6 +96,7 @@ const BrandsPage: React.FC = () => {
     form.setFieldsValue({ isActive: true });
   };
 
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any -- Brand API response fields
   const handleEdit = (brand: any) => {
     setEditingBrand(brand);
     setIsModalVisible(true);
@@ -117,6 +120,7 @@ const BrandsPage: React.FC = () => {
       dataIndex: 'logo',
       key: 'logo',
       width: 80,
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       render: (logo: string, record: any) => {
         const fullLogoUrl = getUploadUrl(logo);
         return logo ? (
@@ -138,6 +142,7 @@ const BrandsPage: React.FC = () => {
       title: t('admin.brands.table.name'),
       dataIndex: 'name',
       key: 'name',
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       render: (name: string, record: any) => (
         <div>
           <div className="font-medium">{name}</div>
@@ -172,7 +177,8 @@ const BrandsPage: React.FC = () => {
       title: t('admin.brands.table.actions'),
       key: 'actions',
       width: 120,
-      render: (_: any, record: any) => (
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      render: (_: unknown, record: any) => (
         <Space>
           <Button type="link" icon={<EditOutlined />} onClick={() => handleEdit(record)} size="small" />
           <Popconfirm

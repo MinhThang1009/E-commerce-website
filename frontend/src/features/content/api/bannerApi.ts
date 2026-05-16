@@ -28,7 +28,7 @@ interface BannerPayload {
 export const bannerKeys = {
   all: ['banners'] as const,
   lists: () => [...bannerKeys.all, 'list'] as const,
-  list: (params: any) => [...bannerKeys.lists(), params] as const,
+  list: (params: unknown) => [...bannerKeys.lists(), params] as const,
 };
 
 // === Query Hooks ===

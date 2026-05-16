@@ -40,17 +40,19 @@ import ProductSpecificationsForm from '../../components/ProductSpecificationsFor
 import ProductFAQForm from '../../components/ProductFAQForm';
 import ValidationAlerts from '../../components/ValidationAlerts';
 import FormActions from '../../components/FormActions';
-import AttributeModal from '@/components/modals/AttributeModal';
-import VariantModal from '@/components/modals/VariantModal';
+import AttributeModal from '../../components/AttributeModal';
+import VariantModal from '../../components/VariantModal';
 
 // Types
 import { ProductFormData, ProductAttribute, ProductVariant } from '@/types';
+import type { UpdateProductRequest } from '@/features/admin/api/adminProductApi';
 
 // Utils
 import {
   processDescriptionImages,
   hasBase64Images,
 } from '@/utils/descriptionImageProcessor';
+import { getErrorMsg } from '@/utils/errorMessage';
 
 const { Title, Text } = Typography;
 
@@ -96,7 +98,7 @@ const EditProductPage: React.FC = () => {
   } = useProductVariants([], form);
 
   // State thông số kỹ thuật
-  const [specifications, setSpecifications] = useState<any[]>([]);
+  const [specifications, setSpecifications] = useState<Array<{ id: string; name: string; value: string; category?: string }>>([]);
 
   const {
     isFormValid,
@@ -128,7 +130,7 @@ const EditProductPage: React.FC = () => {
             uploadImageFn: async ({ base64Data, options }) => {
               return await convertBase64ToImage({
                 base64Data,
-                options: options as any,
+                options: options as Record<string, unknown>,
               });
             },
           });
@@ -138,7 +140,7 @@ const EditProductPage: React.FC = () => {
         }
 
         // Xây dựng đối tượng cập nhật đầy đủ
-        const productData: any = {
+        const productData: UpdateProductRequest & Record<string, unknown> = {
           id,
           name: formValues.name,
           baseName: formValues.baseName || formValues.name,
@@ -157,7 +159,7 @@ const EditProductPage: React.FC = () => {
           images: typeof formValues.images === 'string'
             ? formValues.images.split('\n').filter((img: string) => img.trim())
             : Array.isArray(formValues.images) ? formValues.images : [],
-          specifications: (formValues.specifications || []).map((spec: any) => ({
+          specifications: (formValues.specifications || []).map((spec: { name: string; value: string; category?: string }) => ({
             name: spec.name,
             value: spec.value,
             category: spec.category || 'General',
@@ -181,23 +183,23 @@ const EditProductPage: React.FC = () => {
         productData.comparePrice = compareAtPrice > 0 ? compareAtPrice : null;
 
         // Thuộc tính và biến thể - luôn gửi nếu có để an toàn
-        productData.attributes = attributes.map((attr: any) => ({
+        productData.attributes = attributes.map((attr: ProductAttribute) => ({
           name: attr.name,
-          value: Array.isArray((attr as any).values) 
-            ? (attr as any).values.join(', ') 
-            : (attr as any).value || (attr as any).values || '',
+          value: Array.isArray(attr.values)
+            ? attr.values.join(', ')
+            : '',
         }));
 
         if (hasVariants) {
-          productData.variants = variants.map((variant: any, index: number) => ({
+          productData.variants = variants.map((variant: ProductVariant, index: number) => ({
             id: variant.id && !variant.id.startsWith('var-') ? variant.id : undefined,
             name: variant.name,
             price: parseFloat(variant.price?.toString()) || 0,
             sku: variant.sku || `VAR-${id}-${index}-${Date.now()}`,
             isAvailable: true,
             isDefault: variant.isDefault || index === 0,
-            stockQuantity: parseInt((variant as any).stockQuantity?.toString() || variant.stock?.toString() || '0') || 0,
-            stock: parseInt(variant.stock?.toString() || (variant as any).stockQuantity?.toString() || '0') || 0,
+            stockQuantity: parseInt(variant.stockQuantity?.toString() || variant.stock?.toString() || '0') || 0,
+            stock: parseInt(variant.stock?.toString() || variant.stockQuantity?.toString() || '0') || 0,
             attributes: variant.attributes || {},
           }));
         }
@@ -205,7 +207,7 @@ const EditProductPage: React.FC = () => {
         await updateProduct(productData);
         message.success(t('admin.products.messages.updateSuccess'));
         navigate(ROUTES.ADMIN_PRODUCTS);
-      } catch (error: any) {
+      } catch (error) {
         console.error('Failed to update product:', error);
         const errorMessage = formatErrorMessage(error);
         message.error(errorMessage);
@@ -221,7 +223,9 @@ const EditProductPage: React.FC = () => {
   useEffect(() => {
     if (productResponse?.data) {
       // Xử lý cả format { product } và raw product
-      const product = (productResponse.data as any).product || productResponse.data;
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any -- API response shape phức tạp, cần dynamic access cho nhiều trường
+      const rawData = productResponse.data as any;
+      const product = rawData.product || rawData;
 
       // Xử lý mô tả: xử lý ảnh base64
       let processedDescription = product.description || '';
@@ -247,10 +251,10 @@ const EditProductPage: React.FC = () => {
         product.images &&
         Array.isArray(product.images)
       ) {
-        const imageElements = product.images
-          .filter((img: any) => img.includes('data:image'))
+        const imageElements = (product.images as string[])
+          .filter((img: string) => img.includes('data:image'))
           .map(
-            (img: any) =>
+            (img: string) =>
               `<img src="${img}" alt="${t('product.imageAlt')}" style="max-width: 100%; height: auto;" />`
           )
           .join('<br/>');
@@ -271,14 +275,14 @@ const EditProductPage: React.FC = () => {
         sku: product.sku,
         status: product.status,
         featured: product.featured,
-        categoryIds: product.categories?.map((cat: any) => cat.id) || [],
+        categoryIds: product.categories?.map((cat: { id: string }) => cat.id) || [],
         images: product.images?.join('\n') || '',
         thumbnail: product.thumbnail || '',
         seoTitle: product.seoTitle || '',
         seoDescription: product.seoDescription || '',
         seoKeywords: product.seoKeywords || '',
         warrantyPackageIds:
-          product.warrantyPackages?.map((wp: any) => wp.id) || [],
+          product.warrantyPackages?.map((wp: { id: string }) => wp.id) || [],
         faqs: product.faqs || [],
         specifications: (() => {
           // Tải thông số từ bảng productSpecifications
@@ -287,7 +291,7 @@ const EditProductPage: React.FC = () => {
             Array.isArray(product.productSpecifications)
           ) {
             const specs = product.productSpecifications.map(
-              (spec: any, index: number) => ({
+              (spec: { id?: string; name: string; value: string; category?: string }, index: number) => ({
                 id: spec.id || `spec-${index}`,
                 name: spec.name,
                 value: spec.value,
@@ -312,7 +316,7 @@ const EditProductPage: React.FC = () => {
       // Gán thuộc tính và biến thể
       if (product.attributes) {
         const formattedAttributes: ProductAttribute[] = product.attributes.map(
-          (attr: any, index: number) => ({
+          (attr: { id?: string; name: string; values?: string[]; value?: string }, index: number) => ({
             id: attr.id || `attr-${index}`,
             name: attr.name,
           // Nếu values là mảng, chuyển thành chuỗi ngăn cách bởi dấu phẩy
@@ -326,10 +330,10 @@ const EditProductPage: React.FC = () => {
 
       if (product.variants) {
         const formattedVariants: ProductVariant[] = product.variants.map(
-          (variant: any, index: number) => ({
+          (variant: { id?: string; name: string; price: number | string; stockQuantity?: number; stock?: number; sku?: string; attributes?: Record<string, string> }, index: number) => ({
             id: variant.id || `var-${index}`,
             name: variant.name,
-            price: parseFloat(variant.price) || 0,
+            price: parseFloat(String(variant.price)) || 0,
         // Sử dụng stockQuantity thay vì stock để dùng với dữ liệu API
             stock: variant.stockQuantity || variant.stock || 0,
             sku: variant.sku || '',
@@ -388,34 +392,11 @@ const EditProductPage: React.FC = () => {
   }, [productResponse, form, setAttributes, setVariants, setIsFormValid, t]);
 
   // Hàm hỗ trợ định dạng thông báo lỗi
-  const formatErrorMessage = (error: any): string => {
-    if (error?.data?.message) {
-      return error.data.message;
-    }
-
-    if (error?.data?.errors && error.data.errors.length > 0) {
-      if (error.data.errors.length === 1) {
-        return (
-          error.data.errors[0].message ||
-          t('admin.products.messages.fieldValidationError', { field: error.data.errors[0].field })
-        );
-      }
-
-      // Nhiều lỗi - định dạng gọn gàng
-      const errorList = error.data.errors
-        .map((err: any) => err.message || t('admin.products.messages.fieldValidationError', { field: err.field }))
-        .join('\n• ');
-      return `${t('admin.products.messages.multipleErrors', { count: error.data.errors.length })}:\n• ${errorList}`;
-    }
-
-    if (error?.message) {
-      return error.message;
-    }
-
-    return t('admin.products.messages.updateFailed');
+  const formatErrorMessage = (error: unknown): string => {
+    return getErrorMsg(error, t('admin.products.messages.updateFailed'));
   };
 
-  const categories: any[] = Array.isArray(categoriesResponse?.data) 
+  const categories = Array.isArray(categoriesResponse?.data)
     ? categoriesResponse.data 
     : categoriesResponse?.data 
       ? [categoriesResponse.data] 
@@ -583,7 +564,7 @@ const EditProductPage: React.FC = () => {
         <AttributeModal
           open={attributeModalVisible}
           onClose={closeAttributeModal}
-          attribute={editingAttribute as any}
+          attribute={editingAttribute}
           onSave={handleAddAttribute}
         />
       )}
@@ -592,9 +573,9 @@ const EditProductPage: React.FC = () => {
         <VariantModal
           open={variantModalVisible}
           onClose={closeVariantModal}
-          variant={editingVariant as any}
+          variant={editingVariant}
           onSave={handleAddVariant}
-          attributes={attributes as any}
+          attributes={attributes}
         />
       )}
     </div>

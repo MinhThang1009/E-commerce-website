@@ -23,7 +23,7 @@ export interface ChatAction {
   type: string;
   label: string;
   url?: string;
-  data?: Record<string, any>;
+  data?: Record<string, unknown>;
 }
 
 export interface ChatbotResponse {
@@ -38,7 +38,7 @@ export interface SendChatbotMessageRequest {
   message: string;
   userId?: number | string;
   sessionId: string;
-  context?: Record<string, any>;
+  context?: Record<string, unknown>;
 }
 
 export interface TrackAnalyticsRequest {
@@ -47,7 +47,7 @@ export interface TrackAnalyticsRequest {
   sessionId: string;
   productId?: string | number;
   value?: number;
-  metadata?: Record<string, any>;
+  metadata?: Record<string, unknown>;
 }
 
 export interface AddToCartViaChatbotRequest {
@@ -69,7 +69,7 @@ export function useSendChatbotMessageMutation() {
 }
 
 export function useTrackChatbotAnalyticsMutation() {
-  return useMutation<any, Error, TrackAnalyticsRequest>({
+  return useMutation<unknown, Error, TrackAnalyticsRequest>({
     mutationFn: async (body) => {
       const { data } = await apiClient.post('/chatbot/analytics', body);
       return data;
@@ -79,7 +79,7 @@ export function useTrackChatbotAnalyticsMutation() {
 
 export function useAddToCartViaChatbotMutation() {
   const queryClient = useQueryClient();
-  return useMutation<any, Error, AddToCartViaChatbotRequest>({
+  return useMutation<unknown, Error, AddToCartViaChatbotRequest>({
     mutationFn: async ({ productId, quantity, sessionId, variantId }) => {
       const { data } = await apiClient.post('/chatbot/cart/add', {
         productId, quantity, sessionId, variantId,

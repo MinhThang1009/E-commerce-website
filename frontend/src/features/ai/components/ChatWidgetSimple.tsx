@@ -130,7 +130,7 @@ const ChatWidgetSimple: React.FC = () => {
           },
         ];
       });
-    } catch (error: any) {
+    } catch (error) {
       console.error('Lỗi khi tạo phản hồi AI:', error);
 
       const errorMessage = t('chat.errors.general');

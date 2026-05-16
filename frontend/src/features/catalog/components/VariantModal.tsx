@@ -17,9 +17,10 @@ interface Variant {
 interface VariantModalProps {
   open: boolean;
   onClose: () => void;
-  variant?: any;
+  variant?: Variant | null;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any -- Caller passes different variant types
   onSave: (variant: any) => void;
-  attributes: any[];
+  attributes: Array<{ id?: string; name: string; value?: string; values?: string[] }>;
 }
 
 const VariantModal: React.FC<VariantModalProps> = ({
@@ -46,6 +47,7 @@ const VariantModal: React.FC<VariantModalProps> = ({
     }
   }, [variant, form, open]);
 
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any -- Antd Form destructuring cần dynamic keys
   const handleSubmit = (values: any) => {
     const { name, price, stock, sku, ...attributeValues } = values;
 

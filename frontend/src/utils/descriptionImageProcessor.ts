@@ -1,5 +1,6 @@
 import { message } from 'antd';
 import i18next from 'i18next';
+import { getErrorMsg } from '@/utils/errorMessage';
 
 export interface ProcessDescriptionOptions {
   productId?: string;
@@ -10,6 +11,7 @@ export interface ProcessDescriptionOptions {
       category?: string;
       productId?: string;
     };
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   }) => Promise<any>;
 }
 
@@ -111,13 +113,13 @@ export const processDescriptionImages = async (
           );
           hasErrors = true;
         }
-      } catch (error: any) {
+      } catch (error) {
         console.error(`Lỗi khi chuyển đổi ảnh ${i + 1}:`, error);
         hasErrors = true;
 
         // Tiếp tục xử lý ảnh khác dù một ảnh bị lỗi
         const errorMessage =
-          error?.data?.message || error?.message || 'Unknown error';
+          getErrorMsg(error, 'Unknown error');
         console.error(`Chuyển đổi ảnh ${i + 1} thất bại: ${errorMessage}`);
       }
     }

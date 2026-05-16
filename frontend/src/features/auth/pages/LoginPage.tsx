@@ -10,6 +10,7 @@ import {
 } from '../api/authApi';
 import { useAuthStore } from '@/stores/authStore';
 import GoogleLoginButton from '../components/GoogleLoginButton';
+import { getErrorMsg } from '@/utils/errorMessage';
 
 interface LocationState { from?: { pathname: string } }
 type ApiError = { data?: { message?: string }; message?: string };
@@ -77,7 +78,7 @@ const LoginPage: React.FC = () => {
       } else {
         navigate(from === '/admin' ? '/' : from, { replace: true });
       }
-    } catch (err: any) {
+    } catch (err) {
       // Lỗi đã được TanStack Query xử lý và hiển thị trên UI
     }
   };
@@ -92,8 +93,8 @@ const LoginPage: React.FC = () => {
     try {
       await resendVerification({ email });
       setResendSuccess(t('auth.login.resendOtpSuccess'));
-    } catch (err: any) {
-      setResendError(err?.data?.message || err?.message || t('auth.login.resendOtpError'));
+    } catch (err) {
+      setResendError(getErrorMsg(err, t('auth.login.resendOtpError')));
     }
   };
 

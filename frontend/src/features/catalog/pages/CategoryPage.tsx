@@ -52,7 +52,7 @@ const CategoryPage: React.FC = () => {
   const { data: allCatsData } = useGetAllCategoriesQuery();
   const relatedCategories = useMemo(() => {
     const cats = Array.isArray(allCatsData?.data) ? allCatsData.data : [];
-    return cats.filter((c: any) => c.slug !== slug).slice(0, 5);
+    return cats.filter((c) => c.slug !== slug).slice(0, 5);
   }, [allCatsData, slug]);
 
   useEffect(() => {
@@ -268,7 +268,8 @@ const CategoryPage: React.FC = () => {
           </div>
         ) : (
           <div className={`grid gap-5 ${viewMode === 'grid' ? 'grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4' : 'grid-cols-1 lg:grid-cols-2'}`}>
-            {products.map((product: any) => (
+            {products.map(// eslint-disable-next-line @typescript-eslint/no-explicit-any -- Product card cần nhiều trường
+          (product: any) => (
               <ProductCard key={product.id} {...product} />
             ))}
           </div>

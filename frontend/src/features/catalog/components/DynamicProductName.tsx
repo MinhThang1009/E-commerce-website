@@ -23,6 +23,7 @@ interface DynamicProductNameProps {
   baseName?: string;
   selectedAttributes?: Record<string, string>;
   productId?: string;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any -- AI response details
   onNameGenerated?: (name: string, details: any) => void;
   disabled?: boolean;
 }
@@ -98,9 +99,9 @@ const DynamicProductName: React.FC<DynamicProductNameProps> = ({
           form.setFieldValue('name', response.data.generatedName);
         }
       }
-    } catch (err: any) {
+    } catch (err) {
       console.error('Lỗi tạo tên:', err);
-      setError(err.message || 'Failed to generate product name');
+      setError(err instanceof Error ? err.message : 'Failed to generate product name');
     } finally {
       setLoading(false);
     }

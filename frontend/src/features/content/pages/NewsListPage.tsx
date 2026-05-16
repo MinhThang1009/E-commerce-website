@@ -119,6 +119,7 @@ const NewsListPage: React.FC = () => {
 
                 {gridPosts.length > 0 && (
                   <div className="lg:col-span-4 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-1 gap-6">
+                    {/* eslint-disable-next-line @typescript-eslint/no-explicit-any -- News post cần nhiều trường */}
                     {gridPosts.map((post: any) => (
                       <Link
                         key={post.id}
@@ -151,6 +152,7 @@ const NewsListPage: React.FC = () => {
             )}
 
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-10">
+              {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
               {listPosts.map((item: any) => (
                 <Link
                   key={item.id}

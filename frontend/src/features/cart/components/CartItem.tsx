@@ -45,7 +45,7 @@ const CartItem: React.FC<CartItemProps> = ({ item, isCheckout = false, readonly:
         updateQuantity({ id: item.id, quantity: newQuantity });
         toast.success(t('cart.notifications.quantityUpdatedOffline'));
       }
-    } catch (error: any) {
+    } catch (error) {
       console.error('Lỗi cập nhật sản phẩm trong giỏ:', error);
       updateQuantity({ id: item.id, quantity: newQuantity });
       toast.error(t('cart.notifications.updateServerError'));
@@ -61,7 +61,7 @@ const CartItem: React.FC<CartItemProps> = ({ item, isCheckout = false, readonly:
         removeItem(item.id);
         toast.success(t('cart.notifications.itemRemoved'));
       }
-    } catch (error: any) {
+    } catch (error) {
       console.error('Lỗi xóa sản phẩm khỏi giỏ:', error);
       removeItem(item.id);
       toast.error(t('cart.notifications.removeServerError'));

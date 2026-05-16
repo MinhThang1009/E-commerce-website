@@ -28,7 +28,7 @@ const { Option } = Select;
 const { Text } = Typography;
 
 interface AttributeGroup extends BaseAttributeGroup {
-  values: AttributeValue[];
+  values?: AttributeValue[];
 }
 
 interface DynamicAttributeSelectorProps {
@@ -38,6 +38,7 @@ interface DynamicAttributeSelectorProps {
     attributeValues: Record<string, string>,
     affectingNameOnly: Record<string, string>
   ) => void;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any -- AI response details
   onNameGenerated?: (name: string, details: any) => void;
   disabled?: boolean;
   showNamePreview?: boolean;
@@ -78,7 +79,7 @@ const DynamicAttributeSelector: React.FC<DynamicAttributeSelectorProps> = ({
       if (response.status === 'success') {
         setAttributeGroups(response.data);
       }
-    } catch (err: any) {
+    } catch (err) {
       setError(t('attr.loadError'));
       console.error('Lỗi tải nhóm thuộc tính:', err);
     } finally {
@@ -93,7 +94,7 @@ const DynamicAttributeSelector: React.FC<DynamicAttributeSelectorProps> = ({
       if (response.status === 'success') {
         setNameAffectingAttributes(response.data);
       }
-    } catch (err: any) {
+    } catch (err) {
       console.error('Lỗi tải thuộc tính ảnh hưởng đến tên:', err);
     }
   };
@@ -126,7 +127,7 @@ const DynamicAttributeSelector: React.FC<DynamicAttributeSelectorProps> = ({
   const getVisibleAttributeGroups = () => {
     if (showOnlyNameAffecting) {
       return attributeGroups.filter((group) =>
-        group.values.some((value) => value.affectsName)
+        group.values?.some((value) => value.affectsName)
       );
     }
     return attributeGroups;
@@ -134,7 +135,7 @@ const DynamicAttributeSelector: React.FC<DynamicAttributeSelectorProps> = ({
 
   const getAttributeValueInfo = (valueId: string) => {
     for (const group of attributeGroups) {
-      const value = group.values.find((v) => v.id === valueId);
+      const value = group.values?.find((v) => v.id === valueId);
       if (value) {
         return { value, group };
       }
@@ -258,7 +259,7 @@ const DynamicAttributeSelector: React.FC<DynamicAttributeSelectorProps> = ({
                   <Space>
                     <span>{group.name}</span>
                     {group.isRequired && <Text type="danger">*</Text>}
-                    {group.values.some((v) => v.affectsName) && (
+                    {group.values?.some((v) => v.affectsName) && (
                       <Tooltip title={t('product.affectsNameTooltip')}>
                         <Tag color="blue">
                           <BulbOutlined style={{ fontSize: 10 }} />
@@ -286,7 +287,7 @@ const DynamicAttributeSelector: React.FC<DynamicAttributeSelectorProps> = ({
                   optionFilterProp="children"
                   notFoundContent={t('common.noResults')}
                 >
-                  {group.values
+                  {(group.values ?? [])
                     .filter((value) => value.isActive)
                     .sort((a, b) => (a.sortOrder ?? 0) - (b.sortOrder ?? 0))
                     .map((value) => renderAttributeValue(value, group.type))}

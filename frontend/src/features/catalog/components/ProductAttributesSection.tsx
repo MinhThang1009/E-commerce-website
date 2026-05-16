@@ -36,7 +36,7 @@ const ProductAttributesSection: React.FC<ProductAttributesSectionProps> = ({
       title: t('productSection.attr.actionsColumn'),
       key: 'actions',
       width: 120,
-      render: (_: any, record: ProductAttribute) => (
+      render: (_: unknown, record: ProductAttribute) => (
         <Space>
           <Button
             type="text"

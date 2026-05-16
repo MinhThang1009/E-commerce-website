@@ -63,7 +63,7 @@ export function useCheckWishlistQuery(
 
 export function useAddToWishlistMutation() {
   const queryClient = useQueryClient();
-  return useMutation<any, Error, { productId: string }>({
+  return useMutation<unknown, Error, { productId: string }>({
     mutationFn: async (body) => {
       const { data } = await apiClient.post('/wishlists', body);
       return data;
@@ -76,7 +76,7 @@ export function useAddToWishlistMutation() {
 
 export function useRemoveFromWishlistMutation() {
   const queryClient = useQueryClient();
-  return useMutation<any, Error, string>({
+  return useMutation<unknown, Error, string>({
     mutationFn: async (productId) => {
       const { data } = await apiClient.delete(`/wishlists/${productId}`);
       return data;
@@ -89,7 +89,7 @@ export function useRemoveFromWishlistMutation() {
 
 export function useClearWishlistMutation() {
   const queryClient = useQueryClient();
-  return useMutation<any, Error, void>({
+  return useMutation<unknown, Error, void>({
     mutationFn: async () => {
       const { data } = await apiClient.delete('/wishlists');
       return data;

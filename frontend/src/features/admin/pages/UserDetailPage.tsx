@@ -77,6 +77,7 @@ const UserDetailPage: React.FC = () => {
       title: t('admin.userDetail.orderColumns.code'),
       dataIndex: 'orderNumber',
       key: 'orderNumber',
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any -- Antd Table record
       render: (text: string, record: any) => (
         <Link to={buildRoute.adminOrderDetail(record.id)} className="font-medium">
           #{text || record.id.substring(0, 8)}
@@ -236,6 +237,7 @@ const UserDetailPage: React.FC = () => {
                   children: (
                     <Row gutter={[16, 16]}>
                       {user.addresses?.length > 0 ? (
+                        // eslint-disable-next-line @typescript-eslint/no-explicit-any -- Address fields dynamic
                         user.addresses.map((addr: any) => (
                           <Col span={12} key={addr.id}>
                             <Card size="small" className="h-full border-neutral-200">
@@ -272,17 +274,20 @@ const UserDetailPage: React.FC = () => {
                     <Timeline
                       className="mt-4"
                       items={[
+                        // eslint-disable-next-line @typescript-eslint/no-explicit-any -- API response fields dynamic
                         ...(user.loyaltyHistories || []).map((h: any) => ({
                           color: h.type === 'earn' ? 'green' : 'gold',
                           date: new Date(h.createdAt),
                           children: `${new Date(h.createdAt).toLocaleString(i18n.language === 'vi' ? 'vi-VN' : 'en-US')}: ${h.type === 'earn' ? t('admin.userDetail.activity.earn') : t('admin.userDetail.activity.use')} ${h.points} ${t('admin.userDetail.activity.points')} - ${h.description || 'N/A'}`,
                         })),
+                        // eslint-disable-next-line @typescript-eslint/no-explicit-any
                         ...(user.searchHistories || []).map((s: any) => ({
                           color: 'blue',
                           date: new Date(s.createdAt),
                           children: `${new Date(s.createdAt).toLocaleString(i18n.language === 'vi' ? 'vi-VN' : 'en-US')}: ${t('admin.userDetail.activity.search')} "${s.keyword || s.query || 'N/A'}"`,
                         })),
                       ]
+                        // eslint-disable-next-line @typescript-eslint/no-explicit-any
                         .sort((a: any, b: any) => b.date.getTime() - a.date.getTime())
                         .map(({ date: _date, ...rest }) => rest)
                       }

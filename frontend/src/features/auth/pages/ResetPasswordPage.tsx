@@ -5,6 +5,7 @@ import { ROUTES } from '@/routes/paths';
 import Button from '@/components/common/Button';
 import Input from '@/components/common/Input';
 import { useResetPasswordMutation } from '../api/authApi';
+import { getErrorMsg } from '@/utils/errorMessage';
 
 const ResetPasswordPage: React.FC = () => {
   const { t } = useTranslation();
@@ -85,8 +86,8 @@ const ResetPasswordPage: React.FC = () => {
       setTimeout(() => {
         navigate('/login');
       }, 3000);
-    } catch (err: any) {
-      setError(err || t('auth.resetPassword.errors.resetFailed'));
+    } catch (err) {
+      setError(getErrorMsg(err, t('auth.resetPassword.errors.resetFailed')));
       setIsLoading(false);
     }
   };

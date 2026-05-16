@@ -32,6 +32,7 @@ export const useSpeechRecognition = (): SpeechRecognitionResult => {
     recognitionInstance.interimResults = true;
     recognitionInstance.lang = 'vi-VN'; // Ngôn ngữ tiếng Việt
 
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any -- Web Speech API event type
     recognitionInstance.onresult = (event: any) => {
       const current = event.resultIndex;
       const result = event.results[current];
@@ -39,6 +40,7 @@ export const useSpeechRecognition = (): SpeechRecognitionResult => {
       setTranscript(transcriptValue);
     };
 
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any -- Web Speech API event type
     recognitionInstance.onerror = (event: any) => {
       console.error('Lỗi nhận dạng giọng nói', event.error);
       setIsListening(false);
@@ -80,7 +82,9 @@ export const useSpeechRecognition = (): SpeechRecognitionResult => {
 // Khai báo TypeScript cho Web Speech API
 declare global {
   interface Window {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any -- Web Speech API chưa có type definitions chuẩn
     SpeechRecognition: any;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     webkitSpeechRecognition: any;
   }
 }

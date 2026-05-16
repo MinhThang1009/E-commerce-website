@@ -200,7 +200,7 @@ const ShopPage: React.FC = () => {
       id: 'brand',
       name: t('filters.brand'),
       options:
-        brandsData?.data?.map((brand: any) => ({
+        brandsData?.data?.map((brand: { id: string; name: string }) => ({
           id: brand.id,
           name: brand.name,
         })) || [],
@@ -209,7 +209,7 @@ const ShopPage: React.FC = () => {
       id: 'collection',
       name: t('filters.collection'),
       options:
-        collectionsData?.data?.map((collection: any) => ({
+        collectionsData?.data?.map((collection: { id: string; name: string }) => ({
           id: collection.id,
           name: collection.name,
         })) || [],

@@ -150,14 +150,14 @@ export interface ExportQuery {
 export const adminDashboardKeys = {
   all: ['admin-dashboard'] as const,
   stats: () => [...adminDashboardKeys.all, 'stats'] as const,
-  detailed: (params: any) => [...adminDashboardKeys.all, 'detailed', params] as const,
-  orderStatus: (params?: any) => [...adminDashboardKeys.all, 'order-status', params] as const,
-  topProducts: (params?: any) => [...adminDashboardKeys.all, 'top-products', params] as const,
-  revenueByCategory: (params?: any) => [...adminDashboardKeys.all, 'revenue-category', params] as const,
-  userGrowth: (params: any) => [...adminDashboardKeys.all, 'user-growth', params] as const,
+  detailed: (params: unknown) => [...adminDashboardKeys.all, 'detailed', params] as const,
+  orderStatus: (params?: unknown) => [...adminDashboardKeys.all, 'order-status', params] as const,
+  topProducts: (params?: unknown) => [...adminDashboardKeys.all, 'top-products', params] as const,
+  revenueByCategory: (params?: unknown) => [...adminDashboardKeys.all, 'revenue-category', params] as const,
+  userGrowth: (params: unknown) => [...adminDashboardKeys.all, 'user-growth', params] as const,
   paymentMethods: () => [...adminDashboardKeys.all, 'payment-methods'] as const,
-  lowStock: (params?: any) => [...adminDashboardKeys.all, 'low-stock', params] as const,
-  chatbotStats: (params?: any) => [...adminDashboardKeys.all, 'chatbot-stats', params] as const,
+  lowStock: (params?: unknown) => [...adminDashboardKeys.all, 'low-stock', params] as const,
+  chatbotStats: (params?: unknown) => [...adminDashboardKeys.all, 'chatbot-stats', params] as const,
 };
 
 // === Query Hooks ===

@@ -74,7 +74,8 @@ const RichTextEditor: React.FC<RichTextEditorProps> = ({
             // Xóa nội dung editor trước
             quill.setText('');
             // Sau đó dán nội dung HTML
-            (quill as any).dangerouslyPasteHTML(displayValue);
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any -- ReactQuill internal API
+      (quill as any).dangerouslyPasteHTML(displayValue);
           } else {
             // Với văn bản thường, dùng setText
             quill.setText(displayValue);

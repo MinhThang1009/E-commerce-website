@@ -1,6 +1,12 @@
-// AppError — base operational error (status code + isOperational flag).
-// Re-export class hiện có từ middlewares/errorHandler để bảo toàn instance equality
-// (mọi nơi dùng instanceof AppError vẫn match). Phase 5 sẽ flip — class thật ở đây.
-const { AppError } = require('../../middlewares/errorHandler');
+class AppError extends Error {
+  constructor(message, statusCode) {
+    super(message);
+    this.statusCode = statusCode;
+    this.status = `${statusCode}`.startsWith('4') ? 'fail' : 'error';
+    this.isOperational = true;
+
+    Error.captureStackTrace(this, this.constructor);
+  }
+}
 
 module.exports = AppError;

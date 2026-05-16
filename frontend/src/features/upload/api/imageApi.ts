@@ -104,7 +104,7 @@ export function useGetImagesByProductIdQuery(
 }
 
 export function useImageHealthCheckQuery() {
-  return useQuery<{ status: string; message: string; data: any }>({
+  return useQuery<{ status: string; message: string; data: unknown }>({
     queryKey: imageKeys.health(),
     queryFn: async () => {
       const { data } = await apiClient.get('/images/health');

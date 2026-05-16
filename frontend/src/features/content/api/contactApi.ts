@@ -16,7 +16,7 @@ export interface FeedbackRequest {
 export interface ContactResponse {
   status: string;
   message: string;
-  data?: any;
+  data?: unknown;
 }
 
 // === Mutation Hooks ===

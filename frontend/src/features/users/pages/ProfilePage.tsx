@@ -16,6 +16,7 @@ import {
 } from '@/features/users';
 import { Address } from '@/types/user.types';
 import { useGetLoyaltyInfoQuery } from '@/features/loyalty';
+import { getErrorMsg } from '@/utils/errorMessage';
 
 type TabKey = 'info' | 'password' | 'orders' | 'addresses' | 'loyalty';
 
@@ -134,8 +135,8 @@ const ProfilePage: React.FC = () => {
       updateUserStore({ firstName: updatedUser.firstName, lastName: updatedUser.lastName, phone: updatedUser.phone, avatar: updatedUser.avatar });
       addNotification({ type: 'success', message: t('profile.info.updateSuccess'), duration: 3000 });
       setIsEditing(false);
-    } catch (error: any) {
-      addNotification({ type: 'error', message: error.data?.message || t('profile.info.updateError'), duration: 5000 });
+    } catch (error) {
+      addNotification({ type: 'error', message: getErrorMsg(error, t('profile.info.updateError')), duration: 5000 });
     }
   };
 
@@ -146,8 +147,8 @@ const ProfilePage: React.FC = () => {
       await changePassword({ currentPassword: formData.currentPassword, newPassword: formData.newPassword, confirmPassword: formData.confirmPassword });
       addNotification({ type: 'success', message: t('profile.password.changeSuccess'), duration: 3000 });
       setFormData((prev) => ({ ...prev, currentPassword: '', newPassword: '', confirmPassword: '' }));
-    } catch (error: any) {
-      addNotification({ type: 'error', message: error.data?.message || t('profile.password.changeError'), duration: 5000 });
+    } catch (error) {
+      addNotification({ type: 'error', message: getErrorMsg(error, t('profile.password.changeError')), duration: 5000 });
     }
   };
 
@@ -190,8 +191,8 @@ const ProfilePage: React.FC = () => {
       setShowAddressForm(false);
       setEditingAddressId(null);
       setAddressForm(emptyAddressForm);
-    } catch (err: any) {
-      addNotification({ type: 'error', message: err?.data?.message || t('common.error'), duration: 5000 });
+    } catch (err) {
+      addNotification({ type: 'error', message: getErrorMsg(err, t('common.error')), duration: 5000 });
     }
   };
 
@@ -201,8 +202,8 @@ const ProfilePage: React.FC = () => {
     try {
       await deleteAddress(id);
       addNotification({ type: 'success', message: t('profile.addresses.deleteSuccess'), duration: 3000 });
-    } catch (err: any) {
-      addNotification({ type: 'error', message: err?.data?.message || t('common.error'), duration: 5000 });
+    } catch (err) {
+      addNotification({ type: 'error', message: getErrorMsg(err, t('common.error')), duration: 5000 });
     }
   };
 
@@ -211,8 +212,8 @@ const ProfilePage: React.FC = () => {
     try {
       await setDefaultAddress(id);
       addNotification({ type: 'success', message: t('profile.addresses.defaultSuccess'), duration: 3000 });
-    } catch (err: any) {
-      addNotification({ type: 'error', message: err?.data?.message || t('common.error'), duration: 5000 });
+    } catch (err) {
+      addNotification({ type: 'error', message: getErrorMsg(err, t('common.error')), duration: 5000 });
     }
   };
 
@@ -784,7 +785,8 @@ const ProfilePage: React.FC = () => {
                 </thead>
                 <tbody className="divide-y divide-neutral-100 dark:divide-neutral-800">
                   {loyaltyData?.data?.history?.items?.length > 0 ? (
-                    loyaltyData.data.history.items.map((item: any) => (
+                    // eslint-disable-next-line @typescript-eslint/no-explicit-any -- Loyalty history items
+                loyaltyData.data.history.items.map((item: any) => (
                       <tr key={item.id} className="group hover:bg-neutral-50 dark:hover:bg-neutral-800/40 transition-colors">
                         <td className="py-4 text-sm text-neutral-600 dark:text-neutral-400">
                           {new Date(item.createdAt).toLocaleDateString(i18n.language === 'vi' ? 'vi-VN' : 'en-US')}

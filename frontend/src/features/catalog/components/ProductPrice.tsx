@@ -4,7 +4,7 @@ import { useProductPriceRange } from '../hooks/useProductPriceRange';
 
 interface ProductPriceProps {
   basePrice: number;
-  variants?: any[];
+  variants?: Array<{ price: number | string }>;
   compareAtPrice?: number;
   className?: string;
 }

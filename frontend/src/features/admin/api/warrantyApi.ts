@@ -27,7 +27,7 @@ export interface CreateWarrantyPackageRequest {
   description?: string;
   durationMonths: number;
   price: number;
-  terms?: Record<string, any>;
+  terms?: Record<string, string | number | boolean>;
   coverage?: string[];
   isActive?: boolean;
   sortOrder?: number;
@@ -49,7 +49,7 @@ export interface WarrantyPackageFilters {
 export const warrantyKeys = {
   all: ['warranty-packages'] as const,
   lists: () => [...warrantyKeys.all, 'list'] as const,
-  list: (filters: any) => [...warrantyKeys.lists(), filters] as const,
+  list: (filters: unknown) => [...warrantyKeys.lists(), filters] as const,
   details: () => [...warrantyKeys.all, 'detail'] as const,
   detail: (id: string) => [...warrantyKeys.details(), id] as const,
 };

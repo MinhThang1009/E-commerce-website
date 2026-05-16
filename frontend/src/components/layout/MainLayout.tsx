@@ -5,7 +5,7 @@ import Header from './Header';
 import Footer from './Footer';
 // Không cần import ChatWidget ở đây nữa vì đã được thêm vào App.tsx
 import { useScrollToTop } from '@/hooks/useScrollToTop';
-import { useCartMerge } from '@/hooks/useCartMerge';
+import { useCartMerge } from '@/features/cart';
 
 const MainLayout: React.FC = () => {
   // Sử dụng hook để scroll lên đầu trang khi chuyển trang

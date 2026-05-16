@@ -9,27 +9,27 @@ import {
 import {
   createProductFiltersParams,
   transformProductsResponse,
-} from '@/utils/productTransform';
+} from '../utils/productTransform';
 
 // === Query Keys ===
 
 export const productKeys = {
   all: ['products'] as const,
   lists: () => [...productKeys.all, 'list'] as const,
-  list: (filters: any) => [...productKeys.lists(), filters] as const,
+  list: (filters: unknown) => [...productKeys.lists(), filters] as const,
   details: () => [...productKeys.all, 'detail'] as const,
   detail: (id: string) => [...productKeys.details(), id] as const,
   slug: (slug: string) => [...productKeys.all, 'slug', slug] as const,
-  featured: (params?: any) => [...productKeys.all, 'featured', params] as const,
-  newArrivals: (params?: any) => [...productKeys.all, 'new-arrivals', params] as const,
-  bestSellers: (params?: any) => [...productKeys.all, 'best-sellers', params] as const,
-  deals: (params?: any) => [...productKeys.all, 'deals', params] as const,
+  featured: (params?: unknown) => [...productKeys.all, 'featured', params] as const,
+  newArrivals: (params?: unknown) => [...productKeys.all, 'new-arrivals', params] as const,
+  bestSellers: (params?: unknown) => [...productKeys.all, 'best-sellers', params] as const,
+  deals: (params?: unknown) => [...productKeys.all, 'deals', params] as const,
   related: (id: string) => [...productKeys.all, 'related', id] as const,
   variants: (id: string) => [...productKeys.all, 'variants', id] as const,
   reviewsSummary: (id: string) => [...productKeys.all, 'reviews-summary', id] as const,
-  search: (params: any) => [...productKeys.all, 'search', params] as const,
-  filters: (params?: any) => [...productKeys.all, 'filters', params] as const,
-  recentlyViewed: (params?: any) => [...productKeys.all, 'recently-viewed', params] as const,
+  search: (params: unknown) => [...productKeys.all, 'search', params] as const,
+  filters: (params?: unknown) => [...productKeys.all, 'filters', params] as const,
+  recentlyViewed: (params?: unknown) => [...productKeys.all, 'recently-viewed', params] as const,
 };
 
 // === Query Hooks ===

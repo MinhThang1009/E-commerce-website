@@ -44,6 +44,17 @@ export interface CreateReviewData {
   images?: string[];
 }
 
+export interface ReviewsResponse {
+  status: string;
+  data: {
+    reviews: Review[];
+    total: number;
+    pages: number;
+    page: number;
+    limit: number;
+  };
+}
+
 // Query keys tập trung
 export const reviewKeys = {
   all: ['reviews'] as const,
@@ -63,7 +74,7 @@ export function useGetProductReviewsQuery(
   options?: { enabled?: boolean },
 ) {
   const { productId, ...filters } = args;
-  return useQuery<any>({
+  return useQuery<ReviewsResponse>({
     queryKey: reviewKeys.productFiltered(productId, filters),
     queryFn: async () => {
       const params = new URLSearchParams();
@@ -92,7 +103,7 @@ export function useGetUserReviewsQuery(
   params: { page?: number; limit?: number } = {},
   options?: { enabled?: boolean },
 ) {
-  return useQuery<any>({
+  return useQuery<ReviewsResponse>({
     queryKey: reviewKeys.user(params),
     queryFn: async () => {
       const queryParams = new URLSearchParams();
@@ -113,7 +124,7 @@ export function useGetUserReviewsQuery(
 /** Tạo đánh giá mới */
 export function useCreateReviewMutation() {
   const queryClient = useQueryClient();
-  return useMutation<any, Error, CreateReviewData>({
+  return useMutation<unknown, Error, CreateReviewData>({
     mutationFn: async (reviewData) => {
       const res = await apiClient.post('/reviews', reviewData);
       return res.data;
@@ -133,7 +144,7 @@ export function useCreateReviewMutation() {
 /** Cập nhật đánh giá */
 export function useUpdateReviewMutation() {
   const queryClient = useQueryClient();
-  return useMutation<any, Error, { id: string } & Partial<CreateReviewData>>({
+  return useMutation<unknown, Error, { id: string } & Partial<CreateReviewData>>({
     mutationFn: async ({ id, ...reviewData }) => {
       const res = await apiClient.put(`/reviews/${id}`, reviewData);
       return res.data;
@@ -156,7 +167,7 @@ export function useUpdateReviewMutation() {
 /** Xóa đánh giá */
 export function useDeleteReviewMutation() {
   const queryClient = useQueryClient();
-  return useMutation<any, Error, string>({
+  return useMutation<unknown, Error, string>({
     mutationFn: async (id) => {
       const res = await apiClient.delete(`/reviews/${id}`);
       return res.data;
@@ -171,7 +182,7 @@ export function useDeleteReviewMutation() {
 export function useMarkReviewHelpfulMutation() {
   const queryClient = useQueryClient();
   return useMutation<
-    any,
+    unknown,
     Error,
     { id: string; helpful: boolean; productId?: string }
   >({

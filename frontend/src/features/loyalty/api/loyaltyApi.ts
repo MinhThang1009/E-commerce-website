@@ -5,7 +5,7 @@ import apiClient from '@/services/apiClient';
 
 export const loyaltyKeys = {
   all: ['loyalty'] as const,
-  info: (params: any) => [...loyaltyKeys.all, 'info', params] as const,
+  info: (params: unknown) => [...loyaltyKeys.all, 'info', params] as const,
 };
 
 // === Query Hooks ===
@@ -19,6 +19,7 @@ export function useGetLoyaltyInfoQuery(
     ? options.enabled
     : options?.skip !== undefined ? !options.skip : true;
 
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   return useQuery<any>({
     queryKey: loyaltyKeys.info(params),
     queryFn: async () => {

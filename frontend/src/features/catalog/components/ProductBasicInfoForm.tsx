@@ -3,7 +3,7 @@ import { Form, Input, Select, Row, Col, Button, Alert } from 'antd';
 import { useTranslation } from 'react-i18next';
 import SimpleRichTextEditor from '@/components/common/SimpleRichTextEditor';
 import Base64ImageWarning from './Base64ImageWarning';
-import { sampleLaptopData } from '@/utils/sampleProductData';
+import { sampleLaptopData } from '../utils/sampleProductData';
 
 const { TextArea } = Input;
 const { Option } = Select;

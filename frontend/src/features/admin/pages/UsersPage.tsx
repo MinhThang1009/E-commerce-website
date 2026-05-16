@@ -40,6 +40,7 @@ import {
   type User,
   type UserFilters,
 } from '../api/adminUserApi';
+import { getErrorMsg } from '@/utils/errorMessage';
 
 const { Title } = Typography;
 const { Option } = Select;
@@ -83,8 +84,8 @@ const UsersPage: React.FC = () => {
       setIsModalVisible(false);
       setEditingUser(null);
       form.resetFields();
-    } catch (error: any) {
-      message.error(error?.data?.message || t('admin.users.messages.editError'));
+    } catch (error) {
+      message.error(getErrorMsg(error, t('admin.users.messages.editError')));
     }
   };
 
@@ -92,8 +93,8 @@ const UsersPage: React.FC = () => {
     try {
       await deleteUser(id);
       message.success(t('admin.users.messages.deleteSuccess'));
-    } catch (error: any) {
-      message.error(error?.data?.message || t('admin.users.messages.deleteError'));
+    } catch (error) {
+      message.error(getErrorMsg(error, t('admin.users.messages.deleteError')));
     }
   };
 
@@ -114,7 +115,7 @@ const UsersPage: React.FC = () => {
     setFilters((prev) => ({ ...prev, search: value, page: 1 }));
   };
 
-  const handleFilterChange = (key: keyof UserFilters, value: any) => {
+  const handleFilterChange = (key: keyof UserFilters, value: string | number | boolean | undefined) => {
     setFilters((prev) => ({ ...prev, [key]: value, page: 1 }));
   };
 
@@ -152,7 +153,7 @@ const UsersPage: React.FC = () => {
     {
       title: t('admin.users.table.user'),
       key: 'user',
-      render: (_: any, record: User) => (
+      render: (_: unknown, record: User) => (
         <div className="flex items-center gap-3">
           <Avatar src={record.avatar} icon={<UserOutlined />} size={48} />
           <div>
@@ -186,7 +187,7 @@ const UsersPage: React.FC = () => {
       title: t('common.status'),
       key: 'status',
       width: 150,
-      render: (_: any, record: User) => (
+      render: (_: unknown, record: User) => (
         <div className="space-y-1">
           <div>
             <Tag color={record.isActive ? 'success' : 'error'}>
@@ -212,7 +213,7 @@ const UsersPage: React.FC = () => {
       title: t('admin.common.actions'),
       key: 'actions',
       width: 120,
-      render: (_: any, record: User) => (
+      render: (_: unknown, record: User) => (
         <Space>
           <Button type="link" icon={<EyeOutlined />} onClick={() => navigate(buildRoute.adminUserDetail(record.id))} size="small" />
           <Button type="link" icon={<EditOutlined />} onClick={() => handleEdit(record)} size="small" />

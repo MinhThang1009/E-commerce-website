@@ -101,7 +101,8 @@ const NewsPage: React.FC = () => {
       title: t('admin.common.actions'),
       key: 'actions',
       width: 150,
-      render: (_: any, record: any) => (
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any -- Antd Table record
+      render: (_: unknown, record: any) => (
         <Space>
           <Button type="link" icon={<EditOutlined />} onClick={() => navigate(buildRoute.adminNewsEdit(record.id))} size="small" />
           <Popconfirm

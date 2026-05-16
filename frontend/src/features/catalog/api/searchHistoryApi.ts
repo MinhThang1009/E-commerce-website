@@ -5,7 +5,7 @@ import apiClient from '@/services/apiClient';
 
 export const searchHistoryKeys = {
   all: ['search-history'] as const,
-  list: (params: any) => [...searchHistoryKeys.all, 'list', params] as const,
+  list: (params: unknown) => [...searchHistoryKeys.all, 'list', params] as const,
 };
 
 // === Query Hooks ===
@@ -19,6 +19,7 @@ export function useGetSearchHistoryQuery(
     ? options.enabled
     : options?.skip !== undefined ? !options.skip : true;
 
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   return useQuery<any>({
     queryKey: searchHistoryKeys.list(params),
     queryFn: async () => {
@@ -35,7 +36,7 @@ export function useGetSearchHistoryQuery(
 
 export function useSaveSearchMutation() {
   const queryClient = useQueryClient();
-  return useMutation<any, Error, { keyword: string; resultsCount?: number; sessionId?: string }>({
+  return useMutation<unknown, Error, { keyword: string; resultsCount?: number; sessionId?: string }>({
     mutationFn: async (body) => {
       const { data } = await apiClient.post('/search-histories', body);
       return data;
@@ -48,7 +49,7 @@ export function useSaveSearchMutation() {
 
 export function useDeleteSearchHistoryMutation() {
   const queryClient = useQueryClient();
-  return useMutation<any, Error, string>({
+  return useMutation<unknown, Error, string>({
     mutationFn: async (id) => {
       const { data } = await apiClient.delete(`/search-histories/${id}`);
       return data;
@@ -61,7 +62,7 @@ export function useDeleteSearchHistoryMutation() {
 
 export function useClearAllSearchHistoryMutation() {
   const queryClient = useQueryClient();
-  return useMutation<any, Error, void>({
+  return useMutation<unknown, Error, void>({
     mutationFn: async () => {
       const { data } = await apiClient.delete('/search-histories');
       return data;

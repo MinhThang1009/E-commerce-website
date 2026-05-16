@@ -28,7 +28,7 @@ export const categoryKeys = {
   tree: () => [...categoryKeys.all, 'tree'] as const,
   detail: (id: string) => [...categoryKeys.all, 'detail', id] as const,
   slug: (slug: string) => [...categoryKeys.all, 'slug', slug] as const,
-  products: (id: string, params?: any) => [...categoryKeys.all, 'products', id, params] as const,
+  products: (id: string, params?: unknown) => [...categoryKeys.all, 'products', id, params] as const,
   featured: () => [...categoryKeys.all, 'featured'] as const,
   flat: () => [...categoryKeys.all, 'flat'] as const,
 };

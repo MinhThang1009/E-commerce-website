@@ -38,6 +38,7 @@ interface EnhancedVariantSelectorProps {
   product: Product;
   selectedAttributes: Record<string, string>;
   onAttributeChange: (attributeName: string, value: string | undefined) => void;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any -- AI response details
   onNameUpdate?: (newName: string, details: any) => void;
   disabled?: boolean;
 }
@@ -55,6 +56,7 @@ const EnhancedVariantSelector: React.FC<EnhancedVariantSelectorProps> = ({
   >(new Set());
   const [loadingNameAttributes, setLoadingNameAttributes] = useState(false);
   const [previewName, setPreviewName] = useState<string>('');
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const [nameDetails, setNameDetails] = useState<any>(null);
 
   // Tải thuộc tính ảnh hưởng tên khi mount
@@ -158,6 +160,7 @@ const EnhancedVariantSelector: React.FC<EnhancedVariantSelectorProps> = ({
               </Text>
               {nameDetails?.affectingAttributes && (
                 <Space wrap size="small">
+                  {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
                   {nameDetails.affectingAttributes.map((attr: any) => (
                     <Tag key={attr.id} color="blue">
                       {attr.groupName}: {attr.nameTemplate}

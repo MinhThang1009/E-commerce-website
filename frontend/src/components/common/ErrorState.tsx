@@ -4,7 +4,7 @@ import PremiumButton from './PremiumButton';
 import { getErrorMessage } from '@/utils/errorUtils';
 
 interface ErrorStateProps {
-  error: any;
+  error: unknown;
   onRetry?: () => void;
   className?: string;
   size?: 'sm' | 'md' | 'lg';

@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
-import axios from 'axios';
 import { useTranslation } from 'react-i18next';
+import apiClient from '@/services/apiClient';
 import Input from './Input';
 
 interface LocationSuggestion {
@@ -49,8 +49,7 @@ const AddressPicker: React.FC<AddressPickerProps> = ({
       }
       setLoading(true);
       try {
-        const apiBase = import.meta.env.VITE_API_URL || 'http://localhost:8888/api';
-        const res = await axios.get(`${apiBase}/locations/search?text=${encodeURIComponent(value)}`);
+        const res = await apiClient.get(`/locations/search?text=${encodeURIComponent(value)}`);
         if (res.data?.data) {
           setSuggestions(res.data.data);
           setShowDropdown(true);

@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Typography } from 'antd';
-import { simpleNamingService } from '@/utils/productNaming';
+import { simpleNamingService } from '../utils/productNaming';
 
 const { Title } = Typography;
 

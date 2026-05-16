@@ -35,7 +35,8 @@ import {
   formatStockText,
   getStockStatusColor,
   hasVariants,
-} from '@/utils/productHelpers';
+} from '../utils/productHelpers';
+import { getErrorMsg } from '@/utils/errorMessage';
 
 const ProductDetailPage: React.FC = () => {
   const { t } = useTranslation();
@@ -173,7 +174,7 @@ const ProductDetailPage: React.FC = () => {
     setQuantity(1);
   };
 
-  const _handleDynamicNameUpdate = (newName: string, _details: any) => {
+  const _handleDynamicNameUpdate = (newName: string, _details: Record<string, unknown>) => {
     setDynamicProductName(newName);
   };
 
@@ -217,8 +218,8 @@ const ProductDetailPage: React.FC = () => {
         );
         if (!allSelected) {
           const missingAttributes = product.attributes
-            .filter((attr: any) => !selectedAttributes[attr.name])
-            .map((attr: any) => attr.name);
+            .filter((attr: { name: string }) => !selectedAttributes[attr.name])
+            .map((attr: { name: string }) => attr.name);
 
           addNotification({
             type: 'error',
@@ -275,7 +276,7 @@ const ProductDetailPage: React.FC = () => {
           type: 'success',
           duration: 3000,
         });
-      } catch (error: any) {
+      } catch (error) {
         console.error('❌ API thất bại:', error);
 
         // Dự phòng lưu localStorage nếu API thất bại
@@ -296,16 +297,14 @@ const ProductDetailPage: React.FC = () => {
               ? selectedAttributes
               : undefined,
           warrantyPackageIds: selectedWarranties,
-          warrantyPackages: product.warrantyPackages?.filter((p: any) => selectedWarranties.includes(p.id)) || [],
+          warrantyPackages: product.warrantyPackages?.filter((p) => selectedWarranties.includes(p.id)) || [],
         };
 
         addItem(newItem);
 
         addNotification({
-          message:
-            error?.data?.message ||
-            t('cart.notifications.serverError'),
-          type: error?.data?.message ? 'error' : 'success',
+          message: getErrorMsg(error, t('cart.notifications.serverError')),
+          type: 'error',
           duration: 3000,
         });
       }
@@ -328,7 +327,7 @@ const ProductDetailPage: React.FC = () => {
             ? selectedAttributes
             : undefined,
         warrantyPackageIds: selectedWarranties,
-        warrantyPackages: product.warrantyPackages?.filter((p: any) => selectedWarranties.includes(p.id)) || [],
+        warrantyPackages: product.warrantyPackages?.filter((p) => selectedWarranties.includes(p.id)) || [],
       };
 
       // Chỉ thêm vào Zustand store, cartStore sẽ tự động cập nhật localStorage
@@ -353,7 +352,8 @@ const ProductDetailPage: React.FC = () => {
       // Tìm variant ID dựa trên thuộc tính đã chọn
       let variantId: string | undefined;
       if (product.variants && Object.keys(selectedAttributes).length > 0) {
-        const selectedVariant = product.variants.find((variant: any) => {
+        const selectedVariant = // eslint-disable-next-line @typescript-eslint/no-explicit-any -- Variant matching cần dynamic attribute access
+      product.variants.find((variant: any) => {
           if (!variant.attributes) return false;
           return Object.entries(selectedAttributes).every(
             ([key, value]) => variant.attributes[key] === value
@@ -381,7 +381,7 @@ const ProductDetailPage: React.FC = () => {
         image,
         attributes: Object.keys(selectedAttributes).length > 0 ? selectedAttributes : undefined,
         warrantyPackageIds: selectedWarranties,
-        warrantyPackages: product.warrantyPackages?.filter((p: any) => selectedWarranties.includes(p.id)) || [],
+        warrantyPackages: product.warrantyPackages?.filter((p) => selectedWarranties.includes(p.id)) || [],
       };
 
       // 3. Lưu thông tin sản phẩm vào sessionStorage để CheckoutPage sử dụng
@@ -391,10 +391,10 @@ const ProductDetailPage: React.FC = () => {
 
       // 4. Chuyển hướng ngay lập tức đến checkout
       navigate('/checkout?buyNow=true');
-    } catch (error: any) {
+    } catch (error) {
       console.error('Lỗi khi mua ngay:', error);
       addNotification({
-        message: error?.data?.message || t('productDetail.buyNow.error'),
+        message: getErrorMsg(error, t('productDetail.buyNow.error')),
         type: 'error',
         duration: 3000,
       });
@@ -536,7 +536,7 @@ const ProductDetailPage: React.FC = () => {
         {/* Hình ảnh sản phẩm */}
         <div>
           <ProductImageGallery
-            images={product.images ? product.images.map((img: any) => typeof img === 'string' ? img : img.url).filter(Boolean) : []}
+            images={product.images ? product.images.filter(Boolean) : []}
             thumbnail={
             // Ưu tiên thumbnail của variant đang chọn để gallery switch đúng ảnh khi đổi variant
               (product.isVariantProduct && product.currentVariant?.thumbnail)
@@ -668,6 +668,7 @@ const ProductDetailPage: React.FC = () => {
           {/* Bộ chọn thuộc tính động */}
           {product.attributes && product.attributes.length > 0 && (
             <div className="mb-6">
+              {/* eslint-disable-next-line @typescript-eslint/no-explicit-any -- Attribute shape varies */}
               {product.attributes.map((attribute: any, index: number) => {
                 const attributeValuesWithStock = getAttributeValuesWithStock(
                   product,
@@ -935,6 +936,7 @@ const ProductDetailPage: React.FC = () => {
             {t('productDetail.relatedProducts')}
           </h2>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+            {/* eslint-disable-next-line @typescript-eslint/no-explicit-any -- ProductCard cần full product type */}
             {relatedProducts.slice(0, 4).map((product: any) => (
               <ProductCard key={product.id} {...product} />
             ))}

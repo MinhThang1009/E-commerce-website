@@ -25,6 +25,7 @@ import { useCreateVNPayUrlMutation } from '@/features/payment';
 import { useGetLoyaltyInfoQuery } from '@/features/loyalty';
 import { useGetAddressesQuery } from '@/features/users';
 import { Address } from '@/types/user.types';
+import { getErrorMsg } from '@/utils/errorMessage';
 
 const CheckoutPage: React.FC = () => {
   const { t } = useTranslation();
@@ -41,6 +42,7 @@ const CheckoutPage: React.FC = () => {
     const searchParams = new URLSearchParams(window.location.search);
     return searchParams.get('buyNow') === 'true' || sessionStorage.getItem('buyNowAction') === 'true';
   });
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const [buyNowItem, setBuyNowItem] = useState<any>(() => {
     const itemStr = sessionStorage.getItem('buyNowItem');
     const searchParams = new URLSearchParams(window.location.search);
@@ -217,6 +219,7 @@ const CheckoutPage: React.FC = () => {
 
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [isProcessing, setIsProcessing] = useState(false);
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const [currentOrder, setCurrentOrder] = useState<any>(null);
   const [isInstallmentModalOpen, setIsInstallmentModalOpen] = useState(false);
 
@@ -293,8 +296,9 @@ const CheckoutPage: React.FC = () => {
   );
 
   // Tính tổng phí bảo hành
-  const warrantyTotal = items.reduce((sum: number, item: any) => {
-    const itemWarrantyPrice = item.warrantyPackages?.reduce((wSum: number, pkg: any) => wSum + pkg.price, 0) || 0;
+  const warrantyTotal = items.reduce(// eslint-disable-next-line @typescript-eslint/no-explicit-any -- Cart item warranty calculation
+      (sum: number, item: any) => {
+    const itemWarrantyPrice = item.warrantyPackages?.reduce((wSum: number, pkg: { price: number }) => wSum + pkg.price, 0) || 0;
     return sum + (itemWarrantyPrice * item.quantity);
   }, 0);
 
@@ -465,8 +469,8 @@ const CheckoutPage: React.FC = () => {
         type: 'success',
         message: t('checkout.discountCode.success'),
       });
-    } catch (error: any) {
-      setDiscountError(error.data?.message || t('checkout.discountCode.invalid'));
+    } catch (error) {
+      setDiscountError(getErrorMsg(error, t('checkout.discountCode.invalid')));
     }
   };
 
@@ -574,7 +578,7 @@ const CheckoutPage: React.FC = () => {
   };
 
   // Xử lý thanh toán thành công
-  const _handlePaymentSuccess = async (_paymentIntent: any) => {
+  const _handlePaymentSuccess = async (_paymentIntent: unknown) => {
     addNotification({
       type: 'success',
       message: t('checkout.success.message'),

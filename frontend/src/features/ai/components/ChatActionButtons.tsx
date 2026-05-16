@@ -5,7 +5,7 @@ interface ChatAction {
   type: string;
   label: string;
   url?: string;
-  data?: Record<string, any>;
+  data?: Record<string, unknown>;
 }
 
 interface ChatActionButtonsProps {

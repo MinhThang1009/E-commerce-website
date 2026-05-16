@@ -19,7 +19,8 @@ interface Attribute {
 interface AttributeModalProps {
   open: boolean;
   onClose: () => void;
-  attribute?: any;
+  attribute?: Attribute | null;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any -- Caller passes different attribute types
   onSave: (attribute: any) => void;
 }
 
@@ -45,7 +46,7 @@ const AttributeModal: React.FC<AttributeModalProps> = ({
     }
   }, [attribute, form, open]);
 
-  const handleSubmit = (values: any) => {
+  const handleSubmit = (values: { name: string; value: string }) => {
     const attributeData: Attribute = {
       id: attribute?.id,
       name: values.name.trim(),

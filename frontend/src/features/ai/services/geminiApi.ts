@@ -43,7 +43,7 @@ class GeminiService {
         text: data.response || data.text || i18n.t('chat.errors.noResponse'),
         suggestions: data.suggestions || this.generateSuggestions(cleanMessage, data.response || ''),
       };
-    } catch (error: any) {
+    } catch (error) {
       console.error('Lỗi AI Service:', error);
 
       return {

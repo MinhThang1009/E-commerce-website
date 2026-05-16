@@ -34,6 +34,7 @@ import {
   useDeleteWarrantyPackageMutation,
 } from '../api/warrantyApi';
 import { WarrantyPackage } from '@/features/catalog';
+import { getErrorMsg } from '@/utils/errorMessage';
 
 const { TextArea } = Input;
 
@@ -70,11 +71,12 @@ const WarrantyPackagesPage: React.FC = () => {
     try {
       await deleteWarrantyPackage(id);
       message.success(t('admin.warrantyPackages.messages.deleteSuccess'));
-    } catch (error: any) {
-      message.error(error?.data?.message || t('admin.warrantyPackages.messages.deleteError'));
+    } catch (error) {
+      message.error(getErrorMsg(error, t('admin.warrantyPackages.messages.deleteError')));
     }
   };
 
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any -- Antd Form values
   const handleSubmit = async (values: any) => {
     try {
       const coverageArray = values.coverage
@@ -93,8 +95,8 @@ const WarrantyPackagesPage: React.FC = () => {
       setIsModalOpen(false);
       form.resetFields();
       setEditingPackage(null);
-    } catch (error: any) {
-      message.error(error?.data?.message || t('common.errorOccurred'));
+    } catch (error) {
+      message.error(getErrorMsg(error, t('common.errorOccurred')));
     }
   };
 
@@ -142,7 +144,7 @@ const WarrantyPackagesPage: React.FC = () => {
       title: t('admin.warrantyPackages.table.benefits'),
       dataIndex: 'coverage',
       key: 'coverage',
-      render: (coverage: any) => {
+      render: (coverage: unknown) => {
         const coverageArray = Array.isArray(coverage) ? coverage : [];
         return (
           <div>
@@ -180,7 +182,7 @@ const WarrantyPackagesPage: React.FC = () => {
     {
       title: t('admin.common.actions'),
       key: 'actions',
-      render: (_: any, record: WarrantyPackage) => (
+      render: (_: unknown, record: WarrantyPackage) => (
         <Space>
           <Button type="link" icon={<EditOutlined />} size="small" onClick={() => handleEdit(record)} />
           <Popconfirm

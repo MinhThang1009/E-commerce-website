@@ -5,6 +5,7 @@ import { Rating } from '@/components/common/Rating';
 import { PremiumButton } from '@/components/common';
 import { useCreateReviewMutation } from '../api/reviewApi';
 import { toast } from '@/utils/toast';
+import { getErrorMsg } from '@/utils/errorMessage';
 
 interface ReviewModalProps {
   isOpen: boolean;
@@ -57,9 +58,9 @@ const ReviewModal: React.FC<ReviewModalProps> = ({
       setRating(5);
       setTitle('');
       setComment('');
-    } catch (error: any) {
+    } catch (error) {
       console.error('Review submission failed:', error);
-      toast.error(error?.data?.message || t('review.modal.submitError'));
+      toast.error(getErrorMsg(error, t('review.modal.submitError')));
     }
   };
 

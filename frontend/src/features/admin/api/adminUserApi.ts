@@ -53,7 +53,7 @@ export interface UserFilters {
 export const adminUserKeys = {
   all: ['admin-users'] as const,
   lists: () => [...adminUserKeys.all, 'list'] as const,
-  list: (filters: any) => [...adminUserKeys.lists(), filters] as const,
+  list: (filters: unknown) => [...adminUserKeys.lists(), filters] as const,
   details: () => [...adminUserKeys.all, 'detail'] as const,
   detail: (id: string) => [...adminUserKeys.details(), id] as const,
 };
@@ -84,6 +84,8 @@ export function useGetUserByIdQuery(
   id: string,
   options?: { enabled?: boolean; skip?: boolean }
 ) {
+  // Admin API trả về user detail với nhiều trường mở rộng (orders, addresses, loyalty...)
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   return useQuery<{ status: string; data: { user: any } }>({
     queryKey: adminUserKeys.detail(id),
     queryFn: async () => {

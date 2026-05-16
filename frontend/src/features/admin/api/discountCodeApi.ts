@@ -32,7 +32,7 @@ export interface DiscountCodeFilters {
 export const discountCodeKeys = {
   all: ['discount-codes'] as const,
   lists: () => [...discountCodeKeys.all, 'list'] as const,
-  list: (filters: any) => [...discountCodeKeys.lists(), filters] as const,
+  list: (filters: unknown) => [...discountCodeKeys.lists(), filters] as const,
   details: () => [...discountCodeKeys.all, 'detail'] as const,
   detail: (id: string) => [...discountCodeKeys.details(), id] as const,
 };

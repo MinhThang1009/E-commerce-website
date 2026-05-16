@@ -14,6 +14,7 @@ export interface OrderItem {
   quantity: number;
   subtotal: number;
   image?: string;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any -- attributes chứa nhiều dạng dữ liệu (string, array, object) tùy context
   attributes?: Record<string, any>;
   createdAt: string;
   updatedAt: string;
@@ -233,17 +234,11 @@ export function useCreateOrderMutation() {
 /** Hủy đơn hàng */
 export function useCancelOrderMutation() {
   const queryClient = useQueryClient();
-  return useMutation<
-    { status: string; message: string; data: any },
-    Error,
-    string
-  >({
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any -- response shape phụ thuộc backend, chưa có shared type
+  return useMutation<{ status: string; message: string; data: any }, Error, string>({
     mutationFn: async (id) => {
-      const res = await apiClient.post<{
-        status: string;
-        message: string;
-        data: any;
-      }>(`/orders/${id}/cancel`);
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const res = await apiClient.post<{ status: string; message: string; data: any }>(`/orders/${id}/cancel`);
       return res.data;
     },
     onSuccess: (_data, id) => {
@@ -256,17 +251,11 @@ export function useCancelOrderMutation() {
 /** Thanh toán lại đơn hàng */
 export function useRepayOrderMutation() {
   const queryClient = useQueryClient();
-  return useMutation<
-    { status: string; message: string; data: any },
-    Error,
-    string
-  >({
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any -- response shape phụ thuộc backend, chưa có shared type
+  return useMutation<{ status: string; message: string; data: any }, Error, string>({
     mutationFn: async (id) => {
-      const res = await apiClient.post<{
-        status: string;
-        message: string;
-        data: any;
-      }>(`/orders/${id}/repay`);
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const res = await apiClient.post<{ status: string; message: string; data: any }>(`/orders/${id}/repay`);
       return res.data;
     },
     onSuccess: (_data, id) => {
@@ -293,17 +282,14 @@ export function useApplyDiscountCodeMutation() {
 export function useConfirmReceivedMutation() {
   const queryClient = useQueryClient();
   return useMutation<
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any -- response shape phụ thuộc backend
     { status: string; message: string; pointsEarned: number; data: any },
     Error,
     string
   >({
     mutationFn: async (id) => {
-      const res = await apiClient.post<{
-        status: string;
-        message: string;
-        pointsEarned: number;
-        data: any;
-      }>(`/orders/${id}/receive`);
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const res = await apiClient.post<{ status: string; message: string; pointsEarned: number; data: any }>(`/orders/${id}/receive`);
       return res.data;
     },
     onSuccess: (_data, id) => {

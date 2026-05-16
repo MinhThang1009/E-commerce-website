@@ -37,6 +37,7 @@ import {
   useDeleteDiscountCodeMutation,
 } from '../api/discountCodeApi';
 import { DiscountCode } from '@/types/discount.types';
+import { getErrorMsg } from '@/utils/errorMessage';
 
 const { TextArea } = Input;
 const { RangePicker } = DatePicker;
@@ -86,14 +87,16 @@ const DiscountCodesPage: React.FC = () => {
     try {
       await deleteDiscountCode(id);
       message.success(t('admin.discountCodes.messages.deleteSuccess'));
-    } catch (error: any) {
-      message.error(error?.data?.message || t('admin.discountCodes.messages.deleteError'));
+    } catch (error) {
+      message.error(getErrorMsg(error, t('admin.discountCodes.messages.deleteError')));
     }
   };
 
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any -- Antd Form values
   const handleSubmit = async (values: any) => {
     try {
       const { dateRange, ...restValues } = values;
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const data: any = { ...restValues };
 
       if (dateRange && dateRange[0]) data.startDate = dateRange[0].toISOString();
@@ -114,14 +117,14 @@ const DiscountCodesPage: React.FC = () => {
       setIsModalOpen(false);
       form.resetFields();
       setEditingCode(null);
-    } catch (error: any) {
-      message.error(error?.data?.message || t('common.errorOccurred'));
+    } catch (error) {
+      message.error(getErrorMsg(error, t('common.errorOccurred')));
     }
   };
 
   // Luôn VND — locale động theo ngôn ngữ UI
-  const formatPrice = (price: any) => {
-    const num = parseFloat(price);
+  const formatPrice = (price: number | string) => {
+    const num = parseFloat(String(price));
     if (isNaN(num)) return `0${t('common.currencySymbol')}`;
     return new Intl.NumberFormat(getLocale(), { style: 'currency', currency: 'VND' }).format(num);
   };
@@ -150,12 +153,12 @@ const DiscountCodesPage: React.FC = () => {
       title: t('admin.discountCodes.table.minOrder'),
       dataIndex: 'minOrderAmount',
       key: 'minOrderAmount',
-      render: (amount: any) => formatPrice(amount),
+      render: (amount: number | string) => formatPrice(amount),
     },
     {
       title: t('admin.discountCodes.table.period'),
       key: 'validity',
-      render: (_: any, record: DiscountCode) => (
+      render: (_: unknown, record: DiscountCode) => (
         <div className="text-sm text-gray-600">
           <div>{t('admin.discountCodes.table.from')} {record.startDate ? dayjs(record.startDate).format('DD/MM/YYYY') : t('admin.discountCodes.table.unlimited')}</div>
           <div>{t('admin.discountCodes.table.to')} {record.endDate ? dayjs(record.endDate).format('DD/MM/YYYY') : t('admin.discountCodes.table.unlimited')}</div>
@@ -165,7 +168,7 @@ const DiscountCodesPage: React.FC = () => {
     {
       title: t('admin.discountCodes.table.usage'),
       key: 'usage',
-      render: (_: any, record: DiscountCode) => (
+      render: (_: unknown, record: DiscountCode) => (
         <Tooltip title={t('admin.discountCodes.table.usageInfo', { used: record.usedCount, limit: record.usageLimit || t('admin.discountCodes.table.noLimit') })}>
           <div className="text-sm">
             <span className="font-semibold text-blue-600">{record.usedCount}</span> / {record.usageLimit || '∞'}
@@ -186,7 +189,7 @@ const DiscountCodesPage: React.FC = () => {
     {
       title: t('admin.common.actions'),
       key: 'actions',
-      render: (_: any, record: DiscountCode) => (
+      render: (_: unknown, record: DiscountCode) => (
         <Space>
           <Button type="link" icon={<EditOutlined />} size="small" onClick={() => handleEdit(record)} />
           <Popconfirm

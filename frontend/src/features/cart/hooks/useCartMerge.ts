@@ -8,6 +8,7 @@ import {
   useGetCartQuery,
 } from '@/features/cart';
 import { useUiStore } from '@/stores/uiStore';
+import { getErrorMsg } from '@/utils/errorMessage';
 
 export const useCartMerge = (
   isAuthenticated: boolean,
@@ -111,7 +112,7 @@ export const useCartMerge = (
 
           // Reset cờ justLoggedIn để tránh gộp lại khi reload
           useAuthStore.getState().clearJustLoggedIn();
-        } catch (error: any) {
+        } catch (error) {
           console.error('Gộp giỏ hàng thất bại:', error);
 
           // Reset justLoggedIn ngay cả khi gộp thất bại để tránh vòng lặp retry

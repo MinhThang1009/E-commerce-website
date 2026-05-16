@@ -10,6 +10,7 @@ import {
   useGetCollectionsQuery, useCreateCollectionMutation, useUpdateCollectionMutation, useDeleteCollectionMutation,
 } from '../../api/collectionApi';
 import { useGetProductsQuery } from '../../api/productApi';
+import { getErrorMsg } from '@/utils/errorMessage';
 
 const { Title } = Typography;
 const { TextArea } = Input;
@@ -26,7 +27,8 @@ const CollectionsPage: React.FC = () => {
   const { t } = useTranslation();
   const [form] = Form.useForm();
   const [isModalVisible, setIsModalVisible] = useState(false);
-  const [editingCollection, setEditingCollection] = useState<any | null>(null);
+  const [editingCollection, setEditingCollection] = // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  useState<any>(null);
 
   const { data: collectionsData, isLoading, refetch } = useGetCollectionsQuery();
   const { data: productsData } = useGetProductsQuery({ limit: 100 });
@@ -36,7 +38,7 @@ const CollectionsPage: React.FC = () => {
 
   const collections = collectionsData?.data || [];
   const products = productsData?.data || [];
-  const productOptions = products.map((p: any) => ({ label: p.name, value: p.id }));
+  const productOptions = products.map((p) => ({ label: p.name, value: p.id }));
 
   const handleSubmit = async (values: CollectionFormData) => {
     try {
@@ -51,8 +53,8 @@ const CollectionsPage: React.FC = () => {
       setEditingCollection(null);
       form.resetFields();
       refetch();
-    } catch (error: any) {
-      message.error(error?.data?.message || t('common.errorOccurred'));
+    } catch (error) {
+      message.error(getErrorMsg(error, t('common.errorOccurred')));
     }
   };
 
@@ -61,8 +63,8 @@ const CollectionsPage: React.FC = () => {
       await deleteCollection(id);
       message.success(t('admin.collections.messages.deleteSuccess'));
       refetch();
-    } catch (error: any) {
-      message.error(error?.data?.message || t('admin.collections.messages.deleteError'));
+    } catch (error) {
+      message.error(getErrorMsg(error, t('admin.collections.messages.deleteError')));
     }
   };
 
@@ -73,6 +75,7 @@ const CollectionsPage: React.FC = () => {
     form.setFieldsValue({ isActive: true, productIds: [] });
   };
 
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const handleEdit = (collection: any) => {
     setEditingCollection(collection);
     setIsModalVisible(true);
@@ -81,7 +84,7 @@ const CollectionsPage: React.FC = () => {
       description: collection.description,
       thumbnail: collection.thumbnail,
       isActive: collection.isActive,
-      productIds: collection.Products?.map((p: any) => p.id) || [],
+      productIds: collection.Products?.map((p: { id: string }) => p.id) || [],
     });
   };
 
@@ -93,6 +96,7 @@ const CollectionsPage: React.FC = () => {
       dataIndex: 'thumbnail',
       key: 'thumbnail',
       width: 100,
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       render: (thumbnail: string, record: any) =>
         thumbnail ? (
           <Image src={getFullImageUrl(thumbnail)} alt={record.name} width={60} height={40} style={{ objectFit: 'cover', borderRadius: 4 }} />
@@ -106,6 +110,7 @@ const CollectionsPage: React.FC = () => {
       title: t('admin.collections.title'),
       dataIndex: 'name',
       key: 'name',
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       render: (name: string, record: any) => (
         <div>
           <div className="font-medium">{name}</div>
@@ -116,7 +121,8 @@ const CollectionsPage: React.FC = () => {
     {
       title: t('admin.collections.table.productCount'),
       key: 'productCount',
-      render: (_: any, record: any) => t('admin.collections.table.productCountLabel', { count: record.Products?.length || 0 }),
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      render: (_: unknown, record: any) => t('admin.collections.table.productCountLabel', { count: record.Products?.length || 0 }),
     },
     {
       title: t('common.status'),
@@ -132,7 +138,8 @@ const CollectionsPage: React.FC = () => {
       title: t('admin.common.actions'),
       key: 'actions',
       width: 120,
-      render: (_: any, record: any) => (
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      render: (_: unknown, record: any) => (
         <Space>
           <Button type="link" icon={<EditOutlined />} onClick={() => handleEdit(record)} size="small" />
           <Popconfirm

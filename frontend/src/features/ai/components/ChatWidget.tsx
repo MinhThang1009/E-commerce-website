@@ -42,7 +42,7 @@ export interface Message {
     type: string;
     label: string;
     url?: string;
-    data?: Record<string, any>;
+    data?: Record<string, unknown>;
   }>;
 }
 
@@ -114,20 +114,18 @@ const ChatWidget: React.FC = () => {
       });
 
       let response: ChatbotResponse;
-      if (
-        (apiResponse as any).status === 'success' &&
-        (apiResponse as any).data
-      ) {
-        const newApiResponse = apiResponse as any;
+      const apiResult = apiResponse as unknown as Record<string, unknown>;
+      if (apiResult.status === 'success' && apiResult.data) {
+        const responseData = apiResult.data as Record<string, unknown>;
         response = {
-          response: newApiResponse.data.response,
-          suggestions: newApiResponse.data.suggestions,
-          products: newApiResponse.data.products,
-          actions: newApiResponse.data.actions,
-          sessionId: newApiResponse.data.sessionId,
+          response: responseData.response as string,
+          suggestions: responseData.suggestions as string[] | undefined,
+          products: responseData.products as ProductRecommendation[] | undefined,
+          actions: responseData.actions as ChatbotResponse['actions'],
+          sessionId: responseData.sessionId as string | undefined,
         };
       } else {
-        response = apiResponse as any as ChatbotResponse;
+        response = apiResponse as unknown as ChatbotResponse;
       }
 
       removeMessage(loadingId);
@@ -139,16 +137,19 @@ const ChatWidget: React.FC = () => {
         products: response.products,
         actions: response.actions,
       });
-    } catch (error: any) {
+    } catch (error) {
       console.error('Lỗi khi gửi tin nhắn:', error);
 
       let errorMessage = t('chat.errors.general');
+      const status = error && typeof error === 'object' && 'status' in error
+        ? (error as Record<string, unknown>).status
+        : undefined;
 
-      if (error.status === 404) {
+      if (status === 404) {
         errorMessage = t('chat.errors.notFound');
-      } else if (error.status === 429) {
+      } else if (status === 429) {
         errorMessage = t('chat.errors.tooManyRequests');
-      } else if (error.status >= 500) {
+      } else if (typeof status === 'number' && status >= 500) {
         errorMessage = t('chat.errors.serverError');
       }
 
@@ -171,11 +172,11 @@ const ChatWidget: React.FC = () => {
   };
 
   const handleResizeStop = (
-    e: MouseEvent | TouchEvent,
-    direction: any,
+    _e: MouseEvent | TouchEvent,
+    _direction: unknown,
     ref: HTMLElement,
-    _delta: any,
-    _position: any
+    _delta: unknown,
+    _position: unknown
   ) => {
     setSize({
       width: ref.offsetWidth as 384,
@@ -189,12 +190,13 @@ const ChatWidget: React.FC = () => {
 
       {isOpen && (
         <Rnd
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any -- react-rnd ref type không tương thích trực tiếp
           ref={chatWidgetRef as any}
           default={{
             x: window.innerWidth - size.width - 24,
             y: window.innerHeight - size.height - 100,
-            width: size.width as any,
-            height: size.height as any,
+            width: size.width,
+            height: size.height,
           }}
           minWidth={CHAT_WIDGET_CONFIG.MIN_SIZE.width}
           minHeight={CHAT_WIDGET_CONFIG.MIN_SIZE.height}
@@ -207,7 +209,9 @@ const ChatWidget: React.FC = () => {
           onResizeStop={handleResizeStop}
           style={{ zIndex: 9999 }}
           className="bg-white dark:bg-neutral-900 rounded-3xl shadow-2xl overflow-hidden flex flex-col border border-neutral-200 dark:border-neutral-800 transition-all chat-widget-active"
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any -- react-rnd HandleStyles type quá strict
           resizeHandleStyles={RESIZE_HANDLE_STYLES as any}
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any -- react-rnd HandleClasses type quá strict
           resizeHandleClasses={RESIZE_HANDLE_CLASSES as any}
         >
           <div className="chat-header-drag flex-shrink-0 sticky top-0 z-[100] shadow-xl">

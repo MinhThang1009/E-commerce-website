@@ -6,7 +6,9 @@ import { exportToExcel, exportToCSV } from '@/utils/exportUtils';
 interface ProductExportModalProps {
   isOpen: boolean;
   onClose: () => void;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any -- Dữ liệu sản phẩm có nhiều trường dynamic
   currentPageData: any[];
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   selectedRows: any[];
   filters: {
     search?: string;
@@ -15,7 +17,8 @@ interface ProductExportModalProps {
     sortBy?: string;
     sortOrder?: string;
   };
-  onExportAll: (filters: any) => Promise<any[]>;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  onExportAll: (filters: Record<string, unknown>) => Promise<any[]>;
   isLoading: boolean;
 }
 
@@ -36,6 +39,7 @@ const ProductExportModal: React.FC<ProductExportModalProps> = ({
   const handleExport = async () => {
     setIsProcessing(true);
     try {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any -- Dynamic product fields
       let dataToExport: any[] = [];
 
       if (scope === 'current') {
@@ -76,8 +80,8 @@ const ProductExportModal: React.FC<ProductExportModalProps> = ({
         Description: item.description,
         Thumbnail: item.thumbnail,
         Images: Array.isArray(item.images) ? item.images.join(', ') : item.images,
-        CategoryNames: item.categories?.map((c: any) => c.name).join('|'),
-        CategoryIDs: item.categories?.map((c: any) => c.id).join('|'),
+        CategoryNames: item.categories?.map((c: { name: string; id: string }) => c.name).join('|'),
+        CategoryIDs: item.categories?.map((c: { name: string; id: string }) => c.id).join('|'),
         SEOTitle: item.seoTitle,
         SEODescription: item.seoDescription,
         SEOKeywords: Array.isArray(item.seoKeywords) ? item.seoKeywords.join(', ') : item.seoKeywords,
@@ -86,7 +90,7 @@ const ProductExportModal: React.FC<ProductExportModalProps> = ({
         BaseName: item.baseName,
         IsVariantProduct: item.isVariantProduct ? t('common.yes') : t('common.no'),
         Variants: JSON.stringify(item.variants || []),
-        WarrantyPackages: item.warrantyPackages?.map((w: any) => w.name).join(', '),
+        WarrantyPackages: (item.warrantyPackages as Array<{ name: string }> | undefined)?.map((w) => w.name).join(', '),
         CreatedAt: item.createdAt,
       }));
 

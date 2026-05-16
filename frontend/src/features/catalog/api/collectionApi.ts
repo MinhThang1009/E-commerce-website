@@ -1,14 +1,14 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import apiClient from '@/services/apiClient';
-import { transformProductsResponse } from '@/utils/productTransform';
+import { transformProductsResponse } from '../utils/productTransform';
 
 // === Query Keys ===
 
 export const collectionKeys = {
   all: ['collections'] as const,
-  list: (params?: any) => [...collectionKeys.all, 'list', params] as const,
+  list: (params?: unknown) => [...collectionKeys.all, 'list', params] as const,
   slug: (slug: string) => [...collectionKeys.all, 'slug', slug] as const,
-  products: (slug: string, params?: any) => [...collectionKeys.all, 'products', slug, params] as const,
+  products: (slug: string, params?: Record<string, unknown>) => [...collectionKeys.all, 'products', slug, params] as const,
 };
 
 // === Query Hooks ===
@@ -66,7 +66,7 @@ export function useGetProductsByCollectionQuery(
 export function useCreateCollectionMutation() {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: async (body: any) => {
+    mutationFn: async (body: object) => {
       const { data } = await apiClient.post('/admin/collections', body);
       return data;
     },
@@ -79,7 +79,7 @@ export function useCreateCollectionMutation() {
 export function useUpdateCollectionMutation() {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: async ({ id, body }: { id: string; body: any }) => {
+    mutationFn: async ({ id, body }: { id: string; body: object }) => {
       const { data } = await apiClient.put(`/admin/collections/${id}`, body);
       return data;
     },

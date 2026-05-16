@@ -3,6 +3,7 @@ import { useTranslation } from 'react-i18next';
 import { toast } from '@/utils/toast';
 import { useAuthStore } from '@/stores/authStore';
 import { useCreateReviewMutation } from '../api/reviewApi';
+import { getErrorMsg } from '@/utils/errorMessage';
 
 interface ReviewFormProps {
   productId: string;
@@ -77,16 +78,10 @@ const ReviewForm: React.FC<ReviewFormProps> = ({
       if (onSubmitSuccess) {
         onSubmitSuccess();
       }
-    } catch (error: any) {
+    } catch (error) {
       console.error('Review submission error:', error);
 
-      if (error?.data?.message) {
-        toast.error(error.data.message);
-      } else if (error?.message) {
-        toast.error(error.message);
-      } else {
-        toast.error(t('review.form.submitError'));
-      }
+      toast.error(getErrorMsg(error, t('review.form.submitError')));
     }
   };
 

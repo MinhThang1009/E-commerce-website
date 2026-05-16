@@ -3,6 +3,7 @@ import { XMarkIcon, CloudArrowUpIcon, LinkIcon } from '@heroicons/react/24/outli
 import { useTranslation } from 'react-i18next';
 import { toast } from '@/utils/toast';
 import { getUploadUrl } from '@/utils/uploadUrl';
+import { getErrorMsg } from '@/utils/errorMessage';
 
 interface ImageUploadProps {
   value?: string | string[];
@@ -74,7 +75,7 @@ const ImageUpload: React.FC<ImageUploadProps> = ({
 
       if (result.status === 'success') {
         const newUrls = multiple 
-          ? result.data.files.map((f: any) => f.url) 
+          ? result.data.files.map((f: { url: string }) => f.url) 
           : [result.data.url];
         
         const finalUrls = [...images, ...newUrls];
@@ -83,9 +84,9 @@ const ImageUpload: React.FC<ImageUploadProps> = ({
       } else {
         throw new Error(result.message || 'Upload failed');
       }
-    } catch (error: any) {
+    } catch (error) {
       console.error('Lỗi tải ảnh lên server:', error);
-      toast.error(error.message || t('imageUpload.uploadError'));
+      toast.error(getErrorMsg(error, t('imageUpload.uploadError')));
     } finally {
       setIsUploading(false);
       if (fileInputRef.current) fileInputRef.current.value = '';

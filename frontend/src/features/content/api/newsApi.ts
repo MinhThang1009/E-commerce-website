@@ -7,7 +7,7 @@ import { NewsFilters, NewsResponse, SingleNewsResponse } from '../types/news.typ
 export const newsKeys = {
   all: ['news'] as const,
   lists: () => [...newsKeys.all, 'list'] as const,
-  list: (filters: any) => [...newsKeys.lists(), filters] as const,
+  list: (filters: unknown) => [...newsKeys.lists(), filters] as const,
   details: () => [...newsKeys.all, 'detail'] as const,
   detail: (id: string) => [...newsKeys.details(), id] as const,
   slug: (slug: string) => [...newsKeys.all, 'slug', slug] as const,
@@ -84,7 +84,7 @@ export function useGetRelatedNewsQuery(
 
 export function useCreateNewsMutation() {
   const queryClient = useQueryClient();
-  return useMutation<any, Error, any>({
+  return useMutation<unknown, Error, Record<string, unknown>>({
     mutationFn: async (body) => {
       const { data } = await apiClient.post('/news', body);
       return data;
@@ -97,7 +97,7 @@ export function useCreateNewsMutation() {
 
 export function useUpdateNewsMutation() {
   const queryClient = useQueryClient();
-  return useMutation<any, Error, { id: string; data: any }>({
+  return useMutation<unknown, Error, { id: string; data: unknown }>({
     mutationFn: async ({ id, data: body }) => {
       const { data } = await apiClient.put(`/news/${id}`, body);
       return data;
@@ -111,7 +111,7 @@ export function useUpdateNewsMutation() {
 
 export function useDeleteNewsMutation() {
   const queryClient = useQueryClient();
-  return useMutation<any, Error, string>({
+  return useMutation<unknown, Error, string>({
     mutationFn: async (id) => {
       const { data } = await apiClient.delete(`/news/${id}`);
       return data;

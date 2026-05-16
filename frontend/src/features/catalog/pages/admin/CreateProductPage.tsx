@@ -27,8 +27,8 @@ import { useConvertBase64ToImageMutation, useDeleteImageMutation } from '@/featu
 import { useGetWarrantyPackagesQuery } from '@/features/admin';
 
 // Các component con cho từng phần của form
-import AttributeModal from '@/components/modals/AttributeModal';
-import VariantModal from '@/components/modals/VariantModal';
+import AttributeModal from '../../components/AttributeModal';
+import VariantModal from '../../components/VariantModal';
 import ProductAttributesSection from '../../components/ProductAttributesSection';
 import ProductBasicInfoForm from '../../components/ProductBasicInfoForm';
 import ProductCategoryForm from '../../components/ProductCategoryForm';
@@ -44,7 +44,8 @@ import ProductFAQForm from '../../components/ProductFAQForm';
 
 // Types và utils
 import { AttributeGroup } from '../../api/attributeApi';
-import { ProductFormData } from '@/types';
+import { ProductFormData, ProductAttribute, ProductVariant } from '@/types';
+import { getErrorMsg } from '@/utils/errorMessage';
 
 // Utils xử lý ảnh trong mô tả sản phẩm (base64 -> file đã upload)
 import {
@@ -86,8 +87,8 @@ const CreateProductPage: React.FC = () => {
 
   // State cho hierarchical attributes và variants nếu cần thiết trong tương lai
   const [_attributeGroups, _setAttributeGroups] = useState<AttributeGroup[]>([]);
-  const [_hierarchicalVariants, _setHierarchicalVariants] = useState<any[]>([]);
-  const [_specifications, _setSpecifications] = useState<any[]>([]);
+  const [_hierarchicalVariants, _setHierarchicalVariants] = useState<ProductVariant[]>([]);
+  const [_specifications, _setSpecifications] = useState<Array<{ name: string; value: string; category?: string }>>([]);
 
   // Các API hook cần thiết
   const { data: categories, isLoading: isCategoriesLoading } =
@@ -191,11 +192,11 @@ const CreateProductPage: React.FC = () => {
         if (hasBase64Images(processedDescription)) {
           const result = await processDescriptionImages(processedDescription, {
             productId: undefined,
-            category: 'product' as any,
+            category: 'product' as const,
             uploadImageFn: async ({ base64Data, options }) => {
               return await convertBase64ToImage({
                 base64Data,
-                options: options as any,
+                options: options as Record<string, unknown>,
               });
             },
           });
@@ -266,7 +267,7 @@ const CreateProductPage: React.FC = () => {
             ) || 0,
           sku: hasVariants
             ? undefined
-            : allFormValues.sku || (values as any).sku || `PROD-${Date.now()}`,
+            : allFormValues.sku || (values as ProductFormData & { sku?: string }).sku || `PROD-${Date.now()}`,
           status: allFormValues.status || values.status || 'active',
           featured: allFormValues.featured || values.featured || false,
           categoryIds: allFormValues.categoryIds || values.categoryIds || [],
@@ -301,11 +302,11 @@ const CreateProductPage: React.FC = () => {
             allFormValues.warrantyPackageIds || values.warrantyPackageIds || [],
           attributes:
             attributes.length > 0
-              ? attributes.map((attr) => ({
+              ? attributes.map((attr: ProductAttribute) => ({
                 name: attr.name,
-                value: Array.isArray((attr as any).values)
-                  ? (attr as any).values.join(', ')
-                  : (attr as any).value || (attr as any).values || '',
+                value: Array.isArray(attr.values)
+                  ? attr.values.join(', ')
+                  : '',
               }))
               : [],
           variants: hasVariants
@@ -316,8 +317,8 @@ const CreateProductPage: React.FC = () => {
               compareAtPrice: variant.compareAtPrice
                 ? parseFloat(variant.compareAtPrice.toString())
                 : undefined,
-              stockQuantity: parseInt((variant as any).stockQuantity?.toString() || variant.stock?.toString() || '0') || 0,
-              stock: parseInt(variant.stock?.toString() || (variant as any).stockQuantity?.toString() || '0') || 0,
+              stockQuantity: parseInt(variant.stockQuantity?.toString() || variant.stock?.toString() || '0') || 0,
+              stock: parseInt(variant.stock?.toString() || variant.stockQuantity?.toString() || '0') || 0,
               sku: variant.sku || `VAR-${Date.now()}-${index + 1}`,
               isDefault: index === 0, // Biến thể đầu tiên là mặc định
               isAvailable: true,
@@ -360,7 +361,7 @@ const CreateProductPage: React.FC = () => {
         await createProduct(productData);
         message.success(t('admin.products.messages.createSuccess'));
         navigate('/admin/products');
-      } catch (error: any) {
+      } catch (error) {
         // Rollback: xóa ảnh description đã upload nếu tạo sản phẩm thất bại
         // Tránh orphaned files khi form bị lỗi validation sau khi ảnh đã được upload
         if (uploadedDescImageIds.length > 0) {
@@ -376,31 +377,8 @@ const CreateProductPage: React.FC = () => {
   });
 
   // Hàm hỗ trợ định dạng thông báo lỗi
-  const formatErrorMessage = (error: any): string => {
-    if (error?.data?.message) {
-      return error.data.message;
-    }
-
-    if (error?.data?.errors && error.data.errors.length > 0) {
-      if (error.data.errors.length === 1) {
-        return (
-          error.data.errors[0].message ||
-          `${error.data.errors[0].field}: ${t('admin.products.messages.validationError')}`
-        );
-      }
-
-      // Multiple errors - format nicely
-      const errorList = error.data.errors
-        .map((err: any) => err.message || `${err.field}: ${t('admin.products.messages.validationError')}`)
-        .join('\n• ');
-      return `${t('admin.products.messages.multipleErrors', { count: error.data.errors.length })}:\n• ${errorList}`;
-    }
-
-    if (error?.message) {
-      return error.message;
-    }
-
-    return t('admin.products.messages.createFailed');
+  const formatErrorMessage = (error: unknown): string => {
+    return getErrorMsg(error, t('admin.products.messages.createFailed'));
   };
 
   const categoriesList = categories || [];

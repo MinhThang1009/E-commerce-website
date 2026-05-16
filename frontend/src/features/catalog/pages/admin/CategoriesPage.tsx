@@ -33,6 +33,7 @@ import {
 } from '../../api/categoryApi';
 import type { Category } from '../../types/category.types';
 import ImageUpload from '@/components/common/ImageUpload';
+import { getErrorMsg } from '@/utils/errorMessage';
 
 const { Title } = Typography;
 const { TextArea } = Input;
@@ -81,8 +82,8 @@ const CategoriesPage: React.FC = () => {
       setEditingCategory(null);
       form.resetFields();
       refetch();
-    } catch (error: any) {
-      message.error(error?.data?.message || t('common.errorOccurred'));
+    } catch (error) {
+      message.error(getErrorMsg(error, t('common.errorOccurred')));
     }
   };
 
@@ -91,8 +92,8 @@ const CategoriesPage: React.FC = () => {
       await deleteCategory(id);
       message.success(t('admin.categories.messages.deleteSuccess'));
       refetch();
-    } catch (error: any) {
-      message.error(error?.data?.message || t('admin.categories.messages.deleteError'));
+    } catch (error) {
+      message.error(getErrorMsg(error, t('admin.categories.messages.deleteError')));
     }
   };
 

@@ -28,7 +28,7 @@ const ReviewSummary: React.FC<ReviewSummaryProps> = ({
   const ratingDistribution = [5, 4, 3, 2, 1].map((rating) => {
     const count =
       reviewsData?.data?.reviews?.filter(
-        (review: any) => review.rating === rating
+        (review: { rating: number }) => review.rating === rating
       ).length || 0;
     const percentage = totalReviews > 0 ? (count / totalReviews) * 100 : 0;
     return { rating, count, percentage };
@@ -103,7 +103,7 @@ const ReviewSummary: React.FC<ReviewSummaryProps> = ({
 
             <div>
               <div className="text-lg font-semibold text-purple-600 dark:text-purple-400">
-                {reviewsData?.data?.reviews?.filter((r: any) => r.isVerified)
+                {reviewsData?.data?.reviews?.filter((r: { isVerified?: boolean }) => r.isVerified)
                   .length || 0}
               </div>
               <div className="text-xs text-neutral-600 dark:text-neutral-400">

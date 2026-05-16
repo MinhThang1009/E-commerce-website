@@ -229,7 +229,8 @@ const OrderDetails: React.FC<OrderDetailsProps> = ({ orderId, onOpenReview }) =>
                       )}
                       {item.attributes?.warrantyPackages?.length > 0 && (
                         <div className="mt-1 flex flex-wrap gap-1">
-                          {item.attributes?.warrantyPackages?.map((pkg: any) => (
+                          {item.attributes?.warrantyPackages?.map(// eslint-disable-next-line @typescript-eslint/no-explicit-any -- Warranty package fields
+                          (pkg: any) => (
                             <span key={pkg.id} className="text-[10px] bg-blue-50 text-blue-600 dark:bg-blue-900/20 dark:text-blue-400 px-1.5 py-0.5 rounded border border-blue-100 dark:border-blue-800">
                               🛡️ {pkg.name} ({formatPrice(pkg.price)})
                             </span>

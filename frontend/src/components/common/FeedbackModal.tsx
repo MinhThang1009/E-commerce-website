@@ -2,6 +2,7 @@ import React from 'react';
 import { Modal, Form, Input, Select, message } from 'antd';
 import { useTranslation } from 'react-i18next';
 import { useSendFeedbackMutation } from '@/features/content';
+import { getErrorMsg } from '@/utils/errorMessage';
 
 interface FeedbackModalProps {
   visible: boolean;
@@ -23,9 +24,9 @@ const FeedbackModal: React.FC<FeedbackModalProps> = ({ visible, onClose }) => {
       message.success(t('feedback.successMessage'));
       form.resetFields();
       onClose();
-    } catch (error: any) {
-      if (error?.name !== 'ValidationError') {
-        message.error(error?.data?.message || t('feedback.errorMessage'));
+    } catch (error) {
+      if (!(error instanceof Error && error.name === 'ValidationError')) {
+        message.error(getErrorMsg(error, t('feedback.errorMessage')));
       }
     }
   };

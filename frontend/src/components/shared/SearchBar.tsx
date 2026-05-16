@@ -75,7 +75,7 @@ const SearchBar: React.FC<SearchBarProps> = ({
   // Cập nhật recentSearches khi historyData thay đổi (từ server)
   useEffect(() => {
     if (historyData?.data) {
-      const serverSearches = historyData.data.map((item: any) => item.keyword);
+      const serverSearches = historyData.data.map((item: { keyword: string }) => item.keyword);
       // Kết hợp với tìm kiếm cục bộ, loại bỏ trùng lặp
       const localSearches = JSON.parse(localStorage.getItem('recentSearches') || '[]');
       const combined = Array.from(new Set([...serverSearches, ...localSearches])).slice(0, 5);
@@ -189,7 +189,7 @@ const SearchBar: React.FC<SearchBarProps> = ({
       setRecentSearches(updatedSearches);
 
       if (isLoggedIn && historyData?.data) {
-        const itemToDelete = historyData.data.find((item: any) => item.keyword === termToRemove);
+        const itemToDelete = historyData.data.find((item: { keyword: string; id?: string }) => item.keyword === termToRemove);
         if (itemToDelete) {
           await deleteSearch(itemToDelete.id);
         }

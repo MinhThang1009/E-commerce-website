@@ -254,7 +254,7 @@ const HierarchicalVariantsForm: React.FC<HierarchicalVariantsFormProps> = ({
       title: t('variants.colActions'),
       key: 'actions',
       width: 120,
-      render: (_: any, record: ProductVariant) => (
+      render: (_: unknown, record: ProductVariant) => (
         <Space>
           <Button
             type="text"

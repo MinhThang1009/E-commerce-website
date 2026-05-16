@@ -138,16 +138,20 @@ const ChatWidgetPortal: React.FC = () => {
       } else {
         throw new Error(response.message || t('errors.unknown'));
       }
-    } catch (error: any) {
+    } catch (error) {
       let errorMessage = t('chat.errors.general');
+      const errMsg = error instanceof Error ? error.message : undefined;
+      const status = error && typeof error === 'object' && 'status' in error
+        ? (error as Record<string, unknown>).status
+        : undefined;
 
-      if (error.message === 'Request timeout') {
+      if (errMsg === 'Request timeout') {
         errorMessage = t('chat.errors.timeout');
-      } else if (error.status === 404) {
+      } else if (status === 404) {
         errorMessage = t('chat.errors.notFound');
-      } else if (error.status === 429) {
+      } else if (status === 429) {
         errorMessage = t('chat.errors.tooManyRequests');
-      } else if (error.status >= 500) {
+      } else if (typeof status === 'number' && status >= 500) {
         errorMessage = t('chat.errors.serverError');
       }
 

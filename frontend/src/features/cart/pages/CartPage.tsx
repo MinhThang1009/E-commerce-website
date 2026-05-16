@@ -19,6 +19,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { useQueryClient } from '@tanstack/react-query';
 import { ROUTES } from '@/routes/paths';
 import { cartKeys } from '../api/cartApi';
+import { getErrorMsg } from '@/utils/errorMessage';
 
 const CartPage: React.FC = () => {
   const { t } = useTranslation();
@@ -123,8 +124,8 @@ const CartPage: React.FC = () => {
         discountCodeId: result.data.discountCodeId,
       });
       toast.success(t('cart.voucher.appliedSuccess'));
-    } catch (err: any) {
-      const msg = err?.data?.message || t('cart.voucher.invalid');
+    } catch (err) {
+      const msg = getErrorMsg(err, t('cart.voucher.invalid'));
       setVoucherError(msg);
       setAppliedVoucher(null);
     }
@@ -150,9 +151,9 @@ const CartPage: React.FC = () => {
         discountAmount: result.data.discountAmount,
         discountCodeId: result.data.discountCodeId,
       });
-    } catch (err: any) {
+    } catch (err) {
       // Voucher không còn hợp lệ với giá trị giỏ hàng hiện tại
-      const msg = err?.data?.message || '';
+      const msg = getErrorMsg(err, '');
       toast.warning(t('cart.voucher.cancelled', { message: msg }));
       setAppliedVoucher(null);
       setVoucherCode('');
@@ -198,7 +199,7 @@ const CartPage: React.FC = () => {
       }
       setAppliedVoucher(null);
       setVoucherCode('');
-    } catch (error: any) {
+    } catch (error) {
       clearLocalCart();
       toast.error(t('cart.notifications.serverError'));
     }

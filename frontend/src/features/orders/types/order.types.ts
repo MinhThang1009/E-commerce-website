@@ -12,7 +12,7 @@ export interface OrderItem {
   quantity: number;
   subtotal: number;
   image?: string;
-  attributes?: Record<string, any>;
+  attributes?: Record<string, string>;
   createdAt?: string;
   updatedAt?: string;
   Product?: {

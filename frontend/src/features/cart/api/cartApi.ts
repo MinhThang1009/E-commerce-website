@@ -52,7 +52,7 @@ export interface SyncCartRequest {
     name: string;
     price: number;
     image: string;
-    attributes?: any;
+    attributes?: Record<string, string>;
   }[];
 }
 

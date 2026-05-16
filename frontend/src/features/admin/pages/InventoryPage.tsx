@@ -32,7 +32,7 @@ const InventoryPage: React.FC = () => {
     id: typeof p.id === 'string' ? parseInt(p.id, 10) : p.id as unknown as number,
     name: p.name,
     sku: p.sku,
-    stockQuantity: (p as any).stockQuantity ?? 0,
+    stockQuantity: (p as { stockQuantity?: number }).stockQuantity ?? 0,
     status: p.status,
   }));
 

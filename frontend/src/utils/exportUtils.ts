@@ -6,7 +6,7 @@ import ExcelJS from 'exceljs';
  * @param fileName Tên file (không có phần mở rộng)
  * @param sheetName Tên trang tính
  */
-export const exportToExcel = async (data: any[], fileName: string, sheetName: string = 'Sheet1') => {
+export const exportToExcel = async (data: Record<string, unknown>[], fileName: string, sheetName: string = 'Sheet1') => {
   if (data.length === 0) return;
 
   const wb = new ExcelJS.Workbook();
@@ -37,7 +37,7 @@ export const exportToExcel = async (data: any[], fileName: string, sheetName: st
  * @param data Mảng đối tượng cần xuất
  * @param fileName Tên file (không có phần mở rộng)
  */
-export const exportToCSV = (data: any[], fileName: string) => {
+export const exportToCSV = (data: Record<string, unknown>[], fileName: string) => {
   if (data.length === 0) return;
 
   const headers = Object.keys(data[0]);

@@ -40,7 +40,8 @@ export const HomeNewsSection: React.FC = () => {
       }
     >
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-6 gap-4 lg:gap-6 h-auto lg:h-[600px]">
-        {news.map((item: any, index: number) => {
+        {news.map(// eslint-disable-next-line @typescript-eslint/no-explicit-any -- News item fields dynamic
+                (item: any, index: number) => {
            // Logic bố cục:
            // Mục 0, 1: Lớn (chiếm 3 cột trên LG)
            // Mục 2, 3, 4: Nhỏ (chiếm 2 cột trên LG)

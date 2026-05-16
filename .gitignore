@@ -59,6 +59,9 @@ temp/
 # Temp commit-rewrite files
 scripts/msg*.txt
 
+# Lint/tool output
+**/eslint_output.txt
+
 # Analysis files
 ANALYSIS_INDEX.md
 ANALYSIS_REPORT.md

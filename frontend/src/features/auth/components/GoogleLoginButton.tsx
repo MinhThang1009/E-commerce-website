@@ -5,12 +5,14 @@ import { useTranslation } from 'react-i18next';
 import { useAuthStore } from '@/stores/authStore';
 import { useUiStore } from '@/stores/uiStore';
 import { PremiumButton } from '@/components/common';
+import { getErrorMsg } from '@/utils/errorMessage';
 
 const GoogleLoginButton: React.FC = () => {
   const { t } = useTranslation();
   const addNotification = useUiStore((s) => s.addNotification);
   const { mutateAsync: googleLogin, isPending: isLoading } = useGoogleLoginMutation();
 
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any -- Google OAuth response shape
   const handleGoogleSuccess = async (tokenResponse: any) => {
     try {
 
@@ -24,10 +26,10 @@ const GoogleLoginButton: React.FC = () => {
         message: t('auth.googleLoginSuccess'),
         type: 'success',
       });
-    } catch (error: any) {
+    } catch (error) {
       console.error('Lỗi đăng nhập Google:', error);
       addNotification({
-        message: error?.data?.message || error?.message || t('auth.googleLoginError'),
+        message: getErrorMsg(error, t('auth.googleLoginError')),
         type: 'error',
       });
     }

@@ -12,6 +12,7 @@ import {
 } from '@/utils/priceUtils';
 import { v4 as uuidv4 } from 'uuid';
 import { ShoppingCartIcon } from '@heroicons/react/24/outline';
+import { getErrorMsg } from '@/utils/errorMessage';
 
 interface ProductListCardProps extends Product {
   enableVariantPricing?: boolean; // Option để bật/tắt việc load variants
@@ -91,10 +92,10 @@ const ProductListCard: React.FC<ProductListCardProps> = ({
         type: 'success',
         duration: 3000,
       });
-    } catch (error: any) {
+    } catch (error) {
       console.error('Thêm vào giỏ hàng thất bại:', error);
       addNotification({
-        message: error?.data?.message || t('product.addToCartError'),
+        message: getErrorMsg(error, t('product.addToCartError')),
         type: 'error',
         duration: 3000,
       });

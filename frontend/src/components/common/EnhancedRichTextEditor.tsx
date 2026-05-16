@@ -9,6 +9,7 @@ import { message } from 'antd';
 import { useTranslation } from 'react-i18next';
 import { useUploadImageMutation } from '@/features/upload';
 import EditorErrorBoundary from './EditorErrorBoundary';
+import { getErrorMsg } from '@/utils/errorMessage';
 
 interface EnhancedRichTextEditorProps {
   value?: string;
@@ -97,8 +98,8 @@ const EnhancedRichTextEditor: React.FC<EnhancedRichTextEditorProps> = ({
           }
         }
         message.success(t('richEditor.uploadSuccess'));
-      } catch (error: any) {
-        const errorMessage = error?.data?.message || t('richEditor.uploadError');
+      } catch (error) {
+        const errorMessage = getErrorMsg(error, t('richEditor.uploadError'));
         message.error(errorMessage);
         console.error('Lỗi upload ảnh:', error);
       } finally {
@@ -189,7 +190,7 @@ const EnhancedRichTextEditor: React.FC<EnhancedRichTextEditorProps> = ({
               if (onImageUpload) onImageUpload(imageUrl, result.data.id);
             }
             message.success(t('richEditor.uploadSuccess'));
-          } catch (error: any) {
+          } catch (error) {
             message.error(t('richEditor.uploadError'));
           } finally {
             hideProgress();

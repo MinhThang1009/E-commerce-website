@@ -39,7 +39,8 @@ const CollectionsPage: React.FC = () => {
                     </div>
                 ) : (
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-10">
-                        {collections.map((collection: any) => (
+                        {collections.map(// eslint-disable-next-line @typescript-eslint/no-explicit-any -- Collection API response
+            (collection: any) => (
                             <Link
                                 key={collection.id}
                                 to={buildRoute.shopCollection(collection.id)}

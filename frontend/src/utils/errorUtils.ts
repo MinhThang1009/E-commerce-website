@@ -33,101 +33,91 @@ const ERROR_TYPE_TO_KEY: Record<ErrorType, string> = {
   [ErrorType.UNKNOWN_ERROR]: 'errors.unknown',
 };
 
+// Helper: truy cập thuộc tính an toàn trên unknown object
+function prop(obj: unknown, key: string): unknown {
+  if (obj && typeof obj === 'object' && key in obj) {
+    return (obj as Record<string, unknown>)[key];
+  }
+  return undefined;
+}
+
+function str(val: unknown): string | undefined {
+  return typeof val === 'string' ? val : undefined;
+}
+
+function num(val: unknown): number | undefined {
+  return typeof val === 'number' ? val : undefined;
+}
+
+// Lấy error type theo status code
+function errorTypeByStatus(status: number): ErrorType | undefined {
+  if (status === 400) return ErrorType.VALIDATION_ERROR;
+  if (status === 401) return ErrorType.AUTHENTICATION_ERROR;
+  if (status === 403) return ErrorType.AUTHORIZATION_ERROR;
+  if (status === 404) return ErrorType.NOT_FOUND_ERROR;
+  if (status >= 500) return ErrorType.SERVER_ERROR;
+  return undefined;
+}
+
+// Trích xuất message từ data object (hỗ trợ data.message và data.error.message)
+function extractMessage(data: unknown): string {
+  const msg = str(prop(data, 'message'));
+  if (msg) return msg;
+  const errObj = prop(data, 'error');
+  const errMsg = str(prop(errObj, 'message'));
+  if (errMsg) return errMsg;
+  return 'Unknown error';
+}
+
 /**
  * Phân tích lỗi từ các nguồn khác nhau
  */
-export const parseError = (error: any): AppError => {
+export const parseError = (error: unknown): AppError => {
   // Lỗi có status trực tiếp (legacy format hoặc error object tự tạo)
-  if (error?.status) {
-    const status = error.status;
-    const message =
-      error.data?.message || error.data?.error?.message || 'Unknown error';
+  const status = num(prop(error, 'status'));
+  const statusStr = str(prop(error, 'status'));
+  const data = prop(error, 'data');
 
-    if (status === 400) {
-      return {
-        type: ErrorType.VALIDATION_ERROR,
-        message,
-        code: status,
-        details: error.data,
-      };
-    }
-
-    if (status === 401) {
-      return {
-        type: ErrorType.AUTHENTICATION_ERROR,
-        message,
-        code: status,
-        details: error.data,
-      };
-    }
-
-    if (status === 403) {
-      return {
-        type: ErrorType.AUTHORIZATION_ERROR,
-        message,
-        code: status,
-        details: error.data,
-      };
-    }
-
-    if (status === 404) {
-      return {
-        type: ErrorType.NOT_FOUND_ERROR,
-        message,
-        code: status,
-        details: error.data,
-      };
-    }
-
-    if (status >= 500) {
-      return {
-        type: ErrorType.SERVER_ERROR,
-        message,
-        code: status,
-        details: error.data,
-      };
-    }
-
-    if (status === 'ERR_NETWORK') {
-      return {
-        type: ErrorType.NETWORK_ERROR,
-        message,
-        code: status,
-        details: error,
-      };
+  if (status) {
+    const message = extractMessage(data);
+    const errorType = errorTypeByStatus(status);
+    if (errorType) {
+      return { type: errorType, message, code: status, details: data };
     }
   }
 
-  // Lỗi axios (AxiosError có thuộc tính code)
-  if (error?.code === 'ERR_NETWORK' || error?.code === 'ECONNABORTED') {
+  if (statusStr === 'ERR_NETWORK') {
     return {
       type: ErrorType.NETWORK_ERROR,
-      message: error.message || i18next.t('errors.network'),
-      code: error.code,
+      message: extractMessage(data),
+      code: statusStr,
+      details: error,
+    };
+  }
+
+  // Lỗi axios (AxiosError có thuộc tính code)
+  const code = str(prop(error, 'code'));
+  if (code === 'ERR_NETWORK' || code === 'ECONNABORTED') {
+    return {
+      type: ErrorType.NETWORK_ERROR,
+      message: str(prop(error, 'message')) || i18next.t('errors.network'),
+      code,
       details: error,
     };
   }
 
   // Lỗi axios với response (error.response.status)
-  if (error?.response?.status) {
-    const axiosStatus = error.response.status;
-    const axiosMessage =
-      error.response.data?.message || error.response.data?.error?.message || error.message || 'Unknown error';
+  const response = prop(error, 'response');
+  const axiosStatus = num(prop(response, 'status'));
+  if (axiosStatus) {
+    const responseData = prop(response, 'data');
+    const axiosMessage = extractMessage(responseData) !== 'Unknown error'
+      ? extractMessage(responseData)
+      : str(prop(error, 'message')) || 'Unknown error';
 
-    if (axiosStatus === 400) {
-      return { type: ErrorType.VALIDATION_ERROR, message: axiosMessage, code: axiosStatus, details: error.response.data };
-    }
-    if (axiosStatus === 401) {
-      return { type: ErrorType.AUTHENTICATION_ERROR, message: axiosMessage, code: axiosStatus, details: error.response.data };
-    }
-    if (axiosStatus === 403) {
-      return { type: ErrorType.AUTHORIZATION_ERROR, message: axiosMessage, code: axiosStatus, details: error.response.data };
-    }
-    if (axiosStatus === 404) {
-      return { type: ErrorType.NOT_FOUND_ERROR, message: axiosMessage, code: axiosStatus, details: error.response.data };
-    }
-    if (axiosStatus >= 500) {
-      return { type: ErrorType.SERVER_ERROR, message: axiosMessage, code: axiosStatus, details: error.response.data };
+    const errorType = errorTypeByStatus(axiosStatus);
+    if (errorType) {
+      return { type: errorType, message: axiosMessage, code: axiosStatus, details: responseData };
     }
   }
 
@@ -159,7 +149,7 @@ export const parseError = (error: any): AppError => {
 /**
  * Lấy thông báo lỗi thân thiện với người dùng
  */
-export const getErrorMessage = (error: any): string => {
+export const getErrorMessage = (error: unknown): string => {
   const parsedError = parseError(error);
 
   if (parsedError.message && !parsedError.message.includes('Unknown error')) {
@@ -173,7 +163,7 @@ export const getErrorMessage = (error: any): string => {
  * Tạo hàm xử lý lỗi cho component
  */
 export const createErrorHandler = (onError?: (error: AppError) => void) => {
-  return (error: any) => {
+  return (error: unknown) => {
     const parsedError = parseError(error);
 
     if (onError) {
@@ -215,7 +205,7 @@ export const retryWithBackoff = async <T>(
 /**
  * Kiểm tra xem lỗi có thể thử lại không
  */
-export const isRetryableError = (error: any): boolean => {
+export const isRetryableError = (error: unknown): boolean => {
   const parsedError = parseError(error);
 
   return [ErrorType.NETWORK_ERROR, ErrorType.SERVER_ERROR].includes(
@@ -226,7 +216,7 @@ export const isRetryableError = (error: any): boolean => {
 /**
  * Định dạng lỗi để ghi log
  */
-export const formatErrorForLogging = (error: any): string => {
+export const formatErrorForLogging = (error: unknown): string => {
   const parsedError = parseError(error);
 
   return JSON.stringify(
@@ -242,4 +232,3 @@ export const formatErrorForLogging = (error: any): string => {
     2
   );
 };
-

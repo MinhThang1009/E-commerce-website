@@ -73,7 +73,7 @@ const Header: React.FC = () => {
   useEffect(() => {
     if (serverWishlist && serverWishlist.data) {
       // Cập nhật wishlist trong Zustand store với dữ liệu từ server sau khi xác thực
-      useWishlistStore.getState().setWishlist(serverWishlist.data.map((p: any) => p.id));
+      useWishlistStore.getState().setWishlist(serverWishlist.data.map((p) => p.id));
     }
   }, [serverWishlist]);
 

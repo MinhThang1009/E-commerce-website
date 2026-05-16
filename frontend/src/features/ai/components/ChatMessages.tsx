@@ -8,6 +8,7 @@ interface ChatMessagesProps {
   messages: Message[];
   onSuggestionClick: (suggestion: string) => void;
   messagesEndRef: RefObject<HTMLDivElement>;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any -- User object shape varies
   user?: any;
 }
 

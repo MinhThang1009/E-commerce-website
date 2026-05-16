@@ -43,7 +43,8 @@ const RecentlyViewedProducts: React.FC<RecentlyViewedProductsProps> = ({
     <div className="py-8">
       <h2 className="text-2xl font-bold mb-6">{resolvedTitle}</h2>
       <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
-        {products.map((product: any) => (
+        {products.map(// eslint-disable-next-line @typescript-eslint/no-explicit-any -- ProductCard cần nhiều props
+          (product: any) => (
           <ProductCard key={product.id} {...product} />
         ))}
       </div>

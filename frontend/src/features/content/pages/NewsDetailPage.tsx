@@ -15,7 +15,7 @@ const RelatedNewsList: React.FC<{ slug: string }> = ({ slug }) => {
 
   return (
     <>
-      {data.news.map((n: any) => (
+      {data.news.map((n) => (
         <Link key={n.id} to={buildRoute.newsDetail(n.slug)} className="group block bg-neutral-50 dark:bg-neutral-800 rounded-3xl overflow-hidden shadow-sm hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1">
           <div className="aspect-[16/10] overflow-hidden relative">
             <img
@@ -170,7 +170,7 @@ const NewsDetailPage: React.FC = () => {
                 {t('news.recent')}
               </h3>
               <div className="space-y-8">
-                {recentNewsResponse?.news?.filter((n: any) => n.id !== item.id).slice(0, 4).map((n: any) => (
+                {recentNewsResponse?.news?.filter((n) => n.id !== item.id).slice(0, 4).map((n) => (
                   <Link key={n.id} to={buildRoute.newsDetail(n.slug)} className="group flex gap-4">
                     <div className="w-24 h-24 flex-shrink-0 rounded-2xl overflow-hidden shadow-sm">
                       <img

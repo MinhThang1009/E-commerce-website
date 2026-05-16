@@ -2,6 +2,9 @@
   "name": "techstore-backend",
   "version": "1.0.0",
   "main": "src/server.js",
+  "engines": {
+    "node": ">=20"
+  },
   "scripts": {
     "start": "node src/server.js",
     "dev": "nodemon src/server.js",
@@ -64,8 +67,7 @@
     "swagger-jsdoc": "^6.2.8",
     "swagger-ui-express": "^5.0.0",
     "uuid": "^11.1.0",
-    "winston": "^3.17.0",
-    "xss-clean": "^0.1.4"
+    "winston": "^3.17.0"
   },
   "devDependencies": {
     "axios": "^1.13.6",

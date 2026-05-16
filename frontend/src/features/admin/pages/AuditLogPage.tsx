@@ -14,8 +14,8 @@ interface AuditLog {
   action: string;
   entityType: string;
   entityId?: number;
-  oldValue?: any;
-  newValue?: any;
+  oldValue?: unknown;
+  newValue?: unknown;
   ipAddress?: string;
   createdAt: string;
   admin?: { id: number; firstName: string; lastName: string; email: string };
@@ -35,7 +35,7 @@ interface AuditLogsResponse {
 // Query keys cho audit logs
 const auditLogKeys = {
   all: ['audit-logs'] as const,
-  list: (params: any) => [...auditLogKeys.all, 'list', params] as const,
+  list: (params: Record<string, unknown>) => [...auditLogKeys.all, 'list', params] as const,
 };
 
 function useGetAuditLogsQuery(params: {
@@ -55,7 +55,7 @@ function useGetAuditLogsQuery(params: {
   });
 }
 
-const prettyJson = (val: any): string => {
+const prettyJson = (val: unknown): string => {
   if (!val) return '';
   try {
     const parsed = typeof val === 'string' ? JSON.parse(val) : val;

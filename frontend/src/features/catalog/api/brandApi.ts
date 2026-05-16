@@ -1,14 +1,14 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import apiClient from '@/services/apiClient';
-import { transformProductsResponse } from '@/utils/productTransform';
+import { transformProductsResponse } from '../utils/productTransform';
 
 // === Query Keys ===
 
 export const brandKeys = {
   all: ['brands'] as const,
-  list: (params?: any) => [...brandKeys.all, 'list', params] as const,
+  list: (params?: unknown) => [...brandKeys.all, 'list', params] as const,
   slug: (slug: string) => [...brandKeys.all, 'slug', slug] as const,
-  products: (slug: string, params?: any) => [...brandKeys.all, 'products', slug, params] as const,
+  products: (slug: string, params?: unknown) => [...brandKeys.all, 'products', slug, params] as const,
 };
 
 // === Query Hooks ===
@@ -70,7 +70,7 @@ export function useGetProductsByBrandQuery(
 export function useCreateBrandMutation() {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: async (body: any) => {
+    mutationFn: async (body: object) => {
       const { data } = await apiClient.post('/admin/brands', body);
       return data;
     },
@@ -83,7 +83,7 @@ export function useCreateBrandMutation() {
 export function useUpdateBrandMutation() {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: async ({ id, body }: { id: string; body: any }) => {
+    mutationFn: async ({ id, body }: { id: string; body: object }) => {
       const { data } = await apiClient.put(`/admin/brands/${id}`, body);
       return data;
     },

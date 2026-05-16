@@ -3,6 +3,7 @@ import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { useVerifyOtpMutation, useResendVerificationMutation } from '../api/authApi';
 import Button from '@/components/common/Button';
+import { getErrorMsg } from '@/utils/errorMessage';
 
 const VerifyEmailPage: React.FC = () => {
   const { t } = useTranslation();
@@ -60,8 +61,8 @@ const VerifyEmailPage: React.FC = () => {
       await verifyOtp({ email, otp });
       setOtpSuccess(t('verifyEmail.successTitle'));
       setTimeout(() => navigate('/login', { replace: true }), 2000);
-    } catch (err: any) {
-      setOtpError(err?.data?.message || t('verifyEmail.defaultOtpError'));
+    } catch (err) {
+      setOtpError(getErrorMsg(err, t('verifyEmail.defaultOtpError')));
     }
   };
 
@@ -75,8 +76,8 @@ const VerifyEmailPage: React.FC = () => {
       const timer = setInterval(() => {
         setResendCooldown(c => { if (c <= 1) { clearInterval(timer); return 0; } return c - 1; });
       }, 1000);
-    } catch (err: any) {
-      setOtpError(err?.data?.message || t('verifyEmail.resendError'));
+    } catch (err) {
+      setOtpError(getErrorMsg(err, t('verifyEmail.resendError')));
     }
   };
 

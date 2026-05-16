@@ -12,7 +12,8 @@ const BrandsPage: React.FC = () => {
     const [searchTerm, setSearchTerm] = useState('');
 
     const brands = brandsData?.data || [];
-    const filteredBrands = brands.filter((brand: any) =>
+    const filteredBrands = // eslint-disable-next-line @typescript-eslint/no-explicit-any -- API brand data
+          brands.filter((brand: any) =>
         brand.name.toLowerCase().includes(searchTerm.toLowerCase())
     );
 
@@ -56,6 +57,7 @@ const BrandsPage: React.FC = () => {
                     </div>
                 ) : (
                     <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6 gap-6">
+                        {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
                         {filteredBrands.map((brand: any) => (
                             <Link
                                 key={brand.id}

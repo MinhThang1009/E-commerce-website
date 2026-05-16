@@ -3,14 +3,14 @@
 // Khai báo module cho import file .tsx trực tiếp
 declare module '*.tsx' {
   import React from 'react';
-  const Component: React.ComponentType<any>;
+  const Component: React.ComponentType<Record<string, unknown>>;
   export default Component;
 }
 
 // Khai báo module cho import file .jsx trực tiếp
 declare module '*.jsx' {
   import React from 'react';
-  const Component: React.ComponentType<any>;
+  const Component: React.ComponentType<Record<string, unknown>>;
   export default Component;
 }
 

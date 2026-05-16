@@ -1,4 +1,5 @@
 import { useUiStore } from '@/stores/uiStore';
+import { proxyImg } from '@/utils/proxyImg';
 import { Product } from '@/features/catalog';
 import { calculatePriceRange } from '@/utils/priceUtils';
 import React, { useState } from 'react';
@@ -6,10 +7,7 @@ import { useTranslation } from 'react-i18next';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuthStore } from '@/stores/authStore';
 import { useWishlistStore } from '@/stores/wishlistStore';
-import {
-  useAddToWishlistMutation,
-  useRemoveFromWishlistMutation
-} from '@/features/wishlist';
+import { useAddToWishlistMutation, useRemoveFromWishlistMutation } from '@/features/wishlist';
 import { HeartIcon } from '@heroicons/react/24/outline';
 import { HeartIcon as HeartIconSolid } from '@heroicons/react/24/solid';
 import { useAddToCartMutation } from '@/features/cart';
@@ -100,9 +98,7 @@ const ProductCard: React.FC<ProductCardProps> = ({
     discountPercentage !== undefined
       ? Math.round(discountPercentage)
       : compareAtPrice
-        ? Math.round(
-          ((compareAtPrice - priceInfo.basePrice) / compareAtPrice) * 100
-        )
+        ? Math.round(((compareAtPrice - priceInfo.basePrice) / compareAtPrice) * 100)
         : 0;
 
   // Xử lý xem chi tiết
@@ -120,7 +116,7 @@ const ProductCard: React.FC<ProductCardProps> = ({
     if (isBuying) return;
     setIsBuying(true);
 
-    const defaultVariant = variants?.find(v => v.isDefault) || variants?.[0];
+    const defaultVariant = variants?.find((v) => v.isDefault) || variants?.[0];
 
     try {
       const buyNowItem = {
@@ -133,13 +129,13 @@ const ProductCard: React.FC<ProductCardProps> = ({
         image: thumbnail,
         inStock: true,
         stockQuantity: defaultVariant?.stockQuantity || 10,
-        attributes: defaultVariant ? { variant: defaultVariant.name } : undefined
+        attributes: defaultVariant ? { variant: defaultVariant.name } : undefined,
       };
 
       // Lưu vào sessionStorage để CheckoutPage sử dụng
       sessionStorage.setItem('buyNowItem', JSON.stringify(buyNowItem));
       sessionStorage.setItem('buyNowAction', 'true');
-      
+
       navigate('/checkout?buyNow=true');
     } catch (error) {
       console.error('Mua ngay thất bại:', error);
@@ -174,7 +170,7 @@ const ProductCard: React.FC<ProductCardProps> = ({
         <Link to={productUrl} className="block w-full h-full">
           <div className="w-full h-full overflow-hidden">
             <img
-              src={thumbnail}
+              src={proxyImg(thumbnail)}
               alt={name}
               className="w-full h-full object-cover object-center transform group-hover:scale-105 transition-transform duration-300 ease-out"
               loading="lazy"
@@ -242,14 +238,17 @@ const ProductCard: React.FC<ProductCardProps> = ({
             </span>
             {compareAtPrice && compareAtPrice > priceInfo.basePrice && (
               <span className="text-sm text-neutral-400 dark:text-neutral-500 line-through font-medium">
-                {compareAtPrice.toLocaleString(i18n.language === 'vi' ? 'vi-VN' : 'en-US')}{t('common.currencySymbol')}
+                {compareAtPrice.toLocaleString(i18n.language === 'vi' ? 'vi-VN' : 'en-US')}
+                {t('common.currencySymbol')}
               </span>
             )}
           </div>
           {compareAtPrice && compareAtPrice > priceInfo.basePrice && (
             <div className="flex items-center gap-1.5 flex-wrap">
               <span className="text-xs text-emerald-600 dark:text-emerald-400 font-semibold bg-emerald-50 dark:bg-emerald-900/20 px-2 py-1 rounded-md">
-                {t('product.savings', { amount: `${(compareAtPrice - priceInfo.basePrice).toLocaleString(i18n.language === 'vi' ? 'vi-VN' : 'en-US')}${t('common.currencySymbol')}` })}
+                {t('product.savings', {
+                  amount: `${(compareAtPrice - priceInfo.basePrice).toLocaleString(i18n.language === 'vi' ? 'vi-VN' : 'en-US')}${t('common.currencySymbol')}`,
+                })}
               </span>
               <span className="text-xs text-rose-600 dark:text-rose-400 font-semibold bg-rose-50 dark:bg-rose-900/20 px-2 py-1 rounded-md">
                 -{discount}%
@@ -307,4 +306,3 @@ const ProductCard: React.FC<ProductCardProps> = ({
 };
 
 export default ProductCard;
-

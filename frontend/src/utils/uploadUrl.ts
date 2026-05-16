@@ -7,8 +7,15 @@
  */
 export function getUploadUrl(path: string | undefined | null): string {
   if (!path) return '';
+  // CDN URLs cần proxy qua backend để bypass hotlink protection trên localhost
+  if (path.startsWith('http') && (path.includes('tgdd.vn') || path.includes('cellphones.com.vn'))) {
+    const apiBase = import.meta.env.VITE_API_URL || 'http://localhost:8888/api';
+    return `${apiBase}/img?url=${encodeURIComponent(path)}`;
+  }
   if (path.startsWith('http')) return path;
-  const base = (import.meta.env.VITE_API_URL || 'http://localhost:8888/api')
-    .replace(/\/api\/?$/, '');
+  const base = (import.meta.env.VITE_API_URL || 'http://localhost:8888/api').replace(
+    /\/api\/?$/,
+    '',
+  );
   return `${base}${path.startsWith('/') ? '' : '/'}${path}`;
 }

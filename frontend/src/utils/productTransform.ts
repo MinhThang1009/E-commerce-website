@@ -79,15 +79,39 @@ const transformSpecs = (specs: unknown, attributes: unknown = {}) => {
 export const transformProduct = (product: any): any => {
   if (!product) return null;
 
+  // Proxy CDN URLs để bypass hotlink protection trên dev
+  const pImg = (url: string | null | undefined) => {
+    if (!url) return url;
+    if (url.includes('tgdd.vn') || url.includes('cellphones.com.vn')) {
+      const api =
+        typeof import.meta !== 'undefined'
+          ? import.meta.env?.VITE_API_URL || 'http://localhost:8888/api'
+          : 'http://localhost:8888/api';
+      return `${api}/img?url=${encodeURIComponent(url)}`;
+    }
+    return url;
+  };
+
   return {
     ...product,
+    thumbnail: pImg(product.thumbnail),
+    images: (product.images || []).map((img: Record<string, unknown>) => ({
+      ...img,
+      url: pImg(img.url as string),
+    })),
+    productImages: (product.productImages || []).map((img: Record<string, unknown>) => ({
+      ...img,
+      imageUrl: pImg(img.imageUrl as string),
+    })),
     price: parseFloat(String(product.price)),
-    compareAtPrice: product.compareAtPrice
-      ? parseFloat(String(product.compareAtPrice))
-      : null,
-    stock: product.variants?.length > 0
-      ? product.variants.reduce((sum: number, v: Record<string, unknown>) => sum + (Number(v.stockQuantity) || 0), 0)
-      : product.stockQuantity,
+    compareAtPrice: product.compareAtPrice ? parseFloat(String(product.compareAtPrice)) : null,
+    stock:
+      product.variants?.length > 0
+        ? product.variants.reduce(
+            (sum: number, v: Record<string, unknown>) => sum + (Number(v.stockQuantity) || 0),
+            0,
+          )
+        : product.stockQuantity,
     isVariantProduct: (product.variants?.length || 0) > 0,
     categoryId: product.categoryId || product.category?.id || product.categories?.[0]?.id || '',
     categoryName: product.category?.name || product.categories?.[0]?.name || '',
@@ -133,24 +157,30 @@ export const transformProduct = (product: any): any => {
         }),
 
     // Chuyển đổi thông số kỹ thuật (cấp ROOT)
-    productSpecifications: transformSpecs(product.specifications, product.attributes_object || product.attributes),
+    productSpecifications: transformSpecs(
+      product.specifications,
+      product.attributes_object || product.attributes,
+    ),
 
     // Xử lý biến thể hiện tại nếu có
-    currentVariant: product.currentVariant ? {
-      ...product.currentVariant,
-      // Nếu backend đã gộp thông số vào biến thể, dùng chúng.
-      // Ngược lại, gộp thuộc tính biến thể tại đây.
-      productSpecifications: transformSpecs(product.currentVariant.specifications || product.specifications, product.currentVariant.attributes),
-    } : null,
+    currentVariant: product.currentVariant
+      ? {
+          ...product.currentVariant,
+          // Nếu backend đã gộp thông số vào biến thể, dùng chúng.
+          // Ngược lại, gộp thuộc tính biến thể tại đây.
+          productSpecifications: transformSpecs(
+            product.currentVariant.specifications || product.specifications,
+            product.currentVariant.attributes,
+          ),
+        }
+      : null,
   };
 };
 
 /**
  * Chuyển đổi một mảng sản phẩm
  */
-export const transformProducts = (
-  products: RawProduct[]
-): TransformedProduct[] => {
+export const transformProducts = (products: RawProduct[]): TransformedProduct[] => {
   if (!Array.isArray(products)) return [];
   return products.map(transformProduct);
 };
@@ -184,9 +214,7 @@ export const transformProductsResponse = (response: any): any => {
 /**
  * Tạo URLSearchParams từ bộ lọc
  */
-export const createProductFiltersParams = (
-  filters: ProductFilters = {}
-): URLSearchParams => {
+export const createProductFiltersParams = (filters: ProductFilters = {}): URLSearchParams => {
   const params = new URLSearchParams();
 
   // Bộ lọc cơ bản
@@ -194,10 +222,8 @@ export const createProductFiltersParams = (
   if (filters.limit) params.append('limit', filters.limit.toString());
   if (filters.categoryId) params.append('category', filters.categoryId);
   if (filters.search) params.append('search', filters.search);
-  if (filters.minPrice !== undefined)
-    params.append('minPrice', filters.minPrice.toString());
-  if (filters.maxPrice !== undefined)
-    params.append('maxPrice', filters.maxPrice.toString());
+  if (filters.minPrice !== undefined) params.append('minPrice', filters.minPrice.toString());
+  if (filters.maxPrice !== undefined) params.append('maxPrice', filters.maxPrice.toString());
 
   // Mặc định lấy sản phẩm đang hoạt động
   if (filters.status !== undefined) {

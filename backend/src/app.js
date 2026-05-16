@@ -17,15 +17,33 @@ const logger = require('./utils/logger');
 const eventBus = require('./shared/eventBus');
 const sequelize = require('./config/sequelize');
 const {
-  User, Address,
-  Cart, CartItem, Product, ProductVariant, WarrantyPackage,
+  User,
+  Address,
+  Cart,
+  CartItem,
+  Product,
+  ProductVariant,
+  WarrantyPackage,
   Wishlist,
-  Review, ReviewFeedback, Order, OrderItem,
+  Review,
+  ReviewFeedback,
+  Order,
+  OrderItem,
   LoyaltyHistory,
-  Banner, News, EmailCampaign, NewsletterSubscriber, Feedback,
-  Category, Brand, Collection, ProductCollection,
-  ProductAttribute, ProductSpecification, RecentlyViewed,
-  DiscountCode, InventoryLog,
+  Banner,
+  News,
+  EmailCampaign,
+  NewsletterSubscriber,
+  Feedback,
+  Category,
+  Brand,
+  Collection,
+  ProductCollection,
+  ProductAttribute,
+  ProductSpecification,
+  RecentlyViewed,
+  DiscountCode,
+  InventoryLog,
   ChatMessage,
 } = require('./models');
 const constants = require('./constants');
@@ -70,32 +88,57 @@ const usersModule = buildUsersModule({
 usersModule.subscribeEvents();
 
 const cartModule = buildCartModule({
-  Cart, CartItem, Product, ProductVariant, WarrantyPackage,
-  sequelize, eventBus, logger,
+  Cart,
+  CartItem,
+  Product,
+  ProductVariant,
+  WarrantyPackage,
+  sequelize,
+  eventBus,
+  logger,
 });
 cartModule.subscribeEvents();
 
 const wishlistModule = buildWishlistModule({
-  Wishlist, Product, eventBus, logger,
+  Wishlist,
+  Product,
+  eventBus,
+  logger,
 });
 wishlistModule.subscribeEvents();
 
 const reviewsModule = buildReviewsModule({
-  Review, ReviewFeedback, Product, User, Order, OrderItem,
-  eventBus, logger,
+  Review,
+  ReviewFeedback,
+  Product,
+  User,
+  Order,
+  OrderItem,
+  eventBus,
+  logger,
 });
 reviewsModule.subscribeEvents();
 
 const loyaltyModule = buildLoyaltyModule({
-  User, LoyaltyHistory, sequelize, eventBus, logger,
+  User,
+  LoyaltyHistory,
+  sequelize,
+  eventBus,
+  logger,
 });
 loyaltyModule.subscribeEvents();
 
 const contentModule = buildContentModule({
-  Banner, News, EmailCampaign, NewsletterSubscriber, Feedback, User,
+  Banner,
+  News,
+  EmailCampaign,
+  NewsletterSubscriber,
+  Feedback,
+  User,
   emailService,
   redisClient: getRedisClient,
-  eventBus, logger,
+  eventBus,
+  logger,
 });
 contentModule.subscribeEvents();
 
@@ -103,47 +146,88 @@ const uploadModule = buildUploadModule({ eventBus, logger });
 uploadModule.subscribeEvents();
 
 const catalogModule = buildCatalogModule({
-  Category, Brand, Collection, ProductCollection, Product,
-  ProductAttribute, ProductVariant, ProductSpecification,
-  Review, RecentlyViewed, WarrantyPackage,
+  Category,
+  Brand,
+  Collection,
+  ProductCollection,
+  Product,
+  ProductAttribute,
+  ProductVariant,
+  ProductSpecification,
+  Review,
+  RecentlyViewed,
+  WarrantyPackage,
   sequelize,
   redisClient: getRedisClient,
-  eventBus, logger,
+  eventBus,
+  logger,
 });
 catalogModule.subscribeEvents();
 
 const ordersModule = buildOrdersModule({
-  Order, OrderItem, Cart, CartItem, Product, ProductVariant, User,
-  DiscountCode, LoyaltyHistory, InventoryLog, WarrantyPackage,
-  sequelize, eventBus, logger,
-  emailService, constants,
+  Order,
+  OrderItem,
+  Cart,
+  CartItem,
+  Product,
+  ProductVariant,
+  User,
+  DiscountCode,
+  LoyaltyHistory,
+  InventoryLog,
+  WarrantyPackage,
+  sequelize,
+  eventBus,
+  logger,
+  emailService,
+  constants,
 });
 ordersModule.subscribeEvents();
 
 const paymentModule = buildPaymentModule({
-  Order, OrderItem, User, Cart, CartItem, DiscountCode,
-  sequelize, eventBus, logger,
-  momoService, vnpayService, emailService,
+  Order,
+  OrderItem,
+  User,
+  Cart,
+  CartItem,
+  DiscountCode,
+  sequelize,
+  eventBus,
+  logger,
+  momoService,
+  vnpayService,
+  emailService,
 });
 paymentModule.subscribeEvents();
 
 const inventoryModule = buildInventoryModule({
-  Product, ProductVariant, InventoryLog, User,
-  eventBus, logger,
+  Product,
+  ProductVariant,
+  InventoryLog,
+  User,
+  eventBus,
+  logger,
 });
 inventoryModule.subscribeEvents();
 
 const chatModule = buildChatModule({
-  ChatMessage, User,
+  ChatMessage,
+  User,
   // io binding deferred — server.js gọi chatModule.bindSocketIO(io) sau .listen
-  eventBus, logger,
+  eventBus,
+  logger,
 });
 chatModule.subscribeEvents();
 
 const aiModule = buildAiModule({
-  Product, ProductVariant, Category,
-  geminiChatbotService, ruleBasedChatbot,
-  sequelize, eventBus, logger,
+  Product,
+  ProductVariant,
+  Category,
+  geminiChatbotService,
+  ruleBasedChatbot,
+  sequelize,
+  eventBus,
+  logger,
 });
 aiModule.subscribeEvents();
 
@@ -168,17 +252,14 @@ app.use(
     contentSecurityPolicy: {
       directives: {
         defaultSrc: ["'self'"],
-        scriptSrc: [
-          "'self'",
-          'https://accounts.google.com',
-        ],
+        scriptSrc: ["'self'", 'https://accounts.google.com'],
         styleSrc: ["'self'", "'unsafe-inline'"],
         imgSrc: ["'self'", 'data:', 'https:', 'blob:'],
         connectSrc: ["'self'"],
         frameSrc: ["'self'"],
       },
     },
-  })
+  }),
 );
 
 // Cấu hình CORS
@@ -194,13 +275,17 @@ if (process.env.CORS_ORIGIN === '*') {
   corsOptions.origin = '*';
 } else if (process.env.CORS_ORIGIN) {
   // Phân tách danh sách origins ngăn cách bởi dấu phẩy
-  const origins = process.env.CORS_ORIGIN.split(',').map(origin => origin.trim());
+  const origins = process.env.CORS_ORIGIN.split(',').map((origin) => origin.trim());
   corsOptions.origin = origins;
 } else {
   // Dùng giá trị mặc định theo môi trường
-  corsOptions.origin = process.env.NODE_ENV === 'production'
-    ? process.env.FRONTEND_URL || 'https://yourdomain.com'
-    : (process.env.CORS_ORIGINS_DEV || '').split(',').map(o => o.trim()).filter(Boolean);
+  corsOptions.origin =
+    process.env.NODE_ENV === 'production'
+      ? process.env.FRONTEND_URL || 'https://yourdomain.com'
+      : (process.env.CORS_ORIGINS_DEV || '')
+          .split(',')
+          .map((o) => o.trim())
+          .filter(Boolean);
 }
 
 app.use(cors(corsOptions));
@@ -233,7 +318,7 @@ app.use((req, res, next) => {
   const allowedOrigins = Array.isArray(corsOptions.origin)
     ? corsOptions.origin
     : corsOptions.origin === '*'
-      ? null                    // wildcard → không kiểm tra
+      ? null // wildcard → không kiểm tra
       : [corsOptions.origin];
 
   if (allowedOrigins && !allowedOrigins.includes(origin)) {
@@ -253,7 +338,7 @@ if (process.env.NODE_ENV !== 'test') {
     morgan(':method :url :status :response-time ms', {
       // Bỏ qua /health endpoint để tránh log noise từ uptime monitoring
       skip: (req) => req.url === '/health' || req.url === '/api/health',
-    })
+    }),
   );
 }
 
@@ -293,11 +378,17 @@ app.use(sanitizeBody);
 // Nén response để tăng hiệu năng
 app.use(compression());
 
+// Image proxy — bypass CDN hotlink protection trên localhost dev
+app.use('/api/img', require('./routes/imageProxy'));
+
 // Phục vụ file upload tĩnh — cache 1 năm vì filename chứa hash/timestamp
-app.use('/uploads', express.static(path.join(__dirname, '../uploads'), {
-  maxAge: '365d',
-  immutable: true,
-}));
+app.use(
+  '/uploads',
+  express.static(path.join(__dirname, '../uploads'), {
+    maxAge: '365d',
+    immutable: true,
+  }),
+);
 
 // Phase 42.2+ — Mount Modular Monolith modules TRƯỚC routes/index để new module
 // thắng path mặc định (routes/index.js đã tháo các route cũ tương ứng).

@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Image } from 'antd';
 import { LeftOutlined, RightOutlined, EyeOutlined } from '@ant-design/icons';
+import { proxyImg } from '@/utils/proxyImg';
 
 interface ProductImageGalleryProps {
   images: string[];
@@ -20,8 +21,7 @@ const ProductImageGallery: React.FC<ProductImageGalleryProps> = ({
   // Kết hợp thumbnail và ảnh, lọc bỏ trùng lặp và chuỗi rỗng
   const images = React.useMemo(() => {
     const rawImages = [thumbnail, ...(propImages || [])].filter(Boolean) as string[];
-    // Xóa trùng lặp
-    return [...new Set(rawImages)];
+    return [...new Set(rawImages)].map(proxyImg);
   }, [thumbnail, propImages]);
 
   const handlePrevImage = (e: React.MouseEvent) => {

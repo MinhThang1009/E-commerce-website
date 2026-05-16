@@ -24,7 +24,6 @@ beforeAll(async () => {
     models = require('../models');
     dbAvailable = true;
   } catch (err) {
-    // eslint-disable-next-line no-console
     console.warn('[schemaDrift] DB không available — skip integration test:', err.message);
     dbAvailable = false;
   }
@@ -38,7 +37,7 @@ async function getDbColumns(tableName) {
   const [rows] = await sequelize.query(
     `SELECT COLUMN_NAME FROM INFORMATION_SCHEMA.COLUMNS
      WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = ?`,
-    { replacements: [tableName] }
+    { replacements: [tableName] },
   );
   return new Set(rows.map((r) => r.COLUMN_NAME));
 }
@@ -46,7 +45,6 @@ async function getDbColumns(tableName) {
 describe('Phase 46.4 — Schema drift integration check', () => {
   test('DB phải available để chạy test (skip nếu không)', () => {
     if (!dbAvailable) {
-      // eslint-disable-next-line no-console
       console.warn('Skipping schema drift test — DB không available.');
       return;
     }
@@ -57,9 +55,7 @@ describe('Phase 46.4 — Schema drift integration check', () => {
     if (!dbAvailable) return;
 
     const drifts = [];
-    const modelInstances = Object.values(models).filter(
-      (m) => m && m.tableName && m.rawAttributes
-    );
+    const modelInstances = Object.values(models).filter((m) => m && m.tableName && m.rawAttributes);
 
     for (const model of modelInstances) {
       const dbCols = await getDbColumns(model.tableName);
@@ -79,7 +75,7 @@ describe('Phase 46.4 — Schema drift integration check', () => {
 
     const drifts = [];
     const modelInstances = Object.values(models).filter(
-      (m) => m && m.tableName && m.options && m.options.paranoid
+      (m) => m && m.tableName && m.options && m.options.paranoid,
     );
 
     for (const model of modelInstances) {

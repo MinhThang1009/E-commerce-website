@@ -6,7 +6,10 @@ import { useGetChatHistoryQuery, ChatMessage } from '../api/chatApi';
 import { ChatBubbleLeftRightIcon, XMarkIcon, PaperAirplaneIcon } from '@heroicons/react/24/outline';
 import { v4 as uuidv4 } from 'uuid';
 
-const SOCKET_URL = (import.meta.env.VITE_API_URL || 'http://localhost:8888/api').replace(/\/api$/, '');
+const SOCKET_URL = (import.meta.env.VITE_API_URL || 'http://localhost:8888/api').replace(
+  /\/api$/,
+  '',
+);
 
 const SupportChat: React.FC = () => {
   const { t } = useTranslation();
@@ -43,8 +46,14 @@ const SupportChat: React.FC = () => {
     }
   }, [isOpen]);
 
+  // Chỉ fetch history nếu session đã tồn tại trước đó (có messages)
+  // Session mới (vừa tạo UUID) chưa có trong DB → skip để tránh 404
+  const [hasExistingSession] = useState(() => {
+    return !!localStorage.getItem('support_chat_has_messages');
+  });
+
   const { data: historyData, isLoading } = useGetChatHistoryQuery(currentIdentifier, {
-    enabled: isOpen && !!currentIdentifier,
+    enabled: isOpen && !!currentIdentifier && hasExistingSession,
   });
 
   useEffect(() => {
@@ -87,11 +96,13 @@ const SupportChat: React.FC = () => {
     socket.on('messageRecieved', (newMessage: ChatMessage) => {
       if (newMessage.sessionId === sessionId || (userId && newMessage.userId === userId)) {
         setMessages((prev) => {
-          if (prev.some(m => m.id === newMessage.id)) return prev;
+          if (prev.some((m) => m.id === newMessage.id)) return prev;
 
           const isFromMe = !newMessage.isFromAdmin;
           if (isFromMe) {
-            const filtered = prev.filter(m => !(m.id.startsWith('temp_') && m.content === newMessage.content));
+            const filtered = prev.filter(
+              (m) => !(m.id.startsWith('temp_') && m.content === newMessage.content),
+            );
             return [...filtered, newMessage];
           }
 
@@ -103,7 +114,7 @@ const SupportChat: React.FC = () => {
           fetch(`${SOCKET_URL}/api/chat/read/${currentIdentifier}`, {
             method: 'PATCH',
             headers: {
-              ...(token ? { 'Authorization': `Bearer ${token}` } : {}),
+              ...(token ? { Authorization: `Bearer ${token}` } : {}),
             },
           });
         }
@@ -169,6 +180,7 @@ const SupportChat: React.FC = () => {
 
     socketRef.current.emit('sendMessage', messageData);
     setMessage('');
+    localStorage.setItem('support_chat_has_messages', 'true');
   };
 
   return (
@@ -190,9 +202,15 @@ const SupportChat: React.FC = () => {
         <div className="bg-white dark:bg-neutral-900 rounded-2xl shadow-2xl w-80 sm:w-96 flex flex-col border border-neutral-200 dark:border-neutral-800 animate-slideIn">
           <div className="bg-gradient-to-r from-primary-600 to-primary-500 text-white p-4 rounded-t-2xl flex items-center justify-between">
             <div className="flex items-center gap-2">
-              <div className={`h-3 w-3 rounded-full ${isAdminOnline ? 'bg-green-400 animate-pulse' : 'bg-neutral-400'}`}></div>
+              <div
+                className={`h-3 w-3 rounded-full ${isAdminOnline ? 'bg-green-400 animate-pulse' : 'bg-neutral-400'}`}
+              ></div>
               <h3 className="font-semibold">{t('support.title')}</h3>
-              {isAdminOnline && <span className="text-[10px] bg-white/20 px-1.5 rounded uppercase font-bold tracking-wider">{t('common.online')}</span>}
+              {isAdminOnline && (
+                <span className="text-[10px] bg-white/20 px-1.5 rounded uppercase font-bold tracking-wider">
+                  {t('common.online')}
+                </span>
+              )}
             </div>
             <button onClick={() => setIsOpen(false)} className="hover:text-neutral-200">
               <XMarkIcon className="h-5 w-5" />
@@ -208,12 +226,16 @@ const SupportChat: React.FC = () => {
               messages.map((msg, idx) => {
                 const isMe = !msg.isFromAdmin;
                 return (
-                  <div key={msg.id || idx} className={`flex ${isMe ? 'justify-end' : 'justify-start'}`}>
+                  <div
+                    key={msg.id || idx}
+                    className={`flex ${isMe ? 'justify-end' : 'justify-start'}`}
+                  >
                     <div
-                      className={`max-w-[75%] p-3 rounded-2xl text-sm ${isMe
-                        ? 'bg-primary-600 text-white rounded-br-none'
-                        : 'bg-neutral-100 dark:bg-neutral-800 text-neutral-800 dark:text-neutral-100 rounded-bl-none'
-                        }`}
+                      className={`max-w-[75%] p-3 rounded-2xl text-sm ${
+                        isMe
+                          ? 'bg-primary-600 text-white rounded-br-none'
+                          : 'bg-neutral-100 dark:bg-neutral-800 text-neutral-800 dark:text-neutral-100 rounded-bl-none'
+                      }`}
                     >
                       {msg.content}
                     </div>
@@ -226,16 +248,19 @@ const SupportChat: React.FC = () => {
 
           {isAdminTyping && (
             <div className="px-4 py-2 text-xs text-neutral-400 italic flex items-center gap-1">
-               <div className="flex gap-1">
-                 <span className="h-1 w-1 bg-neutral-400 rounded-full animate-bounce"></span>
-                 <span className="h-1 w-1 bg-neutral-400 rounded-full animate-bounce [animation-delay:0.2s]"></span>
-                 <span className="h-1 w-1 bg-neutral-400 rounded-full animate-bounce [animation-delay:0.4s]"></span>
-               </div>
-               {t('support.adminTyping')}
+              <div className="flex gap-1">
+                <span className="h-1 w-1 bg-neutral-400 rounded-full animate-bounce"></span>
+                <span className="h-1 w-1 bg-neutral-400 rounded-full animate-bounce [animation-delay:0.2s]"></span>
+                <span className="h-1 w-1 bg-neutral-400 rounded-full animate-bounce [animation-delay:0.4s]"></span>
+              </div>
+              {t('support.adminTyping')}
             </div>
           )}
 
-          <form onSubmit={handleSendMessage} className="p-4 border-t border-neutral-200 dark:border-neutral-800 flex gap-2">
+          <form
+            onSubmit={handleSendMessage}
+            className="p-4 border-t border-neutral-200 dark:border-neutral-800 flex gap-2"
+          >
             <input
               type="text"
               value={message}

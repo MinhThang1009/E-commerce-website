@@ -48,21 +48,22 @@ const ProductImageGallery: React.FC<ProductImageGalleryProps> = ({
       <div className="relative group rounded-xl overflow-hidden bg-white dark:bg-neutral-800 border border-gray-100 dark:border-neutral-700">
         {/* Khung full width/height không padding, giữ tỷ lệ nhưng cho phép fill */}
         <div className="w-full aspect-[4/3] flex items-center justify-center bg-white dark:bg-neutral-900 relative">
-             <Image
-                src={images[selectedImage]}
-                alt={`${productName} - View ${selectedImage + 1}`}
-                className="object-contain max-h-full max-w-full !h-auto !w-auto"
-                style={{ maxHeight: '100%', maxWidth: '100%' }} // Đảm bảo không tràn container
-                rootClassName="flex items-center justify-center w-full h-full" // Căn giữa nội dung
-                preview={{
-                  mask: (
-                    <div className="flex items-center justify-center bg-black/30 backdrop-blur-[2px] w-full h-full text-white transition-opacity">
-                      <EyeOutlined className="text-xl mr-2" />
-                      <span className="font-medium">{t('product.viewLargeImage')}</span>
-                    </div>
-                  ),
-                }}
-              />
+          <Image
+            src={images[selectedImage]}
+            alt={`${productName} - View ${selectedImage + 1}`}
+            referrerPolicy="no-referrer"
+            className="object-contain max-h-full max-w-full !h-auto !w-auto"
+            style={{ maxHeight: '100%', maxWidth: '100%' }}
+            rootClassName="flex items-center justify-center w-full h-full"
+            preview={{
+              mask: (
+                <div className="flex items-center justify-center bg-black/30 backdrop-blur-[2px] w-full h-full text-white transition-opacity">
+                  <EyeOutlined className="text-xl mr-2" />
+                  <span className="font-medium">{t('product.viewLargeImage')}</span>
+                </div>
+              ),
+            }}
+          />
         </div>
 
         {/* Nút điều hướng cho ảnh chính */}
@@ -103,14 +104,15 @@ const ProductImageGallery: React.FC<ProductImageGalleryProps> = ({
               `}
             >
               <div className="w-full h-full bg-white dark:bg-neutral-800 flex items-center justify-center p-1">
-                 <img
-                    src={img}
-                    alt={`${productName} thumbnail ${index + 1}`}
-                    className="max-w-full max-h-full object-contain"
-                  />
+                <img
+                  src={img}
+                  alt={`${productName} thumbnail ${index + 1}`}
+                  referrerPolicy="no-referrer"
+                  className="max-w-full max-h-full object-contain"
+                />
               </div>
               {/* Lớp phủ làm tối nhẹ các ảnh không được chọn - tùy chọn */}
-               {selectedImage !== index && (
+              {selectedImage !== index && (
                 <div className="absolute inset-0 bg-black/5 hover:bg-transparent transition-colors duration-200" />
               )}
             </div>
@@ -122,4 +124,3 @@ const ProductImageGallery: React.FC<ProductImageGalleryProps> = ({
 };
 
 export default ProductImageGallery;
-

@@ -2289,7 +2289,27 @@
       "ram_capacity": "Bộ nhớ (RAM)",
       "storage_capacity": "Dung lượng (Storage)",
       "network_connectivity": "Kết nối mạng / Không dây",
-      "other_features": "Tiện ích khác"
+      "other_features": "Tiện ích khác",
+      "water_resistance": "Chống nước",
+      "sensors": "Cảm biến",
+      "health_features": "Tính năng sức khỏe",
+      "sports_modes": "Chế độ thể thao",
+      "positioning": "Định vị",
+      "compatibility": "Tương thích",
+      "target_user": "Đối tượng sử dụng",
+      "collection": "Bộ sưu tập",
+      "dial_size": "Đường kính mặt số",
+      "case_thickness": "Độ dày vỏ",
+      "band_width": "Bề rộng dây",
+      "band_material": "Chất liệu dây",
+      "case_material": "Chất liệu vỏ",
+      "glass_material": "Chất liệu mặt kính",
+      "movement_type": "Loại máy",
+      "movement_name": "Bộ máy",
+      "power_source": "Nguồn năng lượng",
+      "power_reserve": "Dự trữ năng lượng",
+      "battery_life": "Thời lượng pin",
+      "features": "Tính năng"
     }
   },
   "contact": {

@@ -21,7 +21,7 @@ import { useTranslation } from 'react-i18next';
 const ShopPage: React.FC = () => {
   const { t } = useTranslation();
   const [searchParams, setSearchParams] = useSearchParams();
-  
+
   const sortOptions = [
     { value: 'newest', label: t('shop.sort.newest') },
     { value: 'price_asc', label: t('shop.sort.price_asc') },
@@ -36,20 +36,14 @@ const ShopPage: React.FC = () => {
   const brandId = searchParams.getAll('brand');
   const collectionId = searchParams.getAll('collection');
   const search = searchParams.get('search') || undefined;
-  const minPrice = searchParams.get('minPrice')
-    ? Number(searchParams.get('minPrice'))
-    : undefined;
-  const maxPrice = searchParams.get('maxPrice')
-    ? Number(searchParams.get('maxPrice'))
-    : undefined;
+  const minPrice = searchParams.get('minPrice') ? Number(searchParams.get('minPrice')) : undefined;
+  const maxPrice = searchParams.get('maxPrice') ? Number(searchParams.get('maxPrice')) : undefined;
   const sort = (searchParams.get('sort') as ProductFilters['sort']) || 'newest';
   const page = searchParams.get('page') ? Number(searchParams.get('page')) : 1;
   const limit = 12;
 
   // Bộ lọc đã chọn cho panel lọc
-  const [selectedFilters, setSelectedFilters] = useState<
-    Record<string, string[]>
-  >({
+  const [selectedFilters, setSelectedFilters] = useState<Record<string, string[]>>({
     categories: categoryId ? [categoryId] : [],
     brand: brandId,
     collection: collectionId,
@@ -78,30 +72,32 @@ const ShopPage: React.FC = () => {
     limit,
   });
 
-  const { data: categoriesData, isLoading: isCategoriesLoading } =
-    useGetCategoriesQuery();
+  const { data: categoriesData, isLoading: isCategoriesLoading } = useGetCategoriesQuery();
 
   const { data: brandsData, isLoading: _isBrandsLoading } = useGetBrandsQuery({
     isActive: true,
     categoryId: categoryId, // Tự động lọc thương hiệu theo danh mục đang chọn
   });
 
-  const { data: collectionsData, isLoading: _isCollectionsLoading } =
-    useGetCollectionsQuery({ isActive: true });
+  const { data: collectionsData, isLoading: _isCollectionsLoading } = useGetCollectionsQuery({
+    isActive: true,
+  });
 
   // Cập nhật bộ lọc đã chọn khi tham số URL thay đổi
+  const brandIdStr = brandId.join(',');
+  const collectionIdStr = collectionId.join(',');
   useEffect(() => {
     setSelectedFilters({
       categories: categoryId ? [categoryId] : [],
-      brand: brandId,
-      collection: collectionId,
+      brand: brandIdStr ? brandIdStr.split(',') : [],
+      collection: collectionIdStr ? collectionIdStr.split(',') : [],
     });
 
     setPriceRange({
       min: minPrice || 0,
-      max: maxPrice || 10000000, // 10 triệu VND
+      max: maxPrice || 10000000,
     });
-  }, [categoryId, searchParams, minPrice, maxPrice, brandId, collectionId]);
+  }, [categoryId, brandIdStr, collectionIdStr, minPrice, maxPrice]);
 
   // Cập nhật URL khi bộ lọc thay đổi
   const updateFilters = (newFilters: Partial<ProductFilters>) => {
@@ -140,11 +136,7 @@ const ShopPage: React.FC = () => {
   };
 
   // Xử lý thay đổi bộ lọc
-  const handleFilterChange = (
-    groupId: string,
-    optionId: string,
-    isSelected: boolean
-  ) => {
+  const handleFilterChange = (groupId: string, optionId: string, isSelected: boolean) => {
     const updatedParams = new URLSearchParams(searchParams);
 
     if (groupId === 'categories') {
@@ -190,11 +182,10 @@ const ShopPage: React.FC = () => {
     {
       id: 'categories',
       name: t('filters.category'),
-      options:
-        (categoriesData || []).map((category: Category) => ({
-          id: category.id,
-          name: `${category.name} (${category.productCount || 0})`,
-        })),
+      options: (categoriesData || []).map((category: Category) => ({
+        id: category.id,
+        name: `${category.name} (${category.productCount || 0})`,
+      })),
     },
     {
       id: 'brand',
@@ -225,7 +216,10 @@ const ShopPage: React.FC = () => {
         <meta property="og:title" content={t('shop.seo.title')} />
         <meta property="og:description" content={t('shop.seo.description')} />
         <meta property="og:type" content="website" />
-        <link rel="canonical" href={`${import.meta.env.VITE_SITE_URL || 'https://techstore.vn'}/shop`} />
+        <link
+          rel="canonical"
+          href={`${import.meta.env.VITE_SITE_URL || 'https://techstore.vn'}/shop`}
+        />
       </Helmet>
       <div className="container mx-auto px-4 py-8 animate-fadeIn">
         {/* Tiêu đề trang */}
@@ -235,7 +229,10 @@ const ShopPage: React.FC = () => {
           </h1>
           <p className="text-neutral-600 dark:text-neutral-400 text-lg">
             {productsData?.total
-              ? t('shop.stats', { current: productsData.data?.length || 0, total: productsData.total })
+              ? t('shop.stats', {
+                  current: productsData.data?.length || 0,
+                  total: productsData.total,
+                })
               : t('shop.subtitle')}
           </p>
         </div>
@@ -270,12 +267,7 @@ const ShopPage: React.FC = () => {
                 }`}
                 aria-label={t('shop.gridView')}
               >
-                <svg
-                  className="h-4 w-4"
-                  fill="none"
-                  viewBox="0 0 24 24"
-                  stroke="currentColor"
-                >
+                <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path
                     strokeLinecap="round"
                     strokeLinejoin="round"
@@ -293,12 +285,7 @@ const ShopPage: React.FC = () => {
                 }`}
                 aria-label={t('shop.listView')}
               >
-                <svg
-                  className="h-4 w-4"
-                  fill="none"
-                  viewBox="0 0 24 24"
-                  stroke="currentColor"
-                >
+                <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path
                     strokeLinecap="round"
                     strokeLinejoin="round"
@@ -329,7 +316,7 @@ const ShopPage: React.FC = () => {
               onFilterChange={handleFilterChange}
               onClearFilters={handleClearFilters}
             />
-            
+
             {/* Banner bên cạnh */}
             <BannerDisplay position="sidebar" className="mt-8" />
           </div>
@@ -356,7 +343,10 @@ const ShopPage: React.FC = () => {
             <div className="hidden lg:flex justify-between items-center mb-6">
               <p className="text-neutral-600 dark:text-neutral-400">
                 {productsData?.total
-                  ? t('shop.stats', { current: productsData.data?.length || 0, total: productsData.total })
+                  ? t('shop.stats', {
+                      current: productsData.data?.length || 0,
+                      total: productsData.total,
+                    })
                   : t('shop.subtitle')}
               </p>
 
@@ -372,12 +362,7 @@ const ShopPage: React.FC = () => {
                     }`}
                     aria-label={t('shop.gridView')}
                   >
-                    <svg
-                      className="h-4 w-4"
-                      fill="none"
-                      viewBox="0 0 24 24"
-                      stroke="currentColor"
-                    >
+                    <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                       <path
                         strokeLinecap="round"
                         strokeLinejoin="round"
@@ -395,12 +380,7 @@ const ShopPage: React.FC = () => {
                     }`}
                     aria-label={t('shop.listView')}
                   >
-                    <svg
-                      className="h-4 w-4"
-                      fill="none"
-                      viewBox="0 0 24 24"
-                      stroke="currentColor"
-                    >
+                    <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                       <path
                         strokeLinecap="round"
                         strokeLinejoin="round"
@@ -427,8 +407,7 @@ const ShopPage: React.FC = () => {
               <div className="flex justify-center items-center h-64">
                 <LoadingSpinner size="lg" />
               </div>
-            ) : !productsData?.data ||
-              productsData.data.length === 0 ? (
+            ) : !productsData?.data || productsData.data.length === 0 ? (
               <div className="text-center py-12 bg-neutral-50 dark:bg-neutral-800 rounded-lg">
                 <svg
                   xmlns="http://www.w3.org/2000/svg"
@@ -450,11 +429,7 @@ const ShopPage: React.FC = () => {
                 <p className="text-neutral-500 dark:text-neutral-400 mb-6">
                   {t('shop.noProducts.message')}
                 </p>
-                <PremiumButton
-                  variant="primary"
-                  size="large"
-                  onClick={handleClearFilters}
-                >
+                <PremiumButton variant="primary" size="large" onClick={handleClearFilters}>
                   {t('shop.noProducts.clearFilters')}
                 </PremiumButton>
               </div>
@@ -472,7 +447,7 @@ const ShopPage: React.FC = () => {
                       <ProductCard key={product.id} {...product} />
                     ) : (
                       <ProductListCard key={product.id} {...product} />
-                    )
+                    ),
                   )}
                 </div>
 
@@ -496,4 +471,3 @@ const ShopPage: React.FC = () => {
 };
 
 export default ShopPage;
-

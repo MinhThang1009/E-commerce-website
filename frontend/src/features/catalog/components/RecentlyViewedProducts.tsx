@@ -12,13 +12,22 @@ interface RecentlyViewedProductsProps {
   title?: string;
 }
 
-const RecentlyViewedProducts: React.FC<RecentlyViewedProductsProps> = ({
-  limit = 10,
-  title,
-}) => {
+const RecentlyViewedProducts: React.FC<RecentlyViewedProductsProps> = ({ limit = 10, title }) => {
   const { t } = useTranslation();
   const resolvedTitle = title ?? t('product.recentlyViewed');
-  const { data, isLoading, error } = useGetRecentlyViewedQuery({ limit });
+  const { data: rawData, isLoading, error } = useGetRecentlyViewedQuery({ limit });
+
+  // Deduplicate — recently_viewed có thể chứa cùng product nhiều lần
+  const data = React.useMemo(() => {
+    if (!rawData?.data) return rawData;
+    const seen = new Set<string>();
+    const unique = rawData.data.filter((p: { id: string }) => {
+      if (seen.has(p.id)) return false;
+      seen.add(p.id);
+      return true;
+    });
+    return { ...rawData, data: unique };
+  }, [rawData]);
 
   if (isLoading) {
     return (
@@ -43,14 +52,15 @@ const RecentlyViewedProducts: React.FC<RecentlyViewedProductsProps> = ({
     <div className="py-8">
       <h2 className="text-2xl font-bold mb-6">{resolvedTitle}</h2>
       <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
-        {products.map(// eslint-disable-next-line @typescript-eslint/no-explicit-any -- ProductCard cần nhiều props
+        {products.map(
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any -- ProductCard cần nhiều props
           (product: any) => (
-          <ProductCard key={product.id} {...product} />
-        ))}
+            <ProductCard key={product.id} {...product} />
+          ),
+        )}
       </div>
     </div>
   );
 };
 
 export default RecentlyViewedProducts;
-

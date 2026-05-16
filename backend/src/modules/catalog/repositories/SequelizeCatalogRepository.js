@@ -45,7 +45,10 @@ class SequelizeCatalogRepository extends ICatalogRepository {
   // Đếm sản phẩm theo category_id qua raw SQL (nhanh hơn N+1 model.count).
   async getCategoryProductCounts() {
     const rows = await this.sequelize.query(
-      `SELECT category_id, COUNT(*) as product_count FROM products WHERE category_id IS NOT NULL GROUP BY category_id`,
+      `SELECT pc.category_id, COUNT(DISTINCT pc.product_id) as product_count
+       FROM product_categories pc
+       JOIN products p ON p.id = pc.product_id AND p.deleted_at IS NULL AND p.status = 'active'
+       GROUP BY pc.category_id`,
       { type: QueryTypes.SELECT },
     );
     const map = {};

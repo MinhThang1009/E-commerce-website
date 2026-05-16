@@ -29,10 +29,12 @@ const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         try {
           const newToken = await refreshTokenIfNeeded();
           if (newToken) {
-            useAuthStore.getState().loginSuccess({
-              user: JSON.parse(storedUser),
-              token: newToken,
-            });
+            // Dùng updateAccessToken thay loginSuccess — không trigger justLoggedIn toast khi refresh
+            const store = useAuthStore.getState();
+            store.updateAccessToken(newToken);
+            if (!store.user) {
+              store.updateUser(JSON.parse(storedUser));
+            }
           }
         } catch {
           localStorage.removeItem('user');
@@ -59,10 +61,8 @@ const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
   useEffect(() => {
     if (isSuccess && currentUser && token) {
-      useAuthStore.getState().loginSuccess({
-        user: currentUser,
-        token: token,
-      });
+      // Restore user data sau refresh — không trigger justLoggedIn toast
+      useAuthStore.getState().updateUser(currentUser);
     }
   }, [isSuccess, currentUser, token]);
 
@@ -77,9 +77,7 @@ const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       <div className="min-h-screen flex items-center justify-center bg-neutral-50 dark:bg-neutral-900">
         <div className="text-center">
           <LoadingSpinner size="large" />
-          <p className="mt-4 text-neutral-600 dark:text-neutral-400">
-            {t('auth.loading')}
-          </p>
+          <p className="mt-4 text-neutral-600 dark:text-neutral-400">{t('auth.loading')}</p>
         </div>
       </div>
     );

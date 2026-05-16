@@ -138,13 +138,11 @@ const ProductDetailPage: React.FC = () => {
     setSelectedAttributes((prev) => {
       const newAttributes = { ...prev };
 
-      // Nếu nhấp vào cùng giá trị, bỏ chọn
+      // Nếu nhấp vào cùng giá trị — giữ nguyên (không cho bỏ chọn khi có variants)
       if (newAttributes[name] === value) {
-        delete newAttributes[name];
-      } else {
-        // Ngược lại, chọn giá trị mới
-        newAttributes[name] = value;
+        return prev;
       }
+      newAttributes[name] = value;
 
       setMappedAttributes(newAttributes);
 

@@ -1,3 +1,10 @@
 #!/usr/bin/env sh
-# Phase 42.19.2 — Pre-commit hook (Modular Monolith architecture audit)
+# Pre-commit hook: architecture audit + ESLint check
 bash "$(git rev-parse --show-toplevel)/scripts/audit-architecture.sh"
+
+# ESLint — block commit nếu có errors (warnings OK)
+cd "$(git rev-parse --show-toplevel)/frontend" && npx eslint src/ --max-warnings 0 --quiet 2>/dev/null
+if [ $? -ne 0 ]; then
+  echo "❌ ESLint errors found. Fix trước khi commit."
+  exit 1
+fi

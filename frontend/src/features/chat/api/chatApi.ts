@@ -39,7 +39,7 @@ export const chatKeys = {
 
 export function useGetChatHistoryQuery(
   identifier: string,
-  options?: { enabled?: boolean; skip?: boolean }
+  options?: { enabled?: boolean; skip?: boolean },
 ) {
   return useQuery<{ status: string; data: ChatMessage[] }>({
     queryKey: chatKeys.history(identifier),
@@ -47,7 +47,12 @@ export function useGetChatHistoryQuery(
       const { data } = await apiClient.get(`/chat/${identifier}`);
       return data;
     },
-    enabled: options?.skip !== undefined ? !options.skip : !!identifier,
+    enabled:
+      options?.enabled !== undefined
+        ? options.enabled
+        : options?.skip !== undefined
+          ? !options.skip
+          : !!identifier,
   });
 }
 

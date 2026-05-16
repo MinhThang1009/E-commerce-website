@@ -73,6 +73,14 @@ export {
 // API endpoints — Attribute (raw service, không phải TanStack Query hook)
 export { default as attributeApi } from './api/attributeApi';
 
+// API endpoints — Search History
+export {
+  useSaveSearchMutation,
+  useGetSearchHistoryQuery,
+  useDeleteSearchHistoryMutation,
+  useClearAllSearchHistoryMutation,
+} from './api/searchHistoryApi';
+
 // Kiểu dữ liệu
 export type {
   Product,

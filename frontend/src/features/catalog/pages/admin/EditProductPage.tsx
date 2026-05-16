@@ -45,7 +45,7 @@ import VariantModal from '../../components/VariantModal';
 
 // Types
 import { ProductFormData, ProductAttribute, ProductVariant } from '@/types';
-import type { UpdateProductRequest } from '@/features/admin/api/adminProductApi';
+import type { UpdateProductRequest } from '@/features/admin';
 
 // Utils
 import {

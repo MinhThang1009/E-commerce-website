@@ -6,12 +6,12 @@ import { useDebounce } from '@/hooks/useDebounce';
 import { useUiStore } from '@/stores/uiStore';
 import { useSearchProductsQuery, Product } from '@/features/catalog';
 import { useAuth } from '@/features/auth';
-import { 
-  useSaveSearchMutation, 
+import {
+  useSaveSearchMutation,
   useGetSearchHistoryQuery,
   useDeleteSearchHistoryMutation,
   useClearAllSearchHistoryMutation
-} from '@/features/catalog/api/searchHistoryApi';
+} from '@/features/catalog';
 import { v4 as uuidv4 } from 'uuid';
 import { getLocale } from '@/utils/format';
 

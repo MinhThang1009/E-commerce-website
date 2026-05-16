@@ -1,7 +1,7 @@
 import React from 'react';
 import { useTranslation } from 'react-i18next';
 import { useGetBannersQuery } from '@/features/content';
-import type { Banner } from '@/features/content/api/bannerApi';
+import type { Banner } from '@/features/content';
 import { Carousel, Skeleton } from 'antd';
 import { Link } from 'react-router-dom';
 import { getUploadUrl } from '@/utils/uploadUrl';

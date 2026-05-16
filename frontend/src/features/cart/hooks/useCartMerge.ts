@@ -8,7 +8,6 @@ import {
   useGetCartQuery,
 } from '@/features/cart';
 import { useUiStore } from '@/stores/uiStore';
-import { getErrorMsg } from '@/utils/errorMessage';
 
 export const useCartMerge = (
   isAuthenticated: boolean,

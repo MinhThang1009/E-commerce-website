@@ -13,12 +13,7 @@ import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useCartStore } from '@/stores/cartStore';
 import { useAuthStore } from '@/stores/authStore';
-import {
-  Link,
-  useNavigate,
-  useParams,
-  useSearchParams,
-} from 'react-router-dom';
+import { Link, useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import { ROUTES, buildRoute } from '@/routes/paths';
 import { v4 as uuidv4 } from 'uuid';
 import ProductImageGallery from '../components/ProductImageGallery';
@@ -52,16 +47,16 @@ const ProductDetailPage: React.FC = () => {
   const skuId = searchParams.get('skuId') || undefined;
 
   const [quantity, setQuantity] = useState(1);
-  const [selectedAttributes, setSelectedAttributes] = useState<
-    Record<string, string>
-  >({});
+  const [selectedAttributes, setSelectedAttributes] = useState<Record<string, string>>({});
   const [selectedWarranties, setSelectedWarranties] = useState<string[]>([]);
   const [_dynamicProductName, setDynamicProductName] = useState<string>('');
-  const [_mappedAttributes, setMappedAttributes] = useState<
-    Record<string, string>
-  >({});
+  const [_mappedAttributes, setMappedAttributes] = useState<Record<string, string>>({});
 
-  const colorParam = (selectedAttributes.color || selectedAttributes['Màu sắc'] || selectedAttributes['màu sắc']) || undefined;
+  const colorParam =
+    selectedAttributes.color ||
+    selectedAttributes['Màu sắc'] ||
+    selectedAttributes['màu sắc'] ||
+    undefined;
 
   // Các API hooks
   const {
@@ -73,7 +68,8 @@ const ProductDetailPage: React.FC = () => {
     { id: productId || '', skuId, color: colorParam },
     {
       enabled: !!productId,
-    }
+      placeholderData: (prev: unknown) => prev,
+    },
   );
 
   const { mutateAsync: addToCart, isPending: isAddingToCart } = useAddToCartMutation();
@@ -82,7 +78,7 @@ const ProductDetailPage: React.FC = () => {
     productData?.data?.id || '',
     {
       enabled: !!productData?.data?.id,
-    }
+    },
   );
 
   const product = productData?.data;
@@ -98,7 +94,12 @@ const ProductDetailPage: React.FC = () => {
   // Đã bỏ tự động chọn biến thể đầu tiên theo yêu cầu để bắt buộc chọn thủ công
   // NHƯNG vẫn cần đồng bộ state nếu biến thể đã được chọn sẵn qua URL (skuId)
   useEffect(() => {
-    if (product && product.isVariantProduct && product.currentVariant && product.currentVariant.attributes) {
+    if (
+      product &&
+      product.isVariantProduct &&
+      product.currentVariant &&
+      product.currentVariant.attributes
+    ) {
       if (Object.keys(selectedAttributes).length === 0) {
         setSelectedAttributes(product.currentVariant.attributes);
         setMappedAttributes(product.currentVariant.attributes);
@@ -111,7 +112,7 @@ const ProductDetailPage: React.FC = () => {
     if (product) {
       // Xóa các gói bảo hành đã chọn trước đó
       setSelectedWarranties([]);
-      
+
       // Tự động chọn thuộc tính biến thể mặc định nếu là sản phẩm có biến thể
       if (product.isVariantProduct && product.currentVariant && product.currentVariant.attributes) {
         setSelectedAttributes(product.currentVariant.attributes);
@@ -131,7 +132,6 @@ const ProductDetailPage: React.FC = () => {
       setQuantity(newQuantity);
     }
   };
-
 
   // Xử lý chọn thuộc tính với chức năng bật/tắt
   const handleAttributeChange = (name: string, value: string) => {
@@ -154,7 +154,7 @@ const ProductDetailPage: React.FC = () => {
         if (allSelected) {
           const matchingVariant = findVariantByAttributes(product.variants || [], newAttributes);
           if (matchingVariant) {
-          // Cập nhật URL với skuId mới (đồng bộ với logic handleVariantChange)
+            // Cập nhật URL với skuId mới (đồng bộ với logic handleVariantChange)
             const newSearchParams = new URLSearchParams(searchParams);
             newSearchParams.set('skuId', matchingVariant.id);
             setSearchParams(newSearchParams);
@@ -212,10 +212,7 @@ const ProductDetailPage: React.FC = () => {
     } else {
       // Chọn biến thể theo thuộc tính kiểu cũ (legacy)
       if (product.attributes && product.attributes.length > 0) {
-        const allSelected = areAllAttributesSelected(
-          product.attributes,
-          selectedAttributes
-        );
+        const allSelected = areAllAttributesSelected(product.attributes, selectedAttributes);
         if (!allSelected) {
           const missingAttributes = product.attributes
             .filter((attr: { name: string }) => !selectedAttributes[attr.name])
@@ -233,10 +230,7 @@ const ProductDetailPage: React.FC = () => {
       availableStock = getVariantStock(product, selectedAttributes);
 
       if (hasVariants(product) && Object.keys(selectedAttributes).length > 0) {
-        const selectedVariant = findVariantByAttributes(
-          product.variants!,
-          selectedAttributes
-        );
+        const selectedVariant = findVariantByAttributes(product.variants!, selectedAttributes);
         variantId = selectedVariant?.id;
       }
     }
@@ -284,20 +278,20 @@ const ProductDetailPage: React.FC = () => {
           id: uuidv4(),
           productId: product.id,
           name: product.name,
-          price: product.isVariantProduct && product.currentVariant
-            ? product.currentVariant.price
-            : getVariantPrice(product, selectedAttributes),
+          price:
+            product.isVariantProduct && product.currentVariant
+              ? product.currentVariant.price
+              : getVariantPrice(product, selectedAttributes),
           quantity,
-          image: product.isVariantProduct && product.currentVariant?.thumbnail
-            ? product.currentVariant.thumbnail
-            : product.thumbnail,
+          image:
+            product.isVariantProduct && product.currentVariant?.thumbnail
+              ? product.currentVariant.thumbnail
+              : product.thumbnail,
           variantId,
-          attributes:
-            Object.keys(selectedAttributes).length > 0
-              ? selectedAttributes
-              : undefined,
+          attributes: Object.keys(selectedAttributes).length > 0 ? selectedAttributes : undefined,
           warrantyPackageIds: selectedWarranties,
-          warrantyPackages: product.warrantyPackages?.filter((p) => selectedWarranties.includes(p.id)) || [],
+          warrantyPackages:
+            product.warrantyPackages?.filter((p) => selectedWarranties.includes(p.id)) || [],
         };
 
         addItem(newItem);
@@ -314,20 +308,20 @@ const ProductDetailPage: React.FC = () => {
         id: uuidv4(),
         productId: product.id,
         name: product.name,
-        price: product.isVariantProduct && product.currentVariant
-          ? product.currentVariant.price
-          : getVariantPrice(product, selectedAttributes),
+        price:
+          product.isVariantProduct && product.currentVariant
+            ? product.currentVariant.price
+            : getVariantPrice(product, selectedAttributes),
         quantity,
-        image: product.isVariantProduct && product.currentVariant?.thumbnail
-          ? product.currentVariant.thumbnail
-          : product.thumbnail,
+        image:
+          product.isVariantProduct && product.currentVariant?.thumbnail
+            ? product.currentVariant.thumbnail
+            : product.thumbnail,
         variantId,
-        attributes:
-          Object.keys(selectedAttributes).length > 0
-            ? selectedAttributes
-            : undefined,
+        attributes: Object.keys(selectedAttributes).length > 0 ? selectedAttributes : undefined,
         warrantyPackageIds: selectedWarranties,
-        warrantyPackages: product.warrantyPackages?.filter((p) => selectedWarranties.includes(p.id)) || [],
+        warrantyPackages:
+          product.warrantyPackages?.filter((p) => selectedWarranties.includes(p.id)) || [],
       };
 
       // Chỉ thêm vào Zustand store, cartStore sẽ tự động cập nhật localStorage
@@ -353,23 +347,25 @@ const ProductDetailPage: React.FC = () => {
       let variantId: string | undefined;
       if (product.variants && Object.keys(selectedAttributes).length > 0) {
         const selectedVariant = // eslint-disable-next-line @typescript-eslint/no-explicit-any -- Variant matching cần dynamic attribute access
-      product.variants.find((variant: any) => {
-          if (!variant.attributes) return false;
-          return Object.entries(selectedAttributes).every(
-            ([key, value]) => variant.attributes[key] === value
-          );
-        });
+          product.variants.find((variant: any) => {
+            if (!variant.attributes) return false;
+            return Object.entries(selectedAttributes).every(
+              ([key, value]) => variant.attributes[key] === value,
+            );
+          });
         variantId = selectedVariant?.id;
       }
 
       // Tạo đối tượng sản phẩm để mua ngay
-      const price = product.isVariantProduct && product.currentVariant
-        ? product.currentVariant.price
-        : getVariantPrice(product, selectedAttributes);
-      
-      const image = product.isVariantProduct && product.currentVariant?.thumbnail
-        ? product.currentVariant.thumbnail
-        : product.thumbnail;
+      const price =
+        product.isVariantProduct && product.currentVariant
+          ? product.currentVariant.price
+          : getVariantPrice(product, selectedAttributes);
+
+      const image =
+        product.isVariantProduct && product.currentVariant?.thumbnail
+          ? product.currentVariant.thumbnail
+          : product.thumbnail;
 
       const buyNowItem = {
         id: uuidv4(),
@@ -381,7 +377,8 @@ const ProductDetailPage: React.FC = () => {
         image,
         attributes: Object.keys(selectedAttributes).length > 0 ? selectedAttributes : undefined,
         warrantyPackageIds: selectedWarranties,
-        warrantyPackages: product.warrantyPackages?.filter((p) => selectedWarranties.includes(p.id)) || [],
+        warrantyPackages:
+          product.warrantyPackages?.filter((p) => selectedWarranties.includes(p.id)) || [],
       };
 
       // 3. Lưu thông tin sản phẩm vào sessionStorage để CheckoutPage sử dụng
@@ -448,10 +445,7 @@ const ProductDetailPage: React.FC = () => {
       '@type': 'Offer',
       price: displayPrice,
       priceCurrency: 'VND',
-      availability:
-        stockCount > 0
-          ? 'https://schema.org/InStock'
-          : 'https://schema.org/OutOfStock',
+      availability: stockCount > 0 ? 'https://schema.org/InStock' : 'https://schema.org/OutOfStock',
     },
     // aggregateRating chỉ đưa vào khi có ít nhất 1 đánh giá — schema.org yêu cầu reviewCount ≥ 1
     ...((product.ratings?.count ?? 0) > 0
@@ -475,7 +469,10 @@ const ProductDetailPage: React.FC = () => {
         <meta property="og:description" content={seoDescText} />
         <meta property="og:image" content={product.thumbnail} />
         <meta property="og:type" content="product" />
-        <link rel="canonical" href={`${import.meta.env.VITE_SITE_URL || 'https://techstore.vn'}/products/${product.slug}`} />
+        <link
+          rel="canonical"
+          href={`${import.meta.env.VITE_SITE_URL || 'https://techstore.vn'}/products/${product.slug}`}
+        />
         <script type="application/ld+json">{JSON.stringify(jsonLd)}</script>
       </Helmet>
       {/* Đường dẫn điều hướng */}
@@ -495,17 +492,14 @@ const ProductDetailPage: React.FC = () => {
               viewBox="0 0 24 24"
               stroke="currentColor"
             >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M9 5l7 7-7 7"
-              />
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
             </svg>
           </li>
           <li className="flex items-center">
             <Link
-              to={buildRoute.category(product.category?.slug || product.categorySlug || product.categoryId)}
+              to={buildRoute.category(
+                product.category?.slug || product.categorySlug || product.categoryId,
+              )}
               className="text-neutral-500 dark:text-neutral-400 hover:text-primary-500 dark:hover:text-primary-400"
             >
               {product.category?.name || product.categoryName}
@@ -517,17 +511,10 @@ const ProductDetailPage: React.FC = () => {
               viewBox="0 0 24 24"
               stroke="currentColor"
             >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M9 5l7 7-7 7"
-              />
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
             </svg>
           </li>
-          <li className="text-neutral-800 dark:text-neutral-200 truncate">
-            {product.name}
-          </li>
+          <li className="text-neutral-800 dark:text-neutral-200 truncate">{product.name}</li>
         </ol>
       </nav>
 
@@ -538,8 +525,8 @@ const ProductDetailPage: React.FC = () => {
           <ProductImageGallery
             images={product.images ? product.images.filter(Boolean) : []}
             thumbnail={
-            // Ưu tiên thumbnail của variant đang chọn để gallery switch đúng ảnh khi đổi variant
-              (product.isVariantProduct && product.currentVariant?.thumbnail)
+              // Ưu tiên thumbnail của variant đang chọn để gallery switch đúng ảnh khi đổi variant
+              product.isVariantProduct && product.currentVariant?.thumbnail
                 ? product.currentVariant.thumbnail
                 : product.thumbnail
             }
@@ -549,110 +536,106 @@ const ProductDetailPage: React.FC = () => {
 
         {/* Thông tin sản phẩm */}
         <div>
-            {/* Tiêu đề sản phẩm tiêu chuẩn */}
-            <h1 className="text-3xl font-bold text-neutral-900 dark:text-white mb-2">
-              {product.name}
-            </h1>
+          {/* Tiêu đề sản phẩm tiêu chuẩn */}
+          <h1 className="text-3xl font-bold text-neutral-900 dark:text-white mb-2">
+            {product.name}
+          </h1>
 
-            {/* Giá */}
-            <div className="flex items-center mb-4">
-              {(() => {
-                // Dùng giá biến thể hiện tại nếu có, ngược lại dùng logic cũ
-                let currentPrice: number;
-                let comparePrice: number | null = null;
+          {/* Giá */}
+          <div className="flex items-center mb-4">
+            {(() => {
+              // Dùng giá biến thể hiện tại nếu có, ngược lại dùng logic cũ
+              let currentPrice: number;
+              let comparePrice: number | null = null;
 
-                if (product.isVariantProduct && product.currentVariant) {
-                  currentPrice = product.currentVariant.price;
-                  comparePrice = product.currentVariant.compareAtPrice || null;
-                } else {
-                  currentPrice = getVariantPrice(product, selectedAttributes);
-                  comparePrice = product.compareAtPrice || null;
-                }
+              if (product.isVariantProduct && product.currentVariant) {
+                currentPrice = product.currentVariant.price;
+                comparePrice = product.currentVariant.compareAtPrice || null;
+              } else {
+                currentPrice = getVariantPrice(product, selectedAttributes);
+                comparePrice = product.compareAtPrice || null;
+              }
 
-                return (
-                  <>
-                    <span className="text-2xl font-bold text-neutral-900 dark:text-white">
-                      {parseFloat(currentPrice.toString()).toLocaleString(
-                        'vi-VN'
-                      )}
+              return (
+                <>
+                  <span className="text-2xl font-bold text-neutral-900 dark:text-white">
+                    {parseFloat(currentPrice.toString()).toLocaleString('vi-VN')}
+                    {t('common.currencySymbol')}
+                  </span>
+
+                  {comparePrice && comparePrice > currentPrice && (
+                    <span className="ml-3 text-lg text-neutral-500 dark:text-neutral-400 line-through">
+                      {parseFloat(comparePrice.toString()).toLocaleString('vi-VN')}
                       {t('common.currencySymbol')}
                     </span>
+                  )}
 
-                    {comparePrice && comparePrice > currentPrice && (
-                      <span className="ml-3 text-lg text-neutral-500 dark:text-neutral-400 line-through">
-                        {parseFloat(comparePrice.toString()).toLocaleString(
-                          'vi-VN'
-                        )}
-                        {t('common.currencySymbol')}
-                      </span>
-                    )}
-
-                    {comparePrice && comparePrice > currentPrice && (
-                      <Badge variant="secondary" className="ml-3">
-                        {t('product.discountOff', { percent: Math.round(((comparePrice - currentPrice) / comparePrice) * 100) })}
-                      </Badge>
-                    )}
-                  </>
-                );
-              })()}
-            </div>
-
-            {/* Đánh giá */}
-            {product.ratings && (
-              <div className="flex items-center mb-4">
-                <Rating
-                  value={product.ratings.average}
-                  showCount={true}
-                  count={product.ratings.count}
-                />
-                <Link
-                  to="#reviews"
-                  className="ml-2 text-sm text-primary-500 hover:text-primary-600 dark:hover:text-primary-400"
-                >
-                  {t('productDetail.viewReviews')}
-                </Link>
-              </div>
-            )}
-
-            {/* Trạng thái tồn kho */}
-            <div className="mb-4">
-              {(() => {
-                // Dùng tồn kho biến thể hiện tại nếu có, nếu không thì fallback sang logic cũ
-                let availableStock: number;
-
-                if (product.isVariantProduct && product.currentVariant) {
-                  availableStock = product.currentVariant.stockQuantity;
-                } else {
-                  availableStock = getVariantStock(product, selectedAttributes);
-                }
-
-                const stockText = formatStockText(availableStock);
-                const stockColor = getStockStatusColor(availableStock);
-
-                return (
-                  <div className="flex items-center gap-2">
-                    <Badge variant={availableStock > 0 ? 'success' : 'error'}>
-                      {availableStock > 0 ? t('productDetail.stock.inStock') : t('productDetail.stock.outOfStock')}
+                  {comparePrice && comparePrice > currentPrice && (
+                    <Badge variant="secondary" className="ml-3">
+                      {t('product.discountOff', {
+                        percent: Math.round(((comparePrice - currentPrice) / comparePrice) * 100),
+                      })}
                     </Badge>
-                    <span className={`text-sm font-medium ${stockColor}`}>
-                      {stockText}
-                    </span>
-                    {product.isVariantProduct && product.currentVariant && (
-                      <span className="text-xs text-neutral-500 dark:text-neutral-400">
-                        SKU: {product.currentVariant.sku}
-                      </span>
-                    )}
-                  </div>
-                );
-              })()}
+                  )}
+                </>
+              );
+            })()}
+          </div>
+
+          {/* Đánh giá */}
+          {product.ratings && (
+            <div className="flex items-center mb-4">
+              <Rating
+                value={product.ratings.average}
+                showCount={true}
+                count={product.ratings.count}
+              />
+              <Link
+                to="#reviews"
+                className="ml-2 text-sm text-primary-500 hover:text-primary-600 dark:hover:text-primary-400"
+              >
+                {t('productDetail.viewReviews')}
+              </Link>
             </div>
+          )}
 
-            {/* Mô tả ngắn */}
-            <p className="text-neutral-600 dark:text-neutral-400 mb-6">
-              {product.shortDescription ||
-                product.description.substring(0, 150) + '...'}
-            </p>
+          {/* Trạng thái tồn kho */}
+          <div className="mb-4">
+            {(() => {
+              // Dùng tồn kho biến thể hiện tại nếu có, nếu không thì fallback sang logic cũ
+              let availableStock: number;
 
+              if (product.isVariantProduct && product.currentVariant) {
+                availableStock = product.currentVariant.stockQuantity;
+              } else {
+                availableStock = getVariantStock(product, selectedAttributes);
+              }
+
+              const stockText = formatStockText(availableStock);
+              const stockColor = getStockStatusColor(availableStock);
+
+              return (
+                <div className="flex items-center gap-2">
+                  <Badge variant={availableStock > 0 ? 'success' : 'error'}>
+                    {availableStock > 0
+                      ? t('productDetail.stock.inStock')
+                      : t('productDetail.stock.outOfStock')}
+                  </Badge>
+                  <span className={`text-sm font-medium ${stockColor}`}>{stockText}</span>
+                  {product.isVariantProduct && product.currentVariant && (
+                    <span className="text-xs text-neutral-500 dark:text-neutral-400">
+                      SKU: {product.currentVariant.sku}
+                    </span>
+                  )}
+                </div>
+              );
+            })()}
+          </div>
+
+          {/* Mô tả ngắn */}
+          <p className="text-neutral-600 dark:text-neutral-400 mb-6">
+            {product.shortDescription || product.description.substring(0, 150) + '...'}
+          </p>
 
           {/* Bộ chọn biến thể sản phẩm - Đã xóa theo yêu cầu vì trùng lặp với bộ chọn thuộc tính */}
           {/* {product.isVariantProduct && (
@@ -673,29 +656,27 @@ const ProductDetailPage: React.FC = () => {
                 const attributeValuesWithStock = getAttributeValuesWithStock(
                   product,
                   attribute.name,
-                  selectedAttributes
+                  selectedAttributes,
                 );
 
                 return (
                   <div key={attribute.id || attribute.name || index} className="mb-4">
                     <h3 className="text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-2">
-                      {t(`productDetail.attributes.${attribute.name.toLowerCase()}`, { defaultValue: attribute.name })}
+                      {t(`productDetail.attributes.${attribute.name.toLowerCase()}`, {
+                        defaultValue: attribute.name,
+                      })}
                     </h3>
 
                     <div className="flex flex-wrap gap-2">
-                      {attributeValuesWithStock.map(
-                        ({ value, stock: _stock, available }) => {
-                          const isSelected =
-                            selectedAttributes[attribute.name] === value;
+                      {attributeValuesWithStock.map(({ value, stock: _stock, available }) => {
+                        const isSelected = selectedAttributes[attribute.name] === value;
 
-                          return (
-                            <button
-                              key={value}
-                              onClick={() =>
-                                handleAttributeChange(attribute.name, value)
-                              }
-                              disabled={!available}
-                              className={`
+                        return (
+                          <button
+                            key={value}
+                            onClick={() => handleAttributeChange(attribute.name, value)}
+                            disabled={!available}
+                            className={`
                                 px-4 py-2 text-sm border rounded-lg transition-all duration-200 font-medium
                                 ${
                                   isSelected
@@ -705,12 +686,11 @@ const ProductDetailPage: React.FC = () => {
                                       : 'bg-gray-100 border-gray-200 text-gray-400 cursor-not-allowed dark:bg-neutral-700 dark:border-neutral-600 dark:text-neutral-500'
                                 }
                               `}
-                            >
-                              {value}
-                            </button>
-                          );
-                        }
-                      )}
+                          >
+                            {value}
+                          </button>
+                        );
+                      })}
                     </div>
                   </div>
                 );
@@ -753,9 +733,7 @@ const ProductDetailPage: React.FC = () => {
                     min="1"
                     max={maxStock}
                     value={quantity}
-                    onChange={(e) =>
-                      handleQuantityChange(parseInt(e.target.value) || 1)
-                    }
+                    onChange={(e) => handleQuantityChange(parseInt(e.target.value) || 1)}
                     className="w-16 h-10 border-t border-b border-neutral-300 dark:border-neutral-600 bg-white dark:bg-neutral-800 text-neutral-800 dark:text-neutral-200 text-center focus:outline-none focus:ring-0"
                   />
                   <button
@@ -793,23 +771,42 @@ const ProductDetailPage: React.FC = () => {
           {/* Các nút hành động */}
           <div className="flex flex-col gap-4 mb-8">
             {(() => {
-              const allSelected = product && areAllAttributesSelected(product.attributes || [], selectedAttributes);
-              const isOutOfStock = product.stock <= 0 || (product.isVariantProduct && product.currentVariant && product.currentVariant.stockQuantity <= 0);
-              
+              const allSelected =
+                product && areAllAttributesSelected(product.attributes || [], selectedAttributes);
+              const isOutOfStock =
+                product.stock <= 0 ||
+                (product.isVariantProduct &&
+                  product.currentVariant &&
+                  product.currentVariant.stockQuantity <= 0);
+
               const isDisabled = !allSelected || isOutOfStock;
 
               return (
                 <>
-                  {!allSelected && product && product.attributes && product.attributes.length > 0 && (
-                    <div className="bg-orange-50 dark:bg-orange-900/20 border border-orange-200 dark:border-orange-800 p-3 rounded-lg mb-2">
-                      <p className="text-sm text-orange-700 dark:text-orange-400 font-medium flex items-center">
-                        <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
-                        </svg>
-                        {t('product.selectAttributesRequired')}
-                      </p>
-                    </div>
-                  )}
+                  {!allSelected &&
+                    product &&
+                    product.attributes &&
+                    product.attributes.length > 0 && (
+                      <div className="bg-orange-50 dark:bg-orange-900/20 border border-orange-200 dark:border-orange-800 p-3 rounded-lg mb-2">
+                        <p className="text-sm text-orange-700 dark:text-orange-400 font-medium flex items-center">
+                          <svg
+                            xmlns="http://www.w3.org/2000/svg"
+                            className="h-5 w-5 mr-2"
+                            fill="none"
+                            viewBox="0 0 24 24"
+                            stroke="currentColor"
+                          >
+                            <path
+                              strokeLinecap="round"
+                              strokeLinejoin="round"
+                              strokeWidth={2}
+                              d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"
+                            />
+                          </svg>
+                          {t('product.selectAttributesRequired')}
+                        </p>
+                      </div>
+                    )}
 
                   {/* Nút mua ngay */}
                   <PremiumButton
@@ -842,8 +839,8 @@ const ProductDetailPage: React.FC = () => {
           </div>
         </div>
 
-          {/* Thông tin bổ sung */}
-          {/* <div className="border-t border-neutral-200 dark:border-neutral-700 pt-6 space-y-4">
+        {/* Thông tin bổ sung */}
+        {/* <div className="border-t border-neutral-200 dark:border-neutral-700 pt-6 space-y-4">
             <div className="flex">
               <svg
                 xmlns="http://www.w3.org/2000/svg"
@@ -902,12 +899,14 @@ const ProductDetailPage: React.FC = () => {
               </span>
             </div>
           </div> */}
-        </div>
-        
+      </div>
+
       {/* Phần chi tiết sản phẩm */}
       <ProductDetailsSection
         description={product.description}
-        specifications={product.currentVariant?.productSpecifications || product.productSpecifications || []}
+        specifications={
+          product.currentVariant?.productSpecifications || product.productSpecifications || []
+        }
       />
 
       {/* Phần câu hỏi thường gặp */}
@@ -955,4 +954,3 @@ const ProductDetailPage: React.FC = () => {
 };
 
 export default ProductDetailPage;
-

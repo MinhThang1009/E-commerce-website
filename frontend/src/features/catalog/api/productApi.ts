@@ -6,10 +6,7 @@ import {
   ProductDetailApiResponse,
   ProductArrayApiResponse,
 } from '../types/product.types';
-import {
-  createProductFiltersParams,
-  transformProductsResponse,
-} from '../utils/productTransform';
+import { createProductFiltersParams, transformProductsResponse } from '../utils/productTransform';
 
 // === Query Keys ===
 
@@ -36,7 +33,7 @@ export const productKeys = {
 
 export function useGetProductsQuery(
   filters: ProductFilters | void = {},
-  options?: { enabled?: boolean; skip?: boolean }
+  options?: { enabled?: boolean; skip?: boolean },
 ) {
   const filterObj = filters || {};
   return useQuery<ProductListApiResponse>({
@@ -52,7 +49,7 @@ export function useGetProductsQuery(
 
 export function useGetProductByIdQuery(
   arg: string | { id: string; skuId?: string; color?: string },
-  options?: { enabled?: boolean; skip?: boolean }
+  options?: { enabled?: boolean; skip?: boolean; placeholderData?: (prev: unknown) => unknown },
 ) {
   const id = typeof arg === 'string' ? arg : arg.id;
   const skuId = typeof arg === 'object' ? arg.skuId : undefined;
@@ -69,13 +66,19 @@ export function useGetProductByIdQuery(
       const { data } = await apiClient.get(url);
       return transformProductsResponse(data);
     },
-    enabled: options?.skip !== undefined ? !options.skip : !!id,
+    placeholderData: options?.placeholderData as never,
+    enabled:
+      options?.enabled !== undefined
+        ? options.enabled
+        : options?.skip !== undefined
+          ? !options.skip
+          : !!id,
   });
 }
 
 export function useGetProductBySlugQuery(
   params: { slug: string; skuId?: string; color?: string },
-  options?: { enabled?: boolean; skip?: boolean }
+  options?: { enabled?: boolean; skip?: boolean },
 ) {
   return useQuery<ProductDetailApiResponse>({
     queryKey: productKeys.slug(JSON.stringify(params)),
@@ -94,7 +97,7 @@ export function useGetProductBySlugQuery(
 
 export function useGetFeaturedProductsQuery(
   params?: { limit?: number } | void,
-  options?: { enabled?: boolean; skip?: boolean }
+  options?: { enabled?: boolean; skip?: boolean },
 ) {
   const resolvedParams = params && typeof params === 'object' ? params : {};
   return useQuery<ProductArrayApiResponse>({
@@ -113,7 +116,7 @@ export function useGetFeaturedProductsQuery(
 
 export function useGetNewArrivalsQuery(
   params?: { limit?: number } | void,
-  options?: { enabled?: boolean; skip?: boolean }
+  options?: { enabled?: boolean; skip?: boolean },
 ) {
   const resolvedParams = params && typeof params === 'object' ? params : {};
   return useQuery<ProductArrayApiResponse>({
@@ -132,7 +135,7 @@ export function useGetNewArrivalsQuery(
 
 export function useGetBestSellersQuery(
   params?: { limit?: number; period?: string } | void,
-  options?: { enabled?: boolean; skip?: boolean }
+  options?: { enabled?: boolean; skip?: boolean },
 ) {
   return useQuery<ProductArrayApiResponse>({
     queryKey: productKeys.bestSellers(params),
@@ -149,14 +152,13 @@ export function useGetBestSellersQuery(
 
 export function useGetDealsQuery(
   params?: { minDiscount?: number; limit?: number; sort?: string } | void,
-  options?: { enabled?: boolean; skip?: boolean }
+  options?: { enabled?: boolean; skip?: boolean },
 ) {
   return useQuery<ProductArrayApiResponse>({
     queryKey: productKeys.deals(params),
     queryFn: async () => {
       const queryParams = new URLSearchParams();
-      if (params?.minDiscount)
-        queryParams.append('minDiscount', params.minDiscount.toString());
+      if (params?.minDiscount) queryParams.append('minDiscount', params.minDiscount.toString());
       if (params?.limit) queryParams.append('limit', params.limit.toString());
       if (params?.sort) queryParams.append('sort', params.sort);
       const { data } = await apiClient.get(`/products/deals?${queryParams.toString()}`);
@@ -168,7 +170,7 @@ export function useGetDealsQuery(
 
 export function useGetRelatedProductsQuery(
   productId: string,
-  options?: { enabled?: boolean; skip?: boolean }
+  options?: { enabled?: boolean; skip?: boolean },
 ) {
   return useQuery<ProductArrayApiResponse>({
     queryKey: productKeys.related(productId),
@@ -182,7 +184,7 @@ export function useGetRelatedProductsQuery(
 
 export function useGetProductVariantsQuery(
   productId: string,
-  options?: { enabled?: boolean; skip?: boolean }
+  options?: { enabled?: boolean; skip?: boolean },
 ) {
   return useQuery({
     queryKey: productKeys.variants(productId),
@@ -196,7 +198,7 @@ export function useGetProductVariantsQuery(
 
 export function useGetProductReviewsSummaryQuery(
   productId: string,
-  options?: { enabled?: boolean; skip?: boolean }
+  options?: { enabled?: boolean; skip?: boolean },
 ) {
   return useQuery({
     queryKey: productKeys.reviewsSummary(productId),
@@ -210,12 +212,15 @@ export function useGetProductReviewsSummaryQuery(
 
 export function useSearchProductsQuery(
   params: { q: string; page?: number; limit?: number },
-  options?: { enabled?: boolean; skip?: boolean; staleTime?: number }
+  options?: { enabled?: boolean; skip?: boolean; staleTime?: number },
 ) {
   // Ưu tiên enabled nếu có, fallback sang skip (compat), mặc định true
-  const isEnabled = options?.enabled !== undefined
-    ? options.enabled
-    : options?.skip !== undefined ? !options.skip : true;
+  const isEnabled =
+    options?.enabled !== undefined
+      ? options.enabled
+      : options?.skip !== undefined
+        ? !options.skip
+        : true;
 
   return useQuery<ProductListApiResponse>({
     queryKey: productKeys.search(params),
@@ -234,7 +239,7 @@ export function useSearchProductsQuery(
 
 export function useGetProductFiltersQuery(
   params: { categoryId?: string } = {},
-  options?: { enabled?: boolean; skip?: boolean }
+  options?: { enabled?: boolean; skip?: boolean },
 ) {
   return useQuery({
     queryKey: productKeys.filters(params),
@@ -251,7 +256,7 @@ export function useGetProductFiltersQuery(
 
 export function useGetRecentlyViewedQuery(
   params?: { limit?: number } | void,
-  options?: { enabled?: boolean; skip?: boolean }
+  options?: { enabled?: boolean; skip?: boolean },
 ) {
   const resolvedParams = params && typeof params === 'object' ? params : {};
   return useQuery<ProductArrayApiResponse>({

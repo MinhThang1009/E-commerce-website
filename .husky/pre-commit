@@ -1,10 +1,25 @@
 #!/usr/bin/env sh
-# Pre-commit hook: architecture audit + ESLint check
+
+# 1. Architecture audit
 bash "$(git rev-parse --show-toplevel)/scripts/audit-architecture.sh"
 
-# ESLint — block commit nếu có errors (warnings OK)
-cd "$(git rev-parse --show-toplevel)/frontend" && npx eslint src/ --max-warnings 0 --quiet 2>/dev/null
+# 2. Frontend: lint-staged (ESLint + Prettier chỉ cho files thay đổi)
+cd "$(git rev-parse --show-toplevel)/frontend" && npx lint-staged 2>/dev/null
 if [ $? -ne 0 ]; then
-  echo "❌ ESLint errors found. Fix trước khi commit."
+  echo "❌ Frontend lint-staged failed. Fix trước khi commit."
+  exit 1
+fi
+
+# 3. Frontend: TypeScript check
+npx tsc --noEmit 2>/dev/null
+if [ $? -ne 0 ]; then
+  echo "❌ TypeScript errors found. Fix trước khi commit."
+  exit 1
+fi
+
+# 4. Backend: lint-staged (ESLint + Prettier chỉ cho files thay đổi)
+cd "$(git rev-parse --show-toplevel)/backend" && npx lint-staged 2>/dev/null
+if [ $? -ne 0 ]; then
+  echo "❌ Backend lint-staged failed. Fix trước khi commit."
   exit 1
 fi

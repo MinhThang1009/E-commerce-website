@@ -73,9 +73,16 @@
     "axios": "^1.13.6",
     "eslint": "^9.28.0",
     "jest": "^29.7.0",
+    "lint-staged": "^17.0.4",
     "nodemon": "^3.1.10",
     "prettier": "^3.5.3",
     "sequelize-cli": "^6.6.3",
     "supertest": "^7.1.1"
+  },
+  "lint-staged": {
+    "src/**/*.js": [
+      "eslint --max-warnings 0",
+      "prettier --write"
+    ]
   }
 }

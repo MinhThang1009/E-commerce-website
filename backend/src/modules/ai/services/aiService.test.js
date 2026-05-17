@@ -1,5 +1,5 @@
 const AIService = require('../services/aiService');
-const ChatbotLLMGateway = require('../infrastructure/ChatbotLLMGateway');
+const ChatbotLLMGateway = require('../services/chatbotLLMGateway');
 
 describe('AIService', () => {
   let repo;

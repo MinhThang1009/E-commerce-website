@@ -7,7 +7,7 @@ const OrdersService = require('./ordersService');
 // ─── Constants dùng chung ───────────────────────────────────────────────────
 const CONSTANTS = {
   POINTS_EARN_RATE: 1000,
-  POINTS_VALUE: 100,      // 1 điểm = 100 VNĐ
+  POINTS_VALUE: 100, // 1 điểm = 100 VNĐ
   SHIPPING_FREE_THRESHOLD: 500000,
   SHIPPING_BASE_RATE: 30000,
   SHIPPING_WEIGHT_RATE: 5000,
@@ -182,8 +182,14 @@ describe('OrdersService › createOrder', () => {
       createdAt: new Date(),
     };
     const createdItem = {
-      id: 1, orderId: 100, productId: 1, variantId: null,
-      name: 'Sản phẩm A', quantity: 1, unitPrice: 100000, subtotal: 100000,
+      id: 1,
+      orderId: 100,
+      productId: 1,
+      variantId: null,
+      name: 'Sản phẩm A',
+      quantity: 1,
+      unitPrice: 100000,
+      subtotal: 100000,
     };
 
     repo.findProductWithDefaultVariant.mockResolvedValue(product);
@@ -232,28 +238,34 @@ describe('OrdersService › createOrder', () => {
         userId: 1,
         paymentMethod: 'cod',
       }),
-      expect.any(Object)
+      expect.any(Object),
     );
   });
 
   test('happy path → publish OrderCreatedEvent', async () => {
     setupHappyPath();
     const user = mkUser();
-    await service.createOrder({ user, body: mkOrderBody({ items: [{ productId: 1, quantity: 1 }] }) });
+    await service.createOrder({
+      user,
+      body: mkOrderBody({ items: [{ productId: 1, quantity: 1 }] }),
+    });
 
     expect(eventBus.publish).toHaveBeenCalledWith(
-      expect.objectContaining({ type: 'order.created' })
+      expect.objectContaining({ type: 'order.created' }),
     );
   });
 
   test('happy path COD → fire email xác nhận', async () => {
     setupHappyPath();
     const user = mkUser();
-    await service.createOrder({ user, body: mkOrderBody({ items: [{ productId: 1, quantity: 1 }] }) });
+    await service.createOrder({
+      user,
+      body: mkOrderBody({ items: [{ productId: 1, quantity: 1 }] }),
+    });
 
     expect(emailGateway.sendOrderConfirmationEmail).toHaveBeenCalledWith(
       user.email,
-      expect.objectContaining({ orderNumber: expect.any(String) })
+      expect.objectContaining({ orderNumber: expect.any(String) }),
     );
   });
 
@@ -265,7 +277,9 @@ describe('OrdersService › createOrder', () => {
     });
 
     expect(repo.decrementProductStock).toHaveBeenCalledWith(
-      expect.any(Object), 2, expect.any(Object)
+      expect.any(Object),
+      2,
+      expect.any(Object),
     );
   });
 
@@ -289,10 +303,20 @@ describe('OrdersService › createOrder', () => {
     const product = mkProduct();
     const variant = mkVariant();
     const createdOrder = {
-      id: 101, number: 'ORD-X', status: 'pending', total: 150000,
-      userId: 1, shippingFirstName: 'A', shippingLastName: 'N',
-      shippingAddress1: 'x', shippingAddress2: null, shippingCity: 'x',
-      shippingState: null, shippingZip: '1', shippingCountry: 'VN', createdAt: new Date(),
+      id: 101,
+      number: 'ORD-X',
+      status: 'pending',
+      total: 150000,
+      userId: 1,
+      shippingFirstName: 'A',
+      shippingLastName: 'N',
+      shippingAddress1: 'x',
+      shippingAddress2: null,
+      shippingCity: 'x',
+      shippingState: null,
+      shippingZip: '1',
+      shippingCountry: 'VN',
+      createdAt: new Date(),
     };
     repo.findProductWithDefaultVariant.mockResolvedValue(product);
     repo.findVariantBasic.mockResolvedValue(variant);
@@ -307,12 +331,14 @@ describe('OrdersService › createOrder', () => {
 
     expect(repo.lockVariant).toHaveBeenCalledWith(10, expect.any(Object));
     expect(repo.decrementVariantStock).toHaveBeenCalledWith(
-      expect.any(Object), 1, expect.any(Object)
+      expect.any(Object),
+      1,
+      expect.any(Object),
     );
     // giá phải lấy từ variant.price = 120000
     expect(repo.createOrder).toHaveBeenCalledWith(
       expect.objectContaining({ subtotal: 120000 }),
-      expect.any(Object)
+      expect.any(Object),
     );
   });
 
@@ -325,7 +351,7 @@ describe('OrdersService › createOrder', () => {
       service.createOrder({
         user: mkUser(),
         body: mkOrderBody({ items: [{ productId: 999, quantity: 1 }] }),
-      })
+      }),
     ).rejects.toMatchObject({ statusCode: 404, message: 'orders.productNotFound' });
   });
 
@@ -337,7 +363,7 @@ describe('OrdersService › createOrder', () => {
       service.createOrder({
         user: mkUser(),
         body: mkOrderBody({ items: [{ productId: 1, variantId: 999, quantity: 1 }] }),
-      })
+      }),
     ).rejects.toMatchObject({ statusCode: 404, message: 'orders.variantNotFound' });
   });
 
@@ -351,7 +377,7 @@ describe('OrdersService › createOrder', () => {
       service.createOrder({
         user: mkUser(),
         body: mkOrderBody({ items: [{ productId: 1, quantity: 1 }] }),
-      })
+      }),
     ).rejects.toMatchObject({ statusCode: 400, message: 'orders.productInactive' });
   });
 
@@ -366,7 +392,7 @@ describe('OrdersService › createOrder', () => {
       service.createOrder({
         user: mkUser(),
         body: mkOrderBody({ items: [{ productId: 1, quantity: 5 }] }),
-      })
+      }),
     ).rejects.toMatchObject({ statusCode: 400, message: 'orders.stockInsufficient' });
   });
 
@@ -378,7 +404,7 @@ describe('OrdersService › createOrder', () => {
       service.createOrder({
         user: mkUser(),
         body: mkOrderBody({ items: [{ productId: 1, quantity: 1 }] }),
-      })
+      }),
     ).rejects.toMatchObject({ statusCode: 400 });
   });
 
@@ -393,7 +419,7 @@ describe('OrdersService › createOrder', () => {
       service.createOrder({
         user: mkUser(),
         body: mkOrderBody({ items: [{ productId: 1, variantId: 10, quantity: 5 }] }),
-      })
+      }),
     ).rejects.toMatchObject({ statusCode: 400, message: 'orders.stockInsufficient' });
   });
 
@@ -410,7 +436,7 @@ describe('OrdersService › createOrder', () => {
           items: [{ productId: 1, quantity: 1 }],
           discountCode: 'INVALID',
         }),
-      })
+      }),
     ).rejects.toMatchObject({ statusCode: 400, message: 'orders.couponInvalid' });
   });
 
@@ -418,16 +444,21 @@ describe('OrdersService › createOrder', () => {
     setupHappyPath();
     const futureDate = new Date(Date.now() + 86400000).toISOString(); // ngày mai
     repo.findActiveDiscountCode.mockResolvedValue({
-      id: 5, type: 'fixed', value: '50000',
-      startDate: futureDate, endDate: null,
-      usageLimit: null, usedCount: 0, minOrderAmount: '0',
+      id: 5,
+      type: 'fixed',
+      value: '50000',
+      startDate: futureDate,
+      endDate: null,
+      usageLimit: null,
+      usedCount: 0,
+      minOrderAmount: '0',
     });
 
     await expect(
       service.createOrder({
         user: mkUser(),
         body: mkOrderBody({ items: [{ productId: 1, quantity: 1 }], discountCode: 'EARLY' }),
-      })
+      }),
     ).rejects.toMatchObject({ statusCode: 400, message: 'orders.couponNotStarted' });
   });
 
@@ -435,41 +466,55 @@ describe('OrdersService › createOrder', () => {
     setupHappyPath();
     const pastDate = new Date(Date.now() - 86400000).toISOString(); // hôm qua
     repo.findActiveDiscountCode.mockResolvedValue({
-      id: 5, type: 'fixed', value: '50000',
-      startDate: null, endDate: pastDate,
-      usageLimit: null, usedCount: 0, minOrderAmount: '0',
+      id: 5,
+      type: 'fixed',
+      value: '50000',
+      startDate: null,
+      endDate: pastDate,
+      usageLimit: null,
+      usedCount: 0,
+      minOrderAmount: '0',
     });
 
     await expect(
       service.createOrder({
         user: mkUser(),
         body: mkOrderBody({ items: [{ productId: 1, quantity: 1 }], discountCode: 'EXPIRED' }),
-      })
+      }),
     ).rejects.toMatchObject({ statusCode: 400, message: 'orders.couponExpired' });
   });
 
   test('discount code đã đạt usage limit → AppError 400', async () => {
     setupHappyPath();
     repo.findActiveDiscountCode.mockResolvedValue({
-      id: 5, type: 'fixed', value: '50000',
-      startDate: null, endDate: null,
-      usageLimit: 10, usedCount: 10, minOrderAmount: '0',
+      id: 5,
+      type: 'fixed',
+      value: '50000',
+      startDate: null,
+      endDate: null,
+      usageLimit: 10,
+      usedCount: 10,
+      minOrderAmount: '0',
     });
 
     await expect(
       service.createOrder({
         user: mkUser(),
         body: mkOrderBody({ items: [{ productId: 1, quantity: 1 }], discountCode: 'MAX' }),
-      })
+      }),
     ).rejects.toMatchObject({ statusCode: 400, message: 'orders.couponLimitReached' });
   });
 
   test('subtotal < minOrderAmount → AppError 400', async () => {
     setupHappyPath(); // subtotal = 100000
     repo.findActiveDiscountCode.mockResolvedValue({
-      id: 5, type: 'fixed', value: '50000',
-      startDate: null, endDate: null,
-      usageLimit: null, usedCount: 0,
+      id: 5,
+      type: 'fixed',
+      value: '50000',
+      startDate: null,
+      endDate: null,
+      usageLimit: null,
+      usedCount: 0,
       minOrderAmount: '200000', // yêu cầu tối thiểu 200k
     });
 
@@ -477,16 +522,21 @@ describe('OrdersService › createOrder', () => {
       service.createOrder({
         user: mkUser(),
         body: mkOrderBody({ items: [{ productId: 1, quantity: 1 }], discountCode: 'MIN200' }),
-      })
+      }),
     ).rejects.toMatchObject({ statusCode: 400, message: 'orders.couponMinOrderNotMet' });
   });
 
   test('discount code type=fixed → trừ đúng số tiền cố định', async () => {
     setupHappyPath(); // subtotal = 100000
     repo.findActiveDiscountCode.mockResolvedValue({
-      id: 5, type: 'fixed', value: '20000',
-      startDate: null, endDate: null,
-      usageLimit: null, usedCount: 0, minOrderAmount: '0',
+      id: 5,
+      type: 'fixed',
+      value: '20000',
+      startDate: null,
+      endDate: null,
+      usageLimit: null,
+      usedCount: 0,
+      minOrderAmount: '0',
     });
 
     await service.createOrder({
@@ -497,16 +547,21 @@ describe('OrdersService › createOrder', () => {
     // subtotal=100000, shipping=30000, discount=20000 → total=110000
     expect(repo.createOrder).toHaveBeenCalledWith(
       expect.objectContaining({ discount: 20000, total: 110000 }),
-      expect.any(Object)
+      expect.any(Object),
     );
   });
 
   test('discount code type=percent → tính % đúng', async () => {
     setupHappyPath(); // subtotal = 100000
     repo.findActiveDiscountCode.mockResolvedValue({
-      id: 5, type: 'percent', value: '10', // 10%
-      startDate: null, endDate: null,
-      usageLimit: null, usedCount: 0, minOrderAmount: '0',
+      id: 5,
+      type: 'percent',
+      value: '10', // 10%
+      startDate: null,
+      endDate: null,
+      usageLimit: null,
+      usedCount: 0,
+      minOrderAmount: '0',
       maxDiscountAmount: null,
     });
 
@@ -518,16 +573,21 @@ describe('OrdersService › createOrder', () => {
     // discount = 100000 * 10 / 100 = 10000
     expect(repo.createOrder).toHaveBeenCalledWith(
       expect.objectContaining({ discount: 10000 }),
-      expect.any(Object)
+      expect.any(Object),
     );
   });
 
   test('discount percent vượt maxDiscountAmount → cap về maxDiscountAmount', async () => {
     setupHappyPath(); // subtotal = 100000
     repo.findActiveDiscountCode.mockResolvedValue({
-      id: 5, type: 'percent', value: '50', // 50% = 50000
-      startDate: null, endDate: null,
-      usageLimit: null, usedCount: 0, minOrderAmount: '0',
+      id: 5,
+      type: 'percent',
+      value: '50', // 50% = 50000
+      startDate: null,
+      endDate: null,
+      usageLimit: null,
+      usedCount: 0,
+      minOrderAmount: '0',
       maxDiscountAmount: '30000', // cap ở 30000
     });
 
@@ -538,16 +598,21 @@ describe('OrdersService › createOrder', () => {
 
     expect(repo.createOrder).toHaveBeenCalledWith(
       expect.objectContaining({ discount: 30000 }),
-      expect.any(Object)
+      expect.any(Object),
     );
   });
 
   test('discount > subtotal → cap discount = subtotal', async () => {
     setupHappyPath(); // subtotal = 100000
     repo.findActiveDiscountCode.mockResolvedValue({
-      id: 5, type: 'fixed', value: '999999', // lớn hơn subtotal
-      startDate: null, endDate: null,
-      usageLimit: null, usedCount: 0, minOrderAmount: '0',
+      id: 5,
+      type: 'fixed',
+      value: '999999', // lớn hơn subtotal
+      startDate: null,
+      endDate: null,
+      usageLimit: null,
+      usedCount: 0,
+      minOrderAmount: '0',
     });
 
     await service.createOrder({
@@ -557,16 +622,21 @@ describe('OrdersService › createOrder', () => {
 
     expect(repo.createOrder).toHaveBeenCalledWith(
       expect.objectContaining({ discount: 100000 }), // capped tại subtotal
-      expect.any(Object)
+      expect.any(Object),
     );
   });
 
   test('discount code COD → incrementDiscountCodeUsage được gọi ngay', async () => {
     setupHappyPath();
     const codeData = {
-      id: 5, type: 'fixed', value: '10000',
-      startDate: null, endDate: null,
-      usageLimit: null, usedCount: 0, minOrderAmount: '0',
+      id: 5,
+      type: 'fixed',
+      value: '10000',
+      startDate: null,
+      endDate: null,
+      usageLimit: null,
+      usedCount: 0,
+      minOrderAmount: '0',
     };
     repo.findActiveDiscountCode.mockResolvedValue(codeData);
 
@@ -585,9 +655,14 @@ describe('OrdersService › createOrder', () => {
   test('discount code bank_transfer → incrementDiscountCodeUsage cũng được gọi ngay', async () => {
     setupHappyPath();
     const codeData = {
-      id: 5, type: 'fixed', value: '10000',
-      startDate: null, endDate: null,
-      usageLimit: null, usedCount: 0, minOrderAmount: '0',
+      id: 5,
+      type: 'fixed',
+      value: '10000',
+      startDate: null,
+      endDate: null,
+      usageLimit: null,
+      usedCount: 0,
+      minOrderAmount: '0',
     };
     repo.findActiveDiscountCode.mockResolvedValue(codeData);
 
@@ -606,9 +681,14 @@ describe('OrdersService › createOrder', () => {
   test('discount code + online payment (vnpay) → KHÔNG tăng usedCount', async () => {
     setupHappyPath();
     const codeData = {
-      id: 5, type: 'fixed', value: '10000',
-      startDate: null, endDate: null,
-      usageLimit: null, usedCount: 0, minOrderAmount: '0',
+      id: 5,
+      type: 'fixed',
+      value: '10000',
+      startDate: null,
+      endDate: null,
+      usageLimit: null,
+      usedCount: 0,
+      minOrderAmount: '0',
     };
     repo.findActiveDiscountCode.mockResolvedValue(codeData);
 
@@ -675,7 +755,7 @@ describe('OrdersService › createOrder', () => {
       service.createOrder({
         user: mkUser(),
         body: mkOrderBody({ items: [{ productId: 1, quantity: 1 }], pointsToUse: 50 }),
-      })
+      }),
     ).rejects.toMatchObject({ statusCode: 400, message: 'orders.insufficientPoints' });
   });
 
@@ -695,11 +775,11 @@ describe('OrdersService › createOrder', () => {
     expect(repo.updateUserPoints).toHaveBeenCalledWith(
       expect.objectContaining({ loyaltyPoints: 100 }),
       99, // 100 - 1
-      expect.any(Object)
+      expect.any(Object),
     );
     expect(repo.createLoyaltyHistory).toHaveBeenCalledWith(
       expect.objectContaining({ type: 'spend', points: -1 }),
-      expect.any(Object)
+      expect.any(Object),
     );
   });
 
@@ -721,7 +801,7 @@ describe('OrdersService › createOrder', () => {
     // total = 100000 + 30000 - 100000 = 30000
     expect(repo.createOrder).toHaveBeenCalledWith(
       expect.objectContaining({ total: 30000 }),
-      expect.any(Object)
+      expect.any(Object),
     );
   });
 
@@ -737,7 +817,7 @@ describe('OrdersService › createOrder', () => {
         user: mkUser(),
         body: mkOrderBody({ items: [] }), // empty → cart flow
         sessionIdCookie: null,
-      })
+      }),
     ).rejects.toMatchObject({ statusCode: 400, message: 'orders.cartEmpty' });
   });
 
@@ -750,13 +830,17 @@ describe('OrdersService › createOrder', () => {
         user: mkUser(),
         body: mkOrderBody({ items: [] }),
         sessionIdCookie: null,
-      })
+      }),
     ).rejects.toMatchObject({ statusCode: 400 });
   });
 
   test('cart flow với guest cart → merge guest cart vào user cart', async () => {
     const userCart = { id: 10 };
-    const guestCart = { id: 20, status: 'active', items: [{ productId: 1, variantId: null, quantity: 1 }] };
+    const guestCart = {
+      id: 20,
+      status: 'active',
+      items: [{ productId: 1, variantId: null, quantity: 1 }],
+    };
     const product = mkProduct();
 
     repo.findOrCreateActiveCart.mockResolvedValue(userCart);
@@ -764,17 +848,33 @@ describe('OrdersService › createOrder', () => {
     repo.findCartItemMatching.mockResolvedValue(null); // không trùng
     repo.findCartByPkWithItemsDetails.mockResolvedValue({
       id: 10,
-      items: [{
-        productId: 1, variantId: null, quantity: 1,
-        Product: product, ProductVariant: null, warrantyPackageIds: [],
-      }],
+      items: [
+        {
+          productId: 1,
+          variantId: null,
+          quantity: 1,
+          Product: product,
+          ProductVariant: null,
+          warrantyPackageIds: [],
+        },
+      ],
     });
     repo.lockProduct.mockResolvedValue({ ...product, stockQuantity: 10 });
     repo.createOrder.mockResolvedValue({
-      id: 200, number: 'ORD-X', status: 'pending', total: 130000,
-      userId: 1, shippingFirstName: 'A', shippingLastName: 'N',
-      shippingAddress1: 'x', shippingAddress2: null, shippingCity: 'x',
-      shippingState: null, shippingZip: '1', shippingCountry: 'VN', createdAt: new Date(),
+      id: 200,
+      number: 'ORD-X',
+      status: 'pending',
+      total: 130000,
+      userId: 1,
+      shippingFirstName: 'A',
+      shippingLastName: 'N',
+      shippingAddress1: 'x',
+      shippingAddress2: null,
+      shippingCity: 'x',
+      shippingState: null,
+      shippingZip: '1',
+      shippingCountry: 'VN',
+      createdAt: new Date(),
     });
     repo.createOrderItem.mockResolvedValue({ id: 99, orderId: 200 });
 
@@ -807,7 +907,7 @@ describe('OrdersService › createOrder', () => {
           changeAmount: -3,
         }),
       ]),
-      expect.any(Object)
+      expect.any(Object),
     );
   });
 
@@ -850,7 +950,7 @@ describe('OrdersService › getUserOrders', () => {
 
     expect(repo.findUserOrdersWithItems).toHaveBeenCalledWith(
       1,
-      expect.objectContaining({ limit: 10, offset: 10 })
+      expect.objectContaining({ limit: 10, offset: 10 }),
     );
   });
 
@@ -861,7 +961,7 @@ describe('OrdersService › getUserOrders', () => {
 
     expect(repo.findUserOrdersWithItems).toHaveBeenCalledWith(
       1,
-      expect.objectContaining({ limit: 100 })
+      expect.objectContaining({ limit: 100 }),
     );
   });
 
@@ -874,7 +974,7 @@ describe('OrdersService › getUserOrders', () => {
     expect(result.limit).toBe(5);
     expect(repo.findUserOrdersWithItems).toHaveBeenCalledWith(
       1,
-      expect.objectContaining({ limit: 5, offset: 10 })
+      expect.objectContaining({ limit: 5, offset: 10 }),
     );
   });
 
@@ -885,7 +985,7 @@ describe('OrdersService › getUserOrders', () => {
 
     expect(repo.findUserOrdersWithItems).toHaveBeenCalledWith(
       1,
-      expect.objectContaining({ limit: 20 })
+      expect.objectContaining({ limit: 20 }),
     );
   });
 
@@ -912,7 +1012,7 @@ describe('OrdersService › getOrderById', () => {
     repo.findOrderByPkWithItemsAndUser.mockResolvedValue(null);
 
     await expect(
-      service.getOrderById({ id: 999, userId: 1, role: 'customer' })
+      service.getOrderById({ id: 999, userId: 1, role: 'customer' }),
     ).rejects.toMatchObject({ statusCode: 404, message: 'orders.notFound' });
   });
 
@@ -920,7 +1020,7 @@ describe('OrdersService › getOrderById', () => {
     repo.findOrderByPkWithItemsAndUser.mockResolvedValue({ id: 1, userId: 99 });
 
     await expect(
-      service.getOrderById({ id: 1, userId: 1, role: 'customer' })
+      service.getOrderById({ id: 1, userId: 1, role: 'customer' }),
     ).rejects.toMatchObject({ statusCode: 403 });
   });
 
@@ -979,35 +1079,36 @@ describe('OrdersService › cancelOrder', () => {
   test('order không tồn tại → AppError 404', async () => {
     repo.findOrderForCancel.mockResolvedValue(null);
 
-    await expect(
-      service.cancelOrder({ id: 99, userId: 1 })
-    ).rejects.toMatchObject({ statusCode: 404, message: 'orders.notFound' });
+    await expect(service.cancelOrder({ id: 99, userId: 1 })).rejects.toMatchObject({
+      statusCode: 404,
+      message: 'orders.notFound',
+    });
   });
 
   // ── Domain errors từ OrderAggregate ───────────────────────────────────────
 
-  test('order status=shipped → DomainError 422', async () => {
+  test('order status=shipped → AppError 422', async () => {
     repo.findOrderForCancel.mockResolvedValue(mkOrder({ status: 'shipped' }));
 
-    await expect(
-      service.cancelOrder({ id: 1, userId: 1 })
-    ).rejects.toMatchObject({ statusCode: 422, domainCode: 'ORDER_CANNOT_CANCEL' });
+    await expect(service.cancelOrder({ id: 1, userId: 1 })).rejects.toMatchObject({
+      statusCode: 422,
+    });
   });
 
   test('order status=delivered → DomainError 422', async () => {
     repo.findOrderForCancel.mockResolvedValue(mkOrder({ status: 'delivered' }));
 
-    await expect(
-      service.cancelOrder({ id: 1, userId: 1 })
-    ).rejects.toMatchObject({ statusCode: 422 });
+    await expect(service.cancelOrder({ id: 1, userId: 1 })).rejects.toMatchObject({
+      statusCode: 422,
+    });
   });
 
   test('order status=cancelled → DomainError 422 (không hủy lại)', async () => {
     repo.findOrderForCancel.mockResolvedValue(mkOrder({ status: 'cancelled' }));
 
-    await expect(
-      service.cancelOrder({ id: 1, userId: 1 })
-    ).rejects.toMatchObject({ statusCode: 422 });
+    await expect(service.cancelOrder({ id: 1, userId: 1 })).rejects.toMatchObject({
+      statusCode: 422,
+    });
   });
 
   // ── Happy path — pending ───────────────────────────────────────────────────
@@ -1028,7 +1129,7 @@ describe('OrdersService › cancelOrder', () => {
     await service.cancelOrder({ id: 1, userId: 1 });
 
     expect(eventBus.publish).toHaveBeenCalledWith(
-      expect.objectContaining({ type: 'order.cancelled' })
+      expect.objectContaining({ type: 'order.cancelled' }),
     );
   });
 
@@ -1071,7 +1172,9 @@ describe('OrdersService › cancelOrder', () => {
     const product = mkProduct();
     const order = mkOrder({
       status: 'pending',
-      items: [{ productId: 1, variantId: null, quantity: 2, Product: product, ProductVariant: null }],
+      items: [
+        { productId: 1, variantId: null, quantity: 2, Product: product, ProductVariant: null },
+      ],
     });
     repo.findOrderForCancel.mockResolvedValue(order);
 
@@ -1121,7 +1224,7 @@ describe('OrdersService › cancelOrder', () => {
     expect(repo.updateUserPoints).toHaveBeenCalledWith(
       expect.objectContaining({ loyaltyPoints: 100 }),
       150, // 100 + 50
-      expect.any(Object)
+      expect.any(Object),
     );
   });
 
@@ -1139,7 +1242,7 @@ describe('OrdersService › cancelOrder', () => {
         userId: 1,
         orderId: 1,
       }),
-      expect.any(Object)
+      expect.any(Object),
     );
   });
 
@@ -1153,7 +1256,7 @@ describe('OrdersService › cancelOrder', () => {
     expect(repo.updateUserPoints).toHaveBeenCalledWith(
       expect.objectContaining({ loyaltyPoints: 100 }),
       70, // 100 - 30
-      expect.any(Object)
+      expect.any(Object),
     );
   });
 
@@ -1167,12 +1270,17 @@ describe('OrdersService › cancelOrder', () => {
     expect(repo.updateUserPoints).toHaveBeenCalledWith(
       expect.any(Object),
       0, // Math.max(0, 10-500)
-      expect.any(Object)
+      expect.any(Object),
     );
   });
 
   test('pointsUsed > 0 VÀ pointsEarned > 0 → xử lý cả hai (2 lần updateUserPoints)', async () => {
-    const order = mkOrder({ status: 'processing', pointsUsed: 10, pointsEarned: 20, number: 'ORD-BOTH' });
+    const order = mkOrder({
+      status: 'processing',
+      pointsUsed: 10,
+      pointsEarned: 20,
+      number: 'ORD-BOTH',
+    });
     repo.findOrderForCancel.mockResolvedValue(order);
     // findUserById sẽ được gọi 2 lần: 1 cho refund, 1 cho revoke
     repo.findUserById
@@ -1194,16 +1302,14 @@ describe('OrdersService › cancelOrder', () => {
 
     expect(emailGateway.sendOrderCancellationEmail).toHaveBeenCalledWith(
       'user@example.com',
-      expect.objectContaining({ orderNumber: 'ORD-TEST-001' })
+      expect.objectContaining({ orderNumber: 'ORD-TEST-001' }),
     );
   });
 
   test('không có userEmail → không gửi email (không crash)', async () => {
     repo.findOrderForCancel.mockResolvedValue(mkOrder({ status: 'pending' }));
 
-    await expect(
-      service.cancelOrder({ id: 1, userId: 1, userEmail: null })
-    ).resolves.toBeTruthy();
+    await expect(service.cancelOrder({ id: 1, userId: 1, userEmail: null })).resolves.toBeTruthy();
 
     expect(emailGateway.sendOrderCancellationEmail).not.toHaveBeenCalled();
   });
@@ -1232,17 +1338,33 @@ describe('OrdersService › createOrder — cart merge (item trùng)', () => {
     repo.findCartItemMatching.mockResolvedValue(existingCartItem);
     repo.findCartByPkWithItemsDetails.mockResolvedValue({
       id: 10,
-      items: [{
-        productId: 1, variantId: null, quantity: 5,
-        Product: product, ProductVariant: null, warrantyPackageIds: [],
-      }],
+      items: [
+        {
+          productId: 1,
+          variantId: null,
+          quantity: 5,
+          Product: product,
+          ProductVariant: null,
+          warrantyPackageIds: [],
+        },
+      ],
     });
     repo.lockProduct.mockResolvedValue({ ...product, stockQuantity: 10 });
     repo.createOrder.mockResolvedValue({
-      id: 200, number: 'ORD-MERGE', status: 'pending', total: 130000,
-      userId: 1, shippingFirstName: 'A', shippingLastName: 'N',
-      shippingAddress1: 'x', shippingAddress2: null, shippingCity: 'x',
-      shippingState: null, shippingZip: '1', shippingCountry: 'VN', createdAt: new Date(),
+      id: 200,
+      number: 'ORD-MERGE',
+      status: 'pending',
+      total: 130000,
+      userId: 1,
+      shippingFirstName: 'A',
+      shippingLastName: 'N',
+      shippingAddress1: 'x',
+      shippingAddress2: null,
+      shippingCity: 'x',
+      shippingState: null,
+      shippingZip: '1',
+      shippingCountry: 'VN',
+      createdAt: new Date(),
     });
     repo.createOrderItem.mockResolvedValue({ id: 99, orderId: 200 });
 
@@ -1255,7 +1377,7 @@ describe('OrdersService › createOrder — cart merge (item trùng)', () => {
     // saveCartItem gọi để update quantity của existing item
     expect(repo.saveCartItem).toHaveBeenCalledWith(
       expect.objectContaining({ quantity: 5 }), // 2 + 3
-      expect.any(Object)
+      expect.any(Object),
     );
     // deleteCartItem gọi để xóa guest item
     expect(repo.deleteCartItem).toHaveBeenCalledWith(guestItem, expect.any(Object));
@@ -1280,10 +1402,20 @@ describe('OrdersService › createOrder — warranty packages', () => {
     repo.lockProduct.mockResolvedValue({ ...product, stockQuantity: 10 });
     repo.findActiveWarrantyPackagesByIds.mockResolvedValue([warrantyPackage]);
     repo.createOrder.mockResolvedValue({
-      id: 300, number: 'ORD-WARRANTY', status: 'pending', total: 630000,
-      userId: 1, shippingFirstName: 'A', shippingLastName: 'N',
-      shippingAddress1: 'x', shippingAddress2: null, shippingCity: 'x',
-      shippingState: null, shippingZip: '1', shippingCountry: 'VN', createdAt: new Date(),
+      id: 300,
+      number: 'ORD-WARRANTY',
+      status: 'pending',
+      total: 630000,
+      userId: 1,
+      shippingFirstName: 'A',
+      shippingLastName: 'N',
+      shippingAddress1: 'x',
+      shippingAddress2: null,
+      shippingCity: 'x',
+      shippingState: null,
+      shippingZip: '1',
+      shippingCountry: 'VN',
+      createdAt: new Date(),
     });
     repo.createOrderItem.mockResolvedValue({ id: 100, orderId: 300 });
 
@@ -1299,12 +1431,10 @@ describe('OrdersService › createOrder — warranty packages', () => {
     expect(repo.createOrderItem).toHaveBeenCalledWith(
       expect.objectContaining({
         attributes: expect.objectContaining({
-          warrantyPackages: expect.arrayContaining([
-            expect.objectContaining({ id: 5 }),
-          ]),
+          warrantyPackages: expect.arrayContaining([expect.objectContaining({ id: 5 })]),
         }),
       }),
-      expect.any(Object)
+      expect.any(Object),
     );
   });
 });
@@ -1318,10 +1448,20 @@ describe('OrdersService › createOrder — email send failure', () => {
   function setupHappyPath() {
     const product = mkProduct();
     const createdOrder = {
-      id: 400, number: 'ORD-EMAIL', status: 'pending', total: 130000,
-      userId: 1, shippingFirstName: 'Anh', shippingLastName: 'Nguyen',
-      shippingAddress1: '123 Lê Lợi', shippingAddress2: null, shippingCity: 'HCM',
-      shippingState: null, shippingZip: '70000', shippingCountry: 'VN', createdAt: new Date(),
+      id: 400,
+      number: 'ORD-EMAIL',
+      status: 'pending',
+      total: 130000,
+      userId: 1,
+      shippingFirstName: 'Anh',
+      shippingLastName: 'Nguyen',
+      shippingAddress1: '123 Lê Lợi',
+      shippingAddress2: null,
+      shippingCity: 'HCM',
+      shippingState: null,
+      shippingZip: '70000',
+      shippingCountry: 'VN',
+      createdAt: new Date(),
     };
     repo.findProductWithDefaultVariant.mockResolvedValue(product);
     repo.lockProduct.mockResolvedValue({ ...product, stockQuantity: 10 });
@@ -1346,11 +1486,8 @@ describe('OrdersService › createOrder — email send failure', () => {
 
     expect(result).toMatchObject({ id: 400 });
     // Logger error được gọi (fire-and-forget catch)
-    await new Promise(resolve => setTimeout(resolve, 10));
-    expect(logger.error).toHaveBeenCalledWith(
-      expect.stringContaining('email'),
-      expect.any(Error)
-    );
+    await new Promise((resolve) => setTimeout(resolve, 10));
+    expect(logger.error).toHaveBeenCalledWith(expect.stringContaining('email'), expect.any(Error));
   });
 });
 
@@ -1365,18 +1502,26 @@ describe('OrdersService › cancelOrder — email send failure', () => {
   });
 
   test('email hủy đơn thất bại → không throw, chỉ log error', async () => {
-    const order = { id: 1, number: 'ORD-CANCEL', status: 'pending', userId: 1,
-      pointsUsed: 0, pointsEarned: 0, createdAt: new Date(), items: [] };
+    const order = {
+      id: 1,
+      number: 'ORD-CANCEL',
+      status: 'pending',
+      userId: 1,
+      pointsUsed: 0,
+      pointsEarned: 0,
+      createdAt: new Date(),
+      items: [],
+    };
     repo.findOrderForCancel.mockResolvedValue(order);
     emailGateway.sendOrderCancellationEmail.mockRejectedValue(new Error('Mail server down'));
 
     const result = await service.cancelOrder({ id: 1, userId: 1, userEmail: 'user@example.com' });
 
     expect(result).toMatchObject({ status: 'cancelled' });
-    await new Promise(resolve => setTimeout(resolve, 10));
+    await new Promise((resolve) => setTimeout(resolve, 10));
     expect(logger.error).toHaveBeenCalledWith(
       expect.stringContaining('email hủy'),
-      expect.any(Error)
+      expect.any(Error),
     );
   });
 });
@@ -1393,9 +1538,15 @@ describe('OrdersService › updateOrderStatus', () => {
 
   test('updateOrderStatus → gửi email cập nhật trạng thái khi user có email', async () => {
     const order = {
-      id: 1, number: 'ORD-UPD', status: 'processing', paymentMethod: 'cod',
-      userId: 1, subtotal: '50000', total: '80000',
-      user: { email: 'user@example.com' }, createdAt: new Date(),
+      id: 1,
+      number: 'ORD-UPD',
+      status: 'processing',
+      paymentMethod: 'cod',
+      userId: 1,
+      subtotal: '50000',
+      total: '80000',
+      user: { email: 'user@example.com' },
+      createdAt: new Date(),
     };
     repo.findOrderByPkWithItemsAndUser.mockResolvedValue(order);
 
@@ -1403,15 +1554,21 @@ describe('OrdersService › updateOrderStatus', () => {
 
     expect(emailGateway.sendOrderStatusUpdateEmail).toHaveBeenCalledWith(
       'user@example.com',
-      expect.objectContaining({ orderNumber: 'ORD-UPD', status: 'shipped' })
+      expect.objectContaining({ orderNumber: 'ORD-UPD', status: 'shipped' }),
     );
   });
 
   test('updateOrderStatus email fail → không throw, chỉ log error', async () => {
     const order = {
-      id: 1, number: 'ORD-UPD2', status: 'processing', paymentMethod: 'vnpay',
-      userId: 1, subtotal: '50000', total: '80000',
-      user: { email: 'user@example.com' }, createdAt: new Date(),
+      id: 1,
+      number: 'ORD-UPD2',
+      status: 'processing',
+      paymentMethod: 'vnpay',
+      userId: 1,
+      subtotal: '50000',
+      total: '80000',
+      user: { email: 'user@example.com' },
+      createdAt: new Date(),
     };
     repo.findOrderByPkWithItemsAndUser.mockResolvedValue(order);
     emailGateway.sendOrderStatusUpdateEmail.mockRejectedValue(new Error('SMTP fail'));
@@ -1419,10 +1576,10 @@ describe('OrdersService › updateOrderStatus', () => {
     const result = await service.updateOrderStatus({ id: 1, status: 'shipped' });
 
     expect(result).toMatchObject({ id: 1, status: 'shipped' });
-    await new Promise(resolve => setTimeout(resolve, 10));
+    await new Promise((resolve) => setTimeout(resolve, 10));
     expect(logger.error).toHaveBeenCalledWith(
       expect.stringContaining('email cập nhật'),
-      expect.any(Error)
+      expect.any(Error),
     );
   });
 });
@@ -1441,8 +1598,13 @@ describe('OrdersService › confirmReceived — subtotal quá nhỏ để tích 
     // POINTS_EARN_RATE = 1000, subtotal = 500 → floor(500/1000) = 0 điểm
     // Nhưng orderTotal > 0 → nhánh else if (orderTotal > 0) chạy → earnedPointsTotal = -1
     const order = {
-      id: 1, number: 'ORD-SMALL', status: 'shipped', paymentMethod: 'cod',
-      userId: 1, subtotal: '500', total: '530',
+      id: 1,
+      number: 'ORD-SMALL',
+      status: 'shipped',
+      paymentMethod: 'cod',
+      userId: 1,
+      subtotal: '500',
+      total: '530',
       pointsEarned: 0, // canEarnPoints() sẽ trả true khi pointsEarned === 0
     };
     order.reload = jest.fn().mockImplementation(() => {

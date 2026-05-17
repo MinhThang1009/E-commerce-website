@@ -3,7 +3,25 @@
 //         confirmReceived, trackOrder, estimateShipping, _clearUserCartInTransaction.
 
 const OrdersService = require('./ordersService');
-const { buildTrackingSteps, STATUS } = require('../domain/policies/OrderStatusPolicy');
+// STATUS và buildTrackingSteps đã được inline vào ordersService (Phase 1 — xóa domain layer).
+// Khai báo lại local để test không phụ thuộc vào implementation detail của service.
+const STATUS = {
+  PENDING: 'pending',
+  PROCESSING: 'processing',
+  SHIPPED: 'shipped',
+  DELIVERED: 'delivered',
+  CANCELLED: 'cancelled',
+};
+function buildTrackingSteps(status) {
+  const progression = ['pending', 'processing', 'shipped', 'delivered'];
+  const idx = progression.indexOf(status);
+  return [
+    { key: 'pending', label: 'Đã đặt hàng', completed: idx >= 0 && status !== STATUS.CANCELLED },
+    { key: 'processing', label: 'Đang chuẩn bị', completed: idx >= 1 },
+    { key: 'shipped', label: 'Đang giao', completed: idx >= 2 },
+    { key: 'delivered', label: 'Đã nhận hàng', completed: idx >= 3 },
+  ];
+}
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 
@@ -166,9 +184,7 @@ describe('OrdersService › getAllOrders', () => {
 
     await service.getAllOrders({ page: 1, limit: 10 });
 
-    expect(repo.findAllOrdersWithUser).toHaveBeenCalledWith(
-      expect.objectContaining({ where: {} }),
-    );
+    expect(repo.findAllOrdersWithUser).toHaveBeenCalledWith(expect.objectContaining({ where: {} }));
   });
 
   it('limit > 100 → cap về 100', async () => {
@@ -327,7 +343,9 @@ describe('OrdersService › repayOrder', () => {
     repo.findOrderByIdAndUserId.mockResolvedValue(order);
 
     const result = await service.repayOrder({
-      id: 5, userId: 1, originUrl: 'https://shop.vn',
+      id: 5,
+      userId: 1,
+      originUrl: 'https://shop.vn',
     });
 
     expect(result).toMatchObject({
@@ -352,9 +370,9 @@ describe('OrdersService › confirmReceived', () => {
   it('AppError 404 khi không tìm thấy order', async () => {
     repo.findOrderByIdAndUserId.mockResolvedValue(null);
 
-    await expect(
-      service.confirmReceived({ id: 99, userId: 1 }),
-    ).rejects.toMatchObject({ statusCode: 404 });
+    await expect(service.confirmReceived({ id: 99, userId: 1 })).rejects.toMatchObject({
+      statusCode: 404,
+    });
   });
 
   it('alreadyProcessed → trả về message "đã xác nhận" và pointsEarned=0', async () => {
@@ -415,9 +433,9 @@ describe('OrdersService › trackOrder', () => {
   });
 
   it('AppError 400 khi thiếu email', async () => {
-    await expect(
-      service.trackOrder({ orderNumber: 'ORD-123', email: '' }),
-    ).rejects.toMatchObject({ statusCode: 400 });
+    await expect(service.trackOrder({ orderNumber: 'ORD-123', email: '' })).rejects.toMatchObject({
+      statusCode: 400,
+    });
   });
 
   it('AppError 404 khi order không tìm thấy', async () => {
@@ -541,9 +559,7 @@ describe('OrdersService › _clearUserCartInTransaction', () => {
   it('không throw khi repo.findActiveCartsByUser ném lỗi — chỉ log error', async () => {
     repo.findActiveCartsByUser.mockRejectedValue(new Error('DB down'));
 
-    await expect(
-      service._clearUserCartInTransaction(1, 'tx'),
-    ).resolves.toBeUndefined();
+    await expect(service._clearUserCartInTransaction(1, 'tx')).resolves.toBeUndefined();
 
     expect(logger.error).toHaveBeenCalled();
   });

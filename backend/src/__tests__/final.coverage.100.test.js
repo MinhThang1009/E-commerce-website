@@ -302,33 +302,6 @@ describe('cartService.js — addToCart with invalid warrantyPackageIds (line 191
 });
 
 // ════════════════════════════════════════════════════════════════════════════════
-// OrderAggregate.js line 20 — get state() { return this.order.status }
-// ════════════════════════════════════════════════════════════════════════════════
-
-describe('OrderAggregate — get state() (line 20)', () => {
-  it('state getter trả về order.status (line 20)', () => {
-    const OrderAggregate = require('../modules/orders/domain/aggregates/OrderAggregate');
-    const orderModel = { status: 'pending' };
-    const aggregate = new OrderAggregate(orderModel);
-
-    // Access .state property → triggers the getter at line 20
-    expect(aggregate.state).toBe('pending');
-  });
-
-  it('state getter phản ánh thay đổi status (line 20)', () => {
-    const OrderAggregate = require('../modules/orders/domain/aggregates/OrderAggregate');
-    const orderModel = { status: 'processing' };
-    const aggregate = new OrderAggregate(orderModel);
-
-    expect(aggregate.state).toBe('processing');
-
-    // Mutate underlying order
-    orderModel.status = 'shipped';
-    expect(aggregate.state).toBe('shipped');
-  });
-});
-
-// ════════════════════════════════════════════════════════════════════════════════
 // uploadService.js line 120 — path traversal: filePath doesn't start with uploadDir
 // ════════════════════════════════════════════════════════════════════════════════
 

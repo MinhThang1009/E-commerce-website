@@ -1,9 +1,14 @@
 const AIController = require('./controllers/aiController');
 const AIService = require('./services/aiService');
 const SequelizeAIRepository = require('./repositories/SequelizeAIRepository');
-const RAGPipeline = require('./domain/orchestrators/RAGPipeline');
-const ChatbotLLMGateway = require('./infrastructure/ChatbotLLMGateway');
-const vectorStoreService = require('../../services/ai/vectorStore');
+const RAGPipeline = require('./services/ragPipeline');
+const ChatbotLLMGateway = require('./services/chatbotLLMGateway');
+let vectorStoreService;
+try {
+  vectorStoreService = require('../../services/ai/vectorStore');
+} catch (e) {
+  vectorStoreService = null;
+}
 const buildRoutes = require('./routes');
 
 module.exports = ({

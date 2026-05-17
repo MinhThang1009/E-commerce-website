@@ -121,7 +121,7 @@ describe('PaymentService.createMomoUrl', () => {
         orderId: order.number,
         amount: order.total,
         extraData: `orderId=${order.id}`,
-      })
+      }),
     );
   });
 
@@ -129,8 +129,9 @@ describe('PaymentService.createMomoUrl', () => {
     const repo = buildMockRepo({ findOrderByPk: jest.fn().mockResolvedValue(null) });
     const svc = buildService({ paymentRepository: repo });
 
-    await expect(svc.createMomoUrl({ orderId: 99, userId: 7 }))
-      .rejects.toMatchObject({ statusCode: 404 });
+    await expect(svc.createMomoUrl({ orderId: 99, userId: 7 })).rejects.toMatchObject({
+      statusCode: 404,
+    });
   });
 
   it('ném AppError 403 khi userId không khớp với order.userId', async () => {
@@ -138,8 +139,9 @@ describe('PaymentService.createMomoUrl', () => {
     const repo = buildMockRepo({ findOrderByPk: jest.fn().mockResolvedValue(order) });
     const svc = buildService({ paymentRepository: repo });
 
-    await expect(svc.createMomoUrl({ orderId: 42, userId: 999 }))
-      .rejects.toMatchObject({ statusCode: 403 });
+    await expect(svc.createMomoUrl({ orderId: 42, userId: 999 })).rejects.toMatchObject({
+      statusCode: 403,
+    });
   });
 });
 
@@ -165,7 +167,7 @@ describe('PaymentService.createVNPayUrl', () => {
     await svc.createVNPayUrl({ orderId: 42, userId: 7, ipAddr: '192.168.1.10' });
 
     expect(vnpayGateway.createPaymentUrl).toHaveBeenCalledWith(
-      expect.objectContaining({ ipAddr: '192.168.1.10', amount: order.total })
+      expect.objectContaining({ ipAddr: '192.168.1.10', amount: order.total }),
     );
   });
 
@@ -173,8 +175,9 @@ describe('PaymentService.createVNPayUrl', () => {
     const repo = buildMockRepo({ findOrderByPk: jest.fn().mockResolvedValue(null) });
     const svc = buildService({ paymentRepository: repo });
 
-    await expect(svc.createVNPayUrl({ orderId: 99, userId: 7, ipAddr: '127.0.0.1' }))
-      .rejects.toMatchObject({ statusCode: 404 });
+    await expect(
+      svc.createVNPayUrl({ orderId: 99, userId: 7, ipAddr: '127.0.0.1' }),
+    ).rejects.toMatchObject({ statusCode: 404 });
   });
 
   it('ném AppError 403 khi user không sở hữu order', async () => {
@@ -182,8 +185,9 @@ describe('PaymentService.createVNPayUrl', () => {
     const repo = buildMockRepo({ findOrderByPk: jest.fn().mockResolvedValue(order) });
     const svc = buildService({ paymentRepository: repo });
 
-    await expect(svc.createVNPayUrl({ orderId: 42, userId: 888, ipAddr: '127.0.0.1' }))
-      .rejects.toMatchObject({ statusCode: 403 });
+    await expect(
+      svc.createVNPayUrl({ orderId: 42, userId: 888, ipAddr: '127.0.0.1' }),
+    ).rejects.toMatchObject({ statusCode: 403 });
   });
 });
 
@@ -344,7 +348,7 @@ describe('PaymentService.handleMomoIPN', () => {
     });
 
     expect(eventBus.publish).toHaveBeenCalledWith(
-      expect.objectContaining({ type: 'payment.succeeded' })
+      expect.objectContaining({ type: 'payment.succeeded' }),
     );
   });
 });
@@ -353,7 +357,9 @@ describe('PaymentService.handleMomoIPN', () => {
 
 describe('PaymentService.handleVnPayReturn', () => {
   it('redirect về checksum-failed khi chữ ký không hợp lệ', async () => {
-    const vnpayGateway = buildMockVnpayGateway({ verifyReturnUrl: jest.fn().mockReturnValue(false) });
+    const vnpayGateway = buildMockVnpayGateway({
+      verifyReturnUrl: jest.fn().mockReturnValue(false),
+    });
     const svc = buildService({ vnpayGateway });
 
     const { redirectUrl } = await svc.handleVnPayReturn({ vnp_Params: {} });
@@ -434,7 +440,9 @@ describe('PaymentService.handleVnPayReturn', () => {
 
 describe('PaymentService.handleVnPayIPN', () => {
   it('trả về RspCode 97 khi signature không hợp lệ', async () => {
-    const vnpayGateway = buildMockVnpayGateway({ verifyReturnUrl: jest.fn().mockReturnValue(false) });
+    const vnpayGateway = buildMockVnpayGateway({
+      verifyReturnUrl: jest.fn().mockReturnValue(false),
+    });
     const svc = buildService({ vnpayGateway });
 
     const result = await svc.handleVnPayIPN({ vnp_Params: {} });
@@ -550,16 +558,16 @@ describe('PaymentService.createRefund', () => {
   it('ném AppError 400 khi không có orderId', async () => {
     const svc = buildService();
 
-    await expect(svc.createRefund({ amount: 100000, reason: 'Test' }))
-      .rejects.toMatchObject({ statusCode: 400 });
+    await expect(svc.createRefund({ amount: 100000, reason: 'Test' })).rejects.toMatchObject({
+      statusCode: 400,
+    });
   });
 
   it('ném AppError 404 khi order không tồn tại', async () => {
     const repo = buildMockRepo({ findOrderByPk: jest.fn().mockResolvedValue(null) });
     const svc = buildService({ paymentRepository: repo });
 
-    await expect(svc.createRefund({ orderId: 99 }))
-      .rejects.toMatchObject({ statusCode: 404 });
+    await expect(svc.createRefund({ orderId: 99 })).rejects.toMatchObject({ statusCode: 404 });
   });
 
   it('ném AppError 400 khi order chưa thanh toán (policy deny)', async () => {
@@ -567,8 +575,7 @@ describe('PaymentService.createRefund', () => {
     const repo = buildMockRepo({ findOrderByPk: jest.fn().mockResolvedValue(order) });
     const svc = buildService({ paymentRepository: repo });
 
-    await expect(svc.createRefund({ orderId: 42 }))
-      .rejects.toMatchObject({ statusCode: 400 });
+    await expect(svc.createRefund({ orderId: 42 })).rejects.toMatchObject({ statusCode: 400 });
   });
 
   it('ném AppError 400 khi provider là momo (chưa hỗ trợ)', async () => {
@@ -580,8 +587,7 @@ describe('PaymentService.createRefund', () => {
     const repo = buildMockRepo({ findOrderByPk: jest.fn().mockResolvedValue(order) });
     const svc = buildService({ paymentRepository: repo });
 
-    await expect(svc.createRefund({ orderId: 42 }))
-      .rejects.toMatchObject({ statusCode: 400 });
+    await expect(svc.createRefund({ orderId: 42 })).rejects.toMatchObject({ statusCode: 400 });
   });
 
   it('ném AppError 400 khi amount > order.total', async () => {
@@ -593,8 +599,9 @@ describe('PaymentService.createRefund', () => {
     const repo = buildMockRepo({ findOrderByPk: jest.fn().mockResolvedValue(order) });
     const svc = buildService({ paymentRepository: repo });
 
-    await expect(svc.createRefund({ orderId: 42, amount: 9999999 }))
-      .rejects.toMatchObject({ statusCode: 400 });
+    await expect(svc.createRefund({ orderId: 42, amount: 9999999 })).rejects.toMatchObject({
+      statusCode: 400,
+    });
   });
 
   it('fallback về order.total khi amount = 0 (falsy — dùng order.total thay thế)', async () => {
@@ -613,9 +620,7 @@ describe('PaymentService.createRefund', () => {
 
     // amount=0 → fallback về order.total=500000 → không throw, refund thành công
     await expect(svc.createRefund({ orderId: 42, amount: 0 })).resolves.toBeDefined();
-    expect(vnpayGateway.refund).toHaveBeenCalledWith(
-      expect.objectContaining({ amount: 500000 })
-    );
+    expect(vnpayGateway.refund).toHaveBeenCalledWith(expect.objectContaining({ amount: 500000 }));
   });
 
   it('ném AppError 400 khi amount âm (< 0)', async () => {
@@ -627,8 +632,9 @@ describe('PaymentService.createRefund', () => {
     const repo = buildMockRepo({ findOrderByPk: jest.fn().mockResolvedValue(order) });
     const svc = buildService({ paymentRepository: repo });
 
-    await expect(svc.createRefund({ orderId: 42, amount: -100 }))
-      .rejects.toMatchObject({ statusCode: 400 });
+    await expect(svc.createRefund({ orderId: 42, amount: -100 })).rejects.toMatchObject({
+      statusCode: 400,
+    });
   });
 
   it('gọi vnpayGateway.refund với đúng tham số và cập nhật paymentStatus=refunded', async () => {
@@ -648,7 +654,7 @@ describe('PaymentService.createRefund', () => {
         orderId: order.number,
         amount: 200000,
         ipAddr: '1.2.3.4',
-      })
+      }),
     );
     expect(order.paymentStatus).toBe('refunded');
     expect(repo.saveOrder).toHaveBeenCalled();
@@ -667,9 +673,7 @@ describe('PaymentService.createRefund', () => {
 
     await svc.createRefund({ orderId: 42 });
 
-    expect(vnpayGateway.refund).toHaveBeenCalledWith(
-      expect.objectContaining({ amount: 500000 })
-    );
+    expect(vnpayGateway.refund).toHaveBeenCalledWith(expect.objectContaining({ amount: 500000 }));
   });
 });
 
@@ -718,7 +722,7 @@ describe('PaymentService._incrementDiscountCodeUsage', () => {
 
     expect(logger.error).toHaveBeenCalledWith(
       expect.stringContaining('Lỗi tăng usedCount discount code cho order 42'),
-      expect.any(String)
+      expect.any(String),
     );
   });
 
@@ -773,7 +777,7 @@ describe('PaymentService._sendOrderConfirmationEmailSafe — order có items', (
           expect.objectContaining({ name: 'iPhone 15', quantity: 1, price: 29990000 }),
           expect.objectContaining({ name: 'AirPods Pro', quantity: 2, price: 6490000 }),
         ]),
-      })
+      }),
     );
   });
 });
@@ -783,38 +787,22 @@ describe('PaymentService._sendOrderConfirmationEmailSafe — order có items', (
 // Test này verify behavior khi nhánh false được đi qua: refund = undefined, order vẫn được
 // đánh dấu refunded và saveOrder được gọi.
 
-describe('PaymentService.createRefund — provider không phải vnpay (line 269 false branch)', () => {
-  it('trả về undefined khi paymentProvider không phải vnpay (không gọi vnpayGateway.refund)', async () => {
-    // Tạo order với provider "other" nhưng bypass policy bằng cách mock canRefund
-    // thông qua jest.mock trong describe riêng
-    // Approach: override policy behavior bằng cách patch module
-    const PaymentPolicy = require('../domain/policies/PaymentPolicy');
-    const originalCanRefund = PaymentPolicy.canRefund;
-
-    // Tạm thời override canRefund để cho phép provider 'other'
-    PaymentPolicy.canRefund = jest.fn().mockReturnValue({ allowed: true });
-
+describe('PaymentService.createRefund — provider không phải vnpay', () => {
+  it('ném AppError khi paymentProvider không nằm trong danh sách hỗ trợ hoàn tiền', async () => {
+    // Sau Phase 1: _canRefund được inline trong service.
+    // Provider 'momo' không được hỗ trợ hoàn tiền → policy từ chối → AppError 400.
     const order = buildOrder({
       total: 100000,
       paymentStatus: 'paid',
-      paymentProvider: 'other', // không phải vnpay → if at line 269 evaluates false
-      paymentTransactionId: 'TX-OTHER',
+      paymentProvider: 'momo',
+      paymentTransactionId: 'TX-MOMO',
     });
     const repo = buildMockRepo({ findOrderByPk: jest.fn().mockResolvedValue(order) });
-    const vnpayGateway = buildMockVnpayGateway();
-    const svc = buildService({ paymentRepository: repo, vnpayGateway });
+    const svc = buildService({ paymentRepository: repo });
 
-    const result = await svc.createRefund({ orderId: 42, amount: 50000 });
-
-    // refund = undefined (provider không phải vnpay → if false → không gọi gateway)
-    expect(result).toBeUndefined();
-    expect(vnpayGateway.refund).not.toHaveBeenCalled();
-    // order vẫn được đánh dấu refunded
-    expect(order.paymentStatus).toBe('refunded');
-    expect(repo.saveOrder).toHaveBeenCalled();
-
-    // Restore original policy
-    PaymentPolicy.canRefund = originalCanRefund;
+    await expect(svc.createRefund({ orderId: 42, amount: 50000 })).rejects.toMatchObject({
+      statusCode: 400,
+    });
   });
 });
 
@@ -836,7 +824,7 @@ describe('PaymentService._sendOrderConfirmationEmailSafe — order.items undefin
 
     expect(emailGateway.sendOrderConfirmationEmail).toHaveBeenCalledWith(
       'customer@example.com',
-      expect.objectContaining({ items: [] })
+      expect.objectContaining({ items: [] }),
     );
   });
 
@@ -855,7 +843,7 @@ describe('PaymentService._sendOrderConfirmationEmailSafe — order.items undefin
 
     expect(emailGateway.sendOrderConfirmationEmail).toHaveBeenCalledWith(
       'customer@example.com',
-      expect.objectContaining({ items: [] })
+      expect.objectContaining({ items: [] }),
     );
   });
 });
@@ -974,7 +962,7 @@ describe('PaymentService._clearUserCart', () => {
     await expect(svc._clearUserCart(7)).resolves.not.toThrow();
     expect(logger.error).toHaveBeenCalledWith(
       expect.stringContaining('Lỗi xóa giỏ hàng cho user 7'),
-      expect.any(String)
+      expect.any(String),
     );
   });
 });

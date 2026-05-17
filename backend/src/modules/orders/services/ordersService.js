@@ -1,14 +1,42 @@
 const crypto = require('crypto');
 const { AppError } = require('../../../shared/errors');
-const OrderAggregate = require('../domain/aggregates/OrderAggregate');
-const { calculateShippingCost } = require('../domain/policies/ShippingPolicy');
-const { buildTrackingSteps, STATUS } = require('../domain/policies/OrderStatusPolicy');
-const OrderCreatedEvent = require('../domain/events/OrderCreatedEvent');
-const OrderCancelledEvent = require('../domain/events/OrderCancelledEvent');
-const OrderDeliveredEvent = require('../domain/events/OrderDeliveredEvent');
 
-// Orders Service — DDD-lite. Pure business logic; mọi data access qua repo,
-// mọi state transition qua OrderAggregate, mọi calc qua Policy.
+// --- Inline từ OrderStatusPolicy (đã xóa domain layer Phase 1) ---
+const STATUS = {
+  PENDING: 'pending',
+  PROCESSING: 'processing',
+  SHIPPED: 'shipped',
+  DELIVERED: 'delivered',
+  CANCELLED: 'cancelled',
+};
+function _canCancel(status) {
+  return status === STATUS.PENDING || status === STATUS.PROCESSING;
+}
+function _canRepay(status, paymentStatus) {
+  return status === STATUS.PENDING || status === STATUS.CANCELLED || paymentStatus === 'failed';
+}
+function _canConfirmReceived(status) {
+  return status === STATUS.SHIPPED || status === STATUS.PROCESSING || status === STATUS.DELIVERED;
+}
+function _buildTrackingSteps(status) {
+  const progression = ['pending', 'processing', 'shipped', 'delivered'];
+  const idx = progression.indexOf(status);
+  return [
+    { key: 'pending', label: 'Đã đặt hàng', completed: idx >= 0 && status !== STATUS.CANCELLED },
+    { key: 'processing', label: 'Đang chuẩn bị', completed: idx >= 1 },
+    { key: 'shipped', label: 'Đang giao', completed: idx >= 2 },
+    { key: 'delivered', label: 'Đã nhận hàng', completed: idx >= 3 },
+  ];
+}
+// --- Inline từ ShippingPolicy (đã xóa domain layer Phase 1) ---
+function _calcShippingCost({ subtotal, totalWeightKg, freeThreshold, baseRate, weightRate }) {
+  if (subtotal >= freeThreshold) return 0;
+  let cost = baseRate;
+  if (totalWeightKg > 2) cost += Math.ceil(totalWeightKg - 2) * weightRate;
+  return cost;
+}
+
+// Orders Service — pure business logic; mọi data access qua repo.
 class OrdersService {
   constructor({
     ordersRepository,
@@ -35,7 +63,7 @@ class OrdersService {
   }
 
   _calculateShipping(subtotal, totalWeightKg) {
-    return calculateShippingCost({
+    return _calcShippingCost({
       subtotal,
       totalWeightKg,
       freeThreshold: this.constants.SHIPPING_FREE_THRESHOLD,
@@ -409,16 +437,17 @@ class OrdersService {
       orderItemsForEmail = orderItems;
     });
 
-    // Publish event
-    await this.eventBus.publish(
-      OrderCreatedEvent({
+    await this.eventBus.publish({
+      type: 'order.created',
+      payload: {
         orderId: createdOrder.id,
         orderNumber: createdOrder.number,
         userId: createdOrder.userId,
         total: createdOrder.total,
         items: orderItemsForEmail.map((i) => ({ productId: i.productId, quantity: i.quantity })),
-      }),
-    );
+      },
+      occurredAt: new Date().toISOString(),
+    });
 
     // Fire-and-forget email
     this.emailGateway
@@ -469,17 +498,17 @@ class OrdersService {
   }
 
   async getUserOrders({ userId, page = 1, limit = 20 }) {
-    const lim = Math.min(parseInt(limit, 10) || 20, 100);
-    const off = (parseInt(page, 10) - 1) * lim;
+    const pageLimit = Math.min(parseInt(limit, 10) || 20, 100);
+    const offset = (parseInt(page, 10) - 1) * pageLimit;
     const { count, rows } = await this.repo.findUserOrdersWithItems(userId, {
-      limit: lim,
-      offset: off,
+      limit: pageLimit,
+      offset,
     });
     return {
       data: rows,
       total: count,
       page: parseInt(page, 10),
-      limit: lim,
+      limit: pageLimit,
     };
   }
 
@@ -505,8 +534,10 @@ class OrdersService {
       const order = await this.repo.findOrderForCancel(id, userId);
       if (!order) throw new AppError('orders.notFound', 404);
 
-      const aggregate = new OrderAggregate(order);
-      aggregate.cancel(); // Throws DomainError if invalid state
+      if (!_canCancel(order.status)) {
+        throw new AppError('Không thể hủy đơn hàng này', 422);
+      }
+      order.status = STATUS.CANCELLED;
       await this.repo.saveOrder(order, { transaction });
 
       // Restore stock
@@ -559,8 +590,10 @@ class OrdersService {
       cancelledOrder = order;
     });
 
-    await this.eventBus.publish(
-      OrderCancelledEvent({
+    // inventory/module.js subscribe 'order.cancelled' để tạo audit log
+    await this.eventBus.publish({
+      type: 'order.cancelled',
+      payload: {
         orderId: cancelledOrder.id,
         orderNumber: cancelledOrder.number,
         userId: cancelledOrder.userId,
@@ -569,8 +602,9 @@ class OrdersService {
           variantId: i.variantId,
           quantity: i.quantity,
         })),
-      }),
-    );
+      },
+      occurredAt: new Date().toISOString(),
+    });
 
     if (userEmail) {
       this.emailGateway
@@ -589,21 +623,21 @@ class OrdersService {
   }
 
   async getAllOrders({ page = 1, limit = 20, status }) {
-    const lim = Math.min(parseInt(limit, 10) || 20, 100);
-    const off = (parseInt(page, 10) - 1) * lim;
+    const pageLimit = Math.min(parseInt(limit, 10) || 20, 100);
+    const offset = (parseInt(page, 10) - 1) * pageLimit;
     const where = {};
     if (status) where.status = status;
 
     const { count, rows } = await this.repo.findAllOrdersWithUser({
       where,
-      limit: lim,
-      offset: off,
+      limit: pageLimit,
+      offset,
     });
     return {
       data: rows,
       total: count,
       page: parseInt(page, 10),
-      limit: lim,
+      limit: pageLimit,
     };
   }
 
@@ -640,15 +674,17 @@ class OrdersService {
         }
       }
 
-      await this.eventBus.publish(
-        OrderDeliveredEvent({
+      await this.eventBus.publish({
+        type: 'order.delivered',
+        payload: {
           orderId: order.id,
           orderNumber: order.number,
           userId: order.userId,
           total: order.total,
           subtotal: order.subtotal,
-        }),
-      );
+        },
+        occurredAt: new Date().toISOString(),
+      });
     }
 
     // Email status update
@@ -673,8 +709,11 @@ class OrdersService {
     const order = await this.repo.findOrderByIdAndUserId(id, userId);
     if (!order) throw new AppError('orders.notFound', 404);
 
-    const aggregate = new OrderAggregate(order);
-    aggregate.prepareRepay(); // throws nếu invalid state
+    if (!_canRepay(order.status, order.paymentStatus)) {
+      throw new AppError('Đơn hàng này không thể thanh toán lại', 422);
+    }
+    order.status = STATUS.PENDING;
+    order.paymentStatus = 'pending';
     await this.repo.saveOrder(order);
 
     const paymentUrl = `${originUrl}/checkout?repayOrder=${order.id}&amount=${order.total}`;
@@ -692,8 +731,18 @@ class OrdersService {
     const order = await this.repo.findOrderByIdAndUserId(id, userId);
     if (!order) throw new AppError('orders.notFound', 404);
 
-    const aggregate = new OrderAggregate(order);
-    const { alreadyProcessed } = aggregate.confirmReceived();
+    // Idempotent: đã delivered + đã trao điểm → không xử lý lại
+    const alreadyProcessed = order.status === STATUS.DELIVERED && (order.pointsEarned || 0) !== 0;
+    if (!alreadyProcessed && !_canConfirmReceived(order.status)) {
+      throw new AppError(
+        'Chỉ có thể xác nhận đơn hàng khi đang giao, đang xử lý hoặc đã giao hàng',
+        422,
+      );
+    }
+    if (!alreadyProcessed) {
+      order.status = STATUS.DELIVERED;
+      if (order.paymentMethod === 'cod') order.paymentStatus = 'paid';
+    }
     await this.repo.saveOrder(order);
     await order.reload();
 
@@ -708,7 +757,7 @@ class OrdersService {
     let earnedPointsTotal = order.pointsEarned || 0;
     let newPointsAwarded = 0;
 
-    if (aggregate.canEarnPoints()) {
+    if ((order.pointsEarned || 0) === 0) {
       const orderTotal = parseFloat(order.subtotal);
       newPointsAwarded = Math.floor(orderTotal / this.constants.POINTS_EARN_RATE);
 
@@ -724,26 +773,28 @@ class OrdersService {
             description: `Tích điểm từ đơn hàng ${order.number} (Người dùng xác nhận)`,
           });
           earnedPointsTotal = newPointsAwarded;
-          aggregate.setPointsEarned(earnedPointsTotal);
+          order.pointsEarned = earnedPointsTotal;
           await this.repo.saveOrder(order);
         }
       } else if (orderTotal > 0) {
         // Đánh dấu đã xử lý dù không đủ điểm
         earnedPointsTotal = -1;
-        aggregate.setPointsEarned(-1);
+        order.pointsEarned = -1;
         await this.repo.saveOrder(order);
       }
     }
 
-    await this.eventBus.publish(
-      OrderDeliveredEvent({
+    await this.eventBus.publish({
+      type: 'order.delivered',
+      payload: {
         orderId: order.id,
         orderNumber: order.number,
         userId: order.userId,
         total: order.total,
         subtotal: order.subtotal,
-      }),
-    );
+      },
+      occurredAt: new Date().toISOString(),
+    });
 
     return {
       message: 'orders.deliveryConfirmed',
@@ -766,7 +817,7 @@ class OrdersService {
       throw new AppError('orders.orderNotFoundWithInfo', 404);
     }
 
-    const steps = buildTrackingSteps(order.status);
+    const steps = _buildTrackingSteps(order.status);
     return {
       orderNumber: order.number,
       currentStatus: order.status,

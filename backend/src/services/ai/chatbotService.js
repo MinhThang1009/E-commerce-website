@@ -10,7 +10,7 @@ const {
 } = require('../../models');
 const vectorStoreService = require('./vectorStore');
 const { detectLanguage } = require('./languageDetector');
-const { expandAbbreviations, classifyIntent } = require('../../modules/ai/domain/policies/AIPolicy');
+const { expandAbbreviations, classifyIntent } = require('../../modules/ai/services/aiPolicy');
 const logger = require('../../utils/logger');
 const { getRedisClient } = require('../../config/redis');
 const promptBuilder = require('./promptBuilder');
@@ -208,7 +208,10 @@ class ChatbotService {
                 { role: 'user', content: message },
                 { role: 'assistant', content: cachedResult.response || '' },
               ].slice(-(MAX_HISTORY_TURNS * 2));
-              this.conversationHistory.set(sessionId, { messages: updated, lastAccess: Date.now() });
+              this.conversationHistory.set(sessionId, {
+                messages: updated,
+                lastAccess: Date.now(),
+              });
               this._evictStaleSessions();
             }
             await this._persistMessages(
@@ -445,23 +448,32 @@ QUY TẮC BẮT BUỘC:
           continue;
         }
 
-        if (process.env.NODE_ENV !== 'production') logger.debug(`Đã nhận phản hồi từ ${provider.model}`);
+        if (process.env.NODE_ENV !== 'production')
+          logger.debug(`Đã nhận phản hồi từ ${provider.model}`);
         return this.parseAIResponse(aiText, products, userMessage);
       } catch (error) {
         const status = error.response?.status;
-        if (status === 429 || status === 402 || status === 500 || status === 503 || !error.response) {
+        if (
+          status === 429 ||
+          status === 402 ||
+          status === 500 ||
+          status === 503 ||
+          !error.response
+        ) {
           logger.warn(
             `[Rotation] getAIResponse provider ${attempt + 1}/${this.providers.length} (${provider.model}) lỗi ${status || error.code}, thử tiếp...`,
           );
           continue;
         }
-        logger.error(`Chi tiết lỗi LLM API (${provider.model}):`, error.response?.data || error.message);
+        logger.error(
+          `Chi tiết lỗi LLM API (${provider.model}):`,
+          error.response?.data || error.message,
+        );
         break;
       }
     }
     return this.simpleKeywordMatch(userMessage, products);
   }
-
 
   _evictStaleSessions() {
     if (this.conversationHistory.size === 0) return;
@@ -481,7 +493,6 @@ QUY TẮC BẮT BUỘC:
       }
     }
   }
-
 }
 
 module.exports = new ChatbotService();

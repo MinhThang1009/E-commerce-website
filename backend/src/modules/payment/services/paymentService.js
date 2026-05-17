@@ -1,18 +1,39 @@
 const moment = require('moment');
 const { AppError } = require('../../../shared/errors');
-const PaymentPolicy = require('../domain/policies/PaymentPolicy');
-const PaymentSucceededEvent = require('../domain/events/PaymentSucceededEvent');
-const PaymentFailedEvent = require('../domain/events/PaymentFailedEvent');
+
+// --- Inline từ PaymentPolicy (đã xóa domain layer Phase 1) ---
+const _SUPPORTED_REFUND_PROVIDERS = ['vnpay'];
+function _canProcessPayment(order, transactionId) {
+  if (!order) return false;
+  if (transactionId && order.paymentTransactionId === transactionId) return false;
+  return order.paymentStatus !== 'paid';
+}
+function _canRefund(order) {
+  if (!order) return { allowed: false, reason: 'Không tìm thấy đơn hàng' };
+  if (order.paymentStatus === 'refunded')
+    return { allowed: false, reason: 'Đơn hàng đã được hoàn tiền' };
+  if (order.paymentStatus !== 'paid')
+    return { allowed: false, reason: 'Chỉ có thể hoàn tiền đơn hàng đã thanh toán' };
+  if (!order.paymentTransactionId)
+    return { allowed: false, reason: 'Không tìm thấy giao dịch thanh toán cho đơn hàng này' };
+  if (!_SUPPORTED_REFUND_PROVIDERS.includes(order.paymentProvider)) {
+    return { allowed: false, reason: `Hoàn tiền chưa được hỗ trợ cho ${order.paymentProvider}` };
+  }
+  return { allowed: true };
+}
 
 // Payment Service — orchestrate MoMo/VNPay gateway + Order updates.
-// Mọi gateway access qua interface (IPaymentGateway), repository wrap Order/User/Cart.
-//
-// Idempotency: PaymentPolicy.canProcessPayment check transactionId + paymentStatus
+// Idempotency: _canProcessPayment check transactionId + paymentStatus
 // để webhook duplicate không double-process.
 class PaymentService {
   constructor({
-    paymentRepository, momoGateway, vnpayGateway,
-    emailGateway, eventBus, logger, frontendUrl,
+    paymentRepository,
+    momoGateway,
+    vnpayGateway,
+    emailGateway,
+    eventBus,
+    logger,
+    frontendUrl,
   }) {
     this.repo = paymentRepository;
     this.momoGateway = momoGateway;
@@ -32,7 +53,8 @@ class PaymentService {
       if (!order || !order.User) return;
 
       const items = (order.items || []).map((item) => ({
-        name: item.name, quantity: item.quantity,
+        name: item.name,
+        quantity: item.quantity,
         price: parseFloat(item.unitPrice),
         subtotal: parseFloat(item.subtotal),
       }));
@@ -46,9 +68,12 @@ class PaymentService {
         items,
         shippingAddress: {
           name: `${order.shippingFirstName} ${order.shippingLastName}`,
-          address1: order.shippingAddress1, address2: order.shippingAddress2,
-          city: order.shippingCity, state: order.shippingState,
-          zip: order.shippingZip, country: order.shippingCountry,
+          address1: order.shippingAddress1,
+          address2: order.shippingAddress2,
+          city: order.shippingCity,
+          state: order.shippingState,
+          zip: order.shippingZip,
+          country: order.shippingCountry,
         },
       });
     } catch (err) {
@@ -107,7 +132,11 @@ class PaymentService {
   }
 
   async handleMomoIPN({ body }) {
-    this.logger.info('Đã nhận MoMo IPN:', { resultCode: body.resultCode, orderId: body.orderId, transId: body.transId });
+    this.logger.info('Đã nhận MoMo IPN:', {
+      resultCode: body.resultCode,
+      orderId: body.orderId,
+      transId: body.transId,
+    });
 
     const isValid = this.momoGateway.verifySignature(body);
     if (!isValid) return { valid: false };
@@ -122,11 +151,15 @@ class PaymentService {
         if (!order) return false;
 
         if (body.amount && Math.abs(order.total - body.amount) > 0.01) {
-          this.logger.warn('MoMo IPN amount mismatch', { expected: order.total, received: body.amount, orderId });
+          this.logger.warn('MoMo IPN amount mismatch', {
+            expected: order.total,
+            received: body.amount,
+            orderId,
+          });
           return false;
         }
 
-        if (!PaymentPolicy.canProcessPayment(order, transId)) return false;
+        if (!_canProcessPayment(order, transId)) return false;
 
         order.status = 'processing';
         order.paymentStatus = 'paid';
@@ -140,11 +173,17 @@ class PaymentService {
       if (processed) {
         await this._clearUserCart(processed.userId);
         await this._sendOrderConfirmationEmailSafe(processed.id);
-        await this.eventBus.publish(PaymentSucceededEvent({
-          orderId: processed.id, orderNumber: processed.number,
-          transactionId: transId, provider: 'momo',
-          amount: processed.total,
-        }));
+        await this.eventBus.publish({
+          type: 'payment.succeeded',
+          payload: {
+            orderId: processed.id,
+            orderNumber: processed.number,
+            transactionId: transId,
+            provider: 'momo',
+            amount: processed.total,
+          },
+          occurredAt: new Date().toISOString(),
+        });
       }
     }
     return { valid: true };
@@ -178,7 +217,7 @@ class PaymentService {
       const transNo = vnp_Params['vnp_TransactionNo'];
       const processed = await this.repo.runInTransaction(async (tx) => {
         const order = await this.repo.findOrderByNumber(orderNumber);
-        if (!order || !PaymentPolicy.canProcessPayment(order, transNo)) return null;
+        if (!order || !_canProcessPayment(order, transNo)) return null;
 
         order.status = 'processing';
         order.paymentStatus = 'paid';
@@ -255,7 +294,7 @@ class PaymentService {
     if (!orderId) throw new AppError('payment.orderIdRequired', 400);
 
     const order = await this.repo.findOrderByPk(orderId);
-    const policyResult = PaymentPolicy.canRefund(order);
+    const policyResult = _canRefund(order);
     if (!policyResult.allowed) {
       throw new AppError(policyResult.reason, order ? 400 : 404);
     }

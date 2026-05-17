@@ -1,6 +1,6 @@
-const { validateMessage, expandAbbreviations, isOffTopic, classifyIntent } = require('../policies/AIPolicy');
-const { AppError } = require('../../../../shared/errors');
-const logger = require('../../../../utils/logger');
+const { validateMessage, expandAbbreviations, isOffTopic, classifyIntent } = require('./aiPolicy');
+const { AppError } = require('../../../shared/errors');
+const logger = require('../../../utils/logger');
 
 // RAGPipeline — orchestrate Retrieve-Augment-Generate cho AI chatbot.
 //

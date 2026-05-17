@@ -1,11 +1,20 @@
 const { AppError } = require('../../../shared/errors');
-const InventoryAggregate = require('../domain/aggregates/InventoryAggregate');
-const { validateRestockQuantity } = require('../domain/policies/InventoryPolicy');
-const StockRestockedEvent = require('../domain/events/StockRestockedEvent');
 
-// Inventory Service — admin restock + view inventory log. Mọi state mutation
-// qua InventoryAggregate (deductStock/restoreStock/restock) enforce invariant
-// stockQuantity >= 0.
+// --- Inline từ InventoryPolicy + InventoryAggregate (đã xóa domain layer Phase 1) ---
+function _validateRestockQty(quantity) {
+  const qty = parseInt(quantity, 10);
+  if (!qty || qty <= 0) return { valid: false, reason: 'Số lượng nhập phải là số nguyên dương' };
+  return { valid: true, quantity: qty };
+}
+// Trả về { previous, current, change } sau khi cộng stock vào stockable
+function _addStock(stockable, qty) {
+  const amount = Number(qty);
+  const previous = stockable.stockQuantity || 0;
+  stockable.stockQuantity = previous + amount;
+  return { previous, current: stockable.stockQuantity, change: amount };
+}
+
+// Inventory Service — admin restock + view inventory log.
 class InventoryService {
   constructor({ inventoryRepository, sequelize, eventBus, logger }) {
     this.repo = inventoryRepository;
@@ -16,7 +25,7 @@ class InventoryService {
 
   // POST /api/inventory/products/:productId/restock — admin nhập hàng.
   async restockProduct({ productId, variantId, quantity, note, adminId }) {
-    const validated = validateRestockQuantity(quantity);
+    const validated = _validateRestockQty(quantity);
     if (!validated.valid) throw new AppError(validated.reason, 400);
     const qty = validated.quantity;
 
@@ -35,8 +44,7 @@ class InventoryService {
       kind = 'product';
     }
 
-    const aggregate = new InventoryAggregate(stockable, kind);
-    const { previous, current, change } = aggregate.restock(qty);
+    const { previous, current, change } = _addStock(stockable, qty);
 
     // Wrap stock updates + log trong transaction để đảm bảo atomicity
     const log = await this.sequelize.transaction(async (tx) => {
@@ -65,14 +73,18 @@ class InventoryService {
       });
     });
 
-    await this.eventBus.publish(StockRestockedEvent({
-      productId: parseInt(productId, 10),
-      variantId: variantId ? parseInt(variantId, 10) : null,
-      quantity: qty,
-      previousStock: previous,
-      newStock: current,
-      adminId,
-    }));
+    await this.eventBus.publish({
+      type: 'inventory.restocked',
+      payload: {
+        productId: parseInt(productId, 10),
+        variantId: variantId ? parseInt(variantId, 10) : null,
+        quantity: qty,
+        previousStock: previous,
+        newStock: current,
+        adminId,
+      },
+      occurredAt: new Date().toISOString(),
+    });
 
     return {
       productId: parseInt(productId, 10),

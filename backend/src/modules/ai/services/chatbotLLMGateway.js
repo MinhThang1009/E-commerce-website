@@ -1,9 +1,6 @@
-const ILLMGateway = require('../domain/ports/ILLMGateway');
-
-// Adapter: implement ILLMGateway bằng cách delegate sang chatbotService.
-class ChatbotLLMGateway extends ILLMGateway {
+// LLM gateway — delegate sang chatbotService (Phase 1: đã xóa ILLMGateway interface).
+class ChatbotLLMGateway {
   constructor({ chatbotService }) {
-    super();
     this.chatbotService = chatbotService;
   }
 

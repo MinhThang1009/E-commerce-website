@@ -1,19 +1,23 @@
 const PaymentController = require('./controllers/paymentController');
 const PaymentService = require('./services/paymentService');
 const SequelizePaymentRepository = require('./repositories/SequelizePaymentRepository');
-const MomoGateway = require('./infrastructure/MomoGateway');
-const VnPayGateway = require('./infrastructure/VnPayGateway');
 const buildRoutes = require('./routes');
 
-// Payment module — DDD-lite. 2 gateway adapter (MoMo/VNPay) wrap
-// services/payment/*; service phụ thuộc IPaymentGateway interface.
-//
-// SePay webhook (controllers/payment.js handleSePayWebhook) giữ legacy đến
-// Phase 5 cleanup — logic phức tạp, ít touch.
+// Payment module — Vertical Slice + Layered (Phase 1: đã xóa infrastructure/ layer).
+// SePay webhook (controllers/payment.js handleSePayWebhook) giữ legacy đến Phase 2.
 module.exports = ({
-  Order, OrderItem, User, Cart, CartItem, DiscountCode,
-  sequelize, eventBus, logger,
-  momoService, vnpayService, emailService,
+  Order,
+  OrderItem,
+  User,
+  Cart,
+  CartItem,
+  DiscountCode,
+  sequelize,
+  eventBus,
+  logger,
+  momoService,
+  vnpayService,
+  emailService,
   frontendUrl,
 }) => {
   if (!Order) throw new Error('payment module: Order model bắt buộc');
@@ -21,20 +25,37 @@ module.exports = ({
   if (!vnpayService) throw new Error('payment module: vnpayService bắt buộc');
 
   const paymentRepository = new SequelizePaymentRepository({
-    Order, OrderItem, User, Cart, CartItem, DiscountCode, sequelize,
+    Order,
+    OrderItem,
+    User,
+    Cart,
+    CartItem,
+    DiscountCode,
+    sequelize,
   });
-
-  const momoGateway = new MomoGateway({ momoService });
-  const vnpayGateway = new VnPayGateway({ vnpayService });
 
   const emailGateway = {
     sendOrderConfirmationEmail: (...args) => emailService.sendOrderConfirmationEmail(...args),
   };
 
+  // momoGateway/vnpayGateway đã inline — pass service trực tiếp
+  const momoGateway = {
+    createPaymentUrl: (input) => momoService.createPaymentUrl(input),
+    verifySignature: (payload) => momoService.verifySignature(payload),
+  };
+  const vnpayGateway = {
+    createPaymentUrl: (input) => vnpayService.createPaymentUrl(input),
+    verifyReturnUrl: (params) => vnpayService.verifyReturnUrl(params),
+    refund: (input) => vnpayService.refund(input),
+  };
+
   const paymentService = new PaymentService({
     paymentRepository,
-    momoGateway, vnpayGateway,
-    emailGateway, eventBus, logger,
+    momoGateway,
+    vnpayGateway,
+    emailGateway,
+    eventBus,
+    logger,
     frontendUrl: frontendUrl || process.env.FRONTEND_URL,
   });
 

@@ -57,7 +57,12 @@ describe('InventoryService — uncovered branches', () => {
   describe('restockProduct — line 50: total || 0 khi sumVariantStock trả 0', () => {
     it('product.stockQuantity = 0 khi sumVariantStockByProductId trả về 0 (false path)', async () => {
       const product = { id: 1, stockQuantity: 10, save: jest.fn().mockResolvedValue() };
-      const variant = { id: 5, stockQuantity: 5, isAvailable: false, save: jest.fn().mockResolvedValue() };
+      const variant = {
+        id: 5,
+        stockQuantity: 5,
+        isAvailable: false,
+        save: jest.fn().mockResolvedValue(),
+      };
 
       repo.findProductById.mockResolvedValue(product);
       repo.findVariantByIdAndProductId.mockResolvedValue(variant);
@@ -78,7 +83,12 @@ describe('InventoryService — uncovered branches', () => {
 
     it('product.stockQuantity = total khi sumVariantStockByProductId trả số dương (true path)', async () => {
       const product = { id: 1, stockQuantity: 0, save: jest.fn().mockResolvedValue() };
-      const variant = { id: 5, stockQuantity: 0, isAvailable: false, save: jest.fn().mockResolvedValue() };
+      const variant = {
+        id: 5,
+        stockQuantity: 0,
+        isAvailable: false,
+        save: jest.fn().mockResolvedValue(),
+      };
 
       repo.findProductById.mockResolvedValue(product);
       repo.findVariantByIdAndProductId.mockResolvedValue(variant);
@@ -98,7 +108,12 @@ describe('InventoryService — uncovered branches', () => {
 
     it('product.stockQuantity = 0 khi sumVariantStockByProductId trả null (falsy)', async () => {
       const product = { id: 1, stockQuantity: 5, save: jest.fn().mockResolvedValue() };
-      const variant = { id: 5, stockQuantity: 0, isAvailable: false, save: jest.fn().mockResolvedValue() };
+      const variant = {
+        id: 5,
+        stockQuantity: 0,
+        isAvailable: false,
+        save: jest.fn().mockResolvedValue(),
+      };
 
       repo.findProductById.mockResolvedValue(product);
       repo.findVariantByIdAndProductId.mockResolvedValue(variant);
@@ -125,7 +140,7 @@ describe('InventoryService — uncovered branches', () => {
 
       // parseInt('abc') = NaN → NaN || 20 = 20
       expect(repo.findInventoryLogs).toHaveBeenCalledWith(
-        expect.objectContaining({ limit: 20, offset: 0 })
+        expect.objectContaining({ limit: 20, offset: 0 }),
       );
     });
 
@@ -134,9 +149,7 @@ describe('InventoryService — uncovered branches', () => {
 
       await service.getInventoryLogs({ page: 1, limit: 50 });
 
-      expect(repo.findInventoryLogs).toHaveBeenCalledWith(
-        expect.objectContaining({ limit: 50 })
-      );
+      expect(repo.findInventoryLogs).toHaveBeenCalledWith(expect.objectContaining({ limit: 50 }));
     });
 
     it('giới hạn tối đa limit = 100 dù truyền vào lớn hơn', async () => {
@@ -144,150 +157,7 @@ describe('InventoryService — uncovered branches', () => {
 
       await service.getInventoryLogs({ page: 1, limit: 9999 });
 
-      expect(repo.findInventoryLogs).toHaveBeenCalledWith(
-        expect.objectContaining({ limit: 100 })
-      );
-    });
-  });
-});
-
-// ─────────────────────────────────────────────────────────────────────────────
-// OrderAggregate.js
-// Line 52: if (this.order.paymentMethod === 'cod') trong markAsDelivered — false path
-// Line 81: if (this.order.paymentMethod === 'cod') trong confirmReceived — false path
-// ─────────────────────────────────────────────────────────────────────────────
-
-describe('OrderAggregate — uncovered branches', () => {
-  const OrderAggregate = require('../modules/orders/domain/aggregates/OrderAggregate');
-
-  describe('markAsDelivered — line 52: paymentMethod !== cod (false path)', () => {
-    it('KHÔNG đổi paymentStatus thành paid khi paymentMethod là vnpay', () => {
-      const order = {
-        id: 1,
-        status: 'shipped',
-        paymentMethod: 'vnpay',
-        paymentStatus: 'paid', // đã paid từ trước
-      };
-      const agg = new OrderAggregate(order);
-
-      agg.markAsDelivered();
-
-      expect(order.status).toBe('delivered');
-      // paymentMethod !== 'cod' → paymentStatus KHÔNG bị set lại
-      // Giá trị paymentStatus vẫn là 'paid' (không đổi)
-      expect(order.paymentStatus).toBe('paid');
-    });
-
-    it('KHÔNG đổi paymentStatus khi paymentMethod là momo', () => {
-      const order = {
-        id: 2,
-        status: 'shipped',
-        paymentMethod: 'momo',
-        paymentStatus: 'pending',
-      };
-      const agg = new OrderAggregate(order);
-
-      agg.markAsDelivered();
-
-      expect(order.status).toBe('delivered');
-      // false path: momo → paymentStatus không bị set thành paid
-      expect(order.paymentStatus).toBe('pending');
-    });
-
-    it('đổi paymentStatus thành paid khi paymentMethod là cod (true path)', () => {
-      const order = {
-        id: 3,
-        status: 'shipped',
-        paymentMethod: 'cod',
-        paymentStatus: 'pending',
-      };
-      const agg = new OrderAggregate(order);
-
-      agg.markAsDelivered();
-
-      expect(order.status).toBe('delivered');
-      expect(order.paymentStatus).toBe('paid'); // true path
-    });
-
-    it('idempotent: không thay đổi nếu status đã là delivered', () => {
-      const order = {
-        id: 4,
-        status: 'delivered',
-        paymentMethod: 'vnpay',
-        paymentStatus: 'paid',
-      };
-      const agg = new OrderAggregate(order);
-
-      const result = agg.markAsDelivered();
-
-      expect(result).toBe(order);
-      expect(order.status).toBe('delivered'); // không thay đổi
-    });
-  });
-
-  describe('confirmReceived — line 81: paymentMethod !== cod (false path)', () => {
-    it('KHÔNG đổi paymentStatus khi paymentMethod là vnpay', () => {
-      const order = {
-        id: 10,
-        status: 'shipped',
-        paymentMethod: 'vnpay',
-        paymentStatus: 'paid',
-        pointsEarned: 0,
-      };
-      const agg = new OrderAggregate(order);
-
-      const { order: resultOrder, alreadyProcessed } = agg.confirmReceived();
-
-      expect(resultOrder.status).toBe('delivered');
-      expect(alreadyProcessed).toBe(false);
-      // false path: vnpay → paymentStatus không bị set 'paid' (đã paid trước đó)
-      expect(order.paymentStatus).toBe('paid');
-    });
-
-    it('KHÔNG set paymentStatus khi paymentMethod là momo', () => {
-      const order = {
-        id: 11,
-        status: 'processing',
-        paymentMethod: 'momo',
-        paymentStatus: 'paid',
-        pointsEarned: 0,
-      };
-      const agg = new OrderAggregate(order);
-
-      agg.confirmReceived();
-
-      // false path: momo → paymentStatus không bị set lại
-      expect(order.paymentStatus).toBe('paid');
-    });
-
-    it('đổi paymentStatus thành paid khi paymentMethod là cod (true path)', () => {
-      const order = {
-        id: 12,
-        status: 'shipped',
-        paymentMethod: 'cod',
-        paymentStatus: 'pending',
-        pointsEarned: 0,
-      };
-      const agg = new OrderAggregate(order);
-
-      agg.confirmReceived();
-
-      expect(order.paymentStatus).toBe('paid'); // true path
-    });
-
-    it('alreadyProcessed=true khi status=delivered và pointsEarned !== 0', () => {
-      const order = {
-        id: 13,
-        status: 'delivered',
-        paymentMethod: 'vnpay',
-        paymentStatus: 'paid',
-        pointsEarned: 100,
-      };
-      const agg = new OrderAggregate(order);
-
-      const { alreadyProcessed } = agg.confirmReceived();
-
-      expect(alreadyProcessed).toBe(true);
+      expect(repo.findInventoryLogs).toHaveBeenCalledWith(expect.objectContaining({ limit: 100 }));
     });
   });
 });
@@ -329,9 +199,11 @@ describe('adminAudit.js — auditMiddleware uncovered branches', () => {
       const originalLogUserAction = AdminAuditService.logUserAction;
       let capturedIp;
 
-      AdminAuditService.logUserAction = jest.fn().mockImplementation(
-        (adminUser, action, targetId, changes, ip) => { capturedIp = ip; }
-      );
+      AdminAuditService.logUserAction = jest
+        .fn()
+        .mockImplementation((adminUser, action, targetId, changes, ip) => {
+          capturedIp = ip;
+        });
 
       const req = {
         ip: undefined, // falsy
@@ -356,9 +228,11 @@ describe('adminAudit.js — auditMiddleware uncovered branches', () => {
       const originalLogUserAction = AdminAuditService.logUserAction;
       let capturedIp;
 
-      AdminAuditService.logUserAction = jest.fn().mockImplementation(
-        (adminUser, action, targetId, changes, ip) => { capturedIp = ip; }
-      );
+      AdminAuditService.logUserAction = jest
+        .fn()
+        .mockImplementation((adminUser, action, targetId, changes, ip) => {
+          capturedIp = ip;
+        });
 
       const req = {
         ip: '10.0.0.1',
@@ -394,17 +268,15 @@ describe('adminAudit.js — auditMiddleware uncovered branches', () => {
       // KHÔNG có ip được inject (design decision — dashboard access không cần ip)
       AdminAuditService.logDashboardAccess({ id: 1 }, '/dashboard', { range: '7d' });
 
-      expect(originalLogDashboardAccess).toHaveBeenCalledWith(
-        { id: 1 },
-        '/dashboard',
-        { range: '7d' }
-      );
+      expect(originalLogDashboardAccess).toHaveBeenCalledWith({ id: 1 }, '/dashboard', {
+        range: '7d',
+      });
       // Không được called với ip là argument thứ 4
       expect(originalLogDashboardAccess).not.toHaveBeenCalledWith(
         expect.anything(),
         expect.anything(),
         expect.anything(),
-        expect.anything()
+        expect.anything(),
       );
     });
 
@@ -429,7 +301,10 @@ describe('adminAudit.js — auditMiddleware uncovered branches', () => {
 // ─────────────────────────────────────────────────────────────────────────────
 
 jest.mock('../utils/logger', () => ({
-  info: jest.fn(), error: jest.fn(), warn: jest.fn(), debug: jest.fn(),
+  info: jest.fn(),
+  error: jest.fn(),
+  warn: jest.fn(),
+  debug: jest.fn(),
 }));
 
 jest.mock('../services/ai/embedding', () => ({
@@ -661,7 +536,7 @@ describe('SequelizeAIRepository.searchProducts — line 15 default parameter bra
       expect.objectContaining({
         where: { status: 'active' },
         limit: 20,
-      })
+      }),
     );
   });
 
@@ -671,7 +546,7 @@ describe('SequelizeAIRepository.searchProducts — line 15 default parameter bra
     expect(mockProduct.findAll).toHaveBeenCalledWith(
       expect.objectContaining({
         where: { status: 'active' },
-      })
+      }),
     );
   });
 
@@ -680,9 +555,7 @@ describe('SequelizeAIRepository.searchProducts — line 15 default parameter bra
 
     const result = await repo.searchProducts({ keyword: 'iphone', limit: 5 });
 
-    expect(mockProduct.findAll).toHaveBeenCalledWith(
-      expect.objectContaining({ limit: 5 })
-    );
+    expect(mockProduct.findAll).toHaveBeenCalledWith(expect.objectContaining({ limit: 5 }));
   });
 });
 
@@ -732,7 +605,7 @@ describe('SequelizeContentRepository — uncovered branches', () => {
           where: {},
           limit: undefined,
           offset: undefined,
-        })
+        }),
       );
     });
 
@@ -742,7 +615,7 @@ describe('SequelizeContentRepository — uncovered branches', () => {
       expect(mockNews.findAndCountAll).toHaveBeenCalledWith(
         expect.objectContaining({
           where: { title: { [Op.like]: '%iPhone%' } },
-        })
+        }),
       );
     });
 
@@ -752,7 +625,7 @@ describe('SequelizeContentRepository — uncovered branches', () => {
       expect(mockNews.findAndCountAll).toHaveBeenCalledWith(
         expect.objectContaining({
           where: { category: 'tech' },
-        })
+        }),
       );
     });
 
@@ -762,7 +635,7 @@ describe('SequelizeContentRepository — uncovered branches', () => {
       expect(mockNews.findAndCountAll).toHaveBeenCalledWith(
         expect.objectContaining({
           where: { isPublished: false },
-        })
+        }),
       );
     });
   });
@@ -771,17 +644,13 @@ describe('SequelizeContentRepository — uncovered branches', () => {
     it('dùng limit mặc định 3 khi không truyền limit', async () => {
       await repo.findLatestNews([], ['id', 'title']);
 
-      expect(mockNews.findAll).toHaveBeenCalledWith(
-        expect.objectContaining({ limit: 3 })
-      );
+      expect(mockNews.findAll).toHaveBeenCalledWith(expect.objectContaining({ limit: 3 }));
     });
 
     it('dùng limit truyền vào khi có', async () => {
       await repo.findLatestNews([], ['id', 'title'], 10);
 
-      expect(mockNews.findAll).toHaveBeenCalledWith(
-        expect.objectContaining({ limit: 10 })
-      );
+      expect(mockNews.findAll).toHaveBeenCalledWith(expect.objectContaining({ limit: 10 }));
     });
 
     it('loại trừ excludeIds trong query', async () => {
@@ -792,7 +661,7 @@ describe('SequelizeContentRepository — uncovered branches', () => {
           where: expect.objectContaining({
             id: { [Op.notIn]: [5, 6] },
           }),
-        })
+        }),
       );
     });
   });

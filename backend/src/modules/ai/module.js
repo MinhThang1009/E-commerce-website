@@ -6,7 +6,7 @@
  */
 const AIController = require('./controllers/aiController');
 const AIService = require('./services/aiService');
-const SequelizeAIRepository = require('./repositories/SequelizeAIRepository');
+const SequelizeAIRepository = require('./repositories/SequelizeAiRepository');
 const RAGPipeline = require('./services/ragPipeline');
 const ChatbotLLMGateway = require('./services/chatbotLLMGateway');
 let vectorStoreService;

@@ -1,7 +1,7 @@
-// Unit tests cho SequelizeAIRepository (src/modules/ai/repositories/SequelizeAIRepository.js)
+// Unit tests cho SequelizeAiRepository (src/modules/ai/repositories/SequelizeAiRepository.js)
 // Mock toàn bộ Sequelize models — không chạm DB
 const { Op, literal } = require('sequelize');
-const SequelizeAIRepository = require('./SequelizeAIRepository');
+const SequelizeAiRepository = require('./SequelizeAiRepository');
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -22,14 +22,14 @@ function makeRepo(overrides = {}) {
     sequelize: { fn: jest.fn(), col: jest.fn(), literal: jest.fn((s) => s) },
     ...overrides,
   };
-  return { repo: new SequelizeAIRepository(deps), deps };
+  return { repo: new SequelizeAiRepository(deps), deps };
 }
 
 // ════════════════════════════════════════════════════════════════════════════
 // searchProducts
 // ════════════════════════════════════════════════════════════════════════════
 
-describe('SequelizeAIRepository.searchProducts', () => {
+describe('SequelizeAiRepository.searchProducts', () => {
   test('gọi Product.findAll với where status=active (không có filters)', async () => {
     const { repo, deps } = makeRepo();
     await repo.searchProducts({});
@@ -37,7 +37,7 @@ describe('SequelizeAIRepository.searchProducts', () => {
     expect(deps.Product.findAll).toHaveBeenCalledWith(
       expect.objectContaining({
         where: expect.objectContaining({ status: 'active' }),
-      })
+      }),
     );
   });
 
@@ -45,18 +45,14 @@ describe('SequelizeAIRepository.searchProducts', () => {
     const { repo, deps } = makeRepo();
     await repo.searchProducts({ limit: 5 });
 
-    expect(deps.Product.findAll).toHaveBeenCalledWith(
-      expect.objectContaining({ limit: 5 })
-    );
+    expect(deps.Product.findAll).toHaveBeenCalledWith(expect.objectContaining({ limit: 5 }));
   });
 
   test('dùng default limit=20 khi limit không được truyền', async () => {
     const { repo, deps } = makeRepo();
     await repo.searchProducts({});
 
-    expect(deps.Product.findAll).toHaveBeenCalledWith(
-      expect.objectContaining({ limit: 20 })
-    );
+    expect(deps.Product.findAll).toHaveBeenCalledWith(expect.objectContaining({ limit: 20 }));
   });
 
   test('thêm Op.or condition khi có keyword', async () => {
@@ -75,9 +71,7 @@ describe('SequelizeAIRepository.searchProducts', () => {
     const callArgs = deps.Product.findAll.mock.calls[0][0];
     const orConditions = callArgs.where[Op.or];
     // Phải bao gồm term mở rộng như 'sneaker'
-    const flatTerms = orConditions
-      .filter((c) => c.name)
-      .map((c) => c.name[Op.like]);
+    const flatTerms = orConditions.filter((c) => c.name).map((c) => c.name[Op.like]);
     expect(flatTerms.some((t) => t.includes('sneaker'))).toBe(true);
   });
 
@@ -130,7 +124,7 @@ describe('SequelizeAIRepository.searchProducts', () => {
 // findActiveDeals
 // ════════════════════════════════════════════════════════════════════════════
 
-describe('SequelizeAIRepository.findActiveDeals', () => {
+describe('SequelizeAiRepository.findActiveDeals', () => {
   test('gọi Product.findAll với status=active và compareAtPrice > 0', async () => {
     const { repo, deps } = makeRepo();
     await repo.findActiveDeals(5);
@@ -142,7 +136,7 @@ describe('SequelizeAIRepository.findActiveDeals', () => {
           compareAtPrice: expect.objectContaining({ [Op.gt]: 0 }),
         }),
         limit: 5,
-      })
+      }),
     );
   });
 
@@ -150,9 +144,7 @@ describe('SequelizeAIRepository.findActiveDeals', () => {
     const { repo, deps } = makeRepo();
     await repo.findActiveDeals();
 
-    expect(deps.Product.findAll).toHaveBeenCalledWith(
-      expect.objectContaining({ limit: 10 })
-    );
+    expect(deps.Product.findAll).toHaveBeenCalledWith(expect.objectContaining({ limit: 10 }));
   });
 });
 
@@ -160,7 +152,7 @@ describe('SequelizeAIRepository.findActiveDeals', () => {
 // findFeaturedProducts
 // ════════════════════════════════════════════════════════════════════════════
 
-describe('SequelizeAIRepository.findFeaturedProducts', () => {
+describe('SequelizeAiRepository.findFeaturedProducts', () => {
   test('gọi Product.findAll với status=active và isFeatured=true', async () => {
     const { repo, deps } = makeRepo();
     await repo.findFeaturedProducts(8);
@@ -169,7 +161,7 @@ describe('SequelizeAIRepository.findFeaturedProducts', () => {
       expect.objectContaining({
         where: { status: 'active', isFeatured: true },
         limit: 8,
-      })
+      }),
     );
   });
 
@@ -177,9 +169,7 @@ describe('SequelizeAIRepository.findFeaturedProducts', () => {
     const { repo, deps } = makeRepo();
     await repo.findFeaturedProducts();
 
-    expect(deps.Product.findAll).toHaveBeenCalledWith(
-      expect.objectContaining({ limit: 10 })
-    );
+    expect(deps.Product.findAll).toHaveBeenCalledWith(expect.objectContaining({ limit: 10 }));
   });
 });
 
@@ -187,7 +177,7 @@ describe('SequelizeAIRepository.findFeaturedProducts', () => {
 // findProductForCart
 // ════════════════════════════════════════════════════════════════════════════
 
-describe('SequelizeAIRepository.findProductForCart', () => {
+describe('SequelizeAiRepository.findProductForCart', () => {
   test('gọi Product.findByPk với productId và include variants', async () => {
     const mockProd = { id: 3, name: 'Adidas NMD' };
     const { repo, deps } = makeRepo({ Product: makeModel({ findByPk: mockProd }) });
@@ -200,7 +190,7 @@ describe('SequelizeAIRepository.findProductForCart', () => {
         include: expect.arrayContaining([
           expect.objectContaining({ model: deps.ProductVariant, as: 'variants' }),
         ]),
-      })
+      }),
     );
     expect(result).toBe(mockProd);
   });

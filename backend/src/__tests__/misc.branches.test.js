@@ -7,7 +7,7 @@
  * - adminAudit.js lines 206, 232
  * - vectorStore.js line 148
  * - wishlistService.js line 17
- * - SequelizeAIRepository.js line 15
+ * - SequelizeAiRepository.js line 15
  * - SequelizeContentRepository.js lines 44, 101
  */
 
@@ -498,13 +498,13 @@ describe('WishlistService.getWishlist — line 17 branches', () => {
 });
 
 // ─────────────────────────────────────────────────────────────────────────────
-// SequelizeAIRepository.js — line 15
+// SequelizeAiRepository.js — line 15
 // searchProducts({ ... } = {}) — default parameter khi gọi không có argument
 // ─────────────────────────────────────────────────────────────────────────────
 
-describe('SequelizeAIRepository.searchProducts — line 15 default parameter branch', () => {
+describe('SequelizeAiRepository.searchProducts — line 15 default parameter branch', () => {
   const { Op, literal } = require('sequelize');
-  const SequelizeAIRepository = require('../modules/ai/repositories/SequelizeAIRepository');
+  const SequelizeAiRepository = require('../modules/ai/repositories/SequelizeAiRepository');
 
   let repo;
   let mockProduct;
@@ -517,7 +517,7 @@ describe('SequelizeAIRepository.searchProducts — line 15 default parameter bra
     const mockCategory = {};
     const mockSequelize = {};
 
-    repo = new SequelizeAIRepository({
+    repo = new SequelizeAiRepository({
       Product: mockProduct,
       ProductVariant: mockProductVariant,
       Category: mockCategory,

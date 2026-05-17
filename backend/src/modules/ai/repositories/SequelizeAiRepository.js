@@ -5,7 +5,7 @@
  * @description Data access layer cho ai
  */
 const { Op, literal } = require('sequelize');
-const IAIRepository = require('./IAIRepository');
+const IAIRepository = require('./IAiRepository');
 
 // Sequelize impl của IAIRepository — wrap Product/Category access cho AI
 // product search + deals/trending. Repo build LIKE conditions internal.
@@ -45,7 +45,7 @@ class SequelizeAIRepository extends IAIRepository {
       terms.forEach((term) => {
         conditions.push(
           { name: { [Op.like]: `%${term}%` } },
-          { description: { [Op.like]: `%${term}%` } }
+          { description: { [Op.like]: `%${term}%` } },
         );
       });
       where[Op.or] = conditions;
@@ -55,7 +55,9 @@ class SequelizeAIRepository extends IAIRepository {
     if (maxPrice) where.basePrice = { ...where.basePrice, [Op.lte]: maxPrice };
 
     const categoryInclude = {
-      model: this.Category, as: 'categories', through: { attributes: [] },
+      model: this.Category,
+      as: 'categories',
+      through: { attributes: [] },
     };
     if (categoryName) {
       categoryInclude.where = { nameVi: { [Op.like]: `%${categoryName}%` } };
@@ -66,7 +68,12 @@ class SequelizeAIRepository extends IAIRepository {
       where,
       include: [
         categoryInclude,
-        { model: this.ProductVariant, as: 'variants', attributes: ['stockQuantity'], required: false },
+        {
+          model: this.ProductVariant,
+          as: 'variants',
+          attributes: ['stockQuantity'],
+          required: false,
+        },
       ],
       limit: limit || 20,
       order: [['createdAt', 'DESC']],
@@ -77,11 +84,14 @@ class SequelizeAIRepository extends IAIRepository {
     return this.Product.findAll({
       where: { status: 'active', compareAtPrice: { [Op.gt]: 0 } },
       include: [
-        { model: this.ProductVariant, as: 'variants', attributes: ['stockQuantity'], required: false },
+        {
+          model: this.ProductVariant,
+          as: 'variants',
+          attributes: ['stockQuantity'],
+          required: false,
+        },
       ],
-      order: [
-        [literal('((compare_at_price - base_price) / compare_at_price) DESC')],
-      ],
+      order: [[literal('((compare_at_price - base_price) / compare_at_price) DESC')]],
       limit,
     });
   }
@@ -90,9 +100,15 @@ class SequelizeAIRepository extends IAIRepository {
     return this.Product.findAll({
       where: { status: 'active', isFeatured: true },
       include: [
-        { model: this.ProductVariant, as: 'variants', attributes: ['stockQuantity'], required: false },
+        {
+          model: this.ProductVariant,
+          as: 'variants',
+          attributes: ['stockQuantity'],
+          required: false,
+        },
       ],
-      limit, order: [['createdAt', 'DESC']],
+      limit,
+      order: [['createdAt', 'DESC']],
     });
   }
 
@@ -111,7 +127,14 @@ class SequelizeAIRepository extends IAIRepository {
 
   async findProductForCart(productId) {
     return this.Product.findByPk(productId, {
-      include: [{ model: this.ProductVariant, as: 'variants', attributes: ['stockQuantity'], required: false }],
+      include: [
+        {
+          model: this.ProductVariant,
+          as: 'variants',
+          attributes: ['stockQuantity'],
+          required: false,
+        },
+      ],
     });
   }
 

@@ -3,7 +3,7 @@
  *
  * Targeted tests cho các dòng chưa được cover:
  *   - product.js             lines 11, 172, 213, 249
- *   - SequelizeAIRepository  line 103
+ *   - SequelizeAiRepository  line 103
  *   - cartService.js         lines 150, 191
  *   - OrderAggregate.js      line 20
  *   - uploadService.js       line 120
@@ -138,10 +138,10 @@ describe('product.js line 11 — catch branch khi require vectorStore thất b�
 });
 
 // ════════════════════════════════════════════════════════════════════════════════
-// SequelizeAIRepository.js line 103 — .catch(() => null) branch
+// SequelizeAiRepository.js line 103 — .catch(() => null) branch
 // ════════════════════════════════════════════════════════════════════════════════
 
-describe('SequelizeAIRepository — createAnalyticsEvent catch branch (line 103)', () => {
+describe('SequelizeAiRepository — createAnalyticsEvent catch branch (line 103)', () => {
   it('khi ChatMessage.create reject → catch trả về null, không throw (line 103)', async () => {
     // The module uses require('../../../models') internally.
     // We mock '../models' (from test root perspective) so it resolves correctly.
@@ -165,8 +165,8 @@ describe('SequelizeAIRepository — createAnalyticsEvent catch branch (line 103)
       }),
     }));
 
-    const SequelizeAIRepository = require('../modules/ai/repositories/SequelizeAIRepository');
-    const repo = new SequelizeAIRepository({
+    const SequelizeAiRepository = require('../modules/ai/repositories/SequelizeAiRepository');
+    const repo = new SequelizeAiRepository({
       Product: {},
       ProductVariant: {},
       Category: {},

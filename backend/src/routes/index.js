@@ -4,7 +4,7 @@ const pkg = require('../../package.json');
 const router = express.Router();
 
 // routes/index.js chỉ còn health endpoint.
-// Tất cả routes đã migrate sang modules/* trong app.js (Gap 5 complete).
+// Tất cả feature routes đã migrate sang modules/*/ trong app.js.
 
 // Route kiểm tra trạng thái hệ thống — Phase 45.2.4 enhanced
 // Trả về status DB + uptime + version để deploy script + manual smoke phân biệt

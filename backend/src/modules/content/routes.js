@@ -20,7 +20,7 @@ const {
 
 // Content module: 5 sub-domain với URL prefix khác nhau (/banners, /news,
 // /email-campaigns, /newsletter, /contact). Module.js wire 5 router riêng,
-// app.js mount mỗi router tại đúng path tương ứng (như legacy routes/index).
+// app.js mount mỗi router tại đúng basePath tương ứng.
 module.exports = ({ contentController }) => {
   const banner = express.Router();
   banner.get('/', httpCacheHeaders(900), contentController.getAllBanners);

@@ -12,16 +12,38 @@ const buildRoutes = require('./routes');
 // Orders module — DDD-lite. DI wire repo → service → controller → router.
 // emailService inject qua adapter port (dễ test/swap).
 module.exports = ({
-  Order, OrderItem, Cart, CartItem, Product, ProductVariant, User,
-  DiscountCode, LoyaltyHistory, InventoryLog, WarrantyPackage,
-  sequelize, eventBus, logger, emailService, constants,
+  Order,
+  OrderItem,
+  Cart,
+  CartItem,
+  Product,
+  ProductVariant,
+  User,
+  DiscountCode,
+  LoyaltyHistory,
+  InventoryLog,
+  WarrantyPackage,
+  sequelize,
+  eventBus,
+  logger,
+  emailService,
+  constants,
 }) => {
   if (!Order) throw new Error('orders module: Order model bắt buộc');
   if (!constants) throw new Error('orders module: constants (POINTS_*, SHIPPING_*) bắt buộc');
 
   const ordersRepository = new SequelizeOrdersRepository({
-    Order, OrderItem, Cart, CartItem, Product, ProductVariant, User,
-    DiscountCode, LoyaltyHistory, InventoryLog, WarrantyPackage,
+    Order,
+    OrderItem,
+    Cart,
+    CartItem,
+    Product,
+    ProductVariant,
+    User,
+    DiscountCode,
+    LoyaltyHistory,
+    InventoryLog,
+    WarrantyPackage,
     sequelize,
   });
 
@@ -33,7 +55,11 @@ module.exports = ({
   };
 
   const ordersService = new OrdersService({
-    ordersRepository, emailGateway, eventBus, logger, constants,
+    ordersRepository,
+    emailGateway,
+    eventBus,
+    logger,
+    constants,
   });
   const ordersController = new OrdersController({ ordersService });
   const router = buildRoutes({ ordersController });
@@ -43,7 +69,7 @@ module.exports = ({
     router,
     subscribeEvents() {
       // Orders publish OrderCreated/OrderCancelled/OrderDelivered.
-      // Sprint 9 inventory module sẽ subscribe OrderCancelled để restore stock event-driven.
+      // inventory module subscribe để tạo audit log khi đơn bị hủy
     },
   };
 };

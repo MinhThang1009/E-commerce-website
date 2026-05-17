@@ -19,7 +19,9 @@ describe('AiService', () => {
     ragPipeline = { run: jest.fn() };
     ruleBasedChatbot = { extractSearchParams: jest.fn() };
     service = new AiService({
-      aiRepository: repo, ragPipeline, ruleBasedChatbot,
+      aiRepository: repo,
+      ragPipeline,
+      ruleBasedChatbot,
       logger: { info: jest.fn(), error: jest.fn() },
     });
   });
@@ -30,25 +32,6 @@ describe('AiService', () => {
       const result = await service.handleMessage({ message: 'hello' });
       expect(ragPipeline.run).toHaveBeenCalledWith({ message: 'hello' });
       expect(result.response).toBe('hi');
-    });
-  });
-
-  describe('productSearch', () => {
-    test('query rỗng → 400', async () => {
-      await expect(service.productSearch({ query: '' })).rejects.toMatchObject({ statusCode: 400 });
-    });
-
-    test('query có giá trị → extract params + search', async () => {
-      ruleBasedChatbot.extractSearchParams.mockReturnValue({ keyword: 'shoe', maxPrice: 1000000 });
-      repo.searchProducts.mockResolvedValue([{ id: 1 }]);
-
-      const result = await service.productSearch({ query: 'giày dưới 1tr', limit: 5 });
-
-      expect(ruleBasedChatbot.extractSearchParams).toHaveBeenCalledWith('giày dưới 1tr');
-      expect(repo.searchProducts).toHaveBeenCalledWith(expect.objectContaining({
-        keyword: 'shoe', maxPrice: 1000000, limit: 5,
-      }));
-      expect(result).toEqual([{ id: 1 }]);
     });
   });
 
@@ -71,8 +54,12 @@ describe('AiService', () => {
   describe('trackAnalytics', () => {
     test('delegate sang repo.createAnalyticsEvent với đúng tham số', async () => {
       const eventData = {
-        event: 'product_view', userId: 1, sessionId: 'sess-abc',
-        productId: 42, value: null, metadata: { source: 'chatbot' },
+        event: 'product_view',
+        userId: 1,
+        sessionId: 'sess-abc',
+        productId: 42,
+        value: null,
+        metadata: { source: 'chatbot' },
         timestamp: new Date(),
       };
       repo.createAnalyticsEvent.mockResolvedValue({ id: 99 });
@@ -99,49 +86,80 @@ describe('AiService', () => {
       repo.findProductForCart.mockResolvedValue(null);
 
       await expect(
-        service.addToCart({ productId: 999, variantId: null, quantity: 1, sessionId: 'sess', userId: 1 })
-      ).rejects.toMatchObject({ statusCode: 404, message: expect.stringContaining('không tồn tại') });
+        service.addToCart({
+          productId: 999,
+          variantId: null,
+          quantity: 1,
+          sessionId: 'sess',
+          userId: 1,
+        }),
+      ).rejects.toMatchObject({
+        statusCode: 404,
+        message: expect.stringContaining('không tồn tại'),
+      });
     });
 
     test('sản phẩm hết hàng (status inactive) → AppError 400', async () => {
       repo.findProductForCart.mockResolvedValue({
-        id: 1, status: 'inactive', stockQuantity: 0, variants: [],
+        id: 1,
+        status: 'inactive',
+        stockQuantity: 0,
+        variants: [],
       });
 
       await expect(
-        service.addToCart({ productId: 1, variantId: null, quantity: 1, sessionId: 'sess', userId: 1 })
+        service.addToCart({
+          productId: 1,
+          variantId: null,
+          quantity: 1,
+          sessionId: 'sess',
+          userId: 1,
+        }),
       ).rejects.toMatchObject({ statusCode: 400, message: expect.stringContaining('hết hàng') });
     });
 
     test('sản phẩm active + còn hàng → addToCart + createAnalyticsEvent', async () => {
       repo.findProductForCart.mockResolvedValue({
-        id: 5, status: 'active', stockQuantity: 10,
+        id: 5,
+        status: 'active',
+        stockQuantity: 10,
         variants: [{ stockQuantity: 5 }],
       });
       repo.addToCart.mockResolvedValue({ id: 20, productId: 5, quantity: 2 });
 
       const result = await service.addToCart({
-        productId: 5, variantId: null, quantity: 2,
-        sessionId: 'sess-xyz', userId: 3,
+        productId: 5,
+        variantId: null,
+        quantity: 2,
+        sessionId: 'sess-xyz',
+        userId: 3,
       });
 
       expect(repo.addToCart).toHaveBeenCalledWith(
-        expect.objectContaining({ userId: 3, productId: 5, quantity: 2 })
+        expect.objectContaining({ userId: 3, productId: 5, quantity: 2 }),
       );
       expect(repo.createAnalyticsEvent).toHaveBeenCalledWith(
-        expect.objectContaining({ event: 'product_added_to_cart', productId: 5 })
+        expect.objectContaining({ event: 'product_added_to_cart', productId: 5 }),
       );
       expect(result).toMatchObject({ id: 20 });
     });
 
     test('sản phẩm active nhưng stock = 0 ở cả product và variants → AppError 400', async () => {
       repo.findProductForCart.mockResolvedValue({
-        id: 3, status: 'active', stockQuantity: 0,
+        id: 3,
+        status: 'active',
+        stockQuantity: 0,
         variants: [{ stockQuantity: 0 }],
       });
 
       await expect(
-        service.addToCart({ productId: 3, variantId: null, quantity: 1, sessionId: 's', userId: 2 })
+        service.addToCart({
+          productId: 3,
+          variantId: null,
+          quantity: 1,
+          sessionId: 's',
+          userId: 2,
+        }),
       ).rejects.toMatchObject({ statusCode: 400 });
     });
   });
@@ -162,7 +180,10 @@ describe('GeminiLlmGateway', () => {
     const result = await gateway.getAIResponse('tìm iphone', [{ id: 1 }], { timeOfDay: 'morning' });
 
     expect(mockGeminiService.getAIResponse).toHaveBeenCalledWith(
-      'tìm iphone', [{ id: 1 }], { timeOfDay: 'morning' }
+      'tìm iphone',
+      [{ id: 1 }],
+      { timeOfDay: 'morning' },
+      undefined,
     );
     expect(result).toMatchObject({ response: 'AI response' });
   });

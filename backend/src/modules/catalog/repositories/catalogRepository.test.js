@@ -11,7 +11,9 @@ function makeModel(defaults = {}) {
     findAll: jest.fn().mockResolvedValue(defaults.findAll ?? []),
     findOne: jest.fn().mockResolvedValue(defaults.findOne ?? null),
     findByPk: jest.fn().mockResolvedValue(defaults.findByPk ?? null),
-    findAndCountAll: jest.fn().mockResolvedValue(defaults.findAndCountAll ?? { count: 0, rows: [] }),
+    findAndCountAll: jest
+      .fn()
+      .mockResolvedValue(defaults.findAndCountAll ?? { count: 0, rows: [] }),
     create: jest.fn().mockResolvedValue(defaults.create ?? {}),
     count: jest.fn().mockResolvedValue(defaults.count ?? 0),
     destroy: jest.fn().mockResolvedValue(defaults.destroy ?? 1),
@@ -61,7 +63,10 @@ function makeRepo(modelOverrides = {}, seqOverride = null) {
 describe('Category methods', () => {
   test('TC-01 findAllCategoriesSorted — gọi findAll với order ASC', async () => {
     const { repo, deps } = makeRepo();
-    const cats = [{ id: 1, name: 'A' }, { id: 2, name: 'B' }];
+    const cats = [
+      { id: 1, name: 'A' },
+      { id: 2, name: 'B' },
+    ];
     deps.Category.findAll.mockResolvedValue(cats);
 
     const result = await repo.findAllCategoriesSorted();
@@ -80,10 +85,9 @@ describe('Category methods', () => {
 
     const result = await repo.getCategoryProductCounts();
 
-    expect(seq.query).toHaveBeenCalledWith(
-      expect.stringContaining('product_categories'),
-      { type: QueryTypes.SELECT },
-    );
+    expect(seq.query).toHaveBeenCalledWith(expect.stringContaining('product_categories'), {
+      type: QueryTypes.SELECT,
+    });
     expect(result).toEqual({ 1: 5, 3: 12 });
   });
 
@@ -157,7 +161,10 @@ describe('Category methods', () => {
 
   test('TC-09 saveCategory / deleteCategory — delegate tới instance method', async () => {
     const { repo } = makeRepo();
-    const cat = { save: jest.fn().mockResolvedValue('saved'), destroy: jest.fn().mockResolvedValue('destroyed') };
+    const cat = {
+      save: jest.fn().mockResolvedValue('saved'),
+      destroy: jest.fn().mockResolvedValue('destroyed'),
+    };
 
     const saved = await repo.saveCategory(cat);
     const deleted = await repo.deleteCategory(cat);
@@ -238,7 +245,10 @@ describe('Brand methods', () => {
     const r1 = await repo.createBrand(payload);
     expect(r1).toBe(created);
 
-    const brandInst = { save: jest.fn().mockResolvedValue(created), destroy: jest.fn().mockResolvedValue(1) };
+    const brandInst = {
+      save: jest.fn().mockResolvedValue(created),
+      destroy: jest.fn().mockResolvedValue(1),
+    };
     await repo.saveBrand(brandInst);
     await repo.deleteBrand(brandInst);
     expect(brandInst.save).toHaveBeenCalled();
@@ -260,7 +270,12 @@ describe('Brand methods', () => {
     const rows = { count: 3, rows: [] };
     deps.Product.findAndCountAll.mockResolvedValue(rows);
 
-    const result = await repo.findProductsByBrandId(4, { sort: 'basePrice', order: 'ASC', limit: 10, offset: 0 });
+    const result = await repo.findProductsByBrandId(4, {
+      sort: 'basePrice',
+      order: 'ASC',
+      limit: 10,
+      offset: 0,
+    });
 
     expect(deps.Product.findAndCountAll).toHaveBeenCalledWith({
       where: { brandId: 4 },
@@ -320,7 +335,10 @@ describe('Collection methods', () => {
     const r = await repo.createCollection(payload);
     expect(r).toBe(created);
 
-    const inst = { save: jest.fn().mockResolvedValue(created), destroy: jest.fn().mockResolvedValue(1) };
+    const inst = {
+      save: jest.fn().mockResolvedValue(created),
+      destroy: jest.fn().mockResolvedValue(1),
+    };
     await repo.saveCollection(inst);
     await repo.deleteCollection(inst);
     expect(inst.save).toHaveBeenCalled();
@@ -380,7 +398,7 @@ describe('_buildProductWhereConditions', () => {
     const where = repo._buildProductWhereConditions({ search: 'iPhone' });
     // Op.or phải tồn tại
     expect(where[Op.or]).toBeDefined();
-    expect(where[Op.or]).toHaveLength(3);
+    expect(where[Op.or]).toHaveLength(4);
     // sequelize.fn được gọi với 'LOWER'
     expect(sequelize.fn).toHaveBeenCalledWith('LOWER', expect.anything());
   });
@@ -476,7 +494,13 @@ describe('Product fetching methods', () => {
     const mockResult = { count: 2, rows: [{ id: 1 }, { id: 2 }] };
     deps.Product.findAndCountAll.mockResolvedValue(mockResult);
 
-    const result = await repo.findProductsList({ filter: {}, sort: 'createdAt', order: 'DESC', limit: 10, offset: 0 });
+    const result = await repo.findProductsList({
+      filter: {},
+      sort: 'createdAt',
+      order: 'DESC',
+      limit: 10,
+      offset: 0,
+    });
 
     expect(deps.Product.findAndCountAll).toHaveBeenCalledWith(
       expect.objectContaining({
@@ -578,9 +602,7 @@ describe('Product fetching methods', () => {
 
     await repo.findFeaturedProducts();
 
-    expect(deps.Product.findAll).toHaveBeenCalledWith(
-      expect.objectContaining({ limit: 8 }),
-    );
+    expect(deps.Product.findAll).toHaveBeenCalledWith(expect.objectContaining({ limit: 8 }));
   });
 
   test('TC-41 findRelatedProducts — exclude id, limit', async () => {
@@ -622,7 +644,7 @@ describe('Search methods', () => {
     const result = await repo.searchProducts({ q: 'Samsung', limit: 20, offset: 0 });
 
     const call = deps.Product.findAndCountAll.mock.calls[0][0];
-    expect(call.where[Op.or]).toHaveLength(4);
+    expect(call.where[Op.or]).toHaveLength(5);
     // sequelize.fn được gọi với 'LOWER' nhiều lần
     expect(sequelize.fn).toHaveBeenCalledWith('LOWER', expect.anything());
     expect(result.count).toBe(1);
@@ -654,7 +676,7 @@ describe('Search methods', () => {
 
     expect(deps.Product.findAll).toHaveBeenCalledWith(
       expect.objectContaining({
-        attributes: ['id', 'name', 'slug'],
+        attributes: ['id', 'nameVi', 'nameEn', 'slug'],
         limit: 5,
         order: [['nameVi', 'ASC']],
       }),
@@ -669,9 +691,7 @@ describe('Search methods', () => {
 
     await repo.findProductSuggestions('test');
 
-    expect(deps.Product.findAll).toHaveBeenCalledWith(
-      expect.objectContaining({ limit: 10 }),
-    );
+    expect(deps.Product.findAll).toHaveBeenCalledWith(expect.objectContaining({ limit: 10 }));
   });
 
   test('TC-46 findBestSellersRaw — raw SQL với replacements', async () => {
@@ -681,13 +701,10 @@ describe('Search methods', () => {
 
     const result = await repo.findBestSellersRaw({ startDate, limit: 5 });
 
-    expect(sequelize.query).toHaveBeenCalledWith(
-      expect.stringContaining('order_items'),
-      {
-        replacements: { startDate, limit: 5 },
-        type: QueryTypes.SELECT,
-      },
-    );
+    expect(sequelize.query).toHaveBeenCalledWith(expect.stringContaining('order_items'), {
+      replacements: { startDate, limit: 5 },
+      type: QueryTypes.SELECT,
+    });
     expect(result).toHaveLength(1);
   });
 
@@ -733,7 +750,12 @@ describe('findProductsByCollectionId', () => {
     const { repo, deps } = makeRepo();
     deps.Product.findAndCountAll.mockResolvedValue({ count: 3, rows: [] });
 
-    await repo.findProductsByCollectionId(8, { sort: 'createdAt', order: 'DESC', limit: 10, offset: 0 });
+    await repo.findProductsByCollectionId(8, {
+      sort: 'createdAt',
+      order: 'DESC',
+      limit: 10,
+      offset: 0,
+    });
 
     const call = deps.Product.findAndCountAll.mock.calls[0][0];
     expect(call.where).toEqual({ status: 'active' });
@@ -823,7 +845,10 @@ describe('Product CRUD', () => {
     await repo.clearProductAttributes(1, { transaction: 'tx' });
     await repo.createProductAttributes(attrs, { transaction: 'tx' });
 
-    expect(deps.ProductAttribute.destroy).toHaveBeenCalledWith({ where: { productId: 1 }, transaction: 'tx' });
+    expect(deps.ProductAttribute.destroy).toHaveBeenCalledWith({
+      where: { productId: 1 },
+      transaction: 'tx',
+    });
     expect(deps.ProductAttribute.bulkCreate).toHaveBeenCalledWith(attrs, { transaction: 'tx' });
   });
 
@@ -834,7 +859,10 @@ describe('Product CRUD', () => {
     await repo.clearProductVariants(1, { transaction: 'tx' });
     await repo.createProductVariants(variants, { transaction: 'tx' });
 
-    expect(deps.ProductVariant.destroy).toHaveBeenCalledWith({ where: { productId: 1 }, transaction: 'tx' });
+    expect(deps.ProductVariant.destroy).toHaveBeenCalledWith({
+      where: { productId: 1 },
+      transaction: 'tx',
+    });
     expect(deps.ProductVariant.bulkCreate).toHaveBeenCalledWith(variants, { transaction: 'tx' });
   });
 
@@ -968,7 +996,13 @@ describe('Edge cases', () => {
     const { repo, deps } = makeRepo();
     deps.Product.findAndCountAll.mockResolvedValue({ count: 1, rows: [] });
 
-    await repo.findProductsByCategoryId(3, { status: 'active', sort: 'basePrice', order: 'ASC', limit: 5, offset: 0 });
+    await repo.findProductsByCategoryId(3, {
+      status: 'active',
+      sort: 'basePrice',
+      order: 'ASC',
+      limit: 5,
+      offset: 0,
+    });
 
     const call = deps.Product.findAndCountAll.mock.calls[0][0];
     expect(call.where).toEqual({ categoryId: 3, status: 'active' });
@@ -1028,7 +1062,10 @@ describe('Edge cases', () => {
     const call = deps.Product.findAll.mock.calls[0][0];
     expect(call.where).toMatchObject({ status: 'active' });
     expect(call.where.id[Op.ne]).toBe(1);
-    expect(call.order).toEqual([['isFeatured', 'DESC'], ['createdAt', 'DESC']]);
+    expect(call.order).toEqual([
+      ['isFeatured', 'DESC'],
+      ['createdAt', 'DESC'],
+    ]);
     expect(call.limit).toBe(4);
   });
 });

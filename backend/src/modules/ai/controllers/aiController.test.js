@@ -21,7 +21,6 @@ function makeLogger() {
 function makeService() {
   return {
     handleMessage: jest.fn(),
-    productSearch: jest.fn(),
     getRecommendations: jest.fn(),
     trackAnalytics: jest.fn(),
     addToCart: jest.fn(),
@@ -59,7 +58,7 @@ describe('AiController', () => {
           status: 'error',
           message: 'Xử lý tin nhắn thất bại',
           data: expect.objectContaining({ suggestions: expect.any(Array) }),
-        })
+        }),
       );
     });
 
@@ -76,7 +75,7 @@ describe('AiController', () => {
 
       expect(res.status).toHaveBeenCalledWith(400);
       expect(res.json).toHaveBeenCalledWith(
-        expect.objectContaining({ status: 'error', message: 'Tin nhắn không hợp lệ' })
+        expect.objectContaining({ status: 'error', message: 'Tin nhắn không hợp lệ' }),
       );
     });
 
@@ -91,40 +90,6 @@ describe('AiController', () => {
       await controller.handleMessage(req, res, next);
 
       expect(res.json).toHaveBeenCalledWith({ status: 'success', data });
-    });
-  });
-
-  // ────────────────────────────────────────────────────────────
-  // productSearch (lines 31-37)
-  // ────────────────────────────────────────────────────────────
-
-  describe('productSearch', () => {
-    test('gọi aiService.productSearch với query và limit từ req.body', async () => {
-      const products = [{ id: 1, name: 'Laptop' }];
-      aiService.productSearch.mockResolvedValue(products);
-
-      const req = { body: { query: 'laptop gaming', limit: 5 } };
-      const res = makeRes();
-      const next = jest.fn();
-
-      await controller.productSearch(req, res, next);
-
-      expect(aiService.productSearch).toHaveBeenCalledWith({ query: 'laptop gaming', limit: 5 });
-      expect(res.json).toHaveBeenCalledWith({ status: 'success', data: products });
-    });
-
-    test('service throw → gọi next(err)', async () => {
-      const err = new Error('Service lỗi');
-      aiService.productSearch.mockRejectedValue(err);
-
-      const req = { body: { query: 'x', limit: 3 } };
-      const res = makeRes();
-      const next = jest.fn();
-
-      await controller.productSearch(req, res, next);
-
-      expect(next).toHaveBeenCalledWith(err);
-      expect(res.json).not.toHaveBeenCalled();
     });
   });
 
@@ -193,11 +158,9 @@ describe('AiController', () => {
           value: 100000,
           metadata: { source: 'home' },
           timestamp: expect.any(Date),
-        })
+        }),
       );
-      expect(res.json).toHaveBeenCalledWith(
-        expect.objectContaining({ status: 'success' })
-      );
+      expect(res.json).toHaveBeenCalledWith(expect.objectContaining({ status: 'success' }));
     });
 
     test('service throw → gọi next(err)', async () => {
@@ -254,9 +217,7 @@ describe('AiController', () => {
 
       await controller.addToCart(req, res, next);
 
-      expect(aiService.addToCart).toHaveBeenCalledWith(
-        expect.objectContaining({ quantity: 1 })
-      );
+      expect(aiService.addToCart).toHaveBeenCalledWith(expect.objectContaining({ quantity: 1 }));
     });
 
     test('service throw → gọi next(err)', async () => {

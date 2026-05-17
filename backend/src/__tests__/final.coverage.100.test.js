@@ -54,7 +54,9 @@ describe('product.js — setter else branch: string passthrough (lines 172, 213,
       set(value) {
         stored = typeof value === 'object' ? JSON.stringify(value) : value;
       },
-      getStored() { return stored; },
+      getStored() {
+        return stored;
+      },
     };
   }
 
@@ -117,7 +119,10 @@ describe('product.js line 11 — catch branch khi require vectorStore thất b�
         };
       });
       jest.doMock('../utils/logger', () => ({
-        info: jest.fn(), error: jest.fn(), warn: jest.fn(), debug: jest.fn(),
+        info: jest.fn(),
+        error: jest.fn(),
+        warn: jest.fn(),
+        debug: jest.fn(),
       }));
       // Make vectorStore throw on require → triggers catch branch (line 11)
       jest.doMock('../services/ai/vectorStore', () => {
@@ -153,7 +158,10 @@ describe('SequelizeAiRepository — createAnalyticsEvent catch branch (line 103)
     }));
     jest.mock('../config/sequelize', () => ({
       define: jest.fn().mockReturnValue({
-        addHook: jest.fn(), belongsTo: jest.fn(), hasMany: jest.fn(), belongsToMany: jest.fn(),
+        addHook: jest.fn(),
+        belongsTo: jest.fn(),
+        hasMany: jest.fn(),
+        belongsToMany: jest.fn(),
       }),
     }));
 
@@ -237,14 +245,19 @@ describe('cartService.js — addToCart with invalid warrantyPackageIds (line 191
   it('warrantyPackageIds chứa ID không tồn tại → throw AppError 400 (line 191)', async () => {
     jest.resetModules();
     jest.mock('../utils/logger', () => ({
-      info: jest.fn(), error: jest.fn(), warn: jest.fn(), debug: jest.fn(),
+      info: jest.fn(),
+      error: jest.fn(),
+      warn: jest.fn(),
+      debug: jest.fn(),
     }));
 
     const CartService = require('../modules/cart/services/cartService');
     const { AppError } = require('../shared/errors');
 
     const product = {
-      id: 1, status: 'active', basePrice: 100000,
+      id: 1,
+      status: 'active',
+      basePrice: 100000,
       defaultVariant: { stockQuantity: 10 },
     };
 
@@ -280,7 +293,7 @@ describe('cartService.js — addToCart with invalid warrantyPackageIds (line 191
           warrantyPackageIds: ['wp-1', 'wp-INVALID'], // 2 requested, only 1 found
         },
         setSessionCookie: jest.fn(),
-      })
+      }),
     ).rejects.toMatchObject({
       message: 'Một hoặc nhiều gói bảo hành không hợp lệ',
       statusCode: 400,
@@ -377,7 +390,7 @@ describe('uploadService.js — deleteFile path traversal check (line 120)', () =
         user: { id: 1, role: 'admin' },
         type: 'products',
         filenameRaw: 'photo.jpg',
-      })
+      }),
     ).rejects.toMatchObject({ statusCode: 403, message: 'Truy cập bị từ chối' });
 
     jest.restoreAllMocks();
@@ -392,7 +405,7 @@ describe('uploadService.js — deleteFile path traversal check (line 120)', () =
         user: { id: 1, role: 'admin' },
         type: 'products',
         filenameRaw: '../etc/passwd',
-      })
+      }),
     ).rejects.toMatchObject({ statusCode: 400, message: 'Tên file không hợp lệ' });
   });
 });
@@ -417,7 +430,10 @@ describe('email.js — batch delay fires between batches (line 165)', () => {
     }));
     jest.mock('sanitize-html', () => jest.fn((html) => html));
     jest.mock('../utils/logger', () => ({
-      info: jest.fn(), error: jest.fn(), warn: jest.fn(), debug: jest.fn(),
+      info: jest.fn(),
+      error: jest.fn(),
+      warn: jest.fn(),
+      debug: jest.fn(),
     }));
 
     process.env.EMAIL_HOST = 'smtp.mailtrap.io';
@@ -466,7 +482,10 @@ describe('geminiChatbot.js — initializeChatbot với valid key (line 50)', () 
 
     // Variable must start with 'mock' for jest.mock factory to access it
     const mockLoggerForChatbot = {
-      info: jest.fn(), error: jest.fn(), warn: jest.fn(), debug: jest.fn(),
+      info: jest.fn(),
+      error: jest.fn(),
+      warn: jest.fn(),
+      debug: jest.fn(),
     };
     jest.mock('../utils/logger', () => mockLoggerForChatbot);
     jest.mock('../config/redis', () => ({ getRedisClient: jest.fn().mockReturnValue(null) }));
@@ -490,19 +509,19 @@ describe('geminiChatbot.js — initializeChatbot với valid key (line 50)', () 
       sequelize: { literal: jest.fn() },
     }));
 
-    // Set a real non-demo key
-    const originalKey = process.env.OPENROUTER_API_KEY;
-    process.env.OPENROUTER_API_KEY = 'sk-real-key-not-demo';
+    // Set a real Gemini key — constructor reads GEMINI_API_KEYS to populate providers
+    const originalKey = process.env.GEMINI_API_KEYS;
+    process.env.GEMINI_API_KEYS = 'sk-real-key-not-demo';
 
     // Load the module — exports a singleton; constructor calls initializeChatbot() at load time
     require('../services/ai/geminiChatbot');
 
     // line 50: logger.info should have been called with success message
     expect(mockLoggerForChatbot.info).toHaveBeenCalledWith(
-      expect.stringContaining('OpenRouter AI khởi tạo thành công')
+      expect.stringContaining('AI khởi tạo thành công'),
     );
 
-    process.env.OPENROUTER_API_KEY = originalKey;
+    process.env.GEMINI_API_KEYS = originalKey;
   });
 });
 
@@ -546,18 +565,18 @@ describe('geminiChatbot.js — initializeChatbot catch block (line 55)', () => {
     }));
     jest.mock('../config/redis', () => ({ getRedisClient: jest.fn().mockReturnValue(null) }));
 
-    const originalKey = process.env.OPENROUTER_API_KEY;
-    process.env.OPENROUTER_API_KEY = 'sk-real-key-triggers-info';
+    const originalKey = process.env.GEMINI_API_KEYS;
+    process.env.GEMINI_API_KEYS = 'sk-real-key-triggers-info';
 
     // Module exports singleton; constructor runs at require time → info throws → catch → error
     require('../services/ai/geminiChatbot');
 
     expect(mockChatbotCatchLogger.error).toHaveBeenCalledWith(
       expect.stringContaining('Khởi tạo Chatbot thất bại'),
-      expect.anything()
+      expect.anything(),
     );
 
-    process.env.OPENROUTER_API_KEY = originalKey;
+    process.env.GEMINI_API_KEYS = originalKey;
     delete global.__chatbotLoggerCallCount;
   });
 });
@@ -572,9 +591,9 @@ describe('geminiChatbot.js — word intersection logic (lines 382-386)', () => {
 
   function matchProductName(pName, rName) {
     const versionKeywords = ['pro', 'max', 'ultra', 'plus', 'lite', 'mini', 'air', 'standard'];
-    const rVersions = versionKeywords.filter(v => rName.includes(v));
-    const pVersions = versionKeywords.filter(v => pName.includes(v));
-    if (rVersions.length !== pVersions.length || !rVersions.every(v => pVersions.includes(v))) {
+    const rVersions = versionKeywords.filter((v) => rName.includes(v));
+    const pVersions = versionKeywords.filter((v) => pName.includes(v));
+    if (rVersions.length !== pVersions.length || !rVersions.every((v) => pVersions.includes(v))) {
       return false;
     }
     const numbersP = pName.match(/\b\d+\b/g);
@@ -582,7 +601,7 @@ describe('geminiChatbot.js — word intersection logic (lines 382-386)', () => {
     if (numbersP && numbersR && numbersP[0] !== numbersR[0]) return false;
     const pWords = new Set(pName.split(/\s+/));
     const rWords = new Set(rName.split(/\s+/));
-    const intersection = [...pWords].filter(w => rWords.has(w) && w.length > 1);
+    const intersection = [...pWords].filter((w) => rWords.has(w) && w.length > 1);
     const minSize = Math.min(pWords.size, rWords.size);
     return minSize > 0 && intersection.length >= minSize * 0.8;
   }
@@ -686,7 +705,7 @@ describe('paymentService.js — _clearUserCart (lines 65-71)', () => {
 
     expect(logger.error).toHaveBeenCalledWith(
       expect.stringContaining('Lỗi xóa giỏ hàng cho user 99'),
-      expect.stringContaining('DB connection lost')
+      expect.stringContaining('DB connection lost'),
     );
   });
 
@@ -777,11 +796,11 @@ describe('contentService.js — subscribeNewsletter fire-and-forget email error 
     expect(result.message).toContain('Cảm ơn');
 
     // Wait for fire-and-forget promise to reject and catch
-    await new Promise(resolve => setImmediate(resolve));
+    await new Promise((resolve) => setImmediate(resolve));
 
     expect(logger.error).toHaveBeenCalledWith(
       expect.stringContaining('Lỗi gửi email chào mừng'),
-      expect.stringContaining('SMTP failure')
+      expect.stringContaining('SMTP failure'),
     );
   });
 });
@@ -801,7 +820,14 @@ describe('contentService.js — sendFeedback fire-and-forget admin email error (
       sendAdminFeedbackNotification: jest.fn().mockRejectedValue(new Error('Admin email failed')),
     };
 
-    const fakeFeedback = { id: 'fb-1', name: 'Test', email: 'u@t.com', subject: 'Hỏi', content: 'Câu hỏi', status: 'pending' };
+    const fakeFeedback = {
+      id: 'fb-1',
+      name: 'Test',
+      email: 'u@t.com',
+      subject: 'Hỏi',
+      content: 'Câu hỏi',
+      status: 'pending',
+    };
 
     const service = new ContentService({
       contentRepository: {
@@ -815,16 +841,22 @@ describe('contentService.js — sendFeedback fire-and-forget admin email error (
     });
 
     const result = await service.sendFeedback({
-      payload: { name: 'Test', email: 'u@t.com', phone: '0123', subject: 'Hỏi', content: 'Câu hỏi' },
+      payload: {
+        name: 'Test',
+        email: 'u@t.com',
+        phone: '0123',
+        subject: 'Hỏi',
+        content: 'Câu hỏi',
+      },
     });
     expect(result).toEqual(fakeFeedback);
 
     // Wait for fire-and-forget to reject
-    await new Promise(resolve => setImmediate(resolve));
+    await new Promise((resolve) => setImmediate(resolve));
 
     expect(logger.error).toHaveBeenCalledWith(
       expect.stringContaining('Lỗi gửi email thông báo phản hồi cho admin'),
-      expect.stringContaining('Admin email failed')
+      expect.stringContaining('Admin email failed'),
     );
   });
 });
@@ -850,7 +882,9 @@ describe('catalogService.js — getBrandBySlug (line 176)', () => {
         findProductsList: jest.fn().mockResolvedValue({ count: 0, rows: [] }),
         findProductByIdWithFullDetails: jest.fn().mockResolvedValue(null),
         findProductBySlugWithFullDetails: jest.fn().mockResolvedValue(null),
-        findProductFiltersData: jest.fn().mockResolvedValue({ priceRange: {}, brands: [], colors: [], sizes: [], others: [] }),
+        findProductFiltersData: jest
+          .fn()
+          .mockResolvedValue({ priceRange: {}, brands: [], colors: [], sizes: [], others: [] }),
         findRecentlyViewedByUser: jest.fn().mockResolvedValue([]),
         createProduct: jest.fn(),
         findCategoriesByIds: jest.fn().mockResolvedValue([]),
@@ -886,10 +920,17 @@ describe('catalogService.js — getProductById _trackRecentlyViewed reject (line
     const logger = { info: jest.fn(), error: jest.fn(), warn: jest.fn(), debug: jest.fn() };
 
     const mockProduct = {
-      id: 1, name: 'Test Product',
+      id: 1,
+      name: 'Test Product',
       toJSON: jest.fn().mockReturnValue({
-        id: 1, name: 'Test Product', basePrice: 100000, status: 'active',
-        images: [], variants: [], productImages: [], reviews: [],
+        id: 1,
+        name: 'Test Product',
+        basePrice: 100000,
+        status: 'active',
+        images: [],
+        variants: [],
+        productImages: [],
+        reviews: [],
       }),
     };
 
@@ -907,7 +948,9 @@ describe('catalogService.js — getProductById _trackRecentlyViewed reject (line
         findProductsList: jest.fn().mockResolvedValue({ count: 0, rows: [] }),
         findProductByIdWithFullDetails: jest.fn().mockResolvedValue(mockProduct),
         findProductBySlugWithFullDetails: jest.fn().mockResolvedValue(mockProduct),
-        findProductFiltersData: jest.fn().mockResolvedValue({ priceRange: {}, brands: [], colors: [], sizes: [], others: [] }),
+        findProductFiltersData: jest
+          .fn()
+          .mockResolvedValue({ priceRange: {}, brands: [], colors: [], sizes: [], others: [] }),
         findRecentlyViewedByUser: jest.fn().mockResolvedValue([]),
         createProduct: jest.fn(),
         findCategoriesByIds: jest.fn().mockResolvedValue([]),
@@ -929,15 +972,20 @@ describe('catalogService.js — getProductById _trackRecentlyViewed reject (line
     const { service, logger } = makeCatalogServiceForTracking();
 
     // Should still resolve normally despite tracking failure
-    const result = await service.getProductById({ id: '1', skuId: null, queryColor: null, userId: 'u-1' });
+    const result = await service.getProductById({
+      id: '1',
+      skuId: null,
+      queryColor: null,
+      userId: 'u-1',
+    });
     expect(result.payload.status).toBe('success');
 
     // Wait for fire-and-forget catch to execute
-    await new Promise(resolve => setImmediate(resolve));
+    await new Promise((resolve) => setImmediate(resolve));
 
     expect(logger.error).toHaveBeenCalledWith(
       expect.stringContaining('Lỗi ghi lịch sử xem sản phẩm'),
-      expect.any(Error)
+      expect.any(Error),
     );
   });
 
@@ -945,13 +993,18 @@ describe('catalogService.js — getProductById _trackRecentlyViewed reject (line
     const { service, logger } = makeCatalogServiceForTracking();
 
     // getProductBySlug returns the responseData directly (not wrapped in {payload})
-    await service.getProductBySlug({ slug: 'test-product', skuId: null, queryColor: null, userId: 'u-2' });
+    await service.getProductBySlug({
+      slug: 'test-product',
+      skuId: null,
+      queryColor: null,
+      userId: 'u-2',
+    });
 
-    await new Promise(resolve => setImmediate(resolve));
+    await new Promise((resolve) => setImmediate(resolve));
 
     expect(logger.error).toHaveBeenCalledWith(
       expect.stringContaining('Lỗi ghi lịch sử xem sản phẩm'),
-      expect.any(Error)
+      expect.any(Error),
     );
   });
 });
@@ -979,7 +1032,9 @@ describe('catalogService.js — _buildProductDetailResponse color image filterin
         findProductsList: jest.fn().mockResolvedValue({ count: 0, rows: [] }),
         findProductByIdWithFullDetails: jest.fn().mockResolvedValue(null),
         findProductBySlugWithFullDetails: jest.fn().mockResolvedValue(null),
-        findProductFiltersData: jest.fn().mockResolvedValue({ priceRange: {}, brands: [], colors: [], sizes: [], others: [] }),
+        findProductFiltersData: jest
+          .fn()
+          .mockResolvedValue({ priceRange: {}, brands: [], colors: [], sizes: [], others: [] }),
         findRecentlyViewedByUser: jest.fn().mockResolvedValue([]),
         createProduct: jest.fn(),
         findCategoriesByIds: jest.fn().mockResolvedValue([]),
@@ -1001,9 +1056,13 @@ describe('catalogService.js — _buildProductDetailResponse color image filterin
     // matchByVariantId: images where img.variantId === 'v-red' → none (both are null)
     // → enters line 557: filter by variantColor='đỏ' → returns img-1 (color='đỏ')
     const product = {
-      id: 1, name: 'Phone',
+      id: 1,
+      name: 'Phone',
       toJSON: jest.fn().mockReturnValue({
-        id: 1, name: 'Phone', basePrice: 10000000, status: 'active',
+        id: 1,
+        name: 'Phone',
+        basePrice: 10000000,
+        status: 'active',
         // productImages is used by _mapProductImages to build images
         productImages: [
           { id: 'img-1', imageUrl: 'red.jpg', color: 'đỏ', isThumbnail: true, variantId: null },
@@ -1011,8 +1070,16 @@ describe('catalogService.js — _buildProductDetailResponse color image filterin
         ],
         variants: [
           {
-            id: 'v-red', sku: 'RED-SKU', name: 'Đỏ', displayName: 'Đỏ 128GB', variantName: 'Đỏ 128GB',
-            price: 10000000, compareAtPrice: null, isDefault: true, isAvailable: true, stockQuantity: 5,
+            id: 'v-red',
+            sku: 'RED-SKU',
+            name: 'Đỏ',
+            displayName: 'Đỏ 128GB',
+            variantName: 'Đỏ 128GB',
+            price: 10000000,
+            compareAtPrice: null,
+            isDefault: true,
+            isAvailable: true,
+            stockQuantity: 5,
             attributes: { 'Màu sắc': 'đỏ' },
           },
         ],
@@ -1020,14 +1087,17 @@ describe('catalogService.js — _buildProductDetailResponse color image filterin
       }),
     };
 
-    const result = service._buildProductDetailResponse(product, { skuId: 'v-red', queryColor: null });
+    const result = service._buildProductDetailResponse(product, {
+      skuId: 'v-red',
+      queryColor: null,
+    });
     expect(result).toBeDefined();
     // After _mapProductImages: images have {url, color, variantId} structure
     // After color filter: only red image remains
     expect(result.images).toEqual(
-      expect.arrayContaining([expect.objectContaining({ url: 'red.jpg', color: 'đỏ' })])
+      expect.arrayContaining([expect.objectContaining({ url: 'red.jpg', color: 'đỏ' })]),
     );
-    expect(result.images.some(img => img.url === 'blue.jpg')).toBe(false);
+    expect(result.images.some((img) => img.url === 'blue.jpg')).toBe(false);
   });
 
   it('skuId không đặt + variantColor từ queryColor → matchByColor filter (line 564)', () => {
@@ -1038,17 +1108,41 @@ describe('catalogService.js — _buildProductDetailResponse color image filterin
     // variantColor = normColor = 'xanh' (line 551: !skuId && normColor → variantColor = normColor)
     // → else if (variantColor) → matchByColor finds productImages with color='xanh' → line 563-566
     const product = {
-      id: 2, name: 'Tablet',
+      id: 2,
+      name: 'Tablet',
       toJSON: jest.fn().mockReturnValue({
-        id: 2, name: 'Tablet', basePrice: 15000000, status: 'active',
+        id: 2,
+        name: 'Tablet',
+        basePrice: 15000000,
+        status: 'active',
         productImages: [
-          { id: 'img-a', imageUrl: 'blue-tablet.jpg', color: 'xanh', isThumbnail: true, variantId: null },
-          { id: 'img-b', imageUrl: 'gray-tablet.jpg', color: 'xám', isThumbnail: false, variantId: null },
+          {
+            id: 'img-a',
+            imageUrl: 'blue-tablet.jpg',
+            color: 'xanh',
+            isThumbnail: true,
+            variantId: null,
+          },
+          {
+            id: 'img-b',
+            imageUrl: 'gray-tablet.jpg',
+            color: 'xám',
+            isThumbnail: false,
+            variantId: null,
+          },
         ],
         variants: [
           {
-            id: 'v-blue', sku: 'BLUE-TAB', name: 'Xanh', displayName: 'Xanh 64GB', variantName: 'Xanh 64GB',
-            price: 15000000, compareAtPrice: null, isDefault: true, isAvailable: true, stockQuantity: 3,
+            id: 'v-blue',
+            sku: 'BLUE-TAB',
+            name: 'Xanh',
+            displayName: 'Xanh 64GB',
+            variantName: 'Xanh 64GB',
+            price: 15000000,
+            compareAtPrice: null,
+            isDefault: true,
+            isAvailable: true,
+            stockQuantity: 3,
             attributes: { 'Màu sắc': 'xanh' },
           },
         ],
@@ -1056,13 +1150,16 @@ describe('catalogService.js — _buildProductDetailResponse color image filterin
       }),
     };
 
-    const result = service._buildProductDetailResponse(product, { skuId: null, queryColor: 'xanh' });
+    const result = service._buildProductDetailResponse(product, {
+      skuId: null,
+      queryColor: 'xanh',
+    });
     expect(result).toBeDefined();
     // matchByColor should select only the blue image (url='blue-tablet.jpg')
     expect(result.images).toEqual(
-      expect.arrayContaining([expect.objectContaining({ url: 'blue-tablet.jpg', color: 'xanh' })])
+      expect.arrayContaining([expect.objectContaining({ url: 'blue-tablet.jpg', color: 'xanh' })]),
     );
-    expect(result.images.some(img => img.url === 'gray-tablet.jpg')).toBe(false);
+    expect(result.images.some((img) => img.url === 'gray-tablet.jpg')).toBe(false);
   });
 });
 
@@ -1087,7 +1184,9 @@ describe('catalogService.js — createProduct category not found (line 822)', ()
         findProductsList: jest.fn().mockResolvedValue({ count: 0, rows: [] }),
         findProductByIdWithFullDetails: jest.fn().mockResolvedValue(null),
         findProductBySlugWithFullDetails: jest.fn().mockResolvedValue(null),
-        findProductFiltersData: jest.fn().mockResolvedValue({ priceRange: {}, brands: [], colors: [], sizes: [], others: [] }),
+        findProductFiltersData: jest
+          .fn()
+          .mockResolvedValue({ priceRange: {}, brands: [], colors: [], sizes: [], others: [] }),
         findRecentlyViewedByUser: jest.fn().mockResolvedValue([]),
         // Only 1 category found, but 2 requested
         findCategoriesByIds: jest.fn().mockResolvedValue([{ id: 1, name: 'Electronics' }]),
@@ -1107,7 +1206,7 @@ describe('catalogService.js — createProduct category not found (line 822)', ()
           price: 100000,
           categoryIds: [1, 999], // 999 doesn't exist → only 1 returned
         },
-      })
+      }),
     ).rejects.toMatchObject({
       statusCode: 400,
       message: expect.stringContaining('danh mục'),

@@ -1,7 +1,7 @@
-const { Op } = require('sequelize');
 const { AppError } = require('../../../shared/errors');
 const { AdminAuditService } = require('../../../shared/adminAudit');
 const discountCodeRepository = require('../repositories/discountCodeRepository');
+const Op = discountCodeRepository.getOp();
 
 /**
  * @file discountCodeService.js

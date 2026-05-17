@@ -1,6 +1,8 @@
 const { DiscountCode } = require('../../../models');
 const { Op } = require('sequelize');
 
+const getOp = () => Op;
+
 /**
  * @file discountCodeRepository.js
  * @layer Repository — Data access layer cho discount code
@@ -69,6 +71,7 @@ const incrementUsedCount = (id) => {
 };
 
 module.exports = {
+  getOp,
   findAll,
   findById,
   findOne,

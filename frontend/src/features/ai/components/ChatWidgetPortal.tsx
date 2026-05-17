@@ -7,7 +7,7 @@ import {
   saveSessionIdToStorage,
   createSessionId,
 } from '@/stores/chatStore';
-import { Message } from '../types/Message';
+import { Message } from '../types/message.types';
 import { useSendChatbotMessageMutation, ChatbotResponse } from '../services/chatbotApi';
 
 type ChatbotApiEnvelope = { status: string; data: ChatbotResponse; message?: string };

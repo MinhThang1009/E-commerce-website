@@ -10,4 +10,3 @@ export interface Message {
   products?: ProductRecommendation[];
   actions?: ChatAction[];
 }
-

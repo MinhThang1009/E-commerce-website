@@ -4,7 +4,7 @@ import { useAuthStore } from '@/stores/authStore';
 import { geminiService } from '../services/geminiApi';
 import './ChatWidget.css';
 
-import { Message } from '../types/Message';
+import { Message } from '../types/message.types';
 
 const ChatWidgetSimple: React.FC = () => {
   const { t } = useTranslation();
@@ -16,9 +16,10 @@ const ChatWidgetSimple: React.FC = () => {
 
   useEffect(() => {
     if (isOpen && messages.length === 0) {
-      const greetingText = isAuthenticated && user
-        ? t('chat.greetingWithName', { name: user.name })
-        : t('chat.greeting');
+      const greetingText =
+        isAuthenticated && user
+          ? t('chat.greetingWithName', { name: user.name })
+          : t('chat.greeting');
 
       const greeting = {
         id: Date.now().toString(),
@@ -48,10 +49,7 @@ const ChatWidgetSimple: React.FC = () => {
       const handleClickOutside = (e: Event) => {
         e.stopPropagation();
 
-        if (
-          chatContainerRef.current &&
-          !chatContainerRef.current.contains(e.target as Node)
-        ) {
+        if (chatContainerRef.current && !chatContainerRef.current.contains(e.target as Node)) {
           e.preventDefault();
         }
       };
@@ -69,10 +67,7 @@ const ChatWidgetSimple: React.FC = () => {
       document.addEventListener('keydown', handleKeyDown, true);
 
       const handleScroll = (e: Event) => {
-        if (
-          chatContainerRef.current &&
-          chatContainerRef.current.contains(e.target as Node)
-        ) {
+        if (chatContainerRef.current && chatContainerRef.current.contains(e.target as Node)) {
           return;
         }
       };
@@ -167,9 +162,9 @@ const ChatWidgetSimple: React.FC = () => {
     e.preventDefault();
 
     const cleanupEvents = () => {
-      const handleClickOutside = () => { };
-      const handleKeyDown = () => { };
-      const handleScroll = () => { };
+      const handleClickOutside = () => {};
+      const handleKeyDown = () => {};
+      const handleScroll = () => {};
 
       document.removeEventListener('click', handleClickOutside, true);
       document.removeEventListener('mousedown', handleClickOutside, true);
@@ -195,16 +190,18 @@ const ChatWidgetSimple: React.FC = () => {
           <div className="absolute inset-0 rounded-full bg-primary-300 animate-ping opacity-20 animation-delay-75"></div>
 
           <div
-            className={`absolute -top-1 -right-1 w-5 h-5 rounded-full border-3 border-white shadow-lg ${geminiService.isReady()
+            className={`absolute -top-1 -right-1 w-5 h-5 rounded-full border-3 border-white shadow-lg ${
+              geminiService.isReady()
                 ? 'bg-gradient-to-r from-green-400 to-green-500'
                 : 'bg-gradient-to-r from-yellow-400 to-orange-500'
-              }`}
+            }`}
           >
             <div
-              className={`absolute inset-1 rounded-full ${geminiService.isReady()
+              className={`absolute inset-1 rounded-full ${
+                geminiService.isReady()
                   ? 'bg-green-300 animate-pulse'
                   : 'bg-yellow-300 animate-pulse'
-                }`}
+              }`}
             ></div>
           </div>
 
@@ -263,8 +260,19 @@ const ChatWidgetSimple: React.FC = () => {
               <div className="flex items-center justify-between">
                 <div className="flex items-center space-x-3">
                   <div className="w-10 h-10 rounded-full bg-white/20 backdrop-blur-sm flex items-center justify-center">
-                    <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z" />
+                    <svg
+                      xmlns="http://www.w3.org/2000/svg"
+                      className="h-6 w-6"
+                      fill="none"
+                      viewBox="0 0 24 24"
+                      stroke="currentColor"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z"
+                      />
                     </svg>
                   </div>
                   <div>
@@ -279,7 +287,12 @@ const ChatWidgetSimple: React.FC = () => {
                   title={t('chat.close')}
                 >
                   <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M6 18L18 6M6 6l12 12"
+                    />
                   </svg>
                 </button>
               </div>
@@ -308,10 +321,11 @@ const ChatWidgetSimple: React.FC = () => {
                   className={`flex ${message.sender === 'user' ? 'justify-end' : 'justify-start'}`}
                 >
                   <div
-                    className={`max-w-[80%] rounded-2xl p-4 chat-bubble ${message.sender === 'user'
+                    className={`max-w-[80%] rounded-2xl p-4 chat-bubble ${
+                      message.sender === 'user'
                         ? 'bg-primary-500 text-white'
                         : 'bg-neutral-100 dark:bg-neutral-800 text-neutral-900 dark:text-white'
-                      }`}
+                    }`}
                   >
                     {message.text === '...' ? (
                       <div className="typing-indicator">
@@ -365,8 +379,19 @@ const ChatWidgetSimple: React.FC = () => {
                   type="submit"
                   className="chat-button bg-primary-500 hover:bg-primary-600 text-white rounded-full p-2 transition-all duration-200"
                 >
-                  <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" />
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    className="h-6 w-6"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    stroke="currentColor"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"
+                    />
                   </svg>
                 </button>
               </form>

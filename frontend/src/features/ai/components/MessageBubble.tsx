@@ -1,6 +1,6 @@
 import React from 'react';
 import { useTranslation } from 'react-i18next';
-import { Message } from '../types/Message';
+import { Message } from '../types/message.types';
 import ProductCard from './AIProductCard';
 import { Link } from 'react-router-dom';
 import { GridIcon } from './icons/index';

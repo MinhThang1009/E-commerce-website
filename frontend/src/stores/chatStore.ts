@@ -1,6 +1,6 @@
 import { create } from 'zustand';
 import { immer } from 'zustand/middleware/immer';
-import { Message } from '@/features/ai/types/Message';
+import { Message } from '@/features/ai/types/message.types';
 
 const STORAGE_KEY_MESSAGES = 'chat_messages';
 const STORAGE_KEY_SESSION = 'chat_session_id';
@@ -26,9 +26,15 @@ const loadSessionId = (): string => {
   try {
     const saved = localStorage.getItem(STORAGE_KEY_SESSION);
     if (saved) return saved;
-  } catch { /* bỏ qua lỗi localStorage */ }
+  } catch {
+    /* bỏ qua lỗi localStorage */
+  }
   const newId = createSessionId();
-  try { localStorage.setItem(STORAGE_KEY_SESSION, newId); } catch { /* bỏ qua lỗi localStorage */ }
+  try {
+    localStorage.setItem(STORAGE_KEY_SESSION, newId);
+  } catch {
+    /* bỏ qua lỗi localStorage */
+  }
   return newId;
 };
 
@@ -36,14 +42,18 @@ const loadSessionId = (): string => {
 export const saveMessagesToStorage = (messages: Message[]): void => {
   try {
     localStorage.setItem(STORAGE_KEY_MESSAGES, JSON.stringify(messages));
-  } catch { /* bỏ qua lỗi localStorage */ }
+  } catch {
+    /* bỏ qua lỗi localStorage */
+  }
 };
 
 // Lưu sessionId vào localStorage
 export const saveSessionIdToStorage = (sessionId: string): void => {
   try {
     localStorage.setItem(STORAGE_KEY_SESSION, sessionId);
-  } catch { /* bỏ qua lỗi localStorage */ }
+  } catch {
+    /* bỏ qua lỗi localStorage */
+  }
 };
 
 interface ChatState {
@@ -117,5 +127,5 @@ export const useChatStore = create<ChatState & ChatActions>()(
           state.messages = [];
         }
       }),
-  }))
+  })),
 );

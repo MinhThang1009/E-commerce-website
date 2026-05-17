@@ -1,6 +1,6 @@
 import React, { RefObject } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Message } from '../types/Message';
+import { Message } from '../types/message.types';
 import { UserIcon } from './icons';
 import MessageBubble from './MessageBubble';
 
@@ -27,9 +27,7 @@ const ChatMessages: React.FC<ChatMessagesProps> = ({
       {messages.map((message) => (
         <div
           key={message.id}
-          className={`flex ${
-            message.sender === 'user' ? 'justify-end' : 'justify-start'
-          }`}
+          className={`flex ${message.sender === 'user' ? 'justify-end' : 'justify-start'}`}
         >
           {message.sender === 'ai' && (
             <div className="relative">
@@ -73,10 +71,7 @@ const ChatMessages: React.FC<ChatMessagesProps> = ({
             </div>
           )}
 
-          <MessageBubble
-            message={message}
-            onSuggestionClick={onSuggestionClick}
-          />
+          <MessageBubble message={message} onSuggestionClick={onSuggestionClick} />
         </div>
       ))}
       <div ref={messagesEndRef} />
@@ -85,4 +80,3 @@ const ChatMessages: React.FC<ChatMessagesProps> = ({
 };
 
 export default ChatMessages;
-

@@ -1,5 +1,5 @@
 import React from 'react';
-import { Message } from '../types/Message';
+import { Message } from '../types/message.types';
 import { getLocale } from '@/utils/format';
 
 // Parse **bold** và xuống dòng — đủ dùng cho chatbot response

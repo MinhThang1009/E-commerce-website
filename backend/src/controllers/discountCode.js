@@ -1,7 +1,7 @@
 ﻿const { DiscountCode } = require('../models');
 const { Op } = require('sequelize');
 const { catchAsync } = require('../utils/catchAsync');
-const { AppError } = require('../middlewares/errorHandler');
+const { AppError } = require('../shared/errors');
 const { AdminAuditService } = require('../services/adminAudit');
 
 /**

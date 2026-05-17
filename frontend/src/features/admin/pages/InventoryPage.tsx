@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Table, Input, Button, Tag, Space, Tooltip, message } from 'antd';
+import { Table, Input, Button, Tag, Space, Tooltip, App } from 'antd';
 import { EditOutlined, SaveOutlined, CloseOutlined, SearchOutlined } from '@ant-design/icons';
 import { useTranslation } from 'react-i18next';
 import { useGetAdminProductsQuery } from '../api/adminProductApi';
@@ -16,6 +16,7 @@ const LOW_STOCK_THRESHOLD = 5;
 
 const InventoryPage: React.FC = () => {
   const { t } = useTranslation();
+  const { message } = App.useApp();
   const [searchText, setSearchText] = useState('');
   const [page, setPage] = useState(1);
   const [editingId, setEditingId] = useState<number | null>(null);
@@ -29,7 +30,7 @@ const InventoryPage: React.FC = () => {
   });
 
   const products: ProductRow[] = (data?.data?.products || []).map((p) => ({
-    id: typeof p.id === 'string' ? parseInt(p.id, 10) : p.id as unknown as number,
+    id: typeof p.id === 'string' ? parseInt(p.id, 10) : (p.id as unknown as number),
     name: p.name,
     sku: p.sku,
     stockQuantity: (p as { stockQuantity?: number }).stockQuantity ?? 0,
@@ -149,11 +150,7 @@ const InventoryPage: React.FC = () => {
         }
         return (
           <Tooltip title={t('inventory.editStock')}>
-            <Button
-              size="small"
-              icon={<EditOutlined />}
-              onClick={() => handleEdit(record)}
-            />
+            <Button size="small" icon={<EditOutlined />} onClick={() => handleEdit(record)} />
           </Tooltip>
         );
       },
@@ -162,13 +159,23 @@ const InventoryPage: React.FC = () => {
 
   return (
     <div style={{ padding: 24 }}>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
+      <div
+        style={{
+          display: 'flex',
+          justifyContent: 'space-between',
+          alignItems: 'center',
+          marginBottom: 16,
+        }}
+      >
         <h2 style={{ margin: 0 }}>{t('inventory.title')}</h2>
         <Input
           placeholder={t('inventory.searchPlaceholder')}
           prefix={<SearchOutlined />}
           value={searchText}
-          onChange={(e) => { setSearchText(e.target.value); setPage(1); }}
+          onChange={(e) => {
+            setSearchText(e.target.value);
+            setPage(1);
+          }}
           style={{ width: 260 }}
           allowClear
         />

@@ -5,8 +5,10 @@ import { ROUTES, buildRoute } from '@/routes/paths';
 import { Helmet } from 'react-helmet-async';
 import { useGetCategoryBySlugQuery, useGetProductsByCategoryQuery } from '../api/categoryApi';
 import { useGetAllCategoriesQuery } from '../api/categoryApi';
-import ProductCard from '@/components/shared/ProductCard';
+import { ProductCard } from '@/features/catalog';
 import { getUploadUrl } from '@/utils/uploadUrl';
+import { localizeField } from '@/utils/localize';
+import { Smartphone, Tablet, Laptop, Watch, Clock, Package, type LucideIcon } from 'lucide-react';
 
 type SortOption = 'newest' | 'price-asc' | 'price-desc' | 'popular';
 
@@ -17,21 +19,27 @@ const sortOrderMap: Record<SortOption, { sort: string; order: 'ASC' | 'DESC' }> 
   popular: { sort: 'totalSold', order: 'DESC' },
 };
 
-const CATEGORY_ICONS: Record<string, string> = {
-  'dien-thoai': '📱',
-  tablet: '🖥️',
-  laptop: '💻',
+const CATEGORY_ICONS: Record<string, LucideIcon> = {
+  'dien-thoai': Smartphone,
+  tablet: Tablet,
+  laptop: Laptop,
+  smartwatch: Watch,
+  'dong-ho': Clock,
 };
 
+const getCategoryIcon = (slug: string) => CATEGORY_ICONS[slug] ?? Package;
+
 const CategoryPage: React.FC = () => {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const { slug } = useParams<{ slug: string }>();
   const navigate = useNavigate();
   const [sortBy, setSortBy] = useState<SortOption>('newest');
   const [page, setPage] = useState(1);
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
 
-  const { data: categoryData, isLoading: categoryLoading } = useGetCategoryBySlugQuery(slug || '', { enabled: !!slug });
+  const { data: categoryData, isLoading: categoryLoading } = useGetCategoryBySlugQuery(slug || '', {
+    enabled: !!slug,
+  });
   const categoryInfo = useMemo(() => {
     if (categoryData?.data && !Array.isArray(categoryData.data)) {
       return categoryData.data;
@@ -46,7 +54,7 @@ const CategoryPage: React.FC = () => {
     isFetching,
   } = useGetProductsByCategoryQuery(
     { id: categoryInfo?.id || '', page, limit: 12, sort, order },
-    { enabled: !!categoryInfo?.id }
+    { enabled: !!categoryInfo?.id },
   );
 
   const { data: allCatsData } = useGetAllCategoriesQuery();
@@ -72,10 +80,12 @@ const CategoryPage: React.FC = () => {
   if (!categoryInfo) return null;
 
   const products = productsData?.data?.products || [];
-  const totalProducts = productsData?.data?.pagination?.totalItems ?? categoryInfo.productCount ?? 0;
-  const totalPages = productsData?.data?.pagination?.totalPages ?? 1;
+  const totalProducts = productsData?.data?.total ?? categoryInfo.productCount ?? 0;
+  const totalPages = productsData?.data?.pages ?? 1;
 
-  const emoji = CATEGORY_ICONS[slug || ''] || '📦';
+  const CategoryIcon = getCategoryIcon(slug || '');
+  const catName = localizeField(categoryInfo, 'name', i18n.language);
+  const catDesc = localizeField(categoryInfo, 'description', i18n.language);
 
   const SORT_OPTIONS: { value: SortOption; label: string }[] = [
     { value: 'newest', label: t('category.sortNewest') },
@@ -91,13 +101,16 @@ const CategoryPage: React.FC = () => {
     <div className="min-h-screen bg-neutral-50 dark:bg-neutral-950">
       {/* Thẻ meta SEO cho trang danh mục */}
       <Helmet>
-        <title>{`${categoryInfo.name} | TechStore`}</title>
-        <meta name="description" content={categoryInfo.description || categoryInfo.name} />
-        <meta property="og:title" content={categoryInfo.name} />
-        <meta property="og:description" content={categoryInfo.description || categoryInfo.name} />
+        <title>{`${catName} | TechStore`}</title>
+        <meta name="description" content={catDesc || catName} />
+        <meta property="og:title" content={catName} />
+        <meta property="og:description" content={catDesc || catName} />
         {categoryImageUrl && <meta property="og:image" content={categoryImageUrl} />}
         <meta property="og:type" content="website" />
-        <link rel="canonical" href={`${import.meta.env.VITE_SITE_URL || 'https://techstore.vn'}/categories/${slug}`} />
+        <link
+          rel="canonical"
+          href={`${import.meta.env.VITE_SITE_URL || 'https://techstore.vn'}/categories/${slug}`}
+        />
       </Helmet>
       {/* Banner hero */}
       <div className="relative overflow-hidden bg-gradient-to-r from-primary-800 via-primary-700 to-primary-600 text-white">
@@ -113,46 +126,68 @@ const CategoryPage: React.FC = () => {
         )}
 
         <div className="absolute inset-0 opacity-10">
-          <div className="absolute top-8 left-16 text-8xl rotate-12 select-none">{emoji}</div>
-          <div className="absolute top-4 right-32 text-6xl -rotate-6 select-none">{emoji}</div>
-          <div className="absolute bottom-4 right-12 text-7xl rotate-3 select-none">{emoji}</div>
-          <div className="absolute bottom-6 left-1/3 text-5xl -rotate-12 select-none">{emoji}</div>
+          <div className="absolute top-8 left-16 rotate-12 select-none opacity-10">
+            <CategoryIcon className="w-24 h-24 text-white" />
+          </div>
+          <div className="absolute top-4 right-32 -rotate-6 select-none opacity-10">
+            <CategoryIcon className="w-16 h-16 text-white" />
+          </div>
+          <div className="absolute bottom-4 right-12 rotate-3 select-none opacity-10">
+            <CategoryIcon className="w-20 h-20 text-white" />
+          </div>
+          <div className="absolute bottom-6 left-1/3 -rotate-12 select-none opacity-10">
+            <CategoryIcon className="w-14 h-14 text-white" />
+          </div>
         </div>
 
         <div className="relative container mx-auto px-4 py-12">
           <nav className="flex items-center gap-2 text-sm text-white/70 mb-6">
-            <Link to={ROUTES.HOME} className="hover:text-white transition-colors">{t('category.home')}</Link>
+            <Link to={ROUTES.HOME} className="hover:text-white transition-colors">
+              {t('category.home')}
+            </Link>
             <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
             </svg>
-            <Link to={ROUTES.SHOP} className="hover:text-white transition-colors">{t('category.shop')}</Link>
+            <Link to={ROUTES.SHOP} className="hover:text-white transition-colors">
+              {t('category.shop')}
+            </Link>
             <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
             </svg>
-            <span className="text-white font-medium">{categoryInfo.name}</span>
+            <span className="text-white font-medium">{catName}</span>
           </nav>
 
           <div className="flex items-center gap-4">
-            <div className="w-16 h-16 bg-white/20 backdrop-blur-sm rounded-2xl flex items-center justify-center text-4xl border border-white/30 shadow-lg overflow-hidden">
+            <div className="w-16 h-16 bg-white/20 backdrop-blur-sm rounded-2xl flex items-center justify-center border border-white/30 shadow-lg overflow-hidden">
               {categoryInfo.image ? (
                 <img
                   src={getUploadUrl(categoryInfo.image)}
-                  alt={categoryInfo.name}
+                  alt={catName}
                   className="w-full h-full object-cover"
                 />
               ) : (
-                emoji
+                <CategoryIcon className="w-8 h-8 text-white" />
               )}
             </div>
             <div>
-              <h1 className="text-3xl md:text-4xl font-bold tracking-tight">{categoryInfo.name}</h1>
-              {categoryInfo.description && (
-                <p className="text-white/80 mt-1 text-sm md:text-base max-w-xl">{categoryInfo.description}</p>
+              <h1 className="text-3xl md:text-4xl font-bold tracking-tight">{catName}</h1>
+              {catDesc && (
+                <p className="text-white/80 mt-1 text-sm md:text-base max-w-xl">{catDesc}</p>
               )}
               <div className="mt-3 flex items-center gap-2">
                 <span className="inline-flex items-center gap-1.5 bg-white/20 backdrop-blur-sm border border-white/20 text-white text-xs font-medium px-3 py-1 rounded-full">
-                  <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
+                  <svg
+                    className="w-3.5 h-3.5"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"
+                    />
                   </svg>
                   {productsLoading ? '...' : t('category.productCount', { count: totalProducts })}
                 </span>
@@ -177,8 +212,11 @@ const CategoryPage: React.FC = () => {
                 to={buildRoute.category(cat.slug)}
                 className="flex-shrink-0 flex items-center gap-2 px-4 py-2 text-sm font-medium rounded-xl border border-neutral-200 dark:border-neutral-700 text-neutral-600 dark:text-neutral-400 hover:bg-white dark:hover:bg-neutral-800 hover:border-primary-300 hover:text-primary-700 dark:hover:border-primary-700 dark:hover:text-primary-300 transition-all"
               >
-                <span>{CATEGORY_ICONS[cat.slug] || '📦'}</span>
-                {cat.name}
+                {(() => {
+                  const Icon = getCategoryIcon(cat.slug);
+                  return <Icon className="w-4 h-4" />;
+                })()}
+                {localizeField(cat, 'name', i18n.language)}
               </Link>
             ))}
           </div>
@@ -197,15 +235,30 @@ const CategoryPage: React.FC = () => {
             <div className="relative">
               <select
                 value={sortBy}
-                onChange={(e) => { setSortBy(e.target.value as SortOption); setPage(1); }}
+                onChange={(e) => {
+                  setSortBy(e.target.value as SortOption);
+                  setPage(1);
+                }}
                 className="appearance-none pl-3 pr-8 py-2 text-sm rounded-xl border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-neutral-800 text-neutral-700 dark:text-neutral-200 focus:border-primary-500 focus:ring-2 focus:ring-primary-500/20 outline-none cursor-pointer"
               >
                 {SORT_OPTIONS.map((opt) => (
-                  <option key={opt.value} value={opt.value}>{opt.label}</option>
+                  <option key={opt.value} value={opt.value}>
+                    {opt.label}
+                  </option>
                 ))}
               </select>
-              <svg className="pointer-events-none absolute right-2.5 top-1/2 -translate-y-1/2 w-4 h-4 text-neutral-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+              <svg
+                className="pointer-events-none absolute right-2.5 top-1/2 -translate-y-1/2 w-4 h-4 text-neutral-400"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M19 9l-7 7-7-7"
+                />
               </svg>
             </div>
 
@@ -225,7 +278,11 @@ const CategoryPage: React.FC = () => {
                 title={t('category.listView')}
               >
                 <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
-                  <path fillRule="evenodd" d="M3 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm0 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm0 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm0 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1z" clipRule="evenodd" />
+                  <path
+                    fillRule="evenodd"
+                    d="M3 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm0 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm0 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm0 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1z"
+                    clipRule="evenodd"
+                  />
                 </svg>
               </button>
             </div>
@@ -233,10 +290,17 @@ const CategoryPage: React.FC = () => {
         </div>
 
         {productsLoading || isFetching ? (
-          <div className={`grid gap-5 ${viewMode === 'grid' ? 'grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4' : 'grid-cols-1'}`}>
+          <div
+            className={`grid gap-5 ${viewMode === 'grid' ? 'grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4' : 'grid-cols-1'}`}
+          >
             {[...Array(8)].map((_, i) => (
-              <div key={i} className="bg-white dark:bg-neutral-900 rounded-2xl overflow-hidden animate-pulse">
-                <div className={`bg-neutral-200 dark:bg-neutral-700 ${viewMode === 'grid' ? 'aspect-square' : 'h-48'}`}></div>
+              <div
+                key={i}
+                className="bg-white dark:bg-neutral-900 rounded-2xl overflow-hidden animate-pulse"
+              >
+                <div
+                  className={`bg-neutral-200 dark:bg-neutral-700 ${viewMode === 'grid' ? 'aspect-square' : 'h-48'}`}
+                ></div>
                 <div className="p-5 space-y-3">
                   <div className="h-4 bg-neutral-200 dark:bg-neutral-700 rounded w-3/4"></div>
                   <div className="h-4 bg-neutral-200 dark:bg-neutral-700 rounded w-1/2"></div>
@@ -247,8 +311,8 @@ const CategoryPage: React.FC = () => {
           </div>
         ) : products.length === 0 ? (
           <div className="text-center py-20 bg-white dark:bg-neutral-900 rounded-2xl border border-neutral-100 dark:border-neutral-800">
-            <div className="w-20 h-20 bg-neutral-100 dark:bg-neutral-800 rounded-2xl flex items-center justify-center mx-auto mb-5 text-4xl">
-              {emoji}
+            <div className="w-20 h-20 bg-neutral-100 dark:bg-neutral-800 rounded-2xl flex items-center justify-center mx-auto mb-5">
+              <CategoryIcon className="w-10 h-10 text-neutral-400 dark:text-neutral-500" />
             </div>
             <h3 className="text-xl font-semibold text-neutral-700 dark:text-neutral-300 mb-2">
               {t('category.noProducts')}
@@ -261,17 +325,26 @@ const CategoryPage: React.FC = () => {
               className="inline-flex items-center gap-2 px-5 py-2.5 bg-primary-600 hover:bg-primary-700 text-white rounded-xl text-sm font-medium transition-colors"
             >
               <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z" />
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z"
+                />
               </svg>
               {t('category.viewAllProducts')}
             </Link>
           </div>
         ) : (
-          <div className={`grid gap-5 ${viewMode === 'grid' ? 'grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4' : 'grid-cols-1 lg:grid-cols-2'}`}>
-            {products.map(// eslint-disable-next-line @typescript-eslint/no-explicit-any -- Product card cần nhiều trường
-          (product: any) => (
-              <ProductCard key={product.id} {...product} />
-            ))}
+          <div
+            className={`grid gap-5 ${viewMode === 'grid' ? 'grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4' : 'grid-cols-1 lg:grid-cols-2'}`}
+          >
+            {products.map(
+              // eslint-disable-next-line @typescript-eslint/no-explicit-any -- Product card cần nhiều trường
+              (product: any) => (
+                <ProductCard key={product.id} {...product} />
+              ),
+            )}
           </div>
         )}
 
@@ -283,7 +356,12 @@ const CategoryPage: React.FC = () => {
               className="flex items-center gap-1.5 px-4 py-2 rounded-xl border border-neutral-200 dark:border-neutral-700 text-sm font-medium text-neutral-600 dark:text-neutral-400 hover:bg-white dark:hover:bg-neutral-800 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
             >
               <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M15 19l-7-7 7-7"
+                />
               </svg>
               {t('category.prev')}
             </button>
@@ -297,19 +375,22 @@ const CategoryPage: React.FC = () => {
               }, [])
               .map((p, idx) =>
                 p === '...' ? (
-                  <span key={`ellipsis-${idx}`} className="px-2 text-neutral-400">…</span>
+                  <span key={`ellipsis-${idx}`} className="px-2 text-neutral-400">
+                    …
+                  </span>
                 ) : (
                   <button
                     key={p}
                     onClick={() => setPage(p as number)}
-                    className={`w-9 h-9 rounded-xl text-sm font-medium transition-colors ${page === p
-                      ? 'bg-primary-600 text-white shadow-sm'
-                      : 'border border-neutral-200 dark:border-neutral-700 text-neutral-600 dark:text-neutral-400 hover:bg-white dark:hover:bg-neutral-800'
-                      }`}
+                    className={`w-9 h-9 rounded-xl text-sm font-medium transition-colors ${
+                      page === p
+                        ? 'bg-primary-600 text-white shadow-sm'
+                        : 'border border-neutral-200 dark:border-neutral-700 text-neutral-600 dark:text-neutral-400 hover:bg-white dark:hover:bg-neutral-800'
+                    }`}
                   >
                     {p}
                   </button>
-                )
+                ),
               )}
 
             <button
@@ -319,7 +400,12 @@ const CategoryPage: React.FC = () => {
             >
               {t('category.next')}
               <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M9 5l7 7-7 7"
+                />
               </svg>
             </button>
           </div>

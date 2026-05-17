@@ -39,7 +39,7 @@ class SequelizeCatalogRepository extends ICatalogRepository {
   // ---------- Category ----------
 
   async findAllCategoriesSorted() {
-    return this.Category.findAll({ order: [['name', 'ASC']] });
+    return this.Category.findAll({ order: [['nameVi', 'ASC']] });
   }
 
   // Đếm sản phẩm theo category_id qua raw SQL (nhanh hơn N+1 model.count).
@@ -102,7 +102,7 @@ class SequelizeCatalogRepository extends ICatalogRepository {
     return this.Product.findAndCountAll({
       where,
       include: [
-        { association: 'brand', attributes: ['id', 'name', 'slug', 'logoUrl'] },
+        { association: 'brand', attributes: ['id', 'name', 'nameVi', 'nameEn', 'slug', 'logoUrl'] },
         { association: 'productAttributes' },
         { association: 'variants' },
         { association: 'productImages' },
@@ -120,7 +120,7 @@ class SequelizeCatalogRepository extends ICatalogRepository {
   async findAllBrands({ filter } = {}) {
     const where = {};
     if (filter && filter.idIn) where.id = { [Op.in]: filter.idIn };
-    return this.Brand.findAll({ where, order: [['name', 'ASC']] });
+    return this.Brand.findAll({ where, order: [['nameVi', 'ASC']] });
   }
 
   // Lấy danh sách brandId của products thuộc category (DISTINCT).
@@ -171,7 +171,7 @@ class SequelizeCatalogRepository extends ICatalogRepository {
   async findAllCollections({ filter } = {}) {
     const where = {};
     if (filter && filter.isActive !== undefined) where.isActive = filter.isActive;
-    return this.Collection.findAll({ where, order: [['name', 'ASC']] });
+    return this.Collection.findAll({ where, order: [['nameVi', 'ASC']] });
   }
 
   async findCollectionById(id) {
@@ -487,7 +487,7 @@ class SequelizeCatalogRepository extends ICatalogRepository {
         },
       ],
       limit,
-      order: [['name', 'ASC']],
+      order: [['nameVi', 'ASC']],
     });
   }
 

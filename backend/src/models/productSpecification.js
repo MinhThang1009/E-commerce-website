@@ -21,6 +21,11 @@ const ProductSpecification = sequelize.define(
       type: DataTypes.TEXT,
       allowNull: false,
     },
+    valueEn: {
+      type: DataTypes.TEXT,
+      allowNull: true,
+      field: 'value_en',
+    },
     category: {
       type: DataTypes.STRING,
       allowNull: true,

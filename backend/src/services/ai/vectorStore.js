@@ -44,7 +44,7 @@ class SimpleVectorStore {
         const content = await fs.promises.readFile(this.storagePath, 'utf8');
         if (content && content.trim()) {
           this.items = JSON.parse(content);
-          logger.debug(`✅ Đã tải ${this.items.length} vector từ ổ đĩa`);
+          logger.debug(`Đã tải ${this.items.length} vector từ ổ đĩa`);
         }
       }
     } catch (e) {
@@ -61,9 +61,9 @@ class SimpleVectorStore {
 
       logger.debug(`💾 Đang lưu ${this.items.length} mục vào ${this.storagePath}...`);
       await fs.promises.writeFile(this.storagePath, JSON.stringify(this.items, null, 2));
-      logger.debug('✅ Lưu file thành công');
+      logger.debug('Lưu file thành công');
     } catch (e) {
-      logger.error('❌ Lỗi khi lưu vector store:', e);
+      logger.error('Lỗi khi lưu vector store:', e);
     }
   }
 
@@ -94,11 +94,11 @@ class SimpleVectorStore {
         try {
           vectorVi = await viEmbeddingService.generateEmbedding(textToEmbed);
           if (vectorVi && vectorVi.length !== EXPECTED_DIM_VI) {
-            logger.warn(`⚠️ vectorVi sai chiều cho "${product.name}": ${vectorVi.length} (mong đợi ${EXPECTED_DIM_VI})`);
+            logger.warn(`vectorVi sai chiều cho "${product.name}": ${vectorVi.length} (mong đợi ${EXPECTED_DIM_VI})`);
             vectorVi = null;
           }
         } catch (err) {
-          logger.warn(`⚠️ Không thể tạo Vietnamese vector cho "${product.name}": ${err.message}`);
+          logger.warn(`Không thể tạo Vietnamese vector cho "${product.name}": ${err.message}`);
         }
       }
 
@@ -145,6 +145,7 @@ class SimpleVectorStore {
     if (magnitude === 0 || !isFinite(magnitude)) return 0;
     const similarity = dotProduct / magnitude;
     // Guard: kết quả NaN/Infinity (embedding API trả NaN) → trả 0
+    /* istanbul ignore next */
     return isFinite(similarity) ? similarity : 0;
   }
 

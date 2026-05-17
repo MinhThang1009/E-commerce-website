@@ -3,7 +3,7 @@ import { useTranslation } from 'react-i18next';
 import { Link } from 'react-router-dom';
 import { ROUTES } from '@/routes/paths';
 import { useGetWishlistQuery, useClearWishlistMutation } from '../api/wishlistApi';
-import ProductCard from '@/components/shared/ProductCard';
+import { ProductCard } from '@/features/catalog';
 import LoadingSpinner from '@/components/common/LoadingSpinner';
 import { HeartIcon } from '@heroicons/react/24/outline';
 import { useWishlistStore } from '@/stores/wishlistStore';
@@ -59,9 +59,7 @@ const WishlistPage: React.FC = () => {
           <h2 className="text-xl font-semibold text-neutral-800 dark:text-neutral-200 mb-2">
             {t('wishlist.emptyTitle')}
           </h2>
-          <p className="text-neutral-600 dark:text-neutral-400 mb-6">
-            {t('wishlist.emptyDesc')}
-          </p>
+          <p className="text-neutral-600 dark:text-neutral-400 mb-6">{t('wishlist.emptyDesc')}</p>
           <Link
             to={ROUTES.SHOP}
             className="inline-flex items-center justify-center bg-primary-600 hover:bg-primary-700 text-white rounded-xl py-2.5 px-6 font-semibold transition-colors"

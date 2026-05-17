@@ -1,3 +1,4 @@
+import { Helmet } from 'react-helmet-async';
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { PremiumButton } from '@/components/common';
@@ -26,9 +27,7 @@ const ContactPage: React.FC = () => {
   const { mutateAsync: sendFeedback, isPending: isSubmitting } = useSendFeedbackMutation();
 
   const handleChange = (
-    e: React.ChangeEvent<
-      HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement
-    >
+    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>,
   ) => {
     const { name, value } = e.target;
     setFormData((prev) => ({
@@ -40,6 +39,20 @@ const ContactPage: React.FC = () => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setSubmitError('');
+
+    if (
+      !formData.name.trim() ||
+      !formData.email.trim() ||
+      !formData.subject ||
+      !formData.message.trim()
+    ) {
+      setSubmitError(t('checkout.validation.required'));
+      return;
+    }
+    if (!/\S+@\S+\.\S+/.test(formData.email)) {
+      setSubmitError(t('validation.email.invalid'));
+      return;
+    }
 
     try {
       // Backend dùng field `content`, không phải `message`
@@ -62,6 +75,9 @@ const ContactPage: React.FC = () => {
 
   return (
     <div className="container mx-auto px-4 py-16">
+      <Helmet>
+        <title>{t('contact.pageTitle', { defaultValue: 'Contact' })} | TechStore</title>
+      </Helmet>
       {/* Phần hero */}
       <div className="text-center mb-16">
         <h1 className="text-4xl font-bold text-neutral-900 dark:text-white mb-4">
@@ -370,9 +386,7 @@ const ContactPage: React.FC = () => {
         <div className="rounded-xl overflow-hidden h-96 bg-neutral-200 dark:bg-neutral-700">
           {/* Thay thế bằng component bản đồ thực tế hoặc iframe */}
           <div className="w-full h-full flex items-center justify-center text-neutral-500 dark:text-neutral-400 p-8 text-center">
-            <p>
-              {t('contact.location.placeholder')}
-            </p>
+            <p>{t('contact.location.placeholder')}</p>
           </div>
         </div>
       </div>
@@ -408,9 +422,7 @@ const ContactPage: React.FC = () => {
               <h3 className="text-lg font-medium text-neutral-900 dark:text-white mb-3">
                 {faq.question}
               </h3>
-              <p className="text-neutral-600 dark:text-neutral-400">
-                {faq.answer}
-              </p>
+              <p className="text-neutral-600 dark:text-neutral-400">{faq.answer}</p>
             </div>
           ))}
         </div>
@@ -420,4 +432,3 @@ const ContactPage: React.FC = () => {
 };
 
 export default ContactPage;
-

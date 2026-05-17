@@ -1,15 +1,33 @@
 const winston = require('winston');
 
+// Symbol splat được winston dùng để lưu extra arguments
+const SPLAT = Symbol.for('splat');
+
+const LEVEL_ICONS = { error: '❌', warn: '⚠️ ', info: '✅', debug: '🔍', verbose: '📋' };
+
+const formatSplat = (splat) => {
+  if (!splat || splat.length === 0) return '';
+  return ' ' + splat
+    .map((s) => (s !== null && typeof s === 'object' ? JSON.stringify(s) : String(s)))
+    .join(' ');
+};
+
 // Định dạng log đơn giản cho development (human-readable)
 const devFormat = winston.format.combine(
-  winston.format.colorize(),
+  // Chỉ colorize khi chạy trong terminal thật — tránh ANSI codes xuất hiện khi pipe/IDE
+  ...(process.stdout.isTTY ? [winston.format.colorize()] : []),
   winston.format.timestamp({ format: 'YYYY-MM-DD HH:mm:ss' }),
   winston.format.errors({ stack: true }),
-  winston.format.printf(({ level, message, timestamp, stack }) => {
-    return stack
-      ? `${timestamp} ${level}: ${message}\n${stack}`
-      : `${timestamp} ${level}: ${message}`;
-  })
+  winston.format.splat(),
+  winston.format.printf(({ level, message, timestamp, stack, [SPLAT]: splat }) => {
+    // Strip ANSI để tính độ dài thật của level string khi colorize
+    const levelClean = level.replace(/\x1B\[[0-9;]*m/g, '');
+    const pad = ' '.repeat(Math.max(0, 5 - levelClean.length));
+    const icon = LEVEL_ICONS[levelClean] ?? '  ';
+    const extra = formatSplat(splat);
+    const base = `${timestamp} ${level}${pad} ${icon} ${message}${extra}`;
+    return stack ? `${base}\n${stack}` : base;
+  }),
 );
 
 // Định dạng JSON cho production (dễ parse bởi log aggregator như ELK, Datadog)

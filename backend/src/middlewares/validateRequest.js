@@ -36,7 +36,7 @@ const validateExpressValidator = (req, res, next) => {
 
     // Log chi tiết để debug
     const logger = require('../utils/logger');
-    logger.error('🔍 Validation Errors: ' + JSON.stringify(formattedErrors, null, 2));
+    logger.error('Validation Errors: ' + JSON.stringify(formattedErrors, null, 2));
     logger.debug('📝 Request Body: ' + JSON.stringify(req.body, null, 2));
     logger.debug('🔗 Request Params: ' + JSON.stringify(req.params, null, 2));
 

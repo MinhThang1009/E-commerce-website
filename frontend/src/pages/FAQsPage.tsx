@@ -1,3 +1,4 @@
+import { Helmet } from 'react-helmet-async';
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
@@ -53,6 +54,9 @@ const FAQsPage: React.FC = () => {
 
   return (
     <div className="container mx-auto px-4 py-16">
+      <Helmet>
+        <title>{t('faqs.pageTitle', { defaultValue: 'FAQs' })} | TechStore</title>
+      </Helmet>
       <div className="text-center mb-12">
         <h1 className="text-4xl font-bold text-neutral-900 dark:text-white mb-4">
           {t('faqs.pageTitle')}
@@ -72,8 +76,19 @@ const FAQsPage: React.FC = () => {
             className="w-full px-4 py-3 pl-12 rounded-lg border border-neutral-300 dark:border-neutral-600 bg-white dark:bg-neutral-800 text-neutral-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary-500"
           />
           <div className="absolute left-4 top-1/2 transform -translate-y-1/2 text-neutral-500 dark:text-neutral-400">
-            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              className="h-5 w-5"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
+              />
             </svg>
           </div>
         </div>
@@ -107,17 +122,29 @@ const FAQsPage: React.FC = () => {
         <div className="lg:w-3/4">
           {filteredFAQs.length === 0 ? (
             <div className="text-center py-12 bg-neutral-50 dark:bg-neutral-800 rounded-lg">
-              <svg xmlns="http://www.w3.org/2000/svg" className="h-12 w-12 mx-auto text-neutral-400 mb-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.172 16.172a4 4 0 015.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                className="h-12 w-12 mx-auto text-neutral-400 mb-4"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M9.172 16.172a4 4 0 015.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+                />
               </svg>
               <h3 className="text-xl font-semibold text-neutral-700 dark:text-neutral-300 mb-2">
                 {t('faqs.empty.title')}
               </h3>
-              <p className="text-neutral-500 dark:text-neutral-400 mb-6">
-                {t('faqs.empty.desc')}
-              </p>
+              <p className="text-neutral-500 dark:text-neutral-400 mb-6">{t('faqs.empty.desc')}</p>
               <button
-                onClick={() => { setSearchQuery(''); setActiveCategory('all'); }}
+                onClick={() => {
+                  setSearchQuery('');
+                  setActiveCategory('all');
+                }}
                 className="px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors"
               >
                 {t('faqs.empty.resetBtn')}
@@ -126,8 +153,13 @@ const FAQsPage: React.FC = () => {
           ) : (
             <div className="space-y-6">
               {filteredFAQs.map((faq, index) => (
-                <div key={index} className="bg-white dark:bg-neutral-800 rounded-lg shadow-sm p-6 border border-neutral-200 dark:border-neutral-700">
-                  <h3 className="text-xl font-semibold text-neutral-900 dark:text-white mb-3">{faq.question}</h3>
+                <div
+                  key={index}
+                  className="bg-white dark:bg-neutral-800 rounded-lg shadow-sm p-6 border border-neutral-200 dark:border-neutral-700"
+                >
+                  <h3 className="text-xl font-semibold text-neutral-900 dark:text-white mb-3">
+                    {faq.question}
+                  </h3>
                   <p className="text-neutral-600 dark:text-neutral-400">{faq.answer}</p>
                 </div>
               ))}
@@ -143,7 +175,10 @@ const FAQsPage: React.FC = () => {
         <p className="text-neutral-600 dark:text-neutral-400 mb-6 max-w-2xl mx-auto">
           {t('faqs.contact.desc')}
         </p>
-        <Link to={ROUTES.CONTACT} className="inline-block bg-primary-600 hover:bg-primary-700 text-white font-medium py-3 px-6 rounded-lg transition-colors">
+        <Link
+          to={ROUTES.CONTACT}
+          className="inline-block bg-primary-600 hover:bg-primary-700 text-white font-medium py-3 px-6 rounded-lg transition-colors"
+        >
           {t('faqs.contact.btn')}
         </Link>
       </div>

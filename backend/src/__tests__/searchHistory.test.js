@@ -51,7 +51,6 @@ jest.mock('../middlewares/authenticate', () => ({
 }));
 
 jest.mock('../middlewares/rateLimiter', () => ({
-  chatLimiter: (_req, _res, next) => next(),
   chatbotLimiter: (_req, _res, next) => next(),
 }));
 

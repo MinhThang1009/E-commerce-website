@@ -3,7 +3,7 @@ import { PremiumButton } from '@/components/common';
 import Badge from '@/components/common/Badge';
 import LoadingSpinner from '@/components/common/LoadingSpinner';
 import { Rating } from '@/components/common/Rating';
-import ProductCard from '@/components/shared/ProductCard';
+import { ProductCard } from '@/features/catalog';
 import { ProductReviews } from '@/features/reviews';
 import WarrantySelection from '../components/WarrantySelection';
 import ProductDetailsSection from '../components/ProductDetailsSection';
@@ -32,9 +32,10 @@ import {
   hasVariants,
 } from '../utils/productHelpers';
 import { getErrorMsg } from '@/utils/errorMessage';
+import { localizeField } from '@/utils/localize';
 
 const ProductDetailPage: React.FC = () => {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const { productId } = useParams<{ productId: string }>();
   const [searchParams, setSearchParams] = useSearchParams();
   const navigate = useNavigate();
@@ -135,40 +136,31 @@ const ProductDetailPage: React.FC = () => {
 
   // Xử lý chọn thuộc tính với chức năng bật/tắt
   const handleAttributeChange = (name: string, value: string) => {
-    setSelectedAttributes((prev) => {
-      const newAttributes = { ...prev };
+    if (selectedAttributes[name] === value) {
+      return;
+    }
 
-      // Nếu nhấp vào cùng giá trị — giữ nguyên (không cho bỏ chọn khi có variants)
-      if (newAttributes[name] === value) {
-        return prev;
-      }
-      newAttributes[name] = value;
+    const newAttributes = { ...selectedAttributes, [name]: value };
 
-      setMappedAttributes(newAttributes);
+    setSelectedAttributes(newAttributes);
+    setMappedAttributes(newAttributes);
 
-      // Tự động tìm và cập nhật skuId nếu tất cả thuộc tính đã được chọn
-      if (product && hasVariants(product) && product.attributes) {
-        const allSelected = areAllAttributesSelected(product.attributes, newAttributes);
-        if (allSelected) {
-          const matchingVariant = findVariantByAttributes(product.variants || [], newAttributes);
-          if (matchingVariant) {
-            // Cập nhật URL với skuId mới (đồng bộ với logic handleVariantChange)
-            const newSearchParams = new URLSearchParams(searchParams);
-            newSearchParams.set('skuId', matchingVariant.id);
-            setSearchParams(newSearchParams);
-          }
-        } else if (skuId) {
-          // Xóa skuId nếu lựa chọn chưa đầy đủ
+    if (product && hasVariants(product) && product.attributes) {
+      const allSelected = areAllAttributesSelected(product.attributes, newAttributes);
+      if (allSelected) {
+        const matchingVariant = findVariantByAttributes(product.variants || [], newAttributes);
+        if (matchingVariant) {
           const newSearchParams = new URLSearchParams(searchParams);
-          newSearchParams.delete('skuId');
+          newSearchParams.set('skuId', matchingVariant.id);
           setSearchParams(newSearchParams);
         }
+      } else if (skuId) {
+        const newSearchParams = new URLSearchParams(searchParams);
+        newSearchParams.delete('skuId');
+        setSearchParams(newSearchParams);
       }
+    }
 
-      return newAttributes;
-    });
-
-    // Reset số lượng về 1 khi thay đổi thuộc tính
     setQuantity(1);
   };
 
@@ -264,7 +256,7 @@ const ProductDetailPage: React.FC = () => {
         setServerCart(serverCartData);
 
         addNotification({
-          message: t('cart.addedToCart', { name: product.name }),
+          message: t('cart.addedToCart', { name: productName }),
           type: 'success',
           duration: 3000,
         });
@@ -275,7 +267,7 @@ const ProductDetailPage: React.FC = () => {
         const newItem = {
           id: uuidv4(),
           productId: product.id,
-          name: product.name,
+          name: productName,
           price:
             product.isVariantProduct && product.currentVariant
               ? product.currentVariant.price
@@ -427,15 +419,28 @@ const ProductDetailPage: React.FC = () => {
     );
   }
 
+  // Tra cứu EN value cho attribute từ attributesEn của variant tương ứng
+  const getEnAttrValue = (attrName: string, viValue: string): string => {
+    if (i18n.language !== 'en') return viValue;
+    const match = (product.variants || []).find(
+      (v: { attributes?: Record<string, string>; attributesEn?: Record<string, string> }) =>
+        v.attributes?.[attrName] === viValue,
+    );
+    return match?.attributesEn?.[attrName] || viValue;
+  };
+
   // Giá hiển thị: ưu tiên biến thể đang chọn, fallback sang giá cơ sở
   const displayPrice = product.currentVariant?.price ?? product.price;
   const stockCount = product.currentVariant?.stockQuantity ?? product.stock ?? 0;
-  const seoTitleText = product.seoTitle || `${product.name} | TechStore`;
-  const seoDescText = product.seoDescription || product.shortDescription || '';
+  const productName = localizeField(product, 'name', i18n.language);
+  const productDesc = localizeField(product, 'description', i18n.language);
+  const productShortDesc = localizeField(product, 'shortDescription', i18n.language);
+  const seoTitleText = product.seoTitle || `${productName} | TechStore`;
+  const seoDescText = product.seoDescription || productShortDesc || '';
   const jsonLd = {
     '@context': 'https://schema.org/',
     '@type': 'Product',
-    name: product.name,
+    name: productName,
     image: product.thumbnail,
     description: seoDescText,
     ...(product.currentVariant?.sku ? { sku: product.currentVariant.sku } : {}),
@@ -463,7 +468,7 @@ const ProductDetailPage: React.FC = () => {
       <Helmet>
         <title>{seoTitleText}</title>
         <meta name="description" content={seoDescText} />
-        <meta property="og:title" content={product.name} />
+        <meta property="og:title" content={productName} />
         <meta property="og:description" content={seoDescText} />
         <meta property="og:image" content={product.thumbnail} />
         <meta property="og:type" content="product" />
@@ -500,7 +505,8 @@ const ProductDetailPage: React.FC = () => {
               )}
               className="text-neutral-500 dark:text-neutral-400 hover:text-primary-500 dark:hover:text-primary-400"
             >
-              {product.category?.name || product.categoryName}
+              {localizeField(product.category || product, 'name', i18n.language) ||
+                product.categoryName}
             </Link>
             <svg
               xmlns="http://www.w3.org/2000/svg"
@@ -512,7 +518,7 @@ const ProductDetailPage: React.FC = () => {
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
             </svg>
           </li>
-          <li className="text-neutral-800 dark:text-neutral-200 truncate">{product.name}</li>
+          <li className="text-neutral-800 dark:text-neutral-200 truncate">{productName}</li>
         </ol>
       </nav>
 
@@ -528,7 +534,7 @@ const ProductDetailPage: React.FC = () => {
                 ? product.currentVariant.thumbnail
                 : product.thumbnail
             }
-            productName={product.name}
+            productName={productName}
           />
         </div>
 
@@ -536,7 +542,7 @@ const ProductDetailPage: React.FC = () => {
         <div>
           {/* Tiêu đề sản phẩm tiêu chuẩn */}
           <h1 className="text-3xl font-bold text-neutral-900 dark:text-white mb-2">
-            {product.name}
+            {productName}
           </h1>
 
           {/* Giá */}
@@ -632,7 +638,7 @@ const ProductDetailPage: React.FC = () => {
 
           {/* Mô tả ngắn */}
           <p className="text-neutral-600 dark:text-neutral-400 mb-6">
-            {product.shortDescription || product.description.substring(0, 150) + '...'}
+            {productShortDesc || productDesc.substring(0, 150) + '...'}
           </p>
 
           {/* Bộ chọn biến thể sản phẩm - Đã xóa theo yêu cầu vì trùng lặp với bộ chọn thuộc tính */}
@@ -685,7 +691,7 @@ const ProductDetailPage: React.FC = () => {
                                 }
                               `}
                           >
-                            {value}
+                            {getEnAttrValue(attribute.name, value)}
                           </button>
                         );
                       })}
@@ -901,7 +907,7 @@ const ProductDetailPage: React.FC = () => {
 
       {/* Phần chi tiết sản phẩm */}
       <ProductDetailsSection
-        description={product.description}
+        description={productDesc}
         specifications={
           product.currentVariant?.productSpecifications || product.productSpecifications || []
         }

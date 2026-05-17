@@ -33,7 +33,6 @@ const MIN_SECRET_LENGTH = 32;
 const app = require('./app');
 const sequelize = require('./config/sequelize');
 const { exec } = require('child_process');
-const { Server } = require('socket.io');
 const { getRedisClient } = require('./config/redis');
 
 // Load tất cả model trước (chưa có quan hệ)
@@ -117,48 +116,31 @@ const checkVectorStoreSync = async () => {
     if (activeCount === 0) return; // Chưa có dữ liệu — bỏ qua
     const deviation = Math.abs(activeCount - vectorCount) / activeCount;
     if (deviation > 0.05) {
-      logger.warn(`⚠️ Vector store lệch >5% so với DB (DB: ${activeCount}, vector: ${vectorCount}). Tự động rebuild...`);
+      logger.warn(`Vector store lệch >5% so với DB (DB: ${activeCount}, vector: ${vectorCount}). Tự động rebuild...`);
       // Dùng exec (async) để không block event loop trong lúc rebuild
       exec('npm run ai:rebuild-vectors', { cwd: __dirname + '/..', timeout: 120000 }, (rebuildErr) => {
         if (rebuildErr) {
-          logger.error('❌ Rebuild vector store thất bại:', rebuildErr.message);
+          logger.error('Rebuild vector store thất bại:', rebuildErr.message);
         } else {
-          logger.info('✅ Đã rebuild vector store tự động.');
+          logger.info('Đã rebuild vector store tự động.');
         }
       });
     } else {
-      logger.info(`✅ Vector store OK: ${vectorCount} vectors / ${activeCount} sản phẩm active.`);
+      logger.info(`Vector store OK: ${vectorCount} vectors / ${activeCount} sản phẩm active.`);
     }
   } catch (err) {
-    logger.warn('⚠️ Không thể kiểm tra vector store sync:', err.message);
+    logger.warn('Không thể kiểm tra vector store sync:', err.message);
   }
 };
 
-// Pre-load dữ liệu ít thay đổi vào Redis cache để request đầu tiên không bị cold miss
+// Categories và Brands không cần warm riêng — catalogService.getAllCategories()
+// và getAllBrands() tự cache khi request đầu tiên đến, kèm productCount đầy đủ.
+// warmCache chỉ dùng cho data service không tự cache (nếu có thêm sau).
 const warmCache = async () => {
   try {
-    const redis = await getRedisClient();
-    const { Category, Brand } = require('./models');
-
-    const categories = await Category.findAll({ order: [['name', 'ASC']] });
-    if (categories.length > 0) {
-      await redis.setEx('categories:all', 1800, JSON.stringify({
-        status: 'success',
-        data: categories,
-      }));
-      logger.info(`[Cache] Warmed: ${categories.length} categories`);
-    }
-
-    const brands = await Brand.findAll({ order: [['name', 'ASC']] });
-    if (brands.length > 0) {
-      await redis.setEx('cache:brands:all', 1800, JSON.stringify({
-        status: 'success',
-        data: brands,
-      }));
-      logger.info(`[Cache] Warmed: ${brands.length} brands`);
-    }
+    logger.info('[Cache] Catalog cache sẽ được warm khi request đầu tiên đến.');
   } catch (err) {
-    logger.warn('[Cache] Warming thất bại:', err.message);
+    logger.warn(`[Cache] Warming thất bại: ${err?.message || err}`);
   }
 };
 
@@ -181,23 +163,6 @@ const startServer = async () => {
 
   // Cache warming — pre-load categories và brands vào Redis sau khi DB sẵn sàng
   warmCache().catch(err => logger.warn('Cache warming failed:', err.message));
-
-  // Khởi tạo Socket.io — fallback về CORS_ORIGINS_DEV thay vì '*' để tránh open CORS
-  const socketOrigin = process.env.CORS_ORIGIN
-    || (process.env.CORS_ORIGINS_DEV || '').split(',').map(o => o.trim()).filter(Boolean);
-  const io = new Server(server, {
-    cors: {
-      origin: socketOrigin.length ? socketOrigin : '*',
-      methods: ['GET', 'POST'],
-    },
-  });
-
-  require('./config/socket')(io);
-
-  // Phase 42.14 — Bind Socket.IO vào chat module để service emit realtime
-  if (app.locals.chatModule && typeof app.locals.chatModule.bindSocketIO === 'function') {
-    app.locals.chatModule.bindSocketIO(io);
-  }
 
   // Xử lý promise rejection không được bắt
   process.on('unhandledRejection', (err) => {

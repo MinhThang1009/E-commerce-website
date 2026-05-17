@@ -3,30 +3,8 @@ const sequelize = require('../config/sequelize');
 const pkg = require('../../package.json');
 const router = express.Router();
 
-// Phase 42.24 cleanup — Tất cả legacy routes đã migrate sang modules/* (Sprint 1-19)
-// hoặc đã xóa orphan (Phase 5 batch 1+2). Các route còn lại là module CHƯA migrate
-// (admin/discount-codes/payments-legacy/chatbot/warranty/attribute/image/search-history/
-// locations) — sẽ migrate sang modules/* khi cần.
-const discountCodeRoutes = require('./discountCode');
-const adminRoutes = require('./admin');
-const paymentRoutes = require('./payment');
-const chatbotRoutes = require('./chatbot');
-const warrantyPackageRoutes = require('./warrantyPackage');
-const attributeRoutes = require('./attribute');
-const imageRoutes = require('./image');
-const searchHistoryRoutes = require('./searchHistory');
-const locationRoutes = require('./location');
-
-// Các route API
-router.use('/discount-codes', discountCodeRoutes);
-router.use('/admin', adminRoutes);
-router.use('/payments', paymentRoutes);
-router.use('/chatbot', chatbotRoutes);
-router.use('/warranty-packages', warrantyPackageRoutes);
-router.use('/attributes', attributeRoutes);
-router.use('/images', imageRoutes);
-router.use('/search-histories', searchHistoryRoutes);
-router.use('/locations', locationRoutes);
+// routes/index.js chỉ còn health endpoint.
+// Tất cả routes đã migrate sang modules/* trong app.js (Gap 5 complete).
 
 // Route kiểm tra trạng thái hệ thống — Phase 45.2.4 enhanced
 // Trả về status DB + uptime + version để deploy script + manual smoke phân biệt

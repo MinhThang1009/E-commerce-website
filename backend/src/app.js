@@ -44,7 +44,6 @@ const {
   RecentlyViewed,
   DiscountCode,
   InventoryLog,
-  ChatMessage,
 } = require('./models');
 const constants = require('./constants');
 const emailService = require('./services/email');
@@ -62,8 +61,14 @@ const buildCatalogModule = require('./modules/catalog/module');
 const buildOrdersModule = require('./modules/orders/module');
 const buildPaymentModule = require('./modules/payment/module');
 const buildInventoryModule = require('./modules/inventory/module');
-const buildChatModule = require('./modules/chat/module');
 const buildAiModule = require('./modules/ai/module');
+const buildSearchHistoryModule  = require('./modules/searchHistory/module');
+const buildImageModule           = require('./modules/image/module');
+const buildDiscountCodeModule    = require('./modules/discountCode/module');
+const buildWarrantyPackageModule = require('./modules/warrantyPackage/module');
+const buildLocationModule        = require('./modules/location/module');
+const buildAttributeModule       = require('./modules/attribute/module');
+const buildAdminModule           = require('./modules/admin/module');
 const geminiChatbotService = require('./services/ai/geminiChatbot');
 const ruleBasedChatbot = require('./services/ai/ruleBasedChatbot');
 const momoService = require('./services/payment/momo');
@@ -205,19 +210,12 @@ const inventoryModule = buildInventoryModule({
   ProductVariant,
   InventoryLog,
   User,
+  sequelize,
   eventBus,
   logger,
 });
 inventoryModule.subscribeEvents();
 
-const chatModule = buildChatModule({
-  ChatMessage,
-  User,
-  // io binding deferred — server.js gọi chatModule.bindSocketIO(io) sau .listen
-  eventBus,
-  logger,
-});
-chatModule.subscribeEvents();
 
 const aiModule = buildAiModule({
   Product,
@@ -350,6 +348,9 @@ if (process.env.NODE_ENV === 'production') {
   app.use('/api', apiLimiter);
 }
 
+// Phát hiện locale từ Accept-Language header hoặc ?lang= query param
+app.use(require('./middlewares/detectLocale'));
+
 // Đọc dữ liệu từ body request — 2mb mặc định, upload routes override riêng
 app.use(express.json({ limit: '2mb' }));
 app.use(express.urlencoded({ extended: true, limit: '2mb' }));
@@ -406,14 +407,24 @@ catalogModule.mounts.forEach(({ basePath, router }) => {
   app.use('/api' + basePath, router);
 });
 app.use('/api' + ordersModule.basePath, ordersModule.router);
-// Payment module mount TRƯỚC routes/index.js — Express fall-through cho
-// /sepay-webhook (legacy routes/payment.js still mounted via routes/index).
 app.use('/api' + paymentModule.basePath, paymentModule.router);
 app.use('/api' + inventoryModule.basePath, inventoryModule.router);
-app.use('/api' + chatModule.basePath, chatModule.router);
-// AI chatbot mount TRƯỚC routes/index — fall-through cho /analytics + /cart/add
-// qua legacy routes/chatbot.js đến Phase 5 cleanup.
 app.use('/api' + aiModule.basePath, aiModule.router);
+// Wrapper modules — thin delegates to flat routes (migrated from routes/index.js)
+const searchHistoryModule  = buildSearchHistoryModule();
+const imageModule          = buildImageModule();
+const discountCodeModule   = buildDiscountCodeModule();
+const warrantyModule       = buildWarrantyPackageModule();
+const locationModule       = buildLocationModule();
+const attributeModule      = buildAttributeModule();
+app.use('/api' + searchHistoryModule.basePath,  searchHistoryModule.router);
+app.use('/api' + imageModule.basePath,          imageModule.router);
+app.use('/api' + discountCodeModule.basePath,   discountCodeModule.router);
+app.use('/api' + warrantyModule.basePath,       warrantyModule.router);
+app.use('/api' + locationModule.basePath,       locationModule.router);
+app.use('/api' + attributeModule.basePath,      attributeModule.router);
+const adminModule = buildAdminModule();
+app.use('/api' + adminModule.basePath, adminModule.router);
 
 // Định nghĩa các API routes
 app.use('/api', routes);
@@ -435,8 +446,5 @@ app.use('*', (req, res) => {
 
 // Middleware xử lý lỗi toàn cục
 app.use(errorHandler);
-
-// Expose chatModule trên app.locals để server.js bind Socket.IO sau khi listen
-app.locals.chatModule = chatModule;
 
 module.exports = app;

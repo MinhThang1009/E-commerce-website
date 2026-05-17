@@ -9,6 +9,8 @@ export interface ChatResponse {
 export interface ProductRecommendation {
   id: string | number;
   name: string;
+  nameVi?: string;
+  nameEn?: string;
   slug?: string;
   price: number;
   compareAtPrice?: number;
@@ -82,7 +84,10 @@ export function useAddToCartViaChatbotMutation() {
   return useMutation<unknown, Error, AddToCartViaChatbotRequest>({
     mutationFn: async ({ productId, quantity, sessionId, variantId }) => {
       const { data } = await apiClient.post('/chatbot/cart/add', {
-        productId, quantity, sessionId, variantId,
+        productId,
+        quantity,
+        sessionId,
+        variantId,
       });
       return data;
     },

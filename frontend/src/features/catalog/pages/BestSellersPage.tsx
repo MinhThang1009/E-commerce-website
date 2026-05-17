@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useGetProductsQuery } from '../api/productApi';
-import ProductCard from '@/components/shared/ProductCard';
+import { ProductCard } from '@/features/catalog';
 import LoadingSpinner from '@/components/common/LoadingSpinner';
 import Select from '@/components/common/Select';
 import Pagination from '@/components/common/Pagination';
@@ -9,7 +9,9 @@ import { Product } from '../types/product.types';
 
 const BestSellersPage: React.FC = () => {
   const { t } = useTranslation();
-  const [sortOption, setSortOption] = useState<'popular' | 'price_asc' | 'price_desc' | 'newest'>('popular');
+  const [sortOption, setSortOption] = useState<'popular' | 'price_asc' | 'price_desc' | 'newest'>(
+    'popular',
+  );
   const [currentPage, setCurrentPage] = useState(1);
   const limit = 12;
 
@@ -54,12 +56,8 @@ const BestSellersPage: React.FC = () => {
   if (error) {
     return (
       <div className="container mx-auto px-4 py-16 text-center">
-        <h1 className="text-2xl font-bold text-red-600 mb-4">
-          {t('bestSellers.error.title')}
-        </h1>
-        <p className="text-neutral-600 dark:text-neutral-400">
-          {t('bestSellers.error.message')}
-        </p>
+        <h1 className="text-2xl font-bold text-red-600 mb-4">{t('bestSellers.error.title')}</h1>
+        <p className="text-neutral-600 dark:text-neutral-400">{t('bestSellers.error.message')}</p>
       </div>
     );
   }
@@ -69,9 +67,7 @@ const BestSellersPage: React.FC = () => {
       {/* Phần hero */}
       <div className="bg-gradient-to-r from-amber-500 to-orange-500 rounded-xl p-8 mb-12 text-white text-center">
         <h1 className="text-4xl font-bold mb-4">{t('bestSellers.title')}</h1>
-        <p className="text-lg max-w-2xl mx-auto mb-6">
-          {t('bestSellers.subtitle')}
-        </p>
+        <p className="text-lg max-w-2xl mx-auto mb-6">{t('bestSellers.subtitle')}</p>
         <div className="inline-block bg-white text-amber-600 font-bold py-3 px-6 rounded-full text-lg">
           {t('bestSellers.badge')}
         </div>
@@ -81,7 +77,10 @@ const BestSellersPage: React.FC = () => {
       <div className="flex flex-col md:flex-row justify-between items-center mb-8">
         <p className="text-neutral-600 dark:text-neutral-400 mb-4 md:mb-0">
           {productsData?.total
-            ? t('bestSellers.stats', { current: productsData.data?.length || 0, total: productsData.total })
+            ? t('bestSellers.stats', {
+                current: productsData.data?.length || 0,
+                total: productsData.total,
+              })
             : t('bestSellers.browse')}
         </p>
         <div className="w-full md:w-48">
@@ -141,4 +140,3 @@ const BestSellersPage: React.FC = () => {
 };
 
 export default BestSellersPage;
-

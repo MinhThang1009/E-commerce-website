@@ -1,0 +1,18 @@
+{
+  "name": "techstore-ecommerce",
+  "version": "1.0.0",
+  "private": true,
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "dev": "concurrently --names \"BE,FE\" --prefix-colors \"cyan,magenta\" \"npm run dev --prefix backend\" \"npm run dev --prefix frontend\"",
+    "build": "npm run build --prefix frontend",
+    "test": "npm test --prefix backend",
+    "install:all": "npm install --prefix backend && npm install --prefix frontend",
+    "lint": "npm run lint --prefix backend && npm run lint --prefix frontend"
+  },
+  "devDependencies": {
+    "concurrently": "^9.1.0"
+  }
+}

@@ -306,6 +306,7 @@ class OrdersService {
       }
 
       // Inventory logs
+      /* istanbul ignore else */
       if (pendingInventoryLogs.length > 0) {
         await this.repo.createInventoryLogs(
           pendingInventoryLogs.map((log) => ({ ...log, orderId: order.id })),

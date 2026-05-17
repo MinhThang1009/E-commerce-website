@@ -78,6 +78,8 @@ class PaymentController {
       return res.status(200).json({ RspCode: '99', Message: 'Lỗi không xác định' });
     }
   };
+
+  handleSePayWebhook = require('../../../controllers/payment').handleSePayWebhook;
 }
 
 module.exports = PaymentController;

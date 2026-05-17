@@ -5,8 +5,12 @@
 export interface Category {
   id: string;
   name: string;
+  nameVi?: string;
+  nameEn?: string;
   slug: string;
   description?: string;
+  descriptionVi?: string;
+  descriptionEn?: string;
   image?: string;
   parentId?: string | null;
   level?: number;
@@ -28,4 +32,3 @@ export interface CategoryFilters {
   isActive?: boolean;
   search?: string;
 }
-

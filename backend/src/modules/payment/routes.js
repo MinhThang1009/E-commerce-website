@@ -17,6 +17,7 @@ module.exports = ({ paymentController }) => {
   const router = express.Router();
 
   // Public — webhooks (gateway signature verification trong service)
+  router.post('/sepay-webhook', express.json(), paymentController.handleSePayWebhook);
   router.get('/momo/return', paymentController.momoReturn);
   router.post('/momo/ipn', webhookLimiter, paymentController.momoIPN);
   router.get('/vnpay/return', paymentController.vnpayReturn);

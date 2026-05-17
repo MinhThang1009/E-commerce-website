@@ -52,7 +52,7 @@ class SequelizeAiRepository extends IAiRepository {
       model: this.Category, as: 'categories', through: { attributes: [] },
     };
     if (categoryName) {
-      categoryInclude.where = { name: { [Op.like]: `%${categoryName}%` } };
+      categoryInclude.where = { nameVi: { [Op.like]: `%${categoryName}%` } };
       categoryInclude.required = true;
     }
 
@@ -88,6 +88,32 @@ class SequelizeAiRepository extends IAiRepository {
       ],
       limit, order: [['createdAt', 'DESC']],
     });
+  }
+
+  async createAnalyticsEvent({ event, userId, sessionId, productId, value, metadata, timestamp }) {
+    // Analytics events lưu vào chat_messages với messageType='ai_chatbot' để tracking
+    const { ChatMessage } = require('../../../models');
+    return ChatMessage.create({
+      sessionId: sessionId || `anon_${Date.now()}`,
+      userId: userId || null,
+      content: JSON.stringify({ event, productId, value, metadata }),
+      role: 'user',
+      messageType: 'ai_chatbot',
+      intent: event,
+    }).catch(() => null); // Non-blocking — analytics failure không fail request
+  }
+
+  async findProductForCart(productId) {
+    return this.Product.findByPk(productId, {
+      include: [{ model: this.ProductVariant, as: 'variants', attributes: ['stockQuantity'], required: false }],
+    });
+  }
+
+  async addToCart({ userId, productId, variantId, quantity }) {
+    const { Cart, CartItem } = require('../../../models');
+    let cart = await Cart.findOne({ where: { userId } });
+    if (!cart) cart = await Cart.create({ userId });
+    return CartItem.create({ cartId: cart.id, productId, variantId, quantity });
   }
 }
 

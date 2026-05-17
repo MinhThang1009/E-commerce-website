@@ -1,6 +1,3 @@
-// AI Controller — 3 handler chính (message, productSearch, recommendations).
-// 2 endpoint còn lại (analytics, cart/add) giữ ở legacy controllers/chatbot.js
-// đến Phase 5 cleanup — tracking + cart logic phụ thuộc nhiều legacy services.
 class AiController {
   constructor({ aiService, logger }) {
     this.aiService = aiService;
@@ -43,6 +40,22 @@ class AiController {
   getRecommendations = async (req, res, next) => {
     try {
       const data = await this.aiService.getRecommendations(req.query);
+      res.json({ status: 'success', data });
+    } catch (err) { next(err); }
+  };
+
+  trackAnalytics = async (req, res, next) => {
+    try {
+      const { event, userId, sessionId, productId, value, metadata } = req.body;
+      await this.aiService.trackAnalytics({ event, userId, sessionId, productId, value, metadata, timestamp: new Date() });
+      res.json({ status: 'success', message: 'Ghi nhận dữ liệu phân tích thành công' });
+    } catch (err) { next(err); }
+  };
+
+  addToCart = async (req, res, next) => {
+    try {
+      const { productId, variantId, quantity = 1, sessionId } = req.body;
+      const data = await this.aiService.addToCart({ productId, variantId, quantity, sessionId, userId: req.user.id });
       res.json({ status: 'success', data });
     } catch (err) { next(err); }
   };

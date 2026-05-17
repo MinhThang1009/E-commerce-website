@@ -60,7 +60,6 @@ export const ROUTES = {
   ADMIN_NEWS_EDIT: '/admin/news/edit/:id',
   ADMIN_CATEGORIES: '/admin/categories',
   ADMIN_ORDERS: '/admin/orders',
-  ADMIN_SUPPORT: '/admin/support',
   ADMIN_USERS: '/admin/users',
   ADMIN_USER_DETAIL: '/admin/users/:id',
   ADMIN_WARRANTY_PACKAGES: '/admin/warranty-packages',
@@ -82,7 +81,8 @@ export const buildRoute = {
   shopCategory: (slug: string) => `/shop?category=${slug}`,
   shopBrand: (id: string | number) => `/shop?brand=${id}`,
   shopCollection: (id: string | number) => `/shop?collection=${id}`,
-  verifyEmail: (email?: string) => `/verify-email${email ? `?email=${encodeURIComponent(email)}` : ''}`,
+  verifyEmail: (email?: string) =>
+    `/verify-email${email ? `?email=${encodeURIComponent(email)}` : ''}`,
   paymentQr: (orderId: string | number, amount: string | number, numberOrder: string) =>
     `/payment-qr?orderId=${orderId}&amount=${amount}&numberOrder=${numberOrder}`,
   checkoutRepay: (repayOrderId: string | number, repayAmount: string | number) =>

@@ -4,24 +4,21 @@ import { useTranslation } from 'react-i18next';
 import { ROUTES, buildRoute } from '@/routes/paths';
 import { PremiumButton } from '@/components/common';
 import Input from '@/components/common/Input';
-import {
-  useLoginMutation,
-  useResendVerificationMutation,
-} from '../api/authApi';
+import { useLoginMutation, useResendVerificationMutation } from '../api/authApi';
 import { useAuthStore } from '@/stores/authStore';
 import GoogleLoginButton from '../components/GoogleLoginButton';
 import { getErrorMsg } from '@/utils/errorMessage';
 
-interface LocationState { from?: { pathname: string } }
+interface LocationState {
+  from?: { pathname: string };
+}
 type ApiError = { data?: { message?: string }; message?: string };
 
 const LoginPage: React.FC = () => {
   const { t } = useTranslation();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [errors, setErrors] = useState<{ email?: string; password?: string }>(
-    {}
-  );
+  const [errors, setErrors] = useState<{ email?: string; password?: string }>({});
   const [resendSuccess, setResendSuccess] = useState('');
   const [resendError, setResendError] = useState('');
 
@@ -115,9 +112,7 @@ const LoginPage: React.FC = () => {
             <h1 className="text-2xl font-bold text-neutral-800 dark:text-neutral-100 mb-2">
               {t('auth.login.title')}
             </h1>
-            <p className="text-neutral-600 dark:text-neutral-400">
-              {t('auth.login.subtitle')}
-            </p>
+            <p className="text-neutral-600 dark:text-neutral-400">{t('auth.login.subtitle')}</p>
           </div>
 
           <form>
@@ -208,7 +203,7 @@ const LoginPage: React.FC = () => {
                       (error as ApiError)?.message ||
                       t('auth.login.errors.invalidCredentials')}
                 </p>
-                {(error as ApiError)?.data?.message?.includes('Vui lòng xác thực email') && (
+                {/xác thực email|verify.*email/i.test((error as ApiError)?.data?.message || '') && (
                   <div className="mt-3 flex flex-col gap-2">
                     {/* Nút nhập OTP */}
                     <button
@@ -235,8 +230,18 @@ const LoginPage: React.FC = () => {
             {/* Gửi lại OTP thành công */}
             {resendSuccess && (
               <div className="p-4 bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400 rounded-lg flex items-start gap-2">
-                <svg className="w-5 h-5 mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                <svg
+                  className="w-5 h-5 mt-0.5 flex-shrink-0"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"
+                  />
                 </svg>
                 <div>
                   <p className="text-sm font-medium">{resendSuccess}</p>
@@ -265,4 +270,3 @@ const LoginPage: React.FC = () => {
 };
 
 export default LoginPage;
-

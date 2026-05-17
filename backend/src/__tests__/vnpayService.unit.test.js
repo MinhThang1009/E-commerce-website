@@ -198,4 +198,22 @@ describe('VNPayService.sortObject', () => {
     expect(keys).toEqual(['vnp_A', 'vnp_Z']); // sorted alphabet
     expect(sorted.vnp_A).toBe('hello+world'); // %20 → +
   });
+
+  test('Bỏ qua inherited property — hasOwnProperty false branch (line 138)', () => {
+    // Tạo object có inherited enumerable property → for..in sẽ iterate nó
+    // nhưng hasOwnProperty trả false → bị bỏ qua (false branch)
+    const proto = { inheritedKey: 'should-be-ignored' };
+    const obj = Object.create(proto);
+    obj.vnp_OwnKey = 'owned-value';
+
+    const sorted = vnpayService.sortObject(obj);
+
+    // Chỉ own property được giữ lại
+    expect(Object.keys(sorted)).not.toContain('inheritedKey');
+    expect(sorted).toHaveProperty('vnp_OwnKey');
+  });
+
+  test('Object rỗng → trả về object rỗng', () => {
+    expect(vnpayService.sortObject({})).toEqual({});
+  });
 });

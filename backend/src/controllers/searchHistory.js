@@ -1,6 +1,6 @@
 const { SearchHistory } = require('../models');
 const { Op } = require('sequelize');
-const { AppError } = require('../middlewares/errorHandler');
+const { AppError } = require('../shared/errors');
 
 // Lưu lịch sử tìm kiếm — bỏ qua nếu cùng keyword đã được lưu trong 1 giờ qua (tránh duplicate)
 const saveSearch = async (req, res, next) => {

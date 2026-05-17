@@ -66,7 +66,6 @@ jest.mock('../middlewares/authenticate', () => ({
 }));
 
 jest.mock('../middlewares/rateLimiter', () => ({
-  chatLimiter: (_req, _res, next) => next(),
 }));
 
 // ---------- Require sau mock ----------

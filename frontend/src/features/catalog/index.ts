@@ -99,3 +99,7 @@ export type {
   ProductWithVariants,
 } from './types/product.types';
 export type { Category } from './types/category.types';
+
+export { default as ProductCard } from './components/ProductCard';
+export { default as ProductListCard } from './components/ProductListCard';
+export { default as FilterPanel } from './components/FilterPanel';

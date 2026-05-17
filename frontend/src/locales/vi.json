@@ -1,4 +1,4 @@
-﻿{
+{
   "header": {
     "brand": "TechStore",
     "tagline": "Thương Mại Điện Tử",
@@ -148,7 +148,8 @@
       "subscribe": "Đăng Ký",
       "backgroundAlt": "Nền mẫu mua sắm",
       "emailRequired": "Vui lòng nhập email",
-      "subscribeError": "Có lỗi xảy ra khi đăng ký. Vui lòng thử lại sau."
+      "subscribeError": "Có lỗi xảy ra khi đăng ký. Vui lòng thử lại sau.",
+      "subscribeSuccess": "Đăng ký nhận bản tin thành công!"
     },
     "featured": {
       "emptyTitle": "Không có sản phẩm nổi bật",
@@ -1080,7 +1081,6 @@
       "warranty": "Gói bảo hành",
       "discounts": "Mã giảm giá",
       "email": "Chiến dịch Email",
-      "support": "Hỗ trợ trực tuyến",
       "banners": "Quản lý Banner",
       "inventory": "Quản lý kho",
       "auditLog": "Nhật ký hệ thống"
@@ -1339,8 +1339,8 @@
         "category": "6. Phân loại",
         "images": "7. Hình ảnh",
         "warranty": "8. Bảo hành",
-        "faqs": "9. FAQ",
-        "seo": "10. SEO"
+        "faqs": "10. FAQ",
+        "seo": "9. SEO"
       },
       "submit": {
         "create": "Tạo sản phẩm",
@@ -1357,7 +1357,8 @@
         "category": "6. Phân loại",
         "images": "7. Hình ảnh",
         "warranty": "8. Bảo hành",
-        "seo": "9. SEO"
+        "seo": "9. SEO",
+        "faqs": "10. FAQ"
       },
       "loadingText": "Đang tải thông tin sản phẩm...",
       "errors": {
@@ -2018,14 +2019,6 @@
         "actions": "Thao tác"
       }
     },
-    "support": {
-      "title": "Hỗ trợ khách hàng",
-      "noChats": "Chưa có người nhắn tin",
-      "guestUser": "Khách ({{id}})",
-      "typing": "Người dùng đang soạn tin...",
-      "inputPlaceholder": "Nhập câu trả lời...",
-      "selectConversation": "Chọn một cuộc trò chuyện để bắt đầu"
-    },
     "userDetail": {
       "notFound": "Không tìm thấy người dùng hoặc có lỗi xảy ra",
       "backToList": "Quay lại danh sách",
@@ -2404,6 +2397,9 @@
     "required": "Trường này là bắt buộc",
     "name": {
       "required": "Vui lòng nhập tên"
+    },
+    "phone": {
+      "invalid": "Số điện thoại không hợp lệ (10 chữ số, bắt đầu bằng 0 hoặc +84)"
     }
   },
   "product_form": {
@@ -2801,6 +2797,7 @@
     "viewProducts": "Xem sản phẩm"
   },
   "categories": {
+    "pageTitle": "Danh mục",
     "heroTitle": "Tất cả danh mục",
     "heroDesc": "Khám phá hàng ngàn sản phẩm trong {{count}} danh mục đa dạng",
     "searchPlaceholder": "Tìm kiếm danh mục...",
@@ -2839,6 +2836,7 @@
     "explore": "Khám phá ngay"
   },
   "deals": {
+    "pageTitle": "Khuyến mãi",
     "heroTitle": "Siêu Giảm Giá - Trên 50% OFF",
     "heroDesc": "Khám phá các sản phẩm giảm giá sốc với mức giảm trên 50%. Cơ hội có hạn, mua ngay kẻo lỡ!",
     "heroBadge": "GIẢM GIÁ TRÊN 50%",
@@ -2871,6 +2869,7 @@
     "emptyHint": "Sớm quay lại để xem hàng mới"
   },
   "news": {
+    "pageTitle": "Tin tức",
     "categories": {
       "all": "Tất cả",
       "news": "Tin tức",
@@ -3234,6 +3233,7 @@
     "updateBtn": "Cập nhật biến thể"
   },
   "about": {
+    "pageTitle": "Giới thiệu",
     "heroTitle": "Về TechStore",
     "heroSubtitle": "Sứ mệnh của chúng tôi là cung cấp các sản phẩm công nghệ chất lượng cao với giá cả hợp lý, cùng dịch vụ chăm sóc khách hàng tận tâm tại Hà Nội.",
     "storyTitle": "Câu chuyện của chúng tôi",
@@ -3842,11 +3842,6 @@
   "products": {
     "notFound": "Không tìm thấy sản phẩm",
     "tryDifferentFilters": "Vui lòng thử lại với bộ lọc khác"
-  },
-  "support": {
-    "title": "Hỗ trợ trực tuyến",
-    "greeting": "Chào bạn, chúng tôi có thể giúp gì?",
-    "adminTyping": "Admin đang soạn tin..."
   },
   "order": {
     "status": {

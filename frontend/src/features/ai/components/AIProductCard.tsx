@@ -1,6 +1,7 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
+import { localizeField } from '@/utils/localize';
 import { buildRoute } from '@/routes/paths';
 import { ProductRecommendation } from '../services/chatbotApi';
 import { EyeIcon, ImageIcon, StarIcon } from './icons';
@@ -14,7 +15,7 @@ interface ProductCardProps {
  * Component hiển thị thông tin sản phẩm trong chat
  */
 const ProductCard: React.FC<ProductCardProps> = ({ product }) => {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   // Format giá tiền — luôn VND, locale động theo ngôn ngữ UI
   const formatPrice = (price: number): string => {
     return new Intl.NumberFormat(getLocale(), {
@@ -49,7 +50,7 @@ const ProductCard: React.FC<ProductCardProps> = ({ product }) => {
         {product.thumbnail ? (
           <img
             src={product.thumbnail}
-            alt={product.name}
+            alt={localizeField(product, 'name', i18n.language)}
             className="w-full h-full object-cover object-center transform group-hover:scale-110 transition-transform duration-500"
             loading="lazy"
           />
@@ -72,7 +73,7 @@ const ProductCard: React.FC<ProductCardProps> = ({ product }) => {
       {/* Thông tin sản phẩm */}
       <div className="p-3 flex flex-col flex-grow">
         <h4 className="font-medium text-sm text-neutral-800 dark:text-white line-clamp-2 group-hover:text-primary-600 dark:group-hover:text-primary-400 transition-colors">
-          {product.name}
+          {localizeField(product, 'name', i18n.language)}
         </h4>
 
         {/* Đánh giá */}
@@ -100,12 +101,11 @@ const ProductCard: React.FC<ProductCardProps> = ({ product }) => {
               <span className="text-sm font-bold text-neutral-900 dark:text-white">
                 {formatPrice(product.price)}
               </span>
-              {product.compareAtPrice &&
-                product.compareAtPrice > product.price && (
-                  <span className="ml-2 text-xs line-through text-neutral-500 dark:text-neutral-400">
-                    {formatPrice(product.compareAtPrice)}
-                  </span>
-                )}
+              {product.compareAtPrice && product.compareAtPrice > product.price && (
+                <span className="ml-2 text-xs line-through text-neutral-500 dark:text-neutral-400">
+                  {formatPrice(product.compareAtPrice)}
+                </span>
+              )}
             </div>
           </div>
 
@@ -125,4 +125,3 @@ const ProductCard: React.FC<ProductCardProps> = ({ product }) => {
 };
 
 export default ProductCard;
-

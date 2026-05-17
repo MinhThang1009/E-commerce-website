@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Modal, Radio, Space, Button, message } from 'antd';
+import { Modal, Radio, Space, Button, App } from 'antd';
 import { useTranslation } from 'react-i18next';
 import { exportToExcel, exportToCSV } from '@/utils/exportUtils';
 
@@ -32,6 +32,7 @@ const ProductExportModal: React.FC<ProductExportModalProps> = ({
   isLoading,
 }) => {
   const { t } = useTranslation();
+  const { message } = App.useApp();
   const [scope, setScope] = useState<'current' | 'all' | 'selected' | 'filtered'>('current');
   const [format, setFormat] = useState<'xlsx' | 'csv'>('xlsx');
   const [isProcessing, setIsProcessing] = useState(false);
@@ -84,13 +85,17 @@ const ProductExportModal: React.FC<ProductExportModalProps> = ({
         CategoryIDs: item.categories?.map((c: { name: string; id: string }) => c.id).join('|'),
         SEOTitle: item.seoTitle,
         SEODescription: item.seoDescription,
-        SEOKeywords: Array.isArray(item.seoKeywords) ? item.seoKeywords.join(', ') : item.seoKeywords,
+        SEOKeywords: Array.isArray(item.seoKeywords)
+          ? item.seoKeywords.join(', ')
+          : item.seoKeywords,
         Attributes: JSON.stringify(item.attributes || []),
         Specifications: JSON.stringify(item.productSpecifications || item.specifications || []),
         BaseName: item.baseName,
         IsVariantProduct: item.isVariantProduct ? t('common.yes') : t('common.no'),
         Variants: JSON.stringify(item.variants || []),
-        WarrantyPackages: (item.warrantyPackages as Array<{ name: string }> | undefined)?.map((w) => w.name).join(', '),
+        WarrantyPackages: (item.warrantyPackages as Array<{ name: string }> | undefined)
+          ?.map((w) => w.name)
+          .join(', '),
         CreatedAt: item.createdAt,
       }));
 
@@ -137,7 +142,9 @@ const ProductExportModal: React.FC<ProductExportModalProps> = ({
           <Space direction="vertical">
             <Radio value="current">{t('productExport.currentPage')}</Radio>
             <Radio value="all">{t('productExport.allProducts')}</Radio>
-            <Radio value="selected">{t('productExport.selectedProducts', { count: selectedRows.length })}</Radio>
+            <Radio value="selected">
+              {t('productExport.selectedProducts', { count: selectedRows.length })}
+            </Radio>
             <Radio value="filtered">{t('productExport.filteredProducts')}</Radio>
           </Space>
         </Radio.Group>
@@ -157,4 +164,3 @@ const ProductExportModal: React.FC<ProductExportModalProps> = ({
 };
 
 export default ProductExportModal;
-

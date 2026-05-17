@@ -1,27 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
-import {
-  Form,
-  Input,
-  Select,
-  Row,
-  Col,
-  Button,
-  Switch,
-  Space,
-  Typography,
-  Divider,
-} from 'antd';
-import {
-  BulbOutlined,
-  SyncOutlined,
-  SettingOutlined,
-  InfoCircleOutlined,
-} from '@ant-design/icons';
+import { Form, Input, Select, Row, Col, Button, Switch, Space, Typography, Divider } from 'antd';
+import { BulbOutlined, SyncOutlined, SettingOutlined, InfoCircleOutlined } from '@ant-design/icons';
 import EnhancedRichTextEditor from '@/components/common/EnhancedRichTextEditor';
 import Base64ImageWarning from './Base64ImageWarning';
 import DynamicProductName from './DynamicProductName';
-import { sampleLaptopData } from '../utils/sampleProductData';
 
 const { TextArea } = Input;
 const { Option } = Select;
@@ -52,13 +35,14 @@ const EnhancedProductBasicForm: React.FC<EnhancedProductBasicFormProps> = ({
   const isVariantProduct = Form.useWatch('isVariantProduct', form);
   const description = Form.useWatch('description', form) || '';
 
-  const handleFillSampleData = () => {
-    const sampleData = {
+  const handleFillSampleData = async () => {
+    if (!import.meta.env.DEV) return;
+    const { sampleLaptopData } = await import('../utils/sampleProductData');
+    form.setFieldsValue({
       ...sampleLaptopData,
       baseName: 'ThinkPad X1 Carbon',
       isVariantProduct: true,
-    };
-    form.setFieldsValue(sampleData);
+    });
     fillExampleData();
   };
 
@@ -85,10 +69,7 @@ const EnhancedProductBasicForm: React.FC<EnhancedProductBasicFormProps> = ({
               border: '1px dashed #d9d9d9',
             }}
           >
-            <Space
-              size="middle"
-              style={{ width: '100%', justifyContent: 'space-between' }}
-            >
+            <Space size="middle" style={{ width: '100%', justifyContent: 'space-between' }}>
               <Space>
                 <BulbOutlined style={{ color: '#1890ff' }} />
                 <Text strong>{t('productForm.autoName')}</Text>
@@ -109,36 +90,33 @@ const EnhancedProductBasicForm: React.FC<EnhancedProductBasicFormProps> = ({
             </Space>
 
             {dynamicNamingEnabled && (
-              <Text
-                type="secondary"
-                style={{ fontSize: 12, display: 'block', marginTop: 8 }}
-              >
+              <Text type="secondary" style={{ fontSize: 12, display: 'block', marginTop: 8 }}>
                 {t('productForm.autoNameDesc')}
               </Text>
             )}
           </div>
         </Col>
 
-        {/* Product Name Field */}
+        {/* Product Name — Tiếng Việt */}
         <Col span={24}>
           <Form.Item
-            name="name"
-            label={t('productForm.nameLabel')}
+            name="nameVi"
+            label={`${t('productForm.nameLabel')} (Tiếng Việt)`}
             rules={[{ required: true, message: t('productForm.nameRequired') }]}
-            extra={
-              dynamicNamingEnabled
-                ? t('productForm.nameAutoUpdate')
-                : undefined
-            }
+            extra={dynamicNamingEnabled ? t('productForm.nameAutoUpdate') : undefined}
           >
             <Input
               placeholder={t('productForm.namePlaceholder')}
               size="large"
-              disabled={
-                dynamicNamingEnabled &&
-                Object.values(selectedAttributes).some((v) => v)
-              }
+              disabled={dynamicNamingEnabled && Object.values(selectedAttributes).some((v) => v)}
             />
+          </Form.Item>
+        </Col>
+
+        {/* Product Name — English */}
+        <Col span={24}>
+          <Form.Item name="nameEn" label={`${t('productForm.nameLabel')} (English)`}>
+            <Input placeholder="Product name in English" size="large" />
           </Form.Item>
         </Col>
 
@@ -197,11 +175,11 @@ const EnhancedProductBasicForm: React.FC<EnhancedProductBasicFormProps> = ({
           </Form.Item>
         </Col>
 
-        {/* Short Description */}
+        {/* Short Description — Tiếng Việt */}
         <Col span={24}>
           <Form.Item
-            name="shortDescription"
-            label={t('productForm.shortDescLabel')}
+            name="shortDescriptionVi"
+            label={`${t('productForm.shortDescLabel')} (Tiếng Việt)`}
             rules={[{ required: true, message: t('productForm.shortDescRequired') }]}
           >
             <TextArea
@@ -214,13 +192,25 @@ const EnhancedProductBasicForm: React.FC<EnhancedProductBasicFormProps> = ({
           </Form.Item>
         </Col>
 
-        {/* Featured Toggle */}
+        {/* Short Description — English */}
         <Col span={24}>
           <Form.Item
-            name="featured"
-            label={t('productForm.featuredLabel')}
-            valuePropName="checked"
+            name="shortDescriptionEn"
+            label={`${t('productForm.shortDescLabel')} (English)`}
           >
+            <TextArea
+              rows={3}
+              placeholder="Short description in English"
+              maxLength={200}
+              showCount
+              size="large"
+            />
+          </Form.Item>
+        </Col>
+
+        {/* Featured Toggle */}
+        <Col span={24}>
+          <Form.Item name="featured" label={t('productForm.featuredLabel')} valuePropName="checked">
             <Switch />
           </Form.Item>
         </Col>
@@ -228,12 +218,7 @@ const EnhancedProductBasicForm: React.FC<EnhancedProductBasicFormProps> = ({
         {/* Sample Data Button — dev only */}
         {import.meta.env.DEV && (
           <Col span={24}>
-            <Button
-              type="dashed"
-              onClick={handleFillSampleData}
-              icon={<SyncOutlined />}
-              block
-            >
+            <Button type="dashed" onClick={handleFillSampleData} icon={<SyncOutlined />} block>
               {t('productForm.fillSampleData')}
             </Button>
           </Col>
@@ -243,20 +228,23 @@ const EnhancedProductBasicForm: React.FC<EnhancedProductBasicFormProps> = ({
           <Divider />
         </Col>
 
-        {/* Description Field */}
+        {/* Description — Tiếng Việt */}
         <Col span={24}>
           <Form.Item
-            name="description"
-            label={t('productForm.descLabel')}
-            rules={[
-              { required: true, message: t('productForm.descRequired') },
-            ]}
+            name="descriptionVi"
+            label={`${t('productForm.descLabel')} (Tiếng Việt)`}
+            rules={[{ required: true, message: t('productForm.descRequired') }]}
           >
-            <EnhancedRichTextEditor
-              placeholder={t('productForm.descPlaceholder')}
-            />
+            <EnhancedRichTextEditor placeholder={t('productForm.descPlaceholder')} />
           </Form.Item>
           <Base64ImageWarning description={description} />
+        </Col>
+
+        {/* Description — English */}
+        <Col span={24}>
+          <Form.Item name="descriptionEn" label={`${t('productForm.descLabel')} (English)`}>
+            <EnhancedRichTextEditor placeholder="Product description in English" />
+          </Form.Item>
         </Col>
       </Row>
     </div>
@@ -264,4 +252,3 @@ const EnhancedProductBasicForm: React.FC<EnhancedProductBasicFormProps> = ({
 };
 
 export default EnhancedProductBasicForm;
-

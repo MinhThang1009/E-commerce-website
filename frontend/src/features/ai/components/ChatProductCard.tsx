@@ -1,6 +1,7 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
+import { localizeField } from '@/utils/localize';
 import { getLocale } from '@/utils/format';
 import { ProductRecommendation } from '../services/chatbotApi';
 import {
@@ -21,7 +22,7 @@ const ChatProductCard: React.FC<ChatProductCardProps> = ({
   sessionId,
   onProductClick,
 }) => {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const navigate = useNavigate();
   const user = useAuthStore((s) => s.user);
   const { mutateAsync: trackAnalytics } = useTrackChatbotAnalyticsMutation();
@@ -87,9 +88,7 @@ const ChatProductCard: React.FC<ChatProductCardProps> = ({
     return Array.from({ length: 5 }, (_, i) => (
       <span
         key={i}
-        className={`text-sm ${
-          i < Math.floor(rating) ? 'text-yellow-400' : 'text-gray-300'
-        }`}
+        className={`text-sm ${i < Math.floor(rating) ? 'text-yellow-400' : 'text-gray-300'}`}
       >
         ★
       </span>
@@ -104,7 +103,7 @@ const ChatProductCard: React.FC<ChatProductCardProps> = ({
       <div className="relative overflow-hidden">
         <img
           src={product.thumbnail || '/images/placeholder-product.jpg'}
-          alt={product.name}
+          alt={localizeField(product, 'name', i18n.language)}
           className="w-full h-32 object-cover group-hover:scale-110 transition-transform duration-300"
         />
 
@@ -116,16 +115,14 @@ const ChatProductCard: React.FC<ChatProductCardProps> = ({
 
         {!product.inStock && (
           <div className="absolute inset-0 bg-black/50 flex items-center justify-center">
-            <span className="text-white font-semibold text-sm">
-              {t('product.outOfStock')}
-            </span>
+            <span className="text-white font-semibold text-sm">{t('product.outOfStock')}</span>
           </div>
         )}
       </div>
 
       <div className="p-3">
         <h4 className="font-semibold text-sm text-neutral-800 dark:text-neutral-200 line-clamp-2 mb-2">
-          {product.name}
+          {localizeField(product, 'name', i18n.language)}
         </h4>
 
         {product.rating !== null && product.rating !== undefined && (
@@ -140,12 +137,11 @@ const ChatProductCard: React.FC<ChatProductCardProps> = ({
             <span className="font-bold text-primary-600 dark:text-primary-400 text-sm">
               {formatPrice(product.price)}
             </span>
-            {product.compareAtPrice &&
-              product.compareAtPrice > product.price && (
-                <span className="text-xs text-neutral-500 line-through">
-                  {formatPrice(product.compareAtPrice)}
-                </span>
-              )}
+            {product.compareAtPrice && product.compareAtPrice > product.price && (
+              <span className="text-xs text-neutral-500 line-through">
+                {formatPrice(product.compareAtPrice)}
+              </span>
+            )}
           </div>
         </div>
 

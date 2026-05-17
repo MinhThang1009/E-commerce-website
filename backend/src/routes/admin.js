@@ -5,10 +5,6 @@ const router = express.Router();
 const adminController = require('../controllers/admin');
 const adminImportController = require('../controllers/adminImport');
 const discountCodeController = require('../controllers/discountCode');
-const brandController = require('../controllers/brand');
-const collectionController = require('../controllers/collection');
-const bannerController = require('../controllers/banner');
-const newsController = require('../controllers/news');
 
 // Khai báo middlewares
 const { adminAuthenticate } = require('../middlewares/adminAuth');
@@ -30,10 +26,6 @@ const {
   createDiscountCodeValidation,
   updateDiscountCodeValidation,
 } = require('../validators/discountCode');
-const { createBannerSchema, updateBannerSchema } = require('../validators/banner');
-const { createNewsSchema, updateNewsSchema } = require('../validators/news');
-const { createBrandSchema, updateBrandSchema } = require('../validators/brand');
-const { createCollectionSchema, updateCollectionSchema } = require('../validators/collection');
 
 // Middleware cho tất cả admin routes
 router.use(adminAuthenticate);
@@ -236,45 +228,10 @@ router.delete(
   discountCodeController.deleteDiscountCode
 );
 
-/**
- * BRAND MANAGEMENT ROUTES
- */
-router.get('/brands', brandController.getAllBrands);
-router.post('/brands', validateRequest(createBrandSchema, 422), brandController.createBrand);
-router.put('/brands/:id', validateRequest(updateBrandSchema, 422), brandController.updateBrand);
-router.delete('/brands/:id', brandController.deleteBrand);
-
-/**
- * COLLECTION MANAGEMENT ROUTES
- */
-router.get('/collections', collectionController.getAllCollections);
-router.post('/collections', validateRequest(createCollectionSchema, 422), collectionController.createCollection);
-router.put('/collections/:id', validateRequest(updateCollectionSchema, 422), collectionController.updateCollection);
-router.delete('/collections/:id', collectionController.deleteCollection);
-
-/**
- * BANNER MANAGEMENT ROUTES (admin path — cạnh /api/banners đã có auth riêng)
- */
-// GET /api/admin/banners — danh sách banner
-router.get('/banners', bannerController.getAllBanners);
-// POST /api/admin/banners — tạo banner mới (yêu cầu imageUrl)
-router.post('/banners', validateRequest(createBannerSchema, 422), bannerController.createBanner);
-// PATCH /api/admin/banners/:id — cập nhật banner
-router.patch('/banners/:id', validateRequest(updateBannerSchema, 422), bannerController.updateBanner);
-// DELETE /api/admin/banners/:id — xóa banner
-router.delete('/banners/:id', bannerController.deleteBanner);
-
-/**
- * NEWS MANAGEMENT ROUTES (admin path — cạnh /api/news đã có auth riêng)
- */
-// GET /api/admin/news — danh sách tin tức
-router.get('/news', newsController.getAllNews);
-// POST /api/admin/news — tạo bài tin tức mới (yêu cầu title + content)
-router.post('/news', validateRequest(createNewsSchema, 422), newsController.createNews);
-// PUT /api/admin/news/:id — cập nhật bài tin tức
-router.put('/news/:id', validateRequest(updateNewsSchema, 422), newsController.updateNews);
-// DELETE /api/admin/news/:id — xóa bài tin tức
-router.delete('/news/:id', newsController.deleteNews);
+/* Brand/Collection/Banner/News admin routes đã migrate sang module routes:
+   - brands/collections → /api/brands, /api/collections (catalog module)
+   - banners/news → /api/banners, /api/news (content module)
+*/
 
 /**
  * ANALYTICS ROUTES — Phase 32

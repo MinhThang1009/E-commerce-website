@@ -26,7 +26,7 @@
 const { Op, Sequelize } = require('sequelize');
 const logger = require('../utils/logger');
 const { catchAsync } = require('../utils/catchAsync');
-const { AppError } = require('../middlewares/errorHandler');
+const { AppError } = require('../shared/errors');
 const { AdminAuditService } = require('../services/adminAudit');
 const {
   calculateTotalStock,
@@ -87,7 +87,7 @@ function deepParseJSONArray(val) {
  * Dashboard - Thống kê tổng quan
  */
 const getDashboardStats = catchAsync(async (req, res) => {
-  logger.info('>>> [CONTROLLER] getDashboardStats started');
+  logger.info('[CONTROLLER] getDashboardStats started');
   const today = new Date();
   const startOfMonth = new Date(today.getFullYear(), today.getMonth(), 1);
   const startOfLastMonth = new Date(
@@ -99,15 +99,15 @@ const getDashboardStats = catchAsync(async (req, res) => {
 
   // Thống kê tổng quan
   const totalUsers = await User.count({ where: { role: 'customer' } });
-  logger.info('>>> [DASHBOARD] Lấy totalUsers:', totalUsers);
+  logger.info('[DASHBOARD] Lấy totalUsers:', totalUsers);
   const totalProducts = await Product.count();
-  logger.info('>>> [DASHBOARD] Lấy totalProducts:', totalProducts);
+  logger.info('[DASHBOARD] Lấy totalProducts:', totalProducts);
   const totalOrders = await Order.count();
-  logger.info('>>> [DASHBOARD] Lấy totalOrders:', totalOrders);
+  logger.info('[DASHBOARD] Lấy totalOrders:', totalOrders);
   const totalRevenue = await Order.sum('total', {
     where: { status: 'delivered', paymentStatus: { [Op.notIn]: ['refunded', 'failed'] } },
   });
-  logger.info('>>> [DASHBOARD] Lấy totalRevenue:', totalRevenue);
+  logger.info('[DASHBOARD] Lấy totalRevenue:', totalRevenue);
 
   // Thống kê theo tháng
   const monthlyUsers = await User.count({
@@ -172,14 +172,14 @@ const getDashboardStats = catchAsync(async (req, res) => {
     : 0;
 
   // Top sản phẩm bán chạy
-  logger.info('>>> [DASHBOARD] Đang lấy topProducts...');
+  logger.info('[DASHBOARD] Đang lấy topProducts...');
   let topProducts = [];
   try {
     topProducts = await OrderItem.findAll({
       attributes: [
         'productId',
-        [Sequelize.fn('SUM', Sequelize.col('quantity')), 'totalSold'],
-        [Sequelize.fn('SUM', Sequelize.col('subtotal')), 'totalRevenue'],
+        [Sequelize.fn('SUM', Sequelize.col('OrderItem.quantity')), 'totalSold'],
+        [Sequelize.fn('SUM', Sequelize.col('OrderItem.subtotal')), 'totalRevenue'],
       ],
       include: [
         {
@@ -196,12 +196,12 @@ const getDashboardStats = catchAsync(async (req, res) => {
         },
       ],
       group: ['productId', 'Product.id'],
-      order: [[Sequelize.fn('SUM', Sequelize.col('quantity')), 'DESC']],
+      order: [[Sequelize.fn('SUM', Sequelize.col('OrderItem.quantity')), 'DESC']],
       limit: 5,
     });
-    logger.info('>>> [DASHBOARD] Lấy topProducts xong:', topProducts.length);
+    logger.info('[DASHBOARD] Lấy topProducts xong:', topProducts.length);
   } catch (err) {
-    logger.error('>>> [DASHBOARD] LỖI khi lấy topProducts:', err.message);
+    logger.error('[DASHBOARD] LỖI khi lấy topProducts:', err.message);
     // Tiếp tục mà không có top products nếu lấy thất bại
   }
 
@@ -308,7 +308,7 @@ const getDetailedStats = catchAsync(async (req, res) => {
   const orderStats = await Order.findAll({
     attributes: [
       [
-        Sequelize.fn('DATE_FORMAT', Sequelize.col('createdAt'), dateFormat),
+        Sequelize.fn('DATE_FORMAT', Sequelize.col('created_at'), dateFormat),
         'period',
       ],
       [Sequelize.fn('COUNT', Sequelize.col('id')), 'orderCount'],
@@ -322,11 +322,11 @@ const getDetailedStats = catchAsync(async (req, res) => {
       paymentStatus: { [Op.notIn]: ['refunded', 'failed'] },
     },
     group: [
-      Sequelize.fn('DATE_FORMAT', Sequelize.col('createdAt'), dateFormat),
+      Sequelize.fn('DATE_FORMAT', Sequelize.col('created_at'), dateFormat),
     ],
     order: [
       [
-        Sequelize.fn('DATE_FORMAT', Sequelize.col('createdAt'), dateFormat),
+        Sequelize.fn('DATE_FORMAT', Sequelize.col('created_at'), dateFormat),
         'ASC',
       ],
     ],
@@ -336,7 +336,7 @@ const getDetailedStats = catchAsync(async (req, res) => {
   const userStats = await User.findAll({
     attributes: [
       [
-        Sequelize.fn('DATE_FORMAT', Sequelize.col('createdAt'), dateFormat),
+        Sequelize.fn('DATE_FORMAT', Sequelize.col('created_at'), dateFormat),
         'period',
       ],
       [Sequelize.fn('COUNT', Sequelize.col('id')), 'newUsers'],
@@ -348,11 +348,11 @@ const getDetailedStats = catchAsync(async (req, res) => {
       },
     },
     group: [
-      Sequelize.fn('DATE_FORMAT', Sequelize.col('createdAt'), dateFormat),
+      Sequelize.fn('DATE_FORMAT', Sequelize.col('created_at'), dateFormat),
     ],
     order: [
       [
-        Sequelize.fn('DATE_FORMAT', Sequelize.col('createdAt'), dateFormat),
+        Sequelize.fn('DATE_FORMAT', Sequelize.col('created_at'), dateFormat),
         'ASC',
       ],
     ],
@@ -792,7 +792,7 @@ const createProduct = catchAsync(async (req, res) => {
         ) {
           try {
             // Tạm thời bỏ qua validation để đảm bảo biến thể được tạo
-          } catch (error) {
+          } catch (error) /* istanbul ignore next */ {
             logger.error('Lỗi khi xác thực thuộc tính biến thể:', error);
             // Không throw error, chỉ log để tiếp tục tạo biến thể
           }
@@ -950,6 +950,12 @@ const createProduct = catchAsync(async (req, res) => {
       {
         model: ProductVariant,
         as: 'variants',
+      },
+      {
+        model: ProductImage,
+        as: 'productImages',
+        attributes: ['imageUrl', 'isThumbnail'],
+        required: false,
       },
       {
         model: require('../models').ProductSpecification,
@@ -1179,7 +1185,7 @@ const updateProduct = catchAsync(async (req, res) => {
       }, {});
 
       // Dùng Set để tra cứu nhanh các ID đầu vào
-      const incomingVarIds = new Set(variants.filter(v => v.id && !v.id.startsWith('var-')).map(v => v.id));
+      const incomingVarIds = new Set(variants.filter(v => v.id && !String(v.id).startsWith('var-')).map(v => v.id));
 
       // 1. Xóa các variants không có trong danh sách đầu vào
       for (const variant of currentVariants) {
@@ -1220,7 +1226,7 @@ const updateProduct = catchAsync(async (req, res) => {
             ...variantData,
             productId: id,
             // Chỉ dùng ID nếu là UUID hợp lệ (không phải ID tạm như 'var-0')
-            id: variant.id && !variant.id.startsWith('var-') ? variant.id : undefined,
+            id: variant.id && !String(variant.id).startsWith('var-') ? variant.id : undefined,
           }, { transaction });
           finalVariants.push(created);
           return created;
@@ -1266,6 +1272,7 @@ const updateProduct = catchAsync(async (req, res) => {
         const specData = {
           name: spec.name,
           value: spec.value,
+          valueEn: spec.valueEn || null,
           category: spec.category || 'General',
           sortOrder: spec.sortOrder || index,
         };
@@ -1279,8 +1286,25 @@ const updateProduct = catchAsync(async (req, res) => {
           }, { transaction });
         }
       });
-      await Promise.all(specPromises);
+      const savedSpecs = await Promise.all(specPromises);
       changes.specifications = specifications.length;
+
+      // Translate background — không block response admin
+      const specsNeedTranslation = savedSpecs.filter(s => !s.valueEn && s.value);
+      if (specsNeedTranslation.length > 0) {
+        setImmediate(async () => {
+          try {
+            const { translateBatch } = require('../services/ai/translateService');
+            const translated = await translateBatch(specsNeedTranslation.map(s => s.value));
+            await Promise.all(specsNeedTranslation.map((s, i) =>
+              s.update({ valueEn: translated[i] || null })
+            ));
+            logger.info(`[Translate] Đã dịch ${specsNeedTranslation.length} specs cho product ${id}`);
+          } catch (err) {
+            logger.warn(`[Translate] Lỗi auto-translate specs product ${id}:`, err.message);
+          }
+        });
+      }
     }
 
     // 7. Cập nhật warranty packages
@@ -1313,6 +1337,7 @@ const updateProduct = catchAsync(async (req, res) => {
         { model: Category, as: 'categories', through: { attributes: [] } },
         { model: ProductAttribute, as: 'productAttributes' },
         { model: ProductVariant, as: 'variants' },
+        { model: ProductImage, as: 'productImages', attributes: ['imageUrl', 'isThumbnail'], required: false },
         { model: ProductSpecification, as: 'productSpecifications' },
         {
           model: WarrantyPackage,
@@ -1509,7 +1534,7 @@ const getAllProducts = catchAsync(async (req, res) => {
     includeClause[1].where = { id: category };
   }
 
-  logger.info('>>> [ADMIN] Đang lấy danh sách sản phẩm...');
+  logger.info('[ADMIN] Đang lấy danh sách sản phẩm...');
   try {
     const { count, rows: products } = await Product.findAndCountAll({
       where: whereClause,
@@ -1519,7 +1544,7 @@ const getAllProducts = catchAsync(async (req, res) => {
       order: [[sortBy === 'price' ? 'basePrice' : sortBy, sortOrder.toUpperCase()]],
       distinct: true,
     });
-    logger.info('>>> [ADMIN] Lấy sản phẩm xong:', products.length);
+    logger.info('[ADMIN] Lấy sản phẩm xong:', products.length);
 
     // Transform dữ liệu để tương thích với Frontend
     const transformedProducts = products.map((p) => {
@@ -1555,7 +1580,7 @@ const getAllProducts = catchAsync(async (req, res) => {
       },
     });
   } catch (err) {
-    logger.error('>>> [ADMIN] LỖI khi lấy danh sách sản phẩm:', err.message);
+    logger.error('[ADMIN] LỖI khi lấy danh sách sản phẩm:', err.message);
     throw err;
   }
 });
@@ -1697,7 +1722,7 @@ const getAllOrders = catchAsync(async (req, res) => {
     },
   ];
 
-  logger.info('>>> [ADMIN] Đang lấy danh sách đơn hàng...');
+  logger.info('[ADMIN] Đang lấy danh sách đơn hàng...');
   try {
     const { count, rows: orders } = await Order.findAndCountAll({
       where: whereClause,
@@ -1706,7 +1731,7 @@ const getAllOrders = catchAsync(async (req, res) => {
       offset: parseInt(offset),
       order: [[sortBy, sortOrder.toUpperCase()]],
     });
-    logger.info('>>> [ADMIN] Lấy đơn hàng xong:', orders.length);
+    logger.info('[ADMIN] Lấy đơn hàng xong:', orders.length);
 
     // Transform dữ liệu đơn hàng
     const transformedOrders = orders.map((o) => {
@@ -1739,7 +1764,7 @@ const getAllOrders = catchAsync(async (req, res) => {
       },
     });
   } catch (err) {
-    logger.error('>>> [ADMIN] LỖI khi lấy danh sách đơn hàng:', err.message);
+    logger.error('[ADMIN] LỖI khi lấy danh sách đơn hàng:', err.message);
     throw err;
   }
 });
@@ -1908,7 +1933,7 @@ const cloneProduct = catchAsync(async (req, res) => {
   let exists = true;
   while (exists) {
     const testName = `${originalProduct.name} (${count})`;
-    const existing = await Product.findOne({ where: { name: testName } });
+    const existing = await Product.findOne({ where: { nameVi: testName } });
     if (!existing) {
       newName = testName;
       exists = false;
@@ -2116,6 +2141,25 @@ const restockProduct = catchAsync(async (req, res) => {
     createdBy: req.user.id,
   });
 
+  // Đồng bộ vector store sau khi stock thay đổi để chatbot hiển thị đúng trạng thái tồn kho
+  try {
+    const { enrichProductData } = require('../services/ai/vectorStore');
+    await vectorStoreService.loadPromise;
+    const productForIndex = await Product.findByPk(productId, {
+      include: [
+        { model: Category, as: 'categories', through: { attributes: [] } },
+        { model: ProductVariant, as: 'variants', attributes: ['stockQuantity'] },
+        { model: ProductImage, as: 'productImages', attributes: ['imageUrl', 'isThumbnail'], required: false },
+      ],
+    });
+    if (productForIndex && productForIndex.status === 'active') {
+      await vectorStoreService.addProduct(enrichProductData(productForIndex.toJSON()));
+      await vectorStoreService.save();
+    }
+  } catch (syncErr) {
+    logger.error('Lỗi đồng bộ vector store sau khi nhập hàng:', syncErr.message);
+  }
+
   res.status(200).json({
     data: {
       productId: parseInt(productId, 10),
@@ -2228,8 +2272,8 @@ const getTopProductsAnalytics = catchAsync(async (req, res) => {
   const topProducts = await OrderItem.findAll({
     attributes: [
       'productId',
-      [Sequelize.fn('SUM', Sequelize.col('subtotal')), 'revenue'],
-      [Sequelize.fn('SUM', Sequelize.col('quantity')), 'soldCount'],
+      [Sequelize.fn('SUM', Sequelize.col('OrderItem.subtotal')), 'revenue'],
+      [Sequelize.fn('SUM', Sequelize.col('OrderItem.quantity')), 'soldCount'],
     ],
     include: [
       {
@@ -2284,7 +2328,7 @@ const getRevenueByCategoryAnalytics = catchAsync(async (req, res) => {
   }
 
   const [results] = await sequelize.query(`
-    SELECT c.id AS categoryId, c.name AS categoryName,
+    SELECT c.id AS categoryId, c.name_vi AS categoryName,
            COALESCE(SUM(oi.subtotal), 0) AS revenue,
            COUNT(DISTINCT oi.id) AS orderItemCount
     FROM order_items oi
@@ -2293,7 +2337,7 @@ const getRevenueByCategoryAnalytics = catchAsync(async (req, res) => {
     JOIN product_categories pc ON pc.product_id = p.id
     JOIN categories c ON c.id = pc.category_id
     WHERE o.payment_status = 'paid' ${dateFilter}
-    GROUP BY c.id, c.name
+    GROUP BY c.id, c.name_vi
     ORDER BY revenue DESC
     LIMIT 8
   `, { replacements });
@@ -2332,15 +2376,15 @@ const getUserGrowthAnalytics = catchAsync(async (req, res) => {
 
   const userGrowth = await User.findAll({
     attributes: [
-      [Sequelize.fn('DATE_FORMAT', Sequelize.col('createdAt'), dateFormat), 'date'],
+      [Sequelize.fn('DATE_FORMAT', Sequelize.col('created_at'), dateFormat), 'date'],
       [Sequelize.fn('COUNT', Sequelize.col('id')), 'newUsers'],
     ],
     where: {
       role: 'customer',
       createdAt: { [Op.between]: [new Date(startDate), new Date(endDate)] },
     },
-    group: [Sequelize.fn('DATE_FORMAT', Sequelize.col('createdAt'), dateFormat)],
-    order: [[Sequelize.fn('DATE_FORMAT', Sequelize.col('createdAt'), dateFormat), 'ASC']],
+    group: [Sequelize.fn('DATE_FORMAT', Sequelize.col('created_at'), dateFormat)],
+    order: [[Sequelize.fn('DATE_FORMAT', Sequelize.col('created_at'), dateFormat), 'ASC']],
     raw: true,
   });
 
@@ -2363,7 +2407,7 @@ const getPaymentMethodsAnalytics = catchAsync(async (req, res) => {
       [Sequelize.fn('SUM', Sequelize.col('total')), 'revenue'],
     ],
     where: { paymentStatus: 'paid' },
-    group: ['paymentMethod'],
+    group: ['payment_method'],
     raw: true,
   });
 
@@ -2383,13 +2427,21 @@ const getLowStockAnalytics = catchAsync(async (req, res) => {
   const threshold = parseInt(req.query.threshold, 10) || 10;
 
   const products = await Product.findAll({
-    attributes: ['id', 'name', 'sku', 'stockQuantity', 'slug'],
-    include: [{
-      model: ProductImage,
-      as: 'productImages',
-      attributes: ['imageUrl'],
-      limit: 1,
-    }],
+    attributes: ['id', 'name', 'stockQuantity', 'slug'],
+    include: [
+      {
+        model: ProductImage,
+        as: 'productImages',
+        attributes: ['imageUrl'],
+        limit: 1,
+      },
+      {
+        model: ProductVariant,
+        as: 'variants',
+        attributes: ['sku'],
+        limit: 1,
+      },
+    ],
     where: { stockQuantity: { [Op.lte]: threshold } },
     order: [['stockQuantity', 'ASC']],
     limit: 20,
@@ -2400,7 +2452,7 @@ const getLowStockAnalytics = catchAsync(async (req, res) => {
     return {
       id: pJson.id,
       name: pJson.name,
-      sku: pJson.sku || '',
+      sku: pJson.variants?.[0]?.sku || '',
       stockQuantity: pJson.stockQuantity,
       thumbnail: pJson.productImages?.[0]?.imageUrl || null,
     };
@@ -2446,7 +2498,7 @@ const exportReport = catchAsync(async (req, res) => {
   } else if (type === 'products') {
     const products = await Product.findAll({
       attributes: ['id', 'name', 'sku', 'basePrice', 'stockQuantity', 'status'],
-      order: [['name', 'ASC']],
+      order: [['nameVi', 'ASC']],
       limit: 5000,
       raw: true,
     });
@@ -2478,7 +2530,7 @@ const getChatbotStats = catchAsync(async (req, res) => {
   // Tổng sessions (unique sessionId)
   const totalSessions = await ChatMessage.count({
     distinct: true,
-    col: 'sessionId',
+    col: 'session_id',
     where,
   });
 

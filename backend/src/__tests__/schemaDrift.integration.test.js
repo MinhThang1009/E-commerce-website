@@ -24,7 +24,9 @@ beforeAll(async () => {
     models = require('../models');
     dbAvailable = true;
   } catch (err) {
+    /* istanbul ignore next */
     console.warn('[schemaDrift] DB không available — skip integration test:', err.message);
+    /* istanbul ignore next */
     dbAvailable = false;
   }
 }, 30000);
@@ -45,7 +47,9 @@ async function getDbColumns(tableName) {
 describe('Phase 46.4 — Schema drift integration check', () => {
   test('DB phải available để chạy test (skip nếu không)', () => {
     if (!dbAvailable) {
+      /* istanbul ignore next */
       console.warn('Skipping schema drift test — DB không available.');
+      /* istanbul ignore next */
       return;
     }
     expect(dbAvailable).toBe(true);

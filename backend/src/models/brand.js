@@ -12,11 +12,13 @@ const Brand = sequelize.define(
       autoIncrement: true,
       primaryKey: true,
     },
-    // Tên thương hiệu
+    // Tên thương hiệu — tiếng Việt (sau i18n migration 2026051611)
+    nameVi: { type: DataTypes.STRING(100), allowNull: false, unique: true },
+    nameEn: { type: DataTypes.STRING(100), allowNull: true },
     name: {
-      type: DataTypes.STRING(200),
-      allowNull: false,
-      unique: true,
+      type: DataTypes.VIRTUAL,
+      get() { return this.getDataValue('nameVi'); },
+      set(v) { this.setDataValue('nameVi', v); },
     },
     // Slug cho URL thân thiện
     slug: {

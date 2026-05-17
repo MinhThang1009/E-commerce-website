@@ -1,3 +1,2 @@
-// Re-export từ middlewares/rateLimiter — bảo toàn proxy stores singleton (counter
-// chia sẻ qua các route mount). Phase 5 cleanup sẽ flip.
+// Canonical import path for modules. Delegates to middlewares/rateLimiter.js (where Jest mocks intercept).
 module.exports = require('../../../middlewares/rateLimiter');

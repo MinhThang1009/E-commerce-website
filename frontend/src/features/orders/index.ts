@@ -28,3 +28,5 @@ export type {
   ApplyDiscountRequest,
   ApplyDiscountResponse,
 } from './api/orderApi';
+
+export { default as OrderDetails } from './components/OrderDetails';

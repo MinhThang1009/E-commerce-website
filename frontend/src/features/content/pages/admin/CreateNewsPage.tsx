@@ -5,16 +5,7 @@ import {
   useCreateNewsMutation,
   useUpdateNewsMutation,
 } from '../../api/newsApi';
-import {
-  Form,
-  Input,
-  Button,
-  Select,
-  Card,
-  message,
-  Space,
-  Spin,
-} from 'antd';
+import { Form, Input, Button, Select, Card, message, Space, Spin } from 'antd';
 import { ArrowLeftOutlined, SaveOutlined, PlusSquareOutlined } from '@ant-design/icons';
 import ReactQuill, { Quill } from 'react-quill';
 import 'react-quill/dist/quill.snow.css';
@@ -35,13 +26,16 @@ class ProductCardBlot extends BlockEmbed {
     node.setAttribute('contenteditable', 'false');
     node.setAttribute('class', 'product-embed-card not-prose');
 
-    const data = typeof value === 'object' ? value : {
-      id: value.id || '#',
-      name: value.name || 'Product',
-      price: value.price || `0${i18n.t('common.currencySymbol')}`,
-      oldPrice: value.oldPrice || '',
-      imageUrl: value.imageUrl || '',
-    };
+    const data =
+      typeof value === 'object'
+        ? value
+        : {
+            id: value.id || '#',
+            name: value.name || 'Product',
+            price: value.price || `0${i18n.t('common.currencySymbol')}`,
+            oldPrice: value.oldPrice || '',
+            imageUrl: value.imageUrl || '',
+          };
 
     node.setAttribute('data-product', JSON.stringify(data));
 
@@ -174,16 +168,33 @@ const CreateNewsPage: React.FC = () => {
     }
   };
 
-  const handleInsertProduct = (product: { id: string; name: string; price: number; images?: string[] }) => {
+  const handleInsertProduct = (product: {
+    id: string;
+    name: string;
+    price: number;
+    images?: string[];
+  }) => {
     if (!quillRef.current) return;
     const quill = quillRef.current.getEditor();
     const range = quill.getSelection(true);
 
-    const price = new Intl.NumberFormat(getLocale(), { style: 'currency', currency: 'VND' }).format(product.price);
-    const oldPrice = new Intl.NumberFormat(getLocale(), { style: 'currency', currency: 'VND' }).format(product.price * 1.2);
+    const price = new Intl.NumberFormat(getLocale(), { style: 'currency', currency: 'VND' }).format(
+      product.price,
+    );
+    const oldPrice = new Intl.NumberFormat(getLocale(), {
+      style: 'currency',
+      currency: 'VND',
+    }).format(product.price * 1.2);
     const imageUrl = product.images?.[0] || '/placeholder-image.jpg';
 
-    const productData = { id: product.id, name: product.name, price, oldPrice, imageUrl, viewDetailsText: t('product.viewDetails') };
+    const productData = {
+      id: product.id,
+      name: product.name,
+      price,
+      oldPrice,
+      imageUrl,
+      viewDetailsText: t('product.viewDetails'),
+    };
 
     quill.insertText(range.index, '\n');
     quill.insertEmbed(range.index + 1, 'productCard', productData);
@@ -206,7 +217,12 @@ const CreateNewsPage: React.FC = () => {
           >
             {t('admin.news.insertProduct')}
           </Button>
-          <Button type="primary" onClick={() => form.submit()} icon={<SaveOutlined />} loading={isLoading}>
+          <Button
+            type="primary"
+            onClick={() => form.submit()}
+            icon={<SaveOutlined />}
+            loading={isLoading}
+          >
             {isEditMode ? t('admin.news.update') : t('admin.news.save')}
           </Button>
         </Space>
@@ -214,13 +230,21 @@ const CreateNewsPage: React.FC = () => {
 
       <Spin spinning={isLoading}>
         <Card title={isEditMode ? t('admin.news.editTitle') : t('admin.news.createTitle')}>
-          <Form form={form} layout="vertical" onFinish={onFinish} initialValues={{ isPublished: true }}>
+          <Form
+            form={form}
+            layout="vertical"
+            onFinish={onFinish}
+            initialValues={{ isPublished: true }}
+          >
             <Form.Item
-              name="title"
-              label={t('admin.news.form.title')}
+              name="titleVi"
+              label={`${t('admin.news.form.title')} (VI)`}
               rules={[{ required: true, message: t('admin.news.form.titleRequired') }]}
             >
               <Input onChange={handleTitleChange} />
+            </Form.Item>
+            <Form.Item name="titleEn" label={`${t('admin.news.form.title')} (EN)`}>
+              <Input placeholder="Article title in English" />
             </Form.Item>
 
             <Form.Item
@@ -252,8 +276,11 @@ const CreateNewsPage: React.FC = () => {
               </Select>
             </Form.Item>
 
-            <Form.Item name="description" label={t('admin.news.form.description')}>
-              <Input.TextArea rows={3} />
+            <Form.Item name="descriptionVi" label={`${t('admin.news.form.description')} (VI)`}>
+              <Input.TextArea rows={2} />
+            </Form.Item>
+            <Form.Item name="descriptionEn" label={`${t('admin.news.form.description')} (EN)`}>
+              <Input.TextArea rows={2} placeholder="Article description in English" />
             </Form.Item>
 
             <Form.Item

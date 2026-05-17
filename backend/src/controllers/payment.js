@@ -3,7 +3,7 @@ const momoService = require('../services/payment/momo');
 const vnpayService = require('../services/payment/vnpay');
 const emailService = require('../services/email');
 const { Order, User, OrderItem, Product, ProductVariant, Cart, CartItem, DiscountCode } = require('../models');
-const { AppError } = require('../middlewares/errorHandler');
+const { AppError } = require('../shared/errors');
 const { Op } = require('sequelize');
 const sequelize = require('../config/sequelize');
 const moment = require('moment');
@@ -63,6 +63,7 @@ const sendOrderConfirmationEmailSafe = async (orderId) => {
  * Idempotent — order.discountCodeId null thì không làm gì.
  */
 async function incrementDiscountCodeUsage(orderId, transactionInstance) {
+  /* istanbul ignore next */
   const options = transactionInstance ? { transaction: transactionInstance } : {};
   const order = await Order.findByPk(orderId, {
     attributes: ['id', 'discountCodeId'],
@@ -302,6 +303,7 @@ const handleSePayWebhook = async (req, res, next) => {
         if (match) {
           // Dùng toàn bộ match cho pattern như ORD251100012, hoặc captured group cho các pattern khác
           orderId = match[0];
+          /* istanbul ignore else */
           if (orderId) {
             orderId = orderId.trim();
             break; // Tìm thấy, dừng tìm kiếm

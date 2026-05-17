@@ -57,7 +57,8 @@ const ProfilePage: React.FC = () => {
   const { data: currentUser, isLoading: isLoadingUser } = useGetCurrentUserQuery();
   const { data: loyaltyData } = useGetLoyaltyInfoQuery();
   const { mutateAsync: updateProfile, isPending: isUpdating } = useUpdateProfileMutation();
-  const { mutateAsync: changePassword, isPending: isChangingPassword } = useChangePasswordMutation();
+  const { mutateAsync: changePassword, isPending: isChangingPassword } =
+    useChangePasswordMutation();
 
   // Hooks địa chỉ
   const { data: addressesData, isLoading: isLoadingAddresses } = useGetAddressesQuery();
@@ -107,18 +108,28 @@ const ProfilePage: React.FC = () => {
     if (!formData.firstName) newErrors.firstName = t('profile.validation.firstNameRequired');
     if (!formData.lastName) newErrors.lastName = t('profile.validation.lastNameRequired');
     if (!formData.email) newErrors.email = t('profile.validation.emailRequired');
-    else if (!/\S+@\S+\.\S+/.test(formData.email)) newErrors.email = t('profile.validation.emailInvalid');
+    else if (!/\S+@\S+\.\S+/.test(formData.email))
+      newErrors.email = t('profile.validation.emailInvalid');
+    if (
+      formData.phone?.trim() &&
+      !/^(0|\+84)[0-9]{9}$/.test(formData.phone.trim().replace(/[\s.-]/g, ''))
+    )
+      newErrors.phone = t('validation.phone.invalid');
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
 
   const validatePasswordForm = () => {
     const newErrors: Record<string, string> = {};
-    if (!formData.currentPassword) newErrors.currentPassword = t('profile.validation.currentPasswordRequired');
+    if (!formData.currentPassword)
+      newErrors.currentPassword = t('profile.validation.currentPasswordRequired');
     if (!formData.newPassword) newErrors.newPassword = t('profile.validation.newPasswordRequired');
-    else if (formData.newPassword.length < 6) newErrors.newPassword = t('profile.validation.newPasswordMin');
-    if (!formData.confirmPassword) newErrors.confirmPassword = t('profile.validation.confirmPasswordRequired');
-    else if (formData.newPassword !== formData.confirmPassword) newErrors.confirmPassword = t('profile.validation.passwordMismatch');
+    else if (formData.newPassword.length < 6)
+      newErrors.newPassword = t('profile.validation.newPasswordMin');
+    if (!formData.confirmPassword)
+      newErrors.confirmPassword = t('profile.validation.confirmPasswordRequired');
+    else if (formData.newPassword !== formData.confirmPassword)
+      newErrors.confirmPassword = t('profile.validation.passwordMismatch');
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
@@ -132,11 +143,24 @@ const ProfilePage: React.FC = () => {
         lastName: formData.lastName,
         phone: formData.phone,
       });
-      updateUserStore({ firstName: updatedUser.firstName, lastName: updatedUser.lastName, phone: updatedUser.phone, avatar: updatedUser.avatar });
-      addNotification({ type: 'success', message: t('profile.info.updateSuccess'), duration: 3000 });
+      updateUserStore({
+        firstName: updatedUser.firstName,
+        lastName: updatedUser.lastName,
+        phone: updatedUser.phone,
+        avatar: updatedUser.avatar,
+      });
+      addNotification({
+        type: 'success',
+        message: t('profile.info.updateSuccess'),
+        duration: 3000,
+      });
       setIsEditing(false);
     } catch (error) {
-      addNotification({ type: 'error', message: getErrorMsg(error, t('profile.info.updateError')), duration: 5000 });
+      addNotification({
+        type: 'error',
+        message: getErrorMsg(error, t('profile.info.updateError')),
+        duration: 5000,
+      });
     }
   };
 
@@ -144,11 +168,28 @@ const ProfilePage: React.FC = () => {
     e.preventDefault();
     if (!validatePasswordForm()) return;
     try {
-      await changePassword({ currentPassword: formData.currentPassword, newPassword: formData.newPassword, confirmPassword: formData.confirmPassword });
-      addNotification({ type: 'success', message: t('profile.password.changeSuccess'), duration: 3000 });
-      setFormData((prev) => ({ ...prev, currentPassword: '', newPassword: '', confirmPassword: '' }));
+      await changePassword({
+        currentPassword: formData.currentPassword,
+        newPassword: formData.newPassword,
+        confirmPassword: formData.confirmPassword,
+      });
+      addNotification({
+        type: 'success',
+        message: t('profile.password.changeSuccess'),
+        duration: 3000,
+      });
+      setFormData((prev) => ({
+        ...prev,
+        currentPassword: '',
+        newPassword: '',
+        confirmPassword: '',
+      }));
     } catch (error) {
-      addNotification({ type: 'error', message: getErrorMsg(error, t('profile.password.changeError')), duration: 5000 });
+      addNotification({
+        type: 'error',
+        message: getErrorMsg(error, t('profile.password.changeError')),
+        duration: 5000,
+      });
     }
   };
 
@@ -180,19 +221,47 @@ const ProfilePage: React.FC = () => {
   // Xử lý lưu địa chỉ (thêm mới hoặc cập nhật)
   const handleSaveAddress = async (e: React.FormEvent) => {
     e.preventDefault();
+    const addrErrors: Record<string, string> = {};
+    if (!addressForm.firstName?.trim())
+      addrErrors.firstName = t('profile.validation.firstNameRequired');
+    if (!addressForm.lastName?.trim())
+      addrErrors.lastName = t('profile.validation.lastNameRequired');
+    if (!addressForm.address1?.trim()) addrErrors.address1 = t('checkout.validation.required');
+    if (!addressForm.city?.trim()) addrErrors.city = t('checkout.validation.required');
+    if (
+      addressForm.phone?.trim() &&
+      !/^(0|\+84)[0-9]{9}$/.test(addressForm.phone.trim().replace(/[\s.-]/g, ''))
+    )
+      addrErrors.phone = t('validation.phone.invalid');
+    if (Object.keys(addrErrors).length > 0) {
+      setErrors(addrErrors);
+      return;
+    }
     try {
       if (editingAddressId) {
         await updateAddress({ id: editingAddressId, ...addressForm });
-        addNotification({ type: 'success', message: t('profile.addresses.updateSuccess'), duration: 3000 });
+        addNotification({
+          type: 'success',
+          message: t('profile.addresses.updateSuccess'),
+          duration: 3000,
+        });
       } else {
         await addAddress(addressForm as Omit<Address, 'id'>);
-        addNotification({ type: 'success', message: t('profile.addresses.addSuccess'), duration: 3000 });
+        addNotification({
+          type: 'success',
+          message: t('profile.addresses.addSuccess'),
+          duration: 3000,
+        });
       }
       setShowAddressForm(false);
       setEditingAddressId(null);
       setAddressForm(emptyAddressForm);
     } catch (err) {
-      addNotification({ type: 'error', message: getErrorMsg(err, t('common.error')), duration: 5000 });
+      addNotification({
+        type: 'error',
+        message: getErrorMsg(err, t('common.error')),
+        duration: 5000,
+      });
     }
   };
 
@@ -201,9 +270,17 @@ const ProfilePage: React.FC = () => {
     if (!window.confirm(t('profile.addresses.confirmDelete'))) return;
     try {
       await deleteAddress(id);
-      addNotification({ type: 'success', message: t('profile.addresses.deleteSuccess'), duration: 3000 });
+      addNotification({
+        type: 'success',
+        message: t('profile.addresses.deleteSuccess'),
+        duration: 3000,
+      });
     } catch (err) {
-      addNotification({ type: 'error', message: getErrorMsg(err, t('common.error')), duration: 5000 });
+      addNotification({
+        type: 'error',
+        message: getErrorMsg(err, t('common.error')),
+        duration: 5000,
+      });
     }
   };
 
@@ -211,14 +288,24 @@ const ProfilePage: React.FC = () => {
   const handleSetDefault = async (id: string) => {
     try {
       await setDefaultAddress(id);
-      addNotification({ type: 'success', message: t('profile.addresses.defaultSuccess'), duration: 3000 });
+      addNotification({
+        type: 'success',
+        message: t('profile.addresses.defaultSuccess'),
+        duration: 3000,
+      });
     } catch (err) {
-      addNotification({ type: 'error', message: getErrorMsg(err, t('common.error')), duration: 5000 });
+      addNotification({
+        type: 'error',
+        message: getErrorMsg(err, t('common.error')),
+        duration: 5000,
+      });
     }
   };
 
-  const displayName = `${formData.firstName} ${formData.lastName}`.trim() || t('profile.defaultName');
-  const initials = `${formData.firstName?.[0] || ''}${formData.lastName?.[0] || ''}`.toUpperCase() || 'U';
+  const displayName =
+    `${formData.firstName} ${formData.lastName}`.trim() || t('profile.defaultName');
+  const initials =
+    `${formData.firstName?.[0] || ''}${formData.lastName?.[0] || ''}`.toUpperCase() || 'U';
 
   const tabs: { key: TabKey; label: string; icon: React.ReactNode }[] = [
     {
@@ -226,7 +313,12 @@ const ProfilePage: React.FC = () => {
       label: t('profile.tabs.info'),
       icon: (
         <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+          <path
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            strokeWidth={2}
+            d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"
+          />
         </svg>
       ),
     },
@@ -235,7 +327,12 @@ const ProfilePage: React.FC = () => {
       label: t('profile.tabs.password'),
       icon: (
         <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+          <path
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            strokeWidth={2}
+            d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"
+          />
         </svg>
       ),
     },
@@ -244,7 +341,12 @@ const ProfilePage: React.FC = () => {
       label: t('profile.tabs.orders'),
       icon: (
         <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z" />
+          <path
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            strokeWidth={2}
+            d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z"
+          />
         </svg>
       ),
     },
@@ -253,8 +355,18 @@ const ProfilePage: React.FC = () => {
       label: t('profile.tabs.addresses'),
       icon: (
         <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+          <path
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            strokeWidth={2}
+            d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"
+          />
+          <path
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            strokeWidth={2}
+            d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"
+          />
         </svg>
       ),
     },
@@ -263,7 +375,12 @@ const ProfilePage: React.FC = () => {
       label: t('profile.tabs.loyalty'),
       icon: (
         <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+          <path
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            strokeWidth={2}
+            d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+          />
         </svg>
       ),
     },
@@ -284,7 +401,14 @@ const ProfilePage: React.FC = () => {
     <div className="min-h-screen bg-neutral-50 dark:bg-neutral-950 pb-16">
       {/* Hero Header */}
       <div className="relative h-48 bg-gradient-to-r from-primary-600 via-primary-700 to-indigo-700 overflow-hidden">
-        <div className="absolute inset-0 opacity-20" style={{ backgroundImage: 'radial-gradient(circle at 20% 50%, white 1px, transparent 1px), radial-gradient(circle at 80% 20%, white 1px, transparent 1px)', backgroundSize: '60px 60px' }}></div>
+        <div
+          className="absolute inset-0 opacity-20"
+          style={{
+            backgroundImage:
+              'radial-gradient(circle at 20% 50%, white 1px, transparent 1px), radial-gradient(circle at 80% 20%, white 1px, transparent 1px)',
+            backgroundSize: '60px 60px',
+          }}
+        ></div>
         <div className="absolute bottom-0 left-0 right-0 h-24 bg-gradient-to-t from-neutral-50 dark:from-neutral-950 to-transparent"></div>
       </div>
 
@@ -295,7 +419,11 @@ const ProfilePage: React.FC = () => {
             {/* Avatar */}
             <div className="relative flex-shrink-0">
               {user?.avatar ? (
-                <img src={user.avatar} alt={displayName} className="w-24 h-24 rounded-2xl object-cover ring-4 ring-white dark:ring-neutral-900 shadow-lg" />
+                <img
+                  src={user.avatar}
+                  alt={displayName}
+                  className="w-24 h-24 rounded-2xl object-cover ring-4 ring-white dark:ring-neutral-900 shadow-lg"
+                />
               ) : (
                 <div className="w-24 h-24 rounded-2xl bg-gradient-to-br from-primary-500 to-indigo-600 flex items-center justify-center ring-4 ring-white dark:ring-neutral-900 shadow-lg">
                   <span className="text-white text-3xl font-bold tracking-wide">{initials}</span>
@@ -307,15 +435,29 @@ const ProfilePage: React.FC = () => {
             {/* Info */}
             <div className="flex-1 text-center sm:text-left">
               <h1 className="text-2xl font-bold text-neutral-900 dark:text-white">{displayName}</h1>
-              <p className="text-neutral-500 dark:text-neutral-400 text-sm mt-0.5">{formData.email}</p>
+              <p className="text-neutral-500 dark:text-neutral-400 text-sm mt-0.5">
+                {formData.email}
+              </p>
               <div className="flex flex-wrap gap-2 mt-3 justify-center sm:justify-start">
                 <span className="inline-flex items-center gap-1.5 text-xs font-medium bg-primary-50 dark:bg-primary-900/30 text-primary-700 dark:text-primary-300 px-3 py-1 rounded-full border border-primary-200 dark:border-primary-800">
-                  <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20"><path fillRule="evenodd" d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z" clipRule="evenodd" /></svg>
+                  <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
+                    <path
+                      fillRule="evenodd"
+                      d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z"
+                      clipRule="evenodd"
+                    />
+                  </svg>
                   {t('profile.roleCustomer')}
                 </span>
                 {user?.isEmailVerified && (
                   <span className="inline-flex items-center gap-1.5 text-xs font-medium bg-emerald-50 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-300 px-3 py-1 rounded-full border border-emerald-200 dark:border-emerald-800">
-                    <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20"><path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" /></svg>
+                    <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
+                      <path
+                        fillRule="evenodd"
+                        d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z"
+                        clipRule="evenodd"
+                      />
+                    </svg>
                     {t('profile.emailVerified')}
                   </span>
                 )}
@@ -324,15 +466,32 @@ const ProfilePage: React.FC = () => {
 
             {/* Quick links */}
             <div className="flex gap-2">
-              <Link to={ROUTES.ORDERS} className="flex items-center gap-2 px-4 py-2.5 rounded-xl border border-neutral-200 dark:border-neutral-700 text-neutral-600 dark:text-neutral-300 hover:bg-neutral-50 dark:hover:bg-neutral-800 text-sm font-medium transition-colors">
-                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z" /></svg>
+              <Link
+                to={ROUTES.ORDERS}
+                className="flex items-center gap-2 px-4 py-2.5 rounded-xl border border-neutral-200 dark:border-neutral-700 text-neutral-600 dark:text-neutral-300 hover:bg-neutral-50 dark:hover:bg-neutral-800 text-sm font-medium transition-colors"
+              >
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z"
+                  />
+                </svg>
                 {t('profile.quickLinks.orders')}
               </Link>
               <button
                 onClick={() => setActiveTab('loyalty')}
                 className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-amber-50 dark:bg-amber-900/20 text-amber-700 dark:text-amber-300 hover:bg-amber-100 dark:hover:bg-amber-800/30 text-sm font-medium transition-colors border border-amber-200 dark:border-amber-800"
               >
-                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+                  />
+                </svg>
                 {t('profile.loyalty.pointsDisplay', { points: loyaltyData?.data?.points || 0 })}
               </button>
             </div>
@@ -362,15 +521,26 @@ const ProfilePage: React.FC = () => {
           <div className="bg-white dark:bg-neutral-900 rounded-2xl shadow-sm border border-neutral-100 dark:border-neutral-800 p-6">
             <div className="flex items-center justify-between mb-6">
               <div>
-                <h2 className="text-lg font-semibold text-neutral-900 dark:text-white">{t('profile.info.title')}</h2>
-                <p className="text-sm text-neutral-500 dark:text-neutral-400 mt-0.5">{t('profile.info.subtitle')}</p>
+                <h2 className="text-lg font-semibold text-neutral-900 dark:text-white">
+                  {t('profile.info.title')}
+                </h2>
+                <p className="text-sm text-neutral-500 dark:text-neutral-400 mt-0.5">
+                  {t('profile.info.subtitle')}
+                </p>
               </div>
               {!isEditing && (
                 <button
                   onClick={() => setIsEditing(true)}
                   className="flex items-center gap-2 px-4 py-2 rounded-lg border border-neutral-200 dark:border-neutral-700 text-neutral-700 dark:text-neutral-200 hover:bg-neutral-50 dark:hover:bg-neutral-800 text-sm font-medium transition-colors"
                 >
-                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" /></svg>
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"
+                    />
+                  </svg>
                   {t('profile.info.edit')}
                 </button>
               )}
@@ -379,7 +549,9 @@ const ProfilePage: React.FC = () => {
             <form onSubmit={handleUpdateInfo}>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
                 <div className="space-y-1.5">
-                  <label className="text-sm font-medium text-neutral-700 dark:text-neutral-300">{t('profile.info.firstName')}</label>
+                  <label className="text-sm font-medium text-neutral-700 dark:text-neutral-300">
+                    {t('profile.info.firstName')}
+                  </label>
                   <input
                     name="firstName"
                     value={formData.firstName}
@@ -395,7 +567,9 @@ const ProfilePage: React.FC = () => {
                 </div>
 
                 <div className="space-y-1.5">
-                  <label className="text-sm font-medium text-neutral-700 dark:text-neutral-300">{t('profile.info.lastName')}</label>
+                  <label className="text-sm font-medium text-neutral-700 dark:text-neutral-300">
+                    {t('profile.info.lastName')}
+                  </label>
                   <input
                     name="lastName"
                     value={formData.lastName}
@@ -413,7 +587,9 @@ const ProfilePage: React.FC = () => {
                 <div className="space-y-1.5">
                   <label className="text-sm font-medium text-neutral-700 dark:text-neutral-300">
                     Email
-                    <span className="ml-2 text-xs text-neutral-400 dark:text-neutral-500 font-normal">{t('profile.info.emailReadOnly')}</span>
+                    <span className="ml-2 text-xs text-neutral-400 dark:text-neutral-500 font-normal">
+                      {t('profile.info.emailReadOnly')}
+                    </span>
                   </label>
                   <input
                     name="email"
@@ -425,11 +601,20 @@ const ProfilePage: React.FC = () => {
                 </div>
 
                 <div className="space-y-1.5">
-                  <label className="text-sm font-medium text-neutral-700 dark:text-neutral-300">{t('profile.info.phone')}</label>
+                  <label className="text-sm font-medium text-neutral-700 dark:text-neutral-300">
+                    {t('profile.info.phone')}
+                  </label>
                   <input
                     name="phone"
+                    type="tel"
+                    inputMode="numeric"
+                    maxLength={10}
                     value={formData.phone}
-                    onChange={handleChange}
+                    onChange={(e) =>
+                      handleChange({
+                        target: { name: 'phone', value: e.target.value.replace(/[^0-9]/g, '') },
+                      } as React.ChangeEvent<HTMLInputElement>)
+                    }
                     disabled={!isEditing || isUpdating}
                     placeholder={t('profile.info.phonePlaceholder')}
                     className={`w-full px-4 py-2.5 rounded-xl border text-sm transition-colors ${
@@ -471,7 +656,19 @@ const ProfilePage: React.FC = () => {
                       </>
                     ) : (
                       <>
-                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" /></svg>
+                        <svg
+                          className="w-4 h-4"
+                          fill="none"
+                          stroke="currentColor"
+                          viewBox="0 0 24 24"
+                        >
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            strokeWidth={2}
+                            d="M5 13l4 4L19 7"
+                          />
+                        </svg>
                         {t('profile.info.save')}
                       </>
                     )}
@@ -485,13 +682,19 @@ const ProfilePage: React.FC = () => {
         {activeTab === 'password' && (
           <div className="bg-white dark:bg-neutral-900 rounded-2xl shadow-sm border border-neutral-100 dark:border-neutral-800 p-6">
             <div className="mb-6">
-              <h2 className="text-lg font-semibold text-neutral-900 dark:text-white">{t('profile.password.title')}</h2>
-              <p className="text-sm text-neutral-500 dark:text-neutral-400 mt-0.5">{t('profile.password.subtitle')}</p>
+              <h2 className="text-lg font-semibold text-neutral-900 dark:text-white">
+                {t('profile.password.title')}
+              </h2>
+              <p className="text-sm text-neutral-500 dark:text-neutral-400 mt-0.5">
+                {t('profile.password.subtitle')}
+              </p>
             </div>
 
             <form onSubmit={handleChangePassword} className="max-w-md space-y-5">
               <div className="space-y-1.5">
-                <label className="text-sm font-medium text-neutral-700 dark:text-neutral-300">{t('profile.password.currentPassword')}</label>
+                <label className="text-sm font-medium text-neutral-700 dark:text-neutral-300">
+                  {t('profile.password.currentPassword')}
+                </label>
                 <input
                   name="currentPassword"
                   type="password"
@@ -500,11 +703,15 @@ const ProfilePage: React.FC = () => {
                   placeholder="••••••••"
                   className={`w-full px-4 py-2.5 rounded-xl border text-sm bg-white dark:bg-neutral-800 focus:ring-2 focus:ring-primary-500/20 outline-none transition-colors ${errors.currentPassword ? 'border-red-400' : 'border-neutral-300 dark:border-neutral-600 focus:border-primary-500'}`}
                 />
-                {errors.currentPassword && <p className="text-xs text-red-500">{errors.currentPassword}</p>}
+                {errors.currentPassword && (
+                  <p className="text-xs text-red-500">{errors.currentPassword}</p>
+                )}
               </div>
 
               <div className="space-y-1.5">
-                <label className="text-sm font-medium text-neutral-700 dark:text-neutral-300">{t('profile.password.newPassword')}</label>
+                <label className="text-sm font-medium text-neutral-700 dark:text-neutral-300">
+                  {t('profile.password.newPassword')}
+                </label>
                 <input
                   name="newPassword"
                   type="password"
@@ -517,7 +724,9 @@ const ProfilePage: React.FC = () => {
               </div>
 
               <div className="space-y-1.5">
-                <label className="text-sm font-medium text-neutral-700 dark:text-neutral-300">{t('profile.password.confirmPassword')}</label>
+                <label className="text-sm font-medium text-neutral-700 dark:text-neutral-300">
+                  {t('profile.password.confirmPassword')}
+                </label>
                 <input
                   name="confirmPassword"
                   type="password"
@@ -526,7 +735,9 @@ const ProfilePage: React.FC = () => {
                   placeholder={t('profile.password.confirmPasswordPlaceholder')}
                   className={`w-full px-4 py-2.5 rounded-xl border text-sm bg-white dark:bg-neutral-800 focus:ring-2 focus:ring-primary-500/20 outline-none transition-colors ${errors.confirmPassword ? 'border-red-400' : 'border-neutral-300 dark:border-neutral-600 focus:border-primary-500'}`}
                 />
-                {errors.confirmPassword && <p className="text-xs text-red-500">{errors.confirmPassword}</p>}
+                {errors.confirmPassword && (
+                  <p className="text-xs text-red-500">{errors.confirmPassword}</p>
+                )}
               </div>
 
               <div className="pt-2">
@@ -542,7 +753,19 @@ const ProfilePage: React.FC = () => {
                     </>
                   ) : (
                     <>
-                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" /></svg>
+                      <svg
+                        className="w-4 h-4"
+                        fill="none"
+                        stroke="currentColor"
+                        viewBox="0 0 24 24"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth={2}
+                          d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"
+                        />
+                      </svg>
                       {t('profile.password.change')}
                     </>
                   )}
@@ -555,16 +778,44 @@ const ProfilePage: React.FC = () => {
         {activeTab === 'orders' && (
           <div className="bg-white dark:bg-neutral-900 rounded-2xl shadow-sm border border-neutral-100 dark:border-neutral-800 p-6">
             <div className="mb-6">
-              <h2 className="text-lg font-semibold text-neutral-900 dark:text-white">{t('profile.orders.title')}</h2>
-              <p className="text-sm text-neutral-500 dark:text-neutral-400 mt-0.5">{t('profile.orders.subtitle')}</p>
+              <h2 className="text-lg font-semibold text-neutral-900 dark:text-white">
+                {t('profile.orders.title')}
+              </h2>
+              <p className="text-sm text-neutral-500 dark:text-neutral-400 mt-0.5">
+                {t('profile.orders.subtitle')}
+              </p>
             </div>
             <div className="text-center py-12">
               <div className="w-16 h-16 bg-neutral-100 dark:bg-neutral-800 rounded-2xl flex items-center justify-center mx-auto mb-4">
-                <svg className="w-8 h-8 text-neutral-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z" /></svg>
+                <svg
+                  className="w-8 h-8 text-neutral-400"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={1.5}
+                    d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z"
+                  />
+                </svg>
               </div>
-              <p className="text-neutral-500 dark:text-neutral-400 mb-4">{t('profile.orders.description')}</p>
-              <Link to={ROUTES.ORDERS} className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-primary-600 hover:bg-primary-700 text-white text-sm font-medium transition-colors">
-                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" /></svg>
+              <p className="text-neutral-500 dark:text-neutral-400 mb-4">
+                {t('profile.orders.description')}
+              </p>
+              <Link
+                to={ROUTES.ORDERS}
+                className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-primary-600 hover:bg-primary-700 text-white text-sm font-medium transition-colors"
+              >
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M9 5l7 7-7 7"
+                  />
+                </svg>
                 {t('profile.orders.viewAll')}
               </Link>
             </div>
@@ -575,8 +826,12 @@ const ProfilePage: React.FC = () => {
           <div className="bg-white dark:bg-neutral-900 rounded-2xl shadow-sm border border-neutral-100 dark:border-neutral-800 p-6">
             <div className="flex items-center justify-between mb-6">
               <div>
-                <h2 className="text-lg font-semibold text-neutral-900 dark:text-white">{t('profile.addresses.title')}</h2>
-                <p className="text-sm text-neutral-500 dark:text-neutral-400 mt-0.5">{t('profile.addresses.subtitle')}</p>
+                <h2 className="text-lg font-semibold text-neutral-900 dark:text-white">
+                  {t('profile.addresses.title')}
+                </h2>
+                <p className="text-sm text-neutral-500 dark:text-neutral-400 mt-0.5">
+                  {t('profile.addresses.subtitle')}
+                </p>
               </div>
               {!showAddressForm && (
                 <button
@@ -584,7 +839,12 @@ const ProfilePage: React.FC = () => {
                   className="flex items-center gap-2 px-4 py-2 rounded-lg bg-primary-600 hover:bg-primary-700 text-white text-sm font-medium transition-colors"
                 >
                   <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M12 4v16m8-8H4"
+                    />
                   </svg>
                   {t('profile.addresses.addNew')}
                 </button>
@@ -593,78 +853,106 @@ const ProfilePage: React.FC = () => {
 
             {/* Form thêm/sửa địa chỉ */}
             {showAddressForm && (
-              <form onSubmit={handleSaveAddress} className="mb-8 p-5 bg-neutral-50 dark:bg-neutral-800 rounded-xl border border-neutral-200 dark:border-neutral-700">
+              <form
+                onSubmit={handleSaveAddress}
+                className="mb-8 p-5 bg-neutral-50 dark:bg-neutral-800 rounded-xl border border-neutral-200 dark:border-neutral-700"
+              >
                 <h3 className="text-base font-semibold text-neutral-800 dark:text-neutral-100 mb-5">
-                  {editingAddressId ? t('profile.addresses.editTitle') : t('profile.addresses.addTitle')}
+                  {editingAddressId
+                    ? t('profile.addresses.editTitle')
+                    : t('profile.addresses.addTitle')}
                 </h3>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div className="md:col-span-2">
-                    <label className="block text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-1">{t('profile.addresses.labelName')}</label>
+                    <label className="block text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-1">
+                      {t('profile.addresses.labelName')}
+                    </label>
                     <input
                       value={addressForm.name}
-                      onChange={(e) => setAddressForm(p => ({ ...p, name: e.target.value }))}
+                      onChange={(e) => setAddressForm((p) => ({ ...p, name: e.target.value }))}
                       placeholder={t('profile.addresses.labelName')}
                       className="w-full px-4 py-2.5 rounded-xl border border-neutral-300 dark:border-neutral-600 bg-white dark:bg-neutral-700 text-sm focus:ring-2 focus:ring-primary-500/20 focus:border-primary-500 outline-none"
                     />
                   </div>
                   <div>
-                    <label className="block text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-1">{t('profile.addresses.labelFirstName')} *</label>
+                    <label className="block text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-1">
+                      {t('profile.addresses.labelFirstName')} *
+                    </label>
                     <input
                       required
                       value={addressForm.firstName}
-                      onChange={(e) => setAddressForm(p => ({ ...p, firstName: e.target.value }))}
+                      onChange={(e) => setAddressForm((p) => ({ ...p, firstName: e.target.value }))}
                       className="w-full px-4 py-2.5 rounded-xl border border-neutral-300 dark:border-neutral-600 bg-white dark:bg-neutral-700 text-sm focus:ring-2 focus:ring-primary-500/20 focus:border-primary-500 outline-none"
                     />
                   </div>
                   <div>
-                    <label className="block text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-1">{t('profile.addresses.labelLastName')} *</label>
+                    <label className="block text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-1">
+                      {t('profile.addresses.labelLastName')} *
+                    </label>
                     <input
                       required
                       value={addressForm.lastName}
-                      onChange={(e) => setAddressForm(p => ({ ...p, lastName: e.target.value }))}
+                      onChange={(e) => setAddressForm((p) => ({ ...p, lastName: e.target.value }))}
                       className="w-full px-4 py-2.5 rounded-xl border border-neutral-300 dark:border-neutral-600 bg-white dark:bg-neutral-700 text-sm focus:ring-2 focus:ring-primary-500/20 focus:border-primary-500 outline-none"
                     />
                   </div>
                   <div>
-                    <label className="block text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-1">{t('profile.addresses.labelPhone')}</label>
+                    <label className="block text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-1">
+                      {t('profile.addresses.labelPhone')}
+                    </label>
                     <input
                       type="tel"
+                      inputMode="numeric"
+                      maxLength={10}
                       value={addressForm.phone}
-                      onChange={(e) => setAddressForm(p => ({ ...p, phone: e.target.value }))}
+                      onChange={(e) =>
+                        setAddressForm((p) => ({
+                          ...p,
+                          phone: e.target.value.replace(/[^0-9]/g, ''),
+                        }))
+                      }
                       className="w-full px-4 py-2.5 rounded-xl border border-neutral-300 dark:border-neutral-600 bg-white dark:bg-neutral-700 text-sm focus:ring-2 focus:ring-primary-500/20 focus:border-primary-500 outline-none"
                     />
                   </div>
                   <div>
-                    <label className="block text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-1">{t('profile.addresses.labelCity')} *</label>
+                    <label className="block text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-1">
+                      {t('profile.addresses.labelCity')} *
+                    </label>
                     <input
                       required
                       value={addressForm.city}
-                      onChange={(e) => setAddressForm(p => ({ ...p, city: e.target.value }))}
+                      onChange={(e) => setAddressForm((p) => ({ ...p, city: e.target.value }))}
                       className="w-full px-4 py-2.5 rounded-xl border border-neutral-300 dark:border-neutral-600 bg-white dark:bg-neutral-700 text-sm focus:ring-2 focus:ring-primary-500/20 focus:border-primary-500 outline-none"
                     />
                   </div>
                   <div className="md:col-span-2">
-                    <label className="block text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-1">{t('profile.addresses.labelAddress')} *</label>
+                    <label className="block text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-1">
+                      {t('profile.addresses.labelAddress')} *
+                    </label>
                     <input
                       required
                       value={addressForm.address1}
-                      onChange={(e) => setAddressForm(p => ({ ...p, address1: e.target.value }))}
+                      onChange={(e) => setAddressForm((p) => ({ ...p, address1: e.target.value }))}
                       className="w-full px-4 py-2.5 rounded-xl border border-neutral-300 dark:border-neutral-600 bg-white dark:bg-neutral-700 text-sm focus:ring-2 focus:ring-primary-500/20 focus:border-primary-500 outline-none"
                     />
                   </div>
                   <div>
-                    <label className="block text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-1">{t('profile.addresses.labelState')}</label>
+                    <label className="block text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-1">
+                      {t('profile.addresses.labelState')}
+                    </label>
                     <input
                       value={addressForm.state}
-                      onChange={(e) => setAddressForm(p => ({ ...p, state: e.target.value }))}
+                      onChange={(e) => setAddressForm((p) => ({ ...p, state: e.target.value }))}
                       className="w-full px-4 py-2.5 rounded-xl border border-neutral-300 dark:border-neutral-600 bg-white dark:bg-neutral-700 text-sm focus:ring-2 focus:ring-primary-500/20 focus:border-primary-500 outline-none"
                     />
                   </div>
                   <div>
-                    <label className="block text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-1">{t('profile.addresses.labelZip')}</label>
+                    <label className="block text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-1">
+                      {t('profile.addresses.labelZip')}
+                    </label>
                     <input
                       value={addressForm.zip}
-                      onChange={(e) => setAddressForm(p => ({ ...p, zip: e.target.value }))}
+                      onChange={(e) => setAddressForm((p) => ({ ...p, zip: e.target.value }))}
                       className="w-full px-4 py-2.5 rounded-xl border border-neutral-300 dark:border-neutral-600 bg-white dark:bg-neutral-700 text-sm focus:ring-2 focus:ring-primary-500/20 focus:border-primary-500 outline-none"
                     />
                   </div>
@@ -672,7 +960,11 @@ const ProfilePage: React.FC = () => {
                 <div className="flex justify-end gap-3 mt-5 pt-4 border-t border-neutral-200 dark:border-neutral-700">
                   <button
                     type="button"
-                    onClick={() => { setShowAddressForm(false); setEditingAddressId(null); setAddressForm(emptyAddressForm); }}
+                    onClick={() => {
+                      setShowAddressForm(false);
+                      setEditingAddressId(null);
+                      setAddressForm(emptyAddressForm);
+                    }}
                     className="px-4 py-2 rounded-lg border border-neutral-300 dark:border-neutral-600 text-neutral-700 dark:text-neutral-300 text-sm font-medium hover:bg-neutral-50 dark:hover:bg-neutral-800 transition-colors"
                   >
                     {t('profile.addresses.cancel')}
@@ -699,13 +991,32 @@ const ProfilePage: React.FC = () => {
             ) : !addressesData || addressesData.length === 0 ? (
               <div className="text-center py-12">
                 <div className="w-16 h-16 bg-neutral-100 dark:bg-neutral-800 rounded-2xl flex items-center justify-center mx-auto mb-4">
-                  <svg className="w-8 h-8 text-neutral-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+                  <svg
+                    className="w-8 h-8 text-neutral-400"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={1.5}
+                      d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"
+                    />
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={1.5}
+                      d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"
+                    />
                   </svg>
                 </div>
-                <p className="text-neutral-500 dark:text-neutral-400 mb-1">{t('profile.addresses.empty')}</p>
-                <p className="text-neutral-400 dark:text-neutral-500 text-xs">{t('profile.addresses.emptyHint')}</p>
+                <p className="text-neutral-500 dark:text-neutral-400 mb-1">
+                  {t('profile.addresses.empty')}
+                </p>
+                <p className="text-neutral-400 dark:text-neutral-500 text-xs">
+                  {t('profile.addresses.emptyHint')}
+                </p>
               </div>
             ) : (
               <div className="space-y-3">
@@ -720,17 +1031,36 @@ const ProfilePage: React.FC = () => {
                   >
                     {addr.isDefault && (
                       <span className="absolute top-3 right-3 inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-semibold bg-primary-100 dark:bg-primary-900/30 text-primary-700 dark:text-primary-300">
-                        <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20"><path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" /></svg>
+                        <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
+                          <path
+                            fillRule="evenodd"
+                            d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z"
+                            clipRule="evenodd"
+                          />
+                        </svg>
                         {t('profile.addresses.labelDefault')}
                       </span>
                     )}
                     {addr.name && (
-                      <p className="text-xs font-semibold uppercase tracking-wider text-neutral-400 dark:text-neutral-500 mb-1">{addr.name}</p>
+                      <p className="text-xs font-semibold uppercase tracking-wider text-neutral-400 dark:text-neutral-500 mb-1">
+                        {addr.name}
+                      </p>
                     )}
-                    <p className="text-sm font-semibold text-neutral-800 dark:text-neutral-100">{addr.firstName} {addr.lastName}</p>
-                    <p className="text-sm text-neutral-600 dark:text-neutral-400 mt-0.5">{addr.address1}{addr.address2 ? `, ${addr.address2}` : ''}</p>
-                    <p className="text-sm text-neutral-600 dark:text-neutral-400">{[addr.city, addr.state, addr.zip, addr.country].filter(Boolean).join(', ')}</p>
-                    {addr.phone && <p className="text-sm text-neutral-500 dark:text-neutral-500 mt-0.5">{addr.phone}</p>}
+                    <p className="text-sm font-semibold text-neutral-800 dark:text-neutral-100">
+                      {addr.firstName} {addr.lastName}
+                    </p>
+                    <p className="text-sm text-neutral-600 dark:text-neutral-400 mt-0.5">
+                      {addr.address1}
+                      {addr.address2 ? `, ${addr.address2}` : ''}
+                    </p>
+                    <p className="text-sm text-neutral-600 dark:text-neutral-400">
+                      {[addr.city, addr.state, addr.zip, addr.country].filter(Boolean).join(', ')}
+                    </p>
+                    {addr.phone && (
+                      <p className="text-sm text-neutral-500 dark:text-neutral-500 mt-0.5">
+                        {addr.phone}
+                      </p>
+                    )}
                     <div className="flex gap-3 mt-3 pt-3 border-t border-neutral-100 dark:border-neutral-700">
                       {!addr.isDefault && (
                         <button
@@ -764,12 +1094,20 @@ const ProfilePage: React.FC = () => {
           <div className="bg-white dark:bg-neutral-900 rounded-2xl shadow-sm border border-neutral-100 dark:border-neutral-800 p-6">
             <div className="flex items-center justify-between mb-8">
               <div>
-                <h2 className="text-lg font-semibold text-neutral-900 dark:text-white">{t('profile.loyalty.title')}</h2>
-                <p className="text-sm text-neutral-500 dark:text-neutral-400 mt-0.5">{t('profile.loyalty.subtitle')}</p>
+                <h2 className="text-lg font-semibold text-neutral-900 dark:text-white">
+                  {t('profile.loyalty.title')}
+                </h2>
+                <p className="text-sm text-neutral-500 dark:text-neutral-400 mt-0.5">
+                  {t('profile.loyalty.subtitle')}
+                </p>
               </div>
               <div className="bg-amber-50 dark:bg-amber-900/20 px-6 py-3 rounded-2xl border border-amber-200 dark:border-amber-800 text-center">
-                <span className="block text-xs text-amber-600 dark:text-amber-400 font-medium uppercase tracking-wider mb-1">{t('profile.loyalty.totalPoints')}</span>
-                <span className="text-2xl font-bold text-amber-700 dark:text-amber-300">{loyaltyData?.data?.points || 0}</span>
+                <span className="block text-xs text-amber-600 dark:text-amber-400 font-medium uppercase tracking-wider mb-1">
+                  {t('profile.loyalty.totalPoints')}
+                </span>
+                <span className="text-2xl font-bold text-amber-700 dark:text-amber-300">
+                  {loyaltyData?.data?.points || 0}
+                </span>
               </div>
             </div>
 
@@ -777,33 +1115,57 @@ const ProfilePage: React.FC = () => {
               <table className="w-full text-left">
                 <thead>
                   <tr className="border-b border-neutral-100 dark:border-neutral-800">
-                    <th className="pb-4 text-xs font-semibold text-neutral-400 uppercase tracking-wider">{t('profile.loyalty.tableDate')}</th>
-                    <th className="pb-4 text-xs font-semibold text-neutral-400 uppercase tracking-wider">{t('profile.loyalty.tableType')}</th>
-                    <th className="pb-4 text-xs font-semibold text-neutral-400 uppercase tracking-wider text-right">{t('profile.loyalty.tablePoints')}</th>
-                    <th className="pb-4 text-xs font-semibold text-neutral-400 uppercase tracking-wider pl-8">{t('profile.loyalty.tableDesc')}</th>
+                    <th className="pb-4 text-xs font-semibold text-neutral-400 uppercase tracking-wider">
+                      {t('profile.loyalty.tableDate')}
+                    </th>
+                    <th className="pb-4 text-xs font-semibold text-neutral-400 uppercase tracking-wider">
+                      {t('profile.loyalty.tableType')}
+                    </th>
+                    <th className="pb-4 text-xs font-semibold text-neutral-400 uppercase tracking-wider text-right">
+                      {t('profile.loyalty.tablePoints')}
+                    </th>
+                    <th className="pb-4 text-xs font-semibold text-neutral-400 uppercase tracking-wider pl-8">
+                      {t('profile.loyalty.tableDesc')}
+                    </th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-neutral-100 dark:divide-neutral-800">
                   {loyaltyData?.data?.history?.items?.length > 0 ? (
                     // eslint-disable-next-line @typescript-eslint/no-explicit-any -- Loyalty history items
-                loyaltyData.data.history.items.map((item: any) => (
-                      <tr key={item.id} className="group hover:bg-neutral-50 dark:hover:bg-neutral-800/40 transition-colors">
+                    loyaltyData.data.history.items.map((item: any) => (
+                      <tr
+                        key={item.id}
+                        className="group hover:bg-neutral-50 dark:hover:bg-neutral-800/40 transition-colors"
+                      >
                         <td className="py-4 text-sm text-neutral-600 dark:text-neutral-400">
-                          {new Date(item.createdAt).toLocaleDateString(i18n.language === 'vi' ? 'vi-VN' : 'en-US')}
+                          {new Date(item.createdAt).toLocaleDateString(
+                            i18n.language === 'vi' ? 'vi-VN' : 'en-US',
+                          )}
                         </td>
                         <td className="py-4">
-                          <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
-                            item.type === 'earn' ? 'bg-emerald-50 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-300' :
-                            item.type === 'spend' ? 'bg-amber-50 text-amber-700 dark:bg-amber-900/30 dark:text-amber-300' :
-                            item.type === 'refund' ? 'bg-blue-50 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300' :
-                            'bg-neutral-100 text-neutral-700 dark:bg-neutral-800 dark:text-neutral-300'
-                          }`}>
-                            {item.type === 'earn' ? t('profile.loyalty.typeEarn') :
-                             item.type === 'spend' ? t('profile.loyalty.typeSpend') :
-                             item.type === 'refund' ? t('profile.loyalty.typeRefund') : t('profile.loyalty.typeAdjust')}
+                          <span
+                            className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
+                              item.type === 'earn'
+                                ? 'bg-emerald-50 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-300'
+                                : item.type === 'spend'
+                                  ? 'bg-amber-50 text-amber-700 dark:bg-amber-900/30 dark:text-amber-300'
+                                  : item.type === 'refund'
+                                    ? 'bg-blue-50 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300'
+                                    : 'bg-neutral-100 text-neutral-700 dark:bg-neutral-800 dark:text-neutral-300'
+                            }`}
+                          >
+                            {item.type === 'earn'
+                              ? t('profile.loyalty.typeEarn')
+                              : item.type === 'spend'
+                                ? t('profile.loyalty.typeSpend')
+                                : item.type === 'refund'
+                                  ? t('profile.loyalty.typeRefund')
+                                  : t('profile.loyalty.typeAdjust')}
                           </span>
                         </td>
-                        <td className={`py-4 text-sm font-bold text-right ${item.points >= 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-amber-600 dark:text-amber-400'}`}>
+                        <td
+                          className={`py-4 text-sm font-bold text-right ${item.points >= 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-amber-600 dark:text-amber-400'}`}
+                        >
                           {item.points >= 0 ? `+${item.points}` : item.points}
                         </td>
                         <td className="py-4 text-sm text-neutral-600 dark:text-neutral-400 pl-8">
@@ -813,7 +1175,10 @@ const ProfilePage: React.FC = () => {
                     ))
                   ) : (
                     <tr>
-                      <td colSpan={4} className="py-12 text-center text-neutral-400 dark:text-neutral-500 italic">
+                      <td
+                        colSpan={4}
+                        className="py-12 text-center text-neutral-400 dark:text-neutral-500 italic"
+                      >
                         {t('profile.loyalty.noHistory')}
                       </td>
                     </tr>
@@ -824,7 +1189,13 @@ const ProfilePage: React.FC = () => {
 
             <div className="mt-8 p-4 bg-neutral-50 dark:bg-neutral-800/50 rounded-2xl border border-neutral-100 dark:border-neutral-800">
               <h4 className="text-sm font-semibold text-neutral-700 dark:text-neutral-300 mb-2 flex items-center gap-1.5">
-                <svg className="w-4 h-4 text-amber-500" fill="currentColor" viewBox="0 0 20 20"><path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" /></svg>
+                <svg className="w-4 h-4 text-amber-500" fill="currentColor" viewBox="0 0 20 20">
+                  <path
+                    fillRule="evenodd"
+                    d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z"
+                    clipRule="evenodd"
+                  />
+                </svg>
                 {t('profile.loyalty.policyTitle')}
               </h4>
               <ul className="text-xs text-neutral-500 dark:text-neutral-400 space-y-1.5 list-disc list-inside">

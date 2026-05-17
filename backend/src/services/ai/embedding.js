@@ -40,12 +40,12 @@ class EmbeddingService {
   initialize() {
     try {
       if (this.apiKey && this.apiKey !== 'demo-key') {
-        logger.info('✅ Embedding Service khởi tạo thành công với OpenRouter');
+        logger.info('Embedding Service khởi tạo thành công với OpenRouter');
       } else {
-        logger.warn('⚠️ Không tìm thấy OpenRouter API key trong Embedding Service');
+        logger.warn('Không tìm thấy OpenRouter API key trong Embedding Service');
       }
     } catch (error) {
-      logger.error('❌ Khởi tạo Embedding Service thất bại:', error.message);
+      logger.error('Khởi tạo Embedding Service thất bại:', error.message);
     }
   }
 
@@ -85,10 +85,10 @@ class EmbeddingService {
       } catch (error) {
         const isLastAttempt = attempt === maxRetries;
         if (!isLastAttempt) {
-          logger.warn(`⚠️ Embedding thất bại (lần ${attempt}/${maxRetries}), thử lại sau ${backoffMs[attempt - 1]}ms...`);
+          logger.warn(`Embedding thất bại (lần ${attempt}/${maxRetries}), thử lại sau ${backoffMs[attempt - 1]}ms...`);
           await new Promise(resolve => setTimeout(resolve, backoffMs[attempt - 1]));
         } else {
-          logger.error('❌ Lỗi khi tạo embedding sau 3 lần thử:', error.response?.data || error.message);
+          logger.error('Lỗi khi tạo embedding sau 3 lần thử:', error.response?.data || error.message);
           throw error;
         }
       }
@@ -124,10 +124,10 @@ class EmbeddingService {
       } catch (error) {
         const isLastAttempt = attempt === maxRetries;
         if (!isLastAttempt) {
-          logger.warn(`⚠️ Batch embedding thất bại (lần ${attempt}/${maxRetries}), thử lại sau ${backoffMs[attempt - 1]}ms...`);
+          logger.warn(`Batch embedding thất bại (lần ${attempt}/${maxRetries}), thử lại sau ${backoffMs[attempt - 1]}ms...`);
           await new Promise(resolve => setTimeout(resolve, backoffMs[attempt - 1]));
         } else {
-          logger.error('❌ Lỗi khi tạo batch embeddings sau 3 lần thử:', error.response?.data || error.message);
+          logger.error('Lỗi khi tạo batch embeddings sau 3 lần thử:', error.response?.data || error.message);
           throw error;
         }
       }

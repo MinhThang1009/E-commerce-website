@@ -8,14 +8,15 @@ export const collectionKeys = {
   all: ['collections'] as const,
   list: (params?: unknown) => [...collectionKeys.all, 'list', params] as const,
   slug: (slug: string) => [...collectionKeys.all, 'slug', slug] as const,
-  products: (slug: string, params?: Record<string, unknown>) => [...collectionKeys.all, 'products', slug, params] as const,
+  products: (slug: string, params?: Record<string, unknown>) =>
+    [...collectionKeys.all, 'products', slug, params] as const,
 };
 
 // === Query Hooks ===
 
 export function useGetCollectionsQuery(
   params?: { isActive?: boolean } | void,
-  options?: { enabled?: boolean; skip?: boolean }
+  options?: { enabled?: boolean; skip?: boolean },
 ) {
   return useQuery({
     queryKey: collectionKeys.list(params),
@@ -32,7 +33,7 @@ export function useGetCollectionsQuery(
 
 export function useGetCollectionBySlugQuery(
   slug: string,
-  options?: { enabled?: boolean; skip?: boolean }
+  options?: { enabled?: boolean; skip?: boolean },
 ) {
   return useQuery({
     queryKey: collectionKeys.slug(slug),
@@ -46,7 +47,7 @@ export function useGetCollectionBySlugQuery(
 
 export function useGetProductsByCollectionQuery(
   params: { slug: string; page?: number; limit?: number },
-  options?: { enabled?: boolean; skip?: boolean }
+  options?: { enabled?: boolean; skip?: boolean },
 ) {
   return useQuery({
     queryKey: collectionKeys.products(params.slug, params),
@@ -55,7 +56,7 @@ export function useGetProductsByCollectionQuery(
       urlParams.append('page', (params.page || 1).toString());
       urlParams.append('limit', (params.limit || 12).toString());
       const { data } = await apiClient.get(
-        `/collections/slug/${params.slug}/products?${urlParams.toString()}`
+        `/collections/slug/${params.slug}/products?${urlParams.toString()}`,
       );
       return transformProductsResponse(data);
     },
@@ -67,7 +68,7 @@ export function useCreateCollectionMutation() {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: async (body: object) => {
-      const { data } = await apiClient.post('/admin/collections', body);
+      const { data } = await apiClient.post('/collections', body);
       return data;
     },
     onSuccess: () => {
@@ -80,7 +81,7 @@ export function useUpdateCollectionMutation() {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: async ({ id, body }: { id: string; body: object }) => {
-      const { data } = await apiClient.put(`/admin/collections/${id}`, body);
+      const { data } = await apiClient.put(`/collections/${id}`, body);
       return data;
     },
     onSuccess: () => {
@@ -93,7 +94,7 @@ export function useDeleteCollectionMutation() {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: async (id: string) => {
-      const { data } = await apiClient.delete(`/admin/collections/${id}`);
+      const { data } = await apiClient.delete(`/collections/${id}`);
       return data;
     },
     onSuccess: () => {

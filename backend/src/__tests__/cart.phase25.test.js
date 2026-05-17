@@ -26,7 +26,6 @@ jest.mock('../utils/logger', () => ({
 }));
 
 jest.mock('../middlewares/rateLimiter', () => ({
-  chatLimiter: (_req, _res, next) => next(),
   chatbotLimiter: (_req, _res, next) => next(),
   apiLimiter: (_req, _res, next) => next(),
   authLimiter: (_req, _res, next) => next(),

@@ -42,12 +42,7 @@ const FeedbackModal: React.FC<FeedbackModalProps> = ({ visible, onClose }) => {
       cancelText={t('common.cancel')}
       width={600}
     >
-      <Form
-        form={form}
-        layout="vertical"
-        initialValues={{ subject: 'Support' }}
-        className="mt-4"
-      >
+      <Form form={form} layout="vertical" initialValues={{ subject: 'Support' }} className="mt-4">
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <Form.Item
             name="name"
@@ -61,7 +56,7 @@ const FeedbackModal: React.FC<FeedbackModalProps> = ({ visible, onClose }) => {
             label={t('feedback.form.email')}
             rules={[
               { required: true, message: t('feedback.form.emailRequired') },
-              { type: 'email', message: t('feedback.form.emailInvalid') }
+              { type: 'email', message: t('feedback.form.emailInvalid') },
             ]}
           >
             <Input placeholder={t('feedback.form.emailPlaceholder')} />
@@ -72,8 +67,13 @@ const FeedbackModal: React.FC<FeedbackModalProps> = ({ visible, onClose }) => {
           <Form.Item
             name="phone"
             label={t('feedback.form.phone')}
+            rules={[{ pattern: /^(0|\+84)[0-9]{9}$/, message: t('validation.phone.invalid') }]}
           >
-            <Input placeholder={t('feedback.form.phonePlaceholder')} />
+            <Input
+              placeholder={t('feedback.form.phonePlaceholder')}
+              maxLength={10}
+              inputMode="numeric"
+            />
           </Form.Item>
           <Form.Item
             name="subject"

@@ -2,13 +2,19 @@
 export interface Product {
   id: string;
   name: string;
+  nameVi?: string;
+  nameEn?: string;
   slug: string;
   price: number;
   compareAtPrice?: number | null;
   thumbnail: string;
   images: string[];
   description: string;
+  descriptionVi?: string;
+  descriptionEn?: string;
   shortDescription?: string;
+  shortDescriptionVi?: string;
+  shortDescriptionEn?: string;
   categoryId: string;
   categoryName: string;
   stock: number;
@@ -35,7 +41,7 @@ export interface Product {
   updatedAt: string;
   // Fields added by transformProduct at runtime
   categorySlug?: string;
-  category?: { id: string; name: string; slug?: string };
+  category?: { id: string; name: string; nameVi?: string; nameEn?: string; slug?: string };
   productSpecifications?: Array<{ name: string; value: string }>;
   discountPercentage?: number;
 }
@@ -52,6 +58,7 @@ export interface ProductVariant {
   price: number;
   stockQuantity: number;
   attributes: Record<string, string>;
+  attributesEn?: Record<string, string>;
   images?: string[];
   // Các trường mới
   displayName?: string;
@@ -183,6 +190,7 @@ export interface ProductSpecification {
   id?: string;
   name: string;
   value: string;
+  valueEn?: string;
   category?: string;
   sortOrder?: number;
 }
@@ -233,4 +241,3 @@ export interface ProductWithVariants extends Product {
     sku: string;
   }>;
 }
-

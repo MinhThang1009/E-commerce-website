@@ -26,7 +26,7 @@ class MoMoService {
     // MoMo yêu cầu orderId phải duy nhất cho mỗi lần thử giao dịch
     const momoOrderId = `${orderId}-${Date.now().toString().slice(-6)}`;
     const requestId = `${momoOrderId}-${uuidv4().split('-')[0]}`;
-    const requestType = 'payWithATM';
+    const requestType = 'captureWallet';
     
     // Tạo chữ ký
     const rawSignature = `accessKey=${this.accessKey}&amount=${intAmount}&extraData=${extraData}&ipnUrl=${this.ipnUrl}&orderId=${momoOrderId}&orderInfo=${orderInfo}&partnerCode=${this.partnerCode}&redirectUrl=${this.redirectUrl}&requestId=${requestId}&requestType=${requestType}`;

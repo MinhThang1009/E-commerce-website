@@ -7,8 +7,9 @@ const StockRestockedEvent = require('../domain/events/StockRestockedEvent');
 // qua InventoryAggregate (deductStock/restoreStock/restock) enforce invariant
 // stockQuantity >= 0.
 class InventoryService {
-  constructor({ inventoryRepository, eventBus, logger }) {
+  constructor({ inventoryRepository, sequelize, eventBus, logger }) {
     this.repo = inventoryRepository;
+    this.sequelize = sequelize;
     this.eventBus = eventBus;
     this.logger = logger;
   }
@@ -38,8 +39,7 @@ class InventoryService {
     const { previous, current, change } = aggregate.restock(qty);
 
     // Wrap stock updates + log trong transaction để đảm bảo atomicity
-    const sequelize = require('../../../config/sequelize');
-    const log = await sequelize.transaction(async (tx) => {
+    const log = await this.sequelize.transaction(async (tx) => {
       const opts = { transaction: tx };
 
       if (kind === 'variant') {

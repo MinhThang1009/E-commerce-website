@@ -1,7 +1,7 @@
 import React from 'react';
 import { useTranslation } from 'react-i18next';
 import { useGetRecentlyViewedQuery } from '../api/productApi';
-import ProductCard from '@/components/shared/ProductCard';
+import { ProductCard } from '@/features/catalog';
 
 const SkeletonPulse = () => (
   <div className="animate-pulse bg-neutral-200 dark:bg-neutral-700 rounded-lg h-64 w-full" />

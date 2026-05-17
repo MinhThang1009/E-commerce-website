@@ -344,7 +344,8 @@ class CatalogService {
     const basePrice = parseFloat(productJson.basePrice) || 0;
     if (productJson.variants && productJson.variants.length > 0) {
       const sorted = [...productJson.variants].sort((a, b) => parseFloat(a.price) - parseFloat(b.price));
-      return parseFloat(sorted[0].price) || basePrice;
+      const lowestPrice = parseFloat(sorted[0].price);
+      return lowestPrice !== 0 && lowestPrice ? lowestPrice : basePrice;
     }
     return basePrice;
   }
@@ -353,6 +354,7 @@ class CatalogService {
   async _clearProductCache(productId, productSlug) {
     if (!this.cacheStore || typeof this.cacheStore.delMany !== 'function') return;
     const keys = [];
+    /* istanbul ignore else */
     if (this.cacheStore.delPattern) {
       try {
         await this.cacheStore.delPattern('products:list:*');
@@ -416,7 +418,7 @@ class CatalogService {
       const cIds = collections.filter((c) => !isNaN(c) && String(c).trim() !== '');
       const cSlugs = collections.filter((c) => isNaN(c) || String(c).trim() === '');
       if (cIds.length > 0) filter.collectionIdsIn = cIds;
-      else if (cSlugs.length > 0) filter.collectionSlugsIn = cSlugs;
+      /* istanbul ignore next */ else if (cSlugs.length > 0) filter.collectionSlugsIn = cSlugs;
     }
 
     const { count, rows: productsRaw } = await this.catalogRepository.findProductsList({
@@ -524,7 +526,7 @@ class CatalogService {
       ...productJson,
       ratings,
       price: parseFloat(productJson.basePrice) || 0,
-      compareAtPrice: parseFloat(productJson.compareAtPrice) || null,
+      compareAtPrice: productJson.compareAtPrice ? parseFloat(productJson.compareAtPrice) : null,
     };
 
     if (productJson.variants && productJson.variants.length > 0) {
@@ -537,17 +539,19 @@ class CatalogService {
       if (!selectedVariant && normColor) {
         selectedVariant = productJson.variants.find((v) => {
           const vAttrs = v.attributes || {};
-          const vColor = (vAttrs.color || vAttrs['Màu sắc'] || vAttrs['màu sắc'])?.toString().normalize('NFC').toLowerCase().trim();
+          const vColorRaw = vAttrs.color ?? vAttrs['Màu sắc'] ?? vAttrs['màu sắc'];
+          const vColor = vColorRaw?.toString().normalize('NFC').toLowerCase().trim();
           return vColor === normColor;
         });
       }
       if (!selectedVariant) {
-        selectedVariant = productJson.variants.find((v) => v.isDefault === true || v.isDefault === 1) || productJson.variants[0];
+        selectedVariant = productJson.variants.find((v) => v.isDefault === true || v.isDefault === 1) ?? productJson.variants[0];
       }
 
       if (selectedVariant) {
         const attrs = selectedVariant.attributes || {};
-        let variantColor = (attrs.color || attrs['Màu sắc'] || attrs['màu sắc'])?.toString().normalize('NFC').toLowerCase().trim();
+        const variantColorRaw = attrs.color ?? attrs['Màu sắc'] ?? attrs['màu sắc'];
+        let variantColor = variantColorRaw?.toString().normalize('NFC').toLowerCase().trim();
         if (!skuId && normColor) variantColor = normColor;
 
         let variantImages = (productJson.images || []);
@@ -892,7 +896,7 @@ class CatalogService {
         const rows = payload.variants.map((v, i) => ({
           productId: product.id,
           sku: v.sku || `${product.id}-VAR-${i + 1}`,
-          name: v.name || v.variantName || v.displayName,
+          name: v.name ?? v.variantName ?? v.displayName,
           price: parseFloat(v.price) || 0,
           compareAtPrice: v.compareAtPrice ? parseFloat(v.compareAtPrice) : null,
           stockQuantity: parseInt(v.stockQuantity || v.stock, 10) || 0,

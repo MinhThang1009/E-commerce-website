@@ -3,7 +3,6 @@ import { Form, Input, Select, Row, Col, Button, Alert } from 'antd';
 import { useTranslation } from 'react-i18next';
 import SimpleRichTextEditor from '@/components/common/SimpleRichTextEditor';
 import Base64ImageWarning from './Base64ImageWarning';
-import { sampleLaptopData } from '../utils/sampleProductData';
 
 const { TextArea } = Input;
 const { Option } = Select;
@@ -21,7 +20,9 @@ const ProductBasicInfoForm: React.FC<ProductBasicInfoFormProps> = ({
   const form = Form.useFormInstance();
   const description = Form.useWatch('description', form) || '';
 
-  const handleFillSampleData = () => {
+  const handleFillSampleData = async () => {
+    if (!import.meta.env.DEV) return;
+    const { sampleLaptopData } = await import('../utils/sampleProductData');
     form.setFieldsValue(sampleLaptopData);
     fillExampleData();
   };

@@ -12,11 +12,13 @@ const Category = sequelize.define(
       autoIncrement: true,
       primaryKey: true,
     },
-    // Tên danh mục
+    // Tên danh mục — tiếng Việt (sau i18n migration 2026051611)
+    nameVi: { type: DataTypes.STRING(100), allowNull: false, unique: true },
+    nameEn: { type: DataTypes.STRING(100), allowNull: true },
     name: {
-      type: DataTypes.STRING(200),
-      allowNull: false,
-      unique: true,
+      type: DataTypes.VIRTUAL,
+      get() { return this.getDataValue('nameVi'); },
+      set(v) { this.setDataValue('nameVi', v); },
     },
     // Slug cho URL thân thiện
     slug: {
@@ -24,10 +26,13 @@ const Category = sequelize.define(
       allowNull: false,
       unique: true,
     },
-    // Mô tả danh mục
+    // Mô tả danh mục — tiếng Việt
+    descriptionVi: { type: DataTypes.TEXT, allowNull: true },
+    descriptionEn: { type: DataTypes.TEXT, allowNull: true },
     description: {
-      type: DataTypes.TEXT,
-      allowNull: true,
+      type: DataTypes.VIRTUAL,
+      get() { return this.getDataValue('descriptionVi'); },
+      set(v) { this.setDataValue('descriptionVi', v); },
     },
     // Xóa mềm (soft delete)
     deletedAt: {

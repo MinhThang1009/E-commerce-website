@@ -73,9 +73,7 @@ export const PageHeader: React.FC<PageHeaderProps> = ({
                     {breadcrumb.label}
                   </a>
                 ) : (
-                  <span className="text-neutral-800 dark:text-neutral-200">
-                    {breadcrumb.label}
-                  </span>
+                  <span className="text-neutral-800 dark:text-neutral-200">{breadcrumb.label}</span>
                 )}
               </li>
             ))}
@@ -90,14 +88,10 @@ export const PageHeader: React.FC<PageHeaderProps> = ({
             {title}
           </h1>
           {description && (
-            <p className="mt-2 text-neutral-600 dark:text-neutral-400">
-              {description}
-            </p>
+            <p className="mt-2 text-neutral-600 dark:text-neutral-400">{description}</p>
           )}
         </div>
-        {actions && (
-          <div className="flex items-center space-x-3">{actions}</div>
-        )}
+        {actions && <div className="flex items-center space-x-3">{actions}</div>}
       </div>
     </div>
   );
@@ -113,14 +107,7 @@ export const PageSection: React.FC<{
   className?: string;
   headerActions?: React.ReactNode;
   containerized?: boolean;
-}> = ({
-  children,
-  title,
-  description,
-  className = '',
-  headerActions,
-  containerized = true,
-}) => {
+}> = ({ children, title, description, className = '', headerActions, containerized = true }) => {
   const headerContent = (
     <>
       {(title || description || headerActions) && (
@@ -133,9 +120,7 @@ export const PageSection: React.FC<{
                 </h2>
               )}
               {description && (
-                <p className="mt-1 text-neutral-600 dark:text-neutral-400">
-                  {description}
-                </p>
+                <p className="mt-1 text-neutral-600 dark:text-neutral-400">{description}</p>
               )}
             </div>
             {headerActions && (
@@ -197,9 +182,7 @@ export const PageLayout: React.FC<PageLayoutProps> = ({
     return `container mx-auto px-4 ${sizeClasses[containerSize]}`;
   };
 
-  const pageTitle = title
-    ? `${title} - TechStore`
-    : 'TechStore';
+  const pageTitle = title ? `${title} | TechStore` : 'TechStore';
 
   // Hiển thị loading toàn trang
   if (isLoading) {
@@ -210,12 +193,7 @@ export const PageLayout: React.FC<PageLayoutProps> = ({
   if (error) {
     return (
       <PageLayout showContainer={showContainer} containerSize={containerSize}>
-        <ErrorState
-          error={error}
-          onRetry={onRetry}
-          size="lg"
-          className="py-16"
-        />
+        <ErrorState error={error} onRetry={onRetry} size="lg" className="py-16" />
       </PageLayout>
     );
   }
@@ -228,21 +206,15 @@ export const PageLayout: React.FC<PageLayoutProps> = ({
         {description && <meta name="description" content={description} />}
         {keywords && <meta name="keywords" content={keywords} />}
         <meta property="og:title" content={pageTitle} />
-        {description && (
-          <meta property="og:description" content={description} />
-        )}
+        {description && <meta property="og:description" content={description} />}
         <meta property="og:type" content="website" />
         <meta name="twitter:card" content="summary_large_image" />
         <meta name="twitter:title" content={pageTitle} />
-        {description && (
-          <meta name="twitter:description" content={description} />
-        )}
+        {description && <meta name="twitter:description" content={description} />}
       </Helmet>
 
       {/* Nội dung trang */}
-      <main
-        className={`min-h-screen bg-white dark:bg-neutral-900 ${className}`}
-      >
+      <main className={`min-h-screen bg-white dark:bg-neutral-900 ${className}`}>
         <div className={getContainerClass()}>{children}</div>
       </main>
     </>
@@ -260,4 +232,3 @@ export const PageContent: React.FC<{
 };
 
 export default PageLayout;
-

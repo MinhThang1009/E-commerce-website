@@ -46,20 +46,15 @@ const AdminOrdersPage = lazy(() => import('@/features/orders/pages/admin/OrdersP
 const AdminUsersPage = lazy(() => import('@/features/admin/pages/UsersPage'));
 const AdminUserDetailPage = lazy(() => import('@/features/admin/pages/UserDetailPage'));
 const AdminCategoriesPage = lazy(() => import('@/features/catalog/pages/admin/CategoriesPage'));
-const AdminWarrantyPackagesPage = lazy(
-  () => import('@/features/admin/pages/WarrantyPackagesPage')
-);
-const AdminDiscountCodesPage = lazy(
-  () => import('@/features/admin/pages/DiscountCodesPage')
-);
+const AdminWarrantyPackagesPage = lazy(() => import('@/features/admin/pages/WarrantyPackagesPage'));
+const AdminDiscountCodesPage = lazy(() => import('@/features/admin/pages/DiscountCodesPage'));
 const AdminBrandsPage = lazy(() => import('@/features/catalog/pages/admin/BrandsPage'));
 const AdminCollectionsPage = lazy(() => import('@/features/catalog/pages/admin/CollectionsPage'));
 const AdminNewsPage = lazy(() => import('@/features/content/pages/admin/NewsPage'));
 const CreateNewsPage = lazy(() => import('@/features/content/pages/admin/CreateNewsPage'));
-const SupportDashboard = lazy(() => import('@/features/admin/pages/SupportDashboard'));
 const AdminBannersPage = lazy(() => import('@/features/content/pages/admin/BannersPage'));
 const AdminEmailCampaignsPage = lazy(
-  () => import('@/features/content/pages/admin/EmailCampaignsPage')
+  () => import('@/features/content/pages/admin/EmailCampaignsPage'),
 );
 const AdminInventoryPage = lazy(() => import('@/features/admin/pages/InventoryPage'));
 const AdminAuditLogPage = lazy(() => import('@/features/admin/pages/AuditLogPage'));
@@ -145,7 +140,6 @@ const AppRoutes: React.FC = () => {
           <Route path="verify-email" element={<VerifyEmailPage />} />
           <Route path="verify-email/:token" element={<VerifyEmailPage />} />
 
-
           {/* Routes được bảo vệ (yêu cầu đăng nhập) */}
           <Route
             path="checkout"
@@ -228,27 +222,16 @@ const AppRoutes: React.FC = () => {
           {/* Các mục admin khác */}
           <Route path="categories" element={<AdminCategoriesPage />} />
           <Route path="orders" element={<AdminOrdersPage />} />
-          <Route path="support" element={<SupportDashboard />} />
           <Route path="users" element={<AdminUsersPage />} />
           <Route path="users/:id" element={<AdminUserDetailPage />} />
-          <Route
-            path="warranty-packages"
-            element={<AdminWarrantyPackagesPage />}
-          />
-          <Route
-            path="discount-codes"
-            element={<AdminDiscountCodesPage />}
-          />
+          <Route path="warranty-packages" element={<AdminWarrantyPackagesPage />} />
+          <Route path="discount-codes" element={<AdminDiscountCodesPage />} />
           <Route path="brands" element={<AdminBrandsPage />} />
           <Route path="collections" element={<AdminCollectionsPage />} />
           <Route path="banners" element={<AdminBannersPage />} />
-          <Route
-            path="email-campaigns"
-            element={<AdminEmailCampaignsPage />}
-          />
+          <Route path="email-campaigns" element={<AdminEmailCampaignsPage />} />
           <Route path="inventory" element={<AdminInventoryPage />} />
           <Route path="audit-log" element={<AdminAuditLogPage />} />
-
         </Route>
       </Routes>
     </Suspense>
@@ -256,4 +239,3 @@ const AppRoutes: React.FC = () => {
 };
 
 export default AppRoutes;
-

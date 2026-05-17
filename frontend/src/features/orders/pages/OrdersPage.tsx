@@ -18,13 +18,11 @@ import { cartKeys, useClearCartMutation } from '@/features/cart';
 import { getLocale } from '@/utils/format';
 import { toast } from '@/utils/toast';
 import { ReviewModal } from '@/features/reviews';
-import OrderDetails from '@/components/shared/OrderDetails';
-
+import { OrderDetails } from '@/features/orders';
 
 // Màu sắc trạng thái thanh toán
 const paymentStatusColors: Record<string, string> = {
-  pending:
-    'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-300',
+  pending: 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-300',
   paid: 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300',
   failed: 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300',
   refunded: 'bg-gray-100 text-gray-800 dark:bg-gray-900/30 dark:text-gray-300',
@@ -133,9 +131,18 @@ const OrdersPage: React.FC = () => {
       const response = await repayOrder(orderId);
 
       // Kiểm tra nếu đơn hàng dùng phương thức chuyển khoản và chuyển hướng đến trang PaymentQR
-      if (response.data?.order?.paymentMethod === 'bank_transfer' || response.data?.order?.paymentMethod === 'bank_transfer_qr') {
+      if (
+        response.data?.order?.paymentMethod === 'bank_transfer' ||
+        response.data?.order?.paymentMethod === 'bank_transfer_qr'
+      ) {
         // Điều hướng đến trang PaymentQR với thông tin đơn hàng
-        navigate(buildRoute.paymentQr(response.data.order.id, response.data.order.total, response.data.order.number));
+        navigate(
+          buildRoute.paymentQr(
+            response.data.order.id,
+            response.data.order.total,
+            response.data.order.number,
+          ),
+        );
       } else if (response.data?.paymentUrl) {
         // Với các phương thức thanh toán khác, dùng URL thanh toán do API trả về
         window.location.href = response.data.paymentUrl;
@@ -224,9 +231,7 @@ const OrdersPage: React.FC = () => {
           <h1 className="text-2xl font-bold text-neutral-800 dark:text-neutral-100 mb-4">
             {t('orders.loginRequired')}
           </h1>
-          <p className="text-neutral-600 dark:text-neutral-400 mb-6">
-            {t('orders.loginMessage')}
-          </p>
+          <p className="text-neutral-600 dark:text-neutral-400 mb-6">{t('orders.loginMessage')}</p>
           <PremiumButton
             variant="primary"
             size="large"
@@ -297,9 +302,7 @@ const OrdersPage: React.FC = () => {
           <h2 className="text-xl font-semibold text-neutral-700 dark:text-neutral-300 mb-2">
             {t('orders.error.title')}
           </h2>
-          <p className="text-neutral-500 dark:text-neutral-400 mb-6">
-            {t('orders.error.message')}
-          </p>
+          <p className="text-neutral-500 dark:text-neutral-400 mb-6">{t('orders.error.message')}</p>
           <Button variant="primary" onClick={() => refetch()}>
             {t('orders.tryAgain')}
           </Button>
@@ -381,13 +384,28 @@ const OrdersPage: React.FC = () => {
                             </Badge>
                           </div>
                           <p className="text-sm text-neutral-500 dark:text-neutral-400 flex items-center gap-1">
-                            <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v14a2 2 0 00-2 2z" /></svg>
+                            <svg
+                              xmlns="http://www.w3.org/2000/svg"
+                              className="h-4 w-4"
+                              fill="none"
+                              viewBox="0 0 24 24"
+                              stroke="currentColor"
+                            >
+                              <path
+                                strokeLinecap="round"
+                                strokeLinejoin="round"
+                                strokeWidth={2}
+                                d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v14a2 2 0 00-2 2z"
+                              />
+                            </svg>
                             {t('orders.placedOn', {
                               date: formatDate(order.createdAt),
                             })}
                             {order.paymentMethod && (
                               <span className="ml-2 pl-2 border-l border-neutral-300 dark:border-neutral-700">
-                                {t(`orders.paymentMethods.${order.paymentMethod.toLowerCase()}`, { defaultValue: order.paymentMethod })}
+                                {t(`orders.paymentMethods.${order.paymentMethod.toLowerCase()}`, {
+                                  defaultValue: order.paymentMethod,
+                                })}
                               </span>
                             )}
                           </p>
@@ -404,8 +422,9 @@ const OrdersPage: React.FC = () => {
                           </div>
                           {order.paymentStatus && (
                             <span
-                              className={`px-3 py-1 text-xs font-semibold rounded-full shadow-sm ${paymentStatusColors[order.paymentStatus]
-                                }`}
+                              className={`px-3 py-1 text-xs font-semibold rounded-full shadow-sm ${
+                                paymentStatusColors[order.paymentStatus]
+                              }`}
                             >
                               {t(`orders.paymentStatus.${order.paymentStatus}`)}
                             </span>
@@ -439,7 +458,8 @@ const OrdersPage: React.FC = () => {
                           </Button>
                         )}
 
-                        {(order.status === 'shipped' || (order.status === 'delivered' && !order.pointsEarned)) && (
+                        {(order.status === 'shipped' ||
+                          (order.status === 'delivered' && !order.pointsEarned)) && (
                           <Button
                             variant="primary"
                             size="sm"
@@ -537,13 +557,10 @@ const OrdersPage: React.FC = () => {
 
                   {/* Chi tiết đơn hàng có thể mở rộng */}
                   {selectedOrder === order.id && (
-                    <OrderDetails
-                      orderId={order.id}
-                      onOpenReview={handleOpenReview}
-                    />
+                    <OrderDetails orderId={order.id} onOpenReview={handleOpenReview} />
                   )}
                 </div>
-              )
+              );
             })}
           </div>
 
@@ -562,9 +579,7 @@ const OrdersPage: React.FC = () => {
                 {Array.from({ length: totalPages }, (_, i) => i + 1)
                   .filter(
                     (page) =>
-                      page === 1 ||
-                      page === totalPages ||
-                      Math.abs(page - currentPage) <= 2
+                      page === 1 || page === totalPages || Math.abs(page - currentPage) <= 2,
                   )
                   .map((page, index, array) => (
                     <div key={page} className="flex items-center">
@@ -611,4 +626,3 @@ const OrdersPage: React.FC = () => {
 };
 
 export default OrdersPage;
-

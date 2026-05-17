@@ -484,26 +484,16 @@ CREATE TABLE IF NOT EXISTS `chat_messages` (
     `id` INT AUTO_INCREMENT PRIMARY KEY,
     `user_id` INT NULL,
     `session_id` VARCHAR(255) NOT NULL,
-    `sender_id` INT NULL,
     `content` TEXT NOT NULL,
-    `is_from_admin` TINYINT(1) DEFAULT 0,
-    `is_read` TINYINT(1) DEFAULT 0,
-    `status` ENUM('sent', 'delivered', 'read') NOT NULL DEFAULT 'sent',
-    `content_type` ENUM('text', 'image', 'product_card') NOT NULL DEFAULT 'text',
-    `attachment_url` VARCHAR(255) NULL,
-    `product_id` INT NULL,
-    `read_at` DATETIME NULL,
     `role` ENUM('user', 'assistant') NULL,
-    `message_type` ENUM('ai_chatbot', 'support_chat') NOT NULL DEFAULT 'support_chat',
+    `message_type` ENUM('ai_chatbot', 'support_chat') NOT NULL DEFAULT 'ai_chatbot',
     `intent` VARCHAR(50) NULL,
     `response_time_ms` INT UNSIGNED NULL,
     `is_fallback` TINYINT(1) NOT NULL DEFAULT 0,
     `is_archived` TINYINT(1) NOT NULL DEFAULT 0,
     `created_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
     `updated_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-    CONSTRAINT `fk_chat_messages_user` FOREIGN KEY (`user_id`) REFERENCES `users`(`id`) ON DELETE SET NULL ON UPDATE CASCADE,
-    CONSTRAINT `fk_chat_messages_sender` FOREIGN KEY (`sender_id`) REFERENCES `users`(`id`) ON DELETE SET NULL ON UPDATE CASCADE,
-    CONSTRAINT `fk_chat_messages_product` FOREIGN KEY (`product_id`) REFERENCES `products`(`id`) ON DELETE SET NULL ON UPDATE CASCADE
+    CONSTRAINT `fk_chat_messages_user` FOREIGN KEY (`user_id`) REFERENCES `users`(`id`) ON DELETE SET NULL ON UPDATE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- ----- BẢNG 22: banners (Banner quảng cáo) -----

@@ -1,4 +1,4 @@
-﻿{
+{
   "header": {
     "brand": "TechStore",
     "tagline": "E-Commerce",
@@ -126,7 +126,8 @@
       "subscribe": "Subscribe",
       "backgroundAlt": "Shopping pattern background",
       "emailRequired": "Please enter your email",
-      "subscribeError": "An error occurred. Please try again."
+      "subscribeError": "An error occurred. Please try again.",
+      "subscribeSuccess": "Successfully subscribed to newsletter!"
     },
     "bestSellers": {
       "badge": "Best Seller",
@@ -960,7 +961,6 @@
       "warranty": "Warranty Packages",
       "discounts": "Discount Codes",
       "email": "Email Campaigns",
-      "support": "Online Support",
       "banners": "Banner Management",
       "inventory": "Inventory",
       "auditLog": "Audit Log"
@@ -1221,8 +1221,8 @@
         "category": "6. Category",
         "images": "7. Images",
         "warranty": "8. Warranty",
-        "faqs": "9. FAQ",
-        "seo": "10. SEO"
+        "faqs": "10. FAQ",
+        "seo": "9. SEO"
       },
       "submit": {
         "create": "Create product",
@@ -1898,14 +1898,6 @@
         "actions": "Actions"
       }
     },
-    "support": {
-      "title": "Customer Support",
-      "noChats": "No conversations yet",
-      "guestUser": "Guest ({{id}})",
-      "typing": "User is typing...",
-      "inputPlaceholder": "Enter reply...",
-      "selectConversation": "Select a conversation to get started"
-    },
     "userDetail": {
       "notFound": "User not found or an error occurred",
       "backToList": "Back to list",
@@ -2168,7 +2160,28 @@
       "ram_capacity": "Memory (RAM)",
       "storage_capacity": "Storage Capacity",
       "network_connectivity": "Network / Wireless Connectivity",
-      "other_features": "Other Features"
+      "other_features": "Other Features",
+      "battery_capacity": "Battery Capacity",
+      "water_resistance": "Water Resistance",
+      "sensors": "Sensors",
+      "health_features": "Health Features",
+      "sports_modes": "Sports Modes",
+      "positioning": "Positioning",
+      "compatibility": "Compatibility",
+      "target_user": "Target User",
+      "collection": "Collection",
+      "dial_size": "Dial Size",
+      "case_thickness": "Case Thickness",
+      "band_width": "Band Width",
+      "band_material": "Band Material",
+      "case_material": "Case Material",
+      "glass_material": "Crystal / Glass Material",
+      "movement_type": "Movement Type",
+      "movement_name": "Movement",
+      "power_source": "Power Source",
+      "power_reserve": "Power Reserve",
+      "battery_life": "Battery Life",
+      "features": "Features"
     }
   },
   "contact": {
@@ -2298,6 +2311,9 @@
     "required": "This field is required",
     "name": {
       "required": "Please enter a name"
+    },
+    "phone": {
+      "invalid": "Invalid phone number (10 digits, starts with 0 or +84)"
     }
   },
   "product_form": {
@@ -2552,7 +2568,7 @@
       "description": "Browse our full range of smartphones, tablets, laptops and accessories at TechStore."
     },
     "sortBy": "Sort By",
-    "stats": "Showing {{count}} products",
+    "stats": "Showing {{current}} of {{total}} products",
     "subtitle": "Discover our full product range",
     "title": "Shop",
     "viewMode": "View Mode",
@@ -2780,6 +2796,7 @@
     "viewProducts": "View products"
   },
   "categories": {
+    "pageTitle": "Categories",
     "heroTitle": "All Categories",
     "heroDesc": "Explore thousands of products across {{count}} diverse categories",
     "searchPlaceholder": "Search categories...",
@@ -2818,6 +2835,7 @@
     "explore": "Explore now"
   },
   "deals": {
+    "pageTitle": "Deals",
     "heroTitle": "Super Sale - Over 50% OFF",
     "heroDesc": "Discover shock-price deals with over 50% off. Limited time — buy now before it's gone!",
     "heroBadge": "OVER 50% OFF",
@@ -2850,6 +2868,7 @@
     "emptyHint": "Check back soon for new arrivals"
   },
   "news": {
+    "pageTitle": "News",
     "categories": {
       "all": "All",
       "news": "News",
@@ -3213,6 +3232,7 @@
     "updateBtn": "Update Variant"
   },
   "about": {
+    "pageTitle": "About",
     "heroTitle": "About TechStore",
     "heroSubtitle": "Our mission is to provide high-quality tech products — phones, laptops, tablets and more — at reasonable prices with dedicated customer service in Hanoi.",
     "storyTitle": "Our Story",
@@ -3821,11 +3841,6 @@
   "products": {
     "notFound": "No products found",
     "tryDifferentFilters": "Please try different filters"
-  },
-  "support": {
-    "title": "Online Support",
-    "greeting": "Hello, how can we help you?",
-    "adminTyping": "Admin is typing..."
   },
   "order": {
     "status": {

@@ -7,6 +7,7 @@ const buildRoutes = require('./routes');
 // để log audit (orders module đã restore stock inline trong cancelOrder).
 module.exports = ({
   Product, ProductVariant, InventoryLog, User,
+  sequelize,
   eventBus, logger,
 }) => {
   if (!Product) throw new Error('inventory module: Product model bắt buộc');
@@ -16,7 +17,7 @@ module.exports = ({
   const inventoryRepository = new SequelizeInventoryRepository({
     Product, ProductVariant, InventoryLog, User,
   });
-  const inventoryService = new InventoryService({ inventoryRepository, eventBus, logger });
+  const inventoryService = new InventoryService({ inventoryRepository, sequelize, eventBus, logger });
   const inventoryController = new InventoryController({ inventoryService });
   const router = buildRoutes({ inventoryController });
 

@@ -2,7 +2,7 @@
 const path = require('path');
 const { v4: uuidv4 } = require('uuid');
 const imageService = require('../services/image');
-const { AppError } = require('../middlewares/errorHandler');
+const { AppError } = require('../shared/errors');
 
 // Cấu hình multer để lưu file tạm thời
 const storage = multer.diskStorage({

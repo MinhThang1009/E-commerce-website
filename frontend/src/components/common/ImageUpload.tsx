@@ -9,9 +9,18 @@ interface ImageUploadProps {
   value?: string | string[];
   onChange: (value: string | string[]) => void;
   multiple?: boolean;
-  type?: 'products' | 'categories' | 'users' | 'reviews' | 'collections' | 'brands' | 'banners' | 'news';
+  type?:
+    | 'products'
+    | 'categories'
+    | 'users'
+    | 'reviews'
+    | 'collections'
+    | 'brands'
+    | 'banners'
+    | 'news';
   label?: string;
   maxFiles?: number;
+  id?: string;
 }
 
 const ImageUpload: React.FC<ImageUploadProps> = ({
@@ -20,7 +29,8 @@ const ImageUpload: React.FC<ImageUploadProps> = ({
   multiple = false,
   type = 'products',
   label,
-  maxFiles = 5
+  maxFiles = 5,
+  id: _id,
 }) => {
   const { t } = useTranslation();
   const [isUploading, setIsUploading] = useState(false);
@@ -28,7 +38,7 @@ const ImageUpload: React.FC<ImageUploadProps> = ({
   const [urlInput, setUrlInput] = useState('');
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  const images = Array.isArray(value) ? value : value ? value.split(',').map(s => s.trim()) : [];
+  const images = Array.isArray(value) ? value : value ? value.split(',').map((s) => s.trim()) : [];
 
   const getFullUrl = getUploadUrl;
 
@@ -48,7 +58,7 @@ const ImageUpload: React.FC<ImageUploadProps> = ({
 
     setIsUploading(true);
     const formData = new FormData();
-    
+
     // Chọn endpoint phù hợp
     const endpoint = multiple ? 'multiple' : 'single';
     if (multiple) {
@@ -62,22 +72,25 @@ const ImageUpload: React.FC<ImageUploadProps> = ({
     try {
       const { getValidToken } = await import('@/utils/tokenManager');
       const authToken = await getValidToken();
-      const response = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:8888/api'}/uploads/${type}/${endpoint}`, {
-        method: 'POST',
-        headers: {
-          ...(authToken ? { 'Authorization': `Bearer ${authToken}` } : {}),
+      const response = await fetch(
+        `${import.meta.env.VITE_API_URL || 'http://localhost:8888/api'}/uploads/${type}/${endpoint}`,
+        {
+          method: 'POST',
+          headers: {
+            ...(authToken ? { Authorization: `Bearer ${authToken}` } : {}),
+          },
+          credentials: 'include',
+          body: formData,
         },
-        credentials: 'include',
-        body: formData,
-      });
+      );
 
       const result = await response.json();
 
       if (result.status === 'success') {
-        const newUrls = multiple 
-          ? result.data.files.map((f: { url: string }) => f.url) 
+        const newUrls = multiple
+          ? result.data.files.map((f: { url: string }) => f.url)
           : [result.data.url];
-        
+
         const finalUrls = [...images, ...newUrls];
         onChange(multiple ? finalUrls : finalUrls[0]);
         toast.success(t('imageUpload.uploadSuccess'));
@@ -94,7 +107,7 @@ const ImageUpload: React.FC<ImageUploadProps> = ({
   };
 
   const handleRemove = (url: string) => {
-    const newUrls = images.filter(img => img !== url);
+    const newUrls = images.filter((img) => img !== url);
     onChange(multiple ? newUrls : '');
   };
 
@@ -120,10 +133,13 @@ const ImageUpload: React.FC<ImageUploadProps> = ({
       {/* Preview Area */}
       <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
         {images.map((img, idx) => (
-          <div key={idx} className="relative aspect-square rounded-xl overflow-hidden border-2 border-neutral-100 dark:border-neutral-800 shadow-sm group">
-            <img 
-              src={getFullUrl(img)} 
-              alt={`Preview ${idx + 1}`} 
+          <div
+            key={idx}
+            className="relative aspect-square rounded-xl overflow-hidden border-2 border-neutral-100 dark:border-neutral-800 shadow-sm group"
+          >
+            <img
+              src={getFullUrl(img)}
+              alt={`Preview ${idx + 1}`}
               className="w-full h-full object-cover"
               onError={(e) => {
                 (e.target as HTMLImageElement).src = 'https://placehold.co/400x400?text=Error';
@@ -145,12 +161,13 @@ const ImageUpload: React.FC<ImageUploadProps> = ({
 
         {/* Upload Button */}
         {(multiple ? images.length < maxFiles : images.length === 0) && (
-          <div 
+          <div
             onClick={() => fileInputRef.current?.click()}
             className={`aspect-square rounded-xl border-2 border-dashed flex flex-col items-center justify-center cursor-pointer transition-all
-              ${isUploading 
-                ? 'border-neutral-200 bg-neutral-50 animate-pulse cursor-wait' 
-                : 'border-neutral-300 dark:border-neutral-700 hover:border-primary-500 hover:bg-primary-50 dark:hover:bg-primary-900/10'
+              ${
+                isUploading
+                  ? 'border-neutral-200 bg-neutral-50 animate-pulse cursor-wait'
+                  : 'border-neutral-300 dark:border-neutral-700 hover:border-primary-500 hover:bg-primary-50 dark:hover:bg-primary-900/10'
               }`}
           >
             {isUploading ? (
@@ -158,7 +175,9 @@ const ImageUpload: React.FC<ImageUploadProps> = ({
             ) : (
               <>
                 <CloudArrowUpIcon className="w-8 h-8 text-neutral-400 mb-2" />
-                <span className="text-xs font-medium text-neutral-500 dark:text-neutral-400">{t('imageUpload.uploadButton')}</span>
+                <span className="text-xs font-medium text-neutral-500 dark:text-neutral-400">
+                  {t('imageUpload.uploadButton')}
+                </span>
               </>
             )}
           </div>
@@ -175,10 +194,8 @@ const ImageUpload: React.FC<ImageUploadProps> = ({
           <LinkIcon className="w-4 h-4" />
           {showUrlInput ? t('imageUpload.hideUrl') : t('imageUpload.showUrl')}
         </button>
-        
-        <span className="text-xs text-neutral-500">
-          {t('imageUpload.acceptedFormats')}
-        </span>
+
+        <span className="text-xs text-neutral-500">{t('imageUpload.acceptedFormats')}</span>
       </div>
 
       {showUrlInput && (
@@ -214,4 +231,3 @@ const ImageUpload: React.FC<ImageUploadProps> = ({
 };
 
 export default ImageUpload;
-

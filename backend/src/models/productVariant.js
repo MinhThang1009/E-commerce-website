@@ -72,6 +72,19 @@ const ProductVariant = sequelize.define(
         );
       },
     },
+    attributesEn: {
+      type: DataTypes.TEXT('long'),
+      allowNull: true,
+      field: 'attributes_en',
+      get() {
+        const value = this.getDataValue('attributesEn');
+        if (!value) return null;
+        try { return typeof value === 'string' ? JSON.parse(value) : value; } catch { return null; }
+      },
+      set(value) {
+        this.setDataValue('attributesEn', typeof value === 'object' ? JSON.stringify(value) : value);
+      },
+    },
     // Cân nặng tính theo kg — dùng để tính phí ship chính xác
     weight: {
       type: DataTypes.DECIMAL(10, 3),

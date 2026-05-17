@@ -9,9 +9,12 @@ const Banner = sequelize.define(
       autoIncrement: true,
       primaryKey: true,
     },
+    titleVi: { type: DataTypes.STRING, allowNull: false },
+    titleEn: { type: DataTypes.STRING, allowNull: true },
     title: {
-      type: DataTypes.STRING,
-      allowNull: false,
+      type: DataTypes.VIRTUAL,
+      get() { return this.getDataValue('titleVi'); },
+      set(v) { this.setDataValue('titleVi', v); },
     },
     imageUrl: {
       type: DataTypes.STRING(512),

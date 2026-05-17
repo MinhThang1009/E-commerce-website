@@ -1,3 +1,4 @@
+import { Helmet } from 'react-helmet-async';
 import { Link, useSearchParams } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { buildRoute } from '@/routes/paths';
@@ -54,7 +55,8 @@ const NewsListPage: React.FC = () => {
   if (isLoading) return <LoadingSpinner fullScreen />;
 
   const allNews = newsData?.news || [];
-  const showFeatured = page === 1 && currentCategory === t('news.categories.all') && allNews.length >= 3;
+  const showFeatured =
+    page === 1 && currentCategory === t('news.categories.all') && allNews.length >= 3;
 
   const featuredPost = showFeatured ? allNews[0] : null;
   const gridPosts = showFeatured ? allNews.slice(1, 5) : [];
@@ -63,6 +65,9 @@ const NewsListPage: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-white dark:bg-neutral-900 py-12 pt-28">
+      <Helmet>
+        <title>{t('news.pageTitle', { defaultValue: 'News' })} | TechStore</title>
+      </Helmet>
       <div className="container mx-auto px-4">
         <div className="flex flex-wrap gap-3 mb-12 overflow-x-auto pb-2 no-scrollbar">
           {CATEGORIES.map((cat) => (
@@ -86,7 +91,7 @@ const NewsListPage: React.FC = () => {
 
         {allNews.length === 0 ? (
           <div className="text-center py-20 bg-neutral-50 dark:bg-neutral-800 rounded-3xl">
-             <p className="text-neutral-500 text-lg">{t('news.empty')}</p>
+            <p className="text-neutral-500 text-lg">{t('news.empty')}</p>
           </div>
         ) : (
           <div className="space-y-12">
@@ -103,17 +108,19 @@ const NewsListPage: React.FC = () => {
                   />
                   <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent" />
                   <div className="absolute bottom-0 left-0 p-8 w-full">
-                     <span className="inline-block px-3 py-1 bg-primary-600 text-white text-xs font-bold rounded-full mb-4">
-                        {featuredPost!.category || t('news.defaultCategory')}
-                     </span>
-                     <h2 className="text-2xl md:text-4xl font-bold text-white mb-4 line-clamp-2 leading-tight group-hover:text-primary-400 transition-colors">
-                        {featuredPost!.title}
-                     </h2>
-                     <div className="flex items-center text-white/70 text-sm gap-4">
-                        <span>{featuredPost!.author?.firstName} {featuredPost!.author?.lastName}</span>
-                        <span className="w-1 h-1 bg-white/50 rounded-full" />
-                        <span>{dayjs(featuredPost!.createdAt).format('DD/MM/YYYY')}</span>
-                     </div>
+                    <span className="inline-block px-3 py-1 bg-primary-600 text-white text-xs font-bold rounded-full mb-4">
+                      {featuredPost!.category || t('news.defaultCategory')}
+                    </span>
+                    <h2 className="text-2xl md:text-4xl font-bold text-white mb-4 line-clamp-2 leading-tight group-hover:text-primary-400 transition-colors">
+                      {featuredPost!.title}
+                    </h2>
+                    <div className="flex items-center text-white/70 text-sm gap-4">
+                      <span>
+                        {featuredPost!.author?.firstName} {featuredPost!.author?.lastName}
+                      </span>
+                      <span className="w-1 h-1 bg-white/50 rounded-full" />
+                      <span>{dayjs(featuredPost!.createdAt).format('DD/MM/YYYY')}</span>
+                    </div>
                   </div>
                 </Link>
 
@@ -166,9 +173,9 @@ const NewsListPage: React.FC = () => {
                       className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
                     />
                     <div className="absolute top-4 left-4">
-                       <span className="px-3 py-1 bg-white/90 dark:bg-neutral-800/90 text-primary-600 text-[10px] font-extrabold rounded-full uppercase tracking-tighter shadow-sm border border-neutral-100 dark:border-neutral-700">
-                          {item.category || t('news.defaultCategory')}
-                       </span>
+                      <span className="px-3 py-1 bg-white/90 dark:bg-neutral-800/90 text-primary-600 text-[10px] font-extrabold rounded-full uppercase tracking-tighter shadow-sm border border-neutral-100 dark:border-neutral-700">
+                        {item.category || t('news.defaultCategory')}
+                      </span>
                     </div>
                   </div>
                   <div className="flex flex-col flex-grow">
@@ -176,17 +183,17 @@ const NewsListPage: React.FC = () => {
                       {item.title}
                     </h2>
                     <div className="mt-auto flex items-center justify-between">
-                       <div className="flex items-center gap-2">
-                          <div className="w-6 h-6 rounded-full bg-neutral-200 overflow-hidden">
-                             <img src={item.author?.avatar || '/placeholder-avatar.jpg'} alt="" />
-                          </div>
-                          <span className="text-xs text-neutral-600 dark:text-neutral-400 font-medium">
-                             {item.author?.firstName} {item.author?.lastName}
-                          </span>
-                       </div>
-                       <span className="text-[11px] text-neutral-400">
-                          {dayjs(item.createdAt).format('DD/MM/YYYY')}
-                       </span>
+                      <div className="flex items-center gap-2">
+                        <div className="w-6 h-6 rounded-full bg-neutral-200 overflow-hidden">
+                          <img src={item.author?.avatar || '/placeholder-avatar.jpg'} alt="" />
+                        </div>
+                        <span className="text-xs text-neutral-600 dark:text-neutral-400 font-medium">
+                          {item.author?.firstName} {item.author?.lastName}
+                        </span>
+                      </div>
+                      <span className="text-[11px] text-neutral-400">
+                        {dayjs(item.createdAt).format('DD/MM/YYYY')}
+                      </span>
                     </div>
                   </div>
                 </Link>

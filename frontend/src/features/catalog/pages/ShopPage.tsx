@@ -1,9 +1,9 @@
 import { useState, useEffect } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { Helmet } from 'react-helmet-async';
-import ProductCard from '@/components/shared/ProductCard';
-import ProductListCard from '@/components/shared/ProductListCard';
-import FilterPanel from '@/components/shared/FilterPanel';
+import { ProductCard } from '@/features/catalog';
+import { ProductListCard } from '@/features/catalog';
+import { FilterPanel } from '@/features/catalog';
 import Pagination from '@/components/common/Pagination';
 import Select from '@/components/common/Select';
 import { PremiumButton, BannerDisplay } from '@/components/common';
@@ -15,11 +15,12 @@ import { useGetCategoriesQuery } from '../api/categoryApi';
 import { useGetBrandsQuery } from '../api/brandApi';
 import { useGetCollectionsQuery } from '../api/collectionApi';
 import { useTranslation } from 'react-i18next';
+import { localizeField } from '@/utils/localize';
 
 // Tùy chọn sắp xếp sẽ được xử lý bên trong component do dùng hooks
 
 const ShopPage: React.FC = () => {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const [searchParams, setSearchParams] = useSearchParams();
 
   const sortOptions = [
@@ -184,26 +185,30 @@ const ShopPage: React.FC = () => {
       name: t('filters.category'),
       options: (categoriesData || []).map((category: Category) => ({
         id: category.id,
-        name: `${category.name} (${category.productCount || 0})`,
+        name: `${localizeField(category, 'name', i18n.language)} (${category.productCount || 0})`,
       })),
     },
     {
       id: 'brand',
       name: t('filters.brand'),
       options:
-        brandsData?.data?.map((brand: { id: string; name: string }) => ({
-          id: brand.id,
-          name: brand.name,
-        })) || [],
+        brandsData?.data?.map(
+          (brand: { id: string; name: string; nameVi?: string; nameEn?: string }) => ({
+            id: brand.id,
+            name: localizeField(brand, 'name', i18n.language),
+          }),
+        ) || [],
     },
     {
       id: 'collection',
       name: t('filters.collection'),
       options:
-        collectionsData?.data?.map((collection: { id: string; name: string }) => ({
-          id: collection.id,
-          name: collection.name,
-        })) || [],
+        collectionsData?.data?.map(
+          (collection: { id: string; name: string; nameVi?: string; nameEn?: string }) => ({
+            id: collection.id,
+            name: localizeField(collection, 'name', i18n.language),
+          }),
+        ) || [],
     },
   ];
 

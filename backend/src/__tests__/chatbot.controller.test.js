@@ -15,8 +15,10 @@
 
 jest.mock('../models', () => ({
   Product: { findByPk: jest.fn(), findOne: jest.fn() },
+  ProductVariant: {},
   Cart: { findOne: jest.fn(), create: jest.fn() },
   CartItem: { create: jest.fn() },
+  ChatMessage: { create: jest.fn().mockResolvedValue({}) },
   Category: {},
   Brand: {},
   Order: {},
@@ -51,8 +53,7 @@ jest.mock('../services/ai/geminiChatbot', () => ({
   }),
 }));
 
-// Middleware authenticate: kiểm tra header Authorization để quyết định 401 hay inject user
-jest.mock('../middlewares/authenticate', () => ({
+const authMiddlewareMock = {
   authenticate: (req, res, next) => {
     if (!req.headers.authorization) {
       return res.status(401).json({ status: 'error', message: 'Không được phép truy cập' });
@@ -61,35 +62,45 @@ jest.mock('../middlewares/authenticate', () => ({
     next();
   },
   optionalAuthenticate: (req, res, next) => {
-    if (req.headers.authorization) {
-      req.user = { id: 1 };
-    }
+    if (req.headers.authorization) req.user = { id: 1 };
     next();
   },
-}));
+};
+// Mock cả legacy path và shared path (ai module dùng shared path)
+jest.mock('../middlewares/authenticate', () => authMiddlewareMock);
+jest.mock('../shared/http/middlewares/authenticate', () => authMiddlewareMock);
 
-// chatbotLimiter: pass-through cho các test chính, test rate limiting dùng describe riêng
-jest.mock('../middlewares/rateLimiter', () => ({
+const rateLimiterMock = {
   chatbotLimiter: (_req, _res, next) => next(),
   apiLimiter: (_req, _res, next) => next(),
   authLimiter: (_req, _res, next) => next(),
   otpLimiter: (_req, _res, next) => next(),
-}));
+};
+jest.mock('../middlewares/rateLimiter', () => rateLimiterMock);
+jest.mock('../shared/http/middlewares/rateLimiter', () => rateLimiterMock);
 
 // ---------- Require sau khi mocks đã đăng ký ----------
 
 const express = require('express');
 const supertest = require('supertest');
-// /cart/add và /analytics endpoints chưa migrate sang modules/ai (Phase 42).
-// Giữ legacy routes/chatbot.js cho 2 endpoints này — sẽ migrate khi cần.
-const chatbotRouter = require('../routes/chatbot');
-const { Product, Cart, CartItem } = require('../models');
-const chatbotService = require('../services/ai/ruleBasedChatbot');
+// Dùng ai module routes (đã migrate từ routes/chatbot.js)
+const buildAiModule = require('../modules/ai/module');
+const geminiChatbotService = require('../services/ai/geminiChatbot');
+const ruleBasedChatbot = require('../services/ai/ruleBasedChatbot');
+const { Product, ProductVariant, Category, Cart, CartItem } = require('../models');
+const chatbotService = ruleBasedChatbot;
+const sequelize = require('../config/sequelize');
+
+const aiModule = buildAiModule({ Product, ProductVariant, Category, geminiChatbotService, ruleBasedChatbot, sequelize, eventBus: { publish: () => {} }, logger: { info: () => {}, warn: () => {}, error: () => {}, debug: () => {} } });
 
 // App Express tối giản chỉ có chatbot routes
 const app = express();
 app.use(express.json());
-app.use('/api/chatbot', chatbotRouter);
+app.use('/api/chatbot', aiModule.router);
+// Error handler cần thiết để AppError → JSON response
+app.use((err, _req, res, _next) => {
+  res.status(err.statusCode || 500).json({ status: 'error', message: err.message });
+});
 const request = supertest(app);
 
 // ============================================================
@@ -231,8 +242,6 @@ describe('POST /api/chatbot/analytics', () => {
   });
 
   test('200 khi ghi nhận analytics thành công', async () => {
-    chatbotService.trackAnalytics.mockResolvedValue(undefined);
-
     const res = await request
       .post('/api/chatbot/analytics')
       .set('Authorization', 'Bearer test-token')
@@ -240,9 +249,8 @@ describe('POST /api/chatbot/analytics', () => {
 
     expect(res.status).toBe(200);
     expect(res.body.status).toBe('success');
-    expect(chatbotService.trackAnalytics).toHaveBeenCalledWith(
-      expect.objectContaining({ event: 'product_clicked', productId: 1 })
-    );
+    // Analytics giờ lưu qua aiRepository.createAnalyticsEvent (chat_messages)
+    // không còn gọi chatbotService.trackAnalytics trực tiếp
   });
 });
 

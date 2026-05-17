@@ -20,7 +20,6 @@ const ProductWarranty = require('./productWarranty');
 const AttributeGroup = require('./attributeGroup');
 const AttributeValue = require('./attributeValue');
 const ProductAttributeGroup = require('./productAttributeGroup');
-const Image = require('./image');
 const News = require('./news');
 const NewsletterSubscriber = require('./newsletterSubscriber');
 const Feedback = require('./feedback');
@@ -35,7 +34,6 @@ const Banner = require('./banner');
 const EmailCampaign = require('./emailCampaign');
 // Models mới theo data_new.sql
 const ProductImage = require('./productImage');
-const BrandCategory = require('./brandCategory');
 const InventoryLog = require('./inventoryLog');
 const AuditLog = require('./auditLog');
 const ImportLog = require('./importLog');
@@ -211,20 +209,7 @@ AttributeGroup.belongsToMany(Product, {
   as: 'products',
 });
 
-// =============================================
-// QUAN HỆ IMAGE (giữ bảng images cũ)
-// =============================================
-// TODO(cleanup): Orphaned structures cần migration plan riêng:
-//   1. Bảng `images` vs `product_images` — cần data migration sang product_images rồi drop images
-//   2. Bảng `reviews` vs tên chuẩn `product_reviews` — cần rename + update tất cả references
-//   3. Column `users.stripe_customer_id` — Stripe đã bỏ, migration 2026051501 đã tạo nhưng
-//      column vẫn tồn tại trong DB. Cần verify migration đã chạy đúng rồi drop column.
-//   4. Column `products.brand` (varchar) — redundant với FK `products.brand_id` → brands table
-
-Image.belongsTo(Product, { foreignKey: 'productId', as: 'product' });
-Image.belongsTo(User, { foreignKey: 'userId', as: 'user' });
-Product.hasMany(Image, { foreignKey: 'productId', as: 'legacyImages' });
-User.hasMany(Image, { foreignKey: 'userId', as: 'userImages' });
+// images table đã DROP (migration 2026051615) — Image model removed 2026-05-17
 
 // =============================================
 // QUAN HỆ BRAND
@@ -309,7 +294,6 @@ module.exports = {
   AttributeGroup,
   AttributeValue,
   ProductAttributeGroup,
-  Image,
   News,
   NewsletterSubscriber,
   ChatMessage,
@@ -325,7 +309,6 @@ module.exports = {
   EmailCampaign,
   // Models mới
   ProductImage,
-  BrandCategory,
   InventoryLog,
   AuditLog,
   ImportLog,

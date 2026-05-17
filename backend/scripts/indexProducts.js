@@ -1,7 +1,7 @@
 require('dotenv').config();
 const path = require('path');
 const fs = require('fs');
-const { Product, Category, ProductImage } = require('../src/models');
+const { Product, Category, ProductImage, ProductVariant } = require('../src/models');
 const vectorStoreService = require('../src/services/ai/vectorStore');
 const { enrichProductData } = vectorStoreService;
 const viEmbeddingService = require('../src/services/ai/viEmbedding');
@@ -22,6 +22,7 @@ const indexAllProducts = async () => {
         { model: Category, as: 'categories', through: { attributes: [] }, attributes: ['name'] },
         { model: Category, as: 'category', attributes: ['name'] },
         { model: ProductImage, as: 'productImages', attributes: ['imageUrl', 'isThumbnail'], required: false },
+        { model: ProductVariant, as: 'variants', attributes: ['stockQuantity'], required: false },
       ],
     });
 

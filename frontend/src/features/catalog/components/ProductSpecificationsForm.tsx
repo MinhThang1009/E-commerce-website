@@ -1,20 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import {
-  Form,
-  Input,
-  Button,
-  Card,
-  Row,
-  Col,
-  Space,
-  Typography,
-  Select,
-} from 'antd';
-import {
-  PlusOutlined,
-  DeleteOutlined,
-  InfoCircleOutlined,
-} from '@ant-design/icons';
+import { Form, Input, Button, Card, Row, Col, Space, Typography, Select } from 'antd';
+import { PlusOutlined, DeleteOutlined, InfoCircleOutlined } from '@ant-design/icons';
 import { useTranslation } from 'react-i18next';
 
 const { TextArea } = Input;
@@ -24,6 +10,7 @@ interface Specification {
   id: string;
   name: string;
   value: string;
+  valueEn?: string;
   category?: string;
 }
 
@@ -35,9 +22,7 @@ const ProductSpecificationsForm: React.FC<ProductSpecificationsFormProps> = ({
   initialSpecifications = [],
 }) => {
   const { t } = useTranslation();
-  const [specifications, setSpecifications] = useState<Specification[]>(
-    initialSpecifications
-  );
+  const [specifications, setSpecifications] = useState<Specification[]>(initialSpecifications);
   const form = Form.useFormInstance();
 
   const specificationCategories = [
@@ -69,51 +54,20 @@ const ProductSpecificationsForm: React.FC<ProductSpecificationsFormProps> = ({
     form.setFieldValue('specifications', specifications);
   }, [specifications, form]);
 
-  useEffect(() => {
-    const interval = setInterval(() => {
-      const currentSpecs = form.getFieldValue('specifications');
-      if (
-        currentSpecs &&
-        Array.isArray(currentSpecs) &&
-        currentSpecs.length > 0
-      ) {
-        if (JSON.stringify(currentSpecs) !== JSON.stringify(specifications)) {
-          setSpecifications(currentSpecs);
-          clearInterval(interval);
-        }
-      }
-    }, 500);
-
-    const timeout = setTimeout(() => {
-      clearInterval(interval);
-    }, 10000);
-
-    return () => {
-      clearInterval(interval);
-      clearTimeout(timeout);
-    };
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- Polling form values một lần khi mount, form và specifications dùng qua closure
-  }, []);
-
   const addSpecification = () => {
     const newSpec: Specification = {
       id: Date.now().toString(),
       name: '',
       value: '',
+      valueEn: '',
       category: 'Thông số chung',
     };
     setSpecifications([...specifications, newSpec]);
   };
 
-  const updateSpecification = (
-    id: string,
-    field: keyof Specification,
-    value: string
-  ) => {
+  const updateSpecification = (id: string, field: keyof Specification, value: string) => {
     setSpecifications((specs) =>
-      specs.map((spec) =>
-        spec.id === id ? { ...spec, [field]: value } : spec
-      )
+      specs.map((spec) => (spec.id === id ? { ...spec, [field]: value } : spec)),
     );
   };
 
@@ -124,13 +78,48 @@ const ProductSpecificationsForm: React.FC<ProductSpecificationsFormProps> = ({
   const addSampleSpecifications = () => {
     const ts = Date.now();
     const sampleSpecs: Specification[] = [
-      { id: `sample-${ts}-1`, name: t('admin.products.specs.sampleSpecs.cpu'), value: 'Intel Core i5-1235U', category: 'Hiệu năng' },
-      { id: `sample-${ts}-2`, name: t('admin.products.specs.sampleSpecs.ram'), value: '8GB DDR4 3200MHz', category: 'Hiệu năng' },
-      { id: `sample-${ts}-3`, name: t('admin.products.specs.sampleSpecs.storage'), value: '512GB SSD NVMe', category: 'Hiệu năng' },
-      { id: `sample-${ts}-4`, name: t('admin.products.specs.sampleSpecs.display'), value: '14 inch Full HD IPS', category: 'Màn hình' },
-      { id: `sample-${ts}-5`, name: t('admin.products.specs.sampleSpecs.weight'), value: '1.4kg', category: 'Thiết kế' },
-      { id: `sample-${ts}-6`, name: t('admin.products.specs.sampleSpecs.battery'), value: '39WHrs 3-cell', category: 'Pin & Nguồn' },
-      { id: `sample-${ts}-7`, name: t('admin.products.specs.sampleSpecs.os'), value: 'Windows 11 Home', category: 'Hệ điều hành' },
+      {
+        id: `sample-${ts}-1`,
+        name: t('admin.products.specs.sampleSpecs.cpu'),
+        value: 'Intel Core i5-1235U',
+        category: 'Hiệu năng',
+      },
+      {
+        id: `sample-${ts}-2`,
+        name: t('admin.products.specs.sampleSpecs.ram'),
+        value: '8GB DDR4 3200MHz',
+        category: 'Hiệu năng',
+      },
+      {
+        id: `sample-${ts}-3`,
+        name: t('admin.products.specs.sampleSpecs.storage'),
+        value: '512GB SSD NVMe',
+        category: 'Hiệu năng',
+      },
+      {
+        id: `sample-${ts}-4`,
+        name: t('admin.products.specs.sampleSpecs.display'),
+        value: '14 inch Full HD IPS',
+        category: 'Màn hình',
+      },
+      {
+        id: `sample-${ts}-5`,
+        name: t('admin.products.specs.sampleSpecs.weight'),
+        value: '1.4kg',
+        category: 'Thiết kế',
+      },
+      {
+        id: `sample-${ts}-6`,
+        name: t('admin.products.specs.sampleSpecs.battery'),
+        value: '39WHrs 3-cell',
+        category: 'Pin & Nguồn',
+      },
+      {
+        id: `sample-${ts}-7`,
+        name: t('admin.products.specs.sampleSpecs.os'),
+        value: 'Windows 11 Home',
+        category: 'Hệ điều hành',
+      },
     ];
     setSpecifications([...specifications, ...sampleSpecs]);
   };
@@ -147,12 +136,7 @@ const ProductSpecificationsForm: React.FC<ProductSpecificationsFormProps> = ({
 
       <div style={{ marginBottom: 24 }}>
         <Space>
-          <Button
-            type="primary"
-            icon={<PlusOutlined />}
-            onClick={addSpecification}
-            size="large"
-          >
+          <Button type="primary" icon={<PlusOutlined />} onClick={addSpecification} size="large">
             {t('admin.products.specs.addButton')}
           </Button>
           <Button type="default" onClick={addSampleSpecifications} size="large">
@@ -165,39 +149,44 @@ const ProductSpecificationsForm: React.FC<ProductSpecificationsFormProps> = ({
         <Card title={t('admin.products.specs.listTitle')} style={{ marginBottom: 24 }}>
           <Space direction="vertical" style={{ width: '100%' }} size="middle">
             {specifications.map((spec, index) => (
-              <Card
-                key={`${spec.id}-${index}`}
-                size="small"
-                style={{ backgroundColor: '#fafafa' }}
-              >
+              <Card key={`${spec.id}-${index}`} size="small" style={{ backgroundColor: '#fafafa' }}>
                 <Row gutter={16} align="middle">
-                  <Col span={6}>
+                  <Col span={5}>
                     <Input
                       placeholder={t('admin.products.specs.namePlaceholder')}
                       value={spec.name}
-                      onChange={(e) =>
-                        updateSpecification(spec.id, 'name', e.target.value)
-                      }
+                      onChange={(e) => updateSpecification(spec.id, 'name', e.target.value)}
                     />
                   </Col>
-                  <Col span={10}>
+                  <Col span={5}>
                     <TextArea
                       placeholder={t('admin.products.specs.valuePlaceholder')}
                       value={spec.value}
+                      onChange={(e) => updateSpecification(spec.id, 'value', e.target.value)}
+                      rows={1}
+                      autoSize={{ minRows: 1, maxRows: 3 }}
+                    />
+                  </Col>
+                  <Col span={5}>
+                    <TextArea
+                      placeholder="Value (EN) — optional"
+                      value={spec.valueEn || ''}
                       onChange={(e) =>
-                        updateSpecification(spec.id, 'value', e.target.value)
+                        updateSpecification(
+                          spec.id,
+                          'valueEn' as keyof Specification,
+                          e.target.value,
+                        )
                       }
                       rows={1}
                       autoSize={{ minRows: 1, maxRows: 3 }}
                     />
                   </Col>
-                  <Col span={6}>
+                  <Col span={7}>
                     <Select
                       placeholder={t('admin.products.specs.categoryPlaceholder')}
                       value={spec.category}
-                      onChange={(value) =>
-                        updateSpecification(spec.id, 'category', value)
-                      }
+                      onChange={(value) => updateSpecification(spec.id, 'category', value)}
                       style={{ width: '100%' }}
                     >
                       {specificationCategories.map((category) => (
@@ -207,7 +196,7 @@ const ProductSpecificationsForm: React.FC<ProductSpecificationsFormProps> = ({
                       ))}
                     </Select>
                   </Col>
-                  <Col span={2}>
+                  <Col span={2} style={{ textAlign: 'center' }}>
                     <Button
                       type="text"
                       danger
@@ -234,9 +223,7 @@ const ProductSpecificationsForm: React.FC<ProductSpecificationsFormProps> = ({
           <Title level={4} style={{ color: '#999' }}>
             {t('admin.products.specs.emptyTitle')}
           </Title>
-          <Text type="secondary">
-            {t('admin.products.specs.emptyDesc')}
-          </Text>
+          <Text type="secondary">{t('admin.products.specs.emptyDesc')}</Text>
         </Card>
       )}
 

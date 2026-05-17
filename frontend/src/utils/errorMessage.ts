@@ -2,16 +2,13 @@
  * Helper trích xuất thông báo lỗi từ error unknown.
  * Hỗ trợ: Error instance, RTK/axios response shape, plain string.
  */
-export function getErrorMsg(
-  error: unknown,
-  fallback = 'Lỗi không xác định'
-): string {
+export function getErrorMsg(error: unknown, fallback = 'Lỗi không xác định'): string {
   if (error instanceof Error) return error.message;
 
   if (error && typeof error === 'object') {
     const e = error as Record<string, unknown>;
 
-    // RTK Query shape: error.data.message
+    // Legacy/custom error shape: error.data.message
     const data = e.data as Record<string, unknown> | undefined;
     if (data && typeof data.message === 'string') return data.message;
 

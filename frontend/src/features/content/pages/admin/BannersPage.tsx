@@ -1,5 +1,16 @@
 import React, { useState } from 'react';
-import { Table, Button, Space, Modal, Form, Input, Select, Switch, message, Popconfirm } from 'antd';
+import {
+  Table,
+  Button,
+  Space,
+  Modal,
+  Form,
+  Input,
+  Select,
+  Switch,
+  message,
+  Popconfirm,
+} from 'antd';
 import { PlusOutlined, EditOutlined, DeleteOutlined } from '@ant-design/icons';
 import { useTranslation } from 'react-i18next';
 import {
@@ -74,7 +85,13 @@ const BannersPage: React.FC = () => {
       key: 'imageUrl',
       render: (url: string) => {
         const fullUrl = getUploadUrl(url);
-        return <img src={fullUrl} alt={t('admin.banners.table.image')} style={{ width: 100, borderRadius: 4 }} />;
+        return (
+          <img
+            src={fullUrl}
+            alt={t('admin.banners.table.image')}
+            style={{ width: 100, borderRadius: 4 }}
+          />
+        );
       },
     },
     {
@@ -82,7 +99,11 @@ const BannersPage: React.FC = () => {
       dataIndex: 'position',
       key: 'position',
       render: (pos: string) => {
-        const colors: Record<string, string> = { home_hero: 'blue', home_middle: 'green', sidebar: 'orange' };
+        const colors: Record<string, string> = {
+          home_hero: 'blue',
+          home_middle: 'green',
+          sidebar: 'orange',
+        };
         const labels: Record<string, string> = {
           home_hero: t('admin.banners.positions.homeHero'),
           home_middle: t('admin.banners.positions.homeMiddle'),
@@ -148,11 +169,14 @@ const BannersPage: React.FC = () => {
       >
         <Form form={form} layout="vertical">
           <Form.Item
-            name="title"
-            label={t('admin.banners.form.title')}
+            name="titleVi"
+            label={`${t('admin.banners.form.title')} (VI)`}
             rules={[{ required: true, message: t('admin.banners.form.titleRequired') }]}
           >
             <Input />
+          </Form.Item>
+          <Form.Item name="titleEn" label={`${t('admin.banners.form.title')} (EN)`}>
+            <Input placeholder="Banner title in English" />
           </Form.Item>
           <Form.Item
             name="imageUrl"
@@ -175,12 +199,21 @@ const BannersPage: React.FC = () => {
             rules={[{ required: true, message: t('admin.banners.form.positionRequired') }]}
           >
             <Select>
-              <Select.Option value="home_hero">{t('admin.banners.positions.homeHero')}</Select.Option>
-              <Select.Option value="home_middle">{t('admin.banners.positions.homeMiddle')}</Select.Option>
+              <Select.Option value="home_hero">
+                {t('admin.banners.positions.homeHero')}
+              </Select.Option>
+              <Select.Option value="home_middle">
+                {t('admin.banners.positions.homeMiddle')}
+              </Select.Option>
               <Select.Option value="sidebar">{t('admin.banners.positions.sidebar')}</Select.Option>
             </Select>
           </Form.Item>
-          <Form.Item name="isActive" label={t('admin.banners.form.isActive')} valuePropName="checked" initialValue={true}>
+          <Form.Item
+            name="isActive"
+            label={t('admin.banners.form.isActive')}
+            valuePropName="checked"
+            initialValue={true}
+          >
             <Switch />
           </Form.Item>
           <Form.Item name="priority" label={t('admin.banners.form.priority')} initialValue={0}>

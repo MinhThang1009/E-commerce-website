@@ -115,7 +115,10 @@ const UsersPage: React.FC = () => {
     setFilters((prev) => ({ ...prev, search: value, page: 1 }));
   };
 
-  const handleFilterChange = (key: keyof UserFilters, value: string | number | boolean | undefined) => {
+  const handleFilterChange = (
+    key: keyof UserFilters,
+    value: string | number | boolean | undefined,
+  ) => {
     setFilters((prev) => ({ ...prev, [key]: value, page: 1 }));
   };
 
@@ -125,27 +128,38 @@ const UsersPage: React.FC = () => {
 
   const getRoleColor = (role: string) => {
     switch (role) {
-      case 'admin': return 'red';
-      case 'manager': return 'orange';
-      case 'customer': return 'blue';
-      default: return 'default';
+      case 'admin':
+        return 'red';
+      case 'manager':
+        return 'orange';
+      case 'customer':
+        return 'blue';
+      default:
+        return 'default';
     }
   };
 
   const getRoleIcon = (role: string) => {
     switch (role) {
-      case 'admin': return <CrownOutlined />;
-      case 'manager': return <TeamOutlined />;
-      default: return <UserOutlined />;
+      case 'admin':
+        return <CrownOutlined />;
+      case 'manager':
+        return <TeamOutlined />;
+      default:
+        return <UserOutlined />;
     }
   };
 
   const getRoleLabel = (role: string) => {
     switch (role) {
-      case 'admin': return t('admin.users.roles.admin');
-      case 'manager': return t('admin.users.roles.manager');
-      case 'customer': return t('admin.users.roles.customer');
-      default: return role;
+      case 'admin':
+        return t('admin.users.roles.admin');
+      case 'manager':
+        return t('admin.users.roles.manager');
+      case 'customer':
+        return t('admin.users.roles.customer');
+      default:
+        return role;
     }
   };
 
@@ -157,7 +171,9 @@ const UsersPage: React.FC = () => {
         <div className="flex items-center gap-3">
           <Avatar src={record.avatar} icon={<UserOutlined />} size={48} />
           <div>
-            <div className="font-medium">{record.firstName} {record.lastName}</div>
+            <div className="font-medium">
+              {record.firstName} {record.lastName}
+            </div>
             <div className="text-sm text-gray-500 flex items-center gap-1">
               <MailOutlined className="text-xs" />
               {record.email}
@@ -196,7 +212,9 @@ const UsersPage: React.FC = () => {
           </div>
           <div>
             <Tag color={record.isEmailVerified ? 'processing' : 'warning'}>
-              {record.isEmailVerified ? t('admin.users.table.verified') : t('admin.users.table.notVerified')}
+              {record.isEmailVerified
+                ? t('admin.users.table.verified')
+                : t('admin.users.table.notVerified')}
             </Tag>
           </div>
         </div>
@@ -207,7 +225,8 @@ const UsersPage: React.FC = () => {
       dataIndex: 'createdAt',
       key: 'createdAt',
       width: 120,
-      render: (date: string) => new Date(date).toLocaleDateString(i18n.language === 'vi' ? 'vi-VN' : 'en-US'),
+      render: (date: string) =>
+        new Date(date).toLocaleDateString(i18n.language === 'vi' ? 'vi-VN' : 'en-US'),
     },
     {
       title: t('admin.common.actions'),
@@ -215,8 +234,18 @@ const UsersPage: React.FC = () => {
       width: 120,
       render: (_: unknown, record: User) => (
         <Space>
-          <Button type="link" icon={<EyeOutlined />} onClick={() => navigate(buildRoute.adminUserDetail(record.id))} size="small" />
-          <Button type="link" icon={<EditOutlined />} onClick={() => handleEdit(record)} size="small" />
+          <Button
+            type="link"
+            icon={<EyeOutlined />}
+            onClick={() => navigate(buildRoute.adminUserDetail(record.id))}
+            size="small"
+          />
+          <Button
+            type="link"
+            icon={<EditOutlined />}
+            onClick={() => handleEdit(record)}
+            size="small"
+          />
           <Popconfirm
             title={t('admin.users.deleteTitle')}
             description={t('admin.users.deleteConfirm')}
@@ -244,16 +273,16 @@ const UsersPage: React.FC = () => {
           <Title level={2} className="!mb-1 text-xl md:text-2xl dark:text-white">
             {t('admin.users.title')}
           </Title>
-          <p className="text-neutral-600 dark:text-neutral-400">
-            {t('admin.users.subtitle')}
-          </p>
+          <p className="text-neutral-600 dark:text-neutral-400">{t('admin.users.subtitle')}</p>
         </div>
 
         <Row gutter={[16, 16]} className="mb-6">
           <Col xs={24} sm={12} md={6}>
             <Card className="dark:bg-neutral-700">
               <Statistic
-                title={<span className="dark:text-neutral-300">{t('admin.users.stats.total')}</span>}
+                title={
+                  <span className="dark:text-neutral-300">{t('admin.users.stats.total')}</span>
+                }
                 value={totalUsers}
                 prefix={<UserOutlined />}
                 valueStyle={{ color: '#1890ff' }}
@@ -263,7 +292,9 @@ const UsersPage: React.FC = () => {
           <Col xs={24} sm={12} md={6}>
             <Card className="dark:bg-neutral-700">
               <Statistic
-                title={<span className="dark:text-neutral-300">{t('admin.users.stats.admins')}</span>}
+                title={
+                  <span className="dark:text-neutral-300">{t('admin.users.stats.admins')}</span>
+                }
                 value={adminCount}
                 prefix={<CrownOutlined />}
                 valueStyle={{ color: '#f5222d' }}
@@ -273,7 +304,9 @@ const UsersPage: React.FC = () => {
           <Col xs={24} sm={12} md={6}>
             <Card className="dark:bg-neutral-700">
               <Statistic
-                title={<span className="dark:text-neutral-300">{t('admin.users.stats.customers')}</span>}
+                title={
+                  <span className="dark:text-neutral-300">{t('admin.users.stats.customers')}</span>
+                }
                 value={customerCount}
                 prefix={<TeamOutlined />}
                 valueStyle={{ color: '#52c41a' }}
@@ -283,7 +316,9 @@ const UsersPage: React.FC = () => {
           <Col xs={24} sm={12} md={6}>
             <Card className="dark:bg-neutral-700">
               <Statistic
-                title={<span className="dark:text-neutral-300">{t('admin.users.stats.verified')}</span>}
+                title={
+                  <span className="dark:text-neutral-300">{t('admin.users.stats.verified')}</span>
+                }
                 value={verifiedCount}
                 prefix={<MailOutlined />}
                 valueStyle={{ color: '#722ed1' }}
@@ -367,7 +402,8 @@ const UsersPage: React.FC = () => {
               pageSize: pagination?.itemsPerPage,
               showSizeChanger: true,
               showQuickJumper: true,
-              showTotal: (total, range) => t('admin.users.totalItems', { range0: range[0], range1: range[1], total }),
+              showTotal: (total, range) =>
+                t('admin.users.totalItems', { range0: range[0], range1: range[1], total }),
               onChange: handleTableChange,
             }}
             scroll={{ x: 800 }}
@@ -377,7 +413,11 @@ const UsersPage: React.FC = () => {
         <Modal
           title={t('admin.users.editUser')}
           open={isModalVisible}
-          onCancel={() => { setIsModalVisible(false); setEditingUser(null); form.resetFields(); }}
+          onCancel={() => {
+            setIsModalVisible(false);
+            setEditingUser(null);
+            form.resetFields();
+          }}
           footer={null}
           width={600}
         >
@@ -403,8 +443,12 @@ const UsersPage: React.FC = () => {
               </Col>
             </Row>
 
-            <Form.Item name="phone" label={t('admin.users.form.phone')}>
-              <Input placeholder={t('admin.users.form.phonePlaceholder')} />
+            <Form.Item
+              name="phone"
+              label={t('admin.users.form.phone')}
+              rules={[{ pattern: /^(0|\+84)[0-9]{9}$/, message: t('validation.phone.invalid') }]}
+            >
+              <Input placeholder={t('admin.users.form.phonePlaceholder')} maxLength={10} />
             </Form.Item>
 
             <Form.Item
@@ -421,7 +465,11 @@ const UsersPage: React.FC = () => {
 
             <Row gutter={16}>
               <Col span={12}>
-                <Form.Item name="isEmailVerified" label={t('admin.users.form.emailStatus')} valuePropName="checked">
+                <Form.Item
+                  name="isEmailVerified"
+                  label={t('admin.users.form.emailStatus')}
+                  valuePropName="checked"
+                >
                   <Switch
                     checkedChildren={t('admin.users.form.emailVerified')}
                     unCheckedChildren={t('admin.users.form.emailNotVerified')}
@@ -429,7 +477,11 @@ const UsersPage: React.FC = () => {
                 </Form.Item>
               </Col>
               <Col span={12}>
-                <Form.Item name="isActive" label={t('admin.users.form.accountStatus')} valuePropName="checked">
+                <Form.Item
+                  name="isActive"
+                  label={t('admin.users.form.accountStatus')}
+                  valuePropName="checked"
+                >
                   <Switch
                     checkedChildren={t('admin.users.status.active')}
                     unCheckedChildren={t('admin.users.status.locked')}
@@ -439,7 +491,13 @@ const UsersPage: React.FC = () => {
             </Row>
 
             <div className="flex justify-end gap-2 mt-6">
-              <Button onClick={() => { setIsModalVisible(false); setEditingUser(null); form.resetFields(); }}>
+              <Button
+                onClick={() => {
+                  setIsModalVisible(false);
+                  setEditingUser(null);
+                  form.resetFields();
+                }}
+              >
                 {t('common.cancel')}
               </Button>
               <Button type="primary" htmlType="submit" loading={isUpdating}>

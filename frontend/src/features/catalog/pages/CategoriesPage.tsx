@@ -1,6 +1,8 @@
 import React, { useState, useMemo } from 'react';
 import { Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
+import { Helmet } from 'react-helmet-async';
+import { localizeField } from '@/utils/localize';
 import { buildRoute } from '@/routes/paths';
 import { useGetAllCategoriesQuery } from '../api/categoryApi';
 import { Category } from '../types/category.types';
@@ -47,11 +49,14 @@ const CategoriesPage: React.FC = () => {
   }, [categoriesData]);
 
   const filteredCategories = categories.filter((cat) =>
-    cat.name.toLowerCase().includes(searchTerm.toLowerCase())
+    cat.name.toLowerCase().includes(searchTerm.toLowerCase()),
   );
 
   return (
     <div className="min-h-screen bg-neutral-50 dark:bg-neutral-950">
+      <Helmet>
+        <title>{t('categories.pageTitle', { defaultValue: 'Categories' })} | TechStore</title>
+      </Helmet>
       <div className="relative bg-gradient-to-br from-primary-700 via-primary-600 to-primary-500 text-white overflow-hidden">
         <div className="relative container mx-auto px-4 py-14 text-center">
           <div className="inline-flex items-center justify-center w-16 h-16 bg-white/20 backdrop-blur-sm rounded-2xl border border-white/30 mb-5 shadow-md">
@@ -94,7 +99,9 @@ const CategoriesPage: React.FC = () => {
             <h3 className="text-lg font-semibold text-neutral-700 dark:text-neutral-300 mb-2">
               {t('categories.noResults')}
             </h3>
-            <p className="text-neutral-500 dark:text-neutral-400 text-sm">{t('categories.noResultsHint')}</p>
+            <p className="text-neutral-500 dark:text-neutral-400 text-sm">
+              {t('categories.noResultsHint')}
+            </p>
           </div>
         ) : (
           <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
@@ -109,8 +116,8 @@ const CategoriesPage: React.FC = () => {
 };
 
 const CategoryCard: React.FC<{ category: Category }> = ({ category }) => {
-  const { t } = useTranslation();
-  const Icon = getIcon(category.slug, category.name);
+  const { t, i18n } = useTranslation();
+  const Icon = getIcon(category.slug, category.nameVi || category.name);
   return (
     <Link
       to={buildRoute.shopCategory(category.id)}
@@ -120,7 +127,7 @@ const CategoryCard: React.FC<{ category: Category }> = ({ category }) => {
         <Icon className="w-6 h-6 text-primary-600 dark:text-primary-400" />
       </div>
       <h3 className="font-semibold text-neutral-900 dark:text-white text-sm leading-snug group-hover:text-primary-700 dark:group-hover:text-primary-300 transition-colors line-clamp-2">
-        {category.name}
+        {localizeField(category, 'name', i18n.language)}
       </h3>
       <p className="text-xs text-neutral-400 dark:text-neutral-500 mt-1">
         {t('categories.productCount', { count: category.productCount || 0 })}

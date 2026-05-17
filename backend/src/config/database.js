@@ -18,7 +18,6 @@ module.exports = {
     dialectOptions: {
       timezone: '+07:00',
       charset: 'utf8mb4',
-      collate: 'utf8mb4_unicode_ci',
     },
     timezone: '+07:00',
   },
@@ -39,7 +38,6 @@ module.exports = {
     dialectOptions: {
       timezone: '+07:00',
       charset: 'utf8mb4',
-      collate: 'utf8mb4_unicode_ci',
     },
     timezone: '+07:00',
   },
@@ -64,7 +62,6 @@ module.exports = {
       } : false,
       timezone: '+07:00',
       charset: 'utf8mb4',
-      collate: 'utf8mb4_unicode_ci',
     },
     timezone: '+07:00',
     pool: {

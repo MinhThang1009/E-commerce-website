@@ -47,12 +47,12 @@ class GeminiChatbotService {
   initializeChatbot() {
     try {
       if (this.apiKey && this.apiKey !== 'demo-key') {
-        logger.info(`✅ OpenRouter AI khởi tạo thành công với model: ${this.model}`);
+        logger.info(`OpenRouter AI khởi tạo thành công với model: ${this.model}`);
       } else {
-        logger.warn('⚠️  Không tìm thấy OpenRouter API key, sử dụng phản hồi dự phòng');
+        logger.warn('Không tìm thấy OpenRouter API key, sử dụng phản hồi dự phòng');
       }
     } catch (error) {
-      logger.error('❌ Khởi tạo Chatbot thất bại:', error.message || error);
+      logger.error('Khởi tạo Chatbot thất bại:', error.message || error);
     }
   }
 
@@ -96,7 +96,7 @@ Format bắt buộc: {"rewrittenQuery": "câu đã chuẩn hóa", "intent": "pro
         intent: result.intent || 'general',
       };
     } catch (error) {
-      logger.error('❌ Lỗi preprocessMessage:', error.message);
+      logger.error('Lỗi preprocessMessage:', error.message);
       return { rewrittenQuery: message, intent: 'general' };
     }
   }
@@ -142,13 +142,13 @@ Format bắt buộc: {"rewrittenQuery": "câu đã chuẩn hóa", "intent": "pro
       const history = entry ? entry.messages : [];
 
       // Bước 2: Tìm kiếm sản phẩm liên quan qua Vector Store (Retrieval)
-      logger.debug(`🔍 Tìm kiếm Vector Store với: "${searchMessage}"`);
+      logger.debug(`Tìm kiếm Vector Store với: "${searchMessage}"`);
       let relevantProducts = [];
       try {
         const searchResults = await vectorStoreService.search(searchMessage, 10);
         relevantProducts = searchResults.map(res => ({ ...res.metadata, score: res.score }));
       } catch (vectorError) {
-        logger.warn('⚠️ Vector store fail, fallback getAllProducts:', vectorError.message);
+        logger.warn('Vector store fail, fallback getAllProducts:', vectorError.message);
         const allProducts = await this.getAllProducts();
         relevantProducts = allProducts.slice(0, 10);
       }
@@ -206,7 +206,6 @@ Format bắt buộc: {"rewrittenQuery": "câu đã chuẩn hóa", "intent": "pro
         {
           sessionId,
           userId: userId || null,
-          senderId: null,
           content: userMessage,
           role: 'user',
           messageType: 'ai_chatbot',
@@ -216,7 +215,6 @@ Format bắt buộc: {"rewrittenQuery": "câu đã chuẩn hóa", "intent": "pro
         {
           sessionId,
           userId: userId || null,
-          senderId: null,
           content: assistantReply,
           role: 'assistant',
           messageType: 'ai_chatbot',
@@ -227,7 +225,7 @@ Format bắt buộc: {"rewrittenQuery": "câu đã chuẩn hóa", "intent": "pro
       ]);
     } catch (dbError) {
       // Không để lỗi DB ảnh hưởng flow chính — chỉ log cảnh báo
-      logger.warn('⚠️ Không thể lưu chatbot messages vào DB:', dbError.message);
+      logger.warn('Không thể lưu chatbot messages vào DB:', dbError.message);
     }
   }
 
@@ -293,18 +291,18 @@ QUY TẮC BẮT BUỘC:
       // choices[] có thể rỗng khi OpenRouter content filter kích hoạt
       const aiText = response.data.choices?.[0]?.message?.content;
       if (!aiText) {
-        logger.warn('⚠️ OpenRouter trả về choices rỗng — dùng fallback response');
+        logger.warn('OpenRouter trả về choices rỗng — dùng fallback response');
         return this.getFallbackResponse(userMessage);
       }
 
       if (process.env.NODE_ENV !== 'production') {
-        logger.debug('✅ Đã nhận phản hồi từ OpenRouter API');
+        logger.debug('Đã nhận phản hồi từ OpenRouter API');
       }
 
       // Phân tích phản hồi AI để trích xuất gợi ý sản phẩm
       return this.parseAIResponse(aiText, products, userMessage);
     } catch (error) {
-      logger.error('❌ Chi tiết lỗi OpenRouter API:', error.response?.data || error.message);
+      logger.error('Chi tiết lỗi OpenRouter API:', error.response?.data || error.message);
       return this.simpleKeywordMatch(userMessage, products);
     }
   }
@@ -497,7 +495,7 @@ Trả về ĐÚNG định dạng JSON sau:
       lowerMessage.includes('new')
     ) {
       if (process.env.NODE_ENV !== 'production') {
-        logger.debug('✅ Đã nhận diện ý định "sản phẩm mới"');
+        logger.debug('Đã nhận diện ý định "sản phẩm mới"');
       }
 
       // Sort theo createdAt mới nhất — products từ vector store có createdAt trong metadata

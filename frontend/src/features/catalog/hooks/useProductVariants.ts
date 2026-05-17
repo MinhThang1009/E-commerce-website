@@ -2,52 +2,39 @@ import { ProductVariant } from '@/types';
 import { useEffect, useState } from 'react';
 import type { FormInstance } from 'antd';
 
-export const useProductVariants = (
-  initialVariants: ProductVariant[] = [],
-  form?: FormInstance
-) => {
+export const useProductVariants = (initialVariants: ProductVariant[] = [], form?: FormInstance) => {
   const [variants, setVariants] = useState<ProductVariant[]>(initialVariants);
   const [variantModalVisible, setVariantModalVisible] = useState(false);
-  const [editingVariant, setEditingVariant] = useState<ProductVariant | null>(
-    null
-  );
+  const [editingVariant, setEditingVariant] = useState<ProductVariant | null>(null);
 
   // Tự động cập nhật tổng số lượng tồn kho và giá trung bình khi variants thay đổi
   useEffect(() => {
-    if (form && variants.length > 0) {
-      // Tính tổng số lượng tồn kho từ tất cả các biến thể
-      const totalStock = variants.reduce((total, variant) => {
-        const stock = parseInt(variant.stock?.toString() || '0');
-        return total + (isNaN(stock) ? 0 : stock);
-      }, 0);
+    if (!form || variants.length === 0) return;
 
-      // Tính giá trung bình có trọng số (dựa trên stock)
-      let weightedPriceSum = 0;
-      let totalWeightedStock = 0;
+    const totalStock = variants.reduce((total, variant) => {
+      const stock = parseInt(variant.stock?.toString() || '0');
+      return total + (isNaN(stock) ? 0 : stock);
+    }, 0);
 
-      variants.forEach((variant) => {
-        const stock = parseInt(variant.stock?.toString() || '0');
-        const price = Math.min(
-          parseFloat(variant.price?.toString() || '0'),
-          99999999.99
-        );
-        if (stock > 0 && price > 0) {
-          weightedPriceSum += price * stock;
-          totalWeightedStock += stock;
-        }
-      });
+    let weightedPriceSum = 0;
+    let totalWeightedStock = 0;
+    variants.forEach((variant) => {
+      const stock = parseInt(variant.stock?.toString() || '0');
+      const price = Math.min(parseFloat(variant.price?.toString() || '0'), 99999999.99);
+      if (stock > 0 && price > 0) {
+        weightedPriceSum += price * stock;
+        totalWeightedStock += stock;
+      }
+    });
 
-      const averagePrice =
-        totalWeightedStock > 0 ? weightedPriceSum / totalWeightedStock : 0;
+    const averagePrice = totalWeightedStock > 0 ? weightedPriceSum / totalWeightedStock : 0;
+    const newPrice = averagePrice > 0 ? Math.round(averagePrice) : form.getFieldValue('price') || 0;
 
-      // Cập nhật giá trị vào form
-      form.setFieldsValue({
-        stockQuantity: totalStock,
-        price:
-          averagePrice > 0
-            ? Math.round(averagePrice)
-            : form.getFieldValue('price') || 0,
-      });
+    // Chỉ update form nếu giá trị thực sự thay đổi — tránh trigger watchFormValues loop
+    const currentStock = form.getFieldValue('stockQuantity');
+    const currentPrice = form.getFieldValue('price');
+    if (currentStock !== totalStock || currentPrice !== newPrice) {
+      form.setFieldsValue({ stockQuantity: totalStock, price: newPrice });
     }
   }, [variants, form]);
 
@@ -56,8 +43,8 @@ export const useProductVariants = (
     if (editingVariant) {
       setVariants(
         variants.map((v) =>
-          v.id === editingVariant.id ? { ...variant, id: editingVariant.id } : v
-        )
+          v.id === editingVariant.id ? { ...variant, id: editingVariant.id } : v,
+        ),
       );
     } else {
       // Sử dụng một ID ổn định hơn, không phụ thuộc vào thời gian
@@ -93,4 +80,3 @@ export const useProductVariants = (
     closeVariantModal,
   };
 };
-

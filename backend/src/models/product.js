@@ -31,10 +31,21 @@ const Product = sequelize.define(
       type: DataTypes.INTEGER,
       allowNull: true,
     },
-    // Tên sản phẩm
-    name: {
+    // Tên sản phẩm — tiếng Việt (canonical) sau i18n migration 2026051611
+    nameVi: {
       type: DataTypes.STRING(200),
       allowNull: false,
+    },
+    // Tên sản phẩm — tiếng Anh (nullable, dành cho i18n)
+    nameEn: {
+      type: DataTypes.STRING(200),
+      allowNull: true,
+    },
+    // Virtual backward-compat: `product.name` maps to nameVi
+    name: {
+      type: DataTypes.VIRTUAL,
+      get() { return this.getDataValue('nameVi'); },
+      set(v) { this.setDataValue('nameVi', v); },
     },
     // Slug cho URL thân thiện
     slug: {
@@ -63,15 +74,21 @@ const Product = sequelize.define(
       type: DataTypes.DECIMAL(15, 2),
       allowNull: true,
     },
-    // Mô tả ngắn
+    // Mô tả ngắn — tiếng Việt
+    shortDescriptionVi: { type: DataTypes.TEXT, allowNull: true },
+    shortDescriptionEn: { type: DataTypes.TEXT, allowNull: true },
     shortDescription: {
-      type: DataTypes.TEXT,
-      allowNull: true,
+      type: DataTypes.VIRTUAL,
+      get() { return this.getDataValue('shortDescriptionVi'); },
+      set(v) { this.setDataValue('shortDescriptionVi', v); },
     },
-    // Mô tả chi tiết
+    // Mô tả chi tiết — tiếng Việt
+    descriptionVi: { type: DataTypes.TEXT, allowNull: true },
+    descriptionEn: { type: DataTypes.TEXT, allowNull: true },
     description: {
-      type: DataTypes.TEXT,
-      allowNull: true,
+      type: DataTypes.VIRTUAL,
+      get() { return this.getDataValue('descriptionVi'); },
+      set(v) { this.setDataValue('descriptionVi', v); },
     },
     // Trạng thái sản phẩm
     status: {
@@ -199,15 +216,21 @@ const Product = sequelize.define(
         );
       },
     },
-    // Tiêu đề SEO (hiển thị trên tab trình duyệt, kết quả tìm kiếm)
+    // Tiêu đề SEO — tiếng Việt
+    seoTitleVi: { type: DataTypes.STRING(500), allowNull: true },
+    seoTitleEn: { type: DataTypes.STRING(500), allowNull: true },
     seoTitle: {
-      type: DataTypes.STRING(500),
-      allowNull: true,
+      type: DataTypes.VIRTUAL,
+      get() { return this.getDataValue('seoTitleVi'); },
+      set(v) { this.setDataValue('seoTitleVi', v); },
     },
-    // Mô tả SEO (meta description dùng cho công cụ tìm kiếm)
+    // Mô tả SEO — tiếng Việt
+    seoDescriptionVi: { type: DataTypes.TEXT, allowNull: true },
+    seoDescriptionEn: { type: DataTypes.TEXT, allowNull: true },
     seoDescription: {
-      type: DataTypes.TEXT,
-      allowNull: true,
+      type: DataTypes.VIRTUAL,
+      get() { return this.getDataValue('seoDescriptionVi'); },
+      set(v) { this.setDataValue('seoDescriptionVi', v); },
     },
     // SEO Keywords (JSON array)
     seoKeywords: {
@@ -227,6 +250,23 @@ const Product = sequelize.define(
           'seoKeywords',
           typeof value === 'object' ? JSON.stringify(value) : value
         );
+      },
+    },
+    // FAQ sản phẩm (JSON array: [{q, a}]) — thêm qua migration 2025122401
+    faqs: {
+      type: DataTypes.TEXT,
+      allowNull: true,
+      get() {
+        const value = this.getDataValue('faqs');
+        if (!value) return [];
+        try {
+          return JSON.parse(value);
+        } catch {
+          return [];
+        }
+      },
+      set(value) {
+        this.setDataValue('faqs', typeof value === 'object' ? JSON.stringify(value) : value);
       },
     },
     // Xóa mềm (soft delete)

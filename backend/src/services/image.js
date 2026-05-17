@@ -4,7 +4,7 @@ const path = require('path');
 const fs = require('fs').promises;
 const { v4: uuidv4 } = require('uuid');
 const Image = require('../models/image');
-const { AppError } = require('../middlewares/errorHandler');
+const { AppError } = require('../shared/errors');
 
 class ImageService {
   constructor() {

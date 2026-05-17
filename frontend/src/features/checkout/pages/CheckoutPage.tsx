@@ -3,10 +3,7 @@ import { useNavigate, useLocation } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { ROUTES, buildRoute } from '@/routes/paths';
 import { useQueryClient } from '@tanstack/react-query';
-import {
-  CheckCircleOutlined,
-  InfoCircleOutlined,
-} from '@ant-design/icons';
+import { CheckCircleOutlined, InfoCircleOutlined } from '@ant-design/icons';
 import { Button, Modal, Table } from 'antd';
 
 import CustomButton from '@/components/common/Button';
@@ -40,20 +37,23 @@ const CheckoutPage: React.FC = () => {
 
   const [isBuyNow, setIsBuyNow] = useState(() => {
     const searchParams = new URLSearchParams(window.location.search);
-    return searchParams.get('buyNow') === 'true' || sessionStorage.getItem('buyNowAction') === 'true';
+    return (
+      searchParams.get('buyNow') === 'true' || sessionStorage.getItem('buyNowAction') === 'true'
+    );
   });
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const [buyNowItem, setBuyNowItem] = useState<any>(() => {
     const itemStr = sessionStorage.getItem('buyNowItem');
     const searchParams = new URLSearchParams(window.location.search);
-    const isBuyNowFlow = searchParams.get('buyNow') === 'true' || sessionStorage.getItem('buyNowAction') === 'true';
+    const isBuyNowFlow =
+      searchParams.get('buyNow') === 'true' || sessionStorage.getItem('buyNowAction') === 'true';
     return isBuyNowFlow && itemStr ? JSON.parse(itemStr) : null;
   });
 
   // Thống nhất danh sách items hiển thị trong checkout - nếu là mua ngay thì chỉ hiển thị 1 item, còn lại hiển thị toàn bộ giỏ hàng
   const items = useMemo(
     () => (isBuyNow && buyNowItem ? [buyNowItem] : cartItems),
-    [isBuyNow, buyNowItem, cartItems]
+    [isBuyNow, buyNowItem, cartItems],
   );
 
   // Kiểm tra giỏ hàng khi component mount để đảm bảo không có dữ liệu cũ hoặc người dùng truy cập sai cách
@@ -63,13 +63,11 @@ const CheckoutPage: React.FC = () => {
     const isBuyNow = searchParams.get('buyNow') === 'true';
 
     // Kiểm tra xem URL có chứa tham số repayOrder hay orderId (cho trường hợp thanh toán lại đơn hàng thất bại) và amount
-    const repayOrderId =
-      searchParams.get('repayOrder') || searchParams.get('orderId');
+    const repayOrderId = searchParams.get('repayOrder') || searchParams.get('orderId');
     const repayAmount = searchParams.get('amount');
 
     // Kiểm tra xem URL có phải là URL cũ của trang thanh toán hay không (ví dụ: /checkout/payment?orderId=xxx&amount=yyy)
-    const isOldPaymentUrl =
-      window.location.pathname.includes('/checkout/payment');
+    const isOldPaymentUrl = window.location.pathname.includes('/checkout/payment');
 
     // Nếu là URL cũ và có tham số repayOrder và amount, chuyển hướng sang URL mới chuẩn với thông tin thanh toán lại đơn hàng
     if (isOldPaymentUrl && repayOrderId && repayAmount) {
@@ -227,9 +225,12 @@ const CheckoutPage: React.FC = () => {
 
   // Trạng thái mã giảm giá
   const [discountCodeInput, setDiscountCodeInput] = useState('');
-  const [appliedDiscount, setAppliedDiscount] = useState<{ code: string; amount: number } | null>(null);
+  const [appliedDiscount, setAppliedDiscount] = useState<{ code: string; amount: number } | null>(
+    null,
+  );
   const [discountError, setDiscountError] = useState('');
-  const { mutateAsync: applyDiscountCode, isPending: isValidatingCode } = useApplyDiscountCodeMutation();
+  const { mutateAsync: applyDiscountCode, isPending: isValidatingCode } =
+    useApplyDiscountCodeMutation();
 
   useEffect(() => {
     const state = location.state as { voucherCode?: string; discountAmount?: number } | null;
@@ -258,7 +259,9 @@ const CheckoutPage: React.FC = () => {
       title: t('checkout.installment.feeColumn'),
       dataIndex: 'fee',
       key: 'fee',
-      render: () => <span className="text-green-600 font-medium">{t('checkout.installment.freeLabel')}</span>,
+      render: () => (
+        <span className="text-green-600 font-medium">{t('checkout.installment.freeLabel')}</span>
+      ),
     },
   ];
 
@@ -290,17 +293,21 @@ const CheckoutPage: React.FC = () => {
     { value: 'FR', label: t('checkout.countries.FR') },
   ];
 
-  const subtotal = items.reduce(
-    (sum, item) => sum + item.price * item.quantity,
-    0
-  );
+  const subtotal = items.reduce((sum, item) => sum + item.price * item.quantity, 0);
 
   // Tính tổng phí bảo hành
-  const warrantyTotal = items.reduce(// eslint-disable-next-line @typescript-eslint/no-explicit-any -- Cart item warranty calculation
-      (sum: number, item: any) => {
-    const itemWarrantyPrice = item.warrantyPackages?.reduce((wSum: number, pkg: { price: number }) => wSum + pkg.price, 0) || 0;
-    return sum + (itemWarrantyPrice * item.quantity);
-  }, 0);
+  const warrantyTotal = items.reduce(
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any -- Cart item warranty calculation
+    (sum: number, item: any) => {
+      const itemWarrantyPrice =
+        item.warrantyPackages?.reduce(
+          (wSum: number, pkg: { price: number }) => wSum + pkg.price,
+          0,
+        ) || 0;
+      return sum + itemWarrantyPrice * item.quantity;
+    },
+    0,
+  );
 
   // Tính phí vận chuyển tự động theo khoảng cách tuyến tính sử dụng API LocationIQ
   let shippingCost = 0;
@@ -309,18 +316,20 @@ const CheckoutPage: React.FC = () => {
   if (formData.address) {
     const lat = formData.lat;
     const lon = formData.lon;
-    
+
     if (lat && lon) {
       const calculateDistance = (lat1: number, lon1: number, lat2: number, lon2: number) => {
         const deg2rad = (deg: number) => deg * (Math.PI / 180);
-        const R = 6371; 
+        const R = 6371;
         const dLat = deg2rad(lat2 - lat1);
-        const dLon = deg2rad(lon2 - lon1); 
-        const a = 
-          Math.sin(dLat/2) * Math.sin(dLat/2) +
-          Math.cos(deg2rad(lat1)) * Math.cos(deg2rad(lat2)) * 
-          Math.sin(dLon/2) * Math.sin(dLon/2); 
-        const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a)); 
+        const dLon = deg2rad(lon2 - lon1);
+        const a =
+          Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+          Math.cos(deg2rad(lat1)) *
+            Math.cos(deg2rad(lat2)) *
+            Math.sin(dLon / 2) *
+            Math.sin(dLon / 2);
+        const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
         return R * c;
       };
 
@@ -338,10 +347,10 @@ const CheckoutPage: React.FC = () => {
 
   const tax = 0; // Thuế 0% - không áp dụng thuế theo yêu cầu
   const discountAmount = appliedDiscount ? appliedDiscount.amount : 0;
-  
+
   // Tính giảm giá theo điểm (1 điểm = 1.000 VND)
   const pointsDiscount = pointsToUse * 1000;
-  
+
   const total = subtotal + warrantyTotal + shippingCost + tax - discountAmount - pointsDiscount;
 
   // Xử lý thay đổi input trong form
@@ -349,12 +358,16 @@ const CheckoutPage: React.FC = () => {
     setFormData((prev) => {
       const updated = { ...prev, [name]: value };
 
-      // Tự động điền các trường phụ để vượt qua validation phía backend
+      // Tự động điền city/state từ address cho backend validation
       if (name === 'address') {
-        const parts = value.split(',');
-        // Dùng chuỗi rỗng thay vì t() — giá trị dịch sẽ gây backend validation fail khi ngôn ngữ EN
-        updated.state = parts.length > 2 ? parts[parts.length - 2].trim() : '';
-        updated.city = parts.length > 3 ? parts[parts.length - 3].trim() : '';
+        const parts = value
+          .split(',')
+          .map((p) => p.trim())
+          .filter(Boolean);
+        // Fallback: dùng phần cuối nếu không đủ parts, tránh gửi chuỗi rỗng gây 400
+        const fallback = parts.length > 0 ? parts[parts.length - 1] : value.trim();
+        updated.state = parts.length > 2 ? parts[parts.length - 2] : fallback;
+        updated.city = parts.length > 3 ? parts[parts.length - 3] : fallback;
       }
 
       // Tự động điền địa chỉ thanh toán nếu giống địa chỉ giao hàng
@@ -400,13 +413,7 @@ const CheckoutPage: React.FC = () => {
     const newErrors: Record<string, string> = {};
 
     // Các trường bắt buộc
-    const requiredFields = [
-      'firstName',
-      'lastName',
-      'email',
-      'phone',
-      'address',
-    ];
+    const requiredFields = ['firstName', 'lastName', 'email', 'phone', 'address', 'city', 'state'];
 
     requiredFields.forEach((field) => {
       if (!formData[field as keyof typeof formData]) {
@@ -525,41 +532,30 @@ const CheckoutPage: React.FC = () => {
         shippingZip: formData.zipCode,
         shippingCountry: formData.country,
         shippingPhone: formData.phone,
-        billingFirstName: formData.sameAsShipping
-          ? formData.firstName
-          : formData.billingFirstName,
-        billingLastName: formData.sameAsShipping
-          ? formData.lastName
-          : formData.billingLastName,
-        billingAddress1: formData.sameAsShipping
-          ? formData.address
-          : formData.billingAddress,
-        billingCity: formData.sameAsShipping
-          ? formData.city
-          : formData.billingCity,
-        billingState: formData.sameAsShipping
-          ? formData.state
-          : formData.billingState,
-        billingZip: formData.sameAsShipping
-          ? formData.zipCode
-          : formData.billingZipCode,
-        billingCountry: formData.sameAsShipping
-          ? formData.country
-          : formData.billingCountry,
-        billingPhone: formData.sameAsShipping
-          ? formData.phone
-          : formData.billingPhone,
+        billingFirstName: formData.sameAsShipping ? formData.firstName : formData.billingFirstName,
+        billingLastName: formData.sameAsShipping ? formData.lastName : formData.billingLastName,
+        billingAddress1: formData.sameAsShipping ? formData.address : formData.billingAddress,
+        billingCity: formData.sameAsShipping ? formData.city : formData.billingCity,
+        billingState: formData.sameAsShipping ? formData.state : formData.billingState,
+        billingZip: formData.sameAsShipping ? formData.zipCode : formData.billingZipCode,
+        billingCountry: formData.sameAsShipping ? formData.country : formData.billingCountry,
+        billingPhone: formData.sameAsShipping ? formData.phone : formData.billingPhone,
         paymentMethod: formData.paymentMethod,
         notes: formData.notes,
         discountCode: appliedDiscount ? appliedDiscount.code : undefined,
         pointsToUse: pointsToUse,
         // shippingCost KHÔNG gửi lên backend — backend tự tính theo Phase 7.3
-        items: isBuyNow && buyNowItem ? [{
-          productId: buyNowItem.productId,
-          variantId: buyNowItem.variantId,
-          quantity: buyNowItem.quantity,
-          warrantyPackageIds: buyNowItem.warrantyPackageIds
-        }] : undefined,
+        items:
+          isBuyNow && buyNowItem
+            ? [
+                {
+                  productId: buyNowItem.productId,
+                  variantId: buyNowItem.variantId,
+                  quantity: buyNowItem.quantity,
+                  warrantyPackageIds: buyNowItem.warrantyPackageIds,
+                },
+              ]
+            : undefined,
       };
 
       const response = await createOrder(orderData);
@@ -622,7 +618,7 @@ const CheckoutPage: React.FC = () => {
 
         // Chuyển hướng đến trang thanh toán QR kèm thông tin đơn hàng
         navigate(
-          `/payment-qr?orderId=${order.id}&amount=${order.total}&numberOrder=${order.number}`
+          `/payment-qr?orderId=${order.id}&amount=${order.total}&numberOrder=${order.number}`,
         );
         return;
       }
@@ -639,7 +635,7 @@ const CheckoutPage: React.FC = () => {
       if (order) {
         try {
           const res = await createVNPayUrl({
-            orderId: order.id
+            orderId: order.id,
           });
 
           if (res.data) {
@@ -669,7 +665,7 @@ const CheckoutPage: React.FC = () => {
       if (order) {
         try {
           const res = await createMomoUrl({
-            orderId: order.id
+            orderId: order.id,
           });
 
           if (res.data?.payUrl) {
@@ -715,8 +711,7 @@ const CheckoutPage: React.FC = () => {
     // Kiểm tra xem URL có chứa tham số
     const searchParams = new URLSearchParams(window.location.search);
     const isBuyNow = searchParams.get('buyNow') === 'true';
-    const repayOrderId =
-      searchParams.get('repayOrder') || searchParams.get('orderId');
+    const repayOrderId = searchParams.get('repayOrder') || searchParams.get('orderId');
 
     // Kiểm tra xem người dùng vừa thực hiện hành động "Mua ngay" hay không
     const isBuyNowAction = sessionStorage.getItem('buyNowAction') === 'true';
@@ -747,11 +742,7 @@ const CheckoutPage: React.FC = () => {
 
       // Kiểm tra cả serverCartCount và items trong Zustand store
       // Chỉ chuyển hướng nếu cả hai đều trống và không phải đang thanh toán lại đơn hàng
-      if (
-        serverCartCount === 0 &&
-        (!items || items.length === 0) &&
-        !repayOrderId
-      ) {
+      if (serverCartCount === 0 && (!items || items.length === 0) && !repayOrderId) {
         // Xóa dữ liệu giỏ hàng trong localStorage để đảm bảo không có dữ liệu cũ
         localStorage.removeItem('cartItems');
 
@@ -775,9 +766,7 @@ const CheckoutPage: React.FC = () => {
     return (
       <div className="container mx-auto px-4 py-16 text-center">
         <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-500 mx-auto mb-4"></div>
-        <p className="text-neutral-600 dark:text-neutral-400">
-          {t('common.loading')}
-        </p>
+        <p className="text-neutral-600 dark:text-neutral-400">{t('common.loading')}</p>
       </div>
     );
   }
@@ -818,7 +807,7 @@ const CheckoutPage: React.FC = () => {
                       const addr = savedAddresses.find((a: Address) => a.id === addrId);
                       if (!addr) return;
                       // Tự động điền form từ địa chỉ đã chọn
-                      setFormData(prev => ({
+                      setFormData((prev) => ({
                         ...prev,
                         firstName: addr.firstName || prev.firstName,
                         lastName: addr.lastName || prev.lastName,
@@ -830,11 +819,15 @@ const CheckoutPage: React.FC = () => {
                     <option value="">{t('checkout.shippingInfo.selectSaved')}</option>
                     {savedAddresses.map((addr: Address) => (
                       <option key={addr.id} value={addr.id}>
-                        {addr.isDefault ? `★ ` : ''}{addr.name ? `${addr.name}: ` : ''}{addr.firstName} {addr.lastName} — {addr.address1}, {addr.city}
+                        {addr.isDefault ? `★ ` : ''}
+                        {addr.name ? `${addr.name}: ` : ''}
+                        {addr.firstName} {addr.lastName} — {addr.address1}, {addr.city}
                       </option>
                     ))}
                   </select>
-                  <p className="text-xs text-neutral-500 dark:text-neutral-400 mt-1">{t('checkout.shippingInfo.orEnterNew')}</p>
+                  <p className="text-xs text-neutral-500 dark:text-neutral-400 mt-1">
+                    {t('checkout.shippingInfo.orEnterNew')}
+                  </p>
                 </div>
               )}
 
@@ -842,18 +835,14 @@ const CheckoutPage: React.FC = () => {
                 <Input
                   label={t('checkout.shippingInfo.firstName')}
                   value={formData.firstName}
-                  onChange={(e) =>
-                    handleInputChange('firstName', e.target.value)
-                  }
+                  onChange={(e) => handleInputChange('firstName', e.target.value)}
                   error={errors.firstName}
                   required
                 />
                 <Input
                   label={t('checkout.shippingInfo.lastName')}
                   value={formData.lastName}
-                  onChange={(e) =>
-                    handleInputChange('lastName', e.target.value)
-                  }
+                  onChange={(e) => handleInputChange('lastName', e.target.value)}
                   error={errors.lastName}
                   required
                 />
@@ -871,8 +860,11 @@ const CheckoutPage: React.FC = () => {
                   type="tel"
                   inputMode="numeric"
                   autoComplete="tel"
+                  maxLength={10}
                   value={formData.phone}
-                  onChange={(e) => handleInputChange('phone', e.target.value)}
+                  onChange={(e) =>
+                    handleInputChange('phone', e.target.value.replace(/[^0-9]/g, ''))
+                  }
                   error={errors.phone}
                   required
                 />
@@ -883,7 +875,7 @@ const CheckoutPage: React.FC = () => {
                     onChange={(val, lat, lon) => {
                       handleInputChange('address', val);
                       if (lat && lon) {
-                        setFormData(prev => ({ ...prev, lat, lon }));
+                        setFormData((prev) => ({ ...prev, lat, lon }));
                       }
                     }}
                     error={errors.address}
@@ -913,9 +905,7 @@ const CheckoutPage: React.FC = () => {
                     name="paymentMethod"
                     value={method.value}
                     checked={formData.paymentMethod === method.value}
-                    onChange={(e) =>
-                      handleInputChange('paymentMethod', e.target.value)
-                    }
+                    onChange={(e) => handleInputChange('paymentMethod', e.target.value)}
                     className="mr-3"
                   />
                   <div className="flex-grow">
@@ -955,7 +945,9 @@ const CheckoutPage: React.FC = () => {
                   </ol>
                 </div>
 
-                <h4 className="font-semibold text-gray-700 mt-4">{t('checkout.installment.bankList')}</h4>
+                <h4 className="font-semibold text-gray-700 mt-4">
+                  {t('checkout.installment.bankList')}
+                </h4>
                 <Table
                   columns={installmentColumns}
                   dataSource={installmentData}
@@ -999,15 +991,12 @@ const CheckoutPage: React.FC = () => {
               <div className="space-y-4 mb-6">
                 <div className="p-4 bg-blue-50 dark:bg-blue-900/20 rounded-lg">
                   <div className="text-blue-800 dark:text-blue-200">
-                    <div className="font-semibold mb-2">
-                      {t('checkout.repayOrder.title')}
-                    </div>
+                    <div className="font-semibold mb-2">{t('checkout.repayOrder.title')}</div>
                     <div className="text-sm mb-1">
                       {t('checkout.repayOrder.id')}: {currentOrder.id}
                     </div>
                     <div className="text-lg font-semibold">
-                      {t('checkout.repayOrder.amount')}:{' '}
-                      {formatPrice(currentOrder.total)}
+                      {t('checkout.repayOrder.amount')}: {formatPrice(currentOrder.total)}
                     </div>
                   </div>
                 </div>
@@ -1037,7 +1026,7 @@ const CheckoutPage: React.FC = () => {
                     />
                   </div>
                   <CustomButton
-                    variant={appliedDiscount ? "danger" : "primary"}
+                    variant={appliedDiscount ? 'danger' : 'primary'}
                     onClick={appliedDiscount ? handleRemoveDiscount : handleApplyDiscount}
                     isLoading={isValidatingCode}
                     className="h-[42px] px-4"
@@ -1045,13 +1034,14 @@ const CheckoutPage: React.FC = () => {
                     {appliedDiscount ? t('checkout.discountCode.cancel') : t('common.apply')}
                   </CustomButton>
                 </div>
-                {discountError && (
-                  <p className="text-red-500 text-xs mt-1">{discountError}</p>
-                )}
+                {discountError && <p className="text-red-500 text-xs mt-1">{discountError}</p>}
                 {appliedDiscount && (
                   <p className="text-green-600 text-sm mt-1 flex items-center">
                     <CheckCircleOutlined className="mr-1" />
-                    {t('checkout.discountCode.discountInfo', { code: appliedDiscount.code, amount: formatPrice(appliedDiscount.amount) })}
+                    {t('checkout.discountCode.discountInfo', {
+                      code: appliedDiscount.code,
+                      amount: formatPrice(appliedDiscount.amount),
+                    })}
                   </p>
                 )}
               </div>
@@ -1064,7 +1054,9 @@ const CheckoutPage: React.FC = () => {
                   <span className="text-sm font-medium text-neutral-700 dark:text-neutral-300">
                     {t('checkout.loyaltyPoints.pointsHeader', { points: availablePoints })}
                   </span>
-                  <span className="text-xs text-neutral-500">{t('checkout.loyaltyPoints.rate')}</span>
+                  <span className="text-xs text-neutral-500">
+                    {t('checkout.loyaltyPoints.rate')}
+                  </span>
                 </div>
                 <div className="flex space-x-2 items-end">
                   <div className="flex-grow">
@@ -1085,13 +1077,14 @@ const CheckoutPage: React.FC = () => {
                     {t('checkout.loyaltyPoints.useAll')}
                   </CustomButton>
                 </div>
-                {pointsError && (
-                  <p className="text-red-500 text-xs mt-1">{pointsError}</p>
-                )}
+                {pointsError && <p className="text-red-500 text-xs mt-1">{pointsError}</p>}
                 {pointsToUse > 0 && !pointsError && (
                   <p className="text-green-600 text-sm mt-1 flex items-center">
                     <CheckCircleOutlined className="mr-1" />
-                    {t('checkout.loyaltyPoints.appliedInfo', { points: pointsToUse, amount: formatPrice(pointsToUse * 1000) })}
+                    {t('checkout.loyaltyPoints.appliedInfo', {
+                      points: pointsToUse,
+                      amount: formatPrice(pointsToUse * 1000),
+                    })}
                   </p>
                 )}
               </div>
@@ -1110,7 +1103,10 @@ const CheckoutPage: React.FC = () => {
                       <span>{t('checkout.orderSummary.shipping')}</span>
                       {finalDistance > 0 && (
                         <span className="text-base font-bold text-emerald-700 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-900/30 px-2.5 py-1.5 rounded-md mt-1.5 shadow-sm border border-emerald-100 dark:border-emerald-800 inline-flex items-center">
-                          {t('checkout.orderSummary.distanceInfo', { distance: finalDistance.toFixed(1), fee: formatPrice(shippingCost) })}
+                          {t('checkout.orderSummary.distanceInfo', {
+                            distance: finalDistance.toFixed(1),
+                            fee: formatPrice(shippingCost),
+                          })}
                         </span>
                       )}
                     </div>
@@ -1128,7 +1124,11 @@ const CheckoutPage: React.FC = () => {
                   )}
                   {appliedDiscount && (
                     <div className="flex justify-between text-green-600 font-medium">
-                      <span>{t('checkout.orderSummary.discountCodeLabel', { code: appliedDiscount.code })}</span>
+                      <span>
+                        {t('checkout.orderSummary.discountCodeLabel', {
+                          code: appliedDiscount.code,
+                        })}
+                      </span>
                       <span>-{formatPrice(appliedDiscount.amount)}</span>
                     </div>
                   )}
@@ -1158,19 +1158,22 @@ const CheckoutPage: React.FC = () => {
             </div>
 
             {/* Nút tương ứng với từng phương thức thanh toán */}
-            {(['bank_transfer', 'vnpay', 'momo', 'installment', 'cod'].includes(formData.paymentMethod)) && (!currentOrder || ['vnpay', 'momo'].includes(formData.paymentMethod)) && (
-              <PremiumButton
-                variant="primary"
-                size="large"
-                iconType="arrow-right"
-                isProcessing={isProcessing}
-                processingText={t('common.processing')}
-                onClick={handleSubmit}
-                className="w-full mt-6 h-14 text-lg font-semibold"
-              >
-                {t('checkout.buttons.continueToPayment')}
-              </PremiumButton>
-            )}
+            {['bank_transfer', 'vnpay', 'momo', 'installment', 'cod'].includes(
+              formData.paymentMethod,
+            ) &&
+              (!currentOrder || ['vnpay', 'momo'].includes(formData.paymentMethod)) && (
+                <PremiumButton
+                  variant="primary"
+                  size="large"
+                  iconType="arrow-right"
+                  isProcessing={isProcessing}
+                  processingText={t('common.processing')}
+                  onClick={handleSubmit}
+                  className="w-full mt-6 h-14 text-lg font-semibold"
+                >
+                  {t('checkout.buttons.continueToPayment')}
+                </PremiumButton>
+              )}
 
             {/* Phần thanh toán QR chuyển khoản (hiển thị sau khi tạo đơn hàng) - Chuyển hướng đến trang QR */}
             {formData.paymentMethod === 'bank_transfer' && currentOrder && (
@@ -1180,7 +1183,6 @@ const CheckoutPage: React.FC = () => {
                   <p className="text-lg text-neutral-700 dark:text-neutral-300">
                     {t('checkout.redirectingToPayment')}
                   </p>
-
                 </div>
               </div>
             )}
@@ -1188,12 +1190,7 @@ const CheckoutPage: React.FC = () => {
             {/* Thông báo bảo mật */}
             <div className="mt-6 p-4 bg-green-50 dark:bg-green-900/20 rounded-lg">
               <div className="flex items-center text-green-800 dark:text-green-200">
-                <svg
-                  className="w-5 h-5 mr-2"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                >
+                <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path
                     strokeLinecap="round"
                     strokeLinejoin="round"
@@ -1202,12 +1199,8 @@ const CheckoutPage: React.FC = () => {
                   />
                 </svg>
                 <div>
-                  <div className="font-semibold">
-                    {t('checkout.securityNotice.title')}
-                  </div>
-                  <div className="text-sm">
-                    {t('checkout.securityNotice.message')}
-                  </div>
+                  <div className="font-semibold">{t('checkout.securityNotice.title')}</div>
+                  <div className="text-sm">{t('checkout.securityNotice.message')}</div>
                 </div>
               </div>
             </div>
@@ -1219,4 +1212,3 @@ const CheckoutPage: React.FC = () => {
 };
 
 export default CheckoutPage;
-

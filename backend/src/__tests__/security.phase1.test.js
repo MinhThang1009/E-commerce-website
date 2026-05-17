@@ -64,7 +64,6 @@ jest.mock('../config/redis', () => ({
 
 // otpLimiter mock pass-through cho các test không liên quan đến rate limit
 jest.mock('../middlewares/rateLimiter', () => ({
-  chatLimiter: (_req, _res, next) => next(),
   chatbotLimiter: (_req, _res, next) => next(),
   apiLimiter: (_req, _res, next) => next(),
   authLimiter: (_req, _res, next) => next(),

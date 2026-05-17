@@ -9,24 +9,34 @@ const ProductSeoForm: React.FC = () => {
 
   return (
     <Row gutter={[24, 16]}>
-      <Col span={24}>
-        <Form.Item name="seoTitle" label={t('admin.products.seo.titleLabel')}>
-          <Input
-            placeholder={t('admin.products.seo.titlePlaceholder')}
-            maxLength={60}
-            showCount
-          />
+      {/* SEO Title — VI */}
+      <Col span={12}>
+        <Form.Item name="seoTitleVi" label={`${t('admin.products.seo.titleLabel')} (VI)`}>
+          <Input placeholder={t('admin.products.seo.titlePlaceholder')} maxLength={60} showCount />
+        </Form.Item>
+      </Col>
+      {/* SEO Title — EN */}
+      <Col span={12}>
+        <Form.Item name="seoTitleEn" label={`${t('admin.products.seo.titleLabel')} (EN)`}>
+          <Input placeholder="SEO title in English" maxLength={60} showCount />
         </Form.Item>
       </Col>
 
-      <Col span={24}>
-        <Form.Item name="seoDescription" label={t('admin.products.seo.descLabel')}>
+      {/* SEO Description — VI */}
+      <Col span={12}>
+        <Form.Item name="seoDescriptionVi" label={`${t('admin.products.seo.descLabel')} (VI)`}>
           <TextArea
             rows={3}
             placeholder={t('admin.products.seo.descPlaceholder')}
             maxLength={160}
             showCount
           />
+        </Form.Item>
+      </Col>
+      {/* SEO Description — EN */}
+      <Col span={12}>
+        <Form.Item name="seoDescriptionEn" label={`${t('admin.products.seo.descLabel')} (EN)`}>
+          <TextArea rows={3} placeholder="SEO description in English" maxLength={160} showCount />
         </Form.Item>
       </Col>
 

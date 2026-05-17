@@ -92,4 +92,31 @@ describe('shared/eventBus', () => {
     await bus.publish({ type: 'y', payload: 1, occurredAt: '' });
     expect(handler).not.toHaveBeenCalled();
   });
+
+  test('subscribe handler thứ hai cho cùng eventType — không tạo lại Set (branch if-false line 19)', async () => {
+    // First subscribe creates the Set (if-true path).
+    // Second subscribe for same eventType hits !has() = false → skips Set creation.
+    const h1 = jest.fn();
+    const h2 = jest.fn();
+    const h3 = jest.fn();
+    bus.subscribe('same-event', h1);
+    bus.subscribe('same-event', h2); // triggers false branch of if(!has)
+    bus.subscribe('same-event', h3); // also false branch
+
+    await bus.publish({ type: 'same-event', payload: 'ok', occurredAt: '' });
+
+    // All three handlers must have been called — Set was not re-created
+    expect(h1).toHaveBeenCalledTimes(1);
+    expect(h2).toHaveBeenCalledTimes(1);
+    expect(h3).toHaveBeenCalledTimes(1);
+  });
+
+  test('unsubscribe eventType chưa có handler — if(set) false branch (line 28)', () => {
+    // unsubscribe gọi trực tiếp cho eventType chưa subscribe bất kỳ handler nào.
+    // this.handlers.get('phantom') = undefined → if(set) = false → skip delete.
+    // Không throw, không side-effect.
+    expect(() => bus.unsubscribe('phantom-event', () => {})).not.toThrow();
+    // Cũng không tạo entry nào trong map
+    expect(bus.handlers.has('phantom-event')).toBe(false);
+  });
 });

@@ -1,10 +1,7 @@
 import React from 'react';
 import { message } from 'antd';
 import { HeroSection, HomeNewsSection } from '@/components/sections';
-import {
-  ProductCardSkeleton,
-  CategoryCardSkeleton,
-} from '@/components/common/LoadingState';
+import { ProductCardSkeleton, CategoryCardSkeleton } from '@/components/common/LoadingState';
 import { ErrorState, EmptyState } from '@/components/common/ErrorState';
 import { ProductGrid, CategoryGrid } from '@/components/layout/Grid';
 import { PageLayout, PageSection } from '@/components/layout/PageLayout';
@@ -14,23 +11,21 @@ import { useGetBrandsQuery } from '@/features/catalog';
 import { useGetCollectionsQuery } from '@/features/catalog';
 import { useSubscribeNewsletterMutation } from '@/features/content';
 import { useApiState } from '@/hooks/useApiState';
-import {
-  getCategoryImage,
-  createCategoryImageErrorHandler,
-} from '@/utils/imageUtils';
+import { getCategoryImage, createCategoryImageErrorHandler } from '@/utils/imageUtils';
 import { getUploadUrl } from '@/utils/uploadUrl';
 import { useTranslation } from 'react-i18next';
 import { Link } from 'react-router-dom';
-import ProductCard from '@/components/shared/ProductCard';
+import { ProductCard } from '@/features/catalog';
 import { PremiumButton, BannerDisplay } from '@/components/common';
 import { ROUTES, buildRoute } from '@/routes/paths';
 import { getErrorMsg } from '@/utils/errorMessage';
+import { localizeField } from '@/utils/localize';
 
 /**
  * HomePage component - Main landing page with hero, featured products, and categories
  */
 const HomePage: React.FC = () => {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
 
   // Các API query với quản lý state nâng cao
   const featuredProductsQuery = useGetFeaturedProductsQuery({ limit: 4 });
@@ -72,7 +67,8 @@ const HomePage: React.FC = () => {
 
   // Chuyển đổi danh mục để hiển thị
   const [newsletterEmail, setNewsletterEmail] = React.useState('');
-  const { mutateAsync: subscribeNewsletter, isPending: isSubscribing } = useSubscribeNewsletterMutation();
+  const { mutateAsync: subscribeNewsletter, isPending: isSubscribing } =
+    useSubscribeNewsletterMutation();
 
   const handleNewsletterSubmit = async () => {
     if (!newsletterEmail) {
@@ -81,8 +77,8 @@ const HomePage: React.FC = () => {
     }
 
     try {
-      const response = await subscribeNewsletter({ email: newsletterEmail });
-      message.success(response.message);
+      await subscribeNewsletter({ email: newsletterEmail });
+      message.success(t('homepage.newsletter.subscribeSuccess'));
       setNewsletterEmail('');
     } catch (error) {
       message.error(getErrorMsg(error, t('homepage.newsletter.subscribeError')));
@@ -91,15 +87,27 @@ const HomePage: React.FC = () => {
 
   // Đăng ký nhận bản tin
   const displayCategories =
-    categories.data?.slice(0, 6).map((category: { id: string; name: string; slug?: string; image?: string; productCount?: number }) => ({
-      id: category.id,
-      name: category.name,
-      image: category.image
-        ? getUploadUrl(category.image)
-        : getCategoryImage(category.name, category.slug ?? ''),
-      count: category.productCount || 0,
-      slug: category.slug,
-    })) || [];
+    categories.data
+      ?.slice(0, 6)
+      .map(
+        (category: {
+          id: string;
+          name: string;
+          nameVi?: string;
+          nameEn?: string;
+          slug?: string;
+          image?: string;
+          productCount?: number;
+        }) => ({
+          id: category.id,
+          name: localizeField(category, 'name', i18n.language),
+          image: category.image
+            ? getUploadUrl(category.image)
+            : getCategoryImage(category.nameVi || category.name, category.slug ?? ''),
+          count: category.productCount || 0,
+          slug: category.slug,
+        }),
+      ) || [];
 
   return (
     <PageLayout
@@ -161,17 +169,14 @@ const HomePage: React.FC = () => {
             {featuredProducts.data?.data
               // eslint-disable-next-line @typescript-eslint/no-explicit-any -- API product data
               ?.map((product: any) => (
-              <ProductCard key={product.id} {...product} />
-            ))}
+                <ProductCard key={product.id} {...product} />
+              ))}
           </ProductGrid>
         )}
       </PageSection>
 
       {/* Middle Banner */}
-      <BannerDisplay
-        position="home_middle"
-        className="container mx-auto px-4"
-      />
+      <BannerDisplay position="home_middle" className="container mx-auto px-4" />
 
       {/* Categories */}
       <PageSection
@@ -260,26 +265,26 @@ const HomePage: React.FC = () => {
                 />
               ))
             : brands.data
-              // eslint-disable-next-line @typescript-eslint/no-explicit-any
-              ?.map((brand: any) => (
-                <Link
-                  key={brand.id}
-                  to={buildRoute.shopBrand(brand.id)}
-                  className="bg-white dark:bg-neutral-800 p-6 rounded-xl shadow-sm hover:shadow-md transition-all flex items-center justify-center border border-neutral-100 dark:border-neutral-700 group"
-                >
-                  {brand.logo ? (
-                    <img
-                      src={brand.logo}
-                      alt={brand.name}
-                      className="max-h-12 w-auto grayscale group-hover:grayscale-0 transition-all"
-                    />
-                  ) : (
-                    <span className="text-lg font-bold text-neutral-400 group-hover:text-primary-500 transition-colors uppercase">
-                      {brand.name}
-                    </span>
-                  )}
-                </Link>
-              ))}
+                // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                ?.map((brand: any) => (
+                  <Link
+                    key={brand.id}
+                    to={buildRoute.shopBrand(brand.id)}
+                    className="bg-white dark:bg-neutral-800 p-6 rounded-xl shadow-sm hover:shadow-md transition-all flex items-center justify-center border border-neutral-100 dark:border-neutral-700 group"
+                  >
+                    {brand.logo ? (
+                      <img
+                        src={brand.logo}
+                        alt={localizeField(brand, 'name', i18n.language)}
+                        className="max-h-12 w-auto grayscale group-hover:grayscale-0 transition-all"
+                      />
+                    ) : (
+                      <span className="text-lg font-bold text-neutral-400 group-hover:text-primary-500 transition-colors uppercase">
+                        {localizeField(brand, 'name', i18n.language)}
+                      </span>
+                    )}
+                  </Link>
+                ))}
         </div>
       </PageSection>
 
@@ -296,52 +301,52 @@ const HomePage: React.FC = () => {
                   className="aspect-w-16 aspect-h-9 bg-neutral-200 dark:bg-neutral-700 rounded-2xl animate-pulse"
                 />
               ))
-            : collections.data?.slice(0, 2)
-              // eslint-disable-next-line @typescript-eslint/no-explicit-any
-              .map((collection: any) => (
-                <Link
-                  key={collection.id}
-                  to={buildRoute.shopCollection(collection.id)}
-                  className="group relative h-80 overflow-hidden rounded-2xl shadow-xl"
-                >
-                  <img
-                    src={
-                      collection.banner ||
-                      'https://images.unsplash.com/photo-1441986300917-64674bd600d8?auto=format&fit=crop&w=1000&q=80'
-                    }
-                    alt={collection.name}
-                    className="w-full h-full object-cover transform group-hover:scale-105 transition-transform duration-700"
-                  />
-                  <div className="absolute inset-0 bg-gradient-to-r from-black/80 via-black/40 to-transparent flex flex-col justify-center p-10">
-                    <h3 className="text-3xl font-extrabold text-white mb-4 drop-shadow-lg">
-                      {collection.name}
-                    </h3>
-                    <p className="text-neutral-200 mb-6 max-w-xs drop-shadow-md">
-                      {collection.description || t('homepage.collections.fallbackDescription')}
-                    </p>
-                    <div>
-                      <span className="inline-flex items-center px-6 py-3 rounded-full bg-white text-neutral-900 font-bold hover:bg-neutral-100 transition-colors">
-                        {t('homepage.collections.exploreButton')}
-                        <svg
-                          xmlns="http://www.w3.org/2000/svg"
-                          className="h-5 w-5 ml-2"
-                          viewBox="0 0 20 20"
-                          fill="currentColor"
-                        >
-                          <path
-                            fillRule="evenodd"
-                            d="M10.293 3.293a1 1 0 011.414 0l6 6a1 1 0 010 1.414l-6 6a1 1 0 01-1.414-1.414L14.586 11H3a1 1 0 110-2h11.586l-4.293-4.293a1 1 0 010-1.414z"
-                            clipRule="evenodd"
-                          />
-                        </svg>
-                      </span>
+            : collections.data
+                ?.slice(0, 2)
+                // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                .map((collection: any) => (
+                  <Link
+                    key={collection.id}
+                    to={buildRoute.shopCollection(collection.id)}
+                    className="group relative h-80 overflow-hidden rounded-2xl shadow-xl"
+                  >
+                    <img
+                      src={
+                        collection.banner ||
+                        'https://images.unsplash.com/photo-1441986300917-64674bd600d8?auto=format&fit=crop&w=1000&q=80'
+                      }
+                      alt={localizeField(collection, 'name', i18n.language)}
+                      className="w-full h-full object-cover transform group-hover:scale-105 transition-transform duration-700"
+                    />
+                    <div className="absolute inset-0 bg-gradient-to-r from-black/80 via-black/40 to-transparent flex flex-col justify-center p-10">
+                      <h3 className="text-3xl font-extrabold text-white mb-4 drop-shadow-lg">
+                        {localizeField(collection, 'name', i18n.language)}
+                      </h3>
+                      <p className="text-neutral-200 mb-6 max-w-xs drop-shadow-md">
+                        {collection.description || t('homepage.collections.fallbackDescription')}
+                      </p>
+                      <div>
+                        <span className="inline-flex items-center px-6 py-3 rounded-full bg-white text-neutral-900 font-bold hover:bg-neutral-100 transition-colors">
+                          {t('homepage.collections.exploreButton')}
+                          <svg
+                            xmlns="http://www.w3.org/2000/svg"
+                            className="h-5 w-5 ml-2"
+                            viewBox="0 0 20 20"
+                            fill="currentColor"
+                          >
+                            <path
+                              fillRule="evenodd"
+                              d="M10.293 3.293a1 1 0 011.414 0l6 6a1 1 0 010 1.414l-6 6a1 1 0 01-1.414-1.414L14.586 11H3a1 1 0 110-2h11.586l-4.293-4.293a1 1 0 010-1.414z"
+                              clipRule="evenodd"
+                            />
+                          </svg>
+                        </span>
+                      </div>
                     </div>
-                  </div>
-                </Link>
-              ))}
+                  </Link>
+                ))}
         </div>
       </PageSection>
-
 
       {/* News Section */}
       <HomeNewsSection />
@@ -391,4 +396,3 @@ const HomePage: React.FC = () => {
 };
 
 export default HomePage;
-

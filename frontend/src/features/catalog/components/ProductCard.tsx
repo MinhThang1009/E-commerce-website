@@ -1,0 +1,319 @@
+import { useUiStore } from '@/stores/uiStore';
+import { proxyImg } from '@/utils/proxyImg';
+import { Product } from '@/features/catalog';
+import { calculatePriceRange } from '@/utils/priceUtils';
+import React, { useState } from 'react';
+import { useTranslation } from 'react-i18next';
+import { localizeField } from '@/utils/localize';
+import { Link, useNavigate } from 'react-router-dom';
+import { useAuthStore } from '@/stores/authStore';
+import { useWishlistStore } from '@/stores/wishlistStore';
+import { useAddToWishlistMutation, useRemoveFromWishlistMutation } from '@/features/wishlist';
+import { HeartIcon } from '@heroicons/react/24/outline';
+import { HeartIcon as HeartIconSolid } from '@heroicons/react/24/solid';
+import { useAddToCartMutation } from '@/features/cart';
+import { ShoppingCartIcon } from '@heroicons/react/24/outline';
+
+// Mở rộng interface Product để hỗ trợ discountPercentage từ API
+interface ProductCardProps extends Product {
+  discountPercentage?: number;
+  enableVariantPricing?: boolean; // Option để bật/tắt việc load variants
+}
+
+const ProductCard: React.FC<ProductCardProps> = ({
+  id,
+  name,
+  nameVi,
+  nameEn,
+  thumbnail,
+  price,
+  compareAtPrice,
+  shortDescription,
+  shortDescriptionVi,
+  shortDescriptionEn,
+  ratings,
+  isNew,
+  slug: _slug,
+  discountPercentage,
+  variants,
+  enableVariantPricing: _enableVariantPricing = false, // Mặc định tắt để tránh quá nhiều API calls
+}) => {
+  const { t, i18n } = useTranslation();
+  const displayName = localizeField({ name, nameVi, nameEn }, 'name', i18n.language);
+  const displayShortDesc = localizeField(
+    { shortDescription, shortDescriptionVi, shortDescriptionEn },
+    'shortDescription',
+    i18n.language,
+  );
+  const navigate = useNavigate();
+  const addNotification = useUiStore((s) => s.addNotification);
+
+  // Wishlist logic
+  const wishlistItems = useWishlistStore((s) => s.items);
+  const addToWishlistLocal = useWishlistStore((s) => s.addToWishlistLocal);
+  const removeFromWishlistLocal = useWishlistStore((s) => s.removeFromWishlistLocal);
+  const isWishlisted = wishlistItems.includes(id);
+
+  const { mutateAsync: addToWishlist } = useAddToWishlistMutation();
+  const { mutateAsync: removeFromWishlist } = useRemoveFromWishlistMutation();
+  const { mutateAsync: _addToCart } = useAddToCartMutation();
+  const [isToggling, setIsToggling] = useState(false);
+  const [isBuying, setIsBuying] = useState(false);
+
+  const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
+
+  const handleToggleWishlist = async (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+
+    if (!isAuthenticated) {
+      addNotification({
+        type: 'info',
+        message: t('product.loginToWishlist'),
+      });
+      navigate('/login');
+      return;
+    }
+
+    if (isToggling) return;
+    setIsToggling(true);
+
+    try {
+      if (isWishlisted) {
+        removeFromWishlistLocal(id);
+        await removeFromWishlist(id);
+      } else {
+        addToWishlistLocal(id);
+        await addToWishlist({ productId: id });
+      }
+    } catch (error) {
+      console.error('Thao tác danh sách yêu thích thất bại:', error);
+      if (isWishlisted) {
+        addToWishlistLocal(id);
+      } else {
+        removeFromWishlistLocal(id);
+      }
+    } finally {
+      setIsToggling(false);
+    }
+  };
+
+  // Luôn sử dụng ID để đảm bảo API sản phẩm liên quan hoạt động đúng
+  const productUrl = `/products/${id}`;
+
+  // Sử dụng utility calculatePriceRange
+  const priceInfo = calculatePriceRange(price, variants);
+
+  // Sử dụng discountPercentage từ API nếu có, nếu không thì tính toán từ giá
+  const discount =
+    discountPercentage !== undefined
+      ? Math.round(discountPercentage)
+      : compareAtPrice
+        ? Math.round(((compareAtPrice - priceInfo.basePrice) / compareAtPrice) * 100)
+        : 0;
+
+  // Xử lý xem chi tiết
+  const handleViewDetails = (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    navigate(productUrl);
+  };
+
+  // Xử lý mua ngay
+  const handleBuyNow = async (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+
+    if (isBuying) return;
+    setIsBuying(true);
+
+    const defaultVariant = variants?.find((v) => v.isDefault) || variants?.[0];
+
+    try {
+      const buyNowItem = {
+        id: defaultVariant ? `${id}-${defaultVariant.id}` : id,
+        productId: id,
+        variantId: defaultVariant?.id,
+        name: displayName,
+        price: defaultVariant?.price || price,
+        quantity: 1,
+        image: thumbnail,
+        inStock: true,
+        stockQuantity: defaultVariant?.stockQuantity || 10,
+        attributes: defaultVariant ? { variant: defaultVariant.name } : undefined,
+      };
+
+      // Lưu vào sessionStorage để CheckoutPage sử dụng
+      sessionStorage.setItem('buyNowItem', JSON.stringify(buyNowItem));
+      sessionStorage.setItem('buyNowAction', 'true');
+
+      navigate('/checkout?buyNow=true');
+    } catch (error) {
+      console.error('Mua ngay thất bại:', error);
+      addNotification({
+        type: 'error',
+        message: t('product.buyNowFailed'),
+      });
+    } finally {
+      setIsBuying(false);
+    }
+  };
+
+  return (
+    <div className="group relative bg-white dark:bg-neutral-900 rounded-2xl overflow-hidden transition-all duration-300 ease-out hover:shadow-lg border border-neutral-100/50 dark:border-neutral-800/50 hover:border-primary-200/30 dark:hover:border-primary-800/30 h-full flex flex-col">
+      {/* Khung ảnh với tỷ lệ được cải tiến */}
+      <div className="relative aspect-square overflow-hidden bg-gradient-to-br from-neutral-50 to-neutral-100 dark:from-neutral-800 dark:to-neutral-900">
+        {/* Nhãn được cải tiến với vị trí tốt hơn */}
+        <div className="absolute top-4 left-4 z-20 flex flex-col gap-2">
+          {compareAtPrice && compareAtPrice > priceInfo.basePrice && (
+            <div className="bg-gradient-to-r from-rose-500 via-rose-600 to-rose-700 text-white text-xs font-bold px-3 py-1.5 rounded-xl shadow-xl backdrop-blur-sm border border-white/20">
+              <span className="drop-shadow-sm">-{discount}%</span>
+            </div>
+          )}
+          {isNew && (
+            <div className="bg-gradient-to-r from-emerald-500 via-emerald-600 to-emerald-700 text-white text-xs font-bold px-3 py-1.5 rounded-xl shadow-xl backdrop-blur-sm border border-white/20">
+              <span className="drop-shadow-sm">{t('product.new')}</span>
+            </div>
+          )}
+        </div>
+
+        {/* Ảnh sản phẩm cải tiến với hiệu ứng hover tốt hơn */}
+        <Link to={productUrl} className="block w-full h-full">
+          <div className="w-full h-full overflow-hidden">
+            <img
+              src={proxyImg(thumbnail)}
+              alt={displayName}
+              className="w-full h-full object-cover object-center transform group-hover:scale-105 transition-transform duration-300 ease-out"
+              loading="lazy"
+            />
+          </div>
+        </Link>
+
+        {/* Nút yêu thích */}
+        <button
+          className="absolute top-4 right-4 z-20 p-2 bg-white/90 dark:bg-neutral-800/90 rounded-full shadow-md backdrop-blur-sm hover:bg-white dark:hover:bg-neutral-800 transition-all duration-200 group/heart"
+          onClick={handleToggleWishlist}
+          disabled={isToggling}
+        >
+          {isWishlisted ? (
+            <HeartIconSolid className="h-5 w-5 text-rose-500 fill-current animate-heart-beat" />
+          ) : (
+            <HeartIcon className="h-5 w-5 text-neutral-500 dark:text-neutral-400 group-hover/heart:text-rose-500 transition-colors duration-200" />
+          )}
+        </button>
+
+        {/* Lớp phủ premium chỉ với hiệu ứng gradient */}
+        <div className="absolute inset-0 bg-gradient-to-t from-black/40 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+      </div>
+
+      {/* Khu vực thông tin sản phẩm cải tiến */}
+      <div className="p-6 flex-grow flex flex-col gap-3">
+        {/* Đánh giá ở trên cùng */}
+        <div className="flex items-center">
+          {ratings && (
+            <div className="flex items-center bg-gradient-to-r from-amber-50 to-yellow-50 dark:from-amber-900/30 dark:to-yellow-900/30 px-3 py-1.5 rounded-xl border border-amber-200/50 dark:border-amber-800/50">
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                className="h-4 w-4 text-amber-500"
+                viewBox="0 0 20 20"
+                fill="currentColor"
+              >
+                <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
+              </svg>
+              <span className="text-sm text-amber-700 dark:text-amber-300 ml-1.5 font-semibold">
+                {ratings.average}
+              </span>
+            </div>
+          )}
+        </div>
+
+        {/* Tiêu đề cải tiến */}
+        <Link to={productUrl} className="block mt-2">
+          <h3 className="text-neutral-900 dark:text-neutral-100 font-bold text-lg leading-tight hover:text-primary-600 dark:hover:text-primary-400 transition-colors duration-200 line-clamp-2 min-h-[3rem] group-hover:text-primary-600 dark:group-hover:text-primary-400">
+            {displayName}
+          </h3>
+        </Link>
+
+        {/* Mô tả cải tiến */}
+        {displayShortDesc && (
+          <p className="text-neutral-600 dark:text-neutral-400 text-sm leading-relaxed line-clamp-2 group-hover:text-neutral-700 dark:group-hover:text-neutral-300 transition-colors duration-200">
+            {displayShortDesc}
+          </p>
+        )}
+
+        {/* Khu vực giá */}
+        <div className="mt-auto flex flex-col gap-2">
+          <div className="flex items-baseline gap-2 flex-wrap">
+            <span className="text-xl font-bold text-neutral-900 dark:text-white tracking-tight">
+              {priceInfo.priceText}
+            </span>
+            {compareAtPrice && compareAtPrice > priceInfo.basePrice && (
+              <span className="text-sm text-neutral-400 dark:text-neutral-500 line-through font-medium">
+                {compareAtPrice.toLocaleString(i18n.language === 'vi' ? 'vi-VN' : 'en-US')}
+                {t('common.currencySymbol')}
+              </span>
+            )}
+          </div>
+          {compareAtPrice && compareAtPrice > priceInfo.basePrice && (
+            <div className="flex items-center gap-1.5 flex-wrap">
+              <span className="text-xs text-emerald-600 dark:text-emerald-400 font-semibold bg-emerald-50 dark:bg-emerald-900/20 px-2 py-1 rounded-md">
+                {t('product.savings', {
+                  amount: `${(compareAtPrice - priceInfo.basePrice).toLocaleString(i18n.language === 'vi' ? 'vi-VN' : 'en-US')}${t('common.currencySymbol')}`,
+                })}
+              </span>
+              <span className="text-xs text-rose-600 dark:text-rose-400 font-semibold bg-rose-50 dark:bg-rose-900/20 px-2 py-1 rounded-md">
+                -{discount}%
+              </span>
+            </div>
+          )}
+        </div>
+
+        <div className="flex flex-col gap-2">
+          {/* Nút mua ngay */}
+          <button
+            className="w-full bg-orange-600 hover:bg-orange-700 text-white rounded-lg py-2.5 px-4 transition-all duration-200 shadow-sm hover:shadow-md font-bold text-sm flex items-center justify-center gap-2 transform active:scale-[0.98] disabled:opacity-70"
+            onClick={handleBuyNow}
+            disabled={isBuying}
+          >
+            {isBuying ? (
+              <div className="h-4 w-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+            ) : (
+              <ShoppingCartIcon className="h-4 w-4" />
+            )}
+            <span>{t('product.buyNow')}</span>
+          </button>
+
+          {/* Nút xem chi tiết — luôn ở dưới cùng */}
+          <button
+            className="w-full bg-primary-600/10 hover:bg-primary-600 text-primary-600 hover:text-white border border-primary-600/20 hover:border-primary-600 rounded-lg py-2.5 px-4 transition-all duration-200 shadow-sm font-semibold text-sm flex items-center justify-center gap-2"
+            onClick={handleViewDetails}
+          >
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              className="h-4 w-4"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"
+              />
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"
+              />
+            </svg>
+            <span>{t('product.viewDetails')}</span>
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+export default ProductCard;

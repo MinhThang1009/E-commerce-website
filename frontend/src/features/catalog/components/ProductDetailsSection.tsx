@@ -8,7 +8,13 @@ import '@/styles/description.css';
 interface Specification {
   name: string;
   value: string;
+  valueEn?: string;
 }
+
+const getSpecValue = (spec: Specification, lang: string): string => {
+  if (lang === 'en') return spec.valueEn || spec.value;
+  return spec.value;
+};
 
 interface ProductDetailsSectionProps {
   description: string;
@@ -19,7 +25,7 @@ const ProductDetailsSection: React.FC<ProductDetailsSectionProps> = ({
   description,
   specifications,
 }) => {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isSpecModalOpen, setIsSpecModalOpen] = useState(false);
 
@@ -29,10 +35,7 @@ const ProductDetailsSection: React.FC<ProductDetailsSectionProps> = ({
       .replace(/&gt;/g, '>')
       .replace(/&amp;/g, '&')
       .replace(/&nbsp;/g, ' ')
-      .replace(
-        /http:\/\/localhost:8888\/api\/uploads/g,
-        'http://localhost:8888/uploads'
-      )
+      .replace(/http:\/\/localhost:8888\/api\/uploads/g, 'http://localhost:8888/uploads'),
   );
 
   return (
@@ -87,10 +90,7 @@ const ProductDetailsSection: React.FC<ProductDetailsSectionProps> = ({
         >
           {specifications && specifications.length > 0 ? (
             <div className="relative">
-              <div
-                className="space-y-0 overflow-hidden relative"
-                style={{ maxHeight: '500px' }}
-              >
+              <div className="space-y-0 overflow-hidden relative" style={{ maxHeight: '500px' }}>
                 {specifications.map((spec, index) => (
                   <div
                     key={index}
@@ -101,10 +101,12 @@ const ProductDetailsSection: React.FC<ProductDetailsSectionProps> = ({
                     `}
                   >
                     <span className="text-sm font-semibold text-gray-700 dark:text-gray-300 min-w-0 flex-shrink-0 mr-4">
-                      {spec.name}
+                      {t(`product.specNames.${spec.name.toLowerCase()}`, {
+                        defaultValue: spec.name,
+                      })}
                     </span>
                     <span className="text-sm text-gray-900 dark:text-gray-100 text-right break-words font-medium">
-                      {spec.value}
+                      {getSpecValue(spec, i18n.language)}
                     </span>
                   </div>
                 ))}
@@ -151,9 +153,9 @@ const ProductDetailsSection: React.FC<ProductDetailsSectionProps> = ({
         width={1000}
         style={{ top: 20 }}
         classNames={{
-          body: "max-h-[85vh] overflow-y-auto p-0 scrollbar-thin scrollbar-thumb-gray-300 dark:scrollbar-thumb-gray-600",
-          content: "rounded-xl overflow-hidden p-0 dark:bg-[#141414]",
-          header: "mb-0 p-4 pb-0 bg-white dark:bg-[#141414] rounded-t-xl",
+          body: 'max-h-[85vh] overflow-y-auto p-0 scrollbar-thin scrollbar-thumb-gray-300 dark:scrollbar-thumb-gray-600',
+          content: 'rounded-xl overflow-hidden p-0 dark:bg-[#141414]',
+          header: 'mb-0 p-4 pb-0 bg-white dark:bg-[#141414] rounded-t-xl',
         }}
         closeIcon={
           <div className="p-1 rounded-full hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors">
@@ -182,9 +184,9 @@ const ProductDetailsSection: React.FC<ProductDetailsSectionProps> = ({
         width={800}
         style={{ top: 20 }}
         classNames={{
-          body: "max-h-[85vh] overflow-y-auto p-0 scrollbar-thin scrollbar-thumb-gray-300 dark:scrollbar-thumb-gray-600",
-          content: "rounded-xl overflow-hidden p-0 dark:bg-[#141414]",
-          header: "mb-0 p-4 pb-0 bg-white dark:bg-[#141414] rounded-t-xl",
+          body: 'max-h-[85vh] overflow-y-auto p-0 scrollbar-thin scrollbar-thumb-gray-300 dark:scrollbar-thumb-gray-600',
+          content: 'rounded-xl overflow-hidden p-0 dark:bg-[#141414]',
+          header: 'mb-0 p-4 pb-0 bg-white dark:bg-[#141414] rounded-t-xl',
         }}
         closeIcon={
           <div className="p-1 rounded-full hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors">
@@ -206,10 +208,10 @@ const ProductDetailsSection: React.FC<ProductDetailsSectionProps> = ({
                   `}
                 >
                   <span className="text-base font-semibold text-gray-700 dark:text-gray-300 capitalize min-w-0 flex-shrink-0 mr-8 w-1/3">
-                    {spec.name}
+                    {t(`product.specNames.${spec.name.toLowerCase()}`, { defaultValue: spec.name })}
                   </span>
                   <span className="text-base text-gray-900 dark:text-gray-100 text-left break-words font-medium w-2/3">
-                    {spec.value}
+                    {getSpecValue(spec, i18n.language)}
                   </span>
                 </div>
               ))}

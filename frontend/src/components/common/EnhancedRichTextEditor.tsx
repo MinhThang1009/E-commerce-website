@@ -1,8 +1,4 @@
-import React, {
-  useEffect,
-  useRef,
-  useCallback,
-} from 'react';
+import React, { useEffect, useRef, useCallback } from 'react';
 import Quill from 'quill';
 import 'quill/dist/quill.snow.css';
 import { message } from 'antd';
@@ -22,6 +18,7 @@ interface EnhancedRichTextEditorProps {
   style?: React.CSSProperties;
   className?: string;
   onImageUpload?: (imageUrl: string, imageId: string) => void;
+  id?: string;
 }
 
 const EnhancedRichTextEditor: React.FC<EnhancedRichTextEditorProps> = ({
@@ -33,6 +30,7 @@ const EnhancedRichTextEditor: React.FC<EnhancedRichTextEditorProps> = ({
   productId,
   category = 'product',
   onImageUpload,
+  id,
 }) => {
   const { t } = useTranslation();
   const resolvedPlaceholder = placeholder ?? t('richEditor.placeholder');
@@ -41,6 +39,7 @@ const EnhancedRichTextEditor: React.FC<EnhancedRichTextEditorProps> = ({
   const isInternalChange = useRef(false);
   const { mutateAsync: uploadImage } = useUploadImageMutation();
   const isUploadingRef = useRef(false);
+  const hasInitialized = useRef(false);
 
   // Hàm xử lý chèn ảnh tùy chỉnh cho Quill
   const handleImageInsert = useCallback(async () => {
@@ -83,7 +82,10 @@ const EnhancedRichTextEditor: React.FC<EnhancedRichTextEditorProps> = ({
         });
 
         if (result?.data?.url) {
-          const domainUrl = (import.meta.env.VITE_API_URL || 'http://localhost:8888/api').replace(/\/api\/?$/, '');
+          const domainUrl = (import.meta.env.VITE_API_URL || 'http://localhost:8888/api').replace(
+            /\/api\/?$/,
+            '',
+          );
           const imageUrl = `${domainUrl}${result.data.url}`;
 
           const quill = quillRef.current;
@@ -111,7 +113,8 @@ const EnhancedRichTextEditor: React.FC<EnhancedRichTextEditorProps> = ({
 
   // Khởi tạo Quill
   useEffect(() => {
-    if (!containerRef.current || quillRef.current) return;
+    if (!containerRef.current || quillRef.current || hasInitialized.current) return;
+    hasInitialized.current = true;
 
     const quill = new Quill(containerRef.current, {
       theme: 'snow',
@@ -136,6 +139,8 @@ const EnhancedRichTextEditor: React.FC<EnhancedRichTextEditorProps> = ({
     });
 
     quillRef.current = quill;
+
+    if (id) quill.root.id = id;
 
     if (value) {
       quill.root.innerHTML = value;
@@ -177,7 +182,9 @@ const EnhancedRichTextEditor: React.FC<EnhancedRichTextEditorProps> = ({
             });
 
             if (result?.data?.url) {
-              const domainUrl = (import.meta.env.VITE_API_URL || 'http://localhost:8888/api').replace(/\/api\/?$/, '');
+              const domainUrl = (
+                import.meta.env.VITE_API_URL || 'http://localhost:8888/api'
+              ).replace(/\/api\/?$/, '');
               const imageUrl = `${domainUrl}${result.data.url}`;
 
               const currentQuill = quillRef.current;
@@ -205,16 +212,19 @@ const EnhancedRichTextEditor: React.FC<EnhancedRichTextEditorProps> = ({
 
     return () => {
       quill.root.removeEventListener('paste', handlePaste);
-      quillRef.current = null;
+      // Không null quillRef — StrictMode simulated cleanup không được xóa instance
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- Khởi tạo Quill một lần, các deps khác dùng qua ref/closure
-  }, [handleImageInsert]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- init một lần, handleImageInsert truy cập qua closure nên không cần dep
+  }, []);
 
   // Đồng bộ giá trị từ bên ngoài vào editor
   useEffect(() => {
     if (!quillRef.current) return;
     const currentContent = quillRef.current.root.innerHTML;
-    if (value !== currentContent && value !== (currentContent === '<p><br></p>' ? '' : currentContent)) {
+    if (
+      value !== currentContent &&
+      value !== (currentContent === '<p><br></p>' ? '' : currentContent)
+    ) {
       isInternalChange.current = true;
       quillRef.current.root.innerHTML = value || '';
       isInternalChange.current = false;
@@ -239,7 +249,28 @@ const EnhancedRichTextEditor: React.FC<EnhancedRichTextEditorProps> = ({
       value={value}
       onChange={onChange}
     >
-      <div className="enhanced-quill-editor" style={{ height: `${height + 42}px`, marginBottom: '50px' }}>
+      <div
+        className="enhanced-quill-editor"
+        style={{ height: `${height + 42}px`, marginBottom: '50px' }}
+      >
+        {/* Textarea ẩn để label[for] của Form.Item có labelable target hợp lệ */}
+        {id && (
+          <textarea
+            id={id}
+            aria-hidden="true"
+            tabIndex={-1}
+            readOnly
+            onFocus={() => quillRef.current?.focus()}
+            style={{
+              position: 'absolute',
+              width: 0,
+              height: 0,
+              opacity: 0,
+              overflow: 'hidden',
+              pointerEvents: 'none',
+            }}
+          />
+        )}
         <div ref={containerRef} style={{ height: `${height}px` }} />
         <style>{`
           .enhanced-quill-editor .ql-container {
@@ -265,4 +296,3 @@ const EnhancedRichTextEditor: React.FC<EnhancedRichTextEditorProps> = ({
 };
 
 export default EnhancedRichTextEditor;
-

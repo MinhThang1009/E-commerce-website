@@ -1,7 +1,7 @@
 import React from 'react';
 import { useTranslation } from 'react-i18next';
 import { Product } from '../api/productApi';
-import ProductCard from '@/components/shared/ProductCard';
+import { ProductCard } from '@/features/catalog';
 
 interface ProductGridProps {
   products: Product[];
@@ -9,11 +9,7 @@ interface ProductGridProps {
   columns?: 2 | 3 | 4;
 }
 
-const ProductGrid: React.FC<ProductGridProps> = ({
-  products,
-  loading = false,
-  columns = 3,
-}) => {
+const ProductGrid: React.FC<ProductGridProps> = ({ products, loading = false, columns = 3 }) => {
   const { t } = useTranslation();
   // Xác định class số cột lưới
   const gridClass = {
@@ -80,4 +76,3 @@ const ProductGrid: React.FC<ProductGridProps> = ({
 };
 
 export default ProductGrid;
-

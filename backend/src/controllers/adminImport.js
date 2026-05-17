@@ -15,7 +15,7 @@ const {
 const { Op } = require('sequelize');
 const logger = require('../utils/logger');
 const { catchAsync } = require('../utils/catchAsync');
-const { AppError } = require('../middlewares/errorHandler');
+const { AppError } = require('../shared/errors');
 const vectorStoreService = require('../services/ai/vectorStore');
 
 // ===================================================

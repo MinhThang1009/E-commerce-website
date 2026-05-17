@@ -7,7 +7,6 @@ import { HelmetProvider } from 'react-helmet-async';
 import AppRoutes from '@/routes/AppRoutes';
 import Notifications from '@/components/common/Notifications';
 import { ChatWidgetPortal, ChatbotErrorBoundary } from '@/features/ai';
-import { SupportChat } from '@/features/chat';
 import { useTokenRefresh } from '@/hooks/useTokenRefresh';
 import { LoginSuccess, AuthProvider } from '@/features/auth';
 import { useAntdToast } from '@/hooks/useAntdToast';
@@ -30,7 +29,8 @@ const AppContent: React.FC = () => {
   // Lắng nghe trạng thái thanh toán thành công ở cấp global
   useEffect(() => {
     const params = new URLSearchParams(location.search);
-    const hasSuccess = params.get('payment') === 'success' ||
+    const hasSuccess =
+      params.get('payment') === 'success' ||
       (params.get('status') === 'momo-return' && params.get('resultCode') === '0');
 
     if (hasSuccess) {
@@ -62,14 +62,13 @@ const AppContent: React.FC = () => {
   return (
     <HelmetProvider>
       <AuthProvider>
-          {contextHolder}
-          <Notifications />
-          <LoginSuccess />
-          <AppRoutes />
-          <ChatbotErrorBoundary>
-            <ChatWidgetPortal />
-          </ChatbotErrorBoundary>
-          {<SupportChat />}
+        {contextHolder}
+        <Notifications />
+        <LoginSuccess />
+        <AppRoutes />
+        <ChatbotErrorBoundary>
+          <ChatWidgetPortal />
+        </ChatbotErrorBoundary>
       </AuthProvider>
     </HelmetProvider>
   );
@@ -84,4 +83,3 @@ const App: React.FC = () => {
 };
 
 export default App;
-

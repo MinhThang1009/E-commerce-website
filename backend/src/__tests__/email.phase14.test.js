@@ -55,7 +55,6 @@ jest.mock('../middlewares/authenticate', () => ({
 
 jest.mock('../middlewares/rateLimiter', () => ({
   otpLimiter: (_req, _res, next) => next(),
-  chatLimiter: (_req, _res, next) => next(),
 }));
 
 // validateRequest pass-through — Phase 14 không test validation boundary của các fields này

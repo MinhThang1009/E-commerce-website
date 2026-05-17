@@ -1,2 +1,2 @@
-// Re-export từ middlewares/validateRequest. Phase 5 cleanup sẽ flip.
+// Canonical import path for modules. Delegates to middlewares/validateRequest.js (where Jest mocks intercept).
 module.exports = require('../../../middlewares/validateRequest');

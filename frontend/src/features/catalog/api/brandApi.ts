@@ -8,14 +8,15 @@ export const brandKeys = {
   all: ['brands'] as const,
   list: (params?: unknown) => [...brandKeys.all, 'list', params] as const,
   slug: (slug: string) => [...brandKeys.all, 'slug', slug] as const,
-  products: (slug: string, params?: unknown) => [...brandKeys.all, 'products', slug, params] as const,
+  products: (slug: string, params?: unknown) =>
+    [...brandKeys.all, 'products', slug, params] as const,
 };
 
 // === Query Hooks ===
 
 export function useGetBrandsQuery(
   params?: { isActive?: boolean; categoryId?: string } | void,
-  options?: { enabled?: boolean; skip?: boolean }
+  options?: { enabled?: boolean; skip?: boolean },
 ) {
   return useQuery({
     queryKey: brandKeys.list(params),
@@ -36,7 +37,7 @@ export function useGetBrandsQuery(
 
 export function useGetBrandBySlugQuery(
   slug: string,
-  options?: { enabled?: boolean; skip?: boolean }
+  options?: { enabled?: boolean; skip?: boolean },
 ) {
   return useQuery({
     queryKey: brandKeys.slug(slug),
@@ -50,7 +51,7 @@ export function useGetBrandBySlugQuery(
 
 export function useGetProductsByBrandQuery(
   params: { slug: string; page?: number; limit?: number },
-  options?: { enabled?: boolean; skip?: boolean }
+  options?: { enabled?: boolean; skip?: boolean },
 ) {
   return useQuery({
     queryKey: brandKeys.products(params.slug, params),
@@ -59,7 +60,7 @@ export function useGetProductsByBrandQuery(
       urlParams.append('page', (params.page || 1).toString());
       urlParams.append('limit', (params.limit || 12).toString());
       const { data } = await apiClient.get(
-        `/brands/slug/${params.slug}/products?${urlParams.toString()}`
+        `/brands/slug/${params.slug}/products?${urlParams.toString()}`,
       );
       return transformProductsResponse(data);
     },
@@ -71,7 +72,7 @@ export function useCreateBrandMutation() {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: async (body: object) => {
-      const { data } = await apiClient.post('/admin/brands', body);
+      const { data } = await apiClient.post('/brands', body);
       return data;
     },
     onSuccess: () => {
@@ -84,7 +85,7 @@ export function useUpdateBrandMutation() {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: async ({ id, body }: { id: string; body: object }) => {
-      const { data } = await apiClient.put(`/admin/brands/${id}`, body);
+      const { data } = await apiClient.put(`/brands/${id}`, body);
       return data;
     },
     onSuccess: () => {
@@ -97,7 +98,7 @@ export function useDeleteBrandMutation() {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: async (id: string) => {
-      const { data } = await apiClient.delete(`/admin/brands/${id}`);
+      const { data } = await apiClient.delete(`/brands/${id}`);
       return data;
     },
     onSuccess: () => {

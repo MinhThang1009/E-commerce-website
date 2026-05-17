@@ -1,4 +1,3 @@
-import i18next from 'i18next';
 import type { ProductFilters } from '../types/product.types';
 
 export interface RawProduct {
@@ -35,41 +34,43 @@ export interface TransformedProduct {
   [key: string]: any;
 }
 
-const getSpecLabel = (key: string): string => {
-  const lowerKey = key.toLowerCase();
-  const tKey = `product.specNames.${lowerKey}`;
-  const translated = i18next.t(tKey);
-  return translated !== tKey ? translated : key;
-};
-
-const transformSpecs = (specs: Record<string, unknown> | Array<{ name?: string; value?: unknown }> | null | undefined, attributes: Record<string, unknown> = {}) => {
+const transformSpecs = (
+  specs:
+    | Record<string, unknown>
+    | Array<{ name?: string; value?: unknown; valueEn?: string }>
+    | null
+    | undefined,
+  attributes: Record<string, unknown> = {},
+  attributesEn: Record<string, string> = {},
+) => {
   let mergedSpecs: Record<string, unknown> = {};
+  const mergedSpecsEn: Record<string, string> = {};
 
-  // 1. Phục hồi từ định dạng mảng nếu tồn tại (chủ yếu cho thông số cơ bản)
   if (Array.isArray(specs)) {
-    specs.forEach(s => {
+    specs.forEach((s) => {
       if (s && s.name) {
         mergedSpecs[s.name] = s.value;
+        if (s.valueEn) mergedSpecsEn[s.name] = s.valueEn;
       }
     });
   } else if (typeof specs === 'object' && specs !== null) {
     mergedSpecs = { ...specs };
   }
 
-  // 2. Gộp các thuộc tính (đặc biệt cho biến thể)
-  // Kiểm tra xem attributes có phải là plain object không (không phải mảng/liên kết)
   if (typeof attributes === 'object' && attributes !== null && !Array.isArray(attributes)) {
     Object.entries(attributes).forEach(([key, value]) => {
       if (!mergedSpecs[key]) {
         mergedSpecs[key] = value;
+        if (attributesEn[key]) mergedSpecsEn[key] = attributesEn[key];
       }
     });
   }
 
-  // 3. Chuyển thành mảng và bản địa hóa
+  // Giữ key thô — để component dịch tại render time (reactive với language change)
   return Object.entries(mergedSpecs).map(([name, value]) => ({
-    name: getSpecLabel(name),
+    name,
     value: String(value),
+    valueEn: mergedSpecsEn[name] || undefined,
   }));
 };
 
@@ -82,12 +83,14 @@ export const transformProduct = (product: RawProduct): TransformedProduct | null
   return {
     ...product,
     price: parseFloat(String(product.price)),
-    compareAtPrice: product.compareAtPrice
-      ? parseFloat(String(product.compareAtPrice))
-      : null,
-    stock: product.variants?.length > 0
-      ? product.variants.reduce((sum: number, v: Record<string, unknown>) => sum + (Number(v.stockQuantity) || 0), 0)
-      : product.stockQuantity,
+    compareAtPrice: product.compareAtPrice ? parseFloat(String(product.compareAtPrice)) : null,
+    stock:
+      product.variants?.length > 0
+        ? product.variants.reduce(
+            (sum: number, v: Record<string, unknown>) => sum + (Number(v.stockQuantity) || 0),
+            0,
+          )
+        : product.stockQuantity,
     isVariantProduct: (product.variants?.length || 0) > 0,
     categoryId: product.categoryId || product.category?.id || product.categories?.[0]?.id || '',
     categoryName: product.category?.name || product.categories?.[0]?.name || '',
@@ -109,7 +112,7 @@ export const transformProduct = (product: RawProduct): TransformedProduct | null
       }
       return { ...v, attributes: attrs || {} };
     }),
-    attributes: Array.isArray(product.attributes) 
+    attributes: Array.isArray(product.attributes)
       ? product.attributes.map((attr: Record<string, unknown>) => {
           let values = attr.values;
           if (!Array.isArray(values)) {
@@ -130,26 +133,42 @@ export const transformProduct = (product: RawProduct): TransformedProduct | null
           const values = Array.isArray(value) ? value : [value];
           return { name: key, values };
         }),
-    
-    // Chuyển đổi thông số kỹ thuật (cấp ROOT)
-    productSpecifications: transformSpecs(product.specifications, product.attributes_object || product.attributes),
-    
+
+    // Ưu tiên productSpecifications từ normalized table (có valueEn), fallback JSON
+    productSpecifications: transformSpecs(
+      product.productSpecifications?.length > 0
+        ? product.productSpecifications
+        : product.specifications,
+      product.attributes_object || product.attributes,
+    ),
+
     // Xử lý biến thể hiện tại nếu có
-    currentVariant: product.currentVariant ? {
-      ...product.currentVariant,
-      // Nếu backend đã gộp thông số vào biến thể, dùng chúng.
-      // Ngược lại, gộp thuộc tính biến thể tại đây.
-      productSpecifications: transformSpecs(product.currentVariant.specifications || product.specifications, product.currentVariant.attributes),
-    } : null,
+    currentVariant: product.currentVariant
+      ? {
+          ...product.currentVariant,
+          // Ưu tiên table data (có valueEn), fallback JSON variant/product specs
+          // Truyền attributesEn để color từ variant cũng có valueEn
+          productSpecifications:
+            product.productSpecifications?.length > 0
+              ? transformSpecs(
+                  product.productSpecifications,
+                  product.currentVariant.attributes,
+                  product.currentVariant.attributesEn || {},
+                )
+              : transformSpecs(
+                  product.currentVariant.specifications || product.specifications,
+                  product.currentVariant.attributes,
+                  product.currentVariant.attributesEn || {},
+                ),
+        }
+      : null,
   };
 };
 
 /**
  * Chuyển đổi một mảng sản phẩm
  */
-export const transformProducts = (
-  products: RawProduct[]
-): TransformedProduct[] => {
+export const transformProducts = (products: RawProduct[]): TransformedProduct[] => {
   if (!Array.isArray(products)) return [];
   return products.map(transformProduct).filter((p): p is TransformedProduct => p !== null);
 };
@@ -184,9 +203,7 @@ export const transformProductsResponse = <T extends { data?: unknown }>(response
 /**
  * Tạo URLSearchParams từ bộ lọc
  */
-export const createProductFiltersParams = (
-  filters: ProductFilters = {}
-): URLSearchParams => {
+export const createProductFiltersParams = (filters: ProductFilters = {}): URLSearchParams => {
   const params = new URLSearchParams();
 
   // Bộ lọc cơ bản
@@ -194,10 +211,8 @@ export const createProductFiltersParams = (
   if (filters.limit) params.append('limit', filters.limit.toString());
   if (filters.categoryId) params.append('category', filters.categoryId);
   if (filters.search) params.append('search', filters.search);
-  if (filters.minPrice !== undefined)
-    params.append('minPrice', filters.minPrice.toString());
-  if (filters.maxPrice !== undefined)
-    params.append('maxPrice', filters.maxPrice.toString());
+  if (filters.minPrice !== undefined) params.append('minPrice', filters.minPrice.toString());
+  if (filters.maxPrice !== undefined) params.append('maxPrice', filters.maxPrice.toString());
 
   // Mặc định lấy sản phẩm đang hoạt động
   if (filters.status !== undefined) {
@@ -246,4 +261,3 @@ export const createProductFiltersParams = (
 
   return params;
 };
-

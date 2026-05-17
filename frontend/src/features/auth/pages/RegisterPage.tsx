@@ -4,7 +4,11 @@ import { useTranslation } from 'react-i18next';
 import { ROUTES } from '@/routes/paths';
 import { PremiumButton } from '@/components/common';
 import Input from '@/components/common/Input';
-import { useRegisterMutation, useVerifyOtpMutation, useResendVerificationMutation } from '../api/authApi';
+import {
+  useRegisterMutation,
+  useVerifyOtpMutation,
+  useResendVerificationMutation,
+} from '../api/authApi';
 import { getErrorMsg } from '@/utils/errorMessage';
 
 type Step = 'form' | 'otp';
@@ -39,23 +43,56 @@ const RegisterPage: React.FC = () => {
   const [resendCooldown, setResendCooldown] = useState(0);
 
   const navigate = useNavigate();
-  const { mutateAsync: register, isPending: isRegistering, error: registerError } = useRegisterMutation();
+  const {
+    mutateAsync: register,
+    isPending: isRegistering,
+    error: registerError,
+  } = useRegisterMutation();
   const { mutateAsync: verifyOtp, isPending: isVerifying } = useVerifyOtpMutation();
-  const { mutateAsync: resendVerification, isPending: isResending } = useResendVerificationMutation();
+  const { mutateAsync: resendVerification, isPending: isResending } =
+    useResendVerificationMutation();
 
   const validateForm = () => {
     const newErrors: typeof errors = {};
     let isValid = true;
 
-    if (!firstName.trim()) { newErrors.firstName = t('validation.firstName.required'); isValid = false; }
-    if (!lastName.trim()) { newErrors.lastName = t('validation.lastName.required'); isValid = false; }
-    if (!email) { newErrors.email = t('validation.email.required'); isValid = false; }
-    else if (!/\S+@\S+\.\S+/.test(email)) { newErrors.email = t('validation.email.invalid'); isValid = false; }
-    if (!password) { newErrors.password = t('validation.password.required'); isValid = false; }
-    else if (password.length < 6) { newErrors.password = t('validation.password.minLength'); isValid = false; }
-    if (!confirmPassword) { newErrors.confirmPassword = t('validation.confirmPassword.required'); isValid = false; }
-    else if (password !== confirmPassword) { newErrors.confirmPassword = t('validation.confirmPassword.mismatch'); isValid = false; }
-    if (!acceptTerms) { newErrors.acceptTerms = t('validation.terms.required'); isValid = false; }
+    if (!firstName.trim()) {
+      newErrors.firstName = t('validation.firstName.required');
+      isValid = false;
+    }
+    if (!lastName.trim()) {
+      newErrors.lastName = t('validation.lastName.required');
+      isValid = false;
+    }
+    if (!email) {
+      newErrors.email = t('validation.email.required');
+      isValid = false;
+    } else if (!/\S+@\S+\.\S+/.test(email)) {
+      newErrors.email = t('validation.email.invalid');
+      isValid = false;
+    }
+    if (!password) {
+      newErrors.password = t('validation.password.required');
+      isValid = false;
+    } else if (password.length < 6) {
+      newErrors.password = t('validation.password.minLength');
+      isValid = false;
+    }
+    if (!confirmPassword) {
+      newErrors.confirmPassword = t('validation.confirmPassword.required');
+      isValid = false;
+    } else if (password !== confirmPassword) {
+      newErrors.confirmPassword = t('validation.confirmPassword.mismatch');
+      isValid = false;
+    }
+    if (phone.trim() && !/^(0|\+84)[0-9]{9}$/.test(phone.trim().replace(/[\s.-]/g, ''))) {
+      newErrors.phone = t('validation.phone.invalid');
+      isValid = false;
+    }
+    if (!acceptTerms) {
+      newErrors.acceptTerms = t('validation.terms.required');
+      isValid = false;
+    }
 
     setErrors(newErrors);
     return isValid;
@@ -65,7 +102,13 @@ const RegisterPage: React.FC = () => {
     e?.preventDefault();
     if (!validateForm()) return;
     try {
-      await register({ email, password, firstName: firstName.trim(), lastName: lastName.trim(), phone: phone.trim() || '' });
+      await register({
+        email,
+        password,
+        firstName: firstName.trim(),
+        lastName: lastName.trim(),
+        phone: phone.trim() || '',
+      });
       setRegisteredEmail(email);
       setStep('otp');
     } catch (err) {
@@ -101,7 +144,10 @@ const RegisterPage: React.FC = () => {
 
   const handleVerifyOtp = async () => {
     const otp = otpValues.join('');
-    if (otp.length < 6) { setOtpError(t('auth.otp.incomplete')); return; }
+    if (otp.length < 6) {
+      setOtpError(t('auth.otp.incomplete'));
+      return;
+    }
     setOtpError('');
     try {
       await verifyOtp({ email: registeredEmail, otp });
@@ -120,7 +166,13 @@ const RegisterPage: React.FC = () => {
       setOtpError('');
       setResendCooldown(60);
       const timer = setInterval(() => {
-        setResendCooldown(c => { if (c <= 1) { clearInterval(timer); return 0; } return c - 1; });
+        setResendCooldown((c) => {
+          if (c <= 1) {
+            clearInterval(timer);
+            return 0;
+          }
+          return c - 1;
+        });
       }, 1000);
     } catch (err) {
       setOtpError(getErrorMsg(err, t('auth.otp.resendError')));
@@ -135,21 +187,46 @@ const RegisterPage: React.FC = () => {
           <div className="bg-white dark:bg-neutral-800 rounded-lg shadow-md p-8">
             <div className="text-center mb-8">
               <div className="mx-auto w-16 h-16 bg-blue-100 dark:bg-blue-900/30 rounded-full flex items-center justify-center mb-4">
-                <svg className="w-8 h-8 text-blue-600 dark:text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+                <svg
+                  className="w-8 h-8 text-blue-600 dark:text-blue-400"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"
+                  />
                 </svg>
               </div>
-              <h1 className="text-2xl font-bold text-neutral-800 dark:text-neutral-100 mb-2">{t('auth.otp.title')}</h1>
+              <h1 className="text-2xl font-bold text-neutral-800 dark:text-neutral-100 mb-2">
+                {t('auth.otp.title')}
+              </h1>
               <p className="text-neutral-600 dark:text-neutral-400 text-sm">
-                {t('auth.otp.description')}<br />
-                <span className="font-semibold text-neutral-800 dark:text-neutral-200">{registeredEmail}</span>
+                {t('auth.otp.description')}
+                <br />
+                <span className="font-semibold text-neutral-800 dark:text-neutral-200">
+                  {registeredEmail}
+                </span>
               </p>
             </div>
 
             {otpSuccess ? (
               <div className="mb-6 p-4 bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400 rounded-lg text-center">
-                <svg className="w-8 h-8 mx-auto mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                <svg
+                  className="w-8 h-8 mx-auto mb-2"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"
+                  />
                 </svg>
                 <p className="font-semibold">{otpSuccess}</p>
                 <p className="text-sm mt-1">{t('auth.otp.redirecting')}</p>
@@ -160,13 +237,15 @@ const RegisterPage: React.FC = () => {
                   {otpValues.map((val, i) => (
                     <input
                       key={i}
-                      ref={el => { otpRefs.current[i] = el; }}
+                      ref={(el) => {
+                        otpRefs.current[i] = el;
+                      }}
                       type="text"
                       inputMode="numeric"
                       maxLength={1}
                       value={val}
-                      onChange={e => handleOtpChange(i, e.target.value)}
-                      onKeyDown={e => handleOtpKeyDown(i, e)}
+                      onChange={(e) => handleOtpChange(i, e.target.value)}
+                      onKeyDown={(e) => handleOtpKeyDown(i, e)}
                       className={`w-12 h-14 text-center text-2xl font-bold border-2 rounded-lg outline-none transition-all
                         ${val ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/20 text-blue-700 dark:text-blue-300' : 'border-neutral-300 dark:border-neutral-600 bg-white dark:bg-neutral-700 text-neutral-800 dark:text-neutral-100'}
                         ${otpError ? 'border-red-400' : ''}
@@ -176,7 +255,9 @@ const RegisterPage: React.FC = () => {
                 </div>
 
                 {otpError && (
-                  <p className="text-center text-sm text-red-600 dark:text-red-400 mb-4">{otpError}</p>
+                  <p className="text-center text-sm text-red-600 dark:text-red-400 mb-4">
+                    {otpError}
+                  </p>
                 )}
 
                 <PremiumButton
@@ -230,9 +311,7 @@ const RegisterPage: React.FC = () => {
             <h1 className="text-2xl font-bold text-neutral-800 dark:text-neutral-100 mb-2">
               {t('auth.register.title')}
             </h1>
-            <p className="text-neutral-600 dark:text-neutral-400">
-              {t('auth.register.subtitle')}
-            </p>
+            <p className="text-neutral-600 dark:text-neutral-400">{t('auth.register.subtitle')}</p>
           </div>
 
           <form onSubmit={handleSubmit}>
@@ -276,9 +355,11 @@ const RegisterPage: React.FC = () => {
             <div className="mb-6">
               <Input
                 type="tel"
+                inputMode="numeric"
+                maxLength={10}
                 label={t('auth.register.phoneLabel')}
                 value={phone}
-                onChange={(e) => setPhone(e.target.value)}
+                onChange={(e) => setPhone(e.target.value.replace(/[^0-9]/g, ''))}
                 placeholder={t('auth.register.phonePlaceholder')}
                 error={errors.phone}
               />
@@ -318,12 +399,26 @@ const RegisterPage: React.FC = () => {
                 />
                 <span className="ml-2 text-sm text-neutral-600 dark:text-neutral-400">
                   {t('auth.register.agreeToTerms')}{' '}
-                  <Link to={ROUTES.TERMS} className="text-primary-600 dark:text-primary-400 hover:text-primary-700 dark:hover:text-primary-300">{t('auth.register.termsOfService')}</Link>
-                  {' '}{t('auth.register.and')}{' '}
-                  <Link to={ROUTES.PRIVACY_POLICY} className="text-primary-600 dark:text-primary-400 hover:text-primary-700 dark:hover:text-primary-300">{t('auth.register.privacyPolicy')}</Link>
+                  <Link
+                    to={ROUTES.TERMS}
+                    className="text-primary-600 dark:text-primary-400 hover:text-primary-700 dark:hover:text-primary-300"
+                  >
+                    {t('auth.register.termsOfService')}
+                  </Link>{' '}
+                  {t('auth.register.and')}{' '}
+                  <Link
+                    to={ROUTES.PRIVACY_POLICY}
+                    className="text-primary-600 dark:text-primary-400 hover:text-primary-700 dark:hover:text-primary-300"
+                  >
+                    {t('auth.register.privacyPolicy')}
+                  </Link>
                 </span>
               </label>
-              {errors.acceptTerms && <p className="mt-1 text-sm text-error-600 dark:text-error-400">{errors.acceptTerms}</p>}
+              {errors.acceptTerms && (
+                <p className="mt-1 text-sm text-error-600 dark:text-error-400">
+                  {errors.acceptTerms}
+                </p>
+              )}
             </div>
 
             <div className="mb-6">
@@ -344,7 +439,10 @@ const RegisterPage: React.FC = () => {
           <div className="text-center">
             <p className="text-neutral-600 dark:text-neutral-400">
               {t('auth.register.haveAccount')}{' '}
-              <Link to={ROUTES.LOGIN} className="text-primary-600 dark:text-primary-400 hover:text-primary-700 dark:hover:text-primary-300 font-medium">
+              <Link
+                to={ROUTES.LOGIN}
+                className="text-primary-600 dark:text-primary-400 hover:text-primary-700 dark:hover:text-primary-300 font-medium"
+              >
                 {t('auth.register.loginNow')}
               </Link>
             </p>
@@ -355,7 +453,9 @@ const RegisterPage: React.FC = () => {
               <div className="p-4 bg-error-100 dark:bg-error-900/30 text-error-700 dark:text-error-400 rounded-lg">
                 {typeof registerError === 'string'
                   ? registerError
-                  : (registerError as ApiError)?.data?.message || (registerError as ApiError)?.message || t('auth.register.errors.registrationFailed')}
+                  : (registerError as ApiError)?.data?.message ||
+                    (registerError as ApiError)?.message ||
+                    t('auth.register.errors.registrationFailed')}
               </div>
             )}
           </div>

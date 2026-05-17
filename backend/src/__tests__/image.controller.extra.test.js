@@ -34,7 +34,7 @@ const mockDeleteImage = jest.fn();
 const mockConvertBase64ToFile = jest.fn();
 const mockCleanupOrphanedFiles = jest.fn();
 
-jest.mock('../services/image', () => ({
+jest.mock('../modules/image/services/imageService', () => ({
   uploadImage: (...args) => mockUploadImage(...args),
   uploadMultipleImages: (...args) => mockUploadMultipleImages(...args),
   getImageById: (...args) => mockGetImageById(...args),

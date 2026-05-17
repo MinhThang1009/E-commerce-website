@@ -50,7 +50,7 @@ jest.mock('../middlewares/adminAuth', () => ({
   },
 }));
 
-jest.mock('../services/adminAudit', () => ({
+jest.mock('../shared/adminAudit', () => ({
   auditMiddleware: (_req, _res, next) => next(),
   AdminAuditService: { log: jest.fn() },
 }));

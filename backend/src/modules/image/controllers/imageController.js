@@ -1,7 +1,7 @@
 const multer = require('multer');
 const path = require('path');
 const { v4: uuidv4 } = require('uuid');
-const imageService = require('../../../services/image');
+const imageService = require('../services/imageService');
 const { AppError } = require('../../../shared/errors');
 
 // Cấu hình multer lưu file tạm — file sẽ được xử lý bởi imageService rồi xóa
@@ -96,13 +96,11 @@ class ImageController {
             optimize: req.body.optimize !== 'false',
           };
           const result = await imageService.uploadMultipleImages(req.files, options);
-          res
-            .status(200)
-            .json({
-              status: 'success',
-              message: `${result.count.successful} ảnh đã được upload thành công`,
-              data: result,
-            });
+          res.status(200).json({
+            status: 'success',
+            message: `${result.count.successful} ảnh đã được upload thành công`,
+            data: result,
+          });
         } catch (error) {
           next(error);
         }
@@ -117,12 +115,10 @@ class ImageController {
     try {
       const { id } = req.params;
       const image = await imageService.getImageById(id);
-      res
-        .status(200)
-        .json({
-          status: 'success',
-          data: { ...image.toJSON(), url: `/uploads/${image.filePath}` },
-        });
+      res.status(200).json({
+        status: 'success',
+        data: { ...image.toJSON(), url: `/uploads/${image.filePath}` },
+      });
     } catch (error) {
       next(error);
     }
@@ -167,13 +163,11 @@ class ImageController {
         userId: req.user?.id || null,
       };
       const result = await imageService.convertBase64ToFile(base64Data, options);
-      res
-        .status(200)
-        .json({
-          status: 'success',
-          message: 'Đã chuyển đổi base64 sang file thành công',
-          data: result,
-        });
+      res.status(200).json({
+        status: 'success',
+        message: 'Đã chuyển đổi base64 sang file thành công',
+        data: result,
+      });
     } catch (error) {
       next(error);
     }
@@ -183,13 +177,11 @@ class ImageController {
   async cleanupOrphanedFiles(req, res, next) {
     try {
       const result = await imageService.cleanupOrphanedFiles();
-      res
-        .status(200)
-        .json({
-          status: 'success',
-          message: 'Đã dọn dẹp các file không còn được tham chiếu thành công',
-          data: result,
-        });
+      res.status(200).json({
+        status: 'success',
+        message: 'Đã dọn dẹp các file không còn được tham chiếu thành công',
+        data: result,
+      });
     } catch (error) {
       next(error);
     }
@@ -198,13 +190,11 @@ class ImageController {
   // Kiểm tra trạng thái hoạt động của image service
   async healthCheck(req, res, next) {
     try {
-      res
-        .status(200)
-        .json({
-          status: 'success',
-          message: 'Image service đang hoạt động bình thường',
-          data: { timestamp: new Date().toISOString(), version: '1.0.0' },
-        });
+      res.status(200).json({
+        status: 'success',
+        message: 'Image service đang hoạt động bình thường',
+        data: { timestamp: new Date().toISOString(), version: '1.0.0' },
+      });
     } catch (error) {
       next(error);
     }

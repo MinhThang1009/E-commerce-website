@@ -184,7 +184,7 @@ describe('adminAudit.js — auditMiddleware uncovered branches', () => {
     jest.mock('../models', () => ({
       AuditLog: { create: jest.fn().mockResolvedValue({ id: 1 }) },
     }));
-    const module = require('../services/adminAudit');
+    const module = require('../shared/adminAudit');
     AdminAuditService = module.AdminAuditService;
     auditMiddleware = module.auditMiddleware;
   });

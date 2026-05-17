@@ -966,7 +966,7 @@ jest.mock('../middlewares/adminAuth', () => ({
   adminAuthenticate: (_req, _res, next) => next(),
 }));
 
-jest.mock('../services/adminAudit', () => ({
+jest.mock('../shared/adminAudit', () => ({
   AdminAuditService: { logAction: jest.fn(), logSuccessfulLogin: jest.fn() },
   auditMiddleware: (_req, _res, next) => next(),
 }));
@@ -1049,12 +1049,12 @@ jest.mock('../models', () => {
   };
 });
 
-jest.mock('../services/payment/momo', () => ({
+jest.mock('../modules/payment/services/momoService', () => ({
   createPaymentUrl: jest.fn(),
   verifySignature: jest.fn(),
 }));
 
-jest.mock('../services/payment/vnpay', () => ({
+jest.mock('../modules/payment/services/vnpayService', () => ({
   createPaymentUrl: jest.fn().mockReturnValue('https://vnpay.test/pay'),
   verifyReturnUrl: jest.fn(),
   refund: jest.fn(),

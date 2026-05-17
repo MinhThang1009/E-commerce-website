@@ -48,7 +48,7 @@ jest.mock('../middlewares/adminAuth', () => ({
   adminAuthenticate: (_req, _res, next) => next(),
 }));
 
-jest.mock('../services/adminAudit', () => ({
+jest.mock('../shared/adminAudit', () => ({
   AdminAuditService: { logAction: jest.fn(), logSuccessfulLogin: jest.fn() },
   auditMiddleware: (_req, _res, next) => next(),
 }));
@@ -156,19 +156,35 @@ jest.mock('../models', () => {
 const express = require('express');
 const supertest = require('supertest');
 const buildCartModule = require('../modules/cart/module');
-const { Cart, CartItem, Product, ProductVariant, WarrantyPackage, sequelize } = require('../models');
+const {
+  Cart,
+  CartItem,
+  Product,
+  ProductVariant,
+  WarrantyPackage,
+  sequelize,
+} = require('../models');
 const eventBus = require('../shared/eventBus');
 const logger = require('../utils/logger');
 const { errorHandler } = require('../middlewares/errorHandler');
 
 const cartModule = buildCartModule({
-  Cart, CartItem, Product, ProductVariant, WarrantyPackage,
-  sequelize, eventBus, logger,
+  Cart,
+  CartItem,
+  Product,
+  ProductVariant,
+  WarrantyPackage,
+  sequelize,
+  eventBus,
+  logger,
 });
 
 const app = express();
 app.use(express.json());
-app.use((req, _res, next) => { req.cookies = {}; next(); });
+app.use((req, _res, next) => {
+  req.cookies = {};
+  next();
+});
 app.use('/api/cart', cartModule.router);
 app.use(errorHandler);
 const request = supertest(app);
@@ -187,9 +203,7 @@ describe('GET /api/cart — lấy giỏ hàng', () => {
   });
 
   test('Người dùng đăng nhập, giỏ rỗng → 200 với items = []', async () => {
-    const res = await request
-      .get('/api/cart')
-      .set('Authorization', 'Bearer test-token');
+    const res = await request.get('/api/cart').set('Authorization', 'Bearer test-token');
 
     expect(res.status).toBe(200);
     expect(res.body.status).toBe('success');
@@ -233,9 +247,7 @@ describe('GET /api/cart — lấy giỏ hàng', () => {
 
     CartItem.findAll.mockResolvedValue([mockItem]);
 
-    const res = await request
-      .get('/api/cart')
-      .set('Authorization', 'Bearer test-token');
+    const res = await request.get('/api/cart').set('Authorization', 'Bearer test-token');
 
     expect(res.status).toBe(200);
     expect(res.body.data.items).toHaveLength(1);
@@ -270,9 +282,7 @@ describe('DELETE /api/cart/items/:id — xóa item khỏi giỏ hàng', () => {
     };
     CartItem.findByPk.mockResolvedValue(mockItem);
 
-    const res = await request
-      .delete('/api/cart/items/5')
-      .set('Authorization', 'Bearer test-token');
+    const res = await request.delete('/api/cart/items/5').set('Authorization', 'Bearer test-token');
 
     expect(mockDestroyFn).toHaveBeenCalled();
     expect(res.status).toBe(200);
@@ -302,9 +312,7 @@ describe('DELETE /api/cart/items/:id — xóa item khỏi giỏ hàng', () => {
     };
     CartItem.findByPk.mockResolvedValue(mockItem);
 
-    const res = await request
-      .delete('/api/cart/items/5')
-      .set('Authorization', 'Bearer test-token');
+    const res = await request.delete('/api/cart/items/5').set('Authorization', 'Bearer test-token');
 
     expect(res.status).toBe(403);
   });
@@ -405,9 +413,7 @@ describe('DELETE /api/cart — xóa toàn bộ giỏ hàng', () => {
     Cart.findOne.mockResolvedValue({ id: 10, status: 'active' });
     CartItem.destroy = destroyFn;
 
-    const res = await request
-      .delete('/api/cart')
-      .set('Authorization', 'Bearer test-token');
+    const res = await request.delete('/api/cart').set('Authorization', 'Bearer test-token');
 
     expect(res.status).toBe(200);
   });
@@ -416,9 +422,7 @@ describe('DELETE /api/cart — xóa toàn bộ giỏ hàng', () => {
     const { Cart } = require('../models');
     Cart.findOne.mockResolvedValue(null);
 
-    const res = await request
-      .delete('/api/cart')
-      .set('Authorization', 'Bearer test-token');
+    const res = await request.delete('/api/cart').set('Authorization', 'Bearer test-token');
 
     expect(res.status).toBe(200);
     expect(res.body.message).toBe('cart.alreadyEmpty');
@@ -440,9 +444,7 @@ describe('GET /api/cart/count — lấy số lượng item', () => {
     Cart.findOne.mockResolvedValue({ id: 10 });
     CartItem.sum.mockResolvedValue(3); // CartItem.sum('quantity') trả về 3
 
-    const res = await request
-      .get('/api/cart/count')
-      .set('Authorization', 'Bearer test-token');
+    const res = await request.get('/api/cart/count').set('Authorization', 'Bearer test-token');
 
     expect(res.status).toBe(200);
     expect(res.body.data.count).toBe(3);
@@ -452,9 +454,7 @@ describe('GET /api/cart/count — lấy số lượng item', () => {
     const { Cart } = require('../models');
     Cart.findOne.mockResolvedValue(null);
 
-    const res = await request
-      .get('/api/cart/count')
-      .set('Authorization', 'Bearer test-token');
+    const res = await request.get('/api/cart/count').set('Authorization', 'Bearer test-token');
 
     expect(res.status).toBe(200);
     expect(res.body.data.count).toBe(0);
@@ -569,9 +569,7 @@ describe('GET /api/cart/validate — kiểm tra tính hợp lệ của giỏ hà
   });
 
   test('Không có giỏ hàng active → 200 với hasIssues: false, items: []', async () => {
-    const res = await request
-      .get('/api/cart/validate')
-      .set('Authorization', 'Bearer test-token');
+    const res = await request.get('/api/cart/validate').set('Authorization', 'Bearer test-token');
 
     expect(res.status).toBe(200);
     expect(res.body.data.hasIssues).toBe(false);
@@ -599,9 +597,7 @@ describe('GET /api/cart/validate — kiểm tra tính hợp lệ của giỏ hà
       },
     ]);
 
-    const res = await request
-      .get('/api/cart/validate')
-      .set('Authorization', 'Bearer test-token');
+    const res = await request.get('/api/cart/validate').set('Authorization', 'Bearer test-token');
 
     expect(res.status).toBe(200);
     expect(res.body.data.hasIssues).toBe(false);
@@ -629,9 +625,7 @@ describe('GET /api/cart/validate — kiểm tra tính hợp lệ của giỏ hà
       },
     ]);
 
-    const res = await request
-      .get('/api/cart/validate')
-      .set('Authorization', 'Bearer test-token');
+    const res = await request.get('/api/cart/validate').set('Authorization', 'Bearer test-token');
 
     expect(res.status).toBe(200);
     expect(res.body.data.hasIssues).toBe(true);
@@ -659,9 +653,7 @@ describe('GET /api/cart/validate — kiểm tra tính hợp lệ của giỏ hà
       },
     ]);
 
-    const res = await request
-      .get('/api/cart/validate')
-      .set('Authorization', 'Bearer test-token');
+    const res = await request.get('/api/cart/validate').set('Authorization', 'Bearer test-token');
 
     expect(res.status).toBe(200);
     expect(res.body.data.hasIssues).toBe(true);

@@ -37,11 +37,15 @@ const mockImageCreate = jest.fn();
 const mockImageFindByPk = jest.fn();
 const mockImageFindAll = jest.fn();
 const mockImageDestroy = jest.fn();
-jest.mock('../models/image', () => ({
-  create: (...args) => mockImageCreate(...args),
-  findByPk: (...args) => mockImageFindByPk(...args),
-  findAll: (...args) => mockImageFindAll(...args),
-}), { virtual: true });
+jest.mock(
+  '../models/image',
+  () => ({
+    create: (...args) => mockImageCreate(...args),
+    findByPk: (...args) => mockImageFindByPk(...args),
+    findAll: (...args) => mockImageFindAll(...args),
+  }),
+  { virtual: true },
+);
 
 jest.mock('../utils/logger', () => ({
   info: jest.fn(),
@@ -51,7 +55,7 @@ jest.mock('../utils/logger', () => ({
 }));
 
 // ── Load service SETELAH mock ──────────────────────────────────────────────
-const imageService = require('./image');
+const imageService = require('../modules/image/services/imageService');
 
 // ── Helper ─────────────────────────────────────────────────────────────────
 function makeFile(overrides = {}) {
@@ -171,7 +175,7 @@ describe('processImage', () => {
     await imageService.processImage('/in.jpg', '/out.jpg', { width: 400, height: 300 });
 
     expect(mockSharp.resize).toHaveBeenCalledWith(
-      expect.objectContaining({ width: 400, height: 300 })
+      expect.objectContaining({ width: 400, height: 300 }),
     );
   });
 
@@ -198,17 +202,17 @@ describe('processImage', () => {
   it('throw AppError(500) khi sharp.toFile() thất bại', async () => {
     mockSharp.toFile.mockRejectedValue(new Error('disk full'));
 
-    await expect(
-      imageService.processImage('/in.jpg', '/out.jpg', {})
-    ).rejects.toMatchObject({ statusCode: 500, message: 'Failed to process image' });
+    await expect(imageService.processImage('/in.jpg', '/out.jpg', {})).rejects.toMatchObject({
+      statusCode: 500,
+      message: 'Failed to process image',
+    });
   });
 
   it('tạo thư mục đích trước khi ghi file', async () => {
     await imageService.processImage('/in.jpg', '/some/nested/dir/out.jpg', {});
-    expect(mockFsPromises.mkdir).toHaveBeenCalledWith(
-      expect.stringContaining('nested/dir'),
-      { recursive: true }
-    );
+    expect(mockFsPromises.mkdir).toHaveBeenCalledWith(expect.stringContaining('nested/dir'), {
+      recursive: true,
+    });
   });
 });
 
@@ -218,7 +222,11 @@ describe('processProductImage', () => {
     await imageService.processProductImage('/in.jpg', '/out.webp');
 
     expect(mockSharp.rotate).toHaveBeenCalled();
-    expect(mockSharp.resize).toHaveBeenCalledWith(800, 800, expect.objectContaining({ fit: 'inside' }));
+    expect(mockSharp.resize).toHaveBeenCalledWith(
+      800,
+      800,
+      expect.objectContaining({ fit: 'inside' }),
+    );
     expect(mockSharp.webp).toHaveBeenCalledWith({ quality: 85 });
     expect(mockSharp.withMetadata).toHaveBeenCalledWith(false);
     expect(mockSharp.toFile).toHaveBeenCalledWith('/out.webp');
@@ -227,9 +235,10 @@ describe('processProductImage', () => {
   it('throw AppError(500) khi xử lý thất bại', async () => {
     mockSharp.toFile.mockRejectedValueOnce(new Error('IO error'));
 
-    await expect(
-      imageService.processProductImage('/in.jpg', '/out.webp')
-    ).rejects.toMatchObject({ statusCode: 500, message: 'Failed to process product image' });
+    await expect(imageService.processProductImage('/in.jpg', '/out.webp')).rejects.toMatchObject({
+      statusCode: 500,
+      message: 'Failed to process product image',
+    });
   });
 });
 
@@ -262,7 +271,7 @@ describe('uploadImage', () => {
         originalName: 'camera.jpg',
         fileSize: 204800,
         mimeType: 'image/jpeg',
-      })
+      }),
     );
   });
 
@@ -314,7 +323,7 @@ describe('uploadImage', () => {
     mockImageCreate.mockRejectedValue(new Error('DB error'));
 
     await expect(
-      imageService.uploadImage(makeFile(), { generateThumbs: false })
+      imageService.uploadImage(makeFile(), { generateThumbs: false }),
     ).rejects.toMatchObject({ statusCode: 500 });
   });
 
@@ -323,7 +332,7 @@ describe('uploadImage', () => {
 
     // Không nên throw
     await expect(
-      imageService.uploadImage(makeFile(), { generateThumbs: false })
+      imageService.uploadImage(makeFile(), { generateThumbs: false }),
     ).resolves.toBeDefined();
   });
 });
@@ -443,7 +452,7 @@ describe('getImagesByProductId', () => {
     expect(mockImageFindAll).toHaveBeenCalledWith(
       expect.objectContaining({
         where: expect.objectContaining({ productId: 100, isActive: true }),
-      })
+      }),
     );
   });
 
@@ -458,8 +467,7 @@ describe('getImagesByProductId', () => {
 
 // ─────────────────────────────────────────────────────────────────────────────
 describe('convertBase64ToFile', () => {
-  const validBase64 =
-    'data:image/jpeg;base64,' + Buffer.from('fake-jpeg-data').toString('base64');
+  const validBase64 = 'data:image/jpeg;base64,' + Buffer.from('fake-jpeg-data').toString('base64');
 
   it('parse base64 đúng → lưu file + tạo DB record', async () => {
     mockImageCreate.mockResolvedValue({ id: 20, ...makeImageRecord() });
@@ -468,7 +476,7 @@ describe('convertBase64ToFile', () => {
 
     expect(mockFsPromises.writeFile).toHaveBeenCalled();
     expect(mockImageCreate).toHaveBeenCalledWith(
-      expect.objectContaining({ mimeType: 'image/jpeg', category: 'product' })
+      expect.objectContaining({ mimeType: 'image/jpeg', category: 'product' }),
     );
     expect(result.url).toMatch('/uploads/');
   });
@@ -477,7 +485,7 @@ describe('convertBase64ToFile', () => {
     // AppError(400) bên trong bị catch bởi outer try-catch và re-wrap thành AppError(500)
     // Đây là behavior thực tế của service
     await expect(
-      imageService.convertBase64ToFile('not-valid-base64-data', {})
+      imageService.convertBase64ToFile('not-valid-base64-data', {}),
     ).rejects.toHaveProperty('statusCode', 500);
   });
 
@@ -497,15 +505,13 @@ describe('getAllFiles', () => {
         { name: 'a.jpg', isDirectory: () => false },
         { name: 'sub', isDirectory: () => true },
       ])
-      .mockResolvedValueOnce([
-        { name: 'b.jpg', isDirectory: () => false },
-      ]);
+      .mockResolvedValueOnce([{ name: 'b.jpg', isDirectory: () => false }]);
 
     const files = await imageService.getAllFiles('/root');
 
     expect(files).toHaveLength(2);
-    expect(files.some(f => f.endsWith('a.jpg'))).toBe(true);
-    expect(files.some(f => f.endsWith('b.jpg'))).toBe(true);
+    expect(files.some((f) => f.endsWith('a.jpg'))).toBe(true);
+    expect(files.some((f) => f.endsWith('b.jpg'))).toBe(true);
   });
 
   it('thư mục rỗng → trả về mảng rỗng', async () => {
@@ -528,10 +534,7 @@ describe('cleanupOrphanedFiles', () => {
       { name: 'orphan.jpg', isDirectory: () => false },
     ]);
 
-    mockImageFindAll.mockResolvedValue([
-      { filePath: 'active.jpg' },
-      { filePath: 'active2.jpg' },
-    ]);
+    mockImageFindAll.mockResolvedValue([{ filePath: 'active.jpg' }, { filePath: 'active2.jpg' }]);
 
     const result = await imageService.cleanupOrphanedFiles();
 
@@ -542,9 +545,7 @@ describe('cleanupOrphanedFiles', () => {
   });
 
   it('không có orphan → không gọi fs.unlink', async () => {
-    mockFsPromises.readdir.mockResolvedValue([
-      { name: 'active.jpg', isDirectory: () => false },
-    ]);
+    mockFsPromises.readdir.mockResolvedValue([{ name: 'active.jpg', isDirectory: () => false }]);
     mockImageFindAll.mockResolvedValue([{ filePath: 'active.jpg' }]);
 
     await imageService.cleanupOrphanedFiles();

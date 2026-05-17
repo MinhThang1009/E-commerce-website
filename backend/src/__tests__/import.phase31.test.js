@@ -48,7 +48,7 @@ jest.mock('../middlewares/adminAuth', () => ({
   },
 }));
 
-jest.mock('../services/adminAudit', () => ({
+jest.mock('../shared/adminAudit', () => ({
   auditMiddleware: (_req, _res, next) => next(),
   AdminAuditService: { log: jest.fn() },
 }));
@@ -63,16 +63,14 @@ jest.mock('../services/ai/vectorStore', () => ({
 jest.mock('../models', () => {
   // Import log mock
   const importLogMock = {
-    create: jest
-      .fn()
-      .mockResolvedValue({
-        id: 1,
-        adminId: 1,
-        filename: 'test.csv',
-        totalRows: 2,
-        successRows: 1,
-        failedRows: 1,
-      }),
+    create: jest.fn().mockResolvedValue({
+      id: 1,
+      adminId: 1,
+      filename: 'test.csv',
+      totalRows: 2,
+      successRows: 1,
+      failedRows: 1,
+    }),
     findAndCountAll: jest.fn().mockResolvedValue({
       rows: [
         {

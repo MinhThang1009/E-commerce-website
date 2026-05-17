@@ -1,10 +1,10 @@
-const logger = require('../utils/logger');
+const logger = require('../../../utils/logger');
 const sharp = require('sharp');
 const path = require('path');
 const fs = require('fs').promises;
 const { v4: uuidv4 } = require('uuid');
-const Image = require('../models/image');
-const { AppError } = require('../shared/errors');
+const Image = require('../../../models/image');
+const { AppError } = require('../../../shared/errors');
 
 class ImageService {
   constructor() {
@@ -214,11 +214,7 @@ class ImageService {
       // Tạo thumbnail nếu được yêu cầu
       let thumbnails = [];
       if (generateThumbs && category === 'product') {
-        thumbnails = await this.generateThumbnails(
-          fullPath,
-          fileName,
-          category
-        );
+        thumbnails = await this.generateThumbnails(fullPath, fileName, category);
       }
 
       // Xóa file tạm
@@ -305,11 +301,7 @@ class ImageService {
         for (const size of thumbSizes) {
           try {
             const thumbFileName = `${path.parse(image.fileName).name}_${size}${path.extname(image.fileName)}`;
-            const thumbPath = path.join(
-              this.uploadDir,
-              'images/thumbnails',
-              thumbFileName
-            );
+            const thumbPath = path.join(this.uploadDir, 'images/thumbnails', thumbFileName);
             await fs.unlink(thumbPath);
           } catch (error) {
             // Bỏ qua lỗi khi xóa thumbnail
@@ -461,4 +453,3 @@ class ImageService {
 }
 
 module.exports = new ImageService();
-

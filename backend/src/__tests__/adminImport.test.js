@@ -64,7 +64,7 @@ jest.mock('../middlewares/validateRequest', () => ({
   validate: () => (_r, _s, n) => n(),
 }));
 
-jest.mock('../services/adminAudit', () => ({
+jest.mock('../shared/adminAudit', () => ({
   AdminAuditService: class {
     static logUserAction() {}
     static logProductAction() {}

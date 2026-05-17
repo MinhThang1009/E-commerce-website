@@ -45,7 +45,7 @@ jest.mock('fs', () => ({
 // ─── Mock imageService ────────────────────────────────────────────────────────
 
 const mockCleanupOrphanedFiles = jest.fn();
-jest.mock('../services/image', () => ({
+jest.mock('../modules/image/services/imageService', () => ({
   cleanupOrphanedFiles: (...args) => mockCleanupOrphanedFiles(...args),
 }));
 
@@ -78,7 +78,7 @@ describe('runDailyCleanup', () => {
     expect(mockCartDestroy).toHaveBeenCalledWith(
       expect.objectContaining({
         where: expect.objectContaining({ status: 'abandoned' }),
-      })
+      }),
     );
     expect(logger.info).toHaveBeenCalledWith(expect.stringContaining('3 abandoned carts'));
   });
@@ -99,7 +99,7 @@ describe('runDailyCleanup', () => {
 
     expect(logger.warn).toHaveBeenCalledWith(
       expect.stringContaining('Lỗi xóa abandoned carts'),
-      expect.any(String)
+      expect.any(String),
     );
   });
 
@@ -108,9 +108,7 @@ describe('runDailyCleanup', () => {
 
     await runDailyCleanup();
 
-    expect(mockSequelizeQuery).toHaveBeenCalledWith(
-      expect.stringContaining('search_histories')
-    );
+    expect(mockSequelizeQuery).toHaveBeenCalledWith(expect.stringContaining('search_histories'));
     expect(logger.info).toHaveBeenCalledWith(expect.stringContaining('12 search history records'));
   });
 
@@ -121,7 +119,7 @@ describe('runDailyCleanup', () => {
 
     expect(logger.warn).toHaveBeenCalledWith(
       expect.stringContaining('Lỗi trim search history'),
-      expect.any(String)
+      expect.any(String),
     );
   });
 
@@ -144,7 +142,7 @@ describe('runDailyCleanup', () => {
 
     expect(logger.warn).toHaveBeenCalledWith(
       expect.stringContaining('Lỗi xóa expired OTP'),
-      expect.any(String)
+      expect.any(String),
     );
   });
 
@@ -155,7 +153,10 @@ describe('runDailyCleanup', () => {
     await runDailyCleanup();
 
     const [, secondUpdateArgs] = mockUserUpdate.mock.calls;
-    expect(secondUpdateArgs[0]).toMatchObject({ resetPasswordToken: null, resetPasswordExpires: null });
+    expect(secondUpdateArgs[0]).toMatchObject({
+      resetPasswordToken: null,
+      resetPasswordExpires: null,
+    });
     expect(logger.info).toHaveBeenCalledWith(expect.stringContaining('2 expired reset tokens'));
   });
 
@@ -168,7 +169,7 @@ describe('runDailyCleanup', () => {
       { isActive: false },
       expect.objectContaining({
         where: expect.objectContaining({ isActive: true }),
-      })
+      }),
     );
     expect(logger.info).toHaveBeenCalledWith(expect.stringContaining('4 expired discount codes'));
   });
@@ -180,7 +181,7 @@ describe('runDailyCleanup', () => {
 
     expect(logger.warn).toHaveBeenCalledWith(
       expect.stringContaining('Lỗi deactivate expired discount codes'),
-      expect.any(String)
+      expect.any(String),
     );
   });
 
@@ -189,10 +190,7 @@ describe('runDailyCleanup', () => {
 
     await runDailyCleanup();
 
-    expect(mockChatMessageUpdate).toHaveBeenCalledWith(
-      { isArchived: true },
-      expect.any(Object)
-    );
+    expect(mockChatMessageUpdate).toHaveBeenCalledWith({ isArchived: true }, expect.any(Object));
     expect(logger.info).toHaveBeenCalledWith(expect.stringContaining('7 chat messages cũ'));
   });
 
@@ -202,9 +200,11 @@ describe('runDailyCleanup', () => {
     await runDailyCleanup();
 
     expect(mockRecentlyViewedDestroy).toHaveBeenCalledWith(
-      expect.objectContaining({ where: expect.any(Object) })
+      expect.objectContaining({ where: expect.any(Object) }),
     );
-    expect(logger.info).toHaveBeenCalledWith(expect.stringContaining('15 recently viewed records cũ'));
+    expect(logger.info).toHaveBeenCalledWith(
+      expect.stringContaining('15 recently viewed records cũ'),
+    );
   });
 
   test('step 7: log warn khi RecentlyViewed.destroy ném lỗi', async () => {
@@ -214,7 +214,7 @@ describe('runDailyCleanup', () => {
 
     expect(logger.warn).toHaveBeenCalledWith(
       expect.stringContaining('Lỗi xóa recently viewed cũ'),
-      expect.any(String)
+      expect.any(String),
     );
   });
 
@@ -262,7 +262,7 @@ describe('runWeeklyCleanup', () => {
 
     expect(mockCleanupOrphanedFiles).toHaveBeenCalledTimes(1);
     expect(logger.info).toHaveBeenCalledWith(
-      expect.stringContaining('Weekly orphaned file cleanup completed')
+      expect.stringContaining('Weekly orphaned file cleanup completed'),
     );
   });
 
@@ -273,7 +273,7 @@ describe('runWeeklyCleanup', () => {
 
     expect(logger.warn).toHaveBeenCalledWith(
       expect.stringContaining('Lỗi weekly cleanup'),
-      expect.any(String)
+      expect.any(String),
     );
   });
 });

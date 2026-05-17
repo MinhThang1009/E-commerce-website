@@ -45,7 +45,7 @@ jest.mock('../middlewares/adminAuth', () => ({
   adminAuthenticate: (_req, _res, next) => next(),
 }));
 
-jest.mock('../services/adminAudit', () => ({
+jest.mock('../shared/adminAudit', () => ({
   AdminAuditService: { logAction: jest.fn(), logSuccessfulLogin: jest.fn() },
   auditMiddleware: (_req, _res, next) => next(),
 }));
@@ -164,8 +164,17 @@ const express = require('express');
 const supertest = require('supertest');
 const buildOrdersModule = require('../modules/orders/module');
 const {
-  Order, OrderItem, Cart, CartItem, Product, ProductVariant, User,
-  DiscountCode, LoyaltyHistory, InventoryLog, WarrantyPackage,
+  Order,
+  OrderItem,
+  Cart,
+  CartItem,
+  Product,
+  ProductVariant,
+  User,
+  DiscountCode,
+  LoyaltyHistory,
+  InventoryLog,
+  WarrantyPackage,
   sequelize,
 } = require('../models');
 const eventBus = require('../shared/eventBus');
@@ -175,14 +184,30 @@ const constants = require('../constants');
 const { errorHandler } = require('../middlewares/errorHandler');
 
 const ordersModule = buildOrdersModule({
-  Order, OrderItem, Cart, CartItem, Product, ProductVariant, User,
-  DiscountCode, LoyaltyHistory, InventoryLog, WarrantyPackage,
-  sequelize, eventBus, logger, emailService, constants,
+  Order,
+  OrderItem,
+  Cart,
+  CartItem,
+  Product,
+  ProductVariant,
+  User,
+  DiscountCode,
+  LoyaltyHistory,
+  InventoryLog,
+  WarrantyPackage,
+  sequelize,
+  eventBus,
+  logger,
+  emailService,
+  constants,
 });
 
 const app = express();
 app.use(express.json());
-app.use((req, _res, next) => { req.cookies = {}; next(); });
+app.use((req, _res, next) => {
+  req.cookies = {};
+  next();
+});
 app.use('/api/orders', ordersModule.router);
 app.use(errorHandler);
 const request = supertest(app);
@@ -200,9 +225,7 @@ describe('GET /api/orders — lấy danh sách đơn hàng của user', () => {
     const { Order } = require('../models');
     Order.findAndCountAll.mockResolvedValue({ count: 0, rows: [] });
 
-    const res = await request
-      .get('/api/orders')
-      .set('Authorization', 'Bearer test-token');
+    const res = await request.get('/api/orders').set('Authorization', 'Bearer test-token');
 
     expect(res.status).toBe(200);
     expect(res.body.status).toBe('success');
@@ -249,9 +272,7 @@ describe('GET /api/orders/:id — lấy chi tiết đơn hàng', () => {
       status: 'pending',
     });
 
-    const res = await request
-      .get('/api/orders/1')
-      .set('Authorization', 'Bearer test-token');
+    const res = await request.get('/api/orders/1').set('Authorization', 'Bearer test-token');
 
     expect(res.status).toBe(200);
     expect(res.body.status).toBe('success');
@@ -262,9 +283,7 @@ describe('GET /api/orders/:id — lấy chi tiết đơn hàng', () => {
     const { Order } = require('../models');
     Order.findByPk.mockResolvedValue(null);
 
-    const res = await request
-      .get('/api/orders/9999')
-      .set('Authorization', 'Bearer test-token');
+    const res = await request.get('/api/orders/9999').set('Authorization', 'Bearer test-token');
 
     expect(res.status).toBe(404);
     expect(res.body.message).toMatch(/không tìm thấy/i);
@@ -280,9 +299,7 @@ describe('GET /api/orders/:id — lấy chi tiết đơn hàng', () => {
       status: 'pending',
     });
 
-    const res = await request
-      .get('/api/orders/1')
-      .set('Authorization', 'Bearer test-token');
+    const res = await request.get('/api/orders/1').set('Authorization', 'Bearer test-token');
 
     expect(res.status).toBe(403);
     expect(res.body.message).toMatch(/không có quyền/i);

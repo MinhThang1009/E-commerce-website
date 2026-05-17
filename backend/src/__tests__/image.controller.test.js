@@ -2,7 +2,7 @@
  * Tests cho image controller (src/controllers/image.js)
  *
  * Chiến lược:
- * - Mock '../services/image' để tránh I/O thực trên disk
+ * - Mock '../modules/image/services/imageService' để tránh I/O thực trên disk
  * - Mock 'multer' để kiểm soát hành vi upload (success / lỗi Multer)
  * - Test healthCheck, getImageById, getImagesByProductId, deleteImage,
  *   convertBase64, cleanupOrphanedFiles, uploadSingle, uploadMultiple
@@ -54,7 +54,7 @@ const mockDeleteImage = jest.fn();
 const mockConvertBase64ToFile = jest.fn();
 const mockCleanupOrphanedFiles = jest.fn();
 
-jest.mock('../services/image', () => ({
+jest.mock('../modules/image/services/imageService', () => ({
   uploadImage: (...args) => mockUploadImage(...args),
   uploadMultipleImages: (...args) => mockUploadMultipleImages(...args),
   getImageById: (...args) => mockGetImageById(...args),
@@ -534,7 +534,7 @@ describe('uploadMultiple — logic controller', () => {
     // Load controller sau khi mock đã sẵn sàng
     jest.resetModules();
     // Re-mock sau resetModules
-    jest.mock('../services/image', () => ({
+    jest.mock('../modules/image/services/imageService', () => ({
       uploadImage: (...args) => mockUploadImage(...args),
       uploadMultipleImages: (...args) => mockUploadMultipleImages(...args),
       getImageById: (...args) => mockGetImageById(...args),

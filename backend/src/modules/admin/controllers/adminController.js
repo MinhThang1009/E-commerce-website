@@ -27,7 +27,7 @@ const { Op, Sequelize } = require('sequelize');
 const logger = require('../../../utils/logger');
 const { catchAsync } = require('../../../utils/catchAsync');
 const { AppError } = require('../../../shared/errors');
-const { AdminAuditService } = require('../../../services/adminAudit');
+const { AdminAuditService } = require('../../../shared/adminAudit');
 const {
   calculateTotalStock,
   updateProductTotalStock,

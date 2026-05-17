@@ -50,7 +50,7 @@ jest.mock('../middlewares/adminAuth', () => ({
   adminAuthenticate: (_req, _res, next) => next(),
 }));
 
-jest.mock('../services/adminAudit', () => ({
+jest.mock('../shared/adminAudit', () => ({
   AdminAuditService: { logAction: jest.fn(), logSuccessfulLogin: jest.fn() },
   auditMiddleware: (_req, _res, next) => next(),
 }));
@@ -80,7 +80,9 @@ jest.mock('../models', () => {
     sequelize: {
       transaction: jest.fn().mockImplementation(async (cb) => {
         const t = { LOCK: { UPDATE: 'UPDATE' } };
-        return typeof cb === 'function' ? cb(t) : { LOCK: { UPDATE: 'UPDATE' }, commit: jest.fn(), rollback: jest.fn() };
+        return typeof cb === 'function'
+          ? cb(t)
+          : { LOCK: { UPDATE: 'UPDATE' }, commit: jest.fn(), rollback: jest.fn() };
       }),
       fn: jest.fn(),
       col: jest.fn(),
@@ -96,7 +98,12 @@ jest.mock('../models', () => {
 jest.mock('google-auth-library', () => ({
   OAuth2Client: jest.fn().mockImplementation(() => ({
     verifyIdToken: jest.fn().mockResolvedValue({
-      getPayload: () => ({ email: 'google@test.com', given_name: 'Test', family_name: 'User', sub: 'google-sub-123' }),
+      getPayload: () => ({
+        email: 'google@test.com',
+        given_name: 'Test',
+        family_name: 'User',
+        sub: 'google-sub-123',
+      }),
     }),
   })),
 }));
@@ -131,7 +138,7 @@ const { User } = require('../models');
 const eventBus = require('../shared/eventBus');
 const logger = require('../utils/logger');
 const emailService = require('../services/email');
-const { AdminAuditService } = require('../services/adminAudit');
+const { AdminAuditService } = require('../shared/adminAudit');
 const { getRedisClient } = require('../config/redis');
 const { errorHandler } = require('../middlewares/errorHandler');
 
@@ -193,8 +200,10 @@ describe('POST /api/auth/login — đăng nhập', () => {
     const cookies = res.headers['set-cookie'];
     expect(cookies).toBeDefined();
     const refreshCookie = Array.isArray(cookies)
-      ? cookies.find(c => c.startsWith('refreshToken='))
-      : (cookies.startsWith('refreshToken=') ? cookies : null);
+      ? cookies.find((c) => c.startsWith('refreshToken='))
+      : cookies.startsWith('refreshToken=')
+        ? cookies
+        : null;
     expect(refreshCookie).toBeDefined();
     expect(refreshCookie).toMatch(/HttpOnly/i);
     expect(res.body.user).toHaveProperty('id');
@@ -238,17 +247,13 @@ describe('POST /api/auth/login — đăng nhập', () => {
   });
 
   test('Thiếu email → 400 validation error', async () => {
-    const res = await request
-      .post('/api/auth/login')
-      .send({ password: 'somePassword' });
+    const res = await request.post('/api/auth/login').send({ password: 'somePassword' });
 
     expect(res.status).toBe(400);
   });
 
   test('Thiếu password → 400 validation error', async () => {
-    const res = await request
-      .post('/api/auth/login')
-      .send({ email: 'user@example.com' });
+    const res = await request.post('/api/auth/login').send({ email: 'user@example.com' });
 
     expect(res.status).toBe(400);
   });

@@ -958,7 +958,7 @@ describe('adminAudit.js — auditMiddleware patches AdminAuditService methods (l
     jest.mock('../models', () => ({
       AuditLog: { create: jest.fn().mockResolvedValue({}) },
     }));
-    const mod = require('../services/adminAudit');
+    const mod = require('../shared/adminAudit');
     AdminAuditService = mod.AdminAuditService;
     auditMiddleware = mod.auditMiddleware;
   });
@@ -1299,14 +1299,12 @@ describe('catalogService.js — uncovered branches', () => {
   it('_mapProductWithImages: no variants → price = basePrice (line 150)', () => {
     const service = makeService();
     const product = {
-      toJSON: jest
-        .fn()
-        .mockReturnValue({
-          basePrice: 100000,
-          variants: [],
-          compareAtPrice: null,
-          productImages: [],
-        }),
+      toJSON: jest.fn().mockReturnValue({
+        basePrice: 100000,
+        variants: [],
+        compareAtPrice: null,
+        productImages: [],
+      }),
     };
     const result = service._mapProductWithImages(product);
     expect(result.price).toBe(100000);
@@ -1353,18 +1351,16 @@ describe('catalogService.js — uncovered branches', () => {
       name: 'P',
       basePrice: 100000,
       status: 'active',
-      toJSON: jest
-        .fn()
-        .mockReturnValue({
-          id: 1,
-          name: 'P',
-          basePrice: 100000,
-          status: 'active',
-          images: [],
-          variants: [],
-          productImages: [],
-          reviews: [],
-        }),
+      toJSON: jest.fn().mockReturnValue({
+        id: 1,
+        name: 'P',
+        basePrice: 100000,
+        status: 'active',
+        images: [],
+        variants: [],
+        productImages: [],
+        reviews: [],
+      }),
     };
     const service = makeService({
       findProductByIdWithFullDetails: jest.fn().mockResolvedValue(null),
@@ -1387,18 +1383,16 @@ describe('catalogService.js — uncovered branches', () => {
       name: 'P',
       basePrice: 100000,
       status: 'active',
-      toJSON: jest
-        .fn()
-        .mockReturnValue({
-          id: 1,
-          name: 'P',
-          basePrice: 100000,
-          status: 'active',
-          images: [],
-          variants: [],
-          productImages: [],
-          reviews: [],
-        }),
+      toJSON: jest.fn().mockReturnValue({
+        id: 1,
+        name: 'P',
+        basePrice: 100000,
+        status: 'active',
+        images: [],
+        variants: [],
+        productImages: [],
+        reviews: [],
+      }),
     };
     const service = makeService({
       findProductByIdWithFullDetails: jest.fn().mockResolvedValue(mockProduct),
@@ -1418,18 +1412,16 @@ describe('catalogService.js — uncovered branches', () => {
       name: 'Q',
       basePrice: 200000,
       status: 'active',
-      toJSON: jest
-        .fn()
-        .mockReturnValue({
-          id: 2,
-          name: 'Q',
-          basePrice: 200000,
-          status: 'active',
-          images: [],
-          variants: [],
-          productImages: [],
-          reviews: [],
-        }),
+      toJSON: jest.fn().mockReturnValue({
+        id: 2,
+        name: 'Q',
+        basePrice: 200000,
+        status: 'active',
+        images: [],
+        variants: [],
+        productImages: [],
+        reviews: [],
+      }),
     };
     const service = makeService({
       findProductBySlugWithFullDetails: jest.fn().mockResolvedValue(mockProduct),
@@ -1814,7 +1806,7 @@ describe('image.js — actual multer diskStorage và fileFilter callbacks (lines
         factory.MulterError = realMulter.MulterError;
         return factory;
       });
-      jest.mock('../services/image', () => ({
+      jest.mock('../modules/image/services/imageService', () => ({
         uploadImage: jest.fn(),
         uploadMultipleImages: jest.fn(),
         getImageById: jest.fn(),

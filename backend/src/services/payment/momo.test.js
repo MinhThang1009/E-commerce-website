@@ -21,7 +21,7 @@ jest.mock('../../utils/logger', () => ({
 
 const axios = require('axios');
 const crypto = require('crypto');
-const momoService = require('./momo');
+const momoService = require('../../modules/payment/services/momoService');
 
 beforeEach(() => {
   axios.post.mockReset();
@@ -81,7 +81,7 @@ describe('MoMoService.createPaymentUrl', () => {
         orderId: 'X',
         amount: 1000,
         orderInfo: 'X',
-      })
+      }),
     ).rejects.toThrow(/resultCode/);
   });
 
@@ -93,7 +93,7 @@ describe('MoMoService.createPaymentUrl', () => {
         orderId: 'X',
         amount: 1000,
         orderInfo: 'X',
-      })
+      }),
     ).rejects.toThrow();
   });
 
@@ -143,11 +143,9 @@ describe('MoMoService constructor — thiếu env vars', () => {
     delete process.env.DEV_SECRET_KEY;
 
     // Require fresh — constructor chạy ngay
-    require('./momo');
+    require('../../modules/payment/services/momoService');
 
-    expect(mockWarn).toHaveBeenCalledWith(
-      expect.stringContaining('MOMO_PARTNER_CODE')
-    );
+    expect(mockWarn).toHaveBeenCalledWith(expect.stringContaining('MOMO_PARTNER_CODE'));
 
     // Restore
     Object.assign(process.env, saved);
@@ -186,8 +184,18 @@ describe('MoMoService.verifySignature', () => {
       .digest('hex');
 
     return {
-      partnerCode, orderId, requestId, amount, orderInfo, orderType,
-      transId, resultCode, message, payType, responseTime, extraData,
+      partnerCode,
+      orderId,
+      requestId,
+      amount,
+      orderInfo,
+      orderType,
+      transId,
+      resultCode,
+      message,
+      payType,
+      responseTime,
+      extraData,
       signature,
     };
   }

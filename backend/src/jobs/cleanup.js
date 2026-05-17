@@ -26,15 +26,20 @@ const cleanupTempFiles = async () => {
             await fs.unlink(filePath);
             logger.info(`[Cleanup] Xóa file tạm cũ: ${file}`);
           }
-        } catch { /* Bỏ qua file không đọc được */ }
-      })
+        } catch {
+          /* Bỏ qua file không đọc được */
+        }
+      }),
     );
-  } catch { /* tempDir chưa tồn tại — bỏ qua */ }
+  } catch {
+    /* tempDir chưa tồn tại — bỏ qua */
+  }
 };
 
 // Chạy mỗi ngày lúc 2:00 AM — dọn dẹp dữ liệu hết hạn và tích lũy
 const runDailyCleanup = async () => {
-  const { Cart, SearchHistory, User, DiscountCode, ChatMessage, RecentlyViewed, sequelize } = getModels();
+  const { Cart, SearchHistory, User, DiscountCode, ChatMessage, RecentlyViewed, sequelize } =
+    getModels();
   const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
   const ninetyDaysAgo = new Date(Date.now() - 90 * 24 * 60 * 60 * 1000);
 
@@ -71,7 +76,7 @@ const runDailyCleanup = async () => {
   try {
     const [, otpMeta] = await User.update(
       { otpCode: null, otpExpires: null },
-      { where: { otpExpires: { [Op.lt]: new Date() }, otpCode: { [Op.ne]: null } } }
+      { where: { otpExpires: { [Op.lt]: new Date() }, otpCode: { [Op.ne]: null } } },
     );
     if (otpMeta > 0) logger.info(`[Cleanup] Đã xóa ${otpMeta} expired OTP`);
   } catch (err) {
@@ -82,7 +87,12 @@ const runDailyCleanup = async () => {
   try {
     const [, tokenMeta] = await User.update(
       { resetPasswordToken: null, resetPasswordExpires: null },
-      { where: { resetPasswordExpires: { [Op.lt]: new Date() }, resetPasswordToken: { [Op.ne]: null } } }
+      {
+        where: {
+          resetPasswordExpires: { [Op.lt]: new Date() },
+          resetPasswordToken: { [Op.ne]: null },
+        },
+      },
     );
     if (tokenMeta > 0) logger.info(`[Cleanup] Đã xóa ${tokenMeta} expired reset tokens`);
   } catch (err) {
@@ -93,7 +103,7 @@ const runDailyCleanup = async () => {
   try {
     const [, dcMeta] = await DiscountCode.update(
       { isActive: false },
-      { where: { endDate: { [Op.lt]: new Date() }, isActive: true } }
+      { where: { endDate: { [Op.lt]: new Date() }, isActive: true } },
     );
     if (dcMeta > 0) logger.info(`[Cleanup] Đã deactivate ${dcMeta} expired discount codes`);
   } catch (err) {
@@ -104,7 +114,7 @@ const runDailyCleanup = async () => {
   try {
     const [, chatMeta] = await ChatMessage.update(
       { isArchived: true },
-      { where: { createdAt: { [Op.lt]: ninetyDaysAgo }, isArchived: { [Op.or]: [false, null] } } }
+      { where: { createdAt: { [Op.lt]: ninetyDaysAgo }, isArchived: { [Op.or]: [false, null] } } },
     );
     if (chatMeta > 0) logger.info(`[Cleanup] Đã archive ${chatMeta} chat messages cũ`);
   } catch (err) {
@@ -130,7 +140,7 @@ const runDailyCleanup = async () => {
 // Chạy mỗi tuần Chủ Nhật 3:00 AM — dọn orphaned upload files
 const runWeeklyCleanup = async () => {
   try {
-    const imageService = require('../services/image');
+    const imageService = require('../modules/image/services/imageService');
     await imageService.cleanupOrphanedFiles();
     logger.info('[Cleanup] Weekly orphaned file cleanup completed');
   } catch (err) {

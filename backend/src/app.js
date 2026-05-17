@@ -47,7 +47,7 @@ const {
 } = require('./models');
 const constants = require('./constants');
 const emailService = require('./services/email');
-const { AdminAuditService } = require('./services/adminAudit');
+const { AdminAuditService } = require('./shared/adminAudit');
 const { getRedisClient } = require('./config/redis');
 const buildAuthModule = require('./modules/auth/module');
 const buildUsersModule = require('./modules/users/module');
@@ -69,8 +69,8 @@ const buildWarrantyPackageModule = require('./modules/warrantyPackage/module');
 const buildAttributeModule = require('./modules/attribute/module');
 const buildAdminModule = require('./modules/admin/module');
 const chatbotService = require('./services/ai/chatbotService');
-const momoService = require('./services/payment/momo');
-const vnpayService = require('./services/payment/vnpay');
+const momoService = require('./modules/payment/services/momoService');
+const vnpayService = require('./modules/payment/services/vnpayService');
 
 const authModule = buildAuthModule({
   User,

@@ -43,7 +43,7 @@ jest.mock('../middlewares/adminAuth', () => ({
     n();
   },
 }));
-jest.mock('../services/adminAudit', () => ({
+jest.mock('../shared/adminAudit', () => ({
   AdminAuditService: {
     logDiscountCodeAction: jest.fn(),
   },
@@ -460,7 +460,7 @@ describe('PUT /api/admin/discount-codes/:id', () => {
   });
 
   test('200 — DEACTIVATE action khi isActive đổi từ true sang false', async () => {
-    const { AdminAuditService } = require('../services/adminAudit');
+    const { AdminAuditService } = require('../shared/adminAudit');
     const existing = {
       ...makeCode({ id: 6, code: 'ACT', isActive: true }),
       update: jest.fn().mockResolvedValue(),
@@ -659,7 +659,7 @@ describe('DELETE /api/admin/discount-codes/:id', () => {
   });
 
   test('ghi audit log sau khi xóa', async () => {
-    const { AdminAuditService } = require('../services/adminAudit');
+    const { AdminAuditService } = require('../shared/adminAudit');
     AdminAuditService.logDiscountCodeAction.mockClear();
     const existing = {
       ...makeCode({ id: 8, code: 'AUDIT10' }),

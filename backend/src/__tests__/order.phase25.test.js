@@ -67,7 +67,7 @@ jest.mock('../middlewares/adminAuth', () => ({
   adminAuthenticate: (_req, _res, next) => next(),
 }));
 
-jest.mock('../services/adminAudit', () => ({
+jest.mock('../shared/adminAudit', () => ({
   AdminAuditService: { logAction: jest.fn(), logSuccessfulLogin: jest.fn() },
   auditMiddleware: (_req, _res, next) => next(),
 }));
@@ -194,8 +194,17 @@ const express = require('express');
 const supertest = require('supertest');
 const buildOrdersModule = require('../modules/orders/module');
 const {
-  Order, OrderItem, Cart, CartItem, Product, ProductVariant, User,
-  DiscountCode, LoyaltyHistory, InventoryLog, WarrantyPackage,
+  Order,
+  OrderItem,
+  Cart,
+  CartItem,
+  Product,
+  ProductVariant,
+  User,
+  DiscountCode,
+  LoyaltyHistory,
+  InventoryLog,
+  WarrantyPackage,
   sequelize,
 } = require('../models');
 const eventBus = require('../shared/eventBus');
@@ -205,15 +214,31 @@ const constants = require('../constants');
 const { errorHandler } = require('../middlewares/errorHandler');
 
 const ordersModule = buildOrdersModule({
-  Order, OrderItem, Cart, CartItem, Product, ProductVariant, User,
-  DiscountCode, LoyaltyHistory, InventoryLog, WarrantyPackage,
-  sequelize, eventBus, logger, emailService, constants,
+  Order,
+  OrderItem,
+  Cart,
+  CartItem,
+  Product,
+  ProductVariant,
+  User,
+  DiscountCode,
+  LoyaltyHistory,
+  InventoryLog,
+  WarrantyPackage,
+  sequelize,
+  eventBus,
+  logger,
+  emailService,
+  constants,
 });
 
 const app = express();
 app.use(express.json());
 // Khởi tạo req.cookies = {} để createOrder không throw TypeError khi đọc sessionId từ cookie
-app.use((req, _res, next) => { req.cookies = {}; next(); });
+app.use((req, _res, next) => {
+  req.cookies = {};
+  next();
+});
 app.use('/api/orders', ordersModule.router);
 app.use(errorHandler);
 const request = supertest(app);
@@ -259,7 +284,9 @@ describe('POST /api/orders — out-of-stock scenarios', () => {
       commit: jest.fn().mockResolvedValue(undefined),
       rollback: jest.fn().mockResolvedValue(undefined),
     };
-    sequelize.transaction.mockImplementation(async (cb) => typeof cb === 'function' ? cb(mockTx) : mockTx);
+    sequelize.transaction.mockImplementation(async (cb) =>
+      typeof cb === 'function' ? cb(mockTx) : mockTx,
+    );
   });
 
   test('Variant stockQuantity = 0 → 400 với message tồn kho', async () => {
@@ -331,13 +358,19 @@ describe('POST /api/orders — discount code validation', () => {
       commit: jest.fn().mockResolvedValue(undefined),
       rollback: jest.fn().mockResolvedValue(undefined),
     };
-    sequelize.transaction.mockImplementation(async (cb) => typeof cb === 'function' ? cb(mockTx) : mockTx);
+    sequelize.transaction.mockImplementation(async (cb) =>
+      typeof cb === 'function' ? cb(mockTx) : mockTx,
+    );
 
     // Variant đủ hàng (5 items); lockedVariant cần có decrement()
     mockProductFindByPkImpl.mockResolvedValue(ACTIVE_PRODUCT);
     mockVariantFindByPkImpl
       .mockResolvedValueOnce({ id: 1, name: 'Đỏ', price: 500000, stockQuantity: 5, sku: 'V-001' })
-      .mockResolvedValueOnce({ id: 1, stockQuantity: 5, decrement: jest.fn().mockResolvedValue(undefined) });
+      .mockResolvedValueOnce({
+        id: 1,
+        stockQuantity: 5,
+        decrement: jest.fn().mockResolvedValue(undefined),
+      });
   });
 
   test('Mã giảm giá không tồn tại → 400', async () => {
@@ -457,15 +490,29 @@ describe('POST /api/orders — happy path', () => {
       commit: jest.fn().mockResolvedValue(undefined),
       rollback: jest.fn().mockResolvedValue(undefined),
     };
-    sequelize.transaction.mockImplementation(async (cb) => typeof cb === 'function' ? cb(mockTx) : mockTx);
+    sequelize.transaction.mockImplementation(async (cb) =>
+      typeof cb === 'function' ? cb(mockTx) : mockTx,
+    );
   });
 
   test('Đặt hàng COD thành công với variant đủ hàng → 201', async () => {
     mockProductFindByPkImpl.mockResolvedValue(ACTIVE_PRODUCT);
     // Lần 1: item lookup; lần 2: lockedVariant cần có decrement()
     mockVariantFindByPkImpl
-      .mockResolvedValueOnce({ id: 1, name: 'Đỏ', price: 500000, stockQuantity: 10, sku: 'V-001', weight: null })
-      .mockResolvedValueOnce({ id: 1, stockQuantity: 10, weight: null, decrement: jest.fn().mockResolvedValue(undefined) });
+      .mockResolvedValueOnce({
+        id: 1,
+        name: 'Đỏ',
+        price: 500000,
+        stockQuantity: 10,
+        sku: 'V-001',
+        weight: null,
+      })
+      .mockResolvedValueOnce({
+        id: 1,
+        stockQuantity: 10,
+        weight: null,
+        decrement: jest.fn().mockResolvedValue(undefined),
+      });
     mockDiscountFindOneImpl.mockResolvedValue(null); // không dùng discount
 
     const { Order, OrderItem, InventoryLog, Cart } = require('../models');
@@ -520,7 +567,9 @@ describe('POST /api/orders — cart-based flow', () => {
       commit: jest.fn().mockResolvedValue(undefined),
       rollback: jest.fn().mockResolvedValue(undefined),
     };
-    sequelize.transaction.mockImplementation(async (cb) => typeof cb === 'function' ? cb(mockTx) : mockTx);
+    sequelize.transaction.mockImplementation(async (cb) =>
+      typeof cb === 'function' ? cb(mockTx) : mockTx,
+    );
   });
 
   test('Đặt hàng từ giỏ hàng (không truyền items) — cart có 1 item đủ hàng → 201', async () => {
@@ -531,8 +580,23 @@ describe('POST /api/orders — cart-based flow', () => {
       variantId: 1,
       quantity: 2,
       warrantyPackageIds: [],
-      Product: { id: 1, name: 'Laptop', status: 'active', basePrice: 800000, slug: 'laptop', thumbnail: null, sku: null },
-      ProductVariant: { id: 1, name: 'Xám', price: 750000, stockQuantity: 5, sku: 'V-GRAY', weight: null },
+      Product: {
+        id: 1,
+        name: 'Laptop',
+        status: 'active',
+        basePrice: 800000,
+        slug: 'laptop',
+        thumbnail: null,
+        sku: null,
+      },
+      ProductVariant: {
+        id: 1,
+        name: 'Xám',
+        price: 750000,
+        stockQuantity: 5,
+        sku: 'V-GRAY',
+        weight: null,
+      },
     };
 
     // Cart.findOrCreate: trả về [cart, created]
@@ -595,14 +659,31 @@ describe('POST /api/orders — cart-based flow', () => {
     Cart.findOrCreate.mockResolvedValue([{ id: 22 }, false]);
     Cart.findByPk.mockResolvedValue({
       id: 22,
-      items: [{
-        productId: 1,
-        variantId: 1,
-        quantity: 1,
-        warrantyPackageIds: [],
-        Product: { id: 1, name: 'Phone', status: 'active', basePrice: 2500000, slug: 'phone', thumbnail: null, sku: null },
-        ProductVariant: { id: 1, name: 'Đen', price: 2500000, stockQuantity: 3, sku: 'V-BLK', weight: null },
-      }],
+      items: [
+        {
+          productId: 1,
+          variantId: 1,
+          quantity: 1,
+          warrantyPackageIds: [],
+          Product: {
+            id: 1,
+            name: 'Phone',
+            status: 'active',
+            basePrice: 2500000,
+            slug: 'phone',
+            thumbnail: null,
+            sku: null,
+          },
+          ProductVariant: {
+            id: 1,
+            name: 'Đen',
+            price: 2500000,
+            stockQuantity: 3,
+            sku: 'V-BLK',
+            weight: null,
+          },
+        },
+      ],
     });
 
     mockVariantFindByPkImpl.mockResolvedValue({
@@ -613,7 +694,13 @@ describe('POST /api/orders — cart-based flow', () => {
     });
 
     Order.update.mockResolvedValue([0]);
-    Order.create.mockResolvedValue({ id: 300, number: 'ORD-CLEAR-TEST', status: 'pending', total: 2500000, createdAt: new Date() });
+    Order.create.mockResolvedValue({
+      id: 300,
+      number: 'ORD-CLEAR-TEST',
+      status: 'pending',
+      total: 2500000,
+      createdAt: new Date(),
+    });
     OrderItem.create.mockResolvedValue({ id: 3 });
     InventoryLog.bulkCreate.mockResolvedValue([]);
 

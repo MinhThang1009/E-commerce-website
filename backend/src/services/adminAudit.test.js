@@ -17,7 +17,7 @@ jest.mock('../models', () => ({
   AuditLog: { create: mockAuditLogCreate },
 }));
 
-const { AdminAuditService } = require('./adminAudit');
+const { AdminAuditService } = require('../shared/adminAudit');
 
 const fakeAdmin = { id: 99, email: 'admin@x.com' };
 
@@ -35,7 +35,7 @@ describe('AdminAuditService.logUserAction', () => {
       'BAN_USER',
       42,
       { old: { isActive: true }, new: { isActive: false } },
-      '127.0.0.1'
+      '127.0.0.1',
     );
 
     // Logger gọi với ADMIN_USER_ACTION
@@ -48,7 +48,7 @@ describe('AdminAuditService.logUserAction', () => {
         entityId: 42,
         adminEmail: 'admin@x.com',
         ip: '127.0.0.1',
-      })
+      }),
     );
 
     // writeToDb chạy async — chờ next tick
@@ -62,7 +62,7 @@ describe('AdminAuditService.logUserAction', () => {
         oldValue: JSON.stringify({ isActive: true }),
         newValue: JSON.stringify({ isActive: false }),
         ip: '127.0.0.1',
-      })
+      }),
     );
   });
 
@@ -70,7 +70,7 @@ describe('AdminAuditService.logUserAction', () => {
     AdminAuditService.logUserAction(undefined, 'X', 1);
 
     expect(mockLogger.error).toHaveBeenCalledWith(
-      expect.stringContaining('adminUser is undefined')
+      expect.stringContaining('adminUser is undefined'),
     );
     expect(mockAuditLogCreate).not.toHaveBeenCalled();
   });
@@ -84,7 +84,7 @@ describe('AdminAuditService.logProductAction', () => {
       42,
       'iPhone 17',
       {},
-      '10.0.0.1'
+      '10.0.0.1',
     );
 
     await new Promise((r) => setImmediate(r));
@@ -94,37 +94,27 @@ describe('AdminAuditService.logProductAction', () => {
         entityType: 'product',
         entityId: 42,
         newValue: JSON.stringify({ name: 'iPhone 17' }),
-      })
+      }),
     );
   });
 
   test('changes có data → newValue là changes (priority hơn productName)', async () => {
-    AdminAuditService.logProductAction(
-      fakeAdmin,
-      'UPDATE_PRODUCT',
-      10,
-      'X',
-      { price: { old: 100, new: 200 } }
-    );
+    AdminAuditService.logProductAction(fakeAdmin, 'UPDATE_PRODUCT', 10, 'X', {
+      price: { old: 100, new: 200 },
+    });
 
     await new Promise((r) => setImmediate(r));
     expect(mockAuditLogCreate).toHaveBeenCalledWith(
       expect.objectContaining({
         newValue: JSON.stringify({ price: { old: 100, new: 200 } }),
-      })
+      }),
     );
   });
 });
 
 describe('AdminAuditService.logOrderAction', () => {
   test('Pass orderCode vào logger, entityType "order"', () => {
-    AdminAuditService.logOrderAction(
-      fakeAdmin,
-      'REFUND',
-      55,
-      'ORD-001',
-      { amount: 100000 }
-    );
+    AdminAuditService.logOrderAction(fakeAdmin, 'REFUND', 55, 'ORD-001', { amount: 100000 });
 
     expect(mockLogger.info).toHaveBeenCalledWith(
       'ADMIN_ORDER_ACTION',
@@ -133,20 +123,14 @@ describe('AdminAuditService.logOrderAction', () => {
         entityType: 'order',
         entityId: 55,
         orderCode: 'ORD-001',
-      })
+      }),
     );
   });
 });
 
 describe('AdminAuditService.logDiscountCodeAction', () => {
   test('changes.new fallback sang { code } khi không có changes', async () => {
-    AdminAuditService.logDiscountCodeAction(
-      fakeAdmin,
-      'CREATE',
-      77,
-      'SAVE10',
-      {}
-    );
+    AdminAuditService.logDiscountCodeAction(fakeAdmin, 'CREATE', 77, 'SAVE10', {});
 
     await new Promise((r) => setImmediate(r));
     expect(mockAuditLogCreate).toHaveBeenCalledWith(
@@ -154,7 +138,7 @@ describe('AdminAuditService.logDiscountCodeAction', () => {
         entityType: 'discount_code',
         entityId: 77,
         newValue: JSON.stringify({ code: 'SAVE10' }),
-      })
+      }),
     );
   });
 });
@@ -169,7 +153,7 @@ describe('AdminAuditService.logFailedAuth', () => {
         email: 'hacker@x.com',
         reason: 'invalid_password',
         ip: '1.2.3.4',
-      })
+      }),
     );
     expect(mockAuditLogCreate).not.toHaveBeenCalled();
   });
@@ -185,7 +169,7 @@ describe('AdminAuditService.logDashboardAccess', () => {
         adminId: 99,
         endpoint: '/api/admin/stats',
         filters: { period: 'month' },
-      })
+      }),
     );
     expect(mockAuditLogCreate).not.toHaveBeenCalled();
   });
@@ -206,7 +190,7 @@ describe('AdminAuditService.logSuccessfulLogin', () => {
         action: 'LOGIN_SUCCESS',
         entityType: 'admin_session',
         ip: '127.0.0.1',
-      })
+      }),
     );
   });
 });
@@ -220,7 +204,7 @@ describe('writeToDb error handling', () => {
     await new Promise((r) => setImmediate(r));
     expect(mockLogger.error).toHaveBeenCalledWith(
       expect.stringContaining('Lỗi ghi audit log vào DB:'),
-      expect.any(String)
+      expect.any(String),
     );
   });
 });

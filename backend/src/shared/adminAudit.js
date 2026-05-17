@@ -64,7 +64,8 @@ class AdminAuditService {
       entityId: productId,
       oldValue: null,
       // Lưu toàn bộ changes object, nếu rỗng thì lưu tên sản phẩm để có context
-      newValue: Object.keys(changes).length > 0 ? changes : (productName ? { name: productName } : null),
+      newValue:
+        Object.keys(changes).length > 0 ? changes : productName ? { name: productName } : null,
       ip,
     };
 
@@ -232,8 +233,7 @@ const auditMiddleware = (req, res, next) => {
   AdminAuditService.logDashboardAccess = (adminUser, endpoint, filters = {}) =>
     originalLogDashboardAccess(adminUser, endpoint, filters);
 
-  AdminAuditService.logSuccessfulLogin = (adminUser) =>
-    originalLogSuccessfulLogin(adminUser, ip);
+  AdminAuditService.logSuccessfulLogin = (adminUser) => originalLogSuccessfulLogin(adminUser, ip);
 
   // Khôi phục method gốc sau khi xử lý xong request
   res.on('finish', () => {

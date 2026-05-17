@@ -2,7 +2,7 @@ const { DiscountCode } = require('../../../models');
 const { Op } = require('sequelize');
 const { catchAsync } = require('../../../utils/catchAsync');
 const { AppError } = require('../../../shared/errors');
-const { AdminAuditService } = require('../../../services/adminAudit');
+const { AdminAuditService } = require('../../../shared/adminAudit');
 
 // Admin: Lấy danh sách mã giảm giá với phân trang và tìm kiếm
 const getAllDiscountCodes = catchAsync(async (req, res) => {

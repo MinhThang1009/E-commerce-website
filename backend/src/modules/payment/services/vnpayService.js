@@ -56,14 +56,7 @@ class VNPayService {
     return crypto.timingSafeEqual(Buffer.from(secureHash), Buffer.from(signed));
   }
 
-  async refund({
-    orderId,
-    amount,
-    transDate,
-    transType = '02',
-    user = 'Admin',
-    ipAddr,
-  }) {
+  async refund({ orderId, amount, transDate, transType = '02', user = 'Admin', ipAddr }) {
     const vnp_Api = process.env.VNP_API;
     const vnp_TmnCode = this.tmnCode;
     const secretKey = this.secretKey;

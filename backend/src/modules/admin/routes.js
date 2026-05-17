@@ -9,7 +9,7 @@ const discountCodeController = require('../discountCode/controllers/discountCode
 // Middlewares
 const { adminAuthenticate } = require('../../middlewares/adminAuth');
 const { validate } = require('../../middlewares/validateRequest');
-const { auditMiddleware } = require('../../services/adminAudit');
+const { auditMiddleware } = require('../../shared/adminAudit');
 
 // Validators
 const {

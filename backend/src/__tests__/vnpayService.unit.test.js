@@ -20,7 +20,7 @@ const axios = require('axios');
 const crypto = require('crypto');
 const querystring = require('qs');
 
-const vnpayService = require('../services/payment/vnpay');
+const vnpayService = require('../modules/payment/services/vnpayService');
 
 beforeEach(() => {
   axios.post.mockReset();

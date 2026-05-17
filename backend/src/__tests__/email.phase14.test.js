@@ -77,7 +77,7 @@ jest.mock('google-auth-library', () => ({
   })),
 }));
 
-jest.mock('../services/adminAudit', () => ({
+jest.mock('../shared/adminAudit', () => ({
   AdminAuditService: {
     logSuccessfulLogin: jest.fn(),
   },
@@ -96,7 +96,7 @@ const emailService = require('../services/email');
 const { User } = require('../models');
 const eventBus = require('../shared/eventBus');
 const logger = require('../utils/logger');
-const { AdminAuditService } = require('../services/adminAudit');
+const { AdminAuditService } = require('../shared/adminAudit');
 const { getRedisClient } = require('../config/redis');
 
 const authModule = buildAuthModule({
@@ -145,9 +145,7 @@ describe('POST /api/auth/forgot-password', () => {
   test('200 OK và cùng message khi email tồn tại', async () => {
     User.findOne.mockResolvedValue({ ...mockUserData });
 
-    const res = await request
-      .post('/api/auth/forgot-password')
-      .send({ email: 'test@example.com' });
+    const res = await request.post('/api/auth/forgot-password').send({ email: 'test@example.com' });
 
     expect(res.status).toBe(200);
     expect(res.body.status).toBe('success');
@@ -159,13 +157,9 @@ describe('POST /api/auth/forgot-password', () => {
   // AC4: Nodemailer fail → server không crash, vẫn trả 200
   test('200 OK dù emailService throw — không crash server', async () => {
     User.findOne.mockResolvedValue({ ...mockUserData });
-    emailService.sendResetPasswordEmail.mockRejectedValueOnce(
-      new Error('SMTP connection refused')
-    );
+    emailService.sendResetPasswordEmail.mockRejectedValueOnce(new Error('SMTP connection refused'));
 
-    const res = await request
-      .post('/api/auth/forgot-password')
-      .send({ email: 'test@example.com' });
+    const res = await request.post('/api/auth/forgot-password').send({ email: 'test@example.com' });
 
     expect(res.status).toBe(200);
     expect(res.body.status).toBe('success');
@@ -229,18 +223,14 @@ describe('POST /api/auth/register', () => {
       id: 1,
       email: 'new@example.com',
     });
-    emailService.sendOtpEmail.mockRejectedValueOnce(
-      new Error('Invalid credentials')
-    );
+    emailService.sendOtpEmail.mockRejectedValueOnce(new Error('Invalid credentials'));
 
-    const res = await request
-      .post('/api/auth/register')
-      .send({
-        email: 'new@example.com',
-        password: 'password123',
-        firstName: 'New',
-        lastName: 'User',
-      });
+    const res = await request.post('/api/auth/register').send({
+      email: 'new@example.com',
+      password: 'password123',
+      firstName: 'New',
+      lastName: 'User',
+    });
 
     expect(res.status).toBe(201);
     expect(res.body.status).toBe('success');
@@ -268,21 +258,19 @@ describe('POST /api/auth/register — OTP email arguments', () => {
     });
     emailService.sendOtpEmail.mockResolvedValue(undefined);
 
-    const res = await request
-      .post('/api/auth/register')
-      .send({
-        email: 'new@example.com',
-        password: 'password123',
-        firstName: 'New',
-        lastName: 'User',
-      });
+    const res = await request.post('/api/auth/register').send({
+      email: 'new@example.com',
+      password: 'password123',
+      firstName: 'New',
+      lastName: 'User',
+    });
 
     expect(res.status).toBe(201);
     // sendOtpEmail phải được gọi với email đúng
     expect(emailService.sendOtpEmail).toHaveBeenCalledTimes(1);
     expect(emailService.sendOtpEmail).toHaveBeenCalledWith(
       'new@example.com',
-      expect.any(String) // mã OTP là chuỗi 6 chữ số
+      expect.any(String), // mã OTP là chuỗi 6 chữ số
     );
     // Mã OTP truyền vào phải là chuỗi số 6 chữ số
     const otpArg = emailService.sendOtpEmail.mock.calls[0][1];

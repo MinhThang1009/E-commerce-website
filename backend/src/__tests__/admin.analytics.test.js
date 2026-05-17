@@ -80,7 +80,7 @@ jest.mock('../middlewares/validateRequest', () => ({
   validateExpressValidator: (_req, _res, next) => next(),
 }));
 
-jest.mock('../services/adminAudit', () => ({
+jest.mock('../shared/adminAudit', () => ({
   AdminAuditService: class {
     static logUserAction() {}
     static logProductAction() {}

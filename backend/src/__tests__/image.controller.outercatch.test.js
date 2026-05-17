@@ -13,7 +13,7 @@ jest.mock('../utils/logger', () => ({
   warn: jest.fn(),
 }));
 
-jest.mock('../services/image', () => ({
+jest.mock('../modules/image/services/imageService', () => ({
   uploadImage: jest.fn(),
   uploadMultipleImages: jest.fn(),
   getImageById: jest.fn(),

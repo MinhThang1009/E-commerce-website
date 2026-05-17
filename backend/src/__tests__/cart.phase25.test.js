@@ -51,7 +51,7 @@ jest.mock('../middlewares/adminAuth', () => ({
   adminAuthenticate: (_req, _res, next) => next(),
 }));
 
-jest.mock('../services/adminAudit', () => ({
+jest.mock('../shared/adminAudit', () => ({
   AdminAuditService: { logAction: jest.fn(), logSuccessfulLogin: jest.fn() },
   auditMiddleware: (_req, _res, next) => next(),
 }));
@@ -118,7 +118,9 @@ jest.mock('../models', () => {
     CartItem: {
       findOne: jest.fn().mockImplementation((...args) => mockCartItemFindOneImpl(...args)),
       findAll: jest.fn().mockResolvedValue([]),
-      create: jest.fn().mockResolvedValue({ id: 1, cartId: 10, productId: 1, variantId: null, quantity: 2 }),
+      create: jest
+        .fn()
+        .mockResolvedValue({ id: 1, cartId: 10, productId: 1, variantId: null, quantity: 2 }),
     },
     WarrantyPackage: {
       findAll: jest.fn().mockResolvedValue([]),
@@ -161,20 +163,36 @@ jest.mock('../models', () => {
 const express = require('express');
 const supertest = require('supertest');
 const buildCartModule = require('../modules/cart/module');
-const { Cart, CartItem, Product, ProductVariant, WarrantyPackage, sequelize } = require('../models');
+const {
+  Cart,
+  CartItem,
+  Product,
+  ProductVariant,
+  WarrantyPackage,
+  sequelize,
+} = require('../models');
 const eventBus = require('../shared/eventBus');
 const logger = require('../utils/logger');
 const { errorHandler } = require('../middlewares/errorHandler');
 
 const cartModule = buildCartModule({
-  Cart, CartItem, Product, ProductVariant, WarrantyPackage,
-  sequelize, eventBus, logger,
+  Cart,
+  CartItem,
+  Product,
+  ProductVariant,
+  WarrantyPackage,
+  sequelize,
+  eventBus,
+  logger,
 });
 
 const app = express();
 app.use(express.json());
 // Khởi tạo req.cookies = {} để cart controller không throw TypeError khi đọc sessionId
-app.use((req, _res, next) => { req.cookies = {}; next(); });
+app.use((req, _res, next) => {
+  req.cookies = {};
+  next();
+});
 app.use('/api/cart', cartModule.router);
 app.use(errorHandler);
 const request = supertest(app);
@@ -229,7 +247,13 @@ describe('POST /api/cart — thêm sản phẩm vào giỏ hàng', () => {
     mockCartItemFindOneImpl.mockResolvedValue(null);
 
     const { CartItem } = require('../models');
-    CartItem.create.mockResolvedValue({ id: 1, quantity: 2, productId: 1, variantId: null, cartId: 10 });
+    CartItem.create.mockResolvedValue({
+      id: 1,
+      quantity: 2,
+      productId: 1,
+      variantId: null,
+      cartId: 10,
+    });
 
     const res = await request
       .post('/api/cart')
@@ -239,7 +263,7 @@ describe('POST /api/cart — thêm sản phẩm vào giỏ hàng', () => {
     // CartItem.create phải được gọi vì chưa có item này trong giỏ
     expect(CartItem.create).toHaveBeenCalledWith(
       expect.objectContaining({ productId: 1, quantity: 2 }),
-      expect.anything()
+      expect.anything(),
     );
     // addToCart sau thành công sẽ gọi getCart → 200
     expect([200, 201]).toContain(res.status);
@@ -299,7 +323,11 @@ describe('POST /api/cart — thêm sản phẩm vào giỏ hàng', () => {
   });
 
   test('Số lượng yêu cầu vượt tồn kho → 400', async () => {
-    mockProductFindByPkImpl.mockResolvedValue({ ...PRODUCT_IN_STOCK, stockQuantity: 2, defaultVariant: { stockQuantity: 2 } });
+    mockProductFindByPkImpl.mockResolvedValue({
+      ...PRODUCT_IN_STOCK,
+      stockQuantity: 2,
+      defaultVariant: { stockQuantity: 2 },
+    });
     mockVariantFindOneImpl.mockResolvedValue(null);
     mockCartItemFindOneImpl.mockResolvedValue(null);
 

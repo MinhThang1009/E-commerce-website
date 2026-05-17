@@ -37,7 +37,7 @@ describe('MoMoService.verifySignature — early return branches', () => {
       process.env.DEV_ACCESS_KEY = 'ACCESS';
       process.env.DEV_SECRET_KEY = 'supersecretkey';
       jest.mock('axios', () => ({ post: jest.fn() }));
-      momoService = require('../services/payment/momo');
+      momoService = require('../modules/payment/services/momoService');
     });
   });
 
@@ -95,7 +95,7 @@ describe('MoMoService.createPaymentUrl — catch branch khi axios.post thất b�
       process.env.MOMO_IPN_URL = 'http://localhost:8888/ipn';
       mockPost = jest.fn();
       jest.mock('axios', () => ({ post: (...args) => mockPost(...args) }));
-      momoService = require('../services/payment/momo');
+      momoService = require('../modules/payment/services/momoService');
     });
   });
 
@@ -147,7 +147,7 @@ describe('VNPayService.verifyReturnUrl — missing/mismatched secureHash', () =>
       process.env.VNP_URL = 'https://sandbox.vnpayment.vn/paymentv2/vpcpay.html';
       process.env.VNP_RETURN_URL = 'http://localhost:8888/return';
       jest.mock('axios', () => ({ post: jest.fn() }));
-      vnpayService = require('../services/payment/vnpay');
+      vnpayService = require('../modules/payment/services/vnpayService');
     });
   });
 
@@ -215,7 +215,9 @@ describe('runDailyCleanup — step 4 warn when reset token update fails', () => 
           unlink: jest.fn(),
         },
       }));
-      jest.mock('../services/image', () => ({ cleanupOrphanedFiles: jest.fn() }));
+      jest.mock('../modules/image/services/imageService', () => ({
+        cleanupOrphanedFiles: jest.fn(),
+      }));
 
       logger = require('../utils/logger');
       ({ runDailyCleanup } = require('../jobs/cleanup'));

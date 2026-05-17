@@ -41,11 +41,15 @@ const mockImageFindByPk = jest.fn();
 const mockImageFindAll = jest.fn();
 const mockImageDestroy = jest.fn();
 
-jest.mock('../models/image', () => ({
-  create: (...args) => mockImageCreate(...args),
-  findByPk: (...args) => mockImageFindByPk(...args),
-  findAll: (...args) => mockImageFindAll(...args),
-}), { virtual: true });
+jest.mock(
+  '../models/image',
+  () => ({
+    create: (...args) => mockImageCreate(...args),
+    findByPk: (...args) => mockImageFindByPk(...args),
+    findAll: (...args) => mockImageFindAll(...args),
+  }),
+  { virtual: true },
+);
 
 const mockLogger = {
   info: jest.fn(),
@@ -56,7 +60,7 @@ const mockLogger = {
 jest.mock('../utils/logger', () => mockLogger);
 
 // ── Load service sau mock ─────────────────────────────────────────────────────
-const imageService = require('./image');
+const imageService = require('../modules/image/services/imageService');
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 function makeImageRecord(overrides = {}) {
@@ -95,7 +99,7 @@ describe('ImageService — initializeDirectories() mkdir lỗi (line 29)', () =>
 
     expect(mockLogger.error).toHaveBeenCalledWith(
       expect.stringContaining('Không thể tạo thư mục'),
-      expect.any(Error)
+      expect.any(Error),
     );
   });
 
@@ -135,7 +139,7 @@ describe('ImageService — generateThumbnails() processImage lỗi (line 153)', 
     // logger.error được gọi cho thumbnail size bị lỗi
     expect(mockLogger.error).toHaveBeenCalledWith(
       expect.stringMatching(/Lỗi khi tạo thumbnail/),
-      expect.any(Error)
+      expect.any(Error),
     );
   });
 
@@ -205,7 +209,7 @@ describe('ImageService — cleanupOrphanedFiles() unlink lỗi cho file orphan (
     // logger.error gọi cho file không xóa được
     expect(mockLogger.error).toHaveBeenCalledWith(
       expect.stringContaining('Lỗi khi xóa file không còn tham chiếu'),
-      expect.any(Error)
+      expect.any(Error),
     );
   });
 });
@@ -223,14 +227,12 @@ describe('ImageService — cleanupOrphanedFiles() outer error (lines 439-440)', 
 
     expect(mockLogger.error).toHaveBeenCalledWith(
       expect.stringContaining('Lỗi khi dọn dẹp file'),
-      expect.any(Error)
+      expect.any(Error),
     );
   });
 
   it('khi Image.findAll throw trong cleanupOrphanedFiles → throw AppError(500)', async () => {
-    mockFsPromises.readdir.mockResolvedValue([
-      { name: 'file.jpg', isDirectory: () => false },
-    ]);
+    mockFsPromises.readdir.mockResolvedValue([{ name: 'file.jpg', isDirectory: () => false }]);
     mockImageFindAll.mockRejectedValue(new Error('DB crashed'));
 
     await expect(imageService.cleanupOrphanedFiles()).rejects.toMatchObject({
@@ -286,11 +288,11 @@ describe('ImageService — generateThumbnails trực tiếp', () => {
     const thumbnails = await imageService.generateThumbnails(
       '/path/original.jpg',
       'original.jpg',
-      'product'
+      'product',
     );
 
     expect(thumbnails).toHaveLength(3);
-    expect(thumbnails.map(t => t.size)).toEqual(['small', 'medium', 'large']);
+    expect(thumbnails.map((t) => t.size)).toEqual(['small', 'medium', 'large']);
   });
 
   it('bỏ qua thumbnail lỗi và tiếp tục xử lý — trả về array với ít phần tử hơn', async () => {
@@ -303,7 +305,7 @@ describe('ImageService — generateThumbnails trực tiếp', () => {
     const thumbnails = await imageService.generateThumbnails(
       '/original.jpg',
       'photo.jpg',
-      'product'
+      'product',
     );
 
     expect(thumbnails).toHaveLength(2);
@@ -379,12 +381,14 @@ describe('ImageService — uploadMultipleImages options default (line 249)', () 
       destroy: mockImageDestroy,
     });
 
-    const files = [{
-      originalname: 'img.jpg',
-      mimetype: 'image/jpeg',
-      size: 1024,
-      path: '/tmp/img.jpg',
-    }];
+    const files = [
+      {
+        originalname: 'img.jpg',
+        mimetype: 'image/jpeg',
+        size: 1024,
+        path: '/tmp/img.jpg',
+      },
+    ];
 
     // Không truyền options → sử dụng default {}
     const result = await imageService.uploadMultipleImages(files);
@@ -413,7 +417,7 @@ describe('ImageService — convertBase64ToFile gọi không có options argument
 
     expect(result.url).toMatch('/uploads/');
     expect(mockImageCreate).toHaveBeenCalledWith(
-      expect.objectContaining({ category: 'product' }) // default category
+      expect.objectContaining({ category: 'product' }), // default category
     );
   });
 });
@@ -426,7 +430,7 @@ describe('ImageService — convertBase64ToFile Image.create lỗi (line 343 catc
     const validBase64 = 'data:image/png;base64,' + Buffer.from('fake-data').toString('base64');
 
     await expect(
-      imageService.convertBase64ToFile(validBase64, { category: 'product' })
+      imageService.convertBase64ToFile(validBase64, { category: 'product' }),
     ).rejects.toMatchObject({ statusCode: 500, message: 'Failed to convert base64 to file' });
   });
 
@@ -434,8 +438,8 @@ describe('ImageService — convertBase64ToFile Image.create lỗi (line 343 catc
     mockFsPromises.writeFile.mockRejectedValueOnce(new Error('disk full'));
     const validBase64 = 'data:image/jpeg;base64,' + Buffer.from('fake-data').toString('base64');
 
-    await expect(
-      imageService.convertBase64ToFile(validBase64, {})
-    ).rejects.toMatchObject({ statusCode: 500 });
+    await expect(imageService.convertBase64ToFile(validBase64, {})).rejects.toMatchObject({
+      statusCode: 500,
+    });
   });
 });

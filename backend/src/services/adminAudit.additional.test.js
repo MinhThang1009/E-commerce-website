@@ -35,7 +35,7 @@ jest.mock('../utils/logger', () => mockLogger);
 const mockAuditLogCreate = jest.fn().mockResolvedValue({ id: 1 });
 jest.mock('../models', () => ({ AuditLog: { create: mockAuditLogCreate } }));
 
-const { AdminAuditService, auditMiddleware } = require('./adminAudit');
+const { AdminAuditService, auditMiddleware } = require('../shared/adminAudit');
 
 const adminUser = { id: 7, email: 'admin@shop.vn' };
 
@@ -49,19 +49,17 @@ describe('AdminAuditService.logUserAction — bổ sung', () => {
   it('changes mặc định {} → oldValue null, newValue null trong DB', async () => {
     AdminAuditService.logUserAction(adminUser, 'VIEW_USER', 10, {}, '1.2.3.4');
 
-    await new Promise(r => setImmediate(r));
+    await new Promise((r) => setImmediate(r));
     expect(mockAuditLogCreate).toHaveBeenCalledWith(
-      expect.objectContaining({ oldValue: null, newValue: null })
+      expect.objectContaining({ oldValue: null, newValue: null }),
     );
   });
 
   it('ip = null → ip được lưu là null', async () => {
     AdminAuditService.logUserAction(adminUser, 'UNLOCK_USER', 10, {}, null);
 
-    await new Promise(r => setImmediate(r));
-    expect(mockAuditLogCreate).toHaveBeenCalledWith(
-      expect.objectContaining({ ip: null })
-    );
+    await new Promise((r) => setImmediate(r));
+    expect(mockAuditLogCreate).toHaveBeenCalledWith(expect.objectContaining({ ip: null }));
   });
 
   it('chứa timestamp trong logger.info', () => {
@@ -69,7 +67,7 @@ describe('AdminAuditService.logUserAction — bổ sung', () => {
 
     expect(mockLogger.info).toHaveBeenCalledWith(
       'ADMIN_USER_ACTION',
-      expect.objectContaining({ timestamp: expect.any(String) })
+      expect.objectContaining({ timestamp: expect.any(String) }),
     );
   });
 
@@ -78,7 +76,7 @@ describe('AdminAuditService.logUserAction — bổ sung', () => {
 
     expect(mockLogger.info).toHaveBeenCalledWith(
       'ADMIN_USER_ACTION',
-      expect.objectContaining({ adminEmail: 'admin@shop.vn' })
+      expect.objectContaining({ adminEmail: 'admin@shop.vn' }),
     );
   });
 });
@@ -89,7 +87,7 @@ describe('AdminAuditService.logProductAction — bổ sung', () => {
     AdminAuditService.logProductAction(undefined, 'CREATE', 1, 'Laptop');
 
     expect(mockLogger.error).toHaveBeenCalledWith(
-      expect.stringContaining('adminUser is undefined')
+      expect.stringContaining('adminUser is undefined'),
     );
     expect(mockAuditLogCreate).not.toHaveBeenCalled();
   });
@@ -97,28 +95,24 @@ describe('AdminAuditService.logProductAction — bổ sung', () => {
   it('changes rỗng + productName null → newValue = null trong DB', async () => {
     AdminAuditService.logProductAction(adminUser, 'DELETE', 1, null, {});
 
-    await new Promise(r => setImmediate(r));
-    expect(mockAuditLogCreate).toHaveBeenCalledWith(
-      expect.objectContaining({ newValue: null })
-    );
+    await new Promise((r) => setImmediate(r));
+    expect(mockAuditLogCreate).toHaveBeenCalledWith(expect.objectContaining({ newValue: null }));
   });
 
   it('ghi entityType "product" vào DB', async () => {
     AdminAuditService.logProductAction(adminUser, 'UPDATE', 5, 'Phone', { stock: 10 });
 
-    await new Promise(r => setImmediate(r));
+    await new Promise((r) => setImmediate(r));
     expect(mockAuditLogCreate).toHaveBeenCalledWith(
-      expect.objectContaining({ entityType: 'product' })
+      expect.objectContaining({ entityType: 'product' }),
     );
   });
 
   it('oldValue luôn là null (không lưu old state)', async () => {
     AdminAuditService.logProductAction(adminUser, 'UPDATE', 5, 'Phone', { newData: true });
 
-    await new Promise(r => setImmediate(r));
-    expect(mockAuditLogCreate).toHaveBeenCalledWith(
-      expect.objectContaining({ oldValue: null })
-    );
+    await new Promise((r) => setImmediate(r));
+    expect(mockAuditLogCreate).toHaveBeenCalledWith(expect.objectContaining({ oldValue: null }));
   });
 });
 
@@ -128,7 +122,7 @@ describe('AdminAuditService.logOrderAction — bổ sung', () => {
     AdminAuditService.logOrderAction(undefined, 'CANCEL', 10, 'ORD-001');
 
     expect(mockLogger.error).toHaveBeenCalledWith(
-      expect.stringContaining('adminUser is undefined')
+      expect.stringContaining('adminUser is undefined'),
     );
     expect(mockAuditLogCreate).not.toHaveBeenCalled();
   });
@@ -136,19 +130,15 @@ describe('AdminAuditService.logOrderAction — bổ sung', () => {
   it('changes rỗng → newValue = null trong DB', async () => {
     AdminAuditService.logOrderAction(adminUser, 'STATUS_CHANGE', 20, 'ORD-002', {});
 
-    await new Promise(r => setImmediate(r));
-    expect(mockAuditLogCreate).toHaveBeenCalledWith(
-      expect.objectContaining({ newValue: null })
-    );
+    await new Promise((r) => setImmediate(r));
+    expect(mockAuditLogCreate).toHaveBeenCalledWith(expect.objectContaining({ newValue: null }));
   });
 
   it('entityId khớp với orderId được truyền vào', async () => {
     AdminAuditService.logOrderAction(adminUser, 'REFUND', 99, 'ORD-099', { amount: 500 });
 
-    await new Promise(r => setImmediate(r));
-    expect(mockAuditLogCreate).toHaveBeenCalledWith(
-      expect.objectContaining({ entityId: 99 })
-    );
+    await new Promise((r) => setImmediate(r));
+    expect(mockAuditLogCreate).toHaveBeenCalledWith(expect.objectContaining({ entityId: 99 }));
   });
 });
 
@@ -158,53 +148,44 @@ describe('AdminAuditService.logDiscountCodeAction — bổ sung', () => {
     AdminAuditService.logDiscountCodeAction(undefined, 'DELETE', 1, 'SAVE10');
 
     expect(mockLogger.error).toHaveBeenCalledWith(
-      expect.stringContaining('adminUser is undefined')
+      expect.stringContaining('adminUser is undefined'),
     );
     expect(mockAuditLogCreate).not.toHaveBeenCalled();
   });
 
   it('changes.old tường minh → oldValue được lưu đúng', async () => {
-    AdminAuditService.logDiscountCodeAction(
-      adminUser,
-      'UPDATE',
-      5,
-      'DEAL20',
-      { old: { discountValue: 10 }, new: { discountValue: 20 } }
-    );
+    AdminAuditService.logDiscountCodeAction(adminUser, 'UPDATE', 5, 'DEAL20', {
+      old: { discountValue: 10 },
+      new: { discountValue: 20 },
+    });
 
-    await new Promise(r => setImmediate(r));
+    await new Promise((r) => setImmediate(r));
     expect(mockAuditLogCreate).toHaveBeenCalledWith(
       expect.objectContaining({
         oldValue: JSON.stringify({ discountValue: 10 }),
         newValue: JSON.stringify({ discountValue: 20 }),
-      })
+      }),
     );
   });
 
   it('changes.new tường minh → ưu tiên hơn fallback { code }', async () => {
-    AdminAuditService.logDiscountCodeAction(
-      adminUser,
-      'UPDATE',
-      5,
-      'DEAL20',
-      { new: { discountValue: 30 } }
-    );
+    AdminAuditService.logDiscountCodeAction(adminUser, 'UPDATE', 5, 'DEAL20', {
+      new: { discountValue: 30 },
+    });
 
-    await new Promise(r => setImmediate(r));
+    await new Promise((r) => setImmediate(r));
     expect(mockAuditLogCreate).toHaveBeenCalledWith(
       expect.objectContaining({
         newValue: JSON.stringify({ discountValue: 30 }),
-      })
+      }),
     );
   });
 
   it('code null + changes rỗng → newValue = null', async () => {
     AdminAuditService.logDiscountCodeAction(adminUser, 'DELETE', 5, null, {});
 
-    await new Promise(r => setImmediate(r));
-    expect(mockAuditLogCreate).toHaveBeenCalledWith(
-      expect.objectContaining({ newValue: null })
-    );
+    await new Promise((r) => setImmediate(r));
+    expect(mockAuditLogCreate).toHaveBeenCalledWith(expect.objectContaining({ newValue: null }));
   });
 });
 
@@ -219,16 +200,16 @@ describe('AdminAuditService.logReviewAction', () => {
         action: 'DELETE_REVIEW',
         entityType: 'review',
         entityId: 33,
-      })
+      }),
     );
 
-    await new Promise(r => setImmediate(r));
+    await new Promise((r) => setImmediate(r));
     expect(mockAuditLogCreate).toHaveBeenCalledWith(
       expect.objectContaining({
         newValue: JSON.stringify({ userId: 100, productId: 200 }),
         entityType: 'review',
         entityId: 33,
-      })
+      }),
     );
   });
 
@@ -236,7 +217,7 @@ describe('AdminAuditService.logReviewAction', () => {
     AdminAuditService.logReviewAction(undefined, 'DELETE_REVIEW', 1, 1, 1);
 
     expect(mockLogger.error).toHaveBeenCalledWith(
-      expect.stringContaining('adminUser is undefined')
+      expect.stringContaining('adminUser is undefined'),
     );
     expect(mockAuditLogCreate).not.toHaveBeenCalled();
   });
@@ -244,10 +225,8 @@ describe('AdminAuditService.logReviewAction', () => {
   it('oldValue luôn null', async () => {
     AdminAuditService.logReviewAction(adminUser, 'APPROVE_REVIEW', 44, 50, 60, null);
 
-    await new Promise(r => setImmediate(r));
-    expect(mockAuditLogCreate).toHaveBeenCalledWith(
-      expect.objectContaining({ oldValue: null })
-    );
+    await new Promise((r) => setImmediate(r));
+    expect(mockAuditLogCreate).toHaveBeenCalledWith(expect.objectContaining({ oldValue: null }));
   });
 });
 
@@ -256,19 +235,15 @@ describe('AdminAuditService.logSuccessfulLogin — bổ sung', () => {
   it('entityId là null (không có entity cụ thể)', async () => {
     AdminAuditService.logSuccessfulLogin(adminUser, '192.168.1.1');
 
-    await new Promise(r => setImmediate(r));
-    expect(mockAuditLogCreate).toHaveBeenCalledWith(
-      expect.objectContaining({ entityId: null })
-    );
+    await new Promise((r) => setImmediate(r));
+    expect(mockAuditLogCreate).toHaveBeenCalledWith(expect.objectContaining({ entityId: null }));
   });
 
   it('ip undefined → lưu null vào DB (??-chaining với undefined)', async () => {
     AdminAuditService.logSuccessfulLogin(adminUser, undefined);
 
-    await new Promise(r => setImmediate(r));
-    expect(mockAuditLogCreate).toHaveBeenCalledWith(
-      expect.objectContaining({ ip: null })
-    );
+    await new Promise((r) => setImmediate(r));
+    expect(mockAuditLogCreate).toHaveBeenCalledWith(expect.objectContaining({ ip: null }));
   });
 });
 
@@ -329,10 +304,8 @@ describe('auditMiddleware', () => {
     // Gọi method đã bị override
     AdminAuditService.logProductAction(adminUser, 'CREATE', 1, 'Product A');
 
-    await new Promise(r => setImmediate(r));
-    expect(mockAuditLogCreate).toHaveBeenCalledWith(
-      expect.objectContaining({ ip: '10.20.30.40' })
-    );
+    await new Promise((r) => setImmediate(r));
+    expect(mockAuditLogCreate).toHaveBeenCalledWith(expect.objectContaining({ ip: '10.20.30.40' }));
   });
 
   it('đăng ký res.on("finish") để khôi phục methods sau request', () => {
@@ -349,7 +322,7 @@ describe('auditMiddleware', () => {
     auditMiddleware(req, res, next);
 
     // Trigger finish
-    const finishHandler = res.on.mock.calls.find(c => c[0] === 'finish')?.[1];
+    const finishHandler = res.on.mock.calls.find((c) => c[0] === 'finish')?.[1];
     expect(finishHandler).toBeDefined();
     finishHandler();
 

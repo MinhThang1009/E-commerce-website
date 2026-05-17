@@ -6,10 +6,15 @@ const logger = require('./utils/logger');
 
 // Fail fast nếu thiếu biến môi trường bắt buộc — server sẽ exit(1) thay vì crash âm thầm khi xử lý request
 const REQUIRED_ENV_VARS = [
-  'DB_HOST', 'DB_USER', 'DB_PASSWORD', 'DB_NAME',
-  'JWT_SECRET', 'JWT_REFRESH_SECRET',
-  'GEMINI_API_KEY',
-  'EMAIL_USERNAME', 'EMAIL_PASSWORD',
+  'DB_HOST',
+  'DB_USER',
+  'DB_PASSWORD',
+  'DB_NAME',
+  'JWT_SECRET',
+  'JWT_REFRESH_SECRET',
+  'GEMINI_API_KEYS',
+  'EMAIL_USERNAME',
+  'EMAIL_PASSWORD',
 ];
 
 // Check undefined thay vì falsy — DB_PASSWORD có thể là empty string trên XAMPP local dev
@@ -25,7 +30,9 @@ const MIN_SECRET_LENGTH = 32;
 ['JWT_SECRET', 'JWT_REFRESH_SECRET'].forEach((key) => {
   const val = process.env[key];
   if (val && val.length < MIN_SECRET_LENGTH) {
-    logger.error(`[STARTUP ERROR] ${key} quá ngắn (${val.length} ký tự, tối thiểu ${MIN_SECRET_LENGTH}). Tạo mới: node -e "console.log(require('crypto').randomBytes(64).toString('hex'))"`);
+    logger.error(
+      `[STARTUP ERROR] ${key} quá ngắn (${val.length} ký tự, tối thiểu ${MIN_SECRET_LENGTH}). Tạo mới: node -e "console.log(require('crypto').randomBytes(64).toString('hex'))"`,
+    );
     process.exit(1);
   }
 });
@@ -103,28 +110,36 @@ const checkVectorStoreSync = async () => {
     const { Op } = require('sequelize');
     const activeCount = await Product.count({
       where: { status: 'active' },
-      include: [{
-        model: ProductVariant,
-        as: 'variants',
-        where: { stockQuantity: { [Op.gt]: 0 } },
-        required: true,
-        attributes: [],
-      }],
+      include: [
+        {
+          model: ProductVariant,
+          as: 'variants',
+          where: { stockQuantity: { [Op.gt]: 0 } },
+          required: true,
+          attributes: [],
+        },
+      ],
       distinct: true,
     });
     const vectorCount = vectorStoreService.items.length;
     if (activeCount === 0) return; // Chưa có dữ liệu — bỏ qua
     const deviation = Math.abs(activeCount - vectorCount) / activeCount;
     if (deviation > 0.05) {
-      logger.warn(`Vector store lệch >5% so với DB (DB: ${activeCount}, vector: ${vectorCount}). Tự động rebuild...`);
+      logger.warn(
+        `Vector store lệch >5% so với DB (DB: ${activeCount}, vector: ${vectorCount}). Tự động rebuild...`,
+      );
       // Dùng exec (async) để không block event loop trong lúc rebuild
-      exec('npm run ai:rebuild-vectors', { cwd: __dirname + '/..', timeout: 120000 }, (rebuildErr) => {
-        if (rebuildErr) {
-          logger.error('Rebuild vector store thất bại:', rebuildErr.message);
-        } else {
-          logger.info('Đã rebuild vector store tự động.');
-        }
-      });
+      exec(
+        'npm run ai:rebuild-vectors',
+        { cwd: __dirname + '/..', timeout: 120000 },
+        (rebuildErr) => {
+          if (rebuildErr) {
+            logger.error('Rebuild vector store thất bại:', rebuildErr.message);
+          } else {
+            logger.info('Đã rebuild vector store tự động.');
+          }
+        },
+      );
     } else {
       logger.info(`Vector store OK: ${vectorCount} vectors / ${activeCount} sản phẩm active.`);
     }
@@ -153,16 +168,14 @@ const startServer = async () => {
 
   const PORT = process.env.PORT || 8888;
   const server = app.listen(PORT, '0.0.0.0', () => {
-    logger.info(
-      `Server đang chạy ở chế độ ${process.env.NODE_ENV} trên cổng ${PORT}`
-    );
+    logger.info(`Server đang chạy ở chế độ ${process.env.NODE_ENV} trên cổng ${PORT}`);
   });
 
   // Kiểm tra vector store sync sau khi server start (không block startup)
-  checkVectorStoreSync().catch(err => logger.warn('Vector store check failed:', err.message));
+  checkVectorStoreSync().catch((err) => logger.warn('Vector store check failed:', err.message));
 
   // Cache warming — pre-load categories và brands vào Redis sau khi DB sẵn sàng
-  warmCache().catch(err => logger.warn('Cache warming failed:', err.message));
+  warmCache().catch((err) => logger.warn('Cache warming failed:', err.message));
 
   // Xử lý promise rejection không được bắt
   process.on('unhandledRejection', (err) => {
@@ -183,4 +196,3 @@ const startServer = async () => {
 };
 
 startServer();
-

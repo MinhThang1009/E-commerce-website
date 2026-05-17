@@ -13,10 +13,7 @@ interface MessageBubbleProps {
 /**
  * Component hiển thị một tin nhắn trong chat
  */
-const MessageBubble: React.FC<MessageBubbleProps> = ({
-  message,
-  onSuggestionClick,
-}) => {
+const MessageBubble: React.FC<MessageBubbleProps> = ({ message, onSuggestionClick }) => {
   const { t } = useTranslation();
   return (
     <div
@@ -55,9 +52,11 @@ const MessageBubble: React.FC<MessageBubbleProps> = ({
                 <span>{t('chat.suggestedProducts')}</span>
               </p>
               <div className="grid grid-cols-1 gap-3">
-                {message.products.map((product) => (
-                  <ProductCard key={product.id} product={product} />
-                ))}
+                {message.products
+                  .filter((p, i, arr) => arr.findIndex((x) => x.id === p.id) === i)
+                  .map((product) => (
+                    <ProductCard key={product.id} product={product} />
+                  ))}
               </div>
             </div>
           )}
@@ -102,4 +101,3 @@ const MessageBubble: React.FC<MessageBubbleProps> = ({
 };
 
 export default MessageBubble;
-

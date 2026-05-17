@@ -19,10 +19,7 @@ const createOrderSchema = Joi.object({
     'string.empty': 'Thành phố giao hàng không được để trống',
     'any.required': 'Thành phố giao hàng là trường bắt buộc',
   }),
-  shippingState: Joi.string().required().messages({
-    'string.empty': 'Tỉnh/Thành phố giao hàng không được để trống',
-    'any.required': 'Tỉnh/Thành phố giao hàng là trường bắt buộc',
-  }),
+  shippingState: Joi.string().allow('').optional(),
   shippingZip: Joi.string().allow('').optional(),
   shippingCountry: Joi.string().allow('').optional(),
   shippingPhone: Joi.string().allow('').optional(),
@@ -45,10 +42,7 @@ const createOrderSchema = Joi.object({
     'string.empty': 'Thành phố thanh toán không được để trống',
     'any.required': 'Thành phố thanh toán là trường bắt buộc',
   }),
-  billingState: Joi.string().required().messages({
-    'string.empty': 'Tỉnh/Thành phố thanh toán không được để trống',
-    'any.required': 'Tỉnh/Thành phố thanh toán là trường bắt buộc',
-  }),
+  billingState: Joi.string().allow('').optional(),
   billingZip: Joi.string().allow('').optional(),
   billingCountry: Joi.string().allow('').optional(),
   billingPhone: Joi.string().allow('').optional(),
@@ -60,12 +54,21 @@ const createOrderSchema = Joi.object({
   notes: Joi.string().allow('').optional(),
   discountCode: Joi.string().allow('').optional(),
   pointsToUse: Joi.number().integer().min(0).optional(),
-  items: Joi.array().items(Joi.object({
-    productId: Joi.alternatives().try(Joi.number().integer(), Joi.string()).required(),
-    variantId: Joi.alternatives().try(Joi.number().integer(), Joi.string()).allow(null).optional(),
-    quantity: Joi.number().integer().min(1).required(),
-    warrantyPackageIds: Joi.array().items(Joi.alternatives().try(Joi.number().integer(), Joi.string())).optional(),
-  })).optional(),
+  items: Joi.array()
+    .items(
+      Joi.object({
+        productId: Joi.alternatives().try(Joi.number().integer(), Joi.string()).required(),
+        variantId: Joi.alternatives()
+          .try(Joi.number().integer(), Joi.string())
+          .allow(null)
+          .optional(),
+        quantity: Joi.number().integer().min(1).required(),
+        warrantyPackageIds: Joi.array()
+          .items(Joi.alternatives().try(Joi.number().integer(), Joi.string()))
+          .optional(),
+      }),
+    )
+    .optional(),
 });
 
 const updateOrderStatusSchema = Joi.object({

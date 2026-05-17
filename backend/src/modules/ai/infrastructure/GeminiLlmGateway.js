@@ -11,8 +11,8 @@ class GeminiLlmGateway extends ILlmGateway {
     return this.geminiService.handleMessage(message, userId, sessionId, context);
   }
 
-  getAIResponse(prompt, products, context) {
-    return this.geminiService.getAIResponse(prompt, products, context);
+  getAIResponse(userMessage, products, context, history) {
+    return this.geminiService.getAIResponse(userMessage, products, context, history);
   }
 }
 

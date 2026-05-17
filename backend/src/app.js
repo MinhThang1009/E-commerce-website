@@ -62,15 +62,13 @@ const buildOrdersModule = require('./modules/orders/module');
 const buildPaymentModule = require('./modules/payment/module');
 const buildInventoryModule = require('./modules/inventory/module');
 const buildAiModule = require('./modules/ai/module');
-const buildSearchHistoryModule  = require('./modules/searchHistory/module');
-const buildImageModule           = require('./modules/image/module');
-const buildDiscountCodeModule    = require('./modules/discountCode/module');
+const buildSearchHistoryModule = require('./modules/searchHistory/module');
+const buildImageModule = require('./modules/image/module');
+const buildDiscountCodeModule = require('./modules/discountCode/module');
 const buildWarrantyPackageModule = require('./modules/warrantyPackage/module');
-const buildLocationModule        = require('./modules/location/module');
-const buildAttributeModule       = require('./modules/attribute/module');
-const buildAdminModule           = require('./modules/admin/module');
+const buildAttributeModule = require('./modules/attribute/module');
+const buildAdminModule = require('./modules/admin/module');
 const geminiChatbotService = require('./services/ai/geminiChatbot');
-const ruleBasedChatbot = require('./services/ai/ruleBasedChatbot');
 const momoService = require('./services/payment/momo');
 const vnpayService = require('./services/payment/vnpay');
 
@@ -216,13 +214,11 @@ const inventoryModule = buildInventoryModule({
 });
 inventoryModule.subscribeEvents();
 
-
 const aiModule = buildAiModule({
   Product,
   ProductVariant,
   Category,
   geminiChatbotService,
-  ruleBasedChatbot,
   sequelize,
   eventBus,
   logger,
@@ -245,12 +241,14 @@ app.use(
   helmet({
     crossOriginResourcePolicy: { policy: 'cross-origin' },
     crossOriginOpenerPolicy: { policy: 'unsafe-none' },
-    // Content Security Policy — chỉ cho phép script từ các domain tin cậy,
-    // không cho phép unsafe-eval để giảm thiểu rủi ro XSS code injection
+    // CSP — dev thêm unsafe-eval vì Vite proxy forward header về browser
     contentSecurityPolicy: {
       directives: {
         defaultSrc: ["'self'"],
-        scriptSrc: ["'self'", 'https://accounts.google.com'],
+        scriptSrc:
+          process.env.NODE_ENV === 'production'
+            ? ["'self'", 'https://accounts.google.com']
+            : ["'self'", 'https://accounts.google.com', "'unsafe-eval'"],
         styleSrc: ["'self'", "'unsafe-inline'"],
         imgSrc: ["'self'", 'data:', 'https:', 'blob:'],
         connectSrc: ["'self'"],
@@ -411,18 +409,16 @@ app.use('/api' + paymentModule.basePath, paymentModule.router);
 app.use('/api' + inventoryModule.basePath, inventoryModule.router);
 app.use('/api' + aiModule.basePath, aiModule.router);
 // Wrapper modules — thin delegates to flat routes (migrated from routes/index.js)
-const searchHistoryModule  = buildSearchHistoryModule();
-const imageModule          = buildImageModule();
-const discountCodeModule   = buildDiscountCodeModule();
-const warrantyModule       = buildWarrantyPackageModule();
-const locationModule       = buildLocationModule();
-const attributeModule      = buildAttributeModule();
-app.use('/api' + searchHistoryModule.basePath,  searchHistoryModule.router);
-app.use('/api' + imageModule.basePath,          imageModule.router);
-app.use('/api' + discountCodeModule.basePath,   discountCodeModule.router);
-app.use('/api' + warrantyModule.basePath,       warrantyModule.router);
-app.use('/api' + locationModule.basePath,       locationModule.router);
-app.use('/api' + attributeModule.basePath,      attributeModule.router);
+const searchHistoryModule = buildSearchHistoryModule();
+const imageModule = buildImageModule();
+const discountCodeModule = buildDiscountCodeModule();
+const warrantyModule = buildWarrantyPackageModule();
+const attributeModule = buildAttributeModule();
+app.use('/api' + searchHistoryModule.basePath, searchHistoryModule.router);
+app.use('/api' + imageModule.basePath, imageModule.router);
+app.use('/api' + discountCodeModule.basePath, discountCodeModule.router);
+app.use('/api' + warrantyModule.basePath, warrantyModule.router);
+app.use('/api' + attributeModule.basePath, attributeModule.router);
 const adminModule = buildAdminModule();
 app.use('/api' + adminModule.basePath, adminModule.router);
 

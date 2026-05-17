@@ -29,14 +29,17 @@ router.get('/', (req, res) => {
     },
   };
   const proxyReq = mod.get(url, options, (proxyRes) => {
+    if (res.headersSent) return;
     res.set('Content-Type', proxyRes.headers['content-type'] || 'image/jpeg');
     res.set('Cache-Control', 'public, max-age=86400');
     proxyRes.pipe(res);
   });
-  proxyReq.on('error', () => res.status(502).send('Upstream error'));
+  proxyReq.on('error', () => {
+    if (!res.headersSent) res.status(502).send('Upstream error');
+  });
   proxyReq.on('timeout', () => {
     proxyReq.destroy();
-    res.status(504).send('Timeout');
+    if (!res.headersSent) res.status(504).send('Timeout');
   });
 });
 

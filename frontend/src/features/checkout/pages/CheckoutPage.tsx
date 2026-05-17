@@ -872,10 +872,38 @@ const CheckoutPage: React.FC = () => {
                   <AddressPicker
                     label={t('checkout.shippingInfo.address')}
                     value={formData.address}
-                    onChange={(val, lat, lon) => {
-                      handleInputChange('address', val);
-                      if (lat && lon) {
-                        setFormData((prev) => ({ ...prev, lat, lon }));
+                    onChange={(val, lat, lon, detail) => {
+                      setFormData((prev) => {
+                        const updated = { ...prev, address: val };
+
+                        // Parse city/state từ comma-separated address (fallback)
+                        const parts = val
+                          .split(',')
+                          .map((p) => p.trim())
+                          .filter(Boolean);
+                        const fallback = parts.length > 0 ? parts[parts.length - 1] : val.trim();
+                        updated.state = parts.length > 2 ? parts[parts.length - 2] : fallback;
+                        updated.city = parts.length > 3 ? parts[parts.length - 3] : fallback;
+
+                        // Override bằng structured detail từ geocoder nếu có
+                        if (lat && lon) {
+                          updated.lat = lat;
+                          updated.lon = lon;
+                        }
+                        if (detail?.city) updated.city = detail.city;
+                        if (detail?.state) updated.state = detail.state;
+                        if (detail?.country) updated.country = detail.country;
+
+                        if (updated.sameAsShipping) {
+                          updated.billingCity = updated.city;
+                          updated.billingState = updated.state;
+                          updated.billingCountry = updated.country;
+                        }
+
+                        return updated;
+                      });
+                      if (errors.address) {
+                        setErrors((prev) => ({ ...prev, address: '' }));
                       }
                     }}
                     error={errors.address}

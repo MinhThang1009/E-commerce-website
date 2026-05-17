@@ -14,9 +14,7 @@
 const mockRedisGet = jest.fn();
 const mockRedisSetEx = jest.fn();
 jest.mock('../../config/redis', () => ({
-  getRedisClient: jest.fn(() =>
-    Promise.resolve({ get: mockRedisGet, setEx: mockRedisSetEx })
-  ),
+  getRedisClient: jest.fn(() => Promise.resolve({ get: mockRedisGet, setEx: mockRedisSetEx })),
 }));
 
 const mockBrandFindAll = jest.fn();
@@ -42,6 +40,10 @@ jest.mock('../../services/ai/vectorStore', () => ({
   addProduct: jest.fn(),
   save: jest.fn(),
   enrichProductData: jest.fn((data) => data),
+  detectLanguage: jest.fn((text) => {
+    if (/[àáâãèéêìíòóôõùúýăđơưÀÁÂÃÈÉÊÌÍÒÓÔÕÙÚÝĂĐƠƯẠ-ỹ]/.test(text)) return 'vi';
+    return 'en';
+  }),
 }));
 
 jest.mock('axios');
@@ -80,8 +82,15 @@ afterEach(() => {
 
 describe('GeminiChatbotService._ensureCatalogCache', () => {
   it('load brands và categories từ DB khi cache chưa có', async () => {
-    mockBrandFindAll.mockResolvedValueOnce([{ name: 'Apple' }, { name: 'Samsung' }]);
-    mockCategoryFindAll.mockResolvedValueOnce([{ name: 'Điện thoại' }, { name: 'Laptop' }]);
+    // Production dùng attributes: ['nameVi', 'nameEn'] — mock data phải match
+    mockBrandFindAll.mockResolvedValueOnce([
+      { nameVi: 'Apple', nameEn: 'Apple' },
+      { nameVi: 'Samsung', nameEn: 'Samsung' },
+    ]);
+    mockCategoryFindAll.mockResolvedValueOnce([
+      { nameVi: 'Điện thoại', nameEn: 'Phone' },
+      { nameVi: 'Laptop', nameEn: 'Laptop' },
+    ]);
 
     await geminiService._ensureCatalogCache();
 
@@ -107,8 +116,8 @@ describe('GeminiChatbotService._ensureCatalogCache', () => {
     geminiService._categoriesCache = ['OldCat'];
     geminiService._catalogCacheExpiry = Date.now() - 1000; // đã hết hạn
 
-    mockBrandFindAll.mockResolvedValueOnce([{ name: 'NewBrand' }]);
-    mockCategoryFindAll.mockResolvedValueOnce([{ name: 'NewCat' }]);
+    mockBrandFindAll.mockResolvedValueOnce([{ nameVi: 'NewBrand', nameEn: null }]);
+    mockCategoryFindAll.mockResolvedValueOnce([{ nameVi: 'NewCat', nameEn: null }]);
 
     await geminiService._ensureCatalogCache();
 
@@ -229,9 +238,7 @@ describe('GeminiChatbotService.parseAIResponse', () => {
 
     geminiService.parseAIResponse(aiText, sampleProducts, 'iphone');
 
-    expect(logger.warn).toHaveBeenCalledWith(
-      expect.stringContaining('Hallucination detected')
-    );
+    expect(logger.warn).toHaveBeenCalledWith(expect.stringContaining('Hallucination detected'));
   });
 
   it('dùng fallback suggestions khi parsed.suggestions rỗng/undefined', () => {
@@ -267,7 +274,15 @@ describe('GeminiChatbotService.parseAIResponse', () => {
 
   it('inStock fallback = true khi product.inStock = undefined', () => {
     const productsWithUndefinedInStock = [
-      { id: 10, name: 'Test Product', slug: 'test', price: 1000, compareAtPrice: null, thumbnail: null, stockQuantity: 1 },
+      {
+        id: 10,
+        name: 'Test Product',
+        slug: 'test',
+        price: 1000,
+        compareAtPrice: null,
+        thumbnail: null,
+        stockQuantity: 1,
+      },
     ];
 
     const aiText = JSON.stringify({
@@ -282,7 +297,8 @@ describe('GeminiChatbotService.parseAIResponse', () => {
   });
 
   it('loại bỏ markdown code fence trước khi parse JSON', () => {
-    const aiText = '```json\n{"response":"Tốt","matchedProducts":[],"suggestions":[],"intent":"general"}\n```';
+    const aiText =
+      '```json\n{"response":"Tốt","matchedProducts":[],"suggestions":[],"intent":"general"}\n```';
 
     const result = geminiService.parseAIResponse(aiText, [], 'hello');
     expect(result.response).toBe('Tốt');
@@ -348,7 +364,8 @@ describe('GeminiChatbotService.simpleKeywordMatch — hàng mới nhất', () =>
   it('query "new" → kích hoạt nhánh new products', () => {
     const result = geminiService.simpleKeywordMatch('show me new products', productsWithDates);
 
-    expect(result.response).toContain('mới nhất');
+    // English input → detectLanguage('show me new products') = 'en' → English response
+    expect(result.response).toContain('latest');
   });
 
   it('query "mới nhất" → kích hoạt nhánh new products', () => {
@@ -444,8 +461,11 @@ describe('GeminiChatbotService.getAIResponse — success path', () => {
   });
 
   it('trả về parsed AI response khi API trả về JSON hợp lệ', async () => {
-    const originalKey = geminiService.apiKey;
-    geminiService.apiKey = 'real-api-key';
+    // Production dùng this.providers array — push provider tạm để trigger API call
+    const originalProviders = geminiService.providers;
+    geminiService.providers = [
+      { key: 'real-api-key', url: 'https://test.api/chat', model: 'test-model' },
+    ];
 
     const aiResponseBody = {
       response: 'Đây là iPhone 15 Pro!',
@@ -461,7 +481,15 @@ describe('GeminiChatbotService.getAIResponse — success path', () => {
     });
 
     const products = [
-      { id: 1, name: 'iPhone 15 Pro', slug: 'iphone-15-pro', price: 29990000, compareAtPrice: null, inStock: true, stockQuantity: 5 },
+      {
+        id: 1,
+        name: 'iPhone 15 Pro',
+        slug: 'iphone-15-pro',
+        price: 29990000,
+        compareAtPrice: null,
+        inStock: true,
+        stockQuantity: 5,
+      },
     ];
 
     const result = await geminiService.getAIResponse('iphone 15 pro', products, {}, []);
@@ -470,12 +498,14 @@ describe('GeminiChatbotService.getAIResponse — success path', () => {
     expect(result.products).toHaveLength(1);
     expect(result.intent).toBe('product_search');
 
-    geminiService.apiKey = originalKey;
+    geminiService.providers = originalProviders;
   });
 
   it('trả về fallback khi choices[0].message.content rỗng', async () => {
-    const originalKey = geminiService.apiKey;
-    geminiService.apiKey = 'real-api-key';
+    const originalProviders = geminiService.providers;
+    geminiService.providers = [
+      { key: 'real-api-key', url: 'https://test.api/chat', model: 'test-model' },
+    ];
 
     axios.post.mockResolvedValueOnce({
       data: { choices: [{ message: { content: null } }] },
@@ -486,15 +516,30 @@ describe('GeminiChatbotService.getAIResponse — success path', () => {
     expect(result).toHaveProperty('response');
     expect(result.intent).toBe('general');
 
-    geminiService.apiKey = originalKey;
+    geminiService.providers = originalProviders;
   });
 
   it('truyền conversation history vào API call', async () => {
-    const originalKey = geminiService.apiKey;
-    geminiService.apiKey = 'real-api-key';
+    const originalProviders = geminiService.providers;
+    geminiService.providers = [
+      { key: 'real-api-key', url: 'https://test.api/chat', model: 'test-model' },
+    ];
 
     axios.post.mockResolvedValueOnce({
-      data: { choices: [{ message: { content: JSON.stringify({ response: 'OK', matchedProducts: [], suggestions: [], intent: 'general' }) } }] },
+      data: {
+        choices: [
+          {
+            message: {
+              content: JSON.stringify({
+                response: 'OK',
+                matchedProducts: [],
+                suggestions: [],
+                intent: 'general',
+              }),
+            },
+          },
+        ],
+      },
     });
 
     const history = [
@@ -508,15 +553,30 @@ describe('GeminiChatbotService.getAIResponse — success path', () => {
     // messages phải chứa history
     expect(callArgs.messages.some((m) => m.content === 'câu trước')).toBe(true);
 
-    geminiService.apiKey = originalKey;
+    geminiService.providers = originalProviders;
   });
 
   it('sanitize userMessage — trim và giới hạn 1000 ký tự', async () => {
-    const originalKey = geminiService.apiKey;
-    geminiService.apiKey = 'real-api-key';
+    const originalProviders = geminiService.providers;
+    geminiService.providers = [
+      { key: 'real-api-key', url: 'https://test.api/chat', model: 'test-model' },
+    ];
 
     axios.post.mockResolvedValueOnce({
-      data: { choices: [{ message: { content: JSON.stringify({ response: 'OK', matchedProducts: [], suggestions: [], intent: 'general' }) } }] },
+      data: {
+        choices: [
+          {
+            message: {
+              content: JSON.stringify({
+                response: 'OK',
+                matchedProducts: [],
+                suggestions: [],
+                intent: 'general',
+              }),
+            },
+          },
+        ],
+      },
     });
 
     const longMessage = 'a'.repeat(1200); // vượt giới hạn 1000
@@ -530,7 +590,7 @@ describe('GeminiChatbotService.getAIResponse — success path', () => {
     // Đảm bảo không có 1200 chữ 'a' liên tiếp trong prompt
     expect(userMsgContent.includes('a'.repeat(1001))).toBe(false);
 
-    geminiService.apiKey = originalKey;
+    geminiService.providers = originalProviders;
   });
 });
 
@@ -540,10 +600,42 @@ describe('GeminiChatbotService.getAIResponse — success path', () => {
 
 describe('GeminiChatbotService.parseAIResponse — version number matching', () => {
   const productsWithVersionNumbers = [
-    { id: 1, name: 'iPhone 15', slug: 'iphone-15', price: 20000000, compareAtPrice: null, inStock: true, stockQuantity: 3 },
-    { id: 2, name: 'iPhone 16', slug: 'iphone-16', price: 25000000, compareAtPrice: null, inStock: true, stockQuantity: 2 },
-    { id: 3, name: 'Galaxy S24 Ultra', slug: 'galaxy-s24-ultra', price: 30000000, compareAtPrice: null, inStock: true, stockQuantity: 1 },
-    { id: 4, name: 'Galaxy S24', slug: 'galaxy-s24', price: 22000000, compareAtPrice: null, inStock: true, stockQuantity: 5 },
+    {
+      id: 1,
+      name: 'iPhone 15',
+      slug: 'iphone-15',
+      price: 20000000,
+      compareAtPrice: null,
+      inStock: true,
+      stockQuantity: 3,
+    },
+    {
+      id: 2,
+      name: 'iPhone 16',
+      slug: 'iphone-16',
+      price: 25000000,
+      compareAtPrice: null,
+      inStock: true,
+      stockQuantity: 2,
+    },
+    {
+      id: 3,
+      name: 'Galaxy S24 Ultra',
+      slug: 'galaxy-s24-ultra',
+      price: 30000000,
+      compareAtPrice: null,
+      inStock: true,
+      stockQuantity: 1,
+    },
+    {
+      id: 4,
+      name: 'Galaxy S24',
+      slug: 'galaxy-s24',
+      price: 22000000,
+      compareAtPrice: null,
+      inStock: true,
+      stockQuantity: 5,
+    },
   ];
 
   it('KHÔNG match iPhone 15 khi LLM đề xuất iPhone 16 (version number mismatch)', () => {
@@ -568,7 +660,11 @@ describe('GeminiChatbotService.parseAIResponse — version number matching', () 
       intent: 'product_search',
     });
 
-    const result = geminiService.parseAIResponse(aiText, productsWithVersionNumbers, 'galaxy ultra');
+    const result = geminiService.parseAIResponse(
+      aiText,
+      productsWithVersionNumbers,
+      'galaxy ultra',
+    );
 
     // Phải match đúng Ultra, không match S24 thường
     const matchedNames = result.products.map((p) => p.name);
@@ -580,7 +676,15 @@ describe('GeminiChatbotService.parseAIResponse — version number matching', () 
 
   it('match sản phẩm bằng word intersection khi không có version keyword', () => {
     const simpleProducts = [
-      { id: 10, name: 'Laptop Dell Inspiron', slug: 'dell-inspiron', price: 15000000, compareAtPrice: null, inStock: true, stockQuantity: 2 },
+      {
+        id: 10,
+        name: 'Laptop Dell Inspiron',
+        slug: 'dell-inspiron',
+        price: 15000000,
+        compareAtPrice: null,
+        inStock: true,
+        stockQuantity: 2,
+      },
     ];
 
     const aiText = JSON.stringify({
@@ -786,7 +890,13 @@ describe('GeminiChatbotService.handleMessage — outer catch fallback', () => {
     // preprocessMessage → intent off_topic → _persistMessages throw → outer catch
     axios.post.mockResolvedValueOnce({
       data: {
-        choices: [{ message: { content: JSON.stringify({ rewrittenQuery: 'bóng đá', intent: 'off_topic' }) } }],
+        choices: [
+          {
+            message: {
+              content: JSON.stringify({ rewrittenQuery: 'bóng đá', intent: 'off_topic' }),
+            },
+          },
+        ],
       },
     });
 
@@ -813,13 +923,30 @@ describe('GeminiChatbotService.handleMessage — cache write', () => {
     axios.post
       .mockResolvedValueOnce({
         data: {
-          choices: [{ message: { content: JSON.stringify({ rewrittenQuery: 'iphone 15', intent: 'product_search' }) } }],
+          choices: [
+            {
+              message: {
+                content: JSON.stringify({ rewrittenQuery: 'iphone 15', intent: 'product_search' }),
+              },
+            },
+          ],
         },
       })
       // getAIResponse API call
       .mockResolvedValueOnce({
         data: {
-          choices: [{ message: { content: JSON.stringify({ response: 'OK iphone', matchedProducts: [], suggestions: [], intent: 'product_search' }) } }],
+          choices: [
+            {
+              message: {
+                content: JSON.stringify({
+                  response: 'OK iphone',
+                  matchedProducts: [],
+                  suggestions: [],
+                  intent: 'product_search',
+                }),
+              },
+            },
+          ],
         },
       });
 
@@ -838,7 +965,7 @@ describe('GeminiChatbotService.handleMessage — cache write', () => {
     expect(mockRedisSetEx).toHaveBeenCalledWith(
       expect.stringContaining('chatbot:'),
       expect.any(Number),
-      expect.any(String)
+      expect.any(String),
     );
 
     geminiService.apiKey = originalKey;
@@ -851,7 +978,13 @@ describe('GeminiChatbotService.handleMessage — cache write', () => {
     // preprocessMessage trả về order_inquiry (không cacheable)
     axios.post.mockResolvedValueOnce({
       data: {
-        choices: [{ message: { content: JSON.stringify({ rewrittenQuery: 'đơn hàng', intent: 'order_inquiry' }) } }],
+        choices: [
+          {
+            message: {
+              content: JSON.stringify({ rewrittenQuery: 'đơn hàng', intent: 'order_inquiry' }),
+            },
+          },
+        ],
       },
     });
 
@@ -863,7 +996,18 @@ describe('GeminiChatbotService.handleMessage — cache write', () => {
     // getAIResponse
     axios.post.mockResolvedValueOnce({
       data: {
-        choices: [{ message: { content: JSON.stringify({ response: 'Đơn hàng bạn...', matchedProducts: [], suggestions: [], intent: 'order_inquiry' }) } }],
+        choices: [
+          {
+            message: {
+              content: JSON.stringify({
+                response: 'Đơn hàng bạn...',
+                matchedProducts: [],
+                suggestions: [],
+                intent: 'order_inquiry',
+              }),
+            },
+          },
+        ],
       },
     });
 
@@ -953,7 +1097,7 @@ describe('GeminiChatbotService.parseAIResponse — line 372 every() callback', (
     const products = [
       {
         id: 1,
-        name: 'iPhone 15 Max',  // có version keyword 'max'
+        name: 'iPhone 15 Max', // có version keyword 'max'
         slug: 'iphone-15-max',
         price: 25000000,
         compareAtPrice: null,
@@ -964,7 +1108,7 @@ describe('GeminiChatbotService.parseAIResponse — line 372 every() callback', (
 
     const aiText = JSON.stringify({
       response: 'iPhone 15 Pro đây!',
-      matchedProducts: ['iPhone 15 Pro'],  // 'pro' keyword, khác 'max'
+      matchedProducts: ['iPhone 15 Pro'], // 'pro' keyword, khác 'max'
       suggestions: [],
       intent: 'product_search',
     });
@@ -974,8 +1118,6 @@ describe('GeminiChatbotService.parseAIResponse — line 372 every() callback', (
     // 'pro' !== 'max' → every() callback thực thi và trả false → không match
     expect(result.products).toHaveLength(0);
     // Hallucination detected vì không match được sản phẩm nào
-    expect(logger.warn).toHaveBeenCalledWith(
-      expect.stringContaining('Hallucination detected')
-    );
+    expect(logger.warn).toHaveBeenCalledWith(expect.stringContaining('Hallucination detected'));
   });
 });

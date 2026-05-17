@@ -19,13 +19,7 @@ const Order = sequelize.define(
       allowNull: false,
     },
     status: {
-      type: DataTypes.ENUM(
-        'pending',
-        'processing',
-        'shipped',
-        'delivered',
-        'cancelled'
-      ),
+      type: DataTypes.ENUM('pending', 'processing', 'shipped', 'delivered', 'cancelled'),
       defaultValue: 'pending',
     },
     shippingFirstName: {
@@ -54,7 +48,8 @@ const Order = sequelize.define(
     },
     shippingState: {
       type: DataTypes.STRING,
-      allowNull: false,
+      allowNull: true,
+      defaultValue: '',
     },
     shippingZip: {
       type: DataTypes.STRING,
@@ -94,7 +89,8 @@ const Order = sequelize.define(
     },
     billingState: {
       type: DataTypes.STRING,
-      allowNull: false,
+      allowNull: true,
+      defaultValue: '',
     },
     billingZip: {
       type: DataTypes.STRING,
@@ -207,7 +203,7 @@ const Order = sequelize.define(
       { name: 'idx_orders_created_at', fields: ['created_at'] },
       { name: 'idx_orders_payment_status', fields: ['payment_status'] },
     ],
-  }
+  },
 );
 
 module.exports = Order;

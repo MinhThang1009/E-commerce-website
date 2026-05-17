@@ -820,9 +820,11 @@ const ProductDetailPage: React.FC = () => {
                     processingText={t('common.processing')}
                     onClick={handleBuyNow}
                     disabled={isDisabled}
-                    className={`w-full h-14 ${!allSelected ? 'opacity-60 grayscale-[0.5]' : ''}`}
+                    className={`w-full h-14 ${isDisabled ? 'opacity-60 grayscale-[0.5]' : ''}`}
                   >
-                    {t('productDetail.buyNow.label')}
+                    {isOutOfStock
+                      ? t('productDetail.stock.outOfStock')
+                      : t('productDetail.buyNow.label')}
                   </PremiumButton>
 
                   <PremiumButton
@@ -833,7 +835,7 @@ const ProductDetailPage: React.FC = () => {
                     processingText={t('common.processing')}
                     onClick={handleAddToCart}
                     disabled={isDisabled}
-                    className={`w-full h-14 ${!allSelected ? 'opacity-60 grayscale-[0.5]' : ''}`}
+                    className={`w-full h-14 ${isDisabled ? 'opacity-60 grayscale-[0.5]' : ''}`}
                   >
                     {t('productDetail.addToCart')}
                   </PremiumButton>

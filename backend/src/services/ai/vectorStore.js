@@ -8,9 +8,14 @@ const fs = require('fs');
 const EXPECTED_DIM_EN = 1536; // text-embedding-3-small (OpenRouter), không truyền dimensions param → default 1536
 const EXPECTED_DIM_VI = 1024; // multilingual-e5-large (HuggingFace)
 
-// Phát hiện ngôn ngữ bằng ký tự đặc trưng tiếng Việt
+// Phát hiện ngôn ngữ: ưu tiên dấu tiếng Việt, fallback check common VI words không dấu
+const VI_NO_ACCENT =
+  /\b(gia|bao nhieu|dien thoai|san pham|co khong|xem|mua|ban|hang|tim|so sanh|nen mua|tot nhat|gia ca|re nhat|khuyen mai|bao hanh|doi tra|giao hang|co hang|het hang|mau|phien ban|cau hinh|thong so|pin|man hinh|camera|chip|ram|bon nho|chinh hang)\b/i;
+
 function detectLanguage(text) {
-  return /[àáâãèéêìíòóôõùúýăđơưÀÁÂÃÈÉÊÌÍÒÓÔÕÙÚÝĂĐƠƯ]/.test(text) ? 'vi' : 'en';
+  if (/[àáâãèéêìíòóôõùúýăđơưÀÁÂÃÈÉÊÌÍÒÓÔÕÙÚÝĂĐƠƯẠ-ỹ]/.test(text)) return 'vi';
+  if (VI_NO_ACCENT.test(text)) return 'vi';
+  return 'en';
 }
 
 // Tạo text đầy đủ để embed — bao gồm tên, thương hiệu, danh mục, mô tả, giá, tình trạng hàng
@@ -25,7 +30,9 @@ function generateProductText(product) {
     product.description ? product.description.replace(/<[^>]*>/g, '').substring(0, 500) : '',
     product.basePrice ? `Giá: ${product.basePrice.toLocaleString('vi-VN')} đồng` : '',
     // Stock thực nằm ở variant level — dùng inStock đã compute hoặc tính từ variants
-    (product.inStock !== undefined ? product.inStock : product.stockQuantity > 0) ? 'Còn hàng' : 'Hết hàng',
+    (product.inStock !== undefined ? product.inStock : product.stockQuantity > 0)
+      ? 'Còn hàng'
+      : 'Hết hàng',
   ];
   return parts.filter(Boolean).join('. ').substring(0, 1500);
 }
@@ -85,7 +92,9 @@ class SimpleVectorStore {
       const vectorEn = await embeddingService.generateEmbedding(textToEmbed);
       if (!vectorEn || !Array.isArray(vectorEn)) throw new Error('vectorEn không hợp lệ');
       if (vectorEn.length !== EXPECTED_DIM_EN) {
-        throw new Error(`vectorEn sai chiều: mong đợi ${EXPECTED_DIM_EN}, nhận được ${vectorEn.length}`);
+        throw new Error(
+          `vectorEn sai chiều: mong đợi ${EXPECTED_DIM_EN}, nhận được ${vectorEn.length}`,
+        );
       }
 
       // Vector tiếng Việt (tùy chọn — skip nếu HF chưa cấu hình)
@@ -94,7 +103,9 @@ class SimpleVectorStore {
         try {
           vectorVi = await viEmbeddingService.generateEmbedding(textToEmbed);
           if (vectorVi && vectorVi.length !== EXPECTED_DIM_VI) {
-            logger.warn(`vectorVi sai chiều cho "${product.name}": ${vectorVi.length} (mong đợi ${EXPECTED_DIM_VI})`);
+            logger.warn(
+              `vectorVi sai chiều cho "${product.name}": ${vectorVi.length} (mong đợi ${EXPECTED_DIM_VI})`,
+            );
             vectorVi = null;
           }
         } catch (err) {
@@ -103,7 +114,7 @@ class SimpleVectorStore {
       }
 
       // Xóa bản ghi cũ của sản phẩm này nếu đã tồn tại
-      this.items = this.items.filter(item => item.metadata.id !== product.id);
+      this.items = this.items.filter((item) => item.metadata.id !== product.id);
 
       this.items.push({
         vectorEn,
@@ -112,7 +123,7 @@ class SimpleVectorStore {
         metadata: {
           id: product.id,
           name: product.name,
-          slug: product.slug,                               // Cần cho link sản phẩm trong chatbot card
+          slug: product.slug, // Cần cho link sản phẩm trong chatbot card
           price: product.basePrice,
           compareAtPrice: product.compareAtPrice,
           thumbnail: product.thumbnail,
@@ -121,7 +132,7 @@ class SimpleVectorStore {
           category: product.categories?.[0]?.name || product.category?.name || 'Sản phẩm',
           baseName: product.baseName,
           shortDescription: product.shortDescription || '', // createPrompt() dùng p.shortDescription
-          createdAt: product.createdAt,                     // simpleKeywordMatch "hàng mới" sort theo ngày
+          createdAt: product.createdAt, // simpleKeywordMatch "hàng mới" sort theo ngày
         },
       });
     } catch (error) {
@@ -149,16 +160,22 @@ class SimpleVectorStore {
     return isFinite(similarity) ? similarity : 0;
   }
 
-  async search(query, limit = 5) {
+  async search(query, limit = 5, minScore = 0.45) {
     try {
       // Đảm bảo load đã xong
       await this.loadPromise;
 
       const lang = detectLanguage(query);
-      const useViModel = lang === 'vi'
-        && viEmbeddingService.isAvailable()
-        && this.items.some(item => item.vectorVi);
+      const useViModel =
+        lang === 'vi' &&
+        viEmbeddingService.isAvailable() &&
+        this.items.some((item) => item.vectorVi);
 
+      if (lang === 'vi' && !useViModel) {
+        logger.warn(
+          `[BILINGUAL] VI query nhưng VI model không khả dụng — fallback sang EN embedding (accuracy giảm)`,
+        );
+      }
       logger.debug(`[SEARCH] lang=${lang}, useViModel=${useViModel}`);
 
       // Chuẩn bị cả 2 query vectors khi dùng VI model để fallback đúng pair
@@ -174,7 +191,7 @@ class SimpleVectorStore {
         queryVectorEn = await embeddingService.generateEmbedding(query);
       }
 
-      const scores = this.items.map(item => {
+      const scores = this.items.map((item) => {
         // Chọn cặp (docVector, queryVector) đúng chiều — tránh dim mismatch silent failure
         let docVector = useViModel ? item.vectorVi : item.vectorEn;
         let qVector = useViModel ? queryVectorVi : queryVectorEn;
@@ -189,7 +206,7 @@ class SimpleVectorStore {
       });
 
       return scores
-        .filter(item => isFinite(item.score) && item.score >= 0.45)
+        .filter((item) => isFinite(item.score) && item.score >= minScore)
         .sort((a, b) => b.score - a.score)
         .slice(0, limit);
     } catch (error) {
@@ -201,9 +218,12 @@ class SimpleVectorStore {
 
 // Compute thumbnail + inStock từ product associations — dùng chung cho indexProducts, model hooks, chatbot fallback
 function enrichProductData(productData) {
-  const thumbImg = productData.productImages?.find(img => img.isThumbnail);
+  const thumbImg = productData.productImages?.find((img) => img.isThumbnail);
   productData.thumbnail = thumbImg?.imageUrl || productData.productImages?.[0]?.imageUrl || null;
-  const variantStock = (productData.variants || []).reduce((sum, v) => sum + (v.stockQuantity || 0), 0);
+  const variantStock = (productData.variants || []).reduce(
+    (sum, v) => sum + (v.stockQuantity || 0),
+    0,
+  );
   productData.inStock = variantStock > 0 || productData.stockQuantity > 0;
   return productData;
 }
@@ -211,4 +231,4 @@ function enrichProductData(productData) {
 const vectorStoreInstance = new SimpleVectorStore();
 module.exports = vectorStoreInstance;
 module.exports.enrichProductData = enrichProductData;
-
+module.exports.detectLanguage = detectLanguage;

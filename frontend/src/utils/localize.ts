@@ -27,9 +27,12 @@ export function translateValue(value: string, lang: string): string {
   return VI_EN_COLORS[value] ?? value;
 }
 
-export function localizeField(obj: Record<string, unknown>, field: string, lang: string): string {
+// Dùng `object` thay vì `Record<string, unknown>` để chấp nhận mọi kiểu object cụ thể
+// (ProductRecommendation, Category, ProductWithVariants, …) mà không cần cast ở call site
+export function localizeField(obj: object, field: string, lang: string): string {
+  const rec = obj as Record<string, unknown>;
   if (lang === 'en') {
-    return obj[`${field}En`] || obj[`${field}Vi`] || obj[field] || '';
+    return String(rec[`${field}En`] ?? rec[`${field}Vi`] ?? rec[field] ?? '');
   }
-  return obj[`${field}Vi`] || obj[field] || '';
+  return String(rec[`${field}Vi`] ?? rec[field] ?? '');
 }

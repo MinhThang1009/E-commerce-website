@@ -2,6 +2,28 @@ import React from 'react';
 import { Message } from '../types/Message';
 import { getLocale } from '@/utils/format';
 
+// Parse **bold** và xuống dòng — đủ dùng cho chatbot response
+function renderMarkdown(text: string): React.ReactNode {
+  return text.split('\n').map((line, i) => {
+    const parts: React.ReactNode[] = [];
+    const boldRegex = /\*\*(.+?)\*\*/g;
+    let last = 0;
+    let match;
+    while ((match = boldRegex.exec(line)) !== null) {
+      if (match.index > last) parts.push(line.slice(last, match.index));
+      parts.push(<strong key={match.index}>{match[1]}</strong>);
+      last = match.index + match[0].length;
+    }
+    if (last < line.length) parts.push(line.slice(last));
+    return (
+      <React.Fragment key={i}>
+        {parts}
+        {i < text.split('\n').length - 1 && <br />}
+      </React.Fragment>
+    );
+  });
+}
+
 interface ChatMessageProps {
   message: Message;
 }
@@ -59,9 +81,7 @@ const ChatMessage: React.FC<ChatMessageProps> = ({ message }) => {
   };
 
   return (
-    <div
-      className={`flex items-start my-4 ${isAI ? 'justify-start' : 'justify-end'} group`}
-    >
+    <div className={`flex items-start my-4 ${isAI ? 'justify-start' : 'justify-end'} group`}>
       {isAI && <div className="relative flex-shrink-0">{renderAvatar()}</div>}
 
       <div
@@ -87,9 +107,7 @@ const ChatMessage: React.FC<ChatMessageProps> = ({ message }) => {
             ></div>
           </div>
         ) : (
-          <div className="whitespace-pre-wrap text-sm leading-relaxed font-medium">
-            {text}
-          </div>
+          <div className="text-sm leading-relaxed font-medium">{renderMarkdown(text)}</div>
         )}
 
         {/* Thời gian gửi tin nhắn */}
@@ -99,11 +117,7 @@ const ChatMessage: React.FC<ChatMessageProps> = ({ message }) => {
               isAI ? 'text-neutral-400 dark:text-neutral-500' : 'text-white/70'
             }`}
           >
-            <svg
-              className="w-3 h-3 mr-1 opacity-60"
-              fill="currentColor"
-              viewBox="0 0 20 20"
-            >
+            <svg className="w-3 h-3 mr-1 opacity-60" fill="currentColor" viewBox="0 0 20 20">
               <path
                 fillRule="evenodd"
                 d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-12a1 1 0 10-2 0v4a1 1 0 00.293.707l2.828 2.829a1 1 0 101.415-1.415L11 9.586V6z"
@@ -124,4 +138,3 @@ const ChatMessage: React.FC<ChatMessageProps> = ({ message }) => {
 };
 
 export default ChatMessage;
-

@@ -11,7 +11,10 @@ const OrderDeliveredEvent = require('../domain/events/OrderDeliveredEvent');
 // mọi state transition qua OrderAggregate, mọi calc qua Policy.
 class OrdersService {
   constructor({
-    ordersRepository, emailGateway, eventBus, logger,
+    ordersRepository,
+    emailGateway,
+    eventBus,
+    logger,
     constants, // POINTS_EARN_RATE, POINTS_VALUE, SHIPPING_*
   }) {
     this.repo = ordersRepository;
@@ -48,14 +51,31 @@ class OrdersService {
   async createOrder({ user, body, sessionIdCookie }) {
     const userId = user.id;
     const {
-      shippingFirstName, shippingLastName, shippingCompany,
-      shippingAddress1, shippingAddress2, shippingCity, shippingState,
-      shippingZip, shippingCountry, shippingPhone,
-      billingFirstName, billingLastName, billingCompany,
-      billingAddress1, billingAddress2, billingCity, billingState,
-      billingZip, billingCountry, billingPhone,
-      paymentMethod, notes, discountCode,
-      items: providedItems, pointsToUse = 0,
+      shippingFirstName,
+      shippingLastName,
+      shippingCompany,
+      shippingAddress1,
+      shippingAddress2,
+      shippingCity,
+      shippingState,
+      shippingZip,
+      shippingCountry,
+      shippingPhone,
+      billingFirstName,
+      billingLastName,
+      billingCompany,
+      billingAddress1,
+      billingAddress2,
+      billingCity,
+      billingState,
+      billingZip,
+      billingCountry,
+      billingPhone,
+      paymentMethod,
+      notes,
+      discountCode,
+      items: providedItems,
+      pointsToUse = 0,
     } = body;
 
     let createdOrder;
@@ -92,15 +112,22 @@ class OrdersService {
         let cart = await this.repo.findOrCreateActiveCart(userId, { transaction });
 
         if (sessionIdCookie) {
-          const guestCart = await this.repo.findActiveCartBySessionId(sessionIdCookie, { transaction });
+          const guestCart = await this.repo.findActiveCartBySessionId(sessionIdCookie, {
+            transaction,
+          });
           if (guestCart && guestCart.items && guestCart.items.length > 0) {
-            this.logger.info(`[ĐƠN HÀNG] Gộp giỏ khách ${guestCart.id} vào giỏ ${cart.id} của user ${userId}`);
+            this.logger.info(
+              `[ĐƠN HÀNG] Gộp giỏ khách ${guestCart.id} vào giỏ ${cart.id} của user ${userId}`,
+            );
             for (const guestItem of guestCart.items) {
-              const existing = await this.repo.findCartItemMatching({
-                cartId: cart.id,
-                productId: guestItem.productId,
-                variantId: guestItem.variantId,
-              }, { transaction });
+              const existing = await this.repo.findCartItemMatching(
+                {
+                  cartId: cart.id,
+                  productId: guestItem.productId,
+                  variantId: guestItem.variantId,
+                },
+                { transaction },
+              );
 
               if (existing) {
                 existing.quantity = existing.quantity + guestItem.quantity;
@@ -144,30 +171,36 @@ class OrdersService {
           if (!lockedVariant || lockedVariant.stockQuantity < item.quantity) {
             throw new AppError(
               `Sản phẩm "${product.name}" chỉ còn ${lockedVariant ? lockedVariant.stockQuantity : 0} sản phẩm`,
-              400
+              400,
             );
           }
           const prev = lockedVariant.stockQuantity;
           await this.repo.decrementVariantStock(lockedVariant, item.quantity, { transaction });
           pendingInventoryLogs.push({
-            productId: item.productId, variantId: item.variantId,
-            changeType: 'sale', changeAmount: -item.quantity,
-            previousStock: prev, newStock: prev - item.quantity,
+            productId: item.productId,
+            variantId: item.variantId,
+            changeType: 'sale',
+            changeAmount: -item.quantity,
+            previousStock: prev,
+            newStock: prev - item.quantity,
           });
         } else {
           const lockedProduct = await this.repo.lockProduct(item.productId, transaction);
           if (!lockedProduct || lockedProduct.stockQuantity < item.quantity) {
             throw new AppError(
               `Sản phẩm "${product.name}" chỉ còn ${lockedProduct ? lockedProduct.stockQuantity : 0} sản phẩm`,
-              400
+              400,
             );
           }
           const prev = lockedProduct.stockQuantity;
           await this.repo.decrementProductStock(lockedProduct, item.quantity, { transaction });
           pendingInventoryLogs.push({
-            productId: item.productId, variantId: null,
-            changeType: 'sale', changeAmount: -item.quantity,
-            previousStock: prev, newStock: prev - item.quantity,
+            productId: item.productId,
+            variantId: null,
+            changeType: 'sale',
+            changeAmount: -item.quantity,
+            previousStock: prev,
+            newStock: prev - item.quantity,
           });
         }
 
@@ -179,7 +212,10 @@ class OrdersService {
         totalWeightKg += itemWeight * item.quantity;
 
         if (item.warrantyPackageIds && item.warrantyPackageIds.length > 0) {
-          const packages = await this.repo.findActiveWarrantyPackagesByIds(item.warrantyPackageIds, { transaction });
+          const packages = await this.repo.findActiveWarrantyPackagesByIds(
+            item.warrantyPackageIds,
+            { transaction },
+          );
           const itemWarrantyFee = packages.reduce((sum, pkg) => sum + parseFloat(pkg.price), 0);
           item.warrantyFee = itemWarrantyFee;
           item.warrantyPackages = packages;
@@ -207,7 +243,10 @@ class OrdersService {
           throw new AppError('Mã giảm giá đã đạt giới hạn lượt sử dụng', 400);
         }
         if (subtotal < parseFloat(codeData.minOrderAmount)) {
-          throw new AppError(`Đơn hàng phải tối thiểu ${codeData.minOrderAmount} để sử dụng mã này`, 400);
+          throw new AppError(
+            `Đơn hàng phải tối thiểu ${codeData.minOrderAmount} để sử dụng mã này`,
+            400,
+          );
         }
 
         if (codeData.type === 'percent') {
@@ -254,26 +293,57 @@ class OrdersService {
       if (pointsToUseInt > 0) {
         const u = await this.repo.findUserById(userId, { transaction });
         await this.repo.updateUserPoints(u, u.loyaltyPoints - pointsToUseInt, { transaction });
-        await this.repo.createLoyaltyHistory({
-          userId, points: -pointsToUseInt, type: 'spend',
-          description: `Sử dụng điểm cho đơn hàng ${orderNumber}`,
-        }, { transaction });
+        await this.repo.createLoyaltyHistory(
+          {
+            userId,
+            points: -pointsToUseInt,
+            type: 'spend',
+            description: `Sử dụng điểm cho đơn hàng ${orderNumber}`,
+          },
+          { transaction },
+        );
       }
 
       // Create order
-      const order = await this.repo.createOrder({
-        number: orderNumber, userId,
-        shippingFirstName, shippingLastName, shippingCompany,
-        shippingAddress1, shippingAddress2, shippingCity, shippingState,
-        shippingZip, shippingCountry, shippingPhone,
-        billingFirstName, billingLastName, billingCompany,
-        billingAddress1, billingAddress2, billingCity, billingState,
-        billingZip, billingCountry, billingPhone,
-        paymentMethod, paymentStatus: 'pending',
-        subtotal, tax, shippingCost, discount, discountCodeId, total,
-        warrantyCost: totalWarrantyCost,
-        pointsUsed: pointsToUseInt, pointsDiscount, notes,
-      }, { transaction });
+      const order = await this.repo.createOrder(
+        {
+          number: orderNumber,
+          userId,
+          shippingFirstName,
+          shippingLastName,
+          shippingCompany,
+          shippingAddress1,
+          shippingAddress2,
+          shippingCity,
+          shippingState: shippingState || '',
+          shippingZip,
+          shippingCountry,
+          shippingPhone,
+          billingFirstName,
+          billingLastName,
+          billingCompany,
+          billingAddress1,
+          billingAddress2,
+          billingCity,
+          billingState: billingState || '',
+          billingZip,
+          billingCountry,
+          billingPhone,
+          paymentMethod,
+          paymentStatus: 'pending',
+          subtotal,
+          tax,
+          shippingCost,
+          discount,
+          discountCodeId,
+          total,
+          warrantyCost: totalWarrantyCost,
+          pointsUsed: pointsToUseInt,
+          pointsDiscount,
+          notes,
+        },
+        { transaction },
+      );
 
       // Create order items
       const orderItems = [];
@@ -283,24 +353,31 @@ class OrdersService {
         const price = variant ? variant.price : product.basePrice;
         const itemSubtotal = price * item.quantity;
 
-        const orderItem = await this.repo.createOrderItem({
-          orderId: order.id,
-          productId: product.id,
-          variantId: variant ? variant.id : null,
-          name: product.name,
-          sku: variant ? variant.sku : null,
-          unitPrice: price,
-          quantity: item.quantity,
-          subtotal: itemSubtotal,
-          image: product.thumbnail,
-          attributes: {
-            ...(variant ? { variant: variant.name } : {}),
-            warrantyPackages: item.warrantyPackages
-              ? item.warrantyPackages.map((pkg) => ({ id: pkg.id, name: pkg.name, price: pkg.price }))
-              : [],
+        const orderItem = await this.repo.createOrderItem(
+          {
+            orderId: order.id,
+            productId: product.id,
+            variantId: variant ? variant.id : null,
+            name: product.name,
+            sku: variant ? variant.sku : null,
+            unitPrice: price,
+            quantity: item.quantity,
+            subtotal: itemSubtotal,
+            image: product.thumbnail,
+            attributes: {
+              ...(variant ? { variant: variant.name } : {}),
+              warrantyPackages: item.warrantyPackages
+                ? item.warrantyPackages.map((pkg) => ({
+                    id: pkg.id,
+                    name: pkg.name,
+                    price: pkg.price,
+                  }))
+                : [],
+            },
+            warrantyPackageIds: item.warrantyPackageIds || null,
           },
-          warrantyPackageIds: item.warrantyPackageIds || null,
-        }, { transaction });
+          { transaction },
+        );
 
         orderItems.push(orderItem);
       }
@@ -310,7 +387,7 @@ class OrdersService {
       if (pendingInventoryLogs.length > 0) {
         await this.repo.createInventoryLogs(
           pendingInventoryLogs.map((log) => ({ ...log, orderId: order.id })),
-          { transaction }
+          { transaction },
         );
       }
 
@@ -325,7 +402,7 @@ class OrdersService {
         await this.repo.updateLoyaltyHistoryOrderId(
           { userId, type: 'spend', description: `Sử dụng điểm cho đơn hàng ${orderNumber}` },
           order.id,
-          { transaction }
+          { transaction },
         );
       }
 
@@ -334,30 +411,39 @@ class OrdersService {
     });
 
     // Publish event
-    await this.eventBus.publish(OrderCreatedEvent({
-      orderId: createdOrder.id,
-      orderNumber: createdOrder.number,
-      userId: createdOrder.userId,
-      total: createdOrder.total,
-      items: orderItemsForEmail.map((i) => ({ productId: i.productId, quantity: i.quantity })),
-    }));
+    await this.eventBus.publish(
+      OrderCreatedEvent({
+        orderId: createdOrder.id,
+        orderNumber: createdOrder.number,
+        userId: createdOrder.userId,
+        total: createdOrder.total,
+        items: orderItemsForEmail.map((i) => ({ productId: i.productId, quantity: i.quantity })),
+      }),
+    );
 
     // Fire-and-forget email
-    this.emailGateway.sendOrderConfirmationEmail(user.email, {
-      orderNumber: createdOrder.number,
-      orderDate: createdOrder.createdAt,
-      total: createdOrder.total,
-      items: orderItemsForEmail.map((item) => ({
-        name: item.name, quantity: item.quantity,
-        price: item.unitPrice, subtotal: item.subtotal,
-      })),
-      shippingAddress: {
-        name: `${createdOrder.shippingFirstName} ${createdOrder.shippingLastName}`,
-        address1: createdOrder.shippingAddress1, address2: createdOrder.shippingAddress2,
-        city: createdOrder.shippingCity, state: createdOrder.shippingState,
-        zip: createdOrder.shippingZip, country: createdOrder.shippingCountry,
-      },
-    }).catch((err) => this.logger.error('Lỗi gửi email xác nhận đơn hàng:', err));
+    this.emailGateway
+      .sendOrderConfirmationEmail(user.email, {
+        orderNumber: createdOrder.number,
+        orderDate: createdOrder.createdAt,
+        total: createdOrder.total,
+        items: orderItemsForEmail.map((item) => ({
+          name: item.name,
+          quantity: item.quantity,
+          price: item.unitPrice,
+          subtotal: item.subtotal,
+        })),
+        shippingAddress: {
+          name: `${createdOrder.shippingFirstName} ${createdOrder.shippingLastName}`,
+          address1: createdOrder.shippingAddress1,
+          address2: createdOrder.shippingAddress2,
+          city: createdOrder.shippingCity,
+          state: createdOrder.shippingState,
+          zip: createdOrder.shippingZip,
+          country: createdOrder.shippingCountry,
+        },
+      })
+      .catch((err) => this.logger.error('Lỗi gửi email xác nhận đơn hàng:', err));
 
     return {
       id: createdOrder.id,
@@ -386,7 +472,10 @@ class OrdersService {
   async getUserOrders({ userId, page = 1, limit = 20 }) {
     const lim = Math.min(parseInt(limit, 10) || 20, 100);
     const off = (parseInt(page, 10) - 1) * lim;
-    const { count, rows } = await this.repo.findUserOrdersWithItems(userId, { limit: lim, offset: off });
+    const { count, rows } = await this.repo.findUserOrdersWithItems(userId, {
+      limit: lim,
+      offset: off,
+    });
     return {
       data: rows,
       total: count,
@@ -433,38 +522,64 @@ class OrdersService {
       // Refund loyalty points used
       if (order.pointsUsed > 0) {
         const user = await this.repo.findUserById(userId, { transaction });
-        await this.repo.updateUserPoints(user, user.loyaltyPoints + order.pointsUsed, { transaction });
-        await this.repo.createLoyaltyHistory({
-          userId, orderId: order.id, points: order.pointsUsed, type: 'refund',
-          description: `Hoàn điểm cho đơn hàng bị hủy ${order.number}`,
-        }, { transaction });
+        await this.repo.updateUserPoints(user, user.loyaltyPoints + order.pointsUsed, {
+          transaction,
+        });
+        await this.repo.createLoyaltyHistory(
+          {
+            userId,
+            orderId: order.id,
+            points: order.pointsUsed,
+            type: 'refund',
+            description: `Hoàn điểm cho đơn hàng bị hủy ${order.number}`,
+          },
+          { transaction },
+        );
       }
 
       // Revoke earned points if any
       if (order.pointsEarned > 0) {
         const user = await this.repo.findUserById(userId, { transaction });
-        await this.repo.updateUserPoints(user, Math.max(0, user.loyaltyPoints - order.pointsEarned), { transaction });
-        await this.repo.createLoyaltyHistory({
-          userId, orderId: order.id, points: -order.pointsEarned, type: 'refund',
-          description: `Thu hồi điểm tích lũy do hủy/trả đơn hàng ${order.number}`,
-        }, { transaction });
+        await this.repo.updateUserPoints(
+          user,
+          Math.max(0, user.loyaltyPoints - order.pointsEarned),
+          { transaction },
+        );
+        await this.repo.createLoyaltyHistory(
+          {
+            userId,
+            orderId: order.id,
+            points: -order.pointsEarned,
+            type: 'refund',
+            description: `Thu hồi điểm tích lũy do hủy/trả đơn hàng ${order.number}`,
+          },
+          { transaction },
+        );
       }
 
       cancelledOrder = order;
     });
 
-    await this.eventBus.publish(OrderCancelledEvent({
-      orderId: cancelledOrder.id,
-      orderNumber: cancelledOrder.number,
-      userId: cancelledOrder.userId,
-      items: cancelledOrder.items.map((i) => ({ productId: i.productId, variantId: i.variantId, quantity: i.quantity })),
-    }));
+    await this.eventBus.publish(
+      OrderCancelledEvent({
+        orderId: cancelledOrder.id,
+        orderNumber: cancelledOrder.number,
+        userId: cancelledOrder.userId,
+        items: cancelledOrder.items.map((i) => ({
+          productId: i.productId,
+          variantId: i.variantId,
+          quantity: i.quantity,
+        })),
+      }),
+    );
 
     if (userEmail) {
-      this.emailGateway.sendOrderCancellationEmail(userEmail, {
-        orderNumber: cancelledOrder.number,
-        orderDate: cancelledOrder.createdAt,
-      }).catch((err) => this.logger.error('Lỗi gửi email hủy đơn:', err));
+      this.emailGateway
+        .sendOrderCancellationEmail(userEmail, {
+          orderNumber: cancelledOrder.number,
+          orderDate: cancelledOrder.createdAt,
+        })
+        .catch((err) => this.logger.error('Lỗi gửi email hủy đơn:', err));
     }
 
     return {
@@ -480,7 +595,11 @@ class OrdersService {
     const where = {};
     if (status) where.status = status;
 
-    const { count, rows } = await this.repo.findAllOrdersWithUser({ where, limit: lim, offset: off });
+    const { count, rows } = await this.repo.findAllOrdersWithUser({
+      where,
+      limit: lim,
+      offset: off,
+    });
     return {
       data: rows,
       total: count,
@@ -511,8 +630,10 @@ class OrdersService {
         if (user) {
           await this.repo.updateUserPoints(user, user.loyaltyPoints + pointsEarned);
           await this.repo.createLoyaltyHistory({
-            userId: order.userId, orderId: order.id,
-            points: pointsEarned, type: 'earn',
+            userId: order.userId,
+            orderId: order.id,
+            points: pointsEarned,
+            type: 'earn',
             description: `Tích điểm từ đơn hàng ${order.number}`,
           });
           order.pointsEarned = pointsEarned;
@@ -520,17 +641,26 @@ class OrdersService {
         }
       }
 
-      await this.eventBus.publish(OrderDeliveredEvent({
-        orderId: order.id, orderNumber: order.number,
-        userId: order.userId, total: order.total, subtotal: order.subtotal,
-      }));
+      await this.eventBus.publish(
+        OrderDeliveredEvent({
+          orderId: order.id,
+          orderNumber: order.number,
+          userId: order.userId,
+          total: order.total,
+          subtotal: order.subtotal,
+        }),
+      );
     }
 
     // Email status update
     if (order.user?.email) {
-      this.emailGateway.sendOrderStatusUpdateEmail(order.user.email, {
-        orderNumber: order.number, orderDate: order.createdAt, status,
-      }).catch((err) => this.logger.error('Lỗi gửi email cập nhật trạng thái:', err));
+      this.emailGateway
+        .sendOrderStatusUpdateEmail(order.user.email, {
+          orderNumber: order.number,
+          orderDate: order.createdAt,
+          status,
+        })
+        .catch((err) => this.logger.error('Lỗi gửi email cập nhật trạng thái:', err));
     }
 
     return {
@@ -550,9 +680,12 @@ class OrdersService {
 
     const paymentUrl = `${originUrl}/checkout?repayOrder=${order.id}&amount=${order.total}`;
     return {
-      id: order.id, number: order.number,
-      status: order.status, paymentStatus: order.paymentStatus,
-      total: order.total, paymentUrl,
+      id: order.id,
+      number: order.number,
+      status: order.status,
+      paymentStatus: order.paymentStatus,
+      total: order.total,
+      paymentUrl,
     };
   }
 
@@ -585,7 +718,10 @@ class OrdersService {
         if (user) {
           await this.repo.updateUserPoints(user, user.loyaltyPoints + newPointsAwarded);
           await this.repo.createLoyaltyHistory({
-            userId, orderId: order.id, points: newPointsAwarded, type: 'earn',
+            userId,
+            orderId: order.id,
+            points: newPointsAwarded,
+            type: 'earn',
             description: `Tích điểm từ đơn hàng ${order.number} (Người dùng xác nhận)`,
           });
           earnedPointsTotal = newPointsAwarded;
@@ -600,17 +736,24 @@ class OrdersService {
       }
     }
 
-    await this.eventBus.publish(OrderDeliveredEvent({
-      orderId: order.id, orderNumber: order.number,
-      userId: order.userId, total: order.total, subtotal: order.subtotal,
-    }));
+    await this.eventBus.publish(
+      OrderDeliveredEvent({
+        orderId: order.id,
+        orderNumber: order.number,
+        userId: order.userId,
+        total: order.total,
+        subtotal: order.subtotal,
+      }),
+    );
 
     return {
       message: 'Xác nhận đã nhận hàng thành công',
       pointsEarned: newPointsAwarded > 0 ? newPointsAwarded : 0,
       data: {
-        id: order.id, number: order.number,
-        status: STATUS.DELIVERED, pointsEarned: earnedPointsTotal,
+        id: order.id,
+        number: order.number,
+        status: STATUS.DELIVERED,
+        pointsEarned: earnedPointsTotal,
       },
     };
   }

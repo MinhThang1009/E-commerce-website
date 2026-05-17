@@ -235,15 +235,18 @@ class SequelizeCatalogRepository extends ICatalogRepository {
     if (filter.search) {
       const lower = filter.search.toLowerCase();
       where[Op.or] = [
-        this.sequelize.where(this.sequelize.fn('LOWER', this.sequelize.col('Product.name')), {
+        this.sequelize.where(this.sequelize.fn('LOWER', this.sequelize.col('Product.name_vi')), {
+          [Op.like]: `%${lower}%`,
+        }),
+        this.sequelize.where(this.sequelize.fn('LOWER', this.sequelize.col('Product.name_en')), {
           [Op.like]: `%${lower}%`,
         }),
         this.sequelize.where(
-          this.sequelize.fn('LOWER', this.sequelize.col('Product.description')),
+          this.sequelize.fn('LOWER', this.sequelize.col('Product.description_vi')),
           { [Op.like]: `%${lower}%` },
         ),
         this.sequelize.where(
-          this.sequelize.fn('LOWER', this.sequelize.col('Product.short_description')),
+          this.sequelize.fn('LOWER', this.sequelize.col('Product.short_description_vi')),
           { [Op.like]: `%${lower}%` },
         ),
       ];
@@ -449,15 +452,18 @@ class SequelizeCatalogRepository extends ICatalogRepository {
     return this.Product.findAndCountAll({
       where: {
         [Op.or]: [
-          this.sequelize.where(this.sequelize.fn('LOWER', this.sequelize.col('Product.name')), {
+          this.sequelize.where(this.sequelize.fn('LOWER', this.sequelize.col('Product.name_vi')), {
+            [Op.like]: `%${lower}%`,
+          }),
+          this.sequelize.where(this.sequelize.fn('LOWER', this.sequelize.col('Product.name_en')), {
             [Op.like]: `%${lower}%`,
           }),
           this.sequelize.where(
-            this.sequelize.fn('LOWER', this.sequelize.col('Product.description')),
+            this.sequelize.fn('LOWER', this.sequelize.col('Product.description_vi')),
             { [Op.like]: `%${lower}%` },
           ),
           this.sequelize.where(
-            this.sequelize.fn('LOWER', this.sequelize.col('Product.short_description')),
+            this.sequelize.fn('LOWER', this.sequelize.col('Product.short_description_vi')),
             { [Op.like]: `%${lower}%` },
           ),
           this.sequelize.where(this.sequelize.fn('LOWER', this.sequelize.col('Product.tags')), {
@@ -475,10 +481,10 @@ class SequelizeCatalogRepository extends ICatalogRepository {
   async findProductSuggestions(prefix, limit = 10) {
     const lower = prefix.toLowerCase();
     return this.Product.findAll({
-      where: this.sequelize.where(this.sequelize.fn('LOWER', this.sequelize.col('name')), {
+      where: this.sequelize.where(this.sequelize.fn('LOWER', this.sequelize.col('name_vi')), {
         [Op.like]: `${lower}%`,
       }),
-      attributes: ['id', 'name', 'slug'],
+      attributes: ['id', 'nameVi', 'nameEn', 'slug'],
       include: [
         {
           association: 'productImages',

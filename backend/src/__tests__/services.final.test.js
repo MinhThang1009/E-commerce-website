@@ -2,8 +2,7 @@
  * services.final.test.js
  *
  * Targeted tests for uncovered branches in:
- *   1. src/services/location.js     — error branches when LOCATION_IQ_TOKEN is missing
- *   2. src/services/payment/momo.js — verifySignature early-return + createPaymentUrl error
+ *   1. src/services/payment/momo.js — verifySignature early-return + createPaymentUrl error
  *   3. src/services/payment/vnpay.js — verifyReturnUrl early-return when secureHash missing
  *   4. src/jobs/cleanup.js          — runDailyCleanup step 4 warn + step 6 warn
  *
@@ -22,102 +21,7 @@ jest.mock('../utils/logger', () => ({
 }));
 
 // ════════════════════════════════════════════════════════════════════════════
-// GROUP 1 — services/location.js
-//
-// The three methods (getAddressFromCoords, getCoordsFromAddress, searchAutocomplete)
-// each have two branches: (a) token missing → throw → catch → return fallback,
-// and (b) axios call fails → catch → return fallback.
-//
-// The controller tests already cover the happy path via the service mock.
-// What is uncovered here: the token-missing branch inside each method, and
-// the axios-error branch for getCoordsFromAddress / searchAutocomplete.
-// ════════════════════════════════════════════════════════════════════════════
-
-describe('LocationService — token missing branch', () => {
-  let locationService;
-  const logger = require('../utils/logger');
-
-  beforeAll(() => {
-    // Load the service in isolation so we can control the token env var
-    jest.isolateModules(() => {
-      // Ensure no token is set when the module initialises
-      delete process.env.LOCATION_IQ_TOKEN;
-      jest.mock('axios', () => ({ get: jest.fn() }));
-      locationService = require('../services/location');
-    });
-  });
-
-  beforeEach(() => {
-    jest.clearAllMocks();
-  });
-
-  test('getAddressFromCoords trả về { error } khi token không được cấu hình', async () => {
-    const result = await locationService.getAddressFromCoords('10.0', '106.0');
-    expect(result).toEqual({ error: 'Không thể lấy địa chỉ' });
-    expect(logger.error).toHaveBeenCalledWith(
-      expect.stringContaining('getAddressFromCoords'),
-      expect.any(String)
-    );
-  });
-
-  test('getCoordsFromAddress trả về [] khi token không được cấu hình', async () => {
-    const result = await locationService.getCoordsFromAddress('123 Lê Lợi');
-    expect(result).toEqual([]);
-    expect(logger.error).toHaveBeenCalledWith(
-      expect.stringContaining('getCoordsFromAddress'),
-      expect.any(String)
-    );
-  });
-
-  test('searchAutocomplete trả về [] khi token không được cấu hình', async () => {
-    const result = await locationService.searchAutocomplete('Nguyễn Huệ');
-    expect(result).toEqual([]);
-    expect(logger.error).toHaveBeenCalledWith(
-      expect.stringContaining('searchAutocomplete'),
-      expect.any(String)
-    );
-  });
-});
-
-describe('LocationService — axios failure branch', () => {
-  let service;
-  let mockAxiosGet;
-  const logger = require('../utils/logger');
-
-  beforeAll(() => {
-    jest.isolateModules(() => {
-      process.env.LOCATION_IQ_TOKEN = 'test-token';
-      mockAxiosGet = jest.fn();
-      jest.mock('axios', () => ({ get: (...args) => mockAxiosGet(...args) }));
-      service = require('../services/location');
-    });
-  });
-
-  beforeEach(() => {
-    jest.clearAllMocks();
-  });
-
-  test('getAddressFromCoords trả về { error } khi axios ném lỗi', async () => {
-    mockAxiosGet.mockRejectedValue(new Error('network error'));
-    const result = await service.getAddressFromCoords('10.0', '106.0');
-    expect(result).toEqual({ error: 'Không thể lấy địa chỉ' });
-  });
-
-  test('getCoordsFromAddress trả về [] khi axios ném lỗi', async () => {
-    mockAxiosGet.mockRejectedValue(new Error('network error'));
-    const result = await service.getCoordsFromAddress('HCM');
-    expect(result).toEqual([]);
-  });
-
-  test('searchAutocomplete trả về [] khi axios ném lỗi', async () => {
-    mockAxiosGet.mockRejectedValue(new Error('network error'));
-    const result = await service.searchAutocomplete('Bắc Từ Liêm');
-    expect(result).toEqual([]);
-  });
-});
-
-// ════════════════════════════════════════════════════════════════════════════
-// GROUP 2 — services/payment/momo.js
+// GROUP 1 — services/payment/momo.js
 //
 // Uncovered branches:
 //   - verifySignature: early return false when signature is missing or length mismatch
@@ -205,7 +109,7 @@ describe('MoMoService.createPaymentUrl — catch branch khi axios.post thất b�
         orderId: 'ORD-fail',
         amount: 50000,
         orderInfo: 'Test payment',
-      })
+      }),
     ).rejects.toThrow(/"message":"Service unavailable"/);
   });
 
@@ -217,7 +121,7 @@ describe('MoMoService.createPaymentUrl — catch branch khi axios.post thất b�
         orderId: 'ORD-timeout',
         amount: 10000,
         orderInfo: 'Test',
-      })
+      }),
     ).rejects.toThrow('timeout');
   });
 });
@@ -338,7 +242,7 @@ describe('runDailyCleanup — step 4 warn when reset token update fails', () => 
 
     expect(logger.warn).toHaveBeenCalledWith(
       expect.stringContaining('Lỗi xóa expired reset tokens'),
-      expect.any(String)
+      expect.any(String),
     );
   });
 
@@ -350,7 +254,7 @@ describe('runDailyCleanup — step 4 warn when reset token update fails', () => 
 
     expect(logger.warn).toHaveBeenCalledWith(
       expect.stringContaining('Lỗi archive chat messages'),
-      expect.any(String)
+      expect.any(String),
     );
   });
 

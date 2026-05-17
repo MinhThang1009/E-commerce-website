@@ -35,6 +35,10 @@ jest.mock('../../services/ai/vectorStore', () => ({
   search: jest.fn().mockResolvedValue([]),
   addProduct: jest.fn().mockResolvedValue(undefined),
   save: jest.fn().mockResolvedValue(undefined),
+  detectLanguage: jest.fn((text) => {
+    if (/[àáâãèéêìíòóôõùúýăđơưÀÁÂÃÈÉÊÌÍÒÓÔÕÙÚÝĂĐƠƯẠ-ỹ]/.test(text)) return 'vi';
+    return 'en';
+  }),
 }));
 
 // Mock axios để tránh gọi OpenRouter API

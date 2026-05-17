@@ -64,7 +64,7 @@ export interface AddToCartViaChatbotRequest {
 export function useSendChatbotMessageMutation() {
   return useMutation<ChatbotResponse, Error, SendChatbotMessageRequest>({
     mutationFn: async (body) => {
-      const { data } = await apiClient.post('/chatbot/message', body);
+      const { data } = await apiClient.post('/chatbot/message', body, { timeout: 30000 });
       return data;
     },
   });

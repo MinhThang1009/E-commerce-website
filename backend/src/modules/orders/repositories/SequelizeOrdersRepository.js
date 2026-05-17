@@ -56,7 +56,7 @@ class SequelizeOrdersRepository extends IOrdersRepository {
           include: [
             {
               model: this.Product,
-              attributes: ['id', 'name', 'slug'],
+              attributes: ['id', 'nameVi', 'slug'],
               include: [
                 {
                   association: 'productImages',
@@ -83,7 +83,7 @@ class SequelizeOrdersRepository extends IOrdersRepository {
           include: [
             {
               model: this.Product,
-              attributes: ['id', 'name', 'slug'],
+              attributes: ['id', 'nameVi', 'slug'],
               include: [
                 { association: 'productImages', attributes: ['id', 'imageUrl', 'isThumbnail'] },
               ],
@@ -114,7 +114,7 @@ class SequelizeOrdersRepository extends IOrdersRepository {
           include: [
             {
               model: this.Product,
-              attributes: ['id', 'name', 'basePrice', 'slug'],
+              attributes: ['id', 'nameVi', 'basePrice', 'slug'],
               include: [
                 { association: 'productImages', attributes: ['id', 'imageUrl', 'isThumbnail'] },
               ],
@@ -205,7 +205,7 @@ class SequelizeOrdersRepository extends IOrdersRepository {
           include: [
             {
               model: this.Product,
-              attributes: ['id', 'name', 'slug', 'basePrice', 'status'],
+              attributes: ['id', 'nameVi', 'slug', 'basePrice', 'status'],
               include: [{ association: 'defaultVariant', attributes: ['id', 'stockQuantity'] }],
             },
             {
@@ -247,7 +247,7 @@ class SequelizeOrdersRepository extends IOrdersRepository {
 
   async findProductWithDefaultVariant(id, options = {}) {
     return this.Product.findByPk(id, {
-      attributes: ['id', 'name', 'slug', 'basePrice', 'status'],
+      attributes: ['id', 'nameVi', 'slug', 'basePrice', 'status'],
       include: [{ association: 'defaultVariant', attributes: ['id', 'stockQuantity'] }],
       ...options,
     });

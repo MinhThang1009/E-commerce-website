@@ -7,7 +7,6 @@
  *   - src/modules/users/routes.js
  *   - src/modules/wishlist/routes.js
  *   - src/modules/inventory/routes.js
- *   - src/routes/location.js
  *
  * Strategy: require mỗi router factory (hoặc module), kiểm tra router được
  * tạo ra là một Express Router hợp lệ và stack chứa đúng số route đã đăng ký.
@@ -224,62 +223,5 @@ describe('inventory/routes.js — factory tạo Express router hợp lệ', () =
   it('router là một function (Express middleware)', () => {
     const router = buildRoutes({ inventoryController: makeInventoryController() });
     expect(typeof router).toBe('function');
-  });
-});
-
-// ════════════════════════════════════════════════════════════════════════════
-// src/routes/location.js
-// ════════════════════════════════════════════════════════════════════════════
-
-describe('routes/location.js — router module hợp lệ', () => {
-  it('export một Express Router function', () => {
-    jest.resetModules();
-
-    // Mock controller để tránh require service thật
-    jest.mock('../controllers/location', () => ({
-      getAddress: jest.fn(),
-      getCoords: jest.fn(),
-      searchAutocomplete: jest.fn(),
-    }));
-
-    const locationRouter = require('../routes/location');
-
-    expect(locationRouter).toBeDefined();
-    expect(typeof locationRouter).toBe('function');
-    // Express Router có stack
-    expect(locationRouter.stack).toBeDefined();
-    expect(Array.isArray(locationRouter.stack)).toBe(true);
-  });
-
-  it('router có đúng 3 route đã đăng ký: /reverse, /forward, /search', () => {
-    jest.resetModules();
-
-    jest.mock('../controllers/location', () => ({
-      getAddress: jest.fn(),
-      getCoords: jest.fn(),
-      searchAutocomplete: jest.fn(),
-    }));
-
-    const locationRouter = require('../routes/location');
-    expect(locationRouter.stack.length).toBe(3);
-  });
-
-  it('tất cả route trong location.js đều dùng method GET', () => {
-    jest.resetModules();
-
-    jest.mock('../controllers/location', () => ({
-      getAddress: jest.fn(),
-      getCoords: jest.fn(),
-      searchAutocomplete: jest.fn(),
-    }));
-
-    const locationRouter = require('../routes/location');
-
-    // Lấy tất cả methods từ stack
-    const methods = locationRouter.stack
-      .filter((layer) => layer.route)
-      .map((layer) => Object.keys(layer.route.methods)[0]);
-
-    expect(methods.every((m) => m === 'get')).toBe(true);
   });
 });

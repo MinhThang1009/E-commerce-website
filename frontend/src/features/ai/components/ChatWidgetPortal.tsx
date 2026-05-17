@@ -1,7 +1,12 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useAuthStore } from '@/stores/authStore';
-import { useChatStore, saveMessagesToStorage, saveSessionIdToStorage, createSessionId } from '@/stores/chatStore';
+import {
+  useChatStore,
+  saveMessagesToStorage,
+  saveSessionIdToStorage,
+  createSessionId,
+} from '@/stores/chatStore';
 import { Message } from '../types/Message';
 import { useSendChatbotMessageMutation, ChatbotResponse } from '../services/chatbotApi';
 
@@ -29,7 +34,9 @@ const ChatWidgetPortal: React.FC = () => {
   const clearMessagesAction = useChatStore((s) => s.clearMessages);
 
   const messagesRef = useRef(messages);
-  useEffect(() => { messagesRef.current = messages; }, [messages]);
+  useEffect(() => {
+    messagesRef.current = messages;
+  }, [messages]);
 
   useEffect(() => {
     saveMessagesToStorage(messages);
@@ -43,9 +50,10 @@ const ChatWidgetPortal: React.FC = () => {
 
   useEffect(() => {
     if (isOpen && messages.length === 0) {
-      const greetingText = isAuthenticated && user
-        ? t('chat.greetingWithName', { name: user.name })
-        : t('chat.greeting');
+      const greetingText =
+        isAuthenticated && user
+          ? t('chat.greetingWithName', { name: user.name })
+          : t('chat.greeting');
 
       const greeting = {
         id: Date.now().toString(),
@@ -101,10 +109,10 @@ const ChatWidgetPortal: React.FC = () => {
 
     try {
       const timeoutPromise = new Promise((_, reject) => {
-        setTimeout(() => reject(new Error('Request timeout')), 10000);
+        setTimeout(() => reject(new Error('Request timeout')), 25000);
       });
 
-      const response = await Promise.race([
+      const response = (await Promise.race([
         sendChatbotMessage({
           message: text,
           userId: user?.id,
@@ -117,7 +125,7 @@ const ChatWidgetPortal: React.FC = () => {
           },
         }),
         timeoutPromise,
-      ]) as ChatbotApiEnvelope;
+      ])) as ChatbotApiEnvelope;
 
       if (response.status === 'success' && response.data) {
         const nextMessages = messagesRef.current
@@ -141,9 +149,10 @@ const ChatWidgetPortal: React.FC = () => {
     } catch (error) {
       let errorMessage = t('chat.errors.general');
       const errMsg = error instanceof Error ? error.message : undefined;
-      const status = error && typeof error === 'object' && 'status' in error
-        ? (error as Record<string, unknown>).status
-        : undefined;
+      const status =
+        error && typeof error === 'object' && 'status' in error
+          ? (error as Record<string, unknown>).status
+          : undefined;
 
       if (errMsg === 'Request timeout') {
         errorMessage = t('chat.errors.timeout');
@@ -212,9 +221,7 @@ const ChatWidgetPortal: React.FC = () => {
         >
           <div
             className={`absolute inset-0.5 rounded-full ${
-              geminiService.isReady()
-                ? 'bg-green-300 animate-pulse'
-                : 'bg-yellow-300 animate-pulse'
+              geminiService.isReady() ? 'bg-green-300 animate-pulse' : 'bg-yellow-300 animate-pulse'
             }`}
             style={{ animationDuration: '1.5s' }}
           ></div>

@@ -22,7 +22,9 @@ function makeModel(defaults = {}) {
     findByPk: jest.fn().mockResolvedValue(defaults.findByPk ?? null),
     findOne: jest.fn().mockResolvedValue(defaults.findOne ?? null),
     findAll: jest.fn().mockResolvedValue(defaults.findAll ?? []),
-    findAndCountAll: jest.fn().mockResolvedValue(defaults.findAndCountAll ?? { count: 0, rows: [] }),
+    findAndCountAll: jest
+      .fn()
+      .mockResolvedValue(defaults.findAndCountAll ?? { count: 0, rows: [] }),
     findOrCreate: jest.fn().mockResolvedValue([defaults.findOrCreate ?? {}, true]),
     create: jest.fn().mockResolvedValue(defaults.create ?? {}),
     update: jest.fn().mockResolvedValue([1]),
@@ -84,7 +86,7 @@ describe('SequelizeOrdersRepository — findOrderForCancel', () => {
             include: expect.any(Array),
           }),
         ]),
-      })
+      }),
     );
     expect(result).toBe(mockOrder);
   });
@@ -113,7 +115,7 @@ describe('SequelizeOrdersRepository — findActiveCartBySessionId', () => {
       expect.objectContaining({
         where: { sessionId: 'sess-abc', status: 'active', userId: null },
         include: expect.any(Array),
-      })
+      }),
     );
     expect(result).toBe(mockCart);
   });
@@ -141,10 +143,8 @@ describe('SequelizeOrdersRepository — findCartByPkWithItemsDetails', () => {
     expect(deps.Cart.findByPk).toHaveBeenCalledWith(
       7,
       expect.objectContaining({
-        include: expect.arrayContaining([
-          expect.objectContaining({ association: 'items' }),
-        ]),
-      })
+        include: expect.arrayContaining([expect.objectContaining({ association: 'items' })]),
+      }),
     );
     expect(result).toBe(mockCart);
   });
@@ -157,7 +157,7 @@ describe('SequelizeOrdersRepository — findCartByPkWithItemsDetails', () => {
 
     expect(deps.Cart.findByPk).toHaveBeenCalledWith(
       3,
-      expect.objectContaining({ transaction: { id: 't1' } })
+      expect.objectContaining({ transaction: { id: 't1' } }),
     );
   });
 });
@@ -174,9 +174,7 @@ describe('SequelizeOrdersRepository — findCartItemMatching', () => {
     const query = { cartId: 1, productId: 5, variantId: null };
     const result = await repo.findCartItemMatching(query);
 
-    expect(deps.CartItem.findOne).toHaveBeenCalledWith(
-      expect.objectContaining({ where: query })
-    );
+    expect(deps.CartItem.findOne).toHaveBeenCalledWith(expect.objectContaining({ where: query }));
     expect(result).toBe(mockItem);
   });
 
@@ -254,11 +252,11 @@ describe('SequelizeOrdersRepository — findProductWithDefaultVariant', () => {
     expect(deps.Product.findByPk).toHaveBeenCalledWith(
       1,
       expect.objectContaining({
-        attributes: expect.arrayContaining(['id', 'name', 'slug']),
+        attributes: expect.arrayContaining(['id', 'nameVi', 'slug']),
         include: expect.arrayContaining([
           expect.objectContaining({ association: 'defaultVariant' }),
         ]),
-      })
+      }),
     );
     expect(result).toBe(mockProduct);
   });
@@ -279,7 +277,7 @@ describe('SequelizeOrdersRepository — findVariantBasic', () => {
       5,
       expect.objectContaining({
         attributes: expect.any(Array),
-      })
+      }),
     );
     expect(result).toBe(mockVariant);
   });
@@ -302,7 +300,7 @@ describe('SequelizeOrdersRepository — lockProduct và lockVariant', () => {
       expect.objectContaining({
         lock: 'UPDATE',
         transaction: fakeTransaction,
-      })
+      }),
     );
     expect(result).toBe(mockProduct);
   });
@@ -319,7 +317,7 @@ describe('SequelizeOrdersRepository — lockProduct và lockVariant', () => {
       expect.objectContaining({
         lock: 'UPDATE',
         transaction: fakeTransaction,
-      })
+      }),
     );
     expect(result).toBe(mockVariant);
   });
@@ -364,7 +362,7 @@ describe('SequelizeOrdersRepository — findActiveWarrantyPackagesByIds', () => 
     expect(deps.WarrantyPackage.findAll).toHaveBeenCalledWith(
       expect.objectContaining({
         where: expect.objectContaining({ id: [1, 2], isActive: true }),
-      })
+      }),
     );
     expect(result).toBe(mockPackages);
   });
@@ -442,7 +440,7 @@ describe('SequelizeOrdersRepository — updateLoyaltyHistoryOrderId', () => {
 
     expect(deps.LoyaltyHistory.update).toHaveBeenCalledWith(
       { orderId: 99 },
-      expect.objectContaining({ where: filter })
+      expect.objectContaining({ where: filter }),
     );
   });
 });

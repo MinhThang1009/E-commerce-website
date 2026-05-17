@@ -13,7 +13,7 @@
 
 const mockRedisGet = jest.fn();
 const mockRedisSetEx = jest.fn();
-jest.mock('../../config/redis', () => ({
+jest.mock('../../../config/redis', () => ({
   getRedisClient: jest.fn(() => Promise.resolve({ get: mockRedisGet, setEx: mockRedisSetEx })),
 }));
 
@@ -22,7 +22,7 @@ const mockCategoryFindAll = jest.fn();
 const mockProductFindAll = jest.fn();
 const mockChatMessageBulkCreate = jest.fn().mockResolvedValue([]);
 
-jest.mock('../../models', () => ({
+jest.mock('../../../models', () => ({
   Product: { findAll: (...a) => mockProductFindAll(...a) },
   Category: { findAll: (...a) => mockCategoryFindAll(...a) },
   Brand: { findAll: (...a) => mockBrandFindAll(...a) },
@@ -33,7 +33,7 @@ jest.mock('../../models', () => ({
   Op: {},
 }));
 
-jest.mock('../../services/ai/vectorStore', () => ({
+jest.mock('./vectorStore', () => ({
   items: [],
   loadPromise: Promise.resolve(),
   hybridSearch: jest.fn().mockResolvedValue([]),
@@ -47,7 +47,7 @@ jest.mock('../../services/ai/vectorStore', () => ({
 }));
 
 jest.mock('axios');
-jest.mock('../../utils/logger', () => ({
+jest.mock('../../../utils/logger', () => ({
   info: jest.fn(),
   warn: jest.fn(),
   error: jest.fn(),
@@ -57,8 +57,8 @@ jest.mock('../../utils/logger', () => ({
 // ---------- Require ----------
 
 const axios = require('axios');
-const vectorStoreService = require('../../services/ai/vectorStore');
-const logger = require('../../utils/logger');
+const vectorStoreService = require('./vectorStore');
+const logger = require('../../../utils/logger');
 
 // Quan trọng: fresh require trong mỗi test suite khi cần reset singleton state
 // Dùng module cache approach — require một lần và mutate state trực tiếp

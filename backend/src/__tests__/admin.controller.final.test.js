@@ -36,7 +36,7 @@ jest.mock('../utils/productHelpers', () => ({
   generateVariantSku: jest.fn().mockReturnValue('SKU-TEST'),
 }));
 
-jest.mock('../services/ai/vectorStore', () => ({
+jest.mock('../modules/ai/services/vectorStore', () => ({
   upsertProduct: jest.fn().mockResolvedValue(undefined),
   save: jest.fn().mockResolvedValue(undefined),
   loadPromise: Promise.resolve(),
@@ -115,7 +115,7 @@ jest.mock('../config/redis', () => ({
 }));
 
 // translateService mock — bị override per-test
-jest.mock('../services/ai/translateService', () => ({
+jest.mock('../modules/ai/services/translateService', () => ({
   translateBatch: jest.fn().mockResolvedValue([]),
 }));
 
@@ -298,7 +298,7 @@ function makeProduct(overrides = {}) {
 beforeEach(() => {
   jest.resetAllMocks();
 
-  const vs = require('../services/ai/vectorStore');
+  const vs = require('../modules/ai/services/vectorStore');
   vs.items = [];
   vs.upsertProduct.mockResolvedValue(undefined);
   vs.save.mockResolvedValue(undefined);
@@ -587,7 +587,7 @@ describe('POST /api/admin/products — line 933: warranty catch khi WarrantyPack
 
 describe('POST /api/admin/products — line 978: vectorStore catch khi save throw', () => {
   it('trả về 201 và gọi logger.error khi vectorStoreService.save throw', async () => {
-    const vs = require('../services/ai/vectorStore');
+    const vs = require('../modules/ai/services/vectorStore');
     // Sản phẩm active → vectorStore.upsertProduct + save được gọi
     // save throw → catch tại line 977-979
     vs.save.mockRejectedValueOnce(new Error('VectorStore IO error'));
@@ -658,7 +658,7 @@ describe('PUT /api/admin/products/:id — line 1077: image object với url fiel
 
 describe('PUT /api/admin/products/:id — line 1296: translate catch khi translateBatch throw', () => {
   it('gọi logger.warn khi translateBatch throw trong setImmediate', async () => {
-    const { translateBatch } = require('../services/ai/translateService');
+    const { translateBatch } = require('../modules/ai/services/translateService');
     translateBatch.mockRejectedValueOnce(new Error('Translation API timeout'));
 
     const specWithoutEn = {
@@ -704,7 +704,7 @@ describe('PUT /api/admin/products/:id — line 1296: translate catch khi transla
 
 describe('PUT /api/admin/products/:id — line 1354: vectorStore catch khi save throw', () => {
   it('trả về 200 và gọi logger.error khi vectorStoreService.save throw sau update', async () => {
-    const vs = require('../services/ai/vectorStore');
+    const vs = require('../modules/ai/services/vectorStore');
     // Chỉ save throw (không phải upsertProduct)
     vs.save.mockRejectedValueOnce(new Error('VectorStore save failed after update'));
 
@@ -842,7 +842,7 @@ describe('POST /api/admin/products/:id/clone — lines 1976-1983: clone productA
 // ─────────────────────────────────────────────────────────────────────────────
 describe('PUT /api/admin/products/:id — line 1296: translate success (logger.info)', () => {
   it('gọi logger.info khi translateBatch thành công', async () => {
-    const { translateBatch } = require('../services/ai/translateService');
+    const { translateBatch } = require('../modules/ai/services/translateService');
     translateBatch.mockResolvedValueOnce(['Intel Core i7 12th Gen']);
 
     const specWithoutEn = {

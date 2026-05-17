@@ -1,4 +1,4 @@
-const logger = require('../../utils/logger');
+const logger = require('../../../utils/logger');
 const embeddingService = require('./embedding');
 const viEmbeddingService = require('./viEmbedding');
 const path = require('path');
@@ -216,9 +216,7 @@ class HybridVectorStore {
   async _vectorSearch(query, limit = 5, minScore = 0) {
     const lang = detectLanguage(query);
     const useViModel =
-      lang === 'vi' &&
-      viEmbeddingService.isAvailable() &&
-      this.items.some((item) => item.vectorVi);
+      lang === 'vi' && viEmbeddingService.isAvailable() && this.items.some((item) => item.vectorVi);
 
     if (lang === 'vi' && !useViModel) {
       logger.warn(
@@ -298,9 +296,7 @@ class HybridVectorStore {
         logger.debug(`[HYBRID] Injected ${injected.length} keyword-only results`);
       }
 
-      return [...vectorResults, ...injected]
-        .sort((a, b) => b.score - a.score)
-        .slice(0, limit);
+      return [...vectorResults, ...injected].sort((a, b) => b.score - a.score).slice(0, limit);
     } catch (error) {
       logger.error('Lỗi tìm kiếm vector:', error.message);
       return [];

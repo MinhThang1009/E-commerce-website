@@ -57,7 +57,7 @@ jest.mock('../utils/productHelpers', () => ({
   generateVariantSku: jest.fn().mockReturnValue('SKU-TEST-VAR'),
 }));
 
-jest.mock('../services/ai/vectorStore', () => ({
+jest.mock('../modules/ai/services/vectorStore', () => ({
   upsertProduct: jest.fn().mockResolvedValue(undefined),
   save: jest.fn().mockResolvedValue(undefined),
   loadPromise: Promise.resolve(),
@@ -357,7 +357,7 @@ function makeUser(overrides = {}) {
 beforeEach(() => {
   jest.resetAllMocks();
   // Khôi phục items array về rỗng
-  const vs = require('../services/ai/vectorStore');
+  const vs = require('../modules/ai/services/vectorStore');
   vs.items = [];
 
   // resetAllMocks xóa tất cả implementations — cần restore default cho các mock cần thiết
@@ -375,7 +375,7 @@ beforeEach(() => {
   });
 
   // Restore vectorStore mocks
-  const vs2 = require('../services/ai/vectorStore');
+  const vs2 = require('../modules/ai/services/vectorStore');
   vs2.upsertProduct.mockResolvedValue(undefined);
   vs2.save.mockResolvedValue(undefined);
   vs2.loadPromise = Promise.resolve();
@@ -865,7 +865,7 @@ describe('POST /api/admin/products — createProduct với các quan hệ', () =
   });
 
   it('không gọi vectorStore.upsertProduct khi product.status là inactive', async () => {
-    const vectorStore = require('../services/ai/vectorStore');
+    const vectorStore = require('../modules/ai/services/vectorStore');
     const newProduct = makeCreatedProduct(33);
     newProduct.status = 'inactive';
     // findByPk lần cuối trả về product với status inactive
@@ -1157,7 +1157,7 @@ describe('PUT /api/admin/products/:id — updateProduct các diff paths', () => 
   });
 
   it('không gọi vectorStore.upsertProduct khi product không active sau update', async () => {
-    const vectorStore = require('../services/ai/vectorStore');
+    const vectorStore = require('../modules/ai/services/vectorStore');
     const inactiveProduct = makeProduct({ id: 10, status: 'inactive' });
     Product.findByPk.mockResolvedValueOnce(inactiveProduct).mockResolvedValueOnce(inactiveProduct);
     sequelize.query.mockResolvedValue([[], {}]);

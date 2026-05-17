@@ -7,18 +7,22 @@
  * @returns {string} Prompt text gửi cho LLM.
  */
 function createPrompt(userMessage, products, context) {
-  const productList = products.length > 0
-    ? products
-        .map(
-          (p) =>
-            `- ${p.lowConfidence ? '⚠️[low confidence] ' : ''}${p.name} (${p.category || 'Sản phẩm'}): ${p.shortDescription || 'Mô tả đang cập nhật'} - Giá: ${(p.price ?? p.basePrice)?.toLocaleString('vi-VN')} đ - Tình trạng: ${p.inStock ? 'Còn hàng' : 'Hết hàng'}`,
-        )
-        .join('\n')
-    : '(Không tìm thấy sản phẩm nào phù hợp trong cơ sở dữ liệu)';
+  const productList =
+    products.length > 0
+      ? products
+          .map(
+            (p) =>
+              `- ${p.lowConfidence ? '⚠️[low confidence] ' : ''}${p.name} (${p.category || 'Sản phẩm'}): ${p.shortDescription || 'Mô tả đang cập nhật'} - Giá: ${(p.price ?? p.basePrice)?.toLocaleString('vi-VN')} đ - Tình trạng: ${p.inStock ? 'Còn hàng' : 'Hết hàng'}`,
+          )
+          .join('\n')
+      : '(Không tìm thấy sản phẩm nào phù hợp trong cơ sở dữ liệu)';
 
   // Context augmentation: phát hiện số version/thế hệ trong query,
   // báo LLM biết nếu không có sản phẩm nào khớp số đó trong retrieved context
-  const queryVersions = (userMessage.match(/\b\d{2,4}\b(?!\s*(?:gb|tb|mb|mah|hz|mp|w|mm|cm|inch|triệu|nghìn|tr|k|đ|"|'))/gi) || []);
+  const queryVersions =
+    userMessage.match(
+      /\b\d{2,4}\b(?!\s*(?:gb|tb|mb|mah|hz|mp|w|mm|cm|inch|triệu|nghìn|tr|k|đ|"|'))/gi,
+    ) || [];
   const productNames = products.map((p) => p.name?.toLowerCase() || '');
   const missingVersions = queryVersions.filter(
     (v) => !productNames.some((name) => name.includes(v)),

@@ -329,7 +329,7 @@ describe('chatbotService.js — initializeChatbot branches (lines 49-56)', () =>
 describe('vectorStore.js — save() và clear() (lines 57-73)', () => {
   // Test clear() trực tiếp — không cần mock fs
   it('clear() → items được xóa thành [] (line 71)', () => {
-    const vs = require('../services/ai/vectorStore');
+    const vs = require('../modules/ai/services/vectorStore');
     vs.items = [{ id: 1 }, { id: 2 }];
     vs.clear();
     expect(vs.items).toEqual([]);
@@ -339,7 +339,7 @@ describe('vectorStore.js — save() và clear() (lines 57-73)', () => {
     const loggerMock = require('../utils/logger');
     jest.clearAllMocks();
 
-    const vs = require('../services/ai/vectorStore');
+    const vs = require('../modules/ai/services/vectorStore');
     // Ghi đè writeFile trực tiếp trên fs.promises object (không dùng spyOn để tránh babel issue)
     const origWriteFile = require('fs').promises.writeFile;
     require('fs').promises.writeFile = jest.fn().mockRejectedValue(new Error('ENOSPC: disk full'));
@@ -357,7 +357,7 @@ describe('vectorStore.js — save() và clear() (lines 57-73)', () => {
   });
 
   it('save() thành công khi dataDir tồn tại (line 63)', async () => {
-    const vs = require('../services/ai/vectorStore');
+    const vs = require('../modules/ai/services/vectorStore');
     const origPath = vs.storagePath;
     const os = require('os');
     const path = require('path');
@@ -1648,7 +1648,7 @@ describe('product.js model — JSON getter error branches (lines 167-168, 207-20
         debug: jest.fn(),
       }));
       // Mock to prevent actual file I/O
-      jest.mock('../services/ai/vectorStore', () => ({
+      jest.mock('../modules/ai/services/vectorStore', () => ({
         loadPromise: Promise.resolve(),
         items: [],
         hybridSearch: jest.fn(),

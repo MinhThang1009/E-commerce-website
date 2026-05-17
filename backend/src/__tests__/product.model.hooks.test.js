@@ -25,8 +25,8 @@ jest.mock('slugify', () =>
     text
       .toLowerCase()
       .replace(/[^a-z0-9]+/g, '-')
-      .replace(/^-|-$/g, '')
-  )
+      .replace(/^-|-$/g, ''),
+  ),
 );
 
 // vectorStore module — mock toàn bộ để hook không thật sự call DB
@@ -36,7 +36,7 @@ const mockVectorStore = {
   items: [],
   enrichProductData: jest.fn((p) => p),
 };
-jest.mock('../services/ai/vectorStore', () => mockVectorStore);
+jest.mock('../modules/ai/services/vectorStore', () => mockVectorStore);
 
 // category / productImage dùng trong hook (lazy require inside hooks)
 jest.mock('../models/category', () => ({}), { virtual: true });
@@ -493,10 +493,7 @@ describe('Product model: afterCreate hook', () => {
 describe('Product model: afterUpdate hook', () => {
   beforeEach(() => {
     jest.clearAllMocks();
-    mockVectorStore.items = [
-      { metadata: { id: 5 } },
-      { metadata: { id: 6 } },
-    ];
+    mockVectorStore.items = [{ metadata: { id: 5 } }, { metadata: { id: 6 } }];
   });
 
   it('status=active → gọi upsertProduct với full product data', async () => {
@@ -538,9 +535,7 @@ describe('Product model: afterUpdate hook', () => {
   it('không throw khi vectorStore.save fail', async () => {
     mockVectorStore.save.mockRejectedValueOnce(new Error('disk full'));
 
-    await expect(
-      capturedHooks.afterUpdate({ id: 6, status: 'inactive' })
-    ).resolves.not.toThrow();
+    await expect(capturedHooks.afterUpdate({ id: 6, status: 'inactive' })).resolves.not.toThrow();
   });
 });
 
@@ -619,7 +614,7 @@ describe('Product model: shippingInfo setter', () => {
 
   it('object → JSON.stringify (object-branch)', () => {
     expect(callSetter({ weight: 500, dimensions: '30x20x10' })).toBe(
-      '{"weight":500,"dimensions":"30x20x10"}'
+      '{"weight":500,"dimensions":"30x20x10"}',
     );
   });
 

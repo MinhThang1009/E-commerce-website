@@ -11,7 +11,7 @@
 
 // ── Mocks ────────────────────────────────────────────────────────────────────
 
-jest.mock('../../utils/logger', () => ({
+jest.mock('../../../utils/logger', () => ({
   info: jest.fn(),
   debug: jest.fn(),
   warn: jest.fn(),
@@ -62,8 +62,11 @@ describe('HybridVectorStore — load()', () => {
     jest.resetModules();
     jest.clearAllMocks();
     // Re-mock sau resetModules
-    jest.mock('../../utils/logger', () => ({
-      info: jest.fn(), debug: jest.fn(), warn: jest.fn(), error: jest.fn(),
+    jest.mock('../../../utils/logger', () => ({
+      info: jest.fn(),
+      debug: jest.fn(),
+      warn: jest.fn(),
+      error: jest.fn(),
     }));
     jest.mock('./embedding', () => ({ generateEmbedding: jest.fn() }));
     jest.mock('./viEmbedding', () => ({ isAvailable: () => false, generateEmbedding: jest.fn() }));
@@ -150,8 +153,11 @@ describe('cosineSimilarity (thuật toán thuần)', () => {
 
   beforeAll(async () => {
     jest.resetModules();
-    jest.mock('../../utils/logger', () => ({
-      info: jest.fn(), debug: jest.fn(), warn: jest.fn(), error: jest.fn(),
+    jest.mock('../../../utils/logger', () => ({
+      info: jest.fn(),
+      debug: jest.fn(),
+      warn: jest.fn(),
+      error: jest.fn(),
     }));
     jest.mock('./embedding', () => ({ generateEmbedding: jest.fn() }));
     jest.mock('./viEmbedding', () => ({ isAvailable: () => false, generateEmbedding: jest.fn() }));
@@ -228,8 +234,11 @@ describe('clear()', () => {
 
   beforeAll(async () => {
     jest.resetModules();
-    jest.mock('../../utils/logger', () => ({
-      info: jest.fn(), debug: jest.fn(), warn: jest.fn(), error: jest.fn(),
+    jest.mock('../../../utils/logger', () => ({
+      info: jest.fn(),
+      debug: jest.fn(),
+      warn: jest.fn(),
+      error: jest.fn(),
     }));
     jest.mock('./embedding', () => ({ generateEmbedding: jest.fn() }));
     jest.mock('./viEmbedding', () => ({ isAvailable: () => false, generateEmbedding: jest.fn() }));
@@ -264,8 +273,11 @@ describe('upsertProduct()', () => {
     jest.resetModules();
     jest.clearAllMocks();
 
-    jest.mock('../../utils/logger', () => ({
-      info: jest.fn(), debug: jest.fn(), warn: jest.fn(), error: jest.fn(),
+    jest.mock('../../../utils/logger', () => ({
+      info: jest.fn(),
+      debug: jest.fn(),
+      warn: jest.fn(),
+      error: jest.fn(),
     }));
 
     mockEn = jest.fn().mockResolvedValue(makeVector(EN_DIM));
@@ -288,7 +300,13 @@ describe('upsertProduct()', () => {
   });
 
   it('thêm sản phẩm hợp lệ → items.length tăng lên 1', async () => {
-    const product = { id: 1, name: 'Laptop', slug: 'laptop', basePrice: 10000000, status: 'active' };
+    const product = {
+      id: 1,
+      name: 'Laptop',
+      slug: 'laptop',
+      basePrice: 10000000,
+      status: 'active',
+    };
 
     await store.upsertProduct(product);
 
@@ -298,7 +316,13 @@ describe('upsertProduct()', () => {
   });
 
   it('thêm cùng productId lần 2 → cập nhật, không tạo duplicate', async () => {
-    const product = { id: 5, name: 'Laptop', slug: 'laptop-5', basePrice: 5000000, status: 'active' };
+    const product = {
+      id: 5,
+      name: 'Laptop',
+      slug: 'laptop-5',
+      basePrice: 5000000,
+      status: 'active',
+    };
 
     await store.upsertProduct(product);
     await store.upsertProduct({ ...product, name: 'Laptop Updated' });
@@ -375,8 +399,11 @@ describe('search()', () => {
     jest.resetModules();
     jest.clearAllMocks();
 
-    jest.mock('../../utils/logger', () => ({
-      info: jest.fn(), debug: jest.fn(), warn: jest.fn(), error: jest.fn(),
+    jest.mock('../../../utils/logger', () => ({
+      info: jest.fn(),
+      debug: jest.fn(),
+      warn: jest.fn(),
+      error: jest.fn(),
     }));
 
     mockEn = jest.fn().mockResolvedValue(makeVector(EN_DIM));
@@ -408,12 +435,14 @@ describe('search()', () => {
     const queryVec = makeVector(EN_DIM);
     mockEn.mockResolvedValue(queryVec);
 
-    store.items = [{
-      vectorEn: queryVec,
-      vectorVi: null,
-      text: 'laptop',
-      metadata: { id: 1, name: 'Laptop' },
-    }];
+    store.items = [
+      {
+        vectorEn: queryVec,
+        vectorVi: null,
+        text: 'laptop',
+        metadata: { id: 1, name: 'Laptop' },
+      },
+    ];
 
     const results = await store.hybridSearch('laptop');
     expect(results).toHaveLength(1);
@@ -428,12 +457,14 @@ describe('search()', () => {
 
     const itemVec = Array(EN_DIM).fill(0);
     itemVec[1] = 1; // trực giao
-    store.items = [{
-      vectorEn: itemVec,
-      vectorVi: null,
-      text: 'chair',
-      metadata: { id: 2, name: 'Chair' },
-    }];
+    store.items = [
+      {
+        vectorEn: itemVec,
+        vectorVi: null,
+        text: 'chair',
+        metadata: { id: 2, name: 'Chair' },
+      },
+    ];
 
     const results = await store.hybridSearch('lamp');
     expect(results).toEqual([]);
@@ -483,12 +514,14 @@ describe('search()', () => {
     mockVi.mockResolvedValue(viVec);
     mockEn.mockResolvedValue(makeVector(EN_DIM));
 
-    store.items = [{
-      vectorEn: makeVector(EN_DIM),
-      vectorVi: viVec,
-      text: 'điện thoại',
-      metadata: { id: 1, name: 'Điện thoại' },
-    }];
+    store.items = [
+      {
+        vectorEn: makeVector(EN_DIM),
+        vectorVi: viVec,
+        text: 'điện thoại',
+        metadata: { id: 1, name: 'Điện thoại' },
+      },
+    ];
 
     const results = await store.hybridSearch('điện thoại'); // tiếng Việt
     // VI model được dùng — mock vi embed được gọi
@@ -502,12 +535,14 @@ describe('search()', () => {
     mockEn.mockResolvedValue(enVec);
 
     // Item chỉ có vectorEn (được index khi HF fail)
-    store.items = [{
-      vectorEn: enVec,
-      vectorVi: null,
-      text: 'laptop',
-      metadata: { id: 10, name: 'Laptop' },
-    }];
+    store.items = [
+      {
+        vectorEn: enVec,
+        vectorVi: null,
+        text: 'laptop',
+        metadata: { id: 10, name: 'Laptop' },
+      },
+    ];
 
     // Có ít nhất 1 item có vectorVi để trigger useViModel = true
     store.items.push({
@@ -529,8 +564,11 @@ describe('enrichProductData()', () => {
 
   beforeAll(() => {
     jest.resetModules();
-    jest.mock('../../utils/logger', () => ({
-      info: jest.fn(), debug: jest.fn(), warn: jest.fn(), error: jest.fn(),
+    jest.mock('../../../utils/logger', () => ({
+      info: jest.fn(),
+      debug: jest.fn(),
+      warn: jest.fn(),
+      error: jest.fn(),
     }));
     jest.mock('./embedding', () => ({ generateEmbedding: jest.fn() }));
     jest.mock('./viEmbedding', () => ({ isAvailable: () => false, generateEmbedding: jest.fn() }));
@@ -562,9 +600,7 @@ describe('enrichProductData()', () => {
 
   it('không có isThumbnail=true → lấy ảnh đầu tiên', () => {
     const product = {
-      productImages: [
-        { imageUrl: 'http://cdn/first.jpg', isThumbnail: false },
-      ],
+      productImages: [{ imageUrl: 'http://cdn/first.jpg', isThumbnail: false }],
       variants: [],
       stockQuantity: 0,
     };
@@ -585,10 +621,7 @@ describe('enrichProductData()', () => {
   it('variants có stockQuantity → inStock = true', () => {
     const product = {
       productImages: [],
-      variants: [
-        { stockQuantity: 0 },
-        { stockQuantity: 5 },
-      ],
+      variants: [{ stockQuantity: 0 }, { stockQuantity: 5 }],
       stockQuantity: 0,
     };
     const result = enrichProductData(product);
@@ -625,7 +658,7 @@ describe('enrichProductData()', () => {
     // null → || [] triggers right side of || on line 205
     const product = {
       productImages: [],
-      variants: null,      // null → || [] → reduce on [] → variantStock = 0
+      variants: null, // null → || [] → reduce on [] → variantStock = 0
       stockQuantity: 0,
     };
     const result = enrichProductData(product);
@@ -636,8 +669,8 @@ describe('enrichProductData()', () => {
   it('variants = undefined → (undefined || []) = [] → variantStock = 0 (line 205 || right side)', () => {
     const product = {
       productImages: [],
-      variants: undefined,   // undefined → || [] triggers
-      stockQuantity: 5,      // stockQuantity > 0 → inStock = true despite variantStock = 0
+      variants: undefined, // undefined → || [] triggers
+      stockQuantity: 5, // stockQuantity > 0 → inStock = true despite variantStock = 0
     };
     const result = enrichProductData(product);
     expect(result.inStock).toBe(true);
@@ -654,8 +687,11 @@ describe('save()', () => {
   beforeEach(async () => {
     jest.resetModules();
     jest.clearAllMocks();
-    jest.mock('../../utils/logger', () => ({
-      info: jest.fn(), debug: jest.fn(), warn: jest.fn(), error: jest.fn(),
+    jest.mock('../../../utils/logger', () => ({
+      info: jest.fn(),
+      debug: jest.fn(),
+      warn: jest.fn(),
+      error: jest.fn(),
     }));
     jest.mock('./embedding', () => ({ generateEmbedding: jest.fn() }));
     jest.mock('./viEmbedding', () => ({ isAvailable: () => false, generateEmbedding: jest.fn() }));
@@ -719,7 +755,7 @@ describe('save()', () => {
     const mockWriteFile = jest.fn().mockRejectedValue(new Error('EACCES: permission denied'));
     const mockLogger = { info: jest.fn(), debug: jest.fn(), warn: jest.fn(), error: jest.fn() };
 
-    jest.mock('../../utils/logger', () => mockLogger);
+    jest.mock('../../../utils/logger', () => mockLogger);
     jest.mock('fs', () => ({
       existsSync: jest.fn().mockReturnValue(true),
       mkdirSync: jest.fn(),
@@ -735,9 +771,6 @@ describe('save()', () => {
     // Không throw
     await expect(store.save()).resolves.not.toThrow();
 
-    expect(mockLogger.error).toHaveBeenCalledWith(
-      'Lỗi khi lưu vector store:',
-      expect.any(Error),
-    );
+    expect(mockLogger.error).toHaveBeenCalledWith('Lỗi khi lưu vector store:', expect.any(Error));
   });
 });

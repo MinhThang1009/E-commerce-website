@@ -16,7 +16,7 @@ const { Op } = require('sequelize');
 const logger = require('../../../utils/logger');
 const { catchAsync } = require('../../../utils/catchAsync');
 const { AppError } = require('../../../shared/errors');
-const vectorStoreService = require('../../../services/ai/vectorStore');
+const vectorStoreService = require('../../../modules/ai/services/vectorStore');
 
 // ===================================================
 // CẤU HÌNH MULTER — chỉ nhận CSV/JSON, tối đa 5MB
@@ -410,7 +410,7 @@ const importProducts = catchAsync(async (req, res, next) => {
     setImmediate(async () => {
       try {
         // Load products vừa tạo với đầy đủ relations để embed
-        const { enrichProductData } = require('../../../services/ai/vectorStore');
+        const { enrichProductData } = require('../../../modules/ai/services/vectorStore');
         const newProducts = await Product.findAll({
           where: { id: { [Op.in]: newProductIds } },
           include: [

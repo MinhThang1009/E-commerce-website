@@ -4,7 +4,7 @@
 
 // ─── Setup trước khi require module ──────────────────────────────────────────
 
-jest.mock('../../utils/logger', () => ({
+jest.mock('../../../utils/logger', () => ({
   info: jest.fn(),
   warn: jest.fn(),
   error: jest.fn(),
@@ -28,7 +28,11 @@ function make1024Vector() {
 describe('VietnameseEmbeddingService.isAvailable', () => {
   beforeEach(() => {
     jest.resetModules();
-    jest.mock('../../utils/logger', () => ({ info: jest.fn(), warn: jest.fn(), error: jest.fn() }));
+    jest.mock('../../../utils/logger', () => ({
+      info: jest.fn(),
+      warn: jest.fn(),
+      error: jest.fn(),
+    }));
     jest.mock('axios', () => ({ post: jest.fn() }));
   });
 
@@ -55,7 +59,11 @@ describe('VietnameseEmbeddingService.generateEmbedding', () => {
 
   beforeEach(() => {
     jest.resetModules();
-    jest.mock('../../utils/logger', () => ({ info: jest.fn(), warn: jest.fn(), error: jest.fn() }));
+    jest.mock('../../../utils/logger', () => ({
+      info: jest.fn(),
+      warn: jest.fn(),
+      error: jest.fn(),
+    }));
     mockAxiosPost.mockReset();
     jest.mock('axios', () => ({ post: (...args) => mockAxiosPost(...args) }));
   });
@@ -64,8 +72,9 @@ describe('VietnameseEmbeddingService.generateEmbedding', () => {
     delete process.env.HF_API_KEY;
     service = require('./viEmbedding');
 
-    await expect(service.generateEmbedding('xin chào'))
-      .rejects.toThrow('HF_API_KEY chưa được cấu hình');
+    await expect(service.generateEmbedding('xin chào')).rejects.toThrow(
+      'HF_API_KEY chưa được cấu hình',
+    );
   });
 
   test('trả embedding đúng 1024 dims — response dạng flat array', async () => {
@@ -113,7 +122,7 @@ describe('VietnameseEmbeddingService.generateEmbedding', () => {
           Authorization: 'Bearer hf-test-header',
         }),
         timeout: 30000,
-      })
+      }),
     );
     delete process.env.HF_API_KEY;
   });
@@ -129,12 +138,16 @@ describe('VietnameseEmbeddingService.generateEmbedding — retry và error', () 
 
   beforeEach(() => {
     jest.resetModules();
-    jest.mock('../../utils/logger', () => ({ info: jest.fn(), warn: jest.fn(), error: jest.fn() }));
+    jest.mock('../../../utils/logger', () => ({
+      info: jest.fn(),
+      warn: jest.fn(),
+      error: jest.fn(),
+    }));
     mockAxiosPost.mockReset();
     jest.mock('axios', () => ({ post: (...args) => mockAxiosPost(...args) }));
     process.env.HF_API_KEY = 'hf-retry-key';
     service = require('./viEmbedding');
-    logger = require('../../utils/logger');
+    logger = require('../../../utils/logger');
   });
 
   afterEach(() => {
@@ -170,8 +183,7 @@ describe('VietnameseEmbeddingService.generateEmbedding — retry và error', () 
   test('ném lỗi sau tất cả 3 lần thất bại — log error', async () => {
     mockAxiosPost.mockRejectedValue(new Error('persistent failure'));
 
-    await expect(service.generateEmbedding('always fail'))
-      .rejects.toThrow('persistent failure');
+    await expect(service.generateEmbedding('always fail')).rejects.toThrow('persistent failure');
 
     expect(mockAxiosPost).toHaveBeenCalledTimes(3);
     // logger.error('❌ VI embedding thất bại sau', 3, 'lần thử:', errorMsg) — 4 separate args
@@ -179,7 +191,7 @@ describe('VietnameseEmbeddingService.generateEmbedding — retry và error', () 
       expect.stringContaining('VI embedding thất bại sau'),
       3,
       'lần thử:',
-      'persistent failure'
+      'persistent failure',
     );
   });
 
@@ -187,23 +199,22 @@ describe('VietnameseEmbeddingService.generateEmbedding — retry và error', () 
     const wrongDimEmbedding = Array.from({ length: 512 }, (_, i) => i * 0.001);
     mockAxiosPost.mockResolvedValue({ data: wrongDimEmbedding });
 
-    await expect(service.generateEmbedding('wrong dim'))
-      .rejects.toThrow(/Invalid embedding.*expected 1024 dims.*got 512/i);
+    await expect(service.generateEmbedding('wrong dim')).rejects.toThrow(
+      /Invalid embedding.*expected 1024 dims.*got 512/i,
+    );
   });
 
   test('ném lỗi khi response.data là null (null access)', async () => {
     mockAxiosPost.mockResolvedValue({ data: null });
 
     // response.data[0] throws TypeError khi data=null — bất kỳ lỗi nào đều acceptable
-    await expect(service.generateEmbedding('null response'))
-      .rejects.toThrow();
+    await expect(service.generateEmbedding('null response')).rejects.toThrow();
   });
 
   test('ném lỗi khi embedding là mảng rỗng', async () => {
     mockAxiosPost.mockResolvedValue({ data: [] });
 
-    await expect(service.generateEmbedding('empty array'))
-      .rejects.toThrow(/Invalid embedding/i);
+    await expect(service.generateEmbedding('empty array')).rejects.toThrow(/Invalid embedding/i);
   });
 });
 
@@ -214,7 +225,11 @@ describe('VietnameseEmbeddingService.generateEmbedding — retry và error', () 
 describe('VietnameseEmbeddingService — khởi tạo', () => {
   beforeEach(() => {
     jest.resetModules();
-    jest.mock('../../utils/logger', () => ({ info: jest.fn(), warn: jest.fn(), error: jest.fn() }));
+    jest.mock('../../../utils/logger', () => ({
+      info: jest.fn(),
+      warn: jest.fn(),
+      error: jest.fn(),
+    }));
     jest.mock('axios', () => ({ post: jest.fn() }));
   });
 
@@ -224,15 +239,19 @@ describe('VietnameseEmbeddingService — khởi tạo', () => {
 
   test('log info khi HF_API_KEY được cấu hình', () => {
     process.env.HF_API_KEY = 'hf-real-key';
-    const logger = require('../../utils/logger');
+    const logger = require('../../../utils/logger');
     require('./viEmbedding');
-    expect(logger.info).toHaveBeenCalledWith(expect.stringContaining('Vietnamese Embedding Service'));
+    expect(logger.info).toHaveBeenCalledWith(
+      expect.stringContaining('Vietnamese Embedding Service'),
+    );
   });
 
   test('log warn khi HF_API_KEY không được cấu hình', () => {
     delete process.env.HF_API_KEY;
-    const logger = require('../../utils/logger');
+    const logger = require('../../../utils/logger');
     require('./viEmbedding');
-    expect(logger.warn).toHaveBeenCalledWith(expect.stringContaining('HF_API_KEY chưa được cấu hình'));
+    expect(logger.warn).toHaveBeenCalledWith(
+      expect.stringContaining('HF_API_KEY chưa được cấu hình'),
+    );
   });
 });

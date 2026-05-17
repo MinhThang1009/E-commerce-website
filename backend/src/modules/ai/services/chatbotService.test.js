@@ -15,11 +15,11 @@
 
 const mockRedisGet = jest.fn();
 const mockRedisSetEx = jest.fn();
-jest.mock('../../config/redis', () => ({
+jest.mock('../../../config/redis', () => ({
   getRedisClient: jest.fn(() => Promise.resolve({ get: mockRedisGet, setEx: mockRedisSetEx })),
 }));
 
-jest.mock('../../models', () => ({
+jest.mock('../../../models', () => ({
   Product: {
     findAll: jest.fn().mockResolvedValue([]),
   },
@@ -32,7 +32,7 @@ jest.mock('../../models', () => ({
   Op: {},
 }));
 
-jest.mock('../../services/ai/vectorStore', () => ({
+jest.mock('./vectorStore', () => ({
   items: [],
   loadPromise: Promise.resolve(),
   hybridSearch: jest.fn().mockResolvedValue([]),
@@ -47,7 +47,7 @@ jest.mock('../../services/ai/vectorStore', () => ({
 
 jest.mock('axios');
 
-jest.mock('../../utils/logger', () => ({
+jest.mock('../../../utils/logger', () => ({
   info: jest.fn(),
   warn: jest.fn(),
   error: jest.fn(),
@@ -57,9 +57,9 @@ jest.mock('../../utils/logger', () => ({
 // ---------- Require sau khi mock ----------
 
 const axios = require('axios');
-const vectorStoreService = require('../../services/ai/vectorStore');
-const { ChatMessage, Product } = require('../../models');
-const { getRedisClient } = require('../../config/redis');
+const vectorStoreService = require('./vectorStore');
+const { ChatMessage, Product } = require('../../../models');
+const { getRedisClient } = require('../../../config/redis');
 
 // Quan trọng: require sau khi mock để singleton nhận đúng env
 let chatbotService;
@@ -163,7 +163,15 @@ describe('ChatbotService._persistMessages', () => {
   });
 
   test('lưu đúng sessionId và userId vào cả 2 records', async () => {
-    await chatbotService._persistMessages('sess-abc', 7, 'hello', 'hi', 'product_search', 180, true);
+    await chatbotService._persistMessages(
+      'sess-abc',
+      7,
+      'hello',
+      'hi',
+      'product_search',
+      180,
+      true,
+    );
     const [[records]] = ChatMessage.bulkCreate.mock.calls;
     records.forEach((r) => {
       expect(r.sessionId).toBe('sess-abc');
@@ -455,7 +463,7 @@ describe('ChatbotService.handleMessage', () => {
 // ============================================================
 
 describe('ChatbotService.initializeChatbot', () => {
-  const logger = require('../../utils/logger');
+  const logger = require('../../../utils/logger');
 
   test('ghi info log khi có providers', () => {
     logger.info.mockClear();

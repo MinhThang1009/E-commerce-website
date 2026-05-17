@@ -65,7 +65,7 @@ jest.mock('../utils/productHelpers', () => ({
   generateVariantSku: jest.fn().mockReturnValue('SKU-TEST-VAR'),
 }));
 
-jest.mock('../services/ai/vectorStore', () => ({
+jest.mock('../modules/ai/services/vectorStore', () => ({
   upsertProduct: jest.fn().mockResolvedValue(undefined),
   save: jest.fn().mockResolvedValue(undefined),
   loadPromise: Promise.resolve(),

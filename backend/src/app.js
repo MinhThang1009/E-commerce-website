@@ -68,7 +68,7 @@ const buildDiscountCodeModule = require('./modules/discountCode/module');
 const buildWarrantyPackageModule = require('./modules/warrantyPackage/module');
 const buildAttributeModule = require('./modules/attribute/module');
 const buildAdminModule = require('./modules/admin/module');
-const chatbotService = require('./services/ai/chatbotService');
+const chatbotService = require('./modules/ai/services/chatbotService');
 const momoService = require('./modules/payment/services/momoService');
 const vnpayService = require('./modules/payment/services/vnpayService');
 

@@ -29,8 +29,8 @@ jest.mock('slugify', () =>
     text
       .toLowerCase()
       .replace(/[^a-z0-9]+/g, '-')
-      .replace(/^-|-$/g, '')
-  )
+      .replace(/^-|-$/g, ''),
+  ),
 );
 
 // vectorStore mock — truthy (default cho getter tests)
@@ -39,7 +39,7 @@ const mockVectorStore = {
   save: jest.fn().mockResolvedValue(undefined),
   items: [],
 };
-jest.mock('../services/ai/vectorStore', () => mockVectorStore);
+jest.mock('../modules/ai/services/vectorStore', () => mockVectorStore);
 
 jest.mock('../models/category', () => ({}), { virtual: true });
 jest.mock('../models/productImage', () => ({}), { virtual: true });
@@ -66,9 +66,15 @@ require('../models/product');
 function makeInstance(initialData = {}) {
   const dataValues = { ...initialData };
   return {
-    getDataValue(field) { return dataValues[field]; },
-    setDataValue(field, value) { dataValues[field] = value; },
-    changed() { return false; },
+    getDataValue(field) {
+      return dataValues[field];
+    },
+    setDataValue(field, value) {
+      dataValues[field] = value;
+    },
+    changed() {
+      return false;
+    },
   };
 }
 
@@ -190,13 +196,13 @@ describe('Product model: afterUpdate hook — vectorStoreService truthy (line 33
     // vectorStoreService truthy (mocked) → vào if block → else branch (inactive)
     await capturedHooks.afterUpdate({ id: 10, status: 'inactive' });
 
-    expect(mockVectorStore.items.some(i => i.metadata.id === 10)).toBe(false);
+    expect(mockVectorStore.items.some((i) => i.metadata.id === 10)).toBe(false);
     expect(mockVectorStore.save).toHaveBeenCalled();
   });
 
   it('status=archived → tương tự inactive: xóa item khỏi vector store', async () => {
     await capturedHooks.afterUpdate({ id: 10, status: 'archived' });
-    expect(mockVectorStore.items.some(i => i.metadata.id === 10)).toBe(false);
+    expect(mockVectorStore.items.some((i) => i.metadata.id === 10)).toBe(false);
     expect(mockVectorStore.save).toHaveBeenCalled();
   });
 
@@ -230,15 +236,12 @@ describe('Product model: afterUpdate hook — vectorStoreService truthy (line 33
 describe('Product model: afterDestroy hook — vectorStoreService truthy (line 365 true path)', () => {
   beforeEach(() => {
     jest.clearAllMocks();
-    mockVectorStore.items = [
-      { metadata: { id: 7 } },
-      { metadata: { id: 8 } },
-    ];
+    mockVectorStore.items = [{ metadata: { id: 7 } }, { metadata: { id: 8 } }];
   });
 
   it('xóa item khỏi vector store và gọi save', async () => {
     await capturedHooks.afterDestroy({ id: 7 });
-    expect(mockVectorStore.items.some(i => i.metadata.id === 7)).toBe(false);
+    expect(mockVectorStore.items.some((i) => i.metadata.id === 7)).toBe(false);
     expect(mockVectorStore.save).toHaveBeenCalled();
   });
 

@@ -102,7 +102,7 @@ const checkVectorStoreSync = async () => {
   try {
     // Lazy require sau khi connectDB() xong để đảm bảo associations đã được setup
     const { Product, ProductVariant } = require('./models');
-    const vectorStoreService = require('./services/ai/vectorStore');
+    const vectorStoreService = require('./modules/ai/services/vectorStore');
     // Đợi vector store load xong trước khi so sánh
     await vectorStoreService.loadPromise;
     // Fix: `inStock` không phải column/VIRTUAL.

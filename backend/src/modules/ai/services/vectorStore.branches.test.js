@@ -12,8 +12,11 @@
 
 // ── Mocks ─────────────────────────────────────────────────────────────────────
 
-jest.mock('../../utils/logger', () => ({
-  info: jest.fn(), debug: jest.fn(), warn: jest.fn(), error: jest.fn(),
+jest.mock('../../../utils/logger', () => ({
+  info: jest.fn(),
+  debug: jest.fn(),
+  warn: jest.fn(),
+  error: jest.fn(),
 }));
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
@@ -38,8 +41,11 @@ describe('buildEmbeddingText — uncovered branches (lines 21-22, 25-28)', () =>
   beforeEach(async () => {
     jest.resetModules();
 
-    jest.mock('../../utils/logger', () => ({
-      info: jest.fn(), debug: jest.fn(), warn: jest.fn(), error: jest.fn(),
+    jest.mock('../../../utils/logger', () => ({
+      info: jest.fn(),
+      debug: jest.fn(),
+      warn: jest.fn(),
+      error: jest.fn(),
     }));
 
     mockEn = jest.fn().mockResolvedValue(makeVector(EN_DIM));
@@ -65,7 +71,7 @@ describe('buildEmbeddingText — uncovered branches (lines 21-22, 25-28)', () =>
       // baseName: undefined → '' → filter(Boolean) loại bỏ
       categories: [],
       shortDescription: 'Flagship',
-      description: undefined,   // falsy
+      description: undefined, // falsy
       basePrice: 20000000,
       inStock: true,
     };
@@ -86,7 +92,7 @@ describe('buildEmbeddingText — uncovered branches (lines 21-22, 25-28)', () =>
       baseName: 'Samsung',
       categories: [],
       shortDescription: 'Android',
-      description: null,      // null → falsy → '' → bị filter(Boolean) bỏ
+      description: null, // null → falsy → '' → bị filter(Boolean) bỏ
       basePrice: 15000000,
       inStock: true,
     };
@@ -104,7 +110,7 @@ describe('buildEmbeddingText — uncovered branches (lines 21-22, 25-28)', () =>
       categories: [],
       shortDescription: 'Miễn phí',
       description: undefined,
-      basePrice: 0,          // 0 → falsy → '' → bị filter(Boolean) bỏ
+      basePrice: 0, // 0 → falsy → '' → bị filter(Boolean) bỏ
       inStock: true,
     };
 
@@ -154,7 +160,7 @@ describe('buildEmbeddingText — uncovered branches (lines 21-22, 25-28)', () =>
       id: 6,
       name: 'No Category Product',
       baseName: 'Brand X',
-      categories: [],           // empty → categories?.[0]?.name = undefined → '' → bị filter
+      categories: [], // empty → categories?.[0]?.name = undefined → '' → bị filter
       shortDescription: 'Test',
       description: undefined,
       basePrice: 1000000,
@@ -175,8 +181,11 @@ describe('HybridVectorStore.cosineSimilarity — line 148: !isFinite(similarity)
   beforeAll(async () => {
     jest.resetModules();
 
-    jest.mock('../../utils/logger', () => ({
-      info: jest.fn(), debug: jest.fn(), warn: jest.fn(), error: jest.fn(),
+    jest.mock('../../../utils/logger', () => ({
+      info: jest.fn(),
+      debug: jest.fn(),
+      warn: jest.fn(),
+      error: jest.fn(),
     }));
     jest.mock('./embedding', () => ({ generateEmbedding: jest.fn() }));
     jest.mock('./viEmbedding', () => ({ isAvailable: () => false, generateEmbedding: jest.fn() }));
@@ -237,13 +246,19 @@ describe('HybridVectorStore.search — line 183: item.vector fallback', () => {
     jest.resetModules();
     jest.clearAllMocks();
 
-    jest.mock('../../utils/logger', () => ({
-      info: jest.fn(), debug: jest.fn(), warn: jest.fn(), error: jest.fn(),
+    jest.mock('../../../utils/logger', () => ({
+      info: jest.fn(),
+      debug: jest.fn(),
+      warn: jest.fn(),
+      error: jest.fn(),
     }));
 
     mockEn = jest.fn().mockResolvedValue(makeVector(EN_DIM));
     const mockVi = jest.fn().mockResolvedValue(makeVector(VI_DIM));
-    const mockViService = { isAvailable: jest.fn().mockReturnValue(true), generateEmbedding: mockVi };
+    const mockViService = {
+      isAvailable: jest.fn().mockReturnValue(true),
+      generateEmbedding: mockVi,
+    };
 
     jest.mock('./embedding', () => ({ generateEmbedding: mockEn }));
     jest.mock('./viEmbedding', () => mockViService);
@@ -278,9 +293,9 @@ describe('HybridVectorStore.search — line 183: item.vector fallback', () => {
       },
       // Item cũ: không có vectorEn, không có vectorVi — chỉ có item.vector (field cũ)
       {
-        vectorEn: undefined,    // undefined
-        vectorVi: null,         // null → docVector = null → vào fallback
-        vector: oldFieldVector,  // field cũ → được dùng làm fallback
+        vectorEn: undefined, // undefined
+        vectorVi: null, // null → docVector = null → vào fallback
+        vector: oldFieldVector, // field cũ → được dùng làm fallback
         text: 'laptop cũ',
         metadata: { id: 100, name: 'Old Laptop' },
       },
@@ -330,8 +345,11 @@ describe('enrichProductData — line 205: inStock logic', () => {
   beforeAll(() => {
     jest.resetModules();
 
-    jest.mock('../../utils/logger', () => ({
-      info: jest.fn(), debug: jest.fn(), warn: jest.fn(), error: jest.fn(),
+    jest.mock('../../../utils/logger', () => ({
+      info: jest.fn(),
+      debug: jest.fn(),
+      warn: jest.fn(),
+      error: jest.fn(),
     }));
     jest.mock('./embedding', () => ({ generateEmbedding: jest.fn() }));
     jest.mock('./viEmbedding', () => ({ isAvailable: () => false, generateEmbedding: jest.fn() }));
@@ -364,7 +382,7 @@ describe('enrichProductData — line 205: inStock logic', () => {
     const product = {
       productImages: [],
       variants: [{ stockQuantity: 0 }],
-      stockQuantity: 1,  // second operand of || → true
+      stockQuantity: 1, // second operand of || → true
     };
 
     const result = enrichProductData(product);
@@ -407,8 +425,11 @@ describe('buildEmbeddingText — TRUE branches (categories name, description)', 
   beforeEach(async () => {
     jest.resetModules();
 
-    jest.mock('../../utils/logger', () => ({
-      info: jest.fn(), debug: jest.fn(), warn: jest.fn(), error: jest.fn(),
+    jest.mock('../../../utils/logger', () => ({
+      info: jest.fn(),
+      debug: jest.fn(),
+      warn: jest.fn(),
+      error: jest.fn(),
     }));
 
     mockEn = jest.fn().mockResolvedValue(Array(1536).fill(1 / Math.sqrt(1536)));
@@ -429,8 +450,10 @@ describe('buildEmbeddingText — TRUE branches (categories name, description)', 
 
   it('categories[0].name truthy → "Danh mục: ..." được đưa vào text (line 22 true branch)', async () => {
     const product = {
-      id: 10, name: 'iPhone 15', baseName: undefined,
-      categories: [{ name: 'Điện thoại' }],  // truthy → "Danh mục: Điện thoại"
+      id: 10,
+      name: 'iPhone 15',
+      baseName: undefined,
+      categories: [{ name: 'Điện thoại' }], // truthy → "Danh mục: Điện thoại"
       shortDescription: undefined,
       description: undefined,
       basePrice: 20000000,
@@ -444,10 +467,12 @@ describe('buildEmbeddingText — TRUE branches (categories name, description)', 
 
   it('description truthy → được strip HTML và thêm vào text (line 25 true branch)', async () => {
     const product = {
-      id: 11, name: 'Samsung Galaxy', baseName: undefined,
+      id: 11,
+      name: 'Samsung Galaxy',
+      baseName: undefined,
       categories: [],
       shortDescription: undefined,
-      description: '<p>Mô tả sản phẩm tốt</p>',  // truthy → strip HTML → "Mô tả sản phẩm tốt"
+      description: '<p>Mô tả sản phẩm tốt</p>', // truthy → strip HTML → "Mô tả sản phẩm tốt"
       basePrice: 15000000,
       inStock: true,
     };
@@ -467,8 +492,11 @@ describe('cosineSimilarity — line 148: isFinite(similarity) false', () => {
 
   beforeAll(async () => {
     jest.resetModules();
-    jest.mock('../../utils/logger', () => ({
-      info: jest.fn(), debug: jest.fn(), warn: jest.fn(), error: jest.fn(),
+    jest.mock('../../../utils/logger', () => ({
+      info: jest.fn(),
+      debug: jest.fn(),
+      warn: jest.fn(),
+      error: jest.fn(),
     }));
     jest.mock('./embedding', () => ({ generateEmbedding: jest.fn() }));
     jest.mock('./viEmbedding', () => ({ isAvailable: () => false, generateEmbedding: jest.fn() }));
@@ -518,8 +546,11 @@ describe('enrichProductData — line 205: v.stockQuantity || 0 in reduce', () =>
 
   beforeAll(() => {
     jest.resetModules();
-    jest.mock('../../utils/logger', () => ({
-      info: jest.fn(), debug: jest.fn(), warn: jest.fn(), error: jest.fn(),
+    jest.mock('../../../utils/logger', () => ({
+      info: jest.fn(),
+      debug: jest.fn(),
+      warn: jest.fn(),
+      error: jest.fn(),
     }));
     jest.mock('./embedding', () => ({ generateEmbedding: jest.fn() }));
     jest.mock('./viEmbedding', () => ({ isAvailable: () => false, generateEmbedding: jest.fn() }));
@@ -535,7 +566,7 @@ describe('enrichProductData — line 205: v.stockQuantity || 0 in reduce', () =>
   it('v.stockQuantity = null → || 0 = 0 → không contribute to stock', () => {
     const product = {
       productImages: [],
-      variants: [{ stockQuantity: null }],   // null → || 0 → contribute 0
+      variants: [{ stockQuantity: null }], // null → || 0 → contribute 0
       stockQuantity: 0,
     };
 
@@ -547,7 +578,7 @@ describe('enrichProductData — line 205: v.stockQuantity || 0 in reduce', () =>
   it('v.stockQuantity truthy → left side of || → contribute actual value', () => {
     const product = {
       productImages: [],
-      variants: [{ stockQuantity: 5 }],  // 5 → left side of || (truthy) → contribute 5
+      variants: [{ stockQuantity: 5 }], // 5 → left side of || (truthy) → contribute 5
       stockQuantity: 0,
     };
 

@@ -23,7 +23,7 @@
 process.env.NODE_ENV = 'test';
 
 jest.mock('axios');
-jest.mock('../../utils/logger', () => ({
+jest.mock('../../../utils/logger', () => ({
   warn: jest.fn(),
   error: jest.fn(),
   info: jest.fn(),
@@ -31,7 +31,7 @@ jest.mock('../../utils/logger', () => ({
 }));
 
 const axios = require('axios');
-const logger = require('../../utils/logger');
+const logger = require('../../../utils/logger');
 const { translateBatch } = require('./translateService');
 
 // Convenience: build the axios response shape the service expects
@@ -215,7 +215,7 @@ describe('translateBatch — catch branch khi JSON.parse thất bại', () => {
     expect(result).toBe(texts);
     expect(logger.warn).toHaveBeenCalledWith(
       'translateBatch thất bại, giữ nguyên giá trị gốc:',
-      expect.any(String)
+      expect.any(String),
     );
   });
 });
@@ -235,7 +235,7 @@ describe('translateBatch — catch branch khi axios.post throw', () => {
     expect(result).toBe(texts);
     expect(logger.warn).toHaveBeenCalledWith(
       'translateBatch thất bại, giữ nguyên giá trị gốc:',
-      networkError.message
+      networkError.message,
     );
   });
 
@@ -249,7 +249,7 @@ describe('translateBatch — catch branch khi axios.post throw', () => {
     expect(result).toBe(texts);
     expect(logger.warn).toHaveBeenCalledWith(
       'translateBatch thất bại, giữ nguyên giá trị gốc:',
-      timeoutError.message
+      timeoutError.message,
     );
   });
 });

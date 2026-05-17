@@ -34,7 +34,7 @@ jest.mock('../utils/logger', () => ({
   warn: jest.fn(),
 }));
 
-jest.mock('../services/ai/chatbotService', () => ({
+jest.mock('../modules/ai/services/chatbotService', () => ({
   handleMessage: jest.fn().mockResolvedValue({
     response: 'Xin chào!',
     suggestions: [],
@@ -75,7 +75,7 @@ const express = require('express');
 const supertest = require('supertest');
 // Dùng ai module routes (đã migrate từ routes/chatbot.js)
 const buildAIModule = require('../modules/ai/module');
-const chatbotService = require('../services/ai/chatbotService');
+const chatbotService = require('../modules/ai/services/chatbotService');
 const { Product, ProductVariant, Category, Cart, CartItem } = require('../models');
 const sequelize = require('../config/sequelize');
 

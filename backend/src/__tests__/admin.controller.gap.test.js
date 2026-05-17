@@ -41,7 +41,7 @@ jest.mock('../utils/productHelpers', () => ({
   generateVariantSku: jest.fn().mockReturnValue('SKU-TEST'),
 }));
 
-jest.mock('../services/ai/vectorStore', () => ({
+jest.mock('../modules/ai/services/vectorStore', () => ({
   upsertProduct: jest.fn().mockResolvedValue(undefined),
   save: jest.fn().mockResolvedValue(undefined),
   loadPromise: Promise.resolve(),
@@ -117,7 +117,7 @@ jest.mock('../config/redis', () => ({
   getRedisClient: jest.fn().mockResolvedValue(null),
 }));
 
-jest.mock('../services/ai/translateService', () => ({
+jest.mock('../modules/ai/services/translateService', () => ({
   translateBatch: jest.fn().mockResolvedValue([]),
 }));
 
@@ -324,7 +324,7 @@ function makeUser(overrides = {}) {
 beforeEach(() => {
   jest.resetAllMocks();
 
-  const vs = require('../services/ai/vectorStore');
+  const vs = require('../modules/ai/services/vectorStore');
   vs.items = [];
   vs.upsertProduct.mockResolvedValue(undefined);
   vs.save.mockResolvedValue(undefined);

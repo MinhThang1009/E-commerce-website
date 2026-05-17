@@ -1,5 +1,5 @@
 const axios = require('axios');
-const logger = require('../../utils/logger');
+const logger = require('../../../utils/logger');
 
 // Cache in-memory: tránh gọi API lặp lại với cùng text — Key: text chuẩn hóa, TTL 10 phút, max 500 entries FIFO
 const embeddingCache = new Map();
@@ -68,11 +68,11 @@ class EmbeddingService {
           { model: this.model, input: text },
           {
             headers: {
-              'Authorization': `Bearer ${this.apiKey}`,
+              Authorization: `Bearer ${this.apiKey}`,
               'Content-Type': 'application/json',
             },
             timeout: 30000,
-          }
+          },
         );
 
         // Null check: API trả về format sai → TypeError thay vì crash ngầm
@@ -85,10 +85,15 @@ class EmbeddingService {
       } catch (error) {
         const isLastAttempt = attempt === maxRetries;
         if (!isLastAttempt) {
-          logger.warn(`Embedding thất bại (lần ${attempt}/${maxRetries}), thử lại sau ${backoffMs[attempt - 1]}ms...`);
-          await new Promise(resolve => setTimeout(resolve, backoffMs[attempt - 1]));
+          logger.warn(
+            `Embedding thất bại (lần ${attempt}/${maxRetries}), thử lại sau ${backoffMs[attempt - 1]}ms...`,
+          );
+          await new Promise((resolve) => setTimeout(resolve, backoffMs[attempt - 1]));
         } else {
-          logger.error('Lỗi khi tạo embedding sau 3 lần thử:', error.response?.data || error.message);
+          logger.error(
+            'Lỗi khi tạo embedding sau 3 lần thử:',
+            error.response?.data || error.message,
+          );
           throw error;
         }
       }
@@ -112,22 +117,27 @@ class EmbeddingService {
           { model: this.model, input: texts },
           {
             headers: {
-              'Authorization': `Bearer ${this.apiKey}`,
+              Authorization: `Bearer ${this.apiKey}`,
               'Content-Type': 'application/json',
             },
             // Timeout 60s cho batch (gấp đôi single) — nhiều items hơn
             timeout: 60000,
-          }
+          },
         );
 
-        return response.data.data.map(item => item.embedding);
+        return response.data.data.map((item) => item.embedding);
       } catch (error) {
         const isLastAttempt = attempt === maxRetries;
         if (!isLastAttempt) {
-          logger.warn(`Batch embedding thất bại (lần ${attempt}/${maxRetries}), thử lại sau ${backoffMs[attempt - 1]}ms...`);
-          await new Promise(resolve => setTimeout(resolve, backoffMs[attempt - 1]));
+          logger.warn(
+            `Batch embedding thất bại (lần ${attempt}/${maxRetries}), thử lại sau ${backoffMs[attempt - 1]}ms...`,
+          );
+          await new Promise((resolve) => setTimeout(resolve, backoffMs[attempt - 1]));
         } else {
-          logger.error('Lỗi khi tạo batch embeddings sau 3 lần thử:', error.response?.data || error.message);
+          logger.error(
+            'Lỗi khi tạo batch embeddings sau 3 lần thử:',
+            error.response?.data || error.message,
+          );
           throw error;
         }
       }

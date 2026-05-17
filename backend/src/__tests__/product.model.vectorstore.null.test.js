@@ -29,7 +29,7 @@ describe('Product model: afterUpdate + afterDestroy hooks — vectorStoreService
       }));
 
       // Mock vectorStore để throw → catch block → vectorStoreService = null
-      jest.doMock('../services/ai/vectorStore', () => {
+      jest.doMock('../modules/ai/services/vectorStore', () => {
         throw new Error('vectorStore unavailable');
       });
 
@@ -38,8 +38,8 @@ describe('Product model: afterUpdate + afterDestroy hooks — vectorStoreService
           text
             .toLowerCase()
             .replace(/[^a-z0-9]+/g, '-')
-            .replace(/^-|-$/g, '')
-        )
+            .replace(/^-|-$/g, ''),
+        ),
       );
 
       jest.doMock('../models/category', () => ({}), { virtual: true });
@@ -72,9 +72,7 @@ describe('Product model: afterUpdate + afterDestroy hooks — vectorStoreService
       const { capturedHooks } = loadProductWithNullVectorStore();
 
       // afterUpdate với status active — nếu vectorStoreService null, không làm gì
-      await expect(
-        capturedHooks.afterUpdate({ id: 1, status: 'active' })
-      ).resolves.toBeUndefined();
+      await expect(capturedHooks.afterUpdate({ id: 1, status: 'active' })).resolves.toBeUndefined();
     });
 
     it('không throw khi status inactive và vectorStoreService null', async () => {
@@ -82,7 +80,7 @@ describe('Product model: afterUpdate + afterDestroy hooks — vectorStoreService
 
       // status inactive — nếu vectorStoreService null, if block không chạy
       await expect(
-        capturedHooks.afterUpdate({ id: 2, status: 'inactive' })
+        capturedHooks.afterUpdate({ id: 2, status: 'inactive' }),
       ).resolves.toBeUndefined();
     });
   });
@@ -93,17 +91,13 @@ describe('Product model: afterUpdate + afterDestroy hooks — vectorStoreService
     it('không throw và không tương tác với vectorStore khi vectorStoreService null', async () => {
       const { capturedHooks } = loadProductWithNullVectorStore();
 
-      await expect(
-        capturedHooks.afterDestroy({ id: 5 })
-      ).resolves.toBeUndefined();
+      await expect(capturedHooks.afterDestroy({ id: 5 })).resolves.toBeUndefined();
     });
 
     it('afterDestroy với bất kỳ productId → không crash khi vectorStoreService null', async () => {
       const { capturedHooks } = loadProductWithNullVectorStore();
 
-      await expect(
-        capturedHooks.afterDestroy({ id: 999 })
-      ).resolves.toBeUndefined();
+      await expect(capturedHooks.afterDestroy({ id: 999 })).resolves.toBeUndefined();
     });
   });
 });

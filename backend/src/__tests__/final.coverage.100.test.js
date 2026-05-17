@@ -125,7 +125,7 @@ describe('product.js line 11 — catch branch khi require vectorStore thất b�
         debug: jest.fn(),
       }));
       // Make vectorStore throw on require → triggers catch branch (line 11)
-      jest.doMock('../services/ai/vectorStore', () => {
+      jest.doMock('../modules/ai/services/vectorStore', () => {
         throw new Error('Module not found');
       });
 
@@ -464,7 +464,7 @@ describe('chatbotService.js — initializeChatbot với valid key (line 50)', ()
     jest.mock('../config/redis', () => ({ getRedisClient: jest.fn().mockReturnValue(null) }));
 
     // Mock vectorStore để tránh file I/O
-    jest.mock('../services/ai/vectorStore', () => ({
+    jest.mock('../modules/ai/services/vectorStore', () => ({
       loadPromise: Promise.resolve(),
       items: [],
       hybridSearch: jest.fn().mockResolvedValue([]),
@@ -487,7 +487,7 @@ describe('chatbotService.js — initializeChatbot với valid key (line 50)', ()
     process.env.GEMINI_API_KEYS = 'sk-real-key-not-demo';
 
     // Load the module — exports a singleton; constructor calls initializeChatbot() at load time
-    require('../services/ai/chatbotService');
+    require('../modules/ai/services/chatbotService');
 
     // line 50: logger.info should have been called with success message
     expect(mockLoggerForChatbot.info).toHaveBeenCalledWith(
@@ -521,7 +521,7 @@ describe('chatbotService.js — initializeChatbot catch block (line 55)', () => 
       debug: jest.fn(),
     };
     jest.mock('../utils/logger', () => mockChatbotCatchLogger);
-    jest.mock('../services/ai/vectorStore', () => ({
+    jest.mock('../modules/ai/services/vectorStore', () => ({
       loadPromise: Promise.resolve(),
       items: [],
       hybridSearch: jest.fn(),
@@ -542,7 +542,7 @@ describe('chatbotService.js — initializeChatbot catch block (line 55)', () => 
     process.env.GEMINI_API_KEYS = 'sk-real-key-triggers-info';
 
     // Module exports singleton; constructor runs at require time → info throws → catch → error
-    require('../services/ai/chatbotService');
+    require('../modules/ai/services/chatbotService');
 
     expect(mockChatbotCatchLogger.error).toHaveBeenCalledWith(
       expect.stringContaining('Khởi tạo Chatbot thất bại'),

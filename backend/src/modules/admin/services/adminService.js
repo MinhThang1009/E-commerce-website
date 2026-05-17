@@ -36,7 +36,7 @@ const {
   validateVariantAttributes,
   generateVariantSku,
 } = require('../../../utils/productHelpers');
-const vectorStoreService = require('../../../services/ai/vectorStore');
+const vectorStoreService = require('../../../modules/ai/services/vectorStore');
 
 /**
  * Đệ quy parse chuỗi JSON để xử lý tình huống stringify nhiều lần.
@@ -917,7 +917,7 @@ const createProduct = catchAsync(async (req, res) => {
   });
 
   try {
-    const { enrichProductData } = require('../../../services/ai/vectorStore');
+    const { enrichProductData } = require('../../../modules/ai/services/vectorStore');
     await vectorStoreService.loadPromise;
     if (productWithRelations.status === 'active') {
       await vectorStoreService.upsertProduct(enrichProductData(productWithRelations.toJSON()));
@@ -1266,7 +1266,7 @@ const updateProduct = catchAsync(async (req, res) => {
       if (specsNeedTranslation.length > 0) {
         setImmediate(async () => {
           try {
-            const { translateBatch } = require('../../../services/ai/translateService');
+            const { translateBatch } = require('../../../modules/ai/services/translateService');
             const translated = await translateBatch(specsNeedTranslation.map((s) => s.value));
             await Promise.all(
               specsNeedTranslation.map((s, i) => s.update({ valueEn: translated[i] || null })),
@@ -1331,7 +1331,7 @@ const updateProduct = catchAsync(async (req, res) => {
     });
 
     try {
-      const { enrichProductData } = require('../../../services/ai/vectorStore');
+      const { enrichProductData } = require('../../../modules/ai/services/vectorStore');
       await vectorStoreService.loadPromise;
       if (finalProduct && finalProduct.status === 'active') {
         await vectorStoreService.upsertProduct(enrichProductData(finalProduct.toJSON()));
@@ -2114,7 +2114,7 @@ const restockProduct = catchAsync(async (req, res) => {
 
   // Đồng bộ vector store sau khi stock thay đổi để chatbot hiển thị đúng trạng thái tồn kho
   try {
-    const { enrichProductData } = require('../../../services/ai/vectorStore');
+    const { enrichProductData } = require('../../../modules/ai/services/vectorStore');
     await vectorStoreService.loadPromise;
     const productForIndex = await adminRepository.findProductById(productId, {
       include: [

@@ -5,7 +5,7 @@ const RAGPipeline = require('./services/ragPipeline');
 const ChatbotLLMGateway = require('./services/chatbotLLMGateway');
 let vectorStoreService;
 try {
-  vectorStoreService = require('../../services/ai/vectorStore');
+  vectorStoreService = require('./services/vectorStore');
 } catch (e) {
   vectorStoreService = null;
 }

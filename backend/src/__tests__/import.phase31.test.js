@@ -54,7 +54,7 @@ jest.mock('../shared/adminAudit', () => ({
 }));
 
 // Mock vectorStore để tránh gọi API embedding thật
-jest.mock('../services/ai/vectorStore', () => ({
+jest.mock('../modules/ai/services/vectorStore', () => ({
   upsertProduct: jest.fn().mockResolvedValue(undefined),
   save: jest.fn().mockResolvedValue(undefined),
 }));

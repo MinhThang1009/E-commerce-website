@@ -7,12 +7,12 @@ const {
   ProductImage,
   ProductVariant,
   sequelize,
-} = require('../../models');
+} = require('../../../models');
 const vectorStoreService = require('./vectorStore');
 const { detectLanguage } = require('./languageDetector');
-const { expandAbbreviations, classifyIntent } = require('../../modules/ai/services/aiPolicy');
-const logger = require('../../utils/logger');
-const { getRedisClient } = require('../../config/redis');
+const { expandAbbreviations, classifyIntent } = require('./aiPolicy');
+const logger = require('../../../utils/logger');
+const { getRedisClient } = require('../../../config/redis');
 const promptBuilder = require('./promptBuilder');
 const responseParser = require('./responseParser');
 const keywordFallback = require('./keywordFallback');

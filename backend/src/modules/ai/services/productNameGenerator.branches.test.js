@@ -13,7 +13,7 @@
 
 // ── Mocks ─────────────────────────────────────────────────────────────────────
 
-jest.mock('../../utils/logger', () => ({
+jest.mock('../../../utils/logger', () => ({
   info: jest.fn(),
   warn: jest.fn(),
   error: jest.fn(),
@@ -22,7 +22,7 @@ jest.mock('../../utils/logger', () => ({
 
 const mockAttributeValueFindAll = jest.fn();
 
-jest.mock('../../models', () => ({
+jest.mock('../../../models', () => ({
   AttributeValue: {
     associations: { attributeGroup: true },
     findAll: (...args) => mockAttributeValueFindAll(...args),
@@ -109,7 +109,9 @@ describe('previewProductName — line 119: options default = {}', () => {
   it('options = undefined → separator mặc định " " — generatedName nối bằng space', async () => {
     mockAttributeValueFindAll.mockResolvedValue([
       {
-        id: 1, name: 'Silver', nameTemplate: null,
+        id: 1,
+        name: 'Silver',
+        nameTemplate: null,
         attributeGroup: { id: 1, name: 'Color', type: 'color', sortOrder: 1 },
       },
     ]);
@@ -127,7 +129,9 @@ describe('previewProductName — line 119: options default = {}', () => {
     mockAttributeValueFindAll.mockResolvedValue([]);
 
     // Truyền options nhưng không có separator → destructure default
-    const result = await productNameGenerator.previewProductName('Lenovo', [], { includeDetails: false });
+    const result = await productNameGenerator.previewProductName('Lenovo', [], {
+      includeDetails: false,
+    });
     expect(result.parts).toEqual(['Lenovo']);
   });
 });
@@ -151,7 +155,7 @@ describe('batchGenerateNames — line 210: separator default = " "', () => {
     // Không truyền separator (undefined) → default = ' '
     const results = await productNameGenerator.batchGenerateNames(
       [{ id: 'v1', baseName: 'Surface', selectedAttributes: [1] }],
-      undefined  // separator = undefined → default ' '
+      undefined, // separator = undefined → default ' '
     );
 
     expect(results).toHaveLength(1);
@@ -179,7 +183,7 @@ describe('generateProductName — line 72: nameToAdd = nameTemplate || name', ()
       {
         id: 1,
         name: 'Blue',
-        nameTemplate: '',      // falsy empty string → || triggers → dùng name
+        nameTemplate: '', // falsy empty string → || triggers → dùng name
         attributeGroup: { name: 'Color', type: 'color', sortOrder: 1 },
       },
     ]);
@@ -194,7 +198,7 @@ describe('generateProductName — line 72: nameToAdd = nameTemplate || name', ()
       {
         id: 2,
         name: 'Red',
-        nameTemplate: 0,       // 0 → falsy → || name = 'Red'
+        nameTemplate: 0, // 0 → falsy → || name = 'Red'
         attributeGroup: { name: 'Color', type: 'color', sortOrder: 1 },
       },
     ]);

@@ -307,12 +307,12 @@ jest.mock('../utils/logger', () => ({
   debug: jest.fn(),
 }));
 
-jest.mock('../services/ai/embedding', () => ({
+jest.mock('../modules/ai/services/embedding', () => ({
   embed: jest.fn().mockResolvedValue([]),
   isAvailable: jest.fn().mockReturnValue(false),
 }));
 
-jest.mock('../services/ai/viEmbedding', () => ({
+jest.mock('../modules/ai/services/viEmbedding', () => ({
   embed: jest.fn().mockResolvedValue([]),
   isAvailable: jest.fn().mockReturnValue(false),
 }));
@@ -330,7 +330,7 @@ describe('HybridVectorStore.cosineSimilarity — line 148 false path', () => {
   let store;
 
   beforeAll(() => {
-    store = require('../services/ai/vectorStore');
+    store = require('../modules/ai/services/vectorStore');
   });
 
   it('trả về similarity bình thường khi hai vectors ortho (finite result)', () => {

@@ -59,7 +59,7 @@ jest.mock('../shared/adminAudit', () => ({
 const mockVectorAddProduct = jest.fn().mockResolvedValue(undefined);
 const mockVectorSave = jest.fn().mockResolvedValue(undefined);
 
-jest.mock('../services/ai/vectorStore', () => ({
+jest.mock('../modules/ai/services/vectorStore', () => ({
   upsertProduct: (...args) => mockVectorAddProduct(...args),
   save: (...args) => mockVectorSave(...args),
   enrichProductData: (d) => d,

@@ -1,5 +1,5 @@
-const logger = require('../../utils/logger');
-const { AttributeValue, AttributeGroup } = require('../../models');
+const logger = require('../../../utils/logger');
+const { AttributeValue, AttributeGroup } = require('../../../models');
 
 // Định nghĩa association nếu chưa tồn tại
 if (!AttributeValue.associations.attributeGroup) {
@@ -27,11 +27,7 @@ class ProductNameGeneratorService {
    * @param {string} separator - Ký tự phân cách giữa các phần tên (mặc định: " ")
    * @returns {Promise<string>} Tên sản phẩm đã tạo
    */
-  async generateProductName(
-    baseName,
-    selectedAttributes = [],
-    separator = ' '
-  ) {
+  async generateProductName(baseName, selectedAttributes = [], separator = ' ') {
     try {
       if (!baseName) {
         throw new Error('Base name is required');
@@ -89,20 +85,10 @@ class ProductNameGeneratorService {
    * @param {string} separator - Ký tự phân cách giữa các phần tên
    * @returns {Promise<string>} Tên sản phẩm đã tạo
    */
-  async generateVariantName(
-    baseName,
-    attributesCombination = {},
-    separator = ' '
-  ) {
+  async generateVariantName(baseName, attributesCombination = {}, separator = ' ') {
     try {
-      const selectedAttributeIds = Object.values(attributesCombination).filter(
-        (id) => id
-      );
-      return this.generateProductName(
-        baseName,
-        selectedAttributeIds,
-        separator
-      );
+      const selectedAttributeIds = Object.values(attributesCombination).filter((id) => id);
+      return this.generateProductName(baseName, selectedAttributeIds, separator);
     } catch (error) {
       logger.error('Error generating variant name:', error);
       throw error;
@@ -120,11 +106,7 @@ class ProductNameGeneratorService {
     try {
       const { separator = ' ', includeDetails = false } = options;
 
-      const generatedName = await this.generateProductName(
-        baseName,
-        selectedAttributes,
-        separator
-      );
+      const generatedName = await this.generateProductName(baseName, selectedAttributes, separator);
 
       const result = {
         originalName: baseName,
@@ -216,7 +198,7 @@ class ProductNameGeneratorService {
         const generatedName = await this.generateProductName(
           baseName,
           selectedAttributes,
-          separator
+          separator,
         );
 
         results.push({
@@ -236,4 +218,3 @@ class ProductNameGeneratorService {
 }
 
 module.exports = new ProductNameGeneratorService();
-

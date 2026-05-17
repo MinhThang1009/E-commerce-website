@@ -6,7 +6,7 @@ const logger = require('../utils/logger');
 // Thử load vectorStore service, nếu không có thì bỏ qua
 let vectorStoreService;
 try {
-  vectorStoreService = require('../services/ai/vectorStore');
+  vectorStoreService = require('../modules/ai/services/vectorStore');
 } catch (e) {
   vectorStoreService = null;
 }
@@ -44,8 +44,12 @@ const Product = sequelize.define(
     // Virtual backward-compat: `product.name` maps to nameVi
     name: {
       type: DataTypes.VIRTUAL,
-      get() { return this.getDataValue('nameVi'); },
-      set(v) { this.setDataValue('nameVi', v); },
+      get() {
+        return this.getDataValue('nameVi');
+      },
+      set(v) {
+        this.setDataValue('nameVi', v);
+      },
     },
     // Slug cho URL thân thiện
     slug: {
@@ -79,16 +83,24 @@ const Product = sequelize.define(
     shortDescriptionEn: { type: DataTypes.TEXT, allowNull: true },
     shortDescription: {
       type: DataTypes.VIRTUAL,
-      get() { return this.getDataValue('shortDescriptionVi'); },
-      set(v) { this.setDataValue('shortDescriptionVi', v); },
+      get() {
+        return this.getDataValue('shortDescriptionVi');
+      },
+      set(v) {
+        this.setDataValue('shortDescriptionVi', v);
+      },
     },
     // Mô tả chi tiết — tiếng Việt
     descriptionVi: { type: DataTypes.TEXT, allowNull: true },
     descriptionEn: { type: DataTypes.TEXT, allowNull: true },
     description: {
       type: DataTypes.VIRTUAL,
-      get() { return this.getDataValue('descriptionVi'); },
-      set(v) { this.setDataValue('descriptionVi', v); },
+      get() {
+        return this.getDataValue('descriptionVi');
+      },
+      set(v) {
+        this.setDataValue('descriptionVi', v);
+      },
     },
     // Trạng thái sản phẩm
     status: {
@@ -129,10 +141,7 @@ const Product = sequelize.define(
         }
       },
       set(value) {
-        this.setDataValue(
-          'tags',
-          typeof value === 'object' ? JSON.stringify(value) : value
-        );
+        this.setDataValue('tags', typeof value === 'object' ? JSON.stringify(value) : value);
       },
     },
     // Thông số kỹ thuật (JSON object)
@@ -151,7 +160,7 @@ const Product = sequelize.define(
       set(value) {
         this.setDataValue(
           'specifications',
-          typeof value === 'object' ? JSON.stringify(value) : value
+          typeof value === 'object' ? JSON.stringify(value) : value,
         );
       },
     },
@@ -169,10 +178,7 @@ const Product = sequelize.define(
         }
       },
       set(value) {
-        this.setDataValue(
-          'attributes',
-          typeof value === 'object' ? JSON.stringify(value) : value
-        );
+        this.setDataValue('attributes', typeof value === 'object' ? JSON.stringify(value) : value);
       },
     },
     // Số lượng tồn kho (cho sản phẩm không có variant)
@@ -212,7 +218,7 @@ const Product = sequelize.define(
       set(value) {
         this.setDataValue(
           'shippingInfo',
-          typeof value === 'object' ? JSON.stringify(value) : value
+          typeof value === 'object' ? JSON.stringify(value) : value,
         );
       },
     },
@@ -221,16 +227,24 @@ const Product = sequelize.define(
     seoTitleEn: { type: DataTypes.STRING(500), allowNull: true },
     seoTitle: {
       type: DataTypes.VIRTUAL,
-      get() { return this.getDataValue('seoTitleVi'); },
-      set(v) { this.setDataValue('seoTitleVi', v); },
+      get() {
+        return this.getDataValue('seoTitleVi');
+      },
+      set(v) {
+        this.setDataValue('seoTitleVi', v);
+      },
     },
     // Mô tả SEO — tiếng Việt
     seoDescriptionVi: { type: DataTypes.TEXT, allowNull: true },
     seoDescriptionEn: { type: DataTypes.TEXT, allowNull: true },
     seoDescription: {
       type: DataTypes.VIRTUAL,
-      get() { return this.getDataValue('seoDescriptionVi'); },
-      set(v) { this.setDataValue('seoDescriptionVi', v); },
+      get() {
+        return this.getDataValue('seoDescriptionVi');
+      },
+      set(v) {
+        this.setDataValue('seoDescriptionVi', v);
+      },
     },
     // SEO Keywords (JSON array)
     seoKeywords: {
@@ -246,10 +260,7 @@ const Product = sequelize.define(
         }
       },
       set(value) {
-        this.setDataValue(
-          'seoKeywords',
-          typeof value === 'object' ? JSON.stringify(value) : value
-        );
+        this.setDataValue('seoKeywords', typeof value === 'object' ? JSON.stringify(value) : value);
       },
     },
     // FAQ sản phẩm (JSON array: [{q, a}]) — thêm qua migration 2025122401
@@ -309,12 +320,17 @@ const Product = sequelize.define(
           if (vectorStoreService && product.status === 'active') {
             const Category = require('./category');
             const ProductImage = require('./productImage');
-            const { enrichProductData } = require('../services/ai/vectorStore');
+            const { enrichProductData } = require('../modules/ai/services/vectorStore');
             const fullProduct = await Product.findByPk(product.id, {
               include: [
                 { model: Category, as: 'categories', attributes: ['name'] },
                 { model: Category, as: 'category', attributes: ['name'] },
-                { model: ProductImage, as: 'productImages', attributes: ['imageUrl', 'isThumbnail'], required: false },
+                {
+                  model: ProductImage,
+                  as: 'productImages',
+                  attributes: ['imageUrl', 'isThumbnail'],
+                  required: false,
+                },
               ],
             });
             if (fullProduct) {
@@ -337,13 +353,23 @@ const Product = sequelize.define(
               const Category = require('./category');
               const ProductImage = require('./productImage');
               const ProductVariant = require('./productVariant');
-              const { enrichProductData } = require('../services/ai/vectorStore');
+              const { enrichProductData } = require('../modules/ai/services/vectorStore');
               const fullProduct = await Product.findByPk(product.id, {
                 include: [
                   { model: Category, as: 'categories', attributes: ['name'] },
                   { model: Category, as: 'category', attributes: ['name'] },
-                  { model: ProductImage, as: 'productImages', attributes: ['imageUrl', 'isThumbnail'], required: false },
-                  { model: ProductVariant, as: 'variants', attributes: ['stockQuantity'], required: false },
+                  {
+                    model: ProductImage,
+                    as: 'productImages',
+                    attributes: ['imageUrl', 'isThumbnail'],
+                    required: false,
+                  },
+                  {
+                    model: ProductVariant,
+                    as: 'variants',
+                    attributes: ['stockQuantity'],
+                    required: false,
+                  },
                 ],
               });
               if (fullProduct) {
@@ -352,7 +378,7 @@ const Product = sequelize.define(
               }
             } else {
               vectorStoreService.items = vectorStoreService.items.filter(
-                (item) => item.metadata.id !== product.id
+                (item) => item.metadata.id !== product.id,
               );
               await vectorStoreService.save(); // Phải await
             }
@@ -366,7 +392,7 @@ const Product = sequelize.define(
         try {
           if (vectorStoreService) {
             vectorStoreService.items = vectorStoreService.items.filter(
-              (item) => item.metadata.id !== product.id
+              (item) => item.metadata.id !== product.id,
             );
             await vectorStoreService.save(); // Phải await
           }
@@ -375,7 +401,7 @@ const Product = sequelize.define(
         }
       },
     },
-  }
+  },
 );
 
 module.exports = Product;

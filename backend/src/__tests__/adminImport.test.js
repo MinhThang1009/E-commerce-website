@@ -19,7 +19,7 @@ jest.mock('../utils/logger', () => ({
   debug: jest.fn(),
 }));
 
-jest.mock('../services/ai/vectorStore', () => ({
+jest.mock('../modules/ai/services/vectorStore', () => ({
   upsertProduct: jest.fn().mockResolvedValue(undefined),
   save: jest.fn().mockResolvedValue(undefined),
   loadPromise: Promise.resolve(),
@@ -874,7 +874,7 @@ describe('POST /api/admin/products/import — lines 264-265: validRows filter v�
 
 describe('POST /api/admin/products/import — lines 394-397: vectorStore sync', () => {
   test('gọi vectorStoreService.upsertProduct và save sau khi import thành công', async () => {
-    const { upsertProduct, save } = require('../services/ai/vectorStore');
+    const { upsertProduct, save } = require('../modules/ai/services/vectorStore');
 
     // Set up findAll to return a product for the vector sync
     Product.findAll.mockResolvedValueOnce([

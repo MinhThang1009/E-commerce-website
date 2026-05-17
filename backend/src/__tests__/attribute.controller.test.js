@@ -87,7 +87,7 @@ const mockPreviewProductName = jest.fn();
 const mockGetNameAffectingAttributes = jest.fn();
 const mockBatchGenerateNames = jest.fn();
 
-jest.mock('../services/ai/productNameGenerator', () => ({
+jest.mock('../modules/ai/services/productNameGenerator', () => ({
   previewProductName: (...args) => mockPreviewProductName(...args),
   getNameAffectingAttributes: (...args) => mockGetNameAffectingAttributes(...args),
   batchGenerateNames: (...args) => mockBatchGenerateNames(...args),

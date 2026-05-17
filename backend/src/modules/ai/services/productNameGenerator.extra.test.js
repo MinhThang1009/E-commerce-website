@@ -15,11 +15,14 @@ describe('productNameGenerator module load — association setup khi chưa có',
     const mockBelongsTo = jest.fn();
     const mockHasMany = jest.fn();
 
-    jest.mock('../../utils/logger', () => ({
-      info: jest.fn(), warn: jest.fn(), error: jest.fn(), debug: jest.fn(),
+    jest.mock('../../../utils/logger', () => ({
+      info: jest.fn(),
+      warn: jest.fn(),
+      error: jest.fn(),
+      debug: jest.fn(),
     }));
 
-    jest.mock('../../models', () => ({
+    jest.mock('../../../models', () => ({
       AttributeValue: {
         associations: {}, // KHÔNG có attributeGroup → phải gọi belongsTo (line 6)
         findAll: jest.fn().mockResolvedValue([]),
@@ -44,11 +47,14 @@ describe('productNameGenerator module load — association setup khi chưa có',
     const mockBelongsTo = jest.fn();
     const mockHasMany = jest.fn();
 
-    jest.mock('../../utils/logger', () => ({
-      info: jest.fn(), warn: jest.fn(), error: jest.fn(), debug: jest.fn(),
+    jest.mock('../../../utils/logger', () => ({
+      info: jest.fn(),
+      warn: jest.fn(),
+      error: jest.fn(),
+      debug: jest.fn(),
     }));
 
-    jest.mock('../../models', () => ({
+    jest.mock('../../../models', () => ({
       AttributeValue: {
         associations: { attributeGroup: true }, // đã có → không gọi belongsTo
         findAll: jest.fn().mockResolvedValue([]),
@@ -75,11 +81,14 @@ describe('productNameGenerator — generateVariantName() error propagation (line
   beforeEach(() => {
     jest.resetModules();
 
-    jest.mock('../../utils/logger', () => ({
-      info: jest.fn(), warn: jest.fn(), error: jest.fn(), debug: jest.fn(),
+    jest.mock('../../../utils/logger', () => ({
+      info: jest.fn(),
+      warn: jest.fn(),
+      error: jest.fn(),
+      debug: jest.fn(),
     }));
 
-    jest.mock('../../models', () => ({
+    jest.mock('../../../models', () => ({
       AttributeValue: {
         associations: { attributeGroup: true },
         findAll: jest.fn().mockRejectedValue(new Error('variant DB crash')),
@@ -95,13 +104,13 @@ describe('productNameGenerator — generateVariantName() error propagation (line
   });
 
   it('AttributeValue.findAll throw trong generateVariantName → propagate lỗi (lines 107-108)', async () => {
-    await expect(
-      service.generateVariantName('MacBook', { colorGroup: 1 })
-    ).rejects.toThrow('variant DB crash');
+    await expect(service.generateVariantName('MacBook', { colorGroup: 1 })).rejects.toThrow(
+      'variant DB crash',
+    );
   });
 
   it('logger.error được gọi khi generateVariantName ném lỗi', async () => {
-    const mockLogger = require('../../utils/logger');
+    const mockLogger = require('../../../utils/logger');
 
     try {
       await service.generateVariantName('MacBook', { colorGroup: 1 });
@@ -111,7 +120,7 @@ describe('productNameGenerator — generateVariantName() error propagation (line
 
     expect(mockLogger.error).toHaveBeenCalledWith(
       expect.stringContaining('Error generating'),
-      expect.any(Error)
+      expect.any(Error),
     );
   });
 });
@@ -124,11 +133,14 @@ describe('productNameGenerator — previewProductName() error propagation (lines
   beforeEach(() => {
     jest.resetModules();
 
-    jest.mock('../../utils/logger', () => ({
-      info: jest.fn(), warn: jest.fn(), error: jest.fn(), debug: jest.fn(),
+    jest.mock('../../../utils/logger', () => ({
+      info: jest.fn(),
+      warn: jest.fn(),
+      error: jest.fn(),
+      debug: jest.fn(),
     }));
 
-    jest.mock('../../models', () => ({
+    jest.mock('../../../models', () => ({
       AttributeValue: {
         associations: { attributeGroup: true },
         findAll: jest.fn().mockRejectedValue(new Error('preview DB timeout')),
@@ -144,13 +156,11 @@ describe('productNameGenerator — previewProductName() error propagation (lines
   });
 
   it('AttributeValue.findAll throw trong previewProductName → propagate lỗi (lines 164-165)', async () => {
-    await expect(
-      service.previewProductName('Dell', [1, 2])
-    ).rejects.toThrow('preview DB timeout');
+    await expect(service.previewProductName('Dell', [1, 2])).rejects.toThrow('preview DB timeout');
   });
 
   it('logger.error được gọi khi previewProductName ném lỗi', async () => {
-    const mockLogger = require('../../utils/logger');
+    const mockLogger = require('../../../utils/logger');
 
     try {
       await service.previewProductName('Dell', [1]);
@@ -160,7 +170,7 @@ describe('productNameGenerator — previewProductName() error propagation (lines
 
     expect(mockLogger.error).toHaveBeenCalledWith(
       expect.stringContaining('Error previewing'),
-      expect.any(Error)
+      expect.any(Error),
     );
   });
 });

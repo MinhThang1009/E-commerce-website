@@ -10,7 +10,7 @@
 
 // ── Mocks ────────────────────────────────────────────────────────────────────
 
-jest.mock('../../utils/logger', () => ({
+jest.mock('../../../utils/logger', () => ({
   info: jest.fn(),
   warn: jest.fn(),
   error: jest.fn(),
@@ -30,8 +30,11 @@ describe('EmbeddingService — cache entry hết hạn (lines 15-16)', () => {
 
   beforeEach(() => {
     jest.resetModules();
-    jest.mock('../../utils/logger', () => ({
-      info: jest.fn(), warn: jest.fn(), error: jest.fn(), debug: jest.fn(),
+    jest.mock('../../../utils/logger', () => ({
+      info: jest.fn(),
+      warn: jest.fn(),
+      error: jest.fn(),
+      debug: jest.fn(),
     }));
     const mockPost = jest.fn();
     jest.mock('axios', () => ({ post: mockPost }));
@@ -40,7 +43,10 @@ describe('EmbeddingService — cache entry hết hạn (lines 15-16)', () => {
     service = require('./embedding');
     axiosMod = require('axios');
 
-    jest.spyOn(global, 'setTimeout').mockImplementation((fn) => { fn(); return 0; });
+    jest.spyOn(global, 'setTimeout').mockImplementation((fn) => {
+      fn();
+      return 0;
+    });
   });
 
   afterEach(() => {
@@ -90,7 +96,10 @@ describe('EmbeddingService — cache entry hết hạn (lines 15-16)', () => {
 
     // Restore Date.now → entry mới vừa lưu còn hạn → lần 3 dùng cache
     jest.restoreAllMocks();
-    jest.spyOn(global, 'setTimeout').mockImplementation((fn) => { fn(); return 0; });
+    jest.spyOn(global, 'setTimeout').mockImplementation((fn) => {
+      fn();
+      return 0;
+    });
 
     await service.generateEmbedding('expire twice');
     expect(axiosMod.post).toHaveBeenCalledTimes(2); // vẫn 2, lần 3 dùng cache
@@ -105,8 +114,11 @@ describe('EmbeddingService — cache FIFO eviction khi đầy (lines 26-27)', ()
 
   beforeEach(() => {
     jest.resetModules();
-    jest.mock('../../utils/logger', () => ({
-      info: jest.fn(), warn: jest.fn(), error: jest.fn(), debug: jest.fn(),
+    jest.mock('../../../utils/logger', () => ({
+      info: jest.fn(),
+      warn: jest.fn(),
+      error: jest.fn(),
+      debug: jest.fn(),
     }));
     const mockPost = jest.fn();
     jest.mock('axios', () => ({ post: mockPost }));
@@ -115,7 +127,10 @@ describe('EmbeddingService — cache FIFO eviction khi đầy (lines 26-27)', ()
     service = require('./embedding');
     axiosMod = require('axios');
 
-    jest.spyOn(global, 'setTimeout').mockImplementation((fn) => { fn(); return 0; });
+    jest.spyOn(global, 'setTimeout').mockImplementation((fn) => {
+      fn();
+      return 0;
+    });
   });
 
   afterEach(() => {
@@ -200,7 +215,7 @@ describe('EmbeddingService — initialize() lỗi (line 48)', () => {
     // Dùng global variable để tránh Jest mock factory hoisting restriction
     global.__mockEmbedInitCallCount = 0;
 
-    jest.mock('../../utils/logger', () => ({
+    jest.mock('../../../utils/logger', () => ({
       info: jest.fn().mockImplementation(() => {
         global.__mockEmbedInitCallCount = (global.__mockEmbedInitCallCount || 0) + 1;
         if (global.__mockEmbedInitCallCount === 1) {
@@ -217,12 +232,12 @@ describe('EmbeddingService — initialize() lỗi (line 48)', () => {
 
     // Khi require embedding, constructor chạy initialize() → logger.info throw → catch
     require('./embedding');
-    const mockLogger = require('../../utils/logger');
+    const mockLogger = require('../../../utils/logger');
 
     // Nhánh catch trong initialize() gọi logger.error
     expect(mockLogger.error).toHaveBeenCalledWith(
       expect.stringContaining('Khởi tạo Embedding Service thất bại'),
-      expect.any(String)
+      expect.any(String),
     );
 
     delete process.env.OPENROUTER_API_KEY;

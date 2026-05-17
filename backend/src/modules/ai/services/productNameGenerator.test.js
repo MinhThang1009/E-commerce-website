@@ -8,18 +8,18 @@
  */
 
 // ── Mocks ────────────────────────────────────────────────────────────────────
-jest.mock('../../utils/logger', () => ({
+jest.mock('../../../utils/logger', () => ({
   info: jest.fn(),
   warn: jest.fn(),
   error: jest.fn(),
   debug: jest.fn(),
 }));
 
-// Mock models — service require '../../models'
+// Mock models — service require '../../../models'
 // Biến mock phải được khai báo TRONG factory function để tránh lỗi hoisting với jest.mock
 const mockAttributeValueFindAll = jest.fn();
 
-jest.mock('../../models', () => ({
+jest.mock('../../../models', () => ({
   AttributeValue: {
     associations: { attributeGroup: true }, // đã có association → service không gọi belongsTo
     findAll: (...args) => mockAttributeValueFindAll(...args),
@@ -55,15 +55,15 @@ beforeEach(() => {
 // ─────────────────────────────────────────────────────────────────────────────
 describe('generateProductName()', () => {
   it('baseName rỗng → throw Error', async () => {
-    await expect(
-      productNameGenerator.generateProductName('', [1])
-    ).rejects.toThrow('Base name is required');
+    await expect(productNameGenerator.generateProductName('', [1])).rejects.toThrow(
+      'Base name is required',
+    );
   });
 
   it('baseName null → throw Error', async () => {
-    await expect(
-      productNameGenerator.generateProductName(null, [1])
-    ).rejects.toThrow('Base name is required');
+    await expect(productNameGenerator.generateProductName(null, [1])).rejects.toThrow(
+      'Base name is required',
+    );
   });
 
   it('selectedAttributes rỗng → trả về baseName nguyên', async () => {
@@ -107,9 +107,7 @@ describe('generateProductName()', () => {
   });
 
   it('separator tùy chỉnh "/" được áp dụng', async () => {
-    mockAttributeValueFindAll.mockResolvedValue([
-      makeAttrValue({ name: 'White' }),
-    ]);
+    mockAttributeValueFindAll.mockResolvedValue([makeAttrValue({ name: 'White' })]);
 
     const result = await productNameGenerator.generateProductName('MacBook', [1], '/');
     expect(result).toBe('MacBook/White');
@@ -127,24 +125,19 @@ describe('generateProductName()', () => {
   it('AttributeValue.findAll throw → propagate error', async () => {
     mockAttributeValueFindAll.mockRejectedValue(new Error('DB connection lost'));
 
-    await expect(
-      productNameGenerator.generateProductName('MacBook', [1])
-    ).rejects.toThrow('DB connection lost');
+    await expect(productNameGenerator.generateProductName('MacBook', [1])).rejects.toThrow(
+      'DB connection lost',
+    );
   });
 });
 
 // ─────────────────────────────────────────────────────────────────────────────
 describe('generateVariantName()', () => {
   it('truyền attributesCombination object → delegate sang generateProductName', async () => {
-    mockAttributeValueFindAll.mockResolvedValue([
-      makeAttrValue({ name: 'Red' }),
-    ]);
+    mockAttributeValueFindAll.mockResolvedValue([makeAttrValue({ name: 'Red' })]);
 
     // attributesCombination: { groupId: valueId }
-    const result = await productNameGenerator.generateVariantName(
-      'iPhone 17',
-      { colorGroup: 1 }
-    );
+    const result = await productNameGenerator.generateVariantName('iPhone 17', { colorGroup: 1 });
 
     expect(result).toBe('iPhone 17 Red');
   });
@@ -167,9 +160,7 @@ describe('generateVariantName()', () => {
 // ─────────────────────────────────────────────────────────────────────────────
 describe('previewProductName()', () => {
   it('trả về originalName, generatedName, hasChanges', async () => {
-    mockAttributeValueFindAll.mockResolvedValue([
-      makeAttrValue({ name: 'Blue' }),
-    ]);
+    mockAttributeValueFindAll.mockResolvedValue([makeAttrValue({ name: 'Blue' })]);
 
     const result = await productNameGenerator.previewProductName('Dell', [1]);
 
@@ -188,9 +179,7 @@ describe('previewProductName()', () => {
   });
 
   it('parts là mảng các thành phần của generatedName', async () => {
-    mockAttributeValueFindAll.mockResolvedValue([
-      makeAttrValue({ name: 'Silver' }),
-    ]);
+    mockAttributeValueFindAll.mockResolvedValue([makeAttrValue({ name: 'Silver' })]);
 
     const result = await productNameGenerator.previewProductName('Asus', [1]);
 
@@ -237,10 +226,7 @@ describe('previewProductName()', () => {
 // ─────────────────────────────────────────────────────────────────────────────
 describe('getNameAffectingAttributes()', () => {
   it('trả về danh sách attribute values có affectsName=true', async () => {
-    const attrs = [
-      makeAttrValue({ id: 1, name: 'Red' }),
-      makeAttrValue({ id: 2, name: '8GB' }),
-    ];
+    const attrs = [makeAttrValue({ id: 1, name: 'Red' }), makeAttrValue({ id: 2, name: '8GB' })];
     mockAttributeValueFindAll.mockResolvedValue(attrs);
 
     const result = await productNameGenerator.getNameAffectingAttributes();
@@ -249,7 +235,7 @@ describe('getNameAffectingAttributes()', () => {
     expect(mockAttributeValueFindAll).toHaveBeenCalledWith(
       expect.objectContaining({
         where: expect.objectContaining({ affectsName: true, isActive: true }),
-      })
+      }),
     );
   });
 
@@ -264,9 +250,7 @@ describe('getNameAffectingAttributes()', () => {
   it('DB throw → propagate error', async () => {
     mockAttributeValueFindAll.mockRejectedValue(new Error('timeout'));
 
-    await expect(
-      productNameGenerator.getNameAffectingAttributes()
-    ).rejects.toThrow('timeout');
+    await expect(productNameGenerator.getNameAffectingAttributes()).rejects.toThrow('timeout');
   });
 
   it('gọi AttributeValue.findAll với include AttributeGroup', async () => {
@@ -275,10 +259,8 @@ describe('getNameAffectingAttributes()', () => {
 
     expect(mockAttributeValueFindAll).toHaveBeenCalledWith(
       expect.objectContaining({
-        include: expect.arrayContaining([
-          expect.objectContaining({ as: 'attributeGroup' }),
-        ]),
-      })
+        include: expect.arrayContaining([expect.objectContaining({ as: 'attributeGroup' })]),
+      }),
     );
   });
 });
@@ -320,9 +302,7 @@ describe('batchGenerateNames()', () => {
     mockAttributeValueFindAll.mockReset();
     mockAttributeValueFindAll.mockResolvedValue([makeAttrValue({ name: 'Pro' })]);
 
-    const items = [
-      { id: 1, baseName: 'MacBook', selectedAttributes: [1] },
-    ];
+    const items = [{ id: 1, baseName: 'MacBook', selectedAttributes: [1] }];
 
     const results = await productNameGenerator.batchGenerateNames(items, '-');
 
@@ -335,7 +315,7 @@ describe('batchGenerateNames()', () => {
     await expect(
       productNameGenerator.batchGenerateNames([
         { id: 1, baseName: 'Test', selectedAttributes: [99] },
-      ])
+      ]),
     ).rejects.toThrow('DB error');
   });
 
@@ -356,24 +336,24 @@ describe('batchGenerateNames()', () => {
 
 describe('generateVariantName() — catch block (lines 107-108)', () => {
   it('attributesCombination không hợp lệ (null) → catch ghi error log và re-throw', async () => {
-    const logger = require('../../utils/logger');
+    const logger = require('../../../utils/logger');
     logger.error.mockClear();
 
     // Object.values(null) throw TypeError đồng bộ → catch trong generateVariantName kích hoạt
-    await expect(
-      productNameGenerator.generateVariantName('Phone', null)
-    ).rejects.toThrow(TypeError);
+    await expect(productNameGenerator.generateVariantName('Phone', null)).rejects.toThrow(
+      TypeError,
+    );
 
     expect(logger.error).toHaveBeenCalledWith(
       'Error generating variant name:',
-      expect.any(TypeError)
+      expect.any(TypeError),
     );
   });
 
   it('catch block không nuốt lỗi — caller nhận được lỗi gốc', async () => {
     // Truyền null để bypass default parameter — Object.values(null) throw TypeError
-    await expect(
-      productNameGenerator.generateVariantName('Laptop', null)
-    ).rejects.toBeInstanceOf(TypeError);
+    await expect(productNameGenerator.generateVariantName('Laptop', null)).rejects.toBeInstanceOf(
+      TypeError,
+    );
   });
 });

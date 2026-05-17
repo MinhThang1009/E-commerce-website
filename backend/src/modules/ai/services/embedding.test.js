@@ -11,7 +11,7 @@
 
 // ── Setup ────────────────────────────────────────────────────────────────────
 
-jest.mock('../../utils/logger', () => ({
+jest.mock('../../../utils/logger', () => ({
   info: jest.fn(),
   warn: jest.fn(),
   error: jest.fn(),
@@ -36,29 +36,28 @@ function makeApiResponse(embedding) {
 describe('EmbeddingService — initialize()', () => {
   beforeEach(() => {
     jest.resetModules();
-    jest.mock('../../utils/logger', () => ({
-      info: jest.fn(), warn: jest.fn(), error: jest.fn(), debug: jest.fn(),
+    jest.mock('../../../utils/logger', () => ({
+      info: jest.fn(),
+      warn: jest.fn(),
+      error: jest.fn(),
+      debug: jest.fn(),
     }));
     jest.mock('axios', () => ({ post: jest.fn() }));
   });
 
   it('có OPENROUTER_API_KEY thật → logger.info được gọi', () => {
     process.env.OPENROUTER_API_KEY = 'real-key-abc123';
-    const mockLogger = require('../../utils/logger');
+    const mockLogger = require('../../../utils/logger');
     require('./embedding');
-    expect(mockLogger.info).toHaveBeenCalledWith(
-      expect.stringContaining('Embedding Service')
-    );
+    expect(mockLogger.info).toHaveBeenCalledWith(expect.stringContaining('Embedding Service'));
     delete process.env.OPENROUTER_API_KEY;
   });
 
   it('API key là "demo-key" → logger.warn được gọi', () => {
     process.env.OPENROUTER_API_KEY = 'demo-key';
-    const mockLogger = require('../../utils/logger');
+    const mockLogger = require('../../../utils/logger');
     require('./embedding');
-    expect(mockLogger.warn).toHaveBeenCalledWith(
-      expect.stringContaining('OpenRouter API key')
-    );
+    expect(mockLogger.warn).toHaveBeenCalledWith(expect.stringContaining('OpenRouter API key'));
   });
 });
 
@@ -68,8 +67,11 @@ describe('generateEmbedding() — API key guards', () => {
 
   beforeEach(() => {
     jest.resetModules();
-    jest.mock('../../utils/logger', () => ({
-      info: jest.fn(), warn: jest.fn(), error: jest.fn(), debug: jest.fn(),
+    jest.mock('../../../utils/logger', () => ({
+      info: jest.fn(),
+      warn: jest.fn(),
+      error: jest.fn(),
+      debug: jest.fn(),
     }));
     jest.mock('axios', () => ({ post: jest.fn() }));
     process.env.OPENROUTER_API_KEY = 'valid-test-key';
@@ -98,8 +100,11 @@ describe('generateEmbedding() — happy path + cache', () => {
 
   beforeEach(() => {
     jest.resetModules();
-    jest.mock('../../utils/logger', () => ({
-      info: jest.fn(), warn: jest.fn(), error: jest.fn(), debug: jest.fn(),
+    jest.mock('../../../utils/logger', () => ({
+      info: jest.fn(),
+      warn: jest.fn(),
+      error: jest.fn(),
+      debug: jest.fn(),
     }));
     // Không mock axios qua jest.mock — dùng require để có thể spy
     const mockPost = jest.fn();
@@ -146,7 +151,7 @@ describe('generateEmbedding() — happy path + cache', () => {
 
   it('text khác nhau → mỗi text gọi API riêng', async () => {
     const emb1 = makeEmbedding(1536);
-    const emb2 = makeEmbedding(1536).map(x => x + 0.1);
+    const emb2 = makeEmbedding(1536).map((x) => x + 0.1);
     axiosMod.post
       .mockResolvedValueOnce(makeApiResponse(emb1))
       .mockResolvedValueOnce(makeApiResponse(emb2));
@@ -170,7 +175,7 @@ describe('generateEmbedding() — happy path + cache', () => {
         headers: expect.objectContaining({
           Authorization: 'Bearer valid-test-key',
         }),
-      })
+      }),
     );
   });
 });
@@ -182,8 +187,11 @@ describe('generateEmbedding() — retry logic (no-op sleep)', () => {
 
   beforeEach(() => {
     jest.resetModules();
-    jest.mock('../../utils/logger', () => ({
-      info: jest.fn(), warn: jest.fn(), error: jest.fn(), debug: jest.fn(),
+    jest.mock('../../../utils/logger', () => ({
+      info: jest.fn(),
+      warn: jest.fn(),
+      error: jest.fn(),
+      debug: jest.fn(),
     }));
     const mockPost = jest.fn();
     jest.mock('axios', () => ({ post: mockPost }));
@@ -193,7 +201,10 @@ describe('generateEmbedding() — retry logic (no-op sleep)', () => {
     axiosMod = require('axios');
 
     // Override Promise-based sleep to resolve immediately
-    jest.spyOn(global, 'setTimeout').mockImplementation((fn) => { fn(); return 0; });
+    jest.spyOn(global, 'setTimeout').mockImplementation((fn) => {
+      fn();
+      return 0;
+    });
   });
 
   afterEach(() => {
@@ -242,8 +253,11 @@ describe('generateBatchEmbeddings()', () => {
 
   beforeEach(() => {
     jest.resetModules();
-    jest.mock('../../utils/logger', () => ({
-      info: jest.fn(), warn: jest.fn(), error: jest.fn(), debug: jest.fn(),
+    jest.mock('../../../utils/logger', () => ({
+      info: jest.fn(),
+      warn: jest.fn(),
+      error: jest.fn(),
+      debug: jest.fn(),
     }));
     const mockPost = jest.fn();
     jest.mock('axios', () => ({ post: mockPost }));
@@ -268,7 +282,7 @@ describe('generateBatchEmbeddings()', () => {
   });
 
   it('trả về mảng embedding cho từng text', async () => {
-    const embeddings = [makeEmbedding(3), makeEmbedding(3).map(x => x + 0.5)];
+    const embeddings = [makeEmbedding(3), makeEmbedding(3).map((x) => x + 0.5)];
     axiosMod.post.mockResolvedValue({
       data: { data: [{ embedding: embeddings[0] }, { embedding: embeddings[1] }] },
     });
@@ -290,7 +304,7 @@ describe('generateBatchEmbeddings()', () => {
     expect(axiosMod.post).toHaveBeenCalledWith(
       expect.any(String),
       expect.objectContaining({ input: ['hello'] }),
-      expect.any(Object)
+      expect.any(Object),
     );
   });
 
@@ -304,7 +318,7 @@ describe('generateBatchEmbeddings()', () => {
     expect(axiosMod.post).toHaveBeenCalledWith(
       expect.any(String),
       expect.any(Object),
-      expect.objectContaining({ timeout: 60000 })
+      expect.objectContaining({ timeout: 60000 }),
     );
   });
 });
@@ -316,8 +330,11 @@ describe('generateBatchEmbeddings() — retry (no-op sleep)', () => {
 
   beforeEach(() => {
     jest.resetModules();
-    jest.mock('../../utils/logger', () => ({
-      info: jest.fn(), warn: jest.fn(), error: jest.fn(), debug: jest.fn(),
+    jest.mock('../../../utils/logger', () => ({
+      info: jest.fn(),
+      warn: jest.fn(),
+      error: jest.fn(),
+      debug: jest.fn(),
     }));
     const mockPost = jest.fn();
     jest.mock('axios', () => ({ post: mockPost }));
@@ -326,7 +343,10 @@ describe('generateBatchEmbeddings() — retry (no-op sleep)', () => {
     service = require('./embedding');
     axiosMod = require('axios');
 
-    jest.spyOn(global, 'setTimeout').mockImplementation((fn) => { fn(); return 0; });
+    jest.spyOn(global, 'setTimeout').mockImplementation((fn) => {
+      fn();
+      return 0;
+    });
   });
 
   afterEach(() => {
@@ -364,8 +384,11 @@ describe('generateEmbedding() — cache FIFO eviction khi đầy (lines 26-27)',
 
   beforeEach(() => {
     jest.resetModules();
-    jest.mock('../../utils/logger', () => ({
-      info: jest.fn(), warn: jest.fn(), error: jest.fn(), debug: jest.fn(),
+    jest.mock('../../../utils/logger', () => ({
+      info: jest.fn(),
+      warn: jest.fn(),
+      error: jest.fn(),
+      debug: jest.fn(),
     }));
     const mockPost = jest.fn();
     jest.mock('axios', () => ({ post: mockPost }));

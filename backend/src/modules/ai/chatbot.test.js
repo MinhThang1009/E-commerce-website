@@ -29,7 +29,7 @@ jest.mock('../../models', () => ({
 }));
 
 // Mock vectorStore để tránh đọc vectorDb.json khi load chatbotService.js
-jest.mock('../../services/ai/vectorStore', () => ({
+jest.mock('./services/vectorStore', () => ({
   items: [],
   loadPromise: Promise.resolve(),
   hybridSearch: jest.fn().mockResolvedValue([]),
@@ -45,19 +45,19 @@ jest.mock('../../services/ai/vectorStore', () => ({
 jest.mock('axios');
 
 // Mock embedding services — chỉ cần khi test cosineSimilarity qua jest.requireActual
-jest.mock('../../services/ai/embedding', () => ({
+jest.mock('./services/embedding', () => ({
   getEmbedding: jest.fn().mockResolvedValue(new Array(1536).fill(0)),
   isAvailable: jest.fn().mockReturnValue(false),
 }));
 
-jest.mock('../../services/ai/viEmbedding', () => ({
+jest.mock('./services/viEmbedding', () => ({
   getEmbedding: jest.fn().mockResolvedValue(new Array(1024).fill(0)),
   isAvailable: jest.fn().mockReturnValue(false),
 }));
 
 // ---------- Require sau khi mock đã đăng ký ----------
 
-const chatbotService = require('../../services/ai/chatbotService');
+const chatbotService = require('./services/chatbotService');
 
 // ============================================================
 // ChatbotService.simpleKeywordMatch
@@ -257,7 +257,7 @@ describe('VectorStoreService.cosineSimilarity', () => {
   let vs;
 
   beforeAll(() => {
-    vs = jest.requireActual('../../services/ai/vectorStore');
+    vs = jest.requireActual('./services/vectorStore');
   });
 
   afterAll(async () => {

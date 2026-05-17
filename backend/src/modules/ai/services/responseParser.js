@@ -1,4 +1,4 @@
-const logger = require('../../utils/logger');
+const logger = require('../../../utils/logger');
 const { simpleKeywordMatch } = require('./keywordFallback');
 
 // Extract JSON object từ response text — xử lý trường hợp model wrap bằng text hoặc markdown

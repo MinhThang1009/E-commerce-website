@@ -53,7 +53,7 @@ jest.mock('../utils/productHelpers', () => ({
   generateVariantSku: jest.fn().mockReturnValue('SKU-GEN'),
 }));
 
-jest.mock('../services/ai/vectorStore', () => ({
+jest.mock('../modules/ai/services/vectorStore', () => ({
   upsertProduct: jest.fn().mockResolvedValue(undefined),
   save: jest.fn().mockResolvedValue(undefined),
   loadPromise: Promise.resolve(),
@@ -129,7 +129,7 @@ jest.mock('../config/redis', () => ({
   getRedisClient: jest.fn().mockResolvedValue(null),
 }));
 
-jest.mock('../services/ai/translateService', () => ({
+jest.mock('../modules/ai/services/translateService', () => ({
   translateBatch: jest.fn().mockResolvedValue(['translated en']),
 }));
 
@@ -350,7 +350,7 @@ function makeVariant(id, overrides = {}) {
 beforeEach(() => {
   jest.resetAllMocks();
 
-  const vs = require('../services/ai/vectorStore');
+  const vs = require('../modules/ai/services/vectorStore');
   vs.items = [];
   vs.upsertProduct.mockResolvedValue(undefined);
   vs.save.mockResolvedValue(undefined);
@@ -881,7 +881,7 @@ describe('PUT /api/admin/products/:id — line 1294: spec translation', () => {
     const savedSpec = makeSpec('CPU', 'Intel i9', null); // valueEn=null → needs translation
     ProductSpecification.create.mockResolvedValueOnce(savedSpec);
 
-    const { translateBatch } = require('../services/ai/translateService');
+    const { translateBatch } = require('../modules/ai/services/translateService');
     translateBatch.mockResolvedValueOnce(['Intel i9']);
 
     const res = await request.put('/api/admin/products/9110').send({
@@ -1628,7 +1628,7 @@ describe('PUT /api/admin/products/:id — line 1294: translated[i] undefined →
     const savedSpec = makeSpec('Battery', '5000mAh', null); // valueEn=null → needs translation
     ProductSpecification.create.mockResolvedValueOnce(savedSpec);
 
-    const { translateBatch } = require('../services/ai/translateService');
+    const { translateBatch } = require('../modules/ai/services/translateService');
     // translateBatch returns fewer items than expected (undefined at index 0)
     translateBatch.mockResolvedValueOnce([]); // empty → translated[0] = undefined → || null
 

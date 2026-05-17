@@ -1,5 +1,5 @@
 const { detectLanguage } = require('./languageDetector');
-const logger = require('../../utils/logger');
+const logger = require('../../../utils/logger');
 
 // Khớp từ khóa đơn giản (dùng khi AI không khả dụng hoặc parseAIResponse fail)
 function simpleKeywordMatch(userMessage, products) {
@@ -91,9 +91,7 @@ function simpleKeywordMatch(userMessage, products) {
   }
 
   if (
-    /sản phẩm mới|hàng mới|mới nhất|new\s*(product|arrival|item)s?|latest|newest/.test(
-      lowerMessage,
-    )
+    /sản phẩm mới|hàng mới|mới nhất|new\s*(product|arrival|item)s?|latest|newest/.test(lowerMessage)
   ) {
     if (process.env.NODE_ENV !== 'production') {
       logger.debug('Đã nhận diện ý định "sản phẩm mới"');

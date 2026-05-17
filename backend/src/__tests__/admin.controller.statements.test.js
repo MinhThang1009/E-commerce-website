@@ -53,7 +53,7 @@ jest.mock('../utils/productHelpers', () => ({
   generateVariantSku: jest.fn().mockReturnValue('SKU-GEN'),
 }));
 
-jest.mock('../services/ai/vectorStore', () => ({
+jest.mock('../modules/ai/services/vectorStore', () => ({
   upsertProduct: jest.fn().mockResolvedValue(undefined),
   save: jest.fn().mockResolvedValue(undefined),
   loadPromise: Promise.resolve(),
@@ -129,7 +129,7 @@ jest.mock('../config/redis', () => ({
   getRedisClient: jest.fn().mockResolvedValue(null),
 }));
 
-jest.mock('../services/ai/translateService', () => ({
+jest.mock('../modules/ai/services/translateService', () => ({
   translateBatch: jest.fn().mockResolvedValue(['translated value']),
 }));
 
@@ -354,7 +354,7 @@ function makeVariant(id, overrides = {}) {
 beforeEach(() => {
   jest.resetAllMocks();
 
-  const vs = require('../services/ai/vectorStore');
+  const vs = require('../modules/ai/services/vectorStore');
   vs.items = [];
   vs.upsertProduct.mockResolvedValue(undefined);
   vs.save.mockResolvedValue(undefined);
@@ -852,7 +852,7 @@ describe('PUT /api/admin/products/:id — line 1294: specs translation', () => {
     };
     ProductSpecification.create.mockResolvedValueOnce(savedSpec);
 
-    const { translateBatch } = require('../services/ai/translateService');
+    const { translateBatch } = require('../modules/ai/services/translateService');
     translateBatch.mockResolvedValueOnce(['Intel i7']);
 
     const res = await request.put('/api/admin/products/208').send({
@@ -1475,7 +1475,7 @@ describe('PUT /api/admin/products/:id — line 1350: vectorStore filter inactive
     ProductSpecification.findAll.mockResolvedValueOnce([]);
 
     // vectorStore has an item for product 300
-    const vs = require('../services/ai/vectorStore');
+    const vs = require('../modules/ai/services/vectorStore');
     vs.items = [{ metadata: { id: 300 } }, { metadata: { id: 999 } }];
 
     const res = await request.put('/api/admin/products/300').send({

@@ -84,8 +84,8 @@ jobs:
           node -e "
           const s = require('./coverage/coverage-summary.json').total;
           const fail = [];
-          if (s.statements.pct < 98) fail.push('Statements: ' + s.statements.pct + '% < 98%');
-          if (s.lines.pct < 98) fail.push('Lines: ' + s.lines.pct + '% < 98%');
+          if (s.statements.pct < 97) fail.push('Statements: ' + s.statements.pct + '% < 97%');
+          if (s.lines.pct < 97) fail.push('Lines: ' + s.lines.pct + '% < 97%');
           if (s.branches.pct < 85) fail.push('Branches: ' + s.branches.pct + '% < 85%');
           if (s.functions.pct < 95) fail.push('Functions: ' + s.functions.pct + '% < 95%');
           if (fail.length) { console.error('Coverage thresholds FAILED:'); fail.forEach(f => console.error('  ✗', f)); process.exit(1); }

@@ -15,7 +15,7 @@ class UsersService {
   async updateProfile({ userId, firstName, lastName, phone, avatar }) {
     const user = await this.usersRepository.findUserById(userId);
     if (!user) {
-      throw new AppError('Không tìm thấy người dùng', 404);
+      throw new AppError('users.notFound', 404);
     }
 
     user.firstName = firstName || user.firstName;
@@ -30,12 +30,12 @@ class UsersService {
   async changePassword({ userId, currentPassword, newPassword }) {
     const user = await this.usersRepository.findUserById(userId);
     if (!user) {
-      throw new AppError('Không tìm thấy người dùng', 404);
+      throw new AppError('users.notFound', 404);
     }
 
     const isMatch = await user.comparePassword(currentPassword);
     if (!isMatch) {
-      throw new AppError('Mật khẩu hiện tại không đúng', 401);
+      throw new AppError('users.wrongPassword', 401);
     }
 
     user.password = newPassword;
@@ -53,7 +53,7 @@ class UsersService {
       this.logger.warn('Không thể set pw_changed key trong Redis:', err.message);
     }
 
-    return { message: 'Đổi mật khẩu thành công' };
+    return { message: 'users.changePasswordSuccess' };
   }
 
   // -------- Address --------
@@ -84,7 +84,7 @@ class UsersService {
   async updateAddress({ userId, addressId, addressData }) {
     const address = await this.usersRepository.findAddressByIdAndUserId(addressId, userId);
     if (!address) {
-      throw new AppError('Không tìm thấy địa chỉ', 404);
+      throw new AppError('users.addressNotFound', 404);
     }
 
     if (addressData.isDefault && !address.isDefault) {
@@ -101,7 +101,7 @@ class UsersService {
   async deleteAddress({ userId, addressId }) {
     const address = await this.usersRepository.findAddressByIdAndUserId(addressId, userId);
     if (!address) {
-      throw new AppError('Không tìm thấy địa chỉ', 404);
+      throw new AppError('users.addressNotFound', 404);
     }
 
     const wasDefault = address.isDefault;
@@ -115,13 +115,13 @@ class UsersService {
       }
     }
 
-    return { message: 'Xóa địa chỉ thành công' };
+    return { message: 'users.deleteAddressSuccess' };
   }
 
   async setDefaultAddress({ userId, addressId }) {
     const address = await this.usersRepository.findAddressByIdAndUserId(addressId, userId);
     if (!address) {
-      throw new AppError('Không tìm thấy địa chỉ', 404);
+      throw new AppError('users.addressNotFound', 404);
     }
 
     await this.usersRepository.clearDefaultAddresses(userId);

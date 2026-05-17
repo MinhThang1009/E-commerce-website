@@ -44,11 +44,11 @@ class WishlistService {
 
     const existing = await this.wishlistRepository.findItem(userId, productId);
     if (existing) {
-      return { message: 'Sản phẩm đã có trong danh sách yêu thích', alreadyExists: true };
+      return { message: 'wishlist.alreadyExists', alreadyExists: true };
     }
 
     await this.wishlistRepository.createItem({ userId, productId });
-    return { message: 'Đã thêm sản phẩm vào danh sách yêu thích', alreadyExists: false };
+    return { message: 'wishlist.added', alreadyExists: false };
   }
 
   async removeFromWishlist({ userId, productId }) {
@@ -58,7 +58,7 @@ class WishlistService {
     }
 
     await this.wishlistRepository.deleteItem(item);
-    return { message: 'Đã xóa sản phẩm khỏi danh sách yêu thích' };
+    return { message: 'wishlist.removed' };
   }
 
   async checkWishlist({ userId, productId }) {
@@ -68,7 +68,7 @@ class WishlistService {
 
   async clearWishlist({ userId }) {
     await this.wishlistRepository.clearByUserId(userId);
-    return { message: 'Đã xóa tất cả sản phẩm trong danh sách yêu thích' };
+    return { message: 'wishlist.clearedAll' };
   }
 }
 

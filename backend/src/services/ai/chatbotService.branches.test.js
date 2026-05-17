@@ -1,5 +1,5 @@
 /**
- * Branch-coverage tests cho GeminiChatbotService.
+ * Branch-coverage tests cho ChatbotService.
  * Nhắm vào các nhánh FALSE chưa được cover:
  *  - line 55:  error.message || error  → khi error.message là undefined
  *  - lines 95,96: result.rewrittenQuery || message / result.intent || 'general' → right sides
@@ -44,8 +44,8 @@ jest.mock('../../models', () => ({
 jest.mock('../../services/ai/vectorStore', () => ({
   items: [],
   loadPromise: Promise.resolve(),
-  search: jest.fn().mockResolvedValue([]),
-  addProduct: jest.fn(),
+  hybridSearch: jest.fn().mockResolvedValue([]),
+  upsertProduct: jest.fn(),
   save: jest.fn(),
   enrichProductData: jest.fn((data) => data),
   detectLanguage: jest.fn((text) => {
@@ -68,24 +68,24 @@ const axios = require('axios');
 const vectorStoreService = require('../../services/ai/vectorStore');
 const logger = require('../../utils/logger');
 
-let geminiService;
+let chatbotService;
 beforeAll(() => {
-  geminiService = require('./geminiChatbot');
+  chatbotService = require('./chatbotService');
 });
 
 afterEach(() => {
   jest.clearAllMocks();
-  geminiService.conversationHistory.clear();
-  geminiService._brandsCache = null;
-  geminiService._categoriesCache = null;
-  geminiService._catalogCacheExpiry = 0;
+  chatbotService.conversationHistory.clear();
+  chatbotService._brandsCache = null;
+  chatbotService._categoriesCache = null;
+  chatbotService._catalogCacheExpiry = 0;
 });
 
 // ============================================================
 // Line 55: error.message || error — khi error không có message property
 // ============================================================
 
-describe('GeminiChatbotService.initializeChatbot — line 55: error không có message', () => {
+describe('ChatbotService.initializeChatbot — line 55: error không có message', () => {
   it('logger.error nhận chính error object khi error.message là undefined', () => {
     // Khi error là plain string (không có .message), error.message là undefined
     // → biểu thức `error.message || error` trả về error (right side)
@@ -96,15 +96,15 @@ describe('GeminiChatbotService.initializeChatbot — line 55: error không có m
     logger.error.mockClear();
 
     // Production dùng this.providers.length > 0 để trigger logger.info
-    const originalProviders = geminiService.providers;
-    geminiService.providers = [
+    const originalProviders = chatbotService.providers;
+    chatbotService.providers = [
       { key: 'real-api-key', url: 'https://test.api/chat', model: 'test-model' },
     ];
-    geminiService.initializeChatbot();
+    chatbotService.initializeChatbot();
 
     // Phải log error với chính string đó (right side của ||)
     expect(logger.error).toHaveBeenCalledWith('Khởi tạo Chatbot thất bại:', 'raw string error');
-    geminiService.providers = originalProviders;
+    chatbotService.providers = originalProviders;
   });
 });
 
@@ -113,10 +113,10 @@ describe('GeminiChatbotService.initializeChatbot — line 55: error không có m
 // — right sides khi API trả về JSON thiếu fields
 // ============================================================
 
-describe('GeminiChatbotService.preprocessMessage — rule-based behavior', () => {
+describe('ChatbotService.normalizeAndClassify — rule-based behavior', () => {
   it('expandAbbreviations được gọi — rewrittenQuery là kết quả expand viết tắt', async () => {
-    // preprocessMessage là rule-based — không gọi LLM, chỉ dùng expandAbbreviations + regex
-    const result = await geminiService.preprocessMessage('tìm iphone');
+    // normalizeAndClassify là rule-based — không gọi LLM, chỉ dùng expandAbbreviations + regex
+    const result = await chatbotService.normalizeAndClassify('tìm iphone');
     // 'iphone' là tên sản phẩm → hasProductName match → intent = product_search
     expect(result.rewrittenQuery).toBeDefined();
     expect(result.intent).toBe('product_search');
@@ -126,13 +126,13 @@ describe('GeminiChatbotService.preprocessMessage — rule-based behavior', () =>
 
   it('intent = "general" khi message không match bất kỳ pattern nào', async () => {
     // 'hello world' không match off_topic, order_inquiry, policy, product name, pricing
-    const result = await geminiService.preprocessMessage('hello world');
+    const result = await chatbotService.normalizeAndClassify('hello world');
     expect(result.intent).toBe('general');
     expect(axios.post).not.toHaveBeenCalled();
   });
 
   it('intent = "off_topic" khi message chứa từ khóa off_topic', async () => {
-    const result = await geminiService.preprocessMessage('thời tiết hôm nay thế nào');
+    const result = await chatbotService.normalizeAndClassify('thời tiết hôm nay thế nào');
     expect(result.intent).toBe('off_topic');
     expect(axios.post).not.toHaveBeenCalled();
   });
@@ -142,10 +142,10 @@ describe('GeminiChatbotService.preprocessMessage — rule-based behavior', () =>
 // Line 132: cachedResult.response || '' — right side khi cached response falsy
 // ============================================================
 
-describe('GeminiChatbotService.handleMessage — line 132: cachedResult.response || ""', () => {
+describe('ChatbotService.handleMessage — line 132: cachedResult.response || ""', () => {
   it('dùng empty string khi cachedResult.response = null trong cache hit', async () => {
-    const originalKey = geminiService.apiKey;
-    geminiService.apiKey = 'real-api-key';
+    const originalKey = chatbotService.apiKey;
+    chatbotService.apiKey = 'real-api-key';
 
     // Cache có response = null
     const cachedWithNullResponse = {
@@ -170,13 +170,13 @@ describe('GeminiChatbotService.handleMessage — line 132: cachedResult.response
     mockRedisGet.mockResolvedValueOnce(JSON.stringify(cachedWithNullResponse));
 
     // _persistMessages được gọi với '' thay vì null
-    await geminiService.handleMessage('iphone', 1, 'sess-null-resp', {});
+    await chatbotService.handleMessage('iphone', 1, 'sess-null-resp', {});
 
     expect(mockChatMessageBulkCreate).toHaveBeenCalledWith(
       expect.arrayContaining([expect.objectContaining({ role: 'assistant', content: '' })]),
     );
 
-    geminiService.apiKey = originalKey;
+    chatbotService.apiKey = originalKey;
   });
 });
 
@@ -184,14 +184,14 @@ describe('GeminiChatbotService.handleMessage — line 132: cachedResult.response
 // Line 156: NODE_ENV = 'production' → debug log KHÔNG được gọi
 // ============================================================
 
-describe('GeminiChatbotService.handleMessage — line 156: NODE_ENV production', () => {
+describe('ChatbotService.handleMessage — line 156: NODE_ENV production', () => {
   it('không gọi logger.debug cho "Tìm thấy N sản phẩm" khi NODE_ENV=production', async () => {
     const originalEnv = process.env.NODE_ENV;
     process.env.NODE_ENV = 'production';
 
-    vectorStoreService.search.mockResolvedValueOnce([]);
+    vectorStoreService.hybridSearch.mockResolvedValueOnce([]);
 
-    await geminiService.handleMessage('tìm iphone', null, null, {});
+    await chatbotService.handleMessage('tìm iphone', null, null, {});
 
     // Không có debug call nào chứa "sản phẩm liên quan qua RAG"
     const debugCalls = logger.debug.mock.calls.map((c) => c[0]);
@@ -209,21 +209,21 @@ describe('GeminiChatbotService.handleMessage — line 156: NODE_ENV production',
 // Session history lưu empty string khi aiResponse.response falsy
 // ============================================================
 
-describe('GeminiChatbotService.handleMessage — line 173: aiResponse.response || ""', () => {
+describe('ChatbotService.handleMessage — line 173: aiResponse.response || ""', () => {
   it('lưu empty string vào session history khi aiResponse.response là undefined', async () => {
-    const originalKey = geminiService.apiKey;
-    geminiService.apiKey = 'real-api-key';
+    const originalKey = chatbotService.apiKey;
+    chatbotService.apiKey = 'real-api-key';
 
     // getAIResponse trả về object không có response field
-    const originalGetAI = geminiService.getAIResponse.bind(geminiService);
-    geminiService.getAIResponse = jest.fn().mockResolvedValue({
+    const originalGetAI = chatbotService.getAIResponse.bind(chatbotService);
+    chatbotService.getAIResponse = jest.fn().mockResolvedValue({
       products: [],
       suggestions: [],
       intent: 'general',
       // response: undefined — missing!
     });
 
-    vectorStoreService.search.mockResolvedValueOnce([]);
+    vectorStoreService.hybridSearch.mockResolvedValueOnce([]);
     axios.post.mockResolvedValueOnce({
       data: {
         choices: [
@@ -237,15 +237,15 @@ describe('GeminiChatbotService.handleMessage — line 173: aiResponse.response |
     });
     mockRedisGet.mockResolvedValueOnce(null);
 
-    await geminiService.handleMessage('hello', null, 'sess-no-response', {});
+    await chatbotService.handleMessage('hello', null, 'sess-no-response', {});
 
-    const entry = geminiService.conversationHistory.get('sess-no-response');
+    const entry = chatbotService.conversationHistory.get('sess-no-response');
     // assistant message content phải là '' không phải undefined
     const assistantMsg = entry?.messages.find((m) => m.role === 'assistant');
     expect(assistantMsg?.content).toBe('');
 
-    geminiService.getAIResponse = originalGetAI;
-    geminiService.apiKey = originalKey;
+    chatbotService.getAIResponse = originalGetAI;
+    chatbotService.apiKey = originalKey;
   });
 });
 
@@ -253,30 +253,30 @@ describe('GeminiChatbotService.handleMessage — line 173: aiResponse.response |
 // Line 233: !this.apiKey (null/undefined) — branch khác demo-key
 // ============================================================
 
-describe('GeminiChatbotService.getAIResponse — providers array empty', () => {
+describe('ChatbotService.getAIResponse — providers array empty', () => {
   it('trả về fallback khi providers rỗng (không có provider nào)', async () => {
     // Production dùng this.providers.length === 0 thay vì !this.apiKey
-    const originalProviders = geminiService.providers;
-    geminiService.providers = [];
+    const originalProviders = chatbotService.providers;
+    chatbotService.providers = [];
 
-    const result = await geminiService.getAIResponse('tìm điện thoại', [], {}, []);
+    const result = await chatbotService.getAIResponse('tìm điện thoại', [], {}, []);
 
     expect(result).toHaveProperty('response');
     expect(result.intent).toBe('general');
     // axios không được gọi vì providers rỗng
     expect(axios.post).not.toHaveBeenCalled();
 
-    geminiService.providers = originalProviders;
+    chatbotService.providers = originalProviders;
   });
 
   it('trả về fallback khi providers = [] (empty array)', async () => {
-    const originalProviders = geminiService.providers;
-    geminiService.providers = [];
+    const originalProviders = chatbotService.providers;
+    chatbotService.providers = [];
 
-    const result = await geminiService.getAIResponse('tìm laptop', [], {}, []);
+    const result = await chatbotService.getAIResponse('tìm laptop', [], {}, []);
     expect(result).toHaveProperty('response');
 
-    geminiService.providers = originalProviders;
+    chatbotService.providers = originalProviders;
   });
 });
 
@@ -285,18 +285,18 @@ describe('GeminiChatbotService.getAIResponse — providers array empty', () => {
 // — right sides khi cache là null
 // ============================================================
 
-describe('GeminiChatbotService.getAIResponse — lines 258-267: cache null fallback', () => {
+describe('ChatbotService.getAIResponse — lines 258-267: cache null fallback', () => {
   it('dùng [] khi _categoriesCache = null (line 258 right side)', async () => {
     // Production dùng this.providers array
-    const originalProviders = geminiService.providers;
-    geminiService.providers = [
+    const originalProviders = chatbotService.providers;
+    chatbotService.providers = [
       { key: 'real-api-key', url: 'https://test.api/chat', model: 'test-model' },
     ];
 
     // Cache null → _ensureCatalogCache sẽ được gọi để load từ DB
-    geminiService._brandsCache = null;
-    geminiService._categoriesCache = null;
-    geminiService._catalogCacheExpiry = 0;
+    chatbotService._brandsCache = null;
+    chatbotService._categoriesCache = null;
+    chatbotService._catalogCacheExpiry = 0;
 
     mockBrandFindAll.mockResolvedValueOnce([]);
     mockCategoryFindAll.mockResolvedValueOnce([]);
@@ -318,11 +318,11 @@ describe('GeminiChatbotService.getAIResponse — lines 258-267: cache null fallb
       },
     });
 
-    const result = await geminiService.getAIResponse('hello', [], {}, []);
+    const result = await chatbotService.getAIResponse('hello', [], {}, []);
     // Không crash — categoriesCache và brandsCache được lấy từ DB (trả về [])
     expect(result).toHaveProperty('response');
 
-    geminiService.providers = originalProviders;
+    chatbotService.providers = originalProviders;
   });
 });
 
@@ -330,18 +330,18 @@ describe('GeminiChatbotService.getAIResponse — lines 258-267: cache null fallb
 // Line 298: NODE_ENV = 'production' → debug "Đã nhận phản hồi" không được gọi
 // ============================================================
 
-describe('GeminiChatbotService.getAIResponse — line 298: production suppresses debug', () => {
+describe('ChatbotService.getAIResponse — line 298: production suppresses debug', () => {
   it('không gọi debug "Đã nhận phản hồi" khi NODE_ENV=production', async () => {
     const originalEnv = process.env.NODE_ENV;
     // Production dùng this.providers array
-    const originalProviders = geminiService.providers;
+    const originalProviders = chatbotService.providers;
     process.env.NODE_ENV = 'production';
-    geminiService.providers = [
+    chatbotService.providers = [
       { key: 'real-api-key', url: 'https://test.api/chat', model: 'test-model' },
     ];
-    geminiService._brandsCache = [];
-    geminiService._categoriesCache = [];
-    geminiService._catalogCacheExpiry = Date.now() + 60000;
+    chatbotService._brandsCache = [];
+    chatbotService._categoriesCache = [];
+    chatbotService._catalogCacheExpiry = Date.now() + 60000;
 
     axios.post.mockResolvedValueOnce({
       data: {
@@ -360,7 +360,7 @@ describe('GeminiChatbotService.getAIResponse — line 298: production suppresses
       },
     });
 
-    await geminiService.getAIResponse('test', [], {}, []);
+    await chatbotService.getAIResponse('test', [], {}, []);
 
     const debugCalls = logger.debug.mock.calls.map((c) => c[0]);
     const hasReceivedLog = debugCalls.some(
@@ -369,7 +369,7 @@ describe('GeminiChatbotService.getAIResponse — line 298: production suppresses
     expect(hasReceivedLog).toBe(false);
 
     process.env.NODE_ENV = originalEnv;
-    geminiService.providers = originalProviders;
+    chatbotService.providers = originalProviders;
   });
 });
 
@@ -379,7 +379,7 @@ describe('GeminiChatbotService.getAIResponse — line 298: production suppresses
 // — p.stockQuantity = undefined → inStock branch
 // ============================================================
 
-describe('GeminiChatbotService.createPrompt — uncovered branches (lines 316-359)', () => {
+describe('ChatbotService.createPrompt — uncovered branches (lines 316-359)', () => {
   it('dùng p.category khi p.category có giá trị', () => {
     // createPrompt dùng `p.category || 'Sản phẩm'` — set category trực tiếp
     const products = [
@@ -392,7 +392,7 @@ describe('GeminiChatbotService.createPrompt — uncovered branches (lines 316-35
       },
     ];
 
-    const prompt = geminiService.createPrompt('tìm điện thoại', products, {});
+    const prompt = chatbotService.createPrompt('tìm điện thoại', products, {});
     expect(prompt).toContain('Điện thoại');
   });
 
@@ -407,7 +407,7 @@ describe('GeminiChatbotService.createPrompt — uncovered branches (lines 316-35
       },
     ];
 
-    const prompt = geminiService.createPrompt('tìm gì đó', products, {});
+    const prompt = chatbotService.createPrompt('tìm gì đó', products, {});
     expect(prompt).toContain('Sản phẩm');
   });
 
@@ -422,7 +422,7 @@ describe('GeminiChatbotService.createPrompt — uncovered branches (lines 316-35
       },
     ];
 
-    const prompt = geminiService.createPrompt('tìm phone', products, {});
+    const prompt = chatbotService.createPrompt('tìm phone', products, {});
     expect(prompt).toContain('Mô tả đang cập nhật');
   });
 
@@ -438,7 +438,7 @@ describe('GeminiChatbotService.createPrompt — uncovered branches (lines 316-35
       },
     ];
 
-    const prompt = geminiService.createPrompt('tìm tablet', products, {});
+    const prompt = chatbotService.createPrompt('tìm tablet', products, {});
     expect(prompt).toContain('Còn hàng');
   });
 
@@ -454,7 +454,7 @@ describe('GeminiChatbotService.createPrompt — uncovered branches (lines 316-35
       },
     ];
 
-    const prompt = geminiService.createPrompt('tìm tablet', products, {});
+    const prompt = chatbotService.createPrompt('tìm tablet', products, {});
     expect(prompt).toContain('Hết hàng');
   });
 
@@ -470,7 +470,7 @@ describe('GeminiChatbotService.createPrompt — uncovered branches (lines 316-35
       },
     ];
 
-    const prompt = geminiService.createPrompt('tìm gì đó', products, {});
+    const prompt = chatbotService.createPrompt('tìm gì đó', products, {});
     expect(prompt).toContain('Sản phẩm');
   });
 });
@@ -480,7 +480,7 @@ describe('GeminiChatbotService.createPrompt — uncovered branches (lines 316-35
 // trong parseAIResponse
 // ============================================================
 
-describe('GeminiChatbotService.parseAIResponse — line 391: price ?? basePrice right side', () => {
+describe('ChatbotService.parseAIResponse — line 391: price ?? basePrice right side', () => {
   it('dùng basePrice khi product.price = null (line 391 ?? right side)', () => {
     const products = [
       {
@@ -503,7 +503,7 @@ describe('GeminiChatbotService.parseAIResponse — line 391: price ?? basePrice 
       intent: 'product_search',
     });
 
-    const result = geminiService.parseAIResponse(aiText, products, 'samsung');
+    const result = chatbotService.parseAIResponse(aiText, products, 'samsung');
     expect(result.products).toHaveLength(1);
     expect(result.products[0].price).toBe(10990000);
   });
@@ -530,7 +530,7 @@ describe('GeminiChatbotService.parseAIResponse — line 391: price ?? basePrice 
       intent: 'general',
     });
 
-    const result = geminiService.parseAIResponse(aiText, products, 'test');
+    const result = chatbotService.parseAIResponse(aiText, products, 'test');
     // Không crash — price sẽ là undefined
     expect(result.products).toHaveLength(1);
     expect(result.products[0].price).toBeUndefined();
@@ -542,7 +542,7 @@ describe('GeminiChatbotService.parseAIResponse — line 391: price ?? basePrice 
 // — right side khi parsed.response falsy
 // ============================================================
 
-describe('GeminiChatbotService.parseAIResponse — line 415: parsed.response || default', () => {
+describe('ChatbotService.parseAIResponse — line 415: parsed.response || default', () => {
   it('dùng default text khi parsed.response = null', () => {
     const aiText = JSON.stringify({
       response: null, // null → || triggers right side
@@ -551,7 +551,7 @@ describe('GeminiChatbotService.parseAIResponse — line 415: parsed.response || 
       intent: 'general',
     });
 
-    const result = geminiService.parseAIResponse(aiText, [], 'hello');
+    const result = chatbotService.parseAIResponse(aiText, [], 'hello');
     expect(result.response).toBe('Tôi có thể giúp bạn tìm sản phẩm phù hợp!');
   });
 
@@ -563,7 +563,7 @@ describe('GeminiChatbotService.parseAIResponse — line 415: parsed.response || 
       intent: 'general',
     });
 
-    const result = geminiService.parseAIResponse(aiText, [], 'hello');
+    const result = chatbotService.parseAIResponse(aiText, [], 'hello');
     expect(result.response).toBe('Tôi có thể giúp bạn tìm sản phẩm phù hợp!');
   });
 });
@@ -573,7 +573,7 @@ describe('GeminiChatbotService.parseAIResponse — line 415: parsed.response || 
 // đều rỗng sau split → Set rỗng → minSize = 0 → return false)
 // ============================================================
 
-describe('GeminiChatbotService.parseAIResponse — line 443: minSize = 0 edge case', () => {
+describe('ChatbotService.parseAIResponse — line 443: minSize = 0 edge case', () => {
   it('không match khi cả pName lẫn rName đều chỉ có 1 từ ngắn bị lọc', () => {
     // pName = "a" (1 ký tự), rName = "b" (1 ký tự)
     // Sau split: pWords = {"a"}, rWords = {"b"}
@@ -600,7 +600,7 @@ describe('GeminiChatbotService.parseAIResponse — line 443: minSize = 0 edge ca
       intent: 'general',
     });
 
-    const result = geminiService.parseAIResponse(aiText, products, 'b');
+    const result = chatbotService.parseAIResponse(aiText, products, 'b');
     // Không match (intersection < 80%)
     expect(result.products).toHaveLength(0);
   });
@@ -628,7 +628,7 @@ describe('GeminiChatbotService.parseAIResponse — line 443: minSize = 0 edge ca
     });
 
     // Không crash — vào minSize = 0 → return false → không match
-    const result = geminiService.parseAIResponse(aiText, products, 'test');
+    const result = chatbotService.parseAIResponse(aiText, products, 'test');
     expect(result.products).toHaveLength(0);
   });
 });
@@ -638,7 +638,7 @@ describe('GeminiChatbotService.parseAIResponse — line 443: minSize = 0 edge ca
 // khi product.price là null/undefined
 // ============================================================
 
-describe('GeminiChatbotService.simpleKeywordMatch — lines 465-471: price ?? basePrice', () => {
+describe('ChatbotService.simpleKeywordMatch — lines 465-471: price ?? basePrice', () => {
   it('dùng basePrice trong product list text khi price = null (line 465 ?? right side)', () => {
     const products = [
       {
@@ -655,7 +655,7 @@ describe('GeminiChatbotService.simpleKeywordMatch — lines 465-471: price ?? ba
       },
     ];
 
-    const result = geminiService.simpleKeywordMatch('tìm xiaomi redmi', products);
+    const result = chatbotService.simpleKeywordMatch('tìm xiaomi redmi', products);
 
     expect(result.products.length).toBeGreaterThan(0);
     // Giá trong response text phải dùng basePrice (5990000)
@@ -678,7 +678,7 @@ describe('GeminiChatbotService.simpleKeywordMatch — lines 465-471: price ?? ba
       },
     ];
 
-    const result = geminiService.simpleKeywordMatch('tìm oppo reno', products);
+    const result = chatbotService.simpleKeywordMatch('tìm oppo reno', products);
 
     // Sản phẩm được match
     expect(result.products.length).toBeGreaterThan(0);
@@ -702,7 +702,7 @@ describe('GeminiChatbotService.simpleKeywordMatch — lines 465-471: price ?? ba
       },
     ];
 
-    const result = geminiService.simpleKeywordMatch('realme c55', products);
+    const result = chatbotService.simpleKeywordMatch('realme c55', products);
 
     if (result.products.length > 0) {
       expect(result.products[0].discount).toBe(20);
@@ -715,7 +715,7 @@ describe('GeminiChatbotService.simpleKeywordMatch — lines 465-471: price ?? ba
 // — debug log bị bỏ qua
 // ============================================================
 
-describe('GeminiChatbotService.simpleKeywordMatch — lines 497-524: production suppresses debug', () => {
+describe('ChatbotService.simpleKeywordMatch — lines 497-524: production suppresses debug', () => {
   const productsWithDates = [
     {
       id: 1,
@@ -735,7 +735,7 @@ describe('GeminiChatbotService.simpleKeywordMatch — lines 497-524: production 
     process.env.NODE_ENV = 'production';
 
     logger.debug.mockClear();
-    geminiService.simpleKeywordMatch('sản phẩm mới', productsWithDates);
+    chatbotService.simpleKeywordMatch('sản phẩm mới', productsWithDates);
 
     const debugCalls = logger.debug.mock.calls.map((c) => c[0]);
     const hasNewProductLog = debugCalls.some(
@@ -761,7 +761,7 @@ describe('GeminiChatbotService.simpleKeywordMatch — lines 497-524: production 
       },
     ];
 
-    const result = geminiService.simpleKeywordMatch('sản phẩm mới nhất', productsWithBasePrice);
+    const result = chatbotService.simpleKeywordMatch('sản phẩm mới nhất', productsWithBasePrice);
 
     expect(result.products.length).toBeGreaterThan(0);
     // Giá phải dùng basePrice
@@ -783,7 +783,7 @@ describe('GeminiChatbotService.simpleKeywordMatch — lines 497-524: production 
       },
     ];
 
-    const result = geminiService.simpleKeywordMatch('hàng mới', products);
+    const result = chatbotService.simpleKeywordMatch('hàng mới', products);
 
     if (result.products.length > 0) {
       expect(result.products[0].discount).toBeGreaterThan(0);
@@ -796,13 +796,13 @@ describe('GeminiChatbotService.simpleKeywordMatch — lines 497-524: production 
 // line 112: if (rewrittenQuery && rewrittenQuery.toLowerCase() !== message.toLowerCase())
 // ============================================================
 
-describe('GeminiChatbotService.handleMessage — line 112: rewrittenQuery same as message', () => {
+describe('ChatbotService.handleMessage — line 112: rewrittenQuery same as message', () => {
   it('không log "Câu truy vấn đã viết lại" khi rewrittenQuery giống message (case insensitive)', async () => {
-    // demo-key → preprocessMessage trả về rewrittenQuery = message → không log rewrite
+    // demo-key → normalizeAndClassify trả về rewrittenQuery = message → không log rewrite
     logger.debug.mockClear();
-    vectorStoreService.search.mockResolvedValueOnce([]);
+    vectorStoreService.hybridSearch.mockResolvedValueOnce([]);
 
-    await geminiService.handleMessage('tìm iphone', null, null, {});
+    await chatbotService.handleMessage('tìm iphone', null, null, {});
 
     // Không có call debug nào chứa "Câu truy vấn đã viết lại"
     const hasRewriteLog = logger.debug.mock.calls.some(
@@ -812,8 +812,8 @@ describe('GeminiChatbotService.handleMessage — line 112: rewrittenQuery same a
   });
 
   it('log "Câu truy vấn đã viết lại" khi rewrittenQuery khác message', async () => {
-    const originalKey = geminiService.apiKey;
-    geminiService.apiKey = 'real-api-key';
+    const originalKey = chatbotService.apiKey;
+    chatbotService.apiKey = 'real-api-key';
     logger.debug.mockClear();
 
     axios.post.mockResolvedValueOnce({
@@ -832,26 +832,26 @@ describe('GeminiChatbotService.handleMessage — line 112: rewrittenQuery same a
       },
     });
     mockRedisGet.mockResolvedValueOnce(null);
-    vectorStoreService.search.mockResolvedValueOnce([]);
+    vectorStoreService.hybridSearch.mockResolvedValueOnce([]);
 
     // Cần mock getAIResponse để không gọi API thật
-    const originalGetAI = geminiService.getAIResponse.bind(geminiService);
-    geminiService.getAIResponse = jest.fn().mockResolvedValue({
+    const originalGetAI = chatbotService.getAIResponse.bind(chatbotService);
+    chatbotService.getAIResponse = jest.fn().mockResolvedValue({
       response: 'OK',
       products: [],
       suggestions: [],
       intent: 'product_search',
     });
 
-    await geminiService.handleMessage('ip 15 pm', null, null, {});
+    await chatbotService.handleMessage('ip 15 pm', null, null, {});
 
     const hasRewriteLog = logger.debug.mock.calls.some(
       (args) => typeof args[0] === 'string' && args[0].includes('Câu truy vấn đã viết lại'),
     );
     expect(hasRewriteLog).toBe(true);
 
-    geminiService.getAIResponse = originalGetAI;
-    geminiService.apiKey = originalKey;
+    chatbotService.getAIResponse = originalGetAI;
+    chatbotService.apiKey = originalKey;
   });
 });
 
@@ -860,7 +860,7 @@ describe('GeminiChatbotService.handleMessage — line 112: rewrittenQuery same a
 // trong simpleKeywordMatch
 // ============================================================
 
-describe('GeminiChatbotService.simpleKeywordMatch — line 443: name null/undefined', () => {
+describe('ChatbotService.simpleKeywordMatch — line 443: name null/undefined', () => {
   it('không crash khi product.name = null (|| "" right side)', () => {
     const products = [
       {
@@ -877,7 +877,7 @@ describe('GeminiChatbotService.simpleKeywordMatch — line 443: name null/undefi
     ];
 
     // Không crash — productName = '' không match bất kỳ term nào → không push vào matched
-    const result = geminiService.simpleKeywordMatch('test', products);
+    const result = chatbotService.simpleKeywordMatch('test', products);
     expect(result).toHaveProperty('response');
   });
 
@@ -896,7 +896,7 @@ describe('GeminiChatbotService.simpleKeywordMatch — line 443: name null/undefi
       },
     ];
 
-    const result = geminiService.simpleKeywordMatch('any query', products);
+    const result = chatbotService.simpleKeywordMatch('any query', products);
     expect(result).toHaveProperty('response');
   });
 });
@@ -907,7 +907,7 @@ describe('GeminiChatbotService.simpleKeywordMatch — line 443: name null/undefi
 // — discount = 0 khi compareAtPrice <= price (false branch of c && c > p)
 // ============================================================
 
-describe('GeminiChatbotService.simpleKeywordMatch — lines 507-524: new products map', () => {
+describe('ChatbotService.simpleKeywordMatch — lines 507-524: new products map', () => {
   it('price ?? basePrice right side trong productList text khi price = null (line 507)', () => {
     // Trigger "new products" branch với product có price = null
     const products = [
@@ -924,7 +924,7 @@ describe('GeminiChatbotService.simpleKeywordMatch — lines 507-524: new product
       },
     ];
 
-    const result = geminiService.simpleKeywordMatch('sản phẩm mới nhất', products);
+    const result = chatbotService.simpleKeywordMatch('sản phẩm mới nhất', products);
 
     expect(result.response).toContain('mới nhất');
     expect(result.response).toContain('7.000.000');
@@ -945,7 +945,7 @@ describe('GeminiChatbotService.simpleKeywordMatch — lines 507-524: new product
       },
     ];
 
-    const result = geminiService.simpleKeywordMatch('hàng mới', products);
+    const result = chatbotService.simpleKeywordMatch('hàng mới', products);
 
     if (result.products.length > 0) {
       expect(result.products[0].discount).toBe(0);
@@ -958,16 +958,16 @@ describe('GeminiChatbotService.simpleKeywordMatch — lines 507-524: new product
 // khi tất cả đều không truyền vào
 // ============================================================
 
-describe('GeminiChatbotService.handleMessage — line 104: default parameters', () => {
+describe('ChatbotService.handleMessage — line 104: default parameters', () => {
   it('hoạt động đúng khi chỉ truyền message (các params còn lại là default)', async () => {
-    vectorStoreService.search.mockResolvedValueOnce([]);
+    vectorStoreService.hybridSearch.mockResolvedValueOnce([]);
 
     // Chỉ truyền message — userId, sessionId, context là default
-    const result = await geminiService.handleMessage('xin chào');
+    const result = await chatbotService.handleMessage('xin chào');
 
     expect(result).toHaveProperty('response');
     // sessionId = null → không lưu conversation history
-    expect(geminiService.conversationHistory.size).toBe(0);
+    expect(chatbotService.conversationHistory.size).toBe(0);
   });
 });
 
@@ -975,16 +975,16 @@ describe('GeminiChatbotService.handleMessage — line 104: default parameters', 
 // getAIResponse — line 233: history = [] default param
 // ============================================================
 
-describe('GeminiChatbotService.getAIResponse — line 233: history default = []', () => {
+describe('ChatbotService.getAIResponse — line 233: history default = []', () => {
   it('hoạt động đúng khi không truyền history (default = [])', async () => {
     // Production dùng this.providers array
-    const originalProviders = geminiService.providers;
-    geminiService.providers = [
+    const originalProviders = chatbotService.providers;
+    chatbotService.providers = [
       { key: 'real-api-key', url: 'https://test.api/chat', model: 'test-model' },
     ];
-    geminiService._brandsCache = [];
-    geminiService._categoriesCache = [];
-    geminiService._catalogCacheExpiry = Date.now() + 60000;
+    chatbotService._brandsCache = [];
+    chatbotService._categoriesCache = [];
+    chatbotService._catalogCacheExpiry = Date.now() + 60000;
 
     axios.post.mockResolvedValueOnce({
       data: {
@@ -1004,14 +1004,14 @@ describe('GeminiChatbotService.getAIResponse — line 233: history default = []'
     });
 
     // Không truyền history argument → default = []
-    const result = await geminiService.getAIResponse('tìm iphone', [], {});
+    const result = await chatbotService.getAIResponse('tìm iphone', [], {});
 
     expect(result).toHaveProperty('response');
     // Messages phải chứa system + user (không có history items)
     const callArgs = axios.post.mock.calls[0][1];
     expect(callArgs.messages).toHaveLength(2); // system + user only
 
-    geminiService.providers = originalProviders;
+    chatbotService.providers = originalProviders;
   });
 });
 
@@ -1021,11 +1021,11 @@ describe('GeminiChatbotService.getAIResponse — line 233: history default = []'
 // (khi _ensureCatalogCache không được gọi hoặc cache vẫn null sau load)
 // ============================================================
 
-describe('GeminiChatbotService.getAIResponse — line 258: categoriesCache null in systemContent', () => {
+describe('ChatbotService.getAIResponse — line 258: categoriesCache null in systemContent', () => {
   it('systemContent dùng [] khi _categoriesCache vẫn null sau _ensureCatalogCache', async () => {
     // Production dùng this.providers array
-    const originalProviders = geminiService.providers;
-    geminiService.providers = [
+    const originalProviders = chatbotService.providers;
+    chatbotService.providers = [
       { key: 'real-api-key', url: 'https://test.api/chat', model: 'test-model' },
     ];
 
@@ -1033,13 +1033,13 @@ describe('GeminiChatbotService.getAIResponse — line 258: categoriesCache null 
     // Sau đó force caches về null để test || [] right side trong systemContent builder
     mockBrandFindAll.mockResolvedValueOnce([]);
     mockCategoryFindAll.mockResolvedValueOnce([]);
-    geminiService._brandsCache = null;
-    geminiService._categoriesCache = null;
-    geminiService._catalogCacheExpiry = 0;
+    chatbotService._brandsCache = null;
+    chatbotService._categoriesCache = null;
+    chatbotService._catalogCacheExpiry = 0;
 
     // Override _ensureCatalogCache để set cache thành null sau khi gọi
-    const originalEnsure = geminiService._ensureCatalogCache.bind(geminiService);
-    geminiService._ensureCatalogCache = jest.fn().mockImplementation(async () => {
+    const originalEnsure = chatbotService._ensureCatalogCache.bind(chatbotService);
+    chatbotService._ensureCatalogCache = jest.fn().mockImplementation(async () => {
       // Simulate: load xong nhưng không set cache (stays null)
       // This triggers _categoriesCache || [] on line 258
     });
@@ -1061,7 +1061,7 @@ describe('GeminiChatbotService.getAIResponse — line 258: categoriesCache null 
       },
     });
 
-    const result = await geminiService.getAIResponse('hello', [], {}, []);
+    const result = await chatbotService.getAIResponse('hello', [], {}, []);
 
     // Không crash — systemContent được build với [] cho cache null
     expect(result).toHaveProperty('response');
@@ -1072,8 +1072,8 @@ describe('GeminiChatbotService.getAIResponse — line 258: categoriesCache null 
     // Với [] → join(', ') = '' → systemContent có format "Danh mục:  — Thương hiệu: "
     expect(systemMsg).toContain('Danh mục:');
 
-    geminiService._ensureCatalogCache = originalEnsure;
-    geminiService.providers = originalProviders;
+    chatbotService._ensureCatalogCache = originalEnsure;
+    chatbotService.providers = originalProviders;
   });
 });
 
@@ -1082,7 +1082,7 @@ describe('GeminiChatbotService.getAIResponse — line 258: categoriesCache null 
 // khi matchedProducts không phải mảng hoặc không tồn tại
 // ============================================================
 
-describe('GeminiChatbotService.parseAIResponse — line 359: matchedProducts not array', () => {
+describe('ChatbotService.parseAIResponse — line 359: matchedProducts not array', () => {
   it('matchedProducts là string (không phải array) → không match, không crash', () => {
     const aiText = JSON.stringify({
       response: 'Test response',
@@ -1091,7 +1091,7 @@ describe('GeminiChatbotService.parseAIResponse — line 359: matchedProducts not
       intent: 'general',
     });
 
-    const result = geminiService.parseAIResponse(aiText, [], 'test');
+    const result = chatbotService.parseAIResponse(aiText, [], 'test');
     // Không crash, products = []
     expect(result.response).toBe('Test response');
     expect(result.products).toHaveLength(0);
@@ -1105,7 +1105,7 @@ describe('GeminiChatbotService.parseAIResponse — line 359: matchedProducts not
       intent: 'general',
     });
 
-    const result = geminiService.parseAIResponse(aiText, [], 'test');
+    const result = chatbotService.parseAIResponse(aiText, [], 'test');
     expect(result.products).toHaveLength(0);
   });
 
@@ -1117,7 +1117,7 @@ describe('GeminiChatbotService.parseAIResponse — line 359: matchedProducts not
       intent: 'general',
     });
 
-    const result = geminiService.parseAIResponse(aiText, [], 'test');
+    const result = chatbotService.parseAIResponse(aiText, [], 'test');
     expect(result.response).toBe('No products field');
     expect(result.products).toHaveLength(0);
   });
@@ -1128,7 +1128,7 @@ describe('GeminiChatbotService.parseAIResponse — line 359: matchedProducts not
 // trong "new products" path
 // ============================================================
 
-describe('GeminiChatbotService.simpleKeywordMatch — line 524: discount > 0 in new products', () => {
+describe('ChatbotService.simpleKeywordMatch — line 524: discount > 0 in new products', () => {
   it('discount > 0 khi compareAtPrice > price trong new products map (line 524 true branch)', () => {
     const products = [
       {
@@ -1144,7 +1144,7 @@ describe('GeminiChatbotService.simpleKeywordMatch — line 524: discount > 0 in 
       },
     ];
 
-    const result = geminiService.simpleKeywordMatch('mới nhất', products);
+    const result = chatbotService.simpleKeywordMatch('mới nhất', products);
 
     if (result.products.length > 0) {
       expect(result.products[0].discount).toBe(20);

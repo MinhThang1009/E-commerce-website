@@ -12,7 +12,7 @@
  * - Import: DB throw trong transaction → ghi error, tiếp tục (lines 361-367)
  * - exportProducts: format=json → trả JSON (lines 465-482)
  * - escapeCsvField: field có dấu phẩy/ngoặc kép → bọc trong ngoặc kép (line 525)
- * - vectorStore: addProduct throw → log error (line 399)
+ * - vectorStore: upsertProduct throw → log error (line 399)
  */
 
 // ── Mocks ──────────────────────────────────────────────────────────────────
@@ -60,8 +60,10 @@ const mockVectorAddProduct = jest.fn().mockResolvedValue(undefined);
 const mockVectorSave       = jest.fn().mockResolvedValue(undefined);
 
 jest.mock('../services/ai/vectorStore', () => ({
-  addProduct: (...args) => mockVectorAddProduct(...args),
+  upsertProduct: (...args) => mockVectorAddProduct(...args),
   save:       (...args) => mockVectorSave(...args),
+  enrichProductData: (d) => d,
+  detectLanguage: () => 'vi',
 }));
 
 // Sequelize models mock
@@ -522,16 +524,16 @@ describe('exportProducts CSV — escapeCsvField với ký tự đặc biệt (li
   });
 });
 
-// ── vectorStore: addProduct throw → log error (line 399) ──────────────────
+// ── vectorStore: upsertProduct throw → log error (line 399) ──────────────────
 // setImmediate chạy async sau response → cần chờ để verify log
 
 describe('POST /api/admin/products/import — vectorStore lỗi không làm response fail (line 399)', () => {
-  it('vectorStore.addProduct throw → logger.error được gọi, response vẫn 200', async () => {
+  it('vectorStore.upsertProduct throw → logger.error được gọi, response vẫn 200', async () => {
     // Import thành công 1 sản phẩm, sau đó vectorStore fail
     mockProductCreate.mockResolvedValue({ id: 301, name: 'Test' });
     // First call during import transaction (Product.findOne for slug check) returns null
     // Second call (Product.findAll for vector sync) returns the new product
-    mockProductFindAll.mockResolvedValueOnce([{ id: 301 }]);
+    mockProductFindAll.mockResolvedValueOnce([{ id: 301, toJSON: () => ({ id: 301 }) }]);
     mockVectorAddProduct.mockRejectedValue(new Error('Embedding API down'));
 
     const logger = require('../utils/logger');

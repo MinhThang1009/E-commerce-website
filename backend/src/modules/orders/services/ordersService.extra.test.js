@@ -129,7 +129,7 @@ describe('OrdersService › getOrderByNumber', () => {
 
     await expect(
       service.getOrderByNumber({ number: 'ORD-MISSING', userId: 1 }),
-    ).rejects.toMatchObject({ statusCode: 404, message: expect.stringContaining('Không tìm thấy') });
+    ).rejects.toMatchObject({ statusCode: 404, message: 'orders.notFound' });
   });
 });
 
@@ -369,7 +369,7 @@ describe('OrdersService › confirmReceived', () => {
     const result = await service.confirmReceived({ id: 1, userId: 1 });
 
     expect(result.pointsEarned).toBe(0);
-    expect(result.message).toMatch(/đã được xác nhận/);
+    expect(result.message).toBe('orders.alreadyConfirmed');
     // khi alreadyProcessed, publish vẫn được gọi (theo code)
   });
 

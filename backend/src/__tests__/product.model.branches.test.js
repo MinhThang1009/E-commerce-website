@@ -35,7 +35,7 @@ jest.mock('slugify', () =>
 
 // vectorStore mock — truthy (default cho getter tests)
 const mockVectorStore = {
-  addProduct: jest.fn().mockResolvedValue(undefined),
+  upsertProduct: jest.fn().mockResolvedValue(undefined),
   save: jest.fn().mockResolvedValue(undefined),
   items: [],
 };
@@ -200,10 +200,10 @@ describe('Product model: afterUpdate hook — vectorStoreService truthy (line 33
     expect(mockVectorStore.save).toHaveBeenCalled();
   });
 
-  it('status=active nhưng findByPk trả null → không gọi addProduct', async () => {
+  it('status=active nhưng findByPk trả null → không gọi upsertProduct', async () => {
     mockProductInstance.findByPk.mockResolvedValue(null);
     await capturedHooks.afterUpdate({ id: 99, status: 'active' });
-    expect(mockVectorStore.addProduct).not.toHaveBeenCalled();
+    expect(mockVectorStore.upsertProduct).not.toHaveBeenCalled();
   });
 });
 

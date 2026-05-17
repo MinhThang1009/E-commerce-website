@@ -34,17 +34,7 @@ jest.mock('../utils/logger', () => ({
   warn: jest.fn(),
 }));
 
-jest.mock('../services/ai/ruleBasedChatbot', () => ({
-  trackAnalytics: jest.fn().mockResolvedValue(undefined),
-  extractSearchParams: jest.fn().mockReturnValue({ keyword: 'test' }),
-  getPersonalizedRecommendations: jest.fn().mockResolvedValue([]),
-  findSalesOpportunity: jest.fn().mockResolvedValue({ found: false }),
-  generateSalesPitch: jest.fn().mockResolvedValue({ text: 'pitch', products: [] }),
-  analyzeIntent: jest.fn().mockResolvedValue({ type: 'general' }),
-  getUserProfile: jest.fn().mockResolvedValue(null),
-}));
-
-jest.mock('../services/ai/geminiChatbot', () => ({
+jest.mock('../services/ai/chatbotService', () => ({
   handleMessage: jest.fn().mockResolvedValue({
     response: 'Xin chào!',
     suggestions: [],
@@ -84,14 +74,12 @@ jest.mock('../shared/http/middlewares/rateLimiter', () => rateLimiterMock);
 const express = require('express');
 const supertest = require('supertest');
 // Dùng ai module routes (đã migrate từ routes/chatbot.js)
-const buildAiModule = require('../modules/ai/module');
-const geminiChatbotService = require('../services/ai/geminiChatbot');
-const ruleBasedChatbot = require('../services/ai/ruleBasedChatbot');
+const buildAIModule = require('../modules/ai/module');
+const chatbotService = require('../services/ai/chatbotService');
 const { Product, ProductVariant, Category, Cart, CartItem } = require('../models');
-const chatbotService = ruleBasedChatbot;
 const sequelize = require('../config/sequelize');
 
-const aiModule = buildAiModule({ Product, ProductVariant, Category, geminiChatbotService, ruleBasedChatbot, sequelize, eventBus: { publish: () => {} }, logger: { info: () => {}, warn: () => {}, error: () => {}, debug: () => {} } });
+const aiModule = buildAIModule({ Product, ProductVariant, Category, chatbotService, sequelize, eventBus: { publish: () => {} }, logger: { info: () => {}, warn: () => {}, error: () => {}, debug: () => {} } });
 
 // App Express tối giản chỉ có chatbot routes
 const app = express();
@@ -153,7 +141,6 @@ describe('POST /api/chatbot/cart/add', () => {
     Cart.findOne.mockResolvedValue({ id: 1 });
     Product.findByPk.mockResolvedValue({ id: 1, status: 'active', stockQuantity: 10 });
     CartItem.create.mockResolvedValue({ id: 10, cartId: 1, productId: 1, quantity: 1 });
-    chatbotService.trackAnalytics.mockResolvedValue(undefined);
   });
 
   test('401 khi không có Authorization header', async () => {

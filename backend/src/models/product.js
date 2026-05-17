@@ -318,7 +318,7 @@ const Product = sequelize.define(
               ],
             });
             if (fullProduct) {
-              await vectorStoreService.addProduct(enrichProductData(fullProduct.toJSON()));
+              await vectorStoreService.upsertProduct(enrichProductData(fullProduct.toJSON()));
               await vectorStoreService.save();
             }
           }
@@ -336,16 +336,18 @@ const Product = sequelize.define(
             if (product.status === 'active') {
               const Category = require('./category');
               const ProductImage = require('./productImage');
+              const ProductVariant = require('./productVariant');
               const { enrichProductData } = require('../services/ai/vectorStore');
               const fullProduct = await Product.findByPk(product.id, {
                 include: [
                   { model: Category, as: 'categories', attributes: ['name'] },
                   { model: Category, as: 'category', attributes: ['name'] },
                   { model: ProductImage, as: 'productImages', attributes: ['imageUrl', 'isThumbnail'], required: false },
+                  { model: ProductVariant, as: 'variants', attributes: ['stockQuantity'], required: false },
                 ],
               });
               if (fullProduct) {
-                await vectorStoreService.addProduct(enrichProductData(fullProduct.toJSON()));
+                await vectorStoreService.upsertProduct(enrichProductData(fullProduct.toJSON()));
                 await vectorStoreService.save();
               }
             } else {

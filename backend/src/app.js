@@ -61,14 +61,14 @@ const buildCatalogModule = require('./modules/catalog/module');
 const buildOrdersModule = require('./modules/orders/module');
 const buildPaymentModule = require('./modules/payment/module');
 const buildInventoryModule = require('./modules/inventory/module');
-const buildAiModule = require('./modules/ai/module');
+const buildAIModule = require('./modules/ai/module');
 const buildSearchHistoryModule = require('./modules/searchHistory/module');
 const buildImageModule = require('./modules/image/module');
 const buildDiscountCodeModule = require('./modules/discountCode/module');
 const buildWarrantyPackageModule = require('./modules/warrantyPackage/module');
 const buildAttributeModule = require('./modules/attribute/module');
 const buildAdminModule = require('./modules/admin/module');
-const geminiChatbotService = require('./services/ai/geminiChatbot');
+const chatbotService = require('./services/ai/chatbotService');
 const momoService = require('./services/payment/momo');
 const vnpayService = require('./services/payment/vnpay');
 
@@ -214,11 +214,11 @@ const inventoryModule = buildInventoryModule({
 });
 inventoryModule.subscribeEvents();
 
-const aiModule = buildAiModule({
+const aiModule = buildAIModule({
   Product,
   ProductVariant,
   Category,
-  geminiChatbotService,
+  chatbotService,
   sequelize,
   eventBus,
   logger,

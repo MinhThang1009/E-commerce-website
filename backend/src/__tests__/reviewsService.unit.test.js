@@ -164,7 +164,7 @@ describe('ReviewsService', () => {
       reviewsRepository.findReviewByPk.mockResolvedValue(review);
       const result = await service.verifyReview({ reviewId: 5, isVerified: true });
       expect(review.isVerified).toBe(true);
-      expect(result.message).toMatch(/xác nhận/);
+      expect(result.message).toBe('reviews.verified');
     });
   });
 
@@ -180,7 +180,7 @@ describe('ReviewsService', () => {
       reviewsRepository.findReviewByPk.mockResolvedValue({ id: 5, userId: 1 });
       await expect(
         service.markReviewHelpful({ userId: 1, reviewId: 5, helpful: true })
-      ).rejects.toMatchObject({ statusCode: 400, message: expect.stringContaining('chính mình') });
+      ).rejects.toMatchObject({ statusCode: 400, message: 'reviews.cannotRateOwnReview' });
     });
 
     test('vote helpful lần đầu → tạo feedback + increment likes', async () => {

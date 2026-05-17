@@ -1,4 +1,6 @@
-class AiController {
+const { t } = require('../../../utils/i18n');
+
+class AIController {
   constructor({ aiService, logger }) {
     this.aiService = aiService;
     this.logger = logger;
@@ -18,10 +20,10 @@ class AiController {
       }
       res.status(500).json({
         status: 'error',
-        message: 'Xử lý tin nhắn thất bại',
+        message: t('ai.messageFailed', req.locale),
         data: {
-          response: 'Xin lỗi, tôi đang gặp một chút vấn đề. Vui lòng thử lại sau ít phút nhé! 😅',
-          suggestions: ['Xem sản phẩm hot', 'Tìm khuyến mãi', 'Liên hệ hỗ trợ'],
+          response: t('ai.fallbackResponse', req.locale),
+          suggestions: [t('ai.suggestionsHot', req.locale), t('ai.suggestionsDeals', req.locale), t('ai.suggestionsSupport', req.locale)],
         },
       });
     }
@@ -48,7 +50,7 @@ class AiController {
         metadata,
         timestamp: new Date(),
       });
-      res.json({ status: 'success', message: 'Ghi nhận dữ liệu phân tích thành công' });
+      res.json({ status: 'success', message: t('ai.analyticsSaved', req.locale) });
     } catch (err) {
       next(err);
     }
@@ -71,4 +73,4 @@ class AiController {
   };
 }
 
-module.exports = AiController;
+module.exports = AIController;

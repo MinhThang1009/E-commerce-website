@@ -122,7 +122,7 @@ describe('UsersService', () => {
 
       await expect(
         service.changePassword({ userId: 1, currentPassword: 'sai', newPassword: 'new' })
-      ).rejects.toMatchObject({ statusCode: 401, message: expect.stringContaining('không đúng') });
+      ).rejects.toMatchObject({ statusCode: 401, message: 'users.wrongPassword' });
     });
 
     test('đổi mật khẩu thành công → cập nhật password + trả message', async () => {
@@ -135,7 +135,7 @@ describe('UsersService', () => {
 
       expect(user.password).toBe('mậtKhẩuMới');
       expect(usersRepository.saveUser).toHaveBeenCalledWith(user);
-      expect(result.message).toMatch(/thành công/);
+      expect(result.message).toBe('users.changePasswordSuccess');
     });
 
     test('đổi mật khẩu thành công + redis có → gọi redis.set với key pw_changed', async () => {
@@ -160,7 +160,7 @@ describe('UsersService', () => {
 
       await expect(
         service.changePassword({ userId: 1, currentPassword: 'ok', newPassword: 'new' })
-      ).resolves.toMatchObject({ message: expect.stringContaining('thành công') });
+      ).resolves.toMatchObject({ message: 'users.changePasswordSuccess' });
     });
   });
 
@@ -287,7 +287,7 @@ describe('UsersService', () => {
 
       expect(usersRepository.deleteAddress).toHaveBeenCalled();
       expect(usersRepository.findLatestAddressByUserId).not.toHaveBeenCalled();
-      expect(result.message).toMatch(/thành công/);
+      expect(result.message).toBe('users.deleteAddressSuccess');
     });
 
     test('xóa default address → promote address tiếp theo làm default', async () => {
@@ -307,7 +307,7 @@ describe('UsersService', () => {
 
       await expect(
         service.deleteAddress({ userId: 1, addressId: 1 })
-      ).resolves.toMatchObject({ message: expect.stringContaining('thành công') });
+      ).resolves.toMatchObject({ message: 'users.deleteAddressSuccess' });
 
       expect(usersRepository.saveAddress).not.toHaveBeenCalled();
     });

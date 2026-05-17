@@ -1,86 +1,71 @@
 const logger = require('../utils/logger');
 const AppError = require('../shared/errors/AppError');
+const { t } = require('../utils/i18n');
 
-// Xử lý lỗi ở môi trường development — gửi thông tin lỗi chi tiết
-const sendErrorDev = (err, res) => {
+// Translate message nếu là i18n key, giữ nguyên nếu không
+const translateMessage = (msg, lang, params) => t(msg, lang, params) || msg;
+
+const sendErrorDev = (err, lang, res) => {
   res.status(err.statusCode).json({
     status: err.status,
-    message: err.message,
+    message: translateMessage(err.message, lang, err.params),
     error: err,
     stack: err.stack,
   });
 };
 
-// Xử lý lỗi ở môi trường production — chỉ gửi thông tin lỗi giới hạn
-const sendErrorProd = (err, res) => {
-  // Lỗi có thể dự đoán được: gửi message cho client
+const sendErrorProd = (err, lang, res) => {
   if (err.isOperational) {
     res.status(err.statusCode).json({
       status: err.status,
-      message: err.message,
+      message: translateMessage(err.message, lang, err.params),
     });
   } else {
-    // Lỗi lập trình hoặc lỗi không xác định: không để lộ chi tiết
-    logger.error('ERROR 💥', err);
+    logger.error('ERROR', err);
     res.status(500).json({
       status: 'error',
-      message: 'Đã xảy ra lỗi. Vui lòng thử lại sau.',
+      message: t('common.unknownError', lang),
     });
   }
 };
 
 // Xử lý lỗi CastError (giá trị không hợp lệ)
 const handleCastErrorDB = (err) => {
-  const message = `Giá trị không hợp lệ: ${err.value}`;
-  return new AppError(message, 400);
+  return new AppError('common.invalidValue', 400, { value: err.value });
 };
 
 // Xử lý lỗi duplicate key (MongoDB legacy — dùng cho compatibility)
 const handleDuplicateFieldsDB = (err) => {
   const value = err.errmsg.match(/(["'])(\\?.)*?\1/)[0];
-  const message = `Giá trị trùng lặp: ${value}. Vui lòng sử dụng giá trị khác!`;
-  return new AppError(message, 409);
+  return new AppError('common.duplicateValue', 409, { value });
 };
 
 // Xử lý lỗi validation (Mongoose legacy — dùng cho compatibility)
 const handleValidationErrorDB = (err) => {
   const errors = Object.values(err.errors).map((el) => el.message);
-  const message = `Dữ liệu không hợp lệ. ${errors.join('. ')}`;
-  return new AppError(message, 422);
+  return new AppError('common.invalidData', 422, { details: errors.join('. ') });
 };
 
-const handleJWTError = () =>
-  new AppError('Token không hợp lệ. Vui lòng đăng nhập lại!', 401);
+const handleJWTError = () => new AppError('auth.jwtInvalid', 401);
 
-const handleJWTExpiredError = () =>
-  new AppError('Token đã hết hạn. Vui lòng đăng nhập lại!', 401);
+const handleJWTExpiredError = () => new AppError('auth.jwtExpired', 401);
 
-// Xử lý lỗi unique constraint của Sequelize — trả 409 Conflict
 const handleSequelizeUniqueConstraintError = (err) => {
   const field = err.errors && err.errors[0]?.path;
   const value = err.errors && err.errors[0]?.value;
-  const message = field
-    ? `Giá trị '${value}' đã tồn tại cho trường '${field}'. Vui lòng sử dụng giá trị khác!`
-    : 'Dữ liệu đã tồn tại. Vui lòng sử dụng giá trị khác!';
-  return new AppError(message, 409);
+  if (field) return new AppError('common.fieldDuplicate', 409, { field, value });
+  return new AppError('common.dataExists', 409);
 };
 
-// Xử lý lỗi validation của Sequelize — trả 422 Unprocessable Entity
 const handleSequelizeValidationError = (err) => {
   const errors = err.errors ? err.errors.map((e) => e.message) : [err.message];
-  const message = `Dữ liệu không hợp lệ: ${errors.join('. ')}`;
-  return new AppError(message, 422);
+  return new AppError('common.invalidDataDetails', 422, { details: errors.join('. ') });
 };
 
-// Xử lý lỗi upload file của Multer
 const handleMulterError = (err) => {
-  if (err.code === 'LIMIT_FILE_SIZE') {
-    return new AppError('File tải lên vượt quá kích thước cho phép.', 400);
-  }
-  if (err.code === 'LIMIT_UNEXPECTED_FILE') {
-    return new AppError('Trường file không hợp lệ hoặc quá nhiều file.', 400);
-  }
-  return new AppError(`Lỗi upload file: ${err.message}`, 400);
+  if (err.code === 'LIMIT_FILE_SIZE') return new AppError('common.fileTooLarge', 400);
+  if (err.code === 'LIMIT_UNEXPECTED_FILE') return new AppError('common.invalidFileField', 400);
+  return new AppError('common.uploadError', 400, { details: err.message });
 };
 
 // Chuẩn hóa loại lỗi thành AppError — áp dụng cho cả development và production
@@ -104,16 +89,15 @@ const normalizeError = (err) => {
 
 // Middleware xử lý lỗi chính
 const errorHandler = (err, req, res, next) => {
-  // Chuẩn hóa lỗi Sequelize/JWT/Multer trước khi kiểm tra môi trường
   const normalizedErr = normalizeError(err);
   normalizedErr.statusCode = normalizedErr.statusCode || 500;
   normalizedErr.status = normalizedErr.status || 'error';
+  const lang = req.locale || 'vi';
 
   if (process.env.NODE_ENV === 'development') {
-    sendErrorDev(normalizedErr, res);
+    sendErrorDev(normalizedErr, lang, res);
   } else {
-    // Production và mọi môi trường khác: ẩn stack trace
-    sendErrorProd(normalizedErr, res);
+    sendErrorProd(normalizedErr, lang, res);
   }
 };
 

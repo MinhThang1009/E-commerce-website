@@ -25,7 +25,7 @@ jest.mock('slugify', () => (text, opts) => {
 
 // Mock vectorStore — nếu không có, hook sẽ bỏ qua
 jest.mock('../services/ai/vectorStore', () => ({
-  addProduct: jest.fn().mockResolvedValue(undefined),
+  upsertProduct: jest.fn().mockResolvedValue(undefined),
   save: jest.fn().mockResolvedValue(undefined),
   items: [],
   enrichProductData: jest.fn(p => p),
@@ -392,9 +392,9 @@ describe('afterCreate hook — vector store indexing', () => {
 
   const mockFindByPk = jest.fn();
 
-  it('product status=active → addProduct và save được gọi', async () => {
+  it('product status=active → upsertProduct và save được gọi', async () => {
     const mockVectorStore = {
-      addProduct: jest.fn().mockResolvedValue(undefined),
+      upsertProduct: jest.fn().mockResolvedValue(undefined),
       save: jest.fn().mockResolvedValue(undefined),
       items: [],
     };
@@ -425,14 +425,14 @@ describe('afterCreate hook — vector store indexing', () => {
 
     if (hooks && hooks.afterCreate) {
       await hooks.afterCreate({ id: 1, status: 'active' });
-      expect(mockVectorStore.addProduct).toHaveBeenCalled();
+      expect(mockVectorStore.upsertProduct).toHaveBeenCalled();
       expect(mockVectorStore.save).toHaveBeenCalled();
     }
   });
 
-  it('product status=inactive → KHÔNG gọi addProduct', async () => {
+  it('product status=inactive → KHÔNG gọi upsertProduct', async () => {
     const mockVectorStore = {
-      addProduct: jest.fn().mockResolvedValue(undefined),
+      upsertProduct: jest.fn().mockResolvedValue(undefined),
       save: jest.fn().mockResolvedValue(undefined),
       items: [],
     };
@@ -449,7 +449,7 @@ describe('afterCreate hook — vector store indexing', () => {
 
     if (hooks && hooks.afterCreate) {
       await hooks.afterCreate({ id: 2, status: 'inactive' });
-      expect(mockVectorStore.addProduct).not.toHaveBeenCalled();
+      expect(mockVectorStore.upsertProduct).not.toHaveBeenCalled();
     }
   });
 });
@@ -484,10 +484,10 @@ describe('afterDestroy hook — xóa khỏi vector store', () => {
 
 // ─────────────────────────────────────────────────────────────────────────────
 describe('afterUpdate hook — vector store sync', () => {
-  it('status=active → addProduct được gọi', async () => {
+  it('status=active → upsertProduct được gọi', async () => {
     const vectorStoreService = {
       items: [{ metadata: { id: 5, name: 'Old Product' } }],
-      addProduct: jest.fn().mockResolvedValue(undefined),
+      upsertProduct: jest.fn().mockResolvedValue(undefined),
       save: jest.fn().mockResolvedValue(undefined),
     };
 
@@ -496,11 +496,11 @@ describe('afterUpdate hook — vector store sync', () => {
     const fullProductData = { ...product };
 
     if (product.status === 'active') {
-      await vectorStoreService.addProduct(fullProductData);
+      await vectorStoreService.upsertProduct(fullProductData);
       await vectorStoreService.save();
     }
 
-    expect(vectorStoreService.addProduct).toHaveBeenCalledWith(fullProductData);
+    expect(vectorStoreService.upsertProduct).toHaveBeenCalledWith(fullProductData);
     expect(vectorStoreService.save).toHaveBeenCalled();
   });
 

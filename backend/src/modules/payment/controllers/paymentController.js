@@ -1,3 +1,5 @@
+const { t } = require('../../../utils/i18n');
+
 // Payment Controller — handler cho MoMo/VNPay/Refund.
 // Note: SePay webhook giữ ở legacy controllers/payment.js đến Phase 5 cleanup
 // (logic SePay phức tạp, ít touch, defer scope).
@@ -39,7 +41,7 @@ class PaymentController {
     try {
       const result = await this.paymentService.handleMomoIPN({ body: req.body });
       if (!result.valid) {
-        return res.status(400).json({ message: 'Chữ ký không hợp lệ' });
+        return res.status(400).json({ message: t('payment.invalidSignature', req.locale) });
       }
       res.status(204).send();
     } catch (err) {
@@ -75,7 +77,7 @@ class PaymentController {
       return res.status(200).json(result);
     } catch (err) {
       this.logger.error('Lỗi VNPay IPN:', err);
-      return res.status(200).json({ RspCode: '99', Message: 'Lỗi không xác định' });
+      return res.status(200).json({ RspCode: '99', Message: t('payment.unknownError', req.locale) });
     }
   };
 

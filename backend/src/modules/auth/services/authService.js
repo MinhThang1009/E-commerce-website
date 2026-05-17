@@ -29,7 +29,7 @@ class AuthService {
   async register({ email, password, firstName, lastName, phone }) {
     const existing = await this.authRepository.findByEmail(email);
     if (existing) {
-      throw new AppError('Email đã được sử dụng', 400);
+      throw new AppError('auth.emailInUse', 400);
     }
 
     const otpCode = String(crypto.randomInt(100000, 1000000));
@@ -57,30 +57,27 @@ class AuthService {
       occurredAt: new Date().toISOString(),
     });
 
-    return { message: 'Đăng ký thành công. Vui lòng kiểm tra email để lấy mã OTP xác thực.' };
+    return { message: 'auth.registerSuccess' };
   }
 
   // Đăng nhập email + password
   async login({ email, password, ip }) {
     const user = await this.authRepository.findByEmail(email);
     if (!user) {
-      throw new AppError('Email hoặc mật khẩu không đúng', 401);
+      throw new AppError('auth.invalidCredentials', 401);
     }
 
     const isMatch = await user.comparePassword(password);
     if (!isMatch) {
-      throw new AppError('Email hoặc mật khẩu không đúng', 401);
+      throw new AppError('auth.invalidCredentials', 401);
     }
 
     if (!user.isEmailVerified) {
-      throw new AppError('Vui lòng xác thực email trước khi đăng nhập', 401);
+      throw new AppError('auth.emailNotVerified', 401);
     }
 
     if (!user.isActive) {
-      throw new AppError(
-        'Tài khoản của bạn đã bị khóa. Vui lòng liên hệ quản trị viên',
-        401
-      );
+      throw new AppError('auth.accountDisabled', 401);
     }
 
     const token = this.tokenSigner.signAccessToken({ id: user.id, role: user.role });
@@ -104,12 +101,12 @@ class AuthService {
       try {
         payload = await this.googleVerifier.verifyAccessToken(token);
       } catch (_err) {
-        throw new AppError('Xác thực Google thất bại', 401);
+        throw new AppError('auth.googleAuthFailed', 401);
       }
     }
 
     if (!payload) {
-      throw new AppError('Xác thực Google thất bại', 401);
+      throw new AppError('auth.googleAuthFailed', 401);
     }
 
     const {
@@ -143,10 +140,7 @@ class AuthService {
     }
 
     if (!user.isActive) {
-      throw new AppError(
-        'Tài khoản của bạn đã bị khóa. Vui lòng liên hệ quản trị viên',
-        401
-      );
+      throw new AppError('auth.accountDisabled', 401);
     }
 
     const accessToken = this.tokenSigner.signAccessToken({ id: user.id, role: user.role });
@@ -189,12 +183,12 @@ class AuthService {
   // Xác thực email bằng OTP
   async verifyOtp({ email, otp }) {
     if (!email || !otp) {
-      throw new AppError('Email và mã OTP là bắt buộc', 400);
+      throw new AppError('auth.emailAndOtpRequired', 400);
     }
 
     const user = await this.authRepository.findByEmail(email);
     // Generic message cho cả user không tồn tại, đã xác thực, OTP sai — chống enumeration
-    const genericError = 'Mã OTP không đúng hoặc đã hết hạn';
+    const genericError = 'auth.otpInvalidOrExpired';
 
     if (!user || user.isEmailVerified) {
       throw new AppError(genericError, 400);
@@ -208,7 +202,7 @@ class AuthService {
     }
 
     if (!user.otpExpires || new Date() > user.otpExpires) {
-      throw new AppError('Mã OTP đã hết hạn. Vui lòng yêu cầu mã mới.', 400);
+      throw new AppError('auth.otpExpired', 400);
     }
 
     user.isEmailVerified = true;
@@ -216,12 +210,12 @@ class AuthService {
     user.otpExpires = null;
     await this.authRepository.saveUser(user);
 
-    return { message: 'Xác thực email thành công. Bạn có thể đăng nhập ngay bây giờ.' };
+    return { message: 'auth.emailVerified' };
   }
 
   // Gửi lại OTP — reset OTP mới hết hạn 10 phút.
   async resendVerification({ email }) {
-    const genericMessage = 'Nếu email này đã đăng ký, mã OTP sẽ được gửi.';
+    const genericMessage = 'auth.resendGeneric';
     const user = await this.authRepository.findByEmail(email);
     if (!user || user.isEmailVerified) {
       return { message: genericMessage };
@@ -240,7 +234,7 @@ class AuthService {
       this.logger.error(`[Auth] Gửi lại OTP email thất bại cho ${user.email}: ${emailErr.message}`);
     }
 
-    return { message: 'Đã gửi lại mã OTP. Vui lòng kiểm tra email của bạn.' };
+    return { message: 'auth.otpResent' };
   }
 
   _refreshTtlSeconds() {
@@ -255,7 +249,7 @@ class AuthService {
   // Làm mới access token bằng refresh token — rotation + reuse detection
   async refreshToken({ refreshToken }) {
     if (!refreshToken) {
-      throw new AppError('Refresh token là bắt buộc', 401);
+      throw new AppError('auth.refreshTokenRequired', 401);
     }
 
     let decoded;
@@ -263,7 +257,7 @@ class AuthService {
       decoded = this.tokenSigner.verifyRefreshToken(refreshToken);
     } catch (err) {
       if (err.name === 'JsonWebTokenError' || err.name === 'TokenExpiredError') {
-        throw new AppError('Refresh token không hợp lệ hoặc đã hết hạn', 401);
+        throw new AppError('auth.refreshTokenInvalid', 401);
       }
       throw err;
     }
@@ -278,25 +272,22 @@ class AuthService {
         // Revoke toàn bộ family — tất cả devices/tabs sẽ bị logout
         await this.blacklistStore.set(`rt_family_revoked:${familyId}`, ttl, '1');
         this.logger.warn(`[Auth] Refresh token reuse detected — family ${familyId} revoked`);
-        throw new AppError('Refresh token đã được sử dụng. Vui lòng đăng nhập lại', 401);
+        throw new AppError('auth.refreshTokenUsed', 401);
       }
 
       const familyRevoked = await this.blacklistStore.get(`rt_family_revoked:${familyId}`);
       if (familyRevoked) {
-        throw new AppError('Phiên đăng nhập đã bị vô hiệu. Vui lòng đăng nhập lại', 401);
+        throw new AppError('auth.sessionRevoked', 401);
       }
     }
 
     const user = await this.authRepository.findById(id);
     if (!user) {
-      throw new AppError('Refresh token không hợp lệ', 401);
+      throw new AppError('auth.refreshTokenError', 401);
     }
 
     if (!user.isActive) {
-      throw new AppError(
-        'Tài khoản của bạn đã bị khóa. Vui lòng liên hệ quản trị viên',
-        401
-      );
+      throw new AppError('auth.accountDisabled', 401);
     }
 
     // Đánh dấu token cũ đã dùng (rotation)
@@ -327,7 +318,7 @@ class AuthService {
       }
     }
 
-    return { message: 'Đã gửi email đặt lại mật khẩu. Vui lòng kiểm tra email của bạn.' };
+    return { message: 'auth.passwordResetSent' };
   }
 
   // Đặt lại mật khẩu bằng token
@@ -335,7 +326,7 @@ class AuthService {
     const user = await this.authRepository.findByResetToken(token);
 
     if (!user) {
-      throw new AppError('Token không hợp lệ hoặc đã hết hạn', 400);
+      throw new AppError('auth.tokenInvalidOrExpired', 400);
     }
 
     user.password = password;
@@ -353,14 +344,14 @@ class AuthService {
       this.logger.warn('Không thể set pw_changed key trong Redis:', err.message);
     }
 
-    return { message: 'Đặt lại mật khẩu thành công. Bạn có thể đăng nhập ngay bây giờ.' };
+    return { message: 'auth.passwordResetSuccess' };
   }
 
   // Lấy thông tin user hiện tại (kèm addresses)
   async getCurrentUser({ userId }) {
     const user = await this.authRepository.findByIdWithAddresses(userId);
     if (!user) {
-      throw new AppError('Không tìm thấy người dùng', 404);
+      throw new AppError('auth.userNotFound', 404);
     }
     return { user };
   }

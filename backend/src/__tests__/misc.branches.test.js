@@ -7,7 +7,7 @@
  * - adminAudit.js lines 206, 232
  * - vectorStore.js line 148
  * - wishlistService.js line 17
- * - SequelizeAiRepository.js line 15
+ * - SequelizeAIRepository.js line 15
  * - SequelizeContentRepository.js lines 44, 101
  */
 
@@ -451,7 +451,7 @@ jest.mock('fs', () => ({
   },
 }));
 
-describe('SimpleVectorStore.cosineSimilarity — line 148 false path', () => {
+describe('HybridVectorStore.cosineSimilarity — line 148 false path', () => {
   let store;
 
   beforeAll(() => {
@@ -623,13 +623,13 @@ describe('WishlistService.getWishlist — line 17 branches', () => {
 });
 
 // ─────────────────────────────────────────────────────────────────────────────
-// SequelizeAiRepository.js — line 15
+// SequelizeAIRepository.js — line 15
 // searchProducts({ ... } = {}) — default parameter khi gọi không có argument
 // ─────────────────────────────────────────────────────────────────────────────
 
-describe('SequelizeAiRepository.searchProducts — line 15 default parameter branch', () => {
+describe('SequelizeAIRepository.searchProducts — line 15 default parameter branch', () => {
   const { Op, literal } = require('sequelize');
-  const SequelizeAiRepository = require('../modules/ai/repositories/SequelizeAiRepository');
+  const SequelizeAIRepository = require('../modules/ai/repositories/SequelizeAIRepository');
 
   let repo;
   let mockProduct;
@@ -642,7 +642,7 @@ describe('SequelizeAiRepository.searchProducts — line 15 default parameter bra
     const mockCategory = {};
     const mockSequelize = {};
 
-    repo = new SequelizeAiRepository({
+    repo = new SequelizeAIRepository({
       Product: mockProduct,
       ProductVariant: mockProductVariant,
       Category: mockCategory,

@@ -1,8 +1,8 @@
-const AiController = require('./controllers/aiController');
-const AiService = require('./services/aiService');
-const SequelizeAiRepository = require('./repositories/SequelizeAiRepository');
-const RagPipeline = require('./domain/orchestrators/RagPipeline');
-const GeminiLlmGateway = require('./infrastructure/GeminiLlmGateway');
+const AIController = require('./controllers/aiController');
+const AIService = require('./services/aiService');
+const SequelizeAIRepository = require('./repositories/SequelizeAIRepository');
+const RAGPipeline = require('./domain/orchestrators/RAGPipeline');
+const ChatbotLLMGateway = require('./infrastructure/ChatbotLLMGateway');
 const vectorStoreService = require('../../services/ai/vectorStore');
 const buildRoutes = require('./routes');
 
@@ -10,24 +10,24 @@ module.exports = ({
   Product,
   ProductVariant,
   Category,
-  geminiChatbotService,
+  chatbotService,
   sequelize,
   eventBus,
   logger,
 }) => {
   if (!Product) throw new Error('ai module: Product model bắt buộc');
-  if (!geminiChatbotService) throw new Error('ai module: geminiChatbotService bắt buộc');
+  if (!chatbotService) throw new Error('ai module: chatbotService bắt buộc');
 
-  const aiRepository = new SequelizeAiRepository({ Product, ProductVariant, Category, sequelize });
-  const llmGateway = new GeminiLlmGateway({ geminiChatbotService });
-  const ragPipeline = new RagPipeline({ llmGateway, vectorStore: vectorStoreService });
+  const aiRepository = new SequelizeAIRepository({ Product, ProductVariant, Category, sequelize });
+  const llmGateway = new ChatbotLLMGateway({ chatbotService });
+  const ragPipeline = new RAGPipeline({ llmGateway, vectorStore: vectorStoreService });
 
-  const aiService = new AiService({
+  const aiService = new AIService({
     aiRepository,
     ragPipeline,
     logger,
   });
-  const aiController = new AiController({ aiService, logger });
+  const aiController = new AIController({ aiService, logger });
   const router = buildRoutes({ aiController });
 
   return {

@@ -37,7 +37,7 @@ jest.mock('../utils/productHelpers', () => ({
 }));
 
 jest.mock('../services/ai/vectorStore', () => ({
-  addProduct: jest.fn().mockResolvedValue(undefined),
+  upsertProduct: jest.fn().mockResolvedValue(undefined),
   save: jest.fn().mockResolvedValue(undefined),
   loadPromise: Promise.resolve(),
   items: [],
@@ -300,7 +300,7 @@ beforeEach(() => {
 
   const vs = require('../services/ai/vectorStore');
   vs.items = [];
-  vs.addProduct.mockResolvedValue(undefined);
+  vs.upsertProduct.mockResolvedValue(undefined);
   vs.save.mockResolvedValue(undefined);
   vs.loadPromise = Promise.resolve();
   vs.enrichProductData.mockImplementation((x) => x);
@@ -600,7 +600,7 @@ describe('POST /api/admin/products — line 933: warranty catch khi WarrantyPack
 describe('POST /api/admin/products — line 978: vectorStore catch khi save throw', () => {
   it('trả về 201 và gọi logger.error khi vectorStoreService.save throw', async () => {
     const vs = require('../services/ai/vectorStore');
-    // Sản phẩm active → vectorStore.addProduct + save được gọi
+    // Sản phẩm active → vectorStore.upsertProduct + save được gọi
     // save throw → catch tại line 977-979
     vs.save.mockRejectedValueOnce(new Error('VectorStore IO error'));
 
@@ -715,7 +715,7 @@ describe('PUT /api/admin/products/:id — line 1296: translate catch khi transla
 describe('PUT /api/admin/products/:id — line 1354: vectorStore catch khi save throw', () => {
   it('trả về 200 và gọi logger.error khi vectorStoreService.save throw sau update', async () => {
     const vs = require('../services/ai/vectorStore');
-    // Chỉ save throw (không phải addProduct)
+    // Chỉ save throw (không phải upsertProduct)
     vs.save.mockRejectedValueOnce(new Error('VectorStore save failed after update'));
 
     const activeProduct = makeProduct({ id: 230, status: 'active' });

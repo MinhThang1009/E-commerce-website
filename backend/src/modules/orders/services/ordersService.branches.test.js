@@ -184,7 +184,7 @@ describe('createOrder — lockedVariant null → throw 400 (line 146)', () => {
       service.createOrder({ user, body, sessionIdCookie: null })
     ).rejects.toMatchObject({
       statusCode: 400,
-      message: expect.stringContaining('chỉ còn 0'),
+      message: 'orders.stockInsufficient',
     });
   });
 });

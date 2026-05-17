@@ -1,0 +1,270 @@
+{
+  "common": {
+    "serverError": "Server error",
+    "unknownError": "An error occurred. Please try again later.",
+    "inputValidationError": "Input validation error",
+    "invalidValue": "Invalid value: {{value}}",
+    "duplicateValue": "Duplicate value: {{value}}. Please use a different value!",
+    "invalidData": "Invalid data. {{details}}",
+    "dataExists": "Data already exists. Please use a different value!",
+    "fieldDuplicate": "Value '{{value}}' already exists for field '{{field}}'. Please use a different value!",
+    "invalidDataDetails": "Invalid data: {{details}}",
+    "fileTooLarge": "Uploaded file exceeds the allowed size.",
+    "invalidFileField": "Invalid file field or too many files.",
+    "uploadError": "File upload error: {{details}}"
+  },
+  "auth": {
+    "emailInUse": "Email is already in use",
+    "registerSuccess": "Registration successful. Please check your email for the OTP verification code.",
+    "invalidCredentials": "Incorrect email or password",
+    "emailNotVerified": "Please verify your email before logging in",
+    "accountLocked": "Account has been locked due to too many failed login attempts. Please try again after {{minutes}} minutes.",
+    "googleAuthFailed": "Google authentication failed",
+    "emailAndOtpRequired": "Email and OTP code are required",
+    "otpInvalidOrExpired": "OTP code is invalid or expired. Please try again or request a new one.",
+    "otpExpired": "OTP code has expired. Please request a new one.",
+    "otpResent": "OTP code has been resent. Please check your email.",
+    "refreshTokenRequired": "Refresh token is required",
+    "refreshTokenInvalid": "Refresh token is invalid or expired",
+    "refreshTokenUsed": "Refresh token has been used. Please log in again",
+    "sessionRevoked": "Session has been revoked. Please log in again",
+    "refreshTokenError": "Invalid refresh token",
+    "passwordResetSent": "Password reset email has been sent. Please check your email.",
+    "tokenInvalidOrExpired": "Token is invalid or expired",
+    "userNotFound": "User not found",
+    "accountDisabled": "Your account has been locked. Please contact the administrator",
+    "emailVerified": "Email verified successfully. You can now log in.",
+    "resendGeneric": "If this email is registered, an OTP code will be sent.",
+    "passwordResetSuccess": "Password reset successful. You can now log in.",
+    "jwtInvalid": "Invalid token. Please log in again!",
+    "jwtExpired": "Token has expired. Please log in again!"
+  },
+  "users": {
+    "notFound": "User not found",
+    "wrongPassword": "Current password is incorrect",
+    "changePasswordSuccess": "Password changed successfully",
+    "addressNotFound": "Address not found",
+    "deleteAddressSuccess": "Address deleted successfully"
+  },
+  "orders": {
+    "notFound": "Order not found",
+    "accessDenied": "You do not have permission to access this order",
+    "productNotFound": "Product ID: {{id}} not found",
+    "variantNotFound": "Variant ID: {{id}} not found",
+    "cartNotFound": "Cart not found for user ID: {{id}}",
+    "cartEmpty": "Cart for user ID: {{id}} is currently empty",
+    "productInactive": "Product \"{{name}}\" is currently unavailable",
+    "outOfStock": "Product \"{{name}}\" is out of stock (requested: {{requested}}, available: {{available}})",
+    "variantOutOfStock": "Variant \"{{variant}}\" of product \"{{name}}\" is out of stock (requested: {{requested}}, available: {{available}})",
+    "couponInvalid": "Invalid or expired coupon code",
+    "couponNotStarted": "Coupon is not yet active",
+    "couponExpired": "Coupon has expired",
+    "couponLimitReached": "Coupon usage limit has been reached",
+    "couponMinOrderNotMet": "Order does not meet the minimum value of {{amount}} to use this coupon",
+    "insufficientPoints": "You do not have enough loyalty points",
+    "stockInsufficient": "Product \"{{name}}\" only has {{available}} items left",
+    "cancelled": "Order has been cancelled",
+    "statusUpdated": "Order status updated successfully",
+    "repaymentReady": "Order has been updated for repayment",
+    "alreadyConfirmed": "Order has already been confirmed and points awarded",
+    "deliveryConfirmed": "Delivery confirmation successful",
+    "provideOrderAndEmail": "Please provide order number and email",
+    "orderNotFoundWithInfo": "No order found with the provided information"
+  },
+  "cart": {
+    "alreadyEmpty": "Cart is already empty",
+    "cleared": "All items removed from cart"
+  },
+  "wishlist": {
+    "alreadyExists": "Product is already in your wishlist",
+    "added": "Product added to wishlist",
+    "removed": "Product removed from wishlist",
+    "clearedAll": "All products removed from wishlist"
+  },
+  "catalog": {
+    "categoryNotFound": "Category not found",
+    "brandNotFound": "Brand not found",
+    "collectionNotFound": "Collection not found",
+    "productNotFound": "Product not found",
+    "cannotDeleteCategoryWithProducts": "Cannot delete category that has products",
+    "cannotDeleteBrandWithProducts": "Cannot delete brand that has products",
+    "searchKeywordRequired": "Search keyword is required",
+    "invalidCategoryId": "Invalid category ID",
+    "categoriesNotExist": "One or more categories do not exist",
+    "warrantyPackagesNotExist": "One or more warranty packages do not exist"
+  },
+  "payment": {
+    "orderNotFound": "Order not found",
+    "accessDenied": "You do not have permission to access this order",
+    "orderIdRequired": "Order ID is required",
+    "invalidRefundAmount": "Invalid refund amount (must be > 0 and <= order total)",
+    "invalidSignature": "Invalid signature",
+    "unknownError": "Unknown error",
+    "processingError": "Order processing error",
+    "webhookUnauthorized": "Webhook request is unauthorized",
+    "missingRequiredFields": "Missing required fields",
+    "invalidTransactionIdType": "Invalid transaction ID data type",
+    "invalidDataType": "Invalid data type",
+    "amountMustBePositive": "Transfer amount must be positive",
+    "invalidTransactionType": "Invalid transaction type",
+    "ignoringOutbound": "Ignoring outbound transaction",
+    "invalidTransactionDate": "Invalid transaction date format"
+  },
+  "content": {
+    "bannerNotFound": "Banner not found",
+    "slugExists": "Slug already exists",
+    "newsNotFound": "News article not found",
+    "newsDeleted": "News article deleted successfully",
+    "campaignNotFound": "Email campaign not found",
+    "campaignAlreadySent": "This email campaign has already been sent",
+    "emailSendFailed": "Email sending failed: {{details}}",
+    "campaignSent": "Campaign sent successfully to {{count}} recipients",
+    "emailRequired": "Email is required",
+    "alreadySubscribed": "You have already subscribed to our newsletter.",
+    "subscribedSuccess": "Thank you for subscribing to our newsletter!",
+    "requiredFieldsMissing": "Please provide all required fields (name, email, subject, content)",
+    "feedbackReceived": "Thank you for your feedback. We will review it soon!",
+    "serverError": "Server error"
+  },
+  "reviews": {
+    "productNotFound": "Product does not exist",
+    "purchaseRequired": "You need to purchase the product before reviewing",
+    "notFound": "Review not found",
+    "deleted": "Review deleted successfully",
+    "verified": "Review has been verified",
+    "rejected": "Review has been rejected",
+    "cannotReviewOwn": "You cannot review your own review",
+    "markedHelpful": "Review marked as helpful",
+    "markedUnhelpful": "Review marked as not helpful"
+  },
+  "upload": {
+    "noFile": "No file uploaded",
+    "invalidFileType": "Only JPG, PNG, WEBP files are allowed",
+    "invalidFileName": "Invalid file name",
+    "accessDenied": "Access denied",
+    "invalidType": "Invalid file type",
+    "fileNotFound": "File not found",
+    "deleteSuccess": "File deleted successfully",
+    "uploadSuccess": "File uploaded successfully",
+    "batchUploadSuccess": "{{count}} files uploaded successfully"
+  },
+  "loyalty": {
+    "userNotFound": "User not found",
+    "insufficientPoints": "Insufficient loyalty points (current: {{current}}, required: {{required}})"
+  },
+  "inventory": {
+    "productNotFound": "Product not found",
+    "variantNotFound": "Variant not found"
+  },
+  "ai": {
+    "messageFailed": "Message processing failed",
+    "fallbackResponse": "Sorry, I'm experiencing a minor issue. Please try again in a moment!",
+    "analyticsSaved": "Analytics data recorded successfully",
+    "suggestionsHot": "View hot products",
+    "suggestionsDeals": "Find deals",
+    "suggestionsSupport": "Contact support"
+  },
+  "attribute": {
+    "cannotGetGroups": "Unable to get attribute groups",
+    "cannotGetProductGroups": "Unable to get product attribute groups",
+    "cannotCreateGroup": "Unable to create attribute group",
+    "cannotAddValue": "Unable to add attribute value",
+    "cannotAssignGroup": "Unable to assign attribute group to product",
+    "cannotUpdateGroup": "Unable to update attribute group",
+    "cannotUpdateValue": "Unable to update attribute value",
+    "cannotDeleteGroup": "Unable to delete attribute group",
+    "cannotDeleteValue": "Unable to delete attribute value",
+    "baseNameRequired": "Base name is required",
+    "cannotPreviewName": "Unable to preview product name",
+    "cannotGetNameAttributes": "Unable to get name-affecting attributes",
+    "cannotBatchCreateNames": "Unable to batch create product names",
+    "cannotCreateRealtimeName": "Unable to create real-time name"
+  },
+  "warranty": {
+    "serverError": "Server error"
+  },
+  "email": {
+    "footer": {
+      "memberNotice": "You received this email because you are a member of our system.",
+      "copyright": "All rights reserved."
+    },
+    "newsletter": {
+      "subject": "Thank you for subscribing to our newsletter!",
+      "welcome": "Welcome!",
+      "thankYou": "Thank you for subscribing to our newsletter. You will receive the latest information about products, promotions, and tech trends.",
+      "explore": "Explore our latest products now!",
+      "goToStore": "Go to store",
+      "unsubscribe": "If you no longer wish to receive emails, you can unsubscribe at any time."
+    },
+    "otp": {
+      "subject": "{{storeName}} verification code",
+      "title": "Account verification",
+      "description": "Thank you for registering. Enter the OTP code below to activate your account:",
+      "label": "OTP Verification Code",
+      "expiry": "This code is valid for <strong>10 minutes</strong>",
+      "ignore": "If you did not make this request, please ignore this email."
+    },
+    "resetPassword": {
+      "subject": "Reset your password",
+      "title": "Reset password",
+      "description": "You have requested a password reset. Please click the link below to reset your password:",
+      "linkText": "Reset password",
+      "ignore": "If you did not make this request, please ignore this email.",
+      "expiry": "This link will expire in 15 minutes."
+    },
+    "orderConfirmation": {
+      "subject": "Order confirmation #{{orderNumber}}",
+      "title": "Order confirmation",
+      "thankYou": "Thank you for your order. Your order has been confirmed and is being processed.",
+      "orderNumber": "Order number:",
+      "orderDate": "Order date:",
+      "estimatedDelivery": "Estimated delivery:",
+      "orderDetails": "Order details",
+      "product": "Product",
+      "quantity": "Quantity",
+      "unitPrice": "Unit price",
+      "lineTotal": "Total",
+      "subtotal": "Subtotal:",
+      "shipping": "Shipping:",
+      "total": "Total:",
+      "shippingAddress": "Shipping address",
+      "notification": "We will notify you when your order is delivered.",
+      "contactUs": "If you have any questions, please contact us."
+    },
+    "orderStatus": {
+      "subject": "Order status update #{{orderNumber}}",
+      "title": "Order status update",
+      "updated": "Your order has been updated.",
+      "orderNumber": "Order number:",
+      "orderDate": "Order date:",
+      "newStatus": "New status:",
+      "trackOrder": "You can track your order in your account.",
+      "contactUs": "If you have any questions, please contact us.",
+      "statuses": {
+        "pending": "Pending",
+        "processing": "Processing",
+        "shipped": "Shipped",
+        "delivered": "Delivered",
+        "cancelled": "Cancelled"
+      }
+    },
+    "orderCancelled": {
+      "subject": "Order #{{orderNumber}} has been cancelled",
+      "title": "Order cancelled",
+      "description": "Your order has been cancelled as requested.",
+      "orderNumber": "Order number:",
+      "orderDate": "Order date:",
+      "refund": "If you have already paid for this order, the refund will be processed within 5-7 business days.",
+      "contactUs": "If you have any questions, please contact us."
+    },
+    "contactFeedback": {
+      "subject": "[New feedback] {{subject}}",
+      "title": "New customer feedback",
+      "name": "Name:",
+      "email": "Email:",
+      "subjectLabel": "Subject:",
+      "content": "Content:",
+      "autoNotice": "This email was sent automatically when new customer feedback was received."
+    }
+  }
+}

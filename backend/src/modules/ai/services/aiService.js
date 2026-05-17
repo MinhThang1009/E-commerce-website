@@ -3,10 +3,9 @@ const { AppError } = require('../../../shared/errors');
 // AI Service — orchestrate chatbot interactions qua RagPipeline + product
 // search/deals/trending qua aiRepository.
 //
-// Sprint 11 thin scope: 5 endpoint chính (handleMessage, productSearch,
-// recommendations, analytics, addToCart). Logic phức tạp giữ ở legacy
-// services/ai/* qua adapter; service chỉ orchestrate.
-class AiService {
+// 4 endpoint chính (handleMessage, recommendations, analytics, addToCart).
+// Logic phức tạp giữ ở services/ai/* qua adapter; service chỉ orchestrate.
+class AIService {
   constructor({ aiRepository, ragPipeline, logger }) {
     this.repo = aiRepository;
     this.ragPipeline = ragPipeline;
@@ -54,4 +53,4 @@ class AiService {
   }
 }
 
-module.exports = AiService;
+module.exports = AIService;

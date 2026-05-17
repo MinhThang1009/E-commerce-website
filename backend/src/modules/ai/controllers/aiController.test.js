@@ -1,11 +1,11 @@
-// Unit tests cho AiController — phủ các nhánh còn thiếu:
+// Unit tests cho AIController — phủ các nhánh còn thiếu:
 //   - productSearch: happy path + error path (next(err))
 //   - getRecommendations: happy path + error path
 //   - trackAnalytics: happy path + error path
 //   - addToCart: happy path + error path
 //   - handleMessage: 500 fallback (line 19) + 400 path
 
-const AiController = require('./aiController');
+const AIController = require('./aiController');
 
 function makeRes() {
   const res = {};
@@ -27,7 +27,7 @@ function makeService() {
   };
 }
 
-describe('AiController', () => {
+describe('AIController', () => {
   let controller;
   let aiService;
   let logger;
@@ -35,7 +35,7 @@ describe('AiController', () => {
   beforeEach(() => {
     aiService = makeService();
     logger = makeLogger();
-    controller = new AiController({ aiService, logger });
+    controller = new AIController({ aiService, logger });
   });
 
   // ────────────────────────────────────────────────────────────

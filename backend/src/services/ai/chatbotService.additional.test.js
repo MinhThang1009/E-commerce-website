@@ -1,6 +1,6 @@
 /**
- * Additional unit tests cho GeminiChatbotService.
- * Bao gồm các nhánh chưa được covered trong geminiChatbot.test.js:
+ * Additional unit tests cho ChatbotService.
+ * Bao gồm các nhánh chưa được covered trong chatbotService.test.js:
  *  - _ensureCatalogCache: load brands/categories từ DB
  *  - initializeChatbot: nhánh apiKey hợp lệ và nhánh lỗi
  *  - getAIResponse: success path (choices trả về JSON hợp lệ)
@@ -36,8 +36,8 @@ jest.mock('../../models', () => ({
 jest.mock('../../services/ai/vectorStore', () => ({
   items: [],
   loadPromise: Promise.resolve(),
-  search: jest.fn().mockResolvedValue([]),
-  addProduct: jest.fn(),
+  hybridSearch: jest.fn().mockResolvedValue([]),
+  upsertProduct: jest.fn(),
   save: jest.fn(),
   enrichProductData: jest.fn((data) => data),
   detectLanguage: jest.fn((text) => {
@@ -62,25 +62,25 @@ const logger = require('../../utils/logger');
 
 // Quan trọng: fresh require trong mỗi test suite khi cần reset singleton state
 // Dùng module cache approach — require một lần và mutate state trực tiếp
-let geminiService;
+let chatbotService;
 beforeAll(() => {
-  geminiService = require('./geminiChatbot');
+  chatbotService = require('./chatbotService');
 });
 
 afterEach(() => {
   jest.clearAllMocks();
-  geminiService.conversationHistory.clear();
+  chatbotService.conversationHistory.clear();
   // Reset catalog cache
-  geminiService._brandsCache = null;
-  geminiService._categoriesCache = null;
-  geminiService._catalogCacheExpiry = 0;
+  chatbotService._brandsCache = null;
+  chatbotService._categoriesCache = null;
+  chatbotService._catalogCacheExpiry = 0;
 });
 
 // ============================================================
-// GeminiChatbotService._ensureCatalogCache
+// ChatbotService._ensureCatalogCache
 // ============================================================
 
-describe('GeminiChatbotService._ensureCatalogCache', () => {
+describe('ChatbotService._ensureCatalogCache', () => {
   it('load brands và categories từ DB khi cache chưa có', async () => {
     // Production dùng attributes: ['nameVi', 'nameEn'] — mock data phải match
     mockBrandFindAll.mockResolvedValueOnce([
@@ -92,45 +92,45 @@ describe('GeminiChatbotService._ensureCatalogCache', () => {
       { nameVi: 'Laptop', nameEn: 'Laptop' },
     ]);
 
-    await geminiService._ensureCatalogCache();
+    await chatbotService._ensureCatalogCache();
 
-    expect(geminiService._brandsCache).toEqual(['Apple', 'Samsung']);
-    expect(geminiService._categoriesCache).toEqual(['Điện thoại', 'Laptop']);
-    expect(geminiService._catalogCacheExpiry).toBeGreaterThan(Date.now());
+    expect(chatbotService._brandsCache).toEqual(['Apple', 'Samsung']);
+    expect(chatbotService._categoriesCache).toEqual(['Điện thoại', 'Laptop']);
+    expect(chatbotService._catalogCacheExpiry).toBeGreaterThan(Date.now());
   });
 
   it('không gọi DB lại khi cache còn hạn', async () => {
     // Seed cache đã có
-    geminiService._brandsCache = ['Apple'];
-    geminiService._categoriesCache = ['Điện thoại'];
-    geminiService._catalogCacheExpiry = Date.now() + 60000; // còn 1 phút
+    chatbotService._brandsCache = ['Apple'];
+    chatbotService._categoriesCache = ['Điện thoại'];
+    chatbotService._catalogCacheExpiry = Date.now() + 60000; // còn 1 phút
 
-    await geminiService._ensureCatalogCache();
+    await chatbotService._ensureCatalogCache();
 
     expect(mockBrandFindAll).not.toHaveBeenCalled();
     expect(mockCategoryFindAll).not.toHaveBeenCalled();
   });
 
   it('reload khi cache hết hạn', async () => {
-    geminiService._brandsCache = ['OldBrand'];
-    geminiService._categoriesCache = ['OldCat'];
-    geminiService._catalogCacheExpiry = Date.now() - 1000; // đã hết hạn
+    chatbotService._brandsCache = ['OldBrand'];
+    chatbotService._categoriesCache = ['OldCat'];
+    chatbotService._catalogCacheExpiry = Date.now() - 1000; // đã hết hạn
 
     mockBrandFindAll.mockResolvedValueOnce([{ nameVi: 'NewBrand', nameEn: null }]);
     mockCategoryFindAll.mockResolvedValueOnce([{ nameVi: 'NewCat', nameEn: null }]);
 
-    await geminiService._ensureCatalogCache();
+    await chatbotService._ensureCatalogCache();
 
-    expect(geminiService._brandsCache).toEqual(['NewBrand']);
-    expect(geminiService._categoriesCache).toEqual(['NewCat']);
+    expect(chatbotService._brandsCache).toEqual(['NewBrand']);
+    expect(chatbotService._categoriesCache).toEqual(['NewCat']);
   });
 });
 
 // ============================================================
-// GeminiChatbotService.parseAIResponse
+// ChatbotService.parseAIResponse
 // ============================================================
 
-describe('GeminiChatbotService.parseAIResponse', () => {
+describe('ChatbotService.parseAIResponse', () => {
   const sampleProducts = [
     {
       id: 1,
@@ -175,7 +175,7 @@ describe('GeminiChatbotService.parseAIResponse', () => {
       intent: 'product_search',
     });
 
-    const result = geminiService.parseAIResponse(aiText, sampleProducts, 'iphone');
+    const result = chatbotService.parseAIResponse(aiText, sampleProducts, 'iphone');
 
     expect(result.response).toBe('Tôi gợi ý iPhone 15 Pro cho bạn!');
     expect(result.products).toHaveLength(1);
@@ -192,7 +192,7 @@ describe('GeminiChatbotService.parseAIResponse', () => {
       intent: 'pricing',
     });
 
-    const result = geminiService.parseAIResponse(aiText, sampleProducts, 'iphone');
+    const result = chatbotService.parseAIResponse(aiText, sampleProducts, 'iphone');
 
     // iPhone 15 Pro: price 29990000, compareAtPrice 32000000
     const product = result.products[0];
@@ -208,7 +208,7 @@ describe('GeminiChatbotService.parseAIResponse', () => {
       intent: 'product_search',
     });
 
-    const result = geminiService.parseAIResponse(aiText, sampleProducts, 'samsung');
+    const result = chatbotService.parseAIResponse(aiText, sampleProducts, 'samsung');
 
     expect(result.products[0].discount).toBe(0);
   });
@@ -221,7 +221,7 @@ describe('GeminiChatbotService.parseAIResponse', () => {
       intent: 'product_search',
     });
 
-    const result = geminiService.parseAIResponse(aiText, sampleProducts, 'iphone pro max');
+    const result = chatbotService.parseAIResponse(aiText, sampleProducts, 'iphone pro max');
 
     // Phải match đúng Pro Max, không match nhầm Pro
     expect(result.products).toHaveLength(1);
@@ -236,7 +236,7 @@ describe('GeminiChatbotService.parseAIResponse', () => {
       intent: 'product_search',
     });
 
-    geminiService.parseAIResponse(aiText, sampleProducts, 'iphone');
+    chatbotService.parseAIResponse(aiText, sampleProducts, 'iphone');
 
     expect(logger.warn).toHaveBeenCalledWith(expect.stringContaining('Hallucination detected'));
   });
@@ -248,13 +248,13 @@ describe('GeminiChatbotService.parseAIResponse', () => {
       intent: 'general',
     });
 
-    const result = geminiService.parseAIResponse(aiText, [], 'hello');
+    const result = chatbotService.parseAIResponse(aiText, [], 'hello');
 
     expect(result.suggestions).toHaveLength(4); // default 4 suggestions
   });
 
   it('fallback về simpleKeywordMatch khi JSON parse fail', () => {
-    const result = geminiService.parseAIResponse('not-json-at-all', sampleProducts, 'iphone');
+    const result = chatbotService.parseAIResponse('not-json-at-all', sampleProducts, 'iphone');
 
     // simpleKeywordMatch sẽ tìm "iphone" trong product names
     expect(result).toHaveProperty('response');
@@ -268,7 +268,7 @@ describe('GeminiChatbotService.parseAIResponse', () => {
       suggestions: [],
     });
 
-    const result = geminiService.parseAIResponse(aiText, [], 'hello');
+    const result = chatbotService.parseAIResponse(aiText, [], 'hello');
     expect(result.intent).toBe('general');
   });
 
@@ -292,7 +292,7 @@ describe('GeminiChatbotService.parseAIResponse', () => {
       intent: 'product_search',
     });
 
-    const result = geminiService.parseAIResponse(aiText, productsWithUndefinedInStock, 'test');
+    const result = chatbotService.parseAIResponse(aiText, productsWithUndefinedInStock, 'test');
     expect(result.products[0].inStock).toBe(true);
   });
 
@@ -300,16 +300,16 @@ describe('GeminiChatbotService.parseAIResponse', () => {
     const aiText =
       '```json\n{"response":"Tốt","matchedProducts":[],"suggestions":[],"intent":"general"}\n```';
 
-    const result = geminiService.parseAIResponse(aiText, [], 'hello');
+    const result = chatbotService.parseAIResponse(aiText, [], 'hello');
     expect(result.response).toBe('Tốt');
   });
 });
 
 // ============================================================
-// GeminiChatbotService.simpleKeywordMatch — nhánh hàng mới nhất
+// ChatbotService.simpleKeywordMatch — nhánh hàng mới nhất
 // ============================================================
 
-describe('GeminiChatbotService.simpleKeywordMatch — hàng mới nhất', () => {
+describe('ChatbotService.simpleKeywordMatch — hàng mới nhất', () => {
   const productsWithDates = [
     {
       id: 1,
@@ -347,7 +347,7 @@ describe('GeminiChatbotService.simpleKeywordMatch — hàng mới nhất', () =>
   ];
 
   it('query "sản phẩm mới" → sort theo createdAt DESC và trả về sản phẩm mới nhất', () => {
-    const result = geminiService.simpleKeywordMatch('sản phẩm mới nhất', productsWithDates);
+    const result = chatbotService.simpleKeywordMatch('sản phẩm mới nhất', productsWithDates);
 
     expect(result.response).toContain('mới nhất');
     // Laptop B (2025-06-01) phải đứng đầu
@@ -355,28 +355,28 @@ describe('GeminiChatbotService.simpleKeywordMatch — hàng mới nhất', () =>
   });
 
   it('query "hàng mới" → kích hoạt nhánh new products', () => {
-    const result = geminiService.simpleKeywordMatch('hàng mới về', productsWithDates);
+    const result = chatbotService.simpleKeywordMatch('hàng mới về', productsWithDates);
 
     expect(result.suggestions).toContain('Sản phẩm khuyến mãi');
     expect(result.intent).toBe('product_search');
   });
 
   it('query "new" → kích hoạt nhánh new products', () => {
-    const result = geminiService.simpleKeywordMatch('show me new products', productsWithDates);
+    const result = chatbotService.simpleKeywordMatch('show me new products', productsWithDates);
 
     // English input → detectLanguage('show me new products') = 'en' → English response
     expect(result.response).toContain('latest');
   });
 
   it('query "mới nhất" → kích hoạt nhánh new products', () => {
-    const result = geminiService.simpleKeywordMatch('điện thoại mới nhất', productsWithDates);
+    const result = chatbotService.simpleKeywordMatch('điện thoại mới nhất', productsWithDates);
 
     expect(result).toHaveProperty('products');
     expect(result.intent).toBe('product_search');
   });
 
   it('query thông thường không khớp → getFallbackResponse', () => {
-    const result = geminiService.simpleKeywordMatch('xyzzy không khớp gì', []);
+    const result = chatbotService.simpleKeywordMatch('xyzzy không khớp gì', []);
 
     // simpleKeywordMatch → không có match → getFallbackResponse
     expect(result).toHaveProperty('response');
@@ -385,10 +385,10 @@ describe('GeminiChatbotService.simpleKeywordMatch — hàng mới nhất', () =>
 });
 
 // ============================================================
-// GeminiChatbotService.simpleKeywordMatch — keyword matching
+// ChatbotService.simpleKeywordMatch — keyword matching
 // ============================================================
 
-describe('GeminiChatbotService.simpleKeywordMatch — keyword matching', () => {
+describe('ChatbotService.simpleKeywordMatch — keyword matching', () => {
   const products = [
     {
       id: 1,
@@ -417,21 +417,21 @@ describe('GeminiChatbotService.simpleKeywordMatch — keyword matching', () => {
   ];
 
   it('khớp sản phẩm theo keyword trong tên và trả về danh sách', () => {
-    const result = geminiService.simpleKeywordMatch('tìm iphone', products);
+    const result = chatbotService.simpleKeywordMatch('tìm iphone', products);
 
     expect(result.products.length).toBeGreaterThan(0);
     expect(result.products[0].name).toBe('iPhone 15 Pro');
   });
 
   it('khớp sản phẩm theo keyword trong shortDescription', () => {
-    const result = geminiService.simpleKeywordMatch('laptop chuyên nghiệp', products);
+    const result = chatbotService.simpleKeywordMatch('laptop chuyên nghiệp', products);
 
     // MacBook Pro M4 có shortDescription chứa "laptop"
     expect(result).toHaveProperty('products');
   });
 
   it('tính discount đúng cho sản phẩm có compareAtPrice', () => {
-    const result = geminiService.simpleKeywordMatch('iphone', products);
+    const result = chatbotService.simpleKeywordMatch('iphone', products);
 
     const iphone = result.products.find((p) => p.name === 'iPhone 15 Pro');
     if (iphone) {
@@ -440,7 +440,7 @@ describe('GeminiChatbotService.simpleKeywordMatch — keyword matching', () => {
   });
 
   it('dedup products theo id khi cùng product match nhiều term', () => {
-    const result = geminiService.simpleKeywordMatch('iphone flagship apple', products);
+    const result = chatbotService.simpleKeywordMatch('iphone flagship apple', products);
 
     const ids = result.products.map((p) => p.id);
     const uniqueIds = new Set(ids);
@@ -449,21 +449,21 @@ describe('GeminiChatbotService.simpleKeywordMatch — keyword matching', () => {
 });
 
 // ============================================================
-// GeminiChatbotService.getAIResponse — success path
+// ChatbotService.getAIResponse — success path
 // ============================================================
 
-describe('GeminiChatbotService.getAIResponse — success path', () => {
+describe('ChatbotService.getAIResponse — success path', () => {
   beforeEach(() => {
     // Seed catalog cache để không gọi DB
-    geminiService._brandsCache = ['Apple', 'Samsung'];
-    geminiService._categoriesCache = ['Điện thoại', 'Laptop'];
-    geminiService._catalogCacheExpiry = Date.now() + 60000;
+    chatbotService._brandsCache = ['Apple', 'Samsung'];
+    chatbotService._categoriesCache = ['Điện thoại', 'Laptop'];
+    chatbotService._catalogCacheExpiry = Date.now() + 60000;
   });
 
   it('trả về parsed AI response khi API trả về JSON hợp lệ', async () => {
     // Production dùng this.providers array — push provider tạm để trigger API call
-    const originalProviders = geminiService.providers;
-    geminiService.providers = [
+    const originalProviders = chatbotService.providers;
+    chatbotService.providers = [
       { key: 'real-api-key', url: 'https://test.api/chat', model: 'test-model' },
     ];
 
@@ -492,18 +492,18 @@ describe('GeminiChatbotService.getAIResponse — success path', () => {
       },
     ];
 
-    const result = await geminiService.getAIResponse('iphone 15 pro', products, {}, []);
+    const result = await chatbotService.getAIResponse('iphone 15 pro', products, {}, []);
 
     expect(result.response).toBe('Đây là iPhone 15 Pro!');
     expect(result.products).toHaveLength(1);
     expect(result.intent).toBe('product_search');
 
-    geminiService.providers = originalProviders;
+    chatbotService.providers = originalProviders;
   });
 
   it('trả về fallback khi choices[0].message.content rỗng', async () => {
-    const originalProviders = geminiService.providers;
-    geminiService.providers = [
+    const originalProviders = chatbotService.providers;
+    chatbotService.providers = [
       { key: 'real-api-key', url: 'https://test.api/chat', model: 'test-model' },
     ];
 
@@ -511,17 +511,17 @@ describe('GeminiChatbotService.getAIResponse — success path', () => {
       data: { choices: [{ message: { content: null } }] },
     });
 
-    const result = await geminiService.getAIResponse('tìm điện thoại', [], {}, []);
+    const result = await chatbotService.getAIResponse('tìm điện thoại', [], {}, []);
 
     expect(result).toHaveProperty('response');
     expect(result.intent).toBe('general');
 
-    geminiService.providers = originalProviders;
+    chatbotService.providers = originalProviders;
   });
 
   it('truyền conversation history vào API call', async () => {
-    const originalProviders = geminiService.providers;
-    geminiService.providers = [
+    const originalProviders = chatbotService.providers;
+    chatbotService.providers = [
       { key: 'real-api-key', url: 'https://test.api/chat', model: 'test-model' },
     ];
 
@@ -547,18 +547,18 @@ describe('GeminiChatbotService.getAIResponse — success path', () => {
       { role: 'assistant', content: 'trả lời trước' },
     ];
 
-    await geminiService.getAIResponse('câu tiếp theo', [], {}, history);
+    await chatbotService.getAIResponse('câu tiếp theo', [], {}, history);
 
     const callArgs = axios.post.mock.calls[0][1];
     // messages phải chứa history
     expect(callArgs.messages.some((m) => m.content === 'câu trước')).toBe(true);
 
-    geminiService.providers = originalProviders;
+    chatbotService.providers = originalProviders;
   });
 
-  it('sanitize userMessage — trim và giới hạn 1000 ký tự', async () => {
-    const originalProviders = geminiService.providers;
-    geminiService.providers = [
+  it('sanitize userMessage — trim và giới hạn 2000 ký tự', async () => {
+    const originalProviders = chatbotService.providers;
+    chatbotService.providers = [
       { key: 'real-api-key', url: 'https://test.api/chat', model: 'test-model' },
     ];
 
@@ -579,26 +579,23 @@ describe('GeminiChatbotService.getAIResponse — success path', () => {
       },
     });
 
-    const longMessage = 'a'.repeat(1200); // vượt giới hạn 1000
-    await geminiService.getAIResponse(longMessage, [], {}, []);
+    const longMessage = 'a'.repeat(2500); // vượt giới hạn 2000
+    await chatbotService.getAIResponse(longMessage, [], {}, []);
 
     const callArgs = axios.post.mock.calls[0][1];
     const userMsgContent = callArgs.messages[callArgs.messages.length - 1].content;
-    // Content phải chứa message đã bị cắt (1000 chars) nhưng không chứa ký tự thứ 1001
-    // Kiểm tra prompt chứa message dưới 1001 chars
     expect(userMsgContent).toContain('a'.repeat(100));
-    // Đảm bảo không có 1200 chữ 'a' liên tiếp trong prompt
-    expect(userMsgContent.includes('a'.repeat(1001))).toBe(false);
+    expect(userMsgContent.includes('a'.repeat(2001))).toBe(false);
 
-    geminiService.providers = originalProviders;
+    chatbotService.providers = originalProviders;
   });
 });
 
 // ============================================================
-// GeminiChatbotService.parseAIResponse — number-based version matching
+// ChatbotService.parseAIResponse — number-based version matching
 // ============================================================
 
-describe('GeminiChatbotService.parseAIResponse — version number matching', () => {
+describe('ChatbotService.parseAIResponse — version number matching', () => {
   const productsWithVersionNumbers = [
     {
       id: 1,
@@ -646,7 +643,7 @@ describe('GeminiChatbotService.parseAIResponse — version number matching', () 
       intent: 'product_search',
     });
 
-    const result = geminiService.parseAIResponse(aiText, productsWithVersionNumbers, 'iphone 16');
+    const result = chatbotService.parseAIResponse(aiText, productsWithVersionNumbers, 'iphone 16');
 
     expect(result.products).toHaveLength(1);
     expect(result.products[0].name).toBe('iPhone 16');
@@ -660,7 +657,7 @@ describe('GeminiChatbotService.parseAIResponse — version number matching', () 
       intent: 'product_search',
     });
 
-    const result = geminiService.parseAIResponse(
+    const result = chatbotService.parseAIResponse(
       aiText,
       productsWithVersionNumbers,
       'galaxy ultra',
@@ -694,7 +691,7 @@ describe('GeminiChatbotService.parseAIResponse — version number matching', () 
       intent: 'product_search',
     });
 
-    const result = geminiService.parseAIResponse(aiText, simpleProducts, 'dell');
+    const result = chatbotService.parseAIResponse(aiText, simpleProducts, 'dell');
 
     expect(result.products).toHaveLength(1);
     expect(result.products[0].name).toBe('Laptop Dell Inspiron');
@@ -702,7 +699,7 @@ describe('GeminiChatbotService.parseAIResponse — version number matching', () 
 });
 
 // ============================================================
-// GeminiChatbotService.parseAIResponse — word intersection matching (lines 382-386)
+// ChatbotService.parseAIResponse — word intersection matching (lines 382-386)
 //
 // Điều kiện để vào nhánh này:
 //   1. pName !== rName (không exact match)
@@ -711,7 +708,7 @@ describe('GeminiChatbotService.parseAIResponse — version number matching', () 
 //   4. word intersection quyết định kết quả
 // ============================================================
 
-describe('GeminiChatbotService.parseAIResponse — word intersection matching (lines 382-386)', () => {
+describe('ChatbotService.parseAIResponse — word intersection matching (lines 382-386)', () => {
   it('intersection ≥ 80% words → match thành công (line 386 = true)', () => {
     // pName = "laptop dell inspiron" (3 từ: laptop, dell, inspiron)
     // rName = "dell inspiron laptop" (3 từ: dell, inspiron, laptop — khác order)
@@ -739,7 +736,7 @@ describe('GeminiChatbotService.parseAIResponse — word intersection matching (l
       intent: 'product_search',
     });
 
-    const result = geminiService.parseAIResponse(aiText, products, 'dell inspiron');
+    const result = chatbotService.parseAIResponse(aiText, products, 'dell inspiron');
 
     // Phải match vì word intersection >= 80%
     expect(result.products).toHaveLength(1);
@@ -770,7 +767,7 @@ describe('GeminiChatbotService.parseAIResponse — word intersection matching (l
       intent: 'product_search',
     });
 
-    const result = geminiService.parseAIResponse(aiText, products, 'samsung');
+    const result = chatbotService.parseAIResponse(aiText, products, 'samsung');
 
     // KHÔNG match vì word intersection < 80%
     expect(result.products).toHaveLength(0);
@@ -802,7 +799,7 @@ describe('GeminiChatbotService.parseAIResponse — word intersection matching (l
       intent: 'product_search',
     });
 
-    const result = geminiService.parseAIResponse(aiText, products, 'sony');
+    const result = chatbotService.parseAIResponse(aiText, products, 'sony');
 
     // Đúng 80% → phải match
     expect(result.products).toHaveLength(1);
@@ -833,7 +830,7 @@ describe('GeminiChatbotService.parseAIResponse — word intersection matching (l
       intent: 'product_search',
     });
 
-    const result = geminiService.parseAIResponse(aiText, products, 'bose');
+    const result = chatbotService.parseAIResponse(aiText, products, 'bose');
 
     // Không match: 2/5 = 40% < 80%
     expect(result.products).toHaveLength(0);
@@ -863,7 +860,7 @@ describe('GeminiChatbotService.parseAIResponse — word intersection matching (l
       intent: 'product_search',
     });
 
-    const result = geminiService.parseAIResponse(aiText, products, 'màn hình');
+    const result = chatbotService.parseAIResponse(aiText, products, 'màn hình');
 
     // Từ "c" bị loại → intersection = {màn, hình} = 2 < 3.2 → không match
     expect(result.products).toHaveLength(0);
@@ -871,23 +868,23 @@ describe('GeminiChatbotService.parseAIResponse — word intersection matching (l
 });
 
 // ============================================================
-// GeminiChatbotService.handleMessage — outer catch fallback
+// ChatbotService.handleMessage — outer catch fallback
 // ============================================================
 
-describe('GeminiChatbotService.handleMessage — outer catch fallback', () => {
-  it('trả về fallback khi preprocessMessage throw không xử lý được', async () => {
-    const originalKey = geminiService.apiKey;
-    geminiService.apiKey = 'real-api-key';
+describe('ChatbotService.handleMessage — outer catch fallback', () => {
+  it('trả về fallback khi normalizeAndClassify throw không xử lý được', async () => {
+    const originalKey = chatbotService.apiKey;
+    chatbotService.apiKey = 'real-api-key';
 
-    // preprocessMessage dùng axios.post — mock nó throw KHÔNG phải Error object
-    // để trigger outer catch (inner try-catch trong preprocessMessage bắt Error,
+    // normalizeAndClassify dùng axios.post — mock nó throw KHÔNG phải Error object
+    // để trigger outer catch (inner try-catch trong normalizeAndClassify bắt Error,
     // nhưng outer catch trong handleMessage bắt nếu có lỗi khác)
     // Cách trigger: mock _persistMessages để throw
-    const origPersist = geminiService._persistMessages.bind(geminiService);
+    const origPersist = chatbotService._persistMessages.bind(chatbotService);
     const mockPersist = jest.fn().mockRejectedValue(new Error('DB crash'));
-    geminiService._persistMessages = mockPersist;
+    chatbotService._persistMessages = mockPersist;
 
-    // preprocessMessage → intent off_topic → _persistMessages throw → outer catch
+    // normalizeAndClassify → intent off_topic → _persistMessages throw → outer catch
     axios.post.mockResolvedValueOnce({
       data: {
         choices: [
@@ -900,26 +897,26 @@ describe('GeminiChatbotService.handleMessage — outer catch fallback', () => {
       },
     });
 
-    const result = await geminiService.handleMessage('bóng đá hôm nay', null, null, {});
+    const result = await chatbotService.handleMessage('bóng đá hôm nay', null, null, {});
 
     expect(result).toHaveProperty('response');
 
     // Restore
-    geminiService._persistMessages = origPersist;
-    geminiService.apiKey = originalKey;
+    chatbotService._persistMessages = origPersist;
+    chatbotService.apiKey = originalKey;
   });
 });
 
 // ============================================================
-// GeminiChatbotService.handleMessage — cache write
+// ChatbotService.handleMessage — cache write
 // ============================================================
 
-describe('GeminiChatbotService.handleMessage — cache write', () => {
+describe('ChatbotService.handleMessage — cache write', () => {
   it('ghi kết quả vào Redis cache sau khi xử lý thành công với intent product_search', async () => {
-    const originalKey = geminiService.apiKey;
-    geminiService.apiKey = 'real-api-key';
+    const originalKey = chatbotService.apiKey;
+    chatbotService.apiKey = 'real-api-key';
 
-    // preprocessMessage trả về product_search intent
+    // normalizeAndClassify trả về product_search intent
     axios.post
       .mockResolvedValueOnce({
         data: {
@@ -954,12 +951,12 @@ describe('GeminiChatbotService.handleMessage — cache write', () => {
     mockRedisGet.mockResolvedValueOnce(null);
     mockRedisSetEx.mockResolvedValueOnce('OK');
 
-    vectorStoreService.search.mockResolvedValueOnce([]);
-    geminiService._brandsCache = ['Apple'];
-    geminiService._categoriesCache = ['Điện thoại'];
-    geminiService._catalogCacheExpiry = Date.now() + 60000;
+    vectorStoreService.hybridSearch.mockResolvedValueOnce([]);
+    chatbotService._brandsCache = ['Apple'];
+    chatbotService._categoriesCache = ['Điện thoại'];
+    chatbotService._catalogCacheExpiry = Date.now() + 60000;
 
-    await geminiService.handleMessage('iphone 15', 1, 'sess-cache', {});
+    await chatbotService.handleMessage('iphone 15', 1, 'sess-cache', {});
 
     // Redis setEx phải được gọi để cache kết quả
     expect(mockRedisSetEx).toHaveBeenCalledWith(
@@ -968,14 +965,14 @@ describe('GeminiChatbotService.handleMessage — cache write', () => {
       expect.any(String),
     );
 
-    geminiService.apiKey = originalKey;
+    chatbotService.apiKey = originalKey;
   });
 
   it('KHÔNG ghi cache khi intent không phải cacheable (order_inquiry)', async () => {
-    const originalKey = geminiService.apiKey;
-    geminiService.apiKey = 'real-api-key';
+    const originalKey = chatbotService.apiKey;
+    chatbotService.apiKey = 'real-api-key';
 
-    // preprocessMessage trả về order_inquiry (không cacheable)
+    // normalizeAndClassify trả về order_inquiry (không cacheable)
     axios.post.mockResolvedValueOnce({
       data: {
         choices: [
@@ -988,10 +985,10 @@ describe('GeminiChatbotService.handleMessage — cache write', () => {
       },
     });
 
-    vectorStoreService.search.mockResolvedValueOnce([]);
-    geminiService._brandsCache = [];
-    geminiService._categoriesCache = [];
-    geminiService._catalogCacheExpiry = Date.now() + 60000;
+    vectorStoreService.hybridSearch.mockResolvedValueOnce([]);
+    chatbotService._brandsCache = [];
+    chatbotService._categoriesCache = [];
+    chatbotService._catalogCacheExpiry = Date.now() + 60000;
 
     // getAIResponse
     axios.post.mockResolvedValueOnce({
@@ -1011,33 +1008,33 @@ describe('GeminiChatbotService.handleMessage — cache write', () => {
       },
     });
 
-    await geminiService.handleMessage('đơn hàng của tôi', 1, 'sess-order', {});
+    await chatbotService.handleMessage('đơn hàng của tôi', 1, 'sess-order', {});
 
     expect(mockRedisSetEx).not.toHaveBeenCalled();
 
-    geminiService.apiKey = originalKey;
+    chatbotService.apiKey = originalKey;
   });
 });
 
 // ============================================================
-// GeminiChatbotService — line 149: vectorStore.search trả về kết quả có metadata
+// ChatbotService — line 149: vectorStore.hybridSearch trả về kết quả có metadata
 // (map callback `res => ({ ...res.metadata, score: res.score })` phải được gọi)
 // ============================================================
 
-describe('GeminiChatbotService — vectorStore.search với non-empty results (line 149 map callback)', () => {
+describe('ChatbotService — vectorStore.hybridSearch với non-empty results (line 149 map callback)', () => {
   beforeEach(() => {
     // Seed catalog cache
-    geminiService._brandsCache = ['Apple'];
-    geminiService._categoriesCache = ['Điện thoại'];
-    geminiService._catalogCacheExpiry = Date.now() + 60000;
+    chatbotService._brandsCache = ['Apple'];
+    chatbotService._categoriesCache = ['Điện thoại'];
+    chatbotService._catalogCacheExpiry = Date.now() + 60000;
   });
 
-  it('vectorStore.search trả về results có metadata → map callback chạy (line 149)', async () => {
-    const originalKey = geminiService.apiKey;
-    geminiService.apiKey = 'real-api-key';
+  it('vectorStore.hybridSearch trả về results có metadata → map callback chạy (line 149)', async () => {
+    const originalKey = chatbotService.apiKey;
+    chatbotService.apiKey = 'real-api-key';
 
-    // vectorStoreService.search trả về kết quả với metadata và score
-    vectorStoreService.search.mockResolvedValueOnce([
+    // vectorStoreService.hybridSearch trả về kết quả với metadata và score
+    vectorStoreService.hybridSearch.mockResolvedValueOnce([
       {
         metadata: { id: 1, name: 'iPhone 15', slug: 'iphone-15', price: 20000000 },
         score: 0.95,
@@ -1048,9 +1045,9 @@ describe('GeminiChatbotService — vectorStore.search với non-empty results (l
       },
     ]);
 
-    // Mock preprocessMessage để return product_search intent
-    const originalPreprocess = geminiService.preprocessMessage.bind(geminiService);
-    geminiService.preprocessMessage = jest.fn().mockResolvedValue({
+    // Mock normalizeAndClassify để return product_search intent
+    const originalPreprocess = chatbotService.normalizeAndClassify.bind(chatbotService);
+    chatbotService.normalizeAndClassify = jest.fn().mockResolvedValue({
       intent: 'product_search',
       normalizedQuery: 'iphone',
       shouldRespond: true,
@@ -1058,8 +1055,8 @@ describe('GeminiChatbotService — vectorStore.search với non-empty results (l
     });
 
     // Mock getAIResponse để không thực sự gọi API
-    const originalGetAI = geminiService.getAIResponse.bind(geminiService);
-    geminiService.getAIResponse = jest.fn().mockResolvedValue({
+    const originalGetAI = chatbotService.getAIResponse.bind(chatbotService);
+    chatbotService.getAIResponse = jest.fn().mockResolvedValue({
       response: 'Đây là iPhone 15!',
       products: [{ id: 1, name: 'iPhone 15', price: 20000000 }],
       suggestions: [],
@@ -1069,25 +1066,25 @@ describe('GeminiChatbotService — vectorStore.search với non-empty results (l
     mockRedisGet.mockResolvedValue(null);
     mockChatMessageBulkCreate.mockResolvedValue([]);
 
-    await geminiService.handleMessage('tìm iphone', null, 'sess-vec-test', {});
+    await chatbotService.handleMessage('tìm iphone', null, 'sess-vec-test', {});
 
     // Map callback được gọi với non-empty results → relevantProducts được populated
-    expect(vectorStoreService.search).toHaveBeenCalled();
+    expect(vectorStoreService.hybridSearch).toHaveBeenCalled();
 
     // Restore
-    geminiService.preprocessMessage = originalPreprocess;
-    geminiService.getAIResponse = originalGetAI;
-    geminiService.apiKey = originalKey;
+    chatbotService.normalizeAndClassify = originalPreprocess;
+    chatbotService.getAIResponse = originalGetAI;
+    chatbotService.apiKey = originalKey;
     jest.clearAllMocks();
   });
 });
 
 // ============================================================
-// GeminiChatbotService.parseAIResponse — line 372 every() callback
+// ChatbotService.parseAIResponse — line 372 every() callback
 // (khi rVersions.length === pVersions.length nhưng keywords khác nhau)
 // ============================================================
 
-describe('GeminiChatbotService.parseAIResponse — line 372 every() callback', () => {
+describe('ChatbotService.parseAIResponse — line 372 every() callback', () => {
   it('cùng số version keywords nhưng khác loại → every() trả false → không match (line 372 right side)', () => {
     // rName = 'iphone 15 pro' → rVersions = ['pro'] (length 1)
     // pName = 'iphone 15 max' → pVersions = ['max'] (length 1)
@@ -1113,7 +1110,7 @@ describe('GeminiChatbotService.parseAIResponse — line 372 every() callback', (
       intent: 'product_search',
     });
 
-    const result = geminiService.parseAIResponse(aiText, products, 'iphone 15');
+    const result = chatbotService.parseAIResponse(aiText, products, 'iphone 15');
 
     // 'pro' !== 'max' → every() callback thực thi và trả false → không match
     expect(result.products).toHaveLength(0);

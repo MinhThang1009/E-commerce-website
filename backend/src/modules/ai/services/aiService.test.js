@@ -1,7 +1,7 @@
-const AiService = require('../services/aiService');
-const GeminiLlmGateway = require('../infrastructure/GeminiLlmGateway');
+const AIService = require('../services/aiService');
+const ChatbotLLMGateway = require('../infrastructure/ChatbotLLMGateway');
 
-describe('AiService', () => {
+describe('AIService', () => {
   let repo;
   let ragPipeline;
   let ruleBasedChatbot;
@@ -18,7 +18,7 @@ describe('AiService', () => {
     };
     ragPipeline = { run: jest.fn() };
     ruleBasedChatbot = { extractSearchParams: jest.fn() };
-    service = new AiService({
+    service = new AIService({
       aiRepository: repo,
       ragPipeline,
       ruleBasedChatbot,
@@ -165,17 +165,17 @@ describe('AiService', () => {
   });
 });
 
-// ─── GeminiLlmGateway.getAIResponse — line 15 ────────────────────────────────
-// Covers line 15: delegate getAIResponse sang geminiService.getAIResponse
+// ─── ChatbotLLMGateway.getAIResponse — line 15 ────────────────────────────────
+// Covers line 15: delegate getAIResponse sang chatbotService.getAIResponse
 
-describe('GeminiLlmGateway', () => {
-  test('getAIResponse delegate sang geminiChatbotService.getAIResponse — covers line 15', async () => {
+describe('ChatbotLLMGateway', () => {
+  test('getAIResponse delegate sang chatbotService.getAIResponse — covers line 15', async () => {
     const mockGeminiService = {
       handleMessage: jest.fn().mockResolvedValue({ response: 'hi' }),
       getAIResponse: jest.fn().mockResolvedValue({ response: 'AI response', products: [] }),
     };
 
-    const gateway = new GeminiLlmGateway({ geminiChatbotService: mockGeminiService });
+    const gateway = new ChatbotLLMGateway({ chatbotService: mockGeminiService });
 
     const result = await gateway.getAIResponse('tìm iphone', [{ id: 1 }], { timeOfDay: 'morning' });
 
@@ -188,13 +188,13 @@ describe('GeminiLlmGateway', () => {
     expect(result).toMatchObject({ response: 'AI response' });
   });
 
-  test('handleMessage delegate sang geminiChatbotService.handleMessage', async () => {
+  test('handleMessage delegate sang chatbotService.handleMessage', async () => {
     const mockGeminiService = {
       handleMessage: jest.fn().mockResolvedValue({ response: 'pong' }),
       getAIResponse: jest.fn(),
     };
 
-    const gateway = new GeminiLlmGateway({ geminiChatbotService: mockGeminiService });
+    const gateway = new ChatbotLLMGateway({ chatbotService: mockGeminiService });
 
     const result = await gateway.handleMessage('ping', 1, 'sess', {});
 

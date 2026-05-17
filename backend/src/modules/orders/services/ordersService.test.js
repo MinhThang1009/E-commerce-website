@@ -326,7 +326,7 @@ describe('OrdersService › createOrder', () => {
         user: mkUser(),
         body: mkOrderBody({ items: [{ productId: 999, quantity: 1 }] }),
       })
-    ).rejects.toMatchObject({ statusCode: 404, message: expect.stringContaining('999') });
+    ).rejects.toMatchObject({ statusCode: 404, message: 'orders.productNotFound' });
   });
 
   test('variant không tồn tại → AppError 404', async () => {
@@ -338,7 +338,7 @@ describe('OrdersService › createOrder', () => {
         user: mkUser(),
         body: mkOrderBody({ items: [{ productId: 1, variantId: 999, quantity: 1 }] }),
       })
-    ).rejects.toMatchObject({ statusCode: 404, message: expect.stringContaining('999') });
+    ).rejects.toMatchObject({ statusCode: 404, message: 'orders.variantNotFound' });
   });
 
   // ── Sản phẩm không active ──────────────────────────────────────────────────
@@ -352,7 +352,7 @@ describe('OrdersService › createOrder', () => {
         user: mkUser(),
         body: mkOrderBody({ items: [{ productId: 1, quantity: 1 }] }),
       })
-    ).rejects.toMatchObject({ statusCode: 400, message: expect.stringContaining('không kinh doanh') });
+    ).rejects.toMatchObject({ statusCode: 400, message: 'orders.productInactive' });
   });
 
   // ── Out of stock ───────────────────────────────────────────────────────────
@@ -367,7 +367,7 @@ describe('OrdersService › createOrder', () => {
         user: mkUser(),
         body: mkOrderBody({ items: [{ productId: 1, quantity: 5 }] }),
       })
-    ).rejects.toMatchObject({ statusCode: 400, message: expect.stringContaining('chỉ còn') });
+    ).rejects.toMatchObject({ statusCode: 400, message: 'orders.stockInsufficient' });
   });
 
   test('product lock trả null (đang bị lock bởi tx khác) → AppError 400', async () => {
@@ -394,7 +394,7 @@ describe('OrdersService › createOrder', () => {
         user: mkUser(),
         body: mkOrderBody({ items: [{ productId: 1, variantId: 10, quantity: 5 }] }),
       })
-    ).rejects.toMatchObject({ statusCode: 400, message: expect.stringContaining('chỉ còn') });
+    ).rejects.toMatchObject({ statusCode: 400, message: 'orders.stockInsufficient' });
   });
 
   // ── Discount code ──────────────────────────────────────────────────────────
@@ -411,7 +411,7 @@ describe('OrdersService › createOrder', () => {
           discountCode: 'INVALID',
         }),
       })
-    ).rejects.toMatchObject({ statusCode: 400, message: expect.stringContaining('không hợp lệ') });
+    ).rejects.toMatchObject({ statusCode: 400, message: 'orders.couponInvalid' });
   });
 
   test('discount code chưa đến ngày startDate → AppError 400', async () => {
@@ -428,7 +428,7 @@ describe('OrdersService › createOrder', () => {
         user: mkUser(),
         body: mkOrderBody({ items: [{ productId: 1, quantity: 1 }], discountCode: 'EARLY' }),
       })
-    ).rejects.toMatchObject({ statusCode: 400, message: expect.stringContaining('chưa đến') });
+    ).rejects.toMatchObject({ statusCode: 400, message: 'orders.couponNotStarted' });
   });
 
   test('discount code quá ngày endDate → AppError 400', async () => {
@@ -445,7 +445,7 @@ describe('OrdersService › createOrder', () => {
         user: mkUser(),
         body: mkOrderBody({ items: [{ productId: 1, quantity: 1 }], discountCode: 'EXPIRED' }),
       })
-    ).rejects.toMatchObject({ statusCode: 400, message: expect.stringContaining('hết hạn') });
+    ).rejects.toMatchObject({ statusCode: 400, message: 'orders.couponExpired' });
   });
 
   test('discount code đã đạt usage limit → AppError 400', async () => {
@@ -461,7 +461,7 @@ describe('OrdersService › createOrder', () => {
         user: mkUser(),
         body: mkOrderBody({ items: [{ productId: 1, quantity: 1 }], discountCode: 'MAX' }),
       })
-    ).rejects.toMatchObject({ statusCode: 400, message: expect.stringContaining('giới hạn') });
+    ).rejects.toMatchObject({ statusCode: 400, message: 'orders.couponLimitReached' });
   });
 
   test('subtotal < minOrderAmount → AppError 400', async () => {
@@ -478,7 +478,7 @@ describe('OrdersService › createOrder', () => {
         user: mkUser(),
         body: mkOrderBody({ items: [{ productId: 1, quantity: 1 }], discountCode: 'MIN200' }),
       })
-    ).rejects.toMatchObject({ statusCode: 400, message: expect.stringContaining('tối thiểu') });
+    ).rejects.toMatchObject({ statusCode: 400, message: 'orders.couponMinOrderNotMet' });
   });
 
   test('discount code type=fixed → trừ đúng số tiền cố định', async () => {
@@ -676,7 +676,7 @@ describe('OrdersService › createOrder', () => {
         user: mkUser(),
         body: mkOrderBody({ items: [{ productId: 1, quantity: 1 }], pointsToUse: 50 }),
       })
-    ).rejects.toMatchObject({ statusCode: 400, message: expect.stringContaining('không đủ điểm') });
+    ).rejects.toMatchObject({ statusCode: 400, message: 'orders.insufficientPoints' });
   });
 
   test('pointsToUse hợp lệ → trừ điểm + ghi loyalty history', async () => {
@@ -738,7 +738,7 @@ describe('OrdersService › createOrder', () => {
         body: mkOrderBody({ items: [] }), // empty → cart flow
         sessionIdCookie: null,
       })
-    ).rejects.toMatchObject({ statusCode: 400, message: expect.stringContaining('trống') });
+    ).rejects.toMatchObject({ statusCode: 400, message: 'orders.cartEmpty' });
   });
 
   test('cart flow (không có items) — cart không tìm thấy sau reload → AppError 400', async () => {
@@ -913,7 +913,7 @@ describe('OrdersService › getOrderById', () => {
 
     await expect(
       service.getOrderById({ id: 999, userId: 1, role: 'customer' })
-    ).rejects.toMatchObject({ statusCode: 404, message: expect.stringContaining('Không tìm thấy') });
+    ).rejects.toMatchObject({ statusCode: 404, message: 'orders.notFound' });
   });
 
   test('order thuộc user khác + không phải admin → AppError 403', async () => {
@@ -981,7 +981,7 @@ describe('OrdersService › cancelOrder', () => {
 
     await expect(
       service.cancelOrder({ id: 99, userId: 1 })
-    ).rejects.toMatchObject({ statusCode: 404, message: expect.stringContaining('Không tìm thấy') });
+    ).rejects.toMatchObject({ statusCode: 404, message: 'orders.notFound' });
   });
 
   // ── Domain errors từ OrderAggregate ───────────────────────────────────────

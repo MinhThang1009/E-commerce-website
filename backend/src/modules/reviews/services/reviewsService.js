@@ -26,12 +26,12 @@ class ReviewsService {
   async createReview({ userId, productId, rating, title, comment, images }) {
     const product = await this.reviewsRepository.findProductById(productId);
     if (!product) {
-      throw new AppError('Sản phẩm không tồn tại', 404);
+      throw new AppError('reviews.productNotFound', 404);
     }
 
     const hasPurchased = await this.reviewsRepository.hasUserPurchasedProduct(userId, productId);
     if (!hasPurchased) {
-      throw new AppError('Bạn cần mua sản phẩm trước khi đánh giá', 403);
+      throw new AppError('reviews.purchaseRequired', 403);
     }
 
     const existing = await this.reviewsRepository.findReviewByUserAndProduct(userId, productId);
@@ -56,7 +56,7 @@ class ReviewsService {
   async updateReview({ userId, reviewId, patch }) {
     const review = await this.reviewsRepository.findReviewByIdAndUserId(reviewId, userId);
     if (!review) {
-      throw new AppError('Không tìm thấy đánh giá', 404);
+      throw new AppError('reviews.notFound', 404);
     }
 
     if (patch.rating !== undefined) review.rating = patch.rating;
@@ -76,14 +76,14 @@ class ReviewsService {
   async deleteReview({ userId, reviewId }) {
     const review = await this.reviewsRepository.findReviewByIdAndUserId(reviewId, userId);
     if (!review) {
-      throw new AppError('Không tìm thấy đánh giá', 404);
+      throw new AppError('reviews.notFound', 404);
     }
 
     const productId = review.productId;
     await this.reviewsRepository.deleteReview(review);
     await this._refreshProductRating(productId);
 
-    return { message: 'Xóa đánh giá thành công' };
+    return { message: 'reviews.deleted' };
   }
 
   async getProductReviews({ productId, page = 1, limit = 10, sort = 'newest', rating, verified }) {
@@ -98,7 +98,7 @@ class ReviewsService {
 
     const product = await this.reviewsRepository.findProductById(productId);
     if (!product) {
-      throw new AppError('Sản phẩm không tồn tại', 404);
+      throw new AppError('reviews.productNotFound', 404);
     }
 
     const whereClause = {};
@@ -155,14 +155,14 @@ class ReviewsService {
   async verifyReview({ reviewId, isVerified }) {
     const review = await this.reviewsRepository.findReviewByPk(reviewId);
     if (!review) {
-      throw new AppError('Không tìm thấy đánh giá', 404);
+      throw new AppError('reviews.notFound', 404);
     }
 
     review.isVerified = isVerified;
     await this.reviewsRepository.saveReview(review);
 
     return {
-      message: isVerified ? 'Đánh giá đã được xác nhận' : 'Đánh giá đã bị từ chối',
+      message: isVerified ? 'reviews.verified' : 'reviews.rejected',
       data: { id: review.id, isVerified },
     };
   }
@@ -170,11 +170,11 @@ class ReviewsService {
   async markReviewHelpful({ userId, reviewId, helpful }) {
     const review = await this.reviewsRepository.findReviewByPk(reviewId);
     if (!review) {
-      throw new AppError('Không tìm thấy đánh giá', 404);
+      throw new AppError('reviews.notFound', 404);
     }
 
     if (review.userId === userId) {
-      throw new AppError('Bạn không thể đánh giá đánh giá của chính mình', 400);
+      throw new AppError('reviews.cannotRateOwnReview', 400);
     }
 
     const existing = await this.reviewsRepository.findFeedback(reviewId, userId);
@@ -203,7 +203,7 @@ class ReviewsService {
     const updated = await this.reviewsRepository.findReviewByPk(reviewId);
 
     return {
-      message: helpful ? 'Đã đánh dấu đánh giá là hữu ích' : 'Đã đánh dấu đánh giá là không hữu ích',
+      message: helpful ? 'reviews.markedHelpful' : 'reviews.markedUnhelpful',
       data: { id: updated.id, likes: updated.likes, dislikes: updated.dislikes },
     };
   }

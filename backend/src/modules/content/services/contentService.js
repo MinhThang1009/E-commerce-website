@@ -39,7 +39,7 @@ class ContentService {
 
   async getBannerById({ id }) {
     const banner = await this.contentRepository.findBannerById(id);
-    if (!banner) throw new AppError('Không tìm thấy banner', 404);
+    if (!banner) throw new AppError('content.bannerNotFound', 404);
     return banner;
   }
 
@@ -51,7 +51,7 @@ class ContentService {
 
   async updateBanner({ id, patch }) {
     const banner = await this.contentRepository.findBannerById(id);
-    if (!banner) throw new AppError('Không tìm thấy banner', 404);
+    if (!banner) throw new AppError('content.bannerNotFound', 404);
     Object.assign(banner, patch);
     await this.contentRepository.saveBanner(banner);
     await this._invalidateBannerCache();
@@ -60,7 +60,7 @@ class ContentService {
 
   async deleteBanner({ id }) {
     const banner = await this.contentRepository.findBannerById(id);
-    if (!banner) throw new AppError('Không tìm thấy banner', 404);
+    if (!banner) throw new AppError('content.bannerNotFound', 404);
     await this.contentRepository.deleteBanner(banner);
     await this._invalidateBannerCache();
   }
@@ -128,7 +128,7 @@ class ContentService {
     if (slug) {
       const existing = await this.contentRepository.findNewsBySlug(slug, { withAuthor: false });
       if (existing) {
-        throw new AppError('Slug đã tồn tại', 400);
+        throw new AppError('content.slugExists', 400);
       }
     }
     return this.contentRepository.createNews({
@@ -145,7 +145,7 @@ class ContentService {
 
     if (patch.slug && patch.slug !== news.slug) {
       const existing = await this.contentRepository.findNewsBySlug(patch.slug, { withAuthor: false });
-      if (existing) throw new AppError('Slug đã tồn tại', 400);
+      if (existing) throw new AppError('content.slugExists', 400);
     }
 
     Object.assign(news, patch);
@@ -173,10 +173,10 @@ class ContentService {
   // Gửi campaign tới subscribers + users (dedupe email).
   async sendCampaign({ id }) {
     const campaign = await this.contentRepository.findCampaignById(id);
-    if (!campaign) throw new AppError('Không tìm thấy chiến dịch email', 404);
+    if (!campaign) throw new AppError('content.campaignNotFound', 404);
 
     if (campaign.status === 'sent') {
-      throw new AppError('Chiến dịch email này đã được gửi trước đó', 400);
+      throw new AppError('content.campaignAlreadySent', 400);
     }
 
     this.logger.info(`[EmailCampaign] Đang xử lý chiến dịch #${campaign.id}: ${campaign.subject}`);
@@ -197,7 +197,7 @@ class ContentService {
         await this.emailGateway.sendBulkCampaignEmail(uniqueEmails, campaign.subject, campaign.content);
       } catch (err) {
         this.logger.error(`[EmailCampaign] Lỗi gửi: ${err.message}`);
-        throw new AppError('Gửi email thất bại: ' + err.message, 500);
+        throw new AppError('content.emailSendFailed', 500, { details: err.message });
       }
     }
 
@@ -210,21 +210,21 @@ class ContentService {
 
   async deleteCampaign({ id }) {
     const campaign = await this.contentRepository.findCampaignById(id);
-    if (!campaign) throw new AppError('Không tìm thấy chiến dịch email', 404);
+    if (!campaign) throw new AppError('content.campaignNotFound', 404);
     await this.contentRepository.deleteCampaign(campaign);
   }
 
   // ---------- Newsletter ----------
 
   async subscribeNewsletter({ email }) {
-    if (!email) throw new AppError('Email không được để trống', 400);
+    if (!email) throw new AppError('content.emailRequired', 400);
 
     const { subscriber, created } = await this.contentRepository.findOrCreateSubscriber(email);
 
     if (!created && subscriber.status === 'active') {
       return {
         statusCode: 200,
-        message: 'Bạn đã đăng ký nhận bản tin trước đó.',
+        message: 'content.alreadySubscribed',
       };
     }
 
@@ -240,7 +240,7 @@ class ContentService {
 
     return {
       statusCode: created ? 201 : 200,
-      message: 'Cảm ơn bạn đã đăng ký nhận bản tin!',
+      message: 'content.subscribedSuccess',
     };
   }
 
@@ -249,10 +249,7 @@ class ContentService {
   async sendFeedback({ payload }) {
     const { name, email, phone, subject, content } = payload;
     if (!name || !email || !subject || !content) {
-      throw new AppError(
-        'Vui lòng cung cấp đầy đủ các trường bắt buộc (name, email, subject, content)',
-        400
-      );
+      throw new AppError('content.requiredFieldsMissing', 400);
     }
 
     const feedback = await this.contentRepository.createFeedback({

@@ -190,7 +190,7 @@ describe('WishlistService', () => {
 
       expect(wishlistRepository.createItem).toHaveBeenCalledWith({ userId: 1, productId: 1 });
       expect(result.alreadyExists).toBe(false);
-      expect(result.message).toMatch(/Đã thêm/);
+      expect(result.message).toBe('wishlist.added');
     });
   });
 
@@ -212,7 +212,7 @@ describe('WishlistService', () => {
       const result = await service.removeFromWishlist({ userId: 1, productId: 1 });
 
       expect(wishlistRepository.deleteItem).toHaveBeenCalledWith(item);
-      expect(result.message).toMatch(/Đã xóa/);
+      expect(result.message).toBe('wishlist.removed');
     });
   });
 
@@ -243,7 +243,7 @@ describe('WishlistService', () => {
       const result = await service.clearWishlist({ userId: 42 });
 
       expect(wishlistRepository.clearByUserId).toHaveBeenCalledWith(42);
-      expect(result.message).toMatch(/Đã xóa tất cả/);
+      expect(result.message).toBe('wishlist.clearedAll');
     });
   });
 });

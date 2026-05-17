@@ -34,7 +34,7 @@ jest.mock('../utils/productHelpers', () => ({
 }));
 
 jest.mock('../services/ai/vectorStore', () => ({
-  addProduct: jest.fn().mockResolvedValue(undefined),
+  upsertProduct: jest.fn().mockResolvedValue(undefined),
   save: jest.fn().mockResolvedValue(undefined),
   loadPromise: Promise.resolve(),
   items: [],

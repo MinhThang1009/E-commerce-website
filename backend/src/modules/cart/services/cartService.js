@@ -282,17 +282,17 @@ class CartService {
       cart = await this.cartRepository.findActiveCartByUserId(user.id);
     } else {
       if (!cookieSessionId) {
-        return { message: 'Giỏ hàng đã trống' };
+        return { message: 'cart.alreadyEmpty' };
       }
       cart = await this.cartRepository.findActiveCartBySessionId(cookieSessionId);
     }
 
-    if (!cart) return { message: 'Giỏ hàng đã trống' };
+    if (!cart) return { message: 'cart.alreadyEmpty' };
 
     await this.cartRepository.clearCartItems(cart.id);
 
     return {
-      message: 'Đã xóa tất cả sản phẩm trong giỏ hàng',
+      message: 'cart.cleared',
       data: { id: cart.id, items: [], totalItems: 0, subtotal: 0 },
     };
   }

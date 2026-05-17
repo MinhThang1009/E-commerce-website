@@ -1,9 +1,8 @@
 const nodemailer = require('nodemailer');
 const sanitizeHtml = require('sanitize-html');
 const logger = require('../utils/logger');
+const { t } = require('../utils/i18n');
 
-// Escape các ký tự HTML đặc biệt trong data người dùng nhập trước khi đưa vào email HTML
-// Ngăn XSS nếu dữ liệu chứa thẻ HTML độc hại
 const escapeHtml = (str) => {
   if (str === null || str === undefined) return '';
   return String(str)
@@ -14,7 +13,6 @@ const escapeHtml = (str) => {
     .replace(/'/g, '&#x27;');
 };
 
-// Sanitize nội dung chiến dịch email — giữ lại formatting tags an toàn
 const sanitizeCampaignHtml = (html) => {
   if (!html) return '';
   return sanitizeHtml(html, {
@@ -28,14 +26,15 @@ const sanitizeCampaignHtml = (html) => {
   });
 };
 
-// Tạo transporter với connection pooling để tối ưu hiệu năng
+const dateLocale = (lang) => (lang === 'en' ? 'en-US' : 'vi-VN');
+
 const createTransporter = () => {
   const isGmail = process.env.EMAIL_HOST === 'smtp.gmail.com';
 
   const config = {
-    pool: true, // Bật connection pooling
-    maxConnections: 3, // Số kết nối đồng thời tối đa
-    maxMessages: 100, // Số tin nhắn tối đa mỗi kết nối
+    pool: true,
+    maxConnections: 3,
+    maxMessages: 100,
     host: process.env.EMAIL_HOST,
     port: process.env.EMAIL_PORT || (isGmail ? 587 : 465),
     secure: process.env.EMAIL_SECURE === 'true' || (!isGmail && process.env.EMAIL_PORT === '465'),
@@ -59,7 +58,6 @@ const createTransporter = () => {
   return nodemailer.createTransport(config);
 };
 
-// Instance transporter theo pattern Singleton
 let transporterInstance = null;
 const getTransporter = () => {
   if (!transporterInstance) {
@@ -68,7 +66,6 @@ const getTransporter = () => {
   return transporterInstance;
 };
 
-// Gửi email
 const sendEmail = async (options) => {
   const transporter = getTransporter();
   logger.info(`[EmailService] Sending single email to ${options.email}...`);
@@ -90,43 +87,40 @@ const sendEmail = async (options) => {
   }
 };
 
-// Gửi email chào mừng đăng ký nhận bản tin
-const sendNewsletterWelcomeEmail = async (email) => {
+const sendNewsletterWelcomeEmail = async (email, lang = 'vi') => {
   await sendEmail({
     email,
-    subject: 'Cảm ơn bạn đã đăng ký nhận bản tin!',
+    subject: t('email.newsletter.subject', lang),
     html: `
       <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; background: #f9f9f9; padding: 20px; border-radius: 8px;">
         <div style="background: white; padding: 32px; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.08);">
-          <h2 style="color: #4f6ef7; margin-bottom: 8px; font-size: 24px;">Chào mừng bạn!</h2>
-          <p style="color: #555; margin-bottom: 24px;">Cảm ơn bạn đã đăng ký nhận bản tin từ chúng tôi. Bạn sẽ nhận được những thông tin mới nhất về sản phẩm, khuyến mãi và tin tức từ cửa hàng.</p>
-          
+          <h2 style="color: #4f6ef7; margin-bottom: 8px; font-size: 24px;">${t('email.newsletter.welcome', lang)}</h2>
+          <p style="color: #555; margin-bottom: 24px;">${t('email.newsletter.thankYou', lang)}</p>
+
           <div style="background: #f0f4ff; border-radius: 12px; padding: 20px; text-align: center; margin: 24px 0;">
-            <p style="color: #4f6ef7; font-weight: bold; margin: 0;">Khám phá ngay các sản phẩm mới nhất của chúng tôi!</p>
-            <a href="${process.env.FRONTEND_URL}/shop" style="display: inline-block; margin-top: 15px; padding: 10px 20px; background-color: #4f6ef7; color: white; text-decoration: none; border-radius: 6px; font-weight: bold;">Đi đến cửa hàng</a>
+            <p style="color: #4f6ef7; font-weight: bold; margin: 0;">${t('email.newsletter.explore', lang)}</p>
+            <a href="${process.env.FRONTEND_URL}/shop" style="display: inline-block; margin-top: 15px; padding: 10px 20px; background-color: #4f6ef7; color: white; text-decoration: none; border-radius: 6px; font-weight: bold;">${t('email.newsletter.goToStore', lang)}</a>
           </div>
 
-          <p style="color: #aaa; font-size: 12px; text-align: center; margin-top: 16px;">Nếu bạn không muốn nhận email nữa, bạn có thể hủy đăng ký bất kỳ lúc nào.</p>
+          <p style="color: #aaa; font-size: 12px; text-align: center; margin-top: 16px;">${t('email.newsletter.unsubscribe', lang)}</p>
         </div>
       </div>
     `,
   });
 };
 
-// Gửi email chiến dịch hàng loạt theo lô để tránh vượt giới hạn tần suất
-const sendBulkCampaignEmail = async (emails, subject, content) => {
-  // Sanitize nội dung trước khi đưa vào HTML email — ngăn XSS nếu admin account bị compromise
+const sendBulkCampaignEmail = async (emails, subject, content, lang = 'vi') => {
   const safeContent = sanitizeCampaignHtml(content);
   const transporter = getTransporter();
-  logger.info(`[EmailService] Bắt đầu gửi email hàng loạt đến ${emails.length} người nhận theo lô...`);
+  logger.info(`[EmailService] Starting bulk email to ${emails.length} recipients...`);
 
   const results = [];
-  const batchSize = 5; // Gửi 5 email mỗi lô
-  const delay = 1000; // Chờ 1 giây giữa các lô
+  const batchSize = 5;
+  const delay = 1000;
 
   for (let i = 0; i < emails.length; i += batchSize) {
     const currentBatch = emails.slice(i, i + batchSize);
-    logger.info(`[EmailService] Đang gửi lô ${Math.floor(i / batchSize) + 1} (${currentBatch.length} email)...`);
+    logger.info(`[EmailService] Sending batch ${Math.floor(i / batchSize) + 1} (${currentBatch.length} emails)...`);
 
     const batchPromises = currentBatch.map(email => {
       const mailOptions = {
@@ -139,20 +133,20 @@ const sendBulkCampaignEmail = async (emails, subject, content) => {
               ${safeContent}
             </div>
             <div style="margin-top: 20px; text-align: center; color: #888; font-size: 12px;">
-              <p>Bạn nhận được email này vì bạn là thành viên của hệ thống chúng tôi.</p>
-              <p>&copy; ${new Date().getFullYear()} ${process.env.EMAIL_FROM_NAME}. Bảo lưu mọi quyền.</p>
+              <p>${t('email.footer.memberNotice', lang)}</p>
+              <p>&copy; ${new Date().getFullYear()} ${process.env.EMAIL_FROM_NAME}. ${t('email.footer.copyright', lang)}</p>
             </div>
           </div>
         `,
       };
-      
+
       return transporter.sendMail(mailOptions)
         .then(info => {
-          logger.info(`[EmailService] Đã gửi thành công đến ${email}`);
+          logger.info(`[EmailService] Sent successfully to ${email}`);
           return { email, success: true, messageId: info.messageId };
         })
         .catch(err => {
-          logger.error(`[EmailService] Gửi thất bại đến ${email}: ${err.message}`);
+          logger.error(`[EmailService] Failed to send to ${email}: ${err.message}`);
           return { email, success: false, error: err.message };
         });
     });
@@ -160,7 +154,6 @@ const sendBulkCampaignEmail = async (emails, subject, content) => {
     const batchResults = await Promise.all(batchPromises);
     results.push(...batchResults);
 
-    // Chờ trước lô tiếp theo nếu còn email chưa gửi
     if (i + batchSize < emails.length) {
       await new Promise(resolve => setTimeout(resolve, delay));
     }
@@ -168,110 +161,105 @@ const sendBulkCampaignEmail = async (emails, subject, content) => {
 
   const successCount = results.filter(r => r.success).length;
   const failCount = results.length - successCount;
-  
-  logger.info(`[EmailService] Hoàn tất gửi hàng loạt. Tổng: ${results.length}, Thành công: ${successCount}, Thất bại: ${failCount}`);
+
+  logger.info(`[EmailService] Bulk email complete. Total: ${results.length}, Success: ${successCount}, Failed: ${failCount}`);
 
   if (successCount === 0 && results.length > 0) {
-    throw new Error('Tất cả email đều gửi thất bại. Kiểm tra log để biết chi tiết.');
+    throw new Error('All emails failed to send. Check logs for details.');
   }
 
   return results;
 };
 
-// Gửi email xác thực OTP — subject chứa mã OTP để khách hàng thấy ngay trong preview
-const sendOtpEmail = async (email, otp) => {
+const sendOtpEmail = async (email, otp, lang = 'vi') => {
+  const storeName = process.env.EMAIL_FROM_NAME || 'TechStore';
   await sendEmail({
     email,
-    subject: 'Mã xác thực đăng nhập TechStore',
+    subject: t('email.otp.subject', lang, { storeName }),
     html: `
       <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; background: #f9f9f9; padding: 20px; border-radius: 8px;">
         <div style="background: white; padding: 32px; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.08);">
-          <h2 style="color: #1a1a1a; margin-bottom: 8px; font-size: 24px;">Xác thực tài khoản</h2>
-          <p style="color: #555; margin-bottom: 24px;">Cảm ơn bạn đã đăng ký. Nhập mã OTP bên dưới để kích hoạt tài khoản của bạn:</p>
+          <h2 style="color: #1a1a1a; margin-bottom: 8px; font-size: 24px;">${t('email.otp.title', lang)}</h2>
+          <p style="color: #555; margin-bottom: 24px;">${t('email.otp.description', lang)}</p>
 
           <div style="background: #f0f4ff; border: 2px dashed #4f6ef7; border-radius: 12px; padding: 24px; text-align: center; margin: 24px 0;">
-            <p style="color: #888; font-size: 12px; margin: 0 0 8px 0; text-transform: uppercase; letter-spacing: 2px;">Mã xác thực OTP</p>
+            <p style="color: #888; font-size: 12px; margin: 0 0 8px 0; text-transform: uppercase; letter-spacing: 2px;">${t('email.otp.label', lang)}</p>
             <div style="font-size: 40px; font-weight: 900; letter-spacing: 12px; color: #4f6ef7; font-family: 'Courier New', monospace;">${otp}</div>
           </div>
 
-          <p style="color: #e74c3c; font-size: 13px; text-align: center; margin-top: 16px;">⏰ Mã này có hiệu lực trong <strong>10 phút</strong></p>
-          <p style="color: #aaa; font-size: 12px; text-align: center; margin-top: 8px;">Nếu bạn không thực hiện yêu cầu này, vui lòng bỏ qua email này.</p>
+          <p style="color: #e74c3c; font-size: 13px; text-align: center; margin-top: 16px;">${t('email.otp.expiry', lang)}</p>
+          <p style="color: #aaa; font-size: 12px; text-align: center; margin-top: 8px;">${t('email.otp.ignore', lang)}</p>
         </div>
       </div>
     `,
   });
 };
 
-
-// Gửi email đặt lại mật khẩu
-const sendResetPasswordEmail = async (email, token) => {
+const sendResetPasswordEmail = async (email, token, lang = 'vi') => {
   const resetUrl = `${process.env.FRONTEND_URL}/reset-password?token=${token}`;
 
   await sendEmail({
     email,
-    subject: 'Đặt lại mật khẩu của bạn',
+    subject: t('email.resetPassword.subject', lang),
     html: `
       <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-        <h2>Đặt lại mật khẩu</h2>
-        <p>Bạn đã yêu cầu đặt lại mật khẩu. Vui lòng nhấp vào liên kết bên dưới để đặt lại mật khẩu của bạn:</p>
+        <h2>${t('email.resetPassword.title', lang)}</h2>
+        <p>${t('email.resetPassword.description', lang)}</p>
         <p>
           <a href="${resetUrl}" style="display: inline-block; padding: 10px 20px; background-color: #4CAF50; color: white; text-decoration: none; border-radius: 4px;">
-            Đặt lại mật khẩu
+            ${t('email.resetPassword.linkText', lang)}
           </a>
         </p>
-        <p>Nếu bạn không thực hiện yêu cầu này, vui lòng bỏ qua email này.</p>
-        <p>Liên kết này sẽ hết hạn sau 15 phút.</p>
+        <p>${t('email.resetPassword.ignore', lang)}</p>
+        <p>${t('email.resetPassword.expiry', lang)}</p>
       </div>
     `,
   });
 };
 
-// Gửi email xác nhận đơn hàng sau khi thanh toán thành công
-// order phải có: orderNumber, orderDate, subtotal, shippingCost, total, items[], shippingAddress, estimatedDelivery
-const sendOrderConfirmationEmail = async (email, order) => {
+const sendOrderConfirmationEmail = async (email, order, lang = 'vi') => {
   const { orderNumber, orderDate, subtotal, shippingCost, total, items, shippingAddress, estimatedDelivery } = order;
+  const loc = dateLocale(lang);
 
-  // Tạo HTML danh sách sản phẩm — escape tên sản phẩm để ngăn XSS
   const itemsHtml = items
     .map(
       (item) => `
       <tr>
         <td style="padding: 10px; border-bottom: 1px solid #eee;">${escapeHtml(item.name)}</td>
         <td style="padding: 10px; border-bottom: 1px solid #eee; text-align: center;">${item.quantity}</td>
-        <td style="padding: 10px; border-bottom: 1px solid #eee; text-align: right;">${parseFloat(item.price).toLocaleString('vi-VN')}đ</td>
-        <td style="padding: 10px; border-bottom: 1px solid #eee; text-align: right;">${parseFloat(item.subtotal).toLocaleString('vi-VN')}đ</td>
+        <td style="padding: 10px; border-bottom: 1px solid #eee; text-align: right;">${parseFloat(item.price).toLocaleString(loc)}đ</td>
+        <td style="padding: 10px; border-bottom: 1px solid #eee; text-align: right;">${parseFloat(item.subtotal).toLocaleString(loc)}đ</td>
       </tr>
     `
     )
     .join('');
 
-  // Tạo dòng ngày giao hàng dự kiến nếu có
   const estimatedDeliveryHtml = estimatedDelivery
-    ? `<p><strong>Ngày giao dự kiến:</strong> ${new Date(estimatedDelivery).toLocaleDateString('vi-VN')}</p>`
+    ? `<p><strong>${t('email.orderConfirmation.estimatedDelivery', lang)}</strong> ${new Date(estimatedDelivery).toLocaleDateString(loc)}</p>`
     : '';
 
   await sendEmail({
     email,
-    subject: `Xác nhận đơn hàng #${escapeHtml(orderNumber)}`,
+    subject: t('email.orderConfirmation.subject', lang, { orderNumber: escapeHtml(orderNumber) }),
     html: `
       <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-        <h2>Xác nhận đơn hàng</h2>
-        <p>Cảm ơn bạn đã đặt hàng. Đơn hàng của bạn đã được xác nhận và đang được xử lý.</p>
+        <h2>${t('email.orderConfirmation.title', lang)}</h2>
+        <p>${t('email.orderConfirmation.thankYou', lang)}</p>
 
         <div style="background-color: #f9f9f9; padding: 15px; margin: 20px 0; border-radius: 4px;">
-          <p><strong>Mã đơn hàng:</strong> #${escapeHtml(orderNumber)}</p>
-          <p><strong>Ngày đặt hàng:</strong> ${new Date(orderDate).toLocaleDateString('vi-VN')}</p>
+          <p><strong>${t('email.orderConfirmation.orderNumber', lang)}</strong> #${escapeHtml(orderNumber)}</p>
+          <p><strong>${t('email.orderConfirmation.orderDate', lang)}</strong> ${new Date(orderDate).toLocaleDateString(loc)}</p>
           ${estimatedDeliveryHtml}
         </div>
 
-        <h3>Chi tiết đơn hàng</h3>
+        <h3>${t('email.orderConfirmation.orderDetails', lang)}</h3>
         <table style="width: 100%; border-collapse: collapse;">
           <thead>
             <tr style="background-color: #f2f2f2;">
-              <th style="padding: 10px; text-align: left;">Sản phẩm</th>
-              <th style="padding: 10px; text-align: center;">Số lượng</th>
-              <th style="padding: 10px; text-align: right;">Đơn giá</th>
-              <th style="padding: 10px; text-align: right;">Thành tiền</th>
+              <th style="padding: 10px; text-align: left;">${t('email.orderConfirmation.product', lang)}</th>
+              <th style="padding: 10px; text-align: center;">${t('email.orderConfirmation.quantity', lang)}</th>
+              <th style="padding: 10px; text-align: right;">${t('email.orderConfirmation.unitPrice', lang)}</th>
+              <th style="padding: 10px; text-align: right;">${t('email.orderConfirmation.lineTotal', lang)}</th>
             </tr>
           </thead>
           <tbody>
@@ -279,21 +267,21 @@ const sendOrderConfirmationEmail = async (email, order) => {
           </tbody>
           <tfoot>
             <tr>
-              <td colspan="3" style="padding: 10px; text-align: right;">Tạm tính:</td>
-              <td style="padding: 10px; text-align: right;">${parseFloat(subtotal).toLocaleString('vi-VN')}đ</td>
+              <td colspan="3" style="padding: 10px; text-align: right;">${t('email.orderConfirmation.subtotal', lang)}</td>
+              <td style="padding: 10px; text-align: right;">${parseFloat(subtotal).toLocaleString(loc)}đ</td>
             </tr>
             <tr>
-              <td colspan="3" style="padding: 10px; text-align: right;">Phí vận chuyển:</td>
-              <td style="padding: 10px; text-align: right;">${parseFloat(shippingCost).toLocaleString('vi-VN')}đ</td>
+              <td colspan="3" style="padding: 10px; text-align: right;">${t('email.orderConfirmation.shipping', lang)}</td>
+              <td style="padding: 10px; text-align: right;">${parseFloat(shippingCost).toLocaleString(loc)}đ</td>
             </tr>
             <tr>
-              <td colspan="3" style="padding: 10px; text-align: right;"><strong>Tổng cộng:</strong></td>
-              <td style="padding: 10px; text-align: right;"><strong>${parseFloat(total).toLocaleString('vi-VN')}đ</strong></td>
+              <td colspan="3" style="padding: 10px; text-align: right;"><strong>${t('email.orderConfirmation.total', lang)}</strong></td>
+              <td style="padding: 10px; text-align: right;"><strong>${parseFloat(total).toLocaleString(loc)}đ</strong></td>
             </tr>
           </tfoot>
         </table>
 
-        <h3>Địa chỉ giao hàng</h3>
+        <h3>${t('email.orderConfirmation.shippingAddress', lang)}</h3>
         <div style="background-color: #f9f9f9; padding: 15px; margin: 20px 0; border-radius: 4px;">
           <p>${escapeHtml(shippingAddress.name)}</p>
           <p>${escapeHtml(shippingAddress.address1)}</p>
@@ -302,105 +290,92 @@ const sendOrderConfirmationEmail = async (email, order) => {
           <p>${escapeHtml(shippingAddress.country || '')}</p>
         </div>
 
-        <p>Chúng tôi sẽ thông báo cho bạn khi đơn hàng được giao.</p>
-        <p>Nếu bạn có bất kỳ câu hỏi nào, vui lòng liên hệ với chúng tôi.</p>
+        <p>${t('email.orderConfirmation.notification', lang)}</p>
+        <p>${t('email.orderConfirmation.contactUs', lang)}</p>
       </div>
     `,
   });
 };
 
-// Gửi email cập nhật trạng thái đơn hàng
-const sendOrderStatusUpdateEmail = async (email, order) => {
+const sendOrderStatusUpdateEmail = async (email, order, lang = 'vi') => {
   const { orderNumber, orderDate, status } = order;
-
-  // Ánh xạ trạng thái sang tiếng Việt
-  const statusMap = {
-    pending: 'Chờ xử lý',
-    processing: 'Đang xử lý',
-    shipped: 'Đã giao cho đơn vị vận chuyển',
-    delivered: 'Đã giao hàng',
-    cancelled: 'Đã hủy',
-    completed: 'Hoàn thành',
-  };
-
-  const statusText = statusMap[status] || status;
+  const loc = dateLocale(lang);
+  const statusText = t(`email.orderStatus.statuses.${status}`, lang) || status;
 
   await sendEmail({
     email,
-    subject: `Cập nhật trạng thái đơn hàng #${orderNumber}`,
+    subject: t('email.orderStatus.subject', lang, { orderNumber }),
     html: `
       <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-        <h2>Cập nhật trạng thái đơn hàng</h2>
-        <p>Đơn hàng của bạn đã được cập nhật.</p>
-        
+        <h2>${t('email.orderStatus.title', lang)}</h2>
+        <p>${t('email.orderStatus.updated', lang)}</p>
+
         <div style="background-color: #f9f9f9; padding: 15px; margin: 20px 0; border-radius: 4px;">
-          <p><strong>Mã đơn hàng:</strong> #${orderNumber}</p>
-          <p><strong>Ngày đặt hàng:</strong> ${new Date(orderDate).toLocaleDateString('vi-VN')}</p>
-          <p><strong>Trạng thái mới:</strong> ${statusText}</p>
+          <p><strong>${t('email.orderStatus.orderNumber', lang)}</strong> #${orderNumber}</p>
+          <p><strong>${t('email.orderStatus.orderDate', lang)}</strong> ${new Date(orderDate).toLocaleDateString(loc)}</p>
+          <p><strong>${t('email.orderStatus.newStatus', lang)}</strong> ${statusText}</p>
         </div>
-        
-        <p>Bạn có thể theo dõi đơn hàng của mình trong tài khoản của bạn.</p>
-        <p>Nếu bạn có bất kỳ câu hỏi nào, vui lòng liên hệ với chúng tôi.</p>
+
+        <p>${t('email.orderStatus.trackOrder', lang)}</p>
+        <p>${t('email.orderStatus.contactUs', lang)}</p>
       </div>
     `,
   });
 };
 
-// Gửi email thông báo hủy đơn hàng
-const sendOrderCancellationEmail = async (email, order) => {
+const sendOrderCancellationEmail = async (email, order, lang = 'vi') => {
   const { orderNumber, orderDate } = order;
+  const loc = dateLocale(lang);
 
   await sendEmail({
     email,
-    subject: `Đơn hàng #${orderNumber} đã bị hủy`,
+    subject: t('email.orderCancelled.subject', lang, { orderNumber }),
     html: `
       <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-        <h2>Đơn hàng đã bị hủy</h2>
-        <p>Đơn hàng của bạn đã bị hủy theo yêu cầu của bạn.</p>
-        
+        <h2>${t('email.orderCancelled.title', lang)}</h2>
+        <p>${t('email.orderCancelled.description', lang)}</p>
+
         <div style="background-color: #f9f9f9; padding: 15px; margin: 20px 0; border-radius: 4px;">
-          <p><strong>Mã đơn hàng:</strong> #${orderNumber}</p>
-          <p><strong>Ngày đặt hàng:</strong> ${new Date(orderDate).toLocaleDateString('vi-VN')}</p>
+          <p><strong>${t('email.orderCancelled.orderNumber', lang)}</strong> #${orderNumber}</p>
+          <p><strong>${t('email.orderCancelled.orderDate', lang)}</strong> ${new Date(orderDate).toLocaleDateString(loc)}</p>
         </div>
-        
-        <p>Nếu bạn đã thanh toán cho đơn hàng này, khoản tiền sẽ được hoàn lại trong vòng 5-7 ngày làm việc.</p>
-        <p>Nếu bạn có bất kỳ câu hỏi nào, vui lòng liên hệ với chúng tôi.</p>
+
+        <p>${t('email.orderCancelled.refund', lang)}</p>
+        <p>${t('email.orderCancelled.contactUs', lang)}</p>
       </div>
     `,
   });
 };
 
-// Gửi email thông báo phản hồi mới từ khách hàng đến admin
-// feedback phải có: name, email, subject, content
-const sendAdminFeedbackNotification = async (adminEmail, feedback) => {
+const sendAdminFeedbackNotification = async (adminEmail, feedback, lang = 'vi') => {
   const { name, email, subject, content } = feedback;
 
   await sendEmail({
     email: adminEmail,
-    subject: `[Phản hồi mới] ${escapeHtml(subject)}`,
+    subject: t('email.contactFeedback.subject', lang, { subject: escapeHtml(subject) }),
     html: `
       <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; background: #f9f9f9; padding: 20px; border-radius: 8px;">
         <div style="background: white; padding: 32px; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.08);">
-          <h2 style="color: #e74c3c; margin-bottom: 8px; font-size: 20px;">Phản hồi mới từ khách hàng</h2>
+          <h2 style="color: #e74c3c; margin-bottom: 8px; font-size: 20px;">${t('email.contactFeedback.title', lang)}</h2>
           <table style="width: 100%; border-collapse: collapse; margin-top: 16px;">
             <tr>
-              <td style="padding: 8px; font-weight: bold; color: #555; width: 120px;">Họ tên:</td>
+              <td style="padding: 8px; font-weight: bold; color: #555; width: 120px;">${t('email.contactFeedback.name', lang)}</td>
               <td style="padding: 8px; color: #333;">${escapeHtml(name)}</td>
             </tr>
             <tr style="background: #f9f9f9;">
-              <td style="padding: 8px; font-weight: bold; color: #555;">Email:</td>
+              <td style="padding: 8px; font-weight: bold; color: #555;">${t('email.contactFeedback.email', lang)}</td>
               <td style="padding: 8px; color: #333;">${escapeHtml(email)}</td>
             </tr>
             <tr>
-              <td style="padding: 8px; font-weight: bold; color: #555;">Tiêu đề:</td>
+              <td style="padding: 8px; font-weight: bold; color: #555;">${t('email.contactFeedback.subjectLabel', lang)}</td>
               <td style="padding: 8px; color: #333;">${escapeHtml(subject)}</td>
             </tr>
           </table>
           <div style="margin-top: 16px; padding: 16px; background: #f0f4ff; border-radius: 8px; border-left: 4px solid #4f6ef7;">
-            <p style="color: #555; font-weight: bold; margin-bottom: 8px;">Nội dung:</p>
+            <p style="color: #555; font-weight: bold; margin-bottom: 8px;">${t('email.contactFeedback.content', lang)}</p>
             <p style="color: #333; white-space: pre-wrap;">${escapeHtml(content)}</p>
           </div>
-          <p style="color: #aaa; font-size: 12px; text-align: center; margin-top: 24px;">Email này được gửi tự động khi có phản hồi mới từ khách hàng.</p>
+          <p style="color: #aaa; font-size: 12px; text-align: center; margin-top: 24px;">${t('email.contactFeedback.autoNotice', lang)}</p>
         </div>
       </div>
     `,
@@ -418,4 +393,3 @@ module.exports = {
   sendBulkCampaignEmail,
   sendAdminFeedbackNotification,
 };
-

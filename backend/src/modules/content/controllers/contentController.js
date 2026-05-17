@@ -1,3 +1,5 @@
+const { t } = require('../../../utils/i18n');
+
 // Content Controller — gộp 5 sub-domain. Trả response shape giữ nguyên cũ
 // (banner trả {status,results,data}; news trả {success,...}; campaign trả
 // {status,data}) để không break FE/test.
@@ -51,37 +53,37 @@ class ContentController {
       res.json({ status: 'success', ...data });
     } catch (error) {
       // Match legacy: log + 500 (không dùng next vì legacy controller cũng vậy)
-      res.status(500).json({ status: 'error', message: 'Lỗi máy chủ' });
+      res.status(500).json({ status: 'error', message: t('content.serverError', req.locale) });
     }
   };
 
   getNewsBySlug = async (req, res) => {
     try {
       const news = await this.contentService.getNewsBySlug({ slug: req.params.slug });
-      if (!news) return res.status(404).json({ status: 'error', message: 'Không tìm thấy tin tức' });
+      if (!news) return res.status(404).json({ status: 'error', message: t('content.newsNotFound', req.locale) });
       res.json({ status: 'success', news });
     } catch (error) {
-      res.status(500).json({ status: 'error', message: 'Lỗi máy chủ' });
+      res.status(500).json({ status: 'error', message: t('content.serverError', req.locale) });
     }
   };
 
   getRelatedNews = async (req, res) => {
     try {
       const news = await this.contentService.getRelatedNews({ slug: req.params.slug });
-      if (news === null) return res.status(404).json({ status: 'error', message: 'Không tìm thấy tin tức' });
+      if (news === null) return res.status(404).json({ status: 'error', message: t('content.newsNotFound', req.locale) });
       res.json({ status: 'success', news });
     } catch (error) {
-      res.status(500).json({ status: 'error', message: 'Lỗi máy chủ' });
+      res.status(500).json({ status: 'error', message: t('content.serverError', req.locale) });
     }
   };
 
   getNewsById = async (req, res) => {
     try {
       const news = await this.contentService.getNewsById({ id: req.params.id });
-      if (!news) return res.status(404).json({ status: 'error', message: 'Không tìm thấy tin tức' });
+      if (!news) return res.status(404).json({ status: 'error', message: t('content.newsNotFound', req.locale) });
       res.json({ status: 'success', news });
     } catch (error) {
-      res.status(500).json({ status: 'error', message: 'Lỗi máy chủ' });
+      res.status(500).json({ status: 'error', message: t('content.serverError', req.locale) });
     }
   };
 
@@ -93,30 +95,30 @@ class ContentController {
       if (error.statusCode === 400) {
         return res.status(400).json({ status: 'error', message: error.message });
       }
-      res.status(500).json({ status: 'error', message: 'Lỗi máy chủ' });
+      res.status(500).json({ status: 'error', message: t('content.serverError', req.locale) });
     }
   };
 
   updateNews = async (req, res) => {
     try {
       const news = await this.contentService.updateNews({ id: req.params.id, patch: req.body });
-      if (!news) return res.status(404).json({ status: 'error', message: 'Không tìm thấy tin tức' });
+      if (!news) return res.status(404).json({ status: 'error', message: t('content.newsNotFound', req.locale) });
       res.json({ status: 'success', news });
     } catch (error) {
       if (error.statusCode === 400) {
         return res.status(400).json({ status: 'error', message: error.message });
       }
-      res.status(500).json({ status: 'error', message: 'Lỗi máy chủ' });
+      res.status(500).json({ status: 'error', message: t('content.serverError', req.locale) });
     }
   };
 
   deleteNews = async (req, res) => {
     try {
       const result = await this.contentService.deleteNews({ id: req.params.id });
-      if (!result) return res.status(404).json({ status: 'error', message: 'Không tìm thấy tin tức' });
-      res.json({ status: 'success', message: 'Tin tức đã được xóa thành công' });
+      if (!result) return res.status(404).json({ status: 'error', message: t('content.newsNotFound', req.locale) });
+      res.json({ status: 'success', message: t('content.newsDeleted', req.locale) });
     } catch (error) {
-      res.status(500).json({ status: 'error', message: 'Lỗi máy chủ' });
+      res.status(500).json({ status: 'error', message: t('content.serverError', req.locale) });
     }
   };
 
@@ -141,7 +143,7 @@ class ContentController {
       const { campaign, recipientCount } = await this.contentService.sendCampaign({ id: req.params.id });
       res.status(200).json({
         status: 'success',
-        message: `Đã gửi thành công chiến dịch tới ${recipientCount} người nhận`,
+        message: t('content.campaignSent', req.locale, { count: recipientCount }),
         data: campaign,
       });
     } catch (err) { next(err); }
@@ -170,7 +172,7 @@ class ContentController {
       const feedback = await this.contentService.sendFeedback({ payload: req.body });
       res.status(201).json({
         status: 'success',
-        message: 'Cảm ơn bạn đã gửi phản hồi. Chúng tôi sẽ xem xét sớm!',
+        message: t('content.feedbackReceived', req.locale),
         data: feedback,
       });
     } catch (err) { next(err); }

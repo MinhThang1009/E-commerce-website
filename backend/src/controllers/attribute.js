@@ -7,6 +7,7 @@
 } = require('../models');
 const productNameGeneratorService = require('../services/ai/productNameGenerator');
 const logger = require('../utils/logger');
+const { t } = require('../utils/i18n');
 
 // Lấy danh sách nhóm thuộc tính cùng với các giá trị của chúng
 const getAttributeGroups = async (req, res) => {
@@ -39,7 +40,7 @@ const getAttributeGroups = async (req, res) => {
     logger.error('Lỗi khi lấy danh sách nhóm thuộc tính:', error);
     res.status(500).json({
       status: 'error',
-      message: 'Không thể lấy danh sách nhóm thuộc tính',
+      message: t('attribute.cannotGetGroups', req.locale),
       error: error.message,
     });
   }
@@ -91,7 +92,7 @@ const getProductAttributeGroups = async (req, res) => {
     logger.error('Lỗi khi lấy nhóm thuộc tính của sản phẩm:', error);
     res.status(500).json({
       status: 'error',
-      message: 'Không thể lấy nhóm thuộc tính của sản phẩm',
+      message: t('attribute.cannotGetProductGroups', req.locale),
       error: error.message,
     });
   }
@@ -119,7 +120,7 @@ const createAttributeGroup = async (req, res) => {
     logger.error('Lỗi khi tạo nhóm thuộc tính:', error);
     res.status(500).json({
       status: 'error',
-      message: 'Không thể tạo nhóm thuộc tính',
+      message: t('attribute.cannotCreateGroup', req.locale),
       error: error.message,
     });
   }
@@ -161,7 +162,7 @@ const addAttributeValue = async (req, res) => {
     logger.error('Lỗi khi thêm giá trị thuộc tính:', error);
     res.status(500).json({
       status: 'error',
-      message: 'Không thể thêm giá trị thuộc tính',
+      message: t('attribute.cannotAddValue', req.locale),
       error: error.message,
     });
   }
@@ -189,7 +190,7 @@ const assignAttributeGroupToProduct = async (req, res) => {
     logger.error('Lỗi khi gán nhóm thuộc tính cho sản phẩm:', error);
     res.status(500).json({
       status: 'error',
-      message: 'Không thể gán nhóm thuộc tính cho sản phẩm',
+      message: t('attribute.cannotAssignGroup', req.locale),
       error: error.message,
     });
   }
@@ -228,7 +229,7 @@ const updateAttributeGroup = async (req, res) => {
     logger.error('Lỗi khi cập nhật nhóm thuộc tính:', error);
     res.status(500).json({
       status: 'error',
-      message: 'Không thể cập nhật nhóm thuộc tính',
+      message: t('attribute.cannotUpdateGroup', req.locale),
       error: error.message,
     });
   }
@@ -279,7 +280,7 @@ const updateAttributeValue = async (req, res) => {
     logger.error('Lỗi khi cập nhật giá trị thuộc tính:', error);
     res.status(500).json({
       status: 'error',
-      message: 'Không thể cập nhật giá trị thuộc tính',
+      message: t('attribute.cannotUpdateValue', req.locale),
       error: error.message,
     });
   }
@@ -308,7 +309,7 @@ const deleteAttributeGroup = async (req, res) => {
     logger.error('Lỗi khi xóa nhóm thuộc tính:', error);
     res.status(500).json({
       status: 'error',
-      message: 'Không thể xóa nhóm thuộc tính',
+      message: t('attribute.cannotDeleteGroup', req.locale),
       error: error.message,
     });
   }
@@ -337,7 +338,7 @@ const deleteAttributeValue = async (req, res) => {
     logger.error('Lỗi khi xóa giá trị thuộc tính:', error);
     res.status(500).json({
       status: 'error',
-      message: 'Không thể xóa giá trị thuộc tính',
+      message: t('attribute.cannotDeleteValue', req.locale),
       error: error.message,
     });
   }
@@ -352,7 +353,7 @@ const previewProductName = async (req, res) => {
     if (!baseName) {
       return res.status(400).json({
         status: 'error',
-        message: 'Tên cơ bản là bắt buộc',
+        message: t('attribute.baseNameRequired', req.locale),
       });
     }
 
@@ -374,7 +375,7 @@ const previewProductName = async (req, res) => {
     logger.error('Lỗi khi xem trước tên sản phẩm:', error);
     res.status(500).json({
       status: 'error',
-      message: 'Không thể xem trước tên sản phẩm',
+      message: t('attribute.cannotPreviewName', req.locale),
       error: error.message,
     });
   }
@@ -397,7 +398,7 @@ const getNameAffectingAttributes = async (req, res) => {
     logger.error('Lỗi khi lấy thuộc tính ảnh hưởng đến tên:', error);
     res.status(500).json({
       status: 'error',
-      message: 'Không thể lấy thuộc tính ảnh hưởng đến tên',
+      message: t('attribute.cannotGetNameAttributes', req.locale),
       error: error.message,
     });
   }
@@ -429,7 +430,7 @@ const batchGenerateProductNames = async (req, res) => {
     logger.error('Lỗi khi tạo tên sản phẩm hàng loạt:', error);
     res.status(500).json({
       status: 'error',
-      message: 'Không thể tạo tên sản phẩm hàng loạt',
+      message: t('attribute.cannotBatchCreateNames', req.locale),
       error: error.message,
     });
   }
@@ -443,7 +444,7 @@ const generateNameRealTime = async (req, res) => {
     if (!baseName) {
       return res.status(400).json({
         status: 'error',
-        message: 'Tên cơ bản là bắt buộc',
+        message: t('attribute.baseNameRequired', req.locale),
       });
     }
 
@@ -481,7 +482,7 @@ const generateNameRealTime = async (req, res) => {
     logger.error('Lỗi khi tạo tên theo thời gian thực:', error);
     res.status(500).json({
       status: 'error',
-      message: 'Không thể tạo tên theo thời gian thực',
+      message: t('attribute.cannotCreateRealtimeName', req.locale),
       error: error.message,
     });
   }

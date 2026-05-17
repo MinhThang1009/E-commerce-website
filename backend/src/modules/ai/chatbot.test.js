@@ -3,8 +3,8 @@
  * Không gọi DB, không gọi API ngoài — tất cả phụ thuộc đều bị mock.
  *
  * Bao gồm:
- *  - GeminiChatbotService.simpleKeywordMatch  (price consistency: vector store vs DB)
- *  - GeminiChatbotService.parseAIResponse     (discount calculation, 3 trường hợp)
+ *  - ChatbotService.simpleKeywordMatch  (price consistency: vector store vs DB)
+ *  - ChatbotService.parseAIResponse     (discount calculation, 3 trường hợp)
  *  - ChatbotService.extractSearchParams       (không extract số model thành giá)
  *  - VectorStoreService.cosineSimilarity      (NaN guard, edge cases)
  */
@@ -28,12 +28,12 @@ jest.mock('../../models', () => ({
   Op: {},
 }));
 
-// Mock vectorStore để tránh đọc vectorDb.json khi load geminiChatbot.js
+// Mock vectorStore để tránh đọc vectorDb.json khi load chatbotService.js
 jest.mock('../../services/ai/vectorStore', () => ({
   items: [],
   loadPromise: Promise.resolve(),
-  search: jest.fn().mockResolvedValue([]),
-  addProduct: jest.fn().mockResolvedValue(undefined),
+  hybridSearch: jest.fn().mockResolvedValue([]),
+  upsertProduct: jest.fn().mockResolvedValue(undefined),
   save: jest.fn().mockResolvedValue(undefined),
   detectLanguage: jest.fn((text) => {
     if (/[àáâãèéêìíòóôõùúýăđơưÀÁÂÃÈÉÊÌÍÒÓÔÕÙÚÝĂĐƠƯẠ-ỹ]/.test(text)) return 'vi';
@@ -57,14 +57,13 @@ jest.mock('../../services/ai/viEmbedding', () => ({
 
 // ---------- Require sau khi mock đã đăng ký ----------
 
-const geminiService = require('../../services/ai/geminiChatbot');
-const chatbotService = require('../../services/ai/ruleBasedChatbot');
+const chatbotService = require('../../services/ai/chatbotService');
 
 // ============================================================
-// GeminiChatbotService.simpleKeywordMatch
+// ChatbotService.simpleKeywordMatch
 // ============================================================
 
-describe('GeminiChatbotService.simpleKeywordMatch', () => {
+describe('ChatbotService.simpleKeywordMatch', () => {
   // Sản phẩm mẫu: giả lập dữ liệu từ vector store (có price, không có basePrice)
   const productFromVectorStore = {
     id: 1,
@@ -106,32 +105,32 @@ describe('GeminiChatbotService.simpleKeywordMatch', () => {
   };
 
   test('dùng price (vector store) khi có field price', () => {
-    const result = geminiService.simpleKeywordMatch('iphone', [productFromVectorStore]);
+    const result = chatbotService.simpleKeywordMatch('iphone', [productFromVectorStore]);
     expect(result.products).toHaveLength(1);
     // price phải là 29990000 (từ .price), không phải undefined
     expect(result.products[0].price).toBe(29990000);
   });
 
   test('dùng basePrice (DB fallback) khi price undefined', () => {
-    const result = geminiService.simpleKeywordMatch('samsung', [productFromDB]);
+    const result = chatbotService.simpleKeywordMatch('samsung', [productFromDB]);
     expect(result.products).toHaveLength(1);
     // price phải là 19990000 (fallback sang .basePrice)
     expect(result.products[0].price).toBe(19990000);
   });
 
   test('discount = 0 khi không có compareAtPrice', () => {
-    const result = geminiService.simpleKeywordMatch('iphone', [productFromVectorStore]);
+    const result = chatbotService.simpleKeywordMatch('iphone', [productFromVectorStore]);
     expect(result.products[0].discount).toBe(0);
   });
 
   test('discount tính đúng khi compareAtPrice > price', () => {
     // (50M - 45M) / 50M * 100 = 10%
-    const result = geminiService.simpleKeywordMatch('macbook', [productWithDiscount]);
+    const result = chatbotService.simpleKeywordMatch('macbook', [productWithDiscount]);
     expect(result.products[0].discount).toBe(10);
   });
 
   test('trả về fallback response khi không có sản phẩm khớp', () => {
-    const result = geminiService.simpleKeywordMatch('xyz không tồn tại abc', [productFromDB]);
+    const result = chatbotService.simpleKeywordMatch('xyz không tồn tại abc', [productFromDB]);
     // Không có matchedProducts — rơi vào nhánh fallback
     expect(result).toHaveProperty('response');
     expect(result).toHaveProperty('suggestions');
@@ -140,10 +139,10 @@ describe('GeminiChatbotService.simpleKeywordMatch', () => {
 });
 
 // ============================================================
-// GeminiChatbotService.parseAIResponse
+// ChatbotService.parseAIResponse
 // ============================================================
 
-describe('GeminiChatbotService.parseAIResponse', () => {
+describe('ChatbotService.parseAIResponse', () => {
   const makeAiText = (matchedProducts = ['iPhone 15 Pro']) =>
     JSON.stringify({
       response: 'Đây là sản phẩm phù hợp cho bạn!',
@@ -167,7 +166,7 @@ describe('GeminiChatbotService.parseAIResponse', () => {
       },
     ];
     // (33M - 29.99M) / 33M * 100 ≈ 9.12 → Math.round → 9
-    const result = geminiService.parseAIResponse(makeAiText(), products, 'iphone 15 pro');
+    const result = chatbotService.parseAIResponse(makeAiText(), products, 'iphone 15 pro');
     expect(result.products[0].discount).toBe(9);
   });
 
@@ -184,7 +183,7 @@ describe('GeminiChatbotService.parseAIResponse', () => {
         stockQuantity: 5,
       },
     ];
-    const result = geminiService.parseAIResponse(makeAiText(), products, 'iphone 15 pro');
+    const result = chatbotService.parseAIResponse(makeAiText(), products, 'iphone 15 pro');
     expect(result.products[0].discount).toBe(0);
   });
 
@@ -201,7 +200,7 @@ describe('GeminiChatbotService.parseAIResponse', () => {
         stockQuantity: 5,
       },
     ];
-    const result = geminiService.parseAIResponse(makeAiText(), products, 'iphone 15 pro');
+    const result = chatbotService.parseAIResponse(makeAiText(), products, 'iphone 15 pro');
     expect(result.products[0].discount).toBe(0);
   });
 
@@ -220,7 +219,7 @@ describe('GeminiChatbotService.parseAIResponse', () => {
       },
     ];
     // (31M - 28M) / 31M * 100 ≈ 9.67 → Math.round → 10
-    const result = geminiService.parseAIResponse(makeAiText(), products, 'iphone 15 pro');
+    const result = chatbotService.parseAIResponse(makeAiText(), products, 'iphone 15 pro');
     expect(result.products[0].price).toBe(28000000);
     expect(result.products[0].discount).toBe(10);
   });
@@ -240,53 +239,13 @@ describe('GeminiChatbotService.parseAIResponse', () => {
       },
     ];
     // Chuỗi không phải JSON → JSON.parse throw → rơi vào simpleKeywordMatch
-    const result = geminiService.parseAIResponse('bố cục bị lỗi', products, 'iphone 15 pro');
+    const result = chatbotService.parseAIResponse('bố cục bị lỗi', products, 'iphone 15 pro');
     expect(result).toHaveProperty('response');
     expect(result).toHaveProperty('suggestions');
   });
 });
 
-// ============================================================
-// ChatbotService.extractSearchParams
-// ============================================================
-
-describe('ChatbotService.extractSearchParams', () => {
-  // Đảm bảo cache trống — không phụ thuộc DB trong unit test
-  beforeEach(() => {
-    chatbotService._categoriesCache = [];
-    chatbotService._brandsCache = [];
-  });
-
-  test('trích xuất maxPrice từ "dưới 30 triệu" — không extract "15" trong "iphone 15" thành giá', () => {
-    const params = chatbotService.extractSearchParams('iphone 15 dưới 30 triệu');
-    expect(params.maxPrice).toBe(30000000);
-    expect(params.minPrice).toBeUndefined();
-    // Số "15" không có đơn vị tiền tệ → không được extract thành giá
-  });
-
-  test('không extract số model "s24" thành giá khi không có đơn vị', () => {
-    const params = chatbotService.extractSearchParams('samsung galaxy s24');
-    expect(params.maxPrice).toBeUndefined();
-    expect(params.minPrice).toBeUndefined();
-  });
-
-  test('trích xuất maxPrice từ "dưới 20tr"', () => {
-    const params = chatbotService.extractSearchParams('laptop dưới 20tr');
-    expect(params.maxPrice).toBe(20000000);
-  });
-
-  test('trích xuất minPrice từ "trên 10 triệu"', () => {
-    const params = chatbotService.extractSearchParams('điện thoại trên 10 triệu');
-    expect(params.minPrice).toBe(10000000);
-    expect(params.maxPrice).toBeUndefined();
-  });
-
-  test('keyword luôn được gán bằng message gốc', () => {
-    const msg = 'tai nghe bluetooth gaming';
-    const params = chatbotService.extractSearchParams(msg);
-    expect(params.keyword).toBe(msg);
-  });
-});
+// extractSearchParams đã xóa cùng ruleBasedChatbot (dead code)
 
 // ============================================================
 // VectorStoreService.cosineSimilarity

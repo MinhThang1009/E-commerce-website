@@ -203,7 +203,7 @@ describe('OrdersService', () => {
 
       const result = await service.confirmReceived({ id: 1, userId: 1 });
 
-      expect(result.message).toMatch(/đã được xác nhận/);
+      expect(result.message).toBe('orders.alreadyConfirmed');
       expect(result.pointsEarned).toBe(0);
     });
 

@@ -17,10 +17,12 @@ jest.mock('../utils/logger', () => ({
 }));
 
 jest.mock('../services/ai/vectorStore', () => ({
-  addProduct: jest.fn().mockResolvedValue(undefined),
+  upsertProduct: jest.fn().mockResolvedValue(undefined),
   save: jest.fn().mockResolvedValue(undefined),
   loadPromise: Promise.resolve(),
   items: [],
+  enrichProductData: jest.fn((d) => d),
+  detectLanguage: jest.fn().mockReturnValue('vi'),
 }));
 
 jest.mock('../middlewares/rateLimiter', () => ({
@@ -802,12 +804,12 @@ describe('POST /api/admin/products/import — lines 264-265: validRows filter v�
 });
 
 // ─────────────────────────────────────────────────────────────────────────────
-// lines 394-397: vectorStore sync sau import — addProduct + save
+// lines 394-397: vectorStore sync sau import — upsertProduct + save
 // ─────────────────────────────────────────────────────────────────────────────
 
 describe('POST /api/admin/products/import — lines 394-397: vectorStore sync', () => {
-  test('gọi vectorStoreService.addProduct và save sau khi import thành công', async () => {
-    const { addProduct, save } = require('../services/ai/vectorStore');
+  test('gọi vectorStoreService.upsertProduct và save sau khi import thành công', async () => {
+    const { upsertProduct, save } = require('../services/ai/vectorStore');
 
     // Set up findAll to return a product for the vector sync
     Product.findAll.mockResolvedValueOnce([
@@ -826,7 +828,7 @@ describe('POST /api/admin/products/import — lines 394-397: vectorStore sync', 
     // setImmediate fires asynchronously — wait for it
     await new Promise((resolve) => setTimeout(resolve, 50));
 
-    expect(addProduct).toHaveBeenCalled();
+    expect(upsertProduct).toHaveBeenCalled();
     expect(save).toHaveBeenCalled();
   });
 });

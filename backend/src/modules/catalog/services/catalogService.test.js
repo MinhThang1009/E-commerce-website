@@ -153,14 +153,14 @@ describe('CatalogService', () => {
       catalogRepository.countProductsByCategoryId.mockResolvedValue(5);
       await expect(
         service.deleteCategory({ id: 1 })
-      ).rejects.toMatchObject({ statusCode: 400, message: expect.stringContaining('có sản phẩm') });
+      ).rejects.toMatchObject({ statusCode: 400, message: 'catalog.cannotDeleteCategoryWithProducts' });
     });
 
     test('deleteCategory không có sản phẩm → xóa thành công', async () => {
       catalogRepository.findCategoryById.mockResolvedValue({ id: 1 });
       catalogRepository.countProductsByCategoryId.mockResolvedValue(0);
       const result = await service.deleteCategory({ id: 1 });
-      expect(result.message).toMatch(/Xóa danh mục thành công/);
+      expect(result.message).toBe('catalog.categoryDeleted');
     });
 
     test('getProductsByCategory fallback từ slug nếu findById fail', async () => {
@@ -611,7 +611,7 @@ describe('CatalogService', () => {
 
       await expect(
         service.createProduct({ payload: { name: 'X', price: 1000, categoryIds: [1, 999] } })
-      ).rejects.toMatchObject({ statusCode: 400, message: expect.stringContaining('danh mục') });
+      ).rejects.toMatchObject({ statusCode: 400, message: 'catalog.categoriesNotExist' });
     });
 
     test('gọi createProductVariants khi có variants', async () => {
@@ -654,7 +654,7 @@ describe('CatalogService', () => {
 
       await expect(
         service.createProduct({ payload: { name: 'X', price: 1000, warrantyPackageIds: [99] } })
-      ).rejects.toMatchObject({ statusCode: 400, message: expect.stringContaining('bảo hành') });
+      ).rejects.toMatchObject({ statusCode: 400, message: 'catalog.warrantyPackagesNotExist' });
     });
 
     test('xóa cache sản phẩm sau khi tạo', async () => {
@@ -757,7 +757,7 @@ describe('CatalogService', () => {
 
       const result = await service.deleteProduct({ id: 7 });
       expect(catalogRepository.deleteProduct).toHaveBeenCalledWith(product);
-      expect(result.message).toMatch(/Xóa sản phẩm thành công/);
+      expect(result.message).toBe('catalog.productDeleted');
     });
 
     test('xóa cache sau khi delete', async () => {
@@ -1329,7 +1329,7 @@ describe('CatalogService', () => {
       catalogRepository.countProductsByBrandId.mockResolvedValue(0);
       const result = await service.deleteBrand({ id: 1 });
       expect(catalogRepository.deleteBrand).toHaveBeenCalled();
-      expect(result.message).toMatch(/Xóa thương hiệu thành công/);
+      expect(result.message).toBe('catalog.brandDeleted');
     });
 
     test('deleteBrand không tồn tại → 404', async () => {
@@ -1516,7 +1516,7 @@ describe('CatalogService', () => {
 
       await expect(
         service.updateProduct({ id: 12, patch: { warrantyPackageIds: [999] } })
-      ).rejects.toMatchObject({ statusCode: 400, message: expect.stringContaining('bảo hành') });
+      ).rejects.toMatchObject({ statusCode: 400, message: 'catalog.warrantyPackagesNotExist' });
     });
 
     test('clear attributes khi patch.attributes = []', async () => {
@@ -1693,7 +1693,7 @@ describe('CatalogService', () => {
       catalogRepository.findBrandBySlug.mockResolvedValue(null);
 
       await expect(service.getBrandBySlug({ slug: 'unknown-brand' }))
-        .rejects.toMatchObject({ statusCode: 404, message: expect.stringContaining('thương hiệu') });
+        .rejects.toMatchObject({ statusCode: 404, message: 'catalog.brandNotFound' });
     });
 
     test('trả về brand khi tồn tại', async () => {

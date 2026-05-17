@@ -3,12 +3,12 @@
  *
  * Targeted tests cho các dòng chưa được cover:
  *   - product.js             lines 11, 172, 213, 249
- *   - SequelizeAiRepository  line 103
+ *   - SequelizeAIRepository  line 103
  *   - cartService.js         lines 150, 191
  *   - OrderAggregate.js      line 20
  *   - uploadService.js       line 120
  *   - email.js               line 165
- *   - geminiChatbot.js       lines 50, 55, 382-386
+ *   - chatbotService.js       lines 50, 55, 382-386
  *   - paymentService.js      lines 65-71, 81
  *   - contentService.js      lines 43, 238, 266
  *   - catalogService.js      lines 176, 487, 506, 559, 564, 822
@@ -138,10 +138,10 @@ describe('product.js line 11 — catch branch khi require vectorStore thất b�
 });
 
 // ════════════════════════════════════════════════════════════════════════════════
-// SequelizeAiRepository.js line 103 — .catch(() => null) branch
+// SequelizeAIRepository.js line 103 — .catch(() => null) branch
 // ════════════════════════════════════════════════════════════════════════════════
 
-describe('SequelizeAiRepository — createAnalyticsEvent catch branch (line 103)', () => {
+describe('SequelizeAIRepository — createAnalyticsEvent catch branch (line 103)', () => {
   it('khi ChatMessage.create reject → catch trả về null, không throw (line 103)', async () => {
     // The module uses require('../../../models') internally.
     // We mock '../models' (from test root perspective) so it resolves correctly.
@@ -165,8 +165,8 @@ describe('SequelizeAiRepository — createAnalyticsEvent catch branch (line 103)
       }),
     }));
 
-    const SequelizeAiRepository = require('../modules/ai/repositories/SequelizeAiRepository');
-    const repo = new SequelizeAiRepository({
+    const SequelizeAIRepository = require('../modules/ai/repositories/SequelizeAIRepository');
+    const repo = new SequelizeAIRepository({
       Product: {},
       ProductVariant: {},
       Category: {},
@@ -391,7 +391,7 @@ describe('uploadService.js — deleteFile path traversal check (line 120)', () =
         type: 'products',
         filenameRaw: 'photo.jpg',
       }),
-    ).rejects.toMatchObject({ statusCode: 403, message: 'Truy cập bị từ chối' });
+    ).rejects.toMatchObject({ statusCode: 403, message: 'upload.accessDenied' });
 
     jest.restoreAllMocks();
   });
@@ -406,7 +406,7 @@ describe('uploadService.js — deleteFile path traversal check (line 120)', () =
         type: 'products',
         filenameRaw: '../etc/passwd',
       }),
-    ).rejects.toMatchObject({ statusCode: 400, message: 'Tên file không hợp lệ' });
+    ).rejects.toMatchObject({ statusCode: 400, message: 'upload.invalidFileName' });
   });
 });
 
@@ -473,10 +473,10 @@ describe('email.js — batch delay fires between batches (line 165)', () => {
 });
 
 // ════════════════════════════════════════════════════════════════════════════════
-// geminiChatbot.js line 50 — initializeChatbot với valid non-demo key
+// chatbotService.js line 50 — initializeChatbot với valid non-demo key
 // ════════════════════════════════════════════════════════════════════════════════
 
-describe('geminiChatbot.js — initializeChatbot với valid key (line 50)', () => {
+describe('chatbotService.js — initializeChatbot với valid key (line 50)', () => {
   it('apiKey hợp lệ (không phải demo-key) → logger.info được gọi (line 50)', () => {
     jest.resetModules();
 
@@ -494,7 +494,7 @@ describe('geminiChatbot.js — initializeChatbot với valid key (line 50)', () 
     jest.mock('../services/ai/vectorStore', () => ({
       loadPromise: Promise.resolve(),
       items: [],
-      search: jest.fn().mockResolvedValue([]),
+      hybridSearch: jest.fn().mockResolvedValue([]),
       enrichProductData: jest.fn().mockResolvedValue([]),
     }));
 
@@ -514,7 +514,7 @@ describe('geminiChatbot.js — initializeChatbot với valid key (line 50)', () 
     process.env.GEMINI_API_KEYS = 'sk-real-key-not-demo';
 
     // Load the module — exports a singleton; constructor calls initializeChatbot() at load time
-    require('../services/ai/geminiChatbot');
+    require('../services/ai/chatbotService');
 
     // line 50: logger.info should have been called with success message
     expect(mockLoggerForChatbot.info).toHaveBeenCalledWith(
@@ -526,10 +526,10 @@ describe('geminiChatbot.js — initializeChatbot với valid key (line 50)', () 
 });
 
 // ════════════════════════════════════════════════════════════════════════════════
-// geminiChatbot.js line 55 — catch block in initializeChatbot
+// chatbotService.js line 55 — catch block in initializeChatbot
 // ════════════════════════════════════════════════════════════════════════════════
 
-describe('geminiChatbot.js — initializeChatbot catch block (line 55)', () => {
+describe('chatbotService.js — initializeChatbot catch block (line 55)', () => {
   it('khi logger.info throw → catch block → logger.error được gọi (line 55)', () => {
     jest.resetModules();
 
@@ -551,7 +551,7 @@ describe('geminiChatbot.js — initializeChatbot catch block (line 55)', () => {
     jest.mock('../services/ai/vectorStore', () => ({
       loadPromise: Promise.resolve(),
       items: [],
-      search: jest.fn(),
+      hybridSearch: jest.fn(),
       enrichProductData: jest.fn(),
     }));
     jest.mock('../models', () => ({
@@ -569,7 +569,7 @@ describe('geminiChatbot.js — initializeChatbot catch block (line 55)', () => {
     process.env.GEMINI_API_KEYS = 'sk-real-key-triggers-info';
 
     // Module exports singleton; constructor runs at require time → info throws → catch → error
-    require('../services/ai/geminiChatbot');
+    require('../services/ai/chatbotService');
 
     expect(mockChatbotCatchLogger.error).toHaveBeenCalledWith(
       expect.stringContaining('Khởi tạo Chatbot thất bại'),
@@ -582,12 +582,12 @@ describe('geminiChatbot.js — initializeChatbot catch block (line 55)', () => {
 });
 
 // ════════════════════════════════════════════════════════════════════════════════
-// geminiChatbot.js lines 382-386 — word intersection matching
+// chatbotService.js lines 382-386 — word intersection matching
 // where p numbers DON'T match AND where intersection >= 0.8 * minSize
 // ════════════════════════════════════════════════════════════════════════════════
 
-describe('geminiChatbot.js — word intersection logic (lines 382-386)', () => {
-  // Reproduce the exact logic from lines 377-386 of geminiChatbot.js
+describe('chatbotService.js — word intersection logic (lines 382-386)', () => {
+  // Reproduce the exact logic from lines 377-386 of chatbotService.js
 
   function matchProductName(pName, rName) {
     const versionKeywords = ['pro', 'max', 'ultra', 'plus', 'lite', 'mini', 'air', 'standard'];
@@ -757,7 +757,7 @@ describe('contentService.js — getBannerById (line 43)', () => {
 
     await expect(service.getBannerById({ id: 999 })).rejects.toMatchObject({
       statusCode: 404,
-      message: 'Không tìm thấy banner',
+      message: 'content.bannerNotFound',
     });
   });
 });
@@ -793,7 +793,7 @@ describe('contentService.js — subscribeNewsletter fire-and-forget email error 
 
     // subscribeNewsletter fires the email and returns immediately
     const result = await service.subscribeNewsletter({ email: 'user@test.com' });
-    expect(result.message).toContain('Cảm ơn');
+    expect(result.message).toBe('content.subscribedSuccess');
 
     // Wait for fire-and-forget promise to reject and catch
     await new Promise((resolve) => setImmediate(resolve));
@@ -905,7 +905,7 @@ describe('catalogService.js — getBrandBySlug (line 176)', () => {
 
     await expect(service.getBrandBySlug({ slug: 'nonexistent-brand' })).rejects.toMatchObject({
       statusCode: 404,
-      message: 'Không tìm thấy thương hiệu',
+      message: 'catalog.brandNotFound',
     });
   });
 });
@@ -1209,7 +1209,7 @@ describe('catalogService.js — createProduct category not found (line 822)', ()
       }),
     ).rejects.toMatchObject({
       statusCode: 400,
-      message: expect.stringContaining('danh mục'),
+      message: 'catalog.categoriesNotExist',
     });
   });
 });

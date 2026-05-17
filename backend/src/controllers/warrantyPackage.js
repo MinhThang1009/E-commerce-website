@@ -1,6 +1,7 @@
 ﻿const { WarrantyPackage, ProductWarranty, Product } = require('../models');
 const logger = require('../utils/logger');
 const { validationResult } = require('express-validator');
+const { t } = require('../utils/i18n');
 
 // Lấy danh sách tất cả gói bảo hành
 exports.getAllWarrantyPackages = async (req, res) => {
@@ -39,7 +40,7 @@ exports.getAllWarrantyPackages = async (req, res) => {
     logger.error('Lỗi khi lấy danh sách gói bảo hành:', error);
     res.status(500).json({
       status: 'error',
-      message: 'Lỗi máy chủ',
+      message: t('warranty.serverError', req.locale),
     });
   }
 };
@@ -91,7 +92,7 @@ exports.getWarrantyPackagesByProduct = async (req, res) => {
     logger.error('Lỗi khi lấy gói bảo hành theo sản phẩm:', error);
     res.status(500).json({
       status: 'error',
-      message: 'Lỗi máy chủ',
+      message: t('warranty.serverError', req.locale),
     });
   }
 };
@@ -118,7 +119,7 @@ exports.getWarrantyPackageById = async (req, res) => {
     logger.error('Lỗi khi lấy gói bảo hành theo ID:', error);
     res.status(500).json({
       status: 'error',
-      message: 'Lỗi máy chủ',
+      message: t('warranty.serverError', req.locale),
     });
   }
 };
@@ -165,7 +166,7 @@ exports.createWarrantyPackage = async (req, res) => {
     logger.error('Lỗi khi tạo gói bảo hành:', error);
     res.status(500).json({
       status: 'error',
-      message: 'Lỗi máy chủ',
+      message: t('warranty.serverError', req.locale),
     });
   }
 };
@@ -222,7 +223,7 @@ exports.updateWarrantyPackage = async (req, res) => {
     logger.error('Lỗi khi cập nhật gói bảo hành:', error);
     res.status(500).json({
       status: 'error',
-      message: 'Lỗi máy chủ',
+      message: t('warranty.serverError', req.locale),
     });
   }
 };
@@ -264,7 +265,7 @@ exports.deleteWarrantyPackage = async (req, res) => {
     logger.error('Lỗi khi xóa gói bảo hành:', error);
     res.status(500).json({
       status: 'error',
-      message: 'Lỗi máy chủ',
+      message: t('warranty.serverError', req.locale),
     });
   }
 };

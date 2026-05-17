@@ -7,6 +7,7 @@ const { AppError } = require('../shared/errors');
 const { Op } = require('sequelize');
 const sequelize = require('../config/sequelize');
 const moment = require('moment');
+const { t } = require('../utils/i18n');
 
 // Tải toàn bộ dữ liệu đơn hàng và gửi email xác nhận — không block flow thanh toán nếu email thất bại
 const sendOrderConfirmationEmailSafe = async (orderId) => {
@@ -211,7 +212,7 @@ const handleSePayWebhook = async (req, res, next) => {
     // Xác thực nguồn webhook bằng API key
     if (!verifySePayApiKey(req)) {
       logger.error('API key SePay không hợp lệ');
-      return res.status(401).json({ error: 'Yêu cầu webhook không được xác thực' });
+      return res.status(401).json({ error: t('payment.webhookUnauthorized', req.locale) });
     }
 
     const {
@@ -234,43 +235,43 @@ const handleSePayWebhook = async (req, res, next) => {
     // Kiểm tra các trường bắt buộc
     if (!id || !transferType || !transferAmount || !transactionDate) {
       logger.info('Thiếu các trường bắt buộc trong SePay webhook');
-      return res.status(400).json({ error: 'Thiếu các trường bắt buộc' });
+      return res.status(400).json({ error: t('payment.missingRequiredFields', req.locale) });
     }
 
     // Kiểm tra kiểu dữ liệu
     if (typeof id !== 'number' && typeof id !== 'string') {
       logger.info('Kiểu dữ liệu transaction ID không hợp lệ trong SePay webhook');
-      return res.status(400).json({ error: 'Kiểu dữ liệu transaction ID không hợp lệ' });
+      return res.status(400).json({ error: t('payment.invalidTransactionIdType', req.locale) });
     }
 
     if (typeof transferAmount !== 'number' || typeof transferType !== 'string') {
       logger.info('Kiểu dữ liệu không hợp lệ trong SePay webhook');
-      return res.status(400).json({ error: 'Kiểu dữ liệu không hợp lệ' });
+      return res.status(400).json({ error: t('payment.invalidDataType', req.locale) });
     }
 
     // Kiểm tra số tiền chuyển phải dương
     if (transferAmount <= 0) {
       logger.info('Số tiền chuyển không hợp lệ:', transferAmount);
-      return res.status(400).json({ error: 'Số tiền chuyển phải là số dương' });
+      return res.status(400).json({ error: t('payment.amountMustBePositive', req.locale) });
     }
 
     // Kiểm tra loại giao dịch
     if (!['in', 'out'].includes(transferType)) {
       logger.info('Loại giao dịch không hợp lệ:', transferType);
-      return res.status(400).json({ error: 'Loại giao dịch không hợp lệ' });
+      return res.status(400).json({ error: t('payment.invalidTransactionType', req.locale) });
     }
 
     // Chỉ xử lý giao dịch tiền vào
     if (transferType !== 'in') {
       logger.info('Bỏ qua giao dịch tiền ra');
-      return res.status(200).json({ received: true, message: 'Bỏ qua giao dịch tiền ra' });
+      return res.status(200).json({ received: true, message: t('payment.ignoringOutbound', req.locale) });
     }
 
     // Kiểm tra định dạng ngày giao dịch
     const parsedTransactionDate = new Date(transactionDate);
     if (isNaN(parsedTransactionDate.getTime())) {
       logger.info('Định dạng ngày giao dịch không hợp lệ:', transactionDate);
-      return res.status(400).json({ error: 'Định dạng ngày giao dịch không hợp lệ' });
+      return res.status(400).json({ error: t('payment.invalidTransactionDate', req.locale) });
     }
 
     // Trích xuất order ID từ content hoặc code (có thể tùy chỉnh theo định dạng thực tế)
@@ -423,7 +424,7 @@ const handleSePayWebhook = async (req, res, next) => {
       // LIKE '%...%' có thể match nhầm order khác, gây risk payment hijacking.
     } catch (error) {
       logger.error('Lỗi database khi tìm đơn hàng:', error);
-      return res.status(500).json({ error: 'Lỗi xử lý đơn hàng' });
+      return res.status(500).json({ error: t('payment.processingError', req.locale) });
     }
 
     if (!order) {
@@ -595,7 +596,7 @@ const momoIPN = async (req, res, next) => {
     const isValid = momoService.verifySignature(req.body);
     
     if (!isValid) {
-      return res.status(400).json({ message: 'Chữ ký không hợp lệ' });
+      return res.status(400).json({ message: t('payment.invalidSignature', req.locale) });
     }
 
     const { resultCode, extraData, transId } = req.body;
@@ -752,7 +753,7 @@ const vnpayIPN = async (req, res, next) => {
     }
   } catch (error) {
     logger.error('Lỗi VNPay IPN:', error);
-    return res.status(200).json({ RspCode: '99', Message: 'Lỗi không xác định' });
+    return res.status(200).json({ RspCode: '99', Message: t('payment.unknownError', req.locale) });
   }
 };
 

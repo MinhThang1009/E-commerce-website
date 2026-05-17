@@ -60,7 +60,7 @@ describe('LoyaltyService', () => {
       });
       await expect(
         service.redeemPoints({ userId: 1, points: 100 })
-      ).rejects.toMatchObject({ statusCode: 400, message: expect.stringContaining('không đủ') });
+      ).rejects.toMatchObject({ statusCode: 400, message: 'loyalty.insufficientPoints' });
     });
 
     test('hợp lệ → decrement points + ghi history + return remaining', async () => {

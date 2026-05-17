@@ -79,7 +79,7 @@ describe('WishlistService', () => {
     test('clear all + return message', async () => {
       const result = await service.clearWishlist({ userId: 1 });
       expect(wishlistRepository.clearByUserId).toHaveBeenCalledWith(1);
-      expect(result.message).toMatch(/Đã xóa/);
+      expect(result.message).toBe('wishlist.clearedAll');
     });
   });
 

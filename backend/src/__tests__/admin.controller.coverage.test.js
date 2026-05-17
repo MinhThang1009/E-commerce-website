@@ -58,7 +58,7 @@ jest.mock('../utils/productHelpers', () => ({
 }));
 
 jest.mock('../services/ai/vectorStore', () => ({
-  addProduct: jest.fn().mockResolvedValue(undefined),
+  upsertProduct: jest.fn().mockResolvedValue(undefined),
   save: jest.fn().mockResolvedValue(undefined),
   loadPromise: Promise.resolve(),
   items: [],
@@ -376,7 +376,7 @@ beforeEach(() => {
 
   // Restore vectorStore mocks
   const vs2 = require('../services/ai/vectorStore');
-  vs2.addProduct.mockResolvedValue(undefined);
+  vs2.upsertProduct.mockResolvedValue(undefined);
   vs2.save.mockResolvedValue(undefined);
   vs2.loadPromise = Promise.resolve();
   vs2.enrichProductData.mockImplementation((x) => x);
@@ -864,7 +864,7 @@ describe('POST /api/admin/products — createProduct với các quan hệ', () =
     expect(ProductWarranty.create).not.toHaveBeenCalled();
   });
 
-  it('không gọi vectorStore.addProduct khi product.status là inactive', async () => {
+  it('không gọi vectorStore.upsertProduct khi product.status là inactive', async () => {
     const vectorStore = require('../services/ai/vectorStore');
     const newProduct = makeCreatedProduct(33);
     newProduct.status = 'inactive';
@@ -882,7 +882,7 @@ describe('POST /api/admin/products — createProduct với các quan hệ', () =
     });
 
     expect(res.status).toBe(201);
-    expect(vectorStore.addProduct).not.toHaveBeenCalled();
+    expect(vectorStore.upsertProduct).not.toHaveBeenCalled();
   });
 });
 
@@ -1156,7 +1156,7 @@ describe('PUT /api/admin/products/:id — updateProduct các diff paths', () => 
     expect(ProductWarranty.create).not.toHaveBeenCalled();
   });
 
-  it('không gọi vectorStore.addProduct khi product không active sau update', async () => {
+  it('không gọi vectorStore.upsertProduct khi product không active sau update', async () => {
     const vectorStore = require('../services/ai/vectorStore');
     const inactiveProduct = makeProduct({ id: 10, status: 'inactive' });
     Product.findByPk
@@ -1169,7 +1169,7 @@ describe('PUT /api/admin/products/:id — updateProduct các diff paths', () => 
     });
 
     expect(res.status).toBe(200);
-    expect(vectorStore.addProduct).not.toHaveBeenCalled();
+    expect(vectorStore.upsertProduct).not.toHaveBeenCalled();
     // Nên remove khỏi items
     expect(vectorStore.save).toHaveBeenCalled();
   });

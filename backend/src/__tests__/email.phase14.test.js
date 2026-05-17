@@ -136,7 +136,7 @@ describe('POST /api/auth/forgot-password', () => {
 
     expect(res.status).toBe(200);
     expect(res.body.status).toBe('success');
-    expect(res.body.message).toBe('Đã gửi email đặt lại mật khẩu. Vui lòng kiểm tra email của bạn.');
+    expect(res.body.message).toBe('auth.passwordResetSent');
     // Không gửi email vì user không tồn tại
     expect(emailService.sendResetPasswordEmail).not.toHaveBeenCalled();
   });
@@ -151,7 +151,7 @@ describe('POST /api/auth/forgot-password', () => {
 
     expect(res.status).toBe(200);
     expect(res.body.status).toBe('success');
-    expect(res.body.message).toBe('Đã gửi email đặt lại mật khẩu. Vui lòng kiểm tra email của bạn.');
+    expect(res.body.message).toBe('auth.passwordResetSent');
     // Email phải được gửi
     expect(emailService.sendResetPasswordEmail).toHaveBeenCalledTimes(1);
   });
@@ -209,7 +209,7 @@ describe('POST /api/auth/reset-password', () => {
       .send({ token: 'alreadyusedtoken', password: 'newpassword123' });
 
     expect(res.status).toBe(400);
-    expect(res.body.message).toMatch(/Token không hợp lệ hoặc đã hết hạn/i);
+    expect(res.body.message).toBe('auth.tokenInvalidOrExpired');
   });
 });
 

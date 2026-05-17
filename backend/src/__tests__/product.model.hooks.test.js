@@ -31,7 +31,7 @@ jest.mock('slugify', () =>
 
 // vectorStore module — mock toàn bộ để hook không thật sự call DB
 const mockVectorStore = {
-  addProduct: jest.fn().mockResolvedValue(undefined),
+  upsertProduct: jest.fn().mockResolvedValue(undefined),
   save: jest.fn().mockResolvedValue(undefined),
   items: [],
   enrichProductData: jest.fn((p) => p),
@@ -41,6 +41,7 @@ jest.mock('../services/ai/vectorStore', () => mockVectorStore);
 // category / productImage dùng trong hook (lazy require inside hooks)
 jest.mock('../models/category', () => ({}), { virtual: true });
 jest.mock('../models/productImage', () => ({}), { virtual: true });
+jest.mock('../models/productVariant', () => ({}), { virtual: true });
 
 // Capture hooks và model khi sequelize.define() được gọi
 let capturedHooks = {};
@@ -441,7 +442,7 @@ describe('Product model: afterCreate hook', () => {
     mockVectorStore.items = [];
   });
 
-  it('product status=active → addProduct và save được gọi', async () => {
+  it('product status=active → upsertProduct và save được gọi', async () => {
     const fullProduct = {
       id: 1,
       name: 'Active Product',
@@ -452,35 +453,35 @@ describe('Product model: afterCreate hook', () => {
 
     await capturedHooks.afterCreate({ id: 1, status: 'active' });
 
-    expect(mockVectorStore.addProduct).toHaveBeenCalled();
+    expect(mockVectorStore.upsertProduct).toHaveBeenCalled();
     expect(mockVectorStore.save).toHaveBeenCalled();
   });
 
-  it('product status=inactive → KHÔNG gọi addProduct', async () => {
+  it('product status=inactive → KHÔNG gọi upsertProduct', async () => {
     await capturedHooks.afterCreate({ id: 2, status: 'inactive' });
-    expect(mockVectorStore.addProduct).not.toHaveBeenCalled();
+    expect(mockVectorStore.upsertProduct).not.toHaveBeenCalled();
   });
 
-  it('product status=draft → KHÔNG gọi addProduct', async () => {
+  it('product status=draft → KHÔNG gọi upsertProduct', async () => {
     await capturedHooks.afterCreate({ id: 3, status: 'draft' });
-    expect(mockVectorStore.addProduct).not.toHaveBeenCalled();
+    expect(mockVectorStore.upsertProduct).not.toHaveBeenCalled();
   });
 
   it('không throw khi findByPk trả về null', async () => {
     mockProductInstance.findByPk.mockResolvedValue(null);
     await expect(capturedHooks.afterCreate({ id: 99, status: 'active' })).resolves.not.toThrow();
-    // addProduct không được gọi vì fullProduct = null
-    expect(mockVectorStore.addProduct).not.toHaveBeenCalled();
+    // upsertProduct không được gọi vì fullProduct = null
+    expect(mockVectorStore.upsertProduct).not.toHaveBeenCalled();
   });
 
-  it('không throw khi vectorStore.addProduct fail — lỗi được swallow', async () => {
+  it('không throw khi vectorStore.upsertProduct fail — lỗi được swallow', async () => {
     const fullProduct = {
       id: 10,
       status: 'active',
       toJSON: () => ({ id: 10, status: 'active' }),
     };
     mockProductInstance.findByPk.mockResolvedValue(fullProduct);
-    mockVectorStore.addProduct.mockRejectedValueOnce(new Error('vector fail'));
+    mockVectorStore.upsertProduct.mockRejectedValueOnce(new Error('vector fail'));
 
     await expect(capturedHooks.afterCreate({ id: 10, status: 'active' })).resolves.not.toThrow();
   });
@@ -498,7 +499,7 @@ describe('Product model: afterUpdate hook', () => {
     ];
   });
 
-  it('status=active → gọi addProduct với full product data', async () => {
+  it('status=active → gọi upsertProduct với full product data', async () => {
     const fullProduct = {
       id: 5,
       status: 'active',
@@ -508,7 +509,7 @@ describe('Product model: afterUpdate hook', () => {
 
     await capturedHooks.afterUpdate({ id: 5, status: 'active' });
 
-    expect(mockVectorStore.addProduct).toHaveBeenCalled();
+    expect(mockVectorStore.upsertProduct).toHaveBeenCalled();
     expect(mockVectorStore.save).toHaveBeenCalled();
   });
 
@@ -517,7 +518,7 @@ describe('Product model: afterUpdate hook', () => {
 
     expect(mockVectorStore.items.find((i) => i.metadata.id === 5)).toBeUndefined();
     expect(mockVectorStore.save).toHaveBeenCalled();
-    expect(mockVectorStore.addProduct).not.toHaveBeenCalled();
+    expect(mockVectorStore.upsertProduct).not.toHaveBeenCalled();
   });
 
   it('status=archived → item bị xóa khỏi vector store', async () => {
@@ -526,12 +527,12 @@ describe('Product model: afterUpdate hook', () => {
     expect(mockVectorStore.items.find((i) => i.metadata.id === 5)).toBeUndefined();
   });
 
-  it('status=active nhưng findByPk trả về null → addProduct không được gọi', async () => {
+  it('status=active nhưng findByPk trả về null → upsertProduct không được gọi', async () => {
     mockProductInstance.findByPk.mockResolvedValue(null);
 
     await capturedHooks.afterUpdate({ id: 5, status: 'active' });
 
-    expect(mockVectorStore.addProduct).not.toHaveBeenCalled();
+    expect(mockVectorStore.upsertProduct).not.toHaveBeenCalled();
   });
 
   it('không throw khi vectorStore.save fail', async () => {

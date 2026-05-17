@@ -19,8 +19,13 @@ class VietnameseEmbeddingService {
   }
 
   // HuggingFace API không ổn định — retry để tránh search() throw exception và mất context chatbot
-  async generateEmbedding(text) {
+  // type: 'query' cho search queries, 'passage' cho documents khi indexing
+  // multilingual-e5-large yêu cầu prefix để phân biệt query vs passage — cải thiện retrieval đáng kể
+  async generateEmbedding(text, type = 'query') {
     if (!this.apiKey) throw new Error('HF_API_KEY chưa được cấu hình');
+
+    const prefix = type === 'passage' ? 'passage: ' : 'query: ';
+    const prefixedText = prefix + text;
 
     const maxRetries = 2;
     const backoffMs = [500, 1000];
@@ -29,7 +34,7 @@ class VietnameseEmbeddingService {
       try {
         const response = await axios.post(
           this.apiUrl,
-          { inputs: text },
+          { inputs: prefixedText },
           {
             headers: {
               Authorization: `Bearer ${this.apiKey}`,

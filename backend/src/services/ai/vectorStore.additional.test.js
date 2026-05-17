@@ -1,9 +1,9 @@
 /**
- * Additional tests cho SimpleVectorStore (src/services/ai/vectorStore.js)
+ * Additional tests cho HybridVectorStore (src/services/ai/vectorStore.js)
  * Phủ các nhánh còn thiếu:
  *  - load(): file rỗng, file invalid JSON, file không tồn tại
  *  - save(): tạo thư mục khi chưa có
- *  - addProduct(): dimension mismatch EN, viEmbedding không available, viEmbedding sai dim
+ *  - upsertProduct(): dimension mismatch EN, viEmbedding không available, viEmbedding sai dim
  *  - search(): useViModel=true / fallback EN, score dưới threshold, empty store
  *  - cosineSimilarity: zero vectors, mismatched lengths, NaN guard
  *  - enrichProductData: nhiều ảnh, không có ảnh, variant stock
@@ -57,7 +57,7 @@ const VI_DIM = 1024;
 // Phải require SAU khi mock đã đặt (jest.mock hoist lên trên, nhưng ta cần
 // control state của mockExistsSync trước khi constructor chạy)
 
-describe('SimpleVectorStore — load()', () => {
+describe('HybridVectorStore — load()', () => {
   beforeEach(() => {
     jest.resetModules();
     jest.clearAllMocks();
@@ -254,7 +254,7 @@ describe('clear()', () => {
 });
 
 // ─────────────────────────────────────────────────────────────────────────────
-describe('addProduct()', () => {
+describe('upsertProduct()', () => {
   let store;
   let mockEn;
   let mockVi;
@@ -290,7 +290,7 @@ describe('addProduct()', () => {
   it('thêm sản phẩm hợp lệ → items.length tăng lên 1', async () => {
     const product = { id: 1, name: 'Laptop', slug: 'laptop', basePrice: 10000000, status: 'active' };
 
-    await store.addProduct(product);
+    await store.upsertProduct(product);
 
     expect(store.items).toHaveLength(1);
     expect(store.items[0].metadata.id).toBe(1);
@@ -300,8 +300,8 @@ describe('addProduct()', () => {
   it('thêm cùng productId lần 2 → cập nhật, không tạo duplicate', async () => {
     const product = { id: 5, name: 'Laptop', slug: 'laptop-5', basePrice: 5000000, status: 'active' };
 
-    await store.addProduct(product);
-    await store.addProduct({ ...product, name: 'Laptop Updated' });
+    await store.upsertProduct(product);
+    await store.upsertProduct({ ...product, name: 'Laptop Updated' });
 
     expect(store.items).toHaveLength(1);
     expect(store.items[0].metadata.name).toBe('Laptop Updated');
@@ -312,7 +312,7 @@ describe('addProduct()', () => {
 
     const product = { id: 2, name: 'Phone', slug: 'phone', basePrice: 2000000 };
 
-    await expect(store.addProduct(product)).rejects.toThrow(/sai chiều/);
+    await expect(store.upsertProduct(product)).rejects.toThrow(/sai chiều/);
   });
 
   it('EN vector là null → throw Error', async () => {
@@ -320,14 +320,14 @@ describe('addProduct()', () => {
 
     const product = { id: 3, name: 'Mouse', slug: 'mouse', basePrice: 500000 };
 
-    await expect(store.addProduct(product)).rejects.toThrow();
+    await expect(store.upsertProduct(product)).rejects.toThrow();
   });
 
   it('viEmbedding không available → vectorVi = null', async () => {
     mockViService.isAvailable.mockReturnValue(false);
 
     const product = { id: 6, name: 'Keyboard', slug: 'keyboard', basePrice: 300000 };
-    await store.addProduct(product);
+    await store.upsertProduct(product);
 
     expect(store.items[0].vectorVi).toBeNull();
   });
@@ -337,7 +337,7 @@ describe('addProduct()', () => {
     mockVi.mockResolvedValue(makeVector(512)); // wrong dim for VI
 
     const product = { id: 7, name: 'Monitor', slug: 'monitor', basePrice: 5000000 };
-    await store.addProduct(product);
+    await store.upsertProduct(product);
 
     expect(store.items[0].vectorVi).toBeNull();
   });
@@ -347,7 +347,7 @@ describe('addProduct()', () => {
     mockVi.mockResolvedValue(makeVector(VI_DIM));
 
     const product = { id: 8, name: 'Màn hình', slug: 'man-hinh', basePrice: 4000000 };
-    await store.addProduct(product);
+    await store.upsertProduct(product);
 
     expect(store.items[0].vectorVi).toBeDefined();
     expect(store.items[0].vectorVi).toHaveLength(VI_DIM);
@@ -358,7 +358,7 @@ describe('addProduct()', () => {
     mockVi.mockRejectedValue(new Error('HF API timeout'));
 
     const product = { id: 9, name: 'Sản phẩm VN', slug: 'sp-vn', basePrice: 1000000 };
-    await store.addProduct(product); // không throw
+    await store.upsertProduct(product); // không throw
 
     expect(store.items[0].vectorVi).toBeNull();
   });
@@ -399,7 +399,7 @@ describe('search()', () => {
   });
 
   it('store rỗng → trả về mảng rỗng', async () => {
-    const results = await store.search('laptop');
+    const results = await store.hybridSearch('laptop');
     expect(results).toEqual([]);
   });
 
@@ -415,7 +415,7 @@ describe('search()', () => {
       metadata: { id: 1, name: 'Laptop' },
     }];
 
-    const results = await store.search('laptop');
+    const results = await store.hybridSearch('laptop');
     expect(results).toHaveLength(1);
     expect(results[0].score).toBeCloseTo(1);
   });
@@ -435,7 +435,7 @@ describe('search()', () => {
       metadata: { id: 2, name: 'Chair' },
     }];
 
-    const results = await store.search('lamp');
+    const results = await store.hybridSearch('lamp');
     expect(results).toEqual([]);
   });
 
@@ -451,7 +451,7 @@ describe('search()', () => {
       metadata: { id: i, name: `Item ${i}` },
     }));
 
-    const results = await store.search('test');
+    const results = await store.hybridSearch('test');
     expect(results).toHaveLength(5);
   });
 
@@ -466,14 +466,14 @@ describe('search()', () => {
       metadata: { id: i, name: `Item ${i}` },
     }));
 
-    const results = await store.search('test', 3);
+    const results = await store.hybridSearch('test', 3);
     expect(results).toHaveLength(3);
   });
 
   it('embeddingService throw → trả về mảng rỗng (không propagate lỗi)', async () => {
     mockEn.mockRejectedValue(new Error('API down'));
 
-    const results = await store.search('query');
+    const results = await store.hybridSearch('query');
     expect(results).toEqual([]);
   });
 
@@ -490,7 +490,7 @@ describe('search()', () => {
       metadata: { id: 1, name: 'Điện thoại' },
     }];
 
-    const results = await store.search('điện thoại'); // tiếng Việt
+    const results = await store.hybridSearch('điện thoại'); // tiếng Việt
     // VI model được dùng — mock vi embed được gọi
     expect(mockVi).toHaveBeenCalled();
   });
@@ -517,7 +517,7 @@ describe('search()', () => {
       metadata: { id: 11, name: 'Chuột' },
     });
 
-    const results = await store.search('tìm kiếm tiếng Việt');
+    const results = await store.hybridSearch('tìm kiếm tiếng Việt');
     // Không crash, trả về array
     expect(Array.isArray(results)).toBe(true);
   });

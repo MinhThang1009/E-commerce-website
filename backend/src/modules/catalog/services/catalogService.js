@@ -58,13 +58,13 @@ class CatalogService {
 
   async getCategoryById({ id }) {
     const category = await this.catalogRepository.findCategoryById(id);
-    if (!category) throw new AppError('Không tìm thấy danh mục', 404);
+    if (!category) throw new AppError('catalog.categoryNotFound', 404);
     return category;
   }
 
   async getCategoryBySlug({ slug }) {
     const category = await this.catalogRepository.findCategoryByIdOrSlug(slug);
-    if (!category) throw new AppError('Không tìm thấy danh mục', 404);
+    if (!category) throw new AppError('catalog.categoryNotFound', 404);
     return category;
   }
 
@@ -79,7 +79,7 @@ class CatalogService {
 
   async updateCategory({ id, patch }) {
     const category = await this.catalogRepository.findCategoryById(id);
-    if (!category) throw new AppError('Không tìm thấy danh mục', 404);
+    if (!category) throw new AppError('catalog.categoryNotFound', 404);
 
     if (patch.name !== undefined) category.name = patch.name;
     if (patch.description !== undefined) category.description = patch.description;
@@ -90,16 +90,16 @@ class CatalogService {
 
   async deleteCategory({ id }) {
     const category = await this.catalogRepository.findCategoryById(id);
-    if (!category) throw new AppError('Không tìm thấy danh mục', 404);
+    if (!category) throw new AppError('catalog.categoryNotFound', 404);
 
     const productCount = await this.catalogRepository.countProductsByCategoryId(id);
     if (productCount > 0) {
-      throw new AppError('Không thể xóa danh mục có sản phẩm', 400);
+      throw new AppError('catalog.cannotDeleteCategoryWithProducts', 400);
     }
 
     await this.catalogRepository.deleteCategory(category);
     await this._invalidateCacheKey('categories:all');
-    return { message: 'Xóa danh mục thành công' };
+    return { message: 'catalog.categoryDeleted' };
   }
 
   async getProductsByCategory({ id, page = 1, limit = 10, sort = 'createdAt', order = 'DESC', status = 'active' }) {
@@ -107,7 +107,7 @@ class CatalogService {
     if (!category) {
       category = await this.catalogRepository.findCategoryBySlug(id);
     }
-    if (!category) throw new AppError('Không tìm thấy danh mục', 404);
+    if (!category) throw new AppError('catalog.categoryNotFound', 404);
 
     const lim = parseInt(limit, 10);
     const off = (parseInt(page, 10) - 1) * lim;
@@ -172,7 +172,7 @@ class CatalogService {
 
   async getBrandBySlug({ slug }) {
     const brand = await this.catalogRepository.findBrandBySlug(slug);
-    if (!brand) throw new AppError('Không tìm thấy thương hiệu', 404);
+    if (!brand) throw new AppError('catalog.brandNotFound', 404);
     return brand;
   }
 
@@ -186,7 +186,7 @@ class CatalogService {
 
   async updateBrand({ id, patch }) {
     const brand = await this.catalogRepository.findBrandById(id);
-    if (!brand) throw new AppError('Không tìm thấy thương hiệu', 404);
+    if (!brand) throw new AppError('catalog.brandNotFound', 404);
     Object.assign(brand, patch);
     await this.catalogRepository.saveBrand(brand);
     await this._invalidateCachePattern('cache:brands:*');
@@ -195,21 +195,21 @@ class CatalogService {
 
   async deleteBrand({ id }) {
     const brand = await this.catalogRepository.findBrandById(id);
-    if (!brand) throw new AppError('Không tìm thấy thương hiệu', 404);
+    if (!brand) throw new AppError('catalog.brandNotFound', 404);
 
     const count = await this.catalogRepository.countProductsByBrandId(id);
     if (count > 0) {
-      throw new AppError('Không thể xóa thương hiệu đang có sản phẩm', 400);
+      throw new AppError('catalog.cannotDeleteBrandWithProducts', 400);
     }
 
     await this.catalogRepository.deleteBrand(brand);
     await this._invalidateCachePattern('cache:brands:*');
-    return { message: 'Xóa thương hiệu thành công' };
+    return { message: 'catalog.brandDeleted' };
   }
 
   async getProductsByBrand({ slug, page = 1, limit = 10, sort = 'createdAt', order = 'DESC' }) {
     const brand = await this.catalogRepository.findBrandBySlug(slug);
-    if (!brand) throw new AppError('Không tìm thấy thương hiệu', 404);
+    if (!brand) throw new AppError('catalog.brandNotFound', 404);
 
     const lim = parseInt(limit, 10);
     const off = (parseInt(page, 10) - 1) * lim;
@@ -236,7 +236,7 @@ class CatalogService {
 
   async getCollectionBySlug({ slug }) {
     const collection = await this.catalogRepository.findCollectionBySlug(slug);
-    if (!collection) throw new AppError('Không tìm thấy bộ sưu tập', 404);
+    if (!collection) throw new AppError('catalog.collectionNotFound', 404);
     return collection;
   }
 
@@ -254,7 +254,7 @@ class CatalogService {
 
   async updateCollection({ id, patch }) {
     const collection = await this.catalogRepository.findCollectionById(id);
-    if (!collection) throw new AppError('Không tìm thấy bộ sưu tập', 404);
+    if (!collection) throw new AppError('catalog.collectionNotFound', 404);
 
     Object.assign(collection, {
       name: patch.name,
@@ -272,16 +272,16 @@ class CatalogService {
 
   async deleteCollection({ id }) {
     const collection = await this.catalogRepository.findCollectionById(id);
-    if (!collection) throw new AppError('Không tìm thấy bộ sưu tập', 404);
+    if (!collection) throw new AppError('catalog.collectionNotFound', 404);
 
     await this.catalogRepository.setCollectionProducts(id, []);
     await this.catalogRepository.deleteCollection(collection);
-    return { message: 'Xóa bộ sưu tập thành công' };
+    return { message: 'catalog.collectionDeleted' };
   }
 
   async getProductsByCollection({ slug, page = 1, limit = 10, sort = 'createdAt', order = 'DESC' }) {
     const collection = await this.catalogRepository.findCollectionBySlug(slug);
-    if (!collection) throw new AppError('Không tìm thấy bộ sưu tập', 404);
+    if (!collection) throw new AppError('catalog.collectionNotFound', 404);
 
     const lim = parseInt(limit, 10);
     const off = (parseInt(page, 10) - 1) * lim;
@@ -479,7 +479,7 @@ class CatalogService {
     if (!product) {
       product = await this.catalogRepository.findProductBySlugWithFullDetails(id);
     }
-    if (!product) throw new AppError('Không tìm thấy sản phẩm', 404);
+    if (!product) throw new AppError('catalog.productNotFound', 404);
 
     const responseData = this._buildProductDetailResponse(product, { skuId, queryColor });
     const payload = { status: 'success', data: responseData };
@@ -499,7 +499,7 @@ class CatalogService {
   // GET /api/products/slug/:slug
   async getProductBySlug({ slug, skuId, queryColor, userId }) {
     const product = await this.catalogRepository.findProductBySlugWithFullDetails(slug);
-    if (!product) throw new AppError('Không tìm thấy sản phẩm', 404);
+    if (!product) throw new AppError('catalog.productNotFound', 404);
 
     const responseData = this._buildProductDetailResponse(product, { skuId, queryColor });
 
@@ -636,7 +636,7 @@ class CatalogService {
 
   async getRelatedProducts({ id, limit = 4 }) {
     const product = await this.catalogRepository.findProductByPk(id);
-    if (!product) throw new AppError('Không tìm thấy sản phẩm', 404);
+    if (!product) throw new AppError('catalog.productNotFound', 404);
 
     const lim = parseInt(limit, 10);
     let related = [];
@@ -658,7 +658,7 @@ class CatalogService {
   }
 
   async searchProducts({ q, page = 1, limit = 10 }) {
-    if (!q) throw new AppError('Từ khóa tìm kiếm là bắt buộc', 400);
+    if (!q) throw new AppError('catalog.searchKeywordRequired', 400);
 
     const lim = parseInt(limit, 10);
     const off = (parseInt(page, 10) - 1) * lim;
@@ -766,7 +766,7 @@ class CatalogService {
 
   async getProductVariants({ id }) {
     const product = await this.catalogRepository.findProductByPk(id);
-    if (!product) throw new AppError('Không tìm thấy sản phẩm', 404);
+    if (!product) throw new AppError('catalog.productNotFound', 404);
 
     const variants = await this.catalogRepository.findProductVariantsByProductId(id);
     return { variants };
@@ -774,7 +774,7 @@ class CatalogService {
 
   async getProductReviewsSummary({ id }) {
     const product = await this.catalogRepository.findProductByPk(id);
-    if (!product) throw new AppError('Không tìm thấy sản phẩm', 404);
+    if (!product) throw new AppError('catalog.productNotFound', 404);
 
     const reviews = await this.catalogRepository.findProductRatingsRows(id);
     const count = reviews.length;
@@ -792,7 +792,7 @@ class CatalogService {
       const isStrictInt = /^\d+$/.test(String(categoryId).trim());
       const isSlug = /^[a-z0-9-]+$/.test(String(categoryId).trim());
       if (!isStrictInt && !isSlug) {
-        throw new AppError('categoryId không hợp lệ', 400);
+        throw new AppError('catalog.invalidCategoryId', 400);
       }
       if (isStrictInt) actualCategoryId = parseInt(categoryId, 10);
       else {
@@ -866,7 +866,7 @@ class CatalogService {
       if (payload.categoryIds && payload.categoryIds.length > 0) {
         const categories = await this.catalogRepository.findCategoriesByIds(payload.categoryIds);
         if (categories.length !== payload.categoryIds.length) {
-          throw new AppError('Một hoặc nhiều danh mục không tồn tại', 400);
+          throw new AppError('catalog.categoriesNotExist', 400);
         }
         await this.catalogRepository.setProductCategories(product, categories, { transaction });
       }
@@ -915,7 +915,7 @@ class CatalogService {
       if (payload.warrantyPackageIds && payload.warrantyPackageIds.length > 0) {
         const warranties = await this.catalogRepository.findWarrantyPackagesByIds(payload.warrantyPackageIds);
         if (warranties.length !== payload.warrantyPackageIds.length) {
-          throw new AppError('Một hoặc nhiều gói bảo hành không tồn tại', 400);
+          throw new AppError('catalog.warrantyPackagesNotExist', 400);
         }
         await this.catalogRepository.setProductWarrantyPackages(product, warranties, { transaction });
       }
@@ -930,7 +930,7 @@ class CatalogService {
 
   async updateProduct({ id, patch }) {
     const product = await this.catalogRepository.findProductByPk(id);
-    if (!product) throw new AppError('Không tìm thấy sản phẩm', 404);
+    if (!product) throw new AppError('catalog.productNotFound', 404);
 
     const originalSlug = product.slug;
 
@@ -957,7 +957,7 @@ class CatalogService {
       if (Object.prototype.hasOwnProperty.call(patch, 'categoryIds') && patch.categoryIds) {
         const categories = await this.catalogRepository.findCategoriesByIds(patch.categoryIds);
         if (categories.length !== patch.categoryIds.length) {
-          throw new AppError('Một hoặc nhiều danh mục không tồn tại', 400);
+          throw new AppError('catalog.categoriesNotExist', 400);
         }
         await this.catalogRepository.setProductCategories(product, categories, { transaction });
       }
@@ -982,7 +982,7 @@ class CatalogService {
         if (patch.warrantyPackageIds && patch.warrantyPackageIds.length > 0) {
           const warranties = await this.catalogRepository.findWarrantyPackagesByIds(patch.warrantyPackageIds);
           if (warranties.length !== patch.warrantyPackageIds.length) {
-            throw new AppError('Một hoặc nhiều gói bảo hành không tồn tại', 400);
+            throw new AppError('catalog.warrantyPackagesNotExist', 400);
           }
           await this.catalogRepository.setProductWarrantyPackages(product, warranties, { transaction });
         } else {
@@ -998,12 +998,12 @@ class CatalogService {
 
   async deleteProduct({ id }) {
     const product = await this.catalogRepository.findProductByPk(id);
-    if (!product) throw new AppError('Không tìm thấy sản phẩm', 404);
+    if (!product) throw new AppError('catalog.productNotFound', 404);
 
     const productSlug = product.slug;
     await this.catalogRepository.deleteProduct(product);
     await this._clearProductCache(id, productSlug);
-    return { message: 'Xóa sản phẩm thành công' };
+    return { message: 'catalog.productDeleted' };
   }
 }
 

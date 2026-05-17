@@ -1,3 +1,5 @@
+const { t } = require('../../../utils/i18n');
+
 // Orders Controller — 11 handler. Trả response shape giữ nguyên cũ.
 class OrdersController {
   constructor({ ordersService }) {
@@ -47,7 +49,7 @@ class OrdersController {
       const data = await this.ordersService.cancelOrder({
         id: req.params.id, userId: req.user.id, userEmail: req.user.email,
       });
-      res.status(200).json({ status: 'success', message: 'Đơn hàng đã được hủy', data });
+      res.status(200).json({ status: 'success', message: t('orders.cancelled', req.locale), data });
     } catch (err) { next(err); }
   };
 
@@ -65,7 +67,7 @@ class OrdersController {
       });
       res.status(200).json({
         status: 'success',
-        message: 'Cập nhật trạng thái đơn hàng thành công',
+        message: t('orders.statusUpdated', req.locale),
         data,
       });
     } catch (err) { next(err); }
@@ -79,7 +81,7 @@ class OrdersController {
       });
       res.status(200).json({
         status: 'success',
-        message: 'Đơn hàng đã được cập nhật để thanh toán lại',
+        message: t('orders.repaymentReady', req.locale),
         data,
       });
     } catch (err) { next(err); }

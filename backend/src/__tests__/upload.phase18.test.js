@@ -213,7 +213,7 @@ describe('POST /api/uploads/:type/single — upload endpoint', () => {
 
     expect(res.status).toBe(400);
     expect(res.body.status).toBe('fail');
-    expect(res.body.message).toMatch(/Only JPG, PNG, WEBP allowed/i);
+    expect(res.body.message).toMatch(/Chỉ cho phép file JPG, PNG, WEBP/i);
   });
 
   // --- File hợp lệ ---

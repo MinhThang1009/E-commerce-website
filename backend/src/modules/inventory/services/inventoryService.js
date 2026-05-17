@@ -21,13 +21,13 @@ class InventoryService {
     const qty = validated.quantity;
 
     const product = await this.repo.findProductById(productId);
-    if (!product) throw new AppError('Không tìm thấy sản phẩm', 404);
+    if (!product) throw new AppError('inventory.productNotFound', 404);
 
     let stockable;
     let kind;
     if (variantId) {
       const variant = await this.repo.findVariantByIdAndProductId(variantId, productId);
-      if (!variant) throw new AppError('Không tìm thấy biến thể', 404);
+      if (!variant) throw new AppError('inventory.variantNotFound', 404);
       stockable = variant;
       kind = 'variant';
     } else {

@@ -1,8 +1,8 @@
 /**
  * Branch-coverage tests cho vectorStore.js.
  * Nhắm vào các nhánh FALSE chưa được cover:
- *  - lines 21-22: generateProductText — product.baseName falsy → '' (right side)
- *  - lines 25-28: generateProductText — product.description falsy → '' (right side)
+ *  - lines 21-22: buildEmbeddingText — product.baseName falsy → '' (right side)
+ *  - lines 25-28: buildEmbeddingText — product.description falsy → '' (right side)
  *                 product.basePrice falsy → '' (right side)
  *                 product.inStock undefined → stockQuantity > 0 path
  *  - line 148: cosineSimilarity — !isFinite(similarity) → return 0 (right side khi NaN)
@@ -26,12 +26,12 @@ function makeVector(dims, value = null) {
 const EN_DIM = 1536;
 const VI_DIM = 1024;
 
-// ── generateProductText — tested indirectly via addProduct ─────────────────────
-// generateProductText là hàm nội bộ (không export). Ta test via addProduct.
+// ── buildEmbeddingText — tested indirectly via upsertProduct ─────────────────────
+// buildEmbeddingText là hàm nội bộ (không export). Ta test via upsertProduct.
 // Nhưng để cover các nhánh (baseName, description, basePrice, inStock), cần
 // instantiate store với mock fs và embedding.
 
-describe('generateProductText — uncovered branches (lines 21-22, 25-28)', () => {
+describe('buildEmbeddingText — uncovered branches (lines 21-22, 25-28)', () => {
   let store;
   let mockEn;
 
@@ -71,7 +71,7 @@ describe('generateProductText — uncovered branches (lines 21-22, 25-28)', () =
     };
 
     // Không throw — text được tạo thành công không có "Thương hiệu:"
-    await expect(store.addProduct(product)).resolves.not.toThrow();
+    await expect(store.upsertProduct(product)).resolves.not.toThrow();
 
     // Kiểm tra text được embed (mockEn được gọi với string không chứa "Thương hiệu:")
     const embedCallArg = mockEn.mock.calls[0][0];
@@ -91,7 +91,7 @@ describe('generateProductText — uncovered branches (lines 21-22, 25-28)', () =
       inStock: true,
     };
 
-    await expect(store.addProduct(product)).resolves.not.toThrow();
+    await expect(store.upsertProduct(product)).resolves.not.toThrow();
     // Không crash, embed được gọi
     expect(mockEn).toHaveBeenCalled();
   });
@@ -108,7 +108,7 @@ describe('generateProductText — uncovered branches (lines 21-22, 25-28)', () =
       inStock: true,
     };
 
-    await expect(store.addProduct(product)).resolves.not.toThrow();
+    await expect(store.upsertProduct(product)).resolves.not.toThrow();
     const embedCallArg = mockEn.mock.calls[0][0];
     expect(embedCallArg).not.toContain('Giá:');
   });
@@ -126,7 +126,7 @@ describe('generateProductText — uncovered branches (lines 21-22, 25-28)', () =
       stockQuantity: 10, // > 0 → true → 'Còn hàng'
     };
 
-    await expect(store.addProduct(product)).resolves.not.toThrow();
+    await expect(store.upsertProduct(product)).resolves.not.toThrow();
     const embedCallArg = mockEn.mock.calls[0][0];
     expect(embedCallArg).toContain('Còn hàng');
   });
@@ -144,7 +144,7 @@ describe('generateProductText — uncovered branches (lines 21-22, 25-28)', () =
       stockQuantity: 0,
     };
 
-    await expect(store.addProduct(product)).resolves.not.toThrow();
+    await expect(store.upsertProduct(product)).resolves.not.toThrow();
     const embedCallArg = mockEn.mock.calls[0][0];
     expect(embedCallArg).toContain('Hết hàng');
   });
@@ -161,7 +161,7 @@ describe('generateProductText — uncovered branches (lines 21-22, 25-28)', () =
       inStock: true,
     };
 
-    await expect(store.addProduct(product)).resolves.not.toThrow();
+    await expect(store.upsertProduct(product)).resolves.not.toThrow();
     const embedCallArg = mockEn.mock.calls[0][0];
     expect(embedCallArg).not.toContain('Danh mục:');
   });
@@ -169,7 +169,7 @@ describe('generateProductText — uncovered branches (lines 21-22, 25-28)', () =
 
 // ── Line 148: cosineSimilarity — !isFinite(similarity) → return 0 ─────────────
 
-describe('SimpleVectorStore.cosineSimilarity — line 148: !isFinite(similarity)', () => {
+describe('HybridVectorStore.cosineSimilarity — line 148: !isFinite(similarity)', () => {
   let store;
 
   beforeAll(async () => {
@@ -229,7 +229,7 @@ describe('SimpleVectorStore.cosineSimilarity — line 148: !isFinite(similarity)
 
 // ── Line 183: search — item.vector fallback (field cũ trước re-index) ──────────
 
-describe('SimpleVectorStore.search — line 183: item.vector fallback', () => {
+describe('HybridVectorStore.search — line 183: item.vector fallback', () => {
   let store;
   let mockEn;
 
@@ -287,7 +287,7 @@ describe('SimpleVectorStore.search — line 183: item.vector fallback', () => {
     ];
 
     // Chạy search với query tiếng Việt để trigger useViModel = true
-    const results = await store.search('điện thoại tiếng Việt');
+    const results = await store.hybridSearch('điện thoại tiếng Việt');
 
     // Không crash — item.vector được dùng làm docVector fallback
     expect(Array.isArray(results)).toBe(true);
@@ -316,7 +316,7 @@ describe('SimpleVectorStore.search — line 183: item.vector fallback', () => {
       },
     ];
 
-    const results = await store.search('tìm kiếm tiếng Việt');
+    const results = await store.hybridSearch('tìm kiếm tiếng Việt');
     // Không crash — item không có vector nhận score = 0 → bị filter dưới 0.45
     expect(Array.isArray(results)).toBe(true);
   });
@@ -397,10 +397,10 @@ describe('enrichProductData — line 205: inStock logic', () => {
   });
 });
 
-// ── Additional coverage for generateProductText TRUE branches ───────────────────
+// ── Additional coverage for buildEmbeddingText TRUE branches ───────────────────
 // Lines 22, 25: TRUE side (categories[0].name truthy, description truthy)
 
-describe('generateProductText — TRUE branches (categories name, description)', () => {
+describe('buildEmbeddingText — TRUE branches (categories name, description)', () => {
   let store;
   let mockEn;
 
@@ -437,7 +437,7 @@ describe('generateProductText — TRUE branches (categories name, description)',
       inStock: true,
     };
 
-    await store.addProduct(product);
+    await store.upsertProduct(product);
     const embedArg = mockEn.mock.calls[0][0];
     expect(embedArg).toContain('Danh mục: Điện thoại');
   });
@@ -452,7 +452,7 @@ describe('generateProductText — TRUE branches (categories name, description)',
       inStock: true,
     };
 
-    await store.addProduct(product);
+    await store.upsertProduct(product);
     const embedArg = mockEn.mock.calls[0][0];
     expect(embedArg).toContain('Mô tả sản phẩm tốt');
     expect(embedArg).not.toContain('<p>');

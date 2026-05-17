@@ -1,7 +1,7 @@
-// Ai DTO factory — pure function, không class.
-// Service trả về model → controller mapper qua toAiDto trước response.
+// AI DTO factory — pure function, không class.
+// Service trả về model → controller mapper qua toAIDto trước response.
 
-function toAiDto(model) {
+function toAIDto(model) {
   if (!model) return null;
   const json = typeof model.toJSON === 'function' ? model.toJSON() : model;
   return {
@@ -10,4 +10,4 @@ function toAiDto(model) {
   };
 }
 
-module.exports = { toAiDto };
+module.exports = { toAIDto };

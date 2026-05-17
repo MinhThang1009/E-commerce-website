@@ -118,7 +118,7 @@ jest.mock('../utils/productHelpers', () => ({
 }));
 
 jest.mock('../services/ai/vectorStore', () => ({
-  addProduct: jest.fn(),
+  upsertProduct: jest.fn(),
   save: jest.fn().mockResolvedValue(undefined),
 }));
 

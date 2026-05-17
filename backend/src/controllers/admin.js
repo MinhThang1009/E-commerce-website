@@ -977,7 +977,7 @@ const createProduct = catchAsync(async (req, res) => {
     const { enrichProductData } = require('../services/ai/vectorStore');
     await vectorStoreService.loadPromise;
     if (productWithRelations.status === 'active') {
-      await vectorStoreService.addProduct(enrichProductData(productWithRelations.toJSON()));
+      await vectorStoreService.upsertProduct(enrichProductData(productWithRelations.toJSON()));
       await vectorStoreService.save();
     }
   } catch (syncErr) {
@@ -1352,7 +1352,7 @@ const updateProduct = catchAsync(async (req, res) => {
       const { enrichProductData } = require('../services/ai/vectorStore');
       await vectorStoreService.loadPromise;
       if (finalProduct && finalProduct.status === 'active') {
-        await vectorStoreService.addProduct(enrichProductData(finalProduct.toJSON()));
+        await vectorStoreService.upsertProduct(enrichProductData(finalProduct.toJSON()));
       } else if (finalProduct) {
         vectorStoreService.items = vectorStoreService.items.filter(item => item.metadata.id !== finalProduct.id);
       }
@@ -2153,7 +2153,7 @@ const restockProduct = catchAsync(async (req, res) => {
       ],
     });
     if (productForIndex && productForIndex.status === 'active') {
-      await vectorStoreService.addProduct(enrichProductData(productForIndex.toJSON()));
+      await vectorStoreService.upsertProduct(enrichProductData(productForIndex.toJSON()));
       await vectorStoreService.save();
     }
   } catch (syncErr) {

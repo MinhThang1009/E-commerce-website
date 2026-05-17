@@ -65,7 +65,7 @@ describe('UploadService', () => {
     test('thiếu file → 400', async () => {
       await expect(
         service.processSingleUpload({ file: null, uploadType: 'products' })
-      ).rejects.toMatchObject({ statusCode: 400, message: expect.stringContaining('Không có file') });
+      ).rejects.toMatchObject({ statusCode: 400, message: 'upload.noFile' });
     });
 
     test('magic bytes invalid → xóa file + 400', async () => {
@@ -74,7 +74,7 @@ describe('UploadService', () => {
 
       await expect(
         service.processSingleUpload({ file, uploadType: 'products' })
-      ).rejects.toMatchObject({ statusCode: 400, message: expect.stringContaining('JPG, PNG, WEBP') });
+      ).rejects.toMatchObject({ statusCode: 400, message: 'upload.invalidFileType' });
 
       expect(uploadRepository.deleteFile).toHaveBeenCalledWith('/tmp/fake.jpg');
     });
@@ -101,7 +101,7 @@ describe('UploadService', () => {
     test('không file nào → 400', async () => {
       await expect(
         service.processMultipleUpload({ files: [], uploadType: 'reviews' })
-      ).rejects.toMatchObject({ statusCode: 400, message: expect.stringContaining('Không có file') });
+      ).rejects.toMatchObject({ statusCode: 400, message: 'upload.noFile' });
     });
 
     test('mix valid + invalid → xóa invalid, trả valid', async () => {
@@ -161,7 +161,7 @@ describe('UploadService', () => {
     test('path traversal qua filename → 400', async () => {
       await expect(
         service.deleteFile({ user: { role: 'admin' }, type: 'products', filenameRaw: '../../../etc/passwd' })
-      ).rejects.toMatchObject({ statusCode: 400, message: expect.stringContaining('không hợp lệ') });
+      ).rejects.toMatchObject({ statusCode: 400, message: 'upload.invalidFileName' });
     });
 
     test('file không tồn tại → 404', async () => {
@@ -176,7 +176,7 @@ describe('UploadService', () => {
       const result = await service.deleteFile({
         user: { role: 'admin' }, type: 'products', filenameRaw: 'a.jpg',
       });
-      expect(result.message).toMatch(/Xóa file thành công/);
+      expect(result.message).toBe('upload.deleteSuccess');
       expect(uploadRepository.deleteFile).toHaveBeenCalled();
     });
   });

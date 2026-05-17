@@ -89,13 +89,13 @@ class OrdersService {
         for (const item of providedItems) {
           const product = await this.repo.findProductWithDefaultVariant(item.productId);
           if (!product) {
-            throw new AppError(`Không tìm thấy sản phẩm ID: ${item.productId}`, 404);
+            throw new AppError('orders.productNotFound', 404, { id: item.productId });
           }
           let variant = null;
           if (item.variantId) {
             variant = await this.repo.findVariantBasic(item.variantId);
             if (!variant) {
-              throw new AppError(`Không tìm thấy biến thể ID: ${item.variantId}`, 404);
+              throw new AppError('orders.variantNotFound', 404, { id: item.variantId });
             }
           }
           itemsToProcess.push({
@@ -145,10 +145,10 @@ class OrdersService {
 
         cart = await this.repo.findCartByPkWithItemsDetails(cart.id, { transaction });
         if (!cart) {
-          throw new AppError(`Không tìm thấy giỏ hàng cho người dùng ID: ${userId}`, 400);
+          throw new AppError('orders.cartNotFound', 400, { id: userId });
         }
         if (cart.items.length === 0) {
-          throw new AppError(`Giỏ hàng của người dùng ID: ${userId} hiện đang trống`, 400);
+          throw new AppError('orders.cartEmpty', 400, { id: userId });
         }
         itemsToProcess = cart.items;
       }
@@ -163,16 +163,16 @@ class OrdersService {
         const product = item.Product;
 
         if (product.status !== 'active') {
-          throw new AppError(`Sản phẩm "${product.name}" hiện không kinh doanh`, 400);
+          throw new AppError('orders.productInactive', 400, { name: product.name });
         }
 
         if (item.variantId) {
           const lockedVariant = await this.repo.lockVariant(item.variantId, transaction);
           if (!lockedVariant || lockedVariant.stockQuantity < item.quantity) {
-            throw new AppError(
-              `Sản phẩm "${product.name}" chỉ còn ${lockedVariant ? lockedVariant.stockQuantity : 0} sản phẩm`,
-              400,
-            );
+            throw new AppError('orders.stockInsufficient', 400, {
+              name: product.name,
+              available: lockedVariant ? lockedVariant.stockQuantity : 0,
+            });
           }
           const prev = lockedVariant.stockQuantity;
           await this.repo.decrementVariantStock(lockedVariant, item.quantity, { transaction });
@@ -187,10 +187,10 @@ class OrdersService {
         } else {
           const lockedProduct = await this.repo.lockProduct(item.productId, transaction);
           if (!lockedProduct || lockedProduct.stockQuantity < item.quantity) {
-            throw new AppError(
-              `Sản phẩm "${product.name}" chỉ còn ${lockedProduct ? lockedProduct.stockQuantity : 0} sản phẩm`,
-              400,
-            );
+            throw new AppError('orders.stockInsufficient', 400, {
+              name: product.name,
+              available: lockedProduct ? lockedProduct.stockQuantity : 0,
+            });
           }
           const prev = lockedProduct.stockQuantity;
           await this.repo.decrementProductStock(lockedProduct, item.quantity, { transaction });
@@ -230,23 +230,22 @@ class OrdersService {
       let discountCodeId = null;
       if (discountCode) {
         const codeData = await this.repo.findActiveDiscountCode(discountCode, { transaction });
-        if (!codeData) throw new AppError('Mã giảm giá không hợp lệ hoặc đã hết hạn', 400);
+        if (!codeData) throw new AppError('orders.couponInvalid', 400);
 
         const now = new Date();
         if (codeData.startDate && now < new Date(codeData.startDate)) {
-          throw new AppError('Mã giảm giá chưa đến thời gian áp dụng', 400);
+          throw new AppError('orders.couponNotStarted', 400);
         }
         if (codeData.endDate && now > new Date(codeData.endDate)) {
-          throw new AppError('Mã giảm giá đã hết hạn', 400);
+          throw new AppError('orders.couponExpired', 400);
         }
         if (codeData.usageLimit !== null && codeData.usedCount >= codeData.usageLimit) {
-          throw new AppError('Mã giảm giá đã đạt giới hạn lượt sử dụng', 400);
+          throw new AppError('orders.couponLimitReached', 400);
         }
         if (subtotal < parseFloat(codeData.minOrderAmount)) {
-          throw new AppError(
-            `Đơn hàng phải tối thiểu ${codeData.minOrderAmount} để sử dụng mã này`,
-            400,
-          );
+          throw new AppError('orders.couponMinOrderNotMet', 400, {
+            amount: codeData.minOrderAmount,
+          });
         }
 
         if (codeData.type === 'percent') {
@@ -273,7 +272,7 @@ class OrdersService {
       if (pointsToUseInt > 0) {
         const u = await this.repo.findUserById(userId, { transaction });
         if (u.loyaltyPoints < pointsToUseInt) {
-          throw new AppError('Bạn không đủ điểm tích lũy', 400);
+          throw new AppError('orders.insufficientPoints', 400);
         }
         pointsDiscount = pointsToUseInt * this.constants.POINTS_VALUE;
         if (pointsDiscount > subtotal - discount) {
@@ -486,16 +485,16 @@ class OrdersService {
 
   async getOrderById({ id, userId, role }) {
     const order = await this.repo.findOrderByPkWithItemsAndUser(id);
-    if (!order) throw new AppError('Không tìm thấy đơn hàng', 404);
+    if (!order) throw new AppError('orders.notFound', 404);
     if (order.userId !== userId && role !== 'admin') {
-      throw new AppError('Bạn không có quyền truy cập đơn hàng này', 403);
+      throw new AppError('orders.accessDenied', 403);
     }
     return order;
   }
 
   async getOrderByNumber({ number, userId }) {
     const order = await this.repo.findOrderByNumberAndUserId(number, userId);
-    if (!order) throw new AppError('Không tìm thấy đơn hàng', 404);
+    if (!order) throw new AppError('orders.notFound', 404);
     return order;
   }
 
@@ -504,7 +503,7 @@ class OrdersService {
 
     await this.repo.runInTransaction(async (transaction) => {
       const order = await this.repo.findOrderForCancel(id, userId);
-      if (!order) throw new AppError('Không tìm thấy đơn hàng', 404);
+      if (!order) throw new AppError('orders.notFound', 404);
 
       const aggregate = new OrderAggregate(order);
       aggregate.cancel(); // Throws DomainError if invalid state
@@ -610,7 +609,7 @@ class OrdersService {
 
   async updateOrderStatus({ id, status }) {
     const order = await this.repo.findOrderByPkWithItemsAndUser(id);
-    if (!order) throw new AppError('Không tìm thấy đơn hàng', 404);
+    if (!order) throw new AppError('orders.notFound', 404);
 
     const previousStatus = order.status;
     order.status = status;
@@ -672,7 +671,7 @@ class OrdersService {
 
   async repayOrder({ id, userId, originUrl }) {
     const order = await this.repo.findOrderByIdAndUserId(id, userId);
-    if (!order) throw new AppError('Không tìm thấy đơn hàng', 404);
+    if (!order) throw new AppError('orders.notFound', 404);
 
     const aggregate = new OrderAggregate(order);
     aggregate.prepareRepay(); // throws nếu invalid state
@@ -691,7 +690,7 @@ class OrdersService {
 
   async confirmReceived({ id, userId }) {
     const order = await this.repo.findOrderByIdAndUserId(id, userId);
-    if (!order) throw new AppError('Không tìm thấy đơn hàng', 404);
+    if (!order) throw new AppError('orders.notFound', 404);
 
     const aggregate = new OrderAggregate(order);
     const { alreadyProcessed } = aggregate.confirmReceived();
@@ -700,7 +699,7 @@ class OrdersService {
 
     if (alreadyProcessed) {
       return {
-        message: 'Đơn hàng đã được xác nhận và tích điểm trước đó',
+        message: 'orders.alreadyConfirmed',
         data: order,
         pointsEarned: 0,
       };
@@ -747,7 +746,7 @@ class OrdersService {
     );
 
     return {
-      message: 'Xác nhận đã nhận hàng thành công',
+      message: 'orders.deliveryConfirmed',
       pointsEarned: newPointsAwarded > 0 ? newPointsAwarded : 0,
       data: {
         id: order.id,
@@ -760,11 +759,11 @@ class OrdersService {
 
   async trackOrder({ orderNumber, email }) {
     if (!orderNumber || !email) {
-      throw new AppError('Vui lòng cung cấp mã đơn hàng và email', 400);
+      throw new AppError('orders.provideOrderAndEmail', 400);
     }
     const order = await this.repo.findOrderByNumberWithUserEmail(orderNumber);
     if (!order || order.User?.email?.toLowerCase() !== email.toLowerCase()) {
-      throw new AppError('Không tìm thấy đơn hàng với thông tin đã cung cấp', 404);
+      throw new AppError('orders.orderNotFoundWithInfo', 404);
     }
 
     const steps = buildTrackingSteps(order.status);

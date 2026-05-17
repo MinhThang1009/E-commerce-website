@@ -1,5 +1,6 @@
 const { validationResult } = require('express-validator');
 const { AppError } = require('./errorHandler');
+const { t } = require('../utils/i18n');
 
 // Middleware kiểm tra request body theo Joi schema
 // statusCode mặc định 400; dùng 422 cho các endpoint có semantic validation (RFC 4918)
@@ -42,7 +43,7 @@ const validateExpressValidator = (req, res, next) => {
 
     return res.status(400).json({
       status: 'fail',
-      message: 'Lỗi kiểm tra dữ liệu đầu vào',
+      message: t('common.inputValidationError', req.locale),
       errors: formattedErrors,
     });
   }

@@ -142,7 +142,7 @@ describe('ContentService', () => {
       contentRepository.findNewsBySlug.mockResolvedValue({ id: 99 });
       await expect(
         service.createNews({ userId: 1, payload: { title: 'A', slug: 'taken' } })
-      ).rejects.toMatchObject({ statusCode: 400, message: expect.stringContaining('Slug') });
+      ).rejects.toMatchObject({ statusCode: 400, message: 'content.slugExists' });
     });
 
     test('createNews default category="Tin tức" + isPublished=true', async () => {
@@ -181,7 +181,7 @@ describe('ContentService', () => {
       contentRepository.findCampaignById.mockResolvedValue({ status: 'sent' });
       await expect(
         service.sendCampaign({ id: 1 })
-      ).rejects.toMatchObject({ statusCode: 400, message: expect.stringContaining('đã được gửi') });
+      ).rejects.toMatchObject({ statusCode: 400, message: 'content.campaignAlreadySent' });
     });
 
     test('sendCampaign dedupe email subscriber + user', async () => {
@@ -238,7 +238,7 @@ describe('ContentService', () => {
       });
       const result = await service.subscribeNewsletter({ email: 'old@x.y' });
       expect(result.statusCode).toBe(200);
-      expect(result.message).toMatch(/đã đăng ký/);
+      expect(result.message).toBe('content.alreadySubscribed');
     });
 
     test('subscriber unsubscribed → reactivate + 200', async () => {

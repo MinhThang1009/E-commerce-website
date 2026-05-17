@@ -1,4 +1,4 @@
-// Ai request validators (Joi schemas)
+// AI request validators (Joi schemas)
 const Joi = require('joi');
 
 module.exports = {

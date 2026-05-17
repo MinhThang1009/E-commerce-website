@@ -345,7 +345,7 @@ describe('CartService', () => {
     test('user không có cart → message empty', async () => {
       cartRepository.findActiveCartByUserId.mockResolvedValue(null);
       const result = await service.clearCart({ user: { id: 1 } });
-      expect(result.message).toMatch(/đã trống/);
+      expect(result.message).toBe('cart.alreadyEmpty');
     });
 
     test('user có cart → clear items + return cart structure', async () => {
@@ -357,7 +357,7 @@ describe('CartService', () => {
 
     test('guest không có sessionId → message empty', async () => {
       const result = await service.clearCart({ user: null, cookieSessionId: null });
-      expect(result.message).toMatch(/đã trống/);
+      expect(result.message).toBe('cart.alreadyEmpty');
     });
   });
 
@@ -701,7 +701,7 @@ describe('CartService', () => {
     test('guest có sessionId nhưng không có cart → message empty', async () => {
       cartRepository.findActiveCartBySessionId.mockResolvedValue(null);
       const result = await service.clearCart({ user: null, cookieSessionId: 'sess' });
-      expect(result.message).toMatch(/đã trống/);
+      expect(result.message).toBe('cart.alreadyEmpty');
     });
 
     test('guest có cart → clear items và trả data', async () => {

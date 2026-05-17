@@ -76,7 +76,7 @@ jest.mock('../services/email', () => ({
 }));
 
 jest.mock('../services/ai/vectorStore', () => ({
-  addProduct: jest.fn(),
+  upsertProduct: jest.fn(),
   save: jest.fn().mockResolvedValue(undefined),
 }));
 
@@ -421,7 +421,7 @@ describe('DELETE /api/cart — xóa toàn bộ giỏ hàng', () => {
       .set('Authorization', 'Bearer test-token');
 
     expect(res.status).toBe(200);
-    expect(res.body.message).toMatch(/trống/i);
+    expect(res.body.message).toBe('cart.alreadyEmpty');
   });
 });
 

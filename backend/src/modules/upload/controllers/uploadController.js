@@ -1,5 +1,6 @@
 const multer = require('multer');
 const { AppError } = require('../../../shared/errors');
+const { t } = require('../../../utils/i18n');
 
 // Upload Controller — wrap multer middleware. Multer parse multipart/form-data
 // vào req.file/files trước khi gọi service. Multer error mapping vào AppError
@@ -34,7 +35,7 @@ class UploadController {
           });
           res.status(200).json({
             status: 'success',
-            message: 'Upload file thành công',
+            message: t('upload.uploadSuccess', req.locale),
             data,
           });
         } catch (e) { next(e); }
@@ -55,7 +56,7 @@ class UploadController {
           });
           res.status(200).json({
             status: 'success',
-            message: `Upload ${files.length} file thành công`,
+            message: t('upload.batchUploadSuccess', req.locale, { count: files.length }),
             data: { files, type: uploadType, count: files.length },
           });
         } catch (e) { next(e); }

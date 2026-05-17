@@ -107,7 +107,7 @@ describe('VietnameseEmbeddingService.generateEmbedding', () => {
 
     expect(mockAxiosPost).toHaveBeenCalledWith(
       expect.stringContaining('multilingual-e5-large'),
-      { inputs: 'kiểm tra header' },
+      { inputs: 'query: kiểm tra header' },
       expect.objectContaining({
         headers: expect.objectContaining({
           Authorization: 'Bearer hf-test-header',

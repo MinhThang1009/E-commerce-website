@@ -2,25 +2,25 @@
 // Tất cả DTO là pure function / pass-through — test verify output trực tiếp.
 
 // ─── AI DTO ───────────────────────────────────────────────────────────────────
-const { toAiDto } = require('../modules/ai/dtos/aiDto');
+const { toAIDto } = require('../modules/ai/dtos/aiDto');
 
-describe('toAiDto', () => {
+describe('toAIDto', () => {
   test('trả về null khi model là null', () => {
-    expect(toAiDto(null)).toBeNull();
+    expect(toAIDto(null)).toBeNull();
   });
 
   test('trả về null khi model là undefined', () => {
-    expect(toAiDto(undefined)).toBeNull();
+    expect(toAIDto(undefined)).toBeNull();
   });
 
   test('gọi toJSON() khi model có method toJSON và map id', () => {
     const model = { toJSON: () => ({ id: 42, extra: 'ignored' }) };
-    expect(toAiDto(model)).toEqual({ id: 42 });
+    expect(toAIDto(model)).toEqual({ id: 42 });
   });
 
   test('dùng trực tiếp object khi không có toJSON', () => {
     const model = { id: 7 };
-    expect(toAiDto(model)).toEqual({ id: 7 });
+    expect(toAIDto(model)).toEqual({ id: 7 });
   });
 });
 

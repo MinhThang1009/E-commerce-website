@@ -409,7 +409,7 @@ describe('sendOrderStatusUpdateEmail', () => {
     await emailService.sendOrderStatusUpdateEmail('user@example.com', statusOrder);
 
     const [mailOptions] = mockSendMail.mock.calls[0];
-    expect(mailOptions.html).toContain('Đã giao cho đơn vị vận chuyển');
+    expect(mailOptions.html).toContain('Đang vận chuyển');
   });
 
   test('email chứa trạng thái tiếng Việt khi status là "delivered"', async () => {
@@ -536,7 +536,7 @@ describe('sendBulkCampaignEmail', () => {
         'Test',
         '<p>Content</p>'
       )
-    ).rejects.toThrow('Tất cả email đều gửi thất bại');
+    ).rejects.toThrow('All emails failed to send. Check logs for details.');
   });
 
   test('sanitize nội dung HTML trước khi đưa vào email', async () => {

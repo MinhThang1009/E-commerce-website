@@ -4,7 +4,7 @@
  * Targeted tests cho các dòng chưa được cover trong 10 files:
  *   1.  src/controllers/image.js         — lines 10-16, 22-33, 94, 114, 143-147, 264
  *   2.  src/controllers/admin.js         — lines 61, 83, 491, 723, 793-796, 839-840, 868, 892, 933, 978, 1077, 1145-1146, 1336, 1916, 1958-1965
- *   3.  src/services/ai/geminiChatbot.js — lines 50, 55, 382-386
+ *   3.  src/services/ai/chatbotService.js — lines 50, 55, 382-386
  *   4.  src/services/ai/vectorStore.js   — lines 58-66
  *   5.  src/modules/orders/services/ordersService.js — lines 106-108, 182-186, 299, 359, 466, 532, 596-598
  *   6.  src/services/adminAudit.js       — lines 218, 224, 227, 230, 233, 236
@@ -251,10 +251,10 @@ describe('admin.js — deepParseJSONArray (lines 67-84)', () => {
 });
 
 // ════════════════════════════════════════════════════════════════════════════════
-// FILE 3: src/services/ai/geminiChatbot.js — initializeChatbot branches (lines 49-56)
+// FILE 3: src/services/ai/chatbotService.js — initializeChatbot branches (lines 49-56)
 // ════════════════════════════════════════════════════════════════════════════════
 
-describe('geminiChatbot.js — initializeChatbot branches (lines 49-56)', () => {
+describe('chatbotService.js — initializeChatbot branches (lines 49-56)', () => {
   const logger = require('../utils/logger');
 
   beforeEach(() => jest.clearAllMocks());
@@ -898,7 +898,7 @@ describe('email.js — sendBulkCampaignEmail all-fail throw (line 175)', () => {
         'Test Subject',
         '<p>Hello</p>'
       )
-    ).rejects.toThrow('Tất cả email đều gửi thất bại');
+    ).rejects.toThrow('All emails failed to send. Check logs for details.');
 
     delete process.env.EMAIL_HOST;
     delete process.env.EMAIL_USERNAME;
@@ -944,158 +944,9 @@ describe('email.js — sendBulkCampaignEmail all-fail throw (line 175)', () => {
   });
 });
 
-// ════════════════════════════════════════════════════════════════════════════════
-// FILE 8: src/services/ai/ruleBasedChatbot.js — các nhánh chưa cover
-// ════════════════════════════════════════════════════════════════════════════════
+// FILE 8: ruleBasedChatbot.js đã xóa (dead code) — skip tests
 
-describe('ruleBasedChatbot.js — extractSearchParams price branches (lines 178-179)', () => {
-  beforeEach(() => {
-    jest.resetModules();
-    jest.mock('../models', () => ({
-      Product: { findAll: jest.fn() },
-      Category: { findAll: jest.fn().mockResolvedValue([]) },
-      Brand: { findAll: jest.fn().mockResolvedValue([]) },
-      Order: { findAll: jest.fn() },
-      OrderItem: { findAll: jest.fn() },
-      User: { findOne: jest.fn() },
-    }));
-    jest.mock('../utils/logger', () => ({
-      info: jest.fn(), warn: jest.fn(), error: jest.fn(), debug: jest.fn(),
-    }));
-  });
-
-  it('000 suffix (không có k/triệu) → dùng num trực tiếp (line 178)', () => {
-    const chatbot = require('../services/ai/ruleBasedChatbot');
-    // "dưới 15000000đ" — số thường không có đơn vị k/triệu/000
-    // Test: price pattern với "000" suffix
-    // Gọi extractSearchParams trực tiếp
-    const params = chatbot.extractSearchParams('điện thoại dưới 15000 đồng');
-    // "15000 đồng" → num = 15000, không có triệu/k/000 → return num = 15000
-    expect(params.maxPrice).toBeDefined();
-  });
-
-  it('minPrice từ từ khóa "trên" (line 184-185)', () => {
-    const chatbot = require('../services/ai/ruleBasedChatbot');
-    const params = chatbot.extractSearchParams('laptop trên 10 triệu');
-    expect(params.minPrice).toBe(10000000);
-  });
-
-  it('minPrice từ từ khóa "từ" (line 184-185)', () => {
-    const chatbot = require('../services/ai/ruleBasedChatbot');
-    const params = chatbot.extractSearchParams('điện thoại từ 5 triệu');
-    expect(params.minPrice).toBe(5000000);
-  });
-});
-
-describe('ruleBasedChatbot.js — generateSalesPitch default case (line 422)', () => {
-  beforeEach(() => {
-    jest.resetModules();
-    jest.mock('../models', () => ({
-      Product: { findAll: jest.fn().mockResolvedValue([]) },
-      Category: { findAll: jest.fn().mockResolvedValue([]) },
-      Brand: { findAll: jest.fn().mockResolvedValue([]) },
-      Order: { findAll: jest.fn().mockResolvedValue([]) },
-      OrderItem: { findAll: jest.fn().mockResolvedValue([]) },
-      User: { findOne: jest.fn() },
-    }));
-    jest.mock('../utils/logger', () => ({
-      info: jest.fn(), warn: jest.fn(), error: jest.fn(), debug: jest.fn(),
-    }));
-  });
-
-  it('selectPitchType trả về type không khớp switch case → default branch (line 422)', async () => {
-    const chatbot = require('../services/ai/ruleBasedChatbot');
-
-    // Patch selectPitchType để trả về type không tồn tại trong switch
-    const originalSelect = chatbot.selectPitchType.bind(chatbot);
-    chatbot.selectPitchType = jest.fn().mockReturnValue('unknown_type');
-
-    const bestDeals = [
-      { id: 1, name: 'P1', slug: 'p1', basePrice: 1000000, compareAtPrice: 1200000, thumbnail: 't1.jpg', rating: 4.5 },
-      { id: 2, name: 'P2', slug: 'p2', basePrice: 2000000, compareAtPrice: 2500000, thumbnail: 't2.jpg', rating: 4.0 },
-    ];
-    const trending = [
-      { id: 3, name: 'P3', slug: 'p3', basePrice: 500000, compareAtPrice: null, thumbnail: 't3.jpg', rating: 4.8 },
-    ];
-
-    const result = await chatbot.generateSalesPitch({
-      userProfile: {},
-      message: 'xin chào',
-      bestDeals,
-      trendingProducts: trending,
-      context: {},
-    });
-
-    expect(result).toHaveProperty('type', 'unknown_type');
-    // default case: takes 2 bestDeals + 1 trending
-    expect(result.products).toHaveLength(3);
-
-    chatbot.selectPitchType = originalSelect;
-  });
-});
-
-describe('ruleBasedChatbot.js — trackConversation + trackAnalytics (lines 491-503, 517)', () => {
-  beforeEach(() => {
-    jest.resetModules();
-    jest.mock('../models', () => ({
-      Product: { findAll: jest.fn() },
-      Category: { findAll: jest.fn().mockResolvedValue([]) },
-      Brand: { findAll: jest.fn().mockResolvedValue([]) },
-      Order: { findAll: jest.fn() },
-      OrderItem: { findAll: jest.fn() },
-      User: { findOne: jest.fn() },
-    }));
-    jest.mock('../utils/logger', () => ({
-      info: jest.fn(), warn: jest.fn(), error: jest.fn(), debug: jest.fn(),
-    }));
-  });
-
-  it('trackConversation gọi logger.debug với đúng fields (lines 491-503)', async () => {
-    const chatbot = require('../services/ai/ruleBasedChatbot');
-    const loggerMock = require('../utils/logger');
-
-    await chatbot.trackConversation({
-      userId: 'u-1',
-      intent: 'product_search',
-      products: [{ id: 1 }, { id: 2 }],
-      timestamp: new Date().toISOString(),
-    });
-
-    expect(loggerMock.debug).toHaveBeenCalledWith(
-      'Tracking conversation',
-      expect.objectContaining({ userId: 'u-1', intent: 'product_search', products: 2 })
-    );
-  });
-
-  it('trackConversation khi products undefined → products count = 0 (line 496)', async () => {
-    const chatbot = require('../services/ai/ruleBasedChatbot');
-    const loggerMock = require('../utils/logger');
-
-    await chatbot.trackConversation({ userId: 'u-2', intent: 'general', timestamp: new Date().toISOString() });
-
-    expect(loggerMock.debug).toHaveBeenCalledWith(
-      'Tracking conversation',
-      expect.objectContaining({ products: 0 })
-    );
-  });
-
-  it('trackAnalytics gọi logger.debug (line 510-513)', async () => {
-    const chatbot = require('../services/ai/ruleBasedChatbot');
-    const loggerMock = require('../utils/logger');
-
-    await chatbot.trackAnalytics({ eventType: 'product_view', userId: 'u-3' });
-
-    expect(loggerMock.debug).toHaveBeenCalledWith(
-      'Tracking analytics',
-      expect.objectContaining({ eventType: 'product_view', userId: 'u-3' })
-    );
-  });
-
-  it('trackAnalytics khi data là undefined không throw (line 513)', async () => {
-    const chatbot = require('../services/ai/ruleBasedChatbot');
-    await expect(chatbot.trackAnalytics(undefined)).resolves.toBeUndefined();
-  });
-});
+// ruleBasedChatbot.js đã xóa (dead code) — tất cả tests liên quan đã bỏ
 
 // ════════════════════════════════════════════════════════════════════════════════
 // FILE 9: src/modules/catalog/services/catalogService.js — uncovered branches
@@ -1299,7 +1150,7 @@ describe('catalogService.js — uncovered branches', () => {
           categoryIds: [1, 2], // 2 IDs nhưng chỉ 1 tồn tại
         },
       })
-    ).rejects.toMatchObject({ statusCode: 400, message: expect.stringContaining('danh mục') });
+    ).rejects.toMatchObject({ statusCode: 400, message: 'catalog.categoriesNotExist' });
   });
 });
 
@@ -1410,7 +1261,7 @@ describe('product.js model — JSON getter error branches (lines 167-168, 207-20
       jest.mock('../services/ai/vectorStore', () => ({
         loadPromise: Promise.resolve(),
         items: [],
-        search: jest.fn(),
+        hybridSearch: jest.fn(),
       }));
       jest.mock('../config/sequelize', () => ({
         define: jest.fn().mockReturnValue({ addHook: jest.fn(), belongsTo: jest.fn(), hasMany: jest.fn() }),
@@ -1470,10 +1321,10 @@ describe('admin.js — deleteUser self-delete guard (line 491)', () => {
 });
 
 // ════════════════════════════════════════════════════════════════════════════════
-// FILE 3 (tiếp): geminiChatbot.js line 382-386 — match với min overlap
+// FILE 3 (tiếp): chatbotService.js line 382-386 — match với min overlap
 // ════════════════════════════════════════════════════════════════════════════════
 
-describe('geminiChatbot.js — product name word-match logic (lines 382-386)', () => {
+describe('chatbotService.js — product name word-match logic (lines 382-386)', () => {
   // Test trực tiếp logic word-match algorithm được dùng trong phân loại sản phẩm
   it('tên sản phẩm khớp đủ 80% từ → match = true (line 386)', () => {
     const pName = 'iphone 15 pro max';

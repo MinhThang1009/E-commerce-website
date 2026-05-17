@@ -47,7 +47,7 @@ const indexAllProducts = async () => {
       const product = products[i];
       process.stdout.write(`[${i + 1}/${products.length}] Indexing: ${product.name}... `);
       try {
-        await vectorStoreService.addProduct(enrichProductData(product.toJSON()));
+        await vectorStoreService.upsertProduct(enrichProductData(product.toJSON()));
         process.stdout.write('✅\n');
       } catch (err) {
         process.stdout.write(`❌ ${err.message}\n`);

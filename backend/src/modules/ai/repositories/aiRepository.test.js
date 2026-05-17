@@ -1,7 +1,7 @@
-// Unit tests cho SequelizeAiRepository (src/modules/ai/repositories/SequelizeAiRepository.js)
+// Unit tests cho SequelizeAIRepository (src/modules/ai/repositories/SequelizeAIRepository.js)
 // Mock toàn bộ Sequelize models — không chạm DB
 const { Op, literal } = require('sequelize');
-const SequelizeAiRepository = require('./SequelizeAiRepository');
+const SequelizeAIRepository = require('./SequelizeAIRepository');
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -22,14 +22,14 @@ function makeRepo(overrides = {}) {
     sequelize: { fn: jest.fn(), col: jest.fn(), literal: jest.fn((s) => s) },
     ...overrides,
   };
-  return { repo: new SequelizeAiRepository(deps), deps };
+  return { repo: new SequelizeAIRepository(deps), deps };
 }
 
 // ════════════════════════════════════════════════════════════════════════════
 // searchProducts
 // ════════════════════════════════════════════════════════════════════════════
 
-describe('SequelizeAiRepository.searchProducts', () => {
+describe('SequelizeAIRepository.searchProducts', () => {
   test('gọi Product.findAll với where status=active (không có filters)', async () => {
     const { repo, deps } = makeRepo();
     await repo.searchProducts({});
@@ -130,7 +130,7 @@ describe('SequelizeAiRepository.searchProducts', () => {
 // findActiveDeals
 // ════════════════════════════════════════════════════════════════════════════
 
-describe('SequelizeAiRepository.findActiveDeals', () => {
+describe('SequelizeAIRepository.findActiveDeals', () => {
   test('gọi Product.findAll với status=active và compareAtPrice > 0', async () => {
     const { repo, deps } = makeRepo();
     await repo.findActiveDeals(5);
@@ -160,7 +160,7 @@ describe('SequelizeAiRepository.findActiveDeals', () => {
 // findFeaturedProducts
 // ════════════════════════════════════════════════════════════════════════════
 
-describe('SequelizeAiRepository.findFeaturedProducts', () => {
+describe('SequelizeAIRepository.findFeaturedProducts', () => {
   test('gọi Product.findAll với status=active và isFeatured=true', async () => {
     const { repo, deps } = makeRepo();
     await repo.findFeaturedProducts(8);
@@ -187,7 +187,7 @@ describe('SequelizeAiRepository.findFeaturedProducts', () => {
 // findProductForCart
 // ════════════════════════════════════════════════════════════════════════════
 
-describe('SequelizeAiRepository.findProductForCart', () => {
+describe('SequelizeAIRepository.findProductForCart', () => {
   test('gọi Product.findByPk với productId và include variants', async () => {
     const mockProd = { id: 3, name: 'Adidas NMD' };
     const { repo, deps } = makeRepo({ Product: makeModel({ findByPk: mockProd }) });

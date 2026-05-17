@@ -60,7 +60,7 @@ describe('AuthService', () => {
       authRepository.findByEmail.mockResolvedValue({ id: 1 });
       await expect(
         service.register({ email: 'a@b.c', password: 'pass', firstName: 'A', lastName: 'B' })
-      ).rejects.toMatchObject({ statusCode: 400, message: expect.stringContaining('Email') });
+      ).rejects.toMatchObject({ statusCode: 400, message: 'auth.emailInUse' });
     });
 
     test('email chưa tồn tại → tạo user + gửi OTP + publish event', async () => {
@@ -81,7 +81,7 @@ describe('AuthService', () => {
       expect(eventBus.publish).toHaveBeenCalledWith(
         expect.objectContaining({ type: 'auth.userRegistered' })
       );
-      expect(result.message).toMatch(/Đăng ký thành công/);
+      expect(result.message).toBe('auth.registerSuccess');
     });
 
     test('email lỗi không chặn flow (logger.error nhưng vẫn return success)', async () => {
@@ -97,7 +97,7 @@ describe('AuthService', () => {
       });
 
       expect(logger.error).toHaveBeenCalled();
-      expect(result.message).toMatch(/Đăng ký thành công/);
+      expect(result.message).toBe('auth.registerSuccess');
     });
   });
 
@@ -128,7 +128,7 @@ describe('AuthService', () => {
       });
       await expect(
         service.login({ email: 'a@b.c', password: 'p' })
-      ).rejects.toMatchObject({ statusCode: 401, message: expect.stringContaining('xác thực email') });
+      ).rejects.toMatchObject({ statusCode: 401, message: 'auth.emailNotVerified' });
     });
 
     test('tài khoản bị khóa → 401', async () => {
@@ -140,7 +140,7 @@ describe('AuthService', () => {
       });
       await expect(
         service.login({ email: 'a@b.c', password: 'p' })
-      ).rejects.toMatchObject({ statusCode: 401, message: expect.stringContaining('bị khóa') });
+      ).rejects.toMatchObject({ statusCode: 401, message: 'auth.accountDisabled' });
     });
 
     test('login thành công → trả token + refreshToken + user', async () => {
@@ -206,7 +206,7 @@ describe('AuthService', () => {
       });
       await expect(
         service.verifyOtp({ email: 'a@b.c', otp: '999999' })
-      ).rejects.toMatchObject({ statusCode: 400, message: expect.stringContaining('OTP không đúng') });
+      ).rejects.toMatchObject({ statusCode: 400, message: 'auth.otpInvalidOrExpired' });
     });
 
     test('OTP hết hạn → 400', async () => {
@@ -217,7 +217,7 @@ describe('AuthService', () => {
       });
       await expect(
         service.verifyOtp({ email: 'a@b.c', otp: '123456' })
-      ).rejects.toMatchObject({ statusCode: 400, message: expect.stringContaining('hết hạn') });
+      ).rejects.toMatchObject({ statusCode: 400, message: 'auth.otpExpired' });
     });
 
     test('OTP hợp lệ → set isEmailVerified=true, clear otp, save', async () => {
@@ -234,7 +234,7 @@ describe('AuthService', () => {
       expect(user.otpCode).toBeNull();
       expect(user.otpExpires).toBeNull();
       expect(authRepository.saveUser).toHaveBeenCalledWith(user);
-      expect(result.message).toMatch(/thành công/);
+      expect(result.message).toBe('auth.emailVerified');
     });
   });
 
@@ -243,7 +243,7 @@ describe('AuthService', () => {
       authRepository.findByEmail.mockResolvedValue(null);
       const result = await service.forgotPassword({ email: 'unknown@x.y' });
       expect(emailGateway.sendResetPasswordEmail).not.toHaveBeenCalled();
-      expect(result.message).toMatch(/đặt lại mật khẩu/);
+      expect(result.message).toBe('auth.passwordResetSent');
     });
 
     test('email tồn tại → set reset token + gửi email', async () => {
@@ -264,7 +264,7 @@ describe('AuthService', () => {
       authRepository.findByResetToken.mockResolvedValue(null);
       await expect(
         service.resetPassword({ token: 'bad', password: 'newpass' })
-      ).rejects.toMatchObject({ statusCode: 400, message: expect.stringContaining('Token') });
+      ).rejects.toMatchObject({ statusCode: 400, message: 'auth.tokenInvalidOrExpired' });
     });
 
     test('token hợp lệ → cập nhật mật khẩu + clear token', async () => {
@@ -277,7 +277,7 @@ describe('AuthService', () => {
       expect(user.resetPasswordToken).toBeNull();
       expect(user.resetPasswordExpires).toBeNull();
       expect(authRepository.saveUser).toHaveBeenCalled();
-      expect(result.message).toMatch(/thành công/);
+      expect(result.message).toBe('auth.passwordResetSuccess');
     });
   });
 
@@ -294,7 +294,7 @@ describe('AuthService', () => {
       });
       await expect(
         service.refreshToken({ refreshToken: 'bad' })
-      ).rejects.toMatchObject({ statusCode: 401, message: expect.stringContaining('không hợp lệ') });
+      ).rejects.toMatchObject({ statusCode: 401, message: 'auth.refreshTokenInvalid' });
     });
 
     test('user không tồn tại → 401', async () => {
@@ -310,7 +310,7 @@ describe('AuthService', () => {
       authRepository.findById.mockResolvedValue({ isActive: false });
       await expect(
         service.refreshToken({ refreshToken: 't' })
-      ).rejects.toMatchObject({ statusCode: 401, message: expect.stringContaining('bị khóa') });
+      ).rejects.toMatchObject({ statusCode: 401, message: 'auth.accountDisabled' });
     });
 
     test('hợp lệ → trả access token mới', async () => {

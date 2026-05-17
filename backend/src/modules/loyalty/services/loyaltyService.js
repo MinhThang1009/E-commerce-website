@@ -12,7 +12,7 @@ class LoyaltyService {
   async getLoyaltyInfo({ userId, page = 1, limit = 10 }) {
     const user = await this.loyaltyRepository.findUserPointsById(userId);
     if (!user) {
-      throw new AppError('Không tìm thấy người dùng', 404);
+      throw new AppError('loyalty.userNotFound', 404);
     }
 
     const lim = parseInt(limit, 10);
@@ -41,13 +41,14 @@ class LoyaltyService {
       });
 
       if (!user) {
-        throw new AppError('Không tìm thấy người dùng', 404);
+        throw new AppError('loyalty.userNotFound', 404);
       }
 
       if (user.loyaltyPoints < points) {
         throw new AppError(
-          `Số điểm không đủ. Hiện có: ${user.loyaltyPoints}, yêu cầu đổi: ${points}`,
-          400
+          'loyalty.insufficientPoints',
+          400,
+          { current: user.loyaltyPoints, required: points }
         );
       }
 

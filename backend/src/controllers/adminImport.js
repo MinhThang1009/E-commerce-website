@@ -384,14 +384,17 @@ const importProducts = catchAsync(async (req, res, next) => {
     setImmediate(async () => {
       try {
         // Load products vừa tạo với đầy đủ relations để embed
+        const { enrichProductData } = require('../services/ai/vectorStore');
         const newProducts = await Product.findAll({
           where: { id: { [Op.in]: newProductIds } },
           include: [
             { model: Category, as: 'categories', attributes: ['name'] },
+            { model: ProductImage, as: 'productImages', attributes: ['imageUrl', 'isThumbnail'], required: false },
+            { model: ProductVariant, as: 'variants', attributes: ['stockQuantity'], required: false },
           ],
         });
         for (const p of newProducts) {
-          await vectorStoreService.addProduct(p);
+          await vectorStoreService.upsertProduct(enrichProductData(p.toJSON()));
         }
         await vectorStoreService.save();
         logger.info(`[VECTOR] Đã sync ${newProductIds.length} sản phẩm mới vào vector store`);

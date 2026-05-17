@@ -44,14 +44,14 @@ class UploadService {
   // Validate single uploaded file — kiểm magic bytes, xóa nếu giả mạo, trả URL.
   async processSingleUpload({ file, uploadType }) {
     if (!file) {
-      throw new AppError('Không có file được upload', 400);
+      throw new AppError('upload.noFile', 400);
     }
 
     const isValidMagic = await this.validateMagicBytes(file.path);
     if (!isValidMagic) {
       // Xóa file giả mạo ngay lập tức (best-effort, không chặn response)
       await this.uploadRepository.deleteFile(file.path).catch(() => {});
-      throw new AppError('Only JPG, PNG, WEBP allowed', 400);
+      throw new AppError('upload.invalidFileType', 400);
     }
 
     return {
@@ -66,7 +66,7 @@ class UploadService {
   // Validate multiple files — phân loại valid/invalid, xóa invalid, trả mảng valid.
   async processMultipleUpload({ files, uploadType }) {
     if (!files || files.length === 0) {
-      throw new AppError('Không có file được upload', 400);
+      throw new AppError('upload.noFile', 400);
     }
 
     const validFiles = [];
@@ -87,7 +87,7 @@ class UploadService {
     );
 
     if (validFiles.length === 0) {
-      throw new AppError('Only JPG, PNG, WEBP allowed', 400);
+      throw new AppError('upload.invalidFileType', 400);
     }
 
     return validFiles.map((file) => ({
@@ -101,32 +101,32 @@ class UploadService {
   // Xóa file đã upload — admin only, validate path traversal.
   async deleteFile({ user, type, filenameRaw }) {
     if (!user || user.role !== 'admin') {
-      throw new AppError('Truy cập bị từ chối', 403);
+      throw new AppError('upload.accessDenied', 403);
     }
 
     if (!this.uploadDirs[type]) {
-      throw new AppError('Loại file không hợp lệ', 400);
+      throw new AppError('upload.invalidType', 400);
     }
 
     const filename = path.basename(filenameRaw);
     if (filename !== filenameRaw) {
-      throw new AppError('Tên file không hợp lệ', 400);
+      throw new AppError('upload.invalidFileName', 400);
     }
 
     const uploadDir = path.resolve(this.uploadDirs[type]);
     const filePath = path.join(uploadDir, filename);
 
     if (!filePath.startsWith(uploadDir + path.sep) && filePath !== uploadDir) {
-      throw new AppError('Truy cập bị từ chối', 403);
+      throw new AppError('upload.accessDenied', 403);
     }
 
     const exists = await this.uploadRepository.fileExists(filePath);
     if (!exists) {
-      throw new AppError('File không tồn tại', 404);
+      throw new AppError('upload.fileNotFound', 404);
     }
 
     await this.uploadRepository.deleteFile(filePath);
-    return { message: 'Xóa file thành công' };
+    return { message: 'upload.deleteSuccess' };
   }
 }
 

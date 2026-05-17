@@ -1,9 +1,9 @@
 const { Op, literal } = require('sequelize');
-const IAiRepository = require('./IAiRepository');
+const IAIRepository = require('./IAIRepository');
 
-// Sequelize impl của IAiRepository — wrap Product/Category access cho AI
+// Sequelize impl của IAIRepository — wrap Product/Category access cho AI
 // product search + deals/trending. Repo build LIKE conditions internal.
-class SequelizeAiRepository extends IAiRepository {
+class SequelizeAIRepository extends IAIRepository {
   constructor({ Product, ProductVariant, Category, sequelize }) {
     super();
     this.Product = Product;
@@ -117,4 +117,4 @@ class SequelizeAiRepository extends IAiRepository {
   }
 }
 
-module.exports = SequelizeAiRepository;
+module.exports = SequelizeAIRepository;

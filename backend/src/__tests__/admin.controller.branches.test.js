@@ -54,7 +54,7 @@ jest.mock('../utils/productHelpers', () => ({
 }));
 
 jest.mock('../services/ai/vectorStore', () => ({
-  addProduct: jest.fn().mockResolvedValue(undefined),
+  upsertProduct: jest.fn().mockResolvedValue(undefined),
   save: jest.fn().mockResolvedValue(undefined),
   loadPromise: Promise.resolve(),
   items: [],
@@ -352,7 +352,7 @@ beforeEach(() => {
 
   const vs = require('../services/ai/vectorStore');
   vs.items = [];
-  vs.addProduct.mockResolvedValue(undefined);
+  vs.upsertProduct.mockResolvedValue(undefined);
   vs.save.mockResolvedValue(undefined);
   vs.loadPromise = Promise.resolve();
   vs.enrichProductData.mockImplementation((x) => x);

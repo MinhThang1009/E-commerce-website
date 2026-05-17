@@ -8,19 +8,15 @@ const fs = require('fs');
 const EXPECTED_DIM_EN = 1536; // text-embedding-3-small (OpenRouter), không truyền dimensions param → default 1536
 const EXPECTED_DIM_VI = 1024; // multilingual-e5-large (HuggingFace)
 
-// Phát hiện ngôn ngữ: ưu tiên dấu tiếng Việt, fallback check common VI words không dấu
-const VI_NO_ACCENT =
-  /\b(gia|bao nhieu|dien thoai|san pham|co khong|xem|mua|ban|hang|tim|so sanh|nen mua|tot nhat|gia ca|re nhat|khuyen mai|bao hanh|doi tra|giao hang|co hang|het hang|mau|phien ban|cau hinh|thong so|pin|man hinh|camera|chip|ram|bon nho|chinh hang)\b/i;
+const { detectLanguage } = require('./languageDetector');
 
-function detectLanguage(text) {
-  if (/[àáâãèéêìíòóôõùúýăđơưÀÁÂÃÈÉÊÌÍÒÓÔÕÙÚÝĂĐƠƯẠ-ỹ]/.test(text)) return 'vi';
-  if (VI_NO_ACCENT.test(text)) return 'vi';
-  return 'en';
-}
-
-// Tạo text đầy đủ để embed — bao gồm tên, thương hiệu, danh mục, mô tả, giá, tình trạng hàng
-// Text phong phú giúp vector search tìm đúng sản phẩm hơn so với chỉ dùng tên
-function generateProductText(product) {
+/**
+ * [Indexing — Text Enrichment] Tạo chuỗi text phong phú từ product data để embedding.
+ * Gộp tên, thương hiệu, danh mục, mô tả, giá, tình trạng hàng thành 1 đoạn text ≤1500 ký tự.
+ * @param {Object} product - Plain object sản phẩm (đã qua enrichProductData + toJSON).
+ * @returns {string} Text dùng cho cả EN và VI embedding model.
+ */
+function buildEmbeddingText(product) {
   const parts = [
     product.name,
     product.baseName ? `Thương hiệu: ${product.baseName}` : '',
@@ -37,7 +33,7 @@ function generateProductText(product) {
   return parts.filter(Boolean).join('. ').substring(0, 1500);
 }
 
-class SimpleVectorStore {
+class HybridVectorStore {
   constructor() {
     this.storagePath = path.join(__dirname, '../../../data/vectorDb.json');
     this.items = [];
@@ -79,14 +75,19 @@ class SimpleVectorStore {
     logger.debug('🗑️ Đã xóa toàn bộ vector store');
   }
 
-  // Thêm hoặc cập nhật sản phẩm vào vector store
-  async addProduct(product) {
+  /**
+   * [Indexing — Upsert] Thêm hoặc cập nhật 1 sản phẩm vào vector store.
+   * Tạo dual embedding (EN bắt buộc, VI tùy chọn), xóa bản cũ nếu trùng id, lưu metadata cho frontend.
+   * @param {Object} product - Plain object sản phẩm (đã qua enrichProductData + toJSON).
+   * @throws {Error} Nếu embedding EN thất bại hoặc sai chiều.
+   */
+  async upsertProduct(product) {
     try {
       // Đảm bảo load đã xong trước khi thêm (tránh race condition khi server mới start)
       await this.loadPromise;
 
       // Tạo text embedding phong phú hơn thay vì chỉ name + shortDescription
-      const textToEmbed = generateProductText(product);
+      const textToEmbed = buildEmbeddingText(product);
 
       // Vector tiếng Anh (bắt buộc) — kiểm tra kích thước chiều
       const vectorEn = await embeddingService.generateEmbedding(textToEmbed);
@@ -101,7 +102,7 @@ class SimpleVectorStore {
       let vectorVi = null;
       if (viEmbeddingService.isAvailable()) {
         try {
-          vectorVi = await viEmbeddingService.generateEmbedding(textToEmbed);
+          vectorVi = await viEmbeddingService.generateEmbedding(textToEmbed, 'passage');
           if (vectorVi && vectorVi.length !== EXPECTED_DIM_VI) {
             logger.warn(
               `vectorVi sai chiều cho "${product.name}": ${vectorVi.length} (mong đợi ${EXPECTED_DIM_VI})`,
@@ -160,53 +161,144 @@ class SimpleVectorStore {
     return isFinite(similarity) ? similarity : 0;
   }
 
-  async search(query, limit = 5, minScore = 0.45) {
+  _tokenize(text) {
+    return text
+      .toLowerCase()
+      .replace(/[^\p{L}\p{N}]/gu, ' ')
+      .split(/\s+/)
+      .filter((t) => t.length > 1);
+  }
+
+  /**
+   * [Retrieval — Keyword] BM25-inspired keyword search — bắt exact match mà vector embedding có thể miss.
+   * Tokenize query + item text bằng Unicode-aware regex, tính score (name ×3, text ×1) × coverage ratio.
+   * @param {string} query - Query text đã normalize.
+   * @param {number} [limit=5] - Số kết quả tối đa.
+   * @returns {Array<Object>} Items có keywordScore > 0, sắp xếp giảm dần.
+   */
+  _keywordSearch(query, limit = 5) {
+    const queryTokens = [...new Set(this._tokenize(query))];
+    if (queryTokens.length === 0) return [];
+
+    const results = [];
+    for (const item of this.items) {
+      const nameTokens = new Set(this._tokenize(item.metadata.name || ''));
+      const textTokens = new Set(this._tokenize(item.text || ''));
+      let score = 0;
+      let matched = 0;
+
+      for (const token of queryTokens) {
+        const inName = nameTokens.has(token);
+        const inText = textTokens.has(token);
+        if (inName || inText) {
+          matched++;
+          score += (inName ? 3 : 0) + (inText ? 1 : 0);
+        }
+      }
+
+      if (matched > 0) {
+        score *= matched / queryTokens.length;
+        results.push({ ...item, keywordScore: score });
+      }
+    }
+
+    return results.sort((a, b) => b.keywordScore - a.keywordScore).slice(0, limit);
+  }
+
+  /**
+   * [Retrieval — Semantic] Vector-only cosine similarity search.
+   * Chọn embedding model theo ngôn ngữ query (VI → VI model nếu có, fallback EN).
+   * @param {string} query - Query text.
+   * @param {number} [limit=5] - Số kết quả tối đa.
+   * @param {number} [minScore=0] - Ngưỡng similarity tối thiểu.
+   * @returns {Promise<Array<Object>>} Items có score ≥ minScore, sắp xếp giảm dần.
+   */
+  async _vectorSearch(query, limit = 5, minScore = 0) {
+    const lang = detectLanguage(query);
+    const useViModel =
+      lang === 'vi' &&
+      viEmbeddingService.isAvailable() &&
+      this.items.some((item) => item.vectorVi);
+
+    if (lang === 'vi' && !useViModel) {
+      logger.warn(
+        `[BILINGUAL] VI query nhưng VI model không khả dụng — fallback sang EN embedding (accuracy giảm)`,
+      );
+    }
+    logger.debug(`[SEARCH] lang=${lang}, useViModel=${useViModel}`);
+
+    let queryVectorVi = null;
+    let queryVectorEn = null;
+
+    if (useViModel) {
+      queryVectorVi = await viEmbeddingService.generateEmbedding(query);
+      queryVectorEn = await embeddingService.generateEmbedding(query);
+    } else {
+      queryVectorEn = await embeddingService.generateEmbedding(query);
+    }
+
+    const scores = this.items.map((item) => {
+      let docVector = useViModel ? item.vectorVi : item.vectorEn;
+      let qVector = useViModel ? queryVectorVi : queryVectorEn;
+
+      if (!docVector || (qVector && docVector.length !== qVector.length)) {
+        docVector = item.vectorEn || item.vector;
+        qVector = queryVectorEn;
+      }
+
+      return { ...item, score: this.cosineSimilarity(qVector, docVector) };
+    });
+
+    return scores
+      .filter((item) => isFinite(item.score) && item.score >= minScore)
+      .sort((a, b) => b.score - a.score)
+      .slice(0, limit);
+  }
+
+  /**
+   * [Retrieval — Fusion] Hybrid search: kết hợp semantic (cosine) + keyword (BM25-inspired).
+   * Chạy song song _vectorSearch + _keywordSearch, boost overlap (+0.05), inject keyword-only results.
+   * @param {string} query - Query text đã normalize.
+   * @param {number} [limit=5] - Số kết quả tối đa trả về.
+   * @param {number} [minScore=0.45] - Ngưỡng similarity tối thiểu cho vector search.
+   * @returns {Promise<Array<Object>>} Kết quả merged, sắp xếp theo score giảm dần.
+   */
+  async hybridSearch(query, limit = 5, minScore = 0.45) {
     try {
-      // Đảm bảo load đã xong
       await this.loadPromise;
 
-      const lang = detectLanguage(query);
-      const useViModel =
-        lang === 'vi' &&
-        viEmbeddingService.isAvailable() &&
-        this.items.some((item) => item.vectorVi);
+      const [vectorResults, keywordResults] = await Promise.all([
+        this._vectorSearch(query, limit * 2, minScore),
+        Promise.resolve(this._keywordSearch(query, limit * 2)),
+      ]);
 
-      if (lang === 'vi' && !useViModel) {
-        logger.warn(
-          `[BILINGUAL] VI query nhưng VI model không khả dụng — fallback sang EN embedding (accuracy giảm)`,
-        );
-      }
-      logger.debug(`[SEARCH] lang=${lang}, useViModel=${useViModel}`);
+      if (vectorResults.length === 0 && keywordResults.length === 0) return [];
 
-      // Chuẩn bị cả 2 query vectors khi dùng VI model để fallback đúng pair
-      // cho sản phẩm không có vectorVi (indexed khi HF API fail)
-      let queryVectorVi = null;
-      let queryVectorEn = null;
+      const vectorIds = new Set(vectorResults.map((r) => r.metadata.id));
+      const keywordIds = new Set(keywordResults.map((r) => r.metadata.id));
 
-      if (useViModel) {
-        queryVectorVi = await viEmbeddingService.generateEmbedding(query);
-        // Tạo thêm EN vector để fallback cho sản phẩm không có vectorVi
-        queryVectorEn = await embeddingService.generateEmbedding(query);
-      } else {
-        queryVectorEn = await embeddingService.generateEmbedding(query);
-      }
-
-      const scores = this.items.map((item) => {
-        // Chọn cặp (docVector, queryVector) đúng chiều — tránh dim mismatch silent failure
-        let docVector = useViModel ? item.vectorVi : item.vectorEn;
-        let qVector = useViModel ? queryVectorVi : queryVectorEn;
-
-        // Fallback: nếu item thiếu vectorVi (indexed khi HF API fail) → dùng EN pair
-        if (!docVector || (qVector && docVector.length !== qVector.length)) {
-          docVector = item.vectorEn || item.vector; // item.vector = field cũ trước khi re-index
-          qVector = queryVectorEn;
+      // Boost vector results cũng khớp keyword
+      vectorResults.forEach((r) => {
+        if (keywordIds.has(r.metadata.id)) {
+          r.score = Math.min(1, r.score + 0.05);
         }
-
-        return { ...item, score: this.cosineSimilarity(qVector, docVector) };
       });
 
-      return scores
-        .filter((item) => isFinite(item.score) && item.score >= minScore)
+      // Inject keyword-only results (vector missed) — score dựa trên keyword quality
+      const maxKw = keywordResults.reduce((m, r) => Math.max(m, r.keywordScore), 1);
+      const injected = keywordResults
+        .filter((r) => !vectorIds.has(r.metadata.id))
+        .map((r) => ({
+          ...r,
+          score: minScore + (r.keywordScore / maxKw) * 0.15,
+          lowConfidence: true,
+        }));
+
+      if (injected.length > 0) {
+        logger.debug(`[HYBRID] Injected ${injected.length} keyword-only results`);
+      }
+
+      return [...vectorResults, ...injected]
         .sort((a, b) => b.score - a.score)
         .slice(0, limit);
     } catch (error) {
@@ -216,19 +308,8 @@ class SimpleVectorStore {
   }
 }
 
-// Compute thumbnail + inStock từ product associations — dùng chung cho indexProducts, model hooks, chatbot fallback
-function enrichProductData(productData) {
-  const thumbImg = productData.productImages?.find((img) => img.isThumbnail);
-  productData.thumbnail = thumbImg?.imageUrl || productData.productImages?.[0]?.imageUrl || null;
-  const variantStock = (productData.variants || []).reduce(
-    (sum, v) => sum + (v.stockQuantity || 0),
-    0,
-  );
-  productData.inStock = variantStock > 0 || productData.stockQuantity > 0;
-  return productData;
-}
-
-const vectorStoreInstance = new SimpleVectorStore();
+const vectorStoreInstance = new HybridVectorStore();
 module.exports = vectorStoreInstance;
-module.exports.enrichProductData = enrichProductData;
+// Re-export backward compat — callers import từ vectorStore, dần chuyển sang file gốc
+module.exports.enrichProductData = require('./productEnricher').enrichProductData;
 module.exports.detectLanguage = detectLanguage;

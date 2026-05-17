@@ -417,7 +417,7 @@ describe('CatalogService — Product (Sprint 6b)', () => {
       catalogRepository.findCategoriesByIds.mockResolvedValue([{ id: 1 }]); // 1 found
       await expect(
         service.createProduct({ payload: { name: 'P', price: 100, categoryIds: [1, 99] } })
-      ).rejects.toMatchObject({ statusCode: 400, message: expect.stringContaining('danh mục') });
+      ).rejects.toMatchObject({ statusCode: 400, message: 'catalog.categoriesNotExist' });
     });
 
     test('warrantyPackageIds không match → 400', async () => {
@@ -425,7 +425,7 @@ describe('CatalogService — Product (Sprint 6b)', () => {
       catalogRepository.findWarrantyPackagesByIds.mockResolvedValue([]);
       await expect(
         service.createProduct({ payload: { name: 'P', price: 100, warrantyPackageIds: [1] } })
-      ).rejects.toMatchObject({ statusCode: 400, message: expect.stringContaining('bảo hành') });
+      ).rejects.toMatchObject({ statusCode: 400, message: 'catalog.warrantyPackagesNotExist' });
     });
   });
 
@@ -485,7 +485,7 @@ describe('CatalogService — Product (Sprint 6b)', () => {
       const product = { id: 1, slug: 'x' };
       catalogRepository.findProductByPk.mockResolvedValue(product);
       const result = await service.deleteProduct({ id: 1 });
-      expect(result.message).toMatch(/Xóa sản phẩm thành công/);
+      expect(result.message).toBe('catalog.productDeleted');
       expect(catalogRepository.deleteProduct).toHaveBeenCalledWith(product);
     });
   });

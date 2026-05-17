@@ -148,7 +148,7 @@ describe('AuthService — bổ sung coverage', () => {
 
       await expect(
         service.refreshToken({ refreshToken: 'used-rt' })
-      ).rejects.toMatchObject({ statusCode: 401, message: expect.stringContaining('đã được sử dụng') });
+      ).rejects.toMatchObject({ statusCode: 401, message: 'auth.refreshTokenUsed' });
 
       expect(blacklistStore.set).toHaveBeenCalledWith(
         'rt_family_revoked:fam-x',
@@ -168,7 +168,7 @@ describe('AuthService — bổ sung coverage', () => {
 
       await expect(
         service.refreshToken({ refreshToken: 'rt' })
-      ).rejects.toMatchObject({ statusCode: 401, message: expect.stringContaining('Phiên đăng nhập') });
+      ).rejects.toMatchObject({ statusCode: 401, message: 'auth.sessionRevoked' });
     });
 
     test('token hợp lệ → đánh dấu jti cũ và sinh refresh token mới', async () => {
@@ -198,7 +198,7 @@ describe('AuthService — bổ sung coverage', () => {
 
       await expect(
         service.refreshToken({ refreshToken: 'expired-rt' })
-      ).rejects.toMatchObject({ statusCode: 401, message: expect.stringContaining('không hợp lệ') });
+      ).rejects.toMatchObject({ statusCode: 401, message: 'auth.refreshTokenInvalid' });
     });
 
     test('lỗi không phải JWT → rethrow', async () => {
@@ -220,7 +220,7 @@ describe('AuthService — bổ sung coverage', () => {
       const result = await service.resendVerification({ email: 'unknown@x.y' });
 
       expect(emailGateway.sendOtpEmail).not.toHaveBeenCalled();
-      expect(result.message).toMatch(/OTP sẽ được gửi/);
+      expect(result.message).toBe('auth.resendGeneric');
     });
 
     test('email đã verify → trả generic message, KHÔNG gửi OTP', async () => {
@@ -229,7 +229,7 @@ describe('AuthService — bổ sung coverage', () => {
       const result = await service.resendVerification({ email: 'verified@x.y' });
 
       expect(emailGateway.sendOtpEmail).not.toHaveBeenCalled();
-      expect(result.message).toMatch(/OTP sẽ được gửi/);
+      expect(result.message).toBe('auth.resendGeneric');
     });
 
     test('email lỗi không chặn flow — logger.error và vẫn return success', async () => {
@@ -245,7 +245,7 @@ describe('AuthService — bổ sung coverage', () => {
       const result = await service.resendVerification({ email: 'unverified@x.y' });
 
       expect(logger.error).toHaveBeenCalled();
-      expect(result.message).toMatch(/Đã gửi lại/);
+      expect(result.message).toBe('auth.otpResent');
     });
 
     test('email hợp lệ → cập nhật OTP mới + gửi email', async () => {
@@ -278,7 +278,7 @@ describe('AuthService — bổ sung coverage', () => {
       const result = await service.forgotPassword({ email: 'a@b.c' });
 
       expect(logger.error).toHaveBeenCalled();
-      expect(result.message).toMatch(/đặt lại mật khẩu/);
+      expect(result.message).toBe('auth.passwordResetSent');
     });
   });
 
@@ -293,7 +293,7 @@ describe('AuthService — bổ sung coverage', () => {
       const result = await service.resetPassword({ token: 'tok', password: 'newpass' });
 
       expect(logger.warn).toHaveBeenCalled();
-      expect(result.message).toMatch(/thành công/);
+      expect(result.message).toBe('auth.passwordResetSuccess');
     });
 
     test('không có blacklistStore → vẫn thành công', async () => {
@@ -312,7 +312,7 @@ describe('AuthService — bổ sung coverage', () => {
 
       const result = await service.resetPassword({ token: 'tok2', password: 'newpass' });
 
-      expect(result.message).toMatch(/thành công/);
+      expect(result.message).toBe('auth.passwordResetSuccess');
     });
   });
 
@@ -384,7 +384,7 @@ describe('AuthService — bổ sung coverage', () => {
 
       await expect(
         service.googleLogin({ token: 'idtok' })
-      ).rejects.toMatchObject({ statusCode: 401, message: expect.stringContaining('bị khóa') });
+      ).rejects.toMatchObject({ statusCode: 401, message: 'auth.accountDisabled' });
     });
 
     test('payload null sau verify → 401', async () => {

@@ -86,8 +86,8 @@ class PaymentService {
 
   async createMomoUrl({ orderId, userId }) {
     const order = await this.repo.findOrderByPk(orderId);
-    if (!order) throw new AppError('Không tìm thấy đơn hàng', 404);
-    if (order.userId !== userId) throw new AppError('Không có quyền truy cập đơn hàng này', 403);
+    if (!order) throw new AppError('payment.orderNotFound', 404);
+    if (order.userId !== userId) throw new AppError('payment.accessDenied', 403);
 
     return this.momoGateway.createPaymentUrl({
       orderId: order.number,
@@ -154,8 +154,8 @@ class PaymentService {
 
   async createVNPayUrl({ orderId, ipAddr, userId }) {
     const order = await this.repo.findOrderByPk(orderId);
-    if (!order) throw new AppError('Không tìm thấy đơn hàng', 404);
-    if (order.userId !== userId) throw new AppError('Không có quyền truy cập đơn hàng này', 403);
+    if (!order) throw new AppError('payment.orderNotFound', 404);
+    if (order.userId !== userId) throw new AppError('payment.accessDenied', 403);
 
     return this.vnpayGateway.createPaymentUrl({
       orderId: order.number,
@@ -252,7 +252,7 @@ class PaymentService {
   // ---------- Refund ----------
 
   async createRefund({ orderId, amount, reason, ipAddr }) {
-    if (!orderId) throw new AppError('Order ID là bắt buộc', 400);
+    if (!orderId) throw new AppError('payment.orderIdRequired', 400);
 
     const order = await this.repo.findOrderByPk(orderId);
     const policyResult = PaymentPolicy.canRefund(order);
@@ -262,7 +262,7 @@ class PaymentService {
 
     const refundAmount = amount || order.total;
     if (refundAmount <= 0 || refundAmount > parseFloat(order.total)) {
-      throw new AppError('Số tiền hoàn không hợp lệ (phải > 0 và <= tổng đơn hàng)', 400);
+      throw new AppError('payment.invalidRefundAmount', 400);
     }
 
     let refund;

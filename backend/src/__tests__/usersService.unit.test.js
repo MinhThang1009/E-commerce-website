@@ -86,7 +86,7 @@ describe('UsersService', () => {
 
       expect(user.password).toBe('newSecret');
       expect(usersRepository.saveUser).toHaveBeenCalledWith(user);
-      expect(result.message).toMatch(/thành công/);
+      expect(result.message).toBe('users.changePasswordSuccess');
     });
   });
 
@@ -187,7 +187,7 @@ describe('UsersService', () => {
 
       expect(usersRepository.deleteAddress).toHaveBeenCalledWith(address);
       expect(usersRepository.findLatestAddressByUserId).not.toHaveBeenCalled();
-      expect(result.message).toMatch(/Xóa địa chỉ thành công/);
+      expect(result.message).toBe('users.deleteAddressSuccess');
     });
 
     test('xóa address default + còn address khác → promote address mới nhất làm default', async () => {

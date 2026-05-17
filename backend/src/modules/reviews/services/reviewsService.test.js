@@ -211,7 +211,7 @@ describe('ReviewsService', () => {
       const result = await service.deleteReview({ userId: 1, reviewId: 1 });
 
       expect(reviewsRepository.deleteReview).toHaveBeenCalled();
-      expect(result.message).toMatch(/thành công/);
+      expect(result.message).toBe('reviews.deleted');
     });
 
     test('cập nhật rating sản phẩm sau khi xóa review', async () => {
@@ -324,7 +324,7 @@ describe('ReviewsService', () => {
       const result = await service.verifyReview({ reviewId: 1, isVerified: true });
 
       expect(review.isVerified).toBe(true);
-      expect(result.message).toMatch(/xác nhận/);
+      expect(result.message).toBe('reviews.verified');
       expect(result.data).toEqual({ id: 1, isVerified: true });
     });
 
@@ -334,7 +334,7 @@ describe('ReviewsService', () => {
 
       const result = await service.verifyReview({ reviewId: 1, isVerified: false });
 
-      expect(result.message).toMatch(/từ chối/);
+      expect(result.message).toBe('reviews.rejected');
     });
   });
 
@@ -370,7 +370,7 @@ describe('ReviewsService', () => {
         expect.objectContaining({ reviewId: 1, userId: 1, isHelpful: true })
       );
       expect(reviewsRepository.incrementReview).toHaveBeenCalledWith(review, 'likes');
-      expect(result.message).toMatch(/hữu ích/);
+      expect(result.message).toBe('reviews.markedHelpful');
     });
 
     test('lần đầu vote helpful=false → tạo feedback + increment dislikes', async () => {

@@ -1,3 +1,9 @@
+/**
+ * @file wishlistController.js
+ * @layer Controller
+ * @module wishlist
+ * @description Xử lý HTTP request/response cho wishlist
+ */
 class WishlistController {
   constructor({ wishlistService }) {
     this.wishlistService = wishlistService;

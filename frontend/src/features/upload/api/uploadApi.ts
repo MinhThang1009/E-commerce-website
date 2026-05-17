@@ -1,3 +1,9 @@
+/**
+ * @file uploadApi.ts
+ * @layer API Client
+ * @feature upload
+ * @description API client functions cho feature upload
+ */
 import { useMutation } from '@tanstack/react-query';
 import apiClient from '@/services/apiClient';
 

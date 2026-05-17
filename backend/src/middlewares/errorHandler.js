@@ -1,3 +1,9 @@
+/**
+ * @file errorHandler.js
+ * @layer Middleware
+ * @module global
+ * @description Express middleware: errorHandler
+ */
 const logger = require('../utils/logger');
 const AppError = require('../shared/errors/AppError');
 const { t } = require('../utils/i18n');

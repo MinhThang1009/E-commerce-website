@@ -1,3 +1,9 @@
+/**
+ * @file contentValidator.js
+ * @layer Validator
+ * @module content
+ * @description Validation schemas cho content
+ */
 const Joi = require('joi');
 
 // Content validators — gộp banner + news + newsletter + feedback.

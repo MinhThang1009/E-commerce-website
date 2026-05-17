@@ -1,3 +1,9 @@
+/**
+ * @file NewsListPage.tsx
+ * @layer Page
+ * @feature content
+ * @description Page component của feature content
+ */
 import { Helmet } from 'react-helmet-async';
 import { Link, useSearchParams } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';

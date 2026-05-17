@@ -1,3 +1,9 @@
+/**
+ * @file product.types.ts
+ * @layer Type
+ * @feature catalog
+ * @description TypeScript type definitions cho feature catalog
+ */
 // Các kiểu dữ liệu sản phẩm
 export interface Product {
   id: string;

@@ -1,3 +1,9 @@
+/**
+ * @file index.ts
+ * @layer Component
+ * @feature ai
+ * @description UI component cho feature ai
+ */
 export { default as ApplyIcon } from './ApplyIcon';
 export { default as BotIcon } from './BotIcon';
 export { default as ChatIcon } from './ChatIcon';

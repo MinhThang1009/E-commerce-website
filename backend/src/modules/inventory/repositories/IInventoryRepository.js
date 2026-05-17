@@ -1,3 +1,9 @@
+/**
+ * @file IInventoryRepository.js
+ * @layer Repository
+ * @module inventory
+ * @description Data access layer cho inventory
+ */
 // IInventoryRepository — interface inventory data access.
 
 class IInventoryRepository {

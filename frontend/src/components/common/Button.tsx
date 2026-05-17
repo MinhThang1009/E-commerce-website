@@ -1,3 +1,9 @@
+/**
+ * @file Button.tsx
+ * @layer Component
+ * @feature shared
+ * @description Shared UI component
+ */
 import { ButtonHTMLAttributes, ElementType, forwardRef } from 'react';
 import { Link } from 'react-router-dom';
 

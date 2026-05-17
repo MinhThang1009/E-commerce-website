@@ -1,3 +1,9 @@
+/**
+ * @file DynamicProductTitle.tsx
+ * @layer Component
+ * @feature catalog
+ * @description UI component cho feature catalog
+ */
 import React, { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Typography, Space, Tag, Skeleton, Alert } from 'antd';

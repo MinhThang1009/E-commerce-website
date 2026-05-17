@@ -1,3 +1,9 @@
+/**
+ * @file routes.js
+ * @layer Route
+ * @module payment
+ * @description HTTP endpoints của payment
+ */
 const express = require('express');
 const rateLimit = require('express-rate-limit');
 const { authenticate } = require('../../middlewares/authenticate');

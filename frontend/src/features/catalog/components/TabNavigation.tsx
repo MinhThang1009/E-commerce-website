@@ -1,3 +1,9 @@
+/**
+ * @file TabNavigation.tsx
+ * @layer Component
+ * @feature catalog
+ * @description UI component cho feature catalog
+ */
 import React from 'react';
 import { useTranslation } from 'react-i18next';
 import { Button, Space, Alert } from 'antd';

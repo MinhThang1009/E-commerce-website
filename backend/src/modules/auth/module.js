@@ -1,3 +1,9 @@
+/**
+ * @file module.js
+ * @layer Module
+ * @module auth
+ * @description Entry point auth module — khởi tạo dependencies và đăng ký routes
+ */
 const jwt = require('jsonwebtoken');
 const crypto = require('crypto');
 const axios = require('axios');

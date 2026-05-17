@@ -1,3 +1,9 @@
+/**
+ * @file ChatMessages.tsx
+ * @layer Component
+ * @feature ai
+ * @description UI component cho feature ai
+ */
 import React, { RefObject } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Message } from '../types/message.types';

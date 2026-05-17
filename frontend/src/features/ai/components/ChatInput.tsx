@@ -1,3 +1,9 @@
+/**
+ * @file ChatInput.tsx
+ * @layer Component
+ * @feature ai
+ * @description UI component cho feature ai
+ */
 import React, { FormEvent, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import {

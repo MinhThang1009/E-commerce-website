@@ -1,3 +1,9 @@
+/**
+ * @file catalogController.js
+ * @layer Controller
+ * @module catalog
+ * @description Xử lý HTTP request/response cho catalog
+ */
 // Catalog Controller — Sprint 6a: Category + Brand + Collection (21 handler).
 // Sprint 6b: Product (16 handler nữa).
 class CatalogController {

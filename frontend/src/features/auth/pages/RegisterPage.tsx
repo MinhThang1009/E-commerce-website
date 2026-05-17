@@ -1,3 +1,9 @@
+/**
+ * @file RegisterPage.tsx
+ * @layer Page
+ * @feature auth
+ * @description Page component của feature auth
+ */
 import { useState, useRef } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';

@@ -1,3 +1,9 @@
+/**
+ * @file HomePage.tsx
+ * @layer Page
+ * @feature global
+ * @description Top-level page component
+ */
 import React from 'react';
 import { message } from 'antd';
 import { HeroSection, HomeNewsSection } from '@/components/sections';

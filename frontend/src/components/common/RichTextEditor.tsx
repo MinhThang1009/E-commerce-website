@@ -1,3 +1,9 @@
+/**
+ * @file RichTextEditor.tsx
+ * @layer Component
+ * @feature shared
+ * @description Shared UI component
+ */
 import React, { useMemo, useEffect, useState, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
 import DOMPurify from 'dompurify';

@@ -1,3 +1,9 @@
+/**
+ * @file routes.js
+ * @layer Route
+ * @module wishlist
+ * @description HTTP endpoints của wishlist
+ */
 const express = require('express');
 const { authenticate } = require('../../middlewares/authenticate');
 

@@ -1,3 +1,9 @@
+/**
+ * @file mailer.js
+ * @layer Shared
+ * @module global
+ * @description Cross-cutting infrastructure: mailer
+ */
 // Re-export Nodemailer wrapper hiện ở services/email. Hiện chứa cả templates
 // (OTP, campaigns, order confirmation, ...) trộn lẫn với transport. Sprint 6
 // (notifications module) sẽ tách: shared/mailer giữ thuần transport

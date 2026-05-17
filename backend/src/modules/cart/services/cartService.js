@@ -1,3 +1,9 @@
+/**
+ * @file cartService.js
+ * @layer Service
+ * @module cart
+ * @description Business logic layer cho cart
+ */
 const { v4: uuidv4 } = require('uuid');
 const { AppError } = require('../../../shared/errors');
 

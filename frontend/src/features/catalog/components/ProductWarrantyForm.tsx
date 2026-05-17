@@ -1,3 +1,9 @@
+/**
+ * @file ProductWarrantyForm.tsx
+ * @layer Component
+ * @feature catalog
+ * @description UI component cho feature catalog
+ */
 import React, { useEffect, useMemo } from 'react';
 import type { FormInstance } from 'antd';
 import {

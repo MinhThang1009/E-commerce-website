@@ -1,3 +1,9 @@
+/**
+ * @file useChatWidget.ts
+ * @layer Hook
+ * @feature ai
+ * @description Custom React hook cho feature ai
+ */
 import { useState, useRef, useEffect, useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
 import { CHAT_WIDGET_CONFIG, getGreetingMessage } from '../constants/chatWidget';

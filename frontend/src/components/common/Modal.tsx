@@ -1,3 +1,9 @@
+/**
+ * @file Modal.tsx
+ * @layer Component
+ * @feature shared
+ * @description Shared UI component
+ */
 import { useEffect, useRef } from 'react';
 import { createPortal } from 'react-dom';
 

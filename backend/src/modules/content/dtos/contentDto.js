@@ -1,3 +1,9 @@
+/**
+ * @file contentDto.js
+ * @layer DTO
+ * @module content
+ * @description Data transfer objects cho content
+ */
 // Content DTO — 5 sub-domain trả raw model. Pass-through cho phép Express
 // serialize qua toJSON() tự động.
 function toBannerDto(banner) { return banner ?? null; }

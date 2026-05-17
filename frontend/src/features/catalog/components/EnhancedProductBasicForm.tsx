@@ -1,3 +1,9 @@
+/**
+ * @file EnhancedProductBasicForm.tsx
+ * @layer Component
+ * @feature catalog
+ * @description UI component cho feature catalog
+ */
 import React, { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Form, Input, Select, Row, Col, Button, Switch, Space, Typography, Divider } from 'antd';

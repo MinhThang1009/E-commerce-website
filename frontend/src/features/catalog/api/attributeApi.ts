@@ -1,3 +1,9 @@
+/**
+ * @file attributeApi.ts
+ * @layer API Client
+ * @feature catalog
+ * @description API client functions cho feature catalog
+ */
 import apiClient from '@/services/apiClient';
 
 export interface NamePreviewRequest {

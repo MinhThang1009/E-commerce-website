@@ -1,3 +1,9 @@
+/**
+ * @file SequelizeLoyaltyRepository.js
+ * @layer Repository
+ * @module loyalty
+ * @description Data access layer cho loyalty
+ */
 const ILoyaltyRepository = require('./ILoyaltyRepository');
 
 // Sequelize impl của ILoyaltyRepository — User points + LoyaltyHistory.

@@ -1,3 +1,9 @@
+/**
+ * @file unitOfWork.js
+ * @layer Shared
+ * @module global
+ * @description Cross-cutting infrastructure: unitOfWork
+ */
 const sequelize = require('./sequelize');
 
 // Unit of Work — wrap business operation trong DB transaction.

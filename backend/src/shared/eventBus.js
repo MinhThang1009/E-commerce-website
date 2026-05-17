@@ -1,3 +1,9 @@
+/**
+ * @file eventBus.js
+ * @layer Shared
+ * @module global
+ * @description Cross-cutting infrastructure: eventBus
+ */
 const logger = require('./logger');
 
 // In-process pub-sub cho cross-module communication (vd

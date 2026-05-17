@@ -1,3 +1,9 @@
+/**
+ * @file BrandsPage.tsx
+ * @layer Page
+ * @feature catalog
+ * @description Page component của feature catalog
+ */
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import React, { useState } from 'react';
 import {

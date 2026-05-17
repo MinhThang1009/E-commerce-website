@@ -1,4 +1,10 @@
 /**
+ * @file uploadUrl.ts
+ * @layer Utility
+ * @feature global
+ * @description Helper utility function
+ */
+/**
  * Helper tạo URL đầy đủ cho file upload (ảnh, banner, logo...).
  *
  * VITE_API_URL thường có suffix "/api" (ví dụ http://localhost:8888/api).

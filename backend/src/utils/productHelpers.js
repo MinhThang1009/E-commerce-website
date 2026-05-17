@@ -1,3 +1,9 @@
+/**
+ * @file productHelpers.js
+ * @layer Utility
+ * @module global
+ * @description Helper utility: productHelpers
+ */
 const logger = require('./logger');
 /**
  * Các hàm hỗ trợ cho sản phẩm

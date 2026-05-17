@@ -1,3 +1,9 @@
+/**
+ * @file loyaltyController.js
+ * @layer Controller
+ * @module loyalty
+ * @description Xử lý HTTP request/response cho loyalty
+ */
 class LoyaltyController {
   constructor({ loyaltyService }) {
     this.loyaltyService = loyaltyService;

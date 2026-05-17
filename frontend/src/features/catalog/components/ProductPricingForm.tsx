@@ -1,3 +1,9 @@
+/**
+ * @file ProductPricingForm.tsx
+ * @layer Component
+ * @feature catalog
+ * @description UI component cho feature catalog
+ */
 import React from 'react';
 import { Form, InputNumber, Switch, Row, Col, Alert, Space } from 'antd';
 import { InfoCircleOutlined } from '@ant-design/icons';

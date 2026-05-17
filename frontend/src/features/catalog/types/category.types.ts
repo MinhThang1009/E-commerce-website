@@ -1,3 +1,9 @@
+/**
+ * @file category.types.ts
+ * @layer Type
+ * @feature catalog
+ * @description TypeScript type definitions cho feature catalog
+ */
 // Kiểu dữ liệu danh mục
 // DB chỉ có: id, name, slug, description, deleted_at, created_at, updated_at.
 // Các field image/parentId/level/isActive/sortOrder chưa tồn tại trong DB —

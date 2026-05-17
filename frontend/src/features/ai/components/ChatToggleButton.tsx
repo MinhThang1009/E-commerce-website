@@ -1,3 +1,9 @@
+/**
+ * @file ChatToggleButton.tsx
+ * @layer Component
+ * @feature ai
+ * @description UI component cho feature ai
+ */
 import React from 'react';
 import { useTranslation } from 'react-i18next';
 import { BotIcon, CloseIcon, SparkleIcon, StatusIcon } from './icons';

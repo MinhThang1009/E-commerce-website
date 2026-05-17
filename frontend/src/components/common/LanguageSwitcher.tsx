@@ -1,3 +1,9 @@
+/**
+ * @file LanguageSwitcher.tsx
+ * @layer Component
+ * @feature shared
+ * @description Shared UI component
+ */
 import { useState, useRef, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 

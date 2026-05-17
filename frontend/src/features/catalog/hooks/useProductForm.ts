@@ -1,3 +1,9 @@
+/**
+ * @file useProductForm.ts
+ * @layer Hook
+ * @feature catalog
+ * @description Custom React hook cho feature catalog
+ */
 import { useState, useEffect, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Form, FormInstance, message } from 'antd';

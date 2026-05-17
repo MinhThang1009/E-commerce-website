@@ -1,3 +1,9 @@
+/**
+ * @file review.types.ts
+ * @layer Type
+ * @feature reviews
+ * @description TypeScript type definitions cho feature reviews
+ */
 // Các kiểu dữ liệu đánh giá
 export interface Review {
   id: string;

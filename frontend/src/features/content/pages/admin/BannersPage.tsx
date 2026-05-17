@@ -1,3 +1,9 @@
+/**
+ * @file BannersPage.tsx
+ * @layer Page
+ * @feature content
+ * @description Page component của feature content
+ */
 import React, { useState } from 'react';
 import {
   Table,

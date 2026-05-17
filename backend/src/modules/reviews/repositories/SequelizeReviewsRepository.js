@@ -1,3 +1,9 @@
+/**
+ * @file SequelizeReviewsRepository.js
+ * @layer Repository
+ * @module reviews
+ * @description Data access layer cho reviews
+ */
 const IReviewsRepository = require('./IReviewsRepository');
 
 // Sequelize impl của IReviewsRepository — duy nhất layer truy cập Review/

@@ -1,3 +1,9 @@
+/**
+ * @file BankTransferQR.tsx
+ * @layer Component
+ * @feature payment
+ * @description UI component cho feature payment
+ */
 import React, { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { CopyOutlined, CheckOutlined } from '@ant-design/icons';

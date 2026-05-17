@@ -1,3 +1,9 @@
+/**
+ * @file ragPipeline.js
+ * @layer Service
+ * @module ai
+ * @description Business logic layer cho ai
+ */
 const { validateMessage, expandAbbreviations, isOffTopic, classifyIntent } = require('./aiPolicy');
 const { AppError } = require('../../../shared/errors');
 const logger = require('../../../utils/logger');

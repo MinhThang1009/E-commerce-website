@@ -1,3 +1,9 @@
+/**
+ * @file IContentRepository.js
+ * @layer Repository
+ * @module content
+ * @description Data access layer cho content
+ */
 // IContentRepository — interface gộp 5 sub-domain content (banner, news,
 // emailCampaign, newsletter, feedback). 5 sub-domain này có CRUD đơn giản
 // không liên kết business logic, gộp vào 1 module để tránh micro-module

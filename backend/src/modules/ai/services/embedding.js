@@ -1,3 +1,9 @@
+/**
+ * @file embedding.js
+ * @layer Service
+ * @module ai
+ * @description Business logic layer cho ai
+ */
 const axios = require('axios');
 const logger = require('../../../utils/logger');
 

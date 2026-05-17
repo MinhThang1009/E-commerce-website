@@ -1,3 +1,9 @@
+/**
+ * @file DealsPage.tsx
+ * @layer Page
+ * @feature catalog
+ * @description Page component của feature catalog
+ */
 import { Helmet } from 'react-helmet-async';
 import { useState, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';

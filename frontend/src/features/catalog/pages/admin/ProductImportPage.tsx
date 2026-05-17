@@ -1,3 +1,9 @@
+/**
+ * @file ProductImportPage.tsx
+ * @layer Page
+ * @feature catalog
+ * @description Page component của feature catalog
+ */
 import React, { useState, useRef, useCallback } from 'react';
 import { useAuthStore } from '@/stores/authStore';
 import {

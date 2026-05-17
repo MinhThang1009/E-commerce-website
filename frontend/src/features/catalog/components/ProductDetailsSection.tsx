@@ -1,3 +1,9 @@
+/**
+ * @file ProductDetailsSection.tsx
+ * @layer Component
+ * @feature catalog
+ * @description UI component cho feature catalog
+ */
 import React, { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import DOMPurify from 'dompurify';

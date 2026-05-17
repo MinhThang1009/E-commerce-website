@@ -1,3 +1,9 @@
+/**
+ * @file CreateProductForm.tsx
+ * @layer Component
+ * @feature admin
+ * @description UI component cho feature admin
+ */
 import React, { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useCreateProductMutation } from '../api/adminProductApi';

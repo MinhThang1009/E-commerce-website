@@ -1,3 +1,9 @@
+/**
+ * @file FeedbackModal.tsx
+ * @layer Component
+ * @feature shared
+ * @description Shared UI component
+ */
 import React from 'react';
 import { Modal, Form, Input, Select, message } from 'antd';
 import { useTranslation } from 'react-i18next';

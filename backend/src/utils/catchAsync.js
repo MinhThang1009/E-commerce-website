@@ -1,4 +1,10 @@
 /**
+ * @file catchAsync.js
+ * @layer Utility
+ * @module global
+ * @description Helper utility: catchAsync
+ */
+/**
  * Wrapper function để bắt lỗi async/await trong controller
  * Tự động chuyển lỗi tới error handling middleware
  */

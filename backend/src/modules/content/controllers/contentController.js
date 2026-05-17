@@ -1,3 +1,9 @@
+/**
+ * @file contentController.js
+ * @layer Controller
+ * @module content
+ * @description Xử lý HTTP request/response cho content
+ */
 const { t } = require('../../../utils/i18n');
 
 // Content Controller — gộp 5 sub-domain. Trả response shape giữ nguyên cũ

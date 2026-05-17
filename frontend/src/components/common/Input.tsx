@@ -1,3 +1,9 @@
+/**
+ * @file Input.tsx
+ * @layer Component
+ * @feature shared
+ * @description Shared UI component
+ */
 import { InputHTMLAttributes, forwardRef } from 'react';
 
 export interface InputProps extends InputHTMLAttributes<HTMLInputElement> {

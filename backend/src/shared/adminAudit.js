@@ -1,3 +1,9 @@
+/**
+ * @file adminAudit.js
+ * @layer Shared
+ * @module global
+ * @description Cross-cutting infrastructure: adminAudit
+ */
 const logger = require('../utils/logger');
 
 // Hàm helper ghi audit log vào DB — dùng require lazy để tránh circular dependency

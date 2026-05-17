@@ -1,3 +1,9 @@
+/**
+ * @file routes.js
+ * @layer Route
+ * @module ai
+ * @description HTTP endpoints của ai
+ */
 const express = require('express');
 const { optionalAuthenticate, authenticate } = require('../../middlewares/authenticate');
 const { chatbotLimiter } = require('../../middlewares/rateLimiter');

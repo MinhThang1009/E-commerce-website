@@ -1,3 +1,9 @@
+/**
+ * @file CartPage.tsx
+ * @layer Page
+ * @feature cart
+ * @description Page component của feature cart
+ */
 import { PremiumButton } from '@/components/common';
 import Button from '@/components/common/Button';
 import CartItem from '../components/CartItem';

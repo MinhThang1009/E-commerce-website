@@ -1,3 +1,9 @@
+/**
+ * @file CategoriesPage.tsx
+ * @layer Page
+ * @feature catalog
+ * @description Page component của feature catalog
+ */
 import React, { useState } from 'react';
 import {
   Table,

@@ -1,3 +1,9 @@
+/**
+ * @file useProductVariants.ts
+ * @layer Hook
+ * @feature catalog
+ * @description Custom React hook cho feature catalog
+ */
 import { ProductVariant } from '@/types';
 import { useEffect, useState } from 'react';
 import type { FormInstance } from 'antd';

@@ -1,3 +1,9 @@
+/**
+ * @file SequelizeContentRepository.js
+ * @layer Repository
+ * @module content
+ * @description Data access layer cho content
+ */
 const { Op } = require('sequelize');
 const IContentRepository = require('./IContentRepository');
 

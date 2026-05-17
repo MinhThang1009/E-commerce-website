@@ -1,3 +1,9 @@
+/**
+ * @file PremiumButton.tsx
+ * @layer Component
+ * @feature shared
+ * @description Shared UI component
+ */
 import React from 'react';
 import { Button, ButtonProps } from 'antd';
 import {

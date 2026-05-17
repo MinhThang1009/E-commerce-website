@@ -1,3 +1,9 @@
+/**
+ * @file OrdersPage.tsx
+ * @layer Page
+ * @feature orders
+ * @description Page component của feature orders
+ */
 import { useState, useEffect } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';

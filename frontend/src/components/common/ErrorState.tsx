@@ -1,3 +1,9 @@
+/**
+ * @file ErrorState.tsx
+ * @layer Component
+ * @feature shared
+ * @description Shared UI component
+ */
 import React from 'react';
 import { useTranslation } from 'react-i18next';
 import PremiumButton from './PremiumButton';

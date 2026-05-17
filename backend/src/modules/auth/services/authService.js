@@ -1,3 +1,9 @@
+/**
+ * @file authService.js
+ * @layer Service
+ * @module auth
+ * @description Business logic layer cho auth
+ */
 const crypto = require('crypto');
 const { AppError } = require('../../../shared/errors');
 

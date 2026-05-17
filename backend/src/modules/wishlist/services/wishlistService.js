@@ -1,3 +1,9 @@
+/**
+ * @file wishlistService.js
+ * @layer Service
+ * @module wishlist
+ * @description Business logic layer cho wishlist
+ */
 const { AppError } = require('../../../shared/errors');
 
 // Wishlist Service — danh sách yêu thích của user. KHÔNG truy cập Sequelize

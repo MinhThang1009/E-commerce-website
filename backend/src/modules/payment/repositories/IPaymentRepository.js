@@ -1,3 +1,9 @@
+/**
+ * @file IPaymentRepository.js
+ * @layer Repository
+ * @module payment
+ * @description Data access layer cho payment
+ */
 // IPaymentRepository — interface data access cho payment module.
 // Cover Order updates (paymentStatus/paymentTransactionId/paymentProvider) +
 // DiscountCode usedCount + Cart cleanup.

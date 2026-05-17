@@ -1,3 +1,9 @@
+/**
+ * @file loyaltyService.js
+ * @layer Service
+ * @module loyalty
+ * @description Business logic layer cho loyalty
+ */
 const { AppError } = require('../../../shared/errors');
 
 // Loyalty Service — điểm tích lũy. SELECT FOR UPDATE chống race condition khi

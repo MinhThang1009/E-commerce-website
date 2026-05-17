@@ -1,3 +1,9 @@
+/**
+ * @file discountCodeController.js
+ * @layer Controller
+ * @module discountCode
+ * @description Xử lý HTTP request/response cho discountCode
+ */
 const { catchAsync } = require('../../../utils/catchAsync');
 const discountCodeService = require('../services/discountCodeService');
 

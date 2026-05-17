@@ -1,3 +1,9 @@
+/**
+ * @file AuditLogPage.tsx
+ * @layer Page
+ * @feature admin
+ * @description Page component của feature admin
+ */
 import React, { useState } from 'react';
 import { Table, Input, DatePicker, Modal, Button, Space, Tag } from 'antd';
 import { SearchOutlined, EyeOutlined } from '@ant-design/icons';

@@ -1,3 +1,9 @@
+/**
+ * @file loyaltyValidator.js
+ * @layer Validator
+ * @module loyalty
+ * @description Validation schemas cho loyalty
+ */
 const Joi = require('joi');
 
 const redeemPointsSchema = Joi.object({

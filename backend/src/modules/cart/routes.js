@@ -1,3 +1,9 @@
+/**
+ * @file routes.js
+ * @layer Route
+ * @module cart
+ * @description HTTP endpoints của cart
+ */
 const express = require('express');
 
 const { optionalAuthenticate } = require('../../middlewares/authenticate');

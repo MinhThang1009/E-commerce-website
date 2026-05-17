@@ -1,3 +1,9 @@
+/**
+ * @file AIProductCard.tsx
+ * @layer Component
+ * @feature ai
+ * @description UI component cho feature ai
+ */
 import React from 'react';
 import { Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';

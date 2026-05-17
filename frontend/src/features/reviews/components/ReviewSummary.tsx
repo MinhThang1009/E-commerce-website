@@ -1,3 +1,9 @@
+/**
+ * @file ReviewSummary.tsx
+ * @layer Component
+ * @feature reviews
+ * @description UI component cho feature reviews
+ */
 import { useTranslation } from 'react-i18next';
 import { useGetProductReviewsQuery } from '../api/reviewApi';
 import { Rating } from '@/components/common/Rating';

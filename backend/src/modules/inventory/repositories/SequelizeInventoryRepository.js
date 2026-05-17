@@ -1,3 +1,9 @@
+/**
+ * @file SequelizeInventoryRepository.js
+ * @layer Repository
+ * @module inventory
+ * @description Data access layer cho inventory
+ */
 const IInventoryRepository = require('./IInventoryRepository');
 
 class SequelizeInventoryRepository extends IInventoryRepository {

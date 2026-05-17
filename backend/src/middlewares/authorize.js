@@ -1,3 +1,9 @@
+/**
+ * @file authorize.js
+ * @layer Middleware
+ * @module global
+ * @description Express middleware: authorize
+ */
 const { AppError } = require('./errorHandler');
 
 // Middleware phân quyền người dùng dựa theo role

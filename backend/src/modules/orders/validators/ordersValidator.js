@@ -1,3 +1,9 @@
+/**
+ * @file ordersValidator.js
+ * @layer Validator
+ * @module orders
+ * @description Validation schemas cho orders
+ */
 const Joi = require('joi');
 
 const createOrderSchema = Joi.object({

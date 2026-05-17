@@ -1,3 +1,9 @@
+/**
+ * @file localize.ts
+ * @layer Utility
+ * @feature global
+ * @description Helper utility function
+ */
 const VI_EN_COLORS: Record<string, string> = {
   Đen: 'Black',
   Trắng: 'White',

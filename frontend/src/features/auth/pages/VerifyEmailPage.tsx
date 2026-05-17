@@ -1,3 +1,9 @@
+/**
+ * @file VerifyEmailPage.tsx
+ * @layer Page
+ * @feature auth
+ * @description Page component của feature auth
+ */
 import React, { useState, useRef } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';

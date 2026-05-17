@@ -1,3 +1,9 @@
+/**
+ * @file contentService.js
+ * @layer Service
+ * @module content
+ * @description Business logic layer cho content
+ */
 const { AppError } = require('../../../shared/errors');
 
 // Content Service — gộp 5 sub-domain. Cache busting cho banner public list,

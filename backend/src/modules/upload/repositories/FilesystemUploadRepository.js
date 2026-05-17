@@ -1,3 +1,9 @@
+/**
+ * @file FilesystemUploadRepository.js
+ * @layer Repository
+ * @module upload
+ * @description Data access layer cho upload
+ */
 const fsPromises = require('fs').promises;
 const IUploadRepository = require('./IUploadRepository');
 

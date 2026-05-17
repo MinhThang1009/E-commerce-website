@@ -1,3 +1,9 @@
+/**
+ * @file IUploadRepository.js
+ * @layer Repository
+ * @module upload
+ * @description Data access layer cho upload
+ */
 // IUploadRepository — interface filesystem operations cho upload module.
 // Tên là "Repository" theo convention nhưng thực chất wrap file system, không
 // phải DB. Service phụ thuộc interface này để dễ swap implementation (vd

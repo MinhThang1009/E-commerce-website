@@ -1,3 +1,9 @@
+/**
+ * @file auth.types.ts
+ * @layer Type
+ * @feature auth
+ * @description TypeScript type definitions cho feature auth
+ */
 // Kiểu dữ liệu xác thực
 import { User } from '@/types/user.types';
 

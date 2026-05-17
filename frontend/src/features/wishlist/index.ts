@@ -1,3 +1,9 @@
+/**
+ * @file index.ts
+ * @layer Barrel
+ * @feature wishlist
+ * @description Public API exports cho feature wishlist
+ */
 // Barrel export feature wishlist — public surface
 
 // Trang

@@ -1,3 +1,9 @@
+/**
+ * @file routes.js
+ * @layer Route
+ * @module loyalty
+ * @description HTTP endpoints của loyalty
+ */
 const express = require('express');
 const { authenticate } = require('../../middlewares/authenticate');
 const { validateRequest } = require('../../middlewares/validateRequest');

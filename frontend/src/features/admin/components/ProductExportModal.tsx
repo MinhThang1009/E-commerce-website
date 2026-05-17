@@ -1,3 +1,9 @@
+/**
+ * @file ProductExportModal.tsx
+ * @layer Component
+ * @feature admin
+ * @description UI component cho feature admin
+ */
 import React, { useState } from 'react';
 import { Modal, Radio, Space, Button, App } from 'antd';
 import { useTranslation } from 'react-i18next';

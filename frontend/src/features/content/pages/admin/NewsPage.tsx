@@ -1,3 +1,9 @@
+/**
+ * @file NewsPage.tsx
+ * @layer Page
+ * @feature content
+ * @description Page component của feature content
+ */
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';

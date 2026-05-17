@@ -1,3 +1,9 @@
+/**
+ * @file errorUtils.ts
+ * @layer Utility
+ * @feature global
+ * @description Helper utility function
+ */
 import i18next from 'i18next';
 
 /**

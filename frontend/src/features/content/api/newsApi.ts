@@ -1,3 +1,9 @@
+/**
+ * @file newsApi.ts
+ * @layer API Client
+ * @feature content
+ * @description API client functions cho feature content
+ */
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import apiClient from '@/services/apiClient';
 import { NewsFilters, NewsResponse, SingleNewsResponse } from '../types/news.types';

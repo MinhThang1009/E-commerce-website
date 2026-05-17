@@ -1,3 +1,9 @@
+/**
+ * @file aiController.js
+ * @layer Controller
+ * @module ai
+ * @description Xử lý HTTP request/response cho ai
+ */
 const { t } = require('../../../utils/i18n');
 
 class AIController {

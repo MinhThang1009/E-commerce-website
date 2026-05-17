@@ -1,3 +1,9 @@
+/**
+ * @file index.ts
+ * @layer Barrel
+ * @feature admin
+ * @description Public API exports cho feature admin
+ */
 // Barrel export feature admin — public surface
 
 // Components

@@ -1,3 +1,9 @@
+/**
+ * @file NewsDetailPage.tsx
+ * @layer Page
+ * @feature content
+ * @description Page component của feature content
+ */
 import { useParams, Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { ROUTES, buildRoute } from '@/routes/paths';

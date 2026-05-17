@@ -1,3 +1,9 @@
+/**
+ * @file useCartSync.ts
+ * @layer Hook
+ * @feature cart
+ * @description Custom React hook cho feature cart
+ */
 import { useEffect } from 'react';
 import { useCartStore } from '@/stores/cartStore';
 import { useAuthStore } from '@/stores/authStore';

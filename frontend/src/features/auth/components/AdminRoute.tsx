@@ -1,3 +1,9 @@
+/**
+ * @file AdminRoute.tsx
+ * @layer Component
+ * @feature auth
+ * @description UI component cho feature auth
+ */
 import { ReactNode } from 'react';
 import { Navigate, useLocation } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';

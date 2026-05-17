@@ -1,3 +1,9 @@
+/**
+ * @file routes.js
+ * @layer Route
+ * @module attribute
+ * @description HTTP endpoints của attribute
+ */
 const express = require('express');
 const router = express.Router();
 const attributeController = require('./controllers/attributeController');

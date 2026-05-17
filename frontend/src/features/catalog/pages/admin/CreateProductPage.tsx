@@ -1,3 +1,9 @@
+/**
+ * @file CreateProductPage.tsx
+ * @layer Page
+ * @feature catalog
+ * @description Page component của feature catalog
+ */
 import { ArrowLeftOutlined } from '@ant-design/icons';
 import { Button, Card, Col, Divider, Form, message, Row, Tabs, Typography } from 'antd';
 import React, { useEffect, useState } from 'react';

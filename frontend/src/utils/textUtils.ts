@@ -1,4 +1,10 @@
 /**
+ * @file textUtils.ts
+ * @layer Utility
+ * @feature global
+ * @description Helper utility function
+ */
+/**
  * Các hàm tiện ích xử lý văn bản
  */
 

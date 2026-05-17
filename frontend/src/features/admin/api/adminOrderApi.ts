@@ -1,3 +1,9 @@
+/**
+ * @file adminOrderApi.ts
+ * @layer API Client
+ * @feature admin
+ * @description API client functions cho feature admin
+ */
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import apiClient from '@/services/apiClient';
 

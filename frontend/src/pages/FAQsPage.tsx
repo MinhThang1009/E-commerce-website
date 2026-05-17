@@ -1,3 +1,9 @@
+/**
+ * @file FAQsPage.tsx
+ * @layer Page
+ * @feature global
+ * @description Top-level page component
+ */
 import { Helmet } from 'react-helmet-async';
 import { useState } from 'react';
 import { Link } from 'react-router-dom';

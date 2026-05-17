@@ -1,3 +1,9 @@
+/**
+ * @file vectorStore.js
+ * @layer Service
+ * @module ai
+ * @description Business logic layer cho ai
+ */
 const logger = require('../../../utils/logger');
 const embeddingService = require('./embedding');
 const viEmbeddingService = require('./viEmbedding');

@@ -1,3 +1,9 @@
+/**
+ * @file toast.ts
+ * @layer Utility
+ * @feature global
+ * @description Helper utility function
+ */
 import { message } from 'antd';
 import { useUiStore } from '@/stores/uiStore';
 

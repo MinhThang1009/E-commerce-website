@@ -1,3 +1,9 @@
+/**
+ * @file authUtils.ts
+ * @layer Utility
+ * @feature global
+ * @description Helper utility function
+ */
 import i18next from 'i18next';
 import { useAuthStore } from '@/stores/authStore';
 import { toast } from '@/utils/toast';

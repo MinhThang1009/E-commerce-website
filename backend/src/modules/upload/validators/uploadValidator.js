@@ -1,3 +1,9 @@
+/**
+ * @file uploadValidator.js
+ * @layer Validator
+ * @module upload
+ * @description Validation schemas cho upload
+ */
 // Upload request validators (Joi schemas)
 const Joi = require('joi');
 

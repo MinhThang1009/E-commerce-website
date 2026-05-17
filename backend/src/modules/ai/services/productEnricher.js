@@ -1,3 +1,9 @@
+/**
+ * @file productEnricher.js
+ * @layer Service
+ * @module ai
+ * @description Business logic layer cho ai
+ */
 // Compute thumbnail + inStock từ product associations — dùng chung cho indexProducts, model hooks, admin controllers
 function enrichProductData(productData) {
   const thumbImg = productData.productImages?.find((img) => img.isThumbnail);

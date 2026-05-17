@@ -1,3 +1,9 @@
+/**
+ * @file imageController.js
+ * @layer Controller
+ * @module image
+ * @description Xử lý HTTP request/response cho image
+ */
 const multer = require('multer');
 const path = require('path');
 const { v4: uuidv4 } = require('uuid');

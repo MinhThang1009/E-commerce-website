@@ -1,3 +1,9 @@
+/**
+ * @file index.tsx
+ * @layer Component
+ * @feature shared
+ * @description Shared UI component
+ */
 import React from 'react';
 
 export interface IconProps {

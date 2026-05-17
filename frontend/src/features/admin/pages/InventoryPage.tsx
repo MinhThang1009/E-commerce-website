@@ -1,3 +1,9 @@
+/**
+ * @file InventoryPage.tsx
+ * @layer Page
+ * @feature admin
+ * @description Page component của feature admin
+ */
 import React, { useState } from 'react';
 import { Table, Input, Button, Tag, Space, Tooltip, App } from 'antd';
 import { EditOutlined, SaveOutlined, CloseOutlined, SearchOutlined } from '@ant-design/icons';

@@ -1,3 +1,9 @@
+/**
+ * @file EditorErrorBoundary.tsx
+ * @layer Component
+ * @feature shared
+ * @description Shared UI component
+ */
 import React, { Component, ReactNode } from 'react';
 import i18next from 'i18next';
 

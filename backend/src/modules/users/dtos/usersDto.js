@@ -1,3 +1,9 @@
+/**
+ * @file usersDto.js
+ * @layer DTO
+ * @module users
+ * @description Data transfer objects cho users
+ */
 // Users DTO factory — pure function, không class.
 // User.toJSON() đã strip password/otp/resetToken. Address là plain row, trả
 // nguyên dữ liệu (không sensitive).

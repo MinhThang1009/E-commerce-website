@@ -1,3 +1,9 @@
+/**
+ * @file chatbotApi.ts
+ * @layer Service
+ * @feature ai
+ * @description Service layer cho feature ai
+ */
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import apiClient from '@/services/apiClient';
 

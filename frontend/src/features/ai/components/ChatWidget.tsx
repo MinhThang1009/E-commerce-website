@@ -1,3 +1,9 @@
+/**
+ * @file ChatWidget.tsx
+ * @layer Component
+ * @feature ai
+ * @description UI component cho feature ai
+ */
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useAuthStore } from '@/stores/authStore';

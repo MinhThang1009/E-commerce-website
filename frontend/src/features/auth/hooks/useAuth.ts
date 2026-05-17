@@ -1,3 +1,9 @@
+/**
+ * @file useAuth.ts
+ * @layer Hook
+ * @feature auth
+ * @description Custom React hook cho feature auth
+ */
 import { useAuthStore } from '@/stores/authStore';
 import { useCartStore } from '@/stores/cartStore';
 import { useWishlistStore } from '@/stores/wishlistStore';

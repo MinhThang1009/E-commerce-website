@@ -1,3 +1,9 @@
+/**
+ * @file useProductAttributes.ts
+ * @layer Hook
+ * @feature catalog
+ * @description Custom React hook cho feature catalog
+ */
 import { useState } from 'react';
 import { ProductAttribute } from '@/types';
 

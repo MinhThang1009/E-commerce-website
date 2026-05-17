@@ -1,3 +1,9 @@
+/**
+ * @file authController.js
+ * @layer Controller
+ * @module auth
+ * @description Xử lý HTTP request/response cho auth
+ */
 const ms = require('ms');
 const { toAuthUserDto } = require('../dtos/authDto');
 

@@ -1,3 +1,9 @@
+/**
+ * @file BestSellersPage.tsx
+ * @layer Page
+ * @feature catalog
+ * @description Page component của feature catalog
+ */
 import { useState } from 'react';
 import { useGetProductsQuery } from '../api/productApi';
 import { ProductCard } from '@/features/catalog';

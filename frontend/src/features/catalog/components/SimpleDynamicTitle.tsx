@@ -1,3 +1,9 @@
+/**
+ * @file SimpleDynamicTitle.tsx
+ * @layer Component
+ * @feature catalog
+ * @description UI component cho feature catalog
+ */
 import React, { useState, useEffect } from 'react';
 import { Typography } from 'antd';
 import { simpleNamingService } from '../utils/productNaming';

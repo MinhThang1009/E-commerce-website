@@ -1,3 +1,9 @@
+/**
+ * @file paymentController.js
+ * @layer Controller
+ * @module payment
+ * @description Xử lý HTTP request/response cho payment
+ */
 const { t } = require('../../../utils/i18n');
 const logger = require('../../../utils/logger');
 const emailService = require('../../../services/email');

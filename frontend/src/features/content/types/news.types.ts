@@ -1,3 +1,9 @@
+/**
+ * @file news.types.ts
+ * @layer Type
+ * @feature content
+ * @description TypeScript type definitions cho feature content
+ */
 import { User } from '@/types/user.types';
 
 export interface News {

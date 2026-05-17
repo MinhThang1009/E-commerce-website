@@ -1,3 +1,9 @@
+/**
+ * @file ProductDetailPage.tsx
+ * @layer Page
+ * @feature catalog
+ * @description Page component của feature catalog
+ */
 import { Helmet } from 'react-helmet-async';
 import { PremiumButton } from '@/components/common';
 import Badge from '@/components/common/Badge';

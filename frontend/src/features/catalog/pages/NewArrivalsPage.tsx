@@ -1,3 +1,9 @@
+/**
+ * @file NewArrivalsPage.tsx
+ * @layer Page
+ * @feature catalog
+ * @description Page component của feature catalog
+ */
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useGetProductsQuery } from '../api/productApi';

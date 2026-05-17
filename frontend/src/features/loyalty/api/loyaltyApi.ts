@@ -1,3 +1,9 @@
+/**
+ * @file loyaltyApi.ts
+ * @layer API Client
+ * @feature loyalty
+ * @description API client functions cho feature loyalty
+ */
 import { useQuery } from '@tanstack/react-query';
 import apiClient from '@/services/apiClient';
 

@@ -1,3 +1,9 @@
+/**
+ * @file FilterPanel.tsx
+ * @layer Component
+ * @feature catalog
+ * @description UI component cho feature catalog
+ */
 import { useState } from 'react';
 import Button from '@/components/common/Button';
 import { formatPrice } from '@/utils/format';

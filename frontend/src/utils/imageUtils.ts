@@ -1,4 +1,10 @@
 /**
+ * @file imageUtils.ts
+ * @layer Utility
+ * @feature global
+ * @description Helper utility function
+ */
+/**
  * Các hàm tiện ích xử lý ảnh
  * Xử lý và tối ưu ảnh tập trung
  */

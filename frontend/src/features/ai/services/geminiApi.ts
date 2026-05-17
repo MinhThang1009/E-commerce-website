@@ -1,3 +1,9 @@
+/**
+ * @file geminiApi.ts
+ * @layer Service
+ * @feature ai
+ * @description Service layer cho feature ai
+ */
 import axios from 'axios';
 import i18n from '@/config/i18n';
 import { useAuthStore } from '@/stores/authStore';

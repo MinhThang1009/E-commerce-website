@@ -1,4 +1,11 @@
 'use strict';
+/**
+ * @file i18n.js
+ * @layer Utility
+ * @module global
+ * @description Helper utility: i18n
+ */
+
 
 const vi = require('../locales/vi.json');
 const en = require('../locales/en.json');

@@ -1,3 +1,9 @@
+/**
+ * @file routes.js
+ * @layer Route
+ * @module admin
+ * @description HTTP endpoints của admin
+ */
 const express = require('express');
 const router = express.Router();
 

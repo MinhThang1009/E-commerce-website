@@ -1,3 +1,9 @@
+/**
+ * @file SequelizeOrdersRepository.js
+ * @layer Repository
+ * @module orders
+ * @description Data access layer cho orders
+ */
 const { col } = require('sequelize');
 const IOrdersRepository = require('./IOrdersRepository');
 

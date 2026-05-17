@@ -1,3 +1,9 @@
+/**
+ * @file IUsersRepository.js
+ * @layer Repository
+ * @module users
+ * @description Data access layer cho users
+ */
 // IUsersRepository — interface user-profile + address data access cho users module.
 // Service chỉ phụ thuộc interface này, KHÔNG require User/Address model trực tiếp.
 

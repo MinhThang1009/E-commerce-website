@@ -1,3 +1,9 @@
+/**
+ * @file ProductBasicInfoForm.tsx
+ * @layer Component
+ * @feature catalog
+ * @description UI component cho feature catalog
+ */
 import React from 'react';
 import { Form, Input, Select, Row, Col, Button, Alert } from 'antd';
 import { useTranslation } from 'react-i18next';

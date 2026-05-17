@@ -1,3 +1,9 @@
+/**
+ * @file ProductAttributesSection.tsx
+ * @layer Component
+ * @feature catalog
+ * @description UI component cho feature catalog
+ */
 import React from 'react';
 import { useTranslation } from 'react-i18next';
 import { Button, Row, Col, Typography, Table, Space, Alert } from 'antd';

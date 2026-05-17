@@ -1,3 +1,9 @@
+/**
+ * @file adminAuth.js
+ * @layer Middleware
+ * @module global
+ * @description Express middleware: adminAuth
+ */
 const logger = require('../utils/logger');
 const jwt = require('jsonwebtoken');
 const { User } = require('../models');

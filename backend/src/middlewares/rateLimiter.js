@@ -1,3 +1,9 @@
+/**
+ * @file rateLimiter.js
+ * @layer Middleware
+ * @module global
+ * @description Express middleware: rateLimiter
+ */
 const rateLimit = require('express-rate-limit');
 const { RedisStore } = require('rate-limit-redis');
 const { getRedisClient } = require('../config/redis');

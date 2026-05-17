@@ -1,3 +1,9 @@
+/**
+ * @file aiDto.js
+ * @layer DTO
+ * @module ai
+ * @description Data transfer objects cho ai
+ */
 // AI DTO factory — pure function, không class.
 // Service trả về model → controller mapper qua toAIDto trước response.
 

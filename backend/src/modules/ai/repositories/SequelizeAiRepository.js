@@ -1,3 +1,9 @@
+/**
+ * @file SequelizeAiRepository.js
+ * @layer Repository
+ * @module ai
+ * @description Data access layer cho ai
+ */
 const { Op, literal } = require('sequelize');
 const IAIRepository = require('./IAIRepository');
 

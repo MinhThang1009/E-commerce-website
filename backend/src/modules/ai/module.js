@@ -1,3 +1,9 @@
+/**
+ * @file module.js
+ * @layer Module
+ * @module ai
+ * @description Entry point ai module — khởi tạo dependencies và đăng ký routes
+ */
 const AIController = require('./controllers/aiController');
 const AIService = require('./services/aiService');
 const SequelizeAIRepository = require('./repositories/SequelizeAIRepository');

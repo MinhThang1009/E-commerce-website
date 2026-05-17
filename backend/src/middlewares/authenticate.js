@@ -1,3 +1,9 @@
+/**
+ * @file authenticate.js
+ * @layer Middleware
+ * @module global
+ * @description Express middleware: authenticate
+ */
 const jwt = require('jsonwebtoken');
 const { User } = require('../models');
 const { AppError } = require('./errorHandler');

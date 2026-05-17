@@ -1,4 +1,10 @@
 /**
+ * @file useApiState.ts
+ * @layer Hook
+ * @feature global
+ * @description Shared React hook
+ */
+/**
  * Custom hook xử lý trạng thái API
  * Cung cấp trạng thái loading, error và success nhất quán
  */

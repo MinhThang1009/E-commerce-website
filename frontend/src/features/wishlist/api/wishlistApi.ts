@@ -1,3 +1,9 @@
+/**
+ * @file wishlistApi.ts
+ * @layer API Client
+ * @feature wishlist
+ * @description API client functions cho feature wishlist
+ */
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import apiClient from '@/services/apiClient';
 import { Product } from '@/features/catalog';

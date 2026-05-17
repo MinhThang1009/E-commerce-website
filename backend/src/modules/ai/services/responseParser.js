@@ -1,3 +1,9 @@
+/**
+ * @file responseParser.js
+ * @layer Service
+ * @module ai
+ * @description Business logic layer cho ai
+ */
 const logger = require('../../../utils/logger');
 const { simpleKeywordMatch } = require('./keywordFallback');
 

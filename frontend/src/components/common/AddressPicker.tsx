@@ -1,3 +1,9 @@
+/**
+ * @file AddressPicker.tsx
+ * @layer Component
+ * @feature shared
+ * @description Shared UI component
+ */
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
 import L from 'leaflet';

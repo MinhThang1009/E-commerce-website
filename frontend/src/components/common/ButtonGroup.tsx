@@ -1,3 +1,9 @@
+/**
+ * @file ButtonGroup.tsx
+ * @layer Component
+ * @feature shared
+ * @description Shared UI component
+ */
 import React, { ReactNode } from 'react';
 
 interface ButtonGroupProps {

@@ -1,3 +1,9 @@
+/**
+ * @file BotIcon.tsx
+ * @layer Component
+ * @feature ai
+ * @description UI component cho feature ai
+ */
 import React from 'react';
 
 interface BotIconProps {

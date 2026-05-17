@@ -1,3 +1,9 @@
+/**
+ * @file ChatWidgetPortal.tsx
+ * @layer Component
+ * @feature ai
+ * @description UI component cho feature ai
+ */
 import React, { useState, useRef, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useAuthStore } from '@/stores/authStore';

@@ -1,3 +1,9 @@
+/**
+ * @file warrantyPackageController.js
+ * @layer Controller
+ * @module warrantyPackage
+ * @description Xử lý HTTP request/response cho warrantyPackage
+ */
 const { WarrantyPackage, ProductWarranty, Product } = require('../../../models');
 const logger = require('../../../utils/logger');
 const { validationResult } = require('express-validator');

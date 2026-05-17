@@ -1,4 +1,11 @@
 'use strict';
+/**
+ * @file localize.js
+ * @layer Utility
+ * @module global
+ * @description Helper utility: localize
+ */
+
 
 /**
  * Map field → [viKey, enKey] cho từng loại entity được i18n.

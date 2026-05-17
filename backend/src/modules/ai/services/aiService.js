@@ -1,3 +1,9 @@
+/**
+ * @file aiService.js
+ * @layer Service
+ * @module ai
+ * @description Business logic layer cho ai
+ */
 const { AppError } = require('../../../shared/errors');
 
 // AI Service — orchestrate chatbot interactions qua RagPipeline + product

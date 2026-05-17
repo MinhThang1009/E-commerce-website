@@ -1,3 +1,9 @@
+/**
+ * @file usersService.js
+ * @layer Service
+ * @module users
+ * @description Business logic layer cho users
+ */
 const { AppError } = require('../../../shared/errors');
 
 // Users Service — business logic profile + address. KHÔNG import Sequelize/Model

@@ -1,3 +1,9 @@
+/**
+ * @file validateRequest.js
+ * @layer Middleware
+ * @module global
+ * @description Express middleware: validateRequest
+ */
 const { validationResult } = require('express-validator');
 const { AppError } = require('./errorHandler');
 const { t } = require('../utils/i18n');

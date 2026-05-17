@@ -1,3 +1,9 @@
+/**
+ * @file AttributeModal.tsx
+ * @layer Component
+ * @feature catalog
+ * @description UI component cho feature catalog
+ */
 import React, { useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Modal, Form, Input, Button, Space, Alert, Divider } from 'antd';

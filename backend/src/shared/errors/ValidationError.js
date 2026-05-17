@@ -1,3 +1,9 @@
+/**
+ * @file ValidationError.js
+ * @layer Shared
+ * @module global
+ * @description Cross-cutting infrastructure: ValidationError
+ */
 const AppError = require('./AppError');
 
 // ValidationError — sai format input (Joi/express-validator). 400 Bad Request.

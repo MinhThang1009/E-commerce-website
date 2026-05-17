@@ -1,3 +1,9 @@
+/**
+ * @file inventoryDto.js
+ * @layer DTO
+ * @module inventory
+ * @description Data transfer objects cho inventory
+ */
 // Inventory DTO factory — pure function, không class.
 // Service trả về model → controller mapper qua toInventoryDto trước response.
 

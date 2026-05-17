@@ -1,3 +1,9 @@
+/**
+ * @file Rating.tsx
+ * @layer Component
+ * @feature shared
+ * @description Shared UI component
+ */
 import React from 'react';
 
 interface RatingProps {

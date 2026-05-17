@@ -1,3 +1,9 @@
+/**
+ * @file wishlistValidator.js
+ * @layer Validator
+ * @module wishlist
+ * @description Validation schemas cho wishlist
+ */
 // Wishlist request validators (Joi schemas)
 const Joi = require('joi');
 

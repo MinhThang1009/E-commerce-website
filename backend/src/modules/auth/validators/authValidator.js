@@ -1,3 +1,9 @@
+/**
+ * @file authValidator.js
+ * @layer Validator
+ * @module auth
+ * @description Validation schemas cho auth
+ */
 // Auth request validators (Joi schemas) — register, login, forgot/reset password,
 // resend verification. Move từ validators/user.js cho phần auth-related; user
 // profile schemas (updateUser, changePassword) ở users module Sprint sau.

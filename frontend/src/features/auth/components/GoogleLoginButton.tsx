@@ -1,3 +1,9 @@
+/**
+ * @file GoogleLoginButton.tsx
+ * @layer Component
+ * @feature auth
+ * @description UI component cho feature auth
+ */
 import React from 'react';
 import { useGoogleLogin } from '@react-oauth/google';
 import { useGoogleLoginMutation } from '../api/authApi';

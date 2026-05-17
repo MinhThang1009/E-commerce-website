@@ -1,3 +1,9 @@
+/**
+ * @file proxyImg.ts
+ * @layer Utility
+ * @feature global
+ * @description Helper utility function
+ */
 const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:8888/api';
 
 export function proxyImg(input: string | Record<string, unknown> | undefined | null): string {

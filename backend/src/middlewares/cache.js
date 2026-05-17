@@ -1,3 +1,9 @@
+/**
+ * @file cache.js
+ * @layer Middleware
+ * @module global
+ * @description Express middleware: cache
+ */
 const { getRedisClient } = require('../config/redis');
 const logger = require('../utils/logger');
 

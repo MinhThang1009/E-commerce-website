@@ -1,3 +1,9 @@
+/**
+ * @file EnhancedVariantSelector.tsx
+ * @layer Component
+ * @feature catalog
+ * @description UI component cho feature catalog
+ */
 import React, { useState, useEffect, useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
 import { getLocale } from '@/utils/format';

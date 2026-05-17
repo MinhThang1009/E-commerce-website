@@ -1,3 +1,9 @@
+/**
+ * @file module.js
+ * @layer Module
+ * @module orders
+ * @description Entry point orders module — khởi tạo dependencies và đăng ký routes
+ */
 const OrdersController = require('./controllers/ordersController');
 const OrdersService = require('./services/ordersService');
 const SequelizeOrdersRepository = require('./repositories/SequelizeOrdersRepository');

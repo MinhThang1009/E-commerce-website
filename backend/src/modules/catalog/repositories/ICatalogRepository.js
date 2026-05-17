@@ -1,3 +1,9 @@
+/**
+ * @file ICatalogRepository.js
+ * @layer Repository
+ * @module catalog
+ * @description Data access layer cho catalog
+ */
 // ICatalogRepository — interface gộp catalog data access (Category, Brand,
 // Collection, Product). Sprint 6a triển khai Category+Brand+Collection;
 // Sprint 6b mở rộng Product (find/search/CRUD/related/featured/...).

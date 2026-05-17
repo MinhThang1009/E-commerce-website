@@ -1,3 +1,9 @@
+/**
+ * @file IconButton.tsx
+ * @layer Component
+ * @feature shared
+ * @description Shared UI component
+ */
 import { forwardRef, ButtonHTMLAttributes } from 'react';
 import { cn } from '@/utils/cn';
 

@@ -1,3 +1,9 @@
+/**
+ * @file Textarea.tsx
+ * @layer Component
+ * @feature shared
+ * @description Shared UI component
+ */
 import React from 'react';
 
 interface TextareaProps {

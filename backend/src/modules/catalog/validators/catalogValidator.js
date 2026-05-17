@@ -1,3 +1,9 @@
+/**
+ * @file catalogValidator.js
+ * @layer Validator
+ * @module catalog
+ * @description Validation schemas cho catalog
+ */
 const Joi = require('joi');
 
 // Catalog validators — gộp Category, Brand, Collection. Sprint 6b sẽ thêm

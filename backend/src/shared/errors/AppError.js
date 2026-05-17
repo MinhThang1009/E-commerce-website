@@ -1,3 +1,9 @@
+/**
+ * @file AppError.js
+ * @layer Shared
+ * @module global
+ * @description Cross-cutting infrastructure: AppError
+ */
 class AppError extends Error {
   constructor(message, statusCode, params = {}) {
     super(message);

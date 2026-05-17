@@ -1,3 +1,9 @@
+/**
+ * @file UnauthorizedPage.tsx
+ * @layer Page
+ * @feature global
+ * @description Top-level page component
+ */
 import React from 'react';
 import { Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';

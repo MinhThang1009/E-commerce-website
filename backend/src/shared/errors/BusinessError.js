@@ -1,3 +1,9 @@
+/**
+ * @file BusinessError.js
+ * @layer Shared
+ * @module global
+ * @description Cross-cutting infrastructure: BusinessError
+ */
 const AppError = require('./AppError');
 
 // BusinessError — vi phạm business rule (trạng thái không hợp lệ, điều kiện không thỏa) (vd order.cancel() khi

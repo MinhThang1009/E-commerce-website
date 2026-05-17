@@ -1,3 +1,9 @@
+/**
+ * @file promptTemplates.ts
+ * @layer Service
+ * @feature ai
+ * @description Service layer cho feature ai
+ */
 import i18n from '@/config/i18n';
 
 const isVi = () => i18n.language === 'vi';

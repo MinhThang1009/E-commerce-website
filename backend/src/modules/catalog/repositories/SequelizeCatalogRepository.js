@@ -1,3 +1,9 @@
+/**
+ * @file SequelizeCatalogRepository.js
+ * @layer Repository
+ * @module catalog
+ * @description Data access layer cho catalog
+ */
 const { Op, QueryTypes, col } = require('sequelize');
 const ICatalogRepository = require('./ICatalogRepository');
 

@@ -1,3 +1,9 @@
+/**
+ * @file OrdersPage.tsx
+ * @layer Page
+ * @feature orders
+ * @description Page component của feature orders
+ */
 import React, { useState, useCallback } from 'react';
 import {
   Table,

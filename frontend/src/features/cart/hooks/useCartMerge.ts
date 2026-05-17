@@ -1,3 +1,9 @@
+/**
+ * @file useCartMerge.ts
+ * @layer Hook
+ * @feature cart
+ * @description Custom React hook cho feature cart
+ */
 import { useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useCartStore } from '@/stores/cartStore';

@@ -1,3 +1,9 @@
+/**
+ * @file ChatbotErrorBoundary.tsx
+ * @layer Component
+ * @feature ai
+ * @description UI component cho feature ai
+ */
 import React, { ReactNode } from 'react';
 import i18next from 'i18next';
 

@@ -1,3 +1,9 @@
+/**
+ * @file PaymentQRPage.tsx
+ * @layer Page
+ * @feature payment
+ * @description Page component của feature payment
+ */
 import { useGetOrderByIdQuery, useCancelOrderMutation } from '@/features/orders';
 import { useCreateVNPayUrlMutation } from '../api/vnpayApi';
 import { useUiStore } from '@/stores/uiStore';

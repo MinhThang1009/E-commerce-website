@@ -1,3 +1,9 @@
+/**
+ * @file descriptionImageProcessor.ts
+ * @layer Utility
+ * @feature global
+ * @description Helper utility function
+ */
 import { message } from 'antd';
 import i18next from 'i18next';
 import { getErrorMsg } from '@/utils/errorUtils';

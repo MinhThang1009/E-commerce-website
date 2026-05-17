@@ -1,3 +1,9 @@
+/**
+ * @file ProductPickerModal.tsx
+ * @layer Component
+ * @feature content
+ * @description UI component cho feature content
+ */
 import React, { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Modal, Input, List, Image, Button, Spin } from 'antd';

@@ -1,3 +1,9 @@
+/**
+ * @file inventoryController.js
+ * @layer Controller
+ * @module inventory
+ * @description Xử lý HTTP request/response cho inventory
+ */
 class InventoryController {
   constructor({ inventoryService }) {
     this.inventoryService = inventoryService;

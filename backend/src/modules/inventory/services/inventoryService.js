@@ -1,3 +1,9 @@
+/**
+ * @file inventoryService.js
+ * @layer Service
+ * @module inventory
+ * @description Business logic layer cho inventory
+ */
 const { AppError } = require('../../../shared/errors');
 
 // Quy tắc validate số lượng nhập kho và thao tác tăng/giảm tồn kho

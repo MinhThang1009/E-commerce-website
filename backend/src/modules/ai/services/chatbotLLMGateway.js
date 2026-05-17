@@ -1,3 +1,9 @@
+/**
+ * @file chatbotLLMGateway.js
+ * @layer Service
+ * @module ai
+ * @description Business logic layer cho ai
+ */
 // Adapter giao tiếp với LLM — chuyển tiếp các lệnh xuống chatbotService.
 class ChatbotLLMGateway {
   constructor({ chatbotService }) {

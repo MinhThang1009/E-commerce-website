@@ -1,3 +1,9 @@
+/**
+ * @file EmailCampaignsPage.tsx
+ * @layer Page
+ * @feature content
+ * @description Page component của feature content
+ */
 import React, { useState } from 'react';
 import { Table, Button, Space, Modal, Form, Input, Card, Typography, message, Popconfirm, Tag } from 'antd';
 import { PlusOutlined, SendOutlined, DeleteOutlined } from '@ant-design/icons';

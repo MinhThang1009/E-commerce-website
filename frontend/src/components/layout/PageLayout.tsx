@@ -1,4 +1,10 @@
 /**
+ * @file PageLayout.tsx
+ * @layer Component
+ * @feature shared
+ * @description Shared UI component
+ */
+/**
  * Component PageLayout
  * Cung cấp cấu trúc bố cục nhất quán cho tất cả các trang
  */

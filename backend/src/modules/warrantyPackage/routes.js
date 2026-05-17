@@ -1,3 +1,9 @@
+/**
+ * @file routes.js
+ * @layer Route
+ * @module warrantyPackage
+ * @description HTTP endpoints của warrantyPackage
+ */
 const express = require('express');
 const {
   getAllWarrantyPackages,

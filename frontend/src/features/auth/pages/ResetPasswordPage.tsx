@@ -1,3 +1,9 @@
+/**
+ * @file ResetPasswordPage.tsx
+ * @layer Page
+ * @feature auth
+ * @description Page component của feature auth
+ */
 import { useState, useEffect } from 'react';
 import { Link, useSearchParams, useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';

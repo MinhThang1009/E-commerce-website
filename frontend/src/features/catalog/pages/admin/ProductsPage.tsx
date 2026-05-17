@@ -1,3 +1,9 @@
+/**
+ * @file ProductsPage.tsx
+ * @layer Page
+ * @feature catalog
+ * @description Page component của feature catalog
+ */
 import { useState, useEffect, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { buildRoute } from '@/routes/paths';

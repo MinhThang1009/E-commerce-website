@@ -1,3 +1,9 @@
+/**
+ * @file SequelizeAuthRepository.js
+ * @layer Repository
+ * @module auth
+ * @description Data access layer cho auth
+ */
 const { Op } = require('sequelize');
 const IAuthRepository = require('./IAuthRepository');
 

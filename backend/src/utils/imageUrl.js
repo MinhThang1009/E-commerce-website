@@ -1,3 +1,9 @@
+/**
+ * @file imageUrl.js
+ * @layer Utility
+ * @module global
+ * @description Helper utility: imageUrl
+ */
 const DEFAULT_LOCAL_BASE = process.env.BACKEND_URL || '';
 
 const trimToNull = (value) => {

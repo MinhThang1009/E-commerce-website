@@ -1,3 +1,9 @@
+/**
+ * @file paymentService.js
+ * @layer Service
+ * @module payment
+ * @description Business logic layer cho payment
+ */
 const moment = require('moment');
 const { AppError } = require('../../../shared/errors');
 

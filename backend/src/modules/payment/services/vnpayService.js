@@ -1,3 +1,9 @@
+/**
+ * @file vnpayService.js
+ * @layer Service
+ * @module payment
+ * @description Business logic layer cho payment
+ */
 const moment = require('moment');
 const crypto = require('crypto');
 const querystring = require('qs');

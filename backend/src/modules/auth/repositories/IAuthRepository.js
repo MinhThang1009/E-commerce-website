@@ -1,3 +1,9 @@
+/**
+ * @file IAuthRepository.js
+ * @layer Repository
+ * @module auth
+ * @description Data access layer cho auth
+ */
 // IAuthRepository — interface auth-specific data access cho User aggregate.
 // Service chỉ phụ thuộc interface này, không phụ thuộc Sequelize impl trực tiếp.
 //

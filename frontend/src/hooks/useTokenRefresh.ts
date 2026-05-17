@@ -1,3 +1,9 @@
+/**
+ * @file useTokenRefresh.ts
+ * @layer Hook
+ * @feature global
+ * @description Shared React hook
+ */
 import { useEffect } from 'react';
 import { useAuthStore } from '@/stores/authStore';
 import { refreshTokenIfNeeded, isTokenExpired } from '@/utils/tokenManager';

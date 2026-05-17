@@ -1,3 +1,9 @@
+/**
+ * @file ReviewSection.tsx
+ * @layer Component
+ * @feature reviews
+ * @description UI component cho feature reviews
+ */
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useAuthStore } from '@/stores/authStore';

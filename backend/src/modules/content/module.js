@@ -1,3 +1,9 @@
+/**
+ * @file module.js
+ * @layer Module
+ * @module content
+ * @description Entry point content module — khởi tạo dependencies và đăng ký routes
+ */
 const ContentController = require('./controllers/contentController');
 const ContentService = require('./services/contentService');
 const SequelizeContentRepository = require('./repositories/SequelizeContentRepository');

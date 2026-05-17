@@ -1,3 +1,9 @@
+/**
+ * @file reviewsController.js
+ * @layer Controller
+ * @module reviews
+ * @description Xử lý HTTP request/response cho reviews
+ */
 class ReviewsController {
   constructor({ reviewsService }) {
     this.reviewsService = reviewsService;

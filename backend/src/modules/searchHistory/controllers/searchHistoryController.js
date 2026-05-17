@@ -1,3 +1,9 @@
+/**
+ * @file searchHistoryController.js
+ * @layer Controller
+ * @module searchHistory
+ * @description Xử lý HTTP request/response cho searchHistory
+ */
 const { SearchHistory } = require('../../../models');
 const { Op } = require('sequelize');
 const { AppError } = require('../../../shared/errors');

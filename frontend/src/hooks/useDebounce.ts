@@ -1,3 +1,9 @@
+/**
+ * @file useDebounce.ts
+ * @layer Hook
+ * @feature global
+ * @description Shared React hook
+ */
 import { useState, useEffect } from 'react';
 
 /**

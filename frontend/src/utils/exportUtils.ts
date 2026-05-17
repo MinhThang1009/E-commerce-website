@@ -1,3 +1,9 @@
+/**
+ * @file exportUtils.ts
+ * @layer Utility
+ * @feature global
+ * @description Helper utility function
+ */
 import ExcelJS from 'exceljs';
 
 /**

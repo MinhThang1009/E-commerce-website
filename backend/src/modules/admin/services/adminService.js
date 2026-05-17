@@ -1,3 +1,9 @@
+/**
+ * @file adminService.js
+ * @layer Service
+ * @module admin
+ * @description Business logic layer cho admin
+ */
 const adminRepository = require('../repositories/adminRepository');
 const sequelize = adminRepository.getSequelize();
 const Op = adminRepository.getOp();

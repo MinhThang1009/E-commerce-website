@@ -1,3 +1,9 @@
+/**
+ * @file attributeController.js
+ * @layer Controller
+ * @module attribute
+ * @description Xử lý HTTP request/response cho attribute
+ */
 const {
   AttributeGroup,
   AttributeValue,

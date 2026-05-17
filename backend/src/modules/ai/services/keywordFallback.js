@@ -1,3 +1,9 @@
+/**
+ * @file keywordFallback.js
+ * @layer Service
+ * @module ai
+ * @description Business logic layer cho ai
+ */
 const { detectLanguage } = require('./languageDetector');
 const logger = require('../../../utils/logger');
 

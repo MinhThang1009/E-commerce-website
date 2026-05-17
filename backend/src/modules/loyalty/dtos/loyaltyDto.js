@@ -1,3 +1,9 @@
+/**
+ * @file loyaltyDto.js
+ * @layer DTO
+ * @module loyalty
+ * @description Data transfer objects cho loyalty
+ */
 // Loyalty DTO factory — pure function, không class.
 // Service trả về model → controller mapper qua toLoyaltyDto trước response.
 

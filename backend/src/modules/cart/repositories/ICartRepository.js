@@ -1,3 +1,9 @@
+/**
+ * @file ICartRepository.js
+ * @layer Repository
+ * @module cart
+ * @description Data access layer cho cart
+ */
 // ICartRepository — interface cart + cart-item data access. Service chỉ
 // phụ thuộc interface này, KHÔNG require Cart/CartItem/Product/Variant model
 // trực tiếp.

@@ -1,3 +1,9 @@
+/**
+ * @file collectionApi.ts
+ * @layer API Client
+ * @feature catalog
+ * @description API client functions cho feature catalog
+ */
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import apiClient from '@/services/apiClient';
 import { transformProductsResponse } from '../utils/productTransform';

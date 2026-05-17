@@ -1,3 +1,9 @@
+/**
+ * @file IWishlistRepository.js
+ * @layer Repository
+ * @module wishlist
+ * @description Data access layer cho wishlist
+ */
 // IWishlistRepository — interface wishlist data access. Service phụ thuộc
 // interface này, không phụ thuộc Wishlist/Product model trực tiếp.
 

@@ -1,3 +1,9 @@
+/**
+ * @file usersValidator.js
+ * @layer Validator
+ * @module users
+ * @description Validation schemas cho users
+ */
 // Users request validators (Joi schemas) — profile + password + address.
 // Move các schema từ validators/user.js (updateUser, changePassword) +
 // validators/address.js (address). Auth-related schema (register/login/...) đã

@@ -1,3 +1,9 @@
+/**
+ * @file productApi.ts
+ * @layer API Client
+ * @feature catalog
+ * @description API client functions cho feature catalog
+ */
 import { useQuery } from '@tanstack/react-query';
 import apiClient from '@/services/apiClient';
 import {

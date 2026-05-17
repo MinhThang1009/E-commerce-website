@@ -1,3 +1,9 @@
+/**
+ * @file reviewsService.js
+ * @layer Service
+ * @module reviews
+ * @description Business logic layer cho reviews
+ */
 const { AppError } = require('../../../shared/errors');
 
 // Reviews Service — review của user cho product. Business rules:

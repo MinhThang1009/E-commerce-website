@@ -1,3 +1,9 @@
+/**
+ * @file reviewApi.ts
+ * @layer API Client
+ * @feature reviews
+ * @description API client functions cho feature reviews
+ */
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import apiClient from '@/services/apiClient';
 

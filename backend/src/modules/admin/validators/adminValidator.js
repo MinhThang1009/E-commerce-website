@@ -1,3 +1,9 @@
+/**
+ * @file adminValidator.js
+ * @layer Validator
+ * @module admin
+ * @description Validation schemas cho admin
+ */
 const { body, query, param } = require('express-validator');
 
 const createProductValidation = [

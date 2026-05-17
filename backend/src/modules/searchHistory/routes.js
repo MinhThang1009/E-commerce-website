@@ -1,3 +1,9 @@
+/**
+ * @file routes.js
+ * @layer Route
+ * @module searchHistory
+ * @description HTTP endpoints của searchHistory
+ */
 const express = require('express');
 const router = express.Router();
 const searchHistoryController = require('./controllers/searchHistoryController');

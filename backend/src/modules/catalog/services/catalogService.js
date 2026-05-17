@@ -1,3 +1,9 @@
+/**
+ * @file catalogService.js
+ * @layer Service
+ * @module catalog
+ * @description Business logic layer cho catalog
+ */
 const { AppError } = require('../../../shared/errors');
 
 // Catalog Service — gộp 4 sub-domain (Category, Brand, Collection, Product).

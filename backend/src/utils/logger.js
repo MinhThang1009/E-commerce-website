@@ -1,3 +1,9 @@
+/**
+ * @file logger.js
+ * @layer Utility
+ * @module global
+ * @description Helper utility: logger
+ */
 const winston = require('winston');
 
 // Symbol splat được winston dùng để lưu extra arguments

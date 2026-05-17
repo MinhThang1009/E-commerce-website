@@ -1,3 +1,9 @@
+/**
+ * @file cartController.js
+ * @layer Controller
+ * @module cart
+ * @description Xử lý HTTP request/response cho cart
+ */
 // Cart Controller — parse req → call service → format res. Service xử lý cookie
 // gián tiếp qua callback (controller set cookie, service chỉ pass sessionId).
 class CartController {

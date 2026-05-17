@@ -1,3 +1,9 @@
+/**
+ * @file inventoryValidator.js
+ * @layer Validator
+ * @module inventory
+ * @description Validation schemas cho inventory
+ */
 // Inventory request validators (Joi schemas)
 const Joi = require('joi');
 

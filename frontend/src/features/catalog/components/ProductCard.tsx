@@ -1,3 +1,9 @@
+/**
+ * @file ProductCard.tsx
+ * @layer Component
+ * @feature catalog
+ * @description UI component cho feature catalog
+ */
 import { useUiStore } from '@/stores/uiStore';
 import { proxyImg } from '@/utils/proxyImg';
 import { Product } from '@/features/catalog';

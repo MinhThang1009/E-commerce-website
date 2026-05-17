@@ -1,3 +1,9 @@
+/**
+ * @file module.js
+ * @layer Module
+ * @module users
+ * @description Entry point users module — khởi tạo dependencies và đăng ký routes
+ */
 const UsersController = require('./controllers/usersController');
 const UsersService = require('./services/usersService');
 const SequelizeUsersRepository = require('./repositories/SequelizeUsersRepository');

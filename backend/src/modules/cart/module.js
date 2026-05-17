@@ -1,3 +1,9 @@
+/**
+ * @file module.js
+ * @layer Module
+ * @module cart
+ * @description Entry point cart module — khởi tạo dependencies và đăng ký routes
+ */
 const CartController = require('./controllers/cartController');
 const CartService = require('./services/cartService');
 const SequelizeCartRepository = require('./repositories/SequelizeCartRepository');

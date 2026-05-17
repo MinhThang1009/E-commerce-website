@@ -1,3 +1,9 @@
+/**
+ * @file module.js
+ * @layer Module
+ * @module inventory
+ * @description Entry point inventory module — khởi tạo dependencies và đăng ký routes
+ */
 const InventoryController = require('./controllers/inventoryController');
 const InventoryService = require('./services/inventoryService');
 const SequelizeInventoryRepository = require('./repositories/SequelizeInventoryRepository');

@@ -1,3 +1,9 @@
+/**
+ * @file LoginSuccess.tsx
+ * @layer Component
+ * @feature auth
+ * @description UI component cho feature auth
+ */
 import React, { useEffect } from 'react';
 import { useAuthStore } from '@/stores/authStore';
 import { useNotifications } from '../hooks/useNotifications';

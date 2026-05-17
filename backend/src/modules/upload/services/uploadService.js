@@ -1,3 +1,9 @@
+/**
+ * @file uploadService.js
+ * @layer Service
+ * @module upload
+ * @description Business logic layer cho upload
+ */
 const path = require('path');
 const { AppError } = require('../../../shared/errors');
 

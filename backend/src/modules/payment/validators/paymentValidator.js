@@ -1,3 +1,9 @@
+/**
+ * @file paymentValidator.js
+ * @layer Validator
+ * @module payment
+ * @description Validation schemas cho payment
+ */
 const Joi = require('joi');
 
 const createUrlSchema = Joi.object({

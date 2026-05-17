@@ -1,3 +1,9 @@
+/**
+ * @file format.ts
+ * @layer Utility
+ * @feature global
+ * @description Helper utility function
+ */
 import i18next from 'i18next';
 
 export const getLocale = (): 'vi-VN' | 'en-US' =>

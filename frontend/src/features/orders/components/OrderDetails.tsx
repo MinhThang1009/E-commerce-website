@@ -1,3 +1,9 @@
+/**
+ * @file OrderDetails.tsx
+ * @layer Component
+ * @feature orders
+ * @description UI component cho feature orders
+ */
 import React from 'react';
 import { useTranslation } from 'react-i18next';
 import { useGetOrderByIdQuery } from '@/features/orders';

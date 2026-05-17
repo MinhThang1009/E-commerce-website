@@ -1,3 +1,9 @@
+/**
+ * @file apiClient.ts
+ * @layer Service
+ * @feature global
+ * @description Global service/API client setup
+ */
 // services/apiClient.ts — Plain Axios instance.
 // Dùng cho calls không qua TanStack Query cache: file upload (multipart/form-data), OAuth flow, raw HTTP.
 // Các API hook (TanStack Query) dùng instance này làm base cho mọi endpoint có cache + hook React.

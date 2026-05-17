@@ -1,3 +1,9 @@
+/**
+ * @file ordersService.js
+ * @layer Service
+ * @module orders
+ * @description Business logic layer cho orders
+ */
 const crypto = require('crypto');
 const { AppError } = require('../../../shared/errors');
 

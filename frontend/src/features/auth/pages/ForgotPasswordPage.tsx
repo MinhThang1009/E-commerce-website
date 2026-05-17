@@ -1,3 +1,9 @@
+/**
+ * @file ForgotPasswordPage.tsx
+ * @layer Page
+ * @feature auth
+ * @description Page component của feature auth
+ */
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';

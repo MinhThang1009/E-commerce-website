@@ -1,3 +1,9 @@
+/**
+ * @file module.js
+ * @layer Module
+ * @module catalog
+ * @description Entry point catalog module — khởi tạo dependencies và đăng ký routes
+ */
 const CatalogController = require('./controllers/catalogController');
 const CatalogService = require('./services/catalogService');
 const SequelizeCatalogRepository = require('./repositories/SequelizeCatalogRepository');

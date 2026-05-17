@@ -1,3 +1,9 @@
+/**
+ * @file ProductFilters.tsx
+ * @layer Component
+ * @feature catalog
+ * @description UI component cho feature catalog
+ */
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { getLocale } from '@/utils/format';

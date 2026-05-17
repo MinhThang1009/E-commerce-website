@@ -1,3 +1,9 @@
+/**
+ * @file SequelizeCartRepository.js
+ * @layer Repository
+ * @module cart
+ * @description Data access layer cho cart
+ */
 const { col } = require('sequelize');
 const ICartRepository = require('./ICartRepository');
 

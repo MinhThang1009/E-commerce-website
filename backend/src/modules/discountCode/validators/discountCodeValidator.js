@@ -1,3 +1,9 @@
+/**
+ * @file discountCodeValidator.js
+ * @layer Validator
+ * @module discountCode
+ * @description Validation schemas cho discountCode
+ */
 const { body, param, query } = require('express-validator');
 
 const createDiscountCodeValidation = [

@@ -1,3 +1,9 @@
+/**
+ * @file routes.js
+ * @layer Route
+ * @module catalog
+ * @description HTTP endpoints của catalog
+ */
 const express = require('express');
 const { authenticate, optionalAuthenticate } = require('../../middlewares/authenticate');
 const { authorize } = require('../../middlewares/authorize');

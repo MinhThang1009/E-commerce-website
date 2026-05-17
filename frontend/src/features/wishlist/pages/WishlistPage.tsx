@@ -1,3 +1,9 @@
+/**
+ * @file WishlistPage.tsx
+ * @layer Page
+ * @feature wishlist
+ * @description Page component của feature wishlist
+ */
 import React from 'react';
 import { useTranslation } from 'react-i18next';
 import { Link } from 'react-router-dom';

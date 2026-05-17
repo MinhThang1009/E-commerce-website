@@ -1,3 +1,9 @@
+/**
+ * @file index.ts
+ * @layer Barrel
+ * @feature ai
+ * @description Public API exports cho feature ai
+ */
 // Barrel export feature AI — public surface
 
 // Giao diện

@@ -1,3 +1,9 @@
+/**
+ * @file imageService.js
+ * @layer Service
+ * @module image
+ * @description Business logic layer cho image
+ */
 const logger = require('../../../utils/logger');
 const sharp = require('sharp');
 const path = require('path');

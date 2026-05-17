@@ -1,3 +1,9 @@
+/**
+ * @file momoService.js
+ * @layer Service
+ * @module payment
+ * @description Business logic layer cho payment
+ */
 const logger = require('../../../utils/logger');
 const crypto = require('crypto');
 const axios = require('axios');

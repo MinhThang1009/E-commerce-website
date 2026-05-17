@@ -1,3 +1,9 @@
+/**
+ * @file SimpleAttributeSelector.tsx
+ * @layer Component
+ * @feature catalog
+ * @description UI component cho feature catalog
+ */
 import React, { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Card, Button, Space, Typography, Tag, Alert } from 'antd';

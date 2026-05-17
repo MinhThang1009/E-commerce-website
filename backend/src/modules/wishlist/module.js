@@ -1,3 +1,9 @@
+/**
+ * @file module.js
+ * @layer Module
+ * @module wishlist
+ * @description Entry point wishlist module — khởi tạo dependencies và đăng ký routes
+ */
 const WishlistController = require('./controllers/wishlistController');
 const WishlistService = require('./services/wishlistService');
 const SequelizeWishlistRepository = require('./repositories/SequelizeWishlistRepository');

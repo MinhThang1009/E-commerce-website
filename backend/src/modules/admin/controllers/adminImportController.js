@@ -1,3 +1,9 @@
+/**
+ * @file adminImportController.js
+ * @layer Controller
+ * @module admin
+ * @description Xử lý HTTP request/response cho admin
+ */
 const multer = require('multer');
 const path = require('path');
 const slugify = require('slugify');

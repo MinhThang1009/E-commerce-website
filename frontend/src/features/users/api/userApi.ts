@@ -1,3 +1,9 @@
+/**
+ * @file userApi.ts
+ * @layer API Client
+ * @feature users
+ * @description API client functions cho feature users
+ */
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import apiClient from '@/services/apiClient';
 import { User, Address } from '@/types/user.types';

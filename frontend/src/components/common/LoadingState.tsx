@@ -1,4 +1,10 @@
 /**
+ * @file LoadingState.tsx
+ * @layer Component
+ * @feature shared
+ * @description Shared UI component
+ */
+/**
  * Các component trạng thái loading
  * Các trạng thái loading tái sử dụng cho nhiều tình huống khác nhau
  */

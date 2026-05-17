@@ -1,4 +1,10 @@
 /**
+ * @file promptBuilder.js
+ * @layer Service
+ * @module ai
+ * @description Business logic layer cho ai
+ */
+/**
  * [Augmentation] Tạo RAG prompt: inject product list + store info + matching rules + version warning.
  * Pure function — không dùng instance state, chỉ dùng params + process.env.
  * @param {string} userMessage - Query đã sanitize.

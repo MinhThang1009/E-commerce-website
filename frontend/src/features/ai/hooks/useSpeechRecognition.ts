@@ -1,3 +1,9 @@
+/**
+ * @file useSpeechRecognition.ts
+ * @layer Hook
+ * @feature ai
+ * @description Custom React hook cho feature ai
+ */
 import { useState, useEffect, useCallback } from 'react';
 
 interface SpeechRecognitionResult {

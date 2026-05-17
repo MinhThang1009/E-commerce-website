@@ -1,3 +1,9 @@
+/**
+ * @file routes.js
+ * @layer Route
+ * @module image
+ * @description HTTP endpoints của image
+ */
 const express = require('express');
 const router = express.Router();
 const imageController = require('./controllers/imageController');

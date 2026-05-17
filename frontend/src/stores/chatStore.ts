@@ -1,3 +1,9 @@
+/**
+ * @file chatStore.ts
+ * @layer Store
+ * @feature global
+ * @description Zustand global state store
+ */
 import { create } from 'zustand';
 import { immer } from 'zustand/middleware/immer';
 import { Message } from '@/features/ai/types/message.types';

@@ -1,3 +1,9 @@
+/**
+ * @file ProtectedRoute.tsx
+ * @layer Component
+ * @feature auth
+ * @description UI component cho feature auth
+ */
 import React from 'react';
 import { Navigate, useLocation } from 'react-router-dom';
 import { useAuthStore } from '@/stores/authStore';

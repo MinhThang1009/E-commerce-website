@@ -1,3 +1,9 @@
+/**
+ * @file uploadController.js
+ * @layer Controller
+ * @module upload
+ * @description Xử lý HTTP request/response cho upload
+ */
 const multer = require('multer');
 const { AppError } = require('../../../shared/errors');
 const { t } = require('../../../utils/i18n');

@@ -1,3 +1,9 @@
+/**
+ * @file ProductReviews.tsx
+ * @layer Component
+ * @feature reviews
+ * @description UI component cho feature reviews
+ */
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import ReviewSummary from './ReviewSummary';

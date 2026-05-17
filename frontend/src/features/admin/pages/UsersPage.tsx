@@ -1,3 +1,9 @@
+/**
+ * @file UsersPage.tsx
+ * @layer Page
+ * @feature admin
+ * @description Page component của feature admin
+ */
 import React, { useState } from 'react';
 import {
   Table,

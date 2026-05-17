@@ -1,3 +1,9 @@
+/**
+ * @file ILoyaltyRepository.js
+ * @layer Repository
+ * @module loyalty
+ * @description Data access layer cho loyalty
+ */
 // ILoyaltyRepository — interface loyalty points data access.
 class ILoyaltyRepository {
   async findUserPointsById(_id, _options) { throw new Error('not implemented'); }

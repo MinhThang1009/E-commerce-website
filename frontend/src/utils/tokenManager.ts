@@ -1,3 +1,9 @@
+/**
+ * @file tokenManager.ts
+ * @layer Utility
+ * @feature global
+ * @description Helper utility function
+ */
 import i18next from 'i18next';
 import { useAuthStore } from '@/stores/authStore';
 import { handleAutoLogout, logoutManager } from '@/utils/authUtils';

@@ -1,3 +1,9 @@
+/**
+ * @file wishlistStore.ts
+ * @layer Store
+ * @feature global
+ * @description Zustand global state store
+ */
 import { create } from 'zustand';
 import { immer } from 'zustand/middleware/immer';
 

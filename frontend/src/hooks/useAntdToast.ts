@@ -1,3 +1,9 @@
+/**
+ * @file useAntdToast.ts
+ * @layer Hook
+ * @feature global
+ * @description Shared React hook
+ */
 import { message } from 'antd';
 import { useUiStore } from '@/stores/uiStore';
 

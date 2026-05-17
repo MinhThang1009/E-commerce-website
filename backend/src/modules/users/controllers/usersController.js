@@ -1,3 +1,9 @@
+/**
+ * @file usersController.js
+ * @layer Controller
+ * @module users
+ * @description Xử lý HTTP request/response cho users
+ */
 const { toUserDto, toAddressDto } = require('../dtos/usersDto');
 
 // Users Controller — parse req → call service → format res. Arrow function bound

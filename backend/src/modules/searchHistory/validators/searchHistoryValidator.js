@@ -1,3 +1,9 @@
+/**
+ * @file searchHistoryValidator.js
+ * @layer Validator
+ * @module searchHistory
+ * @description Validation schemas cho searchHistory
+ */
 const Joi = require('joi');
 
 // Schema kiểm tra keyword lưu lịch sử tìm kiếm — field phải khớp với controller (keyword, không phải query)

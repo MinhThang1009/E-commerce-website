@@ -1,3 +1,9 @@
+/**
+ * @file Badge.tsx
+ * @layer Component
+ * @feature shared
+ * @description Shared UI component
+ */
 import { ReactNode } from 'react';
 
 export type BadgeVariant =

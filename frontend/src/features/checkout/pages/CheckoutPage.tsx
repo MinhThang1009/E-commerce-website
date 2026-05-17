@@ -1,3 +1,9 @@
+/**
+ * @file CheckoutPage.tsx
+ * @layer Page
+ * @feature checkout
+ * @description Page component của feature checkout
+ */
 import { useState, useEffect, useMemo } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';

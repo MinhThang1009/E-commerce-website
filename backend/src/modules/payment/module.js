@@ -1,3 +1,9 @@
+/**
+ * @file module.js
+ * @layer Module
+ * @module payment
+ * @description Entry point payment module — khởi tạo dependencies và đăng ký routes
+ */
 const PaymentController = require('./controllers/paymentController');
 const PaymentService = require('./services/paymentService');
 const SequelizePaymentRepository = require('./repositories/SequelizePaymentRepository');

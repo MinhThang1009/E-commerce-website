@@ -1,3 +1,9 @@
+/**
+ * @file useProductPriceRange.ts
+ * @layer Hook
+ * @feature catalog
+ * @description Custom React hook cho feature catalog
+ */
 import { useMemo } from 'react';
 import { calculatePriceRange } from '@/utils/priceUtils';
 

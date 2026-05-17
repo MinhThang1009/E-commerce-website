@@ -1,3 +1,9 @@
+/**
+ * @file priceUtils.ts
+ * @layer Utility
+ * @feature global
+ * @description Helper utility function
+ */
 import i18next from 'i18next';
 import { ProductVariant } from '@/features/catalog';
 import { getLocale } from './format';

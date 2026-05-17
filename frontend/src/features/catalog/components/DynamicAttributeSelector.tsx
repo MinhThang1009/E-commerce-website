@@ -1,3 +1,9 @@
+/**
+ * @file DynamicAttributeSelector.tsx
+ * @layer Component
+ * @feature catalog
+ * @description UI component cho feature catalog
+ */
 import React, { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { getLocale } from '@/utils/format';

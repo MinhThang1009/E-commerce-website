@@ -1,3 +1,9 @@
+/**
+ * @file SequelizeUsersRepository.js
+ * @layer Repository
+ * @module users
+ * @description Data access layer cho users
+ */
 const IUsersRepository = require('./IUsersRepository');
 
 // Sequelize impl của IUsersRepository — duy nhất layer được phép truy cập User

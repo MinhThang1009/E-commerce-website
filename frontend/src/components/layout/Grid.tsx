@@ -1,4 +1,10 @@
 /**
+ * @file Grid.tsx
+ * @layer Component
+ * @feature shared
+ * @description Shared UI component
+ */
+/**
  * Các component Grid System
  * Các component grid responsive cho bố cục nhất quán
  */

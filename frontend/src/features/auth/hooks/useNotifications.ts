@@ -1,3 +1,9 @@
+/**
+ * @file useNotifications.ts
+ * @layer Hook
+ * @feature auth
+ * @description Custom React hook cho feature auth
+ */
 import { useUiStore } from '@/stores/uiStore';
 import { AddNotificationPayload } from '@/types/ui.types';
 

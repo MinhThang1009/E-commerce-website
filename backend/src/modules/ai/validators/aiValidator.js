@@ -1,3 +1,9 @@
+/**
+ * @file aiValidator.js
+ * @layer Validator
+ * @module ai
+ * @description Validation schemas cho ai
+ */
 // AI request validators (Joi schemas)
 const Joi = require('joi');
 

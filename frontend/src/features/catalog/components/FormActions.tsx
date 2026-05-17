@@ -1,3 +1,9 @@
+/**
+ * @file FormActions.tsx
+ * @layer Component
+ * @feature catalog
+ * @description UI component cho feature catalog
+ */
 import React from 'react';
 import { Button, Space } from 'antd';
 import { SaveOutlined } from '@ant-design/icons';

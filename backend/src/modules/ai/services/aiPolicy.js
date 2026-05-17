@@ -1,3 +1,9 @@
+/**
+ * @file aiPolicy.js
+ * @layer Service
+ * @module ai
+ * @description Business logic layer cho ai
+ */
 // AIPolicy — pure rules cho AI chatbot input validation + query normalization.
 
 const MAX_MESSAGE_LENGTH = 2000;

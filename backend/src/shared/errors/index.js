@@ -1,3 +1,9 @@
+/**
+ * @file index.js
+ * @layer Shared
+ * @module global
+ * @description Cross-cutting infrastructure: index
+ */
 const AppError = require('./AppError');
 const DomainError = require('./DomainError');
 const BusinessError = require('./BusinessError');

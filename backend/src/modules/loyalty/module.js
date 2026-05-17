@@ -1,3 +1,9 @@
+/**
+ * @file module.js
+ * @layer Module
+ * @module loyalty
+ * @description Entry point loyalty module — khởi tạo dependencies và đăng ký routes
+ */
 const LoyaltyController = require('./controllers/loyaltyController');
 const LoyaltyService = require('./services/loyaltyService');
 const SequelizeLoyaltyRepository = require('./repositories/SequelizeLoyaltyRepository');

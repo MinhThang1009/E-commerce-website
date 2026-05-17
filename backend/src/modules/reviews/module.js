@@ -1,3 +1,9 @@
+/**
+ * @file module.js
+ * @layer Module
+ * @module reviews
+ * @description Entry point reviews module — khởi tạo dependencies và đăng ký routes
+ */
 const ReviewsController = require('./controllers/reviewsController');
 const ReviewsService = require('./services/reviewsService');
 const SequelizeReviewsRepository = require('./repositories/SequelizeReviewsRepository');

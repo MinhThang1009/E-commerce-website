@@ -1,3 +1,9 @@
+/**
+ * @file module.js
+ * @layer Module
+ * @module upload
+ * @description Entry point upload module — khởi tạo dependencies và đăng ký routes
+ */
 const path = require('path');
 const fsPromises = require('fs').promises;
 const multer = require('multer');

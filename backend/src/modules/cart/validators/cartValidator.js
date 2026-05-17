@@ -1,3 +1,9 @@
+/**
+ * @file cartValidator.js
+ * @layer Validator
+ * @module cart
+ * @description Validation schemas cho cart
+ */
 const Joi = require('joi');
 
 const addToCartSchema = Joi.object({

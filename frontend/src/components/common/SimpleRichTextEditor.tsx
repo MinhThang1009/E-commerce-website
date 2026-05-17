@@ -1,3 +1,9 @@
+/**
+ * @file SimpleRichTextEditor.tsx
+ * @layer Component
+ * @feature shared
+ * @description Shared UI component
+ */
 import React, { useEffect, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
 import Quill from 'quill';

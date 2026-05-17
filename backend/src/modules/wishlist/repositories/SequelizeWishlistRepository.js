@@ -1,3 +1,9 @@
+/**
+ * @file SequelizeWishlistRepository.js
+ * @layer Repository
+ * @module wishlist
+ * @description Data access layer cho wishlist
+ */
 const { col } = require('sequelize');
 const IWishlistRepository = require('./IWishlistRepository');
 

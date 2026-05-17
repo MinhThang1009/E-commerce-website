@@ -1,3 +1,9 @@
+/**
+ * @file index.ts
+ * @layer Barrel
+ * @feature reviews
+ * @description Public API exports cho feature reviews
+ */
 // Barrel export feature reviews — public surface
 
 // Components

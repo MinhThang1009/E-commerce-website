@@ -1,3 +1,9 @@
+/**
+ * @file MainLayout.tsx
+ * @layer Component
+ * @feature shared
+ * @description Shared UI component
+ */
 import React from 'react';
 import { Outlet } from 'react-router-dom';
 import { useAuthStore } from '@/stores/authStore';

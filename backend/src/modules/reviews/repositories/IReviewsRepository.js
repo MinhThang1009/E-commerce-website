@@ -1,3 +1,9 @@
+/**
+ * @file IReviewsRepository.js
+ * @layer Repository
+ * @module reviews
+ * @description Data access layer cho reviews
+ */
 // IReviewsRepository — interface review data access. Service phụ thuộc
 // interface, không phụ thuộc Review/Product/User/Order/OrderItem/ReviewFeedback.
 

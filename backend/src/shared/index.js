@@ -1,3 +1,9 @@
+/**
+ * @file index.js
+ * @layer Shared
+ * @module global
+ * @description Cross-cutting infrastructure: index
+ */
 // Top-level barrel — convenience export cho file consumer chỉ cần vài thứ.
 // Phần lớn module nên import trực tiếp subpath (vd `shared/persistence/sequelize`)
 // để tree-shake friendly với ESM tương lai.

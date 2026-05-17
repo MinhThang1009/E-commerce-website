@@ -1,3 +1,9 @@
+/**
+ * @file reviewsValidator.js
+ * @layer Validator
+ * @module reviews
+ * @description Validation schemas cho reviews
+ */
 const Joi = require('joi');
 
 const reviewSchema = Joi.object({

@@ -1,3 +1,9 @@
+/**
+ * @file ImageUpload.tsx
+ * @layer Component
+ * @feature shared
+ * @description Shared UI component
+ */
 import React, { useState, useRef } from 'react';
 import { XMarkIcon, CloudArrowUpIcon, LinkIcon } from '@heroicons/react/24/outline';
 import { useTranslation } from 'react-i18next';

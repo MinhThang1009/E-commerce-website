@@ -1,3 +1,9 @@
+/**
+ * @file SequelizePaymentRepository.js
+ * @layer Repository
+ * @module payment
+ * @description Data access layer cho payment
+ */
 const IPaymentRepository = require('./IPaymentRepository');
 
 class SequelizePaymentRepository extends IPaymentRepository {

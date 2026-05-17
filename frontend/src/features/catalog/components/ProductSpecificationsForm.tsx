@@ -1,3 +1,9 @@
+/**
+ * @file ProductSpecificationsForm.tsx
+ * @layer Component
+ * @feature catalog
+ * @description UI component cho feature catalog
+ */
 import React, { useState, useEffect } from 'react';
 import { Form, Input, Button, Card, Row, Col, Space, Typography, Select } from 'antd';
 import { PlusOutlined, DeleteOutlined, InfoCircleOutlined } from '@ant-design/icons';

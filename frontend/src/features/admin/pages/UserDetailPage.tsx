@@ -1,3 +1,9 @@
+/**
+ * @file UserDetailPage.tsx
+ * @layer Page
+ * @feature admin
+ * @description Page component của feature admin
+ */
 import React from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { ROUTES, buildRoute } from '@/routes/paths';

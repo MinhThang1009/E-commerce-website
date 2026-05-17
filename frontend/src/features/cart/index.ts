@@ -1,3 +1,9 @@
+/**
+ * @file index.ts
+ * @layer Barrel
+ * @feature cart
+ * @description Public API exports cho feature cart
+ */
 // Barrel export feature cart — public surface
 // Sau Phase 42 (Modular Monolith), code ngoài feature import qua barrel này
 // thay vì deep import từ subfolders để giảm coupling.

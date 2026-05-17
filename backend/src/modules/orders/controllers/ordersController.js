@@ -1,3 +1,9 @@
+/**
+ * @file ordersController.js
+ * @layer Controller
+ * @module orders
+ * @description Xử lý HTTP request/response cho orders
+ */
 const { t } = require('../../../utils/i18n');
 
 // Orders Controller — 11 handler. Trả response shape giữ nguyên cũ.

@@ -1,3 +1,9 @@
+/**
+ * @file message.types.ts
+ * @layer Type
+ * @feature ai
+ * @description TypeScript type definitions cho feature ai
+ */
 import { ProductRecommendation, ChatAction } from '../services/chatbotApi';
 
 // Định nghĩa kiểu dữ liệu cho tin nhắn

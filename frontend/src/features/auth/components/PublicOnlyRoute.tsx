@@ -1,3 +1,9 @@
+/**
+ * @file PublicOnlyRoute.tsx
+ * @layer Component
+ * @feature auth
+ * @description UI component cho feature auth
+ */
 import React from 'react';
 import { Navigate } from 'react-router-dom';
 import { useAuthStore } from '@/stores/authStore';

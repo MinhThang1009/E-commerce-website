@@ -1,3 +1,9 @@
+/**
+ * @file useScrollToTop.ts
+ * @layer Hook
+ * @feature global
+ * @description Shared React hook
+ */
 import { useEffect } from 'react';
 import { useLocation } from 'react-router-dom';
 

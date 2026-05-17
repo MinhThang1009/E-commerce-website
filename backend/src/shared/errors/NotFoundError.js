@@ -1,3 +1,9 @@
+/**
+ * @file NotFoundError.js
+ * @layer Shared
+ * @module global
+ * @description Cross-cutting infrastructure: NotFoundError
+ */
 const AppError = require('./AppError');
 
 // NotFoundError — resource không tồn tại. 404 Not Found.

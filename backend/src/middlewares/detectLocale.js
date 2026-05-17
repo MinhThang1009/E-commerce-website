@@ -1,4 +1,11 @@
 'use strict';
+/**
+ * @file detectLocale.js
+ * @layer Middleware
+ * @module global
+ * @description Express middleware: detectLocale
+ */
+
 
 const SUPPORTED_LOCALES = ['vi', 'en'];
 const DEFAULT_LOCALE = 'vi';

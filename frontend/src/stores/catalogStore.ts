@@ -1,3 +1,9 @@
+/**
+ * @file catalogStore.ts
+ * @layer Store
+ * @feature global
+ * @description Zustand global state store
+ */
 import { create } from 'zustand';
 import { immer } from 'zustand/middleware/immer';
 import { Product } from '@/features/catalog/types/product.types';

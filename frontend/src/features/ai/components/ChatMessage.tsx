@@ -1,3 +1,9 @@
+/**
+ * @file ChatMessage.tsx
+ * @layer Component
+ * @feature ai
+ * @description UI component cho feature ai
+ */
 import React from 'react';
 import { Message } from '../types/message.types';
 import { getLocale } from '@/utils/format';

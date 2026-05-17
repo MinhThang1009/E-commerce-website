@@ -1,4 +1,10 @@
 /**
+ * @file htmlProcessor.ts
+ * @layer Utility
+ * @feature global
+ * @description Helper utility function
+ */
+/**
  * Các tiện ích xử lý HTML
  */
 

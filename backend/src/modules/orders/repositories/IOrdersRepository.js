@@ -1,3 +1,9 @@
+/**
+ * @file IOrdersRepository.js
+ * @layer Repository
+ * @module orders
+ * @description Data access layer cho orders
+ */
 // IOrdersRepository — interface data access cho Orders module DDD-lite.
 // Cover Order CRUD + cart/product reads (cross-module shortcut, sẽ refactor
 // khi inventory/cart module DDD-lite hoàn tất) + DiscountCode/LoyaltyHistory/

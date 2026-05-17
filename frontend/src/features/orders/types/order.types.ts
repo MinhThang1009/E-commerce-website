@@ -1,3 +1,9 @@
+/**
+ * @file order.types.ts
+ * @layer Type
+ * @feature orders
+ * @description TypeScript type definitions cho feature orders
+ */
 // Các kiểu dữ liệu đơn hàng
 import { Address } from '@/types/user.types';
 

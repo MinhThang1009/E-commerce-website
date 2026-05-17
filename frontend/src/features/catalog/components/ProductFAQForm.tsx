@@ -1,3 +1,9 @@
+/**
+ * @file ProductFAQForm.tsx
+ * @layer Component
+ * @feature catalog
+ * @description UI component cho feature catalog
+ */
 import React from 'react';
 import { Form, Input, Button, Space, Card, Typography } from 'antd';
 import { MinusCircleOutlined, PlusOutlined } from '@ant-design/icons';

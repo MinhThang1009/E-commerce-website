@@ -1,3 +1,9 @@
+/**
+ * @file index.ts
+ * @layer Barrel
+ * @feature checkout
+ * @description Public API exports cho feature checkout
+ */
 // Barrel export feature checkout — public surface
 // Checkout flow gộp cart → addresses → payment, dùng nhiều cross-feature
 // (cart, payment, orders, catalog) nên feature này chủ yếu là 1 page

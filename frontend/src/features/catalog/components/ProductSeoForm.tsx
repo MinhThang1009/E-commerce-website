@@ -1,3 +1,9 @@
+/**
+ * @file ProductSeoForm.tsx
+ * @layer Component
+ * @feature catalog
+ * @description UI component cho feature catalog
+ */
 import React from 'react';
 import { Form, Input, Row, Col, Alert } from 'antd';
 import { useTranslation } from 'react-i18next';

@@ -1,3 +1,9 @@
+/**
+ * @file cart.types.ts
+ * @layer Type
+ * @feature cart
+ * @description TypeScript type definitions cho feature cart
+ */
 // Các kiểu dữ liệu giỏ hàng
 export interface CartItem {
   id: string;

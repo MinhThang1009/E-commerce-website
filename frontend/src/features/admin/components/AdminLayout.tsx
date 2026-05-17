@@ -1,3 +1,9 @@
+/**
+ * @file AdminLayout.tsx
+ * @layer Component
+ * @feature admin
+ * @description UI component cho feature admin
+ */
 import React, { useState, useEffect, useRef } from 'react';
 import { Link, useLocation, Outlet, useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';

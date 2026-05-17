@@ -2,7 +2,7 @@
 
 // Giao diện
 export { default as ChatWidget } from './components/ChatWidget';
-export { default as ChatWidgetSimple } from './components/ChatWidgetSimple';
+
 export { default as ChatWidgetPortal } from './components/ChatWidgetPortal';
 export { default as ChatbotErrorBoundary } from './components/ChatbotErrorBoundary';
 export { default as ChatMessage } from './components/ChatMessage';

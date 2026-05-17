@@ -1,29 +1,31 @@
-﻿const {
-  sequelize,
-  User,
+const adminRepository = require('../repositories/adminRepository');
+const sequelize = adminRepository.getSequelize();
+const Op = adminRepository.getOp();
+const Sequelize = adminRepository.getSequelizeFns();
+const {
   Product,
-  Order,
-  Review,
-  Category,
-  OrderItem,
-  ProductAttribute,
-  ProductVariant,
-  ProductSpecification,
   ProductImage,
+  ProductSpecification,
+  ProductVariant,
+  ProductAttribute,
   ProductWarranty,
   ProductCategory,
   WarrantyPackage,
+  User,
+  Order,
+  OrderItem,
+  Review,
+  Category,
   CartItem,
-  Wishlist,
-  Address,
   LoyaltyHistory,
   SearchHistory,
   RecentlyViewed,
   InventoryLog,
   AuditLog,
   ChatMessage,
-} = require('../../../models');
-const { Op, Sequelize } = require('sequelize');
+  Address,
+} = adminRepository.getModels();
+
 const logger = require('../../../utils/logger');
 const { catchAsync } = require('../../../utils/catchAsync');
 const { AppError } = require('../../../shared/errors');
@@ -94,30 +96,30 @@ const getDashboardStats = catchAsync(async (req, res) => {
   const endOfLastMonth = new Date(today.getFullYear(), today.getMonth(), 0);
 
   // Thống kê tổng quan
-  const totalUsers = await User.count({ where: { role: 'customer' } });
+  const totalUsers = await adminRepository.countUsers({ role: 'customer' });
   logger.info('[DASHBOARD] Lấy totalUsers:', totalUsers);
-  const totalProducts = await Product.count();
+  const totalProducts = await adminRepository.countProducts();
   logger.info('[DASHBOARD] Lấy totalProducts:', totalProducts);
-  const totalOrders = await Order.count();
+  const totalOrders = await adminRepository.countOrders();
   logger.info('[DASHBOARD] Lấy totalOrders:', totalOrders);
-  const totalRevenue = await Order.sum('total', {
+  const totalRevenue = await adminRepository.sumOrderTotal({
     where: { status: 'delivered', paymentStatus: { [Op.notIn]: ['refunded', 'failed'] } },
   });
   logger.info('[DASHBOARD] Lấy totalRevenue:', totalRevenue);
 
   // Thống kê theo tháng
-  const monthlyUsers = await User.count({
+  const monthlyUsers = await adminRepository.countUsers({
     where: {
       role: 'customer',
       createdAt: { [Op.gte]: startOfMonth },
     },
   });
 
-  const monthlyOrders = await Order.count({
+  const monthlyOrders = await adminRepository.countOrders({
     where: { createdAt: { [Op.gte]: startOfMonth } },
   });
 
-  const monthlyRevenue = await Order.sum('total', {
+  const monthlyRevenue = await adminRepository.sumOrderTotal({
     where: {
       status: 'delivered',
       paymentStatus: { [Op.notIn]: ['refunded', 'failed'] },
@@ -126,7 +128,7 @@ const getDashboardStats = catchAsync(async (req, res) => {
   });
 
   // So sánh với tháng trước
-  const lastMonthUsers = await User.count({
+  const lastMonthUsers = await adminRepository.countUsers({
     where: {
       role: 'customer',
       createdAt: {
@@ -136,7 +138,7 @@ const getDashboardStats = catchAsync(async (req, res) => {
     },
   });
 
-  const lastMonthOrders = await Order.count({
+  const lastMonthOrders = await adminRepository.countOrders({
     where: {
       createdAt: {
         [Op.gte]: startOfLastMonth,
@@ -145,7 +147,7 @@ const getDashboardStats = catchAsync(async (req, res) => {
     },
   });
 
-  const lastMonthRevenue = await Order.sum('total', {
+  const lastMonthRevenue = await adminRepository.sumOrderTotal({
     where: {
       status: 'delivered',
       paymentStatus: { [Op.notIn]: ['refunded', 'failed'] },
@@ -169,7 +171,7 @@ const getDashboardStats = catchAsync(async (req, res) => {
   logger.info('[DASHBOARD] Đang lấy topProducts...');
   let topProducts = [];
   try {
-    topProducts = await OrderItem.findAll({
+    topProducts = await adminRepository.aggregateOrderItems({
       attributes: [
         'productId',
         [Sequelize.fn('SUM', Sequelize.col('OrderItem.quantity')), 'totalSold'],
@@ -181,7 +183,7 @@ const getDashboardStats = catchAsync(async (req, res) => {
           attributes: ['name', 'basePrice'],
           include: [
             {
-              model: require('../../../models').ProductImage,
+              model: ProductImage,
               as: 'productImages',
               attributes: ['imageUrl'],
               limit: 1,
@@ -200,7 +202,7 @@ const getDashboardStats = catchAsync(async (req, res) => {
   }
 
   // Breakdown số đơn hàng theo từng trạng thái
-  const orderStatusCounts = await Order.findAll({
+  const orderStatusCounts = await adminRepository.aggregateOrders({
     attributes: ['status', [Sequelize.fn('COUNT', Sequelize.col('id')), 'count']],
     group: ['status'],
     raw: true,
@@ -218,7 +220,7 @@ const getDashboardStats = catchAsync(async (req, res) => {
   const aov = totalOrders > 0 ? (totalRevenue || 0) / totalOrders : 0;
 
   // Đơn hủy trong tháng hiện tại
-  const cancelledOrdersMonth = await Order.count({
+  const cancelledOrdersMonth = await adminRepository.countOrders({
     where: {
       status: 'cancelled',
       createdAt: { [Op.gte]: startOfMonth },
@@ -226,7 +228,7 @@ const getDashboardStats = catchAsync(async (req, res) => {
   });
 
   // Sản phẩm sắp hết hàng (stockQuantity <= 5)
-  const lowStockCount = await Product.count({
+  const lowStockCount = await adminRepository.countProducts({
     where: { stockQuantity: { [Op.lte]: 5 } },
   });
 
@@ -302,7 +304,7 @@ const getDetailedStats = catchAsync(async (req, res) => {
   }
 
   // Thống kê đơn hàng theo thời gian — loại trừ đơn hủy và thanh toán thất bại
-  const orderStats = await Order.findAll({
+  const orderStats = await adminRepository.aggregateOrders({
     attributes: [
       [Sequelize.fn('DATE_FORMAT', Sequelize.col('created_at'), dateFormat), 'period'],
       [Sequelize.fn('COUNT', Sequelize.col('id')), 'orderCount'],
@@ -320,7 +322,7 @@ const getDetailedStats = catchAsync(async (req, res) => {
   });
 
   // Thống kê user mới theo thời gian
-  const userStats = await User.findAll({
+  const userStats = await adminRepository.aggregateUsers({
     attributes: [
       [Sequelize.fn('DATE_FORMAT', Sequelize.col('created_at'), dateFormat), 'period'],
       [Sequelize.fn('COUNT', Sequelize.col('id')), 'newUsers'],
@@ -388,7 +390,7 @@ const getAllUsers = catchAsync(async (req, res) => {
     whereClause.isEmailVerified = isEmailVerified === 'true';
   }
 
-  const { count, rows: users } = await User.findAndCountAll({
+  const { count, rows: users } = await adminRepository.findUsers({
     where: whereClause,
     limit: parseInt(limit),
     offset: parseInt(offset),
@@ -419,7 +421,7 @@ const updateUser = catchAsync(async (req, res) => {
   const { id } = req.params;
   const { firstName, lastName, phone, role, isEmailVerified, isActive } = req.body;
 
-  const user = await User.findByPk(id);
+  const user = await adminRepository.findUserById(id);
   if (!user) {
     throw new AppError('Không tìm thấy người dùng', 404);
   }
@@ -466,7 +468,7 @@ const deleteUser = catchAsync(async (req, res) => {
     throw new AppError('Không thể xóa tài khoản của chính mình', 403);
   }
 
-  const user = await User.findByPk(id);
+  const user = await adminRepository.findUserById(id);
   if (!user) {
     throw new AppError('Không tìm thấy người dùng', 404);
   }
@@ -485,7 +487,7 @@ const deleteUser = catchAsync(async (req, res) => {
 const getUserById = catchAsync(async (req, res) => {
   const { id } = req.params;
 
-  const user = await User.findByPk(id, {
+  const user = await adminRepository.findUserById(id, {
     include: [
       { model: Address, as: 'addresses' },
       {
@@ -516,7 +518,7 @@ const getUserById = catchAsync(async (req, res) => {
 const getProductById = catchAsync(async (req, res) => {
   const { id } = req.params;
 
-  const product = await Product.findByPk(id, {
+  const product = await adminRepository.findProductById(id, {
     include: [
       {
         model: Category,
@@ -532,7 +534,7 @@ const getProductById = catchAsync(async (req, res) => {
         as: 'variants',
       },
       {
-        model: require('../../../models').ProductSpecification,
+        model: ProductSpecification,
         as: 'productSpecifications',
       },
       {
@@ -619,7 +621,7 @@ const createProduct = catchAsync(async (req, res) => {
   const uniqueSku = sku || `SKU-${Date.now()}-${Math.floor(Math.random() * 1000)}`;
 
   // Tạo sản phẩm mới
-  const product = await Product.create({
+  const product = await adminRepository.createProductFull({
     name,
     baseName: baseName || name,
     description,
@@ -663,13 +665,13 @@ const createProduct = catchAsync(async (req, res) => {
       // Với mỗi category ID, tìm kiếm hoặc tạo placeholder
       const categoryPromises = categoryIds.map(async (catId) => {
         // Thử tìm category trước
-        let category = await Category.findByPk(catId).catch(() => null);
+        let category = await adminRepository.findCategoryById(catId).catch(() => null);
 
         // Nếu category không tồn tại và ID là số (từ dữ liệu mock)
         if (!category && /^\d+$/.test(catId)) {
           // Tạo category placeholder với ID là một phần của tên
           // Chỉ dùng cho mục đích phát triển/demo
-          category = await Category.create({
+          category = await adminRepository.createCategory({
             name: `Category ${catId}`,
             slug: `category-${catId}`,
             description: `Category được tạo tự động từ ID ${catId}`,
@@ -713,7 +715,7 @@ const createProduct = catchAsync(async (req, res) => {
 
         logger.info(`Tạo attribute: ${attr.name} với values:`, attrValues);
 
-        return await ProductAttribute.create({
+        return await adminRepository.createProductAttribute({
           productId: product.id,
           name: attr.name,
           values: attrValues.length > 0 ? attrValues : ['Default'],
@@ -733,7 +735,7 @@ const createProduct = catchAsync(async (req, res) => {
       logger.info('Đang xử lý variants:', variants);
 
       // Lấy attributes để validate
-      const productAttributes = await ProductAttribute.findAll({
+      const productAttributes = await adminRepository.findProductAttributes({
         where: { productId: product.id },
       });
 
@@ -771,7 +773,7 @@ const createProduct = catchAsync(async (req, res) => {
             : variant.name);
 
         // Tạo biến thể với dữ liệu đã được xác thực
-        return await ProductVariant.create({
+        return await adminRepository.createProductVariant({
           productId: product.id,
           name: variant.name,
           sku: variantSku,
@@ -790,7 +792,7 @@ const createProduct = catchAsync(async (req, res) => {
 
       // Cập nhật tổng tồn kho của sản phẩm từ các variants
       const totalStock = calculateTotalStock(createdVariants);
-      await Product.update({ stockQuantity: totalStock }, { where: { id: product.id } });
+      await adminRepository.updateProductWhere({ stockQuantity: totalStock }, { id: product.id });
     } catch (error) {
       logger.error('Lỗi khi tạo variants:', error);
       throw error;
@@ -818,7 +820,7 @@ const createProduct = catchAsync(async (req, res) => {
           variantId: img.variantId || null,
         };
       });
-      await ProductImage.bulkCreate(imageData);
+      await adminRepository.bulkCreateProductImages(imageData);
       logger.info(`Đã tạo ${images.length} ảnh cho sản phẩm ${product.id}`);
     } catch (error) {
       logger.error('Lỗi khi tạo ảnh:', error);
@@ -836,7 +838,7 @@ const createProduct = catchAsync(async (req, res) => {
         sortOrder: spec.sortOrder || index,
       }));
 
-      await ProductSpecification.bulkCreate(specificationData);
+      await adminRepository.bulkCreateProductSpecs(specificationData);
       logger.info(`Đã tạo ${specifications.length} thông số kỹ thuật cho sản phẩm ${product.id}`);
     } catch (error) {
       logger.error('Lỗi khi tạo specifications:', error);
@@ -851,14 +853,14 @@ const createProduct = catchAsync(async (req, res) => {
 
       // Kiểm tra xem các warranty packages có tồn tại không
       logger.info('Tìm warranty packages theo IDs:', warrantyPackageIds);
-      const existingWarrantyPackages = await WarrantyPackage.findAll({
+      const existingWarrantyPackages = await adminRepository.findWarrantyPackages({
         where: { id: warrantyPackageIds, isActive: true },
       });
       logger.info('Tìm thấy warranty packages:', existingWarrantyPackages.length);
 
       if (existingWarrantyPackages.length > 0) {
         const warrantyPromises = existingWarrantyPackages.map(async (warrantyPackage, index) => {
-          return await ProductWarranty.create({
+          return await adminRepository.createProductWarranty({
             productId: product.id,
             warrantyPackageId: warrantyPackage.id,
             isDefault: index === 0, // Đặt warranty package đầu tiên làm mặc định
@@ -877,7 +879,7 @@ const createProduct = catchAsync(async (req, res) => {
   }
 
   // Lấy lại product với attributes và variants
-  const productWithRelations = await Product.findByPk(product.id, {
+  const productWithRelations = await adminRepository.findProductById(product.id, {
     include: [
       {
         model: Category,
@@ -899,7 +901,7 @@ const createProduct = catchAsync(async (req, res) => {
         required: false,
       },
       {
-        model: require('../../../models').ProductSpecification,
+        model: ProductSpecification,
         as: 'productSpecifications',
       },
       {
@@ -969,7 +971,7 @@ const updateProduct = catchAsync(async (req, res) => {
   const transaction = await sequelize.transaction();
 
   try {
-    const product = await Product.findByPk(id, { transaction });
+    const product = await adminRepository.findProductById(id, { transaction });
     if (!product) {
       await transaction.rollback();
       throw new AppError('Không tìm thấy sản phẩm', 404);
@@ -1005,7 +1007,7 @@ const updateProduct = catchAsync(async (req, res) => {
     // 1b. Cập nhật ảnh sản phẩm
     if (req.body.hasOwnProperty('images') && Array.isArray(images)) {
       // Xóa ảnh cũ
-      await ProductImage.destroy({ where: { productId: id }, transaction });
+      await adminRepository.destroyProductImages({ productId: id }, { transaction });
 
       if (images.length > 0) {
         const imageData = images.map((img, index) => {
@@ -1026,7 +1028,7 @@ const updateProduct = catchAsync(async (req, res) => {
             variantId: img.variantId || null, // Lưu variantId nếu có
           };
         });
-        await ProductImage.bulkCreate(imageData, { transaction });
+        await adminRepository.bulkCreateProductImages(imageData, { transaction });
       }
       changes.images = images.length;
     }
@@ -1054,7 +1056,7 @@ const updateProduct = catchAsync(async (req, res) => {
 
     // 3. Cập nhật categories
     if (req.body.hasOwnProperty('categoryIds') && Array.isArray(categoryIds)) {
-      const categories = await Category.findAll({
+      const categories = await adminRepository.findCategories({
         where: { id: categoryIds },
         transaction,
       });
@@ -1064,7 +1066,7 @@ const updateProduct = catchAsync(async (req, res) => {
 
     // 4. Cập nhật attributes (cập nhật vi sai)
     if (req.body.hasOwnProperty('attributes') && Array.isArray(attributes)) {
-      const currentAttributes = await ProductAttribute.findAll({
+      const currentAttributes = await adminRepository.findProductAttributes({
         where: { productId: id },
         transaction,
       });
@@ -1113,7 +1115,7 @@ const updateProduct = catchAsync(async (req, res) => {
           );
         } else {
           // Tạo attribute mới
-          return await ProductAttribute.create(
+          return await adminRepository.createProductAttribute(
             {
               productId: id,
               name: attr.name,
@@ -1131,7 +1133,7 @@ const updateProduct = catchAsync(async (req, res) => {
 
     // 5. Cập nhật variants (cập nhật vi sai)
     if (req.body.hasOwnProperty('variants') && Array.isArray(variants)) {
-      const currentVariants = await ProductVariant.findAll({
+      const currentVariants = await adminRepository.findProductVariants({
         where: { productId: id },
         transaction,
       });
@@ -1181,7 +1183,7 @@ const updateProduct = catchAsync(async (req, res) => {
           return updated;
         } else {
           // Tạo variant mới
-          const created = await ProductVariant.create(
+          const created = await adminRepository.createProductVariant(
             {
               ...variantData,
               productId: id,
@@ -1200,18 +1202,23 @@ const updateProduct = catchAsync(async (req, res) => {
 
       // Đồng bộ tổng tồn kho nếu có variants
       const totalStock = calculateTotalStock(finalVariants);
-      await Product.update({ stockQuantity: totalStock }, { where: { id }, transaction });
+      await adminRepository.updateProductWhere(
+        { stockQuantity: totalStock },
+        { id },
+        { transaction },
+      );
     } else if (req.body.hasOwnProperty('stockQuantity')) {
       // Nếu không có variants, dùng tồn kho cơ bản
-      await Product.update(
+      await adminRepository.updateProductWhere(
         { stockQuantity: parseInt(stockQuantity?.toString()) || 0 },
-        { where: { id }, transaction },
+        { id },
+        { transaction },
       );
     }
 
     // 6. Cập nhật thông số kỹ thuật (cập nhật vi sai)
     if (req.body.hasOwnProperty('specifications') && Array.isArray(specifications)) {
-      const currentSpecs = await ProductSpecification.findAll({
+      const currentSpecs = await adminRepository.findProductSpecs({
         where: { productId: id },
         transaction,
       });
@@ -1276,9 +1283,9 @@ const updateProduct = catchAsync(async (req, res) => {
 
     // 7. Cập nhật warranty packages
     if (req.body.hasOwnProperty('warrantyPackageIds') && Array.isArray(warrantyPackageIds)) {
-      await ProductWarranty.destroy({ where: { productId: id }, transaction });
+      await adminRepository.destroyProductWarranties({ productId: id }, { transaction });
       if (warrantyPackageIds.length > 0) {
-        const wp = await WarrantyPackage.findAll({
+        const wp = await adminRepository.findWarrantyPackages({
           where: { id: warrantyPackageIds, isActive: true },
           transaction,
         });
@@ -1302,7 +1309,7 @@ const updateProduct = catchAsync(async (req, res) => {
     AdminAuditService.logProductAction(req.user, 'UPDATE', id, name || product.name, changes);
 
     // Lấy trạng thái cuối cùng để trả về response
-    const finalProduct = await Product.findByPk(id, {
+    const finalProduct = await adminRepository.findProductById(id, {
       include: [
         { model: Category, as: 'categories', through: { attributes: [] } },
         { model: ProductAttribute, as: 'productAttributes' },
@@ -1355,7 +1362,7 @@ const updateProduct = catchAsync(async (req, res) => {
 const deleteProduct = catchAsync(async (req, res) => {
   const { id } = req.params;
 
-  const product = await Product.findByPk(id);
+  const product = await adminRepository.findProductById(id);
   if (!product) {
     throw new AppError('Không tìm thấy sản phẩm', 404);
   }
@@ -1365,23 +1372,23 @@ const deleteProduct = catchAsync(async (req, res) => {
 
   try {
     // Xóa các bản ghi liên quan trong cart_items
-    await CartItem.destroy({ where: { productId: id }, transaction });
+    await adminRepository.destroyCartItems({ productId: id }, { transaction });
 
     // Xóa các bản ghi liên quan trong order_items (hoặc có thể cân nhắc giữ lại lịch sử đơn hàng)
     // Nếu muốn giữ lại lịch sử đơn hàng, có thể bỏ dòng này
     // await OrderItem.destroy({ where: { productId: id }, transaction });
 
     // Xóa các bản ghi liên quan trong wishlist
-    await Wishlist.destroy({ where: { productId: id }, transaction });
+    await adminRepository.destroyWishlists({ productId: id }, { transaction });
 
     // Xóa các thuộc tính của sản phẩm
-    await ProductAttribute.destroy({ where: { productId: id }, transaction });
+    await adminRepository.destroyProductAttributes({ productId: id }, { transaction });
 
     // Xóa các biến thể của sản phẩm
-    await ProductVariant.destroy({ where: { productId: id }, transaction });
+    await adminRepository.destroyProductVariants({ productId: id }, { transaction });
 
     // Xóa các liên kết danh mục
-    await ProductCategory.destroy({ where: { productId: id }, transaction });
+    await adminRepository.destroyProductCategories({ productId: id }, { transaction });
 
     // Cuối cùng xóa sản phẩm
     await product.destroy({ transaction });
@@ -1499,7 +1506,7 @@ const getAllProducts = catchAsync(async (req, res) => {
       required: false,
     },
     {
-      model: require('../../../models').ProductImage,
+      model: ProductImage,
       as: 'productImages',
       attributes: ['imageUrl', 'color', 'isThumbnail'],
       required: false,
@@ -1513,7 +1520,7 @@ const getAllProducts = catchAsync(async (req, res) => {
 
   logger.info('[ADMIN] Đang lấy danh sách sản phẩm...');
   try {
-    const { count, rows: products } = await Product.findAndCountAll({
+    const { count, rows: products } = await adminRepository.findProducts({
       where: whereClause,
       include: includeClause,
       limit: parseInt(limit),
@@ -1588,7 +1595,7 @@ const getAllReviews = catchAsync(async (req, res) => {
     whereClause.rating = parseInt(rating);
   }
 
-  const { count, rows: reviews } = await Review.findAndCountAll({
+  const { count, rows: reviews } = await adminRepository.findReviews({
     where: whereClause,
     include: [
       {
@@ -1626,7 +1633,7 @@ const getAllReviews = catchAsync(async (req, res) => {
 const deleteReview = catchAsync(async (req, res) => {
   const { id } = req.params;
 
-  const review = await Review.findByPk(id);
+  const review = await adminRepository.findReviewById(id);
   if (!review) {
     throw new AppError('Không tìm thấy đánh giá', 404);
   }
@@ -1688,7 +1695,7 @@ const getAllOrders = catchAsync(async (req, res) => {
           attributes: ['id', 'name', 'basePrice'],
           include: [
             {
-              model: require('../../../models').ProductImage,
+              model: ProductImage,
               as: 'productImages',
               attributes: ['imageUrl'],
               limit: 1,
@@ -1701,7 +1708,7 @@ const getAllOrders = catchAsync(async (req, res) => {
 
   logger.info('[ADMIN] Đang lấy danh sách đơn hàng...');
   try {
-    const { count, rows: orders } = await Order.findAndCountAll({
+    const { count, rows: orders } = await adminRepository.findOrders({
       where: whereClause,
       include: includeClause,
       limit: parseInt(limit),
@@ -1753,7 +1760,7 @@ const updateOrderStatus = catchAsync(async (req, res) => {
   const { status, paymentStatus, note } = req.body;
 
   // Khi hủy đơn: cần load items để hoàn tồn kho
-  const order = await Order.findByPk(id, {
+  const order = await adminRepository.findOrderById(id, {
     include:
       status === 'cancelled'
         ? [
@@ -1798,7 +1805,7 @@ const updateOrderStatus = catchAsync(async (req, res) => {
         }
       }
     });
-    const updatedOrder = await Order.findByPk(id);
+    const updatedOrder = await adminRepository.findOrderById(id);
     return res.status(200).json({ status: 'success', data: { order: updatedOrder } });
   }
 
@@ -1816,7 +1823,7 @@ const updateOrderStatus = catchAsync(async (req, res) => {
 const adminCancelOrder = catchAsync(async (req, res) => {
   const { id } = req.params;
 
-  const order = await Order.findByPk(id, {
+  const order = await adminRepository.findOrderById(id, {
     include: [
       {
         model: OrderItem,
@@ -1868,7 +1875,7 @@ const updateProductStock = catchAsync(async (req, res) => {
     throw new AppError('Số lượng tồn kho phải là số nguyên không âm', 400);
   }
 
-  const product = await Product.findByPk(id);
+  const product = await adminRepository.findProductById(id);
   if (!product) throw new AppError('Không tìm thấy sản phẩm', 404);
 
   await product.update({ stockQuantity: qty });
@@ -1886,7 +1893,7 @@ const cloneProduct = catchAsync(async (req, res) => {
   const { id } = req.params;
 
   // 1. Tìm sản phẩm gốc với đầy đủ các quan hệ
-  const originalProduct = await Product.findByPk(id, {
+  const originalProduct = await adminRepository.findProductById(id, {
     include: [
       { model: Category, as: 'categories' },
       { model: ProductAttribute, as: 'productAttributes' },
@@ -1910,7 +1917,7 @@ const cloneProduct = catchAsync(async (req, res) => {
   let exists = true;
   while (exists) {
     const testName = `${originalProduct.name} (${count})`;
-    const existing = await Product.findOne({ where: { nameVi: testName } });
+    const existing = await adminRepository.findProductOne({ nameVi: testName });
     if (!existing) {
       newName = testName;
       exists = false;
@@ -1942,7 +1949,7 @@ const cloneProduct = catchAsync(async (req, res) => {
     productData.sku = newSku;
     productData.status = 'draft'; // Mặc định là bản nháp để admin kiểm tra lại
 
-    const newProduct = await Product.create(productData, { transaction });
+    const newProduct = await adminRepository.createProductFull(productData, { transaction });
 
     // 5. Sao chép các quan hệ
 
@@ -1964,7 +1971,7 @@ const cloneProduct = catchAsync(async (req, res) => {
         delete data.updatedAt;
         return { ...data, productId: newProduct.id };
       });
-      await ProductAttribute.bulkCreate(attributeData, { transaction });
+      await adminRepository.bulkCreateProductAttributes(attributeData, { transaction });
     }
 
     // Biến thể
@@ -1982,7 +1989,7 @@ const cloneProduct = catchAsync(async (req, res) => {
         data.sku = `${newSku}-${suffix}`;
         return { ...data, productId: newProduct.id };
       });
-      await ProductVariant.bulkCreate(variantData, { transaction });
+      await adminRepository.bulkCreateProductVariants(variantData, { transaction });
     }
 
     // Thông số kỹ thuật
@@ -1994,7 +2001,7 @@ const cloneProduct = catchAsync(async (req, res) => {
         delete data.updatedAt;
         return { ...data, productId: newProduct.id };
       });
-      await ProductSpecification.bulkCreate(specData, { transaction });
+      await adminRepository.bulkCreateProductSpecs(specData, { transaction });
     }
 
     // Gói bảo hành
@@ -2004,7 +2011,7 @@ const cloneProduct = catchAsync(async (req, res) => {
         warrantyPackageId: wp.id,
         isDefault: wp.ProductWarranty?.isDefault || false,
       }));
-      await ProductWarranty.bulkCreate(warrantyData, { transaction });
+      await adminRepository.bulkCreateProductWarranties(warrantyData, { transaction });
     }
 
     await transaction.commit();
@@ -2032,7 +2039,7 @@ const toggleProductStatus = catchAsync(async (req, res) => {
   const { id } = req.params;
   const { status } = req.body;
 
-  const product = await Product.findByPk(id);
+  const product = await adminRepository.findProductById(id);
   if (!product) {
     throw new AppError('Không tìm thấy sản phẩm', 404);
   }
@@ -2069,14 +2076,14 @@ const restockProduct = catchAsync(async (req, res) => {
     throw new AppError('Số lượng nhập phải là số nguyên dương', 400);
   }
 
-  const product = await Product.findByPk(productId);
+  const product = await adminRepository.findProductById(productId);
   if (!product) throw new AppError('Không tìm thấy sản phẩm', 404);
 
   let prevStock, newStock;
 
   if (variantId) {
     // Nhập hàng cho biến thể cụ thể
-    const variant = await ProductVariant.findOne({ where: { id: variantId, productId } });
+    const variant = await adminRepository.findProductVariantById(variantId, productId);
     if (!variant) throw new AppError('Không tìm thấy biến thể', 404);
 
     prevStock = variant.stockQuantity;
@@ -2084,7 +2091,7 @@ const restockProduct = catchAsync(async (req, res) => {
     await variant.update({ stockQuantity: newStock, isAvailable: true });
 
     // Cập nhật tổng stock của product
-    const total = await ProductVariant.sum('stockQuantity', { where: { productId } });
+    const total = (await adminRepository.sumProductVariantStock(productId)) || 0;
     await product.update({ stockQuantity: total || 0 });
   } else {
     // Nhập hàng cho sản phẩm không có variant
@@ -2094,7 +2101,7 @@ const restockProduct = catchAsync(async (req, res) => {
   }
 
   // Ghi lịch sử nhập hàng
-  const log = await InventoryLog.create({
+  const log = await adminRepository.createInventoryLog({
     productId: parseInt(productId, 10),
     variantId: variantId ? parseInt(variantId, 10) : null,
     changeType: 'restock',
@@ -2109,7 +2116,7 @@ const restockProduct = catchAsync(async (req, res) => {
   try {
     const { enrichProductData } = require('../../../services/ai/vectorStore');
     await vectorStoreService.loadPromise;
-    const productForIndex = await Product.findByPk(productId, {
+    const productForIndex = await adminRepository.findProductById(productId, {
       include: [
         { model: Category, as: 'categories', through: { attributes: [] } },
         { model: ProductVariant, as: 'variants', attributes: ['stockQuantity'] },
@@ -2161,7 +2168,7 @@ const getAuditLogs = catchAsync(async (req, res) => {
     if (req.query.endDate) where.createdAt[Op.lte] = new Date(req.query.endDate);
   }
 
-  const { rows, count } = await AuditLog.findAndCountAll({
+  const { rows, count } = await adminRepository.findAuditLogs({
     where,
     limit,
     offset,
@@ -2210,7 +2217,7 @@ const getOrderStatusAnalytics = catchAsync(async (req, res) => {
     cancelled: 'Đã hủy',
   };
 
-  const statusDist = await Order.findAll({
+  const statusDist = await adminRepository.aggregateOrders({
     attributes: ['status', [Sequelize.fn('COUNT', Sequelize.col('id')), 'count']],
     group: ['status'],
     where,
@@ -2239,7 +2246,7 @@ const getTopProductsAnalytics = catchAsync(async (req, res) => {
       ? [[Sequelize.literal('revenue'), 'DESC']]
       : [[Sequelize.literal('soldCount'), 'DESC']];
 
-  const topProducts = await OrderItem.findAll({
+  const topProducts = await adminRepository.aggregateOrderItems({
     attributes: [
       'productId',
       [Sequelize.fn('SUM', Sequelize.col('OrderItem.subtotal')), 'revenue'],
@@ -2349,7 +2356,7 @@ const getUserGrowthAnalytics = catchAsync(async (req, res) => {
       dateFormat = '%Y-%m-%d';
   }
 
-  const userGrowth = await User.findAll({
+  const userGrowth = await adminRepository.aggregateUsers({
     attributes: [
       [Sequelize.fn('DATE_FORMAT', Sequelize.col('created_at'), dateFormat), 'date'],
       [Sequelize.fn('COUNT', Sequelize.col('id')), 'newUsers'],
@@ -2375,7 +2382,7 @@ const getUserGrowthAnalytics = catchAsync(async (req, res) => {
  * GET /api/admin/analytics/payment-methods — Phân bổ phương thức thanh toán
  */
 const getPaymentMethodsAnalytics = catchAsync(async (req, res) => {
-  const results = await Order.findAll({
+  const results = await adminRepository.aggregateOrders({
     attributes: [
       'paymentMethod',
       [Sequelize.fn('COUNT', Sequelize.col('id')), 'count'],
@@ -2401,7 +2408,7 @@ const getPaymentMethodsAnalytics = catchAsync(async (req, res) => {
 const getLowStockAnalytics = catchAsync(async (req, res) => {
   const threshold = parseInt(req.query.threshold, 10) || 10;
 
-  const products = await Product.findAll({
+  const products = await adminRepository.findProductsList({
     attributes: ['id', 'name', 'stockQuantity', 'slug'],
     include: [
       {
@@ -2448,7 +2455,7 @@ const exportReport = catchAsync(async (req, res) => {
       where.createdAt = { [Op.between]: [new Date(startDate), new Date(endDate)] };
     }
 
-    const orders = await Order.findAll({
+    const orders = await adminRepository.aggregateOrders({
       where,
       attributes: [
         'id',
@@ -2487,7 +2494,7 @@ const exportReport = catchAsync(async (req, res) => {
     );
     res.status(200).send('﻿' + csvHeader + csvRows);
   } else if (type === 'products') {
-    const products = await Product.findAll({
+    const products = await adminRepository.findProductsList({
       attributes: ['id', 'name', 'sku', 'basePrice', 'stockQuantity', 'status'],
       order: [['nameVi', 'ASC']],
       limit: 5000,
@@ -2525,21 +2532,21 @@ const getChatbotStats = catchAsync(async (req, res) => {
   }
 
   // Tổng sessions (unique sessionId)
-  const totalSessions = await ChatMessage.count({
+  const totalSessions = await adminRepository.countChatMessages({
     distinct: true,
     col: 'session_id',
     where,
   });
 
   // Tổng messages
-  const totalMessages = await ChatMessage.count({ where });
+  const totalMessages = await adminRepository.countChatMessages({ where });
 
   // Trung bình messages/session
   const avgMessagesPerSession =
     totalSessions > 0 ? parseFloat((totalMessages / totalSessions).toFixed(1)) : 0;
 
   // Phân loại intent (chỉ lấy messages từ user)
-  const intentResults = await ChatMessage.findAll({
+  const intentResults = await adminRepository.aggregateChatMessagesAdv({
     attributes: ['intent', [Sequelize.fn('COUNT', Sequelize.col('id')), 'count']],
     where: { ...where, role: 'user', intent: { [Op.not]: null } },
     group: ['intent'],
@@ -2552,10 +2559,10 @@ const getChatbotStats = catchAsync(async (req, res) => {
   });
 
   // Tỷ lệ fallback (assistant messages dùng fallback)
-  const totalAssistantMessages = await ChatMessage.count({
+  const totalAssistantMessages = await adminRepository.countChatMessages({
     where: { ...where, role: 'assistant' },
   });
-  const fallbackMessages = await ChatMessage.count({
+  const fallbackMessages = await adminRepository.countChatMessages({
     where: { ...where, role: 'assistant', isFallback: true },
   });
   const fallbackRate =
@@ -2564,7 +2571,7 @@ const getChatbotStats = catchAsync(async (req, res) => {
       : 0;
 
   // Trung bình response time (chỉ assistant messages có responseTimeMs)
-  const avgResponseTimeMs = await ChatMessage.findOne({
+  const avgResponseTimeMs = await adminRepository.findOneChatMessage({
     attributes: [[Sequelize.fn('AVG', Sequelize.col('response_time_ms')), 'avgTime']],
     where: { ...where, role: 'assistant', responseTimeMs: { [Op.not]: null } },
     raw: true,

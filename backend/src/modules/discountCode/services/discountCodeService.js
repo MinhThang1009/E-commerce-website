@@ -1,14 +1,18 @@
-const { DiscountCode } = require('../../../models');
 const { Op } = require('sequelize');
 const { AppError } = require('../../../shared/errors');
 const { AdminAuditService } = require('../../../shared/adminAudit');
+const discountCodeRepository = require('../repositories/discountCodeRepository');
 
 /**
- * Service xử lý toàn bộ business logic của mã giảm giá.
- * Controller chỉ gọi các method ở đây, không query DB trực tiếp.
+ * @file discountCodeService.js
+ * @layer Service — Business logic layer cho discount code
+ * @module discountCode
+ * @description Xử lý toàn bộ business logic của mã giảm giá.
+ *   Controller gọi service, service gọi repository.
+ *   Không truy cập Model Sequelize trực tiếp.
  *
  * Luồng xử lý applyDiscountCode:
- *   1. Tìm mã theo code + isActive = true
+ *   1. Tìm mã theo code + isActive = true (qua repository)
  *   2. Kiểm tra thời gian hiệu lực (startDate, endDate)
  *   3. Kiểm tra giới hạn lượt dùng
  *   4. Kiểm tra giá trị đơn hàng tối thiểu
@@ -36,17 +40,17 @@ const getAllDiscountCodes = async ({
   sortOrder = 'DESC',
 }) => {
   const offset = (page - 1) * limit;
-  const whereClause = {};
+  const where = {};
 
   if (search) {
-    whereClause.code = { [Op.like]: `%${search}%` };
+    where.code = { [Op.like]: `%${search}%` };
   }
   if (isActive !== undefined) {
-    whereClause.isActive = isActive === 'true';
+    where.isActive = isActive === 'true';
   }
 
-  const { count, rows: discountCodes } = await DiscountCode.findAndCountAll({
-    where: whereClause,
+  const { count, rows: discountCodes } = await discountCodeRepository.findAll({
+    where,
     limit: parseInt(limit),
     offset: parseInt(offset),
     order: [[sortBy, sortOrder.toUpperCase()]],
@@ -70,14 +74,14 @@ const getAllDiscountCodes = async ({
  * @throws {AppError} 404 - Không tìm thấy mã giảm giá
  */
 const getDiscountCodeById = async (id) => {
-  const discountCode = await DiscountCode.findByPk(id);
+  const discountCode = await discountCodeRepository.findById(id);
   if (!discountCode) throw new AppError('Không tìm thấy mã giảm giá', 404);
   return discountCode;
 };
 
 /**
  * Tạo mã giảm giá mới và ghi audit log.
- * @param {Object} data - Dữ liệu mã giảm giá
+ * @param {Object} data  - Dữ liệu mã giảm giá
  * @param {Object} actor - User thực hiện (dùng cho audit log)
  * @returns {Promise<DiscountCode>}
  * @throws {AppError} 400 - Mã giảm giá đã tồn tại
@@ -97,10 +101,10 @@ const createDiscountCode = async (data, actor) => {
   } = data;
 
   // Kiểm tra trùng mã trước khi tạo
-  const existingCode = await DiscountCode.findOne({ where: { code } });
+  const existingCode = await discountCodeRepository.findOne({ code });
   if (existingCode) throw new AppError('Mã giảm giá đã tồn tại', 400);
 
-  const discountCode = await DiscountCode.create({
+  const discountCode = await discountCodeRepository.create({
     code,
     type,
     value,
@@ -119,8 +123,8 @@ const createDiscountCode = async (data, actor) => {
 
 /**
  * Cập nhật thông tin mã giảm giá và ghi audit log.
- * @param {string} id   - UUID của mã giảm giá
- * @param {Object} data - Các trường cần cập nhật
+ * @param {string} id    - UUID của mã giảm giá
+ * @param {Object} data  - Các trường cần cập nhật
  * @param {Object} actor - User thực hiện (dùng cho audit log)
  * @returns {Promise<DiscountCode>}
  * @throws {AppError} 404 - Không tìm thấy mã giảm giá
@@ -140,11 +144,11 @@ const updateDiscountCode = async (id, data, actor) => {
     description,
   } = data;
 
-  const discountCode = await DiscountCode.findByPk(id);
+  const discountCode = await discountCodeRepository.findById(id);
   if (!discountCode) throw new AppError('Không tìm thấy mã giảm giá', 404);
 
   if (code && code !== discountCode.code) {
-    const existingCode = await DiscountCode.findOne({ where: { code } });
+    const existingCode = await discountCodeRepository.findOne({ code });
     if (existingCode) throw new AppError('Mã giảm giá đã tồn tại', 400);
   }
 
@@ -178,10 +182,10 @@ const updateDiscountCode = async (id, data, actor) => {
  * @throws {AppError} 404 - Không tìm thấy mã giảm giá
  */
 const deleteDiscountCode = async (id, actor) => {
-  const discountCode = await DiscountCode.findByPk(id);
+  const discountCode = await discountCodeRepository.findById(id);
   if (!discountCode) throw new AppError('Không tìm thấy mã giảm giá', 404);
 
-  await discountCode.destroy();
+  await discountCodeRepository.remove(discountCode);
   AdminAuditService.logDiscountCodeAction(actor, 'DELETE', id, discountCode.code);
 };
 
@@ -201,7 +205,7 @@ const deleteDiscountCode = async (id, actor) => {
  * @throws {AppError} 400 - Mã không hợp lệ, hết hạn, hết lượt dùng, hoặc đơn không đủ điều kiện
  */
 const applyDiscountCode = async (code, orderAmount) => {
-  const discountCode = await DiscountCode.findOne({ where: { code, isActive: true } });
+  const discountCode = await discountCodeRepository.findOne({ code, isActive: true });
   if (!discountCode) throw new AppError('Mã giảm giá không hợp lệ hoặc đã hết hạn', 400);
 
   const now = new Date();

@@ -65,7 +65,10 @@ jest.mock('express-validator', () => ({
     isEmpty: () => true,
     array: () => [],
   })),
-  body: jest.fn(() => ({ notEmpty: jest.fn().mockReturnThis(), isString: jest.fn().mockReturnThis() })),
+  body: jest.fn(() => ({
+    notEmpty: jest.fn().mockReturnThis(),
+    isString: jest.fn().mockReturnThis(),
+  })),
   param: jest.fn(() => ({ notEmpty: jest.fn().mockReturnThis() })),
 }));
 
@@ -73,7 +76,7 @@ jest.mock('express-validator', () => ({
 
 const express = require('express');
 const supertest = require('supertest');
-const warrantyRouter = require('../routes/warrantyPackage');
+const warrantyRouter = require('../modules/warrantyPackage/routes');
 const { validationResult } = require('express-validator');
 
 const app = express();
@@ -141,14 +144,17 @@ describe('GET /api/warranty-packages — getAllWarrantyPackages', () => {
   });
 
   test('lọc theo isActive=true khi truyền query param', async () => {
-    mockWarrantyPackageFindAndCountAll.mockResolvedValue({ count: 1, rows: [makeWarrantyPackage()] });
+    mockWarrantyPackageFindAndCountAll.mockResolvedValue({
+      count: 1,
+      rows: [makeWarrantyPackage()],
+    });
 
     await request.get('/api/warranty-packages?isActive=true');
 
     expect(mockWarrantyPackageFindAndCountAll).toHaveBeenCalledWith(
       expect.objectContaining({
         where: { isActive: true },
-      })
+      }),
     );
   });
 
@@ -160,7 +166,7 @@ describe('GET /api/warranty-packages — getAllWarrantyPackages', () => {
     expect(mockWarrantyPackageFindAndCountAll).toHaveBeenCalledWith(
       expect.objectContaining({
         where: { isActive: false },
-      })
+      }),
     );
   });
 
@@ -170,7 +176,7 @@ describe('GET /api/warranty-packages — getAllWarrantyPackages', () => {
     await request.get('/api/warranty-packages');
 
     expect(mockWarrantyPackageFindAndCountAll).toHaveBeenCalledWith(
-      expect.objectContaining({ where: {} })
+      expect.objectContaining({ where: {} }),
     );
   });
 
@@ -180,7 +186,7 @@ describe('GET /api/warranty-packages — getAllWarrantyPackages', () => {
     await request.get('/api/warranty-packages?page=3&limit=5');
 
     expect(mockWarrantyPackageFindAndCountAll).toHaveBeenCalledWith(
-      expect.objectContaining({ offset: 10, limit: 5 })
+      expect.objectContaining({ offset: 10, limit: 5 }),
     );
   });
 
@@ -312,7 +318,7 @@ describe('POST /api/warranty-packages — createWarrantyPackage', () => {
         name: 'Bảo hành 24 tháng',
         durationMonths: 24,
         price: 1000000,
-      })
+      }),
     );
   });
 
@@ -339,7 +345,7 @@ describe('POST /api/warranty-packages — createWarrantyPackage', () => {
     await request.post('/api/warranty-packages').send(bodyWithoutDefaults);
 
     expect(mockWarrantyPackageCreate).toHaveBeenCalledWith(
-      expect.objectContaining({ isActive: true, sortOrder: 0 })
+      expect.objectContaining({ isActive: true, sortOrder: 0 }),
     );
   });
 
@@ -382,9 +388,7 @@ describe('PUT /api/warranty-packages/:id — updateWarrantyPackage', () => {
       array: () => [{ msg: 'Price phải là số', param: 'price' }],
     });
 
-    const res = await request
-      .put('/api/warranty-packages/1')
-      .send({ price: 'không phải số' });
+    const res = await request.put('/api/warranty-packages/1').send({ price: 'không phải số' });
 
     expect(res.status).toBe(400);
     expect(res.body.status).toBe('error');

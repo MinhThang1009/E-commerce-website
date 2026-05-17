@@ -51,7 +51,13 @@ jest.mock('multer', () => {
   const buildSingleMiddleware = () => (req, _res, cb) => {
     const behavior = global.__extraMockMulterSingle || 'success';
     if (behavior === 'success') {
-      req.file = { originalname: 'photo.jpg', mimetype: 'image/jpeg', path: '/tmp/t.jpg', filename: 't.jpg', size: 1024 };
+      req.file = {
+        originalname: 'photo.jpg',
+        mimetype: 'image/jpeg',
+        path: '/tmp/t.jpg',
+        filename: 't.jpg',
+        size: 1024,
+      };
       cb(null);
     } else if (behavior === 'noFile') {
       cb(null);
@@ -68,8 +74,20 @@ jest.mock('multer', () => {
     const behavior = global.__extraMockMulterArray || 'success';
     if (behavior === 'success') {
       req.files = [
-        { originalname: 'p1.jpg', mimetype: 'image/jpeg', path: '/tmp/p1.jpg', filename: 'p1.jpg', size: 512 },
-        { originalname: 'p2.jpg', mimetype: 'image/jpeg', path: '/tmp/p2.jpg', filename: 'p2.jpg', size: 512 },
+        {
+          originalname: 'p1.jpg',
+          mimetype: 'image/jpeg',
+          path: '/tmp/p1.jpg',
+          filename: 'p1.jpg',
+          size: 512,
+        },
+        {
+          originalname: 'p2.jpg',
+          mimetype: 'image/jpeg',
+          path: '/tmp/p2.jpg',
+          filename: 'p2.jpg',
+          size: 512,
+        },
       ];
       cb(null);
     } else if (behavior === 'noFiles') {
@@ -99,7 +117,7 @@ jest.mock('multer', () => {
 let imageController;
 
 beforeAll(() => {
-  imageController = require('../controllers/image');
+  imageController = require('../modules/image/controllers/imageController');
 });
 
 beforeEach(() => {
@@ -142,7 +160,9 @@ describe('ImageController.uploadMultiple — non-multer error từ middleware', 
 
     await imageController.uploadMultiple(req, res, next);
 
-    expect(next).toHaveBeenCalledWith(expect.objectContaining({ message: 'S3 connection refused' }));
+    expect(next).toHaveBeenCalledWith(
+      expect.objectContaining({ message: 'S3 connection refused' }),
+    );
     expect(mockUploadMultipleImages).not.toHaveBeenCalled();
   });
 });
@@ -227,7 +247,11 @@ describe('ImageController.uploadSingle — generic multer error', () => {
     const req = { body: {}, user: { id: 1 }, headers: {} };
     const next = jest.fn();
 
-    await imageController.uploadSingle(req, { status: jest.fn().mockReturnThis(), json: jest.fn() }, next);
+    await imageController.uploadSingle(
+      req,
+      { status: jest.fn().mockReturnThis(), json: jest.fn() },
+      next,
+    );
 
     const calledWith = next.mock.calls[0][0];
     expect(calledWith).toMatchObject({ statusCode: 400 });

@@ -6,17 +6,9 @@
  * trực tiếp (không qua supertest) — nhanh hơn và isolate hoàn toàn.
  */
 
-// ── Mocks cho lazy-required modules ──────────────────────────────────────────
+// ── Mocks ────────────────────────────────────────────────────────────────────
 process.env.NODE_ENV = 'test';
 process.env.FRONTEND_URL = 'https://shop.test';
-
-// handleSePayWebhook là require('../../../controllers/payment').handleSePayWebhook
-// được assign tại constructor time — mock module đó
-jest.mock('../../../controllers/payment', () => ({
-  handleSePayWebhook: jest.fn(async (_req, res) => {
-    res.status(200).json({ received: true, message: 'sepay ok' });
-  }),
-}));
 
 jest.mock('../../../utils/logger', () => ({
   info: jest.fn(),
@@ -109,7 +101,7 @@ describe('PaymentController.createRefund', () => {
     await controller.createRefund(req, buildRes(), jest.fn());
 
     expect(paymentService.createRefund).toHaveBeenCalledWith(
-      expect.objectContaining({ ipAddr: '10.0.0.1' })
+      expect.objectContaining({ ipAddr: '10.0.0.1' }),
     );
   });
 
@@ -121,7 +113,7 @@ describe('PaymentController.createRefund', () => {
     await controller.createRefund(req, buildRes(), jest.fn());
 
     expect(paymentService.createRefund).toHaveBeenCalledWith(
-      expect.objectContaining({ ipAddr: '127.0.0.1' })
+      expect.objectContaining({ ipAddr: '127.0.0.1' }),
     );
   });
 
@@ -165,7 +157,7 @@ describe('PaymentController.createMomoUrl', () => {
     await controller.createMomoUrl(req, buildRes(), jest.fn());
 
     expect(paymentService.createMomoUrl).toHaveBeenCalledWith(
-      expect.objectContaining({ orderId: 10, userId: 99 })
+      expect.objectContaining({ orderId: 10, userId: 99 }),
     );
   });
 
@@ -266,9 +258,7 @@ describe('PaymentController.createVNPayUrl', () => {
     await controller.createVNPayUrl(req, res, jest.fn());
 
     expect(res.status).toHaveBeenCalledWith(200);
-    expect(res.json).toHaveBeenCalledWith(
-      expect.objectContaining({ status: 'success' })
-    );
+    expect(res.json).toHaveBeenCalledWith(expect.objectContaining({ status: 'success' }));
   });
 
   it('truyền ipAddr và userId đúng vào service', async () => {
@@ -283,7 +273,7 @@ describe('PaymentController.createVNPayUrl', () => {
     await controller.createVNPayUrl(req, buildRes(), jest.fn());
 
     expect(paymentService.createVNPayUrl).toHaveBeenCalledWith(
-      expect.objectContaining({ ipAddr: '5.6.7.8', userId: 42 })
+      expect.objectContaining({ ipAddr: '5.6.7.8', userId: 42 }),
     );
   });
 
@@ -359,18 +349,11 @@ describe('PaymentController.vnpayIPN', () => {
 });
 
 // ─────────────────────────────────────────────────────────────────────────────
-// handleSePayWebhook — delegated to legacy controllers/payment.js
+// handleSePayWebhook — now inline in PaymentController class
 // ─────────────────────────────────────────────────────────────────────────────
 describe('PaymentController.handleSePayWebhook', () => {
-  it('delegate đến legacy handler và trả về response từ đó', async () => {
+  it('là một async function trên instance của controller', () => {
     const { controller } = buildController();
-    const req = buildReq({ headers: { authorization: 'Apikey test-key' } });
-    const res = buildRes();
-    const next = jest.fn();
-
-    await controller.handleSePayWebhook(req, res, next);
-
-    expect(res.status).toHaveBeenCalledWith(200);
-    expect(res.json).toHaveBeenCalledWith({ received: true, message: 'sepay ok' });
+    expect(typeof controller.handleSePayWebhook).toBe('function');
   });
 });

@@ -378,7 +378,7 @@ app.use(sanitizeBody);
 app.use(compression());
 
 // Image proxy — bypass CDN hotlink protection trên localhost dev
-app.use('/api/img', require('./routes/imageProxy'));
+app.use('/api/img', require('./modules/image/imageProxyRouter'));
 
 // Phục vụ file upload tĩnh — cache 1 năm vì filename chứa hash/timestamp
 app.use(

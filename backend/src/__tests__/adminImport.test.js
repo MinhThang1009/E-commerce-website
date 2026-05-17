@@ -13,7 +13,10 @@ process.env.NODE_ENV = 'test';
 // ─────────────────────────────────────────────────────────────────────────────
 
 jest.mock('../utils/logger', () => ({
-  info: jest.fn(), error: jest.fn(), warn: jest.fn(), debug: jest.fn(),
+  info: jest.fn(),
+  error: jest.fn(),
+  warn: jest.fn(),
+  debug: jest.fn(),
 }));
 
 jest.mock('../services/ai/vectorStore', () => ({
@@ -33,13 +36,22 @@ jest.mock('../middlewares/rateLimiter', () => ({
 }));
 
 jest.mock('../middlewares/authenticate', () => ({
-  authenticate: (req, _res, next) => { req.user = { id: 1, role: 'admin' }; next(); },
+  authenticate: (req, _res, next) => {
+    req.user = { id: 1, role: 'admin' };
+    next();
+  },
   optionalAuthenticate: (_r, _s, n) => n(),
-  adminAuthenticate: (req, _res, next) => { req.user = { id: 1, role: 'admin' }; next(); },
+  adminAuthenticate: (req, _res, next) => {
+    req.user = { id: 1, role: 'admin' };
+    next();
+  },
 }));
 
 jest.mock('../middlewares/adminAuth', () => ({
-  adminAuthenticate: (req, _res, next) => { req.user = { id: 1, role: 'admin' }; next(); },
+  adminAuthenticate: (req, _res, next) => {
+    req.user = { id: 1, role: 'admin' };
+    next();
+  },
   requireSuperAdmin: (_r, _s, n) => n(),
 }));
 
@@ -63,7 +75,7 @@ jest.mock('../services/adminAudit', () => ({
   auditMiddleware: (_r, _s, n) => n(),
 }));
 
-jest.mock('../controllers/discountCode', () => ({
+jest.mock('../modules/discountCode/controllers/discountCodeController', () => ({
   getAllDiscountCodes: (_r, _s, n) => n(),
   getDiscountCodeById: (_r, _s, n) => n(),
   createDiscountCode: (_r, _s, n) => n(),
@@ -98,8 +110,21 @@ jest.mock('../models', () => ({
   Brand: { findAll: jest.fn() },
   ImportLog: { create: jest.fn(), findAndCountAll: jest.fn() },
   // Models needed by other controllers on admin router
-  User: { findAll: jest.fn(), findByPk: jest.fn(), findAndCountAll: jest.fn(), count: jest.fn(), sum: jest.fn() },
-  Order: { findAll: jest.fn(), findByPk: jest.fn(), findAndCountAll: jest.fn(), count: jest.fn(), sum: jest.fn(), update: jest.fn() },
+  User: {
+    findAll: jest.fn(),
+    findByPk: jest.fn(),
+    findAndCountAll: jest.fn(),
+    count: jest.fn(),
+    sum: jest.fn(),
+  },
+  Order: {
+    findAll: jest.fn(),
+    findByPk: jest.fn(),
+    findAndCountAll: jest.fn(),
+    count: jest.fn(),
+    sum: jest.fn(),
+    update: jest.fn(),
+  },
   OrderItem: { findAll: jest.fn(), create: jest.fn() },
   Review: { findAll: jest.fn(), findAndCountAll: jest.fn(), findByPk: jest.fn(), count: jest.fn() },
   ProductAttribute: { findAll: jest.fn(), destroy: jest.fn(), bulkCreate: jest.fn() },
@@ -108,7 +133,13 @@ jest.mock('../models', () => ({
   AuditLog: { findAll: jest.fn(), findAndCountAll: jest.fn(), count: jest.fn(), create: jest.fn() },
   ChatMessage: { count: jest.fn(), findAll: jest.fn(), findOne: jest.fn() },
   WarrantyPackage: { findAll: jest.fn(), findByPk: jest.fn() },
-  DiscountCode: { findAll: jest.fn(), findByPk: jest.fn(), findOne: jest.fn(), create: jest.fn(), findAndCountAll: jest.fn() },
+  DiscountCode: {
+    findAll: jest.fn(),
+    findByPk: jest.fn(),
+    findOne: jest.fn(),
+    create: jest.fn(),
+    findAndCountAll: jest.fn(),
+  },
 }));
 
 jest.mock('../config/redis', () => ({
@@ -128,10 +159,16 @@ jest.mock('../utils/productHelpers', () => ({
 
 const express = require('express');
 const supertest = require('supertest');
-const adminRouter = require('../routes/admin');
+const adminRouter = require('../modules/admin/routes');
 const {
-  Category, Brand, Product, ProductVariant, ProductImage,
-  ProductCategory, ProductSpecification, ImportLog,
+  Category,
+  Brand,
+  Product,
+  ProductVariant,
+  ProductImage,
+  ProductCategory,
+  ProductSpecification,
+  ImportLog,
 } = require('../models');
 
 const app = express();
@@ -161,16 +198,14 @@ const VALID_CSV_NO_SKU = [
 // Một dòng thiếu name (base_price và category_slug hợp lệ) → chính xác 1 error / 1 row → 422
 const INVALID_CSV_ALL_ERRORS = [
   'name,slug,short_description,base_price,category_slug,brand,status,stock_quantity,sku,weight_kg,image_urls,spec_cpu,spec_ram,spec_storage,spec_display,spec_battery',
-  ',,desc,10000,dien-thoai,,,0,,,,,,,,',  // name rỗng, base_price + category_slug hợp lệ → 1 error / 1 row
+  ',,desc,10000,dien-thoai,,,0,,,,,,,,', // name rỗng, base_price + category_slug hợp lệ → 1 error / 1 row
 ].join('\n');
 
 beforeEach(() => {
   jest.clearAllMocks();
 
   // Default mock setup
-  Category.findAll.mockResolvedValue([
-    { id: 1, slug: 'dien-thoai', name: 'Điện thoại' },
-  ]);
+  Category.findAll.mockResolvedValue([{ id: 1, slug: 'dien-thoai', name: 'Điện thoại' }]);
   Brand.findAll.mockResolvedValue([
     { id: 10, name: 'Apple', slug: 'apple' },
     { id: 11, name: 'Samsung', slug: 'samsung' },
@@ -212,7 +247,7 @@ describe('GET /api/admin/products/import-template', () => {
 
   test('nội dung CSV có dòng ví dụ thứ hai không rỗng', async () => {
     const res = await request.get('/api/admin/products/import-template');
-    const lines = res.text.split('\n').filter(l => l.trim());
+    const lines = res.text.split('\n').filter((l) => l.trim());
     expect(lines.length).toBeGreaterThanOrEqual(2);
     expect(lines[1]).toContain('36990000'); // base_price ví dụ
   });
@@ -232,12 +267,15 @@ describe('POST /api/admin/products/import — CSV', () => {
   test('200 — import CSV hợp lệ: tạo Product + lưu ImportLog', async () => {
     const res = await request
       .post('/api/admin/products/import')
-      .attach('file', Buffer.from(VALID_CSV), { filename: 'products.csv', contentType: 'text/csv' });
+      .attach('file', Buffer.from(VALID_CSV), {
+        filename: 'products.csv',
+        contentType: 'text/csv',
+      });
 
     expect(res.status).toBe(200);
     expect(res.body.data.successCount).toBeGreaterThanOrEqual(1);
     expect(ImportLog.create).toHaveBeenCalledWith(
-      expect.objectContaining({ filename: 'products.csv', adminId: 1 })
+      expect.objectContaining({ filename: 'products.csv', adminId: 1 }),
     );
   });
 
@@ -253,7 +291,10 @@ describe('POST /api/admin/products/import — CSV', () => {
   test('200 — KHÔNG tạo ProductVariant khi không có SKU', async () => {
     const res = await request
       .post('/api/admin/products/import')
-      .attach('file', Buffer.from(VALID_CSV_NO_SKU), { filename: 'p.csv', contentType: 'text/csv' });
+      .attach('file', Buffer.from(VALID_CSV_NO_SKU), {
+        filename: 'p.csv',
+        contentType: 'text/csv',
+      });
 
     expect(res.status).toBe(200);
     expect(ProductVariant.create).not.toHaveBeenCalled();
@@ -267,7 +308,7 @@ describe('POST /api/admin/products/import — CSV', () => {
     expect(res.status).toBe(200);
     expect(ProductImage.create).toHaveBeenCalledWith(
       expect.objectContaining({ isThumbnail: true, sortOrder: 1 }),
-      expect.any(Object)
+      expect.any(Object),
     );
   });
 
@@ -279,7 +320,7 @@ describe('POST /api/admin/products/import — CSV', () => {
     expect(res.status).toBe(200);
     expect(ProductCategory.create).toHaveBeenCalledWith(
       expect.objectContaining({ categoryId: 1, productId: 100 }),
-      expect.any(Object)
+      expect.any(Object),
     );
   });
 
@@ -291,14 +332,17 @@ describe('POST /api/admin/products/import — CSV', () => {
     expect(res.status).toBe(200);
     expect(ProductSpecification.create).toHaveBeenCalledWith(
       expect.objectContaining({ specKey: 'CPU', specValue: 'A17 Pro' }),
-      expect.any(Object)
+      expect.any(Object),
     );
   });
 
   test('422 khi tất cả dòng đều không hợp lệ', async () => {
     const res = await request
       .post('/api/admin/products/import')
-      .attach('file', Buffer.from(INVALID_CSV_ALL_ERRORS), { filename: 'bad.csv', contentType: 'text/csv' });
+      .attach('file', Buffer.from(INVALID_CSV_ALL_ERRORS), {
+        filename: 'bad.csv',
+        contentType: 'text/csv',
+      });
 
     expect(res.status).toBe(422);
     expect(res.body.errors).toBeDefined();
@@ -313,7 +357,7 @@ describe('POST /api/admin/products/import — CSV', () => {
     expect(res.status).toBe(200);
     expect(Product.create).toHaveBeenCalledWith(
       expect.objectContaining({ slug: expect.stringMatching(/iphone-15-pro/) }),
-      expect.any(Object)
+      expect.any(Object),
     );
   });
 
@@ -341,7 +385,7 @@ describe('POST /api/admin/products/import — CSV', () => {
     expect(res.body.data.failedCount).toBeGreaterThanOrEqual(1);
     // errors mảng phải chứa entry lỗi
     expect(res.body.data.errors).toEqual(
-      expect.arrayContaining([expect.objectContaining({ field: 'general' })])
+      expect.arrayContaining([expect.objectContaining({ field: 'general' })]),
     );
   });
 
@@ -378,7 +422,10 @@ describe('POST /api/admin/products/import — JSON', () => {
     const notArray = JSON.stringify({ name: 'single object' });
     const res = await request
       .post('/api/admin/products/import')
-      .attach('file', Buffer.from(notArray), { filename: 'products.json', contentType: 'application/json' });
+      .attach('file', Buffer.from(notArray), {
+        filename: 'products.json',
+        contentType: 'application/json',
+      });
 
     expect(res.status).toBe(400);
     expect(res.body.message).toMatch(/mảng/i);
@@ -387,7 +434,10 @@ describe('POST /api/admin/products/import — JSON', () => {
   test('400 khi file JSON malformed', async () => {
     const res = await request
       .post('/api/admin/products/import')
-      .attach('file', Buffer.from('{ invalid json }'), { filename: 'bad.json', contentType: 'application/json' });
+      .attach('file', Buffer.from('{ invalid json }'), {
+        filename: 'bad.json',
+        contentType: 'application/json',
+      });
 
     expect(res.status).toBe(400);
     expect(res.body.message).toMatch(/không hợp lệ/i);
@@ -396,7 +446,10 @@ describe('POST /api/admin/products/import — JSON', () => {
   test('200 — import JSON hợp lệ', async () => {
     const res = await request
       .post('/api/admin/products/import')
-      .attach('file', Buffer.from(validJsonProducts), { filename: 'products.json', contentType: 'application/json' });
+      .attach('file', Buffer.from(validJsonProducts), {
+        filename: 'products.json',
+        contentType: 'application/json',
+      });
 
     expect(res.status).toBe(200);
     expect(res.body.data.totalRows).toBe(1);
@@ -405,7 +458,10 @@ describe('POST /api/admin/products/import — JSON', () => {
   test('200 — JSON tự động thêm _lineNumber từ index', async () => {
     const res = await request
       .post('/api/admin/products/import')
-      .attach('file', Buffer.from(validJsonProducts), { filename: 'p.json', contentType: 'application/json' });
+      .attach('file', Buffer.from(validJsonProducts), {
+        filename: 'p.json',
+        contentType: 'application/json',
+      });
 
     expect(res.status).toBe(200);
     // Dòng đầu tiên của JSON có _lineNumber = 2 (idx 0 + 2)
@@ -438,7 +494,7 @@ describe('GET /api/admin/products/import-history', () => {
     expect(res.body.data.page).toBe(1);
     expect(res.body.data.limit).toBe(20);
     expect(ImportLog.findAndCountAll).toHaveBeenCalledWith(
-      expect.objectContaining({ limit: 20, offset: 0 })
+      expect.objectContaining({ limit: 20, offset: 0 }),
     );
   });
 
@@ -461,7 +517,7 @@ describe('GET /api/admin/products/import-history', () => {
     expect(ImportLog.findAndCountAll).toHaveBeenCalledWith(
       expect.objectContaining({
         attributes: { exclude: ['errorDetail'] },
-      })
+      }),
     );
   });
 });
@@ -473,8 +529,13 @@ describe('GET /api/admin/products/import-history', () => {
 describe('GET /api/admin/products/export', () => {
   const mockProducts = [
     {
-      id: 1, name: 'iPhone 15', slug: 'iphone-15', shortDescription: 'Phone',
-      basePrice: 29990000, status: 'active', stockQuantity: 10,
+      id: 1,
+      name: 'iPhone 15',
+      slug: 'iphone-15',
+      shortDescription: 'Phone',
+      basePrice: 29990000,
+      status: 'active',
+      stockQuantity: 10,
       category: { slug: 'dien-thoai' },
       brand: { name: 'Apple' },
       productImages: [{ imageUrl: 'https://img/iphone.jpg' }],
@@ -529,27 +590,31 @@ describe('GET /api/admin/products/export', () => {
   });
 
   test('200 — CSV escape field có dấu phẩy', async () => {
-    Product.findAll.mockResolvedValue([{
-      ...mockProducts[0],
-      name: 'Product, with comma',
-      category: { slug: 'cat' },
-      brand: null,
-      productImages: [],
-      specifications: [],
-    }]);
+    Product.findAll.mockResolvedValue([
+      {
+        ...mockProducts[0],
+        name: 'Product, with comma',
+        category: { slug: 'cat' },
+        brand: null,
+        productImages: [],
+        specifications: [],
+      },
+    ]);
 
     const res = await request.get('/api/admin/products/export?format=csv');
     expect(res.text).toContain('"Product, with comma"');
   });
 
   test('200 — sản phẩm không có category/brand → empty string', async () => {
-    Product.findAll.mockResolvedValue([{
-      ...mockProducts[0],
-      category: null,
-      brand: null,
-      productImages: [],
-      specifications: [],
-    }]);
+    Product.findAll.mockResolvedValue([
+      {
+        ...mockProducts[0],
+        category: null,
+        brand: null,
+        productImages: [],
+        specifications: [],
+      },
+    ]);
 
     const res = await request.get('/api/admin/products/export?format=json');
     expect(res.body[0].category_slug).toBe('');
@@ -557,13 +622,15 @@ describe('GET /api/admin/products/export', () => {
   });
 
   test('200 — nhiều image_urls nối bởi |', async () => {
-    Product.findAll.mockResolvedValue([{
-      ...mockProducts[0],
-      category: { slug: 'cat' },
-      brand: null,
-      productImages: [{ imageUrl: 'img1.jpg' }, { imageUrl: 'img2.jpg' }],
-      specifications: [],
-    }]);
+    Product.findAll.mockResolvedValue([
+      {
+        ...mockProducts[0],
+        category: { slug: 'cat' },
+        brand: null,
+        productImages: [{ imageUrl: 'img1.jpg' }, { imageUrl: 'img2.jpg' }],
+        specifications: [],
+      },
+    ]);
 
     const res = await request.get('/api/admin/products/export?format=json');
     expect(res.body[0].image_urls).toBe('img1.jpg|img2.jpg');
@@ -617,9 +684,7 @@ describe('POST /api/admin/products/import — line 146: base_price âm → valid
     const errors = res.body.errors;
     expect(errors).toBeDefined();
     // Tìm lỗi liên quan đến base_price âm
-    const basePriceError = errors.find(
-      (e) => e.field === 'base_price' && e.message.includes('âm')
-    );
+    const basePriceError = errors.find((e) => e.field === 'base_price' && e.message.includes('âm'));
     expect(basePriceError).toBeDefined();
   });
 });
@@ -633,7 +698,7 @@ describe('POST /api/admin/products/import — line 146: base_price thiếu/NaN',
     // base_price empty → !row.base_price = true → line 146 errors.push
     const csvMissingPrice = [
       'name,slug,short_description,base_price,category_slug',
-      'Sản phẩm A,,,, dien-thoai',  // base_price rỗng
+      'Sản phẩm A,,,, dien-thoai', // base_price rỗng
     ].join('\n');
 
     const res = await request
@@ -681,7 +746,7 @@ describe('POST /api/admin/products/import — line 152: category_slug rỗng', (
     // category_slug empty → !row.category_slug = true → line 152 errors.push
     const csvMissingCategory = [
       'name,slug,short_description,base_price,category_slug',
-      'Sản phẩm C,,Mô tả,10000000,',  // category_slug rỗng
+      'Sản phẩm C,,Mô tả,10000000,', // category_slug rỗng
     ].join('\n');
 
     const res = await request
@@ -730,7 +795,7 @@ describe('POST /api/admin/products/import — lines 88-89: escaped quote trong C
     // Field có "" → parseCsvLine lines 88-89: current += '"'; i++
     const csvWithEscapedQuote = [
       'name,slug,short_description,base_price,category_slug,brand,status,stock_quantity,sku,weight_kg,image_urls,spec_cpu,spec_ram,spec_storage,spec_display,spec_battery',
-      '"iPhone ""Pro"" Max",,Flagship,36990000,dien-thoai,Apple,active,5,IPH-PRO-MAX,0.228,,,,,,'
+      '"iPhone ""Pro"" Max",,Flagship,36990000,dien-thoai,Apple,active,5,IPH-PRO-MAX,0.228,,,,,,',
     ].join('\n');
 
     const res = await request
@@ -744,7 +809,7 @@ describe('POST /api/admin/products/import — lines 88-89: escaped quote trong C
     // Product.create called with name containing the actual quotes
     expect(Product.create).toHaveBeenCalledWith(
       expect.objectContaining({ name: expect.stringContaining('iPhone') }),
-      expect.anything()
+      expect.anything(),
     );
   });
 });
@@ -759,7 +824,7 @@ describe('POST /api/admin/products/import — line 117: dòng trống bị bỏ 
     const csvWithBlankRows = [
       'name,slug,short_description,base_price,category_slug,brand,status,stock_quantity,sku,weight_kg,image_urls,spec_cpu,spec_ram,spec_storage,spec_display,spec_battery',
       'iPhone 15 Pro,,Flagship Apple,36990000,dien-thoai,Apple,active,10,IPH15P-256,0.187,https://img.com/iphone.jpg,A17 Pro,8GB,256GB,6.1" OLED,3274 mAh',
-      ',,,,,,,,,,,,,,,',  // blank row → every value is '' → skipped
+      ',,,,,,,,,,,,,,,', // blank row → every value is '' → skipped
     ].join('\n');
 
     const res = await request
@@ -787,7 +852,7 @@ describe('POST /api/admin/products/import — lines 264-265: validRows filter v�
     const csvMixedRows = [
       'name,slug,short_description,base_price,category_slug,brand,status,stock_quantity,sku,weight_kg,image_urls,spec_cpu,spec_ram,spec_storage,spec_display,spec_battery',
       'iPhone 15 Pro,,Flagship,36990000,dien-thoai,Apple,active,10,IPH15P,0.187,https://img.com/img.jpg,A17,8GB,256GB,6.1",3274mAh',
-      ',,Missing name,10000,dien-thoai,,,0,,,,,,,,',  // missing name → validation error
+      ',,Missing name,10000,dien-thoai,,,0,,,,,,,,', // missing name → validation error
     ].join('\n');
 
     const res = await request
@@ -844,8 +909,8 @@ describe('POST /api/admin/products/import — line 33: fileFilter allowedMimes b
     const res = await request
       .post('/api/admin/products/import')
       .attach('file', Buffer.from(VALID_CSV), {
-        filename: 'products.txt',   // ext is .txt not .csv
-        contentType: 'text/csv',   // but mimetype is text/csv → line 32-33
+        filename: 'products.txt', // ext is .txt not .csv
+        contentType: 'text/csv', // but mimetype is text/csv → line 32-33
       });
 
     // Should be accepted (200 or process normally, not 400 for unsupported type)
@@ -862,17 +927,20 @@ describe('POST /api/admin/products/import — lines 274-279: brand null và cate
     // row.brand = '' → brandName = null → brandId = null (false branch line 276)
     const csvNoBrand = [
       'name,slug,short_description,base_price,category_slug,brand,status,stock_quantity,sku,weight_kg,image_urls,spec_cpu,spec_ram,spec_storage,spec_display,spec_battery',
-      'Samsung S24,,Galaxy,20000000,dien-thoai,,active,5,,,,,,,,'
+      'Samsung S24,,Galaxy,20000000,dien-thoai,,active,5,,,,,,,,',
     ].join('\n');
 
     const res = await request
       .post('/api/admin/products/import')
-      .attach('file', Buffer.from(csvNoBrand), { filename: 'nobrand.csv', contentType: 'text/csv' });
+      .attach('file', Buffer.from(csvNoBrand), {
+        filename: 'nobrand.csv',
+        contentType: 'text/csv',
+      });
 
     expect(res.status).toBe(200);
     expect(Product.create).toHaveBeenCalledWith(
       expect.objectContaining({ brandId: null }),
-      expect.any(Object)
+      expect.any(Object),
     );
   });
 
@@ -882,19 +950,22 @@ describe('POST /api/admin/products/import — lines 274-279: brand null và cate
 
     const csvUnknownCategory = [
       'name,slug,short_description,base_price,category_slug,brand,status,stock_quantity,sku,weight_kg,image_urls,spec_cpu,spec_ram,spec_storage,spec_display,spec_battery',
-      'Product X,,Desc,10000000,unknown-category,Apple,active,3,,,,,,,,'
+      'Product X,,Desc,10000000,unknown-category,Apple,active,3,,,,,,,,',
     ].join('\n');
 
     const res = await request
       .post('/api/admin/products/import')
-      .attach('file', Buffer.from(csvUnknownCategory), { filename: 'unknowncat.csv', contentType: 'text/csv' });
+      .attach('file', Buffer.from(csvUnknownCategory), {
+        filename: 'unknowncat.csv',
+        contentType: 'text/csv',
+      });
 
     expect(res.status).toBe(200);
     // categoryId = null → ProductCategory.create không được gọi (line 332 false branch)
     expect(ProductCategory.create).not.toHaveBeenCalled();
     expect(Product.create).toHaveBeenCalledWith(
       expect.objectContaining({ categoryId: null }),
-      expect.any(Object)
+      expect.any(Object),
     );
   });
 
@@ -904,7 +975,7 @@ describe('POST /api/admin/products/import — lines 274-279: brand null và cate
 
     const csvBrandNotInMap = [
       'name,slug,short_description,base_price,category_slug,brand,status,stock_quantity,sku,weight_kg,image_urls,spec_cpu,spec_ram,spec_storage,spec_display,spec_battery',
-      'Phone Z,,Desc,15000000,dien-thoai,UnknownBrand,active,2,,,,,,,,'
+      'Phone Z,,Desc,15000000,dien-thoai,UnknownBrand,active,2,,,,,,,,',
     ].join('\n');
 
     // Restore category mock
@@ -912,12 +983,15 @@ describe('POST /api/admin/products/import — lines 274-279: brand null và cate
 
     const res = await request
       .post('/api/admin/products/import')
-      .attach('file', Buffer.from(csvBrandNotInMap), { filename: 'unknownbrand.csv', contentType: 'text/csv' });
+      .attach('file', Buffer.from(csvBrandNotInMap), {
+        filename: 'unknownbrand.csv',
+        contentType: 'text/csv',
+      });
 
     expect(res.status).toBe(200);
     expect(Product.create).toHaveBeenCalledWith(
       expect.objectContaining({ brandId: null }),
-      expect.any(Object)
+      expect.any(Object),
     );
   });
 });
@@ -930,18 +1004,21 @@ describe('POST /api/admin/products/import — line 279-281: slug được cung c
   test('200 — dùng slug cung cấp thay vì auto-generate từ name', async () => {
     const csvWithSlug = [
       'name,slug,short_description,base_price,category_slug,brand,status,stock_quantity,sku,weight_kg,image_urls,spec_cpu,spec_ram,spec_storage,spec_display,spec_battery',
-      'iPhone 15 Pro,my-custom-slug,Flagship,36990000,dien-thoai,Apple,active,10,,,,,,,,'
+      'iPhone 15 Pro,my-custom-slug,Flagship,36990000,dien-thoai,Apple,active,10,,,,,,,,',
     ].join('\n');
 
     const res = await request
       .post('/api/admin/products/import')
-      .attach('file', Buffer.from(csvWithSlug), { filename: 'withslug.csv', contentType: 'text/csv' });
+      .attach('file', Buffer.from(csvWithSlug), {
+        filename: 'withslug.csv',
+        contentType: 'text/csv',
+      });
 
     expect(res.status).toBe(200);
     // Slug phải là đúng slug được cung cấp (không phải iphone-15-pro)
     expect(Product.create).toHaveBeenCalledWith(
       expect.objectContaining({ slug: 'my-custom-slug' }),
-      expect.any(Object)
+      expect.any(Object),
     );
   });
 });
@@ -954,7 +1031,7 @@ describe('POST /api/admin/products/import — line 297: shortDescription null', 
   test('200 — shortDescription là null khi row.short_description rỗng', async () => {
     const csvNoDesc = [
       'name,slug,short_description,base_price,category_slug,brand,status,stock_quantity,sku,weight_kg,image_urls,spec_cpu,spec_ram,spec_storage,spec_display,spec_battery',
-      'Widget,,, 10000,dien-thoai,Apple,active,0,,,,,,,,'
+      'Widget,,, 10000,dien-thoai,Apple,active,0,,,,,,,,',
     ].join('\n');
 
     const res = await request
@@ -964,7 +1041,7 @@ describe('POST /api/admin/products/import — line 297: shortDescription null', 
     expect(res.status).toBe(200);
     expect(Product.create).toHaveBeenCalledWith(
       expect.objectContaining({ shortDescription: null }),
-      expect.any(Object)
+      expect.any(Object),
     );
   });
 });
@@ -975,14 +1052,21 @@ describe('POST /api/admin/products/import — line 297: shortDescription null', 
 
 describe('GET /api/admin/products/export — CSV null category/brand branches', () => {
   test('200 — CSV: product không có category → category_slug là empty string', async () => {
-    Product.findAll.mockResolvedValue([{
-      id: 1, name: 'Widget', slug: 'widget', shortDescription: null,
-      basePrice: 100000, status: 'active', stockQuantity: 5,
-      category: null,       // null category
-      brand: { name: 'Apple' },
-      productImages: [],
-      specifications: [],
-    }]);
+    Product.findAll.mockResolvedValue([
+      {
+        id: 1,
+        name: 'Widget',
+        slug: 'widget',
+        shortDescription: null,
+        basePrice: 100000,
+        status: 'active',
+        stockQuantity: 5,
+        category: null, // null category
+        brand: { name: 'Apple' },
+        productImages: [],
+        specifications: [],
+      },
+    ]);
 
     const res = await request.get('/api/admin/products/export?format=csv');
 
@@ -992,14 +1076,21 @@ describe('GET /api/admin/products/export — CSV null category/brand branches', 
   });
 
   test('200 — CSV: product không có brand → brand là empty string', async () => {
-    Product.findAll.mockResolvedValue([{
-      id: 2, name: 'Gadget', slug: 'gadget', shortDescription: null,
-      basePrice: 200000, status: 'active', stockQuantity: 3,
-      category: { slug: 'electronics' },
-      brand: null,          // null brand
-      productImages: [],
-      specifications: [],
-    }]);
+    Product.findAll.mockResolvedValue([
+      {
+        id: 2,
+        name: 'Gadget',
+        slug: 'gadget',
+        shortDescription: null,
+        basePrice: 200000,
+        status: 'active',
+        stockQuantity: 3,
+        category: { slug: 'electronics' },
+        brand: null, // null brand
+        productImages: [],
+        specifications: [],
+      },
+    ]);
 
     const res = await request.get('/api/admin/products/export?format=csv');
 
@@ -1008,15 +1099,21 @@ describe('GET /api/admin/products/export — CSV null category/brand branches', 
   });
 
   test('200 — CSV: stock_quantity null/undefined → 0 (|| 0 branch)', async () => {
-    Product.findAll.mockResolvedValue([{
-      id: 3, name: 'ZeroStock', slug: 'zero', shortDescription: null,
-      basePrice: 50000, status: null,  // status null → 'active' default
-      stockQuantity: null,              // null → 0
-      category: null,
-      brand: null,
-      productImages: [],
-      specifications: [],
-    }]);
+    Product.findAll.mockResolvedValue([
+      {
+        id: 3,
+        name: 'ZeroStock',
+        slug: 'zero',
+        shortDescription: null,
+        basePrice: 50000,
+        status: null, // status null → 'active' default
+        stockQuantity: null, // null → 0
+        category: null,
+        brand: null,
+        productImages: [],
+        specifications: [],
+      },
+    ]);
 
     const res = await request.get('/api/admin/products/export?format=csv');
 
@@ -1027,14 +1124,21 @@ describe('GET /api/admin/products/export — CSV null category/brand branches', 
   });
 
   test('200 — CSV: specifications specMap lookup — spec không tồn tại → empty string', async () => {
-    Product.findAll.mockResolvedValue([{
-      id: 4, name: 'NoSpec', slug: 'nospec', shortDescription: null,
-      basePrice: 75000, status: 'active', stockQuantity: 1,
-      category: null,
-      brand: null,
-      productImages: [],
-      specifications: [], // không có spec → specMap rỗng → specMap['cpu'] = undefined → || '' → ''
-    }]);
+    Product.findAll.mockResolvedValue([
+      {
+        id: 4,
+        name: 'NoSpec',
+        slug: 'nospec',
+        shortDescription: null,
+        basePrice: 75000,
+        status: 'active',
+        stockQuantity: 1,
+        category: null,
+        brand: null,
+        productImages: [],
+        specifications: [], // không có spec → specMap rỗng → specMap['cpu'] = undefined → || '' → ''
+      },
+    ]);
 
     const res = await request.get('/api/admin/products/export?format=csv');
 
@@ -1044,16 +1148,22 @@ describe('GET /api/admin/products/export — CSV null category/brand branches', 
     expect(dataLine).toBeDefined();
   });
 
-  test('200 — JSON: shortDescription null → empty string (|| \'\' branch)', async () => {
-    Product.findAll.mockResolvedValue([{
-      id: 5, name: 'NullDesc', slug: 'nulldesc',
-      shortDescription: null, // null → || '' → ''
-      basePrice: 99000, status: 'active', stockQuantity: 2,
-      category: null,
-      brand: null,
-      productImages: [],
-      specifications: [],
-    }]);
+  test("200 — JSON: shortDescription null → empty string (|| '' branch)", async () => {
+    Product.findAll.mockResolvedValue([
+      {
+        id: 5,
+        name: 'NullDesc',
+        slug: 'nulldesc',
+        shortDescription: null, // null → || '' → ''
+        basePrice: 99000,
+        status: 'active',
+        stockQuantity: 2,
+        category: null,
+        brand: null,
+        productImages: [],
+        specifications: [],
+      },
+    ]);
 
     const res = await request.get('/api/admin/products/export?format=json');
 
@@ -1062,16 +1172,21 @@ describe('GET /api/admin/products/export — CSV null category/brand branches', 
   });
 
   test('200 — JSON: status null → "active" (|| "active" branch)', async () => {
-    Product.findAll.mockResolvedValue([{
-      id: 6, name: 'NoStatus', slug: 'nostatus', shortDescription: null,
-      basePrice: 50000,
-      status: null,          // null → || 'active'
-      stockQuantity: 0,      // 0 → || 0 (falsy → right side)
-      category: null,
-      brand: null,
-      productImages: [],
-      specifications: [],
-    }]);
+    Product.findAll.mockResolvedValue([
+      {
+        id: 6,
+        name: 'NoStatus',
+        slug: 'nostatus',
+        shortDescription: null,
+        basePrice: 50000,
+        status: null, // null → || 'active'
+        stockQuantity: 0, // 0 → || 0 (falsy → right side)
+        category: null,
+        brand: null,
+        productImages: [],
+        specifications: [],
+      },
+    ]);
 
     const res = await request.get('/api/admin/products/export?format=json');
 
@@ -1081,14 +1196,21 @@ describe('GET /api/admin/products/export — CSV null category/brand branches', 
   });
 
   test('200 — JSON: specifications null → [] (|| [] branch)', async () => {
-    Product.findAll.mockResolvedValue([{
-      id: 7, name: 'NoSpec2', slug: 'nospec2', shortDescription: null,
-      basePrice: 30000, status: 'active', stockQuantity: 1,
-      category: null,
-      brand: null,
-      productImages: null,    // null → || [] branch
-      specifications: null,   // null → || [] branch
-    }]);
+    Product.findAll.mockResolvedValue([
+      {
+        id: 7,
+        name: 'NoSpec2',
+        slug: 'nospec2',
+        shortDescription: null,
+        basePrice: 30000,
+        status: 'active',
+        stockQuantity: 1,
+        category: null,
+        brand: null,
+        productImages: null, // null → || [] branch
+        specifications: null, // null → || [] branch
+      },
+    ]);
 
     const res = await request.get('/api/admin/products/export?format=json');
 
@@ -1097,16 +1219,21 @@ describe('GET /api/admin/products/export — CSV null category/brand branches', 
   });
 
   test('200 — CSV: basePrice null → 0 (|| 0 branch)', async () => {
-    Product.findAll.mockResolvedValue([{
-      id: 8, name: 'NullPrice', slug: 'nullprice', shortDescription: null,
-      basePrice: null,       // null → || 0
-      status: null,          // null → || 'active'
-      stockQuantity: null,   // null → || 0
-      category: null,
-      brand: null,
-      productImages: null,   // null → || []
-      specifications: null,  // null → || []
-    }]);
+    Product.findAll.mockResolvedValue([
+      {
+        id: 8,
+        name: 'NullPrice',
+        slug: 'nullprice',
+        shortDescription: null,
+        basePrice: null, // null → || 0
+        status: null, // null → || 'active'
+        stockQuantity: null, // null → || 0
+        category: null,
+        brand: null,
+        productImages: null, // null → || []
+        specifications: null, // null → || []
+      },
+    ]);
 
     const res = await request.get('/api/admin/products/export?format=csv');
 
@@ -1117,21 +1244,24 @@ describe('GET /api/admin/products/export — CSV null category/brand branches', 
     expect(dataLine).toContain('0');
   });
 
-  test('200 — escapeCsvField: val là null → dùng \'\' (val ?? \'\' branch, line 523)', async () => {
+  test("200 — escapeCsvField: val là null → dùng '' (val ?? '' branch, line 523)", async () => {
     // escapeCsvField(null) → String(null ?? '') → String('') = ''
     // Đây cover ?? right side khi val = null (p.name hoặc p.slug là null)
-    Product.findAll.mockResolvedValue([{
-      id: 9, name: null,   // null → escapeCsvField(null) → ?? '' right side
-      slug: null,           // null → escapeCsvField(null) → ?? '' right side
-      shortDescription: null,
-      basePrice: 0,
-      status: 'active',
-      stockQuantity: 0,
-      category: null,
-      brand: null,
-      productImages: [],
-      specifications: [],
-    }]);
+    Product.findAll.mockResolvedValue([
+      {
+        id: 9,
+        name: null, // null → escapeCsvField(null) → ?? '' right side
+        slug: null, // null → escapeCsvField(null) → ?? '' right side
+        shortDescription: null,
+        basePrice: 0,
+        status: 'active',
+        stockQuantity: 0,
+        category: null,
+        brand: null,
+        productImages: [],
+        specifications: [],
+      },
+    ]);
 
     const res = await request.get('/api/admin/products/export?format=csv');
 
@@ -1156,13 +1286,16 @@ describe('POST /api/admin/products/import — line 313: stock_quantity là 0 ho�
 
     const res = await request
       .post('/api/admin/products/import')
-      .attach('file', Buffer.from(csvZeroStock), { filename: 'zerostock.csv', contentType: 'text/csv' });
+      .attach('file', Buffer.from(csvZeroStock), {
+        filename: 'zerostock.csv',
+        contentType: 'text/csv',
+      });
 
     expect(res.status).toBe(200);
     // ProductVariant.create được gọi với stockQuantity = 0
     expect(ProductVariant.create).toHaveBeenCalledWith(
       expect.objectContaining({ stockQuantity: 0 }),
-      expect.any(Object)
+      expect.any(Object),
     );
   });
 
@@ -1175,12 +1308,15 @@ describe('POST /api/admin/products/import — line 313: stock_quantity là 0 ho�
 
     const res = await request
       .post('/api/admin/products/import')
-      .attach('file', Buffer.from(csvEmptyStock), { filename: 'emptystock.csv', contentType: 'text/csv' });
+      .attach('file', Buffer.from(csvEmptyStock), {
+        filename: 'emptystock.csv',
+        contentType: 'text/csv',
+      });
 
     expect(res.status).toBe(200);
     expect(Product.create).toHaveBeenCalledWith(
       expect.objectContaining({ stockQuantity: 0 }),
-      expect.any(Object)
+      expect.any(Object),
     );
   });
 });
@@ -1203,7 +1339,7 @@ describe('POST /api/admin/products/import — line 365: lỗi không có message
     expect(res.status).toBe(200);
     expect(res.body.data.failedCount).toBeGreaterThanOrEqual(1);
     // Message trong error sẽ là fallback 'Lỗi khi insert vào DB'
-    const rowError = res.body.data.errors.find(e => e.field === 'general');
+    const rowError = res.body.data.errors.find((e) => e.field === 'general');
     expect(rowError).toBeDefined();
   });
 });

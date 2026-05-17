@@ -101,8 +101,20 @@ jest.mock('multer', () => {
     const behavior = global.__mockMulterArrayBehavior || 'success';
     if (behavior === 'success') {
       req.files = [
-        { originalname: 'photo1.jpg', mimetype: 'image/jpeg', path: '/tmp/t1.jpg', filename: 't1.jpg', size: 102400 },
-        { originalname: 'photo2.jpg', mimetype: 'image/jpeg', path: '/tmp/t2.jpg', filename: 't2.jpg', size: 204800 },
+        {
+          originalname: 'photo1.jpg',
+          mimetype: 'image/jpeg',
+          path: '/tmp/t1.jpg',
+          filename: 't1.jpg',
+          size: 102400,
+        },
+        {
+          originalname: 'photo2.jpg',
+          mimetype: 'image/jpeg',
+          path: '/tmp/t2.jpg',
+          filename: 't2.jpg',
+          size: 204800,
+        },
       ];
       cb(null);
     } else if (behavior === 'noFiles') {
@@ -130,7 +142,7 @@ jest.mock('multer', () => {
 
 const express = require('express');
 const supertest = require('supertest');
-const imageRouter = require('../routes/image');
+const imageRouter = require('../modules/image/routes');
 const { errorHandler } = require('../middlewares/errorHandler');
 
 const app = express();
@@ -236,7 +248,10 @@ describe('GET /api/images/product/:productId — getImagesByProductId', () => {
   beforeEach(() => jest.clearAllMocks());
 
   test('trả về danh sách ảnh kèm url và count', async () => {
-    const images = [makeImageRecord(), makeImageRecord({ id: 'img-uuid-2', fileName: 'uuid2.jpg' })];
+    const images = [
+      makeImageRecord(),
+      makeImageRecord({ id: 'img-uuid-2', fileName: 'uuid2.jpg' }),
+    ];
     mockGetImagesByProductId.mockResolvedValue(images);
 
     const res = await request.get('/api/images/product/prod-uuid-1');
@@ -318,7 +333,7 @@ describe('POST /api/images/convert/base64 — convertBase64', () => {
     expect(res.body.message).toMatch(/Đã chuyển đổi base64 sang file thành công/);
     expect(mockConvertBase64ToFile).toHaveBeenCalledWith(
       'data:image/jpeg;base64,/9j/4AAQSkZJRgAB',
-      expect.objectContaining({ category: 'product', productId: 'prod-uuid-1' })
+      expect.objectContaining({ category: 'product', productId: 'prod-uuid-1' }),
     );
   });
 
@@ -338,7 +353,7 @@ describe('POST /api/images/convert/base64 — convertBase64', () => {
 
     expect(mockConvertBase64ToFile).toHaveBeenCalledWith(
       expect.any(String),
-      expect.objectContaining({ userId: 1 })
+      expect.objectContaining({ userId: 1 }),
     );
   });
 
@@ -351,7 +366,7 @@ describe('POST /api/images/convert/base64 — convertBase64', () => {
 
     expect(mockConvertBase64ToFile).toHaveBeenCalledWith(
       expect.any(String),
-      expect.objectContaining({ category: 'product' })
+      expect.objectContaining({ category: 'product' }),
     );
   });
 
@@ -425,7 +440,7 @@ describe('POST /api/images/test-upload — uploadSingle', () => {
     expect(mockUploadImage).toHaveBeenCalledTimes(1);
     expect(mockUploadImage).toHaveBeenCalledWith(
       expect.objectContaining({ originalname: 'photo.jpg' }),
-      expect.objectContaining({ category: 'product' })
+      expect.objectContaining({ category: 'product' }),
     );
   });
 
@@ -486,16 +501,20 @@ describe('POST /api/images/test-upload — uploadSingle', () => {
     setMulterSingle('success');
     mockUploadImage.mockResolvedValue(makeImageRecord());
 
-    const ctrl = require('../controllers/image');
+    const ctrl = require('../modules/image/controllers/imageController');
     const fakeRes = { status: jest.fn().mockReturnThis(), json: jest.fn() };
     const fakeNext = jest.fn();
-    const fakeReq = { body: { category: 'user', productId: 'prod-1' }, user: { id: 1 }, headers: {} };
+    const fakeReq = {
+      body: { category: 'user', productId: 'prod-1' },
+      user: { id: 1 },
+      headers: {},
+    };
 
     await ctrl.uploadSingle(fakeReq, fakeRes, fakeNext);
 
     expect(mockUploadImage).toHaveBeenCalledWith(
       expect.any(Object),
-      expect.objectContaining({ category: 'user', productId: 'prod-1' })
+      expect.objectContaining({ category: 'user', productId: 'prod-1' }),
     );
   });
 });
@@ -524,7 +543,7 @@ describe('uploadMultiple — logic controller', () => {
       convertBase64ToFile: (...args) => mockConvertBase64ToFile(...args),
       cleanupOrphanedFiles: (...args) => mockCleanupOrphanedFiles(...args),
     }));
-    imageController = require('../controllers/image');
+    imageController = require('../modules/image/controllers/imageController');
     mockRes = {
       status: jest.fn().mockReturnThis(),
       json: jest.fn(),
@@ -554,12 +573,10 @@ describe('uploadMultiple — logic controller', () => {
 
     expect(mockUploadMultipleImages).toHaveBeenCalledWith(
       expect.arrayContaining([expect.objectContaining({ originalname: 'photo1.jpg' })]),
-      expect.objectContaining({ category: 'product' })
+      expect.objectContaining({ category: 'product' }),
     );
     expect(mockRes.status).toHaveBeenCalledWith(200);
-    expect(mockRes.json).toHaveBeenCalledWith(
-      expect.objectContaining({ status: 'success' })
-    );
+    expect(mockRes.json).toHaveBeenCalledWith(expect.objectContaining({ status: 'success' }));
   });
 
   test('400 khi không có files trong request', async () => {
@@ -606,7 +623,7 @@ describe('uploadMultiple — logic controller', () => {
     await imageController.uploadMultiple(req, mockRes, mockNext);
 
     expect(mockRes.json).toHaveBeenCalledWith(
-      expect.objectContaining({ message: expect.stringContaining('1') })
+      expect.objectContaining({ message: expect.stringContaining('1') }),
     );
   });
 });

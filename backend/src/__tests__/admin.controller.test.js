@@ -121,7 +121,7 @@ jest.mock('../services/adminAudit', () => ({
 }));
 
 // Mock adminImport controller — tránh phụ thuộc multer/csv
-jest.mock('../controllers/adminImport', () => ({
+jest.mock('../modules/admin/controllers/adminImportController', () => ({
   getImportTemplate: (_req, _res, next) => next(),
   uploadImportFile: (_req, _res, next) => next(),
   importProducts: (_req, _res, next) => next(),
@@ -130,7 +130,7 @@ jest.mock('../controllers/adminImport', () => ({
 }));
 
 // Mock discountCode controller
-jest.mock('../controllers/discountCode', () => ({
+jest.mock('../modules/discountCode/controllers/discountCodeController', () => ({
   getAllDiscountCodes: (_req, _res, next) => next(),
   getDiscountCodeById: (_req, _res, next) => next(),
   createDiscountCode: (_req, _res, next) => next(),
@@ -275,7 +275,7 @@ jest.mock('../models', () => {
 const express = require('express');
 const supertest = require('supertest');
 const { errorHandler } = require('../middlewares/errorHandler');
-const adminRouter = require('../routes/admin');
+const adminRouter = require('../modules/admin/routes');
 
 const {
   User,
@@ -408,9 +408,7 @@ describe('GET /api/admin/dashboard', () => {
       .mockResolvedValueOnce(totalUsers)
       .mockResolvedValueOnce(monthlyUsers)
       .mockResolvedValueOnce(lastMonthUsers);
-    Product.count
-      .mockResolvedValueOnce(totalProducts)
-      .mockResolvedValueOnce(lowStockCount);
+    Product.count.mockResolvedValueOnce(totalProducts).mockResolvedValueOnce(lowStockCount);
     Order.count
       .mockResolvedValueOnce(totalOrders)
       .mockResolvedValueOnce(monthlyOrders)
@@ -467,10 +465,7 @@ describe('GET /api/admin/dashboard', () => {
   });
 
   it('vẫn trả về 200 khi OrderItem.findAll ném lỗi (topProducts lỗi được bắt nội bộ)', async () => {
-    User.count
-      .mockResolvedValueOnce(10)
-      .mockResolvedValueOnce(2)
-      .mockResolvedValueOnce(1);
+    User.count.mockResolvedValueOnce(10).mockResolvedValueOnce(2).mockResolvedValueOnce(1);
     Product.count.mockResolvedValueOnce(5).mockResolvedValueOnce(0);
     Order.count
       .mockResolvedValueOnce(8)
@@ -511,9 +506,7 @@ describe('GET /api/admin/stats', () => {
     Order.findAll.mockResolvedValueOnce([
       makeRow({ period: '2025-01-01', orderCount: 5, revenue: 500000 }),
     ]);
-    User.findAll.mockResolvedValueOnce([
-      makeRow({ period: '2025-01-01', newUsers: 3 }),
-    ]);
+    User.findAll.mockResolvedValueOnce([makeRow({ period: '2025-01-01', newUsers: 3 })]);
 
     const res = await request.get('/api/admin/stats?startDate=2025-01-01&endDate=2025-01-31');
     expect(res.status).toBe(200);
@@ -528,7 +521,9 @@ describe('GET /api/admin/stats', () => {
     Order.findAll.mockResolvedValueOnce([]);
     User.findAll.mockResolvedValueOnce([]);
 
-    const res = await request.get('/api/admin/stats?startDate=2025-01-01&endDate=2025-12-31&groupBy=month');
+    const res = await request.get(
+      '/api/admin/stats?startDate=2025-01-01&endDate=2025-12-31&groupBy=month',
+    );
     expect(res.status).toBe(200);
     expect(res.body.data.orders).toEqual([]);
   });
@@ -620,9 +615,7 @@ describe('PUT /api/admin/users/:id', () => {
     const selfUser = makeUser({ id: 1, role: 'admin' });
     User.findByPk.mockResolvedValueOnce(selfUser);
 
-    const res = await request
-      .put('/api/admin/users/1')
-      .send({ role: 'customer' });
+    const res = await request.put('/api/admin/users/1').send({ role: 'customer' });
     expect(res.status).toBe(403);
   });
 
@@ -630,9 +623,7 @@ describe('PUT /api/admin/users/:id', () => {
     const selfUser = makeUser({ id: 1, role: 'admin', isActive: true });
     User.findByPk.mockResolvedValueOnce(selfUser);
 
-    const res = await request
-      .put('/api/admin/users/1')
-      .send({ isActive: false });
+    const res = await request.put('/api/admin/users/1').send({ isActive: false });
     expect(res.status).toBe(403);
   });
 });
@@ -802,14 +793,16 @@ describe('POST /api/admin/products', () => {
       expect.arrayContaining([
         expect.objectContaining({ imageUrl: 'https://img.com/1.jpg', isThumbnail: true }),
         expect.objectContaining({ imageUrl: 'https://img.com/2.jpg', isThumbnail: false }),
-      ])
+      ]),
     );
   });
 
   it('SKU được tự động sinh khi không cung cấp', async () => {
     setupCreateProductMocks(3);
 
-    await request.post('/api/admin/products').send({ name: 'Product không SKU', basePrice: 5000000 });
+    await request
+      .post('/api/admin/products')
+      .send({ name: 'Product không SKU', basePrice: 5000000 });
 
     const createCall = Product.create.mock.calls[0][0];
     // SKU không có trên products nữa (đã chuyển sang variants), nhưng logic vẫn tạo uniqueSku
@@ -830,7 +823,7 @@ describe('PUT /api/admin/products/:id', () => {
     // Sau đó gọi Product.findByPk(id, { transaction }) bên trong try block
     // Cuối cùng gọi Product.findByPk(id, ...) để load lại sau commit
     Product.findByPk
-      .mockResolvedValueOnce(fakeProduct)  // trong try block sau khi lấy transaction
+      .mockResolvedValueOnce(fakeProduct) // trong try block sau khi lấy transaction
       .mockResolvedValueOnce(fakeProduct); // load lại finalProduct sau commit
     sequelize.query.mockResolvedValue([[], {}]);
 
@@ -906,7 +899,9 @@ describe('PATCH /api/admin/products/:id/status', () => {
     const fakeProduct = makeProduct({ id: 5, status: 'active' });
     Product.findByPk.mockResolvedValueOnce(fakeProduct);
 
-    const res = await request.patch('/api/admin/products/5/status').send({ status: 'invalid_status' });
+    const res = await request
+      .patch('/api/admin/products/5/status')
+      .send({ status: 'invalid_status' });
     expect(res.status).toBe(400);
   });
 });
@@ -977,7 +972,9 @@ describe('POST /api/admin/products/:productId/restock', () => {
     ProductVariant.sum.mockResolvedValueOnce(18);
     InventoryLog.create.mockResolvedValueOnce({ id: 2, changeType: 'restock' });
 
-    const res = await request.post('/api/admin/products/9/restock').send({ quantity: 10, variantId: 'v1' });
+    const res = await request
+      .post('/api/admin/products/9/restock')
+      .send({ quantity: 10, variantId: 'v1' });
     expect(res.status).toBe(200);
     expect(res.body.data.variantId).toBe('v1');
   });
@@ -1004,7 +1001,9 @@ describe('POST /api/admin/products/:productId/restock', () => {
     Product.findByPk.mockResolvedValueOnce(fakeProduct);
     ProductVariant.findOne.mockResolvedValueOnce(null);
 
-    const res = await request.post('/api/admin/products/11/restock').send({ quantity: 5, variantId: 'nonexistent' });
+    const res = await request
+      .post('/api/admin/products/11/restock')
+      .send({ quantity: 5, variantId: 'nonexistent' });
     expect(res.status).toBe(404);
   });
 });
@@ -1052,9 +1051,7 @@ describe('PUT /api/admin/orders/:id/status', () => {
     const fakeOrder = makeOrder({ id: 5, status: 'pending' });
     Order.findByPk.mockResolvedValueOnce(fakeOrder);
 
-    const res = await request
-      .put('/api/admin/orders/5/status')
-      .send({ status: 'processing' });
+    const res = await request.put('/api/admin/orders/5/status').send({ status: 'processing' });
     expect(res.status).toBe(200);
     expect(res.body.status).toBe('success');
   });
@@ -1067,16 +1064,19 @@ describe('PUT /api/admin/orders/:id/status', () => {
   });
 
   it('tự động đặt paymentStatus=paid khi status=delivered và paymentMethod=cod', async () => {
-    const fakeOrder = makeOrder({ id: 6, status: 'shipped', paymentMethod: 'cod', paymentStatus: 'pending' });
+    const fakeOrder = makeOrder({
+      id: 6,
+      status: 'shipped',
+      paymentMethod: 'cod',
+      paymentStatus: 'pending',
+    });
     Order.findByPk.mockResolvedValueOnce(fakeOrder);
 
-    const res = await request
-      .put('/api/admin/orders/6/status')
-      .send({ status: 'delivered' });
+    const res = await request.put('/api/admin/orders/6/status').send({ status: 'delivered' });
     expect(res.status).toBe(200);
     // Kiểm tra update được gọi với paymentStatus=paid
     expect(fakeOrder.update).toHaveBeenCalledWith(
-      expect.objectContaining({ paymentStatus: 'paid' })
+      expect.objectContaining({ paymentStatus: 'paid' }),
     );
   });
 
@@ -1099,9 +1099,7 @@ describe('PUT /api/admin/orders/:id/status', () => {
     const updatedOrder = makeOrder({ id: 7, status: 'cancelled' });
     Order.findByPk.mockResolvedValueOnce(updatedOrder);
 
-    const res = await request
-      .put('/api/admin/orders/7/status')
-      .send({ status: 'cancelled' });
+    const res = await request.put('/api/admin/orders/7/status').send({ status: 'cancelled' });
     expect(res.status).toBe(200);
   });
 });
@@ -1181,7 +1179,7 @@ describe('GET /api/admin/analytics/order-status', () => {
 
     await request.get('/api/admin/analytics/order-status?startDate=2025-01-01');
     expect(Order.findAll).toHaveBeenCalledWith(
-      expect.objectContaining({ where: expect.objectContaining({ createdAt: expect.anything() }) })
+      expect.objectContaining({ where: expect.objectContaining({ createdAt: expect.anything() }) }),
     );
   });
 });
@@ -1197,7 +1195,11 @@ describe('GET /api/admin/analytics/top-products', () => {
         productId: 1,
         revenue: '5000000',
         soldCount: '20',
-        Product: { name: 'Laptop A', productImages: [], toJSON: () => ({ name: 'Laptop A', productImages: [] }) },
+        Product: {
+          name: 'Laptop A',
+          productImages: [],
+          toJSON: () => ({ name: 'Laptop A', productImages: [] }),
+        },
       }),
     ];
     OrderItem.findAll.mockResolvedValueOnce(fakeRows);
@@ -1226,9 +1228,7 @@ describe('GET /api/admin/analytics/top-products', () => {
 describe('GET /api/admin/analytics/revenue-by-category', () => {
   it('trả về 200 với dữ liệu doanh thu theo danh mục', async () => {
     sequelize.query.mockResolvedValueOnce([
-      [
-        { categoryId: 1, categoryName: 'Laptop', revenue: '10000000', orderItemCount: '50' },
-      ],
+      [{ categoryId: 1, categoryName: 'Laptop', revenue: '10000000', orderItemCount: '50' }],
       {},
     ]);
 
@@ -1269,7 +1269,9 @@ describe('GET /api/admin/analytics/user-growth', () => {
       { date: '2025-01-02', newUsers: '8' },
     ]);
 
-    const res = await request.get('/api/admin/analytics/user-growth?startDate=2025-01-01&endDate=2025-01-31');
+    const res = await request.get(
+      '/api/admin/analytics/user-growth?startDate=2025-01-01&endDate=2025-01-31',
+    );
     expect(res.status).toBe(200);
     expect(res.body.data).toHaveLength(2);
     expect(res.body.data[0].newUsers).toBe(5);
@@ -1278,7 +1280,9 @@ describe('GET /api/admin/analytics/user-growth', () => {
   it('groupBy=week dùng định dạng %Y-%u', async () => {
     User.findAll.mockResolvedValueOnce([]);
 
-    await request.get('/api/admin/analytics/user-growth?startDate=2025-01-01&endDate=2025-12-31&groupBy=week');
+    await request.get(
+      '/api/admin/analytics/user-growth?startDate=2025-01-01&endDate=2025-12-31&groupBy=week',
+    );
     expect(User.findAll).toHaveBeenCalled();
   });
 });
@@ -1343,7 +1347,9 @@ describe('GET /api/admin/analytics/low-stock', () => {
     await request.get('/api/admin/analytics/low-stock');
     const callArgs = Product.findAll.mock.calls[0][0];
     // threshold = 10 được dùng trong where clause
-    expect(callArgs.where.stockQuantity).toEqual(expect.objectContaining({ [require('sequelize').Op.lte]: 10 }));
+    expect(callArgs.where.stockQuantity).toEqual(
+      expect.objectContaining({ [require('sequelize').Op.lte]: 10 }),
+    );
   });
 
   it('dùng threshold từ query khi được cung cấp', async () => {
@@ -1351,7 +1357,9 @@ describe('GET /api/admin/analytics/low-stock', () => {
 
     await request.get('/api/admin/analytics/low-stock?threshold=5');
     const callArgs = Product.findAll.mock.calls[0][0];
-    expect(callArgs.where.stockQuantity).toEqual(expect.objectContaining({ [require('sequelize').Op.lte]: 5 }));
+    expect(callArgs.where.stockQuantity).toEqual(
+      expect.objectContaining({ [require('sequelize').Op.lte]: 5 }),
+    );
   });
 });
 
@@ -1385,7 +1393,14 @@ describe('GET /api/admin/reports/export', () => {
 
   it('trả về 200 CSV khi type=products', async () => {
     Product.findAll.mockResolvedValueOnce([
-      { id: 1, name: 'Laptop A', sku: 'SKU-001', basePrice: 15000000, stockQuantity: 10, status: 'active' },
+      {
+        id: 1,
+        name: 'Laptop A',
+        sku: 'SKU-001',
+        basePrice: 15000000,
+        stockQuantity: 10,
+        status: 'active',
+      },
     ]);
 
     const res = await request.get('/api/admin/reports/export?type=products');
@@ -1411,7 +1426,9 @@ describe('GET /api/admin/reports/export', () => {
   it('áp dụng filter ngày cho report orders', async () => {
     Order.findAll.mockResolvedValueOnce([]);
 
-    await request.get('/api/admin/reports/export?type=orders&startDate=2025-01-01&endDate=2025-01-31');
+    await request.get(
+      '/api/admin/reports/export?type=orders&startDate=2025-01-01&endDate=2025-01-31',
+    );
     const callArgs = Order.findAll.mock.calls[0][0];
     expect(callArgs.where.createdAt).toBeDefined();
   });
@@ -1433,18 +1450,21 @@ describe('GET /api/admin/chatbot/stats', () => {
     } = opts;
 
     ChatMessage.count
-      .mockResolvedValueOnce(totalSessions)   // totalSessions
-      .mockResolvedValueOnce(totalMessages)   // totalMessages
-      .mockResolvedValueOnce(totalAssistant)  // totalAssistantMessages
-      .mockResolvedValueOnce(fallbackCount);  // fallbackMessages
+      .mockResolvedValueOnce(totalSessions) // totalSessions
+      .mockResolvedValueOnce(totalMessages) // totalMessages
+      .mockResolvedValueOnce(totalAssistant) // totalAssistantMessages
+      .mockResolvedValueOnce(fallbackCount); // fallbackMessages
     ChatMessage.findAll.mockResolvedValueOnce(intentRows);
-    ChatMessage.findOne.mockResolvedValueOnce(
-      avgResponse ? { avgTime: avgResponse } : null
-    );
+    ChatMessage.findOne.mockResolvedValueOnce(avgResponse ? { avgTime: avgResponse } : null);
   }
 
   it('trả về 200 với đầy đủ thống kê chatbot', async () => {
-    setupChatbotMocks({ totalSessions: 10, totalMessages: 50, totalAssistant: 25, fallbackCount: 5 });
+    setupChatbotMocks({
+      totalSessions: 10,
+      totalMessages: 50,
+      totalAssistant: 25,
+      fallbackCount: 5,
+    });
 
     const res = await request.get('/api/admin/chatbot/stats');
     expect(res.status).toBe(200);
@@ -1466,7 +1486,12 @@ describe('GET /api/admin/chatbot/stats', () => {
   });
 
   it('tính đúng avgMessagesPerSession = messages / sessions', async () => {
-    setupChatbotMocks({ totalSessions: 10, totalMessages: 50, totalAssistant: 20, fallbackCount: 0 });
+    setupChatbotMocks({
+      totalSessions: 10,
+      totalMessages: 50,
+      totalAssistant: 20,
+      fallbackCount: 0,
+    });
 
     const res = await request.get('/api/admin/chatbot/stats');
     expect(res.status).toBe(200);
@@ -1505,9 +1530,7 @@ describe('GET /api/admin/chatbot/stats', () => {
 describe('GET /api/admin/audit-logs', () => {
   it('trả về 200 với danh sách audit logs và phân trang', async () => {
     AuditLog.findAndCountAll.mockResolvedValueOnce({
-      rows: [
-        { id: 1, action: 'CREATE_PRODUCT', adminId: 1, createdAt: new Date() },
-      ],
+      rows: [{ id: 1, action: 'CREATE_PRODUCT', adminId: 1, createdAt: new Date() }],
       count: 1,
     });
 

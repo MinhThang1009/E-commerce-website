@@ -112,7 +112,7 @@ jest.mock('../services/adminAudit', () => ({
   auditMiddleware: (_req, _res, next) => next(),
 }));
 
-jest.mock('../controllers/adminImport', () => ({
+jest.mock('../modules/admin/controllers/adminImportController', () => ({
   getImportTemplate: (_req, _res, next) => next(),
   uploadImportFile: (_req, _res, next) => next(),
   importProducts: (_req, _res, next) => next(),
@@ -120,7 +120,7 @@ jest.mock('../controllers/adminImport', () => ({
   exportProducts: (_req, _res, next) => next(),
 }));
 
-jest.mock('../controllers/discountCode', () => ({
+jest.mock('../modules/discountCode/controllers/discountCodeController', () => ({
   getAllDiscountCodes: (_req, _res, next) => next(),
   getDiscountCodeById: (_req, _res, next) => next(),
   createDiscountCode: (_req, _res, next) => next(),
@@ -258,7 +258,7 @@ jest.mock('../models', () => {
 const express = require('express');
 const supertest = require('supertest');
 const { errorHandler } = require('../middlewares/errorHandler');
-const adminRouter = require('../routes/admin');
+const adminRouter = require('../modules/admin/routes');
 const {
   User,
   Product,
@@ -419,9 +419,7 @@ describe('getProductById — deep-parse attributes và specifications', () => {
         id: 6,
         name: 'PC Test',
         variants: [],
-        attributes: [
-          { name: 'Color', values: '["red","blue"]' },
-        ],
+        attributes: [{ name: 'Color', values: '["red","blue"]' }],
         specifications: null,
       }),
     };
@@ -455,9 +453,7 @@ describe('getProductById — deep-parse attributes và specifications', () => {
         id: 8,
         name: 'Invalid Attr',
         variants: [],
-        attributes: [
-          { name: 'Size', values: 'not-valid-json{{{' },
-        ],
+        attributes: [{ name: 'Size', values: 'not-valid-json{{{' }],
         specifications: null,
       }),
     };
@@ -603,7 +599,9 @@ describe('POST /api/admin/products — createProduct với các quan hệ', () =
     expect(res.status).toBe(201);
     expect(sequelize.query).toHaveBeenCalledWith(
       expect.stringContaining('compare_at_price'),
-      expect.objectContaining({ replacements: expect.objectContaining({ comparePrice: 18000000 }) })
+      expect.objectContaining({
+        replacements: expect.objectContaining({ comparePrice: 18000000 }),
+      }),
     );
   });
 
@@ -625,7 +623,7 @@ describe('POST /api/admin/products — createProduct với các quan hệ', () =
 
     expect(res.status).toBe(201);
     expect(Category.create).toHaveBeenCalledWith(
-      expect.objectContaining({ name: 'Category 5', slug: 'category-5' })
+      expect.objectContaining({ name: 'Category 5', slug: 'category-5' }),
     );
     expect(newProduct.setCategories).toHaveBeenCalledWith([5]);
   });
@@ -665,7 +663,7 @@ describe('POST /api/admin/products — createProduct với các quan hệ', () =
 
     expect(res.status).toBe(201);
     expect(ProductAttribute.create).toHaveBeenCalledWith(
-      expect.objectContaining({ name: 'Color', values: ['Red', 'Blue', 'Green'] })
+      expect.objectContaining({ name: 'Color', values: ['Red', 'Blue', 'Green'] }),
     );
   });
 
@@ -685,7 +683,7 @@ describe('POST /api/admin/products — createProduct với các quan hệ', () =
 
     expect(res.status).toBe(201);
     expect(ProductAttribute.create).toHaveBeenCalledWith(
-      expect.objectContaining({ values: ['8GB', '16GB'] })
+      expect.objectContaining({ values: ['8GB', '16GB'] }),
     );
   });
 
@@ -705,7 +703,7 @@ describe('POST /api/admin/products — createProduct với các quan hệ', () =
 
     expect(res.status).toBe(201);
     expect(ProductAttribute.create).toHaveBeenCalledWith(
-      expect.objectContaining({ values: ['1.5'] })
+      expect.objectContaining({ values: ['1.5'] }),
     );
   });
 
@@ -738,18 +736,20 @@ describe('POST /api/admin/products — createProduct với các quan hệ', () =
     const res = await request.post('/api/admin/products').send({
       name: 'Laptop With Variant',
       basePrice: 10000000,
-      variants: [{
-        name: '8GB RAM',
-        price: 10000000,
-        stock: 5,
-        sku: 'VAR-001',
-        attributes: '{"RAM":"8GB"}',
-      }],
+      variants: [
+        {
+          name: '8GB RAM',
+          price: 10000000,
+          stock: 5,
+          sku: 'VAR-001',
+          attributes: '{"RAM":"8GB"}',
+        },
+      ],
     });
 
     expect(res.status).toBe(201);
     expect(ProductVariant.create).toHaveBeenCalledWith(
-      expect.objectContaining({ attributes: { RAM: '8GB' } })
+      expect.objectContaining({ attributes: { RAM: '8GB' } }),
     );
   });
 
@@ -772,7 +772,7 @@ describe('POST /api/admin/products — createProduct với các quan hệ', () =
       expect.arrayContaining([
         expect.objectContaining({ imageUrl: 'https://img.com/photo1.jpg', isThumbnail: true }),
         expect.objectContaining({ imageUrl: 'https://img.com/photo2.jpg', isThumbnail: false }),
-      ])
+      ]),
     );
   });
 
@@ -794,7 +794,7 @@ describe('POST /api/admin/products — createProduct với các quan hệ', () =
     expect(ProductImage.bulkCreate).toHaveBeenCalledWith(
       expect.arrayContaining([
         expect.objectContaining({ imageUrl: 'https://img.com/obj1.jpg', color: 'black' }),
-      ])
+      ]),
     );
   });
 
@@ -820,7 +820,7 @@ describe('POST /api/admin/products — createProduct với các quan hệ', () =
       expect.arrayContaining([
         expect.objectContaining({ name: 'CPU', value: 'Intel i7', category: 'Hardware' }),
         expect.objectContaining({ name: 'RAM', category: 'General' }),
-      ])
+      ]),
     );
   });
 
@@ -842,7 +842,7 @@ describe('POST /api/admin/products — createProduct với các quan hệ', () =
 
     expect(res.status).toBe(201);
     expect(ProductWarranty.create).toHaveBeenCalledWith(
-      expect.objectContaining({ productId: 31, warrantyPackageId: 1, isDefault: true })
+      expect.objectContaining({ productId: 31, warrantyPackageId: 1, isDefault: true }),
     );
   });
 
@@ -894,7 +894,7 @@ describe('PUT /api/admin/products/:id — updateProduct các diff paths', () => 
   function setupUpdateMocks(productId = 10, extraMocks = {}) {
     const fakeProduct = makeProduct({ id: productId });
     Product.findByPk
-      .mockResolvedValueOnce(fakeProduct)  // bên trong transaction
+      .mockResolvedValueOnce(fakeProduct) // bên trong transaction
       .mockResolvedValueOnce(fakeProduct); // load lại sau commit
     sequelize.query.mockResolvedValue([[], {}]);
 
@@ -954,7 +954,7 @@ describe('PUT /api/admin/products/:id — updateProduct các diff paths', () => 
     expect(res.status).toBe(200);
     expect(existingAttr.update).toHaveBeenCalledWith(
       expect.objectContaining({ values: ['Red', 'Blue'], type: 'select' }),
-      expect.anything()
+      expect.anything(),
     );
   });
 
@@ -969,7 +969,7 @@ describe('PUT /api/admin/products/:id — updateProduct các diff paths', () => 
     expect(res.status).toBe(200);
     expect(ProductAttribute.create).toHaveBeenCalledWith(
       expect.objectContaining({ name: 'NewAttr', values: ['S', 'M', 'L'] }),
-      expect.anything()
+      expect.anything(),
     );
   });
 
@@ -984,7 +984,7 @@ describe('PUT /api/admin/products/:id — updateProduct các diff paths', () => 
     expect(res.status).toBe(200);
     expect(ProductAttribute.create).toHaveBeenCalledWith(
       expect.objectContaining({ values: ['Cotton', 'Polyester'] }),
-      expect.anything()
+      expect.anything(),
     );
   });
 
@@ -1024,7 +1024,7 @@ describe('PUT /api/admin/products/:id — updateProduct các diff paths', () => 
     expect(res.status).toBe(200);
     expect(existingVariant.update).toHaveBeenCalledWith(
       expect.objectContaining({ stockQuantity: 15 }),
-      expect.anything()
+      expect.anything(),
     );
   });
 
@@ -1040,15 +1040,13 @@ describe('PUT /api/admin/products/:id — updateProduct các diff paths', () => 
     expect(res.status).toBe(200);
     expect(ProductVariant.create).toHaveBeenCalledWith(
       expect.objectContaining({ productId: '10' }),
-      expect.anything()
+      expect.anything(),
     );
   });
 
   it('update stockQuantity trực tiếp khi không có variants trong request', async () => {
     const fakeProduct = makeProduct({ id: 10 });
-    Product.findByPk
-      .mockResolvedValueOnce(fakeProduct)
-      .mockResolvedValueOnce(fakeProduct);
+    Product.findByPk.mockResolvedValueOnce(fakeProduct).mockResolvedValueOnce(fakeProduct);
     sequelize.query.mockResolvedValue([[], {}]);
     Product.update.mockResolvedValueOnce([1]);
 
@@ -1059,7 +1057,7 @@ describe('PUT /api/admin/products/:id — updateProduct các diff paths', () => 
     expect(res.status).toBe(200);
     expect(Product.update).toHaveBeenCalledWith(
       { stockQuantity: 25 },
-      expect.objectContaining({ where: { id: '10' } })
+      expect.objectContaining({ where: { id: '10' } }),
     );
   });
 
@@ -1075,7 +1073,11 @@ describe('PUT /api/admin/products/:id — updateProduct các diff paths', () => 
       currentVariants: [],
       currentSpecs: [oldSpec],
     });
-    ProductSpecification.create.mockResolvedValueOnce({ id: 2, name: 'NewSpec', value: 'NewValue' });
+    ProductSpecification.create.mockResolvedValueOnce({
+      id: 2,
+      name: 'NewSpec',
+      value: 'NewValue',
+    });
 
     const res = await request.put('/api/admin/products/10').send({
       specifications: [{ name: 'NewSpec', value: 'NewValue' }],
@@ -1085,7 +1087,7 @@ describe('PUT /api/admin/products/:id — updateProduct các diff paths', () => 
     expect(oldSpec.destroy).toHaveBeenCalled();
     expect(ProductSpecification.create).toHaveBeenCalledWith(
       expect.objectContaining({ name: 'NewSpec', value: 'NewValue', productId: '10' }),
-      expect.anything()
+      expect.anything(),
     );
   });
 
@@ -1109,7 +1111,7 @@ describe('PUT /api/admin/products/:id — updateProduct các diff paths', () => 
     expect(res.status).toBe(200);
     expect(existingSpec.update).toHaveBeenCalledWith(
       expect.objectContaining({ value: 'Intel i9' }),
-      expect.anything()
+      expect.anything(),
     );
   });
 
@@ -1120,9 +1122,7 @@ describe('PUT /api/admin/products/:id — updateProduct các diff paths', () => 
       currentSpecs: [],
     });
     ProductWarranty.destroy.mockResolvedValueOnce(1);
-    WarrantyPackage.findAll.mockResolvedValueOnce([
-      { id: 2, name: '2 Year Warranty' },
-    ]);
+    WarrantyPackage.findAll.mockResolvedValueOnce([{ id: 2, name: '2 Year Warranty' }]);
     ProductWarranty.create.mockResolvedValueOnce({ id: 200 });
 
     const res = await request.put('/api/admin/products/10').send({
@@ -1131,11 +1131,11 @@ describe('PUT /api/admin/products/:id — updateProduct các diff paths', () => 
 
     expect(res.status).toBe(200);
     expect(ProductWarranty.destroy).toHaveBeenCalledWith(
-      expect.objectContaining({ where: { productId: '10' } })
+      expect.objectContaining({ where: { productId: '10' } }),
     );
     expect(ProductWarranty.create).toHaveBeenCalledWith(
       expect.objectContaining({ warrantyPackageId: 2, isDefault: true }),
-      expect.anything()
+      expect.anything(),
     );
   });
 
@@ -1159,9 +1159,7 @@ describe('PUT /api/admin/products/:id — updateProduct các diff paths', () => 
   it('không gọi vectorStore.upsertProduct khi product không active sau update', async () => {
     const vectorStore = require('../services/ai/vectorStore');
     const inactiveProduct = makeProduct({ id: 10, status: 'inactive' });
-    Product.findByPk
-      .mockResolvedValueOnce(inactiveProduct)
-      .mockResolvedValueOnce(inactiveProduct);
+    Product.findByPk.mockResolvedValueOnce(inactiveProduct).mockResolvedValueOnce(inactiveProduct);
     sequelize.query.mockResolvedValue([[], {}]);
 
     const res = await request.put('/api/admin/products/10').send({
@@ -1176,9 +1174,7 @@ describe('PUT /api/admin/products/:id — updateProduct các diff paths', () => 
 
   it('comparePrice field được dùng khi compareAtPrice không có', async () => {
     const fakeProduct = makeProduct({ id: 10 });
-    Product.findByPk
-      .mockResolvedValueOnce(fakeProduct)
-      .mockResolvedValueOnce(fakeProduct);
+    Product.findByPk.mockResolvedValueOnce(fakeProduct).mockResolvedValueOnce(fakeProduct);
     sequelize.query.mockResolvedValue([[], {}]);
 
     const res = await request.put('/api/admin/products/10').send({
@@ -1190,7 +1186,7 @@ describe('PUT /api/admin/products/:id — updateProduct các diff paths', () => 
       expect.stringContaining('compare_at_price'),
       expect.objectContaining({
         replacements: expect.objectContaining({ compareAtPrice: 20000000 }),
-      })
+      }),
     );
   });
 });
@@ -1277,7 +1273,7 @@ describe('PUT /api/admin/orders/:id/status — COD delivered sets paymentStatus=
 
     expect(res.status).toBe(200);
     expect(fakeOrder.update).toHaveBeenCalledWith(
-      expect.objectContaining({ paymentStatus: 'paid' })
+      expect.objectContaining({ paymentStatus: 'paid' }),
     );
   });
 
@@ -1287,12 +1283,14 @@ describe('PUT /api/admin/orders/:id/status — COD delivered sets paymentStatus=
       id: 31,
       status: 'processing',
       paymentMethod: 'vnpay',
-      items: [{
-        quantity: 3,
-        variantId: null,
-        Product: fakeProduct,
-        ProductVariant: null,
-      }],
+      items: [
+        {
+          quantity: 3,
+          variantId: null,
+          Product: fakeProduct,
+          ProductVariant: null,
+        },
+      ],
     });
     Order.findByPk
       .mockResolvedValueOnce(fakeOrder)
@@ -1301,10 +1299,7 @@ describe('PUT /api/admin/orders/:id/status — COD delivered sets paymentStatus=
     const res = await request.put('/api/admin/orders/31/status').send({ status: 'cancelled' });
 
     expect(res.status).toBe(200);
-    expect(fakeProduct.update).toHaveBeenCalledWith(
-      { stockQuantity: 13 },
-      expect.anything()
-    );
+    expect(fakeProduct.update).toHaveBeenCalledWith({ stockQuantity: 13 }, expect.anything());
   });
 });
 
@@ -1343,12 +1338,14 @@ describe('PUT /api/admin/orders/:id/cancel', () => {
     const activeOrder = makeOrder({
       id: 42,
       status: 'processing',
-      items: [{
-        quantity: 2,
-        variantId: null,
-        Product: fakeProductInOrder,
-        ProductVariant: null,
-      }],
+      items: [
+        {
+          quantity: 2,
+          variantId: null,
+          Product: fakeProductInOrder,
+          ProductVariant: null,
+        },
+      ],
     });
     Order.findByPk.mockResolvedValueOnce(activeOrder);
 
@@ -1356,10 +1353,7 @@ describe('PUT /api/admin/orders/:id/cancel', () => {
 
     expect(res.status).toBe(200);
     expect(res.body.data.status).toBe('cancelled');
-    expect(fakeProductInOrder.update).toHaveBeenCalledWith(
-      { stockQuantity: 7 },
-      expect.anything()
-    );
+    expect(fakeProductInOrder.update).toHaveBeenCalledWith({ stockQuantity: 7 }, expect.anything());
   });
 
   it('hủy thành công và hoàn tồn kho Variant khi có variantId', async () => {
@@ -1371,22 +1365,21 @@ describe('PUT /api/admin/orders/:id/cancel', () => {
     const activeOrder = makeOrder({
       id: 43,
       status: 'processing',
-      items: [{
-        quantity: 3,
-        variantId: 'v5',
-        Product: makeProduct({ id: 8 }),
-        ProductVariant: fakeVariant,
-      }],
+      items: [
+        {
+          quantity: 3,
+          variantId: 'v5',
+          Product: makeProduct({ id: 8 }),
+          ProductVariant: fakeVariant,
+        },
+      ],
     });
     Order.findByPk.mockResolvedValueOnce(activeOrder);
 
     const res = await request.put('/api/admin/orders/43/cancel');
 
     expect(res.status).toBe(200);
-    expect(fakeVariant.update).toHaveBeenCalledWith(
-      { stockQuantity: 6 },
-      expect.anything()
-    );
+    expect(fakeVariant.update).toHaveBeenCalledWith({ stockQuantity: 6 }, expect.anything());
   });
 });
 
@@ -1438,10 +1431,8 @@ describe('POST /api/admin/products/:id/clone — với quan hệ đầy đủ', 
     const res = await request.post('/api/admin/products/5/clone');
     expect(res.status).toBe(201);
     expect(ProductCategory.bulkCreate).toHaveBeenCalledWith(
-      expect.arrayContaining([
-        expect.objectContaining({ productId: 50, categoryId: 2 }),
-      ]),
-      expect.anything()
+      expect.arrayContaining([expect.objectContaining({ productId: 50, categoryId: 2 })]),
+      expect.anything(),
     );
   });
 
@@ -1466,10 +1457,8 @@ describe('POST /api/admin/products/:id/clone — với quan hệ đầy đủ', 
     const res = await request.post('/api/admin/products/6/clone');
     expect(res.status).toBe(201);
     expect(ProductVariant.bulkCreate).toHaveBeenCalledWith(
-      expect.arrayContaining([
-        expect.objectContaining({ productId: 60 }),
-      ]),
-      expect.anything()
+      expect.arrayContaining([expect.objectContaining({ productId: 60 })]),
+      expect.anything(),
     );
     // Kiểm tra SKU được tạo mới (không giống với SKU gốc)
     const bulkCreateArgs = ProductVariant.bulkCreate.mock.calls[0][0];
@@ -1500,7 +1489,7 @@ describe('POST /api/admin/products/:id/clone — với quan hệ đầy đủ', 
       expect.arrayContaining([
         expect.objectContaining({ productId: 70, name: 'RAM', value: '16GB' }),
       ]),
-      expect.anything()
+      expect.anything(),
     );
   });
 
@@ -1532,7 +1521,7 @@ describe('POST /api/admin/products/:id/clone — với quan hệ đầy đủ', 
       expect.arrayContaining([
         expect.objectContaining({ productId: 80, warrantyPackageId: 3, isDefault: true }),
       ]),
-      expect.anything()
+      expect.anything(),
     );
   });
 
@@ -1574,8 +1563,22 @@ describe('POST /api/admin/products/:id/clone — với quan hệ đầy đủ', 
 describe('GET /api/admin/reports/export — products type', () => {
   it('trả về CSV với Content-Type text/csv khi type=products', async () => {
     Product.findAll.mockResolvedValueOnce([
-      { id: 1, name: 'Laptop Pro', sku: 'LP-001', basePrice: 15000000, stockQuantity: 10, status: 'active' },
-      { id: 2, name: 'PC "Gaming"', sku: null, basePrice: 20000000, stockQuantity: 5, status: 'inactive' },
+      {
+        id: 1,
+        name: 'Laptop Pro',
+        sku: 'LP-001',
+        basePrice: 15000000,
+        stockQuantity: 10,
+        status: 'active',
+      },
+      {
+        id: 2,
+        name: 'PC "Gaming"',
+        sku: null,
+        basePrice: 20000000,
+        stockQuantity: 5,
+        status: 'inactive',
+      },
     ]);
 
     const res = await request.get('/api/admin/reports/export?type=products');
@@ -1631,20 +1634,22 @@ describe('POST /api/admin/products — createProduct với productAttributes và
     const res = await request.post('/api/admin/products').send({
       name: 'Điện Thoại Variant',
       basePrice: 8000000,
-      variants: [{
-        name: 'Đỏ 128GB',
-        price: 8000000,
-        stock: 3,
-        sku: 'DT-RED-128',
-        // variantAttributes sẽ là { 'Màu sắc': 'đỏ' } — non-empty object
-        attributes: '{"Màu sắc":"đỏ"}',
-      }],
+      variants: [
+        {
+          name: 'Đỏ 128GB',
+          price: 8000000,
+          stock: 3,
+          sku: 'DT-RED-128',
+          // variantAttributes sẽ là { 'Màu sắc': 'đỏ' } — non-empty object
+          attributes: '{"Màu sắc":"đỏ"}',
+        },
+      ],
     });
 
     // Variant creation succeeded → 201
     expect(res.status).toBe(201);
     expect(ProductVariant.create).toHaveBeenCalledWith(
-      expect.objectContaining({ attributes: { 'Màu sắc': 'đỏ' } })
+      expect.objectContaining({ attributes: { 'Màu sắc': 'đỏ' } }),
     );
   });
 });
@@ -1681,10 +1686,7 @@ describe('POST /api/admin/products — createProduct variant creation failure (l
 
     // Error is rethrown → controller catches and returns 500
     expect(res.status).toBe(500);
-    expect(logger.error).toHaveBeenCalledWith(
-      'Lỗi khi tạo variants:',
-      expect.any(Error)
-    );
+    expect(logger.error).toHaveBeenCalledWith('Lỗi khi tạo variants:', expect.any(Error));
   });
 });
 
@@ -1709,18 +1711,20 @@ describe('PUT /api/admin/products/:id — updateProduct attr.value là số nguy
     sequelize.query.mockResolvedValue([[], {}]);
 
     const res = await request.put('/api/admin/products/60').send({
-      attributes: [{
-        name: 'Trọng lượng',
-        // value là số nguyên (không phải string, không phải array) → else if (attr.value) → [String(1500)]
-        value: 1500,
-      }],
+      attributes: [
+        {
+          name: 'Trọng lượng',
+          // value là số nguyên (không phải string, không phải array) → else if (attr.value) → [String(1500)]
+          value: 1500,
+        },
+      ],
     });
 
     expect(res.status).toBe(200);
     // ProductAttribute.create được gọi với values = ['1500'] (String(1500))
     expect(ProductAttribute.create).toHaveBeenCalledWith(
       expect.objectContaining({ name: 'Trọng lượng', values: ['1500'] }),
-      expect.anything()
+      expect.anything(),
     );
   });
 
@@ -1737,17 +1741,19 @@ describe('PUT /api/admin/products/:id — updateProduct attr.value là số nguy
     sequelize.query.mockResolvedValue([[], {}]);
 
     const res = await request.put('/api/admin/products/61').send({
-      attributes: [{
-        name: 'Có bảo hành',
-        // value là boolean true → else if (attr.value) truthy → [String(true)] = ['true']
-        value: true,
-      }],
+      attributes: [
+        {
+          name: 'Có bảo hành',
+          // value là boolean true → else if (attr.value) truthy → [String(true)] = ['true']
+          value: true,
+        },
+      ],
     });
 
     expect(res.status).toBe(200);
     expect(ProductAttribute.create).toHaveBeenCalledWith(
       expect.objectContaining({ name: 'Có bảo hành', values: ['true'] }),
-      expect.anything()
+      expect.anything(),
     );
   });
 });

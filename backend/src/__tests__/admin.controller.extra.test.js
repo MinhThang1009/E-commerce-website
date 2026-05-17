@@ -88,7 +88,7 @@ jest.mock('../services/adminAudit', () => ({
   auditMiddleware: (_req, _res, next) => next(),
 }));
 
-jest.mock('../controllers/adminImport', () => ({
+jest.mock('../modules/admin/controllers/adminImportController', () => ({
   getImportTemplate: (_req, _res, next) => next(),
   uploadImportFile: (_req, _res, next) => next(),
   importProducts: (_req, _res, next) => next(),
@@ -96,7 +96,7 @@ jest.mock('../controllers/adminImport', () => ({
   exportProducts: (_req, _res, next) => next(),
 }));
 
-jest.mock('../controllers/discountCode', () => ({
+jest.mock('../modules/discountCode/controllers/discountCodeController', () => ({
   getAllDiscountCodes: (_req, _res, next) => next(),
   getDiscountCodeById: (_req, _res, next) => next(),
   createDiscountCode: (_req, _res, next) => next(),
@@ -234,7 +234,7 @@ jest.mock('../models', () => {
 const express = require('express');
 const supertest = require('supertest');
 const { errorHandler } = require('../middlewares/errorHandler');
-const adminRouter = require('../routes/admin');
+const adminRouter = require('../modules/admin/routes');
 
 const {
   User,
@@ -438,16 +438,18 @@ describe('GET /api/admin/orders — filter params', () => {
         id: 10,
         number: 'ORD-010',
         status: 'delivered',
-        items: [{
-          id: 1,
-          quantity: 2,
-          Product: {
-            id: 5,
-            name: 'Laptop',
-            basePrice: 10000000,
-            productImages: [{ imageUrl: 'https://img.com/laptop.jpg' }],
+        items: [
+          {
+            id: 1,
+            quantity: 2,
+            Product: {
+              id: 5,
+              name: 'Laptop',
+              basePrice: 10000000,
+              productImages: [{ imageUrl: 'https://img.com/laptop.jpg' }],
+            },
           },
-        }],
+        ],
       }),
     };
     Order.findAndCountAll.mockResolvedValueOnce({ count: 1, rows: [fakeOrder] });
@@ -469,7 +471,9 @@ describe('GET /api/admin/stats — groupBy variations', () => {
     Order.findAll.mockResolvedValueOnce([]);
     User.findAll.mockResolvedValueOnce([]);
 
-    const res = await request.get('/api/admin/stats?startDate=2025-01-01&endDate=2025-01-31&groupBy=hour');
+    const res = await request.get(
+      '/api/admin/stats?startDate=2025-01-01&endDate=2025-01-31&groupBy=hour',
+    );
     expect(res.status).toBe(200);
     expect(res.body.status).toBe('success');
   });
@@ -478,7 +482,9 @@ describe('GET /api/admin/stats — groupBy variations', () => {
     Order.findAll.mockResolvedValueOnce([]);
     User.findAll.mockResolvedValueOnce([]);
 
-    const res = await request.get('/api/admin/stats?startDate=2025-01-01&endDate=2025-12-31&groupBy=week');
+    const res = await request.get(
+      '/api/admin/stats?startDate=2025-01-01&endDate=2025-12-31&groupBy=week',
+    );
     expect(res.status).toBe(200);
   });
 
@@ -486,7 +492,9 @@ describe('GET /api/admin/stats — groupBy variations', () => {
     Order.findAll.mockResolvedValueOnce([]);
     User.findAll.mockResolvedValueOnce([]);
 
-    const res = await request.get('/api/admin/stats?startDate=2025-01-01&endDate=2025-01-31&groupBy=unknown');
+    const res = await request.get(
+      '/api/admin/stats?startDate=2025-01-01&endDate=2025-01-31&groupBy=unknown',
+    );
     expect(res.status).toBe(200);
   });
 });
@@ -621,7 +629,7 @@ describe('updateUser — non-admin không được thay đổi role (trực ti�
 
     // Cần mock lại adminAuthenticate trong router không ảnh hưởng app này
     // Thay vào đó, mock module trực tiếp và import controller
-    const { updateUser } = require('../controllers/admin');
+    const { updateUser } = require('../modules/admin/controllers/adminController');
 
     // Wrap bằng catchAsync pattern thủ công
     localApp.put('/users/:id', (req, res, next) => {
@@ -673,7 +681,9 @@ describe('GET /api/admin/chatbot/stats — date range filter', () => {
     ChatMessage.findAll.mockResolvedValueOnce([]);
     ChatMessage.findOne.mockResolvedValueOnce({ avgTime: '250' });
 
-    const res = await request.get('/api/admin/chatbot/stats?startDate=2025-01-01&endDate=2025-01-31');
+    const res = await request.get(
+      '/api/admin/chatbot/stats?startDate=2025-01-01&endDate=2025-01-31',
+    );
     expect(res.status).toBe(200);
     expect(res.body.data.totalSessions).toBe(20);
     expect(res.body.data.avgResponseTimeMs).toBe(250);
@@ -714,7 +724,7 @@ describe('PUT /api/admin/products/:id — cập nhật images và categories', (
     const fakeProduct = makeProduct({ id: 10 });
     fakeProduct.update = jest.fn().mockResolvedValue(fakeProduct);
     Product.findByPk
-      .mockResolvedValueOnce(fakeProduct)  // bên trong transaction
+      .mockResolvedValueOnce(fakeProduct) // bên trong transaction
       .mockResolvedValueOnce(fakeProduct); // load lại sau commit
 
     ProductImage.destroy.mockResolvedValueOnce(0);
@@ -731,22 +741,20 @@ describe('PUT /api/admin/products/:id — cập nhật images và categories', (
 
     expect(res.status).toBe(200);
     expect(ProductImage.destroy).toHaveBeenCalledWith(
-      expect.objectContaining({ where: { productId: '10' } })
+      expect.objectContaining({ where: { productId: '10' } }),
     );
     expect(ProductImage.bulkCreate).toHaveBeenCalledWith(
       expect.arrayContaining([
         expect.objectContaining({ imageUrl: 'https://img.com/new1.jpg', isThumbnail: true }),
       ]),
-      expect.anything()
+      expect.anything(),
     );
   });
 
   it('cập nhật categories khi có categoryIds trong body', async () => {
     const fakeProduct = makeProduct({ id: 10 });
     fakeProduct.setCategories = jest.fn().mockResolvedValue(undefined);
-    Product.findByPk
-      .mockResolvedValueOnce(fakeProduct)
-      .mockResolvedValueOnce(fakeProduct);
+    Product.findByPk.mockResolvedValueOnce(fakeProduct).mockResolvedValueOnce(fakeProduct);
 
     Category.findAll.mockResolvedValueOnce([
       { id: 1, name: 'Laptop' },
@@ -819,7 +827,9 @@ describe('GET /api/admin/analytics/revenue-by-category — date range', () => {
       {},
     ]);
 
-    const res = await request.get('/api/admin/analytics/revenue-by-category?startDate=2025-01-01&endDate=2025-12-31');
+    const res = await request.get(
+      '/api/admin/analytics/revenue-by-category?startDate=2025-01-01&endDate=2025-12-31',
+    );
     expect(res.status).toBe(200);
     expect(res.body.data[0].categoryName).toBe('Laptop');
     expect(res.body.data[0].revenue).toBe(5000000);
@@ -832,11 +842,11 @@ describe('GET /api/admin/analytics/revenue-by-category — date range', () => {
 
 describe('GET /api/admin/analytics/user-growth — groupBy=month', () => {
   it('trả về 200 với dữ liệu groupBy=month', async () => {
-    User.findAll.mockResolvedValueOnce([
-      { date: '2025-01', newUsers: '30' },
-    ]);
+    User.findAll.mockResolvedValueOnce([{ date: '2025-01', newUsers: '30' }]);
 
-    const res = await request.get('/api/admin/analytics/user-growth?startDate=2025-01-01&endDate=2025-12-31&groupBy=month');
+    const res = await request.get(
+      '/api/admin/analytics/user-growth?startDate=2025-01-01&endDate=2025-12-31&groupBy=month',
+    );
     expect(res.status).toBe(200);
     expect(res.body.data[0].newUsers).toBe(30);
   });
@@ -856,25 +866,25 @@ describe('PUT /api/admin/orders/:id/status — cancelled với variant', () => {
     const fakeOrder = makeOrder({
       id: 20,
       status: 'processing',
-      items: [{
-        quantity: 3,
-        variantId: 'v1',
-        Product: makeProduct({ id: 5, stockQuantity: 10 }),
-        ProductVariant: fakeVariant,
-      }],
+      items: [
+        {
+          quantity: 3,
+          variantId: 'v1',
+          Product: makeProduct({ id: 5, stockQuantity: 10 }),
+          ProductVariant: fakeVariant,
+        },
+      ],
     });
     Order.findByPk
       .mockResolvedValueOnce(fakeOrder)
       .mockResolvedValueOnce(makeOrder({ id: 20, status: 'cancelled' }));
 
-    const res = await request
-      .put('/api/admin/orders/20/status')
-      .send({ status: 'cancelled' });
+    const res = await request.put('/api/admin/orders/20/status').send({ status: 'cancelled' });
 
     expect(res.status).toBe(200);
     expect(fakeVariant.update).toHaveBeenCalledWith(
       expect.objectContaining({ stockQuantity: 8 }),
-      expect.anything()
+      expect.anything(),
     );
   });
 });

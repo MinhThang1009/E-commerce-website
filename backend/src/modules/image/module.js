@@ -5,6 +5,6 @@
  */
 module.exports = () => ({
   basePath: '/images',
-  router: require('../../routes/image'),
+  router: require('./routes'),
   subscribeEvents() {},
 });

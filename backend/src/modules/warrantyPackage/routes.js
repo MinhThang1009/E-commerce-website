@@ -1,4 +1,4 @@
-﻿const express = require('express');
+const express = require('express');
 const {
   getAllWarrantyPackages,
   createWarrantyPackage,
@@ -6,18 +6,18 @@ const {
   deleteWarrantyPackage,
   getWarrantyPackageById,
   getWarrantyPackagesByProduct,
-} = require('../controllers/warrantyPackage');
-const { authenticate } = require('../middlewares/authenticate');
-const { adminAuthenticate } = require('../middlewares/adminAuth');
+} = require('./controllers/warrantyPackageController');
+const { authenticate } = require('../../middlewares/authenticate');
+const { adminAuthenticate } = require('../../middlewares/adminAuth');
 
 const router = express.Router();
 
-// Route công khai
+// Routes công khai
 router.get('/', getAllWarrantyPackages);
 router.get('/product/:productId', getWarrantyPackagesByProduct);
 router.get('/:id', getWarrantyPackageById);
 
-// Route của admin
+// Routes admin
 router.post('/', adminAuthenticate, createWarrantyPackage);
 router.put('/:id', adminAuthenticate, updateWarrantyPackage);
 router.delete('/:id', adminAuthenticate, deleteWarrantyPackage);

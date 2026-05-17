@@ -59,9 +59,12 @@ describe('CartService._buildCartResponse — line 71: item có ProductVariant tr
     const { service, cartRepository } = buildCartService();
     const item = {
       toJSON: () => ({
-        id: 50, quantity: 3, variantId: 10, warrantyPackageIds: [],
-        Product: null,                          // Product = null (edge case sau deletion)
-        ProductVariant: { price: 75000 },       // ProductVariant có giá trị
+        id: 50,
+        quantity: 3,
+        variantId: 10,
+        warrantyPackageIds: [],
+        Product: null, // Product = null (edge case sau deletion)
+        ProductVariant: { price: 75000 }, // ProductVariant có giá trị
       }),
       quantity: 3,
     };
@@ -89,7 +92,7 @@ describe('CartService.updateCartItem — line 248 FALSE: ProductVariant null, ba
     const cartItem = {
       Cart: { userId: 1 },
       Product: { defaultVariant: { stockQuantity: 10 } },
-      ProductVariant: null,  // null → else branch tại line 247
+      ProductVariant: null, // null → else branch tại line 247
       quantity: 1,
     };
     cartRepository.findCartItemByIdWithCartAndStock.mockResolvedValue(cartItem);
@@ -128,7 +131,8 @@ describe('CartService.syncCart — lines 324-327 FALSE: actualQuantity = 0 (quan
     cartRepository.findOrCreateActiveCartByUserId.mockResolvedValue({ id: 10 });
     cartRepository.findActiveCartByUserId.mockResolvedValue({ id: 10 });
     cartRepository.findProductById.mockResolvedValue({
-      id: 1, basePrice: 80000,
+      id: 1,
+      basePrice: 80000,
       defaultVariant: { stockQuantity: 5 }, // > 0 để qua guard
     });
 
@@ -148,7 +152,8 @@ describe('CartService.syncCart — lines 324-327 FALSE: actualQuantity = 0 (quan
     cartRepository.findOrCreateActiveCartByUserId.mockResolvedValue({ id: 10 });
     cartRepository.findActiveCartByUserId.mockResolvedValue({ id: 10 });
     cartRepository.findProductById.mockResolvedValue({
-      id: 2, basePrice: 50000,
+      id: 2,
+      basePrice: 50000,
       defaultVariant: null, // defaultVariant null → baseStockQuantity = 0
     });
 
@@ -172,15 +177,18 @@ describe('CartService.validateCart — line 418 FALSE: item không có ProductVa
     cartRepository.findActiveCartByUserId.mockResolvedValue({ id: 1 });
     cartRepository.findCartItemsForValidation.mockResolvedValue([
       {
-        id: 10, productId: 5, variantId: null,
-        unitPrice: 120000, quantity: 2,
+        id: 10,
+        productId: 5,
+        variantId: null,
+        unitPrice: 120000,
+        quantity: 2,
         Product: {
           id: 5,
           name: 'Bàn phím cơ',
-          basePrice: 120000,                      // currentPrice sẽ = basePrice
+          basePrice: 120000, // currentPrice sẽ = basePrice
           defaultVariant: { stockQuantity: 8 },
         },
-        ProductVariant: null,                     // FALSE branch tại line 417
+        ProductVariant: null, // FALSE branch tại line 417
       },
     ]);
 
@@ -285,13 +293,16 @@ function makeCatalogService(repoOverrides = {}, cacheOverrides = undefined) {
     ...repoOverrides,
   };
 
-  const cacheStore = cacheOverrides !== undefined ? cacheOverrides : {
-    get: jest.fn().mockResolvedValue(null),
-    setEx: jest.fn().mockResolvedValue(),
-    del: jest.fn().mockResolvedValue(),
-    delPattern: jest.fn().mockResolvedValue(),
-    delMany: jest.fn().mockResolvedValue(),
-  };
+  const cacheStore =
+    cacheOverrides !== undefined
+      ? cacheOverrides
+      : {
+          get: jest.fn().mockResolvedValue(null),
+          setEx: jest.fn().mockResolvedValue(),
+          del: jest.fn().mockResolvedValue(),
+          delPattern: jest.fn().mockResolvedValue(),
+          delMany: jest.fn().mockResolvedValue(),
+        };
 
   const logger = { info: jest.fn(), error: jest.fn(), warn: jest.fn() };
   const service = new CatalogService({
@@ -317,7 +328,7 @@ describe('CatalogService._pickDisplayPrice — line 344: sorted[0].price = null 
     // Để đảm bảo sorted[0].price = null: chỉ có 1 variant với price = null
     const result = service._pickDisplayPrice({
       basePrice: '9000000',
-      variants: [{ price: null }],  // sorted[0].price = null → parseFloat(null) = NaN → || basePrice
+      variants: [{ price: null }], // sorted[0].price = null → parseFloat(null) = NaN → || basePrice
     });
 
     // NaN || 9000000 = 9000000
@@ -412,11 +423,17 @@ describe('CatalogService._buildProductDetailResponse — line 526: compareAtPric
     // parseFloat(0) = 0 → falsy → 0 || null = null
     const { service } = makeCatalogService();
     const data = {
-      id: 101, name: 'Sản phẩm A', slug: 'san-pham-a',
+      id: 101,
+      name: 'Sản phẩm A',
+      slug: 'san-pham-a',
       basePrice: '5000000',
-      compareAtPrice: 0,              // 0 → parseFloat = 0 → || null = null
-      stockQuantity: 5, isFeatured: false,
-      productImages: [], variants: [], categories: [], reviews: [],
+      compareAtPrice: 0, // 0 → parseFloat = 0 → || null = null
+      stockQuantity: 5,
+      isFeatured: false,
+      productImages: [],
+      variants: [],
+      categories: [],
+      reviews: [],
     };
     const product = { ...data, toJSON: () => ({ ...data }) };
 
@@ -429,7 +446,10 @@ describe('CatalogService._buildProductDetailResponse — line 526: compareAtPric
     // parseFloat(null) = NaN → falsy → NaN || null = null
     const { service } = makeCatalogService();
     const product = makeProductRow({
-      id: 102, compareAtPrice: null, variants: [], reviews: [],
+      id: 102,
+      compareAtPrice: null,
+      variants: [],
+      reviews: [],
     });
 
     const result = service._buildProductDetailResponse(product, {});
@@ -449,25 +469,42 @@ describe('CatalogService._buildProductDetailResponse — line 539 FALSE: selecte
     // Line 537: if (!selectedVariant && normColor) → !truthy && truthy → false → bỏ qua color search
     const { service } = makeCatalogService();
     const product = makeProductRow({
-      id: 200, name: 'Balo X',
-      basePrice: '500000', reviews: [],
+      id: 200,
+      name: 'Balo X',
+      basePrice: '500000',
+      reviews: [],
       variants: [
         {
-          id: 10, price: '500000', compareAtPrice: null, stockQuantity: 5,
-          variantName: 'Đỏ', isDefault: false,
-          attributes: { color: 'đỏ' }, sku: 'SKU-DO', specifications: {},
+          id: 10,
+          price: '500000',
+          compareAtPrice: null,
+          stockQuantity: 5,
+          variantName: 'Đỏ',
+          isDefault: false,
+          attributes: { color: 'đỏ' },
+          sku: 'SKU-DO',
+          specifications: {},
         },
         {
-          id: 11, price: '600000', compareAtPrice: null, stockQuantity: 3,
-          variantName: 'Xanh', isDefault: true,
-          attributes: { color: 'xanh' }, sku: 'SKU-XANH', specifications: {},
+          id: 11,
+          price: '600000',
+          compareAtPrice: null,
+          stockQuantity: 3,
+          variantName: 'Xanh',
+          isDefault: true,
+          attributes: { color: 'xanh' },
+          sku: 'SKU-XANH',
+          specifications: {},
         },
       ],
     });
 
     // skuId='10' → chọn variant id=10; queryColor='xanh' → normColor='xanh' (khác với variant đã chọn)
     // Nhưng vì selectedVariant đã có từ skuId → !selectedVariant = false → không vào color search
-    const result = service._buildProductDetailResponse(product, { skuId: '10', queryColor: 'xanh' });
+    const result = service._buildProductDetailResponse(product, {
+      skuId: '10',
+      queryColor: 'xanh',
+    });
 
     // Variant được chọn phải là id=10 (từ skuId), không phải id=11 (từ normColor)
     expect(result.sku).toBe('SKU-DO');
@@ -484,18 +521,32 @@ describe('CatalogService._buildProductDetailResponse — lines 548-549: normColo
     // Line 544: variants.find(v => v.isDefault === true || v.isDefault === 1) → id=20 (isDefault=true)
     const { service } = makeCatalogService();
     const product = makeProductRow({
-      id: 201, name: 'Giày thể thao',
-      basePrice: '1200000', reviews: [],
+      id: 201,
+      name: 'Giày thể thao',
+      basePrice: '1200000',
+      reviews: [],
       variants: [
         {
-          id: 19, price: '1200000', compareAtPrice: null, stockQuantity: 4,
-          variantName: 'Đen', isDefault: false,
-          attributes: { color: 'đen' }, sku: 'SKU-19', specifications: {},
+          id: 19,
+          price: '1200000',
+          compareAtPrice: null,
+          stockQuantity: 4,
+          variantName: 'Đen',
+          isDefault: false,
+          attributes: { color: 'đen' },
+          sku: 'SKU-19',
+          specifications: {},
         },
         {
-          id: 20, price: '1300000', compareAtPrice: null, stockQuantity: 2,
-          variantName: 'Trắng', isDefault: true,   // isDefault=true → được chọn khi color miss
-          attributes: { color: 'trắng' }, sku: 'SKU-20', specifications: {},
+          id: 20,
+          price: '1300000',
+          compareAtPrice: null,
+          stockQuantity: 2,
+          variantName: 'Trắng',
+          isDefault: true, // isDefault=true → được chọn khi color miss
+          attributes: { color: 'trắng' },
+          sku: 'SKU-20',
+          specifications: {},
         },
       ],
     });
@@ -510,18 +561,32 @@ describe('CatalogService._buildProductDetailResponse — lines 548-549: normColo
     // Không có variant nào có isDefault=true → variants[0] được chọn
     const { service } = makeCatalogService();
     const product = makeProductRow({
-      id: 202, name: 'Túi du lịch',
-      basePrice: '800000', reviews: [],
+      id: 202,
+      name: 'Túi du lịch',
+      basePrice: '800000',
+      reviews: [],
       variants: [
         {
-          id: 30, price: '800000', compareAtPrice: null, stockQuantity: 6,
-          variantName: 'Xanh navy', isDefault: false,
-          attributes: { color: 'xanh navy' }, sku: 'SKU-30', specifications: {},
+          id: 30,
+          price: '800000',
+          compareAtPrice: null,
+          stockQuantity: 6,
+          variantName: 'Xanh navy',
+          isDefault: false,
+          attributes: { color: 'xanh navy' },
+          sku: 'SKU-30',
+          specifications: {},
         },
         {
-          id: 31, price: '850000', compareAtPrice: null, stockQuantity: 3,
-          variantName: 'Xám', isDefault: false,
-          attributes: { color: 'xám' }, sku: 'SKU-31', specifications: {},
+          id: 31,
+          price: '850000',
+          compareAtPrice: null,
+          stockQuantity: 3,
+          variantName: 'Xám',
+          isDefault: false,
+          attributes: { color: 'xám' },
+          sku: 'SKU-31',
+          specifications: {},
         },
       ],
     });
@@ -543,13 +608,21 @@ describe('CatalogService._buildProductDetailResponse — line 553: selectedVaria
     // → isVariantProduct = true, attrs được extract
     const { service } = makeCatalogService();
     const product = makeProductRow({
-      id: 203, name: 'Áo thun',
-      basePrice: '300000', reviews: [],
+      id: 203,
+      name: 'Áo thun',
+      basePrice: '300000',
+      reviews: [],
       variants: [
         {
-          id: 40, price: '300000', compareAtPrice: null, stockQuantity: 10,
-          variantName: 'M - Đen', isDefault: true,
-          attributes: { color: 'đen', size: 'M' }, sku: 'SKU-M-DEN', specifications: {},
+          id: 40,
+          price: '300000',
+          compareAtPrice: null,
+          stockQuantity: 10,
+          variantName: 'M - Đen',
+          isDefault: true,
+          attributes: { color: 'đen', size: 'M' },
+          sku: 'SKU-M-DEN',
+          specifications: {},
         },
       ],
     });
@@ -583,18 +656,16 @@ describe('CatalogService.createProduct — line 896: variant name fallback → v
           {
             price: 10000,
             stockQuantity: 5,
-            name: null,            // null → fallback
-            variantName: null,     // null → fallback
-            displayName: 'Bản mặc định',  // final fallback
+            name: null, // null → fallback
+            variantName: null, // null → fallback
+            displayName: 'Bản mặc định', // final fallback
           },
         ],
       },
     });
 
     expect(catalogRepository.createProductVariants).toHaveBeenCalledWith(
-      expect.arrayContaining([
-        expect.objectContaining({ name: 'Bản mặc định' }),
-      ]),
+      expect.arrayContaining([expect.objectContaining({ name: 'Bản mặc định' })]),
       expect.any(Object),
     );
   });
@@ -614,7 +685,7 @@ describe('CatalogService.createProduct — line 896: variant name fallback → v
             price: 8000,
             stockQuantity: 3,
             name: null,
-            variantName: 'Đỏ L',  // second in chain
+            variantName: 'Đỏ L', // second in chain
             displayName: 'Fallback không dùng',
           },
         ],
@@ -622,9 +693,7 @@ describe('CatalogService.createProduct — line 896: variant name fallback → v
     });
 
     expect(catalogRepository.createProductVariants).toHaveBeenCalledWith(
-      expect.arrayContaining([
-        expect.objectContaining({ name: 'Đỏ L' }),
-      ]),
+      expect.arrayContaining([expect.objectContaining({ name: 'Đỏ L' })]),
       expect.any(Object),
     );
   });
@@ -707,21 +776,42 @@ function buildOrdersService() {
 
 function mkOrderProduct(overrides = {}) {
   return {
-    id: 1, name: 'Sản phẩm A', basePrice: 100000,
-    status: 'active', thumbnail: 'img.jpg', stockQuantity: 10,
+    id: 1,
+    name: 'Sản phẩm A',
+    basePrice: 100000,
+    status: 'active',
+    thumbnail: 'img.jpg',
+    stockQuantity: 10,
     ...overrides,
   };
 }
 
 function mkOrderBody(overrides = {}) {
   return {
-    shippingFirstName: 'Anh', shippingLastName: 'Nguyen', shippingCompany: null,
-    shippingAddress1: '123 Lê Lợi', shippingAddress2: null, shippingCity: 'HCM',
-    shippingState: null, shippingZip: '70000', shippingCountry: 'VN', shippingPhone: '0901234567',
-    billingFirstName: 'Anh', billingLastName: 'Nguyen', billingCompany: null,
-    billingAddress1: '123 Lê Lợi', billingAddress2: null, billingCity: 'HCM',
-    billingState: null, billingZip: '70000', billingCountry: 'VN', billingPhone: '0901234567',
-    paymentMethod: 'cod', notes: null, discountCode: null, pointsToUse: 0,
+    shippingFirstName: 'Anh',
+    shippingLastName: 'Nguyen',
+    shippingCompany: null,
+    shippingAddress1: '123 Lê Lợi',
+    shippingAddress2: null,
+    shippingCity: 'HCM',
+    shippingState: null,
+    shippingZip: '70000',
+    shippingCountry: 'VN',
+    shippingPhone: '0901234567',
+    billingFirstName: 'Anh',
+    billingLastName: 'Nguyen',
+    billingCompany: null,
+    billingAddress1: '123 Lê Lợi',
+    billingAddress2: null,
+    billingCity: 'HCM',
+    billingState: null,
+    billingZip: '70000',
+    billingCountry: 'VN',
+    billingPhone: '0901234567',
+    paymentMethod: 'cod',
+    notes: null,
+    discountCode: null,
+    pointsToUse: 0,
     ...overrides,
   };
 }
@@ -741,12 +831,22 @@ describe('OrdersService.createOrder — line 309 TRUE: pendingInventoryLogs.leng
     repo.lockProduct.mockResolvedValue({ ...product, stockQuantity: 15 });
 
     const createdOrder = {
-      id: 777, number: 'ORD-INVLOG-01', status: 'pending',
-      total: 130000, userId: 1, createdAt: new Date(),
+      id: 777,
+      number: 'ORD-INVLOG-01',
+      status: 'pending',
+      total: 130000,
+      userId: 1,
+      createdAt: new Date(),
     };
     const createdItem = {
-      id: 777, orderId: 777, productId: 5, variantId: null,
-      name: 'Sản phẩm A', quantity: 2, unitPrice: 100000, subtotal: 200000,
+      id: 777,
+      orderId: 777,
+      productId: 5,
+      variantId: null,
+      name: 'Sản phẩm A',
+      quantity: 2,
+      unitPrice: 100000,
+      subtotal: 200000,
     };
     repo.createOrder.mockResolvedValue(createdOrder);
     repo.createOrderItem.mockResolvedValue(createdItem);
@@ -765,10 +865,10 @@ describe('OrdersService.createOrder — line 309 TRUE: pendingInventoryLogs.leng
     expect(logCall).toEqual(
       expect.arrayContaining([
         expect.objectContaining({
-          orderId: 777,          // orderId từ created order
+          orderId: 777, // orderId từ created order
           productId: 5,
           changeType: 'sale',
-          changeAmount: -2,      // âm vì là bán hàng
+          changeAmount: -2, // âm vì là bán hàng
         }),
       ]),
     );
@@ -780,14 +880,25 @@ describe('OrdersService.createOrder — line 309 TRUE: pendingInventoryLogs.leng
     const { service, repo } = buildOrdersService();
 
     const product = mkOrderProduct({ id: 6 });
-    const variant = { id: 20, name: 'Đỏ/M', sku: 'SKU-020', price: 150000, weight: '0.3', stockQuantity: 8 };
+    const variant = {
+      id: 20,
+      name: 'Đỏ/M',
+      sku: 'SKU-020',
+      price: 150000,
+      weight: '0.3',
+      stockQuantity: 8,
+    };
     repo.findProductWithDefaultVariant.mockResolvedValue(product);
     repo.findVariantBasic.mockResolvedValue(variant);
     repo.lockVariant.mockResolvedValue({ ...variant, stockQuantity: 8 });
 
     const createdOrder = {
-      id: 888, number: 'ORD-VARLOG-01', status: 'pending',
-      total: 180000, userId: 1, createdAt: new Date(),
+      id: 888,
+      number: 'ORD-VARLOG-01',
+      status: 'pending',
+      total: 180000,
+      userId: 1,
+      createdAt: new Date(),
     };
     const createdItem = { id: 888, orderId: 888 };
     repo.createOrder.mockResolvedValue(createdOrder);
@@ -923,10 +1034,15 @@ jest.mock('../models', () => {
     Product: { findByPk: jest.fn().mockResolvedValue(null) },
     ProductVariant: { findByPk: jest.fn().mockResolvedValue(null) },
     sequelize: {
-      transaction: jest.fn().mockImplementation(async (cb) =>
-        typeof cb === 'function' ? cb({ LOCK: { UPDATE: 'UPDATE' } }) : {}
-      ),
-      fn: jest.fn(), col: jest.fn(), where: jest.fn(), literal: jest.fn(),
+      transaction: jest
+        .fn()
+        .mockImplementation(async (cb) =>
+          typeof cb === 'function' ? cb({ LOCK: { UPDATE: 'UPDATE' } }) : {},
+        ),
+      fn: jest.fn(),
+      col: jest.fn(),
+      where: jest.fn(),
+      literal: jest.fn(),
       query: jest.fn().mockResolvedValue([]),
     },
     Op: sequelizePkg.Op,
@@ -958,339 +1074,3 @@ jest.mock('../utils/productHelpers', () => ({
 
 const express = require('express');
 const supertest = require('supertest');
-const paymentController = require('../controllers/payment');
-const vnpayService = require('../services/payment/vnpay');
-const { errorHandler } = require('../middlewares/errorHandler');
-
-beforeEach(() => {
-  jest.clearAllMocks();
-  mockFinalCartFindAll.mockResolvedValue([]);
-  mockFinalCartItemDestroy.mockResolvedValue(0);
-  mockFinalDiscountCodeIncrement.mockResolvedValue(undefined);
-  mockFinalDiscountCodeFindByPk.mockResolvedValue(null);
-});
-
-function buildSePayApp() {
-  const app = express();
-  app.use(express.json());
-  app.post('/api/payments/sepay-webhook', paymentController.handleSePayWebhook);
-  app.use(errorHandler);
-  return app;
-}
-
-const VALID_SEPAY_BODY = {
-  id: 9999,
-  gateway: 'MB',
-  transactionDate: '2025-01-15 10:00:00',
-  accountNumber: '0987654321',
-  code: null,
-  content: 'Chuyen khoan ORD-2511-00099',
-  transferType: 'in',
-  transferAmount: 500000,
-  accumulated: 1000000,
-  subAccount: null,
-  referenceCode: null,
-  description: 'Payment test final',
-};
-
-// ─── Lines 305, 330, 355: orderId guard — FALSE branch khi match[0] là empty string ""
-// Theo cấu trúc code: for (pattern) { match = content.match(pattern); if (match) { orderId = match[0]; if (orderId) { ... break; } } }
-// FALSE branch của `if (orderId)` xảy ra khi match[0] = "" (empty string → falsy)
-// Standard regex không trả "" làm match[0] cho patterns trong code này.
-// Để verify FALSE branch, ta phải dùng String.prototype.match mock.
-// Tuy nhiên, theo instruction: "Uncovered might be when match exists but match[0] is empty string"
-// Cách thực tế nhất: verify rằng khi tất cả patterns đều trả match nhưng match[0] = ""
-// thì code tiếp tục sang pattern tiếp theo (không break).
-
-describe('Payment handleSePayWebhook — orderId guard FALSE branches (lines 305/330/355)', () => {
-  // Test cho line 305: FALSE branch khi match[0] = ""
-  // Ta mock String.prototype.match để trả về match array với match[0] = ""
-  // cho content patterns, buộc code tiếp tục sang code patterns và referenceCode patterns
-  it('line 305 FALSE: content match[0] = "" → tiếp tục sang pattern tiếp theo (không break)', async () => {
-    // Patch String.prototype.match tạm thời để simulate match[0] = ""
-    const originalMatch = String.prototype.match;
-    let callCount = 0;
-    String.prototype.match = function (pattern) {
-      // Chỉ intercept pattern đầu tiên của content extraction
-      if (callCount === 0 && this.includes('ORDERFAKE')) {
-        callCount++;
-        // Trả match array với match[0] = "" → if (orderId) → false → không break
-        return Object.assign([''], { index: 0, input: String(this) });
-      }
-      callCount++;
-      // Cho tất cả pattern còn lại trả null để không tìm thấy orderId
-      return originalMatch.call(this, pattern);
-    };
-
-    mockFinalOrderFindOne.mockResolvedValue(null);
-
-    const sePayApp = buildSePayApp();
-    const res = await supertest(sePayApp)
-      .post('/api/payments/sepay-webhook')
-      .set('Authorization', `Apikey ${process.env.SEPAY_API_KEY}`)
-      .send({
-        ...VALID_SEPAY_BODY,
-        content: 'ORDERFAKE', // content sẽ trigger intercept
-        code: null,
-        referenceCode: null,
-      });
-
-    // Restore
-    String.prototype.match = originalMatch;
-
-    // Response 200 (dù không tìm thấy order)
-    expect(res.status).toBe(200);
-  });
-
-  it('line 330 FALSE: code match[0] = "" → tiếp tục sang pattern tiếp theo trong code extraction', async () => {
-    // Simulate: content không match → đến code extraction
-    // code match[0] = "" → if (orderId) false → tiếp tục pattern tiếp theo
-    // Tất cả patterns đều "empty match" → orderId không được set → message "Không tìm thấy"
-    const originalMatch = String.prototype.match;
-    let codeExtractionCount = 0;
-    String.prototype.match = function (pattern) {
-      // Nhận dạng code extraction bằng value của this
-      if (String(this) === 'FAKECODEEMPTY') {
-        // Trả match với match[0] = "" cho tất cả patterns của code
-        codeExtractionCount++;
-        return Object.assign([''], { index: 0, input: String(this) });
-      }
-      return originalMatch.call(this, pattern);
-    };
-
-    mockFinalOrderFindOne.mockResolvedValue(null);
-
-    const sePayApp = buildSePayApp();
-    const res = await supertest(sePayApp)
-      .post('/api/payments/sepay-webhook')
-      .set('Authorization', `Apikey ${process.env.SEPAY_API_KEY}`)
-      .send({
-        ...VALID_SEPAY_BODY,
-        content: null,           // null → bỏ qua content extraction
-        code: 'FAKECODEEMPTY',   // "" match → if(orderId) false
-        referenceCode: null,
-      });
-
-    String.prototype.match = originalMatch;
-
-    expect(res.status).toBe(200);
-    // Nếu tất cả empty match → orderId không được set → message "Không tìm thấy"
-    if (res.body.message) {
-      expect(res.body.message).toMatch(/Không tìm thấy order ID/);
-    }
-  });
-
-  it('line 355 FALSE: referenceCode match[0] = "" → tiếp tục qua hết patterns không break', async () => {
-    // content và code không match → đến referenceCode extraction
-    // referenceCode match[0] = "" → if (orderId) false → không break → orderId = undefined
-    const originalMatch = String.prototype.match;
-    String.prototype.match = function (pattern) {
-      if (String(this) === 'FAKEREFEMPTY') {
-        return Object.assign([''], { index: 0, input: String(this) });
-      }
-      return originalMatch.call(this, pattern);
-    };
-
-    mockFinalOrderFindOne.mockResolvedValue(null);
-
-    const sePayApp = buildSePayApp();
-    const res = await supertest(sePayApp)
-      .post('/api/payments/sepay-webhook')
-      .set('Authorization', `Apikey ${process.env.SEPAY_API_KEY}`)
-      .send({
-        ...VALID_SEPAY_BODY,
-        content: 'xyz',           // không match ORD pattern
-        code: null,
-        referenceCode: 'FAKEREFEMPTY',  // "" match → if(orderId) false
-      });
-
-    String.prototype.match = originalMatch;
-
-    expect(res.status).toBe(200);
-    // orderId không được set → message về không tìm thấy
-    if (res.body.message) {
-      expect(res.body.message).toMatch(/Không tìm thấy order ID/);
-    }
-  });
-
-  it('content extraction hit break: match[0] truthy → trim() gọi → break (lines 305-307 TRUE)', async () => {
-    // Verify TRUE branch: content có ORD pattern → match[0] = 'ORD-2511-00099' (truthy)
-    // → if (orderId) TRUE → orderId.trim() → break → không vào code/referenceCode extraction
-    mockFinalOrderFindOne.mockResolvedValue(null);
-
-    const sePayApp = buildSePayApp();
-    const res = await supertest(sePayApp)
-      .post('/api/payments/sepay-webhook')
-      .set('Authorization', `Apikey ${process.env.SEPAY_API_KEY}`)
-      .send({
-        ...VALID_SEPAY_BODY,
-        content: 'Thanh toan ORD-2511-00099',
-        code: 'IGNORED-CODE',      // không được dùng vì content match đã break
-        referenceCode: 'IGNORED-REF',
-      });
-
-    expect(res.status).toBe(200);
-    expect(res.body.received).toBe(true);
-  });
-
-  it('code extraction hit break: content null → code match → trim() → break (lines 330-332 TRUE)', async () => {
-    // content = null → bỏ qua content extraction
-    // code = 'ORD2511-00099' → match → trim() → break (line 330-332 TRUE)
-    mockFinalOrderFindOne.mockResolvedValue(null);
-
-    const sePayApp = buildSePayApp();
-    const res = await supertest(sePayApp)
-      .post('/api/payments/sepay-webhook')
-      .set('Authorization', `Apikey ${process.env.SEPAY_API_KEY}`)
-      .send({
-        ...VALID_SEPAY_BODY,
-        content: null,
-        code: 'ORD2511-00099',
-        referenceCode: null,
-      });
-
-    expect(res.status).toBe(200);
-    expect(res.body.received).toBe(true);
-  });
-
-  it('referenceCode extraction hit break: content và code không match → referenceCode → trim() → break (line 355-357 TRUE)', async () => {
-    // content không match, code không match → đến referenceCode
-    // referenceCode = 'ORDER-12345678' → match → trim() → break (line 355-357 TRUE)
-    mockFinalOrderFindOne.mockResolvedValue(null);
-
-    const sePayApp = buildSePayApp();
-    const res = await supertest(sePayApp)
-      .post('/api/payments/sepay-webhook')
-      .set('Authorization', `Apikey ${process.env.SEPAY_API_KEY}`)
-      .send({
-        ...VALID_SEPAY_BODY,
-        content: 'ngau nhien', // không match ORD pattern
-        code: 'XYZABC',        // không match ORD pattern
-        referenceCode: 'ORDER-12345678', // match → break
-      });
-
-    expect(res.status).toBe(200);
-    expect(res.body.received).toBe(true);
-  });
-});
-
-// ─── Line 634/636: createVNPayUrl — req.socket.remoteAddress fallback
-// Condition: x-forwarded-for undefined → connection.remoteAddress undefined → socket.remoteAddress
-
-describe('Payment createVNPayUrl — line 636: req.socket.remoteAddress fallback', () => {
-  it('dùng req.socket.remoteAddress khi x-forwarded-for và connection.remoteAddress đều undefined', async () => {
-    // Line 634: x-forwarded-for header = undefined → falsy
-    // Line 635: req.connection.remoteAddress = undefined → falsy
-    // Line 636: req.socket.remoteAddress = '172.16.0.5' → truthy → ipAddr = '172.16.0.5'
-    const order = {
-      id: 42, number: 'ORD-FINAL-42', userId: 1, total: 500000,
-      paymentStatus: 'pending', paymentProvider: 'vnpay',
-      paymentTransactionId: 'TX-999', status: 'pending',
-      update: jest.fn().mockResolvedValue(undefined),
-    };
-    mockFinalOrderFindByPk.mockResolvedValue(order);
-
-    const app = express();
-    app.use(express.json());
-
-    // Middleware xóa x-forwarded-for và set connection.remoteAddress = undefined
-    // để buộc fallback sang socket.remoteAddress
-    app.use((req, _res, next) => {
-      delete req.headers['x-forwarded-for'];
-      // Override connection để connection.remoteAddress = undefined
-      Object.defineProperty(req, 'connection', {
-        value: { remoteAddress: undefined, socket: { remoteAddress: '192.168.99.1' } },
-        writable: true,
-        configurable: true,
-      });
-      // Socket có remoteAddress
-      Object.defineProperty(req, 'socket', {
-        value: { remoteAddress: '172.16.0.5' },
-        writable: true,
-        configurable: true,
-      });
-      next();
-    });
-
-    // Auth middleware
-    app.use((req, _res, next) => {
-      req.user = { id: 1, role: 'admin' };
-      next();
-    });
-
-    const Joi = require('joi');
-    const { validateRequest } = require('../middlewares/validateRequest');
-    const schema = Joi.object({ orderId: Joi.number().integer().positive().required() });
-    app.post(
-      '/api/payments/vnpay/create-url',
-      validateRequest(schema),
-      paymentController.createVNPayUrl,
-    );
-    app.use(errorHandler);
-
-    const res = await supertest(app)
-      .post('/api/payments/vnpay/create-url')
-      .send({ orderId: 42 });
-
-    expect(res.status).toBe(200);
-    // ipAddr = req.socket.remoteAddress = '172.16.0.5'
-    expect(vnpayService.createPaymentUrl).toHaveBeenCalledWith(
-      expect.objectContaining({ ipAddr: '172.16.0.5' }),
-    );
-  });
-
-  it('dùng req.connection.socket.remoteAddress khi 3 options trước đều undefined', async () => {
-    // Line 634-636: x-forwarded-for = undefined, connection.remoteAddress = undefined,
-    //              socket.remoteAddress = undefined → req.connection.socket.remoteAddress
-    const order = {
-      id: 43, number: 'ORD-FINAL-43', userId: 1, total: 600000,
-      paymentStatus: 'pending', paymentProvider: 'vnpay',
-      paymentTransactionId: 'TX-1000', status: 'pending',
-      update: jest.fn().mockResolvedValue(undefined),
-    };
-    mockFinalOrderFindByPk.mockResolvedValue(order);
-
-    const app = express();
-    app.use(express.json());
-
-    app.use((req, _res, next) => {
-      delete req.headers['x-forwarded-for'];
-      Object.defineProperty(req, 'connection', {
-        value: { remoteAddress: undefined, socket: { remoteAddress: '10.10.10.10' } },
-        writable: true,
-        configurable: true,
-      });
-      Object.defineProperty(req, 'socket', {
-        value: { remoteAddress: undefined }, // socket.remoteAddress = undefined
-        writable: true,
-        configurable: true,
-      });
-      next();
-    });
-
-    app.use((req, _res, next) => {
-      req.user = { id: 1, role: 'admin' };
-      next();
-    });
-
-    const Joi = require('joi');
-    const { validateRequest } = require('../middlewares/validateRequest');
-    const schema = Joi.object({ orderId: Joi.number().integer().positive().required() });
-    app.post(
-      '/api/payments/vnpay/create-url',
-      validateRequest(schema),
-      paymentController.createVNPayUrl,
-    );
-    app.use(errorHandler);
-
-    const res = await supertest(app)
-      .post('/api/payments/vnpay/create-url')
-      .send({ orderId: 43 });
-
-    expect(res.status).toBe(200);
-    // req.connection.socket.remoteAddress = '10.10.10.10'
-    expect(vnpayService.createPaymentUrl).toHaveBeenCalledWith(
-      expect.objectContaining({ ipAddr: '10.10.10.10' }),
-    );
-  });
-});

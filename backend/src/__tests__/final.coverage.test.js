@@ -82,21 +82,12 @@ describe('image.js — fileFilter callback (lines 22-37)', () => {
 
   // Tái hiện fileFilter từ image.js
   const fileFilter = (req, file, cb) => {
-    const allowedMimes = [
-      'image/jpeg',
-      'image/jpg',
-      'image/png',
-      'image/gif',
-      'image/webp',
-    ];
+    const allowedMimes = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp'];
 
     if (allowedMimes.includes(file.mimetype)) {
       cb(null, true);
     } else {
-      cb(
-        new AppError('Chỉ chấp nhận file ảnh (JPEG, PNG, GIF, WebP)', 400),
-        false
-      );
+      cb(new AppError('Chỉ chấp nhận file ảnh (JPEG, PNG, GIF, WebP)', 400), false);
     }
   };
 
@@ -276,7 +267,7 @@ describe('chatbotService.js — initializeChatbot branches (lines 49-56)', () =>
     }
 
     expect(loggerMock.info).toHaveBeenCalledWith(
-      expect.stringContaining('OpenRouter AI khởi tạo thành công')
+      expect.stringContaining('OpenRouter AI khởi tạo thành công'),
     );
   });
 
@@ -298,7 +289,7 @@ describe('chatbotService.js — initializeChatbot branches (lines 49-56)', () =>
     }
 
     expect(loggerMock.warn).toHaveBeenCalledWith(
-      expect.stringContaining('Không tìm thấy OpenRouter API key')
+      expect.stringContaining('Không tìm thấy OpenRouter API key'),
     );
   });
 
@@ -326,7 +317,7 @@ describe('chatbotService.js — initializeChatbot branches (lines 49-56)', () =>
     }
     expect(loggerMock.error).toHaveBeenCalledWith(
       expect.stringContaining('Khởi tạo Chatbot thất bại'),
-      expect.stringContaining('initialization failed')
+      expect.stringContaining('initialization failed'),
     );
   });
 });
@@ -361,7 +352,7 @@ describe('vectorStore.js — save() và clear() (lines 57-73)', () => {
 
     expect(loggerMock.error).toHaveBeenCalledWith(
       expect.stringContaining('Lỗi khi lưu vector store'),
-      expect.anything()
+      expect.anything(),
     );
   });
 
@@ -382,7 +373,9 @@ describe('vectorStore.js — save() và clear() (lines 57-73)', () => {
     expect(exists).toBe(true);
 
     // Cleanup
-    try { fs.unlinkSync(vs.storagePath); } catch {}
+    try {
+      fs.unlinkSync(vs.storagePath);
+    } catch {}
     vs.storagePath = origPath;
   });
 });
@@ -395,30 +388,51 @@ describe('ordersService.js — cart guest merge branch (lines 106-108)', () => {
   const OrdersService = require('../modules/orders/services/ordersService');
 
   const constants = {
-    POINTS_EARN_RATE: 1000, POINTS_VALUE: 100,
-    SHIPPING_FREE_THRESHOLD: 500000, SHIPPING_BASE_RATE: 30000, SHIPPING_WEIGHT_RATE: 5000,
+    POINTS_EARN_RATE: 1000,
+    POINTS_VALUE: 100,
+    SHIPPING_FREE_THRESHOLD: 500000,
+    SHIPPING_BASE_RATE: 30000,
+    SHIPPING_WEIGHT_RATE: 5000,
   };
 
   function makeRepo(overrides = {}) {
     return {
-      findOrderByPkBasic: jest.fn(), findOrderByIdAndUserId: jest.fn(),
-      findOrderByPkWithItemsAndUser: jest.fn(), findOrderByNumberAndUserId: jest.fn(),
-      findOrderByNumberWithUserEmail: jest.fn(), findUserOrdersWithItems: jest.fn(),
-      findAllOrdersWithUser: jest.fn(), findOrderForCancel: jest.fn(),
-      createOrder: jest.fn(), createOrderItem: jest.fn(),
-      saveOrder: jest.fn(async (o) => o), cancelPendingOrdersByUser: jest.fn().mockResolvedValue(),
-      findOrCreateActiveCart: jest.fn(), findActiveCartBySessionId: jest.fn(),
-      findCartByPkWithItemsDetails: jest.fn(), findCartItemMatching: jest.fn(),
-      saveCartItem: jest.fn(), deleteCartItem: jest.fn(), saveCart: jest.fn(),
-      findActiveCartsByUser: jest.fn().mockResolvedValue([]), clearCartItems: jest.fn().mockResolvedValue(),
-      findProductWithDefaultVariant: jest.fn(), findVariantBasic: jest.fn(),
-      lockProduct: jest.fn(), lockVariant: jest.fn(),
-      decrementProductStock: jest.fn().mockResolvedValue(), decrementVariantStock: jest.fn().mockResolvedValue(),
-      restoreProductStock: jest.fn().mockResolvedValue(), restoreVariantStock: jest.fn().mockResolvedValue(),
+      findOrderByPkBasic: jest.fn(),
+      findOrderByIdAndUserId: jest.fn(),
+      findOrderByPkWithItemsAndUser: jest.fn(),
+      findOrderByNumberAndUserId: jest.fn(),
+      findOrderByNumberWithUserEmail: jest.fn(),
+      findUserOrdersWithItems: jest.fn(),
+      findAllOrdersWithUser: jest.fn(),
+      findOrderForCancel: jest.fn(),
+      createOrder: jest.fn(),
+      createOrderItem: jest.fn(),
+      saveOrder: jest.fn(async (o) => o),
+      cancelPendingOrdersByUser: jest.fn().mockResolvedValue(),
+      findOrCreateActiveCart: jest.fn(),
+      findActiveCartBySessionId: jest.fn(),
+      findCartByPkWithItemsDetails: jest.fn(),
+      findCartItemMatching: jest.fn(),
+      saveCartItem: jest.fn(),
+      deleteCartItem: jest.fn(),
+      saveCart: jest.fn(),
+      findActiveCartsByUser: jest.fn().mockResolvedValue([]),
+      clearCartItems: jest.fn().mockResolvedValue(),
+      findProductWithDefaultVariant: jest.fn(),
+      findVariantBasic: jest.fn(),
+      lockProduct: jest.fn(),
+      lockVariant: jest.fn(),
+      decrementProductStock: jest.fn().mockResolvedValue(),
+      decrementVariantStock: jest.fn().mockResolvedValue(),
+      restoreProductStock: jest.fn().mockResolvedValue(),
+      restoreVariantStock: jest.fn().mockResolvedValue(),
       findActiveWarrantyPackagesByIds: jest.fn().mockResolvedValue([]),
-      findActiveDiscountCode: jest.fn(), incrementDiscountCodeUsage: jest.fn().mockResolvedValue(),
-      findUserById: jest.fn(), updateUserPoints: jest.fn().mockResolvedValue(),
-      createLoyaltyHistory: jest.fn().mockResolvedValue(), updateLoyaltyHistoryOrderId: jest.fn().mockResolvedValue(),
+      findActiveDiscountCode: jest.fn(),
+      incrementDiscountCodeUsage: jest.fn().mockResolvedValue(),
+      findUserById: jest.fn(),
+      updateUserPoints: jest.fn().mockResolvedValue(),
+      createLoyaltyHistory: jest.fn().mockResolvedValue(),
+      updateLoyaltyHistoryOrderId: jest.fn().mockResolvedValue(),
       createInventoryLogs: jest.fn().mockResolvedValue(),
       runInTransaction: jest.fn(async (work) => work({ LOCK: { UPDATE: 'FOR UPDATE' } })),
       ...overrides,
@@ -443,23 +457,46 @@ describe('ordersService.js — cart guest merge branch (lines 106-108)', () => {
 
   it('khi guest cart item đã tồn tại trong user cart → merge qty và xóa guest item (line 106-108)', async () => {
     const repo = makeRepo();
-    const service = new OrdersService({ ordersRepository: repo, emailGateway: makeEmailGateway(), eventBus: makeEventBus(), logger: makeLogger(), constants });
+    const service = new OrdersService({
+      ordersRepository: repo,
+      emailGateway: makeEmailGateway(),
+      eventBus: makeEventBus(),
+      logger: makeLogger(),
+      constants,
+    });
 
     const userCart = { id: 'cart-user', status: 'active', items: [] };
     const guestItem = { productId: 1, variantId: null, quantity: 2, cartId: 'cart-guest' };
     const guestCart = { id: 'cart-guest', status: 'active', items: [guestItem] };
-    const existingItem = { id: 'item-existing', cartId: 'cart-user', productId: 1, variantId: null, quantity: 3 };
+    const existingItem = {
+      id: 'item-existing',
+      cartId: 'cart-user',
+      productId: 1,
+      variantId: null,
+      quantity: 3,
+    };
 
     const product = {
-      id: 1, name: 'Sản phẩm A', status: 'active', basePrice: 100000,
-      thumbnail: 'thumb.jpg', stockQuantity: 10,
+      id: 1,
+      name: 'Sản phẩm A',
+      status: 'active',
+      basePrice: 100000,
+      thumbnail: 'thumb.jpg',
+      stockQuantity: 10,
     };
     const cartWithItems = {
-      id: 'cart-user', status: 'active',
-      items: [{
-        productId: 1, variantId: null, quantity: 5, warrantyPackageIds: [],
-        Product: product, ProductVariant: null,
-      }],
+      id: 'cart-user',
+      status: 'active',
+      items: [
+        {
+          productId: 1,
+          variantId: null,
+          quantity: 5,
+          warrantyPackageIds: [],
+          Product: product,
+          ProductVariant: null,
+        },
+      ],
     };
 
     repo.findOrCreateActiveCart.mockResolvedValue(userCart);
@@ -470,15 +507,43 @@ describe('ordersService.js — cart guest merge branch (lines 106-108)', () => {
     repo.saveCart.mockResolvedValue();
     repo.findCartByPkWithItemsDetails.mockResolvedValue(cartWithItems);
     repo.lockProduct.mockResolvedValue({ ...product, stockQuantity: 10 });
-    repo.createOrder.mockResolvedValue({ id: 'ord-1', number: 'ORD-001', status: 'pending', total: 500000, subtotal: 500000, createdAt: new Date(), userId: 1, shippingFirstName: 'A', shippingLastName: 'B', shippingAddress1: '123 Main', shippingAddress2: null, shippingCity: 'HCM', shippingState: null, shippingZip: '70000', shippingCountry: 'VN', paymentMethod: 'cod' });
-    repo.createOrderItem.mockResolvedValue({ id: 'oi-1', productId: 1, name: 'Sản phẩm A', unitPrice: 100000, quantity: 5, subtotal: 500000 });
+    repo.createOrder.mockResolvedValue({
+      id: 'ord-1',
+      number: 'ORD-001',
+      status: 'pending',
+      total: 500000,
+      subtotal: 500000,
+      createdAt: new Date(),
+      userId: 1,
+      shippingFirstName: 'A',
+      shippingLastName: 'B',
+      shippingAddress1: '123 Main',
+      shippingAddress2: null,
+      shippingCity: 'HCM',
+      shippingState: null,
+      shippingZip: '70000',
+      shippingCountry: 'VN',
+      paymentMethod: 'cod',
+    });
+    repo.createOrderItem.mockResolvedValue({
+      id: 'oi-1',
+      productId: 1,
+      name: 'Sản phẩm A',
+      unitPrice: 100000,
+      quantity: 5,
+      subtotal: 500000,
+    });
     repo.findUserById.mockResolvedValue({ id: 1, email: 'test@test.com', loyaltyPoints: 0 });
 
     const result = await service.createOrder({
       user: { id: 1, email: 'test@test.com' },
       body: {
-        shippingFirstName: 'A', shippingLastName: 'B', shippingAddress1: '123 Main',
-        shippingCity: 'HCM', shippingZip: '70000', shippingCountry: 'VN',
+        shippingFirstName: 'A',
+        shippingLastName: 'B',
+        shippingAddress1: '123 Main',
+        shippingCity: 'HCM',
+        shippingZip: '70000',
+        shippingCountry: 'VN',
         paymentMethod: 'cod',
       },
       sessionIdCookie: 'guest-session-id',
@@ -492,22 +557,39 @@ describe('ordersService.js — cart guest merge branch (lines 106-108)', () => {
 
   it('khi guest cart item KHÔNG tồn tại trong user cart → gán cartId và save (line 110-111)', async () => {
     const repo = makeRepo();
-    const service = new OrdersService({ ordersRepository: repo, emailGateway: makeEmailGateway(), eventBus: makeEventBus(), logger: makeLogger(), constants });
+    const service = new OrdersService({
+      ordersRepository: repo,
+      emailGateway: makeEmailGateway(),
+      eventBus: makeEventBus(),
+      logger: makeLogger(),
+      constants,
+    });
 
     const userCart = { id: 'cart-user', status: 'active', items: [] };
     const guestItem = { productId: 2, variantId: null, quantity: 1, cartId: 'cart-guest' };
     const guestCart = { id: 'cart-guest', status: 'active', items: [guestItem] };
 
     const product = {
-      id: 2, name: 'Sản phẩm B', status: 'active', basePrice: 200000,
-      thumbnail: 'thumb2.jpg', stockQuantity: 5,
+      id: 2,
+      name: 'Sản phẩm B',
+      status: 'active',
+      basePrice: 200000,
+      thumbnail: 'thumb2.jpg',
+      stockQuantity: 5,
     };
     const cartWithItems = {
-      id: 'cart-user', status: 'active',
-      items: [{
-        productId: 2, variantId: null, quantity: 1, warrantyPackageIds: [],
-        Product: product, ProductVariant: null,
-      }],
+      id: 'cart-user',
+      status: 'active',
+      items: [
+        {
+          productId: 2,
+          variantId: null,
+          quantity: 1,
+          warrantyPackageIds: [],
+          Product: product,
+          ProductVariant: null,
+        },
+      ],
     };
 
     repo.findOrCreateActiveCart.mockResolvedValue(userCart);
@@ -517,15 +599,43 @@ describe('ordersService.js — cart guest merge branch (lines 106-108)', () => {
     repo.saveCart.mockResolvedValue();
     repo.findCartByPkWithItemsDetails.mockResolvedValue(cartWithItems);
     repo.lockProduct.mockResolvedValue({ ...product, stockQuantity: 5 });
-    repo.createOrder.mockResolvedValue({ id: 'ord-2', number: 'ORD-002', status: 'pending', total: 200000, subtotal: 200000, createdAt: new Date(), userId: 1, shippingFirstName: 'A', shippingLastName: 'B', shippingAddress1: '123 Main', shippingAddress2: null, shippingCity: 'HCM', shippingState: null, shippingZip: '70000', shippingCountry: 'VN', paymentMethod: 'bank_transfer' });
-    repo.createOrderItem.mockResolvedValue({ id: 'oi-2', productId: 2, name: 'Sản phẩm B', unitPrice: 200000, quantity: 1, subtotal: 200000 });
+    repo.createOrder.mockResolvedValue({
+      id: 'ord-2',
+      number: 'ORD-002',
+      status: 'pending',
+      total: 200000,
+      subtotal: 200000,
+      createdAt: new Date(),
+      userId: 1,
+      shippingFirstName: 'A',
+      shippingLastName: 'B',
+      shippingAddress1: '123 Main',
+      shippingAddress2: null,
+      shippingCity: 'HCM',
+      shippingState: null,
+      shippingZip: '70000',
+      shippingCountry: 'VN',
+      paymentMethod: 'bank_transfer',
+    });
+    repo.createOrderItem.mockResolvedValue({
+      id: 'oi-2',
+      productId: 2,
+      name: 'Sản phẩm B',
+      unitPrice: 200000,
+      quantity: 1,
+      subtotal: 200000,
+    });
     repo.findUserById.mockResolvedValue({ id: 1, email: 'test@test.com', loyaltyPoints: 0 });
 
     await service.createOrder({
       user: { id: 1, email: 'test@test.com' },
       body: {
-        shippingFirstName: 'A', shippingLastName: 'B', shippingAddress1: '123 Main',
-        shippingCity: 'HCM', shippingZip: '70000', shippingCountry: 'VN',
+        shippingFirstName: 'A',
+        shippingLastName: 'B',
+        shippingAddress1: '123 Main',
+        shippingCity: 'HCM',
+        shippingZip: '70000',
+        shippingCountry: 'VN',
         paymentMethod: 'bank_transfer',
       },
       sessionIdCookie: 'guest-session-id',
@@ -539,24 +649,64 @@ describe('ordersService.js — cart guest merge branch (lines 106-108)', () => {
 
   it('warrantyPackageIds không rỗng → tính warranty fee (lines 182-186)', async () => {
     const repo = makeRepo();
-    const service = new OrdersService({ ordersRepository: repo, emailGateway: makeEmailGateway(), eventBus: makeEventBus(), logger: makeLogger(), constants });
+    const service = new OrdersService({
+      ordersRepository: repo,
+      emailGateway: makeEmailGateway(),
+      eventBus: makeEventBus(),
+      logger: makeLogger(),
+      constants,
+    });
 
-    const product = { id: 3, name: 'SP C', status: 'active', basePrice: 500000, thumbnail: 'c.jpg', stockQuantity: 10 };
+    const product = {
+      id: 3,
+      name: 'SP C',
+      status: 'active',
+      basePrice: 500000,
+      thumbnail: 'c.jpg',
+      stockQuantity: 10,
+    };
     const warrantyPkg = { id: 'wp-1', name: 'Bảo hành 1 năm', price: '50000' };
 
     repo.findProductWithDefaultVariant.mockResolvedValue(product);
     repo.findVariantBasic.mockResolvedValue(null);
     repo.lockProduct.mockResolvedValue({ ...product, stockQuantity: 10 });
     repo.findActiveWarrantyPackagesByIds.mockResolvedValue([warrantyPkg]);
-    repo.createOrder.mockResolvedValue({ id: 'ord-3', number: 'ORD-003', status: 'pending', total: 550000, subtotal: 500000, createdAt: new Date(), userId: 1, shippingFirstName: 'A', shippingLastName: 'B', shippingAddress1: '123 Main', shippingAddress2: null, shippingCity: 'HCM', shippingState: null, shippingZip: '70000', shippingCountry: 'VN', paymentMethod: 'cod' });
-    repo.createOrderItem.mockResolvedValue({ id: 'oi-3', name: 'SP C', unitPrice: 500000, quantity: 1, subtotal: 500000 });
+    repo.createOrder.mockResolvedValue({
+      id: 'ord-3',
+      number: 'ORD-003',
+      status: 'pending',
+      total: 550000,
+      subtotal: 500000,
+      createdAt: new Date(),
+      userId: 1,
+      shippingFirstName: 'A',
+      shippingLastName: 'B',
+      shippingAddress1: '123 Main',
+      shippingAddress2: null,
+      shippingCity: 'HCM',
+      shippingState: null,
+      shippingZip: '70000',
+      shippingCountry: 'VN',
+      paymentMethod: 'cod',
+    });
+    repo.createOrderItem.mockResolvedValue({
+      id: 'oi-3',
+      name: 'SP C',
+      unitPrice: 500000,
+      quantity: 1,
+      subtotal: 500000,
+    });
     repo.findUserById.mockResolvedValue({ id: 1, email: 't@t.com', loyaltyPoints: 0 });
 
     await service.createOrder({
       user: { id: 1, email: 't@t.com' },
       body: {
-        shippingFirstName: 'A', shippingLastName: 'B', shippingAddress1: '123 Main',
-        shippingCity: 'HCM', shippingZip: '70000', shippingCountry: 'VN',
+        shippingFirstName: 'A',
+        shippingLastName: 'B',
+        shippingAddress1: '123 Main',
+        shippingCity: 'HCM',
+        shippingZip: '70000',
+        shippingCountry: 'VN',
         paymentMethod: 'cod',
         items: [{ productId: 3, variantId: null, quantity: 1, warrantyPackageIds: ['wp-1'] }],
       },
@@ -571,22 +721,62 @@ describe('ordersService.js — cart guest merge branch (lines 106-108)', () => {
     const emailGateway = makeEmailGateway();
     emailGateway.sendOrderConfirmationEmail.mockRejectedValue(new Error('SMTP timeout'));
     const logger = makeLogger();
-    const service = new OrdersService({ ordersRepository: repo, emailGateway, eventBus: makeEventBus(), logger, constants });
+    const service = new OrdersService({
+      ordersRepository: repo,
+      emailGateway,
+      eventBus: makeEventBus(),
+      logger,
+      constants,
+    });
 
-    const product = { id: 4, name: 'SP D', status: 'active', basePrice: 100000, thumbnail: 'd.jpg', stockQuantity: 5 };
+    const product = {
+      id: 4,
+      name: 'SP D',
+      status: 'active',
+      basePrice: 100000,
+      thumbnail: 'd.jpg',
+      stockQuantity: 5,
+    };
     repo.findProductWithDefaultVariant.mockResolvedValue(product);
     repo.lockProduct.mockResolvedValue({ ...product, stockQuantity: 5 });
     repo.findActiveWarrantyPackagesByIds.mockResolvedValue([]);
-    repo.createOrder.mockResolvedValue({ id: 'ord-4', number: 'ORD-004', status: 'pending', total: 100000, subtotal: 100000, createdAt: new Date(), userId: 1, shippingFirstName: 'A', shippingLastName: 'B', shippingAddress1: '123', shippingAddress2: null, shippingCity: 'HCM', shippingState: null, shippingZip: '70000', shippingCountry: 'VN', paymentMethod: 'cod' });
-    repo.createOrderItem.mockResolvedValue({ id: 'oi-4', name: 'SP D', unitPrice: 100000, quantity: 1, subtotal: 100000 });
+    repo.createOrder.mockResolvedValue({
+      id: 'ord-4',
+      number: 'ORD-004',
+      status: 'pending',
+      total: 100000,
+      subtotal: 100000,
+      createdAt: new Date(),
+      userId: 1,
+      shippingFirstName: 'A',
+      shippingLastName: 'B',
+      shippingAddress1: '123',
+      shippingAddress2: null,
+      shippingCity: 'HCM',
+      shippingState: null,
+      shippingZip: '70000',
+      shippingCountry: 'VN',
+      paymentMethod: 'cod',
+    });
+    repo.createOrderItem.mockResolvedValue({
+      id: 'oi-4',
+      name: 'SP D',
+      unitPrice: 100000,
+      quantity: 1,
+      subtotal: 100000,
+    });
     repo.findUserById.mockResolvedValue({ id: 1, email: 'u@u.com', loyaltyPoints: 0 });
 
     // Should NOT throw even when email fails
     const result = await service.createOrder({
       user: { id: 1, email: 'u@u.com' },
       body: {
-        shippingFirstName: 'A', shippingLastName: 'B', shippingAddress1: '123',
-        shippingCity: 'HCM', shippingZip: '70000', shippingCountry: 'VN',
+        shippingFirstName: 'A',
+        shippingLastName: 'B',
+        shippingAddress1: '123',
+        shippingCity: 'HCM',
+        shippingZip: '70000',
+        shippingCountry: 'VN',
         paymentMethod: 'cod',
         items: [{ productId: 4, variantId: null, quantity: 1 }],
       },
@@ -595,10 +785,10 @@ describe('ordersService.js — cart guest merge branch (lines 106-108)', () => {
 
     expect(result).toHaveProperty('id', 'ord-4');
     // Wait for the fire-and-forget promise to settle
-    await new Promise(resolve => setImmediate(resolve));
+    await new Promise((resolve) => setImmediate(resolve));
     expect(logger.error).toHaveBeenCalledWith(
       expect.stringContaining('Lỗi gửi email xác nhận đơn hàng'),
-      expect.any(Error)
+      expect.any(Error),
     );
   });
 
@@ -607,12 +797,32 @@ describe('ordersService.js — cart guest merge branch (lines 106-108)', () => {
     const emailGateway = makeEmailGateway();
     emailGateway.sendOrderCancellationEmail.mockRejectedValue(new Error('Email fail'));
     const loggerInst = makeLogger();
-    const service = new OrdersService({ ordersRepository: repo, emailGateway, eventBus: makeEventBus(), logger: loggerInst, constants });
+    const service = new OrdersService({
+      ordersRepository: repo,
+      emailGateway,
+      eventBus: makeEventBus(),
+      logger: loggerInst,
+      constants,
+    });
 
     const order = {
-      id: 'ord-c1', number: 'ORD-C01', status: 'pending', userId: 1,
-      paymentStatus: 'pending', paymentMethod: 'cod', pointsUsed: 0, pointsEarned: 0,
-      items: [{ productId: 1, variantId: null, quantity: 1, ProductVariant: null, Product: { id: 1, stockQuantity: 5 } }],
+      id: 'ord-c1',
+      number: 'ORD-C01',
+      status: 'pending',
+      userId: 1,
+      paymentStatus: 'pending',
+      paymentMethod: 'cod',
+      pointsUsed: 0,
+      pointsEarned: 0,
+      items: [
+        {
+          productId: 1,
+          variantId: null,
+          quantity: 1,
+          ProductVariant: null,
+          Product: { id: 1, stockQuantity: 5 },
+        },
+      ],
     };
     repo.findOrderForCancel.mockResolvedValue(order);
     repo.findUserById.mockResolvedValue({ id: 1, email: 'cancel@test.com', loyaltyPoints: 0 });
@@ -620,21 +830,35 @@ describe('ordersService.js — cart guest merge branch (lines 106-108)', () => {
     // cancelOrder takes { id, userId, userEmail } — pass userEmail to trigger email send
     await service.cancelOrder({ id: 'ord-c1', userId: 1, userEmail: 'cancel@test.com' });
 
-    await new Promise(resolve => setImmediate(resolve));
+    await new Promise((resolve) => setImmediate(resolve));
     expect(loggerInst.error).toHaveBeenCalledWith(
       expect.stringContaining('Lỗi gửi email hủy đơn'),
-      expect.any(Error)
+      expect.any(Error),
     );
   });
 
   it('updateOrderStatus delivered với COD → paymentStatus = paid (line 499-501)', async () => {
     const repo = makeRepo();
-    const service = new OrdersService({ ordersRepository: repo, emailGateway: makeEmailGateway(), eventBus: makeEventBus(), logger: makeLogger(), constants });
+    const service = new OrdersService({
+      ordersRepository: repo,
+      emailGateway: makeEmailGateway(),
+      eventBus: makeEventBus(),
+      logger: makeLogger(),
+      constants,
+    });
 
     const order = {
-      id: 'ord-d1', number: 'ORD-D01', status: 'shipped', paymentStatus: 'pending',
-      paymentMethod: 'cod', subtotal: 100000, userId: 1, total: 130000, createdAt: new Date(),
-      pointsEarned: null, user: { email: 'u@u.com' },
+      id: 'ord-d1',
+      number: 'ORD-D01',
+      status: 'shipped',
+      paymentStatus: 'pending',
+      paymentMethod: 'cod',
+      subtotal: 100000,
+      userId: 1,
+      total: 130000,
+      createdAt: new Date(),
+      pointsEarned: null,
+      user: { email: 'u@u.com' },
       items: [],
     };
     repo.findOrderByPkWithItemsAndUser.mockResolvedValue(order);
@@ -650,34 +874,59 @@ describe('ordersService.js — cart guest merge branch (lines 106-108)', () => {
     const emailGateway = makeEmailGateway();
     emailGateway.sendOrderStatusUpdateEmail.mockRejectedValue(new Error('Email fail'));
     const logger = makeLogger();
-    const service = new OrdersService({ ordersRepository: repo, emailGateway, eventBus: makeEventBus(), logger, constants });
+    const service = new OrdersService({
+      ordersRepository: repo,
+      emailGateway,
+      eventBus: makeEventBus(),
+      logger,
+      constants,
+    });
 
     const order = {
-      id: 'ord-s1', number: 'ORD-S01', status: 'processing', paymentStatus: 'pending',
-      paymentMethod: 'cod', subtotal: 100000, userId: 1, total: 130000, createdAt: new Date(),
-      pointsEarned: null, user: { email: 'u@u.com' },
+      id: 'ord-s1',
+      number: 'ORD-S01',
+      status: 'processing',
+      paymentStatus: 'pending',
+      paymentMethod: 'cod',
+      subtotal: 100000,
+      userId: 1,
+      total: 130000,
+      createdAt: new Date(),
+      pointsEarned: null,
+      user: { email: 'u@u.com' },
       items: [],
     };
     repo.findOrderByPkWithItemsAndUser.mockResolvedValue(order);
 
     await service.updateOrderStatus({ id: 'ord-s1', status: 'shipped' });
 
-    await new Promise(resolve => setImmediate(resolve));
+    await new Promise((resolve) => setImmediate(resolve));
     expect(logger.error).toHaveBeenCalledWith(
       expect.stringContaining('Lỗi gửi email cập nhật trạng thái'),
-      expect.any(Error)
+      expect.any(Error),
     );
   });
 
   it('confirmReceived khi orderTotal > 0 nhưng không đủ điểm → pointsEarned = -1 (lines 594-598)', async () => {
     const repo = makeRepo();
-    const service = new OrdersService({ ordersRepository: repo, emailGateway: makeEmailGateway(), eventBus: makeEventBus(), logger: makeLogger(), constants });
+    const service = new OrdersService({
+      ordersRepository: repo,
+      emailGateway: makeEmailGateway(),
+      eventBus: makeEventBus(),
+      logger: makeLogger(),
+      constants,
+    });
 
     const order = {
-      id: 'ord-cr1', number: 'ORD-CR01', status: 'delivered',
-      paymentStatus: 'paid', paymentMethod: 'cod',
+      id: 'ord-cr1',
+      number: 'ORD-CR01',
+      status: 'delivered',
+      paymentStatus: 'paid',
+      paymentMethod: 'cod',
       subtotal: '500', // < POINTS_EARN_RATE (1000) → 0 points
-      userId: 1, total: 500, createdAt: new Date(),
+      userId: 1,
+      total: 500,
+      createdAt: new Date(),
       pointsEarned: null, // not yet processed
       reload: jest.fn().mockResolvedValue(),
     };
@@ -701,7 +950,10 @@ describe('adminAudit.js — auditMiddleware patches AdminAuditService methods (l
   beforeEach(() => {
     jest.resetModules();
     jest.mock('../utils/logger', () => ({
-      info: jest.fn(), error: jest.fn(), warn: jest.fn(), debug: jest.fn(),
+      info: jest.fn(),
+      error: jest.fn(),
+      warn: jest.fn(),
+      debug: jest.fn(),
     }));
     jest.mock('../models', () => ({
       AuditLog: { create: jest.fn().mockResolvedValue({}) },
@@ -739,7 +991,14 @@ describe('adminAudit.js — auditMiddleware patches AdminAuditService methods (l
     const adminUser = { id: 'admin-1', email: 'admin@test.com' };
     AdminAuditService.logProductAction(adminUser, 'CREATE', 'prod-1', 'iPhone 15');
 
-    expect(originalFn).toHaveBeenCalledWith(adminUser, 'CREATE', 'prod-1', 'iPhone 15', {}, '10.0.0.1');
+    expect(originalFn).toHaveBeenCalledWith(
+      adminUser,
+      'CREATE',
+      'prod-1',
+      'iPhone 15',
+      {},
+      '10.0.0.1',
+    );
   });
 
   it('auditMiddleware patch logOrderAction → gọi original với IP (line 223-224)', () => {
@@ -753,7 +1012,14 @@ describe('adminAudit.js — auditMiddleware patches AdminAuditService methods (l
     const adminUser = { id: 'admin-1', email: 'admin@test.com' };
     AdminAuditService.logOrderAction(adminUser, 'STATUS_CHANGE', 'ord-1', 'ORD-001');
 
-    expect(originalFn).toHaveBeenCalledWith(adminUser, 'STATUS_CHANGE', 'ord-1', 'ORD-001', {}, '10.0.0.2');
+    expect(originalFn).toHaveBeenCalledWith(
+      adminUser,
+      'STATUS_CHANGE',
+      'ord-1',
+      'ORD-001',
+      {},
+      '10.0.0.2',
+    );
   });
 
   it('auditMiddleware patch logDiscountCodeAction → gọi original với IP (line 226-227)', () => {
@@ -767,7 +1033,14 @@ describe('adminAudit.js — auditMiddleware patches AdminAuditService methods (l
     const adminUser = { id: 'admin-1', email: 'admin@test.com' };
     AdminAuditService.logDiscountCodeAction(adminUser, 'CREATE', 'disc-1', 'SUMMER20');
 
-    expect(originalFn).toHaveBeenCalledWith(adminUser, 'CREATE', 'disc-1', 'SUMMER20', {}, '10.0.0.3');
+    expect(originalFn).toHaveBeenCalledWith(
+      adminUser,
+      'CREATE',
+      'disc-1',
+      'SUMMER20',
+      {},
+      '10.0.0.3',
+    );
   });
 
   it('auditMiddleware patch logReviewAction → gọi original với IP (line 229-230)', () => {
@@ -781,7 +1054,14 @@ describe('adminAudit.js — auditMiddleware patches AdminAuditService methods (l
     const adminUser = { id: 'admin-1', email: 'admin@test.com' };
     AdminAuditService.logReviewAction(adminUser, 'DELETE', 'rev-1', 'user-5', 'prod-3');
 
-    expect(originalFn).toHaveBeenCalledWith(adminUser, 'DELETE', 'rev-1', 'user-5', 'prod-3', '10.0.0.4');
+    expect(originalFn).toHaveBeenCalledWith(
+      adminUser,
+      'DELETE',
+      'rev-1',
+      'user-5',
+      'prod-3',
+      '10.0.0.4',
+    );
   });
 
   it('auditMiddleware patch logDashboardAccess → không inject IP (line 232-233)', () => {
@@ -816,7 +1096,11 @@ describe('adminAudit.js — auditMiddleware patches AdminAuditService methods (l
     const originalLogUserAction = AdminAuditService.logUserAction;
     const req = { ip: '10.0.0.7', connection: {} };
     let finishHandler;
-    const res = { on: jest.fn((event, handler) => { if (event === 'finish') finishHandler = handler; }) };
+    const res = {
+      on: jest.fn((event, handler) => {
+        if (event === 'finish') finishHandler = handler;
+      }),
+    };
     const next = jest.fn();
 
     auditMiddleware(req, res, next);
@@ -841,14 +1125,18 @@ describe('email.js — createTransporter Gmail path (line 49)', () => {
     jest.resetModules();
     const mockSendMail = jest.fn().mockResolvedValue({ messageId: 'test-gmail-id' });
     const mockCreateTransport = jest.fn().mockReturnValue({
-      sendMail: mockSendMail, verify: jest.fn(),
+      sendMail: mockSendMail,
+      verify: jest.fn(),
     });
     jest.mock('nodemailer', () => ({
       createTransport: mockCreateTransport,
     }));
     jest.mock('sanitize-html', () => jest.fn((html) => html));
     jest.mock('../utils/logger', () => ({
-      info: jest.fn(), error: jest.fn(), warn: jest.fn(), debug: jest.fn(),
+      info: jest.fn(),
+      error: jest.fn(),
+      warn: jest.fn(),
+      debug: jest.fn(),
     }));
 
     process.env.EMAIL_HOST = 'smtp.gmail.com';
@@ -862,9 +1150,7 @@ describe('email.js — createTransporter Gmail path (line 49)', () => {
     // Kích hoạt singleton getTransporter() bằng cách gọi sendOtpEmail async (fire-and-forget)
     emailModule.sendOtpEmail('test@gmail.com', '123456').catch(() => {});
 
-    expect(mockCreateTransport).toHaveBeenCalledWith(
-      expect.objectContaining({ service: 'gmail' })
-    );
+    expect(mockCreateTransport).toHaveBeenCalledWith(expect.objectContaining({ service: 'gmail' }));
 
     delete process.env.EMAIL_HOST;
     delete process.env.EMAIL_USERNAME;
@@ -883,7 +1169,10 @@ describe('email.js — sendBulkCampaignEmail all-fail throw (line 175)', () => {
     }));
     jest.mock('sanitize-html', () => jest.fn((html) => html));
     jest.mock('../utils/logger', () => ({
-      info: jest.fn(), error: jest.fn(), warn: jest.fn(), debug: jest.fn(),
+      info: jest.fn(),
+      error: jest.fn(),
+      warn: jest.fn(),
+      debug: jest.fn(),
     }));
 
     process.env.EMAIL_HOST = 'smtp.mailtrap.io';
@@ -896,8 +1185,8 @@ describe('email.js — sendBulkCampaignEmail all-fail throw (line 175)', () => {
       emailService.sendBulkCampaignEmail(
         ['a@test.com', 'b@test.com'],
         'Test Subject',
-        '<p>Hello</p>'
-      )
+        '<p>Hello</p>',
+      ),
     ).rejects.toThrow('All emails failed to send. Check logs for details.');
 
     delete process.env.EMAIL_HOST;
@@ -921,7 +1210,10 @@ describe('email.js — sendBulkCampaignEmail all-fail throw (line 175)', () => {
     }));
     jest.mock('sanitize-html', () => jest.fn((html) => html));
     jest.mock('../utils/logger', () => ({
-      info: jest.fn(), error: jest.fn(), warn: jest.fn(), debug: jest.fn(),
+      info: jest.fn(),
+      error: jest.fn(),
+      warn: jest.fn(),
+      debug: jest.fn(),
     }));
 
     process.env.EMAIL_HOST = 'smtp.mailtrap.io';
@@ -932,7 +1224,7 @@ describe('email.js — sendBulkCampaignEmail all-fail throw (line 175)', () => {
     const results = await emailService.sendBulkCampaignEmail(
       ['ok@test.com', 'fail@test.com'],
       'Test Subject',
-      '<p>Hello</p>'
+      '<p>Hello</p>',
     );
 
     expect(results.some((r) => r.success)).toBe(true);
@@ -971,7 +1263,9 @@ describe('catalogService.js — uncovered branches', () => {
       findProductsList: jest.fn().mockResolvedValue({ count: 0, rows: [] }),
       findProductByIdWithFullDetails: jest.fn(),
       findProductBySlugWithFullDetails: jest.fn(),
-      findProductFiltersData: jest.fn().mockResolvedValue({ priceRange: {}, brands: [], colors: [], sizes: [], others: [] }),
+      findProductFiltersData: jest
+        .fn()
+        .mockResolvedValue({ priceRange: {}, brands: [], colors: [], sizes: [], others: [] }),
       findRecentlyViewedByUser: jest.fn().mockResolvedValue([]),
       createProduct: jest.fn(),
       findCategoriesByIds: jest.fn(),
@@ -1005,7 +1299,14 @@ describe('catalogService.js — uncovered branches', () => {
   it('_mapProductWithImages: no variants → price = basePrice (line 150)', () => {
     const service = makeService();
     const product = {
-      toJSON: jest.fn().mockReturnValue({ basePrice: 100000, variants: [], compareAtPrice: null, productImages: [] }),
+      toJSON: jest
+        .fn()
+        .mockReturnValue({
+          basePrice: 100000,
+          variants: [],
+          compareAtPrice: null,
+          productImages: [],
+        }),
     };
     const result = service._mapProductWithImages(product);
     expect(result.price).toBe(100000);
@@ -1013,7 +1314,9 @@ describe('catalogService.js — uncovered branches', () => {
 
   it('getBrandBySlug: brand không tồn tại → throw AppError 404 (line 176)', async () => {
     const service = makeService({ findBrandBySlug: jest.fn().mockResolvedValue(null) });
-    await expect(service.getBrandBySlug({ slug: 'nonexistent' })).rejects.toMatchObject({ statusCode: 404 });
+    await expect(service.getBrandBySlug({ slug: 'nonexistent' })).rejects.toMatchObject({
+      statusCode: 404,
+    });
   });
 
   it('getAllProducts: category là slug non-numeric → resolve qua findCategoryBySlug, không tìm thấy → sentinel (line 393-397)', async () => {
@@ -1023,7 +1326,9 @@ describe('catalogService.js — uncovered branches', () => {
     });
 
     const result = await service.getAllProducts({
-      page: 1, limit: 10, category: 'non-existent-slug',
+      page: 1,
+      limit: 10,
+      category: 'non-existent-slug',
     });
 
     // getAllProducts returns { payload, cacheHit }
@@ -1044,8 +1349,22 @@ describe('catalogService.js — uncovered branches', () => {
 
   it('getProductById: tìm bằng ID không thấy → fallback findBySlug (line 478)', async () => {
     const mockProduct = {
-      id: 1, name: 'P', basePrice: 100000, status: 'active',
-      toJSON: jest.fn().mockReturnValue({ id: 1, name: 'P', basePrice: 100000, status: 'active', images: [], variants: [], productImages: [], reviews: [] }),
+      id: 1,
+      name: 'P',
+      basePrice: 100000,
+      status: 'active',
+      toJSON: jest
+        .fn()
+        .mockReturnValue({
+          id: 1,
+          name: 'P',
+          basePrice: 100000,
+          status: 'active',
+          images: [],
+          variants: [],
+          productImages: [],
+          reviews: [],
+        }),
     };
     const service = makeService({
       findProductByIdWithFullDetails: jest.fn().mockResolvedValue(null),
@@ -1053,14 +1372,33 @@ describe('catalogService.js — uncovered branches', () => {
       findCategoryBySlug: jest.fn(),
     });
 
-    const { payload } = await service.getProductById({ id: 'some-slug', skuId: null, queryColor: null, userId: null });
+    const { payload } = await service.getProductById({
+      id: 'some-slug',
+      skuId: null,
+      queryColor: null,
+      userId: null,
+    });
     expect(payload.status).toBe('success');
   });
 
   it('getProductById: userId đặt → _trackRecentlyViewed được gọi (line 486)', async () => {
     const mockProduct = {
-      id: 1, name: 'P', basePrice: 100000, status: 'active',
-      toJSON: jest.fn().mockReturnValue({ id: 1, name: 'P', basePrice: 100000, status: 'active', images: [], variants: [], productImages: [], reviews: [] }),
+      id: 1,
+      name: 'P',
+      basePrice: 100000,
+      status: 'active',
+      toJSON: jest
+        .fn()
+        .mockReturnValue({
+          id: 1,
+          name: 'P',
+          basePrice: 100000,
+          status: 'active',
+          images: [],
+          variants: [],
+          productImages: [],
+          reviews: [],
+        }),
     };
     const service = makeService({
       findProductByIdWithFullDetails: jest.fn().mockResolvedValue(mockProduct),
@@ -1076,15 +1414,34 @@ describe('catalogService.js — uncovered branches', () => {
 
   it('getProductBySlug: userId đặt → _trackRecentlyViewed được gọi (lines 505-506)', async () => {
     const mockProduct = {
-      id: 2, name: 'Q', basePrice: 200000, status: 'active',
-      toJSON: jest.fn().mockReturnValue({ id: 2, name: 'Q', basePrice: 200000, status: 'active', images: [], variants: [], productImages: [], reviews: [] }),
+      id: 2,
+      name: 'Q',
+      basePrice: 200000,
+      status: 'active',
+      toJSON: jest
+        .fn()
+        .mockReturnValue({
+          id: 2,
+          name: 'Q',
+          basePrice: 200000,
+          status: 'active',
+          images: [],
+          variants: [],
+          productImages: [],
+          reviews: [],
+        }),
     };
     const service = makeService({
       findProductBySlugWithFullDetails: jest.fn().mockResolvedValue(mockProduct),
     });
     service._trackRecentlyViewed = jest.fn().mockResolvedValue();
 
-    await service.getProductBySlug({ slug: 'product-q', skuId: null, queryColor: null, userId: 'u-2' });
+    await service.getProductBySlug({
+      slug: 'product-q',
+      skuId: null,
+      queryColor: null,
+      userId: 'u-2',
+    });
 
     expect(service._trackRecentlyViewed).toHaveBeenCalledWith('u-2', 2);
   });
@@ -1092,15 +1449,31 @@ describe('catalogService.js — uncovered branches', () => {
   it('_buildProductDetailResponse: selectedVariant với variantColor → filter images by color (line 557-566)', () => {
     const service = makeService();
     const product = {
-      id: 1, name: 'Điện thoại', basePrice: 10000000,
+      id: 1,
+      name: 'Điện thoại',
+      basePrice: 10000000,
       toJSON: jest.fn().mockReturnValue({
-        id: 1, name: 'Điện thoại', basePrice: 10000000,
+        id: 1,
+        name: 'Điện thoại',
+        basePrice: 10000000,
         images: [
           { id: 'img-1', imageUrl: 'red.jpg', color: 'đỏ', isThumbnail: true, variantId: null },
           { id: 'img-2', imageUrl: 'blue.jpg', color: 'xanh', isThumbnail: false, variantId: null },
         ],
         variants: [
-          { id: 'v-1', sku: 'SKU-RED', name: 'Đỏ', displayName: 'Đỏ 128GB', variantName: 'Đỏ 128GB', price: 10000000, compareAtPrice: null, isDefault: true, isAvailable: true, stockQuantity: 5, attributes: { 'Màu sắc': 'đỏ' } },
+          {
+            id: 'v-1',
+            sku: 'SKU-RED',
+            name: 'Đỏ',
+            displayName: 'Đỏ 128GB',
+            variantName: 'Đỏ 128GB',
+            price: 10000000,
+            compareAtPrice: null,
+            isDefault: true,
+            isAvailable: true,
+            stockQuantity: 5,
+            attributes: { 'Màu sắc': 'đỏ' },
+          },
         ],
         productImages: [],
         reviews: [],
@@ -1117,15 +1490,36 @@ describe('catalogService.js — uncovered branches', () => {
   it('_buildProductDetailResponse: variantId match image → filter by variantId (line 554-556)', () => {
     const service = makeService();
     const product = {
-      id: 2, name: 'Laptop',
+      id: 2,
+      name: 'Laptop',
       toJSON: jest.fn().mockReturnValue({
-        id: 2, name: 'Laptop', basePrice: 20000000,
+        id: 2,
+        name: 'Laptop',
+        basePrice: 20000000,
         images: [
-          { id: 'img-a', imageUrl: 'variant-img.jpg', color: null, isThumbnail: true, variantId: 'v-a' },
+          {
+            id: 'img-a',
+            imageUrl: 'variant-img.jpg',
+            color: null,
+            isThumbnail: true,
+            variantId: 'v-a',
+          },
           { id: 'img-b', imageUrl: 'other.jpg', color: null, isThumbnail: false, variantId: null },
         ],
         variants: [
-          { id: 'v-a', sku: 'SKU-VA', name: 'Pro', displayName: 'Pro', variantName: 'Pro', price: 20000000, compareAtPrice: null, isDefault: true, isAvailable: true, stockQuantity: 3, attributes: {} },
+          {
+            id: 'v-a',
+            sku: 'SKU-VA',
+            name: 'Pro',
+            displayName: 'Pro',
+            variantName: 'Pro',
+            price: 20000000,
+            compareAtPrice: null,
+            isDefault: true,
+            isAvailable: true,
+            stockQuantity: 3,
+            attributes: {},
+          },
         ],
         productImages: [],
         reviews: [],
@@ -1146,10 +1540,11 @@ describe('catalogService.js — uncovered branches', () => {
     await expect(
       service.createProduct({
         payload: {
-          name: 'Test product', price: 100000,
+          name: 'Test product',
+          price: 100000,
           categoryIds: [1, 2], // 2 IDs nhưng chỉ 1 tồn tại
         },
-      })
+      }),
     ).rejects.toMatchObject({ statusCode: 400, message: 'catalog.categoriesNotExist' });
   });
 });
@@ -1255,7 +1650,10 @@ describe('product.js model — JSON getter error branches (lines 167-168, 207-20
       // vectorStore module tồn tại → require thành công → biến không null
       jest.resetModules();
       jest.mock('../utils/logger', () => ({
-        info: jest.fn(), error: jest.fn(), warn: jest.fn(), debug: jest.fn(),
+        info: jest.fn(),
+        error: jest.fn(),
+        warn: jest.fn(),
+        debug: jest.fn(),
       }));
       // Mock to prevent actual file I/O
       jest.mock('../services/ai/vectorStore', () => ({
@@ -1264,7 +1662,9 @@ describe('product.js model — JSON getter error branches (lines 167-168, 207-20
         hybridSearch: jest.fn(),
       }));
       jest.mock('../config/sequelize', () => ({
-        define: jest.fn().mockReturnValue({ addHook: jest.fn(), belongsTo: jest.fn(), hasMany: jest.fn() }),
+        define: jest
+          .fn()
+          .mockReturnValue({ addHook: jest.fn(), belongsTo: jest.fn(), hasMany: jest.fn() }),
         sync: jest.fn(),
       }));
 
@@ -1288,8 +1688,11 @@ describe('admin.js — deleteUser self-delete guard (line 491)', () => {
       let parsed = val;
       let maxAttempts = 5;
       while (typeof parsed === 'string' && maxAttempts-- > 0) {
-        try { parsed = JSON.parse(parsed); }
-        catch (e) { return {}; }
+        try {
+          parsed = JSON.parse(parsed);
+        } catch (e) {
+          return {};
+        }
       }
       if (typeof parsed === 'object' && !Array.isArray(parsed) && parsed !== null) return parsed;
       return {};
@@ -1308,8 +1711,11 @@ describe('admin.js — deleteUser self-delete guard (line 491)', () => {
       let parsed = val;
       let maxAttempts = 5;
       while (typeof parsed === 'string' && maxAttempts-- > 0) {
-        try { parsed = JSON.parse(parsed); }
-        catch (e) { return []; }
+        try {
+          parsed = JSON.parse(parsed);
+        } catch (e) {
+          return [];
+        }
       }
       if (Array.isArray(parsed)) return parsed;
       return [];
@@ -1332,7 +1738,7 @@ describe('chatbotService.js — product name word-match logic (lines 382-386)', 
 
     const pWords = new Set(pName.split(/\s+/));
     const rWords = new Set(rName.split(/\s+/));
-    const intersection = [...pWords].filter(w => rWords.has(w) && w.length > 1);
+    const intersection = [...pWords].filter((w) => rWords.has(w) && w.length > 1);
     const minSize = Math.min(pWords.size, rWords.size);
     const matched = minSize > 0 && intersection.length >= minSize * 0.8;
 
@@ -1345,7 +1751,7 @@ describe('chatbotService.js — product name word-match logic (lines 382-386)', 
 
     const pWords = new Set(pName.split(/\s+/));
     const rWords = new Set(rName.split(/\s+/));
-    const intersection = [...pWords].filter(w => rWords.has(w) && w.length > 1);
+    const intersection = [...pWords].filter((w) => rWords.has(w) && w.length > 1);
     const minSize = Math.min(pWords.size, rWords.size);
     const matched = minSize > 0 && intersection.length >= minSize * 0.8;
 
@@ -1419,7 +1825,7 @@ describe('image.js — actual multer diskStorage và fileFilter callbacks (lines
       }));
 
       // Loading image.js will call multer(options) → our factory captures storage + fileFilter
-      require('../controllers/image');
+      require('../modules/image/controllers/imageController');
     });
   });
 

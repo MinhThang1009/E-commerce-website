@@ -97,7 +97,7 @@ jest.mock('../services/adminAudit', () => ({
   auditMiddleware: (_req, _res, next) => next(),
 }));
 
-jest.mock('../controllers/adminImport', () => ({
+jest.mock('../modules/admin/controllers/adminImportController', () => ({
   getImportTemplate: (_req, _res, next) => next(),
   uploadImportFile: (_req, _res, next) => next(),
   importProducts: (_req, _res, next) => next(),
@@ -105,7 +105,7 @@ jest.mock('../controllers/adminImport', () => ({
   exportProducts: (_req, _res, next) => next(),
 }));
 
-jest.mock('../controllers/discountCode', () => ({
+jest.mock('../modules/discountCode/controllers/discountCodeController', () => ({
   getAllDiscountCodes: (_req, _res, next) => next(),
   getDiscountCodeById: (_req, _res, next) => next(),
   createDiscountCode: (_req, _res, next) => next(),
@@ -249,7 +249,7 @@ jest.mock('../models', () => {
 const express = require('express');
 const supertest = require('supertest');
 const { errorHandler } = require('../middlewares/errorHandler');
-const adminRouter = require('../routes/admin');
+const adminRouter = require('../modules/admin/routes');
 const {
   User,
   Product,
@@ -474,9 +474,9 @@ describe('PUT /api/admin/users/:id — lines 469,472-475: user.update với isAc
     expect(existingUser.update).toHaveBeenCalledWith(
       expect.objectContaining({
         firstName: 'Jane',
-        isActive: true,          // giữ nguyên từ user
-        isEmailVerified: false,  // giữ nguyên từ user
-      })
+        isActive: true, // giữ nguyên từ user
+        isEmailVerified: false, // giữ nguyên từ user
+      }),
     );
   });
 
@@ -494,7 +494,7 @@ describe('PUT /api/admin/users/:id — lines 469,472-475: user.update với isAc
       expect.objectContaining({
         isEmailVerified: true,
         isActive: true,
-      })
+      }),
     );
   });
 });
@@ -537,8 +537,8 @@ describe('GET /api/admin/products — lines 1547-1555: transform product với c
           name: 'Laptop Merge',
           basePrice: 20000000,
           productImages: [{ imageUrl: 'https://img.com/a.jpg' }],
-          categories: [],       // categories rỗng ban đầu
-          category: category,   // direct category → cần merge
+          categories: [], // categories rỗng ban đầu
+          category: category, // direct category → cần merge
         }),
       },
     ];
@@ -550,7 +550,7 @@ describe('GET /api/admin/products — lines 1547-1555: transform product với c
     expect(res.status).toBe(200);
     // Sau transform: categories phải chứa category
     expect(res.body.data.products[0].categories).toContainEqual(
-      expect.objectContaining({ id: 3, name: 'Laptop' })
+      expect.objectContaining({ id: 3, name: 'Laptop' }),
     );
     // images được chuyển từ productImages
     expect(res.body.data.products[0].images).toEqual(['https://img.com/a.jpg']);
@@ -566,7 +566,7 @@ describe('GET /api/admin/products — lines 1547-1555: transform product với c
           basePrice: 20000000,
           productImages: [],
           categories: [category], // category đã có
-          category: category,     // trùng → không push thêm
+          category: category, // trùng → không push thêm
         }),
       },
     ];
@@ -598,9 +598,7 @@ describe('GET /api/admin/orders — lines 1732-1737: transform order items', () 
               id: 10,
               name: 'Laptop',
               basePrice: 20000000,
-              productImages: [
-                { imageUrl: 'https://cdn.example.com/lap.jpg' },
-              ],
+              productImages: [{ imageUrl: 'https://cdn.example.com/lap.jpg' }],
             },
           },
         ],
@@ -669,9 +667,7 @@ describe('PUT /api/admin/orders/:id/status — lines 1788,1790: note/delivered+c
 
     expect(res.status).toBe(200);
     // note='' → note === '' → null
-    expect(order.update).toHaveBeenCalledWith(
-      expect.objectContaining({ note: null })
-    );
+    expect(order.update).toHaveBeenCalledWith(expect.objectContaining({ note: null }));
   });
 
   it('tự động đặt paymentStatus=paid khi delivered + cod', async () => {
@@ -685,13 +681,11 @@ describe('PUT /api/admin/orders/:id/status — lines 1788,1790: note/delivered+c
     };
     Order.findByPk.mockResolvedValueOnce(order);
 
-    const res = await request
-      .put('/api/admin/orders/701/status')
-      .send({ status: 'delivered' });
+    const res = await request.put('/api/admin/orders/701/status').send({ status: 'delivered' });
 
     expect(res.status).toBe(200);
     expect(order.update).toHaveBeenCalledWith(
-      expect.objectContaining({ status: 'delivered', paymentStatus: 'paid' })
+      expect.objectContaining({ status: 'delivered', paymentStatus: 'paid' }),
     );
   });
 });
@@ -722,15 +716,13 @@ describe('PUT /api/admin/orders/:id/status — lines 1802,1808: cancel restock',
     };
     Order.findByPk.mockResolvedValueOnce(order);
 
-    const res = await request
-      .put('/api/admin/orders/710/status')
-      .send({ status: 'cancelled' });
+    const res = await request.put('/api/admin/orders/710/status').send({ status: 'cancelled' });
 
     expect(res.status).toBe(200);
     // Variant được cộng thêm quantity
     expect(mockVariant.update).toHaveBeenCalledWith(
       { stockQuantity: 8 }, // 5 + 3
-      expect.anything()
+      expect.anything(),
     );
   });
 
@@ -744,7 +736,7 @@ describe('PUT /api/admin/orders/:id/status — lines 1802,1808: cancel restock',
       paymentMethod: 'bank',
       items: [
         {
-          variantId: null,     // không có variant
+          variantId: null, // không có variant
           quantity: 2,
           ProductVariant: null,
           Product: mockOrderProduct,
@@ -754,15 +746,13 @@ describe('PUT /api/admin/orders/:id/status — lines 1802,1808: cancel restock',
     };
     Order.findByPk.mockResolvedValueOnce(order);
 
-    const res = await request
-      .put('/api/admin/orders/711/status')
-      .send({ status: 'cancelled' });
+    const res = await request.put('/api/admin/orders/711/status').send({ status: 'cancelled' });
 
     expect(res.status).toBe(200);
     // Product được cộng thêm quantity
     expect(mockOrderProduct.update).toHaveBeenCalledWith(
       { stockQuantity: 12 }, // 10 + 2
-      expect.anything()
+      expect.anything(),
     );
   });
 });
@@ -776,9 +766,7 @@ describe('PATCH /api/admin/products/:id/status — line 2072: auto toggle', () =
     const inactiveProduct = makeProduct({ id: 800, status: 'inactive' });
     Product.findByPk.mockResolvedValueOnce(inactiveProduct);
 
-    const res = await request
-      .patch('/api/admin/products/800/status')
-      .send({});
+    const res = await request.patch('/api/admin/products/800/status').send({});
 
     expect(res.status).toBe(200);
     // inactive → toggle → active
@@ -789,9 +777,7 @@ describe('PATCH /api/admin/products/:id/status — line 2072: auto toggle', () =
     const activeProduct = makeProduct({ id: 801, status: 'active' });
     Product.findByPk.mockResolvedValueOnce(activeProduct);
 
-    const res = await request
-      .patch('/api/admin/products/801/status')
-      .send({});
+    const res = await request.patch('/api/admin/products/801/status').send({});
 
     expect(res.status).toBe(200);
     expect(activeProduct.update).toHaveBeenCalledWith({ status: 'inactive' });
@@ -834,9 +820,7 @@ describe('POST /api/admin/products/:productId/restock — line 2117: variant res
     Product.findByPk.mockResolvedValueOnce(product);
     InventoryLog.create.mockResolvedValueOnce({ id: 2 });
 
-    const res = await request
-      .post('/api/admin/products/901/restock')
-      .send({ quantity: 5 });
+    const res = await request.post('/api/admin/products/901/restock').send({ quantity: 5 });
 
     expect(res.status).toBe(200);
     expect(product.update).toHaveBeenCalledWith({ stockQuantity: 35 }); // 30 + 5
@@ -891,7 +875,7 @@ describe('GET /api/admin/analytics/top-products — lines 2276-2282: null Produc
     const items = [
       {
         productId: 1,
-        Product: null,  // Product không join được
+        Product: null, // Product không join được
         getDataValue: jest.fn((key) => (key === 'revenue' ? '500000' : '10')),
       },
     ];
@@ -975,14 +959,19 @@ describe('GET /api/admin/analytics/payment-methods — line 2391: null method �
 describe('GET /api/admin/reports/export — lines 2464-2479: type=products', () => {
   it('trả về CSV products với Content-Type text/csv', async () => {
     const products = [
-      { id: 1, name: 'Laptop A', sku: 'LAP001', basePrice: 20000000, stockQuantity: 5, status: 'active' },
+      {
+        id: 1,
+        name: 'Laptop A',
+        sku: 'LAP001',
+        basePrice: 20000000,
+        stockQuantity: 5,
+        status: 'active',
+      },
       { id: 2, name: 'Phone "B"', sku: null, basePrice: 10000000, stockQuantity: 0, status: null },
     ];
     Product.findAll.mockResolvedValueOnce(products);
 
-    const res = await request
-      .get('/api/admin/reports/export')
-      .query({ type: 'products' });
+    const res = await request.get('/api/admin/reports/export').query({ type: 'products' });
 
     expect(res.status).toBe(200);
     expect(res.headers['content-type']).toMatch(/text\/csv/);
@@ -1002,9 +991,7 @@ describe('GET /api/admin/reports/export — lines 2464-2479: type=products', () 
 
 describe('GET /api/admin/reports/export — line 2481: invalid type → 400', () => {
   it('trả về 400 khi type không phải orders hoặc products', async () => {
-    const res = await request
-      .get('/api/admin/reports/export')
-      .query({ type: 'invalid-type' });
+    const res = await request.get('/api/admin/reports/export').query({ type: 'invalid-type' });
 
     expect(res.status).toBe(400);
     expect(res.body.message).toMatch(/Loại báo cáo không hợp lệ/);
@@ -1045,9 +1032,7 @@ describe('GET /api/admin/reports/export — type=orders: User.firstName + lastNa
     ];
     Order.findAll.mockResolvedValueOnce(orders);
 
-    const res = await request
-      .get('/api/admin/reports/export')
-      .query({ type: 'orders' });
+    const res = await request.get('/api/admin/reports/export').query({ type: 'orders' });
 
     expect(res.status).toBe(200);
     expect(res.headers['content-type']).toMatch(/text\/csv/);

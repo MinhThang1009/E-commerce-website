@@ -1,12 +1,10 @@
-﻿const { DiscountCode } = require('../models');
+const { DiscountCode } = require('../../../models');
 const { Op } = require('sequelize');
-const { catchAsync } = require('../utils/catchAsync');
-const { AppError } = require('../shared/errors');
-const { AdminAuditService } = require('../services/adminAudit');
+const { catchAsync } = require('../../../utils/catchAsync');
+const { AppError } = require('../../../shared/errors');
+const { AdminAuditService } = require('../../../services/adminAudit');
 
-/**
- * Admin: Lấy danh sách mã giảm giá
- */
+// Admin: Lấy danh sách mã giảm giá với phân trang và tìm kiếm
 const getAllDiscountCodes = catchAsync(async (req, res) => {
   const {
     page = 1,
@@ -49,26 +47,15 @@ const getAllDiscountCodes = catchAsync(async (req, res) => {
   });
 });
 
-/**
- * Admin: Lấy chi tiết mã giảm giá
- */
+// Admin: Lấy chi tiết một mã giảm giá theo ID
 const getDiscountCodeById = catchAsync(async (req, res) => {
   const { id } = req.params;
   const discountCode = await DiscountCode.findByPk(id);
-
-  if (!discountCode) {
-    throw new AppError('Không tìm thấy mã giảm giá', 404);
-  }
-
-  res.status(200).json({
-    status: 'success',
-    data: { discountCode },
-  });
+  if (!discountCode) throw new AppError('Không tìm thấy mã giảm giá', 404);
+  res.status(200).json({ status: 'success', data: { discountCode } });
 });
 
-/**
- * Admin: Tạo mã giảm giá mới
- */
+// Admin: Tạo mã giảm giá mới
 const createDiscountCode = catchAsync(async (req, res) => {
   const {
     code,
@@ -83,11 +70,9 @@ const createDiscountCode = catchAsync(async (req, res) => {
     description,
   } = req.body;
 
-  // Kiểm tra trùng mã
+  // Kiểm tra trùng mã trước khi tạo
   const existingCode = await DiscountCode.findOne({ where: { code } });
-  if (existingCode) {
-    throw new AppError('Mã giảm giá đã tồn tại', 400);
-  }
+  if (existingCode) throw new AppError('Mã giảm giá đã tồn tại', 400);
 
   const discountCode = await DiscountCode.create({
     code,
@@ -102,7 +87,6 @@ const createDiscountCode = catchAsync(async (req, res) => {
     description,
   });
 
-  // Ghi audit log tạo mã giảm giá
   AdminAuditService.logDiscountCodeAction(req.user, 'CREATE', discountCode.id, code);
 
   res.status(201).json({
@@ -112,9 +96,7 @@ const createDiscountCode = catchAsync(async (req, res) => {
   });
 });
 
-/**
- * Admin: Cập nhật mã giảm giá
- */
+// Admin: Cập nhật mã giảm giá
 const updateDiscountCode = catchAsync(async (req, res) => {
   const { id } = req.params;
   const {
@@ -131,15 +113,11 @@ const updateDiscountCode = catchAsync(async (req, res) => {
   } = req.body;
 
   const discountCode = await DiscountCode.findByPk(id);
-  if (!discountCode) {
-    throw new AppError('Không tìm thấy mã giảm giá', 404);
-  }
+  if (!discountCode) throw new AppError('Không tìm thấy mã giảm giá', 404);
 
   if (code && code !== discountCode.code) {
     const existingCode = await DiscountCode.findOne({ where: { code } });
-    if (existingCode) {
-      throw new AppError('Mã giảm giá đã tồn tại', 400);
-    }
+    if (existingCode) throw new AppError('Mã giảm giá đã tồn tại', 400);
   }
 
   const wasActive = discountCode.isActive;
@@ -149,7 +127,8 @@ const updateDiscountCode = catchAsync(async (req, res) => {
     type: type || discountCode.type,
     value: value !== undefined ? value : discountCode.value,
     minOrderAmount: minOrderAmount !== undefined ? minOrderAmount : discountCode.minOrderAmount,
-    maxDiscountAmount: maxDiscountAmount !== undefined ? maxDiscountAmount : discountCode.maxDiscountAmount,
+    maxDiscountAmount:
+      maxDiscountAmount !== undefined ? maxDiscountAmount : discountCode.maxDiscountAmount,
     startDate: startDate || discountCode.startDate,
     endDate: endDate || discountCode.endDate,
     usageLimit: usageLimit !== undefined ? usageLimit : discountCode.usageLimit,
@@ -168,68 +147,59 @@ const updateDiscountCode = catchAsync(async (req, res) => {
   });
 });
 
-/**
- * Admin: Xóa mã giảm giá
- */
+// Admin: Xóa mã giảm giá
 const deleteDiscountCode = catchAsync(async (req, res) => {
   const { id } = req.params;
-
   const discountCode = await DiscountCode.findByPk(id);
-  if (!discountCode) {
-    throw new AppError('Không tìm thấy mã giảm giá', 404);
-  }
+  if (!discountCode) throw new AppError('Không tìm thấy mã giảm giá', 404);
 
   await discountCode.destroy();
-
-  // Ghi audit log xóa mã giảm giá
   AdminAuditService.logDiscountCodeAction(req.user, 'DELETE', id, discountCode.code);
 
-  res.status(200).json({
-    status: 'success',
-    message: 'Xóa mã giảm giá thành công',
-  });
+  res.status(200).json({ status: 'success', message: 'Xóa mã giảm giá thành công' });
 });
 
-/**
- * Customer: Áp dụng mã giảm giá (Dự đoán số tiền)
- */
+// Customer: Kiểm tra và tính toán số tiền được giảm khi áp dụng mã
 const applyDiscountCode = catchAsync(async (req, res) => {
   const { code, orderAmount } = req.body;
 
   const discountCode = await DiscountCode.findOne({ where: { code, isActive: true } });
-  if (!discountCode) {
-    throw new AppError('Mã giảm giá không hợp lệ hoặc đã hết hạn', 400);
-  }
+  if (!discountCode) throw new AppError('Mã giảm giá không hợp lệ hoặc đã hết hạn', 400);
 
   const now = new Date();
   if (discountCode.startDate && now < new Date(discountCode.startDate)) {
     throw new AppError('Mã giảm giá chưa đến thời gian áp dụng', 400);
   }
-
   if (discountCode.endDate && now > new Date(discountCode.endDate)) {
     throw new AppError('Mã giảm giá đã hết hạn', 400);
   }
-
   if (discountCode.usageLimit !== null && discountCode.usedCount >= discountCode.usageLimit) {
     throw new AppError('Mã giảm giá đã đạt giới hạn lượt sử dụng', 400);
   }
-
   if (orderAmount < parseFloat(discountCode.minOrderAmount)) {
-    throw new AppError(`Đơn hàng phải tối thiểu ${discountCode.minOrderAmount} để sử dụng mã này`, 400);
+    throw new AppError(
+      `Đơn hàng phải tối thiểu ${discountCode.minOrderAmount} để sử dụng mã này`,
+      400,
+    );
   }
 
   let discountAmount = 0;
   const value = parseFloat(discountCode.value);
-  
+
   if (discountCode.type === 'percent') {
     discountAmount = (orderAmount * value) / 100;
-    if (discountCode.maxDiscountAmount && discountAmount > parseFloat(discountCode.maxDiscountAmount)) {
+    // Giới hạn số tiền giảm tối đa nếu có cấu hình
+    if (
+      discountCode.maxDiscountAmount &&
+      discountAmount > parseFloat(discountCode.maxDiscountAmount)
+    ) {
       discountAmount = parseFloat(discountCode.maxDiscountAmount);
     }
   } else {
     discountAmount = value;
   }
 
+  // Không giảm quá tổng giá trị đơn hàng
   if (discountAmount > orderAmount) {
     discountAmount = orderAmount;
   }
@@ -237,11 +207,7 @@ const applyDiscountCode = catchAsync(async (req, res) => {
   res.status(200).json({
     status: 'success',
     message: 'Áp dụng mã giảm giá thành công',
-    data: {
-      discountAmount,
-      discountCodeId: discountCode.id,
-      code: discountCode.code,
-    },
+    data: { discountAmount, discountCodeId: discountCode.id, code: discountCode.code },
   });
 });
 

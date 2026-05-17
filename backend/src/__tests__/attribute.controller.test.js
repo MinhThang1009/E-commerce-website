@@ -97,7 +97,7 @@ jest.mock('../services/ai/productNameGenerator', () => ({
 
 const express = require('express');
 const supertest = require('supertest');
-const attributeRouter = require('../routes/attribute');
+const attributeRouter = require('../modules/attribute/routes');
 const { errorHandler } = require('../middlewares/errorHandler');
 
 const app = express();
@@ -243,7 +243,7 @@ describe('POST /api/attributes/groups — createAttributeGroup', () => {
     expect(res.body.status).toBe('success');
     expect(res.body.message).toMatch(/Tạo nhóm thuộc tính thành công/);
     expect(mockAttributeGroupCreate).toHaveBeenCalledWith(
-      expect.objectContaining({ name: 'Chất liệu', type: 'text' })
+      expect.objectContaining({ name: 'Chất liệu', type: 'text' }),
     );
   });
 
@@ -282,9 +282,7 @@ describe('PUT /api/attributes/groups/:id — updateAttributeGroup', () => {
   test('trả về 404 khi nhóm không tồn tại', async () => {
     mockAttributeGroupFindByPk.mockResolvedValue(null);
 
-    const res = await request
-      .put('/api/attributes/groups/999')
-      .send({ name: 'Không tồn tại' });
+    const res = await request.put('/api/attributes/groups/999').send({ name: 'Không tồn tại' });
 
     expect(res.status).toBe(404);
     expect(res.body.message).toMatch(/Không tìm thấy nhóm thuộc tính/);
@@ -366,9 +364,7 @@ describe('POST /api/attributes/groups/:attributeGroupId/values — addAttributeV
     const created = makeAttributeValue({ name: 'Xanh lam', value: 'blue' });
     mockAttributeValueCreate.mockResolvedValue(created);
 
-    const res = await request
-      .post('/api/attributes/groups/1/values')
-      .send(validValueBody);
+    const res = await request.post('/api/attributes/groups/1/values').send(validValueBody);
 
     expect(res.status).toBe(201);
     expect(res.body.status).toBe('success');
@@ -378,7 +374,7 @@ describe('POST /api/attributes/groups/:attributeGroupId/values — addAttributeV
         attributeGroupId: '1',
         name: 'Xanh lam',
         affectsName: true,
-      })
+      }),
     );
   });
 
@@ -390,16 +386,14 @@ describe('POST /api/attributes/groups/:attributeGroupId/values — addAttributeV
     await request.post('/api/attributes/groups/1/values').send(bodyWithoutAffectsName);
 
     expect(mockAttributeValueCreate).toHaveBeenCalledWith(
-      expect.objectContaining({ affectsName: false })
+      expect.objectContaining({ affectsName: false }),
     );
   });
 
   test('trả về 500 khi DB throw lỗi khi tạo', async () => {
     mockAttributeValueCreate.mockRejectedValue(new Error('FK constraint failed'));
 
-    const res = await request
-      .post('/api/attributes/groups/1/values')
-      .send(validValueBody);
+    const res = await request.post('/api/attributes/groups/1/values').send(validValueBody);
 
     expect(res.status).toBe(500);
     expect(res.body.message).toMatch(/Không thể thêm giá trị thuộc tính/);
@@ -430,9 +424,7 @@ describe('PUT /api/attributes/values/:id — updateAttributeValue', () => {
   test('trả về 404 khi giá trị không tồn tại', async () => {
     mockAttributeValueFindByPk.mockResolvedValue(null);
 
-    const res = await request
-      .put('/api/attributes/values/999')
-      .send({ name: 'Không tồn tại' });
+    const res = await request.put('/api/attributes/values/999').send({ name: 'Không tồn tại' });
 
     expect(res.status).toBe(404);
     expect(res.body.message).toMatch(/Không tìm thấy giá trị thuộc tính/);
@@ -445,9 +437,7 @@ describe('PUT /api/attributes/values/:id — updateAttributeValue', () => {
     });
     mockAttributeValueFindByPk.mockResolvedValue(existingValue);
 
-    const res = await request
-      .put('/api/attributes/values/10')
-      .send({ name: 'Đỏ', isActive: true });
+    const res = await request.put('/api/attributes/values/10').send({ name: 'Đỏ', isActive: true });
 
     expect(res.status).toBe(500);
     expect(res.body.status).toBe('error');
@@ -513,7 +503,7 @@ describe('POST /api/attributes/products/:productId/groups/:attributeGroupId — 
     expect(res.body.status).toBe('success');
     expect(res.body.message).toMatch(/Gán nhóm thuộc tính cho sản phẩm thành công/);
     expect(mockProductAttributeGroupCreate).toHaveBeenCalledWith(
-      expect.objectContaining({ productId: '5', attributeGroupId: '1' })
+      expect.objectContaining({ productId: '5', attributeGroupId: '1' }),
     );
   });
 
@@ -553,7 +543,7 @@ describe('POST /api/attributes/preview-name — previewProductName', () => {
     expect(mockPreviewProductName).toHaveBeenCalledWith(
       'iPhone 15 Pro',
       [1, 2],
-      expect.objectContaining({ separator: ' ', includeDetails: true })
+      expect.objectContaining({ separator: ' ', includeDetails: true }),
     );
   });
 
@@ -575,7 +565,7 @@ describe('POST /api/attributes/preview-name — previewProductName', () => {
     expect(mockPreviewProductName).toHaveBeenCalledWith(
       'Laptop Dell',
       [],
-      expect.objectContaining({ separator: ' ', includeDetails: false })
+      expect.objectContaining({ separator: ' ', includeDetails: false }),
     );
   });
 
@@ -599,7 +589,10 @@ describe('GET /api/attributes/name-affecting — getNameAffectingAttributes', ()
   beforeEach(() => jest.clearAllMocks());
 
   test('trả về danh sách thuộc tính ảnh hưởng tên khi có productId', async () => {
-    const attributes = [{ id: 1, name: 'Màu sắc' }, { id: 2, name: 'Dung lượng' }];
+    const attributes = [
+      { id: 1, name: 'Màu sắc' },
+      { id: 2, name: 'Dung lượng' },
+    ];
     mockGetNameAffectingAttributes.mockResolvedValue(attributes);
 
     const res = await request.get('/api/attributes/name-affecting?productId=5');
@@ -721,7 +714,7 @@ describe('POST /api/attributes/generate-name-realtime — generateNameRealTime',
     expect(mockPreviewProductName).toHaveBeenCalledWith(
       'iPhone 15',
       [3],
-      expect.objectContaining({ includeDetails: true })
+      expect.objectContaining({ includeDetails: true }),
     );
   });
 
@@ -755,7 +748,7 @@ describe('POST /api/attributes/generate-name-realtime — generateNameRealTime',
     expect(res.status).toBe(200);
     expect(res.body.data.suggestions).toHaveLength(1);
     expect(mockProductVariantFindAll).toHaveBeenCalledWith(
-      expect.objectContaining({ where: { productId: 10 } })
+      expect.objectContaining({ where: { productId: 10 } }),
     );
   });
 
@@ -804,7 +797,7 @@ describe('POST /api/attributes/generate-name-realtime — generateNameRealTime',
     expect(mockPreviewProductName).toHaveBeenCalledWith(
       'Product Only',
       [],
-      expect.objectContaining({ includeDetails: true })
+      expect.objectContaining({ includeDetails: true }),
     );
   });
 
@@ -818,10 +811,6 @@ describe('POST /api/attributes/generate-name-realtime — generateNameRealTime',
     });
 
     expect(res.status).toBe(200);
-    expect(mockPreviewProductName).toHaveBeenCalledWith(
-      'Null Attrs',
-      [],
-      expect.any(Object)
-    );
+    expect(mockPreviewProductName).toHaveBeenCalledWith('Null Attrs', [], expect.any(Object));
   });
 });

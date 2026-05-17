@@ -5,6 +5,6 @@
  */
 module.exports = () => ({
   basePath: '/attributes',
-  router: require('../../routes/attribute'),
+  router: require('./routes'),
   subscribeEvents() {},
 });

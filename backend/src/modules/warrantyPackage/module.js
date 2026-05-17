@@ -5,6 +5,6 @@
  */
 module.exports = () => ({
   basePath: '/warranty-packages',
-  router: require('../../routes/warrantyPackage'),
+  router: require('./routes'),
   subscribeEvents() {},
 });

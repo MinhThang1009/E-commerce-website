@@ -16,23 +16,23 @@
 
 jest.mock('../middlewares/rateLimiter', () => ({
   chatbotLimiter: (_req, _res, next) => next(),
-  apiLimiter:     (_req, _res, next) => next(),
-  authLimiter:    (_req, _res, next) => next(),
+  apiLimiter: (_req, _res, next) => next(),
+  authLimiter: (_req, _res, next) => next(),
 }));
 
 jest.mock('../utils/logger', () => ({
-  info:  jest.fn(),
+  info: jest.fn(),
   error: jest.fn(),
-  warn:  jest.fn(),
+  warn: jest.fn(),
   debug: jest.fn(),
 }));
 
 jest.mock('../config/redis', () => ({
   getRedisClient: jest.fn().mockResolvedValue({
-    get:   jest.fn().mockResolvedValue(null),
-    set:   jest.fn().mockResolvedValue('OK'),
+    get: jest.fn().mockResolvedValue(null),
+    set: jest.fn().mockResolvedValue('OK'),
     setex: jest.fn().mockResolvedValue('OK'),
-    del:   jest.fn().mockResolvedValue(1),
+    del: jest.fn().mockResolvedValue(1),
   }),
 }));
 
@@ -56,17 +56,34 @@ jest.mock('../services/adminAudit', () => ({
 // Mock vectorStore để tránh gọi API embedding thật
 jest.mock('../services/ai/vectorStore', () => ({
   upsertProduct: jest.fn().mockResolvedValue(undefined),
-  save:       jest.fn().mockResolvedValue(undefined),
+  save: jest.fn().mockResolvedValue(undefined),
 }));
 
 // Mock Sequelize models
 jest.mock('../models', () => {
   // Import log mock
   const importLogMock = {
-    create: jest.fn().mockResolvedValue({ id: 1, adminId: 1, filename: 'test.csv', totalRows: 2, successRows: 1, failedRows: 1 }),
+    create: jest
+      .fn()
+      .mockResolvedValue({
+        id: 1,
+        adminId: 1,
+        filename: 'test.csv',
+        totalRows: 2,
+        successRows: 1,
+        failedRows: 1,
+      }),
     findAndCountAll: jest.fn().mockResolvedValue({
       rows: [
-        { id: 1, adminId: 1, filename: 'products.csv', totalRows: 5, successRows: 4, failedRows: 1, importedAt: new Date() },
+        {
+          id: 1,
+          adminId: 1,
+          filename: 'products.csv',
+          totalRows: 5,
+          successRows: 4,
+          failedRows: 1,
+          importedAt: new Date(),
+        },
       ],
       count: 1,
     }),
@@ -74,7 +91,7 @@ jest.mock('../models', () => {
 
   // Product mock
   const productMock = {
-    create:  jest.fn().mockResolvedValue({ id: 100, name: 'Test Product' }),
+    create: jest.fn().mockResolvedValue({ id: 100, name: 'Test Product' }),
     findOne: jest.fn().mockResolvedValue(null), // slug không trùng
     findAll: jest.fn().mockResolvedValue([]),
   };
@@ -83,21 +100,19 @@ jest.mock('../models', () => {
   const categoryMock = {
     findAll: jest.fn().mockResolvedValue([
       { id: 1, slug: 'dien-thoai', name: 'Điện thoại' },
-      { id: 2, slug: 'laptop',     name: 'Laptop' },
+      { id: 2, slug: 'laptop', name: 'Laptop' },
     ]),
   };
 
   // Brand mock
   const brandMock = {
-    findAll: jest.fn().mockResolvedValue([
-      { id: 1, name: 'Apple', slug: 'apple' },
-    ]),
+    findAll: jest.fn().mockResolvedValue([{ id: 1, name: 'Apple', slug: 'apple' }]),
   };
 
   const productVariantMock = { create: jest.fn().mockResolvedValue({}) };
-  const productImageMock   = { create: jest.fn().mockResolvedValue({}) };
+  const productImageMock = { create: jest.fn().mockResolvedValue({}) };
   const productCategoryMock = { create: jest.fn().mockResolvedValue({}) };
-  const productSpecMock    = { create: jest.fn().mockResolvedValue({}) };
+  const productSpecMock = { create: jest.fn().mockResolvedValue({}) };
 
   // sequelize.transaction mock — chạy thẳng không dùng transaction thật
   const sequelizeMock = {
@@ -108,28 +123,28 @@ jest.mock('../models', () => {
   };
 
   return {
-    sequelize:            sequelizeMock,
-    Product:              productMock,
-    ProductVariant:       productVariantMock,
-    ProductImage:         productImageMock,
-    ProductCategory:      productCategoryMock,
+    sequelize: sequelizeMock,
+    Product: productMock,
+    ProductVariant: productVariantMock,
+    ProductImage: productImageMock,
+    ProductCategory: productCategoryMock,
     ProductSpecification: productSpecMock,
-    Category:             categoryMock,
-    Brand:                brandMock,
-    ImportLog:            importLogMock,
+    Category: categoryMock,
+    Brand: brandMock,
+    ImportLog: importLogMock,
     Op: require('sequelize').Op,
   };
 });
 
 // ── Setup ──────────────────────────────────────────────────────────────────
 
-const express    = require('express');
-const supertest  = require('supertest');
+const express = require('express');
+const supertest = require('supertest');
 const { errorHandler } = require('../middlewares/errorHandler');
 
 let app;
 beforeAll(() => {
-  const adminRouter = require('../routes/admin');
+  const adminRouter = require('../modules/admin/routes');
   app = express();
   app.use(express.json());
   app.use('/api/admin', adminRouter);
@@ -143,9 +158,7 @@ const adminHeaders = { 'x-test-admin': 'true' };
 
 describe('GET /api/admin/products/import-template', () => {
   test('Admin → trả về file CSV với Content-Disposition attachment', async () => {
-    const res = await supertest(app)
-      .get('/api/admin/products/import-template')
-      .set(adminHeaders);
+    const res = await supertest(app).get('/api/admin/products/import-template').set(adminHeaders);
 
     expect(res.status).toBe(200);
     expect(res.headers['content-type']).toMatch(/text\/csv/);
@@ -157,17 +170,14 @@ describe('GET /api/admin/products/import-template', () => {
   });
 
   test('Không có auth (thiếu x-test-admin) → 401', async () => {
-    const res = await supertest(app)
-      .get('/api/admin/products/import-template');
+    const res = await supertest(app).get('/api/admin/products/import-template');
     expect(res.status).toBe(401);
   });
 });
 
 describe('POST /api/admin/products/import', () => {
   test('Không có file đính kèm → 400', async () => {
-    const res = await supertest(app)
-      .post('/api/admin/products/import')
-      .set(adminHeaders);
+    const res = await supertest(app).post('/api/admin/products/import').set(adminHeaders);
 
     expect(res.status).toBe(400);
     // 4xx errors dùng status 'fail' theo convention errorHandler
@@ -178,7 +188,10 @@ describe('POST /api/admin/products/import', () => {
     const res = await supertest(app)
       .post('/api/admin/products/import')
       .set(adminHeaders)
-      .attach('file', Buffer.from('some text'), { filename: 'data.txt', contentType: 'text/plain' });
+      .attach('file', Buffer.from('some text'), {
+        filename: 'data.txt',
+        contentType: 'text/plain',
+      });
 
     expect(res.status).toBe(400);
   });
@@ -193,7 +206,10 @@ describe('POST /api/admin/products/import', () => {
     const res = await supertest(app)
       .post('/api/admin/products/import')
       .set(adminHeaders)
-      .attach('file', Buffer.from(csvContent), { filename: 'products.csv', contentType: 'text/csv' });
+      .attach('file', Buffer.from(csvContent), {
+        filename: 'products.csv',
+        contentType: 'text/csv',
+      });
 
     expect(res.status).toBe(200);
     expect(res.body.status).toBe('success');
@@ -208,14 +224,17 @@ describe('POST /api/admin/products/import', () => {
     // Dòng 3: hợp lệ → import được
     const csvContent = [
       'name,base_price,category_slug',
-      ',29990000,dien-thoai',         // dòng 2: name bỏ trống → error
+      ',29990000,dien-thoai', // dòng 2: name bỏ trống → error
       'Samsung Galaxy S25,29990000,dien-thoai', // dòng 3: hợp lệ
     ].join('\n');
 
     const res = await supertest(app)
       .post('/api/admin/products/import')
       .set(adminHeaders)
-      .attach('file', Buffer.from(csvContent), { filename: 'products.csv', contentType: 'text/csv' });
+      .attach('file', Buffer.from(csvContent), {
+        filename: 'products.csv',
+        contentType: 'text/csv',
+      });
 
     // Vẫn trả 200 nếu có ít nhất 1 dòng thành công hoặc 422 nếu tất cả lỗi
     expect([200, 422]).toContain(res.status);
@@ -224,7 +243,7 @@ describe('POST /api/admin/products/import', () => {
       // Phải có errors array với ít nhất 1 lỗi về name
       expect(res.body.data.errors.length).toBeGreaterThan(0);
       const nameError = res.body.data.errors.find(
-        (e) => e.field === 'name' || e.field === 'general'
+        (e) => e.field === 'name' || e.field === 'general',
       );
       expect(nameError).toBeTruthy();
     }
@@ -241,9 +260,7 @@ describe('POST /api/admin/products/import', () => {
 
 describe('GET /api/admin/products/import-history', () => {
   test('Admin → trả về danh sách lịch sử import (200)', async () => {
-    const res = await supertest(app)
-      .get('/api/admin/products/import-history')
-      .set(adminHeaders);
+    const res = await supertest(app).get('/api/admin/products/import-history').set(adminHeaders);
 
     expect(res.status).toBe(200);
     expect(res.body.status).toBe('success');
@@ -253,8 +270,7 @@ describe('GET /api/admin/products/import-history', () => {
   });
 
   test('Không có auth → 401', async () => {
-    const res = await supertest(app)
-      .get('/api/admin/products/import-history');
+    const res = await supertest(app).get('/api/admin/products/import-history');
     expect(res.status).toBe(401);
   });
 });
@@ -279,9 +295,7 @@ describe('GET /api/admin/products/export', () => {
       },
     ]);
 
-    const res = await supertest(app)
-      .get('/api/admin/products/export?format=csv')
-      .set(adminHeaders);
+    const res = await supertest(app).get('/api/admin/products/export?format=csv').set(adminHeaders);
 
     expect(res.status).toBe(200);
     expect(res.headers['content-type']).toMatch(/text\/csv/);
@@ -290,8 +304,7 @@ describe('GET /api/admin/products/export', () => {
   });
 
   test('Không có auth → 401', async () => {
-    const res = await supertest(app)
-      .get('/api/admin/products/export');
+    const res = await supertest(app).get('/api/admin/products/export');
     expect(res.status).toBe(401);
   });
 });

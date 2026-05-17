@@ -1,9 +1,9 @@
-﻿const express = require('express');
+const express = require('express');
 const router = express.Router();
-const searchHistoryController = require('../controllers/searchHistory');
-const { authenticate } = require('../middlewares/authenticate');
-const { validateRequest } = require('../middlewares/validateRequest');
-const { saveSearchSchema } = require('../validators/searchHistory');
+const searchHistoryController = require('./controllers/searchHistoryController');
+const { authenticate } = require('../../middlewares/authenticate');
+const { validateRequest } = require('../../middlewares/validateRequest');
+const { saveSearchSchema } = require('./validators/searchHistoryValidator');
 
 // Khách có thể lưu tìm kiếm — validate query trước khi xử lý
 router.post('/', validateRequest(saveSearchSchema, 422), (req, res, next) => {

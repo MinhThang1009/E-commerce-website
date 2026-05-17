@@ -94,7 +94,7 @@ jest.mock('../services/adminAudit', () => ({
   auditMiddleware: (_req, _res, next) => next(),
 }));
 
-jest.mock('../controllers/adminImport', () => ({
+jest.mock('../modules/admin/controllers/adminImportController', () => ({
   getImportTemplate: (_req, _res, next) => next(),
   uploadImportFile: (_req, _res, next) => next(),
   importProducts: (_req, _res, next) => next(),
@@ -102,7 +102,7 @@ jest.mock('../controllers/adminImport', () => ({
   exportProducts: (_req, _res, next) => next(),
 }));
 
-jest.mock('../controllers/discountCode', () => ({
+jest.mock('../modules/discountCode/controllers/discountCodeController', () => ({
   getAllDiscountCodes: (_req, _res, next) => next(),
   getDiscountCodeById: (_req, _res, next) => next(),
   createDiscountCode: (_req, _res, next) => next(),
@@ -245,7 +245,7 @@ jest.mock('../models', () => {
 const express = require('express');
 const supertest = require('supertest');
 const { errorHandler } = require('../middlewares/errorHandler');
-const adminRouter = require('../routes/admin');
+const adminRouter = require('../modules/admin/routes');
 const {
   User,
   Product,
@@ -495,10 +495,7 @@ describe('POST /api/admin/products — line 723: categories catch khi setCategor
 
     // Error được catch ở line 722 → không propagate → response 201
     expect(res.status).toBe(201);
-    expect(logger.error).toHaveBeenCalledWith(
-      'Lỗi khi xử lý categories:',
-      expect.any(Error)
-    );
+    expect(logger.error).toHaveBeenCalledWith('Lỗi khi xử lý categories:', expect.any(Error));
   });
 });
 
@@ -526,10 +523,7 @@ describe('POST /api/admin/products — line 868: images catch khi bulkCreate thr
 
     // Error được catch ở line 867 → không propagate → response 201
     expect(res.status).toBe(201);
-    expect(logger.error).toHaveBeenCalledWith(
-      'Lỗi khi tạo ảnh:',
-      expect.any(Error)
-    );
+    expect(logger.error).toHaveBeenCalledWith('Lỗi khi tạo ảnh:', expect.any(Error));
   });
 });
 
@@ -556,10 +550,7 @@ describe('POST /api/admin/products — line 892: specs catch khi bulkCreate thro
     });
 
     expect(res.status).toBe(201);
-    expect(logger.error).toHaveBeenCalledWith(
-      'Lỗi khi tạo specifications:',
-      expect.any(Error)
-    );
+    expect(logger.error).toHaveBeenCalledWith('Lỗi khi tạo specifications:', expect.any(Error));
   });
 });
 
@@ -586,10 +577,7 @@ describe('POST /api/admin/products — line 933: warranty catch khi WarrantyPack
     });
 
     expect(res.status).toBe(201);
-    expect(logger.error).toHaveBeenCalledWith(
-      'Lỗi khi tạo warranty packages:',
-      expect.any(Error)
-    );
+    expect(logger.error).toHaveBeenCalledWith('Lỗi khi tạo warranty packages:', expect.any(Error));
   });
 });
 
@@ -621,7 +609,7 @@ describe('POST /api/admin/products — line 978: vectorStore catch khi save thro
     expect(res.status).toBe(201);
     expect(logger.error).toHaveBeenCalledWith(
       'Lỗi đồng bộ vector store sau khi tạo sản phẩm:',
-      expect.any(String)
+      expect.any(String),
     );
   });
 });
@@ -635,7 +623,7 @@ describe('PUT /api/admin/products/:id — line 1077: image object với url fiel
   it('sử dụng img.url khi image là object có trường url', async () => {
     const fakeProduct = makeProduct({ id: 210 });
     Product.findByPk
-      .mockResolvedValueOnce(fakeProduct)  // lần 1 trong transaction
+      .mockResolvedValueOnce(fakeProduct) // lần 1 trong transaction
       .mockResolvedValueOnce(fakeProduct); // lần 2 sau commit (finalProduct)
     sequelize.query.mockResolvedValue([[], {}]);
     ProductImage.destroy.mockResolvedValueOnce(0);
@@ -651,10 +639,14 @@ describe('PUT /api/admin/products/:id — line 1077: image object với url fiel
     expect(res.status).toBe(200);
     expect(ProductImage.bulkCreate).toHaveBeenCalledWith(
       expect.arrayContaining([
-        expect.objectContaining({ imageUrl: 'https://cdn.example.com/photo1.jpg', color: 'red', variantId: 'v1' }),
+        expect.objectContaining({
+          imageUrl: 'https://cdn.example.com/photo1.jpg',
+          color: 'red',
+          variantId: 'v1',
+        }),
         expect.objectContaining({ imageUrl: 'https://cdn.example.com/photo2.jpg' }),
       ]),
-      expect.anything()
+      expect.anything(),
     );
   });
 });
@@ -678,9 +670,7 @@ describe('PUT /api/admin/products/:id — line 1296: translate catch khi transla
     };
 
     const fakeProduct = makeProduct({ id: 220 });
-    Product.findByPk
-      .mockResolvedValueOnce(fakeProduct)
-      .mockResolvedValueOnce(fakeProduct);
+    Product.findByPk.mockResolvedValueOnce(fakeProduct).mockResolvedValueOnce(fakeProduct);
     sequelize.query.mockResolvedValue([[], {}]);
 
     // currentSpecs rỗng → spec mới sẽ được create
@@ -703,7 +693,7 @@ describe('PUT /api/admin/products/:id — line 1296: translate catch khi transla
 
     expect(logger.warn).toHaveBeenCalledWith(
       expect.stringContaining('Lỗi auto-translate'),
-      expect.any(String)
+      expect.any(String),
     );
   });
 });
@@ -719,9 +709,7 @@ describe('PUT /api/admin/products/:id — line 1354: vectorStore catch khi save 
     vs.save.mockRejectedValueOnce(new Error('VectorStore save failed after update'));
 
     const activeProduct = makeProduct({ id: 230, status: 'active' });
-    Product.findByPk
-      .mockResolvedValueOnce(activeProduct)
-      .mockResolvedValueOnce(activeProduct);
+    Product.findByPk.mockResolvedValueOnce(activeProduct).mockResolvedValueOnce(activeProduct);
     sequelize.query.mockResolvedValue([[], {}]);
 
     const logger = require('../utils/logger');
@@ -733,7 +721,7 @@ describe('PUT /api/admin/products/:id — line 1354: vectorStore catch khi save 
     expect(res.status).toBe(200);
     expect(logger.error).toHaveBeenCalledWith(
       'Lỗi đồng bộ vector store sau khi cập nhật sản phẩm:',
-      expect.any(String)
+      expect.any(String),
     );
   });
 });
@@ -772,7 +760,7 @@ describe('POST /api/admin/products/:id/clone — line 1934: count++ khi tên b�
     // Product.create được gọi với tên có counter = 2
     expect(Product.create).toHaveBeenCalledWith(
       expect.objectContaining({ name: 'Laptop Dupl (2)' }),
-      expect.anything()
+      expect.anything(),
     );
     // findOne được gọi 2 lần: kiểm tra (1) rồi (2)
     expect(Product.findOne).toHaveBeenCalledTimes(2);
@@ -802,7 +790,7 @@ describe('POST /api/admin/products/:id/clone — lines 1976-1983: clone productA
       id: 310,
       name: 'Laptop Attrs',
       categories: [],
-      attributes: [origAttr],   // đây là field mà code kiểm tra
+      attributes: [origAttr], // đây là field mà code kiểm tra
       productAttributes: [origAttr],
       variants: [],
       productSpecifications: [],
@@ -820,10 +808,8 @@ describe('POST /api/admin/products/:id/clone — lines 1976-1983: clone productA
 
     expect(res.status).toBe(201);
     expect(ProductAttribute.bulkCreate).toHaveBeenCalledWith(
-      expect.arrayContaining([
-        expect.objectContaining({ productId: 311, name: 'RAM' }),
-      ]),
-      expect.anything()
+      expect.arrayContaining([expect.objectContaining({ productId: 311, name: 'RAM' })]),
+      expect.anything(),
     );
   });
 
@@ -868,9 +854,7 @@ describe('PUT /api/admin/products/:id — line 1296: translate success (logger.i
     };
 
     const fakeProduct = makeProduct({ id: 330 });
-    Product.findByPk
-      .mockResolvedValueOnce(fakeProduct)
-      .mockResolvedValueOnce(fakeProduct);
+    Product.findByPk.mockResolvedValueOnce(fakeProduct).mockResolvedValueOnce(fakeProduct);
     sequelize.query.mockResolvedValue([[], {}]);
     ProductAttribute.findAll.mockResolvedValueOnce([]);
     ProductVariant.findAll.mockResolvedValueOnce([]);
@@ -890,8 +874,6 @@ describe('PUT /api/admin/products/:id — line 1296: translate success (logger.i
     await new Promise((r) => setTimeout(r, 50));
 
     expect(specWithoutEn.update).toHaveBeenCalledWith({ valueEn: 'Intel Core i7 12th Gen' });
-    expect(logger.info).toHaveBeenCalledWith(
-      expect.stringContaining('Đã dịch 1 specs')
-    );
+    expect(logger.info).toHaveBeenCalledWith(expect.stringContaining('Đã dịch 1 specs'));
   });
 });

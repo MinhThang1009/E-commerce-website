@@ -19,23 +19,23 @@
 
 jest.mock('../middlewares/rateLimiter', () => ({
   chatbotLimiter: (_req, _res, next) => next(),
-  apiLimiter:     (_req, _res, next) => next(),
-  authLimiter:    (_req, _res, next) => next(),
+  apiLimiter: (_req, _res, next) => next(),
+  authLimiter: (_req, _res, next) => next(),
 }));
 
 jest.mock('../utils/logger', () => ({
-  info:  jest.fn(),
+  info: jest.fn(),
   error: jest.fn(),
-  warn:  jest.fn(),
+  warn: jest.fn(),
   debug: jest.fn(),
 }));
 
 jest.mock('../config/redis', () => ({
   getRedisClient: jest.fn().mockResolvedValue({
-    get:   jest.fn().mockResolvedValue(null),
-    set:   jest.fn().mockResolvedValue('OK'),
+    get: jest.fn().mockResolvedValue(null),
+    set: jest.fn().mockResolvedValue('OK'),
     setex: jest.fn().mockResolvedValue('OK'),
-    del:   jest.fn().mockResolvedValue(1),
+    del: jest.fn().mockResolvedValue(1),
   }),
 }));
 
@@ -57,17 +57,17 @@ jest.mock('../services/adminAudit', () => ({
 
 // vectorStore — default mock thành công, test override khi cần
 const mockVectorAddProduct = jest.fn().mockResolvedValue(undefined);
-const mockVectorSave       = jest.fn().mockResolvedValue(undefined);
+const mockVectorSave = jest.fn().mockResolvedValue(undefined);
 
 jest.mock('../services/ai/vectorStore', () => ({
   upsertProduct: (...args) => mockVectorAddProduct(...args),
-  save:       (...args) => mockVectorSave(...args),
+  save: (...args) => mockVectorSave(...args),
   enrichProductData: (d) => d,
   detectLanguage: () => 'vi',
 }));
 
 // Sequelize models mock
-const mockProductCreate  = jest.fn().mockResolvedValue({ id: 200, name: 'Product' });
+const mockProductCreate = jest.fn().mockResolvedValue({ id: 200, name: 'Product' });
 const mockProductFindOne = jest.fn().mockResolvedValue(null);
 const mockProductFindAll = jest.fn().mockResolvedValue([]);
 
@@ -85,28 +85,34 @@ jest.mock('../models', () => {
   };
 
   return {
-    sequelize:            sequelizeMock,
-    Product:              { create: (...a) => mockProductCreate(...a), findOne: (...a) => mockProductFindOne(...a), findAll: (...a) => mockProductFindAll(...a) },
-    ProductVariant:       { create: jest.fn().mockResolvedValue({}) },
-    ProductImage:         { create: jest.fn().mockResolvedValue({}) },
-    ProductCategory:      { create: jest.fn().mockResolvedValue({}) },
+    sequelize: sequelizeMock,
+    Product: {
+      create: (...a) => mockProductCreate(...a),
+      findOne: (...a) => mockProductFindOne(...a),
+      findAll: (...a) => mockProductFindAll(...a),
+    },
+    ProductVariant: { create: jest.fn().mockResolvedValue({}) },
+    ProductImage: { create: jest.fn().mockResolvedValue({}) },
+    ProductCategory: { create: jest.fn().mockResolvedValue({}) },
     ProductSpecification: { create: jest.fn().mockResolvedValue({}) },
-    Category:             { findAll: jest.fn().mockResolvedValue([{ id: 1, slug: 'dien-thoai', name: 'Điện thoại' }]) },
-    Brand:                { findAll: jest.fn().mockResolvedValue([{ id: 1, name: 'Apple', slug: 'apple' }]) },
-    ImportLog:            importLogMock,
+    Category: {
+      findAll: jest.fn().mockResolvedValue([{ id: 1, slug: 'dien-thoai', name: 'Điện thoại' }]),
+    },
+    Brand: { findAll: jest.fn().mockResolvedValue([{ id: 1, name: 'Apple', slug: 'apple' }]) },
+    ImportLog: importLogMock,
     Op: require('sequelize').Op,
   };
 });
 
 // ── Setup ──────────────────────────────────────────────────────────────────
 
-const express   = require('express');
+const express = require('express');
 const supertest = require('supertest');
 const { errorHandler } = require('../middlewares/errorHandler');
 
 let app;
 beforeAll(() => {
-  const adminRouter = require('../routes/admin');
+  const adminRouter = require('../modules/admin/routes');
   app = express();
   app.use(express.json());
   app.use('/api/admin', adminRouter);
@@ -200,32 +206,37 @@ describe('parseCsvLine — escaped quote trong CSV (lines 88-89)', () => {
     const res = await supertest(app)
       .post('/api/admin/products/import')
       .set(adminHeaders)
-      .attach('file', Buffer.from(csvContent), { filename: 'products.csv', contentType: 'text/csv' });
+      .attach('file', Buffer.from(csvContent), {
+        filename: 'products.csv',
+        contentType: 'text/csv',
+      });
 
     expect(res.status).toBe(200);
     // Product.create phải được gọi với tên chứa dấu ngoặc kép thật
     expect(mockProductCreate).toHaveBeenCalledWith(
       expect.objectContaining({ name: expect.stringContaining('"Galaxy"') }),
-      expect.anything()
+      expect.anything(),
     );
   });
 
   it('CSV field có dấu phẩy trong ngoặc kép → parse không bị tách sai', async () => {
-    const csvContent = [
-      'name,base_price,category_slug',
-      '"Laptop, Core i9",35000000,laptop',
-    ].join('\n');
+    const csvContent = ['name,base_price,category_slug', '"Laptop, Core i9",35000000,laptop'].join(
+      '\n',
+    );
 
     const { models } = require('../models');
     const res = await supertest(app)
       .post('/api/admin/products/import')
       .set(adminHeaders)
-      .attach('file', Buffer.from(csvContent), { filename: 'products.csv', contentType: 'text/csv' });
+      .attach('file', Buffer.from(csvContent), {
+        filename: 'products.csv',
+        contentType: 'text/csv',
+      });
 
     expect(res.status).toBe(200);
     expect(mockProductCreate).toHaveBeenCalledWith(
       expect.objectContaining({ name: 'Laptop, Core i9' }),
-      expect.anything()
+      expect.anything(),
     );
   });
 });
@@ -235,10 +246,7 @@ describe('parseCsvLine — escaped quote trong CSV (lines 88-89)', () => {
 describe('validateRow — base_price âm và category_slug rỗng (lines 148, 152)', () => {
   it('base_price âm → 422 với lỗi base_price không được âm', async () => {
     // Cả 2 dòng đều lỗi → 422 (tất cả dòng không hợp lệ)
-    const csvContent = [
-      'name,base_price,category_slug',
-      'Product A,-100,dien-thoai',
-    ].join('\n');
+    const csvContent = ['name,base_price,category_slug', 'Product A,-100,dien-thoai'].join('\n');
 
     const res = await supertest(app)
       .post('/api/admin/products/import')
@@ -248,17 +256,14 @@ describe('validateRow — base_price âm và category_slug rỗng (lines 148, 15
     expect([200, 422]).toContain(res.status);
     if (res.status === 422 || res.status === 200) {
       const errors = res.body.errors || res.body.data?.errors || [];
-      const basePriceErr = errors.find(e => e.field === 'base_price');
+      const basePriceErr = errors.find((e) => e.field === 'base_price');
       expect(basePriceErr).toBeTruthy();
       expect(basePriceErr.message).toMatch(/âm/);
     }
   });
 
   it('category_slug rỗng → validation error với field category_slug', async () => {
-    const csvContent = [
-      'name,base_price,category_slug',
-      'Good Product,29990000,',
-    ].join('\n');
+    const csvContent = ['name,base_price,category_slug', 'Good Product,29990000,'].join('\n');
 
     const res = await supertest(app)
       .post('/api/admin/products/import')
@@ -267,7 +272,7 @@ describe('validateRow — base_price âm và category_slug rỗng (lines 148, 15
 
     expect([200, 422]).toContain(res.status);
     const errors = res.body.errors || res.body.data?.errors || [];
-    const categoryErr = errors.find(e => e.field === 'category_slug');
+    const categoryErr = errors.find((e) => e.field === 'category_slug');
     expect(categoryErr).toBeTruthy();
   });
 });
@@ -281,7 +286,10 @@ describe('POST /api/admin/products/import — JSON file paths', () => {
     const res = await supertest(app)
       .post('/api/admin/products/import')
       .set(adminHeaders)
-      .attach('file', Buffer.from(jsonContent), { filename: 'products.json', contentType: 'application/json' });
+      .attach('file', Buffer.from(jsonContent), {
+        filename: 'products.json',
+        contentType: 'application/json',
+      });
 
     expect(res.status).toBe(400);
     expect(['error', 'fail']).toContain(res.body.status);
@@ -294,7 +302,10 @@ describe('POST /api/admin/products/import — JSON file paths', () => {
     const res = await supertest(app)
       .post('/api/admin/products/import')
       .set(adminHeaders)
-      .attach('file', Buffer.from(invalidJson), { filename: 'products.json', contentType: 'application/json' });
+      .attach('file', Buffer.from(invalidJson), {
+        filename: 'products.json',
+        contentType: 'application/json',
+      });
 
     expect(res.status).toBe(400);
     expect(res.body.message).toMatch(/parse|hợp lệ/);
@@ -308,7 +319,10 @@ describe('POST /api/admin/products/import — JSON file paths', () => {
     const res = await supertest(app)
       .post('/api/admin/products/import')
       .set(adminHeaders)
-      .attach('file', Buffer.from(jsonContent), { filename: 'products.json', contentType: 'application/json' });
+      .attach('file', Buffer.from(jsonContent), {
+        filename: 'products.json',
+        contentType: 'application/json',
+      });
 
     expect(res.status).toBe(200);
     expect(res.body.status).toBe('success');
@@ -320,11 +334,9 @@ describe('POST /api/admin/products/import — JSON file paths', () => {
 
 describe('POST /api/admin/products/import — tất cả dòng đều không hợp lệ (line 249)', () => {
   it('CSV với 2 dòng đều thiếu name → 422 với message "Tất cả dòng đều không hợp lệ"', async () => {
-    const csvContent = [
-      'name,base_price,category_slug',
-      ',10000,dien-thoai',
-      ',20000,laptop',
-    ].join('\n');
+    const csvContent = ['name,base_price,category_slug', ',10000,dien-thoai', ',20000,laptop'].join(
+      '\n',
+    );
 
     const res = await supertest(app)
       .post('/api/admin/products/import')
@@ -347,10 +359,9 @@ describe('POST /api/admin/products/import — slug trùng → append timestamp (
     mockProductFindOne.mockResolvedValueOnce({ id: 50 });
     mockProductFindAll.mockResolvedValue([]);
 
-    const csvContent = [
-      'name,base_price,category_slug',
-      'iPhone 17 Pro,36990000,dien-thoai',
-    ].join('\n');
+    const csvContent = ['name,base_price,category_slug', 'iPhone 17 Pro,36990000,dien-thoai'].join(
+      '\n',
+    );
 
     const res = await supertest(app)
       .post('/api/admin/products/import')
@@ -361,7 +372,7 @@ describe('POST /api/admin/products/import — slug trùng → append timestamp (
     // Product.create phải được gọi với slug có timestamp appended (chứa dấu gạch ngang)
     expect(mockProductCreate).toHaveBeenCalledWith(
       expect.objectContaining({ slug: expect.stringMatching(/iphone-17-pro-\d+/) }),
-      expect.anything()
+      expect.anything(),
     );
   });
 });
@@ -390,7 +401,7 @@ describe('POST /api/admin/products/import — DB lỗi trong transaction (lines 
     expect(res.status).toBe(200);
     expect(res.body.data.failedCount).toBeGreaterThan(0);
     expect(res.body.data.errors.length).toBeGreaterThan(0);
-    const dbErr = res.body.data.errors.find(e => e.field === 'general');
+    const dbErr = res.body.data.errors.find((e) => e.field === 'general');
     expect(dbErr).toBeTruthy();
     expect(dbErr.message).toMatch(/Duplicate entry/);
   });
@@ -488,9 +499,7 @@ describe('exportProducts CSV — escapeCsvField với ký tự đặc biệt (li
       },
     ]);
 
-    const res = await supertest(app)
-      .get('/api/admin/products/export?format=csv')
-      .set(adminHeaders);
+    const res = await supertest(app).get('/api/admin/products/export?format=csv').set(adminHeaders);
 
     expect(res.status).toBe(200);
     // Field có dấu phẩy phải được bọc ngoặc kép
@@ -514,9 +523,7 @@ describe('exportProducts CSV — escapeCsvField với ký tự đặc biệt (li
       },
     ]);
 
-    const res = await supertest(app)
-      .get('/api/admin/products/export?format=csv')
-      .set(adminHeaders);
+    const res = await supertest(app).get('/api/admin/products/export?format=csv').set(adminHeaders);
 
     expect(res.status).toBe(200);
     // Dấu ngoặc kép trong tên phải được escape thành ""
@@ -553,12 +560,12 @@ describe('POST /api/admin/products/import — vectorStore lỗi không làm resp
     expect(res.body.status).toBe('success');
 
     // Chờ setImmediate thực thi
-    await new Promise(resolve => setImmediate(resolve));
+    await new Promise((resolve) => setImmediate(resolve));
 
     // logger.error phải được gọi với message về vector sync thất bại
     expect(logger.error).toHaveBeenCalledWith(
       expect.stringContaining('[VECTOR]'),
-      expect.stringContaining('Embedding API down')
+      expect.stringContaining('Embedding API down'),
     );
   });
 });

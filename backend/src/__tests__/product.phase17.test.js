@@ -105,9 +105,17 @@ const supertest = require('supertest');
 const buildCatalogModule = require('../modules/catalog/module');
 const { errorHandler } = require('../middlewares/errorHandler');
 const {
-  Product, Category, Brand, Collection, ProductCollection,
-  ProductAttribute, ProductVariant, ProductSpecification,
-  Review, RecentlyViewed, WarrantyPackage,
+  Product,
+  Category,
+  Brand,
+  Collection,
+  ProductCollection,
+  ProductAttribute,
+  ProductVariant,
+  ProductSpecification,
+  Review,
+  RecentlyViewed,
+  WarrantyPackage,
   sequelize,
 } = require('../models');
 const eventBus = require('../shared/eventBus');
@@ -115,10 +123,21 @@ const logger = require('../utils/logger');
 const { getRedisClient } = require('../config/redis');
 
 const catalogModule = buildCatalogModule({
-  Category, Brand, Collection, ProductCollection, Product,
-  ProductAttribute, ProductVariant, ProductSpecification,
-  Review, RecentlyViewed, WarrantyPackage,
-  sequelize, redisClient: getRedisClient, eventBus, logger,
+  Category,
+  Brand,
+  Collection,
+  ProductCollection,
+  Product,
+  ProductAttribute,
+  ProductVariant,
+  ProductSpecification,
+  Review,
+  RecentlyViewed,
+  WarrantyPackage,
+  sequelize,
+  redisClient: getRedisClient,
+  eventBus,
+  logger,
 });
 const productMount = catalogModule.mounts.find((m) => m.basePath === '/products');
 
@@ -160,7 +179,14 @@ describe('GET /api/products/suggestions — getProductSuggestions', () => {
 
   test('200 + trả về danh sách suggestions khi có q', async () => {
     const mockProducts = [
-      { toJSON: () => ({ id: 1, name: 'Laptop Dell', slug: 'laptop-dell', productImages: [{ imageUrl: 'https://img.jpg', isThumbnail: true, displayOrder: 1 }] }) },
+      {
+        toJSON: () => ({
+          id: 1,
+          name: 'Laptop Dell',
+          slug: 'laptop-dell',
+          productImages: [{ imageUrl: 'https://img.jpg', isThumbnail: true, displayOrder: 1 }],
+        }),
+      },
       { toJSON: () => ({ id: 2, name: 'Laptop HP', slug: 'laptop-hp', productImages: [] }) },
     ];
     Product.findAll.mockResolvedValue(mockProducts);
@@ -208,9 +234,7 @@ describe('GET /api/products/suggestions — getProductSuggestions', () => {
     Product.findAll.mockResolvedValue([]);
 
     await request.get('/api/products/suggestions?q=samsung');
-    expect(Product.findAll).toHaveBeenCalledWith(
-      expect.objectContaining({ limit: 10 })
-    );
+    expect(Product.findAll).toHaveBeenCalledWith(expect.objectContaining({ limit: 10 }));
   });
 
   test('trả về mảng rỗng khi không có sản phẩm khớp', async () => {
@@ -226,11 +250,11 @@ describe('GET /api/products/suggestions — getProductSuggestions', () => {
 // Deduplication trong saveSearch — SearchHistory
 // ============================================================
 
-jest.mock('../validators/searchHistory', () => ({
+jest.mock('../modules/searchHistory/validators/searchHistoryValidator', () => ({
   saveSearchSchema: { validate: jest.fn().mockReturnValue({ error: null }) },
 }));
 
-const searchHistoryRouter = require('../routes/searchHistory');
+const searchHistoryRouter = require('../modules/searchHistory/routes');
 const { SearchHistory } = require('../models');
 
 const appHistory = express();

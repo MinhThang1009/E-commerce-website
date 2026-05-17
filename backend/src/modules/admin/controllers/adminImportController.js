@@ -11,12 +11,12 @@ const {
   Category,
   Brand,
   ImportLog,
-} = require('../models');
+} = require('../../../models');
 const { Op } = require('sequelize');
-const logger = require('../utils/logger');
-const { catchAsync } = require('../utils/catchAsync');
-const { AppError } = require('../shared/errors');
-const vectorStoreService = require('../services/ai/vectorStore');
+const logger = require('../../../utils/logger');
+const { catchAsync } = require('../../../utils/catchAsync');
+const { AppError } = require('../../../shared/errors');
+const vectorStoreService = require('../../../services/ai/vectorStore');
 
 // ===================================================
 // CẤU HÌNH MULTER — chỉ nhận CSV/JSON, tối đa 5MB
@@ -49,17 +49,17 @@ const uploadImportFile = importUpload.single('file');
 // TIÊU CHUẨN CSV — các cột và thứ tự
 // ===================================================
 const CSV_HEADERS = [
-  'name',             // * bắt buộc
-  'slug',             // tùy chọn — auto-gen từ name nếu bỏ trống
+  'name', // * bắt buộc
+  'slug', // tùy chọn — auto-gen từ name nếu bỏ trống
   'short_description',
-  'base_price',       // * bắt buộc
-  'category_slug',    // * bắt buộc
-  'brand',            // tùy chọn
-  'status',           // mặc định: active
-  'stock_quantity',   // mặc định: 0
-  'sku',              // SKU cho variant mặc định
-  'weight_kg',        // cân nặng (kg)
-  'image_urls',       // phân cách bởi | — URL hoặc tên file
+  'base_price', // * bắt buộc
+  'category_slug', // * bắt buộc
+  'brand', // tùy chọn
+  'status', // mặc định: active
+  'stock_quantity', // mặc định: 0
+  'sku', // SKU cho variant mặc định
+  'weight_kg', // cân nặng (kg)
+  'image_urls', // phân cách bởi | — URL hoặc tên file
   'spec_cpu',
   'spec_ram',
   'spec_storage',
@@ -106,15 +106,15 @@ function parseCsvLine(line) {
  * Trả về { rows, headers } — headers từ dòng đầu tiên.
  */
 function parseCsv(content) {
-  const lines = content.split(/\r?\n/).filter(l => l.trim());
+  const lines = content.split(/\r?\n/).filter((l) => l.trim());
   if (lines.length === 0) return { headers: [], rows: [] };
 
-  const headers = parseCsvLine(lines[0]).map(h => h.toLowerCase().replace(/\s+/g, '_'));
+  const headers = parseCsvLine(lines[0]).map((h) => h.toLowerCase().replace(/\s+/g, '_'));
   const rows = [];
 
   for (let i = 1; i < lines.length; i++) {
     const values = parseCsvLine(lines[i]);
-    if (values.every(v => v === '')) continue; // bỏ qua dòng trống
+    if (values.every((v) => v === '')) continue; // bỏ qua dòng trống
 
     const row = {};
     headers.forEach((h, idx) => {
@@ -149,7 +149,11 @@ function validateRow(row, rowIndex) {
   }
 
   if (!row.category_slug || !String(row.category_slug).trim()) {
-    errors.push({ row: rowIndex, field: 'category_slug', message: 'Trường category_slug là bắt buộc' });
+    errors.push({
+      row: rowIndex,
+      field: 'category_slug',
+      message: 'Trường category_slug là bắt buộc',
+    });
   }
 
   return errors;
@@ -163,22 +167,22 @@ const getImportTemplate = catchAsync(async (_req, res) => {
   const headerRow = CSV_HEADERS.join(',');
   // Dòng ví dụ minh họa format
   const exampleRow = [
-    'iPhone 17 Pro Max',      // name
-    '',                        // slug (để trống — auto-gen)
+    'iPhone 17 Pro Max', // name
+    '', // slug (để trống — auto-gen)
     'Smartphone cao cấp mới nhất của Apple', // short_description
-    '36990000',               // base_price
-    'dien-thoai',             // category_slug
-    'Apple',                  // brand
-    'active',                 // status
-    '50',                     // stock_quantity
-    'IPH17PM-256-BLK',        // sku
-    '0.228',                  // weight_kg
+    '36990000', // base_price
+    'dien-thoai', // category_slug
+    'Apple', // brand
+    'active', // status
+    '50', // stock_quantity
+    'IPH17PM-256-BLK', // sku
+    '0.228', // weight_kg
     '/uploads/products/iphone17-pro-max.jpg', // image_urls
-    'Apple A19 Pro',          // spec_cpu
-    '8GB',                    // spec_ram
-    '256GB',                  // spec_storage
-    '6.9" Super Retina XDR',  // spec_display
-    '4685 mAh',               // spec_battery
+    'Apple A19 Pro', // spec_cpu
+    '8GB', // spec_ram
+    '256GB', // spec_storage
+    '6.9" Super Retina XDR', // spec_display
+    '4685 mAh', // spec_battery
   ].join(',');
 
   const csvContent = `${headerRow}\n${exampleRow}\n`;
@@ -229,10 +233,12 @@ const importProducts = catchAsync(async (req, res, next) => {
   const brands = await Brand.findAll({ attributes: ['id', 'name', 'slug'] });
 
   const categoryMap = {};
-  categories.forEach(c => { categoryMap[c.slug] = c.id; });
+  categories.forEach((c) => {
+    categoryMap[c.slug] = c.id;
+  });
 
   const brandMap = {};
-  brands.forEach(b => {
+  brands.forEach((b) => {
     brandMap[b.name.toLowerCase()] = b.id;
     brandMap[b.slug] = b.id;
   });
@@ -260,9 +266,11 @@ const importProducts = catchAsync(async (req, res, next) => {
   const newProductIds = [];
 
   // Các dòng không có lỗi validation
-  const validRows = rows.filter(row => {
-    const hasError = rowErrors.some(e => e.row === row._lineNumber);
-    if (hasError) { failedCount++; }
+  const validRows = rows.filter((row) => {
+    const hasError = rowErrors.some((e) => e.row === row._lineNumber);
+    if (hasError) {
+      failedCount++;
+    }
     return !hasError;
   });
 
@@ -291,49 +299,64 @@ const importProducts = catchAsync(async (req, res, next) => {
           finalSlug = `${rawSlug}-${Date.now()}`;
         }
 
-        const product = await Product.create({
-          name: String(row.name).trim(),
-          slug: finalSlug,
-          shortDescription: row.short_description ? String(row.short_description).trim() : null,
-          basePrice: parseFloat(row.base_price),
-          categoryId,
-          brandId,
-          status: row.status || 'active',
-          stockQuantity: parseInt(row.stock_quantity) || 0,
-        }, { transaction: t });
+        const product = await Product.create(
+          {
+            name: String(row.name).trim(),
+            slug: finalSlug,
+            shortDescription: row.short_description ? String(row.short_description).trim() : null,
+            basePrice: parseFloat(row.base_price),
+            categoryId,
+            brandId,
+            status: row.status || 'active',
+            stockQuantity: parseInt(row.stock_quantity) || 0,
+          },
+          { transaction: t },
+        );
 
         newProductIds.push(product.id);
 
         // Variant mặc định nếu có SKU
         if (row.sku && String(row.sku).trim()) {
-          await ProductVariant.create({
-            productId: product.id,
-            sku: String(row.sku).trim(),
-            price: parseFloat(row.base_price),
-            stockQuantity: parseInt(row.stock_quantity) || 0,
-            isDefault: true,
-          }, { transaction: t });
+          await ProductVariant.create(
+            {
+              productId: product.id,
+              sku: String(row.sku).trim(),
+              price: parseFloat(row.base_price),
+              stockQuantity: parseInt(row.stock_quantity) || 0,
+              isDefault: true,
+            },
+            { transaction: t },
+          );
         }
 
         // Ảnh sản phẩm — phân cách bởi |
         if (row.image_urls && String(row.image_urls).trim()) {
-          const imageUrls = String(row.image_urls).split('|').map(u => u.trim()).filter(Boolean);
+          const imageUrls = String(row.image_urls)
+            .split('|')
+            .map((u) => u.trim())
+            .filter(Boolean);
           for (let i = 0; i < imageUrls.length; i++) {
-            await ProductImage.create({
-              productId: product.id,
-              imageUrl: imageUrls[i],
-              isThumbnail: i === 0,
-              sortOrder: i + 1,
-            }, { transaction: t });
+            await ProductImage.create(
+              {
+                productId: product.id,
+                imageUrl: imageUrls[i],
+                isThumbnail: i === 0,
+                sortOrder: i + 1,
+              },
+              { transaction: t },
+            );
           }
         }
 
         // Liên kết product_categories nếu có categoryId
         if (categoryId) {
-          await ProductCategory.create({
-            productId: product.id,
-            categoryId,
-          }, { transaction: t });
+          await ProductCategory.create(
+            {
+              productId: product.id,
+              categoryId,
+            },
+            { transaction: t },
+          );
         }
 
         // Thông số kỹ thuật — chỉ insert nếu có giá trị
@@ -346,12 +369,15 @@ const importProducts = catchAsync(async (req, res, next) => {
         ];
         for (const spec of specFields) {
           if (spec.value && String(spec.value).trim()) {
-            await ProductSpecification.create({
-              productId: product.id,
-              specKey: spec.key,
-              specValue: String(spec.value).trim(),
-              sortOrder: spec.order,
-            }, { transaction: t });
+            await ProductSpecification.create(
+              {
+                productId: product.id,
+                specKey: spec.key,
+                specValue: String(spec.value).trim(),
+                sortOrder: spec.order,
+              },
+              { transaction: t },
+            );
           }
         }
       });
@@ -384,13 +410,23 @@ const importProducts = catchAsync(async (req, res, next) => {
     setImmediate(async () => {
       try {
         // Load products vừa tạo với đầy đủ relations để embed
-        const { enrichProductData } = require('../services/ai/vectorStore');
+        const { enrichProductData } = require('../../../services/ai/vectorStore');
         const newProducts = await Product.findAll({
           where: { id: { [Op.in]: newProductIds } },
           include: [
             { model: Category, as: 'categories', attributes: ['name'] },
-            { model: ProductImage, as: 'productImages', attributes: ['imageUrl', 'isThumbnail'], required: false },
-            { model: ProductVariant, as: 'variants', attributes: ['stockQuantity'], required: false },
+            {
+              model: ProductImage,
+              as: 'productImages',
+              attributes: ['imageUrl', 'isThumbnail'],
+              required: false,
+            },
+            {
+              model: ProductVariant,
+              as: 'variants',
+              attributes: ['stockQuantity'],
+              required: false,
+            },
           ],
         });
         for (const p of newProducts) {
@@ -456,8 +492,13 @@ const exportProducts = catchAsync(async (req, res) => {
   const products = await Product.findAll({
     include: [
       { model: Category, as: 'category', attributes: ['slug'] },
-      { model: require('../models').Brand, as: 'brand', attributes: ['name'] },
-      { model: require('../models').ProductImage, as: 'productImages', attributes: ['imageUrl'], limit: 5 },
+      { model: require('../../../models').Brand, as: 'brand', attributes: ['name'] },
+      {
+        model: require('../../../models').ProductImage,
+        as: 'productImages',
+        attributes: ['imageUrl'],
+        limit: 5,
+      },
       { model: ProductSpecification, as: 'specifications', attributes: ['specKey', 'specValue'] },
     ],
     order: [['id', 'ASC']],
@@ -465,7 +506,7 @@ const exportProducts = catchAsync(async (req, res) => {
 
   if (format === 'json') {
     // Export JSON — mỗi sản phẩm là một object
-    const data = products.map(p => ({
+    const data = products.map((p) => ({
       name: p.name,
       slug: p.slug,
       short_description: p.shortDescription || '',
@@ -474,14 +515,17 @@ const exportProducts = catchAsync(async (req, res) => {
       brand: p.brand?.name || '',
       status: p.status || 'active',
       stock_quantity: p.stockQuantity || 0,
-      image_urls: (p.productImages || []).map(img => img.imageUrl).join('|'),
+      image_urls: (p.productImages || []).map((img) => img.imageUrl).join('|'),
       ...Object.fromEntries(
-        (p.specifications || []).map(s => [`spec_${s.specKey.toLowerCase()}`, s.specValue])
+        (p.specifications || []).map((s) => [`spec_${s.specKey.toLowerCase()}`, s.specValue]),
       ),
     }));
 
     res.setHeader('Content-Type', 'application/json');
-    res.setHeader('Content-Disposition', `attachment; filename="products-export-${Date.now()}.json"`);
+    res.setHeader(
+      'Content-Disposition',
+      `attachment; filename="products-export-${Date.now()}.json"`,
+    );
     return res.json(data);
   }
 
@@ -490,7 +534,7 @@ const exportProducts = catchAsync(async (req, res) => {
 
   for (const p of products) {
     const specMap = {};
-    (p.specifications || []).forEach(s => {
+    (p.specifications || []).forEach((s) => {
       specMap[s.specKey.toLowerCase()] = s.specValue;
     });
 
@@ -503,9 +547,9 @@ const exportProducts = catchAsync(async (req, res) => {
       escapeCsvField(p.brand?.name || ''),
       p.status || 'active',
       p.stockQuantity || 0,
-      '',  // sku — không export variant level
-      '',  // weight_kg
-      escapeCsvField((p.productImages || []).map(img => img.imageUrl).join('|')),
+      '', // sku — không export variant level
+      '', // weight_kg
+      escapeCsvField((p.productImages || []).map((img) => img.imageUrl).join('|')),
       escapeCsvField(specMap['cpu'] || ''),
       escapeCsvField(specMap['ram'] || ''),
       escapeCsvField(specMap['bộ nhớ'] || specMap['storage'] || ''),

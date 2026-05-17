@@ -18,7 +18,7 @@ process.env.NODE_ENV = 'test';
 // ════════════════════════════════════════════════════════════════════════════
 
 describe('createNewsSchema', () => {
-  const { createNewsSchema } = require('../validators/news');
+  const { createNewsSchema } = require('../modules/content/validators/contentValidator');
 
   it('chấp nhận dữ liệu hợp lệ đầy đủ', () => {
     const validInput = {
@@ -87,7 +87,7 @@ describe('createNewsSchema', () => {
 });
 
 describe('updateNewsSchema', () => {
-  const { updateNewsSchema } = require('../validators/news');
+  const { updateNewsSchema } = require('../modules/content/validators/contentValidator');
 
   it('chấp nhận object rỗng (tất cả trường đều tuỳ chọn)', () => {
     const { error } = updateNewsSchema.validate({});
@@ -110,7 +110,7 @@ describe('updateNewsSchema', () => {
 // ════════════════════════════════════════════════════════════════════════════
 
 describe('createCollectionSchema', () => {
-  const { createCollectionSchema } = require('../validators/collection');
+  const { createCollectionSchema } = require('../modules/catalog/validators/catalogValidator');
 
   it('chấp nhận dữ liệu hợp lệ với name bắt buộc', () => {
     const { error } = createCollectionSchema.validate({ name: 'Bộ sưu tập mùa hè' });
@@ -150,7 +150,7 @@ describe('createCollectionSchema', () => {
 });
 
 describe('updateCollectionSchema', () => {
-  const { updateCollectionSchema } = require('../validators/collection');
+  const { updateCollectionSchema } = require('../modules/catalog/validators/catalogValidator');
 
   it('chấp nhận object rỗng', () => {
     const { error } = updateCollectionSchema.validate({});
@@ -173,7 +173,7 @@ describe('updateCollectionSchema', () => {
 // ════════════════════════════════════════════════════════════════════════════
 
 describe('createBrandSchema', () => {
-  const { createBrandSchema } = require('../validators/brand');
+  const { createBrandSchema } = require('../modules/catalog/validators/catalogValidator');
 
   it('chấp nhận dữ liệu hợp lệ với name bắt buộc', () => {
     const { error } = createBrandSchema.validate({ name: 'Samsung' });
@@ -219,7 +219,7 @@ describe('createBrandSchema', () => {
 });
 
 describe('updateBrandSchema', () => {
-  const { updateBrandSchema } = require('../validators/brand');
+  const { updateBrandSchema } = require('../modules/catalog/validators/catalogValidator');
 
   it('chấp nhận object rỗng', () => {
     const { error } = updateBrandSchema.validate({});
@@ -237,7 +237,7 @@ describe('updateBrandSchema', () => {
 // ════════════════════════════════════════════════════════════════════════════
 
 describe('createBannerSchema', () => {
-  const { createBannerSchema } = require('../validators/banner');
+  const { createBannerSchema } = require('../modules/content/validators/contentValidator');
 
   it('chấp nhận dữ liệu hợp lệ với title và imageUrl bắt buộc', () => {
     const { error } = createBannerSchema.validate({
@@ -320,7 +320,7 @@ describe('createBannerSchema', () => {
 });
 
 describe('updateBannerSchema', () => {
-  const { updateBannerSchema } = require('../validators/banner');
+  const { updateBannerSchema } = require('../modules/content/validators/contentValidator');
 
   it('chấp nhận object rỗng', () => {
     const { error } = updateBannerSchema.validate({});

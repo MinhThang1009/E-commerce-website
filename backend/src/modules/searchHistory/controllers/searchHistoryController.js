@@ -1,6 +1,6 @@
-const { SearchHistory } = require('../models');
+const { SearchHistory } = require('../../../models');
 const { Op } = require('sequelize');
-const { AppError } = require('../shared/errors');
+const { AppError } = require('../../../shared/errors');
 
 // Lưu lịch sử tìm kiếm — bỏ qua nếu cùng keyword đã được lưu trong 1 giờ qua (tránh duplicate)
 const saveSearch = async (req, res, next) => {
@@ -46,7 +46,7 @@ const saveSearch = async (req, res, next) => {
   }
 };
 
-// Lấy lịch sử tìm kiếm
+// Lấy lịch sử tìm kiếm của user hiện tại
 const getSearchHistory = async (req, res, next) => {
   try {
     const userId = req.user.id;
@@ -67,7 +67,7 @@ const getSearchHistory = async (req, res, next) => {
   }
 };
 
-// Xóa một mục lịch sử tìm kiếm
+// Xóa một mục lịch sử tìm kiếm theo id
 const deleteSearchHistory = async (req, res, next) => {
   try {
     const { id } = req.params;

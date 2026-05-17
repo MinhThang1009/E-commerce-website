@@ -23,7 +23,7 @@ const {
   getSearchHistory,
   deleteSearchHistory,
   clearAllSearchHistory,
-} = require('../controllers/searchHistory');
+} = require('../modules/searchHistory/controllers/searchHistoryController');
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -90,7 +90,7 @@ describe('saveSearch', () => {
     await saveSearch(req, res, next);
 
     expect(SearchHistory.create).toHaveBeenCalledWith(
-      expect.objectContaining({ keyword: 'giày sneaker', userId: 3, resultsCount: 12 })
+      expect.objectContaining({ keyword: 'giày sneaker', userId: 3, resultsCount: 12 }),
     );
     expect(res.status).toHaveBeenCalledWith(201);
     expect(res.json).toHaveBeenCalledWith({ status: 'success', data: created });
@@ -108,7 +108,7 @@ describe('saveSearch', () => {
     await saveSearch(req, res, next);
 
     expect(SearchHistory.create).toHaveBeenCalledWith(
-      expect.objectContaining({ keyword: 'balo', userId: null, sessionId: 'sess-abc' })
+      expect.objectContaining({ keyword: 'balo', userId: null, sessionId: 'sess-abc' }),
     );
     expect(res.status).toHaveBeenCalledWith(201);
   });
@@ -161,7 +161,7 @@ describe('saveSearch', () => {
 
     const req = makeReq({
       body: { keyword: 'anonymous' }, // không có sessionId
-      user: null,                      // không đăng nhập
+      user: null, // không đăng nhập
     });
     const res = makeRes();
     const next = jest.fn();
@@ -176,7 +176,7 @@ describe('saveSearch', () => {
 
     // Tạo record thành công
     expect(SearchHistory.create).toHaveBeenCalledWith(
-      expect.objectContaining({ keyword: 'anonymous', userId: null })
+      expect.objectContaining({ keyword: 'anonymous', userId: null }),
     );
     expect(res.status).toHaveBeenCalledWith(201);
   });
@@ -190,7 +190,10 @@ describe('getSearchHistory', () => {
   beforeEach(() => jest.clearAllMocks());
 
   test('trả danh sách history của user với default limit 10', async () => {
-    const history = [{ id: 1, keyword: 'áo' }, { id: 2, keyword: 'quần' }];
+    const history = [
+      { id: 1, keyword: 'áo' },
+      { id: 2, keyword: 'quần' },
+    ];
     SearchHistory.findAll.mockResolvedValue(history);
 
     const req = makeReq({ user: { id: 5 }, query: {} });
@@ -203,7 +206,7 @@ describe('getSearchHistory', () => {
         where: { userId: 5 },
         limit: 10,
         order: [['createdAt', 'DESC']],
-      })
+      }),
     );
     expect(res.status).toHaveBeenCalledWith(200);
     expect(res.json).toHaveBeenCalledWith({ status: 'success', data: history });
@@ -217,9 +220,7 @@ describe('getSearchHistory', () => {
 
     await getSearchHistory(req, res, jest.fn());
 
-    expect(SearchHistory.findAll).toHaveBeenCalledWith(
-      expect.objectContaining({ limit: 5 })
-    );
+    expect(SearchHistory.findAll).toHaveBeenCalledWith(expect.objectContaining({ limit: 5 }));
   });
 
   test('gọi next(error) khi SearchHistory.findAll ném lỗi', async () => {
@@ -254,9 +255,7 @@ describe('deleteSearchHistory', () => {
     expect(SearchHistory.findOne).toHaveBeenCalledWith({ where: { id: '3', userId: 5 } });
     expect(historyItem.destroy).toHaveBeenCalledTimes(1);
     expect(res.status).toHaveBeenCalledWith(200);
-    expect(res.json).toHaveBeenCalledWith(
-      expect.objectContaining({ status: 'success' })
-    );
+    expect(res.json).toHaveBeenCalledWith(expect.objectContaining({ status: 'success' }));
   });
 
   test('ném AppError 404 khi không tìm thấy record', async () => {
@@ -268,9 +267,7 @@ describe('deleteSearchHistory', () => {
 
     await deleteSearchHistory(req, res, next);
 
-    expect(next).toHaveBeenCalledWith(
-      expect.objectContaining({ statusCode: 404 })
-    );
+    expect(next).toHaveBeenCalledWith(expect.objectContaining({ statusCode: 404 }));
   });
 
   test('gọi next(error) khi findOne ném lỗi', async () => {
@@ -303,9 +300,7 @@ describe('clearAllSearchHistory', () => {
 
     expect(SearchHistory.destroy).toHaveBeenCalledWith({ where: { userId: 8 } });
     expect(res.status).toHaveBeenCalledWith(200);
-    expect(res.json).toHaveBeenCalledWith(
-      expect.objectContaining({ status: 'success' })
-    );
+    expect(res.json).toHaveBeenCalledWith(expect.objectContaining({ status: 'success' }));
   });
 
   test('gọi next(error) khi destroy ném lỗi', async () => {

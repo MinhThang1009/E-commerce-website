@@ -109,7 +109,7 @@ jest.mock('../services/adminAudit', () => ({
   auditMiddleware: (_req, _res, next) => next(),
 }));
 
-jest.mock('../controllers/adminImport', () => ({
+jest.mock('../modules/admin/controllers/adminImportController', () => ({
   getImportTemplate: (_req, _res, next) => next(),
   uploadImportFile: (_req, _res, next) => next(),
   importProducts: (_req, _res, next) => next(),
@@ -117,7 +117,7 @@ jest.mock('../controllers/adminImport', () => ({
   exportProducts: (_req, _res, next) => next(),
 }));
 
-jest.mock('../controllers/discountCode', () => ({
+jest.mock('../modules/discountCode/controllers/discountCodeController', () => ({
   getAllDiscountCodes: (_req, _res, next) => next(),
   getDiscountCodeById: (_req, _res, next) => next(),
   createDiscountCode: (_req, _res, next) => next(),
@@ -261,7 +261,7 @@ jest.mock('../models', () => {
 const express = require('express');
 const supertest = require('supertest');
 const { errorHandler } = require('../middlewares/errorHandler');
-const adminRouter = require('../routes/admin');
+const adminRouter = require('../modules/admin/routes');
 const {
   User,
   Product,
@@ -422,7 +422,7 @@ describe('POST /api/admin/products — lines 664-668: null fallback cho seoKeywo
 
     const res = await request.post('/api/admin/products').send({
       name: 'Laptop Null Keywords',
-      seoKeywords: null,  // null → seoKeywords = null (không dùng default) → null || [] = []
+      seoKeywords: null, // null → seoKeywords = null (không dùng default) → null || [] = []
     });
 
     expect(res.status).toBe(201);
@@ -438,7 +438,7 @@ describe('POST /api/admin/products — lines 664-668: null fallback cho seoKeywo
 
     const res = await request.post('/api/admin/products').send({
       name: 'Laptop Null Specs',
-      specifications: null,  // null là falsy → null || [] = []
+      specifications: null, // null là falsy → null || [] = []
     });
 
     expect(res.status).toBe(201);
@@ -453,7 +453,7 @@ describe('POST /api/admin/products — lines 664-668: null fallback cho seoKeywo
 
     const res = await request.post('/api/admin/products').send({
       name: 'Laptop Null FAQs',
-      faqs: null,  // null là falsy → null || [] = []
+      faqs: null, // null là falsy → null || [] = []
     });
 
     expect(res.status).toBe(201);
@@ -476,13 +476,13 @@ describe('POST /api/admin/products — lines 743-756: attr value types', () => {
 
     const res = await request.post('/api/admin/products').send({
       name: 'Laptop Number Value',
-      attributes: [{ name: 'RAM', value: 16 }],  // number → truthy, non-string, non-array
+      attributes: [{ name: 'RAM', value: 16 }], // number → truthy, non-string, non-array
     });
 
     expect(res.status).toBe(201);
     // attr.value=16 → else if (attr.value) → attrValues = [String(16)] = ['16']
     expect(ProductAttribute.create).toHaveBeenCalledWith(
-      expect.objectContaining({ values: ['16'] })
+      expect.objectContaining({ values: ['16'] }),
     );
   });
 
@@ -495,13 +495,13 @@ describe('POST /api/admin/products — lines 743-756: attr value types', () => {
 
     const res = await request.post('/api/admin/products').send({
       name: 'Laptop Default Attr',
-      attributes: [{ name: 'Weight', value: 0 }],  // 0 is falsy → skip all branches → attrValues=[]
+      attributes: [{ name: 'Weight', value: 0 }], // 0 is falsy → skip all branches → attrValues=[]
     });
 
     expect(res.status).toBe(201);
     // attrValues.length === 0 → ['Default'] (line 756)
     expect(ProductAttribute.create).toHaveBeenCalledWith(
-      expect.objectContaining({ values: ['Default'] })
+      expect.objectContaining({ values: ['Default'] }),
     );
   });
 });
@@ -522,14 +522,14 @@ describe('POST /api/admin/products — lines 820-821: variant price/stock undefi
 
     const res = await request.post('/api/admin/products').send({
       name: 'Laptop No Price',
-      variants: [{ name: 'Default', sku: 'VAR-001' }],  // no price, no stock → undefined
+      variants: [{ name: 'Default', sku: 'VAR-001' }], // no price, no stock → undefined
     });
 
     expect(res.status).toBe(201);
     // parseFloat(undefined) = NaN → NaN || 0 = 0 (line 820)
     // parseInt(undefined) = NaN → NaN || 0 = 0 (line 821)
     expect(ProductVariant.create).toHaveBeenCalledWith(
-      expect.objectContaining({ price: 0, stockQuantity: 0 })
+      expect.objectContaining({ price: 0, stockQuantity: 0 }),
     );
   });
 });
@@ -541,9 +541,7 @@ describe('POST /api/admin/products — lines 820-821: variant price/stock undefi
 describe('PUT /api/admin/products/:id — line 1044: baseName || name fallback', () => {
   it('dùng name khi baseName được gửi là null (baseName || name)', async () => {
     const product = makeProduct({ id: 9030, name: 'Original Name' });
-    Product.findByPk
-      .mockResolvedValueOnce(product)
-      .mockResolvedValueOnce(product);
+    Product.findByPk.mockResolvedValueOnce(product).mockResolvedValueOnce(product);
 
     ProductAttribute.findAll.mockResolvedValueOnce([]);
     ProductVariant.findAll.mockResolvedValueOnce([]);
@@ -551,13 +549,13 @@ describe('PUT /api/admin/products/:id — line 1044: baseName || name fallback',
 
     const res = await request.put('/api/admin/products/9030').send({
       name: 'New Name',
-      baseName: null,  // null is falsy → baseName || name = 'New Name'
+      baseName: null, // null is falsy → baseName || name = 'New Name'
     });
 
     expect(res.status).toBe(200);
     expect(product.update).toHaveBeenCalledWith(
-      expect.objectContaining({ baseName: 'New Name' }),  // null || 'New Name'
-      expect.anything()
+      expect.objectContaining({ baseName: 'New Name' }), // null || 'New Name'
+      expect.anything(),
     );
   });
 });
@@ -569,43 +567,39 @@ describe('PUT /api/admin/products/:id — line 1044: baseName || name fallback',
 describe('PUT /api/admin/products/:id — lines 1047-1048: price/stockQuantity null → 0', () => {
   it('đặt basePrice=0 khi gửi price=null', async () => {
     const product = makeProduct({ id: 9040 });
-    Product.findByPk
-      .mockResolvedValueOnce(product)
-      .mockResolvedValueOnce(product);
+    Product.findByPk.mockResolvedValueOnce(product).mockResolvedValueOnce(product);
 
     ProductAttribute.findAll.mockResolvedValueOnce([]);
     ProductVariant.findAll.mockResolvedValueOnce([]);
     ProductSpecification.findAll.mockResolvedValueOnce([]);
 
     const res = await request.put('/api/admin/products/9040').send({
-      price: null,  // null?.toString() = undefined → parseFloat(undefined) = NaN → NaN || 0
+      price: null, // null?.toString() = undefined → parseFloat(undefined) = NaN → NaN || 0
     });
 
     expect(res.status).toBe(200);
     expect(product.update).toHaveBeenCalledWith(
       expect.objectContaining({ basePrice: 0 }),
-      expect.anything()
+      expect.anything(),
     );
   });
 
   it('đặt stockQuantity=0 khi gửi stockQuantity=null', async () => {
     const product = makeProduct({ id: 9041 });
-    Product.findByPk
-      .mockResolvedValueOnce(product)
-      .mockResolvedValueOnce(product);
+    Product.findByPk.mockResolvedValueOnce(product).mockResolvedValueOnce(product);
 
     ProductAttribute.findAll.mockResolvedValueOnce([]);
     ProductVariant.findAll.mockResolvedValueOnce([]);
     ProductSpecification.findAll.mockResolvedValueOnce([]);
 
     const res = await request.put('/api/admin/products/9041').send({
-      stockQuantity: null,  // null?.toString() = undefined → parseInt(undefined) = NaN → NaN || 0
+      stockQuantity: null, // null?.toString() = undefined → parseInt(undefined) = NaN → NaN || 0
     });
 
     expect(res.status).toBe(200);
     expect(product.update).toHaveBeenCalledWith(
       expect.objectContaining({ stockQuantity: 0 }),
-      expect.anything()
+      expect.anything(),
     );
   });
 });
@@ -617,9 +611,7 @@ describe('PUT /api/admin/products/:id — lines 1047-1048: price/stockQuantity n
 describe('PUT /api/admin/products/:id — line 1066: images=[] → skip bulkCreate', () => {
   it('không gọi ProductImage.bulkCreate khi images=[]', async () => {
     const product = makeProduct({ id: 9050 });
-    Product.findByPk
-      .mockResolvedValueOnce(product)
-      .mockResolvedValueOnce(product);
+    Product.findByPk.mockResolvedValueOnce(product).mockResolvedValueOnce(product);
 
     ProductImage.destroy.mockResolvedValueOnce(undefined);
     ProductAttribute.findAll.mockResolvedValueOnce([]);
@@ -627,7 +619,7 @@ describe('PUT /api/admin/products/:id — line 1066: images=[] → skip bulkCrea
     ProductSpecification.findAll.mockResolvedValueOnce([]);
 
     const res = await request.put('/api/admin/products/9050').send({
-      images: [],  // hasOwnProperty('images') true, Array.isArray true, but length===0 → skip bulkCreate
+      images: [], // hasOwnProperty('images') true, Array.isArray true, but length===0 → skip bulkCreate
     });
 
     expect(res.status).toBe(200);
@@ -645,9 +637,7 @@ describe('PUT /api/admin/products/:id — line 1066: images=[] → skip bulkCrea
 describe('PUT /api/admin/products/:id — lines 1145-1149: attr update với truthy non-string value', () => {
   it('dùng [String(attr.value)] khi attr.value là số trong updateProduct', async () => {
     const product = makeProduct({ id: 9060 });
-    Product.findByPk
-      .mockResolvedValueOnce(product)
-      .mockResolvedValueOnce(product);
+    Product.findByPk.mockResolvedValueOnce(product).mockResolvedValueOnce(product);
 
     // Existing attribute 'RAM' will be updated
     const existingAttr = makeAttr('RAM', ['8GB']);
@@ -657,7 +647,7 @@ describe('PUT /api/admin/products/:id — lines 1145-1149: attr update với tru
 
     const res = await request.put('/api/admin/products/9060').send({
       attributes: [
-        { name: 'RAM', value: 32 },  // truthy, non-string, non-array → [String(32)] = ['32']
+        { name: 'RAM', value: 32 }, // truthy, non-string, non-array → [String(32)] = ['32']
       ],
     });
 
@@ -665,15 +655,13 @@ describe('PUT /api/admin/products/:id — lines 1145-1149: attr update với tru
     // ['32'] is non-empty so normalizedValues = ['32'] (not ['Default'])
     expect(existingAttr.update).toHaveBeenCalledWith(
       expect.objectContaining({ values: ['32'] }),
-      expect.anything()
+      expect.anything(),
     );
   });
 
   it('dùng [Default] khi attr.value là falsy và attr.values không tồn tại', async () => {
     const product = makeProduct({ id: 9061 });
-    Product.findByPk
-      .mockResolvedValueOnce(product)
-      .mockResolvedValueOnce(product);
+    Product.findByPk.mockResolvedValueOnce(product).mockResolvedValueOnce(product);
 
     const existingAttr = makeAttr('Color', ['Red']);
     ProductAttribute.findAll.mockResolvedValueOnce([existingAttr]);
@@ -682,7 +670,7 @@ describe('PUT /api/admin/products/:id — lines 1145-1149: attr update với tru
 
     const res = await request.put('/api/admin/products/9061').send({
       attributes: [
-        { name: 'Color', value: 0 },  // falsy (0) → attrValues stays [] → ['Default']
+        { name: 'Color', value: 0 }, // falsy (0) → attrValues stays [] → ['Default']
       ],
     });
 
@@ -690,7 +678,7 @@ describe('PUT /api/admin/products/:id — lines 1145-1149: attr update với tru
     // attrValues empty → normalizedValues = ['Default'] (line 1149)
     expect(existingAttr.update).toHaveBeenCalledWith(
       expect.objectContaining({ values: ['Default'] }),
-      expect.anything()
+      expect.anything(),
     );
   });
 });
@@ -702,9 +690,7 @@ describe('PUT /api/admin/products/:id — lines 1145-1149: attr update với tru
 describe('PUT /api/admin/products/:id — lines 1155-1156: attr.required ternary', () => {
   it('dùng attr.required=true khi được cung cấp rõ ràng', async () => {
     const product = makeProduct({ id: 9070 });
-    Product.findByPk
-      .mockResolvedValueOnce(product)
-      .mockResolvedValueOnce(product);
+    Product.findByPk.mockResolvedValueOnce(product).mockResolvedValueOnce(product);
 
     const existingAttr = makeAttr('Size', ['M'], { required: false });
     ProductAttribute.findAll.mockResolvedValueOnce([existingAttr]);
@@ -713,7 +699,7 @@ describe('PUT /api/admin/products/:id — lines 1155-1156: attr.required ternary
 
     const res = await request.put('/api/admin/products/9070').send({
       attributes: [
-        { name: 'Size', value: 'L', required: true },  // required !== undefined → use attr.required
+        { name: 'Size', value: 'L', required: true }, // required !== undefined → use attr.required
       ],
     });
 
@@ -721,15 +707,13 @@ describe('PUT /api/admin/products/:id — lines 1155-1156: attr.required ternary
     // attr.required=true → ternary takes truthy path (line 1156)
     expect(existingAttr.update).toHaveBeenCalledWith(
       expect.objectContaining({ required: true }),
-      expect.anything()
+      expect.anything(),
     );
   });
 
   it('giữ nguyên required từ currentAttr khi attr.required không được gửi', async () => {
     const product = makeProduct({ id: 9071 });
-    Product.findByPk
-      .mockResolvedValueOnce(product)
-      .mockResolvedValueOnce(product);
+    Product.findByPk.mockResolvedValueOnce(product).mockResolvedValueOnce(product);
 
     // Existing attribute with required=true
     const existingAttr = makeAttr('Model', ['X1'], { required: true });
@@ -739,15 +723,15 @@ describe('PUT /api/admin/products/:id — lines 1155-1156: attr.required ternary
 
     const res = await request.put('/api/admin/products/9071').send({
       attributes: [
-        { name: 'Model', value: 'X2' },  // no required → attr.required=undefined → keep existing
+        { name: 'Model', value: 'X2' }, // no required → attr.required=undefined → keep existing
       ],
     });
 
     expect(res.status).toBe(200);
     // attr.required=undefined → ternary takes false path → currentAttrMap['Model'].required = true
     expect(existingAttr.update).toHaveBeenCalledWith(
-      expect.objectContaining({ required: true }),  // kept from existingAttr
-      expect.anything()
+      expect.objectContaining({ required: true }), // kept from existingAttr
+      expect.anything(),
     );
   });
 });
@@ -760,9 +744,7 @@ describe('PUT /api/admin/products/:id — lines 1155-1156: attr.required ternary
 describe('PUT /api/admin/products/:id — lines 1203-1204,1209: variant field fallbacks', () => {
   it('đặt price=0 và stockQuantity=0 khi variant không có price và stock', async () => {
     const product = makeProduct({ id: 9080 });
-    Product.findByPk
-      .mockResolvedValueOnce(product)
-      .mockResolvedValueOnce(product);
+    Product.findByPk.mockResolvedValueOnce(product).mockResolvedValueOnce(product);
 
     ProductAttribute.findAll.mockResolvedValueOnce([]);
     ProductVariant.findAll.mockResolvedValueOnce([]);
@@ -776,7 +758,7 @@ describe('PUT /api/admin/products/:id — lines 1203-1204,1209: variant field fa
         {
           name: 'Default',
           // no price, no stock → undefined → parseFloat/parseInt → NaN → NaN || 0
-          attributes: { color: 'blue' },  // attributes available
+          attributes: { color: 'blue' }, // attributes available
         },
       ],
     });
@@ -784,15 +766,13 @@ describe('PUT /api/admin/products/:id — lines 1203-1204,1209: variant field fa
     expect(res.status).toBe(200);
     expect(ProductVariant.create).toHaveBeenCalledWith(
       expect.objectContaining({ price: 0, stockQuantity: 0 }),
-      expect.anything()
+      expect.anything(),
     );
   });
 
   it('dùng Object.values(attributes).join() làm displayName khi cả displayName lẫn name đều falsy', async () => {
     const product = makeProduct({ id: 9081 });
-    Product.findByPk
-      .mockResolvedValueOnce(product)
-      .mockResolvedValueOnce(product);
+    Product.findByPk.mockResolvedValueOnce(product).mockResolvedValueOnce(product);
 
     ProductAttribute.findAll.mockResolvedValueOnce([]);
     ProductVariant.findAll.mockResolvedValueOnce([]);
@@ -817,9 +797,9 @@ describe('PUT /api/admin/products/:id — lines 1203-1204,1209: variant field fa
     expect(res.status).toBe(200);
     expect(ProductVariant.create).toHaveBeenCalledWith(
       expect.objectContaining({
-        displayName: 'blue - L',  // Object.values({color:'blue', size:'L'}).join(' - ')
+        displayName: 'blue - L', // Object.values({color:'blue', size:'L'}).join(' - ')
       }),
-      expect.anything()
+      expect.anything(),
     );
   });
 });
@@ -831,9 +811,7 @@ describe('PUT /api/admin/products/:id — lines 1203-1204,1209: variant field fa
 describe('PUT /api/admin/products/:id — line 1223: temp id var-* → undefined', () => {
   it('tạo variant mới với id=undefined khi id bắt đầu bằng "var-"', async () => {
     const product = makeProduct({ id: 9090 });
-    Product.findByPk
-      .mockResolvedValueOnce(product)
-      .mockResolvedValueOnce(product);
+    Product.findByPk.mockResolvedValueOnce(product).mockResolvedValueOnce(product);
 
     ProductAttribute.findAll.mockResolvedValueOnce([]);
     ProductVariant.findAll.mockResolvedValueOnce([]);
@@ -845,7 +823,7 @@ describe('PUT /api/admin/products/:id — line 1223: temp id var-* → undefined
     const res = await request.put('/api/admin/products/9090').send({
       variants: [
         {
-          id: 'var-0',  // starts with 'var-' → id: undefined in create call
+          id: 'var-0', // starts with 'var-' → id: undefined in create call
           name: 'Default',
           price: 5000000,
           stock: 3,
@@ -856,7 +834,7 @@ describe('PUT /api/admin/products/:id — line 1223: temp id var-* → undefined
     expect(res.status).toBe(200);
     expect(ProductVariant.create).toHaveBeenCalledWith(
       expect.objectContaining({ id: undefined }),
-      expect.anything()
+      expect.anything(),
     );
   });
 });
@@ -868,9 +846,7 @@ describe('PUT /api/admin/products/:id — line 1223: temp id var-* → undefined
 describe('PUT /api/admin/products/:id — line 1242: stockQuantity without variants', () => {
   it('gọi Product.update với stockQuantity khi không có variants trong body', async () => {
     const product = makeProduct({ id: 9100 });
-    Product.findByPk
-      .mockResolvedValueOnce(product)
-      .mockResolvedValueOnce(product);
+    Product.findByPk.mockResolvedValueOnce(product).mockResolvedValueOnce(product);
 
     Product.update.mockResolvedValueOnce(undefined);
     ProductAttribute.findAll.mockResolvedValueOnce([]);
@@ -884,7 +860,7 @@ describe('PUT /api/admin/products/:id — line 1242: stockQuantity without varia
     expect(res.status).toBe(200);
     expect(Product.update).toHaveBeenCalledWith(
       { stockQuantity: 77 },
-      expect.objectContaining({ where: { id: '9100' } })
+      expect.objectContaining({ where: { id: '9100' } }),
     );
   });
 });
@@ -896,15 +872,13 @@ describe('PUT /api/admin/products/:id — line 1242: stockQuantity without varia
 describe('PUT /api/admin/products/:id — line 1294: spec translation', () => {
   it('gọi translateBatch cho spec chưa có valueEn', async () => {
     const product = makeProduct({ id: 9110 });
-    Product.findByPk
-      .mockResolvedValueOnce(product)
-      .mockResolvedValueOnce(product);
+    Product.findByPk.mockResolvedValueOnce(product).mockResolvedValueOnce(product);
 
     ProductAttribute.findAll.mockResolvedValueOnce([]);
     ProductVariant.findAll.mockResolvedValueOnce([]);
     ProductSpecification.findAll.mockResolvedValueOnce([]);
 
-    const savedSpec = makeSpec('CPU', 'Intel i9', null);  // valueEn=null → needs translation
+    const savedSpec = makeSpec('CPU', 'Intel i9', null); // valueEn=null → needs translation
     ProductSpecification.create.mockResolvedValueOnce(savedSpec);
 
     const { translateBatch } = require('../services/ai/translateService');
@@ -982,7 +956,7 @@ describe('GET /api/admin/products — line 1547: productImages null → []', () 
           id: 9200,
           name: 'Laptop No Images',
           basePrice: 15000000,
-          productImages: null,  // null?.map() = undefined → undefined || [] = []
+          productImages: null, // null?.map() = undefined → undefined || [] = []
           categories: [],
           category: null,
         }),
@@ -1011,7 +985,7 @@ describe('GET /api/admin/orders — lines 1732-1734: order item edge cases', () 
           {
             id: 1,
             quantity: 2,
-            Product: null,  // line 1734: if (item.Product) → false branch
+            Product: null, // line 1734: if (item.Product) → false branch
           },
         ],
       }),
@@ -1038,7 +1012,7 @@ describe('GET /api/admin/orders — lines 1732-1734: order item edge cases', () 
               id: 11,
               name: 'Keyboard',
               basePrice: 1500000,
-              productImages: null,  // null?.map() = undefined → undefined || [] = []
+              productImages: null, // null?.map() = undefined → undefined || [] = []
             },
           },
         ],
@@ -1075,9 +1049,7 @@ describe('PUT /api/admin/orders/:id/status — line 1788: note="" → null', () 
 
     expect(res.status).toBe(200);
     // note='' → note === '' ? null : order.note → null (line 1790 conditional)
-    expect(order.update).toHaveBeenCalledWith(
-      expect.objectContaining({ note: null })
-    );
+    expect(order.update).toHaveBeenCalledWith(expect.objectContaining({ note: null }));
   });
 });
 
@@ -1098,15 +1070,13 @@ describe('PUT /api/admin/orders/:id/status — lines 1802,1808: cancel restock',
     };
     Order.findByPk.mockResolvedValueOnce(order);
 
-    const res = await request
-      .put('/api/admin/orders/9410/status')
-      .send({ status: 'cancelled' });
+    const res = await request.put('/api/admin/orders/9410/status').send({ status: 'cancelled' });
 
     expect(res.status).toBe(200);
     // variantId truthy + ProductVariant exists → restock variant (line 1802-1806)
     expect(variantMock.update).toHaveBeenCalledWith(
-      { stockQuantity: 10 },  // 8 + 2
-      expect.anything()
+      { stockQuantity: 10 }, // 8 + 2
+      expect.anything(),
     );
   });
 
@@ -1122,15 +1092,13 @@ describe('PUT /api/admin/orders/:id/status — lines 1802,1808: cancel restock',
     };
     Order.findByPk.mockResolvedValueOnce(order);
 
-    const res = await request
-      .put('/api/admin/orders/9411/status')
-      .send({ status: 'cancelled' });
+    const res = await request.put('/api/admin/orders/9411/status').send({ status: 'cancelled' });
 
     expect(res.status).toBe(200);
     // no variantId → else if (item.Product) → restock product (line 1808)
     expect(productMock.update).toHaveBeenCalledWith(
-      { stockQuantity: 18 },  // 15 + 3
-      expect.anything()
+      { stockQuantity: 18 }, // 15 + 3
+      expect.anything(),
     );
   });
 });
@@ -1157,8 +1125,8 @@ describe('PUT /api/admin/orders/:id/cancel — line 1859: product restock', () =
     expect(res.status).toBe(200);
     // else if (item.Product) → restock product (line 1859)
     expect(productMock.update).toHaveBeenCalledWith(
-      { stockQuantity: 16 },  // 12 + 4
-      expect.anything()
+      { stockQuantity: 16 }, // 12 + 4
+      expect.anything(),
     );
   });
 });
@@ -1174,7 +1142,7 @@ describe('POST /api/admin/products/:productId/restock — line 2117: variant res
 
     Product.findByPk.mockResolvedValueOnce(product);
     ProductVariant.findOne.mockResolvedValueOnce(variant);
-    ProductVariant.sum.mockResolvedValueOnce(30);  // total after restock
+    ProductVariant.sum.mockResolvedValueOnce(30); // total after restock
     InventoryLog.create.mockResolvedValueOnce({ id: 1 });
 
     const res = await request
@@ -1183,9 +1151,7 @@ describe('POST /api/admin/products/:productId/restock — line 2117: variant res
 
     expect(res.status).toBe(200);
     // variant.update called with newStock = 5 + 25 = 30
-    expect(variant.update).toHaveBeenCalledWith(
-      { stockQuantity: 30, isAvailable: true }
-    );
+    expect(variant.update).toHaveBeenCalledWith({ stockQuantity: 30, isAvailable: true });
     // product.update called with sum result (line 2117): total || 0 = 30
     expect(product.update).toHaveBeenCalledWith({ stockQuantity: 30 });
   });
@@ -1196,7 +1162,7 @@ describe('POST /api/admin/products/:productId/restock — line 2117: variant res
 
     Product.findByPk.mockResolvedValueOnce(product);
     ProductVariant.findOne.mockResolvedValueOnce(variant);
-    ProductVariant.sum.mockResolvedValueOnce(null);  // null → || 0
+    ProductVariant.sum.mockResolvedValueOnce(null); // null → || 0
     InventoryLog.create.mockResolvedValueOnce({ id: 2 });
 
     // quantity must be > 0 to pass validation (quantity=0 throws 400)
@@ -1218,9 +1184,7 @@ describe('GET /api/admin/audit-logs — line 2165: date range filter', () => {
   it('tạo Op.gte khi startDate được gửi', async () => {
     AuditLog.findAndCountAll.mockResolvedValueOnce({ rows: [], count: 0 });
 
-    const res = await request
-      .get('/api/admin/audit-logs')
-      .query({ startDate: '2024-03-01' });
+    const res = await request.get('/api/admin/audit-logs').query({ startDate: '2024-03-01' });
 
     expect(res.status).toBe(200);
     const callArg = AuditLog.findAndCountAll.mock.calls[0][0];
@@ -1232,9 +1196,7 @@ describe('GET /api/admin/audit-logs — line 2165: date range filter', () => {
   it('tạo Op.lte khi endDate được gửi', async () => {
     AuditLog.findAndCountAll.mockResolvedValueOnce({ rows: [], count: 0 });
 
-    const res = await request
-      .get('/api/admin/audit-logs')
-      .query({ endDate: '2024-12-31' });
+    const res = await request.get('/api/admin/audit-logs').query({ endDate: '2024-12-31' });
 
     expect(res.status).toBe(200);
     const callArg = AuditLog.findAndCountAll.mock.calls[0][0];
@@ -1251,7 +1213,7 @@ describe('GET /api/admin/audit-logs — line 2165: date range filter', () => {
 describe('GET /api/admin/analytics/order-status — line 2228: unknown status label', () => {
   it('dùng row.status làm label khi status không nằm trong statusLabels', async () => {
     const statusDist = [
-      { status: 'unknown_status', count: '3' },  // not in statusLabels → || row.status
+      { status: 'unknown_status', count: '3' }, // not in statusLabels → || row.status
     ];
     Order.findAll.mockResolvedValueOnce(statusDist);
 
@@ -1263,9 +1225,7 @@ describe('GET /api/admin/analytics/order-status — line 2228: unknown status la
   });
 
   it('dùng label từ statusLabels khi status hợp lệ', async () => {
-    const statusDist = [
-      { status: 'pending', count: '5' },
-    ];
+    const statusDist = [{ status: 'pending', count: '5' }];
     Order.findAll.mockResolvedValueOnce(statusDist);
 
     const res = await request.get('/api/admin/analytics/order-status');
@@ -1284,9 +1244,7 @@ describe('GET /api/admin/analytics/top-products — line 2239: limitNum capped a
   it('cap limit tại 20 khi gửi limit=50', async () => {
     OrderItem.findAll.mockResolvedValueOnce([]);
 
-    const res = await request
-      .get('/api/admin/analytics/top-products')
-      .query({ limit: '50' });
+    const res = await request.get('/api/admin/analytics/top-products').query({ limit: '50' });
 
     expect(res.status).toBe(200);
     // Math.min(parseInt('50') || 5, 20) = Math.min(50, 20) = 20
@@ -1320,9 +1278,7 @@ describe('GET /api/admin/analytics/top-products — line 2239: limitNum capped a
     // Branch 320: parseInt(qLimit, 10) || 5 — right branch when parseInt returns NaN
     OrderItem.findAll.mockResolvedValueOnce([]);
 
-    const res = await request
-      .get('/api/admin/analytics/top-products')
-      .query({ limit: 'abc' });  // NaN → || 5
+    const res = await request.get('/api/admin/analytics/top-products').query({ limit: 'abc' }); // NaN → || 5
 
     expect(res.status).toBe(200);
     // parseInt('abc') = NaN → NaN || 5 = 5 → Math.min(5, 20) = 5
@@ -1340,7 +1296,7 @@ describe('GET /api/admin/analytics/top-products — lines 2281-2282: null Produc
     const items = [
       {
         productId: 1,
-        Product: null,  // null → {} (line 2276: item.Product ? toJSON() : {})
+        Product: null, // null → {} (line 2276: item.Product ? toJSON() : {})
         getDataValue: (key) => (key === 'revenue' ? '500000' : '3'),
       },
     ];
@@ -1365,7 +1321,7 @@ describe('GET /api/admin/analytics/top-products — lines 2281-2282: null Produc
           toJSON: () => ({
             id: 2,
             name: 'Laptop',
-            productImages: [],  // empty array → ?.[0] = undefined → undefined?.imageUrl = undefined || null
+            productImages: [], // empty array → ?.[0] = undefined → undefined?.imageUrl = undefined || null
           }),
         },
         getDataValue: (key) => (key === 'revenue' ? '1000000' : '10'),
@@ -1387,7 +1343,7 @@ describe('GET /api/admin/analytics/top-products — lines 2281-2282: null Produc
         Product: {
           toJSON: () => ({ id: 3, name: 'Item', productImages: [] }),
         },
-        getDataValue: (key) => null,  // always null → || 0 right branch hit
+        getDataValue: (key) => null, // always null → || 0 right branch hit
       },
     ];
     OrderItem.findAll.mockResolvedValueOnce(items);
@@ -1432,7 +1388,7 @@ describe('GET /api/admin/analytics/payment-methods — lines 2389,2391: fallback
   it('đặt method="unknown" khi paymentMethod là null', async () => {
     const rows = [
       { paymentMethod: 'cod', count: '10', revenue: '2000000' },
-      { paymentMethod: null, count: '1', revenue: '0' },  // null → || 'unknown'
+      { paymentMethod: null, count: '1', revenue: '0' }, // null → || 'unknown'
     ];
     Order.findAll.mockResolvedValueOnce(rows);
 
@@ -1446,7 +1402,7 @@ describe('GET /api/admin/analytics/payment-methods — lines 2389,2391: fallback
   it('revenue=0 khi row.revenue là null (line 2391: revenue || 0 right branch)', async () => {
     // Branch 336: parseFloat(row.revenue || 0) — need row.revenue to be null/undefined
     const rows = [
-      { paymentMethod: 'momo', count: '5', revenue: null },  // null → null || 0 → 0
+      { paymentMethod: 'momo', count: '5', revenue: null }, // null → null || 0 → 0
     ];
     Order.findAll.mockResolvedValueOnce(rows);
 
@@ -1474,20 +1430,18 @@ describe('GET /api/admin/reports/export — line 2463: orders User=null and User
           paymentMethod: 'cod',
           total: 500000,
           createdAt: '2024-01-15T00:00:00.000Z',
-          User: null,  // null → customer = '', email = ''
+          User: null, // null → customer = '', email = ''
         }),
       },
     ];
     Order.findAll.mockResolvedValueOnce(orders);
 
-    const res = await request
-      .get('/api/admin/reports/export')
-      .query({ type: 'orders' });
+    const res = await request.get('/api/admin/reports/export').query({ type: 'orders' });
 
     expect(res.status).toBe(200);
     expect(res.headers['content-type']).toMatch(/text\/csv/);
     // When User=null: customer = '' (trim of ' '), email = '' (oJson.User?.email = undefined || '')
-    const csvRows = res.text.split('\n').slice(1);  // skip header
+    const csvRows = res.text.split('\n').slice(1); // skip header
     expect(csvRows[0]).toContain(',"",""');
   });
 
@@ -1500,22 +1454,20 @@ describe('GET /api/admin/reports/export — line 2463: orders User=null and User
           number: 'ORD-002',
           status: 'delivered',
           paymentStatus: 'paid',
-          paymentMethod: null,  // null paymentMethod → || '' (line 2466 right branch)
+          paymentMethod: null, // null paymentMethod → || '' (line 2466 right branch)
           total: 300000,
           createdAt: '2024-02-10T00:00:00.000Z',
           User: {
-            firstName: null,   // null → firstName || '' = '' (line 2463 branch 345)
-            lastName: null,    // null → lastName || '' = '' (line 2463 branch 346)
-            email: null,       // null → email || '' (line 2464 right branch)
+            firstName: null, // null → firstName || '' = '' (line 2463 branch 345)
+            lastName: null, // null → lastName || '' = '' (line 2463 branch 346)
+            email: null, // null → email || '' (line 2464 right branch)
           },
         }),
       },
     ];
     Order.findAll.mockResolvedValueOnce(orders);
 
-    const res = await request
-      .get('/api/admin/reports/export')
-      .query({ type: 'orders' });
+    const res = await request.get('/api/admin/reports/export').query({ type: 'orders' });
 
     expect(res.status).toBe(200);
     // User exists → true branch of ternary (line 2463)
@@ -1535,13 +1487,18 @@ describe('GET /api/admin/reports/export — line 2463: orders User=null and User
 describe('GET /api/admin/reports/export — line 2482: product status null → active', () => {
   it('dùng "active" khi product.status là null', async () => {
     const products = [
-      { id: 1, name: 'Product A', sku: 'SKU-A', basePrice: 10000000, stockQuantity: 5, status: null },
+      {
+        id: 1,
+        name: 'Product A',
+        sku: 'SKU-A',
+        basePrice: 10000000,
+        stockQuantity: 5,
+        status: null,
+      },
     ];
     Product.findAll.mockResolvedValueOnce(products);
 
-    const res = await request
-      .get('/api/admin/reports/export')
-      .query({ type: 'products' });
+    const res = await request.get('/api/admin/reports/export').query({ type: 'products' });
 
     expect(res.status).toBe(200);
     expect(res.headers['content-type']).toMatch(/text\/csv/);
@@ -1551,13 +1508,18 @@ describe('GET /api/admin/reports/export — line 2482: product status null → a
 
   it('giữ nguyên status khi product.status là "inactive"', async () => {
     const products = [
-      { id: 2, name: 'Discontinued', sku: null, basePrice: 0, stockQuantity: 0, status: 'inactive' },
+      {
+        id: 2,
+        name: 'Discontinued',
+        sku: null,
+        basePrice: 0,
+        stockQuantity: 0,
+        status: 'inactive',
+      },
     ];
     Product.findAll.mockResolvedValueOnce(products);
 
-    const res = await request
-      .get('/api/admin/reports/export')
-      .query({ type: 'products' });
+    const res = await request.get('/api/admin/reports/export').query({ type: 'products' });
 
     expect(res.status).toBe(200);
     // status='inactive' → truthy → left branch of || taken
@@ -1571,13 +1533,11 @@ describe('GET /api/admin/reports/export — line 2482: product status null → a
     ];
     Product.findAll.mockResolvedValueOnce(products);
 
-    const res = await request
-      .get('/api/admin/reports/export')
-      .query({ type: 'products' });
+    const res = await request.get('/api/admin/reports/export').query({ type: 'products' });
 
     expect(res.status).toBe(200);
     // name=null → null || '' = '' (right branch of || covered)
-    expect(res.text).toContain(',active');  // status also null → 'active'
+    expect(res.text).toContain(',active'); // status also null → 'active'
   });
 });
 
@@ -1589,19 +1549,17 @@ describe('GET /api/admin/reports/export — line 2482: product status null → a
 describe('PUT /api/admin/products/:id — line 1155: || "custom" fallback', () => {
   it('dùng "custom" khi cả attr.type lẫn currentAttr.type đều falsy', async () => {
     const product = makeProduct({ id: 9200 });
-    Product.findByPk
-      .mockResolvedValueOnce(product)
-      .mockResolvedValueOnce(product);
+    Product.findByPk.mockResolvedValueOnce(product).mockResolvedValueOnce(product);
 
     // Existing attribute without type (type=null or undefined)
-    const existingAttr = makeAttr('Screen', ['15"'], { type: null });  // type=null → falsy
+    const existingAttr = makeAttr('Screen', ['15"'], { type: null }); // type=null → falsy
     ProductAttribute.findAll.mockResolvedValueOnce([existingAttr]);
     ProductVariant.findAll.mockResolvedValueOnce([]);
     ProductSpecification.findAll.mockResolvedValueOnce([]);
 
     const res = await request.put('/api/admin/products/9200').send({
       attributes: [
-        { name: 'Screen', value: '16"' },  // attr.type not sent → undefined → falsy
+        { name: 'Screen', value: '16"' }, // attr.type not sent → undefined → falsy
         // currentAttrMap['Screen'].type = null → falsy
         // → 'custom' (third arm, line 1155)
       ],
@@ -1611,7 +1569,7 @@ describe('PUT /api/admin/products/:id — line 1155: || "custom" fallback', () =
     // Both falsy → uses 'custom' as fallback
     expect(existingAttr.update).toHaveBeenCalledWith(
       expect.objectContaining({ type: 'custom' }),
-      expect.anything()
+      expect.anything(),
     );
   });
 });
@@ -1623,9 +1581,7 @@ describe('PUT /api/admin/products/:id — line 1155: || "custom" fallback', () =
 describe('PUT /api/admin/products/:id — line 1223: real UUID → preserve id in create', () => {
   it('dùng variant.id gốc khi id không bắt đầu bằng "var-" và không có trong currentVarMap', async () => {
     const product = makeProduct({ id: 9210 });
-    Product.findByPk
-      .mockResolvedValueOnce(product)
-      .mockResolvedValueOnce(product);
+    Product.findByPk.mockResolvedValueOnce(product).mockResolvedValueOnce(product);
 
     ProductAttribute.findAll.mockResolvedValueOnce([]);
     // No existing variants → currentVarMap is empty → goes to create path
@@ -1639,7 +1595,7 @@ describe('PUT /api/admin/products/:id — line 1223: real UUID → preserve id i
     const res = await request.put('/api/admin/products/9210').send({
       variants: [
         {
-          id: 'real-uuid-abc-123',  // real UUID, not in currentVarMap → create with this id
+          id: 'real-uuid-abc-123', // real UUID, not in currentVarMap → create with this id
           name: 'Default Variant',
           price: 15000000,
           stock: 3,
@@ -1651,7 +1607,7 @@ describe('PUT /api/admin/products/:id — line 1223: real UUID → preserve id i
     // id is truthy + does NOT start with 'var-' → ternary returns variant.id (truthy arm)
     expect(ProductVariant.create).toHaveBeenCalledWith(
       expect.objectContaining({ id: 'real-uuid-abc-123' }),
-      expect.anything()
+      expect.anything(),
     );
   });
 });
@@ -1663,20 +1619,18 @@ describe('PUT /api/admin/products/:id — line 1223: real UUID → preserve id i
 describe('PUT /api/admin/products/:id — line 1294: translated[i] undefined → null', () => {
   it('đặt valueEn=null khi translateBatch trả về mảng thiếu phần tử (undefined)', async () => {
     const product = makeProduct({ id: 9220 });
-    Product.findByPk
-      .mockResolvedValueOnce(product)
-      .mockResolvedValueOnce(product);
+    Product.findByPk.mockResolvedValueOnce(product).mockResolvedValueOnce(product);
 
     ProductAttribute.findAll.mockResolvedValueOnce([]);
     ProductVariant.findAll.mockResolvedValueOnce([]);
     ProductSpecification.findAll.mockResolvedValueOnce([]);
 
-    const savedSpec = makeSpec('Battery', '5000mAh', null);  // valueEn=null → needs translation
+    const savedSpec = makeSpec('Battery', '5000mAh', null); // valueEn=null → needs translation
     ProductSpecification.create.mockResolvedValueOnce(savedSpec);
 
     const { translateBatch } = require('../services/ai/translateService');
     // translateBatch returns fewer items than expected (undefined at index 0)
-    translateBatch.mockResolvedValueOnce([]);  // empty → translated[0] = undefined → || null
+    translateBatch.mockResolvedValueOnce([]); // empty → translated[0] = undefined → || null
 
     const res = await request.put('/api/admin/products/9220').send({
       specifications: [{ name: 'Battery', value: '5000mAh' }],
@@ -1702,7 +1656,7 @@ describe('GET /api/admin/orders — line 1732: order.items falsy → skip item t
       toJSON: () => ({
         id: 9300,
         status: 'pending',
-        items: null,  // null → if (order.items) → false → skip (line 1732 false branch)
+        items: null, // null → if (order.items) → false → skip (line 1732 false branch)
       }),
     };
     Order.findAndCountAll.mockResolvedValueOnce({ count: 1, rows: [orderRow] });
@@ -1733,15 +1687,11 @@ describe('PUT /api/admin/orders/:id/status — line 1788: status falsy → use o
     Order.findByPk.mockResolvedValueOnce(order);
 
     // Send only paymentStatus, not status → status undefined → right branch of || (line 1788)
-    const res = await request
-      .put('/api/admin/orders/9400/status')
-      .send({ paymentStatus: 'paid' });
+    const res = await request.put('/api/admin/orders/9400/status').send({ paymentStatus: 'paid' });
 
     expect(res.status).toBe(200);
     // status undefined → status || order.status = order.status = 'shipped'
-    expect(order.update).toHaveBeenCalledWith(
-      expect.objectContaining({ status: 'shipped' })
-    );
+    expect(order.update).toHaveBeenCalledWith(expect.objectContaining({ status: 'shipped' }));
   });
 });
 
@@ -1756,15 +1706,13 @@ describe('PUT /api/admin/orders/:id/status — line 1802: order.items null → |
       status: 'processing',
       paymentStatus: 'unpaid',
       paymentMethod: 'bank',
-      items: null,  // null → order.items || [] = [] → empty loop (line 1802 right branch)
+      items: null, // null → order.items || [] = [] → empty loop (line 1802 right branch)
       update: jest.fn().mockResolvedValue(undefined),
     };
     Order.findByPk.mockResolvedValueOnce(order);
-    Order.findByPk.mockResolvedValueOnce(order);  // for the after-cancel fetch
+    Order.findByPk.mockResolvedValueOnce(order); // for the after-cancel fetch
 
-    const res = await request
-      .put('/api/admin/orders/9410/status')
-      .send({ status: 'cancelled' });
+    const res = await request.put('/api/admin/orders/9410/status').send({ status: 'cancelled' });
 
     expect(res.status).toBe(200);
     // order.items null → || [] → loop over [] → no restock needed
@@ -1791,9 +1739,7 @@ describe('PUT /api/admin/orders/:id/status — line 1808: item without Product f
     Order.findByPk.mockResolvedValueOnce(order);
     Order.findByPk.mockResolvedValueOnce(order);
 
-    const res = await request
-      .put('/api/admin/orders/9420/status')
-      .send({ status: 'cancelled' });
+    const res = await request.put('/api/admin/orders/9420/status').send({ status: 'cancelled' });
 
     expect(res.status).toBe(200);
     // Neither restock path taken → order still cancelled

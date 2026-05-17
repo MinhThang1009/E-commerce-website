@@ -47,7 +47,7 @@ jest.mock('multer', () => {
 let imageController;
 
 beforeAll(() => {
-  imageController = require('../controllers/image');
+  imageController = require('../modules/image/controllers/imageController');
 });
 
 // ─── uploadSingle outer catch — line 94 ──────────────────────────────────────
@@ -61,7 +61,7 @@ describe('ImageController.uploadSingle — outer catch khi multer middleware thr
     await imageController.uploadSingle(req, res, next);
 
     expect(next).toHaveBeenCalledWith(
-      expect.objectContaining({ message: 'multer internal sync error in single' })
+      expect.objectContaining({ message: 'multer internal sync error in single' }),
     );
   });
 });
@@ -77,7 +77,7 @@ describe('ImageController.uploadMultiple — outer catch khi multer middleware t
     await imageController.uploadMultiple(req, res, next);
 
     expect(next).toHaveBeenCalledWith(
-      expect.objectContaining({ message: 'multer internal sync error in array' })
+      expect.objectContaining({ message: 'multer internal sync error in array' }),
     );
   });
 });

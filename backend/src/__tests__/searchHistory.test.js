@@ -58,7 +58,7 @@ jest.mock('../middlewares/rateLimiter', () => ({
 
 const express = require('express');
 const supertest = require('supertest');
-const searchHistoryRouter = require('../routes/searchHistory');
+const searchHistoryRouter = require('../modules/searchHistory/routes');
 const { SearchHistory } = require('../models');
 
 const app = express();
@@ -129,7 +129,7 @@ describe('POST /api/search-histories — saveSearch', () => {
     expect(res.status).toBe(201);
     expect(res.body.status).toBe('success');
     expect(SearchHistory.create).toHaveBeenCalledWith(
-      expect.objectContaining({ keyword: 'áo thun nam' })
+      expect.objectContaining({ keyword: 'áo thun nam' }),
     );
   });
 
@@ -139,7 +139,7 @@ describe('POST /api/search-histories — saveSearch', () => {
       .send({ keyword: 'giày sneaker', sessionId: 'guest-session-123' });
     expect(res.status).toBe(201);
     expect(SearchHistory.create).toHaveBeenCalledWith(
-      expect.objectContaining({ keyword: 'giày sneaker' })
+      expect.objectContaining({ keyword: 'giày sneaker' }),
     );
   });
 });

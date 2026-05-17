@@ -14,8 +14,14 @@ jest.mock('../models', () => ({
 }));
 jest.mock('../utils/logger', () => ({ info: jest.fn(), error: jest.fn(), warn: jest.fn() }));
 jest.mock('../middlewares/authenticate', () => ({
-  authenticate: (req, res, next) => { req.user = { id: 1, role: 'admin' }; next(); },
-  adminAuthenticate: (req, res, next) => { req.user = { id: 1, role: 'admin' }; next(); },
+  authenticate: (req, res, next) => {
+    req.user = { id: 1, role: 'admin' };
+    next();
+  },
+  adminAuthenticate: (req, res, next) => {
+    req.user = { id: 1, role: 'admin' };
+    next();
+  },
   optionalAuthenticate: (req, res, next) => next(),
 }));
 jest.mock('../middlewares/rateLimiter', () => ({
@@ -32,7 +38,10 @@ jest.mock('../middlewares/authorize', () => ({
   authorize: () => (r, s, n) => n(),
 }));
 jest.mock('../middlewares/adminAuth', () => ({
-  adminAuthenticate: (r, s, n) => { r.user = { id: 1, role: 'admin' }; n(); },
+  adminAuthenticate: (r, s, n) => {
+    r.user = { id: 1, role: 'admin' };
+    n();
+  },
 }));
 jest.mock('../services/adminAudit', () => ({
   AdminAuditService: {
@@ -43,8 +52,8 @@ jest.mock('../services/adminAudit', () => ({
 
 const express = require('express');
 const supertest = require('supertest');
-const discountCodeRoutes = require('../routes/discountCode');
-const adminRoutes = require('../routes/admin');
+const discountCodeRoutes = require('../modules/discountCode/routes');
+const adminRoutes = require('../modules/admin/routes');
 const { DiscountCode } = require('../models');
 
 // App cho customer routes
@@ -84,11 +93,15 @@ function makeCode(overrides = {}) {
 }
 
 describe('POST /api/discount-codes/apply', () => {
-  beforeEach(() => { DiscountCode.findOne.mockReset(); });
+  beforeEach(() => {
+    DiscountCode.findOne.mockReset();
+  });
 
   test('400 khi code không tồn tại', async () => {
     DiscountCode.findOne.mockResolvedValue(null);
-    const res = await request.post('/api/discount-codes/apply').send({ code: 'INVALID', orderAmount: 500000 });
+    const res = await request
+      .post('/api/discount-codes/apply')
+      .send({ code: 'INVALID', orderAmount: 500000 });
     expect(res.status).toBe(400);
     expect(res.body.message).toMatch(/không hợp lệ/);
   });
@@ -96,7 +109,9 @@ describe('POST /api/discount-codes/apply', () => {
   test('400 khi code chưa đến ngày áp dụng', async () => {
     const future = new Date(Date.now() + 86400000).toISOString(); // tomorrow
     DiscountCode.findOne.mockResolvedValue(makeCode({ startDate: future }));
-    const res = await request.post('/api/discount-codes/apply').send({ code: 'SAVE10', orderAmount: 500000 });
+    const res = await request
+      .post('/api/discount-codes/apply')
+      .send({ code: 'SAVE10', orderAmount: 500000 });
     expect(res.status).toBe(400);
     expect(res.body.message).toMatch(/chưa đến/);
   });
@@ -104,69 +119,95 @@ describe('POST /api/discount-codes/apply', () => {
   test('400 khi code đã hết hạn', async () => {
     const past = new Date(Date.now() - 86400000).toISOString(); // yesterday
     DiscountCode.findOne.mockResolvedValue(makeCode({ endDate: past }));
-    const res = await request.post('/api/discount-codes/apply').send({ code: 'SAVE10', orderAmount: 500000 });
+    const res = await request
+      .post('/api/discount-codes/apply')
+      .send({ code: 'SAVE10', orderAmount: 500000 });
     expect(res.status).toBe(400);
     expect(res.body.message).toMatch(/hết hạn/);
   });
 
   test('400 khi code vượt giới hạn sử dụng', async () => {
     DiscountCode.findOne.mockResolvedValue(makeCode({ usageLimit: 10, usedCount: 10 }));
-    const res = await request.post('/api/discount-codes/apply').send({ code: 'SAVE10', orderAmount: 500000 });
+    const res = await request
+      .post('/api/discount-codes/apply')
+      .send({ code: 'SAVE10', orderAmount: 500000 });
     expect(res.status).toBe(400);
     expect(res.body.message).toMatch(/giới hạn/);
   });
 
   test('400 khi đơn hàng dưới giá tối thiểu', async () => {
     DiscountCode.findOne.mockResolvedValue(makeCode({ minOrderAmount: '500000' }));
-    const res = await request.post('/api/discount-codes/apply').send({ code: 'SAVE10', orderAmount: 200000 });
+    const res = await request
+      .post('/api/discount-codes/apply')
+      .send({ code: 'SAVE10', orderAmount: 200000 });
     expect(res.status).toBe(400);
     expect(res.body.message).toMatch(/tối thiểu/);
   });
 
   test('200 — discount type percent tính đúng', async () => {
     DiscountCode.findOne.mockResolvedValue(makeCode({ type: 'percent', value: '10.00' }));
-    const res = await request.post('/api/discount-codes/apply').send({ code: 'SAVE10', orderAmount: 1000000 });
+    const res = await request
+      .post('/api/discount-codes/apply')
+      .send({ code: 'SAVE10', orderAmount: 1000000 });
     expect(res.status).toBe(200);
     expect(res.body.data.discountAmount).toBe(100000); // 10% of 1,000,000
   });
 
   test('200 — discount type percent + maxDiscountAmount cap', async () => {
-    DiscountCode.findOne.mockResolvedValue(makeCode({ type: 'percent', value: '30.00', maxDiscountAmount: '50000' }));
-    const res = await request.post('/api/discount-codes/apply').send({ code: 'SAVE30', orderAmount: 1000000 });
+    DiscountCode.findOne.mockResolvedValue(
+      makeCode({ type: 'percent', value: '30.00', maxDiscountAmount: '50000' }),
+    );
+    const res = await request
+      .post('/api/discount-codes/apply')
+      .send({ code: 'SAVE30', orderAmount: 1000000 });
     expect(res.status).toBe(200);
     expect(res.body.data.discountAmount).toBe(50000); // capped at 50,000
   });
 
   test('200 — discount type fixed tính đúng', async () => {
     DiscountCode.findOne.mockResolvedValue(makeCode({ type: 'fixed', value: '50000' }));
-    const res = await request.post('/api/discount-codes/apply').send({ code: 'FLAT50', orderAmount: 500000 });
+    const res = await request
+      .post('/api/discount-codes/apply')
+      .send({ code: 'FLAT50', orderAmount: 500000 });
     expect(res.status).toBe(200);
     expect(res.body.data.discountAmount).toBe(50000);
   });
 
   test('200 — discount không vượt quá orderAmount', async () => {
     DiscountCode.findOne.mockResolvedValue(makeCode({ type: 'fixed', value: '999999' }));
-    const res = await request.post('/api/discount-codes/apply').send({ code: 'BIG', orderAmount: 100000 });
+    const res = await request
+      .post('/api/discount-codes/apply')
+      .send({ code: 'BIG', orderAmount: 100000 });
     expect(res.status).toBe(200);
     expect(res.body.data.discountAmount).toBe(100000); // capped at orderAmount
   });
 
   test('200 — response chứa đủ fields', async () => {
     DiscountCode.findOne.mockResolvedValue(makeCode({ id: 99, code: 'SAVE10' }));
-    const res = await request.post('/api/discount-codes/apply').send({ code: 'SAVE10', orderAmount: 500000 });
+    const res = await request
+      .post('/api/discount-codes/apply')
+      .send({ code: 'SAVE10', orderAmount: 500000 });
     expect(res.status).toBe(200);
-    expect(res.body.data).toMatchObject({ discountCodeId: 99, code: 'SAVE10', discountAmount: expect.any(Number) });
+    expect(res.body.data).toMatchObject({
+      discountCodeId: 99,
+      code: 'SAVE10',
+      discountAmount: expect.any(Number),
+    });
   });
 
   test('200 — code hợp lệ khi usageLimit chưa đạt', async () => {
     DiscountCode.findOne.mockResolvedValue(makeCode({ usageLimit: 100, usedCount: 5 }));
-    const res = await request.post('/api/discount-codes/apply').send({ code: 'SAVE10', orderAmount: 500000 });
+    const res = await request
+      .post('/api/discount-codes/apply')
+      .send({ code: 'SAVE10', orderAmount: 500000 });
     expect(res.status).toBe(200);
   });
 
   test('200 — code không có startDate/endDate luôn hợp lệ về ngày', async () => {
     DiscountCode.findOne.mockResolvedValue(makeCode({ startDate: null, endDate: null }));
-    const res = await request.post('/api/discount-codes/apply').send({ code: 'SAVE10', orderAmount: 500000 });
+    const res = await request
+      .post('/api/discount-codes/apply')
+      .send({ code: 'SAVE10', orderAmount: 500000 });
     expect(res.status).toBe(200);
   });
 });
@@ -176,7 +217,9 @@ describe('POST /api/discount-codes/apply', () => {
 // ============================================================
 
 describe('GET /api/admin/discount-codes', () => {
-  beforeEach(() => { DiscountCode.findAndCountAll.mockReset(); });
+  beforeEach(() => {
+    DiscountCode.findAndCountAll.mockReset();
+  });
 
   test('200 — trả về danh sách với pagination', async () => {
     DiscountCode.findAndCountAll.mockResolvedValue({
@@ -192,7 +235,10 @@ describe('GET /api/admin/discount-codes', () => {
   });
 
   test('200 — filter theo search', async () => {
-    DiscountCode.findAndCountAll.mockResolvedValue({ count: 1, rows: [makeCode({ code: 'SAVE50' })] });
+    DiscountCode.findAndCountAll.mockResolvedValue({
+      count: 1,
+      rows: [makeCode({ code: 'SAVE50' })],
+    });
 
     const res = await adminRequest.get('/api/admin/discount-codes?search=SAVE50');
     expect(res.status).toBe(200);
@@ -200,7 +246,7 @@ describe('GET /api/admin/discount-codes', () => {
     expect(DiscountCode.findAndCountAll).toHaveBeenCalledWith(
       expect.objectContaining({
         where: expect.objectContaining({ code: expect.objectContaining({}) }),
-      })
+      }),
     );
   });
 
@@ -212,7 +258,7 @@ describe('GET /api/admin/discount-codes', () => {
     expect(DiscountCode.findAndCountAll).toHaveBeenCalledWith(
       expect.objectContaining({
         where: expect.objectContaining({ isActive: true }),
-      })
+      }),
     );
   });
 
@@ -239,7 +285,9 @@ describe('GET /api/admin/discount-codes', () => {
 // ============================================================
 
 describe('GET /api/admin/discount-codes/:id', () => {
-  beforeEach(() => { DiscountCode.findByPk.mockReset(); });
+  beforeEach(() => {
+    DiscountCode.findByPk.mockReset();
+  });
 
   test('200 — trả về discount code khi tìm thấy', async () => {
     DiscountCode.findByPk.mockResolvedValue(makeCode({ id: 5, code: 'XMAS20' }));
@@ -274,7 +322,9 @@ describe('POST /api/admin/discount-codes', () => {
     DiscountCode.create.mockResolvedValue(created);
 
     const res = await adminRequest.post('/api/admin/discount-codes').send({
-      code: 'NEW10', type: 'percent', value: 10,
+      code: 'NEW10',
+      type: 'percent',
+      value: 10,
     });
 
     expect(res.status).toBe(201);
@@ -286,7 +336,9 @@ describe('POST /api/admin/discount-codes', () => {
     DiscountCode.findOne.mockResolvedValue(makeCode({ code: 'SAVE10' }));
 
     const res = await adminRequest.post('/api/admin/discount-codes').send({
-      code: 'SAVE10', type: 'percent', value: 10,
+      code: 'SAVE10',
+      type: 'percent',
+      value: 10,
     });
 
     expect(res.status).toBe(400);
@@ -297,21 +349,23 @@ describe('POST /api/admin/discount-codes', () => {
     DiscountCode.findOne.mockResolvedValue(null);
     DiscountCode.create.mockResolvedValue(makeCode({ code: 'DEF', isActive: true }));
 
-    await adminRequest.post('/api/admin/discount-codes').send({ code: 'DEF', type: 'fixed', value: 50000 });
+    await adminRequest
+      .post('/api/admin/discount-codes')
+      .send({ code: 'DEF', type: 'fixed', value: 50000 });
 
-    expect(DiscountCode.create).toHaveBeenCalledWith(
-      expect.objectContaining({ isActive: true })
-    );
+    expect(DiscountCode.create).toHaveBeenCalledWith(expect.objectContaining({ isActive: true }));
   });
 
   test('201 — minOrderAmount mặc định 0 khi không truyền', async () => {
     DiscountCode.findOne.mockResolvedValue(null);
     DiscountCode.create.mockResolvedValue(makeCode({ code: 'MIN0' }));
 
-    await adminRequest.post('/api/admin/discount-codes').send({ code: 'MIN0', type: 'fixed', value: 10000 });
+    await adminRequest
+      .post('/api/admin/discount-codes')
+      .send({ code: 'MIN0', type: 'fixed', value: 10000 });
 
     expect(DiscountCode.create).toHaveBeenCalledWith(
-      expect.objectContaining({ minOrderAmount: 0 })
+      expect.objectContaining({ minOrderAmount: 0 }),
     );
   });
 
@@ -327,9 +381,7 @@ describe('POST /api/admin/discount-codes', () => {
       isActive: false,
     });
 
-    expect(DiscountCode.create).toHaveBeenCalledWith(
-      expect.objectContaining({ isActive: false })
-    );
+    expect(DiscountCode.create).toHaveBeenCalledWith(expect.objectContaining({ isActive: false }));
   });
 
   test('201 — minOrderAmount được dùng khi được truyền (line 96 truthy branch)', async () => {
@@ -345,7 +397,7 @@ describe('POST /api/admin/discount-codes', () => {
     });
 
     expect(DiscountCode.create).toHaveBeenCalledWith(
-      expect.objectContaining({ minOrderAmount: 50000 })
+      expect.objectContaining({ minOrderAmount: 50000 }),
     );
   });
 });
@@ -399,7 +451,9 @@ describe('PUT /api/admin/discount-codes/:id', () => {
     };
     DiscountCode.findByPk.mockResolvedValue(existing);
 
-    const res = await adminRequest.put('/api/admin/discount-codes/5').send({ code: 'SAME', value: 15 });
+    const res = await adminRequest
+      .put('/api/admin/discount-codes/5')
+      .send({ code: 'SAME', value: 15 });
 
     expect(res.status).toBe(200);
     expect(DiscountCode.findOne).not.toHaveBeenCalled();
@@ -416,7 +470,10 @@ describe('PUT /api/admin/discount-codes/:id', () => {
     await adminRequest.put('/api/admin/discount-codes/6').send({ isActive: false });
 
     expect(AdminAuditService.logDiscountCodeAction).toHaveBeenCalledWith(
-      expect.any(Object), 'DEACTIVATE', '6', 'ACT'
+      expect.any(Object),
+      'DEACTIVATE',
+      '6',
+      'ACT',
     );
   });
 });
@@ -465,7 +522,7 @@ describe('PUT /api/admin/discount-codes/:id — branch coverage bổ sung', () =
 
     expect(res.status).toBe(200);
     expect(existing.update).toHaveBeenCalledWith(
-      expect.objectContaining({ value: '25.00' }) // dùng value cũ
+      expect.objectContaining({ value: '25.00' }), // dùng value cũ
     );
   });
 
@@ -482,7 +539,7 @@ describe('PUT /api/admin/discount-codes/:id — branch coverage bổ sung', () =
 
     expect(res.status).toBe(200);
     expect(existing.update).toHaveBeenCalledWith(
-      expect.objectContaining({ minOrderAmount: '200000' })
+      expect.objectContaining({ minOrderAmount: '200000' }),
     );
   });
 
@@ -499,7 +556,7 @@ describe('PUT /api/admin/discount-codes/:id — branch coverage bổ sung', () =
 
     expect(res.status).toBe(200);
     expect(existing.update).toHaveBeenCalledWith(
-      expect.objectContaining({ maxDiscountAmount: '100000' })
+      expect.objectContaining({ maxDiscountAmount: '100000' }),
     );
   });
 
@@ -515,9 +572,7 @@ describe('PUT /api/admin/discount-codes/:id — branch coverage bổ sung', () =
     });
 
     expect(res.status).toBe(200);
-    expect(existing.update).toHaveBeenCalledWith(
-      expect.objectContaining({ usageLimit: 50 })
-    );
+    expect(existing.update).toHaveBeenCalledWith(expect.objectContaining({ usageLimit: 50 }));
   });
 
   test('200 — minOrderAmount được cung cấp → dùng giá trị mới (line 151 true branch)', async () => {
@@ -534,7 +589,7 @@ describe('PUT /api/admin/discount-codes/:id — branch coverage bổ sung', () =
 
     expect(res.status).toBe(200);
     expect(existing.update).toHaveBeenCalledWith(
-      expect.objectContaining({ minOrderAmount: 200000 })
+      expect.objectContaining({ minOrderAmount: 200000 }),
     );
   });
 
@@ -552,7 +607,7 @@ describe('PUT /api/admin/discount-codes/:id — branch coverage bổ sung', () =
 
     expect(res.status).toBe(200);
     expect(existing.update).toHaveBeenCalledWith(
-      expect.objectContaining({ maxDiscountAmount: 50000 })
+      expect.objectContaining({ maxDiscountAmount: 50000 }),
     );
   });
 
@@ -569,9 +624,7 @@ describe('PUT /api/admin/discount-codes/:id — branch coverage bổ sung', () =
     });
 
     expect(res.status).toBe(200);
-    expect(existing.update).toHaveBeenCalledWith(
-      expect.objectContaining({ usageLimit: 100 })
-    );
+    expect(existing.update).toHaveBeenCalledWith(expect.objectContaining({ usageLimit: 100 }));
   });
 });
 
@@ -580,7 +633,9 @@ describe('PUT /api/admin/discount-codes/:id — branch coverage bổ sung', () =
 // ============================================================
 
 describe('DELETE /api/admin/discount-codes/:id', () => {
-  beforeEach(() => { DiscountCode.findByPk.mockReset(); });
+  beforeEach(() => {
+    DiscountCode.findByPk.mockReset();
+  });
 
   test('200 — xóa thành công', async () => {
     const existing = {
@@ -615,7 +670,10 @@ describe('DELETE /api/admin/discount-codes/:id', () => {
     await adminRequest.delete('/api/admin/discount-codes/8');
 
     expect(AdminAuditService.logDiscountCodeAction).toHaveBeenCalledWith(
-      expect.any(Object), 'DELETE', '8', 'AUDIT10'
+      expect.any(Object),
+      'DELETE',
+      '8',
+      'AUDIT10',
     );
   });
 });

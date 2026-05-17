@@ -109,7 +109,7 @@ jest.mock('../config/sequelize', () => ({
 }));
 
 // Mock adminImport controller — tránh phụ thuộc multer/csv
-jest.mock('../controllers/adminImport', () => ({
+jest.mock('../modules/admin/controllers/adminImportController', () => ({
   getImportTemplate: (_req, _res, next) => next(),
   uploadImportFile: (_req, _res, next) => next(),
   importProducts: (_req, _res, next) => next(),
@@ -118,7 +118,7 @@ jest.mock('../controllers/adminImport', () => ({
 }));
 
 // Mock discountCode controller
-jest.mock('../controllers/discountCode', () => ({
+jest.mock('../modules/discountCode/controllers/discountCodeController', () => ({
   getAllDiscountCodes: (_req, _res, next) => next(),
   getDiscountCodeById: (_req, _res, next) => next(),
   createDiscountCode: (_req, _res, next) => next(),
@@ -210,7 +210,7 @@ jest.mock('../models', () => ({
 const express = require('express');
 const supertest = require('supertest');
 const { errorHandler } = require('../middlewares/errorHandler');
-const adminRouter = require('../routes/admin');
+const adminRouter = require('../modules/admin/routes');
 
 // Import models sau khi mock — để dùng trong test assertions
 const { User, Order, OrderItem, Product } = require('../models');
@@ -252,18 +252,18 @@ describe('GET /api/admin/dashboard', () => {
     lowStockCount = 3,
   } = {}) {
     User.count
-      .mockResolvedValueOnce(totalUsers)   // totalUsers
+      .mockResolvedValueOnce(totalUsers) // totalUsers
       .mockResolvedValueOnce(monthlyUsers) // monthlyUsers
       .mockResolvedValueOnce(lastMonthUsers); // lastMonthUsers
     Product.count.mockResolvedValueOnce(totalProducts);
     Order.count
-      .mockResolvedValueOnce(totalOrders)       // totalOrders
-      .mockResolvedValueOnce(monthlyOrders)     // monthlyOrders
-      .mockResolvedValueOnce(lastMonthOrders)   // lastMonthOrders
+      .mockResolvedValueOnce(totalOrders) // totalOrders
+      .mockResolvedValueOnce(monthlyOrders) // monthlyOrders
+      .mockResolvedValueOnce(lastMonthOrders) // lastMonthOrders
       .mockResolvedValueOnce(cancelledOrdersMonth); // cancelledOrdersMonth
     Order.sum
-      .mockResolvedValueOnce(totalRevenue)    // totalRevenue
-      .mockResolvedValueOnce(monthlyRevenue)  // monthlyRevenue
+      .mockResolvedValueOnce(totalRevenue) // totalRevenue
+      .mockResolvedValueOnce(monthlyRevenue) // monthlyRevenue
       .mockResolvedValueOnce(lastMonthRevenue); // lastMonthRevenue
     Order.findAll.mockResolvedValueOnce(orderStatusCounts);
     OrderItem.findAll.mockResolvedValueOnce(topProductsRows);
@@ -324,8 +324,15 @@ describe('GET /api/admin/dashboard', () => {
     // Trả về đủ count/sum nhưng OrderItem.findAll ném lỗi
     User.count.mockResolvedValueOnce(10).mockResolvedValueOnce(2).mockResolvedValueOnce(1);
     Product.count.mockResolvedValueOnce(5);
-    Order.count.mockResolvedValueOnce(8).mockResolvedValueOnce(2).mockResolvedValueOnce(1).mockResolvedValueOnce(0);
-    Order.sum.mockResolvedValueOnce(100000).mockResolvedValueOnce(20000).mockResolvedValueOnce(15000);
+    Order.count
+      .mockResolvedValueOnce(8)
+      .mockResolvedValueOnce(2)
+      .mockResolvedValueOnce(1)
+      .mockResolvedValueOnce(0);
+    Order.sum
+      .mockResolvedValueOnce(100000)
+      .mockResolvedValueOnce(20000)
+      .mockResolvedValueOnce(15000);
     OrderItem.findAll.mockRejectedValueOnce(new Error('DB connection failed'));
     Order.findAll.mockResolvedValueOnce([]);
     Product.count.mockResolvedValueOnce(0);
@@ -354,8 +361,15 @@ describe('GET /api/admin/dashboard', () => {
 
     User.count.mockResolvedValueOnce(5).mockResolvedValueOnce(1).mockResolvedValueOnce(1);
     Product.count.mockResolvedValueOnce(10);
-    Order.count.mockResolvedValueOnce(20).mockResolvedValueOnce(5).mockResolvedValueOnce(4).mockResolvedValueOnce(0);
-    Order.sum.mockResolvedValueOnce(200000).mockResolvedValueOnce(50000).mockResolvedValueOnce(40000);
+    Order.count
+      .mockResolvedValueOnce(20)
+      .mockResolvedValueOnce(5)
+      .mockResolvedValueOnce(4)
+      .mockResolvedValueOnce(0);
+    Order.sum
+      .mockResolvedValueOnce(200000)
+      .mockResolvedValueOnce(50000)
+      .mockResolvedValueOnce(40000);
     OrderItem.findAll.mockResolvedValueOnce([topProductRow]);
     Order.findAll.mockResolvedValueOnce([]);
     Product.count.mockResolvedValueOnce(1);
@@ -444,7 +458,7 @@ describe('GET /api/admin/stats', () => {
     User.findAll.mockResolvedValueOnce([]);
 
     const res = await request.get(
-      '/api/admin/stats?startDate=2024-01-01&endDate=2024-12-31&groupBy=month'
+      '/api/admin/stats?startDate=2024-01-01&endDate=2024-12-31&groupBy=month',
     );
 
     expect(res.status).toBe(200);
@@ -491,7 +505,7 @@ describe('GET /api/admin/analytics/user-growth', () => {
     ]);
 
     const res = await request.get(
-      '/api/admin/analytics/user-growth?startDate=2024-05-01&endDate=2024-05-31'
+      '/api/admin/analytics/user-growth?startDate=2024-05-01&endDate=2024-05-31',
     );
 
     expect(res.status).toBe(200);
@@ -505,7 +519,7 @@ describe('GET /api/admin/analytics/user-growth', () => {
     User.findAll.mockResolvedValueOnce([{ date: '2024-06-10', newUsers: '99' }]);
 
     const res = await request.get(
-      '/api/admin/analytics/user-growth?startDate=2024-06-01&endDate=2024-06-30'
+      '/api/admin/analytics/user-growth?startDate=2024-06-01&endDate=2024-06-30',
     );
 
     expect(res.status).toBe(200);
@@ -517,7 +531,7 @@ describe('GET /api/admin/analytics/user-growth', () => {
     User.findAll.mockResolvedValueOnce([]);
 
     const res = await request.get(
-      '/api/admin/analytics/user-growth?startDate=2020-01-01&endDate=2020-01-31'
+      '/api/admin/analytics/user-growth?startDate=2020-01-01&endDate=2020-01-31',
     );
 
     expect(res.status).toBe(200);
@@ -558,7 +572,12 @@ describe('GET /api/admin/analytics/top-products', () => {
 
   test('thumbnail là null khi sản phẩm không có ảnh', async () => {
     OrderItem.findAll.mockResolvedValueOnce([
-      makeTopProductRow({ productId: 2, revenue: '100000', soldCount: '5', name: 'No-image Product' }),
+      makeTopProductRow({
+        productId: 2,
+        revenue: '100000',
+        soldCount: '5',
+        name: 'No-image Product',
+      }),
     ]);
 
     const res = await request.get('/api/admin/analytics/top-products');
@@ -622,7 +641,13 @@ describe('GET /api/admin/analytics/top-products', () => {
 // ─────────────────────────────────────────────────────────────────────────────
 
 describe('GET /api/admin/analytics/low-stock', () => {
-  function makeLowStockProduct({ id, name, stockQuantity, slug = 'product-slug', imageUrl = null }) {
+  function makeLowStockProduct({
+    id,
+    name,
+    stockQuantity,
+    slug = 'product-slug',
+    imageUrl = null,
+  }) {
     return {
       toJSON: () => ({
         id,
@@ -785,9 +810,7 @@ describe('GET /api/admin/analytics/payment-methods', () => {
   });
 
   test('paymentMethod null được map thành "unknown"', async () => {
-    Order.findAll.mockResolvedValueOnce([
-      { paymentMethod: null, count: '3', revenue: '150000' },
-    ]);
+    Order.findAll.mockResolvedValueOnce([{ paymentMethod: null, count: '3', revenue: '150000' }]);
 
     const res = await request.get('/api/admin/analytics/payment-methods');
 

@@ -53,7 +53,13 @@ jest.mock('multer', () => {
   const buildSingleMiddleware = () => (req, _res, cb) => {
     const behavior = global.__finalMockSingle || 'success';
     if (behavior === 'success') {
-      req.file = { originalname: 'photo.jpg', mimetype: 'image/jpeg', path: '/tmp/t.jpg', filename: 't.jpg', size: 1024 };
+      req.file = {
+        originalname: 'photo.jpg',
+        mimetype: 'image/jpeg',
+        path: '/tmp/t.jpg',
+        filename: 't.jpg',
+        size: 1024,
+      };
       cb(null);
     } else if (behavior === 'noFile') {
       cb(null);
@@ -68,7 +74,13 @@ jest.mock('multer', () => {
     const behavior = global.__finalMockArray || 'success';
     if (behavior === 'success') {
       req.files = [
-        { originalname: 'a.jpg', mimetype: 'image/jpeg', path: '/tmp/a.jpg', filename: 'a.jpg', size: 512 },
+        {
+          originalname: 'a.jpg',
+          mimetype: 'image/jpeg',
+          path: '/tmp/a.jpg',
+          filename: 'a.jpg',
+          size: 512,
+        },
       ];
       cb(null);
     } else if (behavior === 'noFiles') {
@@ -95,7 +107,7 @@ jest.mock('multer', () => {
 let imageController;
 
 beforeAll(() => {
-  imageController = require('../controllers/image');
+  imageController = require('../modules/image/controllers/imageController');
 });
 
 beforeEach(() => {
@@ -126,7 +138,7 @@ describe('ImageController.uploadSingle — inner service error (line 90)', () =>
     await imageController.uploadSingle(req, res, next);
 
     expect(next).toHaveBeenCalledWith(
-      expect.objectContaining({ message: 'Image processing failed' })
+      expect.objectContaining({ message: 'Image processing failed' }),
     );
   });
 });
@@ -143,9 +155,7 @@ describe('ImageController.uploadMultiple — generic MulterError (line 114)', ()
 
     await imageController.uploadMultiple(req, res, next);
 
-    expect(next).toHaveBeenCalledWith(
-      expect.objectContaining({ statusCode: 400 })
-    );
+    expect(next).toHaveBeenCalledWith(expect.objectContaining({ statusCode: 400 }));
     expect(mockUploadMultipleImages).not.toHaveBeenCalled();
   });
 });
@@ -164,7 +174,7 @@ describe('ImageController.uploadMultiple — imageService.uploadMultipleImages t
     await imageController.uploadMultiple(req, res, next);
 
     expect(next).toHaveBeenCalledWith(
-      expect.objectContaining({ message: 'S3 batch upload failed' })
+      expect.objectContaining({ message: 'S3 batch upload failed' }),
     );
   });
 });
@@ -185,9 +195,7 @@ describe('ImageController.uploadMultiple — non-multer error từ callback (lin
 
     await imageController.uploadMultiple(req, res, next);
 
-    expect(next).toHaveBeenCalledWith(
-      expect.objectContaining({ message: 'NFS mount lost' })
-    );
+    expect(next).toHaveBeenCalledWith(expect.objectContaining({ message: 'NFS mount lost' }));
   });
 });
 
@@ -209,7 +217,7 @@ describe('ImageController.uploadMultiple — req.user undefined → userId null 
 
     expect(mockUploadMultipleImages).toHaveBeenCalledWith(
       expect.anything(),
-      expect.objectContaining({ userId: null })
+      expect.objectContaining({ userId: null }),
     );
   });
 });
@@ -232,7 +240,7 @@ describe('ImageController.convertBase64 — req.user undefined → userId null (
 
     expect(mockConvertBase64ToFile).toHaveBeenCalledWith(
       'data:image/png;base64,abc123',
-      expect.objectContaining({ userId: null })
+      expect.objectContaining({ userId: null }),
     );
   });
 });
@@ -246,14 +254,16 @@ describe('ImageController.healthCheck — error path (line 264)', () => {
     const req = {};
     const res = {
       status: jest.fn().mockReturnThis(),
-      json: jest.fn().mockImplementation(() => { throw new Error('response stream closed'); }),
+      json: jest.fn().mockImplementation(() => {
+        throw new Error('response stream closed');
+      }),
     };
     const next = jest.fn();
 
     await imageController.healthCheck(req, res, next);
 
     expect(next).toHaveBeenCalledWith(
-      expect.objectContaining({ message: 'response stream closed' })
+      expect.objectContaining({ message: 'response stream closed' }),
     );
   });
 });

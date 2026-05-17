@@ -5,6 +5,6 @@
  */
 module.exports = () => ({
   basePath: '/discount-codes',
-  router: require('../../routes/discountCode'),
+  router: require('./routes'),
   subscribeEvents() {},
 });

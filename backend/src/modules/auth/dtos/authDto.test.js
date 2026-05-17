@@ -46,7 +46,7 @@ describe('toAuthUserDto', () => {
       password: 'bcrypt-hash',
       otpCode: '123456',
       toJSON() {
-        const { password, otpCode, ...safe } = this; // eslint-disable-line no-unused-vars
+        const { password: _pw, otpCode: _otp, ...safe } = this;
         return safe;
       },
     };

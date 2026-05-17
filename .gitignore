@@ -70,3 +70,8 @@ QUICK_SUMMARY.txt
 README_ANALYSIS.txt
 export_docx.py
 HANDOFF.md
+
+dump.rdb
+*_token.txt
+backend/server_err.txt
+backend/server_out*.log

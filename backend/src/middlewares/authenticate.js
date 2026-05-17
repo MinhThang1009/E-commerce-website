@@ -27,8 +27,8 @@ const authenticate = async (req, res, next) => {
         }
       }
       // Reject token cấp trước khi user đổi password
-      const pwChanged = await redis.get(`pw_changed:${decoded.id}`);
-      if (pwChanged && decoded.iat && decoded.iat < parseInt(pwChanged, 10)) {
+      const passwordChangedAt = await redis.get(`pw_changed:${decoded.id}`);
+      if (passwordChangedAt && decoded.iat && decoded.iat < parseInt(passwordChangedAt, 10)) {
         return next(new AppError('Mật khẩu đã thay đổi. Vui lòng đăng nhập lại', 401));
       }
     }
@@ -42,31 +42,21 @@ const authenticate = async (req, res, next) => {
     // Kiểm tra tài khoản có đang hoạt động không
     if (!user.isActive) {
       return next(
-        new AppError(
-          'Tài khoản của bạn đã bị khóa. Vui lòng liên hệ quản trị viên',
-          401
-        )
+        new AppError('Tài khoản của bạn đã bị khóa. Vui lòng liên hệ quản trị viên', 401),
       );
     }
 
     // Kiểm tra email đã được xác thực chưa
     if (!user.isEmailVerified) {
-      return next(
-        new AppError('Vui lòng xác thực email trước khi tiếp tục', 401)
-      );
+      return next(new AppError('Vui lòng xác thực email trước khi tiếp tục', 401));
     }
 
     // Gán thông tin người dùng vào request
     req.user = user;
     next();
   } catch (error) {
-    if (
-      error.name === 'JsonWebTokenError' ||
-      error.name === 'TokenExpiredError'
-    ) {
-      return next(
-        new AppError('Phiên đăng nhập đã hết hạn. Vui lòng đăng nhập lại', 401)
-      );
+    if (error.name === 'JsonWebTokenError' || error.name === 'TokenExpiredError') {
+      return next(new AppError('Phiên đăng nhập đã hết hạn. Vui lòng đăng nhập lại', 401));
     }
     next(error);
   }
@@ -93,8 +83,8 @@ const optionalAuthenticate = async (req, res, next) => {
         const isBlacklisted = await redis.get(`bl:${decoded.jti}`);
         if (isBlacklisted) return next();
       }
-      const pwChanged = await redis.get(`pw_changed:${decoded.id}`);
-      if (pwChanged && decoded.iat && decoded.iat < parseInt(pwChanged, 10)) {
+      const passwordChangedAt = await redis.get(`pw_changed:${decoded.id}`);
+      if (passwordChangedAt && decoded.iat && decoded.iat < parseInt(passwordChangedAt, 10)) {
         return next();
       }
     }
@@ -108,28 +98,20 @@ const optionalAuthenticate = async (req, res, next) => {
     // Kiểm tra tài khoản có hoạt động không — nếu không, trả về lỗi thay vì tiếp tục với tư cách khách
     if (!user.isActive) {
       return next(
-        new AppError(
-          'Tài khoản của bạn đã bị khóa. Vui lòng liên hệ quản trị viên',
-          401
-        )
+        new AppError('Tài khoản của bạn đã bị khóa. Vui lòng liên hệ quản trị viên', 401),
       );
     }
 
     // Kiểm tra email đã được xác thực chưa
     if (!user.isEmailVerified) {
-      return next(
-        new AppError('Vui lòng xác thực email trước khi tiếp tục', 401)
-      );
+      return next(new AppError('Vui lòng xác thực email trước khi tiếp tục', 401));
     }
 
     // Gán thông tin người dùng vào request
     req.user = user;
     next();
   } catch (error) {
-    if (
-      error.name === 'JsonWebTokenError' ||
-      error.name === 'TokenExpiredError'
-    ) {
+    if (error.name === 'JsonWebTokenError' || error.name === 'TokenExpiredError') {
       // Token không hợp lệ hoặc đã hết hạn, tiếp tục với tư cách khách
       return next();
     }

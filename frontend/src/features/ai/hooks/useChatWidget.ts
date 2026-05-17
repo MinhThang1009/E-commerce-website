@@ -12,8 +12,8 @@ export const useChatWidget = () => {
 
   // Messages từ Zustand — single source of truth, persist qua navigation
   const messages = useChatStore((s) => s.messages) as Message[];
-  const addMessageAction = useChatStore((s) => s.addMessage);
-  const setMessagesAction = useChatStore((s) => s.setMessages);
+  const storeAddMessage = useChatStore((s) => s.addMessage);
+  const storeSetMessages = useChatStore((s) => s.setMessages);
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const chatWidgetRef = useRef<HTMLDivElement>(null);
@@ -21,9 +21,7 @@ export const useChatWidget = () => {
 
   useEffect(() => {
     try {
-      const savedSize = localStorage.getItem(
-        CHAT_WIDGET_CONFIG.STORAGE_KEYS.SIZE
-      );
+      const savedSize = localStorage.getItem(CHAT_WIDGET_CONFIG.STORAGE_KEYS.SIZE);
       if (savedSize) {
         setSize(JSON.parse(savedSize));
       }
@@ -38,9 +36,9 @@ export const useChatWidget = () => {
         ...getGreetingMessage(),
         id: Date.now().toString(),
       };
-      setMessagesAction([greeting]);
+      storeSetMessages([greeting]);
     }
-  }, [messages.length, setMessagesAction]);
+  }, [messages.length, storeSetMessages]);
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -72,7 +70,7 @@ export const useChatWidget = () => {
       setIsOpen(true);
       isOpenRef.current = true;
     },
-    [isOpen]
+    [isOpen],
   );
 
   const closeChat = useCallback((event?: React.MouseEvent) => {
@@ -84,32 +82,38 @@ export const useChatWidget = () => {
     document.body.classList.remove('chat-widget-open');
   }, []);
 
-  const addMessage = useCallback((message: Message) => {
-    addMessageAction(message);
-  }, [addMessageAction]);
+  const addMessage = useCallback(
+    (message: Message) => {
+      storeAddMessage(message);
+    },
+    [storeAddMessage],
+  );
 
-  const removeMessage = useCallback((messageId: string) => {
-    setMessagesAction(messages.filter((msg) => msg.id !== messageId));
-  }, [setMessagesAction, messages]);
+  const removeMessage = useCallback(
+    (messageId: string) => {
+      storeSetMessages(messages.filter((msg) => msg.id !== messageId));
+    },
+    [storeSetMessages, messages],
+  );
 
   const updateMessage = useCallback(
     (messageId: string, updates: Partial<Message>) => {
-      setMessagesAction(
-        messages.map((msg) => (msg.id === messageId ? { ...msg, ...updates } : msg))
+      storeSetMessages(
+        messages.map((msg) => (msg.id === messageId ? { ...msg, ...updates } : msg)),
       );
     },
-    [setMessagesAction, messages]
+    [storeSetMessages, messages],
   );
 
-  const setMessages = useCallback((newMessages: Message[]) => {
-    setMessagesAction(newMessages);
-  }, [setMessagesAction]);
+  const setMessages = useCallback(
+    (newMessages: Message[]) => {
+      storeSetMessages(newMessages);
+    },
+    [storeSetMessages],
+  );
 
   const applyChanges = useCallback(() => {
-    localStorage.setItem(
-      CHAT_WIDGET_CONFIG.STORAGE_KEYS.SIZE,
-      JSON.stringify(size)
-    );
+    localStorage.setItem(CHAT_WIDGET_CONFIG.STORAGE_KEYS.SIZE, JSON.stringify(size));
 
     const confirmMessage: Message = {
       id: Date.now().toString(),

@@ -1,10 +1,5 @@
 // Phase 42.1 — Unit tests cho shared/errors hierarchy
-const {
-  AppError,
-  DomainError,
-  ValidationError,
-  NotFoundError,
-} = require('.');
+const { AppError, DomainError, ValidationError, NotFoundError } = require('.');
 
 describe('shared/errors', () => {
   test('AppError set statusCode + isOperational', () => {
@@ -20,12 +15,12 @@ describe('shared/errors', () => {
     expect(e.status).toBe('fail');
   });
 
-  test('DomainError extends AppError, statusCode 422, có domainCode', () => {
+  test('BusinessError extends AppError, statusCode 422, có domainCode', () => {
     const e = new DomainError('cannot cancel', 'ORDER_INVALID');
     expect(e).toBeInstanceOf(AppError);
     expect(e.statusCode).toBe(422);
     expect(e.domainCode).toBe('ORDER_INVALID');
-    expect(e.name).toBe('DomainError');
+    expect(e.name).toBe('BusinessError');
   });
 
   test('ValidationError statusCode 400, có details', () => {

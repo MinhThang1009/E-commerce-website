@@ -1,8 +1,8 @@
 const express = require('express');
 const rateLimit = require('express-rate-limit');
-const { authenticate } = require('../../shared/http/middlewares/authenticate');
-const { authorize } = require('../../shared/http/middlewares/authorize');
-const { validateRequest } = require('../../shared/http/middlewares/validateRequest');
+const { authenticate } = require('../../middlewares/authenticate');
+const { authorize } = require('../../middlewares/authorize');
+const { validateRequest } = require('../../middlewares/validateRequest');
 const { createUrlSchema, refundSchema } = require('./validators/paymentValidator');
 
 const webhookLimiter = rateLimit({
@@ -24,11 +24,27 @@ module.exports = ({ paymentController }) => {
   router.get('/vnpay/ipn', webhookLimiter, paymentController.vnpayIPN);
 
   // Authenticated routes
-  router.post('/momo/create-url', authenticate, validateRequest(createUrlSchema), paymentController.createMomoUrl);
-  router.post('/vnpay/create-url', authenticate, validateRequest(createUrlSchema), paymentController.createVNPayUrl);
+  router.post(
+    '/momo/create-url',
+    authenticate,
+    validateRequest(createUrlSchema),
+    paymentController.createMomoUrl,
+  );
+  router.post(
+    '/vnpay/create-url',
+    authenticate,
+    validateRequest(createUrlSchema),
+    paymentController.createVNPayUrl,
+  );
 
   // Admin
-  router.post('/refund', authenticate, authorize('admin'), validateRequest(refundSchema), paymentController.createRefund);
+  router.post(
+    '/refund',
+    authenticate,
+    authorize('admin'),
+    validateRequest(refundSchema),
+    paymentController.createRefund,
+  );
 
   return router;
 };

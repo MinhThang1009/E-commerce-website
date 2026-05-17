@@ -1,8 +1,8 @@
 const express = require('express');
 
-const { authenticate } = require('../../shared/http/middlewares/authenticate');
-const { otpLimiter } = require('../../shared/http/middlewares/rateLimiter');
-const { validateRequest } = require('../../shared/http/middlewares/validateRequest');
+const { authenticate } = require('../../middlewares/authenticate');
+const { otpLimiter } = require('../../middlewares/rateLimiter');
+const { validateRequest } = require('../../middlewares/validateRequest');
 const {
   registerSchema,
   loginSchema,
@@ -72,7 +72,7 @@ module.exports = ({ authController }) => {
     '/resend-verification',
     otpLimiter,
     validateRequest(emailSchema),
-    authController.resendVerification
+    authController.resendVerification,
   );
 
   /**
@@ -95,7 +95,7 @@ module.exports = ({ authController }) => {
     '/forgot-password',
     otpLimiter,
     validateRequest(forgotPasswordSchema),
-    authController.forgotPassword
+    authController.forgotPassword,
   );
 
   /**
@@ -108,7 +108,7 @@ module.exports = ({ authController }) => {
   router.post(
     '/reset-password',
     validateRequest(resetPasswordSchema),
-    authController.resetPassword
+    authController.resetPassword,
   );
 
   /**

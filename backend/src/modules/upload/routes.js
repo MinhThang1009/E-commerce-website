@@ -1,5 +1,5 @@
 const express = require('express');
-const { authenticate } = require('../../shared/http/middlewares/authenticate');
+const { authenticate } = require('../../middlewares/authenticate');
 
 module.exports = ({ uploadController }) => {
   const router = express.Router();

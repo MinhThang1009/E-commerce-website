@@ -1,7 +1,7 @@
 const express = require('express');
 
-const { optionalAuthenticate } = require('../../shared/http/middlewares/authenticate');
-const { validateRequest } = require('../../shared/http/middlewares/validateRequest');
+const { optionalAuthenticate } = require('../../middlewares/authenticate');
+const { validateRequest } = require('../../middlewares/validateRequest');
 const {
   addToCartSchema,
   updateCartItemSchema,

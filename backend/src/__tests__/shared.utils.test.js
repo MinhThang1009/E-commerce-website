@@ -4,8 +4,8 @@
  * Tests for shared utility re-export shims at 0% coverage:
  *   - src/shared/utils/catchAsync.js       → re-exports utils/catchAsync
  *   - src/shared/mailer.js                 → re-exports services/email
- *   - src/shared/http/middlewares/errorHandler.js → re-exports middlewares/errorHandler
- *   - src/shared/http/middlewares/adminAuth.js    → re-exports middlewares/adminAuth
+ *   - src/middlewares/errorHandler.js → re-exports middlewares/errorHandler
+ *   - src/middlewares/adminAuth.js    → re-exports middlewares/adminAuth
  *   - src/shared/cache/redisClient.js      → re-exports config/redis
  *
  * Strategy: require the shim and verify it exports the same functions as the
@@ -110,45 +110,45 @@ describe('shared/mailer — re-export shim', () => {
 });
 
 // ════════════════════════════════════════════════════════════════════════════
-// shared/http/middlewares/errorHandler.js — re-export of middlewares/errorHandler
+// middlewares/errorHandler.js — re-export of middlewares/errorHandler
 // ════════════════════════════════════════════════════════════════════════════
 
-describe('shared/http/middlewares/errorHandler — re-export shim', () => {
+describe('middlewares/errorHandler — re-export shim', () => {
   it('xuất ra cùng object với middlewares/errorHandler gốc', () => {
     const canonical = require('../middlewares/errorHandler');
-    const shim = require('../shared/http/middlewares/errorHandler');
+    const shim = require('../middlewares/errorHandler');
     expect(shim).toBe(canonical);
   });
 
   it('shim xuất ra hàm errorHandler', () => {
-    const shim = require('../shared/http/middlewares/errorHandler');
+    const shim = require('../middlewares/errorHandler');
     expect(typeof shim.errorHandler).toBe('function');
   });
 
   it('shim xuất ra class AppError', () => {
-    const shim = require('../shared/http/middlewares/errorHandler');
+    const shim = require('../middlewares/errorHandler');
     expect(typeof shim.AppError).toBe('function');
   });
 });
 
 // ════════════════════════════════════════════════════════════════════════════
-// shared/http/middlewares/adminAuth.js — re-export of middlewares/adminAuth
+// middlewares/adminAuth.js — re-export of middlewares/adminAuth
 // ════════════════════════════════════════════════════════════════════════════
 
-describe('shared/http/middlewares/adminAuth — re-export shim', () => {
+describe('middlewares/adminAuth — re-export shim', () => {
   it('xuất ra cùng object với middlewares/adminAuth gốc', () => {
     const canonical = require('../middlewares/adminAuth');
-    const shim = require('../shared/http/middlewares/adminAuth');
+    const shim = require('../middlewares/adminAuth');
     expect(shim).toBe(canonical);
   });
 
   it('shim xuất ra hàm adminAuthenticate', () => {
-    const shim = require('../shared/http/middlewares/adminAuth');
+    const shim = require('../middlewares/adminAuth');
     expect(typeof shim.adminAuthenticate).toBe('function');
   });
 
   it('shim xuất ra hàm requireSuperAdmin', () => {
-    const shim = require('../shared/http/middlewares/adminAuth');
+    const shim = require('../middlewares/adminAuth');
     expect(typeof shim.requireSuperAdmin).toBe('function');
   });
 });

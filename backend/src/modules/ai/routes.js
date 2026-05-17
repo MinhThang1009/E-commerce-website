@@ -1,9 +1,6 @@
 const express = require('express');
-const {
-  optionalAuthenticate,
-  authenticate,
-} = require('../../shared/http/middlewares/authenticate');
-const { chatbotLimiter } = require('../../shared/http/middlewares/rateLimiter');
+const { optionalAuthenticate, authenticate } = require('../../middlewares/authenticate');
+const { chatbotLimiter } = require('../../middlewares/rateLimiter');
 
 // AI module routes — basePath '/chatbot'. Đã migrate đầy đủ từ routes/chatbot.js.
 module.exports = ({ aiController }) => {

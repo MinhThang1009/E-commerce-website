@@ -1,12 +1,15 @@
 const express = require('express');
-const { authenticate } = require('../../shared/http/middlewares/authenticate');
-const { authorize } = require('../../shared/http/middlewares/authorize');
-const { validateRequest } = require('../../shared/http/middlewares/validateRequest');
-const { httpCacheHeaders } = require('../../shared/http/middlewares/cache');
+const { authenticate } = require('../../middlewares/authenticate');
+const { authorize } = require('../../middlewares/authorize');
+const { validateRequest } = require('../../middlewares/validateRequest');
+const { httpCacheHeaders } = require('../../middlewares/cache');
 const {
-  createBannerSchema, updateBannerSchema,
-  createNewsSchema, updateNewsSchema,
-  newsletterSchema, feedbackSchema,
+  createBannerSchema,
+  updateBannerSchema,
+  createNewsSchema,
+  updateNewsSchema,
+  newsletterSchema,
+  feedbackSchema,
 } = require('./validators/contentValidator');
 
 // Content module: 5 sub-domain với URL prefix khác nhau (/banners, /news,
@@ -32,21 +35,16 @@ module.exports = ({ contentController }) => {
     authenticate,
     authorize('admin'),
     validateRequest(createNewsSchema, 422),
-    contentController.createNews
+    contentController.createNews,
   );
   news.put(
     '/:id',
     authenticate,
     authorize('admin'),
     validateRequest(updateNewsSchema, 422),
-    contentController.updateNews
+    contentController.updateNews,
   );
-  news.delete(
-    '/:id',
-    authenticate,
-    authorize('admin'),
-    contentController.deleteNews
-  );
+  news.delete('/:id', authenticate, authorize('admin'), contentController.deleteNews);
 
   const campaigns = express.Router();
   campaigns.use(authenticate);
@@ -57,10 +55,18 @@ module.exports = ({ contentController }) => {
   campaigns.delete('/:id', contentController.deleteCampaign);
 
   const newsletter = express.Router();
-  newsletter.post('/subscribe', validateRequest(newsletterSchema, 422), contentController.subscribeNewsletter);
+  newsletter.post(
+    '/subscribe',
+    validateRequest(newsletterSchema, 422),
+    contentController.subscribeNewsletter,
+  );
 
   const contact = express.Router();
-  contact.post('/newsletter', validateRequest(newsletterSchema, 422), contentController.subscribeNewsletter);
+  contact.post(
+    '/newsletter',
+    validateRequest(newsletterSchema, 422),
+    contentController.subscribeNewsletter,
+  );
   contact.post('/feedback', validateRequest(feedbackSchema, 422), contentController.sendFeedback);
 
   return { banner, news, campaigns, newsletter, contact };

@@ -1,8 +1,8 @@
 const express = require('express');
-const { authenticate } = require('../../shared/http/middlewares/authenticate');
-const { authorize } = require('../../shared/http/middlewares/authorize');
-const { validateRequest } = require('../../shared/http/middlewares/validateRequest');
-const { httpCacheHeaders } = require('../../shared/http/middlewares/cache');
+const { authenticate } = require('../../middlewares/authenticate');
+const { authorize } = require('../../middlewares/authorize');
+const { validateRequest } = require('../../middlewares/validateRequest');
+const { httpCacheHeaders } = require('../../middlewares/cache');
 const { createOrderSchema, updateOrderStatusSchema } = require('./validators/ordersValidator');
 
 // Orders module routes — basePath '/orders'. URL không đổi so với routes/order.js cũ.
@@ -33,7 +33,7 @@ module.exports = ({ ordersController }) => {
     '/admin/:id/status',
     authorize('admin'),
     validateRequest(updateOrderStatusSchema),
-    ordersController.updateOrderStatus
+    ordersController.updateOrderStatus,
   );
 
   return router;

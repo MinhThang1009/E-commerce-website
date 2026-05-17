@@ -58,7 +58,7 @@ const authMiddlewareMock = {
 };
 // Mock cả legacy path và shared path (ai module dùng shared path)
 jest.mock('../middlewares/authenticate', () => authMiddlewareMock);
-jest.mock('../shared/http/middlewares/authenticate', () => authMiddlewareMock);
+jest.mock('../middlewares/authenticate', () => authMiddlewareMock);
 
 const rateLimiterMock = {
   chatbotLimiter: (_req, _res, next) => next(),
@@ -67,7 +67,7 @@ const rateLimiterMock = {
   otpLimiter: (_req, _res, next) => next(),
 };
 jest.mock('../middlewares/rateLimiter', () => rateLimiterMock);
-jest.mock('../shared/http/middlewares/rateLimiter', () => rateLimiterMock);
+jest.mock('../middlewares/rateLimiter', () => rateLimiterMock);
 
 // ---------- Require sau khi mocks đã đăng ký ----------
 
@@ -79,7 +79,15 @@ const chatbotService = require('../services/ai/chatbotService');
 const { Product, ProductVariant, Category, Cart, CartItem } = require('../models');
 const sequelize = require('../config/sequelize');
 
-const aiModule = buildAIModule({ Product, ProductVariant, Category, chatbotService, sequelize, eventBus: { publish: () => {} }, logger: { info: () => {}, warn: () => {}, error: () => {}, debug: () => {} } });
+const aiModule = buildAIModule({
+  Product,
+  ProductVariant,
+  Category,
+  chatbotService,
+  sequelize,
+  eventBus: { publish: () => {} },
+  logger: { info: () => {}, warn: () => {}, error: () => {}, debug: () => {} },
+});
 
 // App Express tối giản chỉ có chatbot routes
 const app = express();
@@ -97,26 +105,20 @@ const request = supertest(app);
 
 describe('POST /api/chatbot/message', () => {
   test('400 khi message rỗng', async () => {
-    const res = await request
-      .post('/api/chatbot/message')
-      .send({ message: '   ' });
+    const res = await request.post('/api/chatbot/message').send({ message: '   ' });
     expect(res.status).toBe(400);
     expect(res.body.status).toBe('error');
   });
 
   test('400 khi message vượt 2000 ký tự', async () => {
-    const res = await request
-      .post('/api/chatbot/message')
-      .send({ message: 'a'.repeat(2001) });
+    const res = await request.post('/api/chatbot/message').send({ message: 'a'.repeat(2001) });
     expect(res.status).toBe(400);
     expect(res.body.status).toBe('error');
     expect(res.body.message).toMatch(/2000/);
   });
 
   test('200 khi message đúng 2000 ký tự', async () => {
-    const res = await request
-      .post('/api/chatbot/message')
-      .send({ message: 'a'.repeat(2000) });
+    const res = await request.post('/api/chatbot/message').send({ message: 'a'.repeat(2000) });
     expect(res.status).toBe(200);
     expect(res.body.status).toBe('success');
   });
@@ -144,9 +146,7 @@ describe('POST /api/chatbot/cart/add', () => {
   });
 
   test('401 khi không có Authorization header', async () => {
-    const res = await request
-      .post('/api/chatbot/cart/add')
-      .send({ productId: 1, quantity: 1 });
+    const res = await request.post('/api/chatbot/cart/add').send({ productId: 1, quantity: 1 });
     expect(res.status).toBe(401);
     expect(res.body.status).toBe('error');
   });
@@ -196,7 +196,7 @@ describe('POST /api/chatbot/cart/add', () => {
     expect(res.status).toBe(200);
     expect(res.body.status).toBe('success');
     expect(CartItem.create).toHaveBeenCalledWith(
-      expect.objectContaining({ productId: 1, quantity: 2 })
+      expect.objectContaining({ productId: 1, quantity: 2 }),
     );
   });
 
@@ -261,18 +261,14 @@ describe('chatbotLimiter — rate limiting', () => {
     const rlApp = freshExpress();
     rlApp.use(freshExpress.json());
     // Route đơn giản chỉ để đo rate limit
-    rlApp.post('/probe', chatbotLimiter, (_req, res) =>
-      res.status(200).json({ ok: true })
-    );
+    rlApp.post('/probe', chatbotLimiter, (_req, res) => res.status(200).json({ ok: true }));
 
     rlRequest = freshSupertest(rlApp);
   });
 
   test('429 sau khi vượt 20 requests trong 1 phút', async () => {
     // Gửi đúng 20 requests (nằm trong giới hạn)
-    const batch = Array.from({ length: 20 }, () =>
-      rlRequest.post('/probe').send({})
-    );
+    const batch = Array.from({ length: 20 }, () => rlRequest.post('/probe').send({}));
     const responses = await Promise.all(batch);
     responses.forEach((r) => expect(r.status).toBe(200));
 

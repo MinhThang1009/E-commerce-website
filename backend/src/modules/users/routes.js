@@ -1,7 +1,7 @@
 const express = require('express');
 
-const { authenticate } = require('../../shared/http/middlewares/authenticate');
-const { validateRequest } = require('../../shared/http/middlewares/validateRequest');
+const { authenticate } = require('../../middlewares/authenticate');
+const { validateRequest } = require('../../middlewares/validateRequest');
 const {
   updateProfileSchema,
   changePasswordSchema,
@@ -24,7 +24,11 @@ module.exports = ({ usersController }) => {
   router.use(authenticate);
 
   router.put('/profile', validateRequest(updateProfileSchema), usersController.updateProfile);
-  router.post('/change-password', validateRequest(changePasswordSchema), usersController.changePassword);
+  router.post(
+    '/change-password',
+    validateRequest(changePasswordSchema),
+    usersController.changePassword,
+  );
 
   router.get('/addresses', usersController.getAddresses);
   router.post('/addresses', validateRequest(addressSchema), usersController.addAddress);

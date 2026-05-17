@@ -1,12 +1,14 @@
 const express = require('express');
-const { authenticate, optionalAuthenticate } = require('../../shared/http/middlewares/authenticate');
-const { authorize } = require('../../shared/http/middlewares/authorize');
-const { validateRequest } = require('../../shared/http/middlewares/validateRequest');
-const { httpCacheHeaders } = require('../../shared/http/middlewares/cache');
+const { authenticate, optionalAuthenticate } = require('../../middlewares/authenticate');
+const { authorize } = require('../../middlewares/authorize');
+const { validateRequest } = require('../../middlewares/validateRequest');
+const { httpCacheHeaders } = require('../../middlewares/cache');
 const {
   categorySchema,
-  createBrandSchema, updateBrandSchema,
-  createCollectionSchema, updateCollectionSchema,
+  createBrandSchema,
+  updateBrandSchema,
+  createCollectionSchema,
+  updateCollectionSchema,
   productSchema,
 } = require('./validators/catalogValidator');
 
@@ -20,24 +22,60 @@ module.exports = ({ catalogController }) => {
   categories.get('/slug/:slug', catalogController.getCategoryBySlug);
   categories.get('/:id/products', catalogController.getProductsByCategory);
   categories.get('/:id', catalogController.getCategoryById);
-  categories.post('/', authenticate, authorize('admin'), validateRequest(categorySchema), catalogController.createCategory);
-  categories.put('/:id', authenticate, authorize('admin'), validateRequest(categorySchema), catalogController.updateCategory);
+  categories.post(
+    '/',
+    authenticate,
+    authorize('admin'),
+    validateRequest(categorySchema),
+    catalogController.createCategory,
+  );
+  categories.put(
+    '/:id',
+    authenticate,
+    authorize('admin'),
+    validateRequest(categorySchema),
+    catalogController.updateCategory,
+  );
   categories.delete('/:id', authenticate, authorize('admin'), catalogController.deleteCategory);
 
   const brands = express.Router();
   brands.get('/', catalogController.getAllBrands);
   brands.get('/slug/:slug', catalogController.getBrandBySlug);
   brands.get('/slug/:slug/products', catalogController.getProductsByBrand);
-  brands.post('/', authenticate, authorize('admin'), validateRequest(createBrandSchema), catalogController.createBrand);
-  brands.put('/:id', authenticate, authorize('admin'), validateRequest(updateBrandSchema), catalogController.updateBrand);
+  brands.post(
+    '/',
+    authenticate,
+    authorize('admin'),
+    validateRequest(createBrandSchema),
+    catalogController.createBrand,
+  );
+  brands.put(
+    '/:id',
+    authenticate,
+    authorize('admin'),
+    validateRequest(updateBrandSchema),
+    catalogController.updateBrand,
+  );
   brands.delete('/:id', authenticate, authorize('admin'), catalogController.deleteBrand);
 
   const collections = express.Router();
   collections.get('/', catalogController.getAllCollections);
   collections.get('/slug/:slug', catalogController.getCollectionBySlug);
   collections.get('/slug/:slug/products', catalogController.getProductsByCollection);
-  collections.post('/', authenticate, authorize('admin'), validateRequest(createCollectionSchema), catalogController.createCollection);
-  collections.put('/:id', authenticate, authorize('admin'), validateRequest(updateCollectionSchema), catalogController.updateCollection);
+  collections.post(
+    '/',
+    authenticate,
+    authorize('admin'),
+    validateRequest(createCollectionSchema),
+    catalogController.createCollection,
+  );
+  collections.put(
+    '/:id',
+    authenticate,
+    authorize('admin'),
+    validateRequest(updateCollectionSchema),
+    catalogController.updateCollection,
+  );
   collections.delete('/:id', authenticate, authorize('admin'), catalogController.deleteCollection);
 
   // Product router — order matters: GET / + named paths trước /:id để
@@ -52,13 +90,35 @@ module.exports = ({ catalogController }) => {
   products.get('/filters', catalogController.getProductFilters);
   products.get('/search', catalogController.searchProducts);
   products.get('/suggestions', catalogController.getProductSuggestions);
-  products.get('/slug/:slug', httpCacheHeaders(300), optionalAuthenticate, catalogController.getProductBySlug);
+  products.get(
+    '/slug/:slug',
+    httpCacheHeaders(300),
+    optionalAuthenticate,
+    catalogController.getProductBySlug,
+  );
   products.get('/:id/related', catalogController.getRelatedProducts);
   products.get('/:id/variants', catalogController.getProductVariants);
   products.get('/:id/reviews-summary', catalogController.getProductReviewsSummary);
-  products.get('/:id', httpCacheHeaders(300), optionalAuthenticate, catalogController.getProductById);
-  products.post('/', authenticate, authorize('admin'), validateRequest(productSchema), catalogController.createProduct);
-  products.put('/:id', authenticate, authorize('admin'), validateRequest(productSchema), catalogController.updateProduct);
+  products.get(
+    '/:id',
+    httpCacheHeaders(300),
+    optionalAuthenticate,
+    catalogController.getProductById,
+  );
+  products.post(
+    '/',
+    authenticate,
+    authorize('admin'),
+    validateRequest(productSchema),
+    catalogController.createProduct,
+  );
+  products.put(
+    '/:id',
+    authenticate,
+    authorize('admin'),
+    validateRequest(productSchema),
+    catalogController.updateProduct,
+  );
   products.delete('/:id', authenticate, authorize('admin'), catalogController.deleteProduct);
 
   return { categories, brands, collections, products };

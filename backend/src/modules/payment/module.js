@@ -3,8 +3,8 @@ const PaymentService = require('./services/paymentService');
 const SequelizePaymentRepository = require('./repositories/SequelizePaymentRepository');
 const buildRoutes = require('./routes');
 
-// Payment module — Vertical Slice + Layered (Phase 1: đã xóa infrastructure/ layer).
-// SePay webhook (controllers/payment.js handleSePayWebhook) giữ legacy đến Phase 2.
+// Payment module — Vertical Slice + Layered.
+// SePay webhook (controllers/payment.js handleSePayWebhook) chưa migrate vào module này.
 module.exports = ({
   Order,
   OrderItem,

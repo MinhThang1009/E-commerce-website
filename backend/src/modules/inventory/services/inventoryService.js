@@ -1,6 +1,6 @@
 const { AppError } = require('../../../shared/errors');
 
-// --- Inline từ InventoryPolicy + InventoryAggregate (đã xóa domain layer Phase 1) ---
+// Quy tắc validate số lượng nhập kho và thao tác tăng/giảm tồn kho
 function _validateRestockQty(quantity) {
   const qty = parseInt(quantity, 10);
   if (!qty || qty <= 0) return { valid: false, reason: 'Số lượng nhập phải là số nguyên dương' };

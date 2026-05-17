@@ -1,4 +1,4 @@
-// LLM gateway — delegate sang chatbotService (Phase 1: đã xóa ILLMGateway interface).
+// Adapter giao tiếp với LLM — chuyển tiếp các lệnh xuống chatbotService.
 class ChatbotLLMGateway {
   constructor({ chatbotService }) {
     this.chatbotService = chatbotService;

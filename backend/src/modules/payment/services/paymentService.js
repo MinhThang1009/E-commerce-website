@@ -1,7 +1,7 @@
 const moment = require('moment');
 const { AppError } = require('../../../shared/errors');
 
-// --- Inline từ PaymentPolicy (đã xóa domain layer Phase 1) ---
+// Quy tắc kiểm tra điều kiện xử lý thanh toán và hoàn tiền
 const _SUPPORTED_REFUND_PROVIDERS = ['vnpay'];
 function _canProcessPayment(order, transactionId) {
   if (!order) return false;

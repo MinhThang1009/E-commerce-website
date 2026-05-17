@@ -1,7 +1,7 @@
 const crypto = require('crypto');
 const { AppError } = require('../../../shared/errors');
 
-// --- Inline từ OrderStatusPolicy (đã xóa domain layer Phase 1) ---
+// Các trạng thái hợp lệ và quy tắc chuyển trạng thái đơn hàng
 const STATUS = {
   PENDING: 'pending',
   PROCESSING: 'processing',
@@ -28,7 +28,7 @@ function _buildTrackingSteps(status) {
     { key: 'delivered', label: 'Đã nhận hàng', completed: idx >= 3 },
   ];
 }
-// --- Inline từ ShippingPolicy (đã xóa domain layer Phase 1) ---
+// Công thức tính phí ship: miễn phí nếu đủ ngưỡng, ngược lại tính base + phụ phí theo cân nặng
 function _calcShippingCost({ subtotal, totalWeightKg, freeThreshold, baseRate, weightRate }) {
   if (subtotal >= freeThreshold) return 0;
   let cost = baseRate;

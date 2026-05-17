@@ -1,6 +1,6 @@
 import React, { useEffect } from 'react';
 import { useAuthStore } from '@/stores/authStore';
-import { useNotifications } from '@/hooks/useNotifications';
+import { useNotifications } from '../hooks/useNotifications';
 import { useTranslation } from 'react-i18next';
 
 const LoginSuccess: React.FC = () => {
@@ -33,4 +33,3 @@ const LoginSuccess: React.FC = () => {
 };
 
 export default LoginSuccess;
-

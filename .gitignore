@@ -74,4 +74,4 @@ HANDOFF.md
 dump.rdb
 *_token.txt
 backend/server_err.txt
-backend/server_out*.log
+backend/server_out*.logbackend/src/modules/uploads/

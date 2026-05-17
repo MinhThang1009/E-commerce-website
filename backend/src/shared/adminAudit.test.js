@@ -17,7 +17,7 @@ jest.mock('../models', () => ({
   AuditLog: { create: mockAuditLogCreate },
 }));
 
-const { AdminAuditService } = require('../shared/adminAudit');
+const { AdminAuditService } = require('./adminAudit');
 
 const fakeAdmin = { id: 99, email: 'admin@x.com' };
 

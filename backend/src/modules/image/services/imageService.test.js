@@ -38,7 +38,7 @@ const mockImageFindByPk = jest.fn();
 const mockImageFindAll = jest.fn();
 const mockImageDestroy = jest.fn();
 jest.mock(
-  '../models/image',
+  '../../../models/image',
   () => ({
     create: (...args) => mockImageCreate(...args),
     findByPk: (...args) => mockImageFindByPk(...args),
@@ -47,7 +47,7 @@ jest.mock(
   { virtual: true },
 );
 
-jest.mock('../utils/logger', () => ({
+jest.mock('../../../utils/logger', () => ({
   info: jest.fn(),
   debug: jest.fn(),
   error: jest.fn(),
@@ -55,7 +55,7 @@ jest.mock('../utils/logger', () => ({
 }));
 
 // ── Load service SETELAH mock ──────────────────────────────────────────────
-const imageService = require('../modules/image/services/imageService');
+const imageService = require('./imageService');
 
 // ── Helper ─────────────────────────────────────────────────────────────────
 function makeFile(overrides = {}) {

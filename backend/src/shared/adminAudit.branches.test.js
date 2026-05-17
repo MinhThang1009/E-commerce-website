@@ -26,7 +26,7 @@ jest.mock('../utils/logger', () => mockLogger);
 const mockAuditLogCreate = jest.fn().mockResolvedValue({ id: 1 });
 jest.mock('../models', () => ({ AuditLog: { create: mockAuditLogCreate } }));
 
-const { AdminAuditService, auditMiddleware } = require('../shared/adminAudit');
+const { AdminAuditService, auditMiddleware } = require('./adminAudit');
 
 const adminUser = { id: 99, email: 'dash@shop.vn' };
 

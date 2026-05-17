@@ -42,7 +42,7 @@ const mockImageFindAll = jest.fn();
 const mockImageDestroy = jest.fn();
 
 jest.mock(
-  '../models/image',
+  '../../../models/image',
   () => ({
     create: (...args) => mockImageCreate(...args),
     findByPk: (...args) => mockImageFindByPk(...args),
@@ -57,10 +57,10 @@ const mockLogger = {
   error: jest.fn(),
   warn: jest.fn(),
 };
-jest.mock('../utils/logger', () => mockLogger);
+jest.mock('../../../utils/logger', () => mockLogger);
 
 // ── Load service sau mock ─────────────────────────────────────────────────────
-const imageService = require('../modules/image/services/imageService');
+const imageService = require('./imageService');
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 function makeImageRecord(overrides = {}) {

@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import React, { useState } from 'react';
 import {
   Table,
@@ -31,7 +32,7 @@ import {
   useUpdateBrandMutation,
   useDeleteBrandMutation,
 } from '../../api/brandApi';
-import { getErrorMsg } from '@/utils/errorMessage';
+import { getErrorMsg } from '@/utils/errorUtils';
 
 const { Title } = Typography;
 const { TextArea } = Input;
@@ -48,8 +49,7 @@ const BrandsPage: React.FC = () => {
   const { t } = useTranslation();
   const [form] = Form.useForm();
   const [isModalVisible, setIsModalVisible] = useState(false);
-  const [editingBrand, setEditingBrand] = // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  useState<any>(null);
+  const [editingBrand, setEditingBrand] = useState<any>(null);
   const [_fileList, setFileList] = useState<unknown[]>([]);
 
   const { data: brandsData, isLoading, refetch } = useGetBrandsQuery();
@@ -156,7 +156,12 @@ const BrandsPage: React.FC = () => {
       key: 'website',
       render: (website: string) =>
         website ? (
-          <a href={website} target="_blank" rel="noopener noreferrer" className="flex items-center gap-1">
+          <a
+            href={website}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="flex items-center gap-1"
+          >
             <GlobalOutlined /> {new URL(website).hostname}
           </a>
         ) : (
@@ -180,7 +185,12 @@ const BrandsPage: React.FC = () => {
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       render: (_: unknown, record: any) => (
         <Space>
-          <Button type="link" icon={<EditOutlined />} onClick={() => handleEdit(record)} size="small" />
+          <Button
+            type="link"
+            icon={<EditOutlined />}
+            onClick={() => handleEdit(record)}
+            size="small"
+          />
           <Popconfirm
             title={t('admin.brands.deleteTitle')}
             description={t('admin.brands.deleteConfirm')}
@@ -204,12 +214,15 @@ const BrandsPage: React.FC = () => {
             <Title level={2} className="!mb-1 text-xl md:text-2xl dark:text-white">
               {t('admin.brands.title')}
             </Title>
-            <p className="text-neutral-600 dark:text-neutral-400">
-              {t('admin.brands.subtitle')}
-            </p>
+            <p className="text-neutral-600 dark:text-neutral-400">{t('admin.brands.subtitle')}</p>
           </div>
           <Space className="flex-wrap">
-            <Button icon={<ReloadOutlined />} onClick={() => refetch()} loading={isLoading} className="dark:text-neutral-300">
+            <Button
+              icon={<ReloadOutlined />}
+              onClick={() => refetch()}
+              loading={isLoading}
+              className="dark:text-neutral-300"
+            >
               {t('common.refresh')}
             </Button>
             <Button type="primary" icon={<PlusOutlined />} onClick={handleCreate}>
@@ -236,7 +249,11 @@ const BrandsPage: React.FC = () => {
         <Modal
           title={editingBrand ? t('admin.brands.editBrand') : t('admin.brands.addBrandModal')}
           open={isModalVisible}
-          onCancel={() => { setIsModalVisible(false); setEditingBrand(null); form.resetFields(); }}
+          onCancel={() => {
+            setIsModalVisible(false);
+            setEditingBrand(null);
+            form.resetFields();
+          }}
           footer={null}
           width={600}
         >
@@ -271,7 +288,10 @@ const BrandsPage: React.FC = () => {
             </Form.Item>
 
             <Form.Item name="isActive" label={t('common.status')} valuePropName="checked">
-              <Switch checkedChildren={t('common.active')} unCheckedChildren={t('admin.common.hidden')} />
+              <Switch
+                checkedChildren={t('common.active')}
+                unCheckedChildren={t('admin.common.hidden')}
+              />
             </Form.Item>
 
             <div className="flex justify-end gap-2 mt-6">

@@ -18,7 +18,7 @@ import { Link } from 'react-router-dom';
 import { ProductCard } from '@/features/catalog';
 import { PremiumButton, BannerDisplay } from '@/components/common';
 import { ROUTES, buildRoute } from '@/routes/paths';
-import { getErrorMsg } from '@/utils/errorMessage';
+import { getErrorMsg } from '@/utils/errorUtils';
 import { localizeField } from '@/utils/localize';
 
 /**

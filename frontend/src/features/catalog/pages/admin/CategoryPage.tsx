@@ -10,14 +10,7 @@ import {
   ChevronDownIcon,
   ChevronRightIcon,
 } from '@heroicons/react/24/outline';
-import {
-  Button,
-  Input,
-  Select,
-  Checkbox,
-  Modal,
-  Textarea,
-} from '@/components/common';
+import { Button, Input, Select, Checkbox, Modal, Textarea } from '@/components/common';
 import { message } from 'antd';
 import {
   useGetAllCategoriesQuery,
@@ -26,7 +19,7 @@ import {
   useDeleteCategoryMutation,
 } from '../../api/categoryApi';
 import { Category } from '../../types/category.types';
-import { getErrorMsg } from '@/utils/errorMessage';
+import { getErrorMsg } from '@/utils/errorUtils';
 
 interface CategoryFormData {
   name: string;
@@ -43,29 +36,18 @@ const CategoryPage: React.FC = () => {
   const [messageApi, contextHolder] = message.useMessage();
 
   // Các API hooks
-  const {
-    data: categoriesData,
-    isLoading,
-    refetch,
-  } = useGetAllCategoriesQuery();
-  const { mutateAsync: createCategory, isPending: isCreating } =
-    useCreateCategoryMutation();
-  const { mutateAsync: updateCategory, isPending: isUpdating } =
-    useUpdateCategoryMutation();
-  const { mutateAsync: deleteCategory, isPending: isDeleting } =
-    useDeleteCategoryMutation();
+  const { data: categoriesData, isLoading, refetch } = useGetAllCategoriesQuery();
+  const { mutateAsync: createCategory, isPending: isCreating } = useCreateCategoryMutation();
+  const { mutateAsync: updateCategory, isPending: isUpdating } = useUpdateCategoryMutation();
+  const { mutateAsync: deleteCategory, isPending: isDeleting } = useDeleteCategoryMutation();
 
   // Các trạng thái
   const [categories, setCategories] = useState<Category[]>([]);
-  const [expandedCategories, setExpandedCategories] = useState<
-    Record<string, boolean>
-  >({});
+  const [expandedCategories, setExpandedCategories] = useState<Record<string, boolean>>({});
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
-  const [selectedCategory, setSelectedCategory] = useState<Category | null>(
-    null
-  );
+  const [selectedCategory, setSelectedCategory] = useState<Category | null>(null);
   const [formData, setFormData] = useState<CategoryFormData>({
     name: '',
     description: '',
@@ -89,7 +71,7 @@ const CategoryPage: React.FC = () => {
   // Xử lý thay đổi input trong form
   const handleInputChange = (
     field: keyof CategoryFormData,
-    value: string | boolean | number | null | undefined
+    value: string | boolean | number | null | undefined,
   ) => {
     setFormData({
       ...formData,
@@ -179,9 +161,7 @@ const CategoryPage: React.FC = () => {
       setIsEditModalOpen(false);
       refetch();
     } catch (error) {
-      messageApi.error(
-        getErrorMsg(error, t('adminCategory.updateError'))
-      );
+      messageApi.error(getErrorMsg(error, t('adminCategory.updateError')));
     }
   };
 
@@ -215,10 +195,7 @@ const CategoryPage: React.FC = () => {
           className={`border-b border-gray-200 dark:border-gray-700 ${level > 0 ? 'bg-gray-50 dark:bg-gray-800/50' : ''}`}
         >
           <td className="px-4 py-3 text-sm">
-            <div
-              className="flex items-center"
-              style={{ paddingLeft: `${level * 20}px` }}
-            >
+            <div className="flex items-center" style={{ paddingLeft: `${level * 20}px` }}>
               {category.children && category.children.length > 0 ? (
                 <button
                   onClick={() => toggleCategoryExpansion(category.id)}
@@ -234,9 +211,7 @@ const CategoryPage: React.FC = () => {
                 <span className="w-4 h-4 mr-2"></span>
               )}
               <FolderIcon className="w-5 h-5 mr-2 text-primary-500 dark:text-primary-400" />
-              <span className="font-medium text-gray-900 dark:text-gray-100">
-                {category.name}
-              </span>
+              <span className="font-medium text-gray-900 dark:text-gray-100">{category.name}</span>
             </div>
           </td>
           <td className="px-4 py-3 text-sm">
@@ -245,9 +220,7 @@ const CategoryPage: React.FC = () => {
                 {category.description}
               </span>
             ) : (
-              <span className="text-gray-400 dark:text-gray-500">
-                {t('adminCategory.noDesc')}
-              </span>
+              <span className="text-gray-400 dark:text-gray-500">{t('adminCategory.noDesc')}</span>
             )}
           </td>
           <td className="px-4 py-3 text-sm">
@@ -306,7 +279,7 @@ const CategoryPage: React.FC = () => {
   const buildCategoryOptions = (
     categories: Category[],
     level = 0,
-    excludeId?: string
+    excludeId?: string,
   ): { value: string; label: string }[] => {
     let options: { value: string; label: string }[] = [];
 
@@ -318,10 +291,7 @@ const CategoryPage: React.FC = () => {
         });
 
         if (category.children && category.children.length > 0) {
-          options = [
-            ...options,
-            ...buildCategoryOptions(category.children, level + 1, excludeId),
-          ];
+          options = [...options, ...buildCategoryOptions(category.children, level + 1, excludeId)];
         }
       }
     });
@@ -447,10 +417,7 @@ const CategoryPage: React.FC = () => {
           className={`border-b border-gray-200 dark:border-gray-700 ${level > 0 ? 'bg-gray-50 dark:bg-gray-800/50' : ''}`}
         >
           <td className="px-4 py-3 text-sm">
-            <div
-              className="flex items-center"
-              style={{ paddingLeft: `${level * 20}px` }}
-            >
+            <div className="flex items-center" style={{ paddingLeft: `${level * 20}px` }}>
               {category.children && category.children.length > 0 ? (
                 <button
                   onClick={() => toggleCategoryExpansion(category.id)}
@@ -696,9 +663,7 @@ const CategoryPage: React.FC = () => {
                 </div>
 
                 {/* Hiển thị card trên Mobile */}
-                <div className="lg:hidden space-y-4">
-                  {renderMobileCategoryCards(categories)}
-                </div>
+                <div className="lg:hidden space-y-4">{renderMobileCategoryCards(categories)}</div>
               </>
             )}
           </div>
@@ -760,9 +725,7 @@ const CategoryPage: React.FC = () => {
               </label>
               <Textarea
                 value={formData.description || ''}
-                onChange={(e) =>
-                  handleInputChange('description', e.target.value)
-                }
+                onChange={(e) => handleInputChange('description', e.target.value)}
                 placeholder={t('adminCategory.descPlaceholder')}
                 rows={3}
               />
@@ -792,9 +755,7 @@ const CategoryPage: React.FC = () => {
                   ...buildCategoryOptions(categories),
                 ]}
                 value={formData.parentId || ''}
-                onChange={(value) =>
-                  handleInputChange('parentId', value === '' ? null : value)
-                }
+                onChange={(value) => handleInputChange('parentId', value === '' ? null : value)}
                 placeholder={t('adminCategory.parentPlaceholder')}
               />
             </div>
@@ -807,12 +768,7 @@ const CategoryPage: React.FC = () => {
                 <Input
                   type="number"
                   value={(formData.sortOrder ?? 0).toString()}
-                  onChange={(e) =>
-                    handleInputChange(
-                      'sortOrder',
-                      parseInt(e.target.value) || 0
-                    )
-                  }
+                  onChange={(e) => handleInputChange('sortOrder', parseInt(e.target.value) || 0)}
                   placeholder="0"
                   min="0"
                 />
@@ -824,9 +780,7 @@ const CategoryPage: React.FC = () => {
                 <div className="mt-2">
                   <Checkbox
                     checked={formData.isActive ?? false}
-                    onChange={(e) =>
-                      handleInputChange('isActive', e.target.checked)
-                    }
+                    onChange={(e) => handleInputChange('isActive', e.target.checked)}
                     label={t('adminCategory.activeCheckbox')}
                   />
                 </div>
@@ -891,9 +845,7 @@ const CategoryPage: React.FC = () => {
               </label>
               <Textarea
                 value={formData.description || ''}
-                onChange={(e) =>
-                  handleInputChange('description', e.target.value)
-                }
+                onChange={(e) => handleInputChange('description', e.target.value)}
                 placeholder={t('adminCategory.descPlaceholder')}
                 rows={3}
               />
@@ -923,9 +875,7 @@ const CategoryPage: React.FC = () => {
                   ...buildCategoryOptions(categories, 0, selectedCategory?.id),
                 ]}
                 value={formData.parentId || ''}
-                onChange={(value) =>
-                  handleInputChange('parentId', value === '' ? null : value)
-                }
+                onChange={(value) => handleInputChange('parentId', value === '' ? null : value)}
                 placeholder={t('adminCategory.parentPlaceholder')}
               />
             </div>
@@ -938,12 +888,7 @@ const CategoryPage: React.FC = () => {
                 <Input
                   type="number"
                   value={(formData.sortOrder ?? 0).toString()}
-                  onChange={(e) =>
-                    handleInputChange(
-                      'sortOrder',
-                      parseInt(e.target.value) || 0
-                    )
-                  }
+                  onChange={(e) => handleInputChange('sortOrder', parseInt(e.target.value) || 0)}
                   placeholder="0"
                   min="0"
                 />
@@ -955,9 +900,7 @@ const CategoryPage: React.FC = () => {
                 <div className="mt-2">
                   <Checkbox
                     checked={formData.isActive ?? false}
-                    onChange={(e) =>
-                      handleInputChange('isActive', e.target.checked)
-                    }
+                    onChange={(e) => handleInputChange('isActive', e.target.checked)}
                     label={t('adminCategory.activeCheckbox')}
                   />
                 </div>

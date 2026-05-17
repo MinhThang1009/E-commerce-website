@@ -5,7 +5,7 @@ import { Rating } from '@/components/common/Rating';
 import { PremiumButton } from '@/components/common';
 import { useCreateReviewMutation } from '../api/reviewApi';
 import { toast } from '@/utils/toast';
-import { getErrorMsg } from '@/utils/errorMessage';
+import { getErrorMsg } from '@/utils/errorUtils';
 
 interface ReviewModalProps {
   isOpen: boolean;
@@ -66,11 +66,7 @@ const ReviewModal: React.FC<ReviewModalProps> = ({
 
   const footer = (
     <div className="flex gap-2 justify-end w-full">
-      <PremiumButton
-        variant="outline"
-        onClick={onClose}
-        disabled={isLoading}
-      >
+      <PremiumButton variant="outline" onClick={onClose} disabled={isLoading}>
         {t('common.cancel')}
       </PremiumButton>
       <PremiumButton
@@ -106,12 +102,7 @@ const ReviewModal: React.FC<ReviewModalProps> = ({
           <label className="block text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-2">
             {t('review.modal.ratingLabel')}
           </label>
-          <Rating
-            value={rating}
-            onChange={setRating}
-            interactive={true}
-            size="large"
-          />
+          <Rating value={rating} onChange={setRating} interactive={true} size="large" />
         </div>
 
         <div>

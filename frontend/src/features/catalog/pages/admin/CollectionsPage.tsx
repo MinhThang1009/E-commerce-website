@@ -1,16 +1,39 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import React, { useState } from 'react';
 import {
-  Table, Button, Modal, Form, Input, Switch, Space, message, Popconfirm, Tag, Image, Card, Typography, Select,
+  Table,
+  Button,
+  Modal,
+  Form,
+  Input,
+  Switch,
+  Space,
+  message,
+  Popconfirm,
+  Tag,
+  Image,
+  Card,
+  Typography,
+  Select,
 } from 'antd';
 import { useTranslation } from 'react-i18next';
 import ImageUpload from '@/components/common/ImageUpload';
 import { getUploadUrl } from '@/utils/uploadUrl';
-import { PlusOutlined, EditOutlined, DeleteOutlined, ReloadOutlined, AppstoreOutlined } from '@ant-design/icons';
 import {
-  useGetCollectionsQuery, useCreateCollectionMutation, useUpdateCollectionMutation, useDeleteCollectionMutation,
+  PlusOutlined,
+  EditOutlined,
+  DeleteOutlined,
+  ReloadOutlined,
+  AppstoreOutlined,
+} from '@ant-design/icons';
+import {
+  useGetCollectionsQuery,
+  useCreateCollectionMutation,
+  useUpdateCollectionMutation,
+  useDeleteCollectionMutation,
 } from '../../api/collectionApi';
 import { useGetProductsQuery } from '../../api/productApi';
-import { getErrorMsg } from '@/utils/errorMessage';
+import { getErrorMsg } from '@/utils/errorUtils';
 
 const { Title } = Typography;
 const { TextArea } = Input;
@@ -27,8 +50,7 @@ const CollectionsPage: React.FC = () => {
   const { t } = useTranslation();
   const [form] = Form.useForm();
   const [isModalVisible, setIsModalVisible] = useState(false);
-  const [editingCollection, setEditingCollection] = // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  useState<any>(null);
+  const [editingCollection, setEditingCollection] = useState<any>(null);
 
   const { data: collectionsData, isLoading, refetch } = useGetCollectionsQuery();
   const { data: productsData } = useGetProductsQuery({ limit: 100 });
@@ -99,7 +121,13 @@ const CollectionsPage: React.FC = () => {
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       render: (thumbnail: string, record: any) =>
         thumbnail ? (
-          <Image src={getFullImageUrl(thumbnail)} alt={record.name} width={60} height={40} style={{ objectFit: 'cover', borderRadius: 4 }} />
+          <Image
+            src={getFullImageUrl(thumbnail)}
+            alt={record.name}
+            width={60}
+            height={40}
+            style={{ objectFit: 'cover', borderRadius: 4 }}
+          />
         ) : (
           <div className="w-16 h-10 bg-gray-100 rounded flex items-center justify-center">
             <AppstoreOutlined className="text-gray-400" />
@@ -122,7 +150,8 @@ const CollectionsPage: React.FC = () => {
       title: t('admin.collections.table.productCount'),
       key: 'productCount',
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      render: (_: unknown, record: any) => t('admin.collections.table.productCountLabel', { count: record.Products?.length || 0 }),
+      render: (_: unknown, record: any) =>
+        t('admin.collections.table.productCountLabel', { count: record.Products?.length || 0 }),
     },
     {
       title: t('common.status'),
@@ -141,7 +170,12 @@ const CollectionsPage: React.FC = () => {
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       render: (_: unknown, record: any) => (
         <Space>
-          <Button type="link" icon={<EditOutlined />} onClick={() => handleEdit(record)} size="small" />
+          <Button
+            type="link"
+            icon={<EditOutlined />}
+            onClick={() => handleEdit(record)}
+            size="small"
+          />
           <Popconfirm
             title={t('admin.collections.deleteTitle')}
             description={t('admin.collections.deleteConfirm')}
@@ -170,7 +204,12 @@ const CollectionsPage: React.FC = () => {
             </p>
           </div>
           <Space className="flex-wrap">
-            <Button icon={<ReloadOutlined />} onClick={() => refetch()} loading={isLoading} className="dark:text-neutral-300">
+            <Button
+              icon={<ReloadOutlined />}
+              onClick={() => refetch()}
+              loading={isLoading}
+              className="dark:text-neutral-300"
+            >
               {t('common.refresh')}
             </Button>
             <Button type="primary" icon={<PlusOutlined />} onClick={handleCreate}>
@@ -195,9 +234,17 @@ const CollectionsPage: React.FC = () => {
         </div>
 
         <Modal
-          title={editingCollection ? t('admin.collections.editCollection') : t('admin.collections.addCollectionModal')}
+          title={
+            editingCollection
+              ? t('admin.collections.editCollection')
+              : t('admin.collections.addCollectionModal')
+          }
           open={isModalVisible}
-          onCancel={() => { setIsModalVisible(false); setEditingCollection(null); form.resetFields(); }}
+          onCancel={() => {
+            setIsModalVisible(false);
+            setEditingCollection(null);
+            form.resetFields();
+          }}
           footer={null}
           width={700}
         >
@@ -214,7 +261,12 @@ const CollectionsPage: React.FC = () => {
               <TextArea rows={3} placeholder={t('admin.brands.form.descriptionPlaceholder')} />
             </Form.Item>
 
-            <Form.Item name="thumbnail" label={t('admin.collections.form.thumbnail') || t('admin.collections.table.thumbnail')}>
+            <Form.Item
+              name="thumbnail"
+              label={
+                t('admin.collections.form.thumbnail') || t('admin.collections.table.thumbnail')
+              }
+            >
               <ImageUpload
                 type="collections"
                 multiple={false}
@@ -223,7 +275,12 @@ const CollectionsPage: React.FC = () => {
               />
             </Form.Item>
 
-            <Form.Item name="productIds" label={t('admin.collections.form.addProducts') || t('admin.collections.table.productCount')}>
+            <Form.Item
+              name="productIds"
+              label={
+                t('admin.collections.form.addProducts') || t('admin.collections.table.productCount')
+              }
+            >
               <Select
                 mode="multiple"
                 allowClear
@@ -231,13 +288,16 @@ const CollectionsPage: React.FC = () => {
                 placeholder={t('admin.collections.form.selectProducts') || ''}
                 options={productOptions}
                 filterOption={(input, option) =>
-                  (option?.label as string ?? '').toLowerCase().includes(input.toLowerCase())
+                  ((option?.label as string) ?? '').toLowerCase().includes(input.toLowerCase())
                 }
               />
             </Form.Item>
 
             <Form.Item name="isActive" label={t('common.status')} valuePropName="checked">
-              <Switch checkedChildren={t('common.active')} unCheckedChildren={t('admin.common.hidden')} />
+              <Switch
+                checkedChildren={t('common.active')}
+                unCheckedChildren={t('admin.common.hidden')}
+              />
             </Form.Item>
 
             <div className="flex justify-end gap-2 mt-6">

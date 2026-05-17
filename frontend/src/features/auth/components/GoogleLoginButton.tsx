@@ -5,7 +5,7 @@ import { useTranslation } from 'react-i18next';
 import { useAuthStore } from '@/stores/authStore';
 import { useUiStore } from '@/stores/uiStore';
 import { PremiumButton } from '@/components/common';
-import { getErrorMsg } from '@/utils/errorMessage';
+import { getErrorMsg } from '@/utils/errorUtils';
 
 const GoogleLoginButton: React.FC = () => {
   const { t } = useTranslation();
@@ -15,7 +15,6 @@ const GoogleLoginButton: React.FC = () => {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any -- Google OAuth response shape
   const handleGoogleSuccess = async (tokenResponse: any) => {
     try {
-
       // Luồng implicit cấp access_token.
       // Truyền token này lên backend để backend lấy thông tin người dùng.
       const result = await googleLogin({ token: tokenResponse.access_token });
@@ -80,4 +79,3 @@ const GoogleLoginButton: React.FC = () => {
 };
 
 export default GoogleLoginButton;
-

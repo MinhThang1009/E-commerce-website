@@ -111,9 +111,10 @@ export const parseError = (error: unknown): AppError => {
   const axiosStatus = num(prop(response, 'status'));
   if (axiosStatus) {
     const responseData = prop(response, 'data');
-    const axiosMessage = extractMessage(responseData) !== 'Unknown error'
-      ? extractMessage(responseData)
-      : str(prop(error, 'message')) || 'Unknown error';
+    const axiosMessage =
+      extractMessage(responseData) !== 'Unknown error'
+        ? extractMessage(responseData)
+        : str(prop(error, 'message')) || 'Unknown error';
 
     const errorType = errorTypeByStatus(axiosStatus);
     if (errorType) {
@@ -180,7 +181,7 @@ export const createErrorHandler = (onError?: (error: AppError) => void) => {
 export const retryWithBackoff = async <T>(
   fn: () => Promise<T>,
   maxRetries: number = 3,
-  baseDelay: number = 1000
+  baseDelay: number = 1000,
 ): Promise<T> => {
   let lastError: unknown;
 
@@ -208,9 +209,7 @@ export const retryWithBackoff = async <T>(
 export const isRetryableError = (error: unknown): boolean => {
   const parsedError = parseError(error);
 
-  return [ErrorType.NETWORK_ERROR, ErrorType.SERVER_ERROR].includes(
-    parsedError.type
-  );
+  return [ErrorType.NETWORK_ERROR, ErrorType.SERVER_ERROR].includes(parsedError.type);
 };
 
 /**
@@ -229,6 +228,13 @@ export const formatErrorForLogging = (error: unknown): string => {
       userAgent: navigator.userAgent,
     },
     null,
-    2
+    2,
   );
 };
+
+// Alias để backward compat với errorMessage.ts
+export function getErrorMsg(error: unknown, fallback?: string): string {
+  // Wrapper của getErrorMessage với fallback param tùy chọn
+  const msg = getErrorMessage(error);
+  return fallback && msg.includes('không xác định') ? fallback : msg;
+}

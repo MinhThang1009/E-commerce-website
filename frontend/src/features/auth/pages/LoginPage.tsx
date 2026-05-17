@@ -7,7 +7,7 @@ import Input from '@/components/common/Input';
 import { useLoginMutation, useResendVerificationMutation } from '../api/authApi';
 import { useAuthStore } from '@/stores/authStore';
 import GoogleLoginButton from '../components/GoogleLoginButton';
-import { getErrorMsg } from '@/utils/errorMessage';
+import { getErrorMsg } from '@/utils/errorUtils';
 
 interface LocationState {
   from?: { pathname: string };

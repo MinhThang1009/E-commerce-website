@@ -33,7 +33,7 @@ import {
 } from '../../api/categoryApi';
 import type { Category } from '../../types/category.types';
 import ImageUpload from '@/components/common/ImageUpload';
-import { getErrorMsg } from '@/utils/errorMessage';
+import { getErrorMsg } from '@/utils/errorUtils';
 
 const { Title } = Typography;
 const { TextArea } = Input;
@@ -125,7 +125,13 @@ const CategoriesPage: React.FC = () => {
       width: 80,
       render: (image: string, record: Category) =>
         image ? (
-          <Image src={image} alt={record.name} width={50} height={50} style={{ objectFit: 'cover', borderRadius: 4 }} />
+          <Image
+            src={image}
+            alt={record.name}
+            width={50}
+            height={50}
+            style={{ objectFit: 'cover', borderRadius: 4 }}
+          />
         ) : (
           <div className="w-12 h-12 bg-gray-100 rounded flex items-center justify-center">
             <FolderOutlined className="text-gray-400" />
@@ -149,7 +155,9 @@ const CategoriesPage: React.FC = () => {
       key: 'description',
       render: (description?: string) =>
         description ? (
-          <div className="max-w-xs truncate" title={description}>{description}</div>
+          <div className="max-w-xs truncate" title={description}>
+            {description}
+          </div>
         ) : (
           <span className="text-gray-400">—</span>
         ),
@@ -161,7 +169,11 @@ const CategoriesPage: React.FC = () => {
       render: (parentId?: string | null) => {
         if (!parentId) return <Tag color="green">{t('admin.categories.table.root')}</Tag>;
         const parent = categories.find((cat) => cat.id === parentId);
-        return parent ? <Tag color="blue">{parent.name}</Tag> : <span className="text-gray-400">—</span>;
+        return parent ? (
+          <Tag color="blue">{parent.name}</Tag>
+        ) : (
+          <span className="text-gray-400">—</span>
+        );
       },
     },
     {
@@ -187,7 +199,12 @@ const CategoriesPage: React.FC = () => {
       width: 120,
       render: (_, record: Category) => (
         <Space>
-          <Button type="link" icon={<EditOutlined />} onClick={() => handleEdit(record)} size="small" />
+          <Button
+            type="link"
+            icon={<EditOutlined />}
+            onClick={() => handleEdit(record)}
+            size="small"
+          />
           <Popconfirm
             title={t('admin.categories.deleteTitle')}
             description={t('admin.categories.deleteConfirm')}
@@ -216,7 +233,12 @@ const CategoriesPage: React.FC = () => {
             </p>
           </div>
           <Space className="flex-wrap">
-            <Button icon={<ReloadOutlined />} onClick={() => refetch()} loading={isLoading} className="dark:text-neutral-300">
+            <Button
+              icon={<ReloadOutlined />}
+              onClick={() => refetch()}
+              loading={isLoading}
+              className="dark:text-neutral-300"
+            >
               {t('common.refresh')}
             </Button>
             <Button type="primary" icon={<PlusOutlined />} onClick={handleCreate}>
@@ -239,19 +261,33 @@ const CategoriesPage: React.FC = () => {
               showSizeChanger: true,
               showQuickJumper: true,
               responsive: true,
-              showTotal: (total, range) => t('admin.categories.totalItems', { range0: range[0], range1: range[1], total }),
+              showTotal: (total, range) =>
+                t('admin.categories.totalItems', { range0: range[0], range1: range[1], total }),
             }}
           />
         </div>
 
         <Modal
-          title={editingCategory ? t('admin.categories.editCategory') : t('admin.categories.addCategoryModal')}
+          title={
+            editingCategory
+              ? t('admin.categories.editCategory')
+              : t('admin.categories.addCategoryModal')
+          }
           open={isModalVisible}
-          onCancel={() => { setIsModalVisible(false); setEditingCategory(null); form.resetFields(); }}
+          onCancel={() => {
+            setIsModalVisible(false);
+            setEditingCategory(null);
+            form.resetFields();
+          }}
           footer={null}
           width={600}
         >
-          <Form form={form} layout="vertical" onFinish={handleSubmit} initialValues={{ isActive: true, sortOrder: 0 }}>
+          <Form
+            form={form}
+            layout="vertical"
+            onFinish={handleSubmit}
+            initialValues={{ isActive: true, sortOrder: 0 }}
+          >
             <Form.Item
               name="name"
               label={t('admin.categories.table.name')}
@@ -290,12 +326,21 @@ const CategoriesPage: React.FC = () => {
               </Form.Item>
 
               <Form.Item name="isActive" label={t('common.status')} valuePropName="checked">
-                <Switch checkedChildren={t('common.active')} unCheckedChildren={t('admin.common.hidden')} />
+                <Switch
+                  checkedChildren={t('common.active')}
+                  unCheckedChildren={t('admin.common.hidden')}
+                />
               </Form.Item>
             </div>
 
             <div className="flex flex-wrap justify-end gap-2 mt-6">
-              <Button onClick={() => { setIsModalVisible(false); setEditingCategory(null); form.resetFields(); }}>
+              <Button
+                onClick={() => {
+                  setIsModalVisible(false);
+                  setEditingCategory(null);
+                  form.resetFields();
+                }}
+              >
                 {t('common.cancel')}
               </Button>
               <Button type="primary" htmlType="submit" loading={isCreating || isUpdating}>

@@ -2,7 +2,7 @@ import React from 'react';
 import { Modal, Form, Input, Select, message } from 'antd';
 import { useTranslation } from 'react-i18next';
 import { useSendFeedbackMutation } from '@/features/content';
-import { getErrorMsg } from '@/utils/errorMessage';
+import { getErrorMsg } from '@/utils/errorUtils';
 
 interface FeedbackModalProps {
   visible: boolean;

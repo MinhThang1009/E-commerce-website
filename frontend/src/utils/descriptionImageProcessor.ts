@@ -1,6 +1,6 @@
 import { message } from 'antd';
 import i18next from 'i18next';
-import { getErrorMsg } from '@/utils/errorMessage';
+import { getErrorMsg } from '@/utils/errorUtils';
 
 export interface ProcessDescriptionOptions {
   productId?: string;
@@ -11,7 +11,7 @@ export interface ProcessDescriptionOptions {
       category?: string;
       productId?: string;
     };
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
   }) => Promise<any>;
 }
 
@@ -33,7 +33,7 @@ export interface ProcessDescriptionResult {
  */
 export const processDescriptionImages = async (
   description: string,
-  options: ProcessDescriptionOptions
+  options: ProcessDescriptionOptions,
 ): Promise<ProcessDescriptionResult> => {
   if (!description) {
     return {
@@ -55,7 +55,6 @@ export const processDescriptionImages = async (
     };
   }
 
-
   let processedDescription = description;
   const uploadedImages: ProcessDescriptionResult['uploadedImages'] = [];
   let hasErrors = false;
@@ -74,10 +73,12 @@ export const processDescriptionImages = async (
       const base64Data = base64Images[i];
 
       try {
-
         // Cập nhật thông báo đang tải
         message.loading({
-          content: i18next.t('descProcessor.convertingItem', { current: i + 1, total: base64Images.length }),
+          content: i18next.t('descProcessor.convertingItem', {
+            current: i + 1,
+            total: base64Images.length,
+          }),
           key: loadingKey,
           duration: 0,
         });
@@ -92,14 +93,14 @@ export const processDescriptionImages = async (
         });
 
         if (result?.data) {
-          const domainUrl = (import.meta.env.VITE_API_URL || 'http://localhost:8888/api').replace(/\/api\/?$/, '');
+          const domainUrl = (import.meta.env.VITE_API_URL || 'http://localhost:8888/api').replace(
+            /\/api\/?$/,
+            '',
+          );
           const uploadedUrl = `${domainUrl}${result.data.url}`;
 
           // Thay thế base64 bằng URL đã tải lên trong mô tả
-          processedDescription = processedDescription.replace(
-            base64Data,
-            uploadedUrl
-          );
+          processedDescription = processedDescription.replace(base64Data, uploadedUrl);
 
           // Lưu thông tin ảnh đã tải lên
           uploadedImages.push({
@@ -108,9 +109,7 @@ export const processDescriptionImages = async (
             imageId: result.data.id,
           });
         } else {
-          console.error(
-            `Chuyển đổi ảnh ${i + 1} thất bại: Không có dữ liệu trong response`
-          );
+          console.error(`Chuyển đổi ảnh ${i + 1} thất bại: Không có dữ liệu trong response`);
           hasErrors = true;
         }
       } catch (error) {
@@ -118,8 +117,7 @@ export const processDescriptionImages = async (
         hasErrors = true;
 
         // Tiếp tục xử lý ảnh khác dù một ảnh bị lỗi
-        const errorMessage =
-          getErrorMsg(error, 'Unknown error');
+        const errorMessage = getErrorMsg(error, 'Unknown error');
         console.error(`Chuyển đổi ảnh ${i + 1} thất bại: ${errorMessage}`);
       }
     }
@@ -131,12 +129,13 @@ export const processDescriptionImages = async (
     if (uploadedImages.length > 0) {
       if (hasErrors) {
         message.warning(
-          i18next.t('descProcessor.partialSuccess', { uploaded: uploadedImages.length, total: base64Images.length })
+          i18next.t('descProcessor.partialSuccess', {
+            uploaded: uploadedImages.length,
+            total: base64Images.length,
+          }),
         );
       } else {
-        message.success(
-          i18next.t('descProcessor.fullSuccess', { count: uploadedImages.length })
-        );
+        message.success(i18next.t('descProcessor.fullSuccess', { count: uploadedImages.length }));
       }
     } else if (hasErrors) {
       message.error(i18next.t('descProcessor.allFailed'));
@@ -182,4 +181,3 @@ export const countBase64Images = (description: string): number => {
   const matches = description.match(base64ImageRegex);
   return matches ? matches.length : 0;
 };
-

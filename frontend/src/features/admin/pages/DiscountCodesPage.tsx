@@ -37,7 +37,7 @@ import {
   useDeleteDiscountCodeMutation,
 } from '../api/discountCodeApi';
 import { DiscountCode } from '@/types/discount.types';
-import { getErrorMsg } from '@/utils/errorMessage';
+import { getErrorMsg } from '@/utils/errorUtils';
 
 const { TextArea } = Input;
 const { RangePicker } = DatePicker;
@@ -50,8 +50,10 @@ const DiscountCodesPage: React.FC = () => {
   const [filters, setFilters] = useState({ page: 1, limit: 10, search: '' });
 
   const { data: discountCodesData, isLoading } = useGetDiscountCodesQuery(filters);
-  const { mutateAsync: createDiscountCode, isPending: isCreating } = useCreateDiscountCodeMutation();
-  const { mutateAsync: updateDiscountCode, isPending: isUpdating } = useUpdateDiscountCodeMutation();
+  const { mutateAsync: createDiscountCode, isPending: isCreating } =
+    useCreateDiscountCodeMutation();
+  const { mutateAsync: updateDiscountCode, isPending: isUpdating } =
+    useUpdateDiscountCodeMutation();
   const { mutateAsync: deleteDiscountCode } = useDeleteDiscountCodeMutation();
 
   const discountCodes = discountCodesData?.data?.discountCodes || [];
@@ -76,9 +78,10 @@ const DiscountCodesPage: React.FC = () => {
     setEditingCode(record);
     form.setFieldsValue({
       ...record,
-      dateRange: record.startDate && record.endDate
-        ? [dayjs(record.startDate), dayjs(record.endDate)]
-        : undefined,
+      dateRange:
+        record.startDate && record.endDate
+          ? [dayjs(record.startDate), dayjs(record.endDate)]
+          : undefined,
     });
     setIsModalOpen(true);
   };
@@ -134,7 +137,11 @@ const DiscountCodesPage: React.FC = () => {
       title: t('admin.discountCodes.table.code'),
       dataIndex: 'code',
       key: 'code',
-      render: (text: string) => <Tag color="blue" className="font-semibold text-sm">{text}</Tag>,
+      render: (text: string) => (
+        <Tag color="blue" className="font-semibold text-sm">
+          {text}
+        </Tag>
+      ),
     },
     {
       title: t('admin.discountCodes.table.type'),
@@ -142,7 +149,11 @@ const DiscountCodesPage: React.FC = () => {
       key: 'type',
       render: (type: string, record: DiscountCode) => (
         <div className="flex items-center gap-1">
-          {type === 'percent' ? <PercentageOutlined className="text-orange-500" /> : <DollarOutlined className="text-green-500" />}
+          {type === 'percent' ? (
+            <PercentageOutlined className="text-orange-500" />
+          ) : (
+            <DollarOutlined className="text-green-500" />
+          )}
           <span className="font-medium">
             {type === 'percent' ? `${record.value}%` : formatPrice(record.value)}
           </span>
@@ -160,8 +171,18 @@ const DiscountCodesPage: React.FC = () => {
       key: 'validity',
       render: (_: unknown, record: DiscountCode) => (
         <div className="text-sm text-gray-600">
-          <div>{t('admin.discountCodes.table.from')} {record.startDate ? dayjs(record.startDate).format('DD/MM/YYYY') : t('admin.discountCodes.table.unlimited')}</div>
-          <div>{t('admin.discountCodes.table.to')} {record.endDate ? dayjs(record.endDate).format('DD/MM/YYYY') : t('admin.discountCodes.table.unlimited')}</div>
+          <div>
+            {t('admin.discountCodes.table.from')}{' '}
+            {record.startDate
+              ? dayjs(record.startDate).format('DD/MM/YYYY')
+              : t('admin.discountCodes.table.unlimited')}
+          </div>
+          <div>
+            {t('admin.discountCodes.table.to')}{' '}
+            {record.endDate
+              ? dayjs(record.endDate).format('DD/MM/YYYY')
+              : t('admin.discountCodes.table.unlimited')}
+          </div>
         </div>
       ),
     },
@@ -169,9 +190,15 @@ const DiscountCodesPage: React.FC = () => {
       title: t('admin.discountCodes.table.usage'),
       key: 'usage',
       render: (_: unknown, record: DiscountCode) => (
-        <Tooltip title={t('admin.discountCodes.table.usageInfo', { used: record.usedCount, limit: record.usageLimit || t('admin.discountCodes.table.noLimit') })}>
+        <Tooltip
+          title={t('admin.discountCodes.table.usageInfo', {
+            used: record.usedCount,
+            limit: record.usageLimit || t('admin.discountCodes.table.noLimit'),
+          })}
+        >
           <div className="text-sm">
-            <span className="font-semibold text-blue-600">{record.usedCount}</span> / {record.usageLimit || '∞'}
+            <span className="font-semibold text-blue-600">{record.usedCount}</span> /{' '}
+            {record.usageLimit || '∞'}
           </div>
         </Tooltip>
       ),
@@ -181,8 +208,13 @@ const DiscountCodesPage: React.FC = () => {
       dataIndex: 'isActive',
       key: 'isActive',
       render: (isActive: boolean) => (
-        <Tag color={isActive ? 'green' : 'red'} icon={isActive ? <CheckCircleOutlined /> : <StopOutlined />}>
-          {isActive ? t('admin.discountCodes.status.active') : t('admin.discountCodes.status.paused')}
+        <Tag
+          color={isActive ? 'green' : 'red'}
+          icon={isActive ? <CheckCircleOutlined /> : <StopOutlined />}
+        >
+          {isActive
+            ? t('admin.discountCodes.status.active')
+            : t('admin.discountCodes.status.paused')}
         </Tag>
       ),
     },
@@ -191,7 +223,12 @@ const DiscountCodesPage: React.FC = () => {
       key: 'actions',
       render: (_: unknown, record: DiscountCode) => (
         <Space>
-          <Button type="link" icon={<EditOutlined />} size="small" onClick={() => handleEdit(record)} />
+          <Button
+            type="link"
+            icon={<EditOutlined />}
+            size="small"
+            onClick={() => handleEdit(record)}
+          />
           <Popconfirm
             title={t('admin.discountCodes.deleteTitle')}
             description={t('admin.discountCodes.deleteConfirm')}
@@ -245,15 +282,22 @@ const DiscountCodesPage: React.FC = () => {
             total: discountCodesData?.data?.pagination?.total || 0,
             onChange: (page, limit) => setFilters({ ...filters, page, limit }),
             showSizeChanger: true,
-            showTotal: (total, range) => t('admin.discountCodes.totalItems', { range0: range[0], range1: range[1], total }),
+            showTotal: (total, range) =>
+              t('admin.discountCodes.totalItems', { range0: range[0], range1: range[1], total }),
           }}
         />
       </Card>
 
       <Modal
-        title={editingCode ? t('admin.discountCodes.editCode') : t('admin.discountCodes.createCodeModal')}
+        title={
+          editingCode ? t('admin.discountCodes.editCode') : t('admin.discountCodes.createCodeModal')
+        }
         open={isModalOpen}
-        onCancel={() => { setIsModalOpen(false); form.resetFields(); setEditingCode(null); }}
+        onCancel={() => {
+          setIsModalOpen(false);
+          form.resetFields();
+          setEditingCode(null);
+        }}
         footer={null}
         width={700}
       >
@@ -271,7 +315,10 @@ const DiscountCodesPage: React.FC = () => {
                   getValueFromEvent={(e) => e.target.value.toUpperCase()}
                   style={{ flex: 1, marginBottom: 24 }}
                 >
-                  <Input placeholder={t('admin.discountCodes.form.codePlaceholder')} style={{ textTransform: 'uppercase' }} />
+                  <Input
+                    placeholder={t('admin.discountCodes.form.codePlaceholder')}
+                    style={{ textTransform: 'uppercase' }}
+                  />
                 </Form.Item>
                 <Button
                   onClick={generateRandomCode}
@@ -284,11 +331,17 @@ const DiscountCodesPage: React.FC = () => {
               </div>
             </Col>
             <Col span={12}>
-              <Form.Item name="type" label={t('admin.discountCodes.form.type')} rules={[{ required: true }]}>
-                <Select options={[
-                  { value: 'percent', label: t('admin.discountCodes.form.typePercent') },
-                  { value: 'fixed', label: t('admin.discountCodes.form.typeFixed') },
-                ]} />
+              <Form.Item
+                name="type"
+                label={t('admin.discountCodes.form.type')}
+                rules={[{ required: true }]}
+              >
+                <Select
+                  options={[
+                    { value: 'percent', label: t('admin.discountCodes.form.typePercent') },
+                    { value: 'fixed', label: t('admin.discountCodes.form.typeFixed') },
+                  ]}
+                />
               </Form.Item>
             </Col>
           </Row>
@@ -301,15 +354,29 @@ const DiscountCodesPage: React.FC = () => {
                   <Col span={12}>
                     <Form.Item
                       name="value"
-                      label={type === 'percent' ? t('admin.discountCodes.form.valuePercent') : t('admin.discountCodes.form.valueFixed')}
-                      rules={[{ required: true, message: t('admin.discountCodes.form.valueRequired') }]}
+                      label={
+                        type === 'percent'
+                          ? t('admin.discountCodes.form.valuePercent')
+                          : t('admin.discountCodes.form.valueFixed')
+                      }
+                      rules={[
+                        { required: true, message: t('admin.discountCodes.form.valueRequired') },
+                      ]}
                     >
                       <InputNumber<number>
                         min={0}
                         max={type === 'percent' ? 100 : undefined}
                         style={{ width: '100%' }}
-                        formatter={type === 'fixed' ? (value) => `${value}`.replace(/\B(?=(\d{3})+(?!\d))/g, ',') : undefined}
-                        parser={type === 'fixed' ? (value) => Number(value?.replace(/\$\s?|(,*)/g, '') ?? '') : undefined}
+                        formatter={
+                          type === 'fixed'
+                            ? (value) => `${value}`.replace(/\B(?=(\d{3})+(?!\d))/g, ',')
+                            : undefined
+                        }
+                        parser={
+                          type === 'fixed'
+                            ? (value) => Number(value?.replace(/\$\s?|(,*)/g, '') ?? '')
+                            : undefined
+                        }
                       />
                     </Form.Item>
                   </Col>
@@ -351,7 +418,11 @@ const DiscountCodesPage: React.FC = () => {
                 label={t('admin.discountCodes.form.usageLimit')}
                 tooltip={t('admin.discountCodes.form.usageLimitTooltip')}
               >
-                <InputNumber min={0} style={{ width: '100%' }} placeholder={t('admin.discountCodes.form.usageLimitPlaceholder')} />
+                <InputNumber
+                  min={0}
+                  style={{ width: '100%' }}
+                  placeholder={t('admin.discountCodes.form.usageLimitPlaceholder')}
+                />
               </Form.Item>
             </Col>
           </Row>

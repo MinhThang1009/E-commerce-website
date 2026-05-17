@@ -37,7 +37,7 @@ import type { UpdateProductRequest } from '@/features/admin';
 
 // Utils
 import { processDescriptionImages, hasBase64Images } from '@/utils/descriptionImageProcessor';
-import { getErrorMsg } from '@/utils/errorMessage';
+import { getErrorMsg } from '@/utils/errorUtils';
 
 const { Title, Text } = Typography;
 

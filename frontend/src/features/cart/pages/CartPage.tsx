@@ -3,11 +3,7 @@ import Button from '@/components/common/Button';
 import CartItem from '../components/CartItem';
 import CheckCircleIcon from '@/components/icons/CheckCircleIcon';
 import PlusCircleIcon from '@/components/icons/PlusCircleIcon';
-import {
-  useClearCartMutation,
-  useGetCartQuery,
-  useValidateCartQuery,
-} from '../api/cartApi';
+import { useClearCartMutation, useGetCartQuery, useValidateCartQuery } from '../api/cartApi';
 import { useCartStore } from '@/stores/cartStore';
 import { useAuthStore } from '@/stores/authStore';
 import { useApplyDiscountCodeMutation } from '@/features/orders';
@@ -19,7 +15,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { useQueryClient } from '@tanstack/react-query';
 import { ROUTES } from '@/routes/paths';
 import { cartKeys } from '../api/cartApi';
-import { getErrorMsg } from '@/utils/errorMessage';
+import { getErrorMsg } from '@/utils/errorUtils';
 
 const CartPage: React.FC = () => {
   const { t } = useTranslation();
@@ -166,7 +162,7 @@ const CartPage: React.FC = () => {
     if (appliedVoucher) {
       handleVoucherRevalidate();
     }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [subtotal]);
 
   // Tổng tiền
@@ -254,7 +250,10 @@ const CartPage: React.FC = () => {
               </p>
               <ul className="space-y-1.5">
                 {issueItems.map((issue) => (
-                  <li key={issue.id} className="text-sm text-amber-700 dark:text-amber-400 flex flex-col gap-0.5">
+                  <li
+                    key={issue.id}
+                    className="text-sm text-amber-700 dark:text-amber-400 flex flex-col gap-0.5"
+                  >
                     <span className="font-medium">› {issue.name}</span>
                     {issue.outOfStock && (
                       <span className="text-red-600 dark:text-red-400 ml-3">
@@ -263,12 +262,18 @@ const CartPage: React.FC = () => {
                     )}
                     {issue.quantityExceedsStock && !issue.outOfStock && (
                       <span className="text-orange-600 dark:text-orange-400 ml-3">
-                        {t('cart.validation.onlyLeft', { max: issue.maxStock, qty: issue.quantity })}
+                        {t('cart.validation.onlyLeft', {
+                          max: issue.maxStock,
+                          qty: issue.quantity,
+                        })}
                       </span>
                     )}
                     {issue.priceChanged && (
                       <span className="text-amber-600 dark:text-amber-300 ml-3">
-                        {t('cart.validation.priceChanged', { old: formatPrice(issue.savedPrice), new: formatPrice(issue.currentPrice) })}
+                        {t('cart.validation.priceChanged', {
+                          old: formatPrice(issue.savedPrice),
+                          new: formatPrice(issue.currentPrice),
+                        })}
                       </span>
                     )}
                   </li>
@@ -408,25 +413,45 @@ const CartPage: React.FC = () => {
               {/* Tổng tiền */}
               <div className="space-y-3">
                 <div className="flex justify-between text-sm">
-                  <span className="text-neutral-600 dark:text-neutral-400">{t('cart.subtotal')}</span>
-                  <span className="text-neutral-800 dark:text-neutral-200 font-medium">{formatPrice(subtotal)}</span>
+                  <span className="text-neutral-600 dark:text-neutral-400">
+                    {t('cart.subtotal')}
+                  </span>
+                  <span className="text-neutral-800 dark:text-neutral-200 font-medium">
+                    {formatPrice(subtotal)}
+                  </span>
                 </div>
 
                 {appliedVoucher && (
                   <div className="flex justify-between text-sm text-green-600 dark:text-green-400">
                     <span className="flex items-center gap-1">
-                      <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z" />
+                      <svg
+                        className="w-3.5 h-3.5"
+                        fill="none"
+                        viewBox="0 0 24 24"
+                        stroke="currentColor"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth={2}
+                          d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z"
+                        />
                       </svg>
                       {t('cart.voucher.discountLabel', { code: appliedVoucher.code })}
                     </span>
-                    <span className="font-semibold">-{formatPrice(appliedVoucher.discountAmount)}</span>
+                    <span className="font-semibold">
+                      -{formatPrice(appliedVoucher.discountAmount)}
+                    </span>
                   </div>
                 )}
 
                 <div className="border-t border-neutral-200 dark:border-neutral-700 pt-3 flex justify-between">
-                  <span className="text-neutral-800 dark:text-neutral-200 font-semibold text-base">{t('cart.total')}</span>
-                  <span className="text-neutral-900 dark:text-white font-bold text-xl">{formatPrice(total)}</span>
+                  <span className="text-neutral-800 dark:text-neutral-200 font-semibold text-base">
+                    {t('cart.total')}
+                  </span>
+                  <span className="text-neutral-900 dark:text-white font-bold text-xl">
+                    {formatPrice(total)}
+                  </span>
                 </div>
               </div>
 
@@ -459,8 +484,19 @@ const CartPage: React.FC = () => {
                   t('cart.benefits.returnPolicy'),
                 ].map((benefit) => (
                   <p key={benefit} className="flex items-center">
-                    <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-2 text-primary-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                    <svg
+                      xmlns="http://www.w3.org/2000/svg"
+                      className="h-4 w-4 mr-2 text-primary-500"
+                      fill="none"
+                      viewBox="0 0 24 24"
+                      stroke="currentColor"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d="M5 13l4 4L19 7"
+                      />
                     </svg>
                     {benefit}
                   </p>

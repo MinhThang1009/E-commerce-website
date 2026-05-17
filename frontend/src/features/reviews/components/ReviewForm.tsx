@@ -3,7 +3,7 @@ import { useTranslation } from 'react-i18next';
 import { toast } from '@/utils/toast';
 import { useAuthStore } from '@/stores/authStore';
 import { useCreateReviewMutation } from '../api/reviewApi';
-import { getErrorMsg } from '@/utils/errorMessage';
+import { getErrorMsg } from '@/utils/errorUtils';
 
 interface ReviewFormProps {
   productId: string;
@@ -11,11 +11,7 @@ interface ReviewFormProps {
   onCancel?: () => void;
 }
 
-const ReviewForm: React.FC<ReviewFormProps> = ({
-  productId,
-  onSubmitSuccess,
-  onCancel,
-}) => {
+const ReviewForm: React.FC<ReviewFormProps> = ({ productId, onSubmitSuccess, onCancel }) => {
   const { t } = useTranslation();
   const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
   const _user = useAuthStore((s) => s.user);
@@ -87,12 +83,18 @@ const ReviewForm: React.FC<ReviewFormProps> = ({
 
   const getStarLabel = (rating: number) => {
     switch (rating) {
-      case 1: return t('review.form.star1');
-      case 2: return t('review.form.star2');
-      case 3: return t('review.form.star3');
-      case 4: return t('review.form.star4');
-      case 5: return t('review.form.star5');
-      default: return '';
+      case 1:
+        return t('review.form.star1');
+      case 2:
+        return t('review.form.star2');
+      case 3:
+        return t('review.form.star3');
+      case 4:
+        return t('review.form.star4');
+      case 5:
+        return t('review.form.star5');
+      default:
+        return '';
     }
   };
 
@@ -122,13 +124,17 @@ const ReviewForm: React.FC<ReviewFormProps> = ({
           </p>
           <div className="flex flex-col sm:flex-row gap-3 justify-center">
             <button
-              onClick={() => { window.location.href = '/login'; }}
+              onClick={() => {
+                window.location.href = '/login';
+              }}
               className="px-6 py-2 bg-primary-500 text-white rounded-lg hover:bg-primary-600 transition-colors font-medium"
             >
               {t('review.loginRequired.login')}
             </button>
             <button
-              onClick={() => { window.location.href = '/register'; }}
+              onClick={() => {
+                window.location.href = '/register';
+              }}
               className="px-6 py-2 border border-neutral-300 dark:border-neutral-600 text-neutral-700 dark:text-neutral-300 rounded-lg hover:bg-neutral-50 dark:hover:bg-neutral-700 transition-colors font-medium"
             >
               {t('review.loginRequired.register')}
@@ -185,9 +191,7 @@ const ReviewForm: React.FC<ReviewFormProps> = ({
               )}
             </span>
           </div>
-          {errors.rating && (
-            <p className="text-red-500 text-sm mt-1">{errors.rating}</p>
-          )}
+          {errors.rating && <p className="text-red-500 text-sm mt-1">{errors.rating}</p>}
         </div>
 
         {/* Title */}
@@ -211,9 +215,7 @@ const ReviewForm: React.FC<ReviewFormProps> = ({
             maxLength={100}
           />
           <div className="flex justify-between items-center mt-1">
-            {errors.title && (
-              <p className="text-red-500 text-sm">{errors.title}</p>
-            )}
+            {errors.title && <p className="text-red-500 text-sm">{errors.title}</p>}
             <p className="text-xs text-neutral-500 dark:text-neutral-400 ml-auto">
               {formData.title.length}/100
             </p>
@@ -241,9 +243,7 @@ const ReviewForm: React.FC<ReviewFormProps> = ({
             maxLength={1000}
           />
           <div className="flex justify-between items-center mt-1">
-            {errors.comment && (
-              <p className="text-red-500 text-sm">{errors.comment}</p>
-            )}
+            {errors.comment && <p className="text-red-500 text-sm">{errors.comment}</p>}
             <p className="text-xs text-neutral-500 dark:text-neutral-400 ml-auto">
               {formData.comment.length}/1000
             </p>

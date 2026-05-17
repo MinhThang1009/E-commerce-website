@@ -3,7 +3,7 @@ import { XMarkIcon, CloudArrowUpIcon, LinkIcon } from '@heroicons/react/24/outli
 import { useTranslation } from 'react-i18next';
 import { toast } from '@/utils/toast';
 import { getUploadUrl } from '@/utils/uploadUrl';
-import { getErrorMsg } from '@/utils/errorMessage';
+import { getErrorMsg } from '@/utils/errorUtils';
 
 interface ImageUploadProps {
   value?: string | string[];

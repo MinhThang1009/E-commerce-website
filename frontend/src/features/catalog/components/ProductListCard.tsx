@@ -9,7 +9,7 @@ import { useAddToCartMutation } from '@/features/cart';
 import { calculatePriceRange, calculateDiscountPercentage } from '@/utils/priceUtils';
 import { v4 as uuidv4 } from 'uuid';
 import { ShoppingCartIcon } from '@heroicons/react/24/outline';
-import { getErrorMsg } from '@/utils/errorMessage';
+import { getErrorMsg } from '@/utils/errorUtils';
 
 interface ProductListCardProps extends Product {
   enableVariantPricing?: boolean; // Option để bật/tắt việc load variants

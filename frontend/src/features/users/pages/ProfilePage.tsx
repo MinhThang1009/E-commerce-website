@@ -16,7 +16,7 @@ import {
 } from '@/features/users';
 import { Address } from '@/types/user.types';
 import { useGetLoyaltyInfoQuery } from '@/features/loyalty';
-import { getErrorMsg } from '@/utils/errorMessage';
+import { getErrorMsg } from '@/utils/errorUtils';
 
 type TabKey = 'info' | 'password' | 'orders' | 'addresses' | 'loyalty';
 

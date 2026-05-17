@@ -1,15 +1,5 @@
 import { ArrowLeftOutlined } from '@ant-design/icons';
-import {
-  Button,
-  Card,
-  Col,
-  Divider,
-  Form,
-  message,
-  Row,
-  Tabs,
-  Typography,
-} from 'antd';
+import { Button, Card, Col, Divider, Form, message, Row, Tabs, Typography } from 'antd';
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
@@ -45,23 +35,38 @@ import ProductFAQForm from '../../components/ProductFAQForm';
 // Types và utils
 import { AttributeGroup } from '../../api/attributeApi';
 import { ProductFormData, ProductAttribute, ProductVariant } from '@/types';
-import { getErrorMsg } from '@/utils/errorMessage';
+import { getErrorMsg } from '@/utils/errorUtils';
 
 // Utils xử lý ảnh trong mô tả sản phẩm (base64 -> file đã upload)
-import {
-  hasBase64Images,
-  processDescriptionImages,
-} from '@/utils/descriptionImageProcessor';
+import { hasBase64Images, processDescriptionImages } from '@/utils/descriptionImageProcessor';
 
 const { Title, Text } = Typography;
 
 const getDefaultFaqs = () => [
-  { question: i18next.t('admin.products.faq.defaults.q1'), answer: i18next.t('admin.products.faq.defaults.a1') },
-  { question: i18next.t('admin.products.faq.defaults.q2'), answer: i18next.t('admin.products.faq.defaults.a2') },
-  { question: i18next.t('admin.products.faq.defaults.q3'), answer: i18next.t('admin.products.faq.defaults.a3') },
-  { question: i18next.t('admin.products.faq.defaults.q4'), answer: i18next.t('admin.products.faq.defaults.a4') },
-  { question: i18next.t('admin.products.faq.defaults.q5'), answer: i18next.t('admin.products.faq.defaults.a5') },
-  { question: i18next.t('admin.products.faq.defaults.q6'), answer: i18next.t('admin.products.faq.defaults.a6') },
+  {
+    question: i18next.t('admin.products.faq.defaults.q1'),
+    answer: i18next.t('admin.products.faq.defaults.a1'),
+  },
+  {
+    question: i18next.t('admin.products.faq.defaults.q2'),
+    answer: i18next.t('admin.products.faq.defaults.a2'),
+  },
+  {
+    question: i18next.t('admin.products.faq.defaults.q3'),
+    answer: i18next.t('admin.products.faq.defaults.a3'),
+  },
+  {
+    question: i18next.t('admin.products.faq.defaults.q4'),
+    answer: i18next.t('admin.products.faq.defaults.a4'),
+  },
+  {
+    question: i18next.t('admin.products.faq.defaults.q5'),
+    answer: i18next.t('admin.products.faq.defaults.a5'),
+  },
+  {
+    question: i18next.t('admin.products.faq.defaults.q6'),
+    answer: i18next.t('admin.products.faq.defaults.a6'),
+  },
 ];
 
 const CreateProductPage: React.FC = () => {
@@ -70,31 +75,31 @@ const CreateProductPage: React.FC = () => {
   const [form] = Form.useForm();
 
   // State để theo dõi các bước đã hoàn thành trong quy trình tạo sản phẩm
-  const [completedSteps, setCompletedSteps] = useState<Record<string, boolean>>(
-    {
-      basic: false,
-      specifications: false,
-      attributes: false,
-      variants: false,
-      pricing: false,
-      category: false,
-      images: false,
-      warranty: false,
-      faqs: false,
-      seo: false,
-    }
-  );
+  const [completedSteps, setCompletedSteps] = useState<Record<string, boolean>>({
+    basic: false,
+    specifications: false,
+    attributes: false,
+    variants: false,
+    pricing: false,
+    category: false,
+    images: false,
+    warranty: false,
+    faqs: false,
+    seo: false,
+  });
 
   // State cho hierarchical attributes và variants nếu cần thiết trong tương lai
   const [_attributeGroups, _setAttributeGroups] = useState<AttributeGroup[]>([]);
   const [_hierarchicalVariants, _setHierarchicalVariants] = useState<ProductVariant[]>([]);
-  const [_specifications, _setSpecifications] = useState<Array<{ name: string; value: string; category?: string }>>([]);
+  const [_specifications, _setSpecifications] = useState<
+    Array<{ name: string; value: string; category?: string }>
+  >([]);
 
   // Các API hook cần thiết
-  const { data: categories, isLoading: isCategoriesLoading } =
-    useGetCategoriesQuery();
-  const { data: _warrantyData, isLoading: _isWarrantyLoading } =
-    useGetWarrantyPackagesQuery({ isActive: true });
+  const { data: categories, isLoading: isCategoriesLoading } = useGetCategoriesQuery();
+  const { data: _warrantyData, isLoading: _isWarrantyLoading } = useGetWarrantyPackagesQuery({
+    isActive: true,
+  });
   const { mutateAsync: createProduct, isPending: isCreating } = useCreateProductMutation();
   const { mutateAsync: convertBase64ToImage } = useConvertBase64ToImageMutation();
   const { mutateAsync: deleteImage } = useDeleteImageMutation();
@@ -120,12 +125,10 @@ const CreateProductPage: React.FC = () => {
   } = useProductVariants([], form);
 
   // Debug: Log attributes whenever they change - đặc biệt là để theo dõi khi xóa thuộc tính (vì thuộc tính bị xóa sẽ ảnh hưởng đến biến thể)
-  useEffect(() => {
-  }, [attributes]);
+  useEffect(() => {}, [attributes]);
 
   // Debug: Log variants whenever they change - đặc biệt là để theo dõi khi xóa biến thể
   useEffect(() => {
-
     // Tự động set price = 0 khi có variants để tránh lỗi validation khi tạo sản phẩm có variants mà chưa nhập giá cho variants
     if (variants.length > 0) {
       form.setFieldValue('price', 0);
@@ -186,8 +189,7 @@ const CreateProductPage: React.FC = () => {
         const hasVariants = variants.length > 0;
 
         // Xử lý mô tả: chuyển ảnh base64 thành file đã upload
-        let processedDescription =
-          allFormValues.description || values.description || '';
+        let processedDescription = allFormValues.description || values.description || '';
 
         if (hasBase64Images(processedDescription)) {
           const result = await processDescriptionImages(processedDescription, {
@@ -212,62 +214,43 @@ const CreateProductPage: React.FC = () => {
 
         const productData = {
           name: allFormValues.name || values.name,
-          baseName:
-            allFormValues.baseName ||
-            values.baseName ||
-            allFormValues.name ||
-            values.name,
-          shortDescription:
-            allFormValues.shortDescription || values.shortDescription,
+          baseName: allFormValues.baseName || values.baseName || allFormValues.name || values.name,
+          shortDescription: allFormValues.shortDescription || values.shortDescription,
           description: processedDescription,
           // Sản phẩm có biến thể: đặt giá về 0
           price: hasVariants
             ? 0
-            : parseFloat(
-              (allFormValues.price || values.price || '0').toString()
-            ) || 0,
+            : parseFloat((allFormValues.price || values.price || '0').toString()) || 0,
           comparePrice: hasVariants
             ? undefined
             : (() => {
-              const compareAtPrice =
-                allFormValues.compareAtPrice || values.compareAtPrice;
-              return compareAtPrice &&
-                parseFloat(compareAtPrice.toString()) > 0
-                ? parseFloat(compareAtPrice.toString())
-                : undefined;
-            })(),
+                const compareAtPrice = allFormValues.compareAtPrice || values.compareAtPrice;
+                return compareAtPrice && parseFloat(compareAtPrice.toString()) > 0
+                  ? parseFloat(compareAtPrice.toString())
+                  : undefined;
+              })(),
           compareAtPrice: hasVariants
             ? undefined
             : (() => {
-              const compareAtPrice =
-                allFormValues.compareAtPrice || values.compareAtPrice;
-              return compareAtPrice &&
-                parseFloat(compareAtPrice.toString()) > 0
-                ? parseFloat(compareAtPrice.toString())
-                : undefined;
-            })(),
+                const compareAtPrice = allFormValues.compareAtPrice || values.compareAtPrice;
+                return compareAtPrice && parseFloat(compareAtPrice.toString()) > 0
+                  ? parseFloat(compareAtPrice.toString())
+                  : undefined;
+              })(),
           // Sản phẩm có biến thể: đặt tồn kho về 0
           stock: hasVariants
             ? 0
-            : parseInt(
-              (
-                allFormValues.stockQuantity ||
-                values.stockQuantity ||
-                '0'
-              ).toString()
-            ) || 0,
+            : parseInt((allFormValues.stockQuantity || values.stockQuantity || '0').toString()) ||
+              0,
           stockQuantity: hasVariants
             ? 0
-            : parseInt(
-              (
-                allFormValues.stockQuantity ||
-                values.stockQuantity ||
-                '0'
-              ).toString()
-            ) || 0,
+            : parseInt((allFormValues.stockQuantity || values.stockQuantity || '0').toString()) ||
+              0,
           sku: hasVariants
             ? undefined
-            : allFormValues.sku || (values as ProductFormData & { sku?: string }).sku || `PROD-${Date.now()}`,
+            : allFormValues.sku ||
+              (values as ProductFormData & { sku?: string }).sku ||
+              `PROD-${Date.now()}`,
           status: allFormValues.status || values.status || 'active',
           featured: allFormValues.featured || values.featured || false,
           categoryIds: allFormValues.categoryIds || values.categoryIds || [],
@@ -298,49 +281,46 @@ const CreateProductPage: React.FC = () => {
             }
             return [];
           })(),
-          warrantyPackageIds:
-            allFormValues.warrantyPackageIds || values.warrantyPackageIds || [],
+          warrantyPackageIds: allFormValues.warrantyPackageIds || values.warrantyPackageIds || [],
           attributes:
             attributes.length > 0
               ? attributes.map((attr: ProductAttribute) => ({
-                name: attr.name,
-                value: Array.isArray(attr.values)
-                  ? attr.values.join(', ')
-                  : '',
-              }))
+                  name: attr.name,
+                  value: Array.isArray(attr.values) ? attr.values.join(', ') : '',
+                }))
               : [],
           variants: hasVariants
             ? variants.map((variant, index) => ({
-              name: variant.name || `Variant ${index + 1}`,
-              variantName: variant.name || `Variant ${index + 1}`,
-              price: parseFloat(variant.price?.toString() || '0') || 0,
-              compareAtPrice: variant.compareAtPrice
-                ? parseFloat(variant.compareAtPrice.toString())
-                : undefined,
-              stockQuantity: parseInt(variant.stockQuantity?.toString() || variant.stock?.toString() || '0') || 0,
-              stock: parseInt(variant.stock?.toString() || variant.stockQuantity?.toString() || '0') || 0,
-              sku: variant.sku || `VAR-${Date.now()}-${index + 1}`,
-              isDefault: index === 0, // Biến thể đầu tiên là mặc định
-              isAvailable: true,
-              attributes: variant.attributes || {},
-              specifications: variant.specifications || {},
-              images: variant.images || [],
-            }))
+                name: variant.name || `Variant ${index + 1}`,
+                variantName: variant.name || `Variant ${index + 1}`,
+                price: parseFloat(variant.price?.toString() || '0') || 0,
+                compareAtPrice: variant.compareAtPrice
+                  ? parseFloat(variant.compareAtPrice.toString())
+                  : undefined,
+                stockQuantity:
+                  parseInt(variant.stockQuantity?.toString() || variant.stock?.toString() || '0') ||
+                  0,
+                stock:
+                  parseInt(variant.stock?.toString() || variant.stockQuantity?.toString() || '0') ||
+                  0,
+                sku: variant.sku || `VAR-${Date.now()}-${index + 1}`,
+                isDefault: index === 0, // Biến thể đầu tiên là mặc định
+                isAvailable: true,
+                attributes: variant.attributes || {},
+                specifications: variant.specifications || {},
+                images: variant.images || [],
+              }))
             : [],
           // Thêm các trường SEO - chỉ thêm nếu có giá trị
           ...(allFormValues.seoTitle || values.seoTitle
             ? {
-              seoTitle: (allFormValues.seoTitle || values.seoTitle).substring(
-                0,
-                500
-              ),
-            }
+                seoTitle: (allFormValues.seoTitle || values.seoTitle).substring(0, 500),
+              }
             : {}),
           ...(allFormValues.seoDescription || values.seoDescription
             ? {
-              seoDescription:
-                allFormValues.seoDescription || values.seoDescription,
-            }
+                seoDescription: allFormValues.seoDescription || values.seoDescription,
+              }
             : {}),
           seoKeywords: (() => {
             const keywords = allFormValues.seoKeywords || values.seoKeywords;
@@ -366,7 +346,7 @@ const CreateProductPage: React.FC = () => {
         // Tránh orphaned files khi form bị lỗi validation sau khi ảnh đã được upload
         if (uploadedDescImageIds.length > 0) {
           await Promise.allSettled(
-            uploadedDescImageIds.map((id) => deleteImage(id).catch(() => {}))
+            uploadedDescImageIds.map((id) => deleteImage(id).catch(() => {})),
           );
         }
         const errorMessage = formatErrorMessage(error);
@@ -431,11 +411,7 @@ const CreateProductPage: React.FC = () => {
       label: (
         <span
           style={{
-            color: completedSteps.basic
-              ? '#52c41a'
-              : isTabAccessible('basic')
-                ? '#000'
-                : '#999',
+            color: completedSteps.basic ? '#52c41a' : isTabAccessible('basic') ? '#000' : '#999',
           }}
         >
           {t('admin.products.tabs.basic')} {completedSteps.basic ? '?' : ''}
@@ -444,10 +420,7 @@ const CreateProductPage: React.FC = () => {
       disabled: !isTabAccessible('basic'),
       children: (
         <>
-          <ProductBasicInfoForm
-            fillExampleData={fillExampleData}
-            productId={undefined}
-          />
+          <ProductBasicInfoForm fillExampleData={fillExampleData} productId={undefined} />
           <TabNavigation
             activeTab={activeTab}
             setActiveTab={setActiveTab}
@@ -600,10 +573,7 @@ const CreateProductPage: React.FC = () => {
       disabled: !isTabAccessible('category'),
       children: (
         <>
-          <ProductCategoryForm
-            categories={categoriesList}
-            isLoading={isCategoriesLoading}
-          />
+          <ProductCategoryForm categories={categoriesList} isLoading={isCategoriesLoading} />
           <TabNavigation
             activeTab={activeTab}
             setActiveTab={setActiveTab}
@@ -618,11 +588,7 @@ const CreateProductPage: React.FC = () => {
       label: (
         <span
           style={{
-            color: completedSteps.images
-              ? '#52c41a'
-              : isTabAccessible('images')
-                ? '#000'
-                : '#999',
+            color: completedSteps.images ? '#52c41a' : isTabAccessible('images') ? '#000' : '#999',
           }}
         >
           {t('admin.products.tabs.images')} {completedSteps.images ? '?' : ''}
@@ -674,11 +640,7 @@ const CreateProductPage: React.FC = () => {
       label: (
         <span
           style={{
-            color: completedSteps.faqs
-              ? '#52c41a'
-              : isTabAccessible('faqs')
-                ? '#000'
-                : '#999',
+            color: completedSteps.faqs ? '#52c41a' : isTabAccessible('faqs') ? '#000' : '#999',
           }}
         >
           {t('admin.products.tabs.faqs')} {completedSteps.faqs ? '?' : ''}
@@ -702,11 +664,7 @@ const CreateProductPage: React.FC = () => {
       label: (
         <span
           style={{
-            color: completedSteps.seo
-              ? '#52c41a'
-              : isTabAccessible('seo')
-                ? '#000'
-                : '#999',
+            color: completedSteps.seo ? '#52c41a' : isTabAccessible('seo') ? '#000' : '#999',
           }}
         >
           {t('admin.products.tabs.seo')} {completedSteps.seo ? '?' : ''}
@@ -741,9 +699,7 @@ const CreateProductPage: React.FC = () => {
             <Title level={2} style={{ margin: 0 }}>
               {t('admin.products.create.title')}
             </Title>
-            <Text type="secondary">
-              {t('admin.products.create.subtitle')}
-            </Text>
+            <Text type="secondary">{t('admin.products.create.subtitle')}</Text>
           </Col>
           <Col>
             <Button
@@ -813,4 +769,3 @@ const CreateProductPage: React.FC = () => {
 };
 
 export default CreateProductPage;
-

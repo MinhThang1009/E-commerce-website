@@ -24,13 +24,9 @@ import {
   TagOutlined,
   InfoCircleOutlined,
 } from '@ant-design/icons';
-import {
-  attributeService,
-  AttributeGroup,
-  AttributeValue,
-} from '../api/attributeApi';
+import { attributeService, AttributeGroup, AttributeValue } from '../api/attributeApi';
 import { getLocale } from '@/utils/format';
-import { getErrorMsg } from '@/utils/errorMessage';
+import { getErrorMsg } from '@/utils/errorUtils';
 
 const { Title, Text } = Typography;
 const { Option } = Select;
@@ -46,12 +42,8 @@ const HierarchicalAttributesForm: React.FC<HierarchicalAttributesFormProps> = ({
   const [form] = Form.useForm();
   const [isModalVisible, setIsModalVisible] = useState(false);
   const [modalType, setModalType] = useState<'group' | 'value'>('group');
-  const [editingItem, setEditingItem] = useState<
-    AttributeGroup | AttributeValue | null
-  >(null);
-  const [selectedGroup, setSelectedGroup] = useState<AttributeGroup | null>(
-    null
-  );
+  const [editingItem, setEditingItem] = useState<AttributeGroup | AttributeValue | null>(null);
+  const [selectedGroup, setSelectedGroup] = useState<AttributeGroup | null>(null);
   const [expandedKeys, setExpandedKeys] = useState<React.Key[]>([]);
 
   // State nội bộ (attributeApi dùng class-based service, không phải TanStack Query hook)
@@ -81,18 +73,23 @@ const HierarchicalAttributesForm: React.FC<HierarchicalAttributesFormProps> = ({
   });
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const updateAttributeGroup = (payload: { id: string; data: any }) => ({
-    unwrap: () => attributeService.updateAttributeGroup(payload.id, payload.data).then((r) => r.data),
+    unwrap: () =>
+      attributeService.updateAttributeGroup(payload.id, payload.data).then((r) => r.data),
   });
   const deleteAttributeGroup = (id: string) => ({
     unwrap: () => attributeService.deleteAttributeGroup(id).then((r) => r.data),
   });
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const addAttributeValue = (payload: { attributeGroupId: string; data: any }) => ({
-    unwrap: () => attributeService.addAttributeValue(payload.attributeGroupId, payload.data).then((r) => r.data),
+    unwrap: () =>
+      attributeService
+        .addAttributeValue(payload.attributeGroupId, payload.data)
+        .then((r) => r.data),
   });
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const updateAttributeValue = (payload: { id: string; data: any }) => ({
-    unwrap: () => attributeService.updateAttributeValue(payload.id, payload.data).then((r) => r.data),
+    unwrap: () =>
+      attributeService.updateAttributeValue(payload.id, payload.data).then((r) => r.data),
   });
   const deleteAttributeValue = (id: string) => ({
     unwrap: () => attributeService.deleteAttributeValue(id).then((r) => r.data),
@@ -294,7 +291,8 @@ const HierarchicalAttributesForm: React.FC<HierarchicalAttributesFormProps> = ({
               {(value.priceAdjustment ?? 0) !== 0 && (
                 <Text type={(value.priceAdjustment ?? 0) > 0 ? 'success' : 'danger'}>
                   {(value.priceAdjustment ?? 0) > 0 ? '+' : ''}
-                  {(value.priceAdjustment ?? 0).toLocaleString(getLocale())}{t('common.currencySymbol')}
+                  {(value.priceAdjustment ?? 0).toLocaleString(getLocale())}
+                  {t('common.currencySymbol')}
                 </Text>
               )}
             </Space>
@@ -418,22 +416,14 @@ const HierarchicalAttributesForm: React.FC<HierarchicalAttributesFormProps> = ({
                 </Select>
               </Form.Item>
 
-              <Form.Item
-                name="isRequired"
-                label={t('attr.isRequired')}
-                initialValue={false}
-              >
+              <Form.Item name="isRequired" label={t('attr.isRequired')} initialValue={false}>
                 <Select>
                   <Option value={true}>{t('attr.yes')}</Option>
                   <Option value={false}>{t('attr.no')}</Option>
                 </Select>
               </Form.Item>
 
-              <Form.Item
-                name="sortOrder"
-                label={t('attr.sortOrder')}
-                initialValue={0}
-              >
+              <Form.Item name="sortOrder" label={t('attr.sortOrder')} initialValue={0}>
                 <InputNumber min={0} style={{ width: '100%' }} />
               </Form.Item>
             </>
@@ -443,9 +433,7 @@ const HierarchicalAttributesForm: React.FC<HierarchicalAttributesFormProps> = ({
               <Form.Item
                 name="name"
                 label={t('attr.valueName')}
-                rules={[
-                  { required: true, message: t('attr.valueNameRequired') },
-                ]}
+                rules={[{ required: true, message: t('attr.valueNameRequired') }]}
               >
                 <Input placeholder={t('attr.valueNamePlaceholder')} />
               </Form.Item>
@@ -464,11 +452,7 @@ const HierarchicalAttributesForm: React.FC<HierarchicalAttributesFormProps> = ({
                 </Form.Item>
               )}
 
-              <Form.Item
-                name="priceAdjustment"
-                label={t('attr.priceAdjustment')}
-                initialValue={0}
-              >
+              <Form.Item name="priceAdjustment" label={t('attr.priceAdjustment')} initialValue={0}>
                 <InputNumber
                   style={{ width: '100%' }}
                   placeholder="0"
@@ -479,11 +463,7 @@ const HierarchicalAttributesForm: React.FC<HierarchicalAttributesFormProps> = ({
                 />
               </Form.Item>
 
-              <Form.Item
-                name="sortOrder"
-                label={t('attr.sortOrder')}
-                initialValue={0}
-              >
+              <Form.Item name="sortOrder" label={t('attr.sortOrder')} initialValue={0}>
                 <InputNumber min={0} style={{ width: '100%' }} />
               </Form.Item>
             </>
@@ -495,4 +475,3 @@ const HierarchicalAttributesForm: React.FC<HierarchicalAttributesFormProps> = ({
 };
 
 export default HierarchicalAttributesForm;
-

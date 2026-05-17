@@ -34,7 +34,7 @@ import {
   useDeleteWarrantyPackageMutation,
 } from '../api/warrantyApi';
 import { WarrantyPackage } from '@/features/catalog';
-import { getErrorMsg } from '@/utils/errorMessage';
+import { getErrorMsg } from '@/utils/errorUtils';
 
 const { TextArea } = Input;
 
@@ -44,9 +44,13 @@ const WarrantyPackagesPage: React.FC = () => {
   const [editingPackage, setEditingPackage] = useState<WarrantyPackage | null>(null);
   const [form] = Form.useForm();
 
-  const { data: warrantyPackagesData, isLoading } = useGetWarrantyPackagesQuery({ isActive: undefined });
-  const { mutateAsync: createWarrantyPackage, isPending: isCreating } = useCreateWarrantyPackageMutation();
-  const { mutateAsync: updateWarrantyPackage, isPending: isUpdating } = useUpdateWarrantyPackageMutation();
+  const { data: warrantyPackagesData, isLoading } = useGetWarrantyPackagesQuery({
+    isActive: undefined,
+  });
+  const { mutateAsync: createWarrantyPackage, isPending: isCreating } =
+    useCreateWarrantyPackageMutation();
+  const { mutateAsync: updateWarrantyPackage, isPending: isUpdating } =
+    useUpdateWarrantyPackageMutation();
   const { mutateAsync: deleteWarrantyPackage } = useDeleteWarrantyPackageMutation();
 
   const warrantyPackages = warrantyPackagesData?.data?.warrantyPackages || [];
@@ -62,7 +66,7 @@ const WarrantyPackagesPage: React.FC = () => {
     setEditingPackage(record);
     form.setFieldsValue({
       ...record,
-      coverage: Array.isArray(record.coverage) ? record.coverage.join('\n') : (record.coverage || ''),
+      coverage: Array.isArray(record.coverage) ? record.coverage.join('\n') : record.coverage || '',
     });
     setIsModalOpen(true);
   };
@@ -156,7 +160,9 @@ const WarrantyPackagesPage: React.FC = () => {
             ))}
             {coverageArray.length > 2 && (
               <div className="text-sm text-gray-500">
-                {t('admin.warrantyPackages.table.moreBenefits', { count: coverageArray.length - 2 })}
+                {t('admin.warrantyPackages.table.moreBenefits', {
+                  count: coverageArray.length - 2,
+                })}
               </div>
             )}
           </div>
@@ -168,8 +174,13 @@ const WarrantyPackagesPage: React.FC = () => {
       dataIndex: 'isActive',
       key: 'isActive',
       render: (isActive: boolean) => (
-        <Tag color={isActive ? 'green' : 'red'} icon={isActive ? <CheckCircleOutlined /> : <StopOutlined />}>
-          {isActive ? t('admin.warrantyPackages.status.active') : t('admin.warrantyPackages.status.paused')}
+        <Tag
+          color={isActive ? 'green' : 'red'}
+          icon={isActive ? <CheckCircleOutlined /> : <StopOutlined />}
+        >
+          {isActive
+            ? t('admin.warrantyPackages.status.active')
+            : t('admin.warrantyPackages.status.paused')}
         </Tag>
       ),
     },
@@ -184,7 +195,12 @@ const WarrantyPackagesPage: React.FC = () => {
       key: 'actions',
       render: (_: unknown, record: WarrantyPackage) => (
         <Space>
-          <Button type="link" icon={<EditOutlined />} size="small" onClick={() => handleEdit(record)} />
+          <Button
+            type="link"
+            icon={<EditOutlined />}
+            size="small"
+            onClick={() => handleEdit(record)}
+          />
           <Popconfirm
             title={t('admin.warrantyPackages.deleteTitle')}
             description={t('admin.warrantyPackages.deleteConfirm')}
@@ -228,15 +244,24 @@ const WarrantyPackagesPage: React.FC = () => {
             total: warrantyPackagesData?.data?.pagination?.total || 0,
             showSizeChanger: true,
             showQuickJumper: true,
-            showTotal: (total, range) => t('admin.warrantyPackages.totalItems', { range0: range[0], range1: range[1], total }),
+            showTotal: (total, range) =>
+              t('admin.warrantyPackages.totalItems', { range0: range[0], range1: range[1], total }),
           }}
         />
       </Card>
 
       <Modal
-        title={editingPackage ? t('admin.warrantyPackages.editPackage') : t('admin.warrantyPackages.createPackageModal')}
+        title={
+          editingPackage
+            ? t('admin.warrantyPackages.editPackage')
+            : t('admin.warrantyPackages.createPackageModal')
+        }
         open={isModalOpen}
-        onCancel={() => { setIsModalOpen(false); form.resetFields(); setEditingPackage(null); }}
+        onCancel={() => {
+          setIsModalOpen(false);
+          form.resetFields();
+          setEditingPackage(null);
+        }}
         footer={null}
         width={800}
       >
@@ -255,7 +280,9 @@ const WarrantyPackagesPage: React.FC = () => {
               <Form.Item
                 name="durationMonths"
                 label={t('admin.warrantyPackages.form.duration')}
-                rules={[{ required: true, message: t('admin.warrantyPackages.form.durationRequired') }]}
+                rules={[
+                  { required: true, message: t('admin.warrantyPackages.form.durationRequired') },
+                ]}
               >
                 <InputNumber min={1} max={120} placeholder="12" style={{ width: '100%' }} />
               </Form.Item>
@@ -265,9 +292,14 @@ const WarrantyPackagesPage: React.FC = () => {
           <Form.Item
             name="description"
             label={t('admin.warrantyPackages.form.description')}
-            rules={[{ required: true, message: t('admin.warrantyPackages.form.descriptionRequired') }]}
+            rules={[
+              { required: true, message: t('admin.warrantyPackages.form.descriptionRequired') },
+            ]}
           >
-            <TextArea rows={2} placeholder={t('admin.warrantyPackages.form.descriptionPlaceholder')} />
+            <TextArea
+              rows={2}
+              placeholder={t('admin.warrantyPackages.form.descriptionPlaceholder')}
+            />
           </Form.Item>
 
           <Row gutter={16}>
@@ -275,7 +307,9 @@ const WarrantyPackagesPage: React.FC = () => {
               <Form.Item
                 name="price"
                 label={t('admin.warrantyPackages.form.price')}
-                rules={[{ required: true, message: t('admin.warrantyPackages.form.priceRequired') }]}
+                rules={[
+                  { required: true, message: t('admin.warrantyPackages.form.priceRequired') },
+                ]}
               >
                 <InputNumber<number>
                   min={0}
@@ -290,7 +324,9 @@ const WarrantyPackagesPage: React.FC = () => {
               <Form.Item
                 name="sortOrder"
                 label={t('admin.warrantyPackages.form.sortOrder')}
-                rules={[{ required: true, message: t('admin.warrantyPackages.form.sortOrderRequired') }]}
+                rules={[
+                  { required: true, message: t('admin.warrantyPackages.form.sortOrderRequired') },
+                ]}
               >
                 <InputNumber min={0} placeholder="0" style={{ width: '100%' }} />
               </Form.Item>
@@ -314,7 +350,13 @@ const WarrantyPackagesPage: React.FC = () => {
 
           <Form.Item>
             <Space className="w-full justify-end">
-              <Button onClick={() => { setIsModalOpen(false); form.resetFields(); setEditingPackage(null); }}>
+              <Button
+                onClick={() => {
+                  setIsModalOpen(false);
+                  form.resetFields();
+                  setEditingPackage(null);
+                }}
+              >
                 {t('common.cancel')}
               </Button>
               <Button type="primary" htmlType="submit" loading={isCreating || isUpdating}>

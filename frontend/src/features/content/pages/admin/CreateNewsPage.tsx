@@ -13,7 +13,7 @@ import { useTranslation } from 'react-i18next';
 import i18n from 'i18next';
 import ProductPickerModal from '../../components/ProductPickerModal';
 import { getLocale } from '@/utils/format';
-import { getErrorMsg } from '@/utils/errorMessage';
+import { getErrorMsg } from '@/utils/errorUtils';
 
 // --- Custom Quill Blot for Product Card ---
 // eslint-disable-next-line @typescript-eslint/no-explicit-any -- Quill internal API không có type definitions đầy đủ

@@ -31,7 +31,7 @@ import {
   getStockStatusColor,
   hasVariants,
 } from '../utils/productHelpers';
-import { getErrorMsg } from '@/utils/errorMessage';
+import { getErrorMsg } from '@/utils/errorUtils';
 import { localizeField } from '@/utils/localize';
 
 const ProductDetailPage: React.FC = () => {

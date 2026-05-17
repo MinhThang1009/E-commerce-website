@@ -40,7 +40,7 @@ import {
   type User,
   type UserFilters,
 } from '../api/adminUserApi';
-import { getErrorMsg } from '@/utils/errorMessage';
+import { getErrorMsg } from '@/utils/errorUtils';
 
 const { Title } = Typography;
 const { Option } = Select;

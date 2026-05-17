@@ -9,7 +9,7 @@ import {
   useVerifyOtpMutation,
   useResendVerificationMutation,
 } from '../api/authApi';
-import { getErrorMsg } from '@/utils/errorMessage';
+import { getErrorMsg } from '@/utils/errorUtils';
 
 type Step = 'form' | 'otp';
 type ApiError = { data?: { message?: string }; message?: string };

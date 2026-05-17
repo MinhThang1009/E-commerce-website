@@ -22,7 +22,7 @@ import { useCreateVNPayUrlMutation } from '@/features/payment';
 import { useGetLoyaltyInfoQuery } from '@/features/loyalty';
 import { useGetAddressesQuery } from '@/features/users';
 import { Address } from '@/types/user.types';
-import { getErrorMsg } from '@/utils/errorMessage';
+import { getErrorMsg } from '@/utils/errorUtils';
 
 const CheckoutPage: React.FC = () => {
   const { t } = useTranslation();

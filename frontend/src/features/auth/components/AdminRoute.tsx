@@ -7,9 +7,9 @@
 import { ReactNode } from 'react';
 import { Navigate, useLocation } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
-import { useAuthStore } from '@/stores/authStore';
+import { useAuthStore } from '@/stores/auth-store';
 import { ROUTES } from '@/routes/paths';
-import { useGetCurrentUserQuery } from '../api/authApi';
+import { useGetCurrentUserQuery } from '../api/auth-api';
 import LoadingSpinner from '@/components/common/LoadingSpinner';
 
 interface AdminRouteProps {
@@ -73,4 +73,3 @@ const AdminRoute: React.FC<AdminRouteProps> = ({ children }) => {
 };
 
 export default AdminRoute;
-

@@ -7,7 +7,6 @@
 import React from 'react';
 import { useTranslation } from 'react-i18next';
 
-
 interface QuickAction {
   id: string;
   labelKey: string;

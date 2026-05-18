@@ -12,13 +12,13 @@ import { Form, App, Card, Tabs, Divider, Typography, Row, Col, Button, Spin, Res
 import { ArrowLeftOutlined } from '@ant-design/icons';
 
 // Custom hooks
-import { useProductForm } from '../../hooks/useProductForm';
-import { useProductAttributes } from '../../hooks/useProductAttributes';
-import { useProductVariants } from '../../hooks/useProductVariants';
+import { useProductForm } from '../../hooks/use-product-form';
+import { useProductAttributes } from '../../hooks/use-product-attributes';
+import { useProductVariants } from '../../hooks/use-product-variants';
 
 // Các API hook
 import { useUpdateProductMutation, useGetAdminProductByIdQuery } from '@/features/admin';
-import { useGetAllCategoriesQuery } from '../../api/categoryApi';
+import { useGetAllCategoriesQuery } from '../../api/category-api';
 import { useConvertBase64ToImageMutation } from '@/features/upload';
 
 // Components
@@ -42,8 +42,8 @@ import { ProductFormData, ProductAttribute, ProductVariant } from '@/types';
 import type { UpdateProductRequest } from '@/features/admin';
 
 // Utils
-import { processDescriptionImages, hasBase64Images } from '@/utils/descriptionImageProcessor';
-import { getErrorMsg } from '@/utils/errorUtils';
+import { processDescriptionImages, hasBase64Images } from '@/utils/description-image-processor';
+import { getErrorMsg } from '@/utils/error-utils';
 
 const { Title, Text } = Typography;
 

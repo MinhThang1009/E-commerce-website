@@ -14,4 +14,3 @@ export interface DiscountCode {
   createdAt?: string;
   updatedAt?: string;
 }
-

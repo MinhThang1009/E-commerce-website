@@ -17,13 +17,13 @@ process.env.NODE_ENV = 'test';
 
 // ---------- Mutable mock state (read ở call time, không phải factory time) ----------
 
-let mockBlacklistedJtis = new Set();
+const mockBlacklistedJtis = new Set();
 let mockUserForAuth = null;
 
 // ---------- Mocks ----------
 
 // Mock sequelize config để load user.js mà không cần kết nối DB thật
-jest.mock('../config/sequelize', () => ({
+jest.mock('@config/sequelize', () => ({
   define: (_name, _attrs, _opts) => {
     class MockModel {}
     return MockModel;
@@ -31,7 +31,7 @@ jest.mock('../config/sequelize', () => ({
 }));
 
 // Mock models để authenticate middleware không cần DB
-jest.mock('../models', () => ({
+jest.mock('@models', () => ({
   User: {
     findByPk: jest.fn().mockImplementation(() => Promise.resolve(mockUserForAuth)),
     findOne: jest.fn().mockResolvedValue(null),
@@ -42,14 +42,14 @@ jest.mock('../models', () => ({
   },
 }));
 
-jest.mock('../utils/logger', () => ({
+jest.mock('@utils/logger', () => ({
   info: jest.fn(),
   error: jest.fn(),
   warn: jest.fn(),
 }));
 
 // Redis mock với blacklist kiểm soát được
-jest.mock('../config/redis', () => ({
+jest.mock('@config/redis', () => ({
   getRedisClient: jest.fn().mockResolvedValue({
     get: jest.fn().mockImplementation((key) => {
       const m = key.match(/^bl:(.+)$/);
@@ -63,7 +63,7 @@ jest.mock('../config/redis', () => ({
 }));
 
 // otpLimiter mock pass-through cho các test không liên quan đến rate limit
-jest.mock('../middlewares/rateLimiter', () => ({
+jest.mock('@middlewares/rate-limiter', () => ({
   chatbotLimiter: (_req, _res, next) => next(),
   apiLimiter: (_req, _res, next) => next(),
   authLimiter: (_req, _res, next) => next(),
@@ -76,8 +76,8 @@ const jwt = require('jsonwebtoken');
 const crypto = require('crypto');
 const express = require('express');
 const supertest = require('supertest');
-const { errorHandler } = require('../middlewares/errorHandler');
-const { authenticate } = require('../middlewares/authenticate');
+const { errorHandler } = require('@middlewares/error-handler');
+const { authenticate } = require('@middlewares/authenticate');
 
 // ============================================================
 // 1. authenticate middleware — JWT blacklist
@@ -170,7 +170,7 @@ describe('otpLimiter — chặn brute-force OTP sau 5 lần / 15 phút', () => {
 
   beforeAll(() => {
     // Dùng otpLimiter thực (jest.requireActual) thay vì pass-through mock
-    const { otpLimiter } = jest.requireActual('../middlewares/rateLimiter');
+    const { otpLimiter } = jest.requireActual('@middlewares/rate-limiter');
 
     app = express();
     app.use(express.json());
@@ -209,9 +209,9 @@ describe('otpLimiter — chặn brute-force OTP sau 5 lần / 15 phút', () => {
 // ============================================================
 
 describe('User.prototype.toJSON — không trả về các field nhạy cảm', () => {
-  // Require trực tiếp user.js (khác với mock '../models' = index.js)
+  // Require trực tiếp user.js (khác với mock '@models' = index.js)
   // ../config/sequelize đã được mock nên không cần kết nối DB thật
-  const User = require('../models/user');
+  const User = require('@models/user');
 
   const sensitiveData = {
     id: 1,
@@ -257,9 +257,9 @@ describe('User.prototype.toJSON — không trả về các field nhạy cảm', 
 
 describe('deleteFile controller — ngăn chặn path traversal trong filename', () => {
   // Phase 42 modules/upload expose deleteFile handler qua module instance
-  const buildUploadModule = require('../modules/upload/module');
-  const eventBus = require('../shared/eventBus');
-  const logger = require('../utils/logger');
+  const buildUploadModule = require('@modules/upload/module');
+  const eventBus = require('@shared/event-bus');
+  const logger = require('@utils/logger');
   const { deleteFile } = buildUploadModule({ eventBus, logger });
 
   function mockReqRes(type, filename, role = 'admin') {

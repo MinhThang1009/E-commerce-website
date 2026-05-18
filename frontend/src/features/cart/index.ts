@@ -26,7 +26,7 @@ export {
   useMergeCartMutation,
   useValidateCartQuery,
   cartKeys,
-} from './api/cartApi';
+} from './api/cart-api';
 export type {
   BackendCartItem,
   BackendCart,
@@ -36,14 +36,14 @@ export type {
   CartResponse,
   CartCountResponse,
   CartValidationResult,
-} from './api/cartApi';
+} from './api/cart-api';
 
 // Hooks
-export { useCartMerge } from './hooks/useCartMerge';
-export { useCartSync } from './hooks/useCartSync';
+export { useCartMerge } from './hooks/use-cart-merge';
+export { useCartSync } from './hooks/use-cart-sync';
 
 // Zustand store
-export { useCartStore } from '@/stores/cartStore';
+export { useCartStore } from '@/stores/cart-store';
 
 // Kiểu dữ liệu
 export type {

@@ -7,7 +7,7 @@
 import React, { useState } from 'react';
 import { Modal, Radio, Space, Button, App } from 'antd';
 import { useTranslation } from 'react-i18next';
-import { exportToExcel, exportToCSV } from '@/utils/exportUtils';
+import { exportToExcel, exportToCSV } from '@/utils/export-utils';
 
 interface ProductExportModalProps {
   isOpen: boolean;

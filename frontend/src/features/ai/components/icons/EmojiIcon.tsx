@@ -12,12 +12,7 @@ interface IconProps {
 
 const EmojiIcon: React.FC<IconProps> = ({ className = 'w-5 h-5' }) => {
   return (
-    <svg
-      className={className}
-      fill="none"
-      viewBox="0 0 24 24"
-      stroke="currentColor"
-    >
+    <svg className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor">
       <path
         strokeLinecap="round"
         strokeLinejoin="round"
@@ -29,4 +24,3 @@ const EmojiIcon: React.FC<IconProps> = ({ className = 'w-5 h-5' }) => {
 };
 
 export default EmojiIcon;
-

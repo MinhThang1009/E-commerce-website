@@ -79,7 +79,7 @@ function isAlreadyMatching(state, type, nullClause, defaultExpr) {
   if (wantNullable !== isNullable) return false;
   if (state.COLUMN_TYPE.toLowerCase() !== type.toLowerCase()) return false;
   // Default check
-  let actualDefault = state.COLUMN_DEFAULT;
+  const actualDefault = state.COLUMN_DEFAULT;
   let wantDefault = defaultExpr;
   if (wantDefault && wantDefault.startsWith("'") && wantDefault.endsWith("'")) {
     wantDefault = wantDefault.slice(1, -1);

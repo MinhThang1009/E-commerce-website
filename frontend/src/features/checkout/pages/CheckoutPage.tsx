@@ -17,9 +17,9 @@ import PremiumButton from '@/components/common/PremiumButton';
 import Input from '@/components/common/Input';
 import AddressPicker from '@/components/common/AddressPicker';
 import { CartItem } from '@/features/cart';
-import { useCartStore } from '@/stores/cartStore';
-import { useAuthStore } from '@/stores/authStore';
-import { useUiStore } from '@/stores/uiStore';
+import { useCartStore } from '@/stores/cart-store';
+import { useAuthStore } from '@/stores/auth-store';
+import { useUiStore } from '@/stores/ui-store';
 import { formatPrice } from '@/utils/format';
 import { useCreateOrderMutation, useApplyDiscountCodeMutation } from '@/features/orders';
 import { cartKeys, useGetCartCountQuery } from '@/features/cart';
@@ -28,7 +28,7 @@ import { useCreateVNPayUrlMutation } from '@/features/payment';
 import { useGetLoyaltyInfoQuery } from '@/features/loyalty';
 import { useGetAddressesQuery } from '@/features/users';
 import { Address } from '@/types/user.types';
-import { getErrorMsg } from '@/utils/errorUtils';
+import { getErrorMsg } from '@/utils/error-utils';
 
 const CheckoutPage: React.FC = () => {
   const { t } = useTranslation();
@@ -419,13 +419,24 @@ const CheckoutPage: React.FC = () => {
     const newErrors: Record<string, string> = {};
 
     // Các trường bắt buộc
-    const requiredFields = ['firstName', 'lastName', 'email', 'phone', 'address', 'city', 'state'];
+    const requiredFields = ['firstName', 'lastName', 'email', 'phone'];
 
     requiredFields.forEach((field) => {
       if (!formData[field as keyof typeof formData]) {
         newErrors[field] = t('checkout.validation.required');
       }
     });
+
+    // Validate địa chỉ đầy đủ — cần tỉnh + quận + số nhà (address phải có ít nhất 2 dấu phẩy)
+    const addressParts = (formData.address || '')
+      .split(',')
+      .map((p) => p.trim())
+      .filter(Boolean);
+    if (!formData.address || addressParts.length < 3) {
+      newErrors.address = t('checkout.validation.addressRequired');
+    }
+    if (!formData.city) newErrors.city = t('checkout.validation.required');
+    if (!formData.state) newErrors.state = t('checkout.validation.required');
 
     // Kiểm tra định dạng email
     if (formData.email && !/\S+@\S+\.\S+/.test(formData.email)) {
@@ -644,8 +655,8 @@ const CheckoutPage: React.FC = () => {
             orderId: order.id,
           });
 
-          if (res.data) {
-            window.location.href = res.data;
+          if (res.data?.paymentUrl) {
+            window.location.href = res.data.paymentUrl;
             return;
           }
         } catch (error) {

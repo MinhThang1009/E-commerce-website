@@ -6,7 +6,7 @@
  */
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { useAuthStore } from '@/stores/authStore';
+import { useAuthStore } from '@/stores/auth-store';
 import ReviewForm from './ReviewForm';
 import ReviewList from './ReviewList';
 import { useNavigate } from 'react-router-dom';
@@ -74,9 +74,7 @@ const ReviewSection: React.FC<ReviewSectionProps> = ({ productId }) => {
                   d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"
                 />
               </svg>
-              <p className="text-sm mb-3">
-                {t('review.section.loginPrompt')}
-              </p>
+              <p className="text-sm mb-3">{t('review.section.loginPrompt')}</p>
               <div className="flex flex-col sm:flex-row gap-2 justify-center">
                 <button
                   onClick={() => {
@@ -107,4 +105,3 @@ const ReviewSection: React.FC<ReviewSectionProps> = ({ productId }) => {
 };
 
 export default ReviewSection;
-

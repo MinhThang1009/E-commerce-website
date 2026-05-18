@@ -21,7 +21,7 @@ interface ProductPickerModalProps {
 const ProductPickerModal: React.FC<ProductPickerModalProps> = ({ open, onCancel, onSelect }) => {
   const { t } = useTranslation();
   const [searchTerm, setSearchTerm] = useState('');
-  
+
   const { data: productsData, isLoading } = useGetProductsQuery({
     search: searchTerm || undefined,
     limit: 10,
@@ -61,7 +61,7 @@ const ProductPickerModal: React.FC<ProductPickerModalProps> = ({ open, onCancel,
               actions={[
                 <Button type="primary" onClick={() => onSelect(item)}>
                   {t('productPicker.selectButton')}
-                </Button>
+                </Button>,
               ]}
             >
               <List.Item.Meta
@@ -77,12 +77,17 @@ const ProductPickerModal: React.FC<ProductPickerModalProps> = ({ open, onCancel,
                 description={
                   <div>
                     <span className="text-primary-600 font-bold">
-                      {new Intl.NumberFormat(getLocale(), { style: 'currency', currency: 'VND' }).format(item.price)}
+                      {new Intl.NumberFormat(getLocale(), {
+                        style: 'currency',
+                        currency: 'VND',
+                      }).format(item.price)}
                     </span>
-                    {(item.stock > 0 || (item.variants?.length > 0 && item.variants.some((v: { stockQuantity: number }) => v.stockQuantity > 0))) ? (
-                       <span className="ml-2 text-xs text-green-500">{t('product.inStock')}</span>
+                    {item.stock > 0 ||
+                    (item.variants?.length > 0 &&
+                      item.variants.some((v: { stockQuantity: number }) => v.stockQuantity > 0)) ? (
+                      <span className="ml-2 text-xs text-green-500">{t('product.inStock')}</span>
                     ) : (
-                       <span className="ml-2 text-xs text-red-500">{t('product.outOfStock')}</span>
+                      <span className="ml-2 text-xs text-red-500">{t('product.outOfStock')}</span>
                     )}
                   </div>
                 }
@@ -96,4 +101,3 @@ const ProductPickerModal: React.FC<ProductPickerModalProps> = ({ open, onCancel,
 };
 
 export default ProductPickerModal;
-

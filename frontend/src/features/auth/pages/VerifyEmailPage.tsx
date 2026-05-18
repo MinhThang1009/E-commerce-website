@@ -7,9 +7,9 @@
 import React, { useState, useRef } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
-import { useVerifyOtpMutation, useResendVerificationMutation } from '../api/authApi';
+import { useVerifyOtpMutation, useResendVerificationMutation } from '../api/auth-api';
 import Button from '@/components/common/Button';
-import { getErrorMsg } from '@/utils/errorUtils';
+import { getErrorMsg } from '@/utils/error-utils';
 
 const VerifyEmailPage: React.FC = () => {
   const { t } = useTranslation();

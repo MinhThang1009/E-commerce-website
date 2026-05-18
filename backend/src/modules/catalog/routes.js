@@ -5,10 +5,10 @@
  * @description HTTP endpoints của catalog
  */
 const express = require('express');
-const { authenticate, optionalAuthenticate } = require('../../middlewares/authenticate');
-const { authorize } = require('../../middlewares/authorize');
-const { validateRequest } = require('../../middlewares/validateRequest');
-const { httpCacheHeaders } = require('../../middlewares/cache');
+const { authenticate, optionalAuthenticate } = require('@middlewares/authenticate');
+const { authorize } = require('@middlewares/authorize');
+const { validateRequest } = require('@middlewares/validate-request');
+const { httpCacheHeaders } = require('@middlewares/cache');
 const {
   categorySchema,
   createBrandSchema,
@@ -16,7 +16,7 @@ const {
   createCollectionSchema,
   updateCollectionSchema,
   productSchema,
-} = require('./validators/catalogValidator');
+} = require('@modules/catalog/validators/catalog-validator');
 
 // Catalog module routes — 4 sub-router (categories, brands, collections, products).
 // URL không đổi so với routes/category.js + brand.js + collection.js + product.js cũ.

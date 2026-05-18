@@ -41,15 +41,9 @@ const BotIcon: React.FC<BotIconProps> = ({ className = '', size = 24 }) => {
         strokeWidth="1.5"
         strokeLinecap="round"
       />
-      <path
-        d="M12 1V3"
-        stroke="currentColor"
-        strokeWidth="2"
-        strokeLinecap="round"
-      />
+      <path d="M12 1V3" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
     </svg>
   );
 };
 
 export default BotIcon;
-

@@ -13,9 +13,7 @@ interface ChatHeaderContentProps {
   onClose: () => void;
 }
 
-const ChatHeaderContent: React.FC<ChatHeaderContentProps> = ({
-  onClose,
-}) => {
+const ChatHeaderContent: React.FC<ChatHeaderContentProps> = ({ onClose }) => {
   const { t } = useTranslation();
 
   return (
@@ -32,9 +30,7 @@ const ChatHeaderContent: React.FC<ChatHeaderContentProps> = ({
             <BotIcon size={24} className="text-white drop-shadow-sm" />
           </div>
           <div>
-            <h3 className="font-bold text-lg tracking-tight leading-tight">
-              {t('chat.title')}
-            </h3>
+            <h3 className="font-bold text-lg tracking-tight leading-tight">{t('chat.title')}</h3>
             <div className="flex items-center space-x-1.5 mt-0.5">
               <span className="flex h-2 w-2 relative">
                 <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75"></span>
@@ -54,7 +50,10 @@ const ChatHeaderContent: React.FC<ChatHeaderContentProps> = ({
             className="w-9 h-9 rounded-xl bg-white/10 hover:bg-white/20 backdrop-blur-md flex items-center justify-center transition-all duration-300 hover:rotate-90 group"
             title={t('chat.close')}
           >
-            <CloseIcon size={18} className="text-white group-hover:scale-110 transition-transform" />
+            <CloseIcon
+              size={18}
+              className="text-white group-hover:scale-110 transition-transform"
+            />
           </button>
         </div>
       </div>
@@ -63,4 +62,3 @@ const ChatHeaderContent: React.FC<ChatHeaderContentProps> = ({
 };
 
 export default ChatHeaderContent;
-

@@ -8,7 +8,7 @@ import React, { useState } from 'react';
 import { Table, Input, Button, Tag, Space, Tooltip, App } from 'antd';
 import { EditOutlined, SaveOutlined, CloseOutlined, SearchOutlined } from '@ant-design/icons';
 import { useTranslation } from 'react-i18next';
-import { useGetAdminProductsQuery } from '../api/adminProductApi';
+import { useGetAdminProductsQuery } from '../api/admin-product-api';
 
 interface ProductRow {
   id: number;
@@ -62,7 +62,7 @@ const InventoryPage: React.FC = () => {
     setSavingId(record.id);
     try {
       const apiBase = import.meta.env.VITE_API_URL || 'http://localhost:8888/api';
-      const { getValidToken } = await import('@/utils/tokenManager');
+      const { getValidToken } = await import('@/utils/token-manager');
       const token = await getValidToken();
       const res = await fetch(`${apiBase}/admin/products/${record.id}/stock`, {
         method: 'PATCH',

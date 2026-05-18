@@ -1,8 +1,9 @@
-﻿require('dotenv').config();
+﻿require('module-alias/register'); // phải là dòng đầu tiên trước mọi require khác
+require('dotenv').config();
 // Kích hoạt nodemon restart khi thay đổi .env
 
 // Import logger trước validation để startup error có cùng định dạng với mọi log khác
-const logger = require('./utils/logger');
+const logger = require('@utils/logger');
 
 // Fail fast nếu thiếu biến môi trường bắt buộc — server sẽ exit(1) thay vì crash âm thầm khi xử lý request
 const REQUIRED_ENV_VARS = [
@@ -12,7 +13,6 @@ const REQUIRED_ENV_VARS = [
   'DB_NAME',
   'JWT_SECRET',
   'JWT_REFRESH_SECRET',
-  'GEMINI_API_KEYS',
   'EMAIL_USERNAME',
   'EMAIL_PASSWORD',
 ];
@@ -38,27 +38,27 @@ const MIN_SECRET_LENGTH = 32;
 });
 
 const app = require('./app');
-const sequelize = require('./config/sequelize');
+const sequelize = require('@config/sequelize');
 const { exec } = require('child_process');
-const { getRedisClient } = require('./config/redis');
+const { getRedisClient } = require('@config/redis');
 
 // Load tất cả model trước (chưa có quan hệ)
 const models = [
-  require('./models/user'),
-  require('./models/address'),
-  require('./models/category'),
-  require('./models/product'),
-  require('./models/productCategory'),
-  require('./models/productAttribute'),
-  require('./models/productVariant'),
-  require('./models/review'),
-  require('./models/reviewFeedback'),
-  require('./models/cart'),
-  require('./models/cartItem'),
-  require('./models/order'),
-  require('./models/orderItem'),
-  require('./models/wishlist'),
-  require('./models/image'),
+  require('@models/user'),
+  require('@models/address'),
+  require('@models/category'),
+  require('@models/product'),
+  require('@models/product-category'),
+  require('@models/product-attribute'),
+  require('@models/product-variant'),
+  require('@models/review'),
+  require('@models/review-feedback'),
+  require('@models/cart'),
+  require('@models/cart-item'),
+  require('@models/order'),
+  require('@models/order-item'),
+  require('@models/wishlist'),
+  require('@models/image'),
 ];
 
 // Xử lý exception không được bắt
@@ -76,7 +76,7 @@ const connectDB = async () => {
     logger.info('Kết nối database thành công.');
 
     // Load models và quan hệ
-    require('./models');
+    require('@models');
     logger.info('Đã load toàn bộ model.');
 
     // sequelize.sync() bị tắt để tránh lỗi "Too many keys" (giới hạn 64 key của MySQL)
@@ -101,8 +101,8 @@ const connectDB = async () => {
 const checkVectorStoreSync = async () => {
   try {
     // Lazy require sau khi connectDB() xong để đảm bảo associations đã được setup
-    const { Product, ProductVariant } = require('./models');
-    const vectorStoreService = require('./modules/ai/services/vectorStore');
+    const { Product, ProductVariant } = require('@models');
+    const vectorStoreService = require('@modules/ai/services/vectorstore/vector-store');
     // Đợi vector store load xong trước khi so sánh
     await vectorStoreService.loadPromise;
     // Fix: `inStock` không phải column/VIRTUAL.

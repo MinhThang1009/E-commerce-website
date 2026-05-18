@@ -38,9 +38,9 @@ import {
   useCreateWarrantyPackageMutation,
   useUpdateWarrantyPackageMutation,
   useDeleteWarrantyPackageMutation,
-} from '../api/warrantyApi';
+} from '../api/warranty-api';
 import { WarrantyPackage } from '@/features/catalog';
-import { getErrorMsg } from '@/utils/errorUtils';
+import { getErrorMsg } from '@/utils/error-utils';
 
 const { TextArea } = Input;
 

@@ -19,7 +19,7 @@ const formatSplat = (splat) => {
 };
 
 // Định dạng log đơn giản cho development (human-readable)
-const devFormat = winston.format.combine(
+const DEV_FORMAT = winston.format.combine(
   // Chỉ colorize khi chạy trong terminal thật — tránh ANSI codes xuất hiện khi pipe/IDE
   ...(process.stdout.isTTY ? [winston.format.colorize()] : []),
   winston.format.timestamp({ format: 'YYYY-MM-DD HH:mm:ss' }),
@@ -37,7 +37,7 @@ const devFormat = winston.format.combine(
 );
 
 // Định dạng JSON cho production (dễ parse bởi log aggregator như ELK, Datadog)
-const prodFormat = winston.format.combine(
+const PROD_FORMAT = winston.format.combine(
   winston.format.timestamp(),
   winston.format.errors({ stack: true }),
   winston.format.splat(),
@@ -47,7 +47,7 @@ const prodFormat = winston.format.combine(
 const logger = winston.createLogger({
   // LOG_LEVEL env var để override từ bên ngoài, fallback theo môi trường
   level: process.env.LOG_LEVEL || (process.env.NODE_ENV === 'production' ? 'info' : 'debug'),
-  format: process.env.NODE_ENV === 'production' ? prodFormat : devFormat,
+  format: process.env.NODE_ENV === 'production' ? PROD_FORMAT : DEV_FORMAT,
   defaultMeta: { service: 'api' },
   transports: [
     new winston.transports.Console(),

@@ -70,11 +70,7 @@ export const Grid: React.FC<GridProps> = ({
 /**
  * Component Grid Item
  */
-export const GridItem: React.FC<GridItemProps> = ({
-  children,
-  span,
-  className = '',
-}) => {
+export const GridItem: React.FC<GridItemProps> = ({ children, span, className = '' }) => {
   const getSpanClasses = () => {
     if (!span) return '';
 
@@ -196,12 +192,7 @@ export const MasonryGrid: React.FC<{
   };
   gap?: number;
   className?: string;
-}> = ({
-  children,
-  columns = { xs: 1, sm: 2, md: 3, lg: 4 },
-  gap = 4,
-  className = '',
-}) => {
+}> = ({ children, columns = { xs: 1, sm: 2, md: 3, lg: 4 }, gap = 4, className = '' }) => {
   const getColumnClasses = () => {
     const classes = ['columns-1'];
 
@@ -213,11 +204,7 @@ export const MasonryGrid: React.FC<{
     return classes.join(' ');
   };
 
-  return (
-    <div className={`${getColumnClasses()} gap-${gap} ${className}`}>
-      {children}
-    </div>
-  );
+  return <div className={`${getColumnClasses()} gap-${gap} ${className}`}>{children}</div>;
 };
 
 /**
@@ -280,4 +267,3 @@ export const FlexGrid: React.FC<{
 };
 
 export default Grid;
-

@@ -9,7 +9,7 @@ import { Link, useLocation, Outlet, useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { ROUTES } from '@/routes/paths';
 import { useAuth } from '@/features/auth';
-import { useUiStore } from '@/stores/uiStore';
+import { useUiStore } from '@/stores/ui-store';
 import { ConfigProvider, App as AntdApp, theme as antdTheme, Button, Drawer } from 'antd';
 import { MenuOutlined } from '@ant-design/icons';
 import { UserIcon } from '@/components/icons';

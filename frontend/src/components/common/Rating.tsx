@@ -73,10 +73,7 @@ export const Rating: React.FC<RatingProps> = ({
 
   return (
     <div className={`flex items-center ${className}`}>
-      <div
-        className={`flex ${containerSizeClass}`}
-        onMouseLeave={handleMouseLeave}
-      >
+      <div className={`flex ${containerSizeClass}`} onMouseLeave={handleMouseLeave}>
         {[1, 2, 3, 4, 5].map((index) => (
           <Star
             key={index}
@@ -90,9 +87,7 @@ export const Rating: React.FC<RatingProps> = ({
       </div>
 
       {showCount && count !== undefined && (
-        <span className="ml-2 text-sm text-neutral-500 dark:text-neutral-400">
-          ({count})
-        </span>
+        <span className="ml-2 text-sm text-neutral-500 dark:text-neutral-400">({count})</span>
       )}
     </div>
   );
@@ -106,13 +101,7 @@ interface StarProps {
   interactive: boolean;
 }
 
-const Star: React.FC<StarProps> = ({
-  filled,
-  size,
-  onMouseEnter,
-  onClick,
-  interactive,
-}) => {
+const Star: React.FC<StarProps> = ({ filled, size, onMouseEnter, onClick, interactive }) => {
   return (
     <svg
       xmlns="http://www.w3.org/2000/svg"
@@ -134,4 +123,3 @@ const Star: React.FC<StarProps> = ({
     </svg>
   );
 };
-

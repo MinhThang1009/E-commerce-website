@@ -25,8 +25,7 @@ const Checkbox: React.FC<CheckboxProps> = ({
   id,
   name,
 }) => {
-  const checkboxId =
-    id || `checkbox-${Math.random().toString(36).substr(2, 9)}`;
+  const checkboxId = id || `checkbox-${Math.random().toString(36).substr(2, 9)}`;
 
   return (
     <div className={`flex items-center ${className}`}>
@@ -54,4 +53,3 @@ const Checkbox: React.FC<CheckboxProps> = ({
 };
 
 export default Checkbox;
-

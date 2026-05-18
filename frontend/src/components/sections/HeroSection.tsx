@@ -6,10 +6,7 @@
  */
 import React, { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
-import {
-  LightningIcon,
-  CategoriesIcon,
-} from '@/components/icons';
+import { LightningIcon, CategoriesIcon } from '@/components/icons';
 
 interface HeroSectionProps {
   onShopNowClick?: () => void;
@@ -43,11 +40,7 @@ const HERO_SLIDES = [
   },
 ] as const;
 
-
-const HeroSection: React.FC<HeroSectionProps> = ({
-  onShopNowClick,
-  onBrowseCategoriesClick,
-}) => {
+const HeroSection: React.FC<HeroSectionProps> = ({ onShopNowClick, onBrowseCategoriesClick }) => {
   const { t } = useTranslation();
   const [currentSlide, setCurrentSlide] = useState(0);
   const [isAutoPlaying, setIsAutoPlaying] = useState(true);
@@ -88,9 +81,7 @@ const HeroSection: React.FC<HeroSectionProps> = ({
           <div
             key={slide.id}
             className={`absolute inset-0 transition-all duration-1000 ease-in-out ${
-              index === currentSlide
-                ? 'opacity-100 scale-100'
-                : 'opacity-0 scale-105'
+              index === currentSlide ? 'opacity-100 scale-100' : 'opacity-0 scale-105'
             }`}
           >
             <img
@@ -258,4 +249,3 @@ const HeroSection: React.FC<HeroSectionProps> = ({
 };
 
 export default HeroSection;
-

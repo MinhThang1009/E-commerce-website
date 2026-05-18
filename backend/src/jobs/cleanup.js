@@ -2,12 +2,12 @@ const cron = require('node-cron');
 const { Op } = require('sequelize');
 const path = require('path');
 const fs = require('fs').promises;
-const logger = require('../utils/logger');
+const logger = require('@utils/logger');
 
 // Lazy require models để tránh circular dependency khi app.js import file này
 let models = null;
 function getModels() {
-  if (!models) models = require('../models');
+  if (!models) models = require('@models');
   return models;
 }
 
@@ -140,7 +140,7 @@ const runDailyCleanup = async () => {
 // Chạy mỗi tuần Chủ Nhật 3:00 AM — dọn orphaned upload files
 const runWeeklyCleanup = async () => {
   try {
-    const imageService = require('../modules/image/services/imageService');
+    const imageService = require('@modules/image/services/image-service');
     await imageService.cleanupOrphanedFiles();
     logger.info('[Cleanup] Weekly orphaned file cleanup completed');
   } catch (err) {

@@ -9,9 +9,9 @@ import { useTranslation } from 'react-i18next';
 import Modal from '@/components/common/Modal';
 import { Rating } from '@/components/common/Rating';
 import { PremiumButton } from '@/components/common';
-import { useCreateReviewMutation } from '../api/reviewApi';
+import { useCreateReviewMutation } from '../api/review-api';
 import { toast } from '@/utils/toast';
-import { getErrorMsg } from '@/utils/errorUtils';
+import { getErrorMsg } from '@/utils/error-utils';
 
 interface ReviewModalProps {
   isOpen: boolean;

@@ -32,4 +32,3 @@ const HelpIcon: React.FC<IconProps> = ({ className = '', size = 14 }) => {
 };
 
 export default HelpIcon;
-

@@ -6,9 +6,9 @@
  */
 const express = require('express');
 const router = express.Router();
-const attributeController = require('./controllers/attributeController');
-const { authenticate } = require('../../middlewares/authenticate');
-const { authorize } = require('../../middlewares/authorize');
+const attributeController = require('@modules/attribute/controllers/attribute-controller');
+const { authenticate } = require('@middlewares/authenticate');
+const { authorize } = require('@middlewares/authorize');
 
 // Routes công khai — dùng để hiển thị sản phẩm phía frontend
 router.get('/groups', attributeController.getAttributeGroups);

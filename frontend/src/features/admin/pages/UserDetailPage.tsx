@@ -39,7 +39,7 @@ import {
   CloseCircleOutlined,
 } from '@ant-design/icons';
 import { useTranslation } from 'react-i18next';
-import { useGetUserByIdQuery } from '../api/adminUserApi';
+import { useGetUserByIdQuery } from '../api/admin-user-api';
 import LoadingSpinner from '@/components/common/LoadingSpinner';
 
 const { Title, Text } = Typography;
@@ -68,11 +68,23 @@ const UserDetailPage: React.FC = () => {
   const getRoleTag = (role: string) => {
     switch (role) {
       case 'admin':
-        return <Tag color="red" icon={<CrownOutlined />}>{t('admin.users.roles.admin')}</Tag>;
+        return (
+          <Tag color="red" icon={<CrownOutlined />}>
+            {t('admin.users.roles.admin')}
+          </Tag>
+        );
       case 'manager':
-        return <Tag color="orange" icon={<TeamOutlined />}>{t('admin.users.roles.manager')}</Tag>;
+        return (
+          <Tag color="orange" icon={<TeamOutlined />}>
+            {t('admin.users.roles.manager')}
+          </Tag>
+        );
       case 'customer':
-        return <Tag color="blue" icon={<UserOutlined />}>{t('admin.users.roles.customer')}</Tag>;
+        return (
+          <Tag color="blue" icon={<UserOutlined />}>
+            {t('admin.users.roles.customer')}
+          </Tag>
+        );
       default:
         return <Tag>{role}</Tag>;
     }
@@ -94,7 +106,8 @@ const UserDetailPage: React.FC = () => {
       title: t('admin.userDetail.orderColumns.createdAt'),
       dataIndex: 'createdAt',
       key: 'createdAt',
-      render: (date: string) => new Date(date).toLocaleDateString(i18n.language === 'vi' ? 'vi-VN' : 'en-US'),
+      render: (date: string) =>
+        new Date(date).toLocaleDateString(i18n.language === 'vi' ? 'vi-VN' : 'en-US'),
     },
     {
       title: t('common.status'),
@@ -105,11 +118,12 @@ const UserDetailPage: React.FC = () => {
         if (status === 'delivered') color = 'success';
         if (status === 'pending') color = 'processing';
         if (status === 'cancelled') color = 'error';
-        const label = status === 'delivered'
-          ? t('admin.userDetail.orderStatus.delivered')
-          : status === 'pending'
-            ? t('admin.userDetail.orderStatus.pending')
-            : status;
+        const label =
+          status === 'delivered'
+            ? t('admin.userDetail.orderStatus.delivered')
+            : status === 'pending'
+              ? t('admin.userDetail.orderStatus.pending')
+              : status;
         return <Tag color={color}>{label}</Tag>;
       },
     },
@@ -117,7 +131,12 @@ const UserDetailPage: React.FC = () => {
       title: t('admin.userDetail.orderColumns.total'),
       dataIndex: 'total',
       key: 'total',
-      render: (total: number) => <Text strong>{total.toLocaleString(i18n.language === 'vi' ? 'vi-VN' : 'en-US')}{t('common.currencySymbol')}</Text>,
+      render: (total: number) => (
+        <Text strong>
+          {total.toLocaleString(i18n.language === 'vi' ? 'vi-VN' : 'en-US')}
+          {t('common.currencySymbol')}
+        </Text>
+      ),
     },
   ];
 
@@ -142,7 +161,9 @@ const UserDetailPage: React.FC = () => {
           <Col xs={24} lg={8}>
             <Card
               className="text-center shadow-sm"
-              cover={<div className="h-24 bg-gradient-to-r from-primary-500 to-blue-600 rounded-t-lg" />}
+              cover={
+                <div className="h-24 bg-gradient-to-r from-primary-500 to-blue-600 rounded-t-lg" />
+              }
             >
               <div className="-mt-12 mb-4">
                 <Avatar
@@ -179,14 +200,16 @@ const UserDetailPage: React.FC = () => {
               <Divider />
 
               <Descriptions column={1} size="small" colon={false}>
-                <Descriptions.Item label={<MailOutlined />}>
-                  {user.email}
-                </Descriptions.Item>
+                <Descriptions.Item label={<MailOutlined />}>{user.email}</Descriptions.Item>
                 <Descriptions.Item label={<PhoneOutlined />}>
                   {user.phone || t('admin.userDetail.notUpdated')}
                 </Descriptions.Item>
                 <Descriptions.Item label={<CalendarOutlined />}>
-                  {t('admin.userDetail.joinedDate', { date: new Date(user.createdAt).toLocaleDateString(i18n.language === 'vi' ? 'vi-VN' : 'en-US') })}
+                  {t('admin.userDetail.joinedDate', {
+                    date: new Date(user.createdAt).toLocaleDateString(
+                      i18n.language === 'vi' ? 'vi-VN' : 'en-US',
+                    ),
+                  })}
                 </Descriptions.Item>
               </Descriptions>
             </Card>
@@ -195,9 +218,13 @@ const UserDetailPage: React.FC = () => {
               <Descriptions column={1} size="small">
                 <Descriptions.Item label={t('admin.userDetail.activeLabel')}>
                   {user.isActive ? (
-                    <Tag color="success" icon={<CheckCircleOutlined />}>{t('admin.userDetail.activeStatus')}</Tag>
+                    <Tag color="success" icon={<CheckCircleOutlined />}>
+                      {t('admin.userDetail.activeStatus')}
+                    </Tag>
                   ) : (
-                    <Tag color="error" icon={<CloseCircleOutlined />}>{t('admin.userDetail.lockedStatus')}</Tag>
+                    <Tag color="error" icon={<CloseCircleOutlined />}>
+                      {t('admin.userDetail.lockedStatus')}
+                    </Tag>
                   )}
                 </Descriptions.Item>
                 <Descriptions.Item label={t('admin.userDetail.emailVerifyLabel')}>
@@ -248,14 +275,20 @@ const UserDetailPage: React.FC = () => {
                           <Col span={12} key={addr.id}>
                             <Card size="small" className="h-full border-neutral-200">
                               <div className="flex justify-between items-start">
-                                <Text strong>{addr.firstName} {addr.lastName}</Text>
-                                {addr.isDefault && <Tag color="blue">{t('admin.userDetail.defaultAddress')}</Tag>}
+                                <Text strong>
+                                  {addr.firstName} {addr.lastName}
+                                </Text>
+                                {addr.isDefault && (
+                                  <Tag color="blue">{t('admin.userDetail.defaultAddress')}</Tag>
+                                )}
                               </div>
                               <div className="mt-2 text-sm text-neutral-600">
                                 <p>{addr.phone}</p>
                                 <p>{addr.addressLine1}</p>
                                 {addr.addressLine2 && <p>{addr.addressLine2}</p>}
-                                <p>{addr.city}, {addr.state} {addr.zipCode}</p>
+                                <p>
+                                  {addr.city}, {addr.state} {addr.zipCode}
+                                </p>
                                 <p>{addr.country}</p>
                               </div>
                             </Card>
@@ -263,7 +296,10 @@ const UserDetailPage: React.FC = () => {
                         ))
                       ) : (
                         <Col span={24}>
-                          <Empty image={Empty.PRESENTED_IMAGE_SIMPLE} description={t('admin.userDetail.noAddresses')} />
+                          <Empty
+                            image={Empty.PRESENTED_IMAGE_SIMPLE}
+                            description={t('admin.userDetail.noAddresses')}
+                          />
                         </Col>
                       )}
                     </Row>
@@ -295,8 +331,7 @@ const UserDetailPage: React.FC = () => {
                       ]
                         // eslint-disable-next-line @typescript-eslint/no-explicit-any
                         .sort((a: any, b: any) => b.date.getTime() - a.date.getTime())
-                        .map(({ date: _date, ...rest }) => rest)
-                      }
+                        .map(({ date: _date, ...rest }) => rest)}
                     />
                   ),
                 },

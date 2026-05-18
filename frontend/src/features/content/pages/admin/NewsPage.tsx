@@ -8,9 +8,24 @@ import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { buildRoute } from '@/routes/paths';
-import { useGetNewsQuery, useDeleteNewsMutation } from '../../api/newsApi';
+import { useGetNewsQuery, useDeleteNewsMutation } from '../../api/news-api';
 import {
-  Table, Button, Input, Select, Card, Space, Tag, Pagination, Row, Col, Typography, Image, Popconfirm, message, Spin, Alert,
+  Table,
+  Button,
+  Input,
+  Select,
+  Card,
+  Space,
+  Tag,
+  Pagination,
+  Row,
+  Col,
+  Typography,
+  Image,
+  Popconfirm,
+  message,
+  Spin,
+  Alert,
 } from 'antd';
 import { PlusOutlined, SearchOutlined, EditOutlined, DeleteOutlined } from '@ant-design/icons';
 
@@ -24,11 +39,16 @@ const NewsPage: React.FC = () => {
   const [statusFilter, setStatusFilter] = useState<string>('all');
   const [currentPage, setCurrentPage] = useState(1);
 
-  const { data: newsResponse, error, isLoading, refetch } = useGetNewsQuery({
+  const {
+    data: newsResponse,
+    error,
+    isLoading,
+    refetch,
+  } = useGetNewsQuery({
     page: currentPage,
     limit: 10,
     search: searchTerm || undefined,
-    isPublished: statusFilter !== 'all' ? (statusFilter === 'published') : undefined,
+    isPublished: statusFilter !== 'all' ? statusFilter === 'published' : undefined,
   });
 
   const { mutateAsync: deleteNews } = useDeleteNewsMutation();
@@ -48,7 +68,9 @@ const NewsPage: React.FC = () => {
   };
 
   useEffect(() => {
-    const timeoutId = setTimeout(() => { setCurrentPage(1); }, 300);
+    const timeoutId = setTimeout(() => {
+      setCurrentPage(1);
+    }, 300);
     return () => clearTimeout(timeoutId);
   }, [searchTerm, statusFilter]);
 
@@ -59,8 +81,14 @@ const NewsPage: React.FC = () => {
       key: 'thumbnail',
       width: 80,
       render: (thumbnail: string) => (
-        <Image width={50} height={50} src={thumbnail || '/placeholder-image.jpg'} alt={t('admin.news.form.thumbnail')}
-          style={{ objectFit: 'cover', borderRadius: 4 }} fallback="/placeholder-image.jpg" />
+        <Image
+          width={50}
+          height={50}
+          src={thumbnail || '/placeholder-image.jpg'}
+          alt={t('admin.news.form.thumbnail')}
+          style={{ objectFit: 'cover', borderRadius: 4 }}
+          fallback="/placeholder-image.jpg"
+        />
       ),
     },
     {
@@ -78,7 +106,9 @@ const NewsPage: React.FC = () => {
       title: t('admin.news.table.category'),
       dataIndex: 'category',
       key: 'category',
-      render: (category: string) => <Tag color="blue">{category || t('admin.news.status.published')}</Tag>,
+      render: (category: string) => (
+        <Tag color="blue">{category || t('admin.news.status.published')}</Tag>
+      ),
     },
     {
       title: t('admin.news.table.views'),
@@ -101,7 +131,8 @@ const NewsPage: React.FC = () => {
       title: t('admin.news.table.createdAt'),
       dataIndex: 'createdAt',
       key: 'createdAt',
-      render: (date: string) => new Date(date).toLocaleDateString(i18n.language === 'vi' ? 'vi-VN' : 'en-US'),
+      render: (date: string) =>
+        new Date(date).toLocaleDateString(i18n.language === 'vi' ? 'vi-VN' : 'en-US'),
     },
     {
       title: t('admin.common.actions'),
@@ -110,7 +141,12 @@ const NewsPage: React.FC = () => {
       // eslint-disable-next-line @typescript-eslint/no-explicit-any -- Antd Table record
       render: (_: unknown, record: any) => (
         <Space>
-          <Button type="link" icon={<EditOutlined />} onClick={() => navigate(buildRoute.adminNewsEdit(record.id))} size="small" />
+          <Button
+            type="link"
+            icon={<EditOutlined />}
+            onClick={() => navigate(buildRoute.adminNewsEdit(record.id))}
+            size="small"
+          />
           <Popconfirm
             title={t('admin.news.deleteTitle')}
             description={t('admin.news.deleteConfirm')}
@@ -152,7 +188,12 @@ const NewsPage: React.FC = () => {
             </p>
           </Col>
           <Col xs={24} sm={12} className="flex justify-start sm:justify-end">
-            <Button type="primary" icon={<PlusOutlined />} onClick={() => navigate('/admin/news/create')} size="large">
+            <Button
+              type="primary"
+              icon={<PlusOutlined />}
+              onClick={() => navigate('/admin/news/create')}
+              size="large"
+            >
               {t('admin.news.addArticle')}
             </Button>
           </Col>
@@ -187,11 +228,22 @@ const NewsPage: React.FC = () => {
 
       <Card>
         <Spin spinning={isLoading}>
-          <Table columns={columns} dataSource={newsList} rowKey="id" pagination={false} scroll={{ x: 800 }} />
+          <Table
+            columns={columns}
+            dataSource={newsList}
+            rowKey="id"
+            pagination={false}
+            scroll={{ x: 800 }}
+          />
         </Spin>
         {totalItems > 0 && (
           <div className="mt-4 text-center">
-            <Pagination current={currentPage} total={totalItems} pageSize={10} onChange={setCurrentPage} />
+            <Pagination
+              current={currentPage}
+              total={totalItems}
+              pageSize={10}
+              onChange={setCurrentPage}
+            />
           </div>
         )}
       </Card>

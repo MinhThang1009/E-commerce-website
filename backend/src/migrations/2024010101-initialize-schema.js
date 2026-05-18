@@ -1,10 +1,10 @@
 'use strict';
 
-const sequelize = require('../config/sequelize');
-const logger = require('../utils/logger');
+const sequelize = require('@config/sequelize');
+const logger = require('@utils/logger');
 
 // Ensure all models are registered before syncing
-require('../models');
+require('@models');
 
 /** @type {import('sequelize-cli').Migration} */
 module.exports = {

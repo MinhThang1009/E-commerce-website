@@ -5,7 +5,7 @@ import { initReactI18next } from 'react-i18next';
 import enTranslations from '../locales/en.json';
 import viTranslations from '../locales/vi.json';
 
-const resources = {
+const RESOURCES = {
   en: {
     translation: enTranslations,
   },
@@ -15,7 +15,7 @@ const resources = {
 };
 
 i18n.use(initReactI18next).init({
-  resources,
+  resources: RESOURCES,
   lng: localStorage.getItem('language') || 'vi', // Mặc định là tiếng Việt
   fallbackLng: 'vi',
 
@@ -38,4 +38,3 @@ i18n.use(initReactI18next).init({
 });
 
 export default i18n;
-

@@ -11,10 +11,7 @@ interface ResizeIconProps {
   size?: number;
 }
 
-const ResizeIcon: React.FC<ResizeIconProps> = ({
-  className = '',
-  size = 16,
-}) => {
+const ResizeIcon: React.FC<ResizeIconProps> = ({ className = '', size = 16 }) => {
   return (
     <svg
       width={size}
@@ -57,4 +54,3 @@ const ResizeIcon: React.FC<ResizeIconProps> = ({
 };
 
 export default ResizeIcon;
-

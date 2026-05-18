@@ -36,10 +36,10 @@ import {
   useCreateCategoryMutation,
   useUpdateCategoryMutation,
   useDeleteCategoryMutation,
-} from '../../api/categoryApi';
+} from '../../api/category-api';
 import type { Category } from '../../types/category.types';
 import ImageUpload from '@/components/common/ImageUpload';
-import { getErrorMsg } from '@/utils/errorUtils';
+import { getErrorMsg } from '@/utils/error-utils';
 
 const { Title } = Typography;
 const { TextArea } = Input;

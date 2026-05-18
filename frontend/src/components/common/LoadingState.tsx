@@ -54,9 +54,7 @@ export const LoadingSpinner: React.FC<LoadingSpinnerProps> = ({
         className={`animate-spin rounded-full border-t-2 border-b-2 border-primary-500 ${sizeClasses[size]}`}
       />
       {text && (
-        <p
-          className={`mt-2 text-neutral-600 dark:text-neutral-400 ${textSizeClasses[size]}`}
-        >
+        <p className={`mt-2 text-neutral-600 dark:text-neutral-400 ${textSizeClasses[size]}`}>
           {text}
         </p>
       )}
@@ -92,10 +90,7 @@ export const LoadingSkeleton: React.FC<LoadingSkeletonProps> = ({
 /**
  * Component Loading Pulse
  */
-export const LoadingPulse: React.FC<LoadingStateProps> = ({
-  size = 'md',
-  className = '',
-}) => {
+export const LoadingPulse: React.FC<LoadingStateProps> = ({ size = 'md', className = '' }) => {
   const sizeClasses = {
     sm: 'h-16 w-16',
     md: 'h-24 w-24',
@@ -114,9 +109,7 @@ export const LoadingPulse: React.FC<LoadingStateProps> = ({
 /**
  * Loading Skeleton cho card sản phẩm
  */
-export const ProductCardSkeleton: React.FC<{ className?: string }> = ({
-  className = '',
-}) => {
+export const ProductCardSkeleton: React.FC<{ className?: string }> = ({ className = '' }) => {
   return (
     <div
       className={`animate-pulse bg-white dark:bg-neutral-800 rounded-lg shadow-md p-4 ${className}`}
@@ -134,10 +127,7 @@ export const ProductCardSkeleton: React.FC<{ className?: string }> = ({
       {/* Skeleton đánh giá */}
       <div className="flex items-center space-x-1 mb-3">
         {Array.from({ length: 5 }).map((_, index) => (
-          <div
-            key={index}
-            className="h-3 w-3 bg-neutral-200 dark:bg-neutral-700 rounded-full"
-          />
+          <div key={index} className="h-3 w-3 bg-neutral-200 dark:bg-neutral-700 rounded-full" />
         ))}
       </div>
 
@@ -150,9 +140,7 @@ export const ProductCardSkeleton: React.FC<{ className?: string }> = ({
 /**
  * Loading Skeleton cho card danh mục
  */
-export const CategoryCardSkeleton: React.FC<{ className?: string }> = ({
-  className = '',
-}) => {
+export const CategoryCardSkeleton: React.FC<{ className?: string }> = ({ className = '' }) => {
   return (
     <div
       className={`animate-pulse bg-white dark:bg-neutral-800 rounded-xl shadow-lg overflow-hidden ${className}`}
@@ -172,10 +160,7 @@ export const CategoryCardSkeleton: React.FC<{ className?: string }> = ({
 /**
  * Component trạng thái loading chung
  */
-export const LoadingState: React.FC<LoadingStateProps> = ({
-  variant = 'spinner',
-  ...props
-}) => {
+export const LoadingState: React.FC<LoadingStateProps> = ({ variant = 'spinner', ...props }) => {
   switch (variant) {
     case 'skeleton':
       return <LoadingSkeleton {...props} />;
@@ -189,9 +174,7 @@ export const LoadingState: React.FC<LoadingStateProps> = ({
 /**
  * Component loading toàn trang
  */
-export const FullPageLoading: React.FC<{ message?: string }> = ({
-  message,
-}) => {
+export const FullPageLoading: React.FC<{ message?: string }> = ({ message }) => {
   const { t } = useTranslation();
   return (
     <div className="fixed inset-0 bg-white dark:bg-neutral-900 flex items-center justify-center z-50">
@@ -214,4 +197,3 @@ export const SectionLoading: React.FC<{
     </div>
   );
 };
-

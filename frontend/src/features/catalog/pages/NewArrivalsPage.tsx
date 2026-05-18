@@ -6,7 +6,7 @@
  */
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { useGetProductsQuery } from '../api/productApi';
+import { useGetProductsQuery } from '../api/product-api';
 import { ProductCard } from '@/features/catalog';
 import LoadingSpinner from '@/components/common/LoadingSpinner';
 import Select from '@/components/common/Select';

@@ -11,10 +11,7 @@ interface IconProps {
   filled?: boolean;
 }
 
-const StarIcon: React.FC<IconProps> = ({
-  className = 'w-3 h-3',
-  filled = true,
-}) => {
+const StarIcon: React.FC<IconProps> = ({ className = 'w-3 h-3', filled = true }) => {
   return (
     <svg
       className={className}
@@ -28,4 +25,3 @@ const StarIcon: React.FC<IconProps> = ({
 };
 
 export default StarIcon;
-

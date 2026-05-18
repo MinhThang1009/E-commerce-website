@@ -5,7 +5,7 @@
  * @description UI component cho feature reviews
  */
 import { useTranslation } from 'react-i18next';
-import { useGetProductReviewsQuery } from '../api/reviewApi';
+import { useGetProductReviewsQuery } from '../api/review-api';
 import { Rating } from '@/components/common/Rating';
 
 interface ReviewSummaryProps {
@@ -27,15 +27,14 @@ const ReviewSummary: React.FC<ReviewSummaryProps> = ({
     },
     {
       enabled: !!productId && productId !== 'undefined',
-    }
+    },
   );
 
   // Tính phân phối đánh giá
   const ratingDistribution = [5, 4, 3, 2, 1].map((rating) => {
     const count =
-      reviewsData?.data?.reviews?.filter(
-        (review: { rating: number }) => review.rating === rating
-      ).length || 0;
+      reviewsData?.data?.reviews?.filter((review: { rating: number }) => review.rating === rating)
+        .length || 0;
     const percentage = totalReviews > 0 ? (count / totalReviews) * 100 : 0;
     return { rating, count, percentage };
   });
@@ -71,9 +70,7 @@ const ReviewSummary: React.FC<ReviewSummaryProps> = ({
                   style={{ width: `${percentage}%` }}
                 />
               </div>
-              <span className="text-sm text-neutral-600 dark:text-neutral-400 w-8">
-                {count}
-              </span>
+              <span className="text-sm text-neutral-600 dark:text-neutral-400 w-8">{count}</span>
             </div>
           ))}
         </div>
@@ -86,9 +83,8 @@ const ReviewSummary: React.FC<ReviewSummaryProps> = ({
             <div>
               <div className="text-lg font-semibold text-green-600 dark:text-green-400">
                 {Math.round(
-                  ((ratingDistribution[0].count + ratingDistribution[1].count) /
-                    totalReviews) *
-                    100
+                  ((ratingDistribution[0].count + ratingDistribution[1].count) / totalReviews) *
+                    100,
                 )}
                 %
               </div>
@@ -124,4 +120,3 @@ const ReviewSummary: React.FC<ReviewSummaryProps> = ({
 };
 
 export default ReviewSummary;
-

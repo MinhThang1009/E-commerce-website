@@ -16,5 +16,5 @@ export {
   useCheckWishlistQuery,
   useRemoveFromWishlistMutation,
   useClearWishlistMutation,
-} from './api/wishlistApi';
-export type { WishlistResponse, CheckWishlistResponse } from './api/wishlistApi';
+} from './api/wishlist-api';
+export type { WishlistResponse, CheckWishlistResponse } from './api/wishlist-api';

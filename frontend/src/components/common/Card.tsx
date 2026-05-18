@@ -47,9 +47,7 @@ const Card: React.FC<CardProps> = ({
             </h3>
           )}
           {subtitle && (
-            <p className="text-sm text-neutral-500 dark:text-neutral-400 mt-1">
-              {subtitle}
-            </p>
+            <p className="text-sm text-neutral-500 dark:text-neutral-400 mt-1">{subtitle}</p>
           )}
         </div>
       )}
@@ -66,4 +64,3 @@ const Card: React.FC<CardProps> = ({
 };
 
 export default Card;
-

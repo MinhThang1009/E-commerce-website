@@ -8,7 +8,7 @@ import { Helmet } from 'react-helmet-async';
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { PremiumButton } from '@/components/common';
-import { useSendFeedbackMutation } from '../api/contactApi';
+import { useSendFeedbackMutation } from '../api/contact-api';
 
 interface FormData {
   name: string;

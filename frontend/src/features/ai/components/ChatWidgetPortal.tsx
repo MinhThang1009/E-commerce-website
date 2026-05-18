@@ -6,18 +6,18 @@
  */
 import React, { useState, useRef, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
-import { useAuthStore } from '@/stores/authStore';
+import { useAuthStore } from '@/stores/auth-store';
 import {
   useChatStore,
   saveMessagesToStorage,
   saveSessionIdToStorage,
   createSessionId,
-} from '@/stores/chatStore';
+} from '@/stores/chat-store';
 import { Message } from '../types/message.types';
-import { useSendChatbotMessageMutation, ChatbotResponse } from '../services/chatbotApi';
+import { useSendChatbotMessageMutation, ChatbotResponse } from '../services/chatbot-api';
 
 type ChatbotApiEnvelope = { status: string; data: ChatbotResponse; message?: string };
-import { geminiService } from '../services/geminiApi';
+import { geminiService } from '../services/gemini-api';
 import ChatHeader from './ChatHeader';
 import ChatMessages from './ChatMessages';
 import ChatInput from './ChatInput';

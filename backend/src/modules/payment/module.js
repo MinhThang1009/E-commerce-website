@@ -4,10 +4,10 @@
  * @module payment
  * @description Entry point payment module — khởi tạo dependencies và đăng ký routes
  */
-const PaymentController = require('./controllers/paymentController');
-const PaymentService = require('./services/paymentService');
-const SequelizePaymentRepository = require('./repositories/SequelizePaymentRepository');
-const buildRoutes = require('./routes');
+const PaymentController = require('@modules/payment/controllers/payment-controller');
+const PaymentService = require('@modules/payment/services/payment-service');
+const SequelizePaymentRepository = require('@modules/payment/repositories/sequelize-payment-repository');
+const buildRoutes = require('@modules/payment/routes');
 
 // Payment module — Vertical Slice + Layered.
 // SePay webhook (controllers/payment.js handleSePayWebhook) chưa migrate vào module này.

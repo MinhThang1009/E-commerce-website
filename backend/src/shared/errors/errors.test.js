@@ -46,8 +46,8 @@ describe('shared/errors', () => {
   });
 
   test('AppError instance equality giữa shared/ và middlewares/', () => {
-    const sharedAppError = require('./AppError');
-    const oldAppError = require('../../middlewares/errorHandler').AppError;
+    const sharedAppError = require('./app-error');
+    const oldAppError = require('@middlewares/error-handler').AppError;
     expect(sharedAppError).toBe(oldAppError);
   });
 });

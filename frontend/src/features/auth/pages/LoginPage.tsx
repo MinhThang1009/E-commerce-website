@@ -10,10 +10,10 @@ import { useTranslation } from 'react-i18next';
 import { ROUTES, buildRoute } from '@/routes/paths';
 import { PremiumButton } from '@/components/common';
 import Input from '@/components/common/Input';
-import { useLoginMutation, useResendVerificationMutation } from '../api/authApi';
-import { useAuthStore } from '@/stores/authStore';
+import { useLoginMutation, useResendVerificationMutation } from '../api/auth-api';
+import { useAuthStore } from '@/stores/auth-store';
 import GoogleLoginButton from '../components/GoogleLoginButton';
-import { getErrorMsg } from '@/utils/errorUtils';
+import { getErrorMsg } from '@/utils/error-utils';
 
 interface LocationState {
   from?: { pathname: string };
@@ -24,6 +24,7 @@ const LoginPage: React.FC = () => {
   const { t } = useTranslation();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
   const [errors, setErrors] = useState<{ email?: string; password?: string }>({});
   const [resendSuccess, setResendSuccess] = useState('');
   const [resendError, setResendError] = useState('');
@@ -63,9 +64,8 @@ const LoginPage: React.FC = () => {
   };
 
   const handleSubmit = async (e?: React.FormEvent) => {
-    // Chỉ gọi preventDefault nếu có event được truyền vào
     e?.preventDefault();
-
+    if (isLoading) return; // chặn double-submit khi đang xử lý
     if (!validateForm()) return;
 
     try {
@@ -141,6 +141,7 @@ const LoginPage: React.FC = () => {
                   className="block text-sm font-medium text-neutral-700 dark:text-neutral-300"
                 >
                   {t('auth.login.passwordLabel')}
+                  <span className="text-red-500 ml-1">*</span>
                 </label>
                 <Link
                   to={ROUTES.FORGOT_PASSWORD}
@@ -150,13 +151,62 @@ const LoginPage: React.FC = () => {
                 </Link>
               </div>
               <Input
-                type="password"
+                type={showPassword ? 'text' : 'password'}
                 id="password"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 placeholder={t('auth.login.passwordPlaceholder')}
                 error={errors.password}
                 required
+                rightIcon={
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword((v) => !v)}
+                    className="text-neutral-400 hover:text-neutral-600 dark:hover:text-neutral-300 focus:outline-none"
+                    tabIndex={-1}
+                    aria-label={
+                      showPassword ? t('auth.login.hidePassword') : t('auth.login.showPassword')
+                    }
+                  >
+                    {showPassword ? (
+                      <svg
+                        xmlns="http://www.w3.org/2000/svg"
+                        className="h-5 w-5"
+                        fill="none"
+                        viewBox="0 0 24 24"
+                        stroke="currentColor"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth={2}
+                          d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l3.59 3.59m0 0A9.953 9.953 0 0112 5c4.478 0 8.268 2.943 9.543 7a10.025 10.025 0 01-4.132 5.411m0 0L21 21"
+                        />
+                      </svg>
+                    ) : (
+                      <svg
+                        xmlns="http://www.w3.org/2000/svg"
+                        className="h-5 w-5"
+                        fill="none"
+                        viewBox="0 0 24 24"
+                        stroke="currentColor"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth={2}
+                          d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"
+                        />
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth={2}
+                          d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"
+                        />
+                      </svg>
+                    )}
+                  </button>
+                }
               />
             </div>
 
@@ -203,11 +253,7 @@ const LoginPage: React.FC = () => {
             {error && (
               <div className="p-4 bg-error-100 dark:bg-error-900/30 text-error-700 dark:text-error-400 rounded-lg">
                 <p className="text-sm font-medium">
-                  {typeof error === 'string'
-                    ? error
-                    : (error as ApiError)?.data?.message ||
-                      (error as ApiError)?.message ||
-                      t('auth.login.errors.invalidCredentials')}
+                  {getErrorMsg(error, t('auth.login.errors.invalidCredentials'))}
                 </p>
                 {/xác thực email|verify.*email/i.test((error as ApiError)?.data?.message || '') && (
                   <div className="mt-3 flex flex-col gap-2">

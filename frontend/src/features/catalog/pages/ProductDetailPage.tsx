@@ -14,18 +14,18 @@ import { ProductReviews } from '@/features/reviews';
 import WarrantySelection from '../components/WarrantySelection';
 import ProductDetailsSection from '../components/ProductDetailsSection';
 import ProductFAQSection from '../components/ProductFAQSection';
-import { productApi } from '../api/productApi';
+import { productApi } from '../api/product-api';
 import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { useCartStore } from '@/stores/cartStore';
-import { useAuthStore } from '@/stores/authStore';
+import { useCartStore } from '@/stores/cart-store';
+import { useAuthStore } from '@/stores/auth-store';
 import { Link, useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import { ROUTES, buildRoute } from '@/routes/paths';
 import { v4 as uuidv4 } from 'uuid';
 import ProductImageGallery from '../components/ProductImageGallery';
 import RecentlyViewedProducts from '../components/RecentlyViewedProducts';
 
-import { useUiStore } from '@/stores/uiStore';
+import { useUiStore } from '@/stores/ui-store';
 import { useAddToCartMutation } from '@/features/cart';
 import {
   getVariantStock,
@@ -36,8 +36,8 @@ import {
   formatStockText,
   getStockStatusColor,
   hasVariants,
-} from '../utils/productHelpers';
-import { getErrorMsg } from '@/utils/errorUtils';
+} from '../utils/product-helpers';
+import { getErrorMsg } from '@/utils/error-utils';
 import { localizeField } from '@/utils/localize';
 
 const ProductDetailPage: React.FC = () => {

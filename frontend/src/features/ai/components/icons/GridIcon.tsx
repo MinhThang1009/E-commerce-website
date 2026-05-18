@@ -19,4 +19,3 @@ const GridIcon: React.FC<IconProps> = ({ className = 'w-3.5 h-3.5' }) => {
 };
 
 export default GridIcon;
-

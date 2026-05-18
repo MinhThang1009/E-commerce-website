@@ -57,7 +57,8 @@ const ProductVariantsSection: React.FC<ProductVariantsSectionProps> = ({
       title: t('productSection.variants.priceColumn'),
       dataIndex: 'price',
       key: 'price',
-      render: (price: number) => `${price.toLocaleString(getLocale())}${t('common.currencySymbol')}`,
+      render: (price: number) =>
+        `${price.toLocaleString(getLocale())}${t('common.currencySymbol')}`,
     },
     {
       title: t('productSection.variants.stockColumn'),
@@ -108,20 +109,14 @@ const ProductVariantsSection: React.FC<ProductVariantsSectionProps> = ({
               <Title level={5}>
                 {t('productSection.variants.sectionTitle')} <Text type="danger">*</Text>
               </Title>
-              <Text type="secondary">
-                {t('productSection.variants.sectionDesc')}
-              </Text>
+              <Text type="secondary">{t('productSection.variants.sectionDesc')}</Text>
               <div style={{ marginTop: 8 }}>
                 <Text type="warning">
                   <strong>{t('common.note')}:</strong> {t('productSection.variants.note')}
                 </Text>
               </div>
             </div>
-            <Button
-              type="primary"
-              icon={<PlusOutlined />}
-              onClick={onAddVariant}
-            >
+            <Button type="primary" icon={<PlusOutlined />} onClick={onAddVariant}>
               {t('productSection.variants.addButton')}
             </Button>
           </div>

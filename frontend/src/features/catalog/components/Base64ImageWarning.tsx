@@ -8,17 +8,14 @@ import React from 'react';
 import { useTranslation } from 'react-i18next';
 import { Alert } from 'antd';
 import { InfoCircleOutlined } from '@ant-design/icons';
-import { countBase64Images } from '@/utils/descriptionImageProcessor';
+import { countBase64Images } from '@/utils/description-image-processor';
 
 interface Base64ImageWarningProps {
   description: string;
   className?: string;
 }
 
-const Base64ImageWarning: React.FC<Base64ImageWarningProps> = ({
-  description,
-  className,
-}) => {
+const Base64ImageWarning: React.FC<Base64ImageWarningProps> = ({ description, className }) => {
   const { t } = useTranslation();
   const base64Count = countBase64Images(description);
 

@@ -16,10 +16,7 @@ interface ProductCategoryFormProps {
   isLoading: boolean;
 }
 
-const ProductCategoryForm: React.FC<ProductCategoryFormProps> = ({
-  categories,
-  isLoading,
-}) => {
+const ProductCategoryForm: React.FC<ProductCategoryFormProps> = ({ categories, isLoading }) => {
   const { t } = useTranslation();
 
   return (
@@ -50,7 +47,6 @@ const ProductCategoryForm: React.FC<ProductCategoryFormProps> = ({
           </Select>
         </Form.Item>
       </Col>
-
 
       <Col span={24}>
         <Alert

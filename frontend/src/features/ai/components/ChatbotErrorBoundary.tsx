@@ -47,4 +47,3 @@ class ChatbotErrorBoundary extends React.Component<Props, State> {
 }
 
 export default ChatbotErrorBoundary;
-

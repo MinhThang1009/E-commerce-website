@@ -6,14 +6,14 @@
  */
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { useAuthStore } from '@/stores/authStore';
+import { useAuthStore } from '@/stores/auth-store';
 import { getLocale } from '@/utils/format';
 import {
   useGetProductReviewsQuery,
   useMarkReviewHelpfulMutation,
   Review,
   ReviewFilters,
-} from '../api/reviewApi';
+} from '../api/review-api';
 import { Rating } from '@/components/common/Rating';
 
 interface ReviewListProps {
@@ -39,7 +39,7 @@ const ReviewList: React.FC<ReviewListProps> = ({ productId }) => {
     { productId, ...filters },
     {
       enabled: !!productId && productId !== 'undefined',
-    }
+    },
   );
 
   const handleFilterChange = (newFilters: Partial<ReviewFilters>) => {
@@ -154,8 +154,19 @@ const ReviewList: React.FC<ReviewListProps> = ({ productId }) => {
 
       {reviews.length === 0 ? (
         <div className="text-center py-8 text-neutral-500 dark:text-neutral-400">
-          <svg xmlns="http://www.w3.org/2000/svg" className="h-12 w-12 mx-auto mb-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 8h10M7 12h4m1 8l-4-4H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-1l-4 4z" />
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            className="h-12 w-12 mx-auto mb-3"
+            fill="none"
+            viewBox="0 0 24 24"
+            stroke="currentColor"
+          >
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeWidth={2}
+              d="M7 8h10M7 12h4m1 8l-4-4H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-1l-4 4z"
+            />
           </svg>
           <p>{t('review.list.empty')}</p>
         </div>
@@ -187,7 +198,11 @@ const ReviewList: React.FC<ReviewListProps> = ({ productId }) => {
                         {review.isVerified && (
                           <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200">
                             <svg className="w-3 h-3 mr-1" fill="currentColor" viewBox="0 0 20 20">
-                              <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                              <path
+                                fillRule="evenodd"
+                                d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z"
+                                clipRule="evenodd"
+                              />
                             </svg>
                             {t('review.list.verified')}
                           </span>
@@ -208,9 +223,12 @@ const ReviewList: React.FC<ReviewListProps> = ({ productId }) => {
 
                   {(() => {
                     try {
-                      const parsedImages = typeof review.images === 'string'
-                        ? JSON.parse(review.images)
-                        : Array.isArray(review.images) ? review.images : [];
+                      const parsedImages =
+                        typeof review.images === 'string'
+                          ? JSON.parse(review.images)
+                          : Array.isArray(review.images)
+                            ? review.images
+                            : [];
 
                       return Array.isArray(parsedImages) && parsedImages.length > 0 ? (
                         <div className="flex flex-wrap gap-2 mb-3">
@@ -220,7 +238,9 @@ const ReviewList: React.FC<ReviewListProps> = ({ productId }) => {
                               src={image}
                               alt={`Review image ${index + 1}`}
                               className="w-16 h-16 object-cover rounded-lg cursor-pointer hover:opacity-80 transition-opacity"
-                              onClick={() => { window.open(image, '_blank'); }}
+                              onClick={() => {
+                                window.open(image, '_blank');
+                              }}
                             />
                           ))}
                         </div>
@@ -235,8 +255,18 @@ const ReviewList: React.FC<ReviewListProps> = ({ productId }) => {
                       onClick={() => handleMarkHelpful(review.id, true)}
                       className="flex items-center space-x-1 text-neutral-500 dark:text-neutral-400 hover:text-green-600 dark:hover:text-green-400 transition-colors"
                     >
-                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14 10h4.764a2 2 0 011.789 2.894l-3.5 7A2 2 0 0115.263 21h-4.017c-.163 0-.326-.02-.485-.06L7 20m7-10V5a2 2 0 00-2-2h-.095c-.5 0-.905.405-.905.905 0 .714-.211 1.412-.608 2.006L7 11v9m7-10h-2M7 20H5a2 2 0 01-2-2v-6a2 2 0 012-2h2.5" />
+                      <svg
+                        className="w-4 h-4"
+                        fill="none"
+                        stroke="currentColor"
+                        viewBox="0 0 24 24"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth={2}
+                          d="M14 10h4.764a2 2 0 011.789 2.894l-3.5 7A2 2 0 0115.263 21h-4.017c-.163 0-.326-.02-.485-.06L7 20m7-10V5a2 2 0 00-2-2h-.095c-.5 0-.905.405-.905.905 0 .714-.211 1.412-.608 2.006L7 11v9m7-10h-2M7 20H5a2 2 0 01-2-2v-6a2 2 0 012-2h2.5"
+                        />
                       </svg>
                       <span>{t('review.list.helpful', { count: review.likes })}</span>
                     </button>
@@ -245,8 +275,18 @@ const ReviewList: React.FC<ReviewListProps> = ({ productId }) => {
                       onClick={() => handleMarkHelpful(review.id, false)}
                       className="flex items-center space-x-1 text-neutral-500 dark:text-neutral-400 hover:text-red-600 dark:hover:text-red-400 transition-colors"
                     >
-                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 14H5.236a2 2 0 01-1.789-2.894l3.5-7A2 2 0 018.736 3h4.018c.163 0 .326.02.485.06L17 4m-7 10v2a2 2 0 002 2h.095c.5 0 .905-.405.905-.905 0-.714.211-1.412.608-2.006L17 13V4m-7 10h2m5-10H5a2 2 0 00-2 2v6a2 2 0 002 2h2.5" />
+                      <svg
+                        className="w-4 h-4"
+                        fill="none"
+                        stroke="currentColor"
+                        viewBox="0 0 24 24"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth={2}
+                          d="M10 14H5.236a2 2 0 01-1.789-2.894l3.5-7A2 2 0 018.736 3h4.018c.163 0 .326.02.485.06L17 4m-7 10v2a2 2 0 002 2h.095c.5 0 .905-.405.905-.905 0-.714.211-1.412.608-2.006L17 13V4m-7 10h2m5-10H5a2 2 0 00-2 2v6a2 2 0 002 2h2.5"
+                        />
                       </svg>
                       <span>{t('review.list.notHelpful', { count: review.dislikes })}</span>
                     </button>

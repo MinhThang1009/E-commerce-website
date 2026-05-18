@@ -6,11 +6,11 @@
  */
 import React from 'react';
 import { Outlet } from 'react-router-dom';
-import { useAuthStore } from '@/stores/authStore';
+import { useAuthStore } from '@/stores/auth-store';
 import Header from './Header';
 import Footer from './Footer';
 // Không cần import ChatWidget ở đây nữa vì đã được thêm vào App.tsx
-import { useScrollToTop } from '@/hooks/useScrollToTop';
+import { useScrollToTop } from '@/hooks/use-scroll-to-top';
 import { useCartMerge } from '@/features/cart';
 
 const MainLayout: React.FC = () => {

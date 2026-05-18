@@ -5,10 +5,10 @@
  * @description HTTP endpoints của content
  */
 const express = require('express');
-const { authenticate } = require('../../middlewares/authenticate');
-const { authorize } = require('../../middlewares/authorize');
-const { validateRequest } = require('../../middlewares/validateRequest');
-const { httpCacheHeaders } = require('../../middlewares/cache');
+const { authenticate } = require('@middlewares/authenticate');
+const { authorize } = require('@middlewares/authorize');
+const { validateRequest } = require('@middlewares/validate-request');
+const { httpCacheHeaders } = require('@middlewares/cache');
 const {
   createBannerSchema,
   updateBannerSchema,
@@ -16,7 +16,7 @@ const {
   updateNewsSchema,
   newsletterSchema,
   feedbackSchema,
-} = require('./validators/contentValidator');
+} = require('@modules/content/validators/content-validator');
 
 // Content module: 5 sub-domain với URL prefix khác nhau (/banners, /news,
 // /email-campaigns, /newsletter, /contact). Module.js wire 5 router riêng,

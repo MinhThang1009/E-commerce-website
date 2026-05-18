@@ -7,17 +7,14 @@
 import React from 'react';
 import { useTranslation } from 'react-i18next';
 import { BotIcon, CloseIcon, SparkleIcon, StatusIcon } from './icons';
-import { geminiService } from '../services/geminiApi';
+import { geminiService } from '../services/gemini-api';
 
 interface ChatToggleButtonProps {
   isOpen: boolean;
   onClick: (event?: React.MouseEvent) => void;
 }
 
-const ChatToggleButton: React.FC<ChatToggleButtonProps> = ({
-  isOpen,
-  onClick,
-}) => {
+const ChatToggleButton: React.FC<ChatToggleButtonProps> = ({ isOpen, onClick }) => {
   const { t } = useTranslation();
   const isAIReady = geminiService.isReady();
 
@@ -47,10 +44,7 @@ const ChatToggleButton: React.FC<ChatToggleButtonProps> = ({
       {/* Icon chính */}
       <div className="relative">
         {isOpen ? (
-          <CloseIcon
-            size={28}
-            className="transform transition-transform duration-300 rotate-180"
-          />
+          <CloseIcon size={28} className="transform transition-transform duration-300 rotate-180" />
         ) : (
           <>
             <BotIcon
@@ -59,10 +53,7 @@ const ChatToggleButton: React.FC<ChatToggleButtonProps> = ({
             />
             {/* Hiệu ứng sparkle AI */}
             <div className="absolute -top-1 -right-1">
-              <SparkleIcon
-                size={12}
-                className="text-yellow-300 animate-pulse"
-              />
+              <SparkleIcon size={12} className="text-yellow-300 animate-pulse" />
             </div>
           </>
         )}
@@ -72,4 +63,3 @@ const ChatToggleButton: React.FC<ChatToggleButtonProps> = ({
 };
 
 export default ChatToggleButton;
-

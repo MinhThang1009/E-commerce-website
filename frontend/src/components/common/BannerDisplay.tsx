@@ -10,7 +10,7 @@ import { useGetBannersQuery } from '@/features/content';
 import type { Banner } from '@/features/content';
 import { Carousel, Skeleton } from 'antd';
 import { Link } from 'react-router-dom';
-import { getUploadUrl } from '@/utils/uploadUrl';
+import { getUploadUrl } from '@/utils/upload-url';
 
 interface BannerDisplayProps {
   position: 'home_hero' | 'home_middle' | 'sidebar';
@@ -47,8 +47,17 @@ const BannerDisplay: React.FC<BannerDisplayProps> = ({ position, className }) =>
           {banner.linkUrl && (
             <div className="text-white opacity-80 flex items-center gap-2 transform translate-y-4 group-hover:translate-y-0 transition-transform duration-500 delay-75">
               <span>{t('banner.exploreNow')}</span>
-              <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
-                <path fillRule="evenodd" d="M10.293 3.293a1 1 0 011.414 0l6 6a1 1 0 010 1.414l-6 6a1 1 0 01-1.414-1.414L14.586 11H3a1 1 0 110-2h11.586l-4.293-4.293a1 1 0 010-1.414z" clipRule="evenodd" />
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                className="h-5 w-5"
+                viewBox="0 0 20 20"
+                fill="currentColor"
+              >
+                <path
+                  fillRule="evenodd"
+                  d="M10.293 3.293a1 1 0 011.414 0l6 6a1 1 0 010 1.414l-6 6a1 1 0 01-1.414-1.414L14.586 11H3a1 1 0 110-2h11.586l-4.293-4.293a1 1 0 010-1.414z"
+                  clipRule="evenodd"
+                />
               </svg>
             </div>
           )}
@@ -57,18 +66,29 @@ const BannerDisplay: React.FC<BannerDisplayProps> = ({ position, className }) =>
     );
 
     return banner.linkUrl ? (
-      <Link key={banner.id} to={banner.linkUrl} className={`block w-full outline-none ${wrapperClass || 'h-full'}`}>
+      <Link
+        key={banner.id}
+        to={banner.linkUrl}
+        className={`block w-full outline-none ${wrapperClass || 'h-full'}`}
+      >
         {content}
       </Link>
     ) : (
-      <div key={banner.id} className={`w-full outline-none ${wrapperClass || 'h-full'}`}>{content}</div>
+      <div key={banner.id} className={`w-full outline-none ${wrapperClass || 'h-full'}`}>
+        {content}
+      </div>
     );
   };
 
   if (position === 'home_hero') {
     return (
       <div className={`w-full mb-8 ${className}`}>
-        <Carousel autoplay effect="fade" autoplaySpeed={5000} className="rounded-2xl overflow-hidden shadow-2xl">
+        <Carousel
+          autoplay
+          effect="fade"
+          autoplaySpeed={5000}
+          className="rounded-2xl overflow-hidden shadow-2xl"
+        >
           {banners.map((b) => renderBanner(b, 'h-[300px] md:h-[500px]'))}
         </Carousel>
       </div>
@@ -77,7 +97,9 @@ const BannerDisplay: React.FC<BannerDisplayProps> = ({ position, className }) =>
 
   if (position === 'home_middle') {
     return (
-      <div className={`w-full my-12 rounded-3xl overflow-hidden shadow-xl transform transition-transform hover:scale-[1.01] duration-500 ${className}`}>
+      <div
+        className={`w-full my-12 rounded-3xl overflow-hidden shadow-xl transform transition-transform hover:scale-[1.01] duration-500 ${className}`}
+      >
         {banners.length > 1 ? (
           <Carousel autoplay dots={false} pauseOnHover={false} speed={1000}>
             {banners.map((b) => renderBanner(b, 'h-[200px] md:h-[300px]'))}
@@ -93,7 +115,10 @@ const BannerDisplay: React.FC<BannerDisplayProps> = ({ position, className }) =>
     return (
       <div className={`flex flex-col gap-4 ${className}`}>
         {banners.map((banner: Banner) => (
-          <div key={banner.id} className="w-full aspect-[3/4] rounded-xl overflow-hidden shadow-md hover:shadow-lg transition-all duration-300">
+          <div
+            key={banner.id}
+            className="w-full aspect-[3/4] rounded-xl overflow-hidden shadow-md hover:shadow-lg transition-all duration-300"
+          >
             {renderBanner(banner, 'h-full')}
           </div>
         ))}
@@ -105,4 +130,3 @@ const BannerDisplay: React.FC<BannerDisplayProps> = ({ position, className }) =>
 };
 
 export default BannerDisplay;
-

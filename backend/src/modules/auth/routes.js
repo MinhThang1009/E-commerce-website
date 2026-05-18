@@ -6,16 +6,16 @@
  */
 const express = require('express');
 
-const { authenticate } = require('../../middlewares/authenticate');
-const { otpLimiter } = require('../../middlewares/rateLimiter');
-const { validateRequest } = require('../../middlewares/validateRequest');
+const { authenticate } = require('@middlewares/authenticate');
+const { otpLimiter } = require('@middlewares/rate-limiter');
+const { validateRequest } = require('@middlewares/validate-request');
 const {
   registerSchema,
   loginSchema,
   forgotPasswordSchema,
   resetPasswordSchema,
   emailSchema,
-} = require('./validators/authValidator');
+} = require('@modules/auth/validators/auth-validator');
 
 // Auth module routes — mount tại basePath '/auth' (server.js wire vào /api/auth).
 // Endpoint URL không đổi so với routes/auth.js cũ → integration tests pass.

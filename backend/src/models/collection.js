@@ -1,6 +1,6 @@
 const { DataTypes } = require('sequelize');
 const slugify = require('slugify');
-const sequelize = require('../config/sequelize');
+const sequelize = require('@config/sequelize');
 
 const Collection = sequelize.define(
   'Collection',

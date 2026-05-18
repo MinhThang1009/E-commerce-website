@@ -32,16 +32,14 @@ const ProductFAQForm: React.FC = () => {
                   key={key}
                   className="mb-6 p-4 border border-gray-100 dark:border-gray-800 rounded-lg bg-gray-50 dark:bg-gray-900/50 relative"
                 >
-                  <Space
-                    direction="vertical"
-                    size="middle"
-                    style={{ width: '100%' }}
-                  >
+                  <Space direction="vertical" size="middle" style={{ width: '100%' }}>
                     <Form.Item
                       {...restField}
                       name={[name, 'question']}
                       label={t('admin.products.faq.questionLabel')}
-                      rules={[{ required: true, message: t('admin.products.faq.questionRequired') }]}
+                      rules={[
+                        { required: true, message: t('admin.products.faq.questionRequired') },
+                      ]}
                     >
                       <Input placeholder={t('admin.products.faq.questionPlaceholder')} />
                     </Form.Item>
@@ -49,9 +47,7 @@ const ProductFAQForm: React.FC = () => {
                       {...restField}
                       name={[name, 'answer']}
                       label={t('admin.products.faq.answerLabel')}
-                      rules={[
-                        { required: true, message: t('admin.products.faq.answerRequired') },
-                      ]}
+                      rules={[{ required: true, message: t('admin.products.faq.answerRequired') }]}
                     >
                       <Input.TextArea
                         rows={3}
@@ -69,12 +65,7 @@ const ProductFAQForm: React.FC = () => {
                 </div>
               ))}
               <Form.Item>
-                <Button
-                  type="dashed"
-                  onClick={() => add()}
-                  block
-                  icon={<PlusOutlined />}
-                >
+                <Button type="dashed" onClick={() => add()} block icon={<PlusOutlined />}>
                   {t('admin.products.faq.addButton')}
                 </Button>
               </Form.Item>

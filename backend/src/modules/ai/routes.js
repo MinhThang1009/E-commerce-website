@@ -5,8 +5,8 @@
  * @description HTTP endpoints của ai
  */
 const express = require('express');
-const { optionalAuthenticate, authenticate } = require('../../middlewares/authenticate');
-const { chatbotLimiter } = require('../../middlewares/rateLimiter');
+const { optionalAuthenticate, authenticate } = require('@middlewares/authenticate');
+const { chatbotLimiter } = require('@middlewares/rate-limiter');
 
 // AI module routes — basePath '/chatbot'. Đã migrate đầy đủ từ routes/chatbot.js.
 module.exports = ({ aiController }) => {

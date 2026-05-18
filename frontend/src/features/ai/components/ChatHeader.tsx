@@ -7,7 +7,7 @@
 import React from 'react';
 import { useTranslation } from 'react-i18next';
 import { CloseIcon, LightningIcon } from './icons/index';
-import { geminiService } from '../services/geminiApi';
+import { geminiService } from '../services/gemini-api';
 
 // Dùng kiểu của instance singleton vì geminiApi không export kiểu riêng
 type GeminiServiceType = typeof geminiService;
@@ -38,12 +38,8 @@ const ChatHeader: React.FC<ChatHeaderProps> = ({ onClose, geminiService }) => {
             <LightningIcon className="w-5 h-5" />
           </div>
           <div>
-            <h3 className="font-bold text-xl tracking-tight">
-              {t('chat.title')}
-            </h3>
-            <p className="text-sm text-white/90 font-medium">
-              {t('chat.subtitle')}
-            </p>
+            <h3 className="font-bold text-xl tracking-tight">{t('chat.title')}</h3>
+            <p className="text-sm text-white/90 font-medium">{t('chat.subtitle')}</p>
           </div>
         </div>
 
@@ -90,4 +86,3 @@ const ChatHeader: React.FC<ChatHeaderProps> = ({ onClose, geminiService }) => {
 };
 
 export default ChatHeader;
-

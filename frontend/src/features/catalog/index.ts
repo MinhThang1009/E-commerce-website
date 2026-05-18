@@ -20,10 +20,10 @@ export { default as ProductVariantSelector } from './components/ProductVariantSe
 export { default as RecentlyViewedProducts } from './components/RecentlyViewedProducts';
 
 // Hooks
-export { useProductAttributes } from './hooks/useProductAttributes';
-export { useProductForm } from './hooks/useProductForm';
-export { useProductPriceRange } from './hooks/useProductPriceRange';
-export { useProductVariants } from './hooks/useProductVariants';
+export { useProductAttributes } from './hooks/use-product-attributes';
+export { useProductForm } from './hooks/use-product-form';
+export { useProductPriceRange } from './hooks/use-product-price-range';
+export { useProductVariants } from './hooks/use-product-variants';
 
 // API hooks — Product
 export {
@@ -40,7 +40,7 @@ export {
   useSearchProductsQuery,
   useGetProductFiltersQuery,
   useGetRecentlyViewedQuery,
-} from './api/productApi';
+} from './api/product-api';
 
 // API hooks — Category
 export {
@@ -54,7 +54,7 @@ export {
   useGetProductsByCategoryQuery,
   useGetFeaturedCategoriesQuery,
   useGetCategoriesQuery,
-} from './api/categoryApi';
+} from './api/category-api';
 
 // API hooks — Brand
 export {
@@ -64,7 +64,7 @@ export {
   useCreateBrandMutation,
   useUpdateBrandMutation,
   useDeleteBrandMutation,
-} from './api/brandApi';
+} from './api/brand-api';
 
 // API hooks — Collection
 export {
@@ -74,10 +74,10 @@ export {
   useCreateCollectionMutation,
   useUpdateCollectionMutation,
   useDeleteCollectionMutation,
-} from './api/collectionApi';
+} from './api/collection-api';
 
 // API endpoints — Attribute (raw service, không phải TanStack Query hook)
-export { default as attributeApi } from './api/attributeApi';
+export { default as attributeApi } from './api/attribute-api';
 
 // API endpoints — Search History
 export {
@@ -85,7 +85,7 @@ export {
   useGetSearchHistoryQuery,
   useDeleteSearchHistoryMutation,
   useClearAllSearchHistoryMutation,
-} from './api/searchHistoryApi';
+} from './api/search-history-api';
 
 // Kiểu dữ liệu
 export type {

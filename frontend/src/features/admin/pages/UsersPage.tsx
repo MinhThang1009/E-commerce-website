@@ -45,8 +45,8 @@ import {
   useDeleteUserMutation,
   type User,
   type UserFilters,
-} from '../api/adminUserApi';
-import { getErrorMsg } from '@/utils/errorUtils';
+} from '../api/admin-user-api';
+import { getErrorMsg } from '@/utils/error-utils';
 
 const { Title } = Typography;
 const { Option } = Select;

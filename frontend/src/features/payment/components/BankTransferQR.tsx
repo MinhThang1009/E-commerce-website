@@ -14,10 +14,7 @@ interface BankTransferQRProps {
   numberOrder: string;
 }
 
-const BankTransferQR: React.FC<BankTransferQRProps> = ({
-  amount,
-  numberOrder,
-}) => {
+const BankTransferQR: React.FC<BankTransferQRProps> = ({ amount, numberOrder }) => {
   const { t, i18n } = useTranslation();
   const [copiedField, setCopiedField] = useState<string | null>(null);
 
@@ -96,13 +93,9 @@ const BankTransferQR: React.FC<BankTransferQRProps> = ({
                 {t('checkout.bankTransfer.accountNumber')}
               </span>
               <div className="flex items-center gap-2">
-                <span className="font-medium font-mono">
-                  {bankInfo.accountNumber}
-                </span>
+                <span className="font-medium font-mono">{bankInfo.accountNumber}</span>
                 <button
-                  onClick={() =>
-                    copyToClipboard(bankInfo.accountNumber, 'accountNumber')
-                  }
+                  onClick={() => copyToClipboard(bankInfo.accountNumber, 'accountNumber')}
                   className="p-1 hover:bg-neutral-100 dark:hover:bg-neutral-700 rounded transition-colors"
                   title={t('checkout.bankTransfer.copyAccountNumber')}
                 >
@@ -127,7 +120,8 @@ const BankTransferQR: React.FC<BankTransferQRProps> = ({
                 {t('checkout.bankTransfer.amount')}
               </span>
               <span className="font-medium text-red-600 dark:text-red-400">
-                {roundedAmount.toLocaleString(i18n.language === 'vi' ? 'vi-VN' : 'en-US')} {t('product.currencyCode')}
+                {roundedAmount.toLocaleString(i18n.language === 'vi' ? 'vi-VN' : 'en-US')}{' '}
+                {t('product.currencyCode')}
               </span>
             </div>
 
@@ -140,9 +134,7 @@ const BankTransferQR: React.FC<BankTransferQRProps> = ({
                   {bankInfo.reference}
                 </span>
                 <button
-                  onClick={() =>
-                    copyToClipboard(bankInfo.reference, 'reference')
-                  }
+                  onClick={() => copyToClipboard(bankInfo.reference, 'reference')}
                   className="p-1 hover:bg-neutral-100 dark:hover:bg-neutral-700 rounded transition-colors"
                   title={t('checkout.bankTransfer.copyReference')}
                 >
@@ -179,4 +171,3 @@ const BankTransferQR: React.FC<BankTransferQRProps> = ({
 };
 
 export default BankTransferQR;
-

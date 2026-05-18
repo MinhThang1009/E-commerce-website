@@ -12,13 +12,13 @@ import { useTranslation } from 'react-i18next';
 import i18next from 'i18next';
 
 // Hooks tùy chỉnh cho form sản phẩm, attributes và variants
-import { useProductAttributes } from '../../hooks/useProductAttributes';
-import { useProductForm } from '../../hooks/useProductForm';
-import { useProductVariants } from '../../hooks/useProductVariants';
+import { useProductAttributes } from '../../hooks/use-product-attributes';
+import { useProductForm } from '../../hooks/use-product-form';
+import { useProductVariants } from '../../hooks/use-product-variants';
 
 // Các API hook cần thiết
 import { useCreateProductMutation } from '@/features/admin';
-import { useGetCategoriesQuery } from '../../api/categoryApi';
+import { useGetCategoriesQuery } from '../../api/category-api';
 import { useConvertBase64ToImageMutation, useDeleteImageMutation } from '@/features/upload';
 import { useGetWarrantyPackagesQuery } from '@/features/admin';
 
@@ -39,12 +39,12 @@ import ValidationAlerts from '../../components/ValidationAlerts';
 import ProductFAQForm from '../../components/ProductFAQForm';
 
 // Types và utils
-import { AttributeGroup } from '../../api/attributeApi';
+import { AttributeGroup } from '../../api/attribute-api';
 import { ProductFormData, ProductAttribute, ProductVariant } from '@/types';
-import { getErrorMsg } from '@/utils/errorUtils';
+import { getErrorMsg } from '@/utils/error-utils';
 
 // Utils xử lý ảnh trong mô tả sản phẩm (base64 -> file đã upload)
-import { hasBase64Images, processDescriptionImages } from '@/utils/descriptionImageProcessor';
+import { hasBase64Images, processDescriptionImages } from '@/utils/description-image-processor';
 
 const { Title, Text } = Typography;
 

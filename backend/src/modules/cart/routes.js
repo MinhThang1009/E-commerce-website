@@ -6,13 +6,13 @@
  */
 const express = require('express');
 
-const { optionalAuthenticate } = require('../../middlewares/authenticate');
-const { validateRequest } = require('../../middlewares/validateRequest');
+const { optionalAuthenticate } = require('@middlewares/authenticate');
+const { validateRequest } = require('@middlewares/validate-request');
 const {
   addToCartSchema,
   updateCartItemSchema,
   syncCartSchema,
-} = require('./validators/cartValidator');
+} = require('@modules/cart/validators/cart-validator');
 
 // Cart module routes — basePath '/cart' (mount /api/cart). URL không đổi so với
 // routes/cart.js cũ.

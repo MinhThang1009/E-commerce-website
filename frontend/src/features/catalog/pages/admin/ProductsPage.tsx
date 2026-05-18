@@ -14,10 +14,10 @@ import {
   useUpdateProductStatusMutation,
   useLazyGetAdminProductsQuery,
 } from '@/features/admin';
-import { useGetAllCategoriesQuery } from '../../api/categoryApi';
+import { useGetAllCategoriesQuery } from '../../api/category-api';
 import { useTranslation } from 'react-i18next';
 import { ProductExportModal } from '@/features/admin';
-import { calculatePriceRange } from '@/utils/priceUtils';
+import { calculatePriceRange } from '@/utils/price-utils';
 import { getLocale } from '@/utils/format';
 import {
   Table,
@@ -71,7 +71,7 @@ interface AdminProductRow {
 const ProductsPage: React.FC = () => {
   const { t } = useTranslation();
   const navigate = useNavigate();
-  
+
   const statusOptions = [
     { value: 'all', label: t('admin.products.filters.allStatus') },
     { value: 'active', label: t('admin.products.status.active') },
@@ -99,8 +99,7 @@ const ProductsPage: React.FC = () => {
   const [isQuickViewOpen, setIsQuickViewOpen] = useState(false);
 
   // Lấy danh mục từ API
-  const { data: categoriesResponse, isLoading: isCategoriesLoading } =
-    useGetAllCategoriesQuery();
+  const { data: categoriesResponse, isLoading: isCategoriesLoading } = useGetAllCategoriesQuery();
 
   // Các query và mutation API
   const {
@@ -120,25 +119,22 @@ const ProductsPage: React.FC = () => {
 
   const { mutateAsync: deleteProduct, isPending: _isDeleting } = useDeleteProductMutation();
   const { mutateAsync: cloneProduct, isPending: isCloning } = useCloneProductMutation();
-  const { mutateAsync: updateProductStatus, isPending: isUpdatingStatus } = useUpdateProductStatusMutation();
+  const { mutateAsync: updateProductStatus, isPending: isUpdatingStatus } =
+    useUpdateProductStatusMutation();
   const { trigger: triggerGetProducts } = useLazyGetAdminProductsQuery();
   const [isFetchingForExport, _setIsFetchingForExport] = useState(false);
 
   // Xử lý dữ liệu sản phẩm từ API
   const products = useMemo(
     () => productsResponse?.data?.products || [],
-    [productsResponse?.data?.products]
+    [productsResponse?.data?.products],
   );
   const pagination = productsResponse?.data?.pagination;
 
   // Xử lý dữ liệu danh mục từ API
   const rawCategories = categoriesResponse?.data;
   const apiCategories = useMemo(() => {
-    return Array.isArray(rawCategories)
-      ? rawCategories
-      : rawCategories
-        ? [rawCategories]
-        : [];
+    return Array.isArray(rawCategories) ? rawCategories : rawCategories ? [rawCategories] : [];
   }, [rawCategories]);
 
   // Tạo options cho dropdown danh mục
@@ -230,9 +226,7 @@ const ProductsPage: React.FC = () => {
   const calculateDisplayPrice = (product: AdminProductRow) => {
     // Nếu sản phẩm có variants, hiển thị giá thấp nhất
     if (product.variants && product.variants.length > 0) {
-      const prices = product.variants.map((variant) =>
-        parseFloat(String(variant.price))
-      );
+      const prices = product.variants.map((variant) => parseFloat(String(variant.price)));
       const minPrice = Math.min(...prices);
 
       // Chỉ hiển thị giá thấp nhất (không hiển thị range)
@@ -310,9 +304,7 @@ const ProductsPage: React.FC = () => {
       key: 'price',
       sorter: true,
       render: (price: number, record: AdminProductRow) => (
-        <span style={{ fontWeight: 500, color: '#52c41a' }}>
-          {calculateDisplayPrice(record)}
-        </span>
+        <span style={{ fontWeight: 500, color: '#52c41a' }}>{calculateDisplayPrice(record)}</span>
       ),
     },
     {
@@ -322,13 +314,8 @@ const ProductsPage: React.FC = () => {
       sorter: true,
       render: (stockQuantity: number, record: AdminProductRow) => {
         // Sử dụng stockQuantity từ API hoặc fallback về stock nếu có
-        const stock =
-          stockQuantity !== undefined ? stockQuantity : record.stock;
-        return (
-          <span style={{ color: (stock ?? 0) > 0 ? '#52c41a' : '#ff4d4f' }}>
-            {stock}
-          </span>
-        );
+        const stock = stockQuantity !== undefined ? stockQuantity : record.stock;
+        return <span style={{ color: (stock ?? 0) > 0 ? '#52c41a' : '#ff4d4f' }}>{stock}</span>;
       },
     },
     {
@@ -345,13 +332,15 @@ const ProductsPage: React.FC = () => {
           onMouseEnter={() => setSelectedProduct(record)}
           size="small"
         >
-          {statusOptions.filter(opt => opt.value !== 'all').map((opt) => (
-            <Select.Option key={opt.value} value={opt.value}>
-              <Tag color={getStatusColor(opt.value)} style={{ border: 'none', margin: 0 }}>
-                {opt.label}
-              </Tag>
-            </Select.Option>
-          ))}
+          {statusOptions
+            .filter((opt) => opt.value !== 'all')
+            .map((opt) => (
+              <Select.Option key={opt.value} value={opt.value}>
+                <Tag color={getStatusColor(opt.value)} style={{ border: 'none', margin: 0 }}>
+                  {opt.label}
+                </Tag>
+              </Select.Option>
+            ))}
         </Select>
       ),
     },
@@ -449,16 +438,15 @@ const ProductsPage: React.FC = () => {
       <Card className="mb-4 md:mb-6">
         <Row justify="space-between" align="middle" gutter={[16, 16]}>
           <Col xs={24} sm={12}>
-            <Title
-              level={2}
-              style={{ margin: 0 }}
-              className="text-xl md:text-2xl"
-            >
+            <Title level={2} style={{ margin: 0 }} className="text-xl md:text-2xl">
               {t('admin.products.title')}
             </Title>
             <p className="mt-2 text-sm text-neutral-600 dark:text-neutral-400">
               {pagination?.totalItems
-                ? t('admin.products.stats', { totalItems: pagination.totalItems, totalPages: pagination.totalPages })
+                ? t('admin.products.stats', {
+                    totalItems: pagination.totalItems,
+                    totalPages: pagination.totalPages,
+                  })
                 : t('admin.products.subtitle')}
             </p>
           </Col>
@@ -587,25 +575,18 @@ const ProductsPage: React.FC = () => {
                 />
               </Col>
               <Col span={16}>
-                <Space
-                  direction="vertical"
-                  size="middle"
-                  style={{ width: '100%' }}
-                >
+                <Space direction="vertical" size="middle" style={{ width: '100%' }}>
                   <div>
                     <strong>{t('admin.products.modal.productName')}:</strong> {selectedProduct.name}
                   </div>
                   <div>
                     <strong>{t('admin.products.modal.category')}:</strong>{' '}
-                    {selectedProduct.categories &&
-                    selectedProduct.categories.length > 0 ? (
-                      selectedProduct.categories.map(
-                        (cat: { name: string }, index: number) => (
-                          <Tag color="blue" key={index}>
-                            {cat.name}
-                          </Tag>
-                        )
-                      )
+                    {selectedProduct.categories && selectedProduct.categories.length > 0 ? (
+                      selectedProduct.categories.map((cat: { name: string }, index: number) => (
+                        <Tag color="blue" key={index}>
+                          {cat.name}
+                        </Tag>
+                      ))
                     ) : (
                       <span>-</span>
                     )}
@@ -617,7 +598,7 @@ const ProductsPage: React.FC = () => {
                         calculatePriceRange(
                           selectedProduct.price,
                           // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                          selectedProduct.variants as any
+                          selectedProduct.variants as any,
                         ).priceText
                       }
                     </span>
@@ -627,8 +608,7 @@ const ProductsPage: React.FC = () => {
                     <span
                       style={{
                         color:
-                          ((selectedProduct.stockQuantity ?? 0) ||
-                            (selectedProduct.stock ?? 0)) > 0
+                          ((selectedProduct.stockQuantity ?? 0) || (selectedProduct.stock ?? 0)) > 0
                             ? '#52c41a'
                             : '#ff4d4f',
                       }}
@@ -641,15 +621,15 @@ const ProductsPage: React.FC = () => {
                   <div>
                     <strong>{t('admin.products.modal.status')}:</strong>{' '}
                     <Tag color={getStatusColor(selectedProduct.status)}>
-                      {selectedProduct.status ? t(`admin.products.status.${selectedProduct.status}`) : ''}
+                      {selectedProduct.status
+                        ? t(`admin.products.status.${selectedProduct.status}`)
+                        : ''}
                     </Tag>
                   </div>
                   {selectedProduct.description && (
                     <div>
                       <strong>{t('admin.products.modal.description')}:</strong>
-                      <p style={{ marginTop: 8 }}>
-                        {selectedProduct.description}
-                      </p>
+                      <p style={{ marginTop: 8 }}>{selectedProduct.description}</p>
                     </div>
                   )}
                 </Space>
@@ -679,4 +659,3 @@ const ProductsPage: React.FC = () => {
 };
 
 export default ProductsPage;
-

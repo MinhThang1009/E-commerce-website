@@ -6,10 +6,10 @@
  */
 const express = require('express');
 const rateLimit = require('express-rate-limit');
-const { authenticate } = require('../../middlewares/authenticate');
-const { authorize } = require('../../middlewares/authorize');
-const { validateRequest } = require('../../middlewares/validateRequest');
-const { createUrlSchema, refundSchema } = require('./validators/paymentValidator');
+const { authenticate } = require('@middlewares/authenticate');
+const { authorize } = require('@middlewares/authorize');
+const { validateRequest } = require('@middlewares/validate-request');
+const { createUrlSchema, refundSchema } = require('@modules/payment/validators/payment-validator');
 
 const webhookLimiter = rateLimit({
   windowMs: 60 * 1000,

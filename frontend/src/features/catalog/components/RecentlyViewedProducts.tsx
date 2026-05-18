@@ -6,7 +6,7 @@
  */
 import React from 'react';
 import { useTranslation } from 'react-i18next';
-import { useGetRecentlyViewedQuery } from '../api/productApi';
+import { useGetRecentlyViewedQuery } from '../api/product-api';
 import { ProductCard } from '@/features/catalog';
 
 const SkeletonPulse = () => (

@@ -33,10 +33,7 @@ const convertBase64ToImages = (content: string, altText = 'Product image'): stri
   // Thay thế từng chuỗi base64 bằng thẻ img nếu chưa được bao bọc
   convertedContent = convertedContent.replace(base64Pattern, (match) => {
     // Kiểm tra xem base64 này đã nằm trong thẻ img chưa
-    const beforeMatch = convertedContent.substring(
-      0,
-      convertedContent.indexOf(match)
-    );
+    const beforeMatch = convertedContent.substring(0, convertedContent.indexOf(match));
     // Kiểm tra đơn giản: nếu có <img trước và > sau, có thể đã được bao bọc
     if (
       beforeMatch.includes('<img') &&
@@ -81,7 +78,7 @@ const RichTextEditor: React.FC<RichTextEditorProps> = ({
             quill.setText('');
             // Sau đó dán nội dung HTML
             // eslint-disable-next-line @typescript-eslint/no-explicit-any -- ReactQuill internal API
-      (quill as any).dangerouslyPasteHTML(displayValue);
+            (quill as any).dangerouslyPasteHTML(displayValue);
           } else {
             // Với văn bản thường, dùng setText
             quill.setText(displayValue);
@@ -115,7 +112,7 @@ const RichTextEditor: React.FC<RichTextEditorProps> = ({
         matchVisual: false,
       },
     }),
-    []
+    [],
   );
 
   const formats = [
@@ -208,4 +205,3 @@ const RichTextEditor: React.FC<RichTextEditorProps> = ({
 };
 
 export default RichTextEditor;
-

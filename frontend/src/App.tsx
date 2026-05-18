@@ -1,17 +1,17 @@
 import { useEffect } from 'react';
 import { BrowserRouter as Router, useNavigate, useLocation } from 'react-router-dom';
 import { useQueryClient } from '@tanstack/react-query';
-import { useCartStore } from '@/stores/cartStore';
+import { useCartStore } from '@/stores/cart-store';
 import { cartKeys } from '@/features/cart';
 import { HelmetProvider } from 'react-helmet-async';
 import AppRoutes from '@/routes/AppRoutes';
 import Notifications from '@/components/common/Notifications';
 import { ChatWidgetPortal, ChatbotErrorBoundary } from '@/features/ai';
-import { useTokenRefresh } from '@/hooks/useTokenRefresh';
+import { useTokenRefresh } from '@/hooks/use-token-refresh';
 import { LoginSuccess, AuthProvider } from '@/features/auth';
-import { useAntdToast } from '@/hooks/useAntdToast';
-import { setNavigateFunction } from '@/utils/authUtils';
-import { useUiStore } from '@/stores/uiStore';
+import { useAntdToast } from '@/hooks/use-antd-toast';
+import { setNavigateFunction } from '@/utils/auth-utils';
+import { useUiStore } from '@/stores/ui-store';
 // Khởi tạo cấu hình i18n
 import '@/config/i18n';
 import '@/styles/index.scss';

@@ -10,15 +10,19 @@ import { useTranslation } from 'react-i18next';
 import { ROUTES } from '@/routes/paths';
 import Button from '@/components/common/Button';
 import Input from '@/components/common/Input';
-import { useForgotPasswordMutation } from '../api/authApi';
-
-type ApiError = { data?: { message?: string }; message?: string };
+import { useForgotPasswordMutation } from '../api/auth-api';
+import { getErrorMsg } from '@/utils/error-utils';
 
 const ForgotPasswordPage: React.FC = () => {
   const { t } = useTranslation();
   const [email, setEmail] = useState('');
   const [emailError, setEmailError] = useState('');
-  const { mutateAsync: forgotPassword, isPending: isLoading, isSuccess, error } = useForgotPasswordMutation();
+  const {
+    mutateAsync: forgotPassword,
+    isPending: isLoading,
+    isSuccess,
+    error,
+  } = useForgotPasswordMutation();
 
   const validateEmail = (email: string) => {
     if (!email) {
@@ -78,12 +82,7 @@ const ForgotPasswordPage: React.FC = () => {
                 to={ROUTES.LOGIN}
                 className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-primary-600 dark:text-primary-400 bg-primary-100 dark:bg-primary-900/30 hover:bg-primary-200 dark:hover:bg-primary-900/50 transition-colors"
               >
-                <svg
-                  className="h-4 w-4 mr-2"
-                  fill="none"
-                  viewBox="0 0 24 24"
-                  stroke="currentColor"
-                >
+                <svg className="h-4 w-4 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path
                     strokeLinecap="round"
                     strokeLinejoin="round"
@@ -131,9 +130,7 @@ const ForgotPasswordPage: React.FC = () => {
           <div className="mb-6 min-h-[56px]">
             {error && (
               <div className="p-4 bg-error-100 dark:bg-error-900/30 text-error-700 dark:text-error-400 rounded-lg">
-                {typeof error === 'string' 
-                  ? error 
-                  : (error as ApiError)?.data?.message || (error as ApiError)?.message || t('auth.forgotPassword.errors.sendFailed')}
+                {getErrorMsg(error, t('auth.forgotPassword.errors.sendFailed'))}
               </div>
             )}
           </div>
@@ -152,13 +149,7 @@ const ForgotPasswordPage: React.FC = () => {
             </div>
 
             <div className="mb-6">
-              <Button
-                type="submit"
-                variant="primary"
-                size="lg"
-                isLoading={isLoading}
-                fullWidth
-              >
+              <Button type="submit" variant="primary" size="lg" isLoading={isLoading} fullWidth>
                 {t('auth.forgotPassword.sendResetLinkButton')}
               </Button>
             </div>
@@ -169,12 +160,7 @@ const ForgotPasswordPage: React.FC = () => {
               to={ROUTES.LOGIN}
               className="inline-flex items-center text-sm text-primary-600 dark:text-primary-400 hover:text-primary-700 dark:hover:text-primary-300"
             >
-              <svg
-                className="h-4 w-4 mr-1"
-                fill="none"
-                viewBox="0 0 24 24"
-                stroke="currentColor"
-              >
+              <svg className="h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path
                   strokeLinecap="round"
                   strokeLinejoin="round"
@@ -192,4 +178,3 @@ const ForgotPasswordPage: React.FC = () => {
 };
 
 export default ForgotPasswordPage;
-

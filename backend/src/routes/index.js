@@ -1,5 +1,5 @@
 ﻿const express = require('express');
-const sequelize = require('../config/sequelize');
+const sequelize = require('@config/sequelize');
 const pkg = require('../../package.json');
 const router = express.Router();
 
@@ -21,7 +21,7 @@ router.get('/health', async (req, res) => {
   // (Phase 1 dùng Redis qua ioredis; check nếu RedisClient có method ping.)
   let redisStatus = 'not_configured';
   try {
-    const { getRedisClient } = require('../config/redis');
+    const { getRedisClient } = require('@config/redis');
     const redisClient = await getRedisClient();
     if (redisClient && typeof redisClient.ping === 'function') {
       const pong = await redisClient.ping();

@@ -10,6 +10,6 @@
  */
 module.exports = () => ({
   basePath: '/images',
-  router: require('./routes'),
+  router: require('@modules/image/routes'),
   subscribeEvents() {},
 });

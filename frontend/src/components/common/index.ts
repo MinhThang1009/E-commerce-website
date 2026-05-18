@@ -30,4 +30,3 @@ export { default as BannerDisplay } from './BannerDisplay';
 // Các component tiện ích mới
 export * from './LoadingState';
 export * from './ErrorState';
-

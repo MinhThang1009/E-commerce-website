@@ -188,6 +188,8 @@
       "resendOtpSuccess": "Đã gửi mã OTP mới đến email của bạn!",
       "resendOtpError": "Không thể gửi lại OTP",
       "signingIn": "Đang đăng nhập...",
+      "showPassword": "Hiện mật khẩu",
+      "hidePassword": "Ẩn mật khẩu",
       "enterOtp": "Nhập mã OTP xác thực",
       "resending": "Đang gửi...",
       "enterOtpNow": "Nhập mã OTP ngay →"
@@ -400,14 +402,14 @@
     "poweredByLabel": "Được hỗ trợ bởi TechStore AI"
   },
   "ai": {
-    "statusActive": "Gemini AI đang hoạt động",
+    "statusActive": "Chatbot AI đang hoạt động",
     "statusDemo": "Chế độ Demo",
     "statusOffline": "AI ngoại tuyến",
     "statusTitle": "Trạng thái AI",
     "modelReady": "Model sẵn sàng:",
     "apiKey": "Khóa API:",
     "configured": "Đã cấu hình",
-    "enableGemini": "Kích hoạt Gemini AI",
+    "enableGemini": "Kích hoạt Chatbot AI",
     "setupStep1": "1. Lấy API key từ",
     "googleAIStudio": "Google AI Studio",
     "setupStep2": "2. Thêm vào file .env:",
@@ -417,7 +419,7 @@
     "featureNLP": "Hiểu ngôn ngữ tự nhiên",
     "featureContext": "Phản hồi nhận biết ngữ cảnh",
     "featureMultilingual": "Hỗ trợ đa ngôn ngữ",
-    "geminiName": "Gemini AI",
+    "geminiName": "Chatbot AI",
     "smartMode": "Chế độ Thông minh",
     "limited": "Hạn chế"
   },
@@ -866,7 +868,8 @@
       "message": "Thông tin thanh toán của bạn được xử lý một cách an toàn. Chúng tôi không lưu trữ thông tin thẻ tín dụng."
     },
     "validation": {
-      "required": "Trường này là bắt buộc",
+      "required": "Vui lòng điền thông tin này",
+      "addressRequired": "Vui lòng chọn địa chỉ giao hàng đầy đủ",
       "emailInvalid": "Vui lòng nhập địa chỉ email hợp lệ",
       "phoneInvalid": "Vui lòng nhập số điện thoại 10 chữ số hợp lệ",
       "zipCodeInvalid": "Vui lòng nhập mã bưu điện hợp lệ",
@@ -3762,8 +3765,17 @@
   },
   "addressPicker": {
     "label": "Địa chỉ giao hàng",
-    "placeholder": "Ví dụ: Số 123, Đường ABC, Phường XYZ, Hà Nội",
-    "searching": "Đang tìm kiếm..."
+    "placeholder": "VD: 12 Quang Trung, Hà Đông, Hà Nội — gõ số nhà để tìm địa chỉ cụ thể",
+    "searching": "Đang tìm kiếm...",
+    "loading": "Đang tải...",
+    "province": "Tỉnh / Thành phố",
+    "district": "Quận / Huyện",
+    "ward": "Phường / Xã",
+    "streetLabel": "Số nhà, tên đường",
+    "streetPlaceholder": "VD: 12 Đường Quang Trung",
+    "selectProvince": "-- Chọn Tỉnh/Thành phố --",
+    "selectDistrict": "-- Chọn Quận/Huyện --",
+    "selectWard": "-- Chọn Phường/Xã --"
   },
   "home": {
     "newsTitle": "Tin tức & Sự kiện",

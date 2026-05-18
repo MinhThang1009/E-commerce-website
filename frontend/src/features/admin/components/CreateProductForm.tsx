@@ -6,7 +6,7 @@
  */
 import React, { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
-import { useCreateProductMutation } from '../api/adminProductApi';
+import { useCreateProductMutation } from '../api/admin-product-api';
 import { useGetCategoriesQuery } from '@/features/catalog';
 import Button from '@/components/common/Button';
 import Input from '@/components/common/Input';
@@ -44,15 +44,10 @@ interface Variant {
   stock: number;
 }
 
-const CreateProductForm: React.FC<CreateProductFormProps> = ({
-  isOpen,
-  onClose,
-  onSuccess,
-}) => {
+const CreateProductForm: React.FC<CreateProductFormProps> = ({ isOpen, onClose, onSuccess }) => {
   const { t } = useTranslation();
   const { mutateAsync: createProduct, isPending: isLoading } = useCreateProductMutation();
-  const { data: categories, isLoading: isCategoriesLoading } =
-    useGetCategoriesQuery();
+  const { data: categories, isLoading: isCategoriesLoading } = useGetCategoriesQuery();
   const [activeTab, setActiveTab] = useState('basic');
 
   const statusOptions = [
@@ -104,10 +99,7 @@ const CreateProductForm: React.FC<CreateProductFormProps> = ({
   }, [formData.name, formData.description]);
 
   // Các hàm xử lý form
-  const handleInputChange = (
-    field: string,
-    value: string | string[] | boolean
-  ) => {
+  const handleInputChange = (field: string, value: string | string[] | boolean) => {
     setFormData({ ...formData, [field]: value });
     if (errors[field]) {
       setErrors({ ...errors, [field]: '' });
@@ -116,18 +108,11 @@ const CreateProductForm: React.FC<CreateProductFormProps> = ({
 
   // Các hàm xử lý thuộc tính
   const addAttribute = () => {
-    setAttributes([
-      ...attributes,
-      { id: Date.now().toString(), name: '', value: '' },
-    ]);
+    setAttributes([...attributes, { id: Date.now().toString(), name: '', value: '' }]);
   };
 
   const updateAttribute = (id: string, field: string, value: string) => {
-    setAttributes(
-      attributes.map((attr) =>
-        attr.id === id ? { ...attr, [field]: value } : attr
-      )
-    );
+    setAttributes(attributes.map((attr) => (attr.id === id ? { ...attr, [field]: value } : attr)));
   };
 
   const removeAttribute = (id: string) => {
@@ -136,17 +121,12 @@ const CreateProductForm: React.FC<CreateProductFormProps> = ({
 
   // Các hàm xử lý biến thể
   const addVariant = () => {
-    setVariants([
-      ...variants,
-      { id: Date.now().toString(), name: '', price: 0, stock: 0 },
-    ]);
+    setVariants([...variants, { id: Date.now().toString(), name: '', price: 0, stock: 0 }]);
   };
 
   const updateVariant = (id: string, field: string, value: string | number) => {
     setVariants(
-      variants.map((variant) =>
-        variant.id === id ? { ...variant, [field]: value } : variant
-      )
+      variants.map((variant) => (variant.id === id ? { ...variant, [field]: value } : variant)),
     );
   };
 
@@ -190,12 +170,7 @@ const CreateProductForm: React.FC<CreateProductFormProps> = ({
 
     // Nếu có lỗi, chuyển sang tab chứa lỗi đầu tiên
     if (Object.keys(newErrors).length > 0) {
-      if (
-        newErrors.name ||
-        newErrors.sku ||
-        newErrors.description ||
-        newErrors.shortDescription
-      ) {
+      if (newErrors.name || newErrors.sku || newErrors.description || newErrors.shortDescription) {
         setActiveTab('basic');
       } else if (newErrors.price || newErrors.stock) {
         setActiveTab('pricing');
@@ -221,20 +196,15 @@ const CreateProductForm: React.FC<CreateProductFormProps> = ({
         description: formData.description.trim(),
         shortDescription: formData.shortDescription.trim(),
         price: Number(formData.price),
-        comparePrice: formData.comparePrice
-          ? Number(formData.comparePrice)
-          : undefined,
+        comparePrice: formData.comparePrice ? Number(formData.comparePrice) : undefined,
         stockQuantity: Number(formData.stock),
         sku: formData.sku.trim(),
         status: formData.status as 'active' | 'inactive' | 'draft',
         categoryIds: formData.categoryIds,
-        images: formData.images
-          ? formData.images.split(',').map((img) => img.trim())
-          : [],
+        images: formData.images ? formData.images.split(',').map((img) => img.trim()) : [],
         featured: formData.featured,
         seoTitle: formData.seoTitle || formData.name.trim(),
-        seoDescription:
-          formData.seoDescription || formData.shortDescription.trim(),
+        seoDescription: formData.seoDescription || formData.shortDescription.trim(),
         seoKeywords: formData.seoKeywords
           ? formData.seoKeywords.split(',').map((kw) => kw.trim())
           : [],
@@ -282,7 +252,9 @@ const CreateProductForm: React.FC<CreateProductFormProps> = ({
     } catch (error) {
       console.error('Tạo sản phẩm thất bại:', error);
       if (error && typeof error === 'object' && 'data' in error) {
-        const errData = (error as Record<string, unknown>).data as Record<string, unknown> | undefined;
+        const errData = (error as Record<string, unknown>).data as
+          | Record<string, unknown>
+          | undefined;
         if (errData?.errors && Array.isArray(errData.errors)) {
           const apiErrors: Record<string, string> = {};
           errData.errors.forEach((err: Record<string, string>) => {
@@ -388,9 +360,7 @@ const CreateProductForm: React.FC<CreateProductFormProps> = ({
 
         <form className="space-y-6 px-1">
           {/* Thông tin cơ bản */}
-          <div
-            className={`space-y-6 ${activeTab === 'basic' ? 'block' : 'hidden'}`}
-          >
+          <div className={`space-y-6 ${activeTab === 'basic' ? 'block' : 'hidden'}`}>
             <div className="p-4 bg-gray-50 dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700">
               <h3 className="font-medium text-lg mb-4 text-neutral-800 dark:text-neutral-200 flex items-center">
                 <DocumentTextIcon className="w-5 h-5 mr-2 text-primary-500" />
@@ -429,9 +399,7 @@ const CreateProductForm: React.FC<CreateProductFormProps> = ({
                   <div className="relative">
                     <textarea
                       value={formData.shortDescription}
-                      onChange={(e) =>
-                        handleInputChange('shortDescription', e.target.value)
-                      }
+                      onChange={(e) => handleInputChange('shortDescription', e.target.value)}
                       rows={2}
                       maxLength={200}
                       className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-primary-500 focus:border-primary-500 dark:bg-gray-700 dark:text-white text-neutral-800 dark:text-neutral-200"
@@ -442,9 +410,7 @@ const CreateProductForm: React.FC<CreateProductFormProps> = ({
                     </div>
                   </div>
                   {errors.shortDescription && (
-                    <p className="mt-1 text-sm text-red-500">
-                      {errors.shortDescription}
-                    </p>
+                    <p className="mt-1 text-sm text-red-500">{errors.shortDescription}</p>
                   )}
                 </div>
 
@@ -454,17 +420,13 @@ const CreateProductForm: React.FC<CreateProductFormProps> = ({
                   </label>
                   <textarea
                     value={formData.description}
-                    onChange={(e) =>
-                      handleInputChange('description', e.target.value)
-                    }
+                    onChange={(e) => handleInputChange('description', e.target.value)}
                     rows={4}
                     className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-primary-500 focus:border-primary-500 dark:bg-gray-700 dark:text-white text-neutral-800 dark:text-neutral-200"
                     placeholder={t('createProduct.detailDescPlaceholder')}
                   />
                   {errors.description && (
-                    <p className="mt-1 text-sm text-red-500">
-                      {errors.description}
-                    </p>
+                    <p className="mt-1 text-sm text-red-500">{errors.description}</p>
                   )}
                 </div>
 
@@ -473,9 +435,7 @@ const CreateProductForm: React.FC<CreateProductFormProps> = ({
                     type="checkbox"
                     id="featured"
                     checked={formData.featured as boolean}
-                    onChange={(e) =>
-                      handleInputChange('featured', e.target.checked)
-                    }
+                    onChange={(e) => handleInputChange('featured', e.target.checked)}
                     className="h-4 w-4 text-primary-500 focus:ring-primary-400 border-gray-300 rounded"
                   />
                   <label
@@ -490,9 +450,7 @@ const CreateProductForm: React.FC<CreateProductFormProps> = ({
           </div>
 
           {/* Giá & Kho hàng */}
-          <div
-            className={`space-y-6 ${activeTab === 'pricing' ? 'block' : 'hidden'}`}
-          >
+          <div className={`space-y-6 ${activeTab === 'pricing' ? 'block' : 'hidden'}`}>
             <div className="p-4 bg-gray-50 dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700">
               <h3 className="font-medium text-lg mb-4 text-neutral-800 dark:text-neutral-200 flex items-center">
                 <CurrencyDollarIcon className="w-5 h-5 mr-2 text-primary-500" />
@@ -521,9 +479,7 @@ const CreateProductForm: React.FC<CreateProductFormProps> = ({
                   <Input
                     type="number"
                     value={formData.comparePrice}
-                    onChange={(e) =>
-                      handleInputChange('comparePrice', e.target.value)
-                    }
+                    onChange={(e) => handleInputChange('comparePrice', e.target.value)}
                     placeholder="0"
                     min="0"
                   />
@@ -550,11 +506,7 @@ const CreateProductForm: React.FC<CreateProductFormProps> = ({
               {/* Mẹo về giá */}
               <div className="mt-6 p-3 bg-blue-50 dark:bg-blue-900/20 rounded-lg border border-blue-100 dark:border-blue-800/50">
                 <h4 className="font-medium text-blue-700 dark:text-blue-300 mb-2 flex items-center">
-                  <svg
-                    className="w-4 h-4 mr-1"
-                    fill="currentColor"
-                    viewBox="0 0 20 20"
-                  >
+                  <svg className="w-4 h-4 mr-1" fill="currentColor" viewBox="0 0 20 20">
                     <path
                       fillRule="evenodd"
                       d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2h-1V9z"
@@ -578,9 +530,7 @@ const CreateProductForm: React.FC<CreateProductFormProps> = ({
           </div>
 
           {/* Phân loại & Trạng thái */}
-          <div
-            className={`space-y-6 ${activeTab === 'categories' ? 'block' : 'hidden'}`}
-          >
+          <div className={`space-y-6 ${activeTab === 'categories' ? 'block' : 'hidden'}`}>
             <div className="p-4 bg-gray-50 dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700">
               <h3 className="font-medium text-lg mb-4 text-neutral-800 dark:text-neutral-200 flex items-center">
                 <TagIcon className="w-5 h-5 mr-2 text-primary-500" />
@@ -596,10 +546,7 @@ const CreateProductForm: React.FC<CreateProductFormProps> = ({
                     multiple
                     value={formData.categoryIds}
                     onChange={(e) => {
-                      const values = Array.from(
-                        e.target.selectedOptions,
-                        (option) => option.value
-                      );
+                      const values = Array.from(e.target.selectedOptions, (option) => option.value);
                       handleInputChange('categoryIds', values);
                     }}
                     className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-primary-500 focus:border-primary-500 dark:bg-gray-700 dark:text-white text-neutral-800 dark:text-neutral-200"
@@ -618,9 +565,7 @@ const CreateProductForm: React.FC<CreateProductFormProps> = ({
                     )}
                   </select>
                   {errors.categoryIds && (
-                    <p className="mt-1 text-sm text-red-500">
-                      {errors.categoryIds}
-                    </p>
+                    <p className="mt-1 text-sm text-red-500">{errors.categoryIds}</p>
                   )}
                   <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
                     {t('createProduct.catHint')}
@@ -638,7 +583,6 @@ const CreateProductForm: React.FC<CreateProductFormProps> = ({
                       onChange={(value) => handleInputChange('status', value)}
                     />
                   </div>
-
                 </div>
               </div>
 
@@ -650,9 +594,7 @@ const CreateProductForm: React.FC<CreateProductFormProps> = ({
                   </h4>
                   <div className="flex flex-wrap gap-2">
                     {formData.categoryIds.map((categoryId) => {
-                      const category = categories?.find(
-                        (c) => c.id === categoryId
-                      );
+                      const category = categories?.find((c) => c.id === categoryId);
                       return category ? (
                         <span
                           key={categoryId}
@@ -669,9 +611,7 @@ const CreateProductForm: React.FC<CreateProductFormProps> = ({
           </div>
 
           {/* Hình ảnh */}
-          <div
-            className={`space-y-6 ${activeTab === 'images' ? 'block' : 'hidden'}`}
-          >
+          <div className={`space-y-6 ${activeTab === 'images' ? 'block' : 'hidden'}`}>
             <div className="p-4 bg-gray-50 dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700">
               <h3 className="font-medium text-lg mb-4 text-neutral-800 dark:text-neutral-200 flex items-center">
                 <PhotoIcon className="w-5 h-5 mr-2 text-primary-500" />
@@ -685,9 +625,7 @@ const CreateProductForm: React.FC<CreateProductFormProps> = ({
                   </label>
                   <textarea
                     value={formData.images}
-                    onChange={(e) =>
-                      handleInputChange('images', e.target.value)
-                    }
+                    onChange={(e) => handleInputChange('images', e.target.value)}
                     rows={3}
                     className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-primary-500 focus:border-primary-500 dark:bg-gray-700 dark:text-white text-neutral-800 dark:text-neutral-200"
                     placeholder="https://example.com/image1.jpg, https://example.com/image2.jpg"
@@ -696,7 +634,6 @@ const CreateProductForm: React.FC<CreateProductFormProps> = ({
                     {t('createProduct.imageUrlsHint')}
                   </p>
                 </div>
-
               </div>
 
               {/* Xem trước ảnh */}
@@ -729,9 +666,7 @@ const CreateProductForm: React.FC<CreateProductFormProps> = ({
           </div>
 
           {/* SEO Tab */}
-          <div
-            className={`space-y-6 ${activeTab === 'seo' ? 'block' : 'hidden'}`}
-          >
+          <div className={`space-y-6 ${activeTab === 'seo' ? 'block' : 'hidden'}`}>
             <div className="p-4 bg-gray-50 dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700">
               <h3 className="font-medium text-lg mb-4 text-neutral-800 dark:text-neutral-200 flex items-center">
                 <MagnifyingGlassIcon className="w-5 h-5 mr-2 text-primary-500" />
@@ -746,9 +681,7 @@ const CreateProductForm: React.FC<CreateProductFormProps> = ({
                   <div className="relative">
                     <Input
                       value={formData.seoTitle}
-                      onChange={(e) =>
-                        handleInputChange('seoTitle', e.target.value)
-                      }
+                      onChange={(e) => handleInputChange('seoTitle', e.target.value)}
                       placeholder={t('createProduct.seoTitlePlaceholder')}
                       maxLength={60}
                     />
@@ -765,9 +698,7 @@ const CreateProductForm: React.FC<CreateProductFormProps> = ({
                   <div className="relative">
                     <textarea
                       value={formData.seoDescription}
-                      onChange={(e) =>
-                        handleInputChange('seoDescription', e.target.value)
-                      }
+                      onChange={(e) => handleInputChange('seoDescription', e.target.value)}
                       rows={3}
                       maxLength={160}
                       className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-primary-500 focus:border-primary-500 dark:bg-gray-700 dark:text-white text-neutral-800 dark:text-neutral-200"
@@ -785,9 +716,7 @@ const CreateProductForm: React.FC<CreateProductFormProps> = ({
                   </label>
                   <Input
                     value={formData.seoKeywords}
-                    onChange={(e) =>
-                      handleInputChange('seoKeywords', e.target.value)
-                    }
+                    onChange={(e) => handleInputChange('seoKeywords', e.target.value)}
                     placeholder={t('createProduct.seoKwPlaceholder')}
                   />
                   <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
@@ -826,9 +755,7 @@ const CreateProductForm: React.FC<CreateProductFormProps> = ({
           </div>
 
           {/* Thuộc tính */}
-          <div
-            className={`space-y-6 ${activeTab === 'attributes' ? 'block' : 'hidden'}`}
-          >
+          <div className={`space-y-6 ${activeTab === 'attributes' ? 'block' : 'hidden'}`}>
             <div className="p-4 bg-gray-50 dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700">
               <div className="flex items-center justify-between mb-4">
                 <h3 className="font-medium text-lg text-neutral-800 dark:text-neutral-200 flex items-center">
@@ -869,13 +796,7 @@ const CreateProductForm: React.FC<CreateProductFormProps> = ({
                         <Input
                           placeholder={t('createProduct.attrNamePlaceholder')}
                           value={attribute.name}
-                          onChange={(e) =>
-                            updateAttribute(
-                              attribute.id,
-                              'name',
-                              e.target.value
-                            )
-                          }
+                          onChange={(e) => updateAttribute(attribute.id, 'name', e.target.value)}
                         />
                       </div>
                       <div className="flex-1">
@@ -885,13 +806,7 @@ const CreateProductForm: React.FC<CreateProductFormProps> = ({
                         <Input
                           placeholder={t('createProduct.attrValuePlaceholder')}
                           value={attribute.value}
-                          onChange={(e) =>
-                            updateAttribute(
-                              attribute.id,
-                              'value',
-                              e.target.value
-                            )
-                          }
+                          onChange={(e) => updateAttribute(attribute.id, 'value', e.target.value)}
                         />
                       </div>
                       <Button
@@ -912,9 +827,7 @@ const CreateProductForm: React.FC<CreateProductFormProps> = ({
           </div>
 
           {/* Biến thể */}
-          <div
-            className={`space-y-6 ${activeTab === 'variants' ? 'block' : 'hidden'}`}
-          >
+          <div className={`space-y-6 ${activeTab === 'variants' ? 'block' : 'hidden'}`}>
             <div className="p-4 bg-gray-50 dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700">
               <div className="flex items-center justify-between mb-4">
                 <h3 className="font-medium text-lg text-neutral-800 dark:text-neutral-200 flex items-center">
@@ -958,9 +871,7 @@ const CreateProductForm: React.FC<CreateProductFormProps> = ({
                         <Input
                           placeholder={t('createProduct.variantNamePlaceholder')}
                           value={variant.name}
-                          onChange={(e) =>
-                            updateVariant(variant.id, 'name', e.target.value)
-                          }
+                          onChange={(e) => updateVariant(variant.id, 'name', e.target.value)}
                         />
                       </div>
                       <div>
@@ -972,11 +883,7 @@ const CreateProductForm: React.FC<CreateProductFormProps> = ({
                           placeholder="0"
                           value={variant.price}
                           onChange={(e) =>
-                            updateVariant(
-                              variant.id,
-                              'price',
-                              Number(e.target.value)
-                            )
+                            updateVariant(variant.id, 'price', Number(e.target.value))
                           }
                           min="0"
                         />
@@ -990,11 +897,7 @@ const CreateProductForm: React.FC<CreateProductFormProps> = ({
                           placeholder="0"
                           value={variant.stock}
                           onChange={(e) =>
-                            updateVariant(
-                              variant.id,
-                              'stock',
-                              Number(e.target.value)
-                            )
+                            updateVariant(variant.id, 'stock', Number(e.target.value))
                           }
                           min="0"
                         />

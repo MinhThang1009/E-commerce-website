@@ -16,15 +16,15 @@ import { useGetFeaturedProductsQuery } from '@/features/catalog';
 import { useGetBrandsQuery } from '@/features/catalog';
 import { useGetCollectionsQuery } from '@/features/catalog';
 import { useSubscribeNewsletterMutation } from '@/features/content';
-import { useApiState } from '@/hooks/useApiState';
-import { getCategoryImage, createCategoryImageErrorHandler } from '@/utils/imageUtils';
-import { getUploadUrl } from '@/utils/uploadUrl';
+import { useApiState } from '@/hooks/use-api-state';
+import { getCategoryImage, createCategoryImageErrorHandler } from '@/utils/image-utils';
+import { getUploadUrl } from '@/utils/upload-url';
 import { useTranslation } from 'react-i18next';
 import { Link } from 'react-router-dom';
 import { ProductCard } from '@/features/catalog';
 import { PremiumButton, BannerDisplay } from '@/components/common';
 import { ROUTES, buildRoute } from '@/routes/paths';
-import { getErrorMsg } from '@/utils/errorUtils';
+import { getErrorMsg } from '@/utils/error-utils';
 import { localizeField } from '@/utils/localize';
 
 /**

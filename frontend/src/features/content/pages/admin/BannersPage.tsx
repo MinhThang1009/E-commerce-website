@@ -25,9 +25,9 @@ import {
   useUpdateBannerMutation,
   useDeleteBannerMutation,
   Banner,
-} from '../../api/bannerApi';
+} from '../../api/banner-api';
 import ImageUpload from '@/components/common/ImageUpload';
-import { getUploadUrl } from '@/utils/uploadUrl';
+import { getUploadUrl } from '@/utils/upload-url';
 
 const BannersPage: React.FC = () => {
   const { t } = useTranslation();

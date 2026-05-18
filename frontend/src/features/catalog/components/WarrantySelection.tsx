@@ -6,11 +6,7 @@
  */
 import React, { useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import {
-  SafetyOutlined,
-  CheckCircleOutlined,
-  InfoCircleOutlined,
-} from '@ant-design/icons';
+import { SafetyOutlined, CheckCircleOutlined, InfoCircleOutlined } from '@ant-design/icons';
 import { WarrantyPackage } from '../types/product.types';
 import { getLocale } from '@/utils/format';
 
@@ -155,9 +151,7 @@ const WarrantySelection: React.FC<WarrantySelectionProps> = ({
       <div className="mt-4 p-3 bg-blue-50 dark:bg-blue-900/20 rounded-lg">
         <div className="flex items-start gap-2">
           <InfoCircleOutlined className="text-blue-500 text-sm mt-0.5" />
-          <p className="text-xs text-blue-700 dark:text-blue-300">
-            {t('product.warrantyNote')}
-          </p>
+          <p className="text-xs text-blue-700 dark:text-blue-300">{t('product.warrantyNote')}</p>
         </div>
       </div>
     </div>

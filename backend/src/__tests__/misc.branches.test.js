@@ -20,7 +20,7 @@ process.env.NODE_ENV = 'test';
 // ─────────────────────────────────────────────────────────────────────────────
 
 describe('InventoryService — uncovered branches', () => {
-  const InventoryService = require('../modules/inventory/services/inventoryService');
+  const InventoryService = require('@modules/inventory/services/inventory-service');
 
   let repo;
   let service;
@@ -176,15 +176,15 @@ describe('adminAudit.js — auditMiddleware uncovered branches', () => {
   beforeEach(() => {
     jest.resetModules();
     // Mock logger trước khi require adminAudit
-    jest.mock('../utils/logger', () => ({
+    jest.mock('@utils/logger', () => ({
       info: jest.fn(),
       error: jest.fn(),
       warn: jest.fn(),
     }));
-    jest.mock('../models', () => ({
+    jest.mock('@models', () => ({
       AuditLog: { create: jest.fn().mockResolvedValue({ id: 1 }) },
     }));
-    const module = require('../shared/adminAudit');
+    const module = require('@shared/admin-audit');
     AdminAuditService = module.AdminAuditService;
     auditMiddleware = module.auditMiddleware;
   });
@@ -193,101 +193,55 @@ describe('adminAudit.js — auditMiddleware uncovered branches', () => {
     jest.resetModules();
   });
 
-  describe('line 206: ip resolution — req.ip falsy, dùng connection.remoteAddress', () => {
-    it('lấy ip từ req.connection.remoteAddress khi req.ip là undefined', () => {
-      // Spy để capture ip được inject vào method
-      const originalLogUserAction = AdminAuditService.logUserAction;
-      let capturedIp;
+  describe('ip resolution — req.ip vs req.connection.remoteAddress', () => {
+    // auditMiddleware dùng AsyncLocalStorage — IP lưu trong context, không inject vào method args
+    it('dùng req.connection.remoteAddress khi req.ip falsy → IP ghi vào DB', async () => {
+      const { AuditLog } = require('@models');
+      let resolveNext;
+      const nextPromise = new Promise((r) => { resolveNext = r; });
 
-      AdminAuditService.logUserAction = jest
-        .fn()
-        .mockImplementation((adminUser, action, targetId, changes, ip) => {
-          capturedIp = ip;
-        });
-
-      const req = {
-        ip: undefined, // falsy
-        connection: { remoteAddress: '192.168.1.50' },
+      const next = () => {
+        AdminAuditService.logUserAction({ id: 1, email: 'a@b.com' }, 'BAN', 2, {});
+        resolveNext();
       };
-      const res = { on: jest.fn() };
-      const next = jest.fn();
 
-      auditMiddleware(req, res, next);
+      auditMiddleware({ ip: undefined, connection: { remoteAddress: '192.168.1.50' } }, {}, next);
+      await nextPromise;
+      await new Promise((r) => setImmediate(r));
 
-      // Gọi method đã được override bởi middleware
-      AdminAuditService.logUserAction({}, 'test', 1, {});
-
-      // Line 206: ip = req.ip || req.connection?.remoteAddress = '192.168.1.50'
-      expect(capturedIp).toBe('192.168.1.50');
-
-      // Restore
-      AdminAuditService.logUserAction = originalLogUserAction;
+      expect(AuditLog.create).toHaveBeenCalledWith(expect.objectContaining({ ip: '192.168.1.50' }));
     });
 
-    it('lấy ip từ req.ip khi req.ip có giá trị (true path)', () => {
-      const originalLogUserAction = AdminAuditService.logUserAction;
-      let capturedIp;
+    it('dùng req.ip khi có giá trị (true path) → IP ghi vào DB', async () => {
+      const { AuditLog } = require('@models');
+      let resolveNext;
+      const nextPromise = new Promise((r) => { resolveNext = r; });
 
-      AdminAuditService.logUserAction = jest
-        .fn()
-        .mockImplementation((adminUser, action, targetId, changes, ip) => {
-          capturedIp = ip;
-        });
-
-      const req = {
-        ip: '10.0.0.1',
-        connection: { remoteAddress: '192.168.1.50' },
+      const next = () => {
+        AdminAuditService.logUserAction({ id: 1, email: 'a@b.com' }, 'BAN', 2, {});
+        resolveNext();
       };
-      const res = { on: jest.fn() };
-      const next = jest.fn();
 
-      auditMiddleware(req, res, next);
-      AdminAuditService.logUserAction({}, 'test', 1, {});
+      auditMiddleware({ ip: '10.0.0.1', connection: { remoteAddress: '192.168.1.50' } }, {}, next);
+      await nextPromise;
+      await new Promise((r) => setImmediate(r));
 
-      expect(capturedIp).toBe('10.0.0.1');
-
-      AdminAuditService.logUserAction = originalLogUserAction;
+      expect(AuditLog.create).toHaveBeenCalledWith(expect.objectContaining({ ip: '10.0.0.1' }));
     });
   });
 
-  describe('line 232: logDashboardAccess không inject ip vào call', () => {
-    it('logDashboardAccess closure không truyền ip — gọi originalLogDashboardAccess không có ip arg', () => {
-      const originalLogDashboardAccess = jest.fn();
-      AdminAuditService.logDashboardAccess = originalLogDashboardAccess;
-
-      const req = {
-        ip: '10.0.0.2',
-        connection: { remoteAddress: '192.168.1.1' },
-      };
-      const res = { on: jest.fn() };
+  describe('auditMiddleware behavior — AsyncLocalStorage based', () => {
+    it('gọi next() để tiếp tục pipeline', () => {
       const next = jest.fn();
-
-      auditMiddleware(req, res, next);
-
-      // logDashboardAccess được override → gọi originalLogDashboardAccess(adminUser, endpoint, filters)
-      // KHÔNG có ip được inject (design decision — dashboard access không cần ip)
-      AdminAuditService.logDashboardAccess({ id: 1 }, '/dashboard', { range: '7d' });
-
-      expect(originalLogDashboardAccess).toHaveBeenCalledWith({ id: 1 }, '/dashboard', {
-        range: '7d',
-      });
-      // Không được called với ip là argument thứ 4
-      expect(originalLogDashboardAccess).not.toHaveBeenCalledWith(
-        expect.anything(),
-        expect.anything(),
-        expect.anything(),
-        expect.anything(),
-      );
+      auditMiddleware({ ip: '1.2.3.4', connection: {} }, {}, next);
+      expect(next).toHaveBeenCalledTimes(1);
     });
 
-    it('middleware gọi next() sau khi override methods', () => {
-      const req = { ip: '1.2.3.4', connection: {} };
-      const res = { on: jest.fn() };
+    it('không mutate static methods của AdminAuditService', () => {
+      const originalLogUserAction = AdminAuditService.logUserAction;
       const next = jest.fn();
-
-      auditMiddleware(req, res, next);
-
-      expect(next).toHaveBeenCalledTimes(1);
+      auditMiddleware({ ip: '10.0.0.2', connection: {} }, {}, next);
+      expect(AdminAuditService.logUserAction).toBe(originalLogUserAction);
     });
   });
 });
@@ -300,19 +254,19 @@ describe('adminAudit.js — auditMiddleware uncovered branches', () => {
 // Dùng jest.mock cho logger, embedding, fs để tránh file system access.
 // ─────────────────────────────────────────────────────────────────────────────
 
-jest.mock('../utils/logger', () => ({
+jest.mock('@utils/logger', () => ({
   info: jest.fn(),
   error: jest.fn(),
   warn: jest.fn(),
   debug: jest.fn(),
 }));
 
-jest.mock('../modules/ai/services/embedding', () => ({
+jest.mock('@modules/ai/services/embedding/embedding', () => ({
   embed: jest.fn().mockResolvedValue([]),
   isAvailable: jest.fn().mockReturnValue(false),
 }));
 
-jest.mock('../modules/ai/services/viEmbedding', () => ({
+jest.mock('@modules/ai/services/embedding/vi-embedding', () => ({
   embed: jest.fn().mockResolvedValue([]),
   isAvailable: jest.fn().mockReturnValue(false),
 }));
@@ -330,7 +284,7 @@ describe('HybridVectorStore.cosineSimilarity — line 148 false path', () => {
   let store;
 
   beforeAll(() => {
-    store = require('../modules/ai/services/vectorStore');
+    store = require('@modules/ai/services/vectorstore/vector-store');
   });
 
   it('trả về similarity bình thường khi hai vectors ortho (finite result)', () => {
@@ -388,7 +342,7 @@ describe('HybridVectorStore.cosineSimilarity — line 148 false path', () => {
 // ─────────────────────────────────────────────────────────────────────────────
 
 describe('WishlistService.getWishlist — line 17 branches', () => {
-  const WishlistService = require('../modules/wishlist/services/wishlistService');
+  const WishlistService = require('@modules/wishlist/services/wishlist-service');
 
   let wishlistRepository;
   let service;
@@ -504,7 +458,7 @@ describe('WishlistService.getWishlist — line 17 branches', () => {
 
 describe('SequelizeAiRepository.searchProducts — line 15 default parameter branch', () => {
   const { Op, literal } = require('sequelize');
-  const SequelizeAiRepository = require('../modules/ai/repositories/SequelizeAiRepository');
+  const SequelizeAiRepository = require('@modules/ai/repositories/sequelize-ai-repository');
 
   let repo;
   let mockProduct;
@@ -567,7 +521,7 @@ describe('SequelizeAiRepository.searchProducts — line 15 default parameter bra
 
 describe('SequelizeContentRepository — uncovered branches', () => {
   const { Op } = require('sequelize');
-  const SequelizeContentRepository = require('../modules/content/repositories/SequelizeContentRepository');
+  const SequelizeContentRepository = require('@modules/content/repositories/sequelize-content-repository');
 
   let repo;
   let mockNews;

@@ -5,6 +5,14 @@ import path from 'path';
 // https://vitejs.dev/config/
 export default defineConfig({
   plugins: [react()],
+  css: {
+    preprocessorOptions: {
+      scss: {
+        // Dùng modern Sass compiler API thay vì legacy JS API (đã deprecated từ Dart Sass 2.0)
+        api: 'modern-compiler',
+      },
+    },
+  },
   build: {
     sourcemap: false,
   },
@@ -34,7 +42,7 @@ export default defineConfig({
   },
   server: {
     port: 5175,
-    strictPort: false, // Cho phép tìm cổng khác nếu 5175 đã được sử dụng
+    strictPort: true,
     proxy: {
       // Proxy /api/* sang backend để tránh CORS khi dev
       '/api': {

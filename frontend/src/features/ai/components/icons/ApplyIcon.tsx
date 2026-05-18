@@ -30,4 +30,3 @@ const ApplyIcon: React.FC<ApplyIconProps> = ({ className = '', size = 16 }) => {
 };
 
 export default ApplyIcon;
-

@@ -8,18 +8,19 @@ import { useState, useRef, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { buildRoute } from '@/routes/paths';
-import { useDebounce } from '@/hooks/useDebounce';
-import { useUiStore } from '@/stores/uiStore';
+import { useDebounce } from '@/hooks/use-debounce';
+import { useUiStore } from '@/stores/ui-store';
 import { useSearchProductsQuery, Product } from '@/features/catalog';
 import { useAuth } from '@/features/auth';
 import {
   useSaveSearchMutation,
   useGetSearchHistoryQuery,
   useDeleteSearchHistoryMutation,
-  useClearAllSearchHistoryMutation
+  useClearAllSearchHistoryMutation,
 } from '@/features/catalog';
 import { v4 as uuidv4 } from 'uuid';
 import { getLocale } from '@/utils/format';
+import { proxyImg } from '@/utils/proxy-img';
 
 interface SearchBarProps {
   className?: string;
@@ -39,16 +40,13 @@ const SearchBar: React.FC<SearchBarProps> = ({
   const [isActive, setIsActive] = useState(isExpanded);
   const [recentSearches, setRecentSearches] = useState<string[]>([]);
   const [sessionId, setSessionId] = useState<string>('');
-  
+
   const { isLoggedIn } = useAuth();
   const { mutateAsync: saveSearch } = useSaveSearchMutation();
   const { mutateAsync: deleteSearch } = useDeleteSearchHistoryMutation();
   const { mutateAsync: clearAllSearch } = useClearAllSearchHistoryMutation();
-  
-  const { data: historyData } = useGetSearchHistoryQuery(
-    { limit: 5 },
-    { enabled: isActive }
-  );
+
+  const { data: historyData } = useGetSearchHistoryQuery({ limit: 5 }, { enabled: isActive });
   const searchRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   const navigate = useNavigate();
@@ -104,8 +102,7 @@ const SearchBar: React.FC<SearchBarProps> = ({
     }
   }, [isActive]);
 
-  const searchPlaceholder =
-    placeholder || t('header.actions.searchPlaceholder');
+  const searchPlaceholder = placeholder || t('header.actions.searchPlaceholder');
 
   const debouncedSearchTerm = useDebounce(searchTerm, 300);
 
@@ -119,7 +116,7 @@ const SearchBar: React.FC<SearchBarProps> = ({
     {
       enabled: debouncedSearchTerm.length > 1 && isActive,
       staleTime: 0,
-    }
+    },
   );
 
   // Lấy gợi ý từ kết quả tìm kiếm
@@ -128,10 +125,7 @@ const SearchBar: React.FC<SearchBarProps> = ({
   // Xử lý click bên ngoài để đóng thanh tìm kiếm
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
-      if (
-        searchRef.current &&
-        !searchRef.current.contains(event.target as Node)
-      ) {
+      if (searchRef.current && !searchRef.current.contains(event.target as Node)) {
         setIsActive(false);
         if (onClose) onClose();
       }
@@ -139,8 +133,7 @@ const SearchBar: React.FC<SearchBarProps> = ({
 
     if (isActive) {
       document.addEventListener('mousedown', handleClickOutside);
-      return () =>
-        document.removeEventListener('mousedown', handleClickOutside);
+      return () => document.removeEventListener('mousedown', handleClickOutside);
     }
     return undefined;
   }, [onClose, isActive]);
@@ -175,11 +168,10 @@ const SearchBar: React.FC<SearchBarProps> = ({
     try {
       localStorage.setItem('recentSearches', JSON.stringify([]));
       setRecentSearches([]);
-      
+
       if (isLoggedIn) {
         await clearAllSearch();
       }
-      
     } catch (error) {
       console.error('Lỗi xóa lịch sử tìm kiếm:', error);
     }
@@ -188,19 +180,18 @@ const SearchBar: React.FC<SearchBarProps> = ({
   // Xóa một từ khóa tìm kiếm
   const removeSearchTerm = async (termToRemove: string) => {
     try {
-      const updatedSearches = recentSearches.filter(
-        (term) => term !== termToRemove
-      );
+      const updatedSearches = recentSearches.filter((term) => term !== termToRemove);
       localStorage.setItem('recentSearches', JSON.stringify(updatedSearches));
       setRecentSearches(updatedSearches);
 
       if (isLoggedIn && historyData?.data) {
-        const itemToDelete = historyData.data.find((item: { keyword: string; id?: string }) => item.keyword === termToRemove);
+        const itemToDelete = historyData.data.find(
+          (item: { keyword: string; id?: string }) => item.keyword === termToRemove,
+        );
         if (itemToDelete) {
           await deleteSearch(itemToDelete.id);
         }
       }
-
     } catch (error) {
       console.error('Lỗi xóa từ khóa tìm kiếm:', error);
     }
@@ -223,20 +214,16 @@ const SearchBar: React.FC<SearchBarProps> = ({
     try {
       const storedSearches = getRecentSearches();
       // Thêm vào đầu và xóa trùng lặp
-      const updatedSearches = [
-        term,
-        ...storedSearches.filter((s) => s !== term),
-      ].slice(0, 5);
+      const updatedSearches = [term, ...storedSearches.filter((s) => s !== term)].slice(0, 5);
       localStorage.setItem('recentSearches', JSON.stringify(updatedSearches));
       setRecentSearches(updatedSearches);
 
       // Lưu lên server
-      await saveSearch({ 
-        keyword: term, 
+      await saveSearch({
+        keyword: term,
         resultsCount,
-        sessionId: !isLoggedIn ? sessionId : undefined 
+        sessionId: !isLoggedIn ? sessionId : undefined,
       });
-
     } catch (error) {
       console.error('Lỗi lưu từ khóa tìm kiếm:', error);
     }
@@ -248,7 +235,7 @@ const SearchBar: React.FC<SearchBarProps> = ({
     if (searchTerm.trim()) {
       const term = searchTerm.trim();
       const resultsCount = searchResults?.total || 0;
-      
+
       // Lưu từ khóa tìm kiếm
       saveSearchTerm(term, resultsCount);
 
@@ -368,93 +355,89 @@ const SearchBar: React.FC<SearchBarProps> = ({
           </div>
 
           {/* Gợi ý tìm kiếm */}
-          {(suggestions.length > 0 || isFetching) &&
-            debouncedSearchTerm.length > 1 && (
-              <div className="border-t border-neutral-200 dark:border-neutral-700 max-h-80 overflow-y-auto">
-                {isFetching ? (
-                  <div className="p-4 text-center text-neutral-500 dark:text-neutral-400">
-                    <div className="inline-block animate-spin rounded-full h-5 w-5 border-t-2 border-neutral-500 dark:border-neutral-400 border-r-2 border-neutral-500 dark:border-neutral-400 mr-2"></div>
-                    {t('search.loading')}
-                  </div>
-                ) : isError ? (
-                  <div className="p-4 text-center text-red-500">
-                    {t('search.error')}
-                  </div>
-                ) : suggestions.length === 0 &&
-                  debouncedSearchTerm.length > 1 ? (
-                  <div className="p-4 text-center text-neutral-500 dark:text-neutral-400">
-                    {t('search.noResults')}
-                  </div>
-                ) : (
-                  <ul>
-                    {suggestions.map((product: Product) => (
-                      <li key={product.id}>
-                        <button
-                          onClick={() => handleSuggestionClick(product.id)}
-                          className="w-full text-left px-4 py-3 hover:bg-neutral-100 dark:hover:bg-neutral-700 transition-colors flex items-center gap-3"
-                        >
-                          {/* Ảnh thumbnail sản phẩm */}
-                          {product.thumbnail && (
-                            <div className="w-12 h-12 flex-shrink-0 rounded overflow-hidden border border-neutral-200 dark:border-neutral-700">
-                              <img
-                                src={product.thumbnail}
-                                alt={product.name}
-                                className="w-full h-full object-cover"
-                                loading="lazy"
-                              />
-                            </div>
-                          )}
-
-                          <div className="flex-1">
-                            <p className="text-neutral-900 dark:text-white font-medium line-clamp-1">
-                              {product.name}
-                            </p>
-                            <div className="flex items-center justify-between mt-1">
-                              <p className="text-neutral-500 dark:text-neutral-400 text-sm">
-                                {product.categoryName}
-                              </p>
-                              <p className="text-primary-600 dark:text-primary-400 font-medium">
-                                {new Intl.NumberFormat(getLocale(), {
-                                  style: 'currency',
-                                  currency: 'VND',
-                                  maximumFractionDigits: 0,
-                                }).format(product.price)}
-                              </p>
-                            </div>
-                          </div>
-                          <svg
-                            xmlns="http://www.w3.org/2000/svg"
-                            className="h-5 w-5 text-neutral-400 flex-shrink-0"
-                            fill="none"
-                            viewBox="0 0 24 24"
-                            stroke="currentColor"
-                          >
-                            <path
-                              strokeLinecap="round"
-                              strokeLinejoin="round"
-                              strokeWidth={2}
-                              d="M9 5l7 7-7 7"
+          {(suggestions.length > 0 || isFetching) && debouncedSearchTerm.length > 1 && (
+            <div className="border-t border-neutral-200 dark:border-neutral-700 max-h-80 overflow-y-auto">
+              {isFetching ? (
+                <div className="p-4 text-center text-neutral-500 dark:text-neutral-400">
+                  <div className="inline-block animate-spin rounded-full h-5 w-5 border-t-2 border-neutral-500 dark:border-neutral-400 border-r-2 border-neutral-500 dark:border-neutral-400 mr-2"></div>
+                  {t('search.loading')}
+                </div>
+              ) : isError ? (
+                <div className="p-4 text-center text-red-500">{t('search.error')}</div>
+              ) : suggestions.length === 0 && debouncedSearchTerm.length > 1 ? (
+                <div className="p-4 text-center text-neutral-500 dark:text-neutral-400">
+                  {t('search.noResults')}
+                </div>
+              ) : (
+                <ul>
+                  {suggestions.map((product: Product) => (
+                    <li key={product.id}>
+                      <button
+                        onClick={() => handleSuggestionClick(product.id)}
+                        className="w-full text-left px-4 py-3 hover:bg-neutral-100 dark:hover:bg-neutral-700 transition-colors flex items-center gap-3"
+                      >
+                        {/* Ảnh thumbnail sản phẩm */}
+                        {product.thumbnail && (
+                          <div className="w-12 h-12 flex-shrink-0 rounded overflow-hidden border border-neutral-200 dark:border-neutral-700">
+                            <img
+                              src={proxyImg(product.thumbnail)}
+                              alt={product.name}
+                              className="w-full h-full object-cover"
+                              loading="lazy"
                             />
-                          </svg>
-                        </button>
-                      </li>
-                    ))}
+                          </div>
+                        )}
 
-                    {/* Nút xem tất cả kết quả */}
-                    {suggestions.length > 0 && (
-                      <li className="border-t border-neutral-200 dark:border-neutral-700">
-                        <button
-                          onClick={handleSearchSubmit}
-                          className="w-full text-center px-4 py-3 text-primary-600 dark:text-primary-400 font-medium hover:bg-neutral-100 dark:hover:bg-neutral-700 transition-colors"
+                        <div className="flex-1">
+                          <p className="text-neutral-900 dark:text-white font-medium line-clamp-1">
+                            {product.name}
+                          </p>
+                          <div className="flex items-center justify-between mt-1">
+                            <p className="text-neutral-500 dark:text-neutral-400 text-sm">
+                              {product.categoryName}
+                            </p>
+                            <p className="text-primary-600 dark:text-primary-400 font-medium">
+                              {new Intl.NumberFormat(getLocale(), {
+                                style: 'currency',
+                                currency: 'VND',
+                                maximumFractionDigits: 0,
+                              }).format(product.price)}
+                            </p>
+                          </div>
+                        </div>
+                        <svg
+                          xmlns="http://www.w3.org/2000/svg"
+                          className="h-5 w-5 text-neutral-400 flex-shrink-0"
+                          fill="none"
+                          viewBox="0 0 24 24"
+                          stroke="currentColor"
                         >
-                          {t('search.viewAll')}
-                        </button>
-                      </li>
-                    )}
-                  </ul>
-                )}
-              </div>
-            )}
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            strokeWidth={2}
+                            d="M9 5l7 7-7 7"
+                          />
+                        </svg>
+                      </button>
+                    </li>
+                  ))}
+
+                  {/* Nút xem tất cả kết quả */}
+                  {suggestions.length > 0 && (
+                    <li className="border-t border-neutral-200 dark:border-neutral-700">
+                      <button
+                        onClick={handleSearchSubmit}
+                        className="w-full text-center px-4 py-3 text-primary-600 dark:text-primary-400 font-medium hover:bg-neutral-100 dark:hover:bg-neutral-700 transition-colors"
+                      >
+                        {t('search.viewAll')}
+                      </button>
+                    </li>
+                  )}
+                </ul>
+              )}
+            </div>
+          )}
 
           {/* Tìm kiếm gần đây - lưu bằng localStorage */}
           {searchTerm.length === 0 && (
@@ -519,4 +502,3 @@ const SearchBar: React.FC<SearchBarProps> = ({
 };
 
 export default SearchBar;
-

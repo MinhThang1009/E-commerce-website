@@ -6,7 +6,7 @@
  */
 import React from 'react';
 import { useTranslation } from 'react-i18next';
-import { ProductRecommendation } from '../services/chatbotApi';
+import { ProductRecommendation } from '../services/chatbot-api';
 import ChatProductCard from './ChatProductCard';
 
 interface ChatProductListProps {
@@ -59,4 +59,3 @@ const ChatProductList: React.FC<ChatProductListProps> = ({
 };
 
 export default ChatProductList;
-

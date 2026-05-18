@@ -5,17 +5,17 @@ const helmet = require('helmet');
 const sanitizeHtml = require('sanitize-html');
 const cookieParser = require('cookie-parser');
 const compression = require('compression');
-const { apiLimiter, authLimiter } = require('./middlewares/rateLimiter');
+const { apiLimiter, authLimiter } = require('@middlewares/rate-limiter');
 const swaggerUi = require('swagger-ui-express');
-const swaggerSpec = require('./config/swagger');
+const swaggerSpec = require('@config/swagger');
 const routes = require('./routes');
-const { errorHandler } = require('./middlewares/errorHandler');
+const { errorHandler } = require('@middlewares/error-handler');
 const path = require('path');
-const logger = require('./utils/logger');
+const logger = require('@utils/logger');
 
 // Phase 42.2+ — Modular Monolith modules. DI deps build trung tâm tại đây.
-const eventBus = require('./shared/eventBus');
-const sequelize = require('./config/sequelize');
+const eventBus = require('@shared/event-bus');
+const sequelize = require('@config/sequelize');
 const {
   User,
   Address,
@@ -44,33 +44,33 @@ const {
   RecentlyViewed,
   DiscountCode,
   InventoryLog,
-} = require('./models');
+} = require('@models');
 const constants = require('./constants');
-const emailService = require('./services/email');
-const { AdminAuditService } = require('./shared/adminAudit');
-const { getRedisClient } = require('./config/redis');
-const buildAuthModule = require('./modules/auth/module');
-const buildUsersModule = require('./modules/users/module');
-const buildCartModule = require('./modules/cart/module');
-const buildWishlistModule = require('./modules/wishlist/module');
-const buildReviewsModule = require('./modules/reviews/module');
-const buildLoyaltyModule = require('./modules/loyalty/module');
-const buildContentModule = require('./modules/content/module');
-const buildUploadModule = require('./modules/upload/module');
-const buildCatalogModule = require('./modules/catalog/module');
-const buildOrdersModule = require('./modules/orders/module');
-const buildPaymentModule = require('./modules/payment/module');
-const buildInventoryModule = require('./modules/inventory/module');
-const buildAIModule = require('./modules/ai/module');
-const buildSearchHistoryModule = require('./modules/searchHistory/module');
-const buildImageModule = require('./modules/image/module');
-const buildDiscountCodeModule = require('./modules/discountCode/module');
-const buildWarrantyPackageModule = require('./modules/warrantyPackage/module');
-const buildAttributeModule = require('./modules/attribute/module');
-const buildAdminModule = require('./modules/admin/module');
-const chatbotService = require('./modules/ai/services/chatbotService');
-const momoService = require('./modules/payment/services/momoService');
-const vnpayService = require('./modules/payment/services/vnpayService');
+const emailService = require('@services/email');
+const { AdminAuditService } = require('@shared/admin-audit');
+const { getRedisClient } = require('@config/redis');
+const buildAuthModule = require('@modules/auth/module');
+const buildUsersModule = require('@modules/users/module');
+const buildCartModule = require('@modules/cart/module');
+const buildWishlistModule = require('@modules/wishlist/module');
+const buildReviewsModule = require('@modules/reviews/module');
+const buildLoyaltyModule = require('@modules/loyalty/module');
+const buildContentModule = require('@modules/content/module');
+const buildUploadModule = require('@modules/upload/module');
+const buildCatalogModule = require('@modules/catalog/module');
+const buildOrdersModule = require('@modules/orders/module');
+const buildPaymentModule = require('@modules/payment/module');
+const buildInventoryModule = require('@modules/inventory/module');
+const buildAIModule = require('@modules/ai/module');
+const buildSearchHistoryModule = require('@modules/search-history/module');
+const buildImageModule = require('@modules/image/module');
+const buildDiscountCodeModule = require('@modules/discount-code/module');
+const buildWarrantyPackageModule = require('@modules/warranty-package/module');
+const buildAttributeModule = require('@modules/attribute/module');
+const buildAdminModule = require('@modules/admin/module');
+const chatbotService = require('@modules/ai/services/chatbot/chatbot-service');
+const momoService = require('@modules/payment/services/momo-service');
+const vnpayService = require('@modules/payment/services/vnpay-service');
 
 const authModule = buildAuthModule({
   User,
@@ -229,7 +229,7 @@ aiModule.subscribeEvents();
 const app = express();
 
 // Đăng ký scheduled cleanup jobs (cron) — abandoned carts, expired OTP, search history, v.v.
-require('./jobs/cleanup');
+require('@jobs/cleanup');
 
 // // Tin tưởng reverse proxy headers khi chạy sau Nginx/PM2
 // if (process.env.NODE_ENV === 'production') {
@@ -347,7 +347,7 @@ if (process.env.NODE_ENV === 'production') {
 }
 
 // Phát hiện locale từ Accept-Language header hoặc ?lang= query param
-app.use(require('./middlewares/detectLocale'));
+app.use(require('@middlewares/detect-locale'));
 
 // Đọc dữ liệu từ body request — 2mb mặc định, upload routes override riêng
 app.use(express.json({ limit: '2mb' }));
@@ -378,7 +378,7 @@ app.use(sanitizeBody);
 app.use(compression());
 
 // Image proxy — bypass CDN hotlink protection trên localhost dev
-app.use('/api/img', require('./modules/image/imageProxyRouter'));
+app.use('/api/img', require('@modules/image/middlewares/image-proxy-router'));
 
 // Phục vụ file upload tĩnh — cache 1 năm vì filename chứa hash/timestamp
 app.use(

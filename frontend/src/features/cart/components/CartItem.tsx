@@ -9,12 +9,9 @@ import { Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { buildRoute } from '@/routes/paths';
 import { toast } from '@/utils/toast';
-import { useCartStore } from '@/stores/cartStore';
-import { useAuthStore } from '@/stores/authStore';
-import {
-  useUpdateCartItemMutation,
-  useRemoveCartItemMutation,
-} from '../api/cartApi';
+import { useCartStore } from '@/stores/cart-store';
+import { useAuthStore } from '@/stores/auth-store';
+import { useUpdateCartItemMutation, useRemoveCartItemMutation } from '../api/cart-api';
 import type { CartItem as CartItemType } from '../types/cart.types';
 import { formatPrice, parsePrice } from '@/utils/format';
 
@@ -25,7 +22,12 @@ interface CartItemProps {
   maxStock?: number;
 }
 
-const CartItem: React.FC<CartItemProps> = ({ item, isCheckout = false, readonly: _readonly = false, maxStock }) => {
+const CartItem: React.FC<CartItemProps> = ({
+  item,
+  isCheckout = false,
+  readonly: _readonly = false,
+  maxStock,
+}) => {
   const { t } = useTranslation();
   const effectiveMaxStock = maxStock ?? item.stockQuantity;
   const updateQuantity = useCartStore((s) => s.updateQuantity);
@@ -79,11 +81,7 @@ const CartItem: React.FC<CartItemProps> = ({ item, isCheckout = false, readonly:
       {/* Product image */}
       <div className="w-20 h-20 flex-shrink-0">
         <Link to={buildRoute.productDetail(item.productId)}>
-          <img
-            src={item.image}
-            alt={item.name}
-            className="w-full h-full object-cover rounded-md"
-          />
+          <img src={item.image} alt={item.name} className="w-full h-full object-cover rounded-md" />
         </Link>
       </div>
 
@@ -136,8 +134,19 @@ const CartItem: React.FC<CartItemProps> = ({ item, isCheckout = false, readonly:
                 {isUpdating ? (
                   <div className="w-3 h-3 border border-neutral-400 border-t-transparent rounded-full animate-spin"></div>
                 ) : (
-                  <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20 12H4" />
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    className="h-4 w-4"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    stroke="currentColor"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M20 12H4"
+                    />
                   </svg>
                 )}
               </button>
@@ -151,8 +160,19 @@ const CartItem: React.FC<CartItemProps> = ({ item, isCheckout = false, readonly:
                 {isUpdating ? (
                   <div className="w-3 h-3 border border-neutral-400 border-t-transparent rounded-full animate-spin"></div>
                 ) : (
-                  <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    className="h-4 w-4"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    stroke="currentColor"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M12 4v16m8-8H4"
+                    />
                   </svg>
                 )}
               </button>
@@ -173,8 +193,19 @@ const CartItem: React.FC<CartItemProps> = ({ item, isCheckout = false, readonly:
               {isRemoving ? (
                 <div className="w-5 h-5 border border-neutral-400 border-t-transparent rounded-full animate-spin"></div>
               ) : (
-                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  className="h-5 w-5"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
+                  />
                 </svg>
               )}
             </button>

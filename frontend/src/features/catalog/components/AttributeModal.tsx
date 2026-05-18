@@ -7,11 +7,7 @@
 import React, { useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Modal, Form, Input, Button, Space, Alert, Divider } from 'antd';
-import {
-  SaveOutlined,
-  CloseOutlined,
-  InfoCircleOutlined,
-} from '@ant-design/icons';
+import { SaveOutlined, CloseOutlined, InfoCircleOutlined } from '@ant-design/icons';
 
 const { TextArea } = Input;
 
@@ -30,12 +26,7 @@ interface AttributeModalProps {
   onSave: (attribute: any) => void;
 }
 
-const AttributeModal: React.FC<AttributeModalProps> = ({
-  open,
-  onClose,
-  attribute,
-  onSave,
-}) => {
+const AttributeModal: React.FC<AttributeModalProps> = ({ open, onClose, attribute, onSave }) => {
   const { t } = useTranslation();
   const [form] = Form.useForm();
 
@@ -45,7 +36,7 @@ const AttributeModal: React.FC<AttributeModalProps> = ({
         name: attribute.name || '',
         value: Array.isArray(attribute.values)
           ? attribute.values.join(', ')
-          : (attribute.value || ''),
+          : attribute.value || '',
       });
     } else {
       form.resetFields();
@@ -59,9 +50,7 @@ const AttributeModal: React.FC<AttributeModalProps> = ({
       value: values.value.trim(),
     };
 
-    const savedAttributes = JSON.parse(
-      localStorage.getItem('debug_attributes') || '[]'
-    );
+    const savedAttributes = JSON.parse(localStorage.getItem('debug_attributes') || '[]');
     savedAttributes.push(attributeData);
     localStorage.setItem('debug_attributes', JSON.stringify(savedAttributes));
 
@@ -104,15 +93,10 @@ const AttributeModal: React.FC<AttributeModalProps> = ({
         <Form.Item
           label={t('attrModal.valueLabel')}
           name="value"
-          rules={[
-            { required: true, message: t('attrModal.valueRequired') },
-          ]}
+          rules={[{ required: true, message: t('attrModal.valueRequired') }]}
           tooltip={t('attrModal.valueTooltip')}
         >
-          <TextArea
-            rows={3}
-            placeholder={t('attrModal.valuePlaceholder')}
-          />
+          <TextArea rows={3} placeholder={t('attrModal.valuePlaceholder')} />
         </Form.Item>
 
         <Divider />
@@ -123,16 +107,13 @@ const AttributeModal: React.FC<AttributeModalProps> = ({
           description={
             <ul style={{ marginBottom: 0, paddingLeft: 20 }}>
               <li>
-                <strong>{t('attrModal.tipNameLabel')}</strong>{' '}
-                {t('attrModal.tipNameDesc')}
+                <strong>{t('attrModal.tipNameLabel')}</strong> {t('attrModal.tipNameDesc')}
               </li>
               <li>
-                <strong>{t('attrModal.tipValueLabel')}</strong>{' '}
-                {t('attrModal.tipValueDesc')}
+                <strong>{t('attrModal.tipValueLabel')}</strong> {t('attrModal.tipValueDesc')}
               </li>
               <li>
-                <strong>{t('attrModal.tipCommaLabel')}</strong>{' '}
-                {t('attrModal.tipCommaDesc')}
+                <strong>{t('attrModal.tipCommaLabel')}</strong> {t('attrModal.tipCommaDesc')}
               </li>
               <li>{t('attrModal.tipUsage')}</li>
             </ul>
@@ -149,22 +130,19 @@ const AttributeModal: React.FC<AttributeModalProps> = ({
           description={
             <div style={{ marginBottom: 0 }}>
               <div>
-                <strong>{t('attrModal.exNameLabel')}</strong>{' '}
-                &ldquo;{t('attrModal.ex1name')}&rdquo; →{' '}
-                <strong>{t('attrModal.exValueLabel')}</strong>{' '}
-                &ldquo;{t('attrModal.ex1value')}&rdquo;
+                <strong>{t('attrModal.exNameLabel')}</strong> &ldquo;{t('attrModal.ex1name')}&rdquo;
+                → <strong>{t('attrModal.exValueLabel')}</strong> &ldquo;{t('attrModal.ex1value')}
+                &rdquo;
               </div>
               <div>
-                <strong>{t('attrModal.exNameLabel')}</strong>{' '}
-                &ldquo;{t('attrModal.ex2name')}&rdquo; →{' '}
-                <strong>{t('attrModal.exValueLabel')}</strong>{' '}
-                &ldquo;{t('attrModal.ex2value')}&rdquo;
+                <strong>{t('attrModal.exNameLabel')}</strong> &ldquo;{t('attrModal.ex2name')}&rdquo;
+                → <strong>{t('attrModal.exValueLabel')}</strong> &ldquo;{t('attrModal.ex2value')}
+                &rdquo;
               </div>
               <div>
-                <strong>{t('attrModal.exNameLabel')}</strong>{' '}
-                &ldquo;{t('attrModal.ex3name')}&rdquo; →{' '}
-                <strong>{t('attrModal.exValueLabel')}</strong>{' '}
-                &ldquo;{t('attrModal.ex3value')}&rdquo;
+                <strong>{t('attrModal.exNameLabel')}</strong> &ldquo;{t('attrModal.ex3name')}&rdquo;
+                → <strong>{t('attrModal.exValueLabel')}</strong> &ldquo;{t('attrModal.ex3value')}
+                &rdquo;
               </div>
             </div>
           }

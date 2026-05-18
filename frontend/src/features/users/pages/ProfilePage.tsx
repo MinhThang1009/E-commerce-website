@@ -8,9 +8,9 @@ import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { ROUTES } from '@/routes/paths';
-import { useAuthStore } from '@/stores/authStore';
+import { useAuthStore } from '@/stores/auth-store';
 import { useGetCurrentUserQuery } from '@/features/auth';
-import { useUiStore } from '@/stores/uiStore';
+import { useUiStore } from '@/stores/ui-store';
 import {
   useUpdateProfileMutation,
   useChangePasswordMutation,
@@ -22,7 +22,7 @@ import {
 } from '@/features/users';
 import { Address } from '@/types/user.types';
 import { useGetLoyaltyInfoQuery } from '@/features/loyalty';
-import { getErrorMsg } from '@/utils/errorUtils';
+import { getErrorMsg } from '@/utils/error-utils';
 
 type TabKey = 'info' | 'password' | 'orders' | 'addresses' | 'loyalty';
 

@@ -25,10 +25,7 @@ const LoadingSpinner: React.FC<LoadingSpinnerProps> = ({
     lg: 'w-12 h-12',
   } as const;
 
-  const aliasMap: Record<
-    NonNullable<LoadingSpinnerProps['size']>,
-    keyof typeof sizeClasses
-  > = {
+  const aliasMap: Record<NonNullable<LoadingSpinnerProps['size']>, keyof typeof sizeClasses> = {
     sm: 'sm',
     md: 'md',
     lg: 'lg',
@@ -45,8 +42,7 @@ const LoadingSpinner: React.FC<LoadingSpinnerProps> = ({
   };
 
   const spinnerSize = sizeClasses[aliasMap[size] ?? 'md'];
-  const spinnerColor =
-    colorClasses[color as keyof typeof colorClasses] || colorClasses.primary;
+  const spinnerColor = colorClasses[color as keyof typeof colorClasses] || colorClasses.primary;
 
   if (fullScreen) {
     return (
@@ -72,9 +68,7 @@ const LoadingSpinner: React.FC<LoadingSpinnerProps> = ({
               d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
             ></path>
           </svg>
-          <p className="mt-3 text-neutral-600 dark:text-neutral-300">
-            {t('common.loading')}
-          </p>
+          <p className="mt-3 text-neutral-600 dark:text-neutral-300">{t('common.loading')}</p>
         </div>
       </div>
     );
@@ -105,4 +99,3 @@ const LoadingSpinner: React.FC<LoadingSpinnerProps> = ({
 };
 
 export default LoadingSpinner;
-

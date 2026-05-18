@@ -7,7 +7,7 @@
 import React from 'react';
 import { useTranslation } from 'react-i18next';
 import PremiumButton from './PremiumButton';
-import { getErrorMessage } from '@/utils/errorUtils';
+import { getErrorMessage } from '@/utils/error-utils';
 
 interface ErrorStateProps {
   error: unknown;
@@ -68,9 +68,7 @@ export const ErrorState: React.FC<ErrorStateProps> = ({
   const classes = sizeClasses[size];
 
   return (
-    <div
-      className={`flex flex-col items-center text-center ${classes.container} ${className}`}
-    >
+    <div className={`flex flex-col items-center text-center ${classes.container} ${className}`}>
       <div className={`${classes.icon} text-red-500 mb-4`}>
         <svg
           fill="none"
@@ -87,25 +85,16 @@ export const ErrorState: React.FC<ErrorStateProps> = ({
         </svg>
       </div>
 
-      <h3
-        className={`font-semibold text-neutral-800 dark:text-neutral-200 mb-2 ${classes.title}`}
-      >
+      <h3 className={`font-semibold text-neutral-800 dark:text-neutral-200 mb-2 ${classes.title}`}>
         {t('common.errorTitle')}
       </h3>
 
-      <p
-        className={`text-neutral-600 dark:text-neutral-400 mb-6 max-w-md ${classes.description}`}
-      >
+      <p className={`text-neutral-600 dark:text-neutral-400 mb-6 max-w-md ${classes.description}`}>
         {errorMessage}
       </p>
 
       {showRetryButton && onRetry && (
-        <PremiumButton
-          variant="primary"
-          size="middle"
-          onClick={onRetry}
-          className={classes.button}
-        >
+        <PremiumButton variant="primary" size="middle" onClick={onRetry} className={classes.button}>
           {effectiveRetryText}
         </PremiumButton>
       )}
@@ -139,19 +128,13 @@ export const EmptyState: React.FC<EmptyStateProps> = ({
   );
 
   return (
-    <div
-      className={`flex flex-col items-center text-center py-12 ${className}`}
-    >
+    <div className={`flex flex-col items-center text-center py-12 ${className}`}>
       <div className="mb-4">{icon || defaultIcon}</div>
 
-      <h3 className="text-lg font-semibold text-neutral-800 dark:text-neutral-200 mb-2">
-        {title}
-      </h3>
+      <h3 className="text-lg font-semibold text-neutral-800 dark:text-neutral-200 mb-2">{title}</h3>
 
       {description && (
-        <p className="text-neutral-600 dark:text-neutral-400 mb-6 max-w-md">
-          {description}
-        </p>
+        <p className="text-neutral-600 dark:text-neutral-400 mb-6 max-w-md">{description}</p>
       )}
 
       {actionLabel && onAction && (
@@ -163,9 +146,7 @@ export const EmptyState: React.FC<EmptyStateProps> = ({
   );
 };
 
-export const NetworkErrorState: React.FC<Omit<ErrorStateProps, 'error'>> = (
-  props
-) => {
+export const NetworkErrorState: React.FC<Omit<ErrorStateProps, 'error'>> = (props) => {
   const { t } = useTranslation();
   const networkError = {
     code: 'ERR_NETWORK',
@@ -181,13 +162,7 @@ export const NotFoundState: React.FC<{
   actionLabel?: string;
   onAction?: () => void;
   className?: string;
-}> = ({
-  title,
-  description,
-  actionLabel,
-  onAction,
-  className = '',
-}) => {
+}> = ({ title, description, actionLabel, onAction, className = '' }) => {
   const { t } = useTranslation();
   const effectiveTitle = title || t('common.notFound');
   const effectiveDescription = description || t('common.notFoundDesc');
@@ -233,9 +208,7 @@ export const NoResultsState: React.FC<{
     ? t('common.noResultsFor', { query: searchQuery })
     : t('common.noResults');
 
-  const description = searchQuery
-    ? t('common.tryDifferentKeyword')
-    : t('common.noResultsDesc');
+  const description = searchQuery ? t('common.tryDifferentKeyword') : t('common.noResultsDesc');
 
   return (
     <EmptyState

@@ -4,10 +4,10 @@
  * @module wishlist
  * @description Entry point wishlist module — khởi tạo dependencies và đăng ký routes
  */
-const WishlistController = require('./controllers/wishlistController');
-const WishlistService = require('./services/wishlistService');
-const SequelizeWishlistRepository = require('./repositories/SequelizeWishlistRepository');
-const buildRoutes = require('./routes');
+const WishlistController = require('@modules/wishlist/controllers/wishlist-controller');
+const WishlistService = require('@modules/wishlist/services/wishlist-service');
+const SequelizeWishlistRepository = require('@modules/wishlist/repositories/sequelize-wishlist-repository');
+const buildRoutes = require('@modules/wishlist/routes');
 
 module.exports = ({ Wishlist, Product, eventBus, logger }) => {
   if (!Wishlist) throw new Error('wishlist module: Wishlist model bắt buộc');

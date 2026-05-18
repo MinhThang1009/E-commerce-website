@@ -4,10 +4,10 @@
  * @module catalog
  * @description Entry point catalog module — khởi tạo dependencies và đăng ký routes
  */
-const CatalogController = require('./controllers/catalogController');
-const CatalogService = require('./services/catalogService');
-const SequelizeCatalogRepository = require('./repositories/SequelizeCatalogRepository');
-const buildRoutes = require('./routes');
+const CatalogController = require('@modules/catalog/controllers/catalog-controller');
+const CatalogService = require('@modules/catalog/services/catalog-service');
+const SequelizeCatalogRepository = require('@modules/catalog/repositories/sequelize-catalog-repository');
+const buildRoutes = require('@modules/catalog/routes');
 
 // Catalog module — gộp Category, Brand, Collection (Sprint 6a) + Product
 // (Sprint 6b). Trả `mounts` array để app.js mount nhiều base path khác nhau.

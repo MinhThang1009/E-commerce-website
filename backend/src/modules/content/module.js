@@ -4,10 +4,10 @@
  * @module content
  * @description Entry point content module — khởi tạo dependencies và đăng ký routes
  */
-const ContentController = require('./controllers/contentController');
-const ContentService = require('./services/contentService');
-const SequelizeContentRepository = require('./repositories/SequelizeContentRepository');
-const buildRoutes = require('./routes');
+const ContentController = require('@modules/content/controllers/content-controller');
+const ContentService = require('@modules/content/services/content-service');
+const SequelizeContentRepository = require('@modules/content/repositories/sequelize-content-repository');
+const buildRoutes = require('@modules/content/routes');
 
 // Content module — gộp 5 sub-domain. Trả `mounts` array để app.js mount nhiều
 // path khác nhau (banner/news/email-campaigns/newsletter/contact).

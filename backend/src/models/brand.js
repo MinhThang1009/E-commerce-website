@@ -1,6 +1,6 @@
 ﻿const { DataTypes } = require('sequelize');
 const slugify = require('slugify');
-const sequelize = require('../config/sequelize');
+const sequelize = require('@config/sequelize');
 
 // Model thương hiệu - theo cấu trúc data_new.sql
 const Brand = sequelize.define(

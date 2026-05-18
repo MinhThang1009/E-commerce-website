@@ -35,7 +35,7 @@ function loadModelCapture(modelPath) {
   let capturedFields = {};
 
   jest.isolateModules(() => {
-    jest.mock('../config/sequelize', () => {
+    jest.mock('@config/sequelize', () => {
       const { DataTypes } = require('sequelize');
       return {
         define(_modelName, fields) {
@@ -59,7 +59,7 @@ describe('banner.js — title virtual field getter', () => {
   let titleField;
 
   beforeAll(() => {
-    const { fields } = loadModelCapture('../models/banner');
+    const { fields } = loadModelCapture('@models/banner');
     titleField = fields.title;
   });
 
@@ -78,7 +78,7 @@ describe('banner.js — title virtual field setter', () => {
   let titleField;
 
   beforeAll(() => {
-    const { fields } = loadModelCapture('../models/banner');
+    const { fields } = loadModelCapture('@models/banner');
     titleField = fields.title;
   });
 
@@ -99,7 +99,7 @@ describe('banner.js — title virtual field setter', () => {
 // usersDto.js — toUserDto và toAddressDto
 // ════════════════════════════════════════════════════════════════════════════
 
-const { toUserDto, toAddressDto } = require('../modules/users/dtos/usersDto');
+const { toUserDto, toAddressDto } = require('@modules/users/dtos/users-dto');
 
 describe('toUserDto', () => {
   it('trả về null khi user là null', () => {
@@ -159,7 +159,7 @@ describe('toAddressDto', () => {
 // authDto.js — toAuthUserDto
 // ════════════════════════════════════════════════════════════════════════════
 
-const { toAuthUserDto } = require('../modules/auth/dtos/authDto');
+const { toAuthUserDto } = require('@modules/auth/dtos/auth-dto');
 
 describe('toAuthUserDto', () => {
   it('trả về null khi user là null', () => {

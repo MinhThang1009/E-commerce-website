@@ -1,5 +1,5 @@
 const { createClient } = require('redis');
-const logger = require('../utils/logger');
+const logger = require('@utils/logger');
 
 // Fallback in-memory khi Redis không khả dụng (môi trường dev)
 const memStore = new Map();

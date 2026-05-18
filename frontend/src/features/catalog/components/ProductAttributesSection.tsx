@@ -77,20 +77,14 @@ const ProductAttributesSection: React.FC<ProductAttributesSectionProps> = ({
               <Title level={5}>
                 {t('productSection.attr.sectionTitle')} <Text type="danger">*</Text>
               </Title>
-              <Text type="secondary">
-                {t('productSection.attr.sectionDesc')}
-              </Text>
+              <Text type="secondary">{t('productSection.attr.sectionDesc')}</Text>
               <div style={{ marginTop: 8 }}>
                 <Text type="warning">
                   <strong>{t('common.note')}:</strong> {t('productSection.attr.note')}
                 </Text>
               </div>
             </div>
-            <Button
-              type="primary"
-              icon={<PlusOutlined />}
-              onClick={onAddAttribute}
-            >
+            <Button type="primary" icon={<PlusOutlined />} onClick={onAddAttribute}>
               {t('productSection.attr.addButton')}
             </Button>
           </div>

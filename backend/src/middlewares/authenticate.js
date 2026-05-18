@@ -5,9 +5,9 @@
  * @description Express middleware: authenticate
  */
 const jwt = require('jsonwebtoken');
-const { User } = require('../models');
-const { AppError } = require('./errorHandler');
-const { getRedisClient } = require('../config/redis');
+const { User } = require('@models');
+const { AppError } = require('@middlewares/error-handler');
+const { getRedisClient } = require('@config/redis');
 
 // Middleware xác thực người dùng
 const authenticate = async (req, res, next) => {

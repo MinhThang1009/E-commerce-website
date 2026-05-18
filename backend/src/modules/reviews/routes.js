@@ -5,10 +5,10 @@
  * @description HTTP endpoints của reviews
  */
 const express = require('express');
-const { authenticate } = require('../../middlewares/authenticate');
-const { authorize } = require('../../middlewares/authorize');
-const { validateRequest } = require('../../middlewares/validateRequest');
-const { reviewSchema, reviewHelpfulSchema } = require('./validators/reviewsValidator');
+const { authenticate } = require('@middlewares/authenticate');
+const { authorize } = require('@middlewares/authorize');
+const { validateRequest } = require('@middlewares/validate-request');
+const { reviewSchema, reviewHelpfulSchema } = require('@modules/reviews/validators/reviews-validator');
 
 // Reviews module routes — basePath '/reviews' (mount /api/reviews).
 // URL không đổi so với routes/review.js cũ.

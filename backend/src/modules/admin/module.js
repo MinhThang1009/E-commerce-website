@@ -11,6 +11,6 @@
  */
 module.exports = () => ({
   basePath: '/admin',
-  router: require('./routes'),
+  router: require('@modules/admin/routes'),
   subscribeEvents() {},
 });

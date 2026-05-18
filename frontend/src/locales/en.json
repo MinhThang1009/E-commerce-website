@@ -188,6 +188,8 @@
       "resendOtpSuccess": "A new OTP code has been sent to your email!",
       "resendOtpError": "Could not resend OTP",
       "signingIn": "Signing in...",
+      "showPassword": "Show password",
+      "hidePassword": "Hide password",
       "enterOtp": "Enter verification OTP",
       "resending": "Sending...",
       "enterOtpNow": "Enter OTP now →"
@@ -400,14 +402,14 @@
     "poweredByLabel": "Powered by TechStore AI"
   },
   "ai": {
-    "statusActive": "Gemini AI Active",
+    "statusActive": "Chatbot AI Active",
     "statusDemo": "Demo Mode",
     "statusOffline": "AI Offline",
     "statusTitle": "AI Status",
     "modelReady": "Model Ready:",
     "apiKey": "API Key:",
     "configured": "Configured",
-    "enableGemini": "Enable Gemini AI",
+    "enableGemini": "Enable Chatbot AI",
     "setupStep1": "1. Get API key from",
     "googleAIStudio": "Google AI Studio",
     "setupStep2": "2. Add to .env file:",
@@ -417,7 +419,7 @@
     "featureNLP": "Natural language understanding",
     "featureContext": "Context-aware responses",
     "featureMultilingual": "Multilingual support",
-    "geminiName": "Gemini AI",
+    "geminiName": "Chatbot AI",
     "smartMode": "Smart Mode",
     "limited": "Limited"
   },
@@ -746,7 +748,8 @@
       "message": "Your payment information is processed securely. We do not store credit card details."
     },
     "validation": {
-      "required": "This field is required",
+      "required": "Please fill in this information",
+      "addressRequired": "Please select your complete delivery address",
       "emailInvalid": "Please enter a valid email address",
       "phoneInvalid": "Please enter a valid 10-digit phone number",
       "zipCodeInvalid": "Please enter a valid zip code",
@@ -3761,8 +3764,17 @@
   },
   "addressPicker": {
     "label": "Delivery address",
-    "placeholder": "E.g.: 123 Main St, District, City",
-    "searching": "Searching..."
+    "placeholder": "E.g.: 12 Quang Trung, Ha Dong, Hanoi — include house number for specific results",
+    "searching": "Searching...",
+    "loading": "Loading...",
+    "province": "Province / City",
+    "district": "District",
+    "ward": "Ward / Commune",
+    "streetLabel": "House number, street name",
+    "streetPlaceholder": "E.g.: 12 Quang Trung Street",
+    "selectProvince": "-- Select Province/City --",
+    "selectDistrict": "-- Select District --",
+    "selectWard": "-- Select Ward --"
   },
   "home": {
     "newsTitle": "News & Events",

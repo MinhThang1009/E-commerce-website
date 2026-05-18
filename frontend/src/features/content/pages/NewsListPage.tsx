@@ -8,7 +8,7 @@ import { Helmet } from 'react-helmet-async';
 import { Link, useSearchParams } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { buildRoute } from '@/routes/paths';
-import { useGetNewsQuery } from '../api/newsApi';
+import { useGetNewsQuery } from '../api/news-api';
 import LoadingSpinner from '@/components/common/LoadingSpinner';
 import Pagination from '@/components/common/Pagination';
 import dayjs from 'dayjs';

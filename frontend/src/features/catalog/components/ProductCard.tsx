@@ -4,16 +4,16 @@
  * @feature catalog
  * @description UI component cho feature catalog
  */
-import { useUiStore } from '@/stores/uiStore';
-import { proxyImg } from '@/utils/proxyImg';
+import { useUiStore } from '@/stores/ui-store';
+import { proxyImg } from '@/utils/proxy-img';
 import { Product } from '@/features/catalog';
-import { calculatePriceRange } from '@/utils/priceUtils';
+import { calculatePriceRange } from '@/utils/price-utils';
 import React, { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { localizeField } from '@/utils/localize';
 import { Link, useNavigate } from 'react-router-dom';
-import { useAuthStore } from '@/stores/authStore';
-import { useWishlistStore } from '@/stores/wishlistStore';
+import { useAuthStore } from '@/stores/auth-store';
+import { useWishlistStore } from '@/stores/wishlist-store';
 import { useAddToWishlistMutation, useRemoveFromWishlistMutation } from '@/features/wishlist';
 import { HeartIcon } from '@heroicons/react/24/outline';
 import { HeartIcon as HeartIconSolid } from '@heroicons/react/24/solid';

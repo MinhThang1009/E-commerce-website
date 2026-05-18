@@ -41,9 +41,9 @@ import {
   useCreateDiscountCodeMutation,
   useUpdateDiscountCodeMutation,
   useDeleteDiscountCodeMutation,
-} from '../api/discountCodeApi';
+} from '../api/discount-code-api';
 import { DiscountCode } from '@/types/discount.types';
-import { getErrorMsg } from '@/utils/errorUtils';
+import { getErrorMsg } from '@/utils/error-utils';
 
 const { TextArea } = Input;
 const { RangePicker } = DatePicker;

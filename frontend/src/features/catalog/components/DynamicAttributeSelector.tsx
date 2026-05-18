@@ -22,12 +22,12 @@ import {
   Switch,
   Tooltip,
 } from 'antd';
+import { BulbOutlined, SettingOutlined, InfoCircleOutlined } from '@ant-design/icons';
 import {
-  BulbOutlined,
-  SettingOutlined,
-  InfoCircleOutlined,
-} from '@ant-design/icons';
-import { attributeService, AttributeValue, AttributeGroup as BaseAttributeGroup } from '../api/attributeApi';
+  attributeService,
+  AttributeValue,
+  AttributeGroup as BaseAttributeGroup,
+} from '../api/attribute-api';
 import DynamicProductName from './DynamicProductName';
 
 const { Option } = Select;
@@ -42,7 +42,7 @@ interface DynamicAttributeSelectorProps {
   baseName?: string;
   onAttributeChange?: (
     attributeValues: Record<string, string>,
-    affectingNameOnly: Record<string, string>
+    affectingNameOnly: Record<string, string>,
   ) => void;
   // eslint-disable-next-line @typescript-eslint/no-explicit-any -- AI response details
   onNameGenerated?: (name: string, details: any) => void;
@@ -61,12 +61,8 @@ const DynamicAttributeSelector: React.FC<DynamicAttributeSelectorProps> = ({
   const { t } = useTranslation();
   const [loading, setLoading] = useState(true);
   const [attributeGroups, setAttributeGroups] = useState<AttributeGroup[]>([]);
-  const [selectedAttributes, setSelectedAttributes] = useState<
-    Record<string, string>
-  >({});
-  const [nameAffectingAttributes, setNameAffectingAttributes] = useState<
-    AttributeValue[]
-  >([]);
+  const [selectedAttributes, setSelectedAttributes] = useState<Record<string, string>>({});
+  const [nameAffectingAttributes, setNameAffectingAttributes] = useState<AttributeValue[]>([]);
   const [showOnlyNameAffecting, setShowOnlyNameAffecting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -95,8 +91,7 @@ const DynamicAttributeSelector: React.FC<DynamicAttributeSelectorProps> = ({
 
   const loadNameAffectingAttributes = async () => {
     try {
-      const response =
-        await attributeService.getNameAffectingAttributes(productId);
+      const response = await attributeService.getNameAffectingAttributes(productId);
       if (response.status === 'success') {
         setNameAffectingAttributes(response.data);
       }
@@ -116,9 +111,7 @@ const DynamicAttributeSelector: React.FC<DynamicAttributeSelectorProps> = ({
     const affectingNameOnly: Record<string, string> = {};
     Object.entries(newSelectedAttributes).forEach(([gId, vId]) => {
       if (vId) {
-        const isAffectingName = nameAffectingAttributes.some(
-          (attr) => attr.id === vId
-        );
+        const isAffectingName = nameAffectingAttributes.some((attr) => attr.id === vId);
         if (isAffectingName) {
           affectingNameOnly[gId] = vId;
         }
@@ -132,9 +125,7 @@ const DynamicAttributeSelector: React.FC<DynamicAttributeSelectorProps> = ({
 
   const getVisibleAttributeGroups = () => {
     if (showOnlyNameAffecting) {
-      return attributeGroups.filter((group) =>
-        group.values?.some((value) => value.affectsName)
-      );
+      return attributeGroups.filter((group) => group.values?.some((value) => value.affectsName));
     }
     return attributeGroups;
   };
@@ -160,17 +151,18 @@ const DynamicAttributeSelector: React.FC<DynamicAttributeSelectorProps> = ({
             {(value.priceAdjustment ?? 0) !== 0 && (
               <Text type="secondary" style={{ marginLeft: 8 }}>
                 {(value.priceAdjustment ?? 0) > 0 ? '+' : ''}
-                {(value.priceAdjustment ?? 0).toLocaleString(getLocale())}{t('common.currencySymbol')}
+                {(value.priceAdjustment ?? 0).toLocaleString(getLocale())}
+                {t('common.currencySymbol')}
               </Text>
             )}
           </span>
           {isNameAffecting && (
             <Tooltip
-              title={t('product.affectsNameTemplate', { template: value.nameTemplate || value.name })}
+              title={t('product.affectsNameTemplate', {
+                template: value.nameTemplate || value.name,
+              })}
             >
-              <Tag color="blue">
-                {value.nameTemplate || 'NAME'}
-              </Tag>
+              <Tag color="blue">{value.nameTemplate || 'NAME'}</Tag>
             </Tooltip>
           )}
         </Space>
@@ -204,8 +196,8 @@ const DynamicAttributeSelector: React.FC<DynamicAttributeSelectorProps> = ({
 
   const visibleGroups = getVisibleAttributeGroups();
   const nameAffectingCount = nameAffectingAttributes.length;
-  const selectedNameAffecting = Object.values(selectedAttributes).filter(
-    (valueId) => nameAffectingAttributes.some((attr) => attr.id === valueId)
+  const selectedNameAffecting = Object.values(selectedAttributes).filter((valueId) =>
+    nameAffectingAttributes.some((attr) => attr.id === valueId),
   ).length;
 
   return (
@@ -217,16 +209,12 @@ const DynamicAttributeSelector: React.FC<DynamicAttributeSelectorProps> = ({
           <Space>
             <SettingOutlined />
             <span>{t('attr.configTitle')}</span>
-            <Tag color="blue">
-              {t('attr.nameAffectingCount', { count: nameAffectingCount })}
-            </Tag>
+            <Tag color="blue">{t('attr.nameAffectingCount', { count: nameAffectingCount })}</Tag>
           </Space>
         }
         extra={
           <Space>
-            <span style={{ fontSize: '12px', color: '#666' }}>
-              {t('attr.showNameAffecting')}
-            </span>
+            <span style={{ fontSize: '12px', color: '#666' }}>{t('attr.showNameAffecting')}</span>
             <Switch
               size="small"
               checked={showOnlyNameAffecting}
@@ -319,11 +307,7 @@ const DynamicAttributeSelector: React.FC<DynamicAttributeSelectorProps> = ({
           size="small"
           style={{ marginTop: 16 }}
           extra={
-            <Button
-              type="link"
-              size="small"
-              onClick={() => setSelectedAttributes({})}
-            >
+            <Button type="link" size="small" onClick={() => setSelectedAttributes({})}>
               {t('common.clear')}
             </Button>
           }

@@ -24,7 +24,7 @@ import {
 } from 'antd';
 import { useTranslation } from 'react-i18next';
 import ImageUpload from '@/components/common/ImageUpload';
-import { getUploadUrl } from '@/utils/uploadUrl';
+import { getUploadUrl } from '@/utils/upload-url';
 import {
   PlusOutlined,
   EditOutlined,
@@ -37,9 +37,9 @@ import {
   useCreateCollectionMutation,
   useUpdateCollectionMutation,
   useDeleteCollectionMutation,
-} from '../../api/collectionApi';
-import { useGetProductsQuery } from '../../api/productApi';
-import { getErrorMsg } from '@/utils/errorUtils';
+} from '../../api/collection-api';
+import { useGetProductsQuery } from '../../api/product-api';
+import { getErrorMsg } from '@/utils/error-utils';
 
 const { Title } = Typography;
 const { TextArea } = Input;

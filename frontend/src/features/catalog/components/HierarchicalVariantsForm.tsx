@@ -24,13 +24,8 @@ import {
   Col,
   message,
 } from 'antd';
-import {
-  PlusOutlined,
-  EditOutlined,
-  DeleteOutlined,
-  InfoCircleOutlined,
-} from '@ant-design/icons';
-import { AttributeGroup } from '../api/attributeApi';
+import { PlusOutlined, EditOutlined, DeleteOutlined, InfoCircleOutlined } from '@ant-design/icons';
+import { AttributeGroup } from '../api/attribute-api';
 import { getLocale } from '@/utils/format';
 
 const { Title, Text } = Typography;
@@ -61,21 +56,14 @@ const HierarchicalVariantsForm: React.FC<HierarchicalVariantsFormProps> = ({
   const { t } = useTranslation();
   const [form] = Form.useForm();
   const [isModalVisible, setIsModalVisible] = useState(false);
-  const [editingVariant, setEditingVariant] = useState<ProductVariant | null>(
-    null
-  );
-  const [selectedAttributes, setSelectedAttributes] = useState<
-    Record<string, string>
-  >({});
+  const [editingVariant, setEditingVariant] = useState<ProductVariant | null>(null);
+  const [selectedAttributes, setSelectedAttributes] = useState<Record<string, string>>({});
 
   // Tạo tất cả tổ hợp có thể
   const generateCombinations = () => {
     const combinations: Array<Record<string, string>> = [];
 
-    const generateRecursive = (
-      groupIndex: number,
-      currentCombination: Record<string, string>
-    ) => {
+    const generateRecursive = (groupIndex: number, currentCombination: Record<string, string>) => {
       if (groupIndex >= attributeGroups.length) {
         combinations.push({ ...currentCombination });
         return;
@@ -104,32 +92,30 @@ const HierarchicalVariantsForm: React.FC<HierarchicalVariantsFormProps> = ({
     }
 
     const combinations = generateCombinations();
-    const newVariants: ProductVariant[] = combinations.map(
-      (combination, index) => {
-        const attributeNames: string[] = [];
-        let basePrice = 0;
+    const newVariants: ProductVariant[] = combinations.map((combination, index) => {
+      const attributeNames: string[] = [];
+      let basePrice = 0;
 
-        Object.entries(combination).forEach(([groupId, valueId]) => {
-          const group = attributeGroups.find((g) => g.id === groupId);
-          const value = group?.values?.find((v) => v.id === valueId);
-          if (value) {
-            attributeNames.push(value.name);
-            basePrice += value.priceAdjustment ?? 0;
-          }
-        });
+      Object.entries(combination).forEach(([groupId, valueId]) => {
+        const group = attributeGroups.find((g) => g.id === groupId);
+        const value = group?.values?.find((v) => v.id === valueId);
+        if (value) {
+          attributeNames.push(value.name);
+          basePrice += value.priceAdjustment ?? 0;
+        }
+      });
 
-        return {
-          id: `variant-${Date.now()}-${index}`,
-          name: attributeNames.join(' - '),
-          sku: `VAR-${Date.now()}-${index}`,
-          price: basePrice,
-          stock: 0,
-          attributeValues: combination,
-          isDefault: index === 0,
-          isAvailable: true,
-        };
-      }
-    );
+      return {
+        id: `variant-${Date.now()}-${index}`,
+        name: attributeNames.join(' - '),
+        sku: `VAR-${Date.now()}-${index}`,
+        price: basePrice,
+        stock: 0,
+        attributeValues: combination,
+        isDefault: index === 0,
+        isAvailable: true,
+      };
+    });
 
     onVariantsChange(newVariants);
     message.success(t('variants.generated', { count: newVariants.length }));
@@ -190,9 +176,7 @@ const HierarchicalVariantsForm: React.FC<HierarchicalVariantsFormProps> = ({
 
       if (editingVariant) {
         // Cập nhật biến thể hiện có
-        const newVariants = variants.map((v) =>
-          v.id === editingVariant.id ? variant : v
-        );
+        const newVariants = variants.map((v) => (v.id === editingVariant.id ? variant : v));
         onVariantsChange(newVariants);
         message.success(t('variants.updated'));
       } else {
@@ -249,7 +233,8 @@ const HierarchicalVariantsForm: React.FC<HierarchicalVariantsFormProps> = ({
       title: t('variants.colPrice'),
       dataIndex: 'price',
       key: 'price',
-      render: (price: number) => `${price.toLocaleString(getLocale())}${t('common.currencySymbol')}`,
+      render: (price: number) =>
+        `${price.toLocaleString(getLocale())}${t('common.currencySymbol')}`,
     },
     {
       title: t('variants.colStock'),
@@ -294,11 +279,7 @@ const HierarchicalVariantsForm: React.FC<HierarchicalVariantsFormProps> = ({
       />
 
       <Space style={{ marginBottom: 16 }}>
-        <Button
-          type="primary"
-          icon={<PlusOutlined />}
-          onClick={handleGenerateVariants}
-        >
+        <Button type="primary" icon={<PlusOutlined />} onClick={handleGenerateVariants}>
           {t('variants.generateAll')}
         </Button>
         <Button icon={<PlusOutlined />} onClick={handleAddVariant}>
@@ -339,9 +320,7 @@ const HierarchicalVariantsForm: React.FC<HierarchicalVariantsFormProps> = ({
               <Form.Item
                 name="name"
                 label={t('variants.colName')}
-                rules={[
-                  { required: true, message: t('variants.nameRequired') },
-                ]}
+                rules={[{ required: true, message: t('variants.nameRequired') }]}
               >
                 <Input placeholder={t('variants.namePlaceholder')} />
               </Form.Item>
@@ -402,11 +381,7 @@ const HierarchicalVariantsForm: React.FC<HierarchicalVariantsFormProps> = ({
               </Form.Item>
             </Col>
             <Col span={12}>
-              <Form.Item
-                name="isAvailable"
-                valuePropName="checked"
-                initialValue={true}
-              >
+              <Form.Item name="isAvailable" valuePropName="checked" initialValue={true}>
                 <Checkbox>{t('variants.isAvailable')}</Checkbox>
               </Form.Item>
             </Col>
@@ -438,7 +413,8 @@ const HierarchicalVariantsForm: React.FC<HierarchicalVariantsFormProps> = ({
                         >
                           {' '}
                           ({(value.priceAdjustment ?? 0) > 0 ? '+' : ''}
-                          {(value.priceAdjustment ?? 0).toLocaleString(getLocale())}{t('common.currencySymbol')})
+                          {(value.priceAdjustment ?? 0).toLocaleString(getLocale())}
+                          {t('common.currencySymbol')})
                         </span>
                       )}
                     </Option>
@@ -454,4 +430,3 @@ const HierarchicalVariantsForm: React.FC<HierarchicalVariantsFormProps> = ({
 };
 
 export default HierarchicalVariantsForm;
-

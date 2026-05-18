@@ -9,12 +9,13 @@ import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { localizeField } from '@/utils/localize';
 import { getLocale } from '@/utils/format';
-import { ProductRecommendation } from '../services/chatbotApi';
+import { proxyImg } from '@/utils/proxy-img';
+import { ProductRecommendation } from '../services/chatbot-api';
 import {
   useTrackChatbotAnalyticsMutation,
   useAddToCartViaChatbotMutation,
-} from '../services/chatbotApi';
-import { useAuthStore } from '@/stores/authStore';
+} from '../services/chatbot-api';
+import { useAuthStore } from '@/stores/auth-store';
 import { toast } from '@/utils/toast';
 
 interface ChatProductCardProps {
@@ -108,9 +109,12 @@ const ChatProductCard: React.FC<ChatProductCardProps> = ({
     >
       <div className="relative overflow-hidden">
         <img
-          src={product.thumbnail || '/images/placeholder-product.jpg'}
+          src={proxyImg(product.thumbnail)}
           alt={localizeField(product, 'name', i18n.language)}
-          className="w-full h-32 object-cover group-hover:scale-110 transition-transform duration-300"
+          className="w-full h-32 object-cover group-hover:scale-110 transition-transform duration-300 bg-neutral-100 dark:bg-neutral-700"
+          onError={(e) => {
+            (e.target as HTMLImageElement).style.opacity = '0.3';
+          }}
         />
 
         {product.discount > 0 && (

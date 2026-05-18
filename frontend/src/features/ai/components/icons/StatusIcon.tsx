@@ -12,11 +12,7 @@ interface StatusIconProps {
   status?: 'online' | 'offline' | 'loading';
 }
 
-const StatusIcon: React.FC<StatusIconProps> = ({
-  className = '',
-  size = 8,
-  status = 'online',
-}) => {
+const StatusIcon: React.FC<StatusIconProps> = ({ className = '', size = 8, status = 'online' }) => {
   const getStatusColor = () => {
     switch (status) {
       case 'online':
@@ -49,4 +45,3 @@ const StatusIcon: React.FC<StatusIconProps> = ({
 };
 
 export default StatusIcon;
-

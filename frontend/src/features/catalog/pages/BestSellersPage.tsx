@@ -5,7 +5,7 @@
  * @description Page component của feature catalog
  */
 import { useState } from 'react';
-import { useGetProductsQuery } from '../api/productApi';
+import { useGetProductsQuery } from '../api/product-api';
 import { ProductCard } from '@/features/catalog';
 import LoadingSpinner from '@/components/common/LoadingSpinner';
 import Select from '@/components/common/Select';

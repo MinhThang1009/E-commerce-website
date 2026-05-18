@@ -8,7 +8,7 @@ import React, { useEffect, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
 import Quill from 'quill';
 import 'quill/dist/quill.snow.css';
-import { processHtmlForEditor } from '../../utils/htmlProcessor';
+import { processHtmlForEditor } from '../../utils/html-processor';
 import EditorErrorBoundary from './EditorErrorBoundary';
 
 interface SimpleRichTextEditorProps {

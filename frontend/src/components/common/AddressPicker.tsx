@@ -2,7 +2,10 @@
  * @file AddressPicker.tsx
  * @layer Component
  * @feature shared
- * @description Shared UI component
+ * @description Địa chỉ giao hàng — cascade Tỉnh → Quận → Phường + số nhà/đường
+ *   Data hành chính: provinces.open-api.vn (free, không cần key)
+ *   Geocoding: Goong.io (lat/lng từ địa chỉ đầy đủ)
+ *   Bản đồ: Leaflet + OpenStreetMap
  */
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -20,9 +23,17 @@ L.Icon.Default.mergeOptions({
   shadowUrl: markerShadow,
 });
 
+// ── Constants ─────────────────────────────────────────────────────────────────
 const DEFAULT_CENTER: [number, number] = [21.0278, 105.8342];
-const PHOTON_URL = 'https://photon.komoot.io/api';
-const PHOTON_REVERSE_URL = 'https://photon.komoot.io/reverse';
+const GOONG_API_KEY = import.meta.env.VITE_GOONG_API_KEY as string;
+const GOONG_BASE = 'https://rsapi.goong.io';
+const VN_API = 'https://provinces.open-api.vn/api';
+
+// ── Interfaces ────────────────────────────────────────────────────────────────
+interface AdminUnit {
+  code: number;
+  name: string;
+}
 
 export interface AddressDetail {
   city?: string;
@@ -38,43 +49,17 @@ interface AddressPickerProps {
   required?: boolean;
 }
 
-interface PhotonFeature {
-  geometry: { coordinates: [number, number] };
-  properties: {
-    name?: string;
-    street?: string;
-    housenumber?: string;
-    city?: string;
-    district?: string;
-    state?: string;
-    country?: string;
-  };
+// ── Helpers ───────────────────────────────────────────────────────────────────
+function buildFullAddress(
+  street: string,
+  ward: string,
+  district: string,
+  province: string,
+): string {
+  return [street, ward, district, province].filter(Boolean).join(', ');
 }
 
-function formatAddress(props: PhotonFeature['properties']): string {
-  const parts: string[] = [];
-  if (props.housenumber && props.street) {
-    parts.push(`${props.housenumber} ${props.street}`);
-  } else if (props.street) {
-    parts.push(props.street);
-  } else if (props.name) {
-    parts.push(props.name);
-  }
-  if (props.district) parts.push(props.district);
-  if (props.city) parts.push(props.city);
-  if (props.state && props.state !== props.city) parts.push(props.state);
-  if (props.country) parts.push(props.country);
-  return parts.join(', ') || props.name || '';
-}
-
-function extractDetail(props: PhotonFeature['properties']): AddressDetail {
-  return {
-    city: props.district || props.city,
-    state: props.state || props.city,
-    country: props.country,
-  };
-}
-
+// ── Component ─────────────────────────────────────────────────────────────────
 const AddressPicker: React.FC<AddressPickerProps> = ({
   label,
   value,
@@ -85,34 +70,79 @@ const AddressPicker: React.FC<AddressPickerProps> = ({
   const { t } = useTranslation();
   const labelText = label ?? t('addressPicker.label');
 
-  const [suggestions, setSuggestions] = useState<PhotonFeature[]>([]);
-  const [loading, setLoading] = useState(false);
-  const [showDropdown, setShowDropdown] = useState(false);
+  // Cascade state
+  const [provinces, setProvinces] = useState<AdminUnit[]>([]);
+  const [districts, setDistricts] = useState<AdminUnit[]>([]);
+  const [wards, setWards] = useState<AdminUnit[]>([]);
 
-  const wrapperRef = useRef<HTMLDivElement>(null);
+  const [selectedProvince, setSelectedProvince] = useState('');
+  const [selectedProvinceCode, setSelectedProvinceCode] = useState<number | null>(null);
+  const [selectedDistrict, setSelectedDistrict] = useState('');
+  const [selectedDistrictCode, setSelectedDistrictCode] = useState<number | null>(null);
+  const [selectedWard, setSelectedWard] = useState('');
+  const [street, setStreet] = useState('');
+
+  const [loadingDistricts, setLoadingDistricts] = useState(false);
+  const [loadingWards, setLoadingWards] = useState(false);
+
+  const geocodeRef = useRef<ReturnType<typeof setTimeout>>();
   const mapContainerRef = useRef<HTMLDivElement>(null);
   const mapRef = useRef<L.Map | null>(null);
   const markerRef = useRef<L.Marker | null>(null);
-  const debounceRef = useRef<ReturnType<typeof setTimeout>>();
+
+  // Load danh sách tỉnh/thành phố một lần
+  useEffect(() => {
+    fetch(`${VN_API}/p/`)
+      .then((r) => r.json())
+      .then((data: AdminUnit[]) => setProvinces(data))
+      .catch(() => {});
+  }, []);
+
+  // Load quận/huyện khi chọn tỉnh
+  useEffect(() => {
+    if (!selectedProvinceCode) {
+      setDistricts([]);
+      setWards([]);
+      return;
+    }
+    setLoadingDistricts(true);
+    setDistricts([]);
+    setSelectedDistrict('');
+    setSelectedDistrictCode(null);
+    setWards([]);
+    setSelectedWard('');
+    fetch(`${VN_API}/p/${selectedProvinceCode}?depth=2`)
+      .then((r) => r.json())
+      .then((data) => setDistricts(data.districts ?? []))
+      .catch(() => {})
+      .finally(() => setLoadingDistricts(false));
+  }, [selectedProvinceCode]);
+
+  // Load phường/xã khi chọn quận
+  useEffect(() => {
+    if (!selectedDistrictCode) {
+      setWards([]);
+      return;
+    }
+    setLoadingWards(true);
+    setWards([]);
+    setSelectedWard('');
+    fetch(`${VN_API}/d/${selectedDistrictCode}?depth=2`)
+      .then((r) => r.json())
+      .then((data) => setWards(data.wards ?? []))
+      .catch(() => {})
+      .finally(() => setLoadingWards(false));
+  }, [selectedDistrictCode]);
 
   // Khởi tạo Leaflet map
   useEffect(() => {
     if (!mapContainerRef.current || mapRef.current) return;
-
-    const map = L.map(mapContainerRef.current, {
-      center: DEFAULT_CENTER,
-      zoom: 14,
-      zoomControl: true,
-    });
-
+    const map = L.map(mapContainerRef.current, { center: DEFAULT_CENTER, zoom: 13 });
     L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-      attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',
+      attribution: '&copy; OpenStreetMap contributors',
     }).addTo(map);
-
-    const marker = L.marker(DEFAULT_CENTER).addTo(map);
-    markerRef.current = marker;
+    markerRef.current = L.marker(DEFAULT_CENTER).addTo(map);
     mapRef.current = map;
-
     return () => {
       map.remove();
       mapRef.current = null;
@@ -120,139 +150,177 @@ const AddressPicker: React.FC<AddressPickerProps> = ({
     };
   }, []);
 
-  // Click trên map → reverse geocode
-  const handleMapClick = useCallback(
-    async (lat: number, lng: number) => {
-      markerRef.current?.setLatLng([lat, lng]);
-      mapRef.current?.setView([lat, lng]);
+  // Geocode địa chỉ đầy đủ → cập nhật map + gọi onChange
+  const geocodeAndNotify = useCallback(
+    (fullAddress: string, ward: string, district: string, province: string) => {
+      if (geocodeRef.current) clearTimeout(geocodeRef.current);
+      onChange(fullAddress); // Cập nhật ngay text
 
-      try {
-        const res = await fetch(`${PHOTON_REVERSE_URL}?lat=${lat}&lon=${lng}`);
-        const data = await res.json();
-        const feature = data.features?.[0] as PhotonFeature | undefined;
+      if (!fullAddress.trim()) return;
 
-        if (feature) {
-          const address = formatAddress(feature.properties);
-          const detail = extractDetail(feature.properties);
-          onChange(address, String(lat), String(lng), detail);
-        } else {
-          onChange(`${lat.toFixed(6)}, ${lng.toFixed(6)}`, String(lat), String(lng));
+      geocodeRef.current = setTimeout(async () => {
+        try {
+          const res = await fetch(
+            `${GOONG_BASE}/Geocode?address=${encodeURIComponent(fullAddress)}&api_key=${GOONG_API_KEY}`,
+          );
+          const data = await res.json();
+          const loc = data.results?.[0]?.geometry?.location;
+          if (loc) {
+            markerRef.current?.setLatLng([loc.lat, loc.lng]);
+            mapRef.current?.setView([loc.lat, loc.lng], 16);
+            onChange(fullAddress, String(loc.lat), String(loc.lng), {
+              city: district,
+              state: province,
+              country: 'Việt Nam',
+            });
+          }
+        } catch {
+          /* bỏ qua lỗi geocode */
         }
-      } catch {
-        onChange(`${lat.toFixed(6)}, ${lng.toFixed(6)}`, String(lat), String(lng));
-      }
+      }, 600);
     },
     [onChange],
   );
 
-  // Bind click event sau khi map và handler sẵn sàng
-  useEffect(() => {
-    const map = mapRef.current;
-    if (!map) return;
-
-    const handler = (e: L.LeafletMouseEvent) => {
-      handleMapClick(e.latlng.lat, e.latlng.lng);
-    };
-    map.on('click', handler);
-    return () => {
-      map.off('click', handler);
-    };
-  }, [handleMapClick]);
-
-  // Click outside → đóng dropdown
-  useEffect(() => {
-    const handler = (e: MouseEvent) => {
-      if (wrapperRef.current && !wrapperRef.current.contains(e.target as Node)) {
-        setShowDropdown(false);
+  // Khi bất kỳ field nào thay đổi → rebuild full address
+  // Chỉ geocode khi có đủ tỉnh + quận + phường + số nhà
+  const handleChange = useCallback(
+    (
+      newStreet = street,
+      newWard = selectedWard,
+      newDistrict = selectedDistrict,
+      newProvince = selectedProvince,
+    ) => {
+      const full = buildFullAddress(newStreet, newWard, newDistrict, newProvince);
+      const isComplete = !!(newProvince && newDistrict && newStreet.trim());
+      if (isComplete) {
+        geocodeAndNotify(full, newDistrict, newProvince, newProvince);
+      } else {
+        // Chưa đủ → reset value về rỗng để validation bắt được
+        geocodeAndNotify('', '', '', newProvince);
       }
-    };
-    document.addEventListener('mousedown', handler);
-    return () => document.removeEventListener('mousedown', handler);
-  }, []);
-
-  // Debounced search qua Photon
-  useEffect(() => {
-    if (debounceRef.current) clearTimeout(debounceRef.current);
-
-    if (!value || value.length < 3 || !showDropdown) {
-      setSuggestions([]);
-      return;
-    }
-
-    debounceRef.current = setTimeout(async () => {
-      setLoading(true);
-      try {
-        const res = await fetch(
-          `${PHOTON_URL}?q=${encodeURIComponent(value)}&limit=5&bbox=102.14,8.18,109.46,23.39`,
-        );
-        const data = await res.json();
-        setSuggestions(data.features ?? []);
-        setShowDropdown(true);
-      } catch (err) {
-        console.error('Lỗi tìm kiếm địa chỉ:', err);
-      } finally {
-        setLoading(false);
-      }
-    }, 350);
-
-    return () => {
-      if (debounceRef.current) clearTimeout(debounceRef.current);
-    };
-  }, [value, showDropdown]);
-
-  const handleSelect = useCallback(
-    (feature: PhotonFeature) => {
-      const [lng, lat] = feature.geometry.coordinates;
-      const address = formatAddress(feature.properties);
-      const detail = extractDetail(feature.properties);
-
-      markerRef.current?.setLatLng([lat, lng]);
-      mapRef.current?.setView([lat, lng], 16);
-
-      setShowDropdown(false);
-      onChange(address, String(lat), String(lng), detail);
     },
-    [onChange],
+    [street, selectedWard, selectedDistrict, selectedProvince, geocodeAndNotify],
   );
+
+  const selectClass =
+    'w-full rounded-lg border border-neutral-300 dark:border-neutral-600 bg-white dark:bg-neutral-800 ' +
+    'text-neutral-900 dark:text-neutral-100 px-3 py-2 text-sm focus:outline-none focus:ring-2 ' +
+    'focus:ring-primary-500 disabled:opacity-50 disabled:cursor-not-allowed';
 
   return (
-    <div className="space-y-2" ref={wrapperRef}>
-      <div className="relative">
-        <Input
-          label={labelText}
-          value={value}
-          onChange={(e) => {
-            onChange(e.target.value);
-            setShowDropdown(true);
-          }}
-          error={error}
-          required={required}
-          placeholder={t('addressPicker.placeholder')}
-          autoComplete="off"
-        />
+    <div className="space-y-3">
+      {label !== undefined && (
+        <label className="block text-sm font-medium text-neutral-700 dark:text-neutral-300">
+          {labelText}
+          {required && <span className="text-red-500 ml-1">*</span>}
+        </label>
+      )}
 
-        {showDropdown && (suggestions.length > 0 || loading) && (
-          <ul className="absolute z-[1000] w-full bg-white dark:bg-neutral-800 border border-neutral-200 dark:border-neutral-700 rounded-md shadow-lg max-h-60 overflow-auto top-full mt-1">
-            {loading && (
-              <li className="px-4 py-2 text-neutral-500 text-sm">{t('addressPicker.searching')}</li>
-            )}
-            {!loading &&
-              suggestions.map((feat, idx) => (
-                <li
-                  key={idx}
-                  onClick={() => handleSelect(feat)}
-                  className="px-4 py-3 cursor-pointer hover:bg-neutral-100 dark:hover:bg-neutral-700 border-b border-neutral-100 dark:border-neutral-700 text-sm text-neutral-800 dark:text-neutral-200"
-                >
-                  {formatAddress(feat.properties)}
-                </li>
-              ))}
-          </ul>
-        )}
+      {/* Tỉnh / Thành phố */}
+      <div>
+        <label className="block text-xs font-medium text-neutral-500 dark:text-neutral-400 mb-1">
+          {t('addressPicker.province')}
+        </label>
+        <select
+          className={selectClass}
+          value={selectedProvinceCode ?? ''}
+          onChange={(e) => {
+            const code = Number(e.target.value);
+            const name = provinces.find((p) => p.code === code)?.name ?? '';
+            setSelectedProvinceCode(code || null);
+            setSelectedProvince(name);
+            handleChange(street, selectedWard, selectedDistrict, name);
+          }}
+        >
+          <option value="">{t('addressPicker.selectProvince')}</option>
+          {provinces.map((p) => (
+            <option key={p.code} value={p.code}>
+              {p.name}
+            </option>
+          ))}
+        </select>
       </div>
 
+      {/* Quận / Huyện */}
+      <div>
+        <label className="block text-xs font-medium text-neutral-500 dark:text-neutral-400 mb-1">
+          {t('addressPicker.district')}
+        </label>
+        <select
+          className={selectClass}
+          value={selectedDistrictCode ?? ''}
+          disabled={!selectedProvinceCode || loadingDistricts}
+          onChange={(e) => {
+            const code = Number(e.target.value);
+            const name = districts.find((d) => d.code === code)?.name ?? '';
+            setSelectedDistrictCode(code || null);
+            setSelectedDistrict(name);
+            handleChange(street, selectedWard, name, selectedProvince);
+          }}
+        >
+          <option value="">
+            {loadingDistricts ? t('addressPicker.loading') : t('addressPicker.selectDistrict')}
+          </option>
+          {districts.map((d) => (
+            <option key={d.code} value={d.code}>
+              {d.name}
+            </option>
+          ))}
+        </select>
+      </div>
+
+      {/* Phường / Xã */}
+      <div>
+        <label className="block text-xs font-medium text-neutral-500 dark:text-neutral-400 mb-1">
+          {t('addressPicker.ward')}
+        </label>
+        <select
+          className={selectClass}
+          value={selectedWard}
+          disabled={!selectedDistrictCode || loadingWards}
+          onChange={(e) => {
+            setSelectedWard(e.target.value);
+            handleChange(street, e.target.value, selectedDistrict, selectedProvince);
+          }}
+        >
+          <option value="">
+            {loadingWards ? t('addressPicker.loading') : t('addressPicker.selectWard')}
+          </option>
+          {wards.map((w) => (
+            <option key={w.code} value={w.name}>
+              {w.name}
+            </option>
+          ))}
+        </select>
+      </div>
+
+      {/* Số nhà, tên đường */}
+      <Input
+        label={t('addressPicker.streetLabel')}
+        value={street}
+        onChange={(e) => {
+          setStreet(e.target.value);
+          handleChange(e.target.value, selectedWard, selectedDistrict, selectedProvince);
+        }}
+        placeholder={t('addressPicker.streetPlaceholder')}
+        autoComplete="off"
+      />
+
+      {/* Error hiển thị ở cuối section — chỉ khi có lỗi từ form validation */}
+      {error && <p className="text-sm text-red-500">{error}</p>}
+
+      {/* Địa chỉ đầy đủ (readonly preview) */}
+      {value && (
+        <p className="text-xs text-neutral-500 dark:text-neutral-400 bg-neutral-50 dark:bg-neutral-800 rounded px-3 py-2">
+          📍 {value}
+        </p>
+      )}
+
+      {/* Bản đồ */}
       <div
         ref={mapContainerRef}
-        style={{ height: '260px', width: '100%', borderRadius: '8px', zIndex: 0 }}
+        style={{ height: '220px', width: '100%', borderRadius: '8px', zIndex: 0 }}
       />
     </div>
   );

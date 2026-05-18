@@ -12,10 +12,7 @@ export interface IconProps {
 }
 
 // Icon điều hướng
-export const HomeIcon: React.FC<IconProps> = ({
-  className = 'h-4 w-4',
-  size,
-}) => (
+export const HomeIcon: React.FC<IconProps> = ({ className = 'h-4 w-4', size }) => (
   <svg
     xmlns="http://www.w3.org/2000/svg"
     className={size ? `h-${size} w-${size}` : className}
@@ -32,10 +29,7 @@ export const HomeIcon: React.FC<IconProps> = ({
   </svg>
 );
 
-export const ShopIcon: React.FC<IconProps> = ({
-  className = 'h-4 w-4',
-  size,
-}) => (
+export const ShopIcon: React.FC<IconProps> = ({ className = 'h-4 w-4', size }) => (
   <svg
     xmlns="http://www.w3.org/2000/svg"
     className={size ? `h-${size} w-${size}` : className}
@@ -52,10 +46,7 @@ export const ShopIcon: React.FC<IconProps> = ({
   </svg>
 );
 
-export const CategoriesIcon: React.FC<IconProps> = ({
-  className = 'h-4 w-4',
-  size,
-}) => (
+export const CategoriesIcon: React.FC<IconProps> = ({ className = 'h-4 w-4', size }) => (
   <svg
     xmlns="http://www.w3.org/2000/svg"
     className={size ? `h-${size} w-${size}` : className}
@@ -72,10 +63,7 @@ export const CategoriesIcon: React.FC<IconProps> = ({
   </svg>
 );
 
-export const DealsIcon: React.FC<IconProps> = ({
-  className = 'h-4 w-4',
-  size,
-}) => (
+export const DealsIcon: React.FC<IconProps> = ({ className = 'h-4 w-4', size }) => (
   <svg
     xmlns="http://www.w3.org/2000/svg"
     className={size ? `h-${size} w-${size}` : className}
@@ -92,10 +80,7 @@ export const DealsIcon: React.FC<IconProps> = ({
   </svg>
 );
 
-export const AboutIcon: React.FC<IconProps> = ({
-  className = 'h-4 w-4',
-  size,
-}) => (
+export const AboutIcon: React.FC<IconProps> = ({ className = 'h-4 w-4', size }) => (
   <svg
     xmlns="http://www.w3.org/2000/svg"
     className={size ? `h-${size} w-${size}` : className}
@@ -112,10 +97,7 @@ export const AboutIcon: React.FC<IconProps> = ({
   </svg>
 );
 
-export const NewsIcon: React.FC<IconProps> = ({
-  className = 'h-4 w-4',
-  size,
-}) => (
+export const NewsIcon: React.FC<IconProps> = ({ className = 'h-4 w-4', size }) => (
   <svg
     xmlns="http://www.w3.org/2000/svg"
     className={size ? `h-${size} w-${size}` : className}
@@ -133,10 +115,7 @@ export const NewsIcon: React.FC<IconProps> = ({
 );
 
 // Icon hành động
-export const UserIcon: React.FC<IconProps> = ({
-  className = 'h-5 w-5',
-  size,
-}) => (
+export const UserIcon: React.FC<IconProps> = ({ className = 'h-5 w-5', size }) => (
   <svg
     xmlns="http://www.w3.org/2000/svg"
     className={size ? `h-${size} w-${size}` : className}
@@ -153,10 +132,7 @@ export const UserIcon: React.FC<IconProps> = ({
   </svg>
 );
 
-export const CartIcon: React.FC<IconProps> = ({
-  className = 'h-5 w-5',
-  size,
-}) => (
+export const CartIcon: React.FC<IconProps> = ({ className = 'h-5 w-5', size }) => (
   <svg
     xmlns="http://www.w3.org/2000/svg"
     className={size ? `h-${size} w-${size}` : className}
@@ -173,10 +149,7 @@ export const CartIcon: React.FC<IconProps> = ({
   </svg>
 );
 
-export const AdminIcon: React.FC<IconProps> = ({
-  className = 'h-4 w-4',
-  size,
-}) => (
+export const AdminIcon: React.FC<IconProps> = ({ className = 'h-4 w-4', size }) => (
   <svg
     xmlns="http://www.w3.org/2000/svg"
     className={size ? `h-${size} w-${size}` : className}
@@ -194,10 +167,7 @@ export const AdminIcon: React.FC<IconProps> = ({
 );
 
 // Icon menu
-export const MenuIcon: React.FC<IconProps> = ({
-  className = 'h-5 w-5',
-  size,
-}) => (
+export const MenuIcon: React.FC<IconProps> = ({ className = 'h-5 w-5', size }) => (
   <svg
     xmlns="http://www.w3.org/2000/svg"
     className={size ? `h-${size} w-${size}` : className}
@@ -214,10 +184,7 @@ export const MenuIcon: React.FC<IconProps> = ({
   </svg>
 );
 
-export const CloseIcon: React.FC<IconProps> = ({
-  className = 'h-5 w-5',
-  size,
-}) => (
+export const CloseIcon: React.FC<IconProps> = ({ className = 'h-5 w-5', size }) => (
   <svg
     xmlns="http://www.w3.org/2000/svg"
     className={size ? `h-${size} w-${size}` : className}
@@ -225,20 +192,12 @@ export const CloseIcon: React.FC<IconProps> = ({
     viewBox="0 0 24 24"
     stroke="currentColor"
   >
-    <path
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      strokeWidth={2}
-      d="M6 18L18 6M6 6l12 12"
-    />
+    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
   </svg>
 );
 
 // Icon phần Hero
-export const LightningIcon: React.FC<IconProps> = ({
-  className = 'h-5 w-5',
-  size,
-}) => (
+export const LightningIcon: React.FC<IconProps> = ({ className = 'h-5 w-5', size }) => (
   <svg
     xmlns="http://www.w3.org/2000/svg"
     className={size ? `h-${size} w-${size}` : className}
@@ -255,10 +214,7 @@ export const LightningIcon: React.FC<IconProps> = ({
   </svg>
 );
 
-export const ChevronDownIcon: React.FC<IconProps> = ({
-  className = 'h-6 w-6',
-  size,
-}) => (
+export const ChevronDownIcon: React.FC<IconProps> = ({ className = 'h-6 w-6', size }) => (
   <svg
     xmlns="http://www.w3.org/2000/svg"
     className={size ? `h-${size} w-${size}` : className}
@@ -286,4 +242,3 @@ export const NAVIGATION_ICONS = {
 } as const;
 
 export type NavigationIconKey = keyof typeof NAVIGATION_ICONS;
-

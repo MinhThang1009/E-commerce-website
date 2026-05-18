@@ -4,10 +4,10 @@
  * @module cart
  * @description Entry point cart module — khởi tạo dependencies và đăng ký routes
  */
-const CartController = require('./controllers/cartController');
-const CartService = require('./services/cartService');
-const SequelizeCartRepository = require('./repositories/SequelizeCartRepository');
-const buildRoutes = require('./routes');
+const CartController = require('@modules/cart/controllers/cart-controller');
+const CartService = require('@modules/cart/services/cart-service');
+const SequelizeCartRepository = require('@modules/cart/repositories/sequelize-cart-repository');
+const buildRoutes = require('@modules/cart/routes');
 
 // Cart module — DI wire repo → service → controller → router.
 // Cart không có model riêng, dùng Cart/CartItem/Product/Variant/WarrantyPackage

@@ -6,10 +6,7 @@
  */
 import React, { FormEvent, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import {
-  LoadingIcon,
-  SendIcon,
-} from './icons/index';
+import { LoadingIcon, SendIcon } from './icons/index';
 
 interface ChatInputProps {
   onSendMessage: (message: string) => void;
@@ -47,9 +44,18 @@ const ChatInput: React.FC<ChatInputProps> = ({
       {isLoading && (
         <div className="flex items-center mb-3 text-[11px] text-neutral-500 dark:text-neutral-400 font-medium animate-pulse">
           <div className="flex space-x-1 mr-2">
-            <span className="w-1.5 h-1.5 bg-primary-500 rounded-full animate-bounce" style={{ animationDelay: '0ms' }}></span>
-            <span className="w-1.5 h-1.5 bg-primary-500 rounded-full animate-bounce" style={{ animationDelay: '150ms' }}></span>
-            <span className="w-1.5 h-1.5 bg-primary-500 rounded-full animate-bounce" style={{ animationDelay: '300ms' }}></span>
+            <span
+              className="w-1.5 h-1.5 bg-primary-500 rounded-full animate-bounce"
+              style={{ animationDelay: '0ms' }}
+            ></span>
+            <span
+              className="w-1.5 h-1.5 bg-primary-500 rounded-full animate-bounce"
+              style={{ animationDelay: '150ms' }}
+            ></span>
+            <span
+              className="w-1.5 h-1.5 bg-primary-500 rounded-full animate-bounce"
+              style={{ animationDelay: '300ms' }}
+            ></span>
           </div>
           <span>{t('chat.assistantTyping')}</span>
         </div>
@@ -74,13 +80,15 @@ const ChatInput: React.FC<ChatInputProps> = ({
 
           {/* Số ký tự đã nhập — đỏ khi vượt ngưỡng cảnh báo */}
           {input.length > 0 && (
-            <div className={`absolute right-3 top-1/2 transform -translate-y-1/2 text-[10px] font-bold px-1.5 py-0.5 rounded-full border shadow-sm ${
-              isOverLimit
-                ? 'text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-900/30 border-red-300 dark:border-red-700'
-                : input.length > WARN_LENGTH
-                ? 'text-orange-500 dark:text-orange-400 bg-orange-50 dark:bg-orange-900/30 border-orange-300 dark:border-orange-700'
-                : 'text-neutral-400 dark:text-neutral-500 bg-white dark:bg-neutral-900 border-neutral-200 dark:border-neutral-700'
-            }`}>
+            <div
+              className={`absolute right-3 top-1/2 transform -translate-y-1/2 text-[10px] font-bold px-1.5 py-0.5 rounded-full border shadow-sm ${
+                isOverLimit
+                  ? 'text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-900/30 border-red-300 dark:border-red-700'
+                  : input.length > WARN_LENGTH
+                    ? 'text-orange-500 dark:text-orange-400 bg-orange-50 dark:bg-orange-900/30 border-orange-300 dark:border-orange-700'
+                    : 'text-neutral-400 dark:text-neutral-500 bg-white dark:bg-neutral-900 border-neutral-200 dark:border-neutral-700'
+              }`}
+            >
               {input.length}/{MAX_LENGTH}
             </div>
           )}
@@ -89,7 +97,9 @@ const ChatInput: React.FC<ChatInputProps> = ({
         <button
           type="submit"
           className={`bg-gradient-to-r from-primary-600 to-primary-500 text-white rounded-2xl p-3 shadow-lg shadow-primary-500/30 transition-all duration-300 hover:scale-105 active:scale-95 flex items-center justify-center ${
-            !input.trim() || isLoading || isOverLimit ? 'opacity-40 grayscale pointer-events-none' : 'hover:shadow-primary-500/50'
+            !input.trim() || isLoading || isOverLimit
+              ? 'opacity-40 grayscale pointer-events-none'
+              : 'hover:shadow-primary-500/50'
           }`}
           disabled={!input.trim() || isLoading || isOverLimit}
         >
@@ -101,4 +111,3 @@ const ChatInput: React.FC<ChatInputProps> = ({
 };
 
 export default ChatInput;
-

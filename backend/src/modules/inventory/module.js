@@ -4,10 +4,10 @@
  * @module inventory
  * @description Entry point inventory module — khởi tạo dependencies và đăng ký routes
  */
-const InventoryController = require('./controllers/inventoryController');
-const InventoryService = require('./services/inventoryService');
-const SequelizeInventoryRepository = require('./repositories/SequelizeInventoryRepository');
-const buildRoutes = require('./routes');
+const InventoryController = require('@modules/inventory/controllers/inventory-controller');
+const InventoryService = require('@modules/inventory/services/inventory-service');
+const SequelizeInventoryRepository = require('@modules/inventory/repositories/sequelize-inventory-repository');
+const buildRoutes = require('@modules/inventory/routes');
 
 // Inventory module — DDD-lite. Subscribe OrderCancelledEvent từ orders module
 // để log audit (orders module đã restore stock inline trong cancelOrder).

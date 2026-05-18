@@ -1,21 +1,108 @@
-// Phase 42.19.3 — Backend ESLint flat config (Modular Monolith architecture rules)
-// Rule chính: enforce 3-layer separation
-//   - services/ KHÔNG được import sequelize hoặc models/* (phải qua repository)
-//   - controllers/ KHÔNG được import sequelize, models/*, repositories/* (phải qua service)
+// Backend ESLint flat config — Naming conventions + Architecture rules
+//
+// NAMING CONVENTIONS (JS standard):
+//   camelCase           — biến, hàm, tham số, local const
+//   PascalCase          — class, constructor
+//   SCREAMING_SNAKE_CASE— global/module-level constants (primitive values)
+//   _camelCase          — private by convention
+//   kebab-case          — tên file và folder (enforce qua unicorn/filename-case)
+//
+// ARCHITECTURE RULES (Modular Monolith):
+//   services/    — KHÔNG import sequelize/models/* trực tiếp
+//   controllers/ — KHÔNG import sequelize/models*/repositories/*
+//   cross-module — KHÔNG deep import vào module khác
+
+const unicorn = require('eslint-plugin-unicorn').default;
 
 module.exports = [
   {
-    ignores: ['node_modules/**', 'coverage/**', 'data/**', 'logs/**'],
+    ignores: [
+      'node_modules/**', 'coverage/**', 'data/**', 'logs/**',
+      'migrations/**',   'scripts/**',
+    ],
   },
+
+  // ── 1. File naming: kebab-case ─────────────────────────────────────────────
   {
-    files: ['src/modules/*/services/**/*.js'],
+    files: ['src/**/*.js'],
+    ignores: ['src/migrations/**'],  // migrations không rename (Sequelize track theo filename)
+    plugins: { unicorn },
+    rules: {
+      // Tất cả file phải là kebab-case
+      // warn (không error) vì còn legacy PascalCase files — rename dần theo sprint
+      'unicorn/filename-case': ['warn', {
+        cases: { kebabCase: true },
+      }],
+    },
+  },
+
+  // ── 2. Identifier naming conventions ───────────────────────────────────────
+  {
+    files: ['src/**/*.js'],
+    rules: {
+      // camelCase cho biến/hàm; allow SCREAMING_SNAKE_CASE cho module-level constants
+      camelcase: ['error', {
+        properties: 'never',       // không enforce object keys (DB thường snake_case)
+        ignoreDestructuring: true, // { user_id } từ DB/request body được phép
+        ignoreGlobals: true,       // process, __dirname, __filename...
+        allow: [
+          '^[A-Z][A-Z0-9_]+$', // SCREAMING_SNAKE_CASE constants
+          '^vnp_',              // VNPay payment gateway API params (external convention)
+          '^momo_',             // MoMo payment API params
+        ],
+      }],
+
+      // PascalCase bắt buộc cho constructor/class
+      'new-cap': ['error', {
+        newIsCap: true,
+        capIsNew: false, // factory function có thể PascalCase mà không dùng new
+        capIsNewExceptions: ['Boolean', 'Number', 'String', 'Object', 'Array', 'Symbol'],
+      }],
+
+      // Cấm var — chỉ dùng const/let
+      'no-var': 'error',
+
+      // Dùng const khi không reassign
+      'prefer-const': ['error', { destructuring: 'any', ignoreReadBeforeAssign: false }],
+
+      // Tránh shadow variable — dễ gây bug
+      'no-shadow': ['warn', {
+        builtinGlobals: false,
+        hoist: 'functions',
+        allow: ['err', 'error', 'resolve', 'reject', 'next', 'req', 'res', 'e'],
+      }],
+
+      // Identifier tối thiểu 2 ký tự (trừ các ký tự thông dụng)
+      'id-length': ['warn', {
+        min: 2,
+        exceptions: [
+          'i', 'j', 'k',  // loop counters
+          'n', 'x', 'y', 'z', // math vars
+          '_',             // intentionally unused param
+          'e',             // error in catch
+          't',             // translation key
+          'q', 'v', 'p',   // query/value/page
+          'l', 'r', 's',   // left/right/sum trong reducers
+          'a', 'b',        // sort comparator (a, b) => a - b
+          'c', 'o', 'm',   // common arrow param aliases
+          'w',             // width
+          'u', 'd', 'h', 'f', // update/delete/handler/flag shortcuts trong callbacks
+          'g',             // group
+        ],
+      }],
+    },
+  },
+
+  // ── 3. Architecture: layer separation ──────────────────────────────────────
+  {
+    files: ['src/modules/*/services/**/*.js', 'src/modules/*/services/*.js'],
     rules: {
       'no-restricted-imports': ['error', {
         paths: [
-          { name: 'sequelize', message: 'Service KHÔNG được import Sequelize. Dùng repository thay vì truy cập ORM trực tiếp.' },
+          { name: 'sequelize', message: 'Service KHÔNG được import Sequelize trực tiếp. Dùng repository.' },
         ],
         patterns: [
-          { group: ['**/models/*'], message: 'Service không được import Model trực tiếp. Đi qua repository.' },
+          { group: ['**/models/*', '@models/*'], message: 'Service không được import Model. Đi qua repository.' },
         ],
       }],
     },
@@ -28,8 +115,8 @@ module.exports = [
           { name: 'sequelize', message: 'Controller KHÔNG được import Sequelize. Delegate sang service.' },
         ],
         patterns: [
-          { group: ['**/models/*'], message: 'Controller không được import Model. Delegate sang service.' },
-          { group: ['**/repositories/*'], message: 'Controller không được import Repository. Delegate sang service.' },
+          { group: ['**/models/*', '@models/*'], message: 'Controller không được import Model. Delegate sang service.' },
+          { group: ['**/repositories/*'],        message: 'Controller không được import Repository. Delegate sang service.' },
         ],
       }],
     },
@@ -40,8 +127,11 @@ module.exports = [
       'no-restricted-imports': ['warn', {
         patterns: [
           {
-            group: ['../../[a-z]*/services/*', '../../[a-z]*/repositories/*', '../../[a-z]*/domain/*', '../../[a-z]*/models/*'],
-            message: 'Cross-module deep import bị block. Dùng DI hoặc eventBus thay vì require thẳng module khác.',
+            group: [
+              '../../[a-z]*/services/*', '../../[a-z]*/repositories/*',
+              '../../[a-z]*/domain/*',   '../../[a-z]*/models/*',
+            ],
+            message: 'Cross-module deep import bị cảnh báo. Dùng DI hoặc @modules/X.',
           },
         ],
       }],

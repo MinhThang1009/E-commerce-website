@@ -11,7 +11,7 @@ import { message } from 'antd';
 import { useTranslation } from 'react-i18next';
 import { useUploadImageMutation } from '@/features/upload';
 import EditorErrorBoundary from './EditorErrorBoundary';
-import { getErrorMsg } from '@/utils/errorUtils';
+import { getErrorMsg } from '@/utils/error-utils';
 
 interface EnhancedRichTextEditorProps {
   value?: string;

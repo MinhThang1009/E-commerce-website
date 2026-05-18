@@ -45,10 +45,7 @@ const Select: React.FC<SelectProps> = ({
   // Đóng dropdown khi click ra ngoài
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
-      if (
-        selectRef.current &&
-        !selectRef.current.contains(event.target as Node)
-      ) {
+      if (selectRef.current && !selectRef.current.contains(event.target as Node)) {
         setIsOpen(false);
       }
     };
@@ -142,12 +139,9 @@ const Select: React.FC<SelectProps> = ({
         )}
       </div>
 
-      {error && (
-        <p className="mt-1 text-sm text-error dark:text-error">{error}</p>
-      )}
+      {error && <p className="mt-1 text-sm text-error dark:text-error">{error}</p>}
     </div>
   );
 };
 
 export default Select;
-

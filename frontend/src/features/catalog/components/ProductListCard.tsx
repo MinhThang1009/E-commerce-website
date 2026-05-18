@@ -8,14 +8,15 @@ import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { Product } from '@/features/catalog';
-import { useCartStore } from '@/stores/cartStore';
-import { useAuthStore } from '@/stores/authStore';
-import { useUiStore } from '@/stores/uiStore';
+import { useCartStore } from '@/stores/cart-store';
+import { useAuthStore } from '@/stores/auth-store';
+import { useUiStore } from '@/stores/ui-store';
 import { useAddToCartMutation } from '@/features/cart';
-import { calculatePriceRange, calculateDiscountPercentage } from '@/utils/priceUtils';
+import { calculatePriceRange, calculateDiscountPercentage } from '@/utils/price-utils';
+import { proxyImg } from '@/utils/proxy-img';
 import { v4 as uuidv4 } from 'uuid';
 import { ShoppingCartIcon } from '@heroicons/react/24/outline';
-import { getErrorMsg } from '@/utils/errorUtils';
+import { getErrorMsg } from '@/utils/error-utils';
 
 interface ProductListCardProps extends Product {
   enableVariantPricing?: boolean; // Option để bật/tắt việc load variants
@@ -159,7 +160,7 @@ const ProductListCard: React.FC<ProductListCardProps> = ({
           {/* Ảnh sản phẩm cải tiến */}
           <Link to={productUrl} className="block w-full h-full">
             <img
-              src={thumbnail}
+              src={proxyImg(thumbnail)}
               alt={name}
               className="w-full h-full object-cover object-center transform group-hover:scale-110 transition-transform duration-700 ease-out"
               loading="lazy"

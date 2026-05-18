@@ -6,7 +6,7 @@
  */
 import React from 'react';
 import { useTranslation } from 'react-i18next';
-import { useProductPriceRange } from '../hooks/useProductPriceRange';
+import { useProductPriceRange } from '../hooks/use-product-price-range';
 
 interface ProductPriceProps {
   basePrice: number;
@@ -26,9 +26,7 @@ const ProductPrice: React.FC<ProductPriceProps> = ({
 
   const discount =
     compareAtPrice && compareAtPrice > priceInfo.basePrice
-      ? Math.round(
-          ((compareAtPrice - priceInfo.basePrice) / compareAtPrice) * 100
-        )
+      ? Math.round(((compareAtPrice - priceInfo.basePrice) / compareAtPrice) * 100)
       : 0;
 
   return (
@@ -39,7 +37,8 @@ const ProductPrice: React.FC<ProductPriceProps> = ({
         </span>
         {compareAtPrice && compareAtPrice > priceInfo.basePrice && (
           <span className="text-base text-neutral-400 dark:text-neutral-500 line-through font-medium">
-            {compareAtPrice.toLocaleString(i18n.language === 'vi' ? 'vi-VN' : 'en-US')}{t('common.currencySymbol')}
+            {compareAtPrice.toLocaleString(i18n.language === 'vi' ? 'vi-VN' : 'en-US')}
+            {t('common.currencySymbol')}
           </span>
         )}
       </div>

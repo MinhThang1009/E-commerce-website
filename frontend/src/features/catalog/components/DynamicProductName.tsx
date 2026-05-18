@@ -6,22 +6,10 @@
  */
 import React, { useState, useEffect, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
-import {
-  Form,
-  Alert,
-  Skeleton,
-  Tag,
-  Space,
-  Typography,
-  Divider,
-} from 'antd';
-import {
-  BulbOutlined,
-  SyncOutlined,
-  CheckCircleOutlined,
-} from '@ant-design/icons';
-import { useDebounce } from '@/hooks/useDebounce';
-import { attributeService } from '../api/attributeApi';
+import { Form, Alert, Skeleton, Tag, Space, Typography, Divider } from 'antd';
+import { BulbOutlined, SyncOutlined, CheckCircleOutlined } from '@ant-design/icons';
+import { useDebounce } from '@/hooks/use-debounce';
+import { attributeService } from '../api/attribute-api';
 
 const { Text, Title } = Typography;
 
@@ -69,9 +57,7 @@ const DynamicProductName: React.FC<DynamicProductNameProps> = ({
   // Tạo tên khi input thay đổi
   const shouldGenerateName = useMemo(() => {
     return (
-      debouncedBaseName &&
-      Object.values(debouncedAttributes).some((value) => value) &&
-      !disabled
+      debouncedBaseName && Object.values(debouncedAttributes).some((value) => value) && !disabled
     );
   }, [debouncedBaseName, debouncedAttributes, disabled]);
 
@@ -159,11 +145,7 @@ const DynamicProductName: React.FC<DynamicProductNameProps> = ({
             <SyncOutlined spin />
             <Text>{t('product.generatingName')}</Text>
           </Space>
-          <Skeleton.Input
-            style={{ width: 300, marginLeft: 16 }}
-            active
-            size="small"
-          />
+          <Skeleton.Input style={{ width: 300, marginLeft: 16 }} active size="small" />
         </div>
       ) : namePreview ? (
         <div style={{ marginBottom: 16 }}>
@@ -172,9 +154,7 @@ const DynamicProductName: React.FC<DynamicProductNameProps> = ({
               padding: '16px',
               background: namePreview.hasChanges ? '#f6ffed' : '#f5f5f5',
               borderRadius: 8,
-              border: namePreview.hasChanges
-                ? '1px solid #b7eb8f'
-                : '1px solid #d9d9d9',
+              border: namePreview.hasChanges ? '1px solid #b7eb8f' : '1px solid #d9d9d9',
             }}
           >
             <Space size="small" style={{ marginBottom: 8 }}>
@@ -198,19 +178,12 @@ const DynamicProductName: React.FC<DynamicProductNameProps> = ({
           {/* Name Parts Breakdown */}
           {namePreview.parts.length > 1 && (
             <div style={{ marginTop: 12 }}>
-              <Text
-                type="secondary"
-                style={{ fontSize: 12, marginBottom: 8, display: 'block' }}
-              >
+              <Text type="secondary" style={{ fontSize: 12, marginBottom: 8, display: 'block' }}>
                 {t('product.nameParts')}
               </Text>
               <Space wrap size="small">
                 {namePreview.parts.map((part, index) => (
-                  <Tag
-                    key={index}
-                    color={index === 0 ? 'blue' : 'green'}
-                    style={{ fontSize: 11 }}
-                  >
+                  <Tag key={index} color={index === 0 ? 'blue' : 'green'} style={{ fontSize: 11 }}>
                     {part}
                   </Tag>
                 ))}
@@ -219,29 +192,25 @@ const DynamicProductName: React.FC<DynamicProductNameProps> = ({
           )}
 
           {/* Affecting Attributes */}
-          {namePreview.affectingAttributes &&
-            namePreview.affectingAttributes.length > 0 && (
-              <div style={{ marginTop: 12 }}>
-                <Text
-                  type="secondary"
-                  style={{ fontSize: 12, marginBottom: 8, display: 'block' }}
-                >
-                  {t('product.affectingAttrs')}
-                </Text>
-                <Space wrap size="small">
-                  {namePreview.affectingAttributes.map((attr) => (
-                    <Tag
-                      key={attr.id}
-                      color="orange"
-                      style={{ fontSize: 11 }}
-                      title={`${attr.groupName}: ${attr.name}`}
-                    >
-                      {attr.nameTemplate || attr.name}
-                    </Tag>
-                  ))}
-                </Space>
-              </div>
-            )}
+          {namePreview.affectingAttributes && namePreview.affectingAttributes.length > 0 && (
+            <div style={{ marginTop: 12 }}>
+              <Text type="secondary" style={{ fontSize: 12, marginBottom: 8, display: 'block' }}>
+                {t('product.affectingAttrs')}
+              </Text>
+              <Space wrap size="small">
+                {namePreview.affectingAttributes.map((attr) => (
+                  <Tag
+                    key={attr.id}
+                    color="orange"
+                    style={{ fontSize: 11 }}
+                    title={`${attr.groupName}: ${attr.name}`}
+                  >
+                    {attr.nameTemplate || attr.name}
+                  </Tag>
+                ))}
+              </Space>
+            </div>
+          )}
         </div>
       ) : null}
 
@@ -261,10 +230,7 @@ const DynamicProductName: React.FC<DynamicProductNameProps> = ({
       {namePreview?.suggestions && namePreview.suggestions.length > 0 && (
         <div>
           <Divider style={{ margin: '12px 0' }} />
-          <Text
-            type="secondary"
-            style={{ fontSize: 12, marginBottom: 8, display: 'block' }}
-          >
+          <Text type="secondary" style={{ fontSize: 12, marginBottom: 8, display: 'block' }}>
             {t('product.variantSuggestions')}
           </Text>
           <Space wrap size="small">

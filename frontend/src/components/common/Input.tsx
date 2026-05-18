@@ -26,9 +26,10 @@ const Input = forwardRef<HTMLInputElement, InputProps>(
       fullWidth = true,
       className = '',
       disabled,
+      required,
       ...props
     },
-    ref
+    ref,
   ) => {
     const inputClasses = `input ${error ? 'input-error' : ''} ${
       disabled ? 'input-disabled' : ''
@@ -44,6 +45,7 @@ const Input = forwardRef<HTMLInputElement, InputProps>(
             className="block text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-1"
           >
             {label}
+            {required && <span className="text-red-500 ml-1">*</span>}
           </label>
         )}
         <div className="relative">
@@ -56,30 +58,26 @@ const Input = forwardRef<HTMLInputElement, InputProps>(
             ref={ref}
             className={inputClasses}
             disabled={disabled}
+            required={required}
             {...props}
           />
           {rightIcon && (
-            <div className="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none text-neutral-500">
+            <div className="absolute inset-y-0 right-0 pr-3 flex items-center text-neutral-500">
               {rightIcon}
             </div>
           )}
         </div>
         {error && (
-          <p className="mt-1 text-sm text-error-600 dark:text-error-400 font-medium">
-            {error}
-          </p>
+          <p className="mt-1 text-sm text-error-600 dark:text-error-400 font-medium">{error}</p>
         )}
         {helperText && !error && (
-          <p className="mt-1 text-sm text-neutral-500 dark:text-neutral-400">
-            {helperText}
-          </p>
+          <p className="mt-1 text-sm text-neutral-500 dark:text-neutral-400">{helperText}</p>
         )}
       </div>
     );
-  }
+  },
 );
 
 Input.displayName = 'Input';
 
 export default Input;
-

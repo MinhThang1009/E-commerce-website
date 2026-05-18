@@ -2,8 +2,8 @@ import React from 'react';
 import ReactDOM from 'react-dom/client';
 import { QueryClientProvider } from '@tanstack/react-query';
 import { ReactQueryDevtools } from '@tanstack/react-query-devtools';
-import { queryClient } from '@/lib/queryClient';
-import { useCartStore } from '@/stores/cartStore';
+import { queryClient } from '@/lib/query-client';
+import { useCartStore } from '@/stores/cart-store';
 import './config/i18n';
 import App from './App';
 
@@ -22,5 +22,5 @@ ReactDOM.createRoot(document.getElementById('root')!).render(
       </GoogleOAuthProvider>
       <ReactQueryDevtools initialIsOpen={false} />
     </QueryClientProvider>
-  </React.StrictMode>
+  </React.StrictMode>,
 );

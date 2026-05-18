@@ -28,8 +28,8 @@ const ProductBasicInfoForm: React.FC<ProductBasicInfoFormProps> = ({
 
   const handleFillSampleData = async () => {
     if (!import.meta.env.DEV) return;
-    const { sampleLaptopData } = await import('../utils/sampleProductData');
-    form.setFieldsValue(sampleLaptopData);
+    const { SAMPLE_LAPTOP_DATA } = await import('../utils/sample-product-data');
+    form.setFieldsValue(SAMPLE_LAPTOP_DATA);
     fillExampleData();
   };
   return (

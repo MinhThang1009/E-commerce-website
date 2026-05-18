@@ -50,11 +50,7 @@ const Modal: React.FC<ModalProps> = ({
 
   // Xử lý click ra ngoài modal
   const handleBackdropClick = (e: React.MouseEvent<HTMLDivElement>) => {
-    if (
-      closeOnClickOutside &&
-      modalRef.current &&
-      !modalRef.current.contains(e.target as Node)
-    ) {
+    if (closeOnClickOutside && modalRef.current && !modalRef.current.contains(e.target as Node)) {
       onClose();
     }
   };
@@ -97,9 +93,8 @@ const Modal: React.FC<ModalProps> = ({
         )}
       </div>
     </div>,
-    document.body
+    document.body,
   );
 };
 
 export default Modal;
-

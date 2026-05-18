@@ -30,10 +30,18 @@ const PrivacyPolicyPage: React.FC = () => {
           <h2>{t('privacy.s1.title')}</h2>
           <p>{t('privacy.s1.intro')}</p>
           <ul>
-            <li><strong>{t('privacy.s1.personalLabel')}</strong> {t('privacy.s1.personalBody')}</li>
-            <li><strong>{t('privacy.s1.transLabel')}</strong> {t('privacy.s1.transBody')}</li>
-            <li><strong>{t('privacy.s1.logLabel')}</strong> {t('privacy.s1.logBody')}</li>
-            <li><strong>{t('privacy.s1.cookieLabel')}</strong> {t('privacy.s1.cookieBody')}</li>
+            <li>
+              <strong>{t('privacy.s1.personalLabel')}</strong> {t('privacy.s1.personalBody')}
+            </li>
+            <li>
+              <strong>{t('privacy.s1.transLabel')}</strong> {t('privacy.s1.transBody')}
+            </li>
+            <li>
+              <strong>{t('privacy.s1.logLabel')}</strong> {t('privacy.s1.logBody')}
+            </li>
+            <li>
+              <strong>{t('privacy.s1.cookieLabel')}</strong> {t('privacy.s1.cookieBody')}
+            </li>
           </ul>
 
           <h2>{t('privacy.s2.title')}</h2>
@@ -52,10 +60,18 @@ const PrivacyPolicyPage: React.FC = () => {
           <h2>{t('privacy.s3.title')}</h2>
           <p>{t('privacy.s3.intro')}</p>
           <ul>
-            <li><strong>{t('privacy.s3.providerLabel')}</strong> {t('privacy.s3.providerBody')}</li>
-            <li><strong>{t('privacy.s3.bizLabel')}</strong> {t('privacy.s3.bizBody')}</li>
-            <li><strong>{t('privacy.s3.legalLabel')}</strong> {t('privacy.s3.legalBody')}</li>
-            <li><strong>{t('privacy.s3.consentLabel')}</strong> {t('privacy.s3.consentBody')}</li>
+            <li>
+              <strong>{t('privacy.s3.providerLabel')}</strong> {t('privacy.s3.providerBody')}
+            </li>
+            <li>
+              <strong>{t('privacy.s3.bizLabel')}</strong> {t('privacy.s3.bizBody')}
+            </li>
+            <li>
+              <strong>{t('privacy.s3.legalLabel')}</strong> {t('privacy.s3.legalBody')}
+            </li>
+            <li>
+              <strong>{t('privacy.s3.consentLabel')}</strong> {t('privacy.s3.consentBody')}
+            </li>
           </ul>
 
           <h2>{t('privacy.s4.title')}</h2>
@@ -96,9 +112,7 @@ const PrivacyPolicyPage: React.FC = () => {
       </div>
 
       <div className="max-w-4xl mx-auto text-center">
-        <p className="text-neutral-600 dark:text-neutral-400 mb-6">
-          {t('privacy.contactDesc')}
-        </p>
+        <p className="text-neutral-600 dark:text-neutral-400 mb-6">{t('privacy.contactDesc')}</p>
         <Link
           to={ROUTES.CONTACT}
           className="inline-block bg-primary-600 hover:bg-primary-700 text-white font-medium py-3 px-6 rounded-lg transition-colors"

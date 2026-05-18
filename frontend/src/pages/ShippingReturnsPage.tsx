@@ -26,31 +26,70 @@ const ShippingReturnsPage: React.FC = () => {
       <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mb-16">
         <div className="bg-white dark:bg-neutral-800 rounded-xl shadow-sm p-8 text-center">
           <div className="flex justify-center mb-4">
-            <svg xmlns="http://www.w3.org/2000/svg" className="h-12 w-12 text-primary-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 8h14M5 8a2 2 0 110-4h14a2 2 0 110 4M5 8v10a2 2 0 002 2h10a2 2 0 002-2V8m-9 4h4" />
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              className="h-12 w-12 text-primary-500"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M5 8h14M5 8a2 2 0 110-4h14a2 2 0 110 4M5 8v10a2 2 0 002 2h10a2 2 0 002-2V8m-9 4h4"
+              />
             </svg>
           </div>
-          <h2 className="text-xl font-bold text-neutral-900 dark:text-white mb-2">{t('shipping.freeTitle')}</h2>
+          <h2 className="text-xl font-bold text-neutral-900 dark:text-white mb-2">
+            {t('shipping.freeTitle')}
+          </h2>
           <p className="text-neutral-600 dark:text-neutral-400">{t('shipping.freeDesc')}</p>
         </div>
 
         <div className="bg-white dark:bg-neutral-800 rounded-xl shadow-sm p-8 text-center">
           <div className="flex justify-center mb-4">
-            <svg xmlns="http://www.w3.org/2000/svg" className="h-12 w-12 text-primary-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              className="h-12 w-12 text-primary-500"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"
+              />
             </svg>
           </div>
-          <h2 className="text-xl font-bold text-neutral-900 dark:text-white mb-2">{t('shipping.fastTitle')}</h2>
+          <h2 className="text-xl font-bold text-neutral-900 dark:text-white mb-2">
+            {t('shipping.fastTitle')}
+          </h2>
           <p className="text-neutral-600 dark:text-neutral-400">{t('shipping.fastDesc')}</p>
         </div>
 
         <div className="bg-white dark:bg-neutral-800 rounded-xl shadow-sm p-8 text-center">
           <div className="flex justify-center mb-4">
-            <svg xmlns="http://www.w3.org/2000/svg" className="h-12 w-12 text-primary-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 15v-1a4 4 0 00-4-4H8m0 0l3 3m-3-3l3-3m9 14V5a2 2 0 00-2-2H6a2 2 0 00-2 2v16l4-2 4 2 4-2 4 2z" />
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              className="h-12 w-12 text-primary-500"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M16 15v-1a4 4 0 00-4-4H8m0 0l3 3m-3-3l3-3m9 14V5a2 2 0 00-2-2H6a2 2 0 00-2 2v16l4-2 4 2 4-2 4 2z"
+              />
             </svg>
           </div>
-          <h2 className="text-xl font-bold text-neutral-900 dark:text-white mb-2">{t('shipping.easyTitle')}</h2>
+          <h2 className="text-xl font-bold text-neutral-900 dark:text-white mb-2">
+            {t('shipping.easyTitle')}
+          </h2>
           <p className="text-neutral-600 dark:text-neutral-400">{t('shipping.easyDesc')}</p>
         </div>
       </div>
@@ -62,31 +101,66 @@ const ShippingReturnsPage: React.FC = () => {
 
         <div className="space-y-8">
           <div>
-            <h3 className="text-xl font-semibold text-neutral-900 dark:text-white mb-4">{t('shipping.methodsTitle')}</h3>
+            <h3 className="text-xl font-semibold text-neutral-900 dark:text-white mb-4">
+              {t('shipping.methodsTitle')}
+            </h3>
             <div className="bg-white dark:bg-neutral-800 rounded-lg overflow-hidden">
               <table className="min-w-full divide-y divide-neutral-200 dark:divide-neutral-700">
                 <thead className="bg-neutral-50 dark:bg-neutral-700">
                   <tr>
-                    <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-neutral-500 dark:text-neutral-300 uppercase tracking-wider">{t('shipping.colMethod')}</th>
-                    <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-neutral-500 dark:text-neutral-300 uppercase tracking-wider">{t('shipping.colDelivery')}</th>
-                    <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-neutral-500 dark:text-neutral-300 uppercase tracking-wider">{t('shipping.colCost')}</th>
+                    <th
+                      scope="col"
+                      className="px-6 py-3 text-left text-xs font-medium text-neutral-500 dark:text-neutral-300 uppercase tracking-wider"
+                    >
+                      {t('shipping.colMethod')}
+                    </th>
+                    <th
+                      scope="col"
+                      className="px-6 py-3 text-left text-xs font-medium text-neutral-500 dark:text-neutral-300 uppercase tracking-wider"
+                    >
+                      {t('shipping.colDelivery')}
+                    </th>
+                    <th
+                      scope="col"
+                      className="px-6 py-3 text-left text-xs font-medium text-neutral-500 dark:text-neutral-300 uppercase tracking-wider"
+                    >
+                      {t('shipping.colCost')}
+                    </th>
                   </tr>
                 </thead>
                 <tbody className="bg-white dark:bg-neutral-800 divide-y divide-neutral-200 dark:divide-neutral-700">
                   <tr>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-neutral-900 dark:text-white">{t('shipping.standardMethod')}</td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-neutral-600 dark:text-neutral-400">{t('shipping.standardTime')}</td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-neutral-600 dark:text-neutral-400">{t('shipping.standardCost')}</td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-neutral-900 dark:text-white">
+                      {t('shipping.standardMethod')}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-neutral-600 dark:text-neutral-400">
+                      {t('shipping.standardTime')}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-neutral-600 dark:text-neutral-400">
+                      {t('shipping.standardCost')}
+                    </td>
                   </tr>
                   <tr>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-neutral-900 dark:text-white">{t('shipping.expressMethod')}</td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-neutral-600 dark:text-neutral-400">{t('shipping.expressTime')}</td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-neutral-600 dark:text-neutral-400">{t('shipping.expressCost')}</td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-neutral-900 dark:text-white">
+                      {t('shipping.expressMethod')}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-neutral-600 dark:text-neutral-400">
+                      {t('shipping.expressTime')}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-neutral-600 dark:text-neutral-400">
+                      {t('shipping.expressCost')}
+                    </td>
                   </tr>
                   <tr>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-neutral-900 dark:text-white">{t('shipping.intlMethod')}</td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-neutral-600 dark:text-neutral-400">{t('shipping.intlTime')}</td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-neutral-600 dark:text-neutral-400">{t('shipping.intlCost')}</td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-neutral-900 dark:text-white">
+                      {t('shipping.intlMethod')}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-neutral-600 dark:text-neutral-400">
+                      {t('shipping.intlTime')}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-neutral-600 dark:text-neutral-400">
+                      {t('shipping.intlCost')}
+                    </td>
                   </tr>
                 </tbody>
               </table>
@@ -94,14 +168,22 @@ const ShippingReturnsPage: React.FC = () => {
           </div>
 
           <div>
-            <h3 className="text-xl font-semibold text-neutral-900 dark:text-white mb-4">{t('shipping.processingTitle')}</h3>
-            <p className="text-neutral-600 dark:text-neutral-400 mb-4">{t('shipping.processingP1')}</p>
+            <h3 className="text-xl font-semibold text-neutral-900 dark:text-white mb-4">
+              {t('shipping.processingTitle')}
+            </h3>
+            <p className="text-neutral-600 dark:text-neutral-400 mb-4">
+              {t('shipping.processingP1')}
+            </p>
             <p className="text-neutral-600 dark:text-neutral-400">{t('shipping.processingP2')}</p>
           </div>
 
           <div>
-            <h3 className="text-xl font-semibold text-neutral-900 dark:text-white mb-4">{t('shipping.intlInfoTitle')}</h3>
-            <p className="text-neutral-600 dark:text-neutral-400 mb-4">{t('shipping.intlInfoP1')}</p>
+            <h3 className="text-xl font-semibold text-neutral-900 dark:text-white mb-4">
+              {t('shipping.intlInfoTitle')}
+            </h3>
+            <p className="text-neutral-600 dark:text-neutral-400 mb-4">
+              {t('shipping.intlInfoP1')}
+            </p>
             <p className="text-neutral-600 dark:text-neutral-400">{t('shipping.intlInfoP2')}</p>
           </div>
         </div>
@@ -114,25 +196,35 @@ const ShippingReturnsPage: React.FC = () => {
 
         <div className="space-y-8">
           <div>
-            <h3 className="text-xl font-semibold text-neutral-900 dark:text-white mb-4">{t('shipping.returnPolicyTitle')}</h3>
-            <p className="text-neutral-600 dark:text-neutral-400 mb-4">{t('shipping.returnPolicyP1')}</p>
+            <h3 className="text-xl font-semibold text-neutral-900 dark:text-white mb-4">
+              {t('shipping.returnPolicyTitle')}
+            </h3>
+            <p className="text-neutral-600 dark:text-neutral-400 mb-4">
+              {t('shipping.returnPolicyP1')}
+            </p>
             <p className="text-neutral-600 dark:text-neutral-400">{t('shipping.returnPolicyP2')}</p>
           </div>
 
           <div>
-            <h3 className="text-xl font-semibold text-neutral-900 dark:text-white mb-4">{t('shipping.refundTitle')}</h3>
+            <h3 className="text-xl font-semibold text-neutral-900 dark:text-white mb-4">
+              {t('shipping.refundTitle')}
+            </h3>
             <p className="text-neutral-600 dark:text-neutral-400 mb-4">{t('shipping.refundP1')}</p>
             <p className="text-neutral-600 dark:text-neutral-400 mb-4">{t('shipping.refundP2')}</p>
             <p className="text-neutral-600 dark:text-neutral-400">{t('shipping.refundP3')}</p>
           </div>
 
           <div>
-            <h3 className="text-xl font-semibold text-neutral-900 dark:text-white mb-4">{t('shipping.exchangeTitle')}</h3>
+            <h3 className="text-xl font-semibold text-neutral-900 dark:text-white mb-4">
+              {t('shipping.exchangeTitle')}
+            </h3>
             <p className="text-neutral-600 dark:text-neutral-400">{t('shipping.exchangeP')}</p>
           </div>
 
           <div>
-            <h3 className="text-xl font-semibold text-neutral-900 dark:text-white mb-4">{t('shipping.damagedTitle')}</h3>
+            <h3 className="text-xl font-semibold text-neutral-900 dark:text-white mb-4">
+              {t('shipping.damagedTitle')}
+            </h3>
             <p className="text-neutral-600 dark:text-neutral-400">{t('shipping.damagedP')}</p>
           </div>
         </div>
@@ -145,7 +237,10 @@ const ShippingReturnsPage: React.FC = () => {
 
         <div className="space-y-6">
           {(['faq1', 'faq2', 'faq3', 'faq4', 'faq5'] as const).map((key) => (
-            <div key={key} className="bg-white dark:bg-neutral-800 rounded-lg shadow-sm p-6 border border-neutral-200 dark:border-neutral-700">
+            <div
+              key={key}
+              className="bg-white dark:bg-neutral-800 rounded-lg shadow-sm p-6 border border-neutral-200 dark:border-neutral-700"
+            >
               <h3 className="text-lg font-semibold text-neutral-900 dark:text-white mb-3">
                 {t(`shipping.${key}.question`)}
               </h3>
@@ -165,10 +260,16 @@ const ShippingReturnsPage: React.FC = () => {
           {t('shipping.contact.desc')}
         </p>
         <div className="flex flex-col sm:flex-row justify-center gap-4">
-          <Link to={ROUTES.CONTACT} className="bg-primary-600 hover:bg-primary-700 text-white font-medium py-3 px-6 rounded-lg transition-colors">
+          <Link
+            to={ROUTES.CONTACT}
+            className="bg-primary-600 hover:bg-primary-700 text-white font-medium py-3 px-6 rounded-lg transition-colors"
+          >
             {t('shipping.contact.btn')}
           </Link>
-          <Link to={ROUTES.FAQS} className="bg-white dark:bg-neutral-800 text-primary-600 dark:text-primary-400 border border-primary-600 dark:border-primary-400 font-medium py-3 px-6 rounded-lg hover:bg-primary-50 dark:hover:bg-neutral-700 transition-colors">
+          <Link
+            to={ROUTES.FAQS}
+            className="bg-white dark:bg-neutral-800 text-primary-600 dark:text-primary-400 border border-primary-600 dark:border-primary-400 font-medium py-3 px-6 rounded-lg hover:bg-primary-50 dark:hover:bg-neutral-700 transition-colors"
+          >
             {t('shipping.contact.faqsBtn')}
           </Link>
         </div>

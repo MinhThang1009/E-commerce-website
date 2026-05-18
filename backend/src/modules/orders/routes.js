@@ -5,11 +5,11 @@
  * @description HTTP endpoints của orders
  */
 const express = require('express');
-const { authenticate } = require('../../middlewares/authenticate');
-const { authorize } = require('../../middlewares/authorize');
-const { validateRequest } = require('../../middlewares/validateRequest');
-const { httpCacheHeaders } = require('../../middlewares/cache');
-const { createOrderSchema, updateOrderStatusSchema } = require('./validators/ordersValidator');
+const { authenticate } = require('@middlewares/authenticate');
+const { authorize } = require('@middlewares/authorize');
+const { validateRequest } = require('@middlewares/validate-request');
+const { httpCacheHeaders } = require('@middlewares/cache');
+const { createOrderSchema, updateOrderStatusSchema } = require('@modules/orders/validators/orders-validator');
 
 // Orders module routes — basePath '/orders'. URL không đổi so với routes/order.js cũ.
 //

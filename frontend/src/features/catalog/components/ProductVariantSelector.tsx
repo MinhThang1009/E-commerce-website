@@ -100,8 +100,7 @@ const ProductVariantSelector: React.FC<ProductVariantSelectorProps> = ({
           <Space direction="vertical" style={{ width: '100%' }} size="small">
             {availableVariants.map((variant) => {
               const isSelected =
-                selectedVariantId === variant.id ||
-                (!selectedVariantId && variant.isDefault);
+                selectedVariantId === variant.id || (!selectedVariantId && variant.isDefault);
               const isOutOfStock = variant.stockQuantity <= 0;
 
               return (
@@ -114,9 +113,7 @@ const ProductVariantSelector: React.FC<ProductVariantSelectorProps> = ({
                     height: 'auto',
                     padding: '12px 16px',
                     textAlign: 'left',
-                    border: isSelected
-                      ? '2px solid #0ea5e9'
-                      : '1px solid #d1d5db',
+                    border: isSelected ? '2px solid #0ea5e9' : '1px solid #d1d5db',
                     backgroundColor: isSelected ? '#f0f9ff' : 'white',
                     opacity: isOutOfStock ? 0.5 : 1,
                   }}
@@ -137,18 +134,12 @@ const ProductVariantSelector: React.FC<ProductVariantSelectorProps> = ({
                           fontSize: '14px',
                         }}
                       >
-                        {isSelected && (
-                          <CheckOutlined style={{ marginRight: 4 }} />
-                        )}
+                        {isSelected && <CheckOutlined style={{ marginRight: 4 }} />}
                         {variant.name}
                       </Text>
                       <Space>
-                        {variant.isDefault && (
-                          <Tag color="blue">{t('product.defaultVariant')}</Tag>
-                        )}
-                        {isOutOfStock && (
-                          <Tag color="red">{t('product.outOfStock')}</Tag>
-                        )}
+                        {variant.isDefault && <Tag color="blue">{t('product.defaultVariant')}</Tag>}
+                        {isOutOfStock && <Tag color="red">{t('product.outOfStock')}</Tag>}
                       </Space>
                     </div>
 
@@ -160,21 +151,14 @@ const ProductVariantSelector: React.FC<ProductVariantSelectorProps> = ({
                       }}
                     >
                       <Space>
-                        <Text
-                          strong
-                          style={{ color: '#dc2626', fontSize: '14px' }}
-                        >
+                        <Text strong style={{ color: '#dc2626', fontSize: '14px' }}>
                           {formatPrice(variant.price)}
                         </Text>
-                        {variant.compareAtPrice &&
-                          variant.compareAtPrice > variant.price && (
-                            <Text
-                              delete
-                              style={{ color: '#6b7280', fontSize: '12px' }}
-                            >
-                              {formatPrice(variant.compareAtPrice)}
-                            </Text>
-                          )}
+                        {variant.compareAtPrice && variant.compareAtPrice > variant.price && (
+                          <Text delete style={{ color: '#6b7280', fontSize: '12px' }}>
+                            {formatPrice(variant.compareAtPrice)}
+                          </Text>
+                        )}
                       </Space>
                       <Text type="secondary" style={{ fontSize: '12px' }}>
                         {t('product.remainingStock', {

@@ -7,9 +7,9 @@
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { toast } from '@/utils/toast';
-import { useAuthStore } from '@/stores/authStore';
-import { useCreateReviewMutation } from '../api/reviewApi';
-import { getErrorMsg } from '@/utils/errorUtils';
+import { useAuthStore } from '@/stores/auth-store';
+import { useCreateReviewMutation } from '../api/review-api';
+import { getErrorMsg } from '@/utils/error-utils';
 
 interface ReviewFormProps {
   productId: string;

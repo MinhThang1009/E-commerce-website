@@ -21,4 +21,3 @@ export interface AddNotificationPayload {
   title?: string;
   duration?: number;
 }
-

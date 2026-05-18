@@ -4,10 +4,10 @@
  * @module users
  * @description Entry point users module — khởi tạo dependencies và đăng ký routes
  */
-const UsersController = require('./controllers/usersController');
-const UsersService = require('./services/usersService');
-const SequelizeUsersRepository = require('./repositories/SequelizeUsersRepository');
-const buildRoutes = require('./routes');
+const UsersController = require('@modules/users/controllers/users-controller');
+const UsersService = require('@modules/users/services/users-service');
+const SequelizeUsersRepository = require('@modules/users/repositories/sequelize-users-repository');
+const buildRoutes = require('@modules/users/routes');
 
 // Users module — DI wire repo → service → controller → router.
 // User + Address model inject từ app.js (legacy models/index.js đến Phase 5).

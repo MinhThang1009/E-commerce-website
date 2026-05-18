@@ -9,7 +9,7 @@ import { Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { localizeField } from '@/utils/localize';
 import { buildRoute } from '@/routes/paths';
-import { useGetBrandsQuery } from '../api/brandApi';
+import { useGetBrandsQuery } from '../api/brand-api';
 import { PageLayout } from '@/components/layout/PageLayout';
 import { ErrorState } from '@/components/common/ErrorState';
 

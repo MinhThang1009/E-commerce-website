@@ -1,13 +1,26 @@
 module.exports = {
   testEnvironment: 'node',
+  moduleNameMapper: {
+    '^@modules/(.*)$':     '<rootDir>/src/modules/$1',
+    '^@shared/(.*)$':      '<rootDir>/src/shared/$1',
+    '^@utils/(.*)$':       '<rootDir>/src/utils/$1',
+    '^@middlewares/(.*)$': '<rootDir>/src/middlewares/$1',
+    '^@models/(.*)$':      '<rootDir>/src/models/$1',
+    '^@models$':           '<rootDir>/src/models',
+    '^@config/(.*)$':      '<rootDir>/src/config/$1',
+    '^@services/(.*)$':    '<rootDir>/src/services/$1',
+    '^@jobs/(.*)$':        '<rootDir>/src/jobs/$1',
+  },
   // Hỗ trợ cả flat __tests__/ (integration tests) lẫn co-located unit tests
   testMatch: [
-    '**/src/__tests__/**/*.test.js',        // integration + controller tests
+    '**/src/__tests__/**/*.test.js',        // integration + cross-cutting tests
     '**/src/modules/**/*.test.js',          // co-located module unit tests
     '**/src/services/**/*.test.js',         // co-located service tests
     '**/src/utils/**/*.test.js',            // co-located util tests
     '**/src/shared/**/*.test.js',           // co-located shared tests
     '**/src/middlewares/**/*.test.js',      // co-located middleware tests
+    '**/src/models/**/*.test.js',           // co-located model tests
+    '**/src/jobs/**/*.test.js',             // co-located job tests
   ],
   testPathIgnorePatterns: ['/node_modules/'],
   setupFiles: ['./src/__tests__/setup.js'],
@@ -34,10 +47,10 @@ module.exports = {
   ],
   coverageThreshold: {
     global: {
-      statements: 96,   // current: ~97% post-refactor (paymentController+ragPipeline thấp)
-      branches: 85,     // current: ~93% post-refactor (mới thêm nhiều code)
-      functions: 95,    // current: ~97% post-refactor
-      lines: 96,        // current: ~97% post-refactor
+      statements: 99,   // current: ~99.65% post Phase-10 coverage push
+      branches: 97,     // current: ~97.75% post Phase-10 coverage push
+      functions: 99,    // current: ~99.15% post Phase-10 coverage push
+      lines: 99,        // current: ~99.82% post Phase-10 coverage push
     },
   },
 };

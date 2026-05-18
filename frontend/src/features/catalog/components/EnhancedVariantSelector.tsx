@@ -8,12 +8,8 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
 import { getLocale } from '@/utils/format';
 import { Space, Tag, Button, Typography, Alert, Skeleton, Tooltip } from 'antd';
-import {
-  BulbOutlined,
-  InfoCircleOutlined,
-  CheckOutlined,
-} from '@ant-design/icons';
-import { attributeService } from '../api/attributeApi';
+import { BulbOutlined, InfoCircleOutlined, CheckOutlined } from '@ant-design/icons';
+import { attributeService } from '../api/attribute-api';
 
 const { Text } = Typography;
 
@@ -57,9 +53,7 @@ const EnhancedVariantSelector: React.FC<EnhancedVariantSelectorProps> = ({
   disabled = false,
 }) => {
   const { t } = useTranslation();
-  const [nameAffectingAttributes, setNameAffectingAttributes] = useState<
-    Set<string>
-  >(new Set());
+  const [nameAffectingAttributes, setNameAffectingAttributes] = useState<Set<string>>(new Set());
   const [loadingNameAttributes, setLoadingNameAttributes] = useState(false);
   const [previewName, setPreviewName] = useState<string>('');
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -85,9 +79,7 @@ const EnhancedVariantSelector: React.FC<EnhancedVariantSelectorProps> = ({
   const loadNameAffectingAttributes = async () => {
     setLoadingNameAttributes(true);
     try {
-      const response = await attributeService.getNameAffectingAttributes(
-        product.id
-      );
+      const response = await attributeService.getNameAffectingAttributes(product.id);
       if (response.status === 'success') {
         // Xây dựng tập hợp tên thuộc tính ảnh hưởng đến tên
         const affecting = new Set<string>();
@@ -139,7 +131,7 @@ const EnhancedVariantSelector: React.FC<EnhancedVariantSelectorProps> = ({
         onAttributeChange(attributeName, value);
       }
     },
-    [selectedAttributes, onAttributeChange]
+    [selectedAttributes, onAttributeChange],
   );
 
   const getAttributeValueWithStock = (attribute: Attribute) => {
@@ -186,8 +178,7 @@ const EnhancedVariantSelector: React.FC<EnhancedVariantSelectorProps> = ({
       {/* Attribute Selection */}
       <div className="space-y-4">
         {product.attributes.map((attribute) => {
-          const attributeValuesWithStock =
-            getAttributeValueWithStock(attribute);
+          const attributeValuesWithStock = getAttributeValueWithStock(attribute);
           const isNameAffecting = nameAffectingAttributes.has(attribute.name);
 
           return (
@@ -216,17 +207,9 @@ const EnhancedVariantSelector: React.FC<EnhancedVariantSelectorProps> = ({
 
               <div className="flex flex-wrap gap-2">
                 {attributeValuesWithStock.map(
-                  ({
-                    value,
-                    stock: _stock,
-                    available,
-                    priceAdjustment,
-                    isAffectingName,
-                  }) => {
-                    const isSelected =
-                      selectedAttributes[attribute.name] === value;
-                    const isPriceAdjusted =
-                      priceAdjustment && priceAdjustment !== 0;
+                  ({ value, stock: _stock, available, priceAdjustment, isAffectingName }) => {
+                    const isSelected = selectedAttributes[attribute.name] === value;
+                    const isPriceAdjusted = priceAdjustment && priceAdjustment !== 0;
 
                     return (
                       <Button
@@ -234,9 +217,7 @@ const EnhancedVariantSelector: React.FC<EnhancedVariantSelectorProps> = ({
                         size="small"
                         disabled={!available || disabled}
                         type={isSelected ? 'primary' : 'default'}
-                        onClick={() =>
-                          handleAttributeSelect(attribute.name, value)
-                        }
+                        onClick={() => handleAttributeSelect(attribute.name, value)}
                         style={{
                           position: 'relative',
                           borderColor: isSelected
@@ -257,7 +238,8 @@ const EnhancedVariantSelector: React.FC<EnhancedVariantSelectorProps> = ({
                               style={{ fontSize: 10 }}
                             >
                               {priceAdjustment! > 0 ? '+' : ''}
-                              {priceAdjustment!.toLocaleString(getLocale())}{t('common.currencySymbol')}
+                              {priceAdjustment!.toLocaleString(getLocale())}
+                              {t('common.currencySymbol')}
                             </Text>
                           )}
 
@@ -283,14 +265,12 @@ const EnhancedVariantSelector: React.FC<EnhancedVariantSelectorProps> = ({
                               justifyContent: 'center',
                             }}
                           >
-                            <BulbOutlined
-                              style={{ fontSize: 8, color: 'white' }}
-                            />
+                            <BulbOutlined style={{ fontSize: 8, color: 'white' }} />
                           </div>
                         )}
                       </Button>
                     );
-                  }
+                  },
                 )}
               </div>
 
@@ -302,7 +282,7 @@ const EnhancedVariantSelector: React.FC<EnhancedVariantSelectorProps> = ({
                     <Text strong>{selectedAttributes[attribute.name]}</Text>
                     {(() => {
                       const selectedVal = attributeValuesWithStock.find(
-                        (v) => v.value === selectedAttributes[attribute.name]
+                        (v) => v.value === selectedAttributes[attribute.name],
                       );
                       return selectedVal
                         ? ` • ${t('product.stockAvailable', { count: selectedVal.stock })}`
@@ -335,9 +315,7 @@ const EnhancedVariantSelector: React.FC<EnhancedVariantSelectorProps> = ({
                   <Space size={2}>
                     <span>{attrName}:</span>
                     <strong>{value}</strong>
-                    {isNameAffecting && (
-                      <BulbOutlined style={{ fontSize: 10 }} />
-                    )}
+                    {isNameAffecting && <BulbOutlined style={{ fontSize: 10 }} />}
                   </Space>
                 </Tag>
               );
@@ -352,9 +330,7 @@ const EnhancedVariantSelector: React.FC<EnhancedVariantSelectorProps> = ({
           message={
             <Space>
               <InfoCircleOutlined />
-              <Text style={{ fontSize: 12 }}>
-                {t('product.productNameAffected')}
-              </Text>
+              <Text style={{ fontSize: 12 }}>{t('product.productNameAffected')}</Text>
             </Space>
           }
           type="info"

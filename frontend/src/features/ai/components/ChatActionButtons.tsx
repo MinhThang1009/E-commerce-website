@@ -19,10 +19,7 @@ interface ChatActionButtonsProps {
   onActionClick?: (action: ChatAction) => void;
 }
 
-const ChatActionButtons: React.FC<ChatActionButtonsProps> = ({
-  actions,
-  onActionClick,
-}) => {
+const ChatActionButtons: React.FC<ChatActionButtonsProps> = ({ actions, onActionClick }) => {
   const navigate = useNavigate();
 
   if (!actions || actions.length === 0) {
@@ -73,4 +70,3 @@ const ChatActionButtons: React.FC<ChatActionButtonsProps> = ({
 };
 
 export default ChatActionButtons;
-

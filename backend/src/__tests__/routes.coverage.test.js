@@ -22,7 +22,7 @@ describe('payment/routes.js — factory tạo Express router hợp lệ', () => 
   let buildRoutes;
 
   beforeAll(() => {
-    buildRoutes = require('../modules/payment/routes');
+    buildRoutes = require('@modules/payment/routes');
   });
 
   function makePaymentController() {
@@ -67,7 +67,7 @@ describe('reviews/routes.js — factory tạo Express router hợp lệ', () => 
   let buildRoutes;
 
   beforeAll(() => {
-    buildRoutes = require('../modules/reviews/routes');
+    buildRoutes = require('@modules/reviews/routes');
   });
 
   function makeReviewsController() {
@@ -111,7 +111,7 @@ describe('users/routes.js — factory tạo Express router hợp lệ', () => {
   let buildRoutes;
 
   beforeAll(() => {
-    buildRoutes = require('../modules/users/routes');
+    buildRoutes = require('@modules/users/routes');
   });
 
   function makeUsersController() {
@@ -155,7 +155,7 @@ describe('wishlist/routes.js — factory tạo Express router hợp lệ', () =>
   let buildRoutes;
 
   beforeAll(() => {
-    buildRoutes = require('../modules/wishlist/routes');
+    buildRoutes = require('@modules/wishlist/routes');
   });
 
   function makeWishlistController() {
@@ -196,7 +196,7 @@ describe('inventory/routes.js — factory tạo Express router hợp lệ', () =
   let buildRoutes;
 
   beforeAll(() => {
-    buildRoutes = require('../modules/inventory/routes');
+    buildRoutes = require('@modules/inventory/routes');
   });
 
   function makeInventoryController() {

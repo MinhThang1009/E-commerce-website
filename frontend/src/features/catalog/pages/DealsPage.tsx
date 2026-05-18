@@ -7,7 +7,7 @@
 import { Helmet } from 'react-helmet-async';
 import { useState, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
-import { useGetDealsQuery } from '../api/productApi';
+import { useGetDealsQuery } from '../api/product-api';
 import { ProductCard } from '@/features/catalog';
 import { ProductListCard } from '@/features/catalog';
 import LoadingSpinner from '@/components/common/LoadingSpinner';

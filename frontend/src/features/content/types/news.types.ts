@@ -43,4 +43,3 @@ export interface SingleNewsResponse {
   status: 'success' | 'error';
   news: News;
 }
-

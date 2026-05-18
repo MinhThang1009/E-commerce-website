@@ -8,7 +8,7 @@ import React, { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Card, Button, Space, Typography, Tag, Alert } from 'antd';
 import { CheckOutlined } from '@ant-design/icons';
-import { simpleNamingService } from '../utils/productNaming';
+import { simpleNamingService } from '../utils/product-naming';
 
 const { Text, Title } = Typography;
 
@@ -24,9 +24,7 @@ const SimpleAttributeSelector: React.FC<SimpleAttributeSelectorProps> = ({
   disabled = false,
 }) => {
   const { t } = useTranslation();
-  const [selectedAttributes, setSelectedAttributes] = useState<
-    Record<string, string>
-  >({});
+  const [selectedAttributes, setSelectedAttributes] = useState<Record<string, string>>({});
 
   // Tùy chọn thuộc tính giả - Trong thực tế sẽ lấy từ API
   const attributeOptions = {
@@ -48,15 +46,7 @@ const SimpleAttributeSelector: React.FC<SimpleAttributeSelectorProps> = ({
       'AMD Radeon RX 7600M',
       'AMD Radeon RX 7700M',
     ],
-    RAM: [
-      '8GB DDR4',
-      '16GB DDR4',
-      '32GB DDR4',
-      '8GB DDR5',
-      '16GB DDR5',
-      '32GB DDR5',
-      '64GB DDR5',
-    ],
+    RAM: ['8GB DDR4', '16GB DDR4', '32GB DDR4', '8GB DDR5', '16GB DDR5', '32GB DDR5', '64GB DDR5'],
     Storage: ['256GB SSD', '512GB SSD', '1TB SSD', '2TB SSD'],
   };
 
@@ -75,10 +65,7 @@ const SimpleAttributeSelector: React.FC<SimpleAttributeSelectorProps> = ({
 
     // Xem trước tên nếu có callback
     if (onNamePreview) {
-      const previewName = simpleNamingService.previewName(
-        'ThinkPad',
-        updatedAttributes
-      );
+      const previewName = simpleNamingService.previewName('ThinkPad', updatedAttributes);
       onNamePreview(previewName);
     }
   };
@@ -147,11 +134,7 @@ const SimpleAttributeSelector: React.FC<SimpleAttributeSelectorProps> = ({
               </Title>
               {selectedAttributes[attributeType] && (
                 <Tag color="green">
-                  ✓{' '}
-                  {getShortName(
-                    attributeType,
-                    selectedAttributes[attributeType]
-                  )}
+                  ✓ {getShortName(attributeType, selectedAttributes[attributeType])}
                 </Tag>
               )}
             </div>

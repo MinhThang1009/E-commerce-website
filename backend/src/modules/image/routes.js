@@ -6,9 +6,9 @@
  */
 const express = require('express');
 const router = express.Router();
-const imageController = require('./controllers/imageController');
-const { authenticate } = require('../../middlewares/authenticate');
-const { adminAuthenticate } = require('../../middlewares/adminAuth');
+const imageController = require('@modules/image/controllers/image-controller');
+const { authenticate } = require('@middlewares/authenticate');
+const { adminAuthenticate } = require('@middlewares/admin-auth');
 
 // Kiểm tra trạng thái hoạt động
 router.get('/health', imageController.healthCheck);

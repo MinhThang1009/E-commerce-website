@@ -40,11 +40,7 @@ import {
 import type { ColumnsType } from 'antd/es/table';
 
 import dayjs from 'dayjs';
-import {
-  useGetAdminOrdersQuery,
-  useUpdateOrderStatusMutation,
-  AdminOrder,
-} from '@/features/admin';
+import { useGetAdminOrdersQuery, useUpdateOrderStatusMutation, AdminOrder } from '@/features/admin';
 import styles from './OrdersPage.module.css';
 import { useTranslation } from 'react-i18next';
 import { getLocale } from '@/utils/format';
@@ -97,8 +93,7 @@ const OrdersPage: React.FC = () => {
     sortOrder: 'DESC',
   });
 
-  const { mutateAsync: updateOrderStatus, isPending: isUpdating } =
-    useUpdateOrderStatusMutation();
+  const { mutateAsync: updateOrderStatus, isPending: isUpdating } = useUpdateOrderStatusMutation();
 
   // Định dạng tiền tệ — luôn VND, locale động theo ngôn ngữ UI
   const formatCurrency = useCallback((amount: number) => {
@@ -123,9 +118,7 @@ const OrdersPage: React.FC = () => {
     { value: 'cancelled', label: t('admin.orders.status.cancelled') },
   ];
 
-  const updateStatusOptions = statusOptions.filter(
-    (option) => option.value !== ''
-  );
+  const updateStatusOptions = statusOptions.filter((option) => option.value !== '');
 
   // Xử lý xem chi tiết đơn hàng
   const handleViewDetails = useCallback((order: AdminOrder) => {
@@ -144,13 +137,13 @@ const OrdersPage: React.FC = () => {
       });
       setIsUpdateModalOpen(true);
     },
-    [form]
+    [form],
   );
 
   // Gửi cập nhật trạng thái
   const handleStatusUpdate = useCallback(
     // eslint-disable-next-line @typescript-eslint/no-explicit-any -- Antd Form values
-          async (values: any) => {
+    async (values: any) => {
       if (!selectedOrder) return;
 
       try {
@@ -173,7 +166,7 @@ const OrdersPage: React.FC = () => {
         message.error(t('admin.orders.messages.updateError'));
       }
     },
-    [selectedOrder, updateOrderStatus, t, form, refetch]
+    [selectedOrder, updateOrderStatus, t, form, refetch],
   );
 
   // Xử lý tìm kiếm
@@ -196,7 +189,7 @@ const OrdersPage: React.FC = () => {
         // Xử lý thay đổi số mục mỗi trang nếu cần
       }
     },
-    [pageSize]
+    [pageSize],
   );
 
   // Cấu hình các cột bảng
@@ -228,9 +221,7 @@ const OrdersPage: React.FC = () => {
               {record.User?.firstName} {record.User?.lastName}
             </Text>
           </div>
-          <Text style={{ fontSize: '12px', color: '#666' }}>
-            {record.User?.email}
-          </Text>
+          <Text style={{ fontSize: '12px', color: '#666' }}>{record.User?.email}</Text>
         </div>
       ),
     },
@@ -269,8 +260,7 @@ const OrdersPage: React.FC = () => {
         const config = STATUS_CONFIG[status as keyof typeof STATUS_CONFIG];
         return (
           <Tag color={config?.color} className={styles.statusTag}>
-            {config?.icon}{' '}
-            {t(`admin.orders.status.${status}`)}
+            {config?.icon} {t(`admin.orders.status.${status}`)}
           </Tag>
         );
       },
@@ -282,14 +272,13 @@ const OrdersPage: React.FC = () => {
       width: 120,
       render: (paymentStatus: string, record: AdminOrder) => {
         const isCOD = record.paymentMethod === 'cod';
-        const config =
-          PAYMENT_STATUS_CONFIG[
-            paymentStatus as keyof typeof PAYMENT_STATUS_CONFIG
-          ];
-        
+        const config = PAYMENT_STATUS_CONFIG[paymentStatus as keyof typeof PAYMENT_STATUS_CONFIG];
+
         let statusText = paymentStatus;
         if (paymentStatus === 'pending') {
-          statusText = isCOD ? t('admin.orders.paymentStatus.cod') : t('admin.orders.paymentStatus.pending');
+          statusText = isCOD
+            ? t('admin.orders.paymentStatus.cod')
+            : t('admin.orders.paymentStatus.pending');
         } else if (paymentStatus === 'paid') {
           statusText = t('admin.orders.paymentStatus.paid');
         } else if (paymentStatus === 'failed') {
@@ -368,9 +357,7 @@ const OrdersPage: React.FC = () => {
   }
 
   return (
-    <div
-      className={`${styles.ordersPage} dark:bg-neutral-900 dark:!bg-neutral-900`}
-    >
+    <div className={`${styles.ordersPage} dark:bg-neutral-900 dark:!bg-neutral-900`}>
       {/* Tiêu đề trang */}
       <div className={styles.pageHeader}>
         <Title level={2} className={`${styles.pageTitle} dark:text-white`}>
@@ -411,7 +398,9 @@ const OrdersPage: React.FC = () => {
             >
               {statusOptions.map((option) => (
                 <Option key={option.value} value={option.value}>
-                  {option.value === '' ? t('admin.orders.allStatus') : t(`admin.orders.status.${option.value}`)}
+                  {option.value === ''
+                    ? t('admin.orders.allStatus')
+                    : t(`admin.orders.status.${option.value}`)}
                 </Option>
               ))}
             </Select>
@@ -448,9 +437,7 @@ const OrdersPage: React.FC = () => {
 
         {/* Phân trang tùy chỉnh */}
         {pagination && pagination.totalPages > 1 && (
-          <div
-            className={`${styles.paginationContainer} dark:border-neutral-700`}
-          >
+          <div className={`${styles.paginationContainer} dark:border-neutral-700`}>
             <Pagination
               current={page}
               total={pagination.totalItems}
@@ -493,23 +480,13 @@ const OrdersPage: React.FC = () => {
               </Descriptions.Item>
               <Descriptions.Item label={t('admin.orders.details.orderStatus')}>
                 <Tag
-                  color={
-                    STATUS_CONFIG[
-                      selectedOrder.status as keyof typeof STATUS_CONFIG
-                    ]?.color
-                  }
+                  color={STATUS_CONFIG[selectedOrder.status as keyof typeof STATUS_CONFIG]?.color}
                 >
-                  {
-                    STATUS_CONFIG[
-                      selectedOrder.status as keyof typeof STATUS_CONFIG
-                    ]?.icon
-                  }{' '}
+                  {STATUS_CONFIG[selectedOrder.status as keyof typeof STATUS_CONFIG]?.icon}{' '}
                   {t(`admin.orders.status.${selectedOrder.status}`)}
                 </Tag>
               </Descriptions.Item>
-              <Descriptions.Item
-                label={t('admin.orders.details.paymentStatus')}
-              >
+              <Descriptions.Item label={t('admin.orders.details.paymentStatus')}>
                 <Tag
                   color={
                     PAYMENT_STATUS_CONFIG[
@@ -523,8 +500,8 @@ const OrdersPage: React.FC = () => {
                     ]?.icon
                   }{' '}
                   {selectedOrder.paymentStatus === 'pending'
-                    ? selectedOrder.paymentMethod === 'cod' 
-                      ? t('admin.orders.details.paymentInfo.cod') 
+                    ? selectedOrder.paymentMethod === 'cod'
+                      ? t('admin.orders.details.paymentInfo.cod')
                       : t('admin.orders.paymentStatus.pending')
                     : selectedOrder.paymentStatus === 'paid'
                       ? t('admin.orders.paymentStatus.paid')
@@ -566,9 +543,13 @@ const OrdersPage: React.FC = () => {
                   </Descriptions>
                 </Card>
               </Col>
-              
+
               <Col xs={24} md={12}>
-                <Card title={t('admin.orders.details.shipping.title')} size="small" style={{ height: '100%' }}>
+                <Card
+                  title={t('admin.orders.details.shipping.title')}
+                  size="small"
+                  style={{ height: '100%' }}
+                >
                   <Descriptions column={1}>
                     <Descriptions.Item label={t('admin.orders.details.shipping.fullName')}>
                       {selectedOrder.shippingFirstName} {selectedOrder.shippingLastName}
@@ -587,10 +568,16 @@ const OrdersPage: React.FC = () => {
             </Row>
 
             {/* Thông tin thanh toán */}
-            <Card title={t('admin.orders.details.paymentInfo.title')} size="small" style={{ marginBottom: '16px' }}>
+            <Card
+              title={t('admin.orders.details.paymentInfo.title')}
+              size="small"
+              style={{ marginBottom: '16px' }}
+            >
               <Descriptions column={2}>
                 <Descriptions.Item label={t('admin.orders.details.paymentInfo.method')}>
-                  {selectedOrder.paymentMethod === 'cod' ? t('admin.orders.details.paymentInfo.cod') : selectedOrder.paymentMethod.toUpperCase()}
+                  {selectedOrder.paymentMethod === 'cod'
+                    ? t('admin.orders.details.paymentInfo.cod')
+                    : selectedOrder.paymentMethod.toUpperCase()}
                 </Descriptions.Item>
                 <Descriptions.Item label={t('admin.orders.details.paymentInfo.transaction')}>
                   {selectedOrder.paymentTransactionId || 'N/A'}
@@ -621,15 +608,13 @@ const OrdersPage: React.FC = () => {
                         )
                       }
                       title={
-                        <Text strong>
-                          {item.Product?.name || t('admin.orders.noItemsFound')}
-                        </Text>
+                        <Text strong>{item.Product?.name || t('admin.orders.noItemsFound')}</Text>
                       }
                       description={
                         <div>
                           <Text type="secondary">
-                            {t('admin.orders.details.items.quantity')}:{' '}
-                            {item.quantity} × {formatCurrency(item.price)}
+                            {t('admin.orders.details.items.quantity')}: {item.quantity} ×{' '}
+                            {formatCurrency(item.price)}
                           </Text>
                         </div>
                       }
@@ -646,24 +631,16 @@ const OrdersPage: React.FC = () => {
 
             {/* Tóm tắt đơn hàng */}
             <Card title={t('admin.orders.details.summary.title')} size="small">
-              <div
-                style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}
-              >
-                <div
-                  style={{ display: 'flex', justifyContent: 'space-between' }}
-                >
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between' }}>
                   <Text>{t('admin.orders.details.summary.subtotal')}:</Text>
                   <Text>{formatCurrency(selectedOrder.subtotal)}</Text>
                 </div>
-                <div
-                  style={{ display: 'flex', justifyContent: 'space-between' }}
-                >
+                <div style={{ display: 'flex', justifyContent: 'space-between' }}>
                   <Text>{t('admin.orders.details.summary.tax')}:</Text>
                   <Text>{formatCurrency(selectedOrder.tax)}</Text>
                 </div>
-                <div
-                  style={{ display: 'flex', justifyContent: 'space-between' }}
-                >
+                <div style={{ display: 'flex', justifyContent: 'space-between' }}>
                   <Text>{t('admin.orders.details.summary.shipping')}:</Text>
                   <Text>{formatCurrency(selectedOrder.shippingCost)}</Text>
                 </div>
@@ -680,9 +657,7 @@ const OrdersPage: React.FC = () => {
                   </div>
                 )}
                 <Divider style={{ margin: '8px 0' }} />
-                <div
-                  style={{ display: 'flex', justifyContent: 'space-between' }}
-                >
+                <div style={{ display: 'flex', justifyContent: 'space-between' }}>
                   <Text strong style={{ fontSize: '16px' }}>
                     {t('admin.orders.details.summary.total')}:
                   </Text>
@@ -724,10 +699,7 @@ const OrdersPage: React.FC = () => {
               style={{ marginBottom: '16px' }}
             />
 
-            <Form.Item
-              name="status"
-              label={t('admin.orders.updateStatus.newStatus')}
-            >
+            <Form.Item name="status" label={t('admin.orders.updateStatus.newStatus')}>
               <Select placeholder={t('admin.orders.updateStatus.selectNewStatus')}>
                 {updateStatusOptions.map((option) => (
                   <Option key={option.value} value={option.value}>
@@ -737,10 +709,7 @@ const OrdersPage: React.FC = () => {
               </Select>
             </Form.Item>
 
-            <Form.Item
-              name="paymentStatus"
-              label={t('admin.orders.details.paymentStatus')}
-            >
+            <Form.Item name="paymentStatus" label={t('admin.orders.details.paymentStatus')}>
               <Select placeholder={t('admin.orders.details.paymentStatus')}>
                 <Option value="pending">{t('admin.orders.paymentStatus.pending')}</Option>
                 <Option value="paid">{t('admin.orders.paymentStatus.paid')}</Option>
@@ -750,10 +719,7 @@ const OrdersPage: React.FC = () => {
             </Form.Item>
 
             <Form.Item name="note" label={t('admin.orders.updateStatus.note')}>
-              <TextArea
-                rows={3}
-                placeholder={t('admin.orders.updateStatus.notePlaceholder')}
-              />
+              <TextArea rows={3} placeholder={t('admin.orders.updateStatus.notePlaceholder')} />
             </Form.Item>
           </Form>
         )}
@@ -763,4 +729,3 @@ const OrdersPage: React.FC = () => {
 };
 
 export default OrdersPage;
-

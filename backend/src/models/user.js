@@ -1,7 +1,7 @@
 const { DataTypes } = require('sequelize');
 const bcrypt = require('bcrypt');
 const argon2 = require('argon2');
-const sequelize = require('../config/sequelize');
+const sequelize = require('@config/sequelize');
 
 const User = sequelize.define(
   'User',

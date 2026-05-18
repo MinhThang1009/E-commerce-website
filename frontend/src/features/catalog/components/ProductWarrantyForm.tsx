@@ -6,21 +6,8 @@
  */
 import React, { useEffect, useMemo } from 'react';
 import type { FormInstance } from 'antd';
-import {
-  Form,
-  Card,
-  Typography,
-  Checkbox,
-  Row,
-  Col,
-  Alert,
-  Space,
-  Spin,
-} from 'antd';
-import {
-  SafetyOutlined,
-  CheckCircleOutlined,
-} from '@ant-design/icons';
+import { Form, Card, Typography, Checkbox, Row, Col, Alert, Space, Spin } from 'antd';
+import { SafetyOutlined, CheckCircleOutlined } from '@ant-design/icons';
 import { useTranslation } from 'react-i18next';
 import { useGetWarrantyPackagesQuery } from '@/features/admin';
 import { WarrantyPackage } from '../types/product.types';
@@ -32,9 +19,7 @@ interface ProductWarrantyFormProps {
   form?: FormInstance;
 }
 
-const ProductWarrantyForm: React.FC<ProductWarrantyFormProps> = ({
-  form: parentForm,
-}) => {
+const ProductWarrantyForm: React.FC<ProductWarrantyFormProps> = ({ form: parentForm }) => {
   const { t } = useTranslation();
 
   const {
@@ -47,23 +32,17 @@ const ProductWarrantyForm: React.FC<ProductWarrantyFormProps> = ({
 
   const warrantyPackages = useMemo(
     () => warrantyData?.data?.warrantyPackages || [],
-    [warrantyData?.data?.warrantyPackages]
+    [warrantyData?.data?.warrantyPackages],
   );
 
   useEffect(() => {
     if (warrantyPackages.length > 0 && parentForm) {
       const currentValue = parentForm.getFieldValue('warrantyPackageIds') || [];
-      const freePackageIds = warrantyPackages
-        .filter((pkg) => pkg.price === 0)
-        .map((pkg) => pkg.id);
+      const freePackageIds = warrantyPackages.filter((pkg) => pkg.price === 0).map((pkg) => pkg.id);
 
-      const needsUpdate = freePackageIds.some(
-        (id) => !currentValue.includes(id)
-      );
+      const needsUpdate = freePackageIds.some((id) => !currentValue.includes(id));
       if (needsUpdate) {
-        const newValue = Array.from(
-          new Set([...currentValue, ...freePackageIds])
-        );
+        const newValue = Array.from(new Set([...currentValue, ...freePackageIds]));
         parentForm.setFieldValue('warrantyPackageIds', newValue);
       }
     }
@@ -140,10 +119,7 @@ const ProductWarrantyForm: React.FC<ProductWarrantyFormProps> = ({
                     size="small"
                     hoverable
                     style={{
-                      border:
-                        pkg.price === 0
-                          ? '2px solid #1890ff'
-                          : '1px solid #d9d9d9',
+                      border: pkg.price === 0 ? '2px solid #1890ff' : '1px solid #d9d9d9',
                       backgroundColor: pkg.price === 0 ? '#f0f9ff' : 'white',
                     }}
                   >
@@ -173,15 +149,13 @@ const ProductWarrantyForm: React.FC<ProductWarrantyFormProps> = ({
 
                         <div style={{ marginBottom: 8 }}>
                           <Text type="secondary" style={{ fontSize: 12 }}>
-                            {t('admin.products.warranty.durationLabel')} {formatDuration(pkg.durationMonths)}
+                            {t('admin.products.warranty.durationLabel')}{' '}
+                            {formatDuration(pkg.durationMonths)}
                           </Text>
                         </div>
 
                         {pkg.description && (
-                          <Text
-                            type="secondary"
-                            style={{ display: 'block', marginBottom: 8 }}
-                          >
+                          <Text type="secondary" style={{ display: 'block', marginBottom: 8 }}>
                             {pkg.description}
                           </Text>
                         )}
@@ -197,9 +171,7 @@ const ProductWarrantyForm: React.FC<ProductWarrantyFormProps> = ({
                                   gap: 4,
                                 }}
                               >
-                                <CheckCircleOutlined
-                                  style={{ color: '#52c41a', fontSize: 12 }}
-                                />
+                                <CheckCircleOutlined style={{ color: '#52c41a', fontSize: 12 }} />
                                 <Text style={{ fontSize: 12 }}>{coverage}</Text>
                               </div>
                             ))}

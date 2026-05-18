@@ -6,12 +6,10 @@
  */
 import { useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
-import { useUiStore } from '@/stores/uiStore';
+import { useUiStore } from '@/stores/ui-store';
 import type { Notification as NotificationType } from '@/types/ui.types';
 
-const Notification: React.FC<{ notification: NotificationType }> = ({
-  notification,
-}) => {
+const Notification: React.FC<{ notification: NotificationType }> = ({ notification }) => {
   const removeNotification = useUiStore((s) => s.removeNotification);
   const { t } = useTranslation();
 
@@ -163,4 +161,3 @@ const Notifications: React.FC = () => {
 };
 
 export default Notifications;
-

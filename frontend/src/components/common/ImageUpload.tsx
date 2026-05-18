@@ -8,8 +8,8 @@ import React, { useState, useRef } from 'react';
 import { XMarkIcon, CloudArrowUpIcon, LinkIcon } from '@heroicons/react/24/outline';
 import { useTranslation } from 'react-i18next';
 import { toast } from '@/utils/toast';
-import { getUploadUrl } from '@/utils/uploadUrl';
-import { getErrorMsg } from '@/utils/errorUtils';
+import { getUploadUrl } from '@/utils/upload-url';
+import { getErrorMsg } from '@/utils/error-utils';
 
 interface ImageUploadProps {
   value?: string | string[];
@@ -76,7 +76,7 @@ const ImageUpload: React.FC<ImageUploadProps> = ({
     }
 
     try {
-      const { getValidToken } = await import('@/utils/tokenManager');
+      const { getValidToken } = await import('@/utils/token-manager');
       const authToken = await getValidToken();
       const response = await fetch(
         `${import.meta.env.VITE_API_URL || 'http://localhost:8888/api'}/uploads/${type}/${endpoint}`,

@@ -16,10 +16,10 @@ import { PremiumButton, BannerDisplay } from '@/components/common';
 import LoadingSpinner from '@/components/common/LoadingSpinner';
 import { Product, ProductFilters } from '../types/product.types';
 import { Category } from '../types/category.types';
-import { useGetProductsQuery } from '../api/productApi';
-import { useGetCategoriesQuery } from '../api/categoryApi';
-import { useGetBrandsQuery } from '../api/brandApi';
-import { useGetCollectionsQuery } from '../api/collectionApi';
+import { useGetProductsQuery } from '../api/product-api';
+import { useGetCategoriesQuery } from '../api/category-api';
+import { useGetBrandsQuery } from '../api/brand-api';
+import { useGetCollectionsQuery } from '../api/collection-api';
 import { useTranslation } from 'react-i18next';
 import { localizeField } from '@/utils/localize';
 

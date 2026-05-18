@@ -13,7 +13,7 @@ process.env.NODE_ENV = 'test';
 
 // ─── Shared logger mock ───────────────────────────────────────────────────────
 
-jest.mock('../utils/logger', () => ({
+jest.mock('@utils/logger', () => ({
   info: jest.fn(),
   warn: jest.fn(),
   error: jest.fn(),
@@ -37,7 +37,7 @@ describe('MoMoService.verifySignature — early return branches', () => {
       process.env.DEV_ACCESS_KEY = 'ACCESS';
       process.env.DEV_SECRET_KEY = 'supersecretkey';
       jest.mock('axios', () => ({ post: jest.fn() }));
-      momoService = require('../modules/payment/services/momoService');
+      momoService = require('@modules/payment/services/momo-service');
     });
   });
 
@@ -95,7 +95,7 @@ describe('MoMoService.createPaymentUrl — catch branch khi axios.post thất b�
       process.env.MOMO_IPN_URL = 'http://localhost:8888/ipn';
       mockPost = jest.fn();
       jest.mock('axios', () => ({ post: (...args) => mockPost(...args) }));
-      momoService = require('../modules/payment/services/momoService');
+      momoService = require('@modules/payment/services/momo-service');
     });
   });
 
@@ -147,7 +147,7 @@ describe('VNPayService.verifyReturnUrl — missing/mismatched secureHash', () =>
       process.env.VNP_URL = 'https://sandbox.vnpayment.vn/paymentv2/vpcpay.html';
       process.env.VNP_RETURN_URL = 'http://localhost:8888/return';
       jest.mock('axios', () => ({ post: jest.fn() }));
-      vnpayService = require('../modules/payment/services/vnpayService');
+      vnpayService = require('@modules/payment/services/vnpay-service');
     });
   });
 
@@ -199,7 +199,7 @@ describe('runDailyCleanup — step 4 warn when reset token update fails', () => 
 
   beforeAll(() => {
     jest.isolateModules(() => {
-      jest.mock('../models', () => ({
+      jest.mock('@models', () => ({
         Cart: { destroy: (...a) => mockCartDestroy(...a) },
         SearchHistory: {},
         User: { update: (...a) => mockUserUpdate(...a) },
@@ -215,12 +215,12 @@ describe('runDailyCleanup — step 4 warn when reset token update fails', () => 
           unlink: jest.fn(),
         },
       }));
-      jest.mock('../modules/image/services/imageService', () => ({
+      jest.mock('@modules/image/services/image-service', () => ({
         cleanupOrphanedFiles: jest.fn(),
       }));
 
-      logger = require('../utils/logger');
-      ({ runDailyCleanup } = require('../jobs/cleanup'));
+      logger = require('@utils/logger');
+      ({ runDailyCleanup } = require('@jobs/cleanup'));
     });
   });
 

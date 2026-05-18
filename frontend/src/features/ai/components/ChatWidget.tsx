@@ -6,7 +6,7 @@
  */
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { useAuthStore } from '@/stores/authStore';
+import { useAuthStore } from '@/stores/auth-store';
 import { Rnd } from 'react-rnd';
 
 import ChatMessage from './ChatMessage';
@@ -26,14 +26,14 @@ import {
   useTrackChatbotAnalyticsMutation,
   ChatbotResponse,
   ProductRecommendation,
-} from '../services/chatbotApi';
+} from '../services/chatbot-api';
 
-import { useChatWidget } from '../hooks/useChatWidget';
+import { useChatWidget } from '../hooks/use-chat-widget';
 import {
   CHAT_WIDGET_CONFIG,
   RESIZE_HANDLE_STYLES,
   RESIZE_HANDLE_CLASSES,
-} from '../constants/chatWidget';
+} from '../constants/chat-widget';
 
 import './ChatWidget.css';
 
@@ -75,7 +75,7 @@ const ChatWidget: React.FC = () => {
   const { mutateAsync: trackAnalytics } = useTrackChatbotAnalyticsMutation();
 
   const [sessionId] = useState(
-    () => `session_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`
+    () => `session_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
   );
 
   const handleSendMessage = async (text: string) => {
@@ -147,9 +147,10 @@ const ChatWidget: React.FC = () => {
       console.error('Lỗi khi gửi tin nhắn:', error);
 
       let errorMessage = t('chat.errors.general');
-      const status = error && typeof error === 'object' && 'status' in error
-        ? (error as Record<string, unknown>).status
-        : undefined;
+      const status =
+        error && typeof error === 'object' && 'status' in error
+          ? (error as Record<string, unknown>).status
+          : undefined;
 
       if (status === 404) {
         errorMessage = t('chat.errors.notFound');
@@ -182,7 +183,7 @@ const ChatWidget: React.FC = () => {
     _direction: unknown,
     ref: HTMLElement,
     _delta: unknown,
-    _position: unknown
+    _position: unknown,
   ) => {
     setSize({
       width: ref.offsetWidth as 384,
@@ -221,10 +222,7 @@ const ChatWidget: React.FC = () => {
           resizeHandleClasses={RESIZE_HANDLE_CLASSES as any}
         >
           <div className="chat-header-drag flex-shrink-0 sticky top-0 z-[100] shadow-xl">
-            <ChatHeaderContent
-              onApplyChanges={applyChanges}
-              onClose={closeChat}
-            />
+            <ChatHeaderContent onApplyChanges={applyChanges} onClose={closeChat} />
           </div>
 
           <div className="flex-1 overflow-y-auto p-4 sm:p-5 space-y-4 bg-neutral-50 dark:bg-neutral-950/50 custom-scrollbar">
@@ -237,10 +235,7 @@ const ChatWidget: React.FC = () => {
                   <>
                     {message.products && message.products.length > 0 && (
                       <div className="ml-10 mt-3 mb-2">
-                        <ChatProductList
-                          products={message.products}
-                          sessionId={sessionId}
-                        />
+                        <ChatProductList products={message.products} sessionId={sessionId} />
                       </div>
                     )}
 
@@ -264,17 +259,12 @@ const ChatWidget: React.FC = () => {
               <ChatQuickActions onSendMessage={handleSendMessage} />
             </div>
 
-            <ChatInput
-              onSendMessage={handleSendMessage}
-              isLoading={isLoading}
-            />
+            <ChatInput onSendMessage={handleSendMessage} isLoading={isLoading} />
 
             <div className="px-5 pb-3 flex items-center justify-between text-[10px] text-neutral-400 dark:text-neutral-500 font-bold border-t border-neutral-50 dark:border-neutral-800/50 pt-2 bg-neutral-50/30 dark:bg-neutral-800/20">
               <div className="flex items-center group">
                 <VerifiedIcon className="mr-1.5 text-primary-500/70" size={12} />
-                <span className="uppercase tracking-widest">
-                  {t('chat.poweredByLabel')}
-                </span>
+                <span className="uppercase tracking-widest">{t('chat.poweredByLabel')}</span>
               </div>
 
               <div className="flex items-center space-x-3">

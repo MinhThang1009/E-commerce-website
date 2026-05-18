@@ -6,9 +6,9 @@
  */
 import React, { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { useAuthStore } from '@/stores/authStore';
-import { useGetCurrentUserQuery } from '../api/authApi';
-import { refreshTokenIfNeeded } from '@/utils/tokenManager';
+import { useAuthStore } from '@/stores/auth-store';
+import { useGetCurrentUserQuery } from '../api/auth-api';
+import { refreshTokenIfNeeded } from '@/utils/token-manager';
 import LoadingSpinner from '@/components/common/LoadingSpinner';
 
 interface AuthProviderProps {

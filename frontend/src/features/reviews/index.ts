@@ -23,8 +23,8 @@ export {
   useDeleteReviewMutation,
   useMarkReviewHelpfulMutation,
   useGetUserReviewsQuery,
-} from './api/reviewApi';
-export type { Review, ReviewFilters, CreateReviewData } from './api/reviewApi';
+} from './api/review-api';
+export type { Review, ReviewFilters, CreateReviewData } from './api/review-api';
 
 // Kiểu dữ liệu
 export * from './types/review.types';

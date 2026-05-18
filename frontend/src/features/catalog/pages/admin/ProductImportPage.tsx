@@ -5,7 +5,7 @@
  * @description Page component của feature catalog
  */
 import React, { useState, useRef, useCallback } from 'react';
-import { useAuthStore } from '@/stores/authStore';
+import { useAuthStore } from '@/stores/auth-store';
 import {
   Card,
   Button,
@@ -109,10 +109,10 @@ function parseCsvLine(line: string): string[] {
 
 /** Parse CSV content → mảng object */
 function parseCsvPreview(content: string, maxRows = 10): ParsedRow[] {
-  const lines = content.split(/\r?\n/).filter(l => l.trim());
+  const lines = content.split(/\r?\n/).filter((l) => l.trim());
   if (lines.length < 2) return [];
   const headers = parseCsvLine(lines[0]);
-  return lines.slice(1, maxRows + 1).map(line => {
+  return lines.slice(1, maxRows + 1).map((line) => {
     const values = parseCsvLine(line);
     const row: ParsedRow = {};
     headers.forEach((h, idx) => {
@@ -127,7 +127,7 @@ function parseJsonPreview(content: string, maxRows = 10): ParsedRow[] {
   try {
     const parsed = JSON.parse(content);
     if (Array.isArray(parsed)) {
-      return parsed.slice(0, maxRows).map(item => {
+      return parsed.slice(0, maxRows).map((item) => {
         const row: ParsedRow = {};
         Object.entries(item).forEach(([k, v]) => {
           row[k] = String(v ?? '');
@@ -161,58 +161,61 @@ const ProductImportPage: React.FC = () => {
   const selectedFileRef = useRef<RcFile | null>(null);
 
   // ── Xử lý khi chọn file ──
-  const handleFileSelect = useCallback((file: RcFile): boolean => {
-    const ext = file.name.split('.').pop()?.toLowerCase();
-    if (!['csv', 'json'].includes(ext || '')) {
-      message.error(t('adminImport.invalidFileType'));
-      return false;
-    }
-    if (file.size > 5 * 1024 * 1024) {
-      message.error(t('adminImport.fileTooLarge'));
-      return false;
-    }
-
-    selectedFileRef.current = file;
-    const reader = new FileReader();
-    reader.onload = (e) => {
-      const content = e.target?.result as string;
-      fileContentRef.current = content;
-
-      let rows: ParsedRow[] = [];
-      let lineCount = 0;
-
-      if (ext === 'json') {
-        try {
-          const parsed = JSON.parse(content);
-          lineCount = Array.isArray(parsed) ? parsed.length : 0;
-        } catch {
-          lineCount = 0;
-        }
-        rows = parseJsonPreview(content);
-      } else {
-        const lines = content.split(/\r?\n/).filter(l => l.trim());
-        // Trừ 1 dòng header
-        lineCount = Math.max(0, lines.length - 1);
-        rows = parseCsvPreview(content);
+  const handleFileSelect = useCallback(
+    (file: RcFile): boolean => {
+      const ext = file.name.split('.').pop()?.toLowerCase();
+      if (!['csv', 'json'].includes(ext || '')) {
+        message.error(t('adminImport.invalidFileType'));
+        return false;
+      }
+      if (file.size > 5 * 1024 * 1024) {
+        message.error(t('adminImport.fileTooLarge'));
+        return false;
       }
 
-      setTotalRows(lineCount);
-      setPreviewRows(rows);
-      setPreviewHeaders(rows.length > 0 ? Object.keys(rows[0]) : []);
+      selectedFileRef.current = file;
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        const content = e.target?.result as string;
+        fileContentRef.current = content;
 
-      const uploadFile: UploadFile = {
-        uid: file.uid,
-        name: file.name,
-        status: 'done',
-        size: file.size,
+        let rows: ParsedRow[] = [];
+        let lineCount = 0;
+
+        if (ext === 'json') {
+          try {
+            const parsed = JSON.parse(content);
+            lineCount = Array.isArray(parsed) ? parsed.length : 0;
+          } catch {
+            lineCount = 0;
+          }
+          rows = parseJsonPreview(content);
+        } else {
+          const lines = content.split(/\r?\n/).filter((l) => l.trim());
+          // Trừ 1 dòng header
+          lineCount = Math.max(0, lines.length - 1);
+          rows = parseCsvPreview(content);
+        }
+
+        setTotalRows(lineCount);
+        setPreviewRows(rows);
+        setPreviewHeaders(rows.length > 0 ? Object.keys(rows[0]) : []);
+
+        const uploadFile: UploadFile = {
+          uid: file.uid,
+          name: file.name,
+          status: 'done',
+          size: file.size,
+        };
+        setFileList([uploadFile]);
       };
-      setFileList([uploadFile]);
-    };
-    reader.readAsText(file, 'utf-8');
+      reader.readAsText(file, 'utf-8');
 
-    // Ngăn Antd tự upload — chúng ta sẽ upload thủ công
-    return false;
-  }, [t]);
+      // Ngăn Antd tự upload — chúng ta sẽ upload thủ công
+      return false;
+    },
+    [t],
+  );
 
   // ── Gửi file lên server ──
   const handleImport = async () => {
@@ -318,7 +321,7 @@ const ProductImportPage: React.FC = () => {
   // ──────────────────────────────────────────────────
   // Cột bảng preview
   // ──────────────────────────────────────────────────
-  const previewColumns = previewHeaders.map(h => ({
+  const previewColumns = previewHeaders.map((h) => ({
     title: h,
     dataIndex: h,
     key: h,
@@ -359,7 +362,7 @@ const ProductImportPage: React.FC = () => {
       dataIndex: 'failedRows',
       key: 'failedRows',
       width: 100,
-      render: (v: number) => v > 0 ? <Tag color="red">{v}</Tag> : <Tag color="green">0</Tag>,
+      render: (v: number) => (v > 0 ? <Tag color="red">{v}</Tag> : <Tag color="green">0</Tag>),
     },
   ];
 
@@ -370,10 +373,7 @@ const ProductImportPage: React.FC = () => {
   const renderStep0 = () => (
     <div style={{ textAlign: 'center', padding: '24px 0' }}>
       <Space direction="vertical" size="large" style={{ width: '100%' }}>
-        <Button
-          icon={<DownloadOutlined />}
-          onClick={handleDownloadTemplate}
-        >
+        <Button icon={<DownloadOutlined />} onClick={handleDownloadTemplate}>
           {t('adminImport.downloadTemplate')}
         </Button>
 
@@ -399,11 +399,7 @@ const ProductImportPage: React.FC = () => {
           <p className="ant-upload-hint">{t('adminImport.dropzoneHint')}</p>
         </Dragger>
 
-        <Button
-          type="primary"
-          disabled={fileList.length === 0}
-          onClick={() => setCurrentStep(1)}
-        >
+        <Button type="primary" disabled={fileList.length === 0} onClick={() => setCurrentStep(1)}>
           {t('adminImport.next')}
         </Button>
       </Space>
@@ -447,11 +443,7 @@ const ProductImportPage: React.FC = () => {
       />
       <Space>
         <Button onClick={() => setCurrentStep(1)}>{t('adminImport.back')}</Button>
-        <Button
-          type="primary"
-          loading={isImporting}
-          onClick={handleImport}
-        >
+        <Button type="primary" loading={isImporting} onClick={handleImport}>
           {isImporting ? t('adminImport.importing') : t('adminImport.startImport')}
         </Button>
       </Space>
@@ -460,9 +452,10 @@ const ProductImportPage: React.FC = () => {
 
   const renderStep3 = () => {
     if (!importResult) return null;
-    const successRate = importResult.totalRows > 0
-      ? Math.round((importResult.successCount / importResult.totalRows) * 100)
-      : 0;
+    const successRate =
+      importResult.totalRows > 0
+        ? Math.round((importResult.successCount / importResult.totalRows) * 100)
+        : 0;
 
     return (
       <Space direction="vertical" size="middle" style={{ width: '100%' }}>
@@ -511,16 +504,12 @@ const ProductImportPage: React.FC = () => {
   // ──────────────────────────────────────────────────
   const renderHistory = () => (
     <Space direction="vertical" size="middle" style={{ width: '100%' }}>
-      <Button
-        icon={<ReloadOutlined />}
-        loading={historyLoading}
-        onClick={loadHistory}
-      >
+      <Button icon={<ReloadOutlined />} loading={historyLoading} onClick={loadHistory}>
         {t('adminImport.historyTitle')}
       </Button>
 
       <Table
-        dataSource={historyLogs.map(l => ({ ...l, key: l.id }))}
+        dataSource={historyLogs.map((l) => ({ ...l, key: l.id }))}
         columns={historyColumns}
         size="small"
         loading={historyLoading}
@@ -535,17 +524,21 @@ const ProductImportPage: React.FC = () => {
   // ──────────────────────────────────────────────────
   return (
     <div style={{ padding: '24px' }}>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 24 }}>
+      <div
+        style={{
+          display: 'flex',
+          justifyContent: 'space-between',
+          alignItems: 'center',
+          marginBottom: 24,
+        }}
+      >
         <div>
           <Title level={3} style={{ marginBottom: 4 }}>
             {t('adminImport.pageTitle')}
           </Title>
           <Text type="secondary">{t('adminImport.pageDesc')}</Text>
         </div>
-        <Button
-          icon={<ExportOutlined />}
-          onClick={handleExport}
-        >
+        <Button icon={<ExportOutlined />} onClick={handleExport}>
           {t('adminImport.exportBtn')}
         </Button>
       </div>
@@ -583,11 +576,7 @@ const ProductImportPage: React.FC = () => {
           {
             key: 'history',
             label: t('adminImport.tabHistory'),
-            children: (
-              <Card>
-                {renderHistory()}
-              </Card>
-            ),
+            children: <Card>{renderHistory()}</Card>,
           },
         ]}
       />

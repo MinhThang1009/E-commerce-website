@@ -12,7 +12,7 @@
 // SECTION 1 — CartService branches
 // ═══════════════════════════════════════════════════════════════════════════
 
-const CartService = require('../modules/cart/services/cartService');
+const CartService = require('@modules/cart/services/cart-service');
 
 function buildCartService() {
   const cartRepository = {
@@ -207,7 +207,7 @@ describe('CartService.validateCart — line 418 FALSE: item không có ProductVa
 // SECTION 2 — CatalogService branches
 // ═══════════════════════════════════════════════════════════════════════════
 
-const CatalogService = require('../modules/catalog/services/catalogService');
+const CatalogService = require('@modules/catalog/services/catalog-service');
 
 function makeProductRow(overrides = {}) {
   const data = {
@@ -703,7 +703,7 @@ describe('CatalogService.createProduct — line 896: variant name fallback → v
 // SECTION 3 — OrdersService branches
 // ═══════════════════════════════════════════════════════════════════════════
 
-const OrdersService = require('../modules/orders/services/ordersService');
+const OrdersService = require('@modules/orders/services/orders-service');
 
 const CONSTANTS = {
   POINTS_EARN_RATE: 1000,
@@ -933,21 +933,21 @@ process.env.JWT_SECRET = 'test-secret-final-branch';
 process.env.FRONTEND_URL = 'https://shop.test';
 process.env.SEPAY_API_KEY = 'test-sepay-api-key-final';
 
-jest.mock('../utils/logger', () => ({
+jest.mock('@utils/logger', () => ({
   info: jest.fn(),
   error: jest.fn(),
   warn: jest.fn(),
   debug: jest.fn(),
 }));
 
-jest.mock('../middlewares/rateLimiter', () => ({
+jest.mock('@middlewares/rate-limiter', () => ({
   chatbotLimiter: (_req, _res, next) => next(),
   apiLimiter: (_req, _res, next) => next(),
   authLimiter: (_req, _res, next) => next(),
   otpLimiter: (_req, _res, next) => next(),
 }));
 
-jest.mock('../middlewares/authenticate', () => ({
+jest.mock('@middlewares/authenticate', () => ({
   authenticate: (req, res, next) => {
     if (req.headers.authorization === 'Bearer valid-token') {
       req.user = { id: 1, role: 'admin' };
@@ -958,20 +958,20 @@ jest.mock('../middlewares/authenticate', () => ({
   optionalAuthenticate: (_req, _res, next) => next(),
 }));
 
-jest.mock('../middlewares/authorize', () => ({
+jest.mock('@middlewares/authorize', () => ({
   authorize: () => (_req, _res, next) => next(),
 }));
 
-jest.mock('../middlewares/adminAuth', () => ({
+jest.mock('@middlewares/admin-auth', () => ({
   adminAuthenticate: (_req, _res, next) => next(),
 }));
 
-jest.mock('../shared/adminAudit', () => ({
+jest.mock('@shared/admin-audit', () => ({
   AdminAuditService: { logAction: jest.fn(), logSuccessfulLogin: jest.fn() },
   auditMiddleware: (_req, _res, next) => next(),
 }));
 
-jest.mock('../config/redis', () => ({
+jest.mock('@config/redis', () => ({
   getRedisClient: jest.fn().mockResolvedValue({
     get: jest.fn().mockResolvedValue(null),
     set: jest.fn().mockResolvedValue('OK'),
@@ -981,7 +981,7 @@ jest.mock('../config/redis', () => ({
   }),
 }));
 
-jest.mock('../config/sequelize', () => ({
+jest.mock('@config/sequelize', () => ({
   define: jest.fn().mockReturnValue(class MockModel {}),
   fn: jest.fn(),
   col: jest.fn(),
@@ -994,15 +994,15 @@ jest.mock('../config/sequelize', () => ({
   }),
 }));
 
-let mockFinalOrderFindByPk = jest.fn();
-let mockFinalOrderFindOne = jest.fn();
-let mockFinalOrderUpdate = jest.fn();
-let mockFinalDiscountCodeFindByPk = jest.fn();
-let mockFinalDiscountCodeIncrement = jest.fn();
-let mockFinalCartFindAll = jest.fn();
-let mockFinalCartItemDestroy = jest.fn();
+const mockFinalOrderFindByPk = jest.fn();
+const mockFinalOrderFindOne = jest.fn();
+const mockFinalOrderUpdate = jest.fn();
+const mockFinalDiscountCodeFindByPk = jest.fn();
+const mockFinalDiscountCodeIncrement = jest.fn();
+const mockFinalCartFindAll = jest.fn();
+const mockFinalCartItemDestroy = jest.fn();
 
-jest.mock('../models', () => {
+jest.mock('@models', () => {
   const sequelizePkg = require('sequelize');
   return {
     Order: {
@@ -1049,23 +1049,23 @@ jest.mock('../models', () => {
   };
 });
 
-jest.mock('../modules/payment/services/momoService', () => ({
+jest.mock('@modules/payment/services/momo-service', () => ({
   createPaymentUrl: jest.fn(),
   verifySignature: jest.fn(),
 }));
 
-jest.mock('../modules/payment/services/vnpayService', () => ({
+jest.mock('@modules/payment/services/vnpay-service', () => ({
   createPaymentUrl: jest.fn().mockReturnValue('https://vnpay.test/pay'),
   verifyReturnUrl: jest.fn(),
   refund: jest.fn(),
 }));
 
-jest.mock('../services/email', () => ({
+jest.mock('@services/email', () => ({
   sendOrderConfirmationEmail: jest.fn().mockResolvedValue(undefined),
   sendOtpEmail: jest.fn().mockResolvedValue(undefined),
 }));
 
-jest.mock('../utils/productHelpers', () => ({
+jest.mock('@utils/product-helpers', () => ({
   calculateTotalStock: jest.fn().mockReturnValue(0),
   updateProductTotalStock: jest.fn().mockResolvedValue(undefined),
   validateVariantAttributes: jest.fn().mockReturnValue([]),

@@ -6,12 +6,12 @@
  */
 import React from 'react';
 import { useGoogleLogin } from '@react-oauth/google';
-import { useGoogleLoginMutation } from '../api/authApi';
+import { useGoogleLoginMutation } from '../api/auth-api';
 import { useTranslation } from 'react-i18next';
-import { useAuthStore } from '@/stores/authStore';
-import { useUiStore } from '@/stores/uiStore';
+import { useAuthStore } from '@/stores/auth-store';
+import { useUiStore } from '@/stores/ui-store';
 import { PremiumButton } from '@/components/common';
-import { getErrorMsg } from '@/utils/errorUtils';
+import { getErrorMsg } from '@/utils/error-utils';
 
 const GoogleLoginButton: React.FC = () => {
   const { t } = useTranslation();

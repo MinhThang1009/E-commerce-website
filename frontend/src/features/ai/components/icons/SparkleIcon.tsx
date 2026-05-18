@@ -11,10 +11,7 @@ interface SparkleIconProps {
   size?: number;
 }
 
-const SparkleIcon: React.FC<SparkleIconProps> = ({
-  className = '',
-  size = 16,
-}) => {
+const SparkleIcon: React.FC<SparkleIconProps> = ({ className = '', size = 16 }) => {
   return (
     <svg
       width={size}
@@ -24,10 +21,7 @@ const SparkleIcon: React.FC<SparkleIconProps> = ({
       xmlns="http://www.w3.org/2000/svg"
       className={className}
     >
-      <path
-        d="M8 0L9.5 5.5L15 7L9.5 8.5L8 14L6.5 8.5L1 7L6.5 5.5L8 0Z"
-        fill="currentColor"
-      />
+      <path d="M8 0L9.5 5.5L15 7L9.5 8.5L8 14L6.5 8.5L1 7L6.5 5.5L8 0Z" fill="currentColor" />
       <path
         d="M12 2L12.5 3.5L14 4L12.5 4.5L12 6L11.5 4.5L10 4L11.5 3.5L12 2Z"
         fill="currentColor"
@@ -43,4 +37,3 @@ const SparkleIcon: React.FC<SparkleIconProps> = ({
 };
 
 export default SparkleIcon;
-

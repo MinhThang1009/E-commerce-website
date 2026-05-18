@@ -10,7 +10,7 @@ import { SearchOutlined, EyeOutlined } from '@ant-design/icons';
 import { useTranslation } from 'react-i18next';
 import { Dayjs } from 'dayjs';
 import { useQuery } from '@tanstack/react-query';
-import apiClient from '@/services/apiClient';
+import apiClient from '@/services/api-client';
 
 const { RangePicker } = DatePicker;
 
@@ -131,21 +131,26 @@ const AuditLogPage: React.FC = () => {
       title: t('auditLog.colDetail'),
       key: 'detail',
       render: (_: unknown, record: AuditLog) =>
-        (record.oldValue || record.newValue) ? (
-          <Button
-            size="small"
-            icon={<EyeOutlined />}
-            onClick={() => setDetailRecord(record)}
-          >
+        record.oldValue || record.newValue ? (
+          <Button size="small" icon={<EyeOutlined />} onClick={() => setDetailRecord(record)}>
             {t('auditLog.view')}
           </Button>
-        ) : '—',
+        ) : (
+          '—'
+        ),
     },
   ];
 
   return (
     <div style={{ padding: 24 }}>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
+      <div
+        style={{
+          display: 'flex',
+          justifyContent: 'space-between',
+          alignItems: 'center',
+          marginBottom: 16,
+        }}
+      >
         <h2 style={{ margin: 0 }}>{t('auditLog.title')}</h2>
       </div>
 
@@ -154,7 +159,10 @@ const AuditLogPage: React.FC = () => {
           placeholder={t('auditLog.filterAdminId')}
           prefix={<SearchOutlined />}
           value={adminIdFilter}
-          onChange={(e) => { setAdminIdFilter(e.target.value); setPage(1); }}
+          onChange={(e) => {
+            setAdminIdFilter(e.target.value);
+            setPage(1);
+          }}
           style={{ width: 160 }}
           allowClear
           type="number"
@@ -162,13 +170,19 @@ const AuditLogPage: React.FC = () => {
         <Input
           placeholder={t('auditLog.filterAction')}
           value={actionFilter}
-          onChange={(e) => { setActionFilter(e.target.value); setPage(1); }}
+          onChange={(e) => {
+            setActionFilter(e.target.value);
+            setPage(1);
+          }}
           style={{ width: 200 }}
           allowClear
         />
         <RangePicker
           value={dateRange}
-          onChange={(dates) => { setDateRange(dates); setPage(1); }}
+          onChange={(dates) => {
+            setDateRange(dates);
+            setPage(1);
+          }}
           placeholder={[t('auditLog.startDate'), t('auditLog.endDate')]}
         />
       </Space>
@@ -200,13 +214,29 @@ const AuditLogPage: React.FC = () => {
           <div>
             <div style={{ marginBottom: 16 }}>
               <strong>{t('auditLog.oldValue')}:</strong>
-              <pre style={{ background: '#f5f5f5', padding: 8, borderRadius: 4, marginTop: 4, overflow: 'auto' }}>
+              <pre
+                style={{
+                  background: '#f5f5f5',
+                  padding: 8,
+                  borderRadius: 4,
+                  marginTop: 4,
+                  overflow: 'auto',
+                }}
+              >
                 {detailRecord.oldValue ? prettyJson(detailRecord.oldValue) : t('auditLog.noData')}
               </pre>
             </div>
             <div>
               <strong>{t('auditLog.newValue')}:</strong>
-              <pre style={{ background: '#f5f5f5', padding: 8, borderRadius: 4, marginTop: 4, overflow: 'auto' }}>
+              <pre
+                style={{
+                  background: '#f5f5f5',
+                  padding: 8,
+                  borderRadius: 4,
+                  marginTop: 4,
+                  overflow: 'auto',
+                }}
+              >
                 {detailRecord.newValue ? prettyJson(detailRecord.newValue) : t('auditLog.noData')}
               </pre>
             </div>

@@ -7,8 +7,8 @@
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { getLocale } from '@/utils/format';
-import { useCatalogStore } from '@/stores/catalogStore';
-import { Category } from '../api/categoryApi';
+import { useCatalogStore } from '@/stores/catalog-store';
+import { Category } from '../api/category-api';
 import Button from '@/components/common/Button';
 
 interface ProductFiltersProps {
@@ -31,15 +31,11 @@ const ProductFilters: React.FC<ProductFiltersProps> = ({
   const storeSetAttributes = useCatalogStore((s) => s.setAttributes);
   const storeClearFilters = useCatalogStore((s) => s.clearFilters);
 
-  const [priceRange, setPriceRangeLocal] = useState<[number, number]>(
-    filters.priceRange
+  const [priceRange, setPriceRangeLocal] = useState<[number, number]>(filters.priceRange);
+  const [selectedCategories, setSelectedCategoriesLocal] = useState<string[]>(filters.categories);
+  const [selectedAttributes, setSelectedAttributesLocal] = useState<Record<string, string[]>>(
+    filters.attributes,
   );
-  const [selectedCategories, setSelectedCategoriesLocal] = useState<string[]>(
-    filters.categories
-  );
-  const [selectedAttributes, setSelectedAttributesLocal] = useState<
-    Record<string, string[]>
-  >(filters.attributes);
 
   const handlePriceChange = (index: 0 | 1, value: number) => {
     const newRange = [...priceRange] as [number, number];
@@ -51,9 +47,7 @@ const ProductFilters: React.FC<ProductFiltersProps> = ({
     if (checked) {
       setSelectedCategoriesLocal([...selectedCategories, categoryId]);
     } else {
-      setSelectedCategoriesLocal(
-        selectedCategories.filter((id) => id !== categoryId)
-      );
+      setSelectedCategoriesLocal(selectedCategories.filter((id) => id !== categoryId));
     }
   };
 
@@ -62,7 +56,10 @@ const ProductFilters: React.FC<ProductFiltersProps> = ({
     if (checked) {
       setSelectedAttributesLocal({ ...selectedAttributes, [name]: [...currentValues, value] });
     } else {
-      setSelectedAttributesLocal({ ...selectedAttributes, [name]: currentValues.filter((v) => v !== value) });
+      setSelectedAttributesLocal({
+        ...selectedAttributes,
+        [name]: currentValues.filter((v) => v !== value),
+      });
     }
   };
 

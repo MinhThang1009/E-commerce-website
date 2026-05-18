@@ -29,16 +29,18 @@ const ProductFAQSection: React.FC<ProductFAQSectionProps> = ({ faqs }) => {
       <h2 className="text-2xl font-bold text-neutral-900 dark:text-white mb-6">
         {t('product.faq')}
       </h2>
-      
+
       <Collapse
         accordion
         expandIconPosition="end"
         ghost
-        expandIcon={({ isActive }) => (
-          isActive ? 
-            <MinusOutlined className="text-neutral-500 text-sm" /> : 
+        expandIcon={({ isActive }) =>
+          isActive ? (
+            <MinusOutlined className="text-neutral-500 text-sm" />
+          ) : (
             <PlusOutlined className="text-neutral-500 text-sm" />
-        )}
+          )
+        }
         className="product-faq-collapse"
       >
         {faqs.map((faq, index) => (
@@ -76,4 +78,3 @@ const ProductFAQSection: React.FC<ProductFAQSectionProps> = ({ faqs }) => {
 };
 
 export default ProductFAQSection;
-

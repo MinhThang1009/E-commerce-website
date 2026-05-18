@@ -15,4 +15,3 @@ export * from '@/features/content/types/news.types';
 // Kiểu auth đã chuyển sang features/auth (Phase 42 Sprint 12)
 export * from '@/features/auth/types/auth.types';
 export * from './ui.types';
-

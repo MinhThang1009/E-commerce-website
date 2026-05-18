@@ -14,9 +14,9 @@ interface IconProps {
 const VerifiedIcon: React.FC<IconProps> = ({ className = '', size = 14 }) => {
   const pixelSize = typeof size === 'number' ? `${size}px` : size;
   return (
-    <svg 
-      className={className} 
-      fill="currentColor" 
+    <svg
+      className={className}
+      fill="currentColor"
       viewBox="0 0 20 20"
       style={{ width: pixelSize, height: pixelSize }}
     >
@@ -30,4 +30,3 @@ const VerifiedIcon: React.FC<IconProps> = ({ className = '', size = 14 }) => {
 };
 
 export default VerifiedIcon;
-

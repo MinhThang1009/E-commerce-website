@@ -5,7 +5,7 @@
  * @description HTTP endpoints của upload
  */
 const express = require('express');
-const { authenticate } = require('../../middlewares/authenticate');
+const { authenticate } = require('@middlewares/authenticate');
 
 module.exports = ({ uploadController }) => {
   const router = express.Router();

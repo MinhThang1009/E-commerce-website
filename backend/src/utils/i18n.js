@@ -10,7 +10,7 @@
 const vi = require('../locales/vi.json');
 const en = require('../locales/en.json');
 
-const translations = { vi, en };
+const TRANSLATIONS = { vi, en };
 
 // Lấy giá trị từ object theo dot-notation key (vd: 'auth.emailInUse')
 function getNestedValue(obj, key) {
@@ -25,7 +25,7 @@ function getNestedValue(obj, key) {
 
 // Translate i18n key → chuỗi đã dịch. Trả null nếu key không tồn tại (= không phải i18n key).
 function t(key, lang = 'vi', params = {}) {
-  const dict = translations[lang] || translations.vi;
+  const dict = TRANSLATIONS[lang] || TRANSLATIONS.vi;
   const value = getNestedValue(dict, key);
   if (!value) return null;
   return value.replace(/\{\{(\w+)\}\}/g, (_, name) => (params[name] !== undefined ? params[name] : ''));

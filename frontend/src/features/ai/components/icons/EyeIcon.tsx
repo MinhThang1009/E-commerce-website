@@ -12,12 +12,7 @@ interface IconProps {
 
 const EyeIcon: React.FC<IconProps> = ({ className = 'w-4 h-4' }) => {
   return (
-    <svg
-      className={className}
-      fill="none"
-      viewBox="0 0 24 24"
-      stroke="currentColor"
-    >
+    <svg className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor">
       <path
         strokeLinecap="round"
         strokeLinejoin="round"
@@ -35,4 +30,3 @@ const EyeIcon: React.FC<IconProps> = ({ className = 'w-4 h-4' }) => {
 };
 
 export default EyeIcon;
-

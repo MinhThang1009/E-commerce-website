@@ -52,24 +52,19 @@ backend/src/
 ### File naming
 | Layer | Convention | Ví dụ |
 |---|---|---|
-| Module folder | `lowercase` singular hoặc plural | `auth/`, `orders/`, `catalog/` |
+| Module folder | `kebab-case` singular | `auth/`, `orders/`, `discount-code/` |
 | Module entry | `module.js` | `modules/auth/module.js` |
-| Controller | `{name}Controller.js` PascalCase class trong file camelCase | `authController.js` exports `AuthController` |
-| Service | `{name}Service.js` PascalCase class | `authService.js` exports `AuthService` |
-| Repository interface | `I{Name}Repository.js` | `IAuthRepository.js` (EXCEPTION với "no I prefix" — DDD/clean convention) |
-| Repository impl | `Sequelize{Name}Repository.js` hoặc `Filesystem{Name}Repository.js` | `SequelizeAuthRepository.js` |
-| Validator | `{name}Validator.js` exports Joi schemas | `authValidator.js` |
-| DTO | `{name}Dto.js` exports `to{X}Dto(model)` plain function | `authDto.js` exports `toUserDto` |
+| Controller | `{name}-controller.js` kebab-case, PascalCase class bên trong | `auth-controller.js` exports `AuthController` |
+| Service | `{name}-service.js` kebab-case, PascalCase class | `auth-service.js` exports `AuthService` |
+| Repository interface | `i-{name}-repository.js` kebab-case | `i-auth-repository.js` exports `IAuthRepository` |
+| Repository impl | `sequelize-{name}-repository.js` hoặc `filesystem-{name}-repository.js` | `sequelize-auth-repository.js` |
+| Validator | `{name}-validator.js` exports Joi schemas | `auth-validator.js` |
+| DTO | `{name}-dto.js` exports `to{X}Dto(model)` plain function | `auth-dto.js` exports `toUserDto` |
 | Routes | `routes.js` (1 file/module) | `modules/auth/routes.js` |
-| Domain Aggregate | `{Name}Aggregate.js` PascalCase | `OrderAggregate.js`, `InventoryAggregate.js` |
-| Domain Event | `{Name}{Action}Event.js` | `OrderCreatedEvent.js`, `PaymentSucceededEvent.js` |
-| Domain Policy | `{Name}Policy.js` | `RefundPolicy.js`, `OrderStatusPolicy.js` |
-| Domain Port | `I{ServiceName}.js` interface | `ILlmGateway.js`, `ISocketBridge.js` |
-| Infrastructure Gateway | `{Name}Gateway.js` impl của port | `MomoGateway.js`, `VnPayGateway.js` |
-| Models | `camelCase.js` | `product.js`, `orderItem.js` |
-| Middlewares | `camelCase.js` | `authenticate.js` |
+| Models | `kebab-case.js` | `product.js`, `order-item.js`, `product-variant.js` |
+| Middlewares | `kebab-case.js` | `authenticate.js`, `admin-auth.js`, `rate-limiter.js` |
 | Migrations | `YYYYMMDDHHmm-kebab-description.js` | `2026050501-rename-columns.js` |
-| Tests | `{name}.test.js` hoặc `{name}.unit.test.js` | `authService.unit.test.js` |
+| Tests | `{name}.test.js`, `{name}.unit.test.js`, `{name}.phase25.test.js` | `auth-service.unit.test.js` |
 
 ### JavaScript code
 - Variables, functions: `camelCase` (`getUserById`)

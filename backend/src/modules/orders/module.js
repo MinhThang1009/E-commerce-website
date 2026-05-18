@@ -4,10 +4,10 @@
  * @module orders
  * @description Entry point orders module — khởi tạo dependencies và đăng ký routes
  */
-const OrdersController = require('./controllers/ordersController');
-const OrdersService = require('./services/ordersService');
-const SequelizeOrdersRepository = require('./repositories/SequelizeOrdersRepository');
-const buildRoutes = require('./routes');
+const OrdersController = require('@modules/orders/controllers/orders-controller');
+const OrdersService = require('@modules/orders/services/orders-service');
+const SequelizeOrdersRepository = require('@modules/orders/repositories/sequelize-orders-repository');
+const buildRoutes = require('@modules/orders/routes');
 
 // Orders module — DDD-lite. DI wire repo → service → controller → router.
 // emailService inject qua adapter port (dễ test/swap).

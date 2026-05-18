@@ -6,7 +6,7 @@
  */
 import { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
-import { geminiService } from '../services/geminiApi';
+import { geminiService } from '../services/gemini-api';
 
 const AIStatusIndicator: React.FC = () => {
   const { t } = useTranslation();
@@ -89,11 +89,7 @@ const AIStatusIndicator: React.FC = () => {
                 onClick={() => setShowDetails(false)}
                 className="text-neutral-400 hover:text-neutral-600 dark:hover:text-neutral-300"
               >
-                <svg
-                  className="h-4 w-4"
-                  fill="currentColor"
-                  viewBox="0 0 20 20"
-                >
+                <svg className="h-4 w-4" fill="currentColor" viewBox="0 0 20 20">
                   <path
                     fillRule="evenodd"
                     d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z"
@@ -105,24 +101,14 @@ const AIStatusIndicator: React.FC = () => {
 
             <div className="space-y-2 text-sm">
               <div className="flex items-center justify-between">
-                <span className="text-neutral-600 dark:text-neutral-400">
-                  {t('ai.modelReady')}
-                </span>
-                <span
-                  className={status.ready ? 'text-green-500' : 'text-red-500'}
-                >
+                <span className="text-neutral-600 dark:text-neutral-400">{t('ai.modelReady')}</span>
+                <span className={status.ready ? 'text-green-500' : 'text-red-500'}>
                   {status.ready ? t('common.yes') : t('common.no')}
                 </span>
               </div>
               <div className="flex items-center justify-between">
-                <span className="text-neutral-600 dark:text-neutral-400">
-                  {t('ai.apiKey')}
-                </span>
-                <span
-                  className={
-                    status.hasApiKey ? 'text-green-500' : 'text-yellow-500'
-                  }
-                >
+                <span className="text-neutral-600 dark:text-neutral-400">{t('ai.apiKey')}</span>
+                <span className={status.hasApiKey ? 'text-green-500' : 'text-yellow-500'}>
                   {status.hasApiKey ? t('ai.configured') : t('ai.statusDemo')}
                 </span>
               </div>
@@ -165,19 +151,31 @@ const AIStatusIndicator: React.FC = () => {
               </h5>
               <div className="text-xs text-neutral-600 dark:text-neutral-400 space-y-1">
                 <div className="flex items-center space-x-2">
-                  <span className={status.ready && status.hasApiKey ? 'text-green-500' : 'text-neutral-400'}>
+                  <span
+                    className={
+                      status.ready && status.hasApiKey ? 'text-green-500' : 'text-neutral-400'
+                    }
+                  >
                     {status.ready && status.hasApiKey ? '✓' : '○'}
                   </span>
                   <span>{t('ai.featureRecommendations')}</span>
                 </div>
                 <div className="flex items-center space-x-2">
-                  <span className={status.ready && status.hasApiKey ? 'text-green-500' : 'text-neutral-400'}>
+                  <span
+                    className={
+                      status.ready && status.hasApiKey ? 'text-green-500' : 'text-neutral-400'
+                    }
+                  >
                     {status.ready && status.hasApiKey ? '✓' : '○'}
                   </span>
                   <span>{t('ai.featureNLP')}</span>
                 </div>
                 <div className="flex items-center space-x-2">
-                  <span className={status.ready && status.hasApiKey ? 'text-green-500' : 'text-neutral-400'}>
+                  <span
+                    className={
+                      status.ready && status.hasApiKey ? 'text-green-500' : 'text-neutral-400'
+                    }
+                  >
                     {status.ready && status.hasApiKey ? '✓' : '○'}
                   </span>
                   <span>{t('ai.featureContext')}</span>
@@ -196,4 +194,3 @@ const AIStatusIndicator: React.FC = () => {
 };
 
 export default AIStatusIndicator;
-

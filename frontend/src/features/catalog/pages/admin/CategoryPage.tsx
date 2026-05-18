@@ -23,9 +23,9 @@ import {
   useCreateCategoryMutation,
   useUpdateCategoryMutation,
   useDeleteCategoryMutation,
-} from '../../api/categoryApi';
+} from '../../api/category-api';
 import { Category } from '../../types/category.types';
-import { getErrorMsg } from '@/utils/errorUtils';
+import { getErrorMsg } from '@/utils/error-utils';
 
 interface CategoryFormData {
   name: string;

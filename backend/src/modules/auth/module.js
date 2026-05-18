@@ -9,10 +9,10 @@ const crypto = require('crypto');
 const axios = require('axios');
 const { OAuth2Client } = require('google-auth-library');
 
-const AuthController = require('./controllers/authController');
-const AuthService = require('./services/authService');
-const SequelizeAuthRepository = require('./repositories/SequelizeAuthRepository');
-const buildRoutes = require('./routes');
+const AuthController = require('@modules/auth/controllers/auth-controller');
+const AuthService = require('@modules/auth/services/auth-service');
+const SequelizeAuthRepository = require('@modules/auth/repositories/sequelize-auth-repository');
+const buildRoutes = require('@modules/auth/routes');
 
 // Auth module — DI wire repo → service → controller → router.
 //

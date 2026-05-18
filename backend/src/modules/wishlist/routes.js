@@ -5,7 +5,7 @@
  * @description HTTP endpoints của wishlist
  */
 const express = require('express');
-const { authenticate } = require('../../middlewares/authenticate');
+const { authenticate } = require('@middlewares/authenticate');
 
 // Wishlist routes — basePath '/wishlists'. Old route mount tại /api/wishlists.
 module.exports = ({ wishlistController }) => {

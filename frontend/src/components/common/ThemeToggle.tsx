@@ -6,7 +6,7 @@
  */
 import React from 'react';
 import { useTranslation } from 'react-i18next';
-import { useUiStore } from '@/stores/uiStore';
+import { useUiStore } from '@/stores/ui-store';
 
 const ThemeToggle: React.FC = () => {
   const { t } = useTranslation();
@@ -51,4 +51,3 @@ const ThemeToggle: React.FC = () => {
 };
 
 export default ThemeToggle;
-

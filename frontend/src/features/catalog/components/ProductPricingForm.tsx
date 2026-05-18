@@ -13,9 +13,7 @@ interface ProductPricingFormProps {
   hasVariants?: boolean;
 }
 
-const ProductPricingForm: React.FC<ProductPricingFormProps> = ({
-  hasVariants = false,
-}) => {
+const ProductPricingForm: React.FC<ProductPricingFormProps> = ({ hasVariants = false }) => {
   const { t } = useTranslation();
 
   return (
@@ -105,7 +103,11 @@ const ProductPricingForm: React.FC<ProductPricingFormProps> = ({
       <Col span={12}>
         <Form.Item
           name="stockQuantity"
-          label={hasVariants ? t('admin.products.pricing.stockLabelVariant') : t('admin.products.pricing.stockLabel')}
+          label={
+            hasVariants
+              ? t('admin.products.pricing.stockLabelVariant')
+              : t('admin.products.pricing.stockLabel')
+          }
           rules={[{ required: true, message: t('admin.products.pricing.stockRequired') }]}
           tooltip={
             hasVariants
@@ -114,12 +116,7 @@ const ProductPricingForm: React.FC<ProductPricingFormProps> = ({
           }
           extra={hasVariants ? t('admin.products.pricing.stockAutoUpdate') : ''}
         >
-          <InputNumber
-            placeholder="0"
-            style={{ width: '100%' }}
-            min={0}
-            disabled={hasVariants}
-          />
+          <InputNumber placeholder="0" style={{ width: '100%' }} min={0} disabled={hasVariants} />
         </Form.Item>
       </Col>
 

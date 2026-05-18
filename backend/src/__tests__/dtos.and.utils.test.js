@@ -2,7 +2,7 @@
 // Tất cả DTO là pure function / pass-through — test verify output trực tiếp.
 
 // ─── AI DTO ───────────────────────────────────────────────────────────────────
-const { toAIDto } = require('../modules/ai/dtos/aiDto');
+const { toAIDto } = require('@modules/ai/dtos/ai-dto');
 
 describe('toAIDto', () => {
   test('trả về null khi model là null', () => {
@@ -25,7 +25,7 @@ describe('toAIDto', () => {
 });
 
 // ─── CART DTO ─────────────────────────────────────────────────────────────────
-const { toCartDto } = require('../modules/cart/dtos/cartDto');
+const { toCartDto } = require('@modules/cart/dtos/cart-dto');
 
 describe('toCartDto', () => {
   test('trả về null khi data là null', () => {
@@ -43,7 +43,7 @@ describe('toCartDto', () => {
 });
 
 // ─── CATALOG DTO ──────────────────────────────────────────────────────────────
-const { toCategoryDto, toBrandDto, toCollectionDto, toProductDto } = require('../modules/catalog/dtos/catalogDto');
+const { toCategoryDto, toBrandDto, toCollectionDto, toProductDto } = require('@modules/catalog/dtos/catalog-dto');
 
 describe('toCategoryDto', () => {
   test('trả về null khi input là null', () => {
@@ -106,7 +106,7 @@ describe('toProductDto', () => {
 });
 
 // ─── CONTENT DTO ──────────────────────────────────────────────────────────────
-const { toBannerDto, toNewsDto, toCampaignDto, toFeedbackDto } = require('../modules/content/dtos/contentDto');
+const { toBannerDto, toNewsDto, toCampaignDto, toFeedbackDto } = require('@modules/content/dtos/content-dto');
 
 describe('toBannerDto', () => {
   test('trả về null khi input là null', () => {
@@ -169,7 +169,7 @@ describe('toFeedbackDto', () => {
 });
 
 // ─── INVENTORY DTO ────────────────────────────────────────────────────────────
-const { toInventoryDto } = require('../modules/inventory/dtos/inventoryDto');
+const { toInventoryDto } = require('@modules/inventory/dtos/inventory-dto');
 
 describe('toInventoryDto', () => {
   test('trả về null khi model là null', () => {
@@ -192,7 +192,7 @@ describe('toInventoryDto', () => {
 });
 
 // ─── LOYALTY DTO ──────────────────────────────────────────────────────────────
-const { toLoyaltyDto } = require('../modules/loyalty/dtos/loyaltyDto');
+const { toLoyaltyDto } = require('@modules/loyalty/dtos/loyalty-dto');
 
 describe('toLoyaltyDto', () => {
   test('trả về null khi model là null', () => {
@@ -215,7 +215,7 @@ describe('toLoyaltyDto', () => {
 });
 
 // ─── ORDERS DTO ───────────────────────────────────────────────────────────────
-const { toOrderDto } = require('../modules/orders/dtos/ordersDto');
+const { toOrderDto } = require('@modules/orders/dtos/orders-dto');
 
 describe('toOrderDto', () => {
   test('trả về null khi input là null', () => {
@@ -233,7 +233,7 @@ describe('toOrderDto', () => {
 });
 
 // ─── PAYMENT DTO ──────────────────────────────────────────────────────────────
-const { toPaymentIntentDto, toRefundDto } = require('../modules/payment/dtos/paymentDto');
+const { toPaymentIntentDto, toRefundDto } = require('@modules/payment/dtos/payment-dto');
 
 describe('toPaymentIntentDto', () => {
   test('trả về null khi input là null', () => {
@@ -266,7 +266,7 @@ describe('toRefundDto', () => {
 });
 
 // ─── REVIEWS DTO ──────────────────────────────────────────────────────────────
-const { toReviewDto } = require('../modules/reviews/dtos/reviewsDto');
+const { toReviewDto } = require('@modules/reviews/dtos/reviews-dto');
 
 describe('toReviewDto', () => {
   test('trả về null khi input là null', () => {
@@ -284,7 +284,7 @@ describe('toReviewDto', () => {
 });
 
 // ─── UPLOAD DTO ───────────────────────────────────────────────────────────────
-const { toUploadFileDto } = require('../modules/upload/dtos/uploadDto');
+const { toUploadFileDto } = require('@modules/upload/dtos/upload-dto');
 
 describe('toUploadFileDto', () => {
   test('trả về null khi input là null', () => {
@@ -302,7 +302,7 @@ describe('toUploadFileDto', () => {
 });
 
 // ─── WISHLIST DTO ─────────────────────────────────────────────────────────────
-const { toWishlistProductDto } = require('../modules/wishlist/dtos/wishlistDto');
+const { toWishlistProductDto } = require('@modules/wishlist/dtos/wishlist-dto');
 
 describe('toWishlistProductDto', () => {
   test('trả về null khi input là null', () => {
@@ -321,12 +321,12 @@ describe('toWishlistProductDto', () => {
 
 // ─── UNIT OF WORK ─────────────────────────────────────────────────────────────
 // unitOfWork require('../../config/sequelize') → mock trước khi require module.
-jest.mock('../config/sequelize', () => ({
+jest.mock('@config/sequelize', () => ({
   transaction: jest.fn(),
 }));
 
-const sequelizeMock = require('../config/sequelize');
-const { runInTransaction, lockRow } = require('../shared/persistence/unitOfWork');
+const sequelizeMock = require('@config/sequelize');
+const { runInTransaction, lockRow } = require('@shared/persistence/unit-of-work');
 
 describe('runInTransaction', () => {
   beforeEach(() => {
@@ -407,7 +407,7 @@ describe('lockRow', () => {
 });
 
 // ─── SEQUELIZE INVENTORY REPOSITORY ──────────────────────────────────────────
-const SequelizeInventoryRepository = require('../modules/inventory/repositories/SequelizeInventoryRepository');
+const SequelizeInventoryRepository = require('@modules/inventory/repositories/sequelize-inventory-repository');
 
 function buildRepo(overrides = {}) {
   const Product = {

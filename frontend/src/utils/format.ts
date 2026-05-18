@@ -6,8 +6,7 @@
  */
 import i18next from 'i18next';
 
-export const getLocale = (): 'vi-VN' | 'en-US' =>
-  i18next.language === 'vi' ? 'vi-VN' : 'en-US';
+export const getLocale = (): 'vi-VN' | 'en-US' => (i18next.language === 'vi' ? 'vi-VN' : 'en-US');
 
 export const formatPrice = (price: string | number): string => {
   const numPrice = typeof price === 'string' ? parseFloat(price) : price;
@@ -70,4 +69,3 @@ export const parsePrice = (price: string | number): number => {
   const parsed = parseFloat(price);
   return isNaN(parsed) ? 0 : parsed;
 };
-

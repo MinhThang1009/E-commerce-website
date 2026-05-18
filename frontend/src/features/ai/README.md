@@ -121,19 +121,16 @@ src/features/ai/
 ## 🎯 Best Practices được áp dụng
 
 1. **Component Design**
-
    - Single Responsibility Principle
    - Props interface design
    - Proper TypeScript typing
 
 2. **State Management**
-
    - Custom hooks cho logic reuse
    - Proper state lifting
    - Efficient updates
 
 3. **Styling**
-
    - Tailwind CSS best practices
    - CSS-in-JS cho dynamic styles
    - Consistent design tokens

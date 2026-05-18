@@ -8,9 +8,13 @@ import React from 'react';
 import { Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { ROUTES, buildRoute } from '@/routes/paths';
-import { useGetDashboardStatsQuery, useGetLowStockAnalyticsQuery } from '../api/adminDashboardApi';
-import { useGetAdminOrdersQuery } from '../api/adminOrderApi';
+import {
+  useGetDashboardStatsQuery,
+  useGetLowStockAnalyticsQuery,
+} from '../api/admin-dashboard-api';
+import { useGetAdminOrdersQuery } from '../api/admin-order-api';
 import DashboardCharts from '../components/DashboardCharts';
+import { proxyImg } from '@/utils/proxy-img';
 
 // Màu sắc badge trạng thái
 const statusColors: Record<string, string> = {
@@ -677,7 +681,7 @@ const DashboardPage: React.FC = () => {
                       <div className="flex items-center gap-3">
                         {product.thumbnail ? (
                           <img
-                            src={product.thumbnail}
+                            src={proxyImg(product.thumbnail)}
                             alt={product.name}
                             className="w-8 h-8 rounded object-cover"
                           />

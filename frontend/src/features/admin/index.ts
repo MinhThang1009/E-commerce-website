@@ -13,9 +13,9 @@ export { default as DashboardCharts } from './components/DashboardCharts';
 export { default as ProductExportModal } from './components/ProductExportModal';
 
 // API endpoints (TanStack Query)
-export * from './api/adminDashboardApi';
-export * from './api/adminOrderApi';
-export * from './api/adminProductApi';
-export * from './api/adminUserApi';
-export * from './api/discountCodeApi';
-export * from './api/warrantyApi';
+export * from './api/admin-dashboard-api';
+export * from './api/admin-order-api';
+export * from './api/admin-product-api';
+export * from './api/admin-user-api';
+export * from './api/discount-code-api';
+export * from './api/warranty-api';

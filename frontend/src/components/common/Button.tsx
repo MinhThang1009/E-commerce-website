@@ -37,7 +37,7 @@ const Button = forwardRef<HTMLButtonElement, ButtonProps>(
       to,
       ...props
     },
-    ref
+    ref,
   ) => {
     const baseClasses = 'btn inline-flex items-center justify-center';
     const variantClasses = `btn-${variant}`;
@@ -71,20 +71,20 @@ const Button = forwardRef<HTMLButtonElement, ButtonProps>(
           </svg>
         )}
 
-        {!isLoading && leftIcon && (
-          <span className="mr-2 flex-shrink-0">{leftIcon}</span>
-        )}
+        {!isLoading && leftIcon && <span className="mr-2 flex-shrink-0">{leftIcon}</span>}
         <span className="inline-block whitespace-nowrap">{children}</span>
-        {!isLoading && rightIcon && (
-          <span className="ml-2 flex-shrink-0">{rightIcon}</span>
-        )}
+        {!isLoading && rightIcon && <span className="ml-2 flex-shrink-0">{rightIcon}</span>}
       </>
     );
 
     // Nếu button cần render dạng Link từ react-router-dom
     if (as === Link && to) {
       return (
-        <Link to={to} className={allClasses} {...(props as Omit<React.ComponentProps<typeof Link>, 'to' | 'className'>)}>
+        <Link
+          to={to}
+          className={allClasses}
+          {...(props as Omit<React.ComponentProps<typeof Link>, 'to' | 'className'>)}
+        >
           {content}
         </Link>
       );
@@ -102,19 +102,13 @@ const Button = forwardRef<HTMLButtonElement, ButtonProps>(
 
     // Button mặc định
     return (
-      <button
-        ref={ref}
-        className={allClasses}
-        disabled={disabled || isLoading}
-        {...props}
-      >
+      <button ref={ref} className={allClasses} disabled={disabled || isLoading} {...props}>
         {content}
       </button>
     );
-  }
+  },
 );
 
 Button.displayName = 'Button';
 
 export default Button;
-

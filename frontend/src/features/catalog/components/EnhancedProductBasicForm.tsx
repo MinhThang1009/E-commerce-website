@@ -43,9 +43,9 @@ const EnhancedProductBasicForm: React.FC<EnhancedProductBasicFormProps> = ({
 
   const handleFillSampleData = async () => {
     if (!import.meta.env.DEV) return;
-    const { sampleLaptopData } = await import('../utils/sampleProductData');
+    const { SAMPLE_LAPTOP_DATA } = await import('../utils/sample-product-data');
     form.setFieldsValue({
-      ...sampleLaptopData,
+      ...SAMPLE_LAPTOP_DATA,
       baseName: 'ThinkPad X1 Carbon',
       isVariantProduct: true,
     });

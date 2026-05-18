@@ -22,7 +22,7 @@ export {
   useRepayOrderMutation,
   useApplyDiscountCodeMutation,
   useConfirmReceivedMutation,
-} from './api/orderApi';
+} from './api/order-api';
 
 // Kiểu dữ liệu từ orderApi
 export type {
@@ -33,6 +33,6 @@ export type {
   CreateOrderResponse,
   ApplyDiscountRequest,
   ApplyDiscountResponse,
-} from './api/orderApi';
+} from './api/order-api';
 
 export { default as OrderDetails } from './components/OrderDetails';

@@ -4,7 +4,7 @@
  * @module global
  * @description Express middleware: authorize
  */
-const { AppError } = require('./errorHandler');
+const { AppError } = require('@middlewares/error-handler');
 
 // Middleware phân quyền người dùng dựa theo role
 const authorize = (...roles) => {

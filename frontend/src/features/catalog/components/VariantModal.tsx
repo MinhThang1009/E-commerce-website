@@ -166,10 +166,7 @@ const VariantModal: React.FC<VariantModalProps> = ({
             </Space.Compact>
           </Form.Item>
 
-          <Form.Item
-            label={t('variantModal.stockLabel')}
-            required
-          >
+          <Form.Item label={t('variantModal.stockLabel')} required>
             <Space.Compact style={{ width: '100%' }}>
               <Form.Item
                 name="stock"
@@ -220,7 +217,10 @@ const VariantModal: React.FC<VariantModalProps> = ({
                   : [];
                 return (
                   <Form.Item key={attr.id} label={attr.name} name={attr.name}>
-                    <Select placeholder={t('variantModal.selectAttr', { name: attr.name })} allowClear>
+                    <Select
+                      placeholder={t('variantModal.selectAttr', { name: attr.name })}
+                      allowClear
+                    >
                       {values.map((value: string) => (
                         <Select.Option key={value} value={value}>
                           {value}

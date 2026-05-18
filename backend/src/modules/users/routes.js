@@ -6,13 +6,13 @@
  */
 const express = require('express');
 
-const { authenticate } = require('../../middlewares/authenticate');
-const { validateRequest } = require('../../middlewares/validateRequest');
+const { authenticate } = require('@middlewares/authenticate');
+const { validateRequest } = require('@middlewares/validate-request');
 const {
   updateProfileSchema,
   changePasswordSchema,
   addressSchema,
-} = require('./validators/usersValidator');
+} = require('@modules/users/validators/users-validator');
 
 // Users module routes — mount tại basePath '/users' (server.js wire vào /api/users).
 // Endpoint URL không đổi so với routes/user.js cũ:

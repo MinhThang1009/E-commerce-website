@@ -5,9 +5,9 @@
  * @description HTTP endpoints của loyalty
  */
 const express = require('express');
-const { authenticate } = require('../../middlewares/authenticate');
-const { validateRequest } = require('../../middlewares/validateRequest');
-const { redeemPointsSchema } = require('./validators/loyaltyValidator');
+const { authenticate } = require('@middlewares/authenticate');
+const { validateRequest } = require('@middlewares/validate-request');
+const { redeemPointsSchema } = require('@modules/loyalty/validators/loyalty-validator');
 
 module.exports = ({ loyaltyController }) => {
   const router = express.Router();

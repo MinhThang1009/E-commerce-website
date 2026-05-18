@@ -4,8 +4,8 @@
  * @module global
  * @description Express middleware: cache
  */
-const { getRedisClient } = require('../config/redis');
-const logger = require('../utils/logger');
+const { getRedisClient } = require('@config/redis');
+const logger = require('@utils/logger');
 
 // Cache middleware dạng cache-aside — dùng cho GET endpoints công khai
 // Monkey-patch res.json để tự động cache response khi status = 200

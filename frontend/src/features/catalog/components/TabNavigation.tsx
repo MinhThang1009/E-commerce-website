@@ -7,11 +7,7 @@
 import React from 'react';
 import { useTranslation } from 'react-i18next';
 import { Button, Space, Alert } from 'antd';
-import {
-  ArrowRightOutlined,
-  ArrowLeftOutlined,
-  SaveOutlined,
-} from '@ant-design/icons';
+import { ArrowRightOutlined, ArrowLeftOutlined, SaveOutlined } from '@ant-design/icons';
 
 interface TabNavigationProps {
   activeTab: string;
@@ -41,8 +37,7 @@ const TabNavigation: React.FC<TabNavigationProps> = ({
   const resolvedLoadingText = loadingText ?? t('product.creating');
 
   const currentIndex = tabOrder.indexOf(activeTab);
-  const nextTab =
-    currentIndex < tabOrder.length - 1 ? tabOrder[currentIndex + 1] : null;
+  const nextTab = currentIndex < tabOrder.length - 1 ? tabOrder[currentIndex + 1] : null;
   const prevTab = currentIndex > 0 ? tabOrder[currentIndex - 1] : null;
 
   const handleNext = () => {
@@ -102,14 +97,10 @@ const TabNavigation: React.FC<TabNavigationProps> = ({
     <div style={{ marginTop: 24, textAlign: 'right' }}>
       <Alert
         message={
-          isCurrentStepCompleted
-            ? t('product.stepComplete')
-            : t('product.completeStepFirst')
+          isCurrentStepCompleted ? t('product.stepComplete') : t('product.completeStepFirst')
         }
         description={
-          isCurrentStepCompleted
-            ? t('product.canContinueStep')
-            : t('product.fillRequiredFirst')
+          isCurrentStepCompleted ? t('product.canContinueStep') : t('product.fillRequiredFirst')
         }
         type={isCurrentStepCompleted ? 'success' : 'info'}
         showIcon

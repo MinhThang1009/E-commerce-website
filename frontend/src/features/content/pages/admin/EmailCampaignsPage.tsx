@@ -5,7 +5,19 @@
  * @description Page component của feature content
  */
 import React, { useState } from 'react';
-import { Table, Button, Space, Modal, Form, Input, Card, Typography, message, Popconfirm, Tag } from 'antd';
+import {
+  Table,
+  Button,
+  Space,
+  Modal,
+  Form,
+  Input,
+  Card,
+  Typography,
+  message,
+  Popconfirm,
+  Tag,
+} from 'antd';
 import { PlusOutlined, SendOutlined, DeleteOutlined } from '@ant-design/icons';
 import { useTranslation } from 'react-i18next';
 import DOMPurify from 'dompurify';
@@ -15,7 +27,7 @@ import {
   useDeleteEmailCampaignMutation,
   useSendEmailCampaignMutation,
   Campaign,
-} from '../../api/emailCampaignApi';
+} from '../../api/email-campaign-api';
 
 const { Text } = Typography;
 
@@ -84,16 +96,14 @@ const EmailCampaignsPage: React.FC = () => {
       dataIndex: 'status',
       key: 'status',
       render: (status: string) => (
-        <Tag color={status === 'sent' ? 'green' : 'blue'}>
-          {status.toUpperCase()}
-        </Tag>
+        <Tag color={status === 'sent' ? 'green' : 'blue'}>{status.toUpperCase()}</Tag>
       ),
     },
     {
       title: t('emailCampaigns.colSentAt'),
       dataIndex: 'sentAt',
       key: 'sentAt',
-      render: (date: string) => date ? new Date(date).toLocaleString() : '-',
+      render: (date: string) => (date ? new Date(date).toLocaleString() : '-'),
     },
     {
       title: t('emailCampaigns.colCreatedAt'),
@@ -143,12 +153,7 @@ const EmailCampaignsPage: React.FC = () => {
         </Button>
       </div>
 
-      <Table
-        columns={columns}
-        dataSource={campaigns}
-        rowKey="id"
-        loading={isLoading}
-      />
+      <Table columns={columns} dataSource={campaigns} rowKey="id" loading={isLoading} />
 
       <Modal
         title={t('emailCampaigns.modalTitle')}
@@ -158,10 +163,18 @@ const EmailCampaignsPage: React.FC = () => {
         width={800}
       >
         <Form form={form} layout="vertical">
-          <Form.Item name="subject" label={t('emailCampaigns.subjectLabel')} rules={[{ required: true }]}>
+          <Form.Item
+            name="subject"
+            label={t('emailCampaigns.subjectLabel')}
+            rules={[{ required: true }]}
+          >
             <Input placeholder={t('emailCampaigns.subjectPlaceholder')} />
           </Form.Item>
-          <Form.Item name="content" label={t('emailCampaigns.contentLabel')} rules={[{ required: true }]}>
+          <Form.Item
+            name="content"
+            label={t('emailCampaigns.contentLabel')}
+            rules={[{ required: true }]}
+          >
             <Input.TextArea rows={10} placeholder={t('emailCampaigns.contentPlaceholder')} />
           </Form.Item>
         </Form>
@@ -181,7 +194,9 @@ const EmailCampaignsPage: React.FC = () => {
               <Text>{selectedCampaign.subject}</Text>
             </div>
             <Card>
-              <div dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(selectedCampaign.content) }} />
+              <div
+                dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(selectedCampaign.content) }}
+              />
             </Card>
           </div>
         )}

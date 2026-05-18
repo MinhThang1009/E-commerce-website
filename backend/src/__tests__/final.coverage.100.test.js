@@ -17,14 +17,14 @@
 
 process.env.NODE_ENV = 'test';
 
-jest.mock('../utils/logger', () => ({
+jest.mock('@utils/logger', () => ({
   info: jest.fn(),
   error: jest.fn(),
   warn: jest.fn(),
   debug: jest.fn(),
 }));
 
-jest.mock('../config/redis', () => ({
+jest.mock('@config/redis', () => ({
   getRedisClient: jest.fn().mockReturnValue(null),
 }));
 
@@ -105,7 +105,7 @@ describe('product.js line 11 — catch branch khi require vectorStore thất b�
   it('khi vectorStore module không tồn tại → vectorStoreService = null (catch branch)', () => {
     jest.isolateModules(() => {
       // Mock sequelize trước để model load được
-      jest.doMock('../config/sequelize', () => {
+      jest.doMock('@config/sequelize', () => {
         const mockModel = {
           addHook: jest.fn(),
           belongsTo: jest.fn(),
@@ -118,20 +118,20 @@ describe('product.js line 11 — catch branch khi require vectorStore thất b�
           literal: jest.fn(),
         };
       });
-      jest.doMock('../utils/logger', () => ({
+      jest.doMock('@utils/logger', () => ({
         info: jest.fn(),
         error: jest.fn(),
         warn: jest.fn(),
         debug: jest.fn(),
       }));
       // Make vectorStore throw on require → triggers catch branch (line 11)
-      jest.doMock('../modules/ai/services/vectorStore', () => {
+      jest.doMock('@modules/ai/services/vectorstore/vector-store', () => {
         throw new Error('Module not found');
       });
 
       // Importing product.js should NOT throw, and the catch sets vectorStoreService = null
       expect(() => {
-        require('../models/product');
+        require('@models/product');
       }).not.toThrow();
     });
   });
@@ -143,10 +143,10 @@ describe('product.js line 11 — catch branch khi require vectorStore thất b�
 
 describe('SequelizeAiRepository — createAnalyticsEvent catch branch (line 103)', () => {
   it('khi ChatMessage.create reject → catch trả về null, không throw (line 103)', async () => {
-    // The module uses require('../../../models') internally.
-    // We mock '../models' (from test root perspective) so it resolves correctly.
+    // The module uses require('@models') internally.
+    // We mock '@models' (from test root perspective) so it resolves correctly.
     jest.resetModules();
-    jest.mock('../models', () => ({
+    jest.mock('@models', () => ({
       ChatMessage: {
         create: jest.fn().mockRejectedValue(new Error('DB error')),
       },
@@ -156,7 +156,7 @@ describe('SequelizeAiRepository — createAnalyticsEvent catch branch (line 103)
       Brand: {},
       ProductVariant: {},
     }));
-    jest.mock('../config/sequelize', () => ({
+    jest.mock('@config/sequelize', () => ({
       define: jest.fn().mockReturnValue({
         addHook: jest.fn(),
         belongsTo: jest.fn(),
@@ -165,7 +165,7 @@ describe('SequelizeAiRepository — createAnalyticsEvent catch branch (line 103)
       }),
     }));
 
-    const SequelizeAiRepository = require('../modules/ai/repositories/SequelizeAiRepository');
+    const SequelizeAiRepository = require('@modules/ai/repositories/sequelize-ai-repository');
     const repo = new SequelizeAiRepository({
       Product: {},
       ProductVariant: {},
@@ -215,7 +215,7 @@ describe('cartService.js — getCartCount (lines 149-150)', () => {
   }
 
   function makeCartService(repoOverrides = {}) {
-    const CartService = require('../modules/cart/services/cartService');
+    const CartService = require('@modules/cart/services/cart-service');
     return new CartService({
       cartRepository: makeCartRepo(repoOverrides),
       eventBus: { publish: jest.fn().mockResolvedValue() },
@@ -244,15 +244,15 @@ describe('cartService.js — getCartCount (lines 149-150)', () => {
 describe('cartService.js — addToCart with invalid warrantyPackageIds (line 191)', () => {
   it('warrantyPackageIds chứa ID không tồn tại → throw AppError 400 (line 191)', async () => {
     jest.resetModules();
-    jest.mock('../utils/logger', () => ({
+    jest.mock('@utils/logger', () => ({
       info: jest.fn(),
       error: jest.fn(),
       warn: jest.fn(),
       debug: jest.fn(),
     }));
 
-    const CartService = require('../modules/cart/services/cartService');
-    const { AppError } = require('../shared/errors');
+    const CartService = require('@modules/cart/services/cart-service');
+    const { AppError } = require('@shared/errors');
 
     const product = {
       id: 1,
@@ -307,7 +307,7 @@ describe('cartService.js — addToCart with invalid warrantyPackageIds (line 191
 
 describe('uploadService.js — deleteFile path traversal check (line 120)', () => {
   function makeUploadService(repoOverrides = {}) {
-    const UploadService = require('../modules/upload/services/uploadService');
+    const UploadService = require('@modules/upload/services/upload-service');
     return new UploadService({
       uploadRepository: {
         readFileHeader: jest.fn(),
@@ -323,7 +323,7 @@ describe('uploadService.js — deleteFile path traversal check (line 120)', () =
 
   it('filename khớp basename (không có path separator) → nhưng filePath outside uploadDir → throw 403 (line 120)', async () => {
     const path = require('path');
-    const UploadService = require('../modules/upload/services/uploadService');
+    const UploadService = require('@modules/upload/services/upload-service');
 
     // We need to construct a scenario where:
     // filename === filenameRaw (basename check passes at line 112)
@@ -402,7 +402,7 @@ describe('email.js — batch delay fires between batches (line 165)', () => {
       }),
     }));
     jest.mock('sanitize-html', () => jest.fn((html) => html));
-    jest.mock('../utils/logger', () => ({
+    jest.mock('@utils/logger', () => ({
       info: jest.fn(),
       error: jest.fn(),
       warn: jest.fn(),
@@ -413,7 +413,7 @@ describe('email.js — batch delay fires between batches (line 165)', () => {
     process.env.EMAIL_USERNAME = 'user';
     process.env.EMAIL_PASSWORD = 'pass';
 
-    const emailService = require('../services/email');
+    const emailService = require('@services/email');
 
     // batchSize = 5, so 6 emails → 2 batches → setTimeout fires after batch 1
     const emails = ['a@t.com', 'b@t.com', 'c@t.com', 'd@t.com', 'e@t.com', 'f@t.com'];
@@ -460,11 +460,11 @@ describe('chatbotService.js — initializeChatbot với valid key (line 50)', ()
       warn: jest.fn(),
       debug: jest.fn(),
     };
-    jest.mock('../utils/logger', () => mockLoggerForChatbot);
-    jest.mock('../config/redis', () => ({ getRedisClient: jest.fn().mockReturnValue(null) }));
+    jest.mock('@utils/logger', () => mockLoggerForChatbot);
+    jest.mock('@config/redis', () => ({ getRedisClient: jest.fn().mockReturnValue(null) }));
 
     // Mock vectorStore để tránh file I/O
-    jest.mock('../modules/ai/services/vectorStore', () => ({
+    jest.mock('@modules/ai/services/vectorstore/vector-store', () => ({
       loadPromise: Promise.resolve(),
       items: [],
       hybridSearch: jest.fn().mockResolvedValue([]),
@@ -472,7 +472,7 @@ describe('chatbotService.js — initializeChatbot với valid key (line 50)', ()
     }));
 
     // Mock models to avoid argon2/sequelize loading
-    jest.mock('../models', () => ({
+    jest.mock('@models', () => ({
       Product: { findAll: jest.fn().mockResolvedValue([]) },
       Category: { findAll: jest.fn().mockResolvedValue([]) },
       Brand: { findAll: jest.fn().mockResolvedValue([]) },
@@ -482,19 +482,22 @@ describe('chatbotService.js — initializeChatbot với valid key (line 50)', ()
       sequelize: { literal: jest.fn() },
     }));
 
-    // Set a real Gemini key — constructor reads GEMINI_API_KEYS to populate providers
-    const originalKey = process.env.GEMINI_API_KEYS;
-    process.env.GEMINI_API_KEYS = 'sk-real-key-not-demo';
+    // Set LLM provider keys — constructor reads LLM_API_KEY + LLM_BASE_URL
+    const originalKey = process.env.LLM_API_KEY;
+    const originalUrl = process.env.LLM_BASE_URL;
+    process.env.LLM_API_KEY = 'sk-real-key-not-demo';
+    process.env.LLM_BASE_URL = 'https://openrouter.ai/api/v1';
 
-    // Load the module — exports a singleton; constructor calls initializeChatbot() at load time
-    require('../modules/ai/services/chatbotService');
+    // Load the module — exports a singleton; constructor calls _initializeChatbot() at load time
+    require('@modules/ai/services/chatbot/chatbot-service');
 
     // line 50: logger.info should have been called with success message
     expect(mockLoggerForChatbot.info).toHaveBeenCalledWith(
       expect.stringContaining('AI khởi tạo thành công'),
     );
 
-    process.env.GEMINI_API_KEYS = originalKey;
+    process.env.LLM_API_KEY = originalKey;
+    process.env.LLM_BASE_URL = originalUrl;
   });
 });
 
@@ -520,14 +523,14 @@ describe('chatbotService.js — initializeChatbot catch block (line 55)', () => 
       warn: jest.fn(),
       debug: jest.fn(),
     };
-    jest.mock('../utils/logger', () => mockChatbotCatchLogger);
-    jest.mock('../modules/ai/services/vectorStore', () => ({
+    jest.mock('@utils/logger', () => mockChatbotCatchLogger);
+    jest.mock('@modules/ai/services/vectorstore/vector-store', () => ({
       loadPromise: Promise.resolve(),
       items: [],
       hybridSearch: jest.fn(),
       enrichProductData: jest.fn(),
     }));
-    jest.mock('../models', () => ({
+    jest.mock('@models', () => ({
       Product: { findAll: jest.fn().mockResolvedValue([]) },
       Category: { findAll: jest.fn().mockResolvedValue([]) },
       Brand: { findAll: jest.fn().mockResolvedValue([]) },
@@ -536,13 +539,13 @@ describe('chatbotService.js — initializeChatbot catch block (line 55)', () => 
       ProductVariant: {},
       sequelize: { literal: jest.fn() },
     }));
-    jest.mock('../config/redis', () => ({ getRedisClient: jest.fn().mockReturnValue(null) }));
+    jest.mock('@config/redis', () => ({ getRedisClient: jest.fn().mockReturnValue(null) }));
 
     const originalKey = process.env.GEMINI_API_KEYS;
     process.env.GEMINI_API_KEYS = 'sk-real-key-triggers-info';
 
     // Module exports singleton; constructor runs at require time → info throws → catch → error
-    require('../modules/ai/services/chatbotService');
+    require('@modules/ai/services/chatbot/chatbot-service');
 
     expect(mockChatbotCatchLogger.error).toHaveBeenCalledWith(
       expect.stringContaining('Khởi tạo Chatbot thất bại'),
@@ -619,7 +622,7 @@ describe('chatbotService.js — word intersection logic (lines 382-386)', () => 
 
 describe('paymentService.js — _clearUserCart (lines 65-71)', () => {
   function makePaymentService(repoOverrides = {}) {
-    const PaymentService = require('../modules/payment/services/paymentService');
+    const PaymentService = require('@modules/payment/services/payment-service');
     const logger = { info: jest.fn(), error: jest.fn(), warn: jest.fn(), debug: jest.fn() };
     return {
       service: new PaymentService({
@@ -697,7 +700,7 @@ describe('paymentService.js — _clearUserCart (lines 65-71)', () => {
 
 describe('contentService.js — getBannerById (line 43)', () => {
   function makeContentService(repoOverrides = {}) {
-    const ContentService = require('../modules/content/services/contentService');
+    const ContentService = require('@modules/content/services/content-service');
     return new ContentService({
       contentRepository: {
         findAllBanners: jest.fn().mockResolvedValue([]),
@@ -741,7 +744,7 @@ describe('contentService.js — getBannerById (line 43)', () => {
 
 describe('contentService.js — subscribeNewsletter fire-and-forget email error (line 238)', () => {
   it('sendNewsletterWelcomeEmail reject → logger.error được gọi (line 238)', async () => {
-    const ContentService = require('../modules/content/services/contentService');
+    const ContentService = require('@modules/content/services/content-service');
     const logger = { info: jest.fn(), error: jest.fn(), warn: jest.fn(), debug: jest.fn() };
 
     const emailGateway = {
@@ -785,7 +788,7 @@ describe('contentService.js — subscribeNewsletter fire-and-forget email error 
 
 describe('contentService.js — sendFeedback fire-and-forget admin email error (line 266)', () => {
   it('sendAdminFeedbackNotification reject → logger.error được gọi (line 266)', async () => {
-    const ContentService = require('../modules/content/services/contentService');
+    const ContentService = require('@modules/content/services/content-service');
     const logger = { info: jest.fn(), error: jest.fn(), warn: jest.fn(), debug: jest.fn() };
 
     const emailGateway = {
@@ -840,7 +843,7 @@ describe('contentService.js — sendFeedback fire-and-forget admin email error (
 
 describe('catalogService.js — getBrandBySlug (line 176)', () => {
   function makeCatalogService(repoOverrides = {}) {
-    const CatalogService = require('../modules/catalog/services/catalogService');
+    const CatalogService = require('@modules/catalog/services/catalog-service');
     return new CatalogService({
       catalogRepository: {
         findAllCategoriesSorted: jest.fn().mockResolvedValue([]),
@@ -889,7 +892,7 @@ describe('catalogService.js — getBrandBySlug (line 176)', () => {
 
 describe('catalogService.js — getProductById _trackRecentlyViewed reject (line 487)', () => {
   function makeCatalogServiceForTracking() {
-    const CatalogService = require('../modules/catalog/services/catalogService');
+    const CatalogService = require('@modules/catalog/services/catalog-service');
     const logger = { info: jest.fn(), error: jest.fn(), warn: jest.fn(), debug: jest.fn() };
 
     const mockProduct = {
@@ -990,7 +993,7 @@ describe('catalogService.js — getProductById _trackRecentlyViewed reject (line
 
 describe('catalogService.js — _buildProductDetailResponse color image filtering (lines 559, 564)', () => {
   function makeCatalogService() {
-    const CatalogService = require('../modules/catalog/services/catalogService');
+    const CatalogService = require('@modules/catalog/services/catalog-service');
     return new CatalogService({
       catalogRepository: {
         findAllCategoriesSorted: jest.fn().mockResolvedValue([]),
@@ -1142,7 +1145,7 @@ describe('catalogService.js — _buildProductDetailResponse color image filterin
 
 describe('catalogService.js — createProduct category not found (line 822)', () => {
   it('categoryIds không đủ trong DB → throw AppError 400 (line 822)', async () => {
-    const CatalogService = require('../modules/catalog/services/catalogService');
+    const CatalogService = require('@modules/catalog/services/catalog-service');
     const service = new CatalogService({
       catalogRepository: {
         findAllCategoriesSorted: jest.fn().mockResolvedValue([]),

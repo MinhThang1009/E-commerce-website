@@ -9,8 +9,8 @@ import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { ROUTES, buildRoute } from '@/routes/paths';
 import { useQueryClient } from '@tanstack/react-query';
-import { useCartStore } from '@/stores/cartStore';
-import { useAuthStore } from '@/stores/authStore';
+import { useCartStore } from '@/stores/cart-store';
+import { useAuthStore } from '@/stores/auth-store';
 import Button from '@/components/common/Button';
 import Badge, { BadgeVariant } from '@/components/common/Badge';
 import PremiumButton from '@/components/common/PremiumButton';
@@ -19,7 +19,7 @@ import {
   useCancelOrderMutation,
   useRepayOrderMutation,
   useConfirmReceivedMutation,
-} from '../api/orderApi';
+} from '../api/order-api';
 import { cartKeys, useClearCartMutation } from '@/features/cart';
 import { getLocale } from '@/utils/format';
 import { toast } from '@/utils/toast';

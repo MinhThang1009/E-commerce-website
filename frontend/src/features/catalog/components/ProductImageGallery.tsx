@@ -8,7 +8,7 @@ import React, { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Image } from 'antd';
 import { LeftOutlined, RightOutlined, EyeOutlined } from '@ant-design/icons';
-import { proxyImg } from '@/utils/proxyImg';
+import { proxyImg } from '@/utils/proxy-img';
 
 interface ProductImageGalleryProps {
   images: string[];

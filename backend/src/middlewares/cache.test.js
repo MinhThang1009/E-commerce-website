@@ -9,19 +9,19 @@ const mockRedis = {
   del: jest.fn(),
 };
 
-jest.mock('../config/redis', () => ({
+jest.mock('@config/redis', () => ({
   getRedisClient: jest.fn(),
 }));
 
-jest.mock('../utils/logger', () => ({
+jest.mock('@utils/logger', () => ({
   info: jest.fn(),
   warn: jest.fn(),
   error: jest.fn(),
   debug: jest.fn(),
 }));
 
-const { getRedisClient } = require('../config/redis');
-const logger = require('../utils/logger');
+const { getRedisClient } = require('@config/redis');
+const logger = require('@utils/logger');
 const { cacheMiddleware, invalidateCache, httpCacheHeaders } = require('./cache');
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────

@@ -9,9 +9,9 @@ import Button from '@/components/common/Button';
 import CartItem from '../components/CartItem';
 import CheckCircleIcon from '@/components/icons/CheckCircleIcon';
 import PlusCircleIcon from '@/components/icons/PlusCircleIcon';
-import { useClearCartMutation, useGetCartQuery, useValidateCartQuery } from '../api/cartApi';
-import { useCartStore } from '@/stores/cartStore';
-import { useAuthStore } from '@/stores/authStore';
+import { useClearCartMutation, useGetCartQuery, useValidateCartQuery } from '../api/cart-api';
+import { useCartStore } from '@/stores/cart-store';
+import { useAuthStore } from '@/stores/auth-store';
 import { useApplyDiscountCodeMutation } from '@/features/orders';
 import { formatPrice } from '@/utils/format';
 import { toast } from '@/utils/toast';
@@ -20,8 +20,8 @@ import { useTranslation } from 'react-i18next';
 import { Link, useNavigate } from 'react-router-dom';
 import { useQueryClient } from '@tanstack/react-query';
 import { ROUTES } from '@/routes/paths';
-import { cartKeys } from '../api/cartApi';
-import { getErrorMsg } from '@/utils/errorUtils';
+import { cartKeys } from '../api/cart-api';
+import { getErrorMsg } from '@/utils/error-utils';
 
 const CartPage: React.FC = () => {
   const { t } = useTranslation();

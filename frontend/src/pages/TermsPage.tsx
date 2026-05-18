@@ -84,9 +84,7 @@ const TermsPage: React.FC = () => {
       </div>
 
       <div className="max-w-4xl mx-auto text-center">
-        <p className="text-neutral-600 dark:text-neutral-400 mb-6">
-          {t('terms.contactDesc')}
-        </p>
+        <p className="text-neutral-600 dark:text-neutral-400 mb-6">{t('terms.contactDesc')}</p>
         <Link
           to={ROUTES.CONTACT}
           className="inline-block bg-primary-600 hover:bg-primary-700 text-white font-medium py-3 px-6 rounded-lg transition-colors"

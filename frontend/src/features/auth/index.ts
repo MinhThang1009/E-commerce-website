@@ -24,10 +24,10 @@ export { default as GoogleLoginButton } from './components/GoogleLoginButton';
 export { default as LoginSuccess } from './components/LoginSuccess';
 
 // Hook
-export { useAuth } from './hooks/useAuth';
+export { useAuth } from './hooks/use-auth';
 
 // Zustand store
-export { useAuthStore } from '@/stores/authStore';
+export { useAuthStore } from '@/stores/auth-store';
 
 // API endpoints (TanStack Query hooks)
 export {
@@ -41,12 +41,7 @@ export {
   useVerifyOtpMutation,
   useForgotPasswordMutation,
   useGoogleLoginMutation,
-} from './api/authApi';
+} from './api/auth-api';
 
 // Kiểu dữ liệu
-export type {
-  AuthState,
-  AuthResponse,
-  LoginCredentials,
-  RegisterData,
-} from './types/auth.types';
+export type { AuthState, AuthResponse, LoginCredentials, RegisterData } from './types/auth.types';

@@ -41,12 +41,7 @@ class EditorErrorBoundary extends Component<Props, State> {
         return this.props.fallback;
       }
 
-      const {
-        height = 200,
-        placeholder,
-        value = '',
-        onChange,
-      } = this.props;
+      const { height = 200, placeholder, value = '', onChange } = this.props;
 
       const resolvedPlaceholder = placeholder ?? i18next.t('editor.placeholder');
 
@@ -63,7 +58,9 @@ class EditorErrorBoundary extends Component<Props, State> {
         >
           <p>❌ {i18next.t('editor.errorFallback')}</p>
           <p style={{ fontSize: '12px', color: '#999' }}>
-            {i18next.t('editor.error', { message: this.state.error?.message || i18next.t('errors.unknown') })}
+            {i18next.t('editor.error', {
+              message: this.state.error?.message || i18next.t('errors.unknown'),
+            })}
           </p>
           <textarea
             placeholder={resolvedPlaceholder}

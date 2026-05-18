@@ -30,9 +30,9 @@ import {
   TagOutlined,
   InfoCircleOutlined,
 } from '@ant-design/icons';
-import { attributeService, AttributeGroup, AttributeValue } from '../api/attributeApi';
+import { attributeService, AttributeGroup, AttributeValue } from '../api/attribute-api';
 import { getLocale } from '@/utils/format';
-import { getErrorMsg } from '@/utils/errorUtils';
+import { getErrorMsg } from '@/utils/error-utils';
 
 const { Title, Text } = Typography;
 const { Option } = Select;

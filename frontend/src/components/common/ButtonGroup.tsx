@@ -25,8 +25,7 @@ const ButtonGroup: React.FC<ButtonGroupProps> = ({
   const directionClasses = vertical ? 'flex-col' : 'flex-row';
   const widthClasses = fullWidth ? 'w-full' : '';
 
-  const groupClasses =
-    `${baseClasses} ${directionClasses} ${widthClasses} ${className}`.trim();
+  const groupClasses = `${baseClasses} ${directionClasses} ${widthClasses} ${className}`.trim();
 
   // Clone children và thêm các class phù hợp cho nhóm button
   const processedChildren = React.Children.map(children, (child, index) => {
@@ -59,4 +58,3 @@ const ButtonGroup: React.FC<ButtonGroupProps> = ({
 };
 
 export default ButtonGroup;
-

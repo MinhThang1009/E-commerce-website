@@ -12,10 +12,7 @@ interface ProductGalleryProps {
   productName: string;
 }
 
-const ProductGallery: React.FC<ProductGalleryProps> = ({
-  images,
-  productName,
-}) => {
+const ProductGallery: React.FC<ProductGalleryProps> = ({ images, productName }) => {
   const { t } = useTranslation();
   const [activeImage, setActiveImage] = useState(0);
   const [isZoomed, setIsZoomed] = useState(false);
@@ -36,8 +33,7 @@ const ProductGallery: React.FC<ProductGalleryProps> = ({
   const handleMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
     if (!isZoomed) return;
 
-    const { left, top, width, height } =
-      e.currentTarget.getBoundingClientRect();
+    const { left, top, width, height } = e.currentTarget.getBoundingClientRect();
     const x = ((e.clientX - left) / width) * 100;
     const y = ((e.clientY - top) / height) * 100;
 
@@ -151,4 +147,3 @@ const ProductGallery: React.FC<ProductGalleryProps> = ({
 };
 
 export default ProductGallery;
-

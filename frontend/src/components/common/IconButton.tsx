@@ -7,8 +7,7 @@
 import { forwardRef, ButtonHTMLAttributes } from 'react';
 import { cn } from '@/utils/cn';
 
-export interface IconButtonProps
-  extends ButtonHTMLAttributes<HTMLButtonElement> {
+export interface IconButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
   variant?: 'primary' | 'secondary' | 'outline' | 'ghost' | 'danger';
   size?: 'sm' | 'md' | 'lg';
   isLoading?: boolean;
@@ -26,7 +25,7 @@ const IconButton = forwardRef<HTMLButtonElement, IconButtonProps>(
       children,
       ...props
     },
-    ref
+    ref,
   ) => {
     const baseClasses = [
       'inline-flex',
@@ -43,12 +42,7 @@ const IconButton = forwardRef<HTMLButtonElement, IconButtonProps>(
     ];
 
     const variantClasses = {
-      primary: [
-        'bg-primary-600',
-        'text-white',
-        'hover:bg-primary-700',
-        'focus:ring-primary-500',
-      ],
+      primary: ['bg-primary-600', 'text-white', 'hover:bg-primary-700', 'focus:ring-primary-500'],
       secondary: [
         'bg-neutral-200',
         'text-neutral-900',
@@ -77,12 +71,7 @@ const IconButton = forwardRef<HTMLButtonElement, IconButtonProps>(
         'dark:text-neutral-300',
         'dark:hover:bg-neutral-800',
       ],
-      danger: [
-        'bg-red-600',
-        'text-white',
-        'hover:bg-red-700',
-        'focus:ring-red-500',
-      ],
+      danger: ['bg-red-600', 'text-white', 'hover:bg-red-700', 'focus:ring-red-500'],
     };
 
     const sizeClasses = {
@@ -91,20 +80,10 @@ const IconButton = forwardRef<HTMLButtonElement, IconButtonProps>(
       lg: ['h-12', 'w-12', 'text-lg'],
     };
 
-    const classes = cn(
-      baseClasses,
-      variantClasses[variant],
-      sizeClasses[size],
-      className
-    );
+    const classes = cn(baseClasses, variantClasses[variant], sizeClasses[size], className);
 
     return (
-      <button
-        className={classes}
-        disabled={disabled || isLoading}
-        ref={ref}
-        {...props}
-      >
+      <button className={classes} disabled={disabled || isLoading} ref={ref} {...props}>
         {isLoading ? (
           <svg
             className="animate-spin h-4 w-4"
@@ -131,10 +110,9 @@ const IconButton = forwardRef<HTMLButtonElement, IconButtonProps>(
         )}
       </button>
     );
-  }
+  },
 );
 
 IconButton.displayName = 'IconButton';
 
 export default IconButton;
-

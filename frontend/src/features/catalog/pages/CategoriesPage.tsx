@@ -10,7 +10,7 @@ import { useTranslation } from 'react-i18next';
 import { Helmet } from 'react-helmet-async';
 import { localizeField } from '@/utils/localize';
 import { buildRoute } from '@/routes/paths';
-import { useGetAllCategoriesQuery } from '../api/categoryApi';
+import { useGetAllCategoriesQuery } from '../api/category-api';
 import { Category } from '../types/category.types';
 import {
   Smartphone,

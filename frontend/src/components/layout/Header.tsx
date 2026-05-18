@@ -10,9 +10,9 @@ import { useTranslation } from 'react-i18next';
 import { ROUTES, buildRoute } from '@/routes/paths';
 import LanguageSwitcher from '@/components/common/LanguageSwitcher';
 import SearchBar from '@/components/shared/SearchBar';
-import { useUiStore } from '@/stores/uiStore';
-import { useCartStore } from '@/stores/cartStore';
-import { useWishlistStore } from '@/stores/wishlistStore';
+import { useUiStore } from '@/stores/ui-store';
+import { useCartStore } from '@/stores/cart-store';
+import { useWishlistStore } from '@/stores/wishlist-store';
 import { useAuth } from '@/features/auth';
 import { useGetCartCountQuery } from '@/features/cart';
 import { useGetWishlistQuery } from '@/features/wishlist';
@@ -35,13 +35,7 @@ const Header: React.FC = () => {
   const { t } = useTranslation();
 
   // Hook xác thực và lấy thông tin user
-  const {
-    isAuthenticated,
-    user,
-    logout: handleLogout,
-    isAdmin,
-    getUserFullName,
-  } = useAuth();
+  const { isAuthenticated, user, logout: handleLogout, isAdmin, getUserFullName } = useAuth();
 
   // Lấy trạng thái menu mobile và search từ Zustand store
   const isMobileMenuOpen = useUiStore((s) => s.isMobileMenuOpen);
@@ -105,10 +99,7 @@ const Header: React.FC = () => {
   // Hiệu ứng để đóng dropdown khi click ra ngoài
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
-      if (
-        userDropdownRef.current &&
-        !userDropdownRef.current.contains(event.target as Node)
-      ) {
+      if (userDropdownRef.current && !userDropdownRef.current.contains(event.target as Node)) {
         setShowUserDropdown(false);
       }
     };
@@ -139,10 +130,11 @@ const Header: React.FC = () => {
 
   return (
     <header
-      className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${isScrolled || isSearchOpen
-        ? 'bg-white/95 dark:bg-neutral-900/95 backdrop-blur-md shadow-lg border-b border-neutral-200/20 dark:border-neutral-700/20 py-2'
-        : 'bg-white/90 dark:bg-neutral-900/90 backdrop-blur-sm py-3'
-        }`}
+      className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${
+        isScrolled || isSearchOpen
+          ? 'bg-white/95 dark:bg-neutral-900/95 backdrop-blur-md shadow-lg border-b border-neutral-200/20 dark:border-neutral-700/20 py-2'
+          : 'bg-white/90 dark:bg-neutral-900/90 backdrop-blur-sm py-3'
+      }`}
     >
       <div className="container mx-auto px-3 sm:px-4 md:px-6 lg:px-8 flex items-center justify-between">
         {/* Logo */}
@@ -182,16 +174,12 @@ const Header: React.FC = () => {
               >
                 <div className="flex items-center space-x-1">
                   <IconComponent className="h-4 w-4 opacity-60 group-hover:opacity-100 transition-opacity hidden sm:block" />
-                  <span className="text-sm">
-                    {t(`header.navigation.${item.key}`)}
-                  </span>
+                  <span className="text-sm">{t(`header.navigation.${item.key}`)}</span>
                 </div>
                 <div className="absolute bottom-0 left-1/2 transform -translate-x-1/2 w-0 h-0.5 bg-gradient-to-r from-primary-500 to-secondary-500 group-hover:w-full transition-all duration-300"></div>
               </Link>
             );
           })}
-
-
         </nav>
 
         {/* Actions */}
@@ -219,10 +207,11 @@ const Header: React.FC = () => {
           <div className="relative" ref={userDropdownRef}>
             <button
               onClick={handleUserClick}
-              className={`group relative min-h-[44px] min-w-[44px] flex items-center justify-center p-1.5 sm:p-2 rounded-xl transition-all duration-300 ${isAuthenticated
-                ? 'bg-gradient-to-r from-primary-100 to-primary-50 dark:from-primary-900/20 dark:to-primary-800/10 text-primary-600 dark:text-primary-400 hover:from-primary-200 hover:to-primary-100 dark:hover:from-primary-900/30 dark:hover:to-primary-800/20 border border-primary-200/50 dark:border-primary-700/30'
-                : 'text-neutral-700 dark:text-neutral-300 hover:bg-neutral-100 dark:hover:bg-neutral-800 border border-transparent hover:border-neutral-200 dark:hover:border-neutral-700'
-                }`}
+              className={`group relative min-h-[44px] min-w-[44px] flex items-center justify-center p-1.5 sm:p-2 rounded-xl transition-all duration-300 ${
+                isAuthenticated
+                  ? 'bg-gradient-to-r from-primary-100 to-primary-50 dark:from-primary-900/20 dark:to-primary-800/10 text-primary-600 dark:text-primary-400 hover:from-primary-200 hover:to-primary-100 dark:hover:from-primary-900/30 dark:hover:to-primary-800/20 border border-primary-200/50 dark:border-primary-700/30'
+                  : 'text-neutral-700 dark:text-neutral-300 hover:bg-neutral-100 dark:hover:bg-neutral-800 border border-transparent hover:border-neutral-200 dark:hover:border-neutral-700'
+              }`}
               aria-label={t('header.actions.userAccount')}
             >
               <UserIcon className="h-4 w-4 sm:h-5 sm:w-5 group-hover:scale-110 transition-transform duration-300" />
@@ -320,10 +309,11 @@ const Header: React.FC = () => {
           {/* Wishlist (danh sách yêu thích) */}
           <button
             onClick={() => navigate(ROUTES.WISHLIST)}
-            className={`group relative min-h-[44px] min-w-[44px] flex items-center justify-center p-1.5 sm:p-2 rounded-xl transition-all duration-300 ${wishlistCount > 0
-              ? 'bg-gradient-to-r from-rose-100 to-rose-50 dark:from-rose-900/20 dark:to-rose-800/10 text-rose-600 dark:text-rose-400 hover:from-rose-200 hover:to-rose-100 dark:hover:from-rose-900/30 dark:hover:to-rose-800/20 border border-rose-200/50 dark:border-rose-700/30'
-              : 'text-neutral-700 dark:text-neutral-300 hover:bg-neutral-100 dark:hover:bg-neutral-800 border border-transparent hover:border-neutral-200 dark:hover:border-neutral-700'
-              }`}
+            className={`group relative min-h-[44px] min-w-[44px] flex items-center justify-center p-1.5 sm:p-2 rounded-xl transition-all duration-300 ${
+              wishlistCount > 0
+                ? 'bg-gradient-to-r from-rose-100 to-rose-50 dark:from-rose-900/20 dark:to-rose-800/10 text-rose-600 dark:text-rose-400 hover:from-rose-200 hover:to-rose-100 dark:hover:from-rose-900/30 dark:hover:to-rose-800/20 border border-rose-200/50 dark:border-rose-700/30'
+                : 'text-neutral-700 dark:text-neutral-300 hover:bg-neutral-100 dark:hover:bg-neutral-800 border border-transparent hover:border-neutral-200 dark:hover:border-neutral-700'
+            }`}
             aria-label={t('header.actions.wishlist')}
           >
             <HeartIcon className="h-4 w-4 sm:h-5 sm:w-5 group-hover:scale-110 transition-transform duration-300" />
@@ -339,10 +329,11 @@ const Header: React.FC = () => {
           {/* Giỏ hàng */}
           <button
             onClick={handleCartClick}
-            className={`group relative min-h-[44px] min-w-[44px] flex items-center justify-center p-1.5 sm:p-2 rounded-xl transition-all duration-300 ${cartItemsCount > 0
-              ? 'bg-gradient-to-r from-secondary-100 to-secondary-50 dark:from-secondary-900/20 dark:to-secondary-800/10 text-secondary-600 dark:text-secondary-400 hover:from-secondary-200 hover:to-secondary-100 dark:hover:from-secondary-900/30 dark:hover:to-secondary-800/20 border border-secondary-200/50 dark:border-secondary-700/30'
-              : 'text-neutral-700 dark:text-neutral-300 hover:bg-neutral-100 dark:hover:bg-neutral-800 border border-transparent hover:border-neutral-200 dark:hover:border-neutral-700'
-              }`}
+            className={`group relative min-h-[44px] min-w-[44px] flex items-center justify-center p-1.5 sm:p-2 rounded-xl transition-all duration-300 ${
+              cartItemsCount > 0
+                ? 'bg-gradient-to-r from-secondary-100 to-secondary-50 dark:from-secondary-900/20 dark:to-secondary-800/10 text-secondary-600 dark:text-secondary-400 hover:from-secondary-200 hover:to-secondary-100 dark:hover:from-secondary-900/30 dark:hover:to-secondary-800/20 border border-secondary-200/50 dark:border-secondary-700/30'
+                : 'text-neutral-700 dark:text-neutral-300 hover:bg-neutral-100 dark:hover:bg-neutral-800 border border-transparent hover:border-neutral-200 dark:hover:border-neutral-700'
+            }`}
             aria-label={t('header.actions.shoppingCart')}
           >
             <CartIcon className="h-4 w-4 sm:h-5 sm:w-5 group-hover:scale-110 transition-transform duration-300" />
@@ -361,9 +352,7 @@ const Header: React.FC = () => {
             className="lg:hidden group min-h-[44px] min-w-[44px] flex items-center justify-center p-1.5 sm:p-2 rounded-xl text-neutral-700 dark:text-neutral-300 hover:bg-neutral-100 dark:hover:bg-neutral-800 transition-all duration-300 border border-transparent hover:border-neutral-200 dark:hover:border-neutral-700"
             onClick={() => toggleMobileMenu()}
             aria-label={
-              isMobileMenuOpen
-                ? t('header.actions.closeMenu')
-                : t('header.actions.openMenu')
+              isMobileMenuOpen ? t('header.actions.closeMenu') : t('header.actions.openMenu')
             }
           >
             {isMobileMenuOpen ? (
@@ -389,19 +378,13 @@ const Header: React.FC = () => {
                   if (searchTerm) {
                     // Lưu từ khóa tìm kiếm vào localStorage để hiển thị trong phần recent searches (nếu có)
                     try {
-                      const recentSearches =
-                        localStorage.getItem('recentSearches');
-                      const searches = recentSearches
-                        ? JSON.parse(recentSearches)
-                        : [];
+                      const recentSearches = localStorage.getItem('recentSearches');
+                      const searches = recentSearches ? JSON.parse(recentSearches) : [];
                       const updatedSearches = [
                         searchTerm,
                         ...searches.filter((s: string) => s !== searchTerm),
                       ].slice(0, 5);
-                      localStorage.setItem(
-                        'recentSearches',
-                        JSON.stringify(updatedSearches)
-                      );
+                      localStorage.setItem('recentSearches', JSON.stringify(updatedSearches));
                     } catch (error) {
                       console.error('Lỗi khi lưu từ khóa tìm kiếm:', error);
                     }
@@ -480,8 +463,6 @@ const Header: React.FC = () => {
             ))}
           </div>
 
-
-
           {/* Language Switcher Mobile */}
           <div className="pt-4 border-t border-neutral-200 dark:border-neutral-700">
             <div className="flex items-center justify-between">
@@ -498,4 +479,3 @@ const Header: React.FC = () => {
 };
 
 export default Header;
-

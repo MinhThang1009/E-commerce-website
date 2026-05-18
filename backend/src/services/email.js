@@ -1,7 +1,7 @@
 const nodemailer = require('nodemailer');
 const sanitizeHtml = require('sanitize-html');
-const logger = require('../utils/logger');
-const { t } = require('../utils/i18n');
+const logger = require('@utils/logger');
+const { t } = require('@utils/i18n');
 
 const escapeHtml = (str) => {
   if (str === null || str === undefined) return '';

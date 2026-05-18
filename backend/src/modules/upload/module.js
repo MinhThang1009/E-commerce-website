@@ -8,12 +8,12 @@ const path = require('path');
 const fsPromises = require('fs').promises;
 const multer = require('multer');
 const { v4: uuidv4 } = require('uuid');
-const { AppError } = require('../../shared/errors');
+const { AppError } = require('@shared/errors');
 
-const UploadController = require('./controllers/uploadController');
-const UploadService = require('./services/uploadService');
-const FilesystemUploadRepository = require('./repositories/FilesystemUploadRepository');
-const buildRoutes = require('./routes');
+const UploadController = require('@modules/upload/controllers/upload-controller');
+const UploadService = require('@modules/upload/services/upload-service');
+const FilesystemUploadRepository = require('@modules/upload/repositories/filesystem-upload-repository');
+const buildRoutes = require('@modules/upload/routes');
 
 // Upload module — file upload qua multer + magic bytes validation. Dùng
 // FilesystemUploadRepository (không phải Sequelize). Multer config ở

@@ -5,8 +5,8 @@
  * @description HTTP endpoints của inventory
  */
 const express = require('express');
-const { authenticate } = require('../../middlewares/authenticate');
-const { authorize } = require('../../middlewares/authorize');
+const { authenticate } = require('@middlewares/authenticate');
+const { authorize } = require('@middlewares/authorize');
 
 // Inventory module routes — basePath '/inventory'. URL mới (legacy admin
 // /restock vẫn giữ ở routes/admin.js đến Phase 5 cleanup).

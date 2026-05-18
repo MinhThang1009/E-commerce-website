@@ -39,19 +39,19 @@ const mockRedis = {
   get: jest.fn().mockResolvedValue(null),
 };
 
-jest.mock('../config/redis', () => ({
+jest.mock('@config/redis', () => ({
   getRedisClient: jest.fn(),
 }));
 
-jest.mock('../models', () => ({
+jest.mock('@models', () => ({
   User: {
     findByPk: jest.fn(),
   },
 }));
 
 // Helpers
-const { getRedisClient } = require('../config/redis');
-const { User } = require('../models');
+const { getRedisClient } = require('@config/redis');
+const { User } = require('@models');
 const { authenticate, optionalAuthenticate } = require('./authenticate');
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────

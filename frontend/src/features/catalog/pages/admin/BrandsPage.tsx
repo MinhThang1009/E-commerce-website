@@ -23,7 +23,7 @@ import {
 } from 'antd';
 import { useTranslation } from 'react-i18next';
 import ImageUpload from '@/components/common/ImageUpload';
-import { getUploadUrl } from '@/utils/uploadUrl';
+import { getUploadUrl } from '@/utils/upload-url';
 import {
   PlusOutlined,
   EditOutlined,
@@ -37,8 +37,8 @@ import {
   useCreateBrandMutation,
   useUpdateBrandMutation,
   useDeleteBrandMutation,
-} from '../../api/brandApi';
-import { getErrorMsg } from '@/utils/errorUtils';
+} from '../../api/brand-api';
+import { getErrorMsg } from '@/utils/error-utils';
 
 const { Title } = Typography;
 const { TextArea } = Input;

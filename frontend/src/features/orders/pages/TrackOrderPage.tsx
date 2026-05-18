@@ -39,7 +39,7 @@ const TrackOrderPage: React.FC = () => {
     try {
       const apiBase = import.meta.env.VITE_API_URL || 'http://localhost:8888/api';
       const res = await fetch(
-        `${apiBase}/orders/track?orderNumber=${encodeURIComponent(orderNumber)}&email=${encodeURIComponent(email)}`
+        `${apiBase}/orders/track?orderNumber=${encodeURIComponent(orderNumber)}&email=${encodeURIComponent(email)}`,
       );
       const data = await res.json();
 
@@ -57,7 +57,7 @@ const TrackOrderPage: React.FC = () => {
 
   // Chỉ số bước hiện tại để tô màu đường nối giữa các bước
   const currentStepIndex = trackingResult?.steps
-    ? trackingResult.steps.filter(s => s.completed).length - 1
+    ? trackingResult.steps.filter((s) => s.completed).length - 1
     : -1;
 
   return (
@@ -138,12 +138,16 @@ const TrackOrderPage: React.FC = () => {
                 </h2>
               </div>
               <div className="text-right">
-                <div className={`text-lg font-semibold mb-1 ${
-                  trackingResult.isCancelled
-                    ? 'text-red-600 dark:text-red-400'
-                    : 'text-primary-600 dark:text-primary-400'
-                }`}>
-                  {trackingResult.isCancelled ? t('trackOrder.cancelled') : trackingResult.currentStatus}
+                <div
+                  className={`text-lg font-semibold mb-1 ${
+                    trackingResult.isCancelled
+                      ? 'text-red-600 dark:text-red-400'
+                      : 'text-primary-600 dark:text-primary-400'
+                  }`}
+                >
+                  {trackingResult.isCancelled
+                    ? t('trackOrder.cancelled')
+                    : trackingResult.currentStatus}
                 </div>
               </div>
             </div>
@@ -172,9 +176,7 @@ const TrackOrderPage: React.FC = () => {
                       {/* Vòng tròn trạng thái */}
                       <div
                         className={`relative flex items-center justify-center w-8 h-8 rounded-full ${
-                          step.completed
-                            ? 'bg-primary-500'
-                            : 'bg-neutral-300 dark:bg-neutral-600'
+                          step.completed ? 'bg-primary-500' : 'bg-neutral-300 dark:bg-neutral-600'
                         } flex-shrink-0 mr-4`}
                       >
                         {step.completed && (
@@ -233,9 +235,7 @@ const TrackOrderPage: React.FC = () => {
           <h3 className="text-lg font-semibold text-neutral-900 dark:text-white mb-4">
             {t('trackOrder.needHelp')}
           </h3>
-          <p className="text-neutral-600 dark:text-neutral-400 mb-4">
-            {t('trackOrder.helpDesc')}
-          </p>
+          <p className="text-neutral-600 dark:text-neutral-400 mb-4">{t('trackOrder.helpDesc')}</p>
           <div className="flex flex-col sm:flex-row gap-4">
             <div className="flex items-center">
               <svg
@@ -245,7 +245,12 @@ const TrackOrderPage: React.FC = () => {
                 viewBox="0 0 24 24"
                 stroke="currentColor"
               >
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"
+                />
               </svg>
               <span className="text-neutral-700 dark:text-neutral-300">
                 {t('trackOrder.supportEmail')}
@@ -259,7 +264,12 @@ const TrackOrderPage: React.FC = () => {
                 viewBox="0 0 24 24"
                 stroke="currentColor"
               >
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z" />
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z"
+                />
               </svg>
               <span className="text-neutral-700 dark:text-neutral-300">
                 {t('trackOrder.supportPhone')}

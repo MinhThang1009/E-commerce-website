@@ -18,14 +18,14 @@ process.env.NODE_ENV = 'test';
 
 // ─── Global mocks (phải đứng trước mọi require) ─────────────────────────────
 
-jest.mock('../utils/logger', () => ({
+jest.mock('@utils/logger', () => ({
   info: jest.fn(),
   error: jest.fn(),
   warn: jest.fn(),
   debug: jest.fn(),
 }));
 
-jest.mock('../config/redis', () => ({
+jest.mock('@config/redis', () => ({
   getRedisClient: jest.fn().mockReturnValue(null),
 }));
 
@@ -78,7 +78,7 @@ describe('image.js — multer storage filename callback (lines 13-16)', () => {
 });
 
 describe('image.js — fileFilter callback (lines 22-37)', () => {
-  const { AppError } = require('../shared/errors');
+  const { AppError } = require('@shared/errors');
 
   // Tái hiện fileFilter từ image.js
   const fileFilter = (req, file, cb) => {
@@ -246,13 +246,13 @@ describe('admin.js — deepParseJSONArray (lines 67-84)', () => {
 // ════════════════════════════════════════════════════════════════════════════════
 
 describe('chatbotService.js — initializeChatbot branches (lines 49-56)', () => {
-  const logger = require('../utils/logger');
+  const logger = require('@utils/logger');
 
   beforeEach(() => jest.clearAllMocks());
 
   it('khi apiKey hợp lệ (không phải demo-key) → logger.info (line 50)', () => {
     // Test logic của initializeChatbot branch trực tiếp — không cần require actual module
-    const loggerMock = require('../utils/logger');
+    const loggerMock = require('@utils/logger');
     const apiKey = 'real-api-key-12345';
     const model = 'google/gemini-2.0-flash-001';
 
@@ -273,7 +273,7 @@ describe('chatbotService.js — initializeChatbot branches (lines 49-56)', () =>
 
   it('khi không có apiKey → logger.warn được gọi (line 52-53)', () => {
     // Tái hiện logic initializeChatbot
-    const loggerMock = require('../utils/logger');
+    const loggerMock = require('@utils/logger');
     const apiKey = undefined;
     const model = 'google/gemini-2.0-flash-001';
 
@@ -294,7 +294,7 @@ describe('chatbotService.js — initializeChatbot branches (lines 49-56)', () =>
   });
 
   it('khi apiKey là demo-key → warn path (line 52)', () => {
-    const loggerMock = require('../utils/logger');
+    const loggerMock = require('@utils/logger');
     const apiKey = 'demo-key';
     try {
       if (apiKey && apiKey !== 'demo-key') {
@@ -307,7 +307,7 @@ describe('chatbotService.js — initializeChatbot branches (lines 49-56)', () =>
   });
 
   it('khi try block throw → logger.error được gọi (line 54-55)', () => {
-    const loggerMock = require('../utils/logger');
+    const loggerMock = require('@utils/logger');
     const error = new Error('initialization failed');
     // Simulate catch branch
     try {
@@ -329,17 +329,17 @@ describe('chatbotService.js — initializeChatbot branches (lines 49-56)', () =>
 describe('vectorStore.js — save() và clear() (lines 57-73)', () => {
   // Test clear() trực tiếp — không cần mock fs
   it('clear() → items được xóa thành [] (line 71)', () => {
-    const vs = require('../modules/ai/services/vectorStore');
+    const vs = require('@modules/ai/services/vectorstore/vector-store');
     vs.items = [{ id: 1 }, { id: 2 }];
     vs.clear();
     expect(vs.items).toEqual([]);
   });
 
   it('save() khi writeFile throw → logger.error (lines 65-66)', async () => {
-    const loggerMock = require('../utils/logger');
+    const loggerMock = require('@utils/logger');
     jest.clearAllMocks();
 
-    const vs = require('../modules/ai/services/vectorStore');
+    const vs = require('@modules/ai/services/vectorstore/vector-store');
     // Ghi đè writeFile trực tiếp trên fs.promises object (không dùng spyOn để tránh babel issue)
     const origWriteFile = require('fs').promises.writeFile;
     require('fs').promises.writeFile = jest.fn().mockRejectedValue(new Error('ENOSPC: disk full'));
@@ -357,7 +357,7 @@ describe('vectorStore.js — save() và clear() (lines 57-73)', () => {
   });
 
   it('save() thành công khi dataDir tồn tại (line 63)', async () => {
-    const vs = require('../modules/ai/services/vectorStore');
+    const vs = require('@modules/ai/services/vectorstore/vector-store');
     const origPath = vs.storagePath;
     const os = require('os');
     const path = require('path');
@@ -385,7 +385,7 @@ describe('vectorStore.js — save() và clear() (lines 57-73)', () => {
 // ════════════════════════════════════════════════════════════════════════════════
 
 describe('ordersService.js — cart guest merge branch (lines 106-108)', () => {
-  const OrdersService = require('../modules/orders/services/ordersService');
+  const OrdersService = require('@modules/orders/services/orders-service');
 
   const constants = {
     POINTS_EARN_RATE: 1000,
@@ -944,175 +944,78 @@ describe('ordersService.js — cart guest merge branch (lines 106-108)', () => {
 // FILE 6: src/services/adminAudit.js — auditMiddleware patch methods (lines 218-236)
 // ════════════════════════════════════════════════════════════════════════════════
 
-describe('adminAudit.js — auditMiddleware patches AdminAuditService methods (lines 217-236)', () => {
+describe('adminAudit.js — auditMiddleware (AsyncLocalStorage based)', () => {
   let AdminAuditService, auditMiddleware;
 
   beforeEach(() => {
     jest.resetModules();
-    jest.mock('../utils/logger', () => ({
-      info: jest.fn(),
-      error: jest.fn(),
-      warn: jest.fn(),
-      debug: jest.fn(),
+    jest.mock('@utils/logger', () => ({
+      info: jest.fn(), error: jest.fn(), warn: jest.fn(), debug: jest.fn(),
     }));
-    jest.mock('../models', () => ({
+    jest.mock('@models', () => ({
       AuditLog: { create: jest.fn().mockResolvedValue({}) },
     }));
-    const mod = require('../shared/adminAudit');
+    const mod = require('@shared/admin-audit');
     AdminAuditService = mod.AdminAuditService;
     auditMiddleware = mod.auditMiddleware;
   });
 
   afterEach(() => jest.restoreAllMocks());
 
-  it('auditMiddleware patch logUserAction → gọi original với IP từ request (line 218)', () => {
-    const originalFn = jest.spyOn(AdminAuditService, 'logUserAction');
-    const req = { ip: '192.168.1.1', connection: {} };
-    const res = { on: jest.fn() };
+  it('gọi next() để tiếp tục pipeline', () => {
     const next = jest.fn();
-
-    auditMiddleware(req, res, next);
-
-    const adminUser = { id: 'admin-1', email: 'admin@test.com' };
-    AdminAuditService.logUserAction(adminUser, 'BAN', 'user-2');
-
-    // original was patched — it should have been called with ip injected
-    expect(originalFn).toHaveBeenCalledWith(adminUser, 'BAN', 'user-2', {}, '192.168.1.1');
+    auditMiddleware({ ip: '1.1.1.1', connection: {} }, {}, next);
+    expect(next).toHaveBeenCalledTimes(1);
   });
 
-  it('auditMiddleware patch logProductAction → gọi original với IP (line 220-221)', () => {
-    const originalFn = jest.spyOn(AdminAuditService, 'logProductAction');
-    const req = { ip: '10.0.0.1', connection: {} };
-    const res = { on: jest.fn() };
-    const next = jest.fn();
-
-    auditMiddleware(req, res, next);
-
-    const adminUser = { id: 'admin-1', email: 'admin@test.com' };
-    AdminAuditService.logProductAction(adminUser, 'CREATE', 'prod-1', 'iPhone 15');
-
-    expect(originalFn).toHaveBeenCalledWith(
-      adminUser,
-      'CREATE',
-      'prod-1',
-      'iPhone 15',
-      {},
-      '10.0.0.1',
-    );
-  });
-
-  it('auditMiddleware patch logOrderAction → gọi original với IP (line 223-224)', () => {
-    const originalFn = jest.spyOn(AdminAuditService, 'logOrderAction');
-    const req = { ip: '10.0.0.2', connection: {} };
-    const res = { on: jest.fn() };
-    const next = jest.fn();
-
-    auditMiddleware(req, res, next);
-
-    const adminUser = { id: 'admin-1', email: 'admin@test.com' };
-    AdminAuditService.logOrderAction(adminUser, 'STATUS_CHANGE', 'ord-1', 'ORD-001');
-
-    expect(originalFn).toHaveBeenCalledWith(
-      adminUser,
-      'STATUS_CHANGE',
-      'ord-1',
-      'ORD-001',
-      {},
-      '10.0.0.2',
-    );
-  });
-
-  it('auditMiddleware patch logDiscountCodeAction → gọi original với IP (line 226-227)', () => {
-    const originalFn = jest.spyOn(AdminAuditService, 'logDiscountCodeAction');
-    const req = { ip: '10.0.0.3', connection: {} };
-    const res = { on: jest.fn() };
-    const next = jest.fn();
-
-    auditMiddleware(req, res, next);
-
-    const adminUser = { id: 'admin-1', email: 'admin@test.com' };
-    AdminAuditService.logDiscountCodeAction(adminUser, 'CREATE', 'disc-1', 'SUMMER20');
-
-    expect(originalFn).toHaveBeenCalledWith(
-      adminUser,
-      'CREATE',
-      'disc-1',
-      'SUMMER20',
-      {},
-      '10.0.0.3',
-    );
-  });
-
-  it('auditMiddleware patch logReviewAction → gọi original với IP (line 229-230)', () => {
-    const originalFn = jest.spyOn(AdminAuditService, 'logReviewAction');
-    const req = { ip: '10.0.0.4', connection: {} };
-    const res = { on: jest.fn() };
-    const next = jest.fn();
-
-    auditMiddleware(req, res, next);
-
-    const adminUser = { id: 'admin-1', email: 'admin@test.com' };
-    AdminAuditService.logReviewAction(adminUser, 'DELETE', 'rev-1', 'user-5', 'prod-3');
-
-    expect(originalFn).toHaveBeenCalledWith(
-      adminUser,
-      'DELETE',
-      'rev-1',
-      'user-5',
-      'prod-3',
-      '10.0.0.4',
-    );
-  });
-
-  it('auditMiddleware patch logDashboardAccess → không inject IP (line 232-233)', () => {
-    const originalFn = jest.spyOn(AdminAuditService, 'logDashboardAccess');
-    const req = { ip: '10.0.0.5', connection: {} };
-    const res = { on: jest.fn() };
-    const next = jest.fn();
-
-    auditMiddleware(req, res, next);
-
-    const adminUser = { id: 'admin-1', email: 'admin@test.com' };
-    AdminAuditService.logDashboardAccess(adminUser, '/api/admin/dashboard', { period: 'month' });
-
-    expect(originalFn).toHaveBeenCalledWith(adminUser, '/api/admin/dashboard', { period: 'month' });
-  });
-
-  it('auditMiddleware patch logSuccessfulLogin → gọi original với IP (line 235-236)', () => {
-    const originalFn = jest.spyOn(AdminAuditService, 'logSuccessfulLogin');
-    const req = { ip: '10.0.0.6', connection: {} };
-    const res = { on: jest.fn() };
-    const next = jest.fn();
-
-    auditMiddleware(req, res, next);
-
-    const adminUser = { id: 'admin-1', email: 'admin@test.com' };
-    AdminAuditService.logSuccessfulLogin(adminUser);
-
-    expect(originalFn).toHaveBeenCalledWith(adminUser, '10.0.0.6');
-  });
-
-  it('res.on("finish") khôi phục lại method gốc sau request', () => {
+  it('KHÔNG mutate static methods — dùng AsyncLocalStorage thay vì method patching', () => {
     const originalLogUserAction = AdminAuditService.logUserAction;
-    const req = { ip: '10.0.0.7', connection: {} };
-    let finishHandler;
-    const res = {
-      on: jest.fn((event, handler) => {
-        if (event === 'finish') finishHandler = handler;
-      }),
-    };
     const next = jest.fn();
-
-    auditMiddleware(req, res, next);
-
-    // Methods were patched
-    expect(AdminAuditService.logUserAction).not.toBe(originalLogUserAction);
-
-    // Simulate finish event
-    finishHandler();
-
-    // Methods restored
+    auditMiddleware({ ip: '1.1.1.1', connection: {} }, {}, next);
     expect(AdminAuditService.logUserAction).toBe(originalLogUserAction);
+  });
+
+  it('IP từ req.ip được inject vào DB qua context khi log gọi trong next()', async () => {
+    const { AuditLog } = require('@models');
+    const adminUser = { id: 'admin-1', email: 'admin@test.com' };
+    let resolveNext;
+    const nextPromise = new Promise((r) => { resolveNext = r; });
+
+    const next = () => {
+      AdminAuditService.logUserAction(adminUser, 'BAN', 'user-2', {});
+      resolveNext();
+    };
+
+    auditMiddleware({ ip: '192.168.1.1', connection: {} }, {}, next);
+    await nextPromise;
+    await new Promise((r) => setImmediate(r));
+
+    expect(AuditLog.create).toHaveBeenCalledWith(expect.objectContaining({ ip: '192.168.1.1' }));
+  });
+
+  it('IP từ logProductAction gọi trong context → ghi đúng vào DB', async () => {
+    const { AuditLog } = require('@models');
+    const adminUser = { id: 'admin-1', email: 'admin@test.com' };
+    let resolveNext;
+    const nextPromise = new Promise((r) => { resolveNext = r; });
+
+    const next = () => {
+      AdminAuditService.logProductAction(adminUser, 'CREATE', 1, 'iPhone 15');
+      resolveNext();
+    };
+
+    auditMiddleware({ ip: '10.0.0.1', connection: {} }, {}, next);
+    await nextPromise;
+    await new Promise((r) => setImmediate(r));
+
+    expect(AuditLog.create).toHaveBeenCalledWith(expect.objectContaining({ ip: '10.0.0.1' }));
+  });
+
+  it('không có res.on("finish") — không cần cleanup', () => {
+    const res = { on: jest.fn() };
+    const next = jest.fn();
+    auditMiddleware({ ip: '1.1.1.1', connection: {} }, res, next);
+    expect(res.on).not.toHaveBeenCalled();
   });
 });
 
@@ -1132,7 +1035,7 @@ describe('email.js — createTransporter Gmail path (line 49)', () => {
       createTransport: mockCreateTransport,
     }));
     jest.mock('sanitize-html', () => jest.fn((html) => html));
-    jest.mock('../utils/logger', () => ({
+    jest.mock('@utils/logger', () => ({
       info: jest.fn(),
       error: jest.fn(),
       warn: jest.fn(),
@@ -1145,7 +1048,7 @@ describe('email.js — createTransporter Gmail path (line 49)', () => {
 
     // Require sau khi mock thiết lập — email.js sẽ gọi createTransport trong getTransporter()
     // khi lần đầu được gọi (singleton pattern)
-    const emailModule = require('../services/email');
+    const emailModule = require('@services/email');
 
     // Kích hoạt singleton getTransporter() bằng cách gọi sendOtpEmail async (fire-and-forget)
     emailModule.sendOtpEmail('test@gmail.com', '123456').catch(() => {});
@@ -1168,7 +1071,7 @@ describe('email.js — sendBulkCampaignEmail all-fail throw (line 175)', () => {
       }),
     }));
     jest.mock('sanitize-html', () => jest.fn((html) => html));
-    jest.mock('../utils/logger', () => ({
+    jest.mock('@utils/logger', () => ({
       info: jest.fn(),
       error: jest.fn(),
       warn: jest.fn(),
@@ -1179,7 +1082,7 @@ describe('email.js — sendBulkCampaignEmail all-fail throw (line 175)', () => {
     process.env.EMAIL_USERNAME = 'user';
     process.env.EMAIL_PASSWORD = 'pass';
 
-    const emailService = require('../services/email');
+    const emailService = require('@services/email');
 
     await expect(
       emailService.sendBulkCampaignEmail(
@@ -1209,7 +1112,7 @@ describe('email.js — sendBulkCampaignEmail all-fail throw (line 175)', () => {
       }),
     }));
     jest.mock('sanitize-html', () => jest.fn((html) => html));
-    jest.mock('../utils/logger', () => ({
+    jest.mock('@utils/logger', () => ({
       info: jest.fn(),
       error: jest.fn(),
       warn: jest.fn(),
@@ -1220,7 +1123,7 @@ describe('email.js — sendBulkCampaignEmail all-fail throw (line 175)', () => {
     process.env.EMAIL_USERNAME = 'user';
     process.env.EMAIL_PASSWORD = 'pass';
 
-    const emailService = require('../services/email');
+    const emailService = require('@services/email');
     const results = await emailService.sendBulkCampaignEmail(
       ['ok@test.com', 'fail@test.com'],
       'Test Subject',
@@ -1282,8 +1185,8 @@ describe('catalogService.js — uncovered branches', () => {
   function makeService(repoOverrides = {}, cacheStore = null) {
     const { CatalogService } = (() => {
       // Inline the class to avoid circular dependencies in test
-      const { AppError } = require('../shared/errors');
-      return { CatalogService: require('../modules/catalog/services/catalogService') };
+      const { AppError } = require('@shared/errors');
+      return { CatalogService: require('@modules/catalog/services/catalog-service') };
     })();
 
     const logger = { info: jest.fn(), error: jest.fn(), warn: jest.fn(), debug: jest.fn() };
@@ -1641,19 +1544,19 @@ describe('product.js model — JSON getter error branches (lines 167-168, 207-20
     it('khi require vectorStore thành công → vectorStoreService không null', () => {
       // vectorStore module tồn tại → require thành công → biến không null
       jest.resetModules();
-      jest.mock('../utils/logger', () => ({
+      jest.mock('@utils/logger', () => ({
         info: jest.fn(),
         error: jest.fn(),
         warn: jest.fn(),
         debug: jest.fn(),
       }));
       // Mock to prevent actual file I/O
-      jest.mock('../modules/ai/services/vectorStore', () => ({
+      jest.mock('@modules/ai/services/vectorstore/vector-store', () => ({
         loadPromise: Promise.resolve(),
         items: [],
         hybridSearch: jest.fn(),
       }));
-      jest.mock('../config/sequelize', () => ({
+      jest.mock('@config/sequelize', () => ({
         define: jest
           .fn()
           .mockReturnValue({ addHook: jest.fn(), belongsTo: jest.fn(), hasMany: jest.fn() }),
@@ -1661,7 +1564,7 @@ describe('product.js model — JSON getter error branches (lines 167-168, 207-20
       }));
 
       // Just verify module loads without error
-      expect(() => require('../models/product')).not.toThrow();
+      expect(() => require('@models/product')).not.toThrow();
     });
   });
 });
@@ -1806,7 +1709,7 @@ describe('image.js — actual multer diskStorage và fileFilter callbacks (lines
         factory.MulterError = realMulter.MulterError;
         return factory;
       });
-      jest.mock('../modules/image/services/imageService', () => ({
+      jest.mock('@modules/image/services/image-service', () => ({
         uploadImage: jest.fn(),
         uploadMultipleImages: jest.fn(),
         getImageById: jest.fn(),
@@ -1817,7 +1720,7 @@ describe('image.js — actual multer diskStorage và fileFilter callbacks (lines
       }));
 
       // Loading image.js will call multer(options) → our factory captures storage + fileFilter
-      require('../modules/image/controllers/imageController');
+      require('@modules/image/controllers/image-controller');
     });
   });
 

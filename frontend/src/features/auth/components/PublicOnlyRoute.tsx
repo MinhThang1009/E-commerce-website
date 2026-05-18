@@ -6,17 +6,14 @@
  */
 import React from 'react';
 import { Navigate } from 'react-router-dom';
-import { useAuthStore } from '@/stores/authStore';
+import { useAuthStore } from '@/stores/auth-store';
 
 interface PublicOnlyRouteProps {
   children: React.ReactNode;
   redirectTo?: string;
 }
 
-const PublicOnlyRoute: React.FC<PublicOnlyRouteProps> = ({
-  children,
-  redirectTo = '/',
-}) => {
+const PublicOnlyRoute: React.FC<PublicOnlyRouteProps> = ({ children, redirectTo = '/' }) => {
   const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
 
   if (isAuthenticated) {
@@ -28,4 +25,3 @@ const PublicOnlyRoute: React.FC<PublicOnlyRouteProps> = ({
 };
 
 export default PublicOnlyRoute;
-

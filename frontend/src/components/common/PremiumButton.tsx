@@ -34,8 +34,7 @@ export type PremiumButtonIcon =
   | 'settings'
   | 'none';
 
-interface PremiumButtonProps
-  extends Omit<ButtonProps, 'type' | 'icon' | 'variant'> {
+interface PremiumButtonProps extends Omit<ButtonProps, 'type' | 'icon' | 'variant'> {
   variant?: PremiumButtonVariant;
   iconType?: PremiumButtonIcon;
   isProcessing?: boolean;
@@ -62,10 +61,7 @@ const getIcon = (iconType: PremiumButtonIcon) => {
   }
 };
 
-const getGradientStyle = (
-  variant: PremiumButtonVariant,
-  isProcessing: boolean
-) => {
+const getGradientStyle = (variant: PremiumButtonVariant, isProcessing: boolean) => {
   const gradients = {
     primary: {
       normal: 'linear-gradient(135deg, #2AACA7, #229A96)',
@@ -183,41 +179,17 @@ const PremiumButton: React.FC<PremiumButtonProps> = ({
 
     // Thêm các class Ant Design tương ứng cho từng variant
     if (variant === 'primary') {
-      baseClasses.push(
-        'ant-btn-primary',
-        'ant-btn-color-primary',
-        'ant-btn-variant-solid'
-      );
+      baseClasses.push('ant-btn-primary', 'ant-btn-color-primary', 'ant-btn-variant-solid');
     } else if (variant === 'secondary') {
-      baseClasses.push(
-        'ant-btn-default',
-        'ant-btn-color-default',
-        'ant-btn-variant-solid'
-      );
+      baseClasses.push('ant-btn-default', 'ant-btn-color-default', 'ant-btn-variant-solid');
     } else if (variant === 'success') {
-      baseClasses.push(
-        'ant-btn-primary',
-        'ant-btn-color-primary',
-        'ant-btn-variant-solid'
-      );
+      baseClasses.push('ant-btn-primary', 'ant-btn-color-primary', 'ant-btn-variant-solid');
     } else if (variant === 'danger') {
-      baseClasses.push(
-        'ant-btn-dangerous',
-        'ant-btn-color-danger',
-        'ant-btn-variant-solid'
-      );
+      baseClasses.push('ant-btn-dangerous', 'ant-btn-color-danger', 'ant-btn-variant-solid');
     } else if (variant === 'outline') {
-      baseClasses.push(
-        'ant-btn-default',
-        'ant-btn-color-default',
-        'ant-btn-variant-outlined'
-      );
+      baseClasses.push('ant-btn-default', 'ant-btn-color-default', 'ant-btn-variant-outlined');
     } else if (variant === 'ghost') {
-      baseClasses.push(
-        'ant-btn-text',
-        'ant-btn-color-default',
-        'ant-btn-variant-text'
-      );
+      baseClasses.push('ant-btn-text', 'ant-btn-color-default', 'ant-btn-variant-text');
     }
 
     if (className) {
@@ -240,9 +212,7 @@ const PremiumButton: React.FC<PremiumButtonProps> = ({
       {...props}
     >
       {isProcessing ? (
-        <span className="flex items-center justify-center">
-          {processingText}
-        </span>
+        <span className="flex items-center justify-center">{processingText}</span>
       ) : (
         <span className="flex items-center justify-center">{children}</span>
       )}
@@ -251,4 +221,3 @@ const PremiumButton: React.FC<PremiumButtonProps> = ({
 };
 
 export default PremiumButton;
-

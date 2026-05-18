@@ -8,7 +8,9 @@ import React from 'react';
 import { useTranslation } from 'react-i18next';
 import { BotIcon } from './icons';
 
-const ChatEmptyState: React.FC<{ onSuggestionClick?: (text: string) => void }> = ({ onSuggestionClick }) => {
+const ChatEmptyState: React.FC<{ onSuggestionClick?: (text: string) => void }> = ({
+  onSuggestionClick,
+}) => {
   const { t } = useTranslation();
 
   return (

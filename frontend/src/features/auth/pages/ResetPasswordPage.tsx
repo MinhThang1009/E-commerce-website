@@ -10,8 +10,8 @@ import { useTranslation } from 'react-i18next';
 import { ROUTES } from '@/routes/paths';
 import Button from '@/components/common/Button';
 import Input from '@/components/common/Input';
-import { useResetPasswordMutation } from '../api/authApi';
-import { getErrorMsg } from '@/utils/errorUtils';
+import { useResetPasswordMutation } from '../api/auth-api';
+import { getErrorMsg } from '@/utils/error-utils';
 
 const ResetPasswordPage: React.FC = () => {
   const { t } = useTranslation();

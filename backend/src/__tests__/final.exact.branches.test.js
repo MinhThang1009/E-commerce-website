@@ -8,7 +8,7 @@
 // ────────────────────────────────────────────────────────────────────────────
 // CartService — direct unit tests on private methods
 // ────────────────────────────────────────────────────────────────────────────
-const CartService = require('../modules/cart/services/cartService');
+const CartService = require('@modules/cart/services/cart-service');
 
 function makeCartService() {
   const repo = {
@@ -154,7 +154,7 @@ describe('CartService.syncCart — branch coverage', () => {
 // ────────────────────────────────────────────────────────────────────────────
 // CatalogService — direct unit tests on private methods
 // ────────────────────────────────────────────────────────────────────────────
-const CatalogService = require('../modules/catalog/services/catalogService');
+const CatalogService = require('@modules/catalog/services/catalog-service');
 
 function makeCatalogService(overrides = {}) {
   const repo = {
@@ -368,7 +368,7 @@ describe('CatalogService.createProduct — branch coverage', () => {
 // ────────────────────────────────────────────────────────────────────────────
 // OrdersService — branch coverage
 // ────────────────────────────────────────────────────────────────────────────
-const OrdersService = require('../modules/orders/services/ordersService');
+const OrdersService = require('@modules/orders/services/orders-service');
 
 function makeOrdersService() {
   const repo = {

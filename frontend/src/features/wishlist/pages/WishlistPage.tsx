@@ -8,11 +8,11 @@ import React from 'react';
 import { useTranslation } from 'react-i18next';
 import { Link } from 'react-router-dom';
 import { ROUTES } from '@/routes/paths';
-import { useGetWishlistQuery, useClearWishlistMutation } from '../api/wishlistApi';
+import { useGetWishlistQuery, useClearWishlistMutation } from '../api/wishlist-api';
 import { ProductCard } from '@/features/catalog';
 import LoadingSpinner from '@/components/common/LoadingSpinner';
 import { HeartIcon } from '@heroicons/react/24/outline';
-import { useWishlistStore } from '@/stores/wishlistStore';
+import { useWishlistStore } from '@/stores/wishlist-store';
 
 const WishlistPage: React.FC = () => {
   const { t } = useTranslation();

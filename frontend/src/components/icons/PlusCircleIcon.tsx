@@ -10,9 +10,7 @@ interface IconProps {
   className?: string;
 }
 
-const PlusCircleIcon: React.FC<IconProps> = ({
-  className = 'w-4 h-4 mr-2',
-}) => {
+const PlusCircleIcon: React.FC<IconProps> = ({ className = 'w-4 h-4 mr-2' }) => {
   return (
     <svg className={className} fill="currentColor" viewBox="0 0 20 20">
       <path
@@ -25,4 +23,3 @@ const PlusCircleIcon: React.FC<IconProps> = ({
 };
 
 export default PlusCircleIcon;
-

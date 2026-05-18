@@ -38,18 +38,9 @@ export interface PaymentDetails {
   date: string;
 }
 
-export type OrderStatus =
-  | 'pending'
-  | 'processing'
-  | 'shipped'
-  | 'delivered'
-  | 'cancelled';
+export type OrderStatus = 'pending' | 'processing' | 'shipped' | 'delivered' | 'cancelled';
 export type PaymentStatus = 'pending' | 'paid' | 'failed' | 'refunded';
-export type PaymentMethod =
-  | 'credit_card'
-  | 'paypal'
-  | 'bank_transfer'
-  | 'cash_on_delivery';
+export type PaymentMethod = 'credit_card' | 'paypal' | 'bank_transfer' | 'cash_on_delivery';
 
 export interface Order {
   id: string;
@@ -122,4 +113,3 @@ export interface CheckoutData {
   paymentMethod: PaymentMethod;
   notes?: string;
 }
-

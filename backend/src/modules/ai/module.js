@@ -4,18 +4,18 @@
  * @module ai
  * @description Entry point ai module — khởi tạo dependencies và đăng ký routes
  */
-const AIController = require('./controllers/aiController');
-const AIService = require('./services/aiService');
-const SequelizeAIRepository = require('./repositories/SequelizeAiRepository');
-const RAGPipeline = require('./services/ragPipeline');
-const ChatbotLLMGateway = require('./services/chatbotLLMGateway');
+const AIController = require('@modules/ai/controllers/ai-controller');
+const AIService = require('@modules/ai/services/core/ai-service');
+const SequelizeAIRepository = require('@modules/ai/repositories/sequelize-ai-repository');
+const RAGPipeline = require('@modules/ai/services/chatbot/rag/rag-pipeline');
+const ChatbotLLMGateway = require('@modules/ai/services/chatbot/chatbot-llm-gateway');
 let vectorStoreService;
 try {
-  vectorStoreService = require('./services/vectorStore');
+  vectorStoreService = require('@modules/ai/services/vectorstore/vector-store');
 } catch (e) {
   vectorStoreService = null;
 }
-const buildRoutes = require('./routes');
+const buildRoutes = require('@modules/ai/routes');
 
 module.exports = ({
   Product,

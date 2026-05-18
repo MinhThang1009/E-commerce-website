@@ -82,4 +82,3 @@ export interface UpdateCartItemPayload {
   id: string;
   quantity: number;
 }
-

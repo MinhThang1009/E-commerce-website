@@ -6,7 +6,7 @@
  */
 import React from 'react';
 import { useTranslation } from 'react-i18next';
-import { Product } from '../api/productApi';
+import { Product } from '../api/product-api';
 import { ProductCard } from '@/features/catalog';
 
 interface ProductGridProps {

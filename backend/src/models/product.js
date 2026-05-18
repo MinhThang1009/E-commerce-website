@@ -1,12 +1,12 @@
 ﻿const { DataTypes } = require('sequelize');
 const slugify = require('slugify');
-const sequelize = require('../config/sequelize');
-const logger = require('../utils/logger');
+const sequelize = require('@config/sequelize');
+const logger = require('@utils/logger');
 
 // Thử load vectorStore service, nếu không có thì bỏ qua
 let vectorStoreService;
 try {
-  vectorStoreService = require('../modules/ai/services/vectorStore');
+  vectorStoreService = require('@modules/ai/services/vectorstore/vector-store');
 } catch (e) {
   vectorStoreService = null;
 }
@@ -318,9 +318,9 @@ const Product = sequelize.define(
           // (product.stockQuantity luôn 0 — variants chưa tồn tại tại thời điểm afterCreate).
           // Chatbot service tự filter out-of-stock khi search vector.
           if (vectorStoreService && product.status === 'active') {
-            const Category = require('./category');
-            const ProductImage = require('./productImage');
-            const { enrichProductData } = require('../modules/ai/services/vectorStore');
+            const Category = require('@models/category');
+            const ProductImage = require('@models/product-image');
+            const { enrichProductData } = require('@modules/ai/services/vectorstore/vector-store');
             const fullProduct = await Product.findByPk(product.id, {
               include: [
                 { model: Category, as: 'categories', attributes: ['name'] },
@@ -350,10 +350,10 @@ const Product = sequelize.define(
             // Stock check không làm ở hook (product.stockQuantity luôn 0 — stock thực ở variant level).
             // Chatbot service tự filter out-of-stock khi search vector.
             if (product.status === 'active') {
-              const Category = require('./category');
-              const ProductImage = require('./productImage');
-              const ProductVariant = require('./productVariant');
-              const { enrichProductData } = require('../modules/ai/services/vectorStore');
+              const Category = require('@models/category');
+              const ProductImage = require('@models/product-image');
+              const ProductVariant = require('@models/product-variant');
+              const { enrichProductData } = require('@modules/ai/services/vectorstore/vector-store');
               const fullProduct = await Product.findByPk(product.id, {
                 include: [
                   { model: Category, as: 'categories', attributes: ['name'] },

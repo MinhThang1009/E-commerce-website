@@ -1,107 +1,32 @@
 /**
- * validators.extra.test.js
- *
- * Tests for stub Joi validators at 0% coverage:
- *   - src/modules/wishlist/validators/wishlistValidator.js
- *   - src/modules/upload/validators/uploadValidator.js
- *   - src/modules/inventory/validators/inventoryValidator.js
- *   - src/modules/ai/validators/aiValidator.js
- *
- * All four are stub objects with empty Joi.object() schemas for `create` and
- * `update`. Tests verify: module exports the expected shape, and that empty
- * schemas accept any object (including empty input) without error.
+ * validators.extra.test.js — Zod validators (was Joi stubs)
  */
-
 process.env.NODE_ENV = 'test';
 
-// ════════════════════════════════════════════════════════════════════════════
-// wishlistValidator
-// ════════════════════════════════════════════════════════════════════════════
-
-describe('wishlistValidator', () => {
-  const wishlistValidator = require('../modules/wishlist/validators/wishlistValidator');
-
-  it('xuất ra object có trường create và update', () => {
-    expect(wishlistValidator).toHaveProperty('create');
-    expect(wishlistValidator).toHaveProperty('update');
-  });
-
-  it('create schema chấp nhận object rỗng mà không có lỗi', () => {
-    const { error } = wishlistValidator.create.validate({});
-    expect(error).toBeUndefined();
-  });
-
-  it('update schema chấp nhận object rỗng mà không có lỗi', () => {
-    const { error } = wishlistValidator.update.validate({});
-    expect(error).toBeUndefined();
-  });
+describe('wishlist-validator (Zod)', () => {
+  const { addWishlistSchema } = require('@modules/wishlist/validators/wishlist-validator');
+  it('xuất ra addWishlistSchema', () => expect(addWishlistSchema).toBeDefined());
+  it('chấp nhận productId hợp lệ', () => expect(addWishlistSchema.safeParse({ productId: 1 }).success).toBe(true));
+  it('lỗi khi thiếu productId', () => expect(addWishlistSchema.safeParse({}).success).toBe(false));
 });
 
-// ════════════════════════════════════════════════════════════════════════════
-// uploadValidator
-// ════════════════════════════════════════════════════════════════════════════
-
-describe('uploadValidator', () => {
-  const uploadValidator = require('../modules/upload/validators/uploadValidator');
-
-  it('xuất ra object có trường create và update', () => {
-    expect(uploadValidator).toHaveProperty('create');
-    expect(uploadValidator).toHaveProperty('update');
-  });
-
-  it('create schema chấp nhận object rỗng mà không có lỗi', () => {
-    const { error } = uploadValidator.create.validate({});
-    expect(error).toBeUndefined();
-  });
-
-  it('update schema chấp nhận object rỗng mà không có lỗi', () => {
-    const { error } = uploadValidator.update.validate({});
-    expect(error).toBeUndefined();
-  });
+describe('upload-validator (Zod)', () => {
+  const { uploadBodySchema } = require('@modules/upload/validators/upload-validator');
+  it('xuất ra uploadBodySchema', () => expect(uploadBodySchema).toBeDefined());
+  it('chấp nhận object rỗng', () => expect(uploadBodySchema.safeParse({}).success).toBe(true));
+  it('chấp nhận category hợp lệ', () => expect(uploadBodySchema.safeParse({ category: 'product' }).success).toBe(true));
 });
 
-// ════════════════════════════════════════════════════════════════════════════
-// inventoryValidator
-// ════════════════════════════════════════════════════════════════════════════
-
-describe('inventoryValidator', () => {
-  const inventoryValidator = require('../modules/inventory/validators/inventoryValidator');
-
-  it('xuất ra object có trường create và update', () => {
-    expect(inventoryValidator).toHaveProperty('create');
-    expect(inventoryValidator).toHaveProperty('update');
-  });
-
-  it('create schema chấp nhận object rỗng mà không có lỗi', () => {
-    const { error } = inventoryValidator.create.validate({});
-    expect(error).toBeUndefined();
-  });
-
-  it('update schema chấp nhận object rỗng mà không có lỗi', () => {
-    const { error } = inventoryValidator.update.validate({});
-    expect(error).toBeUndefined();
-  });
+describe('inventory-validator (Zod)', () => {
+  const { restockSchema } = require('@modules/inventory/validators/inventory-validator');
+  it('xuất ra restockSchema', () => expect(restockSchema).toBeDefined());
+  it('chấp nhận dữ liệu hợp lệ', () => expect(restockSchema.safeParse({ productId: 1, quantity: 5 }).success).toBe(true));
+  it('lỗi khi quantity < 1', () => expect(restockSchema.safeParse({ productId: 1, quantity: 0 }).success).toBe(false));
 });
 
-// ════════════════════════════════════════════════════════════════════════════
-// aiValidator
-// ════════════════════════════════════════════════════════════════════════════
-
-describe('aiValidator', () => {
-  const aiValidator = require('../modules/ai/validators/aiValidator');
-
-  it('xuất ra object có trường create và update', () => {
-    expect(aiValidator).toHaveProperty('create');
-    expect(aiValidator).toHaveProperty('update');
-  });
-
-  it('create schema chấp nhận object rỗng mà không có lỗi', () => {
-    const { error } = aiValidator.create.validate({});
-    expect(error).toBeUndefined();
-  });
-
-  it('update schema chấp nhận object rỗng mà không có lỗi', () => {
-    const { error } = aiValidator.update.validate({});
-    expect(error).toBeUndefined();
-  });
+describe('ai-validator (Zod)', () => {
+  const { chatMessageSchema } = require('@modules/ai/validators/ai-validator');
+  it('xuất ra chatMessageSchema', () => expect(chatMessageSchema).toBeDefined());
+  it('chấp nhận message hợp lệ', () => expect(chatMessageSchema.safeParse({ message: 'Hello' }).success).toBe(true));
+  it('lỗi khi message rỗng', () => expect(chatMessageSchema.safeParse({ message: '' }).success).toBe(false));
 });

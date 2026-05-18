@@ -14,8 +14,8 @@ import {
   useRegisterMutation,
   useVerifyOtpMutation,
   useResendVerificationMutation,
-} from '../api/authApi';
-import { getErrorMsg } from '@/utils/errorUtils';
+} from '../api/auth-api';
+import { getErrorMsg } from '@/utils/error-utils';
 
 type Step = 'form' | 'otp';
 type ApiError = { data?: { message?: string }; message?: string };

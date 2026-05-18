@@ -8,8 +8,9 @@ import React from 'react';
 import { Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { localizeField } from '@/utils/localize';
+import { proxyImg } from '@/utils/proxy-img';
 import { buildRoute } from '@/routes/paths';
-import { ProductRecommendation } from '../services/chatbotApi';
+import { ProductRecommendation } from '../services/chatbot-api';
 import { EyeIcon, ImageIcon, StarIcon } from './icons';
 import { getLocale } from '@/utils/format';
 
@@ -55,7 +56,7 @@ const ProductCard: React.FC<ProductCardProps> = ({ product }) => {
       <div className="relative overflow-hidden h-36 w-full">
         {product.thumbnail ? (
           <img
-            src={product.thumbnail}
+            src={proxyImg(product.thumbnail)}
             alt={localizeField(product, 'name', i18n.language)}
             className="w-full h-full object-cover object-center transform group-hover:scale-110 transition-transform duration-500"
             loading="lazy"

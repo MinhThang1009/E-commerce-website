@@ -96,7 +96,7 @@ describe('Tính phí vận chuyển', () => {
 
 describe('Tính điểm tích lũy', () => {
   const POINTS_EARN_RATE = 100000; // 100,000 VND = 1 điểm
-  const POINTS_VALUE = 1000;       // 1 điểm = 1,000 VND
+  const POINTS_VALUE = 1000; // 1 điểm = 1,000 VND
 
   function calculateEarnedPoints(subtotal) {
     return Math.floor(subtotal / POINTS_EARN_RATE);

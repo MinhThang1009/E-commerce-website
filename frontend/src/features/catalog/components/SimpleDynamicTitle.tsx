@@ -6,7 +6,7 @@
  */
 import React, { useState, useEffect } from 'react';
 import { Typography } from 'antd';
-import { simpleNamingService } from '../utils/productNaming';
+import { simpleNamingService } from '../utils/product-naming';
 
 const { Title } = Typography;
 
@@ -65,7 +65,7 @@ const SimpleDynamicTitle: React.FC<SimpleDynamicTitleProps> = ({
           margin: 0,
           transition: 'all 0.3s ease',
         }}
-        className='dark:text-white'
+        className="dark:text-white"
       >
         {currentName}
       </Title>

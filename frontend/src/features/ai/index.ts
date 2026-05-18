@@ -16,7 +16,7 @@ export { default as ChatInput } from './components/ChatInput';
 export { default as ChatSuggestions } from './components/ChatSuggestions';
 
 // Hooks
-export { useSpeechRecognition } from './hooks/useSpeechRecognition';
+export { useSpeechRecognition } from './hooks/use-speech-recognition';
 
 // Dịch vụ API (TanStack Query)
-export { useSendChatbotMessageMutation } from './services/chatbotApi';
+export { useSendChatbotMessageMutation } from './services/chatbot-api';

@@ -18,9 +18,7 @@ const ChatResizeIndicator: React.FC = () => {
       {/* Tooltip */}
       <div className="absolute bottom-full right-0 mb-2 w-48 p-2 bg-white dark:bg-neutral-800 rounded-lg shadow-lg text-xs text-neutral-700 dark:text-neutral-300 opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none border border-neutral-200 dark:border-neutral-700">
         <p className="font-medium">{t('chat.resizeDrag')}</p>
-        <p className="mt-1 text-neutral-500 dark:text-neutral-400">
-          {t('chat.resizeApply')}
-        </p>
+        <p className="mt-1 text-neutral-500 dark:text-neutral-400">{t('chat.resizeApply')}</p>
       </div>
     </div>
   );

@@ -15,5 +15,5 @@ export { default as BankTransferQR } from './components/BankTransferQR';
 export { default as PaymentQRPage } from './pages/PaymentQRPage';
 
 // API hooks (TanStack Query)
-export { useCreateMomoUrlMutation } from './api/momoApi';
-export { useCreateVNPayUrlMutation } from './api/vnpayApi';
+export { useCreateMomoUrlMutation } from './api/momo-api';
+export { useCreateVNPayUrlMutation } from './api/vnpay-api';

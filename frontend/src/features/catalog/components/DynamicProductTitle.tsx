@@ -8,8 +8,8 @@ import React, { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Typography, Space, Tag, Skeleton, Alert } from 'antd';
 import { BulbOutlined, LoadingOutlined } from '@ant-design/icons';
-import { useDebounce } from '@/hooks/useDebounce';
-import { attributeService } from '../api/attributeApi';
+import { useDebounce } from '@/hooks/use-debounce';
+import { attributeService } from '../api/attribute-api';
 
 const { Title } = Typography;
 
@@ -95,10 +95,7 @@ const DynamicProductTitle: React.FC<DynamicProductTitleProps> = ({
     return (
       <div style={style}>
         <Space>
-          <Skeleton.Input
-            style={{ width: 400, height: level === 1 ? 32 : 24 }}
-            active
-          />
+          <Skeleton.Input style={{ width: 400, height: level === 1 ? 32 : 24 }} active />
           <LoadingOutlined style={{ color: '#1890ff' }} />
         </Space>
       </div>
@@ -112,12 +109,7 @@ const DynamicProductTitle: React.FC<DynamicProductTitleProps> = ({
         <Title level={level} style={{ margin: 0, color: '#ff4d4f' }}>
           {product.name}
         </Title>
-        <Alert
-          message={error}
-          type="error"
-          showIcon
-          style={{ marginTop: 8 }}
-        />
+        <Alert message={error} type="error" showIcon style={{ marginTop: 8 }} />
       </div>
     );
   }
@@ -160,11 +152,7 @@ const DynamicProductTitle: React.FC<DynamicProductTitleProps> = ({
         {showAttributeTags && attributeDetails.length > 0 && (
           <Space wrap size="small">
             {attributeDetails.map((attr) => (
-              <Tag
-                key={attr.id}
-                color="blue"
-                style={{ fontSize: 11, margin: 2 }}
-              >
+              <Tag key={attr.id} color="blue" style={{ fontSize: 11, margin: 2 }}>
                 <Space size={4}>
                   <span>{attr.groupName}:</span>
                   <strong>{attr.nameTemplate || attr.name}</strong>

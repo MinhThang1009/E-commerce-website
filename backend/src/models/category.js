@@ -1,6 +1,6 @@
 ﻿const { DataTypes } = require('sequelize');
 const slugify = require('slugify');
-const sequelize = require('../config/sequelize');
+const sequelize = require('@config/sequelize');
 
 // Model danh mục sản phẩm - theo cấu trúc data_new.sql
 const Category = sequelize.define(

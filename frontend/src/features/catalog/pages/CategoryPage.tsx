@@ -9,10 +9,10 @@ import { useParams, useNavigate, Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { ROUTES, buildRoute } from '@/routes/paths';
 import { Helmet } from 'react-helmet-async';
-import { useGetCategoryBySlugQuery, useGetProductsByCategoryQuery } from '../api/categoryApi';
-import { useGetAllCategoriesQuery } from '../api/categoryApi';
+import { useGetCategoryBySlugQuery, useGetProductsByCategoryQuery } from '../api/category-api';
+import { useGetAllCategoriesQuery } from '../api/category-api';
 import { ProductCard } from '@/features/catalog';
-import { getUploadUrl } from '@/utils/uploadUrl';
+import { getUploadUrl } from '@/utils/upload-url';
 import { localizeField } from '@/utils/localize';
 import { Smartphone, Tablet, Laptop, Watch, Clock, Package, type LucideIcon } from 'lucide-react';
 

@@ -5,8 +5,8 @@
  * @description UI component cho feature auth
  */
 import React, { useEffect } from 'react';
-import { useAuthStore } from '@/stores/authStore';
-import { useNotifications } from '../hooks/useNotifications';
+import { useAuthStore } from '@/stores/auth-store';
+import { useNotifications } from '../hooks/use-notifications';
 import { useTranslation } from 'react-i18next';
 
 const LoginSuccess: React.FC = () => {

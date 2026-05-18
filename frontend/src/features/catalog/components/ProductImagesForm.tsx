@@ -38,16 +38,20 @@ const ProductImagesForm: React.FC = () => {
           description={
             <div>
               <p>
-                <strong>📝 {t('admin.products.images.howToLabel')}:</strong> {t('admin.products.images.guideInput')}
+                <strong>📝 {t('admin.products.images.howToLabel')}:</strong>{' '}
+                {t('admin.products.images.guideInput')}
               </p>
               <p>
-                <strong>🖼️ {t('admin.products.images.requirementsLabel')}:</strong> {t('admin.products.images.guideRequirement')}
+                <strong>🖼️ {t('admin.products.images.requirementsLabel')}:</strong>{' '}
+                {t('admin.products.images.guideRequirement')}
               </p>
               <p>
-                <strong>📁 {t('admin.products.images.formatLabel')}:</strong> {t('admin.products.images.guideFormat')}
+                <strong>📁 {t('admin.products.images.formatLabel')}:</strong>{' '}
+                {t('admin.products.images.guideFormat')}
               </p>
               <p>
-                <strong>🎯 {t('admin.products.images.thumbnailLabel')}:</strong> {t('admin.products.images.guideThumbnail')}
+                <strong>🎯 {t('admin.products.images.thumbnailLabel')}:</strong>{' '}
+                {t('admin.products.images.guideThumbnail')}
               </p>
               <p>
                 <strong>🔗 Backend:</strong> {t('admin.products.images.guideBackend')}

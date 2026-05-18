@@ -33,8 +33,7 @@ const Textarea: React.FC<TextareaProps> = ({
   error,
   required = false,
 }) => {
-  const textareaId =
-    id || `textarea-${Math.random().toString(36).substr(2, 9)}`;
+  const textareaId = id || `textarea-${Math.random().toString(36).substr(2, 9)}`;
 
   return (
     <div className="w-full">
@@ -59,12 +58,9 @@ const Textarea: React.FC<TextareaProps> = ({
           ${className}
         `}
       />
-      {error && (
-        <p className="mt-1 text-sm text-red-600 dark:text-red-400">{error}</p>
-      )}
+      {error && <p className="mt-1 text-sm text-red-600 dark:text-red-400">{error}</p>}
     </div>
   );
 };
 
 export default Textarea;
-

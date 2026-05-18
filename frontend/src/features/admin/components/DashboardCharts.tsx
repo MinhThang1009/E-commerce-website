@@ -7,7 +7,7 @@
 import React, { useState, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useSearchParams } from 'react-router-dom';
-import { useUiStore } from '@/stores/uiStore';
+import { useUiStore } from '@/stores/ui-store';
 import {
   useGetDetailedStatsQuery,
   useGetOrderStatusAnalyticsQuery,
@@ -16,7 +16,7 @@ import {
   useGetUserGrowthAnalyticsQuery,
   useGetPaymentMethodsAnalyticsQuery,
   useGetChatbotStatsQuery,
-} from '../api/adminDashboardApi';
+} from '../api/admin-dashboard-api';
 import {
   ResponsiveContainer,
   AreaChart,
@@ -37,7 +37,16 @@ import {
 import dayjs from 'dayjs';
 
 // Bảng màu cho Pie Charts
-const PIE_COLORS = ['#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#ec4899', '#06b6d4', '#84cc16'];
+const PIE_COLORS = [
+  '#3b82f6',
+  '#10b981',
+  '#f59e0b',
+  '#ef4444',
+  '#8b5cf6',
+  '#ec4899',
+  '#06b6d4',
+  '#84cc16',
+];
 const STATUS_COLORS: Record<string, string> = {
   pending: '#f59e0b',
   processing: '#3b82f6',
@@ -59,7 +68,7 @@ const DashboardCharts: React.FC = () => {
 
   // State bộ lọc — đọc từ URL query params nếu có
   const [period, setPeriod] = useState<'7d' | '30d' | '90d' | 'custom'>(
-    searchParams.get('from') && searchParams.get('to') ? 'custom' : '30d'
+    searchParams.get('from') && searchParams.get('to') ? 'custom' : '30d',
   );
   const [customFrom, setCustomFrom] = useState(searchParams.get('from') || '');
   const [customTo, setCustomTo] = useState(searchParams.get('to') || '');
@@ -107,13 +116,16 @@ const DashboardCharts: React.FC = () => {
     groupBy,
   });
   const { data: orderStatusData } = useGetOrderStatusAnalyticsQuery({ startDate });
-  const { data: topProductsData } = useGetTopProductsAnalyticsQuery({ metric: topProductMetric, limit: 5 });
+  const { data: topProductsData } = useGetTopProductsAnalyticsQuery({
+    metric: topProductMetric,
+    limit: 5,
+  });
   const { data: categoryData } = useGetRevenueByCategoryAnalyticsQuery({ startDate, endDate });
   const { data: userGrowthData } = useGetUserGrowthAnalyticsQuery({ startDate, endDate, groupBy });
   const { data: paymentMethodsData } = useGetPaymentMethodsAnalyticsQuery();
   const { data: chatbotData } = useGetChatbotStatsQuery(
     activeTab === 'chatbot' ? { startDate, endDate } : undefined,
-    { enabled: activeTab === 'chatbot' }
+    { enabled: activeTab === 'chatbot' },
   );
 
   const formatCurrency = (amount: number) => {
@@ -135,13 +147,14 @@ const DashboardCharts: React.FC = () => {
   const ordersLabel = t('admin.charts.ordersLabel');
 
   const orderDataForChart = useMemo(
-    () => (detailedData?.data?.orders ?? []).map((o) => ({
-      name: formatPeriodLabel(o.period),
-      revenue: o.revenue,
-      orderCount: o.orderCount,
-    })),
+    () =>
+      (detailedData?.data?.orders ?? []).map((o) => ({
+        name: formatPeriodLabel(o.period),
+        revenue: o.revenue,
+        orderCount: o.orderCount,
+      })),
     // eslint-disable-next-line react-hooks/exhaustive-deps -- formatPeriodLabel phụ thuộc vào groupBy đã có trong deps
-    [detailedData?.data?.orders, groupBy]
+    [detailedData?.data?.orders, groupBy],
   );
 
   // Tooltip style chung
@@ -159,7 +172,7 @@ const DashboardCharts: React.FC = () => {
       const params = new URLSearchParams({ type });
       if (startDate) params.set('startDate', startDate);
       if (endDate) params.set('endDate', endDate);
-      const { getValidToken } = await import('@/utils/tokenManager');
+      const { getValidToken } = await import('@/utils/token-manager');
       const token = await getValidToken();
       const baseUrl = import.meta.env.VITE_API_URL || '/api';
       const resp = await fetch(`${baseUrl}/admin/reports/export?${params.toString()}`, {
@@ -182,11 +195,12 @@ const DashboardCharts: React.FC = () => {
   // Render tab chatbot
   const renderChatbotTab = () => {
     const stats = chatbotData?.data;
-    if (!stats) return (
-      <div className="text-center py-12 text-neutral-500 dark:text-neutral-400">
-        {t('common.loading')}
-      </div>
-    );
+    if (!stats)
+      return (
+        <div className="text-center py-12 text-neutral-500 dark:text-neutral-400">
+          {t('common.loading')}
+        </div>
+      );
 
     const intentData = Object.entries(stats.intentBreakdown).map(([key, val], i) => ({
       name: key,
@@ -199,31 +213,57 @@ const DashboardCharts: React.FC = () => {
         {/* KPI Cards chatbot */}
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
           <div className="bg-white dark:bg-neutral-800 rounded-lg p-4 border border-neutral-200 dark:border-neutral-700">
-            <div className="text-sm text-neutral-500 dark:text-neutral-400">{t('admin.chatbot.totalSessions')}</div>
-            <div className="text-2xl font-bold text-neutral-800 dark:text-neutral-100 mt-1">{stats.totalSessions}</div>
+            <div className="text-sm text-neutral-500 dark:text-neutral-400">
+              {t('admin.chatbot.totalSessions')}
+            </div>
+            <div className="text-2xl font-bold text-neutral-800 dark:text-neutral-100 mt-1">
+              {stats.totalSessions}
+            </div>
           </div>
           <div className="bg-white dark:bg-neutral-800 rounded-lg p-4 border border-neutral-200 dark:border-neutral-700">
-            <div className="text-sm text-neutral-500 dark:text-neutral-400">{t('admin.chatbot.avgMessages')}</div>
-            <div className="text-2xl font-bold text-neutral-800 dark:text-neutral-100 mt-1">{stats.avgMessagesPerSession}</div>
+            <div className="text-sm text-neutral-500 dark:text-neutral-400">
+              {t('admin.chatbot.avgMessages')}
+            </div>
+            <div className="text-2xl font-bold text-neutral-800 dark:text-neutral-100 mt-1">
+              {stats.avgMessagesPerSession}
+            </div>
           </div>
           <div className="bg-white dark:bg-neutral-800 rounded-lg p-4 border border-neutral-200 dark:border-neutral-700">
-            <div className="text-sm text-neutral-500 dark:text-neutral-400">{t('admin.chatbot.fallbackRate')}</div>
-            <div className="text-2xl font-bold text-neutral-800 dark:text-neutral-100 mt-1">{(stats.fallbackRate * 100).toFixed(1)}%</div>
+            <div className="text-sm text-neutral-500 dark:text-neutral-400">
+              {t('admin.chatbot.fallbackRate')}
+            </div>
+            <div className="text-2xl font-bold text-neutral-800 dark:text-neutral-100 mt-1">
+              {(stats.fallbackRate * 100).toFixed(1)}%
+            </div>
           </div>
           <div className="bg-white dark:bg-neutral-800 rounded-lg p-4 border border-neutral-200 dark:border-neutral-700">
-            <div className="text-sm text-neutral-500 dark:text-neutral-400">{t('admin.chatbot.avgResponseTime')}</div>
-            <div className="text-2xl font-bold text-neutral-800 dark:text-neutral-100 mt-1">{stats.avgResponseTimeMs}ms</div>
+            <div className="text-sm text-neutral-500 dark:text-neutral-400">
+              {t('admin.chatbot.avgResponseTime')}
+            </div>
+            <div className="text-2xl font-bold text-neutral-800 dark:text-neutral-100 mt-1">
+              {stats.avgResponseTimeMs}ms
+            </div>
           </div>
         </div>
 
         {/* Intent Breakdown pie chart */}
         {intentData.length > 0 && (
           <div className="bg-white dark:bg-neutral-800 rounded-lg p-6 shadow-sm border border-neutral-200 dark:border-neutral-700">
-            <h3 className="text-sm font-medium text-neutral-500 dark:text-neutral-400 mb-4">{t('admin.chatbot.intentBreakdown')}</h3>
+            <h3 className="text-sm font-medium text-neutral-500 dark:text-neutral-400 mb-4">
+              {t('admin.chatbot.intentBreakdown')}
+            </h3>
             <div className="h-64">
               <ResponsiveContainer width="100%" height="100%">
                 <PieChart>
-                  <Pie data={intentData} dataKey="value" nameKey="name" cx="50%" cy="50%" outerRadius={80} label>
+                  <Pie
+                    data={intentData}
+                    dataKey="value"
+                    nameKey="name"
+                    cx="50%"
+                    cy="50%"
+                    outerRadius={80}
+                    label
+                  >
                     {intentData.map((entry, idx) => (
                       <Cell key={idx} fill={entry.fill} />
                     ))}
@@ -243,7 +283,10 @@ const DashboardCharts: React.FC = () => {
     return (
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
         {[...Array(2)].map((_, index) => (
-          <div key={index} className="bg-white dark:bg-neutral-800 rounded-lg p-6 shadow-sm border border-neutral-200 dark:border-neutral-700 animate-pulse h-80 flex items-center justify-center">
+          <div
+            key={index}
+            className="bg-white dark:bg-neutral-800 rounded-lg p-6 shadow-sm border border-neutral-200 dark:border-neutral-700 animate-pulse h-80 flex items-center justify-center"
+          >
             <div className="text-neutral-400">{t('common.loading')}</div>
           </div>
         ))}
@@ -339,8 +382,19 @@ const DashboardCharts: React.FC = () => {
               onClick={() => handleExport('orders')}
               className="px-3 py-1.5 text-sm bg-green-600 text-white rounded-md hover:bg-green-700 flex items-center gap-1"
             >
-              <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                className="h-4 w-4"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
+                />
               </svg>
               {t('admin.charts.exportOrders')}
             </button>
@@ -348,8 +402,19 @@ const DashboardCharts: React.FC = () => {
               onClick={() => handleExport('products')}
               className="px-3 py-1.5 text-sm bg-blue-600 text-white rounded-md hover:bg-blue-700 flex items-center gap-1"
             >
-              <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                className="h-4 w-4"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
+                />
               </svg>
               {t('admin.charts.exportProducts')}
             </button>
@@ -358,30 +423,56 @@ const DashboardCharts: React.FC = () => {
       </div>
 
       {/* Nội dung tab */}
-      {activeTab === 'chatbot' ? renderChatbotTab() : (
+      {activeTab === 'chatbot' ? (
+        renderChatbotTab()
+      ) : (
         <>
           {/* Hàng 1: Revenue Area + Order Count Bar */}
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
             <div className="bg-white dark:bg-neutral-800 rounded-lg p-6 shadow-sm border border-neutral-200 dark:border-neutral-700">
               <h3 className="text-sm font-medium text-neutral-500 dark:text-neutral-400 mb-4">
                 {t('admin.charts.revenue', {
-                  period: t(`admin.charts.period${period === '7d' ? '7d' : period === '30d' ? '30d' : period === '90d' ? '90d' : 'Custom'}`),
+                  period: t(
+                    `admin.charts.period${period === '7d' ? '7d' : period === '30d' ? '30d' : period === '90d' ? '90d' : 'Custom'}`,
+                  ),
                 })}
               </h3>
               <div className="h-64">
                 <ResponsiveContainer width="100%" height="100%">
-                  <AreaChart data={orderDataForChart} margin={{ top: 10, right: 10, left: -10, bottom: 0 }}>
+                  <AreaChart
+                    data={orderDataForChart}
+                    margin={{ top: 10, right: 10, left: -10, bottom: 0 }}
+                  >
                     <defs>
                       <linearGradient id="colorRevenue" x1="0" y1="0" x2="0" y2="1">
                         <stop offset="5%" stopColor="#3b82f6" stopOpacity={0.8} />
                         <stop offset="95%" stopColor="#3b82f6" stopOpacity={0} />
                       </linearGradient>
                     </defs>
-                    <CartesianGrid strokeDasharray="3 3" className="stroke-neutral-200 dark:stroke-neutral-700" />
+                    <CartesianGrid
+                      strokeDasharray="3 3"
+                      className="stroke-neutral-200 dark:stroke-neutral-700"
+                    />
                     <XAxis dataKey="name" tick={tickStyle} />
-                    <YAxis tickFormatter={(v) => v >= 1000000 ? `${v / 1000000}M` : v >= 1000 ? `${v / 1000}K` : v} tick={tickStyle} />
-                    <Tooltip formatter={(value: number) => formatCurrency(value)} contentStyle={tooltipStyle} />
-                    <Area type="monotone" dataKey="revenue" name={revenueLabel} stroke="#3b82f6" fillOpacity={1} fill="url(#colorRevenue)" strokeWidth={2} />
+                    <YAxis
+                      tickFormatter={(v) =>
+                        v >= 1000000 ? `${v / 1000000}M` : v >= 1000 ? `${v / 1000}K` : v
+                      }
+                      tick={tickStyle}
+                    />
+                    <Tooltip
+                      formatter={(value: number) => formatCurrency(value)}
+                      contentStyle={tooltipStyle}
+                    />
+                    <Area
+                      type="monotone"
+                      dataKey="revenue"
+                      name={revenueLabel}
+                      stroke="#3b82f6"
+                      fillOpacity={1}
+                      fill="url(#colorRevenue)"
+                      strokeWidth={2}
+                    />
                   </AreaChart>
                 </ResponsiveContainer>
               </div>
@@ -393,12 +484,23 @@ const DashboardCharts: React.FC = () => {
               </h3>
               <div className="h-64">
                 <ResponsiveContainer width="100%" height="100%">
-                  <BarChart data={orderDataForChart} margin={{ top: 10, right: 10, left: -10, bottom: 0 }}>
-                    <CartesianGrid strokeDasharray="3 3" className="stroke-neutral-200 dark:stroke-neutral-700" />
+                  <BarChart
+                    data={orderDataForChart}
+                    margin={{ top: 10, right: 10, left: -10, bottom: 0 }}
+                  >
+                    <CartesianGrid
+                      strokeDasharray="3 3"
+                      className="stroke-neutral-200 dark:stroke-neutral-700"
+                    />
                     <XAxis dataKey="name" tick={tickStyle} />
                     <YAxis allowDecimals={false} tick={tickStyle} />
                     <Tooltip contentStyle={tooltipStyle} />
-                    <Bar dataKey="orderCount" name={ordersLabel} fill="#10b981" radius={[4, 4, 0, 0]} />
+                    <Bar
+                      dataKey="orderCount"
+                      name={ordersLabel}
+                      fill="#10b981"
+                      radius={[4, 4, 0, 0]}
+                    />
                   </BarChart>
                 </ResponsiveContainer>
               </div>
@@ -443,14 +545,27 @@ const DashboardCharts: React.FC = () => {
               <div className="h-64">
                 <ResponsiveContainer width="100%" height="100%">
                   <LineChart
-                    data={(userGrowthData?.data || []).map((d) => ({ ...d, date: formatPeriodLabel(d.date) }))}
+                    data={(userGrowthData?.data || []).map((d) => ({
+                      ...d,
+                      date: formatPeriodLabel(d.date),
+                    }))}
                     margin={{ top: 10, right: 10, left: -10, bottom: 0 }}
                   >
-                    <CartesianGrid strokeDasharray="3 3" className="stroke-neutral-200 dark:stroke-neutral-700" />
+                    <CartesianGrid
+                      strokeDasharray="3 3"
+                      className="stroke-neutral-200 dark:stroke-neutral-700"
+                    />
                     <XAxis dataKey="date" tick={tickStyle} />
                     <YAxis allowDecimals={false} tick={tickStyle} />
                     <Tooltip contentStyle={tooltipStyle} />
-                    <Line type="monotone" dataKey="newUsers" name={t('admin.charts.newUsers')} stroke="#8b5cf6" strokeWidth={2} dot={{ r: 3 }} />
+                    <Line
+                      type="monotone"
+                      dataKey="newUsers"
+                      name={t('admin.charts.newUsers')}
+                      stroke="#8b5cf6"
+                      strokeWidth={2}
+                      dot={{ r: 3 }}
+                    />
                   </LineChart>
                 </ResponsiveContainer>
               </div>
@@ -491,16 +606,34 @@ const DashboardCharts: React.FC = () => {
                     layout="vertical"
                     margin={{ top: 5, right: 20, left: 80, bottom: 5 }}
                   >
-                    <CartesianGrid strokeDasharray="3 3" className="stroke-neutral-200 dark:stroke-neutral-700" />
-                    <XAxis type="number" tick={tickStyle} tickFormatter={topProductMetric === 'revenue' ? (v) => (v >= 1000000 ? `${v / 1000000}M` : v >= 1000 ? `${v / 1000}K` : `${v}`) : undefined} />
+                    <CartesianGrid
+                      strokeDasharray="3 3"
+                      className="stroke-neutral-200 dark:stroke-neutral-700"
+                    />
+                    <XAxis
+                      type="number"
+                      tick={tickStyle}
+                      tickFormatter={
+                        topProductMetric === 'revenue'
+                          ? (v) =>
+                              v >= 1000000 ? `${v / 1000000}M` : v >= 1000 ? `${v / 1000}K` : `${v}`
+                          : undefined
+                      }
+                    />
                     <YAxis dataKey="name" type="category" tick={tickStyle} width={80} />
                     <Tooltip
-                      formatter={(value: number) => topProductMetric === 'revenue' ? formatCurrency(value) : value}
+                      formatter={(value: number) =>
+                        topProductMetric === 'revenue' ? formatCurrency(value) : value
+                      }
                       contentStyle={tooltipStyle}
                     />
                     <Bar
                       dataKey={topProductMetric}
-                      name={topProductMetric === 'revenue' ? t('admin.charts.revenueLabel') : t('admin.charts.soldCount')}
+                      name={
+                        topProductMetric === 'revenue'
+                          ? t('admin.charts.revenueLabel')
+                          : t('admin.charts.soldCount')
+                      }
                       fill={topProductMetric === 'revenue' ? '#3b82f6' : '#10b981'}
                       radius={[0, 4, 4, 0]}
                     />
@@ -518,17 +651,35 @@ const DashboardCharts: React.FC = () => {
                 <ResponsiveContainer width="100%" height="100%">
                   <BarChart
                     data={(categoryData?.data || []).map((c, i) => ({
-                      name: c.categoryName.length > 15 ? c.categoryName.substring(0, 15) + '...' : c.categoryName,
+                      name:
+                        c.categoryName.length > 15
+                          ? c.categoryName.substring(0, 15) + '...'
+                          : c.categoryName,
                       revenue: c.revenue,
                       fill: PIE_COLORS[i % PIE_COLORS.length],
                     }))}
                     margin={{ top: 10, right: 10, left: -10, bottom: 0 }}
                   >
-                    <CartesianGrid strokeDasharray="3 3" className="stroke-neutral-200 dark:stroke-neutral-700" />
+                    <CartesianGrid
+                      strokeDasharray="3 3"
+                      className="stroke-neutral-200 dark:stroke-neutral-700"
+                    />
                     <XAxis dataKey="name" tick={tickStyle} />
-                    <YAxis tickFormatter={(v) => v >= 1000000 ? `${v / 1000000}M` : v >= 1000 ? `${v / 1000}K` : `${v}`} tick={tickStyle} />
-                    <Tooltip formatter={(value: number) => formatCurrency(value)} contentStyle={tooltipStyle} />
-                    <Bar dataKey="revenue" name={t('admin.charts.revenueLabel')} radius={[4, 4, 0, 0]}>
+                    <YAxis
+                      tickFormatter={(v) =>
+                        v >= 1000000 ? `${v / 1000000}M` : v >= 1000 ? `${v / 1000}K` : `${v}`
+                      }
+                      tick={tickStyle}
+                    />
+                    <Tooltip
+                      formatter={(value: number) => formatCurrency(value)}
+                      contentStyle={tooltipStyle}
+                    />
+                    <Bar
+                      dataKey="revenue"
+                      name={t('admin.charts.revenueLabel')}
+                      radius={[4, 4, 0, 0]}
+                    >
                       {(categoryData?.data || []).map((_, i) => (
                         <Cell key={i} fill={PIE_COLORS[i % PIE_COLORS.length]} />
                       ))}
@@ -549,7 +700,11 @@ const DashboardCharts: React.FC = () => {
                 <ResponsiveContainer width="100%" height="100%">
                   <PieChart>
                     <Pie
-                      data={(paymentMethodsData?.data || []).map((p) => ({ name: p.method, value: p.count, revenue: p.revenue }))}
+                      data={(paymentMethodsData?.data || []).map((p) => ({
+                        name: p.method,
+                        value: p.count,
+                        revenue: p.revenue,
+                      }))}
                       dataKey="value"
                       nameKey="name"
                       cx="50%"

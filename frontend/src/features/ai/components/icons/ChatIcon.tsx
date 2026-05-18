@@ -39,22 +39,11 @@ const ChatIcon: React.FC<IconProps> = ({ className = 'w-7 h-7' }) => {
         />
 
         {/* Dấu ba chấm */}
-        <path
-          d="M9 10.9378H15"
-          stroke="currentColor"
-          strokeWidth="2"
-          strokeLinecap="round"
-        />
-        <path
-          d="M9 14.4378H12"
-          stroke="currentColor"
-          strokeWidth="2"
-          strokeLinecap="round"
-        />
+        <path d="M9 10.9378H15" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+        <path d="M9 14.4378H12" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
       </g>
     </svg>
   );
 };
 
 export default ChatIcon;
-

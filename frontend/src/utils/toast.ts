@@ -5,7 +5,7 @@
  * @description Helper utility function
  */
 import { message } from 'antd';
-import { useUiStore } from '@/stores/uiStore';
+import { useUiStore } from '@/stores/ui-store';
 
 /**
  * Tiện ích toast cho toàn bộ ứng dụng
@@ -119,4 +119,3 @@ export const toast = {
     }
   },
 };
-

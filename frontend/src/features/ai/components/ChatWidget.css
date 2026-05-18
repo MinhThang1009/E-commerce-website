@@ -5,16 +5,23 @@
  * 3. Style scoped đủ qua tên class chuyên biệt (.chat-*, .custom-scrollbar) — không leak global
  */
 
-
 /* Base container animations */
 @keyframes chatFadeIn {
-  from { opacity: 0; transform: scale(0.98); }
-  to { opacity: 1; transform: scale(1); }
+  from {
+    opacity: 0;
+    transform: scale(0.98);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
 }
 
 .chat-widget-active {
   animation: chatFadeIn 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards;
-  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.25), 0 0 0 1px rgba(0, 0, 0, 0.05);
+  box-shadow:
+    0 20px 50px rgba(0, 0, 0, 0.25),
+    0 0 0 1px rgba(0, 0, 0, 0.05);
 }
 
 /* Custom scrollbar for message area */
@@ -37,7 +44,9 @@
 
 /* Message bubble hover effect */
 .message-bubble {
-  transition: transform 0.2s ease, box-shadow 0.2s ease;
+  transition:
+    transform 0.2s ease,
+    box-shadow 0.2s ease;
 }
 
 .message-bubble:hover {
@@ -66,8 +75,14 @@
 
 /* Animations for new messages */
 @keyframes slideUp {
-  from { opacity: 0; transform: translateY(10px); }
-  to { opacity: 1; transform: translateY(0); }
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 .animate-in {

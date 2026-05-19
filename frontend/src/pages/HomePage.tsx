@@ -218,7 +218,7 @@ const HomePage: React.FC = () => {
                   <Sparkles className="w-3 h-3" />
                   {isVi ? '01 / Nổi Bật' : '01 / Featured'}
                 </div>
-                <h2 className="display-heading text-5xl lg:text-6xl xl:text-7xl">
+                <h2 className="display-heading text-4xl lg:text-5xl">
                   {t('homepage.featuredProducts.title')}
                 </h2>
               </div>
@@ -294,7 +294,7 @@ const HomePage: React.FC = () => {
                 <LayoutGrid className="w-3 h-3" />
                 {isVi ? '02 / Danh Mục' : '02 / Categories'}
               </div>
-              <h2 className="display-heading text-5xl lg:text-6xl">
+              <h2 className="display-heading text-4xl lg:text-5xl">
                 {t('homepage.categories.title')}
               </h2>
             </motion.div>
@@ -374,7 +374,7 @@ const HomePage: React.FC = () => {
                 <Award className="w-3 h-3" />
                 {isVi ? '03 / Thương Hiệu' : '03 / Brands'}
               </div>
-              <h2 className="display-heading text-5xl lg:text-6xl">{t('homepage.brands.title')}</h2>
+              <h2 className="display-heading text-4xl lg:text-5xl">{t('homepage.brands.title')}</h2>
             </motion.div>
 
             {/* Marquee — auto-scroll brand names */}
@@ -459,7 +459,7 @@ const HomePage: React.FC = () => {
                 <Layers className="w-3 h-3" />
                 {isVi ? '04 / Bộ Sưu Tập' : '04 / Collections'}
               </div>
-              <h2 className="display-heading text-5xl lg:text-6xl">
+              <h2 className="display-heading text-4xl lg:text-5xl">
                 {t('homepage.collections.title')}
               </h2>
             </motion.div>

@@ -142,7 +142,8 @@ const ProductListCard: React.FC<ProductListCardProps> = ({
     <div className="group relative bg-white dark:bg-neutral-900 rounded-2xl overflow-hidden transition-all duration-500 ease-out hover:shadow-2xl hover:-translate-y-1 border border-neutral-100/50 dark:border-neutral-800/50 hover:border-primary-200/30 dark:hover:border-primary-800/30 backdrop-blur-sm">
       <div className="flex flex-col lg:flex-row gap-6 p-8">
         {/* Khu vực ảnh cải tiến */}
-        <div className="relative w-full lg:w-80 h-64 lg:h-48 flex-shrink-0 overflow-hidden rounded-2xl bg-gradient-to-br from-neutral-50 to-neutral-100 dark:from-neutral-800 dark:to-neutral-900">
+        {/* Image: self-stretch để fill height của row bên phải */}
+        <div className="relative w-full lg:w-80 h-64 lg:h-auto lg:self-stretch lg:min-h-[200px] flex-shrink-0 overflow-hidden rounded-2xl bg-white dark:bg-[#2a2a2a]">
           {/* Nhãn cải tiến */}
           <div className="absolute top-3 left-3 z-20 flex flex-wrap gap-2">
             {compareAtPrice && compareAtPrice > priceInfo.basePrice && (
@@ -162,7 +163,7 @@ const ProductListCard: React.FC<ProductListCardProps> = ({
             <img
               src={proxyImg(thumbnail)}
               alt={name}
-              className="w-full h-full object-cover object-center transform group-hover:scale-110 transition-transform duration-700 ease-out"
+              className="w-full h-full object-contain transform group-hover:scale-105 transition-transform duration-700 ease-out"
               loading="lazy"
             />
           </Link>
@@ -238,11 +239,21 @@ const ProductListCard: React.FC<ProductListCardProps> = ({
 
             {/* Các nút hành động cải tiến */}
             <div className="flex flex-col gap-3">
-              {/* Nút mua ngay */}
+              {/* Nút mua ngay — Glass coral */}
               <button
                 onClick={handleBuyNow}
                 disabled={isBuying}
-                className="w-full bg-gradient-to-r from-orange-500 via-orange-600 to-orange-700 hover:from-orange-600 hover:via-orange-700 hover:to-orange-800 disabled:from-gray-400 disabled:to-gray-500 text-white rounded-xl px-6 py-4 transition-all duration-300 shadow-lg hover:shadow-xl transform hover:scale-[1.01] active:scale-[0.99] font-bold text-lg flex items-center justify-center gap-3 group/buynow"
+                className="btn-glass-secondary w-full px-6 py-4 font-bold text-lg flex items-center justify-center gap-3"
+                style={
+                  {
+                    background: 'rgba(255,117,94,0.72)',
+                    border: '1px solid rgba(255,140,110,0.55)',
+                    boxShadow:
+                      'inset 0 1.5px 0 rgba(255,255,255,0.25), 0 3px 14px rgba(255,117,94,0.35)',
+                    backdropFilter: 'blur(14px) saturate(2)',
+                    WebkitBackdropFilter: 'blur(14px) saturate(2)',
+                  } as React.CSSProperties
+                }
               >
                 {isBuying ? (
                   <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white"></div>
@@ -257,7 +268,7 @@ const ProductListCard: React.FC<ProductListCardProps> = ({
                 <button
                   onClick={handleAddToCart}
                   disabled={isAddingToCart}
-                  className="flex-1 bg-gradient-to-r from-emerald-600 via-emerald-700 to-emerald-800 hover:from-emerald-700 hover:via-emerald-800 hover:to-emerald-900 disabled:from-gray-400 disabled:via-gray-500 disabled:to-gray-600 text-white rounded-xl px-4 py-3.5 transition-all duration-300 shadow-md hover:shadow-lg transform hover:scale-[1.02] active:scale-[0.98] disabled:hover:scale-100 font-semibold text-base group/cart"
+                  className="btn-glass-primary flex-1 px-4 py-3.5 font-semibold text-base"
                 >
                   <div className="flex items-center justify-center gap-3">
                     {isAddingToCart ? (

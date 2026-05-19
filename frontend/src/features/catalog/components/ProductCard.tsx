@@ -241,24 +241,22 @@ const ProductCard: React.FC<ProductCardProps> = ({
           )}
         </div>
 
-        {/* CTAs */}
+        {/* CTAs — Glass 2.0 với đầy đủ hover/active effects */}
         <div className="flex flex-col gap-2 mt-2">
           <button
-            className="w-full bg-primary-600 hover:bg-primary-500 text-white rounded-xl py-2.5 text-sm font-bold flex items-center justify-center gap-2 transition-all duration-200 hover:shadow-[0_4px_18px_rgba(42,172,167,0.4)] active:scale-[0.98] disabled:opacity-60"
+            className="btn-glass-primary w-full py-2.5 text-sm flex items-center justify-center gap-2"
             onClick={handleBuyNow}
             disabled={isBuying}
           >
             {isBuying ? (
-              <div className="h-4 w-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+              <div className="h-4 w-4 border-2 border-white/70 border-t-white rounded-full animate-spin" />
             ) : (
               <ShoppingCartIcon className="h-4 w-4" />
             )}
             {t('product.buyNow')}
           </button>
-          <button
-            className="w-full border border-primary-500/25 hover:border-primary-500 text-primary-600 dark:text-primary-400 hover:bg-primary-600 hover:text-white rounded-xl py-2 text-sm font-semibold flex items-center justify-center gap-1.5 transition-all duration-200"
-            onClick={handleViewDetails}
-          >
+
+          <button className="btn-glass-secondary w-full py-2 text-sm" onClick={handleViewDetails}>
             {t('product.viewDetails')}
           </button>
         </div>

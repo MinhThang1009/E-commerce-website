@@ -626,20 +626,160 @@ body {
 .section-number {
   display: inline-flex;
   align-items: center;
-  gap: 0.625rem;
-  font-size: 0.65rem;
-  font-weight: 700;
-  letter-spacing: 0.25em;
+  gap: 0.5rem;
+  font-size: 0.75rem;
+  font-weight: 600;
+  letter-spacing: 0.18em;
   text-transform: uppercase;
   color: var(--accent);
 
   &::before {
     content: '';
     display: block;
-    width: 2rem;
+    width: 1.5rem;
     height: 1px;
     background: currentColor;
     flex-shrink: 0;
+  }
+}
+
+/* ─────────────────────────────────────────────────────────────
+   GLASS BUTTONS 2.0 — hover/active effects, không dùng inline style
+   ───────────────────────────────────────────────────────────── */
+
+/* Primary glass button — teal */
+.btn-glass-primary {
+  position: relative;
+  overflow: hidden;
+  isolation: isolate;
+  color: white;
+  font-weight: 700;
+  border-radius: 0.75rem;
+  /* Light mode: đủ opaque để thấy rõ */
+  background: rgba(42, 172, 167, 0.75);
+  backdrop-filter: blur(14px) saturate(2);
+  -webkit-backdrop-filter: blur(14px) saturate(2);
+  border: 1px solid rgba(75, 188, 184, 0.55);
+  box-shadow:
+    inset 0 1.5px 0 rgba(255, 255, 255, 0.28),
+    0 3px 14px rgba(42, 172, 167, 0.35);
+  transition:
+    background 0.2s ease,
+    box-shadow 0.2s ease,
+    border-color 0.2s ease,
+    transform 0.15s ease;
+
+  /* Specular highlight */
+  &::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    border-radius: inherit;
+    background: linear-gradient(135deg, rgba(255, 255, 255, 0.2) 0%, transparent 55%);
+    pointer-events: none;
+    z-index: 1;
+  }
+
+  > * {
+    position: relative;
+    z-index: 2;
+  }
+
+  &:hover:not(:disabled) {
+    background: rgba(42, 172, 167, 0.88);
+    border-color: rgba(75, 188, 184, 0.8);
+    box-shadow:
+      inset 0 1.5px 0 rgba(255, 255, 255, 0.32),
+      0 6px 22px rgba(42, 172, 167, 0.5);
+    transform: translateY(-1px);
+  }
+
+  &:active:not(:disabled) {
+    background: rgba(42, 172, 167, 0.95);
+    transform: scale(0.97) translateY(0);
+    box-shadow: inset 0 2px 6px rgba(0, 0, 0, 0.15);
+  }
+
+  &:disabled {
+    opacity: 0.45;
+    cursor: not-allowed;
+  }
+}
+
+/* Dark mode: glass có thể dùng opacity thấp hơn vì nền tối */
+.dark .btn-glass-primary {
+  background: rgba(42, 172, 167, 0.38);
+  border-color: rgba(75, 188, 184, 0.5);
+
+  &:hover:not(:disabled) {
+    background: rgba(42, 172, 167, 0.55);
+  }
+}
+
+/* Secondary glass button — neutral */
+.btn-glass-secondary {
+  position: relative;
+  overflow: hidden;
+  isolation: isolate;
+  color: var(--text-primary);
+  font-weight: 600;
+  border-radius: 0.75rem;
+  background: rgba(255, 255, 255, 0.12);
+  backdrop-filter: blur(12px) saturate(1.6);
+  -webkit-backdrop-filter: blur(12px) saturate(1.6);
+  /* Border rõ ràng hơn */
+  border: 1.5px solid rgba(180, 180, 180, 0.35);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.18),
+    0 1px 4px rgba(0, 0, 0, 0.06);
+  transition:
+    background 0.2s ease,
+    box-shadow 0.2s ease,
+    border-color 0.2s ease,
+    transform 0.15s ease,
+    color 0.2s ease;
+
+  &::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    border-radius: inherit;
+    background: linear-gradient(135deg, rgba(255, 255, 255, 0.12) 0%, transparent 55%);
+    pointer-events: none;
+    z-index: 1;
+  }
+
+  > * {
+    position: relative;
+    z-index: 2;
+  }
+
+  &:hover:not(:disabled) {
+    background: rgba(42, 172, 167, 0.14);
+    border-color: rgba(75, 188, 184, 0.5);
+    color: var(--accent);
+    box-shadow:
+      inset 0 1px 0 rgba(255, 255, 255, 0.22),
+      0 4px 14px rgba(42, 172, 167, 0.22);
+    transform: translateY(-1px);
+  }
+
+  &:active:not(:disabled) {
+    transform: scale(0.97);
+    background: rgba(42, 172, 167, 0.18);
+  }
+}
+
+/* Dark mode secondary: border sáng hơn để thấy trên nền tối */
+.dark .btn-glass-secondary {
+  background: rgba(255, 255, 255, 0.08);
+  border-color: rgba(255, 255, 255, 0.2);
+  color: rgba(255, 255, 255, 0.85);
+
+  &:hover:not(:disabled) {
+    background: rgba(42, 172, 167, 0.2);
+    border-color: rgba(75, 188, 184, 0.45);
+    color: rgba(75, 188, 184, 1);
   }
 }
 
@@ -2041,12 +2181,17 @@ body {
       rgba(42, 172, 167, 0.4) 0px 4px 20px 0px !important;
   }
 
+  /* Secondary glass — coral tint */
   .premium-button-secondary,
   .ant-btn-default.ant-btn-color-default.ant-btn-variant-solid.premium-button-secondary {
-    background: linear-gradient(135deg, #ff755e, #e56954) !important;
-    border-color: transparent !important;
+    background: rgba(255, 117, 94, 0.26) !important;
+    backdrop-filter: blur(12px) saturate(1.8) !important;
+    -webkit-backdrop-filter: blur(12px) saturate(1.8) !important;
+    border: 1px solid rgba(255, 140, 110, 0.42) !important;
     color: white !important;
-    box-shadow: rgba(255, 117, 94, 0.3) 0px 4px 15px 0px !important;
+    box-shadow:
+      inset 0 1.5px 0 rgba(255, 255, 255, 0.22),
+      rgba(255, 117, 94, 0.3) 0px 4px 16px 0px !important;
   }
 
   .premium-button-success,
@@ -2102,8 +2247,12 @@ body {
   }
 
   .premium-button-secondary:hover {
+    background: rgba(255, 117, 94, 0.4) !important;
+    border-color: rgba(255, 140, 110, 0.6) !important;
     transform: translateY(-2px) !important;
-    box-shadow: rgba(255, 117, 94, 0.4) 0px 8px 25px 0px !important;
+    box-shadow:
+      inset 0 1.5px 0 rgba(255, 255, 255, 0.28),
+      rgba(255, 117, 94, 0.45) 0px 8px 24px 0px !important;
   }
 
   .premium-button-success:hover {

@@ -63,17 +63,18 @@ const getIcon = (iconType: PremiumButtonIcon) => {
 
 const getGradientStyle = (variant: PremiumButtonVariant, isProcessing: boolean) => {
   const gradients = {
+    // primary/secondary: không set background — CSS class .premium-button-primary/secondary xử lý glass
     primary: {
-      normal: 'linear-gradient(135deg, #2AACA7, #229A96)',
-      processing: 'linear-gradient(135deg, #4BBCB8, #2AACA7)',
-      shadow: 'rgba(42, 172, 167, 0.3)',
-      shadowHover: 'rgba(42, 172, 167, 0.4)',
+      normal: '',
+      processing: '',
+      shadow: '',
+      shadowHover: 'rgba(42, 172, 167, 0.5)',
     },
     secondary: {
-      normal: 'linear-gradient(135deg, #FF755E, #E56954)',
-      processing: 'linear-gradient(135deg, #FF8F7B, #FF755E)',
-      shadow: 'rgba(255, 117, 94, 0.3)',
-      shadowHover: 'rgba(255, 117, 94, 0.4)',
+      normal: '',
+      processing: '',
+      shadow: '',
+      shadowHover: 'rgba(255, 117, 94, 0.5)',
     },
     success: {
       normal: 'linear-gradient(135deg, #10B981, #059669)',
@@ -142,7 +143,11 @@ const PremiumButton: React.FC<PremiumButtonProps> = ({
   const isOutline = variant === 'outline';
 
   const buttonStyle = {
-    ...gradientStyle,
+    // primary/secondary: background='' → không override → CSS class glass xử lý
+    ...(gradientStyle.background ? { background: gradientStyle.background } : {}),
+    ...(gradientStyle.boxShadow && !gradientStyle.boxShadow.endsWith(' ')
+      ? { boxShadow: gradientStyle.boxShadow }
+      : {}),
     borderColor: isOutline ? '#2AACA7' : 'transparent',
     color: isGhost || isOutline ? '#2AACA7' : 'white',
     transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',

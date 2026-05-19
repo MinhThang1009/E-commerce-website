@@ -22,7 +22,7 @@ const PRODUCT_CATEGORIES = [
     // iPhone 17 (id=1 — mới nhất DB)
     thumbnail:
       'https://cdnv2.tgdd.vn/mwg-static/tgdd/Products/Images/42/342667/iphone-17-xanh-6-638930798970669098-750x500.jpg',
-    color: 'from-blue-500/20 to-indigo-600/20',
+    color: 'from-blue-500/25 to-indigo-600/20',
     accent: '#3B82F6',
     badge: 'iPhone 17',
     rating: 4.9,
@@ -36,7 +36,7 @@ const PRODUCT_CATEGORIES = [
     // MacBook Pro 14" M5 (id=24 — mới nhất DB)
     thumbnail:
       'https://cdnv2.tgdd.vn/mwg-static/tgdd/Products/Images/44/358086/macbook-pro-14-inch-m5-16gb-512gb-thumb-638962954605863722-600x600.jpg',
-    color: 'from-violet-500/20 to-purple-600/20',
+    color: 'from-violet-500/25 to-purple-600/20',
     accent: '#8B5CF6',
     badge: 'MacBook Pro M5',
     rating: 4.9,
@@ -50,7 +50,7 @@ const PRODUCT_CATEGORIES = [
     // Apple Watch Ultra 3 (id=47 — mới nhất DB)
     thumbnail:
       'https://cdn.tgdd.vn/Products/Images/7077/344764/apple-watch-ultra-3-gps-cellular-49mm-vien-titanium-day-ocean-den-tb-600x600.jpg',
-    color: 'from-emerald-500/20 to-teal-600/20',
+    color: 'from-emerald-500/25 to-teal-600/20',
     accent: '#10B981',
     badge: 'Watch Ultra 3',
     rating: 4.9,
@@ -63,7 +63,7 @@ const PRODUCT_CATEGORIES = [
     slug: '/shop?category=tablet',
     // iPad A16 5G (id=14 — mới nhất DB)
     thumbnail: 'https://cdn.tgdd.vn/Products/Images/522/335311/ipad-11-5g-sliver-thumb-600x600.jpg',
-    color: 'from-orange-500/20 to-amber-600/20',
+    color: 'from-orange-500/25 to-amber-600/20',
     accent: '#F59E0B',
     badge: 'iPad A16',
     rating: 4.8,
@@ -153,7 +153,7 @@ const HeroSection: React.FC<HeroSectionProps> = ({ onShopNowClick, onBrowseCateg
     <section
       ref={sectionRef}
       className="relative min-h-screen overflow-hidden flex items-center
-                 bg-[var(--bg-base)] dark:bg-neutral-950"
+                 bg-[var(--bg-base)] dark:bg-transparent"
       data-motion="true"
     >
       {/* ── SVG Liquid Glass Distortion Filter ── */}
@@ -181,29 +181,37 @@ const HeroSection: React.FC<HeroSectionProps> = ({ onShopNowClick, onBrowseCateg
       {/* ── Gradient Mesh Background ── */}
       <div className="absolute inset-0 pointer-events-none overflow-hidden" aria-hidden="true">
         {/* Base gradient */}
+        {/* Base bg — dark mode dùng neutral thuần, KHÔNG zinc-based */}
         <div
           className="absolute inset-0 bg-gradient-to-br
           from-neutral-50 via-white to-primary-50/30
-          dark:from-neutral-950 dark:via-neutral-900 dark:to-neutral-950"
+          dark:from-[#111111] dark:via-[#0d0d0d] dark:to-[#111111]"
         />
 
-        {/* Gradient orb 1 — primary teal */}
+        {/* Orb 1 — teal */}
         <motion.div
-          style={{ y: orbY1 }}
-          className="orb orb-primary absolute -top-32 -left-32 w-[600px] h-[600px] animate-orb-1"
+          style={{
+            y: orbY1,
+            background: 'radial-gradient(ellipse, rgba(42,172,167,0.14) 0%, transparent 70%)',
+          }}
+          className="absolute -top-32 -left-32 w-[700px] h-[700px] rounded-full animate-orb-1 pointer-events-none blur-[1px]"
           aria-hidden="true"
         />
-
-        {/* Gradient orb 2 — secondary coral */}
+        {/* Orb 2 — coral */}
         <motion.div
-          style={{ y: orbY2 }}
-          className="orb orb-secondary absolute top-1/4 -right-48 w-[500px] h-[500px] animate-orb-2"
+          style={{
+            y: orbY2,
+            background: 'radial-gradient(ellipse, rgba(255,117,94,0.14) 0%, transparent 70%)',
+          }}
+          className="absolute top-1/4 -right-48 w-[500px] h-[500px] rounded-full animate-orb-2 pointer-events-none"
           aria-hidden="true"
         />
-
-        {/* Gradient orb 3 — accent */}
+        {/* Orb 3 — deep teal */}
         <div
-          className="orb orb-accent absolute -bottom-20 left-1/3 w-[400px] h-[400px] animate-orb-3"
+          className="absolute -bottom-20 left-1/3 w-[400px] h-[400px] rounded-full animate-orb-3 pointer-events-none"
+          style={{
+            background: 'radial-gradient(ellipse, rgba(75,188,184,0.12) 0%, transparent 70%)',
+          }}
           aria-hidden="true"
         />
 
@@ -221,7 +229,7 @@ const HeroSection: React.FC<HeroSectionProps> = ({ onShopNowClick, onBrowseCateg
       {/* ── Main Content ── */}
       <motion.div
         style={{ y: contentY, opacity }}
-        className="container mx-auto px-4 sm:px-6 lg:px-8 py-20 lg:py-24 relative z-10 no-theme-transition"
+        className="container mx-auto px-4 sm:px-6 lg:px-8 pt-20 pb-10 lg:pt-24 lg:pb-14 relative z-10 no-theme-transition"
       >
         <div className="grid lg:grid-cols-2 gap-12 xl:gap-16 items-center">
           {/* ─── Left: Typography + CTAs ─── */}
@@ -377,8 +385,8 @@ const HeroSection: React.FC<HeroSectionProps> = ({ onShopNowClick, onBrowseCateg
 
           {/* ─── Right: Product Category Cards ─── */}
           <div className="relative hidden lg:flex items-center justify-center">
-            {/* 2x2 bento grid */}
-            <div className="grid grid-cols-2 gap-4 w-full max-w-lg">
+            {/* 2×2 equal grid — fill full column width */}
+            <div className="grid grid-cols-2 gap-3 w-full">
               {PRODUCT_CATEGORIES.map((cat, i) => (
                 <motion.div
                   key={cat.id}
@@ -388,7 +396,6 @@ const HeroSection: React.FC<HeroSectionProps> = ({ onShopNowClick, onBrowseCateg
                   animate="visible"
                   whileHover={{ scale: 1.04, y: -6 }}
                   whileTap={{ scale: 0.98 }}
-                  className={`${i === 0 ? 'col-span-2' : ''}`}
                 >
                   <Link
                     to={cat.slug}
@@ -398,12 +405,11 @@ const HeroSection: React.FC<HeroSectionProps> = ({ onShopNowClick, onBrowseCateg
                       className={`relative overflow-hidden rounded-[inherit] bg-gradient-to-br ${cat.color}`}
                     >
                       {/* Product thumbnail */}
-                      <div className={`relative ${i === 0 ? 'h-40' : 'h-32'} overflow-hidden`}>
+                      <div className="relative h-36 overflow-hidden">
                         <img
                           src={cat.thumbnail}
                           alt={cat.label}
-                          className="w-full h-full object-cover object-center
-                            group-hover:scale-110 transition-transform duration-700"
+                          className="w-full h-full object-cover object-center group-hover:scale-105 transition-transform duration-700"
                           loading="lazy"
                         />
                         {/* Gradient overlay */}

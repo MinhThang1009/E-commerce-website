@@ -27,7 +27,7 @@ const MainLayout: React.FC = () => {
   return (
     <div className="flex flex-col min-h-screen">
       <Header />
-      <main className="flex-grow pt-16 sm:pt-18 lg:pt-20">
+      <main className="flex-grow pt-16 sm:pt-[4.5rem] lg:pt-20">
         <div className="w-full">
           <Outlet />
         </div>

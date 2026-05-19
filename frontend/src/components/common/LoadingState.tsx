@@ -177,7 +177,7 @@ export const LoadingState: React.FC<LoadingStateProps> = ({ variant = 'spinner',
 export const FullPageLoading: React.FC<{ message?: string }> = ({ message }) => {
   const { t } = useTranslation();
   return (
-    <div className="fixed inset-0 bg-white dark:bg-neutral-900 flex items-center justify-center z-50">
+    <div className="fixed inset-0 bg-white dark:bg-[#111111] flex items-center justify-center z-50">
       <LoadingSpinner size="lg" text={message ?? t('common.loading')} />
     </div>
   );

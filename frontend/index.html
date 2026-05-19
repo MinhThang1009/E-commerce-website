@@ -10,13 +10,21 @@
       content="TechStore - Điện thoại, Laptop, Tablet và thiết bị công nghệ chính hãng tại Hà Nội"
     />
     <title>TechStore - Cửa hàng công nghệ</title>
-    <!-- Script chặn FOIT (flash of incorrect theme): áp dụng dark class trước khi React render -->
+    <!-- Script chặn FOIT (flash of incorrect theme) và set background ngay để loading không bị sai màu -->
     <script>
       (function () {
         var stored = localStorage.getItem('theme');
         var prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
         if (stored === 'dark' || (!stored && prefersDark)) {
           document.documentElement.classList.add('dark');
+          /* Set background NGAY để loading screen không bị xanh đen
+           * #111111 = neutral dark (R=G=B=17, không zinc-blue)
+           */
+          document.documentElement.style.backgroundColor = '#111111';
+          document.body.style.backgroundColor = '#111111';
+        } else {
+          document.documentElement.style.backgroundColor = '#ffffff';
+          document.body.style.backgroundColor = '#ffffff';
         }
       })();
     </script>

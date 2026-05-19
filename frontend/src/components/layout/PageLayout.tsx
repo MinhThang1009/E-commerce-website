@@ -26,6 +26,8 @@ interface PageLayoutProps {
   onRetry?: () => void;
   containerSize?: 'sm' | 'md' | 'lg' | 'xl' | 'full';
   showContainer?: boolean;
+  /** true: bỏ pt-16 — dùng khi page có full-screen hero tự handle header clearance */
+  noPaddingTop?: boolean;
 }
 
 interface PageHeaderProps {
@@ -173,6 +175,7 @@ export const PageLayout: React.FC<PageLayoutProps> = ({
   onRetry,
   containerSize = 'xl',
   showContainer = true,
+  noPaddingTop = false,
 }) => {
   const getContainerClass = () => {
     if (!showContainer) return '';
@@ -220,7 +223,9 @@ export const PageLayout: React.FC<PageLayoutProps> = ({
       </Helmet>
 
       {/* Nội dung trang */}
-      <main className={`min-h-screen bg-white dark:bg-neutral-900 ${className}`}>
+      <main
+        className={`min-h-screen ${noPaddingTop ? '' : 'pt-16 sm:pt-[4.5rem] lg:pt-20'} ${className}`}
+      >
         <div className={getContainerClass()}>{children}</div>
       </main>
     </>

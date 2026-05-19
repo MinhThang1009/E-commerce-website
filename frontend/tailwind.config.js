@@ -35,18 +35,19 @@ export default {
         },
         // Neutral — chuẩn 2025 dark mode
         neutral: {
-          50: '#FAFAFA',
-          100: '#F4F4F5',
-          200: '#E4E4E7',
-          300: '#D4D4D8',
-          400: '#A1A1AA',
-          500: '#71717A',
-          600: '#52525B',
-          700: '#3F3F46',
-          800: '#27272A',
-          850: '#1C1C1F',
-          900: '#18181B',
-          950: '#09090B',
+          /* Truly neutral — không zinc-blue tint, R=G=B cho mọi shade */
+          50:  '#FAFAFA',
+          100: '#F5F5F5',
+          200: '#E5E5E5',
+          300: '#D4D4D4',
+          400: '#A3A3A3',
+          500: '#737373',
+          600: '#525252',
+          700: '#404040',
+          800: '#262626',
+          850: '#1F1F1F',
+          900: '#1A1A1A',
+          950: '#0F0F0F',
         },
         // 2025 glass/liquid tokens
         glass: {

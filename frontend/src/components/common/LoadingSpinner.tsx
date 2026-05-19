@@ -46,7 +46,7 @@ const LoadingSpinner: React.FC<LoadingSpinnerProps> = ({
 
   if (fullScreen) {
     return (
-      <div className="fixed inset-0 flex items-center justify-center bg-white/80 dark:bg-neutral-900/80 z-50">
+      <div className="fixed inset-0 flex items-center justify-center bg-white dark:bg-[#111111] z-50">
         <div className="flex flex-col items-center">
           <svg
             className={`animate-spin ${spinnerSize} ${spinnerColor}`}

@@ -9,6 +9,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { ROUTES, buildRoute } from '@/routes/paths';
 import LanguageSwitcher from '@/components/common/LanguageSwitcher';
+import ThemeToggle from '@/components/common/ThemeToggle';
 import SearchBar from '@/components/shared/SearchBar';
 import { useUiStore } from '@/stores/ui-store';
 import { useCartStore } from '@/stores/cart-store';
@@ -132,8 +133,8 @@ const Header: React.FC = () => {
     <header
       className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${
         isScrolled || isSearchOpen
-          ? 'bg-white/95 dark:bg-neutral-900/95 backdrop-blur-md shadow-lg border-b border-neutral-200/20 dark:border-neutral-700/20 py-2'
-          : 'bg-white/90 dark:bg-neutral-900/90 backdrop-blur-sm py-3'
+          ? 'bg-white/96 dark:bg-[#111111]/98 backdrop-blur-md py-2'
+          : 'bg-white/90 dark:bg-[#111111]/95 backdrop-blur-sm py-3'
       }`}
     >
       <div className="container mx-auto px-3 sm:px-4 md:px-6 lg:px-8 flex items-center justify-between">
@@ -198,10 +199,10 @@ const Header: React.FC = () => {
             <LanguageSwitcher />
           </div>
 
-          {/* Chuyển đổi giao diện */}
-          {/* <div className="p-1 sm:p-2 rounded-xl hover:bg-neutral-100 dark:hover:bg-neutral-800 transition-colors">
+          {/* Toggle light/dark mode */}
+          <div className="hidden sm:flex items-center p-1 rounded-xl">
             <ThemeToggle />
-          </div> */}
+          </div>
 
           {/* Người dùng */}
           <div className="relative" ref={userDropdownRef}>
@@ -366,7 +367,7 @@ const Header: React.FC = () => {
 
       {/* Menu mobile */}
       {isMobileMenuOpen && (
-        <div className="lg:hidden absolute top-full left-0 right-0 bg-white dark:bg-neutral-900 shadow-lg py-4 px-4 sm:px-6 space-y-4 animate-slideInTop border-b border-neutral-200 dark:border-neutral-700">
+        <div className="lg:hidden absolute top-full left-0 right-0 bg-white dark:bg-[#171717] shadow-lg py-4 px-4 sm:px-6 space-y-4 animate-slideInTop border-b border-neutral-200 dark:border-white/[0.06]">
           {/* Tìm kiếm mobile */}
           <div className="pb-4">
             <div className="relative">

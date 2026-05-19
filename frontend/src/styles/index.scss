@@ -64,10 +64,10 @@
 
 /* ── CSS Variables: Dark mode ── */
 .dark {
-  /* Backgrounds — deep charcoal (không dùng gray thô) */
-  --bg-base: #09090b;
-  --bg-surface: #111116;
-  --bg-elevated: #18181b;
+  /* Backgrounds — neutral dark, không zinc/slate blue */
+  --bg-base: #111111;
+  --bg-surface: #161616;
+  --bg-elevated: #1f1f1f;
   --bg-overlay: rgba(9, 9, 11, 0.85);
 
   /* Text */
@@ -122,6 +122,56 @@
 [data-motion],
 [data-framer-motion] {
   transition: none !important;
+}
+
+/*
+ * Top-level elements: KHÔNG transition background-color
+ * Prevents stripe artifact khi switch dark/light theme
+ */
+html,
+body,
+header,
+main,
+.page-canvas {
+  transition-property: color, border-color, box-shadow !important;
+  transition-duration: 0.4s !important;
+  transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1) !important;
+}
+
+/* ─────────────────────────────────────────────────────────────
+   THEME SWITCH ANIMATION — Smooth crossfade (nhanh, không lag)
+   startViewTransition() với default crossfade + custom timing
+   ───────────────────────────────────────────────────────────── */
+
+/*
+ * Circular reveal từ vị trí toggle button
+ * Duration ngắn (0.3s) + ease-out để không lag
+ * clip-path trên view-transition snapshot = GPU composited layer
+ */
+::view-transition-old(root) {
+  animation: none;
+  z-index: 0;
+}
+
+::view-transition-new(root) {
+  z-index: 1;
+  animation: theme-circle-reveal 0.3s ease-out forwards;
+}
+
+@keyframes theme-circle-reveal {
+  from {
+    clip-path: circle(0% at var(--theme-toggle-x, 50%) var(--theme-toggle-y, 10%));
+  }
+  to {
+    clip-path: circle(170% at var(--theme-toggle-x, 50%) var(--theme-toggle-y, 10%));
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  ::view-transition-old(root),
+  ::view-transition-new(root) {
+    animation: none;
+  }
 }
 
 /* ── Base styles ── */
@@ -541,6 +591,385 @@ body {
   }
 }
 
+/* ─────────────────────────────────────────────────────────────
+   GLASSMORPHISM 2.0 — Noise texture + Iridescent glow + Deep frost
+   Khác G1.0: blur mạnh hơn, noise grain, multi-layer shadow, teal glow on hover
+   ───────────────────────────────────────────────────────────── */
+
+/* ─────────────────────────────────────────────────────────────
+   PREMIUM 2025-2026 — Unified canvas, marquee, display typography
+   ───────────────────────────────────────────────────────────── */
+
+/* ── Unified page canvas — 1 background xuyên suốt (không stripe) ── */
+.page-canvas {
+  background: linear-gradient(180deg, #f0fdfb 0%, #fafafa 25%, #ffffff 60%, #fff6f3 100%);
+  min-height: 100vh;
+}
+
+.dark .page-canvas {
+  /*
+   * Neutral near-black — KHÔNG blue/teal tint ở background
+   * Như Apple dark mode: background thuần neutral, màu đến từ content/orbs
+   * #111111 → #0d0d0d: warm charcoal (slight warm undertone, không lạnh)
+   */
+  background: linear-gradient(180deg, #111111 0%, #0d0d0d 50%, #111111 100%);
+}
+
+/* Section backgrounds — giờ chỉ dùng transparent để canvas show through */
+.section-featured,
+.section-brands,
+.section-newsletter {
+  background: transparent;
+}
+
+/* ── Section number label — 01 / LABEL ── */
+.section-number {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.625rem;
+  font-size: 0.65rem;
+  font-weight: 700;
+  letter-spacing: 0.25em;
+  text-transform: uppercase;
+  color: var(--accent);
+
+  &::before {
+    content: '';
+    display: block;
+    width: 2rem;
+    height: 1px;
+    background: currentColor;
+    flex-shrink: 0;
+  }
+}
+
+/* ── Display heading — large expressive section title ── */
+.display-heading {
+  font-family: var(--font-heading);
+  font-weight: 900;
+  letter-spacing: -0.03em;
+  line-height: 1;
+  color: var(--text-primary);
+}
+
+/* ── Iridescent section divider ── */
+.iridescent-rule {
+  height: 1px;
+  background: linear-gradient(
+    90deg,
+    transparent 0%,
+    rgba(42, 172, 167, 0.4) 20%,
+    rgba(255, 117, 94, 0.35) 50%,
+    rgba(42, 172, 167, 0.4) 80%,
+    transparent 100%
+  );
+  border: none;
+  margin: 0;
+}
+
+/* ── Brand marquee ── */
+.marquee-container {
+  overflow: hidden;
+  width: 100%;
+  /* Fade edges */
+  mask-image: linear-gradient(to right, transparent 0%, black 8%, black 92%, transparent 100%);
+  -webkit-mask-image: linear-gradient(
+    to right,
+    transparent 0%,
+    black 8%,
+    black 92%,
+    transparent 100%
+  );
+}
+
+.marquee-track {
+  display: flex;
+  align-items: center;
+  gap: 0;
+  width: max-content;
+  animation: marquee-scroll 28s linear infinite;
+
+  &:hover {
+    animation-play-state: paused;
+  }
+}
+
+@keyframes marquee-scroll {
+  from {
+    transform: translateX(0);
+  }
+  to {
+    transform: translateX(-50%);
+  }
+}
+
+/* ── Featured product card — tall format ── */
+.glass-product-card-featured {
+  position: relative;
+  background: rgba(255, 255, 255, 0.6);
+  backdrop-filter: blur(28px) saturate(2.2) brightness(1.04);
+  -webkit-backdrop-filter: blur(28px) saturate(2.2) brightness(1.04);
+  border: 1px solid rgba(255, 255, 255, 0.82);
+  border-radius: 1.75rem;
+  isolation: isolate;
+  overflow: hidden;
+  height: 100%;
+  transition:
+    transform 0.4s cubic-bezier(0.16, 1, 0.3, 1),
+    box-shadow 0.4s cubic-bezier(0.16, 1, 0.3, 1),
+    border-color 0.3s ease;
+
+  box-shadow:
+    inset 0 1.5px 0 rgba(255, 255, 255, 0.92),
+    0 8px 40px rgba(0, 0, 0, 0.06),
+    0 2px 8px rgba(0, 0, 0, 0.04);
+
+  &::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='200' height='200'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='200' height='200' filter='url(%23n)'/%3E%3C/svg%3E");
+    background-size: 128px 128px;
+    opacity: 0.02;
+    mix-blend-mode: overlay;
+    pointer-events: none;
+    z-index: 1;
+  }
+
+  &::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(
+      150deg,
+      rgba(255, 255, 255, 0.22) 0%,
+      rgba(255, 255, 255, 0.06) 40%,
+      transparent 60%
+    );
+    pointer-events: none;
+    z-index: 2;
+  }
+
+  > * {
+    position: relative;
+    z-index: 3;
+  }
+
+  &:hover {
+    transform: translateY(-8px) scale(1.01);
+    border-color: rgba(42, 172, 167, 0.45);
+    box-shadow:
+      inset 0 1.5px 0 rgba(255, 255, 255, 0.95),
+      0 24px 64px rgba(42, 172, 167, 0.2),
+      0 8px 24px rgba(0, 0, 0, 0.07);
+  }
+}
+
+.dark .glass-product-card-featured {
+  background: rgba(26, 26, 26, 0.9);
+  border-color: rgba(255, 255, 255, 0.08);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.07),
+    0 8px 48px rgba(0, 0, 0, 0.5),
+    0 0 0 1px rgba(42, 172, 167, 0.1);
+
+  &:hover {
+    border-color: rgba(75, 188, 184, 0.45);
+    box-shadow:
+      inset 0 1px 0 rgba(255, 255, 255, 0.1),
+      0 28px 72px rgba(42, 172, 167, 0.24),
+      0 8px 32px rgba(0, 0, 0, 0.5);
+  }
+}
+
+/* ── Collection editorial card ── */
+.collection-card {
+  position: relative;
+  border-radius: 1.75rem;
+  overflow: hidden;
+  isolation: isolate;
+
+  img {
+    transition: transform 0.7s cubic-bezier(0.16, 1, 0.3, 1);
+  }
+
+  &:hover img {
+    transform: scale(1.06);
+  }
+
+  &::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(
+      to bottom,
+      transparent 30%,
+      rgba(0, 0, 0, 0.4) 65%,
+      rgba(0, 0, 0, 0.82) 100%
+    );
+    pointer-events: none;
+  }
+}
+
+/* Glassmorphism collection CTA button */
+.collection-cta {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.625rem 1.25rem;
+  border-radius: 9999px;
+  font-size: 0.875rem;
+  font-weight: 600;
+  background: rgba(255, 255, 255, 0.15);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  color: white;
+  transition:
+    background 0.25s ease,
+    border-color 0.25s ease,
+    transform 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+
+  &:hover {
+    background: rgba(255, 255, 255, 0.25);
+    border-color: rgba(255, 255, 255, 0.5);
+    transform: translateY(-1px);
+  }
+}
+
+/* Glass product card — dùng cho ProductCard component */
+.glass-product-card {
+  position: relative;
+  /* Transparent hơn để màu background bleed qua glass */
+  background: rgba(255, 255, 255, 0.6);
+  backdrop-filter: blur(24px) saturate(2.1) brightness(1.03);
+  -webkit-backdrop-filter: blur(24px) saturate(2.1) brightness(1.03);
+  border: 1px solid rgba(255, 255, 255, 0.82);
+  border-radius: 1.5rem;
+  isolation: isolate;
+  overflow: hidden;
+  transition:
+    transform 0.4s cubic-bezier(0.16, 1, 0.3, 1),
+    box-shadow 0.4s cubic-bezier(0.16, 1, 0.3, 1),
+    border-color 0.35s ease;
+
+  box-shadow:
+    inset 0 1.5px 0 rgba(255, 255, 255, 0.92),
+    inset 0 -1px 0 rgba(0, 0, 0, 0.03),
+    0 4px 24px rgba(0, 0, 0, 0.05),
+    0 1px 6px rgba(0, 0, 0, 0.04);
+
+  /* Noise grain — simulates frosted glass texture */
+  &::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    border-radius: inherit;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='200' height='200'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='200' height='200' filter='url(%23n)'/%3E%3C/svg%3E");
+    background-size: 128px 128px;
+    opacity: 0.028;
+    mix-blend-mode: overlay;
+    pointer-events: none;
+    z-index: 1;
+  }
+
+  /* Specular highlight — phản chiếu ánh sáng góc trên trái */
+  &::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(
+      150deg,
+      rgba(255, 255, 255, 0.26) 0%,
+      rgba(255, 255, 255, 0.07) 38%,
+      transparent 58%
+    );
+    border-radius: inherit;
+    pointer-events: none;
+    z-index: 2;
+  }
+
+  > * {
+    position: relative;
+    z-index: 3;
+  }
+
+  &:hover {
+    transform: translateY(-6px) scale(1.01);
+    border-color: rgba(42, 172, 167, 0.42);
+    box-shadow:
+      inset 0 1.5px 0 rgba(255, 255, 255, 0.95),
+      0 20px 56px rgba(42, 172, 167, 0.18),
+      0 8px 24px rgba(0, 0, 0, 0.07),
+      0 0 0 1px rgba(42, 172, 167, 0.2) inset;
+  }
+}
+
+.dark .glass-product-card {
+  /* Neutral dark — KHÔNG blue-tinted, giống Apple dark card */
+  background: rgba(26, 26, 26, 0.92);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.08),
+    0 4px 32px rgba(0, 0, 0, 0.55),
+    0 1px 4px rgba(0, 0, 0, 0.3);
+
+  &:hover {
+    transform: translateY(-6px) scale(1.01);
+    background: rgba(32, 32, 32, 0.95);
+    border-color: rgba(75, 188, 184, 0.3);
+    box-shadow:
+      inset 0 1px 0 rgba(255, 255, 255, 0.1),
+      0 20px 56px rgba(42, 172, 167, 0.15),
+      0 8px 28px rgba(0, 0, 0, 0.6);
+  }
+}
+
+/* Glass section card — cho newsletter, promo banners */
+.glass-section-card {
+  position: relative;
+  background: rgba(255, 255, 255, 0.6);
+  backdrop-filter: blur(32px) saturate(2.4) brightness(1.04);
+  -webkit-backdrop-filter: blur(32px) saturate(2.4) brightness(1.04);
+  border: 1px solid rgba(255, 255, 255, 0.75);
+  border-radius: 2rem;
+  isolation: isolate;
+  overflow: hidden;
+  box-shadow:
+    inset 0 2px 0 rgba(255, 255, 255, 0.88),
+    0 8px 48px rgba(0, 0, 0, 0.06),
+    0 2px 12px rgba(0, 0, 0, 0.04);
+
+  &::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(
+      135deg,
+      rgba(255, 255, 255, 0.22) 0%,
+      rgba(255, 255, 255, 0.04) 45%,
+      transparent 65%
+    );
+    border-radius: inherit;
+    pointer-events: none;
+    z-index: 1;
+  }
+
+  > * {
+    position: relative;
+    z-index: 2;
+  }
+}
+
+.dark .glass-section-card {
+  background: rgba(24, 24, 24, 0.8);
+  border-color: rgba(255, 255, 255, 0.08);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.07),
+    0 8px 48px rgba(0, 0, 0, 0.5),
+    0 2px 12px rgba(0, 0, 0, 0.35);
+}
+
 /* Gradient border — premium cards */
 .gradient-border {
   position: relative;
@@ -947,11 +1376,11 @@ body {
 }
 
 .dark {
-  /* Dark mode */
-  --color-bg-primary: #0f172a;
-  --color-bg-secondary: #1e293b;
-  --color-text-primary: #f1f5f9;
-  --color-text-secondary: #94a3b8;
+  /* Dark mode — neutral, không slate/zinc blue */
+  --color-bg-primary: #111111;
+  --color-bg-secondary: #1a1a1a;
+  --color-text-primary: #f5f5f5;
+  --color-text-secondary: #a3a3a3;
   --color-border: #334155;
 }
 
@@ -1196,7 +1625,12 @@ body {
   }
 
   body {
-    @apply bg-white dark:bg-neutral-900 text-base font-normal leading-normal;
+    @apply bg-white text-base font-normal leading-normal;
+    /* dark mode: dùng CSS var neutral thay vì zinc-based neutral-900 */
+  }
+
+  .dark body {
+    background-color: #111111;
   }
 
   h1,
@@ -1582,13 +2016,13 @@ body {
     justify-content: center !important;
   }
 
-  /* Variant specific styles - Match exact RGB values with new classes */
+  /* Variant specific styles — teal brand color, không dùng blue/violet */
   .premium-button-primary,
   .ant-btn-primary.ant-btn-color-primary.ant-btn-variant-solid {
-    background: linear-gradient(135deg, rgb(59, 130, 246), rgb(139, 92, 246)) !important;
+    background: linear-gradient(135deg, #2aaca7 0%, #4bbcb8 100%) !important;
     border-color: transparent !important;
     color: white !important;
-    box-shadow: rgba(59, 130, 246, 0.3) 0px 4px 15px 0px !important;
+    box-shadow: rgba(42, 172, 167, 0.35) 0px 4px 15px 0px !important;
   }
 
   .premium-button-secondary,
@@ -1640,15 +2074,15 @@ body {
     color: #3b82f6 !important;
   }
 
-  /* Hover effects - Enhanced for better UX */
+  /* Hover effects */
   .premium-button-primary:hover:not(:disabled):not(.ant-btn-loading) {
     transform: translateY(-2px) !important;
-    box-shadow: rgba(59, 130, 246, 0.4) 0px 8px 25px 0px !important;
+    box-shadow: rgba(42, 172, 167, 0.5) 0px 8px 25px 0px !important;
   }
 
   .premium-button-primary:active:not(:disabled):not(.ant-btn-loading) {
     transform: translateY(0px) !important;
-    box-shadow: rgba(59, 130, 246, 0.3) 0px 4px 15px 0px !important;
+    box-shadow: rgba(42, 172, 167, 0.3) 0px 4px 15px 0px !important;
   }
 
   .premium-button-secondary:hover {

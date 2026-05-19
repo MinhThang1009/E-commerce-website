@@ -2016,13 +2016,29 @@ body {
     justify-content: center !important;
   }
 
-  /* Variant specific styles — teal brand color, không dùng blue/violet */
+  /* Glassmorphism 2.0 — mode-aware:
+   * Light mode: opacity cao (0.88) để không chìm trên nền trắng
+   * Dark mode:  opacity thấp (0.26) để blur thấy màu background
+   */
   .premium-button-primary,
   .ant-btn-primary.ant-btn-color-primary.ant-btn-variant-solid {
-    background: linear-gradient(135deg, #2aaca7 0%, #4bbcb8 100%) !important;
-    border-color: transparent !important;
+    background: rgba(42, 172, 167, 0.88) !important;
+    backdrop-filter: blur(12px) saturate(1.8) !important;
+    -webkit-backdrop-filter: blur(12px) saturate(1.8) !important;
+    border: 1px solid rgba(75, 188, 184, 0.5) !important;
     color: white !important;
-    box-shadow: rgba(42, 172, 167, 0.35) 0px 4px 15px 0px !important;
+    box-shadow:
+      inset 0 1.5px 0 rgba(255, 255, 255, 0.28),
+      rgba(42, 172, 167, 0.32) 0px 4px 16px 0px !important;
+  }
+
+  .dark .premium-button-primary,
+  .dark .ant-btn-primary.ant-btn-color-primary.ant-btn-variant-solid {
+    background: rgba(42, 172, 167, 0.26) !important;
+    border: 1px solid rgba(75, 188, 184, 0.42) !important;
+    box-shadow:
+      inset 0 1.5px 0 rgba(255, 255, 255, 0.18),
+      rgba(42, 172, 167, 0.4) 0px 4px 20px 0px !important;
   }
 
   .premium-button-secondary,

@@ -79,24 +79,24 @@ const AboutPage: React.FC = () => {
   // Avatar trung tính dùng DiceBear API (no external photos, GDPR safe)
   const teamMembers = [
     {
-      name: 'Sarah Johnson',
+      name: 'Ngô Văn Minh Thắng',
       role: t('about.teamMember1.role'),
-      image: 'https://api.dicebear.com/9.x/avataaars/svg?seed=Sarah&backgroundColor=b6e3f4',
+      image: 'https://api.dicebear.com/9.x/avataaars/svg?seed=Thang&backgroundColor=b6e3f4',
     },
     {
-      name: 'Michael Chen',
+      name: 'Trần Quang Minh',
       role: t('about.teamMember2.role'),
-      image: 'https://api.dicebear.com/9.x/avataaars/svg?seed=Michael&backgroundColor=c0aede',
+      image: 'https://api.dicebear.com/9.x/avataaars/svg?seed=Minh&backgroundColor=c0aede',
     },
     {
-      name: 'Emily Rodriguez',
+      name: 'Nguyễn Thị Lan Anh',
       role: t('about.teamMember3.role'),
-      image: 'https://api.dicebear.com/9.x/avataaars/svg?seed=Emily&backgroundColor=ffd5dc',
+      image: 'https://api.dicebear.com/9.x/avataaars/svg?seed=LanAnh&backgroundColor=ffd5dc',
     },
     {
-      name: 'David Kim',
+      name: 'Phạm Đức Hùng',
       role: t('about.teamMember4.role'),
-      image: 'https://api.dicebear.com/9.x/avataaars/svg?seed=David&backgroundColor=d1d4f9',
+      image: 'https://api.dicebear.com/9.x/avataaars/svg?seed=Hung&backgroundColor=d1d4f9',
     },
   ];
 

@@ -328,37 +328,57 @@ const HeroSection: React.FC<HeroSectionProps> = ({ onShopNowClick, onBrowseCateg
               variants={itemVariants}
               className="flex flex-col sm:flex-row gap-3 justify-center lg:justify-start"
             >
-              {/* Primary CTA */}
+              {/* Primary CTA — Glassmorphism 2.0 */}
               <motion.button
-                whileHover={{ scale: 1.03, y: -2 }}
+                whileHover={{ scale: 1.03, y: -3 }}
                 whileTap={{ scale: 0.97 }}
                 onClick={handleShopNow}
                 className="group relative flex items-center justify-center gap-2.5
                   px-7 py-4 rounded-2xl font-semibold text-base text-white
-                  bg-primary-600 hover:bg-primary-500
-                  shadow-[0_4px_24px_rgba(42,172,167,0.4)]
-                  hover:shadow-[0_8px_32px_rgba(42,172,167,0.55)]
-                  transition-all duration-300 overflow-hidden"
+                  overflow-hidden isolate"
+                style={{
+                  background: 'rgba(42,172,167,0.25)',
+                  backdropFilter: 'blur(20px) saturate(2)',
+                  WebkitBackdropFilter: 'blur(20px) saturate(2)',
+                  border: '1px solid rgba(75,188,184,0.45)',
+                  boxShadow:
+                    'inset 0 1.5px 0 rgba(255,255,255,0.28), inset 0 -1px 0 rgba(0,0,0,0.1), 0 4px 24px rgba(42,172,167,0.35)',
+                }}
               >
+                {/* Specular highlight */}
                 <span
-                  className="absolute inset-0 bg-gradient-to-r from-white/0 via-white/10 to-white/0
-                  translate-x-[-100%] group-hover:translate-x-[100%] transition-transform duration-700"
+                  className="absolute inset-0 pointer-events-none"
+                  style={{
+                    background:
+                      'linear-gradient(135deg, rgba(255,255,255,0.22) 0%, rgba(255,255,255,0.05) 45%, transparent 65%)',
+                    borderRadius: 'inherit',
+                  }}
                 />
-                <Zap className="w-5 h-5 group-hover:scale-110 transition-transform" />
-                <span>{isEn ? 'Shop Now' : 'Mua sắm ngay'}</span>
-                <ArrowRight className="w-4 h-4 opacity-0 -translate-x-2 group-hover:opacity-100 group-hover:translate-x-0 transition-all duration-300" />
+                {/* Shimmer on hover */}
+                <span
+                  className="absolute inset-0 bg-gradient-to-r from-white/0 via-white/15 to-white/0
+                  translate-x-[-100%] group-hover:translate-x-[100%] transition-transform duration-700 pointer-events-none"
+                />
+                <Zap className="w-5 h-5 group-hover:scale-110 transition-transform relative z-10" />
+                <span className="relative z-10">{isEn ? 'Shop Now' : 'Mua sắm ngay'}</span>
+                <ArrowRight className="w-4 h-4 opacity-0 -translate-x-2 group-hover:opacity-100 group-hover:translate-x-0 transition-all duration-300 relative z-10" />
               </motion.button>
 
-              {/* Secondary CTA */}
+              {/* Secondary CTA — Glass nhẹ hơn */}
               <motion.button
-                whileHover={{ scale: 1.03, y: -2 }}
+                whileHover={{ scale: 1.03, y: -3 }}
                 whileTap={{ scale: 0.97 }}
                 onClick={handleBrowseCategories}
                 className="group flex items-center justify-center gap-2.5
                   px-7 py-4 rounded-2xl font-semibold text-base
-                  glass-card !transition-all !duration-300
-                  text-neutral-700 dark:text-neutral-200
-                  hover:text-primary-600 dark:hover:text-primary-400"
+                  text-neutral-800 dark:text-white overflow-hidden"
+                style={{
+                  background: 'rgba(255,255,255,0.14)',
+                  backdropFilter: 'blur(16px) saturate(1.8)',
+                  WebkitBackdropFilter: 'blur(16px) saturate(1.8)',
+                  border: '1px solid rgba(255,255,255,0.28)',
+                  boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.25), 0 2px 12px rgba(0,0,0,0.06)',
+                }}
               >
                 <span>{isEn ? 'Browse Categories' : 'Khám phá danh mục'}</span>
                 <ChevronRight className="w-4 h-4 group-hover:translate-x-1 transition-transform duration-300" />

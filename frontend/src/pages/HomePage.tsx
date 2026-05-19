@@ -26,7 +26,7 @@ import { ROUTES, buildRoute } from '@/routes/paths';
 import { getErrorMsg } from '@/utils/error-utils';
 import { localizeField } from '@/utils/localize';
 import { motion } from 'framer-motion';
-import { ChevronRight, Sparkles, Mail, ArrowRight } from 'lucide-react';
+import { ChevronRight, Sparkles, Mail, ArrowRight, LayoutGrid, Award, Layers } from 'lucide-react';
 
 /**
  * Simple Icons CDN — SVG logos cho tech brands, reliable hơn Clearbit
@@ -291,6 +291,7 @@ const HomePage: React.FC = () => {
               variants={fadeUp}
             >
               <div className="section-number mb-3">
+                <LayoutGrid className="w-3 h-3" />
                 {isVi ? '02 / Danh Mục' : '02 / Categories'}
               </div>
               <h2 className="display-heading text-5xl lg:text-6xl">
@@ -369,7 +370,10 @@ const HomePage: React.FC = () => {
               viewport={{ once: true }}
               variants={fadeUp}
             >
-              <div className="section-number mb-3">{isVi ? '03 / Thương Hiệu' : '03 / Brands'}</div>
+              <div className="section-number mb-3">
+                <Award className="w-3 h-3" />
+                {isVi ? '03 / Thương Hiệu' : '03 / Brands'}
+              </div>
               <h2 className="display-heading text-5xl lg:text-6xl">{t('homepage.brands.title')}</h2>
             </motion.div>
 
@@ -452,6 +456,7 @@ const HomePage: React.FC = () => {
               variants={fadeUp}
             >
               <div className="section-number mb-3">
+                <Layers className="w-3 h-3" />
                 {isVi ? '04 / Bộ Sưu Tập' : '04 / Collections'}
               </div>
               <h2 className="display-heading text-5xl lg:text-6xl">

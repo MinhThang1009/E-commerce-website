@@ -13,6 +13,30 @@ import { useGetBrandsQuery } from '../api/brand-api';
 import { PageLayout } from '@/components/layout/PageLayout';
 import { ErrorState } from '@/components/common/ErrorState';
 
+// Simple Icons CDN fallback — dùng chung với HomePage marquee
+const SIMPLE_ICONS_SLUGS: Record<string, string> = {
+  APPLE: 'apple',
+  SAMSUNG: 'samsung',
+  XIAOMI: 'xiaomi',
+  ASUS: 'asus',
+  DELL: 'dell',
+  HP: 'hp',
+  LENOVO: 'lenovo',
+  OPPO: 'oppo',
+  REALME: 'realme',
+  ACER: 'acer',
+  LG: 'lg',
+  SONY: 'sony',
+  HUAWEI: 'huawei',
+  MOTOROLA: 'motorola',
+  CITIZEN: 'citizen',
+};
+
+function getBrandLogoUrl(name: string): string | null {
+  const slug = SIMPLE_ICONS_SLUGS[name.toUpperCase().trim()];
+  return slug ? `https://cdn.simpleicons.org/${slug}/2aaca7` : null;
+}
+
 const BrandsPage: React.FC = () => {
   const { t, i18n } = useTranslation();
   const { data: brandsData, isLoading, error, refetch } = useGetBrandsQuery({ isActive: true });
@@ -85,17 +109,25 @@ const BrandsPage: React.FC = () => {
                 className="group bg-white dark:bg-neutral-900 border border-neutral-100 dark:border-neutral-800 rounded-2xl p-8 flex flex-col items-center justify-center text-center hover:shadow-xl hover:border-primary-500/30 transition-all duration-300"
               >
                 <div className="h-20 flex items-center justify-center mb-4 transition-transform group-hover:scale-110 duration-500">
-                  {brand.logo ? (
-                    <img
-                      src={brand.logo}
-                      alt={localizeField(brand, 'name', i18n.language)}
-                      className="max-h-full max-w-full grayscale group-hover:grayscale-0 transition-all duration-300"
-                    />
-                  ) : (
-                    <div className="w-16 h-16 rounded-full bg-primary-100 dark:bg-primary-900/30 text-primary-600 dark:text-primary-400 flex items-center justify-center text-2xl font-bold">
-                      {localizeField(brand, 'name', i18n.language).charAt(0)}
-                    </div>
-                  )}
+                  {(() => {
+                    const brandName = localizeField(brand, 'name', i18n.language);
+                    // API trả về logoUrl, không phải logo
+                    const logoSrc = brand.logoUrl || brand.logo || getBrandLogoUrl(brandName);
+                    return logoSrc ? (
+                      <img
+                        src={logoSrc}
+                        alt={brandName}
+                        className="max-h-12 max-w-full dark:brightness-0 dark:invert opacity-70 group-hover:opacity-100 transition-all duration-300"
+                        onError={(e) => {
+                          e.currentTarget.style.display = 'none';
+                        }}
+                      />
+                    ) : (
+                      <div className="w-16 h-16 rounded-full bg-primary-100 dark:bg-primary-900/30 text-primary-600 dark:text-primary-400 flex items-center justify-center text-2xl font-bold">
+                        {brandName.charAt(0)}
+                      </div>
+                    );
+                  })()}
                 </div>
                 <h3 className="font-bold text-neutral-900 dark:text-white group-hover:text-primary-600 dark:group-hover:text-primary-400 transition-colors">
                   {localizeField(brand, 'name', i18n.language)}

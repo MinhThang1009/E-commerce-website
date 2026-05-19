@@ -60,7 +60,9 @@ function parseAIResponse(aiText, products, userMessage) {
             const hasNumberMismatch =
               numbersR.some((n) => !numbersP.includes(n)) ||
               numbersP.some((n) => !numbersR.includes(n));
-            if (hasNumberMismatch) return false;
+            if (hasNumberMismatch) {
+              return false;
+            }
           }
 
           const pWords = new Set(pName.split(/\s+/));

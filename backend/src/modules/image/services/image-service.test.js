@@ -481,12 +481,11 @@ describe('convertBase64ToFile', () => {
     expect(result.url).toMatch('/uploads/');
   });
 
-  it('input không phải data:URI hợp lệ → throw AppError (caught by outer handler)', async () => {
-    // AppError(400) bên trong bị catch bởi outer try-catch và re-wrap thành AppError(500)
-    // Đây là behavior thực tế của service
+  it('input không phải data:URI hợp lệ → throw AppError 400 (preserve validation error)', async () => {
+    // AppError(400) được re-throw trực tiếp, không bị wrap thành 500
     await expect(
       imageService.convertBase64ToFile('not-valid-base64-data', {}),
-    ).rejects.toHaveProperty('statusCode', 500);
+    ).rejects.toHaveProperty('statusCode', 400);
   });
 
   it('trả về url dạng /uploads/...', async () => {
@@ -561,5 +560,168 @@ describe('cleanupOrphanedFiles', () => {
 
     expect(result.orphanedFiles).toBe(0);
     expect(result.totalFiles).toBe(0);
+  });
+});
+
+// ─── initializeDirectories — mkdir fail (line 35) ────────────────────────────
+
+describe('ImageService.initializeDirectories — mkdir thất bại', () => {
+  it('log error nhưng không throw khi mkdir fail', async () => {
+    const logger = require('@utils/logger');
+    mockFsPromises.mkdir.mockRejectedValueOnce(new Error('permission denied'));
+    await imageService.initializeDirectories();
+    expect(logger.error).toHaveBeenCalled();
+    // Reset lại để không ảnh hưởng tests khác
+    mockFsPromises.mkdir.mockResolvedValue(undefined);
+  });
+});
+
+// ─── generateThumbnails — thumbnail error (line 159) ─────────────────────────
+
+describe('ImageService.generateThumbnails — processImage fail', () => {
+  it('log error khi tạo thumbnail thất bại nhưng tiếp tục với sizes còn lại', async () => {
+    const logger = require('@utils/logger');
+    mockSharp.toFile
+      .mockRejectedValueOnce(new Error('sharp error'))
+      .mockResolvedValue({ size: 1024 });
+
+    await imageService.generateThumbnails('/tmp/photo.jpg', 'photo.jpg', 'product');
+    expect(logger.error).toHaveBeenCalledWith(
+      expect.stringContaining('Lỗi khi tạo thumbnail'),
+      expect.any(Error),
+    );
+    mockSharp.toFile.mockResolvedValue({ size: 1024 });
+  });
+});
+
+// ─── getImagesByProductId — findAll throw (line 336) ─────────────────────────
+
+describe('ImageService.getImagesByProductId — throw khi DB lỗi', () => {
+  it('rethrow lỗi từ Image.findAll', async () => {
+    mockImageFindAll.mockRejectedValue(new Error('DB connection lost'));
+    await expect(imageService.getImagesByProductId(1)).rejects.toThrow('DB connection lost');
+  });
+});
+
+// ─── cleanupOrphanedFiles — unlink fail (line 426) ───────────────────────────
+
+describe('cleanupOrphanedFiles — unlink thất bại', () => {
+  it('log error khi unlink fail nhưng tiếp tục và trả kết quả', async () => {
+    const logger = require('@utils/logger');
+    mockFsPromises.readdir.mockResolvedValue([{ name: 'orphan.jpg', isDirectory: () => false }]);
+    mockImageFindAll.mockResolvedValue([]);
+    mockFsPromises.unlink.mockRejectedValueOnce(new Error('EACCES'));
+
+    const result = await imageService.cleanupOrphanedFiles();
+    expect(logger.error).toHaveBeenCalledWith(
+      expect.stringContaining('Lỗi khi xóa file'),
+      expect.any(Error),
+    );
+    expect(result).toBeDefined();
+    mockFsPromises.unlink.mockResolvedValue(undefined);
+  });
+});
+
+// ─── cleanupOrphanedFiles — outer catch (lines 437-438) ──────────────────────
+
+describe('cleanupOrphanedFiles — outer catch', () => {
+  it('throw AppError khi readdir fail hoàn toàn', async () => {
+    mockFsPromises.readdir.mockRejectedValue(new Error('IO error'));
+    await expect(imageService.cleanupOrphanedFiles()).rejects.toThrow('Failed to cleanup');
+    mockFsPromises.readdir.mockReset();
+  });
+});
+
+// ─── processImage — missing branches ────────────────────────────────────────
+
+describe('processImage — uncovered branches', () => {
+  it('.jpeg extension với quality → gọi jpeg() (covers endsWith(".jpeg") branch)', async () => {
+    await imageService.processImage('/in.jpg', '/out.jpeg', { quality: 80 });
+    expect(mockSharp.jpeg).toHaveBeenCalledWith({ quality: 80 });
+  });
+
+  it('unsupported format với quality → không gọi jpeg/png/webp', async () => {
+    await imageService.processImage('/in.jpg', '/out.gif', { quality: 80 });
+    expect(mockSharp.jpeg).not.toHaveBeenCalled();
+    expect(mockSharp.png).not.toHaveBeenCalled();
+    expect(mockSharp.webp).not.toHaveBeenCalled();
+  });
+});
+
+// ─── uploadMultipleImages — error catch in loop (line 251) ────────────────────
+
+describe('uploadMultipleImages — uploadImage throw', () => {
+  it('catch lỗi khi uploadImage throw và tiếp tục với file tiếp theo', async () => {
+    const logger = require('@utils/logger');
+    // Mock Image.create để fail lần đầu
+    mockImageCreate
+      .mockRejectedValueOnce(new Error('upload fail'))
+      .mockResolvedValueOnce({ id: 2, filePath: '/uploads/b.jpg' });
+
+    const jpegBuf = Buffer.concat([Buffer.from([0xff, 0xd8, 0xff]), Buffer.alloc(9)]);
+    mockFsPromises.mkdir.mockResolvedValue(undefined);
+    mockFsPromises.copyFile.mockResolvedValue(undefined);
+    mockFsPromises.unlink.mockResolvedValue(undefined);
+
+    const files = [
+      { originalname: 'a.jpg', path: '/tmp/a', mimetype: 'image/jpeg', size: 100 },
+      { originalname: 'b.jpg', path: '/tmp/b', mimetype: 'image/jpeg', size: 100 },
+    ];
+
+    const result = await imageService.uploadMultipleImages(files, { category: 'product' });
+    // Phải có cấu trúc { successful, failed, count }
+    expect(result).toHaveProperty('successful');
+    expect(result).toHaveProperty('failed');
+  });
+});
+
+// ─── Default parameter branches (options = {}) ────────────────────────────────
+
+describe('processImage — default options parameter branch', () => {
+  it('gọi không có options → dùng default {}', async () => {
+    await imageService.processImage('/in.jpg', '/out.jpg');
+    expect(mockSharp.toFile).toHaveBeenCalledWith('/out.jpg');
+  });
+});
+
+describe('uploadImage — default options parameter branch', () => {
+  it('gọi không có options → dùng default {}', async () => {
+    const file = {
+      originalname: 'test.jpg',
+      path: '/tmp/test.jpg',
+      mimetype: 'image/jpeg',
+      size: 1000,
+    };
+    mockImageCreate.mockResolvedValueOnce({ id: 99, filePath: 'path/test.jpg' });
+    const result = await imageService.uploadImage(file);
+    expect(result).toBeDefined();
+  });
+});
+
+describe('uploadMultipleImages — default options parameter branch', () => {
+  it('gọi không có options → dùng default {}', async () => {
+    mockImageCreate.mockResolvedValue({ id: 99, filePath: 'path/test.jpg' });
+    const result = await imageService.uploadMultipleImages([]);
+    expect(result.count.total).toBe(0);
+  });
+});
+
+describe('convertBase64ToFile — default options parameter branch', () => {
+  it('gọi không có options → dùng default {}', async () => {
+    await expect(imageService.convertBase64ToFile('invalid-base64')).rejects.toThrow();
+  });
+});
+
+// ─── convertBase64ToFile — non-AppError triggers 500 ─────────────────────────
+
+describe('convertBase64ToFile — non-AppError → 500', () => {
+  it('throw AppError 500 khi có lỗi hệ thống (không phải AppError)', async () => {
+    // Mock writeFile để throw system error (không phải AppError)
+    mockFsPromises.writeFile.mockRejectedValueOnce(new Error('ENOSPC: no space left'));
+    const validBase64 = 'data:image/jpeg;base64,/9j/4AAQSkZJRg==';
+    await expect(
+      imageService.convertBase64ToFile(validBase64, { category: 'product' }),
+    ).rejects.toMatchObject({ statusCode: 500 });
+    mockFsPromises.writeFile.mockResolvedValue(undefined);
   });
 });

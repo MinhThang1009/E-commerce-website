@@ -45,6 +45,9 @@ const getOp = () => Op;
 const getSequelizeFns = () => Sequelize;
 
 // ─── User queries ─────────────────────────────────────────────────────────────
+// QUAN TRỌNG: các hàm count/sum nhận flat where object, KHÔNG wrap trong { where: {...} }
+// Đúng: countUsers({ role: 'customer' })
+// Sai:  countUsers({ where: { role: 'customer' } }) → double-nested, WHERE không được áp dụng
 
 const countUsers = (where = {}) => User.count({ where });
 
@@ -210,15 +213,10 @@ const findOneChatMessage = (options = {}) => ChatMessage.findOne(options);
 const aggregateChatMessages = ({ attributes, where = {}, group, order, raw, limit } = {}) =>
   ChatMessage.findAll({ attributes, where, group, order, raw, limit });
 
-const bulkCreateProductVariants = (data, options = {}) =>
-  Object.keys(options).length
-    ? ProductVariant.bulkCreate(data, options)
-    : ProductVariant.bulkCreate(data);
+const bulkCreateProductVariants = (data, options = {}) => ProductVariant.bulkCreate(data, options);
 
 const bulkCreateProductWarranties = (data, options = {}) =>
-  Object.keys(options).length
-    ? ProductWarranty.bulkCreate(data, options)
-    : ProductWarranty.bulkCreate(data);
+  ProductWarranty.bulkCreate(data, options);
 
 const findProductVariantById = (id, productId, options = {}) =>
   ProductVariant.findOne({ where: { id, productId }, ...options });
@@ -233,9 +231,7 @@ const destroyWishlists = (where, options = {}) => Wishlist.destroy({ where, ...o
 const destroyProductCategories = (where, options = {}) =>
   ProductCategory.destroy({ where, ...options });
 const bulkCreateProductCategories = (data, options = {}) =>
-  Object.keys(options).length
-    ? ProductCategory.bulkCreate(data, options)
-    : ProductCategory.bulkCreate(data);
+  ProductCategory.bulkCreate(data, options);
 
 const rawQuery = (sql, options = {}) => sequelize.query(sql, options);
 
@@ -284,9 +280,7 @@ const destroyProductVariants = (where, options = {}) =>
   ProductVariant.destroy({ where, ...options });
 
 const bulkCreateProductAttributes = (data, options = {}) =>
-  Object.keys(options).length
-    ? ProductAttribute.bulkCreate(data, options)
-    : ProductAttribute.bulkCreate(data);
+  ProductAttribute.bulkCreate(data, options);
 
 const aggregateChatMessagesAdv = (options = {}) => ChatMessage.findAll(options);
 

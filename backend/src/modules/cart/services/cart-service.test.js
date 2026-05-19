@@ -69,7 +69,7 @@ describe('CartService', () => {
       cartRepository.findOrCreateActiveCartByUserId.mockResolvedValue(userCart);
       cartRepository.findActiveCartBySessionId.mockResolvedValue(guestCart);
       cartRepository.findCartItemsByCartId.mockResolvedValue([guestItem]);
-      cartRepository.findCartItemMatching.mockResolvedValue(null);  // không có existing
+      cartRepository.findCartItemMatching.mockResolvedValue(null); // không có existing
 
       await service.getCart({ user: { id: 1 }, cookieSessionId: 'sess' });
 
@@ -141,21 +141,21 @@ describe('CartService', () => {
     test('product không tồn tại → 404', async () => {
       cartRepository.findProductById.mockResolvedValue(null);
       await expect(
-        service.addToCart({ user: { id: 1 }, body: { productId: 99 } })
+        service.addToCart({ user: { id: 1 }, body: { productId: 99 } }),
       ).rejects.toMatchObject({ statusCode: 404 });
     });
 
     test('product hết hàng + không có variant → 400', async () => {
       cartRepository.findProductById.mockResolvedValue(mkProduct(100, 0));
       await expect(
-        service.addToCart({ user: { id: 1 }, body: { productId: 1, quantity: 1 } })
+        service.addToCart({ user: { id: 1 }, body: { productId: 1, quantity: 1 } }),
       ).rejects.toMatchObject({ statusCode: 400, message: expect.stringContaining('hết hàng') });
     });
 
     test('quantity vượt stock → 400', async () => {
       cartRepository.findProductById.mockResolvedValue(mkProduct(100, 5));
       await expect(
-        service.addToCart({ user: { id: 1 }, body: { productId: 1, quantity: 10 } })
+        service.addToCart({ user: { id: 1 }, body: { productId: 1, quantity: 10 } }),
       ).rejects.toMatchObject({ statusCode: 400, message: expect.stringContaining('tồn kho') });
     });
 
@@ -163,7 +163,7 @@ describe('CartService', () => {
       cartRepository.findProductById.mockResolvedValue(mkProduct());
       cartRepository.findVariantByIdAndProductId.mockResolvedValue(null);
       await expect(
-        service.addToCart({ user: { id: 1 }, body: { productId: 1, variantId: 5, quantity: 1 } })
+        service.addToCart({ user: { id: 1 }, body: { productId: 1, variantId: 5, quantity: 1 } }),
       ).rejects.toMatchObject({ statusCode: 404 });
     });
 
@@ -174,7 +174,7 @@ describe('CartService', () => {
         service.addToCart({
           user: { id: 1 },
           body: { productId: 1, quantity: 1, warrantyPackageIds: [1, 2] },
-        })
+        }),
       ).rejects.toMatchObject({ statusCode: 400, message: expect.stringContaining('bảo hành') });
     });
 
@@ -183,10 +183,7 @@ describe('CartService', () => {
       // → KHÔNG throw → đi vào line 191: validWarrantyPackageIds = warranties.map(w => w.id)
       // → item được tạo với warrantyPackageIds đúng
       cartRepository.findProductById.mockResolvedValue(mkProduct());
-      cartRepository.findActiveWarrantyPackagesByIds.mockResolvedValue([
-        { id: 10 },
-        { id: 20 },
-      ]);
+      cartRepository.findActiveWarrantyPackagesByIds.mockResolvedValue([{ id: 10 }, { id: 20 }]);
       cartRepository.findOrCreateActiveCartByUserId.mockResolvedValue({ id: 5 });
       cartRepository.findCartItemMatching.mockResolvedValue(null);
       cartRepository.findActiveCartByUserId.mockResolvedValue({ id: 5 });
@@ -199,7 +196,7 @@ describe('CartService', () => {
       // Xác nhận item được tạo với warrantyPackageIds đã được map từ warranties
       expect(cartRepository.createCartItem).toHaveBeenCalledWith(
         expect.objectContaining({ warrantyPackageIds: [10, 20] }),
-        expect.any(Object)
+        expect.any(Object),
       );
     });
 
@@ -216,7 +213,7 @@ describe('CartService', () => {
 
       expect(cartRepository.createCartItem).toHaveBeenCalledWith(
         expect.objectContaining({ cartId: 10, productId: 1, quantity: 2, unitPrice: 100 }),
-        expect.any(Object)
+        expect.any(Object),
       );
     });
 
@@ -241,7 +238,8 @@ describe('CartService', () => {
       const setCookie = jest.fn();
 
       await service.addToCart({
-        user: null, cookieSessionId: null,
+        user: null,
+        cookieSessionId: null,
         body: { productId: 1, quantity: 1 },
         setSessionCookie: setCookie,
       });
@@ -256,7 +254,7 @@ describe('CartService', () => {
     test('không tìm thấy item → 404', async () => {
       cartRepository.findCartItemByIdWithCartAndStock.mockResolvedValue(null);
       await expect(
-        service.updateCartItem({ user: { id: 1 }, itemId: 5, quantity: 2 })
+        service.updateCartItem({ user: { id: 1 }, itemId: 5, quantity: 2 }),
       ).rejects.toMatchObject({ statusCode: 404 });
     });
 
@@ -266,7 +264,7 @@ describe('CartService', () => {
         Product: { defaultVariant: { stockQuantity: 5 } },
       });
       await expect(
-        service.updateCartItem({ user: { id: 1 }, itemId: 5, quantity: 2 })
+        service.updateCartItem({ user: { id: 1 }, itemId: 5, quantity: 2 }),
       ).rejects.toMatchObject({ statusCode: 403 });
     });
 
@@ -277,8 +275,22 @@ describe('CartService', () => {
         ProductVariant: { stockQuantity: 3 },
       });
       await expect(
-        service.updateCartItem({ user: { id: 1 }, itemId: 5, quantity: 10 })
+        service.updateCartItem({ user: { id: 1 }, itemId: 5, quantity: 10 }),
       ).rejects.toMatchObject({ statusCode: 400 });
+    });
+
+    test('variant stock đủ → cập nhật quantity thành công (line 261 FALSE branch)', async () => {
+      const item = {
+        Cart: { userId: 1 },
+        Product: { defaultVariant: { stockQuantity: 100 } },
+        ProductVariant: { stockQuantity: 20 },
+        quantity: 1,
+      };
+      cartRepository.findCartItemByIdWithCartAndStock.mockResolvedValue(item);
+      cartRepository.findOrCreateActiveCartByUserId.mockResolvedValue({ id: 10 });
+
+      await service.updateCartItem({ user: { id: 1 }, itemId: 5, quantity: 5 });
+      expect(item.quantity).toBe(5);
     });
 
     test('hợp lệ → cập nhật quantity + save', async () => {
@@ -317,7 +329,7 @@ describe('CartService', () => {
         Product: { defaultVariant: { stockQuantity: 100 } },
       });
       await expect(
-        service.updateCartItem({ user: null, cookieSessionId: 'mine', itemId: 5, quantity: 1 })
+        service.updateCartItem({ user: null, cookieSessionId: 'mine', itemId: 5, quantity: 1 }),
       ).rejects.toMatchObject({ statusCode: 403 });
     });
   });
@@ -325,9 +337,9 @@ describe('CartService', () => {
   describe('removeCartItem', () => {
     test('không tìm thấy → 404', async () => {
       cartRepository.findCartItemByIdWithCartAndStock.mockResolvedValue(null);
-      await expect(
-        service.removeCartItem({ user: { id: 1 }, itemId: 99 })
-      ).rejects.toMatchObject({ statusCode: 404 });
+      await expect(service.removeCartItem({ user: { id: 1 }, itemId: 99 })).rejects.toMatchObject({
+        statusCode: 404,
+      });
     });
 
     test('hợp lệ → xóa item', async () => {
@@ -363,9 +375,9 @@ describe('CartService', () => {
 
   describe('syncCart', () => {
     test('không có user → 401', async () => {
-      await expect(
-        service.syncCart({ user: null, items: [] })
-      ).rejects.toMatchObject({ statusCode: 401 });
+      await expect(service.syncCart({ user: null, items: [] })).rejects.toMatchObject({
+        statusCode: 401,
+      });
     });
 
     test('user có item hợp lệ → clear cũ + tạo lại', async () => {
@@ -381,7 +393,7 @@ describe('CartService', () => {
       expect(cartRepository.clearCartItems).toHaveBeenCalled();
       expect(cartRepository.createCartItem).toHaveBeenCalledWith(
         expect.objectContaining({ productId: 1, quantity: 3, unitPrice: 50 }),
-        expect.any(Object)
+        expect.any(Object),
       );
     });
 
@@ -396,8 +408,8 @@ describe('CartService', () => {
       });
 
       expect(cartRepository.createCartItem).toHaveBeenCalledWith(
-        expect.objectContaining({ quantity: 2 }),  // capped
-        expect.any(Object)
+        expect.objectContaining({ quantity: 2 }), // capped
+        expect.any(Object),
       );
     });
 
@@ -417,9 +429,7 @@ describe('CartService', () => {
 
   describe('mergeCart', () => {
     test('chưa login → 401', async () => {
-      await expect(
-        service.mergeCart({ user: null })
-      ).rejects.toMatchObject({ statusCode: 401 });
+      await expect(service.mergeCart({ user: null })).rejects.toMatchObject({ statusCode: 401 });
     });
 
     test('không có sessionId → trả user cart hiện tại', async () => {
@@ -448,7 +458,11 @@ describe('CartService', () => {
       cartRepository.findActiveCartByUserId.mockResolvedValue({ id: 10 });
 
       const clearCookie = jest.fn();
-      await service.mergeCart({ user: { id: 1 }, cookieSessionId: 'sess', clearSessionCookie: clearCookie });
+      await service.mergeCart({
+        user: { id: 1 },
+        cookieSessionId: 'sess',
+        clearSessionCookie: clearCookie,
+      });
 
       expect(guestCart.status).toBe('merged');
       expect(clearCookie).toHaveBeenCalled();
@@ -463,9 +477,14 @@ describe('CartService', () => {
 
     test('item bị xóa product → hasIssue=true outOfStock=true', async () => {
       cartRepository.findActiveCartByUserId.mockResolvedValue({ id: 1 });
-      cartRepository.findCartItemsForValidation.mockResolvedValue([{
-        id: 1, productId: 99, variantId: null, Product: null,
-      }]);
+      cartRepository.findCartItemsForValidation.mockResolvedValue([
+        {
+          id: 1,
+          productId: 99,
+          variantId: null,
+          Product: null,
+        },
+      ]);
 
       const result = await service.validateCart({ user: { id: 1 } });
 
@@ -475,12 +494,17 @@ describe('CartService', () => {
 
     test('giá thay đổi → priceChanged=true', async () => {
       cartRepository.findActiveCartByUserId.mockResolvedValue({ id: 1 });
-      cartRepository.findCartItemsForValidation.mockResolvedValue([{
-        id: 1, productId: 1, variantId: null,
-        unitPrice: 50, quantity: 1,
-        Product: { id: 1, name: 'P', basePrice: 75, defaultVariant: { stockQuantity: 10 } },
-        ProductVariant: null,
-      }]);
+      cartRepository.findCartItemsForValidation.mockResolvedValue([
+        {
+          id: 1,
+          productId: 1,
+          variantId: null,
+          unitPrice: 50,
+          quantity: 1,
+          Product: { id: 1, name: 'P', basePrice: 75, defaultVariant: { stockQuantity: 10 } },
+          ProductVariant: null,
+        },
+      ]);
 
       const result = await service.validateCart({ user: { id: 1 } });
 
@@ -491,12 +515,17 @@ describe('CartService', () => {
 
     test('quantity > stock → quantityExceedsStock=true', async () => {
       cartRepository.findActiveCartByUserId.mockResolvedValue({ id: 1 });
-      cartRepository.findCartItemsForValidation.mockResolvedValue([{
-        id: 1, productId: 1, variantId: null,
-        unitPrice: 100, quantity: 10,
-        Product: { id: 1, name: 'P', basePrice: 100, defaultVariant: { stockQuantity: 3 } },
-        ProductVariant: null,
-      }]);
+      cartRepository.findCartItemsForValidation.mockResolvedValue([
+        {
+          id: 1,
+          productId: 1,
+          variantId: null,
+          unitPrice: 100,
+          quantity: 10,
+          Product: { id: 1, name: 'P', basePrice: 100, defaultVariant: { stockQuantity: 3 } },
+          ProductVariant: null,
+        },
+      ]);
 
       const result = await service.validateCart({ user: { id: 1 } });
 
@@ -506,12 +535,17 @@ describe('CartService', () => {
 
     test('item hợp lệ → hasIssue=false', async () => {
       cartRepository.findActiveCartByUserId.mockResolvedValue({ id: 1 });
-      cartRepository.findCartItemsForValidation.mockResolvedValue([{
-        id: 1, productId: 1, variantId: null,
-        unitPrice: 100, quantity: 2,
-        Product: { id: 1, name: 'P', basePrice: 100, defaultVariant: { stockQuantity: 10 } },
-        ProductVariant: null,
-      }]);
+      cartRepository.findCartItemsForValidation.mockResolvedValue([
+        {
+          id: 1,
+          productId: 1,
+          variantId: null,
+          unitPrice: 100,
+          quantity: 2,
+          Product: { id: 1, name: 'P', basePrice: 100, defaultVariant: { stockQuantity: 10 } },
+          ProductVariant: null,
+        },
+      ]);
 
       const result = await service.validateCart({ user: { id: 1 } });
 
@@ -539,12 +573,17 @@ describe('CartService', () => {
 
     test('item dùng ProductVariant → lấy giá và stock từ variant', async () => {
       cartRepository.findActiveCartByUserId.mockResolvedValue({ id: 1 });
-      cartRepository.findCartItemsForValidation.mockResolvedValue([{
-        id: 2, productId: 1, variantId: 10,
-        unitPrice: 200, quantity: 1,
-        Product: { id: 1, name: 'P', basePrice: 150, defaultVariant: { stockQuantity: 5 } },
-        ProductVariant: { name: 'Black 128GB', price: 200, stockQuantity: 3 },
-      }]);
+      cartRepository.findCartItemsForValidation.mockResolvedValue([
+        {
+          id: 2,
+          productId: 1,
+          variantId: 10,
+          unitPrice: 200,
+          quantity: 1,
+          Product: { id: 1, name: 'P', basePrice: 150, defaultVariant: { stockQuantity: 5 } },
+          ProductVariant: { name: 'Black 128GB', price: 200, stockQuantity: 3 },
+        },
+      ]);
 
       const result = await service.validateCart({ user: { id: 1 } });
 
@@ -558,9 +597,16 @@ describe('CartService', () => {
     test('tính subtotal đúng khi có warrantyPackages', async () => {
       const item = {
         toJSON: () => ({
-          id: 1, quantity: 2, variantId: null, warrantyPackageIds: [10],
+          id: 1,
+          quantity: 2,
+          variantId: null,
+          warrantyPackageIds: [10],
           Product: {
-            id: 1, name: 'P', basePrice: 100, variants: [], defaultVariant: null,
+            id: 1,
+            name: 'P',
+            basePrice: 100,
+            variants: [],
+            defaultVariant: null,
             productImages: [],
           },
           ProductVariant: null,
@@ -582,7 +628,10 @@ describe('CartService', () => {
     test('tính subtotal dùng ProductVariant.price khi có variant', async () => {
       const item = {
         toJSON: () => ({
-          id: 2, quantity: 3, variantId: 5, warrantyPackageIds: [],
+          id: 2,
+          quantity: 3,
+          variantId: 5,
+          warrantyPackageIds: [],
           Product: { id: 1, basePrice: 100, variants: [], defaultVariant: null, productImages: [] },
           ProductVariant: { price: 200 },
         }),
@@ -599,9 +648,15 @@ describe('CartService', () => {
     test('thumbnail từ ảnh variantId trùng khớp', async () => {
       const item = {
         toJSON: () => ({
-          id: 3, quantity: 1, variantId: 7, warrantyPackageIds: [],
+          id: 3,
+          quantity: 1,
+          variantId: 7,
+          warrantyPackageIds: [],
           Product: {
-            id: 1, basePrice: 100, variants: [], defaultVariant: null,
+            id: 1,
+            basePrice: 100,
+            variants: [],
+            defaultVariant: null,
             productImages: [
               { imageUrl: 'variant.jpg', variantId: 7, isThumbnail: false },
               { imageUrl: 'main.jpg', variantId: null, isThumbnail: true },
@@ -621,9 +676,15 @@ describe('CartService', () => {
     test('thumbnail fallback về isThumbnail khi không có variantId match', async () => {
       const item = {
         toJSON: () => ({
-          id: 4, quantity: 1, variantId: null, warrantyPackageIds: [],
+          id: 4,
+          quantity: 1,
+          variantId: null,
+          warrantyPackageIds: [],
           Product: {
-            id: 1, basePrice: 100, variants: [], defaultVariant: null,
+            id: 1,
+            basePrice: 100,
+            variants: [],
+            defaultVariant: null,
             productImages: [
               { imageUrl: 'first.jpg', variantId: null, isThumbnail: false },
               { imageUrl: 'thumb.jpg', variantId: null, isThumbnail: true },
@@ -643,9 +704,14 @@ describe('CartService', () => {
     test('tính variantStock từ tổng variants.stockQuantity', async () => {
       const item = {
         toJSON: () => ({
-          id: 5, quantity: 1, variantId: null, warrantyPackageIds: [],
+          id: 5,
+          quantity: 1,
+          variantId: null,
+          warrantyPackageIds: [],
           Product: {
-            id: 1, basePrice: 100, defaultVariant: null,
+            id: 1,
+            basePrice: 100,
+            defaultVariant: null,
             variants: [{ stockQuantity: 3 }, { stockQuantity: 7 }],
             productImages: [],
           },
@@ -665,35 +731,43 @@ describe('CartService', () => {
 
   describe('_assertStock', () => {
     test('variant stock đủ → không throw', () => {
-      expect(() => service._assertStock({
-        product: mkProduct(100, 5),
-        variant: { stockQuantity: 10 },
-        quantity: 5,
-      })).not.toThrow();
+      expect(() =>
+        service._assertStock({
+          product: mkProduct(100, 5),
+          variant: { stockQuantity: 10 },
+          quantity: 5,
+        }),
+      ).not.toThrow();
     });
 
     test('variant stock thiếu → throw 400', () => {
-      expect(() => service._assertStock({
-        product: mkProduct(100, 100),
-        variant: { stockQuantity: 2 },
-        quantity: 5,
-      })).toThrow(expect.objectContaining({ statusCode: 400 }));
+      expect(() =>
+        service._assertStock({
+          product: mkProduct(100, 100),
+          variant: { stockQuantity: 2 },
+          quantity: 5,
+        }),
+      ).toThrow(expect.objectContaining({ statusCode: 400 }));
     });
 
     test('không có variant + base stock đủ → không throw', () => {
-      expect(() => service._assertStock({
-        product: mkProduct(100, 10),
-        variant: null,
-        quantity: 5,
-      })).not.toThrow();
+      expect(() =>
+        service._assertStock({
+          product: mkProduct(100, 10),
+          variant: null,
+          quantity: 5,
+        }),
+      ).not.toThrow();
     });
 
     test('không có variant + base stock thiếu → throw 400', () => {
-      expect(() => service._assertStock({
-        product: mkProduct(100, 2),
-        variant: null,
-        quantity: 5,
-      })).toThrow(expect.objectContaining({ statusCode: 400 }));
+      expect(() =>
+        service._assertStock({
+          product: mkProduct(100, 2),
+          variant: null,
+          quantity: 5,
+        }),
+      ).toThrow(expect.objectContaining({ statusCode: 400 }));
     });
   });
 
@@ -727,7 +801,7 @@ describe('CartService', () => {
 
       expect(cartRepository.createCartItem).toHaveBeenCalledWith(
         expect.objectContaining({ quantity: 3, unitPrice: 150, variantId: 5 }),
-        expect.any(Object)
+        expect.any(Object),
       );
     });
 
@@ -751,7 +825,9 @@ describe('CartService', () => {
       const guestCart = { id: 20, status: 'active' };
       const product = mkProduct(100, 5);
       const sessionItem = {
-        productId: 1, variantId: null, quantity: 4,
+        productId: 1,
+        variantId: null,
+        quantity: 4,
         Product: product,
         ProductVariant: null,
         cartId: 20,
@@ -776,7 +852,9 @@ describe('CartService', () => {
       const guestCart = { id: 20, status: 'active' };
       const product = mkProduct(100, 10);
       const sessionItem = {
-        productId: 1, variantId: null, quantity: 2,
+        productId: 1,
+        variantId: null,
+        quantity: 2,
         Product: product,
         ProductVariant: null,
         cartId: 20,
@@ -799,7 +877,9 @@ describe('CartService', () => {
       const guestCart = { id: 20, status: 'active' };
       const product = mkProduct(100, 10);
       const sessionItem = {
-        productId: 1, variantId: 5, quantity: 1,
+        productId: 1,
+        variantId: 5,
+        quantity: 1,
         Product: product,
         ProductVariant: { price: '250', stockQuantity: 5 },
         cartId: 20,
@@ -816,6 +896,123 @@ describe('CartService', () => {
 
       // price phải được refresh từ ProductVariant.price
       expect(sessionItem.price).toBe(250);
+    });
+  });
+
+  describe('_buildCartResponse — istanbul coverage paths', () => {
+    // Line 81: price = 0 khi item không có ProductVariant lẫn Product
+    test('subtotal = 0 khi item không có ProductVariant và không có Product', async () => {
+      const item = {
+        toJSON: () => ({
+          id: 9,
+          quantity: 2,
+          variantId: null,
+          warrantyPackageIds: [],
+          Product: null,
+          ProductVariant: null,
+        }),
+        quantity: 2,
+      };
+      cartRepository.findCartItemsWithDetails.mockResolvedValue([item]);
+
+      const result = await service._buildCartResponse({ id: 1 });
+
+      // price = 0 (fallback), warrantyPrice = 0 → subtotal = 0
+      expect(result.subtotal).toBe(0);
+    });
+  });
+
+  describe('syncCart — basePrice null fallback (line 340)', () => {
+    // Line 340: unitPrice = product.basePrice || 0 khi basePrice = null
+    test('product.basePrice null → unitPrice fallback về 0', async () => {
+      const productNoPrice = { id: 1, basePrice: null, defaultVariant: null, name: 'P' };
+      cartRepository.findOrCreateActiveCartByUserId.mockResolvedValue({ id: 10 });
+      cartRepository.findActiveCartByUserId.mockResolvedValue({ id: 10 });
+      cartRepository.findProductById.mockResolvedValue(productNoPrice);
+
+      // baseStockQuantity = 0 (no defaultVariant) → skip item (baseStockQuantity <= 0 && !variantId)
+      // Cần product có stock để không bị skip → dùng product có defaultVariant nhưng basePrice null
+      const productWithStockNoPrice = {
+        id: 1,
+        basePrice: null,
+        defaultVariant: { stockQuantity: 5, price: null },
+        name: 'P',
+      };
+      cartRepository.findProductById.mockResolvedValue(productWithStockNoPrice);
+
+      await service.syncCart({
+        user: { id: 1 },
+        items: [{ productId: 1, quantity: 2 }],
+      });
+
+      expect(cartRepository.createCartItem).toHaveBeenCalledWith(
+        expect.objectContaining({ unitPrice: 0 }),
+        expect.any(Object),
+      );
+    });
+  });
+
+  describe('validateCart — fallback paths (lines 430-431)', () => {
+    // Line 430: currentPrice = item.Product?.basePrice ?? 0 khi không có ProductVariant
+    // Line 431: baseStockQuantity = 0 khi không có defaultVariant
+    test('item không có ProductVariant và không có defaultVariant → price/stock từ basePrice/0', async () => {
+      cartRepository.findActiveCartByUserId.mockResolvedValue({ id: 1 });
+      cartRepository.findCartItemsForValidation.mockResolvedValue([
+        {
+          id: 5,
+          productId: 1,
+          variantId: null,
+          unitPrice: 80,
+          quantity: 1,
+          // không có defaultVariant → baseStockQuantity = 0 → outOfStock = true
+          Product: { id: 1, name: 'P', basePrice: 80, defaultVariant: null },
+          ProductVariant: null,
+        },
+      ]);
+
+      const result = await service.validateCart({ user: { id: 1 } });
+
+      // currentPrice = basePrice = 80 → priceChanged = false
+      expect(result.items[0].currentPrice).toBe(80);
+      expect(result.items[0].priceChanged).toBe(false);
+      // baseStockQuantity = 0 → currentStock = 0 → outOfStock = true
+      expect(result.items[0].outOfStock).toBe(true);
+      expect(result.items[0].maxStock).toBe(0);
+    });
+
+    test('item không có ProductVariant, không có Product.basePrice → currentPrice = 0', async () => {
+      cartRepository.findActiveCartByUserId.mockResolvedValue({ id: 1 });
+      cartRepository.findCartItemsForValidation.mockResolvedValue([
+        {
+          id: 6,
+          productId: 1,
+          variantId: null,
+          unitPrice: 0,
+          quantity: 1,
+          Product: { id: 1, name: 'P', basePrice: undefined, defaultVariant: null },
+          ProductVariant: null,
+        },
+      ]);
+
+      const result = await service.validateCart({ user: { id: 1 } });
+
+      // basePrice undefined → ?? 0 → currentPrice = 0
+      expect(result.items[0].currentPrice).toBe(0);
+    });
+  });
+
+  describe('_assertStock — stock đủ không throw (line 104 else-if coverage)', () => {
+    // Line 104: else if (baseStockQuantity < quantity) — nhánh FALSE (stock đủ, không throw)
+    // đã được cover bởi test "không có variant + base stock đủ → không throw" ở trên.
+    // Test này xác nhận thêm: product không có defaultVariant (baseStockQuantity=0), quantity=0
+    test('không có variant, không có defaultVariant, quantity=0 → không throw', () => {
+      expect(() =>
+        service._assertStock({
+          product: { basePrice: 100, defaultVariant: null },
+          variant: null,
+          quantity: 0,
+        }),
+      ).not.toThrow();
     });
   });
 });

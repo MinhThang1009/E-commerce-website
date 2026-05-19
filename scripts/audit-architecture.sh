@@ -14,7 +14,7 @@ filter_staged() {
 }
 
 # RULE 1: Services không được import Sequelize hoặc Model.X trực tiếp
-SERVICES=$(filter_staged 'backend/src/modules/.*/services/.*\.js$')
+SERVICES=$(filter_staged 'backend/src/modules/.*/services/[^.]*\.js$' | grep -v '\.test\.js$' || true)
 if [ -n "$SERVICES" ]; then
   VIOLATIONS=$(echo "$SERVICES" | xargs -I {} grep -l -E "require[[:space:]]*\([[:space:]]*['\"]sequelize['\"]|Model\.(findAll|findOne|findByPk|create|update|destroy|bulkCreate)" {} 2>/dev/null || true)
   if [ -n "$VIOLATIONS" ]; then
@@ -25,8 +25,8 @@ if [ -n "$SERVICES" ]; then
   fi
 fi
 
-# RULE 2: Controllers không được import Sequelize hoặc gọi Model.X
-CONTROLLERS=$(filter_staged 'backend/src/modules/.*/controllers/.*\.js$')
+# RULE 2: Controllers không được import Sequelize hoặc gọi Model.X (exclude test files)
+CONTROLLERS=$(filter_staged 'backend/src/modules/.*/controllers/[^.]*\.js$' | grep -v '\.test\.js$' || true)
 if [ -n "$CONTROLLERS" ]; then
   VIOLATIONS=$(echo "$CONTROLLERS" | xargs -I {} grep -l -E "require[[:space:]]*\([[:space:]]*['\"]sequelize['\"]|Model\.(findAll|findOne|findByPk|create|update|destroy)" {} 2>/dev/null || true)
   if [ -n "$VIOLATIONS" ]; then

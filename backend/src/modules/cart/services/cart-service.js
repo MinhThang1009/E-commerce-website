@@ -29,46 +29,60 @@ class CartService {
   async _buildCartResponse(cart) {
     const cartItems = await this.cartRepository.findCartItemsWithDetails(cart.id);
 
-    const items = await Promise.all(cartItems.map(async (item) => {
-      const itemData = item.toJSON();
+    const items = await Promise.all(
+      cartItems.map(async (item) => {
+        const itemData = item.toJSON();
 
-      if (itemData.Product) {
-        const p = itemData.Product;
-        // Stock thực nằm ở variant level — tính tổng stock từ tất cả variants
-        const variantStock = (p.variants || []).reduce((s, v) => s + (v.stockQuantity || 0), 0);
-        p.stockQuantity = variantStock || (p.defaultVariant ? p.defaultVariant.stockQuantity : 0);
-        p.inStock = variantStock > 0 || (p.defaultVariant ? p.defaultVariant.stockQuantity > 0 : false);
+        if (itemData.Product) {
+          const p = itemData.Product;
+          // Stock thực nằm ở variant level — tính tổng stock từ tất cả variants
+          const variantStock = (p.variants || []).reduce((s, v) => s + (v.stockQuantity || 0), 0);
+          p.stockQuantity = variantStock || (p.defaultVariant ? p.defaultVariant.stockQuantity : 0);
+          p.inStock =
+            variantStock > 0 || (p.defaultVariant ? p.defaultVariant.stockQuantity > 0 : false);
 
-        if (p.productImages && p.productImages.length > 0) {
-          // Ưu tiên ảnh theo variantId, fallback về thumbnail chính
-          const variantImg = itemData.variantId
-            ? p.productImages.find((img) => img.variant_id === itemData.variantId || img.variantId === itemData.variantId)
-            : null;
-          const primaryImg = variantImg
-            || p.productImages.find((img) => img.isThumbnail === true || img.is_thumbnail === true)
-            || p.productImages[0];
-          p.thumbnail = primaryImg.imageUrl;
-        } else {
-          p.thumbnail = p.thumbnail || null;
+          if (p.productImages && p.productImages.length > 0) {
+            // Ưu tiên ảnh theo variantId, fallback về thumbnail chính
+            const variantImg = itemData.variantId
+              ? p.productImages.find(
+                  (img) =>
+                    img.variant_id === itemData.variantId || img.variantId === itemData.variantId,
+                )
+              : null;
+            const primaryImg =
+              variantImg ||
+              p.productImages.find(
+                (img) => img.isThumbnail === true || img.is_thumbnail === true,
+              ) ||
+              p.productImages[0];
+            p.thumbnail = primaryImg.imageUrl;
+          } else {
+            p.thumbnail = p.thumbnail || null;
+          }
+
+          p.price = p.basePrice;
+          delete p.productImages;
+          delete p.defaultVariant;
+          delete p.variants;
         }
 
-        p.price = p.basePrice;
-        delete p.productImages;
-        delete p.defaultVariant;
-        delete p.variants;
-      }
+        if (itemData.warrantyPackageIds && itemData.warrantyPackageIds.length > 0) {
+          const warranties = await this.cartRepository.findActiveWarrantyPackagesByIds(
+            itemData.warrantyPackageIds,
+          );
+          itemData.warrantyPackages = warranties.map((w) => ({
+            id: w.id,
+            name: w.name,
+            price: w.price,
+            durationMonths: w.durationMonths,
+          }));
+        } else {
+          itemData.warrantyPackages = [];
+        }
 
-      if (itemData.warrantyPackageIds && itemData.warrantyPackageIds.length > 0) {
-        const warranties = await this.cartRepository.findActiveWarrantyPackagesByIds(itemData.warrantyPackageIds);
-        itemData.warrantyPackages = warranties.map((w) => ({
-          id: w.id, name: w.name, price: w.price, durationMonths: w.durationMonths,
-        }));
-      } else {
-        itemData.warrantyPackages = [];
-      }
-
-      return itemData;
-    }));
+        return itemData;
+      }),
+    );
 
     const totalItems = cartItems.reduce((sum, item) => sum + item.quantity, 0);
     const subtotal = items.reduce((sum, item) => {
@@ -78,13 +92,10 @@ class CartService {
       } else if (item.Product) {
         price = item.Product.basePrice;
       } else {
-        /* istanbul ignore next */
         price = 0;
       }
 
-      const warrantyPrice = item.warrantyPackages
-        ? item.warrantyPackages.reduce((s, w) => s + parseFloat(w.price), 0)
-        : 0;
+      const warrantyPrice = item.warrantyPackages.reduce((s, w) => s + parseFloat(w.price), 0);
 
       return sum + price * item.quantity + warrantyPrice * item.quantity;
     }, 0);
@@ -100,7 +111,7 @@ class CartService {
       if (variant.stockQuantity < quantity) {
         throw new AppError('Số lượng vượt quá số lượng tồn kho', 400);
       }
-    } else /* istanbul ignore else */ if (baseStockQuantity < quantity) {
+    } else if (baseStockQuantity < quantity) {
       throw new AppError('Số lượng vượt quá số lượng tồn kho', 400);
     }
   }
@@ -120,7 +131,9 @@ class CartService {
         if (guestCart) {
           const guestItems = await this.cartRepository.findCartItemsByCartId(guestCart.id);
           if (guestItems.length > 0) {
-            this.logger.info(`Đang gộp giỏ hàng khách ${guestCart.id} vào giỏ hàng người dùng ${cart.id}`);
+            this.logger.info(
+              `Đang gộp giỏ hàng khách ${guestCart.id} vào giỏ hàng người dùng ${cart.id}`,
+            );
             for (const guestItem of guestItems) {
               const existing = await this.cartRepository.findCartItemMatching({
                 cartId: cart.id,
@@ -196,7 +209,8 @@ class CartService {
 
     let validWarrantyPackageIds = [];
     if (warrantyPackageIds && warrantyPackageIds.length > 0) {
-      const warranties = await this.cartRepository.findActiveWarrantyPackagesByIds(warrantyPackageIds);
+      const warranties =
+        await this.cartRepository.findActiveWarrantyPackagesByIds(warrantyPackageIds);
       if (warranties.length !== warrantyPackageIds.length) {
         throw new AppError('Một hoặc nhiều gói bảo hành không hợp lệ', 400);
       }
@@ -216,15 +230,20 @@ class CartService {
             setSessionCookie(nextSessionId);
           }
         }
-        cart = await this.cartRepository.findOrCreateActiveCartBySessionId(nextSessionId, { transaction });
+        cart = await this.cartRepository.findOrCreateActiveCartBySessionId(nextSessionId, {
+          transaction,
+        });
       }
 
-      const existing = await this.cartRepository.findCartItemMatching({
-        cartId: cart.id,
-        productId,
-        variantId: variantId || null,
-        warrantyPackageIds: validWarrantyPackageIds,
-      }, { transaction });
+      const existing = await this.cartRepository.findCartItemMatching(
+        {
+          cartId: cart.id,
+          productId,
+          variantId: variantId || null,
+          warrantyPackageIds: validWarrantyPackageIds,
+        },
+        { transaction },
+      );
 
       if (existing) {
         const newQuantity = existing.quantity + quantity;
@@ -232,14 +251,17 @@ class CartService {
         existing.quantity = newQuantity;
         await this.cartRepository.saveCartItem(existing, { transaction });
       } else {
-        await this.cartRepository.createCartItem({
-          cartId: cart.id,
-          productId,
-          variantId: variantId || null,
-          quantity,
-          unitPrice: variant ? variant.price : product.basePrice,
-          warrantyPackageIds: validWarrantyPackageIds,
-        }, { transaction });
+        await this.cartRepository.createCartItem(
+          {
+            cartId: cart.id,
+            productId,
+            variantId: variantId || null,
+            quantity,
+            unitPrice: variant ? variant.price : product.basePrice,
+            warrantyPackageIds: validWarrantyPackageIds,
+          },
+          { transaction },
+        );
       }
     });
 
@@ -255,14 +277,16 @@ class CartService {
 
     this._assertOwnership(cartItem, user, cookieSessionId);
 
-    const baseStockQuantity = cartItem.Product.defaultVariant ? cartItem.Product.defaultVariant.stockQuantity : 0;
+    const baseStockQuantity = cartItem.Product.defaultVariant
+      ? cartItem.Product.defaultVariant.stockQuantity
+      : 0;
     if (cartItem.ProductVariant) {
       if (cartItem.ProductVariant.stockQuantity < quantity) {
         throw new AppError('Số lượng vượt quá số lượng tồn kho', 400);
       }
     } else if (baseStockQuantity < quantity) {
       throw new AppError('Số lượng vượt quá số lượng tồn kho', 400);
-    } /* istanbul ignore next */ else { /* baseStockQuantity >= quantity — item updated successfully */ }
+    }
 
     cartItem.quantity = quantity;
     await this.cartRepository.saveCartItem(cartItem);
@@ -310,34 +334,51 @@ class CartService {
     }
 
     await this.cartRepository.runInTransaction(async (transaction) => {
-      const cart = await this.cartRepository.findOrCreateActiveCartByUserId(user.id, { transaction });
+      const cart = await this.cartRepository.findOrCreateActiveCartByUserId(user.id, {
+        transaction,
+      });
       await this.cartRepository.clearCartItems(cart.id, { transaction });
 
       for (const item of items) {
         const { productId, variantId, quantity } = item;
         const product = await this.cartRepository.findProductById(productId);
-        const baseStockQuantity = product && product.defaultVariant ? product.defaultVariant.stockQuantity : 0;
+        const baseStockQuantity =
+          product && product.defaultVariant ? product.defaultVariant.stockQuantity : 0;
 
         if (!product || (baseStockQuantity <= 0 && !variantId)) continue;
 
         if (variantId) {
-          const variant = await this.cartRepository.findVariantByIdAndProductId(variantId, productId);
+          const variant = await this.cartRepository.findVariantByIdAndProductId(
+            variantId,
+            productId,
+          );
           if (!variant) continue;
 
           const actualQuantity = Math.min(quantity, variant.stockQuantity);
           if (actualQuantity > 0) {
-            await this.cartRepository.createCartItem({
-              cartId: cart.id, productId, variantId,
-              quantity: actualQuantity, unitPrice: variant.price,
-            }, { transaction });
+            await this.cartRepository.createCartItem(
+              {
+                cartId: cart.id,
+                productId,
+                variantId,
+                quantity: actualQuantity,
+                unitPrice: variant.price,
+              },
+              { transaction },
+            );
           }
         } else {
           const actualQuantity = Math.min(quantity, baseStockQuantity);
           if (actualQuantity > 0) {
-            await this.cartRepository.createCartItem({
-              cartId: cart.id, productId,
-              quantity: actualQuantity, unitPrice: /* istanbul ignore next */ product.basePrice || 0,
-            }, { transaction });
+            await this.cartRepository.createCartItem(
+              {
+                cartId: cart.id,
+                productId,
+                quantity: actualQuantity,
+                unitPrice: product.basePrice || 0,
+              },
+              { transaction },
+            );
           }
         }
       }
@@ -362,15 +403,22 @@ class CartService {
     }
 
     await this.cartRepository.runInTransaction(async (transaction) => {
-      const userCart = await this.cartRepository.findOrCreateActiveCartByUserId(user.id, { transaction });
-      const sessionItems = await this.cartRepository.findCartItemsForMerge(sessionCart.id, { transaction });
+      const userCart = await this.cartRepository.findOrCreateActiveCartByUserId(user.id, {
+        transaction,
+      });
+      const sessionItems = await this.cartRepository.findCartItemsForMerge(sessionCart.id, {
+        transaction,
+      });
 
       for (const sessionItem of sessionItems) {
-        const existingUserItem = await this.cartRepository.findCartItemMatching({
-          cartId: userCart.id,
-          productId: sessionItem.productId,
-          variantId: sessionItem.variantId || null,
-        }, { transaction });
+        const existingUserItem = await this.cartRepository.findCartItemMatching(
+          {
+            cartId: userCart.id,
+            productId: sessionItem.productId,
+            variantId: sessionItem.variantId || null,
+          },
+          { transaction },
+        );
 
         const currentPrice = sessionItem.ProductVariant
           ? parseFloat(sessionItem.ProductVariant.price)
@@ -378,8 +426,12 @@ class CartService {
 
         if (existingUserItem) {
           const newQuantity = existingUserItem.quantity + sessionItem.quantity;
-          const baseStockQuantity = sessionItem.Product.defaultVariant ? sessionItem.Product.defaultVariant.stockQuantity : 0;
-          const maxStock = sessionItem.ProductVariant ? sessionItem.ProductVariant.stockQuantity : baseStockQuantity;
+          const baseStockQuantity = sessionItem.Product.defaultVariant
+            ? sessionItem.Product.defaultVariant.stockQuantity
+            : 0;
+          const maxStock = sessionItem.ProductVariant
+            ? sessionItem.ProductVariant.stockQuantity
+            : baseStockQuantity;
           const finalQuantity = Math.min(newQuantity, maxStock);
 
           existingUserItem.quantity = finalQuantity;
@@ -421,27 +473,43 @@ class CartService {
     const validatedItems = cartItems.map((item) => {
       if (!item.Product) {
         return {
-          id: item.id, productId: item.productId, variantId: item.variantId,
-          name: 'Sản phẩm không còn tồn tại', hasIssue: true, outOfStock: true,
+          id: item.id,
+          productId: item.productId,
+          variantId: item.variantId,
+          name: 'Sản phẩm không còn tồn tại',
+          hasIssue: true,
+          outOfStock: true,
         };
       }
 
-      const currentPrice = item.ProductVariant ? item.ProductVariant.price : item.Product?.basePrice ?? 0;
-      const baseStockQuantity = item.Product.defaultVariant ? item.Product.defaultVariant.stockQuantity : 0;
-      const currentStock = item.ProductVariant ? item.ProductVariant.stockQuantity : baseStockQuantity;
+      const currentPrice = item.ProductVariant
+        ? item.ProductVariant.price
+        : (item.Product?.basePrice ?? 0);
+      const baseStockQuantity = item.Product.defaultVariant
+        ? item.Product.defaultVariant.stockQuantity
+        : 0;
+      const currentStock = item.ProductVariant
+        ? item.ProductVariant.stockQuantity
+        : baseStockQuantity;
       const isInStock = currentStock > 0;
       const priceChanged = parseFloat(currentPrice) !== parseFloat(item.unitPrice);
       const outOfStock = !isInStock;
       const quantityExceedsStock = isInStock && item.quantity > currentStock;
 
       return {
-        id: item.id, productId: item.productId, variantId: item.variantId,
-        name: item.ProductVariant ? `${item.Product.name} - ${item.ProductVariant.name}` : item.Product.name,
+        id: item.id,
+        productId: item.productId,
+        variantId: item.variantId,
+        name: item.ProductVariant
+          ? `${item.Product.name} - ${item.ProductVariant.name}`
+          : item.Product.name,
         savedPrice: parseFloat(item.unitPrice),
         currentPrice: parseFloat(currentPrice),
         quantity: item.quantity,
         maxStock: currentStock,
-        priceChanged, outOfStock, quantityExceedsStock,
+        priceChanged,
+        outOfStock,
+        quantityExceedsStock,
         hasIssue: priceChanged || outOfStock || quantityExceedsStock,
       };
     });

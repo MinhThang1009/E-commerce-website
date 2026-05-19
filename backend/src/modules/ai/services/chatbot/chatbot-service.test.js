@@ -326,8 +326,10 @@ describe('ChatbotService._evictStaleSessions', () => {
 
 describe('ChatbotService.handleMessage', () => {
   test('off_topic → trả về fallback ngay, không gọi vector store', async () => {
-    const originalKey = chatbotService.apiKey;
-    chatbotService.apiKey = 'real-api-key';
+    const originalProviders = [...chatbotService.providers];
+    chatbotService.providers = [
+      { key: 'test-key', url: 'https://api.test/v1/chat/completions', model: 'gpt-4' },
+    ];
 
     // normalizeAndClassify trả về intent off_topic
     axios.post.mockResolvedValueOnce({
@@ -349,12 +351,14 @@ describe('ChatbotService.handleMessage', () => {
     // Vector store không được gọi khi off_topic
     expect(vectorStoreService.hybridSearch).not.toHaveBeenCalled();
 
-    chatbotService.apiKey = originalKey;
+    chatbotService.providers = originalProviders;
   });
 
   test('cache HIT → trả về kết quả từ cache, không gọi vector store', async () => {
-    const originalKey = chatbotService.apiKey;
-    chatbotService.apiKey = 'real-api-key';
+    const originalProviders = [...chatbotService.providers];
+    chatbotService.providers = [
+      { key: 'test-key', url: 'https://api.test/v1/chat/completions', model: 'gpt-4' },
+    ];
 
     const cachedResponse = {
       response: 'Kết quả từ cache',
@@ -384,7 +388,7 @@ describe('ChatbotService.handleMessage', () => {
     expect(result.response).toBe('Kết quả từ cache');
     expect(vectorStoreService.hybridSearch).not.toHaveBeenCalled();
 
-    chatbotService.apiKey = originalKey;
+    chatbotService.providers = originalProviders;
   });
 
   test('fallback về getFallbackResponse khi apiKey = demo-key', async () => {
@@ -438,13 +442,14 @@ describe('ChatbotService.handleMessage', () => {
     expect(entry.messages.length).toBeLessThanOrEqual(20);
   });
 
-  test('trả về fallback khi có lỗi không mong đợi', async () => {
+  test('trả về fallback khi hybridSearch lỗi', async () => {
     vectorStoreService.hybridSearch.mockRejectedValueOnce(new Error('vector fail'));
-    // getAllProducts fallback cũng fail
-    Product.findAll.mockRejectedValueOnce(new Error('DB fail'));
+    // Product.findAll không liên quan — getAllProducts đã bị loại bỏ khỏi service
 
     const result = await chatbotService.handleMessage('iphone', null, null, {});
     expect(result).toHaveProperty('response');
+    expect(result).toHaveProperty('intent');
+    expect(Array.isArray(result.suggestions)).toBe(true);
   });
 });
 
@@ -500,8 +505,10 @@ describe('ChatbotService.getAIResponse', () => {
   });
 
   test('gọi simpleKeywordMatch khi axios throw', async () => {
-    const originalKey = chatbotService.apiKey;
-    chatbotService.apiKey = 'real-api-key';
+    const originalProviders = [...chatbotService.providers];
+    chatbotService.providers = [
+      { key: 'test-key', url: 'https://api.test/v1/chat/completions', model: 'gpt-4' },
+    ];
 
     // Catalog cache phải tồn tại để không gọi DB
     chatbotService._brandsCache = ['Apple'];
@@ -527,7 +534,7 @@ describe('ChatbotService.getAIResponse', () => {
     expect(result).toHaveProperty('response');
     expect(result).toHaveProperty('products');
 
-    chatbotService.apiKey = originalKey;
+    chatbotService.providers = originalProviders;
   });
 });
 
@@ -537,14 +544,10 @@ describe('ChatbotService.getAIResponse', () => {
 
 // ---------- Mocks ----------
 
-
 const mockBrandFindAll = jest.fn().mockResolvedValue([]);
 const mockCategoryFindAll = jest.fn().mockResolvedValue([]);
 const mockProductFindAll = jest.fn().mockResolvedValue([]);
 const mockChatMessageBulkCreate = jest.fn().mockResolvedValue([]);
-
-
-
 
 // ---------- Require ----------
 
@@ -624,10 +627,15 @@ describe('ChatbotService.normalizeAndClassify — rule-based behavior', () => {
 // ============================================================
 
 describe('ChatbotService.handleMessage — line 132: cachedResult.response || ""', () => {
-  beforeEach(() => { mockRedisGet.mockReset(); mockRedisSetEx.mockReset(); });
+  beforeEach(() => {
+    mockRedisGet.mockReset();
+    mockRedisSetEx.mockReset();
+  });
   it('dùng empty string khi cachedResult.response = null trong cache hit', async () => {
-    const originalKey = chatbotService.apiKey;
-    chatbotService.apiKey = 'real-api-key';
+    const originalProviders = [...chatbotService.providers];
+    chatbotService.providers = [
+      { key: 'test-key', url: 'https://api.test/v1/chat/completions', model: 'gpt-4' },
+    ];
 
     // Cache có response = null
     const cachedWithNullResponse = {
@@ -658,7 +666,7 @@ describe('ChatbotService.handleMessage — line 132: cachedResult.response || ""
       expect.arrayContaining([expect.objectContaining({ role: 'assistant', content: '' })]),
     );
 
-    chatbotService.apiKey = originalKey;
+    chatbotService.providers = originalProviders;
   });
 });
 
@@ -693,8 +701,10 @@ describe('ChatbotService.handleMessage — line 156: NODE_ENV production', () =>
 
 describe('ChatbotService.handleMessage — line 173: aiResponse.response || ""', () => {
   it('lưu empty string vào session history khi aiResponse.response là undefined', async () => {
-    const originalKey = chatbotService.apiKey;
-    chatbotService.apiKey = 'real-api-key';
+    const originalProviders = [...chatbotService.providers];
+    chatbotService.providers = [
+      { key: 'test-key', url: 'https://api.test/v1/chat/completions', model: 'gpt-4' },
+    ];
 
     // getAIResponse trả về object không có response field
     const originalGetAI = chatbotService.getAIResponse.bind(chatbotService);
@@ -727,7 +737,7 @@ describe('ChatbotService.handleMessage — line 173: aiResponse.response || ""',
     expect(assistantMsg?.content).toBe('');
 
     chatbotService.getAIResponse = originalGetAI;
-    chatbotService.apiKey = originalKey;
+    chatbotService.providers = originalProviders;
   });
 });
 
@@ -1294,8 +1304,10 @@ describe('ChatbotService.handleMessage — line 112: rewrittenQuery same as mess
   });
 
   it('log "Câu truy vấn đã viết lại" khi rewrittenQuery khác message', async () => {
-    const originalKey = chatbotService.apiKey;
-    chatbotService.apiKey = 'real-api-key';
+    const originalProviders = [...chatbotService.providers];
+    chatbotService.providers = [
+      { key: 'test-key', url: 'https://api.test/v1/chat/completions', model: 'gpt-4' },
+    ];
     logger.debug.mockClear();
 
     axios.post.mockResolvedValueOnce({
@@ -1333,7 +1345,7 @@ describe('ChatbotService.handleMessage — line 112: rewrittenQuery same as mess
     expect(hasRewriteLog).toBe(true);
 
     chatbotService.getAIResponse = originalGetAI;
-    chatbotService.apiKey = originalKey;
+    chatbotService.providers = originalProviders;
   });
 });
 
@@ -1640,13 +1652,7 @@ describe('ChatbotService.simpleKeywordMatch — line 524: discount > 0 in new pr
 
 // ---------- Mocks ----------
 
-
-
-
-
-
 // ---------- Require ----------
-
 
 // Quan trọng: fresh require trong mỗi test suite khi cần reset singleton state
 // Dùng module cache approach — require một lần và mutate state trực tiếp
@@ -2466,8 +2472,10 @@ describe('ChatbotService.parseAIResponse — word intersection matching (lines 3
 
 describe('ChatbotService.handleMessage — outer catch fallback', () => {
   it('trả về fallback khi normalizeAndClassify throw không xử lý được', async () => {
-    const originalKey = chatbotService.apiKey;
-    chatbotService.apiKey = 'real-api-key';
+    const originalProviders = [...chatbotService.providers];
+    chatbotService.providers = [
+      { key: 'test-key', url: 'https://api.test/v1/chat/completions', model: 'gpt-4' },
+    ];
 
     // normalizeAndClassify dùng axios.post — mock nó throw KHÔNG phải Error object
     // để trigger outer catch (inner try-catch trong normalizeAndClassify bắt Error,
@@ -2496,7 +2504,7 @@ describe('ChatbotService.handleMessage — outer catch fallback', () => {
 
     // Restore
     chatbotService._persistMessages = origPersist;
-    chatbotService.apiKey = originalKey;
+    chatbotService.providers = originalProviders;
   });
 });
 
@@ -2506,8 +2514,10 @@ describe('ChatbotService.handleMessage — outer catch fallback', () => {
 
 describe('ChatbotService.handleMessage — cache write', () => {
   it('ghi kết quả vào Redis cache sau khi xử lý thành công với intent product_search', async () => {
-    const originalKey = chatbotService.apiKey;
-    chatbotService.apiKey = 'real-api-key';
+    const originalProviders = [...chatbotService.providers];
+    chatbotService.providers = [
+      { key: 'test-key', url: 'https://api.test/v1/chat/completions', model: 'gpt-4' },
+    ];
 
     // normalizeAndClassify trả về product_search intent
     axios.post
@@ -2558,12 +2568,14 @@ describe('ChatbotService.handleMessage — cache write', () => {
       expect.any(String),
     );
 
-    chatbotService.apiKey = originalKey;
+    chatbotService.providers = originalProviders;
   });
 
   it('KHÔNG ghi cache khi intent không phải cacheable (order_inquiry)', async () => {
-    const originalKey = chatbotService.apiKey;
-    chatbotService.apiKey = 'real-api-key';
+    const originalProviders = [...chatbotService.providers];
+    chatbotService.providers = [
+      { key: 'test-key', url: 'https://api.test/v1/chat/completions', model: 'gpt-4' },
+    ];
 
     // normalizeAndClassify trả về order_inquiry (không cacheable)
     axios.post.mockResolvedValueOnce({
@@ -2605,7 +2617,7 @@ describe('ChatbotService.handleMessage — cache write', () => {
 
     expect(mockRedisSetEx).not.toHaveBeenCalled();
 
-    chatbotService.apiKey = originalKey;
+    chatbotService.providers = originalProviders;
   });
 });
 
@@ -2623,8 +2635,10 @@ describe('ChatbotService — vectorStore.hybridSearch với non-empty results (l
   });
 
   it('vectorStore.hybridSearch trả về results có metadata → map callback chạy (line 149)', async () => {
-    const originalKey = chatbotService.apiKey;
-    chatbotService.apiKey = 'real-api-key';
+    const originalProviders = [...chatbotService.providers];
+    chatbotService.providers = [
+      { key: 'test-key', url: 'https://api.test/v1/chat/completions', model: 'gpt-4' },
+    ];
 
     // vectorStoreService.hybridSearch trả về kết quả với metadata và score
     vectorStoreService.hybridSearch.mockResolvedValueOnce([
@@ -2667,7 +2681,7 @@ describe('ChatbotService — vectorStore.hybridSearch với non-empty results (l
     // Restore
     chatbotService.normalizeAndClassify = originalPreprocess;
     chatbotService.getAIResponse = originalGetAI;
-    chatbotService.apiKey = originalKey;
+    chatbotService.providers = originalProviders;
     jest.clearAllMocks();
   });
 });
@@ -2719,13 +2733,9 @@ describe('ChatbotService.parseAIResponse — line 372 every() callback', () => {
 
 // ── Mocks ─────────────────────────────────────────────────────────────────────
 
-
-
 const mockHybridSearch = jest.fn();
 
-
 // ── Require ───────────────────────────────────────────────────────────────────
-
 
 beforeAll(() => {
   chatbotService = require('./chatbot-service');
@@ -2798,7 +2808,9 @@ describe('ChatbotService constructor với LLM_API_KEY + LLM_BASE_URL', () => {
     const savedUrl = process.env.LLM_BASE_URL;
     delete process.env.LLM_API_KEY;
     delete process.env.LLM_BASE_URL;
-    jest.isolateModules(() => { serviceWithEnv = require('./chatbot-service'); });
+    jest.isolateModules(() => {
+      serviceWithEnv = require('./chatbot-service');
+    });
     process.env.LLM_API_KEY = savedKey;
     process.env.LLM_BASE_URL = savedUrl;
     expect(serviceWithEnv.providers.length).toBe(0);
@@ -2852,11 +2864,9 @@ describe('ChatbotService._llmRewrite', () => {
     addFakeProvider({ key: 'key-2' });
     // Provider 1 trả 429, provider 2 thành công
     const err429 = Object.assign(new Error('Rate limit'), { response: { status: 429 } });
-    axios.post
-      .mockRejectedValueOnce(err429)
-      .mockResolvedValueOnce({
-        data: { choices: [{ message: { content: 'MacBook Air M3' } }] },
-      });
+    axios.post.mockRejectedValueOnce(err429).mockResolvedValueOnce({
+      data: { choices: [{ message: { content: 'MacBook Air M3' } }] },
+    });
     const result = await chatbotService._llmRewrite('macbook air m3');
     expect(result).toBe('MacBook Air M3');
     expect(axios.post).toHaveBeenCalledTimes(2);
@@ -2963,7 +2973,13 @@ describe('ChatbotService._ensureCatalogCache — brands/categories map (lines 84
     addFakeProvider();
     axios.post.mockResolvedValue({
       data: {
-        choices: [{ message: { content: '{"response":"ok","products":[],"suggestions":[],"intent":"general"}' } }],
+        choices: [
+          {
+            message: {
+              content: '{"response":"ok","products":[],"suggestions":[],"intent":"general"}',
+            },
+          },
+        ],
       },
     });
 
@@ -3036,7 +3052,14 @@ describe('ChatbotService.handleMessage — legacy llmRewrite path', () => {
       .mockResolvedValueOnce({
         // Lần 2: getAIResponse
         data: {
-          choices: [{ message: { content: '{"response":"ok","products":[],"suggestions":[],"intent":"product_search"}' } }],
+          choices: [
+            {
+              message: {
+                content:
+                  '{"response":"ok","products":[],"suggestions":[],"intent":"product_search"}',
+              },
+            },
+          ],
         },
       });
 
@@ -3060,7 +3083,16 @@ describe('ChatbotService.handleMessage — legacy llmRewrite path', () => {
         data: { choices: [{ message: { content: 'MacBook Pro M3 Max' } }] },
       })
       .mockResolvedValueOnce({
-        data: { choices: [{ message: { content: '{"response":"ok","products":[],"suggestions":[],"intent":"product_search"}' } }] },
+        data: {
+          choices: [
+            {
+              message: {
+                content:
+                  '{"response":"ok","products":[],"suggestions":[],"intent":"product_search"}',
+              },
+            },
+          ],
+        },
       });
 
     const initialProducts = [{ metadata: { id: 5, name: 'MacBook Pro' }, score: 0.7 }];
@@ -3081,7 +3113,16 @@ describe('ChatbotService.handleMessage — legacy llmRewrite path', () => {
         data: { choices: [{ message: { content: 'Gaming Laptop Dell XPS' } }] },
       })
       .mockResolvedValueOnce({
-        data: { choices: [{ message: { content: '{"response":"ok","products":[],"suggestions":[],"intent":"product_search"}' } }] },
+        data: {
+          choices: [
+            {
+              message: {
+                content:
+                  '{"response":"ok","products":[],"suggestions":[],"intent":"product_search"}',
+              },
+            },
+          ],
+        },
       });
 
     const initialProducts = [{ metadata: { id: 7, name: 'Dell XPS 15' }, score: 0.6 }];
@@ -3156,12 +3197,7 @@ describe('ChatbotService.handleMessage — cache hit sessionId direct (lines 209
 
     const sessionId = 'direct-sess-' + Date.now();
 
-    const result = await chatbotService.handleMessage(
-      'iPhone 15',
-      null,
-      sessionId,
-      {},
-    );
+    const result = await chatbotService.handleMessage('iPhone 15', null, sessionId, {});
 
     // classifyIntent('iPhone 15') = 'product_search' → CACHEABLE → redis.get → cached
     // if (sessionId) → true → lines 209-211 should execute
@@ -3190,7 +3226,14 @@ describe('ChatbotService.getAIResponse — provider rotation', () => {
       .mockRejectedValueOnce(err429) // provider 1: 429
       .mockResolvedValueOnce({
         data: {
-          choices: [{ message: { content: '{"response":"tìm thấy sản phẩm","products":[],"suggestions":[],"intent":"product_search"}' } }],
+          choices: [
+            {
+              message: {
+                content:
+                  '{"response":"tìm thấy sản phẩm","products":[],"suggestions":[],"intent":"product_search"}',
+              },
+            },
+          ],
         },
       }); // provider 2: thành công
 
@@ -3240,11 +3283,17 @@ describe('ChatbotService.getAIResponse — provider rotation', () => {
     addFakeProvider({ key: 'k2' });
 
     const err402 = Object.assign(new Error('Payment required'), { response: { status: 402 } });
-    axios.post
-      .mockRejectedValueOnce(err402)
-      .mockResolvedValueOnce({
-        data: { choices: [{ message: { content: '{"response":"ok","products":[],"suggestions":[],"intent":"general"}' } }] },
-      });
+    axios.post.mockRejectedValueOnce(err402).mockResolvedValueOnce({
+      data: {
+        choices: [
+          {
+            message: {
+              content: '{"response":"ok","products":[],"suggestions":[],"intent":"general"}',
+            },
+          },
+        ],
+      },
+    });
 
     const result = await chatbotService.getAIResponse('test', [], {}, []);
 

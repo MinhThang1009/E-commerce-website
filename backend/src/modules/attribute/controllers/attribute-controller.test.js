@@ -5,10 +5,18 @@
 
 process.env.NODE_ENV = 'test';
 
-jest.mock('@utils/logger', () => ({ info: jest.fn(), error: jest.fn(), warn: jest.fn(), debug: jest.fn() }));
+jest.mock('@utils/logger', () => ({
+  info: jest.fn(),
+  error: jest.fn(),
+  warn: jest.fn(),
+  debug: jest.fn(),
+}));
 jest.mock('@middlewares/rate-limiter', () => ({ apiLimiter: (_r, _s, n) => n() }));
 jest.mock('@middlewares/authenticate', () => ({
-  authenticate: (req, _res, next) => { req.user = { id: 1, role: 'admin' }; next(); },
+  authenticate: (req, _res, next) => {
+    req.user = { id: 1, role: 'admin' };
+    next();
+  },
 }));
 jest.mock('@middlewares/authorize', () => ({ authorize: () => (_r, _s, n) => n() }));
 
@@ -296,7 +304,9 @@ describe('POST /api/attributes/preview-name — previewProductName', () => {
     await request.post('/api/attributes/preview-name').send({ baseName: 'iPhone 15' });
 
     expect(mockService.previewProductName).toHaveBeenCalledWith(
-      'iPhone 15', [], expect.any(Object),
+      'iPhone 15',
+      [],
+      expect.any(Object),
     );
   });
 
@@ -378,7 +388,10 @@ describe('POST /api/attributes/batch-generate-names — batchGenerateProductName
 
 describe('POST /api/attributes/generate-name-realtime — generateNameRealTime', () => {
   test('tạo tên real-time thành công với attributeValues là mảng', async () => {
-    mockService.generateNameRealTime.mockResolvedValue({ generatedName: 'iPhone 15 Pro Đen 256GB', suggestions: [] });
+    mockService.generateNameRealTime.mockResolvedValue({
+      generatedName: 'iPhone 15 Pro Đen 256GB',
+      suggestions: [],
+    });
 
     const res = await request.post('/api/attributes/generate-name-realtime').send({
       baseName: 'iPhone 15 Pro',
@@ -390,7 +403,10 @@ describe('POST /api/attributes/generate-name-realtime — generateNameRealTime',
   });
 
   test('tạo tên real-time thành công với attributeValues là object', async () => {
-    mockService.generateNameRealTime.mockResolvedValue({ generatedName: 'MacBook Pro Bạc', suggestions: [] });
+    mockService.generateNameRealTime.mockResolvedValue({
+      generatedName: 'MacBook Pro Bạc',
+      suggestions: [],
+    });
 
     const res = await request.post('/api/attributes/generate-name-realtime').send({
       baseName: 'MacBook Pro',
@@ -408,7 +424,10 @@ describe('POST /api/attributes/generate-name-realtime — generateNameRealTime',
   });
 
   test('lấy thêm gợi ý khi có productId', async () => {
-    mockService.generateNameRealTime.mockResolvedValue({ generatedName: 'Test', suggestions: [{ id: 1 }] });
+    mockService.generateNameRealTime.mockResolvedValue({
+      generatedName: 'Test',
+      suggestions: [{ id: 1 }],
+    });
 
     const res = await request.post('/api/attributes/generate-name-realtime').send({
       baseName: 'Test',
@@ -422,7 +441,23 @@ describe('POST /api/attributes/generate-name-realtime — generateNameRealTime',
   test('trả về 500 khi service throw lỗi', async () => {
     mockService.generateNameRealTime.mockRejectedValue(new Error('fail'));
 
-    const res = await request.post('/api/attributes/generate-name-realtime').send({ baseName: 'Test' });
+    const res = await request
+      .post('/api/attributes/generate-name-realtime')
+      .send({ baseName: 'Test' });
+
+    expect(res.status).toBe(500);
+  });
+});
+
+// ============================================================
+// DELETE /api/attributes/values/:id — error path
+// ============================================================
+
+describe('DELETE /api/attributes/values/:id — deleteAttributeValue error path', () => {
+  test('trả về 500 khi deleteValue throw lỗi', async () => {
+    mockService.deleteValue.mockRejectedValue(new Error('DB lỗi'));
+
+    const res = await request.delete('/api/attributes/values/1');
 
     expect(res.status).toBe(500);
   });

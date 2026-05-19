@@ -62,7 +62,10 @@ describe('HybridVectorStore — load()', () => {
       error: jest.fn(),
     }));
     jest.mock('@modules/ai/services/embedding/embedding', () => ({ generateEmbedding: jest.fn() }));
-    jest.mock('@modules/ai/services/embedding/vi-embedding', () => ({ isAvailable: () => false, generateEmbedding: jest.fn() }));
+    jest.mock('@modules/ai/services/embedding/vi-embedding', () => ({
+      isAvailable: () => false,
+      generateEmbedding: jest.fn(),
+    }));
   });
 
   it('load từ file JSON hợp lệ → this.items chứa dữ liệu', async () => {
@@ -153,7 +156,10 @@ describe('cosineSimilarity (thuật toán thuần)', () => {
       error: jest.fn(),
     }));
     jest.mock('@modules/ai/services/embedding/embedding', () => ({ generateEmbedding: jest.fn() }));
-    jest.mock('@modules/ai/services/embedding/vi-embedding', () => ({ isAvailable: () => false, generateEmbedding: jest.fn() }));
+    jest.mock('@modules/ai/services/embedding/vi-embedding', () => ({
+      isAvailable: () => false,
+      generateEmbedding: jest.fn(),
+    }));
     jest.mock('fs', () => ({
       existsSync: jest.fn().mockReturnValue(false),
       mkdirSync: jest.fn(),
@@ -201,7 +207,7 @@ describe('cosineSimilarity (thuật toán thuần)', () => {
   it('vector toàn NaN → kết quả là 0 (không phải NaN)', () => {
     const nanVec = [NaN, NaN];
     const result = store.cosineSimilarity(nanVec, nanVec);
-    expect(isFinite(result) || result === 0).toBe(true);
+    expect(result).toBe(0);
   });
 
   it('similarity = Infinity (dotProduct rất lớn, magnitude nhỏ) → trả về 0 (line 148 guard)', () => {
@@ -234,7 +240,10 @@ describe('clear()', () => {
       error: jest.fn(),
     }));
     jest.mock('@modules/ai/services/embedding/embedding', () => ({ generateEmbedding: jest.fn() }));
-    jest.mock('@modules/ai/services/embedding/vi-embedding', () => ({ isAvailable: () => false, generateEmbedding: jest.fn() }));
+    jest.mock('@modules/ai/services/embedding/vi-embedding', () => ({
+      isAvailable: () => false,
+      generateEmbedding: jest.fn(),
+    }));
     jest.mock('fs', () => ({
       existsSync: jest.fn().mockReturnValue(false),
       mkdirSync: jest.fn(),
@@ -564,7 +573,10 @@ describe('enrichProductData()', () => {
       error: jest.fn(),
     }));
     jest.mock('@modules/ai/services/embedding/embedding', () => ({ generateEmbedding: jest.fn() }));
-    jest.mock('@modules/ai/services/embedding/vi-embedding', () => ({ isAvailable: () => false, generateEmbedding: jest.fn() }));
+    jest.mock('@modules/ai/services/embedding/vi-embedding', () => ({
+      isAvailable: () => false,
+      generateEmbedding: jest.fn(),
+    }));
     jest.mock('fs', () => ({
       existsSync: jest.fn().mockReturnValue(false),
       mkdirSync: jest.fn(),
@@ -687,7 +699,10 @@ describe('save()', () => {
       error: jest.fn(),
     }));
     jest.mock('@modules/ai/services/embedding/embedding', () => ({ generateEmbedding: jest.fn() }));
-    jest.mock('@modules/ai/services/embedding/vi-embedding', () => ({ isAvailable: () => false, generateEmbedding: jest.fn() }));
+    jest.mock('@modules/ai/services/embedding/vi-embedding', () => ({
+      isAvailable: () => false,
+      generateEmbedding: jest.fn(),
+    }));
   });
 
   it('thư mục đã tồn tại → writeFile được gọi với JSON items, mkdirSync KHÔNG được gọi', async () => {
@@ -785,7 +800,6 @@ jest.mock('@utils/logger', () => ({
 
 // makeVector already declared in section 1 — reuse it directly.
 
-
 // ── buildEmbeddingText — tested indirectly via upsertProduct ─────────────────────
 // buildEmbeddingText là hàm nội bộ (không export). Ta test via upsertProduct.
 // Nhưng để cover các nhánh (baseName, description, basePrice, inStock), cần
@@ -807,7 +821,10 @@ describe('buildEmbeddingText — uncovered branches (lines 21-22, 25-28)', () =>
 
     mockEn = jest.fn().mockResolvedValue(makeVector(EN_DIM));
     jest.mock('@modules/ai/services/embedding/embedding', () => ({ generateEmbedding: mockEn }));
-    jest.mock('@modules/ai/services/embedding/vi-embedding', () => ({ isAvailable: () => false, generateEmbedding: jest.fn() }));
+    jest.mock('@modules/ai/services/embedding/vi-embedding', () => ({
+      isAvailable: () => false,
+      generateEmbedding: jest.fn(),
+    }));
     jest.mock('fs', () => ({
       existsSync: jest.fn().mockReturnValue(false),
       mkdirSync: jest.fn(),
@@ -945,7 +962,10 @@ describe('HybridVectorStore.cosineSimilarity — line 148: !isFinite(similarity)
       error: jest.fn(),
     }));
     jest.mock('@modules/ai/services/embedding/embedding', () => ({ generateEmbedding: jest.fn() }));
-    jest.mock('@modules/ai/services/embedding/vi-embedding', () => ({ isAvailable: () => false, generateEmbedding: jest.fn() }));
+    jest.mock('@modules/ai/services/embedding/vi-embedding', () => ({
+      isAvailable: () => false,
+      generateEmbedding: jest.fn(),
+    }));
     jest.mock('fs', () => ({
       existsSync: jest.fn().mockReturnValue(false),
       mkdirSync: jest.fn(),
@@ -1109,7 +1129,10 @@ describe('enrichProductData — line 205: inStock logic', () => {
       error: jest.fn(),
     }));
     jest.mock('@modules/ai/services/embedding/embedding', () => ({ generateEmbedding: jest.fn() }));
-    jest.mock('@modules/ai/services/embedding/vi-embedding', () => ({ isAvailable: () => false, generateEmbedding: jest.fn() }));
+    jest.mock('@modules/ai/services/embedding/vi-embedding', () => ({
+      isAvailable: () => false,
+      generateEmbedding: jest.fn(),
+    }));
     jest.mock('fs', () => ({
       existsSync: jest.fn().mockReturnValue(false),
       mkdirSync: jest.fn(),
@@ -1191,7 +1214,10 @@ describe('buildEmbeddingText — TRUE branches (categories name, description)', 
 
     mockEn = jest.fn().mockResolvedValue(Array(1536).fill(1 / Math.sqrt(1536)));
     jest.mock('@modules/ai/services/embedding/embedding', () => ({ generateEmbedding: mockEn }));
-    jest.mock('@modules/ai/services/embedding/vi-embedding', () => ({ isAvailable: () => false, generateEmbedding: jest.fn() }));
+    jest.mock('@modules/ai/services/embedding/vi-embedding', () => ({
+      isAvailable: () => false,
+      generateEmbedding: jest.fn(),
+    }));
     jest.mock('fs', () => ({
       existsSync: jest.fn().mockReturnValue(false),
       mkdirSync: jest.fn(),
@@ -1256,7 +1282,10 @@ describe('cosineSimilarity — line 148: isFinite(similarity) false', () => {
       error: jest.fn(),
     }));
     jest.mock('@modules/ai/services/embedding/embedding', () => ({ generateEmbedding: jest.fn() }));
-    jest.mock('@modules/ai/services/embedding/vi-embedding', () => ({ isAvailable: () => false, generateEmbedding: jest.fn() }));
+    jest.mock('@modules/ai/services/embedding/vi-embedding', () => ({
+      isAvailable: () => false,
+      generateEmbedding: jest.fn(),
+    }));
     jest.mock('fs', () => ({
       existsSync: jest.fn().mockReturnValue(false),
       mkdirSync: jest.fn(),
@@ -1310,7 +1339,10 @@ describe('enrichProductData — line 205: v.stockQuantity || 0 in reduce', () =>
       error: jest.fn(),
     }));
     jest.mock('@modules/ai/services/embedding/embedding', () => ({ generateEmbedding: jest.fn() }));
-    jest.mock('@modules/ai/services/embedding/vi-embedding', () => ({ isAvailable: () => false, generateEmbedding: jest.fn() }));
+    jest.mock('@modules/ai/services/embedding/vi-embedding', () => ({
+      isAvailable: () => false,
+      generateEmbedding: jest.fn(),
+    }));
     jest.mock('fs', () => ({
       existsSync: jest.fn().mockReturnValue(false),
       mkdirSync: jest.fn(),
@@ -1349,7 +1381,10 @@ describe('enrichProductData — line 205: v.stockQuantity || 0 in reduce', () =>
 // ═══════════════════════════════════════════════════════════════════════════════
 
 jest.mock('@utils/logger', () => ({
-  info: jest.fn(), debug: jest.fn(), warn: jest.fn(), error: jest.fn(),
+  info: jest.fn(),
+  debug: jest.fn(),
+  warn: jest.fn(),
+  error: jest.fn(),
 }));
 
 jest.mock('@modules/ai/services/embedding/embedding', () => ({ generateEmbedding: mockEnEmbed }));
@@ -1362,7 +1397,10 @@ jest.mock('@modules/ai/services/embedding/vi-embedding', () => ({
 
 jest.mock('@modules/ai/services/chatbot/language/language-detector', () => ({
   detectLanguage: jest.fn((text) => {
-    if (/[àáâãèéêìíòóôõùúýăđơưÀÁÂÃÈÉÊÌÍÒÓÔÕÙÚÝĂĐƠƯẠ-ỹ]/.test(text) || /điện thoại|laptop|mua/.test(text))
+    if (
+      /[àáâãèéêìíòóôõùúýăđơưÀÁÂÃÈÉÊÌÍÒÓÔÕÙÚÝĂĐƠƯẠ-ỹ]/.test(text) ||
+      /điện thoại|laptop|mua/.test(text)
+    )
       return 'vi';
     return 'en';
   }),
@@ -1415,9 +1453,7 @@ describe('vectorStore._vectorSearch — line 228: VI query nhưng VI model khôn
     // useViModel = 'vi' && false && ... = false → line 227 condition true → line 228 warn
     await vectorStoreService.hybridSearch('điện thoại samsung', 5);
 
-    expect(localLogger.warn).toHaveBeenCalledWith(
-      expect.stringContaining('[BILINGUAL] VI query'),
-    );
+    expect(localLogger.warn).toHaveBeenCalledWith(expect.stringContaining('[BILINGUAL] VI query'));
 
     // Cleanup
     vectorStoreService.items = [];
@@ -1484,11 +1520,126 @@ describe('vectorStore.hybridSearch — line 302: injected keyword-only results',
     // Keyword search sẽ tìm thấy item (vì keywords match)
     // Vector search sẽ miss item (vì similarity < minScore)
     // → injected.length > 0 → line 302 logger.debug called
-    expect(localLogger.debug).toHaveBeenCalledWith(
-      expect.stringContaining('[HYBRID] Injected'),
-    );
+    expect(localLogger.debug).toHaveBeenCalledWith(expect.stringContaining('[HYBRID] Injected'));
 
     // Cleanup
     vectorStoreService.items = [];
+  });
+});
+
+// ─── _keywordSearch — empty query (lines 185-191) ────────────────────────────
+
+describe('vectorStore._keywordSearch — empty query → return []', () => {
+  test('trả về [] khi query rỗng (queryTokens.length === 0)', () => {
+    const vs = require('./vector-store');
+    vs.items = [{ metadata: { id: 1, name: 'iPhone 15' }, keywords: ['iphone'] }];
+    const result = vs._keywordSearch('');
+    expect(result).toEqual([]);
+    vs.items = [];
+  });
+
+  test('trả về [] khi query chỉ có ký tự đặc biệt', () => {
+    const vs = require('./vector-store');
+    vs.items = [{ metadata: { id: 1, name: 'iPhone 15' }, keywords: ['iphone'] }];
+    const result = vs._keywordSearch('!!!???');
+    expect(result).toEqual([]);
+    vs.items = [];
+  });
+});
+
+describe('vectorStore._keywordSearch — item without metadata.name (line 191)', () => {
+  test('xử lý item không có metadata.name → || "" fallback', () => {
+    const vs = require('./vector-store');
+    vs.items = [{ metadata: { id: 1 }, text: 'iPhone 15 laptop', keywords: ['iphone'] }];
+    const result = vs._keywordSearch('iphone');
+    expect(Array.isArray(result)).toBe(true);
+    vs.items = [];
+  });
+});
+
+// ─── _keywordSearch sort callback — requires 2+ results ──────────────────────
+
+describe('vectorStore._keywordSearch — sort callback với 2+ items', () => {
+  test('sort callback gọi khi có 2 results', () => {
+    const vs = require('./vector-store');
+    vs.items = [
+      {
+        metadata: { id: 1, name: 'iPhone 15' },
+        text: 'iPhone 15 Pro Max',
+        keywords: ['iphone', 'iphone 15'],
+      },
+      {
+        metadata: { id: 2, name: 'Samsung Galaxy' },
+        text: 'Samsung Galaxy S24',
+        keywords: ['samsung', 'galaxy'],
+      },
+    ];
+    const result = vs._keywordSearch('iphone samsung', 10);
+    // Nếu cả 2 items đều match, sort callback được gọi
+    expect(Array.isArray(result)).toBe(true);
+    vs.items = [];
+  });
+});
+
+// ─── hybridSearch reduce/forEach callbacks ────────────────────────────────────
+
+describe('vectorStore.hybridSearch — reduce/forEach callbacks với items', () => {
+  test('reduce và forEach callbacks gọi khi có vector+keyword results', async () => {
+    mockViIsAvailable = false;
+    const vs = require('./vector-store');
+
+    // 2 items để trigger sort callback
+    vs.items = [
+      {
+        metadata: { id: 10, name: 'iPhone 15' },
+        vectorEn: [1, 0, 0, 0],
+        keywords: ['iphone', 'iphone 15'],
+        keywordScore: 0,
+      },
+      {
+        metadata: { id: 11, name: 'iPhone 14' },
+        vectorEn: [0.9, 0.1, 0, 0],
+        keywords: ['iphone', 'iphone 14'],
+        keywordScore: 0,
+      },
+    ];
+    vs.loadPromise = Promise.resolve();
+
+    const mockVector = new Array(1536).fill(0.1);
+    mockVector[0] = 1;
+    mockEnEmbed.mockResolvedValue(mockVector);
+
+    const result = await vs.hybridSearch('iphone', 5, 0);
+
+    // reduce maxKw callback + forEach boost callback + sort callbacks
+    expect(Array.isArray(result)).toBe(true);
+
+    vs.items = [];
+  });
+});
+
+// ─── cosineSimilarity — magnitude 0 và NaN guards ────────────────────────────
+
+describe('vectorStore.cosineSimilarity — edge cases', () => {
+  test('trả về 0 khi vectors zero (magnitude = 0)', () => {
+    const vs = require('./vector-store');
+    expect(vs.cosineSimilarity([0, 0, 0], [0, 0, 0])).toBe(0);
+  });
+
+  test('trả về 0 khi vector chứa NaN (magnitude = NaN)', () => {
+    const vs = require('./vector-store');
+    expect(vs.cosineSimilarity([NaN, 1, 0], [1, 1, 0])).toBe(0);
+  });
+
+  test('trả về 0 khi vectors có độ dài khác nhau', () => {
+    const vs = require('./vector-store');
+    expect(vs.cosineSimilarity([1, 0], [1, 0, 0])).toBe(0);
+  });
+
+  test('trả về 1.0 khi 2 vectors giống hệt nhau', () => {
+    const vs = require('./vector-store');
+    const v = [0.6, 0.8];
+    const result = vs.cosineSimilarity(v, v);
+    expect(result).toBeCloseTo(1.0, 5);
   });
 });

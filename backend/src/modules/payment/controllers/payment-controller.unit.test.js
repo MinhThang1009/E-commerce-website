@@ -117,6 +117,23 @@ describe('PaymentController.createRefund', () => {
     );
   });
 
+  it('chuyển ipAddr từ socket.remoteAddress khi không có x-forwarded-for và không có connection.remoteAddress', async () => {
+    const { controller, paymentService } = buildController();
+    paymentService.createRefund.mockResolvedValue({});
+
+    const req = buildReq({
+      body: { orderId: 1 },
+      headers: {},
+      connection: {},
+      socket: { remoteAddress: '192.168.1.1' },
+    });
+    await controller.createRefund(req, buildRes(), jest.fn());
+
+    expect(paymentService.createRefund).toHaveBeenCalledWith(
+      expect.objectContaining({ ipAddr: '192.168.1.1' }),
+    );
+  });
+
   it('gọi next(err) khi service throw', async () => {
     const { controller, paymentService } = buildController();
     const err = new Error('Service error');
@@ -274,6 +291,24 @@ describe('PaymentController.createVNPayUrl', () => {
 
     expect(paymentService.createVNPayUrl).toHaveBeenCalledWith(
       expect.objectContaining({ ipAddr: '5.6.7.8', userId: 42 }),
+    );
+  });
+
+  it('chuyển ipAddr từ socket.remoteAddress khi không có x-forwarded-for và không có connection.remoteAddress', async () => {
+    const { controller, paymentService } = buildController();
+    paymentService.createVNPayUrl.mockResolvedValue({});
+
+    const req = buildReq({
+      body: { orderId: 5 },
+      user: { id: 1 },
+      headers: {},
+      connection: {},
+      socket: { remoteAddress: '10.10.10.10' },
+    });
+    await controller.createVNPayUrl(req, buildRes(), jest.fn());
+
+    expect(paymentService.createVNPayUrl).toHaveBeenCalledWith(
+      expect.objectContaining({ ipAddr: '10.10.10.10' }),
     );
   });
 

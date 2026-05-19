@@ -11,8 +11,14 @@ function makeRes() {
   const res = {
     _status: 200, // express default
     _body: null,
-    status(code) { this._status = code; return this; },
-    json(body) { this._body = body; return this; },
+    status(code) {
+      this._status = code;
+      return this;
+    },
+    json(body) {
+      this._body = body;
+      return this;
+    },
   };
   return res;
 }
@@ -122,7 +128,9 @@ describe('ContentController — Banner', () => {
       const newBanner = { id: 10, title: 'Banner Mới', position: 'home_top' };
       contentService.createBanner.mockResolvedValue(newBanner);
 
-      const req = makeReq({ body: { title: 'Banner Mới', position: 'home_top', imageUrl: 'new.jpg' } });
+      const req = makeReq({
+        body: { title: 'Banner Mới', position: 'home_top', imageUrl: 'new.jpg' },
+      });
       const res = makeRes();
       const next = jest.fn();
 
@@ -132,6 +140,13 @@ describe('ContentController — Banner', () => {
       expect(res._status).toBe(201);
       expect(res._body).toEqual({ status: 'success', data: newBanner });
       expect(next).not.toHaveBeenCalled();
+    });
+
+    it('gọi next(err) khi service throw lỗi', async () => {
+      contentService.createBanner.mockRejectedValue(new Error('lỗi tạo'));
+      const next = jest.fn();
+      await controller.createBanner(makeReq({ body: {} }), makeRes(), next);
+      expect(next).toHaveBeenCalled();
     });
   });
 
@@ -145,7 +160,10 @@ describe('ContentController — Banner', () => {
 
       await controller.updateBanner(req, res, jest.fn());
 
-      expect(contentService.updateBanner).toHaveBeenCalledWith({ id: '5', patch: { title: 'Updated Banner' } });
+      expect(contentService.updateBanner).toHaveBeenCalledWith({
+        id: '5',
+        patch: { title: 'Updated Banner' },
+      });
       expect(res._status).toBe(200);
       expect(res._body).toEqual({ status: 'success', data: updatedBanner });
     });
@@ -161,6 +179,13 @@ describe('ContentController — Banner', () => {
   });
 
   describe('deleteBanner', () => {
+    it('gọi next(err) khi service throw lỗi', async () => {
+      contentService.deleteBanner.mockRejectedValue(new Error('lỗi xóa'));
+      const next = jest.fn();
+      await controller.deleteBanner(makeReq({ params: { id: '1' } }), makeRes(), next);
+      expect(next).toHaveBeenCalled();
+    });
+
     it('trả 204 với { status, data: null }', async () => {
       contentService.deleteBanner.mockResolvedValue();
 
@@ -280,6 +305,14 @@ describe('ContentController — News', () => {
       expect(res._status).toBe(200);
       expect(res._body.news).toEqual([]);
     });
+
+    it('trả 500 khi service throw lỗi', async () => {
+      contentService.getRelatedNews.mockRejectedValue(new Error('DB lỗi'));
+      const res = makeRes();
+      await controller.getRelatedNews(makeReq({ params: { slug: 'test' } }), res);
+      expect(res._status).toBe(500);
+      expect(res._body.status).toBe('error');
+    });
   });
 
   describe('getNewsById', () => {
@@ -373,7 +406,10 @@ describe('ContentController — News', () => {
 
       await controller.updateNews(req, res);
 
-      expect(contentService.updateNews).toHaveBeenCalledWith({ id: '7', patch: { title: 'Updated Title' } });
+      expect(contentService.updateNews).toHaveBeenCalledWith({
+        id: '7',
+        patch: { title: 'Updated Title' },
+      });
       expect(res._body).toEqual({ status: 'success', news: updatedNews });
     });
 
@@ -449,7 +485,10 @@ describe('ContentController — News', () => {
 describe('ContentController — Campaign', () => {
   describe('getAllCampaigns', () => {
     it('trả { status, results, data } với length đúng', async () => {
-      const campaignList = [{ id: 1, name: 'Campaign A' }, { id: 2, name: 'Campaign B' }];
+      const campaignList = [
+        { id: 1, name: 'Campaign A' },
+        { id: 2, name: 'Campaign B' },
+      ];
       contentService.getAllCampaigns.mockResolvedValue(campaignList);
 
       const res = makeRes();
@@ -485,6 +524,13 @@ describe('ContentController — Campaign', () => {
       expect(contentService.createCampaign).toHaveBeenCalledWith({ payload: req.body });
       expect(res._status).toBe(201);
       expect(res._body).toEqual({ status: 'success', data: newCampaign });
+    });
+
+    it('gọi next(err) khi service throw lỗi', async () => {
+      contentService.createCampaign.mockRejectedValue(new Error('lỗi'));
+      const next = jest.fn();
+      await controller.createCampaign(makeReq({ body: {} }), makeRes(), next);
+      expect(next).toHaveBeenCalled();
     });
   });
 
@@ -530,6 +576,13 @@ describe('ContentController — Campaign', () => {
       expect(res._body).toEqual({ status: 'success', data: null });
       expect(next).not.toHaveBeenCalled();
     });
+
+    it('gọi next(err) khi service throw lỗi', async () => {
+      contentService.deleteCampaign.mockRejectedValue(new Error('lỗi xóa'));
+      const next = jest.fn();
+      await controller.deleteCampaign(makeReq({ params: { id: '1' } }), makeRes(), next);
+      expect(next).toHaveBeenCalled();
+    });
   });
 });
 
@@ -551,9 +604,14 @@ describe('ContentController — Newsletter', () => {
 
       await controller.subscribeNewsletter(req, res, next);
 
-      expect(contentService.subscribeNewsletter).toHaveBeenCalledWith({ email: 'user@example.com' });
+      expect(contentService.subscribeNewsletter).toHaveBeenCalledWith({
+        email: 'user@example.com',
+      });
       expect(res._status).toBe(200);
-      expect(res._body).toEqual({ status: 'success', message: 'Bạn đã đăng ký nhận bản tin thành công' });
+      expect(res._body).toEqual({
+        status: 'success',
+        message: 'Bạn đã đăng ký nhận bản tin thành công',
+      });
       expect(next).not.toHaveBeenCalled();
     });
 

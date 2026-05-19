@@ -388,7 +388,8 @@ describe('OrdersService › confirmReceived', () => {
 
     expect(result.pointsEarned).toBe(0);
     expect(result.message).toBe('orders.alreadyConfirmed');
-    // khi alreadyProcessed, publish vẫn được gọi (theo code)
+    // alreadyProcessed → return sớm trước eventBus.publish
+    expect(eventBus.publish).not.toHaveBeenCalled();
   });
 
   it('đơn đã shipped → tích điểm mới và publish OrderDeliveredEvent', async () => {
@@ -529,6 +530,34 @@ describe('OrdersService › estimateShipping', () => {
     // 0 < threshold → có phí ship
     expect(result.shippingCost).toBe(CONSTANTS.SHIPPING_BASE_RATE);
   });
+
+  it('weight > 2kg → cộng thêm phụ phí theo kg', () => {
+    // 3kg: cost = baseRate + ceil(3-2) * weightRate = 30000 + 1*5000 = 35000
+    const result = service.estimateShipping({ subtotal: 100000, weight: 3 });
+    expect(result.shippingCost).toBe(CONSTANTS.SHIPPING_BASE_RATE + CONSTANTS.SHIPPING_WEIGHT_RATE);
+  });
+});
+
+// ─── _generateOrderNumber ────────────────────────────────────────────────────
+
+describe('OrdersService › _generateOrderNumber', () => {
+  it('orderNumber có prefix ORD- và format YYMM-timestamp-RAND', () => {
+    const { service } = buildService();
+
+    const orderNumber = service._generateOrderNumber();
+
+    expect(orderNumber).toMatch(/^ORD-\d{4}-\d+-[0-9A-F]{8}$/);
+  });
+
+  it('hai lần gọi _generateOrderNumber tạo ra số khác nhau', () => {
+    const { service } = buildService();
+
+    const num1 = service._generateOrderNumber();
+    const num2 = service._generateOrderNumber();
+
+    expect(num1).toMatch(/^ORD-/);
+    expect(num2).toMatch(/^ORD-/);
+  });
 });
 
 // ─── _clearUserCartInTransaction — error handling ────────────────────────────
@@ -553,7 +582,10 @@ describe('OrdersService › _clearUserCartInTransaction', () => {
 
     expect(cart.status).toBe('converted');
     expect(repo.saveCart).toHaveBeenCalledWith(cart, { transaction: 'tx' });
-    expect(repo.clearCartItems).toHaveBeenCalledWith(5);
+    expect(repo.clearCartItems).toHaveBeenCalledWith(
+      5,
+      expect.objectContaining({ transaction: expect.anything() }),
+    );
   });
 
   it('không throw khi repo.findActiveCartsByUser ném lỗi — chỉ log error', async () => {

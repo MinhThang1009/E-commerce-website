@@ -130,197 +130,10 @@ describe('image.js — fileFilter callback (lines 22-37)', () => {
   });
 });
 
-// ════════════════════════════════════════════════════════════════════════════════
-// FILE 2: src/controllers/admin.js — các hàm helper deepParseJSON / deepParseJSONArray
-//         + một số error path qua các helper functions
-// ════════════════════════════════════════════════════════════════════════════════
+// deepParseJSON + deepParseJSONArray tests đã được gộp vào final.coverage.100.test.js
 
-describe('admin.js — deepParseJSON (lines 43-62)', () => {
-  // Lấy hàm thông qua isolate module (không export ra ngoài, phải test gián tiếp)
-  // Test trực tiếp logic bằng cách tái hiện function
-
-  function deepParseJSON(val) {
-    if (val === null || val === undefined) return {};
-    if (typeof val === 'object' && !Array.isArray(val)) return val;
-    if (typeof val !== 'string') return {};
-
-    let parsed = val;
-    let maxAttempts = 5;
-    while (typeof parsed === 'string' && maxAttempts-- > 0) {
-      try {
-        parsed = JSON.parse(parsed);
-      } catch (e) {
-        return {};
-      }
-    }
-
-    if (typeof parsed === 'object' && !Array.isArray(parsed) && parsed !== null) {
-      return parsed;
-    }
-    return {};
-  }
-
-  it('null → {}', () => {
-    expect(deepParseJSON(null)).toEqual({});
-  });
-
-  it('undefined → {}', () => {
-    expect(deepParseJSON(undefined)).toEqual({});
-  });
-
-  it('object đã là object rồi → trả về nguyên', () => {
-    const obj = { key: 'value' };
-    expect(deepParseJSON(obj)).toBe(obj);
-  });
-
-  it('number (không phải string/object) → {}', () => {
-    expect(deepParseJSON(42)).toEqual({});
-  });
-
-  it('JSON string hợp lệ → parse thành object', () => {
-    expect(deepParseJSON('{"key":"val"}')).toEqual({ key: 'val' });
-  });
-
-  it('double-stringified JSON → parse đúng (line 52-55)', () => {
-    const doubleStr = JSON.stringify(JSON.stringify({ a: 1 }));
-    expect(deepParseJSON(doubleStr)).toEqual({ a: 1 });
-  });
-
-  it('invalid JSON string → {} (catch branch, line 54)', () => {
-    expect(deepParseJSON('not-json{')).toEqual({});
-  });
-
-  it('JSON array string → {} (parsed là array không phải object, line 60-61)', () => {
-    expect(deepParseJSON('[1,2,3]')).toEqual({});
-  });
-});
-
-describe('admin.js — deepParseJSONArray (lines 67-84)', () => {
-  function deepParseJSONArray(val) {
-    if (val === null || val === undefined) return [];
-    if (Array.isArray(val)) return val;
-    if (typeof val !== 'string') return [];
-
-    let parsed = val;
-    let maxAttempts = 5;
-    while (typeof parsed === 'string' && maxAttempts-- > 0) {
-      try {
-        parsed = JSON.parse(parsed);
-      } catch (e) {
-        return [];
-      }
-    }
-
-    if (Array.isArray(parsed)) return parsed;
-    return [];
-  }
-
-  it('null → []', () => {
-    expect(deepParseJSONArray(null)).toEqual([]);
-  });
-
-  it('array đã là array → trả về nguyên (line 69)', () => {
-    const arr = [1, 2, 3];
-    expect(deepParseJSONArray(arr)).toBe(arr);
-  });
-
-  it('number (không phải string) → [] (line 70)', () => {
-    expect(deepParseJSONArray(42)).toEqual([]);
-  });
-
-  it('JSON array string → parse thành array (line 83)', () => {
-    expect(deepParseJSONArray('[1,2,3]')).toEqual([1, 2, 3]);
-  });
-
-  it('invalid JSON string → [] (catch branch, line 78)', () => {
-    expect(deepParseJSONArray('not-array')).toEqual([]);
-  });
-
-  it('JSON object string (không phải array) → [] (line 84)', () => {
-    expect(deepParseJSONArray('{"key":"val"}')).toEqual([]);
-  });
-});
-
-// ════════════════════════════════════════════════════════════════════════════════
-// FILE 3: src/services/ai/chatbotService.js — initializeChatbot branches (lines 49-56)
-// ════════════════════════════════════════════════════════════════════════════════
-
-describe('chatbotService.js — initializeChatbot branches (lines 49-56)', () => {
-  const logger = require('@utils/logger');
-
-  beforeEach(() => jest.clearAllMocks());
-
-  it('khi apiKey hợp lệ (không phải demo-key) → logger.info (line 50)', () => {
-    // Test logic của initializeChatbot branch trực tiếp — không cần require actual module
-    const loggerMock = require('@utils/logger');
-    const apiKey = 'real-api-key-12345';
-    const model = 'google/gemini-2.0-flash-001';
-
-    try {
-      if (apiKey && apiKey !== 'demo-key') {
-        loggerMock.info(`✅ OpenRouter AI khởi tạo thành công với model: ${model}`);
-      } else {
-        loggerMock.warn('⚠️  Không tìm thấy OpenRouter API key, sử dụng phản hồi dự phòng');
-      }
-    } catch (error) {
-      loggerMock.error('❌ Khởi tạo Chatbot thất bại:', error.message || error);
-    }
-
-    expect(loggerMock.info).toHaveBeenCalledWith(
-      expect.stringContaining('OpenRouter AI khởi tạo thành công'),
-    );
-  });
-
-  it('khi không có apiKey → logger.warn được gọi (line 52-53)', () => {
-    // Tái hiện logic initializeChatbot
-    const loggerMock = require('@utils/logger');
-    const apiKey = undefined;
-    const model = 'google/gemini-2.0-flash-001';
-
-    // Simulate the try block from initializeChatbot
-    try {
-      if (apiKey && apiKey !== 'demo-key') {
-        loggerMock.info(`✅ OpenRouter AI khởi tạo thành công với model: ${model}`);
-      } else {
-        loggerMock.warn('⚠️  Không tìm thấy OpenRouter API key, sử dụng phản hồi dự phòng');
-      }
-    } catch (error) {
-      loggerMock.error('❌ Khởi tạo Chatbot thất bại:', error.message || error);
-    }
-
-    expect(loggerMock.warn).toHaveBeenCalledWith(
-      expect.stringContaining('Không tìm thấy OpenRouter API key'),
-    );
-  });
-
-  it('khi apiKey là demo-key → warn path (line 52)', () => {
-    const loggerMock = require('@utils/logger');
-    const apiKey = 'demo-key';
-    try {
-      if (apiKey && apiKey !== 'demo-key') {
-        loggerMock.info('info');
-      } else {
-        loggerMock.warn('⚠️  Không tìm thấy OpenRouter API key, sử dụng phản hồi dự phòng');
-      }
-    } catch {}
-    expect(loggerMock.warn).toHaveBeenCalled();
-  });
-
-  it('khi try block throw → logger.error được gọi (line 54-55)', () => {
-    const loggerMock = require('@utils/logger');
-    const error = new Error('initialization failed');
-    // Simulate catch branch
-    try {
-      throw error;
-    } catch (e) {
-      loggerMock.error('❌ Khởi tạo Chatbot thất bại:', e.message || e);
-    }
-    expect(loggerMock.error).toHaveBeenCalledWith(
-      expect.stringContaining('Khởi tạo Chatbot thất bại'),
-      expect.stringContaining('initialization failed'),
-    );
-  });
-});
+// chatbotService initializeChatbot branches đã được cover trong
+// chatbot-cache-session.test.js và chatbot-service.test.js — không cần duplicate ở đây.
 
 // ════════════════════════════════════════════════════════════════════════════════
 // FILE 4: src/services/ai/vectorStore.js — save() error path (lines 58-66) + clear()
@@ -950,7 +763,10 @@ describe('adminAudit.js — auditMiddleware (AsyncLocalStorage based)', () => {
   beforeEach(() => {
     jest.resetModules();
     jest.mock('@utils/logger', () => ({
-      info: jest.fn(), error: jest.fn(), warn: jest.fn(), debug: jest.fn(),
+      info: jest.fn(),
+      error: jest.fn(),
+      warn: jest.fn(),
+      debug: jest.fn(),
     }));
     jest.mock('@models', () => ({
       AuditLog: { create: jest.fn().mockResolvedValue({}) },
@@ -979,7 +795,9 @@ describe('adminAudit.js — auditMiddleware (AsyncLocalStorage based)', () => {
     const { AuditLog } = require('@models');
     const adminUser = { id: 'admin-1', email: 'admin@test.com' };
     let resolveNext;
-    const nextPromise = new Promise((r) => { resolveNext = r; });
+    const nextPromise = new Promise((r) => {
+      resolveNext = r;
+    });
 
     const next = () => {
       AdminAuditService.logUserAction(adminUser, 'BAN', 'user-2', {});
@@ -997,7 +815,9 @@ describe('adminAudit.js — auditMiddleware (AsyncLocalStorage based)', () => {
     const { AuditLog } = require('@models');
     const adminUser = { id: 'admin-1', email: 'admin@test.com' };
     let resolveNext;
-    const nextPromise = new Promise((r) => { resolveNext = r; });
+    const nextPromise = new Promise((r) => {
+      resolveNext = r;
+    });
 
     const next = () => {
       AdminAuditService.logProductAction(adminUser, 'CREATE', 1, 'iPhone 15');
@@ -1213,12 +1033,7 @@ describe('catalogService.js — uncovered branches', () => {
     expect(result.price).toBe(100000);
   });
 
-  it('getBrandBySlug: brand không tồn tại → throw AppError 404 (line 176)', async () => {
-    const service = makeService({ findBrandBySlug: jest.fn().mockResolvedValue(null) });
-    await expect(service.getBrandBySlug({ slug: 'nonexistent' })).rejects.toMatchObject({
-      statusCode: 404,
-    });
-  });
+  // getBrandBySlug 404 đã được test trong final.coverage.100.test.js với assertions đầy đủ hơn
 
   it('getAllProducts: category là slug non-numeric → resolve qua findCategoryBySlug, không tìm thấy → sentinel (line 393-397)', async () => {
     const service = makeService({
@@ -1426,22 +1241,7 @@ describe('catalogService.js — uncovered branches', () => {
     expect(result).toBeDefined();
   });
 
-  it('createProduct: categoryIds không tồn tại đủ → throw AppError 400 (line 822)', async () => {
-    const service = makeService({
-      createProduct: jest.fn().mockResolvedValue({ id: 'p-new', setCategories: jest.fn() }),
-      findCategoriesByIds: jest.fn().mockResolvedValue([{ id: 1 }]), // trả 1 nhưng request 2
-    });
-
-    await expect(
-      service.createProduct({
-        payload: {
-          name: 'Test product',
-          price: 100000,
-          categoryIds: [1, 2], // 2 IDs nhưng chỉ 1 tồn tại
-        },
-      }),
-    ).rejects.toMatchObject({ statusCode: 400, message: 'catalog.categoriesNotExist' });
-  });
+  // createProduct 400 đã được test trong final.coverage.100.test.js với setup đầy đủ hơn
 });
 
 // ════════════════════════════════════════════════════════════════════════════════

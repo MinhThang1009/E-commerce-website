@@ -653,17 +653,17 @@ describe('updateUser — non-admin không được thay đổi role (trực ti�
 
 describe('DELETE /api/admin/users/:id — tự xóa chính mình', () => {
   it('trả về 403 khi admin cố xóa tài khoản của chính mình', async () => {
-    // req.user.id = 1 (mock), target id = '1' (string) — xem logic deleteUser
-    // deleteUser check: if (req.user.id === id) → id là string từ params
-    // Thực ra logic check `req.user.id === id` — req.user.id là số, id là string
-    // → điều kiện sẽ false (1 !== '1') — vì vậy kiểm tra thực tế
+    // req.user.id = 1 (set bởi adminAuthenticate mock)
+    // DELETE /api/admin/users/1 → id = '1' (string từ params)
+    // Source đã fix: String(req.user.id) === String(id) → '1' === '1' → true → 403
     const res = await request.delete('/api/admin/users/1');
-    // Controller: req.user.id (number 1) === id (string '1') → false → không vào 403
-    // Test này verify behavior thực tế
-    // Nếu user không tồn tại → 404
+    expect(res.status).toBe(403);
+  });
+
+  it('trả về 404 khi xóa user khác không tồn tại', async () => {
     User.findByPk.mockResolvedValueOnce(null);
-    const res2 = await request.delete('/api/admin/users/999');
-    expect(res2.status).toBe(404);
+    const res = await request.delete('/api/admin/users/999');
+    expect(res.status).toBe(404);
   });
 });
 

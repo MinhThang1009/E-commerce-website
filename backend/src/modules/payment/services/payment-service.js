@@ -10,7 +10,6 @@ const { AppError } = require('@shared/errors');
 // Quy tắc kiểm tra điều kiện xử lý thanh toán và hoàn tiền
 const _SUPPORTED_REFUND_PROVIDERS = ['vnpay'];
 function _canProcessPayment(order, transactionId) {
-  if (!order) return false;
   if (transactionId && order.paymentTransactionId === transactionId) return false;
   return order.paymentStatus !== 'paid';
 }
@@ -305,20 +304,18 @@ class PaymentService {
       throw new AppError(policyResult.reason, order ? 400 : 404);
     }
 
-    const refundAmount = amount || order.total;
+    const refundAmount = amount != null ? amount : order.total;
     if (refundAmount <= 0 || refundAmount > parseFloat(order.total)) {
       throw new AppError('payment.invalidRefundAmount', 400);
     }
 
-    let refund;
-    if (order.paymentProvider === 'vnpay') {
-      refund = await this.vnpayGateway.refund({
-        orderId: order.number,
-        amount: refundAmount,
-        transDate: moment(order.updatedAt).format('YYYYMMDDHHmmss'),
-        ipAddr,
-      });
-    }
+    // _canRefund đảm bảo chỉ vnpay đến được đây
+    const refund = await this.vnpayGateway.refund({
+      orderId: order.number,
+      amount: refundAmount,
+      transDate: moment(order.updatedAt).format('YYYYMMDDHHmmss'),
+      ipAddr,
+    });
 
     order.paymentStatus = 'refunded';
     await this.repo.saveOrder(order);

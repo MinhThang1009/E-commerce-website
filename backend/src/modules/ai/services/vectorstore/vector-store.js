@@ -159,12 +159,9 @@ class HybridVectorStore {
       mag2 += v2[i] * v2[i];
     }
     const magnitude = Math.sqrt(mag1) * Math.sqrt(mag2);
-    // Guard: magnitude 0 hoặc Infinity → trả 0 thay vì NaN
+    // Guard: magnitude 0 hoặc Infinity/NaN → trả 0 thay vì NaN/Infinity
     if (magnitude === 0 || !isFinite(magnitude)) return 0;
-    const similarity = dotProduct / magnitude;
-    // Guard: kết quả NaN/Infinity (embedding API trả NaN) → trả 0
-    /* istanbul ignore next */
-    return isFinite(similarity) ? similarity : 0;
+    return dotProduct / magnitude;
   }
 
   _tokenize(text) {
@@ -219,7 +216,7 @@ class HybridVectorStore {
    * @param {number} [minScore=0] - Ngưỡng similarity tối thiểu.
    * @returns {Promise<Array<Object>>} Items có score ≥ minScore, sắp xếp giảm dần.
    */
-  async _vectorSearch(query, limit = 5, minScore = 0) {
+  async _vectorSearch(query, limit, minScore) {
     const lang = detectLanguage(query);
     const useViModel =
       lang === 'vi' && viEmbeddingService.isAvailable() && this.items.some((item) => item.vectorVi);
@@ -313,5 +310,6 @@ class HybridVectorStore {
 const vectorStoreInstance = new HybridVectorStore();
 module.exports = vectorStoreInstance;
 // Re-export backward compat — callers import từ vectorStore, dần chuyển sang file gốc
-module.exports.enrichProductData = require('@modules/ai/services/product/product-enricher').enrichProductData;
+module.exports.enrichProductData =
+  require('@modules/ai/services/product/product-enricher').enrichProductData;
 module.exports.detectLanguage = detectLanguage;

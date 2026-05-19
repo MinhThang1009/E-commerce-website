@@ -44,8 +44,14 @@ jest.mock('@models', () => ({
     findOne: jest.fn().mockResolvedValue(null),
     count: jest.fn().mockResolvedValue(0),
   },
-  ProductImage: { bulkCreate: (...args) => mockProductImageBulkCreate(...args), destroy: jest.fn() },
-  ProductSpecification: { bulkCreate: (...args) => mockProductSpecBulkCreate(...args), findAll: jest.fn().mockResolvedValue([]) },
+  ProductImage: {
+    bulkCreate: (...args) => mockProductImageBulkCreate(...args),
+    destroy: jest.fn(),
+  },
+  ProductSpecification: {
+    bulkCreate: (...args) => mockProductSpecBulkCreate(...args),
+    findAll: jest.fn().mockResolvedValue([]),
+  },
   ProductAttribute: {
     create: (...args) => mockProductAttributeCreate(...args),
     bulkCreate: (...args) => mockProductAttributeBulkCreate(...args),
@@ -70,7 +76,12 @@ jest.mock('@models', () => ({
     destroy: (...args) => mockProductCategoryDestroy(...args),
   },
   WarrantyPackage: { findAll: jest.fn().mockResolvedValue([]) },
-  User: { count: jest.fn().mockResolvedValue(0), findAndCountAll: jest.fn().mockResolvedValue({ count: 0, rows: [] }), findByPk: jest.fn().mockResolvedValue(null), findAll: jest.fn().mockResolvedValue([]) },
+  User: {
+    count: jest.fn().mockResolvedValue(0),
+    findAndCountAll: jest.fn().mockResolvedValue({ count: 0, rows: [] }),
+    findByPk: jest.fn().mockResolvedValue(null),
+    findAll: jest.fn().mockResolvedValue([]),
+  },
   Order: {
     count: jest.fn().mockResolvedValue(0),
     sum: jest.fn().mockResolvedValue(0),
@@ -80,8 +91,15 @@ jest.mock('@models', () => ({
     update: jest.fn().mockResolvedValue([1]),
   },
   OrderItem: { findAll: (...args) => mockOrderItemFindAll(...args) },
-  Review: { findAndCountAll: jest.fn().mockResolvedValue({ count: 0, rows: [] }), findByPk: jest.fn().mockResolvedValue(null) },
-  Category: { findByPk: jest.fn().mockResolvedValue(null), create: jest.fn().mockResolvedValue({ id: 1 }), findAll: jest.fn().mockResolvedValue([]) },
+  Review: {
+    findAndCountAll: jest.fn().mockResolvedValue({ count: 0, rows: [] }),
+    findByPk: jest.fn().mockResolvedValue(null),
+  },
+  Category: {
+    findByPk: jest.fn().mockResolvedValue(null),
+    create: jest.fn().mockResolvedValue({ id: 1 }),
+    findAll: jest.fn().mockResolvedValue([]),
+  },
   Brand: {},
   CartItem: { destroy: (...args) => mockCartItemDestroy(...args) },
   Wishlist: { destroy: (...args) => mockWishlistDestroy(...args) },
@@ -106,8 +124,12 @@ jest.mock('@models', () => ({
 jest.mock('sequelize', () => ({
   Op: {},
   Sequelize: class {
-    static fn(...args) { return { fn: args[0], args: args.slice(1) }; }
-    static col(c) { return { col: c }; }
+    static fn(...args) {
+      return { fn: args[0], args: args.slice(1) };
+    }
+    static col(c) {
+      return { col: c };
+    }
   },
 }));
 
@@ -280,7 +302,9 @@ describe('adminRepository — uncovered aggregate functions', () => {
   test('findTopSellingItems không có args → default limit=5, include=[] (lines 143-158 default branch)', async () => {
     mockOrderItemFindAll.mockResolvedValue([]);
     await repo.findTopSellingItems();
-    expect(mockOrderItemFindAll).toHaveBeenCalled();
+    expect(mockOrderItemFindAll).toHaveBeenCalledWith(
+      expect.objectContaining({ limit: 5, include: [] }),
+    );
   });
 
   test('aggregateOrderItems2 gọi OrderItem.findAll', async () => {
@@ -291,13 +315,25 @@ describe('adminRepository — uncovered aggregate functions', () => {
 
   test('aggregateOrderItems với include và where rõ ràng (line 156-158 explicit branch)', async () => {
     mockOrderItemFindAll.mockResolvedValue([]);
-    await repo.aggregateOrderItems({ attributes: ['productId'], include: [], where: { status: 'paid' }, group: ['productId'], raw: true });
+    await repo.aggregateOrderItems({
+      attributes: ['productId'],
+      include: [],
+      where: { status: 'paid' },
+      group: ['productId'],
+      raw: true,
+    });
     expect(mockOrderItemFindAll).toHaveBeenCalled();
   });
 
   test('aggregateOrderItems2 với include và where rõ ràng (branches)', async () => {
     mockOrderItemFindAll.mockResolvedValue([]);
-    await repo.aggregateOrderItems2({ attributes: ['productId'], include: [], where: { status: 'completed' }, group: ['productId'], raw: true });
+    await repo.aggregateOrderItems2({
+      attributes: ['productId'],
+      include: [],
+      where: { status: 'completed' },
+      group: ['productId'],
+      raw: true,
+    });
     expect(mockOrderItemFindAll).toHaveBeenCalled();
   });
 
@@ -396,7 +432,15 @@ describe('adminRepository — User queries', () => {
 // ═══════════════════════════════════════════════════════════════════════════════
 
 describe('adminRepository — Product queries', () => {
-  const { Product, ProductSpecification, ProductAttribute, ProductVariant, WarrantyPackage, ProductImage, ProductWarranty } = require('@models');
+  const {
+    Product,
+    ProductSpecification,
+    ProductAttribute,
+    ProductVariant,
+    WarrantyPackage,
+    ProductImage,
+    ProductWarranty,
+  } = require('@models');
 
   test('findProducts gọi Product.findAndCountAll', async () => {
     Product.findAndCountAll.mockResolvedValue({ count: 5, rows: [] });
@@ -492,7 +536,10 @@ describe('adminRepository — Product queries', () => {
   test('findProductVariantById với options rõ ràng (line 291 non-default branch)', async () => {
     ProductVariant.findOne.mockResolvedValue({ id: 1 });
     await repo.findProductVariantById(1, 5, { include: [] });
-    expect(ProductVariant.findOne).toHaveBeenCalledWith({ where: { id: 1, productId: 5 }, include: [] });
+    expect(ProductVariant.findOne).toHaveBeenCalledWith({
+      where: { id: 1, productId: 5 },
+      include: [],
+    });
   });
 
   test('sumProductVariantStock gọi ProductVariant.sum', async () => {
@@ -703,7 +750,12 @@ describe('adminRepository — Inventory, Analytics, Audit, Chatbot', () => {
 
   test('aggregateUsers với where rõ ràng (line 210 non-default branch)', async () => {
     User.findAll.mockResolvedValue([]);
-    await repo.aggregateUsers({ attributes: ['id'], where: { isActive: true }, group: ['id'], raw: true });
+    await repo.aggregateUsers({
+      attributes: ['id'],
+      where: { isActive: true },
+      group: ['id'],
+      raw: true,
+    });
     expect(User.findAll).toHaveBeenCalled();
   });
 
@@ -746,7 +798,12 @@ describe('adminRepository — Inventory, Analytics, Audit, Chatbot', () => {
 
   test('aggregateChatMessages với where rõ ràng (line 240 non-default branch)', async () => {
     mockChatMessageFindAll.mockResolvedValue([]);
-    await repo.aggregateChatMessages({ attributes: ['intent'], where: { role: 'user' }, group: ['intent'], raw: true });
+    await repo.aggregateChatMessages({
+      attributes: ['intent'],
+      where: { role: 'user' },
+      group: ['intent'],
+      raw: true,
+    });
     expect(mockChatMessageFindAll).toHaveBeenCalled();
   });
 });
@@ -756,28 +813,31 @@ describe('adminRepository — Inventory, Analytics, Audit, Chatbot', () => {
 // ═══════════════════════════════════════════════════════════════════════════════
 
 describe('adminRepository — bulkCreate FALSE branches còn thiếu', () => {
-  test('bulkCreateProductVariants không có options → FALSE branch', async () => {
+  test('bulkCreateProductVariants không có options → gọi với options={}', async () => {
     mockProductVariantBulkCreate.mockResolvedValue([]);
     await repo.bulkCreateProductVariants([{ sku: 'V1' }]);
-    expect(mockProductVariantBulkCreate).toHaveBeenCalledWith([{ sku: 'V1' }]);
+    expect(mockProductVariantBulkCreate).toHaveBeenCalledWith([{ sku: 'V1' }], {});
   });
 
-  test('bulkCreateProductWarranties không có options → FALSE branch', async () => {
+  test('bulkCreateProductWarranties không có options → gọi với options={}', async () => {
     mockProductWarrantyBulkCreate.mockResolvedValue([]);
     await repo.bulkCreateProductWarranties([{ packageId: 1 }]);
-    expect(mockProductWarrantyBulkCreate).toHaveBeenCalledWith([{ packageId: 1 }]);
+    expect(mockProductWarrantyBulkCreate).toHaveBeenCalledWith([{ packageId: 1 }], {});
   });
 
-  test('bulkCreateProductCategories không có options → FALSE branch', async () => {
+  test('bulkCreateProductCategories không có options → gọi với options={}', async () => {
     mockProductCategoryBulkCreate.mockResolvedValue([]);
     await repo.bulkCreateProductCategories([{ productId: 1, categoryId: 2 }]);
-    expect(mockProductCategoryBulkCreate).toHaveBeenCalledWith([{ productId: 1, categoryId: 2 }]);
+    expect(mockProductCategoryBulkCreate).toHaveBeenCalledWith(
+      [{ productId: 1, categoryId: 2 }],
+      {},
+    );
   });
 
-  test('bulkCreateProductAttributes không có options → FALSE branch', async () => {
+  test('bulkCreateProductAttributes không có options → gọi với options={}', async () => {
     mockProductAttributeBulkCreate.mockResolvedValue([]);
     await repo.bulkCreateProductAttributes([{ name: 'Color' }]);
-    expect(mockProductAttributeBulkCreate).toHaveBeenCalledWith([{ name: 'Color' }]);
+    expect(mockProductAttributeBulkCreate).toHaveBeenCalledWith([{ name: 'Color' }], {});
   });
 
   test('createProductVariant không có options → FALSE branch', async () => {
@@ -790,5 +850,93 @@ describe('adminRepository — bulkCreate FALSE branches còn thiếu', () => {
     mockProductWarrantyCreate.mockResolvedValue({ id: 1 });
     await repo.createProductWarranty({ packageId: 1 });
     expect(mockProductWarrantyCreate).toHaveBeenCalledWith({ packageId: 1 });
+  });
+});
+
+// ─── aggregateOrderItems/aggregateOrderItems2 destructuring defaults ───────────
+
+describe('adminRepository — destructuring default branches', () => {
+  test('aggregateOrderItems không có args → outer default {}', async () => {
+    mockOrderItemFindAll.mockResolvedValue([]);
+    await repo.aggregateOrderItems();
+    expect(mockOrderItemFindAll).toHaveBeenCalled();
+  });
+
+  test('aggregateOrderItems không có include → dùng default []', async () => {
+    mockOrderItemFindAll.mockResolvedValue([]);
+    // Không truyền include → default include = []
+    await repo.aggregateOrderItems({ attributes: ['id'], group: ['id'] });
+    expect(mockOrderItemFindAll).toHaveBeenCalled();
+  });
+
+  test('aggregateOrderItems2 không có args → outer default {}', async () => {
+    mockOrderItemFindAll.mockResolvedValue([]);
+    await repo.aggregateOrderItems2();
+    expect(mockOrderItemFindAll).toHaveBeenCalled();
+  });
+
+  test('aggregateOrderItems2 không có include → dùng default []', async () => {
+    mockOrderItemFindAll.mockResolvedValue([]);
+    await repo.aggregateOrderItems2({ attributes: ['id'], group: ['id'] });
+    expect(mockOrderItemFindAll).toHaveBeenCalled();
+  });
+});
+
+describe('adminRepository — countProducts default branch', () => {
+  test('countProducts không có where → default {}', async () => {
+    const mockProductCount = jest.fn().mockResolvedValue(10);
+    // Product.count is mocked via @models
+    // Lấy reference từ mock setup toàn cục
+    const models = require('@models');
+    models.Product.count = mockProductCount;
+    await repo.countProducts();
+    expect(mockProductCount).toHaveBeenCalledWith({ where: {} });
+  });
+});
+
+describe('adminRepository — aggregateChatMessages default branch', () => {
+  test('aggregateChatMessages không có where → dùng default {}', async () => {
+    mockChatMessageFindAll.mockResolvedValue([]);
+    // Không truyền where → where = {} default
+    await repo.aggregateChatMessages({ attributes: ['createdAt'], group: ['date'] });
+    expect(mockChatMessageFindAll).toHaveBeenCalled();
+  });
+
+  test('aggregateChatMessages không có args → outer default {}', async () => {
+    mockChatMessageFindAll.mockResolvedValue([]);
+    await repo.aggregateChatMessages();
+    expect(mockChatMessageFindAll).toHaveBeenCalled();
+  });
+});
+
+describe('adminRepository — remaining default parameter branches', () => {
+  test('rawQuery không có options → default {}', async () => {
+    mockSequelizeQuery.mockResolvedValue([[], {}]);
+    await repo.rawQuery('SELECT 1');
+    expect(mockSequelizeQuery).toHaveBeenCalled();
+  });
+
+  test('findProductOne không có options → default {}', async () => {
+    const mockProductFindOne = jest.fn().mockResolvedValue(null);
+    const models = require('@models');
+    models.Product.findOne = mockProductFindOne;
+    await repo.findProductOne({ id: 1 });
+    expect(mockProductFindOne).toHaveBeenCalled();
+  });
+
+  test('aggregateChatMessagesAdv không có options → default {}', async () => {
+    mockChatMessageFindAll.mockResolvedValue([]);
+    await repo.aggregateChatMessagesAdv();
+    expect(mockChatMessageFindAll).toHaveBeenCalled();
+  });
+});
+
+describe('adminRepository — findCategories default branch', () => {
+  test('findCategories không có options → dùng default {}', async () => {
+    const models = require('@models');
+    const mockCategoryFindAll = jest.fn().mockResolvedValue([]);
+    models.Category.findAll = mockCategoryFindAll;
+    await repo.findCategories();
+    expect(mockCategoryFindAll).toHaveBeenCalled();
   });
 });

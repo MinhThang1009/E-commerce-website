@@ -19,7 +19,8 @@ describe('UploadService', () => {
       readFileHeader: jest.fn(),
     };
     service = new UploadService({
-      uploadRepository, uploadDirs,
+      uploadRepository,
+      uploadDirs,
       eventBus: { publish: jest.fn() },
       logger: { info: jest.fn(), error: jest.fn(), warn: jest.fn() },
     });
@@ -40,11 +41,7 @@ describe('UploadService', () => {
     });
 
     test('WebP signature → true (RIFF + WEBP marker)', () => {
-      const buf = Buffer.concat([
-        Buffer.from('RIFF'),
-        Buffer.alloc(4),
-        Buffer.from('WEBP'),
-      ]);
+      const buf = Buffer.concat([Buffer.from('RIFF'), Buffer.alloc(4), Buffer.from('WEBP')]);
       expect(UploadService.isValidImageMagic(buf)).toBe(true);
     });
 
@@ -64,16 +61,21 @@ describe('UploadService', () => {
   describe('processSingleUpload', () => {
     test('thiếu file → 400', async () => {
       await expect(
-        service.processSingleUpload({ file: null, uploadType: 'products' })
+        service.processSingleUpload({ file: null, uploadType: 'products' }),
       ).rejects.toMatchObject({ statusCode: 400, message: 'upload.noFile' });
     });
 
     test('magic bytes invalid → xóa file + 400', async () => {
       uploadRepository.readFileHeader.mockResolvedValue(Buffer.alloc(12)); // not valid image
-      const file = { path: '/tmp/fake.jpg', filename: 'fake.jpg', originalname: 'a.jpg', size: 100 };
+      const file = {
+        path: '/tmp/fake.jpg',
+        filename: 'fake.jpg',
+        originalname: 'a.jpg',
+        size: 100,
+      };
 
       await expect(
-        service.processSingleUpload({ file, uploadType: 'products' })
+        service.processSingleUpload({ file, uploadType: 'products' }),
       ).rejects.toMatchObject({ statusCode: 400, message: 'upload.invalidFileType' });
 
       expect(uploadRepository.deleteFile).toHaveBeenCalledWith('/tmp/fake.jpg');
@@ -100,7 +102,7 @@ describe('UploadService', () => {
   describe('processMultipleUpload', () => {
     test('không file nào → 400', async () => {
       await expect(
-        service.processMultipleUpload({ files: [], uploadType: 'reviews' })
+        service.processMultipleUpload({ files: [], uploadType: 'reviews' }),
       ).rejects.toMatchObject({ statusCode: 400, message: 'upload.noFile' });
     });
 
@@ -108,7 +110,7 @@ describe('UploadService', () => {
       const jpegBuf = Buffer.concat([Buffer.from([0xff, 0xd8, 0xff]), Buffer.alloc(9)]);
       uploadRepository.readFileHeader
         .mockResolvedValueOnce(jpegBuf)
-        .mockResolvedValueOnce(Buffer.alloc(12))  // invalid
+        .mockResolvedValueOnce(Buffer.alloc(12)) // invalid
         .mockResolvedValueOnce(jpegBuf);
 
       const files = [
@@ -132,7 +134,7 @@ describe('UploadService', () => {
       ];
 
       await expect(
-        service.processMultipleUpload({ files, uploadType: 'reviews' })
+        service.processMultipleUpload({ files, uploadType: 'reviews' }),
       ).rejects.toMatchObject({ statusCode: 400 });
 
       expect(uploadRepository.deleteFile).toHaveBeenCalledTimes(2);
@@ -142,39 +144,45 @@ describe('UploadService', () => {
   describe('deleteFile (admin)', () => {
     test('không phải admin → 403', async () => {
       await expect(
-        service.deleteFile({ user: { role: 'customer' }, type: 'products', filenameRaw: 'a.jpg' })
+        service.deleteFile({ user: { role: 'customer' }, type: 'products', filenameRaw: 'a.jpg' }),
       ).rejects.toMatchObject({ statusCode: 403 });
     });
 
     test('không user → 403', async () => {
       await expect(
-        service.deleteFile({ user: null, type: 'products', filenameRaw: 'a.jpg' })
+        service.deleteFile({ user: null, type: 'products', filenameRaw: 'a.jpg' }),
       ).rejects.toMatchObject({ statusCode: 403 });
     });
 
     test('type không hợp lệ → 400', async () => {
       await expect(
-        service.deleteFile({ user: { role: 'admin' }, type: 'invalid-type', filenameRaw: 'a.jpg' })
+        service.deleteFile({ user: { role: 'admin' }, type: 'invalid-type', filenameRaw: 'a.jpg' }),
       ).rejects.toMatchObject({ statusCode: 400 });
     });
 
     test('path traversal qua filename → 400', async () => {
       await expect(
-        service.deleteFile({ user: { role: 'admin' }, type: 'products', filenameRaw: '../../../etc/passwd' })
+        service.deleteFile({
+          user: { role: 'admin' },
+          type: 'products',
+          filenameRaw: '../../../etc/passwd',
+        }),
       ).rejects.toMatchObject({ statusCode: 400, message: 'upload.invalidFileName' });
     });
 
     test('file không tồn tại → 404', async () => {
       uploadRepository.fileExists.mockResolvedValue(false);
       await expect(
-        service.deleteFile({ user: { role: 'admin' }, type: 'products', filenameRaw: 'a.jpg' })
+        service.deleteFile({ user: { role: 'admin' }, type: 'products', filenameRaw: 'a.jpg' }),
       ).rejects.toMatchObject({ statusCode: 404 });
     });
 
     test('hợp lệ → xóa file + return message', async () => {
       uploadRepository.fileExists.mockResolvedValue(true);
       const result = await service.deleteFile({
-        user: { role: 'admin' }, type: 'products', filenameRaw: 'a.jpg',
+        user: { role: 'admin' },
+        type: 'products',
+        filenameRaw: 'a.jpg',
       });
       expect(result.message).toBe('upload.deleteSuccess');
       expect(uploadRepository.deleteFile).toHaveBeenCalled();
@@ -185,5 +193,29 @@ describe('UploadService', () => {
     test('format /uploads/{type}/{filename}', () => {
       expect(service.buildFileUrl('products', 'abc.jpg')).toBe('/uploads/products/abc.jpg');
     });
+  });
+});
+
+// ─── processSingleUpload — deleteFile catch (.catch(() => {})) ────────────────
+
+describe('processSingleUpload — deleteFile catch arrow function', () => {
+  test('swallow lỗi khi deleteFile reject (covers .catch(() => {}))', async () => {
+    const svc = new UploadService({
+      uploadRepository: {
+        fileExists: jest.fn(),
+        deleteFile: jest.fn().mockRejectedValue(new Error('disk error')),
+        readFileHeader: jest.fn().mockResolvedValue(Buffer.alloc(12)),
+      },
+      uploadDirs: { products: '/test/products' },
+      eventBus: { publish: jest.fn() },
+      logger: { info: jest.fn(), error: jest.fn(), warn: jest.fn() },
+    });
+
+    await expect(
+      svc.processSingleUpload({
+        file: { path: '/tmp/e.jpg', filename: 'e.jpg', originalname: 'e.jpg', size: 1 },
+        uploadType: 'products',
+      }),
+    ).rejects.toMatchObject({ statusCode: 400 });
   });
 });

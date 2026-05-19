@@ -294,7 +294,10 @@ describe('OrdersService › createOrder', () => {
     });
 
     expect(activeCarts[0].status).toBe('converted');
-    expect(repo.clearCartItems).toHaveBeenCalledWith(5);
+    expect(repo.clearCartItems).toHaveBeenCalledWith(
+      5,
+      expect.objectContaining({ transaction: expect.anything() }),
+    );
   });
 
   // ── Happy path — variant flow ──────────────────────────────────────────────
@@ -717,7 +720,10 @@ describe('OrdersService › createOrder', () => {
     });
 
     expect(cart.status).toBe('converted');
-    expect(repo.clearCartItems).toHaveBeenCalledWith(7);
+    expect(repo.clearCartItems).toHaveBeenCalledWith(
+      7,
+      expect.objectContaining({ transaction: expect.anything() }),
+    );
   });
 
   test('paymentMethod=installment → xóa cart (cũng là manual method)', async () => {
@@ -1309,7 +1315,9 @@ describe('OrdersService › cancelOrder', () => {
   test('không có userEmail → không gửi email (không crash)', async () => {
     repo.findOrderForCancel.mockResolvedValue(mkOrder({ status: 'pending' }));
 
-    await expect(service.cancelOrder({ id: 1, userId: 1, userEmail: null })).resolves.toBeTruthy();
+    await expect(service.cancelOrder({ id: 1, userId: 1, userEmail: null })).resolves.toMatchObject(
+      { status: 'cancelled' },
+    );
 
     expect(emailGateway.sendOrderCancellationEmail).not.toHaveBeenCalled();
   });
@@ -1621,5 +1629,51 @@ describe('OrdersService › confirmReceived — subtotal quá nhỏ để tích 
     expect(result.pointsEarned).toBe(0);
     // saveOrder được gọi để lưu trạng thái -1
     expect(repo.saveOrder).toHaveBeenCalled();
+  });
+});
+
+// ─── confirmReceived — invalid status (line 743) ────────────────────────────
+
+describe('OrdersService › confirmReceived — invalid status', () => {
+  let service, repo;
+
+  beforeEach(() => {
+    ({ service, repo } = buildService());
+  });
+
+  test('status pending → throw 422', async () => {
+    const order = { id: 1, status: 'pending', pointsEarned: 0 };
+    repo.findOrderByIdAndUserId.mockResolvedValue(order);
+
+    await expect(service.confirmReceived({ id: 1, userId: 1 })).rejects.toMatchObject({
+      statusCode: 422,
+    });
+  });
+});
+
+// ─── confirmReceived — alreadyProcessed branch ────────────────────────────────
+
+describe('OrdersService › confirmReceived — alreadyProcessed=true', () => {
+  let service, repo;
+
+  beforeEach(() => {
+    ({ service, repo } = buildService());
+  });
+
+  test('delivered + pointsEarned!=0 → trả alreadyConfirmed message, pointsEarned=0', async () => {
+    const order = {
+      id: 1,
+      status: 'delivered',
+      pointsEarned: 50,
+      number: 'ORD-0001',
+      reload: jest.fn().mockResolvedValue(),
+    };
+    repo.findOrderByIdAndUserId.mockResolvedValue(order);
+    repo.saveOrder.mockResolvedValue();
+
+    const result = await service.confirmReceived({ id: 1, userId: 1 });
+
+    expect(result.message).toBe('orders.alreadyConfirmed');
+    expect(result.pointsEarned).toBe(0);
   });
 });

@@ -224,7 +224,6 @@ describe('parseCsvLine — escaped quote trong CSV (lines 88-89)', () => {
       '\n',
     );
 
-    const { models } = require('@models');
     const res = await supertest(app)
       .post('/api/admin/products/import')
       .set(adminHeaders)
@@ -567,5 +566,25 @@ describe('POST /api/admin/products/import — vectorStore lỗi không làm resp
       expect.stringContaining('[VECTOR]'),
       expect.stringContaining('Embedding API down'),
     );
+  });
+});
+
+// ── allFailed với row có nhiều lỗi (regression test cho fix allFailed condition) ──
+
+describe('POST /api/admin/products/import — allFailed khi row có nhiều lỗi validation', () => {
+  it('CSV 1 row thiếu cả name và base_price âm → vẫn là allFailed (multi-error per row)', async () => {
+    // Row này có 2 lỗi: thiếu name + base_price âm
+    // Bug cũ: validationErrors.length (2) !== rows.length (1) → allFailed=false → 200
+    // Fix mới: dùng Set(errors.map(e=>e.row)).size === 1 === rows.length → allFailed=true → 422
+    const csvContent = ['name,base_price,category_slug', ',-500,dien-thoai'].join('\n');
+
+    const res = await supertest(app)
+      .post('/api/admin/products/import')
+      .set(adminHeaders)
+      .attach('file', Buffer.from(csvContent), { filename: 'p.csv', contentType: 'text/csv' });
+
+    expect(res.status).toBe(422);
+    expect(res.body.message).toMatch(/Tất cả dòng đều không hợp lệ/);
+    expect(res.body.errors.length).toBeGreaterThanOrEqual(2); // ít nhất 2 lỗi
   });
 });

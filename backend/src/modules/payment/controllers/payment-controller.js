@@ -253,12 +253,10 @@ class PaymentController {
       }
 
       if (!orderId) {
-        return res
-          .status(200)
-          .json({
-            received: true,
-            message: 'Không tìm thấy order ID trong giao dịch, đã xử lý thành công',
-          });
+        return res.status(200).json({
+          received: true,
+          message: 'Không tìm thấy order ID trong giao dịch, đã xử lý thành công',
+        });
       }
 
       // Tìm order — thử exact match trước, sau đó thử các biến thể format có/không dấu gạch
@@ -283,12 +281,10 @@ class PaymentController {
       }
 
       if (!order) {
-        return res
-          .status(200)
-          .json({
-            received: true,
-            message: `Không tìm thấy đơn hàng với ID ${orderId}, đã xử lý thành công`,
-          });
+        return res.status(200).json({
+          received: true,
+          message: `Không tìm thấy đơn hàng với ID ${orderId}, đã xử lý thành công`,
+        });
       }
 
       // Kiểm tra số tiền — cho phép sai số 0.01 do làm tròn
@@ -324,15 +320,13 @@ class PaymentController {
           .json({ received: true, message: 'Đơn hàng đã được xử lý, webhook đã ghi nhận' });
       }
 
-      res
-        .status(200)
-        .json({
-          received: true,
-          message: 'SePay webhook đã được xử lý thành công',
-          orderId: order.id,
-          orderNumber: order.number,
-          transactionId: id,
-        });
+      res.status(200).json({
+        received: true,
+        message: 'SePay webhook đã được xử lý thành công',
+        orderId: order.id,
+        orderNumber: order.number,
+        transactionId: id,
+      });
     } catch (error) {
       logger.error('Lỗi xử lý SePay webhook:', error);
       next(error);

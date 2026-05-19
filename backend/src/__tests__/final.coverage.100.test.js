@@ -142,6 +142,8 @@ describe('product.js line 11 — catch branch khi require vectorStore thất b�
 // ════════════════════════════════════════════════════════════════════════════════
 
 describe('SequelizeAiRepository — createAnalyticsEvent catch branch (line 103)', () => {
+  afterEach(() => jest.resetModules()); // restore module registry sau mỗi test dùng resetModules
+
   it('khi ChatMessage.create reject → catch trả về null, không throw (line 103)', async () => {
     // The module uses require('@models') internally.
     // We mock '@models' (from test root perspective) so it resolves correctly.
@@ -1191,91 +1193,6 @@ describe('catalogService.js — createProduct category not found (line 822)', ()
 });
 
 // ════════════════════════════════════════════════════════════════════════════════
-// admin.js lines 61, 83 — deepParseJSON returns {} when parsed is not object,
-//                         deepParseJSONArray returns [] when parsed is not array
-// ════════════════════════════════════════════════════════════════════════════════
-
-describe('admin.js — deepParseJSON and deepParseJSONArray non-object/non-array results (lines 61, 83)', () => {
-  // Reproduce the actual functions from admin.js (lines 43-84)
-
-  function deepParseJSON(val) {
-    if (val === null || val === undefined) return {};
-    if (typeof val === 'object' && !Array.isArray(val)) return val;
-    if (typeof val !== 'string') return {};
-
-    let parsed = val;
-    let maxAttempts = 5;
-    while (typeof parsed === 'string' && maxAttempts-- > 0) {
-      try {
-        parsed = JSON.parse(parsed);
-      } catch (e) {
-        return {};
-      }
-    }
-
-    if (typeof parsed === 'object' && !Array.isArray(parsed) && parsed !== null) {
-      return parsed;
-    }
-    return {}; // line 61
-  }
-
-  function deepParseJSONArray(val) {
-    if (val === null || val === undefined) return [];
-    if (Array.isArray(val)) return val;
-    if (typeof val !== 'string') return [];
-
-    let parsed = val;
-    let maxAttempts = 5;
-    while (typeof parsed === 'string' && maxAttempts-- > 0) {
-      try {
-        parsed = JSON.parse(parsed);
-      } catch (e) {
-        return [];
-      }
-    }
-
-    if (Array.isArray(parsed)) return parsed;
-    return []; // line 83
-  }
-
-  // line 61: parsed is a number after JSON.parse → not an object → return {}
-  it('deepParseJSON — JSON string chứa số → parsed là number → return {} (line 61)', () => {
-    // JSON.parse('42') = 42 (number), typeof 42 !== 'object' → return {}
-    expect(deepParseJSON('42')).toEqual({});
-  });
-
-  it('deepParseJSON — JSON string chứa boolean true → return {} (line 61)', () => {
-    // JSON.parse('true') = true (boolean) → typeof true !== 'object' → return {}
-    expect(deepParseJSON('true')).toEqual({});
-  });
-
-  it('deepParseJSON — JSON string chứa null → return {} (line 61, null check)', () => {
-    // JSON.parse('null') = null → typeof null === 'object' but null !== null is false → return {}
-    expect(deepParseJSON('null')).toEqual({});
-  });
-
-  it('deepParseJSON — JSON array string → parsed is array → return {} (line 61)', () => {
-    // JSON.parse('[1,2]') = [1,2] (Array) → Array.isArray = true → return {}
-    expect(deepParseJSON('[1,2]')).toEqual({});
-  });
-
-  // line 83: parsed is a number after JSON.parse → not an array → return []
-  it('deepParseJSONArray — JSON string chứa số → parsed là number → return [] (line 83)', () => {
-    // JSON.parse('42') = 42 → !Array.isArray(42) → return []
-    expect(deepParseJSONArray('42')).toEqual([]);
-  });
-
-  it('deepParseJSONArray — JSON string chứa boolean → return [] (line 83)', () => {
-    expect(deepParseJSONArray('false')).toEqual([]);
-  });
-
-  it('deepParseJSONArray — JSON object string → parsed is object, not array → return [] (line 83)', () => {
-    // JSON.parse('{"k":1}') = {k:1} → !Array.isArray → return []
-    expect(deepParseJSONArray('{"k":1}')).toEqual([]);
-  });
-
-  it('deepParseJSONArray — JSON string chứa chuỗi → return [] (line 83)', () => {
-    // JSON.parse('"hello"') = 'hello' (string) → keep parsing → maxAttempts exhaust → not array → []
-    expect(deepParseJSONArray('"hello"')).toEqual([]);
-  });
-});
+// deepParseJSON / deepParseJSONArray (admin.js lines 43-84) không được export ra ngoài.
+// Coverage cho các hàm này đến từ admin-controller tests qua HTTP endpoints.
+// Xem admin-controller.branches.test.js và admin-controller.statements.test.js.

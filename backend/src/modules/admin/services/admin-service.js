@@ -109,58 +109,49 @@ const getDashboardStats = catchAsync(async (req, res) => {
   const totalOrders = await adminRepository.countOrders();
   logger.info('[DASHBOARD] Lấy totalOrders:', totalOrders);
   const totalRevenue = await adminRepository.sumOrderTotal({
-    where: { status: 'delivered', paymentStatus: { [Op.notIn]: ['refunded', 'failed'] } },
+    status: 'delivered',
+    paymentStatus: { [Op.notIn]: ['refunded', 'failed'] },
   });
   logger.info('[DASHBOARD] Lấy totalRevenue:', totalRevenue);
 
   // Thống kê theo tháng
   const monthlyUsers = await adminRepository.countUsers({
-    where: {
-      role: 'customer',
-      createdAt: { [Op.gte]: startOfMonth },
-    },
+    role: 'customer',
+    createdAt: { [Op.gte]: startOfMonth },
   });
 
   const monthlyOrders = await adminRepository.countOrders({
-    where: { createdAt: { [Op.gte]: startOfMonth } },
+    createdAt: { [Op.gte]: startOfMonth },
   });
 
   const monthlyRevenue = await adminRepository.sumOrderTotal({
-    where: {
-      status: 'delivered',
-      paymentStatus: { [Op.notIn]: ['refunded', 'failed'] },
-      createdAt: { [Op.gte]: startOfMonth },
-    },
+    status: 'delivered',
+    paymentStatus: { [Op.notIn]: ['refunded', 'failed'] },
+    createdAt: { [Op.gte]: startOfMonth },
   });
 
   // So sánh với tháng trước
   const lastMonthUsers = await adminRepository.countUsers({
-    where: {
-      role: 'customer',
-      createdAt: {
-        [Op.gte]: startOfLastMonth,
-        [Op.lte]: endOfLastMonth,
-      },
+    role: 'customer',
+    createdAt: {
+      [Op.gte]: startOfLastMonth,
+      [Op.lte]: endOfLastMonth,
     },
   });
 
   const lastMonthOrders = await adminRepository.countOrders({
-    where: {
-      createdAt: {
-        [Op.gte]: startOfLastMonth,
-        [Op.lte]: endOfLastMonth,
-      },
+    createdAt: {
+      [Op.gte]: startOfLastMonth,
+      [Op.lte]: endOfLastMonth,
     },
   });
 
   const lastMonthRevenue = await adminRepository.sumOrderTotal({
-    where: {
-      status: 'delivered',
-      paymentStatus: { [Op.notIn]: ['refunded', 'failed'] },
-      createdAt: {
-        [Op.gte]: startOfLastMonth,
-        [Op.lte]: endOfLastMonth,
-      },
+    status: 'delivered',
+    paymentStatus: { [Op.notIn]: ['refunded', 'failed'] },
+    createdAt: {
+      [Op.gte]: startOfLastMonth,
+      [Op.lte]: endOfLastMonth,
     },
   });
 
@@ -227,15 +218,13 @@ const getDashboardStats = catchAsync(async (req, res) => {
 
   // Đơn hủy trong tháng hiện tại
   const cancelledOrdersMonth = await adminRepository.countOrders({
-    where: {
-      status: 'cancelled',
-      createdAt: { [Op.gte]: startOfMonth },
-    },
+    status: 'cancelled',
+    createdAt: { [Op.gte]: startOfMonth },
   });
 
   // Sản phẩm sắp hết hàng (stockQuantity <= 5)
   const lowStockCount = await adminRepository.countProducts({
-    where: { stockQuantity: { [Op.lte]: 5 } },
+    stockQuantity: { [Op.lte]: 5 },
   });
 
   res.status(200).json({
@@ -449,14 +438,20 @@ const updateUser = catchAsync(async (req, res) => {
     throw new AppError('Chỉ admin mới có quyền thay đổi role', 403);
   }
 
-  const updatedUser = await user.update({
-    firstName: firstName || user.firstName,
-    lastName: lastName || user.lastName,
-    phone: phone || user.phone,
+  const updatePayload = {
     role: role || user.role,
     isEmailVerified: isEmailVerified !== undefined ? isEmailVerified : user.isEmailVerified,
     isActive: isActive !== undefined ? isActive : user.isActive,
-  });
+  };
+  updatePayload.firstName = req.body.hasOwnProperty('firstName')
+    ? firstName || user.firstName
+    : user.firstName;
+  updatePayload.lastName = req.body.hasOwnProperty('lastName')
+    ? lastName || user.lastName
+    : user.lastName;
+  updatePayload.phone = req.body.hasOwnProperty('phone') ? phone : user.phone;
+
+  const updatedUser = await user.update(updatePayload);
 
   res.status(200).json({
     status: 'success',
@@ -470,7 +465,7 @@ const updateUser = catchAsync(async (req, res) => {
 const deleteUser = catchAsync(async (req, res) => {
   const { id } = req.params;
 
-  if (req.user.id === id) {
+  if (String(req.user.id) === String(id)) {
     throw new AppError('Không thể xóa tài khoản của chính mình', 403);
   }
 
@@ -757,14 +752,7 @@ const createProduct = catchAsync(async (req, res) => {
         });
 
         // Validate variant attributes - bỏ qua validation nếu không có thuộc tính
-        if (productAttributes.length > 0 && Object.keys(variantAttributes).length > 0) {
-          try {
-            // Tạm thời bỏ qua validation để đảm bảo biến thể được tạo
-          } catch (error) /* istanbul ignore next */ {
-            logger.error('Lỗi khi xác thực thuộc tính biến thể:', error);
-            // Không throw error, chỉ log để tiếp tục tạo biến thể
-          }
-        }
+        // Validation thuộc tính biến thể — tạm thời bỏ qua, để đảm bảo biến thể được tạo
 
         // Tạo SKU nếu chưa được cung cấp
         const variantSku = variant.sku || generateVariantSku(uniqueSku, variantAttributes);
@@ -2412,7 +2400,8 @@ const getPaymentMethodsAnalytics = catchAsync(async (req, res) => {
  * GET /api/admin/analytics/low-stock — Sản phẩm sắp hết hàng
  */
 const getLowStockAnalytics = catchAsync(async (req, res) => {
-  const threshold = parseInt(req.query.threshold, 10) || 10;
+  const parsedThreshold = parseInt(req.query.threshold, 10);
+  const threshold = Number.isFinite(parsedThreshold) ? parsedThreshold : 10;
 
   const products = await adminRepository.findProductsList({
     attributes: ['id', 'name', 'stockQuantity', 'slug'],

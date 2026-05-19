@@ -431,6 +431,13 @@ describe('GET /api/admin/dashboard', () => {
     expect(res.body.data).toHaveProperty('monthly');
     expect(res.body.data).toHaveProperty('growth');
     expect(res.body.data).toHaveProperty('topProducts');
+    // Verify WHERE clause không bị nested sai (regression test)
+    // monthlyUsers: User.count call thứ 2 (sau totalUsers)
+    const monthlyCall = User.count.mock.calls[1][0];
+    expect(monthlyCall.where).toHaveProperty('role', 'customer');
+    expect(monthlyCall.where).toHaveProperty('createdAt');
+    // Phải là flat object, không nested { where: { where: {...} } }
+    expect(monthlyCall.where.where).toBeUndefined();
   });
 
   it('overview chứa đúng totalUsers, totalProducts, totalOrders, totalRevenue', async () => {
@@ -625,6 +632,31 @@ describe('PUT /api/admin/users/:id', () => {
 
     const res = await request.put('/api/admin/users/1').send({ isActive: false });
     expect(res.status).toBe(403);
+  });
+
+  it('giữ nguyên firstName/lastName/phone khi không gửi trong body', async () => {
+    const fakeUser = makeUser({ id: 55, firstName: 'Old', lastName: 'Name', phone: '0901' });
+    User.findByPk.mockResolvedValueOnce(fakeUser);
+
+    const res = await request.put('/api/admin/users/55').send({ role: 'customer' });
+    expect(res.status).toBe(200);
+    expect(fakeUser.update).toHaveBeenCalledWith(
+      expect.objectContaining({ firstName: 'Old', lastName: 'Name', phone: '0901' }),
+    );
+  });
+
+  it('firstName="" (falsy) → fallback về user.firstName cũ (covers || user.firstName branch)', async () => {
+    const fakeUser = makeUser({ id: 56, firstName: 'Existing' });
+    User.findByPk.mockResolvedValueOnce(fakeUser);
+
+    const res = await request
+      .put('/api/admin/users/56')
+      .send({ firstName: '', lastName: '', phone: '' });
+    expect(res.status).toBe(200);
+    // firstName='' là falsy → '' || user.firstName = 'Existing'
+    expect(fakeUser.update).toHaveBeenCalledWith(
+      expect.objectContaining({ firstName: 'Existing' }),
+    );
   });
 });
 

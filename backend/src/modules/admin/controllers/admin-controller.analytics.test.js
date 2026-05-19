@@ -692,10 +692,8 @@ describe('GET /api/admin/analytics/low-stock', () => {
     expect(values).toContain(10);
   });
 
-  test('threshold=0 bị fallback về 10 do lỗi `parseInt("0") || 10` — hành vi hiện tại', async () => {
-    // BUG NOTE: Controller dùng `parseInt(req.query.threshold, 10) || 10`
-    // parseInt("0") = 0, nhưng 0 là falsy nên || 10 kick in → threshold thực tế là 10.
-    // Test này document hành vi hiện tại, KHÔNG fix bug. Xem controller dòng 2383.
+  test('threshold=0 → dùng đúng 0 (không fallback về 10)', async () => {
+    // Fix: Number.isFinite(0) = true → threshold = 0 (xem sản phẩm hết hàng hoàn toàn)
     Product.findAll.mockResolvedValueOnce([]);
 
     await request.get('/api/admin/analytics/low-stock?threshold=0');
@@ -704,8 +702,8 @@ describe('GET /api/admin/analytics/low-stock', () => {
     const stockCondition = callArgs.where.stockQuantity;
     const symbols = Object.getOwnPropertySymbols(stockCondition);
     const values = symbols.map((s) => stockCondition[s]);
-    // Hành vi thực tế: 0 bị bỏ qua, threshold = 10
-    expect(values).toContain(10);
+    expect(values).toContain(0); // threshold=0 được giữ nguyên
+    expect(values).not.toContain(10);
   });
 
   test('thumbnail là null khi sản phẩm không có ảnh', async () => {

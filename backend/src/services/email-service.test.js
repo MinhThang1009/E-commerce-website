@@ -91,7 +91,9 @@ describe('sendOrderConfirmationEmail — XSS escaping trong nội dung email', (
     const emailService = loadEmailService();
     const order = {
       ...baseOrder,
-      items: [{ name: '<script>alert("xss")</script>', quantity: 1, price: 100000, subtotal: 100000 }],
+      items: [
+        { name: '<script>alert("xss")</script>', quantity: 1, price: 100000, subtotal: 100000 },
+      ],
     };
 
     await emailService.sendOrderConfirmationEmail('customer@test.com', order);
@@ -108,7 +110,7 @@ describe('sendOrderConfirmationEmail — XSS escaping trong nội dung email', (
       items: [],
       shippingAddress: {
         ...baseOrder.shippingAddress,
-        name: "O'Brien \"The Best\"",
+        name: 'O\'Brien "The Best"',
       },
     };
 
@@ -157,11 +159,11 @@ describe('sendOrderConfirmationEmail — escapeHtml null/undefined input (lines 
       total: 100000,
       items: [],
       shippingAddress: {
-        name: null,      // null → escapeHtml(null) → '' (hits line 8 null check)
+        name: null, // null → escapeHtml(null) → '' (hits line 8 null check)
         address1: undefined, // undefined → escapeHtml(undefined) → '' (hits line 8 undefined check)
         city: 'HN',
         state: 'HN',
-        zip: null,       // null → zip || '' → '' → escapeHtml('') → ''
+        zip: null, // null → zip || '' → '' → escapeHtml('') → ''
         country: undefined, // undefined → country || '' → '' → escapeHtml('') → ''
       },
     });
@@ -184,10 +186,10 @@ describe('sendOrderConfirmationEmail — escapeHtml null/undefined input (lines 
       shippingAddress: {
         name: null,
         address1: 'Some Street',
-        address2: null,     // null/falsy → template literal renders '' (line 300)
+        address2: null, // null/falsy → template literal renders '' (line 300)
         city: 'HCM',
         state: 'HCM',
-        zip: undefined,     // undefined → zip || '' evaluates '' (line 301)
+        zip: undefined, // undefined → zip || '' evaluates '' (line 301)
         country: undefined, // undefined → country || '' evaluates '' (line 302)
       },
     });
@@ -231,7 +233,7 @@ describe('sendEmail', () => {
     mockSendMail.mockRejectedValue(new Error('SMTP connection refused'));
 
     await expect(
-      emailService.sendEmail({ email: 'user@example.com', subject: 'Test', html: '<p>Test</p>' })
+      emailService.sendEmail({ email: 'user@example.com', subject: 'Test', html: '<p>Test</p>' }),
     ).rejects.toThrow('SMTP connection refused');
   });
 
@@ -282,9 +284,9 @@ describe('sendOtpEmail', () => {
     const emailService = loadEmailService();
     mockSendMail.mockRejectedValue(new Error('Auth failed'));
 
-    await expect(
-      emailService.sendOtpEmail('user@example.com', '111111')
-    ).rejects.toThrow('Auth failed');
+    await expect(emailService.sendOtpEmail('user@example.com', '111111')).rejects.toThrow(
+      'Auth failed',
+    );
   });
 });
 
@@ -332,9 +334,7 @@ describe('sendOrderConfirmationEmail', () => {
     shippingCost: 30000,
     total: 2030000,
     estimatedDelivery: '2024-01-20T10:00:00Z',
-    items: [
-      { name: 'iPhone 15 Pro', quantity: 1, price: 2000000, subtotal: 2000000 },
-    ],
+    items: [{ name: 'iPhone 15 Pro', quantity: 1, price: 2000000, subtotal: 2000000 }],
     shippingAddress: {
       name: 'Nguyễn Văn B',
       address1: '456 Đường XYZ',
@@ -497,11 +497,11 @@ describe('sendBulkCampaignEmail', () => {
     const results = await emailService.sendBulkCampaignEmail(
       emails,
       'Khuyến mãi tháng 1',
-      '<p>Nội dung khuyến mãi</p>'
+      '<p>Nội dung khuyến mãi</p>',
     );
 
     expect(results).toHaveLength(3);
-    expect(results.every(r => r.success)).toBe(true);
+    expect(results.every((r) => r.success)).toBe(true);
     expect(mockSendMail).toHaveBeenCalledTimes(3);
   });
 
@@ -516,11 +516,11 @@ describe('sendBulkCampaignEmail', () => {
     const results = await emailService.sendBulkCampaignEmail(
       ['a@test.com', 'bad-address', 'c@test.com'],
       'Test subject',
-      '<p>Content</p>'
+      '<p>Content</p>',
     );
 
     expect(results).toHaveLength(3);
-    const failed = results.filter(r => !r.success);
+    const failed = results.filter((r) => !r.success);
     expect(failed).toHaveLength(1);
     expect(failed[0].email).toBe('bad-address');
     expect(failed[0].error).toBe('Invalid address');
@@ -531,11 +531,7 @@ describe('sendBulkCampaignEmail', () => {
     mockSendMail.mockRejectedValue(new Error('SMTP down'));
 
     await expect(
-      emailService.sendBulkCampaignEmail(
-        ['a@test.com', 'b@test.com'],
-        'Test',
-        '<p>Content</p>'
-      )
+      emailService.sendBulkCampaignEmail(['a@test.com', 'b@test.com'], 'Test', '<p>Content</p>'),
     ).rejects.toThrow('All emails failed to send. Check logs for details.');
   });
 
@@ -547,7 +543,7 @@ describe('sendBulkCampaignEmail', () => {
     await emailService.sendBulkCampaignEmail(
       ['a@test.com'],
       'Test',
-      '<p>Nội dung tốt</p><script>evil()</script>'
+      '<p>Nội dung tốt</p><script>evil()</script>',
     );
 
     const [mailOptions] = mockSendMail.mock.calls[0];
@@ -604,8 +600,8 @@ describe('sendAdminFeedbackNotification', () => {
     const [mailOptions] = mockSendMail.mock.calls[0];
     // escapeHtml chuyển " thành &quot; — tag gốc không còn thực thi được
     expect(mailOptions.html).not.toContain('<img src=x onerror="'); // unescaped form không xuất hiện
-    expect(mailOptions.html).toContain('&lt;img');  // tag bị escaped
-    expect(mailOptions.html).toContain('&quot;');   // dấu nháy kép bị escaped
+    expect(mailOptions.html).toContain('&lt;img'); // tag bị escaped
+    expect(mailOptions.html).toContain('&quot;'); // dấu nháy kép bị escaped
   });
 
   test('subject chứa tiêu đề phản hồi', async () => {
@@ -645,9 +641,7 @@ describe('createTransporter — Gmail branch', () => {
     });
 
     // createTransport được gọi với service: 'gmail' (không phải host/port config)
-    expect(mockCreateTransport).toHaveBeenCalledWith(
-      expect.objectContaining({ service: 'gmail' })
-    );
+    expect(mockCreateTransport).toHaveBeenCalledWith(expect.objectContaining({ service: 'gmail' }));
 
     process.env.EMAIL_HOST = origHost;
   });
@@ -666,7 +660,11 @@ describe('createTransporter — EMAIL_PORT undefined → fallback port (line 40)
     mockSendMail.mockResolvedValue({ messageId: 'fallback-port-ok' });
     const emailService = loadEmailService();
 
-    await emailService.sendEmail({ email: 'x@test.com', subject: 'FallbackPort', html: '<p>x</p>' });
+    await emailService.sendEmail({
+      email: 'x@test.com',
+      subject: 'FallbackPort',
+      html: '<p>x</p>',
+    });
 
     expect(mockSendMail).toHaveBeenCalledTimes(1);
 
@@ -708,7 +706,9 @@ describe('sendBulkCampaignEmail — delay between batches (line 165)', () => {
     const emails = Array.from({ length: 6 }, (_, i) => `user${i}@example.com`);
 
     const sendPromise = emailService.sendBulkCampaignEmail(
-      emails, 'Test Campaign', '<p>Nội dung</p>'
+      emails,
+      'Test Campaign',
+      '<p>Nội dung</p>',
     );
 
     // Advance fake timers để vượt qua delay 1000ms
@@ -722,5 +722,19 @@ describe('sendBulkCampaignEmail — delay between batches (line 165)', () => {
     expect(Array.isArray(result)).toBe(true);
     expect(result).toHaveLength(6);
     expect(result[0]).toHaveProperty('success', true);
+  });
+});
+
+// ─── sanitizeCampaignHtml — null/falsy input (line 17 branch) ─────────────────
+
+describe('sendBulkCampaignEmail — null content triggers sanitizeCampaignHtml falsy branch', () => {
+  beforeEach(() => jest.clearAllMocks());
+
+  test('null content → safeContent="" → email không có script tag', async () => {
+    const emailService = loadEmailService();
+    mockSendMail.mockResolvedValue({ messageId: 'null-content' });
+    // Gọi với content=null → sanitizeCampaignHtml(null) → return '' (line 17 branch)
+    const results = await emailService.sendBulkCampaignEmail(['a@test.com'], 'Subject', null);
+    expect(results[0].success).toBe(true);
   });
 });

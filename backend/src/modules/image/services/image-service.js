@@ -392,6 +392,7 @@ class ImageService {
         category,
       };
     } catch (error) {
+      if (error instanceof AppError) throw error; // giữ nguyên status code gốc (400, 422...)
       logger.error('Lỗi khi chuyển đổi base64 thành file:', error);
       throw new AppError('Failed to convert base64 to file', 500);
     }

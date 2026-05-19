@@ -78,29 +78,54 @@ function buildService() {
 
 function mkProduct(overrides = {}) {
   return {
-    id: 1, name: 'Sản phẩm A', basePrice: 100000,
-    status: 'active', thumbnail: 'img.jpg', stockQuantity: 10,
+    id: 1,
+    name: 'Sản phẩm A',
+    basePrice: 100000,
+    status: 'active',
+    thumbnail: 'img.jpg',
+    stockQuantity: 10,
     ...overrides,
   };
 }
 
 function mkVariant(overrides = {}) {
   return {
-    id: 10, name: 'Đỏ / L', sku: 'SKU-001',
-    price: 120000, weight: '0.5', stockQuantity: 8,
+    id: 10,
+    name: 'Đỏ / L',
+    sku: 'SKU-001',
+    price: 120000,
+    weight: '0.5',
+    stockQuantity: 8,
     ...overrides,
   };
 }
 
 function mkOrderBody(overrides = {}) {
   return {
-    shippingFirstName: 'Anh', shippingLastName: 'Nguyen', shippingCompany: null,
-    shippingAddress1: '123 Lê Lợi', shippingAddress2: null, shippingCity: 'HCM',
-    shippingState: null, shippingZip: '70000', shippingCountry: 'VN', shippingPhone: '0901234567',
-    billingFirstName: 'Anh', billingLastName: 'Nguyen', billingCompany: null,
-    billingAddress1: '123 Lê Lợi', billingAddress2: null, billingCity: 'HCM',
-    billingState: null, billingZip: '70000', billingCountry: 'VN', billingPhone: '0901234567',
-    paymentMethod: 'cod', notes: null, discountCode: null, pointsToUse: 0,
+    shippingFirstName: 'Anh',
+    shippingLastName: 'Nguyen',
+    shippingCompany: null,
+    shippingAddress1: '123 Lê Lợi',
+    shippingAddress2: null,
+    shippingCity: 'HCM',
+    shippingState: null,
+    shippingZip: '70000',
+    shippingCountry: 'VN',
+    shippingPhone: '0901234567',
+    billingFirstName: 'Anh',
+    billingLastName: 'Nguyen',
+    billingCompany: null,
+    billingAddress1: '123 Lê Lợi',
+    billingAddress2: null,
+    billingCity: 'HCM',
+    billingState: null,
+    billingZip: '70000',
+    billingCountry: 'VN',
+    billingPhone: '0901234567',
+    paymentMethod: 'cod',
+    notes: null,
+    discountCode: null,
+    pointsToUse: 0,
     ...overrides,
   };
 }
@@ -112,7 +137,19 @@ describe('createOrder — cart flow: guestCart tồn tại với items rỗng', 
     const { service, repo } = buildService();
 
     const product = mkProduct();
-    const cart = { id: 5, items: [{ productId: 1, variantId: null, quantity: 1, Product: product, ProductVariant: null, warrantyPackageIds: [] }] };
+    const cart = {
+      id: 5,
+      items: [
+        {
+          productId: 1,
+          variantId: null,
+          quantity: 1,
+          Product: product,
+          ProductVariant: null,
+          warrantyPackageIds: [],
+        },
+      ],
+    };
 
     repo.findOrCreateActiveCart.mockResolvedValue({ id: 5 });
     // guestCart tồn tại nhưng items rỗng
@@ -120,8 +157,24 @@ describe('createOrder — cart flow: guestCart tồn tại với items rỗng', 
     repo.findCartByPkWithItemsDetails.mockResolvedValue(cart);
     repo.lockProduct.mockResolvedValue({ ...product, stockQuantity: 10 });
 
-    const createdOrder = { id: 1, number: 'ORD-01', status: 'pending', total: 130000, userId: 1, createdAt: new Date() };
-    const createdItem = { id: 1, orderId: 1, productId: 1, variantId: null, name: 'Sản phẩm A', quantity: 1, unitPrice: 100000, subtotal: 100000 };
+    const createdOrder = {
+      id: 1,
+      number: 'ORD-01',
+      status: 'pending',
+      total: 130000,
+      userId: 1,
+      createdAt: new Date(),
+    };
+    const createdItem = {
+      id: 1,
+      orderId: 1,
+      productId: 1,
+      variantId: null,
+      name: 'Sản phẩm A',
+      quantity: 1,
+      unitPrice: 100000,
+      subtotal: 100000,
+    };
     repo.createOrder.mockResolvedValue(createdOrder);
     repo.createOrderItem.mockResolvedValue(createdItem);
 
@@ -140,7 +193,19 @@ describe('createOrder — cart flow: guestCart tồn tại với items rỗng', 
     const { service, repo } = buildService();
 
     const product = mkProduct();
-    const cart = { id: 5, items: [{ productId: 1, variantId: null, quantity: 1, Product: product, ProductVariant: null, warrantyPackageIds: [] }] };
+    const cart = {
+      id: 5,
+      items: [
+        {
+          productId: 1,
+          variantId: null,
+          quantity: 1,
+          Product: product,
+          ProductVariant: null,
+          warrantyPackageIds: [],
+        },
+      ],
+    };
 
     repo.findOrCreateActiveCart.mockResolvedValue({ id: 5 });
     // guestCart tồn tại nhưng items = null
@@ -148,14 +213,34 @@ describe('createOrder — cart flow: guestCart tồn tại với items rỗng', 
     repo.findCartByPkWithItemsDetails.mockResolvedValue(cart);
     repo.lockProduct.mockResolvedValue({ ...product, stockQuantity: 10 });
 
-    const createdOrder = { id: 1, number: 'ORD-02', status: 'pending', total: 130000, userId: 1, createdAt: new Date() };
-    const createdItem = { id: 1, orderId: 1, productId: 1, variantId: null, name: 'Sản phẩm A', quantity: 1, unitPrice: 100000, subtotal: 100000 };
+    const createdOrder = {
+      id: 1,
+      number: 'ORD-02',
+      status: 'pending',
+      total: 130000,
+      userId: 1,
+      createdAt: new Date(),
+    };
+    const createdItem = {
+      id: 1,
+      orderId: 1,
+      productId: 1,
+      variantId: null,
+      name: 'Sản phẩm A',
+      quantity: 1,
+      unitPrice: 100000,
+      subtotal: 100000,
+    };
     repo.createOrder.mockResolvedValue(createdOrder);
     repo.createOrderItem.mockResolvedValue(createdItem);
 
     const user = { id: 1, email: 'user@test.com' };
 
-    const result = await service.createOrder({ user, body: mkOrderBody({ items: undefined }), sessionIdCookie: 'sess-guest' });
+    const result = await service.createOrder({
+      user,
+      body: mkOrderBody({ items: undefined }),
+      sessionIdCookie: 'sess-guest',
+    });
 
     expect(repo.saveCart).not.toHaveBeenCalled();
     expect(result.id).toBe(1);
@@ -180,9 +265,7 @@ describe('createOrder — lockedVariant null → throw 400 (line 146)', () => {
     const user = { id: 1, email: 'user@test.com' };
     const body = mkOrderBody({ items: [{ productId: 1, variantId: 10, quantity: 1 }] });
 
-    await expect(
-      service.createOrder({ user, body, sessionIdCookie: null })
-    ).rejects.toMatchObject({
+    await expect(service.createOrder({ user, body, sessionIdCookie: null })).rejects.toMatchObject({
       statusCode: 400,
       message: 'orders.stockInsufficient',
     });
@@ -199,8 +282,24 @@ describe('createOrder — online payment → không clear cart ngay (line 317-32
     repo.findProductWithDefaultVariant.mockResolvedValue(product);
     repo.lockProduct.mockResolvedValue({ ...product, stockQuantity: 10 });
 
-    const createdOrder = { id: 1, number: 'ORD-ONLINE', status: 'pending', total: 130000, userId: 1, createdAt: new Date() };
-    const createdItem = { id: 1, orderId: 1, productId: 1, variantId: null, name: 'Sản phẩm A', quantity: 1, unitPrice: 100000, subtotal: 100000 };
+    const createdOrder = {
+      id: 1,
+      number: 'ORD-ONLINE',
+      status: 'pending',
+      total: 130000,
+      userId: 1,
+      createdAt: new Date(),
+    };
+    const createdItem = {
+      id: 1,
+      orderId: 1,
+      productId: 1,
+      variantId: null,
+      name: 'Sản phẩm A',
+      quantity: 1,
+      unitPrice: 100000,
+      subtotal: 100000,
+    };
     repo.createOrder.mockResolvedValue(createdOrder);
     repo.createOrderItem.mockResolvedValue(createdItem);
 
@@ -228,8 +327,24 @@ describe('createOrder — không tạo inventory logs khi items = 0 (line 309 fa
     repo.findProductWithDefaultVariant.mockResolvedValue(product);
     repo.lockProduct.mockResolvedValue({ ...product, stockQuantity: 10 });
 
-    const createdOrder = { id: 1, number: 'ORD-LOG', status: 'pending', total: 130000, userId: 1, createdAt: new Date() };
-    const createdItem = { id: 1, orderId: 1, productId: 1, variantId: null, name: 'Sản phẩm A', quantity: 1, unitPrice: 100000, subtotal: 100000 };
+    const createdOrder = {
+      id: 1,
+      number: 'ORD-LOG',
+      status: 'pending',
+      total: 130000,
+      userId: 1,
+      createdAt: new Date(),
+    };
+    const createdItem = {
+      id: 1,
+      orderId: 1,
+      productId: 1,
+      variantId: null,
+      name: 'Sản phẩm A',
+      quantity: 1,
+      unitPrice: 100000,
+      subtotal: 100000,
+    };
     repo.createOrder.mockResolvedValue(createdOrder);
     repo.createOrderItem.mockResolvedValue(createdItem);
 
@@ -256,10 +371,23 @@ describe('createOrder — warrantyPackageIds truthy trong createOrderItem (line 
       { id: 1, name: 'BH 12 tháng', price: '50000' },
     ]);
 
-    const createdOrder = { id: 1, number: 'ORD-WARRANTY', status: 'pending', total: 200000, userId: 1, createdAt: new Date() };
+    const createdOrder = {
+      id: 1,
+      number: 'ORD-WARRANTY',
+      status: 'pending',
+      total: 200000,
+      userId: 1,
+      createdAt: new Date(),
+    };
     const createdItem = {
-      id: 1, orderId: 1, productId: 1, variantId: null,
-      name: 'Sản phẩm A', quantity: 1, unitPrice: 100000, subtotal: 100000,
+      id: 1,
+      orderId: 1,
+      productId: 1,
+      variantId: null,
+      name: 'Sản phẩm A',
+      quantity: 1,
+      unitPrice: 100000,
+      subtotal: 100000,
     };
     repo.createOrder.mockResolvedValue(createdOrder);
     repo.createOrderItem.mockResolvedValue(createdItem);
@@ -288,8 +416,24 @@ describe('createOrder — warrantyPackageIds truthy trong createOrderItem (line 
     repo.findProductWithDefaultVariant.mockResolvedValue(product);
     repo.lockProduct.mockResolvedValue({ ...product, stockQuantity: 10 });
 
-    const createdOrder = { id: 2, number: 'ORD-NO-WARRANTY', status: 'pending', total: 130000, userId: 1, createdAt: new Date() };
-    const createdItem = { id: 2, orderId: 2, productId: 1, variantId: null, name: 'Sản phẩm A', quantity: 1, unitPrice: 100000, subtotal: 100000 };
+    const createdOrder = {
+      id: 2,
+      number: 'ORD-NO-WARRANTY',
+      status: 'pending',
+      total: 130000,
+      userId: 1,
+      createdAt: new Date(),
+    };
+    const createdItem = {
+      id: 2,
+      orderId: 2,
+      productId: 1,
+      variantId: null,
+      name: 'Sản phẩm A',
+      quantity: 1,
+      unitPrice: 100000,
+      subtotal: 100000,
+    };
     repo.createOrder.mockResolvedValue(createdOrder);
     repo.createOrderItem.mockResolvedValue(createdItem);
 
@@ -319,8 +463,11 @@ describe('createOrder — cart flow: warrantyPackageIds null → createOrderItem
     const product = mkProduct();
     // Cart item với warrantyPackageIds = null (không được normalize như buy-now)
     const cartItem = {
-      productId: 1, variantId: null, quantity: 1,
-      Product: product, ProductVariant: null,
+      productId: 1,
+      variantId: null,
+      quantity: 1,
+      Product: product,
+      ProductVariant: null,
       warrantyPackageIds: null, // null → line 302: null || null = null
     };
     const cart = { id: 5, items: [cartItem] };
@@ -329,14 +476,25 @@ describe('createOrder — cart flow: warrantyPackageIds null → createOrderItem
     repo.findCartByPkWithItemsDetails.mockResolvedValue(cart);
     repo.lockProduct.mockResolvedValue({ ...product, stockQuantity: 10 });
 
-    const createdOrder = { id: 1, number: 'ORD-NULL-WP', status: 'pending', total: 130000, userId: 1, createdAt: new Date() };
+    const createdOrder = {
+      id: 1,
+      number: 'ORD-NULL-WP',
+      status: 'pending',
+      total: 130000,
+      userId: 1,
+      createdAt: new Date(),
+    };
     const createdItem = { id: 1, orderId: 1 };
     repo.createOrder.mockResolvedValue(createdOrder);
     repo.createOrderItem.mockResolvedValue(createdItem);
 
     const user = { id: 1, email: 'user@test.com' };
     // Cart flow: không truyền items
-    await service.createOrder({ user, body: mkOrderBody({ items: undefined }), sessionIdCookie: null });
+    await service.createOrder({
+      user,
+      body: mkOrderBody({ items: undefined }),
+      sessionIdCookie: null,
+    });
 
     // createOrderItem được gọi với warrantyPackageIds: null (null || null = null)
     expect(repo.createOrderItem).toHaveBeenCalledWith(
@@ -360,7 +518,14 @@ describe('createOrder — item.warrantyPackages truthy → map packages vào att
     repo.lockProduct.mockResolvedValue({ ...product, stockQuantity: 10 });
     repo.findActiveWarrantyPackagesByIds.mockResolvedValue([warrantyPkg]);
 
-    const createdOrder = { id: 2, number: 'ORD-WP-MAP', status: 'pending', total: 200000, userId: 1, createdAt: new Date() };
+    const createdOrder = {
+      id: 2,
+      number: 'ORD-WP-MAP',
+      status: 'pending',
+      total: 200000,
+      userId: 1,
+      createdAt: new Date(),
+    };
     const createdItem = { id: 2, orderId: 2 };
     repo.createOrder.mockResolvedValue(createdOrder);
     repo.createOrderItem.mockResolvedValue(createdItem);
@@ -394,7 +559,14 @@ describe('createOrder — pendingInventoryLogs có log → createInventoryLogs �
     repo.findProductWithDefaultVariant.mockResolvedValue(product);
     repo.lockProduct.mockResolvedValue({ ...product, stockQuantity: 10 });
 
-    const createdOrder = { id: 99, number: 'ORD-INV-LOG', status: 'pending', total: 130000, userId: 1, createdAt: new Date() };
+    const createdOrder = {
+      id: 99,
+      number: 'ORD-INV-LOG',
+      status: 'pending',
+      total: 130000,
+      userId: 1,
+      createdAt: new Date(),
+    };
     const createdItem = { id: 99, orderId: 99 };
     repo.createOrder.mockResolvedValue(createdOrder);
     repo.createOrderItem.mockResolvedValue(createdItem);
@@ -429,7 +601,14 @@ describe('createOrder — pendingInventoryLogs có log → createInventoryLogs �
     repo.findVariantBasic.mockResolvedValue(variant);
     repo.lockVariant.mockResolvedValue({ ...variant, stockQuantity: 8 });
 
-    const createdOrder = { id: 100, number: 'ORD-VAR-LOG', status: 'pending', total: 150000, userId: 1, createdAt: new Date() };
+    const createdOrder = {
+      id: 100,
+      number: 'ORD-VAR-LOG',
+      status: 'pending',
+      total: 150000,
+      userId: 1,
+      createdAt: new Date(),
+    };
     const createdItem = { id: 100, orderId: 100 };
     repo.createOrder.mockResolvedValue(createdOrder);
     repo.createOrderItem.mockResolvedValue(createdItem);
@@ -463,9 +642,7 @@ describe('getAllOrders — limit NaN fallback về 20 (line 477)', () => {
 
     const result = await service.getAllOrders({ page: 1, limit: 'abc' });
 
-    expect(repo.findAllOrdersWithUser).toHaveBeenCalledWith(
-      expect.objectContaining({ limit: 20 })
-    );
+    expect(repo.findAllOrdersWithUser).toHaveBeenCalledWith(expect.objectContaining({ limit: 20 }));
     expect(result.limit).toBe(20);
   });
 
@@ -485,13 +662,17 @@ describe('getAllOrders — limit NaN fallback về 20 (line 477)', () => {
 describe('updateOrderStatus — user không tồn tại khi trao loyalty points (line 510)', () => {
   it('không gọi updateUserPoints khi findUserById trả null', async () => {
     // Line 510: if (user) → false → bỏ qua update points
-    const { service, repo } = buildService();
+    const { service, repo, eventBus } = buildService();
 
     const order = {
-      id: 1, number: 'ORD-999', status: 'shipped',
+      id: 1,
+      number: 'ORD-999',
+      status: 'shipped',
       paymentMethod: 'bank_transfer',
       subtotal: 2000000, // > POINTS_EARN_RATE → pointsEarned > 0
-      userId: 42, total: 2000000, user: null,
+      userId: 42,
+      total: 2000000,
+      user: null,
       pointsEarned: 0,
     };
     repo.findOrderByPkWithItemsAndUser.mockResolvedValue(order);
@@ -501,6 +682,10 @@ describe('updateOrderStatus — user không tồn tại khi trao loyalty points 
 
     expect(repo.updateUserPoints).not.toHaveBeenCalled();
     expect(repo.createLoyaltyHistory).not.toHaveBeenCalled();
+    // eventBus.publish vẫn phải được gọi sau block if(user) — nằm ngoài block đó
+    expect(eventBus.publish).toHaveBeenCalledWith(
+      expect.objectContaining({ type: 'order.delivered' }),
+    );
   });
 });
 
@@ -512,10 +697,14 @@ describe('updateOrderStatus — pointsEarned = 0 → không trao điểm', () =>
     const { service, repo } = buildService();
 
     const order = {
-      id: 1, number: 'ORD-LOW', status: 'shipped',
+      id: 1,
+      number: 'ORD-LOW',
+      status: 'shipped',
       paymentMethod: 'cod',
       subtotal: 100, // 100 / 1000 = 0.1 → Math.floor = 0
-      userId: 1, total: 130, user: null,
+      userId: 1,
+      total: 130,
+      user: null,
       pointsEarned: 0,
     };
     repo.findOrderByPkWithItemsAndUser.mockResolvedValue(order);
@@ -530,25 +719,37 @@ describe('updateOrderStatus — pointsEarned = 0 → không trao điểm', () =>
 // ─── Line 578: confirmReceived — canEarnPoints() = false ─────────────────────
 
 describe('confirmReceived — canEarnPoints() = false (line 578 false branch)', () => {
-  it('không trao điểm khi pointsEarned đã được set (canEarnPoints = false)', async () => {
-    // Line 578: aggregate.canEarnPoints() = (pointsEarned || 0) === 0 → false khi pointsEarned != 0
+  it('không trao điểm khi pointsEarned đã được set → canEarnPoints() false', async () => {
+    // Scenario: order status='shipped' (alreadyProcessed=false), nhưng pointsEarned=50
+    // Flow: alreadyProcessed=false → update status→delivered → reload
+    //       → canEarnPoints() check: (50 || 0) === 0 → FALSE → không trao thêm điểm
+    // Khác với alreadyProcessed=true (đã delivered, đã trao điểm → return sớm)
     const { service, repo, eventBus } = buildService();
 
     const order = {
-      id: 1, number: 'ORD-ALREADY', status: 'shipped',
+      id: 1,
+      number: 'ORD-ALREADY',
+      status: 'shipped',
       paymentMethod: 'bank_transfer',
-      subtotal: 5000000, userId: 1, total: 5000000,
-      pointsEarned: 50, // đã trao điểm rồi → canEarnPoints() = false
+      subtotal: 5000000,
+      userId: 1,
+      total: 5000000,
+      pointsEarned: 50, // canEarnPoints() = (50 || 0) === 0 → false → không trao thêm
       reload: jest.fn().mockResolvedValue(),
     };
     repo.findOrderByIdAndUserId.mockResolvedValue(order);
 
     const result = await service.confirmReceived({ id: 1, userId: 1 });
 
+    // alreadyProcessed=false → saveOrder được gọi để update status→delivered
+    expect(repo.saveOrder).toHaveBeenCalled();
+    // canEarnPoints()=false → không query user hay update điểm
     expect(repo.findUserById).not.toHaveBeenCalled();
     expect(repo.updateUserPoints).not.toHaveBeenCalled();
-    // Vẫn publish event
-    expect(eventBus.publish).toHaveBeenCalledWith(expect.objectContaining({ type: 'order.delivered' }));
+    // eventBus.publish vẫn được gọi (nằm ngoài canEarnPoints block)
+    expect(eventBus.publish).toHaveBeenCalledWith(
+      expect.objectContaining({ type: 'order.delivered' }),
+    );
     expect(result.pointsEarned).toBe(0);
   });
 });
@@ -561,9 +762,13 @@ describe('confirmReceived — user null khi trao điểm (line 584 false branch)
     const { service, repo } = buildService();
 
     const order = {
-      id: 1, number: 'ORD-NULL-USER', status: 'shipped',
+      id: 1,
+      number: 'ORD-NULL-USER',
+      status: 'shipped',
       paymentMethod: 'bank_transfer',
-      subtotal: 5000000, userId: 99, total: 5000000,
+      subtotal: 5000000,
+      userId: 99,
+      total: 5000000,
       pointsEarned: 0, // canEarnPoints() = true
       reload: jest.fn().mockResolvedValue(),
     };
@@ -591,10 +796,13 @@ describe('confirmReceived — newPointsAwarded = 0 nhưng orderTotal > 0 (line 5
     const { service, repo } = buildService();
 
     const order = {
-      id: 1, number: 'ORD-SMALL', status: 'shipped',
+      id: 1,
+      number: 'ORD-SMALL',
+      status: 'shipped',
       paymentMethod: 'bank_transfer',
       subtotal: 500, // 500 / 1000 = 0 points, nhưng > 0
-      userId: 1, total: 530,
+      userId: 1,
+      total: 530,
       pointsEarned: 0, // canEarnPoints() = true
       reload: jest.fn().mockResolvedValue(),
     };
@@ -622,19 +830,46 @@ describe('createOrder — cart flow: guestItem trùng existing → cộng dồn 
 
     repo.findOrCreateActiveCart.mockResolvedValue({ id: 5 });
     repo.findActiveCartBySessionId.mockResolvedValue({
-      id: 99, items: [guestItem], status: 'active',
+      id: 99,
+      items: [guestItem],
+      status: 'active',
     });
     repo.findCartItemMatching.mockResolvedValue(existing);
 
     const detailedCart = {
       id: 5,
-      items: [{ productId: 1, variantId: null, quantity: 5, Product: product, ProductVariant: null, warrantyPackageIds: [] }],
+      items: [
+        {
+          productId: 1,
+          variantId: null,
+          quantity: 5,
+          Product: product,
+          ProductVariant: null,
+          warrantyPackageIds: [],
+        },
+      ],
     };
     repo.findCartByPkWithItemsDetails.mockResolvedValue(detailedCart);
     repo.lockProduct.mockResolvedValue({ ...product, stockQuantity: 10 });
 
-    const createdOrder = { id: 1, number: 'ORD-MERGE', status: 'pending', total: 130000, userId: 1, createdAt: new Date() };
-    const createdItem = { id: 1, orderId: 1, productId: 1, variantId: null, name: 'Sản phẩm A', quantity: 5, unitPrice: 100000, subtotal: 500000 };
+    const createdOrder = {
+      id: 1,
+      number: 'ORD-MERGE',
+      status: 'pending',
+      total: 130000,
+      userId: 1,
+      createdAt: new Date(),
+    };
+    const createdItem = {
+      id: 1,
+      orderId: 1,
+      productId: 1,
+      variantId: null,
+      name: 'Sản phẩm A',
+      quantity: 5,
+      unitPrice: 100000,
+      subtotal: 500000,
+    };
     repo.createOrder.mockResolvedValue(createdOrder);
     repo.createOrderItem.mockResolvedValue(createdItem);
 

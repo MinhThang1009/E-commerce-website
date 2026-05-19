@@ -17,7 +17,7 @@ describe('detectLanguage', () => {
   test('vi khi text là "dien thoai"', () => {
     expect(detectLanguage('dien thoai samsung')).toBe('vi');
   });
-  test('vi khi text là "tim kiem san pham"', () => {
+  test('vi khi text là "ban co khong"', () => {
     expect(detectLanguage('ban co khong')).toBe('vi');
   });
 

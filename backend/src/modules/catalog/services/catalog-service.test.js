@@ -102,7 +102,8 @@ describe('CatalogService', () => {
       delMany: jest.fn().mockResolvedValue(),
     };
     service = new CatalogService({
-      catalogRepository, cacheStore,
+      catalogRepository,
+      cacheStore,
       eventBus: { publish: jest.fn() },
       logger: { info: jest.fn(), error: jest.fn(), warn: jest.fn() },
     });
@@ -143,17 +144,18 @@ describe('CatalogService', () => {
 
     test('updateCategory không tìm thấy → 404', async () => {
       catalogRepository.findCategoryById.mockResolvedValue(null);
-      await expect(
-        service.updateCategory({ id: 1, patch: {} })
-      ).rejects.toMatchObject({ statusCode: 404 });
+      await expect(service.updateCategory({ id: 1, patch: {} })).rejects.toMatchObject({
+        statusCode: 404,
+      });
     });
 
     test('deleteCategory có sản phẩm → 400', async () => {
       catalogRepository.findCategoryById.mockResolvedValue({ id: 1 });
       catalogRepository.countProductsByCategoryId.mockResolvedValue(5);
-      await expect(
-        service.deleteCategory({ id: 1 })
-      ).rejects.toMatchObject({ statusCode: 400, message: 'catalog.cannotDeleteCategoryWithProducts' });
+      await expect(service.deleteCategory({ id: 1 })).rejects.toMatchObject({
+        statusCode: 400,
+        message: 'catalog.cannotDeleteCategoryWithProducts',
+      });
     });
 
     test('deleteCategory không có sản phẩm → xóa thành công', async () => {
@@ -206,9 +208,7 @@ describe('CatalogService', () => {
     test('deleteBrand có sản phẩm → 400', async () => {
       catalogRepository.findBrandById.mockResolvedValue({ id: 1 });
       catalogRepository.countProductsByBrandId.mockResolvedValue(3);
-      await expect(
-        service.deleteBrand({ id: 1 })
-      ).rejects.toMatchObject({ statusCode: 400 });
+      await expect(service.deleteBrand({ id: 1 })).rejects.toMatchObject({ statusCode: 400 });
     });
 
     test('updateBrand → invalidate cache pattern', async () => {
@@ -219,16 +219,16 @@ describe('CatalogService', () => {
 
     test('getBrandBySlug không tồn tại → 404', async () => {
       catalogRepository.findBrandBySlug.mockResolvedValue(null);
-      await expect(
-        service.getBrandBySlug({ slug: 'unknown' })
-      ).rejects.toMatchObject({ statusCode: 404 });
+      await expect(service.getBrandBySlug({ slug: 'unknown' })).rejects.toMatchObject({
+        statusCode: 404,
+      });
     });
 
     test('getProductsByBrand không tìm thấy brand → 404', async () => {
       catalogRepository.findBrandBySlug.mockResolvedValue(null);
-      await expect(
-        service.getProductsByBrand({ slug: 'unknown' })
-      ).rejects.toMatchObject({ statusCode: 404 });
+      await expect(service.getProductsByBrand({ slug: 'unknown' })).rejects.toMatchObject({
+        statusCode: 404,
+      });
     });
   });
 
@@ -275,9 +275,9 @@ describe('CatalogService', () => {
 
     test('getCollectionBySlug không tồn tại → 404', async () => {
       catalogRepository.findCollectionBySlug.mockResolvedValue(null);
-      await expect(
-        service.getCollectionBySlug({ slug: 'x' })
-      ).rejects.toMatchObject({ statusCode: 404 });
+      await expect(service.getCollectionBySlug({ slug: 'x' })).rejects.toMatchObject({
+        statusCode: 404,
+      });
     });
   });
 
@@ -378,7 +378,10 @@ describe('CatalogService', () => {
 
     test('average = 0 khi tất cả reviews không verified và onlyVerified = true', () => {
       const reviews = [{ rating: 5, isVerified: false }];
-      expect(service._calcRatings(reviews, { onlyVerified: true })).toEqual({ average: 0, count: 0 });
+      expect(service._calcRatings(reviews, { onlyVerified: true })).toEqual({
+        average: 0,
+        count: 0,
+      });
     });
   });
 
@@ -442,7 +445,7 @@ describe('CatalogService', () => {
       expect(cacheStore.setEx).toHaveBeenCalledWith(
         'products:list:/api/products?page=1',
         expect.any(Number),
-        expect.any(String)
+        expect.any(String),
       );
     });
 
@@ -459,7 +462,7 @@ describe('CatalogService', () => {
       await service.getAllProducts({ category: 'dien-thoai' });
       expect(catalogRepository.findCategoryBySlug).toHaveBeenCalledWith('dien-thoai');
       expect(catalogRepository.findProductsList).toHaveBeenCalledWith(
-        expect.objectContaining({ filter: expect.objectContaining({ categoryId: 5 }) })
+        expect.objectContaining({ filter: expect.objectContaining({ categoryId: 5 }) }),
       );
     });
 
@@ -471,7 +474,7 @@ describe('CatalogService', () => {
       expect(catalogRepository.findProductsList).toHaveBeenCalledWith(
         expect.objectContaining({
           filter: expect.objectContaining({ categoryIdMissingSentinel: true }),
-        })
+        }),
       );
     });
 
@@ -479,7 +482,7 @@ describe('CatalogService', () => {
       catalogRepository.findProductsList.mockResolvedValue({ count: 0, rows: [] });
       await service.getAllProducts({ limit: 9999 });
       expect(catalogRepository.findProductsList).toHaveBeenCalledWith(
-        expect.objectContaining({ limit: 100 })
+        expect.objectContaining({ limit: 100 }),
       );
     });
 
@@ -522,7 +525,9 @@ describe('CatalogService', () => {
       catalogRepository.findProductBySlugWithFullDetails.mockResolvedValue(productRow);
 
       await service.getProductById({ id: 'iphone-15-pro' });
-      expect(catalogRepository.findProductBySlugWithFullDetails).toHaveBeenCalledWith('iphone-15-pro');
+      expect(catalogRepository.findProductBySlugWithFullDetails).toHaveBeenCalledWith(
+        'iphone-15-pro',
+      );
     });
 
     test('ghi cache sau khi tìm thấy sản phẩm (base request)', async () => {
@@ -533,12 +538,25 @@ describe('CatalogService', () => {
       expect(cacheStore.setEx).toHaveBeenCalledWith(
         'product:detail:1',
         expect.any(Number),
-        expect.any(String)
+        expect.any(String),
       );
     });
 
     test('không ghi cache khi có skuId (variant request)', async () => {
-      const productRow = makeProductRow({ variants: [{ id: 10, isDefault: true, price: '29000000', compareAtPrice: null, stockQuantity: 3, variantName: 'Đen 128GB', attributes: {}, sku: 'SKU-1' }] });
+      const productRow = makeProductRow({
+        variants: [
+          {
+            id: 10,
+            isDefault: true,
+            price: '29000000',
+            compareAtPrice: null,
+            stockQuantity: 3,
+            variantName: 'Đen 128GB',
+            attributes: {},
+            sku: 'SKU-1',
+          },
+        ],
+      });
       catalogRepository.findProductByIdWithFullDetails.mockResolvedValue(productRow);
 
       await service.getProductById({ id: 1, skuId: '10' });
@@ -561,7 +579,9 @@ describe('CatalogService', () => {
   describe('getProductBySlug', () => {
     test('404 khi slug không tồn tại', async () => {
       catalogRepository.findProductBySlugWithFullDetails.mockResolvedValue(null);
-      await expect(service.getProductBySlug({ slug: 'unknown' })).rejects.toMatchObject({ statusCode: 404 });
+      await expect(service.getProductBySlug({ slug: 'unknown' })).rejects.toMatchObject({
+        statusCode: 404,
+      });
     });
 
     test('trả về responseData khi tìm thấy', async () => {
@@ -581,7 +601,9 @@ describe('CatalogService', () => {
     test('tạo sản phẩm đơn giản (không variant)', async () => {
       const newProduct = { id: 10, slug: 'test-prod' };
       catalogRepository.createProduct.mockResolvedValue(newProduct);
-      catalogRepository.findProductByIdWithFullDetails.mockResolvedValue(makeProductRow({ id: 10 }));
+      catalogRepository.findProductByIdWithFullDetails.mockResolvedValue(
+        makeProductRow({ id: 10 }),
+      );
 
       const result = await service.createProduct({
         payload: { name: 'Test Prod', price: 5000000, description: 'test' },
@@ -595,7 +617,9 @@ describe('CatalogService', () => {
       const newProduct = { id: 11, slug: 'test-2' };
       catalogRepository.createProduct.mockResolvedValue(newProduct);
       catalogRepository.findCategoriesByIds.mockResolvedValue([{ id: 1 }, { id: 2 }]);
-      catalogRepository.findProductByIdWithFullDetails.mockResolvedValue(makeProductRow({ id: 11 }));
+      catalogRepository.findProductByIdWithFullDetails.mockResolvedValue(
+        makeProductRow({ id: 11 }),
+      );
 
       await service.createProduct({
         payload: { name: 'Test 2', price: 6000000, categoryIds: [1, 2] },
@@ -610,20 +634,28 @@ describe('CatalogService', () => {
       catalogRepository.findCategoriesByIds.mockResolvedValue([{ id: 1 }]);
 
       await expect(
-        service.createProduct({ payload: { name: 'X', price: 1000, categoryIds: [1, 999] } })
+        service.createProduct({ payload: { name: 'X', price: 1000, categoryIds: [1, 999] } }),
       ).rejects.toMatchObject({ statusCode: 400, message: 'catalog.categoriesNotExist' });
     });
 
     test('gọi createProductVariants khi có variants', async () => {
       const newProduct = { id: 13, slug: 'variant-prod' };
       catalogRepository.createProduct.mockResolvedValue(newProduct);
-      catalogRepository.findProductByIdWithFullDetails.mockResolvedValue(makeProductRow({ id: 13 }));
+      catalogRepository.findProductByIdWithFullDetails.mockResolvedValue(
+        makeProductRow({ id: 13 }),
+      );
 
       await service.createProduct({
         payload: {
           name: 'Variant Prod',
           variants: [
-            { sku: 'VAR-1', price: 10000000, stockQuantity: 5, isDefault: true, attributes: { color: 'đen' } },
+            {
+              sku: 'VAR-1',
+              price: 10000000,
+              stockQuantity: 5,
+              isDefault: true,
+              attributes: { color: 'đen' },
+            },
           ],
         },
       });
@@ -634,13 +666,17 @@ describe('CatalogService', () => {
     test('gọi createProductAttributes khi có parentAttributes', async () => {
       const newProduct = { id: 14 };
       catalogRepository.createProduct.mockResolvedValue(newProduct);
-      catalogRepository.findProductByIdWithFullDetails.mockResolvedValue(makeProductRow({ id: 14 }));
+      catalogRepository.findProductByIdWithFullDetails.mockResolvedValue(
+        makeProductRow({ id: 14 }),
+      );
 
       await service.createProduct({
         payload: {
           name: 'Attr Prod',
           price: 5000000,
-          parentAttributes: [{ name: 'Màu sắc', type: 'color', values: ['đen', 'trắng'], required: true }],
+          parentAttributes: [
+            { name: 'Màu sắc', type: 'color', values: ['đen', 'trắng'], required: true },
+          ],
         },
       });
 
@@ -653,13 +689,15 @@ describe('CatalogService', () => {
       catalogRepository.findWarrantyPackagesByIds.mockResolvedValue([]);
 
       await expect(
-        service.createProduct({ payload: { name: 'X', price: 1000, warrantyPackageIds: [99] } })
+        service.createProduct({ payload: { name: 'X', price: 1000, warrantyPackageIds: [99] } }),
       ).rejects.toMatchObject({ statusCode: 400, message: 'catalog.warrantyPackagesNotExist' });
     });
 
     test('xóa cache sản phẩm sau khi tạo', async () => {
       catalogRepository.createProduct.mockResolvedValue({ id: 20 });
-      catalogRepository.findProductByIdWithFullDetails.mockResolvedValue(makeProductRow({ id: 20 }));
+      catalogRepository.findProductByIdWithFullDetails.mockResolvedValue(
+        makeProductRow({ id: 20 }),
+      );
 
       await service.createProduct({ payload: { name: 'New Prod', price: 5000000 } });
       expect(cacheStore.delPattern).toHaveBeenCalledWith('products:list:*');
@@ -673,8 +711,9 @@ describe('CatalogService', () => {
   describe('updateProduct', () => {
     test('404 khi sản phẩm không tồn tại', async () => {
       catalogRepository.findProductByPk.mockResolvedValue(null);
-      await expect(service.updateProduct({ id: 99, patch: { name: 'X' } }))
-        .rejects.toMatchObject({ statusCode: 404 });
+      await expect(service.updateProduct({ id: 99, patch: { name: 'X' } })).rejects.toMatchObject({
+        statusCode: 404,
+      });
     });
 
     test('cập nhật tên và mô tả thành công', async () => {
@@ -682,7 +721,10 @@ describe('CatalogService', () => {
       catalogRepository.findProductByPk.mockResolvedValue(existingProduct);
       catalogRepository.findProductByIdWithFullDetails.mockResolvedValue(makeProductRow({ id: 1 }));
 
-      await service.updateProduct({ id: 1, patch: { name: 'iPhone 15 Pro Updated', description: 'Mới' } });
+      await service.updateProduct({
+        id: 1,
+        patch: { name: 'iPhone 15 Pro Updated', description: 'Mới' },
+      });
       expect(catalogRepository.saveProduct).toHaveBeenCalled();
     });
 
@@ -702,7 +744,7 @@ describe('CatalogService', () => {
       catalogRepository.findCategoriesByIds.mockResolvedValue([]);
 
       await expect(
-        service.updateProduct({ id: 3, patch: { categoryIds: [999] } })
+        service.updateProduct({ id: 3, patch: { categoryIds: [999] } }),
       ).rejects.toMatchObject({ statusCode: 400 });
     });
 
@@ -776,7 +818,9 @@ describe('CatalogService', () => {
 
   describe('getFeaturedProducts', () => {
     test('trả về danh sách sản phẩm nổi bật', async () => {
-      catalogRepository.findFeaturedProducts.mockResolvedValue([makeProductRow({ isFeatured: true })]);
+      catalogRepository.findFeaturedProducts.mockResolvedValue([
+        makeProductRow({ isFeatured: true }),
+      ]);
       const result = await service.getFeaturedProducts({ limit: 8 });
       expect(Array.isArray(result)).toBe(true);
       expect(catalogRepository.findFeaturedProducts).toHaveBeenCalledWith(8);
@@ -799,7 +843,9 @@ describe('CatalogService', () => {
   describe('getRelatedProducts', () => {
     test('404 khi sản phẩm không tồn tại', async () => {
       catalogRepository.findProductByPk.mockResolvedValue(null);
-      await expect(service.getRelatedProducts({ id: 99 })).rejects.toMatchObject({ statusCode: 404 });
+      await expect(service.getRelatedProducts({ id: 99 })).rejects.toMatchObject({
+        statusCode: 404,
+      });
     });
 
     test('trả về sản phẩm liên quan khi có categoryId', async () => {
@@ -858,7 +904,9 @@ describe('CatalogService', () => {
     test('trả về danh sách suggestions đúng format', async () => {
       const mockProduct = {
         toJSON: () => ({
-          id: 1, name: 'iPhone 15', slug: 'iphone-15',
+          id: 1,
+          name: 'iPhone 15',
+          slug: 'iphone-15',
           productImages: [{ isThumbnail: true, imageUrl: 'thumb.jpg' }],
         }),
       };
@@ -866,7 +914,12 @@ describe('CatalogService', () => {
 
       const result = await service.getProductSuggestions({ q: 'iphone' });
       expect(result).toHaveLength(1);
-      expect(result[0]).toMatchObject({ id: 1, name: 'iPhone 15', slug: 'iphone-15', thumbnail: 'thumb.jpg' });
+      expect(result[0]).toMatchObject({
+        id: 1,
+        name: 'iPhone 15',
+        slug: 'iphone-15',
+        thumbnail: 'thumb.jpg',
+      });
     });
 
     test('thumbnail = null khi sản phẩm không có ảnh', async () => {
@@ -931,7 +984,7 @@ describe('CatalogService', () => {
 
       await service.getBestSellers({ limit: 5, period: 'year' });
       expect(catalogRepository.findBestSellersRaw).toHaveBeenCalledWith(
-        expect.objectContaining({ startDate: expect.any(Date), limit: 5 })
+        expect.objectContaining({ startDate: expect.any(Date), limit: 5 }),
       );
     });
   });
@@ -958,7 +1011,7 @@ describe('CatalogService', () => {
       catalogRepository.findDeals.mockResolvedValue([]);
       await service.getDeals({ limit: 999 });
       expect(catalogRepository.findDeals).toHaveBeenCalledWith(
-        expect.objectContaining({ limit: 100 })
+        expect.objectContaining({ limit: 100 }),
       );
     });
   });
@@ -970,7 +1023,9 @@ describe('CatalogService', () => {
   describe('getProductVariants', () => {
     test('404 khi sản phẩm không tồn tại', async () => {
       catalogRepository.findProductByPk.mockResolvedValue(null);
-      await expect(service.getProductVariants({ id: 99 })).rejects.toMatchObject({ statusCode: 404 });
+      await expect(service.getProductVariants({ id: 99 })).rejects.toMatchObject({
+        statusCode: 404,
+      });
     });
 
     test('trả về danh sách variants', async () => {
@@ -989,7 +1044,9 @@ describe('CatalogService', () => {
   describe('getProductReviewsSummary', () => {
     test('404 khi sản phẩm không tồn tại', async () => {
       catalogRepository.findProductByPk.mockResolvedValue(null);
-      await expect(service.getProductReviewsSummary({ id: 99 })).rejects.toMatchObject({ statusCode: 404 });
+      await expect(service.getProductReviewsSummary({ id: 99 })).rejects.toMatchObject({
+        statusCode: 404,
+      });
     });
 
     test('trả về average = 0 khi không có reviews', async () => {
@@ -1004,7 +1061,10 @@ describe('CatalogService', () => {
     test('tính đúng average và distribution', async () => {
       catalogRepository.findProductByPk.mockResolvedValue({ id: 2 });
       catalogRepository.findProductRatingsRows.mockResolvedValue([
-        { rating: 5 }, { rating: 4 }, { rating: 5 }, { rating: 3 },
+        { rating: 5 },
+        { rating: 4 },
+        { rating: 5 },
+        { rating: 3 },
       ]);
 
       const result = await service.getProductReviewsSummary({ id: 2 });
@@ -1037,8 +1097,9 @@ describe('CatalogService', () => {
     });
 
     test('throw 400 khi categoryId không phải số cũng không phải slug hợp lệ', async () => {
-      await expect(service.getProductFilters({ categoryId: '!invalid!' }))
-        .rejects.toMatchObject({ statusCode: 400 });
+      await expect(service.getProductFilters({ categoryId: '!invalid!' })).rejects.toMatchObject({
+        statusCode: 400,
+      });
     });
 
     test('resolve categoryId khi là số', async () => {
@@ -1113,8 +1174,28 @@ describe('CatalogService', () => {
         basePrice: '20000000',
         reviews: [],
         variants: [
-          { id: 10, price: '22000000', compareAtPrice: null, stockQuantity: 3, variantName: 'Đen 256GB', isDefault: false, attributes: { color: 'đen' }, sku: 'SKU-10', specifications: {} },
-          { id: 11, price: '25000000', compareAtPrice: null, stockQuantity: 1, variantName: 'Trắng 256GB', isDefault: true, attributes: { color: 'trắng' }, sku: 'SKU-11', specifications: {} },
+          {
+            id: 10,
+            price: '22000000',
+            compareAtPrice: null,
+            stockQuantity: 3,
+            variantName: 'Đen 256GB',
+            isDefault: false,
+            attributes: { color: 'đen' },
+            sku: 'SKU-10',
+            specifications: {},
+          },
+          {
+            id: 11,
+            price: '25000000',
+            compareAtPrice: null,
+            stockQuantity: 1,
+            variantName: 'Trắng 256GB',
+            isDefault: true,
+            attributes: { color: 'trắng' },
+            sku: 'SKU-11',
+            specifications: {},
+          },
         ],
       });
       const result = service._buildProductDetailResponse(product, { skuId: '10' });
@@ -1129,7 +1210,17 @@ describe('CatalogService', () => {
         basePrice: '20000000',
         reviews: [],
         variants: [
-          { id: 20, price: '20000000', compareAtPrice: null, stockQuantity: 5, variantName: 'Variant A', isDefault: true, attributes: {}, sku: 'SKU-20', specifications: {} },
+          {
+            id: 20,
+            price: '20000000',
+            compareAtPrice: null,
+            stockQuantity: 5,
+            variantName: 'Variant A',
+            isDefault: true,
+            attributes: {},
+            sku: 'SKU-20',
+            specifications: {},
+          },
         ],
       });
       const result = service._buildProductDetailResponse(product, {});
@@ -1154,8 +1245,28 @@ describe('CatalogService', () => {
         basePrice: '20000000',
         reviews: [],
         variants: [
-          { id: 30, price: '20000000', compareAtPrice: null, stockQuantity: 5, variantName: 'Xanh 128GB', isDefault: false, attributes: { color: 'xanh' }, sku: 'SKU-30', specifications: {} },
-          { id: 31, price: '22000000', compareAtPrice: null, stockQuantity: 3, variantName: 'Đỏ 128GB', isDefault: true, attributes: { color: 'đỏ' }, sku: 'SKU-31', specifications: {} },
+          {
+            id: 30,
+            price: '20000000',
+            compareAtPrice: null,
+            stockQuantity: 5,
+            variantName: 'Xanh 128GB',
+            isDefault: false,
+            attributes: { color: 'xanh' },
+            sku: 'SKU-30',
+            specifications: {},
+          },
+          {
+            id: 31,
+            price: '22000000',
+            compareAtPrice: null,
+            stockQuantity: 3,
+            variantName: 'Đỏ 128GB',
+            isDefault: true,
+            attributes: { color: 'đỏ' },
+            sku: 'SKU-31',
+            specifications: {},
+          },
         ],
       });
       const result = service._buildProductDetailResponse(product, { queryColor: 'xanh' });
@@ -1173,7 +1284,17 @@ describe('CatalogService', () => {
           { id: 2, imageUrl: 'img2.jpg', isThumbnail: false, variantId: 41, color: null },
         ],
         variants: [
-          { id: 40, price: '25000000', compareAtPrice: null, stockQuantity: 2, variantName: 'Silver 512GB', isDefault: true, attributes: {}, sku: 'SKU-40', specifications: {} },
+          {
+            id: 40,
+            price: '25000000',
+            compareAtPrice: null,
+            stockQuantity: 2,
+            variantName: 'Silver 512GB',
+            isDefault: true,
+            attributes: {},
+            sku: 'SKU-40',
+            specifications: {},
+          },
         ],
       });
       const result = service._buildProductDetailResponse(product, { skuId: '40' });
@@ -1190,7 +1311,8 @@ describe('CatalogService', () => {
   describe('_invalidateCacheKey', () => {
     test('bỏ qua khi không có cacheStore', async () => {
       const svcNoCache = new CatalogService({
-        catalogRepository, cacheStore: null,
+        catalogRepository,
+        cacheStore: null,
         eventBus: { publish: jest.fn() },
         logger: { info: jest.fn(), error: jest.fn(), warn: jest.fn() },
       });
@@ -1201,20 +1323,30 @@ describe('CatalogService', () => {
     test('log warn khi cacheStore.del throw', async () => {
       const warnSpy = jest.fn();
       const svcWarn = new CatalogService({
-        catalogRepository, cacheStore: { ...cacheStore, del: jest.fn().mockRejectedValue(new Error('redis down')) },
+        catalogRepository,
+        cacheStore: { ...cacheStore, del: jest.fn().mockRejectedValue(new Error('redis down')) },
         eventBus: { publish: jest.fn() },
         logger: { info: jest.fn(), error: jest.fn(), warn: warnSpy },
       });
       await svcWarn._invalidateCacheKey('categories:all');
-      expect(warnSpy).toHaveBeenCalledWith(expect.stringContaining('categories:all'), expect.any(String));
+      expect(warnSpy).toHaveBeenCalledWith(
+        expect.stringContaining('categories:all'),
+        expect.any(String),
+      );
     });
   });
 
   describe('_invalidateCachePattern', () => {
     test('bỏ qua khi cacheStore không có delPattern', async () => {
-      const storeNoPattern = { get: jest.fn(), setEx: jest.fn(), del: jest.fn(), delMany: jest.fn() };
+      const storeNoPattern = {
+        get: jest.fn(),
+        setEx: jest.fn(),
+        del: jest.fn(),
+        delMany: jest.fn(),
+      };
       const svc2 = new CatalogService({
-        catalogRepository, cacheStore: storeNoPattern,
+        catalogRepository,
+        cacheStore: storeNoPattern,
         eventBus: { publish: jest.fn() },
         logger: { info: jest.fn(), error: jest.fn(), warn: jest.fn() },
       });
@@ -1225,12 +1357,18 @@ describe('CatalogService', () => {
       const warnSpy = jest.fn();
       const svcWarn = new CatalogService({
         catalogRepository,
-        cacheStore: { ...cacheStore, delPattern: jest.fn().mockRejectedValue(new Error('timeout')) },
+        cacheStore: {
+          ...cacheStore,
+          delPattern: jest.fn().mockRejectedValue(new Error('timeout')),
+        },
         eventBus: { publish: jest.fn() },
         logger: { info: jest.fn(), error: jest.fn(), warn: warnSpy },
       });
       await svcWarn._invalidateCachePattern('cache:brands:*');
-      expect(warnSpy).toHaveBeenCalledWith(expect.stringContaining('cache:brands:*'), expect.any(String));
+      expect(warnSpy).toHaveBeenCalledWith(
+        expect.stringContaining('cache:brands:*'),
+        expect.any(String),
+      );
     });
   });
 
@@ -1262,7 +1400,9 @@ describe('CatalogService', () => {
 
     test('getCategoryBySlug không tồn tại → 404', async () => {
       catalogRepository.findCategoryByIdOrSlug.mockResolvedValue(null);
-      await expect(service.getCategoryBySlug({ slug: 'unknown' })).rejects.toMatchObject({ statusCode: 404 });
+      await expect(service.getCategoryBySlug({ slug: 'unknown' })).rejects.toMatchObject({
+        statusCode: 404,
+      });
     });
 
     test('updateCategory cập nhật name + description', async () => {
@@ -1283,7 +1423,9 @@ describe('CatalogService', () => {
     test('getProductsByCategory không tìm thấy cả id lẫn slug → 404', async () => {
       catalogRepository.findCategoryById.mockResolvedValue(null);
       catalogRepository.findCategoryBySlug.mockResolvedValue(null);
-      await expect(service.getProductsByCategory({ id: 'unknown' })).rejects.toMatchObject({ statusCode: 404 });
+      await expect(service.getProductsByCategory({ id: 'unknown' })).rejects.toMatchObject({
+        statusCode: 404,
+      });
     });
 
     test('getProductsByCategory trả về products với mapping', async () => {
@@ -1363,7 +1505,9 @@ describe('CatalogService', () => {
     test('getAllCollections filter isActive=false', async () => {
       catalogRepository.findAllCollections.mockResolvedValue([]);
       await service.getAllCollections({ isActive: 'false' });
-      expect(catalogRepository.findAllCollections).toHaveBeenCalledWith({ filter: { isActive: false } });
+      expect(catalogRepository.findAllCollections).toHaveBeenCalledWith({
+        filter: { isActive: false },
+      });
     });
 
     test('getCollectionBySlug tìm thấy → trả collection', async () => {
@@ -1375,7 +1519,9 @@ describe('CatalogService', () => {
 
     test('updateCollection không tồn tại → 404', async () => {
       catalogRepository.findCollectionById.mockResolvedValue(null);
-      await expect(service.updateCollection({ id: 99, patch: {} })).rejects.toMatchObject({ statusCode: 404 });
+      await expect(service.updateCollection({ id: 99, patch: {} })).rejects.toMatchObject({
+        statusCode: 404,
+      });
     });
 
     test('updateCollection không có productIds → bỏ qua setProducts', async () => {
@@ -1391,7 +1537,9 @@ describe('CatalogService', () => {
 
     test('getProductsByCollection không tìm thấy → 404', async () => {
       catalogRepository.findCollectionBySlug.mockResolvedValue(null);
-      await expect(service.getProductsByCollection({ slug: 'missing' })).rejects.toMatchObject({ statusCode: 404 });
+      await expect(service.getProductsByCollection({ slug: 'missing' })).rejects.toMatchObject({
+        statusCode: 404,
+      });
     });
 
     test('getProductsByCollection trả về phân trang đúng', async () => {
@@ -1411,7 +1559,9 @@ describe('CatalogService', () => {
   describe('createProduct — additional paths', () => {
     test('gọi createProductSpecifications khi specifications là mảng', async () => {
       catalogRepository.createProduct.mockResolvedValue({ id: 50 });
-      catalogRepository.findProductByIdWithFullDetails.mockResolvedValue(makeProductRow({ id: 50 }));
+      catalogRepository.findProductByIdWithFullDetails.mockResolvedValue(
+        makeProductRow({ id: 50 }),
+      );
 
       await service.createProduct({
         payload: {
@@ -1426,22 +1576,32 @@ describe('CatalogService', () => {
 
       expect(catalogRepository.createProductSpecifications).toHaveBeenCalledWith(
         expect.arrayContaining([
-          expect.objectContaining({ name: 'CPU', value: 'A17 Pro', category: 'Hardware', sortOrder: 0 }),
+          expect.objectContaining({
+            name: 'CPU',
+            value: 'A17 Pro',
+            category: 'Hardware',
+            sortOrder: 0,
+          }),
           expect.objectContaining({ name: 'RAM', value: '8GB', category: 'General', sortOrder: 1 }),
         ]),
-        expect.any(Object)
+        expect.any(Object),
       );
     });
 
     test('gọi createProductAttributes khi có attributes (không phải parentAttributes)', async () => {
       catalogRepository.createProduct.mockResolvedValue({ id: 51 });
-      catalogRepository.findProductByIdWithFullDetails.mockResolvedValue(makeProductRow({ id: 51 }));
+      catalogRepository.findProductByIdWithFullDetails.mockResolvedValue(
+        makeProductRow({ id: 51 }),
+      );
 
       await service.createProduct({
         payload: {
           name: 'Attr Prod2',
           price: 5000000,
-          attributes: [{ name: 'Màu', value: 'Đen' }, { name: 'Size', value: 'L' }],
+          attributes: [
+            { name: 'Màu', value: 'Đen' },
+            { name: 'Size', value: 'L' },
+          ],
         },
       });
 
@@ -1451,7 +1611,9 @@ describe('CatalogService', () => {
     test('gọi setProductWarrantyPackages khi warrantyPackageIds hợp lệ', async () => {
       catalogRepository.createProduct.mockResolvedValue({ id: 52 });
       catalogRepository.findWarrantyPackagesByIds.mockResolvedValue([{ id: 10 }, { id: 11 }]);
-      catalogRepository.findProductByIdWithFullDetails.mockResolvedValue(makeProductRow({ id: 52 }));
+      catalogRepository.findProductByIdWithFullDetails.mockResolvedValue(
+        makeProductRow({ id: 52 }),
+      );
 
       await service.createProduct({
         payload: { name: 'Warranty Prod', price: 5000000, warrantyPackageIds: [10, 11] },
@@ -1463,7 +1625,9 @@ describe('CatalogService', () => {
     test('variant tạo với auto-generated SKU khi không có sku', async () => {
       const newProduct = { id: 53, slug: 'test-auto-sku' };
       catalogRepository.createProduct.mockResolvedValue(newProduct);
-      catalogRepository.findProductByIdWithFullDetails.mockResolvedValue(makeProductRow({ id: 53 }));
+      catalogRepository.findProductByIdWithFullDetails.mockResolvedValue(
+        makeProductRow({ id: 53 }),
+      );
 
       await service.createProduct({
         payload: {
@@ -1476,7 +1640,7 @@ describe('CatalogService', () => {
         expect.arrayContaining([
           expect.objectContaining({ sku: expect.stringContaining('53-VAR-') }),
         ]),
-        expect.any(Object)
+        expect.any(Object),
       );
     });
   });
@@ -1489,11 +1653,15 @@ describe('CatalogService', () => {
     test('update warrantyPackageIds = [] → setProductWarrantyPackages với []', async () => {
       const existingProduct = makeProductRow({ id: 10 });
       catalogRepository.findProductByPk.mockResolvedValue(existingProduct);
-      catalogRepository.findProductByIdWithFullDetails.mockResolvedValue(makeProductRow({ id: 10 }));
+      catalogRepository.findProductByIdWithFullDetails.mockResolvedValue(
+        makeProductRow({ id: 10 }),
+      );
 
       await service.updateProduct({ id: 10, patch: { warrantyPackageIds: [] } });
       expect(catalogRepository.setProductWarrantyPackages).toHaveBeenCalledWith(
-        existingProduct, [], expect.any(Object)
+        existingProduct,
+        [],
+        expect.any(Object),
       );
     });
 
@@ -1501,11 +1669,15 @@ describe('CatalogService', () => {
       const existingProduct = makeProductRow({ id: 11 });
       catalogRepository.findProductByPk.mockResolvedValue(existingProduct);
       catalogRepository.findWarrantyPackagesByIds.mockResolvedValue([{ id: 20 }]);
-      catalogRepository.findProductByIdWithFullDetails.mockResolvedValue(makeProductRow({ id: 11 }));
+      catalogRepository.findProductByIdWithFullDetails.mockResolvedValue(
+        makeProductRow({ id: 11 }),
+      );
 
       await service.updateProduct({ id: 11, patch: { warrantyPackageIds: [20] } });
       expect(catalogRepository.setProductWarrantyPackages).toHaveBeenCalledWith(
-        existingProduct, [{ id: 20 }], expect.any(Object)
+        existingProduct,
+        [{ id: 20 }],
+        expect.any(Object),
       );
     });
 
@@ -1515,14 +1687,16 @@ describe('CatalogService', () => {
       catalogRepository.findWarrantyPackagesByIds.mockResolvedValue([]);
 
       await expect(
-        service.updateProduct({ id: 12, patch: { warrantyPackageIds: [999] } })
+        service.updateProduct({ id: 12, patch: { warrantyPackageIds: [999] } }),
       ).rejects.toMatchObject({ statusCode: 400, message: 'catalog.warrantyPackagesNotExist' });
     });
 
     test('clear attributes khi patch.attributes = []', async () => {
       const existingProduct = makeProductRow({ id: 13 });
       catalogRepository.findProductByPk.mockResolvedValue(existingProduct);
-      catalogRepository.findProductByIdWithFullDetails.mockResolvedValue(makeProductRow({ id: 13 }));
+      catalogRepository.findProductByIdWithFullDetails.mockResolvedValue(
+        makeProductRow({ id: 13 }),
+      );
 
       await service.updateProduct({ id: 13, patch: { attributes: [] } });
       expect(catalogRepository.clearProductAttributes).toHaveBeenCalled();
@@ -1532,7 +1706,9 @@ describe('CatalogService', () => {
     test('clear và recreate variants khi patch có variants không rỗng', async () => {
       const existingProduct = makeProductRow({ id: 14 });
       catalogRepository.findProductByPk.mockResolvedValue(existingProduct);
-      catalogRepository.findProductByIdWithFullDetails.mockResolvedValue(makeProductRow({ id: 14 }));
+      catalogRepository.findProductByIdWithFullDetails.mockResolvedValue(
+        makeProductRow({ id: 14 }),
+      );
 
       await service.updateProduct({
         id: 14,
@@ -1553,7 +1729,7 @@ describe('CatalogService', () => {
       catalogRepository.findProductsList.mockResolvedValue({ count: 0, rows: [] });
       await service.getAllProducts({ brand: '5' });
       expect(catalogRepository.findProductsList).toHaveBeenCalledWith(
-        expect.objectContaining({ filter: expect.objectContaining({ brandIdsIn: ['5'] }) })
+        expect.objectContaining({ filter: expect.objectContaining({ brandIdsIn: ['5'] }) }),
       );
     });
 
@@ -1561,7 +1737,7 @@ describe('CatalogService', () => {
       catalogRepository.findProductsList.mockResolvedValue({ count: 0, rows: [] });
       await service.getAllProducts({ brand: 'apple' });
       expect(catalogRepository.findProductsList).toHaveBeenCalledWith(
-        expect.objectContaining({ filter: expect.objectContaining({ brandSlugsIn: ['apple'] }) })
+        expect.objectContaining({ filter: expect.objectContaining({ brandSlugsIn: ['apple'] }) }),
       );
     });
 
@@ -1571,7 +1747,7 @@ describe('CatalogService', () => {
       expect(catalogRepository.findProductsList).toHaveBeenCalledWith(
         expect.objectContaining({
           filter: expect.objectContaining({ brandIdsIn: ['5'], brandSlugsIn: ['samsung'] }),
-        })
+        }),
       );
     });
 
@@ -1579,7 +1755,7 @@ describe('CatalogService', () => {
       catalogRepository.findProductsList.mockResolvedValue({ count: 0, rows: [] });
       await service.getAllProducts({ collection: '3' });
       expect(catalogRepository.findProductsList).toHaveBeenCalledWith(
-        expect.objectContaining({ filter: expect.objectContaining({ collectionIdsIn: ['3'] }) })
+        expect.objectContaining({ filter: expect.objectContaining({ collectionIdsIn: ['3'] }) }),
       );
     });
 
@@ -1587,7 +1763,9 @@ describe('CatalogService', () => {
       catalogRepository.findProductsList.mockResolvedValue({ count: 0, rows: [] });
       await service.getAllProducts({ collection: 'summer-sale' });
       expect(catalogRepository.findProductsList).toHaveBeenCalledWith(
-        expect.objectContaining({ filter: expect.objectContaining({ collectionSlugsIn: ['summer-sale'] }) })
+        expect.objectContaining({
+          filter: expect.objectContaining({ collectionSlugsIn: ['summer-sale'] }),
+        }),
       );
     });
 
@@ -1630,7 +1808,7 @@ describe('CatalogService', () => {
 
       await service.getBestSellers({ limit: 5 });
       expect(catalogRepository.findBestSellersRaw).toHaveBeenCalledWith(
-        expect.objectContaining({ startDate: expect.any(Date) })
+        expect.objectContaining({ startDate: expect.any(Date) }),
       );
     });
 
@@ -1650,9 +1828,15 @@ describe('CatalogService', () => {
 
   describe('_clearProductCache', () => {
     test('bỏ qua khi cacheStore không có delMany', async () => {
-      const storeNoDelMany = { get: jest.fn(), setEx: jest.fn(), del: jest.fn(), delPattern: jest.fn() };
+      const storeNoDelMany = {
+        get: jest.fn(),
+        setEx: jest.fn(),
+        del: jest.fn(),
+        delPattern: jest.fn(),
+      };
       const svc3 = new CatalogService({
-        catalogRepository, cacheStore: storeNoDelMany,
+        catalogRepository,
+        cacheStore: storeNoDelMany,
         eventBus: { publish: jest.fn() },
         logger: { info: jest.fn(), error: jest.fn(), warn: jest.fn() },
       });
@@ -1663,13 +1847,15 @@ describe('CatalogService', () => {
     test('delPattern throw → log warn và tiếp tục', async () => {
       const warnSpy = jest.fn();
       const brokenCache = {
-        get: jest.fn(), setEx: jest.fn(),
+        get: jest.fn(),
+        setEx: jest.fn(),
         del: jest.fn().mockResolvedValue(),
         delPattern: jest.fn().mockRejectedValue(new Error('pattern error')),
         delMany: jest.fn().mockResolvedValue(),
       };
       const svc4 = new CatalogService({
-        catalogRepository, cacheStore: brokenCache,
+        catalogRepository,
+        cacheStore: brokenCache,
         eventBus: { publish: jest.fn() },
         logger: { info: jest.fn(), error: jest.fn(), warn: warnSpy },
       });
@@ -1692,8 +1878,10 @@ describe('CatalogService', () => {
     test('ném AppError 404 khi brand không tồn tại theo slug', async () => {
       catalogRepository.findBrandBySlug.mockResolvedValue(null);
 
-      await expect(service.getBrandBySlug({ slug: 'unknown-brand' }))
-        .rejects.toMatchObject({ statusCode: 404, message: 'catalog.brandNotFound' });
+      await expect(service.getBrandBySlug({ slug: 'unknown-brand' })).rejects.toMatchObject({
+        statusCode: 404,
+        message: 'catalog.brandNotFound',
+      });
     });
 
     test('trả về brand khi tồn tại', async () => {
@@ -1717,7 +1905,7 @@ describe('CatalogService', () => {
       catalogRepository.findAttributeValuesByName.mockResolvedValue([]);
       catalogRepository.findOtherAttributes.mockResolvedValue([
         { name: 'Chất liệu', values: ['Nhôm', 'Nhựa'] },
-        { name: 'Xuất xứ', values: null },  // values=null → dùng [] fallback
+        { name: 'Xuất xứ', values: null }, // values=null → dùng [] fallback
       ]);
 
       const result = await service.getProductFilters({});
@@ -1893,8 +2081,7 @@ describe('CatalogService', () => {
     test('ném AppError 404 khi category không tồn tại', async () => {
       catalogRepository.findCategoryById.mockResolvedValue(null);
 
-      await expect(service.deleteCategory({ id: 999 }))
-        .rejects.toMatchObject({ statusCode: 404 });
+      await expect(service.deleteCategory({ id: 999 })).rejects.toMatchObject({ statusCode: 404 });
     });
   });
 
@@ -1905,7 +2092,7 @@ describe('CatalogService', () => {
         toJSON: () => ({
           id: 1,
           basePrice: 15000000,
-          variants: [],      // empty → else branch → line 150
+          variants: [], // empty → else branch → line 150
           productImages: [],
         }),
       };
@@ -1932,8 +2119,9 @@ describe('CatalogService', () => {
     test('ném AppError 404 khi brand không tồn tại', async () => {
       catalogRepository.findBrandById.mockResolvedValue(null);
 
-      await expect(service.updateBrand({ id: 999, patch: { name: 'X' } }))
-        .rejects.toMatchObject({ statusCode: 404 });
+      await expect(service.updateBrand({ id: 999, patch: { name: 'X' } })).rejects.toMatchObject({
+        statusCode: 404,
+      });
     });
   });
 
@@ -1949,7 +2137,7 @@ describe('CatalogService', () => {
       expect(catalogRepository.findProductsList).toHaveBeenCalledWith(
         expect.objectContaining({
           filter: expect.objectContaining({ categoryId: '5' }),
-        })
+        }),
       );
     });
   });
@@ -1986,8 +2174,8 @@ describe('CatalogService', () => {
           productImages: [],
           variants: [],
           reviews: [],
-          categories: [existingCat],  // non-empty → .some() callback executes (line 431 stmt 252)
-          category: cat,              // different id → not found → pushed
+          categories: [existingCat], // non-empty → .some() callback executes (line 431 stmt 252)
+          category: cat, // different id → not found → pushed
         }),
       };
       catalogRepository.findProductsList.mockResolvedValue({ count: 1, rows: [row] });
@@ -2012,7 +2200,7 @@ describe('CatalogService', () => {
 
       expect(service.logger.error).toHaveBeenCalledWith(
         expect.stringContaining('Lỗi ghi lịch sử xem sản phẩm'),
-        expect.any(Error)
+        expect.any(Error),
       );
     });
   });
@@ -2038,7 +2226,7 @@ describe('CatalogService', () => {
 
       expect(service.logger.error).toHaveBeenCalledWith(
         expect.stringContaining('Lỗi ghi lịch sử xem sản phẩm'),
-        expect.any(Error)
+        expect.any(Error),
       );
     });
   });
@@ -2076,7 +2264,7 @@ describe('CatalogService', () => {
       const result = service._buildProductDetailResponse(product, { skuId: 'var-1' });
       // Images filtered by variantColor 'black' → only black.jpg
       expect(result.images).toEqual(
-        expect.arrayContaining([expect.objectContaining({ color: 'Black' })])
+        expect.arrayContaining([expect.objectContaining({ color: 'Black' })]),
       );
     });
 
@@ -2111,11 +2299,291 @@ describe('CatalogService', () => {
       // → matchByColor.length > 0 → variantImages = matchByColor
       const result = service._buildProductDetailResponse(product, { queryColor: 'Silver' });
       expect(result.images).toEqual(
-        expect.arrayContaining([expect.objectContaining({ color: 'Silver' })])
+        expect.arrayContaining([expect.objectContaining({ color: 'Silver' })]),
       );
       expect(result.images).not.toEqual(
-        expect.arrayContaining([expect.objectContaining({ color: 'Black' })])
+        expect.arrayContaining([expect.objectContaining({ color: 'Black' })]),
       );
     });
+  });
+});
+
+// ─── catalog-service — uncovered branch tests ─────────────────────────────────
+
+describe('CatalogService — uncovered branches', () => {
+  let service;
+
+  beforeEach(() => {
+    service = new CatalogService({
+      catalogRepository: {},
+      cacheStore: null,
+      logger: { info: jest.fn(), error: jest.fn(), warn: jest.fn(), debug: jest.fn() },
+    });
+  });
+
+  describe('_pickDisplayPrice — basePrice=0 (|| 0 branch)', () => {
+    test('trả về 0 khi basePrice=0', () => {
+      const price = service._pickDisplayPrice({ basePrice: '0', variants: [] });
+      expect(price).toBe(0);
+    });
+
+    test('trả về 0 khi basePrice null', () => {
+      const price = service._pickDisplayPrice({ basePrice: null, variants: [] });
+      expect(price).toBe(0);
+    });
+  });
+
+  describe('_buildProductDetailResponse — basePrice=0 (line 534)', () => {
+    test('price=0 khi basePrice=0', () => {
+      const product = makeProductRow({ basePrice: '0', compareAtPrice: null, reviews: [] });
+      const result = service._buildProductDetailResponse(product, {});
+      expect(result.price).toBe(0);
+    });
+  });
+
+  describe('_buildProductDetailResponse — variant attrs || {} branch (line 547)', () => {
+    test('variant không có attributes → dùng {} default', () => {
+      const product = makeProductRow({
+        basePrice: '10000000',
+        reviews: [],
+        variants: [
+          {
+            id: 50,
+            price: '10000000',
+            compareAtPrice: null,
+            stockQuantity: 5,
+            variantName: 'Variant A',
+            isDefault: false,
+            sku: 'SKU-50',
+            specifications: {},
+            attributes: undefined,
+          },
+        ],
+      });
+      // queryColor 'xanh' → sẽ vào color-lookup nhưng không match → fallback to default variant
+      const result = service._buildProductDetailResponse(product, { queryColor: 'xanh' });
+      expect(result).toBeDefined();
+    });
+  });
+
+  describe('_buildProductDetailResponse — skuId + matchByVariantId (lines 557-566)', () => {
+    test('filter images theo variantId khi skuId được cung cấp', () => {
+      const product = makeProductRow({
+        basePrice: '20000000',
+        reviews: [],
+        variants: [
+          {
+            id: 60,
+            price: '20000000',
+            compareAtPrice: null,
+            stockQuantity: 3,
+            variantName: 'Đen',
+            isDefault: true,
+            attributes: { color: 'đen' },
+            sku: 'SKU-60',
+            specifications: {},
+          },
+        ],
+        productImages: [
+          { imageUrl: 'img1.jpg', variantId: 60, color: 'đen', isThumbnail: false },
+          { imageUrl: 'img2.jpg', variantId: null, color: null, isThumbnail: true },
+        ],
+      });
+      const result = service._buildProductDetailResponse(product, { skuId: '60' });
+      expect(result).toBeDefined();
+    });
+  });
+});
+
+// Test for createProduct variant with price=0 (line 906 || 0 branch)
+// This is added separately to avoid conflict with existing describe blocks
+
+describe('CatalogService.createProduct — variant price=0 branch (line 906)', () => {
+  let service2, catalogRepository2;
+
+  beforeEach(() => {
+    catalogRepository2 = {
+      runInTransaction: jest.fn((fn) => fn({})),
+      findCategoriesByIds: jest.fn().mockResolvedValue([]),
+      createProduct: jest.fn().mockResolvedValue({ id: 999, slug: 'p999' }),
+      findProductByIdWithFullDetails: jest.fn().mockResolvedValue(makeProductRow({ id: 999 })),
+      createProductVariants: jest.fn().mockResolvedValue([]),
+      setProductCategories: jest.fn().mockResolvedValue(),
+      createProductSpecifications: jest.fn().mockResolvedValue([]),
+      createProductAttributes: jest.fn().mockResolvedValue([]),
+      invalidateCacheForProduct: jest.fn().mockResolvedValue(),
+      findBrandById: jest.fn().mockResolvedValue(null),
+      findAllCollections: jest.fn().mockResolvedValue([]),
+    };
+    service2 = new CatalogService({
+      catalogRepository: catalogRepository2,
+      cacheStore: null,
+      logger: { info: jest.fn(), error: jest.fn(), warn: jest.fn(), debug: jest.fn() },
+    });
+  });
+
+  test('variant.price=0 → || 0 fallback → price=0 trong createProductVariants', async () => {
+    await service2.createProduct({
+      payload: {
+        name: 'Zero price product',
+        variants: [{ sku: 'Z-1', price: 0, stockQuantity: 1, isDefault: true }],
+      },
+    });
+    const variantsArg = catalogRepository2.createProductVariants.mock.calls[0][0];
+    expect(variantsArg[0].price).toBe(0);
+  });
+});
+
+// ─── Tests bổ sung để xóa istanbul ignore comments ───────────────────────────
+
+describe('CatalogService._clearProductCache — cacheStore không có delPattern', () => {
+  test('bỏ qua delPattern khi method không tồn tại', async () => {
+    const cacheStore = { delMany: jest.fn(), del: jest.fn().mockResolvedValue() };
+    // delPattern KHÔNG tồn tại → else branch của if(delPattern)
+    const svc = new CatalogService({
+      catalogRepository: {},
+      cacheStore,
+      logger: { warn: jest.fn() },
+    });
+    await svc._clearProductCache(1, 'prod-1');
+    expect(cacheStore.del).toHaveBeenCalled();
+  });
+});
+
+describe('CatalogService.getProducts — collection là slug', () => {
+  let catalogRepository;
+  let service;
+
+  beforeEach(() => {
+    catalogRepository = {
+      findProductsList: jest.fn(),
+      findCategoryBySlug: jest.fn(),
+    };
+    service = new CatalogService({
+      catalogRepository,
+      cacheStore: null,
+      logger: { info: jest.fn(), error: jest.fn(), warn: jest.fn() },
+    });
+  });
+
+  test('filter theo collectionSlug khi collection là string không phải số', async () => {
+    catalogRepository.findProductsList.mockResolvedValue({ count: 0, rows: [] });
+    await service.getAllProducts({ collection: 'gaming-collection' });
+    expect(catalogRepository.findProductsList).toHaveBeenCalledWith(
+      expect.objectContaining({
+        filter: expect.objectContaining({ collectionSlugsIn: ['gaming-collection'] }),
+      }),
+    );
+  });
+});
+
+describe('CatalogService.getProductById — _trackRecentlyViewed reject không crash', () => {
+  test('trả dữ liệu từ cache dù _trackRecentlyViewed throw', async () => {
+    const cached = { data: { id: 1, name: 'iPhone' }, ratings: {} };
+    const cacheStore = {
+      get: jest.fn().mockResolvedValue(JSON.stringify(cached)),
+      delMany: jest.fn(),
+      del: jest.fn(),
+      delPattern: jest.fn(),
+    };
+    const svc = new CatalogService({
+      catalogRepository: { findProductByIdWithFullDetails: jest.fn() },
+      cacheStore,
+      logger: { info: jest.fn(), error: jest.fn(), warn: jest.fn(), debug: jest.fn() },
+    });
+    jest.spyOn(svc, '_trackRecentlyViewed').mockRejectedValue(new Error('DB down'));
+    const result = await svc.getProductById({ id: 1, userId: 42 });
+    expect(result.cacheHit).toBe(true);
+  });
+});
+
+describe('CatalogService._buildProductDetailResponse — variant edge cases', () => {
+  let service;
+
+  beforeEach(() => {
+    service = new CatalogService({
+      catalogRepository: {},
+      cacheStore: null,
+      logger: { info: jest.fn(), error: jest.fn(), warn: jest.fn() },
+    });
+  });
+
+  test('variant không có attributes → dùng {} default, không crash', () => {
+    const product = makeProductRow({
+      basePrice: '10000000',
+      reviews: [],
+      variants: [
+        {
+          id: 70,
+          price: '10000000',
+          compareAtPrice: null,
+          stockQuantity: 5,
+          variantName: 'Default',
+          isDefault: true,
+          sku: 'SKU-70',
+          specifications: {},
+          attributes: undefined,
+        },
+      ],
+    });
+    const result = service._buildProductDetailResponse(product, {});
+    expect(result).toBeDefined();
+    expect(result.isVariantProduct).toBe(true);
+  });
+
+  test('product không có images property → variantImages = [], không crash', () => {
+    const product = makeProductRow({
+      basePrice: '15000000',
+      reviews: [],
+      variants: [
+        {
+          id: 80,
+          price: '15000000',
+          compareAtPrice: null,
+          stockQuantity: 3,
+          variantName: 'Variant',
+          isDefault: true,
+          sku: 'SKU-80',
+          specifications: {},
+          attributes: { color: 'đen' },
+        },
+      ],
+      productImages: undefined, // không có images
+    });
+    const result = service._buildProductDetailResponse(product, { skuId: '80' });
+    expect(result).toBeDefined();
+  });
+});
+
+// ─── _buildProductDetailResponse — if(!skuId && normColor) FALSE branch ──────
+
+describe('CatalogService._buildProductDetailResponse — variantColor không override khi có skuId', () => {
+  test('variantColor KHÔNG override khi skuId được cung cấp (FALSE branch line 563)', () => {
+    const svc = new CatalogService({
+      catalogRepository: {},
+      cacheStore: null,
+      logger: { info: jest.fn(), error: jest.fn(), warn: jest.fn(), debug: jest.fn() },
+    });
+    const product = makeProductRow({
+      basePrice: '20000000',
+      reviews: [],
+      variants: [
+        {
+          id: 90,
+          price: '20000000',
+          compareAtPrice: null,
+          stockQuantity: 5,
+          variantName: 'Đen 128GB',
+          isDefault: true,
+          sku: 'SKU-90',
+          specifications: {},
+          attributes: { color: 'đen' },
+        },
+      ],
+    });
+    // skuId được cung cấp → !skuId = false → variantColor KHÔNG bị override bởi normColor
+    const result = svc._buildProductDetailResponse(product, { skuId: '90', queryColor: 'trắng' });
+    expect(result).toBeDefined();
+    expect(result.sku).toBe('SKU-90');
   });
 });

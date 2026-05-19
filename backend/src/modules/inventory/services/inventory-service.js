@@ -60,7 +60,7 @@ class InventoryService {
         stockable.isAvailable = true;
         await stockable.save(opts);
 
-        const total = await this.repo.sumVariantStockByProductId(productId);
+        const total = await this.repo.sumVariantStockByProductId(productId, opts);
         product.stockQuantity = total || 0;
         await product.save(opts);
       } else {

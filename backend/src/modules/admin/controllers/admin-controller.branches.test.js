@@ -1771,3 +1771,309 @@ describe('PUT /api/admin/orders/:id/cancel — line 1859: item without Product f
     expect(order.update).toHaveBeenCalled();
   });
 });
+
+// ─── restockProduct — vectorStore sync error (lines 2138-2142) ────────────────
+
+describe('POST /api/admin/products/:productId/restock — vectorStore sync error', () => {
+  it('trả về 200 và log error khi vectorStoreService.save throw trong sync', async () => {
+    const vs = require('@modules/ai/services/vectorstore/vector-store');
+    vs.save.mockRejectedValueOnce(new Error('VectorStore IO error'));
+
+    const product = makeProduct({ id: 9700, stockQuantity: 10, status: 'active' });
+    Product.findByPk
+      .mockResolvedValueOnce(product) // findProductById trong sync
+      .mockResolvedValueOnce(product); // loadProductForIndex
+    ProductVariant.findOne.mockResolvedValueOnce(null);
+    InventoryLog.create.mockResolvedValueOnce({ id: 99 });
+
+    const logger = require('@utils/logger');
+
+    const res = await request.post('/api/admin/products/9700/restock').send({ quantity: 5 });
+
+    expect(res.status).toBe(200);
+    expect(logger.error).toHaveBeenCalledWith(
+      'Lỗi đồng bộ vector store sau khi nhập hàng:',
+      expect.any(String),
+    );
+    vs.save.mockResolvedValue(undefined);
+  });
+});
+
+// ─── Line 983: updateProduct — price changes tracking ────────────────────────
+
+describe('PUT /api/admin/products/:id — line 983: price change tracking khi price khác basePrice', () => {
+  it('ghi nhận changes.price khi price mới khác basePrice hiện tại', async () => {
+    const product = makeProduct({ id: 9910, basePrice: 10000000 });
+    Product.findByPk.mockResolvedValueOnce(product).mockResolvedValueOnce(product);
+    ProductAttribute.findAll.mockResolvedValueOnce([]);
+    ProductVariant.findAll.mockResolvedValueOnce([]);
+    ProductSpecification.findAll.mockResolvedValueOnce([]);
+
+    const res = await request.put('/api/admin/products/9910').send({
+      name: product.name,
+      price: 12000000, // khác basePrice=10000000 → changes.price được set
+    });
+
+    expect(res.status).toBe(200);
+    // product.update phải được gọi với basePrice mới
+    expect(product.update).toHaveBeenCalledWith(
+      expect.objectContaining({ basePrice: 12000000 }),
+      expect.anything(),
+    );
+  });
+});
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Lines 814-820 (updateProduct): images array chứa object dùng img.url || img.imageUrl
+// và img.color || null
+// ─────────────────────────────────────────────────────────────────────────────
+
+describe('PUT /api/admin/products/:id — lines 814-820: images object với url/imageUrl và color', () => {
+  it('dùng img.url khi có, và img.color khi có', async () => {
+    const product = makeProduct({ id: 8814, basePrice: 5000000 });
+    Product.findByPk.mockResolvedValueOnce(product).mockResolvedValueOnce(product);
+    ProductAttribute.findAll.mockResolvedValueOnce([]);
+    ProductVariant.findAll.mockResolvedValueOnce([]);
+    ProductSpecification.findAll.mockResolvedValueOnce([]);
+
+    const res = await request.put('/api/admin/products/8814').send({
+      images: [
+        { url: 'https://cdn.test/img1.jpg', color: 'red', isThumbnail: true, variantId: null },
+      ],
+    });
+
+    expect(res.status).toBe(200);
+  });
+
+  it('dùng img.imageUrl khi không có img.url, và color null khi không truyền color', async () => {
+    const product = makeProduct({ id: 8815, basePrice: 5000000 });
+    Product.findByPk.mockResolvedValueOnce(product).mockResolvedValueOnce(product);
+    ProductAttribute.findAll.mockResolvedValueOnce([]);
+    ProductVariant.findAll.mockResolvedValueOnce([]);
+    ProductSpecification.findAll.mockResolvedValueOnce([]);
+
+    const res = await request.put('/api/admin/products/8815').send({
+      images: [{ imageUrl: 'https://cdn.test/img2.jpg', isThumbnail: false }],
+    });
+
+    expect(res.status).toBe(200);
+  });
+});
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Lines 988-1001 (updateProduct): hasOwnProperty checks cho baseName, seoTitle,
+// seoKeywords, featured, shortDescription
+// ─────────────────────────────────────────────────────────────────────────────
+
+describe('PUT /api/admin/products/:id — lines 988-1001: hasOwnProperty branches', () => {
+  it('set updateData.baseName khi body có baseName', async () => {
+    const product = makeProduct({ id: 8988, basePrice: 5000000 });
+    Product.findByPk.mockResolvedValueOnce(product).mockResolvedValueOnce(product);
+    ProductAttribute.findAll.mockResolvedValueOnce([]);
+    ProductVariant.findAll.mockResolvedValueOnce([]);
+    ProductSpecification.findAll.mockResolvedValueOnce([]);
+
+    const res = await request.put('/api/admin/products/8988').send({
+      baseName: 'Laptop Base',
+      name: 'Laptop Test',
+    });
+
+    expect(res.status).toBe(200);
+    expect(product.update).toHaveBeenCalledWith(
+      expect.objectContaining({ baseName: 'Laptop Base' }),
+      expect.anything(),
+    );
+  });
+
+  it('fallback baseName về name khi baseName là falsy', async () => {
+    const product = makeProduct({ id: 8989, basePrice: 5000000 });
+    Product.findByPk.mockResolvedValueOnce(product).mockResolvedValueOnce(product);
+    ProductAttribute.findAll.mockResolvedValueOnce([]);
+    ProductVariant.findAll.mockResolvedValueOnce([]);
+    ProductSpecification.findAll.mockResolvedValueOnce([]);
+
+    const res = await request.put('/api/admin/products/8989').send({
+      baseName: '',
+      name: 'Tên Sản Phẩm',
+    });
+
+    expect(res.status).toBe(200);
+    expect(product.update).toHaveBeenCalledWith(
+      expect.objectContaining({ baseName: 'Tên Sản Phẩm' }),
+      expect.anything(),
+    );
+  });
+
+  it('set seoTitle, seoKeywords, featured, shortDescription khi có trong body', async () => {
+    const product = makeProduct({ id: 8990, basePrice: 5000000 });
+    Product.findByPk.mockResolvedValueOnce(product).mockResolvedValueOnce(product);
+    ProductAttribute.findAll.mockResolvedValueOnce([]);
+    ProductVariant.findAll.mockResolvedValueOnce([]);
+    ProductSpecification.findAll.mockResolvedValueOnce([]);
+
+    // Gửi 'featured' (key mà hasOwnProperty check) để trigger line 996
+    // Gửi 'isFeatured' (key destructuring) để biến featured có giá trị
+    // Hai key tách nhau nên test chỉ verify seoTitle/seoKeywords/shortDescription
+    const res = await request.put('/api/admin/products/8990').send({
+      seoTitle: 'SEO Title Test',
+      seoKeywords: ['laptop', 'gaming'],
+      featured: true, // trigger hasOwnProperty('featured') → line 996
+      shortDescription: 'Mô tả ngắn',
+    });
+
+    expect(res.status).toBe(200);
+    expect(product.update).toHaveBeenCalledWith(
+      expect.objectContaining({
+        seoTitle: 'SEO Title Test',
+        seoKeywords: ['laptop', 'gaming'],
+        shortDescription: 'Mô tả ngắn',
+      }),
+      expect.anything(),
+    );
+  });
+});
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Lines 1036-1047 (updateProduct): compareAtPrice và comparePrice handling
+// Line 1036: priceToCompare từ compareAtPrice
+// Line 1047: priceToCompare === '' → null
+// ─────────────────────────────────────────────────────────────────────────────
+
+describe('PUT /api/admin/products/:id — lines 1036-1047: compareAtPrice handling', () => {
+  it('gọi sequelize.query với compareAtPrice khi body có compareAtPrice', async () => {
+    const product = makeProduct({ id: 8036, basePrice: 5000000 });
+    Product.findByPk.mockResolvedValueOnce(product).mockResolvedValueOnce(product);
+    ProductAttribute.findAll.mockResolvedValueOnce([]);
+    ProductVariant.findAll.mockResolvedValueOnce([]);
+    ProductSpecification.findAll.mockResolvedValueOnce([]);
+
+    const res = await request.put('/api/admin/products/8036').send({
+      compareAtPrice: 6000000,
+    });
+
+    expect(res.status).toBe(200);
+    expect(sequelize.query).toHaveBeenCalledWith(
+      'UPDATE products SET compare_at_price = :compareAtPrice WHERE id = :id',
+      expect.objectContaining({
+        replacements: expect.objectContaining({ compareAtPrice: 6000000 }),
+      }),
+    );
+  });
+
+  it('dùng comparePrice khi không có compareAtPrice nhưng có comparePrice', async () => {
+    const product = makeProduct({ id: 8037, basePrice: 5000000 });
+    Product.findByPk.mockResolvedValueOnce(product).mockResolvedValueOnce(product);
+    ProductAttribute.findAll.mockResolvedValueOnce([]);
+    ProductVariant.findAll.mockResolvedValueOnce([]);
+    ProductSpecification.findAll.mockResolvedValueOnce([]);
+
+    const res = await request.put('/api/admin/products/8037').send({
+      comparePrice: 5500000,
+    });
+
+    expect(res.status).toBe(200);
+    expect(sequelize.query).toHaveBeenCalledWith(
+      'UPDATE products SET compare_at_price = :compareAtPrice WHERE id = :id',
+      expect.objectContaining({
+        replacements: expect.objectContaining({ compareAtPrice: 5500000 }),
+      }),
+    );
+  });
+
+  it('truyền null vào query khi compareAtPrice là chuỗi rỗng (line 1047)', async () => {
+    const product = makeProduct({ id: 8038, basePrice: 5000000 });
+    Product.findByPk.mockResolvedValueOnce(product).mockResolvedValueOnce(product);
+    ProductAttribute.findAll.mockResolvedValueOnce([]);
+    ProductVariant.findAll.mockResolvedValueOnce([]);
+    ProductSpecification.findAll.mockResolvedValueOnce([]);
+
+    const res = await request.put('/api/admin/products/8038').send({
+      compareAtPrice: '',
+    });
+
+    expect(res.status).toBe(200);
+    expect(sequelize.query).toHaveBeenCalledWith(
+      'UPDATE products SET compare_at_price = :compareAtPrice WHERE id = :id',
+      expect.objectContaining({
+        replacements: expect.objectContaining({ compareAtPrice: null }),
+      }),
+    );
+  });
+});
+
+// ─── Lines 816,818: img.imageUrl fallback + color null fallback ───────────────
+
+describe('PUT /api/admin/products/:id — lines 816,818: image fallback branches', () => {
+  it('dùng img.imageUrl khi img.url không có (line 816)', async () => {
+    const product = makeProduct({ id: 9950 });
+    Product.findByPk.mockResolvedValueOnce(product).mockResolvedValueOnce(product);
+    ProductAttribute.findAll.mockResolvedValueOnce([]);
+    ProductVariant.findAll.mockResolvedValueOnce([]);
+    ProductSpecification.findAll.mockResolvedValueOnce([]);
+    ProductImage.destroy.mockResolvedValueOnce(0);
+    ProductImage.bulkCreate.mockResolvedValueOnce([]);
+
+    const res = await request.put('/api/admin/products/9950').send({
+      // chỉ có imageUrl, không có url → img.url=undefined → dùng img.imageUrl
+      images: [{ imageUrl: 'https://cdn.example.com/img.jpg' }],
+    });
+    expect(res.status).toBe(200);
+  });
+
+  it('color=null khi image không có color (line 818)', async () => {
+    const product = makeProduct({ id: 9951 });
+    Product.findByPk.mockResolvedValueOnce(product).mockResolvedValueOnce(product);
+    ProductAttribute.findAll.mockResolvedValueOnce([]);
+    ProductVariant.findAll.mockResolvedValueOnce([]);
+    ProductSpecification.findAll.mockResolvedValueOnce([]);
+    ProductImage.destroy.mockResolvedValueOnce(0);
+    ProductImage.bulkCreate.mockResolvedValueOnce([]);
+
+    const res = await request.put('/api/admin/products/9951').send({
+      // không có color → img.color=undefined → null
+      images: [{ url: 'https://cdn.example.com/img.jpg' }],
+    });
+    expect(res.status).toBe(200);
+  });
+});
+
+// ─── Lines 989,997,999,1001: updateData field branches ───────────────────────
+
+describe('PUT /api/admin/products/:id — lines 989,997,999,1001: field assignment branches', () => {
+  it('baseName="" → fallback về name (line 989 || name branch)', async () => {
+    const product = makeProduct({ id: 9960 });
+    Product.findByPk.mockResolvedValueOnce(product).mockResolvedValueOnce(product);
+    ProductAttribute.findAll.mockResolvedValueOnce([]);
+    ProductVariant.findAll.mockResolvedValueOnce([]);
+    ProductSpecification.findAll.mockResolvedValueOnce([]);
+
+    const res = await request.put('/api/admin/products/9960').send({
+      name: 'Real Name',
+      baseName: '', // falsy → baseName || name = 'Real Name'
+    });
+    expect(res.status).toBe(200);
+  });
+
+  it('featured, seoTitle, seoDescription → set vào updateData (lines 997,999,1001)', async () => {
+    const product = makeProduct({ id: 9961 });
+    Product.findByPk.mockResolvedValueOnce(product).mockResolvedValueOnce(product);
+    ProductAttribute.findAll.mockResolvedValueOnce([]);
+    ProductVariant.findAll.mockResolvedValueOnce([]);
+    ProductSpecification.findAll.mockResolvedValueOnce([]);
+
+    const res = await request.put('/api/admin/products/9961').send({
+      description: 'Mô tả sản phẩm', // line 989
+      featured: true, // triggers hasOwnProperty('featured') → line 996
+      isFeatured: true, // provides `featured` variable via destructuring
+      condition: 'new', // line 997
+      seoTitle: 'SEO Title', // line 998
+      seoDescription: 'SEO', // line 999
+      faqs: [], // line 1001
+    });
+    expect(res.status).toBe(200);
+    expect(product.update).toHaveBeenCalledWith(
+      expect.objectContaining({ description: 'Mô tả sản phẩm', seoTitle: 'SEO Title' }),
+      expect.anything(),
+    );
+  });
+});

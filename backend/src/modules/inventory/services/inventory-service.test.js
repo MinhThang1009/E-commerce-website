@@ -30,14 +30,14 @@ describe('InventoryService', () => {
   describe('restockProduct', () => {
     test('quantity invalid → 400', async () => {
       await expect(
-        service.restockProduct({ productId: 1, quantity: 0, adminId: 5 })
+        service.restockProduct({ productId: 1, quantity: 0, adminId: 5 }),
       ).rejects.toMatchObject({ statusCode: 400 });
     });
 
     test('product không tồn tại → 404', async () => {
       repo.findProductById.mockResolvedValue(null);
       await expect(
-        service.restockProduct({ productId: 99, quantity: 5, adminId: 5 })
+        service.restockProduct({ productId: 99, quantity: 5, adminId: 5 }),
       ).rejects.toMatchObject({ statusCode: 404 });
     });
 
@@ -45,7 +45,7 @@ describe('InventoryService', () => {
       repo.findProductById.mockResolvedValue({ id: 1 });
       repo.findVariantByIdAndProductId.mockResolvedValue(null);
       await expect(
-        service.restockProduct({ productId: 1, variantId: 99, quantity: 5, adminId: 5 })
+        service.restockProduct({ productId: 1, variantId: 99, quantity: 5, adminId: 5 }),
       ).rejects.toMatchObject({ statusCode: 404 });
     });
 
@@ -54,16 +54,22 @@ describe('InventoryService', () => {
       repo.findProductById.mockResolvedValue(product);
 
       const result = await service.restockProduct({
-        productId: 1, quantity: 20, adminId: 5,
+        productId: 1,
+        quantity: 20,
+        adminId: 5,
       });
 
       expect(product.stockQuantity).toBe(30);
       expect(repo.createInventoryLog).toHaveBeenCalledWith(
         expect.objectContaining({
-          productId: 1, variantId: null,
-          changeType: 'restock', changeAmount: 20,
-          previousStock: 10, newStock: 30, createdBy: 5,
-        })
+          productId: 1,
+          variantId: null,
+          changeType: 'restock',
+          changeAmount: 20,
+          previousStock: 10,
+          newStock: 30,
+          createdBy: 5,
+        }),
       );
       expect(result.newStock).toBe(30);
     });
@@ -76,12 +82,20 @@ describe('InventoryService', () => {
       repo.sumVariantStockByProductId.mockResolvedValue(15);
 
       await service.restockProduct({
-        productId: 1, variantId: 5, quantity: 12, adminId: 7,
+        productId: 1,
+        variantId: 5,
+        quantity: 12,
+        adminId: 7,
       });
 
       expect(variant.stockQuantity).toBe(15);
       expect(variant.isAvailable).toBe(true);
       expect(product.stockQuantity).toBe(15);
+      // sumVariantStockByProductId phải chạy trong transaction để đảm bảo atomicity
+      expect(repo.sumVariantStockByProductId).toHaveBeenCalledWith(
+        1,
+        expect.objectContaining({ transaction: expect.any(Object) }),
+      );
     });
 
     test('restock publish StockRestockedEvent', async () => {
@@ -91,7 +105,7 @@ describe('InventoryService', () => {
       await service.restockProduct({ productId: 1, quantity: 5, adminId: 9 });
 
       expect(eventBus.publish).toHaveBeenCalledWith(
-        expect.objectContaining({ type: 'inventory.restocked' })
+        expect.objectContaining({ type: 'inventory.restocked' }),
       );
     });
   });
@@ -100,9 +114,7 @@ describe('InventoryService', () => {
     test('cap limit = 100', async () => {
       repo.findInventoryLogs.mockResolvedValue({ count: 0, rows: [] });
       await service.getInventoryLogs({ limit: 999 });
-      expect(repo.findInventoryLogs).toHaveBeenCalledWith(
-        expect.objectContaining({ limit: 100 })
-      );
+      expect(repo.findInventoryLogs).toHaveBeenCalledWith(expect.objectContaining({ limit: 100 }));
     });
 
     test('filter by productId + changeType', async () => {
@@ -111,7 +123,7 @@ describe('InventoryService', () => {
       expect(repo.findInventoryLogs).toHaveBeenCalledWith(
         expect.objectContaining({
           where: { productId: 5, changeType: 'restock' },
-        })
+        }),
       );
     });
   });

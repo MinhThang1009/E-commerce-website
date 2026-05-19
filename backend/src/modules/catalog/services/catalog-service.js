@@ -24,14 +24,20 @@ class CatalogService {
 
   async _invalidateCacheKey(key) {
     if (!this.cacheStore) return;
-    try { await this.cacheStore.del(key); }
-    catch (err) { this.logger.warn(`Xóa cache ${key} thất bại:`, err.message); }
+    try {
+      await this.cacheStore.del(key);
+    } catch (err) {
+      this.logger.warn(`Xóa cache ${key} thất bại:`, err.message);
+    }
   }
 
   async _invalidateCachePattern(pattern) {
     if (!this.cacheStore || typeof this.cacheStore.delPattern !== 'function') return;
-    try { await this.cacheStore.delPattern(pattern); }
-    catch (err) { this.logger.warn(`Xóa cache pattern ${pattern} thất bại:`, err.message); }
+    try {
+      await this.cacheStore.delPattern(pattern);
+    } catch (err) {
+      this.logger.warn(`Xóa cache pattern ${pattern} thất bại:`, err.message);
+    }
   }
 
   // ---------- Category ----------
@@ -108,7 +114,14 @@ class CatalogService {
     return { message: 'catalog.categoryDeleted' };
   }
 
-  async getProductsByCategory({ id, page = 1, limit = 10, sort = 'createdAt', order = 'DESC', status = 'active' }) {
+  async getProductsByCategory({
+    id,
+    page = 1,
+    limit = 10,
+    sort = 'createdAt',
+    order = 'DESC',
+    status = 'active',
+  }) {
     let category = await this.catalogRepository.findCategoryById(id);
     if (!category) {
       category = await this.catalogRepository.findCategoryBySlug(id);
@@ -119,7 +132,11 @@ class CatalogService {
     const off = (parseInt(page, 10) - 1) * lim;
 
     const { count, rows } = await this.catalogRepository.findProductsByCategoryId(category.id, {
-      status, sort, order, limit: lim, offset: off,
+      status,
+      sort,
+      order,
+      limit: lim,
+      offset: off,
     });
 
     const products = rows.map((p) => this._mapProductWithImages(p));
@@ -141,15 +158,18 @@ class CatalogService {
 
     if (json.productImages) {
       json.images = json.productImages.map((img) => ({
-        id: img.id, url: img.imageUrl,
-        isThumbnail: img.isThumbnail, color: img.color,
+        id: img.id,
+        url: img.imageUrl,
+        isThumbnail: img.isThumbnail,
+        color: img.color,
       }));
       const thumb = json.productImages.find((img) => img.isThumbnail) || json.productImages[0];
       json.thumbnail = thumb ? thumb.imageUrl : null;
     }
 
     if (json.variants && json.variants.length > 0) {
-      const def = json.variants.find((v) => v.isDefault === true || v.isDefault === 1) || json.variants[0];
+      const def =
+        json.variants.find((v) => v.isDefault === true || v.isDefault === 1) || json.variants[0];
       json.price = def?.price || json.basePrice;
       json.compareAtPrice = def?.compareAtPrice || json.compareAtPrice;
     } else {
@@ -184,7 +204,8 @@ class CatalogService {
 
   async createBrand({ payload }) {
     const brand = await this.catalogRepository.createBrand({
-      name: payload.name, logoUrl: payload.logoUrl,
+      name: payload.name,
+      logoUrl: payload.logoUrl,
     });
     await this._invalidateCachePattern('cache:brands:*');
     return brand;
@@ -221,7 +242,10 @@ class CatalogService {
     const off = (parseInt(page, 10) - 1) * lim;
 
     const { count, rows: products } = await this.catalogRepository.findProductsByBrandId(brand.id, {
-      sort, order, limit: lim, offset: off,
+      sort,
+      order,
+      limit: lim,
+      offset: off,
     });
 
     return {
@@ -249,7 +273,10 @@ class CatalogService {
   async createCollection({ payload }) {
     const { name, description, thumbnail, isActive, productIds } = payload;
     const collection = await this.catalogRepository.createCollection({
-      name, description, thumbnail, isActive,
+      name,
+      description,
+      thumbnail,
+      isActive,
     });
 
     if (productIds && productIds.length > 0) {
@@ -285,16 +312,28 @@ class CatalogService {
     return { message: 'catalog.collectionDeleted' };
   }
 
-  async getProductsByCollection({ slug, page = 1, limit = 10, sort = 'createdAt', order = 'DESC' }) {
+  async getProductsByCollection({
+    slug,
+    page = 1,
+    limit = 10,
+    sort = 'createdAt',
+    order = 'DESC',
+  }) {
     const collection = await this.catalogRepository.findCollectionBySlug(slug);
     if (!collection) throw new AppError('catalog.collectionNotFound', 404);
 
     const lim = parseInt(limit, 10);
     const off = (parseInt(page, 10) - 1) * lim;
 
-    const { count, rows: products } = await this.catalogRepository.findProductsByCollectionId(collection.id, {
-      sort, order, limit: lim, offset: off,
-    });
+    const { count, rows: products } = await this.catalogRepository.findProductsByCollectionId(
+      collection.id,
+      {
+        sort,
+        order,
+        limit: lim,
+        offset: off,
+      },
+    );
 
     return {
       total: count,
@@ -322,7 +361,8 @@ class CatalogService {
         variantId: img.variantId,
         color: img.color,
       }));
-      const primary = productJson.productImages.find((img) => img.isThumbnail) || productJson.productImages[0];
+      const primary =
+        productJson.productImages.find((img) => img.isThumbnail) || productJson.productImages[0];
       productJson.thumbnail = primary.imageUrl;
     } else {
       productJson.images = [];
@@ -349,7 +389,9 @@ class CatalogService {
   _pickDisplayPrice(productJson) {
     const basePrice = parseFloat(productJson.basePrice) || 0;
     if (productJson.variants && productJson.variants.length > 0) {
-      const sorted = [...productJson.variants].sort((a, b) => parseFloat(a.price) - parseFloat(b.price));
+      const sorted = [...productJson.variants].sort(
+        (a, b) => parseFloat(a.price) - parseFloat(b.price),
+      );
       const lowestPrice = parseFloat(sorted[0].price);
       return lowestPrice !== 0 && lowestPrice ? lowestPrice : basePrice;
     }
@@ -360,7 +402,6 @@ class CatalogService {
   async _clearProductCache(productId, productSlug) {
     if (!this.cacheStore || typeof this.cacheStore.delMany !== 'function') return;
     const keys = [];
-    /* istanbul ignore else */
     if (this.cacheStore.delPattern) {
       try {
         await this.cacheStore.delPattern('products:list:*');
@@ -372,14 +413,31 @@ class CatalogService {
     if (productId) keys.push(`product:detail:${productId}`);
     if (productSlug) keys.push(`product:detail:${productSlug}`);
     for (const k of keys) {
-      try { await this.cacheStore.del(k); } catch { /* ignore */ }
+      try {
+        await this.cacheStore.del(k);
+      } catch {
+        /* ignore */
+      }
     }
   }
 
   // GET /api/products — list với cache + faceted filter
-  async getAllProducts({ page = 1, sort = 'createdAt', order = 'DESC',
-    category, search, minPrice, maxPrice, inStock, featured, status, brand, collection,
-    limit, cacheUrl }) {
+  async getAllProducts({
+    page = 1,
+    sort = 'createdAt',
+    order = 'DESC',
+    category,
+    search,
+    minPrice,
+    maxPrice,
+    inStock,
+    featured,
+    status,
+    brand,
+    collection,
+    limit,
+    cacheUrl,
+  }) {
     const lim = Math.min(parseInt(limit, 10) || 20, 100);
     const off = (parseInt(page, 10) - 1) * lim;
 
@@ -424,11 +482,15 @@ class CatalogService {
       const cIds = collections.filter((c) => !isNaN(c) && String(c).trim() !== '');
       const cSlugs = collections.filter((c) => isNaN(c) || String(c).trim() === '');
       if (cIds.length > 0) filter.collectionIdsIn = cIds;
-      /* istanbul ignore next */ else if (cSlugs.length > 0) filter.collectionSlugsIn = cSlugs;
+      else if (cSlugs.length > 0) filter.collectionSlugsIn = cSlugs;
     }
 
     const { count, rows: productsRaw } = await this.catalogRepository.findProductsList({
-      filter, sort, order, limit: lim, offset: off,
+      filter,
+      sort,
+      order,
+      limit: lim,
+      offset: off,
     });
 
     const products = productsRaw.map((product) => {
@@ -497,7 +559,11 @@ class CatalogService {
     }
 
     if (detailCacheKey && this.cacheStore) {
-      await this.cacheStore.setEx(detailCacheKey, this.CACHE_TTL_PRODUCT_DETAIL, JSON.stringify(payload));
+      await this.cacheStore.setEx(
+        detailCacheKey,
+        this.CACHE_TTL_PRODUCT_DETAIL,
+        JSON.stringify(payload),
+      );
     }
     return { payload, cacheHit: false };
   }
@@ -551,37 +617,49 @@ class CatalogService {
         });
       }
       if (!selectedVariant) {
-        selectedVariant = productJson.variants.find((v) => v.isDefault === true || v.isDefault === 1) ?? productJson.variants[0];
+        selectedVariant =
+          productJson.variants.find((v) => v.isDefault === true || v.isDefault === 1) ??
+          productJson.variants[0];
       }
 
-      if (selectedVariant) {
+      // selectedVariant luôn non-null ở đây (fallback về variants[0] ở trên)
+      {
         const attrs = selectedVariant.attributes || {};
         const variantColorRaw = attrs.color ?? attrs['Màu sắc'] ?? attrs['màu sắc'];
         let variantColor = variantColorRaw?.toString().normalize('NFC').toLowerCase().trim();
         if (!skuId && normColor) variantColor = normColor;
 
-        let variantImages = (productJson.images || []);
+        let variantImages = productJson.images; // _mapProductImages luôn set images
         if (skuId && selectedVariant) {
-          const matchByVariantId = variantImages.filter((img) => img.variantId === selectedVariant.id);
+          const matchByVariantId = variantImages.filter(
+            (img) => img.variantId === selectedVariant.id,
+          );
           if (matchByVariantId.length > 0) variantImages = matchByVariantId;
           else if (variantColor) {
-            variantImages = variantImages.filter((img) =>
-              img.color?.toString().normalize('NFC').toLowerCase().trim() === variantColor
+            variantImages = variantImages.filter(
+              (img) => img.color?.toString().normalize('NFC').toLowerCase().trim() === variantColor,
             );
           }
         } else if (variantColor) {
-          const matchByColor = variantImages.filter((img) =>
-            img.color?.toString().normalize('NFC').toLowerCase().trim() === variantColor
+          const matchByColor = variantImages.filter(
+            (img) => img.color?.toString().normalize('NFC').toLowerCase().trim() === variantColor,
           );
           if (matchByColor.length > 0) variantImages = matchByColor;
         }
 
         const variantName = selectedVariant.variantName || selectedVariant.displayName;
         const mainName = productJson.name;
-        const modelName = productJson.model || mainName.replace(/^(Laptop|Điện thoại|Máy tính bảng|Đồng hồ|Tai nghe|Loa|Phụ kiện)\s+/i, '');
-        const fullName = (variantName.toLowerCase().includes(mainName.toLowerCase()) || variantName.toLowerCase().includes(modelName.toLowerCase()))
-          ? variantName
-          : `${mainName} - ${variantName}`;
+        const modelName =
+          productJson.model ||
+          mainName.replace(
+            /^(Laptop|Điện thoại|Máy tính bảng|Đồng hồ|Tai nghe|Loa|Phụ kiện)\s+/i,
+            '',
+          );
+        const fullName =
+          variantName.toLowerCase().includes(mainName.toLowerCase()) ||
+          variantName.toLowerCase().includes(modelName.toLowerCase())
+            ? variantName
+            : `${mainName} - ${variantName}`;
 
         responseData = {
           ...productJson,
@@ -650,7 +728,9 @@ class CatalogService {
       related = await this.catalogRepository.findRelatedProducts(id, lim);
     }
     if (related.length === 0) {
-      this.logger.info(`Không tìm thấy sản phẩm liên quan cho sản phẩm ${id}. Trả về sản phẩm gần đây thay thế.`);
+      this.logger.info(
+        `Không tìm thấy sản phẩm liên quan cho sản phẩm ${id}. Trả về sản phẩm gần đây thay thế.`,
+      );
       related = await this.catalogRepository.findRelatedProductsFallback(id, lim);
     }
 
@@ -670,7 +750,9 @@ class CatalogService {
     const off = (parseInt(page, 10) - 1) * lim;
 
     const { count, rows: productsRaw } = await this.catalogRepository.searchProducts({
-      q, limit: lim, offset: off,
+      q,
+      limit: lim,
+      offset: off,
     });
 
     const products = productsRaw.map((product) => {
@@ -721,9 +803,15 @@ class CatalogService {
     const now = new Date();
     let startDate;
     switch (period) {
-      case 'week': startDate = new Date(now.setDate(now.getDate() - 7)); break;
-      case 'year': startDate = new Date(now.setFullYear(now.getFullYear() - 1)); break;
-      default: startDate = new Date(now.setMonth(now.getMonth() - 1)); break;
+      case 'week':
+        startDate = new Date(now.setDate(now.getDate() - 7));
+        break;
+      case 'year':
+        startDate = new Date(now.setFullYear(now.getFullYear() - 1));
+        break;
+      default:
+        startDate = new Date(now.setMonth(now.getMonth() - 1));
+        break;
     }
 
     const lim = parseInt(limit, 10);
@@ -751,7 +839,9 @@ class CatalogService {
     const parsedMinDiscount = parseFloat(minDiscount) || 5;
 
     const products = await this.catalogRepository.findDeals({
-      minDiscount: parsedMinDiscount, sort, limit: parsedLimit,
+      minDiscount: parsedMinDiscount,
+      sort,
+      limit: parsedLimit,
     });
 
     return products.map((product) => {
@@ -787,7 +877,9 @@ class CatalogService {
     const average = count > 0 ? reviews.reduce((s, r) => s + r.rating, 0) / count : 0;
 
     const distribution = { 1: 0, 2: 0, 3: 0, 4: 0, 5: 0 };
-    reviews.forEach((r) => { distribution[r.rating]++; });
+    reviews.forEach((r) => {
+      distribution[r.rating]++;
+    });
 
     return { average, count, distribution };
   }
@@ -807,7 +899,9 @@ class CatalogService {
       }
     }
 
-    const priceRange = await this.catalogRepository.getProductPriceRange({ categoryId: actualCategoryId });
+    const priceRange = await this.catalogRepository.getProductPriceRange({
+      categoryId: actualCategoryId,
+    });
 
     const [brands, colors, sizes, others] = await Promise.all([
       this.catalogRepository.findAttributeValuesByName('brand', { categoryId: actualCategoryId }),
@@ -834,7 +928,10 @@ class CatalogService {
   }
 
   async getRecentlyViewed({ userId, limit = 10 }) {
-    const recentlyViewed = await this.catalogRepository.findRecentlyViewedByUser(userId, parseInt(limit, 10));
+    const recentlyViewed = await this.catalogRepository.findRecentlyViewedByUser(
+      userId,
+      parseInt(limit, 10),
+    );
     return recentlyViewed.map((rv) => {
       const product = rv.Product;
       const json = product.toJSON();
@@ -851,23 +948,26 @@ class CatalogService {
     let createdProduct;
 
     await this.catalogRepository.runInTransaction(async (transaction) => {
-      const product = await this.catalogRepository.createProduct({
-        name: payload.name,
-        baseName: payload.baseName || payload.name,
-        description: payload.description,
-        shortDescription: payload.shortDescription,
-        basePrice: isVariantProduct ? 0 : payload.price,
-        compareAtPrice: isVariantProduct ? null : payload.compareAtPrice,
-        images: payload.images || [],
-        stockQuantity: isVariantProduct ? 0 : payload.stockQuantity,
-        isFeatured: payload.featured,
-        tags: payload.tags || [],
-        seoTitle: payload.seoTitle,
-        seoDescription: payload.seoDescription,
-        seoKeywords: payload.seoKeywords || [],
-        isVariantProduct,
-        specifications: payload.specifications || {},
-      }, { transaction });
+      const product = await this.catalogRepository.createProduct(
+        {
+          name: payload.name,
+          baseName: payload.baseName || payload.name,
+          description: payload.description,
+          shortDescription: payload.shortDescription,
+          basePrice: isVariantProduct ? 0 : payload.price,
+          compareAtPrice: isVariantProduct ? null : payload.compareAtPrice,
+          images: payload.images || [],
+          stockQuantity: isVariantProduct ? 0 : payload.stockQuantity,
+          isFeatured: payload.featured,
+          tags: payload.tags || [],
+          seoTitle: payload.seoTitle,
+          seoDescription: payload.seoDescription,
+          seoKeywords: payload.seoKeywords || [],
+          isVariantProduct,
+          specifications: payload.specifications || {},
+        },
+        { transaction },
+      );
 
       if (payload.categoryIds && payload.categoryIds.length > 0) {
         const categories = await this.catalogRepository.findCategoriesByIds(payload.categoryIds);
@@ -877,10 +977,17 @@ class CatalogService {
         await this.catalogRepository.setProductCategories(product, categories, { transaction });
       }
 
-      if (payload.specifications && Array.isArray(payload.specifications) && payload.specifications.length > 0) {
+      if (
+        payload.specifications &&
+        Array.isArray(payload.specifications) &&
+        payload.specifications.length > 0
+      ) {
         const rows = payload.specifications.map((spec, i) => ({
           productId: product.id,
-          name: spec.name, value: spec.value, category: spec.category || 'General', sortOrder: i,
+          name: spec.name,
+          value: spec.value,
+          category: spec.category || 'General',
+          sortOrder: i,
         }));
         await this.catalogRepository.createProductSpecifications(rows, { transaction });
       }
@@ -888,7 +995,11 @@ class CatalogService {
       if (payload.parentAttributes && payload.parentAttributes.length > 0) {
         const rows = payload.parentAttributes.map((attr, i) => ({
           productId: product.id,
-          name: attr.name, type: attr.type, values: attr.values, required: attr.required, sortOrder: i,
+          name: attr.name,
+          type: attr.type,
+          values: attr.values,
+          required: attr.required,
+          sortOrder: i,
         }));
         await this.catalogRepository.createProductAttributes(rows, { transaction });
       }
@@ -919,17 +1030,23 @@ class CatalogService {
       }
 
       if (payload.warrantyPackageIds && payload.warrantyPackageIds.length > 0) {
-        const warranties = await this.catalogRepository.findWarrantyPackagesByIds(payload.warrantyPackageIds);
+        const warranties = await this.catalogRepository.findWarrantyPackagesByIds(
+          payload.warrantyPackageIds,
+        );
         if (warranties.length !== payload.warrantyPackageIds.length) {
           throw new AppError('catalog.warrantyPackagesNotExist', 400);
         }
-        await this.catalogRepository.setProductWarrantyPackages(product, warranties, { transaction });
+        await this.catalogRepository.setProductWarrantyPackages(product, warranties, {
+          transaction,
+        });
       }
 
       createdProduct = product;
     });
 
-    const fullProduct = await this.catalogRepository.findProductByIdWithFullDetails(createdProduct.id);
+    const fullProduct = await this.catalogRepository.findProductByIdWithFullDetails(
+      createdProduct.id,
+    );
     await this._clearProductCache(null);
     return fullProduct;
   }
@@ -943,7 +1060,8 @@ class CatalogService {
     await this.catalogRepository.runInTransaction(async (transaction) => {
       const updateData = {};
       const setIfPresent = (key, value) => {
-        if (Object.prototype.hasOwnProperty.call(patch, key)) updateData[key === 'featured' ? 'isFeatured' : key] = value;
+        if (Object.prototype.hasOwnProperty.call(patch, key))
+          updateData[key === 'featured' ? 'isFeatured' : key] = value;
       };
       setIfPresent('name', patch.name);
       setIfPresent('description', patch.description);
@@ -986,11 +1104,15 @@ class CatalogService {
 
       if (Object.prototype.hasOwnProperty.call(patch, 'warrantyPackageIds')) {
         if (patch.warrantyPackageIds && patch.warrantyPackageIds.length > 0) {
-          const warranties = await this.catalogRepository.findWarrantyPackagesByIds(patch.warrantyPackageIds);
+          const warranties = await this.catalogRepository.findWarrantyPackagesByIds(
+            patch.warrantyPackageIds,
+          );
           if (warranties.length !== patch.warrantyPackageIds.length) {
             throw new AppError('catalog.warrantyPackagesNotExist', 400);
           }
-          await this.catalogRepository.setProductWarrantyPackages(product, warranties, { transaction });
+          await this.catalogRepository.setProductWarrantyPackages(product, warranties, {
+            transaction,
+          });
         } else {
           await this.catalogRepository.setProductWarrantyPackages(product, [], { transaction });
         }

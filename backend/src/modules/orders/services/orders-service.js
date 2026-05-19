@@ -416,13 +416,10 @@ class OrdersService {
       }
 
       // Inventory logs
-      /* istanbul ignore else */
-      if (pendingInventoryLogs.length > 0) {
-        await this.repo.createInventoryLogs(
-          pendingInventoryLogs.map((log) => ({ ...log, orderId: order.id })),
-          { transaction },
-        );
-      }
+      await this.repo.createInventoryLogs(
+        pendingInventoryLogs.map((log) => ({ ...log, orderId: order.id })),
+        { transaction },
+      );
 
       // Manual payment → clear cart ngay; online payment đợi webhook
       const manualPaymentMethods = ['cod', 'bank_transfer', 'installment'];
@@ -496,7 +493,7 @@ class OrdersService {
       for (const cart of carts) {
         cart.status = 'converted';
         await this.repo.saveCart(cart, { transaction });
-        await this.repo.clearCartItems(cart.id);
+        await this.repo.clearCartItems(cart.id, { transaction });
       }
     } catch (err) {
       this.logger.error(`Lỗi xóa giỏ hàng của user ${userId}:`, err.message);

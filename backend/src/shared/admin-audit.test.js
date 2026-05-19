@@ -208,3 +208,20 @@ describe('writeToDb error handling', () => {
     );
   });
 });
+
+// ─── logFailedAuth — ip không truyền (branch ip?? falsy) ─────────────────────
+
+describe('AdminAuditService.logFailedAuth — không truyền ip', () => {
+  test('ip=undefined → dùng requestContext.getStore()?.ip ?? null', () => {
+    // requestContext.getStore() = undefined trong test → ip = null
+    AdminAuditService.logFailedAuth('test@example.com', 'no_ip_reason');
+
+    expect(mockLogger.warn).toHaveBeenCalledWith(
+      'ADMIN_AUTH_FAILED',
+      expect.objectContaining({
+        email: 'test@example.com',
+        ip: null,
+      }),
+    );
+  });
+});

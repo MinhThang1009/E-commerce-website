@@ -18,7 +18,7 @@ const getAll = async ({ page = 1, limit = 10, isActive }) => {
       total: count,
       page: parseInt(page, 10),
       limit: parseInt(limit, 10),
-      totalPages: Math.ceil(count / limit),
+      totalPages: Math.ceil(count / parseInt(limit, 10)),
     },
   };
 };
@@ -27,7 +27,10 @@ const getByProduct = async (productId) => {
   const product = await repo.productExists(productId);
   if (!product) throw new AppError('Không tìm thấy sản phẩm', 404);
   const productWarranties = await repo.findByProduct(productId);
-  return productWarranties.map((pw) => ({ ...pw.warrantyPackage.toJSON(), isDefault: pw.isDefault }));
+  return productWarranties.map((pw) => ({
+    ...pw.warrantyPackage.toJSON(),
+    isDefault: pw.isDefault,
+  }));
 };
 
 const getById = async (id) => {

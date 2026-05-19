@@ -1152,7 +1152,9 @@ describe('PUT /api/admin/products/:id — updateProduct các diff paths', () => 
     });
 
     expect(res.status).toBe(200);
-    expect(ProductWarranty.destroy).toHaveBeenCalled();
+    expect(ProductWarranty.destroy).toHaveBeenCalledWith(
+      expect.objectContaining({ where: { productId: '10' } }),
+    );
     expect(ProductWarranty.create).not.toHaveBeenCalled();
   });
 

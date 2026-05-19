@@ -144,7 +144,9 @@ describe('translateBatch — parsed là mảng JSON trực tiếp', () => {
 // ══════════════════════════════════════════════════════════════════════════════
 
 describe('translateBatch — API trả về object có key bọc ngoài', () => {
-  beforeEach(() => { axios.get = jest.fn().mockRejectedValue(new Error('network')); });
+  beforeEach(() => {
+    axios.get = jest.fn().mockRejectedValue(new Error('network'));
+  });
   it("trích xuất mảng từ key 'translations'", async () => {
     const texts = ['laptop', 'điện thoại'];
     const translated = ['laptop', 'phone'];
@@ -258,5 +260,94 @@ describe('translateBatch — catch branch khi axios.post throw', () => {
       expect.stringContaining('TranslateService'),
       timeoutError.message,
     );
+  });
+});
+
+// ══════════════════════════════════════════════════════════════════════════════
+// translateWithMyMemory — branches trong if/else (lines 109-113)
+// ══════════════════════════════════════════════════════════════════════════════
+
+describe('translateBatch — MyMemory if/else branches', () => {
+  beforeEach(() => {
+    // OpenRouter fail → rơi vào MyMemory
+    axios.post.mockRejectedValue(new Error('network'));
+  });
+
+  it('dùng kết quả MyMemory khi translated hợp lệ', async () => {
+    axios.get.mockResolvedValue({
+      data: { responseData: { translatedText: 'Smartphone' } },
+    });
+    const result = await translateBatch(['điện thoại thông minh']);
+    expect(result).toEqual(['Smartphone']);
+  });
+
+  it('giữ text gốc khi MyMemory trả về PLEASE SELECT', async () => {
+    axios.get.mockResolvedValue({
+      data: { responseData: { translatedText: 'PLEASE SELECT A LANGUAGE' } },
+    });
+    const result = await translateBatch(['xin chào']);
+    expect(result).toEqual(['xin chào']);
+  });
+
+  it('giữ text gốc khi MyMemory trả về đúng text ban đầu', async () => {
+    axios.get.mockResolvedValue({
+      data: { responseData: { translatedText: 'xin chào' } },
+    });
+    const result = await translateBatch(['xin chào']);
+    expect(result).toEqual(['xin chào']);
+  });
+
+  it('giữ text gốc khi MyMemory trả về translatedText null', async () => {
+    axios.get.mockResolvedValue({
+      data: { responseData: { translatedText: null } },
+    });
+    const result = await translateBatch(['xin chào']);
+    expect(result).toEqual(['xin chào']);
+  });
+});
+
+// ══════════════════════════════════════════════════════════════════════════════
+// Branches còn thiếu trong translateWithOpenRouter
+// ══════════════════════════════════════════════════════════════════════════════
+
+describe('translateBatch — langName fallback (lines 40-41)', () => {
+  it('dùng code nguyên khi from/to không có trong langName', async () => {
+    // 'fr' và 'de' không có trong langName → fromName='fr', toName='de'
+    axios.post.mockResolvedValue(makeAxiosResponse('["Bonjour"]'));
+    const result = await translateBatch(['Xin chào'], 'fr', 'de');
+    expect(axios.post).toHaveBeenCalledWith(
+      expect.any(String),
+      expect.objectContaining({
+        messages: expect.arrayContaining([
+          expect.objectContaining({ content: expect.stringContaining('fr') }),
+        ]),
+      }),
+      expect.any(Object),
+    );
+  });
+});
+
+describe('translateBatch — markdown-wrapped JSON response (line 77 mdMatch branch)', () => {
+  it('parse JSON từ markdown code block', async () => {
+    const markdownContent = '```json\n["Processor","RAM"]\n```';
+    axios.post.mockResolvedValue(makeAxiosResponse(markdownContent));
+    const result = await translateBatch(['Bộ vi xử lý', 'Bộ nhớ RAM']);
+    expect(result).toEqual(['Processor', 'RAM']);
+  });
+});
+
+describe('translateBatch — element không phải string (line 87 fallback)', () => {
+  it('element null trong mảng kết quả → dùng text gốc', async () => {
+    // Trả về [null, 'RAM'] → element null fallback về texts[0]
+    axios.post.mockResolvedValue(makeAxiosResponse('[null, "RAM"]'));
+    const result = await translateBatch(['Bộ vi xử lý', 'Bộ nhớ RAM']);
+    expect(result[0]).toBe('Bộ vi xử lý');
+    expect(result[1]).toBe('RAM');
+  });
+
+  it('element chuỗi rỗng → dùng text gốc', async () => {
+    axios.post.mockResolvedValue(makeAxiosResponse('["  ", "RAM"]'));
+    const result = await translateBatch(['Bộ vi xử lý', 'Bộ nhớ RAM']);
+    expect(result[0]).toBe('Bộ vi xử lý');
   });
 });

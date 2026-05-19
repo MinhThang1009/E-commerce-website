@@ -278,6 +278,33 @@ describe('PaymentService.handleMomoIPN', () => {
     expect(repo.saveOrder).toHaveBeenCalled();
   });
 
+  it('xử lý bình thường khi body.amount = undefined (bỏ qua check amount)', async () => {
+    // body.amount là falsy → branch `if (body.amount && ...)` skip → không check mismatch
+    // Order vẫn được xử lý. Đây là expected behavior (optional amount field).
+    const order = buildOrder({
+      total: 500000,
+      paymentTransactionId: null,
+      paymentStatus: 'pending',
+    });
+    const repo = buildMockRepo({
+      runInTransaction: jest.fn(async (fn) => fn({})),
+      lockOrder: jest.fn().mockResolvedValue(order),
+      saveOrder: jest.fn().mockResolvedValue(),
+    });
+    const svc = buildService({ paymentRepository: repo });
+
+    await svc.handleMomoIPN({
+      body: {
+        resultCode: 0,
+        extraData: 'orderId=42',
+        transId: 'TX-MOMO-NO-AMOUNT',
+        // amount: undefined — không truyền
+      },
+    });
+
+    expect(repo.saveOrder).toHaveBeenCalled(); // order được xử lý bình thường
+  });
+
   it('không xử lý order khi amount không khớp', async () => {
     const order = buildOrder({ total: 500000 });
     const repo = buildMockRepo({
@@ -604,10 +631,23 @@ describe('PaymentService.createRefund', () => {
     });
   });
 
-  it('fallback về order.total khi amount = 0 (falsy — dùng order.total thay thế)', async () => {
-    // amount=0 là falsy → `amount || order.total` → refundAmount = order.total (500000)
-    // Đây là behavior thực của code hiện tại (không throw 400).
-    // NOTE: đây là quirk của `amount || order.total` — amount âm sẽ throw vì âm <= 0.
+  it('ném AppError 400 khi amount = 0 (0 đồng không hợp lệ)', async () => {
+    // amount != null ? amount : total → amount=0 → refundAmount=0 → throw 400 (0 <= 0)
+    const order = buildOrder({
+      total: 500000,
+      paymentStatus: 'paid',
+      paymentProvider: 'vnpay',
+      paymentTransactionId: 'TX-VNP',
+    });
+    const repo = buildMockRepo({ findOrderByPk: jest.fn().mockResolvedValue(order) });
+    const svc = buildService({ paymentRepository: repo });
+    await expect(svc.createRefund({ orderId: 42, amount: 0 })).rejects.toMatchObject({
+      statusCode: 400,
+    });
+  });
+
+  it('dùng order.total khi amount = null (không truyền amount)', async () => {
+    // amount=null → refundAmount = order.total → refund thành công
     const order = buildOrder({
       total: 500000,
       paymentStatus: 'paid',
@@ -617,9 +657,7 @@ describe('PaymentService.createRefund', () => {
     const repo = buildMockRepo({ findOrderByPk: jest.fn().mockResolvedValue(order) });
     const vnpayGateway = buildMockVnpayGateway();
     const svc = buildService({ paymentRepository: repo, vnpayGateway });
-
-    // amount=0 → fallback về order.total=500000 → không throw, refund thành công
-    await expect(svc.createRefund({ orderId: 42, amount: 0 })).resolves.toBeDefined();
+    await expect(svc.createRefund({ orderId: 42, amount: null })).resolves.toBeDefined();
     expect(vnpayGateway.refund).toHaveBeenCalledWith(expect.objectContaining({ amount: 500000 }));
   });
 
@@ -786,6 +824,34 @@ describe('PaymentService._sendOrderConfirmationEmailSafe — order có items', (
 // Nhánh else tại line 269 là dead code khi dùng policy thực (chỉ vnpay được cho phép).
 // Test này verify behavior khi nhánh false được đi qua: refund = undefined, order vẫn được
 // đánh dấu refunded và saveOrder được gọi.
+
+// ── createRefund — nhánh if (paymentProvider === 'vnpay') (line 316) ─────────
+
+describe('PaymentService.createRefund — provider là vnpay (nhánh if tại line 316)', () => {
+  it('gọi vnpayGateway.refund khi paymentProvider = vnpay (covers if branch)', async () => {
+    const order = buildOrder({
+      paymentStatus: 'paid',
+      paymentProvider: 'vnpay',
+      paymentTransactionId: 'VNP-TX-123',
+    });
+    const repo = buildMockRepo({ findOrderByPk: jest.fn().mockResolvedValue(order) });
+    const vnpayGateway = buildMockVnpayGateway();
+    const svc = buildService({ paymentRepository: repo, vnpayGateway });
+
+    const refund = await svc.createRefund({ orderId: 42, amount: 100000, ipAddr: '1.2.3.4' });
+
+    expect(vnpayGateway.refund).toHaveBeenCalledWith(
+      expect.objectContaining({
+        orderId: order.number,
+        amount: 100000,
+        ipAddr: '1.2.3.4',
+      }),
+    );
+    expect(refund).toEqual({ success: true });
+    expect(order.paymentStatus).toBe('refunded');
+    expect(repo.saveOrder).toHaveBeenCalledWith(order);
+  });
+});
 
 describe('PaymentService.createRefund — provider không phải vnpay', () => {
   it('ném AppError khi paymentProvider không nằm trong danh sách hỗ trợ hoàn tiền', async () => {

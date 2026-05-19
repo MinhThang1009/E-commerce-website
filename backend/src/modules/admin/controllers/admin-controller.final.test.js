@@ -877,3 +877,28 @@ describe('PUT /api/admin/products/:id — line 1296: translate success (logger.i
     expect(logger.info).toHaveBeenCalledWith(expect.stringContaining('Đã dịch 1 specs'));
   });
 });
+
+// ─── createProduct — lines 816,818: image object fallback branches ────────────
+
+describe('POST /api/admin/products — lines 816,818: image object (imageUrl fallback, color null)', () => {
+  it('img.imageUrl khi không có img.url, color=null khi không có color (line 816,818)', async () => {
+    const newProduct = makeProduct({ id: 290 });
+    Product.create.mockResolvedValueOnce(newProduct);
+    Product.findByPk.mockResolvedValueOnce(newProduct);
+    ProductAttribute.findAll.mockResolvedValueOnce([]);
+    sequelize.query.mockResolvedValue([[], {}]);
+
+    const res = await request.post('/api/admin/products').send({
+      name: 'Product With Image Objects',
+      basePrice: 10000000,
+      // Object images: img.url undefined → img.imageUrl used (line 816)
+      //                img.color undefined → null (line 818)
+      images: [
+        { imageUrl: 'https://cdn.example.com/img1.jpg' }, // no url → fallback to imageUrl
+        { url: 'https://cdn.example.com/img2.jpg', color: 'red' }, // url provided → left side
+      ],
+    });
+
+    expect(res.status).toBe(201);
+  });
+});

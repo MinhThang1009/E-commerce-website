@@ -32,25 +32,28 @@ module.exports = {
   // Generate report: `npx jest --coverage`. Snapshot trong docs/TESTING_COVERAGE_BASELINE.md.
   collectCoverageFrom: [
     'src/**/*.js',
-    '!src/**/*.test.js',        // exclude co-located test files
-    '!src/__tests__/**',        // exclude flat test directory
+    '!src/**/*.test.js',              // exclude co-located test files
+    '!src/__tests__/**',              // exclude flat test directory
     '!src/migrations/**',
     '!src/seeders/**',
     '!src/config/**',
     '!src/server.js',
     '!src/app.js',
-    '!src/**/I*.js',            // exclude abstract interface files (IRepository, IService)
+    '!src/**/I*.js',                  // exclude PascalCase abstract interface files
+    '!src/**/i-*-repository.js',      // exclude kebab-case interface repositories (sau rename)
+    '!src/**/i-*-service.js',         // exclude kebab-case interface services
+    '!src/**/*-dto.js',               // exclude DTO files (data shapes, no logic)
     '!src/**/*.module.js',
-    '!src/**/module.js',        // exclude DI wiring modules
-    '!src/**/index.js',         // exclude barrel re-exports
-    '!src/routes/imageProxy.js', // proxy utility, not business logic
+    '!src/**/module.js',              // exclude DI wiring modules
+    '!src/**/index.js',               // exclude barrel re-exports
+    '!src/routes/imageProxy.js',      // proxy utility, not business logic
   ],
   coverageThreshold: {
     global: {
-      statements: 99,   // current: ~99.65% post Phase-10 coverage push
-      branches: 97,     // current: ~97.75% post Phase-10 coverage push
-      functions: 99,    // current: ~99.15% post Phase-10 coverage push
-      lines: 99,        // current: ~99.82% post Phase-10 coverage push
+      statements: 99,   // current: 100% post test-review session
+      branches: 97,     // branches khó cover tự nhiên (||, ??, ternary) — buffer 3%
+      functions: 99,    // current: 100%
+      lines: 99,        // current: 100%
     },
   },
 };

@@ -49,8 +49,9 @@ describe('CartService._buildCartResponse — branch coverage', () => {
       toJSON: () => ({
         id: 1,
         ProductVariant: null, // outer ternary FALSE → evaluate inner
-        Product: null,        // inner ternary FALSE → price = 0
-        warrantyPackages: null, quantity: 2,
+        Product: null, // inner ternary FALSE → price = 0
+        warrantyPackages: null,
+        quantity: 2,
       }),
     };
     repo.findCartItemsWithDetails.mockResolvedValue([cartItemRaw]);
@@ -86,8 +87,10 @@ describe('CartService.updateCartItem — branch coverage', () => {
     repo.findCartItemsWithDetails.mockResolvedValue([]);
 
     const result = await svc.updateCartItem({
-      itemId: 55, quantity: 5,
-      user: null, cookieSessionId: 'sess-abc',
+      itemId: 55,
+      quantity: 5,
+      user: null,
+      cookieSessionId: 'sess-abc',
     });
 
     // No throw — quantity 5 <= stock 10, repo.saveCartItem called
@@ -95,59 +98,34 @@ describe('CartService.updateCartItem — branch coverage', () => {
   });
 });
 
-describe('CartService.syncCart — branch coverage', () => {
-  // Line 327 [binary-expr] counts=[4,0]: product.basePrice || 0 → 0 path never taken
-  // Line 418 [cond-expr] counts=[11,0]: item.ProductVariant ? price : item.Product.basePrice → FALSE never taken
-  test('line 327 FALSE: product.basePrice = 0 → unitPrice = 0', async () => {
+describe('CartService.validateCart — branch coverage', () => {
+  test('item không có ProductVariant → dùng Product.basePrice (FALSE branch)', async () => {
     const { svc, repo } = makeCartService();
-    const sequelize = { transaction: jest.fn((cb) => cb({})) };
-
-    const product = {
-      id: 1, status: 'active', basePrice: 0, // ← triggers || 0
-      defaultVariant: { stockQuantity: 5 },
-      variants: [],
-    };
-    const cartItems = [{ productId: 1, variantId: null, quantity: 2 }];
-
-    repo.findOrCreateActiveCartByUserId.mockResolvedValue({ id: 10 });
-    repo.findCartItemsForMerge.mockResolvedValue([]);
-
-    // Mock product lookup
-    const ProductModel = { findByPk: jest.fn().mockResolvedValue(product) };
-    // We inject via the method that calls it — need to call directly
-    // _syncCart is private, call via syncCart public
-    repo.clearCartItems.mockResolvedValue(0);
-
-    // Directly test the code path by mocking the internal _syncItem
-    const createCartItemSpy = jest.spyOn(repo, 'createCartItem').mockResolvedValue({ id: 99 });
-
-    // Can't easily hit this without full dependency chain
-    // So test the || 0 logic directly:
-    const price = 0; // product.basePrice = 0
-    const result = price || 0;
-    expect(result).toBe(0); // || 0 path taken
-  });
-
-  test('line 418 FALSE: validateCart item without ProductVariant → uses Product.basePrice', async () => {
-    const { svc, repo } = makeCartService();
-    const cart = {
-      id: 1, userId: 1, sessionId: null,
-      items: [{
+    const cart = { id: 1, userId: 1, sessionId: null };
+    const cartItems = [
+      {
         id: 5,
-        ProductVariant: null, // ← FALSE branch
-        Product: { id: 10, nameVi: 'Test', basePrice: 200000, defaultVariant: { stockQuantity: 5 } },
-        quantity: 1,
+        productId: 10,
+        variantId: null,
+        quantity: 2,
         unitPrice: 200000,
+        ProductVariant: null, // ← FALSE branch: dùng Product.basePrice
+        Product: {
+          id: 10,
+          name: 'Test',
+          basePrice: 200000,
+          defaultVariant: { stockQuantity: 5 },
+        },
         warrantyPackages: [],
-        set: jest.fn(),
-        save: jest.fn().mockResolvedValue({}),
-      }],
-    };
-    repo.findOrCreateActiveCartByUserId.mockResolvedValue(cart);
+      },
+    ];
+    repo.findActiveCartByUserId.mockResolvedValue(cart);
+    repo.findCartItemsForValidation = jest.fn().mockResolvedValue(cartItems);
 
     const result = await svc.validateCart({ user: { id: 1 }, cookieSessionId: null });
-    // currentPrice = item.Product.basePrice = 200000 (FALSE branch covered)
-    expect(result).toBeDefined();
+    expect(result).toHaveProperty('items');
+    // currentPrice lấy từ Product.basePrice (200000) vì ProductVariant = null
+    expect(result.items[0].currentPrice).toBe(200000);
   });
 });
 
@@ -186,22 +164,36 @@ function makeCatalogService(overrides = {}) {
 }
 
 describe('CatalogService._pickDisplayPrice — branch coverage', () => {
-  // Line 344 [binary-expr] counts=[31,0]: parseFloat(sorted[0].price) || basePrice → || path never taken
-  test('line 344 || basePrice: sorted[0].price = null → parseFloat(null) = NaN → returns basePrice', () => {
+  // Source: `lowestPrice !== 0 && lowestPrice ? lowestPrice : basePrice` (ternary, NOT ||)
+  // FALSE branch: khi condition = false → trả basePrice
+
+  test('price = null → lowestPrice = NaN → NaN && NaN = false → trả basePrice', () => {
+    // NaN !== 0 = true, nhưng NaN là falsy → && short-circuit → false → ternary FALSE → basePrice
     const { svc } = makeCatalogService();
     const product = {
       basePrice: 500000,
       variants: [{ price: null }, { price: 800000 }],
     };
     const result = svc._pickDisplayPrice(product);
-    expect(result).toBe(500000); // NaN || 500000 = 500000
+    expect(result).toBe(500000);
   });
 
-  test('line 344 || basePrice: sorted[0].price = 0 → parseFloat(0) = 0 → returns basePrice', () => {
+  test('price = 0 → lowestPrice = 0 → 0 !== 0 = false → ternary FALSE → trả basePrice', () => {
+    // 0 !== 0 = false → AND short-circuit → ternary FALSE → basePrice
     const { svc } = makeCatalogService();
     const product = { basePrice: 300000, variants: [{ price: 0 }] };
     const result = svc._pickDisplayPrice(product);
-    expect(result).toBe(300000); // 0 || 300000 = 300000
+    expect(result).toBe(300000);
+  });
+
+  test('price = 0.001 → lowestPrice = 0.001 → 0.001 !== 0 && truthy → ternary TRUE → trả 0.001', () => {
+    // Pin behavior: ternary (không phải ||) → near-zero valid price được giữ, không fallback basePrice
+    const { svc } = makeCatalogService();
+    const product = { basePrice: 300000, variants: [{ price: 0.001 }] };
+    const result = svc._pickDisplayPrice(product);
+    expect(result).toBe(0.001); // nếu dùng || thì 0.001 truthy cũng pass, nhưng 0.001 || 300000 = 0.001
+    // Test quan trọng: nếu source đổi về `parseFloat(price) || basePrice`, behavior vẫn giống ở đây
+    // Nên thêm negative case để phân biệt: xem test trên về price=0
   });
 });
 
@@ -236,13 +228,17 @@ describe('CatalogService.getAllProducts — branch coverage', () => {
 });
 
 describe('CatalogService._buildProductDetailResponse — branch coverage', () => {
-  // Line 526 [binary-expr] counts=[57,0]: parseFloat(compareAtPrice) || null → null path never taken
-  test('line 526 || null: compareAtPrice = 0 → parseFloat(0) = 0 → null', () => {
+  // Source: `compareAtPrice: productJson.compareAtPrice ? parseFloat(...) : null` (ternary, NOT ||)
+  // FALSE branch: compareAtPrice falsy → null
+  test('compareAtPrice = 0 → falsy → ternary FALSE path → null', () => {
+    // 0 là falsy → ternary FALSE → null (không phải 0 || null = null)
     const { svc } = makeCatalogService();
     const product = {
       toJSON: () => ({
-        id: 1, nameVi: 'Test', basePrice: 100000,
-        compareAtPrice: 0, // ← triggers || null
+        id: 1,
+        nameVi: 'Test',
+        basePrice: 100000,
+        compareAtPrice: 0, // ← falsy → ternary FALSE branch
         reviews: null,
         variants: [],
         images: [],
@@ -250,19 +246,34 @@ describe('CatalogService._buildProductDetailResponse — branch coverage', () =>
       }),
     };
     const result = svc._buildProductDetailResponse(product, {});
-    expect(result.compareAtPrice).toBeNull(); // 0 || null = null
+    expect(result.compareAtPrice).toBeNull();
+    // Pin: price = 0.001 (truthy) → ternary TRUE → parseFloat(0.001) = 0.001 (không phải null)
   });
 
   // Line 539 [binary-expr] counts=[17,0]: !selectedVariant && normColor → short-circuit never
   // FALSE: selectedVariant WAS found (by skuId) → !selectedVariant = false → short-circuit
   test('line 539 FALSE: skuId found variant → !selectedVariant = false → &&  short-circuits', () => {
     const { svc } = makeCatalogService();
-    const variant = { id: 5, sku: 'SKU-123', price: 200000, attributes: { color: 'đen' }, isDefault: true, variantName: 'Đen 128GB', displayName: 'Đen 128GB' };
+    const variant = {
+      id: 5,
+      sku: 'SKU-123',
+      price: 200000,
+      attributes: { color: 'đen' },
+      isDefault: true,
+      variantName: 'Đen 128GB',
+      displayName: 'Đen 128GB',
+    };
     const product = {
       toJSON: () => ({
-        id: 1, name: 'iPhone 17', nameVi: 'iPhone 17', model: 'iPhone 17',
-        basePrice: 100000, compareAtPrice: null,
-        reviews: [], variants: [variant], images: [],
+        id: 1,
+        name: 'iPhone 17',
+        nameVi: 'iPhone 17',
+        model: 'iPhone 17',
+        basePrice: 100000,
+        compareAtPrice: null,
+        reviews: [],
+        variants: [variant],
+        images: [],
         productImages: [{ variantId: 5, imageUrl: 'img.jpg' }],
       }),
     };
@@ -275,12 +286,25 @@ describe('CatalogService._buildProductDetailResponse — branch coverage', () =>
   // FALSE: color search FOUND a variant → selectedVariant set → !selectedVariant = false
   test('line 548 FALSE: normColor matches variant → selectedVariant found → !selectedVariant = false', () => {
     const { svc } = makeCatalogService();
-    const variant = { id: 7, price: 300000, attributes: { color: 'đỏ' }, isDefault: false, variantName: 'Đỏ', displayName: 'Đỏ' };
+    const variant = {
+      id: 7,
+      price: 300000,
+      attributes: { color: 'đỏ' },
+      isDefault: false,
+      variantName: 'Đỏ',
+      displayName: 'Đỏ',
+    };
     const product = {
       toJSON: () => ({
-        id: 1, name: 'Samsung', nameVi: 'Samsung', model: 'Galaxy',
-        basePrice: 100000, compareAtPrice: null,
-        reviews: [], variants: [variant], images: [],
+        id: 1,
+        name: 'Samsung',
+        nameVi: 'Samsung',
+        model: 'Galaxy',
+        basePrice: 100000,
+        compareAtPrice: null,
+        reviews: [],
+        variants: [variant],
+        images: [],
         productImages: [{ variantId: 7, imageUrl: 'red.jpg', color: 'đỏ' }],
       }),
     };
@@ -294,13 +318,33 @@ describe('CatalogService._buildProductDetailResponse — branch coverage', () =>
   // We need find(isDefault) to return a variant (isDefault = true)
   test('line 549 find(isDefault) truthy: variant with isDefault=true found first', () => {
     const { svc } = makeCatalogService();
-    const defaultVariant = { id: 8, price: 400000, attributes: {}, isDefault: true, variantName: '128GB', displayName: '128GB' };
-    const otherVariant = { id: 9, price: 500000, attributes: {}, isDefault: false, variantName: '256GB', displayName: '256GB' };
+    const defaultVariant = {
+      id: 8,
+      price: 400000,
+      attributes: {},
+      isDefault: true,
+      variantName: '128GB',
+      displayName: '128GB',
+    };
+    const otherVariant = {
+      id: 9,
+      price: 500000,
+      attributes: {},
+      isDefault: false,
+      variantName: '256GB',
+      displayName: '256GB',
+    };
     const product = {
       toJSON: () => ({
-        id: 1, name: 'Laptop Dell', nameVi: 'Laptop Dell', model: 'Dell XPS',
-        basePrice: 100000, compareAtPrice: null,
-        reviews: [], variants: [defaultVariant, otherVariant], images: [],
+        id: 1,
+        name: 'Laptop Dell',
+        nameVi: 'Laptop Dell',
+        model: 'Dell XPS',
+        basePrice: 100000,
+        compareAtPrice: null,
+        reviews: [],
+        variants: [defaultVariant, otherVariant],
+        images: [],
         productImages: [],
       }),
     };
@@ -313,12 +357,25 @@ describe('CatalogService._buildProductDetailResponse — branch coverage', () =>
   // Need attrs.color to be truthy → short-circuits before checking 'Màu sắc'
   test('line 553 attrs.color truthy: color = "red" → no need to check Vietnamese keys', () => {
     const { svc } = makeCatalogService();
-    const variant = { id: 10, price: 500000, attributes: { color: 'red' }, isDefault: true, variantName: 'Red', displayName: 'Red' };
+    const variant = {
+      id: 10,
+      price: 500000,
+      attributes: { color: 'red' },
+      isDefault: true,
+      variantName: 'Red',
+      displayName: 'Red',
+    };
     const product = {
       toJSON: () => ({
-        id: 1, name: 'Phone X', nameVi: 'Phone X', model: 'X',
-        basePrice: 100000, compareAtPrice: null,
-        reviews: [], variants: [variant], images: [],
+        id: 1,
+        name: 'Phone X',
+        nameVi: 'Phone X',
+        model: 'X',
+        basePrice: 100000,
+        compareAtPrice: null,
+        reviews: [],
+        variants: [variant],
+        images: [],
         productImages: [{ variantId: 10, imageUrl: 'red.jpg', color: 'red' }],
       }),
     };
@@ -333,9 +390,11 @@ describe('CatalogService.createProduct — branch coverage', () => {
   test('line 896 v.name truthy: variant.name = "Large" → uses name directly', async () => {
     const { svc, repo } = makeCatalogService();
     const product = { id: 1, slug: 'test', status: 'active', setCategories: jest.fn() };
-    repo.runInTransaction = jest.fn((cb) => cb({
-      findOrCreate: jest.fn().mockResolvedValue([product, true]),
-    }));
+    repo.runInTransaction = jest.fn((cb) =>
+      cb({
+        findOrCreate: jest.fn().mockResolvedValue([product, true]),
+      }),
+    );
     const catalogRepo = svc.catalogRepository;
     catalogRepo.findCategoryBySlug = jest.fn().mockResolvedValue({ id: 1 });
     catalogRepo.createProductVariants = jest.fn().mockResolvedValue([{ id: 5 }]);
@@ -349,7 +408,9 @@ describe('CatalogService.createProduct — branch coverage', () => {
 
     try {
       await svc.createProduct({
-        name: 'Test Product', slug: 'test', status: 'active',
+        name: 'Test Product',
+        slug: 'test',
+        status: 'active',
         variants: [{ name: 'Large', price: 100000, sku: 'SKU-L' }], // ← v.name truthy
         categories: [],
         warrantyPackageIds: [],
@@ -396,6 +457,13 @@ function makeOrdersService() {
     eventBus: { publish: jest.fn() },
     logger: { info: jest.fn(), warn: jest.fn(), error: jest.fn() },
     emailGateway: { sendOrderConfirmation: jest.fn().mockResolvedValue() },
+    constants: {
+      SHIPPING_FREE_THRESHOLD: 500000,
+      SHIPPING_BASE_RATE: 30000,
+      SHIPPING_WEIGHT_RATE: 5000,
+      POINTS_EARN_RATE: 1000,
+      POINTS_VALUE: 100,
+    },
   });
 }
 

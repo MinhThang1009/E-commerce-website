@@ -242,7 +242,10 @@ describe('_mapProductWithImages', () => {
     const { service } = makeService();
     const product = {
       toJSON: () => ({
-        id: 1, name: 'X', basePrice: '5000', variants: [],
+        id: 1,
+        name: 'X',
+        basePrice: '5000',
+        variants: [],
         productImages: [
           { id: 1, imageUrl: 'first.jpg', isThumbnail: false, color: null },
           { id: 2, imageUrl: 'second.jpg', isThumbnail: false, color: null },
@@ -259,7 +262,9 @@ describe('_mapProductWithImages', () => {
     const { service } = makeService();
     const product = {
       toJSON: () => ({
-        id: 1, name: 'X', basePrice: '10000',
+        id: 1,
+        name: 'X',
+        basePrice: '10000',
         variants: [
           { isDefault: 0, price: '15000', compareAtPrice: null },
           { isDefault: 1, price: '12000', compareAtPrice: null },
@@ -277,7 +282,9 @@ describe('_mapProductWithImages', () => {
     const { service } = makeService();
     const product = {
       toJSON: () => ({
-        id: 1, name: 'X', basePrice: '10000',
+        id: 1,
+        name: 'X',
+        basePrice: '10000',
         variants: [
           { isDefault: false, price: '9000', compareAtPrice: null },
           { isDefault: false, price: '11000', compareAtPrice: null },
@@ -295,7 +302,9 @@ describe('_mapProductWithImages', () => {
     const { service } = makeService();
     const product = {
       toJSON: () => ({
-        id: 1, name: 'X', basePrice: '8000',
+        id: 1,
+        name: 'X',
+        basePrice: '8000',
         variants: [{ isDefault: true, price: null, compareAtPrice: null }],
         productImages: [],
       }),
@@ -366,7 +375,9 @@ describe('getAllProducts — collection slug array', () => {
 
     expect(catalogRepository.findProductsList).toHaveBeenCalledWith(
       expect.objectContaining({
-        filter: expect.objectContaining({ collectionSlugsIn: expect.arrayContaining(['summer-sale']) }),
+        filter: expect.objectContaining({
+          collectionSlugsIn: expect.arrayContaining(['summer-sale']),
+        }),
       }),
     );
   });
@@ -473,8 +484,16 @@ describe('getAllProducts — map category vào categories', () => {
   it('json.categories = null → được khởi tạo thành [] trước khi push', async () => {
     const { service, catalogRepository } = makeService();
     const data = {
-      id: 1, name: 'Test', slug: 'test', basePrice: '1000', compareAtPrice: null,
-      stockQuantity: 5, isFeatured: false, productImages: [], variants: [], reviews: [],
+      id: 1,
+      name: 'Test',
+      slug: 'test',
+      basePrice: '1000',
+      compareAtPrice: null,
+      stockQuantity: 5,
+      isFeatured: false,
+      productImages: [],
+      variants: [],
+      reviews: [],
       categories: null,
       category: { id: 7, name: 'Tech' },
     };
@@ -567,16 +586,26 @@ describe('_buildProductDetailResponse — image filtering branches', () => {
   it('skuId có nhưng không có ảnh theo variantId, có variantColor → lọc ảnh theo color', () => {
     const { service } = makeService();
     const product = makeProductRow({
-      id: 5, name: 'Laptop A',
-      basePrice: '20000000', reviews: [],
+      id: 5,
+      name: 'Laptop A',
+      basePrice: '20000000',
+      reviews: [],
       productImages: [
         { id: 1, imageUrl: 'red.jpg', isThumbnail: true, variantId: null, color: 'đỏ' },
         { id: 2, imageUrl: 'blue.jpg', isThumbnail: false, variantId: null, color: 'xanh' },
       ],
       variants: [
-        { id: 10, price: '20000000', compareAtPrice: null, stockQuantity: 3,
-          variantName: 'Đỏ 512GB', isDefault: true,
-          attributes: { color: 'đỏ' }, sku: 'SKU-RED', specifications: {} },
+        {
+          id: 10,
+          price: '20000000',
+          compareAtPrice: null,
+          stockQuantity: 3,
+          variantName: 'Đỏ 512GB',
+          isDefault: true,
+          attributes: { color: 'đỏ' },
+          sku: 'SKU-RED',
+          specifications: {},
+        },
       ],
     });
 
@@ -590,16 +619,26 @@ describe('_buildProductDetailResponse — image filtering branches', () => {
   it('skuId có, matchByVariantId rỗng, không có variantColor → giữ nguyên tất cả ảnh', () => {
     const { service } = makeService();
     const product = makeProductRow({
-      id: 6, name: 'Tablet B',
-      basePrice: '15000000', reviews: [],
+      id: 6,
+      name: 'Tablet B',
+      basePrice: '15000000',
+      reviews: [],
       productImages: [
         { id: 1, imageUrl: 'img1.jpg', isThumbnail: true, variantId: null, color: null },
         { id: 2, imageUrl: 'img2.jpg', isThumbnail: false, variantId: null, color: null },
       ],
       variants: [
-        { id: 20, price: '15000000', compareAtPrice: null, stockQuantity: 5,
-          variantName: '128GB WiFi', isDefault: true,
-          attributes: {}, sku: 'SKU-128', specifications: {} },
+        {
+          id: 20,
+          price: '15000000',
+          compareAtPrice: null,
+          stockQuantity: 5,
+          variantName: '128GB WiFi',
+          isDefault: true,
+          attributes: {},
+          sku: 'SKU-128',
+          specifications: {},
+        },
       ],
     });
 
@@ -612,15 +651,25 @@ describe('_buildProductDetailResponse — image filtering branches', () => {
   it('không có skuId, có queryColor, matchByColor rỗng → giữ nguyên tất cả ảnh', () => {
     const { service } = makeService();
     const product = makeProductRow({
-      id: 7, name: 'Phone C',
-      basePrice: '12000000', reviews: [],
+      id: 7,
+      name: 'Phone C',
+      basePrice: '12000000',
+      reviews: [],
       productImages: [
         { id: 1, imageUrl: 'gen.jpg', isThumbnail: true, variantId: null, color: null },
       ],
       variants: [
-        { id: 30, price: '12000000', compareAtPrice: null, stockQuantity: 10,
-          variantName: 'Vàng 64GB', isDefault: true,
-          attributes: { color: 'vàng' }, sku: 'SKU-VANG', specifications: {} },
+        {
+          id: 30,
+          price: '12000000',
+          compareAtPrice: null,
+          stockQuantity: 10,
+          variantName: 'Vàng 64GB',
+          isDefault: true,
+          attributes: { color: 'vàng' },
+          sku: 'SKU-VANG',
+          specifications: {},
+        },
       ],
     });
 
@@ -634,19 +683,37 @@ describe('_buildProductDetailResponse — image filtering branches', () => {
   it('không có skuId, queryColor match ảnh → lọc ảnh theo color', () => {
     const { service } = makeService();
     const product = makeProductRow({
-      id: 8, name: 'Watch D',
-      basePrice: '5000000', reviews: [],
+      id: 8,
+      name: 'Watch D',
+      basePrice: '5000000',
+      reviews: [],
       productImages: [
         { id: 1, imageUrl: 'black.jpg', isThumbnail: true, variantId: null, color: 'đen' },
         { id: 2, imageUrl: 'white.jpg', isThumbnail: false, variantId: null, color: 'trắng' },
       ],
       variants: [
-        { id: 40, price: '5000000', compareAtPrice: null, stockQuantity: 2,
-          variantName: 'Đen', isDefault: false,
-          attributes: { color: 'đen' }, sku: 'SKU-DEN', specifications: {} },
-        { id: 41, price: '5500000', compareAtPrice: null, stockQuantity: 2,
-          variantName: 'Trắng', isDefault: true,
-          attributes: { color: 'trắng' }, sku: 'SKU-TRANG', specifications: {} },
+        {
+          id: 40,
+          price: '5000000',
+          compareAtPrice: null,
+          stockQuantity: 2,
+          variantName: 'Đen',
+          isDefault: false,
+          attributes: { color: 'đen' },
+          sku: 'SKU-DEN',
+          specifications: {},
+        },
+        {
+          id: 41,
+          price: '5500000',
+          compareAtPrice: null,
+          stockQuantity: 2,
+          variantName: 'Trắng',
+          isDefault: true,
+          attributes: { color: 'trắng' },
+          sku: 'SKU-TRANG',
+          specifications: {},
+        },
       ],
     });
 
@@ -668,13 +735,23 @@ describe('_buildProductDetailResponse — fullName logic', () => {
   it('variantName đã chứa mainName → fullName = variantName (không thêm prefix)', () => {
     const { service } = makeService();
     const product = makeProductRow({
-      id: 9, name: 'iPhone 15',
-      basePrice: '25000000', reviews: [],
+      id: 9,
+      name: 'iPhone 15',
+      basePrice: '25000000',
+      reviews: [],
       variants: [
-        { id: 50, price: '25000000', compareAtPrice: null, stockQuantity: 3,
+        {
+          id: 50,
+          price: '25000000',
+          compareAtPrice: null,
+          stockQuantity: 3,
           // variantName chứa 'iphone 15' (case-insensitive)
-          variantName: 'iPhone 15 Pro 256GB Đen', isDefault: true,
-          attributes: {}, sku: 'SKU-50', specifications: {} },
+          variantName: 'iPhone 15 Pro 256GB Đen',
+          isDefault: true,
+          attributes: {},
+          sku: 'SKU-50',
+          specifications: {},
+        },
       ],
     });
 
@@ -686,12 +763,22 @@ describe('_buildProductDetailResponse — fullName logic', () => {
   it('variantName không chứa mainName → fullName = mainName + variantName', () => {
     const { service } = makeService();
     const product = makeProductRow({
-      id: 10, name: 'Galaxy S24',
-      basePrice: '22000000', reviews: [],
+      id: 10,
+      name: 'Galaxy S24',
+      basePrice: '22000000',
+      reviews: [],
       variants: [
-        { id: 60, price: '22000000', compareAtPrice: null, stockQuantity: 5,
-          variantName: '256GB Xanh Đại Dương', isDefault: true,
-          attributes: {}, sku: 'SKU-60', specifications: {} },
+        {
+          id: 60,
+          price: '22000000',
+          compareAtPrice: null,
+          stockQuantity: 5,
+          variantName: '256GB Xanh Đại Dương',
+          isDefault: true,
+          attributes: {},
+          sku: 'SKU-60',
+          specifications: {},
+        },
       ],
     });
 
@@ -703,15 +790,29 @@ describe('_buildProductDetailResponse — fullName logic', () => {
   it('product có model → modelName dùng từ model field (không strip prefix)', () => {
     const { service } = makeService();
     const data = {
-      id: 11, name: 'Laptop Dell XPS 15',
+      id: 11,
+      name: 'Laptop Dell XPS 15',
       model: 'Dell XPS 15',
-      basePrice: '35000000', compareAtPrice: null,
-      reviews: [], productImages: [], categories: [], stockQuantity: 2, isFeatured: false,
+      basePrice: '35000000',
+      compareAtPrice: null,
+      reviews: [],
+      productImages: [],
+      categories: [],
+      stockQuantity: 2,
+      isFeatured: false,
       slug: 'laptop-dell-xps-15',
       variants: [
-        { id: 70, price: '35000000', compareAtPrice: null, stockQuantity: 2,
-          variantName: 'Dell XPS 15 i7', isDefault: true,
-          attributes: {}, sku: 'SKU-70', specifications: {} },
+        {
+          id: 70,
+          price: '35000000',
+          compareAtPrice: null,
+          stockQuantity: 2,
+          variantName: 'Dell XPS 15 i7',
+          isDefault: true,
+          attributes: {},
+          sku: 'SKU-70',
+          specifications: {},
+        },
       ],
     };
     const product = { ...data, toJSON: () => ({ ...data }) };
@@ -731,19 +832,37 @@ describe('_buildProductDetailResponse — variantColor override với normColor'
   it('không có skuId và có normColor → variantColor = normColor', () => {
     const { service } = makeService();
     const product = makeProductRow({
-      id: 12, name: 'Sneaker X',
-      basePrice: '1500000', reviews: [],
+      id: 12,
+      name: 'Sneaker X',
+      basePrice: '1500000',
+      reviews: [],
       productImages: [
         { id: 1, imageUrl: 'red-shoe.jpg', isThumbnail: true, variantId: null, color: 'đỏ' },
         { id: 2, imageUrl: 'blue-shoe.jpg', isThumbnail: false, variantId: null, color: 'xanh' },
       ],
       variants: [
-        { id: 80, price: '1500000', compareAtPrice: null, stockQuantity: 5,
-          variantName: 'Đỏ Size 42', isDefault: false,
-          attributes: { color: 'đỏ' }, sku: 'SKU-RED-42', specifications: {} },
-        { id: 81, price: '1500000', compareAtPrice: null, stockQuantity: 3,
-          variantName: 'Xanh Size 42', isDefault: true,
-          attributes: { color: 'xanh' }, sku: 'SKU-BLUE-42', specifications: {} },
+        {
+          id: 80,
+          price: '1500000',
+          compareAtPrice: null,
+          stockQuantity: 5,
+          variantName: 'Đỏ Size 42',
+          isDefault: false,
+          attributes: { color: 'đỏ' },
+          sku: 'SKU-RED-42',
+          specifications: {},
+        },
+        {
+          id: 81,
+          price: '1500000',
+          compareAtPrice: null,
+          stockQuantity: 3,
+          variantName: 'Xanh Size 42',
+          isDefault: true,
+          attributes: { color: 'xanh' },
+          sku: 'SKU-BLUE-42',
+          specifications: {},
+        },
       ],
     });
 
@@ -763,12 +882,23 @@ describe('_buildProductDetailResponse — variantName fallback displayName', () 
   it('không có variantName → dùng displayName', () => {
     const { service } = makeService();
     const product = makeProductRow({
-      id: 13, name: 'Earphone Y',
-      basePrice: '2000000', reviews: [],
+      id: 13,
+      name: 'Earphone Y',
+      basePrice: '2000000',
+      reviews: [],
       variants: [
-        { id: 90, price: '2000000', compareAtPrice: null, stockQuantity: 8,
-          variantName: undefined, displayName: 'Trắng', isDefault: true,
-          attributes: {}, sku: 'SKU-90', specifications: {} },
+        {
+          id: 90,
+          price: '2000000',
+          compareAtPrice: null,
+          stockQuantity: 8,
+          variantName: undefined,
+          displayName: 'Trắng',
+          isDefault: true,
+          attributes: {},
+          sku: 'SKU-90',
+          specifications: {},
+        },
       ],
     });
 
@@ -854,9 +984,7 @@ describe('getProductFilters — collectValues với values không phải array',
 
   it('row.values = string (không phải array) → không thêm vào set', async () => {
     const { service, catalogRepository } = makeService();
-    catalogRepository.findAttributeValuesByName.mockResolvedValue([
-      { values: 'not-an-array' },
-    ]);
+    catalogRepository.findAttributeValuesByName.mockResolvedValue([{ values: 'not-an-array' }]);
 
     const result = await service.getProductFilters({});
 
@@ -879,9 +1007,7 @@ describe('createProduct — với attributes (không phải parentAttributes)', 
       payload: {
         name: 'Test Attrs',
         price: 5000,
-        attributes: [
-          { name: 'color', values: ['red'], type: 'select' },
-        ],
+        attributes: [{ name: 'color', values: ['red'], type: 'select' }],
       },
     });
 
@@ -970,16 +1096,23 @@ describe('updateProduct — patch.attributes rỗng', () => {
 // ════════════════════════════════════════════════════════════════════════════
 
 describe('_clearProductCache', () => {
-  it('không có cacheStore.delMany → return sớm, không gọi gì', async () => {
-    const { service } = makeService({}, {
-      get: jest.fn().mockResolvedValue(null),
-      setEx: jest.fn().mockResolvedValue(),
-      del: jest.fn().mockResolvedValue(),
-      delPattern: jest.fn().mockResolvedValue(),
-      // Không có delMany
-    });
+  it('không có cacheStore.delMany → return sớm, không gọi del/delPattern', async () => {
+    const del = jest.fn().mockResolvedValue();
+    const delPattern = jest.fn().mockResolvedValue();
+    const { service } = makeService(
+      {},
+      {
+        get: jest.fn().mockResolvedValue(null),
+        setEx: jest.fn().mockResolvedValue(),
+        del,
+        delPattern,
+        // Không có delMany → guard return early
+      },
+    );
 
     await expect(service._clearProductCache(1, 'my-slug')).resolves.toBeUndefined();
+    expect(del).not.toHaveBeenCalled();
+    expect(delPattern).not.toHaveBeenCalled();
   });
 
   it('có cacheStore.delMany và delPattern → gọi delPattern cho products:list:* và chatbot:*', async () => {
@@ -1095,7 +1228,9 @@ describe('getProductSuggestions — edge cases', () => {
     const { service, catalogRepository } = makeService();
     const mockProduct = {
       toJSON: () => ({
-        id: 2, name: 'Item', slug: 'item',
+        id: 2,
+        name: 'Item',
+        slug: 'item',
         productImages: [
           { isThumbnail: false, imageUrl: 'first.jpg' },
           { isThumbnail: false, imageUrl: 'second.jpg' },
@@ -1119,10 +1254,16 @@ describe('_buildProductDetailResponse — reviews null → totalCount = 0 (line 
   it('totalCount = 0 khi productJson.reviews = null', () => {
     const { service } = makeService();
     const data = {
-      id: 50, name: 'Camera Z', slug: 'camera-z',
-      basePrice: '5000000', compareAtPrice: null,
-      stockQuantity: 10, isFeatured: false,
-      productImages: [], variants: [], categories: [],
+      id: 50,
+      name: 'Camera Z',
+      slug: 'camera-z',
+      basePrice: '5000000',
+      compareAtPrice: null,
+      stockQuantity: 10,
+      isFeatured: false,
+      productImages: [],
+      variants: [],
+      categories: [],
       reviews: null, // FALSE branch: reviews null → totalCount = 0
     };
     const product = { ...data, toJSON: () => ({ ...data }) };
@@ -1135,10 +1276,16 @@ describe('_buildProductDetailResponse — reviews null → totalCount = 0 (line 
   it('totalCount = 0 khi productJson.reviews = undefined', () => {
     const { service } = makeService();
     const data = {
-      id: 51, name: 'Drone A', slug: 'drone-a',
-      basePrice: '8000000', compareAtPrice: null,
-      stockQuantity: 5, isFeatured: false,
-      productImages: [], variants: [], categories: [],
+      id: 51,
+      name: 'Drone A',
+      slug: 'drone-a',
+      basePrice: '8000000',
+      compareAtPrice: null,
+      stockQuantity: 5,
+      isFeatured: false,
+      productImages: [],
+      variants: [],
+      categories: [],
       // reviews field không tồn tại (undefined)
     };
     const product = { ...data, toJSON: () => ({ ...data }) };
@@ -1151,10 +1298,16 @@ describe('_buildProductDetailResponse — reviews null → totalCount = 0 (line 
   it('totalCount = reviews.length khi reviews là array không rỗng (TRUE branch)', () => {
     const { service } = makeService();
     const data = {
-      id: 52, name: 'Robot B', slug: 'robot-b',
-      basePrice: '12000000', compareAtPrice: null,
-      stockQuantity: 2, isFeatured: false,
-      productImages: [], variants: [], categories: [],
+      id: 52,
+      name: 'Robot B',
+      slug: 'robot-b',
+      basePrice: '12000000',
+      compareAtPrice: null,
+      stockQuantity: 2,
+      isFeatured: false,
+      productImages: [],
+      variants: [],
+      categories: [],
       reviews: [
         { rating: 5, isVerified: true },
         { rating: 4, isVerified: true },
@@ -1182,15 +1335,33 @@ describe('_buildProductDetailResponse — variant selection fallback (lines 545-
     // Line 545: fallback: variants.find(isDefault) || variants[0]
     const { service } = makeService();
     const product = makeProductRow({
-      id: 60, name: 'Bàn phím',
-      basePrice: '1500000', reviews: [],
+      id: 60,
+      name: 'Bàn phím',
+      basePrice: '1500000',
+      reviews: [],
       variants: [
-        { id: 200, price: '1500000', compareAtPrice: null, stockQuantity: 5,
-          variantName: 'Đen', isDefault: false,
-          attributes: { color: 'đen' }, sku: 'SKU-DEN', specifications: {} },
-        { id: 201, price: '1600000', compareAtPrice: null, stockQuantity: 3,
-          variantName: 'Trắng', isDefault: true, // isDefault = true → được chọn khi color không match
-          attributes: { color: 'trắng' }, sku: 'SKU-TRANG', specifications: {} },
+        {
+          id: 200,
+          price: '1500000',
+          compareAtPrice: null,
+          stockQuantity: 5,
+          variantName: 'Đen',
+          isDefault: false,
+          attributes: { color: 'đen' },
+          sku: 'SKU-DEN',
+          specifications: {},
+        },
+        {
+          id: 201,
+          price: '1600000',
+          compareAtPrice: null,
+          stockQuantity: 3,
+          variantName: 'Trắng',
+          isDefault: true, // isDefault = true → được chọn khi color không match
+          attributes: { color: 'trắng' },
+          sku: 'SKU-TRANG',
+          specifications: {},
+        },
       ],
     });
 
@@ -1204,15 +1375,33 @@ describe('_buildProductDetailResponse — variant selection fallback (lines 545-
     // Line 545: variants.find(isDefault) = undefined → || variants[0]
     const { service } = makeService();
     const product = makeProductRow({
-      id: 61, name: 'Chuột máy tính',
-      basePrice: '500000', reviews: [],
+      id: 61,
+      name: 'Chuột máy tính',
+      basePrice: '500000',
+      reviews: [],
       variants: [
-        { id: 210, price: '500000', compareAtPrice: null, stockQuantity: 8,
-          variantName: 'Đỏ', isDefault: false, // không có isDefault = true
-          attributes: { color: 'đỏ' }, sku: 'SKU-DO', specifications: {} },
-        { id: 211, price: '550000', compareAtPrice: null, stockQuantity: 4,
-          variantName: 'Xanh lá', isDefault: false,
-          attributes: { color: 'xanh lá' }, sku: 'SKU-XANH', specifications: {} },
+        {
+          id: 210,
+          price: '500000',
+          compareAtPrice: null,
+          stockQuantity: 8,
+          variantName: 'Đỏ',
+          isDefault: false, // không có isDefault = true
+          attributes: { color: 'đỏ' },
+          sku: 'SKU-DO',
+          specifications: {},
+        },
+        {
+          id: 211,
+          price: '550000',
+          compareAtPrice: null,
+          stockQuantity: 4,
+          variantName: 'Xanh lá',
+          isDefault: false,
+          attributes: { color: 'xanh lá' },
+          sku: 'SKU-XANH',
+          specifications: {},
+        },
       ],
     });
 
@@ -1227,17 +1416,33 @@ describe('_buildProductDetailResponse — variant selection fallback (lines 545-
     // Line 540: vAttrs['màu sắc'] (lowercase) cũng được check
     const { service } = makeService();
     const product = makeProductRow({
-      id: 62, name: 'Túi xách',
-      basePrice: '2000000', reviews: [],
+      id: 62,
+      name: 'Túi xách',
+      basePrice: '2000000',
+      reviews: [],
       variants: [
-        { id: 220, price: '2000000', compareAtPrice: null, stockQuantity: 6,
-          variantName: 'Đen', isDefault: false,
+        {
+          id: 220,
+          price: '2000000',
+          compareAtPrice: null,
+          stockQuantity: 6,
+          variantName: 'Đen',
+          isDefault: false,
           attributes: { 'màu sắc': 'đen' }, // lowercase key
-          sku: 'SKU-TUI-DEN', specifications: {} },
-        { id: 221, price: '2200000', compareAtPrice: null, stockQuantity: 2,
-          variantName: 'Nâu', isDefault: true,
+          sku: 'SKU-TUI-DEN',
+          specifications: {},
+        },
+        {
+          id: 221,
+          price: '2200000',
+          compareAtPrice: null,
+          stockQuantity: 2,
+          variantName: 'Nâu',
+          isDefault: true,
           attributes: { 'màu sắc': 'nâu' },
-          sku: 'SKU-TUI-NAU', specifications: {} },
+          sku: 'SKU-TUI-NAU',
+          specifications: {},
+        },
       ],
     });
 
@@ -1290,16 +1495,12 @@ describe('createProduct — variant sku fallback và compareAtPrice null (lines 
       payload: {
         name: 'Variant không có compareAtPrice',
         price: 7000,
-        variants: [
-          { sku: 'SKU-V71', price: 7000, compareAtPrice: null, stockQuantity: 5 },
-        ],
+        variants: [{ sku: 'SKU-V71', price: 7000, compareAtPrice: null, stockQuantity: 5 }],
       },
     });
 
     expect(catalogRepository.createProductVariants).toHaveBeenCalledWith(
-      expect.arrayContaining([
-        expect.objectContaining({ compareAtPrice: null }),
-      ]),
+      expect.arrayContaining([expect.objectContaining({ compareAtPrice: null })]),
       expect.any(Object),
     );
   });
@@ -1314,16 +1515,12 @@ describe('createProduct — variant sku fallback và compareAtPrice null (lines 
       payload: {
         name: 'Variant có compareAtPrice',
         price: 10000,
-        variants: [
-          { sku: 'SKU-V72', price: 10000, compareAtPrice: '15000', stockQuantity: 2 },
-        ],
+        variants: [{ sku: 'SKU-V72', price: 10000, compareAtPrice: '15000', stockQuantity: 2 }],
       },
     });
 
     expect(catalogRepository.createProductVariants).toHaveBeenCalledWith(
-      expect.arrayContaining([
-        expect.objectContaining({ compareAtPrice: 15000 }),
-      ]),
+      expect.arrayContaining([expect.objectContaining({ compareAtPrice: 15000 })]),
       expect.any(Object),
     );
   });
@@ -1351,7 +1548,7 @@ describe("updateProduct — patch.featured → updateData['isFeatured'] (line 93
     );
   });
 
-  it("patch.featured = false → updateData.isFeatured = false", async () => {
+  it('patch.featured = false → updateData.isFeatured = false', async () => {
     // Line 936: key === 'featured' (true) → updateData['isFeatured'] = false
     const { service, catalogRepository } = makeService();
     const product = makeProductRow({ id: 81, slug: 'prod-81', isFeatured: true });
@@ -1415,11 +1612,7 @@ describe('_pickDisplayPrice — không có variants → trả basePrice (line 34
 
     const result = service._pickDisplayPrice({
       basePrice: '10000000',
-      variants: [
-        { price: '12000000' },
-        { price: '8000000' },
-        { price: '15000000' },
-      ],
+      variants: [{ price: '12000000' }, { price: '8000000' }, { price: '15000000' }],
     });
 
     // sorted → variants[0].price = 8000000 (nhỏ nhất)
@@ -1462,9 +1655,7 @@ describe('getRecentlyViewed — line 826: map qua recentlyViewed items', () => {
   it('trả về sản phẩm đã xem gần đây với viewedAt', async () => {
     const { service, catalogRepository } = makeService();
     const productRow = makeProductRow({ id: 5, reviews: [] });
-    const recentlyViewed = [
-      { Product: productRow, viewedAt: new Date('2025-01-15T10:00:00Z') },
-    ];
+    const recentlyViewed = [{ Product: productRow, viewedAt: new Date('2025-01-15T10:00:00Z') }];
     catalogRepository.findRecentlyViewedByUser.mockResolvedValue(recentlyViewed);
 
     const result = await service.getRecentlyViewed({ userId: 10 });
@@ -1525,7 +1716,10 @@ describe('_buildProductDetailResponse — compareAtPrice null (line 526)', () =>
   it('compareAtPrice null → response.compareAtPrice = null (|| null branch)', () => {
     const { service } = makeService();
     const product = makeProductRow({
-      id: 20, compareAtPrice: null, variants: [], reviews: [],
+      id: 20,
+      compareAtPrice: null,
+      variants: [],
+      reviews: [],
     });
 
     const result = service._buildProductDetailResponse(product, {});
@@ -1544,19 +1738,31 @@ describe("_buildProductDetailResponse — attrs['Màu sắc'] (Vietnamese attrib
   it("tìm variant theo color qua attrs['Màu sắc'] khi attrs.color không có", () => {
     const { service } = makeService();
     const product = makeProductRow({
-      id: 30, basePrice: '10000000', reviews: [],
+      id: 30,
+      basePrice: '10000000',
+      reviews: [],
       variants: [
         {
-          id: 100, price: '10000000', compareAtPrice: null, stockQuantity: 5,
-          variantName: 'Đỏ', isDefault: false,
+          id: 100,
+          price: '10000000',
+          compareAtPrice: null,
+          stockQuantity: 5,
+          variantName: 'Đỏ',
+          isDefault: false,
           attributes: { 'Màu sắc': 'đỏ' }, // Vietnamese key, not 'color'
-          sku: 'SKU-100', specifications: {},
+          sku: 'SKU-100',
+          specifications: {},
         },
         {
-          id: 101, price: '11000000', compareAtPrice: null, stockQuantity: 3,
-          variantName: 'Xanh', isDefault: true,
+          id: 101,
+          price: '11000000',
+          compareAtPrice: null,
+          stockQuantity: 3,
+          variantName: 'Xanh',
+          isDefault: true,
           attributes: { 'Màu sắc': 'xanh' },
-          sku: 'SKU-101', specifications: {},
+          sku: 'SKU-101',
+          specifications: {},
         },
       ],
     });
@@ -1580,13 +1786,20 @@ describe('_buildProductDetailResponse — price/compareAtPrice fallback branches
   it('selectedVariant.price = 0/null → fallback về productJson.basePrice (line 581)', () => {
     const { service } = makeService();
     const product = makeProductRow({
-      id: 40, basePrice: '9000000', reviews: [],
+      id: 40,
+      basePrice: '9000000',
+      reviews: [],
       variants: [
         {
-          id: 200, price: null, // null → falsy → fallback về basePrice
-          compareAtPrice: null, stockQuantity: 5,
-          variantName: 'Default', isDefault: true,
-          attributes: {}, sku: 'SKU-200', specifications: {},
+          id: 200,
+          price: null, // null → falsy → fallback về basePrice
+          compareAtPrice: null,
+          stockQuantity: 5,
+          variantName: 'Default',
+          isDefault: true,
+          attributes: {},
+          sku: 'SKU-200',
+          specifications: {},
         },
       ],
     });
@@ -1601,14 +1814,21 @@ describe('_buildProductDetailResponse — price/compareAtPrice fallback branches
     const { service } = makeService();
     const data = {
       ...makeProductRow().toJSON(),
-      id: 41, basePrice: '8000000', compareAtPrice: '10000000', reviews: [],
+      id: 41,
+      basePrice: '8000000',
+      compareAtPrice: '10000000',
+      reviews: [],
       variants: [
         {
-          id: 201, price: '8000000',
+          id: 201,
+          price: '8000000',
           compareAtPrice: null, // null → fallback về productJson.compareAtPrice
           stockQuantity: 5,
-          variantName: 'Red', isDefault: true,
-          attributes: {}, sku: 'SKU-201', specifications: {},
+          variantName: 'Red',
+          isDefault: true,
+          attributes: {},
+          sku: 'SKU-201',
+          specifications: {},
         },
       ],
     };
@@ -1624,19 +1844,32 @@ describe('_buildProductDetailResponse — price/compareAtPrice fallback branches
     const { service } = makeService();
     const data = {
       ...makeProductRow().toJSON(),
-      id: 42, basePrice: '7000000', compareAtPrice: '9000000', reviews: [],
+      id: 42,
+      basePrice: '7000000',
+      compareAtPrice: '9000000',
+      reviews: [],
       variants: [
         {
-          id: 202, price: '7000000',
+          id: 202,
+          price: '7000000',
           compareAtPrice: null, // null → fallback
-          variantName: 'Blue', isDefault: true,
-          attributes: {}, sku: 'SKU-202', specifications: {}, stockQuantity: 3,
+          variantName: 'Blue',
+          isDefault: true,
+          attributes: {},
+          sku: 'SKU-202',
+          specifications: {},
+          stockQuantity: 3,
         },
         {
-          id: 203, price: '7500000',
+          id: 203,
+          price: '7500000',
           compareAtPrice: '9500000', // truthy → không fallback
-          variantName: 'Green', isDefault: false,
-          attributes: {}, sku: 'SKU-203', specifications: {}, stockQuantity: 2,
+          variantName: 'Green',
+          isDefault: false,
+          attributes: {},
+          sku: 'SKU-203',
+          specifications: {},
+          stockQuantity: 2,
         },
       ],
     };

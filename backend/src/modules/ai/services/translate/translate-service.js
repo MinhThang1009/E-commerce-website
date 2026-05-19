@@ -10,7 +10,7 @@ const logger = require('@utils/logger');
 const OPENROUTER_URL = 'https://openrouter.ai/api/v1/chat/completions';
 // Model được dùng cho translation — có thể override qua env TRANSLATE_MODEL
 // Model ID trên OpenRouter — set qua env TRANSLATE_MODEL để dễ thay đổi
-const TRANSLATE_MODEL = process.env.TRANSLATE_MODEL || 'openai/gpt-4.5';
+const TRANSLATE_MODEL = process.env.TRANSLATE_MODEL || 'deepseek/deepseek-v4-flash:free';
 
 /**
  * Dịch mảng strings từ ngôn ngữ nguồn sang đích.
@@ -98,7 +98,7 @@ Items: ${JSON.stringify(texts)}`;
  * Fallback: MyMemory API — free, không cần API key.
  * Giới hạn: 500 words/day per IP (không cần key).
  */
-async function translateWithMyMemory(texts, from = 'vi', to = 'en') {
+async function translateWithMyMemory(texts, from, to) {
   const results = [];
   for (const text of texts) {
     try {

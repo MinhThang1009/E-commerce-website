@@ -149,6 +149,8 @@ beforeAll(() => {
   app.use(errorHandler);
 });
 
+beforeEach(() => jest.clearAllMocks());
+
 // Helper headers
 const adminHeaders = { 'x-test-admin': 'true' };
 

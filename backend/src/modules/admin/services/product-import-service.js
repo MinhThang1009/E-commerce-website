@@ -6,20 +6,21 @@
  */
 const path = require('path');
 const slugify = require('slugify');
-const { Op } = require('sequelize');
-const {
-  sequelize, Product, ProductVariant, ProductImage,
-  ProductCategory, ProductSpecification, Category, Brand, ImportLog,
-} = require('@models');
+const repo = require('@modules/admin/repositories/sequelize-product-import-repository');
 const logger = require('@utils/logger');
 const { AppError } = require('@shared/errors');
 const vectorStoreService = require('@modules/ai/services/vectorstore/vector-store');
-const { parseCsv, validateRow, escapeCsvField, CSV_HEADERS } = require('@modules/admin/utils/csv-parser');
+const {
+  parseCsv,
+  validateRow,
+  escapeCsvField,
+  CSV_HEADERS,
+} = require('@modules/admin/utils/csv-parser');
 
 const _buildLookupMaps = async () => {
   const [categories, brands] = await Promise.all([
-    Category.findAll({ attributes: ['id', 'slug', 'name'] }),
-    Brand.findAll({ attributes: ['id', 'name', 'slug'] }),
+    repo.findCategoriesForImport(),
+    repo.findBrandsForImport(),
   ]);
   const categoryMap = Object.fromEntries(categories.map((c) => [c.slug, c.id]));
   const brandMap = {};
@@ -31,7 +32,7 @@ const _buildLookupMaps = async () => {
 };
 
 const _insertProductRow = async (row, categoryMap, brandMap) => {
-  return sequelize.transaction(async (t) => {
+  return repo.runInTransaction(async (t) => {
     const categoryId = categoryMap[String(row.category_slug).trim()] || null;
     const brandName = row.brand ? String(row.brand).trim().toLowerCase() : null;
     const brandId = brandName ? (brandMap[brandName] ?? null) : null;
@@ -41,39 +42,56 @@ const _insertProductRow = async (row, categoryMap, brandMap) => {
       : slugify(String(row.name).trim(), { lower: true, strict: true });
 
     let finalSlug = rawSlug;
-    const existing = await Product.findOne({ where: { slug: rawSlug }, transaction: t, attributes: ['id'] });
+    const existing = await repo.findProductBySlug(rawSlug, t);
     if (existing) finalSlug = `${rawSlug}-${Date.now()}`;
 
-    const product = await Product.create({
-      name: String(row.name).trim(),
-      slug: finalSlug,
-      shortDescription: row.short_description ? String(row.short_description).trim() : null,
-      basePrice: parseFloat(row.base_price),
-      categoryId,
-      brandId,
-      status: row.status || 'active',
-      stockQuantity: parseInt(row.stock_quantity) || 0,
-    }, { transaction: t });
+    const product = await repo.createProduct(
+      {
+        name: String(row.name).trim(),
+        slug: finalSlug,
+        shortDescription: row.short_description ? String(row.short_description).trim() : null,
+        basePrice: parseFloat(row.base_price),
+        categoryId,
+        brandId,
+        status: row.status || 'active',
+        stockQuantity: parseInt(row.stock_quantity) || 0,
+      },
+      t,
+    );
 
     if (row.sku && String(row.sku).trim()) {
-      await ProductVariant.create({
-        productId: product.id,
-        sku: String(row.sku).trim(),
-        price: parseFloat(row.base_price),
-        stockQuantity: parseInt(row.stock_quantity) || 0,
-        isDefault: true,
-      }, { transaction: t });
+      await repo.createProductVariant(
+        {
+          productId: product.id,
+          sku: String(row.sku).trim(),
+          price: parseFloat(row.base_price),
+          stockQuantity: parseInt(row.stock_quantity) || 0,
+          isDefault: true,
+        },
+        t,
+      );
     }
 
     if (row.image_urls && String(row.image_urls).trim()) {
-      const urls = String(row.image_urls).split('|').map((u) => u.trim()).filter(Boolean);
+      const urls = String(row.image_urls)
+        .split('|')
+        .map((u) => u.trim())
+        .filter(Boolean);
       for (let i = 0; i < urls.length; i++) {
-        await ProductImage.create({ productId: product.id, imageUrl: urls[i], isThumbnail: i === 0, sortOrder: i + 1 }, { transaction: t });
+        await repo.createProductImage(
+          {
+            productId: product.id,
+            imageUrl: urls[i],
+            isThumbnail: i === 0,
+            sortOrder: i + 1,
+          },
+          t,
+        );
       }
     }
 
     if (categoryId) {
-      await ProductCategory.create({ productId: product.id, categoryId }, { transaction: t });
+      await repo.createProductCategory({ productId: product.id, categoryId }, t);
     }
 
     const specFields = [
@@ -85,7 +103,15 @@ const _insertProductRow = async (row, categoryMap, brandMap) => {
     ];
     for (const spec of specFields) {
       if (spec.value && String(spec.value).trim()) {
-        await ProductSpecification.create({ productId: product.id, specKey: spec.key, specValue: String(spec.value).trim(), sortOrder: spec.order }, { transaction: t });
+        await repo.createProductSpecification(
+          {
+            productId: product.id,
+            specKey: spec.key,
+            specValue: String(spec.value).trim(),
+            sortOrder: spec.order,
+          },
+          t,
+        );
       }
     }
 
@@ -100,8 +126,13 @@ const importProducts = async ({ file, adminId }) => {
   let rows = [];
   if (ext === '.json') {
     let parsed;
-    try { parsed = JSON.parse(content); } catch { throw new AppError('File JSON không hợp lệ — không thể parse', 400); }
-    if (!Array.isArray(parsed)) throw new AppError('File JSON phải là mảng các object sản phẩm', 400);
+    try {
+      parsed = JSON.parse(content);
+    } catch {
+      throw new AppError('File JSON không hợp lệ — không thể parse', 400);
+    }
+    if (!Array.isArray(parsed))
+      throw new AppError('File JSON phải là mảng các object sản phẩm', 400);
     rows = parsed.map((item, idx) => ({ ...item, _lineNumber: idx + 2 }));
   } else {
     const { rows: csvRows } = parseCsv(content);
@@ -110,7 +141,8 @@ const importProducts = async ({ file, adminId }) => {
   }
 
   const validationErrors = rows.flatMap((row) => validateRow(row, row._lineNumber));
-  if (validationErrors.length === rows.length) {
+  const failedRowCount = new Set(validationErrors.map((e) => e.row)).size;
+  if (failedRowCount === rows.length) {
     return { allFailed: true, errors: validationErrors, totalRows: rows.length };
   }
 
@@ -134,12 +166,16 @@ const importProducts = async ({ file, adminId }) => {
       successCount++;
     } catch (err) {
       failedCount++;
-      rowErrors.push({ row: row._lineNumber, field: 'general', message: err.message || 'Lỗi khi insert vào DB' });
+      rowErrors.push({
+        row: row._lineNumber,
+        field: 'general',
+        message: err.message || 'Lỗi khi insert vào DB',
+      });
       logger.warn(`[IMPORT] Lỗi dòng ${row._lineNumber}:`, err.message);
     }
   }
 
-  await ImportLog.create({
+  await repo.createImportLog({
     adminId,
     filename: file.originalname,
     totalRows: rows.length,
@@ -149,19 +185,11 @@ const importProducts = async ({ file, adminId }) => {
     importedAt: new Date(),
   });
 
-  // Vector sync bất đồng bộ
   if (newProductIds.length > 0) {
     setImmediate(async () => {
       try {
         const { enrichProductData } = require('@modules/ai/services/vectorstore/vector-store');
-        const newProducts = await Product.findAll({
-          where: { id: { [Op.in]: newProductIds } },
-          include: [
-            { model: Category, as: 'categories', attributes: ['name'] },
-            { model: ProductImage, as: 'productImages', attributes: ['imageUrl', 'isThumbnail'], required: false },
-            { model: ProductVariant, as: 'variants', attributes: ['stockQuantity'], required: false },
-          ],
-        });
+        const newProducts = await repo.findProductsByIds(newProductIds);
         for (const p of newProducts) {
           await vectorStoreService.upsertProduct(enrichProductData(p.toJSON()));
         }
@@ -179,50 +207,54 @@ const importProducts = async ({ file, adminId }) => {
 const getImportHistory = async ({ page = 1, limit = 20 }) => {
   const safePage = parseInt(page, 10);
   const safeLimit = Math.min(parseInt(limit, 10), 100);
-  const { rows, count } = await ImportLog.findAndCountAll({
-    order: [['importedAt', 'DESC']],
+  const { rows, count } = await repo.findImportHistory({
     limit: safeLimit,
     offset: (safePage - 1) * safeLimit,
-    attributes: { exclude: ['errorDetail'] },
   });
   return { logs: rows, total: count, page: safePage, limit: safeLimit };
 };
 
 const exportProducts = async (format) => {
-  const { Brand: BrandModel, ProductImage: PIModel } = require('@models');
-  const products = await Product.findAll({
-    include: [
-      { model: Category, as: 'category', attributes: ['slug'] },
-      { model: BrandModel, as: 'brand', attributes: ['name'] },
-      { model: PIModel, as: 'productImages', attributes: ['imageUrl'], limit: 5 },
-      { model: ProductSpecification, as: 'specifications', attributes: ['specKey', 'specValue'] },
-    ],
-    order: [['id', 'ASC']],
-  });
+  const products = await repo.findProductsForExport();
 
   const mapProduct = (p) => ({
-    name: p.name, slug: p.slug, short_description: p.shortDescription || '',
-    base_price: p.basePrice, category_slug: p.category?.slug || '',
-    brand: p.brand?.name || '', status: p.status || 'active',
+    name: p.name,
+    slug: p.slug,
+    short_description: p.shortDescription || '',
+    base_price: p.basePrice,
+    category_slug: p.category?.slug || '',
+    brand: p.brand?.name || '',
+    status: p.status || 'active',
     stock_quantity: p.stockQuantity || 0,
     image_urls: (p.productImages || []).map((img) => img.imageUrl).join('|'),
-    ...Object.fromEntries((p.specifications || []).map((s) => [`spec_${s.specKey.toLowerCase()}`, s.specValue])),
+    ...Object.fromEntries(
+      (p.specifications || []).map((s) => [`spec_${s.specKey.toLowerCase()}`, s.specValue]),
+    ),
   });
 
   if (format === 'json') return products.map(mapProduct);
 
-  const specKeyMap = { 'bộ nhớ': 'storage', 'màn hình': 'display', 'pin': 'battery' };
+  const specKeyMap = { 'bộ nhớ': 'storage', 'màn hình': 'display', pin: 'battery' };
   const csvRows = [CSV_HEADERS.join(',')];
   for (const p of products) {
     const specMap = {};
-    (p.specifications || []).forEach((s) => { specMap[s.specKey.toLowerCase()] = s.specValue; });
+    (p.specifications || []).forEach((s) => {
+      specMap[s.specKey.toLowerCase()] = s.specValue;
+    });
     const row = [
-      escapeCsvField(p.name), escapeCsvField(p.slug),
-      escapeCsvField(p.shortDescription || ''), p.basePrice || 0,
-      escapeCsvField(p.category?.slug || ''), escapeCsvField(p.brand?.name || ''),
-      p.status || 'active', p.stockQuantity || 0, '', '',
+      escapeCsvField(p.name),
+      escapeCsvField(p.slug),
+      escapeCsvField(p.shortDescription || ''),
+      p.basePrice || 0,
+      escapeCsvField(p.category?.slug || ''),
+      escapeCsvField(p.brand?.name || ''),
+      p.status || 'active',
+      p.stockQuantity || 0,
+      '',
+      '',
       escapeCsvField((p.productImages || []).map((img) => img.imageUrl).join('|')),
-      escapeCsvField(specMap['cpu'] || ''), escapeCsvField(specMap['ram'] || ''),
+      escapeCsvField(specMap['cpu'] || ''),
+      escapeCsvField(specMap['ram'] || ''),
       escapeCsvField(specMap[specKeyMap['bộ nhớ']] || specMap['storage'] || ''),
       escapeCsvField(specMap[specKeyMap['màn hình']] || specMap['display'] || ''),
       escapeCsvField(specMap[specKeyMap['pin']] || specMap['battery'] || ''),

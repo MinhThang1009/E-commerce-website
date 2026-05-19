@@ -87,8 +87,8 @@ const _verifySePayApiKey = (req) => {
   const providedApiKey = authHeader.substring(7).trim();
   const expectedApiKey = process.env.SEPAY_API_KEY;
   if (!expectedApiKey) {
-    logger.warn('SePay: API key chưa được cấu hình trong environment variables');
-    return process.env.NODE_ENV === 'development' || process.env.NODE_ENV === 'test';
+    logger.error('SePay: SEPAY_API_KEY chưa được cấu hình — từ chối tất cả webhook');
+    return false;
   }
   let mismatch = expectedApiKey.length !== providedApiKey.length;
   for (let i = 0; i < Math.max(expectedApiKey.length, providedApiKey.length); i++) {
@@ -244,8 +244,8 @@ class PaymentController {
         if (!source) continue;
         for (const pattern of ORDER_ID_PATTERNS) {
           const match = source.match(pattern);
-          if (match && match[0]) {
-            orderId = match[0].trim();
+          if (match && (match[1] ?? match[0])) {
+            orderId = (match[1] ?? match[0]).trim();
             break;
           }
         }
@@ -301,7 +301,8 @@ class PaymentController {
       }
 
       if (order.paymentStatus === 'pending' || order.paymentStatus === 'unpaid') {
-        await Order.update(
+        // Atomic check+update để tránh race condition khi nhiều webhook đến đồng thời
+        const [affectedRows] = await Order.update(
           {
             status: 'processing',
             paymentStatus: 'paid',
@@ -309,8 +310,13 @@ class PaymentController {
             paymentProvider: 'sepay',
             updatedAt: new Date(),
           },
-          { where: { id: order.id } },
+          { where: { id: order.id, paymentStatus: ['pending', 'unpaid'] } },
         );
+        if (affectedRows === 0) {
+          return res
+            .status(200)
+            .json({ received: true, message: 'Webhook đã được xử lý trước đó' });
+        }
         await _incrementSePayDiscountUsage(order.id);
         await _clearSePayUserCart(order.userId);
         await _sendSePayEmailSafe(order.id);

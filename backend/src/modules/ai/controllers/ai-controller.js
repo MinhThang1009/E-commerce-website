@@ -15,7 +15,12 @@ class AIController {
   handleMessage = async (req, res) => {
     try {
       const { message, userId, sessionId } = req.body;
-      this.logger.info('Chatbot', { messageLength: message?.length, userId, sessionId });
+      if (!message || typeof message !== 'string') {
+        return res
+          .status(400)
+          .json({ status: 'error', message: t('ai.messageInvalid', req.locale) });
+      }
+      this.logger.info('Chatbot', { messageLength: message.length, userId, sessionId });
       const data = await this.aiService.handleMessage({ message, userId, sessionId });
       res.json({ status: 'success', data });
     } catch (err) {

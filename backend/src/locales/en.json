@@ -157,6 +157,7 @@
     "variantNotFound": "Variant not found"
   },
   "ai": {
+    "messageInvalid": "Invalid message",
     "messageFailed": "Message processing failed",
     "fallbackResponse": "Sorry, I'm experiencing a minor issue. Please try again in a moment!",
     "analyticsSaved": "Analytics data recorded successfully",

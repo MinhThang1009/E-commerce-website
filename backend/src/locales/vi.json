@@ -157,6 +157,7 @@
     "variantNotFound": "Không tìm thấy biến thể"
   },
   "ai": {
+    "messageInvalid": "Tin nhắn không hợp lệ",
     "messageFailed": "Xử lý tin nhắn thất bại",
     "fallbackResponse": "Xin lỗi, tôi đang gặp một chút vấn đề. Vui lòng thử lại sau ít phút nhé!",
     "analyticsSaved": "Ghi nhận dữ liệu phân tích thành công",

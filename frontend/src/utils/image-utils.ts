@@ -15,60 +15,63 @@
 const IMAGE_CONFIG = {
   FALLBACK_CATEGORY_IMAGE: 'https://placehold.co/800x600/e2e8f0/1e293b',
   FALLBACK_PRODUCT_IMAGE: 'https://placehold.co/400x400/f1f5f9/64748b',
-  PICSUM_BASE_URL: 'https://picsum.photos/seed',
-  SEEDS: {
-    BOOKS: 'books',
-    CLOTHING: 'clothing',
-    ELECTRONICS: 'electronics',
-    FOOD: 'food',
-    SPORTS: 'sports',
-    DEFAULT: 'default',
-  },
+  // Ảnh thực từ sản phẩm trong DB — không dùng picsum/Unsplash
+  // Ưu tiên sản phẩm mới nhất trong từng danh mục
+  CATEGORY_IMAGES: {
+    // Điện thoại → iPhone 17 (id=1/2)
+    'dien-thoai':
+      'https://cdnv2.tgdd.vn/mwg-static/tgdd/Products/Images/42/342667/iphone-17-xanh-6-638930798970669098-750x500.jpg',
+    // Laptop → MacBook Pro 14" M5 (id=24, mới nhất trong DB)
+    laptop:
+      'https://cdnv2.tgdd.vn/mwg-static/tgdd/Products/Images/44/358086/macbook-pro-14-inch-m5-16gb-512gb-thumb-638962954605863722-600x600.jpg',
+    // Smartwatch → Apple Watch Ultra 3 (id=47, mới nhất trong DB)
+    smartwatch:
+      'https://cdn.tgdd.vn/Products/Images/7077/344764/apple-watch-ultra-3-gps-cellular-49mm-vien-titanium-day-ocean-den-tb-600x600.jpg',
+    // Tablet → iPad A16 5G (id=14, mới nhất trong DB)
+    tablet: 'https://cdn.tgdd.vn/Products/Images/522/335311/ipad-11-5g-sliver-thumb-600x600.jpg',
+    // Đồng hồ → CASIO A158WA (id=56)
+    'dong-ho':
+      'https://cdn.tgdd.vn/Products/Images/7264/199508/casio-a158wa-1df-bac-thumb-600x600.jpg',
+    // Phụ kiện → Mi Band 10 (id=53)
+    'phu-kien': 'https://cdn.tgdd.vn/Products/Images/7077/336899/mi-band-10-den-600x600.jpg',
+  } as Record<string, string>,
 } as const;
 
 /**
- * Tạo hash từ văn bản để tạo seed ảnh nhất quán
+ * Lấy ảnh phù hợp cho danh mục dựa theo slug — dùng ảnh thực từ sản phẩm trong DB.
+ * Không còn dùng picsum.photos hoặc Unsplash.
  */
-const generateSeed = (text: string): number => {
-  let hash = 0;
-  for (let i = 0; i < text.length; i++) {
-    hash = (hash << 5) - hash + text.charCodeAt(i);
-    hash = hash & hash; // Chuyển đổi sang số nguyên 32 bit
-  }
-  return Math.abs(hash) % 1000; // Giới hạn trong khoảng 0-999
-};
+export const getCategoryImage = (_name: string, slug: string): string => {
+  const baseSlug = slug.toLowerCase().trim();
 
-/**
- * Lấy ảnh phù hợp cho danh mục dựa theo tên và slug
- */
-export const getCategoryImage = (name: string, slug: string): string => {
-  const seed = generateSeed(name);
-  const baseName = name.toLowerCase();
-  const baseSlug = slug.toLowerCase();
-
-  // Xác định loại danh mục dựa theo từ khóa
-  if (baseSlug.includes('book') || baseSlug.includes('sach')) {
-    return `${IMAGE_CONFIG.PICSUM_BASE_URL}/${IMAGE_CONFIG.SEEDS.BOOKS}-${seed}/800/600`;
+  // Exact slug match
+  if (IMAGE_CONFIG.CATEGORY_IMAGES[baseSlug]) {
+    return IMAGE_CONFIG.CATEGORY_IMAGES[baseSlug];
   }
 
-  if (baseSlug.includes('cloth') || baseSlug.includes('fashion') || baseSlug.includes('quanao')) {
-    return `${IMAGE_CONFIG.PICSUM_BASE_URL}/${IMAGE_CONFIG.SEEDS.CLOTHING}-${seed}/800/600`;
+  // Keyword fallback
+  if (
+    baseSlug.includes('dien-thoai') ||
+    baseSlug.includes('phone') ||
+    baseSlug.includes('mobile')
+  ) {
+    return IMAGE_CONFIG.CATEGORY_IMAGES['dien-thoai'];
+  }
+  if (baseSlug.includes('laptop') || baseSlug.includes('may-tinh')) {
+    return IMAGE_CONFIG.CATEGORY_IMAGES['laptop'];
+  }
+  if (baseSlug.includes('smartwatch') || baseSlug.includes('smart-watch')) {
+    return IMAGE_CONFIG.CATEGORY_IMAGES['smartwatch'];
+  }
+  if (baseSlug.includes('tablet') || baseSlug.includes('may-tinh-bang')) {
+    return IMAGE_CONFIG.CATEGORY_IMAGES['tablet'];
+  }
+  if (baseSlug.includes('dong-ho') || baseSlug.includes('watch')) {
+    return IMAGE_CONFIG.CATEGORY_IMAGES['dong-ho'];
   }
 
-  if (baseSlug.includes('electron') || baseSlug.includes('tech') || baseSlug.includes('dien')) {
-    return `${IMAGE_CONFIG.PICSUM_BASE_URL}/${IMAGE_CONFIG.SEEDS.ELECTRONICS}-${seed}/800/600`;
-  }
-
-  if (baseSlug.includes('food') || baseSlug.includes('thucpham')) {
-    return `${IMAGE_CONFIG.PICSUM_BASE_URL}/${IMAGE_CONFIG.SEEDS.FOOD}-${seed}/800/600`;
-  }
-
-  if (baseSlug.includes('sport') || baseSlug.includes('thethao')) {
-    return `${IMAGE_CONFIG.PICSUM_BASE_URL}/${IMAGE_CONFIG.SEEDS.SPORTS}-${seed}/800/600`;
-  }
-
-  // Ảnh dự phòng mặc định với seed duy nhất
-  return `${IMAGE_CONFIG.PICSUM_BASE_URL}/${encodeURIComponent(baseName)}-${seed}/800/600`;
+  // Default: Samsung watch (đẹp, phù hợp tech store)
+  return IMAGE_CONFIG.CATEGORY_IMAGES['smartwatch'];
 };
 
 /**

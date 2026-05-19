@@ -3,7 +3,7 @@
 // Arrow function không nhận args → lint chạy trên toàn src/ thay vì từng file.
 module.exports = {
   'src/**/*.{ts,tsx}': () => [
-    'eslint --max-warnings 0 src/',
+    'eslint --ext .ts,.tsx --max-warnings 0 src/',
     'prettier --write src/',
   ],
   'src/**/*.{css,scss}': () => [

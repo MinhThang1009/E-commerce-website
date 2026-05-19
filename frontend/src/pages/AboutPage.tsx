@@ -76,30 +76,27 @@ const AboutPage: React.FC = () => {
     },
   ];
 
+  // Avatar trung tính dùng DiceBear API (no external photos, GDPR safe)
   const teamMembers = [
     {
       name: 'Sarah Johnson',
       role: t('about.teamMember1.role'),
-      image:
-        'https://images.unsplash.com/photo-1494790108377-be9c29b29330?ixlib=rb-4.0.3&ixid=MnwxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8&auto=format&fit=crop&w=500&q=80',
+      image: 'https://api.dicebear.com/9.x/avataaars/svg?seed=Sarah&backgroundColor=b6e3f4',
     },
     {
       name: 'Michael Chen',
       role: t('about.teamMember2.role'),
-      image:
-        'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?ixlib=rb-4.0.3&ixid=MnwxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8&auto=format&fit=crop&w=500&q=80',
+      image: 'https://api.dicebear.com/9.x/avataaars/svg?seed=Michael&backgroundColor=c0aede',
     },
     {
       name: 'Emily Rodriguez',
       role: t('about.teamMember3.role'),
-      image:
-        'https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?ixlib=rb-4.0.3&ixid=MnwxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8&auto=format&fit=crop&w=500&q=80',
+      image: 'https://api.dicebear.com/9.x/avataaars/svg?seed=Emily&backgroundColor=ffd5dc',
     },
     {
       name: 'David Kim',
       role: t('about.teamMember4.role'),
-      image:
-        'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?ixlib=rb-4.0.3&ixid=MnwxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8&auto=format&fit=crop&w=500&q=80',
+      image: 'https://api.dicebear.com/9.x/avataaars/svg?seed=David&backgroundColor=d1d4f9',
     },
   ];
 
@@ -127,11 +124,33 @@ const AboutPage: React.FC = () => {
           <p className="text-neutral-600 dark:text-neutral-400">{t('about.storyP3')}</p>
         </div>
         <div className="rounded-2xl overflow-hidden shadow-2xl border border-neutral-200 dark:border-neutral-700">
-          <img
-            src="https://images.unsplash.com/photo-1556742049-0cfed4f6a45d?ixlib=rb-4.0.3&ixid=MnwxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8&auto=format&fit=crop&w=1000&q=80"
-            alt={t('about.imgAlt')}
-            className="w-full h-full object-cover transition-transform duration-500 hover:scale-105"
-          />
+          {/* Ảnh collage sản phẩm TechStore từ DB */}
+          <div className="grid grid-cols-2 gap-1 p-1 bg-neutral-100 dark:bg-neutral-800">
+            <img
+              src="https://cdnv2.tgdd.vn/mwg-static/tgdd/Products/Images/42/342667/iphone-17-xanh-6-638930798970669098-750x500.jpg"
+              alt="iPhone 17"
+              className="w-full h-40 object-cover rounded-tl-xl"
+              loading="lazy"
+            />
+            <img
+              src="https://cdnv2.tgdd.vn/mwg-static/tgdd/Products/Images/44/336967/acer-aspire-lite-15-al15-71p-517d-i5-nxj7ksv001-thumb-638804825325953513-600x600.jpg"
+              alt="Laptop"
+              className="w-full h-40 object-cover rounded-tr-xl"
+              loading="lazy"
+            />
+            <img
+              src="https://cdn.tgdd.vn/Products/Images/7077/338266/samsung-galaxy-watch8-classic-trang-tn-600x600.jpg"
+              alt="Smartwatch"
+              className="w-full h-40 object-cover rounded-bl-xl"
+              loading="lazy"
+            />
+            <img
+              src="https://cdn.tgdd.vn/Products/Images/522/344725/samsung-galaxy-tab-s11-ultra-5g-12gb-256gb-xam-1-600x600.jpg"
+              alt="Tablet"
+              className="w-full h-40 object-cover rounded-br-xl"
+              loading="lazy"
+            />
+          </div>
         </div>
       </div>
 

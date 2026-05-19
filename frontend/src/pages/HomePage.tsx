@@ -307,50 +307,84 @@ const HomePage: React.FC = () => {
                   className="aspect-w-16 aspect-h-9 bg-neutral-200 dark:bg-neutral-700 rounded-2xl animate-pulse"
                 />
               ))
-            : collections.data
-                ?.slice(0, 2)
+            : /* eslint-disable @typescript-eslint/no-explicit-any */
+              (
+                (collections.data as any[])
+                  ?.filter((c: any) =>
+                    ['dien-thoai-moi-nhat', 'tablet-dang-mua-nhat'].includes(c.slug),
+                  )
+                  ?.sort((a: any, b: any) => {
+                    const order = ['dien-thoai-moi-nhat', 'tablet-dang-mua-nhat'];
+                    return order.indexOf(a.slug) - order.indexOf(b.slug);
+                  }) ?? []
+              ) /* eslint-enable @typescript-eslint/no-explicit-any */
+                .slice(0, 2)
                 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                .map((collection: any) => (
-                  <Link
-                    key={collection.id}
-                    to={buildRoute.shopCollection(collection.id)}
-                    className="group relative h-80 overflow-hidden rounded-2xl shadow-xl"
-                  >
-                    <img
-                      src={
-                        collection.banner ||
-                        'https://images.unsplash.com/photo-1441986300917-64674bd600d8?auto=format&fit=crop&w=1000&q=80'
-                      }
-                      alt={localizeField(collection, 'name', i18n.language)}
-                      className="w-full h-full object-cover transform group-hover:scale-105 transition-transform duration-700"
-                    />
-                    <div className="absolute inset-0 bg-gradient-to-r from-black/80 via-black/40 to-transparent flex flex-col justify-center p-10">
-                      <h3 className="text-3xl font-extrabold text-white mb-4 drop-shadow-lg">
-                        {localizeField(collection, 'name', i18n.language)}
-                      </h3>
-                      <p className="text-neutral-200 mb-6 max-w-xs drop-shadow-md">
-                        {collection.description || t('homepage.collections.fallbackDescription')}
-                      </p>
-                      <div>
-                        <span className="inline-flex items-center px-6 py-3 rounded-full bg-white text-neutral-900 font-bold hover:bg-neutral-100 transition-colors">
-                          {t('homepage.collections.exploreButton')}
-                          <svg
-                            xmlns="http://www.w3.org/2000/svg"
-                            className="h-5 w-5 ml-2"
-                            viewBox="0 0 20 20"
-                            fill="currentColor"
-                          >
-                            <path
-                              fillRule="evenodd"
-                              d="M10.293 3.293a1 1 0 011.414 0l6 6a1 1 0 010 1.414l-6 6a1 1 0 01-1.414-1.414L14.586 11H3a1 1 0 110-2h11.586l-4.293-4.293a1 1 0 010-1.414z"
-                              clipRule="evenodd"
-                            />
-                          </svg>
-                        </span>
+                .map((collection: any) => {
+                  // Fallback ảnh theo slug khi thumbnail/banner chưa set
+                  // Fallback dùng ảnh thực từ sản phẩm mới nhất trong DB
+                  const COLLECTION_FALLBACKS: Record<string, string> = {
+                    'dien-thoai-moi-nhat':
+                      'https://cdnv2.tgdd.vn/mwg-static/tgdd/Products/Images/42/342667/iphone-17-xanh-6-638930798970669098-750x500.jpg',
+                    // MacBook Pro 14" M5 (id=24, mới nhất DB)
+                    'laptop-cho-sinh-vien':
+                      'https://cdnv2.tgdd.vn/mwg-static/tgdd/Products/Images/44/358086/macbook-pro-14-inch-m5-16gb-512gb-thumb-638962954605863722-600x600.jpg',
+                    'san-pham-noi-bat':
+                      'https://cdn.tgdd.vn/Products/Images/7077/338266/samsung-galaxy-watch8-classic-trang-tn-600x600.jpg',
+                    // iPad A16 5G (id=14, mới nhất DB)
+                    'tablet-dang-mua-nhat':
+                      'https://cdn.tgdd.vn/Products/Images/522/335311/ipad-11-5g-sliver-thumb-600x600.jpg',
+                  };
+                  const imgSrc =
+                    collection.thumbnail ||
+                    collection.banner ||
+                    COLLECTION_FALLBACKS[collection.slug] ||
+                    COLLECTION_FALLBACKS['san-pham-noi-bat'];
+                  const descText =
+                    (i18n.language === 'en'
+                      ? collection.descriptionEn
+                      : collection.descriptionVi) ||
+                    collection.description ||
+                    t('homepage.collections.fallbackDescription');
+
+                  return (
+                    <Link
+                      key={collection.id}
+                      to={buildRoute.shopCollection(collection.id)}
+                      className="group relative h-80 overflow-hidden rounded-2xl shadow-xl"
+                    >
+                      <img
+                        src={imgSrc}
+                        alt={localizeField(collection, 'name', i18n.language)}
+                        className="w-full h-full object-cover transform group-hover:scale-105 transition-transform duration-700"
+                        loading="lazy"
+                      />
+                      <div className="absolute inset-0 bg-gradient-to-r from-black/80 via-black/40 to-transparent flex flex-col justify-center p-10">
+                        <h3 className="text-3xl font-extrabold text-white mb-4 drop-shadow-lg">
+                          {localizeField(collection, 'name', i18n.language)}
+                        </h3>
+                        <p className="text-neutral-200 mb-6 max-w-xs drop-shadow-md">{descText}</p>
+                        <div>
+                          <span className="inline-flex items-center px-6 py-3 rounded-full bg-white text-neutral-900 font-bold hover:bg-neutral-100 transition-colors">
+                            {t('homepage.collections.exploreButton')}
+                            <svg
+                              xmlns="http://www.w3.org/2000/svg"
+                              className="h-5 w-5 ml-2"
+                              viewBox="0 0 20 20"
+                              fill="currentColor"
+                            >
+                              <path
+                                fillRule="evenodd"
+                                d="M10.293 3.293a1 1 0 011.414 0l6 6a1 1 0 010 1.414l-6 6a1 1 0 01-1.414-1.414L14.586 11H3a1 1 0 110-2h11.586l-4.293-4.293a1 1 0 010-1.414z"
+                                clipRule="evenodd"
+                              />
+                            </svg>
+                          </span>
+                        </div>
                       </div>
-                    </div>
-                  </Link>
-                ))}
+                    </Link>
+                  );
+                })}
         </div>
       </PageSection>
 
@@ -362,13 +396,14 @@ const HomePage: React.FC = () => {
         className="py-16 bg-white dark:bg-neutral-800 relative overflow-hidden"
         containerized={false}
       >
-        <div className="absolute inset-0 opacity-10">
-          <img
-            src="https://images.unsplash.com/photo-1518770660439-4636190af475?auto=format&fit=crop&w=2070&q=80"
-            alt={t('homepage.newsletter.backgroundAlt')}
-            className="w-full h-full object-cover"
-          />
-        </div>
+        {/* Background: gradient mesh thay vì Unsplash stock photo */}
+        <div
+          className="absolute inset-0 opacity-100 pointer-events-none"
+          style={{
+            background:
+              'radial-gradient(ellipse at 20% 50%, rgba(42,172,167,0.08) 0%, transparent 60%), radial-gradient(ellipse at 80% 50%, rgba(255,117,94,0.06) 0%, transparent 60%)',
+          }}
+        />
         <div className="container mx-auto px-4 max-w-3xl text-center relative z-10">
           <h2 className="text-2xl md:text-3xl font-bold text-neutral-800 dark:text-neutral-100 mb-3">
             {t('homepage.newsletter.title')}

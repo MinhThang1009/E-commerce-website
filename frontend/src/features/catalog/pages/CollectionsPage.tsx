@@ -63,12 +63,25 @@ const CollectionsPage: React.FC = () => {
                 >
                   <img
                     src={
-                      collection.banner ||
                       collection.thumbnail ||
-                      'https://images.unsplash.com/photo-1441986300917-64674bd600d8?auto=format&fit=crop&w=1000&q=80'
+                      collection.banner ||
+                      (
+                        {
+                          'dien-thoai-moi-nhat':
+                            'https://cdnv2.tgdd.vn/mwg-static/tgdd/Products/Images/42/342667/iphone-17-xanh-6-638930798970669098-750x500.jpg',
+                          'laptop-cho-sinh-vien':
+                            'https://cdnv2.tgdd.vn/mwg-static/tgdd/Products/Images/44/358086/macbook-pro-14-inch-m5-16gb-512gb-thumb-638962954605863722-600x600.jpg',
+                          'san-pham-noi-bat':
+                            'https://cdn.tgdd.vn/Products/Images/7077/344764/apple-watch-ultra-3-gps-cellular-49mm-vien-titanium-day-ocean-den-tb-600x600.jpg',
+                          'tablet-dang-mua-nhat':
+                            'https://cdn.tgdd.vn/Products/Images/522/335311/ipad-11-5g-sliver-thumb-600x600.jpg',
+                        } as Record<string, string>
+                      )[collection.slug] ||
+                      'https://cdn.tgdd.vn/Products/Images/7077/344764/apple-watch-ultra-3-gps-cellular-49mm-vien-titanium-day-ocean-den-tb-600x600.jpg'
                     }
                     alt={collection.name}
                     className="w-full h-full object-cover transform group-hover:scale-110 transition-transform duration-1000"
+                    loading="lazy"
                   />
                   <div className="absolute inset-0 bg-gradient-to-t from-black via-black/40 to-transparent flex flex-col justify-end p-12">
                     <div className="transform translate-y-6 group-hover:translate-y-0 transition-transform duration-500">

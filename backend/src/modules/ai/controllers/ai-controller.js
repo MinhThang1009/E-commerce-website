@@ -14,9 +14,9 @@ class AIController {
 
   handleMessage = async (req, res) => {
     try {
-      const { message, userId, sessionId, context = {} } = req.body;
-      this.logger.info('Nhận tin nhắn chatbot:', { message, userId, sessionId });
-      const data = await this.aiService.handleMessage({ message, userId, sessionId, context });
+      const { message, userId, sessionId } = req.body;
+      this.logger.info('Chatbot', { messageLength: message?.length, userId, sessionId });
+      const data = await this.aiService.handleMessage({ message, userId, sessionId });
       res.json({ status: 'success', data });
     } catch (err) {
       this.logger.error('Lỗi chatbot:', err);
@@ -29,7 +29,11 @@ class AIController {
         message: t('ai.messageFailed', req.locale),
         data: {
           response: t('ai.fallbackResponse', req.locale),
-          suggestions: [t('ai.suggestionsHot', req.locale), t('ai.suggestionsDeals', req.locale), t('ai.suggestionsSupport', req.locale)],
+          suggestions: [
+            t('ai.suggestionsHot', req.locale),
+            t('ai.suggestionsDeals', req.locale),
+            t('ai.suggestionsSupport', req.locale),
+          ],
         },
       });
     }

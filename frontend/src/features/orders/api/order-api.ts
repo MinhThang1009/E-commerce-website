@@ -17,6 +17,7 @@ export interface OrderItem {
   name: string;
   sku?: string;
   price: number;
+  unitPrice?: number;
   quantity: number;
   subtotal: number;
   image?: string;

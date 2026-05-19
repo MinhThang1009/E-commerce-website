@@ -94,11 +94,15 @@ class ContentService {
     if (category && category !== 'Tất cả') filter.category = category;
 
     const { count, rows } = await this.contentRepository.findAllNews({
-      filter, limit: lim, offset: off,
+      filter,
+      limit: lim,
+      offset: off,
     });
     return {
-      count, totalPages: Math.ceil(count / lim),
-      currentPage: parseInt(page, 10), news: rows,
+      count,
+      totalPages: Math.ceil(count / lim),
+      currentPage: parseInt(page, 10),
+      news: rows,
     };
   }
 
@@ -114,7 +118,11 @@ class ContentService {
     if (!currentNews) return null;
 
     const attributes = ['id', 'title', 'slug', 'thumbnail', 'category', 'createdAt', 'viewCount'];
-    let related = await this.contentRepository.findNewsByCategory(currentNews.category, currentNews.id, attributes);
+    let related = await this.contentRepository.findNewsByCategory(
+      currentNews.category,
+      currentNews.id,
+      attributes,
+    );
 
     if (related.length < 3) {
       const needed = 3 - related.length;
@@ -130,15 +138,32 @@ class ContentService {
   }
 
   async createNews({ userId, payload }) {
-    const { slug } = payload;
-    if (slug) {
+    const { slug: rawSlug, title } = payload;
+    // Auto-generate slug từ title nếu không truyền
+    const baseSlug =
+      rawSlug ||
+      (title || '')
+        .toLowerCase()
+        .replace(/[àáạảãâầấậẩẫăằắặẳẵ]/g, 'a')
+        .replace(/[èéẹẻẽêềếệểễ]/g, 'e')
+        .replace(/[ìíịỉĩ]/g, 'i')
+        .replace(/[òóọỏõôồốộổỗơờớợởỡ]/g, 'o')
+        .replace(/[ùúụủũưừứựửữ]/g, 'u')
+        .replace(/[ỳýỵỷỹ]/g, 'y')
+        .replace(/đ/g, 'd')
+        .replace(/[^a-z0-9\s-]/g, '')
+        .replace(/\s+/g, '-')
+        .replace(/-+/g, '-')
+        .substring(0, 90);
+    const slug = baseSlug + (rawSlug ? '' : `-${Date.now().toString(36)}`);
+
+    if (rawSlug) {
       const existing = await this.contentRepository.findNewsBySlug(slug, { withAuthor: false });
-      if (existing) {
-        throw new AppError('content.slugExists', 400);
-      }
+      if (existing) throw new AppError('content.slugExists', 400);
     }
     return this.contentRepository.createNews({
       ...payload,
+      slug,
       category: payload.category || 'Tin tức',
       isPublished: payload.isPublished === undefined ? true : payload.isPublished,
       userId,
@@ -150,7 +175,9 @@ class ContentService {
     if (!news) return null;
 
     if (patch.slug && patch.slug !== news.slug) {
-      const existing = await this.contentRepository.findNewsBySlug(patch.slug, { withAuthor: false });
+      const existing = await this.contentRepository.findNewsBySlug(patch.slug, {
+        withAuthor: false,
+      });
       if (existing) throw new AppError('content.slugExists', 400);
     }
 
@@ -200,7 +227,11 @@ class ContentService {
 
     if (uniqueEmails.length > 0) {
       try {
-        await this.emailGateway.sendBulkCampaignEmail(uniqueEmails, campaign.subject, campaign.content);
+        await this.emailGateway.sendBulkCampaignEmail(
+          uniqueEmails,
+          campaign.subject,
+          campaign.content,
+        );
       } catch (err) {
         this.logger.error(`[EmailCampaign] Lỗi gửi: ${err.message}`);
         throw new AppError('content.emailSendFailed', 500, { details: err.message });
@@ -259,15 +290,25 @@ class ContentService {
     }
 
     const feedback = await this.contentRepository.createFeedback({
-      name, email, phone, subject, content, status: 'pending',
+      name,
+      email,
+      phone,
+      subject,
+      content,
+      status: 'pending',
     });
 
     if (this.adminEmail) {
-      this.emailGateway.sendAdminFeedbackNotification(this.adminEmail, {
-        name, email, subject, content,
-      }).catch((err) => {
-        this.logger.error('Lỗi gửi email thông báo phản hồi cho admin:', err.message);
-      });
+      this.emailGateway
+        .sendAdminFeedbackNotification(this.adminEmail, {
+          name,
+          email,
+          subject,
+          content,
+        })
+        .catch((err) => {
+          this.logger.error('Lỗi gửi email thông báo phản hồi cho admin:', err.message);
+        });
     }
 
     return feedback;

@@ -939,7 +939,10 @@ class CatalogService {
       delete json.productImages;
       const ratings = this._calcRatings(json.reviews);
       delete json.reviews;
-      return { ...json, ratings, viewedAt: rv.viewedAt };
+      // Dùng _pickDisplayPrice để lấy giá đúng từ variant (tránh trả base_price=0 cho variant product)
+      const displayPrice = this._pickDisplayPrice(json);
+      const compareAtPrice = parseFloat(json.compareAtPrice) || null;
+      return { ...json, price: displayPrice, compareAtPrice, ratings, viewedAt: rv.viewedAt };
     });
   }
 

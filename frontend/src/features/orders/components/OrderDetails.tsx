@@ -316,7 +316,7 @@ const OrderDetails: React.FC<OrderDetailsProps> = ({ orderId, onOpenReview }) =>
                       {/* Thông tin giá cho mobile */}
                       <div className="md:hidden mt-2 text-sm">
                         <span className="font-medium text-neutral-600">
-                          {formatPrice(item.price)}
+                          {formatPrice(item.unitPrice || item.price)}
                         </span>
                         <span className="text-neutral-400 mx-1">x</span>
                         <span className="font-bold">{item.quantity}</span>
@@ -325,7 +325,7 @@ const OrderDetails: React.FC<OrderDetailsProps> = ({ orderId, onOpenReview }) =>
                   </div>
 
                   <div className="hidden md:block col-span-2 text-center font-medium text-neutral-600 dark:text-neutral-400">
-                    {formatPrice(item.price)}
+                    {formatPrice(item.unitPrice || item.price)}
                   </div>
                   <div className="hidden md:block col-span-2 text-center font-bold text-neutral-800 dark:text-neutral-200 bg-neutral-100 dark:bg-neutral-800 rounded-md py-1 w-max mx-auto px-4">
                     {item.quantity}

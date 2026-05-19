@@ -507,8 +507,30 @@ class OrdersService {
       limit: pageLimit,
       offset,
     });
+    // Transform productImages → images[] và thumbnail cho FE
+    const data = rows.map((row) => {
+      const o = row.toJSON ? row.toJSON() : { ...row };
+      if (o.items) {
+        o.items = o.items.map((item) => {
+          // Map unitPrice → price để FE dùng được
+          if (item.unitPrice !== undefined && item.price === undefined) {
+            item.price = parseFloat(item.unitPrice) || 0;
+          }
+          if (item.Product?.productImages) {
+            item.Product.thumbnail =
+              item.Product.productImages.find((img) => img.isThumbnail)?.imageUrl ||
+              item.Product.productImages[0]?.imageUrl ||
+              null;
+            item.Product.images = item.Product.productImages.map((img) => img.imageUrl);
+            delete item.Product.productImages;
+          }
+          return item;
+        });
+      }
+      return o;
+    });
     return {
-      data: rows,
+      data,
       total: count,
       page: parseInt(page, 10),
       limit: pageLimit,

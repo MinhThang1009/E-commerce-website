@@ -698,8 +698,17 @@ class SequelizeCatalogRepository extends ICatalogRepository {
       include: [
         {
           model: this.Product,
-          attributes: ['id', 'name', 'slug', [col('base_price'), 'price'], 'compareAtPrice'],
-          include: [{ association: 'reviews' }, { association: 'productImages', required: false }],
+          attributes: ['id', 'name', 'slug', 'basePrice', 'compareAtPrice'],
+          include: [
+            { association: 'reviews' },
+            { association: 'productImages', required: false },
+            // Cần variants để _pickDisplayPrice tính đúng giá cho variant product
+            {
+              association: 'variants',
+              required: false,
+              attributes: ['id', 'price', 'compareAtPrice'],
+            },
+          ],
         },
       ],
     });

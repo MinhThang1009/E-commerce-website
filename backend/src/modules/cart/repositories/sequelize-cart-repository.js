@@ -126,8 +126,8 @@ class SequelizeCartRepository extends ICartRepository {
           include: [
             { association: 'productImages', required: false },
             { association: 'defaultVariant', required: false },
-            // Include tất cả variants để tính tổng stock (stock thực ở variant level)
-            { association: 'variants', attributes: ['stockQuantity'], required: false },
+            // Include tất cả variants để tính tổng stock + lấy giá thấp nhất
+            { association: 'variants', attributes: ['price', 'stockQuantity'], required: false },
           ],
         },
         {

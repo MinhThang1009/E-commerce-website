@@ -492,15 +492,21 @@ const OrdersPage: React.FC = () => {
                               key={item.id}
                               className="w-12 h-12 rounded-lg border border-neutral-100 dark:border-neutral-700 overflow-hidden bg-neutral-50 dark:bg-neutral-800 flex-shrink-0 shadow-sm hover:scale-105 transition-transform"
                             >
-                              {item.Product?.images?.[0] ? (
+                              {item.Product?.thumbnail ||
+                              item.Product?.images?.[0] ||
+                              item.image ? (
                                 <img
-                                  src={item.Product.images[0]}
-                                  alt={item.Product.name}
+                                  src={
+                                    item.Product?.thumbnail ||
+                                    item.Product?.images?.[0] ||
+                                    item.image
+                                  }
+                                  alt={item.Product?.name || item.name}
                                   className="w-full h-full object-cover"
                                 />
                               ) : (
                                 <div className="w-full h-full flex items-center justify-center text-xs font-medium text-neutral-400">
-                                  {item.Product?.name?.charAt(0) || '?'}
+                                  {item.Product?.name?.charAt(0) || item.name?.charAt(0) || '?'}
                                 </div>
                               )}
                             </div>

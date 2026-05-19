@@ -9,7 +9,7 @@ const router = express.Router();
 const discountCodeController = require('@modules/discount-code/controllers/discount-code-controller');
 const { validateRequest } = require('@middlewares/validate-request');
 const {
-  applyDiscountCodeValidation,
+  applyDiscountCodeSchema: applyDiscountCodeValidation,
 } = require('@modules/discount-code/validators/discount-code-validator');
 
 // Customer: Áp dụng mã giảm giá

@@ -64,8 +64,8 @@ const deleteUser = (user) => user.destroy();
 
 const countProducts = (where = {}) => Product.count({ where });
 
-const findProducts = ({ where = {}, limit, offset, order, include, attributes } = {}) =>
-  Product.findAndCountAll({ where, limit, offset, order, include, attributes });
+const findProducts = ({ where = {}, limit, offset, order, include, attributes, distinct } = {}) =>
+  Product.findAndCountAll({ where, limit, offset, order, include, attributes, distinct });
 
 const findProductById = (id, options = {}) => Product.findByPk(id, options);
 
@@ -127,8 +127,8 @@ const countOrders = (where = {}) => Order.count({ where });
 
 const sumOrderTotal = (where = {}) => Order.sum('total', { where });
 
-const findOrders = ({ where = {}, limit, offset, order, include } = {}) =>
-  Order.findAndCountAll({ where, limit, offset, order, include });
+const findOrders = ({ where = {}, limit, offset, order, include, distinct } = {}) =>
+  Order.findAndCountAll({ where, limit, offset, order, include, distinct });
 
 const findOrderById = (id, options = {}) => Order.findByPk(id, options);
 

@@ -60,7 +60,15 @@ class CartService {
             p.thumbnail = p.thumbnail || null;
           }
 
-          p.price = p.basePrice;
+          // Ưu tiên giá từ defaultVariant (variant product có base_price=0)
+          const variantPrice = p.defaultVariant?.price ? parseFloat(p.defaultVariant.price) : null;
+          const minVariantPrice =
+            variantPrice ||
+            (() => {
+              const prices = (p.variants || []).map((v) => parseFloat(v.price)).filter(Boolean);
+              return prices.length ? Math.min(...prices) : null;
+            })();
+          p.price = minVariantPrice || parseFloat(p.basePrice) || 0;
           delete p.productImages;
           delete p.defaultVariant;
           delete p.variants;

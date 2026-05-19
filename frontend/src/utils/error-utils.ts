@@ -82,7 +82,8 @@ export const parseError = (error: unknown): AppError => {
   // Lỗi có status trực tiếp (legacy format hoặc error object tự tạo)
   const status = num(prop(error, 'status'));
   const statusStr = str(prop(error, 'status'));
-  const data = prop(error, 'data');
+  // AxiosError v1 có .status shorthand nhưng data nằm ở .response.data, không phải .data
+  const data = prop(prop(error, 'response'), 'data') ?? prop(error, 'data');
 
   if (status) {
     const message = extractMessage(data);
@@ -241,5 +242,6 @@ export const formatErrorForLogging = (error: unknown): string => {
 export function getErrorMsg(error: unknown, fallback?: string): string {
   // Wrapper của getErrorMessage với fallback param tùy chọn
   const msg = getErrorMessage(error);
-  return fallback && msg.includes('không xác định') ? fallback : msg;
+  const isGeneric = msg.includes('không xác định') || msg === 'Unknown error';
+  return fallback && isGeneric ? fallback : msg;
 }

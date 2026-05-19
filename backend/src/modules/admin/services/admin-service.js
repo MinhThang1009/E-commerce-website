@@ -596,7 +596,8 @@ const createProduct = catchAsync(async (req, res) => {
     baseName,
     description,
     shortDescription,
-    basePrice: price,
+    basePrice: basePriceField,
+    price: priceField,
     comparePrice,
     stock,
     sku,
@@ -616,6 +617,9 @@ const createProduct = catchAsync(async (req, res) => {
     warrantyPackageIds = [],
     faqs = [],
   } = req.body;
+
+  // Chấp nhận cả 'price' lẫn 'basePrice' từ request body
+  const price = basePriceField !== undefined ? basePriceField : priceField;
 
   // SKU đã chuyển sang product_variants — column products.sku đã drop
   // Giữ uniqueSku cho variant SKU generation
@@ -1708,6 +1712,7 @@ const getAllOrders = catchAsync(async (req, res) => {
       limit: parseInt(limit),
       offset: parseInt(offset),
       order: [[sortBy, sortOrder.toUpperCase()]],
+      distinct: true,
     });
     logger.info('[ADMIN] Lấy đơn hàng xong:', orders.length);
 

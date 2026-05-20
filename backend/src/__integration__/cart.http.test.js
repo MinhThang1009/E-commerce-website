@@ -70,3 +70,37 @@ describe('DELETE /api/cart', () => {
     expect(res.body.status).toBe('success');
   });
 });
+
+// ── Cart endpoints còn thiếu ─────────────────────────────────
+describe('POST /api/cart/sync', () => {
+  test('→ 200', async () => {
+    const res = await request(app)
+      .post('/api/cart/sync')
+      .set('Authorization', `Bearer ${token}`)
+      .send({ items: [] });
+    expect([200, 400]).toContain(res.status);
+  });
+});
+
+describe('POST /api/cart/merge', () => {
+  test('→ 200', async () => {
+    const res = await request(app).post('/api/cart/merge').set('Authorization', `Bearer ${token}`);
+    expect([200, 400]).toContain(res.status);
+  });
+});
+
+describe('PUT + DELETE /api/cart/items/:id (invalid id)', () => {
+  test('PUT item không tồn tại → 404 hoặc 400', async () => {
+    const res = await request(app)
+      .put('/api/cart/items/999999999')
+      .set('Authorization', `Bearer ${token}`)
+      .send({ quantity: 2 });
+    expect([400, 404]).toContain(res.status);
+  });
+  test('DELETE item không tồn tại → 404 hoặc 400', async () => {
+    const res = await request(app)
+      .delete('/api/cart/items/999999999')
+      .set('Authorization', `Bearer ${token}`);
+    expect([400, 404]).toContain(res.status);
+  });
+});

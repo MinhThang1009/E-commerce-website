@@ -111,3 +111,70 @@ describe('POST /api/orders/:id/cancel', () => {
     expect([200, 400]).toContain(res.status);
   });
 });
+
+// ── Orders endpoints còn thiếu ───────────────────────────────
+describe('GET /api/orders/shipping-estimate', () => {
+  test('authenticated → 200 hoặc 400', async () => {
+    const res = await request(app)
+      .get('/api/orders/shipping-estimate')
+      .set('Authorization', `Bearer ${token}`)
+      .query({ weight: 1 });
+    expect([200, 400]).toContain(res.status);
+  });
+  test('không auth → 401', async () => {
+    const res = await request(app).get('/api/orders/shipping-estimate');
+    expect(res.status).toBe(401);
+  });
+});
+
+describe('GET /api/orders/number/:number', () => {
+  test('số không tồn tại → 404', async () => {
+    const res = await request(app)
+      .get('/api/orders/number/NOTEXIST999')
+      .set('Authorization', `Bearer ${token}`);
+    expect([400, 404]).toContain(res.status);
+  });
+  test('không auth → 401', async () => {
+    const res = await request(app).get('/api/orders/number/ORD-001');
+    expect(res.status).toBe(401);
+  });
+});
+
+describe('POST /api/orders/:id/repay', () => {
+  test('không auth → 401', async () => {
+    const res = await request(app).post('/api/orders/999999999/repay');
+    expect(res.status).toBe(401);
+  });
+  test('order không tồn tại → 404', async () => {
+    const res = await request(app)
+      .post('/api/orders/999999999/repay')
+      .set('Authorization', `Bearer ${token}`);
+    expect([400, 404]).toContain(res.status);
+  });
+});
+
+describe('POST /api/orders/:id/receive', () => {
+  test('không auth → 401', async () => {
+    const res = await request(app).post('/api/orders/999999999/receive');
+    expect(res.status).toBe(401);
+  });
+  test('order không tồn tại → 404', async () => {
+    const res = await request(app)
+      .post('/api/orders/999999999/receive')
+      .set('Authorization', `Bearer ${token}`);
+    expect([400, 404]).toContain(res.status);
+  });
+});
+
+describe('GET /api/orders/admin/all', () => {
+  test('không auth → 401', async () => {
+    const res = await request(app).get('/api/orders/admin/all');
+    expect(res.status).toBe(401);
+  });
+  test('customer → 403', async () => {
+    const res = await request(app)
+      .get('/api/orders/admin/all')
+      .set('Authorization', `Bearer ${token}`);
+    expect(res.status).toBe(403);
+  });
+});

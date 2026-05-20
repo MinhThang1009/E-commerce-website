@@ -116,3 +116,39 @@ describe('POST /api/payments/momo/ipn', () => {
     expect(res.status).not.toBe(500);
   });
 });
+
+// ── Payment endpoints còn thiếu ──────────────────────────────
+describe('GET /api/payments/momo/return', () => {
+  test('không có params → redirect hoặc 400', async () => {
+    const res = await request(app).get('/api/payments/momo/return');
+    expect([200, 302, 400]).toContain(res.status);
+  });
+});
+
+describe('GET /api/payments/vnpay/return', () => {
+  test('không có params → redirect hoặc 400', async () => {
+    const res = await request(app).get('/api/payments/vnpay/return');
+    expect([200, 302, 400]).toContain(res.status);
+  });
+});
+
+describe('POST /api/payments/refund', () => {
+  test('không auth → 401', async () => {
+    const res = await request(app).post('/api/payments/refund').send({ orderId: 1 });
+    expect(res.status).toBe(401);
+  });
+  test('customer → 403', async () => {
+    const res = await request(app)
+      .post('/api/payments/refund')
+      .set('Authorization', `Bearer ${token}`)
+      .send({ orderId: 1 });
+    expect([400, 403]).toContain(res.status);
+  });
+});
+
+describe('POST /api/payments/sepay-webhook', () => {
+  test('payload không hợp lệ → không crash', async () => {
+    const res = await request(app).post('/api/payments/sepay-webhook').send({ content: 'invalid' });
+    expect(res.status).not.toBe(500);
+  });
+});

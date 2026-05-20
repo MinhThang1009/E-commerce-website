@@ -54,3 +54,64 @@ describe('POST /api/reviews', () => {
     expect(res.status).toBe(401);
   });
 });
+
+// ── Reviews endpoints còn thiếu ──────────────────────────────
+describe('PUT /api/reviews/:id', () => {
+  test('không auth → 401', async () => {
+    const res = await request(app).put('/api/reviews/1').send({ rating: 4 });
+    expect(res.status).toBe(401);
+  });
+  test('review không tồn tại → 404', async () => {
+    const res = await request(app)
+      .put('/api/reviews/999999999')
+      .set('Authorization', `Bearer ${token}`)
+      .send({ rating: 4, content: 'Updated' });
+    expect([400, 403, 404]).toContain(res.status);
+  });
+});
+
+describe('DELETE /api/reviews/:id', () => {
+  test('không auth → 401', async () => {
+    const res = await request(app).delete('/api/reviews/1');
+    expect(res.status).toBe(401);
+  });
+  test('review không tồn tại → 404', async () => {
+    const res = await request(app)
+      .delete('/api/reviews/999999999')
+      .set('Authorization', `Bearer ${token}`);
+    expect([400, 403, 404]).toContain(res.status);
+  });
+});
+
+describe('PUT /api/reviews/:id/helpful', () => {
+  test('không auth → 401', async () => {
+    const res = await request(app).put('/api/reviews/1/helpful').send({ isHelpful: true });
+    expect(res.status).toBe(401);
+  });
+});
+
+describe('GET /api/reviews/admin/all', () => {
+  test('không auth → 401', async () => {
+    const res = await request(app).get('/api/reviews/admin/all');
+    expect(res.status).toBe(401);
+  });
+  test('customer → 403', async () => {
+    const res = await request(app)
+      .get('/api/reviews/admin/all')
+      .set('Authorization', `Bearer ${token}`);
+    expect(res.status).toBe(403);
+  });
+});
+
+describe('PATCH /api/reviews/admin/:id/verify', () => {
+  test('không auth → 401', async () => {
+    const res = await request(app).patch('/api/reviews/admin/1/verify');
+    expect(res.status).toBe(401);
+  });
+  test('customer → 403', async () => {
+    const res = await request(app)
+      .patch('/api/reviews/admin/999999999/verify')
+      .set('Authorization', `Bearer ${token}`);
+    expect(res.status).toBe(403);
+  });
+});

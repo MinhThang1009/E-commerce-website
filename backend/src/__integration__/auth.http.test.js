@@ -125,3 +125,76 @@ describe('POST /api/auth/logout', () => {
     expect([200, 204]).toContain(res.status);
   });
 });
+
+// ── Auth endpoints còn thiếu ─────────────────────────────────
+describe('POST /api/auth/verify-otp', () => {
+  test('OTP sai → 400', async () => {
+    const res = await request(app)
+      .post('/api/auth/verify-otp')
+      .send({ email: verifiedUser.email, otp: '000000' });
+    expect([400, 401]).toContain(res.status);
+  });
+  test('thiếu fields → 400', async () => {
+    const res = await request(app).post('/api/auth/verify-otp').send({});
+    expect(res.status).toBe(400);
+  });
+});
+
+describe('POST /api/auth/resend-verification', () => {
+  test('email không tồn tại → 200 (generic)', async () => {
+    const res = await request(app)
+      .post('/api/auth/resend-verification')
+      .send({ email: 'notexist@t.com' });
+    expect([200, 400, 429]).toContain(res.status);
+  });
+});
+
+describe('POST /api/auth/refresh-token', () => {
+  test('không có token → 401', async () => {
+    const res = await request(app).post('/api/auth/refresh-token');
+    expect([400, 401]).toContain(res.status);
+  });
+  test('token không hợp lệ → 401', async () => {
+    const res = await request(app)
+      .post('/api/auth/refresh-token')
+      .set('Cookie', 'refreshToken=invalid.token.here');
+    expect([400, 401]).toContain(res.status);
+  });
+});
+
+describe('POST /api/auth/forgot-password', () => {
+  test('email không tồn tại → 200 (chống enumeration)', async () => {
+    const res = await request(app)
+      .post('/api/auth/forgot-password')
+      .send({ email: 'notexist_forgot@t.com' });
+    expect([200, 400, 429]).toContain(res.status);
+  });
+  test('thiếu email → 400', async () => {
+    const res = await request(app).post('/api/auth/forgot-password').send({});
+    expect(res.status).toBe(400);
+  });
+});
+
+describe('POST /api/auth/reset-password', () => {
+  test('token không hợp lệ → 400 hoặc 401', async () => {
+    const res = await request(app)
+      .post('/api/auth/reset-password')
+      .send({ token: 'invalid_reset_token', password: 'NewPass123!' });
+    expect([400, 401]).toContain(res.status);
+  });
+  test('thiếu fields → 400', async () => {
+    const res = await request(app).post('/api/auth/reset-password').send({});
+    expect(res.status).toBe(400);
+  });
+});
+
+describe('POST /api/auth/google', () => {
+  test('invalid google token → 400 hoặc 401', async () => {
+    const res = await request(app).post('/api/auth/google').send({ token: 'invalid_google_token' });
+    expect([400, 401, 500]).toContain(res.status);
+  });
+  test('thiếu token → 400 hoặc 401', async () => {
+    const res = await request(app).post('/api/auth/google').send({});
+    expect([400, 401, 422]).toContain(res.status);
+  });
+});

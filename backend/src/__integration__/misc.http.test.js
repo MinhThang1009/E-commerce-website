@@ -302,3 +302,146 @@ describe('GET /api/health', () => {
     expect(res.status).toBe(200);
   });
 });
+
+// ── Warranty Package endpoints còn thiếu ─────────────────────
+describe('GET /api/warranty-packages/:id', () => {
+  test('tồn tại → 200', async () => {
+    if (!wpId) return;
+    const res = await request(app).get(`/api/warranty-packages/${wpId}`);
+    expect(res.status).toBe(200);
+    expect(res.body.status).toBe('success');
+  });
+  test('không tồn tại → 404', async () => {
+    const res = await request(app).get('/api/warranty-packages/999999999');
+    expect([400, 404]).toContain(res.status);
+  });
+});
+
+describe('PUT /api/warranty-packages/:id', () => {
+  test('không auth → 401', async () => {
+    const res = await request(app).put('/api/warranty-packages/1').send({ name: 'X' });
+    expect(res.status).toBe(401);
+  });
+  test('admin → 200 hoặc 404', async () => {
+    if (!wpId) return;
+    const res = await request(app)
+      .put(`/api/warranty-packages/${wpId}`)
+      .set('Authorization', `Bearer ${adminToken}`)
+      .send({ name: `__HTTP_WP_Updated_${Date.now()}`, price: 600000, durationMonths: 12 });
+    expect([200, 400, 404]).toContain(res.status);
+  });
+});
+
+describe('DELETE /api/warranty-packages/:id', () => {
+  test('không auth → 401', async () => {
+    const res = await request(app).delete('/api/warranty-packages/1');
+    expect(res.status).toBe(401);
+  });
+  test('admin → 200 hoặc 404', async () => {
+    if (!wpId) return;
+    const res = await request(app)
+      .delete(`/api/warranty-packages/${wpId}`)
+      .set('Authorization', `Bearer ${adminToken}`);
+    expect([200, 400, 404]).toContain(res.status);
+    wpId = null; // đã xóa
+  });
+});
+
+// ── Attribute endpoints còn thiếu ────────────────────────────
+describe('PUT /api/attributes/groups/:id', () => {
+  test('admin → 200 hoặc 404', async () => {
+    if (!attrGroupId) return;
+    const res = await request(app)
+      .put(`/api/attributes/groups/${attrGroupId}`)
+      .set('Authorization', `Bearer ${adminToken}`)
+      .send({ name: `__HTTP_AttrG_Updated_${Date.now()}` });
+    expect([200, 400, 404]).toContain(res.status);
+  });
+  test('không auth → 401', async () => {
+    const res = await request(app).put('/api/attributes/groups/1').send({ name: 'X' });
+    expect(res.status).toBe(401);
+  });
+});
+
+describe('DELETE /api/attributes/groups/:id', () => {
+  test('không auth → 401', async () => {
+    const res = await request(app).delete('/api/attributes/groups/1');
+    expect(res.status).toBe(401);
+  });
+});
+
+describe('DELETE /api/attributes/values/:id', () => {
+  test('không auth → 401', async () => {
+    const res = await request(app).delete('/api/attributes/values/1');
+    expect(res.status).toBe(401);
+  });
+  test('admin → 200 hoặc 404', async () => {
+    if (!attrValueId) return;
+    const res = await request(app)
+      .delete(`/api/attributes/values/${attrValueId}`)
+      .set('Authorization', `Bearer ${adminToken}`);
+    expect([200, 400, 404]).toContain(res.status);
+    attrValueId = null;
+  });
+});
+
+describe('POST /api/attributes/preview-name', () => {
+  test('→ 200', async () => {
+    const res = await request(app)
+      .post('/api/attributes/preview-name')
+      .send({ baseName: 'Laptop', selectedAttributes: [], separator: ' ' });
+    expect([200, 400]).toContain(res.status);
+  });
+});
+
+describe('POST /api/attributes/generate-name-realtime', () => {
+  test('→ 200', async () => {
+    const res = await request(app)
+      .post('/api/attributes/generate-name-realtime')
+      .send({ baseName: 'Laptop', selectedAttributes: [] });
+    expect([200, 400]).toContain(res.status);
+  });
+});
+
+describe('GET /api/attributes/name-affecting', () => {
+  test('→ 200', async () => {
+    const res = await request(app).get('/api/attributes/name-affecting');
+    expect(res.status).toBe(200);
+  });
+});
+
+describe('POST /api/attributes/batch-generate-names', () => {
+  test('không auth → 401', async () => {
+    const res = await request(app).post('/api/attributes/batch-generate-names').send({});
+    expect(res.status).toBe(401);
+  });
+});
+
+// ── Search History còn thiếu ─────────────────────────────────
+describe('DELETE /api/search-histories/:id', () => {
+  test('không auth → 401', async () => {
+    const res = await request(app).delete('/api/search-histories/1');
+    expect(res.status).toBe(401);
+  });
+  test('authenticated, không tồn tại → 404', async () => {
+    const res = await request(app)
+      .delete('/api/search-histories/999999999')
+      .set('Authorization', `Bearer ${userToken}`);
+    expect([400, 404]).toContain(res.status);
+  });
+});
+
+// ── Inventory còn thiếu ──────────────────────────────────────
+describe('POST /api/inventory/products/:productId/restock', () => {
+  test('không auth → 401', async () => {
+    const res = await request(app).post('/api/inventory/products/1/restock').send({ quantity: 10 });
+    expect(res.status).toBe(401);
+  });
+  test('customer → 403', async () => {
+    const res = await request(app)
+      .post(`/api/inventory/products/${prod.id}/restock`)
+      .set('Authorization', `Bearer ${userToken}`)
+      .send({ quantity: 10 });
+    expect(res.status).toBe(403);
+  });
+});

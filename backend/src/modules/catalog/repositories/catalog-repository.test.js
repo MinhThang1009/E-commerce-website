@@ -462,12 +462,20 @@ describe('_buildProductWhereConditions', () => {
 describe('_buildProductOrderClause', () => {
   const { repo } = makeRepo();
 
-  test('TC-34 price_asc → [[basePrice, ASC]]', () => {
-    expect(repo._buildProductOrderClause('price_asc')).toEqual([['basePrice', 'ASC']]);
+  test('TC-34 price_asc → COALESCE(min variant price, basePrice) ASC', () => {
+    const result = repo._buildProductOrderClause('price_asc');
+    expect(result).toHaveLength(1);
+    expect(result[0][1]).toBe('ASC');
+    expect(result[0][0]).toMatchObject({ literal: expect.stringContaining('COALESCE') });
+    expect(result[0][0].literal).toContain('basePrice');
   });
 
-  test('TC-34b price_desc → [[basePrice, DESC]]', () => {
-    expect(repo._buildProductOrderClause('price_desc')).toEqual([['basePrice', 'DESC']]);
+  test('TC-34b price_desc → COALESCE(min variant price, basePrice) DESC', () => {
+    const result = repo._buildProductOrderClause('price_desc');
+    expect(result).toHaveLength(1);
+    expect(result[0][1]).toBe('DESC');
+    expect(result[0][0]).toMatchObject({ literal: expect.stringContaining('COALESCE') });
+    expect(result[0][0].literal).toContain('basePrice');
   });
 
   test('TC-34c newest → [[createdAt, DESC]]', () => {

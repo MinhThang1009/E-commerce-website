@@ -71,7 +71,8 @@ describe('SequelizeAiRepository.searchProducts', () => {
     const callArgs = deps.Product.findAll.mock.calls[0][0];
     const orConditions = callArgs.where[Op.or];
     // Phải bao gồm term mở rộng như 'sneaker'
-    const flatTerms = orConditions.filter((c) => c.name).map((c) => c.name[Op.like]);
+    // Sau khi fix: dùng nameVi/nameEn thay vì name (VIRTUAL field)
+    const flatTerms = orConditions.filter((c) => c.nameVi).map((c) => c.nameVi[Op.like]);
     expect(flatTerms.some((t) => t.includes('sneaker'))).toBe(true);
   });
 

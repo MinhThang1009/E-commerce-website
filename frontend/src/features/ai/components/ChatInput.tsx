@@ -39,7 +39,7 @@ const ChatInput: React.FC<ChatInputProps> = ({
   };
 
   return (
-    <div className="p-4 bg-white dark:bg-neutral-900 backdrop-blur-lg">
+    <div className="glass-input-area p-4">
       {/* Chỉ báo đang soạn tin */}
       {isLoading && (
         <div className="flex items-center mb-3 text-[11px] text-neutral-500 dark:text-neutral-400 font-medium animate-pulse">
@@ -69,10 +69,8 @@ const ChatInput: React.FC<ChatInputProps> = ({
             onChange={(e) => setInput(e.target.value)}
             placeholder={t('chat.placeholder')}
             maxLength={MAX_LENGTH + 100} /* Cho phép gõ vượt để thấy cảnh báo, không cắt ngầm */
-            className={`w-full bg-neutral-100 dark:bg-neutral-800 border-2 rounded-2xl pl-4 pr-12 py-3 text-sm focus:ring-4 focus:outline-none text-neutral-900 dark:text-white placeholder-neutral-500 dark:placeholder-neutral-400 transition-all duration-300 shadow-sm group-hover:bg-neutral-200/50 dark:group-hover:bg-neutral-700/50 ${
-              isOverLimit
-                ? 'border-red-500/60 focus:border-red-500/80 focus:ring-red-500/10'
-                : 'border-transparent focus:border-primary-500/20 focus:ring-primary-500/10'
+            className={`glass-input-field w-full rounded-2xl pl-4 pr-14 py-3 text-sm text-neutral-900 dark:text-white placeholder-neutral-500 dark:placeholder-neutral-400 ${
+              isOverLimit ? 'border-red-400/60 !ring-red-400/20' : ''
             }`}
             disabled={isLoading}
             autoComplete="off"
@@ -96,10 +94,10 @@ const ChatInput: React.FC<ChatInputProps> = ({
 
         <button
           type="submit"
-          className={`bg-gradient-to-r from-primary-600 to-primary-500 text-white rounded-2xl p-3 shadow-lg shadow-primary-500/30 transition-all duration-300 hover:scale-105 active:scale-95 flex items-center justify-center ${
+          className={`glass-send-btn text-white rounded-2xl p-3 flex items-center justify-center ${
             !input.trim() || isLoading || isOverLimit
               ? 'opacity-40 grayscale pointer-events-none'
-              : 'hover:shadow-primary-500/50'
+              : ''
           }`}
           disabled={!input.trim() || isLoading || isOverLimit}
         >

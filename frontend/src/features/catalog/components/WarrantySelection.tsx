@@ -80,7 +80,7 @@ const WarrantySelection: React.FC<WarrantySelectionProps> = ({
                   type="checkbox"
                   checked={selectedPackages.includes(pkg.id)}
                   onChange={() => togglePackage(pkg.id)}
-                  className="mt-1 w-4 h-4 text-primary-600 bg-white border-neutral-300 rounded focus:ring-primary-500 dark:focus:ring-primary-600 dark:ring-offset-gray-800 focus:ring-2 dark:bg-gray-700 dark:border-gray-600"
+                  className="mt-1 w-4 h-4 text-primary-600 bg-white border-neutral-300 rounded focus:ring-primary-500 dark:focus:ring-primary-600 dark:ring-offset-gray-800 focus:ring-2 dark:bg-[#222222] dark:border-gray-600"
                 />
                 <div className="flex-1">
                   <div className="flex items-center justify-between">
@@ -148,7 +148,7 @@ const WarrantySelection: React.FC<WarrantySelectionProps> = ({
         </div>
       )}
 
-      <div className="mt-4 p-3 bg-blue-50 dark:bg-blue-900/20 rounded-lg">
+      <div className="mt-4 p-3 bg-blue-50 dark:bg-primary-700/20 rounded-lg">
         <div className="flex items-start gap-2">
           <InfoCircleOutlined className="text-blue-500 text-sm mt-0.5" />
           <p className="text-xs text-blue-700 dark:text-blue-300">{t('product.warrantyNote')}</p>

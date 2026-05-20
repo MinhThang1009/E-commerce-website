@@ -7,7 +7,7 @@
 import React from 'react';
 import { useTranslation } from 'react-i18next';
 import { BotIcon, CloseIcon, SparkleIcon, StatusIcon } from './icons';
-import { geminiService } from '../services/gemini-api';
+import { chatbotService } from '../services/chatbot-service';
 
 interface ChatToggleButtonProps {
   isOpen: boolean;
@@ -16,7 +16,7 @@ interface ChatToggleButtonProps {
 
 const ChatToggleButton: React.FC<ChatToggleButtonProps> = ({ isOpen, onClick }) => {
   const { t } = useTranslation();
-  const isAIReady = geminiService.isReady();
+  const isAIReady = chatbotService.isReady();
 
   return (
     <button

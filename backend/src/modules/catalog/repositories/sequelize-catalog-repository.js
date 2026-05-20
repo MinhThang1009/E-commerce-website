@@ -300,9 +300,16 @@ class SequelizeCatalogRepository extends ICatalogRepository {
   }
 
   // Build orderClause từ sort/order plain string.
+  // Giá sort dùng min(variant.price) nếu có variants, fallback về base_price —
+  // khớp với cách frontend tính giá hiển thị (calculatePriceRange).
   _buildProductOrderClause(sort, order) {
-    if (sort === 'price_asc') return [['basePrice', 'ASC']];
-    if (sort === 'price_desc') return [['basePrice', 'DESC']];
+    if (sort === 'price_asc' || sort === 'price_desc') {
+      const dir = sort === 'price_asc' ? 'ASC' : 'DESC';
+      const effectivePrice = this.sequelize.literal(
+        'COALESCE((SELECT MIN(pv.price) FROM product_variants pv WHERE pv.product_id = `Product`.`id`), basePrice)',
+      );
+      return [[effectivePrice, dir]];
+    }
     if (sort === 'newest') return [['createdAt', 'DESC']];
     if (sort === 'bestselling' || sort === 'popular') return [['soldCount', 'DESC']];
     return [[sort, order]];
@@ -520,7 +527,7 @@ class SequelizeCatalogRepository extends ICatalogRepository {
     return this.sequelize.query(
       `
       SELECT
-        p.id, p.name, p.slug,
+        p.id, p.name_vi as name, p.slug,
         p.base_price as price, p.compare_at_price,
         p.is_featured as isFeatured,
         COUNT(oi.product_id) as sales_count,

@@ -1,0 +1,109 @@
+/**
+ * @file _tokens.scss
+ * @description Design Tokens — Tất cả màu sắc, spacing, shadow tập trung 1 chỗ
+ *              Thay đổi 1 biến = apply toàn bộ app
+ *              Import vào index.scss: @use 'tokens';
+ */
+
+/* ─────────────────────────────────────────────────────────────
+   BRAND COLORS
+   ───────────────────────────────────────────────────────────── */
+:root {
+  /* Primary — Teal */
+  --color-primary: #2aaca7;
+  --color-primary-light: #4bbcb8;
+  --color-primary-dark: #229a96;
+
+  /* Secondary — Coral */
+  --color-secondary: #ff755e;
+  --color-secondary-light: #ff9a87;
+  --color-secondary-dark: #e56954;
+
+  /* Accent neutral */
+  --color-white: #ffffff;
+  --color-black: #000000;
+}
+
+/* ─────────────────────────────────────────────────────────────
+   BUTTON GLASS TOKENS
+   Thay đổi opacity hoặc màu ở đây = apply toàn bộ buttons
+   ───────────────────────────────────────────────────────────── */
+:root {
+  /* === Nút CTA chính "Mua ngay" — Teal === */
+  --btn-cta-bg: rgba(42, 172, 167, 0.82); /* ← Đổi opacity để đậm/nhạt hơn */
+  --btn-cta-bg-hover: rgba(42, 172, 167, 0.96);
+  --btn-cta-bg-active: rgba(42, 172, 167, 1);
+  --btn-cta-border: rgba(75, 188, 184, 0.55);
+  --btn-cta-glow: rgba(42, 172, 167, 0.32);
+  --btn-cta-text: #ffffff;
+
+  /* === Nút giỏ hàng "Thêm vào giỏ" — Coral === */
+  --btn-cart-bg: rgba(255, 117, 94, 0.78); /* ← Đổi màu coral ở đây */
+  --btn-cart-bg-hover: rgba(255, 117, 94, 0.92);
+  --btn-cart-bg-active: rgba(255, 117, 94, 1);
+  --btn-cart-border: rgba(255, 140, 110, 0.55);
+  --btn-cart-glow: rgba(255, 117, 94, 0.3);
+  --btn-cart-text: #ffffff;
+
+  /* === Nút phụ "Xem chi tiết" — Neutral === */
+  --btn-view-bg: rgba(0, 0, 0, 0.06);
+  --btn-view-bg-hover: rgba(0, 0, 0, 0.09);
+  --btn-view-border: rgba(0, 0, 0, 0.12);
+  --btn-view-border-hover: rgba(0, 0, 0, 0.22);
+  --btn-view-text: var(--text-primary);
+  --btn-view-text-hover: var(--text-primary);
+
+  /* === Backdrop blur cho tất cả glass buttons === */
+  --btn-blur: blur(14px) saturate(2);
+  --btn-specular: linear-gradient(135deg, rgba(255, 255, 255, 0.22) 0%, transparent 55%);
+  --btn-inner-glow: inset 0 1.5px 0 rgba(255, 255, 255, 0.25);
+}
+
+/* Dark mode: opacity thấp hơn để glass trong hơn */
+.dark {
+  --btn-cta-bg: rgba(42, 172, 167, 0.3);
+  --btn-cta-bg-hover: rgba(42, 172, 167, 0.48);
+  --btn-cta-bg-active: rgba(42, 172, 167, 0.62);
+  --btn-cta-border: rgba(75, 188, 184, 0.45);
+  --btn-cta-glow: rgba(42, 172, 167, 0.4);
+
+  --btn-cart-bg: rgba(255, 117, 94, 0.28);
+  --btn-cart-bg-hover: rgba(255, 117, 94, 0.45);
+  --btn-cart-bg-active: rgba(255, 117, 94, 0.6);
+  --btn-cart-border: rgba(255, 140, 110, 0.42);
+  --btn-cart-glow: rgba(255, 117, 94, 0.38);
+
+  --btn-view-bg: rgba(255, 255, 255, 0.08);
+  --btn-view-bg-hover: rgba(255, 255, 255, 0.13);
+  --btn-view-border: rgba(255, 255, 255, 0.18);
+  --btn-view-border-hover: rgba(255, 255, 255, 0.3);
+  --btn-view-text-hover: var(--text-primary);
+  --btn-inner-glow: inset 0 1.5px 0 rgba(255, 255, 255, 0.15);
+}
+
+/* ─────────────────────────────────────────────────────────────
+   SURFACE / BACKGROUND TOKENS
+   ───────────────────────────────────────────────────────────── */
+:root {
+  --surface-card: rgba(255, 255, 255, 0.6);
+  --surface-card-border: rgba(255, 255, 255, 0.82);
+  --surface-overlay: rgba(255, 255, 255, 0.14);
+  --surface-image: #f5f5f5; /* ← Nền ảnh product light mode */
+}
+
+.dark {
+  --surface-card: rgba(26, 26, 26, 0.92);
+  --surface-card-border: rgba(255, 255, 255, 0.08);
+  --surface-overlay: rgba(255, 255, 255, 0.05);
+  --surface-image: #2a2a2a; /* ← Nền ảnh product dark mode */
+}
+
+/* ─────────────────────────────────────────────────────────────
+   SECTION AMBIENT TOKENS
+   ───────────────────────────────────────────────────────────── */
+:root {
+  --orb-primary-light: rgba(42, 172, 167, 0.18);
+  --orb-secondary-light: rgba(255, 117, 94, 0.14);
+  --orb-primary-dark: rgba(42, 172, 167, 0.32);
+  --orb-secondary-dark: rgba(255, 117, 94, 0.22);
+}

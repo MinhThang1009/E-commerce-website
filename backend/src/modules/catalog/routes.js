@@ -21,6 +21,78 @@ const {
 // Catalog module routes — 4 sub-router (categories, brands, collections, products).
 // URL không đổi so với routes/category.js + brand.js + collection.js + product.js cũ.
 module.exports = ({ catalogController }) => {
+  /**
+   * @swagger
+   * /api/categories:
+   *   get:
+   *     summary: Lấy danh sách danh mục
+   *     tags: [Categories]
+   *   post:
+   *     summary: Tạo danh mục mới (admin)
+   *     tags: [Categories]
+   *     security:
+   *       - bearerAuth: []
+   * /api/categories/tree:
+   *   get:
+   *     summary: Lấy cây danh mục phân cấp
+   *     tags: [Categories]
+   * /api/categories/featured:
+   *   get:
+   *     summary: Lấy danh mục nổi bật
+   *     tags: [Categories]
+   * /api/categories/slug/{slug}:
+   *   get:
+   *     summary: Lấy danh mục theo slug
+   *     tags: [Categories]
+   *     parameters:
+   *       - in: path
+   *         name: slug
+   *         required: true
+   *         schema:
+   *           type: string
+   * /api/categories/{id}:
+   *   get:
+   *     summary: Lấy danh mục theo ID
+   *     tags: [Categories]
+   *     parameters:
+   *       - in: path
+   *         name: id
+   *         required: true
+   *         schema:
+   *           type: integer
+   *   put:
+   *     summary: Cập nhật danh mục (admin)
+   *     tags: [Categories]
+   *     security:
+   *       - bearerAuth: []
+   *     parameters:
+   *       - in: path
+   *         name: id
+   *         required: true
+   *         schema:
+   *           type: integer
+   *   delete:
+   *     summary: Xóa danh mục (admin)
+   *     tags: [Categories]
+   *     security:
+   *       - bearerAuth: []
+   *     parameters:
+   *       - in: path
+   *         name: id
+   *         required: true
+   *         schema:
+   *           type: integer
+   * /api/categories/{id}/products:
+   *   get:
+   *     summary: Lấy sản phẩm theo danh mục
+   *     tags: [Categories]
+   *     parameters:
+   *       - in: path
+   *         name: id
+   *         required: true
+   *         schema:
+   *           type: integer
+   */
   const categories = express.Router();
   categories.get('/', httpCacheHeaders(1800), catalogController.getAllCategories);
   categories.get('/tree', httpCacheHeaders(1800), catalogController.getCategoryTree);
@@ -44,6 +116,61 @@ module.exports = ({ catalogController }) => {
   );
   categories.delete('/:id', authenticate, authorize('admin'), catalogController.deleteCategory);
 
+  /**
+   * @swagger
+   * /api/brands:
+   *   get:
+   *     summary: Lấy danh sách thương hiệu
+   *     tags: [Brands]
+   *   post:
+   *     summary: Tạo thương hiệu mới (admin)
+   *     tags: [Brands]
+   *     security:
+   *       - bearerAuth: []
+   * /api/brands/slug/{slug}:
+   *   get:
+   *     summary: Lấy thương hiệu theo slug
+   *     tags: [Brands]
+   *     parameters:
+   *       - in: path
+   *         name: slug
+   *         required: true
+   *         schema:
+   *           type: string
+   * /api/brands/slug/{slug}/products:
+   *   get:
+   *     summary: Lấy sản phẩm theo thương hiệu
+   *     tags: [Brands]
+   *     parameters:
+   *       - in: path
+   *         name: slug
+   *         required: true
+   *         schema:
+   *           type: string
+   * /api/brands/{id}:
+   *   put:
+   *     summary: Cập nhật thương hiệu (admin)
+   *     tags: [Brands]
+   *     security:
+   *       - bearerAuth: []
+   *     parameters:
+   *       - in: path
+   *         name: id
+   *         required: true
+   *         schema:
+   *           type: integer
+   *   delete:
+   *     summary: Xóa thương hiệu (admin)
+   *     tags: [Brands]
+   *     security:
+   *       - bearerAuth: []
+   *     parameters:
+   *       - in: path
+   *         name: id
+   *         required: true
+   *         schema:
+   *           type: integer
+   */
   const brands = express.Router();
   brands.get('/', catalogController.getAllBrands);
   brands.get('/slug/:slug', catalogController.getBrandBySlug);
@@ -64,6 +191,61 @@ module.exports = ({ catalogController }) => {
   );
   brands.delete('/:id', authenticate, authorize('admin'), catalogController.deleteBrand);
 
+  /**
+   * @swagger
+   * /api/collections:
+   *   get:
+   *     summary: Lấy danh sách bộ sưu tập
+   *     tags: [Collections]
+   *   post:
+   *     summary: Tạo bộ sưu tập mới (admin)
+   *     tags: [Collections]
+   *     security:
+   *       - bearerAuth: []
+   * /api/collections/slug/{slug}:
+   *   get:
+   *     summary: Lấy bộ sưu tập theo slug
+   *     tags: [Collections]
+   *     parameters:
+   *       - in: path
+   *         name: slug
+   *         required: true
+   *         schema:
+   *           type: string
+   * /api/collections/slug/{slug}/products:
+   *   get:
+   *     summary: Lấy sản phẩm trong bộ sưu tập
+   *     tags: [Collections]
+   *     parameters:
+   *       - in: path
+   *         name: slug
+   *         required: true
+   *         schema:
+   *           type: string
+   * /api/collections/{id}:
+   *   put:
+   *     summary: Cập nhật bộ sưu tập (admin)
+   *     tags: [Collections]
+   *     security:
+   *       - bearerAuth: []
+   *     parameters:
+   *       - in: path
+   *         name: id
+   *         required: true
+   *         schema:
+   *           type: integer
+   *   delete:
+   *     summary: Xóa bộ sưu tập (admin)
+   *     tags: [Collections]
+   *     security:
+   *       - bearerAuth: []
+   *     parameters:
+   *       - in: path
+   *         name: id
+   *         required: true
+   *         schema:
+   *           type: integer
+   */
   const collections = express.Router();
   collections.get('/', catalogController.getAllCollections);
   collections.get('/slug/:slug', catalogController.getCollectionBySlug);
@@ -86,6 +268,124 @@ module.exports = ({ catalogController }) => {
 
   // Product router — order matters: GET / + named paths trước /:id để
   // /:id không catch /featured, /deals, etc.
+  /**
+   * @swagger
+   * /api/products:
+   *   get:
+   *     summary: Lấy danh sách sản phẩm
+   *     tags: [Products]
+   *   post:
+   *     summary: Tạo sản phẩm mới (admin)
+   *     tags: [Products]
+   *     security:
+   *       - bearerAuth: []
+   * /api/products/recently-viewed:
+   *   get:
+   *     summary: Lấy sản phẩm đã xem gần đây
+   *     tags: [Products]
+   *     security:
+   *       - bearerAuth: []
+   * /api/products/featured:
+   *   get:
+   *     summary: Lấy sản phẩm nổi bật
+   *     tags: [Products]
+   * /api/products/new-arrivals:
+   *   get:
+   *     summary: Lấy sản phẩm mới về
+   *     tags: [Products]
+   * /api/products/best-sellers:
+   *   get:
+   *     summary: Lấy sản phẩm bán chạy
+   *     tags: [Products]
+   * /api/products/deals:
+   *   get:
+   *     summary: Lấy sản phẩm đang giảm giá
+   *     tags: [Products]
+   * /api/products/filters:
+   *   get:
+   *     summary: Lấy các bộ lọc sản phẩm
+   *     tags: [Products]
+   * /api/products/search:
+   *   get:
+   *     summary: Tìm kiếm sản phẩm
+   *     tags: [Products]
+   * /api/products/suggestions:
+   *   get:
+   *     summary: Lấy gợi ý tìm kiếm sản phẩm
+   *     tags: [Products]
+   * /api/products/slug/{slug}:
+   *   get:
+   *     summary: Lấy sản phẩm theo slug
+   *     tags: [Products]
+   *     parameters:
+   *       - in: path
+   *         name: slug
+   *         required: true
+   *         schema:
+   *           type: string
+   * /api/products/{id}:
+   *   get:
+   *     summary: Lấy chi tiết sản phẩm theo ID
+   *     tags: [Products]
+   *     parameters:
+   *       - in: path
+   *         name: id
+   *         required: true
+   *         schema:
+   *           type: integer
+   *   put:
+   *     summary: Cập nhật sản phẩm (admin)
+   *     tags: [Products]
+   *     security:
+   *       - bearerAuth: []
+   *     parameters:
+   *       - in: path
+   *         name: id
+   *         required: true
+   *         schema:
+   *           type: integer
+   *   delete:
+   *     summary: Xóa sản phẩm (admin)
+   *     tags: [Products]
+   *     security:
+   *       - bearerAuth: []
+   *     parameters:
+   *       - in: path
+   *         name: id
+   *         required: true
+   *         schema:
+   *           type: integer
+   * /api/products/{id}/related:
+   *   get:
+   *     summary: Lấy sản phẩm liên quan
+   *     tags: [Products]
+   *     parameters:
+   *       - in: path
+   *         name: id
+   *         required: true
+   *         schema:
+   *           type: integer
+   * /api/products/{id}/variants:
+   *   get:
+   *     summary: Lấy các biến thể của sản phẩm
+   *     tags: [Products]
+   *     parameters:
+   *       - in: path
+   *         name: id
+   *         required: true
+   *         schema:
+   *           type: integer
+   * /api/products/{id}/reviews-summary:
+   *   get:
+   *     summary: Lấy tóm tắt đánh giá của sản phẩm
+   *     tags: [Products]
+   *     parameters:
+   *       - in: path
+   *         name: id
+   *         required: true
+   *         schema:
+   *           type: integer
+   */
   const products = express.Router();
   products.get('/', httpCacheHeaders(60), catalogController.getAllProducts);
   products.get('/recently-viewed', authenticate, catalogController.getRecentlyViewed);

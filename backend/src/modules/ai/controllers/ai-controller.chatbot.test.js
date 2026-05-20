@@ -15,7 +15,7 @@
 
 jest.mock('@models', () => ({
   Product: { findByPk: jest.fn(), findOne: jest.fn() },
-  ProductVariant: {},
+  ProductVariant: { findByPk: jest.fn().mockResolvedValue({ price: 500_000 }) },
   Cart: { findOne: jest.fn(), create: jest.fn() },
   CartItem: { create: jest.fn() },
   ChatMessage: { create: jest.fn().mockResolvedValue({}) },

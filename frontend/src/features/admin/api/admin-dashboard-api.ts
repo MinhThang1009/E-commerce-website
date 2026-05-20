@@ -5,7 +5,7 @@
  * @description API client functions cho feature admin
  */
 import { useQuery } from '@tanstack/react-query';
-import apiClient from '@/services/api-client';
+import apiClient from '@/lib/api-client';
 
 // Kiểu dữ liệu cho Dashboard
 export interface DashboardOverview {

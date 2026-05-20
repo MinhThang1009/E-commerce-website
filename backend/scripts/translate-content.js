@@ -1,5 +1,6 @@
 /**
- * Script dịch nội dung tiếng Việt sang tiếng Anh dùng OpenRouter (Gemini 2.0 Flash).
+ * Script dịch nội dung tiếng Việt sang tiếng Anh dùng OpenRouter.
+ * Model cấu hình qua TRANSLATE_MODEL trong .env (mặc định: openai/gpt-4o-mini).
  *
  * Chạy: node scripts/translateContent.js [--dry-run] [--table=products]
  *   --dry-run  : in ra nội dung dịch, không write DB
@@ -7,6 +8,7 @@
  */
 
 require('dotenv').config({ path: `${__dirname}/../.env` });
+require('module-alias/register');
 const axios = require('axios');
 const sequelize = require('../src/config/sequelize');
 
@@ -18,7 +20,7 @@ const TABLE_ARG = (process.argv.find((a) => a.startsWith('--table=')) || '').rep
 
 const API_URL = 'https://openrouter.ai/api/v1/chat/completions';
 const API_KEY = process.env.OPENROUTER_API_KEY;
-const MODEL   = 'google/gemini-2.0-flash-001';
+const MODEL   = process.env.TRANSLATE_MODEL || 'openai/gpt-4o-mini';
 
 // Delay giữa mỗi batch request để tránh rate limit
 const DELAY_MS = 800;

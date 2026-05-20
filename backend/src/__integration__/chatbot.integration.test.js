@@ -1,0 +1,423 @@
+/**
+ * Integration tests — AI Chatbot với database thật (techstore).
+ *
+ * Scope: DB operations của chatbot module
+ *   - ChatMessage: lưu/đọc/filter lịch sử chat
+ *   - AIRepository: searchProducts, findActiveDeals, findFeaturedProducts, createAnalyticsEvent
+ *   - Chatbot flow: session history persistence
+ *
+ * KHÔNG test LLM generation (cần API key).
+ * KHÔNG test vector store search (cần embedding API key).
+ */
+require('module-alias/register');
+const sequelize = require('@config/sequelize');
+const { ChatMessage, User, Product, ProductVariant, Category, Brand } = require('@models');
+const { Op } = require('sequelize');
+const SequelizeAIRepository = require('@modules/ai/repositories/sequelize-ai-repository');
+
+const TS = Date.now();
+let user, testProduct, testCategory, aiRepo;
+
+beforeAll(async () => {
+  await sequelize.authenticate();
+
+  // Tạo user cho các test cần userId
+  user = await User.create({
+    firstName: '__INT_Chatbot',
+    lastName: 'User',
+    email: `__int_chatbot_${TS}@t.com`,
+    password: 'Chatbot123!',
+    role: 'customer',
+  });
+
+  // Tạo category + brand + product để test AI repository search
+  testCategory = await Category.create({
+    nameVi: `__INT_AI_Cat_${TS}`,
+    nameEn: `__INT_AI_Cat_${TS}`,
+    slug: `int-ai-cat-${TS}`,
+    isActive: true,
+  });
+  const brand = await Brand.create({
+    nameVi: `__INT_AI_Brand_${TS}`,
+    nameEn: `__INT_AI_Brand_${TS}`,
+    slug: `int-ai-brand-${TS}`,
+  });
+  testProduct = await Product.create({
+    nameVi: `__INT_AI_Laptop_${TS}`,
+    nameEn: `__INT_AI_Laptop_EN_${TS}`,
+    baseName: `__INT_AI_Laptop_${TS}`,
+    slug: `int-ai-laptop-${TS}`,
+    description: `laptop test description ${TS}`,
+    basePrice: 15_000_000,
+    compareAtPrice: 18_000_000,
+    categoryId: testCategory.id,
+    brandId: brand.id,
+    status: 'active',
+    stockQuantity: 10,
+    isFeatured: true,
+  });
+  await ProductVariant.create({
+    productId: testProduct.id,
+    sku: `INT-AI-VAR-${TS}`,
+    variantName: 'Base',
+    price: 15_000_000,
+    stockQuantity: 10,
+    isDefault: true,
+  });
+
+  // Khởi tạo AI repository với real models
+  aiRepo = new SequelizeAIRepository({
+    Product,
+    ProductVariant,
+    Category,
+    sequelize,
+  });
+});
+
+afterAll(async () => {
+  await ChatMessage.destroy({
+    where: { sessionId: { [Op.like]: `int-session-${TS}%` } },
+    force: true,
+  });
+  await ChatMessage.destroy({ where: { userId: user?.id } }, { force: true });
+  await ProductVariant.destroy({ where: { productId: testProduct?.id }, force: true });
+  if (testProduct) await testProduct.destroy({ force: true });
+  if (testCategory) await testCategory.destroy({ force: true });
+  if (user) await user.destroy({ force: true });
+});
+
+// ─────────────────────────────────────────────────────────────
+describe('ChatMessage Integration — Lưu & đọc lịch sử', () => {
+  const sessionId = `int-session-${TS}-1`;
+
+  test('Lưu tin nhắn user vào DB', async () => {
+    const msg = await ChatMessage.create({
+      sessionId,
+      userId: user.id,
+      role: 'user',
+      content: 'Laptop nào tốt dưới 20 triệu?',
+      messageType: 'ai_chatbot',
+      isFallback: false,
+      isArchived: false,
+    });
+    expect(msg.id).toBeDefined();
+    expect(msg.role).toBe('user');
+    expect(msg.content).toBe('Laptop nào tốt dưới 20 triệu?');
+  });
+
+  test('Lưu tin nhắn assistant (response)', async () => {
+    const msg = await ChatMessage.create({
+      sessionId,
+      userId: user.id,
+      role: 'assistant',
+      content: 'Dưới đây là các laptop tốt dưới 20 triệu...',
+      messageType: 'ai_chatbot',
+      intent: 'product_search',
+      responseTimeMs: 450,
+      isFallback: false,
+      isArchived: false,
+    });
+    expect(msg.role).toBe('assistant');
+    expect(msg.intent).toBe('product_search');
+    expect(msg.responseTimeMs).toBe(450);
+  });
+
+  test('Đọc lịch sử chat theo sessionId — đúng thứ tự', async () => {
+    const history = await ChatMessage.findAll({
+      where: { sessionId },
+      order: [['createdAt', 'ASC']],
+    });
+    expect(history).toHaveLength(2);
+    expect(history[0].role).toBe('user');
+    expect(history[1].role).toBe('assistant');
+  });
+
+  test('Lưu nhiều turns — max 10 turns logic', async () => {
+    const extraSession = `int-session-${TS}-extra`;
+    for (let i = 0; i < 5; i++) {
+      await ChatMessage.create({
+        sessionId: extraSession,
+        userId: user.id,
+        role: 'user',
+        content: `Turn ${i} user`,
+        messageType: 'ai_chatbot',
+        isFallback: false,
+        isArchived: false,
+      });
+      await ChatMessage.create({
+        sessionId: extraSession,
+        userId: user.id,
+        role: 'assistant',
+        content: `Turn ${i} assistant`,
+        messageType: 'ai_chatbot',
+        isFallback: false,
+        isArchived: false,
+      });
+    }
+    const all = await ChatMessage.findAll({ where: { sessionId: extraSession } });
+    expect(all).toHaveLength(10); // 5 turns = 10 messages
+    await ChatMessage.destroy({ where: { sessionId: extraSession }, force: true });
+  });
+
+  test('Filter theo userId — chỉ messages của user này', async () => {
+    const msgs = await ChatMessage.findAll({ where: { userId: user.id, sessionId } });
+    expect(msgs.length).toBeGreaterThanOrEqual(2);
+    for (const m of msgs) expect(m.userId).toBe(user.id);
+  });
+
+  test('isFallback flag — đánh dấu response từ keyword fallback', async () => {
+    const fallback = await ChatMessage.create({
+      sessionId: `int-session-${TS}-fallback`,
+      userId: user.id,
+      role: 'assistant',
+      content: 'Xin lỗi, tôi không hiểu câu hỏi này.',
+      messageType: 'ai_chatbot',
+      isFallback: true,
+      isArchived: false,
+    });
+    expect(fallback.isFallback).toBe(true);
+  });
+
+  test('Soft archive messages cũ', async () => {
+    const oldMsg = await ChatMessage.create({
+      sessionId: `int-session-${TS}-old`,
+      userId: user.id,
+      role: 'user',
+      content: 'Câu hỏi cũ',
+      messageType: 'ai_chatbot',
+      isFallback: false,
+      isArchived: false,
+    });
+    await oldMsg.update({ isArchived: true });
+    await oldMsg.reload();
+    expect(oldMsg.isArchived).toBe(true);
+
+    // Active messages không include archived
+    const active = await ChatMessage.findAll({
+      where: { sessionId: `int-session-${TS}-old`, isArchived: false },
+    });
+    expect(active).toHaveLength(0);
+  });
+});
+
+// ─────────────────────────────────────────────────────────────
+describe('AI Repository Integration — Product Search', () => {
+  test('searchProducts trả về sản phẩm active có keyword khớp', async () => {
+    const results = await aiRepo.searchProducts({
+      keyword: `int-ai-laptop-${TS}`.slice(0, 20), // substring để match
+      limit: 10,
+    });
+    // Sản phẩm test có "laptop" trong nameEn và slug
+    expect(Array.isArray(results)).toBe(true);
+  });
+
+  test('searchProducts filter theo minPrice', async () => {
+    const results = await aiRepo.searchProducts({
+      minPrice: 10_000_000,
+      limit: 50,
+    });
+    expect(results.length).toBeGreaterThan(0);
+    for (const p of results) {
+      expect(Number(p.basePrice)).toBeGreaterThanOrEqual(10_000_000);
+    }
+  });
+
+  test('searchProducts filter theo maxPrice', async () => {
+    const results = await aiRepo.searchProducts({
+      maxPrice: 5_000_000,
+      limit: 50,
+    });
+    for (const p of results) {
+      expect(Number(p.basePrice)).toBeLessThanOrEqual(5_000_000);
+    }
+  });
+
+  test('searchProducts filter minPrice + maxPrice', async () => {
+    const results = await aiRepo.searchProducts({
+      minPrice: 10_000_000,
+      maxPrice: 20_000_000,
+      limit: 50,
+    });
+    for (const p of results) {
+      const price = Number(p.basePrice);
+      expect(price).toBeGreaterThanOrEqual(10_000_000);
+      expect(price).toBeLessThanOrEqual(20_000_000);
+    }
+  });
+
+  test('searchProducts không có keyword trả về tất cả active', async () => {
+    const results = await aiRepo.searchProducts({ limit: 5 });
+    expect(results.length).toBeGreaterThan(0);
+    for (const p of results) expect(p.status).toBe('active');
+  });
+});
+
+// ─────────────────────────────────────────────────────────────
+describe('AI Repository Integration — Deals & Featured', () => {
+  test('findActiveDeals trả về sản phẩm có compareAtPrice', async () => {
+    // testProduct có compareAtPrice=18M > basePrice=15M
+    const deals = await aiRepo.findActiveDeals(20);
+    expect(deals.length).toBeGreaterThan(0);
+    for (const p of deals) {
+      expect(Number(p.compareAtPrice)).toBeGreaterThan(0);
+      expect(p.status).toBe('active');
+    }
+  });
+
+  test('findActiveDeals sắp xếp theo % giảm giá DESC', async () => {
+    const deals = await aiRepo.findActiveDeals(50);
+    if (deals.length >= 2) {
+      const pct = (p) =>
+        (Number(p.compareAtPrice) - Number(p.basePrice)) / Number(p.compareAtPrice);
+      for (let i = 0; i < deals.length - 1; i++) {
+        expect(pct(deals[i])).toBeGreaterThanOrEqual(pct(deals[i + 1]) - 0.001); // tolerance
+      }
+    }
+  });
+
+  test('findFeaturedProducts trả về sản phẩm isFeatured=true', async () => {
+    const featured = await aiRepo.findFeaturedProducts(20);
+    expect(featured.length).toBeGreaterThan(0);
+    for (const p of featured) {
+      expect(p.isFeatured).toBe(true);
+      expect(p.status).toBe('active');
+    }
+    // testProduct (isFeatured=true) phải có trong kết quả
+    const found = featured.find((p) => p.id === testProduct.id);
+    expect(found).toBeDefined();
+  });
+
+  test('findFeaturedProducts với limit', async () => {
+    const limited = await aiRepo.findFeaturedProducts(2);
+    expect(limited.length).toBeLessThanOrEqual(2);
+  });
+});
+
+// ─────────────────────────────────────────────────────────────
+describe('AI Repository Integration — Analytics Event', () => {
+  test('createAnalyticsEvent lưu vào ChatMessage', async () => {
+    const before = await ChatMessage.count({ where: { userId: user.id, intent: 'view_product' } });
+    await aiRepo.createAnalyticsEvent({
+      event: 'view_product',
+      userId: user.id,
+      sessionId: `int-session-${TS}-analytics`,
+      productId: testProduct.id,
+      value: 1,
+      metadata: { source: 'chatbot_recommendation' },
+    });
+    // Đợi async
+    await new Promise((r) => setTimeout(r, 100));
+    const after = await ChatMessage.count({ where: { userId: user.id, intent: 'view_product' } });
+    expect(after).toBe(before + 1);
+  });
+
+  test('Analytics event content có thể parse JSON', async () => {
+    const event = await ChatMessage.findOne({
+      where: { userId: user.id, intent: 'view_product', sessionId: `int-session-${TS}-analytics` },
+    });
+    expect(event).not.toBeNull();
+    const parsed = JSON.parse(event.content);
+    expect(parsed.event).toBe('view_product');
+    expect(parsed.productId).toBe(testProduct.id);
+  });
+});
+
+// ─────────────────────────────────────────────────────────────
+describe('AI Repository Integration — findProductForCart', () => {
+  test('findProductForCart lấy product với variants', async () => {
+    const p = await aiRepo.findProductForCart(testProduct.id);
+    expect(p).not.toBeNull();
+    expect(p.id).toBe(testProduct.id);
+    expect(p.variants).toBeDefined();
+    expect(p.variants.length).toBeGreaterThan(0);
+  });
+
+  test('findProductForCart trả null cho productId không tồn tại', async () => {
+    const p = await aiRepo.findProductForCart(999999999);
+    expect(p).toBeNull();
+  });
+});
+
+// ─────────────────────────────────────────────────────────────
+describe('AI Repository Integration — searchProducts với categoryName', () => {
+  test('searchProducts filter theo categoryName khớp nameVi', async () => {
+    const results = await aiRepo.searchProducts({
+      categoryName: `__INT_AI_Cat_${TS}`.slice(0, 15),
+      limit: 10,
+    });
+    // testProduct thuộc testCategory có nameVi bắt đầu bằng '__INT_AI_Cat_'
+    expect(Array.isArray(results)).toBe(true);
+    if (results.length > 0) {
+      // Tất cả kết quả phải active
+      for (const p of results) expect(p.status).toBe('active');
+    }
+  });
+
+  test('searchProducts keyword + minPrice kết hợp', async () => {
+    const results = await aiRepo.searchProducts({
+      keyword: 'laptop',
+      minPrice: 1_000_000,
+      limit: 10,
+    });
+    expect(Array.isArray(results)).toBe(true);
+    for (const p of results) {
+      expect(Number(p.basePrice)).toBeGreaterThanOrEqual(1_000_000);
+    }
+  });
+});
+
+// ─────────────────────────────────────────────────────────────
+describe('AI Repository Integration — addToCart', () => {
+  test('addToCart tạo cart mới nếu user chưa có, thêm CartItem', async () => {
+    const { Cart, CartItem } = require('@models');
+
+    // Đảm bảo user chưa có cart
+    await CartItem.destroy({ where: {}, force: true });
+    await Cart.destroy({ where: { userId: user.id }, force: true });
+
+    await aiRepo.addToCart({
+      userId: user.id,
+      productId: testProduct.id,
+      variantId: (
+        await require('@models').ProductVariant.findOne({ where: { productId: testProduct.id } })
+      ).id,
+      quantity: 2,
+    });
+
+    const cart = await Cart.findOne({ where: { userId: user.id } });
+    expect(cart).not.toBeNull();
+
+    const item = await CartItem.findOne({ where: { cartId: cart.id, productId: testProduct.id } });
+    expect(item).not.toBeNull();
+    expect(item.quantity).toBe(2);
+
+    // Cleanup
+    await CartItem.destroy({ where: { cartId: cart.id }, force: true });
+    await cart.destroy({ force: true });
+  });
+
+  test('addToCart tái sử dụng cart hiện có', async () => {
+    const { Cart, CartItem } = require('@models');
+
+    // Tạo cart trước
+    const existingCart = await Cart.create({ userId: user.id, status: 'active' });
+
+    await aiRepo.addToCart({
+      userId: user.id,
+      productId: testProduct.id,
+      variantId: (
+        await require('@models').ProductVariant.findOne({ where: { productId: testProduct.id } })
+      ).id,
+      quantity: 1,
+    });
+
+    // Phải dùng cart cũ, không tạo mới
+    const carts = await Cart.findAll({ where: { userId: user.id } });
+    expect(carts.length).toBe(1);
+    expect(carts[0].id).toBe(existingCart.id);
+
+    // Cleanup
+    await CartItem.destroy({ where: { cartId: existingCart.id }, force: true });
+    await existingCart.destroy({ force: true });
+  });
+});

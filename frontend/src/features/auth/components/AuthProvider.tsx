@@ -11,6 +11,27 @@ import { useGetCurrentUserQuery } from '../api/auth-api';
 import { refreshTokenIfNeeded } from '@/utils/token-manager';
 import LoadingSpinner from '@/components/common/LoadingSpinner';
 
+// Preload page bundle cho route hiện tại song song với auth network call
+// — tránh Suspense fallback xuất hiện ngay sau khi auth xong (double-load)
+function preloadCurrentRoute() {
+  const path = window.location.pathname;
+  if (path === '/' || path === '') {
+    void import('@/pages/HomePage');
+  } else if (path.startsWith('/shop')) {
+    void import('@/features/catalog/pages/ShopPage');
+  } else if (path.startsWith('/products')) {
+    void import('@/features/catalog/pages/ProductDetailPage');
+  } else if (path.startsWith('/cart')) {
+    void import('@/features/cart/pages/CartPage');
+  } else if (path.startsWith('/profile')) {
+    void import('@/features/users/pages/ProfilePage');
+  } else if (path.startsWith('/orders')) {
+    void import('@/features/orders/pages/OrdersPage');
+  } else {
+    void import('@/pages/HomePage');
+  }
+}
+
 interface AuthProviderProps {
   children: React.ReactNode;
 }
@@ -20,7 +41,10 @@ const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const token = useAuthStore((s) => s.token);
   const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
   const user = useAuthStore((s) => s.user);
-  const [isHydrating, setIsHydrating] = useState(true);
+  // Không hydrate nếu đã có token hợp lệ trong sessionStorage (reload trong cùng tab)
+  const [isHydrating, setIsHydrating] = useState(
+    () => !useAuthStore.getState().token && !!localStorage.getItem('user'),
+  );
 
   // Silent refresh khi app mount — access token mất khi reload, dùng httpOnly cookie để lấy lại
   useEffect(() => {
@@ -32,6 +56,8 @@ const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
       const storedUser = localStorage.getItem('user');
       if (storedUser) {
+        // Preload page bundle song song với network call — tránh double-load spinner
+        preloadCurrentRoute();
         try {
           const newToken = await refreshTokenIfNeeded();
           if (newToken) {

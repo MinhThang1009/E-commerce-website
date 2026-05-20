@@ -50,8 +50,8 @@ const ProductDetailsSection: React.FC<ProductDetailsSectionProps> = ({
         <Card
           title={
             <div className="flex items-center space-x-2">
-              <span className="text-xl font-bold text-gray-800 dark:text-gray-200">📝</span>
-              <span className="text-lg font-semibold text-gray-800 dark:text-gray-200">
+              <span className="text-xl font-bold text-gray-800 dark:text-neutral-200">📝</span>
+              <span className="text-lg font-semibold text-gray-800 dark:text-neutral-200">
                 {t('product.description')}
               </span>
             </div>
@@ -85,8 +85,8 @@ const ProductDetailsSection: React.FC<ProductDetailsSectionProps> = ({
         <Card
           title={
             <div className="flex items-center space-x-2">
-              <span className="text-xl font-bold text-gray-800 dark:text-gray-200">⚙️</span>
-              <span className="text-lg font-semibold text-gray-800 dark:text-gray-200">
+              <span className="text-xl font-bold text-gray-800 dark:text-neutral-200">⚙️</span>
+              <span className="text-lg font-semibold text-gray-800 dark:text-neutral-200">
                 {t('product.specifications')}
               </span>
             </div>
@@ -101,17 +101,17 @@ const ProductDetailsSection: React.FC<ProductDetailsSectionProps> = ({
                   <div
                     key={index}
                     className={`
-                      flex justify-between items-start py-4 px-4 border-b border-gray-100 dark:border-gray-700 last:border-b-0
-                      ${index % 2 === 0 ? 'bg-gray-50 dark:bg-gray-800' : 'bg-white dark:bg-gray-900'}
-                      transition-colors hover:bg-blue-50 dark:hover:bg-blue-900/20
+                      flex justify-between items-start py-4 px-4 border-b border-gray-100 dark:border-white/[0.06] last:border-b-0
+                      ${index % 2 === 0 ? 'bg-neutral-50 dark:bg-[#181818]' : 'bg-white dark:bg-[#141414]'}
+                      transition-colors hover:bg-primary-50/30 dark:hover:bg-primary-900/15
                     `}
                   >
-                    <span className="text-sm font-semibold text-gray-700 dark:text-gray-300 min-w-0 flex-shrink-0 mr-4">
+                    <span className="text-sm font-semibold text-gray-700 dark:text-neutral-300 min-w-0 flex-shrink-0 mr-4">
                       {t(`product.specNames.${spec.name.toLowerCase()}`, {
                         defaultValue: spec.name,
                       })}
                     </span>
-                    <span className="text-sm text-gray-900 dark:text-gray-100 text-right break-words font-medium">
+                    <span className="text-sm text-gray-900 dark:text-neutral-100 text-right break-words font-medium">
                       {getSpecValue(spec, i18n.language)}
                     </span>
                   </div>
@@ -134,12 +134,12 @@ const ProductDetailsSection: React.FC<ProductDetailsSectionProps> = ({
               )}
             </div>
           ) : (
-            <div className="text-center text-gray-500 dark:text-gray-400 py-12">
+            <div className="text-center text-gray-500 dark:text-neutral-400 py-12">
               <div className="text-5xl mb-4">📋</div>
-              <p className="text-base font-medium text-gray-600 dark:text-gray-300">
+              <p className="text-base font-medium text-gray-600 dark:text-neutral-300">
                 {t('product.noSpecs')}
               </p>
-              <p className="text-sm text-gray-400 dark:text-gray-500 mt-2">
+              <p className="text-sm text-gray-400 dark:text-neutral-500 mt-2">
                 {t('product.specsComingSoon')}
               </p>
             </div>
@@ -149,7 +149,7 @@ const ProductDetailsSection: React.FC<ProductDetailsSectionProps> = ({
 
       <Modal
         title={
-          <div className="text-lg font-bold text-gray-800 dark:text-white pb-2 border-b dark:border-gray-700">
+          <div className="text-lg font-bold text-gray-800 dark:text-white pb-2 border-b dark:border-white/[0.06]">
             {t('product.detailsTitle')}
           </div>
         }
@@ -164,8 +164,8 @@ const ProductDetailsSection: React.FC<ProductDetailsSectionProps> = ({
           header: 'mb-0 p-4 pb-0 bg-white dark:bg-[#141414] rounded-t-xl',
         }}
         closeIcon={
-          <div className="p-1 rounded-full hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors">
-            <CloseOutlined className="text-gray-500 dark:text-gray-400 text-lg" />
+          <div className="p-1 rounded-full hover:bg-neutral-100 dark:hover:bg-[#1f1f1f] transition-colors">
+            <CloseOutlined className="text-gray-500 dark:text-neutral-400 text-lg" />
           </div>
         }
         centered
@@ -180,7 +180,7 @@ const ProductDetailsSection: React.FC<ProductDetailsSectionProps> = ({
 
       <Modal
         title={
-          <div className="text-lg font-bold text-gray-800 dark:text-white pb-2 border-b dark:border-gray-700">
+          <div className="text-lg font-bold text-gray-800 dark:text-white pb-2 border-b dark:border-white/[0.06]">
             {t('product.specifications')}
           </div>
         }
@@ -195,28 +195,28 @@ const ProductDetailsSection: React.FC<ProductDetailsSectionProps> = ({
           header: 'mb-0 p-4 pb-0 bg-white dark:bg-[#141414] rounded-t-xl',
         }}
         closeIcon={
-          <div className="p-1 rounded-full hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors">
-            <CloseOutlined className="text-gray-500 dark:text-gray-400 text-lg" />
+          <div className="p-1 rounded-full hover:bg-neutral-100 dark:hover:bg-[#1f1f1f] transition-colors">
+            <CloseOutlined className="text-gray-500 dark:text-neutral-400 text-lg" />
           </div>
         }
         centered
       >
         <div className="p-6">
           {specifications && specifications.length > 0 ? (
-            <div className="space-y-0 border rounded-lg overflow-hidden dark:border-gray-700">
+            <div className="space-y-0 border rounded-lg overflow-hidden dark:border-white/[0.06]">
               {specifications.map((spec, index) => (
                 <div
                   key={index}
                   className={`
-                    flex justify-between items-center py-4 px-6 border-b border-gray-100 dark:border-gray-700 last:border-b-0
-                    ${index % 2 === 0 ? 'bg-gray-50 dark:bg-gray-800' : 'bg-white dark:bg-gray-900'}
-                    hover:bg-blue-50 dark:hover:bg-blue-900/20 transition-colors
+                    flex justify-between items-center py-4 px-6 border-b border-gray-100 dark:border-white/[0.06] last:border-b-0
+                    ${index % 2 === 0 ? 'bg-neutral-50 dark:bg-[#181818]' : 'bg-white dark:bg-[#141414]'}
+                    hover:bg-primary-50/30 dark:hover:bg-primary-900/15 transition-colors
                   `}
                 >
-                  <span className="text-base font-semibold text-gray-700 dark:text-gray-300 capitalize min-w-0 flex-shrink-0 mr-8 w-1/3">
+                  <span className="text-base font-semibold text-gray-700 dark:text-neutral-300 capitalize min-w-0 flex-shrink-0 mr-8 w-1/3">
                     {t(`product.specNames.${spec.name.toLowerCase()}`, { defaultValue: spec.name })}
                   </span>
-                  <span className="text-base text-gray-900 dark:text-gray-100 text-left break-words font-medium w-2/3">
+                  <span className="text-base text-gray-900 dark:text-neutral-100 text-left break-words font-medium w-2/3">
                     {getSpecValue(spec, i18n.language)}
                   </span>
                 </div>

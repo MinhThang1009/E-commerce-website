@@ -1,4 +1,7 @@
+const path = require('path');
 const swaggerJsdoc = require('swagger-jsdoc');
+
+const SRC_DIR = path.join(__dirname, '..');
 
 const SWAGGER_OPTIONS = {
   definition: {
@@ -14,7 +17,7 @@ const SWAGGER_OPTIONS = {
     },
     servers: [
       {
-        url: process.env.API_URL,
+        url: process.env.API_URL || `http://localhost:${process.env.PORT || 8888}`,
         description: 'Máy chủ phát triển',
       },
     ],
@@ -33,7 +36,11 @@ const SWAGGER_OPTIONS = {
       },
     ],
   },
-  apis: ['@config/src/routes/*.js', '@config/src/models/*.js'],
+  apis: [
+    path.join(SRC_DIR, 'modules', '**', 'routes.js'),
+    path.join(SRC_DIR, 'routes', '*.js'),
+    path.join(SRC_DIR, 'models', '*.js'),
+  ],
 };
 
 const swaggerSpec = swaggerJsdoc(SWAGGER_OPTIONS);

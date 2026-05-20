@@ -22,6 +22,47 @@ const webhookLimiter = rateLimit({
 module.exports = ({ paymentController }) => {
   const router = express.Router();
 
+  /**
+   * @swagger
+   * /api/payments/sepay-webhook:
+   *   post:
+   *     summary: Webhook nhận thông báo thanh toán từ SePay
+   *     tags: [Payment]
+   * /api/payments/momo/return:
+   *   get:
+   *     summary: Trang trả về sau khi thanh toán MoMo
+   *     tags: [Payment]
+   * /api/payments/momo/ipn:
+   *   post:
+   *     summary: IPN callback từ MoMo
+   *     tags: [Payment]
+   * /api/payments/vnpay/return:
+   *   get:
+   *     summary: Trang trả về sau khi thanh toán VNPay
+   *     tags: [Payment]
+   * /api/payments/vnpay/ipn:
+   *   get:
+   *     summary: IPN callback từ VNPay
+   *     tags: [Payment]
+   * /api/payments/momo/create-url:
+   *   post:
+   *     summary: Tạo URL thanh toán MoMo
+   *     tags: [Payment]
+   *     security:
+   *       - bearerAuth: []
+   * /api/payments/vnpay/create-url:
+   *   post:
+   *     summary: Tạo URL thanh toán VNPay
+   *     tags: [Payment]
+   *     security:
+   *       - bearerAuth: []
+   * /api/payments/refund:
+   *   post:
+   *     summary: Tạo yêu cầu hoàn tiền (admin)
+   *     tags: [Payment]
+   *     security:
+   *       - bearerAuth: []
+   */
   // Public — webhooks (gateway signature verification trong service)
   router.post('/sepay-webhook', express.json(), paymentController.handleSePayWebhook);
   router.get('/momo/return', paymentController.momoReturn);

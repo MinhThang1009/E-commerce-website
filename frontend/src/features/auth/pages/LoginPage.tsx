@@ -261,7 +261,7 @@ const LoginPage: React.FC = () => {
                     <button
                       type="button"
                       onClick={handleGoToOtp}
-                      className="w-full py-2 px-4 bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium rounded-lg transition-colors"
+                      className="w-full py-2 px-4 bg-primary-600 hover:bg-primary-50/40 text-white text-sm font-medium rounded-lg transition-colors"
                     >
                       📩 {t('auth.login.enterOtp')}
                     </button>

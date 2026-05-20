@@ -240,23 +240,9 @@ export const createProductFiltersParams = (filters: ProductFilters = {}): URLSea
     }
   });
 
-  // Sắp xếp
+  // Gửi thẳng sort option name — backend _buildProductOrderClause nhận price_asc/price_desc/newest/popular
   if (filters.sort) {
-    const sortMap: Record<string, string> = {
-      price_asc: 'price',
-      price_desc: 'price',
-      newest: 'createdAt',
-      popular: 'rating',
-    };
-
-    const orderMap: Record<string, string> = {
-      price_desc: 'DESC',
-      newest: 'DESC',
-      popular: 'DESC',
-    };
-
-    params.append('sort', sortMap[filters.sort] || 'createdAt');
-    params.append('order', orderMap[filters.sort] || 'ASC');
+    params.append('sort', filters.sort);
   }
 
   return params;

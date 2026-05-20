@@ -244,8 +244,8 @@ class PaymentController {
         if (!source) continue;
         for (const pattern of ORDER_ID_PATTERNS) {
           const match = source.match(pattern);
-          if (match && (match[1] ?? match[0])) {
-            orderId = (match[1] ?? match[0]).trim();
+          if (match && match[0]) {
+            orderId = match[0].trim();
             break;
           }
         }

@@ -298,7 +298,7 @@ const EnhancedVariantSelector: React.FC<EnhancedVariantSelectorProps> = ({
 
       {/* Tóm tắt */}
       {Object.keys(selectedAttributes).length > 0 && (
-        <div className="p-3 bg-blue-50 dark:bg-blue-900/20 rounded-lg">
+        <div className="p-3 bg-blue-50 dark:bg-primary-700/20 rounded-lg">
           <Text strong style={{ fontSize: 12 }}>
             {t('product.selectedConfig')}
           </Text>

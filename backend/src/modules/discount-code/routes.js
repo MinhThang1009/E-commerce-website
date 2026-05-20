@@ -12,7 +12,13 @@ const {
   applyDiscountCodeSchema: applyDiscountCodeValidation,
 } = require('@modules/discount-code/validators/discount-code-validator');
 
-// Customer: Áp dụng mã giảm giá
+/**
+ * @swagger
+ * /api/discount-codes/apply:
+ *   post:
+ *     summary: Áp dụng mã giảm giá
+ *     tags: [Discount Codes]
+ */
 router.post(
   '/apply',
   validateRequest(applyDiscountCodeValidation),

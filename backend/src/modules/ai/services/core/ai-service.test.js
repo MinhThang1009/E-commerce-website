@@ -176,16 +176,16 @@ describe('AIService', () => {
 
 describe('ChatbotLLMGateway', () => {
   test('getAIResponse delegate sang chatbotService.getAIResponse — covers line 15', async () => {
-    const mockGeminiService = {
+    const mockChatbotService = {
       handleMessage: jest.fn().mockResolvedValue({ response: 'hi' }),
       getAIResponse: jest.fn().mockResolvedValue({ response: 'AI response', products: [] }),
     };
 
-    const gateway = new ChatbotLLMGateway({ chatbotService: mockGeminiService });
+    const gateway = new ChatbotLLMGateway({ chatbotService: mockChatbotService });
 
     const result = await gateway.getAIResponse('tìm iphone', [{ id: 1 }], { timeOfDay: 'morning' });
 
-    expect(mockGeminiService.getAIResponse).toHaveBeenCalledWith(
+    expect(mockChatbotService.getAIResponse).toHaveBeenCalledWith(
       'tìm iphone',
       [{ id: 1 }],
       { timeOfDay: 'morning' },
@@ -195,16 +195,16 @@ describe('ChatbotLLMGateway', () => {
   });
 
   test('handleMessage delegate sang chatbotService.handleMessage', async () => {
-    const mockGeminiService = {
+    const mockChatbotService = {
       handleMessage: jest.fn().mockResolvedValue({ response: 'pong' }),
       getAIResponse: jest.fn(),
     };
 
-    const gateway = new ChatbotLLMGateway({ chatbotService: mockGeminiService });
+    const gateway = new ChatbotLLMGateway({ chatbotService: mockChatbotService });
 
     const result = await gateway.handleMessage('ping', 1, 'sess', {});
 
-    expect(mockGeminiService.handleMessage).toHaveBeenCalledWith('ping', 1, 'sess', {});
+    expect(mockChatbotService.handleMessage).toHaveBeenCalledWith('ping', 1, 'sess', {});
     expect(result).toMatchObject({ response: 'pong' });
   });
 });

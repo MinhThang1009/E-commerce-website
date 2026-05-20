@@ -40,6 +40,11 @@ jest.mock('@models', () => ({
 
 const PaymentController = require('./payment-controller');
 
+beforeEach(() => {
+  // authReq() gửi 'Apikey any-key' — set key khớp để bypass auth trong hầu hết tests
+  process.env.SEPAY_API_KEY = 'any-key';
+});
+
 afterEach(() => {
   jest.clearAllMocks();
   delete process.env.SEPAY_API_KEY;
@@ -98,15 +103,12 @@ describe('handleSePayWebhook — xác thực API key', () => {
     await controller.handleSePayWebhook(buildReq({ headers: {} }), res, jest.fn());
     expect(res.status).toHaveBeenCalledWith(401);
   });
-  test('NODE_ENV=test, không có SEPAY_API_KEY → cho phép qua', async () => {
+  test('không có SEPAY_API_KEY → từ chối 401', async () => {
+    delete process.env.SEPAY_API_KEY;
     const { controller } = buildController();
-    mockOrderFindOne.mockResolvedValue(makeOrder());
-    mockOrderUpdate.mockResolvedValue([1]);
-    mockOrderFindByPk.mockResolvedValue(null);
-    mockCartFindAll.mockResolvedValue([]);
     const res = buildRes();
     await controller.handleSePayWebhook(authReq(), res, jest.fn());
-    expect(res.status).not.toHaveBeenCalledWith(401);
+    expect(res.status).toHaveBeenCalledWith(401);
   });
   test('SEPAY_API_KEY set, key sai → 401', async () => {
     process.env.SEPAY_API_KEY = 'correct-key';

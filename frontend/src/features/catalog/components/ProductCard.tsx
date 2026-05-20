@@ -18,7 +18,7 @@ import { useAddToWishlistMutation, useRemoveFromWishlistMutation } from '@/featu
 import { HeartIcon } from '@heroicons/react/24/outline';
 import { HeartIcon as HeartIconSolid } from '@heroicons/react/24/solid';
 import { useAddToCartMutation } from '@/features/cart';
-import { ShoppingCartIcon } from '@heroicons/react/24/outline';
+import { ShoppingCartIcon, EyeIcon } from '@heroicons/react/24/outline';
 import { motion } from 'framer-motion';
 
 interface ProductCardProps extends Product {
@@ -143,12 +143,12 @@ const ProductCard: React.FC<ProductCardProps> = ({
        * dark:bg-[#1c2030] — dark navy, đủ tối để không jarring, đủ sáng để product visible
        */}
       {/*
-       * bg-white: product CDN images có nền trắng baked-in → seamless
-       * translateZ(0): force GPU composite layer → fix sub-pixel rendering overflow khi zoom
-       * rounded-t-[1.5rem]: clip khớp với card border-radius
+       * aspect-square: tự scale theo chiều rộng cột → responsive hoàn toàn
+       * bg-white: CDN images có nền trắng → seamless
+       * translateZ(0): GPU layer → fix zoom artifact
        */}
       <div
-        className="relative h-56 sm:h-60 overflow-hidden bg-white shrink-0 rounded-t-[1.5rem]"
+        className="relative w-full aspect-square overflow-hidden bg-white shrink-0 rounded-t-[1.5rem]"
         style={{ transform: 'translateZ(0)', willChange: 'transform' }}
       >
         {/* Discount / New badges */}
@@ -187,7 +187,7 @@ const ProductCard: React.FC<ProductCardProps> = ({
           <img
             src={proxyImg(thumbnail)}
             alt={displayName}
-            className="w-full h-full object-contain transition-transform duration-500 group-hover:scale-105"
+            className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
             loading="lazy"
           />
         </Link>
@@ -256,7 +256,11 @@ const ProductCard: React.FC<ProductCardProps> = ({
             {t('product.buyNow')}
           </button>
 
-          <button className="btn-glass-secondary w-full py-2 text-sm" onClick={handleViewDetails}>
+          <button
+            className="btn-glass-secondary w-full py-2 text-sm flex items-center justify-center gap-1.5"
+            onClick={handleViewDetails}
+          >
+            <EyeIcon className="w-4 h-4 flex-shrink-0" />
             {t('product.viewDetails')}
           </button>
         </div>

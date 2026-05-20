@@ -9,6 +9,30 @@ import { immer } from 'zustand/middleware/immer';
 import { User } from '@/types/user.types';
 import { AuthResponse } from '@/features/auth/types/auth.types';
 
+const SESSION_TOKEN_KEY = 'access_token';
+
+const getSessionToken = (): string | null => {
+  try {
+    return sessionStorage.getItem(SESSION_TOKEN_KEY);
+  } catch {
+    return null;
+  }
+};
+
+const isSessionTokenValid = (token: string): boolean => {
+  try {
+    const payload = JSON.parse(atob(token.split('.')[1]));
+    return payload.exp > Date.now() / 1000;
+  } catch {
+    return false;
+  }
+};
+
+const initToken = (() => {
+  const t = getSessionToken();
+  return t && isSessionTokenValid(t) ? t : null;
+})();
+
 interface AuthState {
   user: User | null;
   token: string | null;
@@ -41,8 +65,8 @@ const getStoredUser = (): User | null => {
 export const useAuthStore = create<AuthState & AuthActions>()(
   immer((set) => ({
     user: getStoredUser(),
-    token: null,
-    isAuthenticated: false,
+    token: initToken,
+    isAuthenticated: !!initToken,
     isLoading: false,
     error: null,
     justLoggedIn: false,
@@ -61,6 +85,7 @@ export const useAuthStore = create<AuthState & AuthActions>()(
         state.token = payload.token;
         state.justLoggedIn = true;
         localStorage.setItem('user', JSON.stringify(payload.user));
+        sessionStorage.setItem(SESSION_TOKEN_KEY, payload.token);
       }),
 
     loginFailure: (error) =>
@@ -79,6 +104,7 @@ export const useAuthStore = create<AuthState & AuthActions>()(
         localStorage.removeItem('cartItems');
         localStorage.removeItem('token');
         localStorage.removeItem('refreshToken');
+        sessionStorage.removeItem(SESSION_TOKEN_KEY);
       }),
 
     updateUser: (data) =>
@@ -97,6 +123,7 @@ export const useAuthStore = create<AuthState & AuthActions>()(
       set((state) => {
         state.token = token;
         state.isAuthenticated = true;
+        sessionStorage.setItem(SESSION_TOKEN_KEY, token);
       }),
 
     clearJustLoggedIn: () =>

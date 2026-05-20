@@ -12,9 +12,41 @@ const { chatbotLimiter } = require('@middlewares/rate-limiter');
 module.exports = ({ aiController }) => {
   const router = express.Router();
 
+  /**
+   * @swagger
+   * /api/chatbot/message:
+   *   post:
+   *     summary: Gửi tin nhắn tới chatbot AI
+   *     tags: [AI Chatbot]
+   */
   router.post('/message', chatbotLimiter, optionalAuthenticate, aiController.handleMessage);
+  /**
+   * @swagger
+   * /api/chatbot/recommendations:
+   *   get:
+   *     summary: Lấy gợi ý sản phẩm từ AI
+   *     tags: [AI Chatbot]
+   */
   router.get('/recommendations', optionalAuthenticate, aiController.getRecommendations);
+  /**
+   * @swagger
+   * /api/chatbot/analytics:
+   *   post:
+   *     summary: Ghi nhận sự kiện analytics chatbot
+   *     tags: [AI Chatbot]
+   *     security:
+   *       - bearerAuth: []
+   */
   router.post('/analytics', authenticate, aiController.trackAnalytics);
+  /**
+   * @swagger
+   * /api/chatbot/cart/add:
+   *   post:
+   *     summary: Thêm sản phẩm vào giỏ hàng qua chatbot
+   *     tags: [AI Chatbot]
+   *     security:
+   *       - bearerAuth: []
+   */
   router.post('/cart/add', authenticate, aiController.addToCart);
 
   return router;

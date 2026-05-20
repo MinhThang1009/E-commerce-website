@@ -4,7 +4,7 @@
  * @feature catalog
  * @description API client functions cho feature catalog
  */
-import apiClient from '@/services/api-client';
+import apiClient from '@/lib/api-client';
 
 export interface NamePreviewRequest {
   baseName: string;

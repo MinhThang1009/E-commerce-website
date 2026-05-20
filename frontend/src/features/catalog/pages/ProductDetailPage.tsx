@@ -687,13 +687,13 @@ const ProductDetailPage: React.FC = () => {
                             onClick={() => handleAttributeChange(attribute.name, value)}
                             disabled={!available}
                             className={`
-                                px-4 py-2 text-sm border rounded-lg transition-all duration-200 font-medium
+                                px-4 py-2 text-sm rounded-xl transition-all duration-200 font-semibold
                                 ${
                                   isSelected
-                                    ? 'bg-blue-600 text-white border-blue-600 shadow-md dark:bg-blue-500 dark:border-blue-500'
+                                    ? 'btn-glass-primary text-white'
                                     : available
-                                      ? 'bg-white border-gray-300 text-gray-800 hover:border-blue-500 hover:text-blue-600 hover:shadow-sm dark:bg-neutral-800 dark:border-neutral-600 dark:text-neutral-200 dark:hover:border-blue-400 dark:hover:text-blue-400'
-                                      : 'bg-gray-100 border-gray-200 text-gray-400 cursor-not-allowed dark:bg-neutral-700 dark:border-neutral-600 dark:text-neutral-500'
+                                      ? 'btn-glass-secondary'
+                                      : 'opacity-40 cursor-not-allowed btn-glass-secondary'
                                 }
                               `}
                           >
@@ -818,10 +818,11 @@ const ProductDetailPage: React.FC = () => {
                       </div>
                     )}
 
-                  {/* Nút mua ngay */}
+                  {/* Mua ngay — teal primary + cart icon */}
                   <PremiumButton
-                    variant="secondary"
+                    variant="primary"
                     size="large"
+                    iconType="cart"
                     isProcessing={isBuying}
                     processingText={t('common.processing')}
                     onClick={handleBuyNow}
@@ -833,8 +834,9 @@ const ProductDetailPage: React.FC = () => {
                       : t('productDetail.buyNow.label')}
                   </PremiumButton>
 
+                  {/* Thêm vào giỏ — coral secondary */}
                   <PremiumButton
-                    variant="primary"
+                    variant="secondary"
                     size="large"
                     iconType="cart"
                     isProcessing={isAddingToCart}

@@ -1156,7 +1156,7 @@ const ProfilePage: React.FC = () => {
                                 : item.type === 'spend'
                                   ? 'bg-amber-50 text-amber-700 dark:bg-amber-900/30 dark:text-amber-300'
                                   : item.type === 'refund'
-                                    ? 'bg-blue-50 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300'
+                                    ? 'bg-blue-50 text-blue-700 dark:bg-primary-700/30 dark:text-blue-300'
                                     : 'bg-neutral-100 text-neutral-700 dark:bg-neutral-800 dark:text-neutral-300'
                             }`}
                           >

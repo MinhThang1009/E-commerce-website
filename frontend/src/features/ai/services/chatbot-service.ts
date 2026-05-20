@@ -1,8 +1,8 @@
 /**
- * @file geminiApi.ts
+ * @file chatbot-service.ts
  * @layer Service
  * @feature ai
- * @description Service layer cho feature ai
+ * @description Service giao tiếp với backend AI Chatbot API
  */
 import axios from 'axios';
 import i18n from '@/config/i18n';
@@ -10,23 +10,19 @@ import { useAuthStore } from '@/stores/auth-store';
 
 const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8888/api';
 
-export interface GeminiChatResponse {
+export interface ChatbotResponse {
   text: string;
   suggestions?: string[];
 }
 
-class GeminiService {
+class ChatbotService {
   private isInitialized = false;
 
   constructor() {
-    this.initializeModel();
-  }
-
-  private async initializeModel() {
     this.isInitialized = true;
   }
 
-  async sendMessage(userMessage: string): Promise<GeminiChatResponse> {
+  async sendMessage(userMessage: string): Promise<ChatbotResponse> {
     if (!userMessage || userMessage.trim().length === 0) {
       throw new Error(i18n.t('chat.errors.emptyMessage'));
     }
@@ -36,9 +32,7 @@ class GeminiService {
     try {
       const response = await axios.post(
         `${API_BASE_URL}/chatbot/message`,
-        {
-          message: cleanMessage,
-        },
+        { message: cleanMessage },
         {
           headers: {
             'Content-Type': 'application/json',
@@ -55,7 +49,7 @@ class GeminiService {
           data.suggestions || this.generateSuggestions(cleanMessage, data.response || ''),
       };
     } catch (error) {
-      console.error('Lỗi AI Service:', error);
+      console.error('Lỗi AI Chatbot Service:', error);
 
       return {
         text: i18n.t('chat.errors.busy'),
@@ -91,12 +85,9 @@ class GeminiService {
   }
 
   getStatus(): { ready: boolean; hasApiKey: boolean; error?: string } {
-    return {
-      ready: this.isInitialized,
-      hasApiKey: true,
-    };
+    return { ready: this.isInitialized, hasApiKey: true };
   }
 }
 
-export const geminiService = new GeminiService();
-export default geminiService;
+export const chatbotService = new ChatbotService();
+export default chatbotService;

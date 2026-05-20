@@ -1034,7 +1034,7 @@ const CheckoutPage: React.FC = () => {
             {/* Sản phẩm trong giỏ hoặc đơn hàng thanh toán lại */}
             {isRepayingOrder ? (
               <div className="space-y-4 mb-6">
-                <div className="p-4 bg-blue-50 dark:bg-blue-900/20 rounded-lg">
+                <div className="p-4 bg-blue-50 dark:bg-primary-700/20 rounded-lg">
                   <div className="text-blue-800 dark:text-blue-200">
                     <div className="font-semibold mb-2">{t('checkout.repayOrder.title')}</div>
                     <div className="text-sm mb-1">

@@ -543,8 +543,8 @@ describe('chatbotService.js — initializeChatbot catch block (line 55)', () => 
     }));
     jest.mock('@config/redis', () => ({ getRedisClient: jest.fn().mockReturnValue(null) }));
 
-    const originalKey = process.env.GEMINI_API_KEYS;
-    process.env.GEMINI_API_KEYS = 'sk-real-key-triggers-info';
+    const originalKey = process.env.LLM_API_KEY;
+    process.env.LLM_API_KEY = 'sk-real-key-triggers-info';
 
     // Module exports singleton; constructor runs at require time → info throws → catch → error
     require('@modules/ai/services/chatbot/chatbot-service');
@@ -554,7 +554,7 @@ describe('chatbotService.js — initializeChatbot catch block (line 55)', () => 
       expect.anything(),
     );
 
-    process.env.GEMINI_API_KEYS = originalKey;
+    process.env.LLM_API_KEY = originalKey;
     delete global.__chatbotLoggerCallCount;
   });
 });

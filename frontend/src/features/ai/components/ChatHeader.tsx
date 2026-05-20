@@ -7,79 +7,95 @@
 import React from 'react';
 import { useTranslation } from 'react-i18next';
 import { CloseIcon, LightningIcon } from './icons/index';
-import { geminiService } from '../services/gemini-api';
+import { chatbotService } from '../services/chatbot-service';
 
-// Dùng kiểu của instance singleton vì geminiApi không export kiểu riêng
-type GeminiServiceType = typeof geminiService;
+// Dùng kiểu của instance singleton chatbotService
+type ChatbotServiceType = typeof chatbotService;
 
 interface ChatHeaderProps {
   onClose: () => void;
-  geminiService: GeminiServiceType;
+  chatbotService: ChatbotServiceType;
 }
 
 /**
  * Component hiển thị header của chat widget
  */
-const ChatHeader: React.FC<ChatHeaderProps> = ({ onClose, geminiService }) => {
+const ChatHeader: React.FC<ChatHeaderProps> = ({ onClose, chatbotService }) => {
   const { t } = useTranslation();
 
   return (
-    <div className="bg-gradient-to-br from-primary-500 via-primary-600 to-primary-700 text-white p-5 relative overflow-hidden">
-      {/* Họa tiết nền */}
-      <div className="absolute inset-0 opacity-20">
-        <div className="absolute inset-0 bg-[url('data:image/svg+xml,%3Csvg%20width%3D%2240%22%20height%3D%2240%22%20viewBox%3D%220%200%2040%2040%22%20xmlns%3D%22http%3A//www.w3.org/2000/svg%22%3E%3Cg%20fill%3D%22none%22%20fill-rule%3D%22evenodd%22%3E%3Cg%20fill%3D%22%23ffffff%22%20fill-opacity%3D%220.1%22%3E%3Ccircle%20cx%3D%2220%22%20cy%3D%2220%22%20r%3D%221.5%22/%3E%3C/g%3E%3C/g%3E%3C/svg%3E')]"></div>
-        <div className="absolute top-0 right-0 w-32 h-32 bg-gradient-to-bl from-white/10 to-transparent rounded-full -translate-y-16 translate-x-16"></div>
-        <div className="absolute bottom-0 left-0 w-24 h-24 bg-gradient-to-tr from-white/5 to-transparent rounded-full translate-y-12 -translate-x-12"></div>
-      </div>
+    <div className="glass-header chat-header-drag text-white p-5 relative">
+      {/* Second ambient orb — smaller, left side */}
+      <div
+        className="absolute bottom-0 left-0 w-24 h-24 rounded-full translate-y-12 -translate-x-8 pointer-events-none"
+        style={{
+          background: 'radial-gradient(ellipse, rgba(255,255,255,0.14) 0%, transparent 70%)',
+        }}
+      />
 
-      <div className="relative flex items-center justify-between">
-        <div className="flex items-center space-x-4">
-          <div className="w-10 h-10 bg-white/20 backdrop-blur-sm rounded-xl flex items-center justify-center shadow-lg ring-2 ring-white/30">
-            <LightningIcon className="w-5 h-5" />
+      <div className="relative flex items-center justify-between" style={{ zIndex: 2 }}>
+        <div className="flex items-center space-x-3">
+          <div
+            className="w-11 h-11 rounded-2xl flex items-center justify-center shadow-lg ring-1 ring-white/20"
+            style={{
+              background: 'rgba(255,255,255,0.18)',
+              backdropFilter: 'blur(12px)',
+              boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.30), 0 4px 12px rgba(0,0,0,0.15)',
+            }}
+          >
+            <LightningIcon className="w-5 h-5 drop-shadow-sm" />
           </div>
           <div>
-            <h3 className="font-bold text-xl tracking-tight">{t('chat.title')}</h3>
-            <p className="text-sm text-white/90 font-medium">{t('chat.subtitle')}</p>
+            <h3 className="font-bold text-[17px] tracking-tight leading-tight">
+              {t('chat.title')}
+            </h3>
+            <p className="text-[12px] text-white/80 font-medium mt-0.5">{t('chat.subtitle')}</p>
           </div>
         </div>
 
-        {/* Nút đóng */}
         <button
           onClick={onClose}
-          className="w-8 h-8 rounded-lg bg-white/20 hover:bg-white/30 backdrop-blur-sm flex items-center justify-center transition-all duration-200 hover:scale-110"
+          className="w-8 h-8 rounded-xl flex items-center justify-center transition-all duration-200 hover:scale-110 active:scale-90"
+          style={{
+            background: 'rgba(255,255,255,0.16)',
+            backdropFilter: 'blur(8px)',
+            border: '1px solid rgba(255,255,255,0.22)',
+          }}
           aria-label={t('chat.closeChat')}
         >
           <CloseIcon />
         </button>
       </div>
 
-      {/* Thông tin trạng thái AI */}
-      <div className="mt-4 flex items-center justify-between">
-        <div className="flex items-center space-x-3">
-          {geminiService.isReady() ? (
-            <>
-              <div className="flex items-center space-x-2 bg-white/15 backdrop-blur-sm rounded-full px-3 py-1.5">
-                <div className="w-2.5 h-2.5 bg-green-400 rounded-full animate-pulse shadow-lg"></div>
-                <span className="text-xs font-semibold">{t('ai.geminiName')}</span>
-              </div>
-              <div className="flex items-center space-x-2 bg-white/10 backdrop-blur-sm rounded-full px-3 py-1.5">
-                <span className="text-xs text-white/90">{t('ai.smartMode')}</span>
-              </div>
-            </>
-          ) : (
-            <>
-              <div className="flex items-center space-x-2 bg-white/15 backdrop-blur-sm rounded-full px-3 py-1.5">
-                <div className="w-2.5 h-2.5 bg-yellow-400 rounded-full animate-pulse shadow-lg"></div>
-                <span className="text-xs font-semibold">{t('ai.statusDemo')}</span>
-              </div>
-              <div className="flex items-center space-x-2 bg-white/10 backdrop-blur-sm rounded-full px-3 py-1.5">
-                <span className="text-xs text-white/90">{t('ai.limited')}</span>
-              </div>
-            </>
-          )}
+      {/* Status badges */}
+      <div className="relative mt-3 flex items-center gap-2" style={{ zIndex: 2 }}>
+        <div
+          className="flex items-center gap-1.5 rounded-full px-3 py-1.5"
+          style={{
+            background: 'rgba(255,255,255,0.14)',
+            backdropFilter: 'blur(8px)',
+            border: '1px solid rgba(255,255,255,0.18)',
+          }}
+        >
+          <div
+            className={`w-2 h-2 rounded-full animate-pulse shadow-sm ${chatbotService.isReady() ? 'bg-emerald-400' : 'bg-amber-400'}`}
+          />
+          <span className="text-[11px] font-semibold tracking-wide">
+            {chatbotService.isReady() ? t('ai.chatbotName') : t('ai.statusDemo')}
+          </span>
         </div>
-
-        {/* Đã loại bỏ Online indicator */}
+        <div
+          className="flex items-center rounded-full px-3 py-1.5"
+          style={{
+            background: 'rgba(255,255,255,0.09)',
+            backdropFilter: 'blur(8px)',
+            border: '1px solid rgba(255,255,255,0.12)',
+          }}
+        >
+          <span className="text-[11px] text-white/80">
+            {chatbotService.isReady() ? t('ai.smartMode') : t('ai.limited')}
+          </span>
+        </div>
       </div>
     </div>
   );

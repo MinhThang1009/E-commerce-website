@@ -1,5 +1,8 @@
 @import url('https://fonts.googleapis.com/css2?family=Montserrat:ital,wght@0,300;0,400;0,500;0,600;0,700;0,800;0,900;1,700&family=Inter:wght@300;400;500;600;700&display=swap');
 
+/* Design tokens — tất cả màu sắc tập trung, dễ thay đổi hàng loạt */
+@import './tokens';
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
@@ -647,91 +650,15 @@ body {
    GLASS BUTTONS 2.0 — hover/active effects, không dùng inline style
    ───────────────────────────────────────────────────────────── */
 
-/* Primary glass button — teal */
-.btn-glass-primary {
+/* ── Mixin chung cho glass buttons ── */
+%glass-btn-base {
   position: relative;
   overflow: hidden;
   isolation: isolate;
-  color: white;
-  font-weight: 700;
-  border-radius: 0.75rem;
-  /* Light mode: đủ opaque để thấy rõ */
-  background: rgba(42, 172, 167, 0.75);
-  backdrop-filter: blur(14px) saturate(2);
-  -webkit-backdrop-filter: blur(14px) saturate(2);
-  border: 1px solid rgba(75, 188, 184, 0.55);
-  box-shadow:
-    inset 0 1.5px 0 rgba(255, 255, 255, 0.28),
-    0 3px 14px rgba(42, 172, 167, 0.35);
-  transition:
-    background 0.2s ease,
-    box-shadow 0.2s ease,
-    border-color 0.2s ease,
-    transform 0.15s ease;
-
-  /* Specular highlight */
-  &::before {
-    content: '';
-    position: absolute;
-    inset: 0;
-    border-radius: inherit;
-    background: linear-gradient(135deg, rgba(255, 255, 255, 0.2) 0%, transparent 55%);
-    pointer-events: none;
-    z-index: 1;
-  }
-
-  > * {
-    position: relative;
-    z-index: 2;
-  }
-
-  &:hover:not(:disabled) {
-    background: rgba(42, 172, 167, 0.88);
-    border-color: rgba(75, 188, 184, 0.8);
-    box-shadow:
-      inset 0 1.5px 0 rgba(255, 255, 255, 0.32),
-      0 6px 22px rgba(42, 172, 167, 0.5);
-    transform: translateY(-1px);
-  }
-
-  &:active:not(:disabled) {
-    background: rgba(42, 172, 167, 0.95);
-    transform: scale(0.97) translateY(0);
-    box-shadow: inset 0 2px 6px rgba(0, 0, 0, 0.15);
-  }
-
-  &:disabled {
-    opacity: 0.45;
-    cursor: not-allowed;
-  }
-}
-
-/* Dark mode: glass có thể dùng opacity thấp hơn vì nền tối */
-.dark .btn-glass-primary {
-  background: rgba(42, 172, 167, 0.38);
-  border-color: rgba(75, 188, 184, 0.5);
-
-  &:hover:not(:disabled) {
-    background: rgba(42, 172, 167, 0.55);
-  }
-}
-
-/* Secondary glass button — neutral */
-.btn-glass-secondary {
-  position: relative;
-  overflow: hidden;
-  isolation: isolate;
-  color: var(--text-primary);
   font-weight: 600;
   border-radius: 0.75rem;
-  background: rgba(255, 255, 255, 0.12);
-  backdrop-filter: blur(12px) saturate(1.6);
-  -webkit-backdrop-filter: blur(12px) saturate(1.6);
-  /* Border rõ ràng hơn */
-  border: 1.5px solid rgba(180, 180, 180, 0.35);
-  box-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, 0.18),
-    0 1px 4px rgba(0, 0, 0, 0.06);
+  backdrop-filter: var(--btn-blur);
+  -webkit-backdrop-filter: var(--btn-blur);
   transition:
     background 0.2s ease,
     box-shadow 0.2s ease,
@@ -744,7 +671,7 @@ body {
     position: absolute;
     inset: 0;
     border-radius: inherit;
-    background: linear-gradient(135deg, rgba(255, 255, 255, 0.12) 0%, transparent 55%);
+    background: var(--btn-specular);
     pointer-events: none;
     z-index: 1;
   }
@@ -754,32 +681,74 @@ body {
     z-index: 2;
   }
 
-  &:hover:not(:disabled) {
-    background: rgba(42, 172, 167, 0.14);
-    border-color: rgba(75, 188, 184, 0.5);
-    color: var(--accent);
-    box-shadow:
-      inset 0 1px 0 rgba(255, 255, 255, 0.22),
-      0 4px 14px rgba(42, 172, 167, 0.22);
-    transform: translateY(-1px);
+  &:disabled {
+    opacity: 0.45;
+    cursor: not-allowed;
   }
-
   &:active:not(:disabled) {
     transform: scale(0.97);
-    background: rgba(42, 172, 167, 0.18);
+    box-shadow: inset 0 2px 6px rgba(0, 0, 0, 0.18);
   }
 }
 
-/* Dark mode secondary: border sáng hơn để thấy trên nền tối */
-.dark .btn-glass-secondary {
-  background: rgba(255, 255, 255, 0.08);
-  border-color: rgba(255, 255, 255, 0.2);
-  color: rgba(255, 255, 255, 0.85);
+/* ── CTA: Mua ngay — teal (dùng --btn-cta-* tokens) ── */
+.btn-glass-primary {
+  @extend %glass-btn-base;
+  color: var(--btn-cta-text);
+  background: var(--btn-cta-bg);
+  border: 1px solid var(--btn-cta-border);
+  box-shadow:
+    var(--btn-inner-glow),
+    0 3px 14px var(--btn-cta-glow);
 
   &:hover:not(:disabled) {
-    background: rgba(42, 172, 167, 0.2);
-    border-color: rgba(75, 188, 184, 0.45);
-    color: rgba(75, 188, 184, 1);
+    background: var(--btn-cta-bg-hover);
+    border-color: var(--btn-cta-border);
+    box-shadow:
+      var(--btn-inner-glow),
+      0 6px 22px var(--btn-cta-glow);
+    transform: translateY(-1px);
+  }
+}
+
+/* ── Giỏ hàng: Thêm vào giỏ — coral (dùng --btn-cart-* tokens) ── */
+.btn-glass-cart {
+  @extend %glass-btn-base;
+  color: var(--btn-cart-text);
+  background: var(--btn-cart-bg);
+  border: 1px solid var(--btn-cart-border);
+  box-shadow:
+    var(--btn-inner-glow),
+    0 3px 14px var(--btn-cart-glow);
+
+  &:hover:not(:disabled) {
+    background: var(--btn-cart-bg-hover);
+    border-color: var(--btn-cart-border);
+    box-shadow:
+      var(--btn-inner-glow),
+      0 6px 22px var(--btn-cart-glow);
+    transform: translateY(-1px);
+  }
+}
+
+/* ── Phụ: Xem chi tiết — neutral (dùng --btn-view-* tokens) ── */
+.btn-glass-secondary {
+  @extend %glass-btn-base;
+  color: var(--btn-view-text);
+  background: var(--btn-view-bg);
+  border: 1.5px solid var(--btn-view-border);
+  box-shadow:
+    var(--btn-inner-glow),
+    0 1px 4px rgba(0, 0, 0, 0.06);
+
+  &:hover:not(:disabled) {
+    background: var(--btn-view-bg-hover);
+    border-color: var(--btn-view-border-hover);
+    color: var(--btn-view-text-hover);
+    box-shadow:
+      var(--btn-inner-glow),
+      0 4px 10px rgba(0, 0, 0, 0.12);
+    transform: translateY(-1px);
   }
 }
 
@@ -1410,9 +1379,9 @@ body {
 /* Ant Design Toast Styles */
 .ant-message-dark {
   .ant-message-notice-content {
-    background-color: #1f2937;
+    background-color: #1a1a1a;
     color: #f9fafb;
-    border: 1px solid #374151;
+    border: 1px solid rgba(255, 255, 255, 0.08);
     box-shadow:
       0 3px 6px -4px rgba(0, 0, 0, 0.48),
       0 6px 16px 0 rgba(0, 0, 0, 0.32),
@@ -1528,64 +1497,64 @@ body {
 .dark {
   /* Card styles */
   .ant-card {
-    background-color: #1f2937;
-    border-color: #374151;
+    background-color: #1a1a1a;
+    border-color: rgba(255, 255, 255, 0.08);
     color: #f9fafb;
   }
 
   .ant-card-head {
     color: #f9fafb;
-    border-color: #374151;
+    border-color: rgba(255, 255, 255, 0.08);
   }
 
   /* Table styles */
   .ant-table {
-    background-color: #1f2937;
+    background-color: #1a1a1a;
     color: #f9fafb;
   }
 
   .ant-table-thead > tr > th {
-    background-color: #111827;
+    background-color: #111111;
     color: #f9fafb;
-    border-color: #374151;
+    border-color: rgba(255, 255, 255, 0.08);
   }
 
   .ant-table-tbody > tr > td {
-    border-color: #374151;
+    border-color: rgba(255, 255, 255, 0.08);
     color: #f9fafb;
   }
 
   .ant-table-tbody > tr:hover > td {
-    background-color: #374151;
+    background-color: #262626;
   }
 
   /* Fixed columns in tables */
   .ant-table-cell-fix-right,
   .ant-table-cell-fix-left {
-    background-color: #1f2937 !important;
+    background-color: #1a1a1a !important;
   }
 
   .ant-table-tbody > tr:hover .ant-table-cell-fix-right,
   .ant-table-tbody > tr:hover .ant-table-cell-fix-left {
-    background-color: #374151 !important;
+    background-color: #262626 !important;
   }
 
   /* Fix for sticky header */
   .ant-table-header .ant-table-cell-fix-right,
   .ant-table-header .ant-table-cell-fix-left {
-    background-color: #111827 !important;
+    background-color: #111111 !important;
   }
 
   /* Custom class for dark mode tables with fixed columns */
   .dark-table-fixed-columns {
     .ant-table-cell-fix-right,
     .ant-table-cell-fix-left {
-      background-color: #1f2937 !important;
+      background-color: #1a1a1a !important;
     }
 
     .ant-table-tbody > tr:hover .ant-table-cell-fix-right,
     .ant-table-tbody > tr:hover .ant-table-cell-fix-left {
-      background-color: #374151 !important;
+      background-color: #262626 !important;
     }
 
     .ant-table-cell-fix-right::before,
@@ -1596,8 +1565,8 @@ body {
 
   /* Pagination */
   .ant-pagination-item {
-    background-color: #1f2937;
-    border-color: #374151;
+    background-color: #1a1a1a;
+    border-color: rgba(255, 255, 255, 0.08);
 
     a {
       color: #f9fafb;
@@ -1620,8 +1589,8 @@ body {
   .ant-select-dropdown,
   .ant-picker,
   .ant-input-affix-wrapper {
-    background-color: #1f2937 !important;
-    border-color: #374151 !important;
+    background-color: #1a1a1a !important;
+    border-color: rgba(255, 255, 255, 0.08) !important;
     color: #f9fafb !important;
   }
 
@@ -1644,7 +1613,7 @@ body {
   }
 
   .ant-select-dropdown {
-    background-color: #1f2937 !important;
+    background-color: #1a1a1a !important;
   }
 
   .ant-select-item {
@@ -1652,7 +1621,7 @@ body {
   }
 
   .ant-select-item-option-active:not(.ant-select-item-option-disabled) {
-    background-color: #374151 !important;
+    background-color: #262626 !important;
   }
 
   .ant-select-item-option-selected:not(.ant-select-item-option-disabled) {
@@ -1660,11 +1629,17 @@ body {
     color: white !important;
   }
 
-  /* Modal */
+  /* Modal — neutral dark + white text */
   .ant-modal-content,
   .ant-modal-header {
-    background-color: #1f2937;
-    color: #f9fafb;
+    background-color: #1a1a1a;
+    color: #f5f5f5;
+  }
+
+  .ant-modal-content p,
+  .ant-modal-content span,
+  .ant-modal-content div {
+    color: inherit;
   }
 
   .ant-modal-title {
@@ -1677,12 +1652,12 @@ body {
 
   /* Drawer */
   .ant-drawer-content {
-    background-color: #1f2937;
+    background-color: #1a1a1a;
   }
 
   .ant-drawer-header {
-    background-color: #1f2937;
-    border-color: #374151;
+    background-color: #1a1a1a;
+    border-color: rgba(255, 255, 255, 0.08);
   }
 
   .ant-drawer-title {
@@ -1695,12 +1670,12 @@ body {
 
   /* Buttons */
   .ant-btn-default {
-    background-color: #1f2937;
-    border-color: #374151;
+    background-color: #1a1a1a;
+    border-color: rgba(255, 255, 255, 0.08);
     color: #f9fafb;
 
     &:hover {
-      background-color: #374151;
+      background-color: #262626;
       border-color: #4b5563;
     }
   }
@@ -1711,7 +1686,7 @@ body {
     color: #f9fafb !important;
 
     &:hover {
-      background-color: #374151 !important;
+      background-color: #262626 !important;
       color: white !important;
     }
   }
@@ -1745,7 +1720,7 @@ body {
 
   /* Fix for input number handlers */
   .ant-input-number-handler-wrap {
-    background-color: #374151 !important;
+    background-color: #262626 !important;
   }
 
   .ant-input-number-handler {

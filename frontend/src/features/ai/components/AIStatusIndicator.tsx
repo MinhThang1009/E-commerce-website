@@ -6,17 +6,17 @@
  */
 import { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
-import { geminiService } from '../services/gemini-api';
+import { chatbotService } from '../services/chatbot-service';
 
 const AIStatusIndicator: React.FC = () => {
   const { t } = useTranslation();
-  const [status, setStatus] = useState(geminiService.getStatus());
+  const [status, setStatus] = useState(chatbotService.getStatus());
   const [showDetails, setShowDetails] = useState(false);
 
   useEffect(() => {
     // Cập nhật trạng thái mỗi 5 giây
     const interval = setInterval(() => {
-      setStatus(geminiService.getStatus());
+      setStatus(chatbotService.getStatus());
     }, 5000);
 
     return () => clearInterval(interval);
@@ -118,32 +118,6 @@ const AIStatusIndicator: React.FC = () => {
                 </div>
               )}
             </div>
-
-            {!status.hasApiKey && (
-              <div className="border-t border-neutral-200 dark:border-neutral-700 pt-3">
-                <h5 className="font-medium text-neutral-800 dark:text-neutral-200 mb-2">
-                  {t('ai.enableGemini')}
-                </h5>
-                <div className="text-xs text-neutral-600 dark:text-neutral-400 space-y-1">
-                  <p>
-                    {t('ai.setupStep1')}{' '}
-                    <a
-                      href="https://makersuite.google.com/app/apikey"
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="text-primary-500 hover:text-primary-600"
-                    >
-                      {t('ai.googleAIStudio')}
-                    </a>
-                  </p>
-                  <p>{t('ai.setupStep2')}</p>
-                  <code className="block bg-neutral-100 dark:bg-neutral-700 p-2 rounded text-xs">
-                    VITE_GEMINI_API_KEY=your_api_key_here
-                  </code>
-                  <p>{t('ai.setupStep3')}</p>
-                </div>
-              </div>
-            )}
 
             <div className="border-t border-neutral-200 dark:border-neutral-700 pt-3">
               <h5 className="font-medium text-neutral-800 dark:text-neutral-200 mb-2">

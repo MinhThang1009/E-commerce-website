@@ -17,7 +17,7 @@ import { Message } from '../types/message.types';
 import { useSendChatbotMessageMutation, ChatbotResponse } from '../services/chatbot-api';
 
 type ChatbotApiEnvelope = { status: string; data: ChatbotResponse; message?: string };
-import { geminiService } from '../services/gemini-api';
+import { chatbotService } from '../services/chatbot-service';
 import ChatHeader from './ChatHeader';
 import ChatMessages from './ChatMessages';
 import ChatInput from './ChatInput';
@@ -200,47 +200,49 @@ const ChatWidgetPortal: React.FC = () => {
 
   return (
     <div className="fixed bottom-4 right-4 sm:bottom-6 sm:right-6 z-50 select-none">
-      <button
-        onClick={toggleChat}
-        className="group relative bg-gradient-to-br from-primary-500 via-primary-600 to-primary-700 hover:from-primary-600 hover:via-primary-700 hover:to-primary-800 text-white rounded-full p-4 shadow-[0_8px_25px_rgba(59,130,246,0.35)] hover:shadow-[0_12px_30px_rgba(59,130,246,0.45)] transform hover:scale-110 transition-all duration-300 flex items-center justify-center ring-4 ring-primary-500/20 hover:ring-primary-500/40"
-        aria-label={isOpen ? t('chat.closeChat') : t('chat.openChat')}
-      >
+      <div className="relative">
         {!isOpen && (
           <>
             <div
-              className="absolute inset-0 rounded-full bg-primary-400 animate-ping opacity-25"
-              style={{ animationDuration: '2s' }}
-            ></div>
+              className="absolute inset-0 rounded-full bg-primary-500 animate-ping opacity-40"
+              style={{ animationDuration: '1.4s' }}
+            />
             <div
-              className="absolute inset-0 rounded-full bg-primary-300 animate-ping opacity-15 animation-delay-75"
-              style={{ animationDuration: '2.5s' }}
-            ></div>
+              className="absolute inset-0 rounded-full bg-primary-400 animate-ping opacity-25"
+              style={{ animationDuration: '1.8s', animationDelay: '0.3s' }}
+            />
+            <div
+              className="absolute inset-0 rounded-full bg-primary-300 animate-ping opacity-15"
+              style={{ animationDuration: '2.2s', animationDelay: '0.7s' }}
+            />
           </>
         )}
-
-        <div
-          className={`absolute -top-1 -right-1 w-5 h-5 rounded-full border-2 border-white shadow-lg ${
-            geminiService.isReady()
-              ? 'bg-gradient-to-r from-green-400 to-green-500'
-              : 'bg-gradient-to-r from-yellow-400 to-orange-500'
-          }`}
+        <button
+          onClick={toggleChat}
+          className="relative glass-toggle text-white rounded-full p-4 flex items-center justify-center"
+          aria-label={isOpen ? t('chat.closeChat') : t('chat.openChat')}
         >
           <div
-            className={`absolute inset-0.5 rounded-full ${
-              geminiService.isReady() ? 'bg-green-300 animate-pulse' : 'bg-yellow-300 animate-pulse'
+            className={`absolute -top-1 -right-1 w-4 h-4 rounded-full border-2 border-white/80 shadow-md backdrop-blur-sm ${
+              chatbotService.isReady()
+                ? 'bg-gradient-to-br from-emerald-400 to-green-500'
+                : 'bg-gradient-to-br from-amber-400 to-orange-500'
             }`}
-            style={{ animationDuration: '1.5s' }}
-          ></div>
-        </div>
-
-        {isOpen ? (
-          <CloseIcon className="h-7 w-7 transform transition-transform duration-300 rotate-0 hover:rotate-90" />
-        ) : (
-          <div className="relative">
-            <ChatIcon className="transform transition-transform duration-300 group-hover:scale-110" />
+          >
+            <div className="absolute inset-0.5 rounded-full bg-white/30 animate-pulse" />
           </div>
-        )}
-      </button>
+
+          <div
+            className={`relative transition-all duration-300 ${isOpen ? 'rotate-90 scale-90' : 'rotate-0 scale-100'}`}
+          >
+            {isOpen ? (
+              <CloseIcon className="h-6 w-6" />
+            ) : (
+              <ChatIcon className="transition-transform duration-300" />
+            )}
+          </div>
+        </button>
+      </div>
 
       {isOpen && (
         <>
@@ -255,10 +257,10 @@ const ChatWidgetPortal: React.FC = () => {
 
           <div
             ref={chatContainerRef}
-            className="fixed inset-x-4 bottom-20 sm:absolute sm:bottom-20 sm:right-0 sm:inset-x-auto w-auto sm:w-96 md:max-w-md lg:max-w-lg xl:max-w-xl bg-white/90 dark:bg-neutral-900/90 backdrop-blur-xl rounded-3xl shadow-[0_8px_32px_rgba(0,0,0,0.12)] overflow-hidden flex flex-col border border-white/20 dark:border-neutral-700/30 transform animate-in slide-in-from-bottom-4 duration-500 max-h-[85vh] sm:max-h-[75vh] md:max-h-[70vh] chat-widget-active z-[9999] hover:shadow-[0_10px_40px_rgba(0,0,0,0.18)] transition-all"
+            className="glass-widget fixed inset-x-4 bottom-20 sm:absolute sm:bottom-20 sm:right-0 sm:inset-x-auto w-auto sm:w-96 md:max-w-md rounded-3xl overflow-hidden flex flex-col chat-widget-active z-[9999] h-[75vh] max-h-[680px] min-h-[480px] sm:h-[680px] sm:max-h-[88vh]"
             onClick={(e) => e.stopPropagation()}
           >
-            <ChatHeader onClose={toggleChat} geminiService={geminiService} />
+            <ChatHeader onClose={toggleChat} chatbotService={chatbotService} />
 
             <ChatMessages
               messages={messages}

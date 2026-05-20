@@ -5,7 +5,7 @@
  * @description API client functions cho feature auth
  */
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import apiClient from '@/services/api-client';
+import apiClient from '@/lib/api-client';
 import { User } from '@/types/user.types';
 import { AuthResponse, LoginCredentials, RegisterData } from '../types/auth.types';
 

@@ -237,7 +237,7 @@ const CartPage: React.FC = () => {
       )}
 
       {!isAuthenticated && items.length > 0 && (
-        <div className="mb-4 p-3 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg">
+        <div className="mb-4 p-3 bg-blue-50 dark:bg-primary-700/20 border border-blue-200 dark:border-blue-800 rounded-lg">
           <div className="flex items-center text-blue-700 dark:text-blue-300">
             <PlusCircleIcon />
             <span className="text-sm">{t('cart.savedLocally')}</span>

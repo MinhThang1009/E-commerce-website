@@ -41,11 +41,13 @@ class SequelizeAIRepository extends IAIRepository {
       Object.keys(keywordMapping).forEach((vi) => {
         if (original.includes(vi)) terms = [...terms, ...keywordMapping[vi]];
       });
+      // Dùng nameVi/nameEn/descriptionVi thay vì name/description (VIRTUAL hoặc không tồn tại)
       const conditions = [];
       terms.forEach((term) => {
         conditions.push(
-          { name: { [Op.like]: `%${term}%` } },
-          { description: { [Op.like]: `%${term}%` } },
+          { nameVi: { [Op.like]: `%${term}%` } },
+          { nameEn: { [Op.like]: `%${term}%` } },
+          { descriptionVi: { [Op.like]: `%${term}%` } },
         );
       });
       where[Op.or] = conditions;
@@ -91,7 +93,16 @@ class SequelizeAIRepository extends IAIRepository {
           required: false,
         },
       ],
-      order: [[literal('((compare_at_price - base_price) / compare_at_price) DESC')]],
+      // subQuery: false — tránh Sequelize wrap subquery làm mất column trong ORDER BY
+      subQuery: false,
+      order: [
+        [
+          literal(
+            '((`Product`.`compare_at_price` - `Product`.`base_price`) / `Product`.`compare_at_price`)',
+          ),
+          'DESC',
+        ],
+      ],
       limit,
     });
   }
@@ -140,9 +151,12 @@ class SequelizeAIRepository extends IAIRepository {
 
   async addToCart({ userId, productId, variantId, quantity }) {
     const { Cart, CartItem } = require('@models');
+    // Lấy giá từ variant để lưu unitPrice — CartItem yêu cầu trường này
+    const variant = await this.ProductVariant.findByPk(variantId, { attributes: ['price'] });
+    const unitPrice = variant ? variant.price : 0;
     let cart = await Cart.findOne({ where: { userId } });
     if (!cart) cart = await Cart.create({ userId });
-    return CartItem.create({ cartId: cart.id, productId, variantId, quantity });
+    return CartItem.create({ cartId: cart.id, productId, variantId, quantity, unitPrice });
   }
 }
 

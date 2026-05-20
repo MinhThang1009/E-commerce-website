@@ -8,7 +8,17 @@ import React, { useRef } from 'react';
 import { Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { motion, useScroll, useTransform } from 'framer-motion';
-import { ArrowRight, Zap, ShieldCheck, Truck, Sparkles, ChevronRight, Star } from 'lucide-react';
+import {
+  ArrowRight,
+  ShoppingBag,
+  Zap,
+  ShieldCheck,
+  Truck,
+  Sparkles,
+  ChevronRight,
+  Star,
+  LayoutGrid,
+} from 'lucide-react';
 
 // Danh mục sản phẩm thực từ database — với thumbnail từ sản phẩm nổi bật
 // Ảnh lấy từ sản phẩm mới nhất trong database thực tế của TechStore
@@ -328,59 +338,27 @@ const HeroSection: React.FC<HeroSectionProps> = ({ onShopNowClick, onBrowseCateg
               variants={itemVariants}
               className="flex flex-col sm:flex-row gap-3 justify-center lg:justify-start"
             >
-              {/* Primary CTA — Glassmorphism 2.0 */}
+              {/* Primary CTA — dùng btn-glass-primary class với design tokens */}
               <motion.button
                 whileHover={{ scale: 1.03, y: -3 }}
                 whileTap={{ scale: 0.97 }}
                 onClick={handleShopNow}
-                className="group relative flex items-center justify-center gap-2.5
-                  px-7 py-4 rounded-2xl font-semibold text-base text-white
-                  overflow-hidden isolate"
-                style={{
-                  background: 'rgba(42,172,167,0.25)',
-                  backdropFilter: 'blur(20px) saturate(2)',
-                  WebkitBackdropFilter: 'blur(20px) saturate(2)',
-                  border: '1px solid rgba(75,188,184,0.45)',
-                  boxShadow:
-                    'inset 0 1.5px 0 rgba(255,255,255,0.28), inset 0 -1px 0 rgba(0,0,0,0.1), 0 4px 24px rgba(42,172,167,0.35)',
-                }}
+                className="btn-glass-primary group px-7 py-4 rounded-2xl text-base flex items-center justify-center gap-2.5"
               >
-                {/* Specular highlight */}
-                <span
-                  className="absolute inset-0 pointer-events-none"
-                  style={{
-                    background:
-                      'linear-gradient(135deg, rgba(255,255,255,0.22) 0%, rgba(255,255,255,0.05) 45%, transparent 65%)',
-                    borderRadius: 'inherit',
-                  }}
-                />
-                {/* Shimmer on hover */}
-                <span
-                  className="absolute inset-0 bg-gradient-to-r from-white/0 via-white/15 to-white/0
-                  translate-x-[-100%] group-hover:translate-x-[100%] transition-transform duration-700 pointer-events-none"
-                />
-                <Zap className="w-5 h-5 group-hover:scale-110 transition-transform relative z-10" />
-                <span className="relative z-10">{isEn ? 'Shop Now' : 'Mua sắm ngay'}</span>
-                <ArrowRight className="w-4 h-4 opacity-0 -translate-x-2 group-hover:opacity-100 group-hover:translate-x-0 transition-all duration-300 relative z-10" />
+                <ShoppingBag className="w-5 h-5 group-hover:scale-110 transition-transform" />
+                {isEn ? 'Shop Now' : 'Mua sắm ngay'}
+                <ArrowRight className="w-4 h-4 opacity-0 -translate-x-2 group-hover:opacity-100 group-hover:translate-x-0 transition-all duration-300" />
               </motion.button>
 
-              {/* Secondary CTA — Glass nhẹ hơn */}
+              {/* Secondary CTA — dùng btn-glass-secondary class */}
               <motion.button
                 whileHover={{ scale: 1.03, y: -3 }}
                 whileTap={{ scale: 0.97 }}
                 onClick={handleBrowseCategories}
-                className="group flex items-center justify-center gap-2.5
-                  px-7 py-4 rounded-2xl font-semibold text-base
-                  text-neutral-800 dark:text-white overflow-hidden"
-                style={{
-                  background: 'rgba(255,255,255,0.14)',
-                  backdropFilter: 'blur(16px) saturate(1.8)',
-                  WebkitBackdropFilter: 'blur(16px) saturate(1.8)',
-                  border: '1px solid rgba(255,255,255,0.28)',
-                  boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.25), 0 2px 12px rgba(0,0,0,0.06)',
-                }}
+                className="btn-glass-secondary group px-7 py-4 rounded-2xl text-base flex items-center justify-center gap-2.5"
               >
-                <span>{isEn ? 'Browse Categories' : 'Khám phá danh mục'}</span>
+                <LayoutGrid className="w-4 h-4" />
+                {isEn ? 'Browse Categories' : 'Khám phá danh mục'}
                 <ChevronRight className="w-4 h-4 group-hover:translate-x-1 transition-transform duration-300" />
               </motion.button>
             </motion.div>

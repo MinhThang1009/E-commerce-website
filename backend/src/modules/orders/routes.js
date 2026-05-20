@@ -9,7 +9,10 @@ const { authenticate } = require('@middlewares/authenticate');
 const { authorize } = require('@middlewares/authorize');
 const { validateRequest } = require('@middlewares/validate-request');
 const { httpCacheHeaders } = require('@middlewares/cache');
-const { createOrderSchema, updateOrderStatusSchema } = require('@modules/orders/validators/orders-validator');
+const {
+  createOrderSchema,
+  updateOrderStatusSchema,
+} = require('@modules/orders/validators/orders-validator');
 
 // Orders module routes — basePath '/orders'. URL không đổi so với routes/order.js cũ.
 //
@@ -17,6 +20,108 @@ const { createOrderSchema, updateOrderStatusSchema } = require('@modules/orders/
 module.exports = ({ ordersController }) => {
   const router = express.Router();
 
+  /**
+   * @swagger
+   * /api/orders/track:
+   *   get:
+   *     summary: Tra cứu đơn hàng (không cần đăng nhập)
+   *     tags: [Orders]
+   * /api/orders:
+   *   get:
+   *     summary: Lấy danh sách đơn hàng của người dùng
+   *     tags: [Orders]
+   *     security:
+   *       - bearerAuth: []
+   *   post:
+   *     summary: Tạo đơn hàng mới
+   *     tags: [Orders]
+   *     security:
+   *       - bearerAuth: []
+   * /api/orders/shipping-estimate:
+   *   get:
+   *     summary: Ước tính phí vận chuyển
+   *     tags: [Orders]
+   *     security:
+   *       - bearerAuth: []
+   * /api/orders/number/{number}:
+   *   get:
+   *     summary: Lấy đơn hàng theo mã đơn
+   *     tags: [Orders]
+   *     security:
+   *       - bearerAuth: []
+   *     parameters:
+   *       - in: path
+   *         name: number
+   *         required: true
+   *         schema:
+   *           type: string
+   * /api/orders/{id}:
+   *   get:
+   *     summary: Lấy chi tiết đơn hàng theo ID
+   *     tags: [Orders]
+   *     security:
+   *       - bearerAuth: []
+   *     parameters:
+   *       - in: path
+   *         name: id
+   *         required: true
+   *         schema:
+   *           type: integer
+   * /api/orders/{id}/cancel:
+   *   post:
+   *     summary: Hủy đơn hàng
+   *     tags: [Orders]
+   *     security:
+   *       - bearerAuth: []
+   *     parameters:
+   *       - in: path
+   *         name: id
+   *         required: true
+   *         schema:
+   *           type: integer
+   * /api/orders/{id}/repay:
+   *   post:
+   *     summary: Thanh toán lại đơn hàng
+   *     tags: [Orders]
+   *     security:
+   *       - bearerAuth: []
+   *     parameters:
+   *       - in: path
+   *         name: id
+   *         required: true
+   *         schema:
+   *           type: integer
+   * /api/orders/{id}/receive:
+   *   post:
+   *     summary: Xác nhận đã nhận hàng
+   *     tags: [Orders]
+   *     security:
+   *       - bearerAuth: []
+   *     parameters:
+   *       - in: path
+   *         name: id
+   *         required: true
+   *         schema:
+   *           type: integer
+   * /api/orders/admin/all:
+   *   get:
+   *     summary: Lấy tất cả đơn hàng (admin)
+   *     tags: [Orders]
+   *     security:
+   *       - bearerAuth: []
+   * /api/orders/admin/{id}/status:
+   *   patch:
+   *     summary: Cập nhật trạng thái đơn hàng (admin)
+   *     tags: [Orders]
+   *     security:
+   *       - bearerAuth: []
+   *     parameters:
+   *       - in: path
+   *         name: id
+   *         required: true
+   *         schema:
+   *           type: integer
+   */
   // Public — order tracking (không cần auth)
   router.get('/track', httpCacheHeaders(0, { noStore: true }), ordersController.trackOrder);
 

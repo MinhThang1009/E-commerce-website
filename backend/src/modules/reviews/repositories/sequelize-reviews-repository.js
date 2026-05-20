@@ -35,21 +35,31 @@ class SequelizeReviewsRepository extends IReviewsRepository {
 
   async findReviewByPkWithUser(id) {
     return this.Review.findByPk(id, {
-      include: [{
-        model: this.User, as: 'user',
-        attributes: ['id', 'firstName', 'lastName', 'avatar'],
-      }],
+      include: [
+        {
+          model: this.User,
+          as: 'user',
+          attributes: ['id', 'firstName', 'lastName', 'avatar'],
+        },
+      ],
     });
   }
 
-  async findProductReviews(productId, { whereClause = {}, limit, offset, sortColumn, sortOrder } = {}) {
+  async findProductReviews(
+    productId,
+    { whereClause = {}, limit, offset, sortColumn, sortOrder } = {},
+  ) {
     return this.Review.findAndCountAll({
       where: { productId, ...whereClause },
-      include: [{
-        model: this.User, as: 'user',
-        attributes: ['id', 'firstName', 'lastName', 'avatar'],
-      }],
-      limit, offset,
+      include: [
+        {
+          model: this.User,
+          as: 'user',
+          attributes: ['id', 'firstName', 'lastName', 'avatar'],
+        },
+      ],
+      limit,
+      offset,
       order: [[sortColumn, sortOrder]],
     });
   }
@@ -57,11 +67,14 @@ class SequelizeReviewsRepository extends IReviewsRepository {
   async findUserReviews(userId, { limit, offset } = {}) {
     return this.Review.findAndCountAll({
       where: { userId },
-      include: [{
-        model: this.Product,
-        attributes: ['id', 'name', 'slug', 'thumbnail'],
-      }],
-      limit, offset,
+      include: [
+        {
+          model: this.Product,
+          attributes: ['id', 'nameVi', 'nameEn', 'slug'],
+        },
+      ],
+      limit,
+      offset,
       order: [['createdAt', 'DESC']],
     });
   }
@@ -73,7 +86,8 @@ class SequelizeReviewsRepository extends IReviewsRepository {
         { model: this.User, as: 'user', attributes: ['id', 'firstName', 'lastName', 'email'] },
         { model: this.Product, attributes: ['id', 'name', 'slug'] },
       ],
-      limit, offset,
+      limit,
+      offset,
       order: [['createdAt', 'DESC']],
     });
   }
@@ -115,9 +129,7 @@ class SequelizeReviewsRepository extends IReviewsRepository {
   }
 
   async updateProductRating(productId, avg, count) {
-    const patch = count !== undefined
-      ? { rating: avg, reviewCount: count }
-      : { rating: avg };
+    const patch = count !== undefined ? { rating: avg, reviewCount: count } : { rating: avg };
     return this.Product.update(patch, { where: { id: productId } });
   }
 
@@ -126,11 +138,14 @@ class SequelizeReviewsRepository extends IReviewsRepository {
   async hasUserPurchasedProduct(userId, productId) {
     const order = await this.Order.findOne({
       where: { userId, status: 'delivered' },
-      include: [{
-        model: this.OrderItem, as: 'items',
-        where: { productId },
-        required: true,
-      }],
+      include: [
+        {
+          model: this.OrderItem,
+          as: 'items',
+          where: { productId },
+          required: true,
+        },
+      ],
     });
     return !!order;
   }

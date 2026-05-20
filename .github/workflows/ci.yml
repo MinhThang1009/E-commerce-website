@@ -74,7 +74,7 @@ jobs:
           DB_HOST: localhost
           JWT_SECRET: ${{ secrets.JWT_SECRET || 'ci-test-secret-minimum-32-chars-long' }}
           JWT_REFRESH_SECRET: ${{ secrets.JWT_REFRESH_SECRET || 'ci-refresh-secret-minimum-32-chars' }}
-          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY || 'demo-key' }}
+          LLM_API_KEY: ${{ secrets.LLM_API_KEY || 'demo-key' }}
           EMAIL_USERNAME: test@test.com
           EMAIL_PASSWORD: test
 

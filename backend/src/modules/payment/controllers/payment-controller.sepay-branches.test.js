@@ -41,7 +41,7 @@ function buildController() {
   return { controller: new PaymentController({ paymentService, logger }), logger };
 }
 
-// Header hợp lệ để pass _verifySePayApiKey (NODE_ENV=test + no SEPAY_API_KEY)
+// Header hợp lệ để pass _verifySePayApiKey — key phải khớp SEPAY_API_KEY trong beforeEach
 const VALID_HEADERS = { authorization: 'Apikey test-key' };
 
 // Body hợp lệ để pass các guard trước line 214
@@ -66,7 +66,14 @@ function buildRes() {
   };
 }
 
-beforeEach(() => jest.clearAllMocks());
+beforeEach(() => {
+  jest.clearAllMocks();
+  process.env.SEPAY_API_KEY = 'test-key';
+});
+
+afterEach(() => {
+  delete process.env.SEPAY_API_KEY;
+});
 
 // ─── Line 214: id không phải number hoặc string ───────────────────────────────
 

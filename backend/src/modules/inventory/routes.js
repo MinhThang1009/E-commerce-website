@@ -15,6 +15,27 @@ module.exports = ({ inventoryController }) => {
   router.use(authenticate);
   router.use(authorize('admin'));
 
+  /**
+   * @swagger
+   * /api/inventory/products/{productId}/restock:
+   *   post:
+   *     summary: Nhập thêm hàng cho sản phẩm (admin)
+   *     tags: [Inventory]
+   *     security:
+   *       - bearerAuth: []
+   *     parameters:
+   *       - in: path
+   *         name: productId
+   *         required: true
+   *         schema:
+   *           type: integer
+   * /api/inventory/logs:
+   *   get:
+   *     summary: Lấy nhật ký nhập/xuất kho (admin)
+   *     tags: [Inventory]
+   *     security:
+   *       - bearerAuth: []
+   */
   router.post('/products/:productId/restock', inventoryController.restockProduct);
   router.get('/logs', inventoryController.getInventoryLogs);
 

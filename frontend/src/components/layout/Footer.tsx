@@ -231,7 +231,7 @@ const Footer: React.FC = () => {
               <div className="bg-blue-500 text-white px-2 py-1 text-xs font-bold rounded">
                 {t('footer.dmcaProtected')}
               </div>
-              <div className="bg-blue-600 text-white px-2 py-1 text-xs font-bold rounded">
+              <div className="bg-primary-600 text-white px-2 py-1 text-xs font-bold rounded">
                 {t('footer.bctNotified')}
               </div>
               <div className="bg-red-600 text-white px-2 py-1 text-xs font-bold rounded">

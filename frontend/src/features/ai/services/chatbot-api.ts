@@ -5,7 +5,7 @@
  * @description Service layer cho feature ai
  */
 import { useMutation, useQueryClient } from '@tanstack/react-query';
-import apiClient from '@/services/api-client';
+import apiClient from '@/lib/api-client';
 
 export interface ChatResponse {
   text: string;

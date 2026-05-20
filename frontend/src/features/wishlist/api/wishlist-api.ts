@@ -5,7 +5,7 @@
  * @description API client functions cho feature wishlist
  */
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import apiClient from '@/services/api-client';
+import apiClient from '@/lib/api-client';
 import { Product } from '@/features/catalog';
 
 export interface WishlistResponse {

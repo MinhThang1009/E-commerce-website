@@ -5,7 +5,7 @@
  * @description API client functions cho feature upload
  */
 import { useMutation } from '@tanstack/react-query';
-import apiClient from '@/services/api-client';
+import apiClient from '@/lib/api-client';
 
 export interface UploadResponse {
   status: string;

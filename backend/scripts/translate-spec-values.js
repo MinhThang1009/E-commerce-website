@@ -3,7 +3,7 @@
  *
  * 2 bước:
  *   1. Pattern-based translation (offline, nhanh, không tốn API) cho các pattern phổ biến
- *   2. AI translation (Gemini/OpenRouter) cho phần còn lại — cần API key
+ *   2. AI translation (OpenRouter) cho phần còn lại — cần API key
  *
  * Chạy: node -r module-alias/register scripts/translate-spec-values.js
  */

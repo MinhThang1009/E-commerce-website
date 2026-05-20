@@ -67,10 +67,7 @@ describe('errorHandler — SequelizeValidationError', () => {
   const validationErr = {
     name: 'SequelizeValidationError',
     message: 'Validation error',
-    errors: [
-      { message: 'name không được để trống' },
-      { message: 'price phải lớn hơn 0' },
-    ],
+    errors: [{ message: 'name không được để trống' }, { message: 'price phải lớn hơn 0' }],
   };
 
   test('422 khi Sequelize validation thất bại', async () => {
@@ -178,17 +175,22 @@ describe('errorHandler — Unknown/unexpected error', () => {
 describe('REQUIRED_ENV_VARS validation logic', () => {
   // Kiểm tra logic validation (không khởi động server thực sự)
   const REQUIRED_VARS = [
-    'DB_HOST', 'DB_USER', 'DB_PASSWORD', 'DB_NAME',
-    'JWT_SECRET', 'JWT_REFRESH_SECRET',
-    'GEMINI_API_KEY',
-    'EMAIL_USERNAME', 'EMAIL_PASSWORD',
+    'DB_HOST',
+    'DB_USER',
+    'DB_PASSWORD',
+    'DB_NAME',
+    'JWT_SECRET',
+    'JWT_REFRESH_SECRET',
+    'LLM_API_KEY',
+    'EMAIL_USERNAME',
+    'EMAIL_PASSWORD',
   ];
 
   test('tất cả required vars đều có trong process.env của test', () => {
     expect(REQUIRED_VARS).toContain('JWT_SECRET');
     expect(REQUIRED_VARS).toContain('JWT_REFRESH_SECRET');
     expect(REQUIRED_VARS).toContain('DB_HOST');
-    expect(REQUIRED_VARS).toContain('GEMINI_API_KEY');
+    expect(REQUIRED_VARS).toContain('LLM_API_KEY');
     expect(REQUIRED_VARS).toContain('EMAIL_USERNAME');
     expect(REQUIRED_VARS).toContain('EMAIL_PASSWORD');
   });
@@ -201,7 +203,7 @@ describe('REQUIRED_ENV_VARS validation logic', () => {
       DB_NAME: 'mydb',
       JWT_SECRET: 'secret',
       // JWT_REFRESH_SECRET bị thiếu
-      GEMINI_API_KEY: 'ai-key',
+      LLM_API_KEY: 'ai-key',
       EMAIL_USERNAME: 'user@example.com',
       EMAIL_PASSWORD: 'pass',
     };
@@ -218,7 +220,7 @@ describe('REQUIRED_ENV_VARS validation logic', () => {
       DB_NAME: 'mydb',
       JWT_SECRET: 'secret',
       JWT_REFRESH_SECRET: 'refresh-secret',
-      GEMINI_API_KEY: 'ai-key',
+      LLM_API_KEY: 'ai-key',
       EMAIL_USERNAME: 'user@example.com',
       EMAIL_PASSWORD: 'pass',
     };

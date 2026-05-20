@@ -5,7 +5,7 @@
  * @description API client functions cho feature catalog
  */
 import { useQuery } from '@tanstack/react-query';
-import apiClient from '@/services/api-client';
+import apiClient from '@/lib/api-client';
 import {
   ProductFilters,
   ProductListApiResponse,

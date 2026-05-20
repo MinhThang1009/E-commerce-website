@@ -133,7 +133,7 @@ const ReviewForm: React.FC<ReviewFormProps> = ({ productId, onSubmitSuccess, onC
               onClick={() => {
                 window.location.href = '/login';
               }}
-              className="px-6 py-2 bg-primary-500 text-white rounded-lg hover:bg-primary-600 transition-colors font-medium"
+              className="btn-glass-primary px-6 py-2"
             >
               {t('review.loginRequired.login')}
             </button>
@@ -141,7 +141,7 @@ const ReviewForm: React.FC<ReviewFormProps> = ({ productId, onSubmitSuccess, onC
               onClick={() => {
                 window.location.href = '/register';
               }}
-              className="px-6 py-2 border border-neutral-300 dark:border-neutral-600 text-neutral-700 dark:text-neutral-300 rounded-lg hover:bg-neutral-50 dark:hover:bg-neutral-700 transition-colors font-medium"
+              className="btn-glass-secondary px-6 py-2"
             >
               {t('review.loginRequired.register')}
             </button>

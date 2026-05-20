@@ -5,7 +5,7 @@
  * @description API client functions cho feature users
  */
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import apiClient from '@/services/api-client';
+import apiClient from '@/lib/api-client';
 import { User, Address } from '@/types/user.types';
 
 export interface UpdateProfileRequest {

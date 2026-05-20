@@ -192,7 +192,7 @@ const RegisterPage: React.FC = () => {
         <div className="max-w-md mx-auto">
           <div className="bg-white dark:bg-neutral-800 rounded-lg shadow-md p-8">
             <div className="text-center mb-8">
-              <div className="mx-auto w-16 h-16 bg-blue-100 dark:bg-blue-900/30 rounded-full flex items-center justify-center mb-4">
+              <div className="mx-auto w-16 h-16 bg-blue-100 dark:bg-primary-700/30 rounded-full flex items-center justify-center mb-4">
                 <svg
                   className="w-8 h-8 text-blue-600 dark:text-blue-400"
                   fill="none"
@@ -253,7 +253,7 @@ const RegisterPage: React.FC = () => {
                       onChange={(e) => handleOtpChange(i, e.target.value)}
                       onKeyDown={(e) => handleOtpKeyDown(i, e)}
                       className={`w-12 h-14 text-center text-2xl font-bold border-2 rounded-lg outline-none transition-all
-                        ${val ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/20 text-blue-700 dark:text-blue-300' : 'border-neutral-300 dark:border-neutral-600 bg-white dark:bg-neutral-700 text-neutral-800 dark:text-neutral-100'}
+                        ${val ? 'border-blue-500 bg-blue-50 dark:bg-primary-700/20 text-blue-700 dark:text-blue-300' : 'border-neutral-300 dark:border-neutral-600 bg-white dark:bg-neutral-700 text-neutral-800 dark:text-neutral-100'}
                         ${otpError ? 'border-red-400' : ''}
                         focus:border-blue-500 focus:ring-2 focus:ring-blue-200 dark:focus:ring-blue-800`}
                     />

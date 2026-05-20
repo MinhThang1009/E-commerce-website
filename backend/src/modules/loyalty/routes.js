@@ -12,6 +12,21 @@ const { redeemPointsSchema } = require('@modules/loyalty/validators/loyalty-vali
 module.exports = ({ loyaltyController }) => {
   const router = express.Router();
 
+  /**
+   * @swagger
+   * /api/loyalty:
+   *   get:
+   *     summary: Lấy thông tin điểm tích lũy của người dùng
+   *     tags: [Loyalty]
+   *     security:
+   *       - bearerAuth: []
+   * /api/loyalty/redeem:
+   *   post:
+   *     summary: Đổi điểm tích lũy lấy ưu đãi
+   *     tags: [Loyalty]
+   *     security:
+   *       - bearerAuth: []
+   */
   router.get('/', authenticate, loyaltyController.getLoyaltyInfo);
   router.post(
     '/redeem',

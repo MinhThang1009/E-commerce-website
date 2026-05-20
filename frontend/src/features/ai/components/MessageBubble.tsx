@@ -23,10 +23,10 @@ const MessageBubble: React.FC<MessageBubbleProps> = ({ message, onSuggestionClic
   const { t } = useTranslation();
   return (
     <div
-      className={`max-w-[85%] rounded-2xl p-3.5 chat-bubble ${
+      className={`max-w-[85%] rounded-2xl p-3.5 chat-bubble animate-in ${
         message.sender === 'user'
-          ? 'bg-primary-500 text-white order-1 mr-2 rounded-tr-none shadow-md'
-          : 'bg-white dark:bg-neutral-800 text-neutral-800 dark:text-white shadow-md rounded-tl-none border border-neutral-100 dark:border-neutral-700'
+          ? 'glass-bubble-user text-white order-1 mr-2 rounded-tr-sm'
+          : 'glass-bubble-ai text-neutral-800 dark:text-neutral-100 rounded-tl-sm'
       }`}
     >
       {message.isLoading ? (
@@ -93,7 +93,7 @@ const MessageBubble: React.FC<MessageBubbleProps> = ({ message, onSuggestionClic
                     e.stopPropagation();
                     onSuggestionClick(suggestion);
                   }}
-                  className="text-xs bg-white/20 hover:bg-white/30 dark:bg-neutral-700 dark:hover:bg-neutral-600 rounded-full px-3 py-1.5 transition-all duration-200"
+                  className="chat-suggestion-button text-xs rounded-full px-3 py-1.5 border border-white/20 dark:border-white/10 bg-white/15 dark:bg-white/08 hover:bg-white/25 dark:hover:bg-white/14 transition-all duration-200 text-current backdrop-blur-sm"
                 >
                   {suggestion}
                 </button>

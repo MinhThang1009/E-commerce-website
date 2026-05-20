@@ -29,6 +29,67 @@ module.exports = ({ usersController }) => {
   // Tất cả route yêu cầu xác thực
   router.use(authenticate);
 
+  /**
+   * @swagger
+   * /api/users/profile:
+   *   put:
+   *     summary: Cập nhật thông tin cá nhân
+   *     tags: [Users]
+   *     security:
+   *       - bearerAuth: []
+   * /api/users/change-password:
+   *   post:
+   *     summary: Đổi mật khẩu
+   *     tags: [Users]
+   *     security:
+   *       - bearerAuth: []
+   * /api/users/addresses:
+   *   get:
+   *     summary: Lấy danh sách địa chỉ giao hàng
+   *     tags: [Users]
+   *     security:
+   *       - bearerAuth: []
+   *   post:
+   *     summary: Thêm địa chỉ giao hàng mới
+   *     tags: [Users]
+   *     security:
+   *       - bearerAuth: []
+   * /api/users/addresses/{id}:
+   *   put:
+   *     summary: Cập nhật địa chỉ giao hàng
+   *     tags: [Users]
+   *     security:
+   *       - bearerAuth: []
+   *     parameters:
+   *       - in: path
+   *         name: id
+   *         required: true
+   *         schema:
+   *           type: integer
+   *   delete:
+   *     summary: Xóa địa chỉ giao hàng
+   *     tags: [Users]
+   *     security:
+   *       - bearerAuth: []
+   *     parameters:
+   *       - in: path
+   *         name: id
+   *         required: true
+   *         schema:
+   *           type: integer
+   * /api/users/addresses/{id}/default:
+   *   patch:
+   *     summary: Đặt địa chỉ làm mặc định
+   *     tags: [Users]
+   *     security:
+   *       - bearerAuth: []
+   *     parameters:
+   *       - in: path
+   *         name: id
+   *         required: true
+   *         schema:
+   *           type: integer
+   */
   router.put('/profile', validateRequest(updateProfileSchema), usersController.updateProfile);
   router.post(
     '/change-password',

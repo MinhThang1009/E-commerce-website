@@ -5,7 +5,7 @@
  * @description API client functions cho feature orders
  */
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import apiClient from '@/services/api-client';
+import apiClient from '@/lib/api-client';
 import { cartKeys } from '@/features/cart';
 
 // Kiểu dữ liệu đơn hàng dựa theo backend API

@@ -5,7 +5,7 @@
  * @description API client functions cho feature payment
  */
 import { useMutation } from '@tanstack/react-query';
-import apiClient from '@/services/api-client';
+import apiClient from '@/lib/api-client';
 
 /** Tạo URL thanh toán VNPay */
 export function useCreateVNPayUrlMutation() {

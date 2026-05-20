@@ -5,7 +5,7 @@
  * @description API client functions cho feature content
  */
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import apiClient from '@/services/api-client';
+import apiClient from '@/lib/api-client';
 
 export interface Banner {
   id: string;

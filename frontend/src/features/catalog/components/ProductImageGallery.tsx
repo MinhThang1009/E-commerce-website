@@ -51,16 +51,20 @@ const ProductImageGallery: React.FC<ProductImageGalleryProps> = ({
   return (
     <div className="space-y-4 select-none">
       {/* Khung ảnh chính */}
-      <div className="relative group rounded-xl overflow-hidden bg-white dark:bg-neutral-800 border border-gray-100 dark:border-neutral-700">
-        {/* Khung full width/height không padding, giữ tỷ lệ nhưng cho phép fill */}
-        <div className="w-full aspect-[4/3] flex items-center justify-center bg-white dark:bg-neutral-900 relative">
+      <div className="relative group rounded-xl overflow-hidden bg-white dark:bg-[#2a2a2a] border border-neutral-100/60 dark:border-white/[0.06]">
+        {/*
+         * aspect-[4/3]: tỷ lệ landscape khớp ảnh CDN (có spec labels bên phải)
+         * object-contain: hiện toàn bộ ảnh kể cả spec text, không crop
+         * w-full h-full: fill container → tự scale khi zoom in/out
+         */}
+        <div className="w-full aspect-[4/3] relative">
           <Image
             src={images[selectedImage]}
             alt={`${productName} - View ${selectedImage + 1}`}
             referrerPolicy="no-referrer"
-            className="object-contain max-h-full max-w-full !h-auto !w-auto"
-            style={{ maxHeight: '100%', maxWidth: '100%' }}
-            rootClassName="flex items-center justify-center w-full h-full"
+            className="!w-full !h-full object-contain"
+            style={{ position: 'absolute', inset: 0 }}
+            rootClassName="w-full h-full"
             preview={{
               mask: (
                 <div className="flex items-center justify-center bg-black/30 backdrop-blur-[2px] w-full h-full text-white transition-opacity">

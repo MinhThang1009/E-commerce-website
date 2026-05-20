@@ -20,19 +20,32 @@
  * Hiện tại (2026-05-05): 1 file .test.cjs / 20 tests / utils JSON parsing.
  */
 module.exports = {
-  testEnvironment: 'node',
-  testMatch: ['**/__tests__/**/*.test.cjs', '**/?(*.)+(spec|test).cjs'],
-  transform: {},
-  // Không cần transform — test files là CommonJS thuần
-
-  // Coverage threshold thấp (10%) — frontend hiện có ít tests (1 file .test.cjs).
-  // Tăng dần khi viết thêm tests. Backend đã có threshold 25%.
-  coverageThreshold: {
-    global: {
-      statements: 10,
-      branches: 10,
-      functions: 10,
-      lines: 10,
+  projects: [
+    // Project 1: CommonJS utils tests (như trước)
+    {
+      displayName: 'utils',
+      testEnvironment: 'node',
+      testMatch: ['**/__tests__/**/*.test.cjs', '**/?(*.)+(spec|test).cjs'],
+      transform: {},
     },
-  },
+    // Project 2: React component tests (mới)
+    {
+      displayName: 'components',
+      testEnvironment: 'jsdom',
+      testMatch: ['**/__tests__/**/*.test.tsx', '**/?(*.)+(spec|test).tsx'],
+      transform: { '^.+\\.(ts|tsx)$': ['ts-jest', { tsconfig: { jsx: 'react-jsx' } }] },
+      setupFiles: ['<rootDir>/jest.setup.cjs'],
+      moduleNameMapper: {
+        '^@/(.*)$': '<rootDir>/src/$1',
+        '^@features/(.*)$': '<rootDir>/src/features/$1',
+        '^@components/(.*)$': '<rootDir>/src/components/$1',
+        '^@stores/(.*)$': '<rootDir>/src/stores/$1',
+        '^@lib/(.*)$': '<rootDir>/src/lib/$1',
+        '^@utils/(.*)$': '<rootDir>/src/utils/$1',
+        '^@hooks/(.*)$': '<rootDir>/src/hooks/$1',
+        '^@types/(.*)$': '<rootDir>/src/types/$1',
+        '\\.(css|scss|png|jpg|svg)$': '<rootDir>/src/__tests__/__mocks__/fileMock.cjs',
+      },
+    },
+  ],
 };

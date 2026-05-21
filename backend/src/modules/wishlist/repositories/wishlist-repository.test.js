@@ -73,7 +73,7 @@ describe('findByUserIdWithProducts', () => {
     const productInclude = call.include[0];
     expect(productInclude.model).toBe(deps.Product);
     expect(productInclude.attributes).toContain('id');
-    expect(productInclude.attributes).toContain('name');
+    expect(productInclude.attributes).toContain('nameVi');
     expect(productInclude.attributes).toContain('slug');
   });
 

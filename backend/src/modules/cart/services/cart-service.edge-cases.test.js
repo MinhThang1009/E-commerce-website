@@ -768,9 +768,9 @@ describe('mergeCart — clearSessionCookie không được truyền', () => {
 
 // ─── validateCart — branch: item có ProductVariant → tên gồm cả variant name (line 418) ──
 
-describe('validateCart — item có ProductVariant → name kết hợp product + variant', () => {
-  it('name = "Product - Variant" khi có ProductVariant', async () => {
-    // Line 418: item.ProductVariant truthy → `${product.name} - ${variant.name}`
+describe('validateCart — item có ProductVariant → name lấy từ product', () => {
+  it('name = product nameVi khi có ProductVariant', async () => {
+    // Line 517: name = item.Product.nameVi || item.Product.nameEn || item.Product.name || ''
     const { service, cartRepository } = buildService();
     cartRepository.findActiveCartByUserId.mockResolvedValue({ id: 1 });
     cartRepository.findCartItemsForValidation.mockResolvedValue([
@@ -782,7 +782,8 @@ describe('validateCart — item có ProductVariant → name kết hợp product 
         quantity: 1,
         Product: {
           id: 1,
-          name: 'Điện thoại',
+          nameVi: 'Điện thoại',
+          nameEn: null,
           basePrice: 200,
           defaultVariant: { stockQuantity: 5 },
         },
@@ -792,7 +793,7 @@ describe('validateCart — item có ProductVariant → name kết hợp product 
 
     const result = await service.validateCart({ user: { id: 1 } });
 
-    expect(result.items[0].name).toBe('Điện thoại - Đen 256GB');
+    expect(result.items[0].name).toBe('Điện thoại');
   });
 });
 

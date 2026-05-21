@@ -116,7 +116,7 @@ describe('findInventoryLogs', () => {
     const call = InventoryLog.findAndCountAll.mock.calls[0][0];
     const productInclude = call.include.find((i) => i.model === Product);
     expect(productInclude).toBeDefined();
-    expect(productInclude.attributes).toEqual(['id', 'name', 'slug']);
+    expect(productInclude.attributes).toEqual(['id', 'nameVi', 'nameEn', 'slug']);
     expect(productInclude.required).toBe(false);
   });
 

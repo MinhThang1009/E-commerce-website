@@ -539,7 +539,7 @@ describe('SequelizeInventoryRepository', () => {
       const callArg = repo.InventoryLog.findAndCountAll.mock.calls[0][0];
       const productInclude = callArg.include.find((i) => i.model === repo.Product);
       expect(productInclude).toMatchObject({
-        attributes: ['id', 'name', 'slug'],
+        attributes: ['id', 'nameVi', 'nameEn', 'slug'],
         required: false,
       });
     });

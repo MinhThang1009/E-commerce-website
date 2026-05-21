@@ -62,6 +62,9 @@
 
 ## 1.2 Thứ tự đọc file chuẩn
 
+> ⚠️ **CLAUDE.md là context và gotchas — không thay thế source code.**
+> Phải đọc đủ các bước 2–5 bên dưới để hiểu logic thực tế.
+
 **Backend module:**
 ```
 1. src/modules/<name>/CLAUDE.md                              ← Tổng quan + gotchas

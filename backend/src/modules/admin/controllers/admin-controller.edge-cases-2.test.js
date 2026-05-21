@@ -550,8 +550,8 @@ describe('GET /api/admin/dashboard — topProducts với productImages', () => {
 
     const res = await request.get('/api/admin/dashboard');
     expect(res.status).toBe(200);
-    // Không crash khi Product là null
-    expect(res.body.data.topProducts[0].product).toEqual({});
+    // Không crash khi Product là null — productData = {} rồi name được set thành ''
+    expect(res.body.data.topProducts[0].product).toEqual({ name: '' });
   });
 
   it('ordersByStatus reduce chạy đúng khi có dữ liệu', async () => {

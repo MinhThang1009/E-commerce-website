@@ -7,6 +7,7 @@ jest.mock('@models', () => ({
     create: jest.fn(),
   },
   CartItem: {
+    findOne: jest.fn(),
     create: jest.fn(),
   },
 }));
@@ -38,6 +39,7 @@ beforeEach(() => {
   jest.clearAllMocks();
   Cart.findOne.mockResolvedValue({ id: 'cart1' });
   Cart.create.mockResolvedValue({ id: 'new-cart' });
+  CartItem.findOne.mockResolvedValue(null);
   CartItem.create.mockResolvedValue({ id: 'item1' });
 });
 
@@ -74,7 +76,7 @@ describe('SequelizeAiRepository.addToCart', () => {
 
     await repo.addToCart({ userId: 2, productId: 5, variantId: 1, quantity: 1 });
 
-    expect(Cart.create).toHaveBeenCalledWith({ userId: 2 });
+    expect(Cart.create).toHaveBeenCalledWith({ userId: 2, status: 'active' });
     expect(CartItem.create).toHaveBeenCalledWith(expect.objectContaining({ cartId: 'new-cart' }));
   });
 });

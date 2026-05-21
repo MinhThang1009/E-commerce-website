@@ -194,7 +194,7 @@ describe('findOtherAttributes — với categoryId', () => {
     await repo.findOtherAttributes({});
 
     const call = deps.ProductAttribute.findAll.mock.calls[0][0];
-    expect(call.group).toEqual(['name', 'values']);
+    expect(call.group).toEqual(['nameVi', 'nameEn', 'values']);
     expect(call.limit).toBe(500);
   });
 });

@@ -23,6 +23,9 @@ const ABBREV_MAP = {
   '\\brl\\b': 'realme',
   '\\br5\\b': 'AMD Ryzen 5',
   '\\br7\\b': 'AMD Ryzen 7',
+  // Viết tắt câu hỏi hội thoại phổ biến
+  '\\bbnh\\b': 'bao nhiêu',
+  '\\bbh\\b': 'bảo hành',
 };
 
 /**

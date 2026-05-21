@@ -15,9 +15,12 @@
 
 jest.mock('@models', () => ({
   Product: { findByPk: jest.fn(), findOne: jest.fn() },
-  ProductVariant: { findByPk: jest.fn().mockResolvedValue({ price: 500_000 }) },
+  ProductVariant: {
+    findByPk: jest.fn().mockResolvedValue({ price: 500_000 }),
+    findOne: jest.fn().mockResolvedValue({ id: 1, price: 500_000 }),
+  },
   Cart: { findOne: jest.fn(), create: jest.fn() },
-  CartItem: { create: jest.fn() },
+  CartItem: { findOne: jest.fn().mockResolvedValue(null), create: jest.fn() },
   ChatMessage: { create: jest.fn().mockResolvedValue({}) },
   Category: {},
   Brand: {},
@@ -141,7 +144,9 @@ describe('POST /api/chatbot/cart/add', () => {
   beforeEach(() => {
     // Mặc định: giỏ hàng tồn tại, sản phẩm active và còn hàng
     Cart.findOne.mockResolvedValue({ id: 1 });
+    Cart.create.mockResolvedValue({ id: 2 });
     Product.findByPk.mockResolvedValue({ id: 1, status: 'active', stockQuantity: 10 });
+    CartItem.findOne.mockResolvedValue(null);
     CartItem.create.mockResolvedValue({ id: 10, cartId: 1, productId: 1, quantity: 1 });
   });
 
@@ -210,7 +215,7 @@ describe('POST /api/chatbot/cart/add', () => {
       .send({ productId: 1, quantity: 1 });
 
     expect(res.status).toBe(200);
-    expect(Cart.create).toHaveBeenCalledWith({ userId: 1 });
+    expect(Cart.create).toHaveBeenCalledWith({ userId: 1, status: 'active' });
   });
 });
 

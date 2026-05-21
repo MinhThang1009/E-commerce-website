@@ -598,8 +598,9 @@ describe('CartItem', () => {
   test('item có attributes → hiển thị attributes', () => {
     const itemWithAttr = { ...baseCartItem, attributes: { color: 'Đen', size: '128GB' } };
     render(<CartItem item={itemWithAttr as any} />);
-    expect(screen.getByText(/color/)).toBeInTheDocument();
-    expect(screen.getByText(/size/)).toBeInTheDocument();
+    // CartItem renders attribute values (not keys) as badge text
+    expect(screen.getByText('Đen')).toBeInTheDocument();
+    expect(screen.getByText('128GB')).toBeInTheDocument();
   });
 });
 

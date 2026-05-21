@@ -13,11 +13,10 @@ jest.mock('@stores/auth-store', () => ({
   },
 }));
 
-jest.mock('@utils/toast', () => ({
-  toast: {
-    warning: jest.fn(),
-    success: jest.fn(),
-    error: jest.fn(),
+const mockAddNotification = jest.fn();
+jest.mock('@stores/ui-store', () => ({
+  useUiStore: {
+    getState: jest.fn(() => ({ addNotification: mockAddNotification })),
   },
 }));
 
@@ -33,7 +32,7 @@ import {
   logoutManager,
 } from '@utils/auth-utils';
 import { useAuthStore } from '@stores/auth-store';
-import { toast } from '@utils/toast';
+import { useUiStore } from '@stores/ui-store';
 
 // ── Reset state giữa tests ────────────────────────────────────────────────────
 
@@ -41,6 +40,8 @@ beforeEach(() => {
   jest.clearAllMocks();
   // Reset logoutManager về trạng thái không đăng xuất
   logoutManager.setLoggingOut(false);
+  // Reset ui-store mock
+  (useUiStore.getState as jest.Mock).mockReturnValue({ addNotification: mockAddNotification });
   jest.useFakeTimers();
 });
 
@@ -69,7 +70,11 @@ describe('handleAutoLogout', () => {
   test('hiển thị toast.warning với errorMessage', () => {
     handleAutoLogout('Phiên đăng nhập đã hết hạn');
 
-    expect(toast.warning).toHaveBeenCalledWith('Phiên đăng nhập đã hết hạn', 4);
+    expect(mockAddNotification).toHaveBeenCalledWith({
+      message: 'Phiên đăng nhập đã hết hạn',
+      type: 'warning',
+      duration: 4000,
+    });
   });
 
   test('gọi logout() trên authStore', () => {
@@ -85,7 +90,11 @@ describe('handleAutoLogout', () => {
     handleAutoLogout(); // không truyền message
 
     // i18n mock trả về key → 'auth.errors.sessionExpired'
-    expect(toast.warning).toHaveBeenCalledWith('auth.errors.sessionExpired', 4);
+    expect(mockAddNotification).toHaveBeenCalledWith({
+      message: 'auth.errors.sessionExpired',
+      type: 'warning',
+      duration: 4000,
+    });
   });
 
   test('không có navigateToLogin → không throw khi timeout chạy (window.location.href fallback)', () => {
@@ -103,8 +112,8 @@ describe('handleAutoLogout', () => {
 
     handleAutoLogout('test');
 
-    // toast không được gọi vì đã đang trong quá trình logout
-    expect(toast.warning).not.toHaveBeenCalled();
+    // addNotification không được gọi vì đã đang trong quá trình logout
+    expect(mockAddNotification).not.toHaveBeenCalled();
   });
 
   test('gọi navigateToLogin nếu đã set', () => {
@@ -138,7 +147,11 @@ describe('handleUnauthorizedError', () => {
     const result = handleUnauthorizedError({ status: 401, data: { message: 'Bị khóa' } });
 
     expect(result).toBe(true);
-    expect(toast.warning).toHaveBeenCalledWith('Bị khóa', 4);
+    expect(mockAddNotification).toHaveBeenCalledWith({
+      message: 'Bị khóa',
+      type: 'warning',
+      duration: 4000,
+    });
   });
 
   test('error status=401, không có message → dùng i18n key', () => {
@@ -146,14 +159,18 @@ describe('handleUnauthorizedError', () => {
 
     expect(result).toBe(true);
     // i18n mock → 'auth.errors.accountLocked'
-    expect(toast.warning).toHaveBeenCalledWith('auth.errors.accountLocked', 4);
+    expect(mockAddNotification).toHaveBeenCalledWith({
+      message: 'auth.errors.accountLocked',
+      type: 'warning',
+      duration: 4000,
+    });
   });
 
   test('error không phải 401 → trả về false, không logout', () => {
     const result = handleUnauthorizedError({ status: 403, data: { message: 'Forbidden' } });
 
     expect(result).toBe(false);
-    expect(toast.warning).not.toHaveBeenCalled();
+    expect(mockAddNotification).not.toHaveBeenCalled();
   });
 
   test('error không có status → trả về false', () => {

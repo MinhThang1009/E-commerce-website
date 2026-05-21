@@ -159,6 +159,11 @@ jest.mock('@/components/layout/PageLayout', () => {
   };
 });
 
+// ── Mock proxy-img (dùng import.meta.env nên phải mock để tránh SyntaxError) ──
+jest.mock('@/utils/proxy-img', () => ({
+  proxyImg: (url: string) => url || 'https://placeholder.img/200x200',
+}));
+
 // ── Mock utilities ──────────────────────────────────────────────
 jest.mock('@/utils/localize', () => ({
   localizeField: (_field: unknown, key: string, _lang: string) => {

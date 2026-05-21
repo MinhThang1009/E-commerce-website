@@ -125,7 +125,10 @@ flowchart TB
         A10["PUT /api/users/profile\nCập nhật firstName lastName phone avatar"]
         A11["POST /api/users/change-password\nVerify currentPassword rồi hash mới"]
         A12["GET/POST/PUT/DELETE /api/users/addresses\nQuản lý địa chỉ giao hàng\nauto-default nếu là address đầu tiên"]
+        A13["POST /api/auth/resend-verification\nGửi lại OTP xác thực email\notpLimiter bảo vệ"]
         A1 --> A2
+        A1 --> A13
+        A13 --> A2
         A3 --> A5
         A5 --> A6
         A7 --> A8
@@ -134,6 +137,7 @@ flowchart TB
     Guest --> A1
     Guest --> A3
     Guest --> A4
+    Guest --> A13
     Customer --> A6
     Customer --> A7
     Customer --> A9
@@ -159,12 +163,12 @@ flowchart TB
         B4["GET /api/products/featured\nSản phẩm nổi bật is_featured=1"]
         B5["GET /api/categories\nCây danh mục: name_vi/name_en + slug"]
         B6["GET /api/brands\nDanh sách thương hiệu + logo_url"]
-        B7["GET /api/products/:id/recently-viewed\nSản phẩm xem gần đây (yêu cầu auth)"]
-        B8["POST /api/admin/products\nTạo sản phẩm mới\nCRUD + variants + images\nauto-sync vector store afterCreate hook"]
-        B9["PUT /api/admin/products/:id\nCập nhật sản phẩm\nauto-sync vector store afterUpdate hook"]
-        B10["DELETE /api/admin/products/:id\nSoft delete\nauto-remove vector afterDestroy hook"]
-        B11["POST /api/admin/categories\nCRUD danh mục đa cấp"]
-        B12["POST /api/admin/brands\nCRUD thương hiệu"]
+        B7["GET /api/products/recently-viewed\nSản phẩm xem gần đây (yêu cầu auth)"]
+        B8["POST /api/products\nTạo sản phẩm mới\nCRUD + variants + images\nauto-sync vector store afterCreate hook"]
+        B9["PUT /api/products/:id\nCập nhật sản phẩm\nauto-sync vector store afterUpdate hook"]
+        B10["DELETE /api/products/:id\nSoft delete\nauto-remove vector afterDestroy hook"]
+        B11["POST/PUT/DELETE /api/categories\nCRUD danh mục đa cấp"]
+        B12["POST/PUT/DELETE /api/brands\nCRUD thương hiệu"]
     end
 
     Guest --> B1
@@ -238,13 +242,14 @@ flowchart TB
         O5["POST /api/orders/:id/cancel\nHủy đơn khi pending hoặc processing\nhoàn stock về variants"]
         O6["POST /api/orders/:id/receive\nXác nhận đã nhận hàng\ntrigger cộng Loyalty points"]
         O7["POST /api/orders/:id/repay\nThanh toán lại khi pending/failed"]
+        O8["GET /api/orders/shipping-estimate\nƯớc tính phí vận chuyển\n?subtotal=N&weight=N"]
     end
 
     subgraph PAYMENT["Payment — Thanh toán"]
         direction TB
         P1["POST /api/payments/vnpay/create-url\nTạo URL HMAC-SHA512\nRedirect đến cổng VNPay"]
         P2["GET /api/payments/vnpay/ipn\nVNPay IPN webhook\nVerify signature cập nhật paymentStatus"]
-        P3["GET /api/payments/vnpay/return\nRedirect URL sau VNPay UX only không mutate DB"]
+        P3["GET /api/payments/vnpay/return\nRedirect URL sau VNPay CÓ mutate DB\nkhi vnp_ResponseCode=00: paymentStatus=paid"]
         P4["POST /api/payments/momo/create-url\nTạo request HMAC\nRedirect đến cổng MoMo"]
         P5["POST /api/payments/momo/ipn\nMoMo IPN webhook\nVerify HMAC cập nhật paymentStatus"]
         P6["GET /api/payments/momo/return\nRedirect URL sau MoMo UX only không mutate DB"]
@@ -255,10 +260,11 @@ flowchart TB
         direction TB
         AO1["GET /api/orders/admin/all\nTất cả đơn hàng lọc status payment date"]
         AO2["PATCH /api/orders/admin/:id/status\nCập nhật pending→processing→shipped→delivered\nTrigger loyalty khi DELIVERED"]
-        AO3["GET /api/admin/stats/orders\nThống kê doanh thu groupBy day/month/year"]
+        AO3["GET /api/admin/stats\nThống kê theo khoảng thời gian\ngroupBy hour/day/week/month"]
     end
 
     Customer --> ORDERS
+    Customer --> O8
     Customer --> PAYMENT
     Admin --> ADMIN_O
     Admin --> P7
@@ -280,7 +286,7 @@ flowchart TB
         R4["PUT /api/reviews/:id\nSửa đánh giá chỉ owner"]
         R5["DELETE /api/reviews/:id\nXóa đánh giá chỉ owner soft delete"]
         R6["GET /api/reviews/admin/all\nAdmin xem tất cả đánh giá lọc is_verified productId"]
-        R7["PATCH /api/reviews/admin/:id/verify\nAdmin xác minh đánh giá is_verified=true"]
+        R7["PATCH /api/reviews/admin/:id/verify\nAdmin toggle is_verified true/false"]
     end
 
     Guest --> R1
@@ -875,6 +881,7 @@ erDiagram
     addresses {
         int id PK
         int user_id FK
+        varchar_255 name
         varchar_255 first_name
         varchar_255 last_name
         varchar_255 company
@@ -944,11 +951,22 @@ erDiagram
         enum status
         tinyint is_featured
         varchar_20 condition
+        varchar_20 visibility
         int warranty_months
+        longtext tags
+        longtext specifications
+        longtext attributes
+        longtext shipping_info
         int sold_count
         int view_count
         decimal_3_2 rating_average
         int stock_quantity
+        varchar_500 seo_title_vi
+        varchar_500 seo_title_en
+        text seo_description_vi
+        text seo_description_en
+        longtext seo_keywords
+        text faqs
         datetime created_at
         datetime updated_at
         datetime deleted_at
@@ -965,6 +983,7 @@ erDiagram
         int stock_quantity
         tinyint is_default
         longtext attributes
+        longtext attributes_en
         decimal_10_3 weight
         longtext dimensions
         int sort_order
@@ -1182,6 +1201,7 @@ erDiagram
         enum status
         varchar_255 shipping_first_name
         varchar_255 shipping_last_name
+        varchar_255 shipping_company
         varchar_255 shipping_address1
         varchar_255 shipping_address2
         varchar_255 shipping_city
@@ -1191,8 +1211,14 @@ erDiagram
         varchar_255 shipping_phone
         varchar_255 billing_first_name
         varchar_255 billing_last_name
+        varchar_255 billing_company
         varchar_255 billing_address1
+        varchar_255 billing_address2
         varchar_255 billing_city
+        varchar_255 billing_state
+        varchar_255 billing_zip
+        varchar_255 billing_country
+        varchar_255 billing_phone
         varchar_50 payment_method
         enum payment_status
         varchar_255 payment_transaction_id

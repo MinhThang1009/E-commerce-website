@@ -51,6 +51,7 @@ flowchart TB
     Admin(["Quản trị viên\n(Admin)"])
 
     subgraph UC_GUEST["Use cases — Khách vãng lai"]
+        direction TB
         G1[Xem danh sách sản phẩm]
         G2[Tìm kiếm và lọc sản phẩm]
         G3[Xem chi tiết sản phẩm]
@@ -62,6 +63,7 @@ flowchart TB
     end
 
     subgraph UC_CUSTOMER["Use cases — Khách hàng (kế thừa từ Guest)"]
+        direction TB
         C1[Đặt hàng và thanh toán\nCOD / VNPay / MoMo]
         C2[Theo dõi trạng thái đơn hàng]
         C3[Hủy đơn hàng]
@@ -75,6 +77,7 @@ flowchart TB
     end
 
     subgraph UC_ADMIN["Use cases — Quản trị viên"]
+        direction TB
         A1[Quản lý sản phẩm và biến thể]
         A2[Quản lý đơn hàng và cập nhật trạng thái]
         A3[Quản lý người dùng]
@@ -109,6 +112,7 @@ flowchart TB
     Admin(["Admin"])
 
     subgraph AUTH["Auth — Xác thực & Tài khoản"]
+        direction TB
         A1["POST /api/auth/register\nĐăng ký: email + password\ngửi OTP 6 số TTL 10 phút"]
         A2["POST /api/auth/verify-otp\nXác thực email bằng OTP\nisEmailVerified=true"]
         A3["POST /api/auth/login\nĐăng nhập email/password\naccessToken JWT 15m + refreshToken family"]
@@ -148,6 +152,7 @@ flowchart TB
     Admin(["Admin"])
 
     subgraph CATALOG["Catalog — Sản phẩm & Danh mục"]
+        direction TB
         B1["GET /api/products\nDanh sách: pagination, sort, filter\nCOALESCE MIN variant.price base_price"]
         B2["GET /api/products/:slug\nChi tiết: variants images specs reviews\nauto increment view_count"]
         B3["GET /api/products/search\nFull-text + semantic AI search\nlưu search_histories"]
@@ -184,6 +189,7 @@ flowchart TB
     Customer(["Khách hàng"])
 
     subgraph CART["Cart — Giỏ hàng"]
+        direction TB
         C1["GET /api/cart\nLấy giỏ hàng user cart hoặc guest cart theo sessionId"]
         C2["POST /api/cart/items\nThêm sản phẩm vào giỏ\ncó thể kèm warrantyPackageIds JSON"]
         C3["PUT /api/cart/items/:id\nCập nhật quantity\nvalidate tồn kho thực tế"]
@@ -193,6 +199,7 @@ flowchart TB
     end
 
     subgraph CHECKOUT["Checkout — Quy trình đặt hàng"]
+        direction TB
         D1["Chọn địa chỉ giao hàng\nhoặc nhập địa chỉ mới"]
         D2["Chọn gói bảo hành tùy chọn\nGET /api/warranty-packages/product/:id"]
         D3["Nhập mã giảm giá\nPOST /api/discount-codes/validate\ncheck type value min_order_amount end_date usage_limit"]
@@ -223,6 +230,7 @@ flowchart TB
     Admin(["Admin"])
 
     subgraph ORDERS["Orders — Đơn hàng"]
+        direction TB
         O1["GET /api/orders\nLịch sử đơn hàng lọc theo status"]
         O2["GET /api/orders/:id\nChi tiết đơn hàng"]
         O3["GET /api/orders/number/:number\nTra cứu theo mã ORD-YYMM-..."]
@@ -233,6 +241,7 @@ flowchart TB
     end
 
     subgraph PAYMENT["Payment — Thanh toán"]
+        direction TB
         P1["POST /api/payments/vnpay/create-url\nTạo URL HMAC-SHA512\nRedirect đến cổng VNPay"]
         P2["GET /api/payments/vnpay/ipn\nVNPay IPN webhook\nVerify signature cập nhật paymentStatus"]
         P3["GET /api/payments/vnpay/return\nRedirect URL sau VNPay UX only không mutate DB"]
@@ -243,6 +252,7 @@ flowchart TB
     end
 
     subgraph ADMIN_O["Admin — Quản lý đơn hàng"]
+        direction TB
         AO1["GET /api/orders/admin/all\nTất cả đơn hàng lọc status payment date"]
         AO2["PATCH /api/orders/admin/:id/status\nCập nhật pending→processing→shipped→delivered\nTrigger loyalty khi DELIVERED"]
         AO3["GET /api/admin/stats/orders\nThống kê doanh thu groupBy day/month/year"]
@@ -263,6 +273,7 @@ flowchart TB
     Admin(["Admin"])
 
     subgraph REVIEWS["Reviews — Đánh giá sản phẩm"]
+        direction TB
         R1["GET /api/reviews/product/:productId\nXem đánh giá sản phẩm public\nlọc rating is_verified"]
         R2["GET /api/reviews/user\nXem đánh giá của tôi paginated"]
         R3["POST /api/reviews\nViết đánh giá\nCheck hasUserPurchasedProduct userId productId\n1 đánh giá / orderId upsert nếu đã có"]
@@ -288,6 +299,7 @@ flowchart TB
     Admin(["Admin"])
 
     subgraph INVENTORY["Inventory — Tồn kho"]
+        direction TB
         I1["EventBus order.created\ninventory deduct stock\nSELECT FOR UPDATE + ghi inventory_logs"]
         I2["EventBus order.cancelled\ninventory restore stock\nghi inventory_logs type=return"]
         I3["POST /api/inventory/products/:id/restock\nAdmin nhập hàng\nghi inventory_logs type=restock"]
@@ -296,6 +308,7 @@ flowchart TB
     end
 
     subgraph WARRANTY["Warranty — Gói bảo hành"]
+        direction TB
         W1["GET /api/warranty-packages\nDanh sách tất cả gói bảo hành"]
         W2["GET /api/warranty-packages/product/:productId\nGói bảo hành của sản phẩm cụ thể\nqua product_warranties junction table"]
         W3["POST /api/warranty-packages\nAdmin tạo gói bảo hành\nname duration_months price terms coverage"]
@@ -319,6 +332,7 @@ flowchart TB
     Admin(["Admin"])
 
     subgraph LOYALTY["Loyalty — Điểm tích lũy & Hạng thành viên"]
+        direction TB
         L1["GET /api/loyalty\nXem points + lịch sử paginated\ntype earn/spend/refund/adjustment"]
         L2["POST /api/loyalty/redeem\nĐổi điểm lấy giảm giá\nSELECT FOR UPDATE chống race condition\n1 điểm = POINTS_VALUE VND"]
         L3["Tích điểm tự động sau DELIVERED\nfloor subtotal / POINTS_EARN_RATE\ngọi từ orders service khi admin cập nhật status"]
@@ -342,6 +356,7 @@ flowchart TB
     Customer(["Khách hàng"])
 
     subgraph AI_CHAT["AI Chatbot — RAG Pipeline"]
+        direction TB
         AI1["POST /api/chatbot/message\nchatbotLimiter 20 req/60s dev 200\noptionalAuthenticate\nRAG Validate→Normalize→Retrieve→Generate"]
         AI2["GET /api/chatbot/recommendations\nGợi ý sản phẩm type=deals/featured\noptionalAuthenticate"]
         AI3["POST /api/chatbot/cart/add\nThêm vào giỏ qua chatbot\nauthenticate bắt buộc"]
@@ -349,6 +364,7 @@ flowchart TB
     end
 
     subgraph SEARCH_H["Search History — Lịch sử tìm kiếm"]
+        direction TB
         SH1["POST /api/search-histories\nLưu keyword tìm kiếm\nGuest session_id User user_id"]
         SH2["GET /api/search-histories\nXem lịch sử tìm kiếm\nauthenticate bắt buộc"]
         SH3["DELETE /api/search-histories/:id\nXóa 1 entry lịch sử"]
@@ -376,6 +392,7 @@ flowchart TB
     Admin(["Admin"])
 
     subgraph CONTENT["Content — Nội dung & Liên hệ"]
+        direction TB
         CN1["GET /api/banners\nDanh sách banner active HTTP cache 900s\nposition home_hero/home_middle/sidebar"]
         CN2["GET /api/news\nDanh sách tin tức đã publish\nlọc category is_published=true"]
         CN3["GET /api/news/slug/:slug\nChi tiết tin tức auto tăng view_count"]
@@ -410,6 +427,7 @@ flowchart TB
     Admin(["Admin"])
 
     subgraph ADMIN["Admin Dashboard — Quản trị toàn hệ thống"]
+        direction TB
         AD1["GET /api/admin/stats/overview\nDoanh thu đơn hàng users sản phẩm\nnhóm theo khoảng thời gian"]
         AD2["GET /api/admin/stats/revenue\nBiểu đồ doanh thu theo ngày/tháng/năm"]
         AD3["GET /api/admin/stats/top-products\nTop sản phẩm bán chạy lọc khoảng thời gian"]
@@ -1414,7 +1432,7 @@ erDiagram
 # 5. Kiến Trúc Hệ Thống
 
 ```mermaid
-graph LR
+graph TB
     subgraph CLIENT["Client Layer port 5175"]
         FE["Frontend\nReact 18 + TypeScript\nVite build tool\nTanStack Query v5\nZustand v5 + Immer\nTailwind CSS + SCSS\n14 features"]
     end

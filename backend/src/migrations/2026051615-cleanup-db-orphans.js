@@ -28,12 +28,12 @@ module.exports = {
     try {
       const [[col]] = await queryInterface.sequelize.query(
         `SELECT column_type FROM information_schema.columns
-         WHERE table_schema = DATABASE() AND table_name = 'chat_messages' AND column_name = 'message_type'`
+         WHERE table_schema = DATABASE() AND table_name = 'chat_messages' AND column_name = 'message_type'`,
       );
       if (col && col.column_type.includes('support_chat')) {
         await queryInterface.sequelize.query(
           `ALTER TABLE \`chat_messages\`
-           MODIFY COLUMN \`message_type\` ENUM('ai_chatbot') NOT NULL DEFAULT 'ai_chatbot'`
+           MODIFY COLUMN \`message_type\` ENUM('ai_chatbot') NOT NULL DEFAULT 'ai_chatbot'`,
         );
         console.log("  FIXED: chat_messages.message_type — removed dead 'support_chat' ENUM value");
       } else {
@@ -46,9 +46,11 @@ module.exports = {
 
   async down(queryInterface, Sequelize) {
     // Restore message_type enum (data recovery not possible for dropped table)
-    await queryInterface.sequelize.query(
-      `ALTER TABLE \`chat_messages\`
-       MODIFY COLUMN \`message_type\` ENUM('ai_chatbot', 'support_chat') NOT NULL DEFAULT 'ai_chatbot'`
-    ).catch(() => {});
+    await queryInterface.sequelize
+      .query(
+        `ALTER TABLE \`chat_messages\`
+       MODIFY COLUMN \`message_type\` ENUM('ai_chatbot', 'support_chat') NOT NULL DEFAULT 'ai_chatbot'`,
+      )
+      .catch(() => {});
   },
 };

@@ -22,9 +22,49 @@ function extractJSON(text) {
   return null;
 }
 
+// Trừ stopwords ngắn khi so từ
+const STOPWORDS = new Set(['the', 'và', 'có', 'cho', 'với', 'của', 'là']);
+
+/**
+ * [Post-processing] Bổ sung sản phẩm mà LLM đề cập trong response text nhưng bỏ sót trong matchedProducts.
+ * Dùng word-overlap ≥75% — tránh thêm sản phẩm không liên quan.
+ */
+function extractProductsFromText(responseText, retrievedProducts, alreadyMatchedIds) {
+  const rLower = responseText.toLowerCase();
+  const extras = [];
+
+  for (const p of retrievedProducts) {
+    if (alreadyMatchedIds.has(p.id)) continue;
+    const words = p.name
+      .toLowerCase()
+      .split(/\s+/)
+      .filter((w) => w.length > 2 && !STOPWORDS.has(w));
+    if (words.length < 2) continue;
+    const matchCount = words.filter((w) => rLower.includes(w)).length;
+    if (matchCount < Math.ceil(words.length * 0.75)) continue;
+
+    const price = p.price ?? p.basePrice;
+    const compare = p.compareAtPrice;
+    extras.push({
+      id: p.id,
+      name: p.name,
+      slug: p.slug,
+      price,
+      compareAtPrice: compare,
+      thumbnail: p.thumbnail,
+      inStock: p.inStock !== undefined ? p.inStock : true,
+      stockQuantity: p.stockQuantity,
+      rating: null,
+      discount: compare && compare > price ? Math.round(((compare - price) / compare) * 100) : 0,
+    });
+  }
+  return extras;
+}
+
 /**
  * [Generation] Parse JSON response từ LLM, map matchedProducts về sản phẩm thực trong retrieved context.
  * Exact match → fuzzy match (version keywords + word overlap). Phát hiện hallucination nếu LLM đề xuất SP không có.
+ * Option B post-processing: nếu LLM bỏ sót sản phẩm trong matchedProducts nhưng đề cập trong response text → bổ sung.
  * @param {string} aiText - Raw text response từ LLM.
  * @param {Array<Object>} products - Sản phẩm từ retrieval (ground truth).
  * @param {string} userMessage - Query gốc (dùng cho fallback).
@@ -106,9 +146,17 @@ function parseAIResponse(aiText, products, userMessage) {
       return true;
     });
 
+    // Option B: bổ sung sản phẩm LLM đề cập trong response text nhưng bỏ sót trong matchedProducts
+    const alreadyMatchedIds = new Set(uniqueProducts.map((p) => p.id));
+    const extras = extractProductsFromText(parsed.response || '', products, alreadyMatchedIds);
+    if (extras.length > 0) {
+      logger.debug(`[RAG] Post-processing: bổ sung ${extras.length} sản phẩm từ response text`);
+    }
+    const finalProducts = [...uniqueProducts, ...extras];
+
     return {
       response: parsed.response || 'Tôi có thể giúp bạn tìm sản phẩm phù hợp!',
-      products: uniqueProducts,
+      products: finalProducts,
       suggestions: parsed.suggestions || [
         'Xem tất cả sản phẩm',
         'Sản phẩm khuyến mãi',

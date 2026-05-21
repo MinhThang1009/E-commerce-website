@@ -6,14 +6,8 @@
  */
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { useAuthStore } from '@/stores/auth-store';
 import { getLocale } from '@/utils/format';
-import {
-  useGetProductReviewsQuery,
-  useMarkReviewHelpfulMutation,
-  Review,
-  ReviewFilters,
-} from '../api/review-api';
+import { useGetProductReviewsQuery, Review, ReviewFilters } from '../api/review-api';
 import { Rating } from '@/components/common/Rating';
 
 interface ReviewListProps {
@@ -22,8 +16,6 @@ interface ReviewListProps {
 
 const ReviewList: React.FC<ReviewListProps> = ({ productId }) => {
   const { t } = useTranslation();
-  const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
-  const { mutateAsync: markReviewHelpful } = useMarkReviewHelpfulMutation();
 
   const [filters, setFilters] = useState<ReviewFilters>({
     page: 1,
@@ -49,23 +41,6 @@ const ReviewList: React.FC<ReviewListProps> = ({ productId }) => {
   const handleLoadMore = () => {
     if (reviewsData && (filters.page ?? 1) < reviewsData.data.pages) {
       setFilters((prev) => ({ ...prev, page: (prev.page ?? 1) + 1 }));
-    }
-  };
-
-  const handleMarkHelpful = async (reviewId: string, helpful: boolean) => {
-    if (!isAuthenticated) {
-      window.location.href = '/login';
-      return;
-    }
-
-    try {
-      await markReviewHelpful({
-        id: reviewId,
-        helpful,
-        productId,
-      });
-    } catch (error) {
-      console.error('Error marking review helpful:', error);
     }
   };
 
@@ -130,7 +105,6 @@ const ReviewList: React.FC<ReviewListProps> = ({ productId }) => {
             <option value="oldest">{t('review.list.sortOldest')}</option>
             <option value="highest_rating">{t('review.list.sortHighest')}</option>
             <option value="lowest_rating">{t('review.list.sortLowest')}</option>
-            <option value="most_helpful">{t('review.list.sortHelpful')}</option>
           </select>
 
           <select
@@ -249,48 +223,6 @@ const ReviewList: React.FC<ReviewListProps> = ({ productId }) => {
                       return null;
                     }
                   })()}
-
-                  <div className="flex items-center space-x-4 text-sm">
-                    <button
-                      onClick={() => handleMarkHelpful(review.id, true)}
-                      className="flex items-center space-x-1 text-neutral-500 dark:text-neutral-400 hover:text-green-600 dark:hover:text-green-400 transition-colors"
-                    >
-                      <svg
-                        className="w-4 h-4"
-                        fill="none"
-                        stroke="currentColor"
-                        viewBox="0 0 24 24"
-                      >
-                        <path
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                          strokeWidth={2}
-                          d="M14 10h4.764a2 2 0 011.789 2.894l-3.5 7A2 2 0 0115.263 21h-4.017c-.163 0-.326-.02-.485-.06L7 20m7-10V5a2 2 0 00-2-2h-.095c-.5 0-.905.405-.905.905 0 .714-.211 1.412-.608 2.006L7 11v9m7-10h-2M7 20H5a2 2 0 01-2-2v-6a2 2 0 012-2h2.5"
-                        />
-                      </svg>
-                      <span>{t('review.list.helpful', { count: review.likes })}</span>
-                    </button>
-
-                    <button
-                      onClick={() => handleMarkHelpful(review.id, false)}
-                      className="flex items-center space-x-1 text-neutral-500 dark:text-neutral-400 hover:text-red-600 dark:hover:text-red-400 transition-colors"
-                    >
-                      <svg
-                        className="w-4 h-4"
-                        fill="none"
-                        stroke="currentColor"
-                        viewBox="0 0 24 24"
-                      >
-                        <path
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                          strokeWidth={2}
-                          d="M10 14H5.236a2 2 0 01-1.789-2.894l3.5-7A2 2 0 018.736 3h4.018c.163 0 .326.02.485.06L17 4m-7 10v2a2 2 0 002 2h.095c.5 0 .905-.405.905-.905 0-.714.211-1.412.608-2.006L17 13V4m-7 10h2m5-10H5a2 2 0 00-2 2v6a2 2 0 002 2h2.5"
-                        />
-                      </svg>
-                      <span>{t('review.list.notHelpful', { count: review.dislikes })}</span>
-                    </button>
-                  </div>
                 </div>
               </div>
             </div>

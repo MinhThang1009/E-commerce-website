@@ -19,7 +19,7 @@ async function getColumnType(qi, table, column) {
   const [rows] = await qi.sequelize.query(
     `SELECT COLUMN_TYPE FROM INFORMATION_SCHEMA.COLUMNS
      WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = ? AND COLUMN_NAME = ?`,
-    { replacements: [table, column] }
+    { replacements: [table, column] },
   );
   return rows[0] ? rows[0].COLUMN_TYPE.toLowerCase() : null;
 }
@@ -29,7 +29,7 @@ async function indexExists(qi, table, indexName) {
     `SELECT INDEX_NAME FROM INFORMATION_SCHEMA.STATISTICS
      WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = ? AND INDEX_NAME = ?
      LIMIT 1`,
-    { replacements: [table, indexName] }
+    { replacements: [table, indexName] },
   );
   return rows.length > 0;
 }
@@ -39,7 +39,7 @@ async function tableExists(qi, table) {
     `SELECT TABLE_NAME FROM INFORMATION_SCHEMA.TABLES
      WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = ?
      LIMIT 1`,
-    { replacements: [table] }
+    { replacements: [table] },
   );
   return rows.length > 0;
 }
@@ -50,12 +50,12 @@ async function tableExists(qi, table) {
 // brands.name (100→200), categories.name (100→200) tăng lên
 const NAME_COLUMNS = [
   // [table, column, targetType, modifySQL, rollbackSQL]
-  ['products',           'name', 'varchar(200)', 'VARCHAR(200) NOT NULL',  'VARCHAR(255) NOT NULL'],
-  ['order_items',        'name', 'varchar(200)', 'VARCHAR(200) NOT NULL',  'VARCHAR(255) NOT NULL'],
-  ['collections',        'name', 'varchar(200)', 'VARCHAR(200) NOT NULL',  'VARCHAR(200) NOT NULL'],  // giữ nguyên
-  ['warranty_packages',  'name', 'varchar(200)', 'VARCHAR(200) NOT NULL',  'VARCHAR(200) NOT NULL'],  // giữ nguyên
-  ['brands',             'name', 'varchar(200)', 'VARCHAR(200) NOT NULL',  'VARCHAR(100) NOT NULL'],
-  ['categories',         'name', 'varchar(200)', 'VARCHAR(200) NOT NULL',  'VARCHAR(100) NOT NULL'],
+  ['products', 'name', 'varchar(200)', 'VARCHAR(200) NOT NULL', 'VARCHAR(255) NOT NULL'],
+  ['order_items', 'name', 'varchar(200)', 'VARCHAR(200) NOT NULL', 'VARCHAR(255) NOT NULL'],
+  ['collections', 'name', 'varchar(200)', 'VARCHAR(200) NOT NULL', 'VARCHAR(200) NOT NULL'], // giữ nguyên
+  ['warranty_packages', 'name', 'varchar(200)', 'VARCHAR(200) NOT NULL', 'VARCHAR(200) NOT NULL'], // giữ nguyên
+  ['brands', 'name', 'varchar(200)', 'VARCHAR(200) NOT NULL', 'VARCHAR(100) NOT NULL'],
+  ['categories', 'name', 'varchar(200)', 'VARCHAR(200) NOT NULL', 'VARCHAR(100) NOT NULL'],
 ];
 
 // ── Nhóm 2: image_url columns → varchar(512) thống nhất ────────────────────
@@ -63,8 +63,20 @@ const NAME_COLUMNS = [
 // product_images.image_url: varchar(1000) → varchar(512)
 // banners.image_url: đã varchar(512) → skip
 const IMAGE_URL_COLUMNS = [
-  ['attribute_values', 'image_url', 'varchar(512)', 'VARCHAR(512) NULL DEFAULT NULL', 'TEXT NULL DEFAULT NULL'],
-  ['product_images',   'image_url', 'varchar(512)', 'VARCHAR(512) NOT NULL',          'VARCHAR(1000) NOT NULL'],
+  [
+    'attribute_values',
+    'image_url',
+    'varchar(512)',
+    'VARCHAR(512) NULL DEFAULT NULL',
+    'TEXT NULL DEFAULT NULL',
+  ],
+  [
+    'product_images',
+    'image_url',
+    'varchar(512)',
+    'VARCHAR(512) NOT NULL',
+    'VARCHAR(1000) NOT NULL',
+  ],
 ];
 
 // ── Nhóm 3: slug columns → varchar(100) thống nhất ─────────────────────────
@@ -102,7 +114,7 @@ module.exports = {
       // brands.name và categories.name có UNIQUE index — MySQL xử lý tự động khi resize
       // Chỉ cần verify data không vượt target length
       const [lenRows] = await queryInterface.sequelize.query(
-        `SELECT MAX(LENGTH(\`${column}\`)) as max_len FROM \`${table}\``
+        `SELECT MAX(LENGTH(\`${column}\`)) as max_len FROM \`${table}\``,
       );
       const maxLen = lenRows[0] ? lenRows[0].max_len : 0;
       if (maxLen && maxLen > 200) {
@@ -111,7 +123,7 @@ module.exports = {
       }
 
       await queryInterface.sequelize.query(
-        `ALTER TABLE \`${table}\` MODIFY COLUMN \`${column}\` ${modifySQL}`
+        `ALTER TABLE \`${table}\` MODIFY COLUMN \`${column}\` ${modifySQL}`,
       );
       console.log(`  RESIZED: ${table}.${column} ${currentType} → ${targetType}`);
     }
@@ -136,7 +148,7 @@ module.exports = {
 
       // Verify data không vượt 512 chars
       const [lenRows] = await queryInterface.sequelize.query(
-        `SELECT MAX(LENGTH(\`${column}\`)) as max_len FROM \`${table}\``
+        `SELECT MAX(LENGTH(\`${column}\`)) as max_len FROM \`${table}\``,
       );
       const maxLen = lenRows[0] ? lenRows[0].max_len : 0;
       if (maxLen && maxLen > 512) {
@@ -145,7 +157,7 @@ module.exports = {
       }
 
       await queryInterface.sequelize.query(
-        `ALTER TABLE \`${table}\` MODIFY COLUMN \`${column}\` ${modifySQL}`
+        `ALTER TABLE \`${table}\` MODIFY COLUMN \`${column}\` ${modifySQL}`,
       );
       console.log(`  RESIZED: ${table}.${column} ${currentType} → ${targetType}`);
     }
@@ -170,7 +182,7 @@ module.exports = {
 
       // Verify data không vượt 100 chars — news.slug có UNIQUE index uq_news_slug
       const [lenRows] = await queryInterface.sequelize.query(
-        `SELECT MAX(LENGTH(\`${column}\`)) as max_len FROM \`${table}\``
+        `SELECT MAX(LENGTH(\`${column}\`)) as max_len FROM \`${table}\``,
       );
       const maxLen = lenRows[0] ? lenRows[0].max_len : 0;
       if (maxLen && maxLen > 100) {
@@ -183,20 +195,20 @@ module.exports = {
       const hasUniqueIdx = await indexExists(queryInterface, table, uniqueIdxName);
       if (hasUniqueIdx) {
         await queryInterface.sequelize.query(
-          `ALTER TABLE \`${table}\` DROP INDEX \`${uniqueIdxName}\``
+          `ALTER TABLE \`${table}\` DROP INDEX \`${uniqueIdxName}\``,
         );
         console.log(`  DROPPED: ${uniqueIdxName} (trước khi resize)`);
       }
 
       await queryInterface.sequelize.query(
-        `ALTER TABLE \`${table}\` MODIFY COLUMN \`${column}\` ${modifySQL}`
+        `ALTER TABLE \`${table}\` MODIFY COLUMN \`${column}\` ${modifySQL}`,
       );
       console.log(`  RESIZED: ${table}.${column} ${currentType} → ${targetType}`);
 
       // Recreate UNIQUE index
       if (hasUniqueIdx) {
         await queryInterface.sequelize.query(
-          `ALTER TABLE \`${table}\` ADD UNIQUE KEY \`${uniqueIdxName}\` (\`${column}\`)`
+          `ALTER TABLE \`${table}\` ADD UNIQUE KEY \`${uniqueIdxName}\` (\`${column}\`)`,
         );
         console.log(`  RECREATED: ${uniqueIdxName}`);
       }
@@ -221,7 +233,7 @@ module.exports = {
       }
 
       await queryInterface.sequelize.query(
-        `ALTER TABLE \`${table}\` MODIFY COLUMN \`${column}\` ${modifySQL}`
+        `ALTER TABLE \`${table}\` MODIFY COLUMN \`${column}\` ${modifySQL}`,
       );
       console.log(`  RESIZED: ${table}.${column} ${currentType} → ${targetType}`);
     }
@@ -236,31 +248,35 @@ module.exports = {
       if (statusType && !statusType.startsWith('enum')) {
         // Verify tất cả values hiện tại nằm trong enum target
         const [statusRows] = await queryInterface.sequelize.query(
-          `SELECT DISTINCT status FROM products WHERE status IS NOT NULL`
+          `SELECT DISTINCT status FROM products WHERE status IS NOT NULL`,
         );
         const validEnumValues = ['active', 'inactive', 'draft', 'archived'];
-        const currentValues = statusRows.map(r => r.status);
-        const invalidValues = currentValues.filter(v => !validEnumValues.includes(v));
+        const currentValues = statusRows.map((r) => r.status);
+        const invalidValues = currentValues.filter((v) => !validEnumValues.includes(v));
 
         if (invalidValues.length > 0) {
-          console.log(`  ABORT: products.status có giá trị không hợp lệ: ${invalidValues.join(', ')} — KHÔNG đổi sang ENUM`);
+          console.log(
+            `  ABORT: products.status có giá trị không hợp lệ: ${invalidValues.join(', ')} — KHÔNG đổi sang ENUM`,
+          );
         } else {
           // Drop index trước khi đổi type
           if (await indexExists(queryInterface, 'products', 'idx_products_status')) {
             await queryInterface.sequelize.query(
-              `ALTER TABLE \`products\` DROP INDEX \`idx_products_status\``
+              `ALTER TABLE \`products\` DROP INDEX \`idx_products_status\``,
             );
             console.log('  DROPPED: idx_products_status (trước khi đổi type)');
           }
 
           await queryInterface.sequelize.query(
-            `ALTER TABLE \`products\` MODIFY COLUMN \`status\` ENUM('active','inactive','draft','archived') NULL DEFAULT 'active'`
+            `ALTER TABLE \`products\` MODIFY COLUMN \`status\` ENUM('active','inactive','draft','archived') NULL DEFAULT 'active'`,
           );
-          console.log(`  CHANGED: products.status ${statusType} → enum('active','inactive','draft','archived')`);
+          console.log(
+            `  CHANGED: products.status ${statusType} → enum('active','inactive','draft','archived')`,
+          );
 
           // Recreate index
           await queryInterface.sequelize.query(
-            `ALTER TABLE \`products\` ADD INDEX \`idx_products_status\` (\`status\`)`
+            `ALTER TABLE \`products\` ADD INDEX \`idx_products_status\` (\`status\`)`,
           );
           console.log('  RECREATED: idx_products_status');
         }
@@ -279,14 +295,14 @@ module.exports = {
       if (statusType && statusType.startsWith('enum')) {
         if (await indexExists(queryInterface, 'products', 'idx_products_status')) {
           await queryInterface.sequelize.query(
-            `ALTER TABLE \`products\` DROP INDEX \`idx_products_status\``
+            `ALTER TABLE \`products\` DROP INDEX \`idx_products_status\``,
           );
         }
         await queryInterface.sequelize.query(
-          `ALTER TABLE \`products\` MODIFY COLUMN \`status\` VARCHAR(20) NULL DEFAULT 'active'`
+          `ALTER TABLE \`products\` MODIFY COLUMN \`status\` VARCHAR(20) NULL DEFAULT 'active'`,
         );
         await queryInterface.sequelize.query(
-          `ALTER TABLE \`products\` ADD INDEX \`idx_products_status\` (\`status\`)`
+          `ALTER TABLE \`products\` ADD INDEX \`idx_products_status\` (\`status\`)`,
         );
         console.log('  ROLLBACK: products.status → varchar(20)');
       }
@@ -298,7 +314,7 @@ module.exports = {
       const currentType = await getColumnType(queryInterface, table, column);
       if (!currentType) continue;
       await queryInterface.sequelize.query(
-        `ALTER TABLE \`${table}\` MODIFY COLUMN \`${column}\` ${rollbackSQL}`
+        `ALTER TABLE \`${table}\` MODIFY COLUMN \`${column}\` ${rollbackSQL}`,
       );
       console.log(`  ROLLBACK: ${table}.${column} → ${rollbackSQL}`);
     }
@@ -313,15 +329,15 @@ module.exports = {
       const hasUniqueIdx = await indexExists(queryInterface, table, uniqueIdxName);
       if (hasUniqueIdx) {
         await queryInterface.sequelize.query(
-          `ALTER TABLE \`${table}\` DROP INDEX \`${uniqueIdxName}\``
+          `ALTER TABLE \`${table}\` DROP INDEX \`${uniqueIdxName}\``,
         );
       }
       await queryInterface.sequelize.query(
-        `ALTER TABLE \`${table}\` MODIFY COLUMN \`${column}\` ${rollbackSQL}`
+        `ALTER TABLE \`${table}\` MODIFY COLUMN \`${column}\` ${rollbackSQL}`,
       );
       if (hasUniqueIdx) {
         await queryInterface.sequelize.query(
-          `ALTER TABLE \`${table}\` ADD UNIQUE KEY \`${uniqueIdxName}\` (\`${column}\`)`
+          `ALTER TABLE \`${table}\` ADD UNIQUE KEY \`${uniqueIdxName}\` (\`${column}\`)`,
         );
       }
       console.log(`  ROLLBACK: ${table}.${column} → ${rollbackSQL}`);
@@ -333,7 +349,7 @@ module.exports = {
       const currentType = await getColumnType(queryInterface, table, column);
       if (!currentType) continue;
       await queryInterface.sequelize.query(
-        `ALTER TABLE \`${table}\` MODIFY COLUMN \`${column}\` ${rollbackSQL}`
+        `ALTER TABLE \`${table}\` MODIFY COLUMN \`${column}\` ${rollbackSQL}`,
       );
       console.log(`  ROLLBACK: ${table}.${column} → ${rollbackSQL}`);
     }
@@ -344,7 +360,7 @@ module.exports = {
       const currentType = await getColumnType(queryInterface, table, column);
       if (!currentType) continue;
       await queryInterface.sequelize.query(
-        `ALTER TABLE \`${table}\` MODIFY COLUMN \`${column}\` ${rollbackSQL}`
+        `ALTER TABLE \`${table}\` MODIFY COLUMN \`${column}\` ${rollbackSQL}`,
       );
       console.log(`  ROLLBACK: ${table}.${column} → ${rollbackSQL}`);
     }

@@ -17,8 +17,12 @@ const Category = sequelize.define(
     nameEn: { type: DataTypes.STRING(100), allowNull: true },
     name: {
       type: DataTypes.VIRTUAL,
-      get() { return this.getDataValue('nameVi'); },
-      set(v) { this.setDataValue('nameVi', v); },
+      get() {
+        return this.getDataValue('nameVi');
+      },
+      set(v) {
+        this.setDataValue('nameVi', v);
+      },
     },
     // Slug cho URL thân thiện
     slug: {
@@ -31,8 +35,12 @@ const Category = sequelize.define(
     descriptionEn: { type: DataTypes.TEXT, allowNull: true },
     description: {
       type: DataTypes.VIRTUAL,
-      get() { return this.getDataValue('descriptionVi'); },
-      set(v) { this.setDataValue('descriptionVi', v); },
+      get() {
+        return this.getDataValue('descriptionVi');
+      },
+      set(v) {
+        this.setDataValue('descriptionVi', v);
+      },
     },
     // Xóa mềm (soft delete)
     deletedAt: {
@@ -57,7 +65,7 @@ const Category = sequelize.define(
         }
       },
     },
-  }
+  },
 );
 
 module.exports = Category;

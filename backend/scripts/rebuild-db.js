@@ -3,53 +3,50 @@ require('dotenv').config({ path: path.join(__dirname, '../.env') });
 const mysql = require('mysql2/promise');
 const fs = require('fs');
 
+const ts = () => new Date().toISOString().replace('T', ' ').slice(0, 19);
+const log  = (msg) => console.log(`[${ts()}]  ✅  INFO   ${msg}`);
+const warn = (msg) => console.warn(`[${ts()}]  ⚠️   WARN   ${msg}`);
+const err  = (msg) => console.error(`[${ts()}]  ❌  ERROR  ${msg}`);
+
 async function importSql(conn, filename) {
-  console.log(`\n⏳ Đang import [${filename}]...`);
+  log(`📂 Đang import \`${filename}\`...`);
   const sqlPath = path.join(__dirname, '..', 'data', filename);
   const sqlContent = fs.readFileSync(sqlPath, 'utf8');
-  
-  let cleanedContent = sqlContent.replace(/utf8mb4_0900_ai_ci/g, 'utf8mb4_unicode_ci');
-  
-  // Xóa thủ công tên CONSTRAINT bị trùng trong server (lỗi 121) để MySQL tự động gen tên FK random
-  cleanedContent = cleanedContent.replace(/CONSTRAINT\s+`?\w+`?\s+FOREIGN KEY/gi, 'FOREIGN KEY');
-  
+
+  let cleaned = sqlContent.replace(/utf8mb4_0900_ai_ci/g, 'utf8mb4_unicode_ci');
+  // Xóa tên CONSTRAINT trùng (lỗi 121) để MySQL tự sinh tên FK
+  cleaned = cleaned.replace(/CONSTRAINT\s+`?\w+`?\s+FOREIGN KEY/gi, 'FOREIGN KEY');
+
   try {
-    await conn.query(cleanedContent);
-    console.log(`✅ Thành công import ${filename}`);
-  } catch (err) {
-    console.error(`❌ Lỗi khi import ${filename}:`, err.message.substring(0, 200));
-    throw err;
+    await conn.query(cleaned);
+    log(`✔  Import \`${filename}\` thành công`);
+  } catch (e) {
+    err(`Import \`${filename}\` thất bại: ${e.message.slice(0, 200)}`);
+    throw e;
   }
 }
 
 async function rebuild() {
   let conn;
   try {
-    console.log('🔄 BẮT ĐẦU RESET VÀ IMPORT DATABASE...');
-    
+    log('🚀 Bắt đầu khởi tạo lại database...');
+
     conn = await mysql.createConnection({
       host: process.env.DB_HOST || '127.0.0.1',
       port: process.env.DB_PORT || 3306,
       user: process.env.DB_USER || 'root',
       password: process.env.DB_PASSWORD || '',
-      multipleStatements: true
+      multipleStatements: true,
     });
 
-    const oldDbName = 'websitebanhangmini';
     const dbName = process.env.DB_NAME || 'techstore';
 
-    console.log(`0️⃣ Xóa bỏ database cũ \`${oldDbName}\` để giải phóng khóa ngoại (FK)...`);
-    await conn.query(`DROP DATABASE IF EXISTS \`${oldDbName}\``);
-
-    console.log(`1️⃣ Xóa bỏ Database \`${dbName}\` (nếu đang tồn tại)...`);
+    log(`🗑️  Xóa database \`${dbName}\` (nếu tồn tại)...`);
     await conn.query(`DROP DATABASE IF EXISTS \`${dbName}\``);
-    
-    console.log(`2️⃣ Tạo Database mới: \`${dbName}\``);
-    await conn.query(`CREATE DATABASE \`${dbName}\` CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci`);
-    
-    console.log(`3️⃣ Đang chuyển sang dùng Database \`${dbName}\``);
-    await conn.query(`USE \`${dbName}\``);
 
+    log(`🏗️  Tạo database \`${dbName}\`...`);
+    await conn.query(`CREATE DATABASE \`${dbName}\` CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci`);
+    await conn.query(`USE \`${dbName}\``);
     await conn.query('SET FOREIGN_KEY_CHECKS = 0');
 
     await importSql(conn, 'migration_full.sql');
@@ -57,10 +54,10 @@ async function rebuild() {
 
     await conn.query('SET FOREIGN_KEY_CHECKS = 1');
 
-    console.log(`\n🎉 HOÀN TẤT! Tất cả 39 bảng và dữ liệu mẫu đã được nạp chuẩn xác.`);
+    log('✅ Hoàn tất! Database đã sẵn sàng.');
     process.exit(0);
-  } catch (err) {
-    console.error('\n❌ TIẾN TRÌNH THẤT BẠI:', err);
+  } catch (e) {
+    err(`❌ Khởi tạo thất bại: ${e.message}`);
     process.exit(1);
   } finally {
     if (conn) await conn.end();

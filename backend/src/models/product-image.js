@@ -48,7 +48,7 @@ const ProductImage = sequelize.define(
     paranoid: true,
     // Dùng snake_case cho tên cột tự động (created_at, updated_at)
     underscored: true,
-  }
+  },
 );
 
 module.exports = ProductImage;

@@ -7,7 +7,7 @@
 import React from 'react';
 import { useTranslation } from 'react-i18next';
 import { CloseIcon, LightningIcon } from './icons/index';
-import { chatbotService } from '../services/chatbot-service';
+import { chatbotService } from '../api/chatbot-service';
 
 // Dùng kiểu của instance singleton chatbotService
 type ChatbotServiceType = typeof chatbotService;

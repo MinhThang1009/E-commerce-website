@@ -3,9 +3,7 @@
 /** @type {import('sequelize-cli').Migration} */
 module.exports = {
   async up(queryInterface, Sequelize) {
-    const tableDefinition = await queryInterface.describeTable(
-      'product_attributes'
-    );
+    const tableDefinition = await queryInterface.describeTable('product_attributes');
 
     if (!tableDefinition.type) {
       await queryInterface.addColumn('product_attributes', 'type', {
@@ -29,10 +27,7 @@ module.exports = {
       });
     }
 
-    if (
-      tableDefinition.values &&
-      normalizeType(tableDefinition.values.type) !== 'JSON'
-    ) {
+    if (tableDefinition.values && normalizeType(tableDefinition.values.type) !== 'JSON') {
       await queryInterface.changeColumn('product_attributes', 'values', {
         type: Sequelize.JSON,
         allowNull: false,
@@ -45,9 +40,7 @@ module.exports = {
   },
 
   async down(queryInterface, Sequelize) {
-    const tableDefinition = await queryInterface.describeTable(
-      'product_attributes'
-    );
+    const tableDefinition = await queryInterface.describeTable('product_attributes');
 
     if (tableDefinition.type) {
       // MySQL tự xóa ENUM definition khi removeColumn — không cần DROP TYPE riêng
@@ -63,21 +56,10 @@ module.exports = {
     }
 
     await removeIndexIfExists(queryInterface, 'product_attributes', ['type']);
-    await removeIndexIfExists(
-      queryInterface,
-      'product_attributes',
-      ['required']
-    );
-    await removeIndexIfExists(
-      queryInterface,
-      'product_attributes',
-      ['sort_order']
-    );
+    await removeIndexIfExists(queryInterface, 'product_attributes', ['required']);
+    await removeIndexIfExists(queryInterface, 'product_attributes', ['sort_order']);
 
-    if (
-      tableDefinition.values &&
-      normalizeType(tableDefinition.values.type) === 'JSON'
-    ) {
+    if (tableDefinition.values && normalizeType(tableDefinition.values.type) === 'JSON') {
       await queryInterface.changeColumn('product_attributes', 'values', {
         type: Sequelize.TEXT,
         allowNull: false,

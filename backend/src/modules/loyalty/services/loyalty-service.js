@@ -3,6 +3,8 @@
  * @layer Service
  * @module loyalty
  * @description Business logic layer cho loyalty
+ * @depends-on sequelize-loyalty-repository, eventBus, logger
+ * @see module.js (DI wiring), routes.js (endpoints), CLAUDE.md (overview)
  */
 const { AppError } = require('@shared/errors');
 
@@ -24,7 +26,8 @@ class LoyaltyService {
     const lim = parseInt(limit, 10);
     const off = (parseInt(page, 10) - 1) * lim;
     const { count, rows } = await this.loyaltyRepository.findHistory(userId, {
-      limit: lim, offset: off,
+      limit: lim,
+      offset: off,
     });
 
     return {
@@ -51,20 +54,22 @@ class LoyaltyService {
       }
 
       if (user.loyaltyPoints < points) {
-        throw new AppError(
-          'loyalty.insufficientPoints',
-          400,
-          { current: user.loyaltyPoints, required: points }
-        );
+        throw new AppError('loyalty.insufficientPoints', 400, {
+          current: user.loyaltyPoints,
+          required: points,
+        });
       }
 
       await this.loyaltyRepository.decrementPoints(user, points, { transaction: t });
-      await this.loyaltyRepository.createHistoryRecord({
-        userId,
-        points: -points,
-        type: 'spend',
-        description: `Đổi ${points} điểm lấy giảm giá`,
-      }, { transaction: t });
+      await this.loyaltyRepository.createHistoryRecord(
+        {
+          userId,
+          points: -points,
+          type: 'spend',
+          description: `Đổi ${points} điểm lấy giảm giá`,
+        },
+        { transaction: t },
+      );
 
       await user.reload({ transaction: t });
 

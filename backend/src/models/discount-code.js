@@ -68,7 +68,7 @@ const DiscountCode = sequelize.define(
     timestamps: true,
     paranoid: true,
     underscored: true,
-  }
+  },
 );
 
 module.exports = DiscountCode;

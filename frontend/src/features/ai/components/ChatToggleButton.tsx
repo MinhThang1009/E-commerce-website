@@ -7,7 +7,7 @@
 import React from 'react';
 import { useTranslation } from 'react-i18next';
 import { BotIcon, CloseIcon, SparkleIcon, StatusIcon } from './icons';
-import { chatbotService } from '../services/chatbot-service';
+import { chatbotService } from '../api/chatbot-service';
 
 interface ChatToggleButtonProps {
   isOpen: boolean;

@@ -5,14 +5,17 @@
  * @description UI component cho feature ai
  */
 import React from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { localizeField } from '@/utils/localize';
 import { proxyImg } from '@/utils/proxy-img';
 import { buildRoute } from '@/routes/paths';
-import { ProductRecommendation } from '../services/chatbot-api';
+import { ProductRecommendation, useAddToCartViaChatbotMutation } from '../api/chatbot-api';
 import { EyeIcon, ImageIcon, StarIcon } from './icons';
 import { getLocale } from '@/utils/format';
+import { useAuthStore } from '@/stores/auth-store';
+import { useChatStore } from '@/stores/chat-store';
+import { useNotifications } from '@/hooks/use-notifications';
 
 interface ProductCardProps {
   product: ProductRecommendation;
@@ -23,6 +26,27 @@ interface ProductCardProps {
  */
 const ProductCard: React.FC<ProductCardProps> = ({ product }) => {
   const { t, i18n } = useTranslation();
+  const navigate = useNavigate();
+  const user = useAuthStore((s) => s.user);
+  const sessionId = useChatStore((s) => s.sessionId);
+  const { mutateAsync: addToCart, isPending } = useAddToCartViaChatbotMutation();
+  const { showNotification } = useNotifications();
+
+  const handleAddToCart = async (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (!user) {
+      navigate('/login');
+      return;
+    }
+    try {
+      await addToCart({ productId: product.id, quantity: 1, sessionId });
+      showNotification({ message: t('product.addedToCart'), type: 'success' });
+    } catch {
+      showNotification({ message: t('product.addToCartError'), type: 'error' });
+    }
+  };
+
   // Format giá tiền — luôn VND, locale động theo ngôn ngữ UI
   const formatPrice = (price: number): string => {
     return new Intl.NumberFormat(getLocale(), {
@@ -126,6 +150,16 @@ const ProductCard: React.FC<ProductCardProps> = ({ product }) => {
             {product.inStock ? t('product.inStock') : t('product.outOfStock')}
           </span>
         </div>
+
+        {product.inStock && (
+          <button
+            onClick={handleAddToCart}
+            disabled={isPending}
+            className="btn-glass-cart mt-2 w-full py-2 text-xs disabled:opacity-50"
+          >
+            {isPending ? '...' : t('product.addToCart')}
+          </button>
+        )}
       </div>
     </Link>
   );

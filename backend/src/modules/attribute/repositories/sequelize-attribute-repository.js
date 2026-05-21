@@ -14,33 +14,48 @@ const {
 
 const findAllGroups = () =>
   AttributeGroup.findAll({
-    include: [{
-      model: AttributeValue,
-      as: 'values',
-      where: { isActive: true },
-      required: false,
-      order: [['sortOrder', 'ASC'], ['name', 'ASC']],
-    }],
-    where: { isActive: true },
-    order: [['sortOrder', 'ASC'], ['name', 'ASC']],
-  });
-
-const findProductWithGroups = (productId) =>
-  Product.findByPk(productId, {
-    include: [{
-      model: AttributeGroup,
-      as: 'attributeGroups',
-      through: { attributes: ['isRequired', 'sortOrder'] },
-      include: [{
+    include: [
+      {
         model: AttributeValue,
         as: 'values',
         where: { isActive: true },
         required: false,
-        order: [['sortOrder', 'ASC'], ['name', 'ASC']],
-      }],
-      where: { isActive: true },
-      required: false,
-    }],
+        order: [
+          ['sortOrder', 'ASC'],
+          ['name', 'ASC'],
+        ],
+      },
+    ],
+    where: { isActive: true },
+    order: [
+      ['sortOrder', 'ASC'],
+      ['name', 'ASC'],
+    ],
+  });
+
+const findProductWithGroups = (productId) =>
+  Product.findByPk(productId, {
+    include: [
+      {
+        model: AttributeGroup,
+        as: 'attributeGroups',
+        through: { attributes: ['isRequired', 'sortOrder'] },
+        include: [
+          {
+            model: AttributeValue,
+            as: 'values',
+            where: { isActive: true },
+            required: false,
+            order: [
+              ['sortOrder', 'ASC'],
+              ['name', 'ASC'],
+            ],
+          },
+        ],
+        where: { isActive: true },
+        required: false,
+      },
+    ],
   });
 
 const createGroup = (data) => AttributeGroup.create(data);

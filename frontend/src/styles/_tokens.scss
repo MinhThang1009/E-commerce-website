@@ -53,6 +53,13 @@
   --btn-view-text: var(--text-primary);
   --btn-view-text-hover: var(--text-primary);
 
+  /* === Nút xóa/nguy hiểm — Red === */
+  --btn-danger-bg: rgba(239, 68, 68, 0.82);
+  --btn-danger-bg-hover: rgba(239, 68, 68, 0.96);
+  --btn-danger-border: rgba(252, 129, 129, 0.55);
+  --btn-danger-glow: rgba(239, 68, 68, 0.32);
+  --btn-danger-text: #ffffff;
+
   /* === Backdrop blur cho tất cả glass buttons === */
   --btn-blur: blur(14px) saturate(2);
   --btn-specular: linear-gradient(135deg, rgba(255, 255, 255, 0.22) 0%, transparent 55%);
@@ -73,10 +80,15 @@
   --btn-cart-border: rgba(255, 140, 110, 0.42);
   --btn-cart-glow: rgba(255, 117, 94, 0.38);
 
-  --btn-view-bg: rgba(255, 255, 255, 0.08);
-  --btn-view-bg-hover: rgba(255, 255, 255, 0.13);
-  --btn-view-border: rgba(255, 255, 255, 0.18);
-  --btn-view-border-hover: rgba(255, 255, 255, 0.3);
+  --btn-view-bg: rgba(255, 255, 255, 0.14);
+  --btn-view-bg-hover: rgba(255, 255, 255, 0.2);
+  --btn-view-border: rgba(255, 255, 255, 0.26);
+  --btn-view-border-hover: rgba(255, 255, 255, 0.38);
+
+  --btn-danger-bg: rgba(239, 68, 68, 0.28);
+  --btn-danger-bg-hover: rgba(239, 68, 68, 0.45);
+  --btn-danger-border: rgba(252, 129, 129, 0.42);
+  --btn-danger-glow: rgba(239, 68, 68, 0.38);
   --btn-view-text-hover: var(--text-primary);
   --btn-inner-glow: inset 0 1.5px 0 rgba(255, 255, 255, 0.15);
 }

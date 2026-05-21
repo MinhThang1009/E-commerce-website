@@ -2,9 +2,7 @@
 
 module.exports = {
   async up(queryInterface, Sequelize) {
-    const tableDefinition = await queryInterface.describeTable(
-      'attribute_values'
-    );
+    const tableDefinition = await queryInterface.describeTable('attribute_values');
 
     if (!tableDefinition.affects_name) {
       await queryInterface.addColumn('attribute_values', 'affects_name', {
@@ -24,9 +22,7 @@ module.exports = {
   },
 
   async down(queryInterface) {
-    const tableDefinition = await queryInterface.describeTable(
-      'attribute_values'
-    );
+    const tableDefinition = await queryInterface.describeTable('attribute_values');
 
     if (tableDefinition.affects_name) {
       await queryInterface.removeColumn('attribute_values', 'affects_name');

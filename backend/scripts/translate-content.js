@@ -1,10 +1,10 @@
 /**
- * Script dịch nội dung tiếng Việt sang tiếng Anh dùng OpenRouter.
- * Model cấu hình qua TRANSLATE_MODEL trong .env (mặc định: openai/gpt-4o-mini).
+ * Script dịch nội dung tiếng Việt sang tiếng Anh.
+ * Provider fallback: DeepL → Google Translate unofficial → MyMemory
  *
- * Chạy: node scripts/translateContent.js [--dry-run] [--table=products]
+ * Chạy: node scripts/translate-content.js [--dry-run] [--table=products]
  *   --dry-run  : in ra nội dung dịch, không write DB
- *   --table    : chỉ dịch bảng cụ thể (products | categories | brands | collections)
+ *   --table    : chỉ dịch bảng cụ thể (products | categories | brands | collections | specs)
  */
 
 require('dotenv').config({ path: `${__dirname}/../.env` });
@@ -12,88 +12,88 @@ require('module-alias/register');
 const axios = require('axios');
 const sequelize = require('../src/config/sequelize');
 
-// Models
 const { Product, Category, Brand, Collection } = require('../src/models');
 
 const DRY_RUN  = process.argv.includes('--dry-run');
 const TABLE_ARG = (process.argv.find((a) => a.startsWith('--table=')) || '').replace('--table=', '') || null;
-
-const API_URL = 'https://openrouter.ai/api/v1/chat/completions';
-const API_KEY = process.env.OPENROUTER_API_KEY;
-const MODEL   = process.env.TRANSLATE_MODEL || 'openai/gpt-4o-mini';
-
-// Delay giữa mỗi batch request để tránh rate limit
-const DELAY_MS = 800;
+const DELAY_MS = 300;
 
 async function sleep(ms) {
   return new Promise((r) => setTimeout(r, ms));
 }
 
-/**
- * Gọi OpenRouter API để dịch một batch items.
- * Mỗi item có dạng { id, vi: string, context: string }
- * Trả về array { id, en: string }
- */
-async function translateBatch(items) {
-  if (!API_KEY) {
-    console.error('❌ OPENROUTER_API_KEY không được set trong .env');
-    process.exit(1);
-  }
+// --- Translation providers (ưu tiên: DeepL → Google → MyMemory) ---
 
-  const listText = items
-    .map((item, i) => `${i + 1}. [${item.id}] [ctx:${item.context}] ${item.vi}`)
-    .join('\n');
-
-  const prompt = `You are a professional translator for a Vietnamese e-commerce website selling electronics (smartphones, laptops, tablets).
-
-Translate each item from Vietnamese to English. Rules:
-- Product/brand names that are already English (iPhone, Samsung, MacBook, etc.) → keep as-is
-- Technical specs → translate accurately
-- Marketing copy → natural English, not literal
-- Keep it concise (same approximate length)
-- Output ONLY a numbered list matching input order, format: "N. [id] english text"
-- No explanations, no extra text
-
-Items to translate:
-${listText}`;
-
-  const response = await axios.post(
-    API_URL,
-    {
-      model: MODEL,
-      messages: [{ role: 'user', content: prompt }],
-      temperature: 0.3,
-      max_tokens: 4000,
-    },
-    {
-      headers: {
-        Authorization: `Bearer ${API_KEY}`,
-        'Content-Type': 'application/json',
-      },
-      timeout: 30000,
-    }
+async function translateDeepL(text) {
+  const key = process.env.DEEPL_API_KEY;
+  if (!key) throw new Error('DEEPL_API_KEY chưa cấu hình');
+  const baseUrl = key.endsWith(':fx')
+    ? 'https://api-free.deepl.com'
+    : 'https://api.deepl.com';
+  const resp = await axios.post(
+    `${baseUrl}/v2/translate`,
+    { text: [text], target_lang: 'EN', source_lang: 'VI' },
+    { headers: { Authorization: `DeepL-Auth-Key ${key}`, 'Content-Type': 'application/json' }, timeout: 15000 }
   );
+  const result = resp.data?.translations?.[0]?.text;
+  if (!result) throw new Error('DeepL: response rỗng');
+  return result;
+}
 
-  const text = response.data?.choices?.[0]?.message?.content || '';
-  const results = [];
+async function translateGoogle(text) {
+  const encoded = encodeURIComponent(text);
+  const resp = await axios.get(
+    `https://translate.googleapis.com/translate_a/single?client=gtx&sl=vi&tl=en&dt=t&q=${encoded}`,
+    { timeout: 15000 }
+  );
+  const result = resp.data?.[0]?.map((x) => x?.[0]).filter(Boolean).join('');
+  if (!result) throw new Error('Google: response rỗng');
+  return result;
+}
 
-  // Parse: "1. [id] translation text"
-  const lines = text.trim().split('\n').filter(Boolean);
-  for (const line of lines) {
-    const match = line.match(/^\d+\.\s*\[([^\]]+)\]\s+(.+)$/);
-    if (match) {
-      results.push({ id: match[1], en: match[2].trim() });
-    }
-  }
+async function translateMyMemory(text) {
+  const encoded = encodeURIComponent(text);
+  const resp = await axios.get(
+    `https://api.mymemory.translated.net/get?q=${encoded}&langpair=vi|en`,
+    { timeout: 15000 }
+  );
+  const result = resp.data?.responseData?.translatedText;
+  if (!result || result === text) throw new Error('MyMemory: dịch thất bại');
+  return result;
+}
 
-  // Fallback: nếu parse sai → dùng vi text
-  if (results.length !== items.length) {
-    console.warn(`  ⚠️  Parse mismatch: expected ${items.length}, got ${results.length}`);
-    for (const item of items) {
-      if (!results.find((r) => r.id === item.id)) {
-        results.push({ id: item.id, en: item.vi }); // fallback = vi
+const PROVIDERS = [
+  { name: 'Google',   fn: translateGoogle },
+  { name: 'MyMemory', fn: translateMyMemory },
+];
+
+// Dịch 1 đoạn text với fallback chain
+async function translate(text) {
+  if (!text || !text.trim()) return text;
+  for (let i = 0; i < PROVIDERS.length; i++) {
+    const { name, fn } = PROVIDERS[i];
+    try {
+      const result = await fn(text);
+      if (i > 0) process.stdout.write(` [fallback:${name}]`);
+      return result;
+    } catch (err) {
+      if (i < PROVIDERS.length - 1) {
+        // Tiếp tục sang provider tiếp theo
+      } else {
+        console.error(`\n  ❌ Tất cả providers thất bại: ${err.message}`);
+        return text; // giữ nguyên VI nếu mọi provider đều fail
       }
     }
+  }
+}
+
+// Dịch batch items — gọi translate() cho từng item tuần tự
+async function translateBatch(items) {
+  const results = [];
+  for (const item of items) {
+    const en = await translate(item.vi);
+    results.push({ id: item.id, en });
+    await sleep(DELAY_MS);
   }
   return results;
 }
@@ -154,10 +154,9 @@ async function processTable(Model, tableName, fieldMaps, batchSize = 5) {
 }
 
 /**
- * Dịch specifications JSON — values tiếng Việt → tiếng Anh.
- * Giữ nguyên keys (đã là English), chỉ dịch values.
+ * Dịch specifications JSON — dịch từng value, giữ nguyên keys.
  */
-async function translateSpecifications(batchSize = 3) {
+async function translateSpecifications() {
   const [rows] = await sequelize.query(
     `SELECT id, name_vi, specifications FROM products
      WHERE specifications IS NOT NULL AND specifications_en IS NULL LIMIT 1000`
@@ -167,94 +166,28 @@ async function translateSpecifications(batchSize = 3) {
   if (rows.length === 0) return;
 
   let done = 0;
-  for (let i = 0; i < rows.length; i += batchSize) {
-    const batch = rows.slice(i, i + batchSize);
-    const items = batch.map((r) => {
-      let specs;
-      try { specs = JSON.parse(r.specifications); } catch { specs = {}; }
-      return { id: String(r.id), specs };
-    });
+  for (const row of rows) {
+    let specs;
+    try { specs = JSON.parse(row.specifications); } catch { continue; }
 
-    const itemsText = items
-      .map((item) => `Product ${item.id}:\n${JSON.stringify(item.specs, null, 2)}`)
-      .join('\n\n---\n\n');
+    process.stdout.write(`  specs#${row.id} "${String(row.name_vi).substring(0, 30)}"... `);
 
-    const prompt = `You are translating product specifications from Vietnamese to English for an electronics e-commerce site.
-
-For each product JSON below:
-- Keep all keys exactly as-is (they're already in English)
-- Translate only the VALUES from Vietnamese to English
-- Keep English/numbers/units as-is (e.g., "8GB", "6.1 inch", "A19", "48 MP")
-- Technical Vietnamese terms: translate accurately (e.g., "6 nhân" → "6-core", "pin" → "battery", "màn hình" → "display")
-- Return ONLY valid JSON, one object per product, in format:
-{"id": "1", "specs": {...}}
-{"id": "2", "specs": {...}}
-
-Products to translate:
-${itemsText}`;
-
-    try {
-      const response = await axios.post(
-        API_URL,
-        {
-          model: MODEL,
-          messages: [{ role: 'user', content: prompt }],
-          temperature: 0.1,
-          max_tokens: 6000,
-        },
-        {
-          headers: { Authorization: `Bearer ${API_KEY}`, 'Content-Type': 'application/json' },
-          timeout: 40000,
-        }
-      );
-
-      const rawText = response.data?.choices?.[0]?.message?.content || '';
-      // Strip markdown code block nếu có
-      const clean = rawText.replace(/```json\s*/gi, '').replace(/```\s*/g, '').trim();
-
-      // Extract JSON objects bằng bracket matching (handle multi-line JSON)
-      const jsonObjects = [];
-      let depth = 0, start = -1;
-      for (let ci = 0; ci < clean.length; ci++) {
-        if (clean[ci] === '{') {
-          if (depth === 0) start = ci;
-          depth++;
-        } else if (clean[ci] === '}') {
-          depth--;
-          if (depth === 0 && start !== -1) {
-            jsonObjects.push(clean.slice(start, ci + 1));
-            start = -1;
-          }
-        }
-      }
-
-      for (const jsonStr of jsonObjects) {
-        try {
-          const parsed = JSON.parse(jsonStr);
-          if (parsed.id && parsed.specs) {
-            const row = batch.find((r) => String(r.id) === String(parsed.id));
-            if (!row) continue;
-            if (DRY_RUN) {
-              console.log(`  [DRY] specs#${parsed.id}: ${JSON.stringify(parsed.specs).substring(0, 100)}`);
-            } else {
-              await sequelize.query(
-                'UPDATE products SET specifications_en = ? WHERE id = ?',
-                { replacements: [JSON.stringify(parsed.specs), parsed.id] }
-              );
-              done++;
-            }
-          }
-        } catch (parseErr) {
-          console.warn(`  ⚠️ JSON parse fail: ${parseErr.message?.substring(0, 60)}`);
-        }
-      }
-
-      process.stdout.write(`  ✓ batch ${Math.floor(i / batchSize) + 1}/${Math.ceil(rows.length / batchSize)} (specifications_en)\n`);
+    const specsEn = {};
+    for (const [key, val] of Object.entries(specs)) {
+      specsEn[key] = typeof val === 'string' ? await translate(val) : val;
       await sleep(DELAY_MS);
-    } catch (err) {
-      console.error(`  ❌ Lỗi specs batch ${i}:`, err.message);
-      await sleep(2000);
     }
+
+    if (DRY_RUN) {
+      console.log(`\n  [DRY] ${JSON.stringify(specsEn).substring(0, 120)}`);
+    } else {
+      await sequelize.query(
+        'UPDATE products SET specifications_en = ? WHERE id = ?',
+        { replacements: [JSON.stringify(specsEn), row.id] }
+      );
+      done++;
+    }
+    process.stdout.write('✅\n');
   }
 
   if (!DRY_RUN) console.log(`  ✅ Đã dịch specifications cho ${done} sản phẩm`);

@@ -46,7 +46,7 @@ export interface ReviewFilters {
   rating?: number;
   verified?: boolean;
   withImages?: boolean;
-  sort?: 'newest' | 'oldest' | 'highest_rating' | 'lowest_rating' | 'most_helpful';
+  sort?: 'newest' | 'oldest' | 'highest_rating' | 'lowest_rating';
   page?: number;
   limit?: number;
 }

@@ -10,7 +10,10 @@ jest.mock('@middlewares/rate-limiter', () => ({
   apiLimiter: (_req, _res, next) => next(),
 }));
 jest.mock('@middlewares/authenticate', () => ({
-  authenticate: (req, _res, next) => { req.user = { id: 1, role: 'admin' }; next(); },
+  authenticate: (req, _res, next) => {
+    req.user = { id: 1, role: 'admin' };
+    next();
+  },
 }));
 jest.mock('@middlewares/admin-auth', () => ({
   adminAuthenticate: (_req, _res, next) => next(),
@@ -47,7 +50,9 @@ app.use((err, _req, res, _next) => {
 const request = supertest(app);
 
 const validCreateBody = {
-  name: 'Bảo hành 24 tháng', durationMonths: 24, price: 1000000,
+  name: 'Bảo hành 24 tháng',
+  durationMonths: 24,
+  price: 1000000,
 };
 
 beforeEach(() => jest.clearAllMocks());
@@ -160,7 +165,9 @@ describe('POST /api/warranty-packages — createWarrantyPackage', () => {
 
     expect(res.status).toBe(201);
     expect(res.body.status).toBe('success');
-    expect(mockService.create).toHaveBeenCalledWith(expect.objectContaining({ name: 'Bảo hành 24 tháng' }));
+    expect(mockService.create).toHaveBeenCalledWith(
+      expect.objectContaining({ name: 'Bảo hành 24 tháng' }),
+    );
   });
 
   test('trả về 500 khi service throw lỗi', async () => {
@@ -184,7 +191,10 @@ describe('PUT /api/warranty-packages/:id — updateWarrantyPackage', () => {
 
     expect(res.status).toBe(200);
     expect(res.body.status).toBe('success');
-    expect(mockService.update).toHaveBeenCalledWith('1', expect.objectContaining({ name: 'Updated' }));
+    expect(mockService.update).toHaveBeenCalledWith(
+      '1',
+      expect.objectContaining({ name: 'Updated' }),
+    );
   });
 
   test('trả về 404 khi gói không tồn tại', async () => {

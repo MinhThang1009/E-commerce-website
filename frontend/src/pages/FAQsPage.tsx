@@ -9,6 +9,7 @@ import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { ROUTES } from '@/routes/paths';
+import Button from '@/components/common/Button';
 
 interface FAQ {
   question: string;
@@ -146,15 +147,16 @@ const FAQsPage: React.FC = () => {
                 {t('faqs.empty.title')}
               </h3>
               <p className="text-neutral-500 dark:text-neutral-400 mb-6">{t('faqs.empty.desc')}</p>
-              <button
+              <Button
+                variant="primary"
+                size="md"
                 onClick={() => {
                   setSearchQuery('');
                   setActiveCategory('all');
                 }}
-                className="px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors"
               >
                 {t('faqs.empty.resetBtn')}
-              </button>
+              </Button>
             </div>
           ) : (
             <div className="space-y-6">
@@ -181,12 +183,9 @@ const FAQsPage: React.FC = () => {
         <p className="text-neutral-600 dark:text-neutral-400 mb-6 max-w-2xl mx-auto">
           {t('faqs.contact.desc')}
         </p>
-        <Link
-          to={ROUTES.CONTACT}
-          className="inline-block bg-primary-600 hover:bg-primary-700 text-white font-medium py-3 px-6 rounded-lg transition-colors"
-        >
+        <Button variant="primary" size="md" as={Link} to={ROUTES.CONTACT}>
           {t('faqs.contact.btn')}
-        </Link>
+        </Button>
       </div>
     </div>
   );

@@ -7,6 +7,7 @@
 import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
+import Button from '@/components/common/Button';
 import { ROUTES } from '@/routes/paths';
 import { useAuthStore } from '@/stores/auth-store';
 import { useGetCurrentUserQuery } from '@/features/auth';
@@ -650,35 +651,15 @@ const ProfilePage: React.FC = () => {
                   >
                     {t('common.cancel')}
                   </button>
-                  <button
+                  <Button
                     type="submit"
+                    variant="primary"
+                    size="sm"
                     disabled={isUpdating}
-                    className="flex items-center gap-2 px-5 py-2.5 rounded-xl bg-primary-600 hover:bg-primary-700 text-white text-sm font-medium transition-colors disabled:opacity-60 disabled:cursor-not-allowed shadow-sm"
+                    isLoading={isUpdating}
                   >
-                    {isUpdating ? (
-                      <>
-                        <div className="animate-spin rounded-full h-4 w-4 border-2 border-white/30 border-t-white"></div>
-                        {t('profile.info.saving')}
-                      </>
-                    ) : (
-                      <>
-                        <svg
-                          className="w-4 h-4"
-                          fill="none"
-                          stroke="currentColor"
-                          viewBox="0 0 24 24"
-                        >
-                          <path
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                            strokeWidth={2}
-                            d="M5 13l4 4L19 7"
-                          />
-                        </svg>
-                        {t('profile.info.save')}
-                      </>
-                    )}
-                  </button>
+                    {t('profile.info.save')}
+                  </Button>
                 </div>
               )}
             </form>
@@ -747,35 +728,15 @@ const ProfilePage: React.FC = () => {
               </div>
 
               <div className="pt-2">
-                <button
+                <Button
                   type="submit"
+                  variant="primary"
+                  size="sm"
                   disabled={isChangingPassword}
-                  className="flex items-center gap-2 px-6 py-2.5 rounded-xl bg-primary-600 hover:bg-primary-700 text-white text-sm font-medium transition-colors disabled:opacity-60 disabled:cursor-not-allowed shadow-sm"
+                  isLoading={isChangingPassword}
                 >
-                  {isChangingPassword ? (
-                    <>
-                      <div className="animate-spin rounded-full h-4 w-4 border-2 border-white/30 border-t-white"></div>
-                      {t('common.processing')}
-                    </>
-                  ) : (
-                    <>
-                      <svg
-                        className="w-4 h-4"
-                        fill="none"
-                        stroke="currentColor"
-                        viewBox="0 0 24 24"
-                      >
-                        <path
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                          strokeWidth={2}
-                          d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"
-                        />
-                      </svg>
-                      {t('profile.password.change')}
-                    </>
-                  )}
-                </button>
+                  {t('profile.password.change')}
+                </Button>
               </div>
             </form>
           </div>
@@ -810,20 +771,9 @@ const ProfilePage: React.FC = () => {
               <p className="text-neutral-500 dark:text-neutral-400 mb-4">
                 {t('profile.orders.description')}
               </p>
-              <Link
-                to={ROUTES.ORDERS}
-                className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-primary-600 hover:bg-primary-700 text-white text-sm font-medium transition-colors"
-              >
-                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M9 5l7 7-7 7"
-                  />
-                </svg>
+              <Button variant="primary" size="sm" as={Link} to={ROUTES.ORDERS}>
                 {t('profile.orders.viewAll')}
-              </Link>
+              </Button>
             </div>
           </div>
         )}
@@ -840,20 +790,9 @@ const ProfilePage: React.FC = () => {
                 </p>
               </div>
               {!showAddressForm && (
-                <button
-                  onClick={handleOpenAddAddress}
-                  className="flex items-center gap-2 px-4 py-2 rounded-lg bg-primary-600 hover:bg-primary-700 text-white text-sm font-medium transition-colors"
-                >
-                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M12 4v16m8-8H4"
-                    />
-                  </svg>
+                <Button variant="primary" size="sm" onClick={handleOpenAddAddress}>
                   {t('profile.addresses.addNew')}
-                </button>
+                </Button>
               )}
             </div>
 
@@ -975,16 +914,15 @@ const ProfilePage: React.FC = () => {
                   >
                     {t('profile.addresses.cancel')}
                   </button>
-                  <button
+                  <Button
                     type="submit"
+                    variant="primary"
+                    size="sm"
                     disabled={isAddingAddress || isUpdatingAddress}
-                    className="flex items-center gap-2 px-5 py-2 rounded-lg bg-primary-600 hover:bg-primary-700 text-white text-sm font-medium transition-colors disabled:opacity-60"
+                    isLoading={isAddingAddress || isUpdatingAddress}
                   >
-                    {(isAddingAddress || isUpdatingAddress) && (
-                      <div className="animate-spin rounded-full h-4 w-4 border-2 border-white/30 border-t-white" />
-                    )}
                     {t('profile.addresses.saveBtn')}
-                  </button>
+                  </Button>
                 </div>
               </form>
             )}

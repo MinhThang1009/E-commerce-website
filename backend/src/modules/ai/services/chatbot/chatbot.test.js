@@ -29,7 +29,7 @@ jest.mock('@models', () => ({
 }));
 
 // Mock vectorStore để tránh đọc vector-db.json khi load chatbotService.js
-jest.mock('@modules/ai/services/vectorstore/vector-store', () => ({
+jest.mock('@services/vector-store/vector-store', () => ({
   items: [],
   loadPromise: Promise.resolve(),
   hybridSearch: jest.fn().mockResolvedValue([]),
@@ -256,7 +256,7 @@ describe('parseAIResponse (via chatbotService.parseAIResponse binding)', () => {
     const products = [
       {
         id: 1,
-        name: 'iPhone 11 Pro 512',  // numbersP = ['11', '512']
+        name: 'iPhone 11 Pro 512', // numbersP = ['11', '512']
         slug: 'iphone-11-pro-512',
         price: 22000000,
         compareAtPrice: null,
@@ -267,7 +267,7 @@ describe('parseAIResponse (via chatbotService.parseAIResponse binding)', () => {
     ];
     const aiText = JSON.stringify({
       response: 'Tìm thấy sản phẩm',
-      matchedProducts: ['iPhone 11 Pro'],  // numbersR = ['11'] only
+      matchedProducts: ['iPhone 11 Pro'], // numbersR = ['11'] only
       suggestions: [],
       intent: 'product_search',
     });
@@ -278,10 +278,22 @@ describe('parseAIResponse (via chatbotService.parseAIResponse binding)', () => {
 
   test('không match khi nửa đầu OR true — short-circuit (hasNumberMismatch)', () => {
     const products = [
-      { id: 1, name: 'iPhone 15 Pro', slug: 'iphone-15-pro', price: 29990000, compareAtPrice: null, thumbnail: 'a.jpg', inStock: true, stockQuantity: 5 },
+      {
+        id: 1,
+        name: 'iPhone 15 Pro',
+        slug: 'iphone-15-pro',
+        price: 29990000,
+        compareAtPrice: null,
+        thumbnail: 'a.jpg',
+        inStock: true,
+        stockQuantity: 5,
+      },
     ];
     const aiText = JSON.stringify({
-      response: 'Tìm thấy sản phẩm', matchedProducts: ['iPhone 14 Pro'], suggestions: [], intent: 'product_search',
+      response: 'Tìm thấy sản phẩm',
+      matchedProducts: ['iPhone 14 Pro'],
+      suggestions: [],
+      intent: 'product_search',
     });
     const result = parseAIResponse(aiText, products, 'iphone 14 pro');
     expect(result.products).toHaveLength(0);
@@ -290,7 +302,15 @@ describe('parseAIResponse (via chatbotService.parseAIResponse binding)', () => {
   test('discount > 0 khi compareAtPrice > price (line 63)', () => {
     // Trigger line 63: resolvedCompare && resolvedCompare > resolvedPrice → Math.round(...)
     const products = [
-      { id: 10, name: 'MacBook Air', slug: 'macbook-air', price: 25000000, compareAtPrice: 30000000, thumbnail: null, inStock: true },
+      {
+        id: 10,
+        name: 'MacBook Air',
+        slug: 'macbook-air',
+        price: 25000000,
+        compareAtPrice: 30000000,
+        thumbnail: null,
+        inStock: true,
+      },
     ];
     const aiText = JSON.stringify({
       response: 'MacBook Air tốt',
@@ -305,11 +325,19 @@ describe('parseAIResponse (via chatbotService.parseAIResponse binding)', () => {
   test('dedup: sản phẩm trùng id bị loại — line 102 (seen.has true branch)', () => {
     // Trả về cùng sản phẩm 2 lần → matchedProducts duplicate → line 102 fires
     const products = [
-      { id: 5, name: 'Samsung Galaxy S24', slug: 's24', price: 20000000, compareAtPrice: null, thumbnail: null, inStock: true },
+      {
+        id: 5,
+        name: 'Samsung Galaxy S24',
+        slug: 's24',
+        price: 20000000,
+        compareAtPrice: null,
+        thumbnail: null,
+        inStock: true,
+      },
     ];
     const aiText = JSON.stringify({
       response: 'Tìm thấy',
-      matchedProducts: ['Samsung Galaxy S24', 'Samsung Galaxy S24'],  // duplicate
+      matchedProducts: ['Samsung Galaxy S24', 'Samsung Galaxy S24'], // duplicate
       suggestions: [],
       intent: 'product_search',
     });
@@ -332,7 +360,7 @@ describe('VectorStoreService.cosineSimilarity', () => {
   let vs;
 
   beforeAll(() => {
-    vs = jest.requireActual('@modules/ai/services/vectorstore/vector-store');
+    vs = jest.requireActual('@services/vector-store/vector-store');
   });
 
   afterAll(async () => {

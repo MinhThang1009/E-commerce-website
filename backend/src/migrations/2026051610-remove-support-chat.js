@@ -15,7 +15,7 @@ module.exports = {
   async up(queryInterface, Sequelize) {
     // 1. Purge support_chat messages
     await queryInterface.sequelize.query(
-      `DELETE FROM chat_messages WHERE message_type = 'support_chat' OR message_type IS NULL`
+      `DELETE FROM chat_messages WHERE message_type = 'support_chat' OR message_type IS NULL`,
     );
 
     // 2. Drop FK constraints

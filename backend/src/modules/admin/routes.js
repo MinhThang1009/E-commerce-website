@@ -140,12 +140,6 @@ router.get(
  *     tags: [Admin]
  *     security:
  *       - bearerAuth: []
- * /api/admin/products/import-history:
- *   get:
- *     summary: Lịch sử import sản phẩm
- *     tags: [Admin]
- *     security:
- *       - bearerAuth: []
  * /api/admin/products/export:
  *   get:
  *     summary: Xuất danh sách sản phẩm ra file
@@ -159,7 +153,6 @@ router.post(
   adminImportController.uploadImportFile,
   adminImportController.importProducts,
 );
-router.get('/products/import-history', adminImportController.getImportHistory);
 router.get('/products/export', adminImportController.exportProducts);
 
 /**

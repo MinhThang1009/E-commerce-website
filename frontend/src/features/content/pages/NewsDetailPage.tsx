@@ -89,9 +89,12 @@ const NewsDetailPage: React.FC = () => {
             {t('news.newsLink')}
           </Link>
           <span className="mx-2">/</span>
-          <span className="hover:text-primary-600 cursor-pointer">
+          <Link
+            to={`${ROUTES.NEWS}?category=${encodeURIComponent(item.category || '')}`}
+            className="hover:text-primary-600"
+          >
             {item.category || t('news.defaultCategory')}
-          </span>
+          </Link>
           <span className="mx-2">/</span>
           <span className="text-neutral-800 dark:text-neutral-200 truncate inline-block max-w-[200px] align-bottom">
             {item.title}

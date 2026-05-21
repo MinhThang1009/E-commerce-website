@@ -66,10 +66,7 @@ const ProductVariant = sequelize.define(
         }
       },
       set(value) {
-        this.setDataValue(
-          'attributes',
-          typeof value === 'object' ? JSON.stringify(value) : value
-        );
+        this.setDataValue('attributes', typeof value === 'object' ? JSON.stringify(value) : value);
       },
     },
     attributesEn: {
@@ -79,10 +76,17 @@ const ProductVariant = sequelize.define(
       get() {
         const value = this.getDataValue('attributesEn');
         if (!value) return null;
-        try { return typeof value === 'string' ? JSON.parse(value) : value; } catch { return null; }
+        try {
+          return typeof value === 'string' ? JSON.parse(value) : value;
+        } catch {
+          return null;
+        }
       },
       set(value) {
-        this.setDataValue('attributesEn', typeof value === 'object' ? JSON.stringify(value) : value);
+        this.setDataValue(
+          'attributesEn',
+          typeof value === 'object' ? JSON.stringify(value) : value,
+        );
       },
     },
     // Cân nặng tính theo kg — dùng để tính phí ship chính xác
@@ -117,7 +121,7 @@ const ProductVariant = sequelize.define(
     paranoid: true,
     // Dùng snake_case cho tên cột tự động (created_at, updated_at)
     underscored: true,
-  }
+  },
 );
 
 module.exports = ProductVariant;

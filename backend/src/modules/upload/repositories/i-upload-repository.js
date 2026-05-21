@@ -10,9 +10,15 @@
 // S3FileStorage thay FilesystemUploadRepository ở môi trường production).
 
 class IUploadRepository {
-  async fileExists(_filePath) { throw new Error('not implemented'); }
-  async deleteFile(_filePath) { throw new Error('not implemented'); }
-  async readFileHeader(_filePath, _bytesToRead) { throw new Error('not implemented'); }
+  async fileExists(_filePath) {
+    throw new Error('not implemented');
+  }
+  async deleteFile(_filePath) {
+    throw new Error('not implemented');
+  }
+  async readFileHeader(_filePath, _bytesToRead) {
+    throw new Error('not implemented');
+  }
 }
 
 module.exports = IUploadRepository;

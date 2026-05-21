@@ -11,22 +11,22 @@ const Cart = sequelize.define(
     },
     userId: {
       type: DataTypes.INTEGER,
-      allowNull: true
+      allowNull: true,
     },
     sessionId: {
       type: DataTypes.STRING,
-      allowNull: true
+      allowNull: true,
     },
     status: {
       type: DataTypes.ENUM('active', 'merged', 'converted', 'abandoned'),
-      defaultValue: 'active'
+      defaultValue: 'active',
     },
   },
   {
     tableName: 'carts',
     timestamps: true,
     underscored: true,
-  }
+  },
 );
 
 module.exports = Cart;

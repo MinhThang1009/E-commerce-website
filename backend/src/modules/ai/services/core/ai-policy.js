@@ -8,19 +8,21 @@
 
 const MAX_MESSAGE_LENGTH = 2000;
 
+// Chỉ giữ brand/model abbreviations — domain-specific mà LLM không tự biết.
+// Viết tắt hội thoại (ko, co, dc...) để LLM rewriteQuery xử lý tự nhiên hơn.
 const ABBREV_MAP = {
+  // ip16, ip15pro → iPhone 16, iPhone 15 Pro (lookahead giữ lại số sau ip)
+  '\\bip(?=\\d)': 'iPhone ',
   '\\bip\\b': 'iPhone',
   '\\bpm\\b': 'Pro Max',
+  // ss23, ss24 → Samsung S23, Samsung S24
+  '\\bss(?=\\d)': 'Samsung S',
   '\\bss\\b': 'Samsung',
   '\\bmb\\b': 'MacBook',
-  '\\bxiaomi\\b': 'Xiaomi',
   '(?<![àáâãèéêìíòóôõùúýăđơưẠ-ỹ])\\bop\\b': 'OPPO',
   '\\brl\\b': 'realme',
   '\\br5\\b': 'AMD Ryzen 5',
   '\\br7\\b': 'AMD Ryzen 7',
-  '\\bbh\\b': 'bảo hành',
-  '\\bđh\\b': 'đơn hàng',
-  '\\bbnh\\b': 'bao nhiêu',
 };
 
 /**

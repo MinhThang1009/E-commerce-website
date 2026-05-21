@@ -24,10 +24,8 @@ const findByUser = ({ userId, limit }) =>
     order: [['createdAt', 'DESC']],
   });
 
-const findOneByUserAndId = ({ id, userId }) =>
-  SearchHistory.findOne({ where: { id, userId } });
+const findOneByUserAndId = ({ id, userId }) => SearchHistory.findOne({ where: { id, userId } });
 
-const destroyByUser = ({ userId }) =>
-  SearchHistory.destroy({ where: { userId } });
+const destroyByUser = ({ userId }) => SearchHistory.destroy({ where: { userId } });
 
 module.exports = { findDuplicate, create, findByUser, findOneByUserAndId, destroyByUser };

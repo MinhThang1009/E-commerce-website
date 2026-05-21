@@ -65,8 +65,7 @@ jest.mock('@middlewares/authenticate', () => ({
   optionalAuthenticate: (_req, _res, next) => next(),
 }));
 
-jest.mock('@middlewares/rate-limiter', () => ({
-}));
+jest.mock('@middlewares/rate-limiter', () => ({}));
 
 // ---------- Require sau mock ----------
 
@@ -78,7 +77,11 @@ const eventBus = require('@shared/event-bus');
 const logger = require('@utils/logger');
 
 const loyaltyModule = buildLoyaltyModule({
-  User, LoyaltyHistory, sequelize, eventBus, logger,
+  User,
+  LoyaltyHistory,
+  sequelize,
+  eventBus,
+  logger,
 });
 
 const app = express();
@@ -113,9 +116,7 @@ describe('POST /api/loyalty/redeem — redeemPoints', () => {
   // --- Auth ---
 
   test('401 khi không có Authorization header', async () => {
-    const res = await request
-      .post('/api/loyalty/redeem')
-      .send({ points: 100 });
+    const res = await request.post('/api/loyalty/redeem').send({ points: 100 });
     expect(res.status).toBe(401);
   });
 
@@ -206,12 +207,12 @@ describe('POST /api/loyalty/redeem — redeemPoints', () => {
     // Xác nhận decrement được gọi với đúng số điểm
     expect(mockUser.decrement).toHaveBeenCalledWith(
       'loyaltyPoints',
-      expect.objectContaining({ by: 100 })
+      expect.objectContaining({ by: 100 }),
     );
     // Xác nhận lịch sử giao dịch được tạo
     expect(LoyaltyHistory.create).toHaveBeenCalledWith(
       expect.objectContaining({ type: 'spend', points: -100 }),
-      expect.anything()
+      expect.anything(),
     );
   });
 });

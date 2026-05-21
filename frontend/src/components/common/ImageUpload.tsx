@@ -7,7 +7,7 @@
 import React, { useState, useRef } from 'react';
 import { XMarkIcon, CloudArrowUpIcon, LinkIcon } from '@heroicons/react/24/outline';
 import { useTranslation } from 'react-i18next';
-import { toast } from '@/utils/toast';
+import { useNotifications } from '@/hooks/use-notifications';
 import { getUploadUrl } from '@/utils/upload-url';
 import { getErrorMsg } from '@/utils/error-utils';
 
@@ -39,6 +39,7 @@ const ImageUpload: React.FC<ImageUploadProps> = ({
   id: _id,
 }) => {
   const { t } = useTranslation();
+  const { showNotification } = useNotifications();
   const [isUploading, setIsUploading] = useState(false);
   const [showUrlInput, setShowUrlInput] = useState(false);
   const [urlInput, setUrlInput] = useState('');
@@ -53,12 +54,12 @@ const ImageUpload: React.FC<ImageUploadProps> = ({
     if (!files || files.length === 0) return;
 
     if (!multiple && files.length > 1) {
-      toast.error(t('imageUpload.singleOnly'));
+      showNotification({ message: t('imageUpload.singleOnly'), type: 'error' });
       return;
     }
 
     if (multiple && images.length + files.length > maxFiles) {
-      toast.error(t('imageUpload.maxFiles', { max: maxFiles }));
+      showNotification({ message: t('imageUpload.maxFiles', { max: maxFiles }), type: 'error' });
       return;
     }
 
@@ -99,13 +100,16 @@ const ImageUpload: React.FC<ImageUploadProps> = ({
 
         const finalUrls = [...images, ...newUrls];
         onChange(multiple ? finalUrls : finalUrls[0]);
-        toast.success(t('imageUpload.uploadSuccess'));
+        showNotification({ message: t('imageUpload.uploadSuccess'), type: 'success' });
       } else {
         throw new Error(result.message || 'Upload failed');
       }
     } catch (error) {
       console.error('Lỗi tải ảnh lên server:', error);
-      toast.error(getErrorMsg(error, t('imageUpload.uploadError')));
+      showNotification({
+        message: getErrorMsg(error, t('imageUpload.uploadError')),
+        type: 'error',
+      });
     } finally {
       setIsUploading(false);
       if (fileInputRef.current) fileInputRef.current.value = '';

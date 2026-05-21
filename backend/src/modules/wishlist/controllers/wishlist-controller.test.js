@@ -62,7 +62,8 @@ describe('WishlistController', () => {
   describe('addToWishlist', () => {
     test('sản phẩm mới thêm → trả về 201', async () => {
       wishlistService.addToWishlist.mockResolvedValue({
-        message: 'Đã thêm', alreadyExists: false,
+        message: 'Đã thêm',
+        alreadyExists: false,
       });
 
       const req = { user: { id: 1 }, body: { productId: 5 } };
@@ -73,7 +74,8 @@ describe('WishlistController', () => {
 
     test('sản phẩm đã tồn tại → trả về 200', async () => {
       wishlistService.addToWishlist.mockResolvedValue({
-        message: 'Đã có', alreadyExists: true,
+        message: 'Đã có',
+        alreadyExists: true,
       });
 
       const req = { user: { id: 1 }, body: { productId: 5 } };
@@ -121,14 +123,21 @@ describe('WishlistController', () => {
       const req = { user: { id: 2 }, params: { productId: '10' } };
       await controller.removeFromWishlist(req, res, next);
 
-      expect(wishlistService.removeFromWishlist).toHaveBeenCalledWith({ userId: 2, productId: '10' });
+      expect(wishlistService.removeFromWishlist).toHaveBeenCalledWith({
+        userId: 2,
+        productId: '10',
+      });
     });
 
     test('gọi next(err) khi service throw', async () => {
       const err = new Error('not in wishlist');
       wishlistService.removeFromWishlist.mockRejectedValue(err);
 
-      await controller.removeFromWishlist({ user: { id: 1 }, params: { productId: '99' } }, res, next);
+      await controller.removeFromWishlist(
+        { user: { id: 1 }, params: { productId: '99' } },
+        res,
+        next,
+      );
 
       expect(next).toHaveBeenCalledWith(err);
     });

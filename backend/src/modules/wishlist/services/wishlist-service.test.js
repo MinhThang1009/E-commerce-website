@@ -105,7 +105,12 @@ describe('WishlistService', () => {
       const product = result.products[0];
 
       expect(product.images).toHaveLength(2);
-      expect(product.images[0]).toEqual({ id: 10, url: 'thumb.jpg', alt: 'Ảnh chính', isPrimary: true });
+      expect(product.images[0]).toEqual({
+        id: 10,
+        url: 'thumb.jpg',
+        alt: 'Ảnh chính',
+        isPrimary: true,
+      });
       expect(product.thumbnail).toBe('thumb.jpg');
     });
 
@@ -171,9 +176,9 @@ describe('WishlistService', () => {
     test('sản phẩm không tồn tại → 404', async () => {
       wishlistRepository.findProductById.mockResolvedValue(null);
 
-      await expect(
-        service.addToWishlist({ userId: 1, productId: 99 })
-      ).rejects.toMatchObject({ statusCode: 404 });
+      await expect(service.addToWishlist({ userId: 1, productId: 99 })).rejects.toMatchObject({
+        statusCode: 404,
+      });
     });
 
     test('sản phẩm đã trong wishlist → trả về alreadyExists=true, không tạo mới', async () => {
@@ -204,9 +209,9 @@ describe('WishlistService', () => {
     test('sản phẩm không có trong wishlist → 404', async () => {
       wishlistRepository.findItem.mockResolvedValue(null);
 
-      await expect(
-        service.removeFromWishlist({ userId: 1, productId: 99 })
-      ).rejects.toMatchObject({ statusCode: 404 });
+      await expect(service.removeFromWishlist({ userId: 1, productId: 99 })).rejects.toMatchObject({
+        statusCode: 404,
+      });
     });
 
     test('xóa thành công → trả về message', async () => {
@@ -256,7 +261,6 @@ describe('WishlistService', () => {
 // wishlistService.branches.test.js
 // ═══════════
 
-
 function buildService() {
   const wishlistRepository = {
     findByUserIdWithProducts: jest.fn(),
@@ -283,7 +287,8 @@ describe('getWishlist — line 18: variantStock = 0 và defaultVariant = null �
     const { service, wishlistRepository } = buildService();
 
     const productJson = {
-      id: 1, name: 'Sản phẩm hết hàng',
+      id: 1,
+      name: 'Sản phẩm hết hàng',
       variants: [], // variantStock = reduce([]) = 0
       defaultVariant: null, // null → ternary FALSE → 0
       productImages: [],
@@ -306,7 +311,8 @@ describe('getWishlist — line 18: variantStock = 0 và defaultVariant = null �
     const { service, wishlistRepository } = buildService();
 
     const productJson = {
-      id: 2, name: 'SP không có variant',
+      id: 2,
+      name: 'SP không có variant',
       variants: null, // null → p.variants || [] = []
       defaultVariant: null,
       productImages: [],
@@ -326,7 +332,8 @@ describe('getWishlist — line 18: variantStock = 0 và defaultVariant = null �
     const { service, wishlistRepository } = buildService();
 
     const productJson = {
-      id: 3, name: 'SP có defaultVariant',
+      id: 3,
+      name: 'SP có defaultVariant',
       variants: [], // variantStock = 0
       defaultVariant: { stockQuantity: 5 }, // truthy → ternary TRUE → 5
       productImages: [],
@@ -348,7 +355,8 @@ describe('getWishlist — line 18: variantStock = 0 và defaultVariant = null �
     const { service, wishlistRepository } = buildService();
 
     const productJson = {
-      id: 4, name: 'SP stock = 0',
+      id: 4,
+      name: 'SP stock = 0',
       variants: [{ stockQuantity: 0 }], // variantStock = 0
       defaultVariant: { stockQuantity: 0 }, // truthy nhưng stock = 0
       productImages: [],

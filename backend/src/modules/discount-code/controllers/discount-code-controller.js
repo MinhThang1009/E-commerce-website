@@ -34,13 +34,11 @@ const updateDiscountCode = catchAsync(async (req, res) => {
     req.body,
     req.user,
   );
-  res
-    .status(200)
-    .json({
-      status: 'success',
-      message: 'Cập nhật mã giảm giá thành công',
-      data: { discountCode },
-    });
+  res.status(200).json({
+    status: 'success',
+    message: 'Cập nhật mã giảm giá thành công',
+    data: { discountCode },
+  });
 });
 
 // Admin: Xóa mã giảm giá

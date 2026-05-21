@@ -16,7 +16,6 @@ describe('ReviewsController', () => {
       getUserReviews: jest.fn(),
       getAllReviews: jest.fn(),
       verifyReview: jest.fn(),
-      markReviewHelpful: jest.fn(),
     };
     controller = new ReviewsController({ reviewsService });
 
@@ -53,7 +52,7 @@ describe('ReviewsController', () => {
       await controller.createReview(req, res, next);
 
       expect(reviewsService.createReview).toHaveBeenCalledWith(
-        expect.objectContaining({ userId: 7, productId: 1, rating: 5 })
+        expect.objectContaining({ userId: 7, productId: 1, rating: 5 }),
       );
     });
 
@@ -174,7 +173,7 @@ describe('ReviewsController', () => {
       await controller.getProductReviews(req, res, next);
 
       expect(reviewsService.getProductReviews).toHaveBeenCalledWith(
-        expect.objectContaining({ productId: '5', page: '2', sort: 'highest_rating' })
+        expect.objectContaining({ productId: '5', page: '2', sort: 'highest_rating' }),
       );
     });
 
@@ -211,7 +210,7 @@ describe('ReviewsController', () => {
       await controller.getUserReviews(req, res, next);
 
       expect(reviewsService.getUserReviews).toHaveBeenCalledWith(
-        expect.objectContaining({ userId: 7 })
+        expect.objectContaining({ userId: 7 }),
       );
     });
 
@@ -248,7 +247,7 @@ describe('ReviewsController', () => {
       await controller.getAllReviews(req, res, next);
 
       expect(reviewsService.getAllReviews).toHaveBeenCalledWith(
-        expect.objectContaining({ verified: 'true', page: '1' })
+        expect.objectContaining({ verified: 'true', page: '1' }),
       );
     });
 
@@ -292,66 +291,6 @@ describe('ReviewsController', () => {
       await controller.verifyReview(req, res, next);
 
       expect(next).toHaveBeenCalledWith(err);
-    });
-  });
-
-  // -------- markReviewHelpful --------
-
-  describe('markReviewHelpful', () => {
-    beforeEach(() => {
-      req = { user: { id: 3 }, params: { id: '55' }, body: { helpful: true } };
-    });
-
-    test('trả về 200 với message và data khi helpful=true', async () => {
-      reviewsService.markReviewHelpful.mockResolvedValue({
-        message: 'Đã đánh dấu đánh giá là hữu ích',
-        data: { id: 55, likes: 5, dislikes: 1 },
-      });
-
-      await controller.markReviewHelpful(req, res, next);
-
-      expect(res.status).toHaveBeenCalledWith(200);
-      expect(res.json).toHaveBeenCalledWith({
-        status: 'success',
-        message: 'Đã đánh dấu đánh giá là hữu ích',
-        data: { id: 55, likes: 5, dislikes: 1 },
-      });
-    });
-
-    test('truyền đúng userId + reviewId + helpful vào service', async () => {
-      reviewsService.markReviewHelpful.mockResolvedValue({ message: 'ok', data: {} });
-
-      await controller.markReviewHelpful(req, res, next);
-
-      expect(reviewsService.markReviewHelpful).toHaveBeenCalledWith({
-        userId: 3,
-        reviewId: '55',
-        helpful: true,
-      });
-    });
-
-    test('trả về đúng message khi helpful=false', async () => {
-      req.body.helpful = false;
-      reviewsService.markReviewHelpful.mockResolvedValue({
-        message: 'Đã đánh dấu đánh giá là không hữu ích',
-        data: { id: 55, likes: 4, dislikes: 2 },
-      });
-
-      await controller.markReviewHelpful(req, res, next);
-
-      expect(res.json).toHaveBeenCalledWith(
-        expect.objectContaining({ message: 'Đã đánh dấu đánh giá là không hữu ích' })
-      );
-    });
-
-    test('gọi next(err) khi user vote cho review của chính mình (service throw)', async () => {
-      const err = new Error('Bạn không thể đánh giá đánh giá của chính mình');
-      reviewsService.markReviewHelpful.mockRejectedValue(err);
-
-      await controller.markReviewHelpful(req, res, next);
-
-      expect(next).toHaveBeenCalledWith(err);
-      expect(res.status).not.toHaveBeenCalled();
     });
   });
 });

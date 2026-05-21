@@ -90,7 +90,7 @@ const Image = sequelize.define(
         fields: ['is_active'],
       },
     ],
-  }
+  },
 );
 
 module.exports = Image;

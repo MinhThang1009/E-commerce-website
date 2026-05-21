@@ -3,6 +3,8 @@
  * @layer Service
  * @module cart
  * @description Business logic layer cho cart
+ * @depends-on sequelize-cart-repository, eventBus, logger
+ * @see module.js (DI wiring), routes.js (endpoints), CLAUDE.md (overview)
  */
 const { v4: uuidv4 } = require('uuid');
 const { AppError } = require('@shared/errors');
@@ -35,6 +37,8 @@ class CartService {
 
         if (itemData.Product) {
           const p = itemData.Product;
+          // Thêm backward-compat name field từ nameVi/nameEn
+          p.name = p.nameVi || p.nameEn || p.name || '';
           // Stock thực nằm ở variant level — tính tổng stock từ tất cả variants
           const variantStock = (p.variants || []).reduce((s, v) => s + (v.stockQuantity || 0), 0);
           p.stockQuantity = variantStock || (p.defaultVariant ? p.defaultVariant.stockQuantity : 0);
@@ -500,7 +504,9 @@ class CartService {
         ? item.ProductVariant.stockQuantity
         : baseStockQuantity;
       const isInStock = currentStock > 0;
-      const priceChanged = parseFloat(currentPrice) !== parseFloat(item.unitPrice);
+      // Bỏ qua nếu unitPrice = 0 (data lỗi từ add-to-cart cũ), không coi là price change
+      const priceChanged =
+        parseFloat(item.unitPrice) > 0 && parseFloat(currentPrice) !== parseFloat(item.unitPrice);
       const outOfStock = !isInStock;
       const quantityExceedsStock = isInStock && item.quantity > currentStock;
 
@@ -508,9 +514,7 @@ class CartService {
         id: item.id,
         productId: item.productId,
         variantId: item.variantId,
-        name: item.ProductVariant
-          ? `${item.Product.name} - ${item.ProductVariant.name}`
-          : item.Product.name,
+        name: item.Product.nameVi || item.Product.nameEn || item.Product.name || '',
         savedPrice: parseFloat(item.unitPrice),
         currentPrice: parseFloat(currentPrice),
         quantity: item.quantity,

@@ -19,7 +19,7 @@ jest.mock('@utils/logger', () => ({
   debug: jest.fn(),
 }));
 
-jest.mock('@modules/ai/services/vectorstore/vector-store', () => ({
+jest.mock('@services/vector-store/vector-store', () => ({
   upsertProduct: jest.fn().mockResolvedValue(undefined),
   save: jest.fn().mockResolvedValue(undefined),
   loadPromise: Promise.resolve(),
@@ -108,7 +108,6 @@ jest.mock('@models', () => ({
   ProductSpecification: { create: jest.fn() },
   Category: { findAll: jest.fn() },
   Brand: { findAll: jest.fn() },
-  ImportLog: { create: jest.fn(), findAndCountAll: jest.fn() },
   // Models needed by other controllers on admin router
   User: {
     findAll: jest.fn(),
@@ -168,7 +167,6 @@ const {
   ProductImage,
   ProductCategory,
   ProductSpecification,
-  ImportLog,
 } = require('@models');
 
 const app = express();
@@ -216,7 +214,6 @@ beforeEach(() => {
   ProductImage.create.mockResolvedValue({ id: 300 });
   ProductCategory.create.mockResolvedValue({ id: 400 });
   ProductSpecification.create.mockResolvedValue({});
-  ImportLog.create.mockResolvedValue({ id: 1 });
 });
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -264,7 +261,7 @@ describe('POST /api/admin/products/import — CSV', () => {
     expect(res.body.message).toMatch(/upload file/i);
   });
 
-  test('200 — import CSV hợp lệ: tạo Product + lưu ImportLog', async () => {
+  test('200 — import CSV hợp lệ: tạo Product', async () => {
     const res = await request
       .post('/api/admin/products/import')
       .attach('file', Buffer.from(VALID_CSV), {
@@ -274,9 +271,6 @@ describe('POST /api/admin/products/import — CSV', () => {
 
     expect(res.status).toBe(200);
     expect(res.body.data.successCount).toBeGreaterThanOrEqual(1);
-    expect(ImportLog.create).toHaveBeenCalledWith(
-      expect.objectContaining({ filename: 'products.csv', adminId: 1 }),
-    );
   });
 
   test('200 — tạo ProductVariant khi có SKU', async () => {
@@ -464,61 +458,6 @@ describe('POST /api/admin/products/import — JSON', () => {
       });
 
     expect(res.status).toBe(200);
-    // Dòng đầu tiên của JSON có _lineNumber = 2 (idx 0 + 2)
-    expect(ImportLog.create).toHaveBeenCalled();
-  });
-});
-
-// ─────────────────────────────────────────────────────────────────────────────
-// GET /api/admin/products/import-history
-// ─────────────────────────────────────────────────────────────────────────────
-
-describe('GET /api/admin/products/import-history', () => {
-  test('200 — trả về danh sách logs và pagination', async () => {
-    ImportLog.findAndCountAll.mockResolvedValue({
-      rows: [{ id: 1, filename: 'test.csv', successRows: 5 }],
-      count: 1,
-    });
-
-    const res = await request.get('/api/admin/products/import-history');
-    expect(res.status).toBe(200);
-    expect(res.body.data.logs).toHaveLength(1);
-    expect(res.body.data.total).toBe(1);
-  });
-
-  test('200 — pagination mặc định page=1 limit=20', async () => {
-    ImportLog.findAndCountAll.mockResolvedValue({ rows: [], count: 0 });
-
-    const res = await request.get('/api/admin/products/import-history');
-    expect(res.status).toBe(200);
-    expect(res.body.data.page).toBe(1);
-    expect(res.body.data.limit).toBe(20);
-    expect(ImportLog.findAndCountAll).toHaveBeenCalledWith(
-      expect.objectContaining({ limit: 20, offset: 0 }),
-    );
-  });
-
-  test('200 — limit tối đa 100 dù truyền vào 9999', async () => {
-    ImportLog.findAndCountAll.mockResolvedValue({ rows: [], count: 0 });
-
-    const res = await request.get('/api/admin/products/import-history?limit=9999');
-    expect(res.status).toBe(200);
-    expect(res.body.data.limit).toBe(100);
-  });
-
-  test('200 — không trả về errorDetail trong list (exclude)', async () => {
-    ImportLog.findAndCountAll.mockResolvedValue({
-      rows: [{ id: 1 }],
-      count: 1,
-    });
-
-    await request.get('/api/admin/products/import-history');
-
-    expect(ImportLog.findAndCountAll).toHaveBeenCalledWith(
-      expect.objectContaining({
-        attributes: { exclude: ['errorDetail'] },
-      }),
-    );
   });
 });
 
@@ -874,7 +813,7 @@ describe('POST /api/admin/products/import — lines 264-265: validRows filter v�
 
 describe('POST /api/admin/products/import — lines 394-397: vectorStore sync', () => {
   test('gọi vectorStoreService.upsertProduct và save sau khi import thành công', async () => {
-    const { upsertProduct, save } = require('@modules/ai/services/vectorstore/vector-store');
+    const { upsertProduct, save } = require('@services/vector-store/vector-store');
 
     // Set up findAll to return a product for the vector sync
     Product.findAll.mockResolvedValueOnce([

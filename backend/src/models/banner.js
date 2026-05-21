@@ -13,8 +13,12 @@ const Banner = sequelize.define(
     titleEn: { type: DataTypes.STRING, allowNull: true },
     title: {
       type: DataTypes.VIRTUAL,
-      get() { return this.getDataValue('titleVi'); },
-      set(v) { this.setDataValue('titleVi', v); },
+      get() {
+        return this.getDataValue('titleVi');
+      },
+      set(v) {
+        this.setDataValue('titleVi', v);
+      },
     },
     imageUrl: {
       type: DataTypes.STRING(512),
@@ -42,7 +46,7 @@ const Banner = sequelize.define(
     timestamps: true,
     paranoid: true, // Soft-delete để admin có thể restore banner đã xóa
     underscored: true,
-  }
+  },
 );
 
 module.exports = Banner;

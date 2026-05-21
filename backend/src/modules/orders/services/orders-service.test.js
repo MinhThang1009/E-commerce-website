@@ -1003,6 +1003,105 @@ describe('OrdersService › getUserOrders', () => {
     expect(result.data).toEqual([]);
     expect(result.total).toBe(0);
   });
+
+  test('item có unitPrice nhưng không có price → map unitPrice → price', async () => {
+    const row = {
+      toJSON: () => ({
+        id: 1,
+        items: [{ unitPrice: 500000, Product: null }],
+      }),
+    };
+    repo.findUserOrdersWithItems.mockResolvedValue({ count: 1, rows: [row] });
+
+    const result = await service.getUserOrders({ userId: 1, page: 1, limit: 20 });
+
+    expect(result.data[0].items[0].price).toBe(500000);
+  });
+
+  test('item đã có price → không ghi đè từ unitPrice', async () => {
+    const row = {
+      toJSON: () => ({
+        id: 1,
+        items: [{ unitPrice: 500000, price: 300000, Product: null }],
+      }),
+    };
+    repo.findUserOrdersWithItems.mockResolvedValue({ count: 1, rows: [row] });
+
+    const result = await service.getUserOrders({ userId: 1, page: 1, limit: 20 });
+
+    expect(result.data[0].items[0].price).toBe(300000);
+  });
+
+  test('item.Product có productImages → transform thumbnail + images + xóa productImages', async () => {
+    const row = {
+      toJSON: () => ({
+        id: 1,
+        items: [
+          {
+            unitPrice: 100000,
+            Product: {
+              productImages: [
+                { imageUrl: 'https://cdn/a.jpg', isThumbnail: false },
+                { imageUrl: 'https://cdn/b.jpg', isThumbnail: true },
+              ],
+            },
+          },
+        ],
+      }),
+    };
+    repo.findUserOrdersWithItems.mockResolvedValue({ count: 1, rows: [row] });
+
+    const result = await service.getUserOrders({ userId: 1, page: 1, limit: 20 });
+    const product = result.data[0].items[0].Product;
+
+    expect(product.thumbnail).toBe('https://cdn/b.jpg');
+    expect(product.images).toEqual(['https://cdn/a.jpg', 'https://cdn/b.jpg']);
+    expect(product.productImages).toBeUndefined();
+  });
+
+  test('productImages không có isThumbnail → fallback về ảnh đầu tiên', async () => {
+    const row = {
+      toJSON: () => ({
+        id: 1,
+        items: [
+          {
+            unitPrice: 100000,
+            Product: {
+              productImages: [{ imageUrl: 'https://cdn/first.jpg', isThumbnail: false }],
+            },
+          },
+        ],
+      }),
+    };
+    repo.findUserOrdersWithItems.mockResolvedValue({ count: 1, rows: [row] });
+
+    const result = await service.getUserOrders({ userId: 1, page: 1, limit: 20 });
+
+    expect(result.data[0].items[0].Product.thumbnail).toBe('https://cdn/first.jpg');
+  });
+
+  test('productImages rỗng → thumbnail = null', async () => {
+    const row = {
+      toJSON: () => ({
+        id: 1,
+        items: [{ unitPrice: 100000, Product: { productImages: [] } }],
+      }),
+    };
+    repo.findUserOrdersWithItems.mockResolvedValue({ count: 1, rows: [row] });
+
+    const result = await service.getUserOrders({ userId: 1, page: 1, limit: 20 });
+
+    expect(result.data[0].items[0].Product.thumbnail).toBeNull();
+  });
+
+  test('row không có toJSON → dùng spread {...row}', async () => {
+    const row = { id: 5, items: [] };
+    repo.findUserOrdersWithItems.mockResolvedValue({ count: 1, rows: [row] });
+
+    const result = await service.getUserOrders({ userId: 1, page: 1, limit: 20 });
+
+    expect(result.data[0].id).toBe(5);
+  });
 });
 
 // ─── getOrderById ─────────────────────────────────────────────────────────────
@@ -1036,7 +1135,7 @@ describe('OrdersService › getOrderById', () => {
 
     const result = await service.getOrderById({ id: 1, userId: 1, role: 'customer' });
 
-    expect(result).toBe(order);
+    expect(result).toMatchObject({ id: 1, userId: 1 });
   });
 
   test('admin có thể xem order của bất kỳ user', async () => {
@@ -1045,7 +1144,7 @@ describe('OrdersService › getOrderById', () => {
 
     const result = await service.getOrderById({ id: 1, userId: 1, role: 'admin' });
 
-    expect(result).toBe(order);
+    expect(result).toMatchObject({ id: 1, userId: 99 });
   });
 
   test('gọi findOrderByPkWithItemsAndUser với đúng id', async () => {

@@ -13,14 +13,6 @@ import { useGetNewsQuery } from '@/features/content';
 import { PageSection } from '@/components/layout/PageLayout';
 import { SectionLoading } from '@/components/common/LoadingState';
 
-const GRADIENTS = [
-  'from-orange-600/90 to-rose-900/90', // 1. Đỏ/Cam
-  'from-lime-500/90 to-green-900/90', // 2. Xanh lá/Vàng chanh
-  'from-yellow-500/90 to-amber-900/90', // 3. Vàng
-  'from-teal-500/90 to-blue-900/90', // 4. Xanh dương/Teal
-  'from-fuchsia-600/90 to-purple-900/90', // 5. Tím
-];
-
 export const HomeNewsSection: React.FC = () => {
   const { t } = useTranslation();
   const { data, isLoading } = useGetNewsQuery({ limit: 5, isPublished: true });
@@ -54,7 +46,6 @@ export const HomeNewsSection: React.FC = () => {
             // Mục 2, 3, 4: Nhỏ (chiếm 2 cột trên LG)
             const isLarge = index < 2;
             const colSpan = isLarge ? 'lg:col-span-3' : 'lg:col-span-2';
-            const gradient = GRADIENTS[index % GRADIENTS.length];
 
             return (
               <Link
@@ -67,11 +58,6 @@ export const HomeNewsSection: React.FC = () => {
                   src={item.thumbnail || '/placeholder-news.jpg'}
                   alt={item.title}
                   className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"
-                />
-
-                {/* Lớp gradient màu sắc */}
-                <div
-                  className={`absolute inset-0 bg-gradient-to-br ${gradient} mix-blend-multiply opacity-80 group-hover:opacity-90 transition-opacity duration-300`}
                 />
 
                 {/* Gradient tối hơn để dễ đọc văn bản phía dưới */}

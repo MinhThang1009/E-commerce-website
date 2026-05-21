@@ -222,7 +222,7 @@ export const createProductFiltersParams = (filters: ProductFilters = {}): URLSea
   }
 
   // Bộ lọc mảng
-  const arrayFilters = ['brand', 'collection', 'color', 'size'];
+  const arrayFilters = ['brand', 'color', 'size'];
   arrayFilters.forEach((filter) => {
     if (filters[filter] && Array.isArray(filters[filter])) {
       filters[filter].forEach((value: string) => {

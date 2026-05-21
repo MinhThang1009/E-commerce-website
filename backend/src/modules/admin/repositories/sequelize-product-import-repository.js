@@ -14,7 +14,6 @@ const {
   ProductSpecification,
   Category,
   Brand,
-  ImportLog,
 } = require('@models');
 
 const runInTransaction = (work) => sequelize.transaction(work);
@@ -40,18 +39,6 @@ const createProductCategory = (data, transaction) => ProductCategory.create(data
 
 const createProductSpecification = (data, transaction) =>
   ProductSpecification.create(data, { transaction });
-
-// ─── Import log ───────────────────────────────────────────────────────────────
-
-const createImportLog = (data) => ImportLog.create(data);
-
-const findImportHistory = ({ limit, offset }) =>
-  ImportLog.findAndCountAll({
-    order: [['importedAt', 'DESC']],
-    limit,
-    offset,
-    attributes: { exclude: ['errorDetail'] },
-  });
 
 // ─── Vector sync ──────────────────────────────────────────────────────────────
 
@@ -93,8 +80,6 @@ module.exports = {
   createProductImage,
   createProductCategory,
   createProductSpecification,
-  createImportLog,
-  findImportHistory,
   findProductsByIds,
   findProductsForExport,
 };

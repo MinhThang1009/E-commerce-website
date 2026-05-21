@@ -41,7 +41,7 @@ const Feedback = sequelize.define(
     tableName: 'feedbacks',
     timestamps: true,
     underscored: true,
-  }
+  },
 );
 
 module.exports = Feedback;

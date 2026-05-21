@@ -1,0 +1,197 @@
+# Inventory Module — TechStore Backend
+
+← Quay lại [`backend/CLAUDE.md`](../../../CLAUDE.md)
+
+## Mục lục
+
+- [1. Mục đích & Trách nhiệm](#1-mục-đích--trách-nhiệm)
+  - [1.1 Purpose](#11-purpose)
+  - [1.2 DI Pattern](#12-di-pattern)
+- [2. Cấu trúc Files](#2-cấu-trúc-files)
+  - [2.1 File listing](#21-file-listing)
+- [3. Business Logic Chính](#3-business-logic-chính)
+  - [3.1 Restock](#31-restock)
+  - [3.2 Inventory logs listing](#32-inventory-logs-listing)
+  - [3.3 Event handler (order.cancelled)](#33-event-handler-ordercancelled)
+  - [3.4 Business rules](#34-business-rules)
+- [4. API Endpoints](#4-api-endpoints)
+- [5. Dependencies](#5-dependencies)
+  - [5.1 Depends on](#51-depends-on)
+  - [5.2 Used by](#52-used-by)
+- [6. Gotchas & Edge Cases](#6-gotchas--edge-cases)
+- [7. Tests](#7-tests)
+
+---
+
+# 1. Mục đích & Trách nhiệm
+
+## 1.1 Purpose
+
+Theo dõi tồn kho theo biến thể sản phẩm (`ProductVariant`). Ghi immutable audit log (`InventoryLog`) mỗi khi stock thay đổi. Lắng nghe event `order.cancelled` từ `orders` module để ghi audit log. Cho phép admin nhập kho (`restock`) và xem lịch sử thay đổi tồn kho.
+
+**Phân công trách nhiệm rõ ràng**:
+
+- **Stock tăng (restock)**: Thực hiện trong `inventory` service — trong transaction.
+- **Stock giảm (đặt hàng)**: Thực hiện trong `orders` service — trong transaction với `SELECT FOR UPDATE`. Inventory chỉ nhận event sau đó để ghi audit log.
+
+## 1.2 DI Pattern
+
+Module DI đầy đủ qua constructor injection. Subscribe event tại thời điểm `subscribeEvents()` được gọi (trong `app.js` sau khi tất cả modules khởi tạo):
+
+```js
+// module.js
+return {
+  basePath: '/inventory',
+  router,
+  subscribeEvents() {
+    eventBus.subscribe('order.cancelled', async (event) => {
+      for (const item of event.payload.items) {
+        await inventoryRepository.createInventoryLog({
+          productId: item.productId,
+          variantId: item.variantId || null,
+          changeType: 'cancellation',
+          changeAmount: item.quantity,
+          previousStock: 0, // audit-only placeholder
+          newStock: 0,
+          ...
+        });
+      }
+    });
+  },
+};
+```
+
+---
+
+# 2. Cấu trúc Files
+
+## 2.1 File listing
+
+```
+modules/inventory/
+  module.js
+  routes.js
+  controllers/
+    inventory-controller.js
+  services/
+    inventory-service.js                 — ~127 lines: restock + logs listing
+  repositories/
+    sequelize-inventory-repository.js    — CRUD InventoryLog, stock queries
+    i-inventory-repository.js            — interface
+  validators/
+    inventory-validator.js               — validation helpers
+  dtos/
+    inventory-dto.js                     — pass-through DTOs
+  CLAUDE.md
+```
+
+---
+
+# 3. Business Logic Chính
+
+## 3.1 Restock
+
+**`restockProduct({ productId, variantId, quantity, note, adminId })`**:
+
+1. Validate `quantity`: phải là số nguyên dương — nếu không → 400
+2. Tìm `Product` — không tồn tại → 404
+3. Nếu có `variantId`: tìm `ProductVariant` với cả `id` VÀ `productId` (đảm bảo variant thuộc đúng product) — không tồn tại → 404
+4. Tính `previous` stock, cộng `qty` vào `stockable.stockQuantity`
+5. **Trong transaction**:
+   - Save `stockable` (variant hoặc product) với stock mới
+   - Nếu là variant: `sumVariantStockByProductId` → update `Product.stockQuantity` cho đồng bộ
+   - Tạo `InventoryLog` (changeType: `'restock'`)
+6. Publish event `inventory.restocked` (sau transaction)
+
+Trả về: `{ productId, variantId, previousStock, newStock, quantity, log }`.
+
+## 3.2 Inventory logs listing
+
+**`getInventoryLogs({ page, limit, productId, changeType })`**:
+
+- Filter: `productId`, `changeType`
+- Max 100 records per page
+- Include: `Product` (id, nameVi, nameEn, slug), `ProductVariant` (id, sku), `User` (id, firstName, lastName) as `'creator'`
+- Order: `createdAt DESC`
+
+## 3.3 Event handler (order.cancelled)
+
+Subscribe trong `subscribeEvents()` — không trong service:
+
+```
+order.cancelled → iterate event.payload.items → createInventoryLog(changeType: 'cancellation')
+```
+
+**Quan trọng**: Stock đã được restore trong `orders.cancelOrder` inline (trong transaction trước khi event fire). Inventory chỉ ghi audit log. `previousStock = 0` và `newStock = 0` là placeholder — không phải giá trị thực.
+
+Lỗi khi ghi log → `logger.warn` và tiếp tục (không fail silently với critical operations).
+
+## 3.4 Business rules
+
+- **InventoryLog là immutable**: Chỉ INSERT, không UPDATE/DELETE. `updatedAt: false` trên model — đây là audit trail tài chính.
+- **Stock decrement KHÔNG trong inventory service**: Stock giảm khi đặt hàng phải nằm trong `orders` service với `SELECT FOR UPDATE` trong transaction. KHÔNG bao giờ decrement stock ngoài `unitOfWork`.
+- **Sync `Product.stockQuantity`**: Khi restock variant → tính tổng tất cả variants (`sumVariantStockByProductId`) → ghi vào `Product.stockQuantity`. Giữ đồng bộ để catalog hiển thị đúng.
+- **Validate variant belongs to product**: `findVariantByIdAndProductId(variantId, productId)` — kiểm tra cả hai điều kiện. Tránh restock nhầm variant của product khác.
+
+---
+
+# 4. API Endpoints
+
+Base path: `/api/inventory`
+
+Tất cả routes apply `router.use(authenticate)` + `router.use(authorize('admin'))` — không có endpoint public.
+
+| Method | Path                           | Auth                              | Mô tả                                                                  |
+| ------ | ------------------------------ | --------------------------------- | ---------------------------------------------------------------------- |
+| POST   | `/products/:productId/restock` | authenticate + authorize('admin') | Nhập kho cho product hoặc variant cụ thể                               |
+| GET    | `/logs`                        | authenticate + authorize('admin') | Danh sách inventory logs (filter: productId, changeType; max 100/page) |
+
+> Cũng có `POST /api/admin/products/:productId/restock` trong `admin/routes.js` gọi cùng service method — 2 paths khác nhau, cùng logic.
+
+---
+
+# 5. Dependencies
+
+## 5.1 Depends on
+
+- Models inject từ app.js: `Product`, `ProductVariant`, `InventoryLog`, `User`
+- `sequelize` — transactions cho restock
+- `eventBus` — subscribe `order.cancelled`, publish `inventory.restocked`
+- `logger`
+
+## 5.2 Used by
+
+**Subscribe events từ:**
+
+- `orders` — publish `order.cancelled` → inventory ghi audit log
+
+**Publish events:**
+
+- `inventory.restocked` — sau restock thành công (hiện không có module nào subscribe)
+
+**Direct dependency:**
+
+- `admin` — inventory management UI (nhập kho, xem logs) qua `/api/admin/products/:id/restock` và admin UI
+- `catalog` — stock display trong product detail (đọc trực tiếp từ `ProductVariant.stockQuantity`, không qua inventory API)
+
+---
+
+# 6. Gotchas & Edge Cases
+
+- **`InventoryLog` immutable (audit trail)**: KHÔNG bao giờ UPDATE hoặc DELETE log entry. `updatedAt: false` là intentional. Đây là audit trail tài chính — cần cho reconciliation.
+- **`previousStock = 0` trong cancellation log**: Log cho `order.cancelled` dùng `previousStock: 0` và `newStock: 0` — placeholder, không phải giá trị thực. Stock đã restore trong `orders` flow trước khi event fire.
+- **Stock decrement PHẢI trong orders service với SELECT FOR UPDATE**: KHÔNG bao giờ decrement stock bên ngoài `unitOfWork`. Race condition → oversell. Pattern: `SELECT FOR UPDATE → check stock → decrement → commit`.
+- **`subscribeEvents()` gọi sau tất cả modules init**: Nếu inventory module throw trong constructor → event subscription không xảy ra → `order.cancelled` sẽ không có audit log. Kiểm tra logs khi deploy.
+- **Restock variant cộng tổng vào Product**: `sumVariantStockByProductId` tính tổng ALL variants, không phải chỉ variant vừa restock. Nếu muốn product.stockQuantity phản ánh đúng → phải restock qua service, không update variant trực tiếp.
+- **`saveStockable()` trong repository vs direct save**: Một số paths khác update `ProductVariant` trực tiếp (orders, admin) không qua inventory service → `Product.stockQuantity` có thể lệch. Sync chỉ đảm bảo khi đi qua `restockProduct`.
+- **Audit log `changeType: 'cancellation'` có amount dương**: `changeAmount = item.quantity` là dương (số lượng trả về kho) — convention ghi số lượng, không phải delta âm.
+
+---
+
+# 7. Tests
+
+| File                                        | Loại | Mô tả                                  |
+| ------------------------------------------- | ---- | -------------------------------------- |
+| `services/inventory-service.test.js`        | Unit | Restock logic, event publish, validate |
+| `controllers/inventory-controller.test.js`  | Unit | HTTP layer                             |
+| `repositories/inventory-repository.test.js` | Unit | Repository queries                     |

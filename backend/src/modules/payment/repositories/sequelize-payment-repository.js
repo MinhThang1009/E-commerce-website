@@ -7,10 +7,7 @@
 const IPaymentRepository = require('@modules/payment/repositories/i-payment-repository');
 
 class SequelizePaymentRepository extends IPaymentRepository {
-  constructor({
-    Order, OrderItem, User, Cart, CartItem, DiscountCode,
-    sequelize,
-  }) {
+  constructor({ Order, OrderItem, User, Cart, CartItem, DiscountCode, sequelize }) {
     super();
     this.Order = Order;
     this.OrderItem = OrderItem;
@@ -35,7 +32,8 @@ class SequelizePaymentRepository extends IPaymentRepository {
     return this.Order.findByPk(id, {
       include: [
         {
-          model: this.OrderItem, as: 'items',
+          model: this.OrderItem,
+          as: 'items',
           attributes: ['name', 'quantity', 'unitPrice', 'subtotal'],
         },
         { model: this.User, attributes: ['email'] },

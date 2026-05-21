@@ -66,16 +66,6 @@ export {
   useDeleteBrandMutation,
 } from './api/brand-api';
 
-// API hooks — Collection
-export {
-  useGetCollectionsQuery,
-  useGetCollectionBySlugQuery,
-  useGetProductsByCollectionQuery,
-  useCreateCollectionMutation,
-  useUpdateCollectionMutation,
-  useDeleteCollectionMutation,
-} from './api/collection-api';
-
 // API endpoints — Attribute (raw service, không phải TanStack Query hook)
 export { default as attributeApi } from './api/attribute-api';
 

@@ -1,0 +1,759 @@
+\chapter{Cài đặt, kiểm thử và đánh giá hệ thống}
+
+\section{Môi trường cài đặt và triển khai}
+
+\subsection{Yêu cầu phần cứng và phần mềm}
+
+Hệ thống TechStore được phát triển và kiểm thử trên môi trường local với cấu hình phần cứng tối thiểu bao gồm bộ xử lý 4 nhân 2.5GHz trở lên, bộ nhớ RAM tối thiểu 8GB (khuyến nghị 16GB để chạy đồng thời backend, frontend, MySQL và Redis), và dung lượng ổ cứng trống tối thiểu 10GB dành cho cơ sở dữ liệu, thư mục upload ảnh và log hệ thống.
+
+Về phần mềm, bảng \ref{tab:software-req} liệt kê các thành phần bắt buộc cùng phiên bản được sử dụng trong quá trình phát triển.
+
+\begin{table}[H]
+\centering
+\caption{Yêu cầu phần mềm}
+\label{tab:software-req}
+\begin{tabular}{|l|l|p{7cm}|}
+\hline
+\textbf{Phần mềm} & \textbf{Phiên bản} & \textbf{Mục đích sử dụng} \\
+\hline
+Node.js & 20.x LTS & Runtime backend JavaScript, hỗ trợ ESM và các API mới nhất \\
+\hline
+npm & $\geq$ 10.x & Quản lý gói, chạy scripts \\
+\hline
+MySQL & 8.x & Cơ sở dữ liệu quan hệ chính, lưu toàn bộ dữ liệu kinh doanh \\
+\hline
+Redis & 5.x (tuỳ chọn) & JWT blacklist, session cache, response cache; tự động fallback sang in-memory Map nếu không có \\
+\hline
+Git & $\geq$ 2.40 & Quản lý phiên bản, CI/CD pipeline \\
+\hline
+\end{tabular}
+\end{table}
+
+\subsection{Cấu hình biến môi trường}
+
+Backend yêu cầu thiết lập file \texttt{.env} với đầy đủ các biến môi trường chia thành sáu nhóm chức năng. Nhóm đầu tiên là kết nối cơ sở dữ liệu MySQL, bao gồm \texttt{DB\_HOST}, \texttt{DB\_USER}, \texttt{DB\_PASSWORD}, \texttt{DB\_NAME} và \texttt{DB\_PORT} (mặc định 3306). Nhóm thứ hai là xác thực JWT với \texttt{JWT\_SECRET} và \texttt{JWT\_REFRESH\_SECRET} mỗi biến yêu cầu tối thiểu 32 ký tự ngẫu nhiên, cùng \texttt{JWT\_EXPIRES\_IN} (mặc định 15m) và \texttt{JWT\_REFRESH\_EXPIRES\_IN} (mặc định 30d). Nhóm thứ ba là dịch vụ email gồm \texttt{EMAIL\_USERNAME} (địa chỉ Gmail) và \texttt{EMAIL\_PASSWORD} (App Password 16 ký tự, không phải mật khẩu tài khoản). Nhóm thứ tư là cấu hình AI bao gồm \texttt{LLM\_BASE\_URL}, \texttt{LLM\_API\_KEY}, \texttt{LLM\_MODEL} cho mô hình ngôn ngữ lớn, và \texttt{JINA\_API\_KEY} hoặc \texttt{HF\_API\_KEY} cho dịch vụ embedding. Nhóm thứ năm là tích hợp thanh toán gồm \texttt{VNP\_TMN\_CODE}, \texttt{VNP\_HASH\_SECRET}, \texttt{VNP\_URL} (URL sandbox VNPay) cho cổng VNPay, và \texttt{MOMO\_PARTNER\_CODE}, \texttt{MOMO\_SECRET\_KEY}, \texttt{MOMO\_ACCESS\_KEY} cho cổng MoMo. Nhóm thứ sáu là xác thực Google OAuth với \texttt{GOOGLE\_CLIENT\_ID} và \texttt{GOOGLE\_CLIENT\_SECRET}. Ngoài các biến bắt buộc, hệ thống còn đọc \texttt{REDIS\_URL} (nếu có Redis), \texttt{STORE\_WARRANTY\_DAYS}, \texttt{STORE\_SHIPPING\_DAYS}, \texttt{STORE\_RETURN\_DAYS} và \texttt{STORE\_SUPPORT\_EMAIL} để đưa vào prompt của AI Chatbot.
+
+\subsection{Quy trình khởi tạo hệ thống}
+
+Quy trình cài đặt và khởi động hệ thống diễn ra theo sáu bước có thứ tự cụ thể. Bước một là cài đặt dependencies bằng lệnh \texttt{npm install} ở cả thư mục \texttt{backend/} và \texttt{frontend/}. Bước hai là tạo schema cơ sở dữ liệu thông qua lệnh \texttt{npm run db:migrate}, lệnh này chạy tuần tự 72 Sequelize migrations đã được phân nhóm theo 6 giai đoạn: Core Tables (users, products, categories, brands), Commerce Tables (orders, cart, payment), Content Tables (banners, news, contact), AI Tables (chat\_sessions, chat\_messages), Loyalty và Enhancement. Bước ba là nạp dữ liệu mẫu bằng lệnh \texttt{npm run db:seed}, lệnh này import 60 sản phẩm với 214 biến thể từ 12 thương hiệu, cùng dữ liệu người dùng và nội dung mẫu. Bước bốn là đánh chỉ mục vector cho AI Chatbot bằng lệnh \texttt{npm run ai:rebuild-vectors}, lệnh này gọi \texttt{scripts/index-products.js} để nhúng (embed) toàn bộ sản phẩm vào không gian vector 1024 chiều và lưu tại \texttt{backend/data/vector-db.json}. Bước năm là khởi động backend bằng \texttt{npm run dev} (port 8888, nodemon tự động reload khi code thay đổi) và frontend bằng \texttt{npm run dev} (Vite dev server port 5175). Bước sáu là xác nhận hệ thống hoạt động bình thường bằng cách gọi endpoint \texttt{GET /health} và kiểm tra log khởi động.
+
+\section{Cài đặt kiến trúc Modular Monolith}
+
+\subsection{Cơ chế Dependency Injection}
+
+Kiến trúc Modular Monolith của TechStore được hiện thực thông qua cơ chế Dependency Injection thuần (Pure DI) tập trung tại file \texttt{backend/src/app.js}. Đây là nơi duy nhất trong toàn bộ hệ thống mà các module được khởi tạo và kết nối với nhau. Mỗi module nhận các phụ thuộc (dependencies) thông qua constructor thay vì tự import trực tiếp, đảm bảo rằng logic nghiệp vụ không bị ràng buộc với chi tiết triển khai cụ thể.
+
+Đoạn code sau minh hoạ cách module \texttt{orders} được khởi tạo với đầy đủ phụ thuộc được inject từ bên ngoài, bao gồm repository xử lý truy vấn database, gateway gửi email, eventBus truyền sự kiện nội bộ, các hằng số vận chuyển và tích điểm:
+
+\begin{lstlisting}[language=JavaScript, caption={Khởi tạo OrdersModule với Dependency Injection (app.js)}]
+// Khoi tao shared infrastructure
+const eventBus = require('@shared/event-bus');
+const { runInTransaction, lockRow } = require('@shared/persistence/unit-of-work');
+
+// Khoi tao repository (data access layer)
+const ordersRepo = new SequelizeOrdersRepository({ runInTransaction, lockRow });
+
+// Inject tat ca phu thuoc vao module qua constructor
+const ordersModule = new OrdersModule({
+  ordersRepository: ordersRepo,
+  emailGateway: emailService,
+  eventBus,
+  logger,
+  constants: {
+    SHIPPING_FREE_THRESHOLD,
+    SHIPPING_BASE_RATE,
+    SHIPPING_WEIGHT_RATE,
+    POINTS_EARN_RATE,
+    POINTS_VALUE,
+  },
+});
+\end{lstlisting}
+
+Theo mô hình này, \texttt{OrdersService} không cần biết mình đang dùng MySQL hay một database khác bởi vì tất cả truy vấn đều đi qua interface \texttt{ordersRepository}. Trong môi trường test, có thể inject một mock repository để kiểm thử logic nghiệp vụ mà không cần kết nối database thật.
+
+Middleware stack được thiết lập theo thứ tự cụ thể để đảm bảo tính bảo mật và hiệu năng. Đầu tiên là Helmet để thiết lập các HTTP security headers quan trọng như \texttt{X-Content-Type-Options}, \texttt{X-Frame-Options} và \texttt{Strict-Transport-Security}. Tiếp theo là CORS với danh sách origin được phép, sau đó là CSRF protection cho các request mutation. Morgan xử lý logging HTTP request ở bước thứ tư. Auth rate limiter ngăn brute-force tấn công ở bước thứ năm, theo sau là detect-locale cho i18n. JSON parser và cookie parser xử lý body và cookie request. Cuối cùng là sanitize-html để ngăn XSS injection và compression để nén response.
+
+\subsection{EventBus nội bộ cho giao tiếp xuyên module}
+
+Giao tiếp giữa các module trong hệ thống được thực hiện qua EventBus nội bộ (in-process pub/sub) thay vì gọi trực tiếp hàm của module khác. Cách tiếp cận này giúp giảm coupling giữa các module, đồng thời mở đường cho việc thay thế bằng external broker (Redis Pub/Sub, RabbitMQ) khi hệ thống cần scale horizontal mà không phải thay đổi API của từng module.
+
+\begin{lstlisting}[language=JavaScript, caption={EventBus nội bộ — publish/subscribe (event-bus.js)}]
+class EventBus {
+  constructor() {
+    this.handlers = new Map();
+  }
+
+  subscribe(eventType, handler) {
+    if (!this.handlers.has(eventType)) {
+      this.handlers.set(eventType, new Set());
+    }
+    this.handlers.get(eventType).add(handler);
+    return () => this.unsubscribe(eventType, handler);
+  }
+
+  // Promise.allSettled: 1 handler fail khong huy cac handler khac
+  async publish(event) {
+    if (!event || typeof event.type !== 'string') {
+      throw new Error('eventBus.publish: event.type bat buoc');
+    }
+    const set = this.handlers.get(event.type);
+    if (!set || set.size === 0) return;
+
+    const promises = [];
+    for (const handler of set) {
+      promises.push(
+        Promise.resolve()
+          .then(() => handler(event))
+          .catch((err) => {
+            logger.error(
+              `[eventBus] Handler loi cho event "${event.type}":`, err
+            );
+          })
+      );
+    }
+    await Promise.allSettled(promises);
+  }
+}
+
+// Singleton — 1 instance duy nhat shared toan app
+const eventBus = new EventBus();
+module.exports = eventBus;
+\end{lstlisting}
+
+Điểm đáng chú ý trong thiết kế EventBus là việc sử dụng \texttt{Promise.allSettled} thay vì \texttt{Promise.all}. Quyết định này đảm bảo rằng khi một handler gặp lỗi (ví dụ module inventory không thể ghi log do lỗi tạm thời), các handler khác (ví dụ module email gửi thông báo) vẫn tiếp tục được thực thi. Lỗi được catch và ghi log nhưng không propagate lên stack gọi, tránh làm hỏng toàn bộ luồng nghiệp vụ.
+
+Trong hệ thống, module \texttt{orders} publish sự kiện \texttt{order.created} sau khi tạo đơn hàng thành công. Module \texttt{inventory} subscribe sự kiện này để ghi nhận audit log thay đổi tồn kho. Module \texttt{loyalty} subscribe sự kiện \texttt{order.statusChanged} với trạng thái \texttt{DELIVERED} để cộng điểm tích lũy cho khách hàng.
+
+\subsection{UnitOfWork với SELECT FOR UPDATE}
+
+UnitOfWork là pattern then chốt đảm bảo tính nhất quán khi nhiều người dùng đặt hàng cùng một sản phẩm đồng thời (race condition). Hệ thống cài đặt hai hàm trọng tâm là \texttt{runInTransaction} và \texttt{lockRow}:
+
+\begin{lstlisting}[language=JavaScript, caption={UnitOfWork — runInTransaction và lockRow (unit-of-work.js)}]
+// Wrap business operation trong DB transaction.
+// Service goi runInTransaction(async (tx) => {...}) thay vi
+// sequelize.transaction truc tiep de de swap implementation.
+async function runInTransaction(work, options = {}) {
+  if (options.transaction) {
+    // Parent transaction da co -> reuse, khong open moi
+    return work(options.transaction);
+  }
+  return sequelize.transaction(async (tx) => work(tx));
+}
+
+// SELECT FOR UPDATE helper — lock row trong scope cua transaction
+// de chong race condition khi nhieu request doc-ghi dong thoi.
+async function lockRow(model, where, transaction) {
+  if (!transaction) {
+    throw new Error(
+      'lockRow: transaction bat buoc — phai goi trong runInTransaction'
+    );
+  }
+  return model.findOne({
+    where,
+    transaction,
+    lock: transaction.LOCK.UPDATE,
+  });
+}
+\end{lstlisting}
+
+Cơ chế hoạt động của \texttt{lockRow} như sau: khi một transaction gọi \texttt{findOne} với \texttt{lock: LOCK.UPDATE}, MySQL sẽ đặt một exclusive lock lên row đó trong suốt thời gian transaction chưa kết thúc. Mọi transaction khác cố gắng đọc hoặc ghi row này sẽ phải chờ (block) cho đến khi transaction đầu tiên commit hoặc rollback. Nhờ đó, hai người dùng đặt cùng một biến thể sản phẩm còn 1 chiếc sẽ không thể cùng lúc đọc được số lượng tồn kho là 1 và cùng nhau trừ thành công.
+
+\section{Cài đặt AI Chatbot RAG}
+
+\subsection{Kiến trúc tổng thể Pipeline RAG}
+
+AI Chatbot là tính năng trọng tâm và phức tạp nhất của hệ thống TechStore. Toàn bộ luồng xử lý được điều phối bởi lớp \texttt{RAGPipeline} theo thứ tự năm bước: xác thực, chuẩn hoá, truy xuất song song, tinh chỉnh và sinh ngôn ngữ. Thiết kế này tách biệt rõ ràng từng trách nhiệm, giúp dễ test và dễ mở rộng từng bước độc lập.
+
+\begin{lstlisting}[language=JavaScript, caption={RAGPipeline — điều phối toàn bộ luồng RAG (rag-pipeline.js)}]
+async run({ message, userId, sessionId, context = {} }) {
+  // Buoc 1: Validate — kiem tra do dai, ki tu hop le
+  const validation = validateMessage(message);
+  if (!validation.valid) throw new AppError(validation.reason, 400);
+
+  // Buoc 2: Normalize — giai ma viet tat tieng Viet
+  // (ip -> iPhone, ss -> Samsung, mb -> MacBook...)
+  const normalizedQuery = expandAbbreviations(message);
+
+  // Buoc 3: Off-topic check — bỏ qua retrieval neu cau hoi
+  // khong lien quan den san pham cong nghe
+  if (isOffTopic(normalizedQuery)) {
+    return this.llmGateway.handleMessage(message, userId, sessionId, {
+      ...context,
+      normalizedQuery,
+      preClassifiedIntent: 'off_topic',
+    });
+  }
+
+  let retrievedProducts = null;
+  let rewrittenQuery = null;
+
+  if (this.vectorStore) {
+    try {
+      // Buoc 4: Song song — LLM rewrite query + hybrid search
+      const [llmRewrite, initialResults] = await Promise.all([
+        this.llmGateway.rewriteQuery(normalizedQuery).catch(() => null),
+        this.vectorStore.hybridSearch(normalizedQuery, 10),
+      ]);
+
+      // Neu LLM rewrite khac -> refined search, chon ket qua tot hon
+      if (llmRewrite &&
+          llmRewrite.toLowerCase() !== normalizedQuery.toLowerCase()) {
+        rewrittenQuery = llmRewrite;
+        const refinedResults =
+          await this.vectorStore.hybridSearch(llmRewrite, 10);
+        const results =
+          refinedResults.length > 0 ? refinedResults : initialResults;
+        retrievedProducts =
+          results.map((r) => ({ ...r.metadata, score: r.score }));
+      } else {
+        retrievedProducts =
+          initialResults.map((r) => ({ ...r.metadata, score: r.score }));
+      }
+
+      // Fallback: ha threshold lay top-3 khi khong dat minScore mac dinh
+      if (retrievedProducts.length === 0) {
+        const fallbackQuery = rewrittenQuery || normalizedQuery;
+        const lowResults =
+          await this.vectorStore.hybridSearch(fallbackQuery, 3, 0);
+        retrievedProducts = lowResults.map((r) => ({
+          ...r.metadata, score: r.score, lowConfidence: true,
+        }));
+      }
+    } catch (err) {
+      logger.warn('[RAGPipeline] Vector search that bai:', err.message);
+    }
+  }
+
+  // Buoc 5: Augment + Generate — goi LLM voi context san pham
+  return this.llmGateway.handleMessage(message, userId, sessionId, {
+    ...context,
+    normalizedQuery,
+    preClassifiedIntent: classifyIntent(normalizedQuery),
+    ...(retrievedProducts !== null && { retrievedProducts }),
+    ...(rewrittenQuery && { llmRewrittenQuery: rewrittenQuery }),
+  });
+}
+\end{lstlisting}
+
+Điểm đáng chú ý trong bước 4 là việc thực hiện song song hai tác vụ tốn thời gian nhất: gọi LLM để rewrite query và thực hiện hybrid search. Nhờ \texttt{Promise.all}, tổng thời gian chờ chỉ bằng thời gian của tác vụ chậm nhất thay vì tổng của cả hai. Nếu LLM rewrite trả về query khác với query ban đầu (ví dụ rewrite "ip16 pro giá bao nhiêu" thành "iPhone 16 Pro giá bao nhiêu"), hệ thống thực hiện thêm một lần tìm kiếm tinh chỉnh và chọn kết quả tốt hơn.
+
+Cơ chế fallback được thiết kế đặc biệt cho trường hợp không có sản phẩm nào vượt ngưỡng cosine similarity mặc định 0.45: hạ ngưỡng về 0 và lấy tối đa 3 sản phẩm tương tự nhất, đồng thời đánh dấu \texttt{lowConfidence: true} để lớp tạo prompt hiển thị cảnh báo thích hợp cho người dùng thay vì im lặng trả về danh sách rỗng.
+
+\subsection{Hybrid Search — Kết hợp Semantic và Keyword}
+
+Tầng truy xuất của hệ thống sử dụng Hybrid Search kết hợp hai phương pháp bổ sung cho nhau. Tìm kiếm ngữ nghĩa (semantic search) dùng cosine similarity trên vector embedding 1024 chiều, có thể hiểu ngữ nghĩa nhưng đôi khi bỏ sót tên model cụ thể. Tìm kiếm từ khoá (keyword search) theo thuật toán BM25-inspired với trọng số name nhân 3, text nhân 1, bắt chính xác tên sản phẩm, thương hiệu, model mà semantic search có thể miss.
+
+Hàm \texttt{buildEmbeddingText} xây dựng chuỗi văn bản phong phú từ dữ liệu sản phẩm để embedding, kết hợp tên, thương hiệu, danh mục, mô tả ngắn, phần đầu description (tối đa 500 ký tự, đã strip HTML), giá và trạng thái tồn kho, giới hạn tổng 1500 ký tự:
+
+\begin{lstlisting}[language=JavaScript, caption={buildEmbeddingText — xây dựng text để embedding (vector-store.js)}]
+function buildEmbeddingText(product) {
+  const parts = [
+    product.name,
+    product.baseName
+      ? `Thuong hieu: ${product.baseName}` : '',
+    product.categories?.[0]?.name
+      ? `Danh muc: ${product.categories[0].name}` : '',
+    product.shortDescription || '',
+    product.description
+      ? product.description.replace(/<[^>]*>/g, '').substring(0, 500)
+      : '',
+    product.basePrice
+      ? `Gia: ${product.basePrice.toLocaleString('vi-VN')} dong` : '',
+    (product.inStock !== undefined
+      ? product.inStock : product.stockQuantity > 0)
+      ? 'Con hang' : 'Het hang',
+  ];
+  return parts.filter(Boolean).join('. ').substring(0, 1500);
+}
+\end{lstlisting}
+
+Hàm \texttt{cosineSimilarity} được cài đặt thuần bằng JavaScript với guard điều kiện kiểm tra magnitude bằng 0, vô cực hoặc NaN trả về 0 thay vì gây lỗi:
+
+\begin{lstlisting}[language=JavaScript, caption={cosineSimilarity — đo độ tương đồng cosine (vector-store.js)}]
+cosineSimilarity(v1, v2) {
+  if (!v1 || !v2 || v1.length !== v2.length) return 0;
+  let dotProduct = 0, mag1 = 0, mag2 = 0;
+  for (let i = 0; i < v1.length; i++) {
+    dotProduct += v1[i] * v2[i];
+    mag1 += v1[i] * v1[i];
+    mag2 += v2[i] * v2[i];
+  }
+  const magnitude = Math.sqrt(mag1) * Math.sqrt(mag2);
+  if (magnitude === 0 || !isFinite(magnitude)) return 0;
+  return dotProduct / magnitude;
+}
+\end{lstlisting}
+
+Tìm kiếm từ khoá BM25-inspired sử dụng Unicode-aware regex để tokenize, đảm bảo hoạt động đúng với tiếng Việt có dấu:
+
+\begin{lstlisting}[language=JavaScript, caption={\_keywordSearch — BM25-inspired keyword search (vector-store.js)}]
+_tokenize(text) {
+  return text
+    .toLowerCase()
+    .replace(/[^\p{L}\p{N}]/gu, ' ')   // Unicode-aware: giu chu va so
+    .split(/\s+/)
+    .filter((t) => t.length > 1);       // Bo ky tu don
+}
+
+_keywordSearch(query, limit = 5) {
+  const queryTokens = [...new Set(this._tokenize(query))];
+  if (queryTokens.length === 0) return [];
+
+  const results = [];
+  for (const item of this.items) {
+    const nameTokens = new Set(this._tokenize(item.metadata.name || ''));
+    const textTokens = new Set(this._tokenize(item.text || ''));
+    let score = 0, matched = 0;
+
+    for (const token of queryTokens) {
+      const inName = nameTokens.has(token);
+      const inText = textTokens.has(token);
+      if (inName || inText) {
+        matched++;
+        // Name x3 (ten san pham quan trong hon), text x1
+        score += (inName ? 3 : 0) + (inText ? 1 : 0);
+      }
+    }
+
+    if (matched > 0) {
+      // Coverage ratio: thuong san pham khop nhieu token hon
+      score *= matched / queryTokens.length;
+      results.push({ ...item, keywordScore: score });
+    }
+  }
+  return results.sort((a, b) => b.keywordScore - a.keywordScore)
+                .slice(0, limit);
+}
+\end{lstlisting}
+
+Bước cuối cùng là hàm \texttt{hybridSearch} kết hợp hai kết quả với cơ chế boost và injection:
+
+\begin{lstlisting}[language=JavaScript, caption={hybridSearch — kết hợp semantic và keyword (vector-store.js)}]
+async hybridSearch(query, limit = 5, minScore = 0.45) {
+  await this.loadPromise;
+
+  const [vectorResults, keywordResults] = await Promise.all([
+    this._vectorSearch(query, limit * 2, minScore),
+    Promise.resolve(this._keywordSearch(query, limit * 2)),
+  ]);
+
+  if (vectorResults.length === 0 && keywordResults.length === 0)
+    return [];
+
+  const keywordIds = new Set(keywordResults.map((r) => r.metadata.id));
+
+  // Boost: ket qua vector cung khop keyword duoc cong +0.05
+  vectorResults.forEach((r) => {
+    if (keywordIds.has(r.metadata.id)) {
+      r.score = Math.min(1, r.score + 0.05);
+    }
+  });
+
+  // Inject keyword-only (vector miss) — score phu thuoc chat luong keyword
+  const maxKw = keywordResults.reduce(
+    (m, r) => Math.max(m, r.keywordScore), 1
+  );
+  const vectorIds = new Set(vectorResults.map((r) => r.metadata.id));
+  const injected = keywordResults
+    .filter((r) => !vectorIds.has(r.metadata.id))
+    .map((r) => ({
+      ...r,
+      score: minScore + (r.keywordScore / maxKw) * 0.15,
+      lowConfidence: true,
+    }));
+
+  return [...vectorResults, ...injected]
+    .sort((a, b) => b.score - a.score)
+    .slice(0, limit);
+}
+\end{lstlisting}
+
+Thiết kế Hybrid Search cho phép xử lý hiệu quả cả hai loại câu hỏi khác nhau của người dùng Việt Nam. Với câu hỏi trừu tượng như "cần điện thoại chụp ảnh đẹp tầm 15 triệu", semantic search sẽ tìm được các sản phẩm có mô tả về camera chất lượng cao dù không khớp từ khoá. Với câu hỏi cụ thể như "ss s25 ultra giá bao nhiêu", sau bước expand abbreviation thành "Samsung s25 ultra giá bao nhiêu", keyword search sẽ khớp chính xác tên sản phẩm "Samsung Galaxy S25 Ultra" dù embedding vector có thể chưa nắm bắt đúng do cách viết tắt.
+
+\subsection{ChatbotService — Caching và Quản lý Session}
+
+Lớp \texttt{ChatbotService} là singleton quản lý toàn bộ vòng đời của cuộc hội thoại, bao gồm cache phản hồi AI, lưu trữ lịch sử hội thoại theo session, và gọi RAG pipeline. Các hằng số quan trọng của lớp này là \texttt{MAX\_HISTORY\_TURNS = 10} (giữ 10 lượt hội thoại gần nhất), \texttt{MAX\_SESSIONS = 500} (giới hạn tổng số session đồng thời), \texttt{SESSION\_TTL\_MS = 30 phút} (session tự hết hạn sau 30 phút không hoạt động), \texttt{CHATBOT\_CACHE\_TTL = 5 phút} (TTL cache Redis) và \texttt{CACHEABLE\_INTENTS = ['product\_search']} (chỉ cache intent tìm kiếm sản phẩm, không cache câu hỏi về chính sách hay order có thể thay đổi).
+
+Luồng xử lý của phương thức \texttt{handleMessage} diễn ra theo thứ tự: chuẩn hoá đầu vào → kiểm tra off-topic (early return để tránh tốn tài nguyên) → kiểm tra Redis cache với shared key không phụ thuộc userId (vì câu hỏi giống nhau từ nhiều người có thể dùng chung kết quả) → load lịch sử hội thoại từ in-memory store → gọi RAG pipeline để truy xuất sản phẩm và sinh phản hồi → cập nhật lịch sử (evict session cũ nếu vượt MAX\_SESSIONS) → lưu vào database bất đồng bộ (fire-and-forget để không block response) → cache phản hồi vào Redis.
+
+Cơ chế provider rotation trong \texttt{getAIResponse} tự động chuyển sang provider tiếp theo khi một provider thất bại, với retry 2 lần cho mỗi provider. Hệ thống truyền \texttt{systemContent} chứa đầy đủ thông tin cửa hàng (bảo hành, vận chuyển, đổi trả, hỗ trợ) và danh sách sản phẩm đã retrieve vào context của LLM. Nhiệt độ sampling được đặt ở \texttt{temperature = 0.3} (thiên về factual, ít sáng tạo) và \texttt{max\_tokens = 800} để kiểm soát chi phí API.
+
+\subsection{Xây dựng Prompt và Phát hiện Phiên bản}
+
+Lớp \texttt{PromptBuilder} đảm nhiệm việc định dạng danh sách sản phẩm và xây dựng system prompt gửi cho LLM. Một tính năng đáng chú ý là cơ chế phát hiện số phiên bản trong câu hỏi của người dùng: hàm kiểm tra xem trong câu hỏi có số không kèm đơn vị (như "iphone 17", "galaxy s25") hay không, sau đó cảnh báo LLM nếu số phiên bản đó không xuất hiện trong tên bất kỳ sản phẩm nào được retrieve. Nhờ đó, thay vì bịa ra thông tin về sản phẩm chưa có, LLM sẽ trả lời trung thực rằng hệ thống chưa có sản phẩm đó và gợi ý các sản phẩm tương tự hiện có trong kho.
+
+Khi danh sách sản phẩm trả về có \texttt{lowConfidence: true}, prompt sẽ được thêm tiền tố cảnh báo để LLM biết rằng kết quả retrieve có thể không chính xác và cần dè dặt hơn trong câu trả lời. Prompt còn bao gồm phần \texttt{QUY TẮC NGÔN NGỮ} yêu cầu LLM trả lời theo ngôn ngữ của câu hỏi (tiếng Việt trả lời tiếng Việt, tiếng Anh trả lời tiếng Anh), và phần \texttt{QUY TẮC SO KHỚP} định nghĩa format JSON của response gồm các trường \texttt{response} (văn bản trả lời), \texttt{products} (danh sách sản phẩm kèm slug và tên), và \texttt{suggestions} (danh sách 3 câu hỏi gợi ý tiếp theo).
+
+\section{Cài đặt module xác thực}
+
+\subsection{Đăng ký tài khoản với OTP}
+
+Quy trình đăng ký tài khoản được thiết kế để cân bằng giữa trải nghiệm người dùng (không chặn flow khi gửi email thất bại) và bảo mật (xác thực email trước khi cho đăng nhập). \texttt{AuthService} nhận đầy đủ phụ thuộc qua constructor theo DI pattern, không import Sequelize hay Model trực tiếp:
+
+\begin{lstlisting}[language=JavaScript, caption={AuthService.register() — đăng ký và gửi OTP (auth-service.js)}]
+async register({ email, password, firstName, lastName, phone }) {
+  // Kiem tra email ton tai
+  const existing = await this.authRepository.findByEmail(email);
+  if (existing) {
+    throw new AppError('auth.emailInUse', 400);
+  }
+
+  // Sinh OTP 6 chu so bang crypto (an toan hon Math.random)
+  const otpCode = String(crypto.randomInt(100000, 1000000));
+  const otpExpires = new Date(Date.now() + 10 * 60 * 1000); // 10 phut
+
+  const user = await this.authRepository.createUser({
+    email, password, firstName, lastName, phone,
+    otpCode, otpExpires,
+  });
+
+  // Gui email khong chặn flow — neu fail chi log, khong throw
+  try {
+    await this.emailGateway.sendOtpEmail(user.email, otpCode);
+  } catch (emailErr) {
+    this.logger.error(
+      `[Auth] Gui OTP email that bai cho ${user.email}: ${emailErr.message}`
+    );
+  }
+
+  // Phat su kien de cac module khac xu ly (vi du: welcome logic)
+  await this.eventBus.publish({
+    type: 'auth.userRegistered',
+    payload: { userId: user.id, email: user.email },
+    occurredAt: new Date().toISOString(),
+  });
+
+  return { message: 'auth.registerSuccess' };
+}
+\end{lstlisting}
+
+Điểm quan trọng trong thiết kế này là việc sử dụng \texttt{crypto.randomInt(100000, 1000000)} thay vì \texttt{Math.random()} để sinh OTP. API \texttt{crypto.randomInt} sử dụng nguồn ngẫu nhiên mạnh về mặt mật mã (CSPRNG) từ hệ điều hành, đảm bảo không thể dự đoán giá trị OTP kể cả khi biết các OTP trước đó. OTP được lưu trong database cùng thời điểm hết hạn là 10 phút từ thời điểm tạo.
+
+\subsection{Đăng nhập và Cơ chế JWT Dual-Token}
+
+Phương thức \texttt{login} kiểm tra lần lượt: tồn tại email, đúng mật khẩu (bcrypt so sánh hash), email đã được xác thực, tài khoản chưa bị vô hiệu hoá. Chỉ khi qua đủ bốn bước này mới sinh cặp token:
+
+\begin{lstlisting}[language=JavaScript, caption={AuthService.login() — xác thực và sinh JWT (auth-service.js)}]
+async login({ email, password, ip }) {
+  const user = await this.authRepository.findByEmail(email);
+  // Tat ca loi xac thuc deu tra 401 voi message giong nhau
+  // (khong tiet lo email co ton tai hay khong)
+  if (!user) throw new AppError('auth.invalidCredentials', 401);
+
+  const isMatch = await user.comparePassword(password);
+  if (!isMatch) throw new AppError('auth.invalidCredentials', 401);
+
+  if (!user.isEmailVerified)
+    throw new AppError('auth.emailNotVerified', 401);
+  if (!user.isActive)
+    throw new AppError('auth.accountDisabled', 401);
+
+  // Access token: HS256, 15 phut, luu sessionStorage
+  // Refresh token: HS256, 30 ngay, luu httpOnly cookie
+  const token = this.tokenSigner.signAccessToken({
+    id: user.id, role: user.role
+  });
+  const refreshToken = this.tokenSigner.signRefreshToken({
+    id: user.id
+  });
+
+  // Log audit cho admin login
+  if (user.role === 'admin' && this.auditService) {
+    this.auditService.logSuccessfulLogin(user, ip);
+  }
+
+  return { token, refreshToken, user };
+}
+\end{lstlisting}
+
+Thiết kế bảo mật quan trọng ở đây là tất cả lỗi xác thực (không tìm thấy user, sai mật khẩu, chưa xác thực email, bị vô hiệu hoá) đều trả về cùng HTTP status 401 và cùng message \texttt{auth.invalidCredentials}. Điều này ngăn kẻ tấn công dùng response khác nhau để xác định xem một email có tồn tại trong hệ thống hay không (enumeration attack).
+
+\subsection{Middleware Xác thực JWT}
+
+Middleware \texttt{authenticate} được gắn vào tất cả route cần bảo vệ, thực hiện năm bước kiểm tra trước khi cho phép request tiếp tục. Bước đầu trích xuất Bearer token từ header \texttt{Authorization}. Bước hai verify chữ ký JWT và decode payload bằng thuật toán HS256. Bước ba kiểm tra JWT ID (jti) trong Redis blacklist với key pattern \texttt{bl:\{jti\}} để từ chối token đã bị logout. Bước bốn kiểm tra key \texttt{pw\_changed:\{userId\}} để từ chối token được cấp trước khi user đổi mật khẩu. Bước năm load thông tin user từ database và kiểm tra \texttt{isActive} và \texttt{isEmailVerified}. Chỉ khi qua đủ năm bước, \texttt{req.user} mới được gán và gọi \texttt{next()}.
+
+Bên cạnh \texttt{authenticate}, hệ thống còn có \texttt{optionalAuthenticate} thực hiện các bước tương tự nhưng không throw error khi thất bại, chỉ tiếp tục với \texttt{req.user = null}. Middleware này được dùng cho các endpoint vừa hỗ trợ khách vãng lai vừa hỗ trợ user đã đăng nhập như trang chi tiết sản phẩm hay giỏ hàng.
+
+\section{Cài đặt module đặt hàng}
+
+\subsection{Tạo đơn hàng với SELECT FOR UPDATE}
+
+Phương thức \texttt{createOrder} là một trong những đoạn code phức tạp và quan trọng nhất trong hệ thống. Toàn bộ logic được gói trong một database transaction duy nhất, đảm bảo tính nguyên tử: hoặc tất cả bước thành công (trừ tồn kho, tạo đơn, ghi log inventory), hoặc tất cả được rollback. Hệ thống hỗ trợ hai luồng đặt hàng: buy-now (mua trực tiếp từ trang sản phẩm với \texttt{items} trong request body) và cart flow (mua từ giỏ hàng, có thể merge giỏ khách vãng lai vào giỏ user đã đăng nhập).
+
+Đoạn code xử lý trừ tồn kho với SELECT FOR UPDATE cho biến thể sản phẩm như sau:
+
+\begin{lstlisting}[language=JavaScript, caption={Trừ tồn kho với SELECT FOR UPDATE (orders-service.js)}]
+for (const item of itemsToProcess) {
+  const product = item.Product;
+
+  if (product.status !== 'active') {
+    throw new AppError('orders.productInactive', 400,
+      { name: product.name });
+  }
+
+  if (item.variantId) {
+    // Lock row bien the bang SELECT FOR UPDATE
+    const lockedVariant =
+      await this.repo.lockVariant(item.variantId, transaction);
+
+    if (!lockedVariant || lockedVariant.stockQuantity < item.quantity) {
+      throw new AppError('orders.stockInsufficient', 400, {
+        name: product.name,
+        available: lockedVariant ? lockedVariant.stockQuantity : 0,
+      });
+    }
+
+    const prev = lockedVariant.stockQuantity;
+    await this.repo.decrementVariantStock(
+      lockedVariant, item.quantity, { transaction }
+    );
+
+    // Ghi pending log (se bulk create sau khi tao don)
+    pendingInventoryLogs.push({
+      productId: item.productId,
+      variantId: item.variantId,
+      changeType: 'sale',
+      changeAmount: -item.quantity,
+      previousStock: prev,
+      newStock: prev - item.quantity,
+    });
+  } else {
+    // San pham khong co bien the — lock san pham truc tiep
+    const lockedProduct =
+      await this.repo.lockProduct(item.productId, transaction);
+
+    if (!lockedProduct || lockedProduct.stockQuantity < item.quantity) {
+      throw new AppError('orders.stockInsufficient', 400, {
+        name: product.name,
+        available: lockedProduct ? lockedProduct.stockQuantity : 0,
+      });
+    }
+    const prev = lockedProduct.stockQuantity;
+    await this.repo.decrementProductStock(
+      lockedProduct, item.quantity, { transaction }
+    );
+    pendingInventoryLogs.push({ /* ... */ });
+  }
+}
+\end{lstlisting}
+
+Hàm \texttt{lockVariant} trong repository gọi \texttt{ProductVariant.findOne} với \texttt{lock: transaction.LOCK.UPDATE}, tương ứng với câu SQL \texttt{SELECT ... FOR UPDATE}. MySQL sẽ đặt exclusive lock lên row biến thể đó cho đến khi transaction commit hoặc rollback. Nếu hai transaction cùng gọi \texttt{lockVariant} cho cùng một biến thể, transaction thứ hai sẽ phải chờ transaction đầu tiên giải phóng lock. Đây là cơ chế then chốt ngăn oversell khi nhiều người đặt hàng đồng thời.
+
+\subsection{Tính phí vận chuyển và Áp dụng mã giảm giá}
+
+Sau khi tính tổng tiền hàng (subtotal) và tổng trọng lượng, hệ thống tính phí vận chuyển theo công thức: miễn phí nếu subtotal đạt ngưỡng \texttt{SHIPPING\_FREE\_THRESHOLD}, ngược lại tính phí cơ bản \texttt{SHIPPING\_BASE\_RATE} cộng phụ phí theo cân nặng vượt ngưỡng 2kg với đơn vị là \texttt{SHIPPING\_WEIGHT\_RATE} mỗi kilogram (làm tròn lên). Các hằng số này được inject vào service qua constructor từ file \texttt{src/constants}.
+
+Xử lý mã giảm giá kiểm tra tuần tự: mã có tồn tại, trạng thái hoạt động, nằm trong thời gian hiệu lực (\texttt{validFrom} đến \texttt{validUntil}), chưa vượt giới hạn sử dụng (\texttt{currentUsage < usageLimit}), và đơn hàng đạt giá trị tối thiểu (\texttt{subtotal >= minOrderAmount}). Sau khi qua tất cả kiểm tra, số tiền giảm được tính theo loại: \texttt{percentage} (phần trăm nhân subtotal, có giới hạn \texttt{maxDiscountAmount}) hoặc \texttt{fixed} (số tiền cố định, không vượt quá subtotal).
+
+Điểm tinh tế trong xử lý mã giảm giá là thời điểm tăng \texttt{usedCount}: đối với thanh toán thủ công (COD, chuyển khoản) thì tăng ngay trong transaction tạo đơn hàng; đối với thanh toán online (MoMo, VNPay) thì chỉ tăng khi nhận được IPN từ cổng thanh toán xác nhận giao dịch thành công. Điều này ngăn người dùng lách giới hạn bằng cách tạo nhiều đơn online rồi không thanh toán.
+
+Xử lý điểm tích lũy loyalty tương tự dùng SELECT FOR UPDATE: khoá row user trong transaction, kiểm tra \texttt{loyaltyPoints >= pointsToUse}, sau đó trừ điểm. Cộng điểm ngược lại xảy ra sau khi đơn hàng đạt trạng thái DELIVERED (qua EventBus subscribe), không phải ngay khi tạo đơn hay khi thanh toán.
+
+\section{Cài đặt module thanh toán}
+
+\subsection{Tích hợp VNPay với HMAC-SHA512}
+
+VNPay yêu cầu tất cả tham số gửi đi được sắp xếp theo thứ tự alphabet của key trước khi ký. Hệ thống cài đặt hàm \texttt{sortObject} để đảm bảo tính nhất quán này. Chữ ký được tạo bằng HMAC-SHA512 với \texttt{VNP\_HASH\_SECRET}. Một điểm quan trọng trong tích hợp VNPay là số tiền phải nhân 100 (không có phần thập phân) trước khi gửi vào tham số \texttt{vnp\_Amount}. URL thanh toán được xây dựng bằng \texttt{querystring.stringify} với option \texttt{encode: false} để tránh double-encode ký tự đặc biệt trong URL.
+
+Khi VNPay gửi IPN (Instant Payment Notification) hoặc redirect người dùng về trang kết quả, hệ thống xác minh chữ ký bằng \texttt{crypto.timingSafeEqual} thay vì so sánh chuỗi thông thường. Phương thức \texttt{timingSafeEqual} so sánh hai Buffer trong thời gian cố định bất kể nội dung, ngăn timing attack cho phép kẻ tấn công đoán chữ ký qua sự khác biệt thời gian phản hồi.
+
+\subsection{Tích hợp MoMo với HMAC-SHA256}
+
+MoMo yêu cầu orderId duy nhất cho mỗi yêu cầu thanh toán. Hệ thống tạo orderId theo định dạng \texttt{\{orderId\}-\{timestamp\_6\_digits\}}, trong đó \texttt{timestamp\_6\_digits} là 6 ký tự cuối của \texttt{Date.now().toString()}. Cấu trúc này đảm bảo một đơn hàng có thể yêu cầu thanh toán nhiều lần (ví dụ khi lần đầu thất bại, người dùng thử lại) mà mỗi lần có orderId khác nhau. requestId được sinh bằng \texttt{crypto.randomUUID()}.
+
+Chuỗi rawSignature được xây dựng theo đúng thứ tự tham số quy định của MoMo, sau đó ký bằng HMAC-SHA256. Kết quả được POST lên MoMo API để nhận \texttt{payUrl} và redirect người dùng.
+
+\subsection{Cơ chế Idempotency cho IPN}
+
+IPN (Instant Payment Notification) là webhook từ cổng thanh toán thông báo kết quả giao dịch. Trong môi trường thực tế, IPN có thể được gửi nhiều lần (do mạng không ổn định, timeout, retry của cổng thanh toán). Hàm \texttt{\_canProcessPayment} là chốt bảo vệ chống xử lý trùng lặp:
+
+Hàm này kiểm tra hai điều kiện đồng thời: thứ nhất là đơn hàng chưa ở trạng thái \texttt{paymentStatus = 'paid'} (ngăn thanh toán lại đơn đã trả); thứ hai là \texttt{transactionId} của IPN này chưa được xử lý trước đó (ngăn xử lý cùng một giao dịch hai lần). TransactionId được lưu cùng đơn hàng sau lần xử lý đầu tiên thành công. Nhờ cơ chế này, dù IPN đến 5 hay 10 lần, hệ thống chỉ cập nhật trạng thái và cộng điểm đúng một lần.
+
+\section{Chiến lược kiểm thử 5 tầng}
+
+\subsection{Tổng quan kiến trúc kiểm thử}
+
+Hệ thống TechStore áp dụng chiến lược kiểm thử toàn diện theo 5 tầng, tương ứng với 5 bộ cấu hình Jest riêng biệt. Tổng cộng hệ thống có 5.694 test cases phân bổ theo bảng \ref{tab:test-overview}.
+
+\begin{table}[H]
+\centering
+\caption{Tổng quan các tầng kiểm thử}
+\label{tab:test-overview}
+\begin{tabular}{|l|r|r|r|l|}
+\hline
+\textbf{Tầng kiểm thử} & \textbf{Test Suites} & \textbf{Test Cases} & \textbf{Runtime} & \textbf{Config} \\
+\hline
+BE Unit Tests & 173 & 4.061 & $\approx$ 10 giây & \texttt{jest.config.js} \\
+\hline
+BE Integration Tests & 42 & 228 & $\approx$ 50 giây & \texttt{jest.integration.config.js} \\
+\hline
+BE API HTTP Tests & 45 & 866 & $\approx$ 140 giây & \texttt{jest.api.config.js} \\
+\hline
+BE E2E Tests & 5 & 102 & $\approx$ 20 giây & \texttt{jest.e2e.config.js} \\
+\hline
+FE Component Tests & 17 & 437 & $\approx$ 7 giây & \texttt{jest.config.cjs} \\
+\hline
+\textbf{Tổng cộng} & \textbf{282} & \textbf{5.694} & & \\
+\hline
+\end{tabular}
+\end{table}
+
+\subsection{Tầng 1 — Unit Tests với Mock Database}
+
+Tầng Unit Tests với 173 suites và 4.061 test cases là tầng có số lượng test nhiều nhất và chạy nhanh nhất (khoảng 10 giây). Tầng này kiểm thử từng service riêng lẻ bằng cách mock toàn bộ phụ thuộc (repository, emailGateway, eventBus, logger) thông qua Jest mock functions. Không có kết nối database thật, không có network call thật.
+
+Ví dụ, bộ unit tests cho \texttt{ChatbotService} kiểm thử đầy đủ các luồng: tin nhắn rỗng trả lỗi 400, tin nhắn off-topic trả về sớm không gọi vectorStore, câu hỏi thông thường gọi đúng thứ tự các hàm, cache hit trả về response mà không gọi LLM, cache miss gọi pipeline và lưu vào cache, rate limit hoạt động đúng. Mỗi kịch bản được viết bằng tiếng Việt theo policy của dự án (ví dụ: \texttt{it('nên trả lỗi khi tin nhắn vượt quá giới hạn ký tự', ...)}), đảm bảo hội đồng bảo vệ có thể đọc và hiểu ý nghĩa của từng test case.
+
+Bộ unit tests cho \texttt{RAGPipeline} kiểm thử: validate thất bại throw AppError, off-topic bypass vectorStore, LLM rewrite giống query gốc không tạo thêm search, LLM rewrite khác query gốc tạo refined search, vectorStore throw error được catch và tiếp tục, không có sản phẩm nào trên threshold kích hoạt fallback.
+
+\subsection{Tầng 2 — Integration Tests với MySQL thật}
+
+Tầng Integration Tests với 42 suites và 228 test cases kiểm thử các luồng nghiệp vụ phức tạp với kết nối MySQL thật nhưng không có HTTP server. Mỗi test suite dùng database được seeded trước với fixture data cụ thể, và cleanup (rollback hoặc truncate) sau khi chạy xong.
+
+Tầng này kiểm thử những thứ không thể kiểm thử bằng mock: Sequelize associations đúng với schema, constraint unique/foreign key hoạt động, transaction rollback khi có lỗi, SELECT FOR UPDATE chặn đúng concurrent write, migration chạy đúng thứ tự. Bộ integration tests cho \texttt{OrdersRepository} kiểm thử: \texttt{lockVariant} trong transaction blocked nếu row đã locked, \texttt{decrementVariantStock} rollback khi transaction abort, \texttt{findOrCreateActiveCart} idempotent với cùng userId.
+
+\subsection{Tầng 3 — API HTTP Tests qua Supertest}
+
+Tầng API Tests với 45 suites và 866 test cases dùng Supertest để gửi HTTP request thật tới Express app (không có network, chỉ in-process). Tầng này kiểm thử toàn bộ middleware chain: authentication, authorization, validation, rate limiting, error handling, response format.
+
+Bảng \ref{tab:api-test-coverage} liệt kê một số bộ test API tiêu biểu.
+
+\begin{table}[H]
+\centering
+\caption{Một số bộ API Test tiêu biểu}
+\label{tab:api-test-coverage}
+\begin{tabular}{|l|r|p{7cm}|}
+\hline
+\textbf{Module} & \textbf{Test Cases} & \textbf{Nội dung kiểm thử} \\
+\hline
+auth & 87 & Đăng ký, đăng nhập, verify OTP, refresh token, Google OAuth, logout \\
+\hline
+catalog & 124 & Lọc sản phẩm, tìm kiếm, phân trang, chi tiết sản phẩm, thương hiệu \\
+\hline
+orders & 98 & Tạo đơn, hủy đơn, lịch sử đơn, cập nhật trạng thái admin \\
+\hline
+ai & 67 & Chat endpoint, rate limit, invalid input, off-topic detection \\
+\hline
+payment & 54 & Tạo URL MoMo/VNPay, xác minh IPN, idempotency \\
+\hline
+admin & 112 & CRUD sản phẩm, quản lý đơn hàng, dashboard analytics \\
+\hline
+\end{tabular}
+\end{table}
+
+Một ví dụ tiêu biểu từ bộ test API cho auth: gửi request đăng ký với email hợp lệ, kiểm tra response 201 với message thành công; gửi lại cùng email, kiểm tra response 400 với lỗi email đã tồn tại; gửi request đăng nhập với email chưa xác thực, kiểm tra response 401; thực hiện verify OTP, sau đó đăng nhập, kiểm tra response 200 với access token và refresh token trong cookie.
+
+\subsection{Tầng 4 — E2E Tests cho Luồng Người dùng Hoàn chỉnh}
+
+Tầng E2E với 5 suites và 102 test cases kiểm thử end-to-end các luồng nghiệp vụ quan trọng nhất mà người dùng thực sự trải qua. Mỗi luồng E2E chạy từ HTTP request đầu tiên đến kết quả cuối cùng, sử dụng database thật và không có mock nào.
+
+\begin{table}[H]
+\centering
+\caption{Năm luồng E2E được kiểm thử}
+\label{tab:e2e-flows}
+\begin{tabular}{|l|r|p{8cm}|}
+\hline
+\textbf{Luồng} & \textbf{Tests} & \textbf{Các bước kiểm thử} \\
+\hline
+Auth Flow & 18 & Đăng ký → OTP → đăng nhập → refresh token → logout → blacklist kiểm tra \\
+\hline
+Shopping Flow & 22 & Browse sản phẩm → thêm giỏ → merge giỏ khách → checkout → xác nhận tồn kho \\
+\hline
+Checkout Flow & 28 & Tạo đơn COD → trừ stock → loyalty deduct → discount apply → email trigger \\
+\hline
+Admin Flow & 20 & Thêm sản phẩm → cập nhật → upsert vector → xử lý đơn → cập nhật trạng thái \\
+\hline
+Wishlist Flow & 14 & Thêm sản phẩm yêu thích → xem danh sách → xóa → kiểm tra trùng lặp \\
+\hline
+\end{tabular}
+\end{table}
+
+Luồng Checkout Flow với 28 test cases là phức tạp nhất, kiểm thử toàn bộ chuỗi: tạo đơn hàng COD với mã giảm giá và điểm loyalty → xác nhận stock đã giảm đúng số lượng → xác nhận điểm loyalty đã bị trừ → xác nhận discount \texttt{usedCount} đã tăng → kiểm tra đơn đang ở trạng thái PENDING → hủy đơn → xác nhận stock được hoàn lại.
+
+\subsection{Tầng 5 — Frontend Component Tests}
+
+Tầng Frontend Tests với 17 suites và 437 test cases dùng Jest kết hợp React Testing Library để kiểm thử các component React quan trọng. Tầng này render component trong môi trường jsdom, mock API calls và store Zustand.
+
+Bộ test cho ChatWidget (component AI Chatbot) kiểm thử: render đúng trạng thái ban đầu (collapsed), mở rộng khi click, hiển thị loading khi gửi tin, hiển thị error khi API thất bại, render danh sách sản phẩm đúng từ response, nút thêm vào giỏ hoạt động đúng. Bộ test cho ProductCard kiểm thử: hiển thị đúng tên, giá, ảnh thumbnail, badge "Hết hàng" khi stock = 0, badge "Giảm giá" khi có compareAtPrice, link đúng tới trang chi tiết.
+
+\section{Kết quả kiểm thử và Coverage}
+
+\subsection{Coverage Report}
+
+Sau khi chạy đầy đủ bộ unit tests với Jest coverage, hệ thống đạt kết quả như bảng \ref{tab:coverage-result}.
+
+\begin{table}[H]
+\centering
+\caption{Kết quả Coverage của Backend Unit Tests}
+\label{tab:coverage-result}
+\begin{tabular}{|l|r|r|}
+\hline
+\textbf{Metric} & \textbf{Kết quả thực tế} & \textbf{Ngưỡng tối thiểu (CI)} \\
+\hline
+Statements & 99\% & $\geq$ 97\% \\
+\hline
+Branches & 97\% & $\geq$ 85\% \\
+\hline
+Functions & 99\% & $\geq$ 95\% \\
+\hline
+Lines & 99\% & $\geq$ 97\% \\
+\hline
+\end{tabular}
+\end{table}
+
+Coverage 99\% statements và lines nghĩa là hầu như toàn bộ dòng code trong backend đều được thực thi ít nhất một lần qua bộ test. Branches coverage 97\% phản ánh một số nhánh điều kiện khó tạo đủ điều kiện test (ví dụ các nhánh lỗi hệ thống như disk full khi ghi file, hoặc các điều kiện race condition cực kỳ hiếm trong production). Frontend Component Tests đạt 100\% tất cả metrics.
+
+\subsection{CI/CD Pipeline}
+
+Hệ thống thiết lập CI/CD bằng GitHub Actions với pipeline được định nghĩa tại \texttt{.github/workflows/ci.yml}. Pipeline chạy tự động trên mỗi push và pull request, bao gồm ba job song song. Job đầu tiên là \texttt{lint-and-typecheck} chạy \texttt{npm run lint:strict} (ESLint với \texttt{--max-warnings 0}) và \texttt{npm run typecheck} trên frontend. Job thứ hai là \texttt{test-backend} chạy BE Unit Tests với coverage report và kiểm tra ngưỡng tối thiểu (statements ≥ 97\%, lines ≥ 97\%, branches ≥ 85\%, functions ≥ 95\%). Job thứ ba là \texttt{build-frontend} chạy Vite production build để đảm bảo không có lỗi TypeScript hay import.
+
+Tích hợp và API Tests không chạy trong CI vì yêu cầu MySQL service thật (chi phí runner cao và thời gian dài). Thay vào đó, các test này được chạy thủ công trên máy phát triển trước mỗi release.
+
+Ngoài CI, hệ thống còn thiết lập Husky pre-commit hooks gồm ba kiểm tra: secret scanning (phát hiện API key, password bị commit nhầm), architecture audit (\texttt{scripts/audit-architecture.sh} kiểm tra service không import Sequelize trực tiếp, controller không truy cập ORM, không có cross-module deep import), và lint-staged (chạy ESLint và Prettier chỉ trên các file đã thay đổi để tiết kiệm thời gian).
+
+\section{Đánh giá hệ thống}
+
+\subsection{Đánh giá chức năng}
+
+Hệ thống TechStore hoàn thành đầy đủ các yêu cầu chức năng đã đặt ra cho ba nhóm người dùng. Với khách vãng lai, hệ thống cung cấp trải nghiệm duyệt sản phẩm với bộ lọc đa tiêu chí (danh mục, thương hiệu, khoảng giá, trạng thái tồn kho), giỏ hàng được lưu qua session cookie và merge tự động khi đăng nhập, cùng khả năng chat với AI Chatbot bằng tiếng Việt tự nhiên. Với khách hàng đã đăng nhập, hệ thống hỗ trợ bốn phương thức thanh toán (COD, chuyển khoản VietQR, MoMo, VNPay), lịch sử đơn hàng với tracking 4 trạng thái, đánh giá sản phẩm sau mua, tích điểm và đổi điểm loyalty. Với quản trị viên, hệ thống cung cấp dashboard với các KPI quan trọng (doanh thu, đơn hàng, người dùng mới), CRUD đầy đủ cho sản phẩm/danh mục/thương hiệu, quản lý đơn hàng và mã giảm giá.
+
+\subsection{Đánh giá AI Chatbot RAG}
+
+Bảng \ref{tab:chatbot-eval} trình bày kết quả đánh giá thực tế của AI Chatbot trên bộ câu hỏi thử nghiệm đa dạng.
+
+\begin{table}[H]
+\centering
+\caption{Đánh giá AI Chatbot RAG trên bộ câu hỏi thử nghiệm}
+\label{tab:chatbot-eval}
+\begin{tabular}{|p{4cm}|p{4cm}|p{2.5cm}|p{2cm}|}
+\hline
+\textbf{Loại câu hỏi} & \textbf{Ví dụ} & \textbf{Kết quả mong đợi} & \textbf{Đánh giá} \\
+\hline
+Viết tắt tiếng Việt & "ip17 pro bnh" & Trả về giá iPhone 17 Pro & Đạt \\
+\hline
+Câu hỏi ngân sách & "điện thoại chụp ảnh đẹp tầm 15tr" & Gợi ý 3--5 điện thoại phù hợp & Đạt \\
+\hline
+So sánh sản phẩm & "iPhone 16 vs Samsung S25" & So sánh thông số chính & Đạt \\
+\hline
+Tên model cụ thể & "ASUS ROG Zephyrus G14" & Thông tin chính xác model đó & Đạt \\
+\hline
+Sản phẩm không có & "iPhone 20 giá bao nhiêu" & Thông báo chưa có, gợi ý thay thế & Đạt \\
+\hline
+Câu hỏi off-topic & "thời tiết hôm nay thế nào" & Từ chối, hướng về sản phẩm & Đạt \\
+\hline
+Tiếng Anh & "best laptop under 20M VND" & Trả lời bằng tiếng Anh & Đạt \\
+\hline
+\end{tabular}
+\end{table}
+
+Điểm mạnh của AI Chatbot là khả năng xử lý đầu vào đa dạng từ người dùng Việt Nam thực tế: viết tắt, typo nhẹ, câu hỏi không đầy đủ chủ ngữ. Pipeline RAG đảm bảo chatbot chỉ trả lời dựa trên dữ liệu sản phẩm thực có trong hệ thống, không bịa đặt thông tin về sản phẩm không tồn tại. Cơ chế \texttt{lowConfidence} cảnh báo người dùng khi kết quả tìm kiếm không chắc chắn, thay vì trả lời tự tin sai.
+
+\subsection{Đánh giá hiệu năng}
+
+Thời gian phản hồi trung bình của các API nghiệp vụ chính trên môi trường local được đo như sau. Các API lấy danh sách sản phẩm (có Redis cache) phản hồi trong khoảng 15 đến 30 mili giây. Tạo đơn hàng (có transaction và SELECT FOR UPDATE) mất khoảng 80 đến 150 mili giây tuỳ số lượng item. API AI Chatbot (không có cache, gọi LLM) mất từ 2 đến 5 giây tuỳ provider và độ phức tạp của câu hỏi, trong đó thời gian embedding khoảng 500 mili giây và thời gian LLM generate khoảng 1 đến 4 giây.
+
+Smart product filtering trong \texttt{PromptBuilder} đóng vai trò quan trọng trong việc giảm chi phí LLM: thay vì đưa toàn bộ thông tin sản phẩm vào prompt, hệ thống chỉ đưa các trường cần thiết (tên, giá, tồn kho, mô tả ngắn), giảm 60 đến 70\% số token gửi lên LLM mà không ảnh hưởng đến chất lượng câu trả lời.
+
+\subsection{Hạn chế và Hướng cải thiện}
+
+Mặc dù đạt được các mục tiêu đề ra, hệ thống vẫn còn một số hạn chế cần nhận thức rõ. Về lưu trữ vector, hệ thống hiện lưu \texttt{vector-db.json} trên ổ đĩa dạng JSON (khoảng 10MB cho 60 sản phẩm). Khi số lượng sản phẩm tăng lên hàng nghìn, thời gian load và tìm kiếm tuyến tính sẽ không còn đáp ứng được yêu cầu, cần chuyển sang vector database chuyên dụng như Qdrant hay Pinecone. Về lịch sử hội thoại, conversation history hiện lưu trong in-memory Map và reset khi server restart. Để đảm bảo continuity qua restart, cần persist vào Redis hoặc database. Về triển khai, hệ thống được thiết kế để chạy trên môi trường local và đã được kiến trúc để có thể deploy lên cloud, nhưng chưa có hướng dẫn triển khai production với load balancer, CDN và database replication trong phạm vi khóa luận này.

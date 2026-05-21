@@ -4,35 +4,55 @@
  * @module global
  * @description Helper utility: logger
  */
+const path = require('path');
 const winston = require('winston');
+
+// __dirname = backend/src/utils/ → ../../logs/ = backend/logs/ (absolute, CWD-independent)
+const LOGS_DIR = path.join(__dirname, '../../logs');
 
 // Symbol splat được winston dùng để lưu extra arguments
 const SPLAT = Symbol.for('splat');
 
 const LEVEL_ICONS = { error: '❌', warn: '⚠️ ', info: '✅', debug: '🔍', verbose: '📋' };
+const LEVEL_COLORS = {
+  error: '\x1b[31m',
+  warn: '\x1b[33m',
+  info: '\x1b[36m',
+  debug: '\x1b[90m',
+  verbose: '\x1b[35m',
+};
+const RESET = '\x1b[0m';
+const DIM = '\x1b[2m';
+const BOLD = '\x1b[1m';
+
+const useColor = Boolean(process.stdout.isTTY);
+/* istanbul ignore next */
+const c = (code, str) => (useColor ? `${code}${str}${RESET}` : str);
 
 const formatSplat = (splat) => {
   if (!splat || splat.length === 0) return '';
-  return ' ' + splat
-    .map((s) => (s !== null && typeof s === 'object' ? JSON.stringify(s) : String(s)))
-    .join(' ');
+  return (
+    ' ' +
+    splat
+      .map((s) => (s !== null && typeof s === 'object' ? JSON.stringify(s) : String(s)))
+      .join(' ')
+  );
 };
 
 // Định dạng log đơn giản cho development (human-readable)
 const DEV_FORMAT = winston.format.combine(
-  // Chỉ colorize khi chạy trong terminal thật — tránh ANSI codes xuất hiện khi pipe/IDE
-  ...(process.stdout.isTTY ? [winston.format.colorize()] : []),
   winston.format.timestamp({ format: 'YYYY-MM-DD HH:mm:ss' }),
   winston.format.errors({ stack: true }),
   winston.format.splat(),
   winston.format.printf(({ level, message, timestamp, stack, [SPLAT]: splat }) => {
-    // Strip ANSI để tính độ dài thật của level string khi colorize
-    const levelClean = level.replace(/\x1B\[[0-9;]*m/g, '');
-    const pad = ' '.repeat(Math.max(0, 5 - levelClean.length));
-    const icon = LEVEL_ICONS[levelClean] ?? '  ';
+    const icon = LEVEL_ICONS[level] ?? '  ';
+    const color = LEVEL_COLORS[level] ?? '';
+    const lvl = c(BOLD + color, level.toUpperCase().padEnd(5));
+    const ts = c(DIM, `[${timestamp}]`);
     const extra = formatSplat(splat);
-    const base = `${timestamp} ${level}${pad} ${icon} ${message}${extra}`;
-    return stack ? `${base}\n${stack}` : base;
+    const msg = `${message}${extra}`;
+    const base = `${ts}  ${icon}  ${lvl}  ${msg}`;
+    return stack ? `${base}\n${c(DIM, stack)}` : base;
   }),
 );
 
@@ -41,7 +61,7 @@ const PROD_FORMAT = winston.format.combine(
   winston.format.timestamp(),
   winston.format.errors({ stack: true }),
   winston.format.splat(),
-  winston.format.json()
+  winston.format.json(),
 );
 
 const logger = winston.createLogger({
@@ -55,13 +75,13 @@ const logger = winston.createLogger({
     ...(process.env.NODE_ENV === 'production'
       ? [
           new winston.transports.File({
-            filename: 'logs/error.log',
+            filename: path.join(LOGS_DIR, 'error.log'),
             level: 'error',
             maxsize: 10485760, // 10MB
             maxFiles: 5,
           }),
           new winston.transports.File({
-            filename: 'logs/combined.log',
+            filename: path.join(LOGS_DIR, 'combined.log'),
             maxsize: 10485760, // 10MB
             maxFiles: 5,
           }),

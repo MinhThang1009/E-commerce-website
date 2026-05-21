@@ -3,6 +3,8 @@
  * @layer Service
  * @module payment
  * @description Business logic layer cho payment
+ * @depends-on sequelize-payment-repository, momoService, vnpayService, emailService, logger
+ * @see module.js (DI wiring), routes.js (endpoints), CLAUDE.md (overview)
  */
 const moment = require('moment');
 const { AppError } = require('@shared/errors');

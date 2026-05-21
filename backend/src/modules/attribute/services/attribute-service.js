@@ -10,7 +10,9 @@ const logger = require('@utils/logger');
 
 // productNameGeneratorService được inject từ module.js để tránh cross-module coupling trực tiếp
 let _nameGenerator = null;
-const setNameGenerator = (service) => { _nameGenerator = service; };
+const setNameGenerator = (service) => {
+  _nameGenerator = service;
+};
 
 const getAttributeGroups = () => repo.findAllGroups();
 
@@ -35,7 +37,11 @@ const deleteGroup = async (id) => {
   await group.update({ isActive: false });
 };
 
-const addValue = (data) => repo.createValue(data);
+const addValue = async (data) => {
+  const group = await repo.findGroupById(data.attributeGroupId);
+  if (!group) throw new AppError('Không tìm thấy nhóm thuộc tính', 404);
+  return repo.createValue(data);
+};
 
 const updateValue = async (id, data) => {
   const value = await repo.findValueById(id);

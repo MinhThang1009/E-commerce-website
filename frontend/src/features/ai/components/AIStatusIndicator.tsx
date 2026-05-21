@@ -6,7 +6,7 @@
  */
 import { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
-import { chatbotService } from '../services/chatbot-service';
+import { chatbotService } from '../api/chatbot-service';
 
 const AIStatusIndicator: React.FC = () => {
   const { t } = useTranslation();

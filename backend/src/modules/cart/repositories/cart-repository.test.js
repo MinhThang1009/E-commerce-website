@@ -10,7 +10,9 @@ function makeModel(defaults = {}) {
     findAll: jest.fn().mockResolvedValue(defaults.findAll ?? []),
     findOne: jest.fn().mockResolvedValue(defaults.findOne ?? null),
     findByPk: jest.fn().mockResolvedValue(defaults.findByPk ?? null),
-    findAndCountAll: jest.fn().mockResolvedValue(defaults.findAndCountAll ?? { count: 0, rows: [] }),
+    findAndCountAll: jest
+      .fn()
+      .mockResolvedValue(defaults.findAndCountAll ?? { count: 0, rows: [] }),
     findOrCreate: jest.fn().mockResolvedValue([defaults.findOrCreate ?? {}, false]),
     create: jest.fn().mockResolvedValue(defaults.create ?? {}),
     destroy: jest.fn().mockResolvedValue(defaults.destroy ?? 0),
@@ -337,7 +339,10 @@ describe('findVariantByIdAndProductId', () => {
 describe('findActiveWarrantyPackagesByIds', () => {
   it('gọi WarrantyPackage.findAll với id trong ids và isActive: true', async () => {
     const { repo, deps } = makeRepo();
-    const packages = [{ id: 1, isActive: true }, { id: 2, isActive: true }];
+    const packages = [
+      { id: 1, isActive: true },
+      { id: 2, isActive: true },
+    ];
     deps.WarrantyPackage.findAll.mockResolvedValue(packages);
 
     const result = await repo.findActiveWarrantyPackagesByIds([1, 2]);

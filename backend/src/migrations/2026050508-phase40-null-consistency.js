@@ -19,7 +19,7 @@ async function getColumnState(qi, table, column) {
   const [rows] = await qi.sequelize.query(
     `SELECT IS_NULLABLE, COLUMN_DEFAULT FROM INFORMATION_SCHEMA.COLUMNS
      WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = ? AND COLUMN_NAME = ?`,
-    { replacements: [table, column] }
+    { replacements: [table, column] },
   );
   return rows[0] || null;
 }
@@ -32,7 +32,7 @@ module.exports = {
       // Idempotent: skip nếu đã NOT NULL + DEFAULT 'Vietnam'
       if (state.IS_NULLABLE === 'NO' && state.COLUMN_DEFAULT === 'Vietnam') continue;
       await queryInterface.sequelize.query(
-        `ALTER TABLE \`${table}\` MODIFY COLUMN \`${column}\` VARCHAR(255) NOT NULL DEFAULT 'Vietnam'`
+        `ALTER TABLE \`${table}\` MODIFY COLUMN \`${column}\` VARCHAR(255) NOT NULL DEFAULT 'Vietnam'`,
       );
     }
   },
@@ -40,7 +40,7 @@ module.exports = {
   async down(queryInterface) {
     for (const [table, column] of COLUMNS) {
       await queryInterface.sequelize.query(
-        `ALTER TABLE \`${table}\` MODIFY COLUMN \`${column}\` VARCHAR(255) NULL DEFAULT NULL`
+        `ALTER TABLE \`${table}\` MODIFY COLUMN \`${column}\` VARCHAR(255) NULL DEFAULT NULL`,
       );
     }
   },

@@ -60,7 +60,7 @@ function makeToken(payload = {}, expiresIn = '1h') {
   return jwt.sign(
     { id: 1, role: 'customer', jti: 'test-jti', iat: Math.floor(Date.now() / 1000), ...payload },
     process.env.JWT_SECRET,
-    { algorithm: 'HS256', expiresIn }
+    { algorithm: 'HS256', expiresIn },
   );
 }
 
@@ -176,7 +176,7 @@ describe('authenticate', () => {
       const token = jwt.sign(
         { id: 1, role: 'customer', jti: 'tok-1', iat: oldIat, exp: oldIat + 7200 },
         process.env.JWT_SECRET,
-        { algorithm: 'HS256' }
+        { algorithm: 'HS256' },
       );
 
       mockRedis.get.mockImplementation((key) => {
@@ -209,7 +209,7 @@ describe('authenticate', () => {
       const token = jwt.sign(
         { id: 1, role: 'customer', jti: 'new-tok', iat: newIat, exp: newIat + 3600 },
         process.env.JWT_SECRET,
-        { algorithm: 'HS256' }
+        { algorithm: 'HS256' },
       );
       const req = makeReq(token);
       const next = jest.fn();
@@ -304,7 +304,7 @@ describe('authenticate', () => {
       const tokenWithoutJti = jwt.sign(
         { id: 1, role: 'customer' }, // không có jti
         process.env.JWT_SECRET,
-        { algorithm: 'HS256', expiresIn: '1h' }
+        { algorithm: 'HS256', expiresIn: '1h' },
       );
       const req = makeReq(tokenWithoutJti);
       const next = jest.fn();
@@ -393,7 +393,7 @@ describe('optionalAuthenticate', () => {
     it('gọi next() không có lỗi (bỏ qua token)', async () => {
       getRedisClient.mockResolvedValue(mockRedis);
       mockRedis.get.mockImplementation((key) =>
-        key === 'bl:test-jti' ? Promise.resolve('1') : Promise.resolve(null)
+        key === 'bl:test-jti' ? Promise.resolve('1') : Promise.resolve(null),
       );
 
       const token = makeToken({ jti: 'test-jti' });
@@ -412,7 +412,7 @@ describe('optionalAuthenticate', () => {
       const pwChangedAt = oldIat + 1800;
 
       mockRedis.get.mockImplementation((key) =>
-        key === 'pw_changed:1' ? Promise.resolve(String(pwChangedAt)) : Promise.resolve(null)
+        key === 'pw_changed:1' ? Promise.resolve(String(pwChangedAt)) : Promise.resolve(null),
       );
 
       const token = makeToken({ iat: oldIat });
@@ -492,7 +492,7 @@ describe('optionalAuthenticate', () => {
       const staleToken = jwt.sign(
         { id: 1, role: 'customer', jti: 'stale-jti', iat: oldIat, exp: oldIat + 7200 },
         process.env.JWT_SECRET,
-        { algorithm: 'HS256' }
+        { algorithm: 'HS256' },
       );
 
       mockRedis.get.mockImplementation((key) => {
@@ -532,11 +532,10 @@ describe('optionalAuthenticate', () => {
       User.findByPk.mockResolvedValue(user);
 
       // Token không có jti → decoded.jti = undefined → if(decoded.jti) false → bỏ qua blacklist
-      const tokenWithoutJti = jwt.sign(
-        { id: 1, role: 'customer' },
-        process.env.JWT_SECRET,
-        { algorithm: 'HS256', expiresIn: '1h' }
-      );
+      const tokenWithoutJti = jwt.sign({ id: 1, role: 'customer' }, process.env.JWT_SECRET, {
+        algorithm: 'HS256',
+        expiresIn: '1h',
+      });
       const req = makeReq(tokenWithoutJti);
       const next = jest.fn();
 

@@ -9,7 +9,10 @@ const { WarrantyPackage, ProductWarranty, Product } = require('@models');
 const findAll = ({ where, offset, limit }) =>
   WarrantyPackage.findAndCountAll({
     where,
-    order: [['sortOrder', 'ASC'], ['createdAt', 'ASC']],
+    order: [
+      ['sortOrder', 'ASC'],
+      ['createdAt', 'ASC'],
+    ],
     offset,
     limit,
   });

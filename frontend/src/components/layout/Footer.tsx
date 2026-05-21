@@ -164,7 +164,6 @@ const Footer: React.FC = () => {
                 { labelKey: 'footer.usefulLinks.guide', path: '/faqs' },
                 { labelKey: 'footer.usefulLinks.about', path: '/about' },
                 { labelKey: 'footer.usefulLinks.brands', path: '/brands' },
-                { labelKey: 'footer.usefulLinks.collections', path: '/collections' },
               ].map((item) => (
                 <li key={item.labelKey}>
                   <Link

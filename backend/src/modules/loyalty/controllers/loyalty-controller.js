@@ -16,7 +16,9 @@ class LoyaltyController {
         ...req.query,
       });
       res.status(200).json({ status: 'success', data });
-    } catch (err) { next(err); }
+    } catch (err) {
+      next(err);
+    }
   };
 
   redeemPoints = async (req, res, next) => {
@@ -26,7 +28,9 @@ class LoyaltyController {
         points: req.body.points,
       });
       res.status(200).json({ status: 'success', message: result.message, data: result.data });
-    } catch (err) { next(err); }
+    } catch (err) {
+      next(err);
+    }
   };
 }
 

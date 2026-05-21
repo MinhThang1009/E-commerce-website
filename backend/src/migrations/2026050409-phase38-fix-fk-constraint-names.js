@@ -16,7 +16,7 @@ module.exports = {
          WHERE TABLE_SCHEMA = DATABASE()
            AND TABLE_NAME = :tableName
            AND REFERENCED_TABLE_NAME IS NOT NULL`,
-        { replacements: { tableName } }
+        { replacements: { tableName } },
       );
       return rows.map((r) => r.CONSTRAINT_NAME);
     };

@@ -97,7 +97,7 @@ describe('CartController', () => {
       await controller.getCart(req, res, next);
 
       expect(cartService.getCart).toHaveBeenCalledWith(
-        expect.objectContaining({ cookieSessionId: undefined })
+        expect.objectContaining({ cookieSessionId: undefined }),
       );
     });
   });
@@ -154,7 +154,7 @@ describe('CartController', () => {
           httpOnly: true,
           maxAge: 30 * 24 * 60 * 60 * 1000,
           sameSite: 'strict',
-        })
+        }),
       );
       expect(res.status).toHaveBeenCalledWith(200);
       expect(res.json).toHaveBeenCalledWith({ status: 'success', data: { items: [] } });
@@ -163,16 +163,17 @@ describe('CartController', () => {
     test('thành công khi service không gọi setSessionCookie (guest user không cần set lại cookie)', async () => {
       cartService.addToCart.mockResolvedValue({ data: { items: [{ id: 1 }] } });
 
-      const req = makeReq({ body: { productId: 2, quantity: 2 }, cookies: { sessionId: 'existing' } });
+      const req = makeReq({
+        body: { productId: 2, quantity: 2 },
+        cookies: { sessionId: 'existing' },
+      });
       const res = makeRes();
       const next = jest.fn();
 
       await controller.addToCart(req, res, next);
 
       expect(res.status).toHaveBeenCalledWith(200);
-      expect(res.json).toHaveBeenCalledWith(
-        expect.objectContaining({ status: 'success' })
-      );
+      expect(res.json).toHaveBeenCalledWith(expect.objectContaining({ status: 'success' }));
     });
 
     test('service throw → gọi next(err) (line 31)', async () => {
@@ -206,7 +207,7 @@ describe('CartController', () => {
           cookieSessionId: 'cookie-123',
           body: req.body,
           setSessionCookie: expect.any(Function),
-        })
+        }),
       );
     });
   });
@@ -336,7 +337,7 @@ describe('CartController', () => {
         expect.objectContaining({
           cookieSessionId: 'cookie-merge',
           clearSessionCookie: expect.any(Function),
-        })
+        }),
       );
     });
   });

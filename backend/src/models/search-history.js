@@ -31,7 +31,7 @@ const SearchHistory = sequelize.define(
     timestamps: true,
     updatedAt: false,
     underscored: true,
-  }
+  },
 );
 
 module.exports = SearchHistory;

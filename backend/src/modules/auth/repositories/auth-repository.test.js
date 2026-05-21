@@ -29,7 +29,7 @@ function makeRepo(userOverrides = {}) {
 describe('SequelizeAuthRepository — constructor', () => {
   test('ném lỗi khi thiếu User model', () => {
     expect(() => new SequelizeAuthRepository({})).toThrow(
-      'SequelizeAuthRepository: User model bắt buộc'
+      'SequelizeAuthRepository: User model bắt buộc',
     );
   });
 
@@ -106,7 +106,7 @@ describe('SequelizeAuthRepository — findByIdWithAddresses', () => {
             attributes: expect.objectContaining({ exclude: ['userId'] }),
           }),
         ]),
-      })
+      }),
     );
     expect(result).toBe(fakeUser);
   });
@@ -140,7 +140,7 @@ describe('SequelizeAuthRepository — findByGoogleIdOrEmail', () => {
             expect.objectContaining({ email: 'google@x.com' }),
           ]),
         }),
-      })
+      }),
     );
     expect(result).toBe(fakeUser);
   });
@@ -170,7 +170,7 @@ describe('SequelizeAuthRepository — findByResetToken', () => {
         where: expect.objectContaining({
           resetPasswordToken: 'tok-abc',
         }),
-      })
+      }),
     );
     expect(result).toBe(fakeUser);
   });

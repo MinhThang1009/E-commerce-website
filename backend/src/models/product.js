@@ -6,7 +6,7 @@ const logger = require('@utils/logger');
 // Thử load vectorStore service, nếu không có thì bỏ qua
 let vectorStoreService;
 try {
-  vectorStoreService = require('@modules/ai/services/vectorstore/vector-store');
+  vectorStoreService = require('@services/vector-store/vector-store');
 } catch (e) {
   vectorStoreService = null;
 }
@@ -320,7 +320,7 @@ const Product = sequelize.define(
           if (vectorStoreService && product.status === 'active') {
             const Category = require('@models/category');
             const ProductImage = require('@models/product-image');
-            const { enrichProductData } = require('@modules/ai/services/vectorstore/vector-store');
+            const { enrichProductData } = require('@modules/ai/services/product/product-enricher');
             const fullProduct = await Product.findByPk(product.id, {
               include: [
                 { model: Category, as: 'categories', attributes: ['name'] },
@@ -353,7 +353,9 @@ const Product = sequelize.define(
               const Category = require('@models/category');
               const ProductImage = require('@models/product-image');
               const ProductVariant = require('@models/product-variant');
-              const { enrichProductData } = require('@modules/ai/services/vectorstore/vector-store');
+              const {
+                enrichProductData,
+              } = require('@modules/ai/services/product/product-enricher');
               const fullProduct = await Product.findByPk(product.id, {
                 include: [
                   { model: Category, as: 'categories', attributes: ['name'] },
@@ -387,17 +389,39 @@ const Product = sequelize.define(
           logger.error('Lỗi cập nhật vector store sau khi sửa sản phẩm:', error);
         }
       },
-      // Xóa khỏi vector store khi xóa sản phẩm
+      // Xóa khỏi vector store khi xóa 1 sản phẩm (single instance)
       afterDestroy: async (product) => {
         try {
           if (vectorStoreService) {
             vectorStoreService.items = vectorStoreService.items.filter(
               (item) => item.metadata.id !== product.id,
             );
-            await vectorStoreService.save(); // Phải await
+            await vectorStoreService.save();
           }
         } catch (error) {
           logger.error('Lỗi cập nhật vector store sau khi xóa sản phẩm:', error);
+        }
+      },
+      // Sync vector store sau bulk delete — xóa vectors của products không còn tồn tại
+      afterBulkDestroy: async () => {
+        try {
+          if (!vectorStoreService) return;
+          const { Product: ProductModel } = require('@models');
+          const activeIds = new Set(
+            (await ProductModel.findAll({ attributes: ['id'], raw: true })).map((p) => p.id),
+          );
+          const before = vectorStoreService.items.length;
+          vectorStoreService.items = vectorStoreService.items.filter((item) =>
+            activeIds.has(item.metadata.id),
+          );
+          if (vectorStoreService.items.length < before) {
+            await vectorStoreService.save();
+            logger.debug(
+              `Vector store: xóa ${before - vectorStoreService.items.length} stale vectors sau bulk delete`,
+            );
+          }
+        } catch (error) {
+          logger.error('Lỗi sync vector store sau bulk delete:', error);
         }
       },
     },

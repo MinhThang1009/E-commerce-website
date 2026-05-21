@@ -204,7 +204,7 @@ async function columnExists(queryInterface, table, columnName) {
      WHERE TABLE_SCHEMA = DATABASE()
        AND TABLE_NAME = ?
        AND BINARY COLUMN_NAME = ?`,
-    { replacements: [table, columnName] }
+    { replacements: [table, columnName] },
   );
   return rows.length > 0;
 }
@@ -217,7 +217,7 @@ async function getColumnDefinition(queryInterface, table, columnName) {
      WHERE TABLE_SCHEMA = DATABASE()
        AND TABLE_NAME = ?
        AND BINARY COLUMN_NAME = ?`,
-    { replacements: [table, columnName] }
+    { replacements: [table, columnName] },
   );
   return rows[0] || null;
 }
@@ -243,7 +243,10 @@ function buildColumnDefSql(col) {
   } else if (col.COLUMN_DEFAULT === 'NULL') {
     // Literal string 'NULL' từ MariaDB INFO_SCHEMA → DEFAULT NULL (no quotes)
     defaultClause = ' DEFAULT NULL';
-  } else if (/\(\s*\)$/.test(col.COLUMN_DEFAULT) || /^(current_timestamp|CURRENT_TIMESTAMP)/i.test(col.COLUMN_DEFAULT)) {
+  } else if (
+    /\(\s*\)$/.test(col.COLUMN_DEFAULT) ||
+    /^(current_timestamp|CURRENT_TIMESTAMP)/i.test(col.COLUMN_DEFAULT)
+  ) {
     // Function call expression: current_timestamp(), json_array(), uuid(), v.v.
     defaultClause = ` DEFAULT ${col.COLUMN_DEFAULT}`;
   } else if (col.COLUMN_DEFAULT.startsWith("'") && col.COLUMN_DEFAULT.endsWith("'")) {
@@ -280,7 +283,7 @@ async function safeRenameColumn(queryInterface, table, oldName, newName) {
   if (newExists) {
     throw new Error(
       `Cả 2 column "${oldName}" và "${newName}" đều tồn tại trong "${table}". ` +
-      `Đây là duplicate orphan. Drop column orphan trước khi rerun migration.`
+        `Đây là duplicate orphan. Drop column orphan trước khi rerun migration.`,
     );
   }
 
@@ -302,12 +305,12 @@ module.exports = {
     // ── Pre-step 0: Lưu sql_mode hiện tại + set permissive ──
     // MariaDB strict mode reject DEFAULT expression như `json_array()` khi CHANGE COLUMN
     // (vd cart_items.warranty_package_ids). Set sql_mode='' để allow.
-    const [origMode] = await queryInterface.sequelize.query("SELECT @@SESSION.sql_mode AS m");
+    const [origMode] = await queryInterface.sequelize.query('SELECT @@SESSION.sql_mode AS m');
     const originalSqlMode = origMode[0].m;
     log(`Original sql_mode: ${originalSqlMode}`);
     log("Setting sql_mode='' permissive cho migration");
     await queryInterface.sequelize.query("SET SESSION sql_mode = ''");
-    await queryInterface.sequelize.query("SET SESSION foreign_key_checks = 0");
+    await queryInterface.sequelize.query('SET SESSION foreign_key_checks = 0');
 
     // ── Pre-step 1: drop orphan duplicate columns (chat_messages.session_id) ──
     // session_id là orphan empty (không có migration tạo, table empty)
@@ -316,7 +319,9 @@ module.exports = {
       (await columnExists(queryInterface, 'chat_messages', 'sessionId')) &&
       (await columnExists(queryInterface, 'chat_messages', 'session_id'));
     if (chatMsgHasOrphan) {
-      log('Dropping orphan column chat_messages.session_id (empty, sẽ được tạo lại từ rename sessionId)');
+      log(
+        'Dropping orphan column chat_messages.session_id (empty, sẽ được tạo lại từ rename sessionId)',
+      );
       await queryInterface.removeColumn('chat_messages', 'session_id');
     }
 
@@ -336,22 +341,24 @@ module.exports = {
     } finally {
       // Restore sql_mode + foreign_key_checks dù success hay fail
       await queryInterface.sequelize.query(
-        `SET SESSION sql_mode = '${originalSqlMode.replace(/'/g, "''")}'`
+        `SET SESSION sql_mode = '${originalSqlMode.replace(/'/g, "''")}'`,
       );
-      await queryInterface.sequelize.query("SET SESSION foreign_key_checks = 1");
+      await queryInterface.sequelize.query('SET SESSION foreign_key_checks = 1');
       log(`sql_mode restored to: ${originalSqlMode}`);
     }
-    log(`Hoàn tất: ${renamed} renamed, ${skipped} skipped (đã rename trước đó hoặc không tồn tại).`);
+    log(
+      `Hoàn tất: ${renamed} renamed, ${skipped} skipped (đã rename trước đó hoặc không tồn tại).`,
+    );
   },
 
   async down(queryInterface) {
     const log = (msg) => console.log(`[Phase 40.1 ROLLBACK] ${msg}`);
 
     // Same permissive sql_mode để rollback an toàn
-    const [origMode] = await queryInterface.sequelize.query("SELECT @@SESSION.sql_mode AS m");
+    const [origMode] = await queryInterface.sequelize.query('SELECT @@SESSION.sql_mode AS m');
     const originalSqlMode = origMode[0].m;
     await queryInterface.sequelize.query("SET SESSION sql_mode = ''");
-    await queryInterface.sequelize.query("SET SESSION foreign_key_checks = 0");
+    await queryInterface.sequelize.query('SET SESSION foreign_key_checks = 0');
 
     log(`Bắt đầu rollback ${COLUMN_RENAMES.length} columns snake_case → camelCase...`);
     let reverted = 0;
@@ -369,9 +376,9 @@ module.exports = {
       }
     } finally {
       await queryInterface.sequelize.query(
-        `SET SESSION sql_mode = '${originalSqlMode.replace(/'/g, "''")}'`
+        `SET SESSION sql_mode = '${originalSqlMode.replace(/'/g, "''")}'`,
       );
-      await queryInterface.sequelize.query("SET SESSION foreign_key_checks = 1");
+      await queryInterface.sequelize.query('SET SESSION foreign_key_checks = 1');
     }
     log(`Rollback hoàn tất: ${reverted} reverted, ${skipped} skipped.`);
   },

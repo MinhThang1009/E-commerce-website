@@ -9,8 +9,14 @@ function makeRes() {
   const res = {
     _status: 200,
     _body: null,
-    status(code) { this._status = code; return this; },
-    json(body) { this._body = body; return this; },
+    status(code) {
+      this._status = code;
+      return this;
+    },
+    json(body) {
+      this._body = body;
+      return this;
+    },
   };
   return res;
 }
@@ -141,7 +147,7 @@ describe('LoyaltyController.redeemPoints', () => {
     await controller.redeemPoints(req, makeRes(), jest.fn());
 
     expect(loyaltyService.redeemPoints).toHaveBeenCalledWith(
-      expect.objectContaining({ points: 200, userId: 5 })
+      expect.objectContaining({ points: 200, userId: 5 }),
     );
   });
 
@@ -153,7 +159,7 @@ describe('LoyaltyController.redeemPoints', () => {
     await controller.redeemPoints(
       makeReq({ user: { id: 1 }, body: { points: 99999 } }),
       makeRes(),
-      next
+      next,
     );
 
     expect(next).toHaveBeenCalledWith(err);

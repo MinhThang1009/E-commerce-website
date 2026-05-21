@@ -65,7 +65,8 @@ describe('OrdersService', () => {
 
     service = new OrdersService({
       ordersRepository: repo,
-      emailGateway, eventBus,
+      emailGateway,
+      eventBus,
       logger: { info: jest.fn(), error: jest.fn(), warn: jest.fn() },
       constants,
     });
@@ -92,25 +93,38 @@ describe('OrdersService', () => {
   describe('cancelOrder', () => {
     test('không tồn tại → 404', async () => {
       repo.findOrderForCancel.mockResolvedValue(null);
-      await expect(
-        service.cancelOrder({ id: 99, userId: 1 })
-      ).rejects.toMatchObject({ statusCode: 404 });
+      await expect(service.cancelOrder({ id: 99, userId: 1 })).rejects.toMatchObject({
+        statusCode: 404,
+      });
     });
 
     test('order shipped → DomainError 422 (qua aggregate)', async () => {
       repo.findOrderForCancel.mockResolvedValue({
-        id: 1, status: 'shipped', items: [], pointsUsed: 0, pointsEarned: 0, userId: 1, number: 'X',
+        id: 1,
+        status: 'shipped',
+        items: [],
+        pointsUsed: 0,
+        pointsEarned: 0,
+        userId: 1,
+        number: 'X',
       });
-      await expect(
-        service.cancelOrder({ id: 1, userId: 1 })
-      ).rejects.toMatchObject({ statusCode: 422 });
+      await expect(service.cancelOrder({ id: 1, userId: 1 })).rejects.toMatchObject({
+        statusCode: 422,
+      });
     });
 
     test('hợp lệ pending → status=cancelled + restore stock + publish event', async () => {
       const variant = { id: 5, stockQuantity: 10 };
       const order = {
-        id: 1, status: 'pending', userId: 1, number: 'ORD-1', pointsUsed: 0, pointsEarned: 0,
-        items: [{ productId: 10, variantId: 5, quantity: 2, ProductVariant: variant, Product: null }],
+        id: 1,
+        status: 'pending',
+        userId: 1,
+        number: 'ORD-1',
+        pointsUsed: 0,
+        pointsEarned: 0,
+        items: [
+          { productId: 10, variantId: 5, quantity: 2, ProductVariant: variant, Product: null },
+        ],
       };
       repo.findOrderForCancel.mockResolvedValue(order);
 
@@ -119,14 +133,19 @@ describe('OrdersService', () => {
       expect(order.status).toBe('cancelled');
       expect(repo.restoreVariantStock).toHaveBeenCalledWith(variant, 2, expect.any(Object));
       expect(eventBus.publish).toHaveBeenCalledWith(
-        expect.objectContaining({ type: 'order.cancelled' })
+        expect.objectContaining({ type: 'order.cancelled' }),
       );
     });
 
     test('hợp lệ + pointsUsed > 0 → refund points', async () => {
       const order = {
-        id: 1, status: 'pending', userId: 1, number: 'X',
-        pointsUsed: 50, pointsEarned: 0, items: [],
+        id: 1,
+        status: 'pending',
+        userId: 1,
+        number: 'X',
+        pointsUsed: 50,
+        pointsEarned: 0,
+        items: [],
       };
       repo.findOrderForCancel.mockResolvedValue(order);
       repo.findUserById.mockResolvedValue({ loyaltyPoints: 100 });
@@ -135,19 +154,24 @@ describe('OrdersService', () => {
 
       expect(repo.updateUserPoints).toHaveBeenCalledWith(
         expect.objectContaining({ loyaltyPoints: 100 }),
-        150,  // 100 + 50
-        expect.any(Object)
+        150, // 100 + 50
+        expect.any(Object),
       );
       expect(repo.createLoyaltyHistory).toHaveBeenCalledWith(
         expect.objectContaining({ type: 'refund', points: 50 }),
-        expect.any(Object)
+        expect.any(Object),
       );
     });
 
     test('pointsEarned > 0 → revoke earned points', async () => {
       const order = {
-        id: 1, status: 'processing', userId: 1, number: 'X',
-        pointsUsed: 0, pointsEarned: 30, items: [],
+        id: 1,
+        status: 'processing',
+        userId: 1,
+        number: 'X',
+        pointsUsed: 0,
+        pointsEarned: 30,
+        items: [],
       };
       repo.findOrderForCancel.mockResolvedValue(order);
       repo.findUserById.mockResolvedValue({ loyaltyPoints: 100 });
@@ -155,7 +179,9 @@ describe('OrdersService', () => {
       await service.cancelOrder({ id: 1, userId: 1 });
 
       expect(repo.updateUserPoints).toHaveBeenCalledWith(
-        expect.any(Object), 70, expect.any(Object)
+        expect.any(Object),
+        70,
+        expect.any(Object),
       );
     });
   });
@@ -163,20 +189,26 @@ describe('OrdersService', () => {
   describe('repayOrder', () => {
     test('không tồn tại → 404', async () => {
       repo.findOrderByIdAndUserId.mockResolvedValue(null);
-      await expect(
-        service.repayOrder({ id: 99, userId: 1, originUrl: '' })
-      ).rejects.toMatchObject({ statusCode: 404 });
+      await expect(service.repayOrder({ id: 99, userId: 1, originUrl: '' })).rejects.toMatchObject({
+        statusCode: 404,
+      });
     });
 
     test('shipped → DomainError', async () => {
       repo.findOrderByIdAndUserId.mockResolvedValue({ status: 'shipped', paymentStatus: 'paid' });
       await expect(
-        service.repayOrder({ id: 1, userId: 1, originUrl: 'http://x' })
+        service.repayOrder({ id: 1, userId: 1, originUrl: 'http://x' }),
       ).rejects.toMatchObject({ statusCode: 422 });
     });
 
     test('cancelled → reset pending + paymentUrl', async () => {
-      const order = { id: 5, number: 'ORD-X', status: 'cancelled', paymentStatus: 'pending', total: 1000 };
+      const order = {
+        id: 5,
+        number: 'ORD-X',
+        status: 'cancelled',
+        paymentStatus: 'pending',
+        total: 1000,
+      };
       repo.findOrderByIdAndUserId.mockResolvedValue(order);
 
       const result = await service.repayOrder({ id: 5, userId: 1, originUrl: 'http://shop' });
@@ -189,14 +221,15 @@ describe('OrdersService', () => {
   describe('confirmReceived', () => {
     test('không tồn tại → 404', async () => {
       repo.findOrderByIdAndUserId.mockResolvedValue(null);
-      await expect(
-        service.confirmReceived({ id: 99, userId: 1 })
-      ).rejects.toMatchObject({ statusCode: 404 });
+      await expect(service.confirmReceived({ id: 99, userId: 1 })).rejects.toMatchObject({
+        statusCode: 404,
+      });
     });
 
     test('đã delivered + pointsEarned > 0 → alreadyProcessed', async () => {
       const order = {
-        status: 'delivered', pointsEarned: 50,
+        status: 'delivered',
+        pointsEarned: 50,
         reload: jest.fn(),
       };
       repo.findOrderByIdAndUserId.mockResolvedValue(order);
@@ -209,8 +242,14 @@ describe('OrdersService', () => {
 
     test('shipped → trao điểm + publish event', async () => {
       const order = {
-        id: 1, status: 'shipped', userId: 1, number: 'X',
-        paymentMethod: 'cod', subtotal: 5000, total: 5000, pointsEarned: 0,
+        id: 1,
+        status: 'shipped',
+        userId: 1,
+        number: 'X',
+        paymentMethod: 'cod',
+        subtotal: 5000,
+        total: 5000,
+        pointsEarned: 0,
         reload: jest.fn(),
       };
       repo.findOrderByIdAndUserId.mockResolvedValue(order);
@@ -222,14 +261,20 @@ describe('OrdersService', () => {
       expect(result.pointsEarned).toBe(5);
       expect(repo.updateUserPoints).toHaveBeenCalledWith(expect.any(Object), 5);
       expect(eventBus.publish).toHaveBeenCalledWith(
-        expect.objectContaining({ type: 'order.delivered' })
+        expect.objectContaining({ type: 'order.delivered' }),
       );
     });
 
     test('subtotal=0 → mark pointsEarned=-1 (đã xử lý)', async () => {
       const order = {
-        id: 1, status: 'shipped', userId: 1, number: 'X',
-        paymentMethod: 'cod', subtotal: 0, total: 0, pointsEarned: 0,
+        id: 1,
+        status: 'shipped',
+        userId: 1,
+        number: 'X',
+        paymentMethod: 'cod',
+        subtotal: 0,
+        total: 0,
+        pointsEarned: 0,
         reload: jest.fn(),
       };
       repo.findOrderByIdAndUserId.mockResolvedValue(order);
@@ -243,16 +288,22 @@ describe('OrdersService', () => {
   describe('updateOrderStatus', () => {
     test('không tồn tại → 404', async () => {
       repo.findOrderByPkWithItemsAndUser.mockResolvedValue(null);
-      await expect(
-        service.updateOrderStatus({ id: 99, status: 'shipped' })
-      ).rejects.toMatchObject({ statusCode: 404 });
+      await expect(service.updateOrderStatus({ id: 99, status: 'shipped' })).rejects.toMatchObject({
+        statusCode: 404,
+      });
     });
 
     test('chuyển sang delivered → trao điểm + publish OrderDelivered', async () => {
       const order = {
-        id: 1, number: 'X', userId: 5, status: 'shipped',
-        paymentMethod: 'cod', paymentStatus: 'pending',
-        subtotal: 10000, total: 10000, createdAt: new Date(),
+        id: 1,
+        number: 'X',
+        userId: 5,
+        status: 'shipped',
+        paymentMethod: 'cod',
+        paymentStatus: 'pending',
+        subtotal: 10000,
+        total: 10000,
+        createdAt: new Date(),
         user: { email: 'u@x.y' },
       };
       repo.findOrderByPkWithItemsAndUser.mockResolvedValue(order);
@@ -263,10 +314,10 @@ describe('OrdersService', () => {
       expect(order.status).toBe('delivered');
       expect(order.paymentStatus).toBe('paid'); // COD auto-paid
       expect(repo.createLoyaltyHistory).toHaveBeenCalledWith(
-        expect.objectContaining({ type: 'earn', points: 10 })
+        expect.objectContaining({ type: 'earn', points: 10 }),
       );
       expect(eventBus.publish).toHaveBeenCalledWith(
-        expect.objectContaining({ type: 'order.delivered' })
+        expect.objectContaining({ type: 'order.delivered' }),
       );
     });
   });
@@ -282,13 +333,16 @@ describe('OrdersService', () => {
         status: 'pending',
       });
       await expect(
-        service.trackOrder({ orderNumber: 'X', email: 'fake@x.y' })
+        service.trackOrder({ orderNumber: 'X', email: 'fake@x.y' }),
       ).rejects.toMatchObject({ statusCode: 404 });
     });
 
     test('match → trả tracking steps', async () => {
       repo.findOrderByNumberWithUserEmail.mockResolvedValue({
-        number: 'ORD-1', status: 'shipped', createdAt: new Date(), updatedAt: new Date(),
+        number: 'ORD-1',
+        status: 'shipped',
+        createdAt: new Date(),
+        updatedAt: new Date(),
         User: { email: 'u@x.y' },
       });
       const result = await service.trackOrder({ orderNumber: 'ORD-1', email: 'u@x.y' });
@@ -301,14 +355,14 @@ describe('OrdersService', () => {
     test('không tồn tại → 404', async () => {
       repo.findOrderByPkWithItemsAndUser.mockResolvedValue(null);
       await expect(
-        service.getOrderById({ id: 99, userId: 1, role: 'customer' })
+        service.getOrderById({ id: 99, userId: 1, role: 'customer' }),
       ).rejects.toMatchObject({ statusCode: 404 });
     });
 
     test('user khác chủ + không phải admin → 403', async () => {
       repo.findOrderByPkWithItemsAndUser.mockResolvedValue({ userId: 5 });
       await expect(
-        service.getOrderById({ id: 1, userId: 1, role: 'customer' })
+        service.getOrderById({ id: 1, userId: 1, role: 'customer' }),
       ).rejects.toMatchObject({ statusCode: 403 });
     });
 
@@ -316,7 +370,7 @@ describe('OrdersService', () => {
       const order = { userId: 5 };
       repo.findOrderByPkWithItemsAndUser.mockResolvedValue(order);
       const result = await service.getOrderById({ id: 1, userId: 1, role: 'admin' });
-      expect(result).toBe(order);
+      expect(result).toMatchObject({ userId: 5 });
     });
   });
 });

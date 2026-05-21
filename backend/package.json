@@ -17,38 +17,42 @@
   },
   "scripts": {
     "start": "node src/server.js",
-    "dev": "nodemon src/server.js",
-    "test": "jest --runInBand --forceExit",
+    "dev": "nodemon --signal SIGTERM --ignore data/ --ignore logs/ --ignore uploads/ --ignore coverage/ src/server.js",
+    "kill": "cmd /c \"for /f tokens^=5 %a in ('netstat -ano ^| findstr :8888 ^| findstr LISTENING') do taskkill /F /T /PID %a\"",
+    "test": "jest --runInBand --coverage --coverageReporters=text --coverageReporters=json-summary --forceExit",
     "test:watch": "jest --watch",
     "test:fast": "jest --forceExit --no-coverage",
     "test:file": "jest --forceExit --no-coverage --testPathPattern",
     "test:cov": "jest --forceExit --coverage --testPathPattern",
     "test:ci": "jest --ci --runInBand --forceExit --coverage",
     "test:integration": "jest --config jest.integration.config.js --runInBand --forceExit",
+    "test:api": "jest --config jest.api.config.js --runInBand --forceExit",
+    "db:cleanup-test-data": "node scripts/db-cleanup-test-data.js",
+    "test:e2e": "jest --config jest.e2e.config.js --runInBand --forceExit",
     "lint": "eslint . --max-warnings 0",
     "lint:fix": "eslint . --fix",
     "lint:strict": "eslint . --max-warnings 0",
     "db:check": "node -e \"require('./src/models'); console.log('Models OK')\"",
-    "db:migrate": "sequelize-cli db:migrate",
+    "db:migrate": "node -r module-alias/register -e \"require('dotenv').config()\" node_modules/sequelize-cli/lib/sequelize db:migrate",
     "db:migrate:undo": "sequelize-cli db:migrate:undo",
     "db:seed:all": "sequelize-cli db:seed:all",
     "db:seed:undo": "sequelize-cli db:seed:undo:all",
-    "db:cleanup": "node scripts/dbCleanup.js",
-    "db:seed": "node scripts/rebuildDb.js",
+    "db:cleanup": "node scripts/db-cleanup.js",
+    "db:seed": "node scripts/rebuild-db.js && npx sequelize-cli db:seed:all",
     "docs:openapi": "node -e \"require('dotenv').config();const s=require('./src/config/swagger');require('fs').writeFileSync('./docs/openapi.json',JSON.stringify(s,null,2));console.log('Exported',Object.keys(s.paths||{}).length,'paths')\"",
-    "i18n:translate": "node scripts/translateContent.js",
-    "i18n:dry-run": "node scripts/translateContent.js --dry-run",
-    "db:fresh": "node scripts/rebuildDb.js",
-    "db:reset": "node scripts/rebuildDb.js",
-    "db:verify": "node scripts/dbVerify.js",
+    "i18n:translate": "node scripts/translate-content.js",
+    "i18n:dry-run": "node scripts/translate-content.js --dry-run",
+    "db:fresh": "node scripts/rebuild-db.js",
+    "db:reset": "node scripts/rebuild-db.js",
+    "db:verify": "node scripts/db-verify.js",
     "db:index": "node scripts/index-products.js",
     "ai:rebuild-vectors": "node scripts/index-products.js",
-    "db:import": "node scripts/importProducts.js",
-    "db:sync": "node scripts/syncProducts.js",
-    "db:sync:dry": "node scripts/syncProducts.js --dry-run",
-    "db:export": "node scripts/exportSeed.js",
-    "db:export-seed": "node scripts/exportSeed.js",
-    "db:export:json": "node scripts/exportProductsJson.js"
+    "db:import": "node scripts/import-products.js",
+    "db:sync": "node scripts/sync-products.js",
+    "db:sync:dry": "node scripts/sync-products.js --dry-run",
+    "db:export": "node scripts/export-seed.js",
+    "db:export-seed": "node scripts/export-seed.js",
+    "db:export:json": "node scripts/export-products-json.js"
   },
   "keywords": [
     "ecommerce",
@@ -61,7 +65,6 @@
   "license": "ISC",
   "description": "Backend API for E-commerce website",
   "dependencies": {
-    "argon2": "^0.44.0",
     "bcrypt": "^6.0.0",
     "compression": "^1.7.4",
     "cookie-parser": "^1.4.6",
@@ -102,11 +105,5 @@
     "prettier": "^3.5.3",
     "sequelize-cli": "^6.6.3",
     "supertest": "^7.1.1"
-  },
-  "lint-staged": {
-    "src/**/*.js": [
-      "eslint --max-warnings 0",
-      "prettier --write"
-    ]
   }
 }

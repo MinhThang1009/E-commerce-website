@@ -32,7 +32,12 @@ describe('discountCodeRepository', () => {
   describe('findAll', () => {
     it('gọi DiscountCode.findAndCountAll với đúng options', async () => {
       DiscountCode.findAndCountAll.mockResolvedValue({ count: 2, rows: [{ id: 1 }, { id: 2 }] });
-      const opts = { where: { isActive: true }, limit: 10, offset: 0, order: [['createdAt', 'DESC']] };
+      const opts = {
+        where: { isActive: true },
+        limit: 10,
+        offset: 0,
+        order: [['createdAt', 'DESC']],
+      };
 
       const result = await repo.findAll(opts);
 
@@ -83,7 +88,9 @@ describe('discountCodeRepository', () => {
 
       const result = await repo.findOne({ code: 'SUMMER', isActive: true });
 
-      expect(DiscountCode.findOne).toHaveBeenCalledWith({ where: { code: 'SUMMER', isActive: true } });
+      expect(DiscountCode.findOne).toHaveBeenCalledWith({
+        where: { code: 'SUMMER', isActive: true },
+      });
       expect(result.code).toBe('SUMMER');
     });
 
@@ -123,10 +130,9 @@ describe('discountCodeRepository', () => {
 
       await repo.incrementUsedCount('code-id-123');
 
-      expect(DiscountCode.increment).toHaveBeenCalledWith(
-        'usedCount',
-        { where: { id: 'code-id-123' } },
-      );
+      expect(DiscountCode.increment).toHaveBeenCalledWith('usedCount', {
+        where: { id: 'code-id-123' },
+      });
     });
   });
 

@@ -6,7 +6,7 @@
  */
 import React from 'react';
 import { useTranslation } from 'react-i18next';
-import { ProductRecommendation } from '../services/chatbot-api';
+import { ProductRecommendation } from '../api/chatbot-api';
 import ChatProductCard from './ChatProductCard';
 
 interface ChatProductListProps {

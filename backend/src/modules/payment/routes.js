@@ -24,10 +24,6 @@ module.exports = ({ paymentController }) => {
 
   /**
    * @swagger
-   * /api/payments/sepay-webhook:
-   *   post:
-   *     summary: Webhook nhận thông báo thanh toán từ SePay
-   *     tags: [Payment]
    * /api/payments/momo/return:
    *   get:
    *     summary: Trang trả về sau khi thanh toán MoMo
@@ -64,7 +60,6 @@ module.exports = ({ paymentController }) => {
    *       - bearerAuth: []
    */
   // Public — webhooks (gateway signature verification trong service)
-  router.post('/sepay-webhook', express.json(), paymentController.handleSePayWebhook);
   router.get('/momo/return', paymentController.momoReturn);
   router.post('/momo/ipn', webhookLimiter, paymentController.momoIPN);
   router.get('/vnpay/return', paymentController.vnpayReturn);

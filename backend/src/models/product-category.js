@@ -27,7 +27,7 @@ const ProductCategory = sequelize.define(
     indexes: [
       { name: 'uq_pcat_product_category', unique: true, fields: ['product_id', 'category_id'] },
     ],
-  }
+  },
 );
 
 module.exports = ProductCategory;

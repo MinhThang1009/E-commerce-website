@@ -11,13 +11,27 @@
 // User qua repository này, KHÔNG require ../models/user.
 
 class IAuthRepository {
-  async findByEmail(_email) { throw new Error('not implemented'); }
-  async findById(_id) { throw new Error('not implemented'); }
-  async findByIdWithAddresses(_id) { throw new Error('not implemented'); }
-  async findByGoogleIdOrEmail(_googleId, _email) { throw new Error('not implemented'); }
-  async findByResetToken(_token) { throw new Error('not implemented'); }
-  async createUser(_payload) { throw new Error('not implemented'); }
-  async saveUser(_user) { throw new Error('not implemented'); }
+  async findByEmail(_email) {
+    throw new Error('not implemented');
+  }
+  async findById(_id) {
+    throw new Error('not implemented');
+  }
+  async findByIdWithAddresses(_id) {
+    throw new Error('not implemented');
+  }
+  async findByGoogleIdOrEmail(_googleId, _email) {
+    throw new Error('not implemented');
+  }
+  async findByResetToken(_token) {
+    throw new Error('not implemented');
+  }
+  async createUser(_payload) {
+    throw new Error('not implemented');
+  }
+  async saveUser(_user) {
+    throw new Error('not implemented');
+  }
 }
 
 module.exports = IAuthRepository;

@@ -9,7 +9,9 @@ function makeModel(defaults = {}) {
     findByPk: jest.fn().mockResolvedValue(defaults.findByPk ?? null),
     findOne: jest.fn().mockResolvedValue(defaults.findOne ?? null),
     findAll: jest.fn().mockResolvedValue(defaults.findAll ?? []),
-    findAndCountAll: jest.fn().mockResolvedValue(defaults.findAndCountAll ?? { count: 0, rows: [] }),
+    findAndCountAll: jest
+      .fn()
+      .mockResolvedValue(defaults.findAndCountAll ?? { count: 0, rows: [] }),
     create: jest.fn().mockResolvedValue(defaults.create ?? {}),
     update: jest.fn().mockResolvedValue([1]),
   };
@@ -28,7 +30,6 @@ function makeInstanceWith(extra = {}) {
 function makeRepo(overrides = {}) {
   const deps = {
     Review: makeModel(),
-    ReviewFeedback: makeModel(),
     Product: makeModel(),
     User: makeModel(),
     Order: makeModel(),
@@ -77,10 +78,8 @@ describe('SequelizeReviewsRepository — Review CRUD', () => {
     expect(deps.Review.findByPk).toHaveBeenCalledWith(
       10,
       expect.objectContaining({
-        include: expect.arrayContaining([
-          expect.objectContaining({ as: 'user' }),
-        ]),
-      })
+        include: expect.arrayContaining([expect.objectContaining({ as: 'user' })]),
+      }),
     );
   });
 
@@ -101,7 +100,7 @@ describe('SequelizeReviewsRepository — Review CRUD', () => {
         where: expect.objectContaining({ productId: 42, rating: 5 }),
         limit: 10,
         offset: 0,
-      })
+      }),
     );
     expect(result).toBe(mockResult);
   });
@@ -115,7 +114,7 @@ describe('SequelizeReviewsRepository — Review CRUD', () => {
         where: { userId: 5 },
         limit: 5,
         offset: 0,
-      })
+      }),
     );
   });
 
@@ -127,7 +126,7 @@ describe('SequelizeReviewsRepository — Review CRUD', () => {
       expect.objectContaining({
         where: expect.objectContaining({ rating: { $gte: 3 } }),
         limit: 20,
-      })
+      }),
     );
   });
 
@@ -201,7 +200,7 @@ describe('SequelizeReviewsRepository — Product', () => {
     const result = await repo.getProductRatingsAggregate(1);
 
     expect(deps.Review.findAll).toHaveBeenCalledWith(
-      expect.objectContaining({ where: { productId: 1 }, attributes: ['rating'] })
+      expect.objectContaining({ where: { productId: 1 }, attributes: ['rating'] }),
     );
     expect(result.count).toBe(3);
     expect(result.avg).toBeCloseTo(4, 5);
@@ -221,7 +220,7 @@ describe('SequelizeReviewsRepository — Product', () => {
 
     expect(deps.Product.update).toHaveBeenCalledWith(
       { rating: 4.5, reviewCount: 10 },
-      { where: { id: 5 } }
+      { where: { id: 5 } },
     );
   });
 
@@ -229,10 +228,7 @@ describe('SequelizeReviewsRepository — Product', () => {
     const { repo, deps } = makeRepo();
     await repo.updateProductRating(5, 4.5);
 
-    expect(deps.Product.update).toHaveBeenCalledWith(
-      { rating: 4.5 },
-      { where: { id: 5 } }
-    );
+    expect(deps.Product.update).toHaveBeenCalledWith({ rating: 4.5 }, { where: { id: 5 } });
   });
 });
 
@@ -250,7 +246,7 @@ describe('SequelizeReviewsRepository — Purchase verification', () => {
     expect(deps.Order.findOne).toHaveBeenCalledWith(
       expect.objectContaining({
         where: expect.objectContaining({ userId: 2, status: 'delivered' }),
-      })
+      }),
     );
     expect(result).toBe(true);
   });
@@ -261,42 +257,6 @@ describe('SequelizeReviewsRepository — Purchase verification', () => {
     const result = await repo.hasUserPurchasedProduct(2, 999);
 
     expect(result).toBe(false);
-  });
-});
-
-// ════════════════════════════════════════════════════════════════════════════
-// Feedback
-// ════════════════════════════════════════════════════════════════════════════
-
-describe('SequelizeReviewsRepository — Feedback', () => {
-  test('findFeedback — gọi findOne với reviewId và userId', async () => {
-    const mockFeedback = { id: 1, reviewId: 3, userId: 7 };
-    const { repo, deps } = makeRepo({ ReviewFeedback: makeModel({ findOne: mockFeedback }) });
-
-    const result = await repo.findFeedback(3, 7);
-
-    expect(deps.ReviewFeedback.findOne).toHaveBeenCalledWith({ where: { reviewId: 3, userId: 7 } });
-    expect(result).toBe(mockFeedback);
-  });
-
-  test('createFeedback — gọi ReviewFeedback.create với payload', async () => {
-    const payload = { reviewId: 3, userId: 7, isHelpful: true };
-    const created = { id: 10, ...payload };
-    const { repo, deps } = makeRepo({ ReviewFeedback: makeModel({ create: created }) });
-
-    const result = await repo.createFeedback(payload);
-
-    expect(deps.ReviewFeedback.create).toHaveBeenCalledWith(payload);
-    expect(result).toBe(created);
-  });
-
-  test('saveFeedback — gọi feedback.save()', async () => {
-    const { repo } = makeRepo();
-    const feedback = makeInstanceWith();
-
-    await repo.saveFeedback(feedback);
-
-    expect(feedback.save).toHaveBeenCalledTimes(1);
   });
 });
 
@@ -318,7 +278,7 @@ describe('SequelizeReviewsRepository — default parameter branches', () => {
         where: { productId: 10 },
         limit: undefined,
         offset: undefined,
-      })
+      }),
     );
   });
 
@@ -327,13 +287,18 @@ describe('SequelizeReviewsRepository — default parameter branches', () => {
     const { repo, deps } = makeRepo();
     deps.Review.findAndCountAll.mockResolvedValue({ count: 0, rows: [] });
 
-    await repo.findProductReviews(15, { limit: 5, offset: 0, sortColumn: 'createdAt', sortOrder: 'ASC' });
+    await repo.findProductReviews(15, {
+      limit: 5,
+      offset: 0,
+      sortColumn: 'createdAt',
+      sortOrder: 'ASC',
+    });
 
     // where chỉ chứa productId (không có rating hay điều kiện khác)
     expect(deps.Review.findAndCountAll).toHaveBeenCalledWith(
       expect.objectContaining({
         where: { productId: 15 },
-      })
+      }),
     );
   });
 
@@ -349,7 +314,7 @@ describe('SequelizeReviewsRepository — default parameter branches', () => {
         where: { userId: 3 },
         limit: undefined,
         offset: undefined,
-      })
+      }),
     );
   });
 
@@ -365,7 +330,7 @@ describe('SequelizeReviewsRepository — default parameter branches', () => {
         where: {},
         limit: undefined,
         offset: undefined,
-      })
+      }),
     );
   });
 
@@ -381,7 +346,7 @@ describe('SequelizeReviewsRepository — default parameter branches', () => {
         where: {},
         limit: 10,
         offset: 0,
-      })
+      }),
     );
   });
 });

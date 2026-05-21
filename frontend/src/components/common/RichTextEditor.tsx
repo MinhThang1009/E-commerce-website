@@ -135,15 +135,9 @@ const RichTextEditor: React.FC<RichTextEditorProps> = ({
     return (
       <div className="rich-text-editor readonly-mode">
         <div
-          className="ql-editor"
+          className="ql-editor rounded border border-neutral-300 dark:border-neutral-600 bg-neutral-50 dark:bg-neutral-800 p-3"
           dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(displayValue) }}
-          style={{
-            minHeight: `${height - 42}px`,
-            border: '1px solid #ccc',
-            borderRadius: '4px',
-            padding: '12px 15px',
-            backgroundColor: '#f8f9fa',
-          }}
+          style={{ minHeight: `${height - 42}px` }}
         />
         <style>{`
           .readonly-mode .ql-editor {

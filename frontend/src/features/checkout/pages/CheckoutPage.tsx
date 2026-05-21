@@ -604,8 +604,8 @@ const CheckoutPage: React.FC = () => {
     // Làm mới số lượng giỏ hàng để cập nhật badge trên header
     queryClient.invalidateQueries({ queryKey: cartKeys.count });
 
-    // Chuyển hướng đến trang đơn hàng
-    navigate(ROUTES.ORDERS);
+    // Chuyển hướng đến trang đơn hàng (replace để Back không quay lại checkout)
+    navigate(ROUTES.ORDERS, { replace: true });
   };
 
   // Xử lý lỗi thanh toán
@@ -716,7 +716,7 @@ const CheckoutPage: React.FC = () => {
       // Làm mới số lượng giỏ hàng để cập nhật badge trên header
       queryClient.invalidateQueries({ queryKey: cartKeys.count });
 
-      navigate(ROUTES.ORDERS);
+      navigate(ROUTES.ORDERS, { replace: true });
     }
   };
 
@@ -979,9 +979,14 @@ const CheckoutPage: React.FC = () => {
               ]}
               width={700}
               centered
+              classNames={{
+                content: 'dark:bg-[#141414]',
+                header: 'dark:bg-[#141414]',
+                body: 'dark:bg-[#141414]',
+              }}
             >
               <div className="space-y-4 py-2">
-                <div className="bg-blue-50 p-4 rounded-lg border border-blue-100 text-blue-800">
+                <div className="bg-blue-50 dark:bg-blue-900/20 p-4 rounded-lg border border-blue-100 dark:border-blue-800 text-blue-800 dark:text-blue-300">
                   <h4 className="font-semibold mb-2">{t('checkout.installment.process')}</h4>
                   <ol className="list-decimal list-inside space-y-1 text-sm">
                     <li>{t('checkout.installment.step1')}</li>
@@ -990,7 +995,7 @@ const CheckoutPage: React.FC = () => {
                   </ol>
                 </div>
 
-                <h4 className="font-semibold text-gray-700 mt-4">
+                <h4 className="font-semibold text-gray-700 dark:text-neutral-300 mt-4">
                   {t('checkout.installment.bankList')}
                 </h4>
                 <Table
@@ -1001,7 +1006,7 @@ const CheckoutPage: React.FC = () => {
                   bordered
                 />
 
-                <p className="text-xs text-gray-500 italic mt-2">
+                <p className="text-xs text-gray-500 dark:text-neutral-400 italic mt-2">
                   {t('checkout.installment.note')}
                 </p>
               </div>
@@ -1070,14 +1075,17 @@ const CheckoutPage: React.FC = () => {
                       disabled={!!appliedDiscount}
                     />
                   </div>
-                  <CustomButton
-                    variant={appliedDiscount ? 'danger' : 'primary'}
+                  <button
                     onClick={appliedDiscount ? handleRemoveDiscount : handleApplyDiscount}
-                    isLoading={isValidatingCode}
-                    className="h-[42px] px-4"
+                    disabled={isValidatingCode}
+                    className={`h-[42px] px-4 text-sm font-semibold disabled:opacity-50 ${appliedDiscount ? 'btn-danger' : 'btn-glass-primary'}`}
                   >
-                    {appliedDiscount ? t('checkout.discountCode.cancel') : t('common.apply')}
-                  </CustomButton>
+                    {isValidatingCode
+                      ? '...'
+                      : appliedDiscount
+                        ? t('checkout.discountCode.cancel')
+                        : t('common.apply')}
+                  </button>
                 </div>
                 {discountError && <p className="text-red-500 text-xs mt-1">{discountError}</p>}
                 {appliedDiscount && (

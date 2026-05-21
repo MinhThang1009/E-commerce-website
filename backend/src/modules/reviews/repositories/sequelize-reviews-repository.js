@@ -7,12 +7,11 @@
 const IReviewsRepository = require('@modules/reviews/repositories/i-reviews-repository');
 
 // Sequelize impl của IReviewsRepository — duy nhất layer truy cập Review/
-// ReviewFeedback/Product/User/Order/OrderItem model.
+// Product/User/Order/OrderItem model.
 class SequelizeReviewsRepository extends IReviewsRepository {
-  constructor({ Review, ReviewFeedback, Product, User, Order, OrderItem }) {
+  constructor({ Review, Product, User, Order, OrderItem }) {
     super();
     this.Review = Review;
-    this.ReviewFeedback = ReviewFeedback;
     this.Product = Product;
     this.User = User;
     this.Order = Order;
@@ -84,7 +83,7 @@ class SequelizeReviewsRepository extends IReviewsRepository {
       where: whereConditions,
       include: [
         { model: this.User, as: 'user', attributes: ['id', 'firstName', 'lastName', 'email'] },
-        { model: this.Product, attributes: ['id', 'name', 'slug'] },
+        { model: this.Product, attributes: ['id', 'nameVi', 'nameEn', 'slug'] },
       ],
       limit,
       offset,
@@ -148,20 +147,6 @@ class SequelizeReviewsRepository extends IReviewsRepository {
       ],
     });
     return !!order;
-  }
-
-  // -------- Feedback --------
-
-  async findFeedback(reviewId, userId) {
-    return this.ReviewFeedback.findOne({ where: { reviewId, userId } });
-  }
-
-  async createFeedback(payload) {
-    return this.ReviewFeedback.create(payload);
-  }
-
-  async saveFeedback(feedback) {
-    return feedback.save();
   }
 }
 

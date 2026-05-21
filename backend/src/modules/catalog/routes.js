@@ -13,13 +13,11 @@ const {
   categorySchema,
   createBrandSchema,
   updateBrandSchema,
-  createCollectionSchema,
-  updateCollectionSchema,
   productSchema,
 } = require('@modules/catalog/validators/catalog-validator');
 
-// Catalog module routes — 4 sub-router (categories, brands, collections, products).
-// URL không đổi so với routes/category.js + brand.js + collection.js + product.js cũ.
+// Catalog module routes — 3 sub-router (categories, brands, products).
+// URL không đổi so với routes/category.js + brand.js + product.js cũ.
 module.exports = ({ catalogController }) => {
   /**
    * @swagger
@@ -191,81 +189,6 @@ module.exports = ({ catalogController }) => {
   );
   brands.delete('/:id', authenticate, authorize('admin'), catalogController.deleteBrand);
 
-  /**
-   * @swagger
-   * /api/collections:
-   *   get:
-   *     summary: Lấy danh sách bộ sưu tập
-   *     tags: [Collections]
-   *   post:
-   *     summary: Tạo bộ sưu tập mới (admin)
-   *     tags: [Collections]
-   *     security:
-   *       - bearerAuth: []
-   * /api/collections/slug/{slug}:
-   *   get:
-   *     summary: Lấy bộ sưu tập theo slug
-   *     tags: [Collections]
-   *     parameters:
-   *       - in: path
-   *         name: slug
-   *         required: true
-   *         schema:
-   *           type: string
-   * /api/collections/slug/{slug}/products:
-   *   get:
-   *     summary: Lấy sản phẩm trong bộ sưu tập
-   *     tags: [Collections]
-   *     parameters:
-   *       - in: path
-   *         name: slug
-   *         required: true
-   *         schema:
-   *           type: string
-   * /api/collections/{id}:
-   *   put:
-   *     summary: Cập nhật bộ sưu tập (admin)
-   *     tags: [Collections]
-   *     security:
-   *       - bearerAuth: []
-   *     parameters:
-   *       - in: path
-   *         name: id
-   *         required: true
-   *         schema:
-   *           type: integer
-   *   delete:
-   *     summary: Xóa bộ sưu tập (admin)
-   *     tags: [Collections]
-   *     security:
-   *       - bearerAuth: []
-   *     parameters:
-   *       - in: path
-   *         name: id
-   *         required: true
-   *         schema:
-   *           type: integer
-   */
-  const collections = express.Router();
-  collections.get('/', catalogController.getAllCollections);
-  collections.get('/slug/:slug', catalogController.getCollectionBySlug);
-  collections.get('/slug/:slug/products', catalogController.getProductsByCollection);
-  collections.post(
-    '/',
-    authenticate,
-    authorize('admin'),
-    validateRequest(createCollectionSchema),
-    catalogController.createCollection,
-  );
-  collections.put(
-    '/:id',
-    authenticate,
-    authorize('admin'),
-    validateRequest(updateCollectionSchema),
-    catalogController.updateCollection,
-  );
-  collections.delete('/:id', authenticate, authorize('admin'), catalogController.deleteCollection);
-
   // Product router — order matters: GET / + named paths trước /:id để
   // /:id không catch /featured, /deals, etc.
   /**
@@ -427,5 +350,5 @@ module.exports = ({ catalogController }) => {
   );
   products.delete('/:id', authenticate, authorize('admin'), catalogController.deleteProduct);
 
-  return { categories, brands, collections, products };
+  return { categories, brands, products };
 };

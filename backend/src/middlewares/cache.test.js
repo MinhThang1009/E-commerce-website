@@ -34,7 +34,9 @@ function makeRes(statusCode = 200) {
   const headers = {};
   const res = {
     statusCode,
-    setHeader: jest.fn((name, value) => { headers[name] = value; }),
+    setHeader: jest.fn((name, value) => {
+      headers[name] = value;
+    }),
     json: jest.fn(),
     _headers: headers,
   };
@@ -114,7 +116,7 @@ describe('cacheMiddleware', () => {
       expect(mockRedis.setEx).toHaveBeenCalledWith(
         'cache:/api/products',
         120,
-        JSON.stringify(responseData)
+        JSON.stringify(responseData),
       );
     });
 
@@ -157,10 +159,7 @@ describe('cacheMiddleware', () => {
       // Chờ promise rejection được xử lý
       await new Promise((r) => setImmediate(r));
 
-      expect(logger.warn).toHaveBeenCalledWith(
-        'Cache write failed:',
-        'Redis write error'
-      );
+      expect(logger.warn).toHaveBeenCalledWith('Cache write failed:', 'Redis write error');
     });
   });
 
@@ -186,11 +185,7 @@ describe('cacheMiddleware', () => {
       await Promise.resolve();
 
       expect(keyFn).toHaveBeenCalledWith(req);
-      expect(mockRedis.setEx).toHaveBeenCalledWith(
-        customKey,
-        60,
-        expect.any(String)
-      );
+      expect(mockRedis.setEx).toHaveBeenCalledWith(customKey, 60, expect.any(String));
     });
   });
 
@@ -243,10 +238,7 @@ describe('invalidateCache', () => {
     getRedisClient.mockRejectedValue(new Error('Redis unavailable'));
 
     await expect(invalidateCache('cache:*')).resolves.not.toThrow();
-    expect(logger.warn).toHaveBeenCalledWith(
-      'invalidateCache thất bại:',
-      'Redis unavailable'
-    );
+    expect(logger.warn).toHaveBeenCalledWith('invalidateCache thất bại:', 'Redis unavailable');
   });
 });
 
@@ -264,7 +256,7 @@ describe('httpCacheHeaders', () => {
 
     expect(res.setHeader).toHaveBeenCalledWith(
       'Cache-Control',
-      'public, max-age=300, stale-while-revalidate=600'
+      'public, max-age=300, stale-while-revalidate=600',
     );
     expect(next).toHaveBeenCalled();
   });

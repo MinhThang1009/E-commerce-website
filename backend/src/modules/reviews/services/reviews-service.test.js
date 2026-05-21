@@ -20,11 +20,6 @@ describe('ReviewsService', () => {
       findAllReviews: jest.fn(),
       getProductRatingsAggregate: jest.fn().mockResolvedValue({ avg: 4.5, count: 10 }),
       updateProductRating: jest.fn().mockResolvedValue(),
-      findFeedback: jest.fn(),
-      createFeedback: jest.fn().mockResolvedValue(),
-      saveFeedback: jest.fn((f) => Promise.resolve(f)),
-      incrementReview: jest.fn().mockResolvedValue(),
-      decrementReview: jest.fn().mockResolvedValue(),
     };
 
     service = new ReviewsService({
@@ -41,7 +36,7 @@ describe('ReviewsService', () => {
       reviewsRepository.findProductById.mockResolvedValue(null);
 
       await expect(
-        service.createReview({ userId: 1, productId: 99, rating: 5, title: 'T', comment: 'C' })
+        service.createReview({ userId: 1, productId: 99, rating: 5, title: 'T', comment: 'C' }),
       ).rejects.toMatchObject({ statusCode: 404 });
     });
 
@@ -50,7 +45,7 @@ describe('ReviewsService', () => {
       reviewsRepository.hasUserPurchasedProduct.mockResolvedValue(false);
 
       await expect(
-        service.createReview({ userId: 1, productId: 1, rating: 5, title: 'T', comment: 'C' })
+        service.createReview({ userId: 1, productId: 1, rating: 5, title: 'T', comment: 'C' }),
       ).rejects.toMatchObject({ statusCode: 403 });
     });
 
@@ -63,11 +58,16 @@ describe('ReviewsService', () => {
       reviewsRepository.findReviewByPkWithUser.mockResolvedValue(newReview);
 
       const result = await service.createReview({
-        userId: 1, productId: 1, rating: 5, title: 'Tốt', comment: 'Rất tốt', images: [],
+        userId: 1,
+        productId: 1,
+        rating: 5,
+        title: 'Tốt',
+        comment: 'Rất tốt',
+        images: [],
       });
 
       expect(reviewsRepository.createReview).toHaveBeenCalledWith(
-        expect.objectContaining({ userId: 1, productId: 1, rating: 5, isVerified: true })
+        expect.objectContaining({ userId: 1, productId: 1, rating: 5, isVerified: true }),
       );
       expect(result.review).toBe(newReview);
     });
@@ -80,7 +80,12 @@ describe('ReviewsService', () => {
       reviewsRepository.findReviewByPkWithUser.mockResolvedValue(existingReview);
 
       await service.createReview({
-        userId: 1, productId: 1, rating: 5, title: 'Mới', comment: 'Tốt hơn', images: ['img.jpg'],
+        userId: 1,
+        productId: 1,
+        rating: 5,
+        title: 'Mới',
+        comment: 'Tốt hơn',
+        images: ['img.jpg'],
       });
 
       expect(reviewsRepository.createReview).not.toHaveBeenCalled();
@@ -101,7 +106,7 @@ describe('ReviewsService', () => {
       await service.createReview({ userId: 1, productId: 1, rating: 4, title: 'T', comment: 'C' });
 
       expect(reviewsRepository.createReview).toHaveBeenCalledWith(
-        expect.objectContaining({ images: [] })
+        expect.objectContaining({ images: [] }),
       );
     });
 
@@ -126,7 +131,7 @@ describe('ReviewsService', () => {
       reviewsRepository.findReviewByIdAndUserId.mockResolvedValue(null);
 
       await expect(
-        service.updateReview({ userId: 1, reviewId: 99, patch: {} })
+        service.updateReview({ userId: 1, reviewId: 99, patch: {} }),
       ).rejects.toMatchObject({ statusCode: 404 });
     });
 
@@ -162,7 +167,15 @@ describe('ReviewsService', () => {
     });
 
     test('set isVerified=true sau khi update', async () => {
-      const review = { id: 1, rating: 3, title: 'T', content: 'C', images: [], isVerified: false, productId: 1 };
+      const review = {
+        id: 1,
+        rating: 3,
+        title: 'T',
+        content: 'C',
+        images: [],
+        isVerified: false,
+        productId: 1,
+      };
       reviewsRepository.findReviewByIdAndUserId.mockResolvedValue(review);
       reviewsRepository.findReviewByPkWithUser.mockResolvedValue(review);
 
@@ -184,7 +197,14 @@ describe('ReviewsService', () => {
 
     test('không cập nhật images khi patch.images undefined', async () => {
       const originalImages = ['uploads/reviews/existing.jpg'];
-      const review = { id: 1, rating: 4, title: 'T', content: 'C', images: originalImages, productId: 1 };
+      const review = {
+        id: 1,
+        rating: 4,
+        title: 'T',
+        content: 'C',
+        images: originalImages,
+        productId: 1,
+      };
       reviewsRepository.findReviewByIdAndUserId.mockResolvedValue(review);
       reviewsRepository.findReviewByPkWithUser.mockResolvedValue(review);
 
@@ -200,9 +220,9 @@ describe('ReviewsService', () => {
     test('review không tồn tại → 404', async () => {
       reviewsRepository.findReviewByIdAndUserId.mockResolvedValue(null);
 
-      await expect(
-        service.deleteReview({ userId: 1, reviewId: 99 })
-      ).rejects.toMatchObject({ statusCode: 404 });
+      await expect(service.deleteReview({ userId: 1, reviewId: 99 })).rejects.toMatchObject({
+        statusCode: 404,
+      });
     });
 
     test('xóa thành công → trả về message', async () => {
@@ -229,9 +249,9 @@ describe('ReviewsService', () => {
     test('sản phẩm không tồn tại → 404', async () => {
       reviewsRepository.findProductById.mockResolvedValue(null);
 
-      await expect(
-        service.getProductReviews({ productId: 99 })
-      ).rejects.toMatchObject({ statusCode: 404 });
+      await expect(service.getProductReviews({ productId: 99 })).rejects.toMatchObject({
+        statusCode: 404,
+      });
     });
 
     test('trả về pagination đúng', async () => {
@@ -253,19 +273,7 @@ describe('ReviewsService', () => {
 
       expect(reviewsRepository.findProductReviews).toHaveBeenCalledWith(
         1,
-        expect.objectContaining({ sortColumn: 'rating', sortOrder: 'DESC' })
-      );
-    });
-
-    test('sort "most_helpful" → sortColumn=likes', async () => {
-      reviewsRepository.findProductById.mockResolvedValue({ id: 1 });
-      reviewsRepository.findProductReviews.mockResolvedValue({ count: 0, rows: [] });
-
-      await service.getProductReviews({ productId: 1, sort: 'most_helpful' });
-
-      expect(reviewsRepository.findProductReviews).toHaveBeenCalledWith(
-        1,
-        expect.objectContaining({ sortColumn: 'likes', sortOrder: 'DESC' })
+        expect.objectContaining({ sortColumn: 'rating', sortOrder: 'DESC' }),
       );
     });
 
@@ -277,7 +285,7 @@ describe('ReviewsService', () => {
 
       expect(reviewsRepository.findProductReviews).toHaveBeenCalledWith(
         1,
-        expect.objectContaining({ sortColumn: 'createdAt', sortOrder: 'DESC' })
+        expect.objectContaining({ sortColumn: 'createdAt', sortOrder: 'DESC' }),
       );
     });
 
@@ -289,7 +297,7 @@ describe('ReviewsService', () => {
 
       expect(reviewsRepository.findProductReviews).toHaveBeenCalledWith(
         1,
-        expect.objectContaining({ whereClause: expect.objectContaining({ rating: 4 }) })
+        expect.objectContaining({ whereClause: expect.objectContaining({ rating: 4 }) }),
       );
     });
 
@@ -301,7 +309,7 @@ describe('ReviewsService', () => {
 
       expect(reviewsRepository.findProductReviews).toHaveBeenCalledWith(
         1,
-        expect.objectContaining({ whereClause: expect.objectContaining({ isVerified: true }) })
+        expect.objectContaining({ whereClause: expect.objectContaining({ isVerified: true }) }),
       );
     });
   });
@@ -312,9 +320,9 @@ describe('ReviewsService', () => {
     test('review không tồn tại → 404', async () => {
       reviewsRepository.findReviewByPk.mockResolvedValue(null);
 
-      await expect(
-        service.verifyReview({ reviewId: 99, isVerified: true })
-      ).rejects.toMatchObject({ statusCode: 404 });
+      await expect(service.verifyReview({ reviewId: 99, isVerified: true })).rejects.toMatchObject({
+        statusCode: 404,
+      });
     });
 
     test('isVerified=true → message xác nhận', async () => {
@@ -335,88 +343,6 @@ describe('ReviewsService', () => {
       const result = await service.verifyReview({ reviewId: 1, isVerified: false });
 
       expect(result.message).toBe('reviews.rejected');
-    });
-  });
-
-  // -------- markReviewHelpful --------
-
-  describe('markReviewHelpful', () => {
-    test('review không tồn tại → 404', async () => {
-      reviewsRepository.findReviewByPk.mockResolvedValue(null);
-
-      await expect(
-        service.markReviewHelpful({ userId: 1, reviewId: 99, helpful: true })
-      ).rejects.toMatchObject({ statusCode: 404 });
-    });
-
-    test('user vote cho review của chính mình → 400', async () => {
-      reviewsRepository.findReviewByPk.mockResolvedValue({ id: 1, userId: 5 });
-
-      await expect(
-        service.markReviewHelpful({ userId: 5, reviewId: 1, helpful: true })
-      ).rejects.toMatchObject({ statusCode: 400 });
-    });
-
-    test('lần đầu vote helpful=true → tạo feedback + increment likes', async () => {
-      const review = { id: 1, userId: 3, likes: 0, dislikes: 0 };
-      reviewsRepository.findReviewByPk
-        .mockResolvedValueOnce(review)
-        .mockResolvedValueOnce({ id: 1, likes: 1, dislikes: 0 });
-      reviewsRepository.findFeedback.mockResolvedValue(null);
-
-      const result = await service.markReviewHelpful({ userId: 1, reviewId: 1, helpful: true });
-
-      expect(reviewsRepository.createFeedback).toHaveBeenCalledWith(
-        expect.objectContaining({ reviewId: 1, userId: 1, isHelpful: true })
-      );
-      expect(reviewsRepository.incrementReview).toHaveBeenCalledWith(review, 'likes');
-      expect(result.message).toBe('reviews.markedHelpful');
-    });
-
-    test('lần đầu vote helpful=false → tạo feedback + increment dislikes', async () => {
-      const review = { id: 1, userId: 3, likes: 0, dislikes: 0 };
-      reviewsRepository.findReviewByPk
-        .mockResolvedValueOnce(review)
-        .mockResolvedValueOnce({ id: 1, likes: 0, dislikes: 1 });
-      reviewsRepository.findFeedback.mockResolvedValue(null);
-
-      await service.markReviewHelpful({ userId: 1, reviewId: 1, helpful: false });
-
-      expect(reviewsRepository.incrementReview).toHaveBeenCalledWith(review, 'dislikes');
-      expect(reviewsRepository.createFeedback).toHaveBeenCalledWith(
-        expect.objectContaining({ isHelpful: false })
-      );
-    });
-
-    test('đổi vote từ helpful=true sang false → swap likes/dislikes + cập nhật feedback', async () => {
-      const review = { id: 1, userId: 3 };
-      const existingFeedback = { isHelpful: true };
-      reviewsRepository.findReviewByPk
-        .mockResolvedValueOnce(review)
-        .mockResolvedValueOnce({ id: 1, likes: 0, dislikes: 1 });
-      reviewsRepository.findFeedback.mockResolvedValue(existingFeedback);
-
-      await service.markReviewHelpful({ userId: 1, reviewId: 1, helpful: false });
-
-      expect(reviewsRepository.decrementReview).toHaveBeenCalledWith(review, 'likes');
-      expect(reviewsRepository.incrementReview).toHaveBeenCalledWith(review, 'dislikes');
-      expect(existingFeedback.isHelpful).toBe(false);
-      expect(reviewsRepository.saveFeedback).toHaveBeenCalledWith(existingFeedback);
-    });
-
-    test('vote lại cùng giá trị → không thay đổi gì', async () => {
-      const review = { id: 1, userId: 3 };
-      const existingFeedback = { isHelpful: true };
-      reviewsRepository.findReviewByPk
-        .mockResolvedValueOnce(review)
-        .mockResolvedValueOnce({ id: 1, likes: 5, dislikes: 0 });
-      reviewsRepository.findFeedback.mockResolvedValue(existingFeedback);
-
-      await service.markReviewHelpful({ userId: 1, reviewId: 1, helpful: true });
-
-      expect(reviewsRepository.incrementReview).not.toHaveBeenCalled();
-      expect(reviewsRepository.decrementReview).not.toHaveBeenCalled();
-      expect(reviewsRepository.saveFeedback).not.toHaveBeenCalled();
     });
   });
 });

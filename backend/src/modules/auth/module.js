@@ -44,7 +44,7 @@ module.exports = ({ User, eventBus, logger, emailService, auditService, redisCli
     },
     async verifyAccessToken(accessToken) {
       const response = await axios.get(
-        `https://www.googleapis.com/oauth2/v3/userinfo?access_token=${accessToken}`
+        `https://www.googleapis.com/oauth2/v3/userinfo?access_token=${accessToken}`,
       );
       return response.data;
     },
@@ -54,17 +54,15 @@ module.exports = ({ User, eventBus, logger, emailService, auditService, redisCli
   // không phụ thuộc lib jwt cụ thể (test mock dễ dàng).
   const tokenSigner = {
     signAccessToken({ id, role }) {
-      return jwt.sign(
-        { id, role, jti: crypto.randomUUID() },
-        process.env.JWT_SECRET,
-        { expiresIn: process.env.JWT_EXPIRES_IN }
-      );
+      return jwt.sign({ id, role, jti: crypto.randomUUID() }, process.env.JWT_SECRET, {
+        expiresIn: process.env.JWT_EXPIRES_IN,
+      });
     },
     signRefreshToken({ id, familyId }) {
       return jwt.sign(
         { id, jti: crypto.randomUUID(), familyId: familyId || crypto.randomUUID() },
         process.env.JWT_REFRESH_SECRET,
-        { expiresIn: process.env.JWT_REFRESH_EXPIRES_IN }
+        { expiresIn: process.env.JWT_REFRESH_EXPIRES_IN },
       );
     },
     verifyAccessToken(token) {
@@ -80,26 +78,26 @@ module.exports = ({ User, eventBus, logger, emailService, auditService, redisCli
   // nhất sau reconnect.
   const blacklistStore = redisClient
     ? {
-      async set(key, ttlSeconds, value) {
-        const client = await redisClient();
-        if (client && typeof client.setEx === 'function') {
-          await client.setEx(key, ttlSeconds, value);
-        }
-      },
-      async get(key) {
-        const client = await redisClient();
-        if (client && typeof client.get === 'function') {
-          return client.get(key);
-        }
-        return null;
-      },
-      async del(key) {
-        const client = await redisClient();
-        if (client && typeof client.del === 'function') {
-          await client.del(key);
-        }
-      },
-    }
+        async set(key, ttlSeconds, value) {
+          const client = await redisClient();
+          if (client && typeof client.setEx === 'function') {
+            await client.setEx(key, ttlSeconds, value);
+          }
+        },
+        async get(key) {
+          const client = await redisClient();
+          if (client && typeof client.get === 'function') {
+            return client.get(key);
+          }
+          return null;
+        },
+        async del(key) {
+          const client = await redisClient();
+          if (client && typeof client.del === 'function') {
+            await client.del(key);
+          }
+        },
+      }
     : null;
 
   const authService = new AuthService({

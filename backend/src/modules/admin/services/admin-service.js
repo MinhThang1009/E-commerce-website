@@ -42,7 +42,7 @@ const {
   validateVariantAttributes,
   generateVariantSku,
 } = require('@utils/product-helpers');
-const vectorStoreService = require('@modules/ai/services/vectorstore/vector-store');
+const vectorStoreService = require('@services/vector-store/vector-store');
 
 /**
  * Đệ quy parse chuỗi JSON để xử lý tình huống stringify nhiều lần.
@@ -177,7 +177,7 @@ const getDashboardStats = catchAsync(async (req, res) => {
       include: [
         {
           model: Product,
-          attributes: ['name', 'basePrice'],
+          attributes: ['nameVi', 'nameEn', 'basePrice'],
           include: [
             {
               model: ProductImage,
@@ -256,6 +256,7 @@ const getDashboardStats = catchAsync(async (req, res) => {
           productData.images = productData.productImages.map((img) => img.imageUrl);
           productData.price = productData.basePrice;
         }
+        productData.name = productData.nameVi || productData.nameEn || productData.name || '';
         return {
           product: productData,
           totalSold: parseInt(item.getDataValue('totalSold')),
@@ -915,7 +916,7 @@ const createProduct = catchAsync(async (req, res) => {
   });
 
   try {
-    const { enrichProductData } = require('@modules/ai/services/vectorstore/vector-store');
+    const { enrichProductData } = require('@modules/ai/services/product/product-enricher');
     await vectorStoreService.loadPromise;
     if (productWithRelations.status === 'active') {
       await vectorStoreService.upsertProduct(enrichProductData(productWithRelations.toJSON()));
@@ -1329,7 +1330,7 @@ const updateProduct = catchAsync(async (req, res) => {
     });
 
     try {
-      const { enrichProductData } = require('@modules/ai/services/vectorstore/vector-store');
+      const { enrichProductData } = require('@modules/ai/services/product/product-enricher');
       await vectorStoreService.loadPromise;
       if (finalProduct && finalProduct.status === 'active') {
         await vectorStoreService.upsertProduct(enrichProductData(finalProduct.toJSON()));
@@ -1603,7 +1604,7 @@ const getAllReviews = catchAsync(async (req, res) => {
       },
       {
         model: Product,
-        attributes: ['id', 'name', 'slug'],
+        attributes: ['id', 'nameVi', 'nameEn', 'slug'],
       },
     ],
     limit: parseInt(limit),
@@ -1690,7 +1691,7 @@ const getAllOrders = catchAsync(async (req, res) => {
       include: [
         {
           model: Product,
-          attributes: ['id', 'name', 'basePrice'],
+          attributes: ['id', 'nameVi', 'nameEn', 'basePrice'],
           include: [
             {
               model: ProductImage,
@@ -2113,7 +2114,7 @@ const restockProduct = catchAsync(async (req, res) => {
 
   // Đồng bộ vector store sau khi stock thay đổi để chatbot hiển thị đúng trạng thái tồn kho
   try {
-    const { enrichProductData } = require('@modules/ai/services/vectorstore/vector-store');
+    const { enrichProductData } = require('@modules/ai/services/product/product-enricher');
     await vectorStoreService.loadPromise;
     const productForIndex = await adminRepository.findProductById(productId, {
       include: [
@@ -2259,7 +2260,7 @@ const getTopProductsAnalytics = catchAsync(async (req, res) => {
       },
       {
         model: Product,
-        attributes: ['name'],
+        attributes: ['nameVi', 'nameEn'],
         include: [
           {
             model: ProductImage,
@@ -2280,7 +2281,7 @@ const getTopProductsAnalytics = catchAsync(async (req, res) => {
     const prod = item.Product ? item.Product.toJSON() : {};
     return {
       productId: item.productId,
-      name: prod.name || '',
+      name: prod.nameVi || prod.nameEn || prod.name || '',
       thumbnail: prod.productImages?.[0]?.imageUrl || null,
       revenue: parseFloat(item.getDataValue('revenue') || 0),
       soldCount: parseInt(item.getDataValue('soldCount') || 0, 10),
@@ -2409,7 +2410,7 @@ const getLowStockAnalytics = catchAsync(async (req, res) => {
   const threshold = Number.isFinite(parsedThreshold) ? parsedThreshold : 10;
 
   const products = await adminRepository.findProductsList({
-    attributes: ['id', 'name', 'stockQuantity', 'slug'],
+    attributes: ['id', 'nameVi', 'nameEn', 'stockQuantity', 'slug'],
     include: [
       {
         model: ProductImage,
@@ -2433,7 +2434,7 @@ const getLowStockAnalytics = catchAsync(async (req, res) => {
     const pJson = p.toJSON();
     return {
       id: pJson.id,
-      name: pJson.name,
+      name: pJson.nameVi || pJson.nameEn || pJson.name || '',
       sku: pJson.variants?.[0]?.sku || '',
       stockQuantity: pJson.stockQuantity,
       thumbnail: pJson.productImages?.[0]?.imageUrl || null,
@@ -2495,7 +2496,7 @@ const exportReport = catchAsync(async (req, res) => {
     res.status(200).send('﻿' + csvHeader + csvRows);
   } else if (type === 'products') {
     const products = await adminRepository.findProductsList({
-      attributes: ['id', 'name', 'sku', 'basePrice', 'stockQuantity', 'status'],
+      attributes: ['id', 'nameVi', 'nameEn', 'sku', 'basePrice', 'stockQuantity', 'status'],
       order: [['nameVi', 'ASC']],
       limit: 5000,
       raw: true,
@@ -2505,7 +2506,7 @@ const exportReport = catchAsync(async (req, res) => {
     const csvRows = products
       .map(
         (p) =>
-          `${p.id},"${(p.name || '').replace(/"/g, '""')}","${p.sku || ''}",${p.basePrice},${p.stockQuantity},${p.status || 'active'}`,
+          `${p.id},"${(p.nameVi || p.nameEn || p.name || '').replace(/"/g, '""')}","${p.sku || ''}",${p.basePrice},${p.stockQuantity},${p.status || 'active'}`,
       )
       .join('\n');
 

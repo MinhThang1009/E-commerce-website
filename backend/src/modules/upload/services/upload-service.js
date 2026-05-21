@@ -33,8 +33,7 @@ class UploadService {
     const isJpeg = MAGIC_BYTES.jpeg.equals(buf.slice(0, 3));
     const isPng = MAGIC_BYTES.png.equals(buf.slice(0, 8));
     const isWebp =
-      MAGIC_BYTES.webp.equals(buf.slice(0, 4)) &&
-      buf.slice(8, 12).toString('ascii') === 'WEBP';
+      MAGIC_BYTES.webp.equals(buf.slice(0, 4)) && buf.slice(8, 12).toString('ascii') === 'WEBP';
     return isJpeg || isPng || isWebp;
   }
 
@@ -88,9 +87,7 @@ class UploadService {
     }
 
     // Xóa file giả mạo song song (best-effort)
-    await Promise.allSettled(
-      invalidPaths.map((p) => this.uploadRepository.deleteFile(p))
-    );
+    await Promise.allSettled(invalidPaths.map((p) => this.uploadRepository.deleteFile(p)));
 
     if (validFiles.length === 0) {
       throw new AppError('upload.invalidFileType', 400);

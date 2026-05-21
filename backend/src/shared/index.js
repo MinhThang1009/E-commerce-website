@@ -10,7 +10,7 @@ const eventBus = require('@shared/event-bus');
 const Result = require('@shared/result');
 const sequelize = require('@config/sequelize');
 const unitOfWork = require('@shared/persistence/unit-of-work');
-const logger = require('@shared/logger');
+const logger = require('@utils/logger');
 
 module.exports = {
   ...errors,

@@ -7,7 +7,6 @@ const {
   ProductAttribute,
   ProductSpecification,
   Review,
-  ReviewFeedback,
   Cart,
   CartItem,
   Order,
@@ -27,7 +26,6 @@ const {
   LoyaltyHistory,
   RecentlyViewed,
   Banner,
-  EmailCampaign,
   DiscountCode,
 } = require('../src/models');
 
@@ -40,12 +38,10 @@ async function cleanup() {
     await sequelize.query('SET FOREIGN_KEY_CHECKS = 0', { transaction });
 
     const modelsToClean = [
-      { model: EmailCampaign, name: 'EmailCampaign' },
       { model: Banner, name: 'Banner' },
       { model: LoyaltyHistory, name: 'LoyaltyHistory' },
       { model: SearchHistory, name: 'SearchHistory' },
       { model: RecentlyViewed, name: 'RecentlyViewed' },
-      { model: ReviewFeedback, name: 'ReviewFeedback' },
       { model: Review, name: 'Review' },
       { model: OrderItem, name: 'OrderItem' },
       { model: Order, name: 'Order' },

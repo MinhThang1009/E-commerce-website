@@ -24,7 +24,14 @@ class SequelizeWishlistRepository extends IWishlistRepository {
       include: [
         {
           model: this.Product,
-          attributes: ['id', 'name', 'slug', [col('base_price'), 'price'], 'compareAtPrice'],
+          attributes: [
+            'id',
+            'nameVi',
+            'nameEn',
+            'slug',
+            [col('base_price'), 'price'],
+            'compareAtPrice',
+          ],
           include: [
             { association: 'productImages', required: false },
             { association: 'defaultVariant', required: false },

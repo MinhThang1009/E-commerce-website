@@ -11,47 +11,47 @@ const Review = sequelize.define(
     },
     productId: {
       type: DataTypes.INTEGER,
-      allowNull: false
+      allowNull: false,
     },
     variantId: {
       type: DataTypes.INTEGER,
-      allowNull: true
+      allowNull: true,
     },
     userId: {
       type: DataTypes.INTEGER,
-      allowNull: false
+      allowNull: false,
     },
     rating: {
       type: DataTypes.INTEGER,
       allowNull: false,
       validate: {
         min: 1,
-        max: 5
+        max: 5,
       },
     },
     title: {
       type: DataTypes.STRING,
-      allowNull: true
+      allowNull: true,
     },
     content: {
       type: DataTypes.TEXT,
-      allowNull: false
+      allowNull: false,
     },
     isVerified: {
       type: DataTypes.BOOLEAN,
-      defaultValue: false
+      defaultValue: false,
     },
     likes: {
       type: DataTypes.INTEGER,
-      defaultValue: 0
+      defaultValue: 0,
     },
     dislikes: {
       type: DataTypes.INTEGER,
-      defaultValue: 0
+      defaultValue: 0,
     },
     images: {
       type: DataTypes.JSON,
-      defaultValue: []
+      defaultValue: [],
     },
   },
   {
@@ -59,7 +59,7 @@ const Review = sequelize.define(
     timestamps: true,
     paranoid: true,
     underscored: true,
-  }
+  },
 );
 
 module.exports = Review;

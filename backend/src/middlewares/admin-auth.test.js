@@ -62,7 +62,7 @@ function makeToken(payload = {}, expiresIn = '1h') {
   return jwt.sign(
     { id: 1, role: 'admin', jti: 'admin-jti', iat: Math.floor(Date.now() / 1000), ...payload },
     process.env.JWT_SECRET,
-    { algorithm: 'HS256', expiresIn }
+    { algorithm: 'HS256', expiresIn },
   );
 }
 
@@ -137,7 +137,7 @@ describe('adminAuthenticate', () => {
     it('gọi next với AppError 401', async () => {
       getRedisClient.mockResolvedValue(mockRedis);
       mockRedis.get.mockImplementation((key) =>
-        key === 'bl:admin-jti' ? Promise.resolve('1') : Promise.resolve(null)
+        key === 'bl:admin-jti' ? Promise.resolve('1') : Promise.resolve(null),
       );
 
       const token = makeToken({ jti: 'admin-jti' });
@@ -156,14 +156,14 @@ describe('adminAuthenticate', () => {
       const pwChangedAt = oldIat + 3600;
 
       mockRedis.get.mockImplementation((key) =>
-        key === 'pw_changed:1' ? Promise.resolve(String(pwChangedAt)) : Promise.resolve(null)
+        key === 'pw_changed:1' ? Promise.resolve(String(pwChangedAt)) : Promise.resolve(null),
       );
 
       // Ký thủ công với iat cũ để tránh JWT override
       const token = jwt.sign(
         { id: 1, role: 'admin', jti: 'old-admin-jti', iat: oldIat, exp: oldIat + 3600 * 24 },
         process.env.JWT_SECRET,
-        { algorithm: 'HS256' }
+        { algorithm: 'HS256' },
       );
       const next = jest.fn();
 
@@ -273,7 +273,7 @@ describe('adminAuthenticate', () => {
       const tokenWithoutJti = jwt.sign(
         { id: 1, role: 'admin' }, // không có jti
         process.env.JWT_SECRET,
-        { algorithm: 'HS256', expiresIn: '1h' }
+        { algorithm: 'HS256', expiresIn: '1h' },
       );
       const req = makeReq(tokenWithoutJti);
       const next = jest.fn();
@@ -316,7 +316,13 @@ describe('requireSuperAdmin', () => {
   describe('khi req.user không được gán', () => {
     it('gọi next với AppError 401', () => {
       const next = jest.fn();
-      requireSuperAdmin({ /* không có user */ }, makeRes(), next);
+      requireSuperAdmin(
+        {
+          /* không có user */
+        },
+        makeRes(),
+        next,
+      );
       expect(next.mock.calls[0][0].statusCode).toBe(401);
     });
   });

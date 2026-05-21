@@ -44,27 +44,29 @@ const invalidateCache = async (pattern) => {
   try {
     const redis = await getRedisClient();
     const keys = await redis.keys(pattern);
-    if (keys.length > 0) await Promise.all(keys.map(k => redis.del(k)));
+    if (keys.length > 0) await Promise.all(keys.map((k) => redis.del(k)));
   } catch (err) {
     logger.warn('invalidateCache thất bại:', err.message);
   }
 };
 
 // Middleware thêm HTTP Cache-Control headers cho GET requests
-const httpCacheHeaders = (maxAgeSeconds, options = {}) => (req, res, next) => {
-  if (req.method === 'GET') {
-    if (options.noStore) {
-      res.setHeader('Cache-Control', 'private, no-store');
-    } else if (options.private) {
-      res.setHeader('Cache-Control', `private, max-age=${maxAgeSeconds}`);
-    } else {
-      res.setHeader(
-        'Cache-Control',
-        `public, max-age=${maxAgeSeconds}, stale-while-revalidate=${maxAgeSeconds * 2}`
-      );
+const httpCacheHeaders =
+  (maxAgeSeconds, options = {}) =>
+  (req, res, next) => {
+    if (req.method === 'GET') {
+      if (options.noStore) {
+        res.setHeader('Cache-Control', 'private, no-store');
+      } else if (options.private) {
+        res.setHeader('Cache-Control', `private, max-age=${maxAgeSeconds}`);
+      } else {
+        res.setHeader(
+          'Cache-Control',
+          `public, max-age=${maxAgeSeconds}, stale-while-revalidate=${maxAgeSeconds * 2}`,
+        );
+      }
     }
-  }
-  next();
-};
+    next();
+  };
 
 module.exports = { cacheMiddleware, invalidateCache, httpCacheHeaders };

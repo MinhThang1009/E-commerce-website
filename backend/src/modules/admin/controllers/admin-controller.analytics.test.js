@@ -37,7 +37,7 @@ jest.mock('@utils/product-helpers', () => ({
   generateVariantSku: jest.fn().mockReturnValue('SKU-TEST'),
 }));
 
-jest.mock('@modules/ai/services/vectorstore/vector-store', () => ({
+jest.mock('@services/vector-store/vector-store', () => ({
   upsertProduct: jest.fn(),
   save: jest.fn().mockResolvedValue(undefined),
 }));

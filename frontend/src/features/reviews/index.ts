@@ -21,7 +21,6 @@ export {
   useCreateReviewMutation,
   useUpdateReviewMutation,
   useDeleteReviewMutation,
-  useMarkReviewHelpfulMutation,
   useGetUserReviewsQuery,
 } from './api/review-api';
 export type { Review, ReviewFilters, CreateReviewData } from './api/review-api';

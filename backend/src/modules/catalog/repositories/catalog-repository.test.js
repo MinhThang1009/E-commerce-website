@@ -41,8 +41,6 @@ function makeRepo(modelOverrides = {}, seqOverride = null) {
   const deps = {
     Category: makeModel(),
     Brand: makeModel(),
-    Collection: makeModel(),
-    ProductCollection: makeModel(),
     Product: makeModel(),
     ProductAttribute: makeModel(),
     ProductVariant: makeModel(),
@@ -214,6 +212,18 @@ describe('Brand methods', () => {
     expect(call.where.id[Op.in]).toEqual([2, 3]);
   });
 
+  test('TC-12b findAllBrands — filter.hasProducts=true → include Product với required:true', async () => {
+    const { repo, deps } = makeRepo();
+    deps.Brand.findAll.mockResolvedValue([{ id: 1 }]);
+
+    await repo.findAllBrands({ filter: { hasProducts: true } });
+
+    const call = deps.Brand.findAll.mock.calls[0][0];
+    expect(call.include).toBeDefined();
+    expect(call.include[0].required).toBe(true);
+    expect(call.distinct).toBe(true);
+  });
+
   test('TC-13 findBrandById — delegate tới Brand.findByPk', async () => {
     const { repo, deps } = makeRepo();
     const brand = { id: 5, name: 'Apple' };
@@ -284,101 +294,6 @@ describe('Brand methods', () => {
       order: [['basePrice', 'ASC']],
     });
     expect(result).toBe(rows);
-  });
-});
-
-// ════════════════════════════════════════════════════════════════════════════
-// 3. COLLECTION
-// ════════════════════════════════════════════════════════════════════════════
-
-describe('Collection methods', () => {
-  test('TC-18 findAllCollections — không filter → tất cả collections', async () => {
-    const { repo, deps } = makeRepo();
-    deps.Collection.findAll.mockResolvedValue([{ id: 1 }]);
-
-    const result = await repo.findAllCollections();
-
-    expect(deps.Collection.findAll).toHaveBeenCalledWith({ where: {}, order: [['nameVi', 'ASC']] });
-    expect(result).toHaveLength(1);
-  });
-
-  test('TC-19 findAllCollections — filter.isActive → lọc active', async () => {
-    const { repo, deps } = makeRepo();
-    deps.Collection.findAll.mockResolvedValue([]);
-
-    await repo.findAllCollections({ filter: { isActive: true } });
-
-    const call = deps.Collection.findAll.mock.calls[0][0];
-    expect(call.where.isActive).toBe(true);
-  });
-
-  test('TC-20 findCollectionById / findCollectionBySlug', async () => {
-    const { repo, deps } = makeRepo();
-    const col = { id: 3, slug: 'summer-sale' };
-    deps.Collection.findByPk.mockResolvedValue(col);
-    deps.Collection.findOne.mockResolvedValue(col);
-
-    const byId = await repo.findCollectionById(3);
-    const bySlug = await repo.findCollectionBySlug('summer-sale');
-
-    expect(byId).toBe(col);
-    expect(bySlug).toBe(col);
-    expect(deps.Collection.findOne).toHaveBeenCalledWith({ where: { slug: 'summer-sale' } });
-  });
-
-  test('TC-21 createCollection / saveCollection / deleteCollection', async () => {
-    const { repo, deps } = makeRepo();
-    const payload = { name: 'Flash Sale', slug: 'flash-sale' };
-    const created = { id: 5, ...payload };
-    deps.Collection.create.mockResolvedValue(created);
-
-    const r = await repo.createCollection(payload);
-    expect(r).toBe(created);
-
-    const inst = {
-      save: jest.fn().mockResolvedValue(created),
-      destroy: jest.fn().mockResolvedValue(1),
-    };
-    await repo.saveCollection(inst);
-    await repo.deleteCollection(inst);
-    expect(inst.save).toHaveBeenCalled();
-    expect(inst.destroy).toHaveBeenCalled();
-  });
-
-  test('TC-22 setCollectionProducts — destroy cũ rồi bulkCreate mới', async () => {
-    const { repo, deps } = makeRepo();
-
-    await repo.setCollectionProducts(7, [10, 11, 12]);
-
-    expect(deps.ProductCollection.destroy).toHaveBeenCalledWith({ where: { collectionId: 7 } });
-    expect(deps.ProductCollection.bulkCreate).toHaveBeenCalledWith(
-      [
-        { productId: 10, collectionId: 7 },
-        { productId: 11, collectionId: 7 },
-        { productId: 12, collectionId: 7 },
-      ],
-      {},
-    );
-  });
-
-  test('TC-23 setCollectionProducts — productIds rỗng → chỉ destroy, không bulkCreate', async () => {
-    const { repo, deps } = makeRepo();
-
-    await repo.setCollectionProducts(7, []);
-
-    expect(deps.ProductCollection.destroy).toHaveBeenCalled();
-    expect(deps.ProductCollection.bulkCreate).not.toHaveBeenCalled();
-  });
-
-  test('TC-24 destroyCollectionProducts — gọi ProductCollection.destroy đúng tham số', async () => {
-    const { repo, deps } = makeRepo();
-
-    await repo.destroyCollectionProducts(5, { transaction: 'tx' });
-
-    expect(deps.ProductCollection.destroy).toHaveBeenCalledWith({
-      where: { collectionId: 5 },
-      transaction: 'tx',
-    });
   });
 });
 
@@ -530,19 +445,6 @@ describe('Product fetching methods', () => {
     const brandInclude = call.include.find((inc) => inc.association === 'brand');
     expect(brandInclude).toBeDefined();
     expect(brandInclude.required).toBe(true);
-  });
-
-  test('TC-35c findProductsList — filter.collectionIdsIn → include collections required:true', async () => {
-    const { repo, deps } = makeRepo();
-    deps.Product.findAndCountAll.mockResolvedValue({ count: 0, rows: [] });
-
-    await repo.findProductsList({ filter: { collectionIdsIn: [1, 2] } });
-
-    const call = deps.Product.findAndCountAll.mock.calls[0][0];
-    const colInclude = call.include.find(
-      (inc) => inc.association === 'collections' && inc.required === true,
-    );
-    expect(colInclude).toBeDefined();
   });
 
   test('TC-36 findProductByIdWithFullDetails — findByPk với include đầy đủ', async () => {
@@ -750,29 +652,8 @@ describe('Search methods', () => {
 });
 
 // ════════════════════════════════════════════════════════════════════════════
-// 8. COLLECTION PRODUCTS + PRODUCT CRUD + EDGE CASES
+// 8. PRODUCT CRUD + EDGE CASES
 // ════════════════════════════════════════════════════════════════════════════
-
-describe('findProductsByCollectionId', () => {
-  test('TC-48 include collections where id, status active', async () => {
-    const { repo, deps } = makeRepo();
-    deps.Product.findAndCountAll.mockResolvedValue({ count: 3, rows: [] });
-
-    await repo.findProductsByCollectionId(8, {
-      sort: 'createdAt',
-      order: 'DESC',
-      limit: 10,
-      offset: 0,
-    });
-
-    const call = deps.Product.findAndCountAll.mock.calls[0][0];
-    expect(call.where).toEqual({ status: 'active' });
-    const colInclude = call.include.find((inc) => inc.association === 'collections');
-    expect(colInclude).toBeDefined();
-    expect(colInclude.where).toEqual({ id: 8 });
-    expect(call.distinct).toBe(true);
-  });
-});
 
 describe('Product CRUD', () => {
   test('TC-49 createProduct — Product.create với payload và options', async () => {

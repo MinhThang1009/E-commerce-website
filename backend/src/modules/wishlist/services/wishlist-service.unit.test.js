@@ -23,9 +23,9 @@ describe('WishlistService', () => {
   describe('addToWishlist', () => {
     test('product không tồn tại → 404', async () => {
       wishlistRepository.findProductById.mockResolvedValue(null);
-      await expect(
-        service.addToWishlist({ userId: 1, productId: 99 })
-      ).rejects.toMatchObject({ statusCode: 404 });
+      await expect(service.addToWishlist({ userId: 1, productId: 99 })).rejects.toMatchObject({
+        statusCode: 404,
+      });
     });
 
     test('product đã có → trả message + alreadyExists=true', async () => {
@@ -48,9 +48,9 @@ describe('WishlistService', () => {
   describe('removeFromWishlist', () => {
     test('không tìm thấy → 404', async () => {
       wishlistRepository.findItem.mockResolvedValue(null);
-      await expect(
-        service.removeFromWishlist({ userId: 1, productId: 1 })
-      ).rejects.toMatchObject({ statusCode: 404 });
+      await expect(service.removeFromWishlist({ userId: 1, productId: 1 })).rejects.toMatchObject({
+        statusCode: 404,
+      });
     });
 
     test('hợp lệ → xóa item', async () => {
@@ -88,7 +88,8 @@ describe('WishlistService', () => {
       const item = {
         Product: {
           toJSON: () => ({
-            id: 1, name: 'P',
+            id: 1,
+            name: 'P',
             defaultVariant: { stockQuantity: 5 },
             productImages: [
               { id: 1, imageUrl: 'a.jpg', altText: 'a', isPrimary: false },

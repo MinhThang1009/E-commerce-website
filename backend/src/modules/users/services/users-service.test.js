@@ -41,7 +41,7 @@ describe('UsersService', () => {
       usersRepository.findUserById.mockResolvedValue(null);
 
       await expect(
-        service.updateProfile({ userId: 99, firstName: 'A', lastName: 'B' })
+        service.updateProfile({ userId: 99, firstName: 'A', lastName: 'B' }),
       ).rejects.toMatchObject({ statusCode: 404 });
     });
 
@@ -50,7 +50,9 @@ describe('UsersService', () => {
       usersRepository.findUserById.mockResolvedValue(user);
 
       const result = await service.updateProfile({
-        userId: 1, firstName: 'Mới', lastName: 'Họ',
+        userId: 1,
+        firstName: 'Mới',
+        lastName: 'Họ',
       });
 
       expect(user.firstName).toBe('Mới');
@@ -111,7 +113,7 @@ describe('UsersService', () => {
       usersRepository.findUserById.mockResolvedValue(null);
 
       await expect(
-        service.changePassword({ userId: 99, currentPassword: 'old', newPassword: 'new' })
+        service.changePassword({ userId: 99, currentPassword: 'old', newPassword: 'new' }),
       ).rejects.toMatchObject({ statusCode: 404 });
     });
 
@@ -121,7 +123,7 @@ describe('UsersService', () => {
       });
 
       await expect(
-        service.changePassword({ userId: 1, currentPassword: 'sai', newPassword: 'new' })
+        service.changePassword({ userId: 1, currentPassword: 'sai', newPassword: 'new' }),
       ).rejects.toMatchObject({ statusCode: 401, message: 'users.wrongPassword' });
     });
 
@@ -130,7 +132,9 @@ describe('UsersService', () => {
       usersRepository.findUserById.mockResolvedValue(user);
 
       const result = await service.changePassword({
-        userId: 1, currentPassword: 'đúng', newPassword: 'mậtKhẩuMới',
+        userId: 1,
+        currentPassword: 'đúng',
+        newPassword: 'mậtKhẩuMới',
       });
 
       expect(user.password).toBe('mậtKhẩuMới');
@@ -149,7 +153,7 @@ describe('UsersService', () => {
       expect(redisMock.set).toHaveBeenCalledWith(
         'pw_changed:42',
         expect.any(String),
-        expect.objectContaining({ EX: expect.any(Number) })
+        expect.objectContaining({ EX: expect.any(Number) }),
       );
     });
 
@@ -159,7 +163,7 @@ describe('UsersService', () => {
       getRedisClient.mockRejectedValue(new Error('redis down'));
 
       await expect(
-        service.changePassword({ userId: 1, currentPassword: 'ok', newPassword: 'new' })
+        service.changePassword({ userId: 1, currentPassword: 'ok', newPassword: 'new' }),
       ).resolves.toMatchObject({ message: 'users.changePasswordSuccess' });
     });
   });
@@ -187,11 +191,12 @@ describe('UsersService', () => {
       usersRepository.createAddress.mockResolvedValue(newAddress);
 
       const result = await service.addAddress({
-        userId: 1, addressData: { street: 'Số 1 Đường A' },
+        userId: 1,
+        addressData: { street: 'Số 1 Đường A' },
       });
 
       expect(usersRepository.createAddress).toHaveBeenCalledWith(
-        expect.objectContaining({ isDefault: true })
+        expect.objectContaining({ isDefault: true }),
       );
       expect(result.address).toBe(newAddress);
     });
@@ -201,12 +206,13 @@ describe('UsersService', () => {
       usersRepository.createAddress.mockResolvedValue({ id: 3 });
 
       await service.addAddress({
-        userId: 1, addressData: { street: 'Số 2', isDefault: true },
+        userId: 1,
+        addressData: { street: 'Số 2', isDefault: true },
       });
 
       expect(usersRepository.clearDefaultAddresses).toHaveBeenCalledWith(1);
       expect(usersRepository.createAddress).toHaveBeenCalledWith(
-        expect.objectContaining({ isDefault: true, userId: 1 })
+        expect.objectContaining({ isDefault: true, userId: 1 }),
       );
     });
 
@@ -215,7 +221,8 @@ describe('UsersService', () => {
       usersRepository.createAddress.mockResolvedValue({ id: 2 });
 
       await service.addAddress({
-        userId: 1, addressData: { street: 'Số 3' },
+        userId: 1,
+        addressData: { street: 'Số 3' },
       });
 
       expect(usersRepository.clearDefaultAddresses).not.toHaveBeenCalled();
@@ -229,7 +236,7 @@ describe('UsersService', () => {
       usersRepository.findAddressByIdAndUserId.mockResolvedValue(null);
 
       await expect(
-        service.updateAddress({ userId: 1, addressId: 99, addressData: {} })
+        service.updateAddress({ userId: 1, addressId: 99, addressData: {} }),
       ).rejects.toMatchObject({ statusCode: 404 });
     });
 
@@ -238,7 +245,9 @@ describe('UsersService', () => {
       usersRepository.findAddressByIdAndUserId.mockResolvedValue(address);
 
       await service.updateAddress({
-        userId: 1, addressId: 1, addressData: { street: 'Mới', city: 'HCM' },
+        userId: 1,
+        addressId: 1,
+        addressData: { street: 'Mới', city: 'HCM' },
       });
 
       expect(address.street).toBe('Mới');
@@ -251,7 +260,9 @@ describe('UsersService', () => {
       usersRepository.findAddressByIdAndUserId.mockResolvedValue(address);
 
       await service.updateAddress({
-        userId: 1, addressId: 1, addressData: { isDefault: true },
+        userId: 1,
+        addressId: 1,
+        addressData: { isDefault: true },
       });
 
       expect(usersRepository.clearDefaultAddresses).toHaveBeenCalledWith(1);
@@ -262,7 +273,9 @@ describe('UsersService', () => {
       usersRepository.findAddressByIdAndUserId.mockResolvedValue(address);
 
       await service.updateAddress({
-        userId: 1, addressId: 1, addressData: { isDefault: true },
+        userId: 1,
+        addressId: 1,
+        addressData: { isDefault: true },
       });
 
       expect(usersRepository.clearDefaultAddresses).not.toHaveBeenCalled();
@@ -275,9 +288,9 @@ describe('UsersService', () => {
     test('address không thuộc user → 404', async () => {
       usersRepository.findAddressByIdAndUserId.mockResolvedValue(null);
 
-      await expect(
-        service.deleteAddress({ userId: 1, addressId: 99 })
-      ).rejects.toMatchObject({ statusCode: 404 });
+      await expect(service.deleteAddress({ userId: 1, addressId: 99 })).rejects.toMatchObject({
+        statusCode: 404,
+      });
     });
 
     test('xóa address không phải default → không promote address khác', async () => {
@@ -305,9 +318,9 @@ describe('UsersService', () => {
       usersRepository.findAddressByIdAndUserId.mockResolvedValue({ id: 1, isDefault: true });
       usersRepository.findLatestAddressByUserId.mockResolvedValue(null);
 
-      await expect(
-        service.deleteAddress({ userId: 1, addressId: 1 })
-      ).resolves.toMatchObject({ message: 'users.deleteAddressSuccess' });
+      await expect(service.deleteAddress({ userId: 1, addressId: 1 })).resolves.toMatchObject({
+        message: 'users.deleteAddressSuccess',
+      });
 
       expect(usersRepository.saveAddress).not.toHaveBeenCalled();
     });
@@ -319,9 +332,9 @@ describe('UsersService', () => {
     test('address không tồn tại → 404', async () => {
       usersRepository.findAddressByIdAndUserId.mockResolvedValue(null);
 
-      await expect(
-        service.setDefaultAddress({ userId: 1, addressId: 99 })
-      ).rejects.toMatchObject({ statusCode: 404 });
+      await expect(service.setDefaultAddress({ userId: 1, addressId: 99 })).rejects.toMatchObject({
+        statusCode: 404,
+      });
     });
 
     test('set default → clear cũ + đặt isDefault=true + save', async () => {

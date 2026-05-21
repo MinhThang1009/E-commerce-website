@@ -5,7 +5,7 @@
  * @description Page component của feature orders
  */
 import { useState, useEffect } from 'react';
-import { Link, useNavigate, useLocation } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { ROUTES, buildRoute } from '@/routes/paths';
 import { useQueryClient } from '@tanstack/react-query';
@@ -22,7 +22,7 @@ import {
 } from '../api/order-api';
 import { cartKeys, useClearCartMutation } from '@/features/cart';
 import { getLocale } from '@/utils/format';
-import { toast } from '@/utils/toast';
+import { useNotifications } from '@/hooks/use-notifications';
 import { ReviewModal } from '@/features/reviews';
 import { OrderDetails } from '@/features/orders';
 
@@ -36,6 +36,7 @@ const paymentStatusColors: Record<string, string> = {
 
 const OrdersPage: React.FC = () => {
   const { t } = useTranslation();
+  const { showNotification } = useNotifications();
 
   const statusVariants: Record<string, { variant: BadgeVariant; label: string }> = {
     pending: { variant: 'warning', label: t('order.status.pending') },
@@ -97,15 +98,23 @@ const OrdersPage: React.FC = () => {
       clearServerCart();
 
       // Hiển thị thông báo thành công một lần
-      toast.success(t('checkout.success.message'));
+      showNotification({ message: t('checkout.success.message'), type: 'success' });
 
       // Xóa query param để tránh kích hoạt lại khi tải lại trang
       navigate('/orders', { replace: true });
     } else if (params.get('payment') === 'failed') {
-      toast.error(t('payment.errors.failed'));
+      showNotification({ message: t('payment.errors.failed'), type: 'error' });
       navigate('/orders', { replace: true });
     }
-  }, [location.search, navigate, t, clearLocalCart, queryClient, clearServerCart]);
+  }, [
+    location.search,
+    navigate,
+    t,
+    clearLocalCart,
+    queryClient,
+    clearServerCart,
+    showNotification,
+  ]);
 
   // Bật/tắt chi tiết đơn hàng
   const toggleOrderDetails = (orderId: string) => {
@@ -122,7 +131,7 @@ const OrdersPage: React.FC = () => {
       refetch();
     } catch (error) {
       console.error('Không thể hủy đơn hàng:', error);
-      toast.error(t('common.error'));
+      showNotification({ message: t('common.error'), type: 'error' });
     } finally {
       setCancellingOrder(null);
     }
@@ -154,13 +163,13 @@ const OrdersPage: React.FC = () => {
         window.location.href = response.data.paymentUrl;
       } else {
         // Nếu không có URL thanh toán và không phải chuyển khoản, ở lại trang đơn hàng và hiển thị thông báo thành công
-        toast.success(t('payment.initializingPayment'));
+        showNotification({ message: t('payment.initializingPayment'), type: 'success' });
         // Tải lại danh sách đơn hàng
         refetch();
       }
     } catch (error) {
       console.error('Không thể thanh toán lại đơn hàng:', error);
-      toast.error(t('payment.errors.initializationFailed'));
+      showNotification({ message: t('payment.errors.initializationFailed'), type: 'error' });
     } finally {
       setRepayingOrder(null);
     }
@@ -176,14 +185,14 @@ const OrdersPage: React.FC = () => {
       const points = response.pointsEarned || 0;
 
       if (points > 0) {
-        toast.success(t('orders.receivedWithPoints', { points }));
+        showNotification({ message: t('orders.receivedWithPoints', { points }), type: 'success' });
       } else {
-        toast.success(t('orders.receivedSuccess'));
+        showNotification({ message: t('orders.receivedSuccess'), type: 'success' });
       }
       refetch();
     } catch (error) {
       console.error('Không thể xác nhận đã nhận hàng:', error);
-      toast.error(t('common.error'));
+      showNotification({ message: t('common.error'), type: 'error' });
     } finally {
       setConfirmingOrder(null);
     }
@@ -355,9 +364,14 @@ const OrdersPage: React.FC = () => {
           <p className="text-neutral-500 dark:text-neutral-400 mb-8 max-w-md mx-auto">
             {t('orders.empty.message')}
           </p>
-          <Button variant="primary" as={Link} to={ROUTES.SHOP} size="lg">
+          <PremiumButton
+            variant="primary"
+            size="large"
+            iconType="arrow-right"
+            onClick={() => navigate(ROUTES.SHOP)}
+          >
             {t('orders.empty.startShopping')}
-          </Button>
+          </PremiumButton>
         </div>
       ) : (
         <>

@@ -115,13 +115,6 @@
     "slugExists": "Slug đã tồn tại",
     "newsNotFound": "Không tìm thấy tin tức",
     "newsDeleted": "Tin tức đã được xóa thành công",
-    "campaignNotFound": "Không tìm thấy chiến dịch email",
-    "campaignAlreadySent": "Chiến dịch email này đã được gửi trước đó",
-    "emailSendFailed": "Gửi email thất bại: {{details}}",
-    "campaignSent": "Đã gửi thành công chiến dịch tới {{count}} người nhận",
-    "emailRequired": "Email không được để trống",
-    "alreadySubscribed": "Bạn đã đăng ký nhận bản tin trước đó.",
-    "subscribedSuccess": "Cảm ơn bạn đã đăng ký nhận bản tin!",
     "requiredFieldsMissing": "Vui lòng cung cấp đầy đủ các trường bắt buộc (name, email, subject, content)",
     "feedbackReceived": "Cảm ơn bạn đã gửi phản hồi. Chúng tôi sẽ xem xét sớm!",
     "serverError": "Lỗi máy chủ"
@@ -188,14 +181,6 @@
     "footer": {
       "memberNotice": "Bạn nhận được email này vì bạn là thành viên của hệ thống chúng tôi.",
       "copyright": "Bảo lưu mọi quyền."
-    },
-    "newsletter": {
-      "subject": "Cảm ơn bạn đã đăng ký nhận bản tin!",
-      "welcome": "Chào mừng bạn!",
-      "thankYou": "Cảm ơn bạn đã đăng ký nhận bản tin từ chúng tôi. Bạn sẽ nhận được những thông tin mới nhất về sản phẩm, khuyến mãi và xu hướng công nghệ.",
-      "explore": "Khám phá ngay các sản phẩm mới nhất của chúng tôi!",
-      "goToStore": "Đi đến cửa hàng",
-      "unsubscribe": "Nếu bạn không muốn nhận email nữa, bạn có thể hủy đăng ký bất kỳ lúc nào."
     },
     "otp": {
       "subject": "Mã xác thực đăng nhập {{storeName}}",

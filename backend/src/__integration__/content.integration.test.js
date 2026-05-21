@@ -1,6 +1,6 @@
 require('module-alias/register');
 const sequelize = require('@config/sequelize');
-const { Banner, News, NewsletterSubscriber, Feedback, User } = require('@models');
+const { Banner, News, Feedback, User } = require('@models');
 const { Op } = require('sequelize');
 
 const TS = Date.now();
@@ -24,10 +24,6 @@ afterAll(async () => {
   );
   await News.destroy({ where: { slug: { [Op.like]: `int-news-${TS}%` } } }).catch(() => {});
   // Non-paranoid models: hard delete OK
-  await NewsletterSubscriber.destroy({
-    where: { email: { [Op.like]: `__int_nl_${TS}%` } },
-    force: true,
-  }).catch(() => {});
   await Feedback.destroy({ where: { email: { [Op.like]: `__int_fb_${TS}%` } }, force: true }).catch(
     () => {},
   );
@@ -93,15 +89,7 @@ describe('Content Integration — News', () => {
   });
 });
 
-describe('Content Integration — Newsletter & Feedback', () => {
-  test('Subscribe newsletter', async () => {
-    const sub = await NewsletterSubscriber.create({
-      email: `__int_nl_${TS}@t.com`,
-      isActive: true,
-    });
-    expect(sub.id).toBeDefined();
-  });
-
+describe('Content Integration — Feedback', () => {
   test('Tạo feedback', async () => {
     const fb = await Feedback.create({
       name: '__INT Feedback',

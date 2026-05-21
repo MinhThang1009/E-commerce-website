@@ -3,6 +3,8 @@
  * @layer Service
  * @module inventory
  * @description Business logic layer cho inventory
+ * @depends-on sequelize-inventory-repository, eventBus, logger
+ * @see module.js (DI wiring), routes.js (endpoints), CLAUDE.md (overview)
  */
 const { AppError } = require('@shared/errors');
 
@@ -67,16 +69,19 @@ class InventoryService {
         await stockable.save(opts);
       }
 
-      return this.repo.createInventoryLog({
-        productId: parseInt(productId, 10),
-        variantId: variantId ? parseInt(variantId, 10) : null,
-        changeType: 'restock',
-        changeAmount: change,
-        previousStock: previous,
-        newStock: current,
-        note: note || null,
-        createdBy: adminId,
-      });
+      return this.repo.createInventoryLog(
+        {
+          productId: parseInt(productId, 10),
+          variantId: variantId ? parseInt(variantId, 10) : null,
+          changeType: 'restock',
+          changeAmount: change,
+          previousStock: previous,
+          newStock: current,
+          note: note || null,
+          createdBy: adminId,
+        },
+        opts,
+      );
     });
 
     await this.eventBus.publish({

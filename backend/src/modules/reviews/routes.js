@@ -8,10 +8,7 @@ const express = require('express');
 const { authenticate } = require('@middlewares/authenticate');
 const { authorize } = require('@middlewares/authorize');
 const { validateRequest } = require('@middlewares/validate-request');
-const {
-  reviewSchema,
-  reviewHelpfulSchema,
-} = require('@modules/reviews/validators/reviews-validator');
+const { reviewSchema } = require('@modules/reviews/validators/reviews-validator');
 
 // Reviews module routes — basePath '/reviews' (mount /api/reviews).
 // URL không đổi so với routes/review.js cũ.
@@ -65,18 +62,6 @@ module.exports = ({ reviewsController }) => {
    *         required: true
    *         schema:
    *           type: integer
-   * /api/reviews/{id}/helpful:
-   *   put:
-   *     summary: Đánh dấu đánh giá hữu ích
-   *     tags: [Reviews]
-   *     security:
-   *       - bearerAuth: []
-   *     parameters:
-   *       - in: path
-   *         name: id
-   *         required: true
-   *         schema:
-   *           type: integer
    * /api/reviews/admin/all:
    *   get:
    *     summary: Lấy tất cả đánh giá (admin)
@@ -106,12 +91,6 @@ module.exports = ({ reviewsController }) => {
   router.post('/', authenticate, validateRequest(reviewSchema), reviewsController.createReview);
   router.put('/:id', authenticate, validateRequest(reviewSchema), reviewsController.updateReview);
   router.delete('/:id', authenticate, reviewsController.deleteReview);
-  router.put(
-    '/:id/helpful',
-    authenticate,
-    validateRequest(reviewHelpfulSchema),
-    reviewsController.markReviewHelpful,
-  );
 
   // Admin
   router.get('/admin/all', authenticate, authorize('admin'), reviewsController.getAllReviews);

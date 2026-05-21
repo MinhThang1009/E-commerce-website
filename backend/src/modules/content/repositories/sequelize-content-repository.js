@@ -8,12 +8,10 @@ const { Op } = require('sequelize');
 const IContentRepository = require('@modules/content/repositories/i-content-repository');
 
 class SequelizeContentRepository extends IContentRepository {
-  constructor({ Banner, News, EmailCampaign, NewsletterSubscriber, Feedback, User }) {
+  constructor({ Banner, News, Feedback, User }) {
     super();
     this.Banner = Banner;
     this.News = News;
-    this.EmailCampaign = EmailCampaign;
-    this.NewsletterSubscriber = NewsletterSubscriber;
     this.Feedback = Feedback;
     this.User = User;
   }
@@ -23,7 +21,10 @@ class SequelizeContentRepository extends IContentRepository {
   async findAllBanners(where = {}) {
     return this.Banner.findAll({
       where,
-      order: [['priority', 'DESC'], ['createdAt', 'DESC']],
+      order: [
+        ['priority', 'DESC'],
+        ['createdAt', 'DESC'],
+      ],
     });
   }
 
@@ -49,18 +50,22 @@ class SequelizeContentRepository extends IContentRepository {
   // để service tránh phụ thuộc sequelize Op trực tiếp.
   async findAllNews({ filter = {}, limit, offset } = {}) {
     const where = {};
-    if (filter.search) where.title = { [Op.like]: `%${filter.search}%` };
+    if (filter.search) where.titleVi = { [Op.like]: `%${filter.search}%` };
     if (filter.isPublished !== undefined) where.isPublished = filter.isPublished;
-    if (filter.category) where.category = filter.category;
+    if (filter.category) where.categoryVi = filter.category;
 
     return this.News.findAndCountAll({
       where,
-      limit, offset,
+      limit,
+      offset,
       order: [['createdAt', 'DESC']],
-      include: [{
-        model: this.User, as: 'author',
-        attributes: ['id', 'firstName', 'lastName', 'avatar', 'email'],
-      }],
+      include: [
+        {
+          model: this.User,
+          as: 'author',
+          attributes: ['id', 'firstName', 'lastName', 'avatar', 'email'],
+        },
+      ],
     });
   }
 
@@ -68,25 +73,31 @@ class SequelizeContentRepository extends IContentRepository {
     return this.News.findOne({
       where: { slug },
       ...(withAuthor && {
-        include: [{
-          model: this.User, as: 'author',
-          attributes: ['id', 'firstName', 'lastName', 'avatar'],
-        }],
+        include: [
+          {
+            model: this.User,
+            as: 'author',
+            attributes: ['id', 'firstName', 'lastName', 'avatar'],
+          },
+        ],
       }),
     });
   }
 
   async findNewsBySlugMin(slug) {
-    return this.News.findOne({ where: { slug }, attributes: ['id', 'category'] });
+    return this.News.findOne({ where: { slug }, attributes: ['id', 'categoryVi'] });
   }
 
   async findNewsById(id, { withAuthor = true } = {}) {
     return this.News.findByPk(id, {
       ...(withAuthor && {
-        include: [{
-          model: this.User, as: 'author',
-          attributes: ['id', 'firstName', 'lastName', 'avatar'],
-        }],
+        include: [
+          {
+            model: this.User,
+            as: 'author',
+            attributes: ['id', 'firstName', 'lastName', 'avatar'],
+          },
+        ],
       }),
     });
   }
@@ -94,7 +105,7 @@ class SequelizeContentRepository extends IContentRepository {
   async findNewsByCategory(category, excludeId, attributes) {
     return this.News.findAll({
       where: {
-        category,
+        categoryVi: category,
         id: { [Op.ne]: excludeId },
         isPublished: true,
       },
@@ -130,53 +141,6 @@ class SequelizeContentRepository extends IContentRepository {
 
   async incrementNewsView(news) {
     return news.increment('viewCount');
-  }
-
-  // -------- EmailCampaign --------
-
-  async findAllCampaigns() {
-    return this.EmailCampaign.findAll({ order: [['createdAt', 'DESC']] });
-  }
-
-  async findCampaignById(id) {
-    return this.EmailCampaign.findByPk(id);
-  }
-
-  async createCampaign(payload) {
-    return this.EmailCampaign.create(payload);
-  }
-
-  async saveCampaign(campaign) {
-    return campaign.save();
-  }
-
-  async deleteCampaign(campaign) {
-    return campaign.destroy();
-  }
-
-  async findActiveSubscriberEmails() {
-    return this.NewsletterSubscriber.findAll({
-      where: { status: 'active' },
-      attributes: ['email'],
-    });
-  }
-
-  async findAllUserEmails() {
-    return this.User.findAll({ attributes: ['email'] });
-  }
-
-  // -------- Newsletter --------
-
-  async findOrCreateSubscriber(email) {
-    const [subscriber, created] = await this.NewsletterSubscriber.findOrCreate({
-      where: { email },
-      defaults: { status: 'active' },
-    });
-    return { subscriber, created };
-  }
-
-  async saveSubscriber(subscriber) {
-    return subscriber.save();
   }
 
   // -------- Feedback --------

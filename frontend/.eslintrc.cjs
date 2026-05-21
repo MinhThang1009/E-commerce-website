@@ -36,4 +36,19 @@ module.exports = {
       ],
     }],
   },
+  overrides: [
+    {
+      // Test files dùng require() cho jest.mock dynamic patterns + @ts-nocheck để bỏ qua type errors trong mocks
+      files: ['src/__tests__/**/*.{ts,tsx}', 'src/**/*.test.{ts,tsx}', 'src/**/*.spec.{ts,tsx}'],
+      rules: {
+        '@typescript-eslint/no-var-requires': 'off',
+        '@typescript-eslint/ban-ts-comment': 'off',
+        '@typescript-eslint/no-explicit-any': 'off',
+        '@typescript-eslint/no-redeclare': 'off',
+        '@typescript-eslint/no-unused-vars': 'off',
+        'no-restricted-imports': 'off',
+        'no-console': 'off',
+      },
+    },
+  ],
 };

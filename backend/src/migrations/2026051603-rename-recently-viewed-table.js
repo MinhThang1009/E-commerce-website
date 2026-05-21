@@ -11,7 +11,7 @@ async function tableExists(qi, table) {
     `SELECT TABLE_NAME FROM INFORMATION_SCHEMA.TABLES
      WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = ?
      LIMIT 1`,
-    { replacements: [table] }
+    { replacements: [table] },
   );
   return rows.length > 0;
 }
@@ -22,7 +22,7 @@ async function fkExists(qi, table, constraintName) {
      WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = ? AND CONSTRAINT_NAME = ?
        AND CONSTRAINT_TYPE = 'FOREIGN KEY'
      LIMIT 1`,
-    { replacements: [table, constraintName] }
+    { replacements: [table, constraintName] },
   );
   return rows.length > 0;
 }
@@ -32,7 +32,7 @@ async function indexExists(qi, table, indexName) {
     `SELECT INDEX_NAME FROM INFORMATION_SCHEMA.STATISTICS
      WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = ? AND INDEX_NAME = ?
      LIMIT 1`,
-    { replacements: [table, indexName] }
+    { replacements: [table, indexName] },
   );
   return rows.length > 0;
 }
@@ -55,7 +55,7 @@ module.exports = {
     for (const fk of fkNames) {
       if (await fkExists(queryInterface, 'recently_viewed', fk)) {
         await queryInterface.sequelize.query(
-          `ALTER TABLE \`recently_viewed\` DROP FOREIGN KEY \`${fk}\``
+          `ALTER TABLE \`recently_viewed\` DROP FOREIGN KEY \`${fk}\``,
         );
         console.log(`  DROPPED FK: ${fk}`);
       }
@@ -66,7 +66,7 @@ module.exports = {
     for (const idx of indexNames) {
       if (await indexExists(queryInterface, 'recently_viewed', idx)) {
         await queryInterface.sequelize.query(
-          `ALTER TABLE \`recently_viewed\` DROP INDEX \`${idx}\``
+          `ALTER TABLE \`recently_viewed\` DROP INDEX \`${idx}\``,
         );
         console.log(`  DROPPED INDEX: ${idx}`);
       }
@@ -79,17 +79,17 @@ module.exports = {
     // Bước 4: Recreate FK constraints trên bảng mới
     await queryInterface.sequelize.query(
       `ALTER TABLE \`recently_viewed_products\`
-       ADD CONSTRAINT \`fk_rvp_user\` FOREIGN KEY (\`user_id\`) REFERENCES \`users\` (\`id\`) ON DELETE CASCADE ON UPDATE CASCADE`
+       ADD CONSTRAINT \`fk_rvp_user\` FOREIGN KEY (\`user_id\`) REFERENCES \`users\` (\`id\`) ON DELETE CASCADE ON UPDATE CASCADE`,
     );
     await queryInterface.sequelize.query(
       `ALTER TABLE \`recently_viewed_products\`
-       ADD CONSTRAINT \`fk_rvp_product\` FOREIGN KEY (\`product_id\`) REFERENCES \`products\` (\`id\`) ON DELETE CASCADE ON UPDATE CASCADE`
+       ADD CONSTRAINT \`fk_rvp_product\` FOREIGN KEY (\`product_id\`) REFERENCES \`products\` (\`id\`) ON DELETE CASCADE ON UPDATE CASCADE`,
     );
     console.log('  RECREATED FKs: fk_rvp_user, fk_rvp_product');
 
     // Bước 5: Recreate index
     await queryInterface.sequelize.query(
-      `ALTER TABLE \`recently_viewed_products\` ADD INDEX \`idx_rvp_user_product\` (\`user_id\`, \`product_id\`)`
+      `ALTER TABLE \`recently_viewed_products\` ADD INDEX \`idx_rvp_user_product\` (\`user_id\`, \`product_id\`)`,
     );
     console.log('  RECREATED INDEX: idx_rvp_user_product');
   },
@@ -106,7 +106,7 @@ module.exports = {
     for (const fk of fkNames) {
       if (await fkExists(queryInterface, 'recently_viewed_products', fk)) {
         await queryInterface.sequelize.query(
-          `ALTER TABLE \`recently_viewed_products\` DROP FOREIGN KEY \`${fk}\``
+          `ALTER TABLE \`recently_viewed_products\` DROP FOREIGN KEY \`${fk}\``,
         );
       }
     }
@@ -114,7 +114,7 @@ module.exports = {
     // Drop index
     if (await indexExists(queryInterface, 'recently_viewed_products', 'idx_rvp_user_product')) {
       await queryInterface.sequelize.query(
-        `ALTER TABLE \`recently_viewed_products\` DROP INDEX \`idx_rvp_user_product\``
+        `ALTER TABLE \`recently_viewed_products\` DROP INDEX \`idx_rvp_user_product\``,
       );
     }
 
@@ -125,16 +125,16 @@ module.exports = {
     // Recreate FK cũ
     await queryInterface.sequelize.query(
       `ALTER TABLE \`recently_viewed\`
-       ADD CONSTRAINT \`fk_rv_user\` FOREIGN KEY (\`user_id\`) REFERENCES \`users\` (\`id\`) ON DELETE CASCADE ON UPDATE CASCADE`
+       ADD CONSTRAINT \`fk_rv_user\` FOREIGN KEY (\`user_id\`) REFERENCES \`users\` (\`id\`) ON DELETE CASCADE ON UPDATE CASCADE`,
     );
     await queryInterface.sequelize.query(
       `ALTER TABLE \`recently_viewed\`
-       ADD CONSTRAINT \`fk_rv_product\` FOREIGN KEY (\`product_id\`) REFERENCES \`products\` (\`id\`) ON DELETE CASCADE ON UPDATE CASCADE`
+       ADD CONSTRAINT \`fk_rv_product\` FOREIGN KEY (\`product_id\`) REFERENCES \`products\` (\`id\`) ON DELETE CASCADE ON UPDATE CASCADE`,
     );
 
     // Recreate index
     await queryInterface.sequelize.query(
-      `ALTER TABLE \`recently_viewed\` ADD INDEX \`idx_rv_user_product\` (\`user_id\`, \`product_id\`)`
+      `ALTER TABLE \`recently_viewed\` ADD INDEX \`idx_rv_user_product\` (\`user_id\`, \`product_id\`)`,
     );
   },
 };

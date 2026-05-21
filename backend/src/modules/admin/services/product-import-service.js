@@ -9,7 +9,7 @@ const slugify = require('slugify');
 const repo = require('@modules/admin/repositories/sequelize-product-import-repository');
 const logger = require('@utils/logger');
 const { AppError } = require('@shared/errors');
-const vectorStoreService = require('@modules/ai/services/vectorstore/vector-store');
+const vectorStoreService = require('@services/vector-store/vector-store');
 const {
   parseCsv,
   validateRow,
@@ -175,20 +175,10 @@ const importProducts = async ({ file, adminId }) => {
     }
   }
 
-  await repo.createImportLog({
-    adminId,
-    filename: file.originalname,
-    totalRows: rows.length,
-    successRows: successCount,
-    failedRows: failedCount,
-    errorDetail: rowErrors.length > 0 ? rowErrors : null,
-    importedAt: new Date(),
-  });
-
   if (newProductIds.length > 0) {
     setImmediate(async () => {
       try {
-        const { enrichProductData } = require('@modules/ai/services/vectorstore/vector-store');
+        const { enrichProductData } = require('@modules/ai/services/product/product-enricher');
         const newProducts = await repo.findProductsByIds(newProductIds);
         for (const p of newProducts) {
           await vectorStoreService.upsertProduct(enrichProductData(p.toJSON()));
@@ -202,16 +192,6 @@ const importProducts = async ({ file, adminId }) => {
   }
 
   return { totalRows: rows.length, successCount, failedCount, errors: rowErrors };
-};
-
-const getImportHistory = async ({ page = 1, limit = 20 }) => {
-  const safePage = parseInt(page, 10);
-  const safeLimit = Math.min(parseInt(limit, 10), 100);
-  const { rows, count } = await repo.findImportHistory({
-    limit: safeLimit,
-    offset: (safePage - 1) * safeLimit,
-  });
-  return { logs: rows, total: count, page: safePage, limit: safeLimit };
 };
 
 const exportProducts = async (format) => {
@@ -264,4 +244,4 @@ const exportProducts = async (format) => {
   return csvRows.join('\n');
 };
 
-module.exports = { importProducts, getImportHistory, exportProducts };
+module.exports = { importProducts, exportProducts };

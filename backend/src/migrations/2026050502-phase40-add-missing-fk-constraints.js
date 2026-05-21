@@ -77,7 +77,7 @@ async function constraintExists(queryInterface, table, constraintName) {
   const [rows] = await queryInterface.sequelize.query(
     `SELECT CONSTRAINT_NAME FROM INFORMATION_SCHEMA.TABLE_CONSTRAINTS
      WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = ? AND CONSTRAINT_NAME = ? AND CONSTRAINT_TYPE = 'FOREIGN KEY'`,
-    { replacements: [table, constraintName] }
+    { replacements: [table, constraintName] },
   );
   return rows.length > 0;
 }
@@ -91,7 +91,7 @@ async function findExistingFkOnColumn(queryInterface, table, column) {
       AND c.CONSTRAINT_NAME = k.CONSTRAINT_NAME
       AND c.TABLE_NAME = k.TABLE_NAME
      WHERE k.TABLE_SCHEMA = DATABASE() AND k.TABLE_NAME = ? AND k.COLUMN_NAME = ? AND c.CONSTRAINT_TYPE = 'FOREIGN KEY'`,
-    { replacements: [table, column] }
+    { replacements: [table, column] },
   );
   return rows.map((r) => r.CONSTRAINT_NAME);
 }
@@ -109,7 +109,7 @@ module.exports = {
       for (const oldName of existingFks) {
         if (oldName !== fk.name) {
           await queryInterface.sequelize.query(
-            `ALTER TABLE \`${fk.table}\` DROP FOREIGN KEY \`${oldName}\``
+            `ALTER TABLE \`${fk.table}\` DROP FOREIGN KEY \`${oldName}\``,
           );
         }
       }
@@ -117,7 +117,7 @@ module.exports = {
       await queryInterface.sequelize.query(
         `ALTER TABLE \`${fk.table}\` ADD CONSTRAINT \`${fk.name}\`
          FOREIGN KEY (\`${fk.column}\`) REFERENCES \`${fk.refTable}\`(\`${fk.refColumn}\`)
-         ON DELETE ${fk.onDelete} ON UPDATE ${fk.onUpdate}`
+         ON DELETE ${fk.onDelete} ON UPDATE ${fk.onUpdate}`,
       );
     }
   },
@@ -126,7 +126,7 @@ module.exports = {
     for (const fk of FK_DEFINITIONS) {
       if (await constraintExists(queryInterface, fk.table, fk.name)) {
         await queryInterface.sequelize.query(
-          `ALTER TABLE \`${fk.table}\` DROP FOREIGN KEY \`${fk.name}\``
+          `ALTER TABLE \`${fk.table}\` DROP FOREIGN KEY \`${fk.name}\``,
         );
       }
     }

@@ -9,7 +9,7 @@ module.exports = {
 
     // 2. Drop FK trên review_feedbacks trước khi rename
     await queryInterface.sequelize.query(
-      'ALTER TABLE `review_feedbacks` DROP FOREIGN KEY `fk_review_feedbacks_review`'
+      'ALTER TABLE `review_feedbacks` DROP FOREIGN KEY `fk_review_feedbacks_review`',
     );
 
     // 3. Rename reviews → product_reviews
@@ -26,7 +26,7 @@ module.exports = {
 
   async down(queryInterface) {
     await queryInterface.sequelize.query(
-      'ALTER TABLE `review_feedbacks` DROP FOREIGN KEY `fk_review_feedbacks_review`'
+      'ALTER TABLE `review_feedbacks` DROP FOREIGN KEY `fk_review_feedbacks_review`',
     );
     await queryInterface.renameTable('product_reviews', 'reviews');
     await queryInterface.sequelize.query(`

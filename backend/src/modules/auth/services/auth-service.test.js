@@ -63,7 +63,7 @@ describe('AuthService', () => {
     test('email đã tồn tại → 400', async () => {
       authRepository.findByEmail.mockResolvedValue({ id: 1 });
       await expect(
-        service.register({ email: 'a@b.c', password: 'pass', firstName: 'A', lastName: 'B' })
+        service.register({ email: 'a@b.c', password: 'pass', firstName: 'A', lastName: 'B' }),
       ).rejects.toMatchObject({ statusCode: 400, message: 'auth.emailInUse' });
     });
 
@@ -79,11 +79,11 @@ describe('AuthService', () => {
       });
 
       expect(authRepository.createUser).toHaveBeenCalledWith(
-        expect.objectContaining({ email: 'a@b.c', otpCode: expect.any(String) })
+        expect.objectContaining({ email: 'a@b.c', otpCode: expect.any(String) }),
       );
       expect(emailGateway.sendOtpEmail).toHaveBeenCalledWith('a@b.c', expect.any(String));
       expect(eventBus.publish).toHaveBeenCalledWith(
-        expect.objectContaining({ type: 'auth.userRegistered' })
+        expect.objectContaining({ type: 'auth.userRegistered' }),
       );
       expect(result.message).toBe('auth.registerSuccess');
     });
@@ -108,9 +108,9 @@ describe('AuthService', () => {
   describe('login', () => {
     test('email không tồn tại → 401', async () => {
       authRepository.findByEmail.mockResolvedValue(null);
-      await expect(
-        service.login({ email: 'a@b.c', password: 'p' })
-      ).rejects.toMatchObject({ statusCode: 401 });
+      await expect(service.login({ email: 'a@b.c', password: 'p' })).rejects.toMatchObject({
+        statusCode: 401,
+      });
     });
 
     test('mật khẩu sai → 401', async () => {
@@ -118,9 +118,9 @@ describe('AuthService', () => {
         id: 1,
         comparePassword: jest.fn().mockResolvedValue(false),
       });
-      await expect(
-        service.login({ email: 'a@b.c', password: 'wrong' })
-      ).rejects.toMatchObject({ statusCode: 401 });
+      await expect(service.login({ email: 'a@b.c', password: 'wrong' })).rejects.toMatchObject({
+        statusCode: 401,
+      });
     });
 
     test('email chưa xác thực → 401', async () => {
@@ -130,9 +130,10 @@ describe('AuthService', () => {
         isActive: true,
         comparePassword: jest.fn().mockResolvedValue(true),
       });
-      await expect(
-        service.login({ email: 'a@b.c', password: 'p' })
-      ).rejects.toMatchObject({ statusCode: 401, message: 'auth.emailNotVerified' });
+      await expect(service.login({ email: 'a@b.c', password: 'p' })).rejects.toMatchObject({
+        statusCode: 401,
+        message: 'auth.emailNotVerified',
+      });
     });
 
     test('tài khoản bị khóa → 401', async () => {
@@ -142,9 +143,10 @@ describe('AuthService', () => {
         isActive: false,
         comparePassword: jest.fn().mockResolvedValue(true),
       });
-      await expect(
-        service.login({ email: 'a@b.c', password: 'p' })
-      ).rejects.toMatchObject({ statusCode: 401, message: 'auth.accountDisabled' });
+      await expect(service.login({ email: 'a@b.c', password: 'p' })).rejects.toMatchObject({
+        statusCode: 401,
+        message: 'auth.accountDisabled',
+      });
     });
 
     test('login thành công → trả token + refreshToken + user', async () => {
@@ -185,21 +187,23 @@ describe('AuthService', () => {
 
   describe('verifyOtp', () => {
     test('thiếu email hoặc otp → 400', async () => {
-      await expect(service.verifyOtp({ email: '', otp: '' })).rejects.toMatchObject({ statusCode: 400 });
+      await expect(service.verifyOtp({ email: '', otp: '' })).rejects.toMatchObject({
+        statusCode: 400,
+      });
     });
 
     test('user không tồn tại → 400 generic (chống enumeration)', async () => {
       authRepository.findByEmail.mockResolvedValue(null);
-      await expect(
-        service.verifyOtp({ email: 'a@b.c', otp: '123456' })
-      ).rejects.toMatchObject({ statusCode: 400 });
+      await expect(service.verifyOtp({ email: 'a@b.c', otp: '123456' })).rejects.toMatchObject({
+        statusCode: 400,
+      });
     });
 
     test('email đã verify → 400 generic (chống enumeration)', async () => {
       authRepository.findByEmail.mockResolvedValue({ isEmailVerified: true });
-      await expect(
-        service.verifyOtp({ email: 'a@b.c', otp: '123456' })
-      ).rejects.toMatchObject({ statusCode: 400 });
+      await expect(service.verifyOtp({ email: 'a@b.c', otp: '123456' })).rejects.toMatchObject({
+        statusCode: 400,
+      });
     });
 
     test('OTP sai → 400', async () => {
@@ -208,9 +212,10 @@ describe('AuthService', () => {
         otpCode: '123456',
         otpExpires: new Date(Date.now() + 60000),
       });
-      await expect(
-        service.verifyOtp({ email: 'a@b.c', otp: '999999' })
-      ).rejects.toMatchObject({ statusCode: 400, message: 'auth.otpInvalidOrExpired' });
+      await expect(service.verifyOtp({ email: 'a@b.c', otp: '999999' })).rejects.toMatchObject({
+        statusCode: 400,
+        message: 'auth.otpInvalidOrExpired',
+      });
     });
 
     test('OTP hết hạn → 400', async () => {
@@ -219,9 +224,10 @@ describe('AuthService', () => {
         otpCode: '123456',
         otpExpires: new Date(Date.now() - 60000),
       });
-      await expect(
-        service.verifyOtp({ email: 'a@b.c', otp: '123456' })
-      ).rejects.toMatchObject({ statusCode: 400, message: 'auth.otpExpired' });
+      await expect(service.verifyOtp({ email: 'a@b.c', otp: '123456' })).rejects.toMatchObject({
+        statusCode: 400,
+        message: 'auth.otpExpired',
+      });
     });
 
     test('OTP hợp lệ → set isEmailVerified=true, clear otp, save', async () => {
@@ -267,7 +273,7 @@ describe('AuthService', () => {
     test('token không hợp lệ → 400', async () => {
       authRepository.findByResetToken.mockResolvedValue(null);
       await expect(
-        service.resetPassword({ token: 'bad', password: 'newpass' })
+        service.resetPassword({ token: 'bad', password: 'newpass' }),
       ).rejects.toMatchObject({ statusCode: 400, message: 'auth.tokenInvalidOrExpired' });
     });
 
@@ -296,25 +302,27 @@ describe('AuthService', () => {
         err.name = 'JsonWebTokenError';
         throw err;
       });
-      await expect(
-        service.refreshToken({ refreshToken: 'bad' })
-      ).rejects.toMatchObject({ statusCode: 401, message: 'auth.refreshTokenInvalid' });
+      await expect(service.refreshToken({ refreshToken: 'bad' })).rejects.toMatchObject({
+        statusCode: 401,
+        message: 'auth.refreshTokenInvalid',
+      });
     });
 
     test('user không tồn tại → 401', async () => {
       tokenSigner.verifyRefreshToken.mockReturnValue({ id: 99 });
       authRepository.findById.mockResolvedValue(null);
-      await expect(
-        service.refreshToken({ refreshToken: 't' })
-      ).rejects.toMatchObject({ statusCode: 401 });
+      await expect(service.refreshToken({ refreshToken: 't' })).rejects.toMatchObject({
+        statusCode: 401,
+      });
     });
 
     test('user inactive → 401', async () => {
       tokenSigner.verifyRefreshToken.mockReturnValue({ id: 1 });
       authRepository.findById.mockResolvedValue({ isActive: false });
-      await expect(
-        service.refreshToken({ refreshToken: 't' })
-      ).rejects.toMatchObject({ statusCode: 401, message: 'auth.accountDisabled' });
+      await expect(service.refreshToken({ refreshToken: 't' })).rejects.toMatchObject({
+        statusCode: 401,
+        message: 'auth.accountDisabled',
+      });
     });
 
     test('hợp lệ → trả access token mới', async () => {
@@ -332,7 +340,9 @@ describe('AuthService', () => {
     });
 
     test('token expired/invalid → bỏ qua không throw', async () => {
-      tokenSigner.verifyAccessToken.mockImplementation(() => { throw new Error('expired'); });
+      tokenSigner.verifyAccessToken.mockImplementation(() => {
+        throw new Error('expired');
+      });
       await expect(service.logout({ accessToken: 'old' })).resolves.toBeUndefined();
       expect(blacklistStore.set).not.toHaveBeenCalled();
     });
@@ -356,13 +366,15 @@ describe('AuthService', () => {
       });
       authRepository.findByGoogleIdOrEmail.mockResolvedValue(null);
       authRepository.createUser.mockResolvedValue({
-        id: 10, role: 'customer', isActive: true,
+        id: 10,
+        role: 'customer',
+        isActive: true,
       });
 
       const result = await service.googleLogin({ token: 'idtok' });
 
       expect(authRepository.createUser).toHaveBeenCalledWith(
-        expect.objectContaining({ googleId: 'g-1', email: 'g@x.y', isEmailVerified: true })
+        expect.objectContaining({ googleId: 'g-1', email: 'g@x.y', isEmailVerified: true }),
       );
       expect(result.token).toBe('access-tok');
     });
@@ -370,7 +382,10 @@ describe('AuthService', () => {
     test('id-token fail → fallback access-token verify', async () => {
       googleVerifier.verifyIdToken.mockRejectedValue(new Error('bad id'));
       googleVerifier.verifyAccessToken.mockResolvedValue({
-        sub: 'g-2', email: 'g2@x.y', given_name: 'G2', family_name: 'U',
+        sub: 'g-2',
+        email: 'g2@x.y',
+        given_name: 'G2',
+        family_name: 'U',
       });
       authRepository.findByGoogleIdOrEmail.mockResolvedValue(null);
       authRepository.createUser.mockResolvedValue({ id: 11, role: 'customer', isActive: true });
@@ -384,14 +399,16 @@ describe('AuthService', () => {
     test('cả 2 verify fail → 401', async () => {
       googleVerifier.verifyIdToken.mockRejectedValue(new Error('fail'));
       googleVerifier.verifyAccessToken.mockRejectedValue(new Error('fail'));
-      await expect(
-        service.googleLogin({ token: 'bad' })
-      ).rejects.toMatchObject({ statusCode: 401 });
+      await expect(service.googleLogin({ token: 'bad' })).rejects.toMatchObject({
+        statusCode: 401,
+      });
     });
 
     test('user đã tồn tại không có googleId → liên kết googleId + save', async () => {
       googleVerifier.verifyIdToken.mockResolvedValue({
-        sub: 'g-3', email: 'old@x.y', picture: 'newpic',
+        sub: 'g-3',
+        email: 'old@x.y',
+        picture: 'newpic',
       });
       const existingUser = { id: 5, isActive: true, role: 'customer' };
       authRepository.findByGoogleIdOrEmail.mockResolvedValue(existingUser);
@@ -408,9 +425,9 @@ describe('AuthService', () => {
   describe('getCurrentUser', () => {
     test('user không tồn tại → 404', async () => {
       authRepository.findByIdWithAddresses.mockResolvedValue(null);
-      await expect(
-        service.getCurrentUser({ userId: 99 })
-      ).rejects.toMatchObject({ statusCode: 404 });
+      await expect(service.getCurrentUser({ userId: 99 })).rejects.toMatchObject({
+        statusCode: 404,
+      });
     });
 
     test('user tồn tại → trả user', async () => {
@@ -425,7 +442,6 @@ describe('AuthService', () => {
 // ═══════════════════════════════════════════════════════════════════════════════
 // authService.branches section
 // ═══════════════════════════════════════════════════════════════════════════════
-
 
 describe('AuthService — uncovered branches', () => {
   let authRepository;
@@ -498,7 +514,9 @@ describe('AuthService — uncovered branches', () => {
       });
       authRepository.findByGoogleIdOrEmail.mockResolvedValue(null);
       authRepository.createUser.mockResolvedValue({
-        id: 20, role: 'customer', isActive: true,
+        id: 20,
+        role: 'customer',
+        isActive: true,
       });
 
       await service.googleLogin({ token: 'tok' });
@@ -507,7 +525,7 @@ describe('AuthService — uncovered branches', () => {
         expect.objectContaining({
           firstName: 'Google',
           lastName: 'User',
-        })
+        }),
       );
     });
 
@@ -522,7 +540,9 @@ describe('AuthService — uncovered branches', () => {
       });
       authRepository.findByGoogleIdOrEmail.mockResolvedValue(null);
       authRepository.createUser.mockResolvedValue({
-        id: 21, role: 'customer', isActive: true,
+        id: 21,
+        role: 'customer',
+        isActive: true,
       });
 
       await service.googleLogin({ token: 'tok' });
@@ -531,7 +551,7 @@ describe('AuthService — uncovered branches', () => {
         expect.objectContaining({
           firstName: 'Nguyen',
           lastName: 'User',
-        })
+        }),
       );
     });
 
@@ -546,7 +566,9 @@ describe('AuthService — uncovered branches', () => {
       });
       authRepository.findByGoogleIdOrEmail.mockResolvedValue(null);
       authRepository.createUser.mockResolvedValue({
-        id: 22, role: 'customer', isActive: true,
+        id: 22,
+        role: 'customer',
+        isActive: true,
       });
 
       await service.googleLogin({ token: 'tok' });
@@ -555,7 +577,7 @@ describe('AuthService — uncovered branches', () => {
         expect.objectContaining({
           firstName: 'Tran',
           lastName: 'Van B',
-        })
+        }),
       );
     });
   });
@@ -587,7 +609,7 @@ describe('AuthService — uncovered branches', () => {
       expect(blacklistStore.set).toHaveBeenCalledWith(
         'rt_family_revoked:family-abc',
         expect.any(Number),
-        '1'
+        '1',
       );
     });
 
@@ -597,7 +619,7 @@ describe('AuthService — uncovered branches', () => {
       });
 
       await expect(
-        service.logout({ accessToken: null, refreshToken: 'expired-refresh' })
+        service.logout({ accessToken: null, refreshToken: 'expired-refresh' }),
       ).resolves.toBeUndefined();
 
       expect(blacklistStore.set).not.toHaveBeenCalled();
@@ -636,7 +658,7 @@ describe('AuthService — uncovered branches', () => {
       expect(blacklistStore.set).toHaveBeenCalledWith(
         'rt_used:jti-123',
         expect.any(Number),
-        'fam-2'
+        'fam-2',
       );
     });
 
@@ -668,7 +690,6 @@ describe('AuthService — uncovered branches', () => {
 // ═══════════════════════════════════════════════════════════════════════════════
 // authService.extra.branches section
 // ═══════════════════════════════════════════════════════════════════════════════
-
 
 function buildService(blacklistStoreOverride = undefined) {
   const authRepository = {
@@ -786,8 +807,7 @@ describe('refreshToken — line 304 TRUE branch: jti + blacklistStore đều tru
 // - verifyOtp: otpCode là null → 400
 // - login: không có auditService → bỏ qua audit
 
-'use strict';
-
+('use strict');
 
 describe('AuthService — bổ sung coverage', () => {
   let authRepository;
@@ -848,7 +868,10 @@ describe('AuthService — bổ sung coverage', () => {
 
   describe('logout — refresh token handling', () => {
     test('có refreshToken hợp lệ với familyId → revoke family', async () => {
-      tokenSigner.verifyAccessToken.mockReturnValue({ jti: 'jti-1', exp: Math.floor(Date.now() / 1000) + 3600 });
+      tokenSigner.verifyAccessToken.mockReturnValue({
+        jti: 'jti-1',
+        exp: Math.floor(Date.now() / 1000) + 3600,
+      });
       tokenSigner.verifyRefreshToken.mockReturnValue({ familyId: 'fam-abc', id: 1 });
 
       await service.logout({ accessToken: 'at', refreshToken: 'rt' });
@@ -856,15 +879,22 @@ describe('AuthService — bổ sung coverage', () => {
       expect(blacklistStore.set).toHaveBeenCalledWith(
         'rt_family_revoked:fam-abc',
         expect.any(Number),
-        '1'
+        '1',
       );
     });
 
     test('refreshToken expired/invalid → bỏ qua không throw', async () => {
-      tokenSigner.verifyAccessToken.mockReturnValue({ jti: 'j', exp: Math.floor(Date.now() / 1000) + 1 });
-      tokenSigner.verifyRefreshToken.mockImplementation(() => { throw new Error('expired rt'); });
+      tokenSigner.verifyAccessToken.mockReturnValue({
+        jti: 'j',
+        exp: Math.floor(Date.now() / 1000) + 1,
+      });
+      tokenSigner.verifyRefreshToken.mockImplementation(() => {
+        throw new Error('expired rt');
+      });
 
-      await expect(service.logout({ accessToken: 'at', refreshToken: 'bad-rt' })).resolves.toBeUndefined();
+      await expect(
+        service.logout({ accessToken: 'at', refreshToken: 'bad-rt' }),
+      ).resolves.toBeUndefined();
     });
 
     test('access token không có jti → không set blacklist', async () => {
@@ -873,11 +903,18 @@ describe('AuthService — bổ sung coverage', () => {
       await service.logout({ accessToken: 'at', refreshToken: null });
 
       // Không set blacklist vì không có jti
-      expect(blacklistStore.set).not.toHaveBeenCalledWith(expect.stringContaining('bl:'), expect.anything(), expect.anything());
+      expect(blacklistStore.set).not.toHaveBeenCalledWith(
+        expect.stringContaining('bl:'),
+        expect.anything(),
+        expect.anything(),
+      );
     });
 
     test('access token exp <= now → không set blacklist (TTL <= 0)', async () => {
-      tokenSigner.verifyAccessToken.mockReturnValue({ jti: 'old', exp: Math.floor(Date.now() / 1000) - 1 });
+      tokenSigner.verifyAccessToken.mockReturnValue({
+        jti: 'old',
+        exp: Math.floor(Date.now() / 1000) - 1,
+      });
 
       await service.logout({ accessToken: 'at', refreshToken: null });
 
@@ -897,7 +934,9 @@ describe('AuthService — bổ sung coverage', () => {
       });
       tokenSigner.verifyRefreshToken.mockReturnValue({ familyId: 'fam-1', id: 1 });
 
-      await expect(service.logout({ accessToken: null, refreshToken: 'rt' })).resolves.toBeUndefined();
+      await expect(
+        service.logout({ accessToken: null, refreshToken: 'rt' }),
+      ).resolves.toBeUndefined();
     });
   });
 
@@ -911,29 +950,35 @@ describe('AuthService — bổ sung coverage', () => {
         return Promise.resolve(null);
       });
 
-      await expect(
-        service.refreshToken({ refreshToken: 'used-rt' })
-      ).rejects.toMatchObject({ statusCode: 401, message: 'auth.refreshTokenUsed' });
+      await expect(service.refreshToken({ refreshToken: 'used-rt' })).rejects.toMatchObject({
+        statusCode: 401,
+        message: 'auth.refreshTokenUsed',
+      });
 
       expect(blacklistStore.set).toHaveBeenCalledWith(
         'rt_family_revoked:fam-x',
         expect.any(Number),
-        '1'
+        '1',
       );
       expect(logger.warn).toHaveBeenCalled();
     });
 
     test('family đã bị revoke → 401', async () => {
-      tokenSigner.verifyRefreshToken.mockReturnValue({ id: 1, jti: 'jti-fresh', familyId: 'fam-revoked' });
+      tokenSigner.verifyRefreshToken.mockReturnValue({
+        id: 1,
+        jti: 'jti-fresh',
+        familyId: 'fam-revoked',
+      });
       blacklistStore.get.mockImplementation((key) => {
         if (key === 'rt_used:jti-fresh') return Promise.resolve(null); // chưa dùng
         if (key === 'rt_family_revoked:fam-revoked') return Promise.resolve('1');
         return Promise.resolve(null);
       });
 
-      await expect(
-        service.refreshToken({ refreshToken: 'rt' })
-      ).rejects.toMatchObject({ statusCode: 401, message: 'auth.sessionRevoked' });
+      await expect(service.refreshToken({ refreshToken: 'rt' })).rejects.toMatchObject({
+        statusCode: 401,
+        message: 'auth.sessionRevoked',
+      });
     });
 
     test('token hợp lệ → đánh dấu jti cũ và sinh refresh token mới', async () => {
@@ -947,7 +992,7 @@ describe('AuthService — bổ sung coverage', () => {
       expect(blacklistStore.set).toHaveBeenCalledWith(
         'rt_used:jti-ok',
         expect.any(Number),
-        'fam-ok'
+        'fam-ok',
       );
       // refresh token mới được tạo với familyId
       expect(tokenSigner.signRefreshToken).toHaveBeenCalledWith({ id: 1, familyId: 'fam-ok' });
@@ -961,18 +1006,19 @@ describe('AuthService — bổ sung coverage', () => {
         throw err;
       });
 
-      await expect(
-        service.refreshToken({ refreshToken: 'expired-rt' })
-      ).rejects.toMatchObject({ statusCode: 401, message: 'auth.refreshTokenInvalid' });
+      await expect(service.refreshToken({ refreshToken: 'expired-rt' })).rejects.toMatchObject({
+        statusCode: 401,
+        message: 'auth.refreshTokenInvalid',
+      });
     });
 
     test('lỗi không phải JWT → rethrow', async () => {
       const unexpectedErr = new Error('DB connection lost');
-      tokenSigner.verifyRefreshToken.mockImplementation(() => { throw unexpectedErr; });
+      tokenSigner.verifyRefreshToken.mockImplementation(() => {
+        throw unexpectedErr;
+      });
 
-      await expect(
-        service.refreshToken({ refreshToken: 'rt' })
-      ).rejects.toBe(unexpectedErr);
+      await expect(service.refreshToken({ refreshToken: 'rt' })).rejects.toBe(unexpectedErr);
     });
   });
 
@@ -1119,15 +1165,17 @@ describe('AuthService — bổ sung coverage', () => {
   describe('googleLogin — edge cases', () => {
     test('user tồn tại đã có googleId và avatar → không update, không gọi saveUser', async () => {
       googleVerifier.verifyIdToken.mockResolvedValue({
-        sub: 'g-exist', email: 'exist@x.y', picture: 'old-pic',
+        sub: 'g-exist',
+        email: 'exist@x.y',
+        picture: 'old-pic',
       });
       const existingUser = {
         id: 10,
         isActive: true,
         role: 'customer',
-        googleId: 'g-exist',     // đã có
+        googleId: 'g-exist', // đã có
         avatar: 'existing-avatar', // đã có
-        isEmailVerified: true,    // đã verify
+        isEmailVerified: true, // đã verify
       };
       authRepository.findByGoogleIdOrEmail.mockResolvedValue(existingUser);
 
@@ -1139,7 +1187,8 @@ describe('AuthService — bổ sung coverage', () => {
 
     test('user tồn tại bị khóa → 401', async () => {
       googleVerifier.verifyIdToken.mockResolvedValue({
-        sub: 'g-locked', email: 'locked@x.y',
+        sub: 'g-locked',
+        email: 'locked@x.y',
       });
       authRepository.findByGoogleIdOrEmail.mockResolvedValue({
         id: 20,
@@ -1147,18 +1196,19 @@ describe('AuthService — bổ sung coverage', () => {
         googleId: 'g-locked',
       });
 
-      await expect(
-        service.googleLogin({ token: 'idtok' })
-      ).rejects.toMatchObject({ statusCode: 401, message: 'auth.accountDisabled' });
+      await expect(service.googleLogin({ token: 'idtok' })).rejects.toMatchObject({
+        statusCode: 401,
+        message: 'auth.accountDisabled',
+      });
     });
 
     test('payload null sau verify → 401', async () => {
       googleVerifier.verifyIdToken.mockResolvedValue(null);
       // Khi payload là null → service phải throw 401
       // Thực tế: service check `if (!payload)` → ném AppError
-      await expect(
-        service.googleLogin({ token: 'nullpayload' })
-      ).rejects.toMatchObject({ statusCode: 401 });
+      await expect(service.googleLogin({ token: 'nullpayload' })).rejects.toMatchObject({
+        statusCode: 401,
+      });
     });
   });
 
@@ -1201,9 +1251,9 @@ describe('AuthService — bổ sung coverage', () => {
         otpExpires: new Date(Date.now() + 60000),
       });
 
-      await expect(
-        service.verifyOtp({ email: 'a@b.c', otp: '123456' })
-      ).rejects.toMatchObject({ statusCode: 400 });
+      await expect(service.verifyOtp({ email: 'a@b.c', otp: '123456' })).rejects.toMatchObject({
+        statusCode: 400,
+      });
     });
   });
 });

@@ -116,7 +116,7 @@ module.exports = {
     // Add unique constraint to recently_viewed to simplify updates
     await queryInterface.addIndex('recently_viewed', ['user_id', 'product_id'], {
       unique: true,
-      name: 'recently_viewed_user_product_unique'
+      name: 'recently_viewed_user_product_unique',
     });
   },
 

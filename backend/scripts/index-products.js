@@ -3,8 +3,8 @@ require('module-alias/register');
 const path = require('path');
 const fs = require('fs');
 const { Product, Category, ProductImage, ProductVariant } = require('../src/models');
-const vectorStoreService = require('../src/modules/ai/services/vectorstore/vector-store');
-const { enrichProductData } = vectorStoreService;
+const vectorStoreService = require('../src/services/vector-store/vector-store');
+const { enrichProductData } = require('../src/modules/ai/services/product/product-enricher');
 const viEmbeddingService = require('../src/modules/ai/services/embedding/vi-embedding');
 
 // Script index tất cả sản phẩm vào vector store
@@ -35,7 +35,7 @@ const indexAllProducts = async () => {
     if (fs.existsSync(storagePath)) {
       const backupPath = storagePath + '.bak';
       fs.copyFileSync(storagePath, backupPath);
-      console.log(`✅ Đã backup vectorDb.json → vectorDb.json.bak`);
+      console.log(`✅ Đã backup vector-db.json → vector-db.json.bak`);
     }
 
     // 3. Xóa index cũ — bắt đầu lại từ đầu

@@ -49,33 +49,25 @@ module.exports = {
     }
 
     await addIndexIfMissing(queryInterface, 'product_warranties', ['product_id']);
-    await addIndexIfMissing(queryInterface, 'product_warranties', [
-      'warranty_package_id',
-    ]);
+    await addIndexIfMissing(queryInterface, 'product_warranties', ['warranty_package_id']);
     await addIndexIfMissing(queryInterface, 'product_warranties', ['is_default']);
     await addIndexIfMissing(
       queryInterface,
       'product_warranties',
       ['product_id', 'warranty_package_id'],
-      { unique: true, name: 'unique_product_warranty' }
+      { unique: true, name: 'unique_product_warranty' },
     );
   },
 
   async down(queryInterface) {
-    await removeIndexIfExists(queryInterface, 'product_warranties', [
-      'product_id',
-    ]);
-    await removeIndexIfExists(queryInterface, 'product_warranties', [
-      'warranty_package_id',
-    ]);
-    await removeIndexIfExists(queryInterface, 'product_warranties', [
-      'is_default',
-    ]);
+    await removeIndexIfExists(queryInterface, 'product_warranties', ['product_id']);
+    await removeIndexIfExists(queryInterface, 'product_warranties', ['warranty_package_id']);
+    await removeIndexIfExists(queryInterface, 'product_warranties', ['is_default']);
     await removeIndexIfExists(
       queryInterface,
       'product_warranties',
       ['product_id', 'warranty_package_id'],
-      { name: 'unique_product_warranty' }
+      { name: 'unique_product_warranty' },
     );
     await dropTableIfExists(queryInterface, 'product_warranties');
   },

@@ -115,13 +115,6 @@
     "slugExists": "Slug already exists",
     "newsNotFound": "News article not found",
     "newsDeleted": "News article deleted successfully",
-    "campaignNotFound": "Email campaign not found",
-    "campaignAlreadySent": "This email campaign has already been sent",
-    "emailSendFailed": "Email sending failed: {{details}}",
-    "campaignSent": "Campaign sent successfully to {{count}} recipients",
-    "emailRequired": "Email is required",
-    "alreadySubscribed": "You have already subscribed to our newsletter.",
-    "subscribedSuccess": "Thank you for subscribing to our newsletter!",
     "requiredFieldsMissing": "Please provide all required fields (name, email, subject, content)",
     "feedbackReceived": "Thank you for your feedback. We will review it soon!",
     "serverError": "Server error"
@@ -188,14 +181,6 @@
     "footer": {
       "memberNotice": "You received this email because you are a member of our system.",
       "copyright": "All rights reserved."
-    },
-    "newsletter": {
-      "subject": "Thank you for subscribing to our newsletter!",
-      "welcome": "Welcome!",
-      "thankYou": "Thank you for subscribing to our newsletter. You will receive the latest information about products, promotions, and tech trends.",
-      "explore": "Explore our latest products now!",
-      "goToStore": "Go to store",
-      "unsubscribe": "If you no longer wish to receive emails, you can unsubscribe at any time."
     },
     "otp": {
       "subject": "{{storeName}} verification code",

@@ -11,63 +11,63 @@
 // defaultExpr: null | string (vd "'Vietnam'", "0", "'active'")
 const COLUMNS = [
   // users
-  ['users',           'email',                'VARCHAR(254)', 'NOT NULL', null],
-  ['users',           'phone',                'VARCHAR(20)',  'NULL',     null],
-  ['users',           'first_name',           'VARCHAR(100)', 'NOT NULL', null],
-  ['users',           'last_name',            'VARCHAR(100)', 'NOT NULL', null],
+  ['users', 'email', 'VARCHAR(254)', 'NOT NULL', null],
+  ['users', 'phone', 'VARCHAR(20)', 'NULL', null],
+  ['users', 'first_name', 'VARCHAR(100)', 'NOT NULL', null],
+  ['users', 'last_name', 'VARCHAR(100)', 'NOT NULL', null],
 
   // addresses
-  ['addresses',       'first_name',           'VARCHAR(100)', 'NOT NULL', null],
-  ['addresses',       'last_name',            'VARCHAR(100)', 'NOT NULL', null],
-  ['addresses',       'phone',                'VARCHAR(20)',  'NULL',     null],
-  ['addresses',       'city',                 'VARCHAR(100)', 'NOT NULL', null],
-  ['addresses',       'state',                'VARCHAR(100)', 'NOT NULL', null],
-  ['addresses',       'zip',                  'VARCHAR(20)',  'NOT NULL', null],
-  ['addresses',       'country',              'VARCHAR(100)', 'NOT NULL', null],
+  ['addresses', 'first_name', 'VARCHAR(100)', 'NOT NULL', null],
+  ['addresses', 'last_name', 'VARCHAR(100)', 'NOT NULL', null],
+  ['addresses', 'phone', 'VARCHAR(20)', 'NULL', null],
+  ['addresses', 'city', 'VARCHAR(100)', 'NOT NULL', null],
+  ['addresses', 'state', 'VARCHAR(100)', 'NOT NULL', null],
+  ['addresses', 'zip', 'VARCHAR(20)', 'NOT NULL', null],
+  ['addresses', 'country', 'VARCHAR(100)', 'NOT NULL', null],
 
   // orders shipping/billing
-  ['orders',          'shipping_phone',       'VARCHAR(20)',  'NULL',     null],
-  ['orders',          'shipping_country',     'VARCHAR(100)', 'NOT NULL', "'Vietnam'"],
-  ['orders',          'shipping_city',        'VARCHAR(100)', 'NOT NULL', null],
-  ['orders',          'shipping_state',       'VARCHAR(100)', 'NOT NULL', null],
-  ['orders',          'billing_phone',        'VARCHAR(20)',  'NULL',     null],
-  ['orders',          'billing_country',      'VARCHAR(100)', 'NOT NULL', "'Vietnam'"],
-  ['orders',          'billing_city',         'VARCHAR(100)', 'NOT NULL', null],
-  ['orders',          'billing_state',        'VARCHAR(100)', 'NOT NULL', null],
-  ['orders',          'shipping_first_name',  'VARCHAR(100)', 'NOT NULL', null],
-  ['orders',          'shipping_last_name',   'VARCHAR(100)', 'NOT NULL', null],
-  ['orders',          'billing_first_name',   'VARCHAR(100)', 'NOT NULL', null],
-  ['orders',          'billing_last_name',    'VARCHAR(100)', 'NOT NULL', null],
-  ['orders',          'payment_method',       'VARCHAR(50)',  'NOT NULL', null],
+  ['orders', 'shipping_phone', 'VARCHAR(20)', 'NULL', null],
+  ['orders', 'shipping_country', 'VARCHAR(100)', 'NOT NULL', "'Vietnam'"],
+  ['orders', 'shipping_city', 'VARCHAR(100)', 'NOT NULL', null],
+  ['orders', 'shipping_state', 'VARCHAR(100)', 'NOT NULL', null],
+  ['orders', 'billing_phone', 'VARCHAR(20)', 'NULL', null],
+  ['orders', 'billing_country', 'VARCHAR(100)', 'NOT NULL', "'Vietnam'"],
+  ['orders', 'billing_city', 'VARCHAR(100)', 'NOT NULL', null],
+  ['orders', 'billing_state', 'VARCHAR(100)', 'NOT NULL', null],
+  ['orders', 'shipping_first_name', 'VARCHAR(100)', 'NOT NULL', null],
+  ['orders', 'shipping_last_name', 'VARCHAR(100)', 'NOT NULL', null],
+  ['orders', 'billing_first_name', 'VARCHAR(100)', 'NOT NULL', null],
+  ['orders', 'billing_last_name', 'VARCHAR(100)', 'NOT NULL', null],
+  ['orders', 'payment_method', 'VARCHAR(50)', 'NOT NULL', null],
 
   // slug shorten
-  ['categories',      'slug',                 'VARCHAR(100)', 'NOT NULL', null],
-  ['brands',          'slug',                 'VARCHAR(100)', 'NOT NULL', null],
-  ['collections',     'slug',                 'VARCHAR(100)', 'NOT NULL', null],
-  ['products',        'slug',                 'VARCHAR(100)', 'NOT NULL', null],
+  ['categories', 'slug', 'VARCHAR(100)', 'NOT NULL', null],
+  ['brands', 'slug', 'VARCHAR(100)', 'NOT NULL', null],
+  ['collections', 'slug', 'VARCHAR(100)', 'NOT NULL', null],
+  ['products', 'slug', 'VARCHAR(100)', 'NOT NULL', null],
 
   // chat_messages
-  ['chat_messages',   'session_id',           'VARCHAR(128)', 'NOT NULL', null],
-  ['chat_messages',   'intent',               'VARCHAR(50)',  'NULL',     null],
+  ['chat_messages', 'session_id', 'VARCHAR(128)', 'NOT NULL', null],
+  ['chat_messages', 'intent', 'VARCHAR(50)', 'NULL', null],
 
   // carts + search_histories
-  ['carts',           'session_id',           'VARCHAR(128)', 'NULL',     null],
-  ['search_histories', 'session_id',          'VARCHAR(128)', 'NULL',     null],
+  ['carts', 'session_id', 'VARCHAR(128)', 'NULL', null],
+  ['search_histories', 'session_id', 'VARCHAR(128)', 'NULL', null],
 
   // products status / condition / visibility
-  ['products',        'status',               'VARCHAR(50)',  'NULL',     "'active'"],
-  ['products',        'condition',            'VARCHAR(50)',  'NULL',     "'new'"],
-  ['products',        'visibility',           'VARCHAR(50)',  'NULL',     "'public'"],
+  ['products', 'status', 'VARCHAR(50)', 'NULL', "'active'"],
+  ['products', 'condition', 'VARCHAR(50)', 'NULL', "'new'"],
+  ['products', 'visibility', 'VARCHAR(50)', 'NULL', "'public'"],
 
   // attribute_groups
-  ['attribute_groups', 'type',                'VARCHAR(50)',  'NOT NULL', "'custom'"],
+  ['attribute_groups', 'type', 'VARCHAR(50)', 'NOT NULL', "'custom'"],
 ];
 
 async function getColumnState(qi, table, column) {
   const [rows] = await qi.sequelize.query(
     `SELECT COLUMN_TYPE, IS_NULLABLE, COLUMN_DEFAULT FROM INFORMATION_SCHEMA.COLUMNS
      WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = ? AND COLUMN_NAME = ?`,
-    { replacements: [table, column] }
+    { replacements: [table, column] },
   );
   return rows[0] || null;
 }
@@ -95,9 +95,13 @@ module.exports = {
       const state = await getColumnState(queryInterface, table, column);
       if (!state) continue;
       if (isAlreadyMatching(state, type, nullClause, defaultExpr)) continue;
-      const defaultClause = defaultExpr ? ` DEFAULT ${defaultExpr}` : (nullClause === 'NULL' ? ' DEFAULT NULL' : '');
+      const defaultClause = defaultExpr
+        ? ` DEFAULT ${defaultExpr}`
+        : nullClause === 'NULL'
+          ? ' DEFAULT NULL'
+          : '';
       await queryInterface.sequelize.query(
-        `ALTER TABLE \`${table}\` MODIFY COLUMN \`${column}\` ${type} ${nullClause}${defaultClause}`
+        `ALTER TABLE \`${table}\` MODIFY COLUMN \`${column}\` ${type} ${nullClause}${defaultClause}`,
       );
     }
   },

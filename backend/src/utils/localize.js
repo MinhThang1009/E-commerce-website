@@ -6,38 +6,29 @@
  * @description Helper utility: localize
  */
 
-
 /**
  * Map field → [viKey, enKey] cho từng loại entity được i18n.
  */
 const FIELD_MAPS = {
   product: [
-    ['name',             'nameVi',             'nameEn'],
+    ['name', 'nameVi', 'nameEn'],
     ['shortDescription', 'shortDescriptionVi', 'shortDescriptionEn'],
-    ['description',      'descriptionVi',      'descriptionEn'],
-    ['seoTitle',         'seoTitleVi',         'seoTitleEn'],
-    ['seoDescription',   'seoDescriptionVi',   'seoDescriptionEn'],
+    ['description', 'descriptionVi', 'descriptionEn'],
+    ['seoTitle', 'seoTitleVi', 'seoTitleEn'],
+    ['seoDescription', 'seoDescriptionVi', 'seoDescriptionEn'],
   ],
   category: [
-    ['name',        'nameVi',        'nameEn'],
-    ['description', 'descriptionVi', 'descriptionEn'],
-  ],
-  brand: [
     ['name', 'nameVi', 'nameEn'],
-  ],
-  collection: [
-    ['name',        'nameVi',        'nameEn'],
     ['description', 'descriptionVi', 'descriptionEn'],
   ],
+  brand: [['name', 'nameVi', 'nameEn']],
   news: [
-    ['title',       'titleVi',       'titleEn'],
-    ['content',     'contentVi',     'contentEn'],
-    ['description', 'descriptionVi', 'descriptionEn'],
-    ['category',    'categoryVi',    'categoryEn'],
-  ],
-  banner: [
     ['title', 'titleVi', 'titleEn'],
+    ['content', 'contentVi', 'contentEn'],
+    ['description', 'descriptionVi', 'descriptionEn'],
+    ['category', 'categoryVi', 'categoryEn'],
   ],
+  banner: [['title', 'titleVi', 'titleEn']],
 };
 
 /**
@@ -60,7 +51,7 @@ function localizeEntity(entity, locale = 'vi', type) {
     const vi = obj[viKey];
     const en = obj[enKey];
     // Localized value: ưu tiên ngôn ngữ được chọn, fallback sang ngôn ngữ còn lại
-    obj[field] = locale === 'en' ? (en || vi || null) : (vi || en || null);
+    obj[field] = locale === 'en' ? en || vi || null : vi || en || null;
   }
   return obj;
 }

@@ -11,9 +11,18 @@ function makeRes() {
     _status: null,
     _body: null,
     _headers: {},
-    status(code) { this._status = code; return this; },
-    json(body) { this._body = body; return this; },
-    setHeader(key, value) { this._headers[key] = value; return this; },
+    status(code) {
+      this._status = code;
+      return this;
+    },
+    json(body) {
+      this._body = body;
+      return this;
+    },
+    setHeader(key, value) {
+      this._headers[key] = value;
+      return this;
+    },
   };
   return res;
 }
@@ -51,12 +60,6 @@ beforeEach(() => {
     updateBrand: jest.fn(),
     deleteBrand: jest.fn(),
     getProductsByBrand: jest.fn(),
-    getAllCollections: jest.fn(),
-    getCollectionBySlug: jest.fn(),
-    createCollection: jest.fn(),
-    updateCollection: jest.fn(),
-    deleteCollection: jest.fn(),
-    getProductsByCollection: jest.fn(),
     getAllProducts: jest.fn(),
     getProductById: jest.fn(),
     getProductBySlug: jest.fn(),
@@ -132,9 +135,13 @@ describe('CatalogController — Category', () => {
       const error = new Error('tree error');
       catalogService.getCategoryTree.mockRejectedValue(error);
 
-      await controller.getCategoryTree(makeReq(), makeRes(), jest.fn().mockImplementation((err) => {
-        expect(err).toBe(error);
-      }));
+      await controller.getCategoryTree(
+        makeReq(),
+        makeRes(),
+        jest.fn().mockImplementation((err) => {
+          expect(err).toBe(error);
+        }),
+      );
     });
   });
 
@@ -217,7 +224,10 @@ describe('CatalogController — Category', () => {
 
       await controller.updateCategory(req, res, jest.fn());
 
-      expect(catalogService.updateCategory).toHaveBeenCalledWith({ id: '5', patch: { name: 'Phụ kiện mới' } });
+      expect(catalogService.updateCategory).toHaveBeenCalledWith({
+        id: '5',
+        patch: { name: 'Phụ kiện mới' },
+      });
       expect(res._status).toBe(200);
       expect(res._body).toEqual({ status: 'success', data: updated });
     });
@@ -248,7 +258,9 @@ describe('CatalogController — Category', () => {
       await controller.getProductsByCategory(req, res, jest.fn());
 
       expect(catalogService.getProductsByCategory).toHaveBeenCalledWith({
-        id: '7', page: '2', limit: '10',
+        id: '7',
+        page: '2',
+        limit: '10',
       });
       expect(res._status).toBe(200);
     });
@@ -350,7 +362,10 @@ describe('CatalogController — Brand', () => {
 
       await controller.updateBrand(req, res, jest.fn());
 
-      expect(catalogService.updateBrand).toHaveBeenCalledWith({ id: '2', patch: { name: 'Samsung Updated' } });
+      expect(catalogService.updateBrand).toHaveBeenCalledWith({
+        id: '2',
+        patch: { name: 'Samsung Updated' },
+      });
       expect(res._status).toBe(200);
     });
   });
@@ -380,112 +395,6 @@ describe('CatalogController — Brand', () => {
       await controller.getProductsByBrand(req, res, jest.fn());
 
       expect(catalogService.getProductsByBrand).toHaveBeenCalledWith({ slug: 'apple', page: '1' });
-      expect(res._status).toBe(200);
-    });
-  });
-});
-
-// ============================================================
-// Collection
-// ============================================================
-
-describe('CatalogController — Collection', () => {
-  describe('getAllCollections', () => {
-    it('truyền req.query và trả 200', async () => {
-      const collectionList = [{ id: 1, name: 'Summer Sale' }];
-      catalogService.getAllCollections.mockResolvedValue(collectionList);
-
-      const req = makeReq({ query: { isActive: 'true' } });
-      const res = makeRes();
-
-      await controller.getAllCollections(req, res, jest.fn());
-
-      expect(catalogService.getAllCollections).toHaveBeenCalledWith({ isActive: 'true' });
-      expect(res._status).toBe(200);
-      expect(res._body).toEqual({ status: 'success', data: collectionList });
-    });
-
-    it('gọi next(err) khi service ném lỗi', async () => {
-      catalogService.getAllCollections.mockRejectedValue(new Error('lỗi'));
-
-      const next = jest.fn();
-      await controller.getAllCollections(makeReq(), makeRes(), next);
-
-      expect(next).toHaveBeenCalled();
-    });
-  });
-
-  describe('getCollectionBySlug', () => {
-    it('truyền slug và trả 200', async () => {
-      const collectionData = { id: 3, slug: 'summer-sale' };
-      catalogService.getCollectionBySlug.mockResolvedValue(collectionData);
-
-      const req = makeReq({ params: { slug: 'summer-sale' } });
-      const res = makeRes();
-
-      await controller.getCollectionBySlug(req, res, jest.fn());
-
-      expect(catalogService.getCollectionBySlug).toHaveBeenCalledWith({ slug: 'summer-sale' });
-      expect(res._body).toEqual({ status: 'success', data: collectionData });
-    });
-  });
-
-  describe('createCollection', () => {
-    it('trả về 201 khi tạo thành công', async () => {
-      const newCollection = { id: 8, name: 'Flash Sale' };
-      catalogService.createCollection.mockResolvedValue(newCollection);
-
-      const req = makeReq({ body: { name: 'Flash Sale', productIds: [1, 2] } });
-      const res = makeRes();
-
-      await controller.createCollection(req, res, jest.fn());
-
-      expect(catalogService.createCollection).toHaveBeenCalledWith({ payload: req.body });
-      expect(res._status).toBe(201);
-      expect(res._body).toEqual({ status: 'success', data: newCollection });
-    });
-  });
-
-  describe('updateCollection', () => {
-    it('truyền id và patch, trả 200', async () => {
-      const updatedCollection = { id: '3', name: 'Updated Collection' };
-      catalogService.updateCollection.mockResolvedValue(updatedCollection);
-
-      const req = makeReq({ params: { id: '3' }, body: { name: 'Updated Collection' } });
-      const res = makeRes();
-
-      await controller.updateCollection(req, res, jest.fn());
-
-      expect(catalogService.updateCollection).toHaveBeenCalledWith({ id: '3', patch: { name: 'Updated Collection' } });
-      expect(res._status).toBe(200);
-    });
-  });
-
-  describe('deleteCollection', () => {
-    it('trích message từ service result', async () => {
-      catalogService.deleteCollection.mockResolvedValue({ message: 'Xóa bộ sưu tập thành công' });
-
-      const req = makeReq({ params: { id: '5' } });
-      const res = makeRes();
-
-      await controller.deleteCollection(req, res, jest.fn());
-
-      expect(res._status).toBe(200);
-      expect(res._body.message).toBe('Xóa bộ sưu tập thành công');
-    });
-  });
-
-  describe('getProductsByCollection', () => {
-    it('merge slug và query vào service call', async () => {
-      const data = { rows: [], count: 0 };
-      catalogService.getProductsByCollection.mockResolvedValue(data);
-
-      const req = makeReq({ params: { slug: 'flash-sale' }, query: { limit: '20' } });
-      const res = makeRes();
-
-      await controller.getProductsByCollection(req, res, jest.fn());
-
-      expect(catalogService.getProductsByCollection).toHaveBeenCalledWith({ slug: 'flash-sale', limit: '20' });
       expect(res._status).toBe(200);
     });
   });
@@ -525,7 +434,10 @@ describe('CatalogController — Product', () => {
     it('truyền query và cacheUrl vào service', async () => {
       catalogService.getAllProducts.mockResolvedValue({ payload: {}, cacheHit: false });
 
-      const req = makeReq({ query: { brand: 'samsung', sort: 'price' }, url: '/products?brand=samsung' });
+      const req = makeReq({
+        query: { brand: 'samsung', sort: 'price' },
+        url: '/products?brand=samsung',
+      });
       await controller.getAllProducts(req, makeRes(), jest.fn());
 
       expect(catalogService.getAllProducts).toHaveBeenCalledWith({
@@ -581,7 +493,7 @@ describe('CatalogController — Product', () => {
       await controller.getProductById(req, makeRes(), jest.fn());
 
       expect(catalogService.getProductById).toHaveBeenCalledWith(
-        expect.objectContaining({ queryColor: 'Trắng' })
+        expect.objectContaining({ queryColor: 'Trắng' }),
       );
     });
 
@@ -593,7 +505,7 @@ describe('CatalogController — Product', () => {
       await controller.getProductById(req, makeRes(), jest.fn());
 
       expect(catalogService.getProductById).toHaveBeenCalledWith(
-        expect.objectContaining({ userId: undefined })
+        expect.objectContaining({ userId: undefined }),
       );
     });
 
@@ -852,7 +764,10 @@ describe('CatalogController — Product', () => {
 
       await controller.updateProduct(req, res, jest.fn());
 
-      expect(catalogService.updateProduct).toHaveBeenCalledWith({ id: '50', patch: { price: 25000000 } });
+      expect(catalogService.updateProduct).toHaveBeenCalledWith({
+        id: '50',
+        patch: { price: 25000000 },
+      });
       expect(res._status).toBe(200);
       expect(res._body).toEqual({ status: 'success', data: updatedProduct });
     });

@@ -1,13 +1,7 @@
 /**
- * Test POST /api/contact/newsletter và POST /api/contact/feedback
+ * Test POST /api/contact/feedback
  *
  * Rule 30: endpoint mới bắt buộc có test happy path, validation boundary, auth.
- *
- * Tests newsletter:
- *  - 422 khi thiếu email
- *  - 422 khi email không hợp lệ
- *  - 200 happy path — đăng ký thành công
- *  - 200 khi đã đăng ký trước đó (idempotent)
  *
  * Tests feedback:
  *  - 422 khi thiếu content (< 10 ký tự)
@@ -20,14 +14,10 @@
 // ---------- Mocks ----------
 
 jest.mock('@models', () => ({
-  // Phase 42 modules/content yêu cầu đầy đủ 6 models cho DI; chỉ sub-domain
-  // newsletter/feedback dùng → các model khác stub rỗng để không crash module init.
+  // Phase 42 modules/content yêu cầu đầy đủ models cho DI; các model không liên
+  // quan stub rỗng để không crash module init.
   Banner: { findAll: jest.fn(), findByPk: jest.fn() },
   News: { findAll: jest.fn(), findByPk: jest.fn(), findOne: jest.fn() },
-  EmailCampaign: { findAll: jest.fn(), findByPk: jest.fn(), create: jest.fn() },
-  NewsletterSubscriber: {
-    findOrCreate: jest.fn(),
-  },
   Feedback: {
     create: jest.fn(),
   },
@@ -50,8 +40,7 @@ jest.mock('@middlewares/rate-limiter', () => ({
 
 // email service: fire-and-forget trong controller, không cần thực sự gửi
 jest.mock('@services/email', () => ({
-  sendNewsletterWelcomeEmail:       jest.fn().mockResolvedValue(undefined),
-  sendAdminFeedbackNotification:    jest.fn().mockResolvedValue(undefined),
+  sendAdminFeedbackNotification: jest.fn().mockResolvedValue(undefined),
 }));
 
 // ---------- Require sau mock ----------
@@ -59,18 +48,20 @@ jest.mock('@services/email', () => ({
 const express = require('express');
 const supertest = require('supertest');
 const buildContentModule = require('@modules/content/module');
-const {
-  Banner, News, EmailCampaign, NewsletterSubscriber, Feedback, User,
-} = require('@models');
+const { Banner, News, Feedback, User } = require('@models');
 const emailService = require('@services/email');
 const eventBus = require('@shared/event-bus');
 const logger = require('@utils/logger');
 
 const contentModule = buildContentModule({
-  Banner, News, EmailCampaign, NewsletterSubscriber, Feedback, User,
+  Banner,
+  News,
+  Feedback,
+  User,
   emailService,
   redisClient: null,
-  eventBus, logger,
+  eventBus,
+  logger,
 });
 
 // Tìm contact router trong mounts (Phase 42 module trả về mounts array)
@@ -84,55 +75,6 @@ app.use((err, _req, res, _next) => {
 });
 
 const request = supertest(app);
-
-// ============================================================
-// POST /api/contact/newsletter
-// ============================================================
-
-describe('POST /api/contact/newsletter — subscribeNewsletter', () => {
-  beforeEach(() => {
-    jest.clearAllMocks();
-  });
-
-  // --- Validation ---
-
-  test('422 khi thiếu email', async () => {
-    const res = await request.post('/api/contact/newsletter').send({});
-    expect(res.status).toBe(422);
-  });
-
-  test('422 khi email không hợp lệ', async () => {
-    const res = await request
-      .post('/api/contact/newsletter')
-      .send({ email: 'not-an-email' });
-    expect(res.status).toBe(422);
-  });
-
-  // --- Happy path ---
-
-  // Người dùng mới (created = true) → 201 theo REST convention
-  test('201 happy path — đăng ký mới thành công', async () => {
-    const mockSubscriber = { email: 'test@example.com', status: 'active' };
-    NewsletterSubscriber.findOrCreate.mockResolvedValue([mockSubscriber, true]);
-
-    const res = await request
-      .post('/api/contact/newsletter')
-      .send({ email: 'test@example.com' });
-    expect(res.status).toBe(201);
-    expect(res.body.status).toBe('success');
-  });
-
-  test('200 khi đã đăng ký trước đó — idempotent', async () => {
-    const mockSubscriber = { email: 'existing@example.com', status: 'active' };
-    NewsletterSubscriber.findOrCreate.mockResolvedValue([mockSubscriber, false]);
-
-    const res = await request
-      .post('/api/contact/newsletter')
-      .send({ email: 'existing@example.com' });
-    expect(res.status).toBe(200);
-    expect(res.body.status).toBe('success');
-  });
-});
 
 // ============================================================
 // POST /api/contact/feedback
@@ -172,9 +114,7 @@ describe('POST /api/contact/feedback — sendFeedback', () => {
   });
 
   test('422 khi content < 10 ký tự', async () => {
-    const res = await request
-      .post('/api/contact/feedback')
-      .send({ ...validBody, content: 'Ngắn' });
+    const res = await request.post('/api/contact/feedback').send({ ...validBody, content: 'Ngắn' });
     expect(res.status).toBe(422);
   });
 
@@ -190,8 +130,6 @@ describe('POST /api/contact/feedback — sendFeedback', () => {
     const res = await request.post('/api/contact/feedback').send(validBody);
     expect(res.status).toBe(201);
     expect(res.body.status).toBe('success');
-    expect(Feedback.create).toHaveBeenCalledWith(
-      expect.objectContaining({ status: 'pending' })
-    );
+    expect(Feedback.create).toHaveBeenCalledWith(expect.objectContaining({ status: 'pending' }));
   });
 });

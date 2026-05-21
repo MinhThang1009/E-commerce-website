@@ -14,7 +14,7 @@ const { t } = require('@utils/i18n');
 class UploadController {
   constructor({ uploadService, uploadEngine }) {
     this.uploadService = uploadService;
-    this.uploadEngine = uploadEngine;  // multer instance đã wire storage + filter
+    this.uploadEngine = uploadEngine; // multer instance đã wire storage + filter
   }
 
   // Map multer error → AppError với HTTP status đúng
@@ -37,16 +37,21 @@ class UploadController {
         try {
           const uploadType = req.params.type || 'general';
           const data = await this.uploadService.processSingleUpload({
-            file: req.file, uploadType,
+            file: req.file,
+            uploadType,
           });
           res.status(200).json({
             status: 'success',
             message: t('upload.uploadSuccess', req.locale),
             data,
           });
-        } catch (e) { next(e); }
+        } catch (e) {
+          next(e);
+        }
       });
-    } catch (err) { next(err); }
+    } catch (err) {
+      next(err);
+    }
   };
 
   uploadMultiple = async (req, res, next) => {
@@ -58,16 +63,21 @@ class UploadController {
         if (err) return next(this._mapMulterError(err, maxFiles));
         try {
           const files = await this.uploadService.processMultipleUpload({
-            files: req.files, uploadType,
+            files: req.files,
+            uploadType,
           });
           res.status(200).json({
             status: 'success',
             message: t('upload.batchUploadSuccess', req.locale, { count: files.length }),
             data: { files, type: uploadType, count: files.length },
           });
-        } catch (e) { next(e); }
+        } catch (e) {
+          next(e);
+        }
       });
-    } catch (err) { next(err); }
+    } catch (err) {
+      next(err);
+    }
   };
 
   deleteFile = async (req, res, next) => {
@@ -78,7 +88,9 @@ class UploadController {
         filenameRaw: req.params.filename,
       });
       res.status(200).json({ status: 'success', message: result.message });
-    } catch (err) { next(err); }
+    } catch (err) {
+      next(err);
+    }
   };
 }
 

@@ -64,7 +64,7 @@ const AttributeValue = sequelize.define(
     tableName: 'attribute_values',
     timestamps: true,
     underscored: true,
-  }
+  },
 );
 
 module.exports = AttributeValue;

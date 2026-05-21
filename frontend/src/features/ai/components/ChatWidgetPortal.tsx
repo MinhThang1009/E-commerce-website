@@ -14,10 +14,10 @@ import {
   createSessionId,
 } from '@/stores/chat-store';
 import { Message } from '../types/message.types';
-import { useSendChatbotMessageMutation, ChatbotResponse } from '../services/chatbot-api';
+import { useSendChatbotMessageMutation, ChatbotResponse } from '../api/chatbot-api';
 
 type ChatbotApiEnvelope = { status: string; data: ChatbotResponse; message?: string };
-import { chatbotService } from '../services/chatbot-service';
+import { chatbotService } from '../api/chatbot-service';
 import ChatHeader from './ChatHeader';
 import ChatMessages from './ChatMessages';
 import ChatInput from './ChatInput';

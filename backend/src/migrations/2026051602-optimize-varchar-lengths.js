@@ -17,7 +17,7 @@ async function getColumnType(qi, table, column) {
   const [rows] = await qi.sequelize.query(
     `SELECT COLUMN_TYPE FROM INFORMATION_SCHEMA.COLUMNS
      WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = ? AND COLUMN_NAME = ?`,
-    { replacements: [table, column] }
+    { replacements: [table, column] },
   );
   return rows[0] ? rows[0].COLUMN_TYPE.toLowerCase() : null;
 }
@@ -27,7 +27,7 @@ async function indexExists(qi, table, indexName) {
     `SELECT INDEX_NAME FROM INFORMATION_SCHEMA.STATISTICS
      WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = ? AND INDEX_NAME = ?
      LIMIT 1`,
-    { replacements: [table, indexName] }
+    { replacements: [table, indexName] },
   );
   return rows.length > 0;
 }
@@ -37,7 +37,7 @@ async function tableExists(qi, table) {
     `SELECT TABLE_NAME FROM INFORMATION_SCHEMA.TABLES
      WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = ?
      LIMIT 1`,
-    { replacements: [table] }
+    { replacements: [table] },
   );
   return rows.length > 0;
 }
@@ -48,128 +48,128 @@ async function tableExists(qi, table) {
 
 const SIMPLE_COLUMNS = [
   // --- Phone columns: varchar(20) ---
-  ['users',      'phone',      'varchar(20)',  'VARCHAR(20) NULL DEFAULT NULL'],
-  ['feedbacks',  'phone',      'varchar(20)',  'VARCHAR(20) NULL DEFAULT NULL'],
-  ['addresses',  'phone',      'varchar(20)',  'VARCHAR(20) NULL DEFAULT NULL'],
+  ['users', 'phone', 'varchar(20)', 'VARCHAR(20) NULL DEFAULT NULL'],
+  ['feedbacks', 'phone', 'varchar(20)', 'VARCHAR(20) NULL DEFAULT NULL'],
+  ['addresses', 'phone', 'varchar(20)', 'VARCHAR(20) NULL DEFAULT NULL'],
 
   // --- Name columns: varchar(100) ---
-  ['users',      'first_name', 'varchar(100)', 'VARCHAR(100) NOT NULL'],
-  ['users',      'last_name',  'varchar(100)', 'VARCHAR(100) NOT NULL'],
-  ['addresses',  'first_name', 'varchar(100)', 'VARCHAR(100) NOT NULL'],
-  ['addresses',  'last_name',  'varchar(100)', 'VARCHAR(100) NOT NULL'],
-  ['addresses',  'name',       'varchar(100)', 'VARCHAR(100) NULL DEFAULT NULL'],
+  ['users', 'first_name', 'varchar(100)', 'VARCHAR(100) NOT NULL'],
+  ['users', 'last_name', 'varchar(100)', 'VARCHAR(100) NOT NULL'],
+  ['addresses', 'first_name', 'varchar(100)', 'VARCHAR(100) NOT NULL'],
+  ['addresses', 'last_name', 'varchar(100)', 'VARCHAR(100) NOT NULL'],
+  ['addresses', 'name', 'varchar(100)', 'VARCHAR(100) NULL DEFAULT NULL'],
 
   // --- Email columns: varchar(254) (RFC 5321) ---
-  ['users',           'email',          'varchar(254)', 'VARCHAR(254) NOT NULL'],
-  ['feedbacks',       'email',          'varchar(254)', 'VARCHAR(254) NOT NULL'],
-  ['newsletter_subscribers', 'email',   'varchar(254)', 'VARCHAR(254) NOT NULL'],
+  ['users', 'email', 'varchar(254)', 'VARCHAR(254) NOT NULL'],
+  ['feedbacks', 'email', 'varchar(254)', 'VARCHAR(254) NOT NULL'],
+  ['newsletter_subscribers', 'email', 'varchar(254)', 'VARCHAR(254) NOT NULL'],
 
   // --- Address location columns: varchar(100) ---
-  ['addresses',  'city',       'varchar(100)', 'VARCHAR(100) NOT NULL'],
-  ['addresses',  'state',      'varchar(100)', 'VARCHAR(100) NOT NULL'],
-  ['addresses',  'country',    'varchar(100)', 'VARCHAR(100) NOT NULL'],
-  ['addresses',  'zip',        'varchar(20)',  'VARCHAR(20) NOT NULL'],
-  ['addresses',  'company',    'varchar(200)', "VARCHAR(200) NULL DEFAULT NULL"],
-  ['addresses',  'address1',   'varchar(500)', 'VARCHAR(500) NOT NULL'],
-  ['addresses',  'address2',   'varchar(500)', "VARCHAR(500) NULL DEFAULT NULL"],
+  ['addresses', 'city', 'varchar(100)', 'VARCHAR(100) NOT NULL'],
+  ['addresses', 'state', 'varchar(100)', 'VARCHAR(100) NOT NULL'],
+  ['addresses', 'country', 'varchar(100)', 'VARCHAR(100) NOT NULL'],
+  ['addresses', 'zip', 'varchar(20)', 'VARCHAR(20) NOT NULL'],
+  ['addresses', 'company', 'varchar(200)', 'VARCHAR(200) NULL DEFAULT NULL'],
+  ['addresses', 'address1', 'varchar(500)', 'VARCHAR(500) NOT NULL'],
+  ['addresses', 'address2', 'varchar(500)', 'VARCHAR(500) NULL DEFAULT NULL'],
 
   // --- Orders: shipping/billing ---
-  ['orders',     'shipping_first_name',  'varchar(100)', 'VARCHAR(100) NOT NULL'],
-  ['orders',     'shipping_last_name',   'varchar(100)', 'VARCHAR(100) NOT NULL'],
-  ['orders',     'shipping_phone',       'varchar(20)',  "VARCHAR(20) NULL DEFAULT NULL"],
-  ['orders',     'shipping_city',        'varchar(100)', 'VARCHAR(100) NOT NULL'],
-  ['orders',     'shipping_state',       'varchar(100)', 'VARCHAR(100) NOT NULL'],
-  ['orders',     'shipping_country',     'varchar(100)', "VARCHAR(100) NULL DEFAULT NULL"],
-  ['orders',     'shipping_zip',         'varchar(20)',  "VARCHAR(20) NULL DEFAULT NULL"],
-  ['orders',     'shipping_company',     'varchar(200)', "VARCHAR(200) NULL DEFAULT NULL"],
-  ['orders',     'shipping_address1',    'varchar(500)', 'VARCHAR(500) NOT NULL'],
-  ['orders',     'shipping_address2',    'varchar(500)', "VARCHAR(500) NULL DEFAULT NULL"],
-  ['orders',     'shipping_provider',    'varchar(100)', "VARCHAR(100) NULL DEFAULT NULL"],
-  ['orders',     'billing_first_name',   'varchar(100)', 'VARCHAR(100) NOT NULL'],
-  ['orders',     'billing_last_name',    'varchar(100)', 'VARCHAR(100) NOT NULL'],
-  ['orders',     'billing_phone',        'varchar(20)',  "VARCHAR(20) NULL DEFAULT NULL"],
-  ['orders',     'billing_city',         'varchar(100)', 'VARCHAR(100) NOT NULL'],
-  ['orders',     'billing_state',        'varchar(100)', 'VARCHAR(100) NOT NULL'],
-  ['orders',     'billing_country',      'varchar(100)', "VARCHAR(100) NULL DEFAULT NULL"],
-  ['orders',     'billing_zip',          'varchar(20)',  "VARCHAR(20) NULL DEFAULT NULL"],
-  ['orders',     'billing_company',      'varchar(200)', "VARCHAR(200) NULL DEFAULT NULL"],
-  ['orders',     'billing_address1',     'varchar(500)', 'VARCHAR(500) NOT NULL'],
-  ['orders',     'billing_address2',     'varchar(500)', "VARCHAR(500) NULL DEFAULT NULL"],
-  ['orders',     'payment_method',       'varchar(50)',  'VARCHAR(50) NOT NULL'],
-  ['orders',     'payment_provider',     'varchar(100)', "VARCHAR(100) NULL DEFAULT NULL"],
-  ['orders',     'payment_transaction_id', 'varchar(200)', "VARCHAR(200) NULL DEFAULT NULL"],
-  ['orders',     'tracking_number',      'varchar(100)', "VARCHAR(100) NULL DEFAULT NULL"],
+  ['orders', 'shipping_first_name', 'varchar(100)', 'VARCHAR(100) NOT NULL'],
+  ['orders', 'shipping_last_name', 'varchar(100)', 'VARCHAR(100) NOT NULL'],
+  ['orders', 'shipping_phone', 'varchar(20)', 'VARCHAR(20) NULL DEFAULT NULL'],
+  ['orders', 'shipping_city', 'varchar(100)', 'VARCHAR(100) NOT NULL'],
+  ['orders', 'shipping_state', 'varchar(100)', 'VARCHAR(100) NOT NULL'],
+  ['orders', 'shipping_country', 'varchar(100)', 'VARCHAR(100) NULL DEFAULT NULL'],
+  ['orders', 'shipping_zip', 'varchar(20)', 'VARCHAR(20) NULL DEFAULT NULL'],
+  ['orders', 'shipping_company', 'varchar(200)', 'VARCHAR(200) NULL DEFAULT NULL'],
+  ['orders', 'shipping_address1', 'varchar(500)', 'VARCHAR(500) NOT NULL'],
+  ['orders', 'shipping_address2', 'varchar(500)', 'VARCHAR(500) NULL DEFAULT NULL'],
+  ['orders', 'shipping_provider', 'varchar(100)', 'VARCHAR(100) NULL DEFAULT NULL'],
+  ['orders', 'billing_first_name', 'varchar(100)', 'VARCHAR(100) NOT NULL'],
+  ['orders', 'billing_last_name', 'varchar(100)', 'VARCHAR(100) NOT NULL'],
+  ['orders', 'billing_phone', 'varchar(20)', 'VARCHAR(20) NULL DEFAULT NULL'],
+  ['orders', 'billing_city', 'varchar(100)', 'VARCHAR(100) NOT NULL'],
+  ['orders', 'billing_state', 'varchar(100)', 'VARCHAR(100) NOT NULL'],
+  ['orders', 'billing_country', 'varchar(100)', 'VARCHAR(100) NULL DEFAULT NULL'],
+  ['orders', 'billing_zip', 'varchar(20)', 'VARCHAR(20) NULL DEFAULT NULL'],
+  ['orders', 'billing_company', 'varchar(200)', 'VARCHAR(200) NULL DEFAULT NULL'],
+  ['orders', 'billing_address1', 'varchar(500)', 'VARCHAR(500) NOT NULL'],
+  ['orders', 'billing_address2', 'varchar(500)', 'VARCHAR(500) NULL DEFAULT NULL'],
+  ['orders', 'payment_method', 'varchar(50)', 'VARCHAR(50) NOT NULL'],
+  ['orders', 'payment_provider', 'varchar(100)', 'VARCHAR(100) NULL DEFAULT NULL'],
+  ['orders', 'payment_transaction_id', 'varchar(200)', 'VARCHAR(200) NULL DEFAULT NULL'],
+  ['orders', 'tracking_number', 'varchar(100)', 'VARCHAR(100) NULL DEFAULT NULL'],
 
   // --- Products ---
-  ['products',   'sku',        'varchar(100)', "VARCHAR(100) NULL DEFAULT NULL"],
-  ['products',   'name',       'varchar(255)', null], // Giữ varchar(255) — tên sản phẩm có thể dài
-  ['products',   'slug',       'varchar(100)', 'VARCHAR(100) NOT NULL'],
-  ['products',   'status',     'varchar(20)',  "VARCHAR(20) NULL DEFAULT 'active'"],
-  ['products',   'condition',  'varchar(20)',  "VARCHAR(20) NULL DEFAULT 'new'"],
-  ['products',   'visibility', 'varchar(20)',  "VARCHAR(20) NULL DEFAULT 'public'"],
+  ['products', 'sku', 'varchar(100)', 'VARCHAR(100) NULL DEFAULT NULL'],
+  ['products', 'name', 'varchar(255)', null], // Giữ varchar(255) — tên sản phẩm có thể dài
+  ['products', 'slug', 'varchar(100)', 'VARCHAR(100) NOT NULL'],
+  ['products', 'status', 'varchar(20)', "VARCHAR(20) NULL DEFAULT 'active'"],
+  ['products', 'condition', 'varchar(20)', "VARCHAR(20) NULL DEFAULT 'new'"],
+  ['products', 'visibility', 'varchar(20)', "VARCHAR(20) NULL DEFAULT 'public'"],
 
   // --- Chat messages ---
   ['chat_messages', 'session_id', 'varchar(50)', 'VARCHAR(50) NOT NULL'],
 
   // --- Search histories ---
-  ['search_histories', 'session_id', 'varchar(128)', "VARCHAR(128) NULL DEFAULT NULL"],
-  ['search_histories', 'keyword',    'varchar(200)', 'VARCHAR(200) NOT NULL'],
+  ['search_histories', 'session_id', 'varchar(128)', 'VARCHAR(128) NULL DEFAULT NULL'],
+  ['search_histories', 'keyword', 'varchar(200)', 'VARCHAR(200) NOT NULL'],
 
   // --- Carts ---
-  ['carts',       'session_id',  'varchar(128)', "VARCHAR(128) NULL DEFAULT NULL"],
+  ['carts', 'session_id', 'varchar(128)', 'VARCHAR(128) NULL DEFAULT NULL'],
 
   // --- Discount codes ---
   // discount_codes.code: đã varchar(50) — skip
 
   // --- Attribute groups ---
-  ['attribute_groups', 'type',  'varchar(50)',  "VARCHAR(50) NOT NULL DEFAULT 'custom'"],
-  ['attribute_groups', 'name',  'varchar(100)', 'VARCHAR(100) NOT NULL'],
+  ['attribute_groups', 'type', 'varchar(50)', "VARCHAR(50) NOT NULL DEFAULT 'custom'"],
+  ['attribute_groups', 'name', 'varchar(100)', 'VARCHAR(100) NOT NULL'],
 
   // --- Attribute values ---
-  ['attribute_values', 'name',           'varchar(100)', 'VARCHAR(100) NOT NULL'],
-  ['attribute_values', 'value',          'varchar(100)', 'VARCHAR(100) NOT NULL'],
-  ['attribute_values', 'name_template',  'varchar(200)', "VARCHAR(200) NULL DEFAULT NULL"],
-  ['attribute_values', 'color_code',     'varchar(20)',  "VARCHAR(20) NULL DEFAULT NULL"],
+  ['attribute_values', 'name', 'varchar(100)', 'VARCHAR(100) NOT NULL'],
+  ['attribute_values', 'value', 'varchar(100)', 'VARCHAR(100) NOT NULL'],
+  ['attribute_values', 'name_template', 'varchar(200)', 'VARCHAR(200) NULL DEFAULT NULL'],
+  ['attribute_values', 'color_code', 'varchar(20)', 'VARCHAR(20) NULL DEFAULT NULL'],
 
   // --- Other short strings ---
-  ['feedbacks',     'name',     'varchar(100)', 'VARCHAR(100) NOT NULL'],
-  ['feedbacks',     'subject',  'varchar(200)', 'VARCHAR(200) NOT NULL'],
-  ['collections',   'name',     'varchar(200)', 'VARCHAR(200) NOT NULL'],
-  ['collections',   'slug',     'varchar(100)', 'VARCHAR(100) NOT NULL'],
-  ['brands',        'slug',     'varchar(100)', 'VARCHAR(100) NOT NULL'],
-  ['categories',    'slug',     'varchar(100)', 'VARCHAR(100) NOT NULL'],
-  ['banners',       'title',    'varchar(200)', 'VARCHAR(200) NOT NULL'],
-  ['news',          'title',    'varchar(200)', 'VARCHAR(200) NOT NULL'],
-  ['news',          'slug',     'varchar(200)', 'VARCHAR(200) NOT NULL'],
-  ['news',          'category', 'varchar(100)', "VARCHAR(100) NULL DEFAULT NULL"],
-  ['news',          'tags',     'varchar(500)', "VARCHAR(500) NULL DEFAULT NULL"],
+  ['feedbacks', 'name', 'varchar(100)', 'VARCHAR(100) NOT NULL'],
+  ['feedbacks', 'subject', 'varchar(200)', 'VARCHAR(200) NOT NULL'],
+  ['collections', 'name', 'varchar(200)', 'VARCHAR(200) NOT NULL'],
+  ['collections', 'slug', 'varchar(100)', 'VARCHAR(100) NOT NULL'],
+  ['brands', 'slug', 'varchar(100)', 'VARCHAR(100) NOT NULL'],
+  ['categories', 'slug', 'varchar(100)', 'VARCHAR(100) NOT NULL'],
+  ['banners', 'title', 'varchar(200)', 'VARCHAR(200) NOT NULL'],
+  ['news', 'title', 'varchar(200)', 'VARCHAR(200) NOT NULL'],
+  ['news', 'slug', 'varchar(200)', 'VARCHAR(200) NOT NULL'],
+  ['news', 'category', 'varchar(100)', 'VARCHAR(100) NULL DEFAULT NULL'],
+  ['news', 'tags', 'varchar(500)', 'VARCHAR(500) NULL DEFAULT NULL'],
   ['email_campaigns', 'subject', 'varchar(200)', 'VARCHAR(200) NOT NULL'],
-  ['discount_codes', 'description', 'varchar(500)', "VARCHAR(500) NULL DEFAULT NULL"],
-  ['loyalty_histories', 'description', 'varchar(500)', "VARCHAR(500) NULL DEFAULT NULL"],
-  ['import_logs',   'filename', 'varchar(200)', 'VARCHAR(200) NOT NULL'],
+  ['discount_codes', 'description', 'varchar(500)', 'VARCHAR(500) NULL DEFAULT NULL'],
+  ['loyalty_histories', 'description', 'varchar(500)', 'VARCHAR(500) NULL DEFAULT NULL'],
+  ['import_logs', 'filename', 'varchar(200)', 'VARCHAR(200) NOT NULL'],
   ['warranty_packages', 'name', 'varchar(200)', 'VARCHAR(200) NOT NULL'],
-  ['reviews',       'title',    'varchar(200)', "VARCHAR(200) NULL DEFAULT NULL"],
+  ['reviews', 'title', 'varchar(200)', 'VARCHAR(200) NULL DEFAULT NULL'],
   ['product_attributes', 'name', 'varchar(100)', 'VARCHAR(100) NOT NULL'],
-  ['product_specifications', 'name',     'varchar(100)', 'VARCHAR(100) NOT NULL'],
-  ['product_specifications', 'category', 'varchar(100)', "VARCHAR(100) NULL DEFAULT NULL"],
-  ['product_variants', 'variant_name',  'varchar(255)', null], // Giữ — tên variant có thể dài
-  ['product_variants', 'display_name',  'varchar(255)', null], // Giữ
-  ['order_items',   'name',     'varchar(255)', null], // Giữ — snapshot tên sản phẩm
-  ['order_items',   'sku',      'varchar(100)', "VARCHAR(100) NULL DEFAULT NULL"],
+  ['product_specifications', 'name', 'varchar(100)', 'VARCHAR(100) NOT NULL'],
+  ['product_specifications', 'category', 'varchar(100)', 'VARCHAR(100) NULL DEFAULT NULL'],
+  ['product_variants', 'variant_name', 'varchar(255)', null], // Giữ — tên variant có thể dài
+  ['product_variants', 'display_name', 'varchar(255)', null], // Giữ
+  ['order_items', 'name', 'varchar(255)', null], // Giữ — snapshot tên sản phẩm
+  ['order_items', 'sku', 'varchar(100)', 'VARCHAR(100) NULL DEFAULT NULL'],
 
   // --- URL columns → varchar(512) cho headroom ---
-  ['users',         'avatar',         'varchar(512)', "VARCHAR(512) NULL DEFAULT NULL"],
-  ['banners',       'image_url',      'varchar(512)', 'VARCHAR(512) NOT NULL'],
-  ['banners',       'link_url',       'varchar(512)', "VARCHAR(512) NULL DEFAULT NULL"],
-  ['collections',   'thumbnail',      'varchar(512)', "VARCHAR(512) NULL DEFAULT NULL"],
-  ['news',          'thumbnail',      'varchar(512)', "VARCHAR(512) NULL DEFAULT NULL"],
-  ['chat_messages', 'attachment_url', 'varchar(512)', "VARCHAR(512) NULL DEFAULT NULL"],
-  ['order_items',   'image',          'varchar(512)', "VARCHAR(512) NULL DEFAULT NULL"],
+  ['users', 'avatar', 'varchar(512)', 'VARCHAR(512) NULL DEFAULT NULL'],
+  ['banners', 'image_url', 'varchar(512)', 'VARCHAR(512) NOT NULL'],
+  ['banners', 'link_url', 'varchar(512)', 'VARCHAR(512) NULL DEFAULT NULL'],
+  ['collections', 'thumbnail', 'varchar(512)', 'VARCHAR(512) NULL DEFAULT NULL'],
+  ['news', 'thumbnail', 'varchar(512)', 'VARCHAR(512) NULL DEFAULT NULL'],
+  ['chat_messages', 'attachment_url', 'varchar(512)', 'VARCHAR(512) NULL DEFAULT NULL'],
+  ['order_items', 'image', 'varchar(512)', 'VARCHAR(512) NULL DEFAULT NULL'],
 
   // --- Tokens / hashes: varchar(500) cho JWT-like strings ---
-  ['users',     'password',             'varchar(500)', "VARCHAR(500) NULL DEFAULT NULL"],
-  ['users',     'google_id',            'varchar(100)', "VARCHAR(100) NULL DEFAULT NULL"],
-  ['users',     'reset_password_token', 'varchar(500)', "VARCHAR(500) NULL DEFAULT NULL"],
+  ['users', 'password', 'varchar(500)', 'VARCHAR(500) NULL DEFAULT NULL'],
+  ['users', 'google_id', 'varchar(100)', 'VARCHAR(100) NULL DEFAULT NULL'],
+  ['users', 'reset_password_token', 'varchar(500)', 'VARCHAR(500) NULL DEFAULT NULL'],
 
   // --- Legacy images table ---
   // images.file_name, images.original_name: giữ varchar(255) — file name có thể dài
@@ -184,17 +184,17 @@ module.exports = {
         // Drop UNIQUE index trước khi resize
         if (await indexExists(queryInterface, 'orders', 'uq_orders_number')) {
           await queryInterface.sequelize.query(
-            'ALTER TABLE `orders` DROP INDEX `uq_orders_number`'
+            'ALTER TABLE `orders` DROP INDEX `uq_orders_number`',
           );
           console.log('  DROPPED: uq_orders_number (trước khi resize)');
         }
         await queryInterface.sequelize.query(
-          'ALTER TABLE `orders` MODIFY COLUMN `number` VARCHAR(50) NOT NULL'
+          'ALTER TABLE `orders` MODIFY COLUMN `number` VARCHAR(50) NOT NULL',
         );
         console.log('  RESIZED: orders.number → varchar(50)');
         // Recreate UNIQUE index
         await queryInterface.sequelize.query(
-          'ALTER TABLE `orders` ADD UNIQUE KEY `uq_orders_number` (`number`)'
+          'ALTER TABLE `orders` ADD UNIQUE KEY `uq_orders_number` (`number`)',
         );
         console.log('  RECREATED: uq_orders_number');
       }
@@ -223,7 +223,7 @@ module.exports = {
 
       try {
         await queryInterface.sequelize.query(
-          `ALTER TABLE \`${table}\` MODIFY COLUMN \`${column}\` ${modifySQL}`
+          `ALTER TABLE \`${table}\` MODIFY COLUMN \`${column}\` ${modifySQL}`,
         );
         console.log(`  RESIZED: ${table}.${column} → ${targetType}`);
       } catch (err) {
@@ -242,15 +242,13 @@ module.exports = {
     // Rollback orders.number
     if (await tableExists(queryInterface, 'orders')) {
       if (await indexExists(queryInterface, 'orders', 'uq_orders_number')) {
-        await queryInterface.sequelize.query(
-          'ALTER TABLE `orders` DROP INDEX `uq_orders_number`'
-        );
+        await queryInterface.sequelize.query('ALTER TABLE `orders` DROP INDEX `uq_orders_number`');
       }
       await queryInterface.sequelize.query(
-        'ALTER TABLE `orders` MODIFY COLUMN `number` VARCHAR(255) NOT NULL'
+        'ALTER TABLE `orders` MODIFY COLUMN `number` VARCHAR(255) NOT NULL',
       );
       await queryInterface.sequelize.query(
-        'ALTER TABLE `orders` ADD UNIQUE KEY `uq_orders_number` (`number`)'
+        'ALTER TABLE `orders` ADD UNIQUE KEY `uq_orders_number` (`number`)',
       );
     }
 
@@ -266,7 +264,7 @@ module.exports = {
       const nullClause = isNullable ? 'NULL DEFAULT NULL' : 'NOT NULL';
       try {
         await queryInterface.sequelize.query(
-          `ALTER TABLE \`${table}\` MODIFY COLUMN \`${column}\` VARCHAR(255) ${nullClause}`
+          `ALTER TABLE \`${table}\` MODIFY COLUMN \`${column}\` VARCHAR(255) ${nullClause}`,
         );
       } catch (err) {
         console.error(`  ROLLBACK ERROR: ${table}.${column}: ${err.message}`);

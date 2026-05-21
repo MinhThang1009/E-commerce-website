@@ -5,13 +5,14 @@
  * @description Top-level page component
  */
 import React from 'react';
-import { Link } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
-import Button from '@/components/common/Button';
+import { PremiumButton } from '@/components/common';
 import { ROUTES } from '@/routes/paths';
 
 const NotFoundPage: React.FC = () => {
   const { t } = useTranslation();
+  const navigate = useNavigate();
 
   return (
     <div className="container mx-auto px-4 py-16 flex flex-col items-center justify-center text-center">
@@ -22,12 +23,12 @@ const NotFoundPage: React.FC = () => {
         </h2>
         <p className="text-neutral-600 dark:text-neutral-400 mb-8">{t('notFound.description')}</p>
         <div className="flex flex-col sm:flex-row gap-4 justify-center">
-          <Button variant="primary" as={Link} to={ROUTES.HOME}>
+          <PremiumButton variant="primary" size="large" onClick={() => navigate(ROUTES.HOME)}>
             {t('notFound.goHome')}
-          </Button>
-          <Button variant="outline" as={Link} to={ROUTES.SHOP}>
+          </PremiumButton>
+          <PremiumButton variant="outline" size="large" onClick={() => navigate(ROUTES.SHOP)}>
             {t('notFound.browseProducts')}
-          </Button>
+          </PremiumButton>
         </div>
       </div>
     </div>

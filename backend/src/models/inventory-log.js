@@ -59,7 +59,7 @@ const InventoryLog = sequelize.define(
     timestamps: true,
     updatedAt: false, // Log bất biến — không cần updatedAt
     underscored: true,
-  }
+  },
 );
 
 module.exports = InventoryLog;

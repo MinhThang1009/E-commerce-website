@@ -11,7 +11,7 @@ const RAGPipeline = require('@modules/ai/services/chatbot/rag/rag-pipeline');
 const ChatbotLLMGateway = require('@modules/ai/services/chatbot/chatbot-llm-gateway');
 let vectorStoreService;
 try {
-  vectorStoreService = require('@modules/ai/services/vectorstore/vector-store');
+  vectorStoreService = require('@services/vector-store/vector-store');
 } catch (e) {
   vectorStoreService = null;
 }

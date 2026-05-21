@@ -3,6 +3,8 @@
  * @layer Service
  * @module users
  * @description Business logic layer cho users
+ * @depends-on sequelize-users-repository, eventBus, logger
+ * @see module.js (DI wiring), routes.js (endpoints), CLAUDE.md (overview)
  */
 const { AppError } = require('@shared/errors');
 

@@ -39,13 +39,13 @@ function makeRepo(modelOverrides = {}) {
 describe('SequelizeUsersRepository — constructor', () => {
   test('ném lỗi khi thiếu User model', () => {
     expect(() => new SequelizeUsersRepository({ Address: makeModel() })).toThrow(
-      'SequelizeUsersRepository: User model bắt buộc'
+      'SequelizeUsersRepository: User model bắt buộc',
     );
   });
 
   test('ném lỗi khi thiếu Address model', () => {
     expect(() => new SequelizeUsersRepository({ User: makeModel() })).toThrow(
-      'SequelizeUsersRepository: Address model bắt buộc'
+      'SequelizeUsersRepository: Address model bắt buộc',
     );
   });
 
@@ -93,14 +93,20 @@ describe('SequelizeUsersRepository — User', () => {
 
 describe('SequelizeUsersRepository — Address', () => {
   test('findAddressesByUserId — gọi findAll với order isDefault DESC rồi createdAt DESC', async () => {
-    const addresses = [{ id: 1, isDefault: true }, { id: 2, isDefault: false }];
+    const addresses = [
+      { id: 1, isDefault: true },
+      { id: 2, isDefault: false },
+    ];
     const { repo, deps } = makeRepo({ Address: makeModel({ findAll: addresses }) });
 
     const result = await repo.findAddressesByUserId(5);
 
     expect(deps.Address.findAll).toHaveBeenCalledWith({
       where: { userId: 5 },
-      order: [['isDefault', 'DESC'], ['createdAt', 'DESC']],
+      order: [
+        ['isDefault', 'DESC'],
+        ['createdAt', 'DESC'],
+      ],
     });
     expect(result).toBe(addresses);
   });
@@ -160,7 +166,7 @@ describe('SequelizeUsersRepository — Address', () => {
 
     expect(deps.Address.update).toHaveBeenCalledWith(
       { isDefault: false },
-      { where: { userId: 5, isDefault: true } }
+      { where: { userId: 5, isDefault: true } },
     );
   });
 

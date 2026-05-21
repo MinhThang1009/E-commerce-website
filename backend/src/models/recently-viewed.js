@@ -23,13 +23,11 @@ const RecentlyViewed = sequelize.define(
     },
   },
   {
-    tableName: 'recently_viewed_products',
+    tableName: 'recently_viewed',
     timestamps: true,
     underscored: true,
-    indexes: [
-      { name: 'idx_rvp_user_product', fields: ['user_id', 'product_id'] },
-    ],
-  }
+    indexes: [{ name: 'idx_rvp_user_product', fields: ['user_id', 'product_id'] }],
+  },
 );
 
 module.exports = RecentlyViewed;

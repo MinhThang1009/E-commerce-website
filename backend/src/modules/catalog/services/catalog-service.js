@@ -3,12 +3,14 @@
  * @layer Service
  * @module catalog
  * @description Business logic layer cho catalog
+ * @depends-on sequelize-catalog-repository, cacheStore (Redis), eventBus, logger
+ * @see module.js (DI wiring), routes.js (endpoints), CLAUDE.md (overview)
  */
 const { AppError } = require('@shared/errors');
 
-// Catalog Service — gộp 4 sub-domain (Category, Brand, Collection, Product).
-// Sprint 6a triển khai 21 use case cho Category/Brand/Collection. Sprint 6b
-// mở rộng Product (search, featured, related, CRUD ...).
+// Catalog Service — gộp 3 sub-domain (Category, Brand, Product).
+// Sprint 6a triển khai use case cho Category/Brand. Sprint 6b mở rộng Product
+// (search, featured, related, CRUD ...).
 //
 // Cache key:
 //   - categories:all (TTL 30 phút)
@@ -20,6 +22,10 @@ class CatalogService {
     this.eventBus = eventBus;
     this.logger = logger;
     this.CACHE_TTL_CATEGORIES = 30 * 60;
+    this.CACHE_TTL_BRANDS = 30 * 60;
+    this.CACHE_TTL_FEATURED = 10 * 60;
+    this.CACHE_TTL_BESTSELLERS = 30 * 60;
+    this.CACHE_TTL_DEALS = 10 * 60;
   }
 
   async _invalidateCacheKey(key) {
@@ -51,11 +57,13 @@ class CatalogService {
 
     const categories = await this.catalogRepository.findAllCategoriesSorted();
     const countMap = await this.catalogRepository.getCategoryProductCounts();
-    const data = categories.map((c) => {
-      const json = c.toJSON();
-      json.productCount = countMap[c.id] || 0;
-      return json;
-    });
+    const data = categories
+      .map((c) => {
+        const json = c.toJSON();
+        json.productCount = countMap[c.id] || 0;
+        return json;
+      })
+      .filter((c) => c.productCount > 0);
 
     const payload = { status: 'success', data };
     if (this.cacheStore) {
@@ -181,8 +189,14 @@ class CatalogService {
 
   // ---------- Brand ----------
 
-  async getAllBrands({ categoryId }) {
-    const filter = {};
+  async getAllBrands({ categoryId, hasProducts = true }) {
+    const cacheKey = `brands:${categoryId || 'all'}`;
+    if (this.cacheStore) {
+      const cached = await this.cacheStore.get(cacheKey);
+      if (cached) return JSON.parse(cached);
+    }
+
+    const filter = { hasProducts };
     if (categoryId) {
       const isNumericId = !isNaN(categoryId) && String(categoryId).trim() !== '';
       let catId = categoryId;
@@ -192,8 +206,13 @@ class CatalogService {
       }
       const brandIds = await this.catalogRepository.findBrandIdsByCategoryId(catId);
       filter.idIn = brandIds;
+      filter.hasProducts = false;
     }
-    return this.catalogRepository.findAllBrands({ filter });
+    const data = await this.catalogRepository.findAllBrands({ filter });
+    if (this.cacheStore) {
+      await this.cacheStore.setEx(cacheKey, this.CACHE_TTL_BRANDS, JSON.stringify(data));
+    }
+    return data;
   }
 
   async getBrandBySlug({ slug }) {
@@ -207,7 +226,7 @@ class CatalogService {
       name: payload.name,
       logoUrl: payload.logoUrl,
     });
-    await this._invalidateCachePattern('cache:brands:*');
+    await this._invalidateCachePattern('brands:*');
     return brand;
   }
 
@@ -216,7 +235,7 @@ class CatalogService {
     if (!brand) throw new AppError('catalog.brandNotFound', 404);
     Object.assign(brand, patch);
     await this.catalogRepository.saveBrand(brand);
-    await this._invalidateCachePattern('cache:brands:*');
+    await this._invalidateCachePattern('brands:*');
     return brand;
   }
 
@@ -230,7 +249,7 @@ class CatalogService {
     }
 
     await this.catalogRepository.deleteBrand(brand);
-    await this._invalidateCachePattern('cache:brands:*');
+    await this._invalidateCachePattern('brands:*');
     return { message: 'catalog.brandDeleted' };
   }
 
@@ -247,93 +266,6 @@ class CatalogService {
       limit: lim,
       offset: off,
     });
-
-    return {
-      total: count,
-      pages: Math.ceil(count / lim),
-      currentPage: parseInt(page, 10),
-      products,
-    };
-  }
-
-  // ---------- Collection ----------
-
-  async getAllCollections({ isActive }) {
-    const filter = {};
-    if (isActive !== undefined) filter.isActive = isActive === 'true';
-    return this.catalogRepository.findAllCollections({ filter });
-  }
-
-  async getCollectionBySlug({ slug }) {
-    const collection = await this.catalogRepository.findCollectionBySlug(slug);
-    if (!collection) throw new AppError('catalog.collectionNotFound', 404);
-    return collection;
-  }
-
-  async createCollection({ payload }) {
-    const { name, description, thumbnail, isActive, productIds } = payload;
-    const collection = await this.catalogRepository.createCollection({
-      name,
-      description,
-      thumbnail,
-      isActive,
-    });
-
-    if (productIds && productIds.length > 0) {
-      await this.catalogRepository.setCollectionProducts(collection.id, productIds);
-    }
-    return collection;
-  }
-
-  async updateCollection({ id, patch }) {
-    const collection = await this.catalogRepository.findCollectionById(id);
-    if (!collection) throw new AppError('catalog.collectionNotFound', 404);
-
-    Object.assign(collection, {
-      name: patch.name,
-      description: patch.description,
-      thumbnail: patch.thumbnail,
-      isActive: patch.isActive,
-    });
-    await this.catalogRepository.saveCollection(collection);
-
-    if (patch.productIds !== undefined) {
-      await this.catalogRepository.setCollectionProducts(id, patch.productIds);
-    }
-    return collection;
-  }
-
-  async deleteCollection({ id }) {
-    const collection = await this.catalogRepository.findCollectionById(id);
-    if (!collection) throw new AppError('catalog.collectionNotFound', 404);
-
-    await this.catalogRepository.setCollectionProducts(id, []);
-    await this.catalogRepository.deleteCollection(collection);
-    return { message: 'catalog.collectionDeleted' };
-  }
-
-  async getProductsByCollection({
-    slug,
-    page = 1,
-    limit = 10,
-    sort = 'createdAt',
-    order = 'DESC',
-  }) {
-    const collection = await this.catalogRepository.findCollectionBySlug(slug);
-    if (!collection) throw new AppError('catalog.collectionNotFound', 404);
-
-    const lim = parseInt(limit, 10);
-    const off = (parseInt(page, 10) - 1) * lim;
-
-    const { count, rows: products } = await this.catalogRepository.findProductsByCollectionId(
-      collection.id,
-      {
-        sort,
-        order,
-        limit: lim,
-        offset: off,
-      },
-    );
 
     return {
       total: count,
@@ -405,6 +337,9 @@ class CatalogService {
     if (this.cacheStore.delPattern) {
       try {
         await this.cacheStore.delPattern('products:list:*');
+        await this.cacheStore.delPattern('products:featured:*');
+        await this.cacheStore.delPattern('products:bestsellers:*');
+        await this.cacheStore.delPattern('products:deals:*');
         await this.cacheStore.delPattern('chatbot:*');
       } catch (err) {
         this.logger.warn('clearProductCache pattern thất bại:', err.message);
@@ -434,7 +369,6 @@ class CatalogService {
     featured,
     status,
     brand,
-    collection,
     limit,
     cacheUrl,
   }) {
@@ -475,14 +409,6 @@ class CatalogService {
       const brandSlugs = brands.filter((b) => isNaN(b) || String(b).trim() === '');
       if (brandIds.length > 0) filter.brandIdsIn = brandIds;
       if (brandSlugs.length > 0) filter.brandSlugsIn = brandSlugs;
-    }
-
-    if (collection) {
-      const collections = Array.isArray(collection) ? collection : [collection];
-      const cIds = collections.filter((c) => !isNaN(c) && String(c).trim() !== '');
-      const cSlugs = collections.filter((c) => isNaN(c) || String(c).trim() === '');
-      if (cIds.length > 0) filter.collectionIdsIn = cIds;
-      else if (cSlugs.length > 0) filter.collectionSlugsIn = cSlugs;
     }
 
     const { count, rows: productsRaw } = await this.catalogRepository.findProductsList({
@@ -702,8 +628,17 @@ class CatalogService {
   }
 
   async getFeaturedProducts({ limit = 8 }) {
+    const cacheKey = `products:featured:${limit}`;
+    if (this.cacheStore) {
+      const cached = await this.cacheStore.get(cacheKey);
+      if (cached) return JSON.parse(cached);
+    }
     const productsRaw = await this.catalogRepository.findFeaturedProducts(parseInt(limit, 10));
-    return productsRaw.map((p) => this._mapProductForList(p));
+    const data = productsRaw.map((p) => this._mapProductForList(p));
+    if (this.cacheStore) {
+      await this.cacheStore.setEx(cacheKey, this.CACHE_TTL_FEATURED, JSON.stringify(data));
+    }
+    return data;
   }
 
   // Helper: map product cho list endpoints (featured/new-arrivals/related/...)
@@ -800,6 +735,11 @@ class CatalogService {
   }
 
   async getBestSellers({ limit = 10, period = 'month' }) {
+    const cacheKey = `products:bestsellers:${period}:${limit}`;
+    if (this.cacheStore) {
+      const cached = await this.cacheStore.get(cacheKey);
+      if (cached) return JSON.parse(cached);
+    }
     const now = new Date();
     let startDate;
     switch (period) {
@@ -825,18 +765,27 @@ class CatalogService {
     const ids = bestSellers.map((p) => p.id);
     const productsRaw = await this.catalogRepository.findProductsByIdsOrdered(ids);
 
-    return productsRaw.map((product) => {
+    const data = productsRaw.map((product) => {
       const json = product.toJSON();
       json.price = json.basePrice;
       this._mapProductImages(json);
       delete json.productImages;
       return json;
     });
+    if (this.cacheStore) {
+      await this.cacheStore.setEx(cacheKey, this.CACHE_TTL_BESTSELLERS, JSON.stringify(data));
+    }
+    return data;
   }
 
   async getDeals({ limit, minDiscount, sort = 'discount_desc' }) {
     const parsedLimit = Math.min(parseInt(limit, 10) || 12, 100);
     const parsedMinDiscount = parseFloat(minDiscount) || 5;
+    const cacheKey = `products:deals:${parsedMinDiscount}:${sort}:${parsedLimit}`;
+    if (this.cacheStore) {
+      const cached = await this.cacheStore.get(cacheKey);
+      if (cached) return JSON.parse(cached);
+    }
 
     const products = await this.catalogRepository.findDeals({
       minDiscount: parsedMinDiscount,
@@ -844,7 +793,7 @@ class CatalogService {
       limit: parsedLimit,
     });
 
-    return products.map((product) => {
+    const data = products.map((product) => {
       const compareAtPrice = parseFloat(product.compareAtPrice);
       const basePrice = parseFloat(product.basePrice);
       const discountPercentage = ((compareAtPrice - basePrice) / compareAtPrice) * 100;
@@ -858,6 +807,10 @@ class CatalogService {
       delete json.reviews;
       return { ...json, discountPercentage, ratings };
     });
+    if (this.cacheStore) {
+      await this.cacheStore.setEx(cacheKey, this.CACHE_TTL_DEALS, JSON.stringify(data));
+    }
+    return data;
   }
 
   async getProductVariants({ id }) {

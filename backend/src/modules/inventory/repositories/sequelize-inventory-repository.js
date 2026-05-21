@@ -31,19 +31,25 @@ class SequelizeInventoryRepository extends IInventoryRepository {
     return stockable.save();
   }
 
-  async createInventoryLog(payload) {
-    return this.InventoryLog.create(payload);
+  async createInventoryLog(payload, opts = {}) {
+    return this.InventoryLog.create(payload, opts);
   }
 
   async findInventoryLogs({ where = {}, limit, offset } = {}) {
     return this.InventoryLog.findAndCountAll({
       where,
-      limit, offset,
+      limit,
+      offset,
       order: [['createdAt', 'DESC']],
       include: [
-        { model: this.Product, attributes: ['id', 'name', 'slug'], required: false },
+        { model: this.Product, attributes: ['id', 'nameVi', 'nameEn', 'slug'], required: false },
         { model: this.ProductVariant, attributes: ['id', 'sku'], required: false },
-        { model: this.User, attributes: ['id', 'firstName', 'lastName'], required: false, as: 'creator' },
+        {
+          model: this.User,
+          attributes: ['id', 'firstName', 'lastName'],
+          required: false,
+          as: 'creator',
+        },
       ],
     });
   }

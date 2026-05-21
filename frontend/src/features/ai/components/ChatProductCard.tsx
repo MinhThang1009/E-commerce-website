@@ -10,13 +10,14 @@ import { useTranslation } from 'react-i18next';
 import { localizeField } from '@/utils/localize';
 import { getLocale } from '@/utils/format';
 import { proxyImg } from '@/utils/proxy-img';
-import { ProductRecommendation } from '../services/chatbot-api';
+import { createProductImageErrorHandler } from '@/utils/image-utils';
+import { ProductRecommendation } from '../api/chatbot-api';
 import {
   useTrackChatbotAnalyticsMutation,
   useAddToCartViaChatbotMutation,
-} from '../services/chatbot-api';
+} from '../api/chatbot-api';
 import { useAuthStore } from '@/stores/auth-store';
-import { toast } from '@/utils/toast';
+import { useNotifications } from '@/hooks/use-notifications';
 
 interface ChatProductCardProps {
   product: ProductRecommendation;
@@ -32,6 +33,7 @@ const ChatProductCard: React.FC<ChatProductCardProps> = ({
   const { t, i18n } = useTranslation();
   const navigate = useNavigate();
   const user = useAuthStore((s) => s.user);
+  const { showNotification } = useNotifications();
   const { mutateAsync: trackAnalytics } = useTrackChatbotAnalyticsMutation();
   const { mutateAsync: addToCart } = useAddToCartViaChatbotMutation();
 
@@ -64,9 +66,9 @@ const ChatProductCard: React.FC<ChatProductCardProps> = ({
         value: product.price,
         metadata: { source: 'chatbot_recommendation' },
       });
-      toast.success(t('product.addedToCart'));
+      showNotification({ message: t('product.addedToCart'), type: 'success' });
     } catch (error) {
-      toast.error(t('product.addToCartError'));
+      showNotification({ message: t('product.addToCartError'), type: 'error' });
     }
   };
 
@@ -80,7 +82,7 @@ const ChatProductCard: React.FC<ChatProductCardProps> = ({
       await addToCart({ productId: product.id, quantity: 1, sessionId });
       navigate('/checkout');
     } catch (error) {
-      toast.error(t('product.buyNowFailed'));
+      showNotification({ message: t('product.buyNowFailed'), type: 'error' });
     }
   };
 
@@ -108,14 +110,20 @@ const ChatProductCard: React.FC<ChatProductCardProps> = ({
       onClick={handleProductClick}
     >
       <div className="relative overflow-hidden">
-        <img
-          src={proxyImg(product.thumbnail)}
-          alt={localizeField(product, 'name', i18n.language)}
-          className="w-full h-32 object-cover group-hover:scale-110 transition-transform duration-300 bg-neutral-100 dark:bg-neutral-700"
-          onError={(e) => {
-            (e.target as HTMLImageElement).style.opacity = '0.3';
-          }}
-        />
+        {proxyImg(product.thumbnail) ? (
+          <img
+            src={proxyImg(product.thumbnail)}
+            alt={localizeField(product, 'name', i18n.language)}
+            className="w-full h-32 object-cover group-hover:scale-110 transition-transform duration-300 bg-neutral-100 dark:bg-neutral-700"
+            onError={createProductImageErrorHandler(localizeField(product, 'name', i18n.language))}
+          />
+        ) : (
+          <div className="w-full h-32 bg-neutral-100 dark:bg-neutral-700 flex items-center justify-center">
+            <span className="text-neutral-400 dark:text-neutral-500 text-xs text-center px-2 line-clamp-2">
+              {localizeField(product, 'name', i18n.language)}
+            </span>
+          </div>
+        )}
 
         {product.discount > 0 && (
           <div className="absolute top-2 left-2 bg-red-500 text-white text-xs font-bold px-2 py-1 rounded-full">
@@ -159,24 +167,18 @@ const ChatProductCard: React.FC<ChatProductCardProps> = ({
           <div className="flex space-x-2">
             <button
               onClick={handleProductClick}
-              className="flex-1 bg-neutral-100 dark:bg-neutral-700 text-neutral-800 dark:text-neutral-200 px-3 py-2 rounded-lg text-xs font-medium hover:bg-neutral-200 dark:hover:bg-neutral-600 transition-colors"
+              className="btn-glass-secondary flex-1 py-2 text-xs"
             >
               {t('product.viewDetails')}
             </button>
             {product.inStock && (
-              <button
-                onClick={handleAddToCart}
-                className="flex-1 bg-primary-500 hover:bg-primary-600 text-white px-3 py-2 rounded-lg text-xs font-medium transition-colors"
-              >
+              <button onClick={handleAddToCart} className="btn-glass-cart flex-1 py-2 text-xs">
                 {t('product.addToCart')}
               </button>
             )}
           </div>
           {product.inStock && (
-            <button
-              onClick={handleBuyNow}
-              className="w-full bg-orange-500 hover:bg-orange-600 text-white px-3 py-2 rounded-lg text-xs font-medium transition-colors"
-            >
+            <button onClick={handleBuyNow} className="btn-glass-primary w-full py-2 text-xs">
               {t('product.buyNow')}
             </button>
           )}

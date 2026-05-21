@@ -1,5 +1,4 @@
 const nodemailer = require('nodemailer');
-const sanitizeHtml = require('sanitize-html');
 const logger = require('@utils/logger');
 const { t } = require('@utils/i18n');
 
@@ -11,19 +10,6 @@ const escapeHtml = (str) => {
     .replace(/>/g, '&gt;')
     .replace(/"/g, '&quot;')
     .replace(/'/g, '&#x27;');
-};
-
-const sanitizeCampaignHtml = (html) => {
-  if (!html) return '';
-  return sanitizeHtml(html, {
-    allowedTags: ['p', 'b', 'i', 'strong', 'em', 'a', 'img', 'br', 'ul', 'ol', 'li', 'h1', 'h2', 'h3', 'span', 'div', 'table', 'tr', 'td', 'th', 'thead', 'tbody'],
-    allowedAttributes: {
-      a: ['href', 'target', 'rel'],
-      img: ['src', 'alt', 'width', 'height'],
-      '*': ['style'],
-    },
-    allowedSchemes: ['http', 'https', 'mailto'],
-  });
 };
 
 const dateLocale = (lang) => (lang === 'en' ? 'en-US' : 'vi-VN');
@@ -82,93 +68,11 @@ const sendEmail = async (options) => {
     logger.info(`[EmailService] Single email sent successfully: ${info.messageId}`);
     return info;
   } catch (error) {
-    logger.error(`[EmailService] Failed to send single email to ${options.email}: ${error.message}`);
+    logger.error(
+      `[EmailService] Failed to send single email to ${options.email}: ${error.message}`,
+    );
     throw error;
   }
-};
-
-const sendNewsletterWelcomeEmail = async (email, lang = 'vi') => {
-  await sendEmail({
-    email,
-    subject: t('email.newsletter.subject', lang),
-    html: `
-      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; background: #f9f9f9; padding: 20px; border-radius: 8px;">
-        <div style="background: white; padding: 32px; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.08);">
-          <h2 style="color: #4f6ef7; margin-bottom: 8px; font-size: 24px;">${t('email.newsletter.welcome', lang)}</h2>
-          <p style="color: #555; margin-bottom: 24px;">${t('email.newsletter.thankYou', lang)}</p>
-
-          <div style="background: #f0f4ff; border-radius: 12px; padding: 20px; text-align: center; margin: 24px 0;">
-            <p style="color: #4f6ef7; font-weight: bold; margin: 0;">${t('email.newsletter.explore', lang)}</p>
-            <a href="${process.env.FRONTEND_URL}/shop" style="display: inline-block; margin-top: 15px; padding: 10px 20px; background-color: #4f6ef7; color: white; text-decoration: none; border-radius: 6px; font-weight: bold;">${t('email.newsletter.goToStore', lang)}</a>
-          </div>
-
-          <p style="color: #aaa; font-size: 12px; text-align: center; margin-top: 16px;">${t('email.newsletter.unsubscribe', lang)}</p>
-        </div>
-      </div>
-    `,
-  });
-};
-
-const sendBulkCampaignEmail = async (emails, subject, content, lang = 'vi') => {
-  const safeContent = sanitizeCampaignHtml(content);
-  const transporter = getTransporter();
-  logger.info(`[EmailService] Starting bulk email to ${emails.length} recipients...`);
-
-  const results = [];
-  const batchSize = 5;
-  const delay = 1000;
-
-  for (let i = 0; i < emails.length; i += batchSize) {
-    const currentBatch = emails.slice(i, i + batchSize);
-    logger.info(`[EmailService] Sending batch ${Math.floor(i / batchSize) + 1} (${currentBatch.length} emails)...`);
-
-    const batchPromises = currentBatch.map(email => {
-      const mailOptions = {
-        from: `${process.env.EMAIL_FROM_NAME} <${process.env.EMAIL_FROM}>`,
-        to: email,
-        subject: subject,
-        html: `
-          <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; background: #f9f9f9; padding: 20px; border-radius: 8px;">
-            <div style="background: white; padding: 20px; border-radius: 8px; border: 1px solid #eee;">
-              ${safeContent}
-            </div>
-            <div style="margin-top: 20px; text-align: center; color: #888; font-size: 12px;">
-              <p>${t('email.footer.memberNotice', lang)}</p>
-              <p>&copy; ${new Date().getFullYear()} ${process.env.EMAIL_FROM_NAME}. ${t('email.footer.copyright', lang)}</p>
-            </div>
-          </div>
-        `,
-      };
-
-      return transporter.sendMail(mailOptions)
-        .then(info => {
-          logger.info(`[EmailService] Sent successfully to ${email}`);
-          return { email, success: true, messageId: info.messageId };
-        })
-        .catch(err => {
-          logger.error(`[EmailService] Failed to send to ${email}: ${err.message}`);
-          return { email, success: false, error: err.message };
-        });
-    });
-
-    const batchResults = await Promise.all(batchPromises);
-    results.push(...batchResults);
-
-    if (i + batchSize < emails.length) {
-      await new Promise(resolve => setTimeout(resolve, delay));
-    }
-  }
-
-  const successCount = results.filter(r => r.success).length;
-  const failCount = results.length - successCount;
-
-  logger.info(`[EmailService] Bulk email complete. Total: ${results.length}, Success: ${successCount}, Failed: ${failCount}`);
-
-  if (successCount === 0 && results.length > 0) {
-    throw new Error('All emails failed to send. Check logs for details.');
-  }
-
-  return results;
 };
 
 const sendOtpEmail = async (email, otp, lang = 'vi') => {
@@ -218,7 +122,16 @@ const sendResetPasswordEmail = async (email, token, lang = 'vi') => {
 };
 
 const sendOrderConfirmationEmail = async (email, order, lang = 'vi') => {
-  const { orderNumber, orderDate, subtotal, shippingCost, total, items, shippingAddress, estimatedDelivery } = order;
+  const {
+    orderNumber,
+    orderDate,
+    subtotal,
+    shippingCost,
+    total,
+    items,
+    shippingAddress,
+    estimatedDelivery,
+  } = order;
   const loc = dateLocale(lang);
 
   const itemsHtml = items
@@ -230,7 +143,7 @@ const sendOrderConfirmationEmail = async (email, order, lang = 'vi') => {
         <td style="padding: 10px; border-bottom: 1px solid #eee; text-align: right;">${parseFloat(item.price).toLocaleString(loc)}đ</td>
         <td style="padding: 10px; border-bottom: 1px solid #eee; text-align: right;">${parseFloat(item.subtotal).toLocaleString(loc)}đ</td>
       </tr>
-    `
+    `,
     )
     .join('');
 
@@ -389,7 +302,5 @@ module.exports = {
   sendOrderConfirmationEmail,
   sendOrderStatusUpdateEmail,
   sendOrderCancellationEmail,
-  sendNewsletterWelcomeEmail,
-  sendBulkCampaignEmail,
   sendAdminFeedbackNotification,
 };

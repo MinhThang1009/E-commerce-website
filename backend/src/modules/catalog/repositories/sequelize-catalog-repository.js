@@ -8,16 +8,14 @@ const { Op, QueryTypes, col } = require('sequelize');
 const ICatalogRepository = require('@modules/catalog/repositories/i-catalog-repository');
 
 // Sequelize impl của ICatalogRepository — duy nhất layer truy cập Category/
-// Brand/Collection/ProductCollection/Product model.
+// Brand/Product model.
 //
-// Sprint 6a triển khai 25 method cho 3 sub-domain (Category, Brand, Collection
-// + product reads kèm theo). Sprint 6b mở rộng cho Product CRUD + search.
+// Sprint 6a triển khai method cho 2 sub-domain (Category, Brand + product
+// reads kèm theo). Sprint 6b mở rộng cho Product CRUD + search.
 class SequelizeCatalogRepository extends ICatalogRepository {
   constructor({
     Category,
     Brand,
-    Collection,
-    ProductCollection,
     Product,
     ProductAttribute,
     ProductVariant,
@@ -30,8 +28,6 @@ class SequelizeCatalogRepository extends ICatalogRepository {
     super();
     this.Category = Category;
     this.Brand = Brand;
-    this.Collection = Collection;
-    this.ProductCollection = ProductCollection;
     this.Product = Product;
     this.ProductAttribute = ProductAttribute;
     this.ProductVariant = ProductVariant;
@@ -108,7 +104,7 @@ class SequelizeCatalogRepository extends ICatalogRepository {
     return this.Product.findAndCountAll({
       where,
       include: [
-        { association: 'brand', attributes: ['id', 'name', 'nameVi', 'nameEn', 'slug', 'logoUrl'] },
+        { association: 'brand', attributes: ['id', 'nameVi', 'nameEn', 'slug', 'logoUrl'] },
         { association: 'productAttributes' },
         { association: 'variants' },
         { association: 'productImages' },
@@ -126,6 +122,25 @@ class SequelizeCatalogRepository extends ICatalogRepository {
   async findAllBrands({ filter } = {}) {
     const where = {};
     if (filter && filter.idIn) where.id = { [Op.in]: filter.idIn };
+
+    // Khi hasProducts=true, chỉ trả brands có ít nhất 1 active product
+    if (filter && filter.hasProducts) {
+      return this.Brand.findAll({
+        where,
+        include: [
+          {
+            model: this.Product,
+            as: 'products',
+            where: { status: 'active' },
+            attributes: [],
+            required: true,
+          },
+        ],
+        order: [['nameVi', 'ASC']],
+        distinct: true,
+      });
+    }
+
     return this.Brand.findAll({ where, order: [['nameVi', 'ASC']] });
   }
 
@@ -166,67 +181,6 @@ class SequelizeCatalogRepository extends ICatalogRepository {
   async findProductsByBrandId(brandId, { sort = 'createdAt', order = 'DESC', limit, offset } = {}) {
     return this.Product.findAndCountAll({
       where: { brandId },
-      limit,
-      offset,
-      order: [[sort, order]],
-    });
-  }
-
-  // ---------- Collection ----------
-
-  async findAllCollections({ filter } = {}) {
-    const where = {};
-    if (filter && filter.isActive !== undefined) where.isActive = filter.isActive;
-    return this.Collection.findAll({ where, order: [['nameVi', 'ASC']] });
-  }
-
-  async findCollectionById(id) {
-    return this.Collection.findByPk(id);
-  }
-
-  async findCollectionBySlug(slug) {
-    return this.Collection.findOne({ where: { slug } });
-  }
-
-  async createCollection(payload) {
-    return this.Collection.create(payload);
-  }
-
-  async saveCollection(collection) {
-    return collection.save();
-  }
-
-  async deleteCollection(collection) {
-    return collection.destroy();
-  }
-
-  // Replace toàn bộ products của collection bằng productIds mới.
-  async setCollectionProducts(collectionId, productIds, options = {}) {
-    await this.ProductCollection.destroy({ where: { collectionId }, ...options });
-    if (productIds && productIds.length > 0) {
-      const rows = productIds.map((productId) => ({ productId, collectionId }));
-      await this.ProductCollection.bulkCreate(rows, options);
-    }
-  }
-
-  async destroyCollectionProducts(collectionId, options = {}) {
-    return this.ProductCollection.destroy({ where: { collectionId }, ...options });
-  }
-
-  async findProductsByCollectionId(
-    collectionId,
-    { sort = 'createdAt', order = 'DESC', limit, offset } = {},
-  ) {
-    return this.Product.findAndCountAll({
-      include: [
-        {
-          association: 'collections',
-          where: { id: collectionId },
-          through: { attributes: [] },
-        },
-      ],
-      where: { status: 'active' },
-      distinct: true,
       limit,
       offset,
       order: [[sort, order]],
@@ -315,7 +269,7 @@ class SequelizeCatalogRepository extends ICatalogRepository {
     return [[sort, order]];
   }
 
-  // Filter: { search, minPrice, maxPrice, featured, status, categoryId, categoryIdMissingSentinel, brandIdsIn, brandSlugsIn, collectionIdsIn, collectionSlugsIn }
+  // Filter: { search, minPrice, maxPrice, featured, status, categoryId, categoryIdMissingSentinel, brandIdsIn, brandSlugsIn }
   async findProductsList({ filter = {}, sort = 'createdAt', order = 'DESC', limit, offset } = {}) {
     const include = [
       { association: 'category', required: false },
@@ -334,20 +288,6 @@ class SequelizeCatalogRepository extends ICatalogRepository {
       });
     } else {
       include.push({ association: 'brand', required: false });
-    }
-
-    if (filter.collectionIdsIn && filter.collectionIdsIn.length > 0) {
-      include.push({
-        association: 'collections',
-        where: { id: { [Op.in]: filter.collectionIdsIn } },
-        required: true,
-      });
-    } else if (filter.collectionSlugsIn && filter.collectionSlugsIn.length > 0) {
-      include.push({
-        association: 'collections',
-        where: { slug: { [Op.in]: filter.collectionSlugsIn } },
-        required: true,
-      });
     }
 
     return this.Product.findAndCountAll({
@@ -600,7 +540,11 @@ class SequelizeCatalogRepository extends ICatalogRepository {
         ],
       },
       include: [
-        { association: 'category', required: false, attributes: ['id', 'name', 'slug'] },
+        {
+          association: 'category',
+          required: false,
+          attributes: ['id', 'nameVi', 'nameEn', 'slug'],
+        },
         {
           association: 'reviews',
           required: false,
@@ -686,9 +630,9 @@ class SequelizeCatalogRepository extends ICatalogRepository {
       };
     }
     return this.ProductAttribute.findAll({
-      attributes: ['name', 'values'],
+      attributes: ['nameVi', 'nameEn', 'values'],
       where,
-      group: ['name', 'values'],
+      group: ['nameVi', 'nameEn', 'values'],
       limit: 500,
       raw: true,
     });
@@ -705,7 +649,7 @@ class SequelizeCatalogRepository extends ICatalogRepository {
       include: [
         {
           model: this.Product,
-          attributes: ['id', 'name', 'slug', 'basePrice', 'compareAtPrice'],
+          attributes: ['id', 'nameVi', 'nameEn', 'slug', 'basePrice', 'compareAtPrice'],
           include: [
             { association: 'reviews' },
             { association: 'productImages', required: false },

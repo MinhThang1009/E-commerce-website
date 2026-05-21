@@ -2,10 +2,9 @@
  * @file HomePage.tsx
  * @layer Page
  * @feature global
- * @description Trang chủ premium — unified canvas, bento grid, marquee brands, editorial collections
+ * @description Trang chủ premium — unified canvas, bento grid, marquee brands
  */
 import React from 'react';
-import { message } from 'antd';
 import { HeroSection, HomeNewsSection } from '@/components/sections';
 import { ProductCardSkeleton, CategoryCardSkeleton } from '@/components/common/LoadingState';
 import { ErrorState, EmptyState } from '@/components/common/ErrorState';
@@ -13,20 +12,16 @@ import { PageLayout } from '@/components/layout/PageLayout';
 import { useGetCategoriesQuery } from '@/features/catalog';
 import { useGetFeaturedProductsQuery } from '@/features/catalog';
 import { useGetBrandsQuery } from '@/features/catalog';
-import { useGetCollectionsQuery } from '@/features/catalog';
-import { useSubscribeNewsletterMutation } from '@/features/content';
 import { useApiState } from '@/hooks/use-api-state';
 import { getCategoryImage, createCategoryImageErrorHandler } from '@/utils/image-utils';
 import { getUploadUrl } from '@/utils/upload-url';
 import { useTranslation } from 'react-i18next';
 import { Link } from 'react-router-dom';
 import { ProductCard } from '@/features/catalog';
-import { PremiumButton } from '@/components/common';
 import { ROUTES, buildRoute } from '@/routes/paths';
-import { getErrorMsg } from '@/utils/error-utils';
 import { localizeField } from '@/utils/localize';
 import { motion } from 'framer-motion';
-import { ChevronRight, Sparkles, Mail, ArrowRight, LayoutGrid, Award, Layers } from 'lucide-react';
+import { Sparkles, ArrowRight, LayoutGrid, Award } from 'lucide-react';
 
 /**
  * Simple Icons CDN — SVG logos cho tech brands, reliable hơn Clearbit
@@ -42,7 +37,6 @@ const SIMPLE_ICONS_SLUGS: Record<string, string> = {
   HP: 'hp',
   LENOVO: 'lenovo',
   OPPO: 'oppo',
-  REALME: 'realme',
   ACER: 'acer',
   LG: 'lg',
   SONY: 'sony',
@@ -81,7 +75,6 @@ const HomePage: React.FC = () => {
   const featuredProductsQuery = useGetFeaturedProductsQuery({ limit: 4 });
   const categoriesQuery = useGetCategoriesQuery();
   const brandsQuery = useGetBrandsQuery({ isActive: true });
-  const collectionsQuery = useGetCollectionsQuery({ isActive: true });
 
   const featuredProducts = useApiState({
     data: featuredProductsQuery.data,
@@ -107,32 +100,6 @@ const HomePage: React.FC = () => {
     isArray: true,
   });
 
-  const collections = useApiState({
-    data: collectionsQuery.data?.data,
-    isLoading: collectionsQuery.isLoading,
-    error: collectionsQuery.error,
-    refetch: collectionsQuery.refetch,
-    isArray: true,
-  });
-
-  const [newsletterEmail, setNewsletterEmail] = React.useState('');
-  const { mutateAsync: subscribeNewsletter, isPending: isSubscribing } =
-    useSubscribeNewsletterMutation();
-
-  const handleNewsletterSubmit = async () => {
-    if (!newsletterEmail) {
-      message.error(t('homepage.newsletter.emailRequired'));
-      return;
-    }
-    try {
-      await subscribeNewsletter({ email: newsletterEmail });
-      message.success(t('homepage.newsletter.subscribeSuccess'));
-      setNewsletterEmail('');
-    } catch (error) {
-      message.error(getErrorMsg(error, t('homepage.newsletter.subscribeError')));
-    }
-  };
-
   const displayCategories =
     categories.data
       ?.slice(0, 5)
@@ -147,28 +114,8 @@ const HomePage: React.FC = () => {
         slug: category.slug,
       })) || [];
 
-  // Collections cần hiển thị — API data chưa có full type
-  /* eslint-disable @typescript-eslint/no-explicit-any */
-  const displayCollections =
-    (collections.data as any[])
-      ?.filter((c: any) => ['dien-thoai-moi-nhat', 'tablet-dang-mua-nhat'].includes(c.slug))
-      ?.sort((a: any, b: any) => {
-        const order = ['dien-thoai-moi-nhat', 'tablet-dang-mua-nhat'];
-        return order.indexOf(a.slug) - order.indexOf(b.slug);
-      })
-      ?.slice(0, 2) ?? [];
-  /* eslint-enable @typescript-eslint/no-explicit-any */
-
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const brandList: any[] = brands.data ?? [];
-
-  // Fallback ảnh collection
-  const COLLECTION_FALLBACKS: Record<string, string> = {
-    'dien-thoai-moi-nhat':
-      'https://cdnv2.tgdd.vn/mwg-static/tgdd/Products/Images/42/342667/iphone-17-xanh-6-638930798970669098-750x500.jpg',
-    'tablet-dang-mua-nhat':
-      'https://cdn.tgdd.vn/Products/Images/522/335311/ipad-11-5g-sliver-thumb-600x600.jpg',
-  };
 
   return (
     <PageLayout
@@ -436,158 +383,8 @@ const HomePage: React.FC = () => {
         {/* Iridescent divider */}
         <hr className="iridescent-rule" />
 
-        {/* ──────────────── SECTION 04: COLLECTIONS (EDITORIAL) ──────────────── */}
-        <section className="relative overflow-hidden py-24">
-          <div aria-hidden className="pointer-events-none absolute inset-0 z-0">
-            <div
-              className="absolute -bottom-20 -left-20 w-[480px] h-[480px] rounded-full blur-[85px]"
-              style={{
-                background: 'radial-gradient(ellipse, rgba(42,172,167,0.22) 0%, transparent 70%)',
-              }}
-            />
-          </div>
-
-          <div className="container mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
-            <motion.div
-              className="mb-12"
-              initial="hidden"
-              whileInView="visible"
-              viewport={{ once: true }}
-              variants={fadeUp}
-            >
-              <div className="section-number mb-3">
-                <Layers className="w-3 h-3" />
-                {isVi ? '04 / Bộ Sưu Tập' : '04 / Collections'}
-              </div>
-              <h2 className="display-heading text-4xl lg:text-5xl">
-                {t('homepage.collections.title')}
-              </h2>
-            </motion.div>
-
-            {collections.isLoading ? (
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                {Array.from({ length: 2 }).map((_, i) => (
-                  <div key={i} className="aspect-[16/9] rounded-3xl glass-card animate-pulse" />
-                ))}
-              </div>
-            ) : (
-              <motion.div
-                className="grid grid-cols-1 md:grid-cols-2 gap-6"
-                initial="hidden"
-                whileInView="visible"
-                viewport={{ once: true, margin: '-40px' }}
-                variants={stagger}
-              >
-                {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
-                {displayCollections.map((collection: any, idx: number) => {
-                  const imgSrc =
-                    collection.thumbnail ||
-                    collection.banner ||
-                    COLLECTION_FALLBACKS[collection.slug] ||
-                    COLLECTION_FALLBACKS['dien-thoai-moi-nhat'];
-                  const descText =
-                    (i18n.language === 'en'
-                      ? collection.descriptionEn
-                      : collection.descriptionVi) ||
-                    collection.description ||
-                    t('homepage.collections.fallbackDescription');
-
-                  return (
-                    <motion.div key={collection.id} variants={itemFade} custom={idx}>
-                      <Link
-                        to={buildRoute.shopCollection(collection.id)}
-                        className="collection-card group block"
-                        style={{ aspectRatio: idx === 0 ? '16/10' : '16/10' }}
-                      >
-                        <img
-                          src={imgSrc}
-                          alt={localizeField(collection, 'name', i18n.language)}
-                          className="absolute inset-0 w-full h-full object-cover"
-                          loading="lazy"
-                        />
-                        <div className="absolute inset-0 z-10 flex flex-col justify-end p-8">
-                          <h3 className="text-2xl sm:text-3xl font-black text-white mb-2 drop-shadow-lg leading-tight">
-                            {localizeField(collection, 'name', i18n.language)}
-                          </h3>
-                          <p className="text-white/75 text-sm mb-5 max-w-xs leading-relaxed">
-                            {descText}
-                          </p>
-                          <span className="collection-cta w-fit">
-                            {t('homepage.collections.exploreButton')}
-                            <ChevronRight className="w-4 h-4 group-hover:translate-x-0.5 transition-transform" />
-                          </span>
-                        </div>
-                      </Link>
-                    </motion.div>
-                  );
-                })}
-              </motion.div>
-            )}
-          </div>
-        </section>
-
         {/* ──────────────── NEWS ──────────────── */}
         <HomeNewsSection />
-
-        {/* Iridescent divider */}
-        <hr className="iridescent-rule" />
-
-        {/* ──────────────── SECTION 05: NEWSLETTER ──────────────── */}
-        <section className="section-newsletter relative overflow-hidden py-24">
-          <div aria-hidden className="pointer-events-none absolute inset-0 z-0">
-            <div
-              className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[700px] h-[350px] rounded-full blur-[100px]"
-              style={{
-                background: 'radial-gradient(ellipse, rgba(42,172,167,0.18) 0%, transparent 65%)',
-              }}
-            />
-            <div
-              className="absolute -bottom-16 right-0 w-[350px] h-[350px] rounded-full blur-[80px]"
-              style={{
-                background: 'radial-gradient(ellipse, rgba(255,117,94,0.14) 0%, transparent 70%)',
-              }}
-            />
-          </div>
-
-          <div className="container mx-auto px-4 relative z-10">
-            <motion.div
-              className="glass-section-card max-w-xl mx-auto px-8 py-12 text-center"
-              initial={{ opacity: 0, y: 32 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true }}
-              transition={{ duration: 0.7, ease: [0.16, 1, 0.3, 1] }}
-            >
-              <div className="inline-flex items-center justify-center w-12 h-12 rounded-2xl bg-primary-500/10 dark:bg-primary-500/15 mb-5 mx-auto">
-                <Mail className="w-5 h-5 text-primary-500 dark:text-primary-400" />
-              </div>
-              <h2 className="text-2xl sm:text-3xl font-black text-neutral-900 dark:text-white mb-3 tracking-tight">
-                {t('homepage.newsletter.title')}
-              </h2>
-              <p className="text-neutral-500 dark:text-neutral-400 text-sm mb-7 max-w-sm mx-auto leading-relaxed">
-                {t('homepage.newsletter.description')}
-              </p>
-              <div className="flex flex-col sm:flex-row gap-3 max-w-sm mx-auto">
-                <input
-                  type="email"
-                  value={newsletterEmail}
-                  onChange={(e) => setNewsletterEmail(e.target.value)}
-                  placeholder={t('homepage.newsletter.emailPlaceholder')}
-                  className="glass-input flex-grow px-4 py-3 text-sm"
-                />
-                <PremiumButton
-                  variant="primary"
-                  size="large"
-                  iconType="arrow-right"
-                  className="px-5 py-3 shrink-0"
-                  onClick={handleNewsletterSubmit}
-                  loading={isSubscribing}
-                >
-                  {t('homepage.newsletter.subscribe')}
-                </PremiumButton>
-              </div>
-            </motion.div>
-          </div>
-        </section>
       </div>
       {/* end page-canvas */}
     </PageLayout>

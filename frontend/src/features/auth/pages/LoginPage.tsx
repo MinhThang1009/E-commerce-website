@@ -111,9 +111,9 @@ const LoginPage: React.FC = () => {
   };
 
   return (
-    <div className="container mx-auto px-4 py-16">
+    <div className="container mx-auto px-4 py-8 sm:py-16">
       <div className="max-w-md mx-auto">
-        <div className="bg-white dark:bg-neutral-800 rounded-lg shadow-md p-8">
+        <div className="bg-white dark:bg-neutral-800 rounded-lg shadow-md p-5 sm:p-8">
           <div className="text-center mb-8">
             <h1 className="text-2xl font-bold text-neutral-800 dark:text-neutral-100 mb-2">
               {t('auth.login.title')}
@@ -121,7 +121,7 @@ const LoginPage: React.FC = () => {
             <p className="text-neutral-600 dark:text-neutral-400">{t('auth.login.subtitle')}</p>
           </div>
 
-          <form>
+          <form onSubmit={handleSubmit}>
             <div className="mb-6">
               <Input
                 type="email"
@@ -210,6 +210,78 @@ const LoginPage: React.FC = () => {
               />
             </div>
 
+            <div className="mb-4 space-y-3">
+              {/* Lỗi đăng nhập */}
+              {error && (
+                <div className="p-4 bg-error-100 dark:bg-error-900/30 text-error-700 dark:text-error-400 rounded-lg">
+                  <p className="text-sm font-medium">
+                    {getErrorMsg(error, t('auth.login.errors.invalidCredentials'))}
+                  </p>
+                  {/xác thực email|verify.*email/i.test(
+                    (error as ApiError)?.data?.message || '',
+                  ) && (
+                    <div className="mt-3 flex flex-col gap-2">
+                      {/* Nút nhập OTP */}
+                      <button
+                        type="button"
+                        onClick={handleGoToOtp}
+                        className="w-full py-2 px-4 bg-primary-600 hover:bg-primary-50/40 text-white text-sm font-medium rounded-lg transition-colors"
+                      >
+                        📩 {t('auth.login.enterOtp')}
+                      </button>
+                      {/* Nút gửi lại OTP */}
+                      <button
+                        type="button"
+                        onClick={handleResendVerification}
+                        disabled={isResending}
+                        className="w-full py-2 px-4 border border-current text-sm font-medium rounded-lg hover:bg-error-200 dark:hover:bg-error-900/50 disabled:opacity-50 transition-colors"
+                      >
+                        {isResending
+                          ? t('auth.login.resending')
+                          : t('auth.login.resendVerification')}
+                      </button>
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {/* Gửi lại OTP thành công */}
+              {resendSuccess && (
+                <div className="p-4 bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400 rounded-lg flex items-start gap-2">
+                  <svg
+                    className="w-5 h-5 mt-0.5 flex-shrink-0"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"
+                    />
+                  </svg>
+                  <div>
+                    <p className="text-sm font-medium">{resendSuccess}</p>
+                    <button
+                      type="button"
+                      onClick={handleGoToOtp}
+                      className="mt-1 text-sm underline hover:no-underline"
+                    >
+                      {t('auth.login.enterOtpNow')}
+                    </button>
+                  </div>
+                </div>
+              )}
+
+              {/* Lỗi gửi lại OTP */}
+              {resendError && (
+                <div className="p-3 bg-error-100 dark:bg-error-900/30 text-error-700 dark:text-error-400 rounded-lg text-sm">
+                  {resendError}
+                </div>
+              )}
+            </div>
+
             <div className="mb-6">
               <PremiumButton
                 variant="primary"
@@ -248,73 +320,6 @@ const LoginPage: React.FC = () => {
           </div>
 
           <GoogleLoginButton />
-          <div className="mt-4 space-y-3">
-            {/* Lỗi đăng nhập */}
-            {error && (
-              <div className="p-4 bg-error-100 dark:bg-error-900/30 text-error-700 dark:text-error-400 rounded-lg">
-                <p className="text-sm font-medium">
-                  {getErrorMsg(error, t('auth.login.errors.invalidCredentials'))}
-                </p>
-                {/xác thực email|verify.*email/i.test((error as ApiError)?.data?.message || '') && (
-                  <div className="mt-3 flex flex-col gap-2">
-                    {/* Nút nhập OTP */}
-                    <button
-                      type="button"
-                      onClick={handleGoToOtp}
-                      className="w-full py-2 px-4 bg-primary-600 hover:bg-primary-50/40 text-white text-sm font-medium rounded-lg transition-colors"
-                    >
-                      📩 {t('auth.login.enterOtp')}
-                    </button>
-                    {/* Nút gửi lại OTP */}
-                    <button
-                      type="button"
-                      onClick={handleResendVerification}
-                      disabled={isResending}
-                      className="w-full py-2 px-4 border border-current text-sm font-medium rounded-lg hover:bg-error-200 dark:hover:bg-error-900/50 disabled:opacity-50 transition-colors"
-                    >
-                      {isResending ? t('auth.login.resending') : t('auth.login.resendVerification')}
-                    </button>
-                  </div>
-                )}
-              </div>
-            )}
-
-            {/* Gửi lại OTP thành công */}
-            {resendSuccess && (
-              <div className="p-4 bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400 rounded-lg flex items-start gap-2">
-                <svg
-                  className="w-5 h-5 mt-0.5 flex-shrink-0"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"
-                  />
-                </svg>
-                <div>
-                  <p className="text-sm font-medium">{resendSuccess}</p>
-                  <button
-                    type="button"
-                    onClick={handleGoToOtp}
-                    className="mt-1 text-sm underline hover:no-underline"
-                  >
-                    {t('auth.login.enterOtpNow')}
-                  </button>
-                </div>
-              </div>
-            )}
-
-            {/* Lỗi gửi lại OTP */}
-            {resendError && (
-              <div className="p-3 bg-error-100 dark:bg-error-900/30 text-error-700 dark:text-error-400 rounded-lg text-sm">
-                {resendError}
-              </div>
-            )}
-          </div>
         </div>
       </div>
     </div>

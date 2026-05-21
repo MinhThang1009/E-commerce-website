@@ -3,13 +3,14 @@
  * @layer Service
  * @module reviews
  * @description Business logic layer cho reviews
+ * @depends-on sequelize-reviews-repository, eventBus, logger
+ * @see module.js (DI wiring), routes.js (endpoints), CLAUDE.md (overview)
  */
 const { AppError } = require('@shared/errors');
 
 // Reviews Service — review của user cho product. Business rules:
 //   - Verified purchase: user phải có order delivered chứa product trước khi review
 //   - 1 user / 1 product = 1 review (update nếu đã tồn tại)
-//   - Mark helpful: user khác không thể vote cho review của chính mình
 //   - Tự động tính avg rating + reviewCount cho product khi review CRUD
 class ReviewsService {
   constructor({ reviewsRepository, eventBus, logger }) {
@@ -44,12 +45,23 @@ class ReviewsService {
 
     let review;
     if (existing) {
-      Object.assign(existing, { rating, title, content: comment, images: images || [], isVerified: true });
+      Object.assign(existing, {
+        rating,
+        title,
+        content: comment,
+        images: images || [],
+        isVerified: true,
+      });
       review = await this.reviewsRepository.saveReview(existing);
     } else {
       review = await this.reviewsRepository.createReview({
-        productId, userId, rating, title,
-        content: comment, images: images || [], isVerified: true,
+        productId,
+        userId,
+        rating,
+        title,
+        content: comment,
+        images: images || [],
+        isVerified: true,
       });
     }
 
@@ -98,7 +110,6 @@ class ReviewsService {
       oldest: ['createdAt', 'ASC'],
       highest_rating: ['rating', 'DESC'],
       lowest_rating: ['rating', 'ASC'],
-      most_helpful: ['likes', 'DESC'],
     };
     const [sortColumn, sortOrder] = sortMapping[sort] || ['createdAt', 'DESC'];
 
@@ -115,7 +126,8 @@ class ReviewsService {
       whereClause,
       limit: parseInt(limit, 10),
       offset: (parseInt(page, 10) - 1) * parseInt(limit, 10),
-      sortColumn, sortOrder,
+      sortColumn,
+      sortOrder,
     });
 
     return {
@@ -170,47 +182,6 @@ class ReviewsService {
     return {
       message: isVerified ? 'reviews.verified' : 'reviews.rejected',
       data: { id: review.id, isVerified },
-    };
-  }
-
-  async markReviewHelpful({ userId, reviewId, helpful }) {
-    const review = await this.reviewsRepository.findReviewByPk(reviewId);
-    if (!review) {
-      throw new AppError('reviews.notFound', 404);
-    }
-
-    if (review.userId === userId) {
-      throw new AppError('reviews.cannotRateOwnReview', 400);
-    }
-
-    const existing = await this.reviewsRepository.findFeedback(reviewId, userId);
-
-    if (existing) {
-      if (existing.isHelpful !== helpful) {
-        if (helpful) {
-          await this.reviewsRepository.incrementReview(review, 'likes');
-          await this.reviewsRepository.decrementReview(review, 'dislikes');
-        } else {
-          await this.reviewsRepository.decrementReview(review, 'likes');
-          await this.reviewsRepository.incrementReview(review, 'dislikes');
-        }
-        existing.isHelpful = helpful;
-        await this.reviewsRepository.saveFeedback(existing);
-      }
-    } else {
-      await this.reviewsRepository.createFeedback({ reviewId, userId, isHelpful: helpful });
-      if (helpful) {
-        await this.reviewsRepository.incrementReview(review, 'likes');
-      } else {
-        await this.reviewsRepository.incrementReview(review, 'dislikes');
-      }
-    }
-
-    const updated = await this.reviewsRepository.findReviewByPk(reviewId);
-
-    return {
-      message: helpful ? 'reviews.markedHelpful' : 'reviews.markedUnhelpful',
-      data: { id: updated.id, likes: updated.likes, dislikes: updated.dislikes },
     };
   }
 }

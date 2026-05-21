@@ -18,27 +18,38 @@ class UsersController {
       const { firstName, lastName, phone, avatar } = req.body;
       const { user } = await this.usersService.updateProfile({
         userId: req.user.id,
-        firstName, lastName, phone, avatar,
+        firstName,
+        lastName,
+        phone,
+        avatar,
       });
       res.status(200).json({ status: 'success', data: toUserDto(user) });
-    } catch (err) { next(err); }
+    } catch (err) {
+      next(err);
+    }
   };
 
   changePassword = async (req, res, next) => {
     try {
       const { currentPassword, newPassword } = req.body;
       const result = await this.usersService.changePassword({
-        userId: req.user.id, currentPassword, newPassword,
+        userId: req.user.id,
+        currentPassword,
+        newPassword,
       });
       res.status(200).json({ status: 'success', message: result.message });
-    } catch (err) { next(err); }
+    } catch (err) {
+      next(err);
+    }
   };
 
   getAddresses = async (req, res, next) => {
     try {
       const { addresses } = await this.usersService.getAddresses({ userId: req.user.id });
       res.status(200).json({ status: 'success', data: addresses.map(toAddressDto) });
-    } catch (err) { next(err); }
+    } catch (err) {
+      next(err);
+    }
   };
 
   addAddress = async (req, res, next) => {
@@ -48,7 +59,9 @@ class UsersController {
         addressData: req.body,
       });
       res.status(201).json({ status: 'success', data: toAddressDto(address) });
-    } catch (err) { next(err); }
+    } catch (err) {
+      next(err);
+    }
   };
 
   updateAddress = async (req, res, next) => {
@@ -59,7 +72,9 @@ class UsersController {
         addressData: req.body,
       });
       res.status(200).json({ status: 'success', data: toAddressDto(address) });
-    } catch (err) { next(err); }
+    } catch (err) {
+      next(err);
+    }
   };
 
   deleteAddress = async (req, res, next) => {
@@ -69,7 +84,9 @@ class UsersController {
         addressId: req.params.id,
       });
       res.status(200).json({ status: 'success', message: result.message });
-    } catch (err) { next(err); }
+    } catch (err) {
+      next(err);
+    }
   };
 
   setDefaultAddress = async (req, res, next) => {
@@ -79,7 +96,9 @@ class UsersController {
         addressId: req.params.id,
       });
       res.status(200).json({ status: 'success', data: toAddressDto(address) });
-    } catch (err) { next(err); }
+    } catch (err) {
+      next(err);
+    }
   };
 }
 

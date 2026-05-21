@@ -15,13 +15,15 @@ export { default as ForgotPasswordPage } from './pages/ForgotPasswordPage';
 export { default as ResetPasswordPage } from './pages/ResetPasswordPage';
 export { default as VerifyEmailPage } from './pages/VerifyEmailPage';
 
-// Component giao diện + route guard
+// Components giao diện
 export { default as AuthProvider } from './components/AuthProvider';
-export { default as ProtectedRoute } from './components/ProtectedRoute';
-export { default as PublicOnlyRoute } from './components/PublicOnlyRoute';
-export { default as AdminRoute } from './components/AdminRoute';
 export { default as GoogleLoginButton } from './components/GoogleLoginButton';
 export { default as LoginSuccess } from './components/LoginSuccess';
+
+// Route guards (source: src/components/routing/ — re-export qua barrel để giữ public API)
+export { default as ProtectedRoute } from '@/components/routing/ProtectedRoute';
+export { default as PublicOnlyRoute } from '@/components/routing/PublicOnlyRoute';
+export { default as AdminRoute } from '@/components/routing/AdminRoute';
 
 // Hook
 export { useAuth } from './hooks/use-auth';

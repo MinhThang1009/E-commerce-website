@@ -6,8 +6,8 @@
  */
 const { AppError } = require('@shared/errors');
 
-// Content Service — gộp 5 sub-domain. Cache busting cho banner public list,
-// fire-and-forget email cho newsletter + feedback, batch send cho campaign.
+// Content Service — gộp 3 sub-domain (banner, news, feedback). Cache busting
+// cho banner public list, fire-and-forget email cho feedback.
 class ContentService {
   constructor({ contentRepository, emailGateway, cacheStore, eventBus, logger, adminEmail }) {
     this.contentRepository = contentRepository;
@@ -17,6 +17,8 @@ class ContentService {
     this.logger = logger;
     this.adminEmail = adminEmail;
     this.CACHE_TTL_BANNERS = 60 * 60;
+    this.CACHE_TTL_NEWS_LIST = 15 * 60;
+    this.CACHE_TTL_NEWS_DETAIL = 30 * 60;
   }
 
   // ---------- Banner ----------
@@ -85,9 +87,12 @@ class ContentService {
   async getAllNews({ page = 1, limit = 10, search, isPublished, category }) {
     const lim = parseInt(limit, 10);
     const off = (parseInt(page, 10) - 1) * lim;
+    const cacheKey = `news:list:${page}:${lim}:${isPublished ?? ''}:${category || ''}:${search || ''}`;
+    if (this.cacheStore && !search) {
+      const cached = await this.cacheStore.get(cacheKey);
+      if (cached) return JSON.parse(cached);
+    }
 
-    // Service truyền filter plain (search/isPublished/category); repo build
-    // Op.like internal — service không phụ thuộc Sequelize Op.
     const filter = {};
     if (search) filter.search = search;
     if (isPublished !== undefined) filter.isPublished = isPublished === 'true';
@@ -98,18 +103,37 @@ class ContentService {
       limit: lim,
       offset: off,
     });
-    return {
+    const data = {
       count,
       totalPages: Math.ceil(count / lim),
       currentPage: parseInt(page, 10),
       news: rows,
     };
+    if (this.cacheStore && !search) {
+      await this.cacheStore.setEx(cacheKey, this.CACHE_TTL_NEWS_LIST, JSON.stringify(data));
+    }
+    return data;
   }
 
   async getNewsBySlug({ slug }) {
+    const cacheKey = `news:detail:${slug}`;
+    if (this.cacheStore) {
+      const cached = await this.cacheStore.get(cacheKey);
+      if (cached) {
+        // Vẫn increment view kể cả khi trả cache
+        const news = await this.contentRepository.findNewsById(JSON.parse(cached).id, {
+          withAuthor: false,
+        });
+        if (news) this.contentRepository.incrementNewsView(news).catch(() => {});
+        return JSON.parse(cached);
+      }
+    }
     const news = await this.contentRepository.findNewsBySlug(slug);
     if (!news) return null;
     await this.contentRepository.incrementNewsView(news);
+    if (this.cacheStore) {
+      await this.cacheStore.setEx(cacheKey, this.CACHE_TTL_NEWS_DETAIL, JSON.stringify(news));
+    }
     return news;
   }
 
@@ -117,9 +141,19 @@ class ContentService {
     const currentNews = await this.contentRepository.findNewsBySlugMin(slug);
     if (!currentNews) return null;
 
-    const attributes = ['id', 'title', 'slug', 'thumbnail', 'category', 'createdAt', 'viewCount'];
+    const attributes = [
+      'id',
+      'titleVi',
+      'titleEn',
+      'slug',
+      'thumbnail',
+      'categoryVi',
+      'categoryEn',
+      'createdAt',
+      'viewCount',
+    ];
     let related = await this.contentRepository.findNewsByCategory(
-      currentNews.category,
+      currentNews.categoryVi,
       currentNews.id,
       attributes,
     );
@@ -161,13 +195,15 @@ class ContentService {
       const existing = await this.contentRepository.findNewsBySlug(slug, { withAuthor: false });
       if (existing) throw new AppError('content.slugExists', 400);
     }
-    return this.contentRepository.createNews({
+    const created = await this.contentRepository.createNews({
       ...payload,
       slug,
       category: payload.category || 'Tin tức',
       isPublished: payload.isPublished === undefined ? true : payload.isPublished,
       userId,
     });
+    await this._invalidateNewsCache();
+    return created;
   }
 
   async updateNews({ id, patch }) {
@@ -183,6 +219,7 @@ class ContentService {
 
     Object.assign(news, patch);
     await this.contentRepository.saveNews(news);
+    await this._invalidateNewsCache(news.slug);
     return news;
   }
 
@@ -190,95 +227,18 @@ class ContentService {
     const news = await this.contentRepository.findNewsById(id, { withAuthor: false });
     if (!news) return null;
     await this.contentRepository.deleteNews(news);
+    await this._invalidateNewsCache(news.slug);
     return true;
   }
 
-  // ---------- Email Campaign ----------
-
-  async getAllCampaigns() {
-    return this.contentRepository.findAllCampaigns();
-  }
-
-  async createCampaign({ payload }) {
-    return this.contentRepository.createCampaign(payload);
-  }
-
-  // Gửi campaign tới subscribers + users (dedupe email).
-  async sendCampaign({ id }) {
-    const campaign = await this.contentRepository.findCampaignById(id);
-    if (!campaign) throw new AppError('content.campaignNotFound', 404);
-
-    if (campaign.status === 'sent') {
-      throw new AppError('content.campaignAlreadySent', 400);
+  async _invalidateNewsCache(slug) {
+    if (!this.cacheStore) return;
+    try {
+      if (this.cacheStore.delPattern) await this.cacheStore.delPattern('news:list:*');
+      if (slug) await this.cacheStore.del(`news:detail:${slug}`);
+    } catch (err) {
+      this.logger.warn('Xóa cache news thất bại:', err.message);
     }
-
-    this.logger.info(`[EmailCampaign] Đang xử lý chiến dịch #${campaign.id}: ${campaign.subject}`);
-
-    const [subscribers, users] = await Promise.all([
-      this.contentRepository.findActiveSubscriberEmails(),
-      this.contentRepository.findAllUserEmails(),
-    ]);
-
-    const subscriberEmails = subscribers.map((s) => s.email.toLowerCase().trim());
-    const userEmails = users.map((u) => u.email.toLowerCase().trim());
-    const uniqueEmails = [...new Set([...subscriberEmails, ...userEmails])];
-
-    this.logger.info(`[EmailCampaign] Tổng người nhận duy nhất: ${uniqueEmails.length}`);
-
-    if (uniqueEmails.length > 0) {
-      try {
-        await this.emailGateway.sendBulkCampaignEmail(
-          uniqueEmails,
-          campaign.subject,
-          campaign.content,
-        );
-      } catch (err) {
-        this.logger.error(`[EmailCampaign] Lỗi gửi: ${err.message}`);
-        throw new AppError('content.emailSendFailed', 500, { details: err.message });
-      }
-    }
-
-    campaign.status = 'sent';
-    campaign.sentAt = new Date();
-    await this.contentRepository.saveCampaign(campaign);
-
-    return { campaign, recipientCount: uniqueEmails.length };
-  }
-
-  async deleteCampaign({ id }) {
-    const campaign = await this.contentRepository.findCampaignById(id);
-    if (!campaign) throw new AppError('content.campaignNotFound', 404);
-    await this.contentRepository.deleteCampaign(campaign);
-  }
-
-  // ---------- Newsletter ----------
-
-  async subscribeNewsletter({ email }) {
-    if (!email) throw new AppError('content.emailRequired', 400);
-
-    const { subscriber, created } = await this.contentRepository.findOrCreateSubscriber(email);
-
-    if (!created && subscriber.status === 'active') {
-      return {
-        statusCode: 200,
-        message: 'content.alreadySubscribed',
-      };
-    }
-
-    if (!created && subscriber.status === 'unsubscribed') {
-      subscriber.status = 'active';
-      await this.contentRepository.saveSubscriber(subscriber);
-    }
-
-    // Fire-and-forget welcome email
-    this.emailGateway.sendNewsletterWelcomeEmail(email).catch((err) => {
-      this.logger.error('Lỗi gửi email chào mừng:', err.message);
-    });
-
-    return {
-      statusCode: created ? 201 : 200,
-      message: 'content.subscribedSuccess',
-    };
   }
 
   // ---------- Feedback ----------

@@ -12,7 +12,6 @@ export const ROUTES = {
   CATEGORIES: '/categories',
   CATEGORY: '/categories/:slug',
   BRANDS: '/brands',
-  COLLECTIONS: '/collections',
 
   // Cửa hàng đặc biệt
   DEALS: '/deals',
@@ -65,9 +64,7 @@ export const ROUTES = {
   ADMIN_WARRANTY_PACKAGES: '/admin/warranty-packages',
   ADMIN_DISCOUNT_CODES: '/admin/discount-codes',
   ADMIN_BRANDS: '/admin/brands',
-  ADMIN_COLLECTIONS: '/admin/collections',
   ADMIN_BANNERS: '/admin/banners',
-  ADMIN_EMAIL_CAMPAIGNS: '/admin/email-campaigns',
   ADMIN_INVENTORY: '/admin/inventory',
   ADMIN_AUDIT_LOG: '/admin/audit-log',
 } as const;
@@ -80,7 +77,6 @@ export const buildRoute = {
   shopSearch: (query: string) => `/shop?search=${encodeURIComponent(query)}`,
   shopCategory: (slug: string) => `/shop?category=${slug}`,
   shopBrand: (id: string | number) => `/shop?brand=${id}`,
-  shopCollection: (id: string | number) => `/shop?collection=${id}`,
   verifyEmail: (email?: string) =>
     `/verify-email${email ? `?email=${encodeURIComponent(email)}` : ''}`,
   paymentQr: (orderId: string | number, amount: string | number, numberOrder: string) =>

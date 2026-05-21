@@ -34,7 +34,7 @@ export interface ReviewFilters {
   rating?: number;
   verified?: boolean;
   withImages?: boolean;
-  sort?: 'newest' | 'oldest' | 'highest_rating' | 'lowest_rating' | 'most_helpful';
+  sort?: 'newest' | 'oldest' | 'highest_rating' | 'lowest_rating';
 }
 
 export interface CreateReviewData {
@@ -169,24 +169,6 @@ export function useDeleteReviewMutation() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: reviewKeys.all });
-    },
-  });
-}
-
-/** Đánh dấu đánh giá là hữu ích */
-export function useMarkReviewHelpfulMutation() {
-  const queryClient = useQueryClient();
-  return useMutation<unknown, Error, { id: string; helpful: boolean; productId?: string }>({
-    mutationFn: async ({ id, helpful }) => {
-      const res = await apiClient.put(`/reviews/${id}/helpful`, { helpful });
-      return res.data;
-    },
-    onSuccess: (_data, variables) => {
-      if (variables.productId) {
-        queryClient.invalidateQueries({
-          queryKey: reviewKeys.product(variables.productId),
-        });
-      }
     },
   });
 }

@@ -46,7 +46,10 @@ describe('UsersController', () => {
       await controller.updateProfile(req, res, next);
 
       expect(res.status).toHaveBeenCalledWith(200);
-      expect(res.json).toHaveBeenCalledWith({ status: 'success', data: expect.objectContaining({ id: 1 }) });
+      expect(res.json).toHaveBeenCalledWith({
+        status: 'success',
+        data: expect.objectContaining({ id: 1 }),
+      });
     });
 
     test('truyền đúng tất cả fields từ body vào service', async () => {
@@ -59,7 +62,11 @@ describe('UsersController', () => {
       await controller.updateProfile(req, res, next);
 
       expect(usersService.updateProfile).toHaveBeenCalledWith({
-        userId: 5, firstName: 'Tên', lastName: 'Họ', phone: '0911', avatar: 'avatar.jpg',
+        userId: 5,
+        firstName: 'Tên',
+        lastName: 'Họ',
+        phone: '0911',
+        avatar: 'avatar.jpg',
       });
     });
 
@@ -87,7 +94,10 @@ describe('UsersController', () => {
       await controller.changePassword(req, res, next);
 
       expect(res.status).toHaveBeenCalledWith(200);
-      expect(res.json).toHaveBeenCalledWith({ status: 'success', message: 'Đổi mật khẩu thành công' });
+      expect(res.json).toHaveBeenCalledWith({
+        status: 'success',
+        message: 'Đổi mật khẩu thành công',
+      });
     });
 
     test('truyền đúng userId + currentPassword + newPassword vào service', async () => {
@@ -100,7 +110,9 @@ describe('UsersController', () => {
       await controller.changePassword(req, res, next);
 
       expect(usersService.changePassword).toHaveBeenCalledWith({
-        userId: 3, currentPassword: 'pass123', newPassword: 'newPass456',
+        userId: 3,
+        currentPassword: 'pass123',
+        newPassword: 'newPass456',
       });
     });
 
@@ -154,7 +166,10 @@ describe('UsersController', () => {
       await controller.addAddress(req, res, next);
 
       expect(res.status).toHaveBeenCalledWith(201);
-      expect(res.json).toHaveBeenCalledWith({ status: 'success', data: expect.objectContaining({ id: 5 }) });
+      expect(res.json).toHaveBeenCalledWith({
+        status: 'success',
+        data: expect.objectContaining({ id: 5 }),
+      });
     });
 
     test('truyền toàn bộ body làm addressData', async () => {
@@ -192,19 +207,24 @@ describe('UsersController', () => {
       await controller.updateAddress(req, res, next);
 
       expect(res.status).toHaveBeenCalledWith(200);
-      expect(res.json).toHaveBeenCalledWith({ status: 'success', data: expect.objectContaining({ street: 'Mới' }) });
+      expect(res.json).toHaveBeenCalledWith({
+        status: 'success',
+        data: expect.objectContaining({ street: 'Mới' }),
+      });
     });
 
     test('truyền addressId từ params.id vào service', async () => {
       usersService.updateAddress.mockResolvedValue({ address: mkAddress() });
 
       const req = {
-        user: { id: 1 }, params: { id: '20' }, body: { city: 'Đà Nẵng' },
+        user: { id: 1 },
+        params: { id: '20' },
+        body: { city: 'Đà Nẵng' },
       };
       await controller.updateAddress(req, res, next);
 
       expect(usersService.updateAddress).toHaveBeenCalledWith(
-        expect.objectContaining({ addressId: '20' })
+        expect.objectContaining({ addressId: '20' }),
       );
     });
 
@@ -228,7 +248,10 @@ describe('UsersController', () => {
       await controller.deleteAddress(req, res, next);
 
       expect(res.status).toHaveBeenCalledWith(200);
-      expect(res.json).toHaveBeenCalledWith({ status: 'success', message: 'Xóa địa chỉ thành công' });
+      expect(res.json).toHaveBeenCalledWith({
+        status: 'success',
+        message: 'Xóa địa chỉ thành công',
+      });
     });
 
     test('truyền đúng userId + addressId vào service', async () => {

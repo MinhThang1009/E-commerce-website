@@ -19,7 +19,6 @@ const createNewsSchema = z.object({
   isPublished: z.boolean().optional(),
 });
 const updateNewsSchema = createNewsSchema.partial();
-const newsletterSchema = z.object({ email: z.string().email('Địa chỉ email không hợp lệ').min(1, 'Email không được để trống') });
 const feedbackSchema = z.object({
   name: z.string().trim().min(2, 'Tên phải có ít nhất 2 ký tự').max(100),
   email: z.string().email('Địa chỉ email không hợp lệ').min(1),
@@ -27,4 +26,10 @@ const feedbackSchema = z.object({
   subject: z.string().trim().min(2, 'Tiêu đề phải có ít nhất 2 ký tự').max(200),
   content: z.string().trim().min(10, 'Nội dung phải có ít nhất 10 ký tự').max(5000),
 });
-module.exports = { createBannerSchema, updateBannerSchema, createNewsSchema, updateNewsSchema, newsletterSchema, feedbackSchema };
+module.exports = {
+  createBannerSchema,
+  updateBannerSchema,
+  createNewsSchema,
+  updateNewsSchema,
+  feedbackSchema,
+};

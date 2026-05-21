@@ -7,10 +7,6 @@
 import { useMutation } from '@tanstack/react-query';
 import apiClient from '@/lib/api-client';
 
-export interface NewsletterSubscriptionRequest {
-  email: string;
-}
-
 export interface FeedbackRequest {
   name: string;
   email: string;
@@ -26,15 +22,6 @@ export interface ContactResponse {
 }
 
 // === Mutation Hooks ===
-
-export function useSubscribeNewsletterMutation() {
-  return useMutation<ContactResponse, Error, NewsletterSubscriptionRequest>({
-    mutationFn: async (body) => {
-      const { data } = await apiClient.post('/contact/newsletter', body);
-      return data;
-    },
-  });
-}
 
 export function useSendFeedbackMutation() {
   return useMutation<ContactResponse, Error, FeedbackRequest>({

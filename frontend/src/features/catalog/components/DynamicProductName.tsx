@@ -93,7 +93,7 @@ const DynamicProductName: React.FC<DynamicProductNameProps> = ({
       }
     } catch (err) {
       console.error('Lỗi tạo tên:', err);
-      setError(err instanceof Error ? err.message : 'Failed to generate product name');
+      setError(t('catalog.dynamicName.generateError'));
     } finally {
       setLoading(false);
     }

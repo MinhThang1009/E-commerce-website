@@ -3,9 +3,7 @@ const { DataTypes } = require('sequelize');
 module.exports = {
   up: async (queryInterface, Sequelize) => {
     const productDefinition = await queryInterface.describeTable('products');
-    const variantDefinition = await queryInterface.describeTable(
-      'product_variants'
-    );
+    const variantDefinition = await queryInterface.describeTable('product_variants');
 
     if (!productDefinition.base_name) {
       await queryInterface.addColumn('products', 'base_name', {
@@ -41,9 +39,7 @@ module.exports = {
 
   down: async (queryInterface) => {
     const productDefinition = await queryInterface.describeTable('products');
-    const variantDefinition = await queryInterface.describeTable(
-      'product_variants'
-    );
+    const variantDefinition = await queryInterface.describeTable('product_variants');
 
     if (productDefinition.base_name) {
       await queryInterface.removeColumn('products', 'base_name');
@@ -54,10 +50,7 @@ module.exports = {
     }
 
     if (variantDefinition.compare_at_price) {
-      await queryInterface.removeColumn(
-        'product_variants',
-        'compare_at_price'
-      );
+      await queryInterface.removeColumn('product_variants', 'compare_at_price');
     }
 
     if (variantDefinition.specifications) {

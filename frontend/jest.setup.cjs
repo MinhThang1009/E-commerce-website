@@ -1,4 +1,13 @@
 // Setup cho React component tests — chạy trước mỗi test suite
+
+// ts-jest với moduleResolution:'bundler' compile `import React from 'react'` thành
+// `react_1.default.useState` nhưng React CJS không có `.default` property.
+// Polyfill này gán `.default = module` để namespace access hoạt động đúng.
+const ReactCJS = require('react');
+if (!ReactCJS.default) {
+  Object.defineProperty(ReactCJS, 'default', { value: ReactCJS, configurable: true });
+}
+
 // matchMedia mock cho jsdom
 Object.defineProperty(window, 'matchMedia', {
   writable: true,

@@ -3,7 +3,7 @@
 module.exports = {
   async up(queryInterface, Sequelize) {
     const [results] = await queryInterface.sequelize.query(
-      `SELECT column_name FROM information_schema.columns WHERE table_name='products' AND column_name='faqs';`
+      `SELECT column_name FROM information_schema.columns WHERE table_name='products' AND column_name='faqs';`,
     );
 
     if (results.length === 0) {

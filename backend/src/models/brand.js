@@ -17,8 +17,12 @@ const Brand = sequelize.define(
     nameEn: { type: DataTypes.STRING(100), allowNull: true },
     name: {
       type: DataTypes.VIRTUAL,
-      get() { return this.getDataValue('nameVi'); },
-      set(v) { this.setDataValue('nameVi', v); },
+      get() {
+        return this.getDataValue('nameVi');
+      },
+      set(v) {
+        this.setDataValue('nameVi', v);
+      },
     },
     // Slug cho URL thân thiện
     slug: {
@@ -53,7 +57,7 @@ const Brand = sequelize.define(
         }
       },
     },
-  }
+  },
 );
 
 module.exports = Brand;

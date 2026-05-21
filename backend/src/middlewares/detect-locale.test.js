@@ -4,8 +4,12 @@ const detectLocale = require('./detect-locale');
 function makeReq(overrides = {}) {
   return { headers: {}, query: {}, ...overrides };
 }
-function makeRes() { return {}; }
-function next(req) { return () => {}; }
+function makeRes() {
+  return {};
+}
+function next(req) {
+  return () => {};
+}
 
 describe('detectLocale middleware', () => {
   test('?lang=en → req.locale = en', () => {

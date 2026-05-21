@@ -144,9 +144,7 @@ module.exports = {
     await addIndexIfMissing(queryInterface, 'product_variants', ['is_default']);
     await addIndexIfMissing(queryInterface, 'product_variants', ['is_available']);
     await addIndexIfMissing(queryInterface, 'product_warranties', ['product_id']);
-    await addIndexIfMissing(queryInterface, 'product_warranties', [
-      'warranty_package_id',
-    ]);
+    await addIndexIfMissing(queryInterface, 'product_warranties', ['warranty_package_id']);
   },
 
   down: async (queryInterface, Sequelize) => {
@@ -157,9 +155,7 @@ module.exports = {
     await removeIndexIfExists(queryInterface, 'product_variants', ['is_default']);
     await removeIndexIfExists(queryInterface, 'product_variants', ['is_available']);
     await removeIndexIfExists(queryInterface, 'product_warranties', ['product_id']);
-    await removeIndexIfExists(queryInterface, 'product_warranties', [
-      'warranty_package_id',
-    ]);
+    await removeIndexIfExists(queryInterface, 'product_warranties', ['warranty_package_id']);
 
     // Drop tables
     await dropTableIfExists(queryInterface, 'product_warranties');

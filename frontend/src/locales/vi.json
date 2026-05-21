@@ -104,12 +104,6 @@
       "title": "Thương Hiệu Nổi Bật",
       "viewAll": "Xem Tất Cả"
     },
-    "collections": {
-      "title": "Bộ Sưu Tập Mới",
-      "viewAll": "Xem Tất Cả",
-      "fallbackDescription": "Khám phá bộ sưu tập mới nhất với phong cách độc đáo.",
-      "exploreButton": "Khám phá ngay"
-    },
     "promotion": {
       "badge": "Ưu Đãi Có Thời Hạn",
       "title": "Giảm 20% Cho Tất Cả Hàng Mới Về",
@@ -140,16 +134,6 @@
         "price_desc": "Giá: Cao đến Thấp",
         "newest": "Mới nhất"
       }
-    },
-    "newsletter": {
-      "title": "Đăng Ký Nhận Bản Tin",
-      "description": "Cập nhật những sản phẩm mới nhất, ưu đãi độc quyền và mẹo mua sắm của chúng tôi.",
-      "emailPlaceholder": "Địa chỉ email của bạn",
-      "subscribe": "Đăng Ký",
-      "backgroundAlt": "Nền mẫu mua sắm",
-      "emailRequired": "Vui lòng nhập email",
-      "subscribeError": "Có lỗi xảy ra khi đăng ký. Vui lòng thử lại sau.",
-      "subscribeSuccess": "Đăng ký nhận bản tin thành công!"
     },
     "featured": {
       "emptyTitle": "Không có sản phẩm nổi bật",
@@ -254,7 +238,8 @@
       "errors": {
         "emailNotFound": "Không tìm thấy tài khoản với email này",
         "sendFailed": "Gửi email thất bại. Vui lòng thử lại."
-      }
+      },
+      "sending": "Đang gửi..."
     },
     "resetPassword": {
       "title": "Đặt Lại Mật Khẩu",
@@ -276,7 +261,8 @@
         "invalidToken": "Liên kết đặt lại không hợp lệ hoặc đã hết hạn",
         "resetFailed": "Đặt lại mật khẩu thất bại. Vui lòng thử lại."
       },
-      "redirecting": "Đang chuyển đến trang đăng nhập..."
+      "redirecting": "Đang chuyển đến trang đăng nhập...",
+      "resetting": "Đang đặt lại..."
     },
     "otp": {
       "title": "Nhập mã OTP",
@@ -302,6 +288,9 @@
     "errors": {
       "sessionExpired": "Phiên đăng nhập đã hết hạn",
       "accountLocked": "Tài khoản của bạn đã bị khóa. Vui lòng liên hệ quản trị viên"
+    },
+    "logout": {
+      "success": "Đã đăng xuất thành công"
     }
   },
   "chat": {
@@ -696,8 +685,7 @@
       "terms": "Điều khoản sử dụng",
       "guide": "Câu hỏi thường gặp",
       "about": "Về chúng tôi",
-      "brands": "Thương hiệu",
-      "collections": "Bộ sưu tập"
+      "brands": "Thương hiệu"
     },
     "companyName": "Công ty TNHH Công nghệ Think Việt Nam - GPĐKKD: 0107273909 do sở KH & ĐT TP Hà Nội cấp ngày 09/03/2020",
     "companyAddress": "Địa chỉ: 105/562 Đường Láng, Phường Láng Hạ, Quận Đống Đa, Hà Nội. Điện thoại: 1900633579",
@@ -1065,7 +1053,30 @@
     "errors": {
       "initializationFailed": "Không thể khởi tạo thanh toán. Vui lòng thử lại.",
       "paymentFailed": "Thanh toán thất bại. Vui lòng thử lại.",
-      "confirmationFailed": "Xác nhận thanh toán thất bại. Vui lòng liên hệ hỗ trợ."
+      "confirmationFailed": "Xác nhận thanh toán thất bại. Vui lòng liên hệ hỗ trợ.",
+      "failed": "Thanh toán thất bại. Vui lòng thử lại."
+    }
+  },
+  "bestSellers": {
+    "title": "Sản Phẩm Bán Chạy",
+    "subtitle": "Những sản phẩm được yêu thích nhất của chúng tôi",
+    "badge": "🏆 Top Bán Chạy",
+    "browse": "Xem tất cả sản phẩm",
+    "sortBy": "Sắp xếp theo",
+    "sort": {
+      "popular": "Phổ biến nhất",
+      "newest": "Mới nhất",
+      "price_asc": "Giá tăng dần",
+      "price_desc": "Giá giảm dần"
+    },
+    "stats": "Đang hiển thị {{count}} sản phẩm",
+    "error": {
+      "title": "Không thể tải sản phẩm",
+      "message": "Đã xảy ra lỗi khi tải danh sách sản phẩm bán chạy."
+    },
+    "noProducts": {
+      "title": "Chưa có sản phẩm bán chạy",
+      "message": "Hãy quay lại sau để xem những sản phẩm được yêu thích nhất."
     }
   },
   "admin": {
@@ -1078,12 +1089,10 @@
       "news": "Tin tức",
       "categories": "Danh mục",
       "brands": "Thương hiệu",
-      "collections": "Bộ sưu tập",
       "orders": "Đơn hàng",
       "users": "Người dùng",
       "warranty": "Gói bảo hành",
       "discounts": "Mã giảm giá",
-      "email": "Chiến dịch Email",
       "banners": "Quản lý Banner",
       "inventory": "Quản lý kho",
       "auditLog": "Nhật ký hệ thống"
@@ -1187,8 +1196,10 @@
         "pending": "Chờ thanh toán",
         "paid": "Đã thanh toán",
         "failed": "Thanh toán thất bại",
-        "refunded": "Đã hoàn tiền"
+        "refunded": "Đã hoàn tiền",
+        "cod": "Thanh toán khi nhận"
       },
+      "noItemsFound": "Không tìm thấy sản phẩm",
       "itemsCount": "{{count}} sản phẩm",
       "itemsCount_one": "{{count}} sản phẩm",
       "itemsCount_other": "{{count}} sản phẩm",
@@ -1638,46 +1649,6 @@
       "totalItems": "{{range0}}-{{range1}} của {{total}} danh mục",
       "addCategoryModal": "Thêm danh mục mới"
     },
-    "collections": {
-      "title": "Quản lý Bộ Sưu Tập",
-      "addCollection": "Thêm Bộ Sưu Tập",
-      "editCollection": "Sửa Bộ Sưu Tập",
-      "table": {
-        "name": "Tên bộ sưu tập",
-        "slug": "Slug",
-        "image": "Hình ảnh",
-        "description": "Mô tả",
-        "productCount": "Số sản phẩm",
-        "isActive": "Kích hoạt",
-        "actions": "Thao tác",
-        "thumbnail": "Ảnh đại diện",
-        "productCountLabel": "{{count}} sản phẩm"
-      },
-      "form": {
-        "name": "Tên bộ sưu tập",
-        "namePlaceholder": "Nhập tên bộ sưu tập",
-        "description": "Mô tả",
-        "descriptionPlaceholder": "Nhập mô tả",
-        "sortOrder": "Thứ tự hiển thị",
-        "isActive": "Kích hoạt",
-        "nameRequired": "Vui lòng nhập tên bộ sưu tập!",
-        "thumbnail": "Ảnh bìa",
-        "addProducts": "Thêm sản phẩm vào bộ sưu tập",
-        "selectProducts": "Chọn các sản phẩm cho bộ sưu tập này"
-      },
-      "messages": {
-        "addSuccess": "Thêm bộ sưu tập thành công",
-        "editSuccess": "Cập nhật bộ sưu tập thành công",
-        "deleteSuccess": "Xóa bộ sưu tập thành công",
-        "deleteError": "Không thể xóa bộ sưu tập",
-        "loadError": "Không thể tải danh sách bộ sưu tập"
-      },
-      "subtitle": "Quản lý các bộ sưu tập sản phẩm",
-      "deleteTitle": "Xóa bộ sưu tập",
-      "deleteConfirm": "Bạn có chắc chắn muốn xóa bộ sưu tập này?",
-      "totalItems": "Tổng cộng {{total}} bộ sưu tập",
-      "addCollectionModal": "Thêm bộ sưu tập mới"
-    },
     "discountCodes": {
       "title": "Quản lý Mã Giảm Giá",
       "addCode": "Thêm Mã Giảm Giá",
@@ -1755,6 +1726,7 @@
       "title": "Quản lý Tin Tức",
       "addArticle": "Thêm Bài Viết",
       "editArticle": "Sửa Bài Viết",
+      "searchPlaceholder": "Tìm kiếm bài viết...",
       "table": {
         "title": "Tiêu đề",
         "category": "Danh mục",
@@ -1764,7 +1736,8 @@
         "actions": "Thao tác",
         "views": "Lượt xem",
         "createdAt": "Ngày tạo",
-        "slug": "Slug"
+        "slug": "Slug",
+        "image": "Ảnh"
       },
       "form": {
         "title": "Tiêu đề",
@@ -2011,17 +1984,6 @@
         "sidebar": "Thanh bên"
       }
     },
-    "emailCampaigns": {
-      "title": "Quản lý Email Campaigns",
-      "table": {
-        "name": "Tên chiến dịch",
-        "subject": "Tiêu đề email",
-        "status": "Trạng thái",
-        "sentCount": "Đã gửi",
-        "scheduledAt": "Lịch gửi",
-        "actions": "Thao tác"
-      }
-    },
     "userDetail": {
       "notFound": "Không tìm thấy người dùng hoặc có lỗi xảy ra",
       "backToList": "Quay lại danh sách",
@@ -2132,6 +2094,7 @@
     "savings": "Tiết kiệm {{amount}}",
     "discountOff": "{{percent}}% GIẢM",
     "currencyCode": "VND",
+    "toggleWishlist": "Thêm/xóa khỏi yêu thích",
     "new": "MỚI",
     "adding": "Đang thêm...",
     "buyNowDelivery": "MUA NGAY - GIAO TẬN NHÀ",
@@ -2740,12 +2703,9 @@
       "sortOldest": "Cũ nhất",
       "sortHighest": "Đánh giá cao nhất",
       "sortLowest": "Đánh giá thấp nhất",
-      "sortHelpful": "Hữu ích nhất",
       "allStars": "Tất cả sao",
       "stars": "{{count}} sao",
       "verified": "Đã mua hàng",
-      "helpful": "Hữu ích ({{count}})",
-      "notHelpful": "Không hữu ích ({{count}})",
       "loadMore": "Xem thêm đánh giá",
       "empty": "Chưa có đánh giá nào cho sản phẩm này.",
       "error": "Có lỗi xảy ra khi tải đánh giá. Vui lòng thử lại sau."
@@ -2830,16 +2790,6 @@
     "prev": "Trước",
     "next": "Tiếp"
   },
-  "collections": {
-    "pageTitle": "Bộ sưu tập",
-    "pageDescription": "Khám phá các bộ sưu tập đặc biệt của chúng tôi",
-    "title": "Bộ Sưu Tập Của Chúng Tôi",
-    "description": "Mỗi bộ sưu tập là một câu chuyện riêng, mang phong cách và cá tính độc đáo dành cho bạn.",
-    "empty": "Chưa có bộ sưu tập nào",
-    "emptyHint": "Quay lại sau để khám phá những bộ sưu tập mới",
-    "defaultDesc": "Khám phá bộ sưu tập phong cách mới nhất.",
-    "explore": "Khám phá ngay"
-  },
   "deals": {
     "pageTitle": "Khuyến mãi",
     "heroTitle": "Siêu Giảm Giá - Trên 50% OFF",
@@ -2900,8 +2850,7 @@
     "apply": "Áp dụng",
     "reset": "Đặt lại",
     "category": "Danh mục",
-    "brand": "Thương hiệu",
-    "collection": "Bộ sưu tập"
+    "brand": "Thương hiệu"
   },
   "verifyEmail": {
     "title": "Xác thực tài khoản",
@@ -3684,37 +3633,6 @@
     "attributesLabel": "Thuộc tính",
     "selectAttrPlaceholder": "Chọn {{name}}"
   },
-  "emailCampaigns": {
-    "title": "Chiến dịch Email",
-    "create": "Tạo chiến dịch",
-    "colSubject": "Tiêu đề",
-    "colStatus": "Trạng thái",
-    "colSentAt": "Ngày gửi",
-    "colCreatedAt": "Ngày tạo",
-    "colAction": "Hành động",
-    "preview": "Xem trước",
-    "send": "Gửi",
-    "delete": "Xóa",
-    "sendConfirm": "Gửi chiến dịch này đến tất cả người đăng ký?",
-    "deleteConfirm": "Bạn có chắc chắn muốn xóa chiến dịch này?",
-    "yes": "Có",
-    "no": "Không",
-    "fetchError": "Không thể tải danh sách chiến dịch",
-    "deleteSuccess": "Xóa chiến dịch thành công",
-    "deleteError": "Không thể xóa chiến dịch",
-    "sending": "Đang gửi chiến dịch...",
-    "sendSuccess": "Gửi chiến dịch thành công!",
-    "sendError": "Không thể gửi chiến dịch",
-    "createSuccess": "Tạo chiến dịch thành công",
-    "createError": "Không thể tạo chiến dịch",
-    "modalTitle": "Tạo chiến dịch Email",
-    "subjectLabel": "Tiêu đề",
-    "subjectPlaceholder": "Nhập tiêu đề email",
-    "contentLabel": "Nội dung HTML",
-    "contentPlaceholder": "Nhập nội dung email (cho phép HTML)",
-    "previewTitle": "Xem trước chiến dịch",
-    "subjectPrefix": "Tiêu đề: "
-  },
   "productForm": {
     "autoName": "Tạo tên sản phẩm tự động",
     "advanced": "Nâng cao",
@@ -3866,8 +3784,13 @@
       "cancelled": "Đã hủy"
     }
   },
+  "catalog": {
+    "dynamicName": {
+      "generateError": "Không thể tạo tên sản phẩm. Vui lòng thử lại."
+    }
+  },
   "errors": {
-    "network": "Không thể kết nối tới server. Vui lòng kiểm tra kết nối internet.",
+    "network": "Không thể kết nối tới server. Vui lòng thử lại sau ít phút.",
     "validation": "Dữ liệu không hợp lệ. Vui lòng kiểm tra lại thông tin.",
     "authentication": "Phiên đăng nhập đã hết hạn. Vui lòng đăng nhập lại.",
     "authorization": "Bạn không có quyền truy cập tài nguyên này.",

@@ -8,7 +8,7 @@ import React, { useState, useRef } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { useVerifyOtpMutation, useResendVerificationMutation } from '../api/auth-api';
-import Button from '@/components/common/Button';
+import { PremiumButton } from '@/components/common';
 import { getErrorMsg } from '@/utils/error-utils';
 
 const VerifyEmailPage: React.FC = () => {
@@ -99,7 +99,7 @@ const VerifyEmailPage: React.FC = () => {
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-neutral-900 px-4">
-      <div className="max-w-md w-full bg-white dark:bg-neutral-800 rounded-lg shadow-lg p-8">
+      <div className="max-w-md w-full bg-white dark:bg-neutral-800 rounded-lg shadow-lg p-5 sm:p-8">
         {otpSuccess ? (
           <div className="text-center">
             <div className="mx-auto flex items-center justify-center h-16 w-16 rounded-full bg-green-100 dark:bg-green-900/30 mb-4">
@@ -123,9 +123,14 @@ const VerifyEmailPage: React.FC = () => {
             <p className="text-gray-600 dark:text-neutral-400 mb-6">
               {t('verifyEmail.successDesc')}
             </p>
-            <Button onClick={() => navigate('/login')} className="w-full" variant="primary">
+            <PremiumButton
+              variant="primary"
+              size="large"
+              className="w-full"
+              onClick={() => navigate('/login')}
+            >
               {t('verifyEmail.loginNow')}
-            </Button>
+            </PremiumButton>
           </div>
         ) : (
           <>
@@ -205,14 +210,17 @@ const VerifyEmailPage: React.FC = () => {
             )}
 
             <div className="mt-6 space-y-3">
-              <Button
-                onClick={handleVerify}
-                className="w-full"
+              <PremiumButton
                 variant="primary"
+                size="large"
+                className="w-full"
+                onClick={handleVerify}
                 disabled={isVerifying}
+                isProcessing={isVerifying}
+                processingText={t('verifyEmail.verifying')}
               >
-                {isVerifying ? t('verifyEmail.verifying') : t('verifyEmail.verify')}
-              </Button>
+                {t('verifyEmail.verify')}
+              </PremiumButton>
 
               <div className="text-center">
                 <p className="text-sm text-gray-600 dark:text-neutral-400">

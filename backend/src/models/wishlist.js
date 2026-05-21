@@ -25,7 +25,7 @@ const Wishlist = sequelize.define(
     indexes: [
       { name: 'uq_wishlists_user_product', unique: true, fields: ['user_id', 'product_id'] },
     ],
-  }
+  },
 );
 
 module.exports = Wishlist;

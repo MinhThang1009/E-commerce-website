@@ -9,8 +9,14 @@ function makeRes() {
   const res = {
     _status: 200,
     _body: null,
-    status(code) { this._status = code; return this; },
-    json(body) { this._body = body; return this; },
+    status(code) {
+      this._status = code;
+      return this;
+    },
+    json(body) {
+      this._body = body;
+      return this;
+    },
   };
   return res;
 }
@@ -81,7 +87,7 @@ describe('InventoryController.restockProduct', () => {
     await controller.restockProduct(req, makeRes(), jest.fn());
 
     expect(inventoryService.restockProduct).toHaveBeenCalledWith(
-      expect.objectContaining({ variantId: 7, productId: '2', adminId: 3 })
+      expect.objectContaining({ variantId: 7, productId: '2', adminId: 3 }),
     );
   });
 
@@ -90,7 +96,11 @@ describe('InventoryController.restockProduct', () => {
     inventoryService.restockProduct.mockRejectedValue(err);
 
     const next = jest.fn();
-    await controller.restockProduct(makeReq({ params: { productId: '1' }, body: { quantity: 0 } }), makeRes(), next);
+    await controller.restockProduct(
+      makeReq({ params: { productId: '1' }, body: { quantity: 0 } }),
+      makeRes(),
+      next,
+    );
 
     expect(next).toHaveBeenCalledWith(err);
   });
@@ -103,7 +113,7 @@ describe('InventoryController.restockProduct', () => {
     await controller.restockProduct(
       makeReq({ params: { productId: '99' }, body: { quantity: 5 } }),
       makeRes(),
-      next
+      next,
     );
 
     expect(next).toHaveBeenCalledWith(err);

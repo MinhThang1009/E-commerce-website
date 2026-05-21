@@ -382,13 +382,3 @@ describe('PaymentController.vnpayIPN', () => {
     expect(logger.error).toHaveBeenCalled();
   });
 });
-
-// ─────────────────────────────────────────────────────────────────────────────
-// handleSePayWebhook — now inline in PaymentController class
-// ─────────────────────────────────────────────────────────────────────────────
-describe('PaymentController.handleSePayWebhook', () => {
-  it('là một async function trên instance của controller', () => {
-    const { controller } = buildController();
-    expect(typeof controller.handleSePayWebhook).toBe('function');
-  });
-});

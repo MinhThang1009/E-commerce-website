@@ -29,7 +29,6 @@ module.exports = ({ uploadsBaseDir, eventBus, logger } = {}) => {
     products: path.join(baseDir, 'products'),
     users: path.join(baseDir, 'users'),
     categories: path.join(baseDir, 'categories'),
-    collections: path.join(baseDir, 'collections'),
     brands: path.join(baseDir, 'brands'),
     banners: path.join(baseDir, 'banners'),
     news: path.join(baseDir, 'news'),
@@ -40,7 +39,11 @@ module.exports = ({ uploadsBaseDir, eventBus, logger } = {}) => {
   // Tạo dir async — không block startup
   (async () => {
     for (const dir of Object.values(uploadDirs)) {
-      try { await fsPromises.mkdir(dir, { recursive: true }); } catch { /* already exists */ }
+      try {
+        await fsPromises.mkdir(dir, { recursive: true });
+      } catch {
+        /* already exists */
+      }
     }
   })();
 
@@ -65,7 +68,8 @@ module.exports = ({ uploadsBaseDir, eventBus, logger } = {}) => {
   };
 
   const uploadEngine = multer({
-    storage, fileFilter,
+    storage,
+    fileFilter,
     limits: {
       fileSize: 5 * 1024 * 1024, // 5MB
       files: 10,

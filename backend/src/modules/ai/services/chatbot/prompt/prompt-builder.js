@@ -51,6 +51,12 @@ THÔNG TIN CỬA HÀNG (${process.env.STORE_NAME || 'TechStore'}):
 
 TIN NHẮN KHÁCH HÀNG: "${userMessage}"
 
+QUY TẮC NGÔN NGỮ (BẮT BUỘC — ưu tiên cao nhất):
+0. LUÔN trả lời bằng ĐÚNG ngôn ngữ khách hàng đang dùng.
+   - Khách nhắn tiếng Việt → response, suggestions PHẢI bằng tiếng Việt.
+   - Khách nhắn tiếng Anh → response, suggestions bằng tiếng Anh.
+   - KHÔNG bao giờ tự ý chuyển sang tiếng Anh khi khách dùng tiếng Việt.
+
 QUY TẮC SO KHỚP SẢN PHẨM (BẮT BUỘC):
 1. Thương hiệu + Dòng sản phẩm + Hậu tố phiên bản là 3 yếu tố phân biệt.
    - Bản thường, Pro, Pro Max, Plus, Ultra, e, Lite → KHÁC NHAU HOÀN TOÀN.
@@ -60,12 +66,13 @@ QUY TẮC SO KHỚP SẢN PHẨM (BẮT BUỘC):
 4. NẾU CÓ ⚠️ CẢNH BÁO ở trên: BẮT BUỘC nói "Cửa hàng hiện chưa có [tên sản phẩm khách hỏi] ạ" trước, rồi mới gợi ý tương đương.
 5. NẾU KHÔNG CÓ trong danh sách (không có cảnh báo): Nói rõ "chưa có" rồi gợi ý tương đương.
 6. KHÔNG BỊA tên, giá, thông số ngoài danh sách.
+7. matchedProducts PHẢI chứa TẤT CẢ sản phẩm được đề cập trong response. Nếu response đề cập 5 sản phẩm → matchedProducts phải có đúng 5 phần tử.
 
 Trả về ĐÚNG định dạng JSON sau:
 {
-  "response": "Câu trả lời thân thiện (dùng emoji phù hợp)",
+  "response": "Câu trả lời thân thiện bằng ngôn ngữ của khách (dùng emoji phù hợp)",
   "matchedProducts": ["Tên chính xác sản phẩm trong danh sách"],
-  "suggestions": ["Gợi ý câu tiếp theo"],
+  "suggestions": ["Gợi ý câu tiếp theo bằng ngôn ngữ của khách"],
   "intent": "product_search|pricing|policy|support|general|off_topic"
 }`;
 }

@@ -1,6 +1,5 @@
 const { DataTypes } = require('sequelize');
 const bcrypt = require('bcrypt');
-const argon2 = require('argon2');
 const sequelize = require('@config/sequelize');
 
 const User = sequelize.define(
@@ -85,29 +84,23 @@ const User = sequelize.define(
     timestamps: true,
     paranoid: true,
     underscored: true,
-    indexes: [
-      { name: 'idx_users_role', fields: ['role'] },
-    ],
+    indexes: [{ name: 'idx_users_role', fields: ['role'] }],
     hooks: {
       beforeCreate: async (user) => {
         if (user.password) {
-          user.password = await argon2.hash(user.password, { type: argon2.argon2id });
+          user.password = await bcrypt.hash(user.password, 12);
         }
       },
       beforeUpdate: async (user) => {
         if (user.changed('password')) {
-          user.password = await argon2.hash(user.password, { type: argon2.argon2id });
+          user.password = await bcrypt.hash(user.password, 12);
         }
       },
     },
-  }
+  },
 );
 
-// Backward-compatible: verify cả argon2 (mới) và bcrypt (legacy)
 User.prototype.comparePassword = async function (candidatePassword) {
-  if (this.password.startsWith('$argon2')) {
-    return argon2.verify(this.password, candidatePassword);
-  }
   return bcrypt.compare(candidatePassword, this.password);
 };
 

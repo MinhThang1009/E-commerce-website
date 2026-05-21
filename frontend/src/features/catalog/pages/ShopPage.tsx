@@ -14,12 +14,12 @@ import Pagination from '@/components/common/Pagination';
 import Select from '@/components/common/Select';
 import { PremiumButton, BannerDisplay } from '@/components/common';
 import LoadingSpinner from '@/components/common/LoadingSpinner';
+import { ErrorState } from '@/components/common/ErrorState';
 import { Product, ProductFilters } from '../types/product.types';
 import { Category } from '../types/category.types';
 import { useGetProductsQuery } from '../api/product-api';
 import { useGetCategoriesQuery } from '../api/category-api';
 import { useGetBrandsQuery } from '../api/brand-api';
-import { useGetCollectionsQuery } from '../api/collection-api';
 import { useTranslation } from 'react-i18next';
 import { localizeField } from '@/utils/localize';
 
@@ -41,7 +41,6 @@ const ShopPage: React.FC = () => {
   // Lấy giá trị bộ lọc từ URL
   const categoryId = searchParams.get('category') || undefined;
   const brandId = searchParams.getAll('brand');
-  const collectionId = searchParams.getAll('collection');
   const search = searchParams.get('search') || undefined;
   const minPrice = searchParams.get('minPrice') ? Number(searchParams.get('minPrice')) : undefined;
   const maxPrice = searchParams.get('maxPrice') ? Number(searchParams.get('maxPrice')) : undefined;
@@ -53,7 +52,6 @@ const ShopPage: React.FC = () => {
   const [selectedFilters, setSelectedFilters] = useState<Record<string, string[]>>({
     categories: categoryId ? [categoryId] : [],
     brand: brandId,
-    collection: collectionId,
   });
 
   // Khoảng giá cho panel lọc
@@ -66,11 +64,11 @@ const ShopPage: React.FC = () => {
   const {
     data: productsData,
     isLoading: isProductsLoading,
-    error: _productsError,
+    error: productsError,
+    refetch: refetchProducts,
   } = useGetProductsQuery({
     categoryId,
     brand: brandId.length > 0 ? brandId : undefined,
-    collection: collectionId.length > 0 ? collectionId : undefined,
     search,
     minPrice,
     maxPrice,
@@ -86,25 +84,19 @@ const ShopPage: React.FC = () => {
     categoryId: categoryId, // Tự động lọc thương hiệu theo danh mục đang chọn
   });
 
-  const { data: collectionsData, isLoading: _isCollectionsLoading } = useGetCollectionsQuery({
-    isActive: true,
-  });
-
   // Cập nhật bộ lọc đã chọn khi tham số URL thay đổi
   const brandIdStr = brandId.join(',');
-  const collectionIdStr = collectionId.join(',');
   useEffect(() => {
     setSelectedFilters({
       categories: categoryId ? [categoryId] : [],
       brand: brandIdStr ? brandIdStr.split(',') : [],
-      collection: collectionIdStr ? collectionIdStr.split(',') : [],
     });
 
     setPriceRange({
       min: minPrice || 0,
       max: maxPrice || 10000000,
     });
-  }, [categoryId, brandIdStr, collectionIdStr, minPrice, maxPrice]);
+  }, [categoryId, brandIdStr, minPrice, maxPrice]);
 
   // Cập nhật URL khi bộ lọc thay đổi
   const updateFilters = (newFilters: Partial<ProductFilters>) => {
@@ -152,7 +144,7 @@ const ShopPage: React.FC = () => {
       } else {
         updatedParams.delete('category');
       }
-    } else if (groupId === 'brand' || groupId === 'collection') {
+    } else if (groupId === 'brand') {
       const currentValues = updatedParams.getAll(groupId);
       const strOptionId = String(optionId);
       if (isSelected) {
@@ -189,10 +181,12 @@ const ShopPage: React.FC = () => {
     {
       id: 'categories',
       name: t('filters.category'),
-      options: (categoriesData || []).map((category: Category) => ({
-        id: category.id,
-        name: `${localizeField(category, 'name', i18n.language)} (${category.productCount || 0})`,
-      })),
+      options: (categoriesData || [])
+        .filter((category: Category) => (category.productCount || 0) > 0)
+        .map((category: Category) => ({
+          id: category.id,
+          name: `${localizeField(category, 'name', i18n.language)} (${category.productCount})`,
+        })),
     },
     {
       id: 'brand',
@@ -202,17 +196,6 @@ const ShopPage: React.FC = () => {
           (brand: { id: string; name: string; nameVi?: string; nameEn?: string }) => ({
             id: brand.id,
             name: localizeField(brand, 'name', i18n.language),
-          }),
-        ) || [],
-    },
-    {
-      id: 'collection',
-      name: t('filters.collection'),
-      options:
-        collectionsData?.data?.map(
-          (collection: { id: string; name: string; nameVi?: string; nameEn?: string }) => ({
-            id: collection.id,
-            name: localizeField(collection, 'name', i18n.language),
           }),
         ) || [],
     },
@@ -418,6 +401,8 @@ const ShopPage: React.FC = () => {
               <div className="flex justify-center items-center h-64">
                 <LoadingSpinner size="lg" />
               </div>
+            ) : productsError ? (
+              <ErrorState error={productsError} onRetry={refetchProducts} />
             ) : !productsData?.data || productsData.data.length === 0 ? (
               <div className="text-center py-12 bg-neutral-50 dark:bg-neutral-800 rounded-lg">
                 <svg

@@ -1,16 +1,19 @@
 /**
- * Jest config cho integration tests — chạy với database thật (test_db).
+ * Jest config cho integration tests — test service/repository layer với real DB.
  * Dùng lệnh: npm run test:integration
  *
  * Khác với jest.config.js (unit):
  * - Không mock Sequelize models
- * - Kết nối MySQL thật (test_db)
+ * - Kết nối MySQL thật
  * - maxWorkers=1 để tránh race condition trên cùng DB
- * - Timeout dài hơn (10s/test)
+ *
+ * Khác với jest.api.config.js (HTTP tests):
+ * - Test trực tiếp service/repository, không qua HTTP layer
+ * - Không dùng supertest
  */
 module.exports = {
   testEnvironment: 'node',
-  testMatch: ['**/src/__integration__/**/*.test.js'],
+  testMatch: ['**/src/__integration__/**/*.integration.test.js'],
   testPathIgnorePatterns: ['/node_modules/'],
   setupFiles: ['./src/__integration__/setup.js'],
   moduleNameMapper: {

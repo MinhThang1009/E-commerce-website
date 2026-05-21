@@ -6,7 +6,7 @@
  */
 import i18next from 'i18next';
 import { useAuthStore } from '@/stores/auth-store';
-import { toast } from '@/utils/toast';
+import { useUiStore } from '@/stores/ui-store';
 
 // Hàm điều hướng - sẽ được thiết lập bởi component App
 let navigateToLogin: (() => void) | null = null;
@@ -52,7 +52,9 @@ export const handleAutoLogout = (errorMessage?: string, redirectDelay: number = 
   logoutManager.setLoggingOut(true);
 
   // Hiển thị thông báo cho người dùng
-  toast.warning(resolvedMessage, 4);
+  useUiStore
+    .getState()
+    .addNotification({ message: resolvedMessage, type: 'warning', duration: 4000 });
 
   // Đăng xuất để xóa trạng thái xác thực
   useAuthStore.getState().logout();

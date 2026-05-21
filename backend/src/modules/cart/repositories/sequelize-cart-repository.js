@@ -122,7 +122,7 @@ class SequelizeCartRepository extends ICartRepository {
       include: [
         {
           model: this.Product,
-          attributes: ['id', 'name', 'slug', 'basePrice'],
+          attributes: ['id', 'nameVi', 'nameEn', 'slug', 'basePrice'],
           include: [
             { association: 'productImages', required: false },
             { association: 'defaultVariant', required: false },
@@ -132,7 +132,7 @@ class SequelizeCartRepository extends ICartRepository {
         },
         {
           model: this.ProductVariant,
-          attributes: ['id', [col('variant_name'), 'name'], 'price', 'stockQuantity', 'attributes'],
+          attributes: ['id', 'price', 'stockQuantity', 'attributes'],
         },
       ],
     });
@@ -158,7 +158,7 @@ class SequelizeCartRepository extends ICartRepository {
       include: [
         {
           model: this.Product,
-          attributes: ['id', 'name', 'basePrice'],
+          attributes: ['id', 'nameVi', 'nameEn', 'basePrice'],
           include: [{ association: 'defaultVariant', attributes: ['stockQuantity'] }],
         },
         {

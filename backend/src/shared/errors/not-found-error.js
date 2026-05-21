@@ -11,9 +11,7 @@ const AppError = require('@shared/errors/app-error');
 // check undefined.
 class NotFoundError extends AppError {
   constructor(resource, id) {
-    const message = id
-      ? `${resource} với id "${id}" không tồn tại`
-      : `${resource} không tồn tại`;
+    const message = id ? `${resource} với id "${id}" không tồn tại` : `${resource} không tồn tại`;
     super(message, 404);
     this.name = 'NotFoundError';
     this.resource = resource;

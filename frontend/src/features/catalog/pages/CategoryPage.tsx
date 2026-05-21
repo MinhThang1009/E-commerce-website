@@ -6,6 +6,7 @@
  */
 import { useState, useMemo, useEffect } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
+import Button from '@/components/common/Button';
 import { useTranslation } from 'react-i18next';
 import { ROUTES, buildRoute } from '@/routes/paths';
 import { Helmet } from 'react-helmet-async';
@@ -326,20 +327,9 @@ const CategoryPage: React.FC = () => {
             <p className="text-neutral-500 dark:text-neutral-400 mb-6">
               {t('category.noProductsDesc')}
             </p>
-            <Link
-              to={ROUTES.SHOP}
-              className="inline-flex items-center gap-2 px-5 py-2.5 bg-primary-600 hover:bg-primary-700 text-white rounded-xl text-sm font-medium transition-colors"
-            >
-              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z"
-                />
-              </svg>
+            <Button variant="primary" size="sm" as={Link} to={ROUTES.SHOP}>
               {t('category.viewAllProducts')}
-            </Link>
+            </Button>
           </div>
         ) : (
           <div

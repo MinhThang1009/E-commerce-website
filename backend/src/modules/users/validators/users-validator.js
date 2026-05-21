@@ -5,11 +5,16 @@ const updateProfileSchema = z.object({
   phone: z.string().optional(),
   avatar: z.string().optional(),
 });
-const changePasswordSchema = z.object({
-  currentPassword: z.string().min(1, 'Mật khẩu hiện tại không được để trống'),
-  newPassword: z.string().min(6, 'Mật khẩu mới phải có ít nhất 6 ký tự'),
-  confirmPassword: z.string().min(1, 'Xác nhận mật khẩu không được để trống'),
-}).refine(d => d.newPassword === d.confirmPassword, { message: 'Xác nhận mật khẩu không khớp', path: ['confirmPassword'] });
+const changePasswordSchema = z
+  .object({
+    currentPassword: z.string().min(1, 'Mật khẩu hiện tại không được để trống'),
+    newPassword: z.string().min(6, 'Mật khẩu mới phải có ít nhất 6 ký tự'),
+    confirmPassword: z.string().min(1, 'Xác nhận mật khẩu không được để trống'),
+  })
+  .refine((d) => d.newPassword === d.confirmPassword, {
+    message: 'Xác nhận mật khẩu không khớp',
+    path: ['confirmPassword'],
+  });
 const addressSchema = z.object({
   name: z.string().optional(),
   firstName: z.string().min(1, 'Tên không được để trống'),

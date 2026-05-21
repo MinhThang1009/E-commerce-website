@@ -14,7 +14,7 @@ const {
   ProductVariant,
   sequelize,
 } = require('@models');
-const vectorStoreService = require('@modules/ai/services/vectorstore/vector-store');
+const vectorStoreService = require('@services/vector-store/vector-store');
 const { detectLanguage } = require('@modules/ai/services/chatbot/language/language-detector');
 const { expandAbbreviations, classifyIntent } = require('@modules/ai/services/core/ai-policy');
 const logger = require('@utils/logger');
@@ -154,8 +154,10 @@ class ChatbotService {
       const intent = context.preClassifiedIntent || classifyIntent(rewrittenQuery);
       const searchMessage = rewrittenQuery;
 
-      if (rewrittenQuery && rewrittenQuery.toLowerCase() !== message.toLowerCase()) {
-        logger.debug(`✨ Câu truy vấn đã viết lại: "${rewrittenQuery}" (intent: ${intent})`);
+      // Log query cuối cùng: ưu tiên LLM-rewritten nếu có, fallback về code-expand
+      const displayQuery = context.llmRewrittenQuery || rewrittenQuery;
+      if (displayQuery && displayQuery.toLowerCase() !== message.toLowerCase()) {
+        logger.debug(`✨ Câu truy vấn đã viết lại: "${displayQuery}" (intent: ${intent})`);
       }
 
       // Bước 2: Off-topic → early return, không tốn retrieval + LLM call

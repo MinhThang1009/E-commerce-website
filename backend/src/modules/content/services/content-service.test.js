@@ -1,4 +1,4 @@
-// Phase 42.7 — Unit tests cho ContentService (modules/content gộp 5 sub-domain).
+// Phase 42.7 — Unit tests cho ContentService (modules/content gộp 3 sub-domain).
 const ContentService = require('./content-service');
 
 describe('ContentService', () => {
@@ -24,20 +24,9 @@ describe('ContentService', () => {
       saveNews: jest.fn((n) => Promise.resolve(n)),
       deleteNews: jest.fn().mockResolvedValue(),
       incrementNewsView: jest.fn().mockResolvedValue(),
-      findAllCampaigns: jest.fn(),
-      findCampaignById: jest.fn(),
-      createCampaign: jest.fn(),
-      saveCampaign: jest.fn((c) => Promise.resolve(c)),
-      deleteCampaign: jest.fn().mockResolvedValue(),
-      findActiveSubscriberEmails: jest.fn().mockResolvedValue([]),
-      findAllUserEmails: jest.fn().mockResolvedValue([]),
-      findOrCreateSubscriber: jest.fn(),
-      saveSubscriber: jest.fn((s) => Promise.resolve(s)),
       createFeedback: jest.fn(),
     };
     emailGateway = {
-      sendBulkCampaignEmail: jest.fn().mockResolvedValue(),
-      sendNewsletterWelcomeEmail: jest.fn().mockResolvedValue(),
       sendAdminFeedbackNotification: jest.fn().mockResolvedValue(),
     };
     cacheStore = {
@@ -46,7 +35,9 @@ describe('ContentService', () => {
       del: jest.fn().mockResolvedValue(),
     };
     service = new ContentService({
-      contentRepository, emailGateway, cacheStore,
+      contentRepository,
+      emailGateway,
+      cacheStore,
       eventBus: { publish: jest.fn() },
       logger: { info: jest.fn(), error: jest.fn(), warn: jest.fn(), debug: jest.fn() },
       adminEmail: 'admin@test.com',
@@ -88,16 +79,14 @@ describe('ContentService', () => {
 
     test('updateBanner không tìm thấy → 404', async () => {
       contentRepository.findBannerById.mockResolvedValue(null);
-      await expect(
-        service.updateBanner({ id: 1, patch: {} })
-      ).rejects.toMatchObject({ statusCode: 404 });
+      await expect(service.updateBanner({ id: 1, patch: {} })).rejects.toMatchObject({
+        statusCode: 404,
+      });
     });
 
     test('deleteBanner không tìm thấy → 404', async () => {
       contentRepository.findBannerById.mockResolvedValue(null);
-      await expect(
-        service.deleteBanner({ id: 1 })
-      ).rejects.toMatchObject({ statusCode: 404 });
+      await expect(service.deleteBanner({ id: 1 })).rejects.toMatchObject({ statusCode: 404 });
     });
   });
 
@@ -107,9 +96,12 @@ describe('ContentService', () => {
       const result = await service.getAllNews({ page: 2, limit: 10, search: 'iphone' });
       expect(result.count).toBe(25);
       expect(result.totalPages).toBe(3);
-      expect(contentRepository.findAllNews).toHaveBeenCalledWith(expect.objectContaining({
-        limit: 10, offset: 10,
-      }));
+      expect(contentRepository.findAllNews).toHaveBeenCalledWith(
+        expect.objectContaining({
+          limit: 10,
+          offset: 10,
+        }),
+      );
     });
 
     test('getNewsBySlug → tăng viewCount', async () => {
@@ -129,7 +121,7 @@ describe('ContentService', () => {
 
     test('getRelatedNews dùng category + fallback latest', async () => {
       contentRepository.findNewsBySlugMin.mockResolvedValue({ id: 1, category: 'Tech' });
-      contentRepository.findNewsByCategory.mockResolvedValue([{ id: 2 }]);  // chỉ 1 → cần fallback 2 nữa
+      contentRepository.findNewsByCategory.mockResolvedValue([{ id: 2 }]); // chỉ 1 → cần fallback 2 nữa
       contentRepository.findLatestNews.mockResolvedValue([{ id: 3 }, { id: 4 }]);
 
       const result = await service.getRelatedNews({ slug: 'foo' });
@@ -141,7 +133,7 @@ describe('ContentService', () => {
     test('createNews slug đã tồn tại → 400', async () => {
       contentRepository.findNewsBySlug.mockResolvedValue({ id: 99 });
       await expect(
-        service.createNews({ userId: 1, payload: { title: 'A', slug: 'taken' } })
+        service.createNews({ userId: 1, payload: { title: 'A', slug: 'taken' } }),
       ).rejects.toMatchObject({ statusCode: 400, message: 'content.slugExists' });
     });
 
@@ -150,16 +142,16 @@ describe('ContentService', () => {
       contentRepository.createNews.mockResolvedValue({ id: 5 });
       await service.createNews({ userId: 1, payload: { title: 'A', slug: 'a', content: 'c' } });
       expect(contentRepository.createNews).toHaveBeenCalledWith(
-        expect.objectContaining({ category: 'Tin tức', isPublished: true, userId: 1 })
+        expect.objectContaining({ category: 'Tin tức', isPublished: true, userId: 1 }),
       );
     });
 
     test('updateNews đổi slug sang slug đã tồn tại → 400', async () => {
       contentRepository.findNewsById.mockResolvedValue({ slug: 'old' });
       contentRepository.findNewsBySlug.mockResolvedValue({ id: 99 });
-      await expect(
-        service.updateNews({ id: 1, patch: { slug: 'taken' } })
-      ).rejects.toMatchObject({ statusCode: 400 });
+      await expect(service.updateNews({ id: 1, patch: { slug: 'taken' } })).rejects.toMatchObject({
+        statusCode: 400,
+      });
     });
 
     test('updateNews không tìm thấy → null', async () => {
@@ -169,91 +161,10 @@ describe('ContentService', () => {
     });
   });
 
-  describe('Email Campaign', () => {
-    test('sendCampaign không tồn tại → 404', async () => {
-      contentRepository.findCampaignById.mockResolvedValue(null);
-      await expect(
-        service.sendCampaign({ id: 99 })
-      ).rejects.toMatchObject({ statusCode: 404 });
-    });
-
-    test('sendCampaign đã sent → 400', async () => {
-      contentRepository.findCampaignById.mockResolvedValue({ status: 'sent' });
-      await expect(
-        service.sendCampaign({ id: 1 })
-      ).rejects.toMatchObject({ statusCode: 400, message: 'content.campaignAlreadySent' });
-    });
-
-    test('sendCampaign dedupe email subscriber + user', async () => {
-      const campaign = { id: 1, status: 'draft', subject: 'S', content: 'C' };
-      contentRepository.findCampaignById.mockResolvedValue(campaign);
-      contentRepository.findActiveSubscriberEmails.mockResolvedValue([
-        { email: 'A@test.com' }, { email: 'b@test.com' },
-      ]);
-      contentRepository.findAllUserEmails.mockResolvedValue([
-        { email: 'a@test.com' }, { email: 'c@test.com' },
-      ]);
-
-      const result = await service.sendCampaign({ id: 1 });
-
-      // Dedupe: a@test.com (case-insensitive lowercase) + b + c = 3
-      expect(result.recipientCount).toBe(3);
-      expect(emailGateway.sendBulkCampaignEmail).toHaveBeenCalledWith(
-        expect.arrayContaining(['a@test.com', 'b@test.com', 'c@test.com']),
-        'S', 'C'
-      );
-      expect(campaign.status).toBe('sent');
-    });
-
-    test('sendCampaign 0 recipients → vẫn mark sent, KHÔNG gọi email', async () => {
-      const campaign = { id: 1, status: 'draft' };
-      contentRepository.findCampaignById.mockResolvedValue(campaign);
-
-      const result = await service.sendCampaign({ id: 1 });
-
-      expect(result.recipientCount).toBe(0);
-      expect(emailGateway.sendBulkCampaignEmail).not.toHaveBeenCalled();
-      expect(campaign.status).toBe('sent');
-    });
-  });
-
-  describe('Newsletter', () => {
-    test('email rỗng → 400', async () => {
-      await expect(
-        service.subscribeNewsletter({ email: '' })
-      ).rejects.toMatchObject({ statusCode: 400 });
-    });
-
-    test('subscriber mới → 201', async () => {
-      contentRepository.findOrCreateSubscriber.mockResolvedValue({
-        subscriber: { status: 'active' }, created: true,
-      });
-      const result = await service.subscribeNewsletter({ email: 'new@x.y' });
-      expect(result.statusCode).toBe(201);
-    });
-
-    test('subscriber đã active → 200 không gọi welcome email', async () => {
-      contentRepository.findOrCreateSubscriber.mockResolvedValue({
-        subscriber: { status: 'active' }, created: false,
-      });
-      const result = await service.subscribeNewsletter({ email: 'old@x.y' });
-      expect(result.statusCode).toBe(200);
-      expect(result.message).toBe('content.alreadySubscribed');
-    });
-
-    test('subscriber unsubscribed → reactivate + 200', async () => {
-      const subscriber = { status: 'unsubscribed' };
-      contentRepository.findOrCreateSubscriber.mockResolvedValue({ subscriber, created: false });
-      await service.subscribeNewsletter({ email: 'x@y.z' });
-      expect(subscriber.status).toBe('active');
-      expect(contentRepository.saveSubscriber).toHaveBeenCalledWith(subscriber);
-    });
-  });
-
   describe('Feedback', () => {
     test('thiếu field → 400', async () => {
       await expect(
-        service.sendFeedback({ payload: { name: 'A', email: 'a@b' } })
+        service.sendFeedback({ payload: { name: 'A', email: 'a@b' } }),
       ).rejects.toMatchObject({ statusCode: 400 });
     });
 
@@ -261,22 +172,27 @@ describe('ContentService', () => {
       contentRepository.createFeedback.mockResolvedValue({ id: 1 });
       const result = await service.sendFeedback({
         payload: {
-          name: 'A', email: 'a@b.c', subject: 's', content: 'c',
+          name: 'A',
+          email: 'a@b.c',
+          subject: 's',
+          content: 'c',
         },
       });
       expect(result.id).toBe(1);
       expect(contentRepository.createFeedback).toHaveBeenCalledWith(
-        expect.objectContaining({ name: 'A', status: 'pending' })
+        expect.objectContaining({ name: 'A', status: 'pending' }),
       );
       expect(emailGateway.sendAdminFeedbackNotification).toHaveBeenCalledWith(
         'admin@test.com',
-        expect.objectContaining({ name: 'A' })
+        expect.objectContaining({ name: 'A' }),
       );
     });
 
     test('không gọi admin notification khi adminEmail không được cấu hình', async () => {
       const svcNoAdmin = new ContentService({
-        contentRepository, emailGateway, cacheStore,
+        contentRepository,
+        emailGateway,
+        cacheStore,
         eventBus: { publish: jest.fn() },
         logger: { info: jest.fn(), error: jest.fn(), warn: jest.fn(), debug: jest.fn() },
         adminEmail: null,
@@ -294,7 +210,7 @@ describe('ContentService', () => {
         payload: { name: 'C', email: 'c@d.e', phone: '0901234567', subject: 'sub', content: 'con' },
       });
       expect(contentRepository.createFeedback).toHaveBeenCalledWith(
-        expect.objectContaining({ phone: '0901234567' })
+        expect.objectContaining({ phone: '0901234567' }),
       );
     });
   });
@@ -346,7 +262,10 @@ describe('ContentService', () => {
       });
       contentRepository.createBanner.mockResolvedValue({ id: 5 });
       await svcWarn.createBanner({ payload: {} });
-      expect(warnSpy).toHaveBeenCalledWith(expect.stringContaining('banners:active'), expect.any(String));
+      expect(warnSpy).toHaveBeenCalledWith(
+        expect.stringContaining('banners:active'),
+        expect.any(String),
+      );
     });
   });
 
@@ -365,7 +284,7 @@ describe('ContentService', () => {
       contentRepository.findAllNews.mockResolvedValue({ count: 0, rows: [] });
       await service.getAllNews({ page: 1, limit: 5, isPublished: 'false' });
       expect(contentRepository.findAllNews).toHaveBeenCalledWith(
-        expect.objectContaining({ filter: expect.objectContaining({ isPublished: false }) })
+        expect.objectContaining({ filter: expect.objectContaining({ isPublished: false }) }),
       );
     });
 
@@ -380,7 +299,7 @@ describe('ContentService', () => {
       contentRepository.findAllNews.mockResolvedValue({ count: 0, rows: [] });
       await service.getAllNews({ category: 'Tech' });
       expect(contentRepository.findAllNews).toHaveBeenCalledWith(
-        expect.objectContaining({ filter: expect.objectContaining({ category: 'Tech' }) })
+        expect.objectContaining({ filter: expect.objectContaining({ category: 'Tech' }) }),
       );
     });
 
@@ -404,6 +323,13 @@ describe('ContentService', () => {
       await service.createNews({ userId: 1, payload: { title: 'No slug post', content: 'c' } });
       // findNewsBySlug không được gọi khi không có slug
       expect(contentRepository.findNewsBySlug).not.toHaveBeenCalled();
+      expect(contentRepository.createNews).toHaveBeenCalled();
+    });
+
+    test('createNews không có cả slug lẫn title → (title||"") branch falsy (line 145)', async () => {
+      // title undefined → (title || '') = '' → branch || '' được thực thi
+      contentRepository.createNews.mockResolvedValue({ id: 11 });
+      await service.createNews({ userId: 1, payload: { content: 'c' } }); // không có title
       expect(contentRepository.createNews).toHaveBeenCalled();
     });
 
@@ -440,101 +366,6 @@ describe('ContentService', () => {
   });
 
   // ============================================================
-  // Email Campaign — additional paths
-  // ============================================================
-
-  describe('Email Campaign — additional paths', () => {
-    test('getAllCampaigns → gọi findAllCampaigns', async () => {
-      contentRepository.findAllCampaigns.mockResolvedValue([{ id: 1 }, { id: 2 }]);
-      const result = await service.getAllCampaigns();
-      expect(result).toHaveLength(2);
-    });
-
-    test('createCampaign → gọi findOrCreate và trả về campaign', async () => {
-      contentRepository.createCampaign.mockResolvedValue({ id: 5, subject: 'Test' });
-      const result = await service.createCampaign({ payload: { subject: 'Test', content: 'c' } });
-      expect(result.id).toBe(5);
-    });
-
-    test('deleteCampaign không tồn tại → 404', async () => {
-      contentRepository.findCampaignById.mockResolvedValue(null);
-      await expect(service.deleteCampaign({ id: 99 })).rejects.toMatchObject({ statusCode: 404 });
-    });
-
-    test('deleteCampaign tìm thấy → xóa thành công', async () => {
-      const campaign = { id: 1 };
-      contentRepository.findCampaignById.mockResolvedValue(campaign);
-      await service.deleteCampaign({ id: 1 });
-      expect(contentRepository.deleteCampaign).toHaveBeenCalledWith(campaign);
-    });
-
-    test('sendCampaign gửi thất bại → throw 500', async () => {
-      const campaign = { id: 1, status: 'draft', subject: 'S', content: 'C' };
-      contentRepository.findCampaignById.mockResolvedValue(campaign);
-      contentRepository.findActiveSubscriberEmails.mockResolvedValue([{ email: 'a@b.com' }]);
-      emailGateway.sendBulkCampaignEmail.mockRejectedValue(new Error('SMTP down'));
-
-      await expect(service.sendCampaign({ id: 1 })).rejects.toMatchObject({ statusCode: 500 });
-    });
-
-    test('sendCampaign mark sentAt sau khi gửi thành công', async () => {
-      const campaign = { id: 1, status: 'draft', subject: 'Sub', content: 'Body', sentAt: null };
-      contentRepository.findCampaignById.mockResolvedValue(campaign);
-      contentRepository.findActiveSubscriberEmails.mockResolvedValue([{ email: 'a@b.com' }]);
-
-      await service.sendCampaign({ id: 1 });
-
-      expect(campaign.sentAt).toBeInstanceOf(Date);
-      expect(contentRepository.saveCampaign).toHaveBeenCalledWith(campaign);
-    });
-  });
-
-  // ============================================================
-  // Newsletter — additional paths
-  // ============================================================
-
-  describe('Newsletter — additional paths', () => {
-    test('subscribeNewsletter email undefined → 400', async () => {
-      await expect(
-        service.subscribeNewsletter({ email: undefined })
-      ).rejects.toMatchObject({ statusCode: 400 });
-    });
-
-    test('subscriber mới → gọi sendNewsletterWelcomeEmail', async () => {
-      contentRepository.findOrCreateSubscriber.mockResolvedValue({
-        subscriber: { status: 'active' }, created: true,
-      });
-      await service.subscribeNewsletter({ email: 'new@example.com' });
-      expect(emailGateway.sendNewsletterWelcomeEmail).toHaveBeenCalledWith('new@example.com');
-    });
-
-    test('subscriber reactivated → gọi sendNewsletterWelcomeEmail', async () => {
-      const subscriber = { status: 'unsubscribed' };
-      contentRepository.findOrCreateSubscriber.mockResolvedValue({ subscriber, created: false });
-      await service.subscribeNewsletter({ email: 'reactivate@example.com' });
-      expect(emailGateway.sendNewsletterWelcomeEmail).toHaveBeenCalledWith('reactivate@example.com');
-    });
-
-    test('sendNewsletterWelcomeEmail thất bại → không throw (fire-and-forget catch — line 238)', async () => {
-      contentRepository.findOrCreateSubscriber.mockResolvedValue({
-        subscriber: { status: 'active' }, created: true,
-      });
-      const logger = service.logger;
-      emailGateway.sendNewsletterWelcomeEmail.mockRejectedValue(new Error('mail fail'));
-
-      const result = await service.subscribeNewsletter({ email: 'fail@example.com' });
-
-      expect(result).toHaveProperty('message');
-      // Chờ fire-and-forget resolve
-      await new Promise(resolve => setTimeout(resolve, 10));
-      expect(logger.error).toHaveBeenCalledWith(
-        expect.stringContaining('email chào mừng'),
-        expect.any(String)
-      );
-    });
-  });
-
-  // ============================================================
   // _invalidateBannerCache — cacheStore null → return sớm (line 69)
   // ============================================================
 
@@ -552,7 +383,7 @@ describe('ContentService', () => {
 
       // Không throw — _invalidateBannerCache returns sớm tại line 69
       await expect(
-        svcNoCacheStore.createBanner({ payload: { title: 'Test' } })
+        svcNoCacheStore.createBanner({ payload: { title: 'Test' } }),
       ).resolves.toMatchObject({ id: 10 });
 
       // cacheStore.del không bao giờ được gọi vì cacheStore null
@@ -584,10 +415,13 @@ describe('ContentService', () => {
       contentRepository.findNewsBySlug.mockResolvedValue(null);
       contentRepository.createNews.mockResolvedValue({ id: 20, isPublished: false });
 
-      await service.createNews({ userId: 1, payload: { title: 'Draft', slug: 'draft', isPublished: false } });
+      await service.createNews({
+        userId: 1,
+        payload: { title: 'Draft', slug: 'draft', isPublished: false },
+      });
 
       expect(contentRepository.createNews).toHaveBeenCalledWith(
-        expect.objectContaining({ isPublished: false })
+        expect.objectContaining({ isPublished: false }),
       );
     });
 
@@ -595,10 +429,13 @@ describe('ContentService', () => {
       contentRepository.findNewsBySlug.mockResolvedValue(null);
       contentRepository.createNews.mockResolvedValue({ id: 21, isPublished: true });
 
-      await service.createNews({ userId: 2, payload: { title: 'Published', slug: 'published', isPublished: true } });
+      await service.createNews({
+        userId: 2,
+        payload: { title: 'Published', slug: 'published', isPublished: true },
+      });
 
       expect(contentRepository.createNews).toHaveBeenCalledWith(
-        expect.objectContaining({ isPublished: true })
+        expect.objectContaining({ isPublished: true }),
       );
     });
   });
@@ -628,14 +465,20 @@ describe('ContentService', () => {
       emailGateway.sendAdminFeedbackNotification.mockRejectedValue(new Error('smtp error'));
 
       const result = await service.sendFeedback({
-        payload: { name: 'Nguyễn', email: 'ng@test.com', phone: '0123', subject: 'Góp ý', content: 'Nội dung' },
+        payload: {
+          name: 'Nguyễn',
+          email: 'ng@test.com',
+          phone: '0123',
+          subject: 'Góp ý',
+          content: 'Nội dung',
+        },
       });
 
       expect(result).toBeDefined();
-      await new Promise(resolve => setTimeout(resolve, 10));
+      await new Promise((resolve) => setTimeout(resolve, 10));
       expect(service.logger.error).toHaveBeenCalledWith(
         expect.stringContaining('email thông báo phản hồi'),
-        expect.any(String)
+        expect.any(String),
       );
     });
   });

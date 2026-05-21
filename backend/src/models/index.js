@@ -9,7 +9,6 @@ const ProductAttribute = require('@models/product-attribute');
 const ProductVariant = require('@models/product-variant');
 const ProductSpecification = require('@models/product-specification');
 const Review = require('@models/review');
-const ReviewFeedback = require('@models/review-feedback');
 const Cart = require('@models/cart');
 const CartItem = require('@models/cart-item');
 const Order = require('@models/order');
@@ -21,23 +20,17 @@ const AttributeGroup = require('@models/attribute-group');
 const AttributeValue = require('@models/attribute-value');
 const ProductAttributeGroup = require('@models/product-attribute-group');
 const News = require('@models/news');
-const NewsletterSubscriber = require('@models/newsletter-subscriber');
 const Feedback = require('@models/feedback');
 const ChatMessage = require('@models/chat-message');
 const Brand = require('@models/brand');
-const Collection = require('@models/collection');
-const ProductCollection = require('@models/product-collection');
 const SearchHistory = require('@models/search-history');
 const LoyaltyHistory = require('@models/loyalty-history');
 const RecentlyViewed = require('@models/recently-viewed');
 const Banner = require('@models/banner');
-const EmailCampaign = require('@models/email-campaign');
 // Models mới theo data_new.sql
 const ProductImage = require('@models/product-image');
 const InventoryLog = require('@models/inventory-log');
 const AuditLog = require('@models/audit-log');
-const ImportLog = require('@models/import-log');
-
 // =============================================
 // QUAN HỆ USER
 // =============================================
@@ -45,10 +38,6 @@ const ImportLog = require('@models/import-log');
 // User - Address (người dùng - địa chỉ)
 User.hasMany(Address, { foreignKey: 'userId', as: 'addresses' });
 Address.belongsTo(User, { foreignKey: 'userId' });
-
-// User - ImportLog (admin - lịch sử import sản phẩm)
-User.hasMany(ImportLog, { foreignKey: 'adminId', as: 'importLogs' });
-ImportLog.belongsTo(User, { foreignKey: 'adminId', as: 'admin' });
 
 // User - AuditLog (admin - nhật ký thao tác)
 User.hasMany(AuditLog, { foreignKey: 'adminId', as: 'auditLogs' });
@@ -120,12 +109,6 @@ Review.belongsTo(Product, { foreignKey: 'productId' });
 User.hasMany(Review, { foreignKey: 'userId', as: 'reviews' });
 Review.belongsTo(User, { foreignKey: 'userId', as: 'user' });
 
-// Review - ReviewFeedback (đánh giá - phản hồi đánh giá)
-Review.hasMany(ReviewFeedback, { foreignKey: 'reviewId', as: 'feedbacks' });
-ReviewFeedback.belongsTo(Review, { foreignKey: 'reviewId' });
-User.hasMany(ReviewFeedback, { foreignKey: 'userId' });
-ReviewFeedback.belongsTo(User, { foreignKey: 'userId' });
-
 // =============================================
 // QUAN HỆ CART & ORDER
 // =============================================
@@ -185,9 +168,15 @@ WarrantyPackage.belongsToMany(Product, {
   as: 'products',
 });
 ProductWarranty.belongsTo(Product, { foreignKey: 'productId', as: 'product' });
-ProductWarranty.belongsTo(WarrantyPackage, { foreignKey: 'warrantyPackageId', as: 'warrantyPackage' });
+ProductWarranty.belongsTo(WarrantyPackage, {
+  foreignKey: 'warrantyPackageId',
+  as: 'warrantyPackage',
+});
 Product.hasMany(ProductWarranty, { foreignKey: 'productId', as: 'productWarranties' });
-WarrantyPackage.hasMany(ProductWarranty, { foreignKey: 'warrantyPackageId', as: 'productWarranties' });
+WarrantyPackage.hasMany(ProductWarranty, {
+  foreignKey: 'warrantyPackageId',
+  as: 'productWarranties',
+});
 
 // =============================================
 // QUAN HỆ ATTRIBUTE
@@ -217,23 +206,6 @@ AttributeGroup.belongsToMany(Product, {
 
 Brand.hasMany(Product, { foreignKey: 'brandId', as: 'products' });
 Product.belongsTo(Brand, { foreignKey: 'brandId', as: 'brand' });
-
-// =============================================
-// QUAN HỆ COLLECTION
-// =============================================
-
-Product.belongsToMany(Collection, {
-  through: ProductCollection,
-  foreignKey: 'productId',
-  otherKey: 'collectionId',
-  as: 'collections',
-});
-Collection.belongsToMany(Product, {
-  through: ProductCollection,
-  foreignKey: 'collectionId',
-  otherKey: 'productId',
-  as: 'products',
-});
 
 // =============================================
 // QUAN HỆ INVENTORY LOG
@@ -283,7 +255,6 @@ module.exports = {
   ProductVariant,
   ProductSpecification,
   Review,
-  ReviewFeedback,
   Cart,
   CartItem,
   Order,
@@ -295,21 +266,16 @@ module.exports = {
   AttributeValue,
   ProductAttributeGroup,
   News,
-  NewsletterSubscriber,
   ChatMessage,
   Feedback,
   DiscountCode,
   Brand,
-  Collection,
-  ProductCollection,
   SearchHistory,
   LoyaltyHistory,
   RecentlyViewed,
   Banner,
-  EmailCampaign,
   // Models mới
   ProductImage,
   InventoryLog,
   AuditLog,
-  ImportLog,
 };

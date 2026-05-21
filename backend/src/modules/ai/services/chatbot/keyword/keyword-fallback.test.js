@@ -4,7 +4,12 @@
  * Tập trung vào lines 41-47 (versionNumbers filter empty → productName extraction).
  */
 
-jest.mock('@utils/logger', () => ({ debug: jest.fn(), warn: jest.fn(), info: jest.fn(), error: jest.fn() }));
+jest.mock('@utils/logger', () => ({
+  debug: jest.fn(),
+  warn: jest.fn(),
+  info: jest.fn(),
+  error: jest.fn(),
+}));
 jest.mock('@modules/ai/services/chatbot/language/language-detector', () => ({
   detectLanguage: jest.fn((text) => {
     if (/[àáâãèéêìíòóôõùúýăđơưÀÁÂÃÈÉÊÌÍÒÓÔÕÙÚÝĂĐƠƯẠ-ỹ]/.test(text)) return 'vi';

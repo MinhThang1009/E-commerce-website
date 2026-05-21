@@ -1,0 +1,21 @@
+\begin{center}
+\textbf{\large{Tóm tắt}}
+\end{center}
+\addcontentsline{toc}{chapter}{Tóm tắt}
+
+\begin{small}
+
+Thương mại điện tử (TMĐT) tại Việt Nam đang phát triển mạnh mẽ với tốc độ tăng trưởng trung bình 20--25\% mỗi năm. Tuy nhiên, việc cung cấp dịch vụ tư vấn sản phẩm tự động, chính xác và kịp thời vẫn là thách thức lớn với các nền tảng TMĐT hiện tại. Khóa luận này trình bày quá trình xây dựng hệ thống \textbf{TechStore} --- một website thương mại điện tử fullstack chuyên bán thiết bị công nghệ (laptop, điện thoại thông minh, máy tính bảng, đồng hồ thông minh), tích hợp AI Chatbot sử dụng kỹ thuật RAG (Retrieval-Augmented Generation) để hỗ trợ tư vấn sản phẩm theo thời gian thực.
+
+Hệ thống được xây dựng với kiến trúc \textbf{Modular Monolith}, backend gồm \textbf{19 modules} độc lập sử dụng Node.js 20 + Express 4 + Sequelize 6 + MySQL 8, frontend gồm \textbf{14 features} với React 18 + TypeScript + Vite 5. Backend áp dụng Dependency Injection pattern, EventBus pub/sub nội bộ và UnitOfWork (SELECT FOR UPDATE) để đảm bảo tính nhất quán dữ liệu trong các tình huống đồng thời.
+
+Hệ thống AI Chatbot triển khai pipeline RAG 6 bước: rate limiting, cache kiểm tra, smart product filtering, context augmentation, LLM generation (qua OpenAI-compatible API), và response caching. Vector store lưu trữ embedding 1024 chiều cho từng sản phẩm, sử dụng Hybrid Search kết hợp cosine similarity (semantic) và BM25-inspired keyword search. Chuỗi fallback embedding: Jina v3 → HuggingFace multilingual-e5-large-instruct → multilingual-e5-large.
+
+Các tính năng nổi bật bao gồm: xác thực JWT (access token 15 phút + refresh token 30 ngày) kết hợp Google OAuth 2.0; tích hợp thanh toán MoMo và VNPay qua IPN webhook; hệ thống quản lý tồn kho chống race condition; chương trình loyalty points; và hỗ trợ đa ngôn ngữ Việt/Anh. Cơ sở dữ liệu MySQL 8 với \textbf{35 bảng} và \textbf{72 migrations} đảm bảo tính nhất quán schema.
+
+Hệ thống đạt \textbf{5.694 test cases} với coverage 99\% (unit tests), bao gồm unit, integration, API HTTP và E2E tests. CI/CD được thiết lập với GitHub Actions, Husky pre-commit hooks và ESLint strict mode.
+
+\vspace*{0.5cm}
+\textbf{Từ khóa}: Thương mại điện tử, RAG, AI Chatbot, Node.js, React, MySQL, Modular Monolith, Vector Search, MoMo, VNPay.
+
+\end{small}

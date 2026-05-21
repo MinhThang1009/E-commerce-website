@@ -6,9 +6,22 @@
  */
 
 const CSV_HEADERS = [
-  'name', 'slug', 'short_description', 'base_price', 'category_slug',
-  'brand', 'status', 'stock_quantity', 'sku', 'weight_kg', 'image_urls',
-  'spec_cpu', 'spec_ram', 'spec_storage', 'spec_display', 'spec_battery',
+  'name',
+  'slug',
+  'short_description',
+  'base_price',
+  'category_slug',
+  'brand',
+  'status',
+  'stock_quantity',
+  'sku',
+  'weight_kg',
+  'image_urls',
+  'spec_cpu',
+  'spec_ram',
+  'spec_storage',
+  'spec_display',
+  'spec_battery',
 ];
 
 /**
@@ -53,7 +66,9 @@ function parseCsv(content) {
     const values = parseCsvLine(lines[i]);
     if (values.every((v) => v === '')) continue;
     const row = {};
-    headers.forEach((h, idx) => { row[h] = values[idx] !== undefined ? values[idx] : ''; });
+    headers.forEach((h, idx) => {
+      row[h] = values[idx] !== undefined ? values[idx] : '';
+    });
     row._lineNumber = i + 1;
     rows.push(row);
   }
@@ -73,7 +88,11 @@ function validateRow(row, rowIndex) {
   else if (parseFloat(row.base_price) < 0)
     errors.push({ row: rowIndex, field: 'base_price', message: 'base_price không được âm' });
   if (!row.category_slug || !String(row.category_slug).trim())
-    errors.push({ row: rowIndex, field: 'category_slug', message: 'Trường category_slug là bắt buộc' });
+    errors.push({
+      row: rowIndex,
+      field: 'category_slug',
+      message: 'Trường category_slug là bắt buộc',
+    });
   return errors;
 }
 

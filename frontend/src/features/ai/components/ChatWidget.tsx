@@ -26,7 +26,7 @@ import {
   useTrackChatbotAnalyticsMutation,
   ChatbotResponse,
   ProductRecommendation,
-} from '../services/chatbot-api';
+} from '../api/chatbot-api';
 
 import { useChatWidget } from '../hooks/use-chat-widget';
 import {

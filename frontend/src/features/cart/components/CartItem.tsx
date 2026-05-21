@@ -8,7 +8,7 @@ import React from 'react';
 import { Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { buildRoute } from '@/routes/paths';
-import { toast } from '@/utils/toast';
+import { useNotifications } from '@/hooks/use-notifications';
 import { useCartStore } from '@/stores/cart-store';
 import { useAuthStore } from '@/stores/auth-store';
 import { useUpdateCartItemMutation, useRemoveCartItemMutation } from '../api/cart-api';
@@ -29,6 +29,7 @@ const CartItem: React.FC<CartItemProps> = ({
   maxStock,
 }) => {
   const { t } = useTranslation();
+  const { showNotification } = useNotifications();
   const effectiveMaxStock = maxStock ?? item.stockQuantity;
   const updateQuantity = useCartStore((s) => s.updateQuantity);
   const removeItem = useCartStore((s) => s.removeItem);
@@ -41,22 +42,28 @@ const CartItem: React.FC<CartItemProps> = ({
     if (newQuantity <= 0 || newQuantity > 99) return;
 
     if (effectiveMaxStock && newQuantity > effectiveMaxStock) {
-      toast.error(t('cart.notifications.stockLimit', { count: effectiveMaxStock }));
+      showNotification({
+        message: t('cart.notifications.stockLimit', { count: effectiveMaxStock }),
+        type: 'error',
+      });
       return;
     }
 
     try {
       if (item.id && typeof item.id === 'string') {
         await updateCartItem({ id: item.id, data: { quantity: newQuantity } });
-        toast.success(t('cart.notifications.quantityUpdated'));
+        showNotification({ message: t('cart.notifications.quantityUpdated'), type: 'success' });
       } else {
         updateQuantity({ id: item.id, quantity: newQuantity });
-        toast.success(t('cart.notifications.quantityUpdatedOffline'));
+        showNotification({
+          message: t('cart.notifications.quantityUpdatedOffline'),
+          type: 'success',
+        });
       }
     } catch (error) {
       console.error('Lỗi cập nhật sản phẩm trong giỏ:', error);
       updateQuantity({ id: item.id, quantity: newQuantity });
-      toast.error(t('cart.notifications.updateServerError'));
+      showNotification({ message: t('cart.notifications.updateServerError'), type: 'error' });
     }
   };
 
@@ -64,15 +71,15 @@ const CartItem: React.FC<CartItemProps> = ({
     try {
       if (item.id && typeof item.id === 'string') {
         await removeCartItem(item.id);
-        toast.success(t('cart.notifications.itemRemoved'));
+        showNotification({ message: t('cart.notifications.itemRemoved'), type: 'success' });
       } else {
         removeItem(item.id);
-        toast.success(t('cart.notifications.itemRemoved'));
+        showNotification({ message: t('cart.notifications.itemRemoved'), type: 'success' });
       }
     } catch (error) {
       console.error('Lỗi xóa sản phẩm khỏi giỏ:', error);
       removeItem(item.id);
-      toast.error(t('cart.notifications.removeServerError'));
+      showNotification({ message: t('cart.notifications.removeServerError'), type: 'error' });
     }
   };
 
@@ -100,12 +107,17 @@ const CartItem: React.FC<CartItemProps> = ({
         </div>
 
         {item.attributes && Object.keys(item.attributes).length > 0 && (
-          <div className="mt-1 text-sm text-neutral-500 dark:text-neutral-400">
-            {Object.entries(item.attributes).map(([key, value]) => (
-              <span key={key} className="mr-3">
-                {key}: {value}
-              </span>
-            ))}
+          <div className="mt-1 flex flex-wrap gap-1">
+            {Object.entries(item.attributes)
+              .filter(([, value]) => value)
+              .map(([key, value]) => (
+                <span
+                  key={key}
+                  className="inline-flex items-center px-2 py-0.5 rounded-full text-xs bg-neutral-100 dark:bg-neutral-700 text-neutral-600 dark:text-neutral-300"
+                >
+                  {String(value)}
+                </span>
+              ))}
           </div>
         )}
 

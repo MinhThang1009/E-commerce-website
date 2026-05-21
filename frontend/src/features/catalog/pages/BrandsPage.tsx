@@ -8,6 +8,7 @@ import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { localizeField } from '@/utils/localize';
+import { proxyImg } from '@/utils/proxy-img';
 import { buildRoute } from '@/routes/paths';
 import { useGetBrandsQuery } from '../api/brand-api';
 import { PageLayout } from '@/components/layout/PageLayout';
@@ -23,7 +24,6 @@ const SIMPLE_ICONS_SLUGS: Record<string, string> = {
   HP: 'hp',
   LENOVO: 'lenovo',
   OPPO: 'oppo',
-  REALME: 'realme',
   ACER: 'acer',
   LG: 'lg',
   SONY: 'sony',
@@ -111,20 +111,27 @@ const BrandsPage: React.FC = () => {
                 <div className="h-20 flex items-center justify-center mb-4 transition-transform group-hover:scale-110 duration-500">
                   {(() => {
                     const brandName = localizeField(brand, 'name', i18n.language);
-                    // API trả về logoUrl, không phải logo
                     const logoSrc = brand.logoUrl || brand.logo || getBrandLogoUrl(brandName);
-                    return logoSrc ? (
-                      <img
-                        src={logoSrc}
-                        alt={brandName}
-                        className="max-h-12 max-w-full dark:brightness-0 dark:invert opacity-70 group-hover:opacity-100 transition-all duration-300"
-                        onError={(e) => {
-                          e.currentTarget.style.display = 'none';
-                        }}
-                      />
-                    ) : (
-                      <div className="w-16 h-16 rounded-full bg-primary-100 dark:bg-primary-900/30 text-primary-600 dark:text-primary-400 flex items-center justify-center text-2xl font-bold">
-                        {brandName.charAt(0)}
+                    if (!logoSrc) {
+                      return (
+                        <div className="w-16 h-16 rounded-full bg-primary-100 dark:bg-primary-900/30 text-primary-600 dark:text-primary-400 flex items-center justify-center text-2xl font-bold">
+                          {brandName.charAt(0)}
+                        </div>
+                      );
+                    }
+                    return (
+                      <div className="px-3 py-2 rounded-lg dark:bg-white/90 transition-colors">
+                        <img
+                          src={proxyImg(logoSrc)}
+                          alt={brandName}
+                          className="max-h-10 max-w-[120px] object-contain opacity-80 group-hover:opacity-100 transition-opacity duration-300"
+                          onError={(e) => {
+                            const parent = e.currentTarget.parentElement;
+                            if (parent) {
+                              parent.innerHTML = `<div class="w-12 h-12 rounded-full bg-neutral-200 text-neutral-600 flex items-center justify-center text-xl font-bold">${brandName.charAt(0)}</div>`;
+                            }
+                          }}
+                        />
                       </div>
                     );
                   })()}

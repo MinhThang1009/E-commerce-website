@@ -27,10 +27,22 @@ const uploadImportFile = importUpload.single('file');
 
 const getImportTemplate = catchAsync(async (_req, res) => {
   const exampleRow = [
-    'iPhone 17 Pro Max', '', 'Smartphone cao cấp mới nhất của Apple',
-    '36990000', 'dien-thoai', 'Apple', 'active', '50', 'IPH17PM-256-BLK',
-    '0.228', '/uploads/products/iphone17-pro-max.jpg',
-    'Apple A19 Pro', '8GB', '256GB', '6.9" Super Retina XDR', '4685 mAh',
+    'iPhone 17 Pro Max',
+    '',
+    'Smartphone cao cấp mới nhất của Apple',
+    '36990000',
+    'dien-thoai',
+    'Apple',
+    'active',
+    '50',
+    'IPH17PM-256-BLK',
+    '0.228',
+    '/uploads/products/iphone17-pro-max.jpg',
+    'Apple A19 Pro',
+    '8GB',
+    '256GB',
+    '6.9" Super Retina XDR',
+    '4685 mAh',
   ].join(',');
 
   res.setHeader('Content-Type', 'text/csv; charset=utf-8');
@@ -54,18 +66,16 @@ const importProducts = catchAsync(async (req, res, next) => {
   res.status(200).json({ status: 'success', data: result });
 });
 
-const getImportHistory = catchAsync(async (req, res) => {
-  const data = await importService.getImportHistory(req.query);
-  res.status(200).json({ status: 'success', data });
-});
-
 const exportProducts = catchAsync(async (req, res) => {
   const format = req.query.format === 'json' ? 'json' : 'csv';
   const data = await importService.exportProducts(format);
 
   if (format === 'json') {
     res.setHeader('Content-Type', 'application/json');
-    res.setHeader('Content-Disposition', `attachment; filename="products-export-${Date.now()}.json"`);
+    res.setHeader(
+      'Content-Disposition',
+      `attachment; filename="products-export-${Date.now()}.json"`,
+    );
     return res.json(data);
   }
 
@@ -74,4 +84,4 @@ const exportProducts = catchAsync(async (req, res) => {
   res.send(data);
 });
 
-module.exports = { uploadImportFile, getImportTemplate, importProducts, getImportHistory, exportProducts };
+module.exports = { uploadImportFile, getImportTemplate, importProducts, exportProducts };

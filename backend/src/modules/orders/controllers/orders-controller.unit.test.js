@@ -112,7 +112,7 @@ describe('OrdersController.createOrder', () => {
 
     // req.cookies && req.cookies.sessionId → null && ... → null
     expect(ordersService.createOrder).toHaveBeenCalledWith(
-      expect.objectContaining({ sessionIdCookie: null })
+      expect.objectContaining({ sessionIdCookie: null }),
     );
   });
 
@@ -459,7 +459,7 @@ describe('OrdersController.repayOrder', () => {
     await controller.repayOrder(req, res, makeNext());
 
     expect(ordersService.repayOrder).toHaveBeenCalledWith(
-      expect.objectContaining({ originUrl: 'https://frontend.example.com' })
+      expect.objectContaining({ originUrl: 'https://frontend.example.com' }),
     );
   });
 
@@ -549,7 +549,10 @@ describe('OrdersController.trackOrder', () => {
 
     await controller.trackOrder(req, res, next);
 
-    expect(ordersService.trackOrder).toHaveBeenCalledWith({ orderNumber: 'ORD-001', phone: '0901234567' });
+    expect(ordersService.trackOrder).toHaveBeenCalledWith({
+      orderNumber: 'ORD-001',
+      phone: '0901234567',
+    });
     expect(res.status).toHaveBeenCalledWith(200);
     expect(res.json).toHaveBeenCalledWith({ status: 'success', data: fakeTrackData });
     expect(next).not.toHaveBeenCalled();
@@ -661,7 +664,9 @@ describe('OrdersController.estimateShipping', () => {
     const calcError = new Error('Invalid province code');
     calcError.statusCode = 400;
     const ordersService = makeMockOrdersService({
-      estimateShipping: jest.fn().mockImplementation(() => { throw calcError; }),
+      estimateShipping: jest.fn().mockImplementation(() => {
+        throw calcError;
+      }),
     });
     const controller = new OrdersController({ ordersService });
     const req = makeReq({ query: { province: 'INVALID' } });

@@ -15,7 +15,9 @@ function makeUserModel(defaults = {}) {
 
 function makeLoyaltyHistoryModel(defaults = {}) {
   return {
-    findAndCountAll: jest.fn().mockResolvedValue(defaults.findAndCountAll ?? { count: 0, rows: [] }),
+    findAndCountAll: jest
+      .fn()
+      .mockResolvedValue(defaults.findAndCountAll ?? { count: 0, rows: [] }),
     create: jest.fn().mockResolvedValue(defaults.create ?? {}),
   };
 }
@@ -51,7 +53,7 @@ describe('SequelizeLoyaltyRepository — findUserPointsById', () => {
       1,
       expect.objectContaining({
         attributes: ['id', 'loyaltyPoints'],
-      })
+      }),
     );
     expect(result).toBe(mockUser);
   });
@@ -65,7 +67,7 @@ describe('SequelizeLoyaltyRepository — findUserPointsById', () => {
 
     expect(User.findByPk).toHaveBeenCalledWith(
       5,
-      expect.objectContaining({ lock: 'UPDATE', transaction: {} })
+      expect.objectContaining({ lock: 'UPDATE', transaction: {} }),
     );
   });
 
@@ -103,7 +105,10 @@ describe('SequelizeLoyaltyRepository — decrementPoints', () => {
 
     await repo.decrementPoints(fakeUser, 50, opts);
 
-    expect(fakeUser.decrement).toHaveBeenCalledWith('loyaltyPoints', { by: 50, transaction: { id: 't1' } });
+    expect(fakeUser.decrement).toHaveBeenCalledWith('loyaltyPoints', {
+      by: 50,
+      transaction: { id: 't1' },
+    });
   });
 });
 

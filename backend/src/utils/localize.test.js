@@ -74,14 +74,26 @@ describe('localizeEntity — product', () => {
 
 describe('localizeEntity — category', () => {
   test('locale=vi → nameVi', () => {
-    const cat = { id: 1, nameVi: 'Điện thoại', nameEn: 'Phones', descriptionVi: 'Mô tả', descriptionEn: 'Desc' };
+    const cat = {
+      id: 1,
+      nameVi: 'Điện thoại',
+      nameEn: 'Phones',
+      descriptionVi: 'Mô tả',
+      descriptionEn: 'Desc',
+    };
     const result = localizeEntity(cat, 'vi', 'category');
     expect(result.name).toBe('Điện thoại');
     expect(result.description).toBe('Mô tả');
   });
 
   test('locale=en → nameEn', () => {
-    const cat = { id: 1, nameVi: 'Điện thoại', nameEn: 'Phones', descriptionVi: 'Mô tả', descriptionEn: 'Desc' };
+    const cat = {
+      id: 1,
+      nameVi: 'Điện thoại',
+      nameEn: 'Phones',
+      descriptionVi: 'Mô tả',
+      descriptionEn: 'Desc',
+    };
     const result = localizeEntity(cat, 'en', 'category');
     expect(result.name).toBe('Phones');
   });
@@ -152,7 +164,7 @@ describe('localizeEntity — branch coverage (lines 47, 56)', () => {
 
 describe('FIELD_MAPS', () => {
   test('tất cả supported types tồn tại', () => {
-    ['product', 'category', 'brand', 'collection', 'news', 'banner'].forEach(type => {
+    ['product', 'category', 'brand', 'news', 'banner'].forEach((type) => {
       expect(FIELD_MAPS[type]).toBeDefined();
       expect(FIELD_MAPS[type].length).toBeGreaterThan(0);
     });

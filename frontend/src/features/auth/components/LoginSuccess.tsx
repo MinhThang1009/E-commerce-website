@@ -6,7 +6,7 @@
  */
 import React, { useEffect } from 'react';
 import { useAuthStore } from '@/stores/auth-store';
-import { useNotifications } from '../hooks/use-notifications';
+import { useNotifications } from '@hooks/use-notifications';
 import { useTranslation } from 'react-i18next';
 
 const LoginSuccess: React.FC = () => {

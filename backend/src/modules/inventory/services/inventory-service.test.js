@@ -70,6 +70,7 @@ describe('InventoryService', () => {
           newStock: 30,
           createdBy: 5,
         }),
+        expect.objectContaining({}),
       );
       expect(result.newStock).toBe(30);
     });

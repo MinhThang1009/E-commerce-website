@@ -15,6 +15,7 @@ const {
   Cart,
   CartItem,
   LoyaltyHistory,
+  DiscountCode,
 } = require('@models');
 const { Op } = require('sequelize');
 
@@ -97,6 +98,11 @@ afterAll(async () => {
   });
   await OrderItem.destroy({ where: {}, force: true });
   await Order.destroy({ where: { number: { [Op.like]: `INT-CONCURRENT-${TS}%` } }, force: true });
+  // Xóa discount codes test
+  await DiscountCode.destroy({
+    where: { code: { [Op.like]: `INT-CONC-DC-${TS}%` } },
+    force: true,
+  });
   if (variant) await variant.destroy({ force: true });
   if (product) await product.destroy({ force: true });
   if (cat) await Category.destroy({ where: { id: cat.id } });
@@ -214,5 +220,97 @@ describe('Concurrent cart add — cùng item', () => {
 
     await CartItem.destroy({ where: { cartId: cart.id }, force: true });
     await cart.destroy({ force: true });
+  });
+});
+
+// ─────────────────────────────────────────────────────────────
+describe('Concurrent apply discount code — usageLimit=1', () => {
+  test('3 request đồng thời áp dụng mã usageLimit=1 → chỉ 1 thành công', async () => {
+    // Tạo mã giảm giá chỉ dùng được 1 lần
+    const discountCode = await DiscountCode.create({
+      code: `INT-CONC-DC-${TS}-LIMIT1`,
+      type: 'fixed',
+      value: 50_000,
+      minOrderAmount: 0,
+      usageLimit: 1,
+      usedCount: 0,
+      isActive: true,
+      startDate: new Date(Date.now() - 86_400_000),
+      endDate: new Date(Date.now() + 86_400_000),
+    });
+
+    // Mỗi attempt: SELECT FOR UPDATE row discount code, kiểm tra limit, increment usedCount
+    const attemptApply = () =>
+      sequelize.transaction(async (t) => {
+        const dc = await DiscountCode.findByPk(discountCode.id, {
+          lock: t.LOCK.UPDATE,
+          transaction: t,
+        });
+
+        if (dc.usedCount >= dc.usageLimit) {
+          throw new Error('USAGE_LIMIT_EXCEEDED');
+        }
+
+        await dc.increment('usedCount', { by: 1, transaction: t });
+        return dc;
+      });
+
+    // Chạy 3 attempt song song — DB lock đảm bảo chỉ 1 transaction lock được row
+    const results = await Promise.allSettled([attemptApply(), attemptApply(), attemptApply()]);
+
+    const succeeded = results.filter((r) => r.status === 'fulfilled');
+    const failed = results.filter((r) => r.status === 'rejected');
+
+    // Đúng 1 thành công
+    expect(succeeded.length).toBe(1);
+    // Ít nhất 2 thất bại
+    expect(failed.length).toBeGreaterThanOrEqual(2);
+
+    // usedCount phải đúng 1 sau khi chỉ 1 attempt thành công
+    await discountCode.reload();
+    expect(discountCode.usedCount).toBe(1);
+  });
+});
+
+// ─────────────────────────────────────────────────────────────
+describe('Concurrent loyalty redeem — điểm không âm', () => {
+  test('2 request đồng thời đổi 30 điểm, balance=50 → chỉ 1 thành công, điểm không âm', async () => {
+    // Gán 50 điểm cho user1
+    await user1.update({ loyaltyPoints: 50 });
+    await user1.reload();
+    expect(user1.loyaltyPoints).toBe(50);
+
+    // Mỗi attempt: SELECT FOR UPDATE user row, kiểm tra balance, trừ điểm
+    const attemptRedeem = (points) =>
+      sequelize.transaction(async (t) => {
+        const { User: UserModel } = require('@models');
+        const u = await UserModel.findByPk(user1.id, {
+          lock: t.LOCK.UPDATE,
+          transaction: t,
+        });
+
+        if (u.loyaltyPoints < points) {
+          throw new Error('INSUFFICIENT_POINTS');
+        }
+
+        await u.decrement('loyaltyPoints', { by: points, transaction: t });
+        return u;
+      });
+
+    // 2 attempt đồng thời — chỉ 1 có đủ điểm (50 >= 30), attempt thứ 2 thấy 20 < 30
+    const results = await Promise.allSettled([attemptRedeem(30), attemptRedeem(30)]);
+
+    const succeeded = results.filter((r) => r.status === 'fulfilled');
+    const failed = results.filter((r) => r.status === 'rejected');
+
+    // Đúng 1 thành công
+    expect(succeeded.length).toBe(1);
+    expect(failed.length).toBe(1);
+
+    // Điểm còn lại phải >= 0 (không âm)
+    await user1.reload();
+    expect(user1.loyaltyPoints).toBeGreaterThanOrEqual(0);
+    // Cụ thể: 50 - 30 = 20
+    expect(user1.loyaltyPoints).toBe(20);
   });
 });

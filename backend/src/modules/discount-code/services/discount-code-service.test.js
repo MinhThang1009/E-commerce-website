@@ -88,8 +88,9 @@ describe('discountCodeService.getDiscountCodeById', () => {
   it('ném AppError 404 khi không tìm thấy', async () => {
     discountCodeRepository.findById.mockResolvedValue(null);
 
-    await expect(discountCodeService.getDiscountCodeById('not-exist'))
-      .rejects.toMatchObject({ statusCode: 404 });
+    await expect(discountCodeService.getDiscountCodeById('not-exist')).rejects.toMatchObject({
+      statusCode: 404,
+    });
   });
 });
 
@@ -106,7 +107,12 @@ describe('discountCodeService.createDiscountCode', () => {
     );
 
     expect(result.id).toBe('new-id');
-    expect(AdminAuditService.logDiscountCodeAction).toHaveBeenCalledWith(actor, 'CREATE', 'new-id', 'SUMMER20');
+    expect(AdminAuditService.logDiscountCodeAction).toHaveBeenCalledWith(
+      actor,
+      'CREATE',
+      'new-id',
+      'SUMMER20',
+    );
   });
 
   it('ném AppError 400 khi mã đã tồn tại', async () => {
@@ -127,7 +133,12 @@ describe('discountCodeService.updateDiscountCode', () => {
     const actor = { id: 1 };
     await discountCodeService.updateDiscountCode('code-id-1', { isActive: true }, actor);
 
-    expect(AdminAuditService.logDiscountCodeAction).toHaveBeenCalledWith(actor, 'UPDATE', 'code-id-1', code.code);
+    expect(AdminAuditService.logDiscountCodeAction).toHaveBeenCalledWith(
+      actor,
+      'UPDATE',
+      'code-id-1',
+      code.code,
+    );
   });
 
   it('audit action DEACTIVATE khi isActive chuyển từ true → false', async () => {
@@ -138,7 +149,12 @@ describe('discountCodeService.updateDiscountCode', () => {
     const actor = { id: 1 };
     await discountCodeService.updateDiscountCode('code-id-1', { isActive: false }, actor);
 
-    expect(AdminAuditService.logDiscountCodeAction).toHaveBeenCalledWith(actor, 'DEACTIVATE', 'code-id-1', code.code);
+    expect(AdminAuditService.logDiscountCodeAction).toHaveBeenCalledWith(
+      actor,
+      'DEACTIVATE',
+      'code-id-1',
+      code.code,
+    );
   });
 
   it('ném 400 khi đổi code thành mã đã tồn tại', async () => {
@@ -161,20 +177,31 @@ describe('discountCodeService.deleteDiscountCode', () => {
     await discountCodeService.deleteDiscountCode('code-id-1', actor);
 
     expect(discountCodeRepository.remove).toHaveBeenCalledWith(code);
-    expect(AdminAuditService.logDiscountCodeAction).toHaveBeenCalledWith(actor, 'DELETE', 'code-id-1', code.code);
+    expect(AdminAuditService.logDiscountCodeAction).toHaveBeenCalledWith(
+      actor,
+      'DELETE',
+      'code-id-1',
+      code.code,
+    );
   });
 
   it('ném 404 khi không tìm thấy code', async () => {
     discountCodeRepository.findById.mockResolvedValue(null);
 
-    await expect(discountCodeService.deleteDiscountCode('not-exist', {}))
-      .rejects.toMatchObject({ statusCode: 404 });
+    await expect(discountCodeService.deleteDiscountCode('not-exist', {})).rejects.toMatchObject({
+      statusCode: 404,
+    });
   });
 });
 
 describe('discountCodeService.applyDiscountCode', () => {
   it('tính đúng tiền giảm kiểu percent', async () => {
-    const code = makeCode({ type: 'percent', value: 20, maxDiscountAmount: 100000, minOrderAmount: 0 });
+    const code = makeCode({
+      type: 'percent',
+      value: 20,
+      maxDiscountAmount: 100000,
+      minOrderAmount: 0,
+    });
     discountCodeRepository.findOne.mockResolvedValue(code);
 
     const result = await discountCodeService.applyDiscountCode('SUMMER20', 500000);
@@ -183,7 +210,12 @@ describe('discountCodeService.applyDiscountCode', () => {
   });
 
   it('tính đúng tiền giảm kiểu fixed', async () => {
-    const code = makeCode({ type: 'fixed', value: 50000, minOrderAmount: 0, maxDiscountAmount: null });
+    const code = makeCode({
+      type: 'fixed',
+      value: 50000,
+      minOrderAmount: 0,
+      maxDiscountAmount: null,
+    });
     discountCodeRepository.findOne.mockResolvedValue(code);
 
     const result = await discountCodeService.applyDiscountCode('FIXED50', 300000);
@@ -192,7 +224,12 @@ describe('discountCodeService.applyDiscountCode', () => {
   });
 
   it('cap discountAmount không vượt quá orderAmount', async () => {
-    const code = makeCode({ type: 'fixed', value: 999999, minOrderAmount: 0, maxDiscountAmount: null });
+    const code = makeCode({
+      type: 'fixed',
+      value: 999999,
+      minOrderAmount: 0,
+      maxDiscountAmount: null,
+    });
     discountCodeRepository.findOne.mockResolvedValue(code);
 
     const result = await discountCodeService.applyDiscountCode('HUGE', 100000);
@@ -203,8 +240,9 @@ describe('discountCodeService.applyDiscountCode', () => {
   it('ném 400 khi mã không tồn tại', async () => {
     discountCodeRepository.findOne.mockResolvedValue(null);
 
-    await expect(discountCodeService.applyDiscountCode('INVALID', 100000))
-      .rejects.toMatchObject({ statusCode: 400 });
+    await expect(discountCodeService.applyDiscountCode('INVALID', 100000)).rejects.toMatchObject({
+      statusCode: 400,
+    });
   });
 
   it('ném 400 khi mã chưa đến ngày bắt đầu', async () => {
@@ -212,8 +250,9 @@ describe('discountCodeService.applyDiscountCode', () => {
     const code = makeCode({ startDate: futureDate });
     discountCodeRepository.findOne.mockResolvedValue(code);
 
-    await expect(discountCodeService.applyDiscountCode('FUTURE', 100000))
-      .rejects.toMatchObject({ statusCode: 400 });
+    await expect(discountCodeService.applyDiscountCode('FUTURE', 100000)).rejects.toMatchObject({
+      statusCode: 400,
+    });
   });
 
   it('ném 400 khi mã đã hết hạn', async () => {
@@ -221,23 +260,26 @@ describe('discountCodeService.applyDiscountCode', () => {
     const code = makeCode({ endDate: pastDate });
     discountCodeRepository.findOne.mockResolvedValue(code);
 
-    await expect(discountCodeService.applyDiscountCode('EXPIRED', 100000))
-      .rejects.toMatchObject({ statusCode: 400 });
+    await expect(discountCodeService.applyDiscountCode('EXPIRED', 100000)).rejects.toMatchObject({
+      statusCode: 400,
+    });
   });
 
   it('ném 400 khi đã đạt giới hạn lượt dùng', async () => {
     const code = makeCode({ usageLimit: 5, usedCount: 5 });
     discountCodeRepository.findOne.mockResolvedValue(code);
 
-    await expect(discountCodeService.applyDiscountCode('MAXED', 100000))
-      .rejects.toMatchObject({ statusCode: 400 });
+    await expect(discountCodeService.applyDiscountCode('MAXED', 100000)).rejects.toMatchObject({
+      statusCode: 400,
+    });
   });
 
   it('ném 400 khi đơn hàng không đủ giá trị tối thiểu', async () => {
     const code = makeCode({ minOrderAmount: 500000 });
     discountCodeRepository.findOne.mockResolvedValue(code);
 
-    await expect(discountCodeService.applyDiscountCode('MIN500', 100000))
-      .rejects.toMatchObject({ statusCode: 400 });
+    await expect(discountCodeService.applyDiscountCode('MIN500', 100000)).rejects.toMatchObject({
+      statusCode: 400,
+    });
   });
 });

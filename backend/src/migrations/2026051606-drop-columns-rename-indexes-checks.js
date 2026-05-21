@@ -17,7 +17,7 @@ async function columnExists(qi, table, column) {
     `SELECT COLUMN_NAME FROM INFORMATION_SCHEMA.COLUMNS
      WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = ? AND COLUMN_NAME = ?
      LIMIT 1`,
-    { replacements: [table, column] }
+    { replacements: [table, column] },
   );
   return rows.length > 0;
 }
@@ -27,7 +27,7 @@ async function tableExists(qi, table) {
     `SELECT TABLE_NAME FROM INFORMATION_SCHEMA.TABLES
      WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = ?
      LIMIT 1`,
-    { replacements: [table] }
+    { replacements: [table] },
   );
   return rows.length > 0;
 }
@@ -37,7 +37,7 @@ async function indexExists(qi, table, indexName) {
     `SELECT INDEX_NAME FROM INFORMATION_SCHEMA.STATISTICS
      WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = ? AND INDEX_NAME = ?
      LIMIT 1`,
-    { replacements: [table, indexName] }
+    { replacements: [table, indexName] },
   );
   return rows.length > 0;
 }
@@ -47,7 +47,7 @@ async function checkConstraintExists(qi, name) {
     `SELECT CONSTRAINT_NAME FROM INFORMATION_SCHEMA.TABLE_CONSTRAINTS
      WHERE TABLE_SCHEMA = DATABASE() AND CONSTRAINT_NAME = ? AND CONSTRAINT_TYPE = 'CHECK'
      LIMIT 1`,
-    { replacements: [name] }
+    { replacements: [name] },
   );
   return rows.length > 0;
 }
@@ -55,26 +55,42 @@ async function checkConstraintExists(qi, name) {
 // ── PARTIAL 7: Non-standard indexes cần rename ──────────────────────────────
 // [table, oldName, newName, columns, isUnique]
 const INDEX_RENAMES = [
-  ['product_variants', 'product_variants_is_default_idx', 'idx_product_variants_is_default', 'is_default', false],
-  ['products',         'products_brand_idx',              'idx_products_brand_id',            'brand_id',   false],
-  ['products',         'products_model_idx',              'idx_products_model',               'model',      false],
-  ['products',         'products_condition_idx',          'idx_products_condition',            'condition',  false],
+  [
+    'product_variants',
+    'product_variants_is_default_idx',
+    'idx_product_variants_is_default',
+    'is_default',
+    false,
+  ],
+  ['products', 'products_brand_idx', 'idx_products_brand_id', 'brand_id', false],
+  ['products', 'products_model_idx', 'idx_products_model', 'model', false],
+  ['products', 'products_condition_idx', 'idx_products_condition', 'condition', false],
 ];
 
 // ── PARTIAL 8: CHECK constraints cần rename ─────────────────────────────────
 // [table, oldName, newName, expression]
 // Kiểm tra thực tế từ DB: tên constraint hiện tại đặt theo column thay vì chk_ prefix
 const CHECK_RENAMES = [
-  ['products',          'rating_average',         'chk_products_rating_average',         'rating_average >= 0.00 AND rating_average <= 5.00'],
-  ['products',          'stock_quantity',          'chk_products_stock_quantity',          'stock_quantity >= 0'],
-  ['products',          'base_price',              'chk_products_base_price',              'base_price IS NULL OR base_price >= 0'],
-  ['products',          'warranty_months',         'chk_products_warranty_months',         'warranty_months >= 0'],
-  ['product_variants',  'stock_quantity',          'chk_product_variants_stock_quantity',  'stock_quantity >= 0'],
-  ['product_variants',  'price',                   'chk_product_variants_price',           'price IS NULL OR price >= 0'],
-  ['cart_items',        'quantity',                'chk_cart_items_quantity',               'quantity >= 1'],
-  ['cart_items',        'unit_price',              'chk_cart_items_unit_price',             'unit_price >= 0'],
-  ['order_items',       'quantity',                'chk_order_items_quantity',              'quantity >= 1'],
-  ['order_items',       'unit_price',              'chk_order_items_unit_price',            'unit_price >= 0'],
+  [
+    'products',
+    'rating_average',
+    'chk_products_rating_average',
+    'rating_average >= 0.00 AND rating_average <= 5.00',
+  ],
+  ['products', 'stock_quantity', 'chk_products_stock_quantity', 'stock_quantity >= 0'],
+  ['products', 'base_price', 'chk_products_base_price', 'base_price IS NULL OR base_price >= 0'],
+  ['products', 'warranty_months', 'chk_products_warranty_months', 'warranty_months >= 0'],
+  [
+    'product_variants',
+    'stock_quantity',
+    'chk_product_variants_stock_quantity',
+    'stock_quantity >= 0',
+  ],
+  ['product_variants', 'price', 'chk_product_variants_price', 'price IS NULL OR price >= 0'],
+  ['cart_items', 'quantity', 'chk_cart_items_quantity', 'quantity >= 1'],
+  ['cart_items', 'unit_price', 'chk_cart_items_unit_price', 'unit_price >= 0'],
+  ['order_items', 'quantity', 'chk_order_items_quantity', 'quantity >= 1'],
+  ['order_items', 'unit_price', 'chk_order_items_unit_price', 'unit_price >= 0'],
 ];
 
 module.exports = {
@@ -89,13 +105,13 @@ module.exports = {
       const hasIsActiveCol = await columnExists(queryInterface, 'users', 'is_active');
       if (hasIsActiveCol) {
         const [mismatch] = await queryInterface.sequelize.query(
-          'SELECT COUNT(*) AS cnt FROM `users` WHERE `isActive` != `is_active`'
+          'SELECT COUNT(*) AS cnt FROM `users` WHERE `isActive` != `is_active`',
         );
         if (mismatch[0].cnt > 0) {
           // Sync data trước khi drop
           console.log(`  SYNC: ${mismatch[0].cnt} rows có isActive != is_active, đồng bộ...`);
           await queryInterface.sequelize.query(
-            'UPDATE `users` SET `is_active` = `isActive` WHERE `isActive` != `is_active`'
+            'UPDATE `users` SET `is_active` = `isActive` WHERE `isActive` != `is_active`',
           );
         }
       }
@@ -111,7 +127,7 @@ module.exports = {
     // ══════════════════════════════════════════════════════════════════════════
     if (await columnExists(queryInterface, 'products', 'brand')) {
       const [nonEmpty] = await queryInterface.sequelize.query(
-        "SELECT COUNT(*) AS cnt FROM `products` WHERE `brand` IS NOT NULL AND `brand` != ''"
+        "SELECT COUNT(*) AS cnt FROM `products` WHERE `brand` IS NOT NULL AND `brand` != ''",
       );
       if (nonEmpty[0].cnt > 0) {
         console.log(`  WARNING: ${nonEmpty[0].cnt} products có brand không rỗng — skip drop`);
@@ -128,17 +144,21 @@ module.exports = {
     // ══════════════════════════════════════════════════════════════════════════
     if (await columnExists(queryInterface, 'products', 'sku')) {
       const [nonEmpty] = await queryInterface.sequelize.query(
-        "SELECT COUNT(*) AS cnt FROM `products` WHERE `sku` IS NOT NULL AND `sku` != ''"
+        "SELECT COUNT(*) AS cnt FROM `products` WHERE `sku` IS NOT NULL AND `sku` != ''",
       );
       if (nonEmpty[0].cnt > 0) {
         console.log(`  WARNING: ${nonEmpty[0].cnt} products có sku không rỗng — skip drop`);
       } else {
         // Drop index trên sku nếu có trước khi drop column
         if (await indexExists(queryInterface, 'products', 'idx_products_sku')) {
-          await queryInterface.sequelize.query('ALTER TABLE `products` DROP INDEX `idx_products_sku`');
+          await queryInterface.sequelize.query(
+            'ALTER TABLE `products` DROP INDEX `idx_products_sku`',
+          );
         }
         if (await indexExists(queryInterface, 'products', 'products_sku_idx')) {
-          await queryInterface.sequelize.query('ALTER TABLE `products` DROP INDEX `products_sku_idx`');
+          await queryInterface.sequelize.query(
+            'ALTER TABLE `products` DROP INDEX `products_sku_idx`',
+          );
         }
         await queryInterface.sequelize.query('ALTER TABLE `products` DROP COLUMN `sku`');
         console.log('  DROPPED: products.sku (redundant)');
@@ -160,14 +180,15 @@ module.exports = {
         continue;
       }
       if (await indexExists(queryInterface, table, oldName)) {
-        await queryInterface.sequelize.query(
-          `ALTER TABLE \`${table}\` DROP INDEX \`${oldName}\``
-        );
+        await queryInterface.sequelize.query(`ALTER TABLE \`${table}\` DROP INDEX \`${oldName}\``);
       }
-      const colList = cols.split(',').map((c) => `\`${c.trim()}\``).join(', ');
+      const colList = cols
+        .split(',')
+        .map((c) => `\`${c.trim()}\``)
+        .join(', ');
       const keyword = isUnique ? 'UNIQUE KEY' : 'INDEX';
       await queryInterface.sequelize.query(
-        `ALTER TABLE \`${table}\` ADD ${keyword} \`${newName}\` (${colList})`
+        `ALTER TABLE \`${table}\` ADD ${keyword} \`${newName}\` (${colList})`,
       );
       console.log(`  RENAMED INDEX: ${oldName} → ${newName}`);
     }
@@ -188,12 +209,12 @@ module.exports = {
       // Drop old constraint nếu tồn tại
       if (await checkConstraintExists(queryInterface, oldName)) {
         await queryInterface.sequelize.query(
-          `ALTER TABLE \`${table}\` DROP CONSTRAINT \`${oldName}\``
+          `ALTER TABLE \`${table}\` DROP CONSTRAINT \`${oldName}\``,
         );
       }
       // Add với tên mới
       await queryInterface.sequelize.query(
-        `ALTER TABLE \`${table}\` ADD CONSTRAINT \`${newName}\` CHECK (${expr})`
+        `ALTER TABLE \`${table}\` ADD CONSTRAINT \`${newName}\` CHECK (${expr})`,
       );
       console.log(`  RENAMED CHECK: ${oldName} → ${newName}`);
     }
@@ -205,10 +226,10 @@ module.exports = {
       if (!(await tableExists(queryInterface, table))) continue;
       if (await checkConstraintExists(queryInterface, newName)) {
         await queryInterface.sequelize.query(
-          `ALTER TABLE \`${table}\` DROP CONSTRAINT \`${newName}\``
+          `ALTER TABLE \`${table}\` DROP CONSTRAINT \`${newName}\``,
         );
         await queryInterface.sequelize.query(
-          `ALTER TABLE \`${table}\` ADD CONSTRAINT \`${oldName}\` CHECK (${expr})`
+          `ALTER TABLE \`${table}\` ADD CONSTRAINT \`${oldName}\` CHECK (${expr})`,
         );
         console.log(`  ROLLBACK CHECK: ${newName} → ${oldName}`);
       }
@@ -218,13 +239,14 @@ module.exports = {
     for (const [table, oldName, newName, cols, isUnique] of INDEX_RENAMES) {
       if (!(await tableExists(queryInterface, table))) continue;
       if (await indexExists(queryInterface, table, newName)) {
-        await queryInterface.sequelize.query(
-          `ALTER TABLE \`${table}\` DROP INDEX \`${newName}\``
-        );
-        const colList = cols.split(',').map((c) => `\`${c.trim()}\``).join(', ');
+        await queryInterface.sequelize.query(`ALTER TABLE \`${table}\` DROP INDEX \`${newName}\``);
+        const colList = cols
+          .split(',')
+          .map((c) => `\`${c.trim()}\``)
+          .join(', ');
         const keyword = isUnique ? 'UNIQUE KEY' : 'INDEX';
         await queryInterface.sequelize.query(
-          `ALTER TABLE \`${table}\` ADD ${keyword} \`${oldName}\` (${colList})`
+          `ALTER TABLE \`${table}\` ADD ${keyword} \`${oldName}\` (${colList})`,
         );
         console.log(`  ROLLBACK INDEX: ${newName} → ${oldName}`);
       }
@@ -233,7 +255,7 @@ module.exports = {
     // ── Rollback products.sku ─────────────────────────────────────────────
     if (!(await columnExists(queryInterface, 'products', 'sku'))) {
       await queryInterface.sequelize.query(
-        'ALTER TABLE `products` ADD COLUMN `sku` VARCHAR(100) NULL DEFAULT NULL'
+        'ALTER TABLE `products` ADD COLUMN `sku` VARCHAR(100) NULL DEFAULT NULL',
       );
       console.log('  RESTORED: products.sku');
     }
@@ -241,7 +263,7 @@ module.exports = {
     // ── Rollback products.brand ───────────────────────────────────────────
     if (!(await columnExists(queryInterface, 'products', 'brand'))) {
       await queryInterface.sequelize.query(
-        'ALTER TABLE `products` ADD COLUMN `brand` VARCHAR(255) NULL DEFAULT NULL'
+        'ALTER TABLE `products` ADD COLUMN `brand` VARCHAR(255) NULL DEFAULT NULL',
       );
       console.log('  RESTORED: products.brand');
     }
@@ -249,13 +271,11 @@ module.exports = {
     // ── Rollback users.isActive ───────────────────────────────────────────
     if (!(await columnExists(queryInterface, 'users', 'isActive'))) {
       await queryInterface.sequelize.query(
-        'ALTER TABLE `users` ADD COLUMN `isActive` TINYINT(1) NOT NULL DEFAULT 1'
+        'ALTER TABLE `users` ADD COLUMN `isActive` TINYINT(1) NOT NULL DEFAULT 1',
       );
       // Copy data từ is_active
       if (await columnExists(queryInterface, 'users', 'is_active')) {
-        await queryInterface.sequelize.query(
-          'UPDATE `users` SET `isActive` = `is_active`'
-        );
+        await queryInterface.sequelize.query('UPDATE `users` SET `isActive` = `is_active`');
       }
       console.log('  RESTORED: users.isActive');
     }

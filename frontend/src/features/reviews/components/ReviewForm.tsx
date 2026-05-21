@@ -6,7 +6,7 @@
  */
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { toast } from '@/utils/toast';
+import { useNotifications } from '@/hooks/use-notifications';
 import { useAuthStore } from '@/stores/auth-store';
 import { useCreateReviewMutation } from '../api/review-api';
 import { getErrorMsg } from '@/utils/error-utils';
@@ -19,6 +19,7 @@ interface ReviewFormProps {
 
 const ReviewForm: React.FC<ReviewFormProps> = ({ productId, onSubmitSuccess, onCancel }) => {
   const { t } = useTranslation();
+  const { showNotification } = useNotifications();
   const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
   const _user = useAuthStore((s) => s.user);
   const { mutateAsync: createReview, isPending: isLoading } = useCreateReviewMutation();
@@ -68,7 +69,7 @@ const ReviewForm: React.FC<ReviewFormProps> = ({ productId, onSubmitSuccess, onC
         comment: formData.comment,
       });
 
-      toast.success(t('review.form.submitSuccess'));
+      showNotification({ message: t('review.form.submitSuccess'), type: 'success' });
 
       setFormData({
         rating: 0,
@@ -83,7 +84,10 @@ const ReviewForm: React.FC<ReviewFormProps> = ({ productId, onSubmitSuccess, onC
     } catch (error) {
       console.error('Review submission error:', error);
 
-      toast.error(getErrorMsg(error, t('review.form.submitError')));
+      showNotification({
+        message: getErrorMsg(error, t('review.form.submitError')),
+        type: 'error',
+      });
     }
   };
 

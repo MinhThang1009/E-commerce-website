@@ -23,15 +23,16 @@ frontend/coverage/
 # DB backups (Phase 40+ pre-migration mysqldump) — không commit
 backups/
 *.sql.bak
-backend/data/vectorDb.json.bak
 
-# Logs
+# Logs — dùng absolute path trong logger.js để tránh ghi ra root
 *.log
+logs/
 backend/logs/
 !backend/logs/.gitkeep
 
-# Runtime-generated data
-backend/data/vectorDb.json
+# Runtime-generated data (vector store, rebuild via npm run ai:rebuild-vectors)
+backend/data/vector-db.json
+backend/data/vector-db.json.bak
 
 # Upload files — không commit binary files vào git
 backend/uploads/*
@@ -74,4 +75,5 @@ HANDOFF.md
 dump.rdb
 *_token.txt
 backend/server_err.txt
-backend/server_out*.logbackend/src/modules/uploads/
+backend/server_out*.log
+backend/src/modules/uploads/

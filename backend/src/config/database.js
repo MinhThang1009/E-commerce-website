@@ -56,10 +56,13 @@ module.exports = {
       collate: 'utf8mb4_unicode_ci',
     },
     dialectOptions: {
-      ssl: process.env.DB_SSL === 'true' ? {
-        require: true,
-        rejectUnauthorized: false,
-      } : false,
+      ssl:
+        process.env.DB_SSL === 'true'
+          ? {
+              require: true,
+              rejectUnauthorized: false,
+            }
+          : false,
       timezone: '+07:00',
       charset: 'utf8mb4',
     },

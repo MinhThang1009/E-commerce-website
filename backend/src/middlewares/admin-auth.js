@@ -20,9 +20,7 @@ const adminAuthenticate = async (req, res, next) => {
     const authHeader = req.headers.authorization;
     logger.info(`[AUTH] adminAuthenticate: hasHeader=${!!authHeader}`);
     if (!authHeader || !authHeader.startsWith('Bearer ')) {
-      return next(
-        new AppError('Cần token xác thực để truy cập admin panel', 401)
-      );
+      return next(new AppError('Cần token xác thực để truy cập admin panel', 401));
     }
 
     const token = authHeader.split(' ')[1];
@@ -56,22 +54,14 @@ const adminAuthenticate = async (req, res, next) => {
 
     // Kiểm tra email đã được xác thực chưa
     if (!user.isEmailVerified) {
-      return next(
-        new AppError(
-          'Vui lòng xác thực email trước khi truy cập admin panel',
-          401
-        )
-      );
+      return next(new AppError('Vui lòng xác thực email trước khi truy cập admin panel', 401));
     }
 
     // Gán thông tin người dùng vào request
     req.user = user;
     next();
   } catch (error) {
-    if (
-      error.name === 'JsonWebTokenError' ||
-      error.name === 'TokenExpiredError'
-    ) {
+    if (error.name === 'JsonWebTokenError' || error.name === 'TokenExpiredError') {
       return next(new AppError('Token không hợp lệ hoặc đã hết hạn', 401));
     }
     next(error);
@@ -88,9 +78,7 @@ const requireSuperAdmin = (req, res, next) => {
   }
 
   if (req.user.role !== 'admin') {
-    return next(
-      new AppError('Chỉ Super Admin mới có thể thực hiện hành động này', 403)
-    );
+    return next(new AppError('Chỉ Super Admin mới có thể thực hiện hành động này', 403));
   }
 
   next();
@@ -100,4 +88,3 @@ module.exports = {
   adminAuthenticate,
   requireSuperAdmin,
 };
-

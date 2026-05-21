@@ -6,7 +6,6 @@
  * @description Express middleware: detectLocale
  */
 
-
 const SUPPORTED_LOCALES = ['vi', 'en'];
 const DEFAULT_LOCALE = 'vi';
 

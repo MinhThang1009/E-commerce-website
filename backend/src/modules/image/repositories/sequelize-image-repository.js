@@ -14,7 +14,10 @@ const findById = (id) => Image.findByPk(id);
 const findByProduct = (productId) =>
   Image.findAll({
     where: { entityType: 'product', entityId: productId },
-    order: [['sortOrder', 'ASC'], ['createdAt', 'DESC']],
+    order: [
+      ['sortOrder', 'ASC'],
+      ['createdAt', 'DESC'],
+    ],
   });
 
 const findAll = (where) => Image.findAll({ where });

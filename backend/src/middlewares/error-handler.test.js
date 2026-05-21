@@ -37,7 +37,9 @@ function makeReq() {
 function saveAndSetEnv(value) {
   const original = process.env.NODE_ENV;
   process.env.NODE_ENV = value;
-  return () => { process.env.NODE_ENV = original; };
+  return () => {
+    process.env.NODE_ENV = original;
+  };
 }
 
 // ════════════════════════════════════════════════════════════════════════════
@@ -127,7 +129,10 @@ describe('errorHandler — môi trường production', () => {
 
 describe('errorHandler — CastError (MongoDB)', () => {
   let restore;
-  beforeEach(() => { restore = saveAndSetEnv('production'); jest.clearAllMocks(); });
+  beforeEach(() => {
+    restore = saveAndSetEnv('production');
+    jest.clearAllMocks();
+  });
   afterEach(() => restore());
 
   it('trả về 400 với message chứa giá trị không hợp lệ', () => {
@@ -150,7 +155,10 @@ describe('errorHandler — CastError (MongoDB)', () => {
 
 describe('errorHandler — DuplicateFieldsDB (MongoDB code 11000)', () => {
   let restore;
-  beforeEach(() => { restore = saveAndSetEnv('production'); jest.clearAllMocks(); });
+  beforeEach(() => {
+    restore = saveAndSetEnv('production');
+    jest.clearAllMocks();
+  });
   afterEach(() => restore());
 
   it('trả về 409 với message chứa giá trị trùng lặp', () => {
@@ -173,7 +181,10 @@ describe('errorHandler — DuplicateFieldsDB (MongoDB code 11000)', () => {
 
 describe('errorHandler — ValidationError (MongoDB/Mongoose)', () => {
   let restore;
-  beforeEach(() => { restore = saveAndSetEnv('production'); jest.clearAllMocks(); });
+  beforeEach(() => {
+    restore = saveAndSetEnv('production');
+    jest.clearAllMocks();
+  });
   afterEach(() => restore());
 
   it('trả về 422 với message ghép từ tất cả validation errors', () => {
@@ -200,7 +211,10 @@ describe('errorHandler — ValidationError (MongoDB/Mongoose)', () => {
 
 describe('errorHandler — JsonWebTokenError', () => {
   let restore;
-  beforeEach(() => { restore = saveAndSetEnv('production'); jest.clearAllMocks(); });
+  beforeEach(() => {
+    restore = saveAndSetEnv('production');
+    jest.clearAllMocks();
+  });
   afterEach(() => restore());
 
   it('trả về 401 khi token không hợp lệ', () => {
@@ -234,7 +248,10 @@ describe('errorHandler — JsonWebTokenError', () => {
 
 describe('errorHandler — SequelizeUniqueConstraintError', () => {
   let restore;
-  beforeEach(() => { restore = saveAndSetEnv('production'); jest.clearAllMocks(); });
+  beforeEach(() => {
+    restore = saveAndSetEnv('production');
+    jest.clearAllMocks();
+  });
   afterEach(() => restore());
 
   it('trả về 409 với message chứa field và value khi có errors[0]', () => {
@@ -271,16 +288,16 @@ describe('errorHandler — SequelizeUniqueConstraintError', () => {
 
 describe('errorHandler — SequelizeValidationError', () => {
   let restore;
-  beforeEach(() => { restore = saveAndSetEnv('production'); jest.clearAllMocks(); });
+  beforeEach(() => {
+    restore = saveAndSetEnv('production');
+    jest.clearAllMocks();
+  });
   afterEach(() => restore());
 
   it('trả về 422 với message ghép từ Sequelize validation errors', () => {
     const seqErr = new Error('Validation error');
     seqErr.name = 'SequelizeValidationError';
-    seqErr.errors = [
-      { message: 'Email không được để trống' },
-      { message: 'Mật khẩu quá ngắn' },
-    ];
+    seqErr.errors = [{ message: 'Email không được để trống' }, { message: 'Mật khẩu quá ngắn' }];
     const res = makeRes();
 
     errorHandler(seqErr, makeReq(), res, jest.fn());
@@ -311,7 +328,10 @@ describe('errorHandler — SequelizeValidationError', () => {
 
 describe('errorHandler — MulterError', () => {
   let restore;
-  beforeEach(() => { restore = saveAndSetEnv('production'); jest.clearAllMocks(); });
+  beforeEach(() => {
+    restore = saveAndSetEnv('production');
+    jest.clearAllMocks();
+  });
   afterEach(() => restore());
 
   it('trả về 400 với message LIMIT_FILE_SIZE khi vượt kích thước', () => {

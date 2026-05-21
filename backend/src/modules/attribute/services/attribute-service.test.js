@@ -136,9 +136,17 @@ describe('deleteGroup', () => {
 // ─── addValue ────────────────────────────────────────────────────────────────
 
 describe('addValue', () => {
+  it('throw 404 khi attributeGroup không tồn tại', async () => {
+    repo.findGroupById.mockResolvedValue(null);
+    await expect(service.addValue({ attributeGroupId: 99, value: 'Đỏ' })).rejects.toMatchObject({
+      statusCode: 404,
+    });
+  });
+
   it('gọi repo.createValue', async () => {
+    repo.findGroupById.mockResolvedValue({ id: 1 });
     repo.createValue.mockResolvedValue({ id: 5 });
-    const result = await service.addValue({ value: 'Đỏ' });
+    const result = await service.addValue({ attributeGroupId: 1, value: 'Đỏ' });
     expect(result.id).toBe(5);
   });
 });

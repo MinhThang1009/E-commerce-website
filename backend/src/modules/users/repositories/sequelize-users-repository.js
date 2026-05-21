@@ -59,10 +59,7 @@ class SequelizeUsersRepository extends IUsersRepository {
 
   // Bỏ default flag mọi address khác của user — gọi trước khi set default mới.
   async clearDefaultAddresses(userId) {
-    return this.Address.update(
-      { isDefault: false },
-      { where: { userId, isDefault: true } }
-    );
+    return this.Address.update({ isDefault: false }, { where: { userId, isDefault: true } });
   }
 
   async findLatestAddressByUserId(userId) {

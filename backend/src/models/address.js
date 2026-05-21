@@ -11,55 +11,55 @@ const Address = sequelize.define(
     },
     userId: {
       type: DataTypes.INTEGER,
-      allowNull: false
+      allowNull: false,
     },
     name: {
       type: DataTypes.STRING,
-      allowNull: true
+      allowNull: true,
     },
     firstName: {
       type: DataTypes.STRING,
-      allowNull: false
+      allowNull: false,
     },
     lastName: {
       type: DataTypes.STRING,
-      allowNull: false
+      allowNull: false,
     },
     company: {
       type: DataTypes.STRING,
-      allowNull: true
+      allowNull: true,
     },
     address1: {
       type: DataTypes.STRING,
-      allowNull: false
+      allowNull: false,
     },
     address2: {
       type: DataTypes.STRING,
-      allowNull: true
+      allowNull: true,
     },
     city: {
       type: DataTypes.STRING,
-      allowNull: false
+      allowNull: false,
     },
     state: {
       type: DataTypes.STRING,
-      allowNull: false
+      allowNull: false,
     },
     zip: {
       type: DataTypes.STRING,
-      allowNull: false
+      allowNull: false,
     },
     country: {
       type: DataTypes.STRING,
-      allowNull: false
+      allowNull: false,
     },
     phone: {
       type: DataTypes.STRING,
-      allowNull: true
+      allowNull: true,
     },
     isDefault: {
       type: DataTypes.BOOLEAN,
-      defaultValue: false
+      defaultValue: false,
     },
   },
   {
@@ -67,7 +67,7 @@ const Address = sequelize.define(
     timestamps: true,
     paranoid: true,
     underscored: true,
-  }
+  },
 );
 
 module.exports = Address;

@@ -228,7 +228,9 @@ describe('VietnameseEmbeddingService.generateEmbedding — passage type', () => 
   beforeEach(() => {
     jest.resetModules();
     jest.mock('@utils/logger', () => ({
-      info: jest.fn(), warn: jest.fn(), error: jest.fn(),
+      info: jest.fn(),
+      warn: jest.fn(),
+      error: jest.fn(),
     }));
     mockAxiosPost.mockReset();
     jest.mock('axios', () => ({ post: (...args) => mockAxiosPost(...args) }));
@@ -236,7 +238,9 @@ describe('VietnameseEmbeddingService.generateEmbedding — passage type', () => 
     service = require('./vi-embedding');
   });
 
-  afterEach(() => { delete process.env.HF_API_KEY; });
+  afterEach(() => {
+    delete process.env.HF_API_KEY;
+  });
 
   test('type=passage → dùng prefix "passage: " thay vì "query: " (line 38)', async () => {
     const embedding = new Array(1024).fill(0.1);

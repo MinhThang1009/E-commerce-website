@@ -38,4 +38,12 @@ const updateOrderStatusSchema = z.object({
   paymentStatus: z.enum(['pending', 'paid', 'failed', 'refunded']).optional(),
   note: z.string().max(500).optional(),
 });
-module.exports = { idSchema, paginationSchema, statsSchema, createProductSchema, updateProductSchema, updateUserSchema, updateOrderStatusSchema };
+module.exports = {
+  idSchema,
+  paginationSchema,
+  statsSchema,
+  createProductSchema,
+  updateProductSchema,
+  updateUserSchema,
+  updateOrderStatusSchema,
+};

@@ -25,7 +25,6 @@ const WishlistPage = lazy(() => import('@/features/wishlist/pages/WishlistPage')
 const CategoriesPage = lazy(() => import('@/features/catalog/pages/CategoriesPage'));
 const CategoryPage = lazy(() => import('@/features/catalog/pages/CategoryPage'));
 const BrandsPage = lazy(() => import('@/features/catalog/pages/BrandsPage'));
-const CollectionsPage = lazy(() => import('@/features/catalog/pages/CollectionsPage'));
 const DealsPage = lazy(() => import('@/features/catalog/pages/DealsPage'));
 const NewArrivalsPage = lazy(() => import('@/features/catalog/pages/NewArrivalsPage'));
 const BestSellersPage = lazy(() => import('@/features/catalog/pages/BestSellersPage'));
@@ -39,23 +38,19 @@ const TermsPage = lazy(() => import('@/pages/TermsPage'));
 
 // Các trang dành cho Admin
 const AdminDashboardPage = lazy(() => import('@/features/admin/pages/DashboardPage'));
-const AdminProductsPage = lazy(() => import('@/features/catalog/pages/admin/ProductsPage'));
-const CreateProductPage = lazy(() => import('@/features/catalog/pages/admin/CreateProductPage'));
-const EditProductPage = lazy(() => import('@/features/catalog/pages/admin/EditProductPage'));
-const AdminOrdersPage = lazy(() => import('@/features/orders/pages/admin/OrdersPage'));
+const AdminProductsPage = lazy(() => import('@/features/admin/pages/catalog/ProductsPage'));
+const CreateProductPage = lazy(() => import('@/features/admin/pages/catalog/CreateProductPage'));
+const EditProductPage = lazy(() => import('@/features/admin/pages/catalog/EditProductPage'));
+const AdminOrdersPage = lazy(() => import('@/features/admin/pages/orders/OrdersPage'));
 const AdminUsersPage = lazy(() => import('@/features/admin/pages/UsersPage'));
 const AdminUserDetailPage = lazy(() => import('@/features/admin/pages/UserDetailPage'));
-const AdminCategoriesPage = lazy(() => import('@/features/catalog/pages/admin/CategoriesPage'));
+const AdminCategoriesPage = lazy(() => import('@/features/admin/pages/catalog/CategoriesPage'));
 const AdminWarrantyPackagesPage = lazy(() => import('@/features/admin/pages/WarrantyPackagesPage'));
 const AdminDiscountCodesPage = lazy(() => import('@/features/admin/pages/DiscountCodesPage'));
-const AdminBrandsPage = lazy(() => import('@/features/catalog/pages/admin/BrandsPage'));
-const AdminCollectionsPage = lazy(() => import('@/features/catalog/pages/admin/CollectionsPage'));
-const AdminNewsPage = lazy(() => import('@/features/content/pages/admin/NewsPage'));
-const CreateNewsPage = lazy(() => import('@/features/content/pages/admin/CreateNewsPage'));
-const AdminBannersPage = lazy(() => import('@/features/content/pages/admin/BannersPage'));
-const AdminEmailCampaignsPage = lazy(
-  () => import('@/features/content/pages/admin/EmailCampaignsPage'),
-);
+const AdminBrandsPage = lazy(() => import('@/features/admin/pages/catalog/BrandsPage'));
+const AdminNewsPage = lazy(() => import('@/features/admin/pages/content/NewsPage'));
+const CreateNewsPage = lazy(() => import('@/features/admin/pages/content/CreateNewsPage'));
+const AdminBannersPage = lazy(() => import('@/features/admin/pages/content/BannersPage'));
 const AdminInventoryPage = lazy(() => import('@/features/admin/pages/InventoryPage'));
 const AdminAuditLogPage = lazy(() => import('@/features/admin/pages/AuditLogPage'));
 
@@ -84,9 +79,8 @@ const AppRoutes: React.FC = () => {
           <Route path="categories" element={<CategoriesPage />} />
           <Route path="categories/:slug" element={<CategoryPage />} />
 
-          {/* Trang thương hiệu & bộ sưu tập */}
+          {/* Trang thương hiệu */}
           <Route path="brands" element={<BrandsPage />} />
-          <Route path="collections" element={<CollectionsPage />} />
 
           {/* Các mục trong cửa hàng */}
           <Route path="deals" element={<DealsPage />} />
@@ -227,9 +221,7 @@ const AppRoutes: React.FC = () => {
           <Route path="warranty-packages" element={<AdminWarrantyPackagesPage />} />
           <Route path="discount-codes" element={<AdminDiscountCodesPage />} />
           <Route path="brands" element={<AdminBrandsPage />} />
-          <Route path="collections" element={<AdminCollectionsPage />} />
           <Route path="banners" element={<AdminBannersPage />} />
-          <Route path="email-campaigns" element={<AdminEmailCampaignsPage />} />
           <Route path="inventory" element={<AdminInventoryPage />} />
           <Route path="audit-log" element={<AdminAuditLogPage />} />
         </Route>

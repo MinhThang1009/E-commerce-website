@@ -9,7 +9,7 @@ import { useTranslation } from 'react-i18next';
 import DOMPurify from 'dompurify';
 import { Card, Button, Modal } from 'antd';
 import { CaretDownOutlined, CloseOutlined } from '@ant-design/icons';
-import '@/styles/description.css';
+import '@/styles/product-description.css';
 
 interface Specification {
   name: string;
@@ -223,7 +223,9 @@ const ProductDetailsSection: React.FC<ProductDetailsSectionProps> = ({
               ))}
             </div>
           ) : (
-            <div className="text-center text-gray-500 py-12">{t('common.noData')}</div>
+            <div className="text-center text-gray-500 dark:text-neutral-400 py-12">
+              {t('common.noData')}
+            </div>
           )}
         </div>
       </Modal>

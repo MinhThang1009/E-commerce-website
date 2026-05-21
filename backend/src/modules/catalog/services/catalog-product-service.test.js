@@ -8,10 +8,18 @@ describe('CatalogService — Product (Sprint 6b)', () => {
 
   // Helper: build product mock với Sequelize-like toJSON
   const mkProduct = (overrides = {}) => ({
-    id: 1, name: 'P', basePrice: 100, compareAtPrice: 150,
-    productImages: [], variants: [], reviews: [],
+    id: 1,
+    name: 'P',
+    basePrice: 100,
+    compareAtPrice: 150,
+    productImages: [],
+    variants: [],
+    reviews: [],
     ...overrides,
-    toJSON() { const { toJSON, ...rest } = this; return JSON.parse(JSON.stringify(rest)); },
+    toJSON() {
+      const { toJSON, ...rest } = this;
+      return JSON.parse(JSON.stringify(rest));
+    },
   });
 
   beforeEach(() => {
@@ -64,7 +72,8 @@ describe('CatalogService — Product (Sprint 6b)', () => {
       delMany: jest.fn().mockResolvedValue(),
     };
     service = new CatalogService({
-      catalogRepository, cacheStore,
+      catalogRepository,
+      cacheStore,
       eventBus: { publish: jest.fn() },
       logger: { info: jest.fn(), error: jest.fn(), warn: jest.fn() },
     });
@@ -95,10 +104,12 @@ describe('CatalogService — Product (Sprint 6b)', () => {
 
     test('_pickDisplayPrice: variants chọn lowest, không có variant fallback basePrice', () => {
       expect(service._pickDisplayPrice({ basePrice: '100', variants: [] })).toBe(100);
-      expect(service._pickDisplayPrice({
-        basePrice: '100',
-        variants: [{ price: '90' }, { price: '80' }, { price: '95' }],
-      })).toBe(80);
+      expect(
+        service._pickDisplayPrice({
+          basePrice: '100',
+          variants: [{ price: '90' }, { price: '80' }, { price: '95' }],
+        }),
+      ).toBe(80);
     });
 
     test('_mapProductImages: thumbnail từ isThumbnail flag, fallback first image', () => {
@@ -131,7 +142,8 @@ describe('CatalogService — Product (Sprint 6b)', () => {
 
     test('cache miss → query repo + setEx cache', async () => {
       catalogRepository.findProductsList.mockResolvedValue({
-        count: 0, rows: [],
+        count: 0,
+        rows: [],
       });
       const result = await service.getAllProducts({ cacheUrl: '/test' });
       expect(result.cacheHit).toBe(false);
@@ -144,7 +156,7 @@ describe('CatalogService — Product (Sprint 6b)', () => {
       await service.getAllProducts({ category: 'phones', cacheUrl: '/x' });
       expect(catalogRepository.findCategoryBySlug).toHaveBeenCalledWith('phones');
       expect(catalogRepository.findProductsList).toHaveBeenCalledWith(
-        expect.objectContaining({ filter: expect.objectContaining({ categoryId: 5 }) })
+        expect.objectContaining({ filter: expect.objectContaining({ categoryId: 5 }) }),
       );
     });
 
@@ -153,7 +165,9 @@ describe('CatalogService — Product (Sprint 6b)', () => {
       catalogRepository.findProductsList.mockResolvedValue({ count: 0, rows: [] });
       await service.getAllProducts({ category: 'unknown', cacheUrl: '/x' });
       expect(catalogRepository.findProductsList).toHaveBeenCalledWith(
-        expect.objectContaining({ filter: expect.objectContaining({ categoryIdMissingSentinel: true }) })
+        expect.objectContaining({
+          filter: expect.objectContaining({ categoryIdMissingSentinel: true }),
+        }),
       );
     });
 
@@ -166,7 +180,7 @@ describe('CatalogService — Product (Sprint 6b)', () => {
             brandIdsIn: ['1'],
             brandSlugsIn: ['apple'],
           }),
-        })
+        }),
       );
     });
 
@@ -174,7 +188,7 @@ describe('CatalogService — Product (Sprint 6b)', () => {
       catalogRepository.findProductsList.mockResolvedValue({ count: 0, rows: [] });
       await service.getAllProducts({ limit: '500', cacheUrl: '/x' });
       expect(catalogRepository.findProductsList).toHaveBeenCalledWith(
-        expect.objectContaining({ limit: 100 })
+        expect.objectContaining({ limit: 100 }),
       );
     });
   });
@@ -183,16 +197,14 @@ describe('CatalogService — Product (Sprint 6b)', () => {
     test('không tồn tại theo id và slug → 404', async () => {
       catalogRepository.findProductByIdWithFullDetails.mockResolvedValue(null);
       catalogRepository.findProductBySlugWithFullDetails.mockResolvedValue(null);
-      await expect(
-        service.getProductById({ id: 99 })
-      ).rejects.toMatchObject({ statusCode: 404 });
+      await expect(service.getProductById({ id: 99 })).rejects.toMatchObject({ statusCode: 404 });
     });
 
     test('cache hit → track recently viewed nếu có user', async () => {
       cacheStore.get.mockResolvedValue(JSON.stringify({ data: { id: 5 } }));
       await service.getProductById({ id: 5, userId: 1 });
       // Wait for fire-and-forget upsert
-      await new Promise(r => setImmediate(r));
+      await new Promise((r) => setImmediate(r));
       expect(catalogRepository.upsertRecentlyViewed).toHaveBeenCalledWith(1, 5);
     });
 
@@ -206,10 +218,24 @@ describe('CatalogService — Product (Sprint 6b)', () => {
 
     test('variant resolution theo skuId', async () => {
       const product = mkProduct({
-        id: 1, basePrice: 100, name: 'iPhone',
+        id: 1,
+        basePrice: 100,
+        name: 'iPhone',
         variants: [
-          { id: 10, price: 100, variantName: 'Black', isDefault: false, attributes: { color: 'Black' } },
-          { id: 20, price: 120, variantName: 'White', isDefault: true, attributes: { color: 'White' } },
+          {
+            id: 10,
+            price: 100,
+            variantName: 'Black',
+            isDefault: false,
+            attributes: { color: 'Black' },
+          },
+          {
+            id: 20,
+            price: 120,
+            variantName: 'White',
+            isDefault: true,
+            attributes: { color: 'White' },
+          },
         ],
       });
       catalogRepository.findProductByIdWithFullDetails.mockResolvedValue(product);
@@ -223,18 +249,18 @@ describe('CatalogService — Product (Sprint 6b)', () => {
   describe('getProductBySlug', () => {
     test('không tồn tại → 404', async () => {
       catalogRepository.findProductBySlugWithFullDetails.mockResolvedValue(null);
-      await expect(
-        service.getProductBySlug({ slug: 'unknown' })
-      ).rejects.toMatchObject({ statusCode: 404 });
+      await expect(service.getProductBySlug({ slug: 'unknown' })).rejects.toMatchObject({
+        statusCode: 404,
+      });
     });
   });
 
   describe('getRelatedProducts', () => {
     test('product không tồn tại → 404', async () => {
       catalogRepository.findProductByPk.mockResolvedValue(null);
-      await expect(
-        service.getRelatedProducts({ id: 99 })
-      ).rejects.toMatchObject({ statusCode: 404 });
+      await expect(service.getRelatedProducts({ id: 99 })).rejects.toMatchObject({
+        statusCode: 404,
+      });
     });
 
     test('có category → query findRelatedProducts trước', async () => {
@@ -268,7 +294,8 @@ describe('CatalogService — Product (Sprint 6b)', () => {
 
     test('có q → trả pagination', async () => {
       catalogRepository.searchProducts.mockResolvedValue({
-        count: 10, rows: [mkProduct(), mkProduct()],
+        count: 10,
+        rows: [mkProduct(), mkProduct()],
       });
       const result = await service.searchProducts({ q: 'iphone', page: 1, limit: 5 });
       expect(result.total).toBe(10);
@@ -284,7 +311,14 @@ describe('CatalogService — Product (Sprint 6b)', () => {
 
     test('q có giá trị → query repo + map thumbnail', async () => {
       catalogRepository.findProductSuggestions.mockResolvedValue([
-        { toJSON: () => ({ id: 1, name: 'A', slug: 'a', productImages: [{ imageUrl: 'a.jpg', isThumbnail: true }] }) },
+        {
+          toJSON: () => ({
+            id: 1,
+            name: 'A',
+            slug: 'a',
+            productImages: [{ imageUrl: 'a.jpg', isThumbnail: true }],
+          }),
+        },
       ]);
       const result = await service.getProductSuggestions({ q: 'a' });
       expect(result[0].thumbnail).toBe('a.jpg');
@@ -316,7 +350,7 @@ describe('CatalogService — Product (Sprint 6b)', () => {
       catalogRepository.findDeals.mockResolvedValue([]);
       await service.getDeals({ limit: 999 });
       expect(catalogRepository.findDeals).toHaveBeenCalledWith(
-        expect.objectContaining({ limit: 100 })
+        expect.objectContaining({ limit: 100 }),
       );
     });
 
@@ -324,15 +358,18 @@ describe('CatalogService — Product (Sprint 6b)', () => {
       catalogRepository.findDeals.mockResolvedValue([]);
       await service.getDeals({});
       expect(catalogRepository.findDeals).toHaveBeenCalledWith(
-        expect.objectContaining({ minDiscount: 5 })
+        expect.objectContaining({ minDiscount: 5 }),
       );
     });
 
     test('tính discountPercentage đúng', async () => {
       const product = {
-        compareAtPrice: '200', basePrice: '150',
+        compareAtPrice: '200',
+        basePrice: '150',
         reviews: [],
-        toJSON: function () { return { ...this, productImages: [] }; },
+        toJSON: function () {
+          return { ...this, productImages: [] };
+        },
       };
       catalogRepository.findDeals.mockResolvedValue([product]);
       const result = await service.getDeals({ minDiscount: 10 });
@@ -343,15 +380,17 @@ describe('CatalogService — Product (Sprint 6b)', () => {
   describe('getProductVariants / getProductReviewsSummary', () => {
     test('getProductVariants: 404 nếu product không tồn tại', async () => {
       catalogRepository.findProductByPk.mockResolvedValue(null);
-      await expect(
-        service.getProductVariants({ id: 99 })
-      ).rejects.toMatchObject({ statusCode: 404 });
+      await expect(service.getProductVariants({ id: 99 })).rejects.toMatchObject({
+        statusCode: 404,
+      });
     });
 
     test('getProductReviewsSummary: distribution + average', async () => {
       catalogRepository.findProductByPk.mockResolvedValue({ id: 1 });
       catalogRepository.findProductRatingsRows.mockResolvedValue([
-        { rating: 5 }, { rating: 4 }, { rating: 5 },
+        { rating: 5 },
+        { rating: 4 },
+        { rating: 5 },
       ]);
       const result = await service.getProductReviewsSummary({ id: 1 });
       expect(result.count).toBe(3);
@@ -362,9 +401,9 @@ describe('CatalogService — Product (Sprint 6b)', () => {
 
   describe('getProductFilters', () => {
     test('categoryId không hợp lệ → 400', async () => {
-      await expect(
-        service.getProductFilters({ categoryId: '!@#$' })
-      ).rejects.toMatchObject({ statusCode: 400 });
+      await expect(service.getProductFilters({ categoryId: '!@#$' })).rejects.toMatchObject({
+        statusCode: 400,
+      });
     });
 
     test('categoryId numeric → resolved', async () => {
@@ -376,8 +415,8 @@ describe('CatalogService — Product (Sprint 6b)', () => {
 
     test('collectValues unique từ multi rows', async () => {
       catalogRepository.findAttributeValuesByName
-        .mockResolvedValueOnce([{ values: ['Apple', 'Samsung'] }, { values: ['Apple', 'Xiaomi'] }])  // brand
-        .mockResolvedValueOnce([])  // color
+        .mockResolvedValueOnce([{ values: ['Apple', 'Samsung'] }, { values: ['Apple', 'Xiaomi'] }]) // brand
+        .mockResolvedValueOnce([]) // color
         .mockResolvedValueOnce([]); // size
       catalogRepository.getProductPriceRange.mockResolvedValue({ min: 0, max: 0 });
       const result = await service.getProductFilters({});
@@ -392,13 +431,14 @@ describe('CatalogService — Product (Sprint 6b)', () => {
       catalogRepository.findProductByIdWithFullDetails.mockResolvedValue({ id: 1 });
       await service.createProduct({
         payload: {
-          name: 'P', price: 100,
+          name: 'P',
+          price: 100,
           variants: [{ name: 'V1', price: 90, attributes: {} }],
         },
       });
       expect(catalogRepository.createProduct).toHaveBeenCalledWith(
         expect.objectContaining({ basePrice: 0, isVariantProduct: true }),
-        expect.any(Object)
+        expect.any(Object),
       );
     });
 
@@ -408,7 +448,7 @@ describe('CatalogService — Product (Sprint 6b)', () => {
       await service.createProduct({ payload: { name: 'P', price: 200 } });
       expect(catalogRepository.createProduct).toHaveBeenCalledWith(
         expect.objectContaining({ basePrice: 200, isVariantProduct: false }),
-        expect.any(Object)
+        expect.any(Object),
       );
     });
 
@@ -416,7 +456,7 @@ describe('CatalogService — Product (Sprint 6b)', () => {
       catalogRepository.createProduct.mockResolvedValue({ id: 1 });
       catalogRepository.findCategoriesByIds.mockResolvedValue([{ id: 1 }]); // 1 found
       await expect(
-        service.createProduct({ payload: { name: 'P', price: 100, categoryIds: [1, 99] } })
+        service.createProduct({ payload: { name: 'P', price: 100, categoryIds: [1, 99] } }),
       ).rejects.toMatchObject({ statusCode: 400, message: 'catalog.categoriesNotExist' });
     });
 
@@ -424,7 +464,7 @@ describe('CatalogService — Product (Sprint 6b)', () => {
       catalogRepository.createProduct.mockResolvedValue({ id: 1 });
       catalogRepository.findWarrantyPackagesByIds.mockResolvedValue([]);
       await expect(
-        service.createProduct({ payload: { name: 'P', price: 100, warrantyPackageIds: [1] } })
+        service.createProduct({ payload: { name: 'P', price: 100, warrantyPackageIds: [1] } }),
       ).rejects.toMatchObject({ statusCode: 400, message: 'catalog.warrantyPackagesNotExist' });
     });
   });
@@ -432,9 +472,9 @@ describe('CatalogService — Product (Sprint 6b)', () => {
   describe('updateProduct', () => {
     test('không tồn tại → 404', async () => {
       catalogRepository.findProductByPk.mockResolvedValue(null);
-      await expect(
-        service.updateProduct({ id: 99, patch: {} })
-      ).rejects.toMatchObject({ statusCode: 404 });
+      await expect(service.updateProduct({ id: 99, patch: {} })).rejects.toMatchObject({
+        statusCode: 404,
+      });
     });
 
     test('chỉ cập nhật field cung cấp (Object.hasOwnProperty)', async () => {
@@ -455,7 +495,11 @@ describe('CatalogService — Product (Sprint 6b)', () => {
 
       await service.updateProduct({ id: 1, patch: { warrantyPackageIds: [] } });
 
-      expect(catalogRepository.setProductWarrantyPackages).toHaveBeenCalledWith(product, [], expect.any(Object));
+      expect(catalogRepository.setProductWarrantyPackages).toHaveBeenCalledWith(
+        product,
+        [],
+        expect.any(Object),
+      );
     });
 
     test('variants=[...] → clearProductVariants + createProductVariants', async () => {
@@ -476,9 +520,7 @@ describe('CatalogService — Product (Sprint 6b)', () => {
   describe('deleteProduct', () => {
     test('không tồn tại → 404', async () => {
       catalogRepository.findProductByPk.mockResolvedValue(null);
-      await expect(
-        service.deleteProduct({ id: 99 })
-      ).rejects.toMatchObject({ statusCode: 404 });
+      await expect(service.deleteProduct({ id: 99 })).rejects.toMatchObject({ statusCode: 404 });
     });
 
     test('xóa thành công + cache busting', async () => {

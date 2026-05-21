@@ -11,19 +11,23 @@ const buildRoutes = require('@modules/inventory/routes');
 
 // Inventory module — DDD-lite. Subscribe OrderCancelledEvent từ orders module
 // để log audit (orders module đã restore stock inline trong cancelOrder).
-module.exports = ({
-  Product, ProductVariant, InventoryLog, User,
-  sequelize,
-  eventBus, logger,
-}) => {
+module.exports = ({ Product, ProductVariant, InventoryLog, User, sequelize, eventBus, logger }) => {
   if (!Product) throw new Error('inventory module: Product model bắt buộc');
   if (!ProductVariant) throw new Error('inventory module: ProductVariant model bắt buộc');
   if (!InventoryLog) throw new Error('inventory module: InventoryLog model bắt buộc');
 
   const inventoryRepository = new SequelizeInventoryRepository({
-    Product, ProductVariant, InventoryLog, User,
+    Product,
+    ProductVariant,
+    InventoryLog,
+    User,
   });
-  const inventoryService = new InventoryService({ inventoryRepository, sequelize, eventBus, logger });
+  const inventoryService = new InventoryService({
+    inventoryRepository,
+    sequelize,
+    eventBus,
+    logger,
+  });
   const inventoryController = new InventoryController({ inventoryService });
   const router = buildRoutes({ inventoryController });
 

@@ -47,7 +47,9 @@ function makeFakeInstance(rawValues = {}) {
   const store = { ...rawValues };
   return {
     getDataValue: jest.fn((key) => store[key]),
-    setDataValue: jest.fn((key, value) => { store[key] = value; }),
+    setDataValue: jest.fn((key, value) => {
+      store[key] = value;
+    }),
     _store: store,
   };
 }

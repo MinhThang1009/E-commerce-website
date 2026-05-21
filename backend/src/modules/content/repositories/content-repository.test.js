@@ -22,21 +22,6 @@ function makeNewsModel() {
   };
 }
 
-function makeCampaignModel() {
-  return {
-    findAll: jest.fn(),
-    findByPk: jest.fn(),
-    create: jest.fn(),
-  };
-}
-
-function makeSubscriberModel() {
-  return {
-    findAll: jest.fn(),
-    findOrCreate: jest.fn(),
-  };
-}
-
 function makeFeedbackModel() {
   return { create: jest.fn() };
 }
@@ -49,8 +34,6 @@ function makeRepo(overrides = {}) {
   return new SequelizeContentRepository({
     Banner: overrides.Banner || makeBannerModel(),
     News: overrides.News || makeNewsModel(),
-    EmailCampaign: overrides.EmailCampaign || makeCampaignModel(),
-    NewsletterSubscriber: overrides.NewsletterSubscriber || makeSubscriberModel(),
     Feedback: overrides.Feedback || makeFeedbackModel(),
     User: overrides.User || makeUserModel(),
   });
@@ -71,7 +54,10 @@ describe('SequelizeContentRepository', () => {
 
       expect(Banner.findAll).toHaveBeenCalledWith({
         where: { isActive: true },
-        order: [['priority', 'DESC'], ['createdAt', 'DESC']],
+        order: [
+          ['priority', 'DESC'],
+          ['createdAt', 'DESC'],
+        ],
       });
       expect(result).toHaveLength(1);
     });
@@ -85,7 +71,10 @@ describe('SequelizeContentRepository', () => {
 
       expect(Banner.findAll).toHaveBeenCalledWith({
         where: {},
-        order: [['priority', 'DESC'], ['createdAt', 'DESC']],
+        order: [
+          ['priority', 'DESC'],
+          ['createdAt', 'DESC'],
+        ],
       });
     });
   });
@@ -162,11 +151,11 @@ describe('SequelizeContentRepository', () => {
       await repo.findAllNews({ limit: 10, offset: 0 });
 
       expect(News.findAndCountAll).toHaveBeenCalledWith(
-        expect.objectContaining({ where: {}, limit: 10, offset: 0 })
+        expect.objectContaining({ where: {}, limit: 10, offset: 0 }),
       );
     });
 
-    test('build where.title với Op.like khi filter.search có giá trị', async () => {
+    test('build where.titleVi với Op.like khi filter.search có giá trị', async () => {
       const News = makeNewsModel();
       const User = makeUserModel();
       News.findAndCountAll.mockResolvedValue({ count: 2, rows: [{ id: 1 }, { id: 2 }] });
@@ -175,8 +164,8 @@ describe('SequelizeContentRepository', () => {
       await repo.findAllNews({ filter: { search: 'iphone' }, limit: 10, offset: 0 });
 
       const callArgs = News.findAndCountAll.mock.calls[0][0];
-      // title phải chứa Op.like với pattern %iphone%
-      expect(callArgs.where.title).toBeDefined();
+      // titleVi phải chứa Op.like với pattern %iphone%
+      expect(callArgs.where.titleVi).toBeDefined();
     });
 
     test('build where.isPublished khi filter.isPublished = true', async () => {
@@ -191,7 +180,7 @@ describe('SequelizeContentRepository', () => {
       expect(callArgs.where.isPublished).toBe(true);
     });
 
-    test('build where.category khi filter.category có giá trị', async () => {
+    test('build where.categoryVi khi filter.category có giá trị', async () => {
       const News = makeNewsModel();
       const User = makeUserModel();
       News.findAndCountAll.mockResolvedValue({ count: 0, rows: [] });
@@ -200,7 +189,7 @@ describe('SequelizeContentRepository', () => {
       await repo.findAllNews({ filter: { category: 'Tech' }, limit: 10, offset: 0 });
 
       const callArgs = News.findAndCountAll.mock.calls[0][0];
-      expect(callArgs.where.category).toBe('Tech');
+      expect(callArgs.where.categoryVi).toBe('Tech');
     });
   });
 
@@ -214,7 +203,7 @@ describe('SequelizeContentRepository', () => {
       const result = await repo.findNewsBySlug('test-slug');
 
       expect(News.findOne).toHaveBeenCalledWith(
-        expect.objectContaining({ where: { slug: 'test-slug' } })
+        expect.objectContaining({ where: { slug: 'test-slug' } }),
       );
       expect(result.slug).toBe('test-slug');
     });
@@ -235,16 +224,16 @@ describe('SequelizeContentRepository', () => {
   describe('findNewsBySlugMin', () => {
     test('gọi News.findOne với attributes tối thiểu', async () => {
       const News = makeNewsModel();
-      News.findOne.mockResolvedValue({ id: 2, category: 'Tech' });
+      News.findOne.mockResolvedValue({ id: 2, categoryVi: 'Tech' });
       const repo = makeRepo({ News });
 
       const result = await repo.findNewsBySlugMin('tech-article');
 
       expect(News.findOne).toHaveBeenCalledWith({
         where: { slug: 'tech-article' },
-        attributes: ['id', 'category'],
+        attributes: ['id', 'categoryVi'],
       });
-      expect(result.category).toBe('Tech');
+      expect(result.categoryVi).toBe('Tech');
     });
   });
 
@@ -257,7 +246,10 @@ describe('SequelizeContentRepository', () => {
 
       await repo.findNewsById(3);
 
-      expect(News.findByPk).toHaveBeenCalledWith(3, expect.objectContaining({ include: expect.any(Array) }));
+      expect(News.findByPk).toHaveBeenCalledWith(
+        3,
+        expect.objectContaining({ include: expect.any(Array) }),
+      );
     });
 
     test('withAuthor = false → không có include trong options', async () => {
@@ -282,9 +274,9 @@ describe('SequelizeContentRepository', () => {
 
       expect(News.findAll).toHaveBeenCalledWith(
         expect.objectContaining({
-          where: expect.objectContaining({ category: 'Tech', isPublished: true }),
+          where: expect.objectContaining({ categoryVi: 'Tech', isPublished: true }),
           limit: 3,
-        })
+        }),
       );
     });
   });
@@ -298,7 +290,7 @@ describe('SequelizeContentRepository', () => {
       const result = await repo.findLatestNews([1, 2], ['id', 'title'], 2);
 
       expect(News.findAll).toHaveBeenCalledWith(
-        expect.objectContaining({ limit: 2, order: [['createdAt', 'DESC']] })
+        expect.objectContaining({ limit: 2, order: [['createdAt', 'DESC']] }),
       );
       expect(result).toHaveLength(2);
     });
@@ -346,137 +338,6 @@ describe('SequelizeContentRepository', () => {
   });
 
   // ============================================================
-  // EmailCampaign
-  // ============================================================
-
-  describe('findAllCampaigns', () => {
-    test('gọi EmailCampaign.findAll với order mới nhất trước', async () => {
-      const EmailCampaign = makeCampaignModel();
-      EmailCampaign.findAll.mockResolvedValue([{ id: 1 }]);
-      const repo = makeRepo({ EmailCampaign });
-
-      await repo.findAllCampaigns();
-
-      expect(EmailCampaign.findAll).toHaveBeenCalledWith({ order: [['createdAt', 'DESC']] });
-    });
-  });
-
-  describe('findCampaignById', () => {
-    test('gọi EmailCampaign.findByPk với id', async () => {
-      const EmailCampaign = makeCampaignModel();
-      EmailCampaign.findByPk.mockResolvedValue({ id: 3 });
-      const repo = makeRepo({ EmailCampaign });
-
-      const result = await repo.findCampaignById(3);
-
-      expect(EmailCampaign.findByPk).toHaveBeenCalledWith(3);
-      expect(result.id).toBe(3);
-    });
-  });
-
-  describe('createCampaign', () => {
-    test('gọi EmailCampaign.create với payload', async () => {
-      const EmailCampaign = makeCampaignModel();
-      EmailCampaign.create.mockResolvedValue({ id: 5 });
-      const repo = makeRepo({ EmailCampaign });
-
-      const result = await repo.createCampaign({ subject: 'Hello', content: 'World' });
-
-      expect(EmailCampaign.create).toHaveBeenCalledWith({ subject: 'Hello', content: 'World' });
-      expect(result.id).toBe(5);
-    });
-  });
-
-  describe('saveCampaign', () => {
-    test('gọi campaign.save()', async () => {
-      const repo = makeRepo();
-      const campaign = { save: jest.fn().mockResolvedValue({ id: 1 }) };
-      await repo.saveCampaign(campaign);
-      expect(campaign.save).toHaveBeenCalled();
-    });
-  });
-
-  describe('deleteCampaign', () => {
-    test('gọi campaign.destroy()', async () => {
-      const repo = makeRepo();
-      const campaign = { destroy: jest.fn().mockResolvedValue() };
-      await repo.deleteCampaign(campaign);
-      expect(campaign.destroy).toHaveBeenCalled();
-    });
-  });
-
-  describe('findActiveSubscriberEmails', () => {
-    test('gọi NewsletterSubscriber.findAll với status=active và attributes=[email]', async () => {
-      const NewsletterSubscriber = makeSubscriberModel();
-      NewsletterSubscriber.findAll.mockResolvedValue([{ email: 'a@b.com' }]);
-      const repo = makeRepo({ NewsletterSubscriber });
-
-      const result = await repo.findActiveSubscriberEmails();
-
-      expect(NewsletterSubscriber.findAll).toHaveBeenCalledWith({
-        where: { status: 'active' },
-        attributes: ['email'],
-      });
-      expect(result).toHaveLength(1);
-    });
-  });
-
-  describe('findAllUserEmails', () => {
-    test('gọi User.findAll với attributes=[email]', async () => {
-      const User = makeUserModel();
-      User.findAll.mockResolvedValue([{ email: 'user@x.com' }]);
-      const repo = makeRepo({ User });
-
-      const result = await repo.findAllUserEmails();
-
-      expect(User.findAll).toHaveBeenCalledWith({ attributes: ['email'] });
-      expect(result).toHaveLength(1);
-    });
-  });
-
-  // ============================================================
-  // Newsletter
-  // ============================================================
-
-  describe('findOrCreateSubscriber', () => {
-    test('trả về { subscriber, created: true } khi tạo mới', async () => {
-      const NewsletterSubscriber = makeSubscriberModel();
-      const sub = { id: 1, email: 'new@x.com', status: 'active' };
-      NewsletterSubscriber.findOrCreate.mockResolvedValue([sub, true]);
-      const repo = makeRepo({ NewsletterSubscriber });
-
-      const result = await repo.findOrCreateSubscriber('new@x.com');
-
-      expect(result.subscriber).toBe(sub);
-      expect(result.created).toBe(true);
-      expect(NewsletterSubscriber.findOrCreate).toHaveBeenCalledWith({
-        where: { email: 'new@x.com' },
-        defaults: { status: 'active' },
-      });
-    });
-
-    test('trả về { subscriber, created: false } khi đã tồn tại', async () => {
-      const NewsletterSubscriber = makeSubscriberModel();
-      const sub = { id: 2, email: 'existing@x.com', status: 'active' };
-      NewsletterSubscriber.findOrCreate.mockResolvedValue([sub, false]);
-      const repo = makeRepo({ NewsletterSubscriber });
-
-      const result = await repo.findOrCreateSubscriber('existing@x.com');
-
-      expect(result.created).toBe(false);
-    });
-  });
-
-  describe('saveSubscriber', () => {
-    test('gọi subscriber.save()', async () => {
-      const repo = makeRepo();
-      const subscriber = { save: jest.fn().mockResolvedValue() };
-      await repo.saveSubscriber(subscriber);
-      expect(subscriber.save).toHaveBeenCalled();
-    });
-  });
-
-  // ============================================================
   // Feedback
   // ============================================================
 
@@ -487,10 +348,16 @@ describe('SequelizeContentRepository', () => {
       Feedback.create.mockResolvedValue(newFeedback);
       const repo = makeRepo({ Feedback });
 
-      const result = await repo.createFeedback({ name: 'A', email: 'a@b', subject: 's', content: 'c', status: 'pending' });
+      const result = await repo.createFeedback({
+        name: 'A',
+        email: 'a@b',
+        subject: 's',
+        content: 'c',
+        status: 'pending',
+      });
 
       expect(Feedback.create).toHaveBeenCalledWith(
-        expect.objectContaining({ name: 'A', status: 'pending' })
+        expect.objectContaining({ name: 'A', status: 'pending' }),
       );
       expect(result).toBe(newFeedback);
     });

@@ -40,7 +40,9 @@ function makeRepo(overrides = {}) {
     Cart: overrides.Cart || makeCartModel(),
     CartItem: overrides.CartItem || makeCartItemModel(),
     DiscountCode: overrides.DiscountCode || makeDiscountCodeModel(),
-    sequelize: overrides.sequelize || { transaction: jest.fn((work) => work({ LOCK: { UPDATE: 'UPDATE' } })) },
+    sequelize: overrides.sequelize || {
+      transaction: jest.fn((work) => work({ LOCK: { UPDATE: 'UPDATE' } })),
+    },
   });
 }
 
@@ -111,12 +113,15 @@ describe('SequelizePaymentRepository', () => {
 
       await repo.findOrderByPkWithItemsAndUser(5);
 
-      expect(Order.findByPk).toHaveBeenCalledWith(5, expect.objectContaining({
-        include: expect.arrayContaining([
-          expect.objectContaining({ model: OrderItem, as: 'items' }),
-          expect.objectContaining({ model: User }),
-        ]),
-      }));
+      expect(Order.findByPk).toHaveBeenCalledWith(
+        5,
+        expect.objectContaining({
+          include: expect.arrayContaining([
+            expect.objectContaining({ model: OrderItem, as: 'items' }),
+            expect.objectContaining({ model: User }),
+          ]),
+        }),
+      );
     });
   });
 
@@ -144,10 +149,7 @@ describe('SequelizePaymentRepository', () => {
 
       await repo.updateOrderPayment(10, { status: 'paid' });
 
-      expect(Order.update).toHaveBeenCalledWith(
-        { status: 'paid' },
-        { where: { id: 10 } }
-      );
+      expect(Order.update).toHaveBeenCalledWith({ status: 'paid' }, { where: { id: 10 } });
     });
 
     test('truyền options (transaction) vào update', async () => {
@@ -160,7 +162,7 @@ describe('SequelizePaymentRepository', () => {
 
       expect(Order.update).toHaveBeenCalledWith(
         { status: 'failed' },
-        { where: { id: 11 }, transaction }
+        { where: { id: 11 }, transaction },
       );
     });
   });
@@ -265,7 +267,11 @@ describe('SequelizePaymentRepository', () => {
 
     test('gọi code.increment("usedCount") khi tìm thấy code', async () => {
       const DiscountCode = makeDiscountCodeModel();
-      const code = { id: 3, usedCount: 5, increment: jest.fn().mockResolvedValue({ usedCount: 6 }) };
+      const code = {
+        id: 3,
+        usedCount: 5,
+        increment: jest.fn().mockResolvedValue({ usedCount: 6 }),
+      };
       DiscountCode.findByPk.mockResolvedValue(code);
       const repo = makeRepo({ DiscountCode });
 
@@ -320,7 +326,11 @@ describe('SequelizePaymentRepository', () => {
   describe('saveCart', () => {
     test('gọi cart.save() và trả về cart đã lưu', async () => {
       const repo = makeRepo();
-      const cart = { id: 1, status: 'merged', save: jest.fn().mockResolvedValue({ id: 1, status: 'merged' }) };
+      const cart = {
+        id: 1,
+        status: 'merged',
+        save: jest.fn().mockResolvedValue({ id: 1, status: 'merged' }),
+      };
 
       const result = await repo.saveCart(cart);
 

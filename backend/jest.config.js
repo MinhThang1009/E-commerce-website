@@ -34,6 +34,9 @@ module.exports = {
     'src/**/*.js',
     '!src/**/*.test.js',              // exclude co-located test files
     '!src/__tests__/**',              // exclude flat test directory
+    '!src/__integration__/**',        // exclude integration test helpers
+    '!src/__api__/**',                // exclude HTTP test helpers
+    '!src/__e2e__/**',                // exclude E2E test helpers
     '!src/migrations/**',
     '!src/seeders/**',
     '!src/config/**',

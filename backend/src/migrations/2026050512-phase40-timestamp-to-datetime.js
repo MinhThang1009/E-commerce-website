@@ -15,19 +15,19 @@
 // extra: '' | 'on update CURRENT_TIMESTAMP'
 const COLUMNS = [
   // brands — current state có DEFAULT NULL cho cả 3 cột (không có current_timestamp)
-  ['brands',           'created_at', 'NULL', ''],
-  ['brands',           'updated_at', 'NULL', ''],
-  ['brands',           'deleted_at', 'NULL', ''],
+  ['brands', 'created_at', 'NULL', ''],
+  ['brands', 'updated_at', 'NULL', ''],
+  ['brands', 'deleted_at', 'NULL', ''],
 
   // categories — created/updated có current_timestamp; deleted_at NULL
-  ['categories',       'created_at', 'CURRENT_TIMESTAMP', ''],
-  ['categories',       'updated_at', 'CURRENT_TIMESTAMP', 'on update CURRENT_TIMESTAMP'],
-  ['categories',       'deleted_at', 'NULL', ''],
+  ['categories', 'created_at', 'CURRENT_TIMESTAMP', ''],
+  ['categories', 'updated_at', 'CURRENT_TIMESTAMP', 'on update CURRENT_TIMESTAMP'],
+  ['categories', 'deleted_at', 'NULL', ''],
 
   // products
-  ['products',         'created_at', 'CURRENT_TIMESTAMP', ''],
-  ['products',         'updated_at', 'CURRENT_TIMESTAMP', 'on update CURRENT_TIMESTAMP'],
-  ['products',         'deleted_at', 'NULL', ''],
+  ['products', 'created_at', 'CURRENT_TIMESTAMP', ''],
+  ['products', 'updated_at', 'CURRENT_TIMESTAMP', 'on update CURRENT_TIMESTAMP'],
+  ['products', 'deleted_at', 'NULL', ''],
 
   // product_variants
   ['product_variants', 'created_at', 'CURRENT_TIMESTAMP', ''],
@@ -35,21 +35,21 @@ const COLUMNS = [
   ['product_variants', 'deleted_at', 'NULL', ''],
 
   // product_images
-  ['product_images',   'created_at', 'CURRENT_TIMESTAMP', ''],
-  ['product_images',   'updated_at', 'CURRENT_TIMESTAMP', 'on update CURRENT_TIMESTAMP'],
-  ['product_images',   'deleted_at', 'NULL', ''],
+  ['product_images', 'created_at', 'CURRENT_TIMESTAMP', ''],
+  ['product_images', 'updated_at', 'CURRENT_TIMESTAMP', 'on update CURRENT_TIMESTAMP'],
+  ['product_images', 'deleted_at', 'NULL', ''],
 
   // product_reviews
-  ['product_reviews',  'created_at', 'CURRENT_TIMESTAMP', ''],
-  ['product_reviews',  'updated_at', 'CURRENT_TIMESTAMP', 'on update CURRENT_TIMESTAMP'],
-  ['product_reviews',  'deleted_at', 'NULL', ''],
+  ['product_reviews', 'created_at', 'CURRENT_TIMESTAMP', ''],
+  ['product_reviews', 'updated_at', 'CURRENT_TIMESTAMP', 'on update CURRENT_TIMESTAMP'],
+  ['product_reviews', 'deleted_at', 'NULL', ''],
 ];
 
 async function getColumnDataType(qi, table, column) {
   const [rows] = await qi.sequelize.query(
     `SELECT DATA_TYPE FROM INFORMATION_SCHEMA.COLUMNS
      WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = ? AND COLUMN_NAME = ?`,
-    { replacements: [table, column] }
+    { replacements: [table, column] },
   );
   return rows[0] ? rows[0].DATA_TYPE : null;
 }
@@ -61,10 +61,11 @@ module.exports = {
       if (!currentType) continue;
       if (currentType.toLowerCase() === 'datetime') continue; // Idempotent
 
-      const defaultClause = defaultExpr === 'NULL' ? 'NULL DEFAULT NULL' : `NULL DEFAULT ${defaultExpr}`;
+      const defaultClause =
+        defaultExpr === 'NULL' ? 'NULL DEFAULT NULL' : `NULL DEFAULT ${defaultExpr}`;
       const extraClause = extra ? ` ${extra}` : '';
       await queryInterface.sequelize.query(
-        `ALTER TABLE \`${table}\` MODIFY COLUMN \`${column}\` DATETIME ${defaultClause}${extraClause}`
+        `ALTER TABLE \`${table}\` MODIFY COLUMN \`${column}\` DATETIME ${defaultClause}${extraClause}`,
       );
     }
   },
@@ -76,10 +77,11 @@ module.exports = {
       if (!currentType) continue;
       if (currentType.toLowerCase() === 'timestamp') continue;
 
-      const defaultClause = defaultExpr === 'NULL' ? 'NULL DEFAULT NULL' : `NULL DEFAULT ${defaultExpr}`;
+      const defaultClause =
+        defaultExpr === 'NULL' ? 'NULL DEFAULT NULL' : `NULL DEFAULT ${defaultExpr}`;
       const extraClause = extra ? ` ${extra}` : '';
       await queryInterface.sequelize.query(
-        `ALTER TABLE \`${table}\` MODIFY COLUMN \`${column}\` TIMESTAMP ${defaultClause}${extraClause}`
+        `ALTER TABLE \`${table}\` MODIFY COLUMN \`${column}\` TIMESTAMP ${defaultClause}${extraClause}`,
       );
     }
   },

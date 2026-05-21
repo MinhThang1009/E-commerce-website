@@ -28,13 +28,15 @@ function makeRepo(overrides = {}) {
 
 describe('SequelizeWishlistRepository — constructor', () => {
   it('throw khi Wishlist model bị thiếu', () => {
-    expect(() => new SequelizeWishlistRepository({ Product: makeModel() }))
-      .toThrow('Wishlist model bắt buộc');
+    expect(() => new SequelizeWishlistRepository({ Product: makeModel() })).toThrow(
+      'Wishlist model bắt buộc',
+    );
   });
 
   it('throw khi Product model bị thiếu', () => {
-    expect(() => new SequelizeWishlistRepository({ Wishlist: makeModel() }))
-      .toThrow('Product model bắt buộc');
+    expect(() => new SequelizeWishlistRepository({ Wishlist: makeModel() })).toThrow(
+      'Product model bắt buộc',
+    );
   });
 
   it('khởi tạo thành công khi đầy đủ cả hai model', () => {

@@ -9,7 +9,6 @@ const {
   Order,
   OrderItem,
   Review,
-  ReviewFeedback,
 } = require('@models');
 const { Op } = require('sequelize');
 
@@ -93,7 +92,6 @@ beforeAll(async () => {
 });
 
 afterAll(async () => {
-  await ReviewFeedback.destroy({ where: {}, force: true });
   await Review.destroy({ where: { productId: product?.id }, force: true });
   await OrderItem.destroy({ where: { orderId: order?.id }, force: true });
   await Order.destroy({ where: { id: order?.id }, force: true });
@@ -136,15 +134,6 @@ describe('Reviews Integration', () => {
     await review.reload();
     expect(review.rating).toBe(4);
     expect(review.content).toBe('__INT updated content');
-  });
-
-  test('Helpful feedback', async () => {
-    const feedback = await ReviewFeedback.create({
-      reviewId: review.id,
-      userId: user2.id,
-      isHelpful: true,
-    });
-    expect(feedback.isHelpful).toBe(true);
   });
 
   test('Lấy reviews theo productId', async () => {

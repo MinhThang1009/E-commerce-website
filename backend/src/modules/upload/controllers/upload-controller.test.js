@@ -60,8 +60,12 @@ function makeController(serviceOverrides = {}) {
         cb(new Error('Middleware crash'));
       }
     }),
-    _setSingle: (b) => { singleBehavior = b; },
-    _setArray: (b) => { arrayBehavior = b; },
+    _setSingle: (b) => {
+      singleBehavior = b;
+    },
+    _setArray: (b) => {
+      arrayBehavior = b;
+    },
   };
 
   const controller = new UploadController({ uploadService, uploadEngine });
@@ -180,9 +184,7 @@ describe('uploadSingle', () => {
 
     await controller.uploadSingle(req, makeRes(), next);
 
-    expect(next).toHaveBeenCalledWith(
-      expect.objectContaining({ statusCode: 413 }),
-    );
+    expect(next).toHaveBeenCalledWith(expect.objectContaining({ statusCode: 413 }));
   });
 
   it('LIMIT_FILE_COUNT multer error → gọi next với AppError 400', async () => {
@@ -194,9 +196,7 @@ describe('uploadSingle', () => {
 
     await controller.uploadSingle(req, makeRes(), next);
 
-    expect(next).toHaveBeenCalledWith(
-      expect.objectContaining({ statusCode: 400 }),
-    );
+    expect(next).toHaveBeenCalledWith(expect.objectContaining({ statusCode: 400 }));
   });
 
   it('generic multer error → gọi next với AppError 400', async () => {
@@ -355,7 +355,9 @@ describe('deleteFile', () => {
 
   it('xóa file thành công → res 200 với message', async () => {
     const { controller, uploadService } = makeController();
-    uploadService.deleteFile.mockResolvedValue({ message: 'Xóa file products/test.jpg thành công' });
+    uploadService.deleteFile.mockResolvedValue({
+      message: 'Xóa file products/test.jpg thành công',
+    });
 
     const req = makeReq({
       params: { type: 'products', filename: 'test.jpg' },
@@ -417,7 +419,9 @@ describe('uploadSingle — outer try-catch khi uploadEngine.single throw (line 4
   it('uploadEngine.single throw đồng bộ → gọi next với lỗi đó', async () => {
     const crashError = new Error('multer config crash');
     const uploadEngine = {
-      single: jest.fn().mockImplementation(() => { throw crashError; }),
+      single: jest.fn().mockImplementation(() => {
+        throw crashError;
+      }),
       array: jest.fn(),
     };
     const controller = new UploadController({
@@ -437,7 +441,9 @@ describe('uploadMultiple — outer try-catch khi uploadEngine.array throw (line 
     const crashError = new Error('multer array config crash');
     const uploadEngine = {
       single: jest.fn(),
-      array: jest.fn().mockImplementation(() => { throw crashError; }),
+      array: jest.fn().mockImplementation(() => {
+        throw crashError;
+      }),
     };
     const controller = new UploadController({
       uploadService: { processMultipleUpload: jest.fn() },

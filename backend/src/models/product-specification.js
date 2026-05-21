@@ -40,7 +40,7 @@ const ProductSpecification = sequelize.define(
     tableName: 'product_specifications',
     timestamps: true,
     underscored: true,
-  }
+  },
 );
 
 module.exports = ProductSpecification;

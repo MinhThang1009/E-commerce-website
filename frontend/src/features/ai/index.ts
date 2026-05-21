@@ -19,4 +19,4 @@ export { default as ChatSuggestions } from './components/ChatSuggestions';
 export { useSpeechRecognition } from './hooks/use-speech-recognition';
 
 // Dịch vụ API (TanStack Query)
-export { useSendChatbotMessageMutation } from './services/chatbot-api';
+export { useSendChatbotMessageMutation } from './api/chatbot-api';

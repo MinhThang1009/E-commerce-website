@@ -37,7 +37,13 @@ class AuthController {
   register = async (req, res, next) => {
     try {
       const { email, password, firstName, lastName, phone } = req.body;
-      const result = await this.authService.register({ email, password, firstName, lastName, phone });
+      const result = await this.authService.register({
+        email,
+        password,
+        firstName,
+        lastName,
+        phone,
+      });
       res.status(201).json({ status: 'success', message: result.message });
     } catch (err) {
       next(err);
@@ -81,9 +87,8 @@ class AuthController {
   logout = async (req, res, next) => {
     try {
       const authHeader = req.headers.authorization;
-      const accessToken = authHeader && authHeader.startsWith('Bearer ')
-        ? authHeader.split(' ')[1]
-        : null;
+      const accessToken =
+        authHeader && authHeader.startsWith('Bearer ') ? authHeader.split(' ')[1] : null;
       const refreshToken = req.cookies?.refreshToken || null;
       await this.authService.logout({ accessToken, refreshToken });
       this._clearRefreshCookie(res);

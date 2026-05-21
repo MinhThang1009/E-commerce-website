@@ -4,7 +4,12 @@
  * @module ai
  * @description Business logic layer cho ai
  */
-const { validateMessage, expandAbbreviations, isOffTopic, classifyIntent } = require('@modules/ai/services/core/ai-policy');
+const {
+  validateMessage,
+  expandAbbreviations,
+  isOffTopic,
+  classifyIntent,
+} = require('@modules/ai/services/core/ai-policy');
 const { AppError } = require('@shared/errors');
 const logger = require('@utils/logger');
 

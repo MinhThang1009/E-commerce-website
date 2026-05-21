@@ -20,83 +20,109 @@ class OrdersController {
         sessionIdCookie: req.cookies && req.cookies.sessionId,
       });
       res.status(201).json({ status: 'success', data: { order: data } });
-    } catch (err) { next(err); }
+    } catch (err) {
+      next(err);
+    }
   };
 
   getUserOrders = async (req, res, next) => {
     try {
       const result = await this.ordersService.getUserOrders({
-        userId: req.user.id, ...req.query,
+        userId: req.user.id,
+        ...req.query,
       });
       res.status(200).json({ status: 'success', ...result });
-    } catch (err) { next(err); }
+    } catch (err) {
+      next(err);
+    }
   };
 
   getOrderById = async (req, res, next) => {
     try {
       const data = await this.ordersService.getOrderById({
-        id: req.params.id, userId: req.user.id, role: req.user.role,
+        id: req.params.id,
+        userId: req.user.id,
+        role: req.user.role,
       });
       res.status(200).json({ status: 'success', data });
-    } catch (err) { next(err); }
+    } catch (err) {
+      next(err);
+    }
   };
 
   getOrderByNumber = async (req, res, next) => {
     try {
       const data = await this.ordersService.getOrderByNumber({
-        number: req.params.number, userId: req.user.id,
+        number: req.params.number,
+        userId: req.user.id,
       });
       res.status(200).json({ status: 'success', data });
-    } catch (err) { next(err); }
+    } catch (err) {
+      next(err);
+    }
   };
 
   cancelOrder = async (req, res, next) => {
     try {
       const data = await this.ordersService.cancelOrder({
-        id: req.params.id, userId: req.user.id, userEmail: req.user.email,
+        id: req.params.id,
+        userId: req.user.id,
+        userEmail: req.user.email,
       });
       res.status(200).json({ status: 'success', message: t('orders.cancelled', req.locale), data });
-    } catch (err) { next(err); }
+    } catch (err) {
+      next(err);
+    }
   };
 
   getAllOrders = async (req, res, next) => {
     try {
       const result = await this.ordersService.getAllOrders(req.query);
       res.status(200).json({ status: 'success', ...result });
-    } catch (err) { next(err); }
+    } catch (err) {
+      next(err);
+    }
   };
 
   updateOrderStatus = async (req, res, next) => {
     try {
       const data = await this.ordersService.updateOrderStatus({
-        id: req.params.id, status: req.body.status,
+        id: req.params.id,
+        status: req.body.status,
       });
       res.status(200).json({
         status: 'success',
         message: t('orders.statusUpdated', req.locale),
         data,
       });
-    } catch (err) { next(err); }
+    } catch (err) {
+      next(err);
+    }
   };
 
   repayOrder = async (req, res, next) => {
     try {
       const origin = req.get('origin') || process.env.FRONTEND_URL;
       const data = await this.ordersService.repayOrder({
-        id: req.params.id, userId: req.user.id, originUrl: origin,
+        id: req.params.id,
+        userId: req.user.id,
+        originUrl: origin,
       });
       res.status(200).json({
         status: 'success',
         message: t('orders.repaymentReady', req.locale),
         data,
       });
-    } catch (err) { next(err); }
+    } catch (err) {
+      next(err);
+    }
   };
 
   confirmReceived = async (req, res, next) => {
     try {
       const result = await this.ordersService.confirmReceived({
-        id: req.params.id, userId: req.user.id,
+        id: req.params.id,
+        userId: req.user.id,
       });
       res.status(200).json({
         status: 'success',
@@ -104,7 +130,9 @@ class OrdersController {
         pointsEarned: result.pointsEarned,
         data: result.data,
       });
-    } catch (err) { next(err); }
+    } catch (err) {
+      next(err);
+    }
   };
 
   trackOrder = async (req, res, next) => {
@@ -127,7 +155,9 @@ class OrdersController {
     try {
       const data = this.ordersService.estimateShipping(req.query);
       res.status(200).json({ data });
-    } catch (err) { next(err); }
+    } catch (err) {
+      next(err);
+    }
   };
 }
 

@@ -8,7 +8,7 @@ async function indexExists(qi, table, indexName) {
     `SELECT INDEX_NAME FROM INFORMATION_SCHEMA.STATISTICS
      WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = ? AND INDEX_NAME = ?
      LIMIT 1`,
-    { replacements: [table, indexName] }
+    { replacements: [table, indexName] },
   );
   return rows.length > 0;
 }
@@ -18,7 +18,7 @@ async function tableExists(qi, table) {
     `SELECT TABLE_NAME FROM INFORMATION_SCHEMA.TABLES
      WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = ?
      LIMIT 1`,
-    { replacements: [table] }
+    { replacements: [table] },
   );
   return rows.length > 0;
 }
@@ -28,7 +28,7 @@ async function columnExists(qi, table, column) {
     `SELECT COLUMN_NAME FROM INFORMATION_SCHEMA.COLUMNS
      WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = ? AND COLUMN_NAME = ?
      LIMIT 1`,
-    { replacements: [table, column] }
+    { replacements: [table, column] },
   );
   return rows.length > 0;
 }
@@ -38,24 +38,24 @@ async function columnExists(qi, table, column) {
 // HIGH — Missing UNIQUE constraints
 const UNIQUE_INDEXES = [
   // [table, indexName, columns]
-  ['orders',               'uq_orders_number',                    ['number']],
-  ['newsletter_subscribers','uq_newsletter_subscribers_email',     ['email']],
-  ['news',                 'uq_news_slug',                        ['slug']],
-  ['wishlists',            'uq_wishlists_user_product',            ['user_id', 'product_id']],
-  ['product_categories',   'uq_pcat_product_category',            ['product_id', 'category_id']],
-  ['review_feedbacks',     'uq_review_feedbacks_review_user',     ['review_id', 'user_id']],
+  ['orders', 'uq_orders_number', ['number']],
+  ['newsletter_subscribers', 'uq_newsletter_subscribers_email', ['email']],
+  ['news', 'uq_news_slug', ['slug']],
+  ['wishlists', 'uq_wishlists_user_product', ['user_id', 'product_id']],
+  ['product_categories', 'uq_pcat_product_category', ['product_id', 'category_id']],
+  ['review_feedbacks', 'uq_review_feedbacks_review_user', ['review_id', 'user_id']],
 ];
 
 // MEDIUM — Missing indexes
 const REGULAR_INDEXES = [
   // [table, indexName, columns]
-  ['orders',           'idx_orders_status',        ['status']],
-  ['orders',           'idx_orders_created_at',    ['created_at']],
-  ['orders',           'idx_orders_payment_status',['payment_status']],
-  ['products',         'idx_products_status',      ['status']],
-  ['products',         'idx_products_is_featured', ['is_featured']],
-  ['users',            'idx_users_role',           ['role']],
-  ['recently_viewed',  'idx_rv_user_product',      ['user_id', 'product_id']],
+  ['orders', 'idx_orders_status', ['status']],
+  ['orders', 'idx_orders_created_at', ['created_at']],
+  ['orders', 'idx_orders_payment_status', ['payment_status']],
+  ['products', 'idx_products_status', ['status']],
+  ['products', 'idx_products_is_featured', ['is_featured']],
+  ['users', 'idx_users_role', ['role']],
+  ['recently_viewed', 'idx_rv_user_product', ['user_id', 'product_id']],
 ];
 
 module.exports = {
@@ -83,7 +83,7 @@ module.exports = {
       }
       const colList = columns.map((c) => `\`${c}\``).join(', ');
       await queryInterface.sequelize.query(
-        `ALTER TABLE \`${table}\` ADD UNIQUE KEY \`${indexName}\` (${colList})`
+        `ALTER TABLE \`${table}\` ADD UNIQUE KEY \`${indexName}\` (${colList})`,
       );
       console.log(`  ADDED: ${indexName} (UNIQUE) on ${table}(${columns.join(', ')})`);
     }
@@ -110,7 +110,7 @@ module.exports = {
       }
       const colList = columns.map((c) => `\`${c}\``).join(', ');
       await queryInterface.sequelize.query(
-        `ALTER TABLE \`${table}\` ADD INDEX \`${indexName}\` (${colList})`
+        `ALTER TABLE \`${table}\` ADD INDEX \`${indexName}\` (${colList})`,
       );
       console.log(`  ADDED: ${indexName} on ${table}(${columns.join(', ')})`);
     }
@@ -121,7 +121,7 @@ module.exports = {
     for (const [table, indexName] of [...REGULAR_INDEXES].reverse()) {
       if (await indexExists(queryInterface, table, indexName)) {
         await queryInterface.sequelize.query(
-          `ALTER TABLE \`${table}\` DROP INDEX \`${indexName}\``
+          `ALTER TABLE \`${table}\` DROP INDEX \`${indexName}\``,
         );
         console.log(`  DROPPED: ${indexName}`);
       }
@@ -131,7 +131,7 @@ module.exports = {
     for (const [table, indexName] of [...UNIQUE_INDEXES].reverse()) {
       if (await indexExists(queryInterface, table, indexName)) {
         await queryInterface.sequelize.query(
-          `ALTER TABLE \`${table}\` DROP INDEX \`${indexName}\``
+          `ALTER TABLE \`${table}\` DROP INDEX \`${indexName}\``,
         );
         console.log(`  DROPPED: ${indexName}`);
       }

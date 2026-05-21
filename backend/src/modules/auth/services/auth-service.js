@@ -3,6 +3,8 @@
  * @layer Service
  * @module auth
  * @description Business logic layer cho auth
+ * @depends-on sequelize-auth-repository, emailGateway, googleVerifier, tokenSigner, blacklistStore, logger
+ * @see module.js (DI wiring), routes.js (endpoints), CLAUDE.md (overview)
  */
 const crypto = require('crypto');
 const { AppError } = require('@shared/errors');
@@ -202,8 +204,11 @@ class AuthService {
 
     const otpStr = String(otp).padStart(6, '0');
     const storedOtp = String(user.otpCode || '').padStart(6, '0');
-    if (!user.otpCode || otpStr.length !== storedOtp.length ||
-        !crypto.timingSafeEqual(Buffer.from(otpStr), Buffer.from(storedOtp))) {
+    if (
+      !user.otpCode ||
+      otpStr.length !== storedOtp.length ||
+      !crypto.timingSafeEqual(Buffer.from(otpStr), Buffer.from(storedOtp))
+    ) {
       throw new AppError(genericError, 400);
     }
 
@@ -320,7 +325,9 @@ class AuthService {
       try {
         await this.emailGateway.sendResetPasswordEmail(user.email, resetToken);
       } catch (emailErr) {
-        this.logger.error(`[Auth] Gửi reset password email thất bại cho ${user.email}: ${emailErr.message}`);
+        this.logger.error(
+          `[Auth] Gửi reset password email thất bại cho ${user.email}: ${emailErr.message}`,
+        );
       }
     }
 

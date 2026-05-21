@@ -3,6 +3,9 @@
  * @layer Service
  * @module orders
  * @description Business logic layer cho orders
+ * @depends-on sequelize-orders-repository, emailGateway (adapter), eventBus, logger, constants
+ * @see module.js (DI wiring), routes.js (endpoints), CLAUDE.md (overview)
+ * @see sequelize-orders-repository.js (DB queries), orders-controller.js (HTTP layer)
  */
 const crypto = require('crypto');
 const { AppError } = require('@shared/errors');
@@ -543,7 +546,22 @@ class OrdersService {
     if (order.userId !== userId && role !== 'admin') {
       throw new AppError('orders.accessDenied', 403);
     }
-    return order;
+    // Map productImages → thumbnail + images (giống getUserOrders)
+    const o = order.toJSON ? order.toJSON() : { ...order };
+    if (o.items) {
+      o.items = o.items.map((item) => {
+        if (item.Product?.productImages) {
+          item.Product.thumbnail =
+            item.Product.productImages.find((img) => img.isThumbnail)?.imageUrl ||
+            item.Product.productImages[0]?.imageUrl ||
+            null;
+          item.Product.images = item.Product.productImages.map((img) => img.imageUrl);
+          delete item.Product.productImages;
+        }
+        return item;
+      });
+    }
+    return o;
   }
 
   async getOrderByNumber({ number, userId }) {

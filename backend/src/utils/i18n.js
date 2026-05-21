@@ -6,7 +6,6 @@
  * @description Helper utility: i18n
  */
 
-
 const vi = require('../locales/vi.json');
 const en = require('../locales/en.json');
 
@@ -28,7 +27,9 @@ function t(key, lang = 'vi', params = {}) {
   const dict = TRANSLATIONS[lang] || TRANSLATIONS.vi;
   const value = getNestedValue(dict, key);
   if (!value) return null;
-  return value.replace(/\{\{(\w+)\}\}/g, (_, name) => (params[name] !== undefined ? params[name] : ''));
+  return value.replace(/\{\{(\w+)\}\}/g, (_, name) =>
+    params[name] !== undefined ? params[name] : '',
+  );
 }
 
 module.exports = { t };

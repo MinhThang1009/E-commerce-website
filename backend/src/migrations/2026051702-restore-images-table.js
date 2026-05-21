@@ -5,7 +5,10 @@
 // hai bảng phục vụ mục đích khác nhau, không thể thay thế nhau.
 module.exports = {
   async up(queryInterface, Sequelize) {
-    const tableExists = await queryInterface.describeTable('images').then(() => true).catch(() => false);
+    const tableExists = await queryInterface
+      .describeTable('images')
+      .then(() => true)
+      .catch(() => false);
     if (tableExists) {
       console.log('  SKIP: images table already exists');
       return;
@@ -84,9 +87,9 @@ module.exports = {
     });
 
     await queryInterface.addIndex('images', ['product_id'], { name: 'idx_images_product_id' });
-    await queryInterface.addIndex('images', ['user_id'],    { name: 'idx_images_user_id' });
-    await queryInterface.addIndex('images', ['category'],   { name: 'idx_images_category' });
-    await queryInterface.addIndex('images', ['is_active'],  { name: 'idx_images_is_active' });
+    await queryInterface.addIndex('images', ['user_id'], { name: 'idx_images_user_id' });
+    await queryInterface.addIndex('images', ['category'], { name: 'idx_images_category' });
+    await queryInterface.addIndex('images', ['is_active'], { name: 'idx_images_is_active' });
 
     console.log('  CREATED: images table restored');
   },

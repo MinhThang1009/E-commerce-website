@@ -7,12 +7,10 @@ module.exports = {
     // ── 8.11 product_categories: chuyển từ auto-increment id → composite PK ──
     // Bước 1: Bỏ AUTO_INCREMENT trước khi xóa PK (MySQL yêu cầu thứ tự này)
     await queryInterface.sequelize.query(
-      'ALTER TABLE `product_categories` MODIFY `id` INT NOT NULL'
+      'ALTER TABLE `product_categories` MODIFY `id` INT NOT NULL',
     );
     // Bước 2: Xóa PK hiện tại (đang trên cột id)
-    await queryInterface.sequelize.query(
-      'ALTER TABLE `product_categories` DROP PRIMARY KEY'
-    );
+    await queryInterface.sequelize.query('ALTER TABLE `product_categories` DROP PRIMARY KEY');
     // Bước 3: Xóa cột id
     await queryInterface.removeColumn('product_categories', 'id');
     // Bước 4: Đổi tên cột FK sang snake_case (chuẩn DB naming)
@@ -20,7 +18,7 @@ module.exports = {
     await queryInterface.renameColumn('product_categories', 'categoryId', 'category_id');
     // Bước 5: Thêm composite PK (product_id, category_id)
     await queryInterface.sequelize.query(
-      'ALTER TABLE `product_categories` ADD PRIMARY KEY (`product_id`, `category_id`)'
+      'ALTER TABLE `product_categories` ADD PRIMARY KEY (`product_id`, `category_id`)',
     );
     // Bước 6: Thêm FK constraints với ON DELETE CASCADE
     await queryInterface.addConstraint('product_categories', {
@@ -145,9 +143,7 @@ module.exports = {
     await queryInterface.removeIndex('product_categories', 'idx_product_categories_category_id');
     await queryInterface.removeConstraint('product_categories', 'fk_product_categories_categories');
     await queryInterface.removeConstraint('product_categories', 'fk_product_categories_products');
-    await queryInterface.sequelize.query(
-      'ALTER TABLE `product_categories` DROP PRIMARY KEY'
-    );
+    await queryInterface.sequelize.query('ALTER TABLE `product_categories` DROP PRIMARY KEY');
     await queryInterface.renameColumn('product_categories', 'product_id', 'productId');
     await queryInterface.renameColumn('product_categories', 'category_id', 'categoryId');
     await queryInterface.addColumn('product_categories', 'id', {

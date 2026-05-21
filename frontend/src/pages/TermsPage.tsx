@@ -8,6 +8,7 @@ import React from 'react';
 import { Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { ROUTES } from '@/routes/paths';
+import Button from '@/components/common/Button';
 
 const TermsPage: React.FC = () => {
   const { t } = useTranslation();
@@ -85,12 +86,9 @@ const TermsPage: React.FC = () => {
 
       <div className="max-w-4xl mx-auto text-center">
         <p className="text-neutral-600 dark:text-neutral-400 mb-6">{t('terms.contactDesc')}</p>
-        <Link
-          to={ROUTES.CONTACT}
-          className="inline-block bg-primary-600 hover:bg-primary-700 text-white font-medium py-3 px-6 rounded-lg transition-colors"
-        >
+        <Button variant="primary" size="md" as={Link} to={ROUTES.CONTACT}>
           {t('terms.contactBtn')}
-        </Link>
+        </Button>
       </div>
     </div>
   );

@@ -31,8 +31,8 @@ const BankTransferQR: React.FC<BankTransferQRProps> = ({ amount, numberOrder }) 
     reference: numberOrder,
   };
 
-  // Tạo URL mã QR sử dụng API Sepay.vn - đảm bảo số tiền là số nguyên cho API
-  const qrUrl = `https://qr.sepay.vn/img?acc=${bankInfo.accountNumber}&bank=${bankInfo.bankCode}&amount=${roundedAmount}&des=${encodeURIComponent(bankInfo.reference)}&template=compact`;
+  // Tạo URL mã QR sử dụng VietQR API (img.vietqr.io) — chuẩn Napas, hỗ trợ tất cả ngân hàng VN
+  const qrUrl = `https://img.vietqr.io/image/${bankInfo.bankCode}-${bankInfo.accountNumber}-compact.jpg?amount=${roundedAmount}&addInfo=${encodeURIComponent(bankInfo.reference)}&accountName=${encodeURIComponent(bankInfo.accountName)}`;
 
   // Hàm sao chép văn bản
   const copyToClipboard = async (text: string, field: string) => {

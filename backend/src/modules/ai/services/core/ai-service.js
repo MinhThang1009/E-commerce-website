@@ -3,6 +3,8 @@
  * @layer Service
  * @module ai
  * @description Business logic layer cho ai
+ * @depends-on sequelize-ai-repository, ragPipeline, vectorStoreService, logger
+ * @see module.js (DI wiring), routes.js (endpoints), CLAUDE.md (overview)
  */
 const { AppError } = require('@shared/errors');
 

@@ -85,7 +85,8 @@ const normalizeError = (err) => {
   if (error.name === 'ValidationError') return handleValidationErrorDB(error);
   if (error.name === 'JsonWebTokenError') return handleJWTError();
   if (error.name === 'TokenExpiredError') return handleJWTExpiredError();
-  if (error.name === 'SequelizeUniqueConstraintError') return handleSequelizeUniqueConstraintError(error);
+  if (error.name === 'SequelizeUniqueConstraintError')
+    return handleSequelizeUniqueConstraintError(error);
   if (error.name === 'SequelizeValidationError') return handleSequelizeValidationError(error);
   // MulterError được nhận dạng qua instanceof nên truyền err gốc vào
   if (err.name === 'MulterError') return handleMulterError(err);

@@ -77,12 +77,23 @@ module.exports = {
       });
     }
 
-    await addIndexIfMissing(queryInterface, 'images', ['product_id'], { name: 'idx_images_product_id' });
+    await addIndexIfMissing(queryInterface, 'images', ['product_id'], {
+      name: 'idx_images_product_id',
+    });
     await addIndexIfMissing(queryInterface, 'images', ['user_id'], { name: 'idx_images_user_id' });
-    await addIndexIfMissing(queryInterface, 'images', ['category'], { name: 'idx_images_category' });
-    await addIndexIfMissing(queryInterface, 'images', ['is_active'], { name: 'idx_images_is_active' });
-    await addIndexIfMissing(queryInterface, 'images', ['created_at'], { name: 'idx_images_created_at' });
-    await addIndexIfMissing(queryInterface, 'images', ['file_name'], { name: 'idx_images_file_name', unique: true });
+    await addIndexIfMissing(queryInterface, 'images', ['category'], {
+      name: 'idx_images_category',
+    });
+    await addIndexIfMissing(queryInterface, 'images', ['is_active'], {
+      name: 'idx_images_is_active',
+    });
+    await addIndexIfMissing(queryInterface, 'images', ['created_at'], {
+      name: 'idx_images_created_at',
+    });
+    await addIndexIfMissing(queryInterface, 'images', ['file_name'], {
+      name: 'idx_images_file_name',
+      unique: true,
+    });
   },
 
   down: async (queryInterface) => {

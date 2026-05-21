@@ -30,7 +30,7 @@ jest.mock('@models', () => ({
   Op: {},
 }));
 
-jest.mock('@modules/ai/services/vectorstore/vector-store', () => ({
+jest.mock('@services/vector-store/vector-store', () => ({
   items: [],
   loadPromise: Promise.resolve(),
   hybridSearch: jest.fn().mockResolvedValue([]),
@@ -141,7 +141,7 @@ describe('chatbot-service — cache HIT + sessionId (lines 197-199)', () => {
 
 describe('chatbot-service — hybridSearch reject → .catch(() => []) (line 244)', () => {
   it('trả về [] khi hybridSearch throw (covers arrow function trong catch)', async () => {
-    const vs = require('@modules/ai/services/vectorstore/vector-store');
+    const vs = require('@services/vector-store/vector-store');
     vs.hybridSearch.mockRejectedValueOnce(new Error('vector store down'));
     mockRedisGet.mockResolvedValue(null); // no cache
     mockRedisSetEx.mockResolvedValue('OK');
@@ -157,7 +157,7 @@ describe('chatbot-service — hybridSearch reject → .catch(() => []) (line 244
 
 describe('chatbot-service — initialSearchResults map callback (line 256)', () => {
   it('hybridSearch trả về item → map callback được gọi', async () => {
-    const vs = require('@modules/ai/services/vectorstore/vector-store');
+    const vs = require('@services/vector-store/vector-store');
     const mockProduct = {
       id: 1,
       name: 'iPhone 15',
@@ -183,7 +183,7 @@ describe('chatbot-service — initialSearchResults map callback (line 256)', () 
 
 describe('chatbot-service — fallback map callback (line 267)', () => {
   it('fallback search map callback khi initial search trả về rỗng', async () => {
-    const vs = require('@modules/ai/services/vectorstore/vector-store');
+    const vs = require('@services/vector-store/vector-store');
     const mockProduct = {
       id: 99,
       name: 'Fallback Product',

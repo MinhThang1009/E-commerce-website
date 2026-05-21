@@ -29,7 +29,7 @@ const Notification: React.FC<{ notification: NotificationType }> = ({ notificati
         return (
           <svg
             xmlns="http://www.w3.org/2000/svg"
-            className="h-6 w-6 text-green-500"
+            className="h-6 w-6 text-primary-500"
             fill="none"
             viewBox="0 0 24 24"
             stroke="currentColor"
@@ -101,14 +101,14 @@ const Notification: React.FC<{ notification: NotificationType }> = ({ notificati
   const getBackgroundColor = () => {
     switch (notification.type) {
       case 'success':
-        return 'bg-green-50 dark:bg-green-900/30 border-green-200 dark:border-green-800';
+        return 'bg-teal-50 dark:bg-neutral-800 border-teal-300 dark:border-teal-700';
       case 'error':
-        return 'bg-red-50 dark:bg-red-900/30 border-red-200 dark:border-red-800';
+        return 'bg-red-50 dark:bg-neutral-800 border-red-300 dark:border-red-700';
       case 'warning':
-        return 'bg-yellow-50 dark:bg-yellow-900/30 border-yellow-200 dark:border-yellow-800';
+        return 'bg-amber-50 dark:bg-neutral-800 border-amber-300 dark:border-amber-700';
       case 'info':
       default:
-        return 'bg-blue-50 dark:bg-blue-900/30 border-blue-200 dark:border-blue-800';
+        return 'bg-sky-50 dark:bg-neutral-800 border-sky-300 dark:border-sky-700';
     }
   };
 
@@ -118,7 +118,7 @@ const Notification: React.FC<{ notification: NotificationType }> = ({ notificati
       role="alert"
     >
       <div className="flex-shrink-0 mr-3">{getIcon()}</div>
-      <div className="flex-grow text-sm font-medium text-neutral-800 dark:text-neutral-200">
+      <div className="flex-grow text-sm font-medium text-neutral-800 dark:text-white">
         {notification.message}
       </div>
       <button

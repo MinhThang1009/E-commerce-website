@@ -15,7 +15,7 @@ async function columnExists(qi, table, column) {
   const [rows] = await qi.sequelize.query(
     `SELECT COLUMN_NAME FROM INFORMATION_SCHEMA.COLUMNS
      WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = ? AND COLUMN_NAME = ?`,
-    { replacements: [table, column] }
+    { replacements: [table, column] },
   );
   return rows.length > 0;
 }
@@ -30,7 +30,7 @@ module.exports = {
   async down(queryInterface) {
     if (!(await columnExists(queryInterface, 'products', 'brand'))) {
       await queryInterface.sequelize.query(
-        'ALTER TABLE `products` ADD COLUMN `brand` VARCHAR(255) NULL DEFAULT NULL'
+        'ALTER TABLE `products` ADD COLUMN `brand` VARCHAR(255) NULL DEFAULT NULL',
       );
     }
   },

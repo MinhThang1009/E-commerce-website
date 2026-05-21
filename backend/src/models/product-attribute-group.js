@@ -30,7 +30,7 @@ const ProductAttributeGroup = sequelize.define(
     tableName: 'product_attribute_groups',
     timestamps: true,
     underscored: true,
-  }
+  },
 );
 
 module.exports = ProductAttributeGroup;

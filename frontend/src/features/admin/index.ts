@@ -4,11 +4,11 @@
  * @feature admin
  * @description Public API exports cho feature admin
  *
- * Admin pages theo domain (feature-based):
- *   - Dashboard, Users, Discount, Inventory, Warranty → features/admin/pages/
- *   - Products, Categories, Brands, Collections      → features/catalog/pages/admin/
- *   - News, Banners, Email Campaigns                 → features/content/pages/admin/
- *   - Orders                                         → features/orders/pages/admin/
+ * Tất cả admin pages nằm trong features/admin/pages/<domain>/:
+ *   - features/admin/pages/          → Dashboard, Users, Inventory, DiscountCodes, Warranty, AuditLog
+ *   - features/admin/pages/catalog/  → Products, Categories, Brands
+ *   - features/admin/pages/content/  → News, Banners
+ *   - features/admin/pages/orders/   → OrdersPage
  */
 // Barrel export feature admin — public surface
 

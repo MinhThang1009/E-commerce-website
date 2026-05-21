@@ -13,7 +13,7 @@ module.exports = {
      * Use the existing Sequelize model definitions to create all tables.
      * This keeps the migration logic in sync with the current models
      * and only runs once at the beginning of the migration chain.
-     * 
+     *
      * We do NOT create foreign key constraints here to avoid MySQL 64-key limit error.
      * Relationships are defined in models/index.js for ORM use only.
      */
@@ -21,14 +21,15 @@ module.exports = {
       // Create tables without running sync (which tries to add FK constraints)
       const queryInterface = sequelize.getQueryInterface();
       const models = sequelize.models;
-      
+
       // Create each table individually
       for (const [modelName, model] of Object.entries(models)) {
         try {
           // Check if table already exists
-          const tableExists = await queryInterface.showAllTables()
-            .then(tables => tables.includes(model.tableName));
-          
+          const tableExists = await queryInterface
+            .showAllTables()
+            .then((tables) => tables.includes(model.tableName));
+
           if (!tableExists) {
             logger.info(`Creating table: ${model.tableName}`);
             await queryInterface.createTable(model.tableName, model.rawAttributes, model.options);
@@ -57,4 +58,3 @@ module.exports = {
     }
   },
 };
-

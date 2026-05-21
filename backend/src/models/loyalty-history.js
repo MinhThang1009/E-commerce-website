@@ -34,7 +34,7 @@ const LoyaltyHistory = sequelize.define(
     tableName: 'loyalty_histories',
     timestamps: true,
     underscored: true,
-  }
+  },
 );
 
 module.exports = LoyaltyHistory;

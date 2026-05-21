@@ -2,16 +2,14 @@
 /**
  * Seeder: admin user mặc định cho development.
  * Idempotent: INSERT IGNORE theo email.
- * PASSWORD: admin@123 (argon2id hash — CHỈ DÙNG DEV, thay đổi trước production)
+ * PASSWORD: Admin@123 (bcrypt hash — CHỈ DÙNG DEV, thay đổi trước production)
  */
 const ADMIN_EMAIL = 'admin@techstore.vn';
 
 module.exports = {
   async up(queryInterface) {
-    const { hashPassword } = require('../../src/utils/auth').default || require('../../src/utils/auth');
-    // Dùng argon2 trực tiếp nếu helper không export
-    const argon2 = require('argon2');
-    const passwordHash = await argon2.hash('admin@123');
+    const bcrypt = require('bcrypt');
+    const passwordHash = await bcrypt.hash('Admin@123', 10);
 
     await queryInterface.sequelize.query(
       `INSERT IGNORE INTO users

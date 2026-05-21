@@ -1,0 +1,65 @@
+\chapter{Đặt vấn đề}
+
+\section{Bối cảnh và lý do chọn đề tài}
+
+Thương mại điện tử (TMĐT) tại Việt Nam đang trải qua giai đoạn tăng trưởng mạnh mẽ và liên tục. Theo báo cáo của Hiệp hội Thương mại Điện tử Việt Nam (VECOM) năm 2024, thị trường TMĐT Việt Nam đạt tốc độ tăng trưởng trung bình 20 đến 25 phần trăm mỗi năm trong giai đoạn 2020 đến 2024, và được dự báo sẽ đạt quy mô 39 tỷ đô la Mỹ vào năm 2025 \cite{vecom2024}. Trong bối cảnh đó, lĩnh vực kinh doanh thiết bị công nghệ bao gồm laptop, điện thoại thông minh, máy tính bảng và đồng hồ thông minh nổi lên là một trong những phân khúc sôi động nhất, đòi hỏi các nền tảng trực tuyến ngày càng hoàn thiện và chuyên nghiệp hơn.
+
+Tuy nhiên, các nền tảng TMĐT hiện tại đang phải đối mặt với một thách thức cốt lõi mà các giải pháp truyền thống chưa thể giải quyết triệt để: sự đa dạng và phức tạp của sản phẩm công nghệ khiến người dùng gặp nhiều khó khăn trong việc lựa chọn. Mỗi dòng sản phẩm như laptop hay điện thoại thường có hàng chục cấu hình, phiên bản, mức giá và thông số kỹ thuật khác nhau. Người dùng phổ thông thường không có đủ kiến thức chuyên môn để tự so sánh và quyết định, trong khi dịch vụ tư vấn qua nhân viên chat trực tuyến đòi hỏi chi phí vận hành cao, không thể hoạt động 24 giờ mỗi ngày và bảy ngày mỗi tuần, và không thể đồng thời phục vụ số lượng lớn người dùng.
+
+Trước thực trạng đó, các chatbot thế hệ cũ dựa trên kịch bản cố định (rule-based) đã được triển khai nhưng tỏ ra không hiệu quả vì chỉ có thể trả lời một tập hợp câu hỏi được lập trình trước, không thể hiểu ngữ cảnh câu hỏi phức tạp và hoàn toàn không truy cập được thông tin thời gian thực về giá, tồn kho hay thông số kỹ thuật cập nhật từ cơ sở dữ liệu.
+
+Sự xuất hiện của kỹ thuật RAG (Retrieval-Augmented Generation) \cite{lewis2020rag} đã tạo ra bước đột phá trong lĩnh vực này. RAG kết hợp hai khả năng bổ sung cho nhau: khả năng truy xuất thông tin chính xác từ nguồn dữ liệu ngoài (Retrieval) và khả năng sinh ngôn ngữ tự nhiên của các mô hình ngôn ngữ lớn (Generation). Nhờ đó, chatbot tích hợp RAG có thể trả lời câu hỏi của người dùng với thông tin chính xác, cập nhật và được diễn đạt tự nhiên như một nhân viên tư vấn thực sự.
+
+Xuất phát từ những nhu cầu thực tiễn và tiềm năng công nghệ nêu trên, khóa luận này đề xuất xây dựng hệ thống \textbf{TechStore}, một website thương mại điện tử fullstack chuyên bán thiết bị công nghệ, tích hợp AI Chatbot sử dụng kỹ thuật RAG với Hybrid Search để hỗ trợ người dùng tư vấn và lựa chọn sản phẩm phù hợp theo thời gian thực.
+
+\section{Mô tả bài toán}
+
+Bài toán được đặt ra là xây dựng một hệ thống TMĐT đầy đủ chức năng với trọng tâm là module AI Chatbot RAG, đáp ứng đồng thời nhu cầu của ba nhóm người dùng chính.
+
+Đối với nhóm khách vãng lai, hệ thống cần cung cấp trải nghiệm duyệt sản phẩm mượt mà với khả năng lọc và tìm kiếm đa tiêu chí, xem thông tin chi tiết sản phẩm bao gồm nhiều ảnh và thông số kỹ thuật, quản lý giỏ hàng tạm thời ngay cả khi chưa đăng nhập, và đặc biệt là tương tác với AI Chatbot để được tư vấn sản phẩm bằng ngôn ngữ tự nhiên. Đây là điểm khác biệt then chốt so với các nền tảng TMĐT thông thường.
+
+Đối với nhóm khách hàng đã đăng nhập, ngoài toàn bộ chức năng của khách vãng lai, hệ thống cần bổ sung khả năng đặt hàng và thanh toán trực tuyến qua nhiều phương thức (COD, chuyển khoản, MoMo, VNPay), theo dõi và quản lý lịch sử đơn hàng, viết đánh giá sản phẩm sau khi mua, tích lũy và sử dụng điểm thưởng loyalty, và quản lý hồ sơ cá nhân cùng địa chỉ giao hàng.
+
+Đối với nhóm quản trị viên, hệ thống cần cung cấp bộ công cụ quản trị toàn diện bao gồm dashboard phân tích kinh doanh với các chỉ số KPI quan trọng, quản lý toàn bộ vòng đời sản phẩm từ tạo mới đến cập nhật thông số và quản lý tồn kho, xử lý đơn hàng và cập nhật trạng thái giao hàng, quản lý nội dung marketing (banner, tin tức), tạo và quản lý mã giảm giá, và theo dõi nhật ký thao tác của admin.
+
+Về AI Chatbot, đây là tính năng cốt lõi và phức tạp nhất của hệ thống. Chatbot cần có khả năng hiểu câu hỏi tự nhiên bằng tiếng Việt lẫn tiếng Anh, kể cả các câu hỏi viết tắt phổ biến như "ip17 bnh" hay "ss s25 giá bao nhiêu". Chatbot phải truy xuất thông tin sản phẩm chính xác từ cơ sở dữ liệu theo thời gian thực thông qua vector search kết hợp semantic và keyword, sinh phản hồi tự nhiên không bịa đặt thông tin ngoài danh sách sản phẩm thực có, và hỗ trợ thêm sản phẩm vào giỏ hàng trực tiếp từ giao diện chat.
+
+Đầu vào của bài toán bao gồm câu hỏi văn bản tự nhiên từ người dùng, cơ sở dữ liệu sản phẩm với thông tin đầy đủ về giá, tồn kho và thông số kỹ thuật, và lịch sử hội thoại để duy trì ngữ cảnh. Đầu ra là phản hồi ngôn ngữ tự nhiên kèm danh sách sản phẩm phù hợp nhất, thông tin giá và trạng thái tồn kho hiện tại, cùng các gợi ý câu hỏi tiếp theo để dẫn dắt người dùng.
+
+\section{Mục tiêu và phạm vi nghiên cứu}
+
+\subsection{Mục tiêu nghiên cứu}
+
+Khóa luận đặt ra bốn mục tiêu chính cần đạt được. Mục tiêu thứ nhất là thiết kế và xây dựng hệ thống TMĐT fullstack với kiến trúc Modular Monolith, đảm bảo tính module hóa cao, dễ bảo trì và có khả năng mở rộng khi quy mô tăng lên. Backend được tổ chức thành 19 modules độc lập với Dependency Injection pattern, trong khi frontend được tổ chức thành 14 features cô lập hoàn toàn.
+
+Mục tiêu thứ hai là cài đặt thành công AI Chatbot sử dụng kỹ thuật RAG với Hybrid Search, trong đó kết hợp cosine similarity cho semantic search và thuật toán BM25-inspired cho keyword search trên vector không gian 1024 chiều. Chatbot phải đạt độ chính xác cao trong việc truy xuất sản phẩm liên quan và sinh phản hồi tự nhiên, không bịa đặt thông tin.
+
+Mục tiêu thứ ba là tích hợp hoàn chỉnh hai cổng thanh toán MoMo và VNPay với xử lý IPN (Instant Payment Notification) an toàn, đảm bảo tính idempotency để tránh xử lý trùng lặp khi webhook được gửi nhiều lần, và cơ chế chống race condition bằng SELECT FOR UPDATE khi giảm tồn kho.
+
+Mục tiêu thứ tư là đảm bảo chất lượng phần mềm qua bộ kiểm thử toàn diện gồm 5 tầng: unit tests với mock database, integration tests với MySQL thật, API HTTP tests qua Supertest, E2E tests cho các luồng người dùng hoàn chỉnh, và frontend component tests với React Testing Library. Hệ thống phải đạt coverage tối thiểu 97 phần trăm về statements và lines.
+
+\subsection{Phạm vi nghiên cứu}
+
+Về phạm vi sản phẩm, hệ thống tập trung vào năm danh mục thiết bị công nghệ: điện thoại thông minh, máy tính bảng, laptop, đồng hồ thông minh và đồng hồ đeo tay truyền thống. Dữ liệu mẫu bao gồm 60 sản phẩm với 214 biến thể từ 12 thương hiệu lớn gồm Apple, Samsung, Xiaomi, OPPO, ASUS, HP, Dell, Lenovo, Acer, realme, CASIO và CITIZEN. Phạm vi sản phẩm được chọn để đảm bảo tính đa dạng nhưng đủ tập trung để AI Chatbot có thể hoạt động hiệu quả.
+
+Về phạm vi AI Chatbot, hệ thống hỗ trợ tư vấn sản phẩm bằng tiếng Việt và tiếng Anh, xử lý các câu hỏi về giá, tồn kho, thông số kỹ thuật, so sánh sản phẩm và gợi ý sản phẩm theo ngân sách. Chatbot không xử lý các chủ đề ngoài phạm vi thiết bị công nghệ như thời tiết, âm nhạc hay tin tức.
+
+Về phạm vi thanh toán, hệ thống hỗ trợ bốn phương thức: COD (thanh toán khi nhận hàng), chuyển khoản ngân hàng với QR code VietQR, MoMo wallet và VNPay. Hệ thống chưa hỗ trợ thẻ tín dụng quốc tế (Visa, Mastercard) trong phiên bản hiện tại.
+
+Về phạm vi triển khai, hệ thống được phát triển và kiểm thử trên môi trường local với Node.js 20, MySQL 8 và Redis tùy chọn. Kiến trúc được thiết kế để có thể triển khai trên các nền tảng cloud phổ biến nhưng việc triển khai production nằm ngoài phạm vi của khóa luận này.
+
+\section{Phương pháp nghiên cứu}
+
+Khóa luận áp dụng phương pháp nghiên cứu kết hợp giữa lý thuyết và thực hành theo quy trình có hệ thống.
+
+Giai đoạn đầu tiên là nghiên cứu lý thuyết và tổng quan tài liệu. Trong giai đoạn này, khóa luận tìm hiểu các công trình nền tảng về kỹ thuật RAG của Lewis và cộng sự \cite{lewis2020rag}, các mô hình embedding đa ngôn ngữ \cite{devlin2019bert} \cite{jinaai2024}, kiến trúc Modular Monolith trong phát triển phần mềm hiện đại \cite{newman2019monolith} và thuật toán BM25 trong truy xuất thông tin \cite{robertson2009probabilistic}. Ngoài ra, khóa luận nghiên cứu tài liệu kỹ thuật của các framework và công nghệ sử dụng.
+
+Giai đoạn thứ hai là phân tích yêu cầu và thiết kế hệ thống. Dựa trên kết quả nghiên cứu lý thuyết và phân tích các hệ thống TMĐT hiện có tại Việt Nam như Shopee, Lazada và Thế Giới Di Động, khóa luận xác định đầy đủ yêu cầu chức năng và phi chức năng, thiết kế kiến trúc tổng thể, lập sơ đồ use case, sequence diagram, ERD và component diagram.
+
+Giai đoạn thứ ba là cài đặt và phát triển. Hệ thống được xây dựng theo phương pháp Agile với các sprint ngắn, ưu tiên cài đặt các tính năng cốt lõi trước. Trọng tâm là cài đặt RAG pipeline với Hybrid Search, tích hợp các cổng thanh toán và xây dựng đầy đủ bộ kiểm thử.
+
+Giai đoạn thứ tư là kiểm thử và đánh giá. Hệ thống được kiểm thử toàn diện qua 5 tầng, đánh giá độ chính xác của RAG Chatbot và phân tích kết quả.
+
+\section{Cấu trúc khóa luận}
+
+Khóa luận được tổ chức thành bốn chương nội dung chính cùng phần kết luận. Chương 1 là chương hiện tại, trình bày bối cảnh, phát biểu bài toán, mục tiêu, phạm vi và phương pháp nghiên cứu. Chương 2 trình bày nền tảng lý thuyết và các công nghệ sử dụng, bao gồm kỹ thuật RAG, vector embedding, kiến trúc Modular Monolith và toàn bộ stack công nghệ. Chương 3 mô tả chi tiết quá trình phân tích yêu cầu và thiết kế hệ thống, bao gồm các sơ đồ use case, sequence diagram, ERD và thiết kế chi tiết từng module. Chương 4 trình bày môi trường cài đặt, các đoạn code thực tế của các thành phần chính, chiến lược kiểm thử 5 tầng với kết quả cụ thể và đánh giá tổng quan hệ thống. Phần Kết luận tổng kết các kết quả đạt được, hạn chế và hướng phát triển trong tương lai.

@@ -20,15 +20,18 @@ jest.mock('@utils/logger', () => ({
 
 jest.mock('slugify', () => (text, opts) => {
   // Simplified slugify: lowercase + replace non-alphanumeric with '-'
-  return text.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
+  return text
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-|-$/g, '');
 });
 
 // Mock vectorStore — nếu không có, hook sẽ bỏ qua
-jest.mock('@modules/ai/services/vectorstore/vector-store', () => ({
+jest.mock('@services/vector-store/vector-store', () => ({
   upsertProduct: jest.fn().mockResolvedValue(undefined),
   save: jest.fn().mockResolvedValue(undefined),
   items: [],
-  enrichProductData: jest.fn(p => p),
+  enrichProductData: jest.fn((p) => p),
 }));
 
 // Mock sequelize — trả về đối tượng giả để model có thể define()
@@ -61,12 +64,22 @@ function makeInstance(initialData = {}) {
 
   return {
     _dataValues: dataValues,
-    getDataValue(field) { return dataValues[field]; },
-    setDataValue(field, value) { dataValues[field] = value; },
-    changed(field) { return changedFields.has(field); },
-    _markChanged(field) { changedFields.add(field); },
+    getDataValue(field) {
+      return dataValues[field];
+    },
+    setDataValue(field, value) {
+      dataValues[field] = value;
+    },
+    changed(field) {
+      return changedFields.has(field);
+    },
+    _markChanged(field) {
+      changedFields.add(field);
+    },
     // Expose raw for assertions
-    get _raw() { return dataValues; },
+    get _raw() {
+      return dataValues;
+    },
   };
 }
 
@@ -274,14 +287,18 @@ describe('name virtual field (nameVi alias)', () => {
   it('name getter trả về giá trị của nameVi', () => {
     const instance = makeInstance({ nameVi: 'iPhone 17 Pro Max' });
     // Simulate getter logic: get() { return this.getDataValue('nameVi'); }
-    const nameGetter = function () { return this.getDataValue('nameVi'); };
+    const nameGetter = function () {
+      return this.getDataValue('nameVi');
+    };
     expect(nameGetter.call(instance)).toBe('iPhone 17 Pro Max');
   });
 
   it('name setter lưu vào nameVi', () => {
     const instance = makeInstance({ nameVi: null });
     // Simulate setter logic: set(v) { this.setDataValue('nameVi', v); }
-    const nameSetter = function (v) { this.setDataValue('nameVi', v); };
+    const nameSetter = function (v) {
+      this.setDataValue('nameVi', v);
+    };
     nameSetter.call(instance, 'Samsung Galaxy S25');
     expect(instance.getDataValue('nameVi')).toBe('Samsung Galaxy S25');
   });
@@ -294,10 +311,7 @@ describe('beforeValidate hook — slug generation', () => {
     if (product.name && (!product.slug || product.changed('name'))) {
       const randomString = Math.random().toString(36).substring(2, 8);
       const slugify = require('slugify');
-      product.slug =
-        slugify(product.name, { lower: true, strict: true }) +
-        '-' +
-        randomString;
+      product.slug = slugify(product.name, { lower: true, strict: true }) + '-' + randomString;
     }
   };
 
@@ -382,7 +396,10 @@ describe('afterCreate hook — vector store indexing', () => {
     jest.clearAllMocks();
 
     jest.mock('@utils/logger', () => ({
-      info: jest.fn(), warn: jest.fn(), error: jest.fn(), debug: jest.fn(),
+      info: jest.fn(),
+      warn: jest.fn(),
+      error: jest.fn(),
+      debug: jest.fn(),
     }));
     jest.mock('slugify', () => (t) => t.toLowerCase().replace(/\s+/g, '-'));
     jest.mock('@config/sequelize', () => ({
@@ -398,9 +415,9 @@ describe('afterCreate hook — vector store indexing', () => {
       save: jest.fn().mockResolvedValue(undefined),
       items: [],
     };
-    const mockEnrich = jest.fn(p => p);
+    const mockEnrich = jest.fn((p) => p);
 
-    jest.mock('@modules/ai/services/vectorstore/vector-store', () => ({
+    jest.mock('@services/vector-store/vector-store', () => ({
       ...mockVectorStore,
       enrichProductData: mockEnrich,
     }));
@@ -437,9 +454,9 @@ describe('afterCreate hook — vector store indexing', () => {
       items: [],
     };
 
-    jest.mock('@modules/ai/services/vectorstore/vector-store', () => ({
+    jest.mock('@services/vector-store/vector-store', () => ({
       ...mockVectorStore,
-      enrichProductData: jest.fn(p => p),
+      enrichProductData: jest.fn((p) => p),
     }));
     jest.mock('./category', () => ({}));
     jest.mock('./product-image', () => ({}));
@@ -472,12 +489,12 @@ describe('afterDestroy hook — xóa khỏi vector store', () => {
     const productId = 2;
     // Hook logic:
     vectorStoreService.items = vectorStoreService.items.filter(
-      (item) => item.metadata.id !== productId
+      (item) => item.metadata.id !== productId,
     );
     await vectorStoreService.save();
 
     expect(vectorStoreService.items).toHaveLength(2);
-    expect(vectorStoreService.items.find(i => i.metadata.id === 2)).toBeUndefined();
+    expect(vectorStoreService.items.find((i) => i.metadata.id === 2)).toBeUndefined();
     expect(vectorStoreService.save).toHaveBeenCalled();
   });
 });
@@ -506,10 +523,7 @@ describe('afterUpdate hook — vector store sync', () => {
 
   it('status=inactive → item bị xóa khỏi vector store', async () => {
     const vectorStoreService = {
-      items: [
-        { metadata: { id: 5 } },
-        { metadata: { id: 6 } },
-      ],
+      items: [{ metadata: { id: 5 } }, { metadata: { id: 6 } }],
       save: jest.fn().mockResolvedValue(undefined),
     };
 
@@ -518,7 +532,7 @@ describe('afterUpdate hook — vector store sync', () => {
 
     if (product.status !== 'active') {
       vectorStoreService.items = vectorStoreService.items.filter(
-        (item) => item.metadata.id !== product.id
+        (item) => item.metadata.id !== product.id,
       );
       await vectorStoreService.save();
     }

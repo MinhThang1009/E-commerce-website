@@ -4,8 +4,13 @@
  *   expandAbbreviations, validateMessage, isOffTopic.
  */
 
-const { validateMessage, expandAbbreviations, isOffTopic, classifyIntent, MAX_MESSAGE_LENGTH } =
-  require('./ai-policy');
+const {
+  validateMessage,
+  expandAbbreviations,
+  isOffTopic,
+  classifyIntent,
+  MAX_MESSAGE_LENGTH,
+} = require('./ai-policy');
 
 // ── validateMessage ────────────────────────────────────────────────────────────
 
@@ -45,7 +50,8 @@ describe('expandAbbreviations', () => {
   test('bnh → bao nhiêu', () => expect(expandAbbreviations('bnh tiền')).toContain('bao nhiêu'));
   test('bh → bảo hành', () => expect(expandAbbreviations('bh bao lâu')).toContain('bảo hành'));
   test('rl → realme', () => expect(expandAbbreviations('rl c55')).toContain('realme'));
-  test('r5 → AMD Ryzen 5', () => expect(expandAbbreviations('laptop r5 7530u')).toContain('AMD Ryzen 5'));
+  test('r5 → AMD Ryzen 5', () =>
+    expect(expandAbbreviations('laptop r5 7530u')).toContain('AMD Ryzen 5'));
   test('giữ nguyên khi không có abbreviation', () => {
     expect(expandAbbreviations('laptop gaming')).toBe('laptop gaming');
   });

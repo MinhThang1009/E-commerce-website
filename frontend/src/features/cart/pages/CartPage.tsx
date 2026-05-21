@@ -5,7 +5,6 @@
  * @description Page component của feature cart
  */
 import { PremiumButton } from '@/components/common';
-import Button from '@/components/common/Button';
 import CartItem from '../components/CartItem';
 import CheckCircleIcon from '@/components/icons/CheckCircleIcon';
 import PlusCircleIcon from '@/components/icons/PlusCircleIcon';
@@ -14,10 +13,10 @@ import { useCartStore } from '@/stores/cart-store';
 import { useAuthStore } from '@/stores/auth-store';
 import { useApplyDiscountCodeMutation } from '@/features/orders';
 import { formatPrice } from '@/utils/format';
-import { toast } from '@/utils/toast';
+import { useNotifications } from '@/hooks/use-notifications';
 import React, { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Link, useNavigate } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import { useQueryClient } from '@tanstack/react-query';
 import { ROUTES } from '@/routes/paths';
 import { cartKeys } from '../api/cart-api';
@@ -25,6 +24,7 @@ import { getErrorMsg } from '@/utils/error-utils';
 
 const CartPage: React.FC = () => {
   const { t } = useTranslation();
+  const { showNotification } = useNotifications();
   const { items, subtotal, totalItems, isLoading } = useCartStore();
   const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
   const setServerCart = useCartStore((s) => s.setServerCart);
@@ -74,13 +74,21 @@ const CartPage: React.FC = () => {
         clearServerCart();
       }
 
-      toast.success(t('checkout.success.message'));
+      showNotification({ message: t('checkout.success.message'), type: 'success' });
       navigate(ROUTES.ORDERS, { replace: true });
     } else if (status === 'momo-return' && resultCode !== '0') {
-      toast.error(t('payment.errors.failed'));
+      showNotification({ message: t('payment.errors.failed'), type: 'error' });
       navigate(ROUTES.CART, { replace: true });
     }
-  }, [navigate, t, clearLocalCart, clearServerCart, isAuthenticated, queryClient]);
+  }, [
+    navigate,
+    t,
+    clearLocalCart,
+    clearServerCart,
+    isAuthenticated,
+    queryClient,
+    showNotification,
+  ]);
 
   // Khởi tạo giỏ hàng khi component mount
   useEffect(() => {
@@ -95,10 +103,10 @@ const CartPage: React.FC = () => {
   useEffect(() => {
     if (cartError) {
       console.error('Lỗi giỏ hàng:', cartError);
-      toast.error(t('cart.notifications.loadError'));
+      showNotification({ message: t('cart.notifications.loadError'), type: 'error' });
       initializeCart();
     }
-  }, [cartError, t, initializeCart]);
+  }, [cartError, t, initializeCart, showNotification]);
 
   // Tự động hủy voucher nếu tổng phụ giảm xuống dưới minOrderAmount
   useEffect(() => {
@@ -125,7 +133,7 @@ const CartPage: React.FC = () => {
         discountAmount: result.data.discountAmount,
         discountCodeId: result.data.discountCodeId,
       });
-      toast.success(t('cart.voucher.appliedSuccess'));
+      showNotification({ message: t('cart.voucher.appliedSuccess'), type: 'success' });
     } catch (err) {
       const msg = getErrorMsg(err, t('cart.voucher.invalid'));
       setVoucherError(msg);
@@ -137,7 +145,7 @@ const CartPage: React.FC = () => {
     setAppliedVoucher(null);
     setVoucherCode('');
     setVoucherError('');
-    toast.success(t('cart.voucher.removedSuccess'));
+    showNotification({ message: t('cart.voucher.removedSuccess'), type: 'success' });
   };
 
   // Tính lại nếu tổng đơn hàng thay đổi và voucher đang được áp dụng
@@ -156,7 +164,7 @@ const CartPage: React.FC = () => {
     } catch (err) {
       // Voucher không còn hợp lệ với giá trị giỏ hàng hiện tại
       const msg = getErrorMsg(err, '');
-      toast.warning(t('cart.voucher.cancelled', { message: msg }));
+      showNotification({ message: t('cart.voucher.cancelled', { message: msg }), type: 'warning' });
       setAppliedVoucher(null);
       setVoucherCode('');
       setVoucherError(msg);
@@ -194,16 +202,16 @@ const CartPage: React.FC = () => {
     try {
       if (isAuthenticated) {
         await clearServerCart();
-        toast.success(t('cart.notifications.cleared'));
+        showNotification({ message: t('cart.notifications.cleared'), type: 'success' });
       } else {
         clearLocalCart();
-        toast.success(t('cart.notifications.cleared'));
+        showNotification({ message: t('cart.notifications.cleared'), type: 'success' });
       }
       setAppliedVoucher(null);
       setVoucherCode('');
     } catch (error) {
       clearLocalCart();
-      toast.error(t('cart.notifications.serverError'));
+      showNotification({ message: t('cart.notifications.serverError'), type: 'error' });
     }
   };
 
@@ -291,7 +299,7 @@ const CartPage: React.FC = () => {
       )}
 
       {items.length === 0 ? (
-        <div className="bg-white dark:bg-neutral-800 rounded-lg shadow-sm p-8 text-center">
+        <div className="p-8 text-center">
           <svg
             xmlns="http://www.w3.org/2000/svg"
             className="h-16 w-16 mx-auto text-neutral-400 mb-4"
@@ -312,9 +320,15 @@ const CartPage: React.FC = () => {
           <p className="text-neutral-500 dark:text-neutral-400 mb-6">
             {t('cart.emptyCart.message')}
           </p>
-          <Button variant="primary" as={Link} to={ROUTES.SHOP}>
+          <PremiumButton
+            variant="primary"
+            size="large"
+            iconType="arrow-right"
+            onClick={() => navigate(ROUTES.SHOP)}
+            className="px-8"
+          >
             {t('cart.emptyCart.startShopping')}
-          </Button>
+          </PremiumButton>
         </div>
       ) : (
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
@@ -325,15 +339,13 @@ const CartPage: React.FC = () => {
                 <h2 className="text-xl font-semibold text-neutral-800 dark:text-neutral-100">
                   {t('cart.cartItems')} ({totalItems})
                 </h2>
-                <PremiumButton
-                  variant="danger"
-                  size="small"
-                  isProcessing={clearingCart}
-                  processingText={t('common.loading')}
+                <button
+                  disabled={clearingCart}
                   onClick={handleClearCart}
+                  className="btn-glass-danger px-4 py-2 text-sm disabled:opacity-50"
                 >
-                  {t('cart.clearCart')}
-                </PremiumButton>
+                  {clearingCart ? t('common.loading') : t('cart.clearCart')}
+                </button>
               </div>
 
               <div className="divide-y divide-neutral-200 dark:divide-neutral-700">
@@ -401,7 +413,7 @@ const CartPage: React.FC = () => {
                     <button
                       onClick={handleApplyVoucher}
                       disabled={applyingVoucher || !voucherCode.trim()}
-                      className="px-3 py-2 text-sm font-semibold bg-primary-600 hover:bg-primary-700 text-white rounded-lg disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                      className="btn-glass-primary px-3 py-2 text-sm disabled:opacity-50 disabled:cursor-not-allowed"
                     >
                       {applyingVoucher ? (
                         <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
@@ -474,14 +486,12 @@ const CartPage: React.FC = () => {
                   : t('cart.proceedToCheckout')}
               </PremiumButton>
 
-              <PremiumButton
-                variant="outline"
-                size="large"
+              <button
                 onClick={() => navigate(ROUTES.SHOP)}
-                className="w-full h-12"
+                className="btn-glass-secondary w-full h-12 flex items-center justify-center gap-2 text-sm font-semibold !rounded-xl"
               >
-                {t('cart.continueShopping')}
-              </PremiumButton>
+                → {t('cart.continueShopping')}
+              </button>
 
               <div className="text-sm text-neutral-500 dark:text-neutral-400 space-y-1.5">
                 {[

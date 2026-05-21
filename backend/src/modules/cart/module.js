@@ -15,8 +15,14 @@ const buildRoutes = require('@modules/cart/routes');
 // catalog và cart sẽ chuyển sang gọi catalog service thay vì truy cập Product
 // model trực tiếp.
 module.exports = ({
-  Cart, CartItem, Product, ProductVariant, WarrantyPackage,
-  sequelize, eventBus, logger,
+  Cart,
+  CartItem,
+  Product,
+  ProductVariant,
+  WarrantyPackage,
+  sequelize,
+  eventBus,
+  logger,
 }) => {
   if (!Cart) throw new Error('cart module: Cart model bắt buộc');
   if (!CartItem) throw new Error('cart module: CartItem model bắt buộc');
@@ -28,7 +34,12 @@ module.exports = ({
   if (!logger) throw new Error('cart module: logger bắt buộc');
 
   const cartRepository = new SequelizeCartRepository({
-    Cart, CartItem, Product, ProductVariant, WarrantyPackage, sequelize,
+    Cart,
+    CartItem,
+    Product,
+    ProductVariant,
+    WarrantyPackage,
+    sequelize,
   });
   const cartService = new CartService({ cartRepository, eventBus, logger });
   const cartController = new CartController({ cartService });

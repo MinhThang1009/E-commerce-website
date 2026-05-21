@@ -4,7 +4,7 @@ module.exports = {
   async up(queryInterface, Sequelize) {
     // Kiểm tra cột sku đã tồn tại chưa — nếu chưa thì thêm
     const [results] = await queryInterface.sequelize.query(
-      `SELECT column_name FROM information_schema.columns WHERE table_name='products' AND column_name='sku';`
+      `SELECT column_name FROM information_schema.columns WHERE table_name='products' AND column_name='sku';`,
     );
 
     if (results.length === 0) {
@@ -17,7 +17,7 @@ module.exports = {
 
     // Kiểm tra cột status đã tồn tại chưa — nếu chưa thì thêm
     const [statusResults] = await queryInterface.sequelize.query(
-      `SELECT column_name FROM information_schema.columns WHERE table_name='products' AND column_name='status';`
+      `SELECT column_name FROM information_schema.columns WHERE table_name='products' AND column_name='status';`,
     );
 
     if (statusResults.length === 0) {

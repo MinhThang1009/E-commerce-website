@@ -31,7 +31,8 @@ class SequelizeLoyaltyRepository extends ILoyaltyRepository {
   async findHistory(userId, { limit, offset } = {}) {
     return this.LoyaltyHistory.findAndCountAll({
       where: { userId },
-      limit, offset,
+      limit,
+      offset,
       order: [['createdAt', 'DESC']],
     });
   }

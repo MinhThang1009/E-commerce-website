@@ -30,7 +30,7 @@ jest.mock('@models', () => ({
   Op: {},
 }));
 
-jest.mock('@modules/ai/services/vectorstore/vector-store', () => ({
+jest.mock('@services/vector-store/vector-store', () => ({
   items: [],
   loadPromise: Promise.resolve(),
   hybridSearch: jest.fn().mockResolvedValue([]),
@@ -64,7 +64,7 @@ let vectorStoreService;
 beforeAll(() => {
   chatbotService = require('./chatbot-service');
   // Load vectorStoreService TRONG beforeAll để đảm bảo cùng mock instance với chatbotService
-  vectorStoreService = require('@modules/ai/services/vectorstore/vector-store');
+  vectorStoreService = require('@services/vector-store/vector-store');
 });
 
 afterEach(() => {

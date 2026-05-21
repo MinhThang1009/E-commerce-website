@@ -14,13 +14,12 @@ const {
   updateBannerSchema,
   createNewsSchema,
   updateNewsSchema,
-  newsletterSchema,
   feedbackSchema,
 } = require('@modules/content/validators/content-validator');
 
-// Content module: 5 sub-domain với URL prefix khác nhau (/banners, /news,
-// /email-campaigns, /newsletter, /contact). Module.js wire 5 router riêng,
-// app.js mount mỗi router tại đúng basePath tương ứng.
+// Content module: 3 sub-domain với URL prefix khác nhau (/banners, /news,
+// /contact). Module.js wire 3 router riêng, app.js mount mỗi router tại đúng
+// basePath tương ứng.
 module.exports = ({ contentController }) => {
   /**
    * @swagger
@@ -162,82 +161,13 @@ module.exports = ({ contentController }) => {
 
   /**
    * @swagger
-   * /api/email-campaigns:
-   *   get:
-   *     summary: Lấy danh sách email campaign (admin)
-   *     tags: [Content]
-   *     security:
-   *       - bearerAuth: []
-   *   post:
-   *     summary: Tạo email campaign mới (admin)
-   *     tags: [Content]
-   *     security:
-   *       - bearerAuth: []
-   * /api/email-campaigns/{id}/send:
-   *   post:
-   *     summary: Gửi email campaign (admin)
-   *     tags: [Content]
-   *     security:
-   *       - bearerAuth: []
-   *     parameters:
-   *       - in: path
-   *         name: id
-   *         required: true
-   *         schema:
-   *           type: integer
-   * /api/email-campaigns/{id}:
-   *   delete:
-   *     summary: Xóa email campaign (admin)
-   *     tags: [Content]
-   *     security:
-   *       - bearerAuth: []
-   *     parameters:
-   *       - in: path
-   *         name: id
-   *         required: true
-   *         schema:
-   *           type: integer
-   */
-  const campaigns = express.Router();
-  campaigns.use(authenticate);
-  campaigns.use(authorize('admin'));
-  campaigns.get('/', contentController.getAllCampaigns);
-  campaigns.post('/', contentController.createCampaign);
-  campaigns.post('/:id/send', contentController.sendCampaign);
-  campaigns.delete('/:id', contentController.deleteCampaign);
-
-  /**
-   * @swagger
-   * /api/newsletter/subscribe:
-   *   post:
-   *     summary: Đăng ký nhận bản tin
-   *     tags: [Content]
-   */
-  const newsletter = express.Router();
-  newsletter.post(
-    '/subscribe',
-    validateRequest(newsletterSchema, 422),
-    contentController.subscribeNewsletter,
-  );
-
-  /**
-   * @swagger
-   * /api/contact/newsletter:
-   *   post:
-   *     summary: Đăng ký nhận bản tin qua trang liên hệ
-   *     tags: [Content]
    * /api/contact/feedback:
    *   post:
    *     summary: Gửi phản hồi/liên hệ
    *     tags: [Content]
    */
   const contact = express.Router();
-  contact.post(
-    '/newsletter',
-    validateRequest(newsletterSchema, 422),
-    contentController.subscribeNewsletter,
-  );
   contact.post('/feedback', validateRequest(feedbackSchema, 422), contentController.sendFeedback);
 
-  return { banner, news, campaigns, newsletter, contact };
+  return { banner, news, contact };
 };

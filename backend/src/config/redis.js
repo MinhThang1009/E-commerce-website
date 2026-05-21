@@ -10,7 +10,10 @@ const memClient = {
     return Promise.resolve();
   },
   get: (key) => Promise.resolve(memStore.get(key) ?? null),
-  del: (key) => { memStore.delete(key); return Promise.resolve(); },
+  del: (key) => {
+    memStore.delete(key);
+    return Promise.resolve();
+  },
   set: (key, val, opts) => {
     memStore.set(key, val);
     if (opts?.EX) setTimeout(() => memStore.delete(key), opts.EX * 1000);
@@ -19,7 +22,7 @@ const memClient = {
   // Hỗ trợ pattern glob đơn giản (chỉ dùng * làm wildcard)
   keys: (pattern) => {
     const regex = new RegExp('^' + pattern.replace(/\*/g, '.*') + '$');
-    return Promise.resolve([...memStore.keys()].filter(k => regex.test(k)));
+    return Promise.resolve([...memStore.keys()].filter((k) => regex.test(k)));
   },
 };
 
@@ -43,7 +46,9 @@ const getRedisClient = () => {
         return client;
       } catch {
         logger.warn('Redis unavailable — JWT blacklist using in-memory fallback');
-        try { client.disconnect(); } catch {}
+        try {
+          client.disconnect();
+        } catch {}
         return memClient;
       }
     })();

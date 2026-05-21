@@ -1,6 +1,6 @@
 ﻿require('module-alias/register'); // phải là dòng đầu tiên trước mọi require khác
 require('dotenv').config();
-// Kích hoạt nodemon restart khi thay đổi .env
+// Kích hoạt nodemon restart khi thay đổi .env — last touched: 2026-05-21
 
 // Import logger trước validation để startup error có cùng định dạng với mọi log khác
 const logger = require('@utils/logger');
@@ -52,7 +52,6 @@ const models = [
   require('@models/product-attribute'),
   require('@models/product-variant'),
   require('@models/review'),
-  require('@models/review-feedback'),
   require('@models/cart'),
   require('@models/cart-item'),
   require('@models/order'),
@@ -79,12 +78,13 @@ const connectDB = async () => {
     require('@models');
     logger.info('Đã load toàn bộ model.');
 
-    // sequelize.sync() bị tắt để tránh lỗi "Too many keys" (giới hạn 64 key của MySQL)
-    // Dùng migration thay thế: npm run db:migrate
-    // if (process.env.NODE_ENV === 'development' && process.env.DB_SYNC === 'true') {
-    //   await sequelize.sync({ alter: true, foreignKeys: false });
-    //   logger.info('Đồng bộ bảng database thành công (giữ nguyên dữ liệu).');
-    // }
+    // Tự động sync schema khi DB_SYNC=true (dev only).
+    // foreignKeys: false — tránh lỗi "Too many keys" của MySQL (giới hạn 64 key/bảng).
+    // alter: true — chỉ thêm column/bảng mới, KHÔNG xóa dữ liệu hiện có.
+    if (process.env.NODE_ENV !== 'production' && process.env.DB_SYNC === 'true') {
+      await sequelize.sync({ alter: true, foreignKeys: false });
+      logger.info('Đồng bộ schema database thành công.');
+    }
   } catch (error) {
     logger.error('Không thể kết nối database:', error);
     logger.error('Chi tiết lỗi:', error.message);
@@ -102,7 +102,7 @@ const checkVectorStoreSync = async () => {
   try {
     // Lazy require sau khi connectDB() xong để đảm bảo associations đã được setup
     const { Product, ProductVariant } = require('@models');
-    const vectorStoreService = require('@modules/ai/services/vectorstore/vector-store');
+    const vectorStoreService = require('@services/vector-store/vector-store');
     // Đợi vector store load xong trước khi so sánh
     await vectorStoreService.loadPromise;
     // Fix: `inStock` không phải column/VIRTUAL.
@@ -169,6 +169,14 @@ const startServer = async () => {
   const PORT = process.env.PORT || 8888;
   const server = app.listen(PORT, '0.0.0.0', () => {
     logger.info(`Server đang chạy ở chế độ ${process.env.NODE_ENV} trên cổng ${PORT}`);
+  });
+
+  server.on('error', (err) => {
+    if (err.code === 'EADDRINUSE') {
+      logger.error(`Cổng ${PORT} đã bị chiếm. Chạy "npm run kill" để giải phóng rồi thử lại.`);
+      process.exit(1);
+    }
+    throw err;
   });
 
   // Kiểm tra vector store sync sau khi server start (không block startup)

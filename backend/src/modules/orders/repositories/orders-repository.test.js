@@ -9,7 +9,9 @@ function makeModel(defaults = {}) {
     findByPk: jest.fn().mockResolvedValue(defaults.findByPk ?? null),
     findOne: jest.fn().mockResolvedValue(defaults.findOne ?? null),
     findAll: jest.fn().mockResolvedValue(defaults.findAll ?? []),
-    findAndCountAll: jest.fn().mockResolvedValue(defaults.findAndCountAll ?? { count: 0, rows: [] }),
+    findAndCountAll: jest
+      .fn()
+      .mockResolvedValue(defaults.findAndCountAll ?? { count: 0, rows: [] }),
     findOrCreate: jest.fn().mockResolvedValue([defaults.findOrCreate ?? {}, true]),
     create: jest.fn().mockResolvedValue(defaults.create ?? {}),
     update: jest.fn().mockResolvedValue([1]),
@@ -56,7 +58,7 @@ function makeRepo(overrides = {}) {
 describe('SequelizeOrdersRepository — constructor', () => {
   test('ném lỗi khi thiếu Order model', () => {
     expect(() => new SequelizeOrdersRepository({})).toThrow(
-      'SequelizeOrdersRepository: Order model bắt buộc'
+      'SequelizeOrdersRepository: Order model bắt buộc',
     );
   });
 
@@ -86,7 +88,7 @@ describe('SequelizeOrdersRepository — Order', () => {
     await repo.findOrderByIdAndUserId(5, 3);
 
     expect(deps.Order.findOne).toHaveBeenCalledWith(
-      expect.objectContaining({ where: { id: 5, userId: 3 } })
+      expect.objectContaining({ where: { id: 5, userId: 3 } }),
     );
   });
 
@@ -96,7 +98,7 @@ describe('SequelizeOrdersRepository — Order', () => {
 
     expect(deps.Order.findByPk).toHaveBeenCalledWith(
       10,
-      expect.objectContaining({ include: expect.any(Array) })
+      expect.objectContaining({ include: expect.any(Array) }),
     );
   });
 
@@ -105,7 +107,7 @@ describe('SequelizeOrdersRepository — Order', () => {
     await repo.findOrderByNumberAndUserId('ORD-001', 2);
 
     expect(deps.Order.findOne).toHaveBeenCalledWith(
-      expect.objectContaining({ where: { number: 'ORD-001', userId: 2 } })
+      expect.objectContaining({ where: { number: 'ORD-001', userId: 2 } }),
     );
   });
 
@@ -117,7 +119,7 @@ describe('SequelizeOrdersRepository — Order', () => {
       expect.objectContaining({
         where: { number: 'ORD-002' },
         include: expect.any(Array),
-      })
+      }),
     );
   });
 
@@ -128,7 +130,7 @@ describe('SequelizeOrdersRepository — Order', () => {
     const result = await repo.findUserOrdersWithItems(7, { limit: 10, offset: 0 });
 
     expect(deps.Order.findAndCountAll).toHaveBeenCalledWith(
-      expect.objectContaining({ where: { userId: 7 }, limit: 10, offset: 0 })
+      expect.objectContaining({ where: { userId: 7 }, limit: 10, offset: 0 }),
     );
     expect(result).toBe(mockResult);
   });
@@ -138,7 +140,7 @@ describe('SequelizeOrdersRepository — Order', () => {
     await repo.findAllOrdersWithUser({ where: { status: 'pending' }, limit: 20, offset: 0 });
 
     expect(deps.Order.findAndCountAll).toHaveBeenCalledWith(
-      expect.objectContaining({ where: { status: 'pending' }, limit: 20 })
+      expect.objectContaining({ where: { status: 'pending' }, limit: 20 }),
     );
   });
 
@@ -168,7 +170,7 @@ describe('SequelizeOrdersRepository — Order', () => {
 
     expect(deps.Order.update).toHaveBeenCalledWith(
       { status: 'cancelled' },
-      expect.objectContaining({ where: { userId: 3, status: 'pending' } })
+      expect.objectContaining({ where: { userId: 3, status: 'pending' } }),
     );
   });
 });
@@ -188,7 +190,7 @@ describe('SequelizeOrdersRepository — Cart', () => {
       expect.objectContaining({
         where: { userId: 5, status: 'active' },
         defaults: { userId: 5 },
-      })
+      }),
     );
     expect(result).toBe(mockCart);
   });
@@ -260,7 +262,10 @@ describe('SequelizeOrdersRepository — Stock management', () => {
 
 describe('SequelizeOrdersRepository — InventoryLog', () => {
   test('createInventoryLogs — gọi bulkCreate với rows', async () => {
-    const rows = [{ productId: 1, change: -2 }, { productId: 2, change: -1 }];
+    const rows = [
+      { productId: 1, change: -2 },
+      { productId: 2, change: -1 },
+    ];
     const { repo, deps } = makeRepo();
 
     await repo.createInventoryLogs(rows);
@@ -315,7 +320,7 @@ describe('SequelizeOrdersRepository — DiscountCode và LoyaltyHistory', () => 
     const result = await repo.findActiveDiscountCode('SALE10');
 
     expect(deps.DiscountCode.findOne).toHaveBeenCalledWith(
-      expect.objectContaining({ where: { code: 'SALE10', isActive: true } })
+      expect.objectContaining({ where: { code: 'SALE10', isActive: true } }),
     );
     expect(result).toBe(mockCode);
   });

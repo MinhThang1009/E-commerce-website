@@ -5,12 +5,12 @@
  * @description Shared UI component
  */
 import { useState, useEffect, useRef } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { ROUTES, buildRoute } from '@/routes/paths';
 import LanguageSwitcher from '@/components/common/LanguageSwitcher';
 import ThemeToggle from '@/components/common/ThemeToggle';
-import SearchBar from '@/components/shared/SearchBar';
+import SearchBar from '@/components/common/SearchBar';
 import { useUiStore } from '@/stores/ui-store';
 import { useCartStore } from '@/stores/cart-store';
 import { useWishlistStore } from '@/stores/wishlist-store';
@@ -33,6 +33,7 @@ const Header: React.FC = () => {
   const [showUserDropdown, setShowUserDropdown] = useState(false);
   const userDropdownRef = useRef<HTMLDivElement>(null);
   const navigate = useNavigate();
+  const location = useLocation();
   const { t } = useTranslation();
 
   // Hook xác thực và lấy thông tin user
@@ -43,6 +44,8 @@ const Header: React.FC = () => {
   const isSearchOpen = useUiStore((s) => s.isSearchOpen);
   const toggleMobileMenu = useUiStore((s) => s.toggleMobileMenu);
   const toggleSearch = useUiStore((s) => s.toggleSearch);
+  const addNotification = useUiStore((s) => s.addNotification);
+  const clearNotifications = useUiStore((s) => s.clearNotifications);
 
   // Lấy số lượng item trong cart từ server (nếu authenticated) hoặc localStorage (nếu chưa authenticated)
   const { data: serverCartCount } = useGetCartCountQuery({
@@ -120,7 +123,9 @@ const Header: React.FC = () => {
 
   // Xử lý click vào nút đăng xuất
   const handleLogoutClick = async () => {
+    clearNotifications();
     await handleLogout();
+    addNotification({ type: 'success', message: t('auth.logout.success'), duration: 3000 });
     navigate(ROUTES.HOME, { replace: true });
   };
 
@@ -137,9 +142,9 @@ const Header: React.FC = () => {
           : 'bg-white/90 dark:bg-[#111111]/95 backdrop-blur-sm py-3'
       }`}
     >
-      <div className="container mx-auto px-3 sm:px-4 md:px-6 lg:px-8 flex items-center justify-between">
+      <div className="container mx-auto px-3 sm:px-4 md:px-6 lg:px-8 grid grid-cols-[auto_1fr_auto] items-center gap-2 sm:gap-4">
         {/* Logo */}
-        <Link to={ROUTES.HOME} className="flex items-center group flex-shrink-0">
+        <Link to={ROUTES.HOME} className="col-start-1 flex items-center group flex-shrink-0">
           <div className="relative">
             <div className="absolute inset-0 bg-gradient-to-r from-primary-500 to-secondary-500 rounded-lg blur opacity-20 group-hover:opacity-40 transition-opacity duration-300"></div>
             <div className="relative bg-gradient-to-r from-primary-500 to-secondary-500 p-1.5 rounded-lg">
@@ -157,7 +162,7 @@ const Header: React.FC = () => {
         </Link>
 
         {/* Điều hướng desktop */}
-        <nav className="hidden lg:flex items-center space-x-1 flex-1 max-w-lg justify-center">
+        <nav className="col-start-2 hidden lg:flex items-center space-x-1 justify-center overflow-hidden">
           {[
             { key: 'home' as NavigationIconKey, path: '/' },
             { key: 'shop' as NavigationIconKey, path: '/shop' },
@@ -167,24 +172,35 @@ const Header: React.FC = () => {
             { key: 'about' as NavigationIconKey, path: '/about' },
           ].map((item) => {
             const IconComponent = NAVIGATION_ICONS[item.key];
+            // Route "/" chỉ active khi khớp chính xác; các route khác active khi pathname bắt đầu bằng path
+            const isActive =
+              item.path === '/'
+                ? location.pathname === '/'
+                : location.pathname.startsWith(item.path);
             return (
               <Link
                 key={item.key}
                 to={item.path}
-                className="group relative px-2 sm:px-3 py-2 rounded-xl font-medium text-neutral-700 dark:text-neutral-300 hover:text-primary-600 dark:hover:text-primary-400 transition-all duration-300 hover:bg-primary-50 dark:hover:bg-primary-900/10 whitespace-nowrap"
+                className={`group relative px-2 xl:px-3 py-2 rounded-xl font-medium transition-all duration-300 hover:bg-primary-50 dark:hover:bg-primary-900/10 whitespace-nowrap ${
+                  isActive
+                    ? 'text-primary-600 dark:text-primary-400 font-semibold'
+                    : 'text-neutral-700 dark:text-neutral-300 hover:text-primary-600 dark:hover:text-primary-400'
+                }`}
               >
                 <div className="flex items-center space-x-1">
-                  <IconComponent className="h-4 w-4 opacity-60 group-hover:opacity-100 transition-opacity hidden sm:block" />
+                  <IconComponent className="h-4 w-4 opacity-60 group-hover:opacity-100 transition-opacity hidden xl:block" />
                   <span className="text-sm">{t(`header.navigation.${item.key}`)}</span>
                 </div>
-                <div className="absolute bottom-0 left-1/2 transform -translate-x-1/2 w-0 h-0.5 bg-gradient-to-r from-primary-500 to-secondary-500 group-hover:w-full transition-all duration-300"></div>
+                <div
+                  className={`absolute bottom-0 left-1/2 transform -translate-x-1/2 h-0.5 bg-gradient-to-r from-primary-500 to-secondary-500 transition-all duration-300 ${isActive ? 'w-full' : 'w-0 group-hover:w-full'}`}
+                ></div>
               </Link>
             );
           })}
         </nav>
 
         {/* Actions */}
-        <div className="flex items-center space-x-1 sm:space-x-2">
+        <div className="col-start-3 flex items-center space-x-1 sm:space-x-2">
           {/* Tìm kiếm - chỉ hiển thị trên mobile để tránh bị che */}
           <div className="hidden md:block">
             <SearchBar

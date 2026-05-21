@@ -1,0 +1,282 @@
+\chapter{Phân tích và Thiết kế hệ thống}
+
+\section{Phân tích yêu cầu hệ thống}
+
+\subsection{Các tác nhân hệ thống}
+
+Hệ thống TechStore phục vụ ba nhóm tác nhân với nhu cầu và quyền hạn khác nhau. Tác nhân thứ nhất là Khách vãng lai (Guest), đại diện cho người dùng chưa đăng nhập. Đây là nhóm chiếm đa số lượt truy cập, có thể duyệt và tìm kiếm sản phẩm, xem thông tin chi tiết, thêm sản phẩm vào giỏ hàng tạm thời lưu tại localStorage và tương tác với AI Chatbot. Tác nhân thứ hai là Khách hàng (Customer), đại diện cho người dùng đã đăng nhập và xác thực email. Nhóm này kế thừa toàn bộ quyền của Guest và bổ sung các chức năng đặt hàng, thanh toán, theo dõi đơn hàng, viết đánh giá và tích điểm loyalty. Tác nhân thứ ba là Quản trị viên (Admin), đại diện cho người quản lý hệ thống với toàn quyền CRUD sản phẩm, đơn hàng, người dùng và nội dung, cùng khả năng xem dashboard analytics và audit log.
+
+\subsection{Yêu cầu chức năng}
+
+Hệ thống TechStore được phân tích theo các nhóm chức năng chính như sau.
+
+Nhóm chức năng xác thực và quản lý tài khoản bao gồm: đăng ký tài khoản với email và mật khẩu, xác thực email bằng OTP 6 chữ số với thời hạn 10 phút, đăng nhập bằng email/mật khẩu hoặc Google OAuth, cơ chế quên mật khẩu qua OTP email, refresh token tự động để duy trì phiên đăng nhập và quản lý địa chỉ giao hàng.
+
+Nhóm chức năng catalog sản phẩm bao gồm: hiển thị danh sách sản phẩm với phân trang, lọc theo danh mục, thương hiệu, khoảng giá và thuộc tính động, sắp xếp theo giá thấp nhất từ biến thể, độ mới và mức độ bán chạy. Xem chi tiết sản phẩm với gallery nhiều ảnh, chọn biến thể theo màu và dung lượng, xem thông số kỹ thuật chi tiết và đánh giá khách hàng. Tìm kiếm sản phẩm full-text với gợi ý tự động và lưu lịch sử tìm kiếm.
+
+Nhóm chức năng giỏ hàng và thanh toán bao gồm: thêm sản phẩm vào giỏ kèm gói bảo hành tùy chọn, cập nhật số lượng và xóa sản phẩm, tự động merge giỏ hàng guest vào giỏ hàng user khi đăng nhập, xác thực giỏ hàng trước khi thanh toán về tồn kho và giá, và quy trình checkout với lựa chọn địa chỉ giao hàng, mã giảm giá, điểm loyalty và phương thức thanh toán.
+
+Nhóm chức năng AI Chatbot bao gồm: nhận và xử lý câu hỏi tiếng Việt và tiếng Anh bằng ngôn ngữ tự nhiên, expand viết tắt phổ biến (ip→iPhone, ss→Samsung, mb→MacBook), phân loại intent câu hỏi, truy xuất sản phẩm qua Hybrid Search, sinh phản hồi tự nhiên dựa trên context sản phẩm thực tế và thêm sản phẩm vào giỏ hàng trực tiếp từ chat.
+
+Nhóm chức năng quản trị dành cho Admin bao gồm toàn bộ chức năng CRUD cho tất cả entities, dashboard với 9 loại analytics (doanh thu theo thời gian, top sản phẩm bán chạy, phân bổ trạng thái đơn hàng, tăng trưởng người dùng, phân bổ phương thức thanh toán, sản phẩm sắp hết hàng, thống kê chatbot), import sản phẩm hàng loạt qua CSV hoặc JSON và xem nhật ký thao tác admin.
+
+\subsection{Yêu cầu phi chức năng}
+
+\begin{table}[H]
+\centering
+\caption{Yêu cầu phi chức năng của hệ thống TechStore}
+\begin{tabular}{|p{2.5cm}|p{3.5cm}|p{7cm}|}
+\hline
+\textbf{Tiêu chí} & \textbf{Chỉ số} & \textbf{Cơ chế đảm bảo} \\
+\hline
+Hiệu năng & API response $<$ 500ms (p95). Chatbot $<$ 3 giây & Redis cache, DB indexing, connection pool, vector search tối ưu \\
+\hline
+Bảo mật & Chống XSS, CSRF, SQL Injection, brute force & Helmet, sanitize-html, CSRF origin check, Zod validation, rate limiting, bcrypt \\
+\hline
+Tính khả dụng & Không crash khi Redis unavailable & Auto fallback in-memory, cron jobs không block request \\
+\hline
+Khả năng mở rộng & Module có thể tách thành microservice & Modular Monolith, DI pattern, EventBus \\
+\hline
+Chất lượng code & Coverage $\geq$ 97\% (statements) & 5-tầng testing, CI/CD với GitHub Actions \\
+\hline
+Giao diện & Responsive trên mọi thiết bị & Tailwind CSS, Ant Design responsive \\
+\hline
+Đa ngôn ngữ & Vi/En song ngữ & i18next backend và frontend \\
+\hline
+Tính nhất quán & ACID transactions, không oversell & Sequelize transactions, SELECT FOR UPDATE \\
+\hline
+\end{tabular}
+\end{table}
+
+\section{Kiến trúc tổng quan hệ thống}
+
+\subsection{Kiến trúc 3 tầng}
+
+Hệ thống TechStore được tổ chức theo kiến trúc 3 tầng với giao tiếp REST API qua HTTP/HTTPS. Tầng Client (port 5175) là React 18 SPA với 14 features, giao tiếp với backend qua JSON và httpOnly cookie cho refresh token. Tầng Application (port 8888) là Node.js API server với 19 modules theo kiến trúc Modular Monolith, tích hợp các dịch vụ ngoài bao gồm MoMo, VNPay, Gmail SMTP, Jina AI, HuggingFace Inference API và Google OAuth 2.0. Tầng Data bao gồm MySQL 8 qua Sequelize ORM, Redis (optional với in-memory fallback) và disk storage cho file uploads và vector database.
+
+\subsection{Request Lifecycle}
+
+Mỗi HTTP request đi qua hệ thống theo quy trình chuẩn. Đầu tiên là middleware stack gồm Helmet (security headers), CORS verification, CSRF Origin check, Morgan request logging và rate limiting tùy theo endpoint. Tiếp theo là middleware xử lý request bao gồm detect-locale (xác định ngôn ngữ từ Accept-Language header), JSON body parsing (giới hạn 2MB), cookie parsing và sanitizeHtml (loại bỏ HTML tags chống XSS). Sau đó là module router, trong đó mỗi module xử lý routes theo domain của mình, với middleware chain đặc thù: \texttt{authenticate} (verify JWT), \texttt{authorize} (kiểm tra role), \texttt{validateRequest} (Zod schema validation) và cuối cùng là controller handler bọc trong \texttt{catchAsync} để forward errors. Cuối cùng là global error handler chuẩn hóa tất cả loại lỗi thành JSON response nhất quán.
+
+\subsection{Luồng Event-Driven}
+
+Hệ thống sử dụng EventBus in-process để điều phối các luồng business logic phức tạp liên quan đến nhiều module. Khi một đơn hàng được tạo thành công, module \texttt{orders} publish event \texttt{order.created} với payload chứa orderId và danh sách items; module \texttt{inventory} subscribe event này để ghi audit log thay đổi tồn kho. Khi đơn hàng bị hủy, event \texttt{order.cancelled} được publish và inventory ghi log restore hàng. Khi admin cập nhật trạng thái đơn hàng sang DELIVERED, logic cộng điểm loyalty được thực hiện inline trong \texttt{orders-service.js} (không qua event vì cần kết quả đồng bộ) rồi publish event \texttt{order.delivered}. Module \texttt{auth} publish event \texttt{auth.userRegistered} khi có user đăng ký mới, hiện chưa có subscriber nhưng sẵn sàng cho các extension trong tương lai.
+
+\section{Thiết kế cơ sở dữ liệu}
+
+\subsection{Tổng quan lược đồ quan hệ}
+
+Cơ sở dữ liệu TechStore gồm 35 bảng hoạt động được tổ chức theo các nhóm domain. Nhóm người dùng gồm bảng \texttt{users} (thông tin tài khoản, OTP, JWT, loyalty points) và \texttt{addresses} (địa chỉ giao hàng với soft delete). Nhóm catalog gồm \texttt{products}, \texttt{product\_variants}, \texttt{product\_images}, \texttt{product\_attributes}, \texttt{product\_specifications}, \texttt{categories}, \texttt{brands} và \texttt{brand\_categories}. Nhóm thuộc tính động gồm \texttt{attribute\_groups}, \texttt{attribute\_values} và \texttt{product\_attribute\_groups}. Nhóm giao dịch gồm \texttt{carts}, \texttt{cart\_items}, \texttt{orders}, \texttt{order\_items}, \texttt{discount\_codes}, \texttt{warranty\_packages} và \texttt{product\_warranties}. Nhóm tương tác gồm \texttt{product\_reviews}, \texttt{reviews}, \texttt{review\_feedbacks}, \texttt{wishlists}, \texttt{recently\_viewed} và \texttt{loyalty\_histories}. Nhóm hệ thống gồm \texttt{chat\_messages}, \texttt{search\_histories}, \texttt{inventory\_logs}, \texttt{audit\_logs}, \texttt{banners}, \texttt{news}, \texttt{feedbacks} và \texttt{images}.
+
+\subsection{Thiết kế các bảng trọng tâm}
+
+Bảng \texttt{products} là trung tâm của hệ thống catalog với cấu trúc đặc biệt để hỗ trợ sản phẩm có biến thể. Cột \texttt{base\_price} (DECIMAL 15,2) lưu giá cơ sở dùng làm fallback khi sản phẩm không có biến thể. Cột \texttt{status} (ENUM: active, inactive, draft, archived) kiểm soát visibility. Cột \texttt{stock\_quantity} là giá trị tổng hợp được tính bằng tổng stock của tất cả biến thể, cập nhật mỗi khi variant stock thay đổi. Tất cả text fields sử dụng cặp cột \texttt{name\_vi}/\texttt{name\_en} để hỗ trợ đa ngôn ngữ theo pattern column-per-locale. Bảng dùng Sequelize paranoid (soft delete qua cột \texttt{deleted\_at}) để giữ dữ liệu lịch sử.
+
+\begin{table}[H]
+\centering
+\caption{Thiết kế bảng \texttt{products} (các cột chính)}
+\begin{tabular}{|l|l|l|p{5cm}|}
+\hline
+\textbf{Cột} & \textbf{Kiểu} & \textbf{Ràng buộc} & \textbf{Mô tả} \\
+\hline
+id & INT(11) & PK, AUTO\_INCREMENT & Định danh sản phẩm \\
+\hline
+category\_id & INT(11) & FK categories & Danh mục chính \\
+\hline
+brand\_id & INT(11) & FK brands & Thương hiệu \\
+\hline
+name\_vi & VARCHAR(200) & NOT NULL & Tên tiếng Việt \\
+\hline
+name\_en & VARCHAR(200) & NULL & Tên tiếng Anh \\
+\hline
+slug & VARCHAR(100) & UNIQUE & URL-friendly identifier \\
+\hline
+base\_price & DECIMAL(15,2) & NULL & Giá cơ sở (fallback) \\
+\hline
+status & ENUM & NOT NULL & active/inactive/draft/archived \\
+\hline
+stock\_quantity & INT(11) & DEFAULT 0 & Tổng tồn kho (computed) \\
+\hline
+rating\_average & DECIMAL(3,2) & DEFAULT 0 & Điểm đánh giá trung bình \\
+\hline
+sold\_count & INT(11) & DEFAULT 0 & Số lượng đã bán \\
+\hline
+deleted\_at & DATETIME & NULL & Soft delete timestamp \\
+\hline
+\end{tabular}
+\end{table}
+
+Bảng \texttt{orders} lưu đầy đủ snapshot thông tin đơn hàng tại thời điểm tạo, bao gồm toàn bộ địa chỉ giao hàng và billing (không dùng FK đến \texttt{addresses} để tránh dữ liệu thay đổi sau khi đặt hàng). Cột \texttt{status} (ENUM: pending, processing, shipped, delivered, cancelled) và \texttt{payment\_status} (ENUM: pending, paid, failed, refunded) theo dõi độc lập trạng thái đơn hàng và thanh toán. Các cột \texttt{points\_earned}, \texttt{points\_used} và \texttt{points\_discount} lưu thông tin liên quan đến chương trình loyalty.
+
+Bảng \texttt{chat\_messages} là nơi lưu toàn bộ lịch sử hội thoại của chatbot. Mỗi cặp tin nhắn user/assistant được lưu thành hai records riêng biệt. Cột \texttt{intent} ghi lại loại câu hỏi (product\_search, pricing, policy, general, off\_topic), \texttt{response\_time\_ms} đo thời gian phản hồi của LLM và \texttt{is\_fallback} đánh dấu những lần hệ thống phải dùng keyword matching thay vì LLM vì tất cả providers lỗi.
+
+\subsection{Quản lý Schema với Migrations}
+
+Schema được quản lý qua 72 Sequelize migrations được đánh số theo timestamp YYYYMMDDNN. Mỗi migration có đầy đủ phương thức \texttt{up()} và \texttt{down()} để rollback, đây là yêu cầu bắt buộc được kiểm tra tự động bởi script \texttt{scripts/lint-migrations.sh} trong CI pipeline. Các migrations được tổ chức theo các giai đoạn phát triển: giai đoạn khởi tạo schema ban đầu, giai đoạn thêm tính năng loyalty và inventory, giai đoạn chuẩn hóa naming convention (snake\_case), giai đoạn thêm cột i18n (\_vi/\_en) và giai đoạn cuối loại bỏ 5 bảng không còn sử dụng.
+
+\section{Thiết kế các Module Backend}
+
+\subsection{Tổng quan 19 Modules}
+
+\begin{table}[H]
+\centering
+\caption{Danh sách 19 backend modules và route prefix}
+\begin{tabular}{|l|l|l|p{4cm}|}
+\hline
+\textbf{Module} & \textbf{Route Prefix} & \textbf{Pattern} & \textbf{Chức năng chính} \\
+\hline
+auth & /api/auth & Full DI & Đăng ký, đăng nhập, JWT, OTP, OAuth \\
+\hline
+users & /api/users & Full DI & Profile, địa chỉ giao hàng \\
+\hline
+catalog & /api/products, /categories, /brands & Full DI (multi-mount) & Sản phẩm, danh mục, thương hiệu \\
+\hline
+cart & /api/cart & Full DI & Giỏ hàng guest + auth, merge \\
+\hline
+orders & /api/orders & Full DI & Tạo đơn, quản lý vòng đời \\
+\hline
+payment & /api/payments & Full DI & MoMo, VNPay IPN, hoàn tiền \\
+\hline
+inventory & /api/inventory & Full DI & Tồn kho, audit log \\
+\hline
+reviews & /api/reviews & Full DI & Đánh giá sản phẩm \\
+\hline
+loyalty & /api/loyalty & Full DI & Điểm tích lũy \\
+\hline
+ai & /api/chatbot & Full DI & RAG chatbot, gợi ý, add-to-cart \\
+\hline
+content & /api/banners, /news, /contact & Full DI (multi-mount) & Banner, tin tức, liên hệ \\
+\hline
+upload & /api/uploads & Full DI & File upload, magic bytes validation \\
+\hline
+wishlist & /api/wishlists & Full DI & Danh sách yêu thích \\
+\hline
+admin & /api/admin & Singleton & Dashboard, CRUD, analytics \\
+\hline
+discount-code & /api/discount-codes & Singleton & Mã giảm giá \\
+\hline
+warranty-package & /api/warranty-packages & Singleton & Gói bảo hành \\
+\hline
+attribute & /api/attributes & Singleton + setter & Nhóm thuộc tính \\
+\hline
+search-history & /api/search-histories & Singleton & Lịch sử tìm kiếm \\
+\hline
+image & /api/images & Singleton & Quản lý ảnh, CDN proxy \\
+\hline
+\end{tabular}
+\end{table}
+
+\subsection{Thiết kế Module AI (Chatbot RAG)}
+
+Module AI là module phức tạp và quan trọng nhất của hệ thống. Về cấu trúc nội bộ, module được tổ chức thành các sub-services theo trách nhiệm: \texttt{ai-service.js} là orchestration layer nhận requests từ controller và điều phối các services con; \texttt{rag-pipeline.js} triển khai pipeline 5 bước (validate, normalize, retrieve, augment, generate); \texttt{chatbot-service.js} là LLM gateway quản lý provider rotation, conversation history, cache và persistence; \texttt{ai-policy.js} chứa các pure functions cho input validation và intent classification; \texttt{vector-store.js} và \texttt{unified-embedding.js} trong \texttt{src/services/} cung cấp vector search và embedding infrastructure.
+
+Quy trình xử lý một tin nhắn chatbot diễn ra theo các bước sau. Đầu tiên, tin nhắn được validate (không rỗng, không quá 2000 ký tự) và normalize (expand viết tắt). Nếu tin nhắn là off-topic (thời tiết, âm nhạc, bóng đá), hệ thống trả lời ngay mà không tốn chi phí LLM call. Với các tin nhắn product-related, hệ thống kiểm tra Redis cache với shared key (không phụ thuộc userId để maximize hit rate). Nếu cache miss, RAGPipeline thực hiện song song LLM query rewrite và Hybrid Search. Kết quả retrieval được augment vào system prompt cùng với lịch sử hội thoại (tối đa 10 turns gần nhất) và gửi đến LLM. Response được cache vào Redis và persist vào bảng \texttt{chat\_messages}.
+
+\begin{table}[H]
+\centering
+\caption{Các loại intent và xử lý tương ứng trong AI module}
+\begin{tabular}{|l|l|p{6cm}|}
+\hline
+\textbf{Intent} & \textbf{Regex pattern} & \textbf{Xử lý} \\
+\hline
+off\_topic & thời tiết, bóng đá, âm nhạc, phim... & Early return, không gọi retrieval hay LLM \\
+\hline
+order\_inquiry & đơn hàng, giao hàng, track, ship... & Gọi LLM với context đơn hàng \\
+\hline
+policy & bảo hành, đổi trả, chính sách... & Gọi LLM với thông tin chính sách cửa hàng \\
+\hline
+pricing & giá, bao nhiêu, tiền, cost... & Hybrid Search + LLM, cache enabled \\
+\hline
+product\_search & iPhone, Samsung, laptop, tablet... & Hybrid Search + LLM, cache enabled \\
+\hline
+general & Không khớp pattern nào & Hybrid Search + LLM \\
+\hline
+\end{tabular}
+\end{table}
+
+\subsection{Thiết kế Module Orders}
+
+Module Orders là module có business logic phức tạp nhất với \texttt{orders-service.js} gần 900 dòng. Quy trình tạo đơn hàng được thực hiện trong một Sequelize transaction duy nhất để đảm bảo tính nguyên tử. Đối với mỗi item trong đơn hàng, hệ thống thực hiện SELECT FOR UPDATE để lock row biến thể hoặc sản phẩm, kiểm tra tồn kho sau khi lock, giảm tồn kho và ghi pending inventory log. Sau đó tính toán subtotal, discount, loyalty discount và phí ship, tạo Order record và các OrderItem records. Toàn bộ quá trình này hoặc thành công hoàn toàn hoặc rollback toàn bộ, không bao giờ để hệ thống ở trạng thái trung gian.
+
+Chuyển trạng thái đơn hàng tuân theo quy tắc nghiêm ngặt. Đơn hàng ở trạng thái \texttt{pending} hoặc \texttt{processing} có thể hủy (\texttt{cancelled}). Sau khi hủy, stock được restore inline trong orders service, không qua event. Event \texttt{order.cancelled} chỉ dùng để inventory ghi audit log. Khi admin cập nhật sang \texttt{delivered} hoặc user xác nhận nhận hàng, hệ thống tính và cộng điểm loyalty (floor(subtotal / 100000)), update trường \texttt{pointsEarned} trên order. Với COD, payment status tự động chuyển sang \texttt{paid} khi status là \texttt{delivered}.
+
+\subsection{Thiết kế Module Payment}
+
+Module Payment tích hợp hai cổng thanh toán với thiết kế đảm bảo idempotency. Hàm \texttt{\_canProcessPayment(order, transactionId)} kiểm tra hai điều kiện: transactionId không được trùng với transactionId đã xử lý trước đó (tránh duplicate từ cùng một webhook), và paymentStatus phải chưa phải là \texttt{paid}. Cơ chế này đảm bảo ngay cả khi IPN được gửi nhiều lần (thường xảy ra khi mạng không ổn định), hệ thống chỉ xử lý đúng một lần.
+
+Toàn bộ flow cập nhật đơn hàng sau IPN được thực hiện trong transaction: lock order với SELECT FOR UPDATE để tránh concurrent IPN processing, kiểm tra \texttt{\_canProcessPayment}, cập nhật paymentStatus và paymentTransactionId. Sau transaction, các tác vụ fire-and-forget được thực hiện: xóa giỏ hàng user, gửi email xác nhận và publish event \texttt{payment.succeeded}.
+
+\section{Thiết kế Frontend}
+
+\subsection{Tổng quan 14 Features}
+
+\begin{table}[H]
+\centering
+\caption{Danh sách 14 frontend features và routes chính}
+\begin{tabular}{|l|p{4cm}|p{5.5cm}|}
+\hline
+\textbf{Feature} & \textbf{Routes chính} & \textbf{Chức năng} \\
+\hline
+auth & /login, /register, /verify-email, /forgot-password & Đăng nhập, đăng ký, OTP, Google OAuth \\
+\hline
+catalog & /shop, /products/:id, /categories, /brands & Shop, chi tiết sản phẩm, danh mục \\
+\hline
+cart & /cart & Giỏ hàng, merge guest cart \\
+\hline
+checkout & /checkout & Địa chỉ, discount, loyalty, payment \\
+\hline
+orders & /orders, /track-order & Lịch sử đơn, tracking public \\
+\hline
+payment & /payment-qr & QR code, MoMo/VNPay redirect \\
+\hline
+users & /profile & Profile, địa chỉ, đổi mật khẩu \\
+\hline
+wishlist & /wishlist & Danh sách yêu thích \\
+\hline
+reviews & (embedded) & Review modal, star rating \\
+\hline
+loyalty & (embedded) & Tab trong profile \\
+\hline
+ai & (floating widget) & Chatbot widget, product cards \\
+\hline
+content & /news, /contact & Tin tức, form liên hệ \\
+\hline
+admin & /admin/* & Dashboard, CRUD, analytics \\
+\hline
+upload & (embedded) & File upload component \\
+\hline
+\end{tabular}
+\end{table}
+
+\subsection{Thiết kế State Management}
+
+Chiến lược quản lý state phân tách rõ ràng giữa server state và client state. TanStack Query đảm trách server state với cơ chế caching thông minh: staleTime 5 phút cho phép data được xem là fresh trong 5 phút kể từ lần fetch cuối, gcTime 10 phút là thời gian cache entry được giữ trong bộ nhớ sau khi không có subscriber, retry 1 lần cho queries và 0 lần cho mutations. Mỗi feature định nghĩa query key object riêng (ví dụ \texttt{productKeys}, \texttt{orderKeys}) để cho phép invalidation chính xác và có scope.
+
+Zustand quản lý client state với 6 stores. \texttt{auth-store} lưu thông tin xác thực với access token trong sessionStorage (mất khi đóng tab để bảo mật) và user info trong localStorage (persist để tránh re-fetch khi reload). \texttt{cart-store} duy trì giỏ hàng local và \texttt{serverCart} snapshot, tự động sync khi fetch thành công. \texttt{chat-store} quản lý conversation history và sessionId được persist qua localStorage để duy trì ngữ cảnh khi reload trang.
+
+\subsection{Thiết kế API Client}
+
+API client được xây dựng trên Axios instance với base URL từ biến môi trường \texttt{VITE\_API\_URL}. Request interceptor tự động inject Authorization header bằng cách gọi \texttt{getValidToken()}: kiểm tra expiry của access token, nếu sắp hết hạn hoặc đã hết hạn thì gọi endpoint refresh để lấy token mới trước khi attach. Cơ chế deduplication đảm bảo nhiều requests đồng thời chỉ trigger một lần refresh duy nhất, các requests còn lại queue và chờ token mới.
+
+Response interceptor bắt HTTP 401: nếu request không phải là auth endpoint (login, register, refresh-token), tự động gọi \texttt{handleUnauthorizedError()} để logout và redirect về trang login. Ngoại lệ cho auth endpoints tránh vòng lặp vô tận khi refresh token thất bại.
+
+\section{Thiết kế Giao diện Người dùng}
+
+\subsection{Hệ thống Design Tokens}
+
+Giao diện TechStore sử dụng hệ thống design tokens được định nghĩa qua CSS custom properties trong \texttt{src/styles/\_tokens.scss}. Màu primary là teal (\texttt{\#2aaca7}) cho các CTA buttons và accent elements, màu secondary là coral (\texttt{\#ff755e}) cho cart-related actions và deals. Hệ thống hỗ trợ dark mode đầy đủ với hai bộ CSS variables khác nhau cho light mode (root) và dark mode (class \texttt{.dark}).
+
+\subsection{Liquid Glass Design System}
+
+Frontend áp dụng Liquid Glass design system lấy cảm hứng từ Apple iOS 26, sử dụng backdrop-filter blur kết hợp với noise grain texture tạo ra hiệu ứng kính mờ. Hệ thống định nghĩa nhiều class glass component: \texttt{.glass-card} cho card container, \texttt{.glass-nav} cho navigation bar, \texttt{.glass-product-card} cho product card trong shop và \texttt{.glass-btn} cho buttons. Theme switching sử dụng View Transitions API để tạo hiệu ứng circular reveal từ vị trí nút toggle, tạo trải nghiệm chuyển theme mượt mà và trực quan.
+
+\subsection{Thiết kế AI Chat Widget}
+
+Chat widget được thiết kế như một floating panel cố định ở góc dưới phải màn hình, sử dụng \texttt{react-rnd} để cho phép kéo và resize. Kích thước mặc định là 384x600 pixels, có thể điều chỉnh từ tối thiểu 300x400 đến tối đa 800x800 pixels và vị trí/kích thước được lưu vào localStorage. Widget render qua React Portal vào \texttt{document.body} để tránh bị clip bởi CSS \texttt{overflow: hidden} của parent containers.
+
+Giao diện chat hiển thị messages theo dạng bubble: tin nhắn user bên phải nền teal, tin nhắn AI bên trái nền glass effect. Khi AI đang xử lý, hiển thị typing indicator dạng 3 chấm nhảy. Sau mỗi response, hiển thị danh sách product cards với thumbnail, tên, giá và nút thêm vào giỏ, cùng suggestions chips để gợi ý câu hỏi tiếp theo.
+
+\section*{Kết luận chương 3}
+\addcontentsline{toc}{section}{Kết luận chương 3}
+
+Chương 3 đã trình bày đầy đủ quá trình phân tích yêu cầu với ba nhóm tác nhân và hai nhóm yêu cầu (chức năng và phi chức năng), thiết kế kiến trúc Modular Monolith với 19 backend modules và 14 frontend features, thiết kế cơ sở dữ liệu 35 bảng và thiết kế chi tiết các module trọng tâm đặc biệt là module AI Chatbot RAG và module Orders. Tất cả các quyết định thiết kế đều hướng đến mục tiêu đảm bảo tính nhất quán dữ liệu, khả năng bảo trì, mở rộng và đặc biệt là chất lượng phản hồi của AI Chatbot.

@@ -41,16 +41,10 @@ const DealsPage: React.FC = () => {
           ? parseFloat(item.compareAtPrice)
           : item.compareAtPrice;
 
-      const ratings = {
-        average: 4.5,
-        count: 10,
-      };
-
       return {
         ...item,
         price,
         compareAtPrice,
-        ratings,
         isNew:
           item.createdAt &&
           new Date(item.createdAt) > new Date(Date.now() - 7 * 24 * 60 * 60 * 1000),

@@ -12,7 +12,7 @@ module.exports = {
       });
 
       await queryInterface.sequelize.query(
-        'UPDATE users SET "isActive" = true WHERE "isActive" IS NULL'
+        'UPDATE users SET `isActive` = true WHERE `isActive` IS NULL',
       );
     }
   },

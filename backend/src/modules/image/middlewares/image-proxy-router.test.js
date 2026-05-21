@@ -72,7 +72,10 @@ describe('imageProxyRouter — Input validation và domain whitelist', () => {
     // Test chỉ verify không bị 400/403
     it('không trả về 400/403 cho cdnv2.tgdd.vn (domain được phép)', async () => {
       // Gửi request — sẽ timeout hoặc lỗi kết nối nhưng không phải validation error
-      const res = await request.get('/?url=https://cdnv2.tgdd.vn/test.jpg').timeout(2000).catch(err => err);
+      const res = await request
+        .get('/?url=https://cdnv2.tgdd.vn/test.jpg')
+        .timeout(2000)
+        .catch((err) => err);
       // Nếu timeout: không phải validation error → domain passed whitelist
       if (res.status) {
         expect([200, 502, 504]).toContain(res.status); // upstream error OK
@@ -82,7 +85,10 @@ describe('imageProxyRouter — Input validation và domain whitelist', () => {
     });
 
     it('không trả về 400/403 cho cdn.tgdd.vn (domain được phép)', async () => {
-      const res = await request.get('/?url=https://cdn.tgdd.vn/test.jpg').timeout(2000).catch(err => err);
+      const res = await request
+        .get('/?url=https://cdn.tgdd.vn/test.jpg')
+        .timeout(2000)
+        .catch((err) => err);
       if (res.status) {
         expect(res.status).not.toBe(400);
         expect(res.status).not.toBe(403);
@@ -90,7 +96,10 @@ describe('imageProxyRouter — Input validation và domain whitelist', () => {
     });
 
     it('không trả về 400/403 cho cdn2.cellphones.com.vn (domain được phép)', async () => {
-      const res = await request.get('/?url=https://cdn2.cellphones.com.vn/test.jpg').timeout(2000).catch(err => err);
+      const res = await request
+        .get('/?url=https://cdn2.cellphones.com.vn/test.jpg')
+        .timeout(2000)
+        .catch((err) => err);
       if (res.status) {
         expect(res.status).not.toBe(400);
         expect(res.status).not.toBe(403);
@@ -135,7 +144,6 @@ jest.mock('http', () => {
     },
   };
 });
-
 
 function mockRes() {
   const res = {

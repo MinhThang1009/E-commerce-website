@@ -366,7 +366,6 @@ jest.mock('@utils/logger', () => ({
   debug: jest.fn(),
 }));
 
-
 jest.mock('@models', () => ({
   AttributeValue: {
     associations: { attributeGroup: true },
@@ -378,7 +377,6 @@ jest.mock('@models', () => ({
     hasMany: jest.fn(),
   },
 }));
-
 
 afterEach(() => {
   jest.clearAllMocks();

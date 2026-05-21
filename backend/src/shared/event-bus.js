@@ -4,7 +4,7 @@
  * @module global
  * @description Cross-cutting infrastructure: eventBus
  */
-const logger = require('@shared/logger');
+const logger = require('@utils/logger');
 
 // In-process pub-sub cho cross-module communication (vd
 // orders.OrderCreated → inventory subscribe deduct stock).
@@ -52,7 +52,7 @@ class EventBus {
           .then(() => handler(event))
           .catch((err) => {
             logger.error(`[eventBus] Handler lỗi cho event "${event.type}":`, err);
-          })
+          }),
       );
     }
     await Promise.allSettled(promises);

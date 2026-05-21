@@ -69,10 +69,22 @@ function makeRes() {
     clearCookie: jest.fn().mockReturnThis(),
     setHeader: jest.fn().mockReturnThis(),
   };
-  res.status.mockImplementation((code) => { res._status = code; return res; });
-  res.json.mockImplementation((body) => { res._body = body; return res; });
-  res.cookie.mockImplementation((name, val, opts) => { res._cookies[name] = { val, opts }; return res; });
-  res.clearCookie.mockImplementation((name, opts) => { res._clearedCookies[name] = opts; return res; });
+  res.status.mockImplementation((code) => {
+    res._status = code;
+    return res;
+  });
+  res.json.mockImplementation((body) => {
+    res._body = body;
+    return res;
+  });
+  res.cookie.mockImplementation((name, val, opts) => {
+    res._cookies[name] = { val, opts };
+    return res;
+  });
+  res.clearCookie.mockImplementation((name, opts) => {
+    res._clearedCookies[name] = opts;
+    return res;
+  });
   return res;
 }
 
@@ -89,7 +101,9 @@ function makeFakeUser(overrides = {}) {
     firstName: 'Test',
     lastName: 'User',
     role: 'customer',
-    toJSON: jest.fn().mockReturnValue({ id: 1, email: 'user@test.com', role: 'customer', ...overrides }),
+    toJSON: jest
+      .fn()
+      .mockReturnValue({ id: 1, email: 'user@test.com', role: 'customer', ...overrides }),
     ...overrides,
   };
 }
@@ -104,7 +118,15 @@ describe('AuthController.register', () => {
       register: jest.fn().mockResolvedValue({ message: 'Đăng ký thành công' }),
     });
     const controller = new AuthController({ authService });
-    const req = makeReq({ body: { email: 'new@test.com', password: 'Abc123!', firstName: 'Test', lastName: 'User', phone: '0901234567' } });
+    const req = makeReq({
+      body: {
+        email: 'new@test.com',
+        password: 'Abc123!',
+        firstName: 'Test',
+        lastName: 'User',
+        phone: '0901234567',
+      },
+    });
     const res = makeRes();
     const next = makeNext();
 
@@ -136,7 +158,13 @@ describe('AuthController.register', () => {
       register: jest.fn().mockResolvedValue({ message: 'OK' }),
     });
     const controller = new AuthController({ authService });
-    const reqBody = { email: 'a@b.com', password: 'pass', firstName: 'A', lastName: 'B', phone: '090' };
+    const reqBody = {
+      email: 'a@b.com',
+      password: 'pass',
+      firstName: 'A',
+      lastName: 'B',
+      phone: '090',
+    };
     const req = makeReq({ body: reqBody });
     const res = makeRes();
 
@@ -169,10 +197,14 @@ describe('AuthController.login', () => {
 
     expect(res.status).toHaveBeenCalledWith(200);
     expect(res.json).toHaveBeenCalledWith(
-      expect.objectContaining({ status: 'success', token: 'access-token-abc' })
+      expect.objectContaining({ status: 'success', token: 'access-token-abc' }),
     );
     // Refresh token nên được set vào cookie
-    expect(res.cookie).toHaveBeenCalledWith('refreshToken', 'refresh-token-xyz', expect.objectContaining({ httpOnly: true }));
+    expect(res.cookie).toHaveBeenCalledWith(
+      'refreshToken',
+      'refresh-token-xyz',
+      expect.objectContaining({ httpOnly: true }),
+    );
     expect(next).not.toHaveBeenCalled();
   });
 
@@ -237,9 +269,13 @@ describe('AuthController.googleLogin', () => {
 
     expect(res.status).toHaveBeenCalledWith(200);
     expect(res.json).toHaveBeenCalledWith(
-      expect.objectContaining({ status: 'success', token: 'google-access-token' })
+      expect.objectContaining({ status: 'success', token: 'google-access-token' }),
     );
-    expect(res.cookie).toHaveBeenCalledWith('refreshToken', 'google-refresh-token', expect.anything());
+    expect(res.cookie).toHaveBeenCalledWith(
+      'refreshToken',
+      'google-refresh-token',
+      expect.anything(),
+    );
     expect(next).not.toHaveBeenCalled();
   });
 
@@ -373,7 +409,10 @@ describe('AuthController.verifyOtp', () => {
     await controller.verifyOtp(req, res, next);
 
     expect(res.status).toHaveBeenCalledWith(200);
-    expect(res.json).toHaveBeenCalledWith({ status: 'success', message: 'Xác thực email thành công' });
+    expect(res.json).toHaveBeenCalledWith({
+      status: 'success',
+      message: 'Xác thực email thành công',
+    });
     expect(next).not.toHaveBeenCalled();
   });
 
@@ -465,7 +504,9 @@ describe('AuthController.refreshToken', () => {
 
     await controller.refreshToken(req, res, next);
 
-    expect(authService.refreshToken).toHaveBeenCalledWith({ refreshToken: 'old-refresh-from-cookie' });
+    expect(authService.refreshToken).toHaveBeenCalledWith({
+      refreshToken: 'old-refresh-from-cookie',
+    });
     expect(res.status).toHaveBeenCalledWith(200);
     expect(res.json).toHaveBeenCalledWith({ status: 'success', token: 'new-access-token' });
     expect(res.cookie).toHaveBeenCalledWith('refreshToken', 'new-refresh-token', expect.anything());
@@ -529,7 +570,9 @@ describe('AuthController.refreshToken', () => {
 describe('AuthController.forgotPassword', () => {
   it('trả về 200 với message khi gửi email reset password thành công', async () => {
     const authService = makeMockAuthService({
-      forgotPassword: jest.fn().mockResolvedValue({ message: 'Email đặt lại mật khẩu đã được gửi' }),
+      forgotPassword: jest
+        .fn()
+        .mockResolvedValue({ message: 'Email đặt lại mật khẩu đã được gửi' }),
     });
     const controller = new AuthController({ authService });
     const req = makeReq({ body: { email: 'user@test.com' } });
@@ -540,7 +583,10 @@ describe('AuthController.forgotPassword', () => {
 
     expect(authService.forgotPassword).toHaveBeenCalledWith({ email: 'user@test.com' });
     expect(res.status).toHaveBeenCalledWith(200);
-    expect(res.json).toHaveBeenCalledWith({ status: 'success', message: 'Email đặt lại mật khẩu đã được gửi' });
+    expect(res.json).toHaveBeenCalledWith({
+      status: 'success',
+      message: 'Email đặt lại mật khẩu đã được gửi',
+    });
     expect(next).not.toHaveBeenCalled();
   });
 
@@ -577,9 +623,15 @@ describe('AuthController.resetPassword', () => {
 
     await controller.resetPassword(req, res, next);
 
-    expect(authService.resetPassword).toHaveBeenCalledWith({ token: 'reset-token-abc', password: 'NewSecure123!' });
+    expect(authService.resetPassword).toHaveBeenCalledWith({
+      token: 'reset-token-abc',
+      password: 'NewSecure123!',
+    });
     expect(res.status).toHaveBeenCalledWith(200);
-    expect(res.json).toHaveBeenCalledWith({ status: 'success', message: 'Đặt lại mật khẩu thành công' });
+    expect(res.json).toHaveBeenCalledWith({
+      status: 'success',
+      message: 'Đặt lại mật khẩu thành công',
+    });
     expect(next).not.toHaveBeenCalled();
   });
 
@@ -713,7 +765,7 @@ describe('AuthController._clearRefreshCookie', () => {
 
     expect(res.clearCookie).toHaveBeenCalledWith(
       'refreshToken',
-      expect.objectContaining({ httpOnly: true, path: '/api/auth' })
+      expect.objectContaining({ httpOnly: true, path: '/api/auth' }),
     );
   });
 });

@@ -10,7 +10,7 @@ import Modal from '@/components/common/Modal';
 import { Rating } from '@/components/common/Rating';
 import { PremiumButton } from '@/components/common';
 import { useCreateReviewMutation } from '../api/review-api';
-import { toast } from '@/utils/toast';
+import { useNotifications } from '@/hooks/use-notifications';
 import { getErrorMsg } from '@/utils/error-utils';
 
 interface ReviewModalProps {
@@ -29,6 +29,7 @@ const ReviewModal: React.FC<ReviewModalProps> = ({
   onSuccess,
 }) => {
   const { t } = useTranslation();
+  const { showNotification } = useNotifications();
   const [rating, setRating] = useState<number>(5);
   const [title, setTitle] = useState<string>('');
   const [comment, setComment] = useState<string>('');
@@ -40,12 +41,12 @@ const ReviewModal: React.FC<ReviewModalProps> = ({
     e.preventDefault();
 
     if (rating < 1) {
-      toast.error(t('review.modal.ratingRequired'));
+      showNotification({ message: t('review.modal.ratingRequired'), type: 'error' });
       return;
     }
 
     if (!comment.trim()) {
-      toast.error(t('review.modal.commentRequired'));
+      showNotification({ message: t('review.modal.commentRequired'), type: 'error' });
       return;
     }
 
@@ -58,7 +59,7 @@ const ReviewModal: React.FC<ReviewModalProps> = ({
         images: images.length > 0 ? images : undefined,
       });
 
-      toast.success(t('review.modal.submitSuccess'));
+      showNotification({ message: t('review.modal.submitSuccess'), type: 'success' });
       if (onSuccess) onSuccess();
       onClose();
       setRating(5);
@@ -66,7 +67,10 @@ const ReviewModal: React.FC<ReviewModalProps> = ({
       setComment('');
     } catch (error) {
       console.error('Review submission failed:', error);
-      toast.error(getErrorMsg(error, t('review.modal.submitError')));
+      showNotification({
+        message: getErrorMsg(error, t('review.modal.submitError')),
+        type: 'error',
+      });
     }
   };
 

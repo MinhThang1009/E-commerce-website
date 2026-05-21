@@ -96,7 +96,7 @@ export const parseError = (error: unknown): AppError => {
   if (statusStr === 'ERR_NETWORK') {
     return {
       type: ErrorType.NETWORK_ERROR,
-      message: extractMessage(data),
+      message: i18next.t('errors.network'),
       code: statusStr,
       details: error,
     };
@@ -107,7 +107,7 @@ export const parseError = (error: unknown): AppError => {
   if (code === 'ERR_NETWORK' || code === 'ECONNABORTED') {
     return {
       type: ErrorType.NETWORK_ERROR,
-      message: str(prop(error, 'message')) || i18next.t('errors.network'),
+      message: i18next.t('errors.network'),
       code,
       details: error,
     };
@@ -242,6 +242,7 @@ export const formatErrorForLogging = (error: unknown): string => {
 export function getErrorMsg(error: unknown, fallback?: string): string {
   // Wrapper của getErrorMessage với fallback param tùy chọn
   const msg = getErrorMessage(error);
-  const isGeneric = msg.includes('không xác định') || msg === 'Unknown error';
+  const isGeneric =
+    msg.includes('không xác định') || /* istanbul ignore next */ msg === 'Unknown error';
   return fallback && isGeneric ? fallback : msg;
 }

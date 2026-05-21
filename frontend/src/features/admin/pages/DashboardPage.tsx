@@ -587,7 +587,7 @@ const DashboardPage: React.FC = () => {
             {stats?.topProducts && stats.topProducts.length > 0 ? (
               <div className="space-y-4">
                 {stats.topProducts.map((item, index) => (
-                  <div key={item.product.id} className="flex items-center space-x-4">
+                  <div key={item.product.id ?? index} className="flex items-center space-x-4">
                     <div className="flex-shrink-0 w-12 h-12 rounded-lg overflow-hidden bg-neutral-100 dark:bg-neutral-700">
                       {item.product.images?.[0] ? (
                         <img
@@ -597,7 +597,7 @@ const DashboardPage: React.FC = () => {
                         />
                       ) : (
                         <div className="w-full h-full flex items-center justify-center text-neutral-500">
-                          {item.product.name.charAt(0)}
+                          {(item.product.name || '?').charAt(0)}
                         </div>
                       )}
                     </div>
@@ -687,7 +687,7 @@ const DashboardPage: React.FC = () => {
                           />
                         ) : (
                           <div className="w-8 h-8 rounded bg-neutral-200 dark:bg-neutral-700 flex items-center justify-center text-xs text-neutral-500">
-                            {product.name.charAt(0)}
+                            {(product.name || '?').charAt(0)}
                           </div>
                         )}
                         <span className="text-sm font-medium text-neutral-800 dark:text-neutral-100">

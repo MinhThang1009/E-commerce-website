@@ -11,23 +11,23 @@ const OrderItem = sequelize.define(
     },
     orderId: {
       type: DataTypes.INTEGER,
-      allowNull: false
+      allowNull: false,
     },
     productId: {
       type: DataTypes.INTEGER,
-      allowNull: false
+      allowNull: false,
     },
     variantId: {
       type: DataTypes.INTEGER,
-      allowNull: true
+      allowNull: true,
     },
     name: {
       type: DataTypes.STRING(200),
-      allowNull: false
+      allowNull: false,
     },
     sku: {
       type: DataTypes.STRING,
-      allowNull: true
+      allowNull: true,
     },
     // Giá của 1 unit tại thời điểm đặt hàng (snapshot giá)
     unitPrice: {
@@ -42,19 +42,19 @@ const OrderItem = sequelize.define(
     },
     quantity: {
       type: DataTypes.INTEGER,
-      allowNull: false
+      allowNull: false,
     },
     subtotal: {
       type: DataTypes.DECIMAL(15, 2),
-      allowNull: false
+      allowNull: false,
     },
     image: {
       type: DataTypes.STRING,
-      allowNull: true
+      allowNull: true,
     },
     attributes: {
       type: DataTypes.JSON,
-      defaultValue: {}
+      defaultValue: {},
     },
     warrantyPackageIds: {
       type: DataTypes.JSON,
@@ -65,7 +65,7 @@ const OrderItem = sequelize.define(
     tableName: 'order_items',
     timestamps: true,
     underscored: true,
-  }
+  },
 );
 
 module.exports = OrderItem;

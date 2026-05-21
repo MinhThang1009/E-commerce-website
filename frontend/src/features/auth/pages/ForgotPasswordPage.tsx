@@ -8,7 +8,7 @@ import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { ROUTES } from '@/routes/paths';
-import Button from '@/components/common/Button';
+import { PremiumButton } from '@/components/common';
 import Input from '@/components/common/Input';
 import { useForgotPasswordMutation } from '../api/auth-api';
 import { getErrorMsg } from '@/utils/error-utils';
@@ -53,9 +53,9 @@ const ForgotPasswordPage: React.FC = () => {
 
   if (isSuccess) {
     return (
-      <div className="container mx-auto px-4 py-16">
+      <div className="container mx-auto px-4 py-8 sm:py-16">
         <div className="max-w-md mx-auto">
-          <div className="bg-white dark:bg-neutral-800 rounded-lg shadow-md p-8">
+          <div className="bg-white dark:bg-neutral-800 rounded-lg shadow-md p-5 sm:p-8">
             <div className="text-center">
               <div className="mx-auto flex items-center justify-center h-12 w-12 rounded-full bg-success-100 dark:bg-success-900/30 mb-4">
                 <svg
@@ -100,9 +100,9 @@ const ForgotPasswordPage: React.FC = () => {
   }
 
   return (
-    <div className="container mx-auto px-4 py-16">
+    <div className="container mx-auto px-4 py-8 sm:py-16">
       <div className="max-w-md mx-auto">
-        <div className="bg-white dark:bg-neutral-800 rounded-lg shadow-md p-8">
+        <div className="bg-white dark:bg-neutral-800 rounded-lg shadow-md p-5 sm:p-8">
           <div className="text-center mb-8">
             <div className="mx-auto flex items-center justify-center h-12 w-12 rounded-full bg-primary-100 dark:bg-primary-900/30 mb-4">
               <svg
@@ -149,9 +149,20 @@ const ForgotPasswordPage: React.FC = () => {
             </div>
 
             <div className="mb-6">
-              <Button type="submit" variant="primary" size="lg" isLoading={isLoading} fullWidth>
+              <PremiumButton
+                variant="primary"
+                size="large"
+                iconType="arrow-right"
+                isProcessing={isLoading}
+                processingText={t('auth.forgotPassword.sending')}
+                onClick={(e: React.MouseEvent) => {
+                  e.preventDefault();
+                  handleSubmit(e as unknown as React.FormEvent);
+                }}
+                className="w-full h-12"
+              >
                 {t('auth.forgotPassword.sendResetLinkButton')}
-              </Button>
+              </PremiumButton>
             </div>
           </form>
 

@@ -9,7 +9,7 @@ import { useTranslation } from 'react-i18next';
 import { getLocale } from '@/utils/format';
 import { useCatalogStore } from '@/stores/catalog-store';
 import { Category } from '../api/category-api';
-import Button from '@/components/common/Button';
+import { PremiumButton } from '@/components/common';
 
 interface ProductFiltersProps {
   categories: Category[];
@@ -163,12 +163,12 @@ const ProductFilters: React.FC<ProductFiltersProps> = ({
         ))}
 
         <div className="flex flex-col space-y-2">
-          <Button variant="primary" fullWidth onClick={applyFilters}>
+          <PremiumButton variant="primary" size="large" className="w-full" onClick={applyFilters}>
             {t('filters.apply')}
-          </Button>
-          <Button variant="outline" fullWidth onClick={resetFilters}>
+          </PremiumButton>
+          <PremiumButton variant="outline" size="large" className="w-full" onClick={resetFilters}>
             {t('filters.reset')}
-          </Button>
+          </PremiumButton>
         </div>
       </div>
     </div>

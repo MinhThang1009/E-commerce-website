@@ -5,13 +5,14 @@
  * @description Top-level page component
  */
 import React from 'react';
-import { Link } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
-import Button from '@/components/common/Button';
+import { PremiumButton } from '@/components/common';
 import { ROUTES } from '@/routes/paths';
 
 const UnauthorizedPage: React.FC = () => {
   const { t } = useTranslation();
+  const navigate = useNavigate();
 
   return (
     <div className="container mx-auto px-4 py-16">
@@ -43,17 +44,22 @@ const UnauthorizedPage: React.FC = () => {
           </div>
 
           <div className="space-y-4">
-            <Link to={ROUTES.HOME}>
-              <Button variant="primary" size="lg" fullWidth>
-                {t('unauthorized.goHome')}
-              </Button>
-            </Link>
-
-            <Link to={ROUTES.LOGIN}>
-              <Button variant="secondary" size="lg" fullWidth>
-                {t('unauthorized.login')}
-              </Button>
-            </Link>
+            <PremiumButton
+              variant="primary"
+              size="large"
+              className="w-full"
+              onClick={() => navigate(ROUTES.HOME)}
+            >
+              {t('unauthorized.goHome')}
+            </PremiumButton>
+            <PremiumButton
+              variant="outline"
+              size="large"
+              className="w-full"
+              onClick={() => navigate(ROUTES.LOGIN)}
+            >
+              {t('unauthorized.login')}
+            </PremiumButton>
           </div>
         </div>
       </div>

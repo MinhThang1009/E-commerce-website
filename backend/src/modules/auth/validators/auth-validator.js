@@ -5,9 +5,13 @@
  */
 const { z } = require('zod');
 
-const passwordSchema = z.string()
+const passwordSchema = z
+  .string()
   .min(8, 'Mật khẩu phải có ít nhất 8 ký tự')
-  .regex(/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)/, 'Mật khẩu phải chứa ít nhất 1 chữ hoa, 1 chữ thường và 1 chữ số');
+  .regex(
+    /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)/,
+    'Mật khẩu phải chứa ít nhất 1 chữ hoa, 1 chữ thường và 1 chữ số',
+  );
 
 const registerSchema = z.object({
   email: z.string().min(1, 'Email không được để trống').email('Email không hợp lệ'),
@@ -40,4 +44,11 @@ const otpSchema = z.object({
   otp: z.string().min(4, 'OTP không hợp lệ').max(8, 'OTP không hợp lệ'),
 });
 
-module.exports = { registerSchema, loginSchema, forgotPasswordSchema, resetPasswordSchema, emailSchema, otpSchema };
+module.exports = {
+  registerSchema,
+  loginSchema,
+  forgotPasswordSchema,
+  resetPasswordSchema,
+  emailSchema,
+  otpSchema,
+};

@@ -1,6 +1,11 @@
 'use strict';
 
-jest.mock('@utils/logger', () => ({ info: jest.fn(), error: jest.fn(), warn: jest.fn(), debug: jest.fn() }));
+jest.mock('@utils/logger', () => ({
+  info: jest.fn(),
+  error: jest.fn(),
+  warn: jest.fn(),
+  debug: jest.fn(),
+}));
 
 const { z } = require('zod');
 const { validateRequest } = require('./validate-request');

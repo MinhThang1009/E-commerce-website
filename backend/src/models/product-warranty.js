@@ -26,7 +26,7 @@ const ProductWarranty = sequelize.define(
     tableName: 'product_warranties',
     timestamps: true,
     underscored: true,
-  }
+  },
 );
 
 module.exports = ProductWarranty;

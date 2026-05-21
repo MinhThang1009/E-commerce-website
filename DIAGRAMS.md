@@ -119,8 +119,8 @@ flowchart TB
         A4["POST /api/auth/google\nGoogle OAuth2 passport\nupsert user + tokens"]
         A5["POST /api/auth/refresh-token\nRotate refreshToken\nPhát hiện reuse → invalidate cả family"]
         A6["POST /api/auth/logout\nBlacklist jti trên Redis\nthu hồi refreshToken family"]
-        A7["POST /api/auth/forgot-password\nGửi OTP reset qua email\notpLimiter bảo vệ"]
-        A8["POST /api/auth/reset-password\nXác thực OTP → hash bcrypt cost=12"]
+        A7["POST /api/auth/forgot-password\nGửi link reset qua email (token hex 32 bytes)\notpLimiter bảo vệ"]
+        A8["POST /api/auth/reset-password\nXác thực reset token hex → hash bcrypt cost=12"]
         A9["GET /api/auth/me\nauthenticate middleware → user info"]
         A10["PUT /api/users/profile\nCập nhật firstName lastName phone avatar"]
         A11["POST /api/users/change-password\nVerify currentPassword rồi hash mới"]
@@ -191,7 +191,7 @@ flowchart TB
     subgraph CART["Cart — Giỏ hàng"]
         direction TB
         C1["GET /api/cart\nLấy giỏ hàng user cart hoặc guest cart theo sessionId"]
-        C2["POST /api/cart/items\nThêm sản phẩm vào giỏ\ncó thể kèm warrantyPackageIds JSON"]
+        C2["POST /api/cart\nThêm sản phẩm vào giỏ\ncó thể kèm warrantyPackageIds JSON"]
         C3["PUT /api/cart/items/:id\nCập nhật quantity\nvalidate tồn kho thực tế"]
         C4["DELETE /api/cart/items/:id\nXóa 1 item khỏi giỏ"]
         C5["DELETE /api/cart\nXóa toàn bộ giỏ hàng"]
@@ -202,7 +202,7 @@ flowchart TB
         direction TB
         D1["Chọn địa chỉ giao hàng\nhoặc nhập địa chỉ mới"]
         D2["Chọn gói bảo hành tùy chọn\nGET /api/warranty-packages/product/:id"]
-        D3["Nhập mã giảm giá\nPOST /api/discount-codes/validate\ncheck type value min_order_amount end_date usage_limit"]
+        D3["Nhập mã giảm giá\nPOST /api/discount-codes/apply\ncheck type value min_order_amount end_date usage_limit"]
         D4["Sử dụng điểm Loyalty\nPOST /api/loyalty/redeem SELECT FOR UPDATE\n1 điểm = POINTS_VALUE VND"]
         D5["Chọn phương thức thanh toán\nCOD / VNPay / MoMo / bank_transfer"]
         D6["POST /api/orders\nTạo đơn hàng\nSELECT FOR UPDATE variants\ntính subtotal + shipping + warranty - discount - loyalty_discount"]
@@ -304,7 +304,7 @@ flowchart TB
         I2["EventBus order.cancelled\ninventory restore stock\nghi inventory_logs type=return"]
         I3["POST /api/inventory/products/:id/restock\nAdmin nhập hàng\nghi inventory_logs type=restock"]
         I4["GET /api/inventory/logs\nAdmin xem lịch sử tồn kho\nlọc productId variantId change_type"]
-        I5["GET /api/admin/products/:id/stock\nXem tồn kho hiện tại theo variant"]
+        I5["GET /api/admin/products/:id\nXem chi tiết sản phẩm kèm tồn kho theo variant"]
     end
 
     subgraph WARRANTY["Warranty — Gói bảo hành"]
@@ -337,8 +337,8 @@ flowchart TB
         L2["POST /api/loyalty/redeem\nĐổi điểm lấy giảm giá\nSELECT FOR UPDATE chống race condition\n1 điểm = POINTS_VALUE VND"]
         L3["Tích điểm tự động sau DELIVERED\nfloor subtotal / POINTS_EARN_RATE\ngọi từ orders service khi admin cập nhật status"]
         L4["Hệ thống tính tier tự động\nBronze 0-9 pts\nSilver 10-49 pts\nGold 50-199 pts\nPlatinum >=200 pts"]
-        L5["GET /api/admin/loyalty\nAdmin xem toàn bộ lịch sử điểm\nlọc userId type date"]
-        L6["POST /api/admin/loyalty/adjust\nAdmin điều chỉnh điểm thủ công\ntype=adjustment"]
+        L5["GET /api/admin/users/:id\nAdmin xem lịch sử điểm của user\nkèm loyaltyHistories paginated"]
+        L6["PUT /api/admin/users/:id\nAdmin điều chỉnh loyalty points thủ công\ncập nhật loyalty_points trực tiếp"]
         L3 --> L4
     end
 
@@ -428,16 +428,16 @@ flowchart TB
 
     subgraph ADMIN["Admin Dashboard — Quản trị toàn hệ thống"]
         direction TB
-        AD1["GET /api/admin/stats/overview\nDoanh thu đơn hàng users sản phẩm\nnhóm theo khoảng thời gian"]
-        AD2["GET /api/admin/stats/revenue\nBiểu đồ doanh thu theo ngày/tháng/năm"]
-        AD3["GET /api/admin/stats/top-products\nTop sản phẩm bán chạy lọc khoảng thời gian"]
+        AD1["GET /api/admin/dashboard\nTổng quan: totalUsers totalRevenue aov\ntopProducts ordersByStatus"]
+        AD2["GET /api/admin/stats\nDoanh thu chi tiết theo startDate/endDate\ngroupBy=day/month/year"]
+        AD3["GET /api/admin/analytics/top-products\nTop sản phẩm bán chạy\nlọc metric=revenue/soldCount khoảng thời gian"]
         AD4["GET /api/admin/users\nDanh sách users + loyalty tier lọc role is_active"]
-        AD5["PATCH /api/admin/users/:id/toggle-active\nKích hoạt / vô hiệu hóa user"]
+        AD5["PUT /api/admin/users/:id\nCập nhật user: role isActive + điều chỉnh điểm\nbao gồm toggle kích hoạt/vô hiệu hóa"]
         AD6["GET /api/admin/discount-codes\nQuản lý mã giảm giá lọc is_active expired"]
-        AD7["POST/PUT/DELETE /api/discount-codes\nCRUD mã giảm giá\ncode type=percent/fixed value min_order_amount usage_limit"]
+        AD7["POST/PUT/DELETE /api/admin/discount-codes\nCRUD mã giảm giá\ncode type=percent/fixed value min_order_amount usage_limit"]
         AD8["GET /api/admin/audit-logs\nNhật ký thao tác admin\nlọc action entity_type adminId date"]
-        AD9["GET /api/attribute-groups\nCRUD attribute groups cho AI filter\nname type=custom is_required"]
-        AD10["POST /api/attribute-groups/:id/values\nCRUD attribute values\nname value color_code affects_name"]
+        AD9["GET /api/attributes/groups\nCRUD attribute groups cho AI filter\nname type=custom is_required"]
+        AD10["POST /api/attributes/groups/:id/values\nCRUD attribute values\nname value color_code affects_name"]
     end
 
     Admin --> AD1
@@ -490,11 +490,9 @@ sequenceDiagram
         API-->>FE: 400 Bad Request
         FE-->>User: OTP không hợp lệ
     else OTP đúng
-        API->>DB: UPDATE isEmailVerified=true otp_code=NULL
-        API->>API: Tạo accessToken JWT 15m + refreshToken familyId pattern
-        API->>Redis: SET rt:{familyId}:{token} EX refresh_ttl lưu refreshToken
-        API-->>FE: 200 OK + accessToken + Set-Cookie refreshToken httpOnly
-        FE-->>User: Đăng nhập thành công
+        API->>DB: UPDATE isEmailVerified=true otp_code=NULL otp_expires=NULL
+        API-->>FE: 200 OK { message: 'auth.emailVerified' }
+        FE-->>User: Email xác thực thành công — vui lòng đăng nhập
     end
 
     Note over User,Mail: Luồng Đăng nhập
@@ -507,12 +505,11 @@ sequenceDiagram
     alt User không tồn tại hoặc password sai
         API-->>FE: 401 Unauthorized
     else Tài khoản bị vô hiệu hóa
-        API-->>FE: 403 Forbidden
+        API-->>FE: 401 auth.accountDisabled
     else Email chưa xác thực
-        API-->>FE: 403 Vui lòng xác thực email
+        API-->>FE: 401 auth.emailNotVerified
     else Đăng nhập thành công
         API->>API: Sinh accessToken JWT 15m + refreshToken
-        API->>Redis: SET rt:{familyId}:{token} lưu refreshToken + familyId
         API-->>FE: 200 OK + accessToken refreshToken httpOnly cookie
         FE-->>User: Đăng nhập thành công
     end
@@ -817,28 +814,28 @@ sequenceDiagram
     Note over FE,Redis: accessToken hết hạn 15 phút
 
     FE->>API: POST /api/auth/refresh-token\nrefreshToken tự động gửi qua httpOnly cookie
-    API->>Redis: GET rt:{familyId}:{token} kiểm tra còn hợp lệ
-    Redis-->>API: Token record có hoặc không
+    API->>Redis: GET rt_used:{jti} kiểm tra token đã dùng chưa
+    API->>Redis: GET rt_family_revoked:{familyId} kiểm tra family bị thu hồi chưa
+    Redis-->>API: Kết quả kiểm tra
 
-    alt Token không tồn tại hoặc đã bị thu hồi
+    alt Token đã dùng (reuse) hoặc family bị revoke
         Note over API: Phát hiện token reuse attack
-        API->>Redis: DEL rt:{familyId}:* invalidate toàn bộ family
+        API->>Redis: SET rt_family_revoked:{familyId} EX ttl invalidate cả family
         API-->>FE: 401 Phiên đăng nhập không hợp lệ vui lòng đăng nhập lại
         FE-->>FE: Clear tokens redirect /login
     else Token hợp lệ
-        API->>Redis: DEL rt:{familyId}:{oldToken} blacklist token cũ
+        API->>Redis: SET rt_used:{jti} EX ttl đánh dấu token cũ đã dùng
         API->>API: Tạo accessToken mới JWT jti mới 15m
-        API->>API: Tạo refreshToken mới giữ nguyên family_id
-        API->>Redis: SET rt:{familyId}:{newToken} EX refresh_ttl token mới
+        API->>API: Tạo refreshToken mới giữ nguyên familyId
         API-->>FE: 200 OK + accessToken mới refreshToken mới Set-Cookie
         FE->>FE: Lưu accessToken mới retry request gốc
     end
 
     Note over FE,Redis: Đăng xuất
 
-    FE->>API: POST /api/auth/logout với accessToken hiện tại
+    FE->>API: POST /api/auth/logout với accessToken + refreshToken
     API->>Redis: SET bl:{jti} = 1 EX remaining_ttl blacklist accessToken theo jti
-    API->>Redis: DEL rt:* thu hồi toàn bộ refresh tokens của user
+    API->>Redis: SET rt_family_revoked:{familyId} EX ttl thu hồi family của refreshToken
     API-->>FE: 200 OK + Set-Cookie refreshToken= Max-Age=0 clear cookie
     FE-->>FE: Clear accessToken từ memory
 ```
@@ -1593,7 +1590,7 @@ stateDiagram-v2
 
     processing --> shipped : Admin cập nhật\nPATCH /api/orders/admin/:id/status\ntracking_number được gán
 
-    processing --> cancelled : Admin hủy\nHoàn stock\nHoàn tiền nếu đã paid
+    processing --> cancelled : Admin hủy\nHoàn stock về variants\nHoàn tiền là thao tác manual riêng
 
     shipped --> delivered : Admin xác nhận giao hàng thành công\nHoặc user xác nhận POST /api/orders/:id/receive\nTrigger cộng Loyalty points\nCOD paymentStatus=paid
 
@@ -1604,7 +1601,7 @@ stateDiagram-v2
     note right of pending
         paymentStatus = pending
         Stock locked SELECT FOR UPDATE
-        discount.usedCount COD/bank_transfer tăng ngay
+        discount.usedCount COD/bank_transfer/installment tăng ngay
         discount.usedCount VNPay/MoMo chờ IPN
     end note
 
@@ -1649,7 +1646,7 @@ stateDiagram-v2
     note right of paid
         Trigger xóa cart online
         Trigger gửi email xác nhận
-        Trigger discount.usedCount + 1\nVNPay/MoMo tăng trong IPN\nCOD/bank_transfer tăng khi tạo đơn
+        Trigger discount.usedCount + 1\nVNPay/MoMo tăng trong IPN\nCOD/bank_transfer/installment tăng khi tạo đơn
     end note
 ```
 

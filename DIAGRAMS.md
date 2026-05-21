@@ -464,6 +464,7 @@ sequenceDiagram
     participant FE as Frontend React
     participant API as Backend API
     participant DB as MySQL DB
+    participant Redis as Redis
     participant Mail as Gmail SMTP
 
     Note over User,Mail: Luồng Đăng ký

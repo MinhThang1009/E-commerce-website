@@ -491,7 +491,7 @@ sequenceDiagram
     else OTP đúng
         API->>DB: UPDATE isEmailVerified=true otp_code=NULL
         API->>API: Tạo accessToken JWT 15m + refreshToken familyId pattern
-        API->>DB: INSERT refresh_tokens token familyId userId
+        API->>Redis: SET rt:{familyId}:{token} EX refresh_ttl lưu refreshToken
         API-->>FE: 200 OK + accessToken + Set-Cookie refreshToken httpOnly
         FE-->>User: Đăng nhập thành công
     end
@@ -511,7 +511,7 @@ sequenceDiagram
         API-->>FE: 403 Vui lòng xác thực email
     else Đăng nhập thành công
         API->>API: Sinh accessToken JWT 15m + refreshToken
-        API->>DB: Lưu refreshToken + familyId
+        API->>Redis: SET rt:{familyId}:{token} lưu refreshToken + familyId
         API-->>FE: 200 OK + accessToken refreshToken httpOnly cookie
         FE-->>User: Đăng nhập thành công
     end
@@ -816,19 +816,19 @@ sequenceDiagram
     Note over FE,Redis: accessToken hết hạn 15 phút
 
     FE->>API: POST /api/auth/refresh-token\nrefreshToken tự động gửi qua httpOnly cookie
-    API->>DB: SELECT refresh_tokens WHERE token = ? AND is_valid = true
-    DB-->>API: Token record có hoặc không
+    API->>Redis: GET rt:{familyId}:{token} kiểm tra còn hợp lệ
+    Redis-->>API: Token record có hoặc không
 
     alt Token không tồn tại hoặc đã bị thu hồi
         Note over API: Phát hiện token reuse attack
-        API->>DB: UPDATE refresh_tokens SET is_valid=false WHERE family_id = ?\ninvalidate toàn bộ family
+        API->>Redis: DEL rt:{familyId}:* invalidate toàn bộ family
         API-->>FE: 401 Phiên đăng nhập không hợp lệ vui lòng đăng nhập lại
         FE-->>FE: Clear tokens redirect /login
     else Token hợp lệ
-        API->>DB: UPDATE refresh_tokens SET is_valid=false WHERE token = ? blacklist cũ
+        API->>Redis: DEL rt:{familyId}:{oldToken} blacklist token cũ
         API->>API: Tạo accessToken mới JWT jti mới 15m
         API->>API: Tạo refreshToken mới giữ nguyên family_id
-        API->>DB: INSERT refresh_tokens token mới family_id userId
+        API->>Redis: SET rt:{familyId}:{newToken} EX refresh_ttl token mới
         API-->>FE: 200 OK + accessToken mới refreshToken mới Set-Cookie
         FE->>FE: Lưu accessToken mới retry request gốc
     end
@@ -837,7 +837,7 @@ sequenceDiagram
 
     FE->>API: POST /api/auth/logout với accessToken hiện tại
     API->>Redis: SET bl:{jti} = 1 EX remaining_ttl blacklist accessToken theo jti
-    API->>DB: UPDATE refresh_tokens SET is_valid=false WHERE user_id = ?\nthu hồi toàn bộ refresh tokens của user
+    API->>Redis: DEL rt:* thu hồi toàn bộ refresh tokens của user
     API-->>FE: 200 OK + Set-Cookie refreshToken= Max-Age=0 clear cookie
     FE-->>FE: Clear accessToken từ memory
 ```
@@ -1432,15 +1432,18 @@ erDiagram
 # 5. Kiến Trúc Hệ Thống
 
 ```mermaid
-graph TB
+flowchart TB
     subgraph CLIENT["Client Layer port 5175"]
+        direction TB
         FE["Frontend\nReact 18 + TypeScript\nVite build tool\nTanStack Query v5\nZustand v5 + Immer\nTailwind CSS + SCSS\n14 features"]
     end
 
     subgraph BACKEND["Backend Layer port 8888"]
+        direction TB
         API["Express 4\nNode.js 20\nModular Monolith\n19 modules"]
 
         subgraph MODULES["19 Business Modules"]
+            direction TB
             M1["auth JWT OTP OAuth"]
             M2["users profile addresses"]
             M3["catalog products variants"]
@@ -1463,30 +1466,35 @@ graph TB
         end
 
         subgraph SHARED["Shared Infrastructure"]
+            direction TB
             SH1["EventBus in-memory pub/sub\npayment.succeeded → inventory\norder.created → inventory audit"]
             SH2["UnitOfWork runInTransaction + lockRow\nSELECT FOR UPDATE chống oversell"]
             SH3["AppError + errors\nAdminAuditService audit log"]
         end
 
         subgraph SVC["Shared Services non-DI"]
+            direction TB
             SVC1["email.js nodemailer Gmail SMTP\norder confirm + OTP async"]
             SVC2["vector-store.js HybridVectorStore\nBM25 + cosine similarity\nvector-db.json on disk"]
             SVC3["unified-embedding.js Jina v3 primary\nHuggingFace multilingual-e5 fallback\n1024d vectors"]
         end
 
         subgraph JOBS["Cron Jobs"]
+            direction TB
             J1["cleanup.js daily 2AM\nabandoned carts + expired OTP\nsearch history cleanup"]
             J2["weekly 3AM Sunday maintenance"]
         end
     end
 
     subgraph STORAGE["Storage Layer"]
+        direction TB
         DB[("MySQL 8\nSequelize 6 ORM\n32 models\ntransactions + soft deletes")]
         REDIS[("Redis\nbl:jti JWT blacklist\nContent cache banners catalog\nChatbot cache TTL 5m\nIn-memory fallback tự động")]
         DISK[("Disk Storage\n/uploads/ static files\nvector-db.json product vectors\nchat history in-memory Map")]
     end
 
     subgraph EXTERNAL["External Services"]
+        direction TB
         VNPAY["VNPay Gateway\nHMAC-SHA512\nIPN server-to-server"]
         MOMO["MoMo Gateway\nHMAC-SHA256\nIPN server-to-server"]
         JINA["Jina AI\njina-embeddings-v3\n1024d text embedding"]
@@ -1497,6 +1505,7 @@ graph TB
     end
 
     subgraph DEVOPS["DevOps"]
+        direction TB
         CI["GitHub Actions CI\nci.yml Node 22\nBE unit tests 100% coverage\nFE component tests 100% coverage"]
         HOOKS["Husky Git Hooks\npre-commit secret scan + arch audit + lint-staged + tsc\npre-push build + tests + npm audit\ncommit-msg Conventional Commits"]
     end
@@ -1719,7 +1728,7 @@ stateDiagram-v2
 # 8. Component Diagram
 
 ```mermaid
-graph TB
+flowchart TB
     subgraph FE_LAYER["Frontend React 18 + TypeScript Vite port 5175"]
         direction TB
 
@@ -1817,12 +1826,14 @@ graph TB
     end
 
     subgraph STORAGE_LAYER["Storage"]
+        direction TB
         DB[("MySQL 8\nSequelize 6 ORM\ntransactions + paranoid soft delete")]
         REDIS[("Redis\nJWT blacklist bl:jti\nContent + catalog cache\nChatbot response cache TTL 5m")]
         DISK[("Disk /uploads/\nvector-db.json\nchat history Map")]
     end
 
     subgraph EXT_SERVICES["External Services"]
+        direction TB
         EXT1["VNPay HMAC-SHA512\nIPN server-to-server"]
         EXT2["MoMo HMAC-SHA256\nIPN server-to-server"]
         EXT3["Jina AI jina-embeddings-v3\n1024d text embedding"]

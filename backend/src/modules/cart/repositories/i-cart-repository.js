@@ -1,4 +1,4 @@
-/**
+﻿/**
  * @file ICartRepository.js
  * @layer Repository
  * @module cart
@@ -8,7 +8,6 @@
 // phụ thuộc interface này, KHÔNG require Cart/CartItem/Product/Variant model
 // trực tiếp.
 //
-// Repo cũng wrap đọc Product/Variant/WarrantyPackage để service tránh import
 // Models cross-module — ngắn hạn (Phase 42.4 catalog sprint sẽ refactor lại
 // để cart gọi catalog service thay vì repo đọc Product trực tiếp).
 
@@ -67,7 +66,6 @@ class ICartRepository {
     throw new Error('not implemented');
   }
 
-  // -------- Cart item with full eager load (Product + Variant + WarrantyPackages) --------
   async findCartItemsWithDetails(_cartId) {
     throw new Error('not implemented');
   }

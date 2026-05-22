@@ -1,4 +1,4 @@
-const {
+﻿const {
   sequelize,
   User,
   Product,
@@ -11,13 +11,10 @@ const {
   ProductVariant,
   ProductSpecification,
   ProductImage,
-  ProductWarranty,
   ProductCategory,
-  WarrantyPackage,
   CartItem,
   Wishlist,
   Address,
-  LoyaltyHistory,
   SearchHistory,
   RecentlyViewed,
   InventoryLog,
@@ -105,17 +102,6 @@ const findProductVariants = (where, options = {}) => ProductVariant.findAll({ wh
 
 const createProductVariant = (data, options = {}) =>
   Object.keys(options).length ? ProductVariant.create(data, options) : ProductVariant.create(data);
-
-const findWarrantyPackages = (where, options = {}) =>
-  WarrantyPackage.findAll({ where, ...options });
-
-const createProductWarranty = (data, options = {}) =>
-  Object.keys(options).length
-    ? ProductWarranty.create(data, options)
-    : ProductWarranty.create(data);
-
-const destroyProductWarranties = (where, options = {}) =>
-  ProductWarranty.destroy({ where, ...options });
 
 const findCategoryById = (id, options = {}) => Category.findByPk(id, options);
 
@@ -215,9 +201,6 @@ const aggregateChatMessages = ({ attributes, where = {}, group, order, raw, limi
 
 const bulkCreateProductVariants = (data, options = {}) => ProductVariant.bulkCreate(data, options);
 
-const bulkCreateProductWarranties = (data, options = {}) =>
-  ProductWarranty.bulkCreate(data, options);
-
 const findProductVariantById = (id, productId, options = {}) =>
   ProductVariant.findOne({ where: { id, productId }, ...options });
 
@@ -243,9 +226,7 @@ const getModels = () => ({
   ProductSpecification,
   ProductVariant,
   ProductAttribute,
-  ProductWarranty,
   ProductCategory,
-  WarrantyPackage,
   User,
   Order,
   OrderItem,
@@ -253,7 +234,6 @@ const getModels = () => ({
   Category,
   Brand,
   CartItem,
-  LoyaltyHistory,
   SearchHistory,
   RecentlyViewed,
   InventoryLog,
@@ -310,9 +290,6 @@ module.exports = {
   createProductAttribute,
   findProductVariants,
   createProductVariant,
-  findWarrantyPackages,
-  createProductWarranty,
-  destroyProductWarranties,
   findCategoryById,
   createCategory,
   // Order
@@ -362,7 +339,6 @@ module.exports = {
   bulkCreateProductCategories,
   findProductVariantById,
   sumProductVariantStock,
-  bulkCreateProductWarranties,
   // Raw
   rawQuery,
 };

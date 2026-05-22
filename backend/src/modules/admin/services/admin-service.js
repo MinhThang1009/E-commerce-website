@@ -14,16 +14,13 @@ const {
   ProductSpecification,
   ProductVariant,
   ProductAttribute,
-  ProductWarranty,
   ProductCategory,
-  WarrantyPackage,
   User,
   Order,
   OrderItem,
   Review,
   Category,
   CartItem,
-  LoyaltyHistory,
   SearchHistory,
   RecentlyViewed,
   InventoryLog,
@@ -616,15 +613,6 @@ const getProductById = catchAsync(async (req, res) => {
         model: ProductSpecification,
         as: 'productSpecifications',
       },
-      {
-        model: WarrantyPackage,
-        as: 'warrantyPackages',
-        through: {
-          attributes: ['isDefault'],
-          as: 'productWarranty',
-        },
-        required: false,
-      },
     ],
   });
 
@@ -714,7 +702,6 @@ const createProduct = catchAsync(async (req, res) => {
     // Các trường mới dành cho laptop/máy tính
     condition = 'new',
     specifications = {},
-    warrantyPackageIds = [],
     faqs = [],
   } = req.body;
 
@@ -944,38 +931,6 @@ const createProduct = catchAsync(async (req, res) => {
     }
   }
 
-  // Xử lý warranty packages
-  if (warrantyPackageIds && Array.isArray(warrantyPackageIds) && warrantyPackageIds.length > 0) {
-    try {
-      logger.info('Đang tạo warranty packages:', warrantyPackageIds);
-
-      // Kiểm tra xem các warranty packages có tồn tại không
-      logger.info('Tìm warranty packages theo IDs:', warrantyPackageIds);
-      const existingWarrantyPackages = await adminRepository.findWarrantyPackages({
-        where: { id: warrantyPackageIds, isActive: true },
-      });
-      logger.info('Tìm thấy warranty packages:', existingWarrantyPackages.length);
-
-      if (existingWarrantyPackages.length > 0) {
-        const warrantyPromises = existingWarrantyPackages.map(async (warrantyPackage, index) => {
-          return await adminRepository.createProductWarranty({
-            productId: product.id,
-            warrantyPackageId: warrantyPackage.id,
-            isDefault: index === 0, // Đặt warranty package đầu tiên làm mặc định
-          });
-        });
-
-        await Promise.all(warrantyPromises);
-        logger.info(
-          `Đã tạo ${existingWarrantyPackages.length} liên kết warranty package cho sản phẩm ${product.id}`,
-        );
-      }
-    } catch (error) {
-      logger.error('Lỗi khi tạo warranty packages:', error);
-      // Tiếp tục mà không có warranty packages nếu có lỗi
-    }
-  }
-
   // Lấy lại product với attributes và variants
   const productWithRelations = await adminRepository.findProductById(product.id, {
     include: [
@@ -1001,15 +956,6 @@ const createProduct = catchAsync(async (req, res) => {
       {
         model: ProductSpecification,
         as: 'productSpecifications',
-      },
-      {
-        model: WarrantyPackage,
-        as: 'warrantyPackages',
-        through: {
-          attributes: ['isDefault'],
-          as: 'productWarranty',
-        },
-        required: false,
       },
     ],
   });
@@ -1049,7 +995,7 @@ const createProduct = catchAsync(async (req, res) => {
  * @param {Object} req.body - Các trường cần cập nhật (chỉ trường có trong body mới thay đổi):
  *   `name`, `description`, `price`, `compareAtPrice`, `images`, `stockQuantity`,
  *   `status`, `featured`, `condition`, `seoTitle`, `seoDescription`, `seoKeywords`,
- *   `faqs`, `categoryIds`, `attributes`, `variants`, `specifications`, `warrantyPackageIds`
+ *   `faqs`, `categoryIds`, `attributes`, `variants`, `specifications`
  * @param {Object} req.user - Thông tin admin đang đăng nhập
  * @param {Object} res - HTTP response — hàm này tự gọi res.json() để trả kết quả
  * @throws {AppError} 404 nếu không tìm thấy sản phẩm
@@ -1076,7 +1022,6 @@ const updateProduct = catchAsync(async (req, res) => {
     attributes = [],
     variants = [],
     specifications = [],
-    warrantyPackageIds = [],
     faqs = [],
     condition,
   } = req.body;
@@ -1395,28 +1340,6 @@ const updateProduct = catchAsync(async (req, res) => {
       }
     }
 
-    // 7. Cập nhật warranty packages
-    if (req.body.hasOwnProperty('warrantyPackageIds') && Array.isArray(warrantyPackageIds)) {
-      await adminRepository.destroyProductWarranties({ productId: id }, { transaction });
-      if (warrantyPackageIds.length > 0) {
-        const wp = await adminRepository.findWarrantyPackages({
-          where: { id: warrantyPackageIds, isActive: true },
-          transaction,
-        });
-        const wpPromises = wp.map((p, index) =>
-          ProductWarranty.create(
-            {
-              productId: id,
-              warrantyPackageId: p.id,
-              isDefault: index === 0,
-            },
-            { transaction },
-          ),
-        );
-        await Promise.all(wpPromises);
-      }
-    }
-
     await transaction.commit();
 
     // Ghi audit log (ngoài transaction là hợp lệ)
@@ -1435,12 +1358,6 @@ const updateProduct = catchAsync(async (req, res) => {
           required: false,
         },
         { model: ProductSpecification, as: 'productSpecifications' },
-        {
-          model: WarrantyPackage,
-          as: 'warrantyPackages',
-          through: { attributes: ['isDefault'], as: 'productWarranty' },
-          required: false,
-        },
       ],
     });
 
@@ -1638,12 +1555,6 @@ const getAllProducts = catchAsync(async (req, res) => {
     {
       model: ProductSpecification,
       as: 'productSpecifications',
-      required: false,
-    },
-    {
-      model: WarrantyPackage,
-      as: 'warrantyPackages',
-      through: { attributes: [] },
       required: false,
     },
     {
@@ -2118,11 +2029,6 @@ const cloneProduct = catchAsync(async (req, res) => {
       { model: ProductAttribute, as: 'productAttributes' },
       { model: ProductVariant, as: 'variants' },
       { model: ProductSpecification, as: 'productSpecifications' },
-      {
-        model: WarrantyPackage,
-        as: 'warrantyPackages',
-        through: { attributes: ['isDefault'] },
-      },
     ],
   });
 
@@ -2162,8 +2068,6 @@ const cloneProduct = catchAsync(async (req, res) => {
     delete productData.attributes;
     delete productData.variants;
     delete productData.productSpecifications;
-    delete productData.warrantyPackages;
-
     productData.name = newName;
     productData.sku = newSku;
     productData.status = 'draft'; // Mặc định là bản nháp để admin kiểm tra lại
@@ -2221,16 +2125,6 @@ const cloneProduct = catchAsync(async (req, res) => {
         return { ...data, productId: newProduct.id };
       });
       await adminRepository.bulkCreateProductSpecs(specData, { transaction });
-    }
-
-    // Gói bảo hành
-    if (originalProduct.warrantyPackages && originalProduct.warrantyPackages.length > 0) {
-      const warrantyData = originalProduct.warrantyPackages.map((wp) => ({
-        productId: newProduct.id,
-        warrantyPackageId: wp.id,
-        isDefault: wp.ProductWarranty?.isDefault || false,
-      }));
-      await adminRepository.bulkCreateProductWarranties(warrantyData, { transaction });
     }
 
     await transaction.commit();

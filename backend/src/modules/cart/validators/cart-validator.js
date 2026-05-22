@@ -7,7 +7,6 @@ const cartItemSchema = z.object({
     .int('Số lượng phải là số nguyên')
     .min(1, 'Số lượng phải lớn hơn 0')
     .default(1),
-  warrantyPackageIds: z.array(z.number().int()).optional(),
   name: z.string().optional(),
   price: z.number().optional(),
   image: z.string().optional(),

@@ -74,10 +74,6 @@ const User = sequelize.define(
       type: DataTypes.DATE,
       allowNull: true,
     },
-    loyaltyPoints: {
-      type: DataTypes.INTEGER,
-      defaultValue: 0,
-    },
   },
   {
     tableName: 'users',

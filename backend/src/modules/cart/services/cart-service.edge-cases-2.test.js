@@ -173,7 +173,6 @@ const cartModule = buildCartModule({
   CartItem,
   Product,
   ProductVariant,
-  WarrantyPackage,
   sequelize,
   eventBus,
   logger,

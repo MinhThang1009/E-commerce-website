@@ -1,4 +1,4 @@
-/**
+﻿/**
  * @file catalogService.js
  * @layer Service
  * @module catalog
@@ -1524,19 +1524,6 @@ class CatalogService {
         }));
         await this.catalogRepository.createProductVariants(rows, { transaction });
       }
-
-      if (payload.warrantyPackageIds && payload.warrantyPackageIds.length > 0) {
-        const warranties = await this.catalogRepository.findWarrantyPackagesByIds(
-          payload.warrantyPackageIds,
-        );
-        if (warranties.length !== payload.warrantyPackageIds.length) {
-          throw new AppError('catalog.warrantyPackagesNotExist', 400);
-        }
-        await this.catalogRepository.setProductWarrantyPackages(product, warranties, {
-          transaction,
-        });
-      }
-
       createdProduct = product;
     });
 
@@ -1621,24 +1608,7 @@ class CatalogService {
           await this.catalogRepository.createProductVariants(rows, { transaction });
         }
       }
-
-      if (Object.prototype.hasOwnProperty.call(patch, 'warrantyPackageIds')) {
-        if (patch.warrantyPackageIds && patch.warrantyPackageIds.length > 0) {
-          const warranties = await this.catalogRepository.findWarrantyPackagesByIds(
-            patch.warrantyPackageIds,
-          );
-          if (warranties.length !== patch.warrantyPackageIds.length) {
-            throw new AppError('catalog.warrantyPackagesNotExist', 400);
-          }
-          await this.catalogRepository.setProductWarrantyPackages(product, warranties, {
-            transaction,
-          });
-        } else {
-          await this.catalogRepository.setProductWarrantyPackages(product, [], { transaction });
-        }
-      }
     });
-
     const updatedProduct = await this.catalogRepository.findProductByIdWithFullDetails(id);
     await this._clearProductCache(id, originalSlug);
     return updatedProduct;

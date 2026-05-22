@@ -1,4 +1,4 @@
-/**
+﻿/**
  * @file SequelizeCatalogRepository.js
  * @layer Repository
  * @module catalog
@@ -22,7 +22,6 @@ class SequelizeCatalogRepository extends ICatalogRepository {
     ProductSpecification,
     Review,
     RecentlyViewed,
-    WarrantyPackage,
     sequelize,
   }) {
     super();
@@ -34,7 +33,6 @@ class SequelizeCatalogRepository extends ICatalogRepository {
     this.ProductSpecification = ProductSpecification;
     this.Review = Review;
     this.RecentlyViewed = RecentlyViewed;
-    this.WarrantyPackage = WarrantyPackage;
     this.sequelize = sequelize;
   }
 
@@ -318,11 +316,6 @@ class SequelizeCatalogRepository extends ICatalogRepository {
           association: 'reviews',
           include: [{ association: 'user', attributes: ['id', 'firstName', 'lastName', 'avatar'] }],
         },
-        {
-          association: 'warrantyPackages',
-          through: { attributes: ['isDefault'], as: 'productWarranty' },
-          required: false,
-        },
       ],
     });
   }
@@ -345,11 +338,6 @@ class SequelizeCatalogRepository extends ICatalogRepository {
         {
           association: 'reviews',
           include: [{ association: 'user', attributes: ['id', 'firstName', 'lastName', 'avatar'] }],
-        },
-        {
-          association: 'warrantyPackages',
-          through: { attributes: ['isDefault'], as: 'productWarranty' },
-          required: false,
         },
       ],
     });
@@ -699,19 +687,8 @@ class SequelizeCatalogRepository extends ICatalogRepository {
     return this.Category.findAll({ where: { id: { [Op.in]: ids } } });
   }
 
-  async findWarrantyPackagesByIds(ids) {
-    if (!this.WarrantyPackage) {
-      throw new Error('WarrantyPackage model bắt buộc trong constructor');
-    }
-    return this.WarrantyPackage.findAll({ where: { id: { [Op.in]: ids } } });
-  }
-
   async setProductCategories(product, categories, options = {}) {
     return product.setCategories(categories, options);
-  }
-
-  async setProductWarrantyPackages(product, warranties, options = {}) {
-    return product.setWarrantyPackages(warranties, options);
   }
 
   async createProductSpecifications(rows, options = {}) {

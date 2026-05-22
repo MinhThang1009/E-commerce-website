@@ -1,4 +1,4 @@
-/**
+﻿/**
  * @file cartService.js
  * @layer Service
  * @module cart
@@ -27,7 +27,6 @@ class CartService {
   // ---------- Helpers ----------
 
   // Build response data y hệt controller cũ — items kèm Product/Variant/
-  // warrantyPackages, totalItems, subtotal.
   async _buildCartResponse(cart) {
     const cartItems = await this.cartRepository.findCartItemsWithDetails(cart.id);
 
@@ -78,20 +77,6 @@ class CartService {
           delete p.variants;
         }
 
-        if (itemData.warrantyPackageIds && itemData.warrantyPackageIds.length > 0) {
-          const warranties = await this.cartRepository.findActiveWarrantyPackagesByIds(
-            itemData.warrantyPackageIds,
-          );
-          itemData.warrantyPackages = warranties.map((w) => ({
-            id: w.id,
-            name: w.name,
-            price: w.price,
-            durationMonths: w.durationMonths,
-          }));
-        } else {
-          itemData.warrantyPackages = [];
-        }
-
         return itemData;
       }),
     );
@@ -107,9 +92,7 @@ class CartService {
         price = 0;
       }
 
-      const warrantyPrice = item.warrantyPackages.reduce((s, w) => s + parseFloat(w.price), 0);
-
-      return sum + price * item.quantity + warrantyPrice * item.quantity;
+      return sum + price * item.quantity;
     }, 0);
 
     return { id: cart.id, items, totalItems, subtotal };
@@ -196,7 +179,7 @@ class CartService {
   // Thêm sản phẩm vào giỏ. Tạo cart nếu chưa có. Guest → cấp sessionId mới
   // qua callback setSessionCookie để controller set cookie response.
   async addToCart({ user, cookieSessionId, body, setSessionCookie }) {
-    const { productId, variantId, quantity = 1, warrantyPackageIds = [] } = body;
+    const { productId, variantId, quantity = 1 } = body;
 
     const product = await this.cartRepository.findProductById(productId);
     if (!product) {
@@ -218,16 +201,6 @@ class CartService {
       }
     }
     this._assertStock({ product, variant, quantity });
-
-    let validWarrantyPackageIds = [];
-    if (warrantyPackageIds && warrantyPackageIds.length > 0) {
-      const warranties =
-        await this.cartRepository.findActiveWarrantyPackagesByIds(warrantyPackageIds);
-      if (warranties.length !== warrantyPackageIds.length) {
-        throw new AppError('Một hoặc nhiều gói bảo hành không hợp lệ', 400);
-      }
-      validWarrantyPackageIds = warranties.map((w) => w.id);
-    }
 
     let nextSessionId = cookieSessionId;
 
@@ -252,7 +225,6 @@ class CartService {
           cartId: cart.id,
           productId,
           variantId: variantId || null,
-          warrantyPackageIds: validWarrantyPackageIds,
         },
         { transaction },
       );
@@ -270,7 +242,6 @@ class CartService {
             variantId: variantId || null,
             quantity,
             unitPrice: variant ? variant.price : product.basePrice,
-            warrantyPackageIds: validWarrantyPackageIds,
           },
           { transaction },
         );

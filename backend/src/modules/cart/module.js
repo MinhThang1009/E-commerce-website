@@ -9,26 +9,11 @@ const CartService = require('@modules/cart/services/cart-service');
 const SequelizeCartRepository = require('@modules/cart/repositories/sequelize-cart-repository');
 const buildRoutes = require('@modules/cart/routes');
 
-// Cart module — DI wire repo → service → controller → router.
-// Cart không có model riêng, dùng Cart/CartItem/Product/Variant/WarrantyPackage
-// từ legacy models/. Sprint 4 catalog refactor sẽ tách Product/Variant ra module
-// catalog và cart sẽ chuyển sang gọi catalog service thay vì truy cập Product
-// model trực tiếp.
-module.exports = ({
-  Cart,
-  CartItem,
-  Product,
-  ProductVariant,
-  WarrantyPackage,
-  sequelize,
-  eventBus,
-  logger,
-}) => {
+module.exports = ({ Cart, CartItem, Product, ProductVariant, sequelize, eventBus, logger }) => {
   if (!Cart) throw new Error('cart module: Cart model bắt buộc');
   if (!CartItem) throw new Error('cart module: CartItem model bắt buộc');
   if (!Product) throw new Error('cart module: Product model bắt buộc');
   if (!ProductVariant) throw new Error('cart module: ProductVariant model bắt buộc');
-  if (!WarrantyPackage) throw new Error('cart module: WarrantyPackage model bắt buộc');
   if (!sequelize) throw new Error('cart module: sequelize bắt buộc');
   if (!eventBus) throw new Error('cart module: eventBus bắt buộc');
   if (!logger) throw new Error('cart module: logger bắt buộc');
@@ -38,7 +23,6 @@ module.exports = ({
     CartItem,
     Product,
     ProductVariant,
-    WarrantyPackage,
     sequelize,
   });
   const cartService = new CartService({ cartRepository, eventBus, logger });

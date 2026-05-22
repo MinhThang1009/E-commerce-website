@@ -22,9 +22,7 @@ class SequelizeOrdersRepository extends IOrdersRepository {
     ProductVariant,
     User,
     DiscountCode,
-    LoyaltyHistory,
     InventoryLog,
-    WarrantyPackage,
     sequelize,
   }) {
     super();
@@ -37,9 +35,7 @@ class SequelizeOrdersRepository extends IOrdersRepository {
     this.ProductVariant = ProductVariant;
     this.User = User;
     this.DiscountCode = DiscountCode;
-    this.LoyaltyHistory = LoyaltyHistory;
     this.InventoryLog = InventoryLog;
-    this.WarrantyPackage = WarrantyPackage;
     this.sequelize = sequelize;
   }
 
@@ -300,13 +296,6 @@ class SequelizeOrdersRepository extends IOrdersRepository {
 
   // -------- Warranty --------
 
-  async findActiveWarrantyPackagesByIds(ids, options = {}) {
-    return this.WarrantyPackage.findAll({
-      where: { id: ids, isActive: true },
-      ...options,
-    });
-  }
-
   // -------- DiscountCode --------
 
   async findActiveDiscountCode(code, options = {}) {
@@ -324,19 +313,6 @@ class SequelizeOrdersRepository extends IOrdersRepository {
 
   async findUserById(id, options = {}) {
     return this.User.findByPk(id, options);
-  }
-
-  async updateUserPoints(user, points, options = {}) {
-    user.loyaltyPoints = points;
-    return user.save(options);
-  }
-
-  async createLoyaltyHistory(payload, options = {}) {
-    return this.LoyaltyHistory.create(payload, options);
-  }
-
-  async updateLoyaltyHistoryOrderId(filter, orderId, options = {}) {
-    return this.LoyaltyHistory.update({ orderId }, { where: filter, ...options });
   }
 
   // -------- InventoryLog --------

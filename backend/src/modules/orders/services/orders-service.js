@@ -141,7 +141,6 @@ class OrdersService {
             quantity: item.quantity,
             Product: product,
             ProductVariant: variant,
-            warrantyPackageIds: item.warrantyPackageIds || [],
           });
         }
       } else {
@@ -193,7 +192,6 @@ class OrdersService {
       // Validate stock + lock + tính subtotal/weight/warranty
       let subtotal = 0;
       let totalWeightKg = 0;
-      let totalWarrantyCost = 0;
       const pendingInventoryLogs = [];
 
       for (const item of itemsToProcess) {
@@ -247,19 +245,6 @@ class OrdersService {
 
         const itemWeight = parseFloat(variant?.weight) || 0;
         totalWeightKg += itemWeight * item.quantity;
-
-        if (item.warrantyPackageIds && item.warrantyPackageIds.length > 0) {
-          const packages = await this.repo.findActiveWarrantyPackagesByIds(
-            item.warrantyPackageIds,
-            { transaction },
-          );
-          const itemWarrantyFee = packages.reduce((sum, pkg) => sum + parseFloat(pkg.price), 0);
-          item.warrantyFee = itemWarrantyFee;
-          item.warrantyPackages = packages;
-          totalWarrantyCost += itemWarrantyFee * item.quantity;
-        } else {
-          item.warrantyFee = 0;
-        }
       }
 
       // Discount code
@@ -303,42 +288,13 @@ class OrdersService {
         }
       }
 
-      // Loyalty points
-      const pointsToUseInt = parseInt(pointsToUse, 10) || 0;
-      let pointsDiscount = 0;
-      if (pointsToUseInt > 0) {
-        const u = await this.repo.findUserById(userId, { transaction });
-        if (u.loyaltyPoints < pointsToUseInt) {
-          throw new AppError('orders.insufficientPoints', 400);
-        }
-        pointsDiscount = pointsToUseInt * this.constants.POINTS_VALUE;
-        if (pointsDiscount > subtotal - discount) {
-          pointsDiscount = subtotal - discount;
-        }
-      }
-
       const shippingCost = this._calculateShipping(subtotal, totalWeightKg);
       const tax = 0;
-      const total = subtotal + tax + shippingCost + totalWarrantyCost - discount - pointsDiscount;
+      const total = subtotal + tax + shippingCost - discount;
       const orderNumber = this._generateOrderNumber();
 
       // Cancel pending orders cũ (1 user / 1 pending tại một thời điểm)
       await this.repo.cancelPendingOrdersByUser(userId, { transaction });
-
-      // Trừ điểm + ghi history
-      if (pointsToUseInt > 0) {
-        const u = await this.repo.findUserById(userId, { transaction });
-        await this.repo.updateUserPoints(u, u.loyaltyPoints - pointsToUseInt, { transaction });
-        await this.repo.createLoyaltyHistory(
-          {
-            userId,
-            points: -pointsToUseInt,
-            type: 'spend',
-            description: `Sử dụng điểm cho đơn hàng ${orderNumber}`,
-          },
-          { transaction },
-        );
-      }
 
       // Create order
       const order = await this.repo.createOrder(
@@ -373,9 +329,6 @@ class OrdersService {
           discount,
           discountCodeId,
           total,
-          warrantyCost: totalWarrantyCost,
-          pointsUsed: pointsToUseInt,
-          pointsDiscount,
           notes,
         },
         { transaction },
@@ -402,15 +355,7 @@ class OrdersService {
             image: product.thumbnail,
             attributes: {
               ...(variant ? { variant: variant.name } : {}),
-              warrantyPackages: item.warrantyPackages
-                ? item.warrantyPackages.map((pkg) => ({
-                    id: pkg.id,
-                    name: pkg.name,
-                    price: pkg.price,
-                  }))
-                : [],
             },
-            warrantyPackageIds: item.warrantyPackageIds || null,
           },
           { transaction },
         );
@@ -428,15 +373,6 @@ class OrdersService {
       const manualPaymentMethods = ['cod', 'bank_transfer', 'installment'];
       if (manualPaymentMethods.includes(paymentMethod)) {
         await this._clearUserCartInTransaction(userId, transaction);
-      }
-
-      // Update orderId cho loyalty history
-      if (pointsToUseInt > 0) {
-        await this.repo.updateLoyaltyHistoryOrderId(
-          { userId, type: 'spend', description: `Sử dụng điểm cho đơn hàng ${orderNumber}` },
-          order.id,
-          { transaction },
-        );
       }
 
       createdOrder = order;
@@ -594,42 +530,8 @@ class OrdersService {
       }
 
       // Refund loyalty points used
-      if (order.pointsUsed > 0) {
-        const user = await this.repo.findUserById(userId, { transaction });
-        await this.repo.updateUserPoints(user, user.loyaltyPoints + order.pointsUsed, {
-          transaction,
-        });
-        await this.repo.createLoyaltyHistory(
-          {
-            userId,
-            orderId: order.id,
-            points: order.pointsUsed,
-            type: 'refund',
-            description: `Hoàn điểm cho đơn hàng bị hủy ${order.number}`,
-          },
-          { transaction },
-        );
-      }
 
       // Revoke earned points if any
-      if (order.pointsEarned > 0) {
-        const user = await this.repo.findUserById(userId, { transaction });
-        await this.repo.updateUserPoints(
-          user,
-          Math.max(0, user.loyaltyPoints - order.pointsEarned),
-          { transaction },
-        );
-        await this.repo.createLoyaltyHistory(
-          {
-            userId,
-            orderId: order.id,
-            points: -order.pointsEarned,
-            type: 'refund',
-            description: `Thu hồi điểm tích lũy do hủy/trả đơn hàng ${order.number}`,
-          },
-          { transaction },
-        );
-      }
 
       cancelledOrder = order;
     });
@@ -699,25 +601,7 @@ class OrdersService {
 
     await this.repo.saveOrder(order);
 
-    // Trao loyalty points khi delivered (nếu chưa trao)
     if (status === STATUS.DELIVERED && previousStatus !== STATUS.DELIVERED) {
-      const pointsEarned = Math.floor(parseFloat(order.subtotal) / this.constants.POINTS_EARN_RATE);
-      if (pointsEarned > 0) {
-        const user = await this.repo.findUserById(order.userId);
-        if (user) {
-          await this.repo.updateUserPoints(user, user.loyaltyPoints + pointsEarned);
-          await this.repo.createLoyaltyHistory({
-            userId: order.userId,
-            orderId: order.id,
-            points: pointsEarned,
-            type: 'earn',
-            description: `Tích điểm từ đơn hàng ${order.number}`,
-          });
-          order.pointsEarned = pointsEarned;
-          await this.repo.saveOrder(order);
-        }
-      }
-
       await this.eventBus.publish({
         type: 'order.delivered',
         payload: {
@@ -775,58 +659,16 @@ class OrdersService {
     const order = await this.repo.findOrderByIdAndUserId(id, userId);
     if (!order) throw new AppError('orders.notFound', 404);
 
-    // Idempotent: đã delivered + đã trao điểm → không xử lý lại
-    const alreadyProcessed = order.status === STATUS.DELIVERED && (order.pointsEarned || 0) !== 0;
-    if (!alreadyProcessed && !_canConfirmReceived(order.status)) {
+    if (!_canConfirmReceived(order.status)) {
       throw new AppError(
         'Chỉ có thể xác nhận đơn hàng khi đang giao, đang xử lý hoặc đã giao hàng',
         422,
       );
     }
-    if (!alreadyProcessed) {
-      order.status = STATUS.DELIVERED;
-      if (order.paymentMethod === 'cod') order.paymentStatus = 'paid';
-    }
+    order.status = STATUS.DELIVERED;
+    if (order.paymentMethod === 'cod') order.paymentStatus = 'paid';
     await this.repo.saveOrder(order);
     await order.reload();
-
-    if (alreadyProcessed) {
-      return {
-        message: 'orders.alreadyConfirmed',
-        data: order,
-        pointsEarned: 0,
-      };
-    }
-
-    let earnedPointsTotal = order.pointsEarned || 0;
-    let newPointsAwarded = 0;
-
-    if ((order.pointsEarned || 0) === 0) {
-      const orderTotal = parseFloat(order.subtotal);
-      newPointsAwarded = Math.floor(orderTotal / this.constants.POINTS_EARN_RATE);
-
-      if (newPointsAwarded > 0) {
-        const user = await this.repo.findUserById(userId);
-        if (user) {
-          await this.repo.updateUserPoints(user, user.loyaltyPoints + newPointsAwarded);
-          await this.repo.createLoyaltyHistory({
-            userId,
-            orderId: order.id,
-            points: newPointsAwarded,
-            type: 'earn',
-            description: `Tích điểm từ đơn hàng ${order.number} (Người dùng xác nhận)`,
-          });
-          earnedPointsTotal = newPointsAwarded;
-          order.pointsEarned = earnedPointsTotal;
-          await this.repo.saveOrder(order);
-        }
-      } else if (orderTotal > 0) {
-        // Đánh dấu đã xử lý dù không đủ điểm
-        earnedPointsTotal = -1;
-        order.pointsEarned = -1;
-        await this.repo.saveOrder(order);
-      }
-    }
 
     await this.eventBus.publish({
       type: 'order.delivered',
@@ -842,12 +684,10 @@ class OrdersService {
 
     return {
       message: 'orders.deliveryConfirmed',
-      pointsEarned: newPointsAwarded > 0 ? newPointsAwarded : 0,
       data: {
         id: order.id,
         number: order.number,
         status: STATUS.DELIVERED,
-        pointsEarned: earnedPointsTotal,
       },
     };
   }

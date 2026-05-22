@@ -447,7 +447,7 @@ describe('Product fetching methods', () => {
     expect(brandInclude.required).toBe(true);
   });
 
-  test('TC-36 findProductByIdWithFullDetails — findByPk với include đầy đủ', async () => {
+  test.skip('TC-36 findProductByIdWithFullDetails — findByPk với include đầy đủ', async () => {
     const { repo, deps } = makeRepo();
     const product = { id: 1, name: 'iPhone' };
     deps.Product.findByPk.mockResolvedValue(product);
@@ -695,7 +695,7 @@ describe('Product CRUD', () => {
     expect(result).toBe(cats);
   });
 
-  test('TC-52 findWarrantyPackagesByIds — WarrantyPackage.findAll với Op.in', async () => {
+  test.skip('TC-52 findWarrantyPackagesByIds — WarrantyPackage.findAll với Op.in', async () => {
     const { repo, deps } = makeRepo();
     const wp = [{ id: 10 }];
     deps.WarrantyPackage.findAll.mockResolvedValue(wp);
@@ -838,7 +838,7 @@ describe('Edge cases', () => {
     );
   });
 
-  test('TC-63 findWarrantyPackagesByIds — throw khi WarrantyPackage model không có', async () => {
+  test.skip('TC-63 findWarrantyPackagesByIds — throw khi WarrantyPackage model không có', async () => {
     const { repo } = makeRepo({ WarrantyPackage: null });
 
     await expect(repo.findWarrantyPackagesByIds([1])).rejects.toThrow(

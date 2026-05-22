@@ -32,14 +32,12 @@ const createOrderSchema = z.object({
   paymentMethod: reqStr('Phương thức thanh toán không được để trống'),
   notes: z.string().optional(),
   discountCode: z.string().optional(),
-  pointsToUse: z.number().int().min(0).optional(),
   items: z
     .array(
       z.object({
         productId: idSchema,
         variantId: idSchema.nullable().optional(),
         quantity: z.number().int().min(1),
-        warrantyPackageIds: z.array(idSchema).optional(),
       }),
     )
     .optional(),

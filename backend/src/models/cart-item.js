@@ -37,11 +37,6 @@ const CartItem = sequelize.define(
         min: 0,
       },
     },
-    warrantyPackageIds: {
-      type: DataTypes.JSON,
-      allowNull: true,
-      defaultValue: [],
-    },
   },
   {
     tableName: 'cart_items',

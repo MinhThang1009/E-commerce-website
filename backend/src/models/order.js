@@ -156,22 +156,6 @@ const Order = sequelize.define(
       type: DataTypes.DATE,
       allowNull: true,
     },
-    pointsEarned: {
-      type: DataTypes.INTEGER,
-      defaultValue: 0,
-    },
-    pointsUsed: {
-      type: DataTypes.INTEGER,
-      defaultValue: 0,
-    },
-    pointsDiscount: {
-      type: DataTypes.DECIMAL(15, 2),
-      defaultValue: 0,
-    },
-    warrantyCost: {
-      type: DataTypes.DECIMAL(15, 2),
-      defaultValue: 0,
-    },
     // FK tới discount_codes — biết mã nào đã áp dụng, phục vụ audit trail
     discountCodeId: {
       type: DataTypes.INTEGER,

@@ -122,11 +122,6 @@ const Product = sequelize.define(
       type: DataTypes.STRING(20),
       defaultValue: 'public',
     },
-    // Thời gian bảo hành (tháng)
-    warrantyMonths: {
-      type: DataTypes.INTEGER,
-      defaultValue: 12,
-    },
     // Tags / nhãn sản phẩm (JSON array)
     tags: {
       type: DataTypes.TEXT('long'),

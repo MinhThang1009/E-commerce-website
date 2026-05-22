@@ -1,4 +1,4 @@
-'use strict';
+﻿'use strict';
 /**
  * Nhắm vào các nhánh còn chưa được cover sau khi chạy 6 file test hiện có:
  *
@@ -197,11 +197,6 @@ jest.mock('@models', () => {
       bulkCreate: jest.fn(),
       destroy: jest.fn(),
     },
-    ProductWarranty: {
-      create: jest.fn(),
-      destroy: jest.fn(),
-      bulkCreate: jest.fn(),
-    },
     ProductCategory: {
       destroy: jest.fn(),
       bulkCreate: jest.fn(),
@@ -237,10 +232,6 @@ jest.mock('@models', () => {
       count: jest.fn(),
       findAll: jest.fn(),
       findOne: jest.fn(),
-    },
-    WarrantyPackage: {
-      findAll: jest.fn(),
-      findByPk: jest.fn(),
     },
     Brand: {},
     sequelize: {
@@ -302,7 +293,6 @@ function makeProduct(overrides = {}) {
     productAttributes: [],
     variants: [],
     productSpecifications: [],
-    warrantyPackages: [],
     ...overrides,
   };
   return {

@@ -1,4 +1,4 @@
-/**
+﻿/**
  * @file module.js
  * @layer Module
  * @module catalog
@@ -20,7 +20,6 @@ module.exports = ({
   ProductSpecification,
   Review,
   RecentlyViewed,
-  WarrantyPackage,
   sequelize,
   redisClient,
   eventBus,
@@ -40,7 +39,6 @@ module.exports = ({
     ProductSpecification,
     Review,
     RecentlyViewed,
-    WarrantyPackage,
     sequelize,
   });
 

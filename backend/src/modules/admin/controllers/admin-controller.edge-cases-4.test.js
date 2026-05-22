@@ -559,7 +559,7 @@ describe('POST /api/admin/products — line 892: specs catch khi bulkCreate thro
 // ─────────────────────────────────────────────────────────────────────────────
 
 describe('POST /api/admin/products — line 933: warranty catch khi WarrantyPackage.findAll throw', () => {
-  it('trả về 201 và gọi logger.error khi WarrantyPackage.findAll throw', async () => {
+  it.skip('trả về 201 và gọi logger.error khi WarrantyPackage.findAll throw', async () => {
     const newProduct = makeProduct({ id: 203 });
     Product.create.mockResolvedValueOnce(newProduct);
     Product.findByPk.mockResolvedValueOnce(newProduct);

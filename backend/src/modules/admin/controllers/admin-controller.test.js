@@ -1,4 +1,4 @@
-/**
+﻿/**
  * Tests cho admin controller — bao phủ toàn bộ các section:
  *
  *  Dashboard / Stats:
@@ -209,11 +209,6 @@ jest.mock('@models', () => {
       bulkCreate: jest.fn(),
       destroy: jest.fn(),
     },
-    ProductWarranty: {
-      create: jest.fn(),
-      destroy: jest.fn(),
-      bulkCreate: jest.fn(),
-    },
     ProductCategory: {
       destroy: jest.fn(),
       bulkCreate: jest.fn(),
@@ -249,10 +244,6 @@ jest.mock('@models', () => {
       count: jest.fn(),
       findAll: jest.fn(),
       findOne: jest.fn(),
-    },
-    WarrantyPackage: {
-      findAll: jest.fn(),
-      findByPk: jest.fn(),
     },
     Brand: {},
     sequelize: {

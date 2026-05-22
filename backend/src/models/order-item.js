@@ -56,10 +56,6 @@ const OrderItem = sequelize.define(
       type: DataTypes.JSON,
       defaultValue: {},
     },
-    warrantyPackageIds: {
-      type: DataTypes.JSON,
-      allowNull: true,
-    },
   },
   {
     tableName: 'order_items',

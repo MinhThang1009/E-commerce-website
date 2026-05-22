@@ -14,19 +14,14 @@ const CartItem = require('@models/cart-item');
 const Order = require('@models/order');
 const OrderItem = require('@models/order-item');
 const Wishlist = require('@models/wishlist');
-const WarrantyPackage = require('@models/warranty-package');
-const ProductWarranty = require('@models/product-warranty');
 const AttributeGroup = require('@models/attribute-group');
 const AttributeValue = require('@models/attribute-value');
 const ProductAttributeGroup = require('@models/product-attribute-group');
-const News = require('@models/news');
 const Feedback = require('@models/feedback');
 const ChatMessage = require('@models/chat-message');
 const Brand = require('@models/brand');
 const SearchHistory = require('@models/search-history');
-const LoyaltyHistory = require('@models/loyalty-history');
 const RecentlyViewed = require('@models/recently-viewed');
-const Banner = require('@models/banner');
 // Models mới theo data_new.sql
 const ProductImage = require('@models/product-image');
 const InventoryLog = require('@models/inventory-log');
@@ -42,10 +37,6 @@ Address.belongsTo(User, { foreignKey: 'userId' });
 // User - AuditLog (admin - nhật ký thao tác)
 User.hasMany(AuditLog, { foreignKey: 'adminId', as: 'auditLogs' });
 AuditLog.belongsTo(User, { foreignKey: 'adminId', as: 'admin' });
-
-// User - News (người dùng - bài viết)
-User.hasMany(News, { foreignKey: 'userId', as: 'news' });
-News.belongsTo(User, { foreignKey: 'userId', as: 'author' });
 
 // =============================================
 // QUAN HỆ CATEGORY
@@ -152,33 +143,6 @@ Wishlist.belongsTo(Product, { foreignKey: 'productId' });
 Wishlist.belongsTo(User, { foreignKey: 'userId' });
 
 // =============================================
-// QUAN HỆ WARRANTY
-// =============================================
-
-Product.belongsToMany(WarrantyPackage, {
-  through: ProductWarranty,
-  foreignKey: 'productId',
-  otherKey: 'warrantyPackageId',
-  as: 'warrantyPackages',
-});
-WarrantyPackage.belongsToMany(Product, {
-  through: ProductWarranty,
-  foreignKey: 'warrantyPackageId',
-  otherKey: 'productId',
-  as: 'products',
-});
-ProductWarranty.belongsTo(Product, { foreignKey: 'productId', as: 'product' });
-ProductWarranty.belongsTo(WarrantyPackage, {
-  foreignKey: 'warrantyPackageId',
-  as: 'warrantyPackage',
-});
-Product.hasMany(ProductWarranty, { foreignKey: 'productId', as: 'productWarranties' });
-WarrantyPackage.hasMany(ProductWarranty, {
-  foreignKey: 'warrantyPackageId',
-  as: 'productWarranties',
-});
-
-// =============================================
 // QUAN HỆ ATTRIBUTE
 // =============================================
 
@@ -230,11 +194,6 @@ ChatMessage.belongsTo(User, { foreignKey: 'userId', as: 'user' });
 User.hasMany(SearchHistory, { foreignKey: 'userId', as: 'searchHistories' });
 SearchHistory.belongsTo(User, { foreignKey: 'userId' });
 
-User.hasMany(LoyaltyHistory, { foreignKey: 'userId', as: 'loyaltyHistories' });
-LoyaltyHistory.belongsTo(User, { foreignKey: 'userId', as: 'user' });
-Order.hasMany(LoyaltyHistory, { foreignKey: 'orderId', as: 'loyaltyHistories' });
-LoyaltyHistory.belongsTo(Order, { foreignKey: 'orderId', as: 'order' });
-
 User.hasMany(RecentlyViewed, { foreignKey: 'userId', as: 'recentlyViewed' });
 RecentlyViewed.belongsTo(User, { foreignKey: 'userId' });
 Product.hasMany(RecentlyViewed, { foreignKey: 'productId', as: 'recentlyViewed' });
@@ -260,20 +219,15 @@ module.exports = {
   Order,
   OrderItem,
   Wishlist,
-  WarrantyPackage,
-  ProductWarranty,
   AttributeGroup,
   AttributeValue,
   ProductAttributeGroup,
-  News,
   ChatMessage,
   Feedback,
   DiscountCode,
   Brand,
   SearchHistory,
-  LoyaltyHistory,
   RecentlyViewed,
-  Banner,
   // Models mới
   ProductImage,
   InventoryLog,

@@ -29,7 +29,6 @@ const productSchema = z.object({
   brand: z.string().optional(),
   model: z.string().optional(),
   condition: z.enum(['new', 'like-new', 'used', 'refurbished']).default('new'),
-  warrantyMonths: z.number().int().min(0).max(120).default(12),
   specifications: z.union([z.record(z.string(), z.unknown()), z.array(z.unknown())]).default({}),
   attributes: z.array(z.object({ name: z.string(), values: z.array(z.string()) })).optional(),
   variants: z
@@ -48,6 +47,5 @@ const productSchema = z.object({
       }),
     )
     .optional(),
-  warrantyPackageIds: z.array(z.union([z.number().int(), z.string()])).optional(),
 });
 module.exports = { categorySchema, createBrandSchema, updateBrandSchema, productSchema };

@@ -1,4 +1,4 @@
-/**
+﻿/**
  * @file ordersController.js
  * @layer Controller
  * @module orders
@@ -127,7 +127,6 @@ class OrdersController {
       res.status(200).json({
         status: 'success',
         message: result.message,
-        pointsEarned: result.pointsEarned,
         data: result.data,
       });
     } catch (err) {

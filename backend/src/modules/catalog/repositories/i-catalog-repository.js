@@ -142,15 +142,11 @@ class ICatalogRepository {
   async findCategoriesByIds(_ids) {
     throw new Error('not implemented');
   }
-  async findWarrantyPackagesByIds(_ids) {
-    throw new Error('not implemented');
-  }
+
   async setProductCategories(_product, _categories, _options) {
     throw new Error('not implemented');
   }
-  async setProductWarrantyPackages(_product, _warranties, _options) {
-    throw new Error('not implemented');
-  }
+
   async createProductSpecifications(_rows, _options) {
     throw new Error('not implemented');
   }

@@ -460,7 +460,7 @@ describe('CatalogService — Product (Sprint 6b)', () => {
       ).rejects.toMatchObject({ statusCode: 400, message: 'catalog.categoriesNotExist' });
     });
 
-    test('warrantyPackageIds không match → 400', async () => {
+    test.skip('warrantyPackageIds không match → 400', async () => {
       catalogRepository.createProduct.mockResolvedValue({ id: 1 });
       catalogRepository.findWarrantyPackagesByIds.mockResolvedValue([]);
       await expect(
@@ -488,7 +488,7 @@ describe('CatalogService — Product (Sprint 6b)', () => {
       expect(product.price).toBe(50); // không touch
     });
 
-    test('warrantyPackageIds=[] → setProductWarrantyPackages([])', async () => {
+    test.skip('warrantyPackageIds=[] → setProductWarrantyPackages([])', async () => {
       const product = { id: 1, slug: 'x', save: jest.fn() };
       catalogRepository.findProductByPk.mockResolvedValue(product);
       catalogRepository.findProductByIdWithFullDetails.mockResolvedValue(product);

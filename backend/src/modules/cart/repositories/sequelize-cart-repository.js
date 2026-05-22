@@ -1,4 +1,4 @@
-/**
+﻿/**
  * @file SequelizeCartRepository.js
  * @layer Repository
  * @module cart
@@ -8,26 +8,22 @@ const { col } = require('sequelize');
 const ICartRepository = require('@modules/cart/repositories/i-cart-repository');
 
 // Sequelize impl của ICartRepository — duy nhất layer truy cập Cart/CartItem/
-// Product/Variant/WarrantyPackage model trong cart module.
 //
 // findOrCreate options + transaction được forward thẳng sang Sequelize để
 // service control biên transaction.
 class SequelizeCartRepository extends ICartRepository {
-  constructor({ Cart, CartItem, Product, ProductVariant, WarrantyPackage, sequelize }) {
+  constructor({ Cart, CartItem, Product, ProductVariant, sequelize }) {
     super();
     if (!Cart) throw new Error('SequelizeCartRepository: Cart model bắt buộc');
     if (!CartItem) throw new Error('SequelizeCartRepository: CartItem model bắt buộc');
     if (!Product) throw new Error('SequelizeCartRepository: Product model bắt buộc');
     if (!ProductVariant) throw new Error('SequelizeCartRepository: ProductVariant model bắt buộc');
-    if (!WarrantyPackage)
-      throw new Error('SequelizeCartRepository: WarrantyPackage model bắt buộc');
     if (!sequelize) throw new Error('SequelizeCartRepository: sequelize bắt buộc');
 
     this.Cart = Cart;
     this.CartItem = CartItem;
     this.Product = Product;
     this.ProductVariant = ProductVariant;
-    this.WarrantyPackage = WarrantyPackage;
     this.sequelize = sequelize;
   }
 
@@ -107,11 +103,6 @@ class SequelizeCartRepository extends ICartRepository {
 
   async findVariantByIdAndProductId(variantId, productId) {
     return this.ProductVariant.findOne({ where: { id: variantId, productId } });
-  }
-
-  async findActiveWarrantyPackagesByIds(ids) {
-    if (!ids || ids.length === 0) return [];
-    return this.WarrantyPackage.findAll({ where: { id: ids, isActive: true } });
   }
 
   // -------- Eager load helpers --------

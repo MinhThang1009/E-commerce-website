@@ -104,9 +104,6 @@ class IOrdersRepository {
   }
 
   // -------- Warranty --------
-  async findActiveWarrantyPackagesByIds(_ids, _options) {
-    throw new Error('not implemented');
-  }
 
   // -------- DiscountCode --------
   async findActiveDiscountCode(_code, _options) {
@@ -121,12 +118,6 @@ class IOrdersRepository {
     throw new Error('not implemented');
   }
   async updateUserPoints(_user, _points, _options) {
-    throw new Error('not implemented');
-  }
-  async createLoyaltyHistory(_payload, _options) {
-    throw new Error('not implemented');
-  }
-  async updateLoyaltyHistoryOrderId(_filter, _orderId, _options) {
     throw new Error('not implemented');
   }
 

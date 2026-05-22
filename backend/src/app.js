@@ -23,14 +23,10 @@ const {
   CartItem,
   Product,
   ProductVariant,
-  WarrantyPackage,
   Wishlist,
   Review,
   Order,
   OrderItem,
-  LoyaltyHistory,
-  Banner,
-  News,
   Feedback,
   Category,
   Brand,
@@ -49,7 +45,6 @@ const buildUsersModule = require('@modules/users/module');
 const buildCartModule = require('@modules/cart/module');
 const buildWishlistModule = require('@modules/wishlist/module');
 const buildReviewsModule = require('@modules/reviews/module');
-const buildLoyaltyModule = require('@modules/loyalty/module');
 const buildContentModule = require('@modules/content/module');
 const buildUploadModule = require('@modules/upload/module');
 const buildCatalogModule = require('@modules/catalog/module');
@@ -60,7 +55,6 @@ const buildAIModule = require('@modules/ai/module');
 const buildSearchHistoryModule = require('@modules/search-history/module');
 const buildImageModule = require('@modules/image/module');
 const buildDiscountCodeModule = require('@modules/discount-code/module');
-const buildWarrantyPackageModule = require('@modules/warranty-package/module');
 const buildAttributeModule = require('@modules/attribute/module');
 const buildAdminModule = require('@modules/admin/module');
 const chatbotService = require('@modules/ai/services/chatbot/chatbot-service');
@@ -90,7 +84,6 @@ const cartModule = buildCartModule({
   CartItem,
   Product,
   ProductVariant,
-  WarrantyPackage,
   sequelize,
   eventBus,
   logger,
@@ -116,22 +109,9 @@ const reviewsModule = buildReviewsModule({
 });
 reviewsModule.subscribeEvents();
 
-const loyaltyModule = buildLoyaltyModule({
-  User,
-  LoyaltyHistory,
-  sequelize,
-  eventBus,
-  logger,
-});
-loyaltyModule.subscribeEvents();
-
 const contentModule = buildContentModule({
-  Banner,
-  News,
   Feedback,
-  User,
   emailService,
-  redisClient: getRedisClient,
   eventBus,
   logger,
 });
@@ -149,7 +129,6 @@ const catalogModule = buildCatalogModule({
   ProductSpecification,
   Review,
   RecentlyViewed,
-  WarrantyPackage,
   sequelize,
   redisClient: getRedisClient,
   eventBus,
@@ -166,9 +145,7 @@ const ordersModule = buildOrdersModule({
   ProductVariant,
   User,
   DiscountCode,
-  LoyaltyHistory,
   InventoryLog,
-  WarrantyPackage,
   sequelize,
   eventBus,
   logger,
@@ -386,10 +363,7 @@ app.use('/api' + usersModule.basePath, usersModule.router);
 app.use('/api' + cartModule.basePath, cartModule.router);
 app.use('/api' + wishlistModule.basePath, wishlistModule.router);
 app.use('/api' + reviewsModule.basePath, reviewsModule.router);
-app.use('/api' + loyaltyModule.basePath, loyaltyModule.router);
-contentModule.mounts.forEach(({ basePath, router }) => {
-  app.use('/api' + basePath, router);
-});
+app.use('/api' + contentModule.basePath, contentModule.router);
 app.use('/api' + uploadModule.basePath, uploadModule.router);
 catalogModule.mounts.forEach(({ basePath, router }) => {
   app.use('/api' + basePath, router);
@@ -402,12 +376,10 @@ app.use('/api' + aiModule.basePath, aiModule.router);
 const searchHistoryModule = buildSearchHistoryModule();
 const imageModule = buildImageModule();
 const discountCodeModule = buildDiscountCodeModule();
-const warrantyModule = buildWarrantyPackageModule();
 const attributeModule = buildAttributeModule();
 app.use('/api' + searchHistoryModule.basePath, searchHistoryModule.router);
 app.use('/api' + imageModule.basePath, imageModule.router);
 app.use('/api' + discountCodeModule.basePath, discountCodeModule.router);
-app.use('/api' + warrantyModule.basePath, warrantyModule.router);
 app.use('/api' + attributeModule.basePath, attributeModule.router);
 const adminModule = buildAdminModule();
 app.use('/api' + adminModule.basePath, adminModule.router);

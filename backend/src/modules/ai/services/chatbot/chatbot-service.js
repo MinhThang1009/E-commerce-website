@@ -1,8 +1,35 @@
 /**
- * @file chatbotService.js
+ * @file chatbot-service.js
  * @layer Service
  * @module ai
- * @description Business logic layer cho ai
+ * @description LLM gateway + session management + Redis cache cho AI chatbot.
+ *
+ * Singleton service xử lý giao tiếp với LLM providers (OpenRouter/OpenAI-compatible),
+ * quản lý lịch sử hội thoại in-memory, cache kết quả qua Redis, và persist messages vào DB.
+ *
+ * Được RAGPipeline gọi qua ChatbotLLMGateway (Adapter pattern) — không import trực tiếp.
+ *
+ * **Flow chính — 7 bước (xem handleMessage() để biết chi tiết từng bước):**
+ * ```
+ * [1] Chuẩn hóa query + phân loại intent (expand viết tắt, regex classify)
+ * [2] Off-topic → trả response cố định ngay, không tốn LLM call
+ * [3] Cache check (Redis) — chỉ cache product_search, TTL 5 phút
+ * [4] Load lịch sử hội thoại từ session memory (in-memory Map)
+ * [5] Retrieval — hybrid search (semantic + keyword) lấy sản phẩm liên quan
+ * [6] Generation — gọi LLM với RAG context + lịch sử hội thoại
+ * [7] Persist messages vào DB + cập nhật session memory + cache response
+ * ```
+ *
+ * **Session memory — tại sao giới hạn 500 sessions, TTL 30 phút?**
+ * Lịch sử hội thoại lưu in-memory (Map) — không persist khi server restart (đủ cho demo/KLTN).
+ * Không có giới hạn → server chạy lâu sẽ tích lũy hàng nghìn sessions → rò rỉ bộ nhớ (memory leak).
+ * 500 sessions × (10 turns × 2 messages × ~200 bytes) ≈ 2MB — chấp nhận được.
+ * TTL 30 phút: session không hoạt động sau 30 phút → xóa để giải phóng RAM.
+ *
+ * **Cache Redis shared key — ưu và nhược điểm:**
+ * Ưu: 100 user cùng hỏi "iPhone 15 giá bao nhiêu" → chỉ gọi LLM 1 lần, 99 lần còn lại dùng cache.
+ * Nhược: cache không theo user → không thể personalize response; data sản phẩm thay đổi trong 5 phút
+ *         → user có thể nhận response hơi cũ (chấp nhận được cho product_search).
  */
 const axios = require('axios');
 const {
@@ -23,18 +50,98 @@ const promptBuilder = require('@modules/ai/services/chatbot/prompt/prompt-builde
 const responseParser = require('@modules/ai/services/chatbot/prompt/response-parser');
 const keywordFallback = require('@modules/ai/services/chatbot/keyword/keyword-fallback');
 
-// Cache TTL cho chatbot query result (5 phút)
+/**
+ * TTL (giây) cho Redis cache của chatbot response.
+ * 5 phút đủ để tận dụng cache khi nhiều user hỏi cùng câu, nhưng không quá cũ khi giá/stock thay đổi.
+ * Chú ý: redis.setEx nhận tham số tính bằng giây (khác với setTimeout/setInterval tính bằng ms).
+ */
 const CHATBOT_CACHE_TTL = 5 * 60;
-// Chỉ cache intent tìm sản phẩm — KHÔNG cache order_inquiry, policy, pricing (data realtime)
+
+/**
+ * Danh sách intent được phép cache Redis.
+ * Chỉ cache product_search vì đây là truy vấn không phụ thuộc user hay thời gian thực.
+ * Không cache: order_inquiry (trạng thái đơn realtime), policy (có thể sửa bất kỳ lúc nào),
+ * pricing (giá có thể thay đổi trong ngày).
+ */
 const CACHEABLE_INTENTS = ['product_search'];
 
-// Số lượt hội thoại tối đa giữ trong bộ nhớ (10 turns = 20 messages: user + assistant)
+/**
+ * TTL (milliseconds) cho catalog cache in-memory (brands + categories).
+ * Catalog ít thay đổi → cache 5 phút để tránh query DB mỗi lần gọi LLM.
+ * Đơn vị ms vì dùng với Date.now() (khác với CHATBOT_CACHE_TTL dùng với redis.setEx).
+ */
+const CATALOG_CACHE_TTL_MS = 5 * 60 * 1000;
+
+/**
+ * Số lượt hội thoại tối đa giữ trong session memory per session.
+ * 10 turns = 20 messages (mỗi turn có 2 messages: 1 user + 1 assistant).
+ * Giới hạn để không vượt token limit của LLM khi inject history vào prompt.
+ */
 const MAX_HISTORY_TURNS = 10;
-// Giới hạn số sessions trong memory — evict oldest khi vượt ngưỡng
+
+/**
+ * Tổng số sessions tối đa trong conversationHistory Map.
+ * Khi vượt ngưỡng → xóa session ít dùng nhất (LRU) để giải phóng RAM.
+ * 500 sessions × ~4KB/session ≈ 2MB — chấp nhận được cho server production.
+ */
 const MAX_SESSIONS = 500;
-// Session hết hạn sau 30 phút không hoạt động
+
+/**
+ * Thời gian (milliseconds) trước khi session bị coi là "stale" (không còn active).
+ * Session không có tin nhắn mới sau 30 phút → _evictStaleSessions() sẽ xóa.
+ */
 const SESSION_TTL_MS = 30 * 60 * 1000;
 
+/**
+ * Temperature cho LLM khi sinh response tư vấn sản phẩm.
+ * 0.3 = thấp để câu trả lời ổn định, ít "sáng tạo" quá mức → giảm nguy cơ hallucination.
+ * (Thang 0-2: 0 = deterministic, 1 = balanced, 2 = rất creative/ngẫu nhiên)
+ */
+const LLM_TEMPERATURE = 0.3;
+
+/**
+ * Số token tối đa cho response của LLM khi tư vấn sản phẩm.
+ * 800 tokens ≈ ~600 từ — đủ cho câu trả lời đầy đủ kèm danh sách sản phẩm,
+ * không quá dài làm tốn API quota và tăng latency.
+ */
+const LLM_MAX_TOKENS = 800;
+
+/**
+ * Timeout (milliseconds) cho request đến LLM khi sinh response chính (getAIResponse).
+ * 30 giây đủ cho LLM suy nghĩ và trả về JSON response đầy đủ.
+ */
+const LLM_REQUEST_TIMEOUT_MS = 30000;
+
+/**
+ * Số token tối đa cho response của LLM khi rewrite query (_llmRewrite).
+ * 80 tokens đủ cho 1 dòng text ngắn — rewrite chỉ cần trả về query đã chuẩn hóa.
+ */
+const LLM_REWRITE_MAX_TOKENS = 80;
+
+/**
+ * Timeout (milliseconds) cho request LLM rewrite query.
+ * Ngắn hơn LLM_REQUEST_TIMEOUT_MS vì rewrite chạy song song với vector search —
+ * nếu rewrite chậm quá sẽ làm tăng tổng latency của pipeline.
+ */
+const LLM_REWRITE_TIMEOUT_MS = 8000;
+
+/**
+ * Service singleton quản lý LLM calls, session memory, và Redis cache cho chatbot.
+ *
+ * **Provider rotation** — tự động chuyển sang provider tiếp theo khi gặp lỗi:
+ * - HTTP 429 (rate limit), 402 (quota hết), 500/503 (server lỗi), network error → retry provider tiếp
+ * - HTTP 400 (bad request), 401 (auth fail) → lỗi không phục hồi → break ngay, không retry
+ *
+ * **Session memory** — lưu lịch sử hội thoại per-session:
+ * - Max MAX_HISTORY_TURNS turns = MAX_HISTORY_TURNS × 2 messages per session
+ * - Max MAX_SESSIONS sessions tổng — xóa session ít dùng nhất (LRU) khi vượt
+ * - TTL SESSION_TTL_MS (30 phút) — session không hoạt động → tự động xóa
+ *
+ * **Redis cache** — tránh gọi LLM lặp lại cho cùng câu hỏi:
+ * - Chỉ cache intent product_search (không cache order/policy vì data realtime)
+ * - TTL CHATBOT_CACHE_TTL giây (5 phút)
+ * - Cache key shared (không theo userId) — nhiều user cùng câu hỏi dùng chung 1 cached response
+ */
 class ChatbotService {
   constructor() {
     // Provider list — cấu hình qua env LLM_API_KEY + LLM_BASE_URL + LLM_MODEL
@@ -48,6 +155,7 @@ class ChatbotService {
     }
     this._brandsCache = null;
     this._categoriesCache = null;
+    // Unix ms timestamp — catalog cache hết hạn khi Date.now() vượt qua giá trị này
     this._catalogCacheExpiry = 0;
     // Lịch sử hội thoại lưu theo sessionId (in-memory Map)
     // Reset khi server restart — đủ cho demo, production dùng Redis
@@ -62,7 +170,12 @@ class ChatbotService {
     this._initializeChatbot();
   }
 
-  // Load brands và categories từ DB, cache 5 phút
+  /**
+   * Load danh sách brands và categories từ DB, cache in-memory CATALOG_CACHE_TTL_MS (5 phút).
+   * Dùng để inject vào system prompt — giúp LLM biết cửa hàng bán những gì.
+   * Không query DB nếu cache còn hiệu lực (tránh N+1 queries mỗi lần gọi LLM).
+   * @returns {Promise<void>}
+   */
   async _ensureCatalogCache() {
     if (this._brandsCache && Date.now() < this._catalogCacheExpiry) return;
     const [brands, categories] = await Promise.all([
@@ -71,9 +184,14 @@ class ChatbotService {
     ]);
     this._brandsCache = brands.map((b) => b.nameVi || b.nameEn).filter(Boolean);
     this._categoriesCache = categories.map((c) => c.nameVi || c.nameEn).filter(Boolean);
-    this._catalogCacheExpiry = Date.now() + 5 * 60 * 1000;
+    this._catalogCacheExpiry = Date.now() + CATALOG_CACHE_TTL_MS;
   }
 
+  /**
+   * Log trạng thái khởi tạo chatbot: có bao nhiêu LLM provider sẵn sàng.
+   * Gọi 1 lần trong constructor — chỉ log, không throw nếu 0 providers.
+   * 0 providers → chatbot vẫn hoạt động nhưng dùng fallback keyword match thay vì LLM.
+   */
   _initializeChatbot() {
     try {
       if (this.providers.length > 0) {
@@ -99,7 +217,23 @@ class ChatbotService {
     return { rewrittenQuery, intent: classifyIntent(rewrittenQuery) };
   }
 
-  // LLM rewrite nhẹ: chỉ mở rộng viết tắt + chuẩn hóa query — chạy song song với vector search
+  /**
+   * [Normalize — LLM] Gọi LLM để chuẩn hóa query: mở rộng viết tắt, sửa lỗi chính tả.
+   *
+   * **Tại sao chạy song song với vector search?**
+   * LLM rewrite mất ~1-3 giây. Nếu chạy tuần tự: rewrite → search → response = 1-3s thêm vào latency.
+   * Chạy song song: [rewrite + search đồng thời] → khi cả 2 xong mới merge → tiết kiệm 1-3s.
+   *
+   * **Nếu LLM rewrite lỗi thì sao?**
+   * Trả về null — pipeline dùng query gốc (đã qua expandAbbreviations). Không block request chính.
+   * Timeout ngắn hơn (LLM_REWRITE_TIMEOUT_MS = 8s vs LLM_REQUEST_TIMEOUT_MS = 30s) để không
+   * chờ quá lâu khi rewrite fail.
+   *
+   * Ví dụ: "ip17 pro bnh" → "iPhone 17 Pro bao nhiêu"
+   *
+   * @param {string} message - Query gốc từ user (đã qua expandAbbreviations).
+   * @returns {Promise<string|null>} Query đã rewrite nếu LLM thay đổi được, null nếu lỗi hoặc không đổi.
+   */
   async _llmRewrite(message) {
     if (this.providers.length === 0) return null;
     for (let i = 0; i < this.providers.length; i++) {
@@ -117,7 +251,7 @@ class ChatbotService {
               },
               { role: 'user', content: message },
             ],
-            max_tokens: 80,
+            max_tokens: LLM_REWRITE_MAX_TOKENS,
             temperature: 0,
           },
           {
@@ -125,7 +259,7 @@ class ChatbotService {
               Authorization: `Bearer ${provider.key}`,
               'Content-Type': 'application/json',
             },
-            timeout: 8000,
+            timeout: LLM_REWRITE_TIMEOUT_MS,
           },
         );
         const rewritten = res.data.choices?.[0]?.message?.content?.trim();
@@ -144,6 +278,57 @@ class ChatbotService {
     return null;
   }
 
+  /**
+   * [Orchestration] Entry point chính của ChatbotService — điều phối toàn bộ flow xử lý tin nhắn.
+   *
+   * **Flow 7 bước:**
+   * ```
+   * Bước 1 — Chuẩn hóa query:
+   *   expandAbbreviations("ip15") → "iPhone 15"
+   *   classifyIntent("iPhone 15 giá") → "product_search"
+   *   (skip nếu RAGPipeline đã làm — context.normalizedQuery + context.preClassifiedIntent)
+   *
+   * Bước 2 — Off-topic early return:
+   *   intent === 'off_topic' → trả response cố định ngay (tiếng Việt hoặc English)
+   *   Không gọi LLM, không search sản phẩm → tiết kiệm quota + giảm latency
+   *
+   * Bước 3 — Redis cache check:
+   *   Chỉ check khi intent === 'product_search'
+   *   Cache HIT → trả kết quả ngay, vẫn persist vào DB và lưu session history
+   *   Cache MISS hoặc Redis lỗi → tiếp tục bước 4
+   *
+   * Bước 4 — Load session history:
+   *   Lấy messages[] từ conversationHistory Map theo sessionId
+   *   Dùng làm context cho LLM ở bước 6 — giúp chatbot nhớ cuộc hội thoại
+   *
+   * Bước 5 — Retrieval:
+   *   Path A (chính): RAGPipeline đã search → dùng context.retrievedProducts
+   *   Path B (legacy): không qua RAGPipeline → tự gọi hybridSearch + _llmRewrite song song
+   *
+   * Bước 6 — Generation:
+   *   getAIResponse(finalQuery, products, context, conversationHistory)
+   *   → build system prompt + RAG context → gọi LLM → parse JSON response
+   *
+   * Bước 7 — Persist + cache:
+   *   Cập nhật conversationHistory Map (in-memory)
+   *   _persistMessages() → lưu vào bảng ChatMessage (DB)
+   *   Cache response vào Redis nếu product_search
+   * ```
+   *
+   * **Path A vs Path B:**
+   * Thông thường RAGPipeline gọi handleMessage() SAU khi đã search xong (Path A).
+   * Path B chỉ dùng khi gọi handleMessage() trực tiếp không qua RAGPipeline (legacy/testing).
+   *
+   * @param {string} message - Tin nhắn gốc từ user.
+   * @param {number|null} [userId=null] - ID user đã đăng nhập (null nếu anonymous).
+   * @param {string|null} [sessionId=null] - Session ID để track conversation history (null → không lưu history).
+   * @param {Object} [context={}] - Context từ RAGPipeline:
+   *   - `normalizedQuery` {string}: query đã expand abbreviations (skip bước expand nếu có)
+   *   - `preClassifiedIntent` {string}: intent đã classify (skip classifyIntent nếu có)
+   *   - `retrievedProducts` {Array}: sản phẩm đã search (skip bước retrieval nếu có)
+   *   - `llmRewrittenQuery` {string}: query đã LLM rewrite (dùng cho generation prompt)
+   * @returns {Promise<Object>} `{response: string, products: Array, suggestions: Array, intent: string}`
+   */
   async handleMessage(message, userId = null, sessionId = null, context = {}) {
     const startTime = Date.now(); // Đo thời gian xử lý cho analytics
     try {
@@ -190,7 +375,7 @@ class ChatbotService {
       if (CACHEABLE_INTENTS.includes(intent)) {
         try {
           const redis = await getRedisClient();
-          // Product search không phụ thuộc user — dùng shared cache key để tận dụng tốt hơn
+          // Cache key shared (không theo user) để nhiều user cùng câu hỏi dùng chung cache
           const cacheKey = `chatbot:shared:${searchMessage.toLowerCase().trim()}`;
           const cached = await redis.get(cacheKey);
           if (cached) {
@@ -226,21 +411,22 @@ class ChatbotService {
         }
       }
 
-      // Bước 4: Load lịch sử hội thoại
-      const entry = sessionId ? this.conversationHistory.get(sessionId) : null;
-      const history = entry ? entry.messages : [];
+      // Bước 4: Load lịch sử hội thoại từ session memory
+      const sessionEntry = sessionId ? this.conversationHistory.get(sessionId) : null;
+      const conversationHistory = sessionEntry ? sessionEntry.messages : [];
 
       // Bước 5: Retrieval — lấy sản phẩm liên quan qua hybrid search
       let relevantProducts = [];
       let finalQuery = searchMessage;
 
       if (context.retrievedProducts) {
-        // RAGPipeline đã retrieve — dùng kết quả có sẵn, bỏ qua vector search trùng lặp
+        // Path A (chính): RAGPipeline đã retrieve → dùng kết quả có sẵn, không search lại
         relevantProducts = context.retrievedProducts;
         // Dùng LLM-rewritten query từ RAGPipeline nếu có — cải thiện generation prompt
         if (context.llmRewrittenQuery) finalQuery = context.llmRewrittenQuery;
       } else {
-        // Legacy path: retrieval trực tiếp trong service
+        // Path B (legacy): retrieval trực tiếp, không qua RAGPipeline
+        // Chạy song song LLM rewrite + vector search để giảm tổng thời gian chờ
         const [llmRewrite, initialSearchResults] = await Promise.all([
           this._llmRewrite(searchMessage),
           vectorStoreService.hybridSearch(searchMessage, 10).catch(() => []),
@@ -250,10 +436,11 @@ class ChatbotService {
         if (llmRewrite && llmRewrite !== searchMessage) {
           logger.debug(`✨ [LLM Rewrite] "${searchMessage}" → "${llmRewrite}"`);
           try {
-            const refined = await vectorStoreService.hybridSearch(llmRewrite, 10);
+            const refinedResults = await vectorStoreService.hybridSearch(llmRewrite, 10);
+            // Dùng kết quả của query rewritten nếu có; fallback về kết quả ban đầu
             relevantProducts =
-              refined.length > 0
-                ? refined.map((r) => ({ ...r.metadata, score: r.score }))
+              refinedResults.length > 0
+                ? refinedResults.map((r) => ({ ...r.metadata, score: r.score }))
                 : initialSearchResults.map((r) => ({ ...r.metadata, score: r.score }));
           } catch {
             relevantProducts = initialSearchResults.map((r) => ({ ...r.metadata, score: r.score }));
@@ -262,14 +449,16 @@ class ChatbotService {
           relevantProducts = initialSearchResults.map((r) => ({ ...r.metadata, score: r.score }));
         }
 
+        // Không có kết quả nào vượt ngưỡng score → hạ ngưỡng về 0 lấy top-3 gần nhất
+        // Tránh trả về danh sách trống hoàn toàn khi có thể tìm thấy gì đó liên quan
         if (relevantProducts.length === 0) {
           logger.warn('Retrieval score < threshold cho mọi item — hạ threshold lấy top-3');
           try {
-            const anyResults = await vectorStoreService.hybridSearch(finalQuery, 3, 0);
-            relevantProducts = anyResults.map((r) => ({
+            const lowScoreResults = await vectorStoreService.hybridSearch(finalQuery, 3, 0);
+            relevantProducts = lowScoreResults.map((r) => ({
               ...r.metadata,
               score: r.score,
-              lowConfidence: true,
+              lowConfidence: true, // Đánh dấu để LLM biết kết quả này kém chắc chắn
             }));
           } catch {
             relevantProducts = [];
@@ -286,18 +475,20 @@ class ChatbotService {
         finalQuery,
         relevantProducts,
         { ...context, originalMessage: message },
-        history,
+        conversationHistory,
       );
 
-      // Bước 7: Lưu lịch sử hội thoại + cache response
+      // Bước 7: Cập nhật session memory + persist vào DB + cache response
       if (sessionId) {
-        const updatedHistory = [
-          ...history,
+        const updatedMessages = [
+          ...conversationHistory,
           { role: 'user', content: message },
           { role: 'assistant', content: aiResponse.response || '' },
-        ];
-        const trimmed = updatedHistory.slice(-(MAX_HISTORY_TURNS * 2));
-        this.conversationHistory.set(sessionId, { messages: trimmed, lastAccess: Date.now() });
+        ].slice(-(MAX_HISTORY_TURNS * 2)); // Cắt bỏ tin nhắn cũ nếu vượt quá giới hạn
+        this.conversationHistory.set(sessionId, {
+          messages: updatedMessages,
+          lastAccess: Date.now(),
+        });
         this._evictStaleSessions();
       }
 
@@ -312,11 +503,10 @@ class ChatbotService {
         false,
       );
 
-      // Cache kết quả cho intent product_search/recommendation
+      // Cache kết quả cho intent product_search
       if (CACHEABLE_INTENTS.includes(intent)) {
         try {
           const redis = await getRedisClient();
-          // Product search không phụ thuộc user — dùng shared cache key để tận dụng tốt hơn
           const cacheKey = `chatbot:shared:${searchMessage.toLowerCase().trim()}`;
           await redis.setEx(cacheKey, CHATBOT_CACHE_TTL, JSON.stringify(aiResponse));
         } catch {
@@ -331,7 +521,19 @@ class ChatbotService {
     }
   }
 
-  // Lưu cặp user/assistant message vào DB để tracking analytics và conversation history
+  /**
+   * Lưu cặp tin nhắn user + assistant vào bảng ChatMessage để tracking analytics và lịch sử.
+   * Non-blocking: lỗi DB chỉ log warning, không fail request chính.
+   *
+   * @param {string|null} sessionId - Session ID (null → skip persist).
+   * @param {number|null} userId - ID user.
+   * @param {string} userMessage - Tin nhắn gốc từ user.
+   * @param {string} assistantReply - Câu trả lời của chatbot.
+   * @param {string} intent - Intent đã classify (product_search, off_topic...).
+   * @param {number} responseTimeMs - Thời gian xử lý (ms) — dùng cho analytics dashboard.
+   * @param {boolean} isFallback - True nếu response từ fallback (không qua LLM).
+   * @returns {Promise<void>}
+   */
   async _persistMessages(
     sessionId,
     userId,
@@ -372,12 +574,19 @@ class ChatbotService {
 
   /**
    * [Generation] Gọi LLM với RAG context + conversation history, trả về response JSON.
+   *
+   * Build system prompt với: vai trò nhân viên tư vấn + quy tắc không hallucinate +
+   * danh mục/thương hiệu từ catalog cache. Inject conversation history để LLM nhớ ngữ cảnh.
+   *
    * Provider rotation: thử lần lượt từng provider, fallback simpleKeywordMatch khi hết quota.
-   * @param {string} userMessage - Query đã sanitize.
-   * @param {Array<Object>} products - Sản phẩm từ retrieval.
-   * @param {Object} context - Context bổ sung.
-   * @param {Array<Object>} [history=[]] - Lịch sử hội thoại (role/content pairs).
-   * @returns {Promise<Object>} {response, products, suggestions, intent}.
+   * Retry khi: 429 (rate limit), 402 (quota), 500/503 (server lỗi), network error.
+   * Không retry khi: 400 (bad request), 401 (auth fail) — lỗi không phục hồi được.
+   *
+   * @param {string} userMessage - Query đã sanitize (cắt xuống 2000 ký tự, escape quotes).
+   * @param {Array<Object>} products - Sản phẩm từ retrieval (đã có score + metadata).
+   * @param {Object} context - Context bổ sung (originalMessage, llmRewrittenQuery...).
+   * @param {Array<Object>} [history=[]] - Lịch sử hội thoại dạng [{role, content}].
+   * @returns {Promise<Object>} `{response: string, products: Array, suggestions: Array, intent: string}`
    */
   async getAIResponse(userMessage, products, context, history = []) {
     if (this.providers.length === 0) {
@@ -410,7 +619,7 @@ QUY TẮC BẮT BUỘC:
       { role: 'user', content: ragContextMessage },
     ];
 
-    // Thử lần lượt từng key cho đến khi thành công
+    // Thử lần lượt từng provider cho đến khi thành công
     for (let attempt = 0; attempt < this.providers.length; attempt++) {
       const provider = this.providers[attempt];
       try {
@@ -426,15 +635,15 @@ QUY TẮC BẮT BUỘC:
             model: provider.model,
             messages,
             response_format: { type: 'json_object' },
-            temperature: 0.3,
-            max_tokens: 800,
+            temperature: LLM_TEMPERATURE,
+            max_tokens: LLM_MAX_TOKENS,
           },
           {
             headers: {
               Authorization: `Bearer ${provider.key}`,
               'Content-Type': 'application/json',
             },
-            timeout: 30000,
+            timeout: LLM_REQUEST_TIMEOUT_MS,
           },
         );
 
@@ -471,21 +680,40 @@ QUY TẮC BẮT BUỘC:
     return this.simpleKeywordMatch(userMessage, products);
   }
 
+  /**
+   * Dọn dẹp session memory để tránh rò rỉ bộ nhớ khi server chạy lâu.
+   * Được gọi tự động sau mỗi lần cập nhật lịch sử hội thoại.
+   *
+   * **Evict nghĩa là gì?**
+   * "Evict" = đuổi/xóa — thuật ngữ cache để chỉ việc xóa entry cũ/không dùng ra khỏi bộ nhớ.
+   * Tương tự như LRU (Least Recently Used) cache eviction trong các hệ thống cache.
+   *
+   * **Thực hiện 2 bước theo thứ tự:**
+   * Bước 1 — Xóa session hết hạn: session không có tin nhắn mới trong SESSION_TTL_MS (30 phút) → xóa.
+   * Bước 2 — Giới hạn tổng số session: nếu vẫn còn >MAX_SESSIONS (500) session sau bước 1,
+   *   xóa những session có lần truy cập CŨ NHẤT cho đến khi còn đúng MAX_SESSIONS.
+   *   (Chiến lược LRU: giữ lại những session đang active nhất — ít dùng nhất bị xóa trước)
+   */
   _evictStaleSessions() {
     if (this.conversationHistory.size === 0) return;
     const now = Date.now();
-    for (const [key, val] of this.conversationHistory) {
-      if (now - val.lastAccess > SESSION_TTL_MS) {
-        this.conversationHistory.delete(key);
+
+    // Bước 1: Xóa session quá hạn (không hoạt động > SESSION_TTL_MS)
+    for (const [sessionId, sessionData] of this.conversationHistory) {
+      if (now - sessionData.lastAccess > SESSION_TTL_MS) {
+        this.conversationHistory.delete(sessionId);
       }
     }
+
+    // Bước 2: Nếu vẫn còn quá nhiều session → xóa session ít dùng nhất (LRU)
     if (this.conversationHistory.size > MAX_SESSIONS) {
-      const sorted = [...this.conversationHistory.entries()].sort(
+      // Sort theo thời gian truy cập tăng dần (cũ nhất ở đầu)
+      const sortedByLeastRecentlyUsed = [...this.conversationHistory.entries()].sort(
         (a, b) => a[1].lastAccess - b[1].lastAccess,
       );
-      const toRemove = sorted.length - MAX_SESSIONS;
-      for (let i = 0; i < toRemove; i++) {
-        this.conversationHistory.delete(sorted[i][0]);
+      const numberOfSessionsToRemove = sortedByLeastRecentlyUsed.length - MAX_SESSIONS;
+      for (let i = 0; i < numberOfSessionsToRemove; i++) {
+        this.conversationHistory.delete(sortedByLeastRecentlyUsed[i][0]);
       }
     }
   }

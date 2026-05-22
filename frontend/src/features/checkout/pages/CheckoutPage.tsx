@@ -1,4 +1,4 @@
-/**
+﻿/**
  * @file CheckoutPage.tsx
  * @layer Page
  * @feature checkout
@@ -12,7 +12,6 @@ import { useQueryClient } from '@tanstack/react-query';
 import { CheckCircleOutlined, InfoCircleOutlined } from '@ant-design/icons';
 import { Button, Modal, Table } from 'antd';
 
-import CustomButton from '@/components/common/Button';
 import PremiumButton from '@/components/common/PremiumButton';
 import Input from '@/components/common/Input';
 import AddressPicker from '@/components/common/AddressPicker';
@@ -25,7 +24,6 @@ import { useCreateOrderMutation, useApplyDiscountCodeMutation } from '@/features
 import { cartKeys, useGetCartCountQuery } from '@/features/cart';
 import { useCreateMomoUrlMutation } from '@/features/payment';
 import { useCreateVNPayUrlMutation } from '@/features/payment';
-import { useGetLoyaltyInfoQuery } from '@/features/loyalty';
 import { useGetAddressesQuery } from '@/features/users';
 import { Address } from '@/types/user.types';
 import { getErrorMsg } from '@/utils/error-utils';
@@ -149,19 +147,10 @@ const CheckoutPage: React.FC = () => {
   // Lấy số lượng giỏ hàng từ server để đảm bảo đồng bộ và tránh trường hợp người dùng có thể truy cập trang checkout với giỏ hàng trống do dữ liệu cũ chưa được xóa hoặc truy cập sai cách
   const { data: serverCartCount } = useGetCartCountQuery();
 
-  // Dữ liệu khách hàng và thông tin tích điểm nếu người dùng đã đăng nhập để hiển thị phần sử dụng điểm tích lũy và các ưu đãi liên quan
-  const { data: loyaltyData } = useGetLoyaltyInfoQuery(undefined, {
-    enabled: !!user,
-  });
-  const availablePoints = loyaltyData?.data?.points || 0;
-
   // Địa chỉ đã lưu để tự động điền vào form khi người dùng chọn
   const { data: savedAddresses } = useGetAddressesQuery({
     enabled: !!user,
   });
-  const [pointsToUse, setPointsToUse] = useState<number>(0);
-  const [pointsError, setPointsError] = useState('');
-
   // Các phương thức thanh toán được hỗ trợ, có thể dễ dàng mở rộng hoặc chỉnh sửa sau này, đồng thời sử dụng i18n để hỗ trợ đa ngôn ngữ
   const paymentMethods = [
     { value: 'cod', label: t('checkout.paymentMethod.cod') },
@@ -355,9 +344,7 @@ const CheckoutPage: React.FC = () => {
   const discountAmount = appliedDiscount ? appliedDiscount.amount : 0;
 
   // Tính giảm giá theo điểm (1 điểm = 1.000 VND)
-  const pointsDiscount = pointsToUse * 1000;
-
-  const total = subtotal + warrantyTotal + shippingCost + tax - discountAmount - pointsDiscount;
+  const total = subtotal + warrantyTotal + shippingCost + tax - discountAmount;
 
   // Xử lý thay đổi input trong form
   const handleInputChange = (name: string, value: string) => {
@@ -504,29 +491,6 @@ const CheckoutPage: React.FC = () => {
     setDiscountError('');
   };
 
-  const handleApplyPoints = (val: number) => {
-    if (val < 0) {
-      setPointsError(t('checkout.loyaltyPoints.invalidPoints'));
-      setPointsToUse(0);
-      return;
-    }
-    if (val > availablePoints) {
-      setPointsError(t('checkout.loyaltyPoints.maxExceeded', { max: availablePoints }));
-      setPointsToUse(availablePoints);
-      return;
-    }
-
-    if (val * 1000 > subtotal - discountAmount) {
-      const maxPoints = Math.floor((subtotal - discountAmount) / 1000);
-      setPointsToUse(maxPoints);
-      setPointsError(t('checkout.loyaltyPoints.exceeds'));
-      return;
-    }
-
-    setPointsToUse(val);
-    setPointsError('');
-  };
-
   // Tạo đơn hàng
   const handleCreateOrder = async () => {
     if (!validateForm()) {
@@ -559,9 +523,7 @@ const CheckoutPage: React.FC = () => {
         billingPhone: formData.sameAsShipping ? formData.phone : formData.billingPhone,
         paymentMethod: formData.paymentMethod,
         notes: formData.notes,
-        discountCode: appliedDiscount ? appliedDiscount.code : undefined,
-        pointsToUse: pointsToUse,
-        // shippingCost KHÔNG gửi lên backend — backend tự tính theo Phase 7.3
+        discountCode: appliedDiscount ? appliedDiscount.code : undefined, // shippingCost KHÔNG gửi lên backend — backend tự tính theo Phase 7.3
         items:
           isBuyNow && buyNowItem
             ? [
@@ -1100,49 +1062,6 @@ const CheckoutPage: React.FC = () => {
               </div>
             )}
 
-            {/* Phần điểm tích lũy */}
-            {user && availablePoints > 0 && !isRepayingOrder && (
-              <div className="mb-6 border-t border-neutral-200 dark:border-neutral-700 pt-4">
-                <div className="flex justify-between items-center mb-2">
-                  <span className="text-sm font-medium text-neutral-700 dark:text-neutral-300">
-                    {t('checkout.loyaltyPoints.pointsHeader', { points: availablePoints })}
-                  </span>
-                  <span className="text-xs text-neutral-500">
-                    {t('checkout.loyaltyPoints.rate')}
-                  </span>
-                </div>
-                <div className="flex space-x-2 items-end">
-                  <div className="flex-grow">
-                    <Input
-                      type="number"
-                      placeholder={t('checkout.loyaltyPoints.inputPlaceholder')}
-                      value={pointsToUse.toString()}
-                      min={0}
-                      max={availablePoints}
-                      onChange={(e) => handleApplyPoints(parseInt(e.target.value) || 0)}
-                    />
-                  </div>
-                  <CustomButton
-                    variant="secondary"
-                    onClick={() => handleApplyPoints(availablePoints)}
-                    className="h-[42px] px-4 text-xs"
-                  >
-                    {t('checkout.loyaltyPoints.useAll')}
-                  </CustomButton>
-                </div>
-                {pointsError && <p className="text-red-500 text-xs mt-1">{pointsError}</p>}
-                {pointsToUse > 0 && !pointsError && (
-                  <p className="text-green-600 text-sm mt-1 flex items-center">
-                    <CheckCircleOutlined className="mr-1" />
-                    {t('checkout.loyaltyPoints.appliedInfo', {
-                      points: pointsToUse,
-                      amount: formatPrice(pointsToUse * 1000),
-                    })}
-                  </p>
-                )}
-              </div>
-            )}
-
             {/* Tổng cộng */}
             <div className="border-t border-neutral-200 dark:border-neutral-700 pt-4 space-y-2">
               {!isRepayingOrder ? (
@@ -1183,12 +1102,6 @@ const CheckoutPage: React.FC = () => {
                         })}
                       </span>
                       <span>-{formatPrice(appliedDiscount.amount)}</span>
-                    </div>
-                  )}
-                  {pointsToUse > 0 && (
-                    <div className="flex justify-between text-green-600 font-medium">
-                      <span>{t('checkout.orderSummary.loyaltyDiscount')}</span>
-                      <span>-{formatPrice(pointsToUse * 1000)}</span>
                     </div>
                   )}
                   {tax > 0 && (

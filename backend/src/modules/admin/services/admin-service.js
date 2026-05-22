@@ -45,8 +45,14 @@ const {
 const vectorStoreService = require('@services/vector-store/vector-store');
 
 /**
- * Đệ quy parse chuỗi JSON để xử lý tình huống stringify nhiều lần.
- * Ví dụ: '"{\\"key\\":\\"val\\"}"' → { key: "val" }
+ * Đệ quy parse chuỗi JSON để xử lý tình huống dữ liệu bị stringify nhiều lần.
+ *
+ * Vấn đề: khi frontend gửi form-data hoặc qua nhiều lớp serialize, object có thể
+ * thành chuỗi lồng nhau — ví dụ `'"{\\"key\\":\\"val\\"}"'` thay vì `{ key: "val" }`.
+ * Gọi JSON.parse liên tục (tối đa 5 lần) đến khi nhận được object hoặc gặp lỗi.
+ *
+ * @param {*} val - Chuỗi JSON (1 hay nhiều lớp), object thuần, null, hoặc undefined.
+ * @returns {Object} Object đã parse. Trả về `{}` nếu không parse được hoặc kết quả không phải object.
  */
 function deepParseJSON(val) {
   if (val === null || val === undefined) return {};
@@ -70,7 +76,13 @@ function deepParseJSON(val) {
 }
 
 /**
- * Đệ quy parse chuỗi JSON dạng mảng
+ * Đệ quy parse chuỗi JSON dạng mảng — tương tự deepParseJSON nhưng kết quả là mảng.
+ *
+ * Dùng cho các trường như `values` của ProductAttribute, nơi dữ liệu đôi khi được
+ * lưu dạng chuỗi JSON `'["đỏ","xanh"]'` thay vì mảng thực.
+ *
+ * @param {*} val - Chuỗi JSON chứa mảng, mảng thuần, null, hoặc undefined.
+ * @returns {Array} Mảng đã parse. Trả về `[]` nếu không parse được hoặc không phải mảng.
  */
 function deepParseJSONArray(val) {
   if (val === null || val === undefined) return [];
@@ -92,7 +104,18 @@ function deepParseJSONArray(val) {
 }
 
 /**
- * Dashboard - Thống kê tổng quan
+ * Trả về bộ thống kê tổng quan cho trang Dashboard admin.
+ *
+ * Bao gồm: tổng users/products/orders/doanh thu toàn thời gian; số liệu tháng này;
+ * MoM growth (tỷ lệ tăng trưởng tháng này so tháng trước = (tháng_này - tháng_trước)
+ * / tháng_trước × 100, trả về 0 nếu tháng trước = 0 để tránh chia cho 0); AOV
+ * (Average Order Value); top 5 sản phẩm bán chạy; phân bổ đơn theo trạng thái;
+ * số đơn hủy tháng; số sản phẩm sắp hết hàng (stockQuantity ≤ 5).
+ *
+ * Doanh thu chỉ tính đơn `delivered` và paymentStatus không phải `refunded`/`failed`.
+ *
+ * @param {Object} req - HTTP request từ Express (không dùng params/body/query)
+ * @param {Object} res - HTTP response — hàm này tự gọi res.json() để trả kết quả
  */
 const getDashboardStats = catchAsync(async (req, res) => {
   logger.info('[CONTROLLER] getDashboardStats started');
@@ -268,7 +291,18 @@ const getDashboardStats = catchAsync(async (req, res) => {
 });
 
 /**
- * Thống kê chi tiết theo khoảng thời gian
+ * Thống kê chi tiết đơn hàng và user mới trong khoảng thời gian tùy chọn,
+ * với khả năng nhóm theo giờ/ngày/tuần/tháng.
+ *
+ * Loại trừ đơn hàng `cancelled` và paymentStatus `refunded`/`failed`.
+ *
+ * @param {Object} req - HTTP request từ Express
+ * @param {Object} req.query - Query parameters:
+ * @param {string} req.query.startDate - Ngày bắt đầu (ISO string, bắt buộc)
+ * @param {string} req.query.endDate - Ngày kết thúc (ISO string, bắt buộc)
+ * @param {string} [req.query.groupBy='day'] - Đơn vị nhóm: `hour` | `day` | `week` | `month`
+ * @param {Object} res - HTTP response — hàm này tự gọi res.json() để trả kết quả
+ * @throws {AppError} 400 nếu thiếu startDate hoặc endDate
  */
 const getDetailedStats = catchAsync(async (req, res) => {
   const { startDate, endDate, groupBy = 'day' } = req.query;
@@ -350,7 +384,19 @@ const getDetailedStats = catchAsync(async (req, res) => {
 });
 
 /**
- * Quản lý Users - Lấy danh sách user
+ * Lấy danh sách user có phân trang, tìm kiếm và lọc. Password và token nhạy cảm
+ * bị loại khỏi kết quả.
+ *
+ * @param {Object} req - HTTP request từ Express
+ * @param {Object} req.query - Query parameters:
+ * @param {number} [req.query.page=1] - Trang hiện tại
+ * @param {number} [req.query.limit=20] - Số bản ghi mỗi trang (tối đa 100)
+ * @param {string} [req.query.search=''] - Tìm theo firstName, lastName, email, phone
+ * @param {string} [req.query.role=''] - Lọc theo role
+ * @param {string} [req.query.sortBy='createdAt'] - Trường sắp xếp
+ * @param {string} [req.query.sortOrder='DESC'] - `ASC` | `DESC`
+ * @param {string} [req.query.isEmailVerified] - Lọc `'true'` hoặc `'false'`
+ * @param {Object} res - HTTP response — hàm này tự gọi res.json() để trả kết quả
  */
 const getAllUsers = catchAsync(async (req, res) => {
   const {
@@ -411,7 +457,18 @@ const getAllUsers = catchAsync(async (req, res) => {
 });
 
 /**
- * Quản lý Users - Cập nhật thông tin user
+ * Admin cập nhật thông tin user — có thể thay đổi role, isEmailVerified, isActive
+ * (khác user tự cập nhật). Ba ràng buộc: admin không tự đổi role mình; admin không
+ * tự deactivate mình; chỉ role `admin` (không phải `manager`) mới đổi role user khác.
+ * Chỉ cập nhật trường có trong req.body (dùng hasOwnProperty).
+ *
+ * @param {Object} req - HTTP request từ Express
+ * @param {Object} req.params - `{ id }` — ID user cần cập nhật
+ * @param {Object} req.body - `firstName`, `lastName`, `phone`, `role`, `isEmailVerified`, `isActive`
+ * @param {Object} req.user - Thông tin admin đang đăng nhập
+ * @param {Object} res - HTTP response — hàm này tự gọi res.json() để trả kết quả
+ * @throws {AppError} 404 nếu không tìm thấy user
+ * @throws {AppError} 403 nếu vi phạm ràng buộc bảo vệ
  */
 const updateUser = catchAsync(async (req, res) => {
   const { id } = req.params;
@@ -461,7 +518,15 @@ const updateUser = catchAsync(async (req, res) => {
 });
 
 /**
- * Quản lý Users - Xóa user
+ * Xóa vĩnh viễn user. Admin không được tự xóa chính mình (trả về 403 trước khi
+ * truy vấn DB). Dữ liệu liên quan xử lý theo ON DELETE CASCADE trong schema.
+ *
+ * @param {Object} req - HTTP request từ Express
+ * @param {Object} req.params - `{ id }` — ID user cần xóa
+ * @param {Object} req.user - Thông tin admin đang đăng nhập
+ * @param {Object} res - HTTP response — hàm này tự gọi res.json() để trả kết quả
+ * @throws {AppError} 403 nếu admin tự xóa chính mình
+ * @throws {AppError} 404 nếu không tìm thấy user
  */
 const deleteUser = catchAsync(async (req, res) => {
   const { id } = req.params;
@@ -484,7 +549,13 @@ const deleteUser = catchAsync(async (req, res) => {
 });
 
 /**
- * User Management - Lấy chi tiết user
+ * Lấy chi tiết user kèm lịch sử hoạt động: 10 đơn hàng gần nhất, 10 điểm tích
+ * lũy gần nhất, 10 lịch sử tìm kiếm, 10 sản phẩm xem gần đây.
+ *
+ * @param {Object} req - HTTP request từ Express
+ * @param {Object} req.params - `{ id }` — ID user cần xem
+ * @param {Object} res - HTTP response — hàm này tự gọi res.json() để trả kết quả
+ * @throws {AppError} 404 nếu không tìm thấy user
  */
 const getUserById = catchAsync(async (req, res) => {
   const { id } = req.params;
@@ -498,7 +569,6 @@ const getUserById = catchAsync(async (req, res) => {
         limit: 10,
         order: [['createdAt', 'DESC']],
       },
-      { model: LoyaltyHistory, as: 'loyaltyHistories', limit: 10 },
       { model: SearchHistory, as: 'searchHistories', limit: 10 },
       { model: RecentlyViewed, as: 'recentlyViewed', limit: 10 },
     ],
@@ -515,7 +585,14 @@ const getUserById = catchAsync(async (req, res) => {
 });
 
 /**
- * Quản lý Products - Lấy chi tiết sản phẩm
+ * Lấy chi tiết đầy đủ sản phẩm cho trang edit admin — kèm danh mục, thuộc tính,
+ * biến thể, thông số kỹ thuật, gói bảo hành. Deep-parse các trường JSON lồng nhau:
+ * `variants[].attributes` → object; `attributes[].values` → mảng.
+ *
+ * @param {Object} req - HTTP request từ Express
+ * @param {Object} req.params - `{ id }` — ID sản phẩm
+ * @param {Object} res - HTTP response — hàm này tự gọi res.json() để trả kết quả
+ * @throws {AppError} 404 nếu không tìm thấy sản phẩm
  */
 const getProductById = catchAsync(async (req, res) => {
   const { id } = req.params;
@@ -588,7 +665,29 @@ const getProductById = catchAsync(async (req, res) => {
 });
 
 /**
- * Quản lý Products - Tạo sản phẩm mới
+ * Tạo sản phẩm mới với đầy đủ thông tin liên quan.
+ *
+ * Luồng xử lý: (1) Tạo Product cơ bản; (2) Cập nhật compareAtPrice qua raw SQL;
+ * (3) Gán danh mục; (4) Tạo ProductAttribute; (5) Tạo ProductVariant + tính tổng
+ * stockQuantity; (6) Tạo ProductImage; (7) Tạo ProductSpecification; (8) Liên kết
+ * WarrantyPackage (package đầu tiên là isDefault); (9) Đồng bộ vector store AI
+ * (bất đồng bộ, không block response); (10) Ghi audit log CREATE.
+ *
+ * Chấp nhận cả `price` lẫn `basePrice` trong body (tương thích ngược).
+ *
+ * @param {Object} req - HTTP request từ Express
+ * @param {Object} req.body - Dữ liệu sản phẩm:
+ * @param {string} req.body.name - Tên sản phẩm (bắt buộc)
+ * @param {number} req.body.basePrice - Giá gốc (cũng chấp nhận `price`)
+ * @param {string} [req.body.status='active'] - `active` | `inactive` | `draft`
+ * @param {Array<number>} [req.body.categoryIds=[]] - Danh sách ID danh mục
+ * @param {Array<Object>} [req.body.attributes=[]] - Thuộc tính sản phẩm
+ * @param {Array<Object>} [req.body.variants=[]] - Biến thể sản phẩm
+ * @param {Array} [req.body.images=[]] - URL ảnh (chuỗi hoặc object)
+ * @param {Array<Object>} [req.body.specifications=[]] - Thông số kỹ thuật
+ * @param {Array<number>} [req.body.warrantyPackageIds=[]] - ID gói bảo hành
+ * @param {Object} req.user - Thông tin admin đang đăng nhập
+ * @param {Object} res - HTTP response — hàm này tự gọi res.json() để trả kết quả
  */
 const createProduct = catchAsync(async (req, res) => {
   logger.info('Dữ liệu request tạo sản phẩm:', JSON.stringify(req.body, null, 2));
@@ -937,7 +1036,23 @@ const createProduct = catchAsync(async (req, res) => {
 });
 
 /**
- * Quản lý Products - Cập nhật sản phẩm
+ * Cập nhật sản phẩm trong transaction — áp dụng delta update (chỉ cập nhật trường
+ * có trong req.body qua hasOwnProperty). Các bước: (1) thông tin cơ bản;
+ * (2) ảnh (replace toàn bộ); (3) compareAtPrice qua raw SQL; (4) danh mục;
+ * (5) attributes vi sai; (6) variants vi sai + tính lại stockQuantity;
+ * (7) specifications vi sai + auto-translate valueEn background;
+ * (8) warranty packages (replace toàn bộ); (9) commit → audit log → sync vector store.
+ * Sản phẩm inactive bị xóa khỏi vector store index.
+ *
+ * @param {Object} req - HTTP request từ Express
+ * @param {Object} req.params - `{ id }` — ID sản phẩm
+ * @param {Object} req.body - Các trường cần cập nhật (chỉ trường có trong body mới thay đổi):
+ *   `name`, `description`, `price`, `compareAtPrice`, `images`, `stockQuantity`,
+ *   `status`, `featured`, `condition`, `seoTitle`, `seoDescription`, `seoKeywords`,
+ *   `faqs`, `categoryIds`, `attributes`, `variants`, `specifications`, `warrantyPackageIds`
+ * @param {Object} req.user - Thông tin admin đang đăng nhập
+ * @param {Object} res - HTTP response — hàm này tự gọi res.json() để trả kết quả
+ * @throws {AppError} 404 nếu không tìm thấy sản phẩm
  */
 const updateProduct = catchAsync(async (req, res) => {
   const { id } = req.params;
@@ -1356,7 +1471,15 @@ const updateProduct = catchAsync(async (req, res) => {
 });
 
 /**
- * Quản lý Products - Xóa sản phẩm
+ * Xóa vĩnh viễn sản phẩm và dữ liệu liên quan trong transaction. Thứ tự xóa:
+ * CartItem → Wishlist → ProductAttribute → ProductVariant → ProductCategory → Product.
+ * OrderItem không bị xóa để giữ lịch sử đơn hàng (intentional).
+ *
+ * @param {Object} req - HTTP request từ Express
+ * @param {Object} req.params - `{ id }` — ID sản phẩm
+ * @param {Object} req.user - Thông tin admin đang đăng nhập
+ * @param {Object} res - HTTP response — hàm này tự gọi res.json() để trả kết quả
+ * @throws {AppError} 404 nếu không tìm thấy sản phẩm
  */
 const deleteProduct = catchAsync(async (req, res) => {
   const { id } = req.params;
@@ -1410,7 +1533,26 @@ const deleteProduct = catchAsync(async (req, res) => {
 });
 
 /**
- * Quản lý Products - Lấy danh sách sản phẩm với filter admin
+ * Lấy danh sách sản phẩm có phân trang và bộ lọc đa tiêu chí cho trang quản lý admin.
+ *
+ * Trả về đầy đủ quan hệ: danh mục, biến thể, thuộc tính, thông số, gói bảo hành, ảnh.
+ * Dữ liệu được transform: `productImages → images[]`, `basePrice → price`,
+ * gộp category trực tiếp vào mảng `categories`.
+ *
+ * @param {Object} req - HTTP request từ Express
+ * @param {Object} req.query - Query parameters:
+ * @param {number} [req.query.page=1] - Trang hiện tại
+ * @param {number} [req.query.limit=20] - Số bản ghi mỗi trang (tối đa 100)
+ * @param {string} [req.query.search=''] - Tìm kiếm theo name, description, sku
+ * @param {string} [req.query.category=''] - Lọc theo ID danh mục
+ * @param {string} [req.query.status=''] - Lọc trạng thái: `active`|`inactive`|`draft`
+ * @param {string} [req.query.sortBy='createdAt'] - Trường sắp xếp (dùng `price` → sort theo basePrice)
+ * @param {string} [req.query.sortOrder='DESC'] - Thứ tự: `ASC` | `DESC`
+ * @param {number} [req.query.priceMin] - Giá tối thiểu
+ * @param {number} [req.query.priceMax] - Giá tối đa
+ * @param {number} [req.query.stockMin] - Tồn kho tối thiểu
+ * @param {number} [req.query.stockMax] - Tồn kho tối đa
+ * @param {Object} res - HTTP response — hàm này tự gọi res.json() để trả kết quả
  */
 const getAllProducts = catchAsync(async (req, res) => {
   const {
@@ -1569,7 +1711,18 @@ const getAllProducts = catchAsync(async (req, res) => {
 });
 
 /**
- * Quản lý Reviews - Lấy danh sách review
+ * Lấy danh sách đánh giá sản phẩm có phân trang và lọc theo sản phẩm hoặc
+ * điểm số. Kết quả kèm thông tin user (id, tên, avatar) và sản phẩm (id, tên, slug).
+ *
+ * @param {Object} req - HTTP request từ Express
+ * @param {Object} req.query - Query parameters:
+ * @param {number} [req.query.page=1] - Trang hiện tại
+ * @param {number} [req.query.limit=20] - Số bản ghi mỗi trang (tối đa 100)
+ * @param {string} [req.query.productId=''] - Lọc theo ID sản phẩm
+ * @param {number} [req.query.rating=''] - Lọc theo điểm số (1–5)
+ * @param {string} [req.query.sortBy='createdAt'] - Trường sắp xếp
+ * @param {string} [req.query.sortOrder='DESC'] - Thứ tự: `ASC` | `DESC`
+ * @param {Object} res - HTTP response — hàm này tự gọi res.json() để trả kết quả
  */
 const getAllReviews = catchAsync(async (req, res) => {
   const {
@@ -1627,7 +1780,12 @@ const getAllReviews = catchAsync(async (req, res) => {
 });
 
 /**
- * Quản lý Reviews - Xóa review
+ * Xóa vĩnh viễn một đánh giá sản phẩm.
+ *
+ * @param {Object} req - HTTP request từ Express
+ * @param {Object} req.params - `{ id }` — ID đánh giá cần xóa
+ * @param {Object} res - HTTP response — hàm này tự gọi res.json() để trả kết quả
+ * @throws {AppError} 404 nếu không tìm thấy đánh giá
  */
 const deleteReview = catchAsync(async (req, res) => {
   const { id } = req.params;
@@ -1646,7 +1804,21 @@ const deleteReview = catchAsync(async (req, res) => {
 });
 
 /**
- * Quản lý Orders - Lấy danh sách đơn hàng
+ * Lấy danh sách tất cả đơn hàng có phân trang, lọc theo trạng thái, khoảng thời
+ * gian, và tìm kiếm theo số đơn. Kết quả kèm thông tin user và sản phẩm trong đơn
+ * (kèm ảnh thumbnail). Dữ liệu được transform: `productImages → images[]`, `basePrice → price`.
+ *
+ * @param {Object} req - HTTP request từ Express
+ * @param {Object} req.query - Query parameters:
+ * @param {number} [req.query.page=1] - Trang hiện tại
+ * @param {number} [req.query.limit=20] - Số bản ghi mỗi trang (tối đa 100)
+ * @param {string} [req.query.status=''] - Lọc theo trạng thái đơn
+ * @param {string} [req.query.search=''] - Tìm kiếm theo số đơn hàng (`number`)
+ * @param {string} [req.query.sortBy='createdAt'] - Trường sắp xếp
+ * @param {string} [req.query.sortOrder='DESC'] - Thứ tự: `ASC` | `DESC`
+ * @param {string} [req.query.startDate] - Lọc từ ngày (ISO string)
+ * @param {string} [req.query.endDate] - Lọc đến ngày (ISO string)
+ * @param {Object} res - HTTP response — hàm này tự gọi res.json() để trả kết quả
  */
 const getAllOrders = catchAsync(async (req, res) => {
   const {
@@ -1753,7 +1925,22 @@ const getAllOrders = catchAsync(async (req, res) => {
 });
 
 /**
- * Quản lý Orders - Cập nhật trạng thái đơn hàng
+ * Cập nhật trạng thái và/hoặc trạng thái thanh toán của đơn hàng.
+ *
+ * Hai nhánh xử lý đặc biệt:
+ * - `delivered` + COD → tự động set `paymentStatus = 'paid'`.
+ * - `cancelled` (đơn chưa bị hủy) → chạy trong transaction: cập nhật trạng thái
+ *   + hoàn tồn kho cho từng sản phẩm/variant. Hàm chỉ load `OrderItem` khi cần
+ *   hủy (tối ưu: tránh JOIN không cần thiết cho các thao tác thông thường).
+ *
+ * @param {Object} req - HTTP request từ Express
+ * @param {Object} req.params - `{ id }` — ID đơn hàng
+ * @param {Object} req.body - Dữ liệu cập nhật:
+ * @param {string} [req.body.status] - Trạng thái mới: `pending`|`processing`|`shipped`|`delivered`|`cancelled`
+ * @param {string} [req.body.paymentStatus] - Trạng thái thanh toán mới
+ * @param {string} [req.body.note] - Ghi chú (truyền `''` để xóa note)
+ * @param {Object} res - HTTP response — hàm này tự gọi res.json() để trả kết quả
+ * @throws {AppError} 404 nếu không tìm thấy đơn hàng
  */
 const updateOrderStatus = catchAsync(async (req, res) => {
   const { id } = req.params;
@@ -1818,7 +2005,17 @@ const updateOrderStatus = catchAsync(async (req, res) => {
 });
 
 /**
- * Quản lý Orders - Admin hủy đơn hàng và hoàn tồn kho
+ * Admin hủy đơn hàng và hoàn tồn kho — chuyên biệt hơn `updateOrderStatus`.
+ *
+ * Kiểm tra nghiệp vụ trước khi hủy: không hủy đơn đã bị hủy (tránh hoàn kho
+ * 2 lần), không hủy đơn đã giao. Toàn bộ trong transaction: cập nhật
+ * `status = 'cancelled'` + tăng `stockQuantity` theo từng item.
+ *
+ * @param {Object} req - HTTP request từ Express
+ * @param {Object} req.params - `{ id }` — ID đơn hàng cần hủy
+ * @param {Object} res - HTTP response — hàm này tự gọi res.json() để trả kết quả
+ * @throws {AppError} 404 nếu không tìm thấy đơn hàng
+ * @throws {AppError} 400 nếu đơn đã bị hủy hoặc đã giao
  */
 const adminCancelOrder = catchAsync(async (req, res) => {
   const { id } = req.params;
@@ -1864,7 +2061,17 @@ const adminCancelOrder = catchAsync(async (req, res) => {
 });
 
 /**
- * Quản lý Products - Cập nhật tồn kho trực tiếp (dùng cho trang Inventory)
+ * Ghi đè tồn kho sản phẩm bằng một giá trị tuyệt đối — dùng cho trang Inventory.
+ *
+ * Khác với `restockProduct` (cộng thêm + ghi log), hàm này đặt thẳng giá trị
+ * `stockQuantity` mà không tạo `InventoryLog`.
+ *
+ * @param {Object} req - HTTP request từ Express
+ * @param {Object} req.params - `{ id }` — ID sản phẩm
+ * @param {Object} req.body - `{ stockQuantity }` — Số lượng mới (số nguyên ≥ 0)
+ * @param {Object} res - HTTP response — hàm này tự gọi res.json() để trả kết quả
+ * @throws {AppError} 400 nếu stockQuantity không phải số nguyên hoặc âm
+ * @throws {AppError} 404 nếu không tìm thấy sản phẩm
  */
 const updateProductStock = catchAsync(async (req, res) => {
   const { id } = req.params;
@@ -1887,7 +2094,19 @@ const updateProductStock = catchAsync(async (req, res) => {
 });
 
 /**
- * Quản lý Products - Clone sản phẩm
+ * Tạo bản sao hoàn chỉnh (deep clone) của sản phẩm, bao gồm: thông tin cơ bản,
+ * danh mục, thuộc tính, biến thể (với SKU mới), thông số kỹ thuật, và gói bảo hành.
+ * Ảnh (`ProductImage`) không được sao chép — admin cần upload lại.
+ *
+ * Tên clone theo pattern `{tên gốc} (1)`, `(2)`... cho đến khi không trùng.
+ * Sản phẩm clone luôn có status `draft`. SKU mới: `SKU-{timestamp}-{random}`.
+ * Toàn bộ trong transaction — rollback toàn bộ nếu bất kỳ bước nào thất bại.
+ *
+ * @param {Object} req - HTTP request từ Express
+ * @param {Object} req.params - `{ id }` — ID sản phẩm gốc
+ * @param {Object} req.user - Thông tin admin đang đăng nhập
+ * @param {Object} res - HTTP response — hàm này tự gọi res.json() để trả kết quả
+ * @throws {AppError} 404 nếu không tìm thấy sản phẩm gốc
  */
 const cloneProduct = catchAsync(async (req, res) => {
   const { id } = req.params;
@@ -2033,7 +2252,16 @@ const cloneProduct = catchAsync(async (req, res) => {
 });
 
 /**
- * Quản lý Products - Thay đổi nhanh trạng thái sản phẩm
+ * Thay đổi nhanh trạng thái sản phẩm. Nếu không truyền `status` → tự động đảo
+ * ngược giữa `active` và `inactive` (toggle). Nếu truyền `status` → đặt thẳng.
+ *
+ * @param {Object} req - HTTP request từ Express
+ * @param {Object} req.params - `{ id }` — ID sản phẩm
+ * @param {Object} req.body - `{ status? }` — `active`|`inactive`|`draft` (tùy chọn)
+ * @param {Object} req.user - Thông tin admin đang đăng nhập
+ * @param {Object} res - HTTP response — hàm này tự gọi res.json() để trả kết quả
+ * @throws {AppError} 404 nếu không tìm thấy sản phẩm
+ * @throws {AppError} 400 nếu status không hợp lệ
  */
 const toggleProductStatus = catchAsync(async (req, res) => {
   const { id } = req.params;
@@ -2066,7 +2294,27 @@ const toggleProductStatus = catchAsync(async (req, res) => {
   });
 });
 
-// POST /api/admin/products/:productId/restock — Nhập hàng, tăng stock và ghi InventoryLog
+/**
+ * Nhập thêm hàng vào kho — cộng thêm số lượng và ghi `InventoryLog`.
+ *
+ * Khác với `updateProductStock` (ghi đè tuyệt đối), hàm này cộng thêm vào tồn
+ * kho hiện tại và tạo bản ghi audit log (số trước, số sau, người thực hiện, ghi chú).
+ *
+ * - Có `variantId`: tăng stock variant + tính lại tổng stock của Product (SUM variants).
+ * - Không có `variantId`: tăng stock trực tiếp trên Product.
+ * - Sau khi cập nhật → đồng bộ vector store cho chatbot AI (bất đồng bộ).
+ *
+ * @param {Object} req - HTTP request từ Express
+ * @param {Object} req.params - `{ productId }` — ID sản phẩm
+ * @param {Object} req.body - Dữ liệu nhập hàng:
+ * @param {number} req.body.quantity - Số lượng nhập thêm (số nguyên dương, bắt buộc)
+ * @param {number} [req.body.variantId] - ID biến thể (nếu nhập cho variant cụ thể)
+ * @param {string} [req.body.note] - Ghi chú nhập hàng
+ * @param {Object} req.user - Thông tin admin (lưu vào log `createdBy`)
+ * @param {Object} res - HTTP response — hàm này tự gọi res.json() để trả kết quả
+ * @throws {AppError} 400 nếu quantity không phải số nguyên dương
+ * @throws {AppError} 404 nếu không tìm thấy sản phẩm hoặc biến thể
+ */
 const restockProduct = catchAsync(async (req, res) => {
   const { productId } = req.params;
   const { variantId, quantity, note } = req.body;
@@ -2149,8 +2397,19 @@ const restockProduct = catchAsync(async (req, res) => {
 });
 
 /**
- * GET /api/admin/audit-logs — Lấy lịch sử thao tác admin từ DB
- * Query: page, limit, adminId, action, startDate, endDate
+ * Lấy nhật ký hành động admin từ DB, có phân trang và lọc. Kết quả kèm thông
+ * tin admin thực hiện (id, tên, email) qua join `admin` alias.
+ *
+ * @param {Object} req - HTTP request từ Express
+ * @param {Object} req.query - Query parameters (tất cả tùy chọn):
+ * @param {number} [req.query.page=1] - Trang hiện tại
+ * @param {number} [req.query.limit=20] - Số bản ghi mỗi trang (tối đa 100)
+ * @param {number} [req.query.adminId] - Lọc theo ID admin
+ * @param {string} [req.query.action] - Lọc theo loại hành động (ví dụ: `CREATE`, `DELETE`)
+ * @param {string} [req.query.entityType] - Lọc theo loại entity (ví dụ: `product`, `user`)
+ * @param {string} [req.query.startDate] - Lọc từ ngày (ISO string)
+ * @param {string} [req.query.endDate] - Lọc đến ngày (ISO string)
+ * @param {Object} res - HTTP response — hàm này tự gọi res.json() để trả kết quả
  */
 const getAuditLogs = catchAsync(async (req, res) => {
   const page = Math.max(1, parseInt(req.query.page, 10) || 1);
@@ -2200,7 +2459,12 @@ const getAuditLogs = catchAsync(async (req, res) => {
 // =============================================
 
 /**
- * GET /api/admin/analytics/order-status — Phân bổ trạng thái đơn hàng
+ * Trả về phân bổ số lượng đơn hàng theo từng trạng thái để vẽ biểu đồ.
+ * Kết quả: mảng `{ status, count, label }` — `label` là tên tiếng Việt.
+ *
+ * @param {Object} req - HTTP request từ Express
+ * @param {Object} req.query - `{ startDate? }` — Lọc từ ngày này trở đi (ISO string)
+ * @param {Object} res - HTTP response — hàm này tự gọi res.json() để trả kết quả
  */
 const getOrderStatusAnalytics = catchAsync(async (req, res) => {
   const { startDate } = req.query;
@@ -2234,7 +2498,15 @@ const getOrderStatusAnalytics = catchAsync(async (req, res) => {
 });
 
 /**
- * GET /api/admin/analytics/top-products — Top sản phẩm theo doanh thu hoặc số lượng
+ * Trả về sản phẩm bán chạy nhất theo doanh thu hoặc số lượng bán, chỉ tính
+ * đơn đã thanh toán (`paymentStatus = 'paid'`).
+ * Kết quả mỗi item: `{ productId, name, thumbnail, revenue, soldCount }`.
+ *
+ * @param {Object} req - HTTP request từ Express
+ * @param {Object} req.query - Query parameters:
+ * @param {string} [req.query.metric='revenue'] - Tiêu chí sắp xếp: `revenue` | `quantity`
+ * @param {number} [req.query.limit=5] - Số sản phẩm trả về (tối đa 20)
+ * @param {Object} res - HTTP response — hàm này tự gọi res.json() để trả kết quả
  */
 const getTopProductsAnalytics = catchAsync(async (req, res) => {
   const { metric = 'revenue', limit: qLimit = 5 } = req.query;
@@ -2292,8 +2564,18 @@ const getTopProductsAnalytics = catchAsync(async (req, res) => {
 });
 
 /**
- * GET /api/admin/analytics/revenue-by-category — Doanh thu theo danh mục
- * Dùng raw query vì Sequelize nested JOIN qua belongsToMany khó GROUP BY chính xác
+ * Trả về doanh thu theo danh mục — top 8 danh mục có doanh thu cao nhất, chỉ
+ * tính đơn đã thanh toán (`payment_status = 'paid'`).
+ *
+ * Dùng **raw SQL** thay vì Sequelize ORM vì cần JOIN qua bảng trung gian
+ * `product_categories` (many-to-many) và GROUP BY chính xác — Sequelize nested
+ * JOIN qua `belongsToMany` khó đảm bảo GROUP BY đúng.
+ *
+ * Kết quả mỗi item: `{ categoryId, categoryName, revenue, orderItemCount }`.
+ *
+ * @param {Object} req - HTTP request từ Express
+ * @param {Object} req.query - `{ startDate?, endDate? }` — Khoảng thời gian lọc
+ * @param {Object} res - HTTP response — hàm này tự gọi res.json() để trả kết quả
  */
 const getRevenueByCategoryAnalytics = catchAsync(async (req, res) => {
   const { startDate, endDate } = req.query;
@@ -2335,7 +2617,16 @@ const getRevenueByCategoryAnalytics = catchAsync(async (req, res) => {
 });
 
 /**
- * GET /api/admin/analytics/user-growth — Tăng trưởng user theo thời gian
+ * Trả về số user mới đăng ký theo từng mốc thời gian để vẽ biểu đồ xu hướng.
+ * Chỉ đếm `role = 'customer'`. Kết quả mỗi item: `{ date, newUsers }`.
+ *
+ * @param {Object} req - HTTP request từ Express
+ * @param {Object} req.query - Query parameters:
+ * @param {string} req.query.startDate - Ngày bắt đầu (ISO string, bắt buộc)
+ * @param {string} req.query.endDate - Ngày kết thúc (ISO string, bắt buộc)
+ * @param {string} [req.query.groupBy='day'] - Nhóm theo: `day` | `week` | `month`
+ * @param {Object} res - HTTP response — hàm này tự gọi res.json() để trả kết quả
+ * @throws {AppError} 400 nếu thiếu startDate hoặc endDate
  */
 const getUserGrowthAnalytics = catchAsync(async (req, res) => {
   const { startDate, endDate, groupBy = 'day' } = req.query;
@@ -2379,7 +2670,12 @@ const getUserGrowthAnalytics = catchAsync(async (req, res) => {
 });
 
 /**
- * GET /api/admin/analytics/payment-methods — Phân bổ phương thức thanh toán
+ * Trả về phân bổ số lượng đơn và doanh thu theo từng phương thức thanh toán
+ * (COD, MoMo, VNPay...), chỉ tính đơn đã thanh toán thành công.
+ * Kết quả mỗi item: `{ method, count, revenue }`.
+ *
+ * @param {Object} req - HTTP request từ Express (không dùng params/body/query)
+ * @param {Object} res - HTTP response — hàm này tự gọi res.json() để trả kết quả
  */
 const getPaymentMethodsAnalytics = catchAsync(async (req, res) => {
   const results = await adminRepository.aggregateOrders({
@@ -2403,7 +2699,13 @@ const getPaymentMethodsAnalytics = catchAsync(async (req, res) => {
 });
 
 /**
- * GET /api/admin/analytics/low-stock — Sản phẩm sắp hết hàng
+ * Trả về tối đa 20 sản phẩm có tồn kho thấp nhất (≤ threshold), sắp xếp tăng dần.
+ * Dùng cho dashboard cảnh báo hết hàng.
+ * Kết quả mỗi item: `{ id, name, sku, stockQuantity, thumbnail }`.
+ *
+ * @param {Object} req - HTTP request từ Express
+ * @param {Object} req.query - `{ threshold? }` — Ngưỡng tồn kho thấp (mặc định: 10)
+ * @param {Object} res - HTTP response — hàm này tự gọi res.json() để trả kết quả
  */
 const getLowStockAnalytics = catchAsync(async (req, res) => {
   const parsedThreshold = parseInt(req.query.threshold, 10);
@@ -2445,7 +2747,21 @@ const getLowStockAnalytics = catchAsync(async (req, res) => {
 });
 
 /**
- * GET /api/admin/reports/export — Xuất báo cáo CSV
+ * Xuất báo cáo dạng file CSV, tải thẳng về trình duyệt với BOM UTF-8 để
+ * Excel mở đúng ký tự tiếng Việt.
+ *
+ * Hỗ trợ 2 loại (`?type=`):
+ * - `orders` (mặc định): thông tin khách hàng, trạng thái, thanh toán, tổng tiền.
+ *   Có thể lọc theo ngày. Tối đa 5000 dòng.
+ * - `products`: tên, SKU, giá, tồn kho, trạng thái. Tối đa 5000 dòng.
+ *
+ * @param {Object} req - HTTP request từ Express
+ * @param {Object} req.query - Query parameters:
+ * @param {string} [req.query.type='orders'] - Loại báo cáo: `orders` | `products`
+ * @param {string} [req.query.startDate] - Lọc từ ngày (chỉ áp dụng cho `orders`)
+ * @param {string} [req.query.endDate] - Lọc đến ngày (chỉ áp dụng cho `orders`)
+ * @param {Object} res - HTTP response — hàm này gửi file CSV thay vì JSON
+ * @throws {AppError} 400 nếu type không hợp lệ
  */
 const exportReport = catchAsync(async (req, res) => {
   const { type = 'orders', startDate, endDate } = req.query;
@@ -2522,7 +2838,15 @@ const exportReport = catchAsync(async (req, res) => {
 });
 
 /**
- * GET /api/admin/chatbot/stats — Thống kê AI chatbot
+ * Trả về thống kê hoạt động của AI chatbot từ bảng `ChatMessage`.
+ *
+ * Các chỉ số: `totalSessions` (distinct sessionId), `totalMessages`, `avgMessagesPerSession`,
+ * `intentBreakdown` (đếm theo intent, chỉ user messages), `fallbackRate` (0–1),
+ * `avgResponseTimeMs`. Chỉ tính messages có `messageType = 'ai_chatbot'`.
+ *
+ * @param {Object} req - HTTP request từ Express
+ * @param {Object} req.query - `{ startDate?, endDate? }` — Khoảng thời gian lọc
+ * @param {Object} res - HTTP response — hàm này tự gọi res.json() để trả kết quả
  */
 const getChatbotStats = catchAsync(async (req, res) => {
   const { startDate, endDate } = req.query;

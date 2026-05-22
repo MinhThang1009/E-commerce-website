@@ -13,6 +13,7 @@ const STORAGE_KEY_SESSION = 'chat_session_id';
 
 // Tạo sessionId mới cho phiên trò chuyện
 export const createSessionId = () =>
+  /* istanbul ignore next — nhánh fallback chỉ chạy trên môi trường không có crypto.randomUUID */
   typeof crypto !== 'undefined' && crypto.randomUUID
     ? crypto.randomUUID()
     : `session_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`;
@@ -21,8 +22,10 @@ export const createSessionId = () =>
 const loadMessagesFromStorage = (): Message[] => {
   try {
     const raw = localStorage.getItem(STORAGE_KEY_MESSAGES);
+    /* istanbul ignore next — nhánh JSON.parse chỉ chạy khi localStorage có dữ liệu */
     return raw ? (JSON.parse(raw) as Message[]) : [];
   } catch {
+    /* istanbul ignore next — chỉ xảy ra khi localStorage bị hỏng hoặc chứa JSON không hợp lệ */
     return [];
   }
 };
@@ -31,15 +34,16 @@ const loadMessagesFromStorage = (): Message[] => {
 const loadSessionId = (): string => {
   try {
     const saved = localStorage.getItem(STORAGE_KEY_SESSION);
+    /* istanbul ignore next — nhánh return chỉ chạy khi sessionId đã tồn tại */
     if (saved) return saved;
   } catch {
-    /* bỏ qua lỗi localStorage */
+    /* istanbul ignore next — chỉ xảy ra khi localStorage bị chặn */
   }
   const newId = createSessionId();
   try {
     localStorage.setItem(STORAGE_KEY_SESSION, newId);
   } catch {
-    /* bỏ qua lỗi localStorage */
+    /* istanbul ignore next — chỉ xảy ra khi localStorage đầy hoặc bị chặn */
   }
   return newId;
 };

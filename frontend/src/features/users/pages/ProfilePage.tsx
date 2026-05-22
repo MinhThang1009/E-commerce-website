@@ -1,4 +1,4 @@
-/**
+﻿/**
  * @file ProfilePage.tsx
  * @layer Page
  * @feature users
@@ -22,10 +22,9 @@ import {
   useSetDefaultAddressMutation,
 } from '@/features/users';
 import { Address } from '@/types/user.types';
-import { useGetLoyaltyInfoQuery } from '@/features/loyalty';
 import { getErrorMsg } from '@/utils/error-utils';
 
-type TabKey = 'info' | 'password' | 'orders' | 'addresses' | 'loyalty';
+type TabKey = 'info' | 'password' | 'orders' | 'addresses';
 
 // Form trạng thái địa chỉ
 interface AddressForm {
@@ -55,14 +54,13 @@ const emptyAddressForm: AddressForm = {
 };
 
 const ProfilePage: React.FC = () => {
-  const { t, i18n } = useTranslation();
+  const { t } = useTranslation();
   const user = useAuthStore((s) => s.user);
   const updateUserStore = useAuthStore((s) => s.updateUser);
   const addNotification = useUiStore((s) => s.addNotification);
   const [activeTab, setActiveTab] = useState<TabKey>('info');
 
   const { data: currentUser, isLoading: isLoadingUser } = useGetCurrentUserQuery();
-  const { data: loyaltyData } = useGetLoyaltyInfoQuery();
   const { mutateAsync: updateProfile, isPending: isUpdating } = useUpdateProfileMutation();
   const { mutateAsync: changePassword, isPending: isChangingPassword } =
     useChangePasswordMutation();
@@ -377,20 +375,6 @@ const ProfilePage: React.FC = () => {
         </svg>
       ),
     },
-    {
-      key: 'loyalty',
-      label: t('profile.tabs.loyalty'),
-      icon: (
-        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            strokeWidth={2}
-            d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
-          />
-        </svg>
-      ),
-    },
   ];
 
   if (isLoadingUser) {
@@ -487,10 +471,7 @@ const ProfilePage: React.FC = () => {
                 </svg>
                 {t('profile.quickLinks.orders')}
               </Link>
-              <button
-                onClick={() => setActiveTab('loyalty')}
-                className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-amber-50 dark:bg-amber-900/20 text-amber-700 dark:text-amber-300 hover:bg-amber-100 dark:hover:bg-amber-800/30 text-sm font-medium transition-colors border border-amber-200 dark:border-amber-800"
-              >
+              <button className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-amber-50 dark:bg-amber-900/20 text-amber-700 dark:text-amber-300 hover:bg-amber-100 dark:hover:bg-amber-800/30 text-sm font-medium transition-colors border border-amber-200 dark:border-amber-800">
                 <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path
                     strokeLinecap="round"
@@ -499,7 +480,6 @@ const ProfilePage: React.FC = () => {
                     d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
                   />
                 </svg>
-                {t('profile.loyalty.pointsDisplay', { points: loyaltyData?.data?.points || 0 })}
               </button>
             </div>
           </div>
@@ -1031,123 +1011,6 @@ const ProfilePage: React.FC = () => {
                 ))}
               </div>
             )}
-          </div>
-        )}
-
-        {activeTab === 'loyalty' && (
-          <div className="bg-white dark:bg-neutral-900 rounded-2xl shadow-sm border border-neutral-100 dark:border-neutral-800 p-6">
-            <div className="flex items-center justify-between mb-8">
-              <div>
-                <h2 className="text-lg font-semibold text-neutral-900 dark:text-white">
-                  {t('profile.loyalty.title')}
-                </h2>
-                <p className="text-sm text-neutral-500 dark:text-neutral-400 mt-0.5">
-                  {t('profile.loyalty.subtitle')}
-                </p>
-              </div>
-              <div className="bg-amber-50 dark:bg-amber-900/20 px-6 py-3 rounded-2xl border border-amber-200 dark:border-amber-800 text-center">
-                <span className="block text-xs text-amber-600 dark:text-amber-400 font-medium uppercase tracking-wider mb-1">
-                  {t('profile.loyalty.totalPoints')}
-                </span>
-                <span className="text-2xl font-bold text-amber-700 dark:text-amber-300">
-                  {loyaltyData?.data?.points || 0}
-                </span>
-              </div>
-            </div>
-
-            <div className="overflow-x-auto">
-              <table className="w-full text-left">
-                <thead>
-                  <tr className="border-b border-neutral-100 dark:border-neutral-800">
-                    <th className="pb-4 text-xs font-semibold text-neutral-400 uppercase tracking-wider">
-                      {t('profile.loyalty.tableDate')}
-                    </th>
-                    <th className="pb-4 text-xs font-semibold text-neutral-400 uppercase tracking-wider">
-                      {t('profile.loyalty.tableType')}
-                    </th>
-                    <th className="pb-4 text-xs font-semibold text-neutral-400 uppercase tracking-wider text-right">
-                      {t('profile.loyalty.tablePoints')}
-                    </th>
-                    <th className="pb-4 text-xs font-semibold text-neutral-400 uppercase tracking-wider pl-8">
-                      {t('profile.loyalty.tableDesc')}
-                    </th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-neutral-100 dark:divide-neutral-800">
-                  {loyaltyData?.data?.history?.items?.length > 0 ? (
-                    // eslint-disable-next-line @typescript-eslint/no-explicit-any -- Loyalty history items
-                    loyaltyData.data.history.items.map((item: any) => (
-                      <tr
-                        key={item.id}
-                        className="group hover:bg-neutral-50 dark:hover:bg-neutral-800/40 transition-colors"
-                      >
-                        <td className="py-4 text-sm text-neutral-600 dark:text-neutral-400">
-                          {new Date(item.createdAt).toLocaleDateString(
-                            i18n.language === 'vi' ? 'vi-VN' : 'en-US',
-                          )}
-                        </td>
-                        <td className="py-4">
-                          <span
-                            className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
-                              item.type === 'earn'
-                                ? 'bg-emerald-50 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-300'
-                                : item.type === 'spend'
-                                  ? 'bg-amber-50 text-amber-700 dark:bg-amber-900/30 dark:text-amber-300'
-                                  : item.type === 'refund'
-                                    ? 'bg-blue-50 text-blue-700 dark:bg-primary-700/30 dark:text-blue-300'
-                                    : 'bg-neutral-100 text-neutral-700 dark:bg-neutral-800 dark:text-neutral-300'
-                            }`}
-                          >
-                            {item.type === 'earn'
-                              ? t('profile.loyalty.typeEarn')
-                              : item.type === 'spend'
-                                ? t('profile.loyalty.typeSpend')
-                                : item.type === 'refund'
-                                  ? t('profile.loyalty.typeRefund')
-                                  : t('profile.loyalty.typeAdjust')}
-                          </span>
-                        </td>
-                        <td
-                          className={`py-4 text-sm font-bold text-right ${item.points >= 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-amber-600 dark:text-amber-400'}`}
-                        >
-                          {item.points >= 0 ? `+${item.points}` : item.points}
-                        </td>
-                        <td className="py-4 text-sm text-neutral-600 dark:text-neutral-400 pl-8">
-                          {item.description}
-                        </td>
-                      </tr>
-                    ))
-                  ) : (
-                    <tr>
-                      <td
-                        colSpan={4}
-                        className="py-12 text-center text-neutral-400 dark:text-neutral-500 italic"
-                      >
-                        {t('profile.loyalty.noHistory')}
-                      </td>
-                    </tr>
-                  )}
-                </tbody>
-              </table>
-            </div>
-
-            <div className="mt-8 p-4 bg-neutral-50 dark:bg-neutral-800/50 rounded-2xl border border-neutral-100 dark:border-neutral-800">
-              <h4 className="text-sm font-semibold text-neutral-700 dark:text-neutral-300 mb-2 flex items-center gap-1.5">
-                <svg className="w-4 h-4 text-amber-500" fill="currentColor" viewBox="0 0 20 20">
-                  <path
-                    fillRule="evenodd"
-                    d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z"
-                    clipRule="evenodd"
-                  />
-                </svg>
-                {t('profile.loyalty.policyTitle')}
-              </h4>
-              <ul className="text-xs text-neutral-500 dark:text-neutral-400 space-y-1.5 list-disc list-inside">
-                <li>{t('profile.loyalty.policy1')}</li>
-                <li>{t('profile.loyalty.policy2')}</li>
-                <li>{t('profile.loyalty.policy3')}</li>
-              </ul>
-            </div>
           </div>
         )}
       </div>

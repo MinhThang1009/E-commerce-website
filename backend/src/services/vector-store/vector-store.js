@@ -1,16 +1,66 @@
 /**
- * @file vectorStore.js
- * @layer Service
- * @module ai
- * @description Business logic layer cho ai
+ * @file vector-store.js
+ * @layer Service (shared)
+ * @description Kho lưu trữ vector sản phẩm + hybrid search engine cho chatbot.
+ *
+ * Hybrid search kết hợp 2 phương pháp tìm kiếm:
+ *   1. Semantic search (cosine similarity) — hiểu ý nghĩa ngữ nghĩa
+ *      Ví dụ: "điện thoại Apple" tìm được "iPhone 15 Pro" dù không chứa từ "iPhone"
+ *   2. Keyword search (BM25-inspired) — bắt exact match tên/brand
+ *      Ví dụ: "iPhone 15" bắt chính xác sản phẩm có "iPhone 15" trong tên
+ *
+ * Dữ liệu lưu in-memory (mảng items) + persist xuống file JSON (data/vector-db.json).
+ * Mỗi item gồm: vector 1024 chiều + text gốc + metadata sản phẩm (tên, giá, stock...).
  */
 const logger = require('@utils/logger');
 const embeddingService = require('@services/embedding/unified-embedding');
 const path = require('path');
 const fs = require('fs');
 
-// Jina v3 / multilingual-e5-large-instruct / multilingual-e5-large đều cho 1024d
+/** Số chiều vector của tất cả providers (Jina v3 / e5-instruct / e5-base đều cho 1024d). */
 const EXPECTED_DIM = 1024;
+
+/**
+ * Độ dài tối đa (ký tự) của embedding text — cắt bớt để embedding model xử lý hiệu quả.
+ * 1500 ký tự đủ chứa tên + brand + category + mô tả ngắn mà không vượt token limit của model.
+ */
+const MAX_EMBEDDING_TEXT_LENGTH = 1500;
+
+/**
+ * Ngưỡng cosine similarity tối thiểu mặc định cho hybrid search.
+ * Sản phẩm có score < 0.45 → coi như không liên quan, bị lọc khỏi kết quả.
+ * Giá trị này được chọn qua thử nghiệm trên tập sản phẩm công nghệ tiếng Việt:
+ *   - Quá cao (≥0.6): bỏ sót nhiều kết quả hợp lệ (ví dụ "điện thoại Apple" không ra "iPhone")
+ *   - Quá thấp (≤0.3): trả về quá nhiều sản phẩm không liên quan
+ */
+const DEFAULT_MIN_SCORE = 0.45;
+
+/**
+ * Điểm cộng thêm khi sản phẩm khớp CẢ semantic (vector) LẪN keyword.
+ * Sản phẩm xuất hiện ở cả 2 phương pháp → khả năng liên quan cao hơn → boost score.
+ * Giữ nhỏ (0.05) để không lấn át semantic score gốc.
+ */
+const OVERLAP_BOOST = 0.05;
+
+/**
+ * Hệ số tối đa cho điểm keyword-only khi inject vào kết quả hybrid.
+ * Sản phẩm chỉ match keyword (không match semantic) → score tối đa = DEFAULT_MIN_SCORE + 0.15 = 0.60.
+ * Giữ thấp (0.15) vì keyword-only không có xác nhận ngữ nghĩa → kém chắc chắn hơn.
+ */
+const KEYWORD_INJECTION_MAX_BOOST = 0.15;
+
+/**
+ * Trọng số khi từ khóa khớp trong TÊN sản phẩm.
+ * Cao hơn KEYWORD_TEXT_WEIGHT vì tên là trường định danh quan trọng nhất —
+ * "iPhone 15" trong tên chính xác hơn "iPhone 15" trong đoạn mô tả kỹ thuật.
+ */
+const KEYWORD_NAME_WEIGHT = 3;
+
+/**
+ * Trọng số khi từ khóa khớp trong TEXT mô tả (brand, category, description...).
+ * Thấp hơn tên vì mô tả ít đặc trưng cho sản phẩm cụ thể hơn.
+ */
+const KEYWORD_TEXT_WEIGHT = 1;
 
 /**
  * [Indexing — Text Enrichment] Tạo chuỗi text phong phú từ product data để embedding.
@@ -32,9 +82,18 @@ function buildEmbeddingText(product) {
       ? 'Còn hàng'
       : 'Hết hàng',
   ];
-  return parts.filter(Boolean).join('. ').substring(0, 1500);
+  return parts.filter(Boolean).join('. ').substring(0, MAX_EMBEDDING_TEXT_LENGTH);
 }
 
+/**
+ * Singleton hybrid search engine — kết hợp semantic (cosine) + keyword (BM25) search.
+ *
+ * Vòng đời:
+ * 1. Constructor → load file JSON từ disk (async, fire-and-forget)
+ * 2. Product model hooks gọi upsertProduct() mỗi khi tạo/sửa sản phẩm
+ * 3. RAGPipeline gọi hybridSearch() khi user gửi tin nhắn chatbot
+ * 4. save() ghi lại file JSON sau mỗi upsert
+ */
 class HybridVectorStore {
   constructor() {
     // __dirname = backend/src/services/vector-store → 3 levels up = backend/
@@ -44,6 +103,11 @@ class HybridVectorStore {
     this.loadPromise = this.load();
   }
 
+  /**
+   * Tải dữ liệu vector store từ file JSON trên ổ đĩa vào bộ nhớ.
+   * Được gọi tự động trong constructor (fire-and-forget) — server không block chờ load xong.
+   * Nếu file không tồn tại hoặc lỗi JSON: khởi động với danh sách rỗng, không crash server.
+   */
   async load() {
     try {
       if (fs.existsSync(this.storagePath)) {
@@ -59,7 +123,11 @@ class HybridVectorStore {
     }
   }
 
-  // Phải await khi gọi — đảm bảo file ghi xong trước khi process tiếp theo đọc
+  /**
+   * Lưu toàn bộ vector store hiện tại xuống file JSON.
+   * Phải await khi gọi — đảm bảo file ghi xong trước khi process tiếp theo đọc lại.
+   * Lỗi ghi file: chỉ log warning, không throw để tránh làm hỏng request đang xử lý.
+   */
   async save() {
     try {
       const dataDir = path.dirname(this.storagePath);
@@ -73,16 +141,28 @@ class HybridVectorStore {
     }
   }
 
+  /**
+   * Xóa toàn bộ vectors khỏi bộ nhớ (không xóa file trên ổ đĩa).
+   * Dùng trong test để reset trạng thái giữa các test cases.
+   */
   clear() {
     this.items = [];
     logger.debug('🗑️ Đã xóa toàn bộ vector store');
   }
 
   /**
-   * [Indexing — Upsert] Thêm hoặc cập nhật 1 sản phẩm vào vector store.
-   * Dùng unified embedding service (Jina v3 → e5-instruct → e5-base), 1024d.
+   * [Indexing — Upsert] Thêm hoặc cập nhật 1 sản phẩm vào vector store (bộ nhớ).
+   *
+   * Sau khi gọi hàm này, vector mới chỉ tồn tại trong `this.items` (RAM).
+   * Để lưu xuống file JSON (data/vector-db.json) và không mất khi server restart,
+   * caller phải gọi `await this.save()` sau đó.
+   *
+   * Trong thực tế, Product model hooks (afterCreate/afterUpdate) gọi hàm này và
+   * sau đó tự gọi `save()` — nên từ phía ngoài không cần lo việc này.
+   * Chỉ cần chú ý khi gọi `upsertProduct` trực tiếp trong script hoặc test.
+   *
    * @param {Object} product - Plain object sản phẩm (đã qua enrichProductData + toJSON).
-   * @throws {Error} Nếu embedding thất bại hoặc sai chiều.
+   * @throws {Error} Nếu embedding thất bại hoặc vector trả về sai số chiều (không phải 1024d).
    */
   async upsertProduct(product) {
     try {
@@ -122,8 +202,51 @@ class HybridVectorStore {
     }
   }
 
+  /**
+   * Tính cosine similarity giữa 2 vector — đo độ tương đồng ngữ nghĩa.
+   *
+   * **Cosine similarity là gì?**
+   * Đo góc giữa 2 vector trong không gian nhiều chiều (ở đây 1024 chiều).
+   * Hai vector cùng hướng (cùng ý nghĩa) → cos = 1; vuông góc (không liên quan) → cos = 0.
+   *
+   * **Công thức toán học:**
+   * ```
+   *   cos(θ) = (A·B) / (|A| × |B|)
+   *
+   *   Trong đó:
+   *   - A·B (dot product) = Σ(a_i × b_i) — tích vô hướng, đo mức "đồng hướng"
+   *   - |A| (magnitude)   = √Σ(a_i²)     — độ dài vector A
+   *   - |B| (magnitude)   = √Σ(b_i²)     — độ dài vector B
+   * ```
+   *
+   * Chia cho tích magnitude giúp normalize: vector dài hay ngắn không ảnh hưởng kết quả,
+   * chỉ hướng (ý nghĩa ngữ nghĩa) mới quan trọng.
+   *
+   * **Tại sao loop qua 1024 chiều?**
+   * Mỗi embedding model đặt "ý nghĩa" vào 1024 con số — mỗi chiều đại diện cho 1 khía cạnh
+   * ngữ nghĩa trừu tượng (không đặt tên được). Để so sánh 2 vector phải tính trên toàn bộ
+   * 1024 chiều — không thể bỏ bớt mà không mất thông tin.
+   *
+   * **Phạm vi kết quả (thực tế với embedding vectors):**
+   * - ≥ 0.70: rất liên quan
+   * - ≥ 0.45: có liên quan (ngưỡng mặc định DEFAULT_MIN_SCORE)
+   * - < 0.30: không liên quan
+   *
+   * **Tại sao trả 0 khi magnitude = 0?**
+   * Magnitude = 0 → vector toàn số 0 (zero vector) → không mang thông tin ngữ nghĩa.
+   * Chia cho 0 → Infinity/NaN → trả 0 là giá trị an toàn nhất (không liên quan).
+   *
+   * @param {number[]} v1 - Vector thứ nhất (1024 chiều).
+   * @param {number[]} v2 - Vector thứ hai (1024 chiều).
+   * @returns {number} Cosine similarity (0-1), trả 0 nếu input không hợp lệ hoặc zero vector.
+   */
   cosineSimilarity(v1, v2) {
+    // Bước 1: Kiểm tra input — 2 vector phải tồn tại và cùng số chiều
     if (!v1 || !v2 || v1.length !== v2.length) return 0;
+
+    // Bước 2: Duyệt 1 lần qua tất cả 1024 chiều, tính đồng thời 3 giá trị:
+    //   - dotProduct: tích vô hướng A·B (tử số trong công thức)
+    //   - mag1, mag2: bình phương magnitude |A|², |B|² (sẽ sqrt ở bước 3)
     let dotProduct = 0;
     let mag1 = 0;
     let mag2 = 0;
@@ -132,50 +255,105 @@ class HybridVectorStore {
       mag1 += v1[i] * v1[i];
       mag2 += v2[i] * v2[i];
     }
+
+    // Bước 3: Tính mẫu số = |A| × |B| (tích 2 magnitude)
     const magnitude = Math.sqrt(mag1) * Math.sqrt(mag2);
-    // Guard: magnitude 0 hoặc Infinity/NaN → trả 0 thay vì NaN/Infinity
+
+    // Bước 4: Guard — magnitude 0 (zero vector) hoặc Infinity/NaN → trả 0 thay vì NaN/Infinity
     if (magnitude === 0 || !isFinite(magnitude)) return 0;
+
+    // Bước 5: Cosine similarity = tử / mẫu
     return dotProduct / magnitude;
   }
 
+  /**
+   * Tách text thành danh sách từ (token) để dùng cho keyword search.
+   *
+   * **Regex Unicode `\p{L}\p{N}` là gì?**
+   * - `\p{L}` = bất kỳ ký tự "Letter" nào trong Unicode, bao gồm:
+   *   - Tiếng Việt có dấu: ă, â, ê, ô, ơ, ư, đ và tất cả tổ hợp dấu (à, á, ả, ã, ạ...)
+   *   - Tiếng Anh: a-z, A-Z
+   *   - Các ngôn ngữ khác: CJK, Cyrillic, Arabic...
+   * - `\p{N}` = bất kỳ ký tự "Number" nào (0-9 và các chữ số Unicode khác)
+   * - Flag `u` (unicode) bật chế độ Unicode cho regex — bắt buộc để `\p{...}` hoạt động
+   * - `[^\p{L}\p{N}]` = ký tự KHÔNG phải chữ cái/số → thay bằng khoảng trắng (dấu câu, emoji...)
+   *
+   * Nếu dùng regex thông thường `[^a-zA-Z0-9]` thì "điện thoại" bị tách thành "i n tho i"
+   * vì ệ, ạ không nằm trong a-z. Unicode regex giữ nguyên "điện" và "thoại".
+   *
+   * @param {string} text - Text cần tokenize.
+   * @returns {string[]} Mảng các từ viết thường, mỗi từ dài ≥2 ký tự (loại bỏ noise 1 ký tự).
+   */
   _tokenize(text) {
-    return text
-      .toLowerCase()
-      .replace(/[^\p{L}\p{N}]/gu, ' ')
-      .split(/\s+/)
-      .filter((t) => t.length > 1);
+    return (
+      text
+        .toLowerCase()
+        // Thay mọi ký tự không phải chữ/số bằng space — giữ nguyên dấu tiếng Việt
+        .replace(/[^\p{L}\p{N}]/gu, ' ')
+        // Tách theo khoảng trắng (1 hoặc nhiều space liên tiếp)
+        .split(/\s+/)
+        // Lọc bỏ token 1 ký tự (noise: "a", "1") — chỉ giữ từ có nghĩa ≥2 ký tự
+        .filter((t) => t.length > 1)
+    );
   }
 
   /**
    * [Retrieval — Keyword] BM25-inspired keyword search — bắt exact match mà vector embedding có thể miss.
-   * Tokenize query + item text bằng Unicode-aware regex, tính score (name ×3, text ×1) × coverage ratio.
+   *
+   * **Tại sao cần keyword search bên cạnh vector search?**
+   * Vector embedding giỏi hiểu ý nghĩa ("điện thoại Apple" → "iPhone") nhưng đôi khi miss
+   * exact match quan trọng. Ví dụ: user gõ "iPhone 15 Pro Max 256GB" — embedding có thể match
+   * sản phẩm iPhone khác, trong khi keyword search sẽ bắt đúng model "15 Pro Max".
+   *
+   * **Cách tính score:**
+   * ```
+   * score_thô = Σ (mỗi token khớp):
+   *   + KEYWORD_NAME_WEIGHT (3) nếu token có trong TÊN sản phẩm
+   *   + KEYWORD_TEXT_WEIGHT (1) nếu token có trong TEXT mô tả
+   *
+   * score_cuối = score_thô × (số_token_khớp / tổng_token_query)
+   * ```
+   *
+   * **Tại sao name weight × 3?**
+   * Tên sản phẩm ("iPhone 15 Pro") đặc trưng hơn nhiều so với mô tả ("Hỗ trợ Apple iPhone...").
+   * Nếu "iPhone 15" xuất hiện trong tên → đây là match chắc chắn hơn trong đoạn mô tả kỹ thuật.
+   *
+   * **Coverage ratio (nhân với matched/total) là gì?**
+   * Ngăn sản phẩm match 1 từ trong query 5 từ được score cao.
+   * Ví dụ: query "iPhone 15 Pro Max 256" (5 tokens) — sản phẩm khớp 4/5 token
+   * sẽ được score cao hơn sản phẩm chỉ khớp 1/5 token.
+   *
    * @param {string} query - Query text đã normalize.
-   * @param {number} [limit=5] - Số kết quả tối đa.
-   * @returns {Array<Object>} Items có keywordScore > 0, sắp xếp giảm dần.
+   * @param {number} [limit=5] - Số kết quả tối đa trả về.
+   * @returns {Array<Object>} Items có keywordScore > 0, sắp xếp giảm dần theo keywordScore.
    */
   _keywordSearch(query, limit = 5) {
-    const queryTokens = [...new Set(this._tokenize(query))];
-    if (queryTokens.length === 0) return [];
+    // Loại bỏ token trùng lặp trong query — "iPhone iPhone 15" → ["iphone", "15"]
+    const uniqueQueryTokens = [...new Set(this._tokenize(query))];
+    if (uniqueQueryTokens.length === 0) return [];
 
     const results = [];
     for (const item of this.items) {
       const nameTokens = new Set(this._tokenize(item.metadata.name || ''));
       const textTokens = new Set(this._tokenize(item.text || ''));
-      let score = 0;
-      let matched = 0;
+      let rawScore = 0;
+      let matchedTokenCount = 0;
 
-      for (const token of queryTokens) {
+      for (const token of uniqueQueryTokens) {
         const inName = nameTokens.has(token);
         const inText = textTokens.has(token);
         if (inName || inText) {
-          matched++;
-          score += (inName ? 3 : 0) + (inText ? 1 : 0);
+          matchedTokenCount++;
+          // Token trong tên sản phẩm có giá trị gấp 3 lần so với trong mô tả
+          rawScore += (inName ? KEYWORD_NAME_WEIGHT : 0) + (inText ? KEYWORD_TEXT_WEIGHT : 0);
         }
       }
 
-      if (matched > 0) {
-        score *= matched / queryTokens.length;
-        results.push({ ...item, keywordScore: score });
+      if (matchedTokenCount > 0) {
+        // Nhân với tỷ lệ token khớp để ưu tiên sản phẩm khớp nhiều từ hơn
+        const coverageRatio = matchedTokenCount / uniqueQueryTokens.length;
+        const finalScore = rawScore * coverageRatio;
+        results.push({ ...item, keywordScore: finalScore });
       }
     }
 
@@ -183,23 +361,30 @@ class HybridVectorStore {
   }
 
   /**
-   * [Retrieval — Semantic] Vector-only cosine similarity search.
-   * Unified model (Jina v3 / e5-instruct / e5-base) xử lý cả VI lẫn EN.
-   * @param {string} query - Query text.
-   * @param {number} [limit=5] - Số kết quả tối đa.
-   * @param {number} [minScore=0] - Ngưỡng similarity tối thiểu.
-   * @returns {Promise<Array<Object>>} Items có score ≥ minScore, sắp xếp giảm dần.
+   * [Retrieval — Semantic] Vector-only cosine similarity search — tìm kiếm theo ý nghĩa ngữ nghĩa.
+   *
+   * Chuyển câu query thành vector 1024 chiều (type='query'), sau đó so sánh với tất cả
+   * vectors trong store bằng cosine similarity. Trả về các sản phẩm có score ≥ minScore.
+   *
+   * Unified model (Jina v3 / e5-instruct / e5-base) hỗ trợ cả tiếng Việt lẫn tiếng Anh —
+   * không cần dịch query trước khi search.
+   *
+   * @param {string} query - Query text (câu hỏi của user).
+   * @param {number} [limit=5] - Số kết quả tối đa trả về.
+   * @param {number} [minScore=0] - Ngưỡng cosine similarity tối thiểu (0-1).
+   *   Mặc định 0 để lấy tất cả — caller tự lọc. hybridSearch truyền DEFAULT_MIN_SCORE (0.45).
+   * @returns {Promise<Array<Object>>} Items có score ≥ minScore, sắp xếp giảm dần theo score.
    */
   async _vectorSearch(query, limit, minScore) {
     const queryVector = await embeddingService.generateEmbedding(query, 'query');
 
-    const scores = this.items.map((item) => {
-      // Tương thích ngược với vector-db.json cũ (field vectorEn)
+    const scoredItems = this.items.map((item) => {
+      // Tương thích ngược với vector-db.json cũ (field vectorEn từ schema trước khi unified)
       const docVector = item.vector || item.vectorEn;
       return { ...item, score: this.cosineSimilarity(queryVector, docVector) };
     });
 
-    return scores
+    return scoredItems
       .filter((item) => isFinite(item.score) && item.score >= minScore)
       .sort((a, b) => b.score - a.score)
       .slice(0, limit);
@@ -207,16 +392,37 @@ class HybridVectorStore {
 
   /**
    * [Retrieval — Fusion] Hybrid search: kết hợp semantic (cosine) + keyword (BM25-inspired).
-   * Chạy song song _vectorSearch + _keywordSearch, boost overlap (+0.05), inject keyword-only results.
+   *
+   * **Tại sao kết hợp 2 phương pháp?**
+   * - Semantic search giỏi hiểu ý nghĩa nhưng có thể miss exact match quan trọng.
+   * - Keyword search bắt exact match nhưng không hiểu đồng nghĩa.
+   * - Kết hợp (Reciprocal Rank Fusion) → bù nhược điểm của nhau.
+   *
+   * **Reciprocal Rank Fusion là gì?**
+   * Kỹ thuật kết hợp 2 danh sách xếp hạng thành 1 danh sách tốt hơn.
+   * Sản phẩm xuất hiện ở cả 2 danh sách → được boost score → nằm trên cao.
+   * Sản phẩm chỉ có ở keyword list → inject vào với score thấp hơn.
+   *
+   * **Công thức score:**
+   * 1. Vector results: score = cosine similarity (0.45 → 1.0)
+   *    + OVERLAP_BOOST (0.05) nếu cũng match keyword
+   *
+   * 2. Keyword-only results (không có trong vector results):
+   *    score = DEFAULT_MIN_SCORE + (keywordScore / maxKw) × KEYWORD_INJECTION_MAX_BOOST
+   *    = 0.45 + tỷ_lệ × 0.15  →  tối đa 0.60  →  luôn thấp hơn vector results tốt
+   *    Flag `lowConfidence: true` để RAGPipeline biết xử lý cẩn thận hơn.
+   *
    * @param {string} query - Query text đã normalize.
    * @param {number} [limit=5] - Số kết quả tối đa trả về.
-   * @param {number} [minScore=0.45] - Ngưỡng similarity tối thiểu cho vector search.
+   * @param {number} [minScore=0.45] - Ngưỡng cosine similarity tối thiểu (DEFAULT_MIN_SCORE).
    * @returns {Promise<Array<Object>>} Kết quả merged, sắp xếp theo score giảm dần.
+   *   Mỗi item có `score` (0-1) và optional `lowConfidence: true` (keyword-only).
    */
-  async hybridSearch(query, limit = 5, minScore = 0.45) {
+  async hybridSearch(query, limit = 5, minScore = DEFAULT_MIN_SCORE) {
     try {
       await this.loadPromise;
 
+      // Bước 1: Chạy song song 2 phương pháp search — lấy gấp đôi limit để có dư cho merge
       const [vectorResults, keywordResults] = await Promise.all([
         this._vectorSearch(query, limit * 2, minScore),
         Promise.resolve(this._keywordSearch(query, limit * 2)),
@@ -224,23 +430,29 @@ class HybridVectorStore {
 
       if (vectorResults.length === 0 && keywordResults.length === 0) return [];
 
+      // Bước 2: Tạo Sets để kiểm tra overlap O(1) — sản phẩm nào xuất hiện ở CẢ 2 phương pháp
       const vectorIds = new Set(vectorResults.map((r) => r.metadata.id));
       const keywordIds = new Set(keywordResults.map((r) => r.metadata.id));
 
-      // Boost vector results cũng khớp keyword
+      // Bước 3: Overlap boost — sản phẩm match cả semantic LẪN keyword → đáng tin hơn
+      // Math.min(1, ...) đảm bảo score không vượt 1.0
       vectorResults.forEach((r) => {
         if (keywordIds.has(r.metadata.id)) {
-          r.score = Math.min(1, r.score + 0.05);
+          r.score = Math.min(1, r.score + OVERLAP_BOOST);
         }
       });
 
-      // Inject keyword-only results (vector missed) — score dựa trên keyword quality
-      const maxKw = keywordResults.reduce((m, r) => Math.max(m, r.keywordScore), 1);
+      // Bước 4: Inject keyword-only results (vector missed)
+      // Ví dụ: "iPhone 15" match exact trong tên sản phẩm nhưng embedding không nhận ra
+      // maxKw defaults to 1: prevent chia cho 0 khi mảng rỗng, đảm bảo tỷ lệ ≤ 1
+      const maxKeywordScore = keywordResults.reduce((max, r) => Math.max(max, r.keywordScore), 1);
       const injected = keywordResults
         .filter((r) => !vectorIds.has(r.metadata.id))
         .map((r) => ({
           ...r,
-          score: minScore + (r.keywordScore / maxKw) * 0.15,
+          // Score = sàn (minScore) + phần thưởng tỷ lệ với chất lượng keyword match
+          score: minScore + (r.keywordScore / maxKeywordScore) * KEYWORD_INJECTION_MAX_BOOST,
+          // Flag cho RAGPipeline biết result này chỉ dựa trên keyword, chưa có xác nhận ngữ nghĩa
           lowConfidence: true,
         }));
 
@@ -248,6 +460,7 @@ class HybridVectorStore {
         logger.debug(`[HYBRID] Injected ${injected.length} keyword-only results`);
       }
 
+      // Bước 5: Merge cả 2 nguồn, sort theo score giảm dần, cắt lấy top N
       return [...vectorResults, ...injected].sort((a, b) => b.score - a.score).slice(0, limit);
     } catch (error) {
       logger.error('Lỗi tìm kiếm vector:', error.message);

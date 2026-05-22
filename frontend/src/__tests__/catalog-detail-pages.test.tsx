@@ -125,17 +125,6 @@ jest.mock('@/features/catalog', () => {
   };
 });
 
-// ── Mock news API ───────────────────────────────────────────────
-let mockGetNewsBySlugQuery = { data: null, isLoading: true };
-let mockGetNewsQuery = { data: null, isLoading: false };
-let mockGetRelatedNewsQuery = { data: { news: [] }, isLoading: false };
-
-jest.mock('@/features/content/api/news-api', () => ({
-  useGetNewsBySlugQuery: () => mockGetNewsBySlugQuery,
-  useGetNewsQuery: () => mockGetNewsQuery,
-  useGetRelatedNewsQuery: () => mockGetRelatedNewsQuery,
-}));
-
 // ── Mock product API ────────────────────────────────────────────
 let mockGetProductsQuery = { data: null, isLoading: true, error: null };
 
@@ -211,68 +200,8 @@ jest.mock('@/routes/paths', () => ({
 }));
 
 // ── Import pages sau mock ───────────────────────────────────────
-import NewsDetailPage from '@/features/content/pages/NewsDetailPage';
 import CategoryPage from '@/features/catalog/pages/CategoryPage';
 import NewArrivalsPage from '@/features/catalog/pages/NewArrivalsPage';
-
-// Khai báo kiểu cho các biến module-level mock
-declare let mockCategoryPageIsLoading: boolean;
-declare let mockCategoryPageCategoryInfo: Record<string, unknown> | null;
-
-// ═══════════════════════════════════════════════════════════════
-// NewsDetailPage
-// ═══════════════════════════════════════════════════════════════
-describe('NewsDetailPage', () => {
-  beforeEach(() => {
-    jest.clearAllMocks();
-    mockGetNewsBySlugQuery = { data: null, isLoading: true };
-    mockGetNewsQuery = { data: null, isLoading: false };
-    mockGetRelatedNewsQuery = { data: { news: [] }, isLoading: false };
-  });
-
-  it('loading state — hiển thị spinner khi đang tải bài viết', () => {
-    render(<NewsDetailPage />);
-    expect(screen.getByTestId('loading-spinner')).toBeInTheDocument();
-  });
-
-  it('not-found state — hiển thị thông báo không tìm thấy khi không có dữ liệu', () => {
-    mockGetNewsBySlugQuery = { data: null, isLoading: false };
-    render(<NewsDetailPage />);
-    expect(screen.getByText('news.notFound')).toBeInTheDocument();
-  });
-
-  it('not-found state — hiển thị link quay lại danh sách tin tức', () => {
-    mockGetNewsBySlugQuery = { data: null, isLoading: false };
-    render(<NewsDetailPage />);
-    const backLink = screen.getByText('news.backToList');
-    expect(backLink).toBeInTheDocument();
-    expect(backLink.closest('a')).toHaveAttribute('href', '/news');
-  });
-
-  it('render nội dung bài viết khi có dữ liệu', () => {
-    mockGetNewsBySlugQuery = {
-      data: {
-        news: {
-          id: '1',
-          title: 'Bài viết test',
-          slug: 'bai-viet-test',
-          content: '<p>Nội dung bài viết</p>',
-          thumbnail: null,
-          category: 'Tin tức',
-          tags: null,
-          viewCount: 100,
-          createdAt: '2025-01-01',
-          author: { firstName: 'Nguyễn', lastName: 'A', avatar: null },
-        },
-      },
-      isLoading: false,
-    };
-    render(<NewsDetailPage />);
-    // Tiêu đề xuất hiện ít nhất 1 lần (breadcrumb + h1)
-    const allTitles = screen.getAllByText('Bài viết test');
-    expect(allTitles.length).toBeGreaterThan(0);
-  });
-});
 
 // ═══════════════════════════════════════════════════════════════
 // CategoryPage (mocked — CategoryPage dùng import.meta.env trong Helmet)
@@ -344,47 +273,6 @@ describe('NewArrivalsPage', () => {
     mockGetProductsQuery = { data: null, isLoading: false, error: new Error('Server error') };
     render(<NewArrivalsPage />);
     expect(screen.getByText('newArrivals.errorTitle')).toBeInTheDocument();
-  });
-});
-
-// ═══════════════════════════════════════════════════════════════
-// NewsDetailPage — interaction tests
-// ═══════════════════════════════════════════════════════════════
-describe('NewsDetailPage: interactions', () => {
-  beforeEach(() => {
-    jest.clearAllMocks();
-    mockGetNewsBySlugQuery = { data: null, isLoading: true };
-    mockGetRelatedNewsQuery = { data: { news: [] }, isLoading: false };
-  });
-
-  it('loading → spinner present', () => {
-    // Arrange — API đang loading
-    mockGetNewsBySlugQuery = { data: null, isLoading: true };
-    // Act
-    render(<NewsDetailPage />);
-    // Assert
-    expect(screen.getByTestId('loading-spinner')).toBeInTheDocument();
-  });
-
-  it('back button → visible khi không tìm thấy bài viết', () => {
-    // Arrange — bài viết không tồn tại
-    mockGetNewsBySlugQuery = { data: null, isLoading: false };
-    // Act
-    render(<NewsDetailPage />);
-    // Assert — link quay lại danh sách xuất hiện
-    expect(screen.getByText('news.backToList')).toBeInTheDocument();
-  });
-
-  it('click back button → không crash, link trỏ đúng route', () => {
-    // Arrange
-    mockGetNewsBySlugQuery = { data: null, isLoading: false };
-    // Act
-    render(<NewsDetailPage />);
-    const backLink = screen.getByText('news.backToList').closest('a');
-    expect(backLink).toBeInTheDocument();
-    // Assert — click không crash
-    fireEvent.click(backLink!);
-    expect(backLink).toHaveAttribute('href', '/news');
   });
 });
 
@@ -468,68 +356,6 @@ describe('NewArrivalsPage: interactions', () => {
     render(<NewArrivalsPage />);
     // Assert — Pagination mock được render
     expect(screen.getByTestId('pagination')).toBeInTheDocument();
-  });
-});
-
-// ═══════════════════════════════════════════════════════════════
-// NewsDetailPage: more interactions
-// ═══════════════════════════════════════════════════════════════
-describe('NewsDetailPage: more interactions', () => {
-  const newsItem = {
-    news: {
-      id: '10',
-      title: 'Bài viết tương tác',
-      slug: 'bai-viet-tuong-tac',
-      content: '<p>Nội dung test</p>',
-      thumbnail: '/img/test.jpg',
-      category: 'Tin công nghệ',
-      tags: 'tech,review',
-      viewCount: 200,
-      createdAt: '2025-01-10',
-      author: { firstName: 'Minh', lastName: 'Quang', avatar: null },
-    },
-  };
-
-  beforeEach(() => {
-    jest.clearAllMocks();
-    mockGetNewsBySlugQuery = { data: newsItem, isLoading: false };
-    mockGetNewsQuery = { data: null, isLoading: false };
-    mockGetRelatedNewsQuery = { data: { news: [] }, isLoading: false };
-  });
-
-  it('click social share button Facebook → không crash', () => {
-    // Arrange
-    render(<NewsDetailPage />);
-    // Share buttons render với text "F", "T", "L"
-    const facebookBtn = screen.getByText('F');
-    expect(facebookBtn).toBeInTheDocument();
-    // Act — click share Facebook
-    fireEvent.click(facebookBtn);
-    // Assert — page vẫn hiển thị bình thường (title xuất hiện ≥1 lần: breadcrumb + h1)
-    const allTitles = screen.getAllByText('Bài viết tương tác');
-    expect(allTitles.length).toBeGreaterThan(0);
-  });
-
-  it('related news section hiển thị khi isLoading=false và không có bài liên quan', () => {
-    // Arrange — mockGetRelatedNewsQuery trả về empty → RelatedNewsList render null
-    render(<NewsDetailPage />);
-    // Act — click vào tiêu đề "news.related"
-    const relatedTitle = screen.getByText('news.related');
-    fireEvent.click(relatedTitle);
-    // Assert — section tiêu đề vẫn hiển thị
-    expect(relatedTitle).toBeInTheDocument();
-  });
-
-  it('click thumbnail image → không crash', () => {
-    // Arrange — thumbnail có trong data
-    render(<NewsDetailPage />);
-    const img = document.querySelector('img[src="/img/test.jpg"]');
-    expect(img).toBeInTheDocument();
-    // Act
-    fireEvent.click(img!);
-    // Assert — page không crash (title xuất hiện ≥1 lần: breadcrumb + h1)
-    const allTitles = screen.getAllByText('Bài viết tương tác');
-    expect(allTitles.length).toBeGreaterThan(0);
   });
 });
 

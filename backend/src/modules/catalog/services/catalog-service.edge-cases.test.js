@@ -76,8 +76,10 @@ function makeService(repoOverrides = {}) {
     createProductSpecifications: jest.fn().mockResolvedValue(),
     createProductAttributes: jest.fn().mockResolvedValue(),
     clearProductAttributes: jest.fn().mockResolvedValue(),
-    createProductVariants: jest.fn().mockResolvedValue(),
+    createProductVariants: jest.fn().mockResolvedValue([]),
     clearProductVariants: jest.fn().mockResolvedValue(),
+    createProductImages: jest.fn().mockResolvedValue([]),
+    clearProductImages: jest.fn().mockResolvedValue(),
     findWarrantyPackagesByIds: jest.fn().mockResolvedValue([]),
     setProductWarrantyPackages: jest.fn().mockResolvedValue(),
     runInTransaction: jest.fn((fn) => fn({})),
@@ -180,6 +182,78 @@ describe('updateCategory — patch không đầy đủ fields', () => {
 
     expect(cat.name).toBe('Keep Me');
     expect(cat.description).toBe('Keep Me Too');
+  });
+
+  it('patch có image → category.image được cập nhật', async () => {
+    const { service, catalogRepository } = makeService();
+    const cat = {
+      id: 4,
+      name: 'Cat',
+      description: '',
+      image: null,
+      parentId: null,
+      isActive: true,
+      sortOrder: 0,
+    };
+    catalogRepository.findCategoryById.mockResolvedValue(cat);
+
+    await service.updateCategory({ id: 4, patch: { image: 'https://new-image.jpg' } });
+
+    expect(cat.image).toBe('https://new-image.jpg');
+  });
+
+  it('patch có parentId → category.parentId được cập nhật', async () => {
+    const { service, catalogRepository } = makeService();
+    const cat = {
+      id: 5,
+      name: 'Child',
+      description: '',
+      image: null,
+      parentId: null,
+      isActive: true,
+      sortOrder: 0,
+    };
+    catalogRepository.findCategoryById.mockResolvedValue(cat);
+
+    await service.updateCategory({ id: 5, patch: { parentId: 10 } });
+
+    expect(cat.parentId).toBe(10);
+  });
+
+  it('patch có isActive → category.isActive được cập nhật', async () => {
+    const { service, catalogRepository } = makeService();
+    const cat = {
+      id: 6,
+      name: 'Cat',
+      description: '',
+      image: null,
+      parentId: null,
+      isActive: true,
+      sortOrder: 0,
+    };
+    catalogRepository.findCategoryById.mockResolvedValue(cat);
+
+    await service.updateCategory({ id: 6, patch: { isActive: false } });
+
+    expect(cat.isActive).toBe(false);
+  });
+
+  it('patch có sortOrder → category.sortOrder được cập nhật', async () => {
+    const { service, catalogRepository } = makeService();
+    const cat = {
+      id: 7,
+      name: 'Cat',
+      description: '',
+      image: null,
+      parentId: null,
+      isActive: true,
+      sortOrder: 0,
+    };
+    catalogRepository.findCategoryById.mockResolvedValue(cat);
+
+    await service.updateCategory({ id: 7, patch: { sortOrder: 5 } });
+
+    expect(cat.sortOrder).toBe(5);
   });
 });
 
@@ -1668,5 +1742,115 @@ describe('_buildProductDetailResponse — price/compareAtPrice fallback branches
     expect(result.availableVariants[0].compareAtPrice).toBe('9000000');
     // availableVariants[1].compareAtPrice: '9500000' (truthy, không fallback)
     expect(result.availableVariants[1].compareAtPrice).toBe('9500000');
+  });
+});
+
+// ════════════════════════════════════════════════════════════════════════════
+// getProductById — line 632: product.status !== 'active' → 404
+// ════════════════════════════════════════════════════════════════════════════
+
+describe('getProductById — sản phẩm không active → 404', () => {
+  it('ném AppError 404 khi sản phẩm tìm thấy nhưng status không phải active', async () => {
+    const { service, catalogRepository } = makeService();
+    const inactiveProduct = makeProductRow({ id: 1, status: 'draft' });
+    catalogRepository.findProductByIdWithFullDetails.mockResolvedValue(inactiveProduct);
+
+    await expect(service.getProductById({ id: 1 })).rejects.toMatchObject({
+      statusCode: 404,
+    });
+  });
+});
+
+// ════════════════════════════════════════════════════════════════════════════
+// getProductBySlug — line 663: product.status !== 'active' → 404
+// ════════════════════════════════════════════════════════════════════════════
+
+describe('getProductBySlug — sản phẩm không active → 404', () => {
+  it('ném AppError 404 khi sản phẩm tìm thấy nhưng status không phải active', async () => {
+    const { service, catalogRepository } = makeService();
+    const inactiveProduct = makeProductRow({ id: 2, slug: 'my-product', status: 'inactive' });
+    catalogRepository.findProductBySlugWithFullDetails.mockResolvedValue(inactiveProduct);
+
+    await expect(service.getProductBySlug({ slug: 'my-product' })).rejects.toMatchObject({
+      statusCode: 404,
+    });
+  });
+});
+
+// ════════════════════════════════════════════════════════════════════════════
+// createProduct — line 1366: variantId truthy → đẩy variant images vào rows
+// ════════════════════════════════════════════════════════════════════════════
+
+describe('createProduct — tạo ảnh cho từng variant khi variantId có giá trị', () => {
+  it('gọi createProductImages với variantImageRows khi variant có images và ID', async () => {
+    const { service, catalogRepository } = makeService();
+
+    const createdProduct = { id: 100 };
+    const createdVariants = [{ id: 501 }, { id: 502 }];
+
+    catalogRepository.runInTransaction.mockImplementation(async (fn) => fn({}));
+    catalogRepository.createProduct.mockResolvedValue(createdProduct);
+    catalogRepository.createProductVariants.mockResolvedValue(createdVariants);
+    catalogRepository.createProductImages.mockResolvedValue([]);
+    catalogRepository.findProductByIdWithFullDetails.mockResolvedValue(
+      makeProductRow({ id: 100, status: 'active', variants: createdVariants }),
+    );
+    catalogRepository.setProductCategories.mockResolvedValue();
+    catalogRepository.findCategoriesByIds.mockResolvedValue([{ id: 1 }]);
+
+    await service.createProduct({
+      payload: {
+        name: 'Test Product',
+        basePrice: 10000,
+        categoryIds: [1],
+        variants: [
+          { sku: 'V1', price: 10000, images: ['https://img1.jpg', 'https://img2.jpg'] },
+          { sku: 'V2', price: 20000, images: ['https://img3.jpg'] },
+        ],
+      },
+    });
+
+    // createProductImages phải được gọi với variant images (có variantId)
+    const imageCalls = catalogRepository.createProductImages.mock.calls;
+    const variantImageCall = imageCalls.find(
+      (call) =>
+        call[0] && call[0].some((row) => row.variantId !== undefined && row.variantId !== null),
+    );
+    expect(variantImageCall).toBeDefined();
+    expect(variantImageCall[0][0].variantId).toBe(501);
+    expect(variantImageCall[0][0].imageUrl).toBe('https://img1.jpg');
+  });
+});
+
+// ════════════════════════════════════════════════════════════════════════════
+// updateProduct — line 1487: variantId truthy → đẩy variant images trong patch
+// ════════════════════════════════════════════════════════════════════════════
+
+describe('updateProduct — tạo ảnh cho variant mới trong patch', () => {
+  it('gọi createProductImages với variantId khi patch.variants có images', async () => {
+    const { service, catalogRepository } = makeService();
+
+    const existingProduct = { id: 200, name: 'Existing', status: 'active' };
+    const newVariant = { id: 601 };
+
+    catalogRepository.findProductByPk.mockResolvedValue(existingProduct);
+    catalogRepository.createProductVariants.mockResolvedValue([newVariant]);
+    catalogRepository.findProductByIdWithFullDetails.mockResolvedValue(
+      makeProductRow({ id: 200, status: 'active' }),
+    );
+
+    await service.updateProduct({
+      id: 200,
+      patch: {
+        variants: [{ sku: 'NEW-V1', price: 15000, images: ['https://variant-img.jpg'] }],
+      },
+    });
+
+    const imageCalls = catalogRepository.createProductImages.mock.calls;
+    const variantImageCall = imageCalls.find(
+      (call) => call[0] && call[0].some((row) => row.variantId === 601),
+    );
+    expect(variantImageCall).toBeDefined();
+    expect(variantImageCall[0][0].imageUrl).toBe('https://variant-img.jpg');
   });
 });

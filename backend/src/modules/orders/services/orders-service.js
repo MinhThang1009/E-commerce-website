@@ -45,7 +45,7 @@ class OrdersService {
     emailGateway,
     eventBus,
     logger,
-    constants, // SHIPPING_*
+    constants, // SHIPPING_FREE_THRESHOLD
   }) {
     this.repo = ordersRepository;
     this.emailGateway = emailGateway;

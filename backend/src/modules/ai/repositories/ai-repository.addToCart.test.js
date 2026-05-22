@@ -79,4 +79,23 @@ describe('SequelizeAiRepository.addToCart', () => {
     expect(Cart.create).toHaveBeenCalledWith({ userId: 2, status: 'active' });
     expect(CartItem.create).toHaveBeenCalledWith(expect.objectContaining({ cartId: 'new-cart' }));
   });
+
+  test('đã có item cùng product+variant → cập nhật quantity thay vì tạo mới (line 114)', async () => {
+    const existingItem = {
+      id: 'existing-item',
+      quantity: 3,
+      update: jest.fn().mockResolvedValue({ id: 'existing-item', quantity: 5 }),
+    };
+    CartItem.findOne.mockResolvedValue(existingItem);
+    const { repo } = makeRepo({
+      findByPk: jest.fn().mockResolvedValue({ price: '200000' }),
+    });
+
+    const result = await repo.addToCart({ userId: 1, productId: 10, variantId: 5, quantity: 2 });
+
+    // Phải gọi update thay vì create
+    expect(existingItem.update).toHaveBeenCalledWith({ quantity: 5 }); // 3 + 2 = 5
+    expect(CartItem.create).not.toHaveBeenCalled();
+    expect(result.quantity).toBe(5);
+  });
 });

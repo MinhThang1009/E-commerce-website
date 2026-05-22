@@ -57,7 +57,6 @@ const BrandsPage: React.FC = () => {
   const [form] = Form.useForm();
   const [isModalVisible, setIsModalVisible] = useState(false);
   const [editingBrand, setEditingBrand] = useState<any>(null);
-  const [_fileList, setFileList] = useState<unknown[]>([]);
 
   const { data: brandsData, isLoading, refetch } = useGetBrandsQuery();
   const { mutateAsync: createBrand, isPending: isCreating } = useCreateBrandMutation();
@@ -78,7 +77,6 @@ const BrandsPage: React.FC = () => {
       setIsModalVisible(false);
       setEditingBrand(null);
       form.resetFields();
-      setFileList([]);
       refetch();
     } catch (error) {
       toastError(getErrorMsg(error, t('common.errorOccurred')));
@@ -99,7 +97,6 @@ const BrandsPage: React.FC = () => {
     setEditingBrand(null);
     setIsModalVisible(true);
     form.resetFields();
-    setFileList([]);
     form.setFieldsValue({ isActive: true });
   };
 
@@ -114,11 +111,6 @@ const BrandsPage: React.FC = () => {
       website: brand.website,
       isActive: brand.isActive,
     });
-    if (brand.logoUrl) {
-      setFileList([{ uid: '-1', name: 'logo', status: 'done', url: brand.logoUrl }]);
-    } else {
-      setFileList([]);
-    }
   };
 
   const columns = [
@@ -280,12 +272,7 @@ const BrandsPage: React.FC = () => {
             </Form.Item>
 
             <Form.Item name="logoUrl" label={t('admin.brands.form.logo')}>
-              <ImageUpload
-                type="brands"
-                multiple={false}
-                value={form.getFieldValue('logoUrl')}
-                onChange={(val) => form.setFieldsValue({ logoUrl: val })}
-              />
+              <ImageUpload type="brands" multiple={false} />
             </Form.Item>
 
             <Form.Item

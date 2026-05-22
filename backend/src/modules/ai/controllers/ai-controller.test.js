@@ -62,7 +62,8 @@ describe('AIController', () => {
       );
     });
 
-    test('400 khi service throw lỗi với statusCode=400', async () => {
+    test('400 khi service throw lỗi với statusCode=400 (empty message → early return)', async () => {
+      // Trường hợp này message rỗng → controller trả về sớm trước khi gọi service
       const err = new Error('Tin nhắn không hợp lệ');
       err.statusCode = 400;
       aiService.handleMessage.mockRejectedValue(err);
@@ -74,8 +75,28 @@ describe('AIController', () => {
       await controller.handleMessage(req, res, next);
 
       expect(res.status).toHaveBeenCalledWith(400);
+    });
+
+    test('400 khi service throw lỗi statusCode=400 với message hợp lệ → logger.warn và trả về 400 (lines 29-30)', async () => {
+      // Message hợp lệ → vượt validation → gọi service → service throw 400
+      const err = new Error('Tin nhắn quá dài hoặc không hợp lệ');
+      err.statusCode = 400;
+      aiService.handleMessage.mockRejectedValue(err);
+
+      const req = {
+        body: { message: 'Xin chào tôi muốn mua laptop', userId: 1, sessionId: 's' },
+        locale: 'vi',
+      };
+      const res = makeRes();
+      const next = jest.fn();
+
+      await controller.handleMessage(req, res, next);
+
+      // Lines 29-30: logger.warn được gọi và trả về 400
+      expect(logger.warn).toHaveBeenCalledWith('Chatbot input không hợp lệ:', expect.any(Object));
+      expect(res.status).toHaveBeenCalledWith(400);
       expect(res.json).toHaveBeenCalledWith(
-        expect.objectContaining({ status: 'error', message: 'Tin nhắn không hợp lệ' }),
+        expect.objectContaining({ status: 'error', message: 'Tin nhắn quá dài hoặc không hợp lệ' }),
       );
     });
 

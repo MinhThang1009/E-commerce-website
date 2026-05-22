@@ -38,6 +38,18 @@ describe('validateMessage', () => {
     const r = validateMessage('a'.repeat(MAX_MESSAGE_LENGTH));
     expect(r.valid).toBe(true);
   });
+
+  test('không hợp lệ khi chỉ gồm dấu câu, không có chữ cái hay chữ số', () => {
+    // Line 112: !/[\p{L}\p{N}]/u.test(trimmed) → false branch
+    const r = validateMessage('!!! ???');
+    expect(r.valid).toBe(false);
+    expect(r.reason).toContain('không hợp lệ');
+  });
+
+  test('không hợp lệ khi chỉ là dấu phẩy và khoảng trắng', () => {
+    const r = validateMessage('  ,,,  ');
+    expect(r.valid).toBe(false);
+  });
 });
 
 // ── expandAbbreviations ────────────────────────────────────────────────────────

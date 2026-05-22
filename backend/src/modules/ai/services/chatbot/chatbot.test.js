@@ -28,6 +28,13 @@ jest.mock('@models', () => ({
   Op: {},
 }));
 
+jest.mock('@utils/logger', () => ({
+  info: jest.fn(),
+  warn: jest.fn(),
+  error: jest.fn(),
+  debug: jest.fn(),
+}));
+
 // Mock vectorStore để tránh đọc vector-db.json khi load chatbotService.js
 jest.mock('@services/vector-store/vector-store', () => ({
   items: [],

@@ -176,6 +176,44 @@ describe('OrdersService', () => {
         statusCode: 404,
       });
     });
+
+    test('đơn hàng ở trạng thái shipped → cập nhật thành delivered và trả về kết quả', async () => {
+      const order = {
+        id: 5,
+        number: 'ORD-20240101-0001',
+        status: 'shipped',
+        paymentMethod: 'banking',
+        paymentStatus: 'pending',
+        reload: jest.fn().mockResolvedValue(undefined),
+      };
+      repo.findOrderByIdAndUserId.mockResolvedValue(order);
+      repo.saveOrder.mockResolvedValue(order);
+
+      const result = await service.confirmReceived({ id: 5, userId: 1 });
+
+      expect(order.status).toBe('delivered');
+      expect(order.paymentStatus).toBe('pending'); // không phải cod → không đổi
+      expect(repo.saveOrder).toHaveBeenCalledWith(order);
+      expect(result.data.status).toBe('delivered');
+      expect(result.data.id).toBe(5);
+    });
+
+    test('đơn hàng COD → cập nhật paymentStatus thành paid khi xác nhận nhận hàng', async () => {
+      const order = {
+        id: 6,
+        number: 'ORD-20240101-0002',
+        status: 'processing',
+        paymentMethod: 'cod',
+        paymentStatus: 'pending',
+        reload: jest.fn().mockResolvedValue(undefined),
+      };
+      repo.findOrderByIdAndUserId.mockResolvedValue(order);
+      repo.saveOrder.mockResolvedValue(order);
+
+      await service.confirmReceived({ id: 6, userId: 1 });
+
+      expect(order.paymentStatus).toBe('paid');
+    });
   });
 
   describe('updateOrderStatus', () => {

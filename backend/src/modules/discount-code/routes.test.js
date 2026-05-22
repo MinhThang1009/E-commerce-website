@@ -86,6 +86,32 @@ function makeCode(overrides = {}) {
   };
 }
 
+describe('GET /api/discount-codes', () => {
+  beforeEach(() => {
+    DiscountCode.findAndCountAll.mockReset();
+  });
+
+  test('200 và trả về danh sách mã giảm giá còn hiệu lực', async () => {
+    const activeCodes = [makeCode({ id: 1 }), makeCode({ id: 2, code: 'SAVE20', value: '20.00' })];
+    DiscountCode.findAndCountAll.mockResolvedValue({ rows: activeCodes, count: 2 });
+
+    const res = await request.get('/api/discount-codes');
+
+    expect(res.status).toBe(200);
+    expect(res.body.status).toBe('success');
+    expect(res.body.data.discountCodes).toHaveLength(2);
+  });
+
+  test('200 và trả về mảng rỗng khi không có mã nào còn hiệu lực', async () => {
+    DiscountCode.findAndCountAll.mockResolvedValue({ rows: [], count: 0 });
+
+    const res = await request.get('/api/discount-codes');
+
+    expect(res.status).toBe(200);
+    expect(res.body.data.discountCodes).toEqual([]);
+  });
+});
+
 describe('POST /api/discount-codes/apply', () => {
   beforeEach(() => {
     DiscountCode.findOne.mockReset();

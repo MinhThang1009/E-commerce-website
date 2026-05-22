@@ -959,3 +959,122 @@ describe('validateCart — item không có Product (line 457-458)', () => {
     expect(result.hasIssues).toBe(true);
   });
 });
+
+// ─── _assertStock — variant stock không đủ khi addToCart (line 107) ─────────
+
+describe('_assertStock — variant stock không đủ trong addToCart (line 107)', () => {
+  it('ném 400 khi variant.stockQuantity < quantity trong addToCart', async () => {
+    const { service, cartRepository } = buildService();
+    const product = {
+      id: 1,
+      basePrice: 500000,
+      defaultVariant: { stockQuantity: 10 },
+    };
+    const variant = { id: 5, stockQuantity: 2, price: 500000 };
+
+    cartRepository.findProductById.mockResolvedValue(product);
+    cartRepository.findVariantByIdAndProductId.mockResolvedValue(variant);
+
+    // quantity = 5 nhưng variant stock = 2 → _assertStock ném 400
+    await expect(
+      service.addToCart({
+        user: { id: 1 },
+        cookieSessionId: null,
+        body: { productId: 1, variantId: 5, quantity: 5 },
+      }),
+    ).rejects.toMatchObject({ statusCode: 400, message: expect.stringContaining('tồn kho') });
+  });
+});
+
+// ─── clearCart — guest có cookieSessionId (line 300) ─────────────────────────
+
+describe('clearCart — guest có cookieSessionId → tìm cart theo session (line 300)', () => {
+  it('gọi findActiveCartBySessionId khi guest có cookieSessionId', async () => {
+    const { service, cartRepository } = buildService();
+    const guestCart = { id: 30, status: 'active' };
+    cartRepository.findActiveCartBySessionId.mockResolvedValue(guestCart);
+
+    const result = await service.clearCart({ user: null, cookieSessionId: 'sess-abc' });
+
+    expect(cartRepository.findActiveCartBySessionId).toHaveBeenCalledWith('sess-abc');
+    expect(cartRepository.clearCartItems).toHaveBeenCalledWith(30);
+    expect(result.message).toBe('cart.cleared');
+  });
+});
+
+// ─── mergeCart — không có cookieSessionId → trả về getCart (line 380) ────────
+
+describe('mergeCart — không có cookieSessionId → trả về getCart ngay (line 380)', () => {
+  it('trả về cart user khi không có cookieSessionId', async () => {
+    const { service, cartRepository } = buildService();
+    cartRepository.findOrCreateActiveCartByUserId.mockResolvedValue({ id: 5 });
+
+    const result = await service.mergeCart({
+      user: { id: 1 },
+      cookieSessionId: null,
+    });
+
+    // Không gọi findActiveCartBySessionId (không có session)
+    expect(cartRepository.findActiveCartBySessionId).not.toHaveBeenCalled();
+    // Trả về getCart result: data.id từ cart user
+    expect(result.data.id).toBe(5);
+  });
+});
+
+// ─── mergeCart — sessionCart không tồn tại → trả về getCart (line 385) ───────
+
+describe('mergeCart — sessionCart không tìm thấy → trả về getCart ngay (line 385)', () => {
+  it('trả về cart user khi session cart không tồn tại trong DB', async () => {
+    const { service, cartRepository } = buildService();
+    cartRepository.findActiveCartBySessionId.mockResolvedValue(null); // cart session không tồn tại
+    cartRepository.findOrCreateActiveCartByUserId.mockResolvedValue({ id: 7 });
+
+    const result = await service.mergeCart({
+      user: { id: 1 },
+      cookieSessionId: 'sess-gone',
+    });
+
+    expect(cartRepository.findActiveCartBySessionId).toHaveBeenCalledWith('sess-gone');
+    expect(result.data.id).toBe(7);
+  });
+});
+
+// ─── mergeCart — clearSessionCookie là function → được gọi (line 436) ────────
+
+describe('mergeCart — clearSessionCookie là function → được gọi sau merge (line 436)', () => {
+  it('gọi clearSessionCookie() sau khi merge thành công', async () => {
+    const { service, cartRepository } = buildService();
+    const guestCart = { id: 20, status: 'active' };
+    cartRepository.findActiveCartBySessionId.mockResolvedValue(guestCart);
+    cartRepository.findOrCreateActiveCartByUserId.mockResolvedValue({ id: 10 });
+    cartRepository.findCartItemsForMerge.mockResolvedValue([]);
+    cartRepository.findActiveCartByUserId.mockResolvedValue({ id: 10 });
+
+    const clearSessionCookie = jest.fn();
+
+    await service.mergeCart({
+      user: { id: 1 },
+      cookieSessionId: 'sess-old',
+      clearSessionCookie,
+    });
+
+    expect(clearSessionCookie).toHaveBeenCalledTimes(1);
+  });
+});
+
+// ─── validateCart — guest có cookieSessionId → tìm cart theo session (line 449) ─
+
+describe('validateCart — guest có cookieSessionId → tìm cart theo session (line 449)', () => {
+  it('gọi findActiveCartBySessionId khi guest có cookieSessionId', async () => {
+    const { service, cartRepository } = buildService();
+    cartRepository.findActiveCartBySessionId.mockResolvedValue(null); // không có cart
+
+    const result = await service.validateCart({
+      user: null,
+      cookieSessionId: 'sess-guest',
+    });
+
+    expect(cartRepository.findActiveCartBySessionId).toHaveBeenCalledWith('sess-guest');
+    expect(result).toEqual({ hasIssues: false, items: [] });
+  });
+});

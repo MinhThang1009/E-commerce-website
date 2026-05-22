@@ -43,6 +43,10 @@ jest.mock('@models/category', () => ({}));
 jest.mock('@models/product-image', () => ({}));
 jest.mock('@models/product-variant', () => ({}));
 
+// @models barrel — dùng trong afterBulkDestroy hook (lazy require)
+const mockProductFindAll = jest.fn().mockResolvedValue([]);
+jest.mock('@models', () => ({ Product: { findAll: mockProductFindAll } }));
+
 // Capture hooks và model khi sequelize.define() được gọi
 let capturedHooks = {};
 let capturedFields = {};
@@ -620,6 +624,53 @@ describe('Product model: shippingInfo setter', () => {
 
   it('số (typeof number) → lưu nguyên (else-branch)', () => {
     expect(callSetter(42)).toBe(42);
+  });
+});
+
+// ─────────────────────────────────────────────────────────────────────────────
+// afterBulkDestroy hook — sync vector store sau bulk delete (lines 402-419)
+// ─────────────────────────────────────────────────────────────────────────────
+describe('Product model: afterBulkDestroy hook', () => {
+  const logger = require('@utils/logger');
+
+  beforeEach(() => {
+    jest.clearAllMocks();
+    mockVectorStore.items = [
+      { metadata: { id: 1 } },
+      { metadata: { id: 2 } },
+      { metadata: { id: 3 } },
+    ];
+  });
+
+  it('xóa vectors của products không còn trong DB và gọi save', async () => {
+    // Chỉ còn id 1 và 3 trong DB — id 2 đã bị xóa
+    mockProductFindAll.mockResolvedValueOnce([{ id: 1 }, { id: 3 }]);
+
+    await capturedHooks.afterBulkDestroy();
+
+    expect(mockVectorStore.items).toHaveLength(2);
+    expect(mockVectorStore.items.find((i) => i.metadata.id === 2)).toBeUndefined();
+    expect(mockVectorStore.save).toHaveBeenCalled();
+  });
+
+  it('không gọi save khi không có vector nào bị xóa', async () => {
+    // Tất cả products vẫn còn trong DB
+    mockProductFindAll.mockResolvedValueOnce([{ id: 1 }, { id: 2 }, { id: 3 }]);
+
+    await capturedHooks.afterBulkDestroy();
+
+    expect(mockVectorStore.items).toHaveLength(3);
+    expect(mockVectorStore.save).not.toHaveBeenCalled();
+  });
+
+  it('không throw khi xảy ra lỗi trong hook', async () => {
+    mockProductFindAll.mockRejectedValueOnce(new Error('DB error'));
+
+    await expect(capturedHooks.afterBulkDestroy()).resolves.not.toThrow();
+    expect(logger.error).toHaveBeenCalledWith(
+      expect.stringContaining('Lỗi sync vector store sau bulk delete'),
+      expect.any(Error),
+    );
   });
 });
 

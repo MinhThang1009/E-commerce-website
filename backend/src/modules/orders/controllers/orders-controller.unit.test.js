@@ -485,6 +485,31 @@ describe('OrdersController.repayOrder', () => {
 // ─────────────────────────────────────────────────────────────────────────────
 
 describe('OrdersController.confirmReceived', () => {
+  it('trả về 200 với message và data khi xác nhận thành công', async () => {
+    const serviceResult = {
+      message: 'orders.deliveryConfirmed',
+      data: { id: 8, number: 'ORD-001', status: 'delivered' },
+    };
+    const ordersService = makeMockOrdersService({
+      confirmReceived: jest.fn().mockResolvedValue(serviceResult),
+    });
+    const controller = new OrdersController({ ordersService });
+    const req = makeReq({ params: { id: '8' }, user: { id: 10 } });
+    const res = makeRes();
+    const next = makeNext();
+
+    await controller.confirmReceived(req, res, next);
+
+    expect(ordersService.confirmReceived).toHaveBeenCalledWith({ id: '8', userId: 10 });
+    expect(res.status).toHaveBeenCalledWith(200);
+    expect(res.json).toHaveBeenCalledWith({
+      status: 'success',
+      message: 'orders.deliveryConfirmed',
+      data: { id: 8, number: 'ORD-001', status: 'delivered' },
+    });
+    expect(next).not.toHaveBeenCalled();
+  });
+
   it('gọi next(err) khi confirmReceived thất bại', async () => {
     const err = new Error('Đơn hàng không ở trạng thái shipped');
     err.statusCode = 400;

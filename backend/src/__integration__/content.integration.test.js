@@ -1,6 +1,7 @@
 require('module-alias/register');
 const sequelize = require('@config/sequelize');
 const { Feedback, User } = require('@models');
+const { Op } = require('sequelize');
 
 const TS = Date.now();
 let author;

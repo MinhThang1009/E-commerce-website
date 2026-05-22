@@ -290,18 +290,18 @@ describe('GET /api/orders/:id — lấy chi tiết đơn hàng', () => {
 // ============================================================
 
 describe('GET /api/orders/shipping-estimate — tính phí vận chuyển', () => {
-  test('Subtotal 500000, weight 1kg → dưới ngưỡng miễn phí → shippingCost = null', async () => {
+  test('Subtotal 500000 → dưới ngưỡng miễn phí → shippingCost = null (tính theo km trên FE)', async () => {
     const res = await request
-      .get('/api/orders/shipping-estimate?subtotal=500000&weight=1')
+      .get('/api/orders/shipping-estimate?subtotal=500000')
       .set('Authorization', 'Bearer test-token');
 
     expect(res.status).toBe(200);
     expect(res.body.data.shippingCost).toBeNull();
   });
 
-  test('Subtotal 5000000 (ngưỡng miễn phí), weight 5kg → phí ship = 0', async () => {
+  test('Subtotal 5000000 (ngưỡng miễn phí) → phí ship = 0', async () => {
     const res = await request
-      .get('/api/orders/shipping-estimate?subtotal=5000000&weight=5')
+      .get('/api/orders/shipping-estimate?subtotal=5000000')
       .set('Authorization', 'Bearer test-token');
 
     expect(res.status).toBe(200);

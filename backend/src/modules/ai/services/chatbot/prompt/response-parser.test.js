@@ -111,6 +111,98 @@ describe('parseAIResponse — number mismatch (line 62)', () => {
   });
 });
 
+// ─── hasNegationContext — pos === Infinity khi không có keyword nào trong response (line 109) ─
+
+describe('parseAIResponse — extractProductsFromText: product words không xuất hiện trong response (line 109)', () => {
+  test('sản phẩm có tên không xuất hiện trong response text → không được bổ sung vào extras', () => {
+    const prods = [
+      {
+        id: 50,
+        name: 'Laptop Dell Inspiron 15 3520',
+        price: 15000000,
+        basePrice: 15000000,
+        slug: 'laptop-dell-inspiron-15',
+        thumbnail: null,
+        inStock: true,
+        stockQuantity: 5,
+      },
+    ];
+    // Response hoàn toàn không đề cập đến "dell" hay "inspiron"
+    const aiText = JSON.stringify({
+      response: 'Bạn có thể xem các sản phẩm phù hợp trên website của chúng tôi.',
+      matchedProducts: [],
+      suggestions: [],
+      intent: 'general',
+    });
+
+    const result = parseAIResponse(aiText, prods, 'laptop rẻ');
+    // Không có sản phẩm nào được bổ sung vì words không xuất hiện trong response
+    expect(result.products).toHaveLength(0);
+  });
+});
+
+// ─── extractProductsFromText — product passed 75% threshold → push extras (lines 171-187) ─
+
+describe('parseAIResponse — extractProductsFromText: bổ sung sản phẩm từ response text (lines 171-187)', () => {
+  test('sản phẩm được đề cập trong response nhưng không có trong matchedProducts → được bổ sung', () => {
+    // matchedProducts sẽ là rỗng từ LLM, nhưng response đề cập sản phẩm → extractProductsFromText bổ sung
+    const prods = [
+      {
+        id: 60,
+        name: 'Samsung Galaxy A55 Pro Ultra',
+        price: 12000000,
+        basePrice: 12000000,
+        compareAtPrice: 15000000,
+        slug: 'samsung-galaxy-a55',
+        thumbnail: 'a55.jpg',
+        inStock: true,
+        stockQuantity: 10,
+      },
+    ];
+    // Response đề cập "samsung galaxy a55 pro" — đủ ≥75% words khớp
+    const aiText = JSON.stringify({
+      response: 'Tôi đề xuất Samsung Galaxy A55 Pro Ultra cho bạn với giá tốt.',
+      matchedProducts: [], // LLM quên đưa vào matchedProducts
+      suggestions: [],
+      intent: 'product_search',
+    });
+
+    const result = parseAIResponse(aiText, prods, 'samsung a55');
+    // extractProductsFromText phải phát hiện và bổ sung Samsung Galaxy A55
+    expect(result.products).toHaveLength(1);
+    expect(result.products[0].id).toBe(60);
+    // Tính discount: (15000000 - 12000000) / 15000000 * 100 = 20%
+    expect(result.products[0].discount).toBe(20);
+  });
+
+  test('sản phẩm được đề cập nhưng dùng p.price khi không có basePrice', () => {
+    const prods = [
+      {
+        id: 61,
+        name: 'Xiaomi Redmi Note 13 Pro',
+        price: 8000000,
+        // không có basePrice — dùng p.price ?? p.basePrice
+        slug: 'xiaomi-redmi-note-13',
+        thumbnail: null,
+        inStock: undefined, // → default true
+        stockQuantity: 3,
+      },
+    ];
+    const aiText = JSON.stringify({
+      response: 'Xiaomi Redmi Note 13 Pro là lựa chọn tốt trong tầm giá này.',
+      matchedProducts: [],
+      suggestions: [],
+      intent: 'product_search',
+    });
+
+    const result = parseAIResponse(aiText, prods, 'xiaomi note 13');
+    expect(result.products).toHaveLength(1);
+    expect(result.products[0].price).toBe(8000000);
+    expect(result.products[0].inStock).toBe(true); // default true khi inStock = undefined
+    expect(result.products[0].discount).toBe(0); // không có compareAtPrice
+  });
+});
+
 // ─── hasNumberMismatch FALSE branch — matching numbers fall through ───────────
 
 describe('parseAIResponse — hasNumberMismatch=false: fall through tiếp tục matching', () => {

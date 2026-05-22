@@ -395,3 +395,35 @@ describe('RAGPipeline.run() — truyền context và metadata', () => {
     expect(result).toEqual(expected);
   });
 });
+
+// ─── LowConfidence flag truyền qua khi refined search có lowConfidence (line 145) ─
+
+describe('RAGPipeline.run() — lowConfidence flag truyền qua từ refined results (line 145)', () => {
+  test('refined kết quả có lowConfidence=true → được truyền vào retrievedProducts', async () => {
+    const initialProducts = [makeProduct(1)];
+    // Refined result có lowConfidence flag
+    const refinedProducts = [
+      { score: 0.5, metadata: { id: 11, name: 'Samsung A55' }, lowConfidence: true },
+      { score: 0.8, metadata: { id: 12, name: 'Samsung S25' } }, // không có lowConfidence
+    ];
+    const llm = makeChatbotService({
+      rewriteQuery: jest.fn().mockResolvedValue('Samsung điện thoại flagship 2025'),
+    });
+    const vs = makeVectorStore({
+      hybridSearch: jest
+        .fn()
+        .mockResolvedValueOnce(initialProducts)
+        .mockResolvedValueOnce(refinedProducts),
+    });
+    const pipeline = new RAGPipeline({ chatbotService: llm, vectorStore: vs });
+
+    await pipeline.run({ message: 'Samsung tốt nhất' });
+
+    const callArgs = llm.handleMessage.mock.calls[0][3];
+    const products = callArgs.retrievedProducts;
+    // Sản phẩm có lowConfidence=true phải giữ cờ đó
+    expect(products.find((p) => p.id === 11)).toMatchObject({ lowConfidence: true });
+    // Sản phẩm không có lowConfidence không có cờ đó (spread undefined = không thêm key)
+    expect(products.find((p) => p.id === 12)).not.toHaveProperty('lowConfidence');
+  });
+});

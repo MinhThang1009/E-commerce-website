@@ -29,9 +29,7 @@ Bất cứ giá trị nào lặp lại ở >1 file → đưa vào đây.
 
 | Constant                   |           Giá trị | Mô tả                                                     |
 | -------------------------- | ----------------: | --------------------------------------------------------- |
-| `SHIPPING_FREE_THRESHOLD`  |         `2000000` | Miễn phí ship nếu subtotal ≥ 2,000,000 VND                |
-| `SHIPPING_BASE_RATE`       |           `30000` | Phí ship cơ bản (VND)                                     |
-| `SHIPPING_WEIGHT_RATE`     |            `5000` | +5,000 VND mỗi kg vượt 2kg                                |
+| `SHIPPING_FREE_THRESHOLD`  |         `5000000` | Miễn phí ship nếu subtotal ≥ 5,000,000 VND                |
 | `JWT_REFRESH_EXPIRY`       |           `'30d'` | Thời hạn refresh token (access dùng env `JWT_EXPIRES_IN`) |
 | `PAGINATION_DEFAULT_LIMIT` |              `20` | Số item mặc định / trang                                  |
 | `PAGINATION_MAX_LIMIT`     |             `100` | Trần limit để chặn DOS                                    |

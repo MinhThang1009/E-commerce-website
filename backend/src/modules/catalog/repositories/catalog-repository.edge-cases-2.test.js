@@ -333,3 +333,118 @@ describe('clearProductVariants — guard: ProductVariant null → return', () =>
     expect(result).toBeUndefined();
   });
 });
+
+// ─── findProductByIdWithFullDetails — line 309 ────────────────────────────────
+
+describe('findProductByIdWithFullDetails', () => {
+  it('gọi Product.findByPk với id và đầy đủ associations', async () => {
+    const { repo, deps } = makeRepo();
+    const fakeProduct = { id: 5, name: 'iPhone 15' };
+    deps.Product.findByPk.mockResolvedValue(fakeProduct);
+
+    const result = await repo.findProductByIdWithFullDetails(5);
+
+    expect(deps.Product.findByPk).toHaveBeenCalledWith(
+      5,
+      expect.objectContaining({
+        include: expect.arrayContaining([
+          expect.objectContaining({ association: 'category' }),
+          expect.objectContaining({ association: 'variants' }),
+          expect.objectContaining({ association: 'reviews' }),
+        ]),
+      }),
+    );
+    expect(result).toBe(fakeProduct);
+  });
+
+  it('trả về null khi sản phẩm không tồn tại', async () => {
+    const { repo, deps } = makeRepo();
+    deps.Product.findByPk.mockResolvedValue(null);
+
+    const result = await repo.findProductByIdWithFullDetails(999);
+
+    expect(result).toBeNull();
+  });
+});
+
+// ─── clearProductImages — lines 733-741 ──────────────────────────────────────
+
+describe('clearProductImages', () => {
+  it('return sớm khi ProductImage là null', async () => {
+    const { repo } = makeRepo({ ProductImage: null });
+
+    const result = await repo.clearProductImages(1, null);
+
+    expect(result).toBeUndefined();
+  });
+
+  it('xóa product-level images khi variantIdFilter = null', async () => {
+    const ProductImage = makeModel();
+    const { repo } = makeRepo({ ProductImage });
+
+    await repo.clearProductImages(10, null);
+
+    expect(ProductImage.destroy).toHaveBeenCalledWith(
+      expect.objectContaining({ where: { productId: 10, variantId: null } }),
+    );
+  });
+
+  it('xóa tất cả images (product + variant) khi variantIdFilter = "all"', async () => {
+    const ProductImage = makeModel();
+    const { repo } = makeRepo({ ProductImage });
+
+    await repo.clearProductImages(10, 'all');
+
+    // variantIdFilter = 'all' → where chỉ có productId
+    expect(ProductImage.destroy).toHaveBeenCalledWith(
+      expect.objectContaining({ where: { productId: 10 } }),
+    );
+  });
+
+  it('xóa variant images (variantId != null) khi variantIdFilter là giá trị khác', async () => {
+    const ProductImage = makeModel();
+    const { repo } = makeRepo({ ProductImage });
+
+    await repo.clearProductImages(10, 'variant-only');
+
+    expect(ProductImage.destroy).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: expect.objectContaining({ productId: 10 }),
+      }),
+    );
+  });
+});
+
+// ─── createProductImages — lines 743-745 ─────────────────────────────────────
+
+describe('createProductImages', () => {
+  it('return sớm khi ProductImage là null', async () => {
+    const { repo } = makeRepo({ ProductImage: null });
+
+    const result = await repo.createProductImages([{ imageUrl: 'a.jpg' }]);
+
+    expect(result).toBeUndefined();
+  });
+
+  it('return sớm khi rows rỗng', async () => {
+    const ProductImage = makeModel();
+    const { repo } = makeRepo({ ProductImage });
+
+    const result = await repo.createProductImages([]);
+
+    expect(result).toBeUndefined();
+    expect(ProductImage.bulkCreate).not.toHaveBeenCalled();
+  });
+
+  it('gọi ProductImage.bulkCreate khi có rows hợp lệ', async () => {
+    const ProductImage = makeModel();
+    const rows = [{ productId: 1, imageUrl: 'img.jpg', isThumbnail: true }];
+    ProductImage.bulkCreate.mockResolvedValue(rows);
+    const { repo } = makeRepo({ ProductImage });
+
+    const result = await repo.createProductImages(rows);
+
+    expect(ProductImage.bulkCreate).toHaveBeenCalledWith(rows, {});
+    expect(result).toBe(rows);
+  });
+});

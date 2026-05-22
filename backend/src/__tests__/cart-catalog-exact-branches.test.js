@@ -420,7 +420,6 @@ function makeOrdersService() {
     constants: {
       SHIPPING_FREE_THRESHOLD: 500000,
       SHIPPING_BASE_RATE: 30000,
-      SHIPPING_WEIGHT_RATE: 5000,
       POINTS_EARN_RATE: 1000,
       POINTS_VALUE: 100,
     },

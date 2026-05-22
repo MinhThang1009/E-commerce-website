@@ -1577,16 +1577,17 @@ const getAllProducts = catchAsync(async (req, res) => {
       limit: parseInt(limit),
       offset: parseInt(offset),
       order: [
-        [
-          sortBy === 'price'
-            ? 'basePrice'
-            : sortBy === 'name'
-              ? 'nameVi'
-              : sortBy === 'stockQuantity' || sortBy === 'stock'
-                ? 'stockQuantity'
-                : sortBy,
-          sortOrder.toUpperCase(),
-        ],
+        sortBy === 'stockQuantity' || sortBy === 'stock'
+          ? [
+              Sequelize.literal(
+                '(SELECT COALESCE(SUM(pv.stock_quantity), 0) FROM product_variants pv WHERE pv.product_id = `Product`.`id` AND pv.deleted_at IS NULL)',
+              ),
+              sortOrder.toUpperCase(),
+            ]
+          : [
+              sortBy === 'price' ? 'basePrice' : sortBy === 'name' ? 'nameVi' : sortBy,
+              sortOrder.toUpperCase(),
+            ],
       ],
       distinct: true,
     });

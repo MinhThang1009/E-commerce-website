@@ -26,7 +26,6 @@ let userA, userB, product, variant, cat, brand;
 const CONSTANTS = {
   SHIPPING_FREE_THRESHOLD: 500_000,
   SHIPPING_BASE_RATE: 30_000,
-  SHIPPING_WEIGHT_RATE: 5_000,
   POINTS_EARN_RATE: 1_000,
   POINTS_VALUE: 100,
 };

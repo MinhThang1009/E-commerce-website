@@ -351,6 +351,226 @@ describe('updateUser — cập nhật fields hợp lệ', () => {
   });
 });
 
+// ─── updateProduct — lines 1242-1258: lưu variant images ────────────────────
+
+describe('updateProduct — lưu ảnh cho variant khi variant có images (lines 1242-1258)', () => {
+  const { Product, ProductVariant, ProductImage } = require('@models');
+
+  test('200 và gọi destroyProductImages + bulkCreateProductImages cho variant có images', async () => {
+    const savedVariant = {
+      id: 50,
+      sku: 'V1',
+      price: 15000,
+      stockQuantity: 5,
+      update: jest.fn().mockResolvedValue({ id: 50, stockQuantity: 5, price: 15000 }),
+    };
+    const fakeProduct = {
+      id: 10,
+      name: 'Test Product',
+      basePrice: 10000,
+      stockQuantity: 10,
+      update: jest.fn().mockResolvedValue(undefined),
+      setCategories: jest.fn().mockResolvedValue(undefined),
+    };
+
+    Product.findByPk.mockResolvedValueOnce(fakeProduct);
+    // currentVariants = rỗng (không có variant cũ)
+    ProductVariant.findAll.mockResolvedValueOnce([]);
+    // createProductVariant → tạo variant mới với id 50
+    ProductVariant.create.mockResolvedValueOnce(savedVariant);
+    ProductImage.destroy.mockResolvedValue(1);
+    ProductImage.bulkCreate.mockResolvedValue([]);
+    ProductVariant.sum.mockResolvedValue(5);
+
+    const res = await request.put('/api/admin/products/10').send({
+      variants: [
+        {
+          sku: 'V1',
+          price: 15000,
+          stock: 5,
+          images: ['https://img1.jpg', 'https://img2.jpg'],
+        },
+      ],
+    });
+
+    expect(res.status).toBe(200);
+    // destroyProductImages được gọi cho variant
+    expect(ProductImage.destroy).toHaveBeenCalledWith(
+      expect.objectContaining({ where: expect.objectContaining({ variantId: 50 }) }),
+    );
+    // bulkCreateProductImages được gọi với ảnh variant
+    expect(ProductImage.bulkCreate).toHaveBeenCalledWith(
+      expect.arrayContaining([
+        expect.objectContaining({ variantId: 50, imageUrl: 'https://img1.jpg', isThumbnail: true }),
+        expect.objectContaining({
+          variantId: 50,
+          imageUrl: 'https://img2.jpg',
+          isThumbnail: false,
+        }),
+      ]),
+      expect.any(Object),
+    );
+  });
+});
+
+// ─── getAllProducts — lines 1615-1616: tính tổng tồn kho từ variants ────────
+
+describe('getAllProducts — tính tổng tồn kho từ variants (lines 1615-1616)', () => {
+  const { Product } = require('@models');
+
+  test('stockQuantity được tính từ variants khi sản phẩm có variants', async () => {
+    const productData = {
+      id: 1,
+      nameVi: 'Sản phẩm test',
+      basePrice: 10000,
+      stockQuantity: 0, // sẽ bị ghi đè bởi variants
+      status: 'active',
+      productImages: [],
+      categories: [],
+      category: null,
+      variants: [{ stockQuantity: 3 }, { stockQuantity: 7 }],
+    };
+    const mockProduct = {
+      toJSON: () => ({ ...productData }),
+    };
+
+    Product.findAndCountAll.mockResolvedValueOnce({
+      count: 1,
+      rows: [mockProduct],
+    });
+
+    const res = await request.get('/api/admin/products');
+    expect(res.status).toBe(200);
+    // stockQuantity = 3 + 7 = 10
+    expect(res.body.data.products[0].stockQuantity).toBe(10);
+  });
+});
+
+// ─── updateProductStock — lines 2025-2029: cập nhật variant stock ─────────────
+
+describe('updateProductStock — cập nhật variant stock (lines 2025-2029)', () => {
+  const { Product, ProductVariant } = require('@models');
+
+  test('200 khi variantId được cung cấp → cập nhật variant và tổng tồn kho', async () => {
+    const fakeVariant = {
+      id: 5,
+      stockQuantity: 10,
+      update: jest.fn().mockResolvedValue(undefined),
+    };
+    const fakeProduct = {
+      id: 1,
+      stockQuantity: 20,
+      update: jest.fn().mockResolvedValue(undefined),
+    };
+
+    Product.findByPk.mockResolvedValueOnce(fakeProduct);
+    ProductVariant.findOne.mockResolvedValueOnce(fakeVariant);
+    ProductVariant.sum.mockResolvedValueOnce(15); // tổng stock sau update
+
+    const res = await request
+      .patch('/api/admin/products/1/stock')
+      .send({ stockQuantity: 5, variantId: 5 });
+
+    expect(res.status).toBe(200);
+    expect(fakeVariant.update).toHaveBeenCalledWith({ stockQuantity: 5 });
+    expect(fakeProduct.update).toHaveBeenCalledWith({ stockQuantity: 15 });
+  });
+
+  test('404 khi variant không tìm thấy', async () => {
+    const fakeProduct = {
+      id: 1,
+      update: jest.fn(),
+    };
+
+    Product.findByPk.mockResolvedValueOnce(fakeProduct);
+    ProductVariant.findOne.mockResolvedValueOnce(null); // variant không tồn tại
+
+    const res = await request
+      .patch('/api/admin/products/1/stock')
+      .send({ stockQuantity: 5, variantId: 999 });
+
+    expect(res.status).toBe(404);
+  });
+});
+
+// ─── getLowStockAnalytics — lines 2603-2617 ──────────────────────────────────
+
+describe('getLowStockAnalytics — tính tồn kho từ variants (lines 2603-2617)', () => {
+  const { Product } = require('@models');
+
+  test('200 và tính stock từ variants khi sản phẩm có variants', async () => {
+    const productWithVariants = {
+      toJSON: () => ({
+        id: 10,
+        nameVi: 'Laptop Test',
+        nameEn: null,
+        stockQuantity: 0,
+        variants: [
+          { sku: 'LAP-001', stockQuantity: 2 },
+          { sku: 'LAP-002', stockQuantity: 1 },
+        ],
+        productImages: [{ imageUrl: 'https://img.jpg' }],
+      }),
+    };
+    const productNoVariants = {
+      toJSON: () => ({
+        id: 11,
+        nameVi: null,
+        nameEn: 'Phone Test',
+        stockQuantity: 5,
+        variants: [], // không có variants → dùng stockQuantity
+        productImages: [],
+      }),
+    };
+
+    Product.findAll.mockResolvedValueOnce([productWithVariants, productNoVariants]);
+
+    // threshold = 5 → cả hai đều <= 5
+    const res = await request.get('/api/admin/analytics/low-stock?threshold=5');
+
+    expect(res.status).toBe(200);
+    const items = res.body.data;
+    const laptopItem = items.find((p) => p.id === 10);
+    const phoneItem = items.find((p) => p.id === 11);
+
+    // Line 2604: variantStock = 2 + 1 = 3
+    // Line 2607: variants.length > 0 → stock = 3
+    expect(laptopItem.stockQuantity).toBe(3);
+    // Line 2607: không có variants → stockQuantity = 5
+    expect(phoneItem.stockQuantity).toBe(5);
+  });
+
+  test('200 và lọc chỉ sản phẩm có stock <= threshold', async () => {
+    const highStockProduct = {
+      toJSON: () => ({
+        id: 20,
+        nameVi: 'High stock',
+        stockQuantity: 100,
+        variants: [],
+        productImages: [],
+      }),
+    };
+    const lowStockProduct = {
+      toJSON: () => ({
+        id: 21,
+        nameVi: 'Low stock',
+        stockQuantity: 2,
+        variants: [],
+        productImages: [],
+      }),
+    };
+
+    Product.findAll.mockResolvedValueOnce([highStockProduct, lowStockProduct]);
+
+    const res = await request.get('/api/admin/analytics/low-stock?threshold=10');
+
+    expect(res.status).toBe(200);
+    // Line 2617: filter → chỉ giữ item có stockQuantity <= threshold
+    expect(res.body.data).toHaveLength(1);
+    expect(res.body.data[0].id).toBe(21);
+  });
+});
+
 // ─── deleteUser ───────────────────────────────────────────────────────────────
 
 describe('deleteUser — xóa user', () => {

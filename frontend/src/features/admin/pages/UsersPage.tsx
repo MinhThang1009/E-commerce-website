@@ -354,7 +354,6 @@ const UsersPage: React.FC = () => {
               >
                 <Option value="">{t('common.all')}</Option>
                 <Option value="admin">{t('admin.users.roles.admin')}</Option>
-                <Option value="manager">{t('admin.users.roles.manager')}</Option>
                 <Option value="customer">{t('admin.users.roles.customer')}</Option>
               </Select>
             </Col>
@@ -464,7 +463,6 @@ const UsersPage: React.FC = () => {
             >
               <Select placeholder={t('admin.users.form.rolePlaceholder')}>
                 <Option value="customer">{t('admin.users.roles.customer')}</Option>
-                <Option value="manager">{t('admin.users.roles.manager')}</Option>
                 <Option value="admin">{t('admin.users.roles.admin')}</Option>
               </Select>
             </Form.Item>

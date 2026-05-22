@@ -201,7 +201,6 @@ describe('ordersService.js — cart guest merge branch (lines 106-108)', () => {
     POINTS_VALUE: 100,
     SHIPPING_FREE_THRESHOLD: 500000,
     SHIPPING_BASE_RATE: 30000,
-    SHIPPING_WEIGHT_RATE: 5000,
   };
 
   function makeRepo(overrides = {}) {

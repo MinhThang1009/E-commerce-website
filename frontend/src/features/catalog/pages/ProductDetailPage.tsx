@@ -1,4 +1,4 @@
-/**
+﻿/**
  * @file ProductDetailPage.tsx
  * @layer Page
  * @feature catalog
@@ -11,7 +11,6 @@ import LoadingSpinner from '@/components/common/LoadingSpinner';
 import { Rating } from '@/components/common/Rating';
 import { ProductCard } from '@/features/catalog';
 import { ProductReviews } from '@/features/reviews';
-import WarrantySelection from '../components/WarrantySelection';
 import ProductDetailsSection from '../components/ProductDetailsSection';
 import ProductFAQSection from '../components/ProductFAQSection';
 import { productApi } from '../api/product-api';
@@ -55,7 +54,6 @@ const ProductDetailPage: React.FC = () => {
 
   const [quantity, setQuantity] = useState(1);
   const [selectedAttributes, setSelectedAttributes] = useState<Record<string, string>>({});
-  const [selectedWarranties, setSelectedWarranties] = useState<string[]>([]);
   const [_dynamicProductName, setDynamicProductName] = useState<string>('');
   const [_mappedAttributes, setMappedAttributes] = useState<Record<string, string>>({});
 
@@ -90,8 +88,6 @@ const ProductDetailPage: React.FC = () => {
 
   const product = productData?.data;
   const relatedProducts = relatedProductsData?.data || [];
-  const warrantyPackages = product?.warrantyPackages || [];
-
   useEffect(() => {
     if (error) {
       navigate('/404');
@@ -118,8 +114,6 @@ const ProductDetailPage: React.FC = () => {
   useEffect(() => {
     if (product) {
       // Xóa các gói bảo hành đã chọn trước đó
-      setSelectedWarranties([]);
-
       // Tự động chọn thuộc tính biến thể mặc định nếu là sản phẩm có biến thể
       if (product.isVariantProduct && product.currentVariant && product.currentVariant.attributes) {
         setSelectedAttributes(product.currentVariant.attributes);
@@ -175,10 +169,6 @@ const ProductDetailPage: React.FC = () => {
   };
 
   // Xử lý chọn gói bảo hành
-  const handleWarrantyChange = (packageIds: string[]) => {
-    setSelectedWarranties(packageIds);
-  };
-
   // Xử lý chọn biến thể
   const _handleVariantChange = (variantId: string) => {
     // Cập nhật URL với skuId mới
@@ -255,7 +245,6 @@ const ProductDetailPage: React.FC = () => {
           productId: product.id,
           variantId,
           quantity,
-          warrantyPackageIds: selectedWarranties,
         });
 
         // Cập nhật Zustand store với response từ server
@@ -285,9 +274,6 @@ const ProductDetailPage: React.FC = () => {
               : product.thumbnail,
           variantId,
           attributes: Object.keys(selectedAttributes).length > 0 ? selectedAttributes : undefined,
-          warrantyPackageIds: selectedWarranties,
-          warrantyPackages:
-            product.warrantyPackages?.filter((p) => selectedWarranties.includes(p.id)) || [],
         };
 
         addItem(newItem);
@@ -315,9 +301,6 @@ const ProductDetailPage: React.FC = () => {
             : product.thumbnail,
         variantId,
         attributes: Object.keys(selectedAttributes).length > 0 ? selectedAttributes : undefined,
-        warrantyPackageIds: selectedWarranties,
-        warrantyPackages:
-          product.warrantyPackages?.filter((p) => selectedWarranties.includes(p.id)) || [],
       };
 
       // Chỉ thêm vào Zustand store, cartStore sẽ tự động cập nhật localStorage
@@ -372,9 +355,6 @@ const ProductDetailPage: React.FC = () => {
         quantity,
         image,
         attributes: Object.keys(selectedAttributes).length > 0 ? selectedAttributes : undefined,
-        warrantyPackageIds: selectedWarranties,
-        warrantyPackages:
-          product.warrantyPackages?.filter((p) => selectedWarranties.includes(p.id)) || [],
       };
 
       // 3. Lưu thông tin sản phẩm vào sessionStorage để CheckoutPage sử dụng
@@ -772,11 +752,6 @@ const ProductDetailPage: React.FC = () => {
           </div>
 
           {/* Chọn gói bảo hành */}
-          <WarrantySelection
-            warrantyPackages={warrantyPackages}
-            onWarrantyChange={handleWarrantyChange}
-            selectedPackages={selectedWarranties}
-          />
 
           {/* Các nút hành động */}
           <div className="flex flex-col gap-4 mb-8">

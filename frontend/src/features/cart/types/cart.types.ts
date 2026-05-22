@@ -17,13 +17,6 @@ export interface CartItem {
   inStock?: boolean;
   stockQuantity?: number;
   cartId?: string;
-  warrantyPackageIds?: string[]; // Dành cho gói bảo hành
-  warrantyPackages?: {
-    id: string;
-    name: string;
-    price: number;
-    durationMonths: number;
-  }[];
 }
 
 export interface CartState {
@@ -75,7 +68,6 @@ export interface AddToCartPayload {
   image: string;
   attributes?: Record<string, string>;
   variantId?: string;
-  warrantyPackageIds?: string[];
 }
 
 export interface UpdateCartItemPayload {

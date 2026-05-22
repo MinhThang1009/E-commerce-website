@@ -55,7 +55,6 @@ export const ROUTES = {
   ADMIN_ORDERS: '/admin/orders',
   ADMIN_USERS: '/admin/users',
   ADMIN_USER_DETAIL: '/admin/users/:id',
-  ADMIN_WARRANTY_PACKAGES: '/admin/warranty-packages',
   ADMIN_DISCOUNT_CODES: '/admin/discount-codes',
   ADMIN_BRANDS: '/admin/brands',
   ADMIN_INVENTORY: '/admin/inventory',

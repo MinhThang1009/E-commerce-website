@@ -38,7 +38,6 @@ export interface Product {
   condition?: 'new' | 'like-new' | 'used' | 'refurbished';
   warrantyMonths?: number;
   specifications?: Record<string, string | number | boolean>;
-  warrantyPackages?: WarrantyPackage[];
   faqs?: FAQ[];
   // SEO — có thể null nếu admin chưa điền
   seoTitle?: string | null;
@@ -81,23 +80,6 @@ export interface ProductAttribute {
   productId: string;
   name: string;
   values: string[];
-  createdAt: string;
-  updatedAt: string;
-}
-
-export interface WarrantyPackage {
-  id: string;
-  name: string;
-  description?: string;
-  durationMonths: number;
-  price: number;
-  terms?: Record<string, string | number | boolean>;
-  coverage?: string[];
-  isActive?: boolean;
-  sortOrder?: number;
-  productWarranty?: {
-    isDefault: boolean;
-  };
   createdAt: string;
   updatedAt: string;
 }
@@ -164,7 +146,6 @@ export interface ProductFormData {
 
   // Bảo hành
   warrantyMonths?: number;
-  warrantyPackageIds?: string[];
 
   // Câu hỏi thường gặp
   faqs?: FAQ[];

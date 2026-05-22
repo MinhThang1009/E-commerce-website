@@ -83,7 +83,6 @@ export type {
   FAQ,
   ProductVariant,
   ProductAttribute,
-  WarrantyPackage,
   ProductsResponse,
   ProductFilters,
   ProductFormData,

@@ -49,7 +49,6 @@ export interface CreateProductRequest {
   seoTitle?: string;
   seoDescription?: string;
   seoKeywords?: string[];
-  warrantyPackageIds?: string[];
   faqs?: Array<{
     question: string;
     answer: string;

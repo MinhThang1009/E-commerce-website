@@ -43,7 +43,6 @@ export interface AddToCartRequest {
   productId: string;
   variantId?: string;
   quantity?: number;
-  warrantyPackageIds?: string[];
 }
 
 export interface UpdateCartItemRequest {

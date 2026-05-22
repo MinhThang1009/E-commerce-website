@@ -99,9 +99,6 @@ const ProductExportModal: React.FC<ProductExportModalProps> = ({
         BaseName: item.baseName,
         IsVariantProduct: item.isVariantProduct ? t('common.yes') : t('common.no'),
         Variants: JSON.stringify(item.variants || []),
-        WarrantyPackages: (item.warrantyPackages as Array<{ name: string }> | undefined)
-          ?.map((w) => w.name)
-          .join(', '),
         CreatedAt: item.createdAt,
       }));
 

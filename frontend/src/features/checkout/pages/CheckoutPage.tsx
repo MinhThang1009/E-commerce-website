@@ -290,19 +290,7 @@ const CheckoutPage: React.FC = () => {
 
   const subtotal = items.reduce((sum, item) => sum + item.price * item.quantity, 0);
 
-  // Tính tổng phí bảo hành
-  const warrantyTotal = items.reduce(
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any -- Cart item warranty calculation
-    (sum: number, item: any) => {
-      const itemWarrantyPrice =
-        item.warrantyPackages?.reduce(
-          (wSum: number, pkg: { price: number }) => wSum + pkg.price,
-          0,
-        ) || 0;
-      return sum + itemWarrantyPrice * item.quantity;
-    },
-    0,
-  );
+  const warrantyTotal = items.reduce((sum: number) => sum, 0);
 
   // Tính phí vận chuyển tự động theo khoảng cách tuyến tính sử dụng API LocationIQ
   let shippingCost = 0;
@@ -531,7 +519,6 @@ const CheckoutPage: React.FC = () => {
                   productId: buyNowItem.productId,
                   variantId: buyNowItem.variantId,
                   quantity: buyNowItem.quantity,
-                  warrantyPackageIds: buyNowItem.warrantyPackageIds,
                 },
               ]
             : undefined,

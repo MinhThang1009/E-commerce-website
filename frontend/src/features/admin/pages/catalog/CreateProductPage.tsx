@@ -1,4 +1,4 @@
-/**
+﻿/**
  * @file CreateProductPage.tsx
  * @layer Page
  * @feature catalog
@@ -20,7 +20,6 @@ import { useProductVariants } from '@features/catalog/hooks/use-product-variants
 import { useCreateProductMutation } from '@/features/admin';
 import { useGetCategoriesQuery } from '@features/catalog/api/category-api';
 import { useConvertBase64ToImageMutation, useDeleteImageMutation } from '@/features/upload';
-import { useGetWarrantyPackagesQuery } from '@/features/admin';
 
 // Các component con cho từng phần của form
 import AttributeModal from '@features/catalog/components/AttributeModal';
@@ -33,7 +32,6 @@ import ProductPricingForm from '@features/catalog/components/ProductPricingForm'
 import ProductSeoForm from '@features/catalog/components/ProductSeoForm';
 import ProductSpecificationsForm from '@features/catalog/components/ProductSpecificationsForm';
 import ProductVariantsSection from '@features/catalog/components/ProductVariantsSection';
-import ProductWarrantyForm from '@features/catalog/components/ProductWarrantyForm';
 import TabNavigation from '@features/catalog/components/TabNavigation';
 import ValidationAlerts from '@features/catalog/components/ValidationAlerts';
 import ProductFAQForm from '@features/catalog/components/ProductFAQForm';
@@ -89,7 +87,6 @@ const CreateProductPage: React.FC = () => {
     pricing: false,
     category: false,
     images: false,
-    warranty: false,
     faqs: false,
     seo: false,
   });
@@ -103,9 +100,6 @@ const CreateProductPage: React.FC = () => {
 
   // Các API hook cần thiết
   const { data: categories, isLoading: isCategoriesLoading } = useGetCategoriesQuery();
-  const { data: _warrantyData, isLoading: _isWarrantyLoading } = useGetWarrantyPackagesQuery({
-    isActive: true,
-  });
   const { mutateAsync: createProduct, isPending: isCreating } = useCreateProductMutation();
   const { mutateAsync: convertBase64ToImage } = useConvertBase64ToImageMutation();
   const { mutateAsync: deleteImage } = useDeleteImageMutation();
@@ -150,7 +144,6 @@ const CreateProductPage: React.FC = () => {
       featured: false,
       categoryIds: [],
       specifications: [],
-      warrantyPackageIds: [],
       seoKeywords: '',
       images: '',
       thumbnail: '',
@@ -287,7 +280,6 @@ const CreateProductPage: React.FC = () => {
             }
             return [];
           })(),
-          warrantyPackageIds: allFormValues.warrantyPackageIds || values.warrantyPackageIds || [],
           attributes:
             attributes.length > 0
               ? attributes.map((attr: ProductAttribute) => ({
@@ -378,7 +370,6 @@ const CreateProductPage: React.FC = () => {
     'pricing',
     'category',
     'images',
-    'warranty',
     'faqs',
     'seo',
   ];
@@ -631,7 +622,7 @@ const CreateProductPage: React.FC = () => {
       disabled: !isTabAccessible('warranty'),
       children: (
         <>
-          <ProductWarrantyForm form={form} />
+          {' '}
           <TabNavigation
             activeTab={activeTab}
             setActiveTab={setActiveTab}

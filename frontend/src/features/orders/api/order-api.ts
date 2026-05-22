@@ -117,7 +117,6 @@ export interface CreateOrderRequest {
     productId: string;
     variantId?: string;
     quantity: number;
-    warrantyPackageIds?: string[];
   }[];
 }
 

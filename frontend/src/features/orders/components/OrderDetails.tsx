@@ -1,4 +1,4 @@
-/**
+﻿/**
  * @file OrderDetails.tsx
  * @layer Component
  * @feature orders
@@ -296,21 +296,6 @@ const OrderDetails: React.FC<OrderDetailsProps> = ({ orderId, onOpenReview }) =>
                       {item.attributes?.variant && (
                         <div className="mt-1.5 inline-block text-xs font-medium text-neutral-600 dark:text-neutral-400 bg-neutral-100 dark:bg-neutral-800 px-2 py-1 rounded">
                           {t('orders.variantLabel', { variant: item.attributes.variant })}
-                        </div>
-                      )}
-                      {item.attributes?.warrantyPackages?.length > 0 && (
-                        <div className="mt-1 flex flex-wrap gap-1">
-                          {item.attributes?.warrantyPackages?.map(
-                            // eslint-disable-next-line @typescript-eslint/no-explicit-any -- Warranty package fields
-                            (pkg: any) => (
-                              <span
-                                key={pkg.id}
-                                className="text-[10px] bg-blue-50 text-blue-600 dark:bg-blue-900/20 dark:text-blue-400 px-1.5 py-0.5 rounded border border-blue-100 dark:border-blue-800"
-                              >
-                                🛡️ {pkg.name} ({formatPrice(pkg.price)})
-                              </span>
-                            ),
-                          )}
                         </div>
                       )}
                       {/* Thông tin giá cho mobile */}

@@ -1,4 +1,4 @@
-/**
+﻿/**
  * @file EditProductPage.tsx
  * @layer Page
  * @feature catalog
@@ -28,7 +28,6 @@ import ProductCategoryForm from '@features/catalog/components/ProductCategoryFor
 import ProductImagesForm from '@features/catalog/components/ProductImagesForm';
 import ProductAttributesSection from '@features/catalog/components/ProductAttributesSection';
 import ProductVariantsSection from '@features/catalog/components/ProductVariantsSection';
-import ProductWarrantyForm from '@features/catalog/components/ProductWarrantyForm';
 import ProductSeoForm from '@features/catalog/components/ProductSeoForm';
 import ProductSpecificationsForm from '@features/catalog/components/ProductSpecificationsForm';
 import ProductFAQForm from '@features/catalog/components/ProductFAQForm';
@@ -151,7 +150,6 @@ const EditProductPage: React.FC = () => {
                   .map((kw: string) => kw.trim())
                   .filter((kw: string) => kw)
               : formValues.seoKeywords || [],
-          warrantyPackageIds: formValues.warrantyPackageIds || [],
           faqs: formValues.faqs || [],
           images:
             typeof formValues.images === 'string'
@@ -277,7 +275,6 @@ const EditProductPage: React.FC = () => {
         seoTitle: product.seoTitle || '',
         seoDescription: product.seoDescription || '',
         seoKeywords: product.seoKeywords || '',
-        warrantyPackageIds: product.warrantyPackages?.map((wp: { id: string }) => wp.id) || [],
         faqs: product.faqs || [],
         specifications: (() => {
           // Tải thông số từ bảng productSpecifications
@@ -475,7 +472,6 @@ const EditProductPage: React.FC = () => {
     {
       key: 'warranty',
       label: t('admin.products.editTabs.warranty'),
-      children: <ProductWarrantyForm form={form} />,
     },
     {
       key: 'seo',

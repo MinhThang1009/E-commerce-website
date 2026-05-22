@@ -1,4 +1,4 @@
-/**
+﻿/**
  * @file index.ts
  * @layer Barrel
  * @feature admin
@@ -24,4 +24,3 @@ export * from './api/admin-order-api';
 export * from './api/admin-product-api';
 export * from './api/admin-user-api';
 export * from './api/discount-code-api';
-export * from './api/warranty-api';

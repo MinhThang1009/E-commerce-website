@@ -45,7 +45,6 @@ const AdminOrdersPage = lazy(() => import('@/features/admin/pages/orders/OrdersP
 const AdminUsersPage = lazy(() => import('@/features/admin/pages/UsersPage'));
 const AdminUserDetailPage = lazy(() => import('@/features/admin/pages/UserDetailPage'));
 const AdminCategoriesPage = lazy(() => import('@/features/admin/pages/catalog/CategoriesPage'));
-const AdminWarrantyPackagesPage = lazy(() => import('@/features/admin/pages/WarrantyPackagesPage'));
 const AdminDiscountCodesPage = lazy(() => import('@/features/admin/pages/DiscountCodesPage'));
 const AdminBrandsPage = lazy(() => import('@/features/admin/pages/catalog/BrandsPage'));
 const AdminInventoryPage = lazy(() => import('@/features/admin/pages/InventoryPage'));
@@ -193,18 +192,15 @@ const AppRoutes: React.FC = () => {
         >
           <Route index element={<Navigate to={ROUTES.ADMIN_DASHBOARD} replace />} />
           <Route path="dashboard" element={<AdminDashboardPage />} />
-
           {/* Quản lý sản phẩm */}
           <Route path="products" element={<AdminProductsPage />} />
           <Route path="products/create" element={<CreateProductPage />} />
           <Route path="products/edit/:id" element={<EditProductPage />} />
-
           {/* Các mục admin khác */}
           <Route path="categories" element={<AdminCategoriesPage />} />
           <Route path="orders" element={<AdminOrdersPage />} />
           <Route path="users" element={<AdminUsersPage />} />
-          <Route path="users/:id" element={<AdminUserDetailPage />} />
-          <Route path="warranty-packages" element={<AdminWarrantyPackagesPage />} />
+          <Route path="users/:id" element={<AdminUserDetailPage />} />{' '}
           <Route path="discount-codes" element={<AdminDiscountCodesPage />} />
           <Route path="brands" element={<AdminBrandsPage />} />
           <Route path="inventory" element={<AdminInventoryPage />} />

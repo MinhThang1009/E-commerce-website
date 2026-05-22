@@ -136,7 +136,7 @@ describe('MoMoService.createPaymentUrl — catch branch khi axios.post thất b�
 
 describe('VNPayService.verifyReturnUrl — missing/mismatched secureHash', () => {
   // The vnpayService singleton is already loaded by vnpayService.unit.test.js
-  // in --runInBand mode. Jest isolates module cache per test file, so we load
+  // in --runInBand mode. Jest isolates module registry per test file, so we load
   // a fresh instance here with the same env vars.
   let vnpayService;
 

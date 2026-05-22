@@ -48,7 +48,6 @@ const AdminCategoriesPage = lazy(() => import('@/features/admin/pages/catalog/Ca
 const AdminDiscountCodesPage = lazy(() => import('@/features/admin/pages/DiscountCodesPage'));
 const AdminBrandsPage = lazy(() => import('@/features/admin/pages/catalog/BrandsPage'));
 const AdminInventoryPage = lazy(() => import('@/features/admin/pages/InventoryPage'));
-const AdminAuditLogPage = lazy(() => import('@/features/admin/pages/AuditLogPage'));
 
 const PaymentQRPage = lazy(() => import('@/features/payment/pages/PaymentQRPage'));
 
@@ -204,7 +203,6 @@ const AppRoutes: React.FC = () => {
           <Route path="discount-codes" element={<AdminDiscountCodesPage />} />
           <Route path="brands" element={<AdminBrandsPage />} />
           <Route path="inventory" element={<AdminInventoryPage />} />
-          <Route path="audit-log" element={<AdminAuditLogPage />} />
         </Route>
       </Routes>
     </Suspense>

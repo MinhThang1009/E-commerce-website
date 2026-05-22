@@ -56,15 +56,6 @@ jest.mock('@middlewares/rate-limiter', () => ({
   apiLimiter: (_req, _res, next) => next(),
 }));
 
-jest.mock('@config/redis', () => ({
-  getRedisClient: jest.fn().mockResolvedValue({
-    get: jest.fn().mockResolvedValue(null),
-    set: jest.fn().mockResolvedValue('OK'),
-    setex: jest.fn().mockResolvedValue('OK'),
-    del: jest.fn().mockResolvedValue(1),
-  }),
-}));
-
 jest.mock('@middlewares/authenticate', () => ({
   authenticate: (req, _res, next) => {
     if (req.headers.authorization) {
@@ -115,7 +106,6 @@ const {
 } = require('@models');
 const eventBus = require('@shared/event-bus');
 const logger = require('@utils/logger');
-const { getRedisClient } = require('@config/redis');
 
 const catalogModule = buildCatalogModule({
   Category,
@@ -128,7 +118,6 @@ const catalogModule = buildCatalogModule({
   RecentlyViewed,
   WarrantyPackage,
   sequelize,
-  redisClient: getRedisClient,
   eventBus,
   logger,
 });

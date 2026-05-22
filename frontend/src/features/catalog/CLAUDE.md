@@ -114,7 +114,7 @@ features/catalog/
 
   pages/
     ShopPage.tsx           — /shop: grid sản phẩm, FilterPanel bên trái, sort dropdown, URL params
-    ProductDetailPage.tsx  — /products/:productId: gallery, variant selector, add-to-cart, warranty, tabs
+    ProductDetailPage.tsx  — /products/:productId: gallery, variant selector, add-to-cart, tabs
     CategoriesPage.tsx     — /categories: grid danh mục với thumbnail
     CategoryPage.tsx       — /categories/:slug: sản phẩm trong danh mục
     BrandsPage.tsx         — /brands: grid thương hiệu
@@ -135,7 +135,7 @@ features/catalog/
 
 ## 3.1 Server state (React Query)
 
-Filter/sort/page dùng **URL search params** — không lưu trong store. `productKeys` exported để admin feature invalidate public cache.
+Filter/sort/page dùng **URL search params** — không lưu trong store. `productKeys` exported để admin feature invalidate danh sách sản phẩm public.
 
 ```typescript
 export const productKeys = {
@@ -224,7 +224,7 @@ export const productKeys = {
 - `useGetProductFiltersQuery(params?)`
 - `useGetRecentlyViewedQuery(params?)`
 
-**category-api.ts:** `useGetAllCategoriesQuery`, `useGetCategoryTreeQuery`, `useGetCategoryByIdQuery(id)`, `useGetCategoryBySlugQuery(slug)`, `useGetFeaturedCategoriesQuery`, `useCreateCategoryMutation`, `useUpdateCategoryMutation`, `useDeleteCategoryMutation`
+**category-api.ts:** `useGetAllCategoriesQuery`, `useGetCategoryTreeQuery` _(gửi `Cache-Control: no-cache` header — dùng cho admin để luôn nhận data mới nhất)_, `useGetCategoryByIdQuery(id)`, `useGetCategoryBySlugQuery(slug)`, `useGetFeaturedCategoriesQuery`, `useCreateCategoryMutation`, `useUpdateCategoryMutation`, `useDeleteCategoryMutation`
 
 **brand-api.ts:** `useGetBrandsQuery`, `useGetBrandBySlugQuery(slug)`, `useGetProductsByBrandQuery(params)`, `useCreateBrandMutation`, `useUpdateBrandMutation`, `useDeleteBrandMutation`
 
@@ -295,9 +295,16 @@ interface ProductFilters {
 interface Category {
   id: string;
   name: string;
+  nameVi?: string;
+  nameEn?: string;
   slug: string;
-  parentId?: string;
+  description?: string;
+  parentId?: string | null;
+  isActive?: boolean; // DB field (is_active, default true)
+  sortOrder?: number; // DB field (sort_order, default 0)
   children?: Category[];
+  productCount?: number;
+  // image/level: chưa có trong DB, optional phòng future
 }
 ```
 
@@ -330,7 +337,7 @@ interface Category {
 - **`ProductFilters` type có index signature** `[key: string]: unknown` để cho phép dynamic attribute filters.
 - **`use-product-attributes.ts`** có debug mode toggle qua `localStorage` key — console logs lạ là do debug mode đang bật.
 - **`compareList` max 4** — thêm item thứ 5 bị reject với error toast.
-- **`productKeys` được export** — admin feature import để invalidate public cache sau khi sửa/xóa sản phẩm.
+- **`productKeys` được export** — admin feature import để invalidate danh sách sản phẩm public sau khi sửa/xóa sản phẩm.
 - **Admin form components** nằm trong feature này vì chia sẻ types/utils với user-facing components — không phải kiến trúc lý tưởng nhưng giảm duplication.
 
 ---

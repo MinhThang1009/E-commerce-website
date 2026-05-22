@@ -265,15 +265,3 @@ describe('Admin — Discount codes', () => {
     expect(res.body.status).toBe('success');
   });
 });
-
-// ── Audit logs ───────────────────────────────────────────────
-describe('Admin — Audit logs', () => {
-  test('GET /api/admin/audit-logs → 200', async () => {
-    const res = await request(app)
-      .get('/api/admin/audit-logs')
-      .set('Authorization', `Bearer ${adminToken}`);
-
-    expect(res.status).toBe(200);
-    expect(res.body.status).toBe('success');
-  });
-});

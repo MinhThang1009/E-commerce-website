@@ -8,9 +8,7 @@ const OrdersService = require('./orders-service');
 const CONSTANTS = {
   POINTS_EARN_RATE: 1000,
   POINTS_VALUE: 100, // 1 điểm = 100 VNĐ
-  SHIPPING_FREE_THRESHOLD: 500000,
-  SHIPPING_BASE_RATE: 30000,
-  SHIPPING_WEIGHT_RATE: 5000,
+  SHIPPING_FREE_THRESHOLD: 2000000,
 };
 
 // ─── Helper builders ─────────────────────────────────────────────────────────
@@ -64,7 +62,6 @@ function mkOrderBody(overrides = {}) {
     paymentMethod: 'cod',
     notes: null,
     discountCode: null,
-    pointsToUse: 0,
     ...overrides,
   };
 }
@@ -224,8 +221,8 @@ describe('OrdersService › createOrder', () => {
   test('happy path → tạo order qua repo.createOrder với subtotal/shippingCost đúng', async () => {
     setupHappyPath();
     const user = mkUser();
-    // subtotal = 100000 < 500000 → shippingCost = 30000 (base), weight=0 → không extra
-    const body = mkOrderBody({ items: [{ productId: 1, quantity: 1 }] });
+    // shippingCost do FE tính và truyền vào body
+    const body = mkOrderBody({ items: [{ productId: 1, quantity: 1 }], shippingCost: 30000 });
 
     await service.createOrder({ user, body, sessionIdCookie: null });
 
@@ -544,7 +541,12 @@ describe('OrdersService › createOrder', () => {
 
     await service.createOrder({
       user: mkUser(),
-      body: mkOrderBody({ items: [{ productId: 1, quantity: 1 }], discountCode: 'FIXED20K' }),
+      // shippingCost: 30000 do FE tính và truyền vào
+      body: mkOrderBody({
+        items: [{ productId: 1, quantity: 1 }],
+        discountCode: 'FIXED20K',
+        shippingCost: 30000,
+      }),
     });
 
     // subtotal=100000, shipping=30000, discount=20000 → total=110000
@@ -752,64 +754,6 @@ describe('OrdersService › createOrder', () => {
   });
 
   // ── Loyalty points ─────────────────────────────────────────────────────────
-
-  test.skip('pointsToUse > loyaltyPoints của user → AppError 400', async () => {
-    setupHappyPath();
-    repo.findUserById.mockResolvedValue({ id: 1, loyaltyPoints: 10 });
-
-    await expect(
-      service.createOrder({
-        user: mkUser(),
-        body: mkOrderBody({ items: [{ productId: 1, quantity: 1 }], pointsToUse: 50 }),
-      }),
-    ).rejects.toMatchObject({ statusCode: 400, message: 'orders.insufficientPoints' });
-  });
-
-  test.skip('pointsToUse hợp lệ → trừ điểm + ghi loyalty history', async () => {
-    setupHappyPath();
-    // Gọi findUserById 2 lần: lần check + lần trừ → mock cả 2
-    repo.findUserById
-      .mockResolvedValueOnce({ id: 1, loyaltyPoints: 100 }) // kiểm tra đủ điểm
-      .mockResolvedValueOnce({ id: 1, loyaltyPoints: 100 }); // trừ điểm
-
-    await service.createOrder({
-      user: mkUser(),
-      body: mkOrderBody({ items: [{ productId: 1, quantity: 1 }], pointsToUse: 1 }),
-    });
-
-    // 1 điểm × 100 VNĐ/điểm = 100 VNĐ giảm
-    expect(repo.updateUserPoints).toHaveBeenCalledWith(
-      expect.objectContaining({ loyaltyPoints: 100 }),
-      99, // 100 - 1
-      expect.any(Object),
-    );
-    expect(repo.createLoyaltyHistory).toHaveBeenCalledWith(
-      expect.objectContaining({ type: 'spend', points: -1 }),
-      expect.any(Object),
-    );
-  });
-
-  test.skip('pointsDiscount bị cap khi vượt (subtotal - discount)', async () => {
-    // subtotal = 100000, discount = 0, pointsToUse = 2000 → pointsDiscount = 200000
-    // phải cap về 100000 (= subtotal - discount)
-    setupHappyPath();
-    repo.findUserById
-      .mockResolvedValueOnce({ id: 1, loyaltyPoints: 2000 })
-      .mockResolvedValueOnce({ id: 1, loyaltyPoints: 2000 });
-
-    await service.createOrder({
-      user: mkUser(),
-      body: mkOrderBody({ items: [{ productId: 1, quantity: 1 }], pointsToUse: 2000 }),
-    });
-
-    // subtotal=100000, shipping=30000
-    // pointsDiscount capped tại subtotal-discount = 100000
-    // total = 100000 + 30000 - 100000 = 30000
-    expect(repo.createOrder).toHaveBeenCalledWith(
-      expect.objectContaining({ total: 30000 }),
-      expect.any(Object),
-    );
-  });
 
   // ── Cart flow ──────────────────────────────────────────────────────────────
 
@@ -1171,8 +1115,6 @@ describe('OrdersService › cancelOrder', () => {
       number: 'ORD-TEST-001',
       status: 'pending',
       userId: 1,
-      pointsUsed: 0,
-      pointsEarned: 0,
       createdAt: new Date(),
       items: [],
       ...overrides,
@@ -1309,95 +1251,6 @@ describe('OrdersService › cancelOrder', () => {
 
   // ── Loyalty points refund ──────────────────────────────────────────────────
 
-  test.skip('pointsUsed=0 → KHÔNG refund points', async () => {
-    repo.findOrderForCancel.mockResolvedValue(mkOrder({ pointsUsed: 0, pointsEarned: 0 }));
-
-    await service.cancelOrder({ id: 1, userId: 1 });
-
-    // findUserById không được gọi cho points refund khi pointsUsed=0 và pointsEarned=0
-    expect(repo.updateUserPoints).not.toHaveBeenCalled();
-    expect(repo.createLoyaltyHistory).not.toHaveBeenCalled();
-  });
-
-  test.skip('pointsUsed > 0 → hoàn lại points vào tài khoản user', async () => {
-    const order = mkOrder({ status: 'pending', pointsUsed: 50, pointsEarned: 0 });
-    repo.findOrderForCancel.mockResolvedValue(order);
-    repo.findUserById.mockResolvedValue({ id: 1, loyaltyPoints: 100 });
-
-    await service.cancelOrder({ id: 1, userId: 1 });
-
-    expect(repo.updateUserPoints).toHaveBeenCalledWith(
-      expect.objectContaining({ loyaltyPoints: 100 }),
-      150, // 100 + 50
-      expect.any(Object),
-    );
-  });
-
-  test.skip('pointsUsed > 0 → tạo loyalty history type=refund', async () => {
-    const order = mkOrder({ status: 'pending', pointsUsed: 50, pointsEarned: 0, number: 'ORD-R' });
-    repo.findOrderForCancel.mockResolvedValue(order);
-    repo.findUserById.mockResolvedValue({ id: 1, loyaltyPoints: 200 });
-
-    await service.cancelOrder({ id: 1, userId: 1 });
-
-    expect(repo.createLoyaltyHistory).toHaveBeenCalledWith(
-      expect.objectContaining({
-        type: 'refund',
-        points: 50,
-        userId: 1,
-        orderId: 1,
-      }),
-      expect.any(Object),
-    );
-  });
-
-  test.skip('pointsEarned > 0 → thu hồi điểm tích lũy', async () => {
-    const order = mkOrder({ status: 'processing', pointsUsed: 0, pointsEarned: 30 });
-    repo.findOrderForCancel.mockResolvedValue(order);
-    repo.findUserById.mockResolvedValue({ id: 1, loyaltyPoints: 100 });
-
-    await service.cancelOrder({ id: 1, userId: 1 });
-
-    expect(repo.updateUserPoints).toHaveBeenCalledWith(
-      expect.objectContaining({ loyaltyPoints: 100 }),
-      70, // 100 - 30
-      expect.any(Object),
-    );
-  });
-
-  test.skip('thu hồi pointsEarned không xuống dưới 0 (Math.max)', async () => {
-    const order = mkOrder({ status: 'processing', pointsUsed: 0, pointsEarned: 500 });
-    repo.findOrderForCancel.mockResolvedValue(order);
-    repo.findUserById.mockResolvedValue({ id: 1, loyaltyPoints: 10 }); // ít hơn pointsEarned
-
-    await service.cancelOrder({ id: 1, userId: 1 });
-
-    expect(repo.updateUserPoints).toHaveBeenCalledWith(
-      expect.any(Object),
-      0, // Math.max(0, 10-500)
-      expect.any(Object),
-    );
-  });
-
-  test.skip('pointsUsed > 0 VÀ pointsEarned > 0 → xử lý cả hai (2 lần updateUserPoints)', async () => {
-    const order = mkOrder({
-      status: 'processing',
-      pointsUsed: 10,
-      pointsEarned: 20,
-      number: 'ORD-BOTH',
-    });
-    repo.findOrderForCancel.mockResolvedValue(order);
-    // findUserById sẽ được gọi 2 lần: 1 cho refund, 1 cho revoke
-    repo.findUserById
-      .mockResolvedValueOnce({ id: 1, loyaltyPoints: 100 }) // refund call
-      .mockResolvedValueOnce({ id: 1, loyaltyPoints: 110 }); // revoke call (sau khi refund tăng lên)
-
-    await service.cancelOrder({ id: 1, userId: 1 });
-
-    expect(repo.updateUserPoints).toHaveBeenCalledTimes(2);
-    expect(repo.createLoyaltyHistory).toHaveBeenCalledTimes(2);
-  });
-
   // ── Email ─────────────────────────────────────────────────────────────────
 
   test('có userEmail → gửi email hủy đơn', async () => {
@@ -1491,61 +1344,6 @@ describe('OrdersService › createOrder — cart merge (item trùng)', () => {
   });
 });
 
-// ─── createOrder — warranty packages ─────────────────────────────────────────
-// Covers line 182-186: warrantyPackageIds được xử lý, tính totalWarrantyCost
-
-describe('OrdersService › createOrder — warranty packages', () => {
-  let service, repo;
-
-  beforeEach(() => {
-    ({ service, repo } = buildService());
-  });
-
-  test.skip('item có warrantyPackageIds → findActiveWarrantyPackagesByIds được gọi + tính phí', async () => {
-    const product = mkProduct();
-    const warrantyPackage = { id: 5, name: 'Bảo hành mở rộng 2 năm', price: '500000' };
-
-    repo.findProductWithDefaultVariant.mockResolvedValue(product);
-    repo.lockProduct.mockResolvedValue({ ...product, stockQuantity: 10 });
-    repo.findActiveWarrantyPackagesByIds.mockResolvedValue([warrantyPackage]);
-    repo.createOrder.mockResolvedValue({
-      id: 300,
-      number: 'ORD-WARRANTY',
-      status: 'pending',
-      total: 630000,
-      userId: 1,
-      shippingFirstName: 'A',
-      shippingLastName: 'N',
-      shippingAddress1: 'x',
-      shippingAddress2: null,
-      shippingCity: 'x',
-      shippingState: null,
-      shippingZip: '1',
-      shippingCountry: 'VN',
-      createdAt: new Date(),
-    });
-    repo.createOrderItem.mockResolvedValue({ id: 100, orderId: 300 });
-
-    await service.createOrder({
-      user: mkUser(),
-      body: mkOrderBody({
-        items: [{ productId: 1, quantity: 1, warrantyPackageIds: [5] }],
-      }),
-    });
-
-    expect(repo.findActiveWarrantyPackagesByIds).toHaveBeenCalledWith([5], expect.any(Object));
-    // createOrderItem nhận warrantyPackages trong attributes
-    expect(repo.createOrderItem).toHaveBeenCalledWith(
-      expect.objectContaining({
-        attributes: expect.objectContaining({
-          warrantyPackages: expect.arrayContaining([expect.objectContaining({ id: 5 })]),
-        }),
-      }),
-      expect.any(Object),
-    );
-  });
-});
-
 // ─── createOrder — email catch (line 359) ────────────────────────────────────
 // Covers line 359: .catch trên sendOrderConfirmationEmail
 
@@ -1614,8 +1412,6 @@ describe('OrdersService › cancelOrder — email send failure', () => {
       number: 'ORD-CANCEL',
       status: 'pending',
       userId: 1,
-      pointsUsed: 0,
-      pointsEarned: 0,
       createdAt: new Date(),
       items: [],
     };
@@ -1691,46 +1487,6 @@ describe('OrdersService › updateOrderStatus', () => {
   });
 });
 
-// ─── confirmReceived — earn points nhưng subtotal nhỏ (line 596-598) ─────────
-// Covers lines 596-598: orderTotal > 0 nhưng newPointsAwarded = 0
-
-describe('OrdersService › confirmReceived — subtotal quá nhỏ để tích điểm', () => {
-  let service, repo;
-
-  beforeEach(() => {
-    ({ service, repo } = buildService());
-  });
-
-  test.skip('subtotal > 0 nhưng quá nhỏ để tích điểm → đánh dấu pointsEarned = -1, không trao điểm', async () => {
-    // POINTS_EARN_RATE = 1000, subtotal = 500 → floor(500/1000) = 0 điểm
-    // Nhưng orderTotal > 0 → nhánh else if (orderTotal > 0) chạy → earnedPointsTotal = -1
-    const order = {
-      id: 1,
-      number: 'ORD-SMALL',
-      status: 'shipped',
-      paymentMethod: 'cod',
-      userId: 1,
-      subtotal: '500',
-      total: '530',
-      pointsEarned: 0, // canEarnPoints() sẽ trả true khi pointsEarned === 0
-    };
-    order.reload = jest.fn().mockImplementation(() => {
-      // Sau reload, order.pointsEarned được cập nhật bởi aggregate.setPointsEarned
-      return Promise.resolve();
-    });
-
-    repo.findOrderByIdAndUserId.mockResolvedValue(order);
-
-    const result = await service.confirmReceived({ id: 1, userId: 1 });
-
-    // Kết quả: pointsEarned = 0 (không trao, chỉ đánh dấu -1 nội bộ)
-    expect(result).toHaveProperty('message');
-    expect(result.pointsEarned).toBe(0);
-    // saveOrder được gọi để lưu trạng thái -1
-    expect(repo.saveOrder).toHaveBeenCalled();
-  });
-});
-
 // ─── confirmReceived — invalid status (line 743) ────────────────────────────
 
 describe('OrdersService › confirmReceived — invalid status', () => {
@@ -1741,38 +1497,18 @@ describe('OrdersService › confirmReceived — invalid status', () => {
   });
 
   test('status pending → throw 422', async () => {
-    const order = { id: 1, status: 'pending', pointsEarned: 0 };
+    const order = {
+      id: 1,
+      status: 'pending',
+      userId: 1,
+      number: 'X',
+      paymentMethod: 'cod',
+      reload: jest.fn(),
+    };
     repo.findOrderByIdAndUserId.mockResolvedValue(order);
 
     await expect(service.confirmReceived({ id: 1, userId: 1 })).rejects.toMatchObject({
       statusCode: 422,
     });
-  });
-});
-
-// ─── confirmReceived — alreadyProcessed branch ────────────────────────────────
-
-describe('OrdersService › confirmReceived — alreadyProcessed=true', () => {
-  let service, repo;
-
-  beforeEach(() => {
-    ({ service, repo } = buildService());
-  });
-
-  test.skip('delivered + pointsEarned!=0 → trả alreadyConfirmed message, pointsEarned=0', async () => {
-    const order = {
-      id: 1,
-      status: 'delivered',
-      pointsEarned: 50,
-      number: 'ORD-0001',
-      reload: jest.fn().mockResolvedValue(),
-    };
-    repo.findOrderByIdAndUserId.mockResolvedValue(order);
-    repo.saveOrder.mockResolvedValue();
-
-    const result = await service.confirmReceived({ id: 1, userId: 1 });
-
-    expect(result.message).toBe('orders.alreadyConfirmed');
-    expect(result.pointsEarned).toBe(0);
   });
 });

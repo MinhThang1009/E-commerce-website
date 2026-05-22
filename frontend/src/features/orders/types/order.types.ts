@@ -82,9 +82,6 @@ export interface Order {
   trackingNumber?: string;
   shippingProvider?: string;
   estimatedDelivery?: string;
-  pointsEarned?: number;
-  pointsUsed?: number;
-  pointsDiscount?: number;
   items?: OrderItem[];
   createdAt: string;
   updatedAt: string;

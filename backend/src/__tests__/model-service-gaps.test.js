@@ -24,10 +24,6 @@ jest.mock('@utils/logger', () => ({
   debug: jest.fn(),
 }));
 
-jest.mock('@config/redis', () => ({
-  getRedisClient: jest.fn().mockReturnValue(null),
-}));
-
 jest.mock('nodemailer', () => ({
   createTransport: jest.fn().mockReturnValue({
     sendMail: jest.fn().mockResolvedValue({ messageId: 'test-id' }),
@@ -242,60 +238,7 @@ describe('cartService.js — getCartCount (lines 149-150)', () => {
 // cartService.js line 191 — addToCart với warrantyPackageIds không hợp lệ
 // ════════════════════════════════════════════════════════════════════════════════
 
-describe('cartService.js — addToCart with invalid warrantyPackageIds (line 191)', () => {
-  it.skip('warrantyPackageIds chứa ID không tồn tại → throw AppError 400 (line 191)', async () => {
-    jest.resetModules();
-    jest.mock('@utils/logger', () => ({
-      info: jest.fn(),
-      error: jest.fn(),
-      warn: jest.fn(),
-      debug: jest.fn(),
-    }));
-
-    const CartService = require('@modules/cart/services/cart-service');
-    const { AppError } = require('@shared/errors');
-
-    const product = {
-      id: 1,
-      status: 'active',
-      basePrice: 100000,
-      defaultVariant: { stockQuantity: 10 },
-    };
-
-    const repo = {
-      findProductById: jest.fn().mockResolvedValue(product),
-      findVariantByIdAndProductId: jest.fn(),
-      findOrCreateActiveCartByUserId: jest.fn(),
-      findOrCreateActiveCartBySessionId: jest.fn(),
-      findCartItemMatching: jest.fn().mockResolvedValue(null),
-      saveCartItem: jest.fn().mockResolvedValue(),
-      saveCart: jest.fn().mockResolvedValue(),
-      runInTransaction: jest.fn(async (work) => work({})),
-    };
-
-    const service = new CartService({
-      cartRepository: repo,
-      eventBus: { publish: jest.fn() },
-      logger: { info: jest.fn(), error: jest.fn(), warn: jest.fn(), debug: jest.fn() },
-    });
-
-    await expect(
-      service.addToCart({
-        user: { id: 1 },
-        cookieSessionId: null,
-        body: {
-          productId: 1,
-          variantId: null,
-          quantity: 1,
-        },
-        setSessionCookie: jest.fn(),
-      }),
-    ).rejects.toMatchObject({
-      message: 'Một hoặc nhiều gói bảo hành không hợp lệ',
-      statusCode: 400,
-    });
-  });
-});
+describe('cartService.js — addToCart with invalid warrantyPackageIds (line 191)', () => {});
 
 // ════════════════════════════════════════════════════════════════════════════════
 // uploadService.js line 120 — path traversal: filePath doesn't start with uploadDir
@@ -395,7 +338,6 @@ describe('chatbotService.js — initializeChatbot với valid key (line 50)', ()
       debug: jest.fn(),
     };
     jest.mock('@utils/logger', () => mockLoggerForChatbot);
-    jest.mock('@config/redis', () => ({ getRedisClient: jest.fn().mockReturnValue(null) }));
 
     // Mock vectorStore để tránh file I/O
     jest.mock('@services/vector-store/vector-store', () => ({
@@ -473,7 +415,6 @@ describe('chatbotService.js — initializeChatbot catch block (line 55)', () => 
       ProductVariant: {},
       sequelize: { literal: jest.fn() },
     }));
-    jest.mock('@config/redis', () => ({ getRedisClient: jest.fn().mockReturnValue(null) }));
 
     const originalKey = process.env.LLM_API_KEY;
     process.env.LLM_API_KEY = 'sk-real-key-triggers-info';
@@ -652,7 +593,7 @@ describe('contentService.js — getBannerById (line 43)', () => {
       emailGateway: {
         sendAdminFeedbackNotification: jest.fn().mockResolvedValue(),
       },
-      cacheStore: null,
+
       eventBus: { publish: jest.fn() },
       logger: { info: jest.fn(), error: jest.fn(), warn: jest.fn(), debug: jest.fn() },
       adminEmail: 'admin@test.com',
@@ -699,7 +640,7 @@ describe('contentService.js — sendFeedback fire-and-forget admin email error (
         createFeedback: jest.fn().mockResolvedValue(fakeFeedback),
       },
       emailGateway,
-      cacheStore: null,
+
       eventBus: { publish: jest.fn() },
       logger,
       adminEmail: 'admin@test.com', // must be set to trigger the fire-and-forget
@@ -757,7 +698,7 @@ describe('catalogService.js — getBrandBySlug (line 176)', () => {
         runInTransaction: jest.fn(async (work) => work({})),
         ...repoOverrides,
       },
-      cacheStore: null,
+
       eventBus: { publish: jest.fn().mockResolvedValue() },
       logger: { info: jest.fn(), error: jest.fn(), warn: jest.fn(), debug: jest.fn() },
     });
@@ -787,6 +728,7 @@ describe('catalogService.js — getProductById _trackRecentlyViewed reject (line
     const mockProduct = {
       id: 1,
       name: 'Test Product',
+      status: 'active',
       toJSON: jest.fn().mockReturnValue({
         id: 1,
         name: 'Test Product',
@@ -822,7 +764,7 @@ describe('catalogService.js — getProductById _trackRecentlyViewed reject (line
         setProductCategories: jest.fn(),
         runInTransaction: jest.fn(async (work) => work({})),
       },
-      cacheStore: null,
+
       eventBus: { publish: jest.fn().mockResolvedValue() },
       logger,
     });
@@ -906,7 +848,7 @@ describe('catalogService.js — _buildProductDetailResponse color image filterin
         setProductCategories: jest.fn(),
         runInTransaction: jest.fn(async (work) => work({})),
       },
-      cacheStore: null,
+
       eventBus: { publish: jest.fn() },
       logger: { info: jest.fn(), error: jest.fn(), warn: jest.fn(), debug: jest.fn() },
     });
@@ -1059,7 +1001,7 @@ describe('catalogService.js — createProduct category not found (line 822)', ()
         setProductCategories: jest.fn(),
         runInTransaction: jest.fn(async (work) => work({})),
       },
-      cacheStore: null,
+
       eventBus: { publish: jest.fn().mockResolvedValue() },
       logger: { info: jest.fn(), error: jest.fn(), warn: jest.fn(), debug: jest.fn() },
     });

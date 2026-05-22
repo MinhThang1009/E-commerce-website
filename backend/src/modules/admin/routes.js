@@ -12,7 +12,6 @@ const discountCodeController = require('@modules/discount-code/controllers/disco
 
 const { adminAuthenticate } = require('@middlewares/admin-auth');
 const { validateRequest } = require('@middlewares/validate-request');
-const { auditMiddleware } = require('@shared/admin-audit');
 
 const {
   paginationSchema,
@@ -28,7 +27,6 @@ const {
 } = require('@modules/discount-code/validators/discount-code-validator');
 
 router.use(adminAuthenticate);
-router.use(auditMiddleware);
 
 // Dashboard & Stats
 /**
@@ -438,7 +436,7 @@ router.get('/analytics/user-growth', adminController.getUserGrowthAnalytics);
 router.get('/analytics/payment-methods', adminController.getPaymentMethodsAnalytics);
 router.get('/analytics/low-stock', adminController.getLowStockAnalytics);
 
-// Reports & Chatbot & Audit
+// Reports & Chatbot
 /**
  * @swagger
  * /api/admin/reports/export:
@@ -453,15 +451,8 @@ router.get('/analytics/low-stock', adminController.getLowStockAnalytics);
  *     tags: [Admin]
  *     security:
  *       - bearerAuth: []
- * /api/admin/audit-logs:
- *   get:
- *     summary: Lấy nhật ký thao tác admin
- *     tags: [Admin]
- *     security:
- *       - bearerAuth: []
  */
 router.get('/reports/export', adminController.exportReport);
 router.get('/chatbot/stats', adminController.getChatbotStats);
-router.get('/audit-logs', adminController.getAuditLogs);
 
 module.exports = router;

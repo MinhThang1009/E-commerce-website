@@ -74,17 +74,6 @@ jest.mock('@middlewares/validate-request', () => ({
   validateExpressValidator: (_req, _res, next) => next(),
 }));
 
-jest.mock('@shared/admin-audit', () => ({
-  AdminAuditService: class {
-    static logUserAction() {}
-    static logProductAction() {}
-    static logOrderAction() {}
-    static logDiscountCodeAction() {}
-    log() {}
-  },
-  auditMiddleware: (_req, _res, next) => next(),
-}));
-
 jest.mock('./admin-import-controller', () => ({
   getImportTemplate: (_req, _res, next) => next(),
   uploadImportFile: (_req, _res, next) => next(),
@@ -99,10 +88,6 @@ jest.mock('@modules/discount-code/controllers/discount-code-controller', () => (
   createDiscountCode: (_req, _res, next) => next(),
   updateDiscountCode: (_req, _res, next) => next(),
   deleteDiscountCode: (_req, _res, next) => next(),
-}));
-
-jest.mock('@config/redis', () => ({
-  getRedisClient: jest.fn().mockResolvedValue(null),
 }));
 
 jest.mock('@modules/ai/services/translate/translate-service', () => ({
@@ -203,12 +188,6 @@ jest.mock('@models', () => {
       create: jest.fn(),
       findAndCountAll: jest.fn(),
     },
-    AuditLog: {
-      findAll: jest.fn(),
-      findAndCountAll: jest.fn(),
-      count: jest.fn(),
-      create: jest.fn(),
-    },
     ChatMessage: {
       count: jest.fn(),
       findAll: jest.fn(),
@@ -252,7 +231,6 @@ const {
   WarrantyPackage,
   Order,
   OrderItem,
-  AuditLog,
   InventoryLog,
   sequelize,
 } = require('@models');
@@ -437,46 +415,7 @@ describe('POST /api/admin/products/:id/clone — line 1995: SKU without hyphen',
 // Line 2027: cloneProduct — warrantyPackages with ProductWarranty?.isDefault
 // ─────────────────────────────────────────────────────────────────────────────
 
-describe('POST /api/admin/products/:id/clone — line 2027: warrantyPackages clone', () => {
-  it.skip('clone warrantyPackages với ProductWarranty.isDefault', async () => {
-    const originalProduct = makeProduct({
-      id: 710,
-      name: 'With Warranty',
-      slug: 'with-warranty',
-      status: 'active',
-      variants: [],
-      productSpecifications: [],
-      productAttributes: [],
-      productImages: [],
-      warrantyPackages: [
-        { id: 'wp1', ProductWarranty: { isDefault: true } },
-        { id: 'wp2', ProductWarranty: null }, // null ProductWarranty → false
-      ],
-    });
-
-    const newProduct = makeProduct({ id: 711, name: 'With Warranty (Copy)' });
-
-    Product.findByPk.mockResolvedValueOnce(originalProduct).mockResolvedValueOnce(newProduct);
-
-    Product.findOne.mockResolvedValueOnce(null);
-    Product.create.mockResolvedValueOnce(newProduct);
-
-    ProductAttribute.bulkCreate.mockResolvedValueOnce([]);
-    ProductWarranty.bulkCreate.mockResolvedValueOnce([]);
-    ProductImage.bulkCreate.mockResolvedValueOnce([]);
-
-    const res = await request.post('/api/admin/products/710/clone');
-
-    expect(res.status).toBe(201);
-    expect(ProductWarranty.bulkCreate).toHaveBeenCalledWith(
-      expect.arrayContaining([
-        expect.objectContaining({ warrantyPackageId: 'wp1', isDefault: true }),
-        expect.objectContaining({ warrantyPackageId: 'wp2', isDefault: false }),
-      ]),
-      expect.anything(),
-    );
-  });
-});
+describe('POST /api/admin/products/:id/clone — line 2027: warrantyPackages clone', () => {});
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Line 1350: updateProduct vectorStore — inactive product removed from items

@@ -68,16 +68,6 @@ jest.mock('@middlewares/validate-request', () => ({
   validateExpressValidator: (_req, _res, next) => next(),
 }));
 
-jest.mock('@shared/admin-audit', () => ({
-  AdminAuditService: class {
-    static logUserAction() {}
-    static logProductAction() {}
-    static logOrderAction() {}
-    log() {}
-  },
-  auditMiddleware: (_req, _res, next) => next(),
-}));
-
 jest.mock('@modules/admin/controllers/admin-import-controller', () => ({
   getImportTemplate: (_req, _res, next) => next(),
   uploadImportFile: (_req, _res, next) => next(),
@@ -92,10 +82,6 @@ jest.mock('@modules/discount-code/controllers/discount-code-controller', () => (
   createDiscountCode: (_req, _res, next) => next(),
   updateDiscountCode: (_req, _res, next) => next(),
   deleteDiscountCode: (_req, _res, next) => next(),
-}));
-
-jest.mock('@config/redis', () => ({
-  getRedisClient: jest.fn().mockResolvedValue(null),
 }));
 
 jest.mock('@models', () => {
@@ -170,12 +156,6 @@ jest.mock('@models', () => {
     SearchHistory: {},
     RecentlyViewed: {},
     InventoryLog: { create: jest.fn(), findAndCountAll: jest.fn() },
-    AuditLog: {
-      findAll: jest.fn(),
-      findAndCountAll: jest.fn(),
-      count: jest.fn(),
-      create: jest.fn(),
-    },
     ChatMessage: { count: jest.fn(), findAll: jest.fn(), findOne: jest.fn() },
     WarrantyPackage: { findAll: jest.fn(), findByPk: jest.fn() },
     Brand: {},
@@ -318,20 +298,6 @@ describe('getUserById — trả về user với associations', () => {
 
     const res = await request.get('/api/admin/users/9999');
     expect(res.status).toBe(404);
-  });
-
-  test.skip('gọi findByPk với include associations (addresses, orders, loyaltyHistories...)', async () => {
-    const fakeUser = makeUser({ id: 7 });
-    User.findByPk.mockResolvedValueOnce(fakeUser);
-
-    await request.get('/api/admin/users/7');
-
-    const callArgs = User.findByPk.mock.calls[0];
-    expect(callArgs[0]).toBe('7');
-    // Phải có options với include
-    expect(callArgs[1]).toHaveProperty('include');
-    expect(callArgs[1].include).toBeInstanceOf(Array);
-    expect(callArgs[1].include.length).toBeGreaterThan(0);
   });
 });
 

@@ -6,7 +6,7 @@
  *   - Category: CRUD + phân trang sản phẩm theo danh mục
  *   - Brand: CRUD + phân trang sản phẩm theo thương hiệu
  *   - Product: danh sách, chi tiết, tìm kiếm, CRUD, featured, best-sellers, deals
- * @depends-on sequelize-catalog-repository, cacheStore (Redis), eventBus, logger
+ * @depends-on sequelize-catalog-repository, eventBus, logger
  * @see module.js (DI wiring), routes.js (endpoints), CLAUDE.md (overview)
  */
 const { AppError } = require('@shared/errors');
@@ -39,63 +39,19 @@ const DEFAULT_PAGE_SIZE = 20;
 // Catalog Service — gộp 3 sub-domain (Category, Brand, Product).
 // Sprint 6a triển khai use case cho Category/Brand. Sprint 6b mở rộng Product
 // (search, featured, related, CRUD ...).
-//
-// Cache key:
-//   - categories:all (TTL 30 phút)
-//   - cache:brands:* (pattern, dùng invalidate)
 class CatalogService {
   /**
    * Khởi tạo CatalogService với các dependency được inject từ module.js.
    *
    * @param {object} deps - Các dependency
    * @param {object} deps.catalogRepository - Repository truy cập DB cho catalog
-   * @param {object|null} deps.cacheStore - Redis cache store; null nếu Redis không available
    * @param {object} deps.eventBus - Event bus dùng cho giao tiếp giữa modules
    * @param {object} deps.logger - Winston logger
    */
-  constructor({ catalogRepository, cacheStore, eventBus, logger }) {
+  constructor({ catalogRepository, eventBus, logger }) {
     this.catalogRepository = catalogRepository;
-    this.cacheStore = cacheStore;
     this.eventBus = eventBus;
     this.logger = logger;
-
-    // TTL Redis (giây) — mỗi loại dữ liệu có TTL riêng phù hợp với tần suất thay đổi
-    this.CACHE_TTL_CATEGORIES = 30 * 60; // 30 phút — categories ít thay đổi
-    this.CACHE_TTL_BRANDS = 30 * 60; // 30 phút — brands ít thay đổi
-    this.CACHE_TTL_FEATURED = 10 * 60; // 10 phút — featured có thể thay đổi thường hơn
-    this.CACHE_TTL_BESTSELLERS = 30 * 60; // 30 phút — best-sellers tính theo tuần/tháng
-    this.CACHE_TTL_DEALS = 10 * 60; // 10 phút — deals có thể thay đổi giá bất kỳ lúc
-  }
-
-  /**
-   * Xóa một cache key cụ thể. Không throw nếu Redis lỗi — chỉ log warning.
-   *
-   * @param {string} key - Cache key cần xóa
-   * @returns {Promise<void>}
-   */
-  async _invalidateCacheKey(key) {
-    if (!this.cacheStore) return;
-    try {
-      await this.cacheStore.del(key);
-    } catch (err) {
-      this.logger.warn(`Xóa cache ${key} thất bại:`, err.message);
-    }
-  }
-
-  /**
-   * Xóa tất cả cache keys khớp với pattern glob (ví dụ: `brands:*`).
-   * Chỉ hoạt động khi cacheStore hỗ trợ `delPattern` — không throw nếu method không tồn tại.
-   *
-   * @param {string} pattern - Glob pattern, ví dụ: `products:list:*`
-   * @returns {Promise<void>}
-   */
-  async _invalidateCachePattern(pattern) {
-    if (!this.cacheStore || typeof this.cacheStore.delPattern !== 'function') return;
-    try {
-      await this.cacheStore.delPattern(pattern);
-    } catch (err) {
-      this.logger.warn(`Xóa cache pattern ${pattern} thất bại:`, err.message);
-    }
   }
 
   // ---------- Category ----------
@@ -103,18 +59,11 @@ class CatalogService {
   /**
    * Lấy danh sách tất cả danh mục có ít nhất 1 sản phẩm, kèm số lượng sản phẩm.
    *
-   * Kết quả được cache 30 phút với key `categories:all`.
    * Các danh mục không có sản phẩm nào bị lọc ra khỏi kết quả.
    *
    * @returns {Promise<{status: string, data: object[]}>} Danh sách danh mục với trường `productCount`
    */
   async getAllCategories() {
-    const cacheKey = 'categories:all';
-    if (this.cacheStore) {
-      const cached = await this.cacheStore.get(cacheKey);
-      if (cached) return JSON.parse(cached);
-    }
-
     const categories = await this.catalogRepository.findAllCategoriesSorted();
     const countMap = await this.catalogRepository.getCategoryProductCounts();
     const data = categories
@@ -123,17 +72,13 @@ class CatalogService {
         json.productCount = countMap[c.id] || 0;
         return json;
       })
-      .filter((c) => c.productCount > 0);
+      .filter((c) => c.productCount > 0 && c.isActive !== false);
 
-    const payload = { status: 'success', data };
-    if (this.cacheStore) {
-      await this.cacheStore.setEx(cacheKey, this.CACHE_TTL_CATEGORIES, JSON.stringify(payload));
-    }
-    return payload;
+    return { status: 'success', data };
   }
 
   /**
-   * Lấy cây danh mục dạng raw (không lọc, không cache).
+   * Lấy cây danh mục dạng raw (không lọc).
    * Khác với `getAllCategories`: trả về cả danh mục không có sản phẩm,
    * dùng cho admin hoặc navigation tree.
    *
@@ -172,7 +117,7 @@ class CatalogService {
   }
 
   /**
-   * Tạo danh mục mới. Sau khi tạo, xóa cache `categories:all`.
+   * Tạo danh mục mới.
    *
    * @param {object} params
    * @param {object} params.payload - Dữ liệu danh mục mới
@@ -184,19 +129,20 @@ class CatalogService {
     const category = await this.catalogRepository.createCategory({
       name: payload.name,
       description: payload.description,
+      image: payload.image,
+      parentId: payload.parentId ?? null,
       isActive: payload.isActive ?? true,
+      sortOrder: payload.sortOrder ?? 0,
     });
-    await this._invalidateCacheKey('categories:all');
     return category;
   }
 
   /**
    * Cập nhật danh mục theo ID. Chỉ cập nhật các trường có trong `patch` (partial update).
-   * Sau khi cập nhật, xóa cache `categories:all`.
    *
    * @param {object} params
    * @param {number|string} params.id - ID danh mục cần cập nhật
-   * @param {object} params.patch - Dữ liệu cần cập nhật (name, description, isActive)
+   * @param {object} params.patch - Dữ liệu cần cập nhật (name, description, isActive, sortOrder)
    * @returns {Promise<object>} Danh mục sau khi cập nhật
    * @throws {AppError} 404 nếu không tìm thấy danh mục
    */
@@ -206,9 +152,11 @@ class CatalogService {
 
     if (patch.name !== undefined) category.name = patch.name;
     if (patch.description !== undefined) category.description = patch.description;
+    if (patch.image !== undefined) category.image = patch.image;
+    if (patch.parentId !== undefined) category.parentId = patch.parentId;
     if (patch.isActive !== undefined) category.isActive = patch.isActive;
+    if (patch.sortOrder !== undefined) category.sortOrder = patch.sortOrder;
     await this.catalogRepository.saveCategory(category);
-    await this._invalidateCacheKey('categories:all');
     return category;
   }
 
@@ -231,7 +179,6 @@ class CatalogService {
     }
 
     await this.catalogRepository.deleteCategory(category);
-    await this._invalidateCacheKey('categories:all');
     return { message: 'catalog.categoryDeleted' };
   }
 
@@ -334,7 +281,6 @@ class CatalogService {
   /**
    * Lấy danh sách thương hiệu, có thể lọc theo danh mục và trạng thái có sản phẩm.
    *
-   * Kết quả được cache 30 phút với key `brands:{categoryId|all}`.
    * Nếu truyền `categoryId` dạng slug, service tự resolve sang ID trước khi query.
    *
    * @param {object} params
@@ -343,12 +289,6 @@ class CatalogService {
    * @returns {Promise<object[]>} Danh sách thương hiệu
    */
   async getAllBrands({ categoryId, hasProducts = true }) {
-    const cacheKey = `brands:${categoryId || 'all'}`;
-    if (this.cacheStore) {
-      const cached = await this.cacheStore.get(cacheKey);
-      if (cached) return JSON.parse(cached);
-    }
-
     const filter = { hasProducts };
     if (categoryId) {
       const isNumericId = !isNaN(categoryId) && String(categoryId).trim() !== '';
@@ -361,11 +301,7 @@ class CatalogService {
       filter.idIn = brandIds;
       filter.hasProducts = false;
     }
-    const data = await this.catalogRepository.findAllBrands({ filter });
-    if (this.cacheStore) {
-      await this.cacheStore.setEx(cacheKey, this.CACHE_TTL_BRANDS, JSON.stringify(data));
-    }
-    return data;
+    return this.catalogRepository.findAllBrands({ filter });
   }
 
   /**
@@ -383,7 +319,7 @@ class CatalogService {
   }
 
   /**
-   * Tạo thương hiệu mới. Sau khi tạo, xóa toàn bộ cache `brands:*`.
+   * Tạo thương hiệu mới.
    *
    * @param {object} params
    * @param {object} params.payload - Dữ liệu thương hiệu
@@ -392,17 +328,18 @@ class CatalogService {
    * @returns {Promise<object>} Thương hiệu vừa tạo
    */
   async createBrand({ payload }) {
-    const brand = await this.catalogRepository.createBrand({
+    return this.catalogRepository.createBrand({
       name: payload.name,
       logoUrl: payload.logoUrl,
+      description: payload.description,
+      website: payload.website,
+      isActive: payload.isActive ?? true,
     });
-    await this._invalidateCachePattern('brands:*');
-    return brand;
   }
 
   /**
    * Cập nhật thương hiệu theo ID. Dùng `Object.assign` để merge patch vào instance,
-   * chỉ cập nhật các trường có trong patch. Sau khi cập nhật, xóa cache `brands:*`.
+   * chỉ cập nhật các trường có trong patch.
    *
    * @param {object} params
    * @param {number|string} params.id - ID thương hiệu cần cập nhật
@@ -415,7 +352,6 @@ class CatalogService {
     if (!brand) throw new AppError('catalog.brandNotFound', 404);
     Object.assign(brand, patch);
     await this.catalogRepository.saveBrand(brand);
-    await this._invalidateCachePattern('brands:*');
     return brand;
   }
 
@@ -438,7 +374,6 @@ class CatalogService {
     }
 
     await this.catalogRepository.deleteBrand(brand);
-    await this._invalidateCachePattern('brands:*');
     return { message: 'catalog.brandDeleted' };
   }
 
@@ -480,10 +415,6 @@ class CatalogService {
 
   /** Số sản phẩm tối đa lưu trong lịch sử xem gần đây của 1 user */
   RECENTLY_VIEWED_MAX = 20;
-  /** TTL cache (giây) cho endpoint danh sách sản phẩm */
-  CACHE_TTL_PRODUCT_LIST = 10 * 60;
-  /** TTL cache (giây) cho endpoint chi tiết sản phẩm */
-  CACHE_TTL_PRODUCT_DETAIL = 10 * 60;
 
   /**
    * Helper: gắn `images` và `thumbnail` vào plain object product từ `productImages`.
@@ -563,47 +494,7 @@ class CatalogService {
   }
 
   /**
-   * Xóa toàn bộ cache liên quan đến product sau khi create/update/delete.
-   *
-   * Xóa các pattern sau (nếu Redis hỗ trợ `delPattern`):
-   *   - `products:list:*`     — cache danh sách sản phẩm (tất cả filter combos)
-   *   - `products:featured:*` — cache trang featured
-   *   - `products:bestsellers:*` — cache best-sellers (các period/limit khác nhau)
-   *   - `products:deals:*`    — cache trang deals
-   *   - `chatbot:*`           — chatbot cache có thể reference tên/giá sản phẩm
-   * Ngoài ra xóa `product:detail:{id}` và `product:detail:{slug}` nếu có.
-   *
-   * @param {number|null} productId - ID sản phẩm (null khi tạo mới)
-   * @param {string} [productSlug] - Slug sản phẩm (để xóa detail cache theo slug)
-   * @returns {Promise<void>}
-   */
-  async _clearProductCache(productId, productSlug) {
-    if (!this.cacheStore || typeof this.cacheStore.delMany !== 'function') return;
-    const keys = [];
-    if (this.cacheStore.delPattern) {
-      try {
-        await this.cacheStore.delPattern('products:list:*');
-        await this.cacheStore.delPattern('products:featured:*');
-        await this.cacheStore.delPattern('products:bestsellers:*');
-        await this.cacheStore.delPattern('products:deals:*');
-        await this.cacheStore.delPattern('chatbot:*');
-      } catch (err) {
-        this.logger.warn('clearProductCache pattern thất bại:', err.message);
-      }
-    }
-    if (productId) keys.push(`product:detail:${productId}`);
-    if (productSlug) keys.push(`product:detail:${productSlug}`);
-    for (const k of keys) {
-      try {
-        await this.cacheStore.del(k);
-      } catch {
-        /* ignore */
-      }
-    }
-  }
-
-  /**
-   * Lấy danh sách sản phẩm có phân trang, lọc đa tiêu chí và cache theo URL.
+   * Lấy danh sách sản phẩm có phân trang, lọc đa tiêu chí.
    *
    * **Filter options:**
    *   - `category`: slug hoặc numeric ID — service tự resolve slug sang ID trước khi query.
@@ -616,9 +507,6 @@ class CatalogService {
    *   - `search`: full-text search trên tên sản phẩm
    *   - `status`: trạng thái sản phẩm (`active`, `inactive`, ...)
    *   - `sortBy`: sắp xếp theo `price` dùng `COALESCE(MIN(variant.price), base_price)` (rule cứng)
-   *
-   * **Cache:** key = `products:list:{cacheUrl}` (TTL 10 phút). Nếu `cacheUrl` không truyền,
-   * không cache (thường xảy ra với filter lạ hoặc search).
    *
    * @param {object} params
    * @param {number} [params.page=1] - Trang hiện tại
@@ -633,8 +521,7 @@ class CatalogService {
    * @param {string} [params.status] - Trạng thái sản phẩm
    * @param {string|string[]} [params.brand] - Slug hoặc ID thương hiệu (có thể là mảng)
    * @param {number} [params.limit] - Số sản phẩm mỗi trang (tối đa 100, mặc định 20)
-   * @param {string} [params.cacheUrl] - URL đầy đủ dùng làm cache key (query string included)
-   * @returns {Promise<{payload: object, cacheHit: boolean}>}
+   * @returns {Promise<{payload: object}>}
    *   `payload` gồm: `status`, `data` (mảng sản phẩm), `total`, `page`, `limit`
    */
   async getAllProducts({
@@ -650,19 +537,9 @@ class CatalogService {
     status,
     brand,
     limit,
-    cacheUrl,
   }) {
     const lim = Math.min(parseInt(limit, 10) || DEFAULT_PAGE_SIZE, MAX_QUERY_LIMIT);
     const off = (parseInt(page, 10) - 1) * lim;
-
-    // Cache check
-    const cacheKey = cacheUrl ? `products:list:${cacheUrl}` : null;
-    if (cacheKey && this.cacheStore) {
-      const cached = await this.cacheStore.get(cacheKey);
-      if (cached) {
-        return { payload: JSON.parse(cached), cacheHit: true };
-      }
-    }
 
     // Resolve category slug → id
     let categoryId;
@@ -728,19 +605,13 @@ class CatalogService {
       limit: lim,
     };
 
-    if (cacheKey && this.cacheStore) {
-      await this.cacheStore.setEx(cacheKey, this.CACHE_TTL_PRODUCT_LIST, JSON.stringify(payload));
-    }
-    return { payload, cacheHit: false };
+    return { payload };
   }
 
   /**
    * Lấy chi tiết sản phẩm theo ID, kèm variant resolution và track recently-viewed.
    *
    * Nếu `id` không tìm thấy theo ID số, thử tìm lại theo slug (backward compatibility).
-   * Cache detail với key `product:detail:{id}` (TTL 10 phút), chỉ cache khi request
-   * không có `skuId`/`queryColor` vì các request này trả kết quả khác nhau.
-   *
    * Sau khi tìm thấy sản phẩm, gọi `_trackRecentlyViewed` fire-and-forget (không block response).
    *
    * @param {object} params
@@ -748,30 +619,17 @@ class CatalogService {
    * @param {string|number} [params.skuId] - ID variant cụ thể cần chọn sẵn
    * @param {string} [params.queryColor] - Màu sắc để chọn variant (từ query string `?color=...`)
    * @param {number|null} [params.userId] - ID user đang xem (để track recently-viewed)
-   * @returns {Promise<{payload: object, cacheHit: boolean}>}
+   * @returns {Promise<{payload: object}>}
    *   `payload` gồm: `status`, `data` (chi tiết sản phẩm với variant đã chọn)
    * @throws {AppError} 404 nếu không tìm thấy sản phẩm
    */
   async getProductById({ id, skuId, queryColor, userId }) {
-    const isBaseRequest = !skuId && !queryColor;
-    const detailCacheKey = isBaseRequest ? `product:detail:${id}` : null;
-
-    if (detailCacheKey && this.cacheStore) {
-      const cached = await this.cacheStore.get(detailCacheKey);
-      if (cached) {
-        const cachedData = JSON.parse(cached);
-        if (userId && cachedData?.data?.id) {
-          this._trackRecentlyViewed(userId, cachedData.data.id).catch(() => {});
-        }
-        return { payload: cachedData, cacheHit: true };
-      }
-    }
-
     let product = await this.catalogRepository.findProductByIdWithFullDetails(id);
     if (!product) {
       product = await this.catalogRepository.findProductBySlugWithFullDetails(id);
     }
     if (!product) throw new AppError('catalog.productNotFound', 404);
+    if (product.status !== 'active') throw new AppError('catalog.productNotFound', 404);
 
     const responseData = this._buildProductDetailResponse(product, { skuId, queryColor });
     const payload = { status: 'success', data: responseData };
@@ -782,20 +640,13 @@ class CatalogService {
       });
     }
 
-    if (detailCacheKey && this.cacheStore) {
-      await this.cacheStore.setEx(
-        detailCacheKey,
-        this.CACHE_TTL_PRODUCT_DETAIL,
-        JSON.stringify(payload),
-      );
-    }
-    return { payload, cacheHit: false };
+    return { payload };
   }
 
   /**
    * Lấy chi tiết sản phẩm theo slug URL, kèm variant resolution và track recently-viewed.
    *
-   * Khác với `getProductById`: không có cache và không thử fallback sang ID.
+   * Khác với `getProductById`: không thử fallback sang ID.
    * Track recently-viewed fire-and-forget nếu có `userId`.
    *
    * @param {object} params
@@ -809,6 +660,7 @@ class CatalogService {
   async getProductBySlug({ slug, skuId, queryColor, userId }) {
     const product = await this.catalogRepository.findProductBySlugWithFullDetails(slug);
     if (!product) throw new AppError('catalog.productNotFound', 404);
+    if (product.status !== 'active') throw new AppError('catalog.productNotFound', 404);
 
     const responseData = this._buildProductDetailResponse(product, { skuId, queryColor });
 
@@ -992,26 +844,15 @@ class CatalogService {
   }
 
   /**
-   * Lấy danh sách sản phẩm nổi bật (`isFeatured=true`), có cache.
-   *
-   * Cache key: `products:featured:{limit}` (TTL 10 phút).
+   * Lấy danh sách sản phẩm nổi bật (`isFeatured=true`).
    *
    * @param {object} params
    * @param {number} [params.limit=8] - Số sản phẩm tối đa trả về
    * @returns {Promise<object[]>} Mảng sản phẩm với: images, thumbnail, price, ratings
    */
   async getFeaturedProducts({ limit = DEFAULT_LIST_LIMIT }) {
-    const cacheKey = `products:featured:${limit}`;
-    if (this.cacheStore) {
-      const cached = await this.cacheStore.get(cacheKey);
-      if (cached) return JSON.parse(cached);
-    }
     const productsRaw = await this.catalogRepository.findFeaturedProducts(parseInt(limit, 10));
-    const data = productsRaw.map((p) => this._mapProductForList(p));
-    if (this.cacheStore) {
-      await this.cacheStore.setEx(cacheKey, this.CACHE_TTL_FEATURED, JSON.stringify(data));
-    }
-    return data;
+    return productsRaw.map((p) => this._mapProductForList(p));
   }
 
   /**
@@ -1138,7 +979,7 @@ class CatalogService {
   }
 
   /**
-   * Lấy danh sách sản phẩm mới nhất (sắp xếp theo `createdAt DESC`), không cache.
+   * Lấy danh sách sản phẩm mới nhất (sắp xếp theo `createdAt DESC`).
    *
    * @param {object} params
    * @param {number} [params.limit=8] - Số sản phẩm tối đa trả về
@@ -1157,13 +998,12 @@ class CatalogService {
   }
 
   /**
-   * Lấy danh sách sản phẩm bán chạy trong khoảng thời gian nhất định, có cache.
+   * Lấy danh sách sản phẩm bán chạy trong khoảng thời gian nhất định.
    *
    * Thuật toán: JOIN `order_items` + `orders` (lọc không cancelled), GROUP BY product,
    * ORDER BY tổng số lượng bán. Kết quả raw từ SQL (plain objects, không phải Sequelize instances)
    * được fetch lại bằng `findProductsByIdsOrdered` để có đầy đủ associations.
    *
-   * Cache key: `products:bestsellers:{period}:{limit}` (TTL 30 phút).
    * Fallback về `getNewArrivals` nếu không có đơn hàng nào trong khoảng thời gian.
    *
    * @param {object} params
@@ -1172,11 +1012,6 @@ class CatalogService {
    * @returns {Promise<object[]>} Mảng sản phẩm bán chạy với: images, thumbnail, price
    */
   async getBestSellers({ limit = DEFAULT_BESTSELLERS_LIMIT, period = 'month' }) {
-    const cacheKey = `products:bestsellers:${period}:${limit}`;
-    if (this.cacheStore) {
-      const cached = await this.cacheStore.get(cacheKey);
-      if (cached) return JSON.parse(cached);
-    }
     const now = new Date();
     let startDate;
     switch (period) {
@@ -1202,29 +1037,23 @@ class CatalogService {
     const ids = bestSellers.map((p) => p.id);
     const productsRaw = await this.catalogRepository.findProductsByIdsOrdered(ids);
 
-    const data = productsRaw.map((product) => {
+    return productsRaw.map((product) => {
       const json = product.toJSON();
       json.price = json.basePrice;
       this._mapProductImages(json);
       delete json.productImages;
       return json;
     });
-    if (this.cacheStore) {
-      await this.cacheStore.setEx(cacheKey, this.CACHE_TTL_BESTSELLERS, JSON.stringify(data));
-    }
-    return data;
   }
 
   /**
-   * Lấy danh sách sản phẩm đang giảm giá, có cache.
+   * Lấy danh sách sản phẩm đang giảm giá.
    *
    * Điều kiện: `compareAtPrice IS NOT NULL` và phần trăm giảm giá >= `minDiscount`.
    * Phần trăm giảm = `(compareAtPrice - basePrice) / compareAtPrice * 100`.
    *
    * Lưu ý: query dùng `subQuery: false` vì MySQL yêu cầu để sort theo computed column
    * (literal expression) — không được xóa flag này.
-   *
-   * Cache key: `products:deals:{minDiscount}:{sort}:{limit}` (TTL 10 phút).
    *
    * @param {object} params
    * @param {number} [params.limit] - Số sản phẩm tối đa (mặc định 12, tối đa 100)
@@ -1235,11 +1064,6 @@ class CatalogService {
   async getDeals({ limit, minDiscount, sort = 'discount_desc' }) {
     const parsedLimit = Math.min(parseInt(limit, 10) || DEFAULT_DEALS_LIMIT, MAX_QUERY_LIMIT);
     const parsedMinDiscount = parseFloat(minDiscount) || DEFAULT_MIN_DISCOUNT_PERCENT;
-    const cacheKey = `products:deals:${parsedMinDiscount}:${sort}:${parsedLimit}`;
-    if (this.cacheStore) {
-      const cached = await this.cacheStore.get(cacheKey);
-      if (cached) return JSON.parse(cached);
-    }
 
     const products = await this.catalogRepository.findDeals({
       minDiscount: parsedMinDiscount,
@@ -1261,9 +1085,6 @@ class CatalogService {
       delete json.reviews;
       return { ...json, discountPercentage, ratings };
     });
-    if (this.cacheStore) {
-      await this.cacheStore.setEx(cacheKey, this.CACHE_TTL_DEALS, JSON.stringify(data));
-    }
     return data;
   }
 
@@ -1418,7 +1239,6 @@ class CatalogService {
    *
    * Nếu bất kỳ bước nào fail → toàn bộ transaction rollback, không có entity nào được tạo.
    * Sau khi commit → fetch lại product với full associations để trả về.
-   * Sau khi trả về → xóa cache `products:list:*` và các patterns liên quan.
    *
    * @param {object} params
    * @param {object} params.payload - Dữ liệu sản phẩm mới
@@ -1454,10 +1274,12 @@ class CatalogService {
           shortDescription: payload.shortDescription,
           basePrice: isVariantProduct ? 0 : payload.price,
           compareAtPrice: isVariantProduct ? null : payload.compareAtPrice,
-          images: payload.images || [],
           stockQuantity: isVariantProduct ? 0 : payload.stockQuantity,
           isFeatured: payload.featured,
+          status: payload.status || 'active',
+          condition: payload.condition,
           tags: payload.tags || [],
+          faqs: payload.faqs,
           seoTitle: payload.seoTitle,
           seoDescription: payload.seoDescription,
           seoKeywords: payload.seoKeywords || [],
@@ -1507,6 +1329,17 @@ class CatalogService {
         await this.catalogRepository.createProductAttributes(rows, { transaction });
       }
 
+      // Tạo ảnh product-level (không thuộc variant nào)
+      if (payload.images && payload.images.length > 0) {
+        const imageRows = payload.images.map((url, i) => ({
+          productId: product.id,
+          imageUrl: url,
+          isThumbnail: i === 0,
+          variantId: null,
+        }));
+        await this.catalogRepository.createProductImages(imageRows, { transaction });
+      }
+
       if (payload.variants && payload.variants.length > 0) {
         const rows = payload.variants.map((v, i) => ({
           productId: product.id,
@@ -1518,22 +1351,38 @@ class CatalogService {
           isDefault: v.isDefault || i === 0,
           isAvailable: v.isAvailable !== false,
           attributes: v.attributes || {},
-          attributeValues: v.attributeValues || {},
-          specifications: v.specifications || {},
-          images: v.images || [],
           displayName: v.displayName || v.name || v.variantName,
           sortOrder: v.sortOrder || i,
         }));
-        await this.catalogRepository.createProductVariants(rows, { transaction });
+        const createdVariants = await this.catalogRepository.createProductVariants(rows, {
+          transaction,
+        });
+
+        // Tạo ảnh cho từng variant
+        const variantImageRows = [];
+        payload.variants.forEach((v, i) => {
+          if (v.images && v.images.length > 0) {
+            const variantId = createdVariants[i]?.id;
+            if (variantId) {
+              v.images.forEach((url, j) => {
+                variantImageRows.push({
+                  productId: product.id,
+                  variantId,
+                  imageUrl: url,
+                  isThumbnail: j === 0,
+                });
+              });
+            }
+          }
+        });
+        if (variantImageRows.length > 0) {
+          await this.catalogRepository.createProductImages(variantImageRows, { transaction });
+        }
       }
       createdProduct = product;
     });
 
-    const fullProduct = await this.catalogRepository.findProductByIdWithFullDetails(
-      createdProduct.id,
-    );
-    await this._clearProductCache(null);
-    return fullProduct;
+    return this.catalogRepository.findProductByIdWithFullDetails(createdProduct.id);
   }
 
   /**
@@ -1551,7 +1400,6 @@ class CatalogService {
    *
    * Toàn bộ thao tác trong 1 transaction. Sau khi commit:
    *   - Fetch lại product với full associations để trả về
-   *   - Xóa cache `product:detail:{id}`, `product:detail:{slug}`, và các list/featured/deals patterns
    *
    * @param {object} params
    * @param {number|string} params.id - ID sản phẩm cần cập nhật
@@ -1564,8 +1412,6 @@ class CatalogService {
     const product = await this.catalogRepository.findProductByPk(id);
     if (!product) throw new AppError('catalog.productNotFound', 404);
 
-    const originalSlug = product.slug;
-
     await this.catalogRepository.runInTransaction(async (transaction) => {
       const updateData = {};
       const setIfPresent = (key, value) => {
@@ -1577,9 +1423,12 @@ class CatalogService {
       setIfPresent('shortDescription', patch.shortDescription);
       setIfPresent('price', patch.price);
       setIfPresent('compareAtPrice', patch.compareAtPrice);
-      setIfPresent('images', patch.images);
       setIfPresent('stockQuantity', patch.stockQuantity);
       setIfPresent('featured', patch.featured);
+      setIfPresent('status', patch.status);
+      setIfPresent('condition', patch.condition);
+      setIfPresent('baseName', patch.baseName);
+      setIfPresent('faqs', patch.faqs);
       setIfPresent('tags', patch.tags);
       setIfPresent('seoTitle', patch.seoTitle);
       setIfPresent('seoDescription', patch.seoDescription);
@@ -1603,21 +1452,61 @@ class CatalogService {
         }
       }
 
+      // Thay thế ảnh product-level khi patch có trường images
+      if (Object.prototype.hasOwnProperty.call(patch, 'images')) {
+        await this.catalogRepository.clearProductImages(id, null, { transaction });
+        if (patch.images && patch.images.length > 0) {
+          const imageRows = patch.images.map((url, i) => ({
+            productId: id,
+            imageUrl: url,
+            isThumbnail: i === 0,
+            variantId: null,
+          }));
+          await this.catalogRepository.createProductImages(imageRows, { transaction });
+        }
+      }
+
       if (Object.prototype.hasOwnProperty.call(patch, 'variants')) {
+        // Xóa cả ảnh variant-level trước khi xóa variants
+        await this.catalogRepository.clearProductImages(id, 'variants', { transaction });
         await this.catalogRepository.clearProductVariants(id, { transaction });
         if (patch.variants && patch.variants.length > 0) {
-          const rows = patch.variants.map((v) => ({ ...v, productId: id }));
-          await this.catalogRepository.createProductVariants(rows, { transaction });
+          const rows = patch.variants.map((v) => ({
+            ...v,
+            productId: id,
+            images: undefined, // loại bỏ — images xử lý riêng bên dưới
+          }));
+          const createdVariants = await this.catalogRepository.createProductVariants(rows, {
+            transaction,
+          });
+
+          const variantImageRows = [];
+          patch.variants.forEach((v, i) => {
+            if (v.images && v.images.length > 0) {
+              const variantId = createdVariants[i]?.id;
+              if (variantId) {
+                v.images.forEach((url, j) => {
+                  variantImageRows.push({
+                    productId: id,
+                    variantId,
+                    imageUrl: url,
+                    isThumbnail: j === 0,
+                  });
+                });
+              }
+            }
+          });
+          if (variantImageRows.length > 0) {
+            await this.catalogRepository.createProductImages(variantImageRows, { transaction });
+          }
         }
       }
     });
-    const updatedProduct = await this.catalogRepository.findProductByIdWithFullDetails(id);
-    await this._clearProductCache(id, originalSlug);
-    return updatedProduct;
+    return this.catalogRepository.findProductByIdWithFullDetails(id);
   }
 
   /**
-   * Xóa sản phẩm theo ID. Sau khi xóa, xóa cache liên quan.
+   * Xóa sản phẩm theo ID.
    *
    * @param {object} params
    * @param {number|string} params.id - ID sản phẩm cần xóa
@@ -1628,9 +1517,7 @@ class CatalogService {
     const product = await this.catalogRepository.findProductByPk(id);
     if (!product) throw new AppError('catalog.productNotFound', 404);
 
-    const productSlug = product.slug;
     await this.catalogRepository.deleteProduct(product);
-    await this._clearProductCache(id, productSlug);
     return { message: 'catalog.productDeleted' };
   }
 }

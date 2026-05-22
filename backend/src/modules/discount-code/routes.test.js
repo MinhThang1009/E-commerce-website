@@ -43,12 +43,6 @@ jest.mock('@middlewares/admin-auth', () => ({
     n();
   },
 }));
-jest.mock('@shared/admin-audit', () => ({
-  AdminAuditService: {
-    logDiscountCodeAction: jest.fn(),
-  },
-  auditMiddleware: (r, s, n) => n(),
-}));
 
 const express = require('express');
 const supertest = require('supertest');
@@ -458,24 +452,6 @@ describe('PUT /api/admin/discount-codes/:id', () => {
     expect(res.status).toBe(200);
     expect(DiscountCode.findOne).not.toHaveBeenCalled();
   });
-
-  test('200 — DEACTIVATE action khi isActive đổi từ true sang false', async () => {
-    const { AdminAuditService } = require('@shared/admin-audit');
-    const existing = {
-      ...makeCode({ id: 6, code: 'ACT', isActive: true }),
-      update: jest.fn().mockResolvedValue(),
-    };
-    DiscountCode.findByPk.mockResolvedValue(existing);
-
-    await adminRequest.put('/api/admin/discount-codes/6').send({ isActive: false });
-
-    expect(AdminAuditService.logDiscountCodeAction).toHaveBeenCalledWith(
-      expect.any(Object),
-      'DEACTIVATE',
-      '6',
-      'ACT',
-    );
-  });
 });
 
 // ============================================================
@@ -656,24 +632,5 @@ describe('DELETE /api/admin/discount-codes/:id', () => {
 
     const res = await adminRequest.delete('/api/admin/discount-codes/999');
     expect(res.status).toBe(404);
-  });
-
-  test('ghi audit log sau khi xóa', async () => {
-    const { AdminAuditService } = require('@shared/admin-audit');
-    AdminAuditService.logDiscountCodeAction.mockClear();
-    const existing = {
-      ...makeCode({ id: 8, code: 'AUDIT10' }),
-      destroy: jest.fn().mockResolvedValue(),
-    };
-    DiscountCode.findByPk.mockResolvedValue(existing);
-
-    await adminRequest.delete('/api/admin/discount-codes/8');
-
-    expect(AdminAuditService.logDiscountCodeAction).toHaveBeenCalledWith(
-      expect.any(Object),
-      'DELETE',
-      '8',
-      'AUDIT10',
-    );
   });
 });

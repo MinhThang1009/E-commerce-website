@@ -1,30 +1,68 @@
 /**
- * @file promptBuilder.js
+ * @file prompt-builder.js
  * @layer Service
  * @module ai
- * @description Business logic layer cho ai
+ *
+ * PromptBuilder — xây dựng nội dung tin nhắn gửi cho LLM (phần "Augmented" trong RAG).
+ *
+ * Sau khi RAGPipeline đã tìm được sản phẩm liên quan (Retrieval),
+ * bước này tạo một đoạn text kết hợp:
+ *   - Danh sách sản phẩm tìm được (ground truth từ DB)
+ *   - Thông tin cửa hàng (bảo hành, giao hàng, đổi trả)
+ *   - Câu hỏi của user
+ *   - Các quy tắc cho LLM (không được bịa sản phẩm, phải trả lời đúng ngôn ngữ...)
+ *   - Định dạng JSON mong muốn trong phản hồi
+ *
+ * Tại sao phải inject thông tin sản phẩm vào prompt?
+ * LLM không biết kho hàng cụ thể của cửa hàng. Nếu không inject,
+ * LLM sẽ bịa ra sản phẩm/giá (hallucination). Inject context thực tế → LLM
+ * chỉ được nói về những gì có trong danh sách.
+ *
+ * Pure function — không có side effects, không gọi DB hay API.
  */
+
 /**
- * [Augmentation] Tạo RAG prompt: inject product list + store info + matching rules + version warning.
- * Pure function — không dùng instance state, chỉ dùng params + process.env.
- * @param {string} userMessage - Query đã sanitize.
- * @param {Array<Object>} products - Sản phẩm từ retrieval (metadata + score).
- * @param {Object} context - Context bổ sung (originalMessage...).
- * @returns {string} Prompt text gửi cho LLM.
+ * Tạo nội dung prompt gửi cho LLM, kết hợp danh sách sản phẩm + thông tin cửa hàng + câu hỏi user.
+ *
+ * Đây là bước "Augmented" trong RAG: augment (tăng cường) câu hỏi của user
+ * bằng context thực tế từ DB để LLM có thể trả lời chính xác.
+ *
+ * **Version warning là gì và tại sao cần?**
+ * Đôi khi user hỏi "iPhone 17" nhưng vector search trả về "iPhone 16" (gần nhất).
+ * Nếu không cảnh báo, LLM có thể tưởng rằng "iPhone 16" trong danh sách chính là "iPhone 17"
+ * và trả lời sai. Version warning báo LLM biết: số trong query không khớp với số trong danh sách
+ * → phải nói rõ "cửa hàng chưa có iPhone 17" thay vì bịa thông tin.
+ *
+ * @param {string} userMessage - Query của user đã sanitize (tối đa 2000 ký tự, đã escape quotes).
+ * @param {Array<Object>} products - Danh sách sản phẩm từ bước Retrieval.
+ *   Mỗi sản phẩm có: name, category, shortDescription, price/basePrice, inStock, lowConfidence.
+ * @param {Object} context - Context bổ sung (originalMessage, llmRewrittenQuery...).
+ *   Hiện chưa dùng trực tiếp trong hàm này nhưng giữ để mở rộng sau.
+ * @returns {string} Nội dung prompt dạng text, sẵn sàng gửi cho LLM.
  */
 function createPrompt(userMessage, products, context) {
+  // ── Phần 1: Xây dựng danh sách sản phẩm ────────────────────────────────────────
+  // Mỗi sản phẩm được format thành 1 dòng với đầy đủ thông tin cần thiết
   const productList =
     products.length > 0
       ? products
           .map(
             (p) =>
-              `- ${p.lowConfidence ? '⚠️[low confidence] ' : ''}${p.name} (${p.category || 'Sản phẩm'}): ${p.shortDescription || 'Mô tả đang cập nhật'} - Giá: ${(p.price ?? p.basePrice)?.toLocaleString('vi-VN')} đ - Tình trạng: ${p.inStock ? 'Còn hàng' : 'Hết hàng'}`,
+              // ⚠️[low confidence]: cờ báo kết quả tìm kiếm kém chính xác (score thấp)
+              // LLM sẽ thận trọng hơn khi đề xuất sản phẩm có flag này
+              `- ${p.lowConfidence ? '⚠️[low confidence] ' : ''}${p.name} (${p.category || 'Sản phẩm'}): ${p.shortDescription || 'Mô tả đang cập nhật'} - Giá: ${Number(p.price ?? p.basePrice).toLocaleString('vi-VN')} đ - Tình trạng: ${p.inStock ? 'Còn hàng' : 'Hết hàng'}`,
           )
           .join('\n')
       : '(Không tìm thấy sản phẩm nào phù hợp trong cơ sở dữ liệu)';
 
-  // Context augmentation: phát hiện số version/thế hệ trong query,
-  // báo LLM biết nếu không có sản phẩm nào khớp số đó trong retrieved context
+  // ── Phần 2: Version warning — cảnh báo khi số model trong query không khớp danh sách ──
+  // Mục đích: ngăn LLM nhầm "iPhone 16" là "iPhone 17" chỉ vì tên gần giống.
+  //
+  // Cách hoạt động:
+  //   1. Trích xuất tất cả số có 2+ chữ số trong query (16, 17, 256, 8GB...)
+  //   2. Loại trừ số là đơn vị đo lường (gb, tb, hz, mAh, triệu, nghìn, k đồng...)
+  //   3. Kiểm tra xem mỗi số có xuất hiện trong TÊN sản phẩm nào không
+  //   4. Số không xuất hiện → thêm vào danh sách "missing versions" → sinh cảnh báo
   const queryVersions =
     userMessage.match(
       /\b\d{2,4}\b(?!\s*(?:gb|tb|mb|mah|hz|mp|w|mm|cm|inch|triệu|nghìn|tr|k|đ|"|'))/gi,
@@ -33,11 +71,22 @@ function createPrompt(userMessage, products, context) {
   const missingVersions = queryVersions.filter(
     (v) => !productNames.some((name) => name.includes(v)),
   );
+
+  // Chỉ thêm cảnh báo khi thực sự có số model không khớp
   const versionWarning =
     missingVersions.length > 0
       ? `\n⚠️ CẢNH BÁO: Query đề cập đến số "${missingVersions.join(', ')}" nhưng KHÔNG có sản phẩm nào trong danh sách chứa số này. Đây là retrieved context gần nhất, KHÔNG phải sản phẩm được hỏi.`
       : '';
 
+  // ── Phần 3: Tổng hợp thành prompt hoàn chỉnh ───────────────────────────────────
+  // Cấu trúc prompt gồm 4 phần theo thứ tự:
+  //   [A] Danh sách sản phẩm + cảnh báo version (nếu có)
+  //   [B] Thông tin cửa hàng từ environment variables
+  //   [C] Câu hỏi của user
+  //   [D] Quy tắc ngôn ngữ + quy tắc so khớp sản phẩm + định dạng JSON output
+  //
+  // Thông tin cửa hàng lấy từ process.env để dễ cấu hình cho từng deployment
+  // (không hardcode trong code → không cần sửa code khi thay đổi chính sách)
   return `
 DANH SÁCH SẢN PHẨM HIỆN CÓ (Dữ liệu thực tế — retrieved bởi semantic search):
 ${productList}

@@ -1,6 +1,6 @@
 # TechStore — Chiến Lược Testing
 
-> 5 tầng test, 275 suites, 5.411 test cases, coverage 100% (unit).
+> 5 tầng test, 275 suites, 5.538 test cases, coverage 100% (unit).
 
 ## Mục lục
 
@@ -34,12 +34,12 @@ TechStore áp dụng chiến lược kiểm thử đa tầng. Mỗi tầng phụ
 
 | Suite | Suites | Tests | Runtime | Config |
 |---|---|---|---|---|
-| BE Unit Tests | 166 | **3.778** | ~10s | `jest.config.js` |
+| BE Unit Tests | 166 | **3.905** | ~10s | `jest.config.js` |
 | BE Integration Tests | 42 | **228** | ~50s | `jest.integration.config.js` |
 | BE API HTTP Tests | 45 | **866** | ~140s | `jest.api.config.js` |
 | BE E2E Tests | 5 | **102** | ~20s | `jest.e2e.config.js` |
 | FE Component Tests | 17 | **437** | ~7s | `jest.config.cjs` (frontend/) |
-| **Tổng** | **275** | **5.411** | | |
+| **Tổng** | **275** | **5.538** | | |
 
 ---
 
@@ -53,7 +53,7 @@ TechStore áp dụng chiến lược kiểm thử đa tầng. Mỗi tầng phụ
                 ┌─┴──────────────────────┴─┐
                 │ Integration Tests (228)   │  ← Service/repo layer (real DB)
               ┌─┴──────────────────────────┴─┐
-              │  Unit Tests (3.778 + 437)     │  ← Isolated logic + React components
+              │  Unit Tests (3.905 + 437)     │  ← Isolated logic + React components
               └────────────────────────────────┘
 ```
 
@@ -71,17 +71,17 @@ TechStore áp dụng chiến lược kiểm thử đa tầng. Mỗi tầng phụ
 
 ## 3.1 Backend Unit Tests
 
-**Mục đích**: Kiểm tra logic nghiệp vụ của từng hàm trong isolation hoàn toàn. Mọi external dependency (Sequelize models, email, AI, Redis) đều được mock bằng `jest.fn()`.
+**Mục đích**: Kiểm tra logic nghiệp vụ của từng hàm trong isolation hoàn toàn. Mọi external dependency (Sequelize models, email, AI) đều được mock bằng `jest.fn()`.
 
-**Phạm vi**: 166 test suites, 3.778 test cases.
+**Phạm vi**: 166 test suites, 3.905 test cases.
 - Tất cả Service classes (19 modules × nhiều methods)
 - Repository classes
 - Controller handlers (input/output, error paths)
 - Utility functions (`logger`, `i18n`, `catch-async`, `image-url`)
-- Middleware (`authenticate`, `authorize`, `rate-limiter`, `validate-request`, `cache`, `detect-locale`)
+- Middleware (`authenticate`, `authorize`, `rate-limiter`, `validate-request`, `detect-locale`)
 - Models và validators
 - Cron job functions (`runDailyCleanup`, `runWeeklyCleanup`)
-- EventBus, UnitOfWork, AdminAuditService
+- EventBus, UnitOfWork
 
 **Vị trí file test**:
 ```
@@ -163,13 +163,13 @@ backend/src/__integration__/
 **Mục đích**: Kiểm tra toàn bộ HTTP layer — từ routes đến middleware chain đến DB. Dùng Supertest để gửi real HTTP requests đến Express app.
 
 **Phạm vi**: 45 test suites, 866 test cases.
-- Authentication (JWT verify, token refresh, blacklist)
+- Authentication (JWT verify, token refresh, token reuse detection)
 - Authorization (role check — user vs admin endpoints)
 - Input validation (Zod schemas — valid/invalid payloads)
 - HTTP status codes (200/201/400/401/403/404/409/500)
 - Response body structure
 - Rate limiting behavior
-- Cache headers
+- HTTP headers
 
 **Vị trí file test**:
 ```
@@ -416,12 +416,12 @@ npm run build
 
 | Suite | Suites | Tests | Runtime |
 |---|---|---|---|
-| BE Unit Tests | 166 | 3.778 | ~10s |
+| BE Unit Tests | 166 | 3.905 | ~10s |
 | BE Integration Tests | 42 | 228 | ~50s |
 | BE API HTTP Tests | 45 | 866 | ~140s |
 | BE E2E Tests | 5 | 102 | ~20s |
 | FE Component Tests | 17 | 437 | ~7s |
-| **Tổng** | **275** | **5.411** | |
+| **Tổng** | **275** | **5.538** | |
 
 **Coverage (local unit tests)**:
 - Statements: 100%
@@ -484,18 +484,6 @@ jest.mock('@shared/event-bus', () => ({
 jest.mock('@services/email', () => ({
   sendOTPEmail: jest.fn().mockResolvedValue(true),
   sendOrderConfirmation: jest.fn().mockResolvedValue(true),
-}));
-```
-
-**Mock Redis (trong unit tests)**:
-```javascript
-const mockRedisClient = {
-  get: jest.fn().mockResolvedValue(null),
-  setEx: jest.fn().mockResolvedValue(undefined),
-  del: jest.fn().mockResolvedValue(undefined),
-};
-jest.mock('@config/redis', () => ({
-  getRedisClient: jest.fn().mockResolvedValue(mockRedisClient),
 }));
 ```
 

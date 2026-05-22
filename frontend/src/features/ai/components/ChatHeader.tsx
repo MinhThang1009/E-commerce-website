@@ -7,20 +7,15 @@
 import React from 'react';
 import { useTranslation } from 'react-i18next';
 import { CloseIcon, LightningIcon } from './icons/index';
-import { chatbotService } from '../api/chatbot-service';
-
-// Dùng kiểu của instance singleton chatbotService
-type ChatbotServiceType = typeof chatbotService;
 
 interface ChatHeaderProps {
   onClose: () => void;
-  chatbotService: ChatbotServiceType;
 }
 
 /**
  * Component hiển thị header của chat widget
  */
-const ChatHeader: React.FC<ChatHeaderProps> = ({ onClose, chatbotService }) => {
+const ChatHeader: React.FC<ChatHeaderProps> = ({ onClose }) => {
   const { t } = useTranslation();
 
   return (
@@ -77,12 +72,8 @@ const ChatHeader: React.FC<ChatHeaderProps> = ({ onClose, chatbotService }) => {
             border: '1px solid rgba(255,255,255,0.18)',
           }}
         >
-          <div
-            className={`w-2 h-2 rounded-full animate-pulse shadow-sm ${chatbotService.isReady() ? 'bg-emerald-400' : 'bg-amber-400'}`}
-          />
-          <span className="text-[11px] font-semibold tracking-wide">
-            {chatbotService.isReady() ? t('ai.chatbotName') : t('ai.statusDemo')}
-          </span>
+          <div className="w-2 h-2 rounded-full animate-pulse shadow-sm bg-emerald-400" />
+          <span className="text-[11px] font-semibold tracking-wide">{t('ai.chatbotName')}</span>
         </div>
         <div
           className="flex items-center rounded-full px-3 py-1.5"
@@ -92,9 +83,7 @@ const ChatHeader: React.FC<ChatHeaderProps> = ({ onClose, chatbotService }) => {
             border: '1px solid rgba(255,255,255,0.12)',
           }}
         >
-          <span className="text-[11px] text-white/80">
-            {chatbotService.isReady() ? t('ai.smartMode') : t('ai.limited')}
-          </span>
+          <span className="text-[11px] text-white/80">{t('ai.smartMode')}</span>
         </div>
       </div>
     </div>

@@ -160,11 +160,9 @@ class CatalogController {
 
   getAllProducts = async (req, res, next) => {
     try {
-      const { payload, cacheHit } = await this.catalogService.getAllProducts({
+      const { payload } = await this.catalogService.getAllProducts({
         ...req.query,
-        cacheUrl: req.url,
       });
-      res.setHeader('X-Cache', cacheHit ? 'HIT' : 'MISS');
       res.status(200).json(payload);
     } catch (err) {
       next(err);
@@ -173,13 +171,12 @@ class CatalogController {
 
   getProductById = async (req, res, next) => {
     try {
-      const { payload, cacheHit } = await this.catalogService.getProductById({
+      const { payload } = await this.catalogService.getProductById({
         id: req.params.id,
         skuId: req.query.skuId,
         queryColor: req.query.color || req.query['Màu sắc'],
         userId: req.user?.id,
       });
-      res.setHeader('X-Cache', cacheHit ? 'HIT' : 'MISS');
       res.status(200).json(payload);
     } catch (err) {
       next(err);

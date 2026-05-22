@@ -13,7 +13,6 @@
  * Chiến lược mock:
  *   - Tất cả Sequelize models mock hoàn toàn (không kết nối DB)
  *   - adminAuthenticate bypass để test controller logic, không auth logic
- *   - auditMiddleware bypass để tránh side-effect
  */
 
 process.env.NODE_ENV = 'test';
@@ -78,20 +77,6 @@ jest.mock('@middlewares/validate-request', () => ({
   // validate dùng express-validator array — trả về array middleware để router dùng
   validate: (rules) => [...rules, (_req, _res, next) => next()],
   validateExpressValidator: (_req, _res, next) => next(),
-}));
-
-jest.mock('@shared/admin-audit', () => ({
-  AdminAuditService: class {
-    static logUserAction() {}
-    static logProductAction() {}
-    static logOrderAction() {}
-    log() {}
-  },
-  auditMiddleware: (_req, _res, next) => next(),
-}));
-
-jest.mock('@config/redis', () => ({
-  getRedisClient: jest.fn().mockResolvedValue(null),
 }));
 
 // Mock sequelize instance (dùng bởi getRevenueByCategoryAnalytics và adminImportController)
@@ -188,7 +173,6 @@ jest.mock('@models', () => ({
   SearchHistory: {},
   RecentlyViewed: {},
   InventoryLog: { create: jest.fn(), findAndCountAll: jest.fn() },
-  AuditLog: { findAndCountAll: jest.fn(), create: jest.fn() },
   ChatMessage: { count: jest.fn(), findAll: jest.fn() },
   WarrantyPackage: { findAll: jest.fn() },
   Brand: {},
@@ -676,34 +660,35 @@ describe('GET /api/admin/analytics/low-stock', () => {
     expect(item).toHaveProperty('thumbnail');
   });
 
-  test('threshold mặc định là 10 khi không truyền query param', async () => {
-    Product.findAll.mockResolvedValueOnce([]);
+  test('threshold mặc định là 10 — sản phẩm stock > 10 bị loại khỏi kết quả', async () => {
+    // Implementation mới filter trong JS sau khi fetch toàn bộ sản phẩm
+    Product.findAll.mockResolvedValueOnce([
+      makeLowStockProduct({ id: 1, name: 'Còn ít', stockQuantity: 5 }),
+      makeLowStockProduct({ id: 2, name: 'Đủ hàng', stockQuantity: 50 }),
+    ]);
 
-    await request.get('/api/admin/analytics/low-stock');
+    const res = await request.get('/api/admin/analytics/low-stock');
 
-    const callArgs = Product.findAll.mock.calls[0][0];
-    // where.stockQuantity là object với Symbol(Op.lte) làm key
-    // Dùng Object.getOwnPropertySymbols để đọc giá trị threshold
-    const stockCondition = callArgs.where.stockQuantity;
-    const symbols = Object.getOwnPropertySymbols(stockCondition);
-    expect(symbols.length).toBeGreaterThan(0);
-    // Ít nhất một symbol key phải có value là 10
-    const values = symbols.map((s) => stockCondition[s]);
-    expect(values).toContain(10);
+    expect(res.status).toBe(200);
+    // threshold mặc định 10: chỉ trả sản phẩm có stock <= 10
+    expect(res.body.data).toHaveLength(1);
+    expect(res.body.data[0].id).toBe(1);
+    expect(res.body.data[0].stockQuantity).toBe(5);
   });
 
-  test('threshold=0 → dùng đúng 0 (không fallback về 10)', async () => {
-    // Fix: Number.isFinite(0) = true → threshold = 0 (xem sản phẩm hết hàng hoàn toàn)
-    Product.findAll.mockResolvedValueOnce([]);
+  test('threshold=0 → chỉ trả sản phẩm hết hàng hoàn toàn', async () => {
+    Product.findAll.mockResolvedValueOnce([
+      makeLowStockProduct({ id: 1, name: 'Hết hàng', stockQuantity: 0 }),
+      makeLowStockProduct({ id: 2, name: 'Còn ít', stockQuantity: 3 }),
+    ]);
 
-    await request.get('/api/admin/analytics/low-stock?threshold=0');
+    const res = await request.get('/api/admin/analytics/low-stock?threshold=0');
 
-    const callArgs = Product.findAll.mock.calls[0][0];
-    const stockCondition = callArgs.where.stockQuantity;
-    const symbols = Object.getOwnPropertySymbols(stockCondition);
-    const values = symbols.map((s) => stockCondition[s]);
-    expect(values).toContain(0); // threshold=0 được giữ nguyên
-    expect(values).not.toContain(10);
+    expect(res.status).toBe(200);
+    // threshold=0: chỉ trả sản phẩm hết hàng hoàn toàn
+    expect(res.body.data).toHaveLength(1);
+    expect(res.body.data[0].id).toBe(1);
+    expect(res.body.data[0].stockQuantity).toBe(0);
   });
 
   test('thumbnail là null khi sản phẩm không có ảnh', async () => {

@@ -1,15 +1,15 @@
 'use strict';
 /**
- * Seeder: customer mẫu cho development.
+ * Seeder: user mẫu cho development.
  * Idempotent: INSERT IGNORE theo email.
- * PASSWORD: Customer@123 (CHỈ DÙNG DEV)
+ * PASSWORD: User@123 (CHỈ DÙNG DEV)
  */
-const CUSTOMER_EMAIL = 'customer@techstore.vn';
+const CUSTOMER_EMAIL = 'user@techstore.vn';
 
 module.exports = {
   async up(queryInterface) {
     const bcrypt = require('bcrypt');
-    const passwordHash = await bcrypt.hash('Customer@123', 10);
+    const passwordHash = await bcrypt.hash('User@123', 10);
     const now = new Date();
 
     await queryInterface.sequelize.query(

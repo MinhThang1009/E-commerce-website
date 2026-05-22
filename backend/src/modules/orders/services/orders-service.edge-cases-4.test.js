@@ -45,19 +45,6 @@ jest.mock('@middlewares/admin-auth', () => ({
   adminAuthenticate: (_req, _res, next) => next(),
 }));
 
-jest.mock('@shared/admin-audit', () => ({
-  AdminAuditService: { logAction: jest.fn(), logSuccessfulLogin: jest.fn() },
-  auditMiddleware: (_req, _res, next) => next(),
-}));
-
-jest.mock('@config/redis', () => ({
-  getRedisClient: jest.fn().mockResolvedValue({
-    get: jest.fn().mockResolvedValue(null),
-    set: jest.fn().mockResolvedValue('OK'),
-    del: jest.fn().mockResolvedValue(1),
-  }),
-}));
-
 jest.mock('@config/sequelize', () => ({
   define: jest.fn().mockReturnValue(class MockModel {}),
   fn: jest.fn(),
@@ -303,23 +290,23 @@ describe('GET /api/orders/:id — lấy chi tiết đơn hàng', () => {
 // ============================================================
 
 describe('GET /api/orders/shipping-estimate — tính phí vận chuyển', () => {
-  test('Subtotal 500000, weight 1kg → phí cơ bản 30000', async () => {
+  test('Subtotal 500000, weight 1kg → dưới ngưỡng miễn phí → shippingCost = null', async () => {
     const res = await request
       .get('/api/orders/shipping-estimate?subtotal=500000&weight=1')
       .set('Authorization', 'Bearer test-token');
 
     expect(res.status).toBe(200);
-    expect(res.body.data.shippingCost).toBe(30000);
+    expect(res.body.data.shippingCost).toBeNull();
   });
 
-  test('Subtotal 2000000 (ngưỡng miễn phí), weight 5kg → phí ship = 0', async () => {
+  test('Subtotal 5000000 (ngưỡng miễn phí), weight 5kg → phí ship = 0', async () => {
     const res = await request
-      .get('/api/orders/shipping-estimate?subtotal=2000000&weight=5')
+      .get('/api/orders/shipping-estimate?subtotal=5000000&weight=5')
       .set('Authorization', 'Bearer test-token');
 
     expect(res.status).toBe(200);
     expect(res.body.data.shippingCost).toBe(0);
-    expect(res.body.data.freeShippingThreshold).toBe(2000000);
+    expect(res.body.data.freeShippingThreshold).toBe(5000000);
   });
 
   test('Không truyền params → 200 với default values', async () => {
@@ -328,7 +315,8 @@ describe('GET /api/orders/shipping-estimate — tính phí vận chuyển', () =
       .set('Authorization', 'Bearer test-token');
 
     expect(res.status).toBe(200);
-    expect(typeof res.body.data.shippingCost).toBe('number');
+    // subtotal default = 0 < 5000000 → shippingCost = null; freeShippingThreshold luôn có mặt
+    expect(res.body.data).toHaveProperty('freeShippingThreshold');
   });
 });
 
@@ -406,8 +394,6 @@ describe('POST /api/orders/:id/cancel — hủy đơn hàng', () => {
       number: 'ORD-001',
       status: 'delivered', // không thể hủy
       items: [],
-      pointsUsed: 0,
-      pointsEarned: 0,
     });
 
     const res = await request
@@ -416,30 +402,6 @@ describe('POST /api/orders/:id/cancel — hủy đơn hàng', () => {
 
     expect(res.status).toBe(422);
     expect(res.body.message).toMatch(/không thể hủy/i);
-  });
-
-  test.skip('Đơn hàng pending, không có items, không có loyalty → hủy thành công → 200', async () => {
-    // Phase 42 modules/orders dùng order.save() (qua OrderAggregate mutation) thay vì update()
-    const mockSaveFn = jest.fn().mockResolvedValue(undefined);
-    Order.findOne = jest.fn().mockResolvedValue({
-      id: 1,
-      userId: 1,
-      number: 'ORD-001',
-      status: 'pending',
-      items: [],
-      pointsUsed: 0,
-      pointsEarned: 0,
-      createdAt: new Date(),
-      save: mockSaveFn,
-    });
-
-    const res = await request
-      .post('/api/orders/1/cancel')
-      .set('Authorization', 'Bearer test-token');
-
-    expect(mockSaveFn).toHaveBeenCalled();
-    expect(res.status).toBe(200);
-    expect(res.body.message).toMatch(/đã được hủy/i);
   });
 });
 

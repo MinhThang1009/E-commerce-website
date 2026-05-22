@@ -8,16 +8,9 @@
 const { Op } = require('sequelize');
 jest.mock('@modules/discount-code/repositories/sequelize-discount-code-repository');
 
-jest.mock('@shared/admin-audit', () => ({
-  AdminAuditService: {
-    logDiscountCodeAction: jest.fn(),
-  },
-}));
-
 const discountCodeRepository = require('@modules/discount-code/repositories/sequelize-discount-code-repository');
 discountCodeRepository.getOp = jest.fn().mockReturnValue(Op);
 
-const { AdminAuditService } = require('@shared/admin-audit');
 const discountCodeService = require('./discount-code-service');
 
 function makeCode(overrides = {}) {
@@ -95,7 +88,7 @@ describe('discountCodeService.getDiscountCodeById', () => {
 });
 
 describe('discountCodeService.createDiscountCode', () => {
-  it('tạo code thành công và ghi audit log', async () => {
+  it('tạo code thành công', async () => {
     discountCodeRepository.findOne.mockResolvedValue(null); // không trùng
     const newCode = makeCode({ id: 'new-id' });
     discountCodeRepository.create.mockResolvedValue(newCode);
@@ -107,12 +100,6 @@ describe('discountCodeService.createDiscountCode', () => {
     );
 
     expect(result.id).toBe('new-id');
-    expect(AdminAuditService.logDiscountCodeAction).toHaveBeenCalledWith(
-      actor,
-      'CREATE',
-      'new-id',
-      'SUMMER20',
-    );
   });
 
   it('ném AppError 400 khi mã đã tồn tại', async () => {
@@ -125,36 +112,19 @@ describe('discountCodeService.createDiscountCode', () => {
 });
 
 describe('discountCodeService.updateDiscountCode', () => {
-  it('update thành công — audit action UPDATE', async () => {
+  it('update thành công', async () => {
     const code = makeCode({ isActive: true });
     discountCodeRepository.findById.mockResolvedValue(code);
     discountCodeRepository.findOne.mockResolvedValue(null);
 
     const actor = { id: 1 };
-    await discountCodeService.updateDiscountCode('code-id-1', { isActive: true }, actor);
-
-    expect(AdminAuditService.logDiscountCodeAction).toHaveBeenCalledWith(
-      actor,
-      'UPDATE',
+    const result = await discountCodeService.updateDiscountCode(
       'code-id-1',
-      code.code,
-    );
-  });
-
-  it('audit action DEACTIVATE khi isActive chuyển từ true → false', async () => {
-    const code = makeCode({ isActive: true });
-    discountCodeRepository.findById.mockResolvedValue(code);
-    discountCodeRepository.findOne.mockResolvedValue(null);
-
-    const actor = { id: 1 };
-    await discountCodeService.updateDiscountCode('code-id-1', { isActive: false }, actor);
-
-    expect(AdminAuditService.logDiscountCodeAction).toHaveBeenCalledWith(
+      { isActive: true },
       actor,
-      'DEACTIVATE',
-      'code-id-1',
-      code.code,
     );
+
+    expect(result).toBe(code);
   });
 
   it('ném 400 khi đổi code thành mã đã tồn tại', async () => {
@@ -168,7 +138,7 @@ describe('discountCodeService.updateDiscountCode', () => {
 });
 
 describe('discountCodeService.deleteDiscountCode', () => {
-  it('xóa thành công và ghi audit log', async () => {
+  it('xóa thành công', async () => {
     const code = makeCode();
     discountCodeRepository.findById.mockResolvedValue(code);
     discountCodeRepository.remove.mockResolvedValue(undefined);
@@ -177,12 +147,6 @@ describe('discountCodeService.deleteDiscountCode', () => {
     await discountCodeService.deleteDiscountCode('code-id-1', actor);
 
     expect(discountCodeRepository.remove).toHaveBeenCalledWith(code);
-    expect(AdminAuditService.logDiscountCodeAction).toHaveBeenCalledWith(
-      actor,
-      'DELETE',
-      'code-id-1',
-      code.code,
-    );
   });
 
   it('ném 404 khi không tìm thấy code', async () => {
@@ -281,5 +245,48 @@ describe('discountCodeService.applyDiscountCode', () => {
     await expect(discountCodeService.applyDiscountCode('MIN500', 100000)).rejects.toMatchObject({
       statusCode: 400,
     });
+  });
+});
+
+// ─── getAvailableDiscountCodes ────────────────────────────────────────────────
+
+describe('getAvailableDiscountCodes', () => {
+  beforeEach(() => jest.clearAllMocks());
+
+  it('trả về danh sách codes còn hạn dùng (usageLimit null → không lọc)', async () => {
+    const codes = [
+      makeCode({ id: '1', usageLimit: null, usedCount: 0 }),
+      makeCode({ id: '2', usageLimit: 10, usedCount: 5 }),
+    ];
+    discountCodeRepository.findAll.mockResolvedValue({ rows: codes, count: codes.length });
+
+    const result = await discountCodeService.getAvailableDiscountCodes();
+
+    expect(discountCodeRepository.findAll).toHaveBeenCalled();
+    expect(result.length).toBeGreaterThan(0);
+  });
+
+  it('lọc bỏ codes đã hết lượt dùng (usedCount >= usageLimit)', async () => {
+    const codes = [
+      makeCode({ id: '1', usageLimit: 5, usedCount: 5 }), // maxed out → bị lọc
+      makeCode({ id: '2', usageLimit: 10, usedCount: 3 }), // còn lượt → giữ lại
+    ];
+    discountCodeRepository.findAll.mockResolvedValue({ rows: codes, count: codes.length });
+
+    const result = await discountCodeService.getAvailableDiscountCodes();
+
+    expect(result).toHaveLength(1);
+    expect(result[0].id).toBe('2');
+  });
+
+  it('trả về các trường cần thiết (id, code, type...)', async () => {
+    const code = makeCode({ id: 'c1', code: 'SALE10', type: 'percent', value: 10 });
+    discountCodeRepository.findAll.mockResolvedValue({ rows: [code], count: 1 });
+
+    const result = await discountCodeService.getAvailableDiscountCodes();
+
+    expect(result[0]).toHaveProperty('id');
+    expect(result[0]).toHaveProperty('code');
+    expect(result[0]).toHaveProperty('type');
   });
 });

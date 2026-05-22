@@ -225,7 +225,7 @@ interface ReviewsResponse {
 - **`useGetProductReviewsQuery` guard `productId !== 'undefined'`** — tránh gọi API khi component chưa nhận được productId từ route params.
 - **Không có `useVoteReview` hook** — nếu cần thêm vote (like/dislike), phải tạo hook mới trong `review-api.ts`.
 - **`ReviewForm` validation client-side:** title 5–100 chars; comment 10–1000 chars. Server có validation riêng — đừng bỏ validate client.
-- **`refreshKey` trong `ReviewSection`** — `useState(0)`, increment sau submit thành công → force remount `ReviewList` → fetch lại. Pattern này bypass TanStack Query cache để đảm bảo hiển thị review mới nhất ngay.
+- **`refreshKey` trong `ReviewSection`** — `useState(0)`, increment sau submit thành công → force remount `ReviewList` → fetch lại. Pattern này bypass TanStack Query để đảm bảo hiển thị review mới nhất ngay.
 
 ---
 

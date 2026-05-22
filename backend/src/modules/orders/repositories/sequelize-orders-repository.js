@@ -128,6 +128,7 @@ class SequelizeOrdersRepository extends IOrdersRepository {
           ],
         },
       ],
+      distinct: true, // Đếm đúng số Orders, không bị inflate bởi JOIN với OrderItems
       limit,
       offset,
       order: [['createdAt', 'DESC']],

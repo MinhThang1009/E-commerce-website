@@ -11,10 +11,15 @@ import { useTranslation } from 'react-i18next';
 
 interface ProductPricingFormProps {
   hasVariants?: boolean;
+  variants?: Array<{ price?: number }>;
 }
 
-const ProductPricingForm: React.FC<ProductPricingFormProps> = ({ hasVariants = false }) => {
+const ProductPricingForm: React.FC<ProductPricingFormProps> = ({
+  hasVariants = false,
+  variants = [],
+}) => {
   const { t } = useTranslation();
+  const variantsNeedPrices = hasVariants && variants.some((v) => !v.price || v.price <= 0);
 
   return (
     <Row gutter={[24, 16]}>
@@ -34,9 +39,11 @@ const ProductPricingForm: React.FC<ProductPricingFormProps> = ({ hasVariants = f
                     {t('admin.products.pricing.variantStockAuto')}
                   </li>
                 </ul>
-                <p style={{ marginTop: 8, color: '#ff4d4f' }}>
-                  {t('admin.products.pricing.variantGoBack')}
-                </p>
+                {variantsNeedPrices && (
+                  <p style={{ marginTop: 8, color: '#ff4d4f' }}>
+                    {t('admin.products.pricing.variantGoBack')}
+                  </p>
+                )}
               </div>
             }
             type="warning"
@@ -66,7 +73,7 @@ const ProductPricingForm: React.FC<ProductPricingFormProps> = ({ hasVariants = f
                 placeholder={t('admin.products.pricing.pricePlaceholder')}
                 style={{ width: '100%' }}
                 formatter={(value) =>
-                  value ? `${value}`.replace(/\B(?=(\d{3})+(?!\d))/g, ',') : ''
+                  value != null ? `${value}`.replace(/\B(?=(\d{3})+(?!\d))/g, ',') : ''
                 }
                 parser={(value) => Number(value?.replace(/\$\s?|(,*)/g, '') ?? '')}
                 min={0}
@@ -81,7 +88,11 @@ const ProductPricingForm: React.FC<ProductPricingFormProps> = ({ hasVariants = f
       <Col span={12}>
         <Form.Item
           label={t('admin.products.pricing.comparePriceLabel')}
-          tooltip={t('admin.products.pricing.comparePriceTooltip')}
+          tooltip={
+            hasVariants
+              ? t('admin.products.pricing.comparePriceTooltipVariant')
+              : t('admin.products.pricing.comparePriceTooltip')
+          }
         >
           <Space.Compact style={{ width: '100%' }}>
             <Form.Item name="compareAtPrice" noStyle>
@@ -89,10 +100,11 @@ const ProductPricingForm: React.FC<ProductPricingFormProps> = ({ hasVariants = f
                 placeholder="0"
                 style={{ width: '100%' }}
                 formatter={(value) =>
-                  value ? `${value}`.replace(/\B(?=(\d{3})+(?!\d))/g, ',') : ''
+                  value != null ? `${value}`.replace(/\B(?=(\d{3})+(?!\d))/g, ',') : ''
                 }
                 parser={(value) => Number(value?.replace(/\$\s?|(,*)/g, '') ?? '')}
                 min={0}
+                disabled={hasVariants}
               />
             </Form.Item>
             <div className="ant-input-group-addon">{t('common.currencySymbol')}</div>

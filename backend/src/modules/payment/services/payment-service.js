@@ -33,20 +33,11 @@ function _canRefund(order) {
 // Idempotency: _canProcessPayment check transactionId + paymentStatus
 // để webhook duplicate không double-process.
 class PaymentService {
-  constructor({
-    paymentRepository,
-    momoGateway,
-    vnpayGateway,
-    emailGateway,
-    eventBus,
-    logger,
-    frontendUrl,
-  }) {
+  constructor({ paymentRepository, momoGateway, vnpayGateway, emailGateway, logger, frontendUrl }) {
     this.repo = paymentRepository;
     this.momoGateway = momoGateway;
     this.vnpayGateway = vnpayGateway;
     this.emailGateway = emailGateway;
-    this.eventBus = eventBus;
     this.logger = logger;
     this.frontendUrl = frontendUrl;
   }
@@ -180,17 +171,6 @@ class PaymentService {
       if (processed) {
         await this._clearUserCart(processed.userId);
         await this._sendOrderConfirmationEmailSafe(processed.id);
-        await this.eventBus.publish({
-          type: 'payment.succeeded',
-          payload: {
-            orderId: processed.id,
-            orderNumber: processed.number,
-            transactionId: transId,
-            provider: 'momo',
-            amount: processed.total,
-          },
-          occurredAt: new Date().toISOString(),
-        });
       }
     }
     return { valid: true };

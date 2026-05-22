@@ -9,6 +9,9 @@ import { useTranslation } from 'react-i18next';
 import { Button, Space, Alert } from 'antd';
 import { ArrowRightOutlined, ArrowLeftOutlined, SaveOutlined } from '@ant-design/icons';
 
+// Các step BẮT BUỘC phải điền (còn lại là tùy chọn)
+const REQUIRED_STEPS = ['basic', 'pricing', 'category'];
+
 interface TabNavigationProps {
   activeTab: string;
   setActiveTab: (tab: string) => void;
@@ -19,6 +22,7 @@ interface TabNavigationProps {
   isSubmitting?: boolean;
   submitText?: string;
   loadingText?: string;
+  validateForm?: () => boolean;
 }
 
 const TabNavigation: React.FC<TabNavigationProps> = ({
@@ -31,6 +35,7 @@ const TabNavigation: React.FC<TabNavigationProps> = ({
   isSubmitting = false,
   submitText,
   loadingText,
+  validateForm,
 }) => {
   const { t } = useTranslation();
   const resolvedSubmitText = submitText ?? t('product.createProduct');
@@ -41,9 +46,12 @@ const TabNavigation: React.FC<TabNavigationProps> = ({
   const prevTab = currentIndex > 0 ? tabOrder[currentIndex - 1] : null;
 
   const handleNext = () => {
-    if (nextTab && completedSteps[activeTab]) {
+    if (!nextTab) return;
+    // Force fresh validation nếu có validateForm prop
+    const isValid = validateForm ? validateForm() : completedSteps[activeTab];
+    if (isValid) {
       setActiveTab(nextTab);
-    } else if (nextTab) {
+    } else {
       alert(t('product.completeCurrentStep'));
     }
   };
@@ -92,17 +100,27 @@ const TabNavigation: React.FC<TabNavigationProps> = ({
   }
 
   const isCurrentStepCompleted = completedSteps[activeTab] || false;
+  const isRequiredStep = REQUIRED_STEPS.includes(activeTab);
+  const isOptionalStep = !isRequiredStep;
+
+  const alertType = isCurrentStepCompleted ? 'success' : isOptionalStep ? 'info' : 'info';
+  const alertMessage = isCurrentStepCompleted
+    ? t('product.stepComplete')
+    : isOptionalStep
+      ? t('product.optionalStep') || 'Bước này không bắt buộc'
+      : t('product.completeStepFirst');
+  const alertDesc = isCurrentStepCompleted
+    ? t('product.canContinueStep')
+    : isOptionalStep
+      ? t('product.optionalStepDesc') || 'Bạn có thể bỏ qua hoặc điền thêm thông tin.'
+      : t('product.fillRequiredFirst');
 
   return (
     <div style={{ marginTop: 24, textAlign: 'right' }}>
       <Alert
-        message={
-          isCurrentStepCompleted ? t('product.stepComplete') : t('product.completeStepFirst')
-        }
-        description={
-          isCurrentStepCompleted ? t('product.canContinueStep') : t('product.fillRequiredFirst')
-        }
-        type={isCurrentStepCompleted ? 'success' : 'info'}
+        message={alertMessage}
+        description={alertDesc}
+        type={alertType}
         showIcon
         style={{ marginBottom: 16 }}
       />
@@ -112,13 +130,7 @@ const TabNavigation: React.FC<TabNavigationProps> = ({
             {t('common.back')}
           </Button>
         )}
-        <Button
-          type="primary"
-          onClick={handleNext}
-          icon={<ArrowRightOutlined />}
-          size="large"
-          disabled={!isCurrentStepCompleted}
-        >
+        <Button type="primary" onClick={handleNext} icon={<ArrowRightOutlined />} size="large">
           {t('common.nextStep')}
         </Button>
       </Space>

@@ -14,13 +14,13 @@ import {
   Input,
   Switch,
   Space,
-  message,
   Popconfirm,
   Tag,
   Image,
   Card,
   Typography,
 } from 'antd';
+import { useAntdToast } from '@/hooks/use-antd-toast';
 import { useTranslation } from 'react-i18next';
 import ImageUpload from '@/components/common/ImageUpload';
 import { getUploadUrl } from '@/utils/upload-url';
@@ -46,13 +46,14 @@ const { TextArea } = Input;
 interface BrandFormData {
   name: string;
   description?: string;
-  logo?: string;
+  logoUrl?: string;
   website?: string;
   isActive: boolean;
 }
 
 const BrandsPage: React.FC = () => {
   const { t } = useTranslation();
+  const { success: toastSuccess, error: toastError, contextHolder } = useAntdToast();
   const [form] = Form.useForm();
   const [isModalVisible, setIsModalVisible] = useState(false);
   const [editingBrand, setEditingBrand] = useState<any>(null);
@@ -69,10 +70,10 @@ const BrandsPage: React.FC = () => {
     try {
       if (editingBrand) {
         await updateBrand({ id: editingBrand.id, body: values });
-        message.success(t('admin.brands.messages.editSuccess'));
+        toastSuccess(t('admin.brands.messages.editSuccess'));
       } else {
         await createBrand(values);
-        message.success(t('admin.brands.messages.addSuccess'));
+        toastSuccess(t('admin.brands.messages.addSuccess'));
       }
       setIsModalVisible(false);
       setEditingBrand(null);
@@ -80,17 +81,17 @@ const BrandsPage: React.FC = () => {
       setFileList([]);
       refetch();
     } catch (error) {
-      message.error(getErrorMsg(error, t('common.errorOccurred')));
+      toastError(getErrorMsg(error, t('common.errorOccurred')));
     }
   };
 
   const handleDelete = async (id: string) => {
     try {
       await deleteBrand(id);
-      message.success(t('admin.brands.messages.deleteSuccess'));
+      toastSuccess(t('admin.brands.messages.deleteSuccess'));
       refetch();
     } catch (error) {
-      message.error(getErrorMsg(error, t('admin.brands.messages.deleteError')));
+      toastError(getErrorMsg(error, t('admin.brands.messages.deleteError')));
     }
   };
 
@@ -109,12 +110,12 @@ const BrandsPage: React.FC = () => {
     form.setFieldsValue({
       name: brand.name,
       description: brand.description,
-      logo: brand.logo,
+      logoUrl: brand.logoUrl,
       website: brand.website,
       isActive: brand.isActive,
     });
-    if (brand.logo) {
-      setFileList([{ uid: '-1', name: 'logo', status: 'done', url: brand.logo }]);
+    if (brand.logoUrl) {
+      setFileList([{ uid: '-1', name: 'logo', status: 'done', url: brand.logoUrl }]);
     } else {
       setFileList([]);
     }
@@ -123,8 +124,8 @@ const BrandsPage: React.FC = () => {
   const columns = [
     {
       title: t('admin.brands.table.logo'),
-      dataIndex: 'logo',
-      key: 'logo',
+      dataIndex: 'logoUrl',
+      key: 'logoUrl',
       width: 80,
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       render: (logo: string, record: any) => {
@@ -214,6 +215,7 @@ const BrandsPage: React.FC = () => {
 
   return (
     <div className="p-2 sm:p-4 md:p-6">
+      {contextHolder}
       <Card className="dark:bg-neutral-800">
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 gap-4">
           <div>
@@ -262,6 +264,7 @@ const BrandsPage: React.FC = () => {
           }}
           footer={null}
           width={600}
+          forceRender
         >
           <Form form={form} layout="vertical" onFinish={handleSubmit}>
             <Form.Item
@@ -276,12 +279,12 @@ const BrandsPage: React.FC = () => {
               <TextArea rows={3} placeholder={t('admin.brands.form.descriptionPlaceholder')} />
             </Form.Item>
 
-            <Form.Item name="logo" label={t('admin.brands.form.logo')}>
+            <Form.Item name="logoUrl" label={t('admin.brands.form.logo')}>
               <ImageUpload
                 type="brands"
                 multiple={false}
-                value={form.getFieldValue('logo')}
-                onChange={(val) => form.setFieldsValue({ logo: val })}
+                value={form.getFieldValue('logoUrl')}
+                onChange={(val) => form.setFieldsValue({ logoUrl: val })}
               />
             </Form.Item>
 

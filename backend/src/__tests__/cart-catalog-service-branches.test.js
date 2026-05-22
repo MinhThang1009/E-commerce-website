@@ -227,7 +227,7 @@ function makeProductRow(overrides = {}) {
   return { ...data, toJSON: () => ({ ...data }) };
 }
 
-function makeCatalogService(repoOverrides = {}, cacheOverrides = undefined) {
+function makeCatalogService(repoOverrides = {}) {
   const catalogRepository = {
     findAllCategoriesSorted: jest.fn().mockResolvedValue([]),
     getCategoryProductCounts: jest.fn().mockResolvedValue({}),
@@ -285,26 +285,14 @@ function makeCatalogService(repoOverrides = {}, cacheOverrides = undefined) {
     ...repoOverrides,
   };
 
-  const cacheStore =
-    cacheOverrides !== undefined
-      ? cacheOverrides
-      : {
-          get: jest.fn().mockResolvedValue(null),
-          setEx: jest.fn().mockResolvedValue(),
-          del: jest.fn().mockResolvedValue(),
-          delPattern: jest.fn().mockResolvedValue(),
-          delMany: jest.fn().mockResolvedValue(),
-        };
-
   const logger = { info: jest.fn(), error: jest.fn(), warn: jest.fn() };
   const service = new CatalogService({
     catalogRepository,
-    cacheStore,
     eventBus: { publish: jest.fn() },
     logger,
   });
 
-  return { service, catalogRepository, cacheStore, logger };
+  return { service, catalogRepository, logger };
 }
 
 // ─── Line 344: `|| basePrice` path — `sorted[0].price = null` → NaN → fallback basePrice
@@ -338,36 +326,6 @@ describe('CatalogService._pickDisplayPrice — line 344: sorted[0].price = null 
 
     // sorted[0] = price:0 (nhỏ nhất) → 0 || 5000000 = 5000000
     expect(result).toBe(5000000);
-  });
-});
-
-// ─── Line 356: `_clearProductCache` catch — `delPattern` throws → logger.warn
-
-describe('CatalogService._clearProductCache — line 356: delPattern throw → logger.warn', () => {
-  it('log warn khi cacheStore.delPattern throw, không crash', async () => {
-    const warnFn = jest.fn();
-    const cacheWithThrow = {
-      get: jest.fn().mockResolvedValue(null),
-      setEx: jest.fn().mockResolvedValue(),
-      del: jest.fn().mockResolvedValue(),
-      delPattern: jest.fn().mockRejectedValue(new Error('Redis connection lost')),
-      delMany: jest.fn().mockResolvedValue(),
-    };
-    const service = new CatalogService({
-      catalogRepository: { findProductsList: jest.fn().mockResolvedValue({ count: 0, rows: [] }) },
-      cacheStore: cacheWithThrow,
-      eventBus: { publish: jest.fn() },
-      logger: { info: jest.fn(), error: jest.fn(), warn: warnFn },
-    });
-
-    // Không throw — error được catch bên trong
-    await expect(service._clearProductCache(10, 'my-product')).resolves.toBeUndefined();
-
-    // logger.warn được gọi với message chứa 'clearProductCache'
-    expect(warnFn).toHaveBeenCalledWith(
-      expect.stringContaining('clearProductCache'),
-      expect.any(String),
-    );
   });
 });
 
@@ -767,7 +725,6 @@ function mkOrderBody(overrides = {}) {
     paymentMethod: 'cod',
     notes: null,
     discountCode: null,
-    pointsToUse: 0,
     ...overrides,
   };
 }
@@ -920,21 +877,6 @@ jest.mock('@middlewares/authorize', () => ({
 
 jest.mock('@middlewares/admin-auth', () => ({
   adminAuthenticate: (_req, _res, next) => next(),
-}));
-
-jest.mock('@shared/admin-audit', () => ({
-  AdminAuditService: { logAction: jest.fn(), logSuccessfulLogin: jest.fn() },
-  auditMiddleware: (_req, _res, next) => next(),
-}));
-
-jest.mock('@config/redis', () => ({
-  getRedisClient: jest.fn().mockResolvedValue({
-    get: jest.fn().mockResolvedValue(null),
-    set: jest.fn().mockResolvedValue('OK'),
-    setEx: jest.fn().mockResolvedValue('OK'),
-    del: jest.fn().mockResolvedValue(1),
-    keys: jest.fn().mockResolvedValue([]),
-  }),
 }));
 
 jest.mock('@config/sequelize', () => ({

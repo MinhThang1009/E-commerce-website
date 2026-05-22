@@ -187,7 +187,7 @@ Design system 2025-2026 — Apple iOS 26 inspired. Key concepts:
 | Global font, body reset                    | `index.scss`                                           |
 | Design tokens (brand colors, glass vars)   | `_tokens.scss` CSS variables                           |
 | Complex animations (keyframes phức tạp)    | `index.scss` hoặc **Framer Motion**                    |
-| Product/news description HTML từ Quill     | `product-description.css` class `.description-content` |
+| Product description HTML từ Quill          | `product-description.css` class `.description-content` |
 | Override Ant Design dark mode              | `index.scss` `.dark .ant-*`                            |
 
 **Nguyên tắc:** ưu tiên Tailwind. Chỉ dùng SCSS khi Tailwind không xử lý được.

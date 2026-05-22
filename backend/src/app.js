@@ -28,9 +28,11 @@ const {
   Order,
   OrderItem,
   Feedback,
+  ChatMessage,
   Category,
   Brand,
   ProductAttribute,
+  ProductImage,
   ProductSpecification,
   RecentlyViewed,
   DiscountCode,
@@ -38,8 +40,6 @@ const {
 } = require('@models');
 const constants = require('./constants');
 const emailService = require('@services/email');
-const { AdminAuditService } = require('@shared/admin-audit');
-const { getRedisClient } = require('@config/redis');
 const buildAuthModule = require('@modules/auth/module');
 const buildUsersModule = require('@modules/users/module');
 const buildCartModule = require('@modules/cart/module');
@@ -58,6 +58,7 @@ const buildDiscountCodeModule = require('@modules/discount-code/module');
 const buildAttributeModule = require('@modules/attribute/module');
 const buildAdminModule = require('@modules/admin/module');
 const chatbotService = require('@modules/ai/services/chatbot/chatbot-service');
+chatbotService.initialize({ Brand, Category, ChatMessage });
 const momoService = require('@modules/payment/services/momo-service');
 const vnpayService = require('@modules/payment/services/vnpay-service');
 
@@ -66,8 +67,6 @@ const authModule = buildAuthModule({
   eventBus,
   logger,
   emailService,
-  auditService: AdminAuditService,
-  redisClient: getRedisClient,
 });
 authModule.subscribeEvents();
 
@@ -125,12 +124,12 @@ const catalogModule = buildCatalogModule({
   Brand,
   Product,
   ProductAttribute,
+  ProductImage,
   ProductVariant,
   ProductSpecification,
   Review,
   RecentlyViewed,
   sequelize,
-  redisClient: getRedisClient,
   eventBus,
   logger,
 });
@@ -347,7 +346,7 @@ app.use(compression());
 // Image proxy — bypass CDN hotlink protection trên localhost dev
 app.use('/api/img', require('@modules/image/middlewares/image-proxy-router'));
 
-// Phục vụ file upload tĩnh — cache 1 năm vì filename chứa hash/timestamp
+// Phục vụ file upload tĩnh — filename chứa hash/timestamp để đảm bảo freshness
 app.use(
   '/uploads',
   express.static(path.join(__dirname, '../uploads'), {

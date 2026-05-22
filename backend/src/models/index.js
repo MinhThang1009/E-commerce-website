@@ -25,7 +25,6 @@ const RecentlyViewed = require('@models/recently-viewed');
 // Models mới theo data_new.sql
 const ProductImage = require('@models/product-image');
 const InventoryLog = require('@models/inventory-log');
-const AuditLog = require('@models/audit-log');
 // =============================================
 // QUAN HỆ USER
 // =============================================
@@ -33,10 +32,6 @@ const AuditLog = require('@models/audit-log');
 // User - Address (người dùng - địa chỉ)
 User.hasMany(Address, { foreignKey: 'userId', as: 'addresses' });
 Address.belongsTo(User, { foreignKey: 'userId' });
-
-// User - AuditLog (admin - nhật ký thao tác)
-User.hasMany(AuditLog, { foreignKey: 'adminId', as: 'auditLogs' });
-AuditLog.belongsTo(User, { foreignKey: 'adminId', as: 'admin' });
 
 // =============================================
 // QUAN HỆ CATEGORY
@@ -231,5 +226,4 @@ module.exports = {
   // Models mới
   ProductImage,
   InventoryLog,
-  AuditLog,
 };

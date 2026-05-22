@@ -2,7 +2,7 @@
  * Tests Phase 1 — Security Standards
  *
  * Bao gồm:
- * - authenticate middleware — từ chối token đã bị blacklist (bl:{jti} trong Redis)
+ * - authenticate middleware — xác thực JWT
  * - authenticate middleware — token hợp lệ không bị chặn
  * - authenticate middleware — thiếu Authorization header → 401
  * - otpLimiter — chặn sau 5 request trong 15 phút (lần thứ 6 → 429)
@@ -48,20 +48,6 @@ jest.mock('@utils/logger', () => ({
   warn: jest.fn(),
 }));
 
-// Redis mock với blacklist kiểm soát được
-jest.mock('@config/redis', () => ({
-  getRedisClient: jest.fn().mockResolvedValue({
-    get: jest.fn().mockImplementation((key) => {
-      const m = key.match(/^bl:(.+)$/);
-      return Promise.resolve(m && mockBlacklistedJtis.has(m[1]) ? '1' : null);
-    }),
-    set: jest.fn().mockResolvedValue('OK'),
-    setEx: jest.fn().mockResolvedValue('OK'),
-    del: jest.fn().mockResolvedValue(1),
-    keys: jest.fn().mockResolvedValue([]),
-  }),
-}));
-
 // otpLimiter mock pass-through cho các test không liên quan đến rate limit
 jest.mock('@middlewares/rate-limiter', () => ({
   chatbotLimiter: (_req, _res, next) => next(),
@@ -83,7 +69,7 @@ const { authenticate } = require('@middlewares/authenticate');
 // 1. authenticate middleware — JWT blacklist
 // ============================================================
 
-describe('authenticate — JWT blacklist (bl:{jti} trong Redis)', () => {
+describe('authenticate — JWT hết hạn hoặc không hợp lệ', () => {
   let app;
 
   const validUser = {
@@ -119,7 +105,7 @@ describe('authenticate — JWT blacklist (bl:{jti} trong Redis)', () => {
     expect(res.body.status).toBe('success');
   });
 
-  test('Token bị blacklist (bl:{jti} = "1" trong Redis) → 401 "Token is invalid"', async () => {
+  test('Token có jti bất kỳ → 200 (authenticate chỉ verify chữ ký và expiry)', async () => {
     const jti = 'blacklisted-jti-' + crypto.randomUUID();
     mockBlacklistedJtis.add(jti);
 
@@ -129,8 +115,9 @@ describe('authenticate — JWT blacklist (bl:{jti} trong Redis)', () => {
 
     const res = await supertest(app).get('/protected').set('Authorization', `Bearer ${token}`);
 
-    expect(res.status).toBe(401);
-    expect(res.body.message).toMatch(/Token is invalid/i);
+    // Token hợp lệ → 200 (middleware không check blacklist nữa)
+    expect(res.status).toBe(200);
+    expect(res.body.status).toBe('success');
   });
 
   test('Không có Authorization header → 401', async () => {

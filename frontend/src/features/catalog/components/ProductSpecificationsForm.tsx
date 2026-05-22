@@ -24,6 +24,39 @@ interface ProductSpecificationsFormProps {
   initialSpecifications?: Specification[];
 }
 
+const CATEGORY_EN_TO_VI: Record<string, string> = {
+  General: 'Thông số chung',
+  Performance: 'Hiệu năng',
+  Display: 'Màn hình',
+  Design: 'Thiết kế',
+  Connectivity: 'Kết nối',
+  Battery: 'Pin & Nguồn',
+  OS: 'Hệ điều hành',
+  Security: 'Bảo mật',
+  Audio: 'Âm thanh',
+  Keyboard: 'Bàn phím',
+  Camera: 'Camera',
+  Other: 'Khác',
+};
+
+const VALID_CATEGORIES = new Set([
+  'Hiệu năng',
+  'Màn hình',
+  'Thiết kế',
+  'Kết nối',
+  'Pin & Nguồn',
+  'Hệ điều hành',
+  'Bảo mật',
+  'Âm thanh',
+  'Bàn phím',
+  'Camera',
+  'Thông số chung',
+  'Khác',
+]);
+
+const normalizeCategory = (cat?: string) =>
+  cat && VALID_CATEGORIES.has(cat) ? cat : (CATEGORY_EN_TO_VI[cat || ''] ?? 'Thông số chung');
+
 const ProductSpecificationsForm: React.FC<ProductSpecificationsFormProps> = ({
   initialSpecifications = [],
 }) => {
@@ -51,6 +84,7 @@ const ProductSpecificationsForm: React.FC<ProductSpecificationsFormProps> = ({
       const specsWithIds = initialSpecifications.map((spec, index) => ({
         ...spec,
         id: spec.id || `spec-${Date.now()}-${index}`,
+        category: normalizeCategory(spec.category),
       }));
       setSpecifications(specsWithIds);
     }
@@ -81,55 +115,6 @@ const ProductSpecificationsForm: React.FC<ProductSpecificationsFormProps> = ({
     setSpecifications((specs) => specs.filter((spec) => spec.id !== id));
   };
 
-  const addSampleSpecifications = () => {
-    const ts = Date.now();
-    const sampleSpecs: Specification[] = [
-      {
-        id: `sample-${ts}-1`,
-        name: t('admin.products.specs.sampleSpecs.cpu'),
-        value: 'Intel Core i5-1235U',
-        category: 'Hiệu năng',
-      },
-      {
-        id: `sample-${ts}-2`,
-        name: t('admin.products.specs.sampleSpecs.ram'),
-        value: '8GB DDR4 3200MHz',
-        category: 'Hiệu năng',
-      },
-      {
-        id: `sample-${ts}-3`,
-        name: t('admin.products.specs.sampleSpecs.storage'),
-        value: '512GB SSD NVMe',
-        category: 'Hiệu năng',
-      },
-      {
-        id: `sample-${ts}-4`,
-        name: t('admin.products.specs.sampleSpecs.display'),
-        value: '14 inch Full HD IPS',
-        category: 'Màn hình',
-      },
-      {
-        id: `sample-${ts}-5`,
-        name: t('admin.products.specs.sampleSpecs.weight'),
-        value: '1.4kg',
-        category: 'Thiết kế',
-      },
-      {
-        id: `sample-${ts}-6`,
-        name: t('admin.products.specs.sampleSpecs.battery'),
-        value: '39WHrs 3-cell',
-        category: 'Pin & Nguồn',
-      },
-      {
-        id: `sample-${ts}-7`,
-        name: t('admin.products.specs.sampleSpecs.os'),
-        value: 'Windows 11 Home',
-        category: 'Hệ điều hành',
-      },
-    ];
-    setSpecifications([...specifications, ...sampleSpecs]);
-  };
-
   return (
     <div style={{ padding: '24px' }}>
       <Title level={3}>
@@ -141,21 +126,20 @@ const ProductSpecificationsForm: React.FC<ProductSpecificationsFormProps> = ({
       </Text>
 
       <div style={{ marginBottom: 24 }}>
-        <Space>
-          <Button type="primary" icon={<PlusOutlined />} onClick={addSpecification} size="large">
-            {t('admin.products.specs.addButton')}
-          </Button>
-          <Button type="default" onClick={addSampleSpecifications} size="large">
-            {t('admin.products.specs.addSample')}
-          </Button>
-        </Space>
+        <Button type="primary" icon={<PlusOutlined />} onClick={addSpecification} size="large">
+          {t('admin.products.specs.addButton')}
+        </Button>
       </div>
 
       {specifications.length > 0 && (
         <Card title={t('admin.products.specs.listTitle')} style={{ marginBottom: 24 }}>
           <Space direction="vertical" style={{ width: '100%' }} size="middle">
             {specifications.map((spec, index) => (
-              <Card key={`${spec.id}-${index}`} size="small" style={{ backgroundColor: '#fafafa' }}>
+              <Card
+                key={`${spec.id}-${index}`}
+                size="small"
+                className="dark:bg-neutral-800 dark:border-neutral-600"
+              >
                 <Row gutter={16} align="middle">
                   <Col span={5}>
                     <Input
@@ -219,14 +203,11 @@ const ProductSpecificationsForm: React.FC<ProductSpecificationsFormProps> = ({
 
       {specifications.length === 0 && (
         <Card
-          style={{
-            textAlign: 'center',
-            padding: '40px 20px',
-            border: '2px dashed #d9d9d9',
-          }}
+          className="dark:bg-neutral-800 dark:border-neutral-600"
+          style={{ textAlign: 'center', padding: '40px 20px', border: '2px dashed #d9d9d9' }}
         >
           <div style={{ fontSize: '48px', marginBottom: 16 }}>📋</div>
-          <Title level={4} style={{ color: '#999' }}>
+          <Title level={4} className="dark:text-neutral-400">
             {t('admin.products.specs.emptyTitle')}
           </Title>
           <Text type="secondary">{t('admin.products.specs.emptyDesc')}</Text>

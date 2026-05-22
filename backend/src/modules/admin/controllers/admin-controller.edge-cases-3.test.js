@@ -78,16 +78,6 @@ jest.mock('@middlewares/validate-request', () => ({
   validateExpressValidator: (_req, _res, next) => next(),
 }));
 
-jest.mock('@shared/admin-audit', () => ({
-  AdminAuditService: class {
-    static logUserAction() {}
-    static logProductAction() {}
-    static logOrderAction() {}
-    log() {}
-  },
-  auditMiddleware: (_req, _res, next) => next(),
-}));
-
 jest.mock('./admin-import-controller', () => ({
   getImportTemplate: (_req, _res, next) => next(),
   uploadImportFile: (_req, _res, next) => next(),
@@ -102,10 +92,6 @@ jest.mock('@modules/discount-code/controllers/discount-code-controller', () => (
   createDiscountCode: (_req, _res, next) => next(),
   updateDiscountCode: (_req, _res, next) => next(),
   deleteDiscountCode: (_req, _res, next) => next(),
-}));
-
-jest.mock('@config/redis', () => ({
-  getRedisClient: jest.fn().mockResolvedValue(null),
 }));
 
 jest.mock('@models', () => {
@@ -200,12 +186,6 @@ jest.mock('@models', () => {
       create: jest.fn(),
       findAndCountAll: jest.fn(),
     },
-    AuditLog: {
-      findAll: jest.fn(),
-      findAndCountAll: jest.fn(),
-      count: jest.fn(),
-      create: jest.fn(),
-    },
     ChatMessage: {
       count: jest.fn(),
       findAll: jest.fn(),
@@ -241,7 +221,6 @@ const {
   Product,
   Order,
   OrderItem,
-  AuditLog,
   ChatMessage,
   ProductVariant,
   ProductAttribute,

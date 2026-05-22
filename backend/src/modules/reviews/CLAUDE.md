@@ -175,7 +175,7 @@ Inject từ `app.js`:
 - **`avgRating` update sau mỗi review CRUD:** `_refreshProductRating()` gọi inline trong service, không qua model hooks. Nếu `rating` sai trên Product → kiểm tra xem có code path nào bỏ qua `_refreshProductRating` không.
 - **Không có `GET /check-purchased` endpoint:** FE xác định "đã mua" bằng cách thử `POST /` — service trả 403 nếu chưa mua. Không thêm endpoint check riêng.
 - **Admin không thể delete review qua HTTP:** `deleteReview` service tìm `findReviewByIdAndUserId` — admin không có userId khớp → 404. Admin delete phải xử lý direct DB hoặc thêm endpoint riêng.
-- **`_refreshProductRating` dùng in-memory AVG:** Load tất cả ratings của product rồi tính JS. Với product có nhiều reviews → xem xét dùng SQL AVG() nếu performance issue.
+- **`_refreshProductRating` dùng JS AVG:** Load tất cả ratings của product rồi tính JS. Với product có nhiều reviews → xem xét dùng SQL AVG() nếu performance issue.
 
 ---
 

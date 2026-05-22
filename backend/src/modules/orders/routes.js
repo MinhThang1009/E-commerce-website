@@ -8,7 +8,6 @@ const express = require('express');
 const { authenticate } = require('@middlewares/authenticate');
 const { authorize } = require('@middlewares/authorize');
 const { validateRequest } = require('@middlewares/validate-request');
-const { httpCacheHeaders } = require('@middlewares/cache');
 const {
   createOrderSchema,
   updateOrderStatusSchema,
@@ -123,11 +122,10 @@ module.exports = ({ ordersController }) => {
    *           type: integer
    */
   // Public — order tracking (không cần auth)
-  router.get('/track', httpCacheHeaders(0, { noStore: true }), ordersController.trackOrder);
+  router.get('/track', ordersController.trackOrder);
 
-  // User authenticated — không cache user data
+  // User authenticated
   router.use(authenticate);
-  router.use(httpCacheHeaders(0, { noStore: true }));
 
   router.post('/', validateRequest(createOrderSchema), ordersController.createOrder);
   router.get('/shipping-estimate', ordersController.estimateShipping);

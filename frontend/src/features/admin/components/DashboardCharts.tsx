@@ -15,7 +15,6 @@ import {
   useGetRevenueByCategoryAnalyticsQuery,
   useGetUserGrowthAnalyticsQuery,
   useGetPaymentMethodsAnalyticsQuery,
-  useGetChatbotStatsQuery,
 } from '../api/admin-dashboard-api';
 import {
   ResponsiveContainer,
@@ -55,16 +54,11 @@ const STATUS_COLORS: Record<string, string> = {
   cancelled: '#ef4444',
 };
 
-type TabType = 'overview' | 'chatbot';
-
 const DashboardCharts: React.FC = () => {
   const { t, i18n } = useTranslation();
   const theme = useUiStore((s) => s.theme);
   const isDark = theme === 'dark';
   const [searchParams, setSearchParams] = useSearchParams();
-
-  // Tab hiện tại: Overview hoặc AI Chatbot
-  const [activeTab, setActiveTab] = useState<TabType>('overview');
 
   // State bộ lọc — đọc từ URL query params nếu có
   const [period, setPeriod] = useState<'7d' | '30d' | '90d' | 'custom'>(
@@ -123,10 +117,6 @@ const DashboardCharts: React.FC = () => {
   const { data: categoryData } = useGetRevenueByCategoryAnalyticsQuery({ startDate, endDate });
   const { data: userGrowthData } = useGetUserGrowthAnalyticsQuery({ startDate, endDate, groupBy });
   const { data: paymentMethodsData } = useGetPaymentMethodsAnalyticsQuery();
-  const { data: chatbotData } = useGetChatbotStatsQuery(
-    activeTab === 'chatbot' ? { startDate, endDate } : undefined,
-    { enabled: activeTab === 'chatbot' },
-  );
 
   const formatCurrency = (amount: number) => {
     const locale = i18n.language === 'vi' ? 'vi-VN' : 'en-US';
@@ -192,93 +182,6 @@ const DashboardCharts: React.FC = () => {
     }
   };
 
-  // Render tab chatbot
-  const renderChatbotTab = () => {
-    const stats = chatbotData?.data;
-    if (!stats)
-      return (
-        <div className="text-center py-12 text-neutral-500 dark:text-neutral-400">
-          {t('common.loading')}
-        </div>
-      );
-
-    const intentData = Object.entries(stats.intentBreakdown).map(([key, val], i) => ({
-      name: key,
-      value: val,
-      fill: PIE_COLORS[i % PIE_COLORS.length],
-    }));
-
-    return (
-      <div className="space-y-6">
-        {/* KPI Cards chatbot */}
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-          <div className="bg-white dark:bg-neutral-800 rounded-lg p-4 border border-neutral-200 dark:border-neutral-700">
-            <div className="text-sm text-neutral-500 dark:text-neutral-400">
-              {t('admin.chatbot.totalSessions')}
-            </div>
-            <div className="text-2xl font-bold text-neutral-800 dark:text-neutral-100 mt-1">
-              {stats.totalSessions}
-            </div>
-          </div>
-          <div className="bg-white dark:bg-neutral-800 rounded-lg p-4 border border-neutral-200 dark:border-neutral-700">
-            <div className="text-sm text-neutral-500 dark:text-neutral-400">
-              {t('admin.chatbot.avgMessages')}
-            </div>
-            <div className="text-2xl font-bold text-neutral-800 dark:text-neutral-100 mt-1">
-              {stats.avgMessagesPerSession}
-            </div>
-          </div>
-          <div className="bg-white dark:bg-neutral-800 rounded-lg p-4 border border-neutral-200 dark:border-neutral-700">
-            <div className="text-sm text-neutral-500 dark:text-neutral-400">
-              {t('admin.chatbot.fallbackRate')}
-            </div>
-            <div className="text-2xl font-bold text-neutral-800 dark:text-neutral-100 mt-1">
-              {(stats.fallbackRate * 100).toFixed(1)}%
-            </div>
-          </div>
-          <div className="bg-white dark:bg-neutral-800 rounded-lg p-4 border border-neutral-200 dark:border-neutral-700">
-            <div className="text-sm text-neutral-500 dark:text-neutral-400">
-              {t('admin.chatbot.avgResponseTime')}
-            </div>
-            <div className="text-2xl font-bold text-neutral-800 dark:text-neutral-100 mt-1">
-              {stats.avgResponseTimeMs}ms
-            </div>
-          </div>
-        </div>
-
-        {/* Intent Breakdown pie chart */}
-        {intentData.length > 0 && (
-          <div className="bg-white dark:bg-neutral-800 rounded-lg p-6 shadow-sm border border-neutral-200 dark:border-neutral-700">
-            <h3 className="text-sm font-medium text-neutral-500 dark:text-neutral-400 mb-4">
-              {t('admin.chatbot.intentBreakdown')}
-            </h3>
-            <div className="h-64">
-              <ResponsiveContainer width="100%" height="100%">
-                <PieChart>
-                  <Pie
-                    data={intentData}
-                    dataKey="value"
-                    nameKey="name"
-                    cx="50%"
-                    cy="50%"
-                    outerRadius={80}
-                    label
-                  >
-                    {intentData.map((entry, idx) => (
-                      <Cell key={idx} fill={entry.fill} />
-                    ))}
-                  </Pie>
-                  <Tooltip contentStyle={tooltipStyle} />
-                  <Legend />
-                </PieChart>
-              </ResponsiveContainer>
-            </div>
-          </div>
-        )}
-      </div>
-    );
-  };
-
   if (isDetailedLoading) {
     return (
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
@@ -296,32 +199,8 @@ const DashboardCharts: React.FC = () => {
 
   return (
     <div className="space-y-6 mb-8">
-      {/* Header: tabs + bộ lọc thời gian + export */}
+      {/* Header: bộ lọc thời gian + export */}
       <div className="flex flex-col gap-4 bg-white dark:bg-neutral-800 p-4 rounded-lg border border-neutral-200 dark:border-neutral-700">
-        {/* Tabs */}
-        <div className="flex items-center gap-4 border-b border-neutral-200 dark:border-neutral-700 pb-3">
-          <button
-            onClick={() => setActiveTab('overview')}
-            className={`text-sm font-medium pb-2 border-b-2 transition-colors ${
-              activeTab === 'overview'
-                ? 'border-primary-500 text-primary-600 dark:text-primary-400'
-                : 'border-transparent text-neutral-500 dark:text-neutral-400 hover:text-neutral-700'
-            }`}
-          >
-            {t('admin.charts.title')}
-          </button>
-          <button
-            onClick={() => setActiveTab('chatbot')}
-            className={`text-sm font-medium pb-2 border-b-2 transition-colors ${
-              activeTab === 'chatbot'
-                ? 'border-primary-500 text-primary-600 dark:text-primary-400'
-                : 'border-transparent text-neutral-500 dark:text-neutral-400 hover:text-neutral-700'
-            }`}
-          >
-            {t('admin.chatbot.tab')}
-          </button>
-        </div>
-
         {/* Bộ lọc thời gian + export */}
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
           <div className="flex flex-wrap items-center gap-2">
@@ -422,309 +301,305 @@ const DashboardCharts: React.FC = () => {
         </div>
       </div>
 
-      {/* Nội dung tab */}
-      {activeTab === 'chatbot' ? (
-        renderChatbotTab()
-      ) : (
-        <>
-          {/* Hàng 1: Revenue Area + Order Count Bar */}
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            <div className="bg-white dark:bg-neutral-800 rounded-lg p-6 shadow-sm border border-neutral-200 dark:border-neutral-700">
-              <h3 className="text-sm font-medium text-neutral-500 dark:text-neutral-400 mb-4">
-                {t('admin.charts.revenue', {
-                  period: t(
-                    `admin.charts.period${period === '7d' ? '7d' : period === '30d' ? '30d' : period === '90d' ? '90d' : 'Custom'}`,
-                  ),
-                })}
-              </h3>
-              <div className="h-64">
-                <ResponsiveContainer width="100%" height="100%">
-                  <AreaChart
-                    data={orderDataForChart}
-                    margin={{ top: 10, right: 10, left: -10, bottom: 0 }}
-                  >
-                    <defs>
-                      <linearGradient id="colorRevenue" x1="0" y1="0" x2="0" y2="1">
-                        <stop offset="5%" stopColor="#3b82f6" stopOpacity={0.8} />
-                        <stop offset="95%" stopColor="#3b82f6" stopOpacity={0} />
-                      </linearGradient>
-                    </defs>
-                    <CartesianGrid
-                      strokeDasharray="3 3"
-                      className="stroke-neutral-200 dark:stroke-neutral-700"
-                    />
-                    <XAxis dataKey="name" tick={tickStyle} />
-                    <YAxis
-                      tickFormatter={(v) =>
-                        v >= 1000000 ? `${v / 1000000}M` : v >= 1000 ? `${v / 1000}K` : v
-                      }
-                      tick={tickStyle}
-                    />
-                    <Tooltip
-                      formatter={(value: number) => formatCurrency(value)}
-                      contentStyle={tooltipStyle}
-                    />
-                    <Area
-                      type="monotone"
-                      dataKey="revenue"
-                      name={revenueLabel}
-                      stroke="#3b82f6"
-                      fillOpacity={1}
-                      fill="url(#colorRevenue)"
-                      strokeWidth={2}
-                    />
-                  </AreaChart>
-                </ResponsiveContainer>
-              </div>
-            </div>
-
-            <div className="bg-white dark:bg-neutral-800 rounded-lg p-6 shadow-sm border border-neutral-200 dark:border-neutral-700">
-              <h3 className="text-sm font-medium text-neutral-500 dark:text-neutral-400 mb-4">
-                {t('admin.charts.orderCount')}
-              </h3>
-              <div className="h-64">
-                <ResponsiveContainer width="100%" height="100%">
-                  <BarChart
-                    data={orderDataForChart}
-                    margin={{ top: 10, right: 10, left: -10, bottom: 0 }}
-                  >
-                    <CartesianGrid
-                      strokeDasharray="3 3"
-                      className="stroke-neutral-200 dark:stroke-neutral-700"
-                    />
-                    <XAxis dataKey="name" tick={tickStyle} />
-                    <YAxis allowDecimals={false} tick={tickStyle} />
-                    <Tooltip contentStyle={tooltipStyle} />
-                    <Bar
-                      dataKey="orderCount"
-                      name={ordersLabel}
-                      fill="#10b981"
-                      radius={[4, 4, 0, 0]}
-                    />
-                  </BarChart>
-                </ResponsiveContainer>
-              </div>
+      {/* Charts */}
+      <>
+        {/* Hàng 1: Revenue Area + Order Count Bar */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          <div className="bg-white dark:bg-neutral-800 rounded-lg p-6 shadow-sm border border-neutral-200 dark:border-neutral-700">
+            <h3 className="text-sm font-medium text-neutral-500 dark:text-neutral-400 mb-4">
+              {t('admin.charts.revenue', {
+                period: t(
+                  `admin.charts.period${period === '7d' ? '7d' : period === '30d' ? '30d' : period === '90d' ? '90d' : 'Custom'}`,
+                ),
+              })}
+            </h3>
+            <div className="h-64">
+              <ResponsiveContainer width="100%" height="100%">
+                <AreaChart
+                  data={orderDataForChart}
+                  margin={{ top: 10, right: 10, left: -10, bottom: 0 }}
+                >
+                  <defs>
+                    <linearGradient id="colorRevenue" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="5%" stopColor="#3b82f6" stopOpacity={0.8} />
+                      <stop offset="95%" stopColor="#3b82f6" stopOpacity={0} />
+                    </linearGradient>
+                  </defs>
+                  <CartesianGrid
+                    strokeDasharray="3 3"
+                    className="stroke-neutral-200 dark:stroke-neutral-700"
+                  />
+                  <XAxis dataKey="name" tick={tickStyle} />
+                  <YAxis
+                    tickFormatter={(v) =>
+                      v >= 1000000 ? `${v / 1000000}M` : v >= 1000 ? `${v / 1000}K` : v
+                    }
+                    tick={tickStyle}
+                  />
+                  <Tooltip
+                    formatter={(value: number) => formatCurrency(value)}
+                    contentStyle={tooltipStyle}
+                  />
+                  <Area
+                    type="monotone"
+                    dataKey="revenue"
+                    name={revenueLabel}
+                    stroke="#3b82f6"
+                    fillOpacity={1}
+                    fill="url(#colorRevenue)"
+                    strokeWidth={2}
+                  />
+                </AreaChart>
+              </ResponsiveContainer>
             </div>
           </div>
 
-          {/* Hàng 2: Order Status Pie + User Growth Line */}
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            {/* Pie chart: Phân bổ trạng thái đơn hàng */}
-            <div className="bg-white dark:bg-neutral-800 rounded-lg p-6 shadow-sm border border-neutral-200 dark:border-neutral-700">
-              <h3 className="text-sm font-medium text-neutral-500 dark:text-neutral-400 mb-4">
-                {t('admin.charts.orderStatusDist')}
-              </h3>
-              <div className="h-64">
-                <ResponsiveContainer width="100%" height="100%">
-                  <PieChart>
-                    <Pie
-                      data={orderStatusData?.data || []}
-                      dataKey="count"
-                      nameKey="label"
-                      cx="50%"
-                      cy="50%"
-                      outerRadius={80}
-                      label={({ label, count }) => `${label}: ${count}`}
-                    >
-                      {(orderStatusData?.data || []).map((entry) => (
-                        <Cell key={entry.status} fill={STATUS_COLORS[entry.status] || '#9ca3af'} />
-                      ))}
-                    </Pie>
-                    <Tooltip contentStyle={tooltipStyle} />
-                    <Legend />
-                  </PieChart>
-                </ResponsiveContainer>
-              </div>
+          <div className="bg-white dark:bg-neutral-800 rounded-lg p-6 shadow-sm border border-neutral-200 dark:border-neutral-700">
+            <h3 className="text-sm font-medium text-neutral-500 dark:text-neutral-400 mb-4">
+              {t('admin.charts.orderCount')}
+            </h3>
+            <div className="h-64">
+              <ResponsiveContainer width="100%" height="100%">
+                <BarChart
+                  data={orderDataForChart}
+                  margin={{ top: 10, right: 10, left: -10, bottom: 0 }}
+                >
+                  <CartesianGrid
+                    strokeDasharray="3 3"
+                    className="stroke-neutral-200 dark:stroke-neutral-700"
+                  />
+                  <XAxis dataKey="name" tick={tickStyle} />
+                  <YAxis allowDecimals={false} tick={tickStyle} />
+                  <Tooltip contentStyle={tooltipStyle} />
+                  <Bar
+                    dataKey="orderCount"
+                    name={ordersLabel}
+                    fill="#10b981"
+                    radius={[4, 4, 0, 0]}
+                  />
+                </BarChart>
+              </ResponsiveContainer>
             </div>
+          </div>
+        </div>
 
-            {/* Line chart: Tăng trưởng user */}
-            <div className="bg-white dark:bg-neutral-800 rounded-lg p-6 shadow-sm border border-neutral-200 dark:border-neutral-700">
-              <h3 className="text-sm font-medium text-neutral-500 dark:text-neutral-400 mb-4">
-                {t('admin.charts.userGrowth')}
-              </h3>
-              <div className="h-64">
-                <ResponsiveContainer width="100%" height="100%">
-                  <LineChart
-                    data={(userGrowthData?.data || []).map((d) => ({
-                      ...d,
-                      date: formatPeriodLabel(d.date),
-                    }))}
-                    margin={{ top: 10, right: 10, left: -10, bottom: 0 }}
+        {/* Hàng 2: Order Status Pie + User Growth Line */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          {/* Pie chart: Phân bổ trạng thái đơn hàng */}
+          <div className="bg-white dark:bg-neutral-800 rounded-lg p-6 shadow-sm border border-neutral-200 dark:border-neutral-700">
+            <h3 className="text-sm font-medium text-neutral-500 dark:text-neutral-400 mb-4">
+              {t('admin.charts.orderStatusDist')}
+            </h3>
+            <div className="h-64">
+              <ResponsiveContainer width="100%" height="100%">
+                <PieChart>
+                  <Pie
+                    data={orderStatusData?.data || []}
+                    dataKey="count"
+                    nameKey="label"
+                    cx="50%"
+                    cy="50%"
+                    outerRadius={80}
+                    label={({ label, count }) => `${label}: ${count}`}
                   >
-                    <CartesianGrid
-                      strokeDasharray="3 3"
-                      className="stroke-neutral-200 dark:stroke-neutral-700"
-                    />
-                    <XAxis dataKey="date" tick={tickStyle} />
-                    <YAxis allowDecimals={false} tick={tickStyle} />
-                    <Tooltip contentStyle={tooltipStyle} />
-                    <Line
-                      type="monotone"
-                      dataKey="newUsers"
-                      name={t('admin.charts.newUsers')}
-                      stroke="#8b5cf6"
-                      strokeWidth={2}
-                      dot={{ r: 3 }}
-                    />
-                  </LineChart>
-                </ResponsiveContainer>
-              </div>
+                    {(orderStatusData?.data || []).map((entry) => (
+                      <Cell key={entry.status} fill={STATUS_COLORS[entry.status] || '#9ca3af'} />
+                    ))}
+                  </Pie>
+                  <Tooltip contentStyle={tooltipStyle} />
+                  <Legend />
+                </PieChart>
+              </ResponsiveContainer>
             </div>
           </div>
 
-          {/* Hàng 3: Top Products Bar + Category Revenue Bar */}
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            {/* Bar chart: Top sản phẩm */}
-            <div className="bg-white dark:bg-neutral-800 rounded-lg p-6 shadow-sm border border-neutral-200 dark:border-neutral-700">
-              <div className="flex items-center justify-between mb-4">
-                <h3 className="text-sm font-medium text-neutral-500 dark:text-neutral-400">
-                  {t('admin.charts.topProducts')}
-                </h3>
-                <div className="flex gap-1">
-                  <button
-                    onClick={() => setTopProductMetric('revenue')}
-                    className={`px-2 py-1 text-xs rounded ${topProductMetric === 'revenue' ? 'bg-primary-100 dark:bg-primary-900/30 text-primary-700 dark:text-primary-300' : 'text-neutral-500 hover:bg-neutral-100 dark:hover:bg-neutral-700'}`}
-                  >
-                    {t('admin.charts.byRevenue')}
-                  </button>
-                  <button
-                    onClick={() => setTopProductMetric('soldCount')}
-                    className={`px-2 py-1 text-xs rounded ${topProductMetric === 'soldCount' ? 'bg-primary-100 dark:bg-primary-900/30 text-primary-700 dark:text-primary-300' : 'text-neutral-500 hover:bg-neutral-100 dark:hover:bg-neutral-700'}`}
-                  >
-                    {t('admin.charts.bySoldCount')}
-                  </button>
-                </div>
+          {/* Line chart: Tăng trưởng user */}
+          <div className="bg-white dark:bg-neutral-800 rounded-lg p-6 shadow-sm border border-neutral-200 dark:border-neutral-700">
+            <h3 className="text-sm font-medium text-neutral-500 dark:text-neutral-400 mb-4">
+              {t('admin.charts.userGrowth')}
+            </h3>
+            <div className="h-64">
+              <ResponsiveContainer width="100%" height="100%">
+                <LineChart
+                  data={(userGrowthData?.data || []).map((d) => ({
+                    ...d,
+                    date: formatPeriodLabel(d.date),
+                  }))}
+                  margin={{ top: 10, right: 10, left: -10, bottom: 0 }}
+                >
+                  <CartesianGrid
+                    strokeDasharray="3 3"
+                    className="stroke-neutral-200 dark:stroke-neutral-700"
+                  />
+                  <XAxis dataKey="date" tick={tickStyle} />
+                  <YAxis allowDecimals={false} tick={tickStyle} />
+                  <Tooltip contentStyle={tooltipStyle} />
+                  <Line
+                    type="monotone"
+                    dataKey="newUsers"
+                    name={t('admin.charts.newUsers')}
+                    stroke="#8b5cf6"
+                    strokeWidth={2}
+                    dot={{ r: 3 }}
+                  />
+                </LineChart>
+              </ResponsiveContainer>
+            </div>
+          </div>
+        </div>
+
+        {/* Hàng 3: Top Products Bar + Category Revenue Bar */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          {/* Bar chart: Top sản phẩm */}
+          <div className="bg-white dark:bg-neutral-800 rounded-lg p-6 shadow-sm border border-neutral-200 dark:border-neutral-700">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-sm font-medium text-neutral-500 dark:text-neutral-400">
+                {t('admin.charts.topProducts')}
+              </h3>
+              <div className="flex gap-1">
+                <button
+                  onClick={() => setTopProductMetric('revenue')}
+                  className={`px-2 py-1 text-xs rounded ${topProductMetric === 'revenue' ? 'bg-primary-100 dark:bg-primary-900/30 text-primary-700 dark:text-primary-300' : 'text-neutral-500 hover:bg-neutral-100 dark:hover:bg-neutral-700'}`}
+                >
+                  {t('admin.charts.byRevenue')}
+                </button>
+                <button
+                  onClick={() => setTopProductMetric('soldCount')}
+                  className={`px-2 py-1 text-xs rounded ${topProductMetric === 'soldCount' ? 'bg-primary-100 dark:bg-primary-900/30 text-primary-700 dark:text-primary-300' : 'text-neutral-500 hover:bg-neutral-100 dark:hover:bg-neutral-700'}`}
+                >
+                  {t('admin.charts.bySoldCount')}
+                </button>
               </div>
-              <div className="h-64">
-                <ResponsiveContainer width="100%" height="100%">
-                  <BarChart
-                    data={(topProductsData?.data || []).map((p) => ({
-                      name: p.name.length > 20 ? p.name.substring(0, 20) + '...' : p.name,
+            </div>
+            <div className="h-64">
+              <ResponsiveContainer width="100%" height="100%">
+                <BarChart
+                  data={(topProductsData?.data || []).map((p) => ({
+                    name: p.name.length > 20 ? p.name.substring(0, 20) + '...' : p.name,
+                    revenue: p.revenue,
+                    soldCount: p.soldCount,
+                  }))}
+                  layout="vertical"
+                  margin={{ top: 5, right: 20, left: 80, bottom: 5 }}
+                >
+                  <CartesianGrid
+                    strokeDasharray="3 3"
+                    className="stroke-neutral-200 dark:stroke-neutral-700"
+                  />
+                  <XAxis
+                    type="number"
+                    tick={tickStyle}
+                    tickFormatter={
+                      topProductMetric === 'revenue'
+                        ? (v) =>
+                            v >= 1000000 ? `${v / 1000000}M` : v >= 1000 ? `${v / 1000}K` : `${v}`
+                        : undefined
+                    }
+                  />
+                  <YAxis dataKey="name" type="category" tick={tickStyle} width={80} />
+                  <Tooltip
+                    formatter={(value: number) =>
+                      topProductMetric === 'revenue' ? formatCurrency(value) : value
+                    }
+                    contentStyle={tooltipStyle}
+                  />
+                  <Bar
+                    dataKey={topProductMetric}
+                    name={
+                      topProductMetric === 'revenue'
+                        ? t('admin.charts.revenueLabel')
+                        : t('admin.charts.soldCount')
+                    }
+                    fill={topProductMetric === 'revenue' ? '#3b82f6' : '#10b981'}
+                    radius={[0, 4, 4, 0]}
+                  />
+                </BarChart>
+              </ResponsiveContainer>
+            </div>
+          </div>
+
+          {/* Bar chart: Doanh thu theo danh mục */}
+          <div className="bg-white dark:bg-neutral-800 rounded-lg p-6 shadow-sm border border-neutral-200 dark:border-neutral-700">
+            <h3 className="text-sm font-medium text-neutral-500 dark:text-neutral-400 mb-4">
+              {t('admin.charts.revenueByCategory')}
+            </h3>
+            <div className="h-64">
+              <ResponsiveContainer width="100%" height="100%">
+                <BarChart
+                  data={(categoryData?.data || []).map((c, i) => ({
+                    name:
+                      c.categoryName.length > 15
+                        ? c.categoryName.substring(0, 15) + '...'
+                        : c.categoryName,
+                    revenue: c.revenue,
+                    fill: PIE_COLORS[i % PIE_COLORS.length],
+                  }))}
+                  margin={{ top: 10, right: 10, left: -10, bottom: 0 }}
+                >
+                  <CartesianGrid
+                    strokeDasharray="3 3"
+                    className="stroke-neutral-200 dark:stroke-neutral-700"
+                  />
+                  <XAxis dataKey="name" tick={tickStyle} />
+                  <YAxis
+                    tickFormatter={(v) =>
+                      v >= 1000000 ? `${v / 1000000}M` : v >= 1000 ? `${v / 1000}K` : `${v}`
+                    }
+                    tick={tickStyle}
+                  />
+                  <Tooltip
+                    formatter={(value: number) => formatCurrency(value)}
+                    contentStyle={tooltipStyle}
+                  />
+                  <Bar
+                    dataKey="revenue"
+                    name={t('admin.charts.revenueLabel')}
+                    radius={[4, 4, 0, 0]}
+                  >
+                    {(categoryData?.data || []).map((_, i) => (
+                      <Cell key={i} fill={PIE_COLORS[i % PIE_COLORS.length]} />
+                    ))}
+                  </Bar>
+                </BarChart>
+              </ResponsiveContainer>
+            </div>
+          </div>
+        </div>
+
+        {/* Hàng 4: Payment Methods Pie */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          <div className="bg-white dark:bg-neutral-800 rounded-lg p-6 shadow-sm border border-neutral-200 dark:border-neutral-700">
+            <h3 className="text-sm font-medium text-neutral-500 dark:text-neutral-400 mb-4">
+              {t('admin.charts.paymentMethods')}
+            </h3>
+            <div className="h-64">
+              <ResponsiveContainer width="100%" height="100%">
+                <PieChart>
+                  <Pie
+                    data={(paymentMethodsData?.data || []).map((p) => ({
+                      name: p.method,
+                      value: p.count,
                       revenue: p.revenue,
-                      soldCount: p.soldCount,
                     }))}
-                    layout="vertical"
-                    margin={{ top: 5, right: 20, left: 80, bottom: 5 }}
+                    dataKey="value"
+                    nameKey="name"
+                    cx="50%"
+                    cy="50%"
+                    outerRadius={80}
+                    label={({ name, value }) => `${name}: ${value}`}
                   >
-                    <CartesianGrid
-                      strokeDasharray="3 3"
-                      className="stroke-neutral-200 dark:stroke-neutral-700"
-                    />
-                    <XAxis
-                      type="number"
-                      tick={tickStyle}
-                      tickFormatter={
-                        topProductMetric === 'revenue'
-                          ? (v) =>
-                              v >= 1000000 ? `${v / 1000000}M` : v >= 1000 ? `${v / 1000}K` : `${v}`
-                          : undefined
-                      }
-                    />
-                    <YAxis dataKey="name" type="category" tick={tickStyle} width={80} />
-                    <Tooltip
-                      formatter={(value: number) =>
-                        topProductMetric === 'revenue' ? formatCurrency(value) : value
-                      }
-                      contentStyle={tooltipStyle}
-                    />
-                    <Bar
-                      dataKey={topProductMetric}
-                      name={
-                        topProductMetric === 'revenue'
-                          ? t('admin.charts.revenueLabel')
-                          : t('admin.charts.soldCount')
-                      }
-                      fill={topProductMetric === 'revenue' ? '#3b82f6' : '#10b981'}
-                      radius={[0, 4, 4, 0]}
-                    />
-                  </BarChart>
-                </ResponsiveContainer>
-              </div>
-            </div>
-
-            {/* Bar chart: Doanh thu theo danh mục */}
-            <div className="bg-white dark:bg-neutral-800 rounded-lg p-6 shadow-sm border border-neutral-200 dark:border-neutral-700">
-              <h3 className="text-sm font-medium text-neutral-500 dark:text-neutral-400 mb-4">
-                {t('admin.charts.revenueByCategory')}
-              </h3>
-              <div className="h-64">
-                <ResponsiveContainer width="100%" height="100%">
-                  <BarChart
-                    data={(categoryData?.data || []).map((c, i) => ({
-                      name:
-                        c.categoryName.length > 15
-                          ? c.categoryName.substring(0, 15) + '...'
-                          : c.categoryName,
-                      revenue: c.revenue,
-                      fill: PIE_COLORS[i % PIE_COLORS.length],
-                    }))}
-                    margin={{ top: 10, right: 10, left: -10, bottom: 0 }}
-                  >
-                    <CartesianGrid
-                      strokeDasharray="3 3"
-                      className="stroke-neutral-200 dark:stroke-neutral-700"
-                    />
-                    <XAxis dataKey="name" tick={tickStyle} />
-                    <YAxis
-                      tickFormatter={(v) =>
-                        v >= 1000000 ? `${v / 1000000}M` : v >= 1000 ? `${v / 1000}K` : `${v}`
-                      }
-                      tick={tickStyle}
-                    />
-                    <Tooltip
-                      formatter={(value: number) => formatCurrency(value)}
-                      contentStyle={tooltipStyle}
-                    />
-                    <Bar
-                      dataKey="revenue"
-                      name={t('admin.charts.revenueLabel')}
-                      radius={[4, 4, 0, 0]}
-                    >
-                      {(categoryData?.data || []).map((_, i) => (
-                        <Cell key={i} fill={PIE_COLORS[i % PIE_COLORS.length]} />
-                      ))}
-                    </Bar>
-                  </BarChart>
-                </ResponsiveContainer>
-              </div>
+                    {(paymentMethodsData?.data || []).map((_, i) => (
+                      <Cell key={i} fill={PIE_COLORS[i % PIE_COLORS.length]} />
+                    ))}
+                  </Pie>
+                  <Tooltip contentStyle={tooltipStyle} />
+                  <Legend />
+                </PieChart>
+              </ResponsiveContainer>
             </div>
           </div>
-
-          {/* Hàng 4: Payment Methods Pie */}
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            <div className="bg-white dark:bg-neutral-800 rounded-lg p-6 shadow-sm border border-neutral-200 dark:border-neutral-700">
-              <h3 className="text-sm font-medium text-neutral-500 dark:text-neutral-400 mb-4">
-                {t('admin.charts.paymentMethods')}
-              </h3>
-              <div className="h-64">
-                <ResponsiveContainer width="100%" height="100%">
-                  <PieChart>
-                    <Pie
-                      data={(paymentMethodsData?.data || []).map((p) => ({
-                        name: p.method,
-                        value: p.count,
-                        revenue: p.revenue,
-                      }))}
-                      dataKey="value"
-                      nameKey="name"
-                      cx="50%"
-                      cy="50%"
-                      outerRadius={80}
-                      label={({ name, value }) => `${name}: ${value}`}
-                    >
-                      {(paymentMethodsData?.data || []).map((_, i) => (
-                        <Cell key={i} fill={PIE_COLORS[i % PIE_COLORS.length]} />
-                      ))}
-                    </Pie>
-                    <Tooltip contentStyle={tooltipStyle} />
-                    <Legend />
-                  </PieChart>
-                </ResponsiveContainer>
-              </div>
-            </div>
-          </div>
-        </>
-      )}
+        </div>
+      </>
     </div>
   );
 };

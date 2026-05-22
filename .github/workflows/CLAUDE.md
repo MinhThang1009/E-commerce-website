@@ -46,7 +46,7 @@ File: `.github/workflows/ci.yml`
 Steps theo thứ tự:
 
 1. `actions/checkout@v4`
-2. **Setup Node.js 22** — cache npm từ `backend/package-lock.json`
+2. **Setup Node.js 22** — lưu npm từ `backend/package-lock.json`
 3. **Install backend deps** — `npm ci` trong `backend/`
 4. **Lint backend** — `npm run lint:strict` (zero warnings)
 5. **Lint migrations** — `bash scripts/lint-migrations.sh` (chạy ở root, không có `working-directory: backend`)
@@ -66,7 +66,7 @@ Steps theo thứ tự:
 Steps theo thứ tự:
 
 1. `actions/checkout@v4`
-2. **Setup Node.js 22** — cache npm từ `frontend/package-lock.json`
+2. **Setup Node.js 22** — lưu npm từ `frontend/package-lock.json`
 3. **Install frontend deps** — `npm ci` trong `frontend/`
 4. **Lint frontend** — `npm run lint`
 5. **Typecheck** — `npm run typecheck` (`tsc --noEmit`)

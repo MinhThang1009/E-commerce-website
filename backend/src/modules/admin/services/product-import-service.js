@@ -214,8 +214,7 @@ const _insertProductRow = async (row, categoryMap, brandMap) => {
  *   - `file.originalname` — tên file gốc (dùng để xác định extension)
  *   - `file.buffer` — nội dung file dưới dạng Buffer
  *   Chỉ nhận `.csv` hoặc `.json`, tối đa 5MB (giới hạn ở multer config trong controller)
- * @param {number} params.adminId - ID admin thực hiện import (giữ lại để sẵn sàng cho audit log
- *   trong tương lai — hiện chưa được sử dụng trong hàm này)
+ * @param {number} params.adminId - ID admin thực hiện import
  * @returns {Promise<Object>} Kết quả import:
  *   - Nếu mọi dòng đều fail validation: `{ allFailed: true, errors: Array, totalRows: number }`
  *   - Bình thường: `{ totalRows: number, successCount: number, failedCount: number, errors: Array }`

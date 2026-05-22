@@ -8,6 +8,7 @@ import { useState, useEffect, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Form, FormInstance, message } from 'antd';
 import { ProductFormData } from '@/types';
+import { SAMPLE_LAPTOP_DATA } from '../utils/sample-product-data';
 
 interface UseProductFormProps {
   form: FormInstance;
@@ -46,16 +47,27 @@ export const useProductForm = ({
 
       switch (step) {
         case 'basic': {
-          const basicRequiredFields = ['name', 'shortDescription', 'description'];
-          isStepValid = basicRequiredFields.every((field) => {
+          const checkField = (field: string) => {
             const value = values[field];
-            const isValid =
+            return (
               value !== undefined &&
               value !== null &&
               value !== '' &&
-              (typeof value === 'string' ? value.trim() !== '' : true);
-            return isValid;
-          });
+              (typeof value === 'string' ? value.trim() !== '' : true)
+            );
+          };
+          const nameOk = checkField('name');
+          const shortDescOk = checkField('shortDescription');
+          // Quill đôi khi không update form store — fallback kiểm tra DOM
+          const descFormOk = checkField('description');
+          const descDomOk =
+            typeof document !== 'undefined'
+              ? (
+                  document.querySelector('.simple-quill-editor .ql-editor')?.textContent?.trim() ||
+                  ''
+                ).length > 0
+              : false;
+          isStepValid = nameOk && shortDescOk && (descFormOk || descDomOk);
           break;
         }
         case 'specifications':
@@ -110,10 +122,6 @@ export const useProductForm = ({
           // Images không bắt buộc
           isStepValid = true;
           break;
-        case 'warranty':
-          // Warranty không bắt buộc
-          isStepValid = true;
-          break;
         case 'faqs':
           // FAQs không bắt buộc
           isStepValid = true;
@@ -143,7 +151,6 @@ export const useProductForm = ({
       'pricing',
       'category',
       'images',
-      'warranty',
       'faqs',
       'seo',
     ];
@@ -179,17 +186,9 @@ export const useProductForm = ({
   // Theo dõi thay đổi giá trị form để cập nhật validation
   const watchFormValues = Form.useWatch([], form);
 
-  // Sử dụng useRef để tránh vòng lặp vô hạn
-  const isFirstRender = useRef(true);
-  const validationTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const validationTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
-    // Bỏ qua validation ở lần render đầu tiên
-    if (isFirstRender.current) {
-      isFirstRender.current = false;
-      return;
-    }
-
     // Xóa timeout trước đó để tránh validation nhiều lần
     if (validationTimeoutRef.current) {
       clearTimeout(validationTimeoutRef.current);
@@ -249,6 +248,7 @@ export const useProductForm = ({
     // Sử dụng setTimeout để tránh quá nhiều validation liên tục
     validationTimeoutRef.current = setTimeout(() => {
       validateFormValues();
+      performValidation();
     }, 100);
 
     return () => {
@@ -256,6 +256,7 @@ export const useProductForm = ({
         clearTimeout(validationTimeoutRef.current);
       }
     };
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- performValidation tái tạo mỗi render; thêm vào deps sẽ gây vòng lặp vô hạn
   }, [watchFormValues, form]);
 
   // Validate form - hiện dùng cho validation thủ công
@@ -328,24 +329,23 @@ export const useProductForm = ({
     return missingFields.map((field) => fieldLabels[field as keyof typeof fieldLabels]);
   };
 
-  // Điền dữ liệu mẫu
+  // Điền dữ liệu mẫu MacBook Pro M3 Max
   const fillExampleData = () => {
     form.setFieldsValue({
-      name: t('productForm.sampleName'),
-      description: t('productForm.sampleDescription'),
-      shortDescription: t('productForm.sampleShortDesc'),
-      price: 28990000,
-      compareAtPrice: 31990000,
-      stockQuantity: 50,
-      status: 'active',
-      featured: true,
+      name: SAMPLE_LAPTOP_DATA.name,
+      description: SAMPLE_LAPTOP_DATA.description,
+      shortDescription: SAMPLE_LAPTOP_DATA.shortDescription,
+      price: SAMPLE_LAPTOP_DATA.basePrice,
+      compareAtPrice: SAMPLE_LAPTOP_DATA.salePrice,
+      stockQuantity: SAMPLE_LAPTOP_DATA.stockQuantity,
+      status: SAMPLE_LAPTOP_DATA.status,
+      featured: SAMPLE_LAPTOP_DATA.featured,
       categoryIds: [],
-      seoTitle: t('productForm.sampleSeoTitle'),
-      seoDescription: t('productForm.sampleSeoDesc'),
-      seoKeywords: t('productForm.sampleSeoKeywords'),
+      seoTitle: SAMPLE_LAPTOP_DATA.metaTitle,
+      seoDescription: SAMPLE_LAPTOP_DATA.metaDescription,
+      seoKeywords: SAMPLE_LAPTOP_DATA.metaKeywords,
     });
 
-    // Trigger validation sau khi fill data
     setTimeout(() => {
       performValidation();
     }, 100);

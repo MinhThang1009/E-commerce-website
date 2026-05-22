@@ -10,7 +10,6 @@ const CONSTANTS = {
   POINTS_VALUE: 100,
   SHIPPING_FREE_THRESHOLD: 500000,
   SHIPPING_BASE_RATE: 30000,
-  SHIPPING_WEIGHT_RATE: 5000,
 };
 
 // ─── Builders ─────────────────────────────────────────────────────────────────
@@ -124,7 +123,6 @@ function mkOrderBody(overrides = {}) {
     paymentMethod: 'cod',
     notes: null,
     discountCode: null,
-    pointsToUse: 0,
     ...overrides,
   };
 }

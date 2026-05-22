@@ -35,6 +35,9 @@ const SimpleRichTextEditor: React.FC<SimpleRichTextEditorProps> = ({
   const isInternalChange = useRef(false);
   // Ref này tồn tại qua StrictMode simulated-unmount nhưng reset khi unmount thật
   const hasInitialized = useRef(false);
+  // Stable ref để tránh stale closure trong Quill handler (không cần re-register khi onChange thay đổi)
+  const onChangeRef = useRef(onChange);
+  onChangeRef.current = onChange;
 
   // Khởi tạo Quill
   useEffect(() => {
@@ -71,15 +74,14 @@ const SimpleRichTextEditor: React.FC<SimpleRichTextEditorProps> = ({
       if (isInternalChange.current) return;
       const content = quill.root.innerHTML;
       const finalContent = content === '<p><br></p>' ? '' : content;
-      if (onChange) onChange(finalContent);
+      if (onChangeRef.current) onChangeRef.current(finalContent);
     };
     quill.on('text-change', handleTextChange);
 
-    return () => {
-      quill.off('text-change', handleTextChange);
-      // Không null quillRef — StrictMode simulated cleanup không được xóa instance
-      // hasInitialized.current giữ lại để chặn double-init
-    };
+    // KHÔNG gọi quill.off trong cleanup: React.StrictMode simulates unmount-remount,
+    // cleanup sẽ xóa handler nhưng hasInitialized.current = true ngăn re-register.
+    // Quill instance tồn tại qua cycle này nên handler phải tồn tại cùng.
+    return () => {};
     // eslint-disable-next-line react-hooks/exhaustive-deps -- Khởi tạo Quill một lần khi mount, các props dùng qua ref
   }, []);
 
@@ -147,6 +149,9 @@ const SimpleRichTextEditor: React.FC<SimpleRichTextEditorProps> = ({
           .simple-quill-editor .ql-toolbar {
             border-top-left-radius: 6px;
             border-top-right-radius: 6px;
+          }
+          .simple-quill-editor .ql-editor.ql-blank::before {
+            color: #6b7280;
           }
         `}</style>
       </div>

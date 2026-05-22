@@ -30,6 +30,11 @@ const Category = sequelize.define(
       allowNull: false,
       unique: true,
     },
+    // Ảnh đại diện danh mục
+    image: {
+      type: DataTypes.STRING(500),
+      allowNull: true,
+    },
     // Mô tả danh mục — tiếng Việt
     descriptionVi: { type: DataTypes.TEXT, allowNull: true },
     descriptionEn: { type: DataTypes.TEXT, allowNull: true },
@@ -53,6 +58,12 @@ const Category = sequelize.define(
       allowNull: false,
       defaultValue: 0,
       field: 'sort_order',
+    },
+    // ID danh mục cha (null = danh mục gốc)
+    parentId: {
+      type: DataTypes.INTEGER,
+      allowNull: true,
+      field: 'parent_id',
     },
     // Xóa mềm (soft delete)
     deletedAt: {

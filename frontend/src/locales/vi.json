@@ -1,7 +1,7 @@
 {
   "header": {
     "brand": "TechStore",
-    "tagline": "Thương Mại Điện Tử",
+    "tagline": "Thương mại điện tử",
     "navigation": {
       "home": "Trang chủ",
       "shop": "Cửa hàng",
@@ -32,16 +32,16 @@
       "profile": "Hồ sơ",
       "orders": "Đơn hàng",
       "wishlist": "Danh sách yêu thích",
-      "adminPanel": "Bảng Điều Khiển Admin",
+      "adminPanel": "Bảng điều khiển Admin",
       "logout": "Đăng xuất"
     }
   },
   "homepage": {
     "hero": {
-      "title": "Khám Phá Những Sản Phẩm Tuyệt Vời Cho Cuộc Sống Của Bạn",
+      "title": "Khám phá những sản phẩm tuyệt vời cho cuộc sống của bạn",
       "subtitle": "Mua sắm những xu hướng và đổi mới mới nhất với giá cả không thể đánh bại và chất lượng tuyệt vời.",
-      "shopNow": "Mua Ngay",
-      "browseCategories": "Duyệt Danh Mục",
+      "shopNow": "Mua ngay",
+      "browseCategories": "Duyệt danh mục",
       "imageAlt": "Trung tâm mua sắm hiện đại với nhiều người",
       "slides": {
         "shopping": {
@@ -90,30 +90,30 @@
       }
     },
     "featuredProducts": {
-      "title": "Sản Phẩm Nổi Bật",
-      "viewAll": "Xem Tất Cả"
+      "title": "Sản phẩm nổi bật",
+      "viewAll": "Xem tất cả"
     },
     "categories": {
-      "title": "Mua Sắm Theo Danh Mục",
-      "productsCount": "Sản Phẩm",
+      "title": "Mua sắm theo danh mục",
+      "productsCount": "Sản phẩm",
       "emptyTitle": "Không có danh mục",
       "emptyDescription": "Hiện tại chưa có danh mục nào để hiển thị."
     },
     "brands": {
-      "title": "Thương Hiệu Nổi Bật",
-      "viewAll": "Xem Tất Cả"
+      "title": "Thương hiệu nổi bật",
+      "viewAll": "Xem tất cả"
     },
     "promotion": {
-      "badge": "Ưu Đãi Có Thời Hạn",
-      "title": "Giảm 20% Cho Tất Cả Hàng Mới Về",
+      "badge": "Ưu đãi có thời hạn",
+      "title": "Giảm 20% cho tất cả hàng mới về",
       "description": "Khám phá bộ sưu tập mới nhất của chúng tôi và tận hưởng giảm giá độc quyền trên các mặt hàng được chọn. Sử dụng mã khuyến mãi",
       "promoCode": "NEWSEASON",
       "atCheckout": "khi thanh toán.",
-      "shopNewArrivals": "Mua Hàng Mới Về",
+      "shopNewArrivals": "Mua hàng mới về",
       "imageAlt": "Ưu đãi đặc biệt - Phụ nữ với túi mua sắm"
     },
     "bestSellers": {
-      "title": "Sản Phẩm Bán Chạy",
+      "title": "Sản phẩm bán chạy",
       "subtitle": "Khám phá những sản phẩm phổ biến nhất được hàng ngàn khách hàng yêu thích.",
       "badge": "Sản phẩm yêu thích",
       "stats": "Đang hiển thị {{current}} trên {{total}} sản phẩm",
@@ -124,13 +124,13 @@
         "message": "Vui lòng quay lại sau để xem các sản phẩm phổ biến nhất"
       },
       "error": {
-        "title": "Lỗi Tải Sản Phẩm",
+        "title": "Lỗi tải sản phẩm",
         "message": "Chúng tôi gặp sự cố khi tải danh sách bán chạy. Vui lòng thử lại sau."
       },
       "sort": {
         "popular": "Phổ biến nhất",
-        "price_asc": "Giá: Thấp đến Cao",
-        "price_desc": "Giá: Cao đến Thấp",
+        "price_asc": "Giá: thấp đến cao",
+        "price_desc": "Giá: cao đến thấp",
         "newest": "Mới nhất"
       }
     },
@@ -144,14 +144,14 @@
   },
   "auth": {
     "login": {
-      "title": "Chào Mừng Trở Lại",
+      "title": "Chào mừng trở lại",
       "subtitle": "Đăng nhập vào tài khoản của bạn để tiếp tục",
-      "emailLabel": "Địa Chỉ Email",
+      "emailLabel": "Địa chỉ email",
       "emailPlaceholder": "your.email@example.com",
-      "passwordLabel": "Mật Khẩu",
+      "passwordLabel": "Mật khẩu",
       "passwordPlaceholder": "••••••••",
       "forgotPassword": "Quên mật khẩu?",
-      "signInButton": "Đăng Nhập",
+      "signInButton": "Đăng nhập",
       "noAccount": "Chưa có tài khoản?",
       "signUpLink": "Đăng ký",
       "validation": {
@@ -178,21 +178,21 @@
       "enterOtpNow": "Nhập mã OTP ngay →"
     },
     "register": {
-      "title": "Tạo Tài Khoản",
+      "title": "Tạo tài khoản",
       "subtitle": "Tham gia với chúng tôi để bắt đầu mua sắm",
-      "nameLabel": "Họ và Tên",
+      "nameLabel": "Họ và tên",
       "namePlaceholder": "Nguyễn Văn A",
-      "emailLabel": "Địa Chỉ Email",
+      "emailLabel": "Địa chỉ email",
       "emailPlaceholder": "your.email@example.com",
-      "passwordLabel": "Mật Khẩu",
+      "passwordLabel": "Mật khẩu",
       "passwordPlaceholder": "••••••••",
-      "confirmPasswordLabel": "Xác Nhận Mật Khẩu",
+      "confirmPasswordLabel": "Xác nhận mật khẩu",
       "confirmPasswordPlaceholder": "••••••••",
       "agreeToTerms": "Tôi đồng ý với",
-      "termsOfService": "Điều Khoản Dịch Vụ",
+      "termsOfService": "Điều khoản dịch vụ",
       "and": "và",
-      "privacyPolicy": "Chính Sách Bảo Mật",
-      "createAccountButton": "Tạo Tài Khoản",
+      "privacyPolicy": "Chính sách bảo mật",
+      "createAccountButton": "Tạo tài khoản",
       "haveAccount": "Đã có tài khoản?",
       "signInLink": "Đăng nhập",
       "validation": {
@@ -223,11 +223,11 @@
       "message": "Xin chào {{name}}, bạn đã đăng nhập thành công."
     },
     "forgotPassword": {
-      "title": "Quên Mật Khẩu",
+      "title": "Quên mật khẩu",
       "subtitle": "Nhập email của bạn và chúng tôi sẽ gửi cho bạn liên kết đặt lại mật khẩu",
-      "emailLabel": "Địa Chỉ Email",
+      "emailLabel": "Địa chỉ email",
       "emailPlaceholder": "your.email@example.com",
-      "sendResetLinkButton": "Gửi Liên Kết Đặt Lại",
+      "sendResetLinkButton": "Gửi liên kết đặt lại",
       "backToLogin": "Quay lại đăng nhập",
       "successMessage": "Liên kết đặt lại mật khẩu đã được gửi đến email của bạn",
       "validation": {
@@ -241,13 +241,13 @@
       "sending": "Đang gửi..."
     },
     "resetPassword": {
-      "title": "Đặt Lại Mật Khẩu",
+      "title": "Đặt lại mật khẩu",
       "subtitle": "Nhập mật khẩu mới của bạn",
-      "passwordLabel": "Mật Khẩu Mới",
+      "passwordLabel": "Mật khẩu mới",
       "passwordPlaceholder": "••••••••",
-      "confirmPasswordLabel": "Xác Nhận Mật Khẩu Mới",
+      "confirmPasswordLabel": "Xác nhận mật khẩu mới",
       "confirmPasswordPlaceholder": "••••••••",
-      "resetPasswordButton": "Đặt Lại Mật Khẩu",
+      "resetPasswordButton": "Đặt lại mật khẩu",
       "backToLogin": "Quay lại đăng nhập",
       "successMessage": "Mật khẩu đã được đặt lại thành công",
       "validation": {
@@ -293,7 +293,7 @@
     }
   },
   "chat": {
-    "title": "Trợ Lý Mua Sắm AI",
+    "title": "Trợ lý mua sắm AI",
     "greeting": "Xin chào! Tôi là trợ lý mua sắm AI. Tôi có thể giúp gì cho bạn hôm nay?",
     "greetingWithName": "Xin chào {{name}}! Tôi là trợ lý mua sắm AI. Tôi có thể giúp gì cho bạn hôm nay?",
     "typing": "Đang nhập...",
@@ -408,7 +408,7 @@
     "featureContext": "Phản hồi nhận biết ngữ cảnh",
     "featureMultilingual": "Hỗ trợ đa ngôn ngữ",
     "chatbotName": "Chatbot AI",
-    "smartMode": "Chế độ Thông minh",
+    "smartMode": "Chế độ thông minh",
     "limited": "Hạn chế"
   },
   "common": {
@@ -425,7 +425,7 @@
     "viewMore": "Xem thêm",
     "back": "Quay lại",
     "close": "Đóng",
-    "tryAgain": "Thử Lại",
+    "tryAgain": "Thử lại",
     "previous": "Trước",
     "next": "Tiếp",
     "processing": "Đang xử lý...",
@@ -499,29 +499,29 @@
     "unknown": "Không xác định"
   },
   "unauthorized": {
-    "title": "Truy Cập Bị Từ Chối",
+    "title": "Truy cập bị từ chối",
     "message": "Bạn không có quyền truy cập vào trang này. Vui lòng đăng nhập với tài khoản phù hợp hoặc liên hệ với quản trị viên.",
-    "goHome": "Về Trang Chủ",
-    "login": "Đăng Nhập"
+    "goHome": "Về trang chủ",
+    "login": "Đăng nhập"
   },
   "cart": {
-    "title": "Giỏ Hàng Của Bạn",
+    "title": "Giỏ hàng của bạn",
     "emptyCart": {
       "title": "Giỏ hàng của bạn đang trống",
       "message": "Có vẻ như bạn chưa thêm sản phẩm nào vào giỏ hàng.",
-      "startShopping": "Bắt Đầu Mua Sắm"
+      "startShopping": "Bắt đầu mua sắm"
     },
-    "cartItems": "Sản Phẩm Trong Giỏ",
+    "cartItems": "Sản phẩm trong giỏ",
     "clearCart": "Xóa giỏ hàng",
     "clearCartConfirm": "Bạn có chắc chắn muốn xóa tất cả sản phẩm trong giỏ hàng?",
-    "orderSummary": "Tóm Tắt Đơn Hàng",
+    "orderSummary": "Tóm tắt đơn hàng",
     "subtotal": "Tạm tính",
     "shipping": "Phí vận chuyển",
     "free": "Miễn phí",
     "tax": "Thuế",
     "total": "Tổng cộng",
-    "proceedToCheckout": "Tiến Hành Thanh Toán",
-    "continueShopping": "Tiếp Tục Mua Sắm",
+    "proceedToCheckout": "Tiến hành thanh toán",
+    "continueShopping": "Tiếp tục mua sắm",
     "syncedWithAccount": "Giỏ hàng đã đồng bộ với tài khoản",
     "savedOnServer": "Giỏ hàng đã được lưu trên server",
     "savedLocally": "Giỏ hàng đang được lưu trên thiết bị của bạn",
@@ -575,10 +575,10 @@
   },
   "shop": {
     "seo": {
-      "title": "Cửa Hàng | TechStore",
+      "title": "Cửa hàng | TechStore",
       "description": "Khám phá đầy đủ danh mục điện thoại, máy tính bảng, laptop và phụ kiện tại TechStore."
     },
-    "title": "Cửa Hàng Sản Phẩm",
+    "title": "Cửa hàng sản phẩm",
     "subtitle": "Khám phá bộ sưu tập sản phẩm của chúng tôi",
     "stats": "Hiển thị {{current}} trong tổng số {{total}} sản phẩm",
     "filtersButton": "Bộ lọc sản phẩm",
@@ -593,14 +593,14 @@
     },
     "sort": {
       "newest": "Mới nhất",
-      "price_asc": "Giá: Thấp đến Cao",
-      "price_desc": "Giá: Cao đến Thấp",
+      "price_asc": "Giá: thấp đến cao",
+      "price_desc": "Giá: cao đến thấp",
       "popular": "Phổ biến nhất"
     },
     "filters": {
       "title": "Bộ lọc sản phẩm",
       "close": "Đóng bộ lọc",
-      "priceRange": "Khoảng Giá",
+      "priceRange": "Khoảng giá",
       "minPrice": "Tối thiểu (VND)",
       "maxPrice": "Tối đa (VND)",
       "applyPrice": "Áp dụng khoảng giá",
@@ -658,7 +658,7 @@
     "usefulInfo": "Thông tin hữu ích",
     "feedback": {
       "title": "Phản hồi, góp ý",
-      "description": "Đội ngũ Kiểm Soát Chất Lượng của chúng tôi sẵn sàng lắng nghe quý khách.",
+      "description": "Đội ngũ kiểm soát chất lượng của chúng tôi sẵn sàng lắng nghe quý khách.",
       "sendButton": "Gửi phản hồi"
     },
     "policies": {
@@ -693,24 +693,24 @@
     "dmcaProtected": "Bảo vệ DMCA"
   },
   "checkout": {
-    "title": "Thanh Toán",
+    "title": "Thanh toán",
     "emptyCart": {
       "title": "Giỏ hàng của bạn đang trống",
       "message": "Thêm một số sản phẩm vào giỏ hàng trước khi tiến hành thanh toán.",
-      "continueShopping": "Tiếp Tục Mua Sắm",
+      "continueShopping": "Tiếp tục mua sắm",
       "redirectMessage": "Bạn đã được chuyển hướng đến trang mua sắm vì giỏ hàng trống."
     },
     "shippingInfo": {
-      "title": "Thông Tin Giao Hàng",
+      "title": "Thông tin giao hàng",
       "firstName": "Tên",
       "lastName": "Họ",
-      "email": "Địa Chỉ Email",
-      "phone": "Số Điện Thoại",
-      "address": "Địa Chỉ",
-      "city": "Thành Phố",
+      "email": "Địa chỉ email",
+      "phone": "Số điện thoại",
+      "address": "Địa chỉ",
+      "city": "Thành phố",
       "state": "Tỉnh/Thành",
-      "zipCode": "Mã Bưu Điện",
-      "country": "Quốc Gia",
+      "zipCode": "Mã bưu điện",
+      "country": "Quốc gia",
       "savedAddresses": "Địa chỉ đã lưu",
       "selectSaved": "Chọn địa chỉ đã lưu",
       "orEnterNew": "Hoặc nhập địa chỉ mới bên dưới"
@@ -718,35 +718,35 @@
     "countries": {
       "US": "Hoa Kỳ",
       "CA": "Canada",
-      "UK": "Vương Quốc Anh",
+      "UK": "Vương quốc Anh",
       "AU": "Úc",
       "DE": "Đức",
       "FR": "Pháp",
       "VN": "Việt Nam"
     },
     "shippingMethod": {
-      "title": "Phương Thức Giao Hàng",
+      "title": "Phương thức giao hàng",
       "standard": "Giao hàng tiêu chuẩn (3-5 ngày làm việc)",
       "express": "Giao hàng nhanh (1-2 ngày làm việc)",
       "free": "Giao hàng miễn phí (5-7 ngày làm việc)",
       "freeLabel": "Miễn phí"
     },
     "paymentMethod": {
-      "title": "Phương Thức Thanh Toán",
-      "selectLabel": "Chọn Phương Thức Thanh Toán",
-      "creditCard": "Thẻ Tín Dụng",
+      "title": "Phương thức thanh toán",
+      "selectLabel": "Chọn phương thức thanh toán",
+      "creditCard": "Thẻ tín dụng",
       "paypal": "PayPal",
       "vnpay": "VNPay",
-      "bankTransfer": "Chuyển Khoản Ngân Hàng",
+      "bankTransfer": "Chuyển khoản ngân hàng",
       "cod": "Thanh toán khi nhận hàng (COD)",
       "momo": "Thanh toán MoMo",
       "installment": "Trả góp 0% qua thẻ tín dụng"
     },
     "creditCard": {
-      "cardNumber": "Số Thẻ",
+      "cardNumber": "Số thẻ",
       "cardNumberPlaceholder": "1234 5678 9012 3456",
-      "nameOnCard": "Tên Trên Thẻ",
-      "expiryDate": "Ngày Hết Hạn",
+      "nameOnCard": "Tên trên thẻ",
+      "expiryDate": "Ngày hết hạn",
       "expiryPlaceholder": "MM/YY",
       "cvc": "CVC",
       "cvcPlaceholder": "123"
@@ -768,7 +768,7 @@
       "returnAfterPayment": "Sau khi thanh toán xong, vui lòng quay lại trang này để hoàn tất đơn hàng."
     },
     "bankTransfer": {
-      "title": "Chuyển Khoản Ngân Hàng",
+      "title": "Chuyển khoản ngân hàng",
       "instructions": "Vui lòng sử dụng thông tin sau để thực hiện chuyển khoản ngân hàng:",
       "scanQRCode": "Quét mã QR để thanh toán:",
       "qrInstructions": "Sử dụng ứng dụng ngân hàng để quét mã QR",
@@ -783,16 +783,16 @@
       "step1": "Giữ lại biên lai chuyển khoản",
       "step2": "Đơn hàng sẽ được xử lý trong vòng 1-2 giờ",
       "step3": "Bạn sẽ nhận được email xác nhận khi đơn hàng được duyệt",
-      "routingNumber": "Số Định Tuyến",
+      "routingNumber": "Số định tuyến",
       "referenceNote": "Số đơn hàng của bạn sẽ được cung cấp sau khi thanh toán",
-      "exampleBank": "Ngân Hàng Ví Dụ",
-      "exampleStoreName": "Tên Cửa Hàng Của Bạn",
+      "exampleBank": "Ngân hàng ví dụ",
+      "exampleStoreName": "Tên cửa hàng của bạn",
       "qrAlt": "Mã QR chuyển khoản ngân hàng",
       "copyAccountNumber": "Sao chép số tài khoản",
       "copyReference": "Sao chép mã tham chiếu"
     },
     "orderSummary": {
-      "title": "Tóm Tắt Đơn Hàng",
+      "title": "Tóm tắt đơn hàng",
       "subtotal": "Tạm tính",
       "shipping": "Phí vận chuyển",
       "tax": "Thuế (7%)",
@@ -804,15 +804,15 @@
       "distanceInfo": "📍 Khoảng cách: {{distance}} km - Phí: {{fee}}",
       "discountCodeLabel": "Mã giảm giá ({{code}})"
     },
-    "placeOrder": "Đặt Hàng",
+    "placeOrder": "Đặt hàng",
     "placeOrderWithTotal": "Đặt hàng - {{total}}",
     "createOrder": "Tạo đơn hàng",
     "buttons": {
-      "continueToPayment": "Tiếp Tục Thanh Toán",
+      "continueToPayment": "Tiếp tục thanh toán",
       "processPayment": "Tiếp tục thanh toán"
     },
     "paymentQR": {
-      "title": "Thanh Toán Qua QR",
+      "title": "Thanh toán qua QR",
       "subtitle": "Quét mã QR để hoàn tất thanh toán",
       "orderInfo": {
         "orderId": "ID đơn hàng",
@@ -882,7 +882,9 @@
       "remove": "Xóa",
       "invalid": "Mã giảm giá không hợp lệ",
       "error": "Có lỗi xảy ra khi áp dụng mã giảm giá",
-      "discountInfo": "Đã áp dụng mã {{code}}. Giảm {{amount}}"
+      "discountInfo": "Đã áp dụng mã {{code}}. Giảm {{amount}}",
+      "available": "Mã giảm giá có thể dùng:",
+      "minOrder": "Đơn tối thiểu {{amount}}"
     },
     "loyaltyPoints": {
       "title": "Điểm thưởng",
@@ -933,16 +935,16 @@
     "defaultCity": "Thành phố"
   },
   "orders": {
-    "title": "Đơn Hàng Của Tôi",
-    "loginRequired": "Yêu Cầu Đăng Nhập",
+    "title": "Đơn hàng của tôi",
+    "loginRequired": "Yêu cầu đăng nhập",
     "loginMessage": "Vui lòng đăng nhập để xem đơn hàng của bạn.",
     "empty": {
-      "title": "Chưa Có Đơn Hàng Nào",
+      "title": "Chưa có đơn hàng nào",
       "message": "Bạn chưa đặt đơn hàng nào. Hãy bắt đầu mua sắm để xem đơn hàng tại đây.",
-      "startShopping": "Bắt Đầu Mua Sắm"
+      "startShopping": "Bắt đầu mua sắm"
     },
     "error": {
-      "title": "Lỗi Tải Đơn Hàng",
+      "title": "Lỗi tải đơn hàng",
       "message": "Có lỗi xảy ra khi tải đơn hàng của bạn"
     },
     "orderNumber": "Đơn hàng #{{number}}",
@@ -958,19 +960,20 @@
       "pending": "Chờ thanh toán",
       "paid": "Đã thanh toán",
       "failed": "Thanh toán thất bại",
-      "refunded": "Đã hoàn tiền"
+      "refunded": "Đã hoàn tiền",
+      "cod": "Thanh toán khi nhận"
     },
-    "viewDetails": "Xem Chi Tiết",
-    "hideDetails": "Ẩn Chi Tiết",
-    "writeReview": "Viết Đánh Giá",
+    "viewDetails": "Xem chi tiết",
+    "hideDetails": "Ẩn chi tiết",
+    "writeReview": "Viết đánh giá",
     "items": "{{count}} sản phẩm",
     "items_one": "{{count}} sản phẩm",
     "items_other": "{{count}} sản phẩm",
     "tracking": "Mã vận đơn",
     "track": "Theo dõi",
     "estimatedDelivery": "Dự kiến giao",
-    "orderItems": "Sản Phẩm Trong Đơn Hàng",
-    "orderSummary": "Tóm Tắt Đơn Hàng",
+    "orderItems": "Sản phẩm trong đơn hàng",
+    "orderSummary": "Tóm tắt đơn hàng",
     "quantity": "SL",
     "price": "Giá",
     "subtotal": "Tạm tính",
@@ -978,10 +981,10 @@
     "tax": "Thuế",
     "discount": "Giảm giá",
     "total": "Tổng cộng",
-    "shippingAddress": "Địa Chỉ Giao Hàng",
+    "shippingAddress": "Địa chỉ giao hàng",
     "phone": "Điện thoại",
-    "returnItems": "Trả Hàng",
-    "downloadInvoice": "Tải Hóa Đơn",
+    "returnItems": "Trả hàng",
+    "downloadInvoice": "Tải hóa đơn",
     "cancelOrder": "Hủy",
     "cancelling": "Đang hủy...",
     "cancelConfirm": "Bạn có chắc chắn muốn hủy đơn hàng này không?",
@@ -993,7 +996,7 @@
     "ordersTotal": "đơn hàng tổng cộng",
     "previous": "Trước",
     "next": "Tiếp",
-    "tryAgain": "Thử Lại",
+    "tryAgain": "Thử lại",
     "paymentMethod": "Phương thức thanh toán",
     "paymentMethods": {
       "cod": "Thanh toán khi nhận hàng",
@@ -1014,15 +1017,15 @@
     "progressTitle": "Tiến độ đơn hàng",
     "cancelledTitle": "Đơn hàng đã bị hủy",
     "cancelledDesc": "Đơn hàng này không còn hiệu lực giao dịch.",
-    "deliverySection": "Giao Hàng",
+    "deliverySection": "Giao hàng",
     "recipient": "Người nhận",
     "deliveryAddress": "Địa chỉ nhận hàng",
     "notProvided": "Chưa cung cấp",
-    "paymentSection": "Thanh Toán",
+    "paymentSection": "Thanh toán",
     "paymentType": "Hình thức",
     "paymentStatusLabel": "Trạng thái",
-    "trackingLabel": "Mã Tracking Vận đơn",
-    "yourProducts": "Sản Phẩm Của Bạn",
+    "trackingLabel": "Mã tracking vận đơn",
+    "yourProducts": "Sản phẩm của bạn",
     "productCol": "Sản phẩm",
     "unitPrice": "Đơn giá",
     "qtyCol": "SL",
@@ -1038,13 +1041,13 @@
     "detailTitle": "Chi tiết đơn hàng: #{{number}}",
     "placedAt": "Ngày đặt: {{date}}",
     "paidStatus": "✅ Đã thanh toán",
-    "failedStatus": "❌ Thất bại",
+    "failedStatus": "❌ Thanh toán thất bại",
     "pendingPaymentStatus": "⏳ Chờ thanh toán"
   },
   "payment": {
     "initializingPayment": "Đang khởi tạo thanh toán...",
-    "paymentDetails": "Chi Tiết Thanh Toán",
-    "billingAddress": "Địa Chỉ Thanh Toán",
+    "paymentDetails": "Chi tiết thanh toán",
+    "billingAddress": "Địa chỉ thanh toán",
     "processing": "Đang xử lý...",
     "payNow": "Thanh toán {{amount}}",
     "securePayment": "Thanh toán an toàn",
@@ -1057,9 +1060,9 @@
     }
   },
   "bestSellers": {
-    "title": "Sản Phẩm Bán Chạy",
+    "title": "Sản phẩm bán chạy",
     "subtitle": "Những sản phẩm được yêu thích nhất của chúng tôi",
-    "badge": "🏆 Top Bán Chạy",
+    "badge": "🏆 Top bán chạy",
     "browse": "Xem tất cả sản phẩm",
     "sortBy": "Sắp xếp theo",
     "sort": {
@@ -1091,49 +1094,48 @@
       "users": "Người dùng",
       "warranty": "Gói bảo hành",
       "discounts": "Mã giảm giá",
-      "inventory": "Quản lý kho",
-      "auditLog": "Nhật ký hệ thống"
+      "inventory": "Quản lý kho"
     },
     "dashboard": {
-      "title": "Bảng Điều Khiển Admin",
+      "title": "Bảng điều khiển Admin",
       "lastUpdated": "Cập nhật lần cuối",
       "stats": {
-        "totalRevenue": "Tổng Doanh Thu",
-        "totalOrders": "Tổng Đơn Hàng",
-        "totalUsers": "Tổng Người Dùng",
-        "totalProducts": "Tổng Sản Phẩm",
+        "totalRevenue": "Tổng doanh thu",
+        "totalOrders": "Tổng đơn hàng",
+        "totalUsers": "Tổng người dùng",
+        "totalProducts": "Tổng sản phẩm",
         "activeProducts": "Sản phẩm đang hoạt động",
         "fromLastMonth": "so với tháng trước",
         "aov": "GTTB",
         "averageOrderValue": "Giá trị trung bình đơn hàng",
-        "cancelledThisMonth": "Đơn Hủy Tháng Này",
+        "cancelledThisMonth": "Đơn hủy tháng này",
         "ordersThisMonth": "đơn hàng bị hủy",
-        "lowStock": "Sắp Hết Hàng",
+        "lowStock": "Sắp hết hàng",
         "productsLowStock": "sản phẩm sắp hết hàng"
       },
       "lowStock": {
-        "title": "Cảnh Báo Sắp Hết Hàng",
-        "product": "Sản Phẩm",
+        "title": "Cảnh báo sắp hết hàng",
+        "product": "Sản phẩm",
         "sku": "SKU",
-        "stock": "Tồn Kho",
-        "action": "Thao Tác",
+        "stock": "Tồn kho",
+        "action": "Thao tác",
         "edit": "Sửa"
       },
       "alerts": {
         "pendingOrders": "Bạn có {{count}} đơn hàng chờ xử lý cần chú ý",
-        "viewOrders": "Xem Đơn Hàng"
+        "viewOrders": "Xem đơn hàng"
       },
       "sections": {
-        "recentOrders": "Đơn Hàng Gần Đây",
-        "topProducts": "Sản Phẩm Bán Chạy",
-        "viewAll": "Xem Tất Cả"
+        "recentOrders": "Đơn hàng gần đây",
+        "topProducts": "Sản phẩm bán chạy",
+        "viewAll": "Xem tất cả"
       },
       "table": {
-        "order": "Đơn Hàng",
-        "customer": "Khách Hàng",
+        "order": "Đơn hàng",
+        "customer": "Khách hàng",
         "date": "Ngày",
-        "total": "Tổng Cộng",
-        "status": "Trạng Thái",
+        "total": "Tổng cộng",
+        "status": "Trạng thái",
         "sold": "đã bán",
         "noRecentOrders": "Không có đơn hàng gần đây",
         "noProductData": "Không có dữ liệu sản phẩm"
@@ -1146,7 +1148,7 @@
         "cancelled": "Đã hủy"
       },
       "errors": {
-        "loadingDashboard": "Lỗi Tải Bảng Điều Khiển",
+        "loadingDashboard": "Lỗi tải bảng điều khiển",
         "failedToLoad": "Không thể tải dữ liệu bảng điều khiển. Vui lòng thử lại."
       },
       "orderStatus": {
@@ -1158,7 +1160,7 @@
       }
     },
     "orders": {
-      "title": "Quản Lý Đơn Hàng",
+      "title": "Quản lý đơn hàng",
       "subtitle": "Theo dõi và cập nhật tất cả đơn hàng của khách hàng",
       "searchPlaceholder": "Tìm kiếm theo mã đơn hàng, tên khách hàng hoặc email...",
       "filterByStatus": "Lọc theo trạng thái",
@@ -1178,14 +1180,14 @@
         "cancelled": "Đã hủy"
       },
       "table": {
-        "orderNumber": "Đơn Hàng",
-        "customer": "Khách Hàng",
-        "date": "Ngày Đặt",
-        "items": "Sản Phẩm",
-        "total": "Tổng Tiền",
-        "status": "Trạng Thái",
-        "payment": "Thanh Toán",
-        "actions": "Thao Tác",
+        "orderNumber": "Đơn hàng",
+        "customer": "Khách hàng",
+        "date": "Ngày đặt",
+        "items": "Sản phẩm",
+        "total": "Tổng tiền",
+        "status": "Trạng thái",
+        "payment": "Thanh toán",
+        "actions": "Thao tác",
         "itemCount": "{{count}} sản phẩm",
         "createdAt": "Ngày đặt"
       },
@@ -1209,30 +1211,30 @@
         "next": "Tiếp"
       },
       "details": {
-        "title": "Chi Tiết Đơn Hàng",
-        "orderNumber": "Mã Đơn Hàng",
-        "orderDate": "Ngày Đặt",
-        "orderStatus": "Trạng Thái Đơn Hàng",
-        "paymentStatus": "Trạng Thái Thanh Toán",
+        "title": "Chi tiết đơn hàng",
+        "orderNumber": "Mã đơn hàng",
+        "orderDate": "Ngày đặt",
+        "orderStatus": "Trạng thái đơn hàng",
+        "paymentStatus": "Trạng thái thanh toán",
         "customer": {
-          "title": "Thông Tin Khách Hàng",
+          "title": "Thông tin khách hàng",
           "name": "Tên",
           "email": "Email",
           "phone": "Điện thoại"
         },
         "shipping": {
-          "title": "Địa Chỉ Giao Hàng",
-          "fullName": "Họ và Tên",
+          "title": "Địa chỉ giao hàng",
+          "fullName": "Họ và tên",
           "address": "Địa chỉ",
           "phone": "Điện thoại"
         },
         "items": {
-          "title": "Sản Phẩm Trong Đơn Hàng",
+          "title": "Sản phẩm trong đơn hàng",
           "quantity": "Số lượng",
           "price": "Đơn giá"
         },
         "summary": {
-          "title": "Tóm Tắt Đơn Hàng",
+          "title": "Tóm tắt đơn hàng",
           "subtotal": "Tạm tính",
           "tax": "Thuế",
           "shipping": "Phí vận chuyển",
@@ -1247,7 +1249,7 @@
         }
       },
       "updateStatus": {
-        "title": "Cập Nhật Trạng Thái Đơn Hàng",
+        "title": "Cập nhật trạng thái đơn hàng",
         "currentStatus": "Trạng thái hiện tại",
         "newStatus": "Trạng thái mới",
         "selectNewStatus": "Chọn trạng thái mới",
@@ -1255,7 +1257,14 @@
         "notePlaceholder": "Thêm ghi chú về việc thay đổi trạng thái này...",
         "cancel": "Hủy",
         "update": "Cập nhật",
-        "updating": "Đang cập nhật..."
+        "updating": "Đang cập nhật...",
+        "codDeliveredNote": "Đơn COD chuyển sang 'Đã giao hàng' sẽ tự động đánh dấu đã thanh toán.",
+        "cancelledRefundNote": "Đơn đã thanh toán bị hủy — trạng thái thanh toán đã tự động chuyển sang 'Đã hoàn tiền'.",
+        "deliveredUnpaidNote": "⚠️ Đơn chưa thanh toán nhưng đang được đánh dấu là đã giao hàng.",
+        "refundedActiveNote": "⚠️ Đơn đã hoàn tiền nhưng trạng thái đơn không phải 'Đã hủy'.",
+        "errorCancelledPaid": "Đơn đã hủy không thể ở trạng thái 'Đã thanh toán' — hãy chọn 'Đã hoàn tiền'.",
+        "errorDeliveredUnpaid": "Đơn đã giao phải có trạng thái thanh toán hợp lệ (không phải Chờ hoặc Thất bại).",
+        "errorRefundedActive": "Chỉ đơn 'Đã hủy' mới có thể ở trạng thái 'Đã hoàn tiền'."
       },
       "messages": {
         "updateSuccess": "Cập nhật trạng thái đơn hàng thành công",
@@ -1349,8 +1358,7 @@
         "pricing": "5. Giá & Kho hàng",
         "category": "6. Phân loại",
         "images": "7. Hình ảnh",
-        "warranty": "8. Bảo hành",
-        "faqs": "10. FAQ",
+        "faqs": "8. FAQ",
         "seo": "9. SEO"
       },
       "submit": {
@@ -1395,7 +1403,7 @@
         "descriptionPlaceholder": "Nhập mô tả chi tiết về sản phẩm. Bạn có thể thêm hình ảnh, định dạng văn bản, danh sách...",
         "tipTitle": "Mẹo tạo sản phẩm",
         "tipLine1": "Chỉ cần điền các trường bắt buộc để tạo sản phẩm nhanh",
-        "tipLine2": "Để trống SKU để hệ thống tự tạo mã duy nhất",
+        "tipLine2": "Nên nhập SKU theo chuẩn shop (VD: SAM-S25U-256-BLK). Để trống sẽ tạo mã ngẫu nhiên dạng PRD-XXXXXX",
         "tipFillData": "điền dữ liệu MacBook Pro M3 Max",
         "tipFillDataSuffix": "để xem ví dụ"
       },
@@ -1449,6 +1457,7 @@
         "pricePlaceholder": "Nhập giá bán",
         "comparePriceLabel": "Giá so sánh",
         "comparePriceTooltip": "Giá gốc trước khi giảm giá (nếu có)",
+        "comparePriceTooltipVariant": "Sản phẩm có biến thể — giá so sánh được đặt riêng cho từng biến thể trong tab Biến thể",
         "stockLabelVariant": "Tổng số lượng tồn kho",
         "stockLabel": "Số lượng tồn kho",
         "stockRequired": "Vui lòng nhập số lượng!",
@@ -1564,9 +1573,9 @@
       "hidden": "Không hiển thị"
     },
     "brands": {
-      "title": "Quản lý Thương Hiệu",
-      "addBrand": "Thêm Thương Hiệu",
-      "editBrand": "Sửa Thương Hiệu",
+      "title": "Quản lý thương hiệu",
+      "addBrand": "Thêm thương hiệu",
+      "editBrand": "Sửa thương hiệu",
       "table": {
         "name": "Tên thương hiệu",
         "slug": "Slug",
@@ -1604,9 +1613,9 @@
       "addBrandModal": "Thêm thương hiệu mới"
     },
     "categories": {
-      "title": "Quản lý Danh Mục",
-      "addCategory": "Thêm Danh Mục",
-      "editCategory": "Sửa Danh Mục",
+      "title": "Quản lý danh mục",
+      "addCategory": "Thêm danh mục",
+      "editCategory": "Sửa danh mục",
       "table": {
         "name": "Tên danh mục",
         "slug": "Slug",
@@ -1647,9 +1656,9 @@
       "addCategoryModal": "Thêm danh mục mới"
     },
     "discountCodes": {
-      "title": "Quản lý Mã Giảm Giá",
-      "addCode": "Thêm Mã Giảm Giá",
-      "editCode": "Sửa Mã Giảm Giá",
+      "title": "Quản lý mã giảm giá",
+      "addCode": "Thêm mã giảm giá",
+      "editCode": "Sửa mã giảm giá",
       "table": {
         "code": "Mã",
         "type": "Loại",
@@ -1720,7 +1729,7 @@
       }
     },
     "users": {
-      "title": "Quản lý Người Dùng",
+      "title": "Quản lý người dùng",
       "table": {
         "name": "Họ tên",
         "email": "Email",
@@ -1801,9 +1810,9 @@
       }
     },
     "warrantyPackages": {
-      "title": "Quản lý Gói Bảo Hành",
-      "addPackage": "Thêm Gói Bảo Hành",
-      "editPackage": "Sửa Gói Bảo Hành",
+      "title": "Quản lý gói bảo hành",
+      "addPackage": "Thêm gói bảo hành",
+      "editPackage": "Sửa gói bảo hành",
       "table": {
         "name": "Tên gói",
         "duration": "Thời hạn",
@@ -1903,7 +1912,7 @@
     },
     "verifyingAccess": "Đang xác thực quyền truy cập...",
     "charts": {
-      "title": "Biểu đồ Thống kê",
+      "title": "Biểu đồ thống kê",
       "last7Days": "7 ngày qua",
       "last30Days": "30 ngày qua",
       "last90Days": "90 ngày qua",
@@ -1915,7 +1924,7 @@
       "period30d": "30 ngày",
       "period90d": "90 ngày",
       "periodCustom": "tùy chỉnh",
-      "orderCount": "Số lượng Đơn hàng",
+      "orderCount": "Số lượng đơn hàng",
       "revenueLabel": "Doanh thu",
       "ordersLabel": "Đơn hàng",
       "apply": "Áp dụng",
@@ -1941,22 +1950,22 @@
     }
   },
   "product": {
-    "viewDetails": "Xem Chi Tiết",
-    "addToCart": "Thêm Vào Giỏ",
-    "buyNow": "Mua Ngay",
-    "outOfStock": "Hết Hàng",
-    "inStock": "Còn Hàng",
+    "viewDetails": "Xem chi tiết",
+    "addToCart": "Thêm vào giỏ",
+    "buyNow": "Mua ngay",
+    "outOfStock": "Hết hàng",
+    "inStock": "Còn hàng",
     "price": "Giá",
-    "originalPrice": "Giá Gốc",
-    "discount": "Giảm Giá",
-    "rating": "Đánh Giá",
-    "reviews": "Nhận Xét",
-    "description": "Mô Tả",
-    "specifications": "Thông Số Kỹ Thuật",
+    "originalPrice": "Giá gốc",
+    "discount": "Giảm giá",
+    "rating": "Đánh giá",
+    "reviews": "Nhận xét",
+    "description": "Mô tả",
+    "specifications": "Thông số kỹ thuật",
     "addedToCart": "Đã thêm vào giỏ hàng",
-    "quantity": "Số Lượng",
-    "selectVariant": "Chọn Phiên Bản",
-    "relatedProducts": "Sản Phẩm Liên Quan",
+    "quantity": "Số lượng",
+    "selectVariant": "Chọn phiên bản",
+    "relatedProducts": "Sản phẩm liên quan",
     "condition": {
       "new": "Hàng mới",
       "used": "Đã qua sử dụng",
@@ -1972,7 +1981,7 @@
     "toggleWishlist": "Thêm/xóa khỏi yêu thích",
     "new": "MỚI",
     "adding": "Đang thêm...",
-    "buyNowDelivery": "MUA NGAY - GIAO TẬN NHÀ",
+    "buyNowDelivery": "Mua ngay - giao tận nhà",
     "addedToCartMsg": "{{name}} đã được thêm vào giỏ hàng",
     "addToCartError": "Có lỗi xảy ra khi thêm vào giỏ hàng",
     "loginToWishlist": "Vui lòng đăng nhập để sử dụng chức năng yêu thích",
@@ -2012,6 +2021,8 @@
     "allStepsComplete": "Tất cả các bước đã hoàn thành",
     "canCreateNow": "Bạn có thể tạo sản phẩm ngay bây giờ.",
     "stepComplete": "Bước này đã hoàn thành",
+    "optionalStep": "Bước này không bắt buộc",
+    "optionalStepDesc": "Bạn có thể bỏ qua hoặc điền thêm thông tin tùy chọn.",
     "completeStepFirst": "Hoàn thành bước này trước khi tiếp tục",
     "canContinueStep": "Bạn có thể tiếp tục sang bước tiếp theo.",
     "fillRequiredFirst": "Vui lòng điền đầy đủ thông tin ở bước này trước khi chuyển sang bước tiếp theo.",
@@ -2621,10 +2632,10 @@
     "noRecent": "Không có tìm kiếm gần đây"
   },
   "notFound": {
-    "title": "Không Tìm Thấy Trang",
+    "title": "Không tìm thấy trang",
     "description": "Trang bạn đang tìm kiếm có thể đã bị xóa, đổi tên hoặc tạm thời không khả dụng.",
-    "goHome": "Về Trang Chủ",
-    "browseProducts": "Duyệt Sản Phẩm"
+    "goHome": "Về trang chủ",
+    "browseProducts": "Duyệt sản phẩm"
   },
   "brands": {
     "pageTitle": "Thương hiệu",
@@ -2667,7 +2678,7 @@
   },
   "deals": {
     "pageTitle": "Khuyến mãi",
-    "heroTitle": "Siêu Giảm Giá - Trên 50% OFF",
+    "heroTitle": "Siêu giảm giá - Trên 50% OFF",
     "heroDesc": "Khám phá các sản phẩm giảm giá sốc với mức giảm trên 50%. Cơ hội có hạn, mua ngay kẻo lỡ!",
     "heroBadge": "GIẢM GIÁ TRÊN 50%",
     "showing": "Hiển thị {{count}} sản phẩm giảm giá trên 50%",
@@ -2683,9 +2694,9 @@
     "emptyHint": "Vui lòng quay lại sau để xem các ưu đãi mới"
   },
   "newArrivals": {
-    "heroTitle": "Hàng Mới Về",
+    "heroTitle": "Hàng mới về",
     "heroDesc": "Khám phá những sản phẩm mới nhất và dẫn đầu xu hướng với bộ sưu tập mới nhất của chúng tôi.",
-    "heroBadge": "Mới & Hấp Dẫn",
+    "heroBadge": "Mới & hấp dẫn",
     "showing": "Đang hiển thị {{shown}} trong {{total}} sản phẩm",
     "browse": "Xem những sản phẩm mới nhất của chúng tôi",
     "sortBy": "Sắp xếp",
@@ -2734,7 +2745,7 @@
     "successDesc": "Đơn hàng của bạn đã được xác nhận.",
     "successRedirect": "Chuyển hướng sau {{count}} giây...",
     "securePayment": "Thanh toán an toàn qua VNPay",
-    "title": "Thanh Toán Thẻ Ngân Hàng",
+    "title": "Thanh toán thẻ ngân hàng",
     "subtitle": "Sử dụng thẻ ngân hàng để hoàn tất thanh toán",
     "orderInfo": "Thông tin đơn hàng",
     "orderCode": "Mã đơn hàng",
@@ -2776,7 +2787,7 @@
     "vnpayCertified": "Được chứng nhận VNPay"
   },
   "trackOrder": {
-    "title": "Theo Dõi Đơn Hàng",
+    "title": "Theo dõi đơn hàng",
     "subtitle": "Nhập thông tin đơn hàng bên dưới để kiểm tra trạng thái hiện tại.",
     "formTitle": "Nhập thông tin đơn hàng",
     "orderNumberLabel": "Mã đơn hàng",
@@ -3005,17 +3016,17 @@
     "tipValueLabel": "Giá trị:",
     "tipValueDesc": "Liệt kê tất cả các tùy chọn có thể có",
     "tipCommaLabel": "Cách nhau bởi dấu phẩy:",
-    "tipCommaDesc": "\"Đỏ, Xanh, Đen\" hoặc \"S, M, L, XL\"",
+    "tipCommaDesc": "\"Đen, Trắng, Xanh Titan\" hoặc \"128GB, 256GB, 512GB\"",
     "tipUsage": "Thuộc tính này sẽ được sử dụng khi tạo biến thể sản phẩm",
     "exampleTitle": "📖 Ví dụ minh họa",
     "exNameLabel": "Tên:",
     "exValueLabel": "Giá trị:",
     "ex1name": "Màu sắc",
-    "ex1value": "Đỏ, Xanh dương, Đen, Trắng",
-    "ex2name": "Kích thước",
-    "ex2value": "S, M, L, XL, XXL",
-    "ex3name": "Chất liệu",
-    "ex3value": "Cotton, Polyester, Linen",
+    "ex1value": "Đen, Trắng, Xanh Titan, Vàng",
+    "ex2name": "Dung lượng",
+    "ex2value": "128GB, 256GB, 512GB, 1TB",
+    "ex3name": "RAM",
+    "ex3value": "8GB, 16GB, 32GB, 64GB",
     "addBtn": "Thêm thuộc tính",
     "updateBtn": "Cập nhật thuộc tính"
   },
@@ -3024,10 +3035,10 @@
     "addTitle": "🎭 Thêm biến thể mới",
     "nameLabel": "🏷️ Tên biến thể",
     "nameRequired": "Vui lòng nhập tên biến thể",
-    "namePlaceholder": "VD: Size M - Màu Đỏ",
+    "namePlaceholder": "VD: Đen 256GB, Trắng 16GB RAM",
     "skuLabel": "📦 Mã SKU",
-    "skuTooltip": "Để trống để hệ thống tự tạo mã SKU",
-    "skuPlaceholder": "Để trống để tự tạo",
+    "skuTooltip": "Format gợi ý: {HÃNG}-{MODEL}-{THÔNG SỐ}-{MÀU}. VD: SAM-S25U-256-BLK, APL-IP17P-512-WHI, SAS-G46-LTE-BLK. Để trống sẽ tạo mã tạm VAR-XXXXXX",
+    "skuPlaceholder": "VD: SAM-S25U-256-BLK",
     "priceLabel": "💰 Giá (VNĐ)",
     "priceTooltip": "Giá của biến thể này",
     "priceRequired": "Vui lòng nhập giá",
@@ -3038,6 +3049,11 @@
     "attrSectionTitle": "🎨 Thuộc tính biến thể",
     "selectAttr": "Chọn {{name}}",
     "addBtn": "Thêm biến thể",
+    "comparePriceLabel": "Giá so sánh",
+    "comparePriceTooltip": "Giá gốc trước khi giảm — để trống nếu không giảm giá",
+    "imagesLabel": "Ảnh biến thể",
+    "imagesHint": "Mỗi URL trên một dòng — ảnh riêng cho biến thể này (màu sắc, kiểu dáng...)",
+    "imagesPlaceholder": "https://cdn.example.com/product-black.jpg",
     "updateBtn": "Cập nhật biến thể"
   },
   "about": {
@@ -3596,6 +3612,8 @@
       "addButton": "Thêm thuộc tính",
       "emptyError": "Cần có ít nhất 1 thuộc tính",
       "emptyErrorDesc": "Vui lòng thêm ít nhất một thuộc tính cho sản phẩm trước khi tiếp tục.",
+      "emptyInfo": "Sản phẩm không có thuộc tính",
+      "emptyInfoDesc": "Thuộc tính là tùy chọn. Thêm nếu sản phẩm có nhiều phiên bản (màu sắc, kích thước, dung lượng...).",
       "emptyTable": "Chưa có thuộc tính nào"
     },
     "variants": {
@@ -3612,6 +3630,8 @@
       "addButton": "Thêm biến thể",
       "emptyError": "Cần có ít nhất 1 biến thể",
       "emptyErrorDesc": "Vui lòng thêm ít nhất một biến thể cho sản phẩm trước khi tiếp tục.",
+      "emptyInfo": "Sản phẩm không có biến thể",
+      "emptyInfoDesc": "Giá và số lượng sẽ được lấy trực tiếp từ tab Giá & Kho hàng. Thêm biến thể nếu sản phẩm có nhiều phiên bản (màu sắc, dung lượng...).",
       "emptyTable": "Chưa có biến thể nào"
     }
   },
@@ -3657,7 +3677,7 @@
     "error": "Lỗi: {{message}}"
   },
   "adminImport": {
-    "pageTitle": "Import Sản Phẩm",
+    "pageTitle": "Import sản phẩm",
     "pageDesc": "Import nhiều sản phẩm cùng lúc qua file CSV hoặc JSON",
     "downloadTemplate": "Tải Template CSV",
     "step1Title": "Upload File",
@@ -3704,6 +3724,7 @@
     "title": "Quản lý kho hàng",
     "searchPlaceholder": "Tìm kiếm sản phẩm...",
     "colProduct": "Sản phẩm",
+    "colVariant": "Biến thể",
     "colSku": "SKU",
     "colStock": "Tồn kho",
     "colStatus": "Trạng thái",
@@ -3717,25 +3738,5 @@
     "invalidQty": "Số lượng không hợp lệ",
     "updateSuccess": "Cập nhật tồn kho thành công",
     "updateError": "Cập nhật tồn kho thất bại"
-  },
-  "auditLog": {
-    "title": "Nhật ký hoạt động hệ thống",
-    "filterAdminId": "Lọc theo Admin ID",
-    "filterAction": "Lọc theo hành động",
-    "startDate": "Từ ngày",
-    "endDate": "Đến ngày",
-    "colTime": "Thời gian",
-    "colAdmin": "Quản trị viên",
-    "colAction": "Hành động",
-    "colEntity": "Đối tượng",
-    "colId": "ID",
-    "colDetail": "Chi tiết",
-    "view": "Xem",
-    "total": "bản ghi",
-    "detailTitle": "Chi tiết thay đổi",
-    "oldValue": "Giá trị cũ",
-    "newValue": "Giá trị mới",
-    "noData": "(không có dữ liệu)",
-    "close": "Đóng"
   }
 }

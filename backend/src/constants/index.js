@@ -5,9 +5,7 @@ module.exports = {
   POINTS_VALUE: 1000, // 1 điểm = 1,000 VND giảm giá khi đổi
 
   // Phí vận chuyển
-  SHIPPING_FREE_THRESHOLD: 2000000, // Miễn phí ship nếu subtotal >= 2,000,000 VND
-  SHIPPING_BASE_RATE: 30000, // Phí ship cơ bản (VND)
-  SHIPPING_WEIGHT_RATE: 5000, // Thêm 5,000 VND mỗi kg vượt quá 2kg
+  SHIPPING_FREE_THRESHOLD: 5000000, // Miễn phí ship nếu subtotal >= 5,000,000 VND
 
   // JWT tokens — access expiry dùng từ env JWT_EXPIRES_IN, không cần constant
   JWT_REFRESH_EXPIRY: '30d',

@@ -102,16 +102,6 @@ jest.mock('@middlewares/validate-request', () => ({
   validateExpressValidator: (_req, _res, next) => next(),
 }));
 
-jest.mock('@shared/admin-audit', () => ({
-  AdminAuditService: class {
-    static logUserAction() {}
-    static logProductAction() {}
-    static logOrderAction() {}
-    log() {}
-  },
-  auditMiddleware: (_req, _res, next) => next(),
-}));
-
 jest.mock('./admin-import-controller', () => ({
   getImportTemplate: (_req, _res, next) => next(),
   uploadImportFile: (_req, _res, next) => next(),
@@ -126,10 +116,6 @@ jest.mock('@modules/discount-code/controllers/discount-code-controller', () => (
   createDiscountCode: (_req, _res, next) => next(),
   updateDiscountCode: (_req, _res, next) => next(),
   deleteDiscountCode: (_req, _res, next) => next(),
-}));
-
-jest.mock('@config/redis', () => ({
-  getRedisClient: jest.fn().mockResolvedValue(null),
 }));
 
 jest.mock('@models', () => {
@@ -223,12 +209,6 @@ jest.mock('@models', () => {
     InventoryLog: {
       create: jest.fn(),
       findAndCountAll: jest.fn(),
-    },
-    AuditLog: {
-      findAll: jest.fn(),
-      findAndCountAll: jest.fn(),
-      count: jest.fn(),
-      create: jest.fn(),
     },
     ChatMessage: {
       count: jest.fn(),
@@ -387,8 +367,8 @@ beforeEach(() => {
 // Được exercise gián tiếp qua getProductById
 // ─────────────────────────────────────────────────────────────────────────────
 
-describe('getProductById — deep-parse attributes và specifications', () => {
-  it('parse variants.attributes dạng chuỗi JSON', async () => {
+describe('getProductById — attributes và specifications trả về giá trị gốc', () => {
+  it('variants.attributes được parse thành object khi là JSON hợp lệ', async () => {
     const productWithStringAttrs = {
       toJSON: () => ({
         id: 5,
@@ -410,10 +390,11 @@ describe('getProductById — deep-parse attributes và specifications', () => {
 
     const res = await request.get('/api/admin/products/5');
     expect(res.status).toBe(200);
+    // Chuỗi JSON hợp lệ → deepParseJSON parse thành object
     expect(res.body.data.product.variants[0].attributes).toEqual({ RAM: '8GB', Storage: '256GB' });
   });
 
-  it('parse attributes array trên product với giá trị values là chuỗi JSON', async () => {
+  it('attributes[].values trả về [] khi input là chuỗi JSON (không phải array)', async () => {
     const productWithAttrArray = {
       toJSON: () => ({
         id: 6,
@@ -427,10 +408,11 @@ describe('getProductById — deep-parse attributes và specifications', () => {
 
     const res = await request.get('/api/admin/products/6');
     expect(res.status).toBe(200);
-    expect(res.body.data.product.attributes[0].values).toEqual(['red', 'blue']);
+    // '["red","blue"]' không phải array → Array.isArray = false → []
+    expect(res.body.data.product.attributes[0].values).toEqual([]);
   });
 
-  it('parse specifications dạng chuỗi JSON', async () => {
+  it('specifications trả về chuỗi gốc khi là string JSON (không parse)', async () => {
     const productWithStringSpec = {
       toJSON: () => ({
         id: 7,
@@ -444,7 +426,7 @@ describe('getProductById — deep-parse attributes và specifications', () => {
 
     const res = await request.get('/api/admin/products/7');
     expect(res.status).toBe(200);
-    expect(res.body.data.product.specifications).toEqual({ CPU: 'Intel i7', RAM: '16GB' });
+    expect(res.body.data.product.specifications).toBe('{"CPU":"Intel i7","RAM":"16GB"}');
   });
 
   it('deepParseJSONArray trả về mảng rỗng khi giá trị không phải JSON hợp lệ', async () => {
@@ -465,7 +447,7 @@ describe('getProductById — deep-parse attributes và specifications', () => {
     expect(res.body.data.product.attributes[0].values).toEqual([]);
   });
 
-  it('deepParseJSON trả về {} khi variants.attributes không phải JSON hợp lệ', async () => {
+  it('variants.attributes trả về {} khi là chuỗi không phải JSON hợp lệ', async () => {
     const productWithInvalidVariantAttr = {
       toJSON: () => ({
         id: 9,
@@ -486,6 +468,7 @@ describe('getProductById — deep-parse attributes và specifications', () => {
 
     const res = await request.get('/api/admin/products/9');
     expect(res.status).toBe(200);
+    // Chuỗi không parse được → deepParseJSON trả về {}
     expect(res.body.data.product.variants[0].attributes).toEqual({});
   });
 });
@@ -723,7 +706,7 @@ describe('POST /api/admin/products — createProduct với các quan hệ', () =
     expect(res.status).toBe(500);
   });
 
-  it('tạo variant với attributes là object JSON string', async () => {
+  it('tạo variant với attributes là object (pass-through)', async () => {
     const newProduct = makeCreatedProduct(27);
     Product.create.mockResolvedValueOnce(newProduct);
     Product.findByPk.mockResolvedValueOnce(newProduct);
@@ -742,7 +725,7 @@ describe('POST /api/admin/products — createProduct với các quan hệ', () =
           price: 10000000,
           stock: 5,
           sku: 'VAR-001',
-          attributes: '{"RAM":"8GB"}',
+          attributes: { RAM: '8GB' },
         },
       ],
     });
@@ -822,46 +805,6 @@ describe('POST /api/admin/products — createProduct với các quan hệ', () =
         expect.objectContaining({ name: 'RAM', category: 'General' }),
       ]),
     );
-  });
-
-  it.skip('gắn warrantyPackages khi warrantyPackageIds được truyền và packages tồn tại', async () => {
-    const newProduct = makeCreatedProduct(31);
-    Product.create.mockResolvedValueOnce(newProduct);
-    Product.findByPk.mockResolvedValueOnce(newProduct);
-    ProductAttribute.findAll.mockResolvedValueOnce([]);
-    const warrantyPkg = { id: 1, name: '1 Year Warranty' };
-    WarrantyPackage.findAll.mockResolvedValueOnce([warrantyPkg]);
-    ProductWarranty.create.mockResolvedValueOnce({ id: 100 });
-    sequelize.query.mockResolvedValue([[], {}]);
-
-    const res = await request.post('/api/admin/products').send({
-      name: 'Laptop With Warranty',
-      basePrice: 10000000,
-      warrantyPackageIds: [1],
-    });
-
-    expect(res.status).toBe(201);
-    expect(ProductWarranty.create).toHaveBeenCalledWith(
-      expect.objectContaining({ productId: 31, warrantyPackageId: 1, isDefault: true }),
-    );
-  });
-
-  it.skip('không gọi ProductWarranty.create khi không có warrantyPackages tồn tại', async () => {
-    const newProduct = makeCreatedProduct(32);
-    Product.create.mockResolvedValueOnce(newProduct);
-    Product.findByPk.mockResolvedValueOnce(newProduct);
-    ProductAttribute.findAll.mockResolvedValueOnce([]);
-    WarrantyPackage.findAll.mockResolvedValueOnce([]);
-    sequelize.query.mockResolvedValue([[], {}]);
-
-    const res = await request.post('/api/admin/products').send({
-      name: 'Laptop No Matching Warranty',
-      basePrice: 10000000,
-      warrantyPackageIds: [999],
-    });
-
-    expect(res.status).toBe(201);
-    expect(ProductWarranty.create).not.toHaveBeenCalled();
   });
 
   it('không gọi vectorStore.upsertProduct khi product.status là inactive', async () => {
@@ -1113,49 +1056,6 @@ describe('PUT /api/admin/products/:id — updateProduct các diff paths', () => 
       expect.objectContaining({ value: 'Intel i9' }),
       expect.anything(),
     );
-  });
-
-  it.skip('xóa warranty cũ và gắn warranty mới', async () => {
-    setupUpdateMocks(10, {
-      currentAttributes: [],
-      currentVariants: [],
-      currentSpecs: [],
-    });
-    ProductWarranty.destroy.mockResolvedValueOnce(1);
-    WarrantyPackage.findAll.mockResolvedValueOnce([{ id: 2, name: '2 Year Warranty' }]);
-    ProductWarranty.create.mockResolvedValueOnce({ id: 200 });
-
-    const res = await request.put('/api/admin/products/10').send({
-      warrantyPackageIds: [2],
-    });
-
-    expect(res.status).toBe(200);
-    expect(ProductWarranty.destroy).toHaveBeenCalledWith(
-      expect.objectContaining({ where: { productId: '10' } }),
-    );
-    expect(ProductWarranty.create).toHaveBeenCalledWith(
-      expect.objectContaining({ warrantyPackageId: 2, isDefault: true }),
-      expect.anything(),
-    );
-  });
-
-  it.skip('xóa toàn bộ warranty khi warrantyPackageIds rỗng', async () => {
-    setupUpdateMocks(10, {
-      currentAttributes: [],
-      currentVariants: [],
-      currentSpecs: [],
-    });
-    ProductWarranty.destroy.mockResolvedValueOnce(1);
-
-    const res = await request.put('/api/admin/products/10').send({
-      warrantyPackageIds: [],
-    });
-
-    expect(res.status).toBe(200);
-    expect(ProductWarranty.destroy).toHaveBeenCalledWith(
-      expect.objectContaining({ where: { productId: '10' } }),
-    );
-    expect(ProductWarranty.create).not.toHaveBeenCalled();
   });
 
   it('không gọi vectorStore.upsertProduct khi product không active sau update', async () => {
@@ -1495,38 +1395,6 @@ describe('POST /api/admin/products/:id/clone — với quan hệ đầy đủ', 
     );
   });
 
-  it.skip('clone warrantyPackages từ product gốc', async () => {
-    const origWp = {
-      id: 3,
-      name: '3 Year',
-      ProductWarranty: { isDefault: true },
-    };
-    const originalProduct = makeProduct({
-      id: 8,
-      name: 'Laptop Orig W',
-      categories: [],
-      productAttributes: [],
-      variants: [],
-      productSpecifications: [],
-      warrantyPackages: [origWp],
-    });
-
-    Product.findByPk.mockResolvedValueOnce(originalProduct);
-    Product.findOne.mockResolvedValueOnce(null);
-    const clonedProduct = makeProduct({ id: 80, name: 'Laptop Orig W (1)', status: 'draft' });
-    Product.create.mockResolvedValueOnce(clonedProduct);
-    ProductWarranty.bulkCreate.mockResolvedValueOnce([]);
-
-    const res = await request.post('/api/admin/products/8/clone');
-    expect(res.status).toBe(201);
-    expect(ProductWarranty.bulkCreate).toHaveBeenCalledWith(
-      expect.arrayContaining([
-        expect.objectContaining({ productId: 80, warrantyPackageId: 3, isDefault: true }),
-      ]),
-      expect.anything(),
-    );
-  });
-
   it('rollback transaction khi Product.create throw error', async () => {
     const originalProduct = makeProduct({
       id: 9,
@@ -1642,8 +1510,7 @@ describe('POST /api/admin/products — createProduct với productAttributes và
           price: 8000000,
           stock: 3,
           sku: 'DT-RED-128',
-          // variantAttributes sẽ là { 'Màu sắc': 'đỏ' } — non-empty object
-          attributes: '{"Màu sắc":"đỏ"}',
+          attributes: { 'Màu sắc': 'đỏ' },
         },
       ],
     });

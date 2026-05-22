@@ -24,11 +24,12 @@ class AIController {
       const data = await this.aiService.handleMessage({ message, userId, sessionId });
       res.json({ status: 'success', data });
     } catch (err) {
-      this.logger.error('Lỗi chatbot:', err);
-      // Match legacy: 400 cho validation, 500 fallback
+      // 400 = expected user error (validation) → WARN; 5xx = unexpected → ERROR
       if (err.statusCode === 400) {
+        this.logger.warn('Chatbot input không hợp lệ:', { message: err.message });
         return res.status(400).json({ status: 'error', message: err.message });
       }
+      this.logger.error('Lỗi chatbot:', err);
       res.status(500).json({
         status: 'error',
         message: t('ai.messageFailed', req.locale),

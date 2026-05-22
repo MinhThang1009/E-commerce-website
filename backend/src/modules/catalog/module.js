@@ -16,12 +16,12 @@ module.exports = ({
   Brand,
   Product,
   ProductAttribute,
+  ProductImage,
   ProductVariant,
   ProductSpecification,
   Review,
   RecentlyViewed,
   sequelize,
-  redisClient,
   eventBus,
   logger,
 }) => {
@@ -35,6 +35,7 @@ module.exports = ({
     Brand,
     Product,
     ProductAttribute,
+    ProductImage,
     ProductVariant,
     ProductSpecification,
     Review,
@@ -42,35 +43,8 @@ module.exports = ({
     sequelize,
   });
 
-  // Adapter: Redis → CacheStore port. delPattern wrap keys() + multiple del.
-  const cacheStore = redisClient
-    ? {
-        async get(key) {
-          const c = await redisClient();
-          return c?.get?.(key) ?? null;
-        },
-        async setEx(key, ttl, val) {
-          const c = await redisClient();
-          if (c?.setEx) await c.setEx(key, ttl, val);
-        },
-        async del(key) {
-          const c = await redisClient();
-          if (c?.del) await c.del(key);
-        },
-        async delPattern(pattern) {
-          const c = await redisClient();
-          if (!c?.keys) return;
-          const keys = await c.keys(pattern);
-          if (keys && keys.length > 0) {
-            await Promise.all(keys.map((k) => c.del(k)));
-          }
-        },
-      }
-    : null;
-
   const catalogService = new CatalogService({
     catalogRepository,
-    cacheStore,
     eventBus,
     logger,
   });

@@ -3,32 +3,21 @@
  * @layer Service
  * @module auth
  * @description Business logic layer cho auth
- * @depends-on sequelize-auth-repository, emailGateway, googleVerifier, tokenSigner, blacklistStore, logger
+ * @depends-on sequelize-auth-repository, emailGateway, googleVerifier, tokenSigner, logger
  * @see module.js (DI wiring), routes.js (endpoints), CLAUDE.md (overview)
  */
 const crypto = require('crypto');
 const { AppError } = require('@shared/errors');
 
 // Auth Service — business logic. KHÔNG import Sequelize hoặc Model trực tiếp;
-// chỉ gọi qua authRepository (interface). External service (email/google/redis/audit)
-// đều inject qua constructor để dễ test + dễ swap implementation.
+// chỉ gọi qua authRepository (interface). External service inject qua constructor
+// để dễ test + dễ swap implementation.
 class AuthService {
-  constructor({
-    authRepository,
-    emailGateway,
-    googleVerifier,
-    tokenSigner,
-    blacklistStore,
-    auditService,
-    eventBus,
-    logger,
-  }) {
+  constructor({ authRepository, emailGateway, googleVerifier, tokenSigner, eventBus, logger }) {
     this.authRepository = authRepository;
     this.emailGateway = emailGateway;
     this.googleVerifier = googleVerifier;
     this.tokenSigner = tokenSigner;
-    this.blacklistStore = blacklistStore;
-    this.auditService = auditService;
     this.eventBus = eventBus;
     this.logger = logger;
   }
@@ -59,11 +48,12 @@ class AuthService {
       this.logger.error(`[Auth] Gửi OTP email thất bại cho ${user.email}: ${emailErr.message}`);
     }
 
-    await this.eventBus.publish({
-      type: 'auth.userRegistered',
-      payload: { userId: user.id, email: user.email },
-      occurredAt: new Date().toISOString(),
-    });
+    if (this.eventBus) {
+      this.eventBus.publish({
+        type: 'auth.userRegistered',
+        payload: { userId: user.id, email: user.email },
+      });
+    }
 
     return { message: 'auth.registerSuccess' };
   }
@@ -92,10 +82,6 @@ class AuthService {
     const refreshToken = this.tokenSigner.signRefreshToken({ id: user.id });
 
     this.logger.info('[AUTH] Login success', { userId: user.id, email: user.email });
-
-    if (user.role === 'admin' && this.auditService) {
-      this.auditService.logSuccessfulLogin(user, ip);
-    }
 
     return { token, refreshToken, user };
   }
@@ -157,35 +143,11 @@ class AuthService {
     return { token: accessToken, refreshToken, user };
   }
 
-  // Đăng xuất — blacklist access token jti + revoke refresh token family.
+  // Đăng xuất
   async logout({ accessToken, refreshToken }) {
-    // Blacklist access token
-    if (accessToken) {
-      try {
-        const decoded = this.tokenSigner.verifyAccessToken(accessToken);
-        if (decoded.jti && decoded.exp) {
-          const remainingTTL = decoded.exp - Math.floor(Date.now() / 1000);
-          if (remainingTTL > 0 && this.blacklistStore) {
-            await this.blacklistStore.set(`bl:${decoded.jti}`, remainingTTL, '1');
-          }
-        }
-      } catch (_) {
-        // Token đã expired hoặc invalid — bỏ qua
-      }
-    }
-
-    // Revoke refresh token family
-    if (refreshToken && this.blacklistStore) {
-      try {
-        const decoded = this.tokenSigner.verifyRefreshToken(refreshToken);
-        if (decoded.familyId) {
-          const ttl = this._refreshTtlSeconds();
-          await this.blacklistStore.set(`rt_family_revoked:${decoded.familyId}`, ttl, '1');
-        }
-      } catch (_) {
-        // Refresh token expired/invalid — bỏ qua
-      }
-    }
+    // Token được xóa ở client side — không cần server-side invalidation
+    void accessToken;
+    void refreshToken;
   }
 
   // Xác thực email bằng OTP
@@ -248,16 +210,7 @@ class AuthService {
     return { message: 'auth.otpResent' };
   }
 
-  _refreshTtlSeconds() {
-    const raw = process.env.JWT_REFRESH_EXPIRES_IN || '7d';
-    const match = raw.match(/^(\d+)(s|m|h|d)$/);
-    if (!match) return 7 * 24 * 3600;
-    const n = parseInt(match[1], 10);
-    const unit = { s: 1, m: 60, h: 3600, d: 86400 }[match[2]];
-    return n * unit;
-  }
-
-  // Làm mới access token bằng refresh token — rotation + reuse detection
+  // Làm mới access token bằng refresh token
   async refreshToken({ refreshToken }) {
     if (!refreshToken) {
       throw new AppError('auth.refreshTokenRequired', 401);
@@ -273,24 +226,7 @@ class AuthService {
       throw err;
     }
 
-    const { id, jti, familyId } = decoded;
-    const ttl = this._refreshTtlSeconds();
-
-    // Reuse detection: token đã bị rotate trước đó → có thể bị đánh cắp
-    if (jti && familyId && this.blacklistStore) {
-      const alreadyUsed = await this.blacklistStore.get(`rt_used:${jti}`);
-      if (alreadyUsed) {
-        // Revoke toàn bộ family — tất cả devices/tabs sẽ bị logout
-        await this.blacklistStore.set(`rt_family_revoked:${familyId}`, ttl, '1');
-        this.logger.warn(`[Auth] Refresh token reuse detected — family ${familyId} revoked`);
-        throw new AppError('auth.refreshTokenUsed', 401);
-      }
-
-      const familyRevoked = await this.blacklistStore.get(`rt_family_revoked:${familyId}`);
-      if (familyRevoked) {
-        throw new AppError('auth.sessionRevoked', 401);
-      }
-    }
+    const { id } = decoded;
 
     const user = await this.authRepository.findById(id);
     if (!user) {
@@ -301,13 +237,8 @@ class AuthService {
       throw new AppError('auth.accountDisabled', 401);
     }
 
-    // Đánh dấu token cũ đã dùng (rotation)
-    if (jti && this.blacklistStore) {
-      await this.blacklistStore.set(`rt_used:${jti}`, ttl, familyId || '1');
-    }
-
     const token = this.tokenSigner.signAccessToken({ id: user.id, role: user.role });
-    const newRefreshToken = this.tokenSigner.signRefreshToken({ id: user.id, familyId });
+    const newRefreshToken = this.tokenSigner.signRefreshToken({ id: user.id });
     return { token, refreshToken: newRefreshToken };
   }
 
@@ -346,16 +277,6 @@ class AuthService {
     user.resetPasswordToken = null;
     user.resetPasswordExpires = null;
     await this.authRepository.saveUser(user);
-
-    // Invalidate mọi token cũ — dùng blacklistStore adapter (wrap Redis)
-    try {
-      if (this.blacklistStore) {
-        const nowSec = Math.floor(Date.now() / 1000);
-        await this.blacklistStore.set(`pw_changed:${user.id}`, 30 * 24 * 3600, String(nowSec));
-      }
-    } catch (err) {
-      this.logger.warn('Không thể set pw_changed key trong Redis:', err.message);
-    }
 
     return { message: 'auth.passwordResetSuccess' };
   }

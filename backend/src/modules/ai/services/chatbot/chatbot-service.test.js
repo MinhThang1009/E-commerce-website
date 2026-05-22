@@ -5,16 +5,10 @@
  * Mỗi section có mock setup riêng do dùng jest.resetModules()/jest.isolateModules().
  * Section 1 (main): handleMessage, getFallbackResponse, _persistMessages, _evictStaleSessions
  * Section 2 (branches): createPrompt branches, getAIResponse branches
- * Section 3 (additional): _ensureCatalogCache, edge cases
- * Section 4 (extra2): _llmRewrite, constructor với LLM env, context.retrievedProducts, error rotation
+ * Section 3 (additional): _ensureCatalogData, edge cases
+ * Section 4 (extra2): rewriteQuery, constructor với LLM env, context.retrievedProducts, error rotation
  */
 // ---------- Mocks ----------
-
-const mockRedisGet = jest.fn();
-const mockRedisSetEx = jest.fn();
-jest.mock('@config/redis', () => ({
-  getRedisClient: jest.fn(() => Promise.resolve({ get: mockRedisGet, setEx: mockRedisSetEx })),
-}));
 
 jest.mock('@models', () => ({
   Product: {
@@ -56,13 +50,14 @@ jest.mock('@utils/logger', () => ({
 
 const axios = require('axios');
 const { ChatMessage, Product } = require('@models');
-const { getRedisClient } = require('@config/redis');
 
 // Quan trọng: require sau khi mock để singleton nhận đúng env
 let chatbotService;
 let vectorStoreService;
 beforeAll(() => {
   chatbotService = require('./chatbot-service');
+  // Inject mocked models vào singleton (thay thế require('@models') trực tiếp đã bị xóa)
+  chatbotService.initialize(require('@models'));
   // Load vectorStoreService TRONG beforeAll để đảm bảo cùng mock instance với chatbotService
   vectorStoreService = require('@services/vector-store/vector-store');
 });
@@ -97,38 +92,6 @@ describe('ChatbotService.getFallbackResponse', () => {
 
   test('không crash khi gọi với message rỗng', () => {
     expect(() => chatbotService.getFallbackResponse('')).not.toThrow();
-  });
-});
-
-// ============================================================
-// ChatbotService.normalizeAndClassify
-// ============================================================
-
-describe('ChatbotService.normalizeAndClassify', () => {
-  test('mở rộng viết tắt tiếng Việt (ip → iPhone, pm → Pro Max)', async () => {
-    const result = await chatbotService.normalizeAndClassify('ip 15 pm');
-    expect(result.rewrittenQuery).toBe('iPhone 15 Pro Max');
-  });
-
-  test('phân loại intent product_search khi có tên sản phẩm', async () => {
-    const result = await chatbotService.normalizeAndClassify('tìm iPhone 15');
-    expect(result.intent).toBe('product_search');
-  });
-
-  test('phân loại intent off_topic cho câu hỏi ngoài phạm vi', async () => {
-    const result = await chatbotService.normalizeAndClassify('thời tiết hôm nay');
-    expect(result.intent).toBe('off_topic');
-  });
-
-  test('phân loại intent bilingual — English patterns', async () => {
-    const result = await chatbotService.normalizeAndClassify('recommend a phone');
-    expect(result.intent).toBe('product_search');
-  });
-
-  test('giữ nguyên message khi không có viết tắt', async () => {
-    const result = await chatbotService.normalizeAndClassify('xin chào');
-    expect(result.rewrittenQuery).toBe('xin chào');
-    expect(result.intent).toBe('general');
   });
 });
 
@@ -354,43 +317,6 @@ describe('ChatbotService.handleMessage', () => {
     chatbotService.providers = originalProviders;
   });
 
-  test('cache HIT → trả về kết quả từ cache, không gọi vector store', async () => {
-    const originalProviders = [...chatbotService.providers];
-    chatbotService.providers = [
-      { key: 'test-key', url: 'https://api.test/v1/chat/completions', model: 'gpt-4' },
-    ];
-
-    const cachedResponse = {
-      response: 'Kết quả từ cache',
-      products: [],
-      suggestions: ['Xem thêm'],
-      intent: 'product_search',
-    };
-
-    // normalizeAndClassify trả về intent product_search (cacheable)
-    axios.post.mockResolvedValueOnce({
-      data: {
-        choices: [
-          {
-            message: {
-              content: JSON.stringify({ rewrittenQuery: 'iphone 15', intent: 'product_search' }),
-            },
-          },
-        ],
-      },
-    });
-
-    // Redis trả về cached result
-    mockRedisGet.mockResolvedValueOnce(JSON.stringify(cachedResponse));
-
-    const result = await chatbotService.handleMessage('iphone 15', 1, 'session-test', {});
-
-    expect(result.response).toBe('Kết quả từ cache');
-    expect(vectorStoreService.hybridSearch).not.toHaveBeenCalled();
-
-    chatbotService.providers = originalProviders;
-  });
-
   test('fallback về getFallbackResponse khi apiKey = demo-key', async () => {
     // setup.js đặt OPENROUTER_API_KEY = 'demo-key' → normalizeAndClassify skip API call
     // vectorStore.hybridSearch trả về [] → getAIResponse → demo-key → getFallbackResponse
@@ -510,10 +436,8 @@ describe('ChatbotService.getAIResponse', () => {
       { key: 'test-key', url: 'https://api.test/v1/chat/completions', model: 'gpt-4' },
     ];
 
-    // Catalog cache phải tồn tại để không gọi DB
-    chatbotService._brandsCache = ['Apple'];
-    chatbotService._categoriesCache = ['Điện thoại'];
-    chatbotService._catalogCacheExpiry = Date.now() + 60000;
+    mockBrandFindAll.mockResolvedValueOnce([{ nameVi: 'Apple', nameEn: 'Apple' }]);
+    mockCategoryFindAll.mockResolvedValueOnce([{ nameVi: 'Điện thoại', nameEn: 'Phone' }]);
 
     axios.post.mockRejectedValueOnce(new Error('timeout'));
 
@@ -560,9 +484,6 @@ beforeAll(() => {
 afterEach(() => {
   jest.clearAllMocks();
   chatbotService.conversationHistory.clear();
-  chatbotService._brandsCache = null;
-  chatbotService._categoriesCache = null;
-  chatbotService._catalogCacheExpiry = 0;
 });
 
 // ============================================================
@@ -588,84 +509,6 @@ describe('ChatbotService._initializeChatbot — line 55: error không có messag
 
     // Phải log error với chính string đó (right side của ||)
     expect(logger.error).toHaveBeenCalledWith('Khởi tạo Chatbot thất bại:', 'raw string error');
-    chatbotService.providers = originalProviders;
-  });
-});
-
-// ============================================================
-// Lines 95-96: result.rewrittenQuery || message / result.intent || 'general'
-// — right sides khi API trả về JSON thiếu fields
-// ============================================================
-
-describe('ChatbotService.normalizeAndClassify — rule-based behavior', () => {
-  it('expandAbbreviations được gọi — rewrittenQuery là kết quả expand viết tắt', async () => {
-    // normalizeAndClassify là rule-based — không gọi LLM, chỉ dùng expandAbbreviations + regex
-    const result = await chatbotService.normalizeAndClassify('tìm iphone');
-    // 'iphone' là tên sản phẩm → hasProductName match → intent = product_search
-    expect(result.rewrittenQuery).toBeDefined();
-    expect(result.intent).toBe('product_search');
-    // Không gọi axios.post (không còn LLM call)
-    expect(axios.post).not.toHaveBeenCalled();
-  });
-
-  it('intent = "general" khi message không match bất kỳ pattern nào', async () => {
-    // 'hello world' không match off_topic, order_inquiry, policy, product name, pricing
-    const result = await chatbotService.normalizeAndClassify('hello world');
-    expect(result.intent).toBe('general');
-    expect(axios.post).not.toHaveBeenCalled();
-  });
-
-  it('intent = "off_topic" khi message chứa từ khóa off_topic', async () => {
-    const result = await chatbotService.normalizeAndClassify('thời tiết hôm nay thế nào');
-    expect(result.intent).toBe('off_topic');
-    expect(axios.post).not.toHaveBeenCalled();
-  });
-});
-
-// ============================================================
-// Line 132: cachedResult.response || '' — right side khi cached response falsy
-// ============================================================
-
-describe('ChatbotService.handleMessage — line 132: cachedResult.response || ""', () => {
-  beforeEach(() => {
-    mockRedisGet.mockReset();
-    mockRedisSetEx.mockReset();
-  });
-  it('dùng empty string khi cachedResult.response = null trong cache hit', async () => {
-    const originalProviders = [...chatbotService.providers];
-    chatbotService.providers = [
-      { key: 'test-key', url: 'https://api.test/v1/chat/completions', model: 'gpt-4' },
-    ];
-
-    // Cache có response = null
-    const cachedWithNullResponse = {
-      response: null,
-      products: [],
-      suggestions: [],
-      intent: 'product_search',
-    };
-
-    axios.post.mockResolvedValueOnce({
-      data: {
-        choices: [
-          {
-            message: {
-              content: JSON.stringify({ rewrittenQuery: 'iphone', intent: 'product_search' }),
-            },
-          },
-        ],
-      },
-    });
-
-    mockRedisGet.mockResolvedValueOnce(JSON.stringify(cachedWithNullResponse));
-
-    // _persistMessages được gọi với '' thay vì null
-    await chatbotService.handleMessage('iphone', 1, 'sess-null-resp', {});
-
-    expect(mockChatMessageBulkCreate).toHaveBeenCalledWith(
-      expect.arrayContaining([expect.objectContaining({ role: 'assistant', content: '' })]),
-    );
-
     chatbotService.providers = originalProviders;
   });
 });
@@ -727,7 +570,6 @@ describe('ChatbotService.handleMessage — line 173: aiResponse.response || ""',
         ],
       },
     });
-    mockRedisGet.mockResolvedValueOnce(null);
 
     await chatbotService.handleMessage('hello', null, 'sess-no-response', {});
 
@@ -773,22 +615,16 @@ describe('ChatbotService.getAIResponse — providers array empty', () => {
 });
 
 // ============================================================
-// Lines 258-267: (this._categoriesCache || []) / (this._brandsCache || [])
-// — right sides khi cache là null
+// getAIResponse — query DB trực tiếp cho brands/categories
 // ============================================================
 
-describe('ChatbotService.getAIResponse — lines 258-267: cache null fallback', () => {
-  it('dùng [] khi _categoriesCache = null (line 258 right side)', async () => {
+describe('ChatbotService.getAIResponse — query DB trực tiếp cho brands/categories', () => {
+  it('dùng chuỗi rỗng khi DB trả về [] cho brands và categories', async () => {
     // Production dùng this.providers array
     const originalProviders = chatbotService.providers;
     chatbotService.providers = [
       { key: 'real-api-key', url: 'https://test.api/chat', model: 'test-model' },
     ];
-
-    // Cache null → _ensureCatalogCache sẽ được gọi để load từ DB
-    chatbotService._brandsCache = null;
-    chatbotService._categoriesCache = null;
-    chatbotService._catalogCacheExpiry = 0;
 
     mockBrandFindAll.mockResolvedValueOnce([]);
     mockCategoryFindAll.mockResolvedValueOnce([]);
@@ -811,7 +647,7 @@ describe('ChatbotService.getAIResponse — lines 258-267: cache null fallback', 
     });
 
     const result = await chatbotService.getAIResponse('hello', [], {}, []);
-    // Không crash — categoriesCache và brandsCache được lấy từ DB (trả về [])
+    // Không crash — brands/categories được lấy từ DB (trả về [])
     expect(result).toHaveProperty('response');
 
     chatbotService.providers = originalProviders;
@@ -831,9 +667,8 @@ describe('ChatbotService.getAIResponse — line 298: production suppresses debug
     chatbotService.providers = [
       { key: 'real-api-key', url: 'https://test.api/chat', model: 'test-model' },
     ];
-    chatbotService._brandsCache = [];
-    chatbotService._categoriesCache = [];
-    chatbotService._catalogCacheExpiry = Date.now() + 60000;
+    mockBrandFindAll.mockResolvedValueOnce([]);
+    mockCategoryFindAll.mockResolvedValueOnce([]);
 
     axios.post.mockResolvedValueOnce({
       data: {
@@ -1325,7 +1160,6 @@ describe('ChatbotService.handleMessage — line 112: rewrittenQuery same as mess
         ],
       },
     });
-    mockRedisGet.mockResolvedValueOnce(null);
     vectorStoreService.hybridSearch.mockResolvedValueOnce([]);
 
     // Cần mock getAIResponse để không gọi API thật
@@ -1476,9 +1310,8 @@ describe('ChatbotService.getAIResponse — line 233: history default = []', () =
     chatbotService.providers = [
       { key: 'real-api-key', url: 'https://test.api/chat', model: 'test-model' },
     ];
-    chatbotService._brandsCache = [];
-    chatbotService._categoriesCache = [];
-    chatbotService._catalogCacheExpiry = Date.now() + 60000;
+    mockBrandFindAll.mockResolvedValueOnce([]);
+    mockCategoryFindAll.mockResolvedValueOnce([]);
 
     axios.post.mockResolvedValueOnce({
       data: {
@@ -1510,33 +1343,20 @@ describe('ChatbotService.getAIResponse — line 233: history default = []', () =
 });
 
 // ============================================================
-// Line 258: (this._categoriesCache || []) / (this._brandsCache || [])
-// — right side triggered khi cache null DURING prompt construction
-// (khi _ensureCatalogCache không được gọi hoặc cache vẫn null sau load)
+// getAIResponse — DB lỗi khi load brands/categories → dùng chuỗi rỗng, không crash
 // ============================================================
 
-describe('ChatbotService.getAIResponse — line 258: categoriesCache null in systemContent', () => {
-  it('systemContent dùng [] khi _categoriesCache vẫn null sau _ensureCatalogCache', async () => {
+describe('ChatbotService.getAIResponse — DB lỗi khi load brands/categories', () => {
+  it('không crash khi Brand.findAll throw, systemContent có "Danh mục:"', async () => {
     // Production dùng this.providers array
     const originalProviders = chatbotService.providers;
     chatbotService.providers = [
       { key: 'real-api-key', url: 'https://test.api/chat', model: 'test-model' },
     ];
 
-    // _ensureCatalogCache sẽ được gọi nhưng trả về rỗng
-    // Sau đó force caches về null để test || [] right side trong systemContent builder
-    mockBrandFindAll.mockResolvedValueOnce([]);
-    mockCategoryFindAll.mockResolvedValueOnce([]);
-    chatbotService._brandsCache = null;
-    chatbotService._categoriesCache = null;
-    chatbotService._catalogCacheExpiry = 0;
-
-    // Override _ensureCatalogCache để set cache thành null sau khi gọi
-    const originalEnsure = chatbotService._ensureCatalogCache.bind(chatbotService);
-    chatbotService._ensureCatalogCache = jest.fn().mockImplementation(async () => {
-      // Simulate: load xong nhưng không set cache (stays null)
-      // This triggers _categoriesCache || [] on line 258
-    });
+    // Simulate DB lỗi → catch block → brandsStr/categoriesStr rỗng
+    mockBrandFindAll.mockRejectedValueOnce(new Error('DB down'));
+    mockCategoryFindAll.mockRejectedValueOnce(new Error('DB down'));
 
     axios.post.mockResolvedValueOnce({
       data: {
@@ -1557,16 +1377,14 @@ describe('ChatbotService.getAIResponse — line 258: categoriesCache null in sys
 
     const result = await chatbotService.getAIResponse('hello', [], {}, []);
 
-    // Không crash — systemContent được build với [] cho cache null
+    // Không crash — systemContent được build với chuỗi rỗng khi DB lỗi
     expect(result).toHaveProperty('response');
 
-    // Kiểm tra systemContent không chứa "Danh mục: " hoặc "Thương hiệu: " vì cache rỗng
+    // Kiểm tra systemContent vẫn có dòng "Danh mục:" (giá trị rỗng)
     const callArgs = axios.post.mock.calls[0][1];
     const systemMsg = callArgs.messages[0].content;
-    // Với [] → join(', ') = '' → systemContent có format "Danh mục:  — Thương hiệu: "
     expect(systemMsg).toContain('Danh mục:');
 
-    chatbotService._ensureCatalogCache = originalEnsure;
     chatbotService.providers = originalProviders;
   });
 });
@@ -1655,7 +1473,7 @@ describe('ChatbotService.simpleKeywordMatch — line 524: discount > 0 in new pr
 // ---------- Require ----------
 
 // Quan trọng: fresh require trong mỗi test suite khi cần reset singleton state
-// Dùng module cache approach — require một lần và mutate state trực tiếp
+// Dùng module singleton — require một lần và mutate state trực tiếp
 beforeAll(() => {
   chatbotService = require('./chatbot-service');
 });
@@ -1663,23 +1481,22 @@ beforeAll(() => {
 afterEach(() => {
   jest.clearAllMocks();
   chatbotService.conversationHistory.clear();
-  // Reset catalog cache
-  chatbotService._brandsCache = null;
-  chatbotService._categoriesCache = null;
-  chatbotService._catalogCacheExpiry = 0;
 });
 
 // ============================================================
-// ChatbotService._ensureCatalogCache
+// getAIResponse — query DB trực tiếp cho brands/categories mỗi lần gọi
 // ============================================================
 
-describe('ChatbotService._ensureCatalogCache', () => {
+describe('ChatbotService.getAIResponse — brands/categories từ DB', () => {
   beforeEach(() => {
     mockBrandFindAll.mockReset();
     mockCategoryFindAll.mockReset();
+    // Reset catalog cache để mỗi test bắt đầu với trạng thái sạch
+    chatbotService._catalogCache = null;
+    chatbotService._catalogCacheExpiry = 0;
   });
 
-  it('load brands và categories từ DB khi cache chưa có', async () => {
+  it('inject brands và categories vào systemContent từ DB', async () => {
     // Production dùng attributes: ['nameVi', 'nameEn'] — mock data phải match
     mockBrandFindAll.mockResolvedValueOnce([
       { nameVi: 'Apple', nameEn: 'Apple' },
@@ -1690,37 +1507,110 @@ describe('ChatbotService._ensureCatalogCache', () => {
       { nameVi: 'Laptop', nameEn: 'Laptop' },
     ]);
 
-    await chatbotService._ensureCatalogCache();
+    const originalProviders = chatbotService.providers;
+    chatbotService.providers = [
+      { key: 'real-api-key', url: 'https://test.api/chat', model: 'test-model' },
+    ];
 
-    expect(chatbotService._brandsCache).toEqual(['Apple', 'Samsung']);
-    expect(chatbotService._categoriesCache).toEqual(['Điện thoại', 'Laptop']);
-    expect(chatbotService._catalogCacheExpiry).toBeGreaterThan(Date.now());
+    axios.post.mockResolvedValueOnce({
+      data: {
+        choices: [
+          {
+            message: {
+              content: JSON.stringify({
+                response: 'OK',
+                matchedProducts: [],
+                suggestions: [],
+                intent: 'general',
+              }),
+            },
+          },
+        ],
+      },
+    });
+
+    await chatbotService.getAIResponse('tìm điện thoại', [], {}, []);
+
+    // Kiểm tra systemContent có brands và categories từ DB
+    const callArgs = axios.post.mock.calls[0][1];
+    const systemMsg = callArgs.messages[0].content;
+    expect(systemMsg).toContain('Apple');
+    expect(systemMsg).toContain('Samsung');
+    expect(systemMsg).toContain('Điện thoại');
+
+    chatbotService.providers = originalProviders;
   });
 
-  it('không gọi DB lại khi cache còn hạn', async () => {
-    // Seed cache đã có
-    chatbotService._brandsCache = ['Apple'];
-    chatbotService._categoriesCache = ['Điện thoại'];
-    chatbotService._catalogCacheExpiry = Date.now() + 60000; // còn 1 phút
+  it('query DB lần đầu, dùng cache cho các lần sau (TTL 5 phút)', async () => {
+    mockBrandFindAll.mockResolvedValue([{ nameVi: 'Apple', nameEn: 'Apple' }]);
+    mockCategoryFindAll.mockResolvedValue([{ nameVi: 'Điện thoại', nameEn: 'Phone' }]);
 
-    await chatbotService._ensureCatalogCache();
+    const originalProviders = chatbotService.providers;
+    chatbotService.providers = [
+      { key: 'real-api-key', url: 'https://test.api/chat', model: 'test-model' },
+    ];
 
-    expect(mockBrandFindAll).not.toHaveBeenCalled();
-    expect(mockCategoryFindAll).not.toHaveBeenCalled();
+    axios.post.mockResolvedValue({
+      data: {
+        choices: [
+          {
+            message: {
+              content: JSON.stringify({
+                response: 'OK',
+                matchedProducts: [],
+                suggestions: [],
+                intent: 'general',
+              }),
+            },
+          },
+        ],
+      },
+    });
+
+    await chatbotService.getAIResponse('test 1', [], {}, []);
+    await chatbotService.getAIResponse('test 2', [], {}, []);
+
+    // Lần 1 query DB, lần 2 dùng cache → mỗi mock chỉ được gọi 1 lần
+    expect(mockBrandFindAll).toHaveBeenCalledTimes(1);
+    expect(mockCategoryFindAll).toHaveBeenCalledTimes(1);
+
+    chatbotService.providers = originalProviders;
   });
 
-  it('reload khi cache hết hạn', async () => {
-    chatbotService._brandsCache = ['OldBrand'];
-    chatbotService._categoriesCache = ['OldCat'];
-    chatbotService._catalogCacheExpiry = Date.now() - 1000; // đã hết hạn
+  it('dùng nameEn khi nameVi là null', async () => {
+    mockBrandFindAll.mockResolvedValueOnce([{ nameVi: null, nameEn: 'Apple' }]);
+    mockCategoryFindAll.mockResolvedValueOnce([{ nameVi: null, nameEn: 'Laptop' }]);
 
-    mockBrandFindAll.mockResolvedValueOnce([{ nameVi: 'NewBrand', nameEn: null }]);
-    mockCategoryFindAll.mockResolvedValueOnce([{ nameVi: 'NewCat', nameEn: null }]);
+    const originalProviders = chatbotService.providers;
+    chatbotService.providers = [
+      { key: 'real-api-key', url: 'https://test.api/chat', model: 'test-model' },
+    ];
 
-    await chatbotService._ensureCatalogCache();
+    axios.post.mockResolvedValueOnce({
+      data: {
+        choices: [
+          {
+            message: {
+              content: JSON.stringify({
+                response: 'OK',
+                matchedProducts: [],
+                suggestions: [],
+                intent: 'general',
+              }),
+            },
+          },
+        ],
+      },
+    });
 
-    expect(chatbotService._brandsCache).toEqual(['NewBrand']);
-    expect(chatbotService._categoriesCache).toEqual(['NewCat']);
+    await chatbotService.getAIResponse('test', [], {}, []);
+
+    const callArgs = axios.post.mock.calls[0][1];
+    const systemMsg = callArgs.messages[0].content;
+    expect(systemMsg).toContain('Apple');
+    expect(systemMsg).toContain('Laptop');
+
+    chatbotService.providers = originalProviders;
   });
 });
 
@@ -2053,10 +1943,10 @@ describe('ChatbotService.simpleKeywordMatch — keyword matching', () => {
 describe('ChatbotService.getAIResponse — success path', () => {
   beforeEach(() => {
     axios.post.mockReset();
-    // Seed catalog cache để không gọi DB
-    chatbotService._brandsCache = ['Apple', 'Samsung'];
-    chatbotService._categoriesCache = ['Điện thoại', 'Laptop'];
-    chatbotService._catalogCacheExpiry = Date.now() + 60000;
+    // Seed catalog data để không gọi DB
+    chatbotService._brands = ['Apple', 'Samsung'];
+    chatbotService._categories = ['Điện thoại', 'Laptop'];
+    chatbotService._catalogExpiry = Date.now() + 60000;
   });
 
   it('trả về parsed AI response khi API trả về JSON hợp lệ', async () => {
@@ -2509,129 +2399,16 @@ describe('ChatbotService.handleMessage — outer catch fallback', () => {
 });
 
 // ============================================================
-// ChatbotService.handleMessage — cache write
-// ============================================================
-
-describe('ChatbotService.handleMessage — cache write', () => {
-  it('ghi kết quả vào Redis cache sau khi xử lý thành công với intent product_search', async () => {
-    const originalProviders = [...chatbotService.providers];
-    chatbotService.providers = [
-      { key: 'test-key', url: 'https://api.test/v1/chat/completions', model: 'gpt-4' },
-    ];
-
-    // normalizeAndClassify trả về product_search intent
-    axios.post
-      .mockResolvedValueOnce({
-        data: {
-          choices: [
-            {
-              message: {
-                content: JSON.stringify({ rewrittenQuery: 'iphone 15', intent: 'product_search' }),
-              },
-            },
-          ],
-        },
-      })
-      // getAIResponse API call
-      .mockResolvedValueOnce({
-        data: {
-          choices: [
-            {
-              message: {
-                content: JSON.stringify({
-                  response: 'OK iphone',
-                  matchedProducts: [],
-                  suggestions: [],
-                  intent: 'product_search',
-                }),
-              },
-            },
-          ],
-        },
-      });
-
-    // Cache miss (không có cache sẵn)
-    mockRedisGet.mockResolvedValueOnce(null);
-    mockRedisSetEx.mockResolvedValueOnce('OK');
-
-    vectorStoreService.hybridSearch.mockResolvedValueOnce([]);
-    chatbotService._brandsCache = ['Apple'];
-    chatbotService._categoriesCache = ['Điện thoại'];
-    chatbotService._catalogCacheExpiry = Date.now() + 60000;
-
-    await chatbotService.handleMessage('iphone 15', 1, 'sess-cache', {});
-
-    // Redis setEx phải được gọi để cache kết quả
-    expect(mockRedisSetEx).toHaveBeenCalledWith(
-      expect.stringContaining('chatbot:'),
-      expect.any(Number),
-      expect.any(String),
-    );
-
-    chatbotService.providers = originalProviders;
-  });
-
-  it('KHÔNG ghi cache khi intent không phải cacheable (order_inquiry)', async () => {
-    const originalProviders = [...chatbotService.providers];
-    chatbotService.providers = [
-      { key: 'test-key', url: 'https://api.test/v1/chat/completions', model: 'gpt-4' },
-    ];
-
-    // normalizeAndClassify trả về order_inquiry (không cacheable)
-    axios.post.mockResolvedValueOnce({
-      data: {
-        choices: [
-          {
-            message: {
-              content: JSON.stringify({ rewrittenQuery: 'đơn hàng', intent: 'order_inquiry' }),
-            },
-          },
-        ],
-      },
-    });
-
-    vectorStoreService.hybridSearch.mockResolvedValueOnce([]);
-    chatbotService._brandsCache = [];
-    chatbotService._categoriesCache = [];
-    chatbotService._catalogCacheExpiry = Date.now() + 60000;
-
-    // getAIResponse
-    axios.post.mockResolvedValueOnce({
-      data: {
-        choices: [
-          {
-            message: {
-              content: JSON.stringify({
-                response: 'Đơn hàng bạn...',
-                matchedProducts: [],
-                suggestions: [],
-                intent: 'order_inquiry',
-              }),
-            },
-          },
-        ],
-      },
-    });
-
-    await chatbotService.handleMessage('đơn hàng của tôi', 1, 'sess-order', {});
-
-    expect(mockRedisSetEx).not.toHaveBeenCalled();
-
-    chatbotService.providers = originalProviders;
-  });
-});
-
-// ============================================================
 // ChatbotService — line 149: vectorStore.hybridSearch trả về kết quả có metadata
 // (map callback `res => ({ ...res.metadata, score: res.score })` phải được gọi)
 // ============================================================
 
 describe('ChatbotService — vectorStore.hybridSearch với non-empty results (line 149 map callback)', () => {
   beforeEach(() => {
-    // Seed catalog cache
-    chatbotService._brandsCache = ['Apple'];
-    chatbotService._categoriesCache = ['Điện thoại'];
-    chatbotService._catalogCacheExpiry = Date.now() + 60000;
+    // Seed catalog data
+    chatbotService._brands = ['Apple'];
+    chatbotService._categories = ['Điện thoại'];
+    chatbotService._catalogExpiry = Date.now() + 60000;
   });
 
   it('vectorStore.hybridSearch trả về results có metadata → map callback chạy (line 149)', async () => {
@@ -2652,15 +2429,6 @@ describe('ChatbotService — vectorStore.hybridSearch với non-empty results (l
       },
     ]);
 
-    // Mock normalizeAndClassify để return product_search intent
-    const originalPreprocess = chatbotService.normalizeAndClassify.bind(chatbotService);
-    chatbotService.normalizeAndClassify = jest.fn().mockResolvedValue({
-      intent: 'product_search',
-      normalizedQuery: 'iphone',
-      shouldRespond: true,
-      suggestedResponse: null,
-    });
-
     // Mock getAIResponse để không thực sự gọi API
     const originalGetAI = chatbotService.getAIResponse.bind(chatbotService);
     chatbotService.getAIResponse = jest.fn().mockResolvedValue({
@@ -2670,7 +2438,6 @@ describe('ChatbotService — vectorStore.hybridSearch với non-empty results (l
       intent: 'product_search',
     });
 
-    mockRedisGet.mockResolvedValue(null);
     mockChatMessageBulkCreate.mockResolvedValue([]);
 
     await chatbotService.handleMessage('tìm iphone', null, 'sess-vec-test', {});
@@ -2679,7 +2446,6 @@ describe('ChatbotService — vectorStore.hybridSearch với non-empty results (l
     expect(vectorStoreService.hybridSearch).toHaveBeenCalled();
 
     // Restore
-    chatbotService.normalizeAndClassify = originalPreprocess;
     chatbotService.getAIResponse = originalGetAI;
     chatbotService.providers = originalProviders;
     jest.clearAllMocks();
@@ -2727,7 +2493,7 @@ describe('ChatbotService.parseAIResponse — line 372 every() callback', () => {
 });
 
 // ═══════════════════════════════════════════════════════════════════════════════
-// Extra coverage: _llmRewrite, constructor env, retrieved products, error rotation
+// Extra coverage: rewriteQuery, constructor env, retrieved products, error rotation
 // (từ chatbotService.extra2.test.js)
 // ═══════════════════════════════════════════════════════════════════════════════
 
@@ -2744,9 +2510,9 @@ beforeAll(() => {
 afterEach(() => {
   jest.clearAllMocks();
   chatbotService.conversationHistory.clear();
-  chatbotService._brandsCache = null;
-  chatbotService._categoriesCache = null;
-  chatbotService._catalogCacheExpiry = 0;
+  chatbotService._brands = null;
+  chatbotService._categories = null;
+  chatbotService._catalogExpiry = 0;
   // Reset providers về rỗng sau mỗi test
   chatbotService.providers = [];
 });
@@ -2818,17 +2584,17 @@ describe('ChatbotService constructor với LLM_API_KEY + LLM_BASE_URL', () => {
 });
 
 // ═══════════════════════════════════════════════════════════════════════════════
-// _llmRewrite
+// rewriteQuery
 // ═══════════════════════════════════════════════════════════════════════════════
 
-describe('ChatbotService._llmRewrite', () => {
+describe('ChatbotService.rewriteQuery', () => {
   beforeEach(() => {
     // Reset axios mock để xóa mockResolvedValueOnce queue từ các sections trước
     axios.post.mockReset();
   });
 
   test('trả về null khi providers rỗng', async () => {
-    const result = await chatbotService._llmRewrite('điện thoại Samsung');
+    const result = await chatbotService.rewriteQuery('điện thoại Samsung');
     expect(result).toBeNull();
   });
 
@@ -2837,7 +2603,7 @@ describe('ChatbotService._llmRewrite', () => {
     axios.post.mockResolvedValue({
       data: { choices: [{ message: { content: 'Samsung Galaxy S25' } }] },
     });
-    const result = await chatbotService._llmRewrite('ss s25');
+    const result = await chatbotService.rewriteQuery('ss s25');
     expect(result).toBe('Samsung Galaxy S25');
   });
 
@@ -2846,7 +2612,7 @@ describe('ChatbotService._llmRewrite', () => {
     axios.post.mockResolvedValue({
       data: { choices: [{ message: { content: 'iPhone 15' } }] },
     });
-    const result = await chatbotService._llmRewrite('iPhone 15');
+    const result = await chatbotService.rewriteQuery('iPhone 15');
     expect(result).toBeNull();
   });
 
@@ -2855,7 +2621,7 @@ describe('ChatbotService._llmRewrite', () => {
     axios.post.mockResolvedValue({
       data: { choices: [{ message: { content: '' } }] },
     });
-    const result = await chatbotService._llmRewrite('laptop gaming');
+    const result = await chatbotService.rewriteQuery('laptop gaming');
     expect(result).toBeNull();
   });
 
@@ -2867,7 +2633,7 @@ describe('ChatbotService._llmRewrite', () => {
     axios.post.mockRejectedValueOnce(err429).mockResolvedValueOnce({
       data: { choices: [{ message: { content: 'MacBook Air M3' } }] },
     });
-    const result = await chatbotService._llmRewrite('macbook air m3');
+    const result = await chatbotService.rewriteQuery('macbook air m3');
     expect(result).toBe('MacBook Air M3');
     expect(axios.post).toHaveBeenCalledTimes(2);
   });
@@ -2878,7 +2644,7 @@ describe('ChatbotService._llmRewrite', () => {
       axios.post.mockClear();
       const err = Object.assign(new Error('Error'), { response: { status } });
       axios.post.mockRejectedValue(err);
-      const result = await chatbotService._llmRewrite('test');
+      const result = await chatbotService.rewriteQuery('test');
       expect(result).toBeNull();
     }
   });
@@ -2888,7 +2654,7 @@ describe('ChatbotService._llmRewrite', () => {
     const networkErr = new Error('Network error');
     // networkErr.response = undefined (không set)
     axios.post.mockRejectedValue(networkErr);
-    const result = await chatbotService._llmRewrite('laptop dell');
+    const result = await chatbotService.rewriteQuery('laptop dell');
     expect(result).toBeNull();
   });
 
@@ -2897,7 +2663,7 @@ describe('ChatbotService._llmRewrite', () => {
     addFakeProvider({ key: 'key-2' });
     const err400 = Object.assign(new Error('Bad request'), { response: { status: 400 } });
     axios.post.mockRejectedValue(err400);
-    const result = await chatbotService._llmRewrite('test query');
+    const result = await chatbotService.rewriteQuery('test query');
     // Chỉ gọi 1 lần vì break sau lỗi 400
     expect(axios.post).toHaveBeenCalledTimes(1);
     expect(result).toBeNull();
@@ -2925,51 +2691,26 @@ describe('ChatbotService.handleMessage — off-topic English', () => {
 });
 
 // ═══════════════════════════════════════════════════════════════════════════════
-// handleMessage — cache hit với sessionId (lines 209-211)
-// ═══════════════════════════════════════════════════════════════════════════════
-
-describe('ChatbotService.handleMessage — cache hit với sessionId', () => {
-  test('cache hit + sessionId → cập nhật conversationHistory', async () => {
-    const cachedResponse = {
-      response: 'Cached response',
-      products: [],
-      suggestions: [],
-      intent: 'product_search',
-    };
-    mockRedisGet.mockResolvedValue(JSON.stringify(cachedResponse));
-    mockRedisSetEx.mockResolvedValue(undefined);
-
-    const result = await chatbotService.handleMessage(
-      'iPhone 15 price', // product_search intent để vào cache path
-      42,
-      'sess-cache-123', // sessionId → trigger conversationHistory update
-      { preClassifiedIntent: 'product_search' },
-    );
-
-    expect(result.response).toBe('Cached response');
-    // ConversationHistory phải được cập nhật
-    const entry = chatbotService.conversationHistory.get('sess-cache-123');
-    expect(entry).toBeDefined();
-    expect(entry.messages.length).toBeGreaterThan(0);
-  });
-});
-
-// ═══════════════════════════════════════════════════════════════════════════════
 // getAIResponse — brands/categories map arrows (lines 84-85)
 // ═══════════════════════════════════════════════════════════════════════════════
 
-describe('ChatbotService._ensureCatalogCache — brands/categories map (lines 84-85)', () => {
-  test('map arrows chạy khi brands/categories có data', async () => {
-    mockBrandFindAll.mockResolvedValue([
+describe('ChatbotService.getAIResponse — brands/categories map arrows', () => {
+  beforeEach(() => {
+    // Reset catalog cache để test dùng mock data mới nhất
+    chatbotService._catalogCache = null;
+    chatbotService._catalogCacheExpiry = 0;
+  });
+
+  test('inject đúng brands/categories vào systemContent khi nameVi null dùng nameEn', async () => {
+    mockBrandFindAll.mockResolvedValueOnce([
       { nameVi: 'Samsung', nameEn: 'Samsung' },
       { nameVi: null, nameEn: 'Apple' },
     ]);
-    mockCategoryFindAll.mockResolvedValue([
+    mockCategoryFindAll.mockResolvedValueOnce([
       { nameVi: 'Điện thoại', nameEn: 'Phone' },
       { nameVi: null, nameEn: 'Laptop' },
     ]);
 
-    // _ensureCatalogCache được gọi từ getAIResponse khi có providers
     addFakeProvider();
     axios.post.mockResolvedValue({
       data: {
@@ -2985,19 +2726,17 @@ describe('ChatbotService._ensureCatalogCache — brands/categories map (lines 84
 
     await chatbotService.getAIResponse('test', [], {}, []);
 
-    expect(chatbotService._brandsCache).toContain('Samsung');
-    expect(chatbotService._brandsCache).toContain('Apple');
-    expect(chatbotService._categoriesCache).toContain('Điện thoại');
-    expect(chatbotService._categoriesCache).toContain('Laptop');
+    // Kiểm tra systemContent chứa brands và categories được inject
+    const callArgs = axios.post.mock.calls[0][1];
+    const systemMsg = callArgs.messages[0].content;
+    expect(systemMsg).toContain('Samsung');
+    expect(systemMsg).toContain('Apple');
+    expect(systemMsg).toContain('Điện thoại');
+    expect(systemMsg).toContain('Laptop');
   });
 });
 
 describe('ChatbotService.handleMessage — context.retrievedProducts', () => {
-  beforeEach(() => {
-    mockRedisGet.mockResolvedValue(null);
-    mockRedisSetEx.mockResolvedValue(undefined);
-  });
-
   test('dùng retrievedProducts từ context thay vì tự retrieve', async () => {
     const products = [{ id: 1, name: 'iPhone 15', score: 0.9 }];
     const context = { retrievedProducts: products, preClassifiedIntent: 'product_search' };
@@ -3037,16 +2776,14 @@ describe('ChatbotService.handleMessage — context.retrievedProducts', () => {
 describe('ChatbotService.handleMessage — legacy llmRewrite path', () => {
   beforeEach(() => {
     axios.post.mockReset();
-    mockRedisGet.mockResolvedValue(null);
-    mockRedisSetEx.mockResolvedValue(undefined);
   });
 
   test('refined search khi llmRewrite khác searchMessage', async () => {
     addFakeProvider();
-    // _llmRewrite trả rewrite khác query
+    // rewriteQuery trả rewrite khác query
     axios.post
       .mockResolvedValueOnce({
-        // Lần 1: _llmRewrite
+        // Lần 1: rewriteQuery
         data: { choices: [{ message: { content: 'Dell Gaming Laptop RTX 4060' } }] },
       })
       .mockResolvedValueOnce({
@@ -3107,7 +2844,7 @@ describe('ChatbotService.handleMessage — legacy llmRewrite path', () => {
 
   test('refined search trả [] → fallback về initialSearchResults (line 267)', async () => {
     addFakeProvider();
-    // _llmRewrite trả rewrite khác query (line 260: llmRewrite !== searchMessage)
+    // rewriteQuery trả rewrite khác query (line 260: llmRewrite !== searchMessage)
     axios.post
       .mockResolvedValueOnce({
         data: { choices: [{ message: { content: 'Gaming Laptop Dell XPS' } }] },
@@ -3141,13 +2878,8 @@ describe('ChatbotService.handleMessage — legacy llmRewrite path', () => {
 // ═══════════════════════════════════════════════════════════════════════════════
 
 describe('ChatbotService.handleMessage — fallback search catch (line 285)', () => {
-  beforeEach(() => {
-    mockRedisGet.mockResolvedValue(null);
-    mockRedisSetEx.mockResolvedValue(undefined);
-  });
-
   test('relevantProducts = [] khi fallback hybridSearch throw', async () => {
-    // providers rỗng → _llmRewrite trả null
+    // providers rỗng → rewriteQuery trả null
     // initial hybridSearch trả [] → fallback được gọi
     // fallback hybridSearch throw → relevantProducts = []
     vectorStoreService.hybridSearch
@@ -3175,38 +2907,6 @@ describe('ChatbotService._evictStaleSessions — early return khi empty', () => 
     expect(chatbotService.conversationHistory.size).toBe(0);
     // Gọi trực tiếp — không throw
     expect(() => chatbotService._evictStaleSessions()).not.toThrow();
-  });
-});
-
-// ═══════════════════════════════════════════════════════════════════════════════
-// handleMessage — cache hit với sessionId trực tiếp (lines 209-211)
-// ═══════════════════════════════════════════════════════════════════════════════
-
-describe('ChatbotService.handleMessage — cache hit sessionId direct (lines 209-211)', () => {
-  test('lines 209-211: conversationHistory được set khi cache hit + sessionId', async () => {
-    const cachedData = {
-      response: 'Cached iPhone answer',
-      products: [{ id: 1, name: 'iPhone 15' }],
-      suggestions: [],
-      intent: 'product_search',
-    };
-
-    // Setup: mockRedisGet trả về cached response
-    mockRedisGet.mockImplementation(async () => JSON.stringify(cachedData));
-    mockRedisSetEx.mockResolvedValue(undefined);
-
-    const sessionId = 'direct-sess-' + Date.now();
-
-    const result = await chatbotService.handleMessage('iPhone 15', null, sessionId, {});
-
-    // classifyIntent('iPhone 15') = 'product_search' → CACHEABLE → redis.get → cached
-    // if (sessionId) → true → lines 209-211 should execute
-    expect(result.response).toBe('Cached iPhone answer');
-    const entry = chatbotService.conversationHistory.get(sessionId);
-    expect(entry).toBeDefined();
-    expect(entry.messages.some((m) => m.role === 'user')).toBe(true);
-
-    mockRedisGet.mockReset();
   });
 });
 

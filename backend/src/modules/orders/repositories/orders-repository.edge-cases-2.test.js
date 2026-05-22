@@ -217,20 +217,7 @@ describe('createInventoryLogs', () => {
 
 // ─── findActiveWarrantyPackagesByIds — branch: không truyền options ────────────
 
-describe('findActiveWarrantyPackagesByIds', () => {
-  it.skip('gọi WarrantyPackage.findAll với default options {} khi không truyền options', async () => {
-    const { repo, deps } = makeRepo();
-    const pkgs = [{ id: 1, isActive: true }];
-    deps.WarrantyPackage.findAll.mockResolvedValue(pkgs);
-
-    const result = await repo.findActiveWarrantyPackagesByIds([1]);
-
-    expect(deps.WarrantyPackage.findAll).toHaveBeenCalledWith({
-      where: { id: [1], isActive: true },
-    });
-    expect(result).toBe(pkgs);
-  });
-});
+describe('findActiveWarrantyPackagesByIds', () => {});
 
 // ─── findUserById — branch: không truyền options ─────────────────────────────
 

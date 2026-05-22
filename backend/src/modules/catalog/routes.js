@@ -8,7 +8,6 @@ const express = require('express');
 const { authenticate, optionalAuthenticate } = require('@middlewares/authenticate');
 const { authorize } = require('@middlewares/authorize');
 const { validateRequest } = require('@middlewares/validate-request');
-const { httpCacheHeaders } = require('@middlewares/cache');
 const {
   categorySchema,
   createBrandSchema,
@@ -92,9 +91,9 @@ module.exports = ({ catalogController }) => {
    *           type: integer
    */
   const categories = express.Router();
-  categories.get('/', httpCacheHeaders(1800), catalogController.getAllCategories);
-  categories.get('/tree', httpCacheHeaders(1800), catalogController.getCategoryTree);
-  categories.get('/featured', httpCacheHeaders(1800), catalogController.getFeaturedCategories);
+  categories.get('/', catalogController.getAllCategories);
+  categories.get('/tree', catalogController.getCategoryTree);
+  categories.get('/featured', catalogController.getFeaturedCategories);
   categories.get('/slug/:slug', catalogController.getCategoryBySlug);
   categories.get('/:id/products', catalogController.getProductsByCategory);
   categories.get('/:id', catalogController.getCategoryById);
@@ -310,30 +309,20 @@ module.exports = ({ catalogController }) => {
    *           type: integer
    */
   const products = express.Router();
-  products.get('/', httpCacheHeaders(60), catalogController.getAllProducts);
+  products.get('/', catalogController.getAllProducts);
   products.get('/recently-viewed', authenticate, catalogController.getRecentlyViewed);
-  products.get('/featured', httpCacheHeaders(600), catalogController.getFeaturedProducts);
-  products.get('/new-arrivals', httpCacheHeaders(300), catalogController.getNewArrivals);
+  products.get('/featured', catalogController.getFeaturedProducts);
+  products.get('/new-arrivals', catalogController.getNewArrivals);
   products.get('/best-sellers', catalogController.getBestSellers);
   products.get('/deals', catalogController.getDeals);
   products.get('/filters', catalogController.getProductFilters);
   products.get('/search', catalogController.searchProducts);
   products.get('/suggestions', catalogController.getProductSuggestions);
-  products.get(
-    '/slug/:slug',
-    httpCacheHeaders(300),
-    optionalAuthenticate,
-    catalogController.getProductBySlug,
-  );
+  products.get('/slug/:slug', optionalAuthenticate, catalogController.getProductBySlug);
   products.get('/:id/related', catalogController.getRelatedProducts);
   products.get('/:id/variants', catalogController.getProductVariants);
   products.get('/:id/reviews-summary', catalogController.getProductReviewsSummary);
-  products.get(
-    '/:id',
-    httpCacheHeaders(300),
-    optionalAuthenticate,
-    catalogController.getProductById,
-  );
+  products.get('/:id', optionalAuthenticate, catalogController.getProductById);
   products.post(
     '/',
     authenticate,

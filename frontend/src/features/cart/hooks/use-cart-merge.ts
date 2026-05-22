@@ -30,7 +30,7 @@ import { useUiStore } from '@/stores/ui-store';
  *
  * **Race condition — fallback `serverCart`:** sau khi gọi xong tất cả `addToCart`,
  * hook gọi `refetch()` để cập nhật Zustand store. Nếu `refetch` trả về `undefined`
- * (do cache chưa cập nhật hoặc mạng chậm), hook dùng `serverCart` hiện tại làm
+ * (do query chưa cập nhật hoặc mạng chậm), hook dùng `serverCart` hiện tại làm
  * fallback — tránh cập nhật store bằng dữ liệu rỗng, gây mất hiển thị giỏ hàng.
  *
  * @param isAuthenticated - `true` khi user đã đăng nhập (lấy từ `authStore`).
@@ -101,7 +101,7 @@ export const useCartMerge = (isAuthenticated: boolean, justLoggedIn: boolean) =>
                 // Cập nhật Zustand store với dữ liệu mới nhất từ server
                 setServerCart(refetchResult.data);
               } else if (serverCart) {
-                // Fallback: refetch trả undefined (cache chưa ready hoặc mạng chậm)
+                // Fallback: refetch trả undefined (query chưa sẵn sàng hoặc mạng chậm)
                 // → dùng serverCart hiện tại, tránh cập nhật store bằng dữ liệu rỗng
                 setServerCart(serverCart);
               }

@@ -47,10 +47,10 @@ Browser ──HTTP──▶ Vite Dev Proxy (port 5175)
                        ▼
               Express API Server (port 8888)
                        │
-          ┌────────────┼─────────────┐
-          ▼            ▼             ▼
-       MySQL 8      Redis         vector-db.json
-    (Sequelize 6)  (optional)    (AI/RAG store)
+          ┌────────────┴─────────────┐
+          ▼                          ▼
+       MySQL 8                  vector-db.json
+    (Sequelize 6)               (AI/RAG store)
 ```
 
 Giao tiếp giữa backend và frontend: HTTP REST API, JSON, JWT Bearer token. Không có WebSocket hay GraphQL.
@@ -65,12 +65,11 @@ Giao tiếp giữa backend và frontend: HTTP REST API, JSON, JWT Bearer token. 
 | Web framework | Express | 4.18 |
 | ORM | Sequelize | 6.37 |
 | Database | MySQL | 8.x |
-| Cache / JWT blacklist | Redis | 5.x (optional) |
 | Auth | JWT (access 15m + refresh 30d) + Google OAuth 2.0 + bcrypt 6 | — |
 | Email | Nodemailer (Gmail SMTP) | 7.x |
 | Validation | Zod | 4.x |
 | API docs | Swagger UI + swagger-jsdoc (OpenAPI 3.0) | — |
-| Rate limiting | express-rate-limit + rate-limit-redis | — |
+| Rate limiting | express-rate-limit | — |
 | HTTP security | Helmet + sanitize-html (XSS) + CSRF Origin check | — |
 | Logging | Winston | 3.x |
 | Cron jobs | node-cron | 4.x |
@@ -128,7 +127,6 @@ backend/
 │   │   └── *.js             # Individual model files
 │   ├── shared/
 │   │   ├── event-bus.js     # In-process pub/sub singleton
-│   │   ├── admin-audit.js   # AdminAuditService (ghi AuditLog)
 │   │   ├── errors/          # AppError, error classes
 │   │   └── persistence/
 │   │       └── unit-of-work.js   # runInTransaction + lockRow
@@ -141,7 +139,6 @@ backend/
 │   ├── middlewares/
 │   │   ├── authenticate.js  # JWT verify + optional variant
 │   │   ├── authorize.js     # Role-based access (admin/user)
-│   │   ├── cache.js         # HTTP Cache-Control headers
 │   │   ├── rate-limiter.js  # apiLimiter, authLimiter, chatbotLimiter, otpLimiter
 │   │   ├── detect-locale.js # Accept-Language → req.locale
 │   │   ├── validate-request.js  # Zod validation middleware
@@ -156,7 +153,6 @@ backend/
 │   ├── config/
 │   │   ├── database.js      # Sequelize CLI config (dev/test/production)
 │   │   ├── sequelize.js     # Sequelize instance singleton
-│   │   ├── redis.js         # Redis client + in-memory fallback
 │   │   └── swagger.js       # OpenAPI spec builder
 │   ├── constants/
 │   │   └── index.js         # SHIPPING_*, JWT_*, PAGINATION_*, OTP_*, MAX_CART_QUANTITY
@@ -213,7 +209,7 @@ frontend/
 │   ├── config/
 │   │   └── i18n.ts          # i18next initialization (localStorage detect, vi mặc định)
 │   ├── constants/
-│   │   └── index.ts         # PAGINATION, UPLOAD, LOYALTY
+│   │   └── index.ts         # PAGINATION, UPLOAD
 │   └── locales/
 │       ├── vi.json
 │       └── en.json
@@ -263,11 +259,11 @@ app.use('/api' + ordersModule.basePath, ordersModule.router);
 | `cart` | `/api/cart` | Giỏ hàng guest (sessionId) + user (userId), merge khi login |
 | `orders` | `/api/orders` | Tạo đơn, track, cancel, admin manage |
 | `payment` | `/api/payments` | MoMo + VNPay create-URL, IPN callback, refund (admin) |
-| `inventory` | `/api/inventory` | Stock view + adjust + audit log. SELECT FOR UPDATE chống race condition |
+| `inventory` | `/api/inventory` | Stock view + adjust. SELECT FOR UPDATE chống race condition |
 | `reviews` | `/api/reviews` | CRUD review. Chỉ user có OrderItem với productId mới được review |
 | `discount-code` | `/api/discount-codes` | CRUD mã giảm giá, validate, apply. usedCount tăng khi PAID |
 | `ai` | `/api/chatbot` | RAG chat, gợi ý sản phẩm, thêm vào giỏ qua chatbot |
-| `admin` | `/api/admin` | Dashboard analytics, audit log, bulk operations |
+| `admin` | `/api/admin` | Dashboard analytics, bulk operations |
 | `content` | `/api/contact` | Feedback/contact form |
 | `wishlist` | `/api/wishlists` | Toggle yêu thích sản phẩm |
 | `image` | `/api/images` + `/api/img` (proxy) | Quản lý ảnh, Sharp processing, image proxy |
@@ -287,10 +283,6 @@ app.use('/api' + ordersModule.basePath, ordersModule.router);
 - `runInTransaction(work, options)` — wrap business operation trong Sequelize transaction
 - `lockRow(model, where, transaction)` — SELECT FOR UPDATE helper
 - Nested call: nếu đã có `options.transaction` thì reuse, không mở SAVEPOINT mới
-
-**AdminAuditService** (`src/shared/admin-audit.js`):
-- Ghi AuditLog mỗi khi admin thực hiện thao tác quan trọng
-- Log: `{ adminId, action, entity, entityId, oldValues, newValues, ipAddress }`
 
 **AppError** (`src/shared/errors/index.js`):
 - Custom error classes (AppError, NotFoundError, UnauthorizedError, ValidationError...)
@@ -353,7 +345,7 @@ Routing: tất cả routes lazy-loaded trong `AppRoutes.tsx` với `React.lazy` 
 
 # 6. Database Schema Overview
 
-32 Sequelize models, MySQL 8, charset utf8mb4, timezone +07:00. Tất cả tables dùng `timestamps: true, underscored: true`.
+Sequelize models, MySQL 8, charset utf8mb4, timezone +07:00. Tất cả tables dùng `timestamps: true, underscored: true`.
 
 ## 6.1 Core tables
 
@@ -361,7 +353,7 @@ Routing: tất cả routes lazy-loaded trong `AppRoutes.tsx` với `React.lazy` 
 |---|---|---|
 | `users` | User | Tài khoản: email, password (bcrypt), googleId, role (user/admin), OTP fields, resetToken |
 | `addresses` | Address | Địa chỉ giao hàng của user (1 user N addresses) |
-| `categories` | Category | Danh mục sản phẩm (flat, có parentId cho nested display) |
+| `categories` | Category | Danh mục sản phẩm (flat, có parentId cho nested display); fields: `isActive` (default true), `sortOrder` (default 0) |
 | `brands` | Brand | Thương hiệu (name, slug, logo) |
 | `products` | Product | Sản phẩm: name, slug, basePrice, compareAtPrice, status (active/inactive/draft), thumbnail, categoryId, brandId |
 | `product_variants` | ProductVariant | Biến thể: name, price, stockQuantity, sku, attributes (JSON), isDefault |
@@ -379,8 +371,7 @@ Routing: tất cả routes lazy-loaded trong `AppRoutes.tsx` với `React.lazy` 
 | `chat_messages` | ChatMessage | Lịch sử chat AI: userId (nullable), sessionId, role (user/assistant), content, isArchived |
 | `search_histories` | SearchHistory | Lịch sử tìm kiếm: userId (nullable), query, timestamp |
 | `recently_viewed` | RecentlyViewed | Sản phẩm đã xem: userId, productId, viewedAt |
-| `inventory_logs` | InventoryLog | Audit log tồn kho: productId, variantId, orderId, changeType, quantityBefore, quantityAfter |
-| `audit_logs` | AuditLog | Audit log admin: adminId, action, entity, entityId, oldValues, newValues |
+| `inventory_logs` | InventoryLog | Inventory log tồn kho: productId, variantId, orderId, changeType, quantityBefore, quantityAfter |
 
 ## 6.2 Junction & Log tables
 
@@ -420,7 +411,7 @@ HTTP Request
     │       │       └─ Service (business logic)
     │       │               └─ Repository (Sequelize queries)
     │       │                       └─ MySQL
-    │       └─ httpCacheHeaders (Cache-Control)
+    │       └─ responseHeaders (security headers)
     │
     └─ errorHandler (global error middleware)
 ```
@@ -484,14 +475,13 @@ createOrder()
 
 cancelOrder()
     └─▶ eventBus.publish({ type: 'order.cancelled' })
-                ▶ inventoryModule.subscribe → tạo audit log
+                ▶ inventoryModule.subscribe → ghi inventory log
 ```
 
 **Auth events**:
 ```
 register() ──▶ event → emailService.sendVerificationOTP()
-login()    ──▶ event → log audit (nếu admin)
-logout()   ──▶ token blacklist vào Redis (hoặc in-memory fallback)
+logout()   ──▶ revoke refresh token family (access token cleared phía client)
 ```
 
 **Catalog events**:
@@ -508,7 +498,7 @@ product.afterCreate/Update/Destroy
 orders    ──▶ cart (xóa sau khi đặt)
           ──▶ users (shippingAddress, email)
           ──▶ payment (kiểm tra paymentStatus qua eventBus)
-          ──▶ inventory (eventBus: order.cancelled → audit log)
+          ──▶ inventory (eventBus: order.cancelled → inventory log)
           ──▶ discount-code (apply, tăng usedCount khi PAID)
           ──▶ emailService (gửi xác nhận đơn hàng)
 
@@ -529,7 +519,7 @@ ai        ──▶ catalog (vector search qua vectorStoreService)
 
 payment   ──▶ orders (update paymentStatus qua eventBus)
 
-inventory ◀── orders (subscribe: order.created, order.cancelled → audit log)
+inventory ◀── orders (subscribe: order.created, order.cancelled → inventory log)
 ```
 
 ---
@@ -558,7 +548,6 @@ inventory ◀── orders (subscribe: order.created, order.cancelled → audit 
 | `OPENROUTER_API_KEY` | Không | OpenRouter cho LLM chatbot |
 | `GOOGLE_CLIENT_ID` | Không | Google OAuth |
 | `EMAIL_HOST`, `EMAIL_PORT`, `EMAIL_USERNAME`, `EMAIL_PASSWORD` | **Có** | Gmail SMTP |
-| `REDIS_URL` | Không | Mặc định redis://localhost:6379 |
 | `CORS_ORIGIN` | Không | Production: set cụ thể. Dev: dùng `CORS_ORIGINS_DEV` |
 | `CORS_ORIGINS_DEV` | Không | Comma-separated origins cho dev |
 | `FRONTEND_URL` | Không | Mặc định http://localhost:5175 |

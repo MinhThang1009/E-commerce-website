@@ -46,6 +46,105 @@ import { getErrorMsg } from '@/utils/error-utils';
 
 const { Title, Text } = Typography;
 
+// Map raw DB spec keys → tên tiếng Việt
+const SPEC_NAME_LABELS: Record<string, string> = {
+  display_specs: 'Thông số màn hình',
+  display: 'Màn hình',
+  screen: 'Màn hình',
+  processor_chipset: 'Vi xử lý (Chipset)',
+  cpu: 'Vi xử lý (CPU)',
+  chipset: 'Chipset',
+  ram: 'Bộ nhớ (RAM)',
+  ram_capacity: 'Bộ nhớ (RAM)',
+  storage: 'Dung lượng (Storage)',
+  storage_capacity: 'Dung lượng (Storage)',
+  rom: 'Bộ nhớ trong (ROM)',
+  battery: 'Dung lượng PIN',
+  battery_capacity: 'Dung lượng PIN',
+  charging_speed: 'Tốc độ sạc',
+  charger: 'Công nghệ sạc',
+  charging_tech: 'Công nghệ sạc',
+  operating_system: 'Hệ điều hành',
+  os: 'Hệ điều hành',
+  network_connectivity: 'Kết nối mạng / Không dây',
+  connectivity: 'Kết nối không dây',
+  water_resistance: 'Chống nước',
+  build_material: 'Chất liệu vỏ',
+  material: 'Chất liệu thiết kế',
+  dimensions_weight: 'Kích thước & Trọng lượng',
+  dimensions: 'Kích thước',
+  weight: 'Trọng lượng',
+  sensors: 'Cảm biến',
+  camera: 'Hệ thống Camera',
+  gpu: 'Đồ họa (GPU)',
+  graphics_processor: 'Đồ họa (GPU)',
+  bluetooth: 'Bluetooth',
+  wifi: 'Wi-Fi',
+  security: 'Tính năng bảo mật',
+  color: 'Màu sắc',
+  warranty: 'Chế độ bảo hành',
+  battery_life: 'Thời lượng pin',
+  features: 'Tính năng',
+  other_features: 'Tiện ích khác',
+  health_features: 'Tính năng sức khỏe',
+  sports_modes: 'Chế độ thể thao',
+  positioning: 'Định vị',
+  sim_slots: 'Khe cắm SIM',
+  sim: 'Loại SIM',
+  compatibility: 'Tương thích',
+  release_year: 'Năm ra mắt',
+  network: 'Kết nối mạng',
+  mobile_network: 'Hỗ trợ mạng di động',
+  ports: 'Cổng kết nối',
+  port: 'Cổng kết nối',
+  audio: 'Công nghệ âm thanh',
+  audio_jack: 'Cổng tai nghe 3.5mm',
+  speaker: 'Loa / Âm thanh',
+  dial_size: 'Đường kính mặt số',
+  band_material: 'Chất liệu dây',
+  case_material: 'Chất liệu vỏ',
+  glass_material: 'Chất liệu mặt kính',
+  band_width: 'Bề rộng dây',
+  case_thickness: 'Độ dày vỏ',
+  power_source: 'Nguồn năng lượng',
+  power_reserve: 'Dự trữ năng lượng',
+  charging_port: 'Cổng sạc',
+  collection: 'Bộ sưu tập',
+  movement_name: 'Bộ máy',
+  movement_type: 'Loại máy',
+  made_in: 'Xuất xứ',
+  brand_origin: 'Thương hiệu của',
+  accessories: 'Phụ kiện đi kèm',
+  special_features: 'Tính năng đặc biệt',
+  rear_camera: 'Camera sau',
+  front_camera: 'Camera trước',
+  video: 'Quay phim',
+  gps: 'Định vị GPS',
+  card_reader: 'Khe cắm thẻ nhớ',
+  keyboard: 'Bàn phím',
+  touchpad: 'Bàn di chuột',
+  keyboard_backlight: 'Đèn bàn phím',
+  webcam: 'Webcam / Camera',
+  cooling_system: 'Hệ thống tản nhiệt',
+  panel_type: 'Loại tấm nền',
+  contrast_ratio: 'Tỷ lệ tương phản',
+  color_gamut: 'Độ phủ màu',
+  refresh_rate: 'Tần số quét',
+  brightness: 'Độ sáng',
+  resolution: 'Độ phân giải',
+  target_user: 'Đối tượng sử dụng',
+};
+const mapSpecName = (key: string): string => SPEC_NAME_LABELS[key] ?? key;
+
+const generateSku = (prefix = 'PRD') => {
+  const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ0123456789';
+  const rand = Array.from(
+    { length: 6 },
+    () => chars[Math.floor(Math.random() * chars.length)],
+  ).join('');
+  return `${prefix}-${rand}`;
+};
+
 const EditProductPage: React.FC = () => {
   const { t } = useTranslation();
   const { id } = useParams<{ id: string }>();
@@ -180,13 +279,13 @@ const EditProductPage: React.FC = () => {
 
         // Giá so sánh
         const compareAtPrice = parseFloat(formValues.compareAtPrice?.toString()) || 0;
-        productData.compareAtPrice = compareAtPrice > 0 ? compareAtPrice : null;
-        productData.comparePrice = compareAtPrice > 0 ? compareAtPrice : null;
+        productData.compareAtPrice = compareAtPrice > 0 ? compareAtPrice : undefined;
 
         // Thuộc tính và biến thể - luôn gửi nếu có để an toàn
         productData.attributes = attributes.map((attr: ProductAttribute) => ({
           name: attr.name,
-          value: Array.isArray(attr.values) ? attr.values.join(', ') : '',
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          value: Array.isArray(attr.values) ? attr.values.join(', ') : (attr as any).value || '',
         }));
 
         if (hasVariants) {
@@ -194,14 +293,17 @@ const EditProductPage: React.FC = () => {
             id: variant.id && !String(variant.id).startsWith('var-') ? variant.id : undefined,
             name: variant.name,
             price: parseFloat(variant.price?.toString()) || 0,
-            sku: variant.sku || `VAR-${id}-${index}-${Date.now()}`,
+            sku: variant.sku || generateSku('VAR'),
             isAvailable: true,
             isDefault: variant.isDefault || index === 0,
+            compareAtPrice:
+              (variant as unknown as { compareAtPrice?: number | null }).compareAtPrice ?? null,
             stockQuantity:
               parseInt(variant.stockQuantity?.toString() || variant.stock?.toString() || '0') || 0,
             stock:
               parseInt(variant.stock?.toString() || variant.stockQuantity?.toString() || '0') || 0,
             attributes: variant.attributes || {},
+            images: (variant as unknown as { images?: string[] }).images || [],
           }));
         }
 
@@ -270,16 +372,46 @@ const EditProductPage: React.FC = () => {
         status: product.status,
         featured: product.featured,
         categoryIds: product.categories?.map((cat: { id: string }) => cat.id) || [],
-        images: product.images?.join('\n') || '',
-        thumbnail: product.thumbnail || '',
+        images: (() => {
+          // Thử product.images trước (catalog API — objects {url})
+          const imgs = product.images as Array<{ url?: string } | string> | undefined;
+          if (imgs?.length) {
+            const urls = imgs
+              .map((img) => (typeof img === 'string' ? img : img?.url))
+              .filter(Boolean);
+            if (urls.length) return urls.join('\n');
+          }
+          // Fallback: product.productImages (admin API) — chỉ lấy ảnh chung (variantId = null)
+          const pImgs = product.productImages as
+            | Array<{ imageUrl?: string; url?: string; variantId?: string | null }>
+            | undefined;
+          if (pImgs?.length) {
+            return pImgs
+              .filter((img) => !img?.variantId)
+              .map((img) => img?.imageUrl || img?.url)
+              .filter(Boolean)
+              .join('\n');
+          }
+          return '';
+        })(),
+        thumbnail:
+          product.thumbnail ||
+          (product.productImages as Array<{ imageUrl?: string; isThumbnail?: boolean }>)?.find(
+            (img) => img.isThumbnail,
+          )?.imageUrl ||
+          '',
         seoTitle: product.seoTitle || '',
         seoDescription: product.seoDescription || '',
         seoKeywords: product.seoKeywords || '',
         faqs: product.faqs || [],
         specifications: (() => {
-          // Tải thông số từ bảng productSpecifications
-          if (product.productSpecifications && Array.isArray(product.productSpecifications)) {
-            const specs = product.productSpecifications.map(
+          // Ưu tiên bảng productSpecifications (normalized)
+          if (
+            product.productSpecifications &&
+            Array.isArray(product.productSpecifications) &&
+            product.productSpecifications.length > 0
+          ) {
+            return product.productSpecifications.map(
               (
                 spec: { id?: string; name: string; value: string; category?: string },
                 index: number,
@@ -290,28 +422,63 @@ const EditProductPage: React.FC = () => {
                 category: spec.category || 'General',
               }),
             );
-
-            return specs;
+          }
+          // Fallback: parse từ JSON column specifications
+          if (
+            product.specifications &&
+            typeof product.specifications === 'object' &&
+            !Array.isArray(product.specifications)
+          ) {
+            return Object.entries(product.specifications).map(([name, value], index) => ({
+              id: `spec-json-${index}`,
+              name: mapSpecName(name),
+              value: String(value ?? ''),
+              category: 'General',
+            }));
           }
           return [];
         })(),
       });
 
       // Cập nhật state thông số kỹ thuật
-      if (product.productSpecifications && product.productSpecifications.length > 0) {
-        setSpecifications(product.productSpecifications);
+      const specsFromTable =
+        product.productSpecifications &&
+        Array.isArray(product.productSpecifications) &&
+        product.productSpecifications.length > 0
+          ? product.productSpecifications
+          : null;
+      const specsFromJson =
+        !specsFromTable &&
+        product.specifications &&
+        typeof product.specifications === 'object' &&
+        !Array.isArray(product.specifications)
+          ? Object.entries(product.specifications).map(([name, value], index) => ({
+              id: `spec-json-${index}`,
+              name: mapSpecName(name),
+              value: String(value ?? ''),
+              category: 'General',
+            }))
+          : null;
+      const resolvedSpecs = specsFromTable || specsFromJson;
+      if (resolvedSpecs && resolvedSpecs.length > 0) {
+        setSpecifications(resolvedSpecs);
       }
 
       // Gán thuộc tính và biến thể
-      if (product.attributes) {
-        const formattedAttributes: ProductAttribute[] = product.attributes.map(
+      // Ưu tiên productAttributes (association) nếu attributes JSON column không phải array
+      const rawAttrs = Array.isArray(product.attributes)
+        ? product.attributes
+        : Array.isArray(product.productAttributes)
+          ? product.productAttributes
+          : [];
+      if (rawAttrs.length > 0) {
+        const formattedAttributes: ProductAttribute[] = rawAttrs.map(
           (
             attr: { id?: string; name: string; values?: string[]; value?: string },
             index: number,
           ) => ({
             id: attr.id || `attr-${index}`,
             name: attr.name,
-            // Nếu values là mảng, chuyển thành chuỗi ngăn cách bởi dấu phẩy
             value: Array.isArray(attr.values) ? attr.values.join(', ') : attr.value || '',
           }),
         );
@@ -319,27 +486,62 @@ const EditProductPage: React.FC = () => {
       }
 
       if (product.variants) {
+        const allProductImages = product.productImages as
+          | Array<{ imageUrl?: string; variantId?: string | number | null; color?: string | null }>
+          | undefined;
         const formattedVariants: ProductVariant[] = product.variants.map(
           (
             variant: {
               id?: string;
-              name: string;
+              name?: string;
+              variantName?: string;
+              displayName?: string;
               price: number | string;
+              compareAtPrice?: number | string | null;
               stockQuantity?: number;
               stock?: number;
               sku?: string;
               attributes?: Record<string, string>;
+              images?: string[];
             },
             index: number,
-          ) => ({
-            id: variant.id || `var-${index}`,
-            name: variant.name,
-            price: parseFloat(String(variant.price)) || 0,
-            // Sử dụng stockQuantity thay vì stock để dùng với dữ liệu API
-            stock: variant.stockQuantity || variant.stock || 0,
-            sku: variant.sku || '',
-            attributes: variant.attributes || {},
-          }),
+          ) => {
+            // Ưu tiên filter theo variantId, fallback theo color attribute
+            const byVariantId =
+              variant.id && allProductImages
+                ? allProductImages.filter(
+                    (img) => img.variantId && String(img.variantId) === String(variant.id),
+                  )
+                : [];
+            const variantColor =
+              (variant.attributes as Record<string, string>)?.color ||
+              (variant.attributes as Record<string, string>)?.['Màu sắc'];
+            const byColor =
+              variantColor && allProductImages
+                ? allProductImages.filter(
+                    (img) =>
+                      !img.variantId &&
+                      img.color?.toLowerCase().trim() === variantColor.toLowerCase().trim(),
+                  )
+                : [];
+            const variantImages = (byVariantId.length ? byVariantId : byColor)
+              .map((img) => img.imageUrl || '')
+              .filter(Boolean);
+            return {
+              id: variant.id || `var-${index}`,
+              // variantName = tên đầy đủ, displayName = tên ngắn (VD: "Trắng")
+              name: variant.variantName || variant.name || '',
+              displayName: variant.displayName || '',
+              price: parseFloat(String(variant.price)) || 0,
+              compareAtPrice: variant.compareAtPrice
+                ? parseFloat(String(variant.compareAtPrice))
+                : null,
+              stock: variant.stockQuantity || variant.stock || 0,
+              sku: variant.sku || '',
+              attributes: variant.attributes || {},
+              images: variantImages,
+            };
+          },
         );
         setVariants(formattedVariants);
       }
@@ -457,7 +659,7 @@ const EditProductPage: React.FC = () => {
     {
       key: 'pricing',
       label: t('admin.products.editTabs.pricing'),
-      children: <ProductPricingForm hasVariants={variants.length > 0} />,
+      children: <ProductPricingForm hasVariants={variants.length > 0} variants={variants} />,
     },
     {
       key: 'category',
@@ -468,10 +670,6 @@ const EditProductPage: React.FC = () => {
       key: 'images',
       label: t('admin.products.editTabs.images'),
       children: <ProductImagesForm />,
-    },
-    {
-      key: 'warranty',
-      label: t('admin.products.editTabs.warranty'),
     },
     {
       key: 'seo',

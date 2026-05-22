@@ -7,6 +7,7 @@
     "node": ">=20"
   },
   "scripts": {
+    "predev": "cmd /c \"for /f tokens^=5 %a in ('netstat -ano ^| findstr :5175 ^| findstr LISTENING') do taskkill /F /T /PID %a\" & exit 0",
     "dev": "vite",
     "build": "vite build",
     "lint": "eslint src/ --max-warnings 0",

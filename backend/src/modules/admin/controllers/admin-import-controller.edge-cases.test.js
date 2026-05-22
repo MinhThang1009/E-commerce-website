@@ -26,15 +26,6 @@ jest.mock('@utils/logger', () => ({
   debug: jest.fn(),
 }));
 
-jest.mock('@config/redis', () => ({
-  getRedisClient: jest.fn().mockResolvedValue({
-    get: jest.fn().mockResolvedValue(null),
-    set: jest.fn().mockResolvedValue('OK'),
-    setex: jest.fn().mockResolvedValue('OK'),
-    del: jest.fn().mockResolvedValue(1),
-  }),
-}));
-
 // adminAuthenticate: admin khi header x-test-admin là 'true', còn lại 401
 jest.mock('@middlewares/admin-auth', () => ({
   adminAuthenticate: (req, _res, next) => {
@@ -45,11 +36,6 @@ jest.mock('@middlewares/admin-auth', () => ({
     const { AppError } = require('@middlewares/error-handler');
     return next(new AppError('Cần token xác thực để truy cập admin panel', 401));
   },
-}));
-
-jest.mock('@shared/admin-audit', () => ({
-  auditMiddleware: (_req, _res, next) => next(),
-  AdminAuditService: { log: jest.fn() },
 }));
 
 // Mock vectorStore để tránh gọi API embedding thật

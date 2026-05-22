@@ -7,34 +7,6 @@
 const axios = require('axios');
 const logger = require('@utils/logger');
 
-// Cache in-memory: tránh gọi API lặp lại với cùng text — Key: text chuẩn hóa, TTL 10 phút, max 500 entries FIFO
-const embeddingCache = new Map();
-const CACHE_TTL_MS = 10 * 60 * 1000; // 10 phút
-const CACHE_MAX_SIZE = 500;
-
-// Lấy embedding từ cache nếu còn hạn
-function getFromCache(text) {
-  const key = text.toLowerCase().trim();
-  const entry = embeddingCache.get(key);
-  if (!entry) return null;
-  if (Date.now() > entry.expiresAt) {
-    embeddingCache.delete(key);
-    return null;
-  }
-  return entry.vector;
-}
-
-// Lưu embedding vào cache, xóa entry cũ nhất nếu đầy (FIFO)
-function saveToCache(text, vector) {
-  const key = text.toLowerCase().trim();
-  if (embeddingCache.size >= CACHE_MAX_SIZE) {
-    // Xóa entry đầu tiên (FIFO)
-    const firstKey = embeddingCache.keys().next().value;
-    embeddingCache.delete(firstKey);
-  }
-  embeddingCache.set(key, { vector, expiresAt: Date.now() + CACHE_TTL_MS });
-}
-
 class EmbeddingService {
   constructor() {
     this.apiKey = process.env.OPENROUTER_API_KEY;
@@ -60,10 +32,6 @@ class EmbeddingService {
       throw new Error('Chưa cấu hình API key cho Embedding');
     }
 
-    // Kiểm tra cache trước khi gọi API
-    const cached = getFromCache(text);
-    if (cached) return cached;
-
     const maxRetries = 3;
     const backoffMs = [500, 1000, 2000]; // Tăng dần thời gian chờ giữa các lần thử
 
@@ -85,8 +53,6 @@ class EmbeddingService {
         const embedding = response.data?.data?.[0]?.embedding;
         if (!embedding) throw new Error('API trả về embedding rỗng hoặc sai format');
 
-        // Lưu vào cache để tái sử dụng
-        saveToCache(text, embedding);
         return embedding;
       } catch (error) {
         const isLastAttempt = attempt === maxRetries;

@@ -58,9 +58,6 @@ ROUTES.SHIPPING_RETURNS; // '/shipping-returns'
 ROUTES.TRACK_ORDER; // '/track-order'
 ROUTES.PRIVACY_POLICY; // '/privacy-policy'
 ROUTES.TERMS; // '/terms'
-ROUTES.NEWS; // '/news'
-ROUTES.NEWS_DETAIL; // '/news/:slug'
-
 // Auth
 ROUTES.LOGIN; // '/login'
 ROUTES.REGISTER; // '/register'
@@ -93,7 +90,6 @@ ROUTES.ADMIN_USER_DETAIL; // '/admin/users/:id'
 ROUTES.ADMIN_DISCOUNT_CODES; // '/admin/discount-codes'
 ROUTES.ADMIN_BRANDS; // '/admin/brands'
 ROUTES.ADMIN_INVENTORY; // '/admin/inventory'
-ROUTES.ADMIN_AUDIT_LOG; // '/admin/audit-log'
 ```
 
 ## 2.2 Dynamic route builders (buildRoute object)
@@ -101,7 +97,6 @@ ROUTES.ADMIN_AUDIT_LOG; // '/admin/audit-log'
 ```ts
 buildRoute.productDetail(id)                              // '/products/123'
 buildRoute.category(slug)                                 // '/categories/dien-thoai'
-buildRoute.newsDetail(slug)                               // '/news/tin-tuc-moi'
 buildRoute.shopSearch(query)                              // '/shop?search=iphone'
 buildRoute.shopCategory(slug)                             // '/shop?category=laptop'
 buildRoute.shopBrand(id)                                  // '/shop?brand=1'
@@ -130,7 +125,7 @@ Suspense (fallback: <LoadingSpinner fullScreen />)
     │   │   /categories, /categories/:slug
     │   │   /brands, /deals, /new-arrivals, /best-sellers
     │   │   /about, /contact, /faqs, /shipping-returns, /track-order
-    │   │   /privacy-policy, /terms, /news, /news/:slug
+    │   │   /privacy-policy, /terms
     │   │   /verify-email, /verify-email/:token
     │   │   /unauthorized
     │   │
@@ -149,7 +144,7 @@ Suspense (fallback: <LoadingSpinner fullScreen />)
         /admin/products, /admin/products/create, /admin/products/edit/:id
         /admin/categories, /admin/orders, /admin/users, /admin/users/:id
         /admin/discount-codes
-        /admin/brands, /admin/inventory, /admin/audit-log
+        /admin/brands, /admin/inventory
 ```
 
 ## 3.2 Lazy loading pattern
@@ -175,7 +170,6 @@ Admin pages nằm **sâu trong feature folder**, không phải `pages/Admin*.tsx
 lazy(() => import('@/features/admin/pages/DashboardPage'));
 lazy(() => import('@/features/admin/pages/catalog/ProductsPage'));
 lazy(() => import('@/features/admin/pages/orders/OrdersPage'));
-lazy(() => import('@/features/admin/pages/content/NewsPage'));
 ```
 
 ---

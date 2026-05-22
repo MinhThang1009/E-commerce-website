@@ -406,33 +406,32 @@ describe('CatalogController — Brand', () => {
 
 describe('CatalogController — Product', () => {
   describe('getAllProducts', () => {
-    it('set header X-Cache: MISS khi cacheHit = false', async () => {
+    it('trả về payload từ service', async () => {
       const productPayload = { data: [{ id: 1 }], total: 1 };
-      catalogService.getAllProducts.mockResolvedValue({ payload: productPayload, cacheHit: false });
+      catalogService.getAllProducts.mockResolvedValue({ payload: productPayload });
 
       const req = makeReq({ query: { page: '1' }, url: '/products?page=1' });
       const res = makeRes();
 
       await controller.getAllProducts(req, res, jest.fn());
 
-      expect(res._headers['X-Cache']).toBe('MISS');
       expect(res._status).toBe(200);
       expect(res._body).toEqual(productPayload);
     });
 
-    it('set header X-Cache: HIT khi cacheHit = true', async () => {
-      catalogService.getAllProducts.mockResolvedValue({ payload: { data: [] }, cacheHit: true });
+    it('trả về payload khi service thành công', async () => {
+      catalogService.getAllProducts.mockResolvedValue({ payload: { data: [] } });
 
       const req = makeReq({ url: '/products' });
       const res = makeRes();
 
       await controller.getAllProducts(req, res, jest.fn());
 
-      expect(res._headers['X-Cache']).toBe('HIT');
+      expect(res._status).toBe(200);
     });
 
-    it('truyền query và cacheUrl vào service', async () => {
-      catalogService.getAllProducts.mockResolvedValue({ payload: {}, cacheHit: false });
+    it('truyền query vào service', async () => {
+      catalogService.getAllProducts.mockResolvedValue({ payload: {} });
 
       const req = makeReq({
         query: { brand: 'samsung', sort: 'price' },
@@ -443,7 +442,6 @@ describe('CatalogController — Product', () => {
       expect(catalogService.getAllProducts).toHaveBeenCalledWith({
         brand: 'samsung',
         sort: 'price',
-        cacheUrl: '/products?brand=samsung',
       });
     });
 
@@ -460,7 +458,7 @@ describe('CatalogController — Product', () => {
   describe('getProductById', () => {
     it('truyền id, skuId, color từ query.color, và userId khi có user', async () => {
       const productPayload = { id: '10', name: 'iPhone 15' };
-      catalogService.getProductById.mockResolvedValue({ payload: productPayload, cacheHit: false });
+      catalogService.getProductById.mockResolvedValue(productPayload);
 
       const req = makeReq({
         params: { id: '10' },
@@ -481,7 +479,7 @@ describe('CatalogController — Product', () => {
     });
 
     it('truyền Vietnamese color key "Màu sắc" khi query.color không có', async () => {
-      catalogService.getProductById.mockResolvedValue({ payload: {}, cacheHit: false });
+      catalogService.getProductById.mockResolvedValue({});
 
       const viColorKey = 'Màu sắc';
       const req = makeReq({
@@ -498,7 +496,7 @@ describe('CatalogController — Product', () => {
     });
 
     it('truyền userId = undefined khi request không có user', async () => {
-      catalogService.getProductById.mockResolvedValue({ payload: {}, cacheHit: false });
+      catalogService.getProductById.mockResolvedValue({});
 
       const req = makeReq({ params: { id: '1' }, query: {}, user: undefined });
 
@@ -509,15 +507,15 @@ describe('CatalogController — Product', () => {
       );
     });
 
-    it('set X-Cache header dựa trên cacheHit', async () => {
-      catalogService.getProductById.mockResolvedValue({ payload: {}, cacheHit: true });
+    it('trả về payload từ service', async () => {
+      catalogService.getProductById.mockResolvedValue({});
 
       const req = makeReq({ params: { id: '1' }, query: {} });
       const res = makeRes();
 
       await controller.getProductById(req, res, jest.fn());
 
-      expect(res._headers['X-Cache']).toBe('HIT');
+      expect(res._status).toBe(200);
     });
 
     it('gọi next(err) khi service ném lỗi', async () => {

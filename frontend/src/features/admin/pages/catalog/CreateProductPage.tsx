@@ -46,6 +46,16 @@ import { hasBase64Images, processDescriptionImages } from '@/utils/description-i
 
 const { Title, Text } = Typography;
 
+// Tạo SKU ngẫu nhiên dạng PRD-XXXXXX (6 ký tự uppercase + số)
+const generateSku = (prefix = 'PRD') => {
+  const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ0123456789';
+  const rand = Array.from(
+    { length: 6 },
+    () => chars[Math.floor(Math.random() * chars.length)],
+  ).join('');
+  return `${prefix}-${rand}`;
+};
+
 const getDefaultFaqs = () => [
   {
     question: i18next.t('admin.products.faq.defaults.q1'),
@@ -221,14 +231,6 @@ const CreateProductPage: React.FC = () => {
           price: hasVariants
             ? 0
             : parseFloat((allFormValues.price || values.price || '0').toString()) || 0,
-          comparePrice: hasVariants
-            ? undefined
-            : (() => {
-                const compareAtPrice = allFormValues.compareAtPrice || values.compareAtPrice;
-                return compareAtPrice && parseFloat(compareAtPrice.toString()) > 0
-                  ? parseFloat(compareAtPrice.toString())
-                  : undefined;
-              })(),
           compareAtPrice: hasVariants
             ? undefined
             : (() => {
@@ -250,7 +252,7 @@ const CreateProductPage: React.FC = () => {
             ? undefined
             : allFormValues.sku ||
               (values as ProductFormData & { sku?: string }).sku ||
-              `PROD-${Date.now()}`,
+              generateSku('PRD'),
           status: allFormValues.status || values.status || 'active',
           featured: allFormValues.featured || values.featured || false,
           categoryIds: allFormValues.categoryIds || values.categoryIds || [],
@@ -302,7 +304,7 @@ const CreateProductPage: React.FC = () => {
                 stock:
                   parseInt(variant.stock?.toString() || variant.stockQuantity?.toString() || '0') ||
                   0,
-                sku: variant.sku || `VAR-${Date.now()}-${index + 1}`,
+                sku: variant.sku || generateSku('VAR'),
                 isDefault: index === 0, // Biến thể đầu tiên là mặc định
                 isAvailable: true,
                 attributes: variant.attributes || {},
@@ -409,7 +411,7 @@ const CreateProductPage: React.FC = () => {
       label: (
         <span
           style={{
-            color: completedSteps.basic ? '#52c41a' : isTabAccessible('basic') ? '#000' : '#999',
+            color: completedSteps.basic ? '#52c41a' : isTabAccessible('basic') ? undefined : '#999',
           }}
         >
           {t('admin.products.tabs.basic')} {completedSteps.basic ? '?' : ''}
@@ -424,6 +426,7 @@ const CreateProductPage: React.FC = () => {
             setActiveTab={setActiveTab}
             tabOrder={TAB_ORDER}
             completedSteps={completedSteps}
+            validateForm={validateForm}
           />
         </>
       ),
@@ -436,12 +439,11 @@ const CreateProductPage: React.FC = () => {
             color: completedSteps.specifications
               ? '#52c41a'
               : isTabAccessible('specifications')
-                ? '#000'
+                ? undefined
                 : '#999',
           }}
         >
-          {t('admin.products.tabs.specifications')} <span style={{ color: '#ff4d4f' }}>*</span>{' '}
-          {completedSteps.specifications ? '?' : ''}
+          {t('admin.products.tabs.specifications')} {completedSteps.specifications ? '?' : ''}
         </span>
       ),
       disabled: !isTabAccessible('specifications'),
@@ -453,6 +455,7 @@ const CreateProductPage: React.FC = () => {
             setActiveTab={setActiveTab}
             tabOrder={TAB_ORDER}
             completedSteps={completedSteps}
+            validateForm={validateForm}
           />
         </>
       ),
@@ -465,12 +468,11 @@ const CreateProductPage: React.FC = () => {
             color: completedSteps.attributes
               ? '#52c41a'
               : isTabAccessible('attributes')
-                ? '#000'
+                ? undefined
                 : '#999',
           }}
         >
-          {t('admin.products.tabs.attributes')} <span style={{ color: '#ff4d4f' }}>*</span>{' '}
-          {completedSteps.attributes ? '?' : ''}
+          {t('admin.products.tabs.attributes')} {completedSteps.attributes ? '?' : ''}
         </span>
       ),
       disabled: !isTabAccessible('attributes'),
@@ -487,6 +489,7 @@ const CreateProductPage: React.FC = () => {
             setActiveTab={setActiveTab}
             tabOrder={TAB_ORDER}
             completedSteps={completedSteps}
+            validateForm={validateForm}
           />
         </>
       ),
@@ -499,12 +502,11 @@ const CreateProductPage: React.FC = () => {
             color: completedSteps.variants
               ? '#52c41a'
               : isTabAccessible('variants')
-                ? '#000'
+                ? undefined
                 : '#999',
           }}
         >
-          {t('admin.products.tabs.variants')} <span style={{ color: '#ff4d4f' }}>*</span>{' '}
-          {completedSteps.variants ? '?' : ''}
+          {t('admin.products.tabs.variants')} {completedSteps.variants ? '?' : ''}
         </span>
       ),
       disabled: !isTabAccessible('variants'),
@@ -521,6 +523,7 @@ const CreateProductPage: React.FC = () => {
             setActiveTab={setActiveTab}
             tabOrder={TAB_ORDER}
             completedSteps={completedSteps}
+            validateForm={validateForm}
           />
         </>
       ),
@@ -533,7 +536,7 @@ const CreateProductPage: React.FC = () => {
             color: completedSteps.pricing
               ? '#52c41a'
               : isTabAccessible('pricing')
-                ? '#000'
+                ? undefined
                 : '#999',
           }}
         >
@@ -543,12 +546,13 @@ const CreateProductPage: React.FC = () => {
       disabled: !isTabAccessible('pricing'),
       children: (
         <>
-          <ProductPricingForm hasVariants={variants.length > 0} />
+          <ProductPricingForm hasVariants={variants.length > 0} variants={variants} />
           <TabNavigation
             activeTab={activeTab}
             setActiveTab={setActiveTab}
             tabOrder={TAB_ORDER}
             completedSteps={completedSteps}
+            validateForm={validateForm}
           />
         </>
       ),
@@ -561,7 +565,7 @@ const CreateProductPage: React.FC = () => {
             color: completedSteps.category
               ? '#52c41a'
               : isTabAccessible('category')
-                ? '#000'
+                ? undefined
                 : '#999',
           }}
         >
@@ -577,6 +581,7 @@ const CreateProductPage: React.FC = () => {
             setActiveTab={setActiveTab}
             tabOrder={TAB_ORDER}
             completedSteps={completedSteps}
+            validateForm={validateForm}
           />
         </>
       ),
@@ -586,7 +591,11 @@ const CreateProductPage: React.FC = () => {
       label: (
         <span
           style={{
-            color: completedSteps.images ? '#52c41a' : isTabAccessible('images') ? '#000' : '#999',
+            color: completedSteps.images
+              ? '#52c41a'
+              : isTabAccessible('images')
+                ? undefined
+                : '#999',
           }}
         >
           {t('admin.products.tabs.images')} {completedSteps.images ? '?' : ''}
@@ -601,34 +610,7 @@ const CreateProductPage: React.FC = () => {
             setActiveTab={setActiveTab}
             tabOrder={TAB_ORDER}
             completedSteps={completedSteps}
-          />
-        </>
-      ),
-    },
-    {
-      key: 'warranty',
-      label: (
-        <span
-          style={{
-            color: completedSteps.warranty
-              ? '#52c41a'
-              : isTabAccessible('warranty')
-                ? '#000'
-                : '#999',
-          }}
-        >
-          {t('admin.products.tabs.warranty')} {completedSteps.warranty ? '?' : ''}
-        </span>
-      ),
-      disabled: !isTabAccessible('warranty'),
-      children: (
-        <>
-          {' '}
-          <TabNavigation
-            activeTab={activeTab}
-            setActiveTab={setActiveTab}
-            tabOrder={TAB_ORDER}
-            completedSteps={completedSteps}
+            validateForm={validateForm}
           />
         </>
       ),
@@ -638,7 +620,7 @@ const CreateProductPage: React.FC = () => {
       label: (
         <span
           style={{
-            color: completedSteps.faqs ? '#52c41a' : isTabAccessible('faqs') ? '#000' : '#999',
+            color: completedSteps.faqs ? '#52c41a' : isTabAccessible('faqs') ? undefined : '#999',
           }}
         >
           {t('admin.products.tabs.faqs')} {completedSteps.faqs ? '?' : ''}
@@ -653,6 +635,7 @@ const CreateProductPage: React.FC = () => {
             setActiveTab={setActiveTab}
             tabOrder={TAB_ORDER}
             completedSteps={completedSteps}
+            validateForm={validateForm}
           />
         </>
       ),
@@ -662,7 +645,7 @@ const CreateProductPage: React.FC = () => {
       label: (
         <span
           style={{
-            color: completedSteps.seo ? '#52c41a' : isTabAccessible('seo') ? '#000' : '#999',
+            color: completedSteps.seo ? '#52c41a' : isTabAccessible('seo') ? undefined : '#999',
           }}
         >
           {t('admin.products.tabs.seo')} {completedSteps.seo ? '?' : ''}
@@ -677,6 +660,7 @@ const CreateProductPage: React.FC = () => {
             setActiveTab={setActiveTab}
             tabOrder={TAB_ORDER}
             completedSteps={completedSteps}
+            validateForm={validateForm}
             isLastTab={true}
             onSubmit={() => handleSubmit(form.getFieldsValue())}
             isSubmitting={isCreating}

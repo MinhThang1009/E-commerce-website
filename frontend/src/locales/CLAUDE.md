@@ -37,7 +37,7 @@ Key tổ chức theo namespace lồng nhau, ánh xạ theo UI section:
 
 ```
 header:
-  brand, tagline, navigation.{home,shop,categories,deals,news,about,...}
+  brand, tagline, navigation.{home,shop,categories,deals,about,...}
   actions.{search,searchPlaceholder,userAccount,shoppingCart,...}
   language.{vietnamese,english,current}
   dropdown.{profile,orders,wishlist,adminPanel,logout}
@@ -95,7 +95,6 @@ ai:
   history.{...}
 
 content:
-  news.{title,readMore,...}
   about.{heroTitle,storyTitle,valuesTitle,teamTitle,ctaTitle,...}
   contact.{title,name,email,message,submit,...}
 

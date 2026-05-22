@@ -18,7 +18,6 @@
   SearchHistory,
   RecentlyViewed,
   InventoryLog,
-  AuditLog,
   ChatMessage,
 } = require('@models');
 const { Op, Sequelize } = require('sequelize');
@@ -185,11 +184,6 @@ const aggregateOrderItems2 = ({
   subQuery,
 } = {}) => OrderItem.findAll({ attributes, include, where, group, order, raw, limit });
 
-// ─── Audit log queries ────────────────────────────────────────────────────────
-
-const findAuditLogs = ({ where = {}, limit, offset, order, include } = {}) =>
-  AuditLog.findAndCountAll({ where, limit, offset, order, include });
-
 // ─── Chatbot stats ────────────────────────────────────────────────────────────
 
 const countChatMessages = (where = {}) => ChatMessage.count({ where });
@@ -237,7 +231,6 @@ const getModels = () => ({
   SearchHistory,
   RecentlyViewed,
   InventoryLog,
-  AuditLog,
   ChatMessage,
   Address,
 });
@@ -312,8 +305,6 @@ module.exports = {
   // Analytics
   aggregateOrders,
   aggregateUsers,
-  // Audit
-  findAuditLogs,
   // Chatbot
   countChatMessages,
   findOneChatMessage,

@@ -14,7 +14,6 @@
  * - Lines 1802,1808: updateOrderStatus cancel — variant và product restock paths
  * - Line 1859: cancelOrder — item.Product path (no variantId)
  * - Lines 2072,2117: toggleProductStatus + restockProduct với variant
- * - Lines 2162,2165-2166: getAuditLogs — filter by action/entityType/date
  * - Lines 2276-2282: getTopProductsAnalytics — item.Product is null
  * - Lines 2322-2323: getRevenueByCategoryAnalytics — map results
  * - Lines 2391: getPaymentMethodsAnalytics — paymentMethod null → 'unknown'
@@ -86,17 +85,6 @@ jest.mock('@middlewares/validate-request', () => ({
   validateExpressValidator: (_req, _res, next) => next(),
 }));
 
-jest.mock('@shared/admin-audit', () => ({
-  AdminAuditService: class {
-    static logUserAction() {}
-    static logProductAction() {}
-    static logOrderAction() {}
-    static logDiscountCodeAction() {}
-    log() {}
-  },
-  auditMiddleware: (_req, _res, next) => next(),
-}));
-
 jest.mock('./admin-import-controller', () => ({
   getImportTemplate: (_req, _res, next) => next(),
   uploadImportFile: (_req, _res, next) => next(),
@@ -111,10 +99,6 @@ jest.mock('@modules/discount-code/controllers/discount-code-controller', () => (
   createDiscountCode: (_req, _res, next) => next(),
   updateDiscountCode: (_req, _res, next) => next(),
   deleteDiscountCode: (_req, _res, next) => next(),
-}));
-
-jest.mock('@config/redis', () => ({
-  getRedisClient: jest.fn().mockResolvedValue(null),
 }));
 
 jest.mock('@modules/ai/services/translate/translate-service', () => ({
@@ -215,12 +199,6 @@ jest.mock('@models', () => {
       create: jest.fn(),
       findAndCountAll: jest.fn(),
     },
-    AuditLog: {
-      findAll: jest.fn(),
-      findAndCountAll: jest.fn(),
-      count: jest.fn(),
-      create: jest.fn(),
-    },
     ChatMessage: {
       count: jest.fn(),
       findAll: jest.fn(),
@@ -262,7 +240,6 @@ const {
   WarrantyPackage,
   Order,
   OrderItem,
-  AuditLog,
   InventoryLog,
   sequelize,
 } = require('@models');
@@ -349,10 +326,8 @@ beforeEach(() => {
 // Được gọi qua getProductById khi variant.attributes là số nguyên thuần
 // ─────────────────────────────────────────────────────────────────────────────
 
-describe('deepParseJSON — line 46: non-string, non-object input trả về {}', () => {
-  it('trả về {} khi variant.attributes là số nguyên (không qua JSON.parse)', async () => {
-    // 42 là number, deepParseJSON(42): val !== null, typeof val !== 'object',
-    // typeof val !== 'string' → line 46 hit → return {}
+describe('getProductById — variants.attributes trả về {} khi là số hoặc boolean', () => {
+  it('trả về {} khi variant.attributes là số nguyên (không phải string/object)', async () => {
     const prod = {
       toJSON: () => ({
         id: 500,
@@ -367,6 +342,7 @@ describe('deepParseJSON — line 46: non-string, non-object input trả về {}'
     const res = await request.get('/api/admin/products/500');
 
     expect(res.status).toBe(200);
+    // 42 không phải string, deepParseJSON không thể parse → trả về {}
     expect(res.body.data.product.variants[0].attributes).toEqual({});
   });
 
@@ -385,6 +361,7 @@ describe('deepParseJSON — line 46: non-string, non-object input trả về {}'
     const res = await request.get('/api/admin/products/501');
 
     expect(res.status).toBe(200);
+    // true không phải string → deepParseJSON trả về {}
     expect(res.body.data.product.variants[0].attributes).toEqual({});
   });
 });
@@ -824,45 +801,6 @@ describe('POST /api/admin/products/:productId/restock — line 2117: variant res
 
     expect(res.status).toBe(200);
     expect(product.update).toHaveBeenCalledWith({ stockQuantity: 35 }); // 30 + 5
-  });
-});
-
-// ─────────────────────────────────────────────────────────────────────────────
-// getAuditLogs — lines 2162,2165-2166: filter by action, entityType, startDate/endDate
-// ─────────────────────────────────────────────────────────────────────────────
-
-describe('GET /api/admin/audit-logs — lines 2162,2165-2166: filters', () => {
-  it('filter theo action và entityType', async () => {
-    AuditLog.findAndCountAll.mockResolvedValueOnce({
-      rows: [],
-      count: 0,
-    });
-
-    const res = await request
-      .get('/api/admin/audit-logs')
-      .query({ action: 'CREATE', entityType: 'product', adminId: '1' });
-
-    expect(res.status).toBe(200);
-    const callArg = AuditLog.findAndCountAll.mock.calls[0][0];
-    expect(callArg.where.action).toBe('CREATE');
-    expect(callArg.where.entityType).toBe('product');
-    expect(callArg.where.adminId).toBe(1);
-  });
-
-  it('filter theo startDate và endDate', async () => {
-    AuditLog.findAndCountAll.mockResolvedValueOnce({
-      rows: [],
-      count: 0,
-    });
-
-    const res = await request
-      .get('/api/admin/audit-logs')
-      .query({ startDate: '2024-01-01', endDate: '2024-12-31' });
-
-    expect(res.status).toBe(200);
-    const callArg = AuditLog.findAndCountAll.mock.calls[0][0];
-    // where.createdAt phải có Op.gte và Op.lte
-    expect(callArg.where.createdAt).toBeDefined();
   });
 });
 

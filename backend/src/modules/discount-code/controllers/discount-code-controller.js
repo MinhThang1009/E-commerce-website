@@ -47,6 +47,12 @@ const deleteDiscountCode = catchAsync(async (req, res) => {
   res.status(200).json({ status: 'success', message: 'Xóa mã giảm giá thành công' });
 });
 
+// Customer: Lấy danh sách mã giảm giá còn hiệu lực để hiển thị ở checkout
+const getAvailableDiscountCodes = catchAsync(async (req, res) => {
+  const discountCodes = await discountCodeService.getAvailableDiscountCodes();
+  res.status(200).json({ status: 'success', data: { discountCodes } });
+});
+
 // Customer: Kiểm tra và tính toán số tiền được giảm khi áp dụng mã
 const applyDiscountCode = catchAsync(async (req, res) => {
   const { code, orderAmount } = req.body;
@@ -56,6 +62,7 @@ const applyDiscountCode = catchAsync(async (req, res) => {
 
 module.exports = {
   getAllDiscountCodes,
+  getAvailableDiscountCodes,
   getDiscountCodeById,
   createDiscountCode,
   updateDiscountCode,

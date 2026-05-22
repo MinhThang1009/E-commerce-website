@@ -9,6 +9,7 @@ const createDiscountCodeSchema = z.object({
   endDate: z.string().optional(),
   usageLimit: z.number().int().min(1).optional(),
   isActive: z.boolean().optional(),
+  description: z.string().optional(),
 });
 const updateDiscountCodeSchema = createDiscountCodeSchema.partial();
 const applyDiscountCodeSchema = z.object({

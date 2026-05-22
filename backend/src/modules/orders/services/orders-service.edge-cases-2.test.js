@@ -28,9 +28,7 @@ function buildTrackingSteps(status) {
 const CONSTANTS = {
   POINTS_EARN_RATE: 1000,
   POINTS_VALUE: 100,
-  SHIPPING_FREE_THRESHOLD: 500000,
-  SHIPPING_BASE_RATE: 30000,
-  SHIPPING_WEIGHT_RATE: 5000,
+  SHIPPING_FREE_THRESHOLD: 2000000,
 };
 
 // ─── Builders ────────────────────────────────────────────────────────────────
@@ -246,53 +244,6 @@ describe('OrdersService › updateOrderStatus', () => {
     expect(order.paymentStatus).toBe('paid');
   });
 
-  test.skip('', async () => {
-    const order = mkOrder({
-      status: 'shipped',
-      subtotal: 2000000, // 2000000 / 1000 = 2000 điểm
-      userId: 1,
-      number: 'ORD-EARN',
-    });
-    repo.findOrderByPkWithItemsAndUser.mockResolvedValue(order);
-    repo.findUserById.mockResolvedValue({ id: 1, loyaltyPoints: 100 });
-
-    await service.updateOrderStatus({ id: 1, status: STATUS.DELIVERED });
-
-    expect(repo.updateUserPoints).toHaveBeenCalledWith(
-      expect.objectContaining({ loyaltyPoints: 100 }),
-      2100, // 100 + 2000
-    );
-    expect(repo.createLoyaltyHistory).toHaveBeenCalledWith(
-      expect.objectContaining({ type: 'earn', points: 2000 }),
-    );
-    expect(eventBus.publish).toHaveBeenCalledWith(
-      expect.objectContaining({ type: 'order.delivered' }),
-    );
-  });
-
-  it.skip('delivered nhưng subtotal quá nhỏ để kiếm điểm → không gọi updateUserPoints', async () => {
-    const order = mkOrder({ status: 'shipped', subtotal: 500, userId: 1 }); // 500/1000 = 0 điểm
-    repo.findOrderByPkWithItemsAndUser.mockResolvedValue(order);
-    repo.findUserById.mockResolvedValue({ id: 1, loyaltyPoints: 50 });
-
-    await service.updateOrderStatus({ id: 1, status: STATUS.DELIVERED });
-
-    expect(repo.updateUserPoints).not.toHaveBeenCalled();
-    expect(eventBus.publish).toHaveBeenCalledWith(
-      expect.objectContaining({ type: 'order.delivered' }),
-    );
-  });
-
-  test.skip('', async () => {
-    const order = mkOrder({ status: 'delivered', subtotal: 2000000, userId: 1 });
-    repo.findOrderByPkWithItemsAndUser.mockResolvedValue(order);
-
-    await service.updateOrderStatus({ id: 1, status: 'delivered' });
-
-    expect(repo.updateUserPoints).not.toHaveBeenCalled();
-    expect(eventBus.publish).not.toHaveBeenCalled();
-  });
-
   it('có order.user.email → gửi email cập nhật trạng thái', async () => {
     const order = mkOrder({ status: 'pending', user: { email: 'customer@example.com' } });
     repo.findOrderByPkWithItemsAndUser.mockResolvedValue(order);
@@ -373,48 +324,6 @@ describe('OrdersService › confirmReceived', () => {
     await expect(service.confirmReceived({ id: 99, userId: 1 })).rejects.toMatchObject({
       statusCode: 404,
     });
-  });
-
-  it.skip('alreadyProcessed → trả về message "đã xác nhận" và pointsEarned=0', async () => {
-    // status=delivered là trạng thái "alreadyProcessed" trong OrderAggregate
-    const order = mkOrder({
-      status: 'delivered',
-      pointsEarned: 100,
-      reload: jest.fn().mockResolvedValue(),
-    });
-    repo.findOrderByIdAndUserId.mockResolvedValue(order);
-
-    const result = await service.confirmReceived({ id: 1, userId: 1 });
-
-    expect(result.pointsEarned).toBe(0);
-    expect(result.message).toBe('orders.alreadyConfirmed');
-    // alreadyProcessed → return sớm trước eventBus.publish
-    expect(eventBus.publish).not.toHaveBeenCalled();
-  });
-
-  test.skip('', async () => {
-    const order = mkOrder({
-      id: 1,
-      number: 'ORD-RECV',
-      status: 'shipped',
-      subtotal: 3000000, // 3000000/1000 = 3000 điểm
-      userId: 1,
-      pointsEarned: 0,
-      reload: jest.fn().mockResolvedValue(),
-    });
-    repo.findOrderByIdAndUserId.mockResolvedValue(order);
-    repo.findUserById.mockResolvedValue({ id: 1, loyaltyPoints: 200 });
-
-    const result = await service.confirmReceived({ id: 1, userId: 1 });
-
-    expect(repo.updateUserPoints).toHaveBeenCalledWith(
-      expect.objectContaining({ loyaltyPoints: 200 }),
-      3200, // 200 + 3000
-    );
-    expect(result.pointsEarned).toBe(3000);
-    expect(eventBus.publish).toHaveBeenCalledWith(
-      expect.objectContaining({ type: 'order.delivered' }),
-    );
   });
 });
 
@@ -511,13 +420,13 @@ describe('OrdersService › estimateShipping', () => {
   });
 
   it('subtotal >= SHIPPING_FREE_THRESHOLD → shippingCost = 0', () => {
-    const result = service.estimateShipping({ subtotal: 500000, weight: 0 });
+    const result = service.estimateShipping({ subtotal: 2000000, weight: 0 });
     expect(result.shippingCost).toBe(0);
   });
 
-  it('subtotal < threshold → shippingCost = baseRate', () => {
+  it('subtotal < threshold → shippingCost = null (phụ thuộc khoảng cách)', () => {
     const result = service.estimateShipping({ subtotal: 100000, weight: 0 });
-    expect(result.shippingCost).toBe(CONSTANTS.SHIPPING_BASE_RATE);
+    expect(result.shippingCost).toBeNull();
   });
 
   it('trả về freeShippingThreshold đúng', () => {
@@ -525,28 +434,22 @@ describe('OrdersService › estimateShipping', () => {
     expect(result.freeShippingThreshold).toBe(CONSTANTS.SHIPPING_FREE_THRESHOLD);
   });
 
-  it('NaN subtotal/weight → fallback về 0', () => {
+  it('NaN subtotal → fallback về 0 → nhỏ hơn threshold → shippingCost = null', () => {
     const result = service.estimateShipping({ subtotal: 'invalid', weight: 'bad' });
-    // 0 < threshold → có phí ship
-    expect(result.shippingCost).toBe(CONSTANTS.SHIPPING_BASE_RATE);
-  });
-
-  it('weight > 2kg → cộng thêm phụ phí theo kg', () => {
-    // 3kg: cost = baseRate + ceil(3-2) * weightRate = 30000 + 1*5000 = 35000
-    const result = service.estimateShipping({ subtotal: 100000, weight: 3 });
-    expect(result.shippingCost).toBe(CONSTANTS.SHIPPING_BASE_RATE + CONSTANTS.SHIPPING_WEIGHT_RATE);
+    // parseFloat('invalid') = NaN → || 0 = 0 → 0 < 2000000 → null
+    expect(result.shippingCost).toBeNull();
   });
 });
 
 // ─── _generateOrderNumber ────────────────────────────────────────────────────
 
 describe('OrdersService › _generateOrderNumber', () => {
-  it('orderNumber có prefix ORD- và format YYMM-timestamp-RAND', () => {
+  it('orderNumber có prefix ORD- và format YYYYMMDD-RAND', () => {
     const { service } = buildService();
 
     const orderNumber = service._generateOrderNumber();
 
-    expect(orderNumber).toMatch(/^ORD-\d{4}-\d+-[0-9A-F]{8}$/);
+    expect(orderNumber).toMatch(/^ORD-\d{8}-\d{4}$/);
   });
 
   it('hai lần gọi _generateOrderNumber tạo ra số khác nhau', () => {

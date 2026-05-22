@@ -19,7 +19,6 @@ module.exports = ({
   CartItem,
   DiscountCode,
   sequelize,
-  eventBus,
   logger,
   momoService,
   vnpayService,
@@ -60,7 +59,6 @@ module.exports = ({
     momoGateway,
     vnpayGateway,
     emailGateway,
-    eventBus,
     logger,
     frontendUrl: frontendUrl || process.env.FRONTEND_URL,
   });
@@ -72,7 +70,7 @@ module.exports = ({
     basePath: '/payments',
     router,
     subscribeEvents() {
-      // Module publish PaymentSucceededEvent + PaymentFailedEvent.
+      // Payment module không subscribe và không publish event nào.
     },
   };
 };

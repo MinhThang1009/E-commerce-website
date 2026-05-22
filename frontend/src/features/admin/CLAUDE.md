@@ -29,7 +29,7 @@
 
 ## 1.1 Purpose
 
-Dashboard quản trị toàn bộ: xem analytics/KPIs, quản lý sản phẩm/đơn hàng/người dùng/tồn kho, tạo/xóa mã giảm giá, xem audit log. Tất cả pages trong feature này require role `admin` hoặc `manager`.
+Dashboard quản trị toàn bộ: xem analytics/KPIs, quản lý sản phẩm/đơn hàng/người dùng/tồn kho, tạo/xóa mã giảm giá. Tất cả pages trong feature này require role `admin` hoặc `manager`.
 
 ## 1.2 Routes
 
@@ -48,7 +48,6 @@ Dashboard quản trị toàn bộ: xem analytics/KPIs, quản lý sản phẩm/�
 | `/admin/users/:id`         | `UserDetailPage`    |
 | `/admin/discount-codes`    | `DiscountCodesPage` |
 | `/admin/inventory`         | `InventoryPage`     |
-| `/admin/audit-log`         | `AuditLogPage`      |
 
 ---
 
@@ -75,7 +74,6 @@ features/admin/
     DashboardPage.tsx         — /admin/dashboard: KPI cards + DashboardCharts + recent orders table + low-stock widget
     InventoryPage.tsx         — /admin/inventory: bảng tồn kho theo variant
     DiscountCodesPage.tsx     — /admin/discount-codes: danh sách + CRUD mã giảm giá
-    AuditLogPage.tsx          — /admin/audit-log: lịch sử hành động admin
     UsersPage.tsx             — /admin/users: bảng người dùng với filter
     UserDetailPage.tsx        — /admin/users/:id: profile đầy đủ + chỉnh sửa role/status
 
@@ -177,8 +175,8 @@ Tất cả mutations invalidate query key tương ứng sau khi thành công.
 
 - `useUpdateOrderStatusMutation()` — cập nhật trạng thái đơn hàng
 - `useCreateProductMutation()` — tạo sản phẩm
-- `useUpdateProductMutation()` — cập nhật sản phẩm; invalidate cả `['products']` public cache
-- `useDeleteProductMutation()` — xóa sản phẩm; invalidate cả `['products']` public cache
+- `useUpdateProductMutation()` — cập nhật sản phẩm; invalidate cả `['products']` public list
+- `useDeleteProductMutation()` — xóa sản phẩm; invalidate cả `['products']` public list
 - `useCloneProductMutation()` — clone sản phẩm
 - `useUpdateProductStatusMutation()` — toggle trạng thái active/inactive
 - `useUpdateUserMutation()` — cập nhật thông tin/role người dùng
@@ -302,7 +300,7 @@ interface User {
 # 8. Gotchas & Edge Cases
 
 - **`useGetAdminProductByIdQuery`** tự parse JSON string cho `attributes` và `variants.attributes` trong `queryFn` — data trả về đã là object, không cần parse lại.
-- **`useUpdateProductMutation` và `useDeleteProductMutation`** invalidate cả `['products']` (public catalog cache) để user thấy thay đổi ngay.
+- **`useUpdateProductMutation` và `useDeleteProductMutation`** invalidate cả `['products']` (public catalog list) để user thấy thay đổi ngay.
 - **`useLazyGetAdminProductsQuery`** trả về `{ trigger }` không phải React Query instance — gọi `await trigger(filters)` thủ công.
 - **Admin pages catalog/orders/content** nằm trong `features/admin/pages/<domain>/`, không phải feature domain tương ứng.
 - **`AdminLayout`** wrap ở route level trong `AppRoutes.tsx` — không cần import trong từng page.
@@ -310,6 +308,7 @@ interface User {
 - **Export Excel** dùng `exceljs` — không dùng `xlsx` hay `sheetjs`.
 - **`AdminRoute`** trong `src/components/routing/` cho phép cả role `admin` lẫn `manager` — không chỉ `admin`.
 - **Query keys có cấu trúc** (`adminDashboardKeys`, etc.) — không dùng inline string array như features nhỏ.
+- **`CategoriesPage` dùng `useGetCategoryTreeQuery`** (từ `features/catalog`) thay vì `useGetAllCategoriesQuery` — cần raw tree kể cả categories inactive/không có sản phẩm.
 
 ---
 

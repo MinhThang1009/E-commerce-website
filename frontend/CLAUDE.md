@@ -58,7 +58,7 @@ Route → Page → Components
 | Motion | Framer Motion |
 | Icons | Heroicons + Ant Design Icons + Lucide React |
 
-## 1.3 11 features — mỗi feature = 1 domain cô lập
+## 1.3 13 features — mỗi feature = 1 domain cô lập
 
 - Không có cross-feature imports (ngoại lệ duy nhất: `orders → reviews` cho `ReviewModal`)
 - Shared code trong `src/components/`, `src/stores/`, `src/hooks/`, `src/utils/`, `src/lib/`
@@ -176,13 +176,13 @@ Tất cả page components đều `lazy()` — Suspense fallback là `<LoadingSp
 
 Các route paths được định nghĩa trong `src/routes/paths.ts` (constants + `buildRoute` helpers).
 
-**Public routes:** `/`, `/shop`, `/products/:id`, `/cart`, `/categories/*`, `/brands`, `/deals`, `/new-arrivals`, `/best-sellers`, `/about`, `/contact`, `/faqs`, `/news/*`, `/track-order`
+**Public routes:** `/`, `/shop`, `/products/:id`, `/cart`, `/categories/*`, `/brands`, `/deals`, `/new-arrivals`, `/best-sellers`, `/about`, `/contact`, `/faqs`, `/track-order`
 
 **Auth routes (PublicOnly):** `/login`, `/register`, `/forgot-password`, `/reset-password`, `/verify-email`
 
 **Protected routes:** `/checkout`, `/payment-qr`, `/profile`, `/orders`, `/wishlist`
 
-**Admin routes (AdminRoute):** `/admin/dashboard`, `/admin/products/*`, `/admin/orders`, `/admin/users/*`, `/admin/categories`, `/admin/brands`, `/admin/inventory`, `/admin/discount-codes`, `/admin/audit-log`
+**Admin routes (AdminRoute):** `/admin/dashboard`, `/admin/products/*`, `/admin/orders`, `/admin/users/*`, `/admin/categories`, `/admin/brands`, `/admin/inventory`, `/admin/discount-codes`
 
 ---
 
@@ -196,6 +196,7 @@ Các route paths được định nghĩa trong `src/routes/paths.ts` (constants 
 | `cart` | `/cart` | Giỏ hàng, guest/auth merge | [CLAUDE.md](src/features/cart/CLAUDE.md) |
 | `catalog` | `/shop`, `/products/:id`, `/categories/*`, `/brands`, `/deals`, `/new-arrivals`, `/best-sellers` | Shop, product detail, categories, brands | [CLAUDE.md](src/features/catalog/CLAUDE.md) |
 | `checkout` | `/checkout`, `/checkout/payment` | Checkout flow, address, discount code | [CLAUDE.md](src/features/checkout/CLAUDE.md) |
+| `content` | `/contact` | Form liên hệ/feedback | [CLAUDE.md](src/features/content/CLAUDE.md) |
 | `orders` | `/orders`, `/track-order` | Danh sách đơn, chi tiết đơn, track order | [CLAUDE.md](src/features/orders/CLAUDE.md) |
 | `payment` | `/payment-qr` | Thanh toán QR code (MoMo/VNPay) | [CLAUDE.md](src/features/payment/CLAUDE.md) |
 | `reviews` | embedded (no route) | Review modal, star rating | [CLAUDE.md](src/features/reviews/CLAUDE.md) |
@@ -204,7 +205,7 @@ Các route paths được định nghĩa trong `src/routes/paths.ts` (constants 
 | `wishlist` | `/wishlist` | Danh sách yêu thích | [CLAUDE.md](src/features/wishlist/CLAUDE.md) |
 
 **Admin pages nằm ở đâu:**
-- `features/admin/pages/` — dashboard, inventory, discount-codes, audit-log, users
+- `features/admin/pages/` — dashboard, inventory, discount-codes, users
 - Trang admin của domain khác nằm trong feature đó: `features/catalog/pages/catalog/` (products, brands, categories CRUD), `features/orders/pages/orders/`
 
 ---
@@ -216,7 +217,7 @@ src/components/
   common/        ← UI primitives: Button, Modal, Input, Card, Badge, Pagination, Rating, Table...
   layout/        ← Header, Footer, MainLayout, AdminLayout, PageLayout, Grid
   routing/       ← ProtectedRoute, AdminRoute, PublicOnlyRoute
-  sections/      ← HomePage sections (HeroSection, HomeNewsSection, FeaturedProductsSection...)
+  sections/      ← HomePage sections (HeroSection, FeaturedProductsSection...)
   icons/         ← Custom icon components
 
 src/hooks/       ← Global hooks (8 hooks):
@@ -311,6 +312,7 @@ frontend/src/
   features/cart/CLAUDE.md                    ← Giỏ hàng
   features/catalog/CLAUDE.md                 ← Shop, product detail, categories, brands
   features/checkout/CLAUDE.md                ← Checkout flow
+  features/content/CLAUDE.md                 ← Form liên hệ/feedback
   features/orders/CLAUDE.md                  ← Orders list, order detail
   features/payment/CLAUDE.md                 ← Payment QR page
   features/reviews/CLAUDE.md                 ← Product reviews

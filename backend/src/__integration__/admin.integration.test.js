@@ -1,19 +1,10 @@
 /**
  * Integration tests — Admin module với DB thật.
- * Test: dashboard stats queries, audit log, order management.
+ * Test: dashboard stats queries, order management.
  */
 require('module-alias/register');
 const sequelize = require('@config/sequelize');
-const {
-  User,
-  Order,
-  OrderItem,
-  Product,
-  ProductVariant,
-  Category,
-  Brand,
-  AuditLog,
-} = require('@models');
+const { User, Order, OrderItem, Product, ProductVariant, Category, Brand } = require('@models');
 const { Op, fn, col, literal } = require('sequelize');
 
 const TS = Date.now();
@@ -69,7 +60,6 @@ beforeAll(async () => {
 });
 
 afterAll(async () => {
-  await AuditLog.destroy({ where: { adminId: admin?.id }, force: true });
   await OrderItem.destroy({ where: {}, force: true });
   await Order.destroy({ where: { number: { [Op.like]: `INT-ADMIN-${TS}%` } }, force: true });
   if (product) await product.destroy({ force: true });
@@ -157,42 +147,6 @@ describe('Admin Integration — Dashboard Stats', () => {
       where: { email: { [Op.like]: `__int_admin%_${TS}@t.com` }, role: 'customer' },
     });
     expect(customerCount).toBe(1);
-  });
-});
-
-describe('Admin Integration — Audit Log', () => {
-  test('Ghi audit log khi admin thực hiện action', async () => {
-    const log = await AuditLog.create({
-      adminId: admin.id,
-      action: 'UPDATE_PRODUCT',
-      entityType: 'product',
-      entityId: product.id,
-      changes: JSON.stringify({ basePrice: { before: 3_000_000, after: 2_800_000 } }),
-      ipAddress: '127.0.0.1',
-    });
-    expect(log.id).toBeDefined();
-    expect(log.action).toBe('UPDATE_PRODUCT');
-  });
-
-  test('Lấy audit log theo adminId', async () => {
-    const logs = await AuditLog.findAll({ where: { adminId: admin.id } });
-    expect(logs.length).toBeGreaterThanOrEqual(1);
-    expect(logs.every((l) => l.adminId === admin.id)).toBe(true);
-  });
-
-  test('Lấy audit log theo entityType + entityId', async () => {
-    const logs = await AuditLog.findAll({
-      where: { adminId: admin.id, entityType: 'product', entityId: product.id },
-    });
-    expect(logs.length).toBeGreaterThan(0);
-    // Verify log tồn tại và entityId đúng
-    expect(logs[0].entityId).toBe(product.id);
-    expect(logs[0].action).toBe('UPDATE_PRODUCT');
-  });
-
-  test('Audit log có timestamps', async () => {
-    const log = await AuditLog.findOne({ where: { adminId: admin.id } });
-    expect(log.createdAt).toBeInstanceOf(Date);
   });
 });
 

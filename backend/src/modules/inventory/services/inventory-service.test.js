@@ -6,7 +6,6 @@ jest.mock('@config/sequelize', () => mockSequelize);
 
 describe('InventoryService', () => {
   let repo;
-  let eventBus;
   let service;
 
   beforeEach(() => {
@@ -18,11 +17,9 @@ describe('InventoryService', () => {
       createInventoryLog: jest.fn(async (p) => ({ id: 1, ...p })),
       findInventoryLogs: jest.fn(),
     };
-    eventBus = { publish: jest.fn().mockResolvedValue() };
     service = new InventoryService({
       inventoryRepository: repo,
       sequelize: mockSequelize,
-      eventBus,
       logger: { info: jest.fn(), warn: jest.fn(), error: jest.fn() },
     });
   });
@@ -99,15 +96,15 @@ describe('InventoryService', () => {
       );
     });
 
-    test('restock publish StockRestockedEvent', async () => {
+    test('restock không còn publish event (inventory.restocked đã xóa)', async () => {
+      // inventory.restocked không có subscriber → đã xóa khỏi service
       const product = { id: 1, stockQuantity: 0, save: jest.fn() };
       repo.findProductById.mockResolvedValue(product);
 
-      await service.restockProduct({ productId: 1, quantity: 5, adminId: 9 });
+      const result = await service.restockProduct({ productId: 1, quantity: 5, adminId: 9 });
 
-      expect(eventBus.publish).toHaveBeenCalledWith(
-        expect.objectContaining({ type: 'inventory.restocked' }),
-      );
+      expect(result.productId).toBe(1);
+      expect(result.quantity).toBe(5);
     });
   });
 

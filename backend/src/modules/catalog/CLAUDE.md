@@ -89,7 +89,6 @@ modules/catalog/
 - `brand` chấp nhận array, mix slug và id
 - `inStock` filter dùng subquery: `SELECT DISTINCT product_id FROM product_variants WHERE stock_quantity > 0` — không dùng `Product.stockQuantity`
 - Sort bằng `COALESCE(MIN(pv.price), base_price)` khi sort theo giá — xem gotcha quan trọng bên dưới
-- Cache key: `products:list:{url}` (TTL 10 phút), set header `X-Cache: HIT/MISS`
 
 ## 3.2 Product detail và variant resolution
 
@@ -105,35 +104,33 @@ Sau khi resolve variant → filter ảnh theo `variantId` hoặc color, merge `s
 
 Nếu có `userId` → gọi `_trackRecentlyViewed` (fire-and-forget, max 20 entries per user).
 
-Cache detail: `product:detail:{id}` / `product:detail:{slug}` (TTL 10 phút), chỉ cache khi request không có `skuId` / `queryColor`.
-
 ## 3.3 Specialized product queries
 
-| Method                                   | Cache                                             | Logic                                                                              |
-| ---------------------------------------- | ------------------------------------------------- | ---------------------------------------------------------------------------------- |
-| `getFeaturedProducts(limit)`             | `products:featured:{limit}` (10 phút)             | WHERE `isFeatured = true`                                                          |
-| `getNewArrivals(limit)`                  | —                                                 | ORDER BY `createdAt DESC`                                                          |
-| `getBestSellers({ limit, period })`      | `products:bestsellers:{period}:{limit}` (30 phút) | Raw SQL: JOIN `order_items`, `orders` WHERE không cancelled, GROUP BY product      |
-| `getDeals({ limit, minDiscount, sort })` | `products:deals:{...}` (10 phút)                  | WHERE `compareAtPrice IS NOT NULL`, discount >= minDiscount (%), `subQuery: false` |
-| `getRelatedProducts(id)`                 | —                                                 | Same category; fallback → newest active nếu không có                               |
-| `searchProducts(q)`                      | —                                                 | LIKE trên name_vi, name_en, description_vi, short_description_vi, tags             |
-| `getProductSuggestions(q)`               | —                                                 | Prefix match trên name_vi, trả về id/name/slug/thumbnail                           |
-| `getProductFilters(categoryId)`          | —                                                 | priceRange + brands/colors/sizes từ `ProductAttribute`                             |
+| Method                                   | Logic                                                                              |
+| ---------------------------------------- | ---------------------------------------------------------------------------------- |
+| `getFeaturedProducts(limit)`             | WHERE `isFeatured = true`                                                          |
+| `getNewArrivals(limit)`                  | ORDER BY `createdAt DESC`                                                          |
+| `getBestSellers({ limit, period })`      | Raw SQL: JOIN `order_items`, `orders` WHERE không cancelled, GROUP BY product      |
+| `getDeals({ limit, minDiscount, sort })` | WHERE `compareAtPrice IS NOT NULL`, discount >= minDiscount (%), `subQuery: false` |
+| `getRelatedProducts(id)`                 | Same category; fallback → newest active nếu không có                               |
+| `searchProducts(q)`                      | LIKE trên name_vi, name_en, description_vi, short_description_vi, tags             |
+| `getProductSuggestions(q)`               | Prefix match trên name_vi, trả về id/name/slug/thumbnail                           |
+| `getProductFilters(categoryId)`          | priceRange + brands/colors/sizes từ `ProductAttribute`                             |
 
 ## 3.4 Category và Brand
 
-- `getAllCategories()` — cache `categories:all` (30 phút), filter chỉ giữ categories có `productCount > 0`
-- `getAllBrands({ categoryId, hasProducts })` — cache `brands:{categoryId|all}` (30 phút), filter brands có active products khi `hasProducts = true`
+- `getAllCategories()` — filter chỉ giữ categories có `productCount > 0` **và** `isActive !== false`
+- `getAllBrands({ categoryId, hasProducts })` — filter brands có active products khi `hasProducts = true`
 - Không thể xóa category/brand đang có sản phẩm — 400 error
-- CRUD wrap in `_invalidateCacheKey` / `_invalidateCachePattern` sau mỗi write
+- `createCategory({ name, description, isActive, sortOrder })` — `sortOrder` default 0
+- `updateCategory({ id, patch })` — patch chấp nhận `name`, `description`, `isActive`, `sortOrder`
 
 ## 3.5 Business rules
 
 - **Sort giá**: `COALESCE(MIN(pv.price), base_price)` — KHÔNG sort theo `basePrice` trực tiếp. Rule cứng, không revert.
 - **Variant product**: `isVariantProduct = true` → `basePrice = 0`, giá thực từ variants. `_pickDisplayPrice` chọn lowest variant price.
 - **Recently viewed**: max 20 entries per user, ghi async (fire-and-forget), prune bằng `pruneRecentlyViewed` sau mỗi upsert.
-- **getAllCategories vs getCategoryTree**: `getAllCategories` cache và filter `productCount > 0`. `getCategoryTree` không cache, không filter — trả raw.
-- **Cache invalidation**: Create/update/delete product → clear `products:list:*`, `products:featured:*`, `products:bestsellers:*`, `products:deals:*`, `chatbot:*` patterns + specific `product:detail:{id}`.
+- **getAllCategories vs getCategoryTree**: `getAllCategories` filter `productCount > 0 && isActive !== false`. `getCategoryTree` không filter — trả raw (dùng cho admin).
 
 ---
 
@@ -143,39 +140,39 @@ Cache detail: `product:detail:{id}` / `product:detail:{slug}` (TTL 10 phút), ch
 
 Route order quan trọng — named paths phải đứng trước `/:id` để tránh bị catch nhầm.
 
-| Method | Path                   | Auth                              | Cache HTTP | Mô tả                                                                            |
-| ------ | ---------------------- | --------------------------------- | ---------- | -------------------------------------------------------------------------------- |
-| GET    | `/`                    | —                                 | 60s        | Danh sách sản phẩm (filter, sort, pagination)                                    |
-| GET    | `/recently-viewed`     | authenticate                      | —          | Sản phẩm đã xem gần đây (tối đa 20)                                              |
-| GET    | `/featured`            | —                                 | 600s       | Sản phẩm nổi bật                                                                 |
-| GET    | `/new-arrivals`        | —                                 | 300s       | Sản phẩm mới nhất                                                                |
-| GET    | `/best-sellers`        | —                                 | —          | Sản phẩm bán chạy (tham số: period=week/month/year)                              |
-| GET    | `/deals`               | —                                 | —          | Sản phẩm đang giảm giá                                                           |
-| GET    | `/filters`             | —                                 | —          | Filter options (priceRange, brands, colors, sizes, attributes)                   |
-| GET    | `/search`              | —                                 | —          | Tìm kiếm full-text (tham số: q, page, limit)                                     |
-| GET    | `/suggestions`         | —                                 | —          | Autocomplete gợi ý tên sản phẩm (tham số: q)                                     |
-| GET    | `/slug/:slug`          | optionalAuthenticate              | 300s       | Chi tiết theo slug (hỗ trợ ?skuId, ?color)                                       |
-| GET    | `/:id/related`         | —                                 | —          | Sản phẩm liên quan                                                               |
-| GET    | `/:id/variants`        | —                                 | —          | Danh sách biến thể                                                               |
-| GET    | `/:id/reviews-summary` | —                                 | —          | Tổng hợp rating (average, count, distribution)                                   |
-| GET    | `/:id`                 | optionalAuthenticate              | 300s       | Chi tiết theo ID (hỗ trợ ?skuId, ?color)                                         |
-| POST   | `/`                    | authenticate + authorize('admin') | —          | Tạo sản phẩm (transaction: product + categories + variants + attributes + specs) |
-| PUT    | `/:id`                 | authenticate + authorize('admin') | —          | Cập nhật sản phẩm (transaction)                                                  |
-| DELETE | `/:id`                 | authenticate + authorize('admin') | —          | Xóa sản phẩm                                                                     |
+| Method | Path                   | Auth                              | HTTP Headers | Mô tả                                                                            |
+| ------ | ---------------------- | --------------------------------- | ------------ | -------------------------------------------------------------------------------- |
+| GET    | `/`                    | —                                 | 60s          | Danh sách sản phẩm (filter, sort, pagination)                                    |
+| GET    | `/recently-viewed`     | authenticate                      | —            | Sản phẩm đã xem gần đây (tối đa 20)                                              |
+| GET    | `/featured`            | —                                 | 600s         | Sản phẩm nổi bật                                                                 |
+| GET    | `/new-arrivals`        | —                                 | 300s         | Sản phẩm mới nhất                                                                |
+| GET    | `/best-sellers`        | —                                 | —            | Sản phẩm bán chạy (tham số: period=week/month/year)                              |
+| GET    | `/deals`               | —                                 | —            | Sản phẩm đang giảm giá                                                           |
+| GET    | `/filters`             | —                                 | —            | Filter options (priceRange, brands, colors, sizes, attributes)                   |
+| GET    | `/search`              | —                                 | —            | Tìm kiếm full-text (tham số: q, page, limit)                                     |
+| GET    | `/suggestions`         | —                                 | —            | Autocomplete gợi ý tên sản phẩm (tham số: q)                                     |
+| GET    | `/slug/:slug`          | optionalAuthenticate              | 300s         | Chi tiết theo slug (hỗ trợ ?skuId, ?color)                                       |
+| GET    | `/:id/related`         | —                                 | —            | Sản phẩm liên quan                                                               |
+| GET    | `/:id/variants`        | —                                 | —            | Danh sách biến thể                                                               |
+| GET    | `/:id/reviews-summary` | —                                 | —            | Tổng hợp rating (average, count, distribution)                                   |
+| GET    | `/:id`                 | optionalAuthenticate              | 300s         | Chi tiết theo ID (hỗ trợ ?skuId, ?color)                                         |
+| POST   | `/`                    | authenticate + authorize('admin') | —            | Tạo sản phẩm (transaction: product + categories + variants + attributes + specs) |
+| PUT    | `/:id`                 | authenticate + authorize('admin') | —            | Cập nhật sản phẩm (transaction)                                                  |
+| DELETE | `/:id`                 | authenticate + authorize('admin') | —            | Xóa sản phẩm                                                                     |
 
 ## 4.2 Categories (`/api/categories`)
 
-| Method | Path            | Auth                              | Cache HTTP | Mô tả                                           |
-| ------ | --------------- | --------------------------------- | ---------- | ----------------------------------------------- |
-| GET    | `/`             | —                                 | 1800s      | Danh sách danh mục (có productCount, filter >0) |
-| GET    | `/tree`         | —                                 | 1800s      | Cây danh mục phân cấp (raw, không filter)       |
-| GET    | `/featured`     | —                                 | 1800s      | Danh mục nổi bật                                |
-| GET    | `/slug/:slug`   | —                                 | —          | Danh mục theo slug (cũng chấp nhận numeric id)  |
-| GET    | `/:id/products` | —                                 | —          | Sản phẩm trong danh mục                         |
-| GET    | `/:id`          | —                                 | —          | Chi tiết danh mục                               |
-| POST   | `/`             | authenticate + authorize('admin') | —          | Tạo danh mục                                    |
-| PUT    | `/:id`          | authenticate + authorize('admin') | —          | Cập nhật danh mục                               |
-| DELETE | `/:id`          | authenticate + authorize('admin') | —          | Xóa danh mục (fail nếu còn sản phẩm)            |
+| Method | Path            | Auth                              | HTTP Headers | Mô tả                                           |
+| ------ | --------------- | --------------------------------- | ------------ | ----------------------------------------------- |
+| GET    | `/`             | —                                 | 1800s        | Danh sách danh mục (có productCount, filter >0) |
+| GET    | `/tree`         | —                                 | 1800s        | Cây danh mục phân cấp (raw, không filter)       |
+| GET    | `/featured`     | —                                 | 1800s        | Danh mục nổi bật                                |
+| GET    | `/slug/:slug`   | —                                 | —            | Danh mục theo slug (cũng chấp nhận numeric id)  |
+| GET    | `/:id/products` | —                                 | —            | Sản phẩm trong danh mục                         |
+| GET    | `/:id`          | —                                 | —            | Chi tiết danh mục                               |
+| POST   | `/`             | authenticate + authorize('admin') | —            | Tạo danh mục                                    |
+| PUT    | `/:id`          | authenticate + authorize('admin') | —            | Cập nhật danh mục                               |
+| DELETE | `/:id`          | authenticate + authorize('admin') | —            | Xóa danh mục (fail nếu còn sản phẩm)            |
 
 ## 4.3 Brands (`/api/brands`)
 
@@ -196,7 +193,6 @@ Route order quan trọng — named paths phải đứng trước `/:id` để tr
 
 - Models inject từ app.js: `Category`, `Brand`, `Product`, `ProductAttribute`, `ProductVariant`, `ProductSpecification`, `Review`, `RecentlyViewed`
 - `sequelize` — complex queries, transactions, raw SQL
-- `redisClient` — cache store factory async (optional, null → cacheStore null, service tự bypass)
 - `eventBus`, `logger`
 
 ## 5.2 Used by
@@ -217,7 +213,6 @@ Route order quan trọng — named paths phải đứng trước `/:id` để tr
 - **Route order trong products router**: Named paths (`/recently-viewed`, `/featured`, `/deals`, ...) phải đứng trước `/:id`. Nếu thêm named path mới phải đặt trước `/:id`.
 - **`optionalAuthenticate` chỉ trên `/slug/:slug` và `/:id`**: Dùng để track recently-viewed. Các product list endpoints không dùng.
 - **`/recently-viewed` yêu cầu `authenticate` cứng**: Không dùng `optionalAuthenticate` — user không login không có history.
-- **Cache Redis optional vs HTTP headers**: `httpCacheHeaders(ttl)` set HTTP headers cho browser/CDN cache — khác với Redis cache trong service. Hai layer cache tách biệt.
 - **`getDeals` dùng `subQuery: false`**: ORDER BY literal expression trong MySQL cần `subQuery: false` — nếu remove sẽ lỗi "Unknown column in order clause".
 - **`findBestSellersRaw` raw SQL**: Trả plain objects (không phải Sequelize instances) — sau đó fetch lại bằng `findProductsByIdsOrdered` để có associations.
 - **Variant color matching dùng Unicode NFC normalize**: `queryColor.normalize('NFC').toLowerCase()`. Nếu có bug hiển thị sai variant theo màu → kiểm tra normalization trước.

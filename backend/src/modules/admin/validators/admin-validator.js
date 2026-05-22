@@ -5,6 +5,24 @@ const paginationSchema = z.object({
   limit: z.coerce.number().int().min(1).max(100000).optional(),
   sortBy: z.string().optional(),
   sortOrder: z.enum(['ASC', 'DESC', 'asc', 'desc']).optional(),
+  // Product list filters
+  search: z.string().optional(),
+  category: z.string().optional(),
+  status: z.string().optional(),
+  priceMin: z.coerce.number().optional(),
+  priceMax: z.coerce.number().optional(),
+  stockMin: z.coerce.number().optional(),
+  stockMax: z.coerce.number().optional(),
+  // User list filters
+  role: z.string().optional(),
+  isEmailVerified: z.preprocess(
+    (v) => (v === 'true' ? true : v === 'false' ? false : v),
+    z.boolean().optional(),
+  ),
+  isActive: z.preprocess(
+    (v) => (v === 'true' ? true : v === 'false' ? false : v),
+    z.boolean().optional(),
+  ),
 });
 const statsSchema = z.object({
   startDate: z.string().optional(),
@@ -16,15 +34,15 @@ const createProductSchema = z.object({
   description: z.string().min(1, 'Mô tả chi tiết là bắt buộc'),
   shortDescription: z.string().min(1, 'Mô tả ngắn là bắt buộc'),
   price: z.number().min(0, 'Giá sản phẩm phải là số dương'),
-  compareAtPrice: z.number().min(0).optional(),
-  comparePrice: z.number().min(0).optional(),
+  compareAtPrice: z.number().min(0).nullable().optional(),
+  comparePrice: z.number().min(0).nullable().optional(),
   stockQuantity: z.number().int().min(0).optional(),
   featured: z.boolean().optional(),
   images: z.array(z.string()).optional(),
   seoKeywords: z.array(z.string()).optional(),
   categoryIds: z.array(z.union([z.number().int(), z.string()])).optional(),
 });
-const updateProductSchema = createProductSchema.partial();
+const updateProductSchema = createProductSchema.partial().passthrough();
 const updateUserSchema = z.object({
   firstName: z.string().min(2).max(50).optional(),
   lastName: z.string().min(2).max(50).optional(),

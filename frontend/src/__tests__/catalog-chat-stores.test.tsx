@@ -5,7 +5,12 @@
  */
 import { act, renderHook } from '@testing-library/react';
 import { useCatalogStore } from '@stores/catalog-store';
-import { useChatStore, createSessionId } from '@stores/chat-store';
+import {
+  useChatStore,
+  createSessionId,
+  saveMessagesToStorage,
+  saveSessionIdToStorage,
+} from '@stores/chat-store';
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
@@ -246,6 +251,33 @@ describe('catalogStore — compareList', () => {
   });
 });
 
+// ── clearRecentlyViewed ────────────────────────────────────────────────────────
+
+describe('catalogStore — clearRecentlyViewed', () => {
+  test('xóa tất cả sản phẩm đã xem gần đây khỏi state', () => {
+    const { result } = renderHook(() => useCatalogStore());
+
+    act(() => {
+      result.current.addToRecentlyViewed(makeProduct('r1'));
+      result.current.addToRecentlyViewed(makeProduct('r2'));
+      result.current.clearRecentlyViewed();
+    });
+
+    expect(result.current.recentlyViewed).toHaveLength(0);
+  });
+
+  test('gọi localStorage.removeItem("recentlyViewed") khi xóa', () => {
+    const { result } = renderHook(() => useCatalogStore());
+
+    act(() => {
+      result.current.addToRecentlyViewed(makeProduct('r3'));
+      result.current.clearRecentlyViewed();
+    });
+
+    expect(localStorage.removeItem).toHaveBeenCalledWith('recentlyViewed');
+  });
+});
+
 // ── loadRecentlyViewed ─────────────────────────────────────────────────────────
 
 describe('catalogStore — loadRecentlyViewed', () => {
@@ -272,6 +304,25 @@ describe('catalogStore — loadRecentlyViewed', () => {
       result.current.loadRecentlyViewed();
     });
 
+    expect(result.current.recentlyViewed).toHaveLength(0);
+  });
+
+  test('localStorage chứa JSON không hợp lệ → state reset về mảng rỗng (catch branch)', () => {
+    // Arrange — JSON parse sẽ throw SyntaxError
+    (localStorage.getItem as jest.Mock).mockReturnValueOnce('invalid-json{{{');
+
+    const { result } = renderHook(() => useCatalogStore());
+
+    // Đặt sẵn dữ liệu trong state để xác nhận nó bị xóa sau lỗi parse
+    act(() => {
+      result.current.addToRecentlyViewed(makeProduct('existing'));
+    });
+
+    act(() => {
+      result.current.loadRecentlyViewed();
+    });
+
+    // Assert — catch block đặt recentlyViewed = []
     expect(result.current.recentlyViewed).toHaveLength(0);
   });
 });
@@ -452,7 +503,6 @@ describe('createSessionId', () => {
 
 describe('chatStore — localStorage persistence (saveMessagesToStorage)', () => {
   test('saveMessagesToStorage lưu messages vào localStorage', () => {
-    const { saveMessagesToStorage } = require('@stores/chat-store');
     const messages = [makeMessage('m1'), makeMessage('m2')];
 
     saveMessagesToStorage(messages);
@@ -461,8 +511,6 @@ describe('chatStore — localStorage persistence (saveMessagesToStorage)', () =>
   });
 
   test('saveSessionIdToStorage lưu sessionId vào localStorage', () => {
-    const { saveSessionIdToStorage } = require('@stores/chat-store');
-
     saveSessionIdToStorage('session-xyz');
 
     expect(localStorage.setItem).toHaveBeenCalledWith('chat_session_id', 'session-xyz');

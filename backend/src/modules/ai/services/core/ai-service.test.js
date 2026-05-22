@@ -1,5 +1,4 @@
 const AIService = require('./ai-service');
-const ChatbotLLMGateway = require('@modules/ai/services/chatbot/chatbot-llm-gateway');
 
 describe('AIService', () => {
   let repo;
@@ -9,7 +8,6 @@ describe('AIService', () => {
 
   beforeEach(() => {
     repo = {
-      searchProducts: jest.fn(),
       findActiveDeals: jest.fn(),
       findFeaturedProducts: jest.fn(),
       createAnalyticsEvent: jest.fn().mockResolvedValue({ id: 1 }),
@@ -168,43 +166,5 @@ describe('AIService', () => {
         }),
       ).rejects.toMatchObject({ statusCode: 400 });
     });
-  });
-});
-
-// ─── ChatbotLLMGateway.getAIResponse — line 15 ────────────────────────────────
-// Covers line 15: delegate getAIResponse sang chatbotService.getAIResponse
-
-describe('ChatbotLLMGateway', () => {
-  test('getAIResponse delegate sang chatbotService.getAIResponse — covers line 15', async () => {
-    const mockChatbotService = {
-      handleMessage: jest.fn().mockResolvedValue({ response: 'hi' }),
-      getAIResponse: jest.fn().mockResolvedValue({ response: 'AI response', products: [] }),
-    };
-
-    const gateway = new ChatbotLLMGateway({ chatbotService: mockChatbotService });
-
-    const result = await gateway.getAIResponse('tìm iphone', [{ id: 1 }], { timeOfDay: 'morning' });
-
-    expect(mockChatbotService.getAIResponse).toHaveBeenCalledWith(
-      'tìm iphone',
-      [{ id: 1 }],
-      { timeOfDay: 'morning' },
-      undefined,
-    );
-    expect(result).toMatchObject({ response: 'AI response' });
-  });
-
-  test('handleMessage delegate sang chatbotService.handleMessage', async () => {
-    const mockChatbotService = {
-      handleMessage: jest.fn().mockResolvedValue({ response: 'pong' }),
-      getAIResponse: jest.fn(),
-    };
-
-    const gateway = new ChatbotLLMGateway({ chatbotService: mockChatbotService });
-
-    const result = await gateway.handleMessage('ping', 1, 'sess', {});
-
-    expect(mockChatbotService.handleMessage).toHaveBeenCalledWith('ping', 1, 'sess', {});
-    expect(result).toMatchObject({ response: 'pong' });
   });
 });

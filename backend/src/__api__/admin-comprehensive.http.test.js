@@ -12,7 +12,6 @@
  *  - GET /reviews (page), DELETE /reviews/:id
  *  - GET/POST/PUT/DELETE /discount-codes (basic + auth)
  *  - GET /analytics/* (tất cả 6 endpoint + params đa dạng)
- *  - GET /audit-logs (basic + userId filter)
  *  - GET /reports/export, GET /chatbot/stats
  *
  * Lưu ý thiết kế:
@@ -1146,49 +1145,6 @@ describe('GET /api/admin/analytics/low-stock — threshold param', () => {
   test('customer token → 403', async () => {
     const res = await request(app)
       .get('/api/admin/analytics/low-stock')
-      .set('Authorization', `Bearer ${forbiddenToken}`);
-    expect(res.status).toBe(403);
-  });
-});
-
-// ── Audit Logs — filter đa dạng ───────────────────────────────────────────────
-
-describe('GET /api/admin/audit-logs — filter và pagination', () => {
-  test('phân trang page=1&limit=10 → 200', async () => {
-    const res = await request(app)
-      .get('/api/admin/audit-logs')
-      .set('Authorization', `Bearer ${adminToken}`)
-      .query({ page: 1, limit: 10 });
-    expect(res.status).toBe(200);
-    expect(res.body.status).toBe('success');
-  });
-
-  test('phân trang page=2&limit=5 → 200', async () => {
-    const res = await request(app)
-      .get('/api/admin/audit-logs')
-      .set('Authorization', `Bearer ${adminToken}`)
-      .query({ page: 2, limit: 5 });
-    expect(res.status).toBe(200);
-    expect(res.body.status).toBe('success');
-  });
-
-  test('lọc theo action → 200', async () => {
-    const res = await request(app)
-      .get('/api/admin/audit-logs')
-      .set('Authorization', `Bearer ${adminToken}`)
-      .query({ action: 'UPDATE' });
-    expect(res.status).toBe(200);
-    expect(res.body.status).toBe('success');
-  });
-
-  test('không token → 401', async () => {
-    const res = await request(app).get('/api/admin/audit-logs');
-    expect(res.status).toBe(401);
-  });
-
-  test('customer token → 403', async () => {
-    const res = await request(app)
-      .get('/api/admin/audit-logs')
       .set('Authorization', `Bearer ${forbiddenToken}`);
     expect(res.status).toBe(403);
   });

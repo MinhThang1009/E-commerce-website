@@ -3,7 +3,7 @@
  * @layer Service
  * @module inventory
  * @description Business logic layer cho inventory
- * @depends-on sequelize-inventory-repository, eventBus, logger
+ * @depends-on sequelize-inventory-repository, logger
  * @see module.js (DI wiring), routes.js (endpoints), CLAUDE.md (overview)
  */
 const { AppError } = require('@shared/errors');
@@ -24,10 +24,9 @@ function _addStock(stockable, qty) {
 
 // Inventory Service — admin restock + view inventory log.
 class InventoryService {
-  constructor({ inventoryRepository, sequelize, eventBus, logger }) {
+  constructor({ inventoryRepository, sequelize, logger }) {
     this.repo = inventoryRepository;
     this.sequelize = sequelize;
-    this.eventBus = eventBus;
     this.logger = logger;
   }
 
@@ -82,19 +81,6 @@ class InventoryService {
         },
         opts,
       );
-    });
-
-    await this.eventBus.publish({
-      type: 'inventory.restocked',
-      payload: {
-        productId: parseInt(productId, 10),
-        variantId: variantId ? parseInt(variantId, 10) : null,
-        quantity: qty,
-        previousStock: previous,
-        newStock: current,
-        adminId,
-      },
-      occurredAt: new Date().toISOString(),
     });
 
     return {

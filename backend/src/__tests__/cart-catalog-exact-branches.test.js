@@ -145,21 +145,12 @@ function makeCatalogService(overrides = {}) {
     runInTransaction: jest.fn((cb) => cb({})),
     ...overrides,
   };
-  const cacheStore = {
-    get: jest.fn().mockResolvedValue(null),
-    set: jest.fn().mockResolvedValue('OK'),
-    del: jest.fn().mockResolvedValue(1),
-    delMany: jest.fn().mockResolvedValue(0),
-    delPattern: jest.fn().mockResolvedValue(0),
-    ...overrides.cacheStore,
-  };
   const svc = new CatalogService({
     catalogRepository: repo,
-    cacheStore,
     eventBus: { publish: jest.fn() },
     logger: { info: jest.fn(), warn: jest.fn(), error: jest.fn() },
   });
-  return { svc, repo, cacheStore };
+  return { svc, repo };
 }
 
 describe('CatalogService._pickDisplayPrice — branch coverage', () => {
@@ -193,25 +184,6 @@ describe('CatalogService._pickDisplayPrice — branch coverage', () => {
     expect(result).toBe(0.001); // nếu dùng || thì 0.001 truthy cũng pass, nhưng 0.001 || 300000 = 0.001
     // Test quan trọng: nếu source đổi về `parseFloat(price) || basePrice`, behavior vẫn giống ở đây
     // Nên thêm negative case để phân biệt: xem test trên về price=0
-  });
-});
-
-describe('CatalogService._clearProductCache — branch coverage', () => {
-  // Line 356 [if] counts=[47,0]: if (this.cacheStore.delPattern) → FALSE never taken
-  test('line 356 FALSE: cacheStore without delPattern → skip pattern delete', async () => {
-    const { svc } = makeCatalogService({
-      cacheStore: {
-        get: jest.fn(),
-        set: jest.fn(),
-        del: jest.fn(),
-        delMany: jest.fn().mockResolvedValue(0),
-        // NO delPattern → if (this.cacheStore.delPattern) = false
-      },
-    });
-    // Should not throw, skip pattern delete
-    await svc._clearProductCache(1, 'test-slug');
-    // If we got here without error, the FALSE branch was taken
-    expect(true).toBe(true);
   });
 });
 

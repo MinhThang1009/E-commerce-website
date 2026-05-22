@@ -9,8 +9,7 @@
 - [3. Request Flow](#3-request-flow)
 - [4. Từng file](#4-từng-file)
   - [4.1 chatbot-service.js](#41-chatbot-servicejs)
-  - [4.2 chatbot-llm-gateway.js](#42-chatbot-llm-gatewayjs)
-  - [4.3 rag/rag-pipeline.js](#43-ragrag-pipelinejs)
+    - [4.3 rag/rag-pipeline.js](#43-ragrag-pipelinejs)
   - [4.4 prompt/prompt-builder.js](#44-promptprompt-builderjs)
   - [4.5 prompt/response-parser.js](#45-promptresponse-parserjs)
   - [4.6 keyword/keyword-fallback.js](#46-keywordkeyword-fallbackjs)
@@ -29,8 +28,7 @@ RAG pipeline và các sub-services xử lý một chat message: validate → nor
 
 ```
 chatbot/
-  chatbot-service.js          — Singleton; LLM HTTP client, session memory, Redis cache
-  chatbot-llm-gateway.js      — Thin adapter wrap chatbotService cho RAGPipeline
+  chatbot-service.js          — Singleton; LLM HTTP client, session memory (Map)
   rag/
     rag-pipeline.js           — Orchestrator: validate → expand → search → rewrite → generate
   prompt/
@@ -72,21 +70,13 @@ POST /api/chatbot/message
 Responsibilities:
 
 - LLM HTTP calls với **provider rotation** (env: `LLM_API_KEY`, `LLM_BASE_URL`, `LLM_MODEL`)
-- **Session memory**: `Map<sessionId, { messages[], lastAccess }>` — in-memory, reset khi restart
+- **Session memory**: `Map<sessionId, { messages[], lastAccess }>` — reset khi restart
   - `MAX_HISTORY_TURNS = 10` (20 messages), `MAX_SESSIONS = 500`, `SESSION_TTL_MS = 30 phút`
-- **Redis cache**: cache result 5 phút cho `product_search` intents (key: hash của message)
-  - Không cache: `order_inquiry`, `policy`, `pricing` (data realtime)
-- **Catalog cache**: brands + categories in-memory, TTL đặt lúc runtime
+- **Catalog data**: brands + categories load từ DB, refresh định kỳ
 
-## 4.2 chatbot-llm-gateway.js
+## 4.2 rag/rag-pipeline.js
 
-Adapter pattern — wrap `chatbotService` để `RAGPipeline` không import singleton trực tiếp. Inject qua constructor.
-
-3 methods delegate: `handleMessage`, `getAIResponse`, `rewriteQuery` (`_llmRewrite`).
-
-## 4.3 rag/rag-pipeline.js
-
-Orchestrator. Constructor nhận `{ llmGateway, vectorStore }` — cả hai inject (không require trực tiếp).
+Orchestrator. Constructor nhận `{ chatbotService, vectorStore }` — cả hai inject (không require trực tiếp).
 
 Flow: validate → expand → parallel search+rewrite → merge results → generate.
 
@@ -128,9 +118,8 @@ Dùng bởi: `keywordFallback`, `chatbotService` (chọn ngôn ngữ response).
 
 # 5. Gotchas
 
-- **Session memory mất khi restart** — không persist. Đủ cho demo/KLTN, production cần Redis session store.
+- **Session memory mất khi restart** — không persist. Đủ cho demo/KLTN.
 - **Provider rotation chỉ retry HTTP errors** (429/402/500/503/network) — lỗi khác (400 bad request) → break ngay, không retry.
 - **`rewriteQuery` fail không block** — RAGPipeline dùng original query nếu LLM rewrite lỗi.
 - **`vectorStore = null` trong unit tests** — RAGPipeline handle null bằng cách skip search, trả empty products list.
-- **Cache key = hash message string** — messages tương tự nhưng khác ký tự sẽ miss cache.
 - **`chatbotService` là singleton** — không reinitialize trong test; dùng `jest.spyOn` thay vì new instance.

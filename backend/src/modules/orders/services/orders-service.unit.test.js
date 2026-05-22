@@ -10,9 +10,7 @@ describe('OrdersService', () => {
   const constants = {
     POINTS_EARN_RATE: 1000,
     POINTS_VALUE: 100,
-    SHIPPING_FREE_THRESHOLD: 500000,
-    SHIPPING_BASE_RATE: 30000,
-    SHIPPING_WEIGHT_RATE: 5000,
+    SHIPPING_FREE_THRESHOLD: 2000000,
   };
 
   beforeEach(() => {
@@ -73,20 +71,21 @@ describe('OrdersService', () => {
   });
 
   describe('Helpers', () => {
-    test('_generateOrderNumber format ORD-YYMM-...', () => {
+    test('_generateOrderNumber format ORD-YYYYMMDD-RAND', () => {
       const num = service._generateOrderNumber();
-      expect(num).toMatch(/^ORD-\d{4}-\d+-[0-9A-F]{8}$/);
+      expect(num).toMatch(/^ORD-\d{8}-\d{4}$/);
     });
 
-    test('_calculateShipping qua ShippingPolicy', () => {
-      expect(service._calculateShipping(600000, 1)).toBe(0);
-      expect(service._calculateShipping(100000, 1)).toBe(30000);
-    });
-
-    test('estimateShipping public method', () => {
-      const result = service.estimateShipping({ subtotal: '600000', weight: '1' });
+    test('estimateShipping public method — subtotal >= threshold → shippingCost = 0', () => {
+      const result = service.estimateShipping({ subtotal: '2000000', weight: '1' });
       expect(result.shippingCost).toBe(0);
-      expect(result.freeShippingThreshold).toBe(500000);
+      expect(result.freeShippingThreshold).toBe(2000000);
+    });
+
+    test('estimateShipping public method — subtotal < threshold → shippingCost = null', () => {
+      const result = service.estimateShipping({ subtotal: '600000', weight: '1' });
+      expect(result.shippingCost).toBeNull();
+      expect(result.freeShippingThreshold).toBe(2000000);
     });
   });
 
@@ -136,54 +135,6 @@ describe('OrdersService', () => {
         expect.objectContaining({ type: 'order.cancelled' }),
       );
     });
-
-    test.skip('hợp lệ + pointsUsed > 0 → refund points', async () => {
-      const order = {
-        id: 1,
-        status: 'pending',
-        userId: 1,
-        number: 'X',
-        pointsUsed: 50,
-        pointsEarned: 0,
-        items: [],
-      };
-      repo.findOrderForCancel.mockResolvedValue(order);
-      repo.findUserById.mockResolvedValue({ loyaltyPoints: 100 });
-
-      await service.cancelOrder({ id: 1, userId: 1 });
-
-      expect(repo.updateUserPoints).toHaveBeenCalledWith(
-        expect.objectContaining({ loyaltyPoints: 100 }),
-        150, // 100 + 50
-        expect.any(Object),
-      );
-      expect(repo.createLoyaltyHistory).toHaveBeenCalledWith(
-        expect.objectContaining({ type: 'refund', points: 50 }),
-        expect.any(Object),
-      );
-    });
-
-    test.skip('pointsEarned > 0 → revoke earned points', async () => {
-      const order = {
-        id: 1,
-        status: 'processing',
-        userId: 1,
-        number: 'X',
-        pointsUsed: 0,
-        pointsEarned: 30,
-        items: [],
-      };
-      repo.findOrderForCancel.mockResolvedValue(order);
-      repo.findUserById.mockResolvedValue({ loyaltyPoints: 100 });
-
-      await service.cancelOrder({ id: 1, userId: 1 });
-
-      expect(repo.updateUserPoints).toHaveBeenCalledWith(
-        expect.any(Object),
-        70,
-        expect.any(Object),
-      );
-    });
   });
 
   describe('repayOrder', () => {
@@ -225,64 +176,6 @@ describe('OrdersService', () => {
         statusCode: 404,
       });
     });
-
-    test.skip('đã delivered + pointsEarned > 0 → alreadyProcessed', async () => {
-      const order = {
-        status: 'delivered',
-        pointsEarned: 50,
-        reload: jest.fn(),
-      };
-      repo.findOrderByIdAndUserId.mockResolvedValue(order);
-
-      const result = await service.confirmReceived({ id: 1, userId: 1 });
-
-      expect(result.message).toBe('orders.alreadyConfirmed');
-      expect(result.pointsEarned).toBe(0);
-    });
-
-    test.skip('', async () => {
-      const order = {
-        id: 1,
-        status: 'shipped',
-        userId: 1,
-        number: 'X',
-        paymentMethod: 'cod',
-        subtotal: 5000,
-        total: 5000,
-        pointsEarned: 0,
-        reload: jest.fn(),
-      };
-      repo.findOrderByIdAndUserId.mockResolvedValue(order);
-      repo.findUserById.mockResolvedValue({ loyaltyPoints: 0 });
-
-      const result = await service.confirmReceived({ id: 1, userId: 1 });
-
-      // 5000/1000 = 5 points
-      expect(result.pointsEarned).toBe(5);
-      expect(repo.updateUserPoints).toHaveBeenCalledWith(expect.any(Object), 5);
-      expect(eventBus.publish).toHaveBeenCalledWith(
-        expect.objectContaining({ type: 'order.delivered' }),
-      );
-    });
-
-    test.skip('subtotal=0 → mark pointsEarned=-1 (đã xử lý)', async () => {
-      const order = {
-        id: 1,
-        status: 'shipped',
-        userId: 1,
-        number: 'X',
-        paymentMethod: 'cod',
-        subtotal: 0,
-        total: 0,
-        pointsEarned: 0,
-        reload: jest.fn(),
-      };
-      repo.findOrderByIdAndUserId.mockResolvedValue(order);
-
-      const result = await service.confirmReceived({ id: 1, userId: 1 });
-
-      expect(result.pointsEarned).toBe(0); // result is what AWARDED, not stored
-    });
   });
 
   describe('updateOrderStatus', () => {
@@ -291,34 +184,6 @@ describe('OrdersService', () => {
       await expect(service.updateOrderStatus({ id: 99, status: 'shipped' })).rejects.toMatchObject({
         statusCode: 404,
       });
-    });
-
-    test.skip('', async () => {
-      const order = {
-        id: 1,
-        number: 'X',
-        userId: 5,
-        status: 'shipped',
-        paymentMethod: 'cod',
-        paymentStatus: 'pending',
-        subtotal: 10000,
-        total: 10000,
-        createdAt: new Date(),
-        user: { email: 'u@x.y' },
-      };
-      repo.findOrderByPkWithItemsAndUser.mockResolvedValue(order);
-      repo.findUserById.mockResolvedValue({ loyaltyPoints: 0 });
-
-      await service.updateOrderStatus({ id: 1, status: 'delivered' });
-
-      expect(order.status).toBe('delivered');
-      expect(order.paymentStatus).toBe('paid'); // COD auto-paid
-      expect(repo.createLoyaltyHistory).toHaveBeenCalledWith(
-        expect.objectContaining({ type: 'earn', points: 10 }),
-      );
-      expect(eventBus.publish).toHaveBeenCalledWith(
-        expect.objectContaining({ type: 'order.delivered' }),
-      );
     });
   });
 

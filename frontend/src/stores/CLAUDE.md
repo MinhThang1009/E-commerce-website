@@ -316,4 +316,4 @@ interface WishlistState {
 - **`cartItems` localStorage** bị xóa khi `logout()` trong auth-store — không cần xóa thủ công.
 - **`serverCart` vs `items`:** `items` là mảng flat đã convert từ server, `serverCart` là raw server response. Khi authenticated, luôn dùng `serverCart` count cho display.
 - **Wishlist không persist:** khi user refresh trang, `Header` re-fetch wishlist từ server và gọi `setWishlist()`. Không cần seed từ localStorage.
-- **`chatHistory`** là in-memory (không persist) — chỉ giữ được trong session đang mở. `messages` + `sessionId` persist qua localStorage.
+- **`chatHistory`** (không persist) — chỉ giữ được trong session đang mở. `messages` + `sessionId` persist qua localStorage.

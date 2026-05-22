@@ -345,6 +345,114 @@ describe('ContactPage: form interactions', () => {
       expect(() => fireEvent.click(submitBtn)).not.toThrow();
     });
   });
+
+  it('submit form với email sai định dạng → hiển thị lỗi validation.email.invalid', async () => {
+    // Arrange — điền đủ các trường nhưng email sai format
+    render(<ContactPage />);
+    const nameInput = document.querySelector('input#name') as HTMLInputElement;
+    const emailInput = document.querySelector('input#email') as HTMLInputElement;
+    const subjectSelect = document.querySelector('select#subject') as HTMLSelectElement;
+    const messageTextarea = document.querySelector('textarea#message') as HTMLTextAreaElement;
+    fireEvent.change(nameInput, { target: { value: 'Nguyễn Văn A' } });
+    fireEvent.change(emailInput, { target: { value: 'not-an-email' } });
+    fireEvent.change(subjectSelect, { target: { value: 'general' } });
+    fireEvent.change(messageTextarea, { target: { value: 'Nội dung hợp lệ.' } });
+    // Act
+    const submitBtn = screen.getByTestId('premium-btn');
+    await act(async () => {
+      fireEvent.click(submitBtn);
+    });
+    // Assert — email format validation lỗi
+    expect(screen.getByText('validation.email.invalid')).toBeInTheDocument();
+  });
+
+  it('submit form hợp lệ → API sendFeedback được gọi với đúng payload', async () => {
+    // Arrange
+    contactMockState.sendFeedback = jest.fn().mockResolvedValue(undefined);
+    render(<ContactPage />);
+    const nameInput = document.querySelector('input#name') as HTMLInputElement;
+    const emailInput = document.querySelector('input#email') as HTMLInputElement;
+    const subjectSelect = document.querySelector('select#subject') as HTMLSelectElement;
+    const messageTextarea = document.querySelector('textarea#message') as HTMLTextAreaElement;
+    fireEvent.change(nameInput, { target: { value: 'Trần Thị B' } });
+    fireEvent.change(emailInput, { target: { value: 'b@example.com' } });
+    fireEvent.change(subjectSelect, { target: { value: 'support' } });
+    fireEvent.change(messageTextarea, { target: { value: 'Tôi cần hỗ trợ kỹ thuật.' } });
+    // Act
+    const submitBtn = screen.getByTestId('premium-btn');
+    await act(async () => {
+      fireEvent.click(submitBtn);
+    });
+    // Assert — sendFeedback được gọi với field content (không phải message)
+    expect(contactMockState.sendFeedback).toHaveBeenCalledWith(
+      expect.objectContaining({
+        name: 'Trần Thị B',
+        email: 'b@example.com',
+        subject: 'support',
+        content: 'Tôi cần hỗ trợ kỹ thuật.',
+      }),
+    );
+  });
+
+  it('submit form hợp lệ → hiển thị thông báo thành công contact.form.success', async () => {
+    // Arrange
+    contactMockState.sendFeedback = jest.fn().mockResolvedValue(undefined);
+    render(<ContactPage />);
+    const nameInput = document.querySelector('input#name') as HTMLInputElement;
+    const emailInput = document.querySelector('input#email') as HTMLInputElement;
+    const subjectSelect = document.querySelector('select#subject') as HTMLSelectElement;
+    const messageTextarea = document.querySelector('textarea#message') as HTMLTextAreaElement;
+    fireEvent.change(nameInput, { target: { value: 'Lê Văn C' } });
+    fireEvent.change(emailInput, { target: { value: 'c@example.com' } });
+    fireEvent.change(subjectSelect, { target: { value: 'feedback' } });
+    fireEvent.change(messageTextarea, { target: { value: 'Phản hồi từ khách hàng hài lòng.' } });
+    // Act
+    const submitBtn = screen.getByTestId('premium-btn');
+    await act(async () => {
+      fireEvent.click(submitBtn);
+    });
+    // Assert — success banner hiển thị
+    expect(screen.getByText('contact.form.success')).toBeInTheDocument();
+  });
+
+  it('submit form hợp lệ nhưng API thất bại → hiển thị thông báo lỗi contact.form.error', async () => {
+    // Arrange — API ném lỗi
+    contactMockState.sendFeedback = jest.fn().mockRejectedValue(new Error('Network error'));
+    render(<ContactPage />);
+    const nameInput = document.querySelector('input#name') as HTMLInputElement;
+    const emailInput = document.querySelector('input#email') as HTMLInputElement;
+    const subjectSelect = document.querySelector('select#subject') as HTMLSelectElement;
+    const messageTextarea = document.querySelector('textarea#message') as HTMLTextAreaElement;
+    fireEvent.change(nameInput, { target: { value: 'Phạm Văn D' } });
+    fireEvent.change(emailInput, { target: { value: 'd@example.com' } });
+    fireEvent.change(subjectSelect, { target: { value: 'partnership' } });
+    fireEvent.change(messageTextarea, { target: { value: 'Tôi muốn hợp tác với TechStore.' } });
+    // Act
+    const submitBtn = screen.getByTestId('premium-btn');
+    await act(async () => {
+      fireEvent.click(submitBtn);
+    });
+    // Assert — catch block hiển thị lỗi
+    expect(screen.getByText('contact.form.error')).toBeInTheDocument();
+  });
+
+  it('submit form khi subject chưa chọn → hiển thị thông báo lỗi required', async () => {
+    // Arrange — có name, email, message nhưng không chọn subject
+    render(<ContactPage />);
+    const nameInput = document.querySelector('input#name') as HTMLInputElement;
+    const emailInput = document.querySelector('input#email') as HTMLInputElement;
+    const messageTextarea = document.querySelector('textarea#message') as HTMLTextAreaElement;
+    fireEvent.change(nameInput, { target: { value: 'Nguyễn Văn E' } });
+    fireEvent.change(emailInput, { target: { value: 'e@example.com' } });
+    fireEvent.change(messageTextarea, { target: { value: 'Nội dung đầy đủ.' } });
+    // Act — subject vẫn là '' (giá trị mặc định)
+    const submitBtn = screen.getByTestId('premium-btn');
+    await act(async () => {
+      fireEvent.click(submitBtn);
+    });
+    // Assert — required validation
+    expect(screen.getByText('checkout.validation.required')).toBeInTheDocument();
+  });
 });
 
 // ═══════════════════════════════════════════════════════════════

@@ -21,6 +21,7 @@ export {
   useCancelOrderMutation,
   useRepayOrderMutation,
   useApplyDiscountCodeMutation,
+  useGetAvailableDiscountCodesQuery,
   useConfirmReceivedMutation,
 } from './api/order-api';
 
@@ -33,6 +34,7 @@ export type {
   CreateOrderResponse,
   ApplyDiscountRequest,
   ApplyDiscountResponse,
+  AvailableDiscountCode,
 } from './api/order-api';
 
 export { default as OrderDetails } from './components/OrderDetails';

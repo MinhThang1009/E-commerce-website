@@ -4,7 +4,6 @@ const ContentService = require('./content-service');
 describe('ContentService', () => {
   let contentRepository;
   let emailGateway;
-  let cacheStore;
   let service;
 
   beforeEach(() => {
@@ -29,15 +28,9 @@ describe('ContentService', () => {
     emailGateway = {
       sendAdminFeedbackNotification: jest.fn().mockResolvedValue(),
     };
-    cacheStore = {
-      get: jest.fn().mockResolvedValue(null),
-      setEx: jest.fn().mockResolvedValue(),
-      del: jest.fn().mockResolvedValue(),
-    };
     service = new ContentService({
       contentRepository,
       emailGateway,
-      cacheStore,
       eventBus: { publish: jest.fn() },
       logger: { info: jest.fn(), error: jest.fn(), warn: jest.fn(), debug: jest.fn() },
       adminEmail: 'admin@test.com',
@@ -45,25 +38,19 @@ describe('ContentService', () => {
   });
 
   describe('Banner', () => {
-    test('getAllBanners cache hit → trả từ cache', async () => {
-      cacheStore.get.mockResolvedValue(JSON.stringify({ status: 'success', data: ['cached'] }));
-      const result = await service.getAllBanners({ isActive: 'true' });
-      expect(result.data).toEqual(['cached']);
-      expect(contentRepository.findAllBanners).not.toHaveBeenCalled();
-    });
-
-    test('getAllBanners cache miss → query + setEx cache', async () => {
+    test('getAllBanners → query DB và trả kết quả', async () => {
       contentRepository.findAllBanners.mockResolvedValue([{ id: 1 }]);
       const result = await service.getAllBanners({ isActive: 'true' });
       expect(result.results).toBe(1);
-      expect(cacheStore.setEx).toHaveBeenCalledWith('banners:active', 3600, expect.any(String));
+      expect(contentRepository.findAllBanners).toHaveBeenCalled();
     });
 
-    test('getAllBanners có position filter → KHÔNG cache', async () => {
+    test('getAllBanners có position filter → truyền where đúng', async () => {
       contentRepository.findAllBanners.mockResolvedValue([]);
       await service.getAllBanners({ isActive: 'true', position: 'home_hero' });
-      expect(cacheStore.get).not.toHaveBeenCalled();
-      expect(cacheStore.setEx).not.toHaveBeenCalled();
+      expect(contentRepository.findAllBanners).toHaveBeenCalledWith(
+        expect.objectContaining({ position: 'home_hero' }),
+      );
     });
 
     test('getBannerById không tồn tại → 404', async () => {
@@ -71,10 +58,10 @@ describe('ContentService', () => {
       await expect(service.getBannerById({ id: 99 })).rejects.toMatchObject({ statusCode: 404 });
     });
 
-    test('createBanner → invalidate cache', async () => {
+    test('createBanner → gọi repo và trả về banner', async () => {
       contentRepository.createBanner.mockResolvedValue({ id: 1 });
-      await service.createBanner({ payload: { title: 'B' } });
-      expect(cacheStore.del).toHaveBeenCalledWith('banners:active');
+      const result = await service.createBanner({ payload: { title: 'B' } });
+      expect(result).toEqual({ id: 1 });
     });
 
     test('updateBanner không tìm thấy → 404', async () => {
@@ -192,7 +179,6 @@ describe('ContentService', () => {
       const svcNoAdmin = new ContentService({
         contentRepository,
         emailGateway,
-        cacheStore,
         eventBus: { publish: jest.fn() },
         logger: { info: jest.fn(), error: jest.fn(), warn: jest.fn(), debug: jest.fn() },
         adminEmail: null,
@@ -220,16 +206,17 @@ describe('ContentService', () => {
   // ============================================================
 
   describe('Banner — additional paths', () => {
-    test('getAllBanners không có position cũng không isActive → KHÔNG cache', async () => {
+    test('getAllBanners không có position cũng không isActive → trả về tất cả banners', async () => {
       contentRepository.findAllBanners.mockResolvedValue([]);
-      await service.getAllBanners({});
-      expect(cacheStore.setEx).not.toHaveBeenCalled();
+      const result = await service.getAllBanners({});
+      expect(contentRepository.findAllBanners).toHaveBeenCalledWith({});
+      expect(result.results).toBe(0);
     });
 
-    test('getAllBanners isActive=false → KHÔNG cache', async () => {
+    test('getAllBanners isActive=false → truyền isActive=false vào where', async () => {
       contentRepository.findAllBanners.mockResolvedValue([]);
       await service.getAllBanners({ isActive: 'false' });
-      expect(cacheStore.setEx).not.toHaveBeenCalled();
+      expect(contentRepository.findAllBanners).toHaveBeenCalledWith({ isActive: false });
     });
 
     test('updateBanner tìm thấy → merge patch và save', async () => {
@@ -239,33 +226,13 @@ describe('ContentService', () => {
       expect(banner.title).toBe('New');
       expect(banner.isActive).toBe(false);
       expect(contentRepository.saveBanner).toHaveBeenCalledWith(banner);
-      expect(cacheStore.del).toHaveBeenCalledWith('banners:active');
     });
 
-    test('deleteBanner tìm thấy → xóa + invalidate cache', async () => {
+    test('deleteBanner tìm thấy → xóa thành công', async () => {
       const banner = { id: 2 };
       contentRepository.findBannerById.mockResolvedValue(banner);
       await service.deleteBanner({ id: 2 });
       expect(contentRepository.deleteBanner).toHaveBeenCalledWith(banner);
-      expect(cacheStore.del).toHaveBeenCalledWith('banners:active');
-    });
-
-    test('_invalidateBannerCache log warn khi del throw', async () => {
-      const warnSpy = jest.fn();
-      const svcWarn = new ContentService({
-        contentRepository,
-        emailGateway,
-        cacheStore: { ...cacheStore, del: jest.fn().mockRejectedValue(new Error('redis fail')) },
-        eventBus: { publish: jest.fn() },
-        logger: { info: jest.fn(), error: jest.fn(), warn: warnSpy, debug: jest.fn() },
-        adminEmail: null,
-      });
-      contentRepository.createBanner.mockResolvedValue({ id: 5 });
-      await svcWarn.createBanner({ payload: {} });
-      expect(warnSpy).toHaveBeenCalledWith(
-        expect.stringContaining('banners:active'),
-        expect.any(String),
-      );
     });
   });
 
@@ -362,47 +329,6 @@ describe('ContentService', () => {
       const result = await service.deleteNews({ id: 5 });
       expect(result).toBe(true);
       expect(contentRepository.deleteNews).toHaveBeenCalledWith(news);
-    });
-  });
-
-  // ============================================================
-  // _invalidateBannerCache — cacheStore null → return sớm (line 69)
-  // ============================================================
-
-  describe('Banner — _invalidateBannerCache khi cacheStore là null (line 69)', () => {
-    test('createBanner với cacheStore=null → không throw, không gọi del', async () => {
-      const svcNoCacheStore = new ContentService({
-        contentRepository,
-        emailGateway,
-        cacheStore: null, // không có cacheStore
-        eventBus: { publish: jest.fn() },
-        logger: { info: jest.fn(), error: jest.fn(), warn: jest.fn(), debug: jest.fn() },
-        adminEmail: null,
-      });
-      contentRepository.createBanner.mockResolvedValue({ id: 10 });
-
-      // Không throw — _invalidateBannerCache returns sớm tại line 69
-      await expect(
-        svcNoCacheStore.createBanner({ payload: { title: 'Test' } }),
-      ).resolves.toMatchObject({ id: 10 });
-
-      // cacheStore.del không bao giờ được gọi vì cacheStore null
-      expect(cacheStore.del).not.toHaveBeenCalled();
-    });
-
-    test('deleteBanner với cacheStore=null → không throw', async () => {
-      const svcNoCacheStore = new ContentService({
-        contentRepository,
-        emailGateway,
-        cacheStore: null,
-        eventBus: { publish: jest.fn() },
-        logger: { info: jest.fn(), error: jest.fn(), warn: jest.fn(), debug: jest.fn() },
-        adminEmail: null,
-      });
-      const banner = { id: 3 };
-      contentRepository.findBannerById.mockResolvedValue(banner);
-
-      await expect(svcNoCacheStore.deleteBanner({ id: 3 })).resolves.toBeUndefined();
     });
   });
 

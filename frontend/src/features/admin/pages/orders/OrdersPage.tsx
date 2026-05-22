@@ -12,6 +12,7 @@ import {
   Select,
   Button,
   Tag,
+  Tooltip,
   Modal,
   Form,
   Space,
@@ -272,6 +273,7 @@ const OrdersPage: React.FC = () => {
       width: 120,
       render: (paymentStatus: string, record: AdminOrder) => {
         const isCOD = record.paymentMethod === 'cod';
+        const status = record.status;
         const config = PAYMENT_STATUS_CONFIG[paymentStatus as keyof typeof PAYMENT_STATUS_CONFIG];
 
         let statusText = paymentStatus;
@@ -287,11 +289,25 @@ const OrdersPage: React.FC = () => {
           statusText = t('admin.orders.paymentStatus.refunded');
         }
 
-        return (
+        const warning =
+          status === 'delivered' &&
+          !isCOD &&
+          (paymentStatus === 'pending' || paymentStatus === 'failed')
+            ? t('admin.orders.updateStatus.deliveredUnpaidNote')
+            : paymentStatus === 'refunded' && status !== 'cancelled'
+              ? t('admin.orders.updateStatus.refundedActiveNote')
+              : status === 'cancelled' && paymentStatus === 'paid'
+                ? t('admin.orders.updateStatus.cancelledRefundNote')
+                : null;
+
+        const tag = (
           <Tag color={config?.color} style={{ borderRadius: '16px' }}>
-            {config?.icon} {statusText}
+            {warning ? '⚠️ ' : config?.icon + ' '}
+            {statusText}
           </Tag>
         );
+
+        return warning ? <Tooltip title={warning}>{tag}</Tooltip> : tag;
       },
     },
     {
@@ -614,14 +630,14 @@ const OrdersPage: React.FC = () => {
                         <div>
                           <Text type="secondary">
                             {t('admin.orders.details.items.quantity')}: {item.quantity} ×{' '}
-                            {formatCurrency(item.price)}
+                            {formatCurrency(item.unitPrice)}
                           </Text>
                         </div>
                       }
                     />
                     <div style={{ textAlign: 'right' }}>
                       <Text strong style={{ fontSize: '16px' }}>
-                        {formatCurrency(item.quantity * item.price)}
+                        {formatCurrency(item.quantity * item.unitPrice)}
                       </Text>
                     </div>
                   </List.Item>
@@ -691,7 +707,18 @@ const OrdersPage: React.FC = () => {
         cancelText={t('admin.orders.updateStatus.cancel')}
       >
         {selectedOrder && (
-          <Form form={form} layout="vertical" onFinish={handleStatusUpdate}>
+          <Form
+            form={form}
+            layout="vertical"
+            onFinish={handleStatusUpdate}
+            onValuesChange={(changedValues) => {
+              if (changedValues.status === 'cancelled') {
+                if (form.getFieldValue('paymentStatus') === 'paid') {
+                  form.setFieldValue('paymentStatus', 'refunded');
+                }
+              }
+            }}
+          >
             <Alert
               message={`${t('admin.orders.details.orderNumber')}: #${selectedOrder.number}`}
               description={`${t('admin.orders.updateStatus.currentStatus')}: ${t(`admin.orders.status.${selectedOrder.status}`)}`}
@@ -709,13 +736,80 @@ const OrdersPage: React.FC = () => {
               </Select>
             </Form.Item>
 
-            <Form.Item name="paymentStatus" label={t('admin.orders.details.paymentStatus')}>
-              <Select placeholder={t('admin.orders.details.paymentStatus')}>
-                <Option value="pending">{t('admin.orders.paymentStatus.pending')}</Option>
-                <Option value="paid">{t('admin.orders.paymentStatus.paid')}</Option>
-                <Option value="failed">{t('admin.orders.paymentStatus.failed')}</Option>
-                <Option value="refunded">{t('admin.orders.paymentStatus.refunded')}</Option>
-              </Select>
+            <Form.Item
+              noStyle
+              shouldUpdate={(prev, curr) =>
+                prev.status !== curr.status || prev.paymentStatus !== curr.paymentStatus
+              }
+            >
+              {({ getFieldValue }) => {
+                const newStatus = getFieldValue('status');
+                const newPaymentStatus = getFieldValue('paymentStatus');
+                const isCod = selectedOrder?.paymentMethod === 'cod';
+                const isCodDelivered = newStatus === 'delivered' && isCod;
+                const isCancelledRefund =
+                  newStatus === 'cancelled' && newPaymentStatus === 'refunded';
+                const isDeliveredUnpaid =
+                  newStatus === 'delivered' &&
+                  !isCod &&
+                  (newPaymentStatus === 'pending' || newPaymentStatus === 'failed');
+                const isRefundedActive =
+                  newPaymentStatus === 'refunded' && newStatus !== 'cancelled';
+
+                const note = isCodDelivered
+                  ? t('admin.orders.updateStatus.codDeliveredNote')
+                  : isCancelledRefund
+                    ? t('admin.orders.updateStatus.cancelledRefundNote')
+                    : isDeliveredUnpaid
+                      ? t('admin.orders.updateStatus.deliveredUnpaidNote')
+                      : isRefundedActive
+                        ? t('admin.orders.updateStatus.refundedActiveNote')
+                        : undefined;
+
+                return (
+                  <Form.Item
+                    name="paymentStatus"
+                    label={t('admin.orders.details.paymentStatus')}
+                    extra={isCodDelivered || isCancelledRefund ? note : undefined}
+                    dependencies={['status']}
+                    rules={[
+                      {
+                        validator(_, value) {
+                          const status = form.getFieldValue('status');
+                          const isCod = selectedOrder?.paymentMethod === 'cod';
+                          if (status === 'cancelled' && value === 'paid')
+                            return Promise.reject(
+                              t('admin.orders.updateStatus.errorCancelledPaid'),
+                            );
+                          if (
+                            status === 'delivered' &&
+                            !isCod &&
+                            (value === 'pending' || value === 'failed')
+                          )
+                            return Promise.reject(
+                              t('admin.orders.updateStatus.errorDeliveredUnpaid'),
+                            );
+                          if (value === 'refunded' && status !== 'cancelled')
+                            return Promise.reject(
+                              t('admin.orders.updateStatus.errorRefundedActive'),
+                            );
+                          return Promise.resolve();
+                        },
+                      },
+                    ]}
+                  >
+                    <Select
+                      placeholder={t('admin.orders.details.paymentStatus')}
+                      disabled={isCodDelivered}
+                    >
+                      <Option value="pending">{t('admin.orders.paymentStatus.pending')}</Option>
+                      <Option value="paid">{t('admin.orders.paymentStatus.paid')}</Option>
+                      <Option value="failed">{t('admin.orders.paymentStatus.failed')}</Option>
+                      <Option value="refunded">{t('admin.orders.paymentStatus.refunded')}</Option>
+                    </Select>
+                  </Form.Item>
+                );
+              }}
             </Form.Item>
 
             <Form.Item name="note" label={t('admin.orders.updateStatus.note')}>

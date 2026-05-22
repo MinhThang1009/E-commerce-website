@@ -82,11 +82,11 @@ describe('Refresh token reuse detection', () => {
     if (refresh1.status === 200) {
       // Lần 1 thành công → dùng cookie CŨ lần nữa = reuse attack
       const refresh2 = await request(app).post('/api/auth/refresh-token').set('Cookie', cookieStr);
-      // Family bị revoke → 401 hoặc 403; hoặc 200 nếu in-memory blacklist chưa sync
+      // Family bị revoke → 401 hoặc 403; hoặc 200 nếu blacklist chưa hoạt động
       expect([200, 400, 401, 403]).toContain(refresh2.status);
       // Nếu reuse detection hoạt động đúng, phải là 401
       if (refresh2.status === 200) {
-        console.warn('⚠️ Refresh token reuse detection không hoạt động — in-memory blacklist?');
+        console.warn('⚠️ Refresh token reuse detection không hoạt động');
       }
     } else {
       // Refresh token không hoạt động qua supertest cookie (env issue) — skip gracefully

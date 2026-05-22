@@ -18,6 +18,7 @@ class SequelizeCatalogRepository extends ICatalogRepository {
     Brand,
     Product,
     ProductAttribute,
+    ProductImage,
     ProductVariant,
     ProductSpecification,
     Review,
@@ -29,6 +30,7 @@ class SequelizeCatalogRepository extends ICatalogRepository {
     this.Brand = Brand;
     this.Product = Product;
     this.ProductAttribute = ProductAttribute;
+    this.ProductImage = ProductImage;
     this.ProductVariant = ProductVariant;
     this.ProductSpecification = ProductSpecification;
     this.Review = Review;
@@ -354,7 +356,7 @@ class SequelizeCatalogRepository extends ICatalogRepository {
 
   async findFeaturedProducts(limit = 8) {
     return this.Product.findAll({
-      where: { isFeatured: true },
+      where: { isFeatured: true, status: 'active' },
       include: [
         { association: 'category', required: false },
         { association: 'brand', required: false },
@@ -445,6 +447,7 @@ class SequelizeCatalogRepository extends ICatalogRepository {
 
   async findNewArrivals(limit = 8) {
     return this.Product.findAll({
+      where: { status: 'active' },
       include: [
         { association: 'category' },
         { association: 'reviews' },
@@ -725,6 +728,21 @@ class SequelizeCatalogRepository extends ICatalogRepository {
       throw new Error('ProductVariant model bắt buộc trong constructor');
     }
     return this.ProductVariant.bulkCreate(rows, options);
+  }
+
+  async clearProductImages(productId, variantIdFilter, options = {}) {
+    if (!this.ProductImage) return;
+    const where = { productId };
+    if (variantIdFilter === null) where.variantId = null;
+    else if (variantIdFilter === 'all') {
+      /* xóa hết cả product-level lẫn variant-level */
+    } else where.variantId = { [Op.ne]: null };
+    return this.ProductImage.destroy({ where, ...options });
+  }
+
+  async createProductImages(rows, options = {}) {
+    if (!this.ProductImage || !rows || rows.length === 0) return;
+    return this.ProductImage.bulkCreate(rows, options);
   }
 
   async runInTransaction(work) {

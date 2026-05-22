@@ -5,17 +5,12 @@
  * @description Express middleware: rateLimiter
  */
 const rateLimit = require('express-rate-limit');
-const { RedisStore } = require('rate-limit-redis');
-const { getRedisClient } = require('@config/redis');
 const logger = require('@utils/logger');
 
-// Store proxy: bắt đầu với in-memory, tự nâng cấp lên Redis khi kết nối thành công
-// express-rate-limit gọi store.increment() khi request đến — ProxyStore ủy quyền
-// cho RedisStore nếu Redis khả dụng, ngược lại dùng in-memory Map
+// Rate limit store — express-rate-limit gọi store.increment() khi request đến
 class ProxyStore {
   constructor() {
     this._hits = new Map();
-    this._redisStore = null;
     this._windowMs = 60000;
   }
 
@@ -23,18 +18,7 @@ class ProxyStore {
     this._windowMs = options.windowMs || 60000;
   }
 
-  useRedis(store) {
-    this._redisStore = store;
-  }
-
   async increment(key) {
-    if (this._redisStore) {
-      try {
-        return await this._redisStore.increment(key);
-      } catch {
-        /* fallback */
-      }
-    }
     const now = Date.now();
     let rec = this._hits.get(key);
     if (!rec || rec.resetTime.getTime() < now) {
@@ -46,37 +30,16 @@ class ProxyStore {
   }
 
   async decrement(key) {
-    if (this._redisStore) {
-      try {
-        return await this._redisStore.decrement(key);
-      } catch {
-        /* fallback */
-      }
-    }
     const rec = this._hits.get(key);
     if (rec) rec.totalHits = Math.max(0, rec.totalHits - 1);
   }
 
   async resetKey(key) {
     this._hits.delete(key);
-    if (this._redisStore) {
-      try {
-        await this._redisStore.resetKey(key);
-      } catch {
-        /* bỏ qua */
-      }
-    }
   }
 
   async resetAll() {
     this._hits.clear();
-    if (this._redisStore) {
-      try {
-        await this._redisStore.resetAll?.();
-      } catch {
-        /* bỏ qua */
-      }
-    }
   }
 }
 
@@ -159,25 +122,6 @@ const chatLimiter = rateLimit({
     message: 'Quá nhiều yêu cầu, vui lòng thử lại sau.',
   },
 });
-
-// Nâng cấp tất cả proxy stores lên Redis khi kết nối thành công (async, non-blocking)
-getRedisClient()
-  .then((client) => {
-    if (typeof client.sendCommand === 'function') {
-      Object.entries(PROXY_STORES).forEach(([prefix, proxy]) => {
-        proxy.useRedis(
-          new RedisStore({
-            sendCommand: (...args) => client.sendCommand(args),
-            prefix: `rl:${prefix}:`,
-          }),
-        );
-      });
-      logger.info('[RateLimiter] Đã nâng cấp lên Redis store — counter persist qua restart');
-    }
-  })
-  .catch(() => {
-    logger.info('[RateLimiter] Sử dụng memory store (Redis không khả dụng)');
-  });
 
 module.exports = {
   apiLimiter,

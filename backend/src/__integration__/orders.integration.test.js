@@ -1,15 +1,6 @@
 require('module-alias/register');
 const sequelize = require('@config/sequelize');
-const {
-  User,
-  Product,
-  ProductVariant,
-  Category,
-  Brand,
-  Order,
-  OrderItem,
-  LoyaltyHistory,
-} = require('@models');
+const { User, Product, ProductVariant, Category, Brand, Order, OrderItem } = require('@models');
 const { Op } = require('sequelize');
 
 const TS = Date.now();
@@ -60,9 +51,8 @@ beforeAll(async () => {
 });
 
 afterAll(async () => {
-  await LoyaltyHistory.destroy({ where: { userId: user?.id }, force: true });
   await OrderItem.destroy({ where: {}, force: true });
-  await Order.destroy({ where: { userId: user?.id }, force: true });
+  if (user) await Order.destroy({ where: { userId: user.id }, force: true });
   if (variant) await variant.destroy({ force: true });
   if (product) await product.destroy({ force: true });
   if (user) await user.destroy({ force: true });
@@ -123,20 +113,6 @@ describe('Orders Integration', () => {
 
   test('Total = subtotal + shippingFee', async () => {
     expect(Number(order.total)).toBe(Number(order.subtotal) + Number(order.shippingCost));
-  });
-
-  test('Tạo LoyaltyHistory khi thanh toán thành công', async () => {
-    await LoyaltyHistory.create({
-      userId: user.id,
-      orderId: order.id,
-      type: 'earn',
-      points: 6, // 6M / 1000
-      description: 'Tích điểm từ đơn hàng',
-    });
-
-    const history = await LoyaltyHistory.findOne({ where: { orderId: order.id, type: 'earn' } });
-    expect(history).not.toBeNull();
-    expect(history.points).toBe(6);
   });
 
   test('Update order status: pending → processing', async () => {

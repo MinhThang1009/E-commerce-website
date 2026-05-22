@@ -64,26 +64,6 @@ describe('_buildCartResponse — khi item không có Product', () => {
     expect(result.subtotal).toBe(0);
     expect(result.totalItems).toBe(2);
   });
-
-  it.skip('warrantyPackages là [] khi item không có warrantyPackageIds', async () => {
-    // Line 60-61: else branch — warrantyPackageIds falsy hoặc length = 0
-    const { service, cartRepository } = buildService();
-    const item = {
-      toJSON: () => ({
-        id: 2,
-        quantity: 1,
-        variantId: null,
-        Product: null,
-        ProductVariant: null,
-      }),
-      quantity: 1,
-    };
-    cartRepository.findCartItemsWithDetails.mockResolvedValue([item]);
-
-    const result = await service._buildCartResponse({ id: 1 });
-
-    expect(result.items[0].warrantyPackages).toEqual([]);
-  });
 });
 
 // ─── _buildCartResponse — branch: variantStock = 0, dùng defaultVariant (line 33) ──
@@ -759,5 +739,223 @@ describe('validateCart — item có ProductVariant → name lấy từ product',
     const result = await service.validateCart({ user: { id: 1 } });
 
     expect(result.items[0].name).toBe('Điện thoại');
+  });
+});
+
+// ─── mergeCart — user = null → 401 (line 376) ────────────────────────────────
+
+describe('mergeCart — user = null → 401 (line 376)', () => {
+  it('ném 401 khi user không đăng nhập', async () => {
+    const { service } = buildService();
+
+    await expect(
+      service.mergeCart({ user: null, cookieSessionId: 'sess-abc' }),
+    ).rejects.toMatchObject({ statusCode: 401 });
+  });
+});
+
+// ─── mergeCart — merge items: existingUserItem (lines 410-423) ───────────────
+
+describe('mergeCart — merge items với existing user item (lines 410-423)', () => {
+  it('cộng dồn quantity và cap theo maxStock khi existingUserItem tồn tại', async () => {
+    const { service, cartRepository } = buildService();
+
+    const sessionCart = { id: 20, status: 'active' };
+    const userCart = { id: 10 };
+    const existingUserItem = {
+      id: 100,
+      quantity: 2,
+      price: 50000,
+      save: jest.fn(),
+    };
+    const sessionItem = {
+      id: 200,
+      cartId: 20,
+      productId: 1,
+      variantId: 5,
+      quantity: 3,
+      Product: { id: 1, basePrice: 50000, defaultVariant: { stockQuantity: 10 } },
+      ProductVariant: { id: 5, price: '50000', stockQuantity: 4 }, // maxStock = 4
+    };
+
+    cartRepository.findActiveCartBySessionId.mockResolvedValue(sessionCart);
+    cartRepository.findOrCreateActiveCartByUserId.mockResolvedValue(userCart);
+    cartRepository.findCartItemsForMerge.mockResolvedValue([sessionItem]);
+    cartRepository.findCartItemMatching.mockResolvedValue(existingUserItem);
+    cartRepository.findActiveCartByUserId.mockResolvedValue(userCart);
+    cartRepository.findCartItemsWithDetails.mockResolvedValue([]);
+
+    await service.mergeCart({ user: { id: 1 }, cookieSessionId: 'sess-abc' });
+
+    // existingUserItem.quantity = min(2+3, 4) = 4
+    expect(existingUserItem.quantity).toBe(4);
+    expect(cartRepository.saveCartItem).toHaveBeenCalled();
+    expect(cartRepository.deleteCartItem).toHaveBeenCalledWith(sessionItem, expect.any(Object));
+  });
+
+  it('move session item vào user cart khi không có existingUserItem (else branch)', async () => {
+    const { service, cartRepository } = buildService();
+
+    const sessionCart = { id: 21, status: 'active' };
+    const userCart = { id: 11 };
+    const sessionItem = {
+      id: 201,
+      cartId: 21,
+      productId: 2,
+      variantId: null,
+      quantity: 1,
+      Product: { id: 2, basePrice: 30000, defaultVariant: null },
+      ProductVariant: null,
+    };
+
+    cartRepository.findActiveCartBySessionId.mockResolvedValue(sessionCart);
+    cartRepository.findOrCreateActiveCartByUserId.mockResolvedValue(userCart);
+    cartRepository.findCartItemsForMerge.mockResolvedValue([sessionItem]);
+    cartRepository.findCartItemMatching.mockResolvedValue(null); // không có existing
+    cartRepository.findActiveCartByUserId.mockResolvedValue(userCart);
+    cartRepository.findCartItemsWithDetails.mockResolvedValue([]);
+
+    await service.mergeCart({ user: { id: 1 }, cookieSessionId: 'sess-21' });
+
+    // sessionItem.cartId được đổi sang userCart.id
+    expect(sessionItem.cartId).toBe(11);
+    expect(cartRepository.saveCartItem).toHaveBeenCalledWith(sessionItem, expect.any(Object));
+  });
+});
+
+// ─── removeCartItem — session user path (lines 267-268) ──────────────────────
+
+describe('removeCartItem — session path (lines 267-268)', () => {
+  it('xóa item của guest cart theo sessionId', async () => {
+    const { service, cartRepository } = buildService();
+    const cartItem = {
+      id: 50,
+      Cart: { userId: null, sessionId: 'sess-xyz' },
+    };
+    cartRepository.findCartItemByIdWithCartAndStock.mockResolvedValue(cartItem);
+    cartRepository.findOrCreateActiveCartBySessionId.mockResolvedValue({ id: 1 });
+
+    await service.removeCartItem({
+      user: null,
+      cookieSessionId: 'sess-xyz',
+      itemId: 50,
+    });
+
+    expect(cartRepository.deleteCartItem).toHaveBeenCalledWith(cartItem);
+  });
+});
+
+// ─── _assertStock — variant stock check (line 107) ───────────────────────────
+
+describe('_assertStock — variant stock không đủ (line 107)', () => {
+  it('ném 400 khi variant.stockQuantity < quantity', async () => {
+    const { service, cartRepository } = buildService();
+    const cartItem = {
+      cartId: 1,
+      Cart: { userId: 1 },
+      Product: { id: 1, defaultVariant: { stockQuantity: 10 } },
+      ProductVariant: { stockQuantity: 3 }, // stock chỉ có 3
+    };
+    cartRepository.findCartItemByIdWithCartAndStock.mockResolvedValue(cartItem);
+    cartRepository.findOrCreateActiveCartByUserId.mockResolvedValue({ id: 1 });
+
+    // Cập nhật quantity = 5 nhưng stock chỉ có 3 → throw 400
+    await expect(
+      service.updateCartItem({ user: { id: 1 }, itemId: 5, quantity: 5 }),
+    ).rejects.toMatchObject({ statusCode: 400 });
+  });
+});
+
+// ─── addToCart — setSessionCookie callback (line 215) ─────────────────────────
+
+describe('addToCart — setSessionCookie callback được gọi khi không có sessionId (line 215)', () => {
+  it('gọi setSessionCookie khi guest không có cookieSessionId', async () => {
+    const { service, cartRepository } = buildService();
+    const product = {
+      id: 1,
+      basePrice: 100,
+      defaultVariant: { stockQuantity: 10, price: 100 },
+    };
+    const variant = null;
+    const cart = { id: 5 };
+    const cartItem = { id: 1, quantity: 1, productId: 1, variantId: null, unitPrice: 100 };
+
+    cartRepository.findProductById.mockResolvedValue(product);
+    cartRepository.findVariantByIdAndProductId.mockResolvedValue(variant);
+    cartRepository.findOrCreateActiveCartBySessionId.mockResolvedValue(cart);
+    cartRepository.sumCartItemQuantity.mockResolvedValue(0);
+    cartRepository.findCartItemMatching.mockResolvedValue(null);
+    cartRepository.createCartItem.mockResolvedValue(cartItem);
+    cartRepository.findCartItemsWithDetails.mockResolvedValue([]);
+
+    const setSessionCookie = jest.fn();
+
+    await service.addToCart({
+      user: null,
+      cookieSessionId: null, // không có sessionId → phải gọi setSessionCookie
+      body: { productId: 1, quantity: 1 },
+      setSessionCookie,
+    });
+
+    expect(setSessionCookie).toHaveBeenCalledWith(expect.any(String));
+  });
+});
+
+// ─── clearCart — guest không có sessionId (lines 297-300) ─────────────────────
+
+describe('clearCart — guest không có cookieSessionId (lines 297-300)', () => {
+  it('trả về alreadyEmpty khi guest không có sessionId', async () => {
+    const { service } = buildService();
+
+    const result = await service.clearCart({ user: null, cookieSessionId: null });
+
+    expect(result.message).toBe('cart.alreadyEmpty');
+  });
+});
+
+// ─── syncCart — user = null → 401 (line 315-316) ─────────────────────────────
+
+describe('syncCart — user = null → 401 (line 316)', () => {
+  it('ném 401 khi user không đăng nhập', async () => {
+    const { service } = buildService();
+
+    await expect(
+      service.syncCart({ user: null, cookieSessionId: null, items: [] }),
+    ).rejects.toMatchObject({ statusCode: 401 });
+  });
+});
+
+// ─── validateCart — guest không có sessionId (line 448) ──────────────────────
+
+describe('validateCart — guest không có cookieSessionId (line 448)', () => {
+  it('trả về hasIssues: false, items: [] khi không có sessionId', async () => {
+    const { service } = buildService();
+
+    const result = await service.validateCart({ user: null, cookieSessionId: null });
+
+    expect(result).toEqual({ hasIssues: false, items: [] });
+  });
+});
+
+// ─── validateCart — item không có Product (line 457-458) ─────────────────────
+
+describe('validateCart — item không có Product (line 457-458)', () => {
+  it('trả về item với name "Sản phẩm không còn tồn tại" khi Product null', async () => {
+    const { service, cartRepository } = buildService();
+    cartRepository.findActiveCartByUserId.mockResolvedValue({ id: 1 });
+    cartRepository.findCartItemsForValidation.mockResolvedValue([
+      {
+        id: 5,
+        productId: 10,
+        variantId: null,
+        quantity: 2,
+        Product: null, // sản phẩm đã bị xóa
+      },
+    ]);
+
+    const result = await service.validateCart({ user: { id: 1 } });
+
+    expect(result.items[0].name).toBe('Sản phẩm không còn tồn tại');
+    expect(result.hasIssues).toBe(true);
   });
 });

@@ -9,7 +9,7 @@
  *   2. Keyword search (BM25-inspired) — bắt exact match tên/brand
  *      Ví dụ: "iPhone 15" bắt chính xác sản phẩm có "iPhone 15" trong tên
  *
- * Dữ liệu lưu in-memory (mảng items) + persist xuống file JSON (data/vector-db.json).
+ * Dữ liệu lưu trong mảng JavaScript + persist xuống file JSON (data/vector-db.json).
  * Mỗi item gồm: vector 1024 chiều + text gốc + metadata sản phẩm (tên, giá, stock...).
  */
 const logger = require('@utils/logger');

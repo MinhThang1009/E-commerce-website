@@ -55,46 +55,6 @@ function loadModelCapture(modelPath) {
 // banner.js — virtual field `title` getter and setter
 // ════════════════════════════════════════════════════════════════════════════
 
-describe.skip('banner.js — title virtual field getter', () => {
-  let titleField;
-
-  beforeAll(() => {
-    const { fields } = loadModelCapture('@models/banner');
-    titleField = fields.title;
-  });
-
-  it('getter trả về giá trị của titleVi', () => {
-    const inst = makeInstance({ titleVi: 'Banner mùa hè' });
-    expect(titleField.get.call(inst)).toBe('Banner mùa hè');
-  });
-
-  it('getter trả về undefined khi titleVi chưa được set', () => {
-    const inst = makeInstance({});
-    expect(titleField.get.call(inst)).toBeUndefined();
-  });
-});
-
-describe.skip('banner.js — title virtual field setter', () => {
-  let titleField;
-
-  beforeAll(() => {
-    const { fields } = loadModelCapture('@models/banner');
-    titleField = fields.title;
-  });
-
-  it('setter ghi giá trị vào titleVi', () => {
-    const inst = makeInstance({ titleVi: null });
-    titleField.set.call(inst, 'Flash Sale');
-    expect(inst.getDataValue('titleVi')).toBe('Flash Sale');
-  });
-
-  it('setter với string rỗng ghi string rỗng vào titleVi', () => {
-    const inst = makeInstance({ titleVi: 'cũ' });
-    titleField.set.call(inst, '');
-    expect(inst.getDataValue('titleVi')).toBe('');
-  });
-});
-
 // ════════════════════════════════════════════════════════════════════════════
 // usersDto.js — toUserDto và toAddressDto
 // ════════════════════════════════════════════════════════════════════════════

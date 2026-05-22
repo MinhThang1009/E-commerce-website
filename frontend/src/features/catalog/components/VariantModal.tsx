@@ -8,16 +8,19 @@ import React, { useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Modal, Form, Input, InputNumber, Select, Button, Space } from 'antd';
 import { SaveOutlined, CloseOutlined } from '@ant-design/icons';
+import { formatAttributeKey } from '../utils/product-naming';
 
 interface Variant {
   id?: string;
   name: string;
   price: number;
+  compareAtPrice?: number | null;
   stock?: number;
   stockQuantity?: number;
   sku?: string;
   attributes?: Record<string, string>;
   value?: string;
+  images?: string[];
 }
 
 interface VariantModalProps {
@@ -46,6 +49,8 @@ const VariantModal: React.FC<VariantModalProps> = ({
         price: variant.price || 0,
         stock: variant.stock || 0,
         sku: variant.sku || '',
+        compareAtPrice: variant.compareAtPrice || null,
+        images: Array.isArray(variant.images) ? variant.images.join('\n') : variant.images || '',
         ...variant.attributes,
       });
     } else {
@@ -55,7 +60,7 @@ const VariantModal: React.FC<VariantModalProps> = ({
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any -- Antd Form destructuring cần dynamic keys
   const handleSubmit = (values: any) => {
-    const { name, price, stock, sku, ...attributeValues } = values;
+    const { name, price, compareAtPrice, stock, sku, images, ...attributeValues } = values;
 
     const filteredAttributes: Record<string, string> = {};
     Object.keys(attributeValues).forEach((key) => {
@@ -68,13 +73,22 @@ const VariantModal: React.FC<VariantModalProps> = ({
       }
     });
 
+    const parsedImages = images
+      ? images
+          .split('\n')
+          .map((u: string) => u.trim())
+          .filter(Boolean)
+      : [];
+
     const variantData: Variant = {
       id: variant?.id,
       name: name.trim(),
       price: price || 0,
+      compareAtPrice: compareAtPrice ? Number(compareAtPrice) : null,
       stock: stock || 0,
       sku: sku ? sku.trim() : '',
       attributes: filteredAttributes,
+      images: parsedImages,
     };
 
     onSave(variantData);
@@ -166,6 +180,27 @@ const VariantModal: React.FC<VariantModalProps> = ({
             </Space.Compact>
           </Form.Item>
 
+          <Form.Item
+            label={t('variantModal.comparePriceLabel')}
+            tooltip={t('variantModal.comparePriceTooltip')}
+          >
+            <Space.Compact style={{ width: '100%' }}>
+              <Form.Item name="compareAtPrice" noStyle>
+                <InputNumber<number>
+                  placeholder="12,990,000"
+                  min={0}
+                  step={1000}
+                  style={{ width: '100%' }}
+                  formatter={(value) =>
+                    value ? `${value}`.replace(/\B(?=(\d{3})+(?!\d))/g, ',') : ''
+                  }
+                  parser={(value) => Number(value?.replace(/\$\s?|(,*)/g, '') ?? '')}
+                />
+              </Form.Item>
+              <div className="ant-input-group-addon">{t('common.currencySymbol')}</div>
+            </Space.Compact>
+          </Form.Item>
+
           <Form.Item label={t('variantModal.stockLabel')} required>
             <Space.Compact style={{ width: '100%' }}>
               <Form.Item
@@ -216,9 +251,11 @@ const VariantModal: React.FC<VariantModalProps> = ({
                       .filter((v: string) => v)
                   : [];
                 return (
-                  <Form.Item key={attr.id} label={attr.name} name={attr.name}>
+                  <Form.Item key={attr.id} label={formatAttributeKey(attr.name)} name={attr.name}>
                     <Select
-                      placeholder={t('variantModal.selectAttr', { name: attr.name })}
+                      placeholder={t('variantModal.selectAttr', {
+                        name: formatAttributeKey(attr.name),
+                      })}
                       allowClear
                     >
                       {values.map((value: string) => (
@@ -233,6 +270,17 @@ const VariantModal: React.FC<VariantModalProps> = ({
             </div>
           </div>
         )}
+
+        {/* Ảnh biến thể */}
+        <div style={{ borderTop: '1px solid #f0f0f0', paddingTop: '16px', marginTop: '16px' }}>
+          <Form.Item
+            name="images"
+            label={t('variantModal.imagesLabel')}
+            extra={t('variantModal.imagesHint')}
+          >
+            <Input.TextArea rows={3} placeholder={t('variantModal.imagesPlaceholder')} />
+          </Form.Item>
+        </div>
 
         {/* Nút submit */}
         <div style={{ textAlign: 'right', marginTop: '24px' }}>

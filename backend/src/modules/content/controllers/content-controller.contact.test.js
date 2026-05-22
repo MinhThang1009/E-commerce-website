@@ -59,17 +59,13 @@ const contentModule = buildContentModule({
   Feedback,
   User,
   emailService,
-  redisClient: null,
   eventBus,
   logger,
 });
 
-// Tìm contact router trong mounts (Phase 42 module trả về mounts array)
-const contactMount = contentModule.mounts.find((m) => m.basePath === '/contact');
-
 const app = express();
 app.use(express.json());
-app.use('/api/contact', contactMount.router);
+app.use('/api/contact', contentModule.router);
 app.use((err, _req, res, _next) => {
   res.status(err.statusCode || 500).json({ status: 'error', message: err.message });
 });

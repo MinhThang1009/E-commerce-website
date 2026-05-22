@@ -24,7 +24,7 @@
 
 # 2. Architecture
 
-- **Storage:** In-memory array `this.items` + persist JSON sang `backend/data/vector-db.json`
+- **Storage:** Mảng JavaScript `this.items` + persist JSON sang `backend/data/vector-db.json`
 - **Load:** Async on constructor (`this.loadPromise`), mọi method await trước khi xử lý
 - **Vectors:** 1024-dimensional, generated bởi `EmbeddingService`
 - **Hybrid scoring:** cosine similarity + keyword score, boost +0.05 nếu overlap, inject keyword-only results với score thấp

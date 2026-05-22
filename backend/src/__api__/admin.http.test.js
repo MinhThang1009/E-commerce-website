@@ -205,17 +205,6 @@ analyticsEndpoints.forEach((ep) => {
   });
 });
 
-// ── Audit Logs ───────────────────────────────────────────────
-describe('GET /api/admin/audit-logs', () => {
-  test('→ 200', async () => {
-    const res = await request(app)
-      .get('/api/admin/audit-logs')
-      .set('Authorization', `Bearer ${adminToken}`);
-    expect(res.status).toBe(200);
-    expect(res.body.status).toBe('success');
-  });
-});
-
 // ── Users extended ───────────────────────────────────────────
 describe('DELETE /api/admin/users/:id', () => {
   test('admin xóa user → 200 hoặc 400', async () => {

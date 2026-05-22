@@ -10,7 +10,7 @@ const SequelizeInventoryRepository = require('@modules/inventory/repositories/se
 const buildRoutes = require('@modules/inventory/routes');
 
 // Inventory module — DDD-lite. Subscribe OrderCancelledEvent từ orders module
-// để log audit (orders module đã restore stock inline trong cancelOrder).
+// để ghi InventoryLog (orders module đã restore stock inline trong cancelOrder).
 module.exports = ({ Product, ProductVariant, InventoryLog, User, sequelize, eventBus, logger }) => {
   if (!Product) throw new Error('inventory module: Product model bắt buộc');
   if (!ProductVariant) throw new Error('inventory module: ProductVariant model bắt buộc');
@@ -25,7 +25,6 @@ module.exports = ({ Product, ProductVariant, InventoryLog, User, sequelize, even
   const inventoryService = new InventoryService({
     inventoryRepository,
     sequelize,
-    eventBus,
     logger,
   });
   const inventoryController = new InventoryController({ inventoryService });
@@ -35,7 +34,7 @@ module.exports = ({ Product, ProductVariant, InventoryLog, User, sequelize, even
     basePath: '/inventory',
     router,
     subscribeEvents() {
-      // Subscribe OrderCancelledEvent — audit log only (stock đã restore trong
+      // Subscribe OrderCancelledEvent — ghi InventoryLog (stock đã restore trong
       // orders.cancelOrder inline). Tương lai có thể đổi sang event-driven
       // restoration khi orders module bỏ inline restore.
       eventBus.subscribe('order.cancelled', async (event) => {

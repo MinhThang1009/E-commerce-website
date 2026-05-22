@@ -200,57 +200,7 @@ describe('ChatMessage Integration — Lưu & đọc lịch sử', () => {
   });
 });
 
-// ─────────────────────────────────────────────────────────────
-describe('AI Repository Integration — Product Search', () => {
-  test('searchProducts trả về sản phẩm active có keyword khớp', async () => {
-    const results = await aiRepo.searchProducts({
-      keyword: `int-ai-laptop-${TS}`.slice(0, 20), // substring để match
-      limit: 10,
-    });
-    // Sản phẩm test có "laptop" trong nameEn và slug
-    expect(Array.isArray(results)).toBe(true);
-  });
-
-  test('searchProducts filter theo minPrice', async () => {
-    const results = await aiRepo.searchProducts({
-      minPrice: 10_000_000,
-      limit: 50,
-    });
-    expect(results.length).toBeGreaterThan(0);
-    for (const p of results) {
-      expect(Number(p.basePrice)).toBeGreaterThanOrEqual(10_000_000);
-    }
-  });
-
-  test('searchProducts filter theo maxPrice', async () => {
-    const results = await aiRepo.searchProducts({
-      maxPrice: 5_000_000,
-      limit: 50,
-    });
-    for (const p of results) {
-      expect(Number(p.basePrice)).toBeLessThanOrEqual(5_000_000);
-    }
-  });
-
-  test('searchProducts filter minPrice + maxPrice', async () => {
-    const results = await aiRepo.searchProducts({
-      minPrice: 10_000_000,
-      maxPrice: 20_000_000,
-      limit: 50,
-    });
-    for (const p of results) {
-      const price = Number(p.basePrice);
-      expect(price).toBeGreaterThanOrEqual(10_000_000);
-      expect(price).toBeLessThanOrEqual(20_000_000);
-    }
-  });
-
-  test('searchProducts không có keyword trả về tất cả active', async () => {
-    const results = await aiRepo.searchProducts({ limit: 5 });
-    expect(results.length).toBeGreaterThan(0);
-    for (const p of results) expect(p.status).toBe('active');
-  });
-});
+// searchProducts đã bị xóa khỏi SequelizeAIRepository (dead code — AI module dùng vector search, không dùng SQL keyword search).
 
 // ─────────────────────────────────────────────────────────────
 describe('AI Repository Integration — Deals & Featured', () => {
@@ -338,33 +288,7 @@ describe('AI Repository Integration — findProductForCart', () => {
   });
 });
 
-// ─────────────────────────────────────────────────────────────
-describe('AI Repository Integration — searchProducts với categoryName', () => {
-  test('searchProducts filter theo categoryName khớp nameVi', async () => {
-    const results = await aiRepo.searchProducts({
-      categoryName: `__INT_AI_Cat_${TS}`.slice(0, 15),
-      limit: 10,
-    });
-    // testProduct thuộc testCategory có nameVi bắt đầu bằng '__INT_AI_Cat_'
-    expect(Array.isArray(results)).toBe(true);
-    if (results.length > 0) {
-      // Tất cả kết quả phải active
-      for (const p of results) expect(p.status).toBe('active');
-    }
-  });
-
-  test('searchProducts keyword + minPrice kết hợp', async () => {
-    const results = await aiRepo.searchProducts({
-      keyword: 'laptop',
-      minPrice: 1_000_000,
-      limit: 10,
-    });
-    expect(Array.isArray(results)).toBe(true);
-    for (const p of results) {
-      expect(Number(p.basePrice)).toBeGreaterThanOrEqual(1_000_000);
-    }
-  });
-});
+// searchProducts với categoryName đã bị xóa cùng với searchProducts method.
 
 // ─────────────────────────────────────────────────────────────
 describe('AI Repository Integration — addToCart', () => {

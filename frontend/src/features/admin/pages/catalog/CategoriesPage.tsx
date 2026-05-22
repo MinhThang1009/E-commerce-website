@@ -32,7 +32,7 @@ import {
   ReloadOutlined,
 } from '@ant-design/icons';
 import {
-  useGetAllCategoriesQuery,
+  useGetCategoryTreeQuery,
   useCreateCategoryMutation,
   useUpdateCategoryMutation,
   useDeleteCategoryMutation,
@@ -60,7 +60,7 @@ const CategoriesPage: React.FC = () => {
   const [isModalVisible, setIsModalVisible] = useState(false);
   const [editingCategory, setEditingCategory] = useState<Category | null>(null);
 
-  const { data: categoriesData, isLoading, refetch } = useGetAllCategoriesQuery();
+  const { data: categoriesData, isLoading, refetch } = useGetCategoryTreeQuery();
   const { mutateAsync: createCategory, isPending: isCreating } = useCreateCategoryMutation();
   const { mutateAsync: updateCategory, isPending: isUpdating } = useUpdateCategoryMutation();
   const { mutateAsync: deleteCategory } = useDeleteCategoryMutation();
@@ -73,8 +73,8 @@ const CategoriesPage: React.FC = () => {
 
   const getParentOptions = (excludeId?: string) =>
     categories
-      .filter((cat) => cat.id !== excludeId && !cat.parentId)
-      .map((cat) => ({ value: cat.id, label: cat.name }));
+      .filter((cat: Category) => cat.id !== excludeId && !cat.parentId)
+      .map((cat: Category) => ({ value: cat.id, label: cat.name }));
 
   const handleSubmit = async (values: CategoryFormData) => {
     try {
@@ -116,11 +116,11 @@ const CategoriesPage: React.FC = () => {
     setIsModalVisible(true);
     form.setFieldsValue({
       name: category.name,
-      description: category.description,
-      image: category.image,
-      parentId: category.parentId,
-      isActive: category.isActive,
-      sortOrder: category.sortOrder || 0,
+      description: category.description ?? undefined,
+      image: category.image ?? undefined,
+      parentId: category.parentId ?? undefined,
+      isActive: category.isActive ?? true,
+      sortOrder: category.sortOrder ?? 0,
     });
   };
 
@@ -175,7 +175,7 @@ const CategoriesPage: React.FC = () => {
       key: 'parentId',
       render: (parentId?: string | null) => {
         if (!parentId) return <Tag color="green">{t('admin.categories.table.root')}</Tag>;
-        const parent = categories.find((cat) => cat.id === parentId);
+        const parent = categories.find((cat: Category) => cat.id === parentId);
         return parent ? (
           <Tag color="blue">{parent.name}</Tag>
         ) : (

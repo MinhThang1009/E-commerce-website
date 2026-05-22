@@ -201,17 +201,7 @@ describe('findOtherAttributes — với categoryId', () => {
 
 // ─── setProductWarrantyPackages ───────────────────────────────────────────────
 
-describe('setProductWarrantyPackages', () => {
-  it.skip('gọi product.setWarrantyPackages với warranties và options', async () => {
-    const { repo } = makeRepo();
-    const product = { setWarrantyPackages: jest.fn().mockResolvedValue() };
-    const warranties = [{ id: 1 }, { id: 2 }];
-
-    await repo.setProductWarrantyPackages(product, warranties, { transaction: 'tx' });
-
-    expect(product.setWarrantyPackages).toHaveBeenCalledWith(warranties, { transaction: 'tx' });
-  });
-});
+describe('setProductWarrantyPackages', () => {});
 
 // ─── findDeals — sort price_desc ──────────────────────────────────────────────
 
@@ -295,15 +285,7 @@ describe('createProductVariants — line 771: thiếu ProductVariant model', () 
 
 // ─── findWarrantyPackagesByIds — guard: WarrantyPackage thiếu → throw ──────────
 
-describe('findWarrantyPackagesByIds — guard: thiếu WarrantyPackage model', () => {
-  it.skip('throw khi WarrantyPackage không được inject vào constructor', async () => {
-    const { repo } = makeRepo({ WarrantyPackage: undefined });
-
-    await expect(repo.findWarrantyPackagesByIds([1, 2])).rejects.toThrow(
-      'WarrantyPackage model bắt buộc trong constructor',
-    );
-  });
-});
+describe('findWarrantyPackagesByIds — guard: thiếu WarrantyPackage model', () => {});
 
 // ─── clearProductAttributes — guard: ProductAttribute null → return early ───────
 

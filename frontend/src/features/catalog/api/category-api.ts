@@ -46,9 +46,7 @@ export function useGetAllCategoriesQuery(options?: { enabled?: boolean; skip?: b
   return useQuery<CategoryResponse>({
     queryKey: categoryKeys.lists(),
     queryFn: async () => {
-      const { data } = await apiClient.get('/categories', {
-        headers: { 'Cache-Control': 'no-cache' },
-      });
+      const { data } = await apiClient.get('/categories', {});
       return data;
     },
     enabled: options?.skip !== undefined ? !options.skip : true,
@@ -59,7 +57,7 @@ export function useGetCategoryTreeQuery(options?: { enabled?: boolean; skip?: bo
   return useQuery<CategoryResponse>({
     queryKey: categoryKeys.tree(),
     queryFn: async () => {
-      const { data } = await apiClient.get('/categories/tree');
+      const { data } = await apiClient.get('/categories/tree', {});
       return data;
     },
     enabled: options?.skip !== undefined ? !options.skip : true,
@@ -102,7 +100,7 @@ export function useCreateCategoryMutation() {
       return data as CategoryResponse;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: categoryKeys.all });
+      queryClient.invalidateQueries({ queryKey: categoryKeys.all, refetchType: 'all' });
     },
   });
 }
@@ -115,7 +113,7 @@ export function useUpdateCategoryMutation() {
       return data as CategoryResponse;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: categoryKeys.all });
+      queryClient.invalidateQueries({ queryKey: categoryKeys.all, refetchType: 'all' });
     },
   });
 }
@@ -128,7 +126,7 @@ export function useDeleteCategoryMutation() {
       return data as { status: string; message: string };
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: categoryKeys.all });
+      queryClient.invalidateQueries({ queryKey: categoryKeys.all, refetchType: 'all' });
     },
   });
 }

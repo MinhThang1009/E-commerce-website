@@ -31,7 +31,6 @@ module.exports = {
   adminCancelOrder: adminService.adminCancelOrder,
   updateProductStock: adminService.updateProductStock,
   restockProduct: adminService.restockProduct,
-  getAuditLogs: adminService.getAuditLogs,
   getOrderStatusAnalytics: adminService.getOrderStatusAnalytics,
   getTopProductsAnalytics: adminService.getTopProductsAnalytics,
   getRevenueByCategoryAnalytics: adminService.getRevenueByCategoryAnalytics,

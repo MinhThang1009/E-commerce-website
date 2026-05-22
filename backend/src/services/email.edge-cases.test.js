@@ -77,16 +77,6 @@ jest.mock('google-auth-library', () => ({
   })),
 }));
 
-jest.mock('@shared/admin-audit', () => ({
-  AdminAuditService: {
-    logSuccessfulLogin: jest.fn(),
-  },
-}));
-
-jest.mock('@config/redis', () => ({
-  getRedisClient: jest.fn().mockResolvedValue(null),
-}));
-
 // ---------- Require sau mock ----------
 
 const express = require('express');
@@ -96,16 +86,12 @@ const emailService = require('./email');
 const { User } = require('@models');
 const eventBus = require('@shared/event-bus');
 const logger = require('@utils/logger');
-const { AdminAuditService } = require('@shared/admin-audit');
-const { getRedisClient } = require('@config/redis');
 
 const authModule = buildAuthModule({
   User,
   eventBus,
   logger,
   emailService,
-  auditService: AdminAuditService,
-  redisClient: getRedisClient,
 });
 
 const app = express();

@@ -9,9 +9,8 @@
 - [1. Thứ tự đọc](#1-thứ-tự-đọc)
 - [2. errors/ — Error Class Hierarchy](#2-errors--error-class-hierarchy)
 - [3. event-bus.js — In-Process Pub/Sub](#3-event-busjs--in-process-pubsub)
-- [4. admin-audit.js — Admin Audit Logging](#4-admin-auditjs--admin-audit-logging)
-- [5. persistence/unit-of-work.js — Transaction Wrapper](#5-persistenceunit-of-workjs--transaction-wrapper)
-- [6. index.js — Barrel Export](#6-indexjs--barrel-export)
+- [4. persistence/unit-of-work.js — Transaction Wrapper](#4-persistenceunit-of-workjs--transaction-wrapper)
+- [5. index.js — Barrel Export](#5-indexjs--barrel-export)
 
 ---
 
@@ -19,8 +18,7 @@
 
 1. `errors/index.js` — error hierarchy (dùng nhiều nhất, đọc trước)
 2. `event-bus.js` — pub-sub inter-module
-3. `admin-audit.js` — audit logging
-4. `persistence/unit-of-work.js` — transaction wrapper
+3. `persistence/unit-of-work.js` — transaction wrapper
 
 ---
 
@@ -88,31 +86,7 @@ eventBus.publish({ type: 'order.created', payload: { orderId }, occurredAt: new 
 
 ---
 
-## 4. admin-audit.js — Admin Audit Logging
-
-Ghi log admin actions ra file (Winston) và database (`AuditLog` model).
-
-```js
-// Inject vào admin module qua app.js
-AdminAuditService.logUserAction(adminUser, 'delete', targetUserId, changes, ip);
-AdminAuditService.logProductAction(adminUser, 'create', productId, name, changes, ip);
-AdminAuditService.logOrderAction(adminUser, 'cancel', orderId, orderCode, changes, ip);
-AdminAuditService.logDiscountCodeAction(adminUser, 'deactivate', discountId, code, changes, ip);
-AdminAuditService.logReviewAction(adminUser, 'delete', reviewId, userId, productId, ip);
-AdminAuditService.logSuccessfulLogin(adminUser, ip);
-AdminAuditService.logFailedAuth(email, reason, ip);
-AdminAuditService.logDashboardAccess(adminUser, endpoint, filters); // chỉ file log, không ghi DB
-```
-
-**Implementation notes:**
-
-- Dùng `AsyncLocalStorage` để track IP per-request — không race condition giữa concurrent requests
-- Lazy-require `@models` trong function body → tránh circular dependency khi startup
-- DB errors không interrupt request (wrapped try-catch, log `.warn()`)
-
----
-
-## 5. persistence/unit-of-work.js — Transaction Wrapper
+## 4. persistence/unit-of-work.js — Transaction Wrapper
 
 Service dùng thay vì gọi `sequelize.transaction()` trực tiếp.
 
@@ -135,7 +109,7 @@ await unitOfWork.runInTransaction(async (tx) => { ... }, { transaction: parentTx
 
 ---
 
-## 6. index.js — Barrel Export
+## 5. index.js — Barrel Export
 
 ```js
 const {

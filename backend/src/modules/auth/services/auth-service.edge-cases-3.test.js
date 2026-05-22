@@ -1,20 +1,13 @@
 /**
- * Extra branch coverage cho authService.js line 304.
+ * Branch coverage tests cho auth-service.js refreshToken.
  *
- * Line 303-305:
- *   if (jti && this.blacklistStore) {
- *     await this.blacklistStore.set(`rt_used:${jti}`, ttl, familyId || '1');
- *   }
- *
- * Nhánh TRUE của điều kiện (jti && blacklistStore) đã được cover trong
- * authService.branches.test.js. File này bổ sung test cho:
- *   - familyId truthy → truyền familyId vào set (không dùng '1' fallback)
- *   - familyId falsy → truyền '1' fallback vào set (right side của `||`)
+ * Kiểm tra signRefreshToken được gọi đúng sau khi xóa familyId dead code.
+ * signRefreshToken chỉ nhận { id } — không còn familyId.
  */
 
 const AuthService = require('./auth-service');
 
-function buildService(blacklistStoreOverride = undefined) {
+function buildService() {
   const authRepository = {
     findByEmail: jest.fn(),
     findById: jest.fn(),
@@ -38,12 +31,6 @@ function buildService(blacklistStoreOverride = undefined) {
     verifyAccessToken: jest.fn(),
     verifyRefreshToken: jest.fn(),
   };
-  const blacklistStore = blacklistStoreOverride ?? {
-    get: jest.fn().mockResolvedValue(null),
-    set: jest.fn().mockResolvedValue(),
-  };
-  const auditService = { logSuccessfulLogin: jest.fn() };
-  const eventBus = { publish: jest.fn().mockResolvedValue() };
   const logger = { info: jest.fn(), error: jest.fn(), warn: jest.fn(), debug: jest.fn() };
 
   const service = new AuthService({
@@ -51,21 +38,17 @@ function buildService(blacklistStoreOverride = undefined) {
     emailGateway,
     googleVerifier,
     tokenSigner,
-    blacklistStore,
-    auditService,
-    eventBus,
     logger,
   });
 
-  return { service, authRepository, tokenSigner, blacklistStore };
+  return { service, authRepository, tokenSigner };
 }
 
-// ── Line 304: if (jti && this.blacklistStore) TRUE branch ────────────────────
+// ── refreshToken — signRefreshToken chỉ nhận { id } ─────────────────────────
 
-describe('refreshToken — line 304 TRUE branch: jti + blacklistStore đều truthy', () => {
-  it('đánh dấu rt_used khi jti có và blacklistStore tồn tại (line 304)', async () => {
-    // TRUE branch: jti = 'jti-abc', blacklistStore truthy → gọi set với rt_used:jti-abc
-    const { service, authRepository, tokenSigner, blacklistStore } = buildService();
+describe('refreshToken — signRefreshToken chỉ nhận { id }', () => {
+  it('signRefreshToken được gọi với { id } khi decoded có jti và familyId', async () => {
+    const { service, authRepository, tokenSigner } = buildService();
 
     tokenSigner.verifyRefreshToken.mockReturnValue({
       id: 1,
@@ -74,32 +57,25 @@ describe('refreshToken — line 304 TRUE branch: jti + blacklistStore đều tru
     });
     authRepository.findById.mockResolvedValue({ id: 1, role: 'customer', isActive: true });
 
-    await service.refreshToken({ refreshToken: 'tok' });
+    const result = await service.refreshToken({ refreshToken: 'tok' });
 
-    expect(blacklistStore.set).toHaveBeenCalledWith(
-      'rt_used:jti-abc',
-      expect.any(Number),
-      'family-xyz', // familyId truthy → familyId (không phải '1' fallback)
-    );
+    expect(tokenSigner.signRefreshToken).toHaveBeenCalledWith({ id: 1 });
+    expect(result.token).toBe('access-tok');
+    expect(result.refreshToken).toBe('new-refresh-tok');
   });
 
-  it('dùng "1" làm fallback khi familyId undefined (right side của || tại line 304)', async () => {
-    // familyId = undefined → `familyId || '1'` = '1'
-    const { service, authRepository, tokenSigner, blacklistStore } = buildService();
+  it('signRefreshToken được gọi với { id } khi decoded không có familyId', async () => {
+    const { service, authRepository, tokenSigner } = buildService();
 
     tokenSigner.verifyRefreshToken.mockReturnValue({
       id: 1,
       jti: 'jti-no-family',
-      // familyId không có → undefined
     });
     authRepository.findById.mockResolvedValue({ id: 1, role: 'customer', isActive: true });
 
-    await service.refreshToken({ refreshToken: 'tok-no-family' });
+    const result = await service.refreshToken({ refreshToken: 'tok-no-family' });
 
-    expect(blacklistStore.set).toHaveBeenCalledWith(
-      'rt_used:jti-no-family',
-      expect.any(Number),
-      '1', // fallback vì familyId = undefined
-    );
+    expect(tokenSigner.signRefreshToken).toHaveBeenCalledWith({ id: 1 });
+    expect(result.token).toBe('access-tok');
   });
 });

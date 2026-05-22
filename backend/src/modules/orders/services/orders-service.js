@@ -25,7 +25,8 @@ function _canRepay(status, paymentStatus) {
   return status === STATUS.PENDING || status === STATUS.CANCELLED || paymentStatus === 'failed';
 }
 function _canConfirmReceived(status) {
-  return status === STATUS.SHIPPED || status === STATUS.PROCESSING || status === STATUS.DELIVERED;
+  // delivered là trạng thái SAU KHI xác nhận — không cho confirm lại
+  return status === STATUS.SHIPPED || status === STATUS.PROCESSING;
 }
 function _buildTrackingSteps(status) {
   const progression = ['pending', 'processing', 'shipped', 'delivered'];
@@ -37,14 +38,6 @@ function _buildTrackingSteps(status) {
     { key: 'delivered', label: 'Đã nhận hàng', completed: idx >= 3 },
   ];
 }
-// Công thức tính phí ship: miễn phí nếu đủ ngưỡng, ngược lại tính base + phụ phí theo cân nặng
-function _calcShippingCost({ subtotal, totalWeightKg, freeThreshold, baseRate, weightRate }) {
-  if (subtotal >= freeThreshold) return 0;
-  let cost = baseRate;
-  if (totalWeightKg > 2) cost += Math.ceil(totalWeightKg - 2) * weightRate;
-  return cost;
-}
-
 // Orders Service — pure business logic; mọi data access qua repo.
 class OrdersService {
   constructor({
@@ -64,21 +57,9 @@ class OrdersService {
   // ---------- Helpers ----------
 
   _generateOrderNumber() {
-    const date = new Date();
-    const year = date.getFullYear().toString().substr(-2);
-    const month = (date.getMonth() + 1).toString().padStart(2, '0');
-    const rand = crypto.randomBytes(4).toString('hex').toUpperCase();
-    return `ORD-${year}${month}-${Date.now()}-${rand}`;
-  }
-
-  _calculateShipping(subtotal, totalWeightKg) {
-    return _calcShippingCost({
-      subtotal,
-      totalWeightKg,
-      freeThreshold: this.constants.SHIPPING_FREE_THRESHOLD,
-      baseRate: this.constants.SHIPPING_BASE_RATE,
-      weightRate: this.constants.SHIPPING_WEIGHT_RATE,
-    });
+    const date = new Date().toISOString().slice(0, 10).replace(/-/g, '');
+    const rand = crypto.randomInt(1000, 9999);
+    return `ORD-${date}-${rand}`;
   }
 
   // ---------- Use cases ----------
@@ -111,8 +92,8 @@ class OrdersService {
       paymentMethod,
       notes,
       discountCode,
+      shippingCost: shippingCostFromFE,
       items: providedItems,
-      pointsToUse = 0,
     } = body;
 
     let createdOrder;
@@ -189,9 +170,8 @@ class OrdersService {
         itemsToProcess = cart.items;
       }
 
-      // Validate stock + lock + tính subtotal/weight/warranty
+      // Validate stock + lock + tính subtotal
       let subtotal = 0;
-      let totalWeightKg = 0;
       const pendingInventoryLogs = [];
 
       for (const item of itemsToProcess) {
@@ -242,9 +222,6 @@ class OrdersService {
         const variant = item.ProductVariant;
         const price = variant ? variant.price : product.basePrice;
         subtotal += price * item.quantity;
-
-        const itemWeight = parseFloat(variant?.weight) || 0;
-        totalWeightKg += itemWeight * item.quantity;
       }
 
       // Discount code
@@ -288,7 +265,8 @@ class OrdersService {
         }
       }
 
-      const shippingCost = this._calculateShipping(subtotal, totalWeightKg);
+      // Dùng shippingCost do FE tính (theo khoảng cách km từ kho hàng)
+      const shippingCost = typeof shippingCostFromFE === 'number' ? shippingCostFromFE : 0;
       const tax = 0;
       const total = subtotal + tax + shippingCost - discount;
       const orderNumber = this._generateOrderNumber();
@@ -536,7 +514,7 @@ class OrdersService {
       cancelledOrder = order;
     });
 
-    // inventory/module.js subscribe 'order.cancelled' để tạo audit log
+    // inventory/module.js subscribe 'order.cancelled' để ghi InventoryLog
     await this.eventBus.publish({
       type: 'order.cancelled',
       payload: {
@@ -601,20 +579,6 @@ class OrdersService {
 
     await this.repo.saveOrder(order);
 
-    if (status === STATUS.DELIVERED && previousStatus !== STATUS.DELIVERED) {
-      await this.eventBus.publish({
-        type: 'order.delivered',
-        payload: {
-          orderId: order.id,
-          orderNumber: order.number,
-          userId: order.userId,
-          total: order.total,
-          subtotal: order.subtotal,
-        },
-        occurredAt: new Date().toISOString(),
-      });
-    }
-
     // Email status update
     if (order.user?.email) {
       this.emailGateway
@@ -670,18 +634,6 @@ class OrdersService {
     await this.repo.saveOrder(order);
     await order.reload();
 
-    await this.eventBus.publish({
-      type: 'order.delivered',
-      payload: {
-        orderId: order.id,
-        orderNumber: order.number,
-        userId: order.userId,
-        total: order.total,
-        subtotal: order.subtotal,
-      },
-      occurredAt: new Date().toISOString(),
-    });
-
     return {
       message: 'orders.deliveryConfirmed',
       data: {
@@ -712,11 +664,11 @@ class OrdersService {
     };
   }
 
-  estimateShipping({ subtotal, weight }) {
+  estimateShipping({ subtotal }) {
+    // Phí ship hiển thị trên FE theo khoảng cách km — endpoint này chỉ trả ngưỡng miễn phí
     const sub = parseFloat(subtotal) || 0;
-    const w = parseFloat(weight) || 0;
     return {
-      shippingCost: this._calculateShipping(sub, w),
+      shippingCost: sub >= this.constants.SHIPPING_FREE_THRESHOLD ? 0 : null,
       freeShippingThreshold: this.constants.SHIPPING_FREE_THRESHOLD,
     };
   }

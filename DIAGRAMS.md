@@ -81,7 +81,6 @@ flowchart TB
         A4[Xem thống kê và báo cáo]
         A5[Quản lý mã giảm giá]
         A6[Quản lý tồn kho và nhập hàng]
-        A7[Xem audit log]
         A8[Quản lý danh mục và thương hiệu]
         A9[Quản lý thuộc tính sản phẩm]
     end
@@ -112,7 +111,7 @@ flowchart TB
         A3["POST /api/auth/login\nĐăng nhập email/password\naccessToken JWT 15m + refreshToken family"]
         A4["POST /api/auth/google\nGoogle OAuth2 passport\nupsert user + tokens"]
         A5["POST /api/auth/refresh-token\nRotate refreshToken\nPhát hiện reuse → invalidate cả family"]
-        A6["POST /api/auth/logout\nBlacklist jti trên Redis\nthu hồi refreshToken family"]
+        A6["POST /api/auth/logout\nthu hồi refreshToken family\nclear token phía client"]
         A7["POST /api/auth/forgot-password\nGửi link reset qua email (token hex 32 bytes)\notpLimiter bảo vệ"]
         A8["POST /api/auth/reset-password\nXác thực reset token hex → hash bcrypt cost=12"]
         A9["GET /api/auth/me\nauthenticate middleware → user info"]
@@ -296,8 +295,8 @@ flowchart TB
 
     subgraph INVENTORY["Inventory — Tồn kho"]
         direction TB
-        I1["EventBus order.created\ninventory ghi audit log\nghi inventory_logs"]
-        I2["EventBus order.cancelled\ninventory ghi audit log restore\nghi inventory_logs type=return"]
+        I1["EventBus order.created\nghi inventory_logs"]
+        I2["EventBus order.cancelled\nghi inventory_logs type=return"]
         I3["POST /api/inventory/products/:id/restock\nAdmin nhập hàng\nghi inventory_logs type=restock"]
         I4["GET /api/inventory/logs\nAdmin xem lịch sử tồn kho\nlọc productId variantId change_type"]
         I5["GET /api/admin/products/:id\nXem chi tiết sản phẩm kèm tồn kho theo variant"]
@@ -374,7 +373,6 @@ flowchart TB
         AD5["PUT /api/admin/users/:id\nCập nhật user: role isActive\nbao gồm toggle kích hoạt/vô hiệu hóa"]
         AD6["GET /api/admin/discount-codes\nQuản lý mã giảm giá lọc is_active expired"]
         AD7["POST/PUT/DELETE /api/admin/discount-codes\nCRUD mã giảm giá\ncode type=percent/fixed value min_order_amount usage_limit"]
-        AD8["GET /api/admin/audit-logs\nNhật ký thao tác admin\nlọc action entity_type adminId date"]
         AD9["GET /api/attributes/groups\nCRUD attribute groups cho AI filter\nname type=custom is_required"]
         AD10["POST /api/attributes/groups/:id/values\nCRUD attribute values\nname value color_code affects_name"]
     end
@@ -386,7 +384,6 @@ flowchart TB
     Admin --> AD5
     Admin --> AD6
     Admin --> AD7
-    Admin --> AD8
     Admin --> AD9
     Admin --> AD10
 ```
@@ -403,7 +400,6 @@ sequenceDiagram
     participant FE as Frontend React
     participant API as Backend API
     participant DB as MySQL DB
-    participant Redis as Redis
     participant Mail as Gmail SMTP
 
     Note over User,Mail: Luồng Đăng ký
@@ -560,7 +556,6 @@ sequenceDiagram
     participant VS as Hybrid Vector Store
     participant LLM as LLM Gateway
     participant Embed as Embedding Service
-    participant Redis as Redis Cache
     participant DB as MySQL chat_messages
 
     User->>CW: Nhập câu hỏi về sản phẩm
@@ -582,12 +577,7 @@ sequenceDiagram
             API->>LLM: handleMessage trực tiếp skip retrieval
             LLM-->>API: Response text
         else Intent product_search hoặc pricing
-            API->>Redis: GET cache key = hash normalizedQuery
-
-            alt Cache hit TTL 5 phút shared cache
-                Redis-->>API: Cached response
-            else Cache miss bắt đầu retrieval
-                par Song song Promise.all
+            par Song song Promise.all
                     API->>LLM: rewriteQuery normalizedQuery max_tokens 80 temp 0 timeout 8s
                 and
                     API->>VS: hybridSearch normalizedQuery topK=10
@@ -617,11 +607,10 @@ sequenceDiagram
                 LLM-->>API: response suggestedProducts intent
 
                 API->>API: parseResponse fuzzy match products add links
-                API->>Redis: SET cache TTL 5 phút
             end
         end
 
-        API->>API: Update chat history in-memory Map TTL 30 phút
+        API->>API: Update lịch sử hội thoại (Map) TTL 30 phút
         API->>DB: INSERT chat_messages async role=user + role=assistant
         API-->>CW: response products suggestions intent
         CW-->>User: Hiển thị phản hồi + product cards
@@ -731,33 +720,29 @@ sequenceDiagram
     participant FE as Frontend
     participant API as Backend API
     participant DB as MySQL DB
-    participant Redis as Redis JWT blacklist
 
-    Note over FE,Redis: accessToken hết hạn 15 phút
+    Note over FE,DB: accessToken hết hạn 15 phút
 
     FE->>API: POST /api/auth/refresh-token\nrefreshToken tự động gửi qua httpOnly cookie
-    API->>Redis: GET rt_used:{jti} kiểm tra token đã dùng chưa
-    API->>Redis: GET rt_family_revoked:{familyId} kiểm tra family bị thu hồi chưa
-    Redis-->>API: Kết quả kiểm tra
+    API->>DB: Kiểm tra rt_used:{jti} và rt_family_revoked:{familyId}
 
     alt Token đã dùng (reuse) hoặc family bị revoke
         Note over API: Phát hiện token reuse attack
-        API->>Redis: SET rt_family_revoked:{familyId} EX ttl invalidate cả family
+        API->>DB: SET rt_family_revoked:{familyId} invalidate cả family
         API-->>FE: 401 Phiên đăng nhập không hợp lệ vui lòng đăng nhập lại
         FE-->>FE: Clear tokens redirect /login
     else Token hợp lệ
-        API->>Redis: SET rt_used:{jti} EX ttl đánh dấu token cũ đã dùng
+        API->>DB: SET rt_used:{jti} đánh dấu token cũ đã dùng
         API->>API: Tạo accessToken mới JWT jti mới 15m
         API->>API: Tạo refreshToken mới giữ nguyên familyId
         API-->>FE: 200 OK + accessToken mới refreshToken mới Set-Cookie
         FE->>FE: Lưu accessToken mới retry request gốc
     end
 
-    Note over FE,Redis: Đăng xuất
+    Note over FE,DB: Đăng xuất
 
-    FE->>API: POST /api/auth/logout với accessToken + refreshToken
-    API->>Redis: SET bl:{jti} = 1 EX remaining_ttl blacklist accessToken theo jti
-    API->>Redis: SET rt_family_revoked:{familyId} EX ttl thu hồi family của refreshToken
+    FE->>API: POST /api/auth/logout với refreshToken
+    API->>DB: SET rt_family_revoked:{familyId} thu hồi family của refreshToken
     API-->>FE: 200 OK + Set-Cookie refreshToken= Max-Age=0 clear cookie
     FE-->>FE: Clear accessToken từ memory
 ```
@@ -867,7 +852,6 @@ erDiagram
         tinyint is_featured
         varchar_20 condition
         varchar_20 visibility
-        int warranty_months
         longtext tags
         longtext specifications
         longtext attributes
@@ -1265,25 +1249,11 @@ erDiagram
         datetime created_at
     }
 
-    audit_logs {
-        int id PK
-        int admin_id FK
-        varchar_50 action
-        varchar_50 entity_type
-        int entity_id
-        text old_value
-        text new_value
-        varchar_45 ip
-        datetime created_at
-        datetime updated_at
-    }
-
     users ||--o{ chat_messages : "gửi tin nhắn"
     products ||--o{ inventory_logs : "theo dõi tồn kho"
     product_variants ||--o{ inventory_logs : "theo dõi variant"
     orders ||--o{ inventory_logs : "ghi nhận bán hàng"
     users ||--o{ inventory_logs : "admin thực hiện"
-    users ||--o{ audit_logs : "admin ghi log"
 ```
 
 ---
@@ -1294,12 +1264,12 @@ erDiagram
 flowchart TB
     subgraph CLIENT["Client Layer port 5175"]
         direction TB
-        FE["Frontend\nReact 18 + TypeScript\nVite build tool\nTanStack Query v5\nZustand v5 + Immer\nTailwind CSS + SCSS\n11 features"]
+        FE["Frontend\nReact 18 + TypeScript\nVite build tool\nTanStack Query v5\nZustand v5 + Immer\nTailwind CSS + SCSS\n13 features"]
     end
 
     subgraph BACKEND["Backend Layer port 8888"]
         direction TB
-        API["Express 4\nNode.js 20\nModular Monolith\n16 modules"]
+        API["Express 4\nNode.js 20\nModular Monolith\n17 modules"]
 
         subgraph MODULES["16 Business Modules"]
             direction TB
@@ -1323,9 +1293,9 @@ flowchart TB
 
         subgraph SHARED["Shared Infrastructure"]
             direction TB
-            SH1["EventBus in-memory pub/sub\npayment.succeeded\norder.created → inventory audit\norder.cancelled → inventory audit"]
+            SH1["EventBus pub/sub\npayment.succeeded\norder.created → inventory log\norder.cancelled → inventory log"]
             SH2["UnitOfWork runInTransaction + lockRow\nSELECT FOR UPDATE chống oversell"]
-            SH3["AppError + errors\nAdminAuditService audit log"]
+            SH3["AppError + errors"]
         end
 
         subgraph SVC["Shared Services non-DI"]
@@ -1345,8 +1315,7 @@ flowchart TB
     subgraph STORAGE["Storage Layer"]
         direction TB
         DB[("MySQL 8\nSequelize 6 ORM\n27 models\ntransactions + soft deletes")]
-        REDIS[("Redis\nbl:jti JWT blacklist\nContent cache catalog\nChatbot cache TTL 5m\nIn-memory fallback tự động")]
-        DISK[("Disk Storage\n/uploads/ static files\nvector-db.json product vectors\nchat history in-memory Map")]
+        DISK[("Disk Storage\n/uploads/ static files\nvector-db.json product vectors\nchat history Map")]
     end
 
     subgraph EXTERNAL["External Services"]
@@ -1368,7 +1337,6 @@ flowchart TB
 
     FE <-->|"REST API HTTP/JSON Bearer + httpOnly cookie"| API
     API <-->|"Sequelize ORM + transactions"| DB
-    API <-->|"ioredis blacklist + cache"| REDIS
     API <-->|"fs read/write"| DISK
     M6 -->|"HMAC sign + IPN receive"| VNPAY
     M6 -->|"HMAC sign + IPN receive"| MOMO
@@ -1396,10 +1364,7 @@ flowchart TD
 
     E -->|off_topic / greeting| F["llmGateway.handleMessage\ndirect skip retrieval\ntrả về conversational response"]
 
-    E -->|product_search / pricing| G["Kiểm tra Redis cache\nkey=hash normalizedQuery TTL 5 phút"]
-    G -->|Cache hit| RESP([Trả cached response])
-
-    G -->|Cache miss| H["Song song - Promise.all"]
+    E -->|product_search / pricing| H["Song song - Promise.all"]
     H --> H1["llmGateway.rewriteQuery\nmax_tokens 80 temp 0 timeout 8s\nOptimize query cho vector search"]
     H --> H2["vectorStore.hybridSearch\nnormalizedQuery topK=10"]
 
@@ -1423,11 +1388,8 @@ flowchart TD
     N --> O["llmGateway.generate\nPrompt builder system + products + history + query\ntemp 0.3 max_tokens 800\nresponse_format json_object"]
     O --> P["LLM API OpenAI-compatible\nchat.completions.create"]
     P --> Q["parseResponse\nfuzzy match product names add URLs"]
-    Q --> R["SET Redis cache\nTTL 5 phút shared across users"]
-
     F --> S
-    RESP --> S
-    R --> S["Cập nhật chat history\nin-memory Map TTL 30 phút"]
+    Q --> S["Cập nhật chat history\nMap TTL 30 phút"]
     S --> T["INSERT chat_messages\nDB async không block response"]
     T --> U(["{response products suggestions intent}"])
 ```
@@ -1450,7 +1412,7 @@ stateDiagram-v2
 
     processing --> cancelled : Admin hủy\nHoàn stock về variants\nHoàn tiền là thao tác manual riêng
 
-    shipped --> delivered : Admin xác nhận giao hàng thành công\nHoặc user xác nhận POST /api/orders/:id/receive\nTrigger cộng Loyalty points\nCOD paymentStatus=paid
+    shipped --> delivered : Admin xác nhận giao hàng thành công\nHoặc user xác nhận POST /api/orders/:id/receive\nCOD paymentStatus=paid
 
     delivered --> [*] : Đơn hoàn tất\nĐủ điều kiện viết review\nkhông thể sửa thêm
 
@@ -1624,9 +1586,9 @@ flowchart TB
         direction TB
 
         subgraph BE_MODULES["16 Business Modules src/modules/"]
-            BM1["auth\nDI User eventBus emailService redisClient\nJWT + OTP + Google OAuth"]
+            BM1["auth\nDI User eventBus emailService\nJWT + OTP + Google OAuth"]
             BM2["users\nDI User Address eventBus\nProfile + địa chỉ"]
-            BM3["catalog\nDI Category Brand Product ProductVariant\nProductAttribute Review RecentlyViewed\nRedis cache cho listing"]
+            BM3["catalog\nDI Category Brand Product ProductVariant\nProductAttribute Review RecentlyViewed"]
             BM4["cart\nDI Cart CartItem Product ProductVariant\nGuest + user cart + merge"]
             BM5["orders\nDI Order OrderItem Cart Product DiscountCode\nInventoryLog\nSELECT FOR UPDATE email confirm"]
             BM6["payment\nDI Order DiscountCode Cart momoService vnpayService\nIPN webhook + idempotency"]
@@ -1636,16 +1598,16 @@ flowchart TB
             BM10["content\nDI Feedback emailService\nfeedback/contact only"]
             BM11["ai\nDI Product ProductVariant Category chatbotService\nRAG pipeline orchestration"]
             BM12["upload\nMulter file handling\n/uploads/type/ static"]
-            BM13["admin\nSingleton dashboard analytics + audit log\nCRUD delegates + stats"]
+            BM13["admin\nSingleton dashboard analytics\nCRUD delegates + stats"]
             BM14["discount-code\nSingleton validate + apply codes"]
             BM15["attribute\nSingleton attribute groups + values cho AI"]
             BM16["search-history\nSingleton lưu + lấy lịch sử tìm kiếm"]
         end
 
         subgraph BE_SHARED["Shared Infrastructure src/shared/"]
-            BS1["EventBus in-memory pub/sub singleton\nevent payment.succeeded\nevent order.created → inventory audit\nevent order.cancelled → inventory audit"]
+            BS1["EventBus pub/sub singleton\nevent payment.succeeded\nevent order.created → inventory log\nevent order.cancelled → inventory log"]
             BS2["UnitOfWork runInTransaction + lockRow\nSELECT FOR UPDATE chống race condition"]
-            BS3["AppError + errors.js HTTP error hierarchy\nAdminAuditService ghi audit_logs"]
+            BS3["AppError + errors.js HTTP error hierarchy"]
         end
 
         subgraph BE_SERVICES["Shared Services src/services/"]
@@ -1655,7 +1617,7 @@ flowchart TB
         end
 
         subgraph BE_MODELS["32 Sequelize Models src/models/"]
-            MOD["users addresses categories brands\nproducts product_variants product_images\nproduct_categories product_attributes\nproduct_specifications product_attribute_groups\nattribute_groups attribute_values\norders order_items carts cart_items\ndiscount_codes reviews product_reviews\nwishlists warranty_packages product_warranties\nloyalty_histories recently_viewed chat_messages\nsearch_histories inventory_logs audit_logs\nnews banners feedbacks"]
+            MOD["users addresses categories brands\nproducts product_variants product_images\nproduct_categories product_attributes\nproduct_specifications product_attribute_groups\nattribute_groups attribute_values\norders order_items carts cart_items\ndiscount_codes reviews product_reviews\nwishlists recently_viewed chat_messages\nsearch_histories inventory_logs\nfeedbacks"]
         end
 
         BM5 -->|"publish order.created"| BS1
@@ -1675,7 +1637,6 @@ flowchart TB
     subgraph STORAGE_LAYER["Storage"]
         direction TB
         DB[("MySQL 8\nSequelize 6 ORM\ntransactions + paranoid soft delete")]
-        REDIS[("Redis\nJWT blacklist bl:jti\nContent + catalog cache\nChatbot response cache TTL 5m")]
         DISK[("Disk /uploads/\nvector-db.json\nchat history Map")]
     end
 
@@ -1692,10 +1653,6 @@ flowchart TB
 
     FE_LAYER <-->|"REST API Bearer + Cookie"| BE_LAYER
     MOD <-->|"Sequelize ORM"| DB
-    BM1 <-->|"ioredis blacklist"| REDIS
-    BM3 <-->|"ioredis cache"| REDIS
-    BM11 <-->|"ioredis cache"| REDIS
-    BM12 <-->|"Redis chatbot cache"| REDIS
     BSV2 <-->|"fs read/write"| DISK
     BM13 <-->|"multer disk"| DISK
     BM6 --> EXT1

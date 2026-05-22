@@ -14,7 +14,6 @@ const {
   CartItem,
   Order,
   OrderItem,
-  LoyaltyHistory,
   DiscountCode,
 } = require('@models');
 const { Op } = require('sequelize');
@@ -61,12 +60,10 @@ beforeAll(async () => {
     email: `__int_flow_${TS}@t.com`,
     password: 'Flow123!',
     role: 'customer',
-    loyaltyPoints: 0,
   });
 });
 
 afterAll(async () => {
-  await LoyaltyHistory.destroy({ where: { userId: user?.id }, force: true });
   await CartItem.destroy({ where: {}, force: true });
   await Cart.destroy({ where: { userId: user?.id }, force: true });
   await OrderItem.destroy({ where: {}, force: true });
@@ -153,28 +150,12 @@ describe('Full Order Flow — Cart → Order → Payment → Loyalty', () => {
     expect(order.status).toBe('delivered');
   });
 
-  test('6. Tích điểm loyalty sau delivered', async () => {
-    const points = Math.floor(Number(order.total) / 100_000); // 1 điểm per 100k
-    await LoyaltyHistory.create({
-      userId: user.id,
-      orderId: order.id,
-      type: 'earn',
-      points,
-      description: `Tích điểm đơn hàng ${order.number}`,
-    });
-    await user.increment('loyaltyPoints', { by: points });
-    await user.reload();
-    expect(user.loyaltyPoints).toBe(points);
-  });
-
-  test('7. Verify tổng flow: order + items + loyalty nhất quán', async () => {
+  test('6. Verify tổng flow: order + items nhất quán', async () => {
     const o = await Order.findByPk(order.id);
     const items = await OrderItem.findAll({ where: { orderId: order.id } });
-    const history = await LoyaltyHistory.findAll({ where: { orderId: order.id } });
 
     expect(o.status).toBe('delivered');
     expect(items).toHaveLength(1);
-    expect(history).toHaveLength(1);
     expect(Number(items[0].subtotal)).toBe(Number(variant.price) * QTY);
   });
 });

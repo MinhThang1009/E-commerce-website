@@ -81,9 +81,6 @@ describe('classifyIntent', () => {
   test('policy — "bảo hành" (line 67)', () => {
     expect(classifyIntent('chính sách bảo hành như thế nào')).toBe('policy');
   });
-  test.skip('policy — "warranty"', () => {
-    expect(classifyIntent('warranty policy for iphone')).toBe('policy');
-  });
   test('policy — "đổi trả"', () => {
     expect(classifyIntent('đổi trả hàng trong bao lâu')).toBe('policy');
   });

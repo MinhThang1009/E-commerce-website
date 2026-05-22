@@ -29,15 +29,6 @@ jest.mock('@utils/logger', () => ({
   warn: jest.fn(),
 }));
 
-jest.mock('@config/redis', () => ({
-  getRedisClient: jest.fn().mockResolvedValue({
-    get: jest.fn().mockResolvedValue(null),
-    set: jest.fn().mockResolvedValue('OK'),
-    setex: jest.fn().mockResolvedValue('OK'),
-    del: jest.fn().mockResolvedValue(1),
-  }),
-}));
-
 // Authenticate: user thường theo mặc định, admin khi header x-test-admin có giá trị
 jest.mock('@middlewares/authenticate', () => ({
   authenticate: (req, _res, next) => {

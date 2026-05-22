@@ -2,7 +2,7 @@
 const slugify = require('slugify');
 const sequelize = require('@config/sequelize');
 
-// Model thương hiệu - theo cấu trúc data_new.sql
+// Model thương hiệu
 const Brand = sequelize.define(
   'Brand',
   {
@@ -34,6 +34,30 @@ const Brand = sequelize.define(
     logoUrl: {
       type: DataTypes.STRING(500),
       allowNull: true,
+    },
+    // Mô tả thương hiệu — tiếng Việt
+    descriptionVi: { type: DataTypes.TEXT, allowNull: true },
+    descriptionEn: { type: DataTypes.TEXT, allowNull: true },
+    description: {
+      type: DataTypes.VIRTUAL,
+      get() {
+        return this.getDataValue('descriptionVi');
+      },
+      set(v) {
+        this.setDataValue('descriptionVi', v);
+      },
+    },
+    // Website chính thức của thương hiệu
+    website: {
+      type: DataTypes.STRING(255),
+      allowNull: true,
+    },
+    // Trạng thái hiển thị
+    isActive: {
+      type: DataTypes.BOOLEAN,
+      allowNull: false,
+      defaultValue: true,
+      field: 'is_active',
     },
     // Xóa mềm (soft delete)
     deletedAt: {

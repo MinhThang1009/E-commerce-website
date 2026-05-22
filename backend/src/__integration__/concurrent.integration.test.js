@@ -14,7 +14,6 @@ const {
   OrderItem,
   Cart,
   CartItem,
-  LoyaltyHistory,
   DiscountCode,
 } = require('@models');
 const { Op } = require('sequelize');
@@ -92,10 +91,6 @@ beforeAll(async () => {
 });
 
 afterAll(async () => {
-  await LoyaltyHistory.destroy({
-    where: { userId: { [Op.in]: [user1?.id, user2?.id].filter(Boolean) } },
-    force: true,
-  });
   await OrderItem.destroy({ where: {}, force: true });
   await Order.destroy({ where: { number: { [Op.like]: `INT-CONCURRENT-${TS}%` } }, force: true });
   // Xóa discount codes test
@@ -269,48 +264,5 @@ describe('Concurrent apply discount code — usageLimit=1', () => {
     // usedCount phải đúng 1 sau khi chỉ 1 attempt thành công
     await discountCode.reload();
     expect(discountCode.usedCount).toBe(1);
-  });
-});
-
-// ─────────────────────────────────────────────────────────────
-describe('Concurrent loyalty redeem — điểm không âm', () => {
-  test('2 request đồng thời đổi 30 điểm, balance=50 → chỉ 1 thành công, điểm không âm', async () => {
-    // Gán 50 điểm cho user1
-    await user1.update({ loyaltyPoints: 50 });
-    await user1.reload();
-    expect(user1.loyaltyPoints).toBe(50);
-
-    // Mỗi attempt: SELECT FOR UPDATE user row, kiểm tra balance, trừ điểm
-    const attemptRedeem = (points) =>
-      sequelize.transaction(async (t) => {
-        const { User: UserModel } = require('@models');
-        const u = await UserModel.findByPk(user1.id, {
-          lock: t.LOCK.UPDATE,
-          transaction: t,
-        });
-
-        if (u.loyaltyPoints < points) {
-          throw new Error('INSUFFICIENT_POINTS');
-        }
-
-        await u.decrement('loyaltyPoints', { by: points, transaction: t });
-        return u;
-      });
-
-    // 2 attempt đồng thời — chỉ 1 có đủ điểm (50 >= 30), attempt thứ 2 thấy 20 < 30
-    const results = await Promise.allSettled([attemptRedeem(30), attemptRedeem(30)]);
-
-    const succeeded = results.filter((r) => r.status === 'fulfilled');
-    const failed = results.filter((r) => r.status === 'rejected');
-
-    // Đúng 1 thành công
-    expect(succeeded.length).toBe(1);
-    expect(failed.length).toBe(1);
-
-    // Điểm còn lại phải >= 0 (không âm)
-    await user1.reload();
-    expect(user1.loyaltyPoints).toBeGreaterThanOrEqual(0);
-    // Cụ thể: 50 - 30 = 20
-    expect(user1.loyaltyPoints).toBe(20);
   });
 });

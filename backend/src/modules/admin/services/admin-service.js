@@ -24,7 +24,6 @@ const {
   SearchHistory,
   RecentlyViewed,
   InventoryLog,
-  AuditLog,
   ChatMessage,
   Address,
 } = adminRepository.getModels();
@@ -32,7 +31,6 @@ const {
 const logger = require('@utils/logger');
 const { catchAsync } = require('@utils/catch-async');
 const { AppError } = require('@shared/errors');
-const { AdminAuditService } = require('@shared/admin-audit');
 const {
   calculateTotalStock,
   updateProductTotalStock,
@@ -43,61 +41,23 @@ const vectorStoreService = require('@services/vector-store/vector-store');
 
 /**
  * Đệ quy parse chuỗi JSON để xử lý tình huống dữ liệu bị stringify nhiều lần.
- *
- * Vấn đề: khi frontend gửi form-data hoặc qua nhiều lớp serialize, object có thể
- * thành chuỗi lồng nhau — ví dụ `'"{\\"key\\":\\"val\\"}"'` thay vì `{ key: "val" }`.
  * Gọi JSON.parse liên tục (tối đa 5 lần) đến khi nhận được object hoặc gặp lỗi.
- *
- * @param {*} val - Chuỗi JSON (1 hay nhiều lớp), object thuần, null, hoặc undefined.
  * @returns {Object} Object đã parse. Trả về `{}` nếu không parse được hoặc kết quả không phải object.
  */
 function deepParseJSON(val) {
-  if (val === null || val === undefined) return {};
-  if (typeof val === 'object' && !Array.isArray(val)) return val; // Đã là object rồi
-  if (typeof val !== 'string') return {};
-
-  let parsed = val;
-  let maxAttempts = 5; // Ngăn vòng lặp vô hạn
-  while (typeof parsed === 'string' && maxAttempts-- > 0) {
-    try {
-      parsed = JSON.parse(parsed);
-    } catch (e) {
-      return {}; // Không phải JSON hợp lệ
-    }
-  }
-
-  if (typeof parsed === 'object' && !Array.isArray(parsed) && parsed !== null) {
-    return parsed;
-  }
-  return {};
-}
-
-/**
- * Đệ quy parse chuỗi JSON dạng mảng — tương tự deepParseJSON nhưng kết quả là mảng.
- *
- * Dùng cho các trường như `values` của ProductAttribute, nơi dữ liệu đôi khi được
- * lưu dạng chuỗi JSON `'["đỏ","xanh"]'` thay vì mảng thực.
- *
- * @param {*} val - Chuỗi JSON chứa mảng, mảng thuần, null, hoặc undefined.
- * @returns {Array} Mảng đã parse. Trả về `[]` nếu không parse được hoặc không phải mảng.
- */
-function deepParseJSONArray(val) {
-  if (val === null || val === undefined) return [];
-  if (Array.isArray(val)) return val;
-  if (typeof val !== 'string') return [];
-
   let parsed = val;
   let maxAttempts = 5;
-  while (typeof parsed === 'string' && maxAttempts-- > 0) {
-    try {
+  try {
+    while (typeof parsed === 'string' && maxAttempts-- > 0) {
       parsed = JSON.parse(parsed);
-    } catch (e) {
-      return [];
     }
+    if (typeof parsed === 'object' && !Array.isArray(parsed) && parsed !== null) {
+      return parsed;
+    }
+  } catch (_) {
+    // không parse được → trả về object rỗng
   }
-
-  if (Array.isArray(parsed)) return parsed;
-  return [];
+  return {};
 }
 
 /**
@@ -233,8 +193,12 @@ const getDashboardStats = catchAsync(async (req, res) => {
     { pending: 0, processing: 0, shipped: 0, delivered: 0, cancelled: 0 },
   );
 
-  // AOV = Average Order Value (trung bình giá trị đơn hàng delivered)
-  const aov = totalOrders > 0 ? (totalRevenue || 0) / totalOrders : 0;
+  // AOV = Average Order Value — chia cho đơn delivered (cùng phân mẫu với totalRevenue)
+  const deliveredOrders = await adminRepository.countOrders({
+    status: 'delivered',
+    paymentStatus: { [Op.notIn]: ['refunded', 'failed'] },
+  });
+  const aov = deliveredOrders > 0 ? (totalRevenue || 0) / deliveredOrders : 0;
 
   // Đơn hủy trong tháng hiện tại
   const cancelledOrdersMonth = await adminRepository.countOrders({
@@ -242,9 +206,9 @@ const getDashboardStats = catchAsync(async (req, res) => {
     createdAt: { [Op.gte]: startOfMonth },
   });
 
-  // Sản phẩm sắp hết hàng (stockQuantity <= 5)
+  // Sản phẩm sắp hết hàng (stockQuantity <= 10, đồng bộ với widget low-stock trên dashboard)
   const lowStockCount = await adminRepository.countProducts({
-    stockQuantity: { [Op.lte]: 5 },
+    stockQuantity: { [Op.lte]: 10 },
   });
 
   res.status(200).json({
@@ -309,7 +273,9 @@ const getDetailedStats = catchAsync(async (req, res) => {
   }
 
   const start = new Date(startDate);
+  // Set end về 23:59:59.999 để bao gồm toàn bộ ngày cuối
   const end = new Date(endDate);
+  end.setHours(23, 59, 59, 999);
 
   // Format theo groupBy
   let dateFormat;
@@ -613,6 +579,11 @@ const getProductById = catchAsync(async (req, res) => {
         model: ProductSpecification,
         as: 'productSpecifications',
       },
+      {
+        model: ProductImage,
+        as: 'productImages',
+        required: false,
+      },
     ],
   });
 
@@ -623,27 +594,19 @@ const getProductById = catchAsync(async (req, res) => {
   // Làm sạch dữ liệu sản phẩm trước khi gửi về frontend
   const productJson = product.toJSON();
 
+  if (productJson.attributes && Array.isArray(productJson.attributes)) {
+    productJson.attributes = productJson.attributes.map((attr) => ({
+      ...attr,
+      values: Array.isArray(attr.values) ? attr.values : [],
+    }));
+  }
+
   // Deep-parse thuộc tính biến thể (xử lý trường hợp stringify nhiều lần)
   if (productJson.variants && Array.isArray(productJson.variants)) {
     productJson.variants = productJson.variants.map((v) => ({
       ...v,
       attributes: deepParseJSON(v.attributes),
-      attributeValues: deepParseJSON(v.attributeValues || v.attributes),
-      specifications: deepParseJSON(v.specifications),
     }));
-  }
-
-  // Deep-parse giá trị thuộc tính sản phẩm
-  if (productJson.attributes && Array.isArray(productJson.attributes)) {
-    productJson.attributes = productJson.attributes.map((attr) => ({
-      ...attr,
-      values: deepParseJSONArray(attr.values),
-    }));
-  }
-
-  // Deep-parse thông số kỹ thuật
-  if (productJson.specifications && typeof productJson.specifications !== 'object') {
-    productJson.specifications = deepParseJSON(productJson.specifications);
   }
 
   res.status(200).json({
@@ -659,7 +622,7 @@ const getProductById = catchAsync(async (req, res) => {
  * (3) Gán danh mục; (4) Tạo ProductAttribute; (5) Tạo ProductVariant + tính tổng
  * stockQuantity; (6) Tạo ProductImage; (7) Tạo ProductSpecification; (8) Liên kết
  * WarrantyPackage (package đầu tiên là isDefault); (9) Đồng bộ vector store AI
- * (bất đồng bộ, không block response); (10) Ghi audit log CREATE.
+ * (bất đồng bộ, không block response).
  *
  * Chấp nhận cả `price` lẫn `basePrice` trong body (tương thích ngược).
  *
@@ -828,12 +791,16 @@ const createProduct = catchAsync(async (req, res) => {
 
       // Lấy attributes để validate
       const productAttributes = await adminRepository.findProductAttributes({
-        where: { productId: product.id },
+        productId: product.id,
       });
 
       const variantPromises = variants.map(async (variant) => {
-        // Đảm bảo variant.attributes luôn là một object
-        const variantAttributes = deepParseJSON(variant.attributes);
+        const variantAttributes =
+          variant.attributes &&
+          typeof variant.attributes === 'object' &&
+          !Array.isArray(variant.attributes)
+            ? variant.attributes
+            : {};
 
         logger.info(`Đang xử lý variant: ${variant.name}`, {
           price: variant.price,
@@ -860,7 +827,7 @@ const createProduct = catchAsync(async (req, res) => {
         // Tạo biến thể với dữ liệu đã được xác thực
         return await adminRepository.createProductVariant({
           productId: product.id,
-          name: variant.name,
+          variantName: variant.name || variant.variantName || displayName || variantSku,
           sku: variantSku,
           attributes: variantAttributes,
           price: parseFloat(variant.price) || 0,
@@ -971,10 +938,6 @@ const createProduct = catchAsync(async (req, res) => {
     logger.error('Lỗi đồng bộ vector store sau khi tạo sản phẩm:', syncErr.message);
   }
 
-  // Ghi audit log
-  logger.info('req.user trong createProduct:', req.user);
-  AdminAuditService.logProductAction(req.user, 'CREATE', product.id, product.name);
-
   res.status(201).json({
     status: 'success',
     data: { product: productWithRelations },
@@ -987,7 +950,7 @@ const createProduct = catchAsync(async (req, res) => {
  * (2) ảnh (replace toàn bộ); (3) compareAtPrice qua raw SQL; (4) danh mục;
  * (5) attributes vi sai; (6) variants vi sai + tính lại stockQuantity;
  * (7) specifications vi sai + auto-translate valueEn background;
- * (8) warranty packages (replace toàn bộ); (9) commit → audit log → sync vector store.
+ * (8) warranty packages (replace toàn bộ); (9) commit → sync vector store.
  * Sản phẩm inactive bị xóa khỏi vector store index.
  *
  * @param {Object} req - HTTP request từ Express
@@ -1036,7 +999,6 @@ const updateProduct = catchAsync(async (req, res) => {
       throw new AppError('Không tìm thấy sản phẩm', 404);
     }
 
-    // Theo dõi thay đổi để ghi audit log
     const changes = {};
     if (name && name !== product.name) changes.name = { from: product.name, to: name };
     if (price && price !== product.basePrice)
@@ -1089,7 +1051,7 @@ const updateProduct = catchAsync(async (req, res) => {
         });
         await adminRepository.bulkCreateProductImages(imageData, { transaction });
       }
-      changes.images = images.length;
+      changes.imageCount = images.length;
     }
 
     // 2. Cập nhật compareAtPrice (xử lý đặc biệt do cách đặt tên cột SQL)
@@ -1125,10 +1087,10 @@ const updateProduct = catchAsync(async (req, res) => {
 
     // 4. Cập nhật attributes (cập nhật vi sai)
     if (req.body.hasOwnProperty('attributes') && Array.isArray(attributes)) {
-      const currentAttributes = await adminRepository.findProductAttributes({
-        where: { productId: id },
-        transaction,
-      });
+      const currentAttributes = await adminRepository.findProductAttributes(
+        { productId: id },
+        { transaction },
+      );
       const currentAttrMap = currentAttributes.reduce((map, attr) => {
         map[attr.name] = attr;
         return map;
@@ -1192,10 +1154,10 @@ const updateProduct = catchAsync(async (req, res) => {
 
     // 5. Cập nhật variants (cập nhật vi sai)
     if (req.body.hasOwnProperty('variants') && Array.isArray(variants)) {
-      const currentVariants = await adminRepository.findProductVariants({
-        where: { productId: id },
-        transaction,
-      });
+      const currentVariants = await adminRepository.findProductVariants(
+        { productId: id },
+        { transaction },
+      );
       const currentVarMap = currentVariants.reduce((map, v) => {
         map[v.id] = v;
         return map;
@@ -1216,12 +1178,19 @@ const updateProduct = catchAsync(async (req, res) => {
       // 2. Tạo mới hoặc cập nhật variants
       const finalVariants = [];
       const variantPromises = variants.map(async (variant, index) => {
-        const variantAttributes = deepParseJSON(variant.attributes || variant.attributeValues);
+        const rawAttrs = variant.attributes || variant.attributeValues;
+        const variantAttributes =
+          rawAttrs && typeof rawAttrs === 'object' && !Array.isArray(rawAttrs) ? rawAttrs : {};
 
         const variantSku = variant.sku || generateVariantSku(sku || 'PROD', variantAttributes);
 
+        const derivedName =
+          variant.name ||
+          variant.variantName ||
+          Object.values(variantAttributes).join(' - ') ||
+          variantSku;
         const variantData = {
-          name: variant.name,
+          variantName: derivedName,
           sku: variantSku,
           attributes: variantAttributes,
           attributeValues: variantAttributes,
@@ -1231,8 +1200,7 @@ const updateProduct = catchAsync(async (req, res) => {
           isDefault: variant.isDefault || (index === 0 && !variants.some((v) => v.isDefault)),
           isAvailable: variant.isAvailable !== false,
           compareAtPrice: variant.compareAtPrice || null,
-          displayName:
-            variant.displayName || variant.name || Object.values(variantAttributes).join(' - '),
+          displayName: variant.displayName || derivedName,
         };
 
         if (variant.id && currentVarMap[variant.id]) {
@@ -1259,13 +1227,47 @@ const updateProduct = catchAsync(async (req, res) => {
       await Promise.all(variantPromises);
       changes.variants = variants.length;
 
-      // Đồng bộ tổng tồn kho nếu có variants
+      // Lưu ảnh riêng cho từng variant vào product_images (variantId)
+      for (let i = 0; i < variants.length; i++) {
+        const variantInput = variants[i];
+        const savedVariant = finalVariants[i];
+        if (
+          !savedVariant ||
+          !Array.isArray(variantInput.images) ||
+          variantInput.images.length === 0
+        )
+          continue;
+
+        // Xóa ảnh cũ của variant này
+        await adminRepository.destroyProductImages(
+          { productId: id, variantId: savedVariant.id },
+          { transaction },
+        );
+
+        // Tạo ảnh mới gắn với variantId
+        const variantImageData = variantInput.images
+          .filter((url) => url && typeof url === 'string')
+          .map((url, idx) => ({
+            productId: id,
+            variantId: savedVariant.id,
+            imageUrl: url,
+            isThumbnail: idx === 0,
+            color: null,
+          }));
+        if (variantImageData.length > 0) {
+          await adminRepository.bulkCreateProductImages(variantImageData, { transaction });
+        }
+      }
+
+      // Đồng bộ tổng tồn kho và basePrice (= min variant price) để sort admin hoạt động đúng
       const totalStock = calculateTotalStock(finalVariants);
-      await adminRepository.updateProductWhere(
-        { stockQuantity: totalStock },
-        { id },
-        { transaction },
-      );
+      const minVariantPrice =
+        finalVariants.length > 0
+          ? Math.min(...finalVariants.map((v) => parseFloat(v.price) || 0).filter((p) => p > 0))
+          : null;
+      const stockUpdate = { stockQuantity: totalStock };
+      if (minVariantPrice !== null && minVariantPrice > 0) stockUpdate.basePrice = minVariantPrice;
+      await adminRepository.updateProductWhere(stockUpdate, { id }, { transaction });
     } else if (req.body.hasOwnProperty('stockQuantity')) {
       // Nếu không có variants, dùng tồn kho cơ bản
       await adminRepository.updateProductWhere(
@@ -1277,10 +1279,10 @@ const updateProduct = catchAsync(async (req, res) => {
 
     // 6. Cập nhật thông số kỹ thuật (cập nhật vi sai)
     if (req.body.hasOwnProperty('specifications') && Array.isArray(specifications)) {
-      const currentSpecs = await adminRepository.findProductSpecs({
-        where: { productId: id },
-        transaction,
-      });
+      const currentSpecs = await adminRepository.findProductSpecs(
+        { productId: id },
+        { transaction },
+      );
       const currentSpecMap = currentSpecs.reduce((map, spec) => {
         map[spec.name] = spec;
         return map;
@@ -1341,9 +1343,6 @@ const updateProduct = catchAsync(async (req, res) => {
     }
 
     await transaction.commit();
-
-    // Ghi audit log (ngoài transaction là hợp lệ)
-    AdminAuditService.logProductAction(req.user, 'UPDATE', id, name || product.name, changes);
 
     // Lấy trạng thái cuối cùng để trả về response
     const finalProduct = await adminRepository.findProductById(id, {
@@ -1435,9 +1434,6 @@ const deleteProduct = catchAsync(async (req, res) => {
     // Commit transaction nếu tất cả thành công
     await transaction.commit();
 
-    // Ghi audit log sau khi commit thành công
-    AdminAuditService.logProductAction(req.user, 'DELETE', id, product.name);
-
     res.status(200).json({
       status: 'success',
       message: 'Xóa sản phẩm thành công',
@@ -1489,13 +1485,12 @@ const getAllProducts = catchAsync(async (req, res) => {
   const offset = (page - 1) * limit;
   const whereClause = {};
 
-  // Filter theo tìm kiếm
+  // Filter theo tìm kiếm — dùng tên cột thật (sku ở product_variants, không phải products)
   if (search) {
     whereClause[Op.or] = [
-      { name: { [Op.like]: `%${search}%` } },
-      { description: { [Op.like]: `%${search}%` } },
-      { shortDescription: { [Op.like]: `%${search}%` } },
-      { sku: { [Op.like]: `%${search}%` } },
+      { nameVi: { [Op.like]: `%${search}%` } },
+      { nameEn: { [Op.like]: `%${search}%` } },
+      { shortDescriptionVi: { [Op.like]: `%${search}%` } },
     ];
   }
 
@@ -1518,7 +1513,10 @@ const getAllProducts = catchAsync(async (req, res) => {
     };
   }
 
-  // Filter theo stock
+  // Filter theo stock — dùng Product.stockQuantity (denormalized).
+  // Giá trị display được recalculate từ variants sau query (xem transform bên dưới).
+  // Nếu Product.stockQuantity lệch so với tổng variants, filter có thể trả kết quả không chính xác.
+  // Fix đúng cần HAVING SUM(variants.stockQuantity) nhưng phá vỡ pagination — chấp nhận limitation này.
   if (stockMin) {
     whereClause.stockQuantity = {
       ...whereClause.stockQuantity,
@@ -1565,9 +1563,10 @@ const getAllProducts = catchAsync(async (req, res) => {
     },
   ];
 
-  // Filter theo category
+  // Filter theo category — dùng required: true để INNER JOIN, loại sản phẩm không thuộc category
   if (category) {
     includeClause[1].where = { id: category };
+    includeClause[1].required = true;
   }
 
   logger.info('[ADMIN] Đang lấy danh sách sản phẩm...');
@@ -1577,7 +1576,18 @@ const getAllProducts = catchAsync(async (req, res) => {
       include: includeClause,
       limit: parseInt(limit),
       offset: parseInt(offset),
-      order: [[sortBy === 'price' ? 'basePrice' : sortBy, sortOrder.toUpperCase()]],
+      order: [
+        [
+          sortBy === 'price'
+            ? 'basePrice'
+            : sortBy === 'name'
+              ? 'nameVi'
+              : sortBy === 'stockQuantity' || sortBy === 'stock'
+                ? 'stockQuantity'
+                : sortBy,
+          sortOrder.toUpperCase(),
+        ],
+      ],
       distinct: true,
     });
     logger.info('[ADMIN] Lấy sản phẩm xong:', products.length);
@@ -1598,6 +1608,14 @@ const getAllProducts = catchAsync(async (req, res) => {
         if (!product.categories.some((cat) => cat.id === product.category.id)) {
           product.categories.push(product.category);
         }
+      }
+
+      // Tính tổng tồn kho từ variants (nguồn chính xác), không dùng Product.stockQuantity (có thể lệch)
+      if (product.variants && product.variants.length > 0) {
+        product.stockQuantity = product.variants.reduce(
+          (sum, v) => sum + (v.stockQuantity || 0),
+          0,
+        );
       }
 
       return product;
@@ -1754,7 +1772,14 @@ const getAllOrders = catchAsync(async (req, res) => {
   // Filter theo ngày
   if (startDate && endDate) {
     whereClause.createdAt = {
-      [Op.between]: [new Date(startDate), new Date(endDate)],
+      [Op.between]: [
+        new Date(startDate),
+        (() => {
+          const e = new Date(endDate);
+          e.setHours(23, 59, 59, 999);
+          return e;
+        })(),
+      ],
     };
   }
 
@@ -1986,7 +2011,7 @@ const adminCancelOrder = catchAsync(async (req, res) => {
  */
 const updateProductStock = catchAsync(async (req, res) => {
   const { id } = req.params;
-  const { stockQuantity } = req.body;
+  const { stockQuantity, variantId } = req.body;
 
   const qty = parseInt(stockQuantity, 10);
   if (isNaN(qty) || qty < 0) {
@@ -1996,7 +2021,15 @@ const updateProductStock = catchAsync(async (req, res) => {
   const product = await adminRepository.findProductById(id);
   if (!product) throw new AppError('Không tìm thấy sản phẩm', 404);
 
-  await product.update({ stockQuantity: qty });
+  if (variantId) {
+    const variant = await adminRepository.findProductVariantById(variantId, id);
+    if (!variant) throw new AppError('Không tìm thấy biến thể', 404);
+    await variant.update({ stockQuantity: qty });
+    const total = (await adminRepository.sumProductVariantStock(id)) || 0;
+    await product.update({ stockQuantity: total });
+  } else {
+    await product.update({ stockQuantity: qty });
+  }
 
   res.status(200).json({
     status: 'success',
@@ -2129,11 +2162,6 @@ const cloneProduct = catchAsync(async (req, res) => {
 
     await transaction.commit();
 
-    // Ghi audit log
-    AdminAuditService.logProductAction(req.user, 'CLONE', newProduct.id, newProduct.name, {
-      originalProductId: id,
-    });
-
     res.status(201).json({
       status: 'success',
       data: { product: newProduct },
@@ -2176,12 +2204,6 @@ const toggleProductStatus = catchAsync(async (req, res) => {
 
   await product.update({ status: newStatus });
 
-  // Ghi audit log
-  AdminAuditService.logProductAction(req.user, 'UPDATE_STATUS', product.id, product.name, {
-    from: product.status,
-    to: newStatus,
-  });
-
   res.status(200).json({
     status: 'success',
     data: { product },
@@ -2192,7 +2214,7 @@ const toggleProductStatus = catchAsync(async (req, res) => {
  * Nhập thêm hàng vào kho — cộng thêm số lượng và ghi `InventoryLog`.
  *
  * Khác với `updateProductStock` (ghi đè tuyệt đối), hàm này cộng thêm vào tồn
- * kho hiện tại và tạo bản ghi audit log (số trước, số sau, người thực hiện, ghi chú).
+ * kho hiện tại và tạo bản ghi InventoryLog (số trước, số sau, người thực hiện, ghi chú).
  *
  * - Có `variantId`: tăng stock variant + tính lại tổng stock của Product (SUM variants).
  * - Không có `variantId`: tăng stock trực tiếp trên Product.
@@ -2286,64 +2308,6 @@ const restockProduct = catchAsync(async (req, res) => {
       newStock,
       quantity: qty,
       log,
-    },
-  });
-});
-
-/**
- * Lấy nhật ký hành động admin từ DB, có phân trang và lọc. Kết quả kèm thông
- * tin admin thực hiện (id, tên, email) qua join `admin` alias.
- *
- * @param {Object} req - HTTP request từ Express
- * @param {Object} req.query - Query parameters (tất cả tùy chọn):
- * @param {number} [req.query.page=1] - Trang hiện tại
- * @param {number} [req.query.limit=20] - Số bản ghi mỗi trang (tối đa 100)
- * @param {number} [req.query.adminId] - Lọc theo ID admin
- * @param {string} [req.query.action] - Lọc theo loại hành động (ví dụ: `CREATE`, `DELETE`)
- * @param {string} [req.query.entityType] - Lọc theo loại entity (ví dụ: `product`, `user`)
- * @param {string} [req.query.startDate] - Lọc từ ngày (ISO string)
- * @param {string} [req.query.endDate] - Lọc đến ngày (ISO string)
- * @param {Object} res - HTTP response — hàm này tự gọi res.json() để trả kết quả
- */
-const getAuditLogs = catchAsync(async (req, res) => {
-  const page = Math.max(1, parseInt(req.query.page, 10) || 1);
-  const limit = Math.min(100, parseInt(req.query.limit, 10) || 20);
-  const offset = (page - 1) * limit;
-
-  // Điều kiện lọc tuỳ chọn
-  const where = {};
-  if (req.query.adminId) where.adminId = parseInt(req.query.adminId, 10);
-  if (req.query.action) where.action = req.query.action;
-  if (req.query.entityType) where.entityType = req.query.entityType;
-  if (req.query.startDate || req.query.endDate) {
-    where.createdAt = {};
-    if (req.query.startDate) where.createdAt[Op.gte] = new Date(req.query.startDate);
-    if (req.query.endDate) where.createdAt[Op.lte] = new Date(req.query.endDate);
-  }
-
-  const { rows, count } = await adminRepository.findAuditLogs({
-    where,
-    limit,
-    offset,
-    order: [['createdAt', 'DESC']],
-    include: [
-      {
-        model: User,
-        as: 'admin',
-        attributes: ['id', 'firstName', 'lastName', 'email'],
-        required: false,
-      },
-    ],
-  });
-
-  res.status(200).json({
-    status: 'success',
-    data: {
-      logs: rows,
-      total: count,
-      page,
-      limit,
-      totalPages: Math.ceil(count / limit),
     },
   });
 });
@@ -2479,7 +2443,7 @@ const getRevenueByCategoryAnalytics = catchAsync(async (req, res) => {
   if (startDate && endDate) {
     dateFilter = 'AND o.created_at BETWEEN :startDate AND :endDate';
     replacements.startDate = startDate;
-    replacements.endDate = endDate;
+    replacements.endDate = endDate + ' 23:59:59';
   }
 
   const [results] = await sequelize.query(
@@ -2548,7 +2512,16 @@ const getUserGrowthAnalytics = catchAsync(async (req, res) => {
     ],
     where: {
       role: 'customer',
-      createdAt: { [Op.between]: [new Date(startDate), new Date(endDate)] },
+      createdAt: {
+        [Op.between]: [
+          new Date(startDate),
+          (() => {
+            const e = new Date(endDate);
+            e.setHours(23, 59, 59, 999);
+            return e;
+          })(),
+        ],
+      },
     },
     group: [Sequelize.fn('DATE_FORMAT', Sequelize.col('created_at'), dateFormat)],
     order: [[Sequelize.fn('DATE_FORMAT', Sequelize.col('created_at'), dateFormat), 'ASC']],
@@ -2605,7 +2578,9 @@ const getLowStockAnalytics = catchAsync(async (req, res) => {
   const parsedThreshold = parseInt(req.query.threshold, 10);
   const threshold = Number.isFinite(parsedThreshold) ? parsedThreshold : 10;
 
-  const products = await adminRepository.findProductsList({
+  // Lấy tất cả sản phẩm kèm variants để tính tổng kho chính xác
+  // Không dùng WHERE trên Product.stockQuantity vì field này có thể bị lệch
+  const allProducts = await adminRepository.findProductsList({
     attributes: ['id', 'nameVi', 'nameEn', 'stockQuantity', 'slug'],
     include: [
       {
@@ -2617,25 +2592,30 @@ const getLowStockAnalytics = catchAsync(async (req, res) => {
       {
         model: ProductVariant,
         as: 'variants',
-        attributes: ['sku'],
-        limit: 1,
+        attributes: ['sku', 'stockQuantity'],
       },
     ],
-    where: { stockQuantity: { [Op.lte]: threshold } },
-    order: [['stockQuantity', 'ASC']],
-    limit: 20,
   });
 
-  const data = products.map((p) => {
-    const pJson = p.toJSON();
-    return {
-      id: pJson.id,
-      name: pJson.nameVi || pJson.nameEn || pJson.name || '',
-      sku: pJson.variants?.[0]?.sku || '',
-      stockQuantity: pJson.stockQuantity,
-      thumbnail: pJson.productImages?.[0]?.imageUrl || null,
-    };
-  });
+  const data = allProducts
+    .map((p) => {
+      const pJson = p.toJSON();
+      const variantStock = (pJson.variants || []).reduce(
+        (sum, v) => sum + (v.stockQuantity || 0),
+        0,
+      );
+      const stock = pJson.variants?.length > 0 ? variantStock : pJson.stockQuantity || 0;
+      return {
+        id: pJson.id,
+        name: pJson.nameVi || pJson.nameEn || pJson.name || '',
+        sku: pJson.variants?.[0]?.sku || '',
+        stockQuantity: stock,
+        thumbnail: pJson.productImages?.[0]?.imageUrl || null,
+      };
+    })
+    .filter((p) => p.stockQuantity <= threshold)
+    .sort((a, b) => a.stockQuantity - b.stockQuantity)
+    .slice(0, 20);
 
   res.status(200).json({ status: 'success', data });
 });
@@ -2663,7 +2643,16 @@ const exportReport = catchAsync(async (req, res) => {
   if (type === 'orders') {
     const where = {};
     if (startDate && endDate) {
-      where.createdAt = { [Op.between]: [new Date(startDate), new Date(endDate)] };
+      where.createdAt = {
+        [Op.between]: [
+          new Date(startDate),
+          (() => {
+            const e = new Date(endDate);
+            e.setHours(23, 59, 59, 999);
+            return e;
+          })(),
+        ],
+      };
     }
 
     const orders = await adminRepository.aggregateOrders({
@@ -2747,7 +2736,16 @@ const getChatbotStats = catchAsync(async (req, res) => {
 
   const where = { messageType: 'ai_chatbot' };
   if (startDate && endDate) {
-    where.createdAt = { [Op.between]: [new Date(startDate), new Date(endDate)] };
+    where.createdAt = {
+      [Op.between]: [
+        new Date(startDate),
+        (() => {
+          const e = new Date(endDate);
+          e.setHours(23, 59, 59, 999);
+          return e;
+        })(),
+      ],
+    };
   }
 
   // Tổng sessions (unique sessionId)
@@ -2830,7 +2828,6 @@ module.exports = {
   adminCancelOrder,
   updateProductStock,
   restockProduct,
-  getAuditLogs,
   getOrderStatusAnalytics,
   getTopProductsAnalytics,
   getRevenueByCategoryAnalytics,

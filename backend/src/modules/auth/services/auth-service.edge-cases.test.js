@@ -16,7 +16,6 @@ describe('AuthService — uncovered branches', () => {
   let googleVerifier;
   let tokenSigner;
   let blacklistStore;
-  let auditService;
   let eventBus;
   let logger;
   let service;
@@ -49,7 +48,6 @@ describe('AuthService — uncovered branches', () => {
       get: jest.fn().mockResolvedValue(null),
       set: jest.fn().mockResolvedValue(),
     };
-    auditService = { logSuccessfulLogin: jest.fn() };
     eventBus = { publish: jest.fn().mockResolvedValue() };
     logger = { info: jest.fn(), error: jest.fn(), warn: jest.fn(), debug: jest.fn() };
 
@@ -59,7 +57,6 @@ describe('AuthService — uncovered branches', () => {
       googleVerifier,
       tokenSigner,
       blacklistStore,
-      auditService,
       eventBus,
       logger,
     });
@@ -154,39 +151,23 @@ describe('AuthService — uncovered branches', () => {
   // Khi refresh token không có familyId → không gọi blacklistStore.set cho family
   // ─────────────────────────────────────────────────────────────────────────
 
-  describe('logout — decoded.familyId false path (line 179)', () => {
-    it('không revoke family khi refreshToken không chứa familyId', async () => {
-      // verifyRefreshToken trả decoded không có familyId
-      tokenSigner.verifyRefreshToken.mockReturnValue({ id: 1 }); // không có familyId
+  describe('logout — client-side invalidation', () => {
+    it('logout với refreshToken → không throw, không gọi blacklistStore', async () => {
+      await service.logout({ accessToken: null, refreshToken: 'refresh-tok' });
 
-      await service.logout({ accessToken: null, refreshToken: 'refresh-no-family' });
-
-      // blacklistStore.set KHÔNG được gọi với rt_family_revoked prefix
-      const calls = blacklistStore.set.mock.calls;
-      const familyRevokeCalls = calls.filter(([key]) => key.startsWith('rt_family_revoked:'));
-      expect(familyRevokeCalls).toHaveLength(0);
+      // logout hiện tại dùng client-side invalidation — không gọi blacklistStore
+      expect(blacklistStore.set).not.toHaveBeenCalled();
     });
 
-    it('revoke family khi refreshToken có familyId', async () => {
-      // Verify true path còn hoạt động sau khi test false path
-      tokenSigner.verifyRefreshToken.mockReturnValue({ id: 1, familyId: 'family-abc' });
-
-      await service.logout({ accessToken: null, refreshToken: 'refresh-with-family' });
-
-      expect(blacklistStore.set).toHaveBeenCalledWith(
-        'rt_family_revoked:family-abc',
-        expect.any(Number),
-        '1',
-      );
-    });
-
-    it('không throw khi verifyRefreshToken throw (expired token)', async () => {
-      tokenSigner.verifyRefreshToken.mockImplementation(() => {
-        throw new Error('jwt expired');
-      });
-
+    it('logout với cả accessToken và refreshToken → không throw', async () => {
       await expect(
-        service.logout({ accessToken: null, refreshToken: 'expired-refresh' }),
+        service.logout({ accessToken: 'access-tok', refreshToken: 'refresh-tok' }),
+      ).resolves.toBeUndefined();
+    });
+
+    it('không throw khi cả hai token đều null', async () => {
+      await expect(
+        service.logout({ accessToken: null, refreshToken: null }),
       ).resolves.toBeUndefined();
 
       expect(blacklistStore.set).not.toHaveBeenCalled();
@@ -198,58 +179,36 @@ describe('AuthService — uncovered branches', () => {
   // Khi decoded không có jti → không gọi blacklistStore.set cho rotation mark
   // ─────────────────────────────────────────────────────────────────────────
 
-  describe('refreshToken — jti mark rotation false path (line 304)', () => {
-    it('không đánh dấu token đã dùng khi decoded không có jti', async () => {
-      // decoded không có jti → if (jti && this.blacklistStore) = false → skip rotation mark
-      tokenSigner.verifyRefreshToken.mockReturnValue({ id: 1, familyId: 'fam-1' }); // không có jti
+  describe('refreshToken — trả token mới', () => {
+    it('token hợp lệ → trả access token và refresh token mới', async () => {
+      tokenSigner.verifyRefreshToken.mockReturnValue({ id: 1, familyId: 'fam-1' });
+      authRepository.findById.mockResolvedValue({ id: 1, role: 'customer', isActive: true });
+
+      const result = await service.refreshToken({ refreshToken: 'tok' });
+
+      expect(result.token).toBe('access-tok');
+      expect(result.refreshToken).toBeDefined();
+    });
+
+    it('token hợp lệ có jti → vẫn trả token mới (không dùng blacklist)', async () => {
+      tokenSigner.verifyRefreshToken.mockReturnValue({ id: 1, jti: 'jti-123', familyId: 'fam-2' });
+      authRepository.findById.mockResolvedValue({ id: 1, role: 'customer', isActive: true });
+
+      const result = await service.refreshToken({ refreshToken: 'tok-with-jti' });
+
+      // blacklistStore không được gọi
+      expect(blacklistStore.set).not.toHaveBeenCalled();
+      expect(result.token).toBe('access-tok');
+    });
+
+    it('token không có jti → vẫn trả token mới', async () => {
+      tokenSigner.verifyRefreshToken.mockReturnValue({ id: 1, familyId: 'fam-2' });
       authRepository.findById.mockResolvedValue({ id: 1, role: 'customer', isActive: true });
 
       const result = await service.refreshToken({ refreshToken: 'tok-no-jti' });
 
-      // Rotation mark set KHÔNG được gọi với rt_used prefix
-      const calls = blacklistStore.set.mock.calls;
-      const rotationCalls = calls.filter(([key]) => key.startsWith('rt_used:'));
-      expect(rotationCalls).toHaveLength(0);
-
-      // Nhưng token mới vẫn được tạo
       expect(result.token).toBe('access-tok');
-    });
-
-    it('đánh dấu token đã dùng khi decoded có jti và blacklistStore tồn tại', async () => {
-      // Verify true path vẫn hoạt động — jti có → mark as used
-      tokenSigner.verifyRefreshToken.mockReturnValue({ id: 1, jti: 'jti-123', familyId: 'fam-2' });
-      authRepository.findById.mockResolvedValue({ id: 1, role: 'customer', isActive: true });
-
-      await service.refreshToken({ refreshToken: 'tok-with-jti' });
-
-      expect(blacklistStore.set).toHaveBeenCalledWith(
-        'rt_used:jti-123',
-        expect.any(Number),
-        'fam-2',
-      );
-    });
-
-    it('không đánh dấu token khi không có blacklistStore', async () => {
-      // Service không có blacklistStore → if (jti && this.blacklistStore) = false
-      const serviceNoBlacklist = new AuthService({
-        authRepository,
-        emailGateway,
-        googleVerifier,
-        tokenSigner,
-        blacklistStore: null, // không có blacklistStore
-        auditService,
-        eventBus,
-        logger,
-      });
-
-      tokenSigner.verifyRefreshToken.mockReturnValue({ id: 1, jti: 'jti-456', familyId: 'fam-3' });
-      authRepository.findById.mockResolvedValue({ id: 1, role: 'customer', isActive: true });
-
-      const result = await serviceNoBlacklist.refreshToken({ refreshToken: 'tok' });
-
-      // Không có blacklistStore → không gọi set
       expect(blacklistStore.set).not.toHaveBeenCalled();
-      expect(result.token).toBe('access-tok');
     });
   });
 });

@@ -32,6 +32,7 @@ const createOrderSchema = z.object({
   paymentMethod: reqStr('Phương thức thanh toán không được để trống'),
   notes: z.string().optional(),
   discountCode: z.string().optional(),
+  shippingCost: z.number().min(0).optional(), // Phí ship do FE tính theo khoảng cách km
   items: z
     .array(
       z.object({
@@ -41,6 +42,11 @@ const createOrderSchema = z.object({
       }),
     )
     .optional(),
+  // status không do client gửi — backend luôn tạo đơn với status 'pending'
+  status: z
+    .enum(['pending', 'processing', 'shipped', 'delivered', 'cancelled'])
+    .optional()
+    .default('pending'),
 });
 
 const updateOrderStatusSchema = z.object({

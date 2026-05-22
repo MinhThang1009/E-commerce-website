@@ -399,9 +399,13 @@ const ProductsPage: React.FC = () => {
   // Xử lý thay đổi bảng (sắp xếp, phân trang)
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const handleTableChange = (_paginationInfo: any, _filters: any, sorter: any) => {
-    if (sorter.field) {
+    if (sorter.field && sorter.order) {
       setSortBy(sorter.field);
       setSortOrder(sorter.order === 'ascend' ? 'ASC' : 'DESC');
+    } else if (!sorter.order) {
+      // Reset về mặc định khi user click lần 3 để bỏ sort
+      setSortBy('createdAt');
+      setSortOrder('DESC');
     }
   };
 

@@ -23,7 +23,7 @@
 
 ## 2. email.js
 
-Gửi email qua nodemailer (Gmail SMTP hoặc custom SMTP). **Singleton** — transporter được cache sau lần init đầu.
+Gửi email qua nodemailer (Gmail SMTP hoặc custom SMTP). **Singleton** — transporter được khởi tạo 1 lần (singleton).
 
 **6 functions export:**
 
@@ -49,7 +49,7 @@ Gửi email qua nodemailer (Gmail SMTP hoặc custom SMTP). **Singleton** — tr
 
 ## 3. vector-store/vector-store.js
 
-Hybrid search engine: cosine similarity (semantic) + BM25-inspired keyword search. Lưu vectors in-memory, persist sang `data/vector-db.json`.
+Hybrid search engine: cosine similarity (semantic) + BM25-inspired keyword search. Lưu vectors trong mảng JavaScript, persist sang `data/vector-db.json`.
 
 **Key methods:**
 

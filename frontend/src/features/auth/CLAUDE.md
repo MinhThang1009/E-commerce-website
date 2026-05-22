@@ -203,7 +203,7 @@ interface AuthResponse {
 - **Token storage:** access token lưu `sessionStorage` (mất khi đóng tab) — intentional security decision. User data lưu `localStorage` (persist để tránh re-fetch khi reload).
 - **`justLoggedIn` flag:** set `true` khi `loginSuccess` action chạy. `MainLayout` watch flag để trigger `useCartMerge`. Sau khi merge xong → gọi `clearJustLoggedIn()`. Không reset = merge lại mỗi lần navigate.
 - **Auto-refresh:** api-client interceptor (`src/lib/api-client.ts`) tự động refresh token khi nhận 401 — trừ các endpoint auth (`/auth/login`, `/auth/register`, etc.) để tránh infinite loop.
-- **`useLogoutMutation` `onSuccess`** gọi `queryClient.clear()` — xóa toàn bộ TanStack Query cache. `useAuth.logout()` còn thêm: clear `wishlistStore`, `cartStore`, xóa các `localStorage` keys (`wishlist`, `recentSearches`, `cartItems`).
+- **`useLogoutMutation` `onSuccess`** gọi `queryClient.clear()` — xóa toàn bộ TanStack Query data. `useAuth.logout()` còn thêm: clear `wishlistStore`, `cartStore`, xóa các `localStorage` keys (`wishlist`, `recentSearches`, `cartItems`).
 - **`PublicOnlyRoute`** bắt buộc cho login/register pages — nếu thiếu, user đã đăng nhập vào được trang login → race condition với authStore.
 - **Google OAuth flow:** server trả token trong response body — không phải query params. FE dùng `useGoogleLoginMutation` để nhận `{ user, token }`.
 - **`AdminRoute`** cho phép cả `admin` lẫn `manager` — không chỉ `admin`. Kiểm tra trong `useAuth.isAdmin()` bao gồm cả role `manager`.

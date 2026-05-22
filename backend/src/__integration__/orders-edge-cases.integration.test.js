@@ -13,7 +13,6 @@ const {
   Order,
   OrderItem,
   InventoryLog,
-  LoyaltyHistory,
 } = require('@models');
 const { Op } = require('sequelize');
 
@@ -42,9 +41,7 @@ function makeService() {
     ProductVariant,
     User,
     DiscountCode: require('@models/discount-code'),
-    LoyaltyHistory,
     InventoryLog,
-    WarrantyPackage: require('@models/warranty-package'),
     sequelize,
   });
   return new OrdersService({
@@ -114,7 +111,6 @@ beforeAll(async () => {
     email: `__int_ord_edge_a_${TS}@test.com`,
     password: 'Edge123!',
     role: 'customer',
-    loyaltyPoints: 0,
   });
   userB = await User.create({
     firstName: '__INT_OrdEdge_B',
@@ -122,15 +118,10 @@ beforeAll(async () => {
     email: `__int_ord_edge_b_${TS}@test.com`,
     password: 'Edge456!',
     role: 'customer',
-    loyaltyPoints: 0,
   });
 });
 
 afterAll(async () => {
-  await LoyaltyHistory.destroy({
-    where: { userId: { [Op.in]: [userA?.id, userB?.id].filter(Boolean) } },
-    force: true,
-  });
   await InventoryLog.destroy({
     where: {
       orderId: {

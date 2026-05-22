@@ -352,30 +352,6 @@ describe('SequelizeOrdersRepository — decrementVariantStock', () => {
 // findActiveWarrantyPackagesByIds
 // ════════════════════════════════════════════════════════════════════════════
 
-describe.skip('SequelizeOrdersRepository — findActiveWarrantyPackagesByIds', () => {
-  test.skip('gọi WarrantyPackage.findAll với ids và isActive=true', async () => {
-    const mockPackages = [{ id: 1, name: 'Bảo hành 1 năm', price: 50000 }];
-    const { repo, deps } = makeRepo({ WarrantyPackage: makeModel({ findAll: mockPackages }) });
-
-    const result = await repo.findActiveWarrantyPackagesByIds([1, 2]);
-
-    expect(deps.WarrantyPackage.findAll).toHaveBeenCalledWith(
-      expect.objectContaining({
-        where: expect.objectContaining({ id: [1, 2], isActive: true }),
-      }),
-    );
-    expect(result).toBe(mockPackages);
-  });
-
-  test('trả về mảng rỗng khi không có package nào active', async () => {
-    const { repo } = makeRepo({ WarrantyPackage: makeModel({ findAll: [] }) });
-
-    const result = await repo.findActiveWarrantyPackagesByIds([999]);
-
-    expect(result).toEqual([]);
-  });
-});
-
 // ════════════════════════════════════════════════════════════════════════════
 // findUserById
 // ════════════════════════════════════════════════════════════════════════════
@@ -405,45 +381,9 @@ describe('SequelizeOrdersRepository — findUserById', () => {
 // updateUserPoints
 // ════════════════════════════════════════════════════════════════════════════
 
-describe.skip('SequelizeOrdersRepository — updateUserPoints', () => {
-  test.skip('set user.loyaltyPoints và gọi user.save()', async () => {
-    const { repo } = makeRepo();
-    const user = makeInstance({ loyaltyPoints: 100 });
-
-    await repo.updateUserPoints(user, 250);
-
-    expect(user.loyaltyPoints).toBe(250);
-    expect(user.save).toHaveBeenCalledTimes(1);
-  });
-
-  test('merge options vào user.save()', async () => {
-    const { repo } = makeRepo();
-    const user = makeInstance();
-    const opts = { transaction: {} };
-
-    await repo.updateUserPoints(user, 0, opts);
-
-    expect(user.save).toHaveBeenCalledWith(opts);
-  });
-});
-
 // ════════════════════════════════════════════════════════════════════════════
 // updateLoyaltyHistoryOrderId
 // ════════════════════════════════════════════════════════════════════════════
-
-describe.skip('SequelizeOrdersRepository — updateLoyaltyHistoryOrderId', () => {
-  test.skip('gọi LoyaltyHistory.update với orderId và filter', async () => {
-    const { repo, deps } = makeRepo();
-
-    const filter = { userId: 1, type: 'spend', description: 'Sử dụng điểm cho đơn hàng ORD-001' };
-    await repo.updateLoyaltyHistoryOrderId(filter, 99);
-
-    expect(deps.LoyaltyHistory.update).toHaveBeenCalledWith(
-      { orderId: 99 },
-      expect.objectContaining({ where: filter }),
-    );
-  });
-});
 
 // ════════════════════════════════════════════════════════════════════════════
 // createOrderItem

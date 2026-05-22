@@ -137,7 +137,17 @@ jest.mock('@/components/common/Pagination', () => {
   const R = require('react');
   return {
     __esModule: true,
-    default: () => R.createElement('div', { 'data-testid': 'pagination' }),
+    default: ({
+      onPageChange,
+    }: {
+      currentPage?: number;
+      totalPages?: number;
+      onPageChange?: (page: number) => void;
+    }) =>
+      R.createElement('div', {
+        'data-testid': 'pagination',
+        onClick: () => onPageChange && onPageChange(2),
+      }),
   };
 });
 
@@ -192,6 +202,17 @@ jest.mock('@/routes/paths', () => ({
     newsDetail: (slug: string) => `/news/${slug}`,
   },
 }));
+
+// ── Stub window.scrollTo — jsdom không implement ─────────────────────────────
+// BestSellersPage và NewArrivalsPage gọi window.scrollTo trong handlePageChange;
+// nếu không stub, jsdom ném "Not implemented" làm fail test.
+beforeAll(() => {
+  jest.spyOn(window, 'scrollTo').mockImplementation(() => undefined);
+});
+
+afterAll(() => {
+  jest.restoreAllMocks();
+});
 
 // ── Import pages sau mock ───────────────────────────────────────
 import BestSellersPage from '@/features/catalog/pages/BestSellersPage';
@@ -642,6 +663,63 @@ describe('NewArrivalsPage: interactions', () => {
     render(<NewArrivalsPage />);
     // Assert
     expect(screen.getByText('newArrivals.errorTitle')).toBeInTheDocument();
+  });
+
+  it('handlePageChange — click pagination gọi window.scrollTo với top=0', () => {
+    // Arrange — đủ sản phẩm để pagination hiển thị (total 25 > limit 12, totalPages > 1)
+    const scrollToSpy = jest.spyOn(window, 'scrollTo').mockImplementation(() => undefined);
+    mockGetProductsQuery = {
+      data: {
+        data: [{ id: 'p1' }],
+        total: 25,
+        limit: 12,
+      },
+      isLoading: false,
+      error: null,
+    };
+    // Act
+    render(<NewArrivalsPage />);
+    const pagination = screen.getByTestId('pagination');
+    fireEvent.click(pagination);
+    // Assert — window.scrollTo được gọi với top=0
+    expect(scrollToSpy).toHaveBeenCalledWith({ top: 0, behavior: 'smooth' });
+    scrollToSpy.mockRestore();
+  });
+
+  it('handlePageChange — click pagination cập nhật currentPage', () => {
+    // Arrange — đủ điều kiện hiển thị pagination
+    jest.spyOn(window, 'scrollTo').mockImplementation(() => undefined);
+    mockGetProductsQuery = {
+      data: {
+        data: [{ id: 'p2' }],
+        total: 25,
+        limit: 12,
+      },
+      isLoading: false,
+      error: null,
+    };
+    // Act
+    render(<NewArrivalsPage />);
+    const pagination = screen.getByTestId('pagination');
+    // Click → onPageChange(2) được gọi → setCurrentPage(2) → component không crash
+    fireEvent.click(pagination);
+    // Assert — component vẫn render sau khi đổi trang
+    expect(screen.getByTestId('pagination')).toBeInTheDocument();
+    jest.restoreAllMocks();
+  });
+
+  it('handleSortChange — thay đổi sort option → setSortOption và reset page=1', () => {
+    mockGetProductsQuery = {
+      data: { data: [{ id: 'p3' }], total: 5, limit: 12 },
+      isLoading: false,
+      error: null,
+    };
+    render(<NewArrivalsPage />);
+    const sortSelect = screen.getByTestId('sort-select');
+    // Act — đổi sort sang price_asc
+    fireEvent.change(sortSelect, { target: { value: 'price_asc' } });
+    // Assert — component không crash
+    expect(screen.getByTestId('sort-select')).toBeInTheDocument();
   });
 });
 

@@ -249,14 +249,14 @@ describe('parseAIResponse (via chatbotService.parseAIResponse binding)', () => {
     expect(result).toHaveProperty('suggestions');
   });
 
-  test('không match khi nửa đầu OR false nhưng nửa sau true — line 62 (P có số R không có)', () => {
-    // numbersR = ['11'] ⊆ numbersP = ['11', '512'] → nửa đầu false (11 ∈ P)
-    // nửa sau true (512 ∉ R) → LINE 62 chạy
-    // '512' có \b boundary (space trước, end-of-string sau) → được match
+  test('match khi LLM bỏ qua storage number — "iPhone 11 Pro 512" khớp "iPhone 11 Pro"', () => {
+    // Sau khi sửa Bug 6: chỉ reject khi LLM đề cập số KHÔNG có trong sản phẩm.
+    // LLM bỏ "512" (dung lượng) nhưng không thêm số sai → nên vẫn match.
+    // Word overlap bước 4 xác nhận đây là cùng sản phẩm (iphone, 11, pro → 3/4 words = 75%+).
     const products = [
       {
         id: 1,
-        name: 'iPhone 11 Pro 512', // numbersP = ['11', '512']
+        name: 'iPhone 11 Pro 512',
         slug: 'iphone-11-pro-512',
         price: 22000000,
         compareAtPrice: null,
@@ -267,13 +267,13 @@ describe('parseAIResponse (via chatbotService.parseAIResponse binding)', () => {
     ];
     const aiText = JSON.stringify({
       response: 'Tìm thấy sản phẩm',
-      matchedProducts: ['iPhone 11 Pro'], // numbersR = ['11'] only
+      matchedProducts: ['iPhone 11 Pro'], // LLM bỏ "512" nhưng đúng sản phẩm
       suggestions: [],
       intent: 'product_search',
     });
     const result = parseAIResponse(aiText, products, 'iphone 11 pro');
-    // 11 ∈ P → nửa đầu = false → evaluate nửa sau → 512 ∉ R → true → LINE 62
-    expect(result.products).toHaveLength(0);
+    // LLM không thêm số sai → số check pass → word overlap 3/4 ≥ 80% → match
+    expect(result.products).toHaveLength(1);
   });
 
   test('không match khi nửa đầu OR true — short-circuit (hasNumberMismatch)', () => {

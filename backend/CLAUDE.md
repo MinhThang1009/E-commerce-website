@@ -33,16 +33,16 @@ Request → Express → Middleware stack → Module Router
                                                         └→ Sequelize → MySQL
 ```
 
-**16 modules**, mỗi module = 1 vertical slice tự trị:
+**17 modules**, mỗi module = 1 vertical slice tự trị:
 - Không import lẫn nhau trực tiếp
 - Giao tiếp qua **EventBus** (async) hoặc **DI injection** (sync, qua `app.js`)
 - `src/app.js` là nơi duy nhất khởi tạo và wiring dependencies
 
 **Shared infrastructure** (dùng chung, không thuộc module nào):
 - `src/models/` — 27 Sequelize models
-- `src/middlewares/` — authenticate, authorize, cache, rate-limiter, detect-locale
+- `src/middlewares/` — authenticate, authorize, rate-limiter, detect-locale
 - `src/services/` — email, vector-store, embedding
-- `src/shared/` — EventBus, AppError, UnitOfWork, admin-audit
+- `src/shared/` — EventBus, AppError, UnitOfWork
 - `src/utils/` — logger, i18n, catch-async, image-url, localize
 - `src/constants/` — SHIPPING_*, OTP_*, JWT_*
 
@@ -146,7 +146,7 @@ catalogModule.mounts.forEach(({ basePath, router }) => {
   app.use('/api' + basePath, router);
 });
 
-// content → /api/banners, /api/news, /api/contact
+// content → /api/contact
 contentModule.mounts.forEach(({ basePath, router }) => {
   app.use('/api' + basePath, router);
 });
@@ -160,7 +160,6 @@ contentModule.mounts.forEach(({ basePath, router }) => {
 |---|---|
 | `src/shared/errors/` | Throw HTTP errors: `new NotFoundError('User', id)`, `new BusinessError(...)` |
 | `src/shared/event-bus.js` | Publish/subscribe events giữa modules |
-| `src/shared/admin-audit.js` | Log admin actions (DB + Winston). Inject qua `auditService: AdminAuditService` |
 | `src/shared/persistence/unit-of-work.js` | `runInTransaction()` + `lockRow()` (SELECT FOR UPDATE) |
 | `src/utils/i18n.js` | `t('key', locale)` — bắt buộc cho user-facing strings |
 | `src/utils/logger.js` | Winston logger — không dùng `console.log` |
@@ -170,8 +169,8 @@ contentModule.mounts.forEach(({ basePath, router }) => {
 | `src/middlewares/detect-locale.js` | Parse locale từ `Accept-Language` header hoặc `?lang=` |
 
 **EventBus events hiện có:**
-- `order.created` — publish bởi orders, subscribe bởi inventory (tạo audit log)
-- `order.cancelled` — publish bởi orders, subscribe bởi inventory (tạo audit log; actual stock restore xảy ra inline trong orders service)
+- `order.created` — publish bởi orders, subscribe bởi inventory (ghi inventory log)
+- `order.cancelled` — publish bởi orders, subscribe bởi inventory (ghi inventory log; actual stock restore xảy ra inline trong orders service)
 - `order.delivered` — publish bởi orders khi admin/user confirm delivered (hiện chưa có subscriber)
 - `payment.succeeded` — publish bởi payment sau IPN success (update paymentStatus, usedCount discount, clear cart — tất cả inline)
 - `auth.userRegistered` — publish bởi auth (chưa có subscriber)
@@ -201,7 +200,7 @@ contentModule.mounts.forEach(({ basePath, router }) => {
 | wishlist | `/api/wishlists` | Full DI | [CLAUDE.md](src/modules/wishlist/CLAUDE.md) |
 
 **Special endpoints (không phải module):**
-- `GET /api/health` — `src/routes/index.js`, trả về DB + Redis status
+- `GET /api/health` — `src/routes/index.js`, trả về DB status
 - `GET /api-docs` — Swagger UI
 - `GET /api/img/*` — Image proxy (`src/modules/image/middlewares/image-proxy-router`)
 - `GET /uploads/*` — Static file serving (local uploads)
@@ -275,13 +274,13 @@ Pre-commit hook (`scripts/audit-architecture.sh`) tự động block:
 ```
 backend/CLAUDE.md                            ← File này
 backend/src/
-  config/CLAUDE.md                           ← sequelize, redis, swagger config
+  config/CLAUDE.md                           ← sequelize, swagger config
   constants/CLAUDE.md                        ← Hằng số (shipping, OTP, JWT, cart)
   locales/CLAUDE.md                          ← i18n vi.json / en.json
   models/CLAUDE.md                           ← 27 models, associations
-  migrations/CLAUDE.md                       ← 71+ migrations, schema history
-  middlewares/CLAUDE.md                      ← authenticate, authorize, cache, rate-limiter
-  shared/CLAUDE.md                           ← EventBus, AppError, admin-audit, UnitOfWork
+  migrations/CLAUDE.md                       ← 79 migrations, schema history
+  middlewares/CLAUDE.md                      ← authenticate, authorize, rate-limiter
+  shared/CLAUDE.md                           ← EventBus, AppError, UnitOfWork
     shared/errors/CLAUDE.md                  ← Error class hierarchy
     shared/persistence/CLAUDE.md             ← UnitOfWork pattern
   services/CLAUDE.md                         ← email, vector-store, embedding

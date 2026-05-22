@@ -17,7 +17,6 @@ import { Message } from '../types/message.types';
 import { useSendChatbotMessageMutation, ChatbotResponse } from '../api/chatbot-api';
 
 type ChatbotApiEnvelope = { status: string; data: ChatbotResponse; message?: string };
-import { chatbotService } from '../api/chatbot-service';
 import ChatHeader from './ChatHeader';
 import ChatMessages from './ChatMessages';
 import ChatInput from './ChatInput';
@@ -222,13 +221,7 @@ const ChatWidgetPortal: React.FC = () => {
           className="relative glass-toggle text-white rounded-full p-4 flex items-center justify-center"
           aria-label={isOpen ? t('chat.closeChat') : t('chat.openChat')}
         >
-          <div
-            className={`absolute -top-1 -right-1 w-4 h-4 rounded-full border-2 border-white/80 shadow-md backdrop-blur-sm ${
-              chatbotService.isReady()
-                ? 'bg-gradient-to-br from-emerald-400 to-green-500'
-                : 'bg-gradient-to-br from-amber-400 to-orange-500'
-            }`}
-          >
+          <div className="absolute -top-1 -right-1 w-4 h-4 rounded-full border-2 border-white/80 shadow-md backdrop-blur-sm bg-gradient-to-br from-emerald-400 to-green-500">
             <div className="absolute inset-0.5 rounded-full bg-white/30 animate-pulse" />
           </div>
 
@@ -260,7 +253,7 @@ const ChatWidgetPortal: React.FC = () => {
             className="glass-widget fixed inset-x-4 bottom-20 sm:absolute sm:bottom-20 sm:right-0 sm:inset-x-auto w-auto sm:w-96 md:max-w-md rounded-3xl overflow-hidden flex flex-col chat-widget-active z-[9999] h-[75vh] max-h-[680px] min-h-[480px] sm:h-[680px] sm:max-h-[88vh]"
             onClick={(e) => e.stopPropagation()}
           >
-            <ChatHeader onClose={toggleChat} chatbotService={chatbotService} />
+            <ChatHeader onClose={toggleChat} />
 
             <ChatMessages
               messages={messages}

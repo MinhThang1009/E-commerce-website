@@ -22,7 +22,6 @@ function buildService(overrides = {}) {
     momoGateway: buildMockMomoGateway(),
     vnpayGateway: buildMockVnpayGateway(),
     emailGateway: { sendOrderConfirmationEmail: jest.fn().mockResolvedValue(undefined) },
-    eventBus: { publish: jest.fn().mockResolvedValue(undefined) },
     logger: { info: jest.fn(), warn: jest.fn(), error: jest.fn() },
     frontendUrl: 'https://shop.test',
   };
@@ -359,13 +358,13 @@ describe('PaymentService.handleMomoIPN', () => {
     expect(repo.lockOrder).not.toHaveBeenCalled();
   });
 
-  it('publish PaymentSucceededEvent sau khi xử lý thành công', async () => {
+  it('không publish event sau khi xử lý thành công (payment.succeeded đã xóa)', async () => {
+    // payment.succeeded không còn subscriber → đã xóa khỏi service
     const order = buildOrder();
     const repo = buildMockRepo({ lockOrder: jest.fn().mockResolvedValue(order) });
-    const eventBus = { publish: jest.fn().mockResolvedValue(undefined) };
-    const svc = buildService({ paymentRepository: repo, eventBus });
+    const svc = buildService({ paymentRepository: repo });
 
-    await svc.handleMomoIPN({
+    const result = await svc.handleMomoIPN({
       body: {
         resultCode: 0,
         extraData: 'orderId=42',
@@ -374,9 +373,7 @@ describe('PaymentService.handleMomoIPN', () => {
       },
     });
 
-    expect(eventBus.publish).toHaveBeenCalledWith(
-      expect.objectContaining({ type: 'payment.succeeded' }),
-    );
+    expect(result).toEqual({ valid: true });
   });
 });
 

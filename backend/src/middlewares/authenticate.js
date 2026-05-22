@@ -7,7 +7,6 @@
 const jwt = require('jsonwebtoken');
 const { User } = require('@models');
 const { AppError } = require('@middlewares/error-handler');
-const { getRedisClient } = require('@config/redis');
 
 // Middleware xác thực người dùng
 const authenticate = async (req, res, next) => {
@@ -22,22 +21,6 @@ const authenticate = async (req, res, next) => {
 
     // Xác thực token
     const decoded = jwt.verify(token, process.env.JWT_SECRET, { algorithms: ['HS256'] });
-
-    // Kiểm tra token có trong blacklist không
-    const redis = await getRedisClient();
-    if (redis) {
-      if (decoded.jti) {
-        const isBlacklisted = await redis.get(`bl:${decoded.jti}`);
-        if (isBlacklisted) {
-          return next(new AppError('Token is invalid', 401));
-        }
-      }
-      // Reject token cấp trước khi user đổi password
-      const passwordChangedAt = await redis.get(`pw_changed:${decoded.id}`);
-      if (passwordChangedAt && decoded.iat && decoded.iat < parseInt(passwordChangedAt, 10)) {
-        return next(new AppError('Mật khẩu đã thay đổi. Vui lòng đăng nhập lại', 401));
-      }
-    }
 
     // Tìm người dùng
     const user = await User.findByPk(decoded.id);
@@ -81,19 +64,6 @@ const optionalAuthenticate = async (req, res, next) => {
 
     // Xác thực token
     const decoded = jwt.verify(token, process.env.JWT_SECRET, { algorithms: ['HS256'] });
-
-    // Blacklist + pw_changed check — giống authenticate chính
-    const redis = await getRedisClient();
-    if (redis) {
-      if (decoded.jti) {
-        const isBlacklisted = await redis.get(`bl:${decoded.jti}`);
-        if (isBlacklisted) return next();
-      }
-      const passwordChangedAt = await redis.get(`pw_changed:${decoded.id}`);
-      if (passwordChangedAt && decoded.iat && decoded.iat < parseInt(passwordChangedAt, 10)) {
-        return next();
-      }
-    }
 
     // Tìm người dùng
     const user = await User.findByPk(decoded.id);

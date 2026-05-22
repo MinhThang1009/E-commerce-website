@@ -183,32 +183,6 @@ describe('toInventoryDto', () => {
 
 // ─── LOYALTY DTO ──────────────────────────────────────────────────────────────
 
-describe.skip('toLoyaltyDto', () => {
-  let toLoyaltyDto;
-  beforeAll(() => {
-    try {
-      toLoyaltyDto = require('@modules/loyalty/dtos/loyalty-dto').toLoyaltyDto;
-    } catch (e) {}
-  });
-  test('trả về null khi model là null', () => {
-    expect(toLoyaltyDto(null)).toBeNull();
-  });
-
-  test('trả về null khi model là undefined', () => {
-    expect(toLoyaltyDto(undefined)).toBeNull();
-  });
-
-  test('gọi toJSON() khi model có method toJSON và map id', () => {
-    const model = { toJSON: () => ({ id: 5, points: 200 }) };
-    expect(toLoyaltyDto(model)).toEqual({ id: 5 });
-  });
-
-  test('dùng trực tiếp object khi không có toJSON', () => {
-    const model = { id: 3 };
-    expect(toLoyaltyDto(model)).toEqual({ id: 3 });
-  });
-});
-
 // ─── ORDERS DTO ───────────────────────────────────────────────────────────────
 const { toOrderDto } = require('@modules/orders/dtos/orders-dto');
 

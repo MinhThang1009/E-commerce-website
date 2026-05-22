@@ -22,7 +22,7 @@
 ```js
 const logger = require('@utils/logger');
 logger.info('Order created', { orderId, userId });
-logger.warn('Redis unavailable — fallback to memory');
+logger.warn('Email service unavailable — skipping notification');
 logger.error('Payment failed', { error: e.message, orderId });
 logger.debug('Query params', { page, limit }); // Chỉ output trong dev
 ```

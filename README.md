@@ -44,7 +44,6 @@
 **Backend**
 - Node.js 20 + Express 4 (Modular Monolith, 19 modules)
 - Sequelize 6 + MySQL 8 (utf8mb4, timezone +07:00)
-- Redis (optional — auto fallback về in-memory)
 - JWT (access 15m + refresh 30d), Google OAuth 2.0
 - Nodemailer (Gmail SMTP), bcrypt, Zod validation
 
@@ -66,7 +65,6 @@
 
 - **Node.js** >= 20
 - **MySQL** 8.x
-- **Redis** (tùy chọn — server tự fallback về in-memory nếu Redis không khả dụng)
 - **OpenAI-compatible API key** (cho chatbot)
 - **Jina AI API key** hoặc **HuggingFace API key** (cho embedding/vector search)
 
@@ -144,11 +142,11 @@ cd frontend && npm run dev
 | `cart` | Giỏ hàng (guest + authenticated), merge cart khi đăng nhập |
 | `orders` | Tạo đơn, theo dõi, hủy đơn, xác nhận nhận hàng, admin quản lý trạng thái |
 | `payment` | Thanh toán MoMo và VNPay (create URL + IPN callback + hoàn tiền) |
-| `inventory` | Quản lý tồn kho, audit log biến động stock, SELECT FOR UPDATE chống race condition |
+| `inventory` | Quản lý tồn kho, ghi log biến động stock, SELECT FOR UPDATE chống race condition |
 | `reviews` | Đánh giá sản phẩm (chỉ user đã mua), thống kê rating tổng hợp |
 | `discount-code` | Mã giảm giá (% hoặc cố định), hạn dùng, giới hạn số lần |
 | `ai` | AI chatbot RAG pipeline, gợi ý sản phẩm, thêm vào giỏ qua chat |
-| `admin` | Dashboard analytics, CRUD toàn bộ entities, audit log thao tác admin |
+| `admin` | Dashboard analytics, CRUD toàn bộ entities |
 | `content` | Feedback/contact form |
 | `wishlist` | Danh sách yêu thích |
 | `image` | Quản lý ảnh sản phẩm, image proxy, xử lý ảnh với Sharp |
@@ -170,7 +168,7 @@ cd frontend && npm run dev
 | `wishlist` | Danh sách yêu thích, toggle từ bất kỳ trang sản phẩm |
 | `reviews` | Viết đánh giá (sau khi đã mua), xem rating và bình luận |
 | `ai` | Chat widget nổi (floating, resizable), hiển thị sản phẩm từ AI, thêm vào giỏ qua chat |
-| `admin` | Dashboard analytics, CRUD sản phẩm/đơn hàng/người dùng/tồn kho, audit log |
+| `admin` | Dashboard analytics, CRUD sản phẩm/đơn hàng/người dùng/tồn kho |
 | `upload` | Upload ảnh với preview, drag-and-drop, crop |
 
 ---
@@ -244,10 +242,10 @@ e-commerce-website/
 │   │   ├── models/             # 32 Sequelize models + associations (index.js)
 │   │   ├── shared/             # EventBus, AppError, UnitOfWork, AdminAudit
 │   │   ├── services/           # email, embedding (unified), vector-store
-│   │   ├── middlewares/        # authenticate, authorize, cache, rate-limiter
+│   │   ├── middlewares/        # authenticate, authorize, rate-limiter
 │   │   ├── utils/              # logger (Winston), i18n, catch-async
 │   │   ├── jobs/               # Cron: daily 2AM + weekly Sunday 3AM
-│   │   ├── config/             # database.js, redis.js, sequelize.js, swagger.js
+│   │   ├── config/             # database.js, sequelize.js, swagger.js
 │   │   ├── constants/          # shipping, OTP, pagination limits
 │   │   └── locales/            # vi.json / en.json
 │   ├── data/                   # vector-db.json, SQL dumps
@@ -274,7 +272,7 @@ e-commerce-website/
 │   │   ├── types/              # Shared TypeScript types
 │   │   ├── styles/             # SCSS tokens, global CSS
 │   │   ├── config/             # i18n.ts initialization
-│   │   ├── constants/          # PAGINATION, UPLOAD, LOYALTY
+│   │   ├── constants/          # PAGINATION, UPLOAD
 │   │   └── locales/            # vi.json / en.json
 │   ├── index.html
 │   └── vite.config.ts
@@ -306,7 +304,6 @@ e-commerce-website/
 | `JINA_API_KEY` | Không | Embedding provider chính (Jina v3) |
 | `HF_API_KEY` | Không | HuggingFace fallback embedding |
 | `DEEPL_API_KEY` | Không | Dịch nội dung tự động |
-| `REDIS_URL` | Không | Mặc định redis://localhost:6379 |
 | `CORS_ORIGINS_DEV` | Không | Origins cho phép trong dev (comma-separated) |
 | `FRONTEND_URL` | Không | Mặc định http://localhost:5175 |
 | `GOOGLE_CLIENT_ID` | Không | Google OAuth |

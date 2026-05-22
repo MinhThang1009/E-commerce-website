@@ -93,8 +93,8 @@ const UserDetailPage: React.FC = () => {
   const orderColumns = [
     {
       title: t('admin.userDetail.orderColumns.code'),
-      dataIndex: 'orderNumber',
-      key: 'orderNumber',
+      dataIndex: 'number',
+      key: 'number',
       // eslint-disable-next-line @typescript-eslint/no-explicit-any -- Antd Table record
       render: (text: string, record: any) => (
         <Link to={buildRoute.adminOrderDetail(record.id)} className="font-medium">
@@ -181,18 +181,11 @@ const UserDetailPage: React.FC = () => {
               <Divider />
 
               <Row gutter={16}>
-                <Col span={12}>
+                <Col span={24}>
                   <Statistic
                     title={t('admin.userDetail.stats.orders')}
                     value={user.orders?.length || 0}
                     prefix={<ShoppingOutlined />}
-                  />
-                </Col>
-                <Col span={12}>
-                  <Statistic
-                    title={t('admin.userDetail.stats.points')}
-                    value={user.loyaltyPoints || 0}
-                    valueStyle={{ color: '#faad14' }}
                   />
                 </Col>
               </Row>
@@ -316,12 +309,6 @@ const UserDetailPage: React.FC = () => {
                     <Timeline
                       className="mt-4"
                       items={[
-                        // eslint-disable-next-line @typescript-eslint/no-explicit-any -- API response fields dynamic
-                        ...(user.loyaltyHistories || []).map((h: any) => ({
-                          color: h.type === 'earn' ? 'green' : 'gold',
-                          date: new Date(h.createdAt),
-                          children: `${new Date(h.createdAt).toLocaleString(i18n.language === 'vi' ? 'vi-VN' : 'en-US')}: ${h.type === 'earn' ? t('admin.userDetail.activity.earn') : t('admin.userDetail.activity.use')} ${h.points} ${t('admin.userDetail.activity.points')} - ${h.description || 'N/A'}`,
-                        })),
                         // eslint-disable-next-line @typescript-eslint/no-explicit-any
                         ...(user.searchHistories || []).map((s: any) => ({
                           color: 'blue',

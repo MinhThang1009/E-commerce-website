@@ -4,7 +4,6 @@
  * Targets:
  * - inventoryService.js lines 50, 89
  * - OrderAggregate.js lines 52, 81
- * - adminAudit.js lines 206, 232
  * - vectorStore.js line 148
  * - wishlistService.js line 17
  * - SequelizeAiRepository.js line 15
@@ -158,94 +157,6 @@ describe('InventoryService — uncovered branches', () => {
       await service.getInventoryLogs({ page: 1, limit: 9999 });
 
       expect(repo.findInventoryLogs).toHaveBeenCalledWith(expect.objectContaining({ limit: 100 }));
-    });
-  });
-});
-
-// ─────────────────────────────────────────────────────────────────────────────
-// adminAudit.js
-// Line 206: ip = req.ip || req.connection?.remoteAddress — khi req.ip falsy
-// Line 232: logDashboardAccess không inject ip (không có ip tham số)
-// ─────────────────────────────────────────────────────────────────────────────
-
-describe('adminAudit.js — auditMiddleware uncovered branches', () => {
-  // Reset module để tránh side effects giữa tests
-  let AdminAuditService;
-  let auditMiddleware;
-
-  beforeEach(() => {
-    jest.resetModules();
-    // Mock logger trước khi require adminAudit
-    jest.mock('@utils/logger', () => ({
-      info: jest.fn(),
-      error: jest.fn(),
-      warn: jest.fn(),
-    }));
-    jest.mock('@models', () => ({
-      AuditLog: { create: jest.fn().mockResolvedValue({ id: 1 }) },
-    }));
-    const module = require('@shared/admin-audit');
-    AdminAuditService = module.AdminAuditService;
-    auditMiddleware = module.auditMiddleware;
-  });
-
-  afterEach(() => {
-    jest.resetModules();
-  });
-
-  describe('ip resolution — req.ip vs req.connection.remoteAddress', () => {
-    // auditMiddleware dùng AsyncLocalStorage — IP lưu trong context, không inject vào method args
-    it('dùng req.connection.remoteAddress khi req.ip falsy → IP ghi vào DB', async () => {
-      const { AuditLog } = require('@models');
-      let resolveNext;
-      const nextPromise = new Promise((r) => {
-        resolveNext = r;
-      });
-
-      const next = () => {
-        AdminAuditService.logUserAction({ id: 1, email: 'a@b.com' }, 'BAN', 2, {});
-        resolveNext();
-      };
-
-      auditMiddleware({ ip: undefined, connection: { remoteAddress: '192.168.1.50' } }, {}, next);
-      await nextPromise;
-      await new Promise((r) => setImmediate(r));
-
-      expect(AuditLog.create).toHaveBeenCalledWith(expect.objectContaining({ ip: '192.168.1.50' }));
-    });
-
-    it('dùng req.ip khi có giá trị (true path) → IP ghi vào DB', async () => {
-      const { AuditLog } = require('@models');
-      let resolveNext;
-      const nextPromise = new Promise((r) => {
-        resolveNext = r;
-      });
-
-      const next = () => {
-        AdminAuditService.logUserAction({ id: 1, email: 'a@b.com' }, 'BAN', 2, {});
-        resolveNext();
-      };
-
-      auditMiddleware({ ip: '10.0.0.1', connection: { remoteAddress: '192.168.1.50' } }, {}, next);
-      await nextPromise;
-      await new Promise((r) => setImmediate(r));
-
-      expect(AuditLog.create).toHaveBeenCalledWith(expect.objectContaining({ ip: '10.0.0.1' }));
-    });
-  });
-
-  describe('auditMiddleware behavior — AsyncLocalStorage based', () => {
-    it('gọi next() để tiếp tục pipeline', () => {
-      const next = jest.fn();
-      auditMiddleware({ ip: '1.2.3.4', connection: {} }, {}, next);
-      expect(next).toHaveBeenCalledTimes(1);
-    });
-
-    it('không mutate static methods của AdminAuditService', () => {
-      const originalLogUserAction = AdminAuditService.logUserAction;
-      const next = jest.fn();
-      auditMiddleware({ ip: '10.0.0.2', connection: {} }, {}, next);
-      expect(AdminAuditService.logUserAction).toBe(originalLogUserAction);
     });
   });
 });
@@ -452,68 +363,6 @@ describe('WishlistService.getWishlist — line 17 branches', () => {
 
     expect(products[0].thumbnail).toBe('http://img.test/a.jpg');
     expect(products[0].images).toHaveLength(2);
-  });
-});
-
-// ─────────────────────────────────────────────────────────────────────────────
-// SequelizeAiRepository.js — line 15
-// searchProducts({ ... } = {}) — default parameter khi gọi không có argument
-// ─────────────────────────────────────────────────────────────────────────────
-
-describe('SequelizeAiRepository.searchProducts — line 15 default parameter branch', () => {
-  const { Op, literal } = require('sequelize');
-  const SequelizeAiRepository = require('@modules/ai/repositories/sequelize-ai-repository');
-
-  let repo;
-  let mockProduct;
-
-  beforeEach(() => {
-    mockProduct = {
-      findAll: jest.fn().mockResolvedValue([]),
-    };
-    const mockProductVariant = {};
-    const mockCategory = {};
-    const mockSequelize = {};
-
-    repo = new SequelizeAiRepository({
-      Product: mockProduct,
-      ProductVariant: mockProductVariant,
-      Category: mockCategory,
-      sequelize: mockSequelize,
-    });
-  });
-
-  it('gọi searchProducts() không có argument sử dụng default {} (line 15)', async () => {
-    // Gọi không có argument → default parameter `= {}` được dùng
-    // keyword, minPrice, maxPrice, categoryName, limit đều undefined
-    const result = await repo.searchProducts();
-
-    expect(result).toEqual([]);
-    // Product.findAll được gọi với where chỉ có status='active', limit default 20
-    expect(mockProduct.findAll).toHaveBeenCalledWith(
-      expect.objectContaining({
-        where: { status: 'active' },
-        limit: 20,
-      }),
-    );
-  });
-
-  it('gọi searchProducts({}) với object rỗng → tương tự không có argument', async () => {
-    await repo.searchProducts({});
-
-    expect(mockProduct.findAll).toHaveBeenCalledWith(
-      expect.objectContaining({
-        where: { status: 'active' },
-      }),
-    );
-  });
-
-  it('gọi searchProducts với keyword → build LIKE conditions', async () => {
-    mockProduct.findAll.mockResolvedValue([{ id: 1, nameVi: 'iPhone 17' }]);
-
-    const result = await repo.searchProducts({ keyword: 'iphone', limit: 5 });
-
-    expect(mockProduct.findAll).toHaveBeenCalledWith(expect.objectContaining({ limit: 5 }));
   });
 });
 

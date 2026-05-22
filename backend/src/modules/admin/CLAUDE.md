@@ -28,7 +28,7 @@
 
 ## 1.1 Purpose
 
-Cung cấp toàn bộ chức năng quản trị hệ thống: dashboard analytics, CRUD tất cả entities (sản phẩm, đơn hàng, users, reviews, discount codes, tồn kho), import hàng loạt sản phẩm từ CSV/JSON, export data, và xem audit logs.
+Cung cấp toàn bộ chức năng quản trị hệ thống: dashboard analytics, CRUD tất cả entities (sản phẩm, đơn hàng, users, reviews, discount codes, tồn kho), import hàng loạt sản phẩm từ CSV/JSON, export data.
 
 ## 1.2 Pattern (Singleton)
 
@@ -47,11 +47,10 @@ module.exports = () => ({
 
 ## 1.3 Auth pattern
 
-Tất cả routes dùng `adminAuthenticate` (từ `@middlewares/admin-auth`) kết hợp `auditMiddleware` — **KHÔNG phải** `authenticate` + `authorize('admin')`. Apply ở router level nên cover toàn bộ routes:
+Tất cả routes dùng `adminAuthenticate` (từ `@middlewares/admin-auth`) — **KHÔNG phải** `authenticate` + `authorize('admin')`. Apply ở router level nên cover toàn bộ routes:
 
 ```js
 router.use(adminAuthenticate);
-router.use(auditMiddleware);
 ```
 
 ---
@@ -131,7 +130,6 @@ Tất cả dùng Sequelize.fn aggregate (không phải raw SQL):
 ## 3.4 Business rules
 
 - Admin không thể xóa chính mình — check `req.user.id !== targetUserId`
-- `auditMiddleware` tự động log mọi thao tác write — không cần gọi thủ công trong controller
 - Vector store sync sau create/update/import là async fire-and-forget — response trả về trước khi sync xong
 - `deepParseJSON()` / `deepParseJSONArray()` trong service: xử lý trường hợp field bị stringify nhiều lần (tối đa 5 lần)
 
@@ -139,7 +137,7 @@ Tất cả dùng Sequelize.fn aggregate (không phải raw SQL):
 
 # 4. API Endpoints
 
-Base path: `/api/admin`. Tất cả require `adminAuthenticate` + `auditMiddleware`.
+Base path: `/api/admin`. Tất cả require `adminAuthenticate`.
 
 | Method | Path                                   | Rate Limit | Mô tả                                                           |
 | ------ | -------------------------------------- | ---------- | --------------------------------------------------------------- |
@@ -179,7 +177,6 @@ Base path: `/api/admin`. Tất cả require `adminAuthenticate` + `auditMiddlewa
 | GET    | `/admin/analytics/low-stock`           | —          | Sản phẩm sắp hết hàng                                           |
 | GET    | `/admin/reports/export`                | —          | Export báo cáo tổng hợp                                         |
 | GET    | `/admin/chatbot/stats`                 | —          | Chatbot analytics                                               |
-| GET    | `/admin/audit-logs`                    | —          | Nhật ký hành động admin (phân trang)                            |
 
 ---
 
@@ -188,9 +185,8 @@ Base path: `/api/admin`. Tất cả require `adminAuthenticate` + `auditMiddlewa
 ## 5.1 Depends on (module này dùng)
 
 - `discount-code` module — `discountCodeController` và `discountCodeValidator` import trực tiếp trong `routes.js` (cross-module import được cho phép ở routes layer)
-- `@shared/admin-audit` — `auditMiddleware` + `AdminAuditService`
 - `@services/vector-store/` — sync vector store sau create/import product (async)
-- `@models` — require trực tiếp (singleton exception): Product, User, Order, Review, Category, Brand, OrderItem, ProductVariant, ProductImage, ProductCategory, CartItem, Wishlist, Address, SearchHistory, RecentlyViewed, InventoryLog, AuditLog, ChatMessage
+- `@models` — require trực tiếp (singleton exception): Product, User, Order, Review, Category, Brand, OrderItem, ProductVariant, ProductImage, ProductCategory, CartItem, Wishlist, Address, SearchHistory, RecentlyViewed, InventoryLog, ChatMessage
 - `@modules/ai/services/product/product-enricher` — enrich data trước khi upsert vector store (require lazy trong `setImmediate`)
 
 ## 5.2 Used by (module khác dùng module này)

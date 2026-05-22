@@ -6,19 +6,14 @@
  */
 const { AppError } = require('@shared/errors');
 
-// Content Service — gộp 3 sub-domain (banner, news, feedback). Cache busting
-// cho banner public list, fire-and-forget email cho feedback.
+// Content Service — gộp 3 sub-domain (banner, news, feedback). Fire-and-forget email cho feedback.
 class ContentService {
-  constructor({ contentRepository, emailGateway, cacheStore, eventBus, logger, adminEmail }) {
+  constructor({ contentRepository, emailGateway, eventBus, logger, adminEmail }) {
     this.contentRepository = contentRepository;
     this.emailGateway = emailGateway;
-    this.cacheStore = cacheStore;
     this.eventBus = eventBus;
     this.logger = logger;
     this.adminEmail = adminEmail;
-    this.CACHE_TTL_BANNERS = 60 * 60;
-    this.CACHE_TTL_NEWS_LIST = 15 * 60;
-    this.CACHE_TTL_NEWS_DETAIL = 30 * 60;
   }
 
   // ---------- Banner ----------
@@ -28,21 +23,8 @@ class ContentService {
     if (position) where.position = position;
     if (isActive !== undefined) where.isActive = isActive === 'true';
 
-    const isActiveOnlyQuery = isActive === 'true' && !position;
-    const cacheKey = isActiveOnlyQuery ? 'banners:active' : null;
-
-    if (cacheKey && this.cacheStore) {
-      const cached = await this.cacheStore.get(cacheKey);
-      if (cached) return JSON.parse(cached);
-    }
-
     const banners = await this.contentRepository.findAllBanners(where);
-    const payload = { status: 'success', results: banners.length, data: banners };
-
-    if (cacheKey && this.cacheStore) {
-      await this.cacheStore.setEx(cacheKey, this.CACHE_TTL_BANNERS, JSON.stringify(payload));
-    }
-    return payload;
+    return { status: 'success', results: banners.length, data: banners };
   }
 
   async getBannerById({ id }) {
@@ -52,9 +34,7 @@ class ContentService {
   }
 
   async createBanner({ payload }) {
-    const banner = await this.contentRepository.createBanner(payload);
-    await this._invalidateBannerCache();
-    return banner;
+    return this.contentRepository.createBanner(payload);
   }
 
   async updateBanner({ id, patch }) {
@@ -62,7 +42,6 @@ class ContentService {
     if (!banner) throw new AppError('content.bannerNotFound', 404);
     Object.assign(banner, patch);
     await this.contentRepository.saveBanner(banner);
-    await this._invalidateBannerCache();
     return banner;
   }
 
@@ -70,16 +49,6 @@ class ContentService {
     const banner = await this.contentRepository.findBannerById(id);
     if (!banner) throw new AppError('content.bannerNotFound', 404);
     await this.contentRepository.deleteBanner(banner);
-    await this._invalidateBannerCache();
-  }
-
-  async _invalidateBannerCache() {
-    if (!this.cacheStore) return;
-    try {
-      await this.cacheStore.del('banners:active');
-    } catch (err) {
-      this.logger.warn('Xóa cache banners:active thất bại:', err.message);
-    }
   }
 
   // ---------- News ----------
@@ -87,11 +56,6 @@ class ContentService {
   async getAllNews({ page = 1, limit = 10, search, isPublished, category }) {
     const lim = parseInt(limit, 10);
     const off = (parseInt(page, 10) - 1) * lim;
-    const cacheKey = `news:list:${page}:${lim}:${isPublished ?? ''}:${category || ''}:${search || ''}`;
-    if (this.cacheStore && !search) {
-      const cached = await this.cacheStore.get(cacheKey);
-      if (cached) return JSON.parse(cached);
-    }
 
     const filter = {};
     if (search) filter.search = search;
@@ -103,37 +67,18 @@ class ContentService {
       limit: lim,
       offset: off,
     });
-    const data = {
+    return {
       count,
       totalPages: Math.ceil(count / lim),
       currentPage: parseInt(page, 10),
       news: rows,
     };
-    if (this.cacheStore && !search) {
-      await this.cacheStore.setEx(cacheKey, this.CACHE_TTL_NEWS_LIST, JSON.stringify(data));
-    }
-    return data;
   }
 
   async getNewsBySlug({ slug }) {
-    const cacheKey = `news:detail:${slug}`;
-    if (this.cacheStore) {
-      const cached = await this.cacheStore.get(cacheKey);
-      if (cached) {
-        // Vẫn increment view kể cả khi trả cache
-        const news = await this.contentRepository.findNewsById(JSON.parse(cached).id, {
-          withAuthor: false,
-        });
-        if (news) this.contentRepository.incrementNewsView(news).catch(() => {});
-        return JSON.parse(cached);
-      }
-    }
     const news = await this.contentRepository.findNewsBySlug(slug);
     if (!news) return null;
     await this.contentRepository.incrementNewsView(news);
-    if (this.cacheStore) {
-      await this.cacheStore.setEx(cacheKey, this.CACHE_TTL_NEWS_DETAIL, JSON.stringify(news));
-    }
     return news;
   }
 
@@ -195,15 +140,13 @@ class ContentService {
       const existing = await this.contentRepository.findNewsBySlug(slug, { withAuthor: false });
       if (existing) throw new AppError('content.slugExists', 400);
     }
-    const created = await this.contentRepository.createNews({
+    return this.contentRepository.createNews({
       ...payload,
       slug,
       category: payload.category || 'Tin tức',
       isPublished: payload.isPublished === undefined ? true : payload.isPublished,
       userId,
     });
-    await this._invalidateNewsCache();
-    return created;
   }
 
   async updateNews({ id, patch }) {
@@ -219,7 +162,6 @@ class ContentService {
 
     Object.assign(news, patch);
     await this.contentRepository.saveNews(news);
-    await this._invalidateNewsCache(news.slug);
     return news;
   }
 
@@ -227,18 +169,7 @@ class ContentService {
     const news = await this.contentRepository.findNewsById(id, { withAuthor: false });
     if (!news) return null;
     await this.contentRepository.deleteNews(news);
-    await this._invalidateNewsCache(news.slug);
     return true;
-  }
-
-  async _invalidateNewsCache(slug) {
-    if (!this.cacheStore) return;
-    try {
-      if (this.cacheStore.delPattern) await this.cacheStore.delPattern('news:list:*');
-      if (slug) await this.cacheStore.del(`news:detail:${slug}`);
-    } catch (err) {
-      this.logger.warn('Xóa cache news thất bại:', err.message);
-    }
   }
 
   // ---------- Feedback ----------

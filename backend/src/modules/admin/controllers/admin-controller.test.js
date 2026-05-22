@@ -39,9 +39,6 @@
  *
  *  Chatbot stats:
  *    GET /api/admin/chatbot/stats         → getChatbotStats
- *
- *  Audit logs:
- *    GET /api/admin/audit-logs            → getAuditLogs
  */
 
 process.env.NODE_ENV = 'test';
@@ -110,16 +107,6 @@ jest.mock('@middlewares/validate-request', () => ({
   validateExpressValidator: (_req, _res, next) => next(),
 }));
 
-jest.mock('@shared/admin-audit', () => ({
-  AdminAuditService: class {
-    static logUserAction() {}
-    static logProductAction() {}
-    static logOrderAction() {}
-    log() {}
-  },
-  auditMiddleware: (_req, _res, next) => next(),
-}));
-
 // Mock adminImport controller — tránh phụ thuộc multer/csv
 jest.mock('./admin-import-controller', () => ({
   getImportTemplate: (_req, _res, next) => next(),
@@ -136,10 +123,6 @@ jest.mock('@modules/discount-code/controllers/discount-code-controller', () => (
   createDiscountCode: (_req, _res, next) => next(),
   updateDiscountCode: (_req, _res, next) => next(),
   deleteDiscountCode: (_req, _res, next) => next(),
-}));
-
-jest.mock('@config/redis', () => ({
-  getRedisClient: jest.fn().mockResolvedValue(null),
 }));
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -234,12 +217,6 @@ jest.mock('@models', () => {
       create: jest.fn(),
       findAndCountAll: jest.fn(),
     },
-    AuditLog: {
-      findAll: jest.fn(),
-      findAndCountAll: jest.fn(),
-      count: jest.fn(),
-      create: jest.fn(),
-    },
     ChatMessage: {
       count: jest.fn(),
       findAll: jest.fn(),
@@ -273,7 +250,6 @@ const {
   Product,
   Order,
   OrderItem,
-  AuditLog,
   ChatMessage,
   ProductVariant,
   InventoryLog,
@@ -750,7 +726,7 @@ describe('GET /api/admin/products/:id', () => {
     expect(res.status).toBe(404);
   });
 
-  it('deep-parse variants.attributes khi là chuỗi JSON (xử lý stringify nhiều lần)', async () => {
+  it('variants.attributes được parse thành object khi là chuỗi JSON hợp lệ', async () => {
     const fakeProduct = {
       toJSON: () => ({
         id: 20,
@@ -771,6 +747,7 @@ describe('GET /api/admin/products/:id', () => {
     const res = await request.get('/api/admin/products/20');
     expect(res.status).toBe(200);
     const variant = res.body.data.product.variants[0];
+    // JSON string hợp lệ → deepParseJSON parse thành object
     expect(variant.attributes).toEqual({ ram: '8GB' });
   });
 });
@@ -1364,25 +1341,51 @@ describe('GET /api/admin/analytics/low-stock', () => {
     expect(res.body.data[0].stockQuantity).toBe(3);
   });
 
-  it('dùng threshold mặc định 10 khi không cung cấp', async () => {
-    Product.findAll.mockResolvedValueOnce([]);
+  it('dùng threshold mặc định 10 — loại sản phẩm có stock > 10', async () => {
+    // Implementation mới filter trong JS, không còn WHERE clause trên stockQuantity
+    const fakeProducts = [
+      {
+        toJSON: () => ({ id: 10, name: 'Còn ít', slug: 's', stockQuantity: 8, productImages: [] }),
+      },
+      {
+        toJSON: () => ({
+          id: 11,
+          name: 'Đủ hàng',
+          slug: 's2',
+          stockQuantity: 50,
+          productImages: [],
+        }),
+      },
+    ];
+    Product.findAll.mockResolvedValueOnce(fakeProducts);
 
-    await request.get('/api/admin/analytics/low-stock');
-    const callArgs = Product.findAll.mock.calls[0][0];
-    // threshold = 10 được dùng trong where clause
-    expect(callArgs.where.stockQuantity).toEqual(
-      expect.objectContaining({ [require('sequelize').Op.lte]: 10 }),
-    );
+    const res = await request.get('/api/admin/analytics/low-stock');
+    expect(res.status).toBe(200);
+    expect(res.body.data).toHaveLength(1);
+    expect(res.body.data[0].id).toBe(10);
   });
 
   it('dùng threshold từ query khi được cung cấp', async () => {
-    Product.findAll.mockResolvedValueOnce([]);
+    const fakeProducts = [
+      {
+        toJSON: () => ({ id: 20, name: 'Dưới 5', slug: 's', stockQuantity: 3, productImages: [] }),
+      },
+      {
+        toJSON: () => ({
+          id: 21,
+          name: 'Trên 5',
+          slug: 's2',
+          stockQuantity: 7,
+          productImages: [],
+        }),
+      },
+    ];
+    Product.findAll.mockResolvedValueOnce(fakeProducts);
 
-    await request.get('/api/admin/analytics/low-stock?threshold=5');
-    const callArgs = Product.findAll.mock.calls[0][0];
-    expect(callArgs.where.stockQuantity).toEqual(
-      expect.objectContaining({ [require('sequelize').Op.lte]: 5 }),
-    );
+    const res = await request.get('/api/admin/analytics/low-stock?threshold=5');
+    expect(res.status).toBe(200);
+    expect(res.body.data).toHaveLength(1);
+    expect(res.body.data[0].id).toBe(20);
   });
 });
 
@@ -1543,74 +1546,5 @@ describe('GET /api/admin/chatbot/stats', () => {
       product_search: 15,
       price_inquiry: 8,
     });
-  });
-});
-
-// ─────────────────────────────────────────────────────────────────────────────
-// GET /api/admin/audit-logs
-// ─────────────────────────────────────────────────────────────────────────────
-
-describe('GET /api/admin/audit-logs', () => {
-  it('trả về 200 với danh sách audit logs và phân trang', async () => {
-    AuditLog.findAndCountAll.mockResolvedValueOnce({
-      rows: [{ id: 1, action: 'CREATE_PRODUCT', adminId: 1, createdAt: new Date() }],
-      count: 1,
-    });
-
-    const res = await request.get('/api/admin/audit-logs');
-    expect(res.status).toBe(200);
-    expect(res.body.status).toBe('success');
-    expect(res.body.data.logs).toHaveLength(1);
-    expect(res.body.data.total).toBe(1);
-    expect(res.body.data).toHaveProperty('totalPages');
-  });
-
-  it('trả về 200 với mảng rỗng khi không có log nào', async () => {
-    AuditLog.findAndCountAll.mockResolvedValueOnce({ rows: [], count: 0 });
-
-    const res = await request.get('/api/admin/audit-logs');
-    expect(res.status).toBe(200);
-    expect(res.body.data.logs).toEqual([]);
-    expect(res.body.data.total).toBe(0);
-  });
-
-  it('giới hạn limit tối đa là 100', async () => {
-    AuditLog.findAndCountAll.mockResolvedValueOnce({ rows: [], count: 0 });
-
-    await request.get('/api/admin/audit-logs?limit=500');
-    const callArgs = AuditLog.findAndCountAll.mock.calls[0][0];
-    expect(callArgs.limit).toBeLessThanOrEqual(100);
-  });
-
-  it('filter theo adminId khi được cung cấp', async () => {
-    AuditLog.findAndCountAll.mockResolvedValueOnce({ rows: [], count: 0 });
-
-    await request.get('/api/admin/audit-logs?adminId=2');
-    const callArgs = AuditLog.findAndCountAll.mock.calls[0][0];
-    expect(callArgs.where.adminId).toBe(2);
-  });
-
-  it('filter theo action khi được cung cấp', async () => {
-    AuditLog.findAndCountAll.mockResolvedValueOnce({ rows: [], count: 0 });
-
-    await request.get('/api/admin/audit-logs?action=DELETE_PRODUCT');
-    const callArgs = AuditLog.findAndCountAll.mock.calls[0][0];
-    expect(callArgs.where.action).toBe('DELETE_PRODUCT');
-  });
-
-  it('filter theo date range khi cung cấp startDate và endDate', async () => {
-    AuditLog.findAndCountAll.mockResolvedValueOnce({ rows: [], count: 0 });
-
-    await request.get('/api/admin/audit-logs?startDate=2025-01-01&endDate=2025-01-31');
-    const callArgs = AuditLog.findAndCountAll.mock.calls[0][0];
-    expect(callArgs.where.createdAt).toBeDefined();
-  });
-
-  it('tính đúng totalPages = ceil(total / limit)', async () => {
-    AuditLog.findAndCountAll.mockResolvedValueOnce({ rows: [], count: 45 });
-
-    const res = await request.get('/api/admin/audit-logs?limit=20');
-    expect(res.status).toBe(200);
-    expect(res.body.data.totalPages).toBe(3);
   });
 });

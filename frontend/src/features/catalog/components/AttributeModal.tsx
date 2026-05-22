@@ -8,6 +8,7 @@ import React, { useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Modal, Form, Input, Button, Space, Alert, Divider } from 'antd';
 import { SaveOutlined, CloseOutlined, InfoCircleOutlined } from '@ant-design/icons';
+import { formatAttributeKey } from '../utils/product-naming';
 
 const { TextArea } = Input;
 
@@ -33,7 +34,7 @@ const AttributeModal: React.FC<AttributeModalProps> = ({ open, onClose, attribut
   useEffect(() => {
     if (attribute) {
       form.setFieldsValue({
-        name: attribute.name || '',
+        name: formatAttributeKey(attribute.name || ''),
         value: Array.isArray(attribute.values)
           ? attribute.values.join(', ')
           : attribute.value || '',

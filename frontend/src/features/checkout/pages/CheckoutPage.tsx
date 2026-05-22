@@ -8,6 +8,7 @@ import { useState, useEffect, useMemo } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { ROUTES, buildRoute } from '@/routes/paths';
+import { SHIPPING } from '@/constants';
 import { useQueryClient } from '@tanstack/react-query';
 import { CheckCircleOutlined, InfoCircleOutlined } from '@ant-design/icons';
 import { Button, Modal, Table } from 'antd';
@@ -20,7 +21,12 @@ import { useCartStore } from '@/stores/cart-store';
 import { useAuthStore } from '@/stores/auth-store';
 import { useUiStore } from '@/stores/ui-store';
 import { formatPrice } from '@/utils/format';
-import { useCreateOrderMutation, useApplyDiscountCodeMutation } from '@/features/orders';
+import {
+  useCreateOrderMutation,
+  useApplyDiscountCodeMutation,
+  useGetAvailableDiscountCodesQuery,
+} from '@/features/orders';
+import type { AvailableDiscountCode } from '@/features/orders';
 import { cartKeys, useGetCartCountQuery } from '@/features/cart';
 import { useCreateMomoUrlMutation } from '@/features/payment';
 import { useCreateVNPayUrlMutation } from '@/features/payment';
@@ -226,6 +232,7 @@ const CheckoutPage: React.FC = () => {
   const [discountError, setDiscountError] = useState('');
   const { mutateAsync: applyDiscountCode, isPending: isValidatingCode } =
     useApplyDiscountCodeMutation();
+  const { data: availableCodes = [] } = useGetAvailableDiscountCodesQuery();
 
   useEffect(() => {
     const state = location.state as { voucherCode?: string; discountAmount?: number } | null;
@@ -292,11 +299,11 @@ const CheckoutPage: React.FC = () => {
 
   const warrantyTotal = items.reduce((sum: number) => sum, 0);
 
-  // Tính phí vận chuyển tự động theo khoảng cách tuyến tính sử dụng API LocationIQ
+  // Tính phí vận chuyển theo khoảng cách, nhưng miễn phí nếu subtotal >= ngưỡng (đồng bộ backend)
   let shippingCost = 0;
   let finalDistance = 0;
 
-  if (formData.address) {
+  if (subtotal < SHIPPING.FREE_THRESHOLD && formData.address) {
     const lat = formData.lat;
     const lon = formData.lon;
 
@@ -317,9 +324,9 @@ const CheckoutPage: React.FC = () => {
       };
 
       const calculateShippingFee = (distanceInKm: number) => {
-        if (distanceInKm <= 3) return 15000; // 3km đầu tiên dùng giá 15k
-        const fee = 15000 + Math.ceil(distanceInKm - 3) * 5000; // km thứ 4 trở đi cộng thêm 5k/km
-        return Math.min(fee, 100000); // max 100k
+        if (distanceInKm <= 3) return 15000;
+        const fee = 15000 + Math.ceil(distanceInKm - 3) * 5000;
+        return Math.min(fee, SHIPPING.MAX_FEE);
       };
 
       // Tọa độ gốc của hàng: 144 Đ. Xuân Thủy, Cầu Giấy, HN (21.0378, 105.7827)
@@ -511,7 +518,8 @@ const CheckoutPage: React.FC = () => {
         billingPhone: formData.sameAsShipping ? formData.phone : formData.billingPhone,
         paymentMethod: formData.paymentMethod,
         notes: formData.notes,
-        discountCode: appliedDiscount ? appliedDiscount.code : undefined, // shippingCost KHÔNG gửi lên backend — backend tự tính theo Phase 7.3
+        discountCode: appliedDiscount ? appliedDiscount.code : undefined,
+        shippingCost, // Phí ship tính theo khoảng cách km từ kho hàng
         items:
           isBuyNow && buyNowItem
             ? [
@@ -1015,6 +1023,52 @@ const CheckoutPage: React.FC = () => {
             {/* Phần mã giảm giá */}
             {!isRepayingOrder && (
               <div className="mb-6 border-t border-neutral-200 dark:border-neutral-700 pt-4">
+                {/* Danh sách mã khả dụng */}
+                {availableCodes.length > 0 && !appliedDiscount && (
+                  <div className="mb-3">
+                    <p className="text-xs text-neutral-500 dark:text-neutral-400 mb-2">
+                      {t('checkout.discountCode.available')}
+                    </p>
+                    <div className="flex flex-wrap gap-2">
+                      {availableCodes.map((dc: AvailableDiscountCode) => {
+                        const eligible =
+                          dc.minOrderAmount === null || subtotal >= dc.minOrderAmount;
+                        const label =
+                          dc.type === 'percent'
+                            ? `${dc.value}%${dc.maxDiscountAmount ? ` (tối đa ${formatPrice(dc.maxDiscountAmount)})` : ''}`
+                            : formatPrice(dc.value);
+                        return (
+                          <button
+                            key={dc.id}
+                            disabled={!eligible}
+                            onClick={() => {
+                              setDiscountCodeInput(dc.code);
+                              setDiscountError('');
+                            }}
+                            title={
+                              !eligible && dc.minOrderAmount
+                                ? t('checkout.discountCode.minOrder', {
+                                    amount: formatPrice(dc.minOrderAmount),
+                                  })
+                                : dc.code
+                            }
+                            className={`px-2.5 py-1 rounded border text-xs font-mono font-semibold transition-colors ${
+                              eligible
+                                ? 'border-emerald-400 text-emerald-700 dark:text-emerald-300 dark:border-emerald-600 hover:bg-emerald-50 dark:hover:bg-emerald-900/30 cursor-pointer'
+                                : 'border-neutral-300 dark:border-neutral-600 text-neutral-400 cursor-not-allowed opacity-60'
+                            }`}
+                          >
+                            {dc.code}
+                            <span className="ml-1 font-normal text-neutral-500 dark:text-neutral-400">
+                              -{label}
+                            </span>
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+                )}
+
                 <div className="flex space-x-2 items-end">
                   <div className="flex-grow">
                     <Input

@@ -1,6 +1,6 @@
 # Migrations — TechStore Backend
 
-> 71 Sequelize migration files tại `src/migrations/`. Schema hiện tại: `backend/data/migration_full.sql`.
+> 79 Sequelize migration files tại `src/migrations/`. Schema hiện tại: `backend/data/migration_full.sql`.
 
 ← Quay lại [`backend/CLAUDE.md`](../../CLAUDE.md)
 
@@ -21,7 +21,7 @@
 
 # 1. Lưu ý đọc file
 
-**KHÔNG đọc hết** 71 files — chỉ đọc khi cần trace schema change cụ thể. Dùng tên file (date prefix) để xác định file cần xem. Toàn bộ schema hiện tại ở `data/migration_full.sql`.
+**KHÔNG đọc hết** 79 files — chỉ đọc khi cần trace schema change cụ thể. Dùng tên file (date prefix) để xác định file cần xem. Toàn bộ schema hiện tại ở `data/migration_full.sql`.
 
 ---
 
@@ -69,7 +69,6 @@
 2026050405-create-inventory-logs.js
 2026050406-add-ai-chatbot-fields.js
 2026050407-add-chatmessage-ai-fields.js
-2026050408-create-audit-logs.js
 2026050409-add-FK-constraint-names.js
 2026050410-rename-search-history-table.js
 2026050411-create-import-logs.js
@@ -118,8 +117,8 @@
 | -------------------- | ------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | **Init**             | `2024010101`              | Schema ban đầu: sync từ Sequelize models, không tạo FK constraints để tránh "Too many keys"                                                                                                               |
 | **Early schema**     | `2024121501`–`2025071801` | Add laptop fields, price precision, images table, variant fields, product-warranty, product-specifications                                                                                                |
-| **Phase 5–6**        | `2026050201`–`2026050406` | Product status → English, reviews soft-delete, stock_quantity to products, schema naming standards (price→unit_price rename, discount fields), indexes, inventory_logs, AI chatbot fields, audit_logs     |
-| **Phase 8–10**       | `2026050406`–`2026050408` | ChatMessage AI fields (provider, tokens), ChatMessage status fields, audit_logs table                                                                                                                     |
+| **Phase 5–6**        | `2026050201`–`2026050406` | Product status → English, reviews soft-delete, stock_quantity to products, schema naming standards (price→unit_price rename, discount fields), indexes, inventory_logs, AI chatbot fields                 |
+| **Phase 8–10**       | `2026050406`–`2026050408` | ChatMessage AI fields (provider, tokens), ChatMessage status fields                                                                                                                                       |
 | **Phase 35–38**      | `2026050409`–`2026050412` | FK constraint names, rename search_history table, import_logs, soft-delete columns                                                                                                                        |
 | **Phase 40**         | `2026050501`–`2026050512` | Massive cleanup: snake_case toàn bộ, FK constraints chuẩn, decimal precision DECIMAL(15,2), varchar lengths, default values, null consistency, check constraints, soft-delete columns, timestamp→datetime |
 | **i18n**             | `2026051611`              | Column-per-locale: `name_vi`/`name_en`, `description_vi`/`description_en` cho 6 bảng (products, categories, brands, news, banners)                                                                        |

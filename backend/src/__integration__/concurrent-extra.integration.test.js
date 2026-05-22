@@ -18,14 +18,13 @@ const {
   Cart,
   CartItem,
   Review,
-  News,
   Order,
   OrderItem,
 } = require('@models');
 const { Op } = require('sequelize');
 
 const TS = Date.now();
-let user1, user2, product, variant, cat, brand, testNews;
+let user1, user2, product, variant, cat, brand;
 const createdOrderIds = [];
 
 beforeAll(async () => {
@@ -75,13 +74,6 @@ beforeAll(async () => {
     password: 'ConcExtra2!',
     role: 'customer',
   });
-  testNews = await News.create({
-    titleVi: `__INT_ConcExt_News_${TS}`,
-    slug: `int-conc-ext-news-${TS}`,
-    contentVi: 'Nội dung test',
-    viewCount: 0,
-    isPublished: true,
-  });
 });
 
 afterAll(async () => {
@@ -114,7 +106,6 @@ afterAll(async () => {
     await Cart.destroy({ where: { id: { [Op.in]: cartIds } }, force: true }).catch(() => {});
   }
 
-  if (testNews) await testNews.destroy({ force: true }).catch(() => {});
   if (variant) await variant.destroy({ force: true }).catch(() => {});
   if (product) await product.destroy({ force: true }).catch(() => {});
   if (cat) await Category.destroy({ where: { id: cat.id } }).catch(() => {});
@@ -262,30 +253,5 @@ describe('Concurrent updateProfile — last write wins', () => {
     // User vẫn tồn tại và không bị corrupt — firstName là 1 trong 3 giá trị hợp lệ
     await user2.reload();
     expect(['__INT_CE2_A', '__INT_CE2_B', '__INT_CE2_C']).toContain(user2.firstName);
-  });
-});
-
-// ─────────────────────────────────────────────────────────────
-describe('Concurrent incrementNewsView — count tăng không mất', () => {
-  test('Concurrent incrementNewsView → viewCount tăng đúng số lần gọi', async () => {
-    // Arrange — đặt viewCount = 0
-    await testNews.update({ viewCount: 0 });
-    await testNews.reload();
-    expect(testNews.viewCount).toBe(0);
-
-    const NUM_INCREMENTS = 5;
-
-    // increment() là atomic ở MySQL — an toàn khi gọi song song
-    const incrementView = () =>
-      sequelize.transaction(async (t) => {
-        await testNews.increment('viewCount', { by: 1, transaction: t });
-      });
-
-    // Act — 5 lần increment song song
-    await Promise.all(Array.from({ length: NUM_INCREMENTS }, () => incrementView()));
-
-    // Assert — viewCount phải = NUM_INCREMENTS (không bị mất do race)
-    await testNews.reload();
-    expect(testNews.viewCount).toBe(NUM_INCREMENTS);
   });
 });

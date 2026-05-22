@@ -50,23 +50,9 @@ jest.mock('@middlewares/admin-auth', () => ({
   adminAuthenticate: (_req, _res, next) => next(),
 }));
 
-jest.mock('@shared/admin-audit', () => ({
-  AdminAuditService: { logAction: jest.fn(), logSuccessfulLogin: jest.fn() },
-  auditMiddleware: (_req, _res, next) => next(),
-}));
-
 jest.mock('@services/email', () => ({
   sendOtpEmail: jest.fn().mockResolvedValue(undefined),
   sendOrderConfirmationEmail: jest.fn().mockResolvedValue(undefined),
-}));
-
-jest.mock('@config/redis', () => ({
-  getRedisClient: jest.fn().mockResolvedValue({
-    get: jest.fn().mockResolvedValue(null),
-    set: jest.fn().mockResolvedValue('OK'),
-    setEx: jest.fn().mockResolvedValue('OK'),
-    del: jest.fn().mockResolvedValue(1),
-  }),
 }));
 
 jest.mock('@models', () => {
@@ -138,8 +124,6 @@ const { User } = require('@models');
 const eventBus = require('@shared/event-bus');
 const logger = require('@utils/logger');
 const emailService = require('@services/email');
-const { AdminAuditService } = require('@shared/admin-audit');
-const { getRedisClient } = require('@config/redis');
 const { errorHandler } = require('@middlewares/error-handler');
 
 const authModule = buildAuthModule({
@@ -147,8 +131,6 @@ const authModule = buildAuthModule({
   eventBus,
   logger,
   emailService,
-  auditService: AdminAuditService,
-  redisClient: getRedisClient,
 });
 
 const app = express();

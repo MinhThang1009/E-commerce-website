@@ -13,7 +13,6 @@
  *  - GET /api/admin/orders → 200, PUT /api/admin/orders/:id/status, PUT /api/admin/orders/:id/cancel
  *  - GET/POST/PUT/DELETE /api/admin/discount-codes (basic)
  *  - GET /api/admin/analytics/* (tất cả 6 endpoint — basic)
- *  - GET /api/admin/audit-logs → 200
  *  - GET /api/admin/reviews → 200, DELETE /api/admin/reviews/:id
  *  - GET /api/admin/reports/export, GET /api/admin/chatbot/stats
  */
@@ -163,28 +162,6 @@ describe('GET /api/admin/users/:id không tồn tại', () => {
       .get('/api/admin/users/999999999')
       .set('Authorization', `Bearer ${adminToken}`);
     expect([400, 404]).toContain(res.status);
-  });
-});
-
-// ── Audit logs — filter theo userId ──────────────────────────────────────────
-
-describe('GET /api/admin/audit-logs?userId=<id>', () => {
-  test('lọc audit log theo userId admin → 200', async () => {
-    const res = await request(app)
-      .get('/api/admin/audit-logs')
-      .set('Authorization', `Bearer ${adminToken}`)
-      .query({ userId: admin.id });
-    expect(res.status).toBe(200);
-    expect(res.body.status).toBe('success');
-  });
-
-  test('lọc audit log theo userId không tồn tại → 200 + danh sách rỗng', async () => {
-    const res = await request(app)
-      .get('/api/admin/audit-logs')
-      .set('Authorization', `Bearer ${adminToken}`)
-      .query({ userId: 999999999 });
-    expect(res.status).toBe(200);
-    expect(res.body.status).toBe('success');
   });
 });
 

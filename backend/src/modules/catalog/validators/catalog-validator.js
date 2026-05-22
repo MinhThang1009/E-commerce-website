@@ -1,8 +1,8 @@
 const { z } = require('zod');
 const categorySchema = z.object({
   name: z.string().min(1, 'Tên danh mục không được để trống'),
-  description: z.string().optional(),
-  image: z.string().optional(),
+  description: z.string().nullish(),
+  image: z.string().nullish(),
   parentId: z.string().uuid().nullable().optional(),
   isActive: z.boolean().default(true),
   sortOrder: z.number().int().default(0),
@@ -11,6 +11,9 @@ const createBrandSchema = z.object({
   name: z.string().trim().min(1, 'Tên thương hiệu không được để trống').max(100),
   slug: z.string().trim().max(255).optional(),
   logoUrl: z.string().url().optional().or(z.literal('')).nullable(),
+  description: z.string().nullish(),
+  website: z.string().url('URL website không hợp lệ').optional().or(z.literal('')).nullable(),
+  isActive: z.boolean().default(true),
 });
 const updateBrandSchema = createBrandSchema.partial();
 const productSchema = z.object({
@@ -26,6 +29,9 @@ const productSchema = z.object({
   seoTitle: z.string().optional(),
   seoDescription: z.string().optional(),
   seoKeywords: z.array(z.string()).default([]),
+  status: z.enum(['active', 'inactive', 'draft', 'archived']).optional(),
+  baseName: z.string().optional(),
+  faqs: z.array(z.object({ question: z.string(), answer: z.string() })).optional(),
   brand: z.string().optional(),
   model: z.string().optional(),
   condition: z.enum(['new', 'like-new', 'used', 'refurbished']).default('new'),

@@ -25,7 +25,7 @@
 
 ## 1.1 Purpose
 
-Xử lý toàn bộ authentication: đăng ký tài khoản, đăng nhập email/Google OAuth, quản lý JWT access/refresh token pair, xác thực email qua OTP 6 chữ số, reset password qua OTP, và logout với token blacklist.
+Xử lý toàn bộ authentication: đăng ký tài khoản, đăng nhập email/Google OAuth, quản lý JWT access/refresh token pair, xác thực email qua OTP 6 chữ số, reset password qua OTP, và logout.
 
 ## 1.2 DI Pattern (4 adapters)
 
@@ -33,14 +33,12 @@ Module dùng DI đầy đủ với adapter pattern — 4 adapters được đị
 
 ```js
 // module.js wires:
-module.exports = ({ User, eventBus, logger, emailService, auditService, redisClient }) => {
+module.exports = ({ User, eventBus, logger, emailService }) => {
   // emailGateway   → { sendOtpEmail, sendResetPasswordEmail } (wraps emailService)
   // googleVerifier → { verifyIdToken, verifyAccessToken }     (wraps OAuth2Client + axios)
   // tokenSigner    → { signAccessToken, signRefreshToken, verifyAccessToken, verifyRefreshToken }
   //                  (wraps jsonwebtoken)
-  // blacklistStore → { set, get, del }  (wraps redisClient factory)
-  //                  — null nếu redisClient không được truyền vào
-  // → new AuthService({ authRepository, emailGateway, googleVerifier, tokenSigner, blacklistStore, ... })
+  // → new AuthService({ authRepository, emailGateway, googleVerifier, tokenSigner, ... })
   // → new AuthController({ authService })
   // → buildRoutes({ authController })
 };
@@ -84,9 +82,9 @@ modules/auth/
 **`auth-service.js`** xử lý toàn bộ:
 
 - `register({ email, password, firstName, lastName, phone })` — tạo User, gửi OTP qua email (không block nếu email fail), publish `auth.userRegistered` event
-- `login({ email, password, ip })` — verify password (bcrypt), kiểm tra `isEmailVerified` + `isActive`, tạo access token + refresh token, ghi audit log nếu admin
+- `login({ email, password, ip })` — verify password (bcrypt), kiểm tra `isEmailVerified` + `isActive`, tạo access token + refresh token
 - `googleLogin({ token })` — verify `id_token` qua `OAuth2Client` (thử trước), fallback verify `accessToken` qua axios GET Google userinfo API. Auto-create user nếu chưa tồn tại. Merge account nếu email trùng.
-- `logout({ accessToken, refreshToken })` — blacklist `bl:<jti>` trong Redis (TTL = remaining time của access token), revoke refresh token family `rt_family_revoked:<familyId>`
+- `logout({ refreshToken })` — revoke refresh token family `rt_family_revoked:<familyId>` (clear phía client, không blacklist access token)
 - `verifyOtp({ email, otp })` — timing-safe compare OTP 6 chữ số, set `isEmailVerified=true`, clear OTP fields
 - `resendVerification({ email })` — tạo OTP mới hết hạn 10 phút, gửi email. Trả generic message ngay cả khi user không tồn tại (chống enumeration).
 - `refreshToken({ refreshToken })` — verify refresh token, check family không bị revoke, tạo access token mới + refresh token mới (rotate), revoke token cũ
@@ -99,7 +97,7 @@ modules/auth/
 - **JWT access token**: HS256, payload `{ id, role, jti: randomUUID() }`, TTL từ env `JWT_EXPIRES_IN`
 - **JWT refresh token**: payload `{ id, jti: randomUUID(), familyId: uuid }`, TTL từ env `JWT_REFRESH_EXPIRES_IN`
 - **Token rotation**: Mỗi lần refresh → tạo token pair mới, revoke token cũ. Nếu refresh token cũ bị reuse → revoke toàn bộ family → force logout tất cả devices
-- **Blacklist**: Key `bl:<jti>` trong Redis, TTL = remaining time của access token. Nếu `blacklistStore` là null (không có Redis) → không blacklist (logout không đầy đủ)
+- **Logout**: Revoke refresh token family; access token không bị blacklist — token vẫn valid cho đến hết TTL (xử lý clear phía client)
 - **OTP**: 6 chữ số random (`crypto.randomInt(100000, 1000000)`), TTL 10 phút, so sánh timing-safe
 - **Google OAuth dual mode**: `verifyIdToken()` cho Google `id_token` (mobile), `verifyAccessToken()` cho Google `access_token` (web flow)
 - **Password hash**: bcrypt, cost factor từ env `BCRYPT_ROUNDS` (default 12, test dùng 4)
@@ -116,7 +114,7 @@ Base path: `/api/auth`
 | POST   | `/auth/register`            | —            | —          | Đăng ký tài khoản mới                       |
 | POST   | `/auth/login`               | —            | —          | Đăng nhập email/password                    |
 | POST   | `/auth/google`              | —            | —          | Đăng nhập/đăng ký qua Google OAuth          |
-| POST   | `/auth/logout`              | authenticate | —          | Đăng xuất (blacklist token + revoke family) |
+| POST   | `/auth/logout`              | authenticate | —          | Đăng xuất (revoke refresh token family)     |
 | POST   | `/auth/verify-otp`          | —            | otpLimiter | Xác thực email bằng OTP 6 chữ số            |
 | POST   | `/auth/resend-verification` | —            | otpLimiter | Gửi lại OTP xác thực email                  |
 | POST   | `/auth/refresh-token`       | —            | —          | Lấy access token mới (rotate refresh token) |
@@ -134,8 +132,6 @@ Base path: `/api/auth`
 
 - `User` model — inject từ `app.js`, share với `users` module
 - `emailService` — gửi OTP email + reset password email (inject từ app.js)
-- `auditService` (`AdminAuditService`) — ghi audit log khi admin login (optional, dùng nếu có)
-- `redisClient` — factory function async `getRedisClient()`, dùng cho blacklist store (optional, null nếu không cấu hình)
 - `eventBus` — publish `auth.userRegistered` (bắt buộc)
 
 ## 5.2 Used by (module khác dùng module này)
@@ -152,14 +148,13 @@ Base path: `/api/auth`
 # 6. Gotchas & Edge Cases
 
 - **`authenticate` middleware không trong auth module**: Nằm ở `src/middlewares/authenticate.js`, dùng chung toàn app. Auth module chỉ tạo token; middleware verify là tầng riêng.
-- **Adapters inline trong `module.js`**: Không có file `redis-blacklist-store.js`, `jwt-token-signer.js` riêng biệt. Mọi adapter đều inline trong `module.js`.
-- **`blacklistStore = null` khi không có Redis**: `AuthService` phải handle null — không crash khi Redis không có. Hệ quả: logout không blacklist access token (token vẫn valid cho đến hết TTL).
+- **Adapters inline trong `module.js`**: Không có file `jwt-token-signer.js` riêng biệt. Mọi adapter đều inline trong `module.js`.
+- **Logout chỉ revoke refresh token**: Access token không bị blacklist — vẫn valid cho đến hết TTL. Client có trách nhiệm xóa token khỏi storage ngay khi logout.
 - **Family ID rotation — security behavior**: Reuse refresh token cũ sau khi đã rotate → revoke toàn bộ family `rt_family_revoked:<familyId>` → force logout tất cả devices. Intentional, không bypass.
 - **`/reset-password` không có rate limit**: Endpoint này validate OTP trước khi reset — brute force bị chặn bởi OTP TTL 10 phút và OTP bị clear sau dùng.
-- **Google OAuth fallback**: `verifyIdToken()` thất bại → thử `verifyAccessToken()`. Nếu cả hai fail → `AppError 401`. Không cache kết quả verify.
+- **Google OAuth fallback**: `verifyIdToken()` thất bại → thử `verifyAccessToken()`. Nếu cả hai fail → `AppError 401`. Không lưu kết quả verify.
 - **OTP timing-safe compare**: Dùng `crypto.timingSafeEqual` để tránh timing attack. OTP được pad thành 6 chữ số trước khi compare.
 - **`bcrypt` cost 4 trong test**: Set env `BCRYPT_ROUNDS=4` để test nhanh hơn. Production không được dùng giá trị thấp hơn 10.
-- **`redisClient` là factory async**: `module.js` truyền factory function (không phải client instance trực tiếp) để `blacklistStore` luôn dùng client mới nhất sau reconnect.
 
 ---
 

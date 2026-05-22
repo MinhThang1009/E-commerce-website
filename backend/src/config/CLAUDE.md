@@ -1,6 +1,6 @@
 # Config — Application Configuration
 
-> Cấu hình kết nối database, Redis, và Swagger. Import qua alias `@config`.
+> Cấu hình kết nối database và Swagger. Import qua alias `@config`.
 
 ← Quay lại [`backend/CLAUDE.md`](../../CLAUDE.md)
 
@@ -8,8 +8,7 @@
 
 - [1. sequelize.js](#1-sequelizejs)
 - [2. database.js](#2-databasejs)
-- [3. redis.js](#3-redisjs)
-- [4. swagger.js](#4-swaggerjs)
+- [3. swagger.js](#3-swaggerjs)
 
 ---
 
@@ -44,28 +43,7 @@ Sequelize CLI config (development / test / production). Dùng bởi migrations (
 
 ---
 
-## 3. redis.js
-
-Redis client với in-memory fallback. App **không crash** nếu Redis unavailable.
-
-```js
-const { getRedisClient } = require('@config/redis');
-const client = await getRedisClient(); // trả về redis client hoặc in-memory Map
-```
-
-**Cơ chế hoạt động:**
-
-- Singleton dạng Promise (`initPromise`) — mọi caller `await` cùng 1 lần khởi tạo
-- Kết nối timeout 1500ms, `reconnectStrategy: false` — fail nhanh, không retry vô tận
-- Kết nối thất bại → trả về `memClient` (in-memory `Map`) với interface tương đương
-
-**memClient hỗ trợ đầy đủ:** `setEx`, `get`, `del`, `set`, `keys` (glob `*` matching)
-
-**Env var:** `REDIS_URL` (ví dụ: `redis://localhost:6379`)
-
----
-
-## 4. swagger.js
+## 3. swagger.js
 
 OpenAPI 3.0 spec generator. Scan JSDoc từ routes và models, tạo `swaggerSpec` object.
 

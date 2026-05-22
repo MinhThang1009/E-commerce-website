@@ -45,7 +45,7 @@ export interface AdminOrder {
     id: string;
     productId: string;
     quantity: number;
-    price: number;
+    unitPrice: number;
     Product: {
       id: string;
       name: string;

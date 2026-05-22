@@ -97,7 +97,7 @@ Trả về: `{ discountAmount, discountCodeId, code }`.
 
 Functions: `getAllDiscountCodes({ page, limit, search, isActive, sortBy, sortOrder })`, `getDiscountCodeById(id)`, `createDiscountCode(data, actor)`, `updateDiscountCode(id, data, actor)`, `deleteDiscountCode(id, actor)`.
 
-Tất cả write operations ghi `AdminAuditService.logDiscountCodeAction(actor, action, id, code)`. `updateDiscountCode` phân biệt audit action `'DEACTIVATE'` (khi `isActive` đổi từ true → false) với `'UPDATE'` thông thường.
+Tất cả write operations được ghi nhận qua service. `updateDiscountCode` phân biệt trường hợp `'DEACTIVATE'` (khi `isActive` đổi từ true → false) với `'UPDATE'` thông thường.
 
 ## 3.3 Business rules
 
@@ -142,7 +142,6 @@ Singleton — không nhận inject qua DI. Require trực tiếp:
 
 - `DiscountCode` model qua `@models` (trong repository)
 - `@shared/errors` — `AppError`
-- `@shared/admin-audit` — `AdminAuditService`
 - `@utils/catch-async` — trong controller
 
 ## 5.2 Used by
@@ -166,8 +165,8 @@ Singleton — không nhận inject qua DI. Require trực tiếp:
 
 # 7. Tests
 
-| File                                            | Loại | Mô tả                                         |
-| ----------------------------------------------- | ---- | --------------------------------------------- |
-| `services/discount-code-service.test.js`        | Unit | Apply logic, validate thứ tự, CRUD, audit log |
-| `repositories/discount-code-repository.test.js` | Unit | Repository CRUD, incrementUsedCount           |
-| `routes.test.js`                                | Unit | Route validation middleware                   |
+| File                                            | Loại | Mô tả                               |
+| ----------------------------------------------- | ---- | ----------------------------------- |
+| `services/discount-code-service.test.js`        | Unit | Apply logic, validate thứ tự, CRUD  |
+| `repositories/discount-code-repository.test.js` | Unit | Repository CRUD, incrementUsedCount |
+| `routes.test.js`                                | Unit | Route validation middleware         |

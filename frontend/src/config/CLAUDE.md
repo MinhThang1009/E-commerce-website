@@ -51,7 +51,7 @@ i18n.changeLanguage('en'); // Switch language
 | Supported locales | `['vi', 'en']`                                                                           |
 | Locale files      | `src/locales/vi.json`, `src/locales/en.json`                                             |
 | Detection order   | `localStorage('language')` → `navigator.language` → `htmlTag`                            |
-| Cache             | `localStorage('language')`                                                               |
+| Storage           | `localStorage('language')`                                                               |
 | `fallbackLng`     | `'vi'` — nếu key không tìm thấy trong ngôn ngữ hiện tại, fallback về `vi`                |
 | Debug             | Bật trong `development` (`process.env.NODE_ENV === 'development'`), tắt trong production |
 | Default namespace | `'translation'` (1 file duy nhất, không split namespace)                                 |

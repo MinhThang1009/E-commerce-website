@@ -24,7 +24,6 @@ Response:
 {
   "status": "success",
   "db": "ok",
-  "redis": "ok | memory_fallback | not_configured | error",
   "uptime": 3600,
   "version": "1.0.0",
   "timestamp": "2026-05-20T..."
@@ -32,7 +31,6 @@ Response:
 ```
 
 - 200 nếu DB `ok`, 503 nếu DB lỗi
-- Redis status: `ok` / `memory_fallback` / `not_configured` / `error`
 - Bỏ qua trong Morgan logs (`skip: req.url === '/api/health'`)
 
 ---

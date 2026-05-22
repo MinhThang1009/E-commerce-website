@@ -1,90 +1,219 @@
 /**
- * @file aiPolicy.js
+ * @file ai-policy.js
  * @layer Service
  * @module ai
- * @description Business logic layer cho ai
+ *
+ * AIPolicy — tập hợp các quy tắc thuần túy cho chatbot: validate input, chuẩn hóa query,
+ * phân loại ý định người dùng.
+ *
+ * "Pure functions" nghĩa là: không có side effects, không gọi DB hay API,
+ * không thay đổi state bên ngoài. Cùng input luôn cho cùng output → dễ test.
+ *
+ * Được dùng bởi RAGPipeline (validate + normalize) và ChatbotService (classify intent).
  */
-// AIPolicy — pure rules cho AI chatbot input validation + query normalization.
 
+/**
+ * Độ dài tối đa của một tin nhắn chatbot (ký tự).
+ * Giới hạn này bảo vệ server khỏi payload quá lớn và giới hạn context window của LLM.
+ * LLM tính phí theo token (~1 token ≈ 4 ký tự), tin nhắn quá dài = tốn tiền + chậm hơn.
+ */
 const MAX_MESSAGE_LENGTH = 2000;
 
-// Chỉ giữ brand/model abbreviations — domain-specific mà LLM không tự biết.
-// Viết tắt hội thoại (ko, co, dc...) để LLM rewriteQuery xử lý tự nhiên hơn.
+/**
+ * Bảng viết tắt domain-specific mà LLM không tự hiểu được.
+ *
+ * Tại sao chỉ giữ brand/model abbreviations, không mở rộng thêm?
+ * Viết tắt hội thoại thông thường (ko, co, dc, ok...) LLM đã được huấn luyện để hiểu.
+ * Chỉ những viết tắt đặc thù ngành kỹ thuật (ip, ss, mb, r5...) mới cần expand thủ công.
+ *
+ * Cú pháp regex trong key:
+ *   \\b     = word boundary — đảm bảo "ip" khớp từ nguyên chứ không phải substring
+ *             Ví dụ: "ip16" khớp, nhưng "tip" không khớp vì "ip" ở giữa từ
+ *   (?=\\d) = positive lookahead — chỉ khớp nếu SAU đó có chữ số
+ *             Ví dụ: "ip16" → "ip" khớp (có "1" theo sau), "ip " → "ip" không khớp
+ *   \\b...\\b = khớp từ hoàn chỉnh (có boundary cả hai đầu)
+ *
+ * Flag 'giu' trong regex: g=tất cả lần khớp, i=không phân biệt hoa/thường, u=Unicode
+ */
 const ABBREV_MAP = {
-  // ip16, ip15pro → iPhone 16, iPhone 15 Pro (lookahead giữ lại số sau ip)
+  // "ip16" → "iPhone 16", "ip15pro" → "iPhone 15pro" (lookahead (?=\\d) giữ số theo sau)
   '\\bip(?=\\d)': 'iPhone ',
+  // "ip" đứng độc lập (không có số theo sau) → "iPhone"
   '\\bip\\b': 'iPhone',
+  // "pm" → "Pro Max" (thường dùng: "ip16pm" nhưng sau expand "ip" → "iPhone 16pm" → "iPhone 16 Pro Max")
   '\\bpm\\b': 'Pro Max',
-  // ss23, ss24 → Samsung S23, Samsung S24
+  // "ss23" → "Samsung S23", "ss24" → "Samsung S24"
   '\\bss(?=\\d)': 'Samsung S',
+  // "ss" đứng độc lập → "Samsung"
   '\\bss\\b': 'Samsung',
+  // "mb" → "MacBook" (MacBook Air, MacBook Pro...)
   '\\bmb\\b': 'MacBook',
+  // "op" → "OPPO" — ngoại trừ khi đứng sau ký tự tiếng Việt (để tránh match sai trong văn bản)
   '(?<![àáâãèéêìíòóôõùúýăđơưẠ-ỹ])\\bop\\b': 'OPPO',
+  // "rl" → "realme"
   '\\brl\\b': 'realme',
+  // "r5" → "AMD Ryzen 5" (chip laptop phổ biến)
   '\\br5\\b': 'AMD Ryzen 5',
+  // "r7" → "AMD Ryzen 7"
   '\\br7\\b': 'AMD Ryzen 7',
   // Viết tắt câu hỏi hội thoại phổ biến
+  // "bnh" → "bao nhiêu" (giá bnh = giá bao nhiêu)
   '\\bbnh\\b': 'bao nhiêu',
+  // "bh" → "bảo hành"
   '\\bbh\\b': 'bảo hành',
 };
 
 /**
- * [Input] Expand viết tắt phổ biến: ip→iPhone, ss→Samsung, bnh→bao nhiêu...
- * @param {string} text - Query gốc.
- * @returns {string} Query đã expand.
+ * Mở rộng viết tắt trong câu truy vấn của người dùng.
+ *
+ * Chạy trước khi tìm kiếm vector để tăng độ chính xác:
+ * "ip16 giá bnh" → "iPhone 16 giá bao nhiêu" → vector search tìm được sản phẩm đúng hơn.
+ *
+ * @param {string} text - Query gốc từ user (đã trim).
+ * @returns {string} Query đã được mở rộng viết tắt.
  */
 function expandAbbreviations(text) {
   let result = text;
+  // Duyệt qua từng cặp (pattern, replacement) trong ABBREV_MAP
+  // Object.entries() trả về mảng [[pattern1, replacement1], [pattern2, replacement2], ...]
   for (const [pattern, replacement] of Object.entries(ABBREV_MAP)) {
+    // Flag 'giu': g=global (thay tất cả), i=case-insensitive, u=Unicode support
     result = result.replace(new RegExp(pattern, 'giu'), replacement);
   }
   return result;
 }
 
 /**
- * [Input] Validate tin nhắn chatbot: không rỗng, ≤2000 ký tự.
- * @param {string} message - Tin nhắn gốc.
- * @returns {{valid: boolean, reason?: string}}
+ * Kiểm tra tin nhắn chatbot có hợp lệ không.
+ *
+ * Kiểm tra 2 điều kiện:
+ *   1. Không rỗng (sau khi trim bỏ khoảng trắng)
+ *   2. Không vượt quá MAX_MESSAGE_LENGTH ký tự
+ *
+ * Tại sao trả về object { valid, reason } thay vì throw error?
+ * Để caller (RAGPipeline) tự quyết định cách xử lý lỗi (throw AppError với HTTP status 400).
+ * Pure function không nên throw — throw là side effect.
+ *
+ * @param {string} message - Tin nhắn gốc từ user.
+ * @returns {{ valid: boolean, reason?: string }} Kết quả kiểm tra.
+ *   - `valid: true` nếu hợp lệ
+ *   - `valid: false, reason: "..."` nếu không hợp lệ (kèm lý do cụ thể)
  */
 function validateMessage(message) {
   if (!message || !message.trim()) {
     return { valid: false, reason: 'Tin nhắn không được để trống' };
   }
-  if (message.trim().length > MAX_MESSAGE_LENGTH) {
+  const trimmed = message.trim();
+  if (trimmed.length > MAX_MESSAGE_LENGTH) {
     return { valid: false, reason: `Tin nhắn quá dài (tối đa ${MAX_MESSAGE_LENGTH} ký tự)` };
+  }
+  // Phải có ít nhất 1 chữ cái hoặc chữ số (tránh chỉ gửi dấu câu như ", !, ?, ...)
+  if (!/[\p{L}\p{N}]/u.test(trimmed)) {
+    return { valid: false, reason: 'Tin nhắn không hợp lệ' };
   }
   return { valid: true };
 }
 
+/**
+ * Regex phát hiện câu hỏi ngoài phạm vi tư vấn sản phẩm công nghệ.
+ *
+ * Tại sao dùng regex thay vì LLM để phát hiện off-topic?
+ * LLM mất 1-3 giây để phân tích. Với những từ khóa rõ ràng như "thời tiết", "bóng đá",
+ * regex cho kết quả tức thì (< 1ms) và độ chính xác đủ tốt → tiết kiệm quota + giảm latency.
+ *
+ * Danh sách từ khóa gồm cả tiếng Việt và tiếng Anh để xử lý user nhắn bằng cả hai ngôn ngữ.
+ */
 const OFF_TOPIC_PATTERN =
   /thời tiết|bóng đá|âm nhạc|phim|nấu ăn|sức khỏe|tin tức|weather|football|soccer|music|movie|cooking|health|news/;
 
+/**
+ * Kiểm tra câu hỏi có ngoài phạm vi tư vấn sản phẩm không.
+ *
+ * @param {string} message - Tin nhắn (đã qua expandAbbreviations).
+ * @returns {boolean} true nếu là câu hỏi off-topic, false nếu liên quan đến sản phẩm.
+ */
 function isOffTopic(message) {
+  // toLowerCase() để match không phân biệt hoa/thường (Bóng đá, BÓNG ĐÁ, bóng đá đều match)
   return OFF_TOPIC_PATTERN.test(message.toLowerCase());
 }
 
+/**
+ * Phân loại ý định của người dùng dựa trên nội dung tin nhắn.
+ *
+ * 6 loại intent theo thứ tự ưu tiên kiểm tra:
+ *   1. off_topic      — hỏi ngoài phạm vi (thời tiết, bóng đá...)
+ *   2. order_inquiry  — hỏi về đơn hàng, giao hàng, tracking
+ *   3. policy         — hỏi về bảo hành, đổi trả, chính sách
+ *   4. pricing        — hỏi về giá cả, ngân sách
+ *   5. product_search — hỏi về sản phẩm cụ thể hoặc muốn tư vấn/so sánh
+ *   6. general        — mọi câu hỏi còn lại (không khớp pattern nào)
+ *
+ * Thứ tự quan trọng: off_topic được check trước để tránh match sai
+ * (ví dụ: "bóng đá Samsung" → off_topic, không phải product_search).
+ *
+ * Intent được dùng để:
+ *   - Chatbot chọn template trả lời phù hợp
+ *   - Analytics dashboard thống kê loại câu hỏi phổ biến
+ *
+ * @param {string} normalizedText - Query đã qua expandAbbreviations.
+ * @returns {string} Tên intent: 'off_topic'|'order_inquiry'|'policy'|'pricing'|'product_search'|'general'
+ */
 function classifyIntent(normalizedText) {
   const lower = normalizedText.toLowerCase();
+
+  // Off-topic phải check trước — ưu tiên cao nhất
   if (isOffTopic(normalizedText)) return 'off_topic';
+
+  // Hỏi về trạng thái đơn hàng, vận chuyển
   if (/đơn hàng|order|giao hàng|ship|track|delivery|shipping\s*status/.test(lower))
     return 'order_inquiry';
+
+  // Hỏi về chính sách mua hàng, bảo hành, đổi trả
   if (/bảo hành|đổi trả|chính sách|policy|warranty|return|refund|exchange/.test(lower))
     return 'policy';
+
+  // Hỏi về giá tiền, ngân sách
   if (/giá|bao nhiêu|tiền|cost|price|how\s*much|affordable|budget|cheap/.test(lower))
     return 'pricing';
+
+  // Hỏi về sản phẩm cụ thể (tên thương hiệu, loại sản phẩm)
   if (
     /iphone|samsung|macbook|laptop|phone|computer|tablet|điện thoại|máy tính|đồng hồ|smartwatch|watch|ipad|oppo|xiaomi|realme|pixel|nokia|headphone|earbuds|airpods|galaxy|surface/.test(
       lower,
     )
   )
     return 'product_search';
+
+  // Muốn được tư vấn hoặc so sánh sản phẩm (không đề cập tên cụ thể)
   if (
     /tư vấn|so sánh|nên mua|recommend|suggest|tốt nhất|compare|best|should\s*i\s*buy|which\s*one/.test(
       lower,
     )
   )
     return 'product_search';
+
+  // Không khớp pattern nào → câu hỏi chung chung
   return 'general';
+}
+
+/**
+ * Phát hiện prompt injection patterns phổ biến trong tin nhắn user.
+ * Pure function — không có side effects.
+ *
+ * @param {string} text
+ * @returns {boolean} true nếu phát hiện injection attempt
+ */
+const INJECTION_PATTERNS = [
+  /ignore\s+(all\s+)?(previous\s+)?instructions?/i,
+  /\bsystem\s*:/i,
+  /\bact\s+as\b/i,
+  /\bforget\s+(all|everything|your)\b/i,
+  /\bpretend\s+(to\s+be|you\s+are)\b/i,
+  /\byou\s+are\s+now\b/i,
+];
+
+function isPromptInjection(text) {
+  return INJECTION_PATTERNS.some((p) => p.test(text));
 }
 
 module.exports = {
@@ -92,5 +221,6 @@ module.exports = {
   expandAbbreviations,
   isOffTopic,
   classifyIntent,
+  isPromptInjection,
   MAX_MESSAGE_LENGTH,
 };

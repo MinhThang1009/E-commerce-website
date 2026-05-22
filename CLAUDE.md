@@ -40,7 +40,7 @@
 | Thanh toán MoMo/VNPay | [`backend/src/modules/payment/CLAUDE.md`](backend/src/modules/payment/CLAUDE.md) |
 | Ảnh sản phẩm / upload file | [`backend/src/modules/image/CLAUDE.md`](backend/src/modules/image/CLAUDE.md) → [`backend/src/modules/upload/CLAUDE.md`](backend/src/modules/upload/CLAUDE.md) |
 | Admin dashboard, CRUD, analytics | [`backend/src/modules/admin/CLAUDE.md`](backend/src/modules/admin/CLAUDE.md) |
-| Middleware (auth/cache/rate-limit) | [`backend/src/middlewares/CLAUDE.md`](backend/src/middlewares/CLAUDE.md) |
+| Middleware (auth/rate-limit) | [`backend/src/middlewares/CLAUDE.md`](backend/src/middlewares/CLAUDE.md) |
 | DB schema / models / associations | [`backend/src/models/CLAUDE.md`](backend/src/models/CLAUDE.md) |
 | Error handling, EventBus, UnitOfWork | [`backend/src/shared/CLAUDE.md`](backend/src/shared/CLAUDE.md) |
 | Cron jobs / cleanup | [`backend/src/jobs/CLAUDE.md`](backend/src/jobs/CLAUDE.md) |
@@ -156,11 +156,10 @@ npm run test:ci             # CI mode + coverage
 
 - **Framework:** Node.js 20 + Express 4 + Sequelize 6 + MySQL 8
 - **Pattern:** Mỗi module = 1 vertical slice tự trị. Bên trong: Controller → Service → Repository
-- **16 modules:** `admin`, `ai`, `attribute`, `auth`, `cart`, `catalog`, `content`, `discount-code`, `image`, `inventory`, `orders`, `payment`, `reviews`, `search-history`, `upload`, `users`, `wishlist`
+- **17 modules:** `admin`, `ai`, `attribute`, `auth`, `cart`, `catalog`, `content`, `discount-code`, `image`, `inventory`, `orders`, `payment`, `reviews`, `search-history`, `upload`, `users`, `wishlist`
 - **Entry:** `src/server.js` → `src/app.js` (DI wiring — nơi duy nhất khởi tạo modules)
-- **Cache:** Redis optional; falls back to in-memory automatically
 - **Pattern variants:**
-  - Full DI (11 modules): `auth`, `users`, `cart`, `wishlist`, `reviews`, `content`, `upload`, `catalog`, `orders`, `payment`, `inventory`, `ai`
+  - Full DI (12 modules): `auth`, `users`, `cart`, `wishlist`, `reviews`, `content`, `upload`, `catalog`, `orders`, `payment`, `inventory`, `ai`
   - Singleton / Thin wrapper (5 modules): `discount-code`, `search-history`, `image`, `admin`, `attribute`
 
 ## 4.2 Frontend — Feature-Based
@@ -170,7 +169,7 @@ npm run test:ci             # CI mode + coverage
 - **Feature code** (`src/features/<name>/`): `api/`, `components/`, `hooks/`, `pages/`, `types/`
 - **Shared:** `src/components/`, `src/stores/`, `src/hooks/`, `src/utils/`, `src/lib/`, `src/types/`
 - **State (server):** TanStack Query v5; **State (client):** Zustand v5 + Immer
-- **11 features:** `admin`, `ai`, `auth`, `cart`, `catalog`, `checkout`, `orders`, `payment`, `reviews`, `upload`, `users`, `wishlist`
+- **13 features:** `admin`, `ai`, `auth`, `cart`, `catalog`, `checkout`, `content`, `orders`, `payment`, `reviews`, `upload`, `users`, `wishlist`
 
 ---
 
@@ -230,7 +229,7 @@ ai        → catalog (vector search via vectorStoreService), attribute (name ge
 
 payment   → orders (update paymentStatus via eventBus)
 
-inventory ← orders (subscribe: order.created, order.cancelled → audit log)
+inventory ← orders (subscribe: order.created, order.cancelled → inventory log)
 ```
 
 ---
@@ -264,12 +263,12 @@ inventory ← orders (subscribe: order.created, order.cancelled → audit log)
 
 | Suite | Suites | Tests | Runtime | Config |
 |---|---|---|---|---|
-| BE Unit Tests | 166 | 3.778 | ~10s | `jest.config.js` |
+| BE Unit Tests | 166 | 3.905 | ~10s | `jest.config.js` |
 | BE Integration Tests | 42 | 228 | ~50s | `jest.integration.config.js` |
 | BE API HTTP Tests | 45 | 866 | ~140s | `jest.api.config.js` |
 | BE E2E Tests | 5 | 102 | ~20s | `jest.e2e.config.js` |
 | FE Component Tests | 17 | 437 | ~7s | `jest.config.cjs` (frontend/) |
-| **Tổng** | **275** | **5.411** | | |
+| **Tổng** | **275** | **5.538** | | |
 
 - **BE Coverage (local):** statements 99%, branches 97%, functions 99%, lines 99% (thresholds trong `jest.config.js`)
 - **BE Coverage (CI):** statements ≥97%, lines ≥97%, branches ≥85%, functions ≥95%
@@ -285,18 +284,18 @@ inventory ← orders (subscribe: order.created, order.cancelled → audit log)
 CLAUDE.md                                    ← File này: navigation entry point
 STRUCTURE.md                                 ← Architecture, tech stack, data flow, schema
 DIAGRAMS.md                                  ← Mermaid diagrams (Use Case, Sequence, ERD, Flow)
-TESTING_STRATEGY.md                          ← Chiến lược test 5 tầng, 5.411 tests
+TESTING_STRATEGY.md                          ← Chiến lược test 5 tầng, 5.538 tests
 README.md                                    ← Project README, setup instructions
 
 backend/CLAUDE.md                            ← BE architecture, DI pattern, request trace
 backend/src/
-  config/CLAUDE.md                           ← sequelize, redis, swagger
+  config/CLAUDE.md                           ← sequelize, swagger
   constants/CLAUDE.md                        ← Hằng số toàn cục (shipping, OTP, JWT)
   locales/CLAUDE.md                          ← i18n vi.json / en.json, conventions
   models/CLAUDE.md                           ← 27 models, associations, conventions
-  migrations/CLAUDE.md                       ← 71+ migrations, phases, patterns
-  middlewares/CLAUDE.md                      ← authenticate, authorize, cache, rate-limiter
-  shared/CLAUDE.md                           ← EventBus, AppError/errors, admin-audit, unit-of-work
+  migrations/CLAUDE.md                       ← 79 migrations, phases, patterns
+  middlewares/CLAUDE.md                      ← authenticate, authorize, rate-limiter
+  shared/CLAUDE.md                           ← EventBus, AppError/errors, unit-of-work
   services/CLAUDE.md                         ← email, vector-store, embedding (shared, non-DI)
   utils/CLAUDE.md                            ← logger, i18n, catch-async, image-url, localize
   jobs/CLAUDE.md                             ← cleanup cron (daily 2AM, weekly 3AM)
@@ -310,7 +309,7 @@ backend/src/
   modules/content/CLAUDE.md                  ← Feedback/contact
   modules/discount-code/CLAUDE.md            ← Mã giảm giá
   modules/image/CLAUDE.md                    ← Image proxy, CDN bypass
-  modules/inventory/CLAUDE.md               ← Tồn kho, audit log
+  modules/inventory/CLAUDE.md               ← Tồn kho
   modules/orders/CLAUDE.md                   ← Đơn hàng, checkout, trạng thái
   modules/payment/CLAUDE.md                  ← Thanh toán MoMo/VNPay
   modules/reviews/CLAUDE.md                  ← Đánh giá sản phẩm
@@ -352,6 +351,7 @@ frontend/src/
   features/cart/CLAUDE.md                    ← Giỏ hàng
   features/catalog/CLAUDE.md                 ← Shop, product detail, categories, brands
   features/checkout/CLAUDE.md                ← Checkout flow
+  features/content/CLAUDE.md                 ← Form liên hệ/feedback
   features/orders/CLAUDE.md                  ← Orders list, order detail
   features/payment/CLAUDE.md                 ← Payment QR page
   features/reviews/CLAUDE.md                 ← Product reviews

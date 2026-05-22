@@ -10,11 +10,10 @@
 - [2. authenticate.js](#2-authenticatejs)
 - [3. authorize.js](#3-authorizejs)
 - [4. admin-auth.js](#4-admin-authjs)
-- [5. cache.js](#5-cachejs)
-- [6. rate-limiter.js](#6-rate-limiterjs)
-- [7. error-handler.js](#7-error-handlerjs)
-- [8. detect-locale.js](#8-detect-localejs)
-- [9. validate-request.js](#9-validate-requestjs)
+- [5. rate-limiter.js](#5-rate-limiterjs)
+- [6. error-handler.js](#6-error-handlerjs)
+- [7. detect-locale.js](#7-detect-localejs)
+- [8. validate-request.js](#8-validate-requestjs)
 
 ---
 
@@ -43,14 +42,8 @@ router.get('/profile', authenticate, handler); // Yêu cầu đăng nhập
 router.post('/cart', optionalAuthenticate, handler); // Guest + user đều OK
 ```
 
-- `authenticate` — 401 nếu không có/invalid/blacklisted token
+- `authenticate` — 401 nếu không có/invalid token
 - `optionalAuthenticate` — tiếp tục nếu không có token (`req.user = undefined`)
-
-Kiểm tra 3 Redis keys theo thứ tự:
-
-1. `bl:<jti>` — blacklist (invalidated on logout)
-2. `pw_changed:<userId>` — reject tokens issued trước lần đổi mật khẩu gần nhất
-3. Fallback: allow nếu Redis không available (fail open)
 
 ---
 
@@ -69,7 +62,7 @@ router.delete('/products/:id', authenticate, authorize('admin', 'manager'), hand
 
 ## 4. admin-auth.js
 
-JWT verify + role check dành cho admin panel. Tách riêng khỏi `authenticate.js` để có thể inject `auditService` qua `AsyncLocalStorage`.
+JWT verify + role check dành cho admin panel. Tách riêng khỏi `authenticate.js`.
 
 ```js
 adminRouter.use(adminAuthenticate); // Tất cả admin routes
@@ -81,29 +74,9 @@ adminRouter.delete('/users/:id', requireSuperAdmin, handler); // Chỉ role === 
 
 ---
 
-## 5. cache.js
+## 5. rate-limiter.js
 
-Redis cache-aside cho GET endpoints:
-
-```js
-router.get(
-  '/products',
-  cacheMiddleware(300, (req) => `cache:products:page${req.query.page || 1}`),
-  httpCacheHeaders(300),
-  handler,
-);
-```
-
-- Cache hit: `X-Cache: HIT`, trả JSON từ Redis/memory
-- Cache miss: `X-Cache: MISS`, monkey-patch `res.json()` để cache kết quả 200
-- `invalidateCache('cache:products:*')` — xóa cache theo glob pattern
-- `httpCacheHeaders(maxAge, { private?, noStore? })` — set `Cache-Control` header
-
----
-
-## 6. rate-limiter.js
-
-5 limiters. Tất cả dùng `ProxyStore`: bắt đầu với in-memory, tự upgrade lên Redis khi kết nối thành công (non-blocking).
+5 limiters. Tất cả dùng `Map` JavaScript nội bộ.
 
 | Limiter          | Limit (prod) | Limit (dev) | Window | Mục tiêu                         |
 | ---------------- | ------------ | ----------- | ------ | -------------------------------- |
@@ -117,7 +90,7 @@ router.get(
 
 ---
 
-## 7. error-handler.js
+## 6. error-handler.js
 
 **Phải mount cuối cùng** trong `app.js`. Normalize mọi error type → consistent JSON response.
 
@@ -136,7 +109,7 @@ Dev: trả full error + stack. Prod: chỉ message; non-operational errors → "
 
 ---
 
-## 8. detect-locale.js
+## 7. detect-locale.js
 
 Sets `req.locale = 'vi' | 'en'`. Mount sớm trong stack (trước module routes).
 
@@ -148,7 +121,7 @@ Priority:
 
 ---
 
-## 9. validate-request.js
+## 8. validate-request.js
 
 Zod schema validation. Validate và replace `req[source]` với parsed data (unknown fields bị strip tự động).
 

@@ -73,9 +73,6 @@ export interface Order {
   trackingNumber?: string;
   shippingProvider?: string;
   estimatedDelivery?: string;
-  pointsEarned?: number;
-  pointsUsed?: number;
-  pointsDiscount?: number;
   items?: OrderItem[];
   createdAt: string;
   updatedAt: string;
@@ -264,6 +261,31 @@ export function useRepayOrderMutation() {
   });
 }
 
+export interface AvailableDiscountCode {
+  id: string;
+  code: string;
+  type: 'percent' | 'fixed';
+  value: number;
+  maxDiscountAmount: number | null;
+  minOrderAmount: number | null;
+  endDate: string | null;
+}
+
+/** Lấy danh sách mã giảm giá còn hiệu lực để hiển thị ở checkout */
+export function useGetAvailableDiscountCodesQuery() {
+  return useQuery<AvailableDiscountCode[]>({
+    queryKey: ['discount-codes', 'available'],
+    queryFn: async () => {
+      const res = await apiClient.get<{
+        status: string;
+        data: { discountCodes: AvailableDiscountCode[] };
+      }>('/discount-codes');
+      return res.data.data.discountCodes;
+    },
+    staleTime: 5 * 60 * 1000, // 5 phút
+  });
+}
+
 /** Áp dụng mã giảm giá */
 export function useApplyDiscountCodeMutation() {
   return useMutation<ApplyDiscountResponse, Error, ApplyDiscountRequest>({
@@ -277,17 +299,11 @@ export function useApplyDiscountCodeMutation() {
 /** Xác nhận đã nhận đơn hàng */
 export function useConfirmReceivedMutation() {
   const queryClient = useQueryClient();
-  return useMutation<
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any -- response shape phụ thuộc backend
-    { status: string; message: string; pointsEarned: number; data: any },
-    Error,
-    string
-  >({
+  return useMutation<{ status: string; message: string; data: unknown }, Error, string>({
     mutationFn: async (id) => {
       const res = await apiClient.post<{
         status: string;
         message: string;
-        pointsEarned: number;
         data: unknown;
       }>(`/orders/${id}/receive`);
       return res.data;

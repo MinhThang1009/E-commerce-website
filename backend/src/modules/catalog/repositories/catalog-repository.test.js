@@ -69,7 +69,12 @@ describe('Category methods', () => {
 
     const result = await repo.findAllCategoriesSorted();
 
-    expect(deps.Category.findAll).toHaveBeenCalledWith({ order: [['nameVi', 'ASC']] });
+    expect(deps.Category.findAll).toHaveBeenCalledWith({
+      order: [
+        ['sortOrder', 'ASC'],
+        ['nameVi', 'ASC'],
+      ],
+    });
     expect(result).toBe(cats);
   });
 
@@ -447,26 +452,6 @@ describe('Product fetching methods', () => {
     expect(brandInclude.required).toBe(true);
   });
 
-  test.skip('TC-36 findProductByIdWithFullDetails — findByPk với include đầy đủ', async () => {
-    const { repo, deps } = makeRepo();
-    const product = { id: 1, name: 'iPhone' };
-    deps.Product.findByPk.mockResolvedValue(product);
-
-    const result = await repo.findProductByIdWithFullDetails(1);
-
-    expect(deps.Product.findByPk).toHaveBeenCalledWith(
-      1,
-      expect.objectContaining({
-        include: expect.arrayContaining([
-          expect.objectContaining({ association: 'category' }),
-          expect.objectContaining({ association: 'variants' }),
-          expect.objectContaining({ association: 'warrantyPackages' }),
-        ]),
-      }),
-    );
-    expect(result).toBe(product);
-  });
-
   test('TC-37 findProductBySlugWithFullDetails — findOne với slug', async () => {
     const { repo, deps } = makeRepo();
     const product = { id: 2, slug: 'iphone-15' };
@@ -499,7 +484,7 @@ describe('Product fetching methods', () => {
 
     expect(deps.Product.findAll).toHaveBeenCalledWith(
       expect.objectContaining({
-        where: { isFeatured: true },
+        where: { isFeatured: true, status: 'active' },
         limit: 5,
       }),
     );
@@ -695,17 +680,6 @@ describe('Product CRUD', () => {
     expect(result).toBe(cats);
   });
 
-  test.skip('TC-52 findWarrantyPackagesByIds — WarrantyPackage.findAll với Op.in', async () => {
-    const { repo, deps } = makeRepo();
-    const wp = [{ id: 10 }];
-    deps.WarrantyPackage.findAll.mockResolvedValue(wp);
-
-    const result = await repo.findWarrantyPackagesByIds([10]);
-
-    expect(deps.WarrantyPackage.findAll).toHaveBeenCalledWith({ where: { id: { [Op.in]: [10] } } });
-    expect(result).toBe(wp);
-  });
-
   test('TC-53 setProductCategories — product.setCategories với options', async () => {
     const { repo } = makeRepo();
     const product = { setCategories: jest.fn().mockResolvedValue() };
@@ -835,14 +809,6 @@ describe('Edge cases', () => {
 
     await expect(repo.findProductRatingsRows(1)).rejects.toThrow(
       'Review model bắt buộc trong constructor',
-    );
-  });
-
-  test.skip('TC-63 findWarrantyPackagesByIds — throw khi WarrantyPackage model không có', async () => {
-    const { repo } = makeRepo({ WarrantyPackage: null });
-
-    await expect(repo.findWarrantyPackagesByIds([1])).rejects.toThrow(
-      'WarrantyPackage model bắt buộc trong constructor',
     );
   });
 

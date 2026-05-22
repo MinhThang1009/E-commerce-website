@@ -72,11 +72,6 @@ describe('SequelizeCartRepository — constructor validation', () => {
     expect(() => new SequelizeCartRepository(rest)).toThrow('ProductVariant model bắt buộc');
   });
 
-  it.skip('throw khi WarrantyPackage model bị thiếu', () => {
-    const { WarrantyPackage: _wp, ...rest } = models();
-    expect(() => new SequelizeCartRepository(rest)).toThrow('WarrantyPackage model bắt buộc');
-  });
-
   it('throw khi sequelize bị thiếu', () => {
     const { sequelize: _s, ...rest } = models();
     expect(() => new SequelizeCartRepository(rest)).toThrow('sequelize bắt buộc');
@@ -333,42 +328,6 @@ describe('findVariantByIdAndProductId', () => {
 
     expect(deps.ProductVariant.findOne).toHaveBeenCalledWith({ where: { id: 5, productId: 10 } });
     expect(result).toBe(variant);
-  });
-});
-
-describe.skip('findActiveWarrantyPackagesByIds', () => {
-  it.skip('gọi WarrantyPackage.findAll với id trong ids và isActive: true', async () => {
-    const { repo, deps } = makeRepo();
-    const packages = [
-      { id: 1, isActive: true },
-      { id: 2, isActive: true },
-    ];
-    deps.WarrantyPackage.findAll.mockResolvedValue(packages);
-
-    const result = await repo.findActiveWarrantyPackagesByIds([1, 2]);
-
-    expect(deps.WarrantyPackage.findAll).toHaveBeenCalledWith({
-      where: { id: [1, 2], isActive: true },
-    });
-    expect(result).toBe(packages);
-  });
-
-  it('trả về [] ngay khi ids rỗng — không gọi DB', async () => {
-    const { repo, deps } = makeRepo();
-
-    const result = await repo.findActiveWarrantyPackagesByIds([]);
-
-    expect(result).toEqual([]);
-    expect(deps.WarrantyPackage.findAll).not.toHaveBeenCalled();
-  });
-
-  it('trả về [] ngay khi ids là null — không gọi DB', async () => {
-    const { repo, deps } = makeRepo();
-
-    const result = await repo.findActiveWarrantyPackagesByIds(null);
-
-    expect(result).toEqual([]);
-    expect(deps.WarrantyPackage.findAll).not.toHaveBeenCalled();
   });
 });
 

@@ -64,17 +64,6 @@ jest.mock('@middlewares/validate-request', () => ({
   validate: () => (_r, _s, n) => n(),
 }));
 
-jest.mock('@shared/admin-audit', () => ({
-  AdminAuditService: class {
-    static logUserAction() {}
-    static logProductAction() {}
-    static logOrderAction() {}
-    static logDiscountCodeAction() {}
-    log() {}
-  },
-  auditMiddleware: (_r, _s, n) => n(),
-}));
-
 jest.mock('@modules/discount-code/controllers/discount-code-controller', () => ({
   getAllDiscountCodes: (_r, _s, n) => n(),
   getDiscountCodeById: (_r, _s, n) => n(),
@@ -129,7 +118,6 @@ jest.mock('@models', () => ({
   ProductAttribute: { findAll: jest.fn(), destroy: jest.fn(), bulkCreate: jest.fn() },
   CartItem: { destroy: jest.fn() },
   InventoryLog: { create: jest.fn(), findAndCountAll: jest.fn() },
-  AuditLog: { findAll: jest.fn(), findAndCountAll: jest.fn(), count: jest.fn(), create: jest.fn() },
   ChatMessage: { count: jest.fn(), findAll: jest.fn(), findOne: jest.fn() },
   WarrantyPackage: { findAll: jest.fn(), findByPk: jest.fn() },
   DiscountCode: {
@@ -139,10 +127,6 @@ jest.mock('@models', () => ({
     create: jest.fn(),
     findAndCountAll: jest.fn(),
   },
-}));
-
-jest.mock('@config/redis', () => ({
-  getRedisClient: jest.fn().mockResolvedValue(null),
 }));
 
 jest.mock('@utils/product-helpers', () => ({

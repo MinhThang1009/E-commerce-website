@@ -102,10 +102,10 @@ Base path: `/api/contact`
 
 # 7. Tests
 
-| File                                             | Loại | Mô tả                          |
-| ------------------------------------------------ | ---- | ------------------------------ |
-| `services/content-service.test.js`               | Unit | Service logic: feedback, cache |
-| `controllers/content-controller.test.js`         | Unit | HTTP layer: feedback handler   |
-| `controllers/content-controller.contact.test.js` | Unit | Feedback/contact edge cases    |
-| `validators/content-validator.test.js`           | Unit | Zod schema validation          |
-| `repositories/content-repository.test.js`        | Unit | Repository queries             |
+| File                                             | Loại | Mô tả                        |
+| ------------------------------------------------ | ---- | ---------------------------- |
+| `services/content-service.test.js`               | Unit | Service logic: feedback      |
+| `controllers/content-controller.test.js`         | Unit | HTTP layer: feedback handler |
+| `controllers/content-controller.contact.test.js` | Unit | Feedback/contact edge cases  |
+| `validators/content-validator.test.js`           | Unit | Zod schema validation        |
+| `repositories/content-repository.test.js`        | Unit | Repository queries           |

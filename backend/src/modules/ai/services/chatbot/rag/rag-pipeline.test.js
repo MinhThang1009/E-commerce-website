@@ -17,7 +17,7 @@ jest.mock('@utils/logger', () => ({
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
-function makeLLMGateway(overrides = {}) {
+function makeChatbotService(overrides = {}) {
   return {
     handleMessage: jest.fn().mockResolvedValue({ response: 'ok', products: [] }),
     rewriteQuery: jest.fn().mockResolvedValue(null),
@@ -39,17 +39,17 @@ function makeProduct(id) {
 // ─── Constructor ──────────────────────────────────────────────────────────────
 
 describe('RAGPipeline constructor', () => {
-  test('throw khi thiếu llmGateway', () => {
-    expect(() => new RAGPipeline({})).toThrow('RAGPipeline: llmGateway bắt buộc');
+  test('throw khi thiếu chatbotService', () => {
+    expect(() => new RAGPipeline({})).toThrow('RAGPipeline: chatbotService bắt buộc');
   });
 
-  test('tạo thành công với llmGateway', () => {
-    const pipeline = new RAGPipeline({ llmGateway: makeLLMGateway() });
+  test('tạo thành công với chatbotService', () => {
+    const pipeline = new RAGPipeline({ chatbotService: makeChatbotService() });
     expect(pipeline).toBeInstanceOf(RAGPipeline);
   });
 
   test('vectorStore mặc định là null', () => {
-    const pipeline = new RAGPipeline({ llmGateway: makeLLMGateway() });
+    const pipeline = new RAGPipeline({ chatbotService: makeChatbotService() });
     expect(pipeline.vectorStore).toBeNull();
   });
 });
@@ -60,7 +60,7 @@ describe('RAGPipeline.run() — validation', () => {
   let pipeline;
 
   beforeEach(() => {
-    pipeline = new RAGPipeline({ llmGateway: makeLLMGateway() });
+    pipeline = new RAGPipeline({ chatbotService: makeChatbotService() });
   });
 
   test('throw AppError 400 khi message rỗng', async () => {
@@ -86,9 +86,9 @@ describe('RAGPipeline.run() — validation', () => {
 
 describe('RAGPipeline.run() — off-topic', () => {
   test('off-topic → gọi handleMessage với preClassifiedIntent off_topic, bỏ qua retrieval', async () => {
-    const llm = makeLLMGateway();
+    const llm = makeChatbotService();
     const vs = makeVectorStore();
-    const pipeline = new RAGPipeline({ llmGateway: llm, vectorStore: vs });
+    const pipeline = new RAGPipeline({ chatbotService: llm, vectorStore: vs });
 
     await pipeline.run({ message: 'thời tiết hôm nay thế nào', userId: 1 });
 
@@ -107,8 +107,8 @@ describe('RAGPipeline.run() — off-topic', () => {
 
 describe('RAGPipeline.run() — không có vectorStore', () => {
   test('gọi handleMessage với classifyIntent, không có retrievedProducts', async () => {
-    const llm = makeLLMGateway();
-    const pipeline = new RAGPipeline({ llmGateway: llm });
+    const llm = makeChatbotService();
+    const pipeline = new RAGPipeline({ chatbotService: llm });
 
     await pipeline.run({ message: 'iPhone 15 giá bao nhiêu', sessionId: 'sess-1' });
 
@@ -121,8 +121,8 @@ describe('RAGPipeline.run() — không có vectorStore', () => {
   });
 
   test('intent product_search được classify đúng cho query có tên sản phẩm', async () => {
-    const llm = makeLLMGateway();
-    const pipeline = new RAGPipeline({ llmGateway: llm });
+    const llm = makeChatbotService();
+    const pipeline = new RAGPipeline({ chatbotService: llm });
 
     await pipeline.run({ message: 'macbook air m3' });
 
@@ -140,9 +140,9 @@ describe('RAGPipeline.run() — không có vectorStore', () => {
 describe('RAGPipeline.run() — vectorStore', () => {
   test('LLM rewrite null → dùng initial results', async () => {
     const products = [makeProduct(1), makeProduct(2)];
-    const llm = makeLLMGateway({ rewriteQuery: jest.fn().mockResolvedValue(null) });
+    const llm = makeChatbotService({ rewriteQuery: jest.fn().mockResolvedValue(null) });
     const vs = makeVectorStore({ hybridSearch: jest.fn().mockResolvedValue(products) });
-    const pipeline = new RAGPipeline({ llmGateway: llm, vectorStore: vs });
+    const pipeline = new RAGPipeline({ chatbotService: llm, vectorStore: vs });
 
     await pipeline.run({ message: 'điện thoại Samsung' });
 
@@ -160,9 +160,9 @@ describe('RAGPipeline.run() — vectorStore', () => {
   test('LLM rewrite giống query (case-insensitive) → dùng initial results', async () => {
     const products = [makeProduct(3)];
     const query = 'Samsung Galaxy';
-    const llm = makeLLMGateway({ rewriteQuery: jest.fn().mockResolvedValue('samsung galaxy') });
+    const llm = makeChatbotService({ rewriteQuery: jest.fn().mockResolvedValue('samsung galaxy') });
     const vs = makeVectorStore({ hybridSearch: jest.fn().mockResolvedValue(products) });
-    const pipeline = new RAGPipeline({ llmGateway: llm, vectorStore: vs });
+    const pipeline = new RAGPipeline({ chatbotService: llm, vectorStore: vs });
 
     await pipeline.run({ message: query });
 
@@ -179,7 +179,7 @@ describe('RAGPipeline.run() — vectorStore', () => {
     const initialProducts = [makeProduct(1)];
     const refinedProducts = [makeProduct(5), makeProduct(6)];
     // query không chứa abbreviation → normalizedQuery giữ nguyên, rewrite thật sự khác
-    const llm = makeLLMGateway({
+    const llm = makeChatbotService({
       rewriteQuery: jest.fn().mockResolvedValue('Dell Gaming Laptop RTX 4060'),
     });
     const vs = makeVectorStore({
@@ -188,7 +188,7 @@ describe('RAGPipeline.run() — vectorStore', () => {
         .mockResolvedValueOnce(initialProducts)
         .mockResolvedValueOnce(refinedProducts),
     });
-    const pipeline = new RAGPipeline({ llmGateway: llm, vectorStore: vs });
+    const pipeline = new RAGPipeline({ chatbotService: llm, vectorStore: vs });
 
     await pipeline.run({ message: 'laptop gaming dell' });
 
@@ -206,14 +206,16 @@ describe('RAGPipeline.run() — vectorStore', () => {
 
   test('LLM rewrite khác → refined search rỗng → fallback về initial results', async () => {
     const initialProducts = [makeProduct(7)];
-    const llm = makeLLMGateway({ rewriteQuery: jest.fn().mockResolvedValue('iPhone 15 Ultra') });
+    const llm = makeChatbotService({
+      rewriteQuery: jest.fn().mockResolvedValue('iPhone 15 Ultra'),
+    });
     const vs = makeVectorStore({
       hybridSearch: jest
         .fn()
         .mockResolvedValueOnce(initialProducts) // initial
         .mockResolvedValueOnce([]), // refined rỗng
     });
-    const pipeline = new RAGPipeline({ llmGateway: llm, vectorStore: vs });
+    const pipeline = new RAGPipeline({ chatbotService: llm, vectorStore: vs });
 
     await pipeline.run({ message: 'ip 15 ultra' });
 
@@ -230,7 +232,7 @@ describe('RAGPipeline.run() — vectorStore', () => {
   test('LLM rewrite khác → refined search throw → dùng initial results', async () => {
     const initialProducts = [makeProduct(8)];
     // rewrite phải khác normalizedQuery sau expandAbbreviations
-    const llm = makeLLMGateway({
+    const llm = makeChatbotService({
       rewriteQuery: jest.fn().mockResolvedValue('Gaming Laptop RTX 4060 High Performance'),
     });
     const vs = makeVectorStore({
@@ -239,7 +241,7 @@ describe('RAGPipeline.run() — vectorStore', () => {
         .mockResolvedValueOnce(initialProducts)
         .mockRejectedValueOnce(new Error('refined search thất bại')),
     });
-    const pipeline = new RAGPipeline({ llmGateway: llm, vectorStore: vs });
+    const pipeline = new RAGPipeline({ chatbotService: llm, vectorStore: vs });
 
     await pipeline.run({ message: 'tìm laptop gaming' });
 
@@ -253,13 +255,13 @@ describe('RAGPipeline.run() — vectorStore', () => {
     );
   });
 
-  test('LLM rewriteQuery throw → rewrite = null → dùng initial results', async () => {
+  test('LLM _llmRewrite throw → rewrite = null → dùng initial results', async () => {
     const products = [makeProduct(10)];
-    const llm = makeLLMGateway({
+    const llm = makeChatbotService({
       rewriteQuery: jest.fn().mockRejectedValue(new Error('LLM timeout')),
     });
     const vs = makeVectorStore({ hybridSearch: jest.fn().mockResolvedValue(products) });
-    const pipeline = new RAGPipeline({ llmGateway: llm, vectorStore: vs });
+    const pipeline = new RAGPipeline({ chatbotService: llm, vectorStore: vs });
 
     await pipeline.run({ message: 'MacBook Pro' });
 
@@ -278,14 +280,14 @@ describe('RAGPipeline.run() — vectorStore', () => {
 describe('RAGPipeline.run() — fallback khi retrievedProducts rỗng', () => {
   test('initial rỗng, rewrite null → fallback hybridSearch(normalizedQuery, 3, 0)', async () => {
     const lowResults = [{ score: 0.1, metadata: { id: 99, name: 'low conf' } }];
-    const llm = makeLLMGateway({ rewriteQuery: jest.fn().mockResolvedValue(null) });
+    const llm = makeChatbotService({ rewriteQuery: jest.fn().mockResolvedValue(null) });
     const vs = makeVectorStore({
       hybridSearch: jest
         .fn()
         .mockResolvedValueOnce([]) // initial rỗng
         .mockResolvedValueOnce(lowResults), // fallback
     });
-    const pipeline = new RAGPipeline({ llmGateway: llm, vectorStore: vs });
+    const pipeline = new RAGPipeline({ chatbotService: llm, vectorStore: vs });
 
     await pipeline.run({ message: 'điện thoại' });
 
@@ -304,7 +306,7 @@ describe('RAGPipeline.run() — fallback khi retrievedProducts rỗng', () => {
     const lowResults = [{ score: 0.05, metadata: { id: 88 } }];
     const rewriteResult = 'Laptop Dell XPS 15 Gaming';
     // query không có abbreviation để rewrite thật sự khác normalizedQuery
-    const llm = makeLLMGateway({ rewriteQuery: jest.fn().mockResolvedValue(rewriteResult) });
+    const llm = makeChatbotService({ rewriteQuery: jest.fn().mockResolvedValue(rewriteResult) });
     const vs = makeVectorStore({
       hybridSearch: jest
         .fn()
@@ -312,7 +314,7 @@ describe('RAGPipeline.run() — fallback khi retrievedProducts rỗng', () => {
         .mockResolvedValueOnce([]) // refined rỗng
         .mockResolvedValueOnce(lowResults), // fallback
     });
-    const pipeline = new RAGPipeline({ llmGateway: llm, vectorStore: vs });
+    const pipeline = new RAGPipeline({ chatbotService: llm, vectorStore: vs });
 
     await pipeline.run({ message: 'laptop dell xps' });
 
@@ -320,14 +322,14 @@ describe('RAGPipeline.run() — fallback khi retrievedProducts rỗng', () => {
   });
 
   test('fallback throw → retrievedProducts = []', async () => {
-    const llm = makeLLMGateway({ rewriteQuery: jest.fn().mockResolvedValue(null) });
+    const llm = makeChatbotService({ rewriteQuery: jest.fn().mockResolvedValue(null) });
     const vs = makeVectorStore({
       hybridSearch: jest
         .fn()
         .mockResolvedValueOnce([]) // initial rỗng
         .mockRejectedValueOnce(new Error('fallback thất bại')), // fallback throw
     });
-    const pipeline = new RAGPipeline({ llmGateway: llm, vectorStore: vs });
+    const pipeline = new RAGPipeline({ chatbotService: llm, vectorStore: vs });
 
     await pipeline.run({ message: 'điện thoại rẻ' });
 
@@ -344,11 +346,11 @@ describe('RAGPipeline.run() — fallback khi retrievedProducts rỗng', () => {
 
 describe('RAGPipeline.run() — outer vector search catch', () => {
   test('hybridSearch throw ngay lần đầu → tiếp tục không có retrievedProducts', async () => {
-    const llm = makeLLMGateway();
+    const llm = makeChatbotService();
     const vs = makeVectorStore({
       hybridSearch: jest.fn().mockRejectedValue(new Error('vector DB down')),
     });
-    const pipeline = new RAGPipeline({ llmGateway: llm, vectorStore: vs });
+    const pipeline = new RAGPipeline({ chatbotService: llm, vectorStore: vs });
 
     await pipeline.run({ message: 'MacBook Air' });
 
@@ -365,8 +367,8 @@ describe('RAGPipeline.run() — outer vector search catch', () => {
 
 describe('RAGPipeline.run() — truyền context và metadata', () => {
   test('context bổ sung được merge vào handleMessage call', async () => {
-    const llm = makeLLMGateway();
-    const pipeline = new RAGPipeline({ llmGateway: llm });
+    const llm = makeChatbotService();
+    const pipeline = new RAGPipeline({ chatbotService: llm });
 
     await pipeline.run({
       message: 'tư vấn laptop',
@@ -383,10 +385,10 @@ describe('RAGPipeline.run() — truyền context và metadata', () => {
     );
   });
 
-  test('return giá trị từ llmGateway.handleMessage', async () => {
+  test('return giá trị từ chatbotService.handleMessage', async () => {
     const expected = { response: 'Đây là câu trả lời', products: [{ id: 1 }], intent: 'pricing' };
-    const llm = makeLLMGateway({ handleMessage: jest.fn().mockResolvedValue(expected) });
-    const pipeline = new RAGPipeline({ llmGateway: llm });
+    const llm = makeChatbotService({ handleMessage: jest.fn().mockResolvedValue(expected) });
+    const pipeline = new RAGPipeline({ chatbotService: llm });
 
     const result = await pipeline.run({ message: 'giá iPhone 14' });
 

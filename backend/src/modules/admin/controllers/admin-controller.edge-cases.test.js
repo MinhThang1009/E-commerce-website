@@ -24,7 +24,6 @@
  *   Line 1808 — updateOrderStatus cancel: item has no variantId but has Product
  *   Line 1859 — adminCancelOrder: item.Product path
  *   Line 2117 — restockProduct: variant path
- *   Line 2165 — getAuditLogs: startDate filter
  *   Line 2228 — getOrderStatusAnalytics: unknown status → raw status as label
  *   Line 2239 — getTopProductsAnalytics: limit > 20 → capped
  *   Lines 2281-2282 — getTopProductsAnalytics: null Product
@@ -98,17 +97,6 @@ jest.mock('@middlewares/validate-request', () => ({
   validateExpressValidator: (_req, _res, next) => next(),
 }));
 
-jest.mock('@shared/admin-audit', () => ({
-  AdminAuditService: class {
-    static logUserAction() {}
-    static logProductAction() {}
-    static logOrderAction() {}
-    static logDiscountCodeAction() {}
-    log() {}
-  },
-  auditMiddleware: (_req, _res, next) => next(),
-}));
-
 jest.mock('./admin-import-controller', () => ({
   getImportTemplate: (_req, _res, next) => next(),
   uploadImportFile: (_req, _res, next) => next(),
@@ -123,10 +111,6 @@ jest.mock('@modules/discount-code/controllers/discount-code-controller', () => (
   createDiscountCode: (_req, _res, next) => next(),
   updateDiscountCode: (_req, _res, next) => next(),
   deleteDiscountCode: (_req, _res, next) => next(),
-}));
-
-jest.mock('@config/redis', () => ({
-  getRedisClient: jest.fn().mockResolvedValue(null),
 }));
 
 jest.mock('@modules/ai/services/translate/translate-service', () => ({
@@ -222,12 +206,6 @@ jest.mock('@models', () => {
       create: jest.fn(),
       findAndCountAll: jest.fn(),
     },
-    AuditLog: {
-      findAll: jest.fn(),
-      findAndCountAll: jest.fn(),
-      count: jest.fn(),
-      create: jest.fn(),
-    },
     ChatMessage: {
       count: jest.fn(),
       findAll: jest.fn(),
@@ -266,7 +244,6 @@ const {
   WarrantyPackage,
   Order,
   OrderItem,
-  AuditLog,
   InventoryLog,
   sequelize,
 } = require('@models');
@@ -1163,36 +1140,6 @@ describe('POST /api/admin/products/:productId/restock — line 2117: variant res
     expect(res.status).toBe(200);
     // ProductVariant.sum returns null → null || 0 = 0 (line 2117 right branch)
     expect(product.update).toHaveBeenCalledWith({ stockQuantity: 0 });
-  });
-});
-
-// ─────────────────────────────────────────────────────────────────────────────
-// Line 2165: getAuditLogs — startDate filter (and endDate separately)
-// ─────────────────────────────────────────────────────────────────────────────
-
-describe('GET /api/admin/audit-logs — line 2165: date range filter', () => {
-  it('tạo Op.gte khi startDate được gửi', async () => {
-    AuditLog.findAndCountAll.mockResolvedValueOnce({ rows: [], count: 0 });
-
-    const res = await request.get('/api/admin/audit-logs').query({ startDate: '2024-03-01' });
-
-    expect(res.status).toBe(200);
-    const callArg = AuditLog.findAndCountAll.mock.calls[0][0];
-    const { Op } = require('sequelize');
-    expect(callArg.where.createdAt[Op.gte]).toBeDefined();
-    expect(callArg.where.createdAt[Op.lte]).toBeUndefined();
-  });
-
-  it('tạo Op.lte khi endDate được gửi', async () => {
-    AuditLog.findAndCountAll.mockResolvedValueOnce({ rows: [], count: 0 });
-
-    const res = await request.get('/api/admin/audit-logs').query({ endDate: '2024-12-31' });
-
-    expect(res.status).toBe(200);
-    const callArg = AuditLog.findAndCountAll.mock.calls[0][0];
-    const { Op } = require('sequelize');
-    expect(callArg.where.createdAt[Op.lte]).toBeDefined();
-    expect(callArg.where.createdAt[Op.gte]).toBeUndefined();
   });
 });
 

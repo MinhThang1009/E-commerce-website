@@ -1,0 +1,7 @@
+{
+  "signal": "SIGTERM",
+  "ignore": ["data/", "logs/", "uploads/", "coverage/"],
+  "watch": ["src/"],
+  "ext": "js,json",
+  "windowsHide": true
+}

@@ -24,7 +24,7 @@ src/components/
   common/     — UI primitives (Button, Modal, Input, Card, Rating, RichTextEditor...)
   layout/     — Page structure (Header, Footer, MainLayout, PageLayout, Grid)
   routing/    — Route guards (ProtectedRoute, AdminRoute, PublicOnlyRoute)
-  sections/   — Homepage sections (HeroSection, HomeNewsSection)
+  sections/   — Homepage sections (HeroSection)
   icons/      — SVG icon components + NAVIGATION_ICONS map
 ```
 
@@ -76,7 +76,6 @@ import { ProtectedRoute, AdminRoute, PublicOnlyRoute } from '@/features/auth';
 | `Notifications`          | Không có props — đặt 1 lần trong `App.tsx`                                                                                                      | Global toast container — reads `ui-store.notifications`                                 |
 | `LanguageSwitcher`       | —                                                                                                                                               | Header i18n toggle (vi/en) — lưu vào `localStorage('language')`                         |
 | `ThemeToggle`            | —                                                                                                                                               | Header dark/light mode toggle — dùng View Transitions API cho circular reveal effect    |
-| `BannerDisplay`          | `banners[]`                                                                                                                                     | Hiển thị banners từ content feature (homepage + category page)                          |
 | `FeedbackModal`          | `isOpen`, `onClose`, `onSubmit`                                                                                                                 | Thu thập feedback người dùng                                                            |
 
 ## Barrel export
@@ -156,10 +155,9 @@ import { Button, Modal, PremiumButton, Card, Badge } from '@components/common';
 
 # 5. Section Components
 
-| Component         | Mô tả                                                                                                                                                         |
-| ----------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `HeroSection`     | Landing hero với gradient mesh background, product category cards (iPhone, MacBook, Watch, iPad), Framer Motion animations, 2 CTA buttons. Responsive design. |
-| `HomeNewsSection` | Hiển thị bài viết mới nhất (`useGetNewsQuery`) và banners (`useGetBannersQuery`). Banner backend module đã xóa nhưng GET `/banners` endpoint vẫn hoạt động.   |
+| Component     | Mô tả                                                                                                                                                         |
+| ------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `HeroSection` | Landing hero với gradient mesh background, product category cards (iPhone, MacBook, Watch, iPad), Framer Motion animations, 2 CTA buttons. Responsive design. |
 
 Chỉ dùng trong `HomePage` (`src/pages/HomePage.tsx`).
 
@@ -180,7 +178,7 @@ icons/
 
 ```ts
 import { NAVIGATION_ICONS, NavigationIconKey } from '@/components/icons';
-// Keys: 'home' | 'shop' | 'categories' | 'deals' | 'news' | 'about'
+// Keys: 'home' | 'shop' | 'categories' | 'deals' | 'about'
 const IconComponent = NAVIGATION_ICONS[item.key as NavigationIconKey];
 return <IconComponent className="h-4 w-4" />;
 ```
@@ -214,7 +212,7 @@ Tất cả icon accept `className` và `size` props. Đây là SVG components t�
 
 ## Khi nào dùng RichTextEditor variants
 
-- **`SimpleRichTextEditor`**: nội dung ngắn (news excerpt, product short description)
+- **`SimpleRichTextEditor`**: nội dung ngắn (product short description, FAQ, feedback)
 - **`RichTextEditor`**: nội dung trung bình với basic toolbar
 - **`EnhancedRichTextEditor`**: product description trong admin (extended toolbar + image upload + base64 processing)
 - Luôn wrap bằng `EditorErrorBoundary` khi dùng trong admin

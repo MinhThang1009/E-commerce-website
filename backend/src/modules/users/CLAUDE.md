@@ -79,8 +79,6 @@ Update `firstName`, `lastName`, `phone`, `avatar` (URL string). Chỉ cập nh�
 
 1. Verify `currentPassword` bằng `user.comparePassword()` (bcrypt)
 2. `user.password = newPassword` → Sequelize `beforeSave` hook hash tự động
-3. Ghi timestamp vào Redis: `pw_changed:{userId}` = unix seconds (TTL 30 ngày) — để invalidate JWT tokens cũ
-4. Redis fail (không có connection) → log warn, tiếp tục (không rollback)
 
 ## 3.3 addAddress
 
@@ -131,7 +129,6 @@ Inject từ `app.js`:
 
 - **Models:** `User`, `Address`
 - **eventBus, logger**
-- **Redis** (optional, `require('@config/redis')` trực tiếp trong `changePassword()` — không inject)
 
 ## 5.2 Used by (module khác dùng module này)
 
@@ -144,7 +141,6 @@ Inject từ `app.js`:
 # 6. Gotchas & Edge Cases
 
 - **Không có `GET /me`:** Endpoint `/me` không tồn tại trong module này. CLAUDE.md cũ liệt kê sai. Profile lấy từ auth module hoặc client-side JWT decode.
-- **`changePassword` direct require Redis:** `require('@config/redis')` được gọi trực tiếp trong service body, không inject. Redis optional — nếu fail thì log warn và tiếp tục.
 - **`deleteAddress` auto-promote:** Xóa default address → address mới nhất còn lại trở thành default. Không throw error. FE không cần confirm hay set address khác trước.
 - **Avatar URL flow:** FE upload file → `POST /api/uploads/avatars/single` → nhận URL → gọi `PUT /api/users/profile` với `{ avatar: url }`. Module users không xử lý file.
 - **Password hashing qua Sequelize hook:** `user.password = newPassword` và `saveUser()` → hook `beforeSave` trên User model tự hash. Không hash thủ công trong service.

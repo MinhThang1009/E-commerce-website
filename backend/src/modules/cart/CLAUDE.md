@@ -81,7 +81,7 @@ modules/cart/
 
 **`cart-service.js`** (~500 lines):
 
-- `getCart({ user, cookieSessionId })` — lấy cart kèm items, prices, warranty packages. Nếu user đã login và có `cookieSessionId` → tự động merge guest cart vào user cart trong flow này.
+- `getCart({ user, cookieSessionId })` — lấy cart kèm items, prices. Nếu user đã login và có `cookieSessionId` → tự động merge guest cart vào user cart trong flow này.
 - `getCartCount({ user, cookieSessionId })` — đếm tổng quantity items.
 - `addToCart({ user, cookieSessionId, body, setSessionCookie })` — thêm item (hoặc tăng quantity nếu đã có). Validate stock. Guest không có sessionId → tạo UUID mới, gọi callback `setSessionCookie` để controller set cookie.
 - `updateCartItem({ user, cookieSessionId, itemId, quantity })` — cập nhật quantity, validate ownership + stock.

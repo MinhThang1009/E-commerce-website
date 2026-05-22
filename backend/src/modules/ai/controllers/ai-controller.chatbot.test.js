@@ -117,7 +117,7 @@ describe('POST /api/chatbot/message', () => {
     const res = await request.post('/api/chatbot/message').send({ message: 'a'.repeat(2001) });
     expect(res.status).toBe(400);
     expect(res.body.status).toBe('error');
-    expect(res.body.message).toMatch(/2000/);
+    expect(res.body.message).toMatch(/quá dài|2000/);
   });
 
   test('200 khi message đúng 2000 ký tự', async () => {

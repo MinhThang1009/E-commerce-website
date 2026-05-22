@@ -45,8 +45,6 @@ function makeService() {
       verifyAccessToken: jest.fn().mockRejectedValue(new Error('not used')),
     },
     tokenSigner,
-    blacklistStore: null, // Redis không cần cho các test này
-    auditService: null,
     eventBus: { publish: jest.fn().mockResolvedValue(undefined) },
     logger: { info: jest.fn(), error: jest.fn(), warn: jest.fn(), debug: jest.fn() },
   });

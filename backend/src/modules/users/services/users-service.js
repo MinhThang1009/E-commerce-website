@@ -49,18 +49,6 @@ class UsersService {
     user.password = newPassword;
     await this.usersRepository.saveUser(user);
 
-    // Invalidate mọi token cũ bằng cách ghi timestamp vào Redis
-    try {
-      const { getRedisClient } = require('@config/redis');
-      const redis = await getRedisClient();
-      if (redis) {
-        const nowSec = Math.floor(Date.now() / 1000);
-        await redis.set(`pw_changed:${userId}`, String(nowSec), { EX: 30 * 24 * 3600 });
-      }
-    } catch (err) {
-      this.logger.warn('Không thể set pw_changed key trong Redis:', err.message);
-    }
-
     return { message: 'users.changePasswordSuccess' };
   }
 

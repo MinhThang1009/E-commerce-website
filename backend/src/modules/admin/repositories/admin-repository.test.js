@@ -104,7 +104,6 @@ jest.mock('@models', () => ({
   CartItem: { destroy: (...args) => mockCartItemDestroy(...args) },
   Wishlist: { destroy: (...args) => mockWishlistDestroy(...args) },
   InventoryLog: { create: jest.fn().mockResolvedValue({ id: 1 }) },
-  AuditLog: { findAndCountAll: jest.fn().mockResolvedValue({ count: 0, rows: [] }) },
   ChatMessage: {
     count: jest.fn().mockResolvedValue(0),
     findOne: jest.fn().mockResolvedValue(null),
@@ -222,22 +221,10 @@ describe('adminRepository — bulkCreate functions với non-empty options (TRUE
     expect(mockProductVariantCreate).toHaveBeenCalledWith({ sku: 'SKU-1' }, opts);
   });
 
-  test.skip('createProductWarranty với options → gọi với options', async () => {
-    mockProductWarrantyCreate.mockResolvedValue({ id: 1 });
-    await repo.createProductWarranty({ packageId: 1 }, opts);
-    expect(mockProductWarrantyCreate).toHaveBeenCalledWith({ packageId: 1 }, opts);
-  });
-
   test('bulkCreateProductVariants với options → gọi với options', async () => {
     mockProductVariantBulkCreate.mockResolvedValue([]);
     await repo.bulkCreateProductVariants(variantData, opts);
     expect(mockProductVariantBulkCreate).toHaveBeenCalledWith(variantData, opts);
-  });
-
-  test.skip('bulkCreateProductWarranties với options → gọi với options', async () => {
-    mockProductWarrantyBulkCreate.mockResolvedValue([]);
-    await repo.bulkCreateProductWarranties(warrantyData, opts);
-    expect(mockProductWarrantyBulkCreate).toHaveBeenCalledWith(warrantyData, opts);
   });
 
   test('bulkCreateProductCategories với options → gọi với options', async () => {
@@ -515,18 +502,6 @@ describe('adminRepository — Product queries', () => {
     expect(ProductVariant.findAll).toHaveBeenCalled();
   });
 
-  test.skip('findWarrantyPackages gọi WarrantyPackage.findAll', async () => {
-    WarrantyPackage.findAll.mockResolvedValue([]);
-    await repo.findWarrantyPackages({});
-    expect(WarrantyPackage.findAll).toHaveBeenCalled();
-  });
-
-  test.skip('destroyProductWarranties gọi ProductWarranty.destroy', async () => {
-    mockProductWarrantyDestroy.mockResolvedValue(1);
-    await repo.destroyProductWarranties({ productId: 1 });
-    expect(mockProductWarrantyDestroy).toHaveBeenCalledWith({ where: { productId: 1 } });
-  });
-
   test('findProductVariantById gọi ProductVariant.findOne', async () => {
     ProductVariant.findOne.mockResolvedValue(null);
     await repo.findProductVariantById(1, 5);
@@ -715,8 +690,8 @@ describe('adminRepository — Review queries', () => {
 // Inventory + Analytics + Audit + Chatbot (lines 182-240)
 // ═══════════════════════════════════════════════════════════════════════════════
 
-describe('adminRepository — Inventory, Analytics, Audit, Chatbot', () => {
-  const { InventoryLog, AuditLog, ChatMessage, Order, User } = require('@models');
+describe('adminRepository — Inventory, Analytics, Chatbot', () => {
+  const { InventoryLog, ChatMessage, Order, User } = require('@models');
 
   test('createInventoryLog gọi InventoryLog.create', async () => {
     InventoryLog.create.mockResolvedValue({ id: 1 });
@@ -757,18 +732,6 @@ describe('adminRepository — Inventory, Analytics, Audit, Chatbot', () => {
       raw: true,
     });
     expect(User.findAll).toHaveBeenCalled();
-  });
-
-  test('findAuditLogs gọi AuditLog.findAndCountAll', async () => {
-    AuditLog.findAndCountAll.mockResolvedValue({ count: 2, rows: [] });
-    await repo.findAuditLogs({ where: {}, limit: 10 });
-    expect(AuditLog.findAndCountAll).toHaveBeenCalled();
-  });
-
-  test('findAuditLogs không có args → default (line 235 default branch)', async () => {
-    AuditLog.findAndCountAll.mockResolvedValue({ count: 0, rows: [] });
-    await repo.findAuditLogs();
-    expect(AuditLog.findAndCountAll).toHaveBeenCalled();
   });
 
   test('countChatMessages gọi ChatMessage.count', async () => {
@@ -819,12 +782,6 @@ describe('adminRepository — bulkCreate FALSE branches còn thiếu', () => {
     expect(mockProductVariantBulkCreate).toHaveBeenCalledWith([{ sku: 'V1' }], {});
   });
 
-  test.skip('bulkCreateProductWarranties không có options → gọi với options={}', async () => {
-    mockProductWarrantyBulkCreate.mockResolvedValue([]);
-    await repo.bulkCreateProductWarranties([{ packageId: 1 }]);
-    expect(mockProductWarrantyBulkCreate).toHaveBeenCalledWith([{ packageId: 1 }], {});
-  });
-
   test('bulkCreateProductCategories không có options → gọi với options={}', async () => {
     mockProductCategoryBulkCreate.mockResolvedValue([]);
     await repo.bulkCreateProductCategories([{ productId: 1, categoryId: 2 }]);
@@ -844,12 +801,6 @@ describe('adminRepository — bulkCreate FALSE branches còn thiếu', () => {
     mockProductVariantCreate.mockResolvedValue({ id: 1 });
     await repo.createProductVariant({ sku: 'V1' });
     expect(mockProductVariantCreate).toHaveBeenCalledWith({ sku: 'V1' });
-  });
-
-  test.skip('createProductWarranty không có options → FALSE branch', async () => {
-    mockProductWarrantyCreate.mockResolvedValue({ id: 1 });
-    await repo.createProductWarranty({ packageId: 1 });
-    expect(mockProductWarrantyCreate).toHaveBeenCalledWith({ packageId: 1 });
   });
 });
 

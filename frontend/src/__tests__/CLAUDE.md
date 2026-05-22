@@ -55,7 +55,7 @@ Frontend tests xác minh:
 | `catalog-chat-stores.test.tsx`    | Catalog store + Chat store — synergy, history management                              |
 | `checkout-payment-pages.test.tsx` | Checkout flow → Payment redirect                                                      |
 | `components.test.tsx`             | Shared components: Button, Modal, Input, Card, Badge, Pagination, Rating...           |
-| `content-pages.test.tsx`          | News list, News detail, Contact page                                                  |
+| `content-pages.test.tsx`          | Contact page, TrackOrder page                                                         |
 | `stores.test.tsx`                 | Cart store, Wishlist store, UI store — actions + state                                |
 | `token-manager.test.tsx`          | Token refresh, auto-logout, deduplication logic                                       |
 | `user-pages.test.tsx`             | Profile page, Address management                                                      |
@@ -159,7 +159,7 @@ await new Promise((r) => setTimeout(r, 1000));
 
 # 6. Gotchas
 
-- **TanStack Query cache:** tạo `QueryClient` mới cho mỗi test — `new QueryClient({ defaultOptions: { queries: { retry: false } } })` — để tránh cache bleeding giữa tests.
+- **TanStack Query isolation:** tạo `QueryClient` mới cho mỗi test — `new QueryClient({ defaultOptions: { queries: { retry: false } } })` — để tránh data bleeding giữa tests.
 - **Zustand stores:** reset trong `beforeEach` via `useStore.setState(initialState, true)` (second arg `true` = replace, không merge).
 - **i18n key assertions:** khi mock `t(key) => key`, assert bằng key (`t('auth.login.title')` → `'auth.login.title'`), không phải text Việt/Anh.
 - **Coverage 100%:** thêm code mới → phải kèm test. Không dùng `/* istanbul ignore */` trừ khi có lý do documented rõ ràng.

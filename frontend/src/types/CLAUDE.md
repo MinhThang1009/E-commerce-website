@@ -53,7 +53,6 @@ import type { CartItem, AuthResponse, Notification } from '@/types';
 | `Cart`, `CartItem`, `ServerCart`, `ServerCartItem`, `CartState`, `UpdateCartItemPayload` | `features/cart/types/cart.types`                          |
 | `Order`, `OrderItem`, `OrderStatus`, `PaymentStatus`, `PaymentMethod`                    | `features/orders/types/order.types`                       |
 | `Review`, `ReviewsResponse`                                                              | `features/reviews/types/review.types`                     |
-| `News`, `Banner`                                                                         | `features/content/types/news.types`                       |
 | `AuthState`, `AuthResponse`                                                              | `features/auth/types/auth.types`                          |
 | `User`, `Address`                                                                        | `./user.types`                                            |
 | `PaginatedResponse`, `ApiError`, `ApiResponse`, `PaginationParams`                       | `./common.types`                                          |

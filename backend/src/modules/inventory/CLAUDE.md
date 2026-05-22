@@ -27,12 +27,12 @@
 
 ## 1.1 Purpose
 
-Theo dõi tồn kho theo biến thể sản phẩm (`ProductVariant`). Ghi immutable audit log (`InventoryLog`) mỗi khi stock thay đổi. Lắng nghe event `order.cancelled` từ `orders` module để ghi audit log. Cho phép admin nhập kho (`restock`) và xem lịch sử thay đổi tồn kho.
+Theo dõi tồn kho theo biến thể sản phẩm (`ProductVariant`). Ghi immutable log (`InventoryLog`) mỗi khi stock thay đổi. Lắng nghe event `order.cancelled` từ `orders` module để ghi inventory log. Cho phép admin nhập kho (`restock`) và xem lịch sử thay đổi tồn kho.
 
 **Phân công trách nhiệm rõ ràng**:
 
 - **Stock tăng (restock)**: Thực hiện trong `inventory` service — trong transaction.
-- **Stock giảm (đặt hàng)**: Thực hiện trong `orders` service — trong transaction với `SELECT FOR UPDATE`. Inventory chỉ nhận event sau đó để ghi audit log.
+- **Stock giảm (đặt hàng)**: Thực hiện trong `orders` service — trong transaction với `SELECT FOR UPDATE`. Inventory chỉ nhận event sau đó để ghi inventory log.
 
 ## 1.2 DI Pattern
 
@@ -122,13 +122,13 @@ Subscribe trong `subscribeEvents()` — không trong service:
 order.cancelled → iterate event.payload.items → createInventoryLog(changeType: 'cancellation')
 ```
 
-**Quan trọng**: Stock đã được restore trong `orders.cancelOrder` inline (trong transaction trước khi event fire). Inventory chỉ ghi audit log. `previousStock = 0` và `newStock = 0` là placeholder — không phải giá trị thực.
+**Quan trọng**: Stock đã được restore trong `orders.cancelOrder` inline (trong transaction trước khi event fire). Inventory chỉ ghi inventory log. `previousStock = 0` và `newStock = 0` là placeholder — không phải giá trị thực.
 
 Lỗi khi ghi log → `logger.warn` và tiếp tục (không fail silently với critical operations).
 
 ## 3.4 Business rules
 
-- **InventoryLog là immutable**: Chỉ INSERT, không UPDATE/DELETE. `updatedAt: false` trên model — đây là audit trail tài chính.
+- **InventoryLog là immutable**: Chỉ INSERT, không UPDATE/DELETE. `updatedAt: false` trên model — đây là inventory trail tài chính.
 - **Stock decrement KHÔNG trong inventory service**: Stock giảm khi đặt hàng phải nằm trong `orders` service với `SELECT FOR UPDATE` trong transaction. KHÔNG bao giờ decrement stock ngoài `unitOfWork`.
 - **Sync `Product.stockQuantity`**: Khi restock variant → tính tổng tất cả variants (`sumVariantStockByProductId`) → ghi vào `Product.stockQuantity`. Giữ đồng bộ để catalog hiển thị đúng.
 - **Validate variant belongs to product**: `findVariantByIdAndProductId(variantId, productId)` — kiểm tra cả hai điều kiện. Tránh restock nhầm variant của product khác.
@@ -163,7 +163,7 @@ Tất cả routes apply `router.use(authenticate)` + `router.use(authorize('admi
 
 **Subscribe events từ:**
 
-- `orders` — publish `order.cancelled` → inventory ghi audit log
+- `orders` — publish `order.cancelled` → inventory ghi inventory log
 
 **Publish events:**
 
@@ -178,13 +178,13 @@ Tất cả routes apply `router.use(authenticate)` + `router.use(authorize('admi
 
 # 6. Gotchas & Edge Cases
 
-- **`InventoryLog` immutable (audit trail)**: KHÔNG bao giờ UPDATE hoặc DELETE log entry. `updatedAt: false` là intentional. Đây là audit trail tài chính — cần cho reconciliation.
+- **`InventoryLog` immutable**: KHÔNG bao giờ UPDATE hoặc DELETE log entry. `updatedAt: false` là intentional. Đây là inventory trail tài chính — cần cho reconciliation.
 - **`previousStock = 0` trong cancellation log**: Log cho `order.cancelled` dùng `previousStock: 0` và `newStock: 0` — placeholder, không phải giá trị thực. Stock đã restore trong `orders` flow trước khi event fire.
 - **Stock decrement PHẢI trong orders service với SELECT FOR UPDATE**: KHÔNG bao giờ decrement stock bên ngoài `unitOfWork`. Race condition → oversell. Pattern: `SELECT FOR UPDATE → check stock → decrement → commit`.
-- **`subscribeEvents()` gọi sau tất cả modules init**: Nếu inventory module throw trong constructor → event subscription không xảy ra → `order.cancelled` sẽ không có audit log. Kiểm tra logs khi deploy.
+- **`subscribeEvents()` gọi sau tất cả modules init**: Nếu inventory module throw trong constructor → event subscription không xảy ra → `order.cancelled` sẽ không có inventory log. Kiểm tra logs khi deploy.
 - **Restock variant cộng tổng vào Product**: `sumVariantStockByProductId` tính tổng ALL variants, không phải chỉ variant vừa restock. Nếu muốn product.stockQuantity phản ánh đúng → phải restock qua service, không update variant trực tiếp.
 - **`saveStockable()` trong repository vs direct save**: Một số paths khác update `ProductVariant` trực tiếp (orders, admin) không qua inventory service → `Product.stockQuantity` có thể lệch. Sync chỉ đảm bảo khi đi qua `restockProduct`.
-- **Audit log `changeType: 'cancellation'` có amount dương**: `changeAmount = item.quantity` là dương (số lượng trả về kho) — convention ghi số lượng, không phải delta âm.
+- **InventoryLog `changeType: 'cancellation'` có amount dương**: `changeAmount = item.quantity` là dương (số lượng trả về kho) — convention ghi số lượng, không phải delta âm.
 
 ---
 

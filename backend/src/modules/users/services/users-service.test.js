@@ -1,10 +1,4 @@
-// Mock redis trước khi require UsersService để tránh hit real Redis
-jest.mock('@config/redis', () => ({
-  getRedisClient: jest.fn(),
-}));
-
 const UsersService = require('./users-service');
-const { getRedisClient } = require('@config/redis');
 
 describe('UsersService', () => {
   let usersRepository;
@@ -29,9 +23,6 @@ describe('UsersService', () => {
       eventBus: { publish: jest.fn() },
       logger: { info: jest.fn(), warn: jest.fn(), error: jest.fn() },
     });
-
-    // Mặc định redis mock trả null (skip redis)
-    getRedisClient.mockResolvedValue(null);
   });
 
   // -------- updateProfile --------
@@ -140,31 +131,6 @@ describe('UsersService', () => {
       expect(user.password).toBe('mậtKhẩuMới');
       expect(usersRepository.saveUser).toHaveBeenCalledWith(user);
       expect(result.message).toBe('users.changePasswordSuccess');
-    });
-
-    test('đổi mật khẩu thành công + redis có → gọi redis.set với key pw_changed', async () => {
-      const user = { comparePassword: jest.fn().mockResolvedValue(true) };
-      usersRepository.findUserById.mockResolvedValue(user);
-      const redisMock = { set: jest.fn().mockResolvedValue() };
-      getRedisClient.mockResolvedValue(redisMock);
-
-      await service.changePassword({ userId: 42, currentPassword: 'ok', newPassword: 'new' });
-
-      expect(redisMock.set).toHaveBeenCalledWith(
-        'pw_changed:42',
-        expect.any(String),
-        expect.objectContaining({ EX: expect.any(Number) }),
-      );
-    });
-
-    test('redis lỗi → không throw, tiếp tục return success', async () => {
-      const user = { comparePassword: jest.fn().mockResolvedValue(true) };
-      usersRepository.findUserById.mockResolvedValue(user);
-      getRedisClient.mockRejectedValue(new Error('redis down'));
-
-      await expect(
-        service.changePassword({ userId: 1, currentPassword: 'ok', newPassword: 'new' }),
-      ).resolves.toMatchObject({ message: 'users.changePasswordSuccess' });
     });
   });
 

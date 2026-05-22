@@ -1,5 +1,4 @@
 const { AppError } = require('@shared/errors');
-const { AdminAuditService } = require('@shared/admin-audit');
 const discountCodeRepository = require('@modules/discount-code/repositories/sequelize-discount-code-repository');
 const Op = discountCodeRepository.getOp();
 
@@ -68,6 +67,40 @@ const getAllDiscountCodes = async ({
 };
 
 /**
+ * Lấy danh sách mã giảm giá còn hiệu lực để hiển thị cho người dùng ở trang checkout.
+ * Chỉ trả về các trường an toàn — không expose usedCount hay thông tin nội bộ.
+ * @returns {Promise<Array>}
+ */
+const getAvailableDiscountCodes = async () => {
+  const now = new Date();
+  const where = {
+    isActive: true,
+    [Op.or]: [{ endDate: null }, { endDate: { [Op.gte]: now } }],
+    [Op.and]: [{ [Op.or]: [{ startDate: null }, { startDate: { [Op.lte]: now } }] }],
+  };
+
+  const { rows } = await discountCodeRepository.findAll({
+    where,
+    limit: 50,
+    offset: 0,
+    order: [['createdAt', 'DESC']],
+  });
+
+  // Lọc thêm codes chưa hết lượt dùng và chỉ trả trường cần thiết
+  return rows
+    .filter((c) => c.usageLimit === null || c.usedCount < c.usageLimit)
+    .map((c) => ({
+      id: c.id,
+      code: c.code,
+      type: c.type,
+      value: c.value,
+      maxDiscountAmount: c.maxDiscountAmount,
+      minOrderAmount: c.minOrderAmount,
+      endDate: c.endDate,
+    }));
+};
+
+/**
  * Lấy chi tiết một mã giảm giá theo ID.
  * @param {string} id - UUID của mã giảm giá
  * @returns {Promise<DiscountCode>}
@@ -80,9 +113,9 @@ const getDiscountCodeById = async (id) => {
 };
 
 /**
- * Tạo mã giảm giá mới và ghi audit log.
+ * Tạo mã giảm giá mới.
  * @param {Object} data  - Dữ liệu mã giảm giá
- * @param {Object} actor - User thực hiện (dùng cho audit log)
+ * @param {Object} actor - User thực hiện
  * @returns {Promise<DiscountCode>}
  * @throws {AppError} 400 - Mã giảm giá đã tồn tại
  */
@@ -117,15 +150,14 @@ const createDiscountCode = async (data, actor) => {
     description,
   });
 
-  AdminAuditService.logDiscountCodeAction(actor, 'CREATE', discountCode.id, code);
   return discountCode;
 };
 
 /**
- * Cập nhật thông tin mã giảm giá và ghi audit log.
+ * Cập nhật thông tin mã giảm giá.
  * @param {string} id    - UUID của mã giảm giá
  * @param {Object} data  - Các trường cần cập nhật
- * @param {Object} actor - User thực hiện (dùng cho audit log)
+ * @param {Object} actor - User thực hiện
  * @returns {Promise<DiscountCode>}
  * @throws {AppError} 404 - Không tìm thấy mã giảm giá
  * @throws {AppError} 400 - Mã mới đã tồn tại
@@ -168,17 +200,13 @@ const updateDiscountCode = async (id, data, actor) => {
     description: description || discountCode.description,
   });
 
-  // Phân biệt DEACTIVATE và UPDATE thông thường để audit log rõ ràng hơn
-  const action = isActive === false && wasActive ? 'DEACTIVATE' : 'UPDATE';
-  AdminAuditService.logDiscountCodeAction(actor, action, id, discountCode.code);
-
   return discountCode;
 };
 
 /**
- * Xóa mã giảm giá và ghi audit log.
+ * Xóa mã giảm giá.
  * @param {string} id    - UUID của mã giảm giá
- * @param {Object} actor - User thực hiện (dùng cho audit log)
+ * @param {Object} actor - User thực hiện
  * @throws {AppError} 404 - Không tìm thấy mã giảm giá
  */
 const deleteDiscountCode = async (id, actor) => {
@@ -186,7 +214,6 @@ const deleteDiscountCode = async (id, actor) => {
   if (!discountCode) throw new AppError('Không tìm thấy mã giảm giá', 404);
 
   await discountCodeRepository.remove(discountCode);
-  AdminAuditService.logDiscountCodeAction(actor, 'DELETE', id, discountCode.code);
 };
 
 /**
@@ -251,6 +278,7 @@ const applyDiscountCode = async (code, orderAmount) => {
 
 module.exports = {
   getAllDiscountCodes,
+  getAvailableDiscountCodes,
   getDiscountCodeById,
   createDiscountCode,
   updateDiscountCode,

@@ -5,7 +5,7 @@
  * sequelize.define(), then invoke them directly without a real DB connection.
  *
  * Each model gets its own jest.isolateModules() block so the mock can be set up
- * fresh and the require() cache doesn't bleed between models.
+ * fresh and the require() module state doesn't bleed between models.
  *
  * Files under test:
  *   src/models/brand.js

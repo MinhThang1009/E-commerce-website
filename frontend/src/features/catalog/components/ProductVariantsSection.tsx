@@ -10,6 +10,7 @@ import { Button, Row, Col, Typography, Table, Space, Tag, Alert } from 'antd';
 import { PlusOutlined, EditOutlined, DeleteOutlined } from '@ant-design/icons';
 import { ProductVariant } from '@/types';
 import { getLocale } from '@/utils/format';
+import { formatAttributeKey } from '../utils/product-naming';
 
 const { Title, Text } = Typography;
 
@@ -33,6 +34,14 @@ const ProductVariantsSection: React.FC<ProductVariantsSectionProps> = ({
       title: t('productSection.variants.nameColumn'),
       dataIndex: 'name',
       key: 'name',
+      render: (name: string, record: ProductVariant) => {
+        if (name) return name;
+        // Auto-generate từ attributes khi không có name
+        if (record.attributes && Object.keys(record.attributes).length > 0) {
+          return Object.values(record.attributes).join(' / ');
+        }
+        return <span className="text-neutral-400 text-sm">—</span>;
+      },
     },
     {
       title: t('productSection.variants.attrColumn'),
@@ -46,7 +55,7 @@ const ProductVariantsSection: React.FC<ProductVariantsSectionProps> = ({
           <div>
             {Object.entries(attributes).map(([key, value]) => (
               <Tag key={key} color="blue">
-                {key}: {value}
+                {formatAttributeKey(key)}: {value}
               </Tag>
             ))}
           </div>
@@ -125,9 +134,9 @@ const ProductVariantsSection: React.FC<ProductVariantsSectionProps> = ({
 
       {variants.length === 0 && (
         <Alert
-          message={t('productSection.variants.emptyError')}
-          description={t('productSection.variants.emptyErrorDesc')}
-          type="error"
+          message={t('productSection.variants.emptyInfo')}
+          description={t('productSection.variants.emptyInfoDesc')}
+          type="info"
           showIcon
           style={{ marginBottom: 16 }}
         />

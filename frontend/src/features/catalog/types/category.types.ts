@@ -5,9 +5,8 @@
  * @description TypeScript type definitions cho feature catalog
  */
 // Kiểu dữ liệu danh mục
-// DB chỉ có: id, name, slug, description, deleted_at, created_at, updated_at.
-// Các field image/parentId/level/isActive/sortOrder chưa tồn tại trong DB —
-// giữ optional để frontend không crash nếu backend thêm sau.
+// DB có: id, name_vi, name_en, slug, description_vi, description_en, is_active, sort_order, deleted_at, created_at, updated_at.
+// Field image/level chưa tồn tại trong DB — giữ optional.
 export interface Category {
   id: string;
   name: string;

@@ -83,7 +83,7 @@ import { queryClient } from '@lib/query-client';
 | Option                 | Value   | Ý nghĩa                                                               |
 | ---------------------- | ------- | --------------------------------------------------------------------- |
 | `staleTime`            | 5 phút  | Data được coi fresh — không refetch nếu < 5 phút kể từ lần fetch cuối |
-| `gcTime`               | 10 phút | Cache entry bị garbage collect sau 10 phút không dùng                 |
+| `gcTime`               | 10 phút | Data bị garbage collect sau 10 phút không dùng                        |
 | `retry` (queries)      | `1`     | Retry failed query 1 lần                                              |
 | `retry` (mutations)    | `0`     | Không retry mutations (side effects có thể duplicate)                 |
 | `refetchOnWindowFocus` | `false` | Không auto-refetch khi user focus lại tab                             |

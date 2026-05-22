@@ -68,9 +68,6 @@ class IAdminRepository {
   async aggregateOrderItems(_options) {
     throw new Error('not implemented');
   }
-  async getAuditLogs(_options) {
-    throw new Error('not implemented');
-  }
 }
 
 module.exports = IAdminRepository;

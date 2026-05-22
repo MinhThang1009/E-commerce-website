@@ -20,7 +20,7 @@
 E2E tests xác minh **user flows hoàn chỉnh** — nhiều endpoints nối tiếp nhau tạo thành một hành trình người dùng thực tế. Kiểm tra:
 
 - Luồng đăng ký → xác thực → đăng nhập → mua hàng → thanh toán → xem đơn
-- Admin login → CRUD sản phẩm → upload ảnh → cập nhật inventory → kiểm tra audit log
+- Admin login → CRUD sản phẩm → upload ảnh → cập nhật inventory
 
 Trả lời câu hỏi: **"Toàn bộ user journey có hoạt động không?"** (không phải "endpoint X trả 200 không?").
 
@@ -42,13 +42,13 @@ Trả lời câu hỏi: **"Toàn bộ user journey có hoạt động không?"**
 
 # 3. User flows
 
-| File                                | Flow                                                                                           |
-| ----------------------------------- | ---------------------------------------------------------------------------------------------- |
-| `auth-flow.e2e.test.js`             | Register → verify email (OTP) → login → refresh token → logout → token invalid                 |
-| `shopping-flow.e2e.test.js`         | Browse catalog → add to cart → apply discount → checkout → place order → write review          |
-| `checkout-flow.e2e.test.js`         | Cart → discount code → payment COD → payment VNPay IPN → payment MoMo IPN → order DELIVERED    |
-| `admin-flow.e2e.test.js`            | Admin login → create product → upload image → update inventory → view audit log → manage users |
-| `wishlist-profile-flow.e2e.test.js` | Add to wishlist → move to cart → update profile → add address → set default address            |
+| File                                | Flow                                                                                        |
+| ----------------------------------- | ------------------------------------------------------------------------------------------- |
+| `auth-flow.e2e.test.js`             | Register → verify email (OTP) → login → refresh token → logout → token invalid              |
+| `shopping-flow.e2e.test.js`         | Browse catalog → add to cart → apply discount → checkout → place order → write review       |
+| `checkout-flow.e2e.test.js`         | Cart → discount code → payment COD → payment VNPay IPN → payment MoMo IPN → order DELIVERED |
+| `admin-flow.e2e.test.js`            | Admin login → create product → upload image → update inventory → manage users               |
+| `wishlist-profile-flow.e2e.test.js` | Add to wishlist → move to cart → update profile → add address → set default address         |
 
 ---
 

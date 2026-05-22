@@ -81,7 +81,6 @@ src/pages/
 2. Categories grid — hiển thị `productCount` cho từng danh mục
 3. Brands marquee — autoplay horizontal scroll
 4. Featured products section — product cards
-5. `HomeNewsSection` — tin tức mới nhất từ `src/components/sections/`
 
 **Design:**
 
@@ -190,7 +189,7 @@ Các static pages (`PrivacyPolicyPage`, `TermsPage`, `FAQsPage`, `ShippingReturn
 
 - **Lazy-loaded bắt buộc:** tất cả pages này dùng `lazy(() => import(...))` trong `AppRoutes.tsx` — không import trực tiếp.
 - **`HomePage` là ngoại lệ có API:** page duy nhất trong `pages/` có TanStack Query hooks. Các pages khác là pure static.
-- **`HomePage` dùng `sections/`:** `HeroSection` + `HomeNewsSection` từ `src/components/sections/` — không import từ features.
+- **`HomePage` dùng `sections/`:** `HeroSection` từ `src/components/sections/` — không import từ features.
 - **`AboutPage` dùng DiceBear API:** avatars dùng external CDN `https://api.dicebear.com/9.x/` — cần internet.
 - **`AboutPage` có external images:** CDN URLs từ TGDD — exception có lý do (showcase products thật). Không dùng Unsplash/placeholder images cho showcase products.
 - **`UnauthorizedPage` không có redirect tự động:** user phải chủ động click về home. `AdminRoute` redirect về `/unauthorized` khi thiếu quyền.

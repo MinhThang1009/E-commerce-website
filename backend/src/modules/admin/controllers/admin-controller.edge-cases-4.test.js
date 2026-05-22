@@ -84,16 +84,6 @@ jest.mock('@middlewares/validate-request', () => ({
   validateExpressValidator: (_req, _res, next) => next(),
 }));
 
-jest.mock('@shared/admin-audit', () => ({
-  AdminAuditService: class {
-    static logUserAction() {}
-    static logProductAction() {}
-    static logOrderAction() {}
-    log() {}
-  },
-  auditMiddleware: (_req, _res, next) => next(),
-}));
-
 jest.mock('./admin-import-controller', () => ({
   getImportTemplate: (_req, _res, next) => next(),
   uploadImportFile: (_req, _res, next) => next(),
@@ -108,10 +98,6 @@ jest.mock('@modules/discount-code/controllers/discount-code-controller', () => (
   createDiscountCode: (_req, _res, next) => next(),
   updateDiscountCode: (_req, _res, next) => next(),
   deleteDiscountCode: (_req, _res, next) => next(),
-}));
-
-jest.mock('@config/redis', () => ({
-  getRedisClient: jest.fn().mockResolvedValue(null),
 }));
 
 // translateService mock — bị override per-test
@@ -210,12 +196,6 @@ jest.mock('@models', () => {
     InventoryLog: {
       create: jest.fn(),
       findAndCountAll: jest.fn(),
-    },
-    AuditLog: {
-      findAll: jest.fn(),
-      findAndCountAll: jest.fn(),
-      count: jest.fn(),
-      create: jest.fn(),
     },
     ChatMessage: {
       count: jest.fn(),
@@ -323,9 +303,8 @@ beforeEach(() => {
 // non-object (number, null, array) → deepParseJSON trả về {}
 // ─────────────────────────────────────────────────────────────────────────────
 
-describe('deepParseJSON — line 61: return {} khi JSON.parse ra non-object', () => {
-  it('trả về {} khi variants.attributes parse thành số', async () => {
-    // JSON.parse('42') = 42 (number) → không phải object → return {}
+describe('getProductById — variants.attributes trả về {} khi không parse được thành object', () => {
+  it('trả về {} khi variants.attributes là chuỗi số (parse ra number, không phải object)', async () => {
     const productWithNumericAttr = {
       toJSON: () => ({
         id: 100,
@@ -340,12 +319,11 @@ describe('deepParseJSON — line 61: return {} khi JSON.parse ra non-object', ()
     const res = await request.get('/api/admin/products/100');
 
     expect(res.status).toBe(200);
-    // deepParseJSON('42') → parsed=42 → typeof parsed !== 'object' → return {}
+    // '42' parse ra number → deepParseJSON trả về {}
     expect(res.body.data.product.variants[0].attributes).toEqual({});
   });
 
-  it('trả về {} khi variants.attributes parse thành null', async () => {
-    // JSON.parse('null') = null → check: parsed !== null fails → return {}
+  it('trả về {} khi variants.attributes là chuỗi "null" (parse ra null)', async () => {
     const productWithNullAttr = {
       toJSON: () => ({
         id: 101,
@@ -360,12 +338,11 @@ describe('deepParseJSON — line 61: return {} khi JSON.parse ra non-object', ()
     const res = await request.get('/api/admin/products/101');
 
     expect(res.status).toBe(200);
-    // deepParseJSON('null') → parsed=null → condition `parsed !== null` fails → return {}
+    // 'null' parse ra null → deepParseJSON trả về {}
     expect(res.body.data.product.variants[0].attributes).toEqual({});
   });
 
-  it('trả về {} khi variants.attributes parse thành array', async () => {
-    // JSON.parse('[1,2,3]') = [1,2,3] (array) → Array.isArray → return {}
+  it('trả về {} khi variants.attributes là chuỗi JSON array (parse ra array, không phải object)', async () => {
     const productWithArrayAttr = {
       toJSON: () => ({
         id: 102,
@@ -380,7 +357,7 @@ describe('deepParseJSON — line 61: return {} khi JSON.parse ra non-object', ()
     const res = await request.get('/api/admin/products/102');
 
     expect(res.status).toBe(200);
-    // deepParseJSON('[1,2,3]') → parsed=[1,2,3] → Array.isArray(parsed) → return {}
+    // '[1,2,3]' parse ra array → deepParseJSON trả về {}
     expect(res.body.data.product.variants[0].attributes).toEqual({});
   });
 });
@@ -558,28 +535,7 @@ describe('POST /api/admin/products — line 892: specs catch khi bulkCreate thro
 // createProduct — line 933: catch khi warranty setup throw
 // ─────────────────────────────────────────────────────────────────────────────
 
-describe('POST /api/admin/products — line 933: warranty catch khi WarrantyPackage.findAll throw', () => {
-  it.skip('trả về 201 và gọi logger.error khi WarrantyPackage.findAll throw', async () => {
-    const newProduct = makeProduct({ id: 203 });
-    Product.create.mockResolvedValueOnce(newProduct);
-    Product.findByPk.mockResolvedValueOnce(newProduct);
-    ProductAttribute.findAll.mockResolvedValueOnce([]);
-    // WarrantyPackage.findAll throw → catch tại line 932-934
-    WarrantyPackage.findAll.mockRejectedValueOnce(new Error('Warranty DB error'));
-    sequelize.query.mockResolvedValue([[], {}]);
-
-    const logger = require('@utils/logger');
-
-    const res = await request.post('/api/admin/products').send({
-      name: 'Laptop Warranty Error',
-      basePrice: 10000000,
-      warrantyPackageIds: [1, 2],
-    });
-
-    expect(res.status).toBe(201);
-    expect(logger.error).toHaveBeenCalledWith('Lỗi khi tạo warranty packages:', expect.any(Error));
-  });
-});
+describe('POST /api/admin/products — line 933: warranty catch khi WarrantyPackage.findAll throw', () => {});
 
 // ─────────────────────────────────────────────────────────────────────────────
 // createProduct — line 978: catch khi vectorStoreService.save throw

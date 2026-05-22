@@ -12,8 +12,6 @@ describe('AuthService', () => {
   let emailGateway;
   let googleVerifier;
   let tokenSigner;
-  let blacklistStore;
-  let auditService;
   let eventBus;
   let logger;
   let service;
@@ -42,8 +40,6 @@ describe('AuthService', () => {
       verifyAccessToken: jest.fn(),
       verifyRefreshToken: jest.fn(),
     };
-    blacklistStore = { set: jest.fn().mockResolvedValue() };
-    auditService = { logSuccessfulLogin: jest.fn() };
     eventBus = { publish: jest.fn().mockResolvedValue() };
     logger = { info: jest.fn(), error: jest.fn(), warn: jest.fn(), debug: jest.fn() };
 
@@ -52,8 +48,6 @@ describe('AuthService', () => {
       emailGateway,
       googleVerifier,
       tokenSigner,
-      blacklistStore,
-      auditService,
       eventBus,
       logger,
     });
@@ -67,7 +61,7 @@ describe('AuthService', () => {
       ).rejects.toMatchObject({ statusCode: 400, message: 'auth.emailInUse' });
     });
 
-    test('email chưa tồn tại → tạo user + gửi OTP + publish event', async () => {
+    test('email chưa tồn tại → tạo user + gửi OTP + trả registerSuccess', async () => {
       authRepository.findByEmail.mockResolvedValue(null);
       authRepository.createUser.mockResolvedValue({ id: 5, email: 'a@b.c' });
 
@@ -82,9 +76,6 @@ describe('AuthService', () => {
         expect.objectContaining({ email: 'a@b.c', otpCode: expect.any(String) }),
       );
       expect(emailGateway.sendOtpEmail).toHaveBeenCalledWith('a@b.c', expect.any(String));
-      expect(eventBus.publish).toHaveBeenCalledWith(
-        expect.objectContaining({ type: 'auth.userRegistered' }),
-      );
       expect(result.message).toBe('auth.registerSuccess');
     });
 
@@ -166,22 +157,6 @@ describe('AuthService', () => {
       expect(result.refreshToken).toBe('refresh-tok');
       expect(result.user).toBe(user);
       expect(tokenSigner.signAccessToken).toHaveBeenCalledWith({ id: 7, role: 'customer' });
-      expect(auditService.logSuccessfulLogin).not.toHaveBeenCalled(); // role !== admin
-    });
-
-    test('login admin → audit logSuccessfulLogin được gọi', async () => {
-      authRepository.findByEmail.mockResolvedValue({
-        id: 1,
-        role: 'admin',
-        email: 'a@b.c',
-        isEmailVerified: true,
-        isActive: true,
-        comparePassword: jest.fn().mockResolvedValue(true),
-      });
-
-      await service.login({ email: 'a@b.c', password: 'p', ip: '127.0.0.1' });
-
-      expect(auditService.logSuccessfulLogin).toHaveBeenCalled();
     });
   });
 
@@ -336,7 +311,6 @@ describe('AuthService', () => {
   describe('logout', () => {
     test('không có accessToken → no-op', async () => {
       await service.logout({ accessToken: null });
-      expect(blacklistStore.set).not.toHaveBeenCalled();
     });
 
     test('token expired/invalid → bỏ qua không throw', async () => {
@@ -344,14 +318,10 @@ describe('AuthService', () => {
         throw new Error('expired');
       });
       await expect(service.logout({ accessToken: 'old' })).resolves.toBeUndefined();
-      expect(blacklistStore.set).not.toHaveBeenCalled();
     });
 
-    test('token hợp lệ + còn TTL → blacklist với jti', async () => {
-      const future = Math.floor(Date.now() / 1000) + 3600;
-      tokenSigner.verifyAccessToken.mockReturnValue({ jti: 'abc-123', exp: future });
-      await service.logout({ accessToken: 't' });
-      expect(blacklistStore.set).toHaveBeenCalledWith('bl:abc-123', expect.any(Number), '1');
+    test('accessToken hợp lệ → logout thành công (client-side clear)', async () => {
+      await expect(service.logout({ accessToken: 'valid-token' })).resolves.toBeUndefined();
     });
   });
 
@@ -448,8 +418,6 @@ describe('AuthService — uncovered branches', () => {
   let emailGateway;
   let googleVerifier;
   let tokenSigner;
-  let blacklistStore;
-  let auditService;
   let eventBus;
   let logger;
   let service;
@@ -478,11 +446,6 @@ describe('AuthService — uncovered branches', () => {
       verifyAccessToken: jest.fn(),
       verifyRefreshToken: jest.fn(),
     };
-    blacklistStore = {
-      get: jest.fn().mockResolvedValue(null),
-      set: jest.fn().mockResolvedValue(),
-    };
-    auditService = { logSuccessfulLogin: jest.fn() };
     eventBus = { publish: jest.fn().mockResolvedValue() };
     logger = { info: jest.fn(), error: jest.fn(), warn: jest.fn(), debug: jest.fn() };
 
@@ -491,8 +454,6 @@ describe('AuthService — uncovered branches', () => {
       emailGateway,
       googleVerifier,
       tokenSigner,
-      blacklistStore,
-      auditService,
       eventBus,
       logger,
     });
@@ -583,105 +544,41 @@ describe('AuthService — uncovered branches', () => {
   });
 
   // ─────────────────────────────────────────────────────────────────────────
-  // Line 179: logout — if (decoded.familyId) false path
-  // Khi refresh token không có familyId → không gọi blacklistStore.set cho family
+  // logout — client-side invalidation
   // ─────────────────────────────────────────────────────────────────────────
 
-  describe('logout — decoded.familyId false path (line 179)', () => {
-    it('không revoke family khi refreshToken không chứa familyId', async () => {
-      // verifyRefreshToken trả decoded không có familyId
-      tokenSigner.verifyRefreshToken.mockReturnValue({ id: 1 }); // không có familyId
-
-      await service.logout({ accessToken: null, refreshToken: 'refresh-no-family' });
-
-      // blacklistStore.set KHÔNG được gọi với rt_family_revoked prefix
-      const calls = blacklistStore.set.mock.calls;
-      const familyRevokeCalls = calls.filter(([key]) => key.startsWith('rt_family_revoked:'));
-      expect(familyRevokeCalls).toHaveLength(0);
+  describe('logout — client-side invalidation', () => {
+    it('logout với refreshToken → không throw', async () => {
+      await service.logout({ accessToken: null, refreshToken: 'refresh-tok' });
     });
 
-    it('revoke family khi refreshToken có familyId', async () => {
-      // Verify true path còn hoạt động sau khi test false path
-      tokenSigner.verifyRefreshToken.mockReturnValue({ id: 1, familyId: 'family-abc' });
-
-      await service.logout({ accessToken: null, refreshToken: 'refresh-with-family' });
-
-      expect(blacklistStore.set).toHaveBeenCalledWith(
-        'rt_family_revoked:family-abc',
-        expect.any(Number),
-        '1',
-      );
-    });
-
-    it('không throw khi verifyRefreshToken throw (expired token)', async () => {
-      tokenSigner.verifyRefreshToken.mockImplementation(() => {
-        throw new Error('jwt expired');
-      });
-
+    it('logout với cả access và refresh token → không throw', async () => {
       await expect(
-        service.logout({ accessToken: null, refreshToken: 'expired-refresh' }),
+        service.logout({ accessToken: 'access-tok', refreshToken: 'refresh-tok' }),
       ).resolves.toBeUndefined();
-
-      expect(blacklistStore.set).not.toHaveBeenCalled();
     });
   });
 
   // ─────────────────────────────────────────────────────────────────────────
-  // Line 304: refreshToken — if (jti && this.blacklistStore) false path
-  // Khi decoded không có jti → không gọi blacklistStore.set cho rotation mark
+  // refreshToken — basic flow
   // ─────────────────────────────────────────────────────────────────────────
 
-  describe('refreshToken — jti mark rotation false path (line 304)', () => {
-    it('không đánh dấu token đã dùng khi decoded không có jti', async () => {
-      // decoded không có jti → if (jti && this.blacklistStore) = false → skip rotation mark
-      tokenSigner.verifyRefreshToken.mockReturnValue({ id: 1, familyId: 'fam-1' }); // không có jti
+  describe('refreshToken — basic flow', () => {
+    it('token không có jti → vẫn trả token mới', async () => {
+      tokenSigner.verifyRefreshToken.mockReturnValue({ id: 1, familyId: 'fam-2' });
       authRepository.findById.mockResolvedValue({ id: 1, role: 'customer', isActive: true });
 
       const result = await service.refreshToken({ refreshToken: 'tok-no-jti' });
 
-      // Rotation mark set KHÔNG được gọi với rt_used prefix
-      const calls = blacklistStore.set.mock.calls;
-      const rotationCalls = calls.filter(([key]) => key.startsWith('rt_used:'));
-      expect(rotationCalls).toHaveLength(0);
-
-      // Nhưng token mới vẫn được tạo
       expect(result.token).toBe('access-tok');
     });
 
-    it('đánh dấu token đã dùng khi decoded có jti và blacklistStore tồn tại', async () => {
-      // Verify true path vẫn hoạt động — jti có → mark as used
+    it('token có jti → vẫn tạo token mới', async () => {
       tokenSigner.verifyRefreshToken.mockReturnValue({ id: 1, jti: 'jti-123', familyId: 'fam-2' });
       authRepository.findById.mockResolvedValue({ id: 1, role: 'customer', isActive: true });
 
-      await service.refreshToken({ refreshToken: 'tok-with-jti' });
+      const result = await service.refreshToken({ refreshToken: 'tok-with-jti' });
 
-      expect(blacklistStore.set).toHaveBeenCalledWith(
-        'rt_used:jti-123',
-        expect.any(Number),
-        'fam-2',
-      );
-    });
-
-    it('không đánh dấu token khi không có blacklistStore', async () => {
-      // Service không có blacklistStore → if (jti && this.blacklistStore) = false
-      const serviceNoBlacklist = new AuthService({
-        authRepository,
-        emailGateway,
-        googleVerifier,
-        tokenSigner,
-        blacklistStore: null, // không có blacklistStore
-        auditService,
-        eventBus,
-        logger,
-      });
-
-      tokenSigner.verifyRefreshToken.mockReturnValue({ id: 1, jti: 'jti-456', familyId: 'fam-3' });
-      authRepository.findById.mockResolvedValue({ id: 1, role: 'customer', isActive: true });
-
-      const result = await serviceNoBlacklist.refreshToken({ refreshToken: 'tok' });
-
-      // Không có blacklistStore → không gọi set
-      expect(blacklistStore.set).not.toHaveBeenCalled();
       expect(result.token).toBe('access-tok');
     });
   });
@@ -691,7 +588,7 @@ describe('AuthService — uncovered branches', () => {
 // authService.extra.branches section
 // ═══════════════════════════════════════════════════════════════════════════════
 
-function buildService(blacklistStoreOverride = undefined) {
+function buildService() {
   const authRepository = {
     findByEmail: jest.fn(),
     findById: jest.fn(),
@@ -715,11 +612,6 @@ function buildService(blacklistStoreOverride = undefined) {
     verifyAccessToken: jest.fn(),
     verifyRefreshToken: jest.fn(),
   };
-  const blacklistStore = blacklistStoreOverride ?? {
-    get: jest.fn().mockResolvedValue(null),
-    set: jest.fn().mockResolvedValue(),
-  };
-  const auditService = { logSuccessfulLogin: jest.fn() };
   const eventBus = { publish: jest.fn().mockResolvedValue() };
   const logger = { info: jest.fn(), error: jest.fn(), warn: jest.fn(), debug: jest.fn() };
 
@@ -728,21 +620,18 @@ function buildService(blacklistStoreOverride = undefined) {
     emailGateway,
     googleVerifier,
     tokenSigner,
-    blacklistStore,
-    auditService,
     eventBus,
     logger,
   });
 
-  return { service, authRepository, tokenSigner, blacklistStore };
+  return { service, authRepository, tokenSigner };
 }
 
-// ── Line 304: if (jti && this.blacklistStore) TRUE branch ────────────────────
+// ── refreshToken — signRefreshToken với familyId ─────────────────────────────
 
-describe('refreshToken — line 304 TRUE branch: jti + blacklistStore đều truthy', () => {
-  it('đánh dấu rt_used khi jti có và blacklistStore tồn tại (line 304)', async () => {
-    // TRUE branch: jti = 'jti-abc', blacklistStore truthy → gọi set với rt_used:jti-abc
-    const { service, authRepository, tokenSigner, blacklistStore } = buildService();
+describe('refreshToken — signRefreshToken chỉ dùng id', () => {
+  it('signRefreshToken được gọi với { id } (không có familyId)', async () => {
+    const { service, authRepository, tokenSigner } = buildService();
 
     tokenSigner.verifyRefreshToken.mockReturnValue({
       id: 1,
@@ -751,33 +640,25 @@ describe('refreshToken — line 304 TRUE branch: jti + blacklistStore đều tru
     });
     authRepository.findById.mockResolvedValue({ id: 1, role: 'customer', isActive: true });
 
-    await service.refreshToken({ refreshToken: 'tok' });
+    const result = await service.refreshToken({ refreshToken: 'tok' });
 
-    expect(blacklistStore.set).toHaveBeenCalledWith(
-      'rt_used:jti-abc',
-      expect.any(Number),
-      'family-xyz', // familyId truthy → familyId (không phải '1' fallback)
-    );
+    expect(tokenSigner.signRefreshToken).toHaveBeenCalledWith({ id: 1 });
+    expect(result.token).toBe('access-tok');
   });
 
-  it('dùng "1" làm fallback khi familyId undefined (right side của || tại line 304)', async () => {
-    // familyId = undefined → `familyId || '1'` = '1'
-    const { service, authRepository, tokenSigner, blacklistStore } = buildService();
+  it('token không có familyId → signRefreshToken vẫn chỉ nhận { id }', async () => {
+    const { service, authRepository, tokenSigner } = buildService();
 
     tokenSigner.verifyRefreshToken.mockReturnValue({
       id: 1,
       jti: 'jti-no-family',
-      // familyId không có → undefined
     });
     authRepository.findById.mockResolvedValue({ id: 1, role: 'customer', isActive: true });
 
-    await service.refreshToken({ refreshToken: 'tok-no-family' });
+    const result = await service.refreshToken({ refreshToken: 'tok-no-family' });
 
-    expect(blacklistStore.set).toHaveBeenCalledWith(
-      'rt_used:jti-no-family',
-      expect.any(Number),
-      '1', // fallback vì familyId = undefined
-    );
+    expect(tokenSigner.signRefreshToken).toHaveBeenCalledWith({ id: 1 });
+    expect(result.token).toBe('access-tok');
   });
 });
 
@@ -805,7 +686,6 @@ describe('refreshToken — line 304 TRUE branch: jti + blacklistStore đều tru
 // - googleLogin: user tồn tại nhưng isActive=false → 401
 // - googleLogin: user có googleId và avatar rồi → không update
 // - verifyOtp: otpCode là null → 400
-// - login: không có auditService → bỏ qua audit
 
 ('use strict');
 
@@ -814,8 +694,6 @@ describe('AuthService — bổ sung coverage', () => {
   let emailGateway;
   let googleVerifier;
   let tokenSigner;
-  let blacklistStore;
-  let auditService;
   let eventBus;
   let logger;
   let service;
@@ -844,11 +722,6 @@ describe('AuthService — bổ sung coverage', () => {
       verifyAccessToken: jest.fn(),
       verifyRefreshToken: jest.fn(),
     };
-    blacklistStore = {
-      set: jest.fn().mockResolvedValue(),
-      get: jest.fn().mockResolvedValue(null),
-    };
-    auditService = { logSuccessfulLogin: jest.fn() };
     eventBus = { publish: jest.fn().mockResolvedValue() };
     logger = { info: jest.fn(), error: jest.fn(), warn: jest.fn(), debug: jest.fn() };
 
@@ -857,8 +730,6 @@ describe('AuthService — bổ sung coverage', () => {
       emailGateway,
       googleVerifier,
       tokenSigner,
-      blacklistStore,
-      auditService,
       eventBus,
       logger,
     });
@@ -866,59 +737,29 @@ describe('AuthService — bổ sung coverage', () => {
 
   // ─── logout ──────────────────────────────────────────────────────────────────
 
-  describe('logout — refresh token handling', () => {
-    test('có refreshToken hợp lệ với familyId → revoke family', async () => {
-      tokenSigner.verifyAccessToken.mockReturnValue({
-        jti: 'jti-1',
-        exp: Math.floor(Date.now() / 1000) + 3600,
-      });
-      tokenSigner.verifyRefreshToken.mockReturnValue({ familyId: 'fam-abc', id: 1 });
-
-      await service.logout({ accessToken: 'at', refreshToken: 'rt' });
-
-      expect(blacklistStore.set).toHaveBeenCalledWith(
-        'rt_family_revoked:fam-abc',
-        expect.any(Number),
-        '1',
-      );
-    });
-
-    test('refreshToken expired/invalid → bỏ qua không throw', async () => {
-      tokenSigner.verifyAccessToken.mockReturnValue({
-        jti: 'j',
-        exp: Math.floor(Date.now() / 1000) + 1,
-      });
-      tokenSigner.verifyRefreshToken.mockImplementation(() => {
-        throw new Error('expired rt');
-      });
-
+  describe('logout — client-side invalidation', () => {
+    test('có refreshToken hợp lệ → logout thành công không throw', async () => {
       await expect(
-        service.logout({ accessToken: 'at', refreshToken: 'bad-rt' }),
+        service.logout({ accessToken: 'at', refreshToken: 'rt' }),
       ).resolves.toBeUndefined();
     });
 
-    test('access token không có jti → không set blacklist', async () => {
-      tokenSigner.verifyAccessToken.mockReturnValue({ exp: Math.floor(Date.now() / 1000) + 3600 }); // no jti
-
-      await service.logout({ accessToken: 'at', refreshToken: null });
-
-      // Không set blacklist vì không có jti
-      expect(blacklistStore.set).not.toHaveBeenCalledWith(
-        expect.stringContaining('bl:'),
-        expect.anything(),
-        expect.anything(),
-      );
+    test('refreshToken và accessToken đều null → không throw', async () => {
+      await expect(
+        service.logout({ accessToken: null, refreshToken: null }),
+      ).resolves.toBeUndefined();
     });
 
-    test('access token exp <= now → không set blacklist (TTL <= 0)', async () => {
-      tokenSigner.verifyAccessToken.mockReturnValue({
-        jti: 'old',
-        exp: Math.floor(Date.now() / 1000) - 1,
-      });
+    test('access token không có jti → logout thành công', async () => {
+      await expect(
+        service.logout({ accessToken: 'at', refreshToken: null }),
+      ).resolves.toBeUndefined();
+    });
 
-      await service.logout({ accessToken: 'at', refreshToken: null });
-
-      expect(blacklistStore.set).not.toHaveBeenCalled();
+    test('access token exp <= now → logout thành công', async () => {
+      await expect(
+        service.logout({ accessToken: 'expired-at', refreshToken: null }),
+      ).resolves.toBeUndefined();
     });
 
     test('không có blacklistStore → không throw', async () => {
@@ -927,12 +768,9 @@ describe('AuthService — bổ sung coverage', () => {
         emailGateway,
         googleVerifier,
         tokenSigner,
-        blacklistStore: null,
-        auditService,
         eventBus,
         logger,
       });
-      tokenSigner.verifyRefreshToken.mockReturnValue({ familyId: 'fam-1', id: 1 });
 
       await expect(
         service.logout({ accessToken: null, refreshToken: 'rt' }),
@@ -942,61 +780,25 @@ describe('AuthService — bổ sung coverage', () => {
 
   // ─── refreshToken — reuse detection & family revoke ──────────────────────────
 
-  describe('refreshToken — reuse detection', () => {
-    test('token đã được dùng (alreadyUsed) → revoke family + 401', async () => {
-      tokenSigner.verifyRefreshToken.mockReturnValue({ id: 1, jti: 'used-jti', familyId: 'fam-x' });
-      blacklistStore.get.mockImplementation((key) => {
-        if (key === 'rt_used:used-jti') return Promise.resolve('fam-x');
-        return Promise.resolve(null);
-      });
-
-      await expect(service.refreshToken({ refreshToken: 'used-rt' })).rejects.toMatchObject({
-        statusCode: 401,
-        message: 'auth.refreshTokenUsed',
-      });
-
-      expect(blacklistStore.set).toHaveBeenCalledWith(
-        'rt_family_revoked:fam-x',
-        expect.any(Number),
-        '1',
-      );
-      expect(logger.warn).toHaveBeenCalled();
-    });
-
-    test('family đã bị revoke → 401', async () => {
-      tokenSigner.verifyRefreshToken.mockReturnValue({
-        id: 1,
-        jti: 'jti-fresh',
-        familyId: 'fam-revoked',
-      });
-      blacklistStore.get.mockImplementation((key) => {
-        if (key === 'rt_used:jti-fresh') return Promise.resolve(null); // chưa dùng
-        if (key === 'rt_family_revoked:fam-revoked') return Promise.resolve('1');
-        return Promise.resolve(null);
-      });
-
-      await expect(service.refreshToken({ refreshToken: 'rt' })).rejects.toMatchObject({
-        statusCode: 401,
-        message: 'auth.sessionRevoked',
-      });
-    });
-
-    test('token hợp lệ → đánh dấu jti cũ và sinh refresh token mới', async () => {
+  describe('refreshToken — token rotation', () => {
+    test('token hợp lệ → sinh access token mới và refresh token mới', async () => {
       tokenSigner.verifyRefreshToken.mockReturnValue({ id: 1, jti: 'jti-ok', familyId: 'fam-ok' });
-      blacklistStore.get.mockResolvedValue(null); // chưa dùng, chưa revoke
       authRepository.findById.mockResolvedValue({ id: 1, role: 'customer', isActive: true });
 
       const result = await service.refreshToken({ refreshToken: 'valid-rt' });
 
-      // jti cũ được đánh dấu đã dùng
-      expect(blacklistStore.set).toHaveBeenCalledWith(
-        'rt_used:jti-ok',
-        expect.any(Number),
-        'fam-ok',
-      );
-      // refresh token mới được tạo với familyId
-      expect(tokenSigner.signRefreshToken).toHaveBeenCalledWith({ id: 1, familyId: 'fam-ok' });
+      expect(tokenSigner.signRefreshToken).toHaveBeenCalledWith({ id: 1 });
       expect(result.refreshToken).toBe('new-refresh-tok');
+      expect(result.token).toBe('access-tok');
+    });
+
+    test('token hợp lệ không có familyId → vẫn tạo token mới', async () => {
+      tokenSigner.verifyRefreshToken.mockReturnValue({ id: 1 });
+      authRepository.findById.mockResolvedValue({ id: 1, role: 'customer', isActive: true });
+
+      const result = await service.refreshToken({ refreshToken: 'valid-rt-no-family' });
+
+      expect(result.token).toBe('access-tok');
     });
 
     test('TokenExpiredError → 401', async () => {
@@ -1095,68 +897,68 @@ describe('AuthService — bổ sung coverage', () => {
 
   // ─── resetPassword ────────────────────────────────────────────────────────────
 
-  describe('resetPassword — blacklistStore failure', () => {
-    test('blacklistStore.set lỗi → logger.warn nhưng vẫn return success', async () => {
+  describe('resetPassword — thành công', () => {
+    test('token hợp lệ → đặt lại mật khẩu thành công', async () => {
       const user = { id: 1, resetPasswordToken: 'tok', resetPasswordExpires: new Date() };
       authRepository.findByResetToken.mockResolvedValue(user);
-      blacklistStore.set.mockRejectedValue(new Error('Redis unavailable'));
 
       const result = await service.resetPassword({ token: 'tok', password: 'newpass' });
 
-      expect(logger.warn).toHaveBeenCalled();
-      expect(result.message).toBe('auth.passwordResetSuccess');
-    });
-
-    test('không có blacklistStore → vẫn thành công', async () => {
-      service = new AuthService({
-        authRepository,
-        emailGateway,
-        googleVerifier,
-        tokenSigner,
-        blacklistStore: null,
-        auditService,
-        eventBus,
-        logger,
-      });
-      const user = { id: 2, resetPasswordToken: 'tok2', resetPasswordExpires: new Date() };
-      authRepository.findByResetToken.mockResolvedValue(user);
-
-      const result = await service.resetPassword({ token: 'tok2', password: 'newpass' });
-
+      expect(authRepository.saveUser).toHaveBeenCalledWith(
+        expect.objectContaining({ password: 'newpass', resetPasswordToken: null }),
+      );
       expect(result.message).toBe('auth.passwordResetSuccess');
     });
   });
 
-  // ─── _refreshTtlSeconds ───────────────────────────────────────────────────────
+  // ─── refreshToken — trả về token pair mới ─────────────────────────────────
 
-  describe('_refreshTtlSeconds', () => {
-    test('unit s → trả seconds trực tiếp', () => {
-      process.env.JWT_REFRESH_EXPIRES_IN = '3600s';
-      expect(service._refreshTtlSeconds()).toBe(3600);
+  describe('refreshToken — token pair mới', () => {
+    test('unit s → trả về access token và refresh token mới', async () => {
+      tokenSigner.verifyRefreshToken.mockReturnValue({ id: 1, familyId: 'fam-1' });
+      authRepository.findById.mockResolvedValue({ id: 1, role: 'customer', isActive: true });
+
+      const result = await service.refreshToken({ refreshToken: 'rt' });
+
+      expect(result.token).toBe('access-tok');
+      expect(result.refreshToken).toBe('new-refresh-tok');
     });
 
-    test('unit m → nhân 60', () => {
-      process.env.JWT_REFRESH_EXPIRES_IN = '30m';
-      expect(service._refreshTtlSeconds()).toBe(30 * 60);
+    test('unit m → signRefreshToken chỉ nhận { id }', async () => {
+      tokenSigner.verifyRefreshToken.mockReturnValue({ id: 1, familyId: 'fam-abc' });
+      authRepository.findById.mockResolvedValue({ id: 1, role: 'customer', isActive: true });
+
+      await service.refreshToken({ refreshToken: 'rt' });
+
+      expect(tokenSigner.signRefreshToken).toHaveBeenCalledWith({ id: 1 });
     });
 
-    test('unit h → nhân 3600', () => {
-      process.env.JWT_REFRESH_EXPIRES_IN = '2h';
-      expect(service._refreshTtlSeconds()).toBe(2 * 3600);
+    test('unit h → signAccessToken với role đúng', async () => {
+      tokenSigner.verifyRefreshToken.mockReturnValue({ id: 5 });
+      authRepository.findById.mockResolvedValue({ id: 5, role: 'admin', isActive: true });
+
+      await service.refreshToken({ refreshToken: 'rt' });
+
+      expect(tokenSigner.signAccessToken).toHaveBeenCalledWith({ id: 5, role: 'admin' });
     });
 
-    test('unit d → nhân 86400', () => {
-      process.env.JWT_REFRESH_EXPIRES_IN = '7d';
-      expect(service._refreshTtlSeconds()).toBe(7 * 86400);
+    test('unit d → user không tồn tại → 401', async () => {
+      tokenSigner.verifyRefreshToken.mockReturnValue({ id: 99 });
+      authRepository.findById.mockResolvedValue(null);
+
+      await expect(service.refreshToken({ refreshToken: 'rt' })).rejects.toMatchObject({
+        statusCode: 401,
+      });
     });
 
-    test('không match pattern → trả default 7 ngày', () => {
-      process.env.JWT_REFRESH_EXPIRES_IN = 'invalid-format';
-      expect(service._refreshTtlSeconds()).toBe(7 * 24 * 3600);
-    });
+    test('không match pattern → user inactive → 401', async () => {
+      tokenSigner.verifyRefreshToken.mockReturnValue({ id: 1 });
+      authRepository.findById.mockResolvedValue({ id: 1, isActive: false });
 
-    afterEach(() => {
-      process.env.JWT_REFRESH_EXPIRES_IN = '7d';
+      await expect(service.refreshToken({ refreshToken: 'rt' })).rejects.toMatchObject({
+        statusCode: 401,
+        message: 'auth.accountDisabled',
+      });
     });
   });
 
@@ -1209,35 +1011,6 @@ describe('AuthService — bổ sung coverage', () => {
       await expect(service.googleLogin({ token: 'nullpayload' })).rejects.toMatchObject({
         statusCode: 401,
       });
-    });
-  });
-
-  // ─── login — không có auditService ───────────────────────────────────────────
-
-  describe('login — không có auditService', () => {
-    test('login admin khi auditService=null → không throw', async () => {
-      service = new AuthService({
-        authRepository,
-        emailGateway,
-        googleVerifier,
-        tokenSigner,
-        blacklistStore,
-        auditService: null,
-        eventBus,
-        logger,
-      });
-
-      authRepository.findByEmail.mockResolvedValue({
-        id: 1,
-        role: 'admin',
-        email: 'a@b.c',
-        isEmailVerified: true,
-        isActive: true,
-        comparePassword: jest.fn().mockResolvedValue(true),
-      });
-
-      const result = await service.login({ email: 'a@b.c', password: 'p', ip: '127.0.0.1' });
-      expect(result.token).toBe('access-tok');
     });
   });
 

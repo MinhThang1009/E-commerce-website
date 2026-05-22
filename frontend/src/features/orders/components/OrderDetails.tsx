@@ -233,11 +233,17 @@ const OrderDetails: React.FC<OrderDetailsProps> = ({ orderId, onOpenReview }) =>
               <p className="flex justify-between items-center pb-2 border-b border-neutral-200 dark:border-neutral-700/50">
                 <span className="text-neutral-500">{t('orders.paymentStatusLabel')}:</span>
                 <span className="font-semibold text-neutral-800 dark:text-neutral-100">
-                  {order.paymentStatus === 'paid'
-                    ? t('orders.paidStatus')
-                    : order.paymentStatus === 'failed'
-                      ? t('orders.failedStatus')
-                      : t('orders.pendingPaymentStatus')}
+                  {order.status === 'cancelled' && order.paymentStatus === 'pending'
+                    ? '—'
+                    : order.paymentStatus === 'paid'
+                      ? t('orders.paidStatus')
+                      : order.paymentStatus === 'failed'
+                        ? t('orders.failedStatus')
+                        : order.paymentStatus === 'refunded'
+                          ? t('orders.paymentStatus.refunded')
+                          : order.paymentMethod === 'cod'
+                            ? t('orders.paymentStatus.cod')
+                            : t('orders.pendingPaymentStatus')}
                 </span>
               </p>
               {order.trackingNumber && (
@@ -379,23 +385,6 @@ const OrderDetails: React.FC<OrderDetailsProps> = ({ orderId, onOpenReview }) =>
                     {t('orders.discountVoucher')}
                   </span>
                   <span className="font-bold">-{formatPrice(order.discount)}</span>
-                </div>
-              )}
-
-              {(order.pointsDiscount ?? 0) > 0 && (
-                <div className="flex justify-between items-center text-amber-600 dark:text-amber-400 pt-2">
-                  <span className="flex items-center gap-2">
-                    <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth={2}
-                        d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
-                      />
-                    </svg>
-                    {t('orders.pointsDiscount')}
-                  </span>
-                  <span className="font-bold">-{formatPrice(order.pointsDiscount!)}</span>
                 </div>
               )}
 

@@ -128,11 +128,6 @@ jest.mock('@/features/users', () => ({
   useSetDefaultAddressMutation: () => ({ mutateAsync: jest.fn() }),
 }));
 
-// ── Mock @/features/loyalty barrel ──────────────────────────────
-jest.mock('@/features/loyalty', () => ({
-  useGetLoyaltyInfoQuery: () => ({ data: null }),
-}));
-
 // ── Mock @/components/common barrel (chứa EnhancedRichTextEditor dùng import.meta) ────
 jest.mock('@/components/common', () => {
   const R = require('react');

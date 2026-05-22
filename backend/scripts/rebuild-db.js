@@ -49,7 +49,7 @@ async function rebuild() {
     await conn.query(`USE \`${dbName}\``);
     await conn.query('SET FOREIGN_KEY_CHECKS = 0');
 
-    await importSql(conn, 'migration_full.sql');
+    await importSql(conn, 'migration.sql');
     await importSql(conn, 'seed_data.sql');
 
     await conn.query('SET FOREIGN_KEY_CHECKS = 1');

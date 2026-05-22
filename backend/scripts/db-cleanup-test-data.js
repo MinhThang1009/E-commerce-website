@@ -17,17 +17,18 @@ async function cleanupTestData() {
   // Pattern nhận diện test data: bắt đầu bằng __ (double underscore)
   const testPattern = '^__';
 
+  // Thứ tự quan trọng: child records trước, parent sau
   const tables = [
-    { table: 'news',       column: 'title_vi' },
+    { table: 'orders',     column: 'number' },
     { table: 'products',   column: 'name_vi' },
     { table: 'brands',     column: 'name_vi' },
     { table: 'categories', column: 'name_vi' },
     { table: 'users',      column: 'email' },
-    { table: 'orders',     column: 'number' },
   ];
 
   let totalDeleted = 0;
 
+  await sequelize.query('SET FOREIGN_KEY_CHECKS = 0');
   for (const { table, column } of tables) {
     try {
       const [rows] = await sequelize.query(
@@ -41,18 +42,7 @@ async function cleanupTestData() {
       warn(`  ${table}: ${e.message.slice(0, 80)}`);
     }
   }
-
-  // Reseed news nếu bị xóa
-  const [[{ cnt }]] = await sequelize.query('SELECT COUNT(*) as cnt FROM news WHERE is_published = 1');
-  if (cnt === 0) {
-    log('📰 Reseed news sau cleanup...');
-    const { execSync } = require('child_process');
-    execSync('npx sequelize-cli db:seed:undo --seed 20260101000004-seed-news.js 2>/dev/null; npx sequelize-cli db:seed --seed 20260101000004-seed-news.js', {
-      cwd: __dirname + '/..',
-      stdio: 'pipe',
-    });
-    log('✔  News reseeded');
-  }
+  await sequelize.query('SET FOREIGN_KEY_CHECKS = 1');
 
   log(`✅ Xong! Đã xóa ${totalDeleted} test records.`);
   await sequelize.close();

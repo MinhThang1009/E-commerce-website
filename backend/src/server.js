@@ -40,8 +40,6 @@ const MIN_SECRET_LENGTH = 32;
 const app = require('./app');
 const sequelize = require('@config/sequelize');
 const { exec } = require('child_process');
-const { getRedisClient } = require('@config/redis');
-
 // Load tất cả model trước (chưa có quan hệ)
 const models = [
   require('@models/user'),
@@ -148,23 +146,9 @@ const checkVectorStoreSync = async () => {
   }
 };
 
-// Categories và Brands không cần warm riêng — catalogService.getAllCategories()
-// và getAllBrands() tự cache khi request đầu tiên đến, kèm productCount đầy đủ.
-// warmCache chỉ dùng cho data service không tự cache (nếu có thêm sau).
-const warmCache = async () => {
-  try {
-    logger.info('[Cache] Catalog cache sẽ được warm khi request đầu tiên đến.');
-  } catch (err) {
-    logger.warn(`[Cache] Warming thất bại: ${err?.message || err}`);
-  }
-};
-
 // Khởi động server
 const startServer = async () => {
   await connectDB();
-
-  // Khởi tạo Redis client sớm — nếu Redis không khả dụng thì dùng in-memory fallback
-  await getRedisClient();
 
   const PORT = process.env.PORT || 8888;
   const server = app.listen(PORT, '0.0.0.0', () => {
@@ -181,9 +165,6 @@ const startServer = async () => {
 
   // Kiểm tra vector store sync sau khi server start (không block startup)
   checkVectorStoreSync().catch((err) => logger.warn('Vector store check failed:', err.message));
-
-  // Cache warming — pre-load categories và brands vào Redis sau khi DB sẵn sàng
-  warmCache().catch((err) => logger.warn('Cache warming failed:', err.message));
 
   // Xử lý promise rejection không được bắt
   process.on('unhandledRejection', (err) => {

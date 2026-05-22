@@ -79,8 +79,7 @@ modules/ai/
       ai-policy.js                               — Pure rules: validateMessage, expandAbbreviations,
                                                    isOffTopic, classifyIntent
     chatbot/
-      chatbot-service.js                         — LLM HTTP client, session memory, cache Redis
-      chatbot-llm-gateway.js                     — Adapter wrap chatbotService cho RAGPipeline
+      chatbot-service.js                         — LLM HTTP client, session memory (Map)
       rag/
         rag-pipeline.js                          — RAG main flow: Validate→Normalize→Retrieve→Generate
       language/
@@ -94,7 +93,7 @@ modules/ai/
       product-name-generator.js                  — Sinh tên sản phẩm từ selected attributes
       product-enricher.js                        — Enrich product data trước khi upsert vector store
     embedding/
-      embedding.js                               — HTTP client gọi OpenRouter embedding API (cache 10')
+      embedding.js                               — HTTP client gọi OpenRouter embedding API
       vi-embedding.js                            — Vietnamese-specific embedding preprocessing
     translate/
       translate-service.js                       — Dịch Vi→En (DeepL + OpenRouter fallback)
@@ -141,10 +140,9 @@ Kết quả trả về: `{ response: string, products: Array, suggestions: Array
 **`services/chatbot/chatbot-service.js`** là singleton (module.exports = new ChatbotService()):
 
 - **Provider rotation**: Cấu hình qua env `LLM_API_KEY + LLM_BASE_URL + LLM_MODEL`. Thử lần lượt từng provider khi 429/402/500/503. Fallback `simpleKeywordMatch` khi hết tất cả providers.
-- **Conversation history**: In-memory Map `{ sessionId → { messages, lastAccess } }`. Max 10 turns (20 messages), max 500 sessions, TTL 30 phút. Reset khi server restart.
-- **Redis cache**: `chatbot:shared:<query_hash>` TTL 5 phút. Chỉ cache intent `product_search`. Cache key là shared (không phụ thuộc userId).
-- **Catalog cache**: brands + categories từ DB, cache 5 phút in-memory.
-- **Persist messages**: Lưu cặp user/assistant vào `ChatMessage` model sau mỗi response (kể cả cache hit và fallback).
+- **Conversation history**: `Map<sessionId, { messages, lastAccess }>`. Max 10 turns (20 messages), max 500 sessions, TTL 30 phút. Reset khi server restart.
+- **Catalog data**: brands + categories load từ DB khi cần.
+- **Persist messages**: Lưu cặp user/assistant vào `ChatMessage` model sau mỗi response (kể cả fallback).
 - **LLM response format**: `response_format: { type: 'json_object' }`, temperature 0.3, max_tokens 800.
 
 ## 3.4 AIPolicy — input validation và intent classification
@@ -172,12 +170,12 @@ Kết quả trả về: `{ response: string, products: Array, suggestions: Array
 
 Base path: `/api/chatbot`
 
-| Method | Path                       | Auth                 | Rate Limit                            | Mô tả                                        |
-| ------ | -------------------------- | -------------------- | ------------------------------------- | -------------------------------------------- |
-| POST   | `/chatbot/message`         | optionalAuthenticate | chatbotLimiter (20 req/60s; dev: 200) | Gửi message nhận RAG response                |
-| GET    | `/chatbot/recommendations` | optionalAuthenticate | —                                     | Gợi ý sản phẩm (`?type=deals` hoặc featured) |
-| POST   | `/chatbot/analytics`       | authenticate         | —                                     | Track analytics event (yêu cầu login)        |
-| POST   | `/chatbot/cart/add`        | authenticate         | —                                     | Thêm sản phẩm vào giỏ qua chatbot            |
+| Method | Path                       | Auth                 | Rate Limit                                        | Mô tả                                        |
+| ------ | -------------------------- | -------------------- | ------------------------------------------------- | -------------------------------------------- |
+| POST   | `/chatbot/message`         | optionalAuthenticate | chatbotLimiter (20 req/60s, prod và dev như nhau) | Gửi message nhận RAG response                |
+| GET    | `/chatbot/recommendations` | optionalAuthenticate | —                                                 | Gợi ý sản phẩm (`?type=deals` hoặc featured) |
+| POST   | `/chatbot/analytics`       | authenticate         | —                                                 | Track analytics event (yêu cầu login)        |
+| POST   | `/chatbot/cart/add`        | authenticate         | —                                                 | Thêm sản phẩm vào giỏ qua chatbot            |
 
 ---
 
@@ -205,10 +203,9 @@ Base path: `/api/chatbot`
 - **`chatbotService` bắt buộc** — `module.js` throw Error nếu thiếu. `Product` cũng bắt buộc.
 - **`vectorStoreService` optional** — require trong try/catch, có thể là `null`. `RAGPipeline` handle null vector store bằng cách bỏ qua retrieval step.
 - **Off-topic check dùng regex thuần** — intentional, không gọi LLM để tránh tốn quota. Không thay bằng LLM call.
-- **Redis cache 5 phút, shared key** — nhiều user cùng query giống nhau nhận cùng cached response. Nếu muốn per-user cache thì phải đổi cache key (hiện tại là shared).
 - **`POST /chatbot/analytics` yêu cầu `authenticate`** — không phải public endpoint.
 - **Không có `GET /chatbot/history`** — endpoint này không tồn tại trong routes.js.
-- **Conversation history reset khi restart** — in-memory Map, không persist. Production nên dùng Redis (comment trong code).
+- **Conversation history reset khi restart** — Map không persist. Đủ cho demo/KLTN.
 - **Cross-module import bị hook block** — không được `require('@modules/ai/services/...')` trực tiếp từ module khác ngoài `module.js`. Inject qua DI hoặc setter.
 - **`product-name-generator.js` định nghĩa associations inline** — tự define `AttributeValue.belongsTo(AttributeGroup)` nếu chưa có, để tránh phụ thuộc thứ tự load.
 
@@ -220,8 +217,8 @@ Base path: `/api/chatbot`
 | ------------------------------------------------------------ | ----------- | ----------------------------------------------------- |
 | `services/core/ai-service.test.js`                           | Unit        | Orchestration layer (4 methods)                       |
 | `services/core/ai-policy.test.js`                            | Unit        | Off-topic, intent classification, abbreviation expand |
-| `services/chatbot/chatbot-service.test.js`                   | Unit        | LLM gateway + session + cache                         |
-| `services/chatbot/chatbot-cache-session.test.js`             | Unit        | Cache và session management                           |
+| `services/chatbot/chatbot-service.test.js`                   | Unit        | LLM gateway + session management                      |
+| `services/chatbot/chatbot-catalog-session.test.js`           | Unit        | Session catalog data management                       |
 | `services/chatbot/chatbot.test.js`                           | Unit        | Chatbot integration tests                             |
 | `services/chatbot/rag/rag-pipeline.test.js`                  | Unit        | RAG pipeline flow                                     |
 | `services/chatbot/language/language-detector.test.js`        | Unit        | Language detection                                    |

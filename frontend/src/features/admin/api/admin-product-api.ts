@@ -79,11 +79,11 @@ export interface AdminProduct {
   description: string;
   price: number;
   comparePrice?: number;
-  stock: number;
+  stockQuantity: number;
   sku: string;
   images: string[];
   status: string;
-  Categories: Array<{
+  categories: Array<{
     id: string;
     name: string;
   }>;
@@ -94,8 +94,9 @@ export interface AdminProduct {
   variants?: Array<{
     id: string;
     name: string;
+    sku?: string;
     price: number;
-    stock: number;
+    stockQuantity: number;
   }>;
   createdAt: string;
   updatedAt: string;
@@ -144,6 +145,7 @@ export function useGetAdminProductsQuery(
       return data;
     },
     enabled: options?.skip !== undefined ? !options.skip : true,
+    staleTime: 0, // luôn fetch mới để filter/search luôn phản ánh state backend
   });
 }
 
@@ -200,11 +202,24 @@ export function useGetAdminProductByIdQuery(
             attributeValues: parseIfString(v.attributeValues || v.attributes),
           }));
         }
-        if (product.attributes) {
-          product.attributes = product.attributes.map((attr: Record<string, unknown>) => ({
-            ...attr,
-            values: typeof attr.values === 'string' ? JSON.parse(attr.values) : attr.values || [],
-          }));
+        const parseAttrValues = (attr: Record<string, unknown>) => ({
+          ...attr,
+          values:
+            typeof attr.values === 'string'
+              ? (() => {
+                  try {
+                    return JSON.parse(attr.values as string);
+                  } catch {
+                    return [attr.values];
+                  }
+                })()
+              : attr.values || [],
+        });
+        if (Array.isArray(product.attributes)) {
+          product.attributes = product.attributes.map(parseAttrValues);
+        }
+        if (Array.isArray(product.productAttributes)) {
+          product.productAttributes = product.productAttributes.map(parseAttrValues);
         }
       }
       return response;
@@ -238,7 +253,7 @@ export function useUpdateProductMutation() {
     onSuccess: (_data, { id }) => {
       queryClient.invalidateQueries({ queryKey: adminProductKeys.detail(id) });
       queryClient.invalidateQueries({ queryKey: adminProductKeys.lists() });
-      // Invalidate public product list cache để frontend user thấy thay đổi ngay
+      // Invalidate danh sách sản phẩm public để frontend user thấy thay đổi ngay
       queryClient.invalidateQueries({ queryKey: ['products'] });
     },
   });
@@ -254,7 +269,7 @@ export function useDeleteProductMutation() {
     onSuccess: (_data, id) => {
       queryClient.invalidateQueries({ queryKey: adminProductKeys.detail(id) });
       queryClient.invalidateQueries({ queryKey: adminProductKeys.lists() });
-      // Invalidate public product list cache để sản phẩm bị xóa biến mất ngay
+      // Invalidate danh sách sản phẩm public để sản phẩm bị xóa biến mất ngay
       queryClient.invalidateQueries({ queryKey: ['products'] });
     },
   });
@@ -283,6 +298,7 @@ export function useUpdateProductStatusMutation() {
     onSuccess: (_data, { id }) => {
       queryClient.invalidateQueries({ queryKey: adminProductKeys.detail(id) });
       queryClient.invalidateQueries({ queryKey: adminProductKeys.lists() });
+      queryClient.invalidateQueries({ queryKey: ['products'] });
     },
   });
 }

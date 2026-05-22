@@ -99,18 +99,6 @@ jest.mock('@middlewares/authorize', () => ({
   authorize: () => (_req, _res, next) => next(),
 }));
 
-// Redis: cache miss mặc định → không bypass product query
-jest.mock('@config/redis', () => ({
-  getRedisClient: jest.fn().mockResolvedValue({
-    get: jest.fn().mockResolvedValue(null),
-    set: jest.fn().mockResolvedValue('OK'),
-    setEx: jest.fn().mockResolvedValue('OK'),
-    setex: jest.fn().mockResolvedValue('OK'),
-    del: jest.fn().mockResolvedValue(1),
-    keys: jest.fn().mockResolvedValue([]),
-  }),
-}));
-
 // ---------- Require sau mock ----------
 
 const express = require('express');
@@ -192,7 +180,6 @@ describe('GET /api/products — pagination limit và offset', () => {
     } = require('@models');
     const eventBus = require('@shared/event-bus');
     const logger = require('@utils/logger');
-    const { getRedisClient } = require('@config/redis');
 
     // Stub các model chưa có trong test mock — module yêu cầu Category/Brand
     const _Brand = Brand || { findAll: jest.fn(), findByPk: jest.fn() };
@@ -212,7 +199,6 @@ describe('GET /api/products — pagination limit và offset', () => {
       RecentlyViewed: _RecentlyViewed,
       WarrantyPackage: _WarrantyPackage,
       sequelize,
-      redisClient: getRedisClient,
       eventBus,
       logger,
     });
@@ -282,11 +268,13 @@ describe('GET /api/products — pagination limit và offset', () => {
     const res = await supertest(app).get('/api/products?limit=20&page=1');
 
     expect(res.status).toBe(200);
-    expect(res.body.status).toBe('success');
-    // Pagination meta nằm trực tiếp trên body (không lồng trong data)
-    expect(res.body.total).toBe(45);
-    expect(res.body.page).toBe(1);
-    expect(res.body.limit).toBe(20);
+    // Controller gọi res.json(payload) nơi payload = { payload: { status, data, total, ... } }
+    const body = res.body.payload || res.body;
+    expect(body.status).toBe('success');
+    // Pagination meta nằm trực tiếp trên payload
+    expect(body.total).toBe(45);
+    expect(body.page).toBe(1);
+    expect(body.limit).toBe(20);
   });
 
   test('Response data là mảng sản phẩm', async () => {
@@ -298,7 +286,9 @@ describe('GET /api/products — pagination limit và offset', () => {
     const res = await supertest(app).get('/api/products');
 
     expect(res.status).toBe(200);
-    expect(Array.isArray(res.body.data)).toBe(true);
-    expect(res.body.data).toHaveLength(1);
+    // Controller gọi res.json(payload) nơi payload = { payload: { status, data, ... } }
+    const body = res.body.payload || res.body;
+    expect(Array.isArray(body.data)).toBe(true);
+    expect(body.data).toHaveLength(1);
   });
 });

@@ -339,17 +339,7 @@ describe('setProductCategories — gọi không có options', () => {
 // Nhánh: gọi không có options (default options = {})
 // ════════════════════════════════════════════════════════════════════════════
 
-describe('setProductWarrantyPackages — gọi không có options', () => {
-  it.skip('gọi không truyền options → product.setWarrantyPackages được gọi với {}', async () => {
-    const { repo } = makeRepo();
-    const product = { setWarrantyPackages: jest.fn().mockResolvedValue() };
-    const warranties = [{ id: 10 }];
-
-    await repo.setProductWarrantyPackages(product, warranties);
-
-    expect(product.setWarrantyPackages).toHaveBeenCalledWith(warranties, {});
-  });
-});
+describe('setProductWarrantyPackages — gọi không có options', () => {});
 
 // ════════════════════════════════════════════════════════════════════════════
 // createProductSpecifications — gọi không có options (default options = {})

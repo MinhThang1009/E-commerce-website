@@ -9,8 +9,7 @@ const logger = require('@utils/logger');
 // In-process pub-sub cho cross-module communication (vd
 // orders.OrderCreated → inventory subscribe deduct stock).
 // Không dùng external broker (RabbitMQ/Kafka) cho thesis scope —
-// single-instance deploy nên in-process đủ. Nếu sau này scale horizontal
-// sẽ thay implementation này bằng adapter Redis Pub/Sub mà API không đổi.
+// single-instance deploy nên in-process đủ.
 class EventBus {
   constructor() {
     this.handlers = new Map();

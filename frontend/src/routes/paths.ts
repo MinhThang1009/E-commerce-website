@@ -58,7 +58,6 @@ export const ROUTES = {
   ADMIN_DISCOUNT_CODES: '/admin/discount-codes',
   ADMIN_BRANDS: '/admin/brands',
   ADMIN_INVENTORY: '/admin/inventory',
-  ADMIN_AUDIT_LOG: '/admin/audit-log',
 } as const;
 
 // Dynamic route helpers — dùng khi cần truyền tham số vào path

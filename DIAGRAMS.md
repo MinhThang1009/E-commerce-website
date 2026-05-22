@@ -1,4 +1,4 @@
-# TechStore — Sơ Đồ Hệ Thống
+﻿# TechStore — Sơ Đồ Hệ Thống
 
 Tất cả diagram dùng [Mermaid](https://mermaid.js.org/) — render trực tiếp trên GitHub.
 
@@ -1470,9 +1470,7 @@ stateDiagram-v2
     end note
 
     note right of delivered
-        paymentStatus = paid mọi phương thức
-        loyalty_points đã cộng
-        Đủ điều kiện viết review
+        paymentStatus = paid mọi phương thức        Đủ điều kiện viết review
     end note
 ```
 
@@ -1567,10 +1565,7 @@ stateDiagram-v2
     end note
 
     note right of active
-        role customer/admin/manager
-        loyalty_tier Bronze/Silver/Gold/Platinum
-        Đặt hàng review tích điểm
-    end note
+        role customer/admin/manager\r\n    end note
 
     note right of inactive
         isActive = false
@@ -1597,12 +1592,11 @@ flowchart TB
             FF6["payment VNPay/MoMo redirect"]
             FF7["reviews đánh giá sản phẩm"]
             FF8["wishlist danh sách yêu thích"]
-            FF9["loyalty điểm + hạng thành viên"]
-            FF10["users profile địa chỉ"]
-            FF11["content banner tin tức"]
-            FF12["ai chatbot widget + RAG UI"]
-            FF13["upload file upload"]
-            FF14["admin dashboard quản trị"]
+            FF9["users profile địa chỉ"]
+            FF10["content feedback/contact"]
+            FF11["ai chatbot widget + RAG UI"]
+            FF12["upload file upload"]
+            FF13["admin dashboard quản trị"]
         end
 
         subgraph FE_SHARED["Shared src/"]

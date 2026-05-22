@@ -48,6 +48,12 @@ const Category = sequelize.define(
       defaultValue: true,
       field: 'is_active',
     },
+    sortOrder: {
+      type: DataTypes.INTEGER,
+      allowNull: false,
+      defaultValue: 0,
+      field: 'sort_order',
+    },
     // Xóa mềm (soft delete)
     deletedAt: {
       type: DataTypes.DATE,

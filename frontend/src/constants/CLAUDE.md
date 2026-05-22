@@ -10,9 +10,7 @@
   - [2.1 Values](#21-values)
 - [3. UPLOAD](#3-upload)
   - [3.1 Values](#31-values)
-- [4. LOYALTY](#4-loyalty)
-  - [4.1 Values](#41-values)
-- [5. Key Gotchas](#5-key-gotchas)
+- [4. Key Gotchas](#4-key-gotchas)
 
 ---
 
@@ -50,6 +48,8 @@ PAGINATION.ADMIN_LIMIT; // 20  — số items/trang cho admin tables
 UPLOAD.MAX_FILE_SIZE_MB; // 5 — giới hạn dung lượng file upload (MB)
 UPLOAD.ACCEPTED_IMAGE_TYPES; // ['image/jpeg', 'image/png', 'image/webp', 'image/gif']
 ```
+
+---
 
 ---
 

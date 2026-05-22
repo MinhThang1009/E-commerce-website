@@ -1,4 +1,4 @@
-# Checkout Feature — TechStore Frontend
+﻿# Checkout Feature — TechStore Frontend
 
 ← Quay lại [`frontend/CLAUDE.md`](../../../CLAUDE.md)
 
@@ -50,7 +50,7 @@ Feature tối giản — **không có** `api/`, `components/`, `types/` riêng. 
 ```
 features/checkout/
   pages/
-    CheckoutPage.tsx    — Toàn bộ checkout flow: form địa chỉ, payment selection, mã giảm giá, loyalty points, order summary, submit
+    CheckoutPage.tsx    — Toàn bộ checkout flow: form địa chỉ, payment selection, mã giảm giá, order summary, submit
 
   index.ts              — Barrel export
 ```

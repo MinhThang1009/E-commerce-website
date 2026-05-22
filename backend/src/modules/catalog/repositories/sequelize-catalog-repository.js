@@ -39,7 +39,12 @@ class SequelizeCatalogRepository extends ICatalogRepository {
   // ---------- Category ----------
 
   async findAllCategoriesSorted() {
-    return this.Category.findAll({ order: [['nameVi', 'ASC']] });
+    return this.Category.findAll({
+      order: [
+        ['sortOrder', 'ASC'],
+        ['nameVi', 'ASC'],
+      ],
+    });
   }
 
   // Đếm sản phẩm theo category_id qua raw SQL (nhanh hơn N+1 model.count).

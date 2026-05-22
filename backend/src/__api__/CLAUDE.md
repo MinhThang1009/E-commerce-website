@@ -1,4 +1,4 @@
-# API HTTP Tests — TechStore Backend
+﻿# API HTTP Tests — TechStore Backend
 
 ← Quay lại [`backend/CLAUDE.md`](../../CLAUDE.md)
 
@@ -87,7 +87,7 @@ Tất cả data tạo bởi helpers đều dùng prefix `__HTTP_` để cleanup 
 | ------------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | auth               | `auth.http.test.js`, `auth-deep.http.test.js`, `auth-edge-cases.http.test.js`, `auth-security.http.test.js`                                              |
 | catalog            | `catalog.http.test.js`, `catalog-products.http.test.js`, `catalog-deep.http.test.js`, `catalog-extra.http.test.js`, `catalog-comprehensive.http.test.js` |
-| cart               | `cart.http.test.js`, `cart-extra.http.test.js`, `cart-edge-cases.http.test.js`, `cart-orders-loyalty-deep.http.test.js`                                  |
+| cart               | `cart.http.test.js`, `cart-extra.http.test.js`, `cart-edge-cases.http.test.js`                                                                           |
 | orders             | `orders.http.test.js`, `orders-edge-cases.http.test.js`, `orders-extra.http.test.js`                                                                     |
 | admin              | `admin.http.test.js`, `admin-extra.http.test.js`, `admin-comprehensive.http.test.js`                                                                     |
 | ai                 | `ai-chatbot.http.test.js`, `ai-edge-cases.http.test.js`                                                                                                  |

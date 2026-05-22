@@ -1,4 +1,4 @@
-# E2E Tests — TechStore Backend
+﻿# E2E Tests — TechStore Backend
 
 ← Quay lại [`backend/CLAUDE.md`](../../CLAUDE.md)
 
@@ -21,7 +21,6 @@ E2E tests xác minh **user flows hoàn chỉnh** — nhiều endpoints nối ti�
 
 - Luồng đăng ký → xác thực → đăng nhập → mua hàng → thanh toán → xem đơn
 - Admin login → CRUD sản phẩm → upload ảnh → cập nhật inventory → kiểm tra audit log
-- Guest cart → login → merge cart → checkout → loyalty points cộng sau DELIVERED
 
 Trả lời câu hỏi: **"Toàn bộ user journey có hoạt động không?"** (không phải "endpoint X trả 200 không?").
 
@@ -131,9 +130,7 @@ describe('Checkout flow — COD payment', () => {
   it('Bước 1: thêm sản phẩm vào giỏ', async () => { ... });
   it('Bước 2: apply discount code', async () => { ... });
   it('Bước 3: đặt hàng COD', async () => { ... });
-  it('Bước 4: xác nhận đơn hàng giao thành công', async () => { ... });
-  it('Bước 5: loyalty points được cộng sau DELIVERED', async () => { ... });
-});
+  it('Bước 4: xác nhận đơn hàng giao thành công', async () => { ... });});
 ```
 
 ---

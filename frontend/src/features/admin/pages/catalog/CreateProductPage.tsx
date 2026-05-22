@@ -5,7 +5,7 @@
  * @description Page component của feature catalog
  */
 import { ArrowLeftOutlined } from '@ant-design/icons';
-import { Button, Card, Col, Divider, Form, message, Row, Tabs, Typography } from 'antd';
+import { App, Button, Card, Col, Divider, Form, Row, Tabs, Typography } from 'antd';
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
@@ -76,6 +76,7 @@ const getDefaultFaqs = () => [
 const CreateProductPage: React.FC = () => {
   const { t } = useTranslation();
   const navigate = useNavigate();
+  const { message } = App.useApp();
   const [form] = Form.useForm();
 
   // State để theo dõi các bước đã hoàn thành trong quy trình tạo sản phẩm

@@ -33,18 +33,18 @@ Request → Express → Middleware stack → Module Router
                                                         └→ Sequelize → MySQL
 ```
 
-**19 modules**, mỗi module = 1 vertical slice tự trị:
+**16 modules**, mỗi module = 1 vertical slice tự trị:
 - Không import lẫn nhau trực tiếp
 - Giao tiếp qua **EventBus** (async) hoặc **DI injection** (sync, qua `app.js`)
 - `src/app.js` là nơi duy nhất khởi tạo và wiring dependencies
 
 **Shared infrastructure** (dùng chung, không thuộc module nào):
-- `src/models/` — 32 Sequelize models
+- `src/models/` — 27 Sequelize models
 - `src/middlewares/` — authenticate, authorize, cache, rate-limiter, detect-locale
 - `src/services/` — email, vector-store, embedding
 - `src/shared/` — EventBus, AppError, UnitOfWork, admin-audit
 - `src/utils/` — logger, i18n, catch-async, image-url, localize
-- `src/constants/` — POINTS_*, SHIPPING_*, OTP_*, JWT_*
+- `src/constants/` — SHIPPING_*, OTP_*, JWT_*
 
 ---
 
@@ -59,7 +59,7 @@ Mỗi module export 1 factory function nhận dependencies object, trả về `{
 ```js
 // src/modules/orders/module.js
 module.exports = ({ Order, OrderItem, Cart, CartItem, Product, ProductVariant,
-                    User, DiscountCode, LoyaltyHistory, InventoryLog, WarrantyPackage,
+                    User, DiscountCode, InventoryLog,
                     sequelize, eventBus, logger, emailService, constants }) => {
   const ordersRepository = new SequelizeOrdersRepository({ Order, OrderItem, ... });
   const emailGateway     = { sendOrderConfirmationEmail: (...args) => emailService.sendOrderConfirmationEmail(...args) };
@@ -83,7 +83,7 @@ const emailService = require('@services/email');
 
 // Gọi factory — inject dependencies
 const ordersModule = buildOrdersModule({ Order, OrderItem, Cart, CartItem, Product,
-  ProductVariant, User, DiscountCode, LoyaltyHistory, InventoryLog, WarrantyPackage,
+  ProductVariant, User, DiscountCode, InventoryLog,
   sequelize, eventBus, logger, emailService, constants });
 ordersModule.subscribeEvents();
 
@@ -93,12 +93,11 @@ app.use('/api' + ordersModule.basePath, ordersModule.router);  // → /api/order
 
 ### 2.3 Singleton modules
 
-6 modules không dùng DI đầy đủ — thin wrapper quanh routes trực tiếp:
+5 modules không dùng DI đầy đủ — thin wrapper quanh routes trực tiếp:
 
 | Module | Pattern |
 |---|---|
 | `discount-code` | `module.exports = () => ({ basePath: '/discount-codes', router: require('./routes'), ... })` |
-| `warranty-package` | Thin wrapper, basePath `/warranty-packages` |
 | `search-history` | Thin wrapper, basePath `/search-histories` |
 | `image` | Thin wrapper, basePath `/images` |
 | `admin` | Thin wrapper, basePath `/admin` |
@@ -173,7 +172,7 @@ contentModule.mounts.forEach(({ basePath, router }) => {
 **EventBus events hiện có:**
 - `order.created` — publish bởi orders, subscribe bởi inventory (tạo audit log)
 - `order.cancelled` — publish bởi orders, subscribe bởi inventory (tạo audit log; actual stock restore xảy ra inline trong orders service)
-- `order.delivered` — publish bởi orders khi admin/user confirm delivered (loyalty points cộng inline, không qua subscriber)
+- `order.delivered` — publish bởi orders khi admin/user confirm delivered (hiện chưa có subscriber)
 - `payment.succeeded` — publish bởi payment sau IPN success (update paymentStatus, usedCount discount, clear cart — tất cả inline)
 - `auth.userRegistered` — publish bởi auth (chưa có subscriber)
 
@@ -189,18 +188,16 @@ contentModule.mounts.forEach(({ basePath, router }) => {
 | auth | `/api/auth` | Full DI | [CLAUDE.md](src/modules/auth/CLAUDE.md) |
 | cart | `/api/cart` | Full DI | [CLAUDE.md](src/modules/cart/CLAUDE.md) |
 | catalog | `/api/products`, `/api/categories`, `/api/brands` | Full DI (mounts array) | [CLAUDE.md](src/modules/catalog/CLAUDE.md) |
-| content | `/api/banners`, `/api/news`, `/api/contact` | Full DI (mounts array) | [CLAUDE.md](src/modules/content/CLAUDE.md) |
+| content | `/api/contact` | Full DI | [CLAUDE.md](src/modules/content/CLAUDE.md) |
 | discount-code | `/api/discount-codes` | Thin wrapper | [CLAUDE.md](src/modules/discount-code/CLAUDE.md) |
 | image | `/api/images` | Thin wrapper | [CLAUDE.md](src/modules/image/CLAUDE.md) |
 | inventory | `/api/inventory` | Full DI | [CLAUDE.md](src/modules/inventory/CLAUDE.md) |
-| loyalty | `/api/loyalty` | Full DI | [CLAUDE.md](src/modules/loyalty/CLAUDE.md) |
 | orders | `/api/orders` | Full DI | [CLAUDE.md](src/modules/orders/CLAUDE.md) |
 | payment | `/api/payments` | Full DI | [CLAUDE.md](src/modules/payment/CLAUDE.md) |
 | reviews | `/api/reviews` | Full DI | [CLAUDE.md](src/modules/reviews/CLAUDE.md) |
 | search-history | `/api/search-histories` | Thin wrapper | [CLAUDE.md](src/modules/search-history/CLAUDE.md) |
 | upload | `/api/uploads` | Full DI (multer config in module) | [CLAUDE.md](src/modules/upload/CLAUDE.md) |
 | users | `/api/users` | Full DI | [CLAUDE.md](src/modules/users/CLAUDE.md) |
-| warranty-package | `/api/warranty-packages` | Thin wrapper | [CLAUDE.md](src/modules/warranty-package/CLAUDE.md) |
 | wishlist | `/api/wishlists` | Full DI | [CLAUDE.md](src/modules/wishlist/CLAUDE.md) |
 
 **Special endpoints (không phải module):**
@@ -279,9 +276,9 @@ Pre-commit hook (`scripts/audit-architecture.sh`) tự động block:
 backend/CLAUDE.md                            ← File này
 backend/src/
   config/CLAUDE.md                           ← sequelize, redis, swagger config
-  constants/CLAUDE.md                        ← Hằng số (loyalty, shipping, OTP, JWT, cart)
+  constants/CLAUDE.md                        ← Hằng số (shipping, OTP, JWT, cart)
   locales/CLAUDE.md                          ← i18n vi.json / en.json
-  models/CLAUDE.md                           ← 32 models, associations
+  models/CLAUDE.md                           ← 27 models, associations
   migrations/CLAUDE.md                       ← 71+ migrations, schema history
   middlewares/CLAUDE.md                      ← authenticate, authorize, cache, rate-limiter
   shared/CLAUDE.md                           ← EventBus, AppError, admin-audit, UnitOfWork
@@ -299,18 +296,16 @@ backend/src/
   modules/auth/CLAUDE.md                     ← Auth: JWT, OAuth, OTP
   modules/cart/CLAUDE.md                     ← Giỏ hàng
   modules/catalog/CLAUDE.md                  ← Sản phẩm, danh mục, thương hiệu
-  modules/content/CLAUDE.md                  ← Banner, tin tức, contact
+  modules/content/CLAUDE.md                  ← Feedback/contact
   modules/discount-code/CLAUDE.md            ← Mã giảm giá
   modules/image/CLAUDE.md                    ← Image proxy
   modules/inventory/CLAUDE.md               ← Tồn kho
-  modules/loyalty/CLAUDE.md                  ← Điểm tích lũy
   modules/orders/CLAUDE.md                   ← Đơn hàng
   modules/payment/CLAUDE.md                  ← Thanh toán
   modules/reviews/CLAUDE.md                  ← Đánh giá
   modules/search-history/CLAUDE.md           ← Lịch sử tìm kiếm
   modules/upload/CLAUDE.md                   ← File upload
   modules/users/CLAUDE.md                    ← Profile người dùng
-  modules/warranty-package/CLAUDE.md         ← Gói bảo hành
   modules/wishlist/CLAUDE.md                 ← Danh sách yêu thích
   __tests__/CLAUDE.md                        ← Unit cross-cutting tests
   __integration__/CLAUDE.md                  ← Integration test setup (MySQL real)

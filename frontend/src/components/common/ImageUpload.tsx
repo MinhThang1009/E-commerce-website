@@ -13,7 +13,7 @@ import { getErrorMsg } from '@/utils/error-utils';
 
 interface ImageUploadProps {
   value?: string | string[];
-  onChange: (value: string | string[]) => void;
+  onChange?: (value: string | string[]) => void;
   multiple?: boolean;
   type?:
     | 'products'
@@ -99,7 +99,7 @@ const ImageUpload: React.FC<ImageUploadProps> = ({
           : [result.data.url];
 
         const finalUrls = [...images, ...newUrls];
-        onChange(multiple ? finalUrls : finalUrls[0]);
+        onChange?.(multiple ? finalUrls : finalUrls[0]);
         showNotification({ message: t('imageUpload.uploadSuccess'), type: 'success' });
       } else {
         throw new Error(result.message || 'Upload failed');
@@ -118,15 +118,15 @@ const ImageUpload: React.FC<ImageUploadProps> = ({
 
   const handleRemove = (url: string) => {
     const newUrls = images.filter((img) => img !== url);
-    onChange(multiple ? newUrls : '');
+    onChange?.(multiple ? newUrls : '');
   };
 
   const handleUrlSubmit = () => {
     if (!urlInput.trim()) return;
     if (multiple) {
-      onChange([...images, urlInput.trim()]);
+      onChange?.([...images, urlInput.trim()]);
     } else {
-      onChange(urlInput.trim());
+      onChange?.(urlInput.trim());
     }
     setUrlInput('');
     setShowUrlInput(false);

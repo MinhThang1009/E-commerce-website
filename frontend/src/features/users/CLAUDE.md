@@ -18,7 +18,7 @@
 
 # 1. Mục đích & Trách nhiệm
 
-Trang profile (`/profile`) với 5 tabs: thông tin cá nhân, đổi mật khẩu, đơn hàng (redirect link), địa chỉ giao hàng, điểm tích lũy. Xử lý CRUD địa chỉ và cập nhật thông tin profile. Export `useGetAddressesQuery` + `userKeys` để dùng bởi `CheckoutPage` (feature checkout).
+Trang profile (`/profile`) với 4 tabs: thông tin cá nhân, đổi mật khẩu, đơn hàng (redirect link), địa chỉ giao hàng. Xử lý CRUD địa chỉ và cập nhật thông tin profile. Export `useGetAddressesQuery` + `userKeys` để dùng bởi `CheckoutPage` (feature checkout).
 
 ---
 
@@ -90,13 +90,12 @@ export const userKeys = {
 
 ## 5 Tabs trong ProfilePage
 
-| Tab key     | Nội dung                                                                                                                                                                            |
-| ----------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------- |
-| `info`      | Cập nhật firstName, lastName, phone. Email read-only (không thể thay đổi). Avatar hiển thị hoặc initials fallback. Toggle edit mode (`isEditing`).                                  |
-| `password`  | Form đổi mật khẩu: currentPassword, newPassword, confirmPassword. Min 6 chars cho new password.                                                                                     |
-| `orders`    | Link redirect sang `/orders`. Không render order list inline — chỉ hiển thị icon + button.                                                                                          |
-| `addresses` | CRUD địa chỉ: danh sách với default indicator, form thêm/sửa inline (toggle `showAddressForm`). Validate phone VN: `/^(0                                                            | \+84)[0-9]{9}$/`. |
-| `loyalty`   | Hiển thị tổng điểm + bảng lịch sử (date/type/points/description) từ `useGetLoyaltyInfoQuery` (feature loyalty). Loyalty types: `earn` (xanh), `spend` (vàng), `refund` (xanh nhạt). |
+| Tab key     | Nội dung                                                                                                                                           |
+| ----------- | -------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `info`      | Cập nhật firstName, lastName, phone. Email read-only (không thể thay đổi). Avatar hiển thị hoặc initials fallback. Toggle edit mode (`isEditing`). |
+| `password`  | Form đổi mật khẩu: currentPassword, newPassword, confirmPassword. Min 6 chars cho new password.                                                    |
+| `orders`    | Link redirect sang `/orders`. Không render order list inline — chỉ hiển thị icon + button.                                                         |
+| `addresses` | CRUD địa chỉ: danh sách với default indicator, form thêm/sửa inline (toggle `showAddressForm`). Validate phone VN: `/^(0\|\+84)[0-9]{9}$/`.        |
 
 ---
 
@@ -156,7 +155,6 @@ interface ChangePasswordRequest {
 **Feature này phụ thuộc vào:**
 
 - `features/auth` — `useGetCurrentUserQuery` trong `ProfilePage` để fetch user data mới nhất
-- `features/loyalty` — `useGetLoyaltyInfoQuery` trong tab loyalty của `ProfilePage`
 - `components/common/Button` — UI buttons
 - `stores/auth-store` — đọc `user`, gọi `updateUser()`
 - `stores/ui-store` — `addNotification()`

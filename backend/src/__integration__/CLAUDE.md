@@ -102,18 +102,18 @@ await Product.destroy({
 | `<module>-extra.integration.test.js`      | Additional coverage cho module                 | `orders-extra.integration.test.js`      |
 
 **Danh sách modules có coverage:**
-`admin`, `ai-chatbot`, `attribute` (×2), `auth` (×3), `cart` (×2), `catalog`, `catalog-recently-viewed`, `content` (×2), `discount-code` (×2), `image`, `inventory` (×2), `loyalty` (×3), `orders` (×3), `payment`, `reviews` (×3), `search-history` (×2), `upload` (×2), `users` (×2), `warranty-package` (×2), `wishlist` (×2)
+`admin`, `ai-chatbot`, `attribute` (×2), `auth` (×3), `cart` (×2), `catalog`, `catalog-recently-viewed`, `content`, `discount-code` (×2), `image`, `inventory` (×2), `orders` (×3), `payment`, `reviews` (×3), `search-history` (×2), `upload` (×2), `users` (×2), `wishlist` (×2)
 
 ---
 
 # 6. Special tests
 
-| File                                   | Mô tả                                                                                   |
-| -------------------------------------- | --------------------------------------------------------------------------------------- |
-| `order-flow.integration.test.js`       | Full flow: Guest cart → Login → Merge → Checkout → Order → Payment IPN → Loyalty points |
-| `concurrent.integration.test.js`       | Race conditions: oversell prevention (SELECT FOR UPDATE), double-redeem loyalty         |
-| `concurrent-extra.integration.test.js` | Additional concurrency: concurrent cart operations, discount code race                  |
-| `schema-drift.integration.test.js`     | Phát hiện mismatch giữa Sequelize model attributes và DB columns thực tế                |
+| File                                   | Mô tả                                                                    |
+| -------------------------------------- | ------------------------------------------------------------------------ |
+| `order-flow.integration.test.js`       | Full flow: Guest cart → Login → Merge → Checkout → Order → Payment IPN   |
+| `concurrent.integration.test.js`       | Race conditions: oversell prevention (SELECT FOR UPDATE)                 |
+| `concurrent-extra.integration.test.js` | Additional concurrency: concurrent cart operations, discount code race   |
+| `schema-drift.integration.test.js`     | Phát hiện mismatch giữa Sequelize model attributes và DB columns thực tế |
 
 ---
 

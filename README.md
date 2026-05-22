@@ -146,35 +146,31 @@ cd frontend && npm run dev
 | `payment` | Thanh toán MoMo và VNPay (create URL + IPN callback + hoàn tiền) |
 | `inventory` | Quản lý tồn kho, audit log biến động stock, SELECT FOR UPDATE chống race condition |
 | `reviews` | Đánh giá sản phẩm (chỉ user đã mua), thống kê rating tổng hợp |
-| `loyalty` | Điểm tích lũy (cộng sau trạng thái DELIVERED), lịch sử, đổi điểm |
 | `discount-code` | Mã giảm giá (% hoặc cố định), hạn dùng, giới hạn số lần |
-| `warranty-package` | Gói bảo hành mở rộng, tính phí theo từng sản phẩm |
 | `ai` | AI chatbot RAG pipeline, gợi ý sản phẩm, thêm vào giỏ qua chat |
 | `admin` | Dashboard analytics, CRUD toàn bộ entities, audit log thao tác admin |
-| `content` | Banner trang chủ, tin tức/blog, feedback/contact form |
+| `content` | Feedback/contact form |
 | `wishlist` | Danh sách yêu thích |
 | `image` | Quản lý ảnh sản phẩm, image proxy, xử lý ảnh với Sharp |
 | `upload` | Upload file (Multer + Sharp), resize, dọn orphaned files hàng tuần |
 | `attribute` | Nhóm thuộc tính (màu, size, RAM...), giá trị thuộc tính, AI name generator |
 | `search-history` | Lưu lịch sử tìm kiếm, cleanup tự động (giữ 50 entries/user) |
 
-### 14 Frontend Features
+### 11 Frontend Features
 
 | Feature | Mô tả |
 |---|---|
 | `auth` | Login/Register/Google OAuth, forgot/reset password, verify email, auto token refresh |
 | `catalog` | Trang shop với filter/sort, chi tiết sản phẩm, danh mục, thương hiệu, deals, new arrivals |
 | `cart` | Giỏ hàng sidebar, guest cart với localStorage, merge khi đăng nhập |
-| `checkout` | Luồng checkout, chọn địa chỉ, mã giảm giá, đổi điểm loyalty, chọn thanh toán |
+| `checkout` | Luồng checkout, chọn địa chỉ, mã giảm giá, chọn thanh toán |
 | `orders` | Lịch sử đơn hàng, xem chi tiết, hủy đơn, xác nhận nhận hàng, track order công khai |
 | `payment` | Redirect MoMo/VNPay, QR code thanh toán, xử lý callback sau thanh toán |
 | `users` | Profile, đổi mật khẩu, quản lý địa chỉ giao hàng |
 | `wishlist` | Danh sách yêu thích, toggle từ bất kỳ trang sản phẩm |
 | `reviews` | Viết đánh giá (sau khi đã mua), xem rating và bình luận |
-| `loyalty` | Xem điểm tích lũy, lịch sử điểm, đổi điểm giảm giá |
 | `ai` | Chat widget nổi (floating, resizable), hiển thị sản phẩm từ AI, thêm vào giỏ qua chat |
-| `content` | Trang tin tức/blog, form liên hệ, banner homepage |
-| `admin` | Dashboard analytics, CRUD sản phẩm/đơn hàng/người dùng/nội dung, audit log |
+| `admin` | Dashboard analytics, CRUD sản phẩm/đơn hàng/người dùng/tồn kho, audit log |
 | `upload` | Upload ảnh với preview, drag-and-drop, crop |
 
 ---
@@ -252,7 +248,7 @@ e-commerce-website/
 │   │   ├── utils/              # logger (Winston), i18n, catch-async
 │   │   ├── jobs/               # Cron: daily 2AM + weekly Sunday 3AM
 │   │   ├── config/             # database.js, redis.js, sequelize.js, swagger.js
-│   │   ├── constants/          # loyalty rates, shipping, OTP, pagination limits
+│   │   ├── constants/          # shipping, OTP, pagination limits
 │   │   └── locales/            # vi.json / en.json
 │   ├── data/                   # vector-db.json, SQL dumps
 │   ├── docs/                   # openapi.json (auto-generated)

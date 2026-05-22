@@ -21,7 +21,7 @@
 ## 1.1 Import pattern
 
 ```ts
-import { PAGINATION, UPLOAD, LOYALTY } from '@constants';
+import { PAGINATION, UPLOAD } from '@constants';
 // hoặc
 import { PAGINATION } from '@/constants';
 ```
@@ -53,20 +53,9 @@ UPLOAD.ACCEPTED_IMAGE_TYPES; // ['image/jpeg', 'image/png', 'image/webp', 'image
 
 ---
 
-# 4. LOYALTY
-
-## 4.1 Values
-
-```ts
-LOYALTY.POINTS_PER_ORDER_VND; // 1000 — mỗi 1000 VND chi tiêu = 1 điểm tích lũy
-LOYALTY.MIN_REDEEM_POINTS; // 100  — tối thiểu 100 điểm để đổi
-```
-
----
-
-# 5. Key Gotchas
+# 4. Key Gotchas
 
 - **Luôn dùng constants** — không hardcode `limit: 10` hay `limit: 20` inline. Thay đổi 1 value → áp dụng toàn app.
 - **`ADMIN_LIMIT: 20`** chỉ dùng cho admin tables — user-facing pages dùng `DEFAULT_LIMIT: 10`.
-- **Constants này chỉ cho display/validation** — business logic (tính điểm thật, giới hạn file trên server) cũng được enforce ở backend. Client constants để hiển thị đúng thông tin cho user và validate trước khi upload.
+- **Constants này chỉ cho display/validation** — business logic (giới hạn file trên server) cũng được enforce ở backend. Client constants để hiển thị đúng thông tin cho user và validate trước khi upload.
 - **`UPLOAD.MAX_FILE_SIZE_MB`** dùng trong `ImageUpload` component để validate file size phía client trước khi gửi lên server — server cũng có validation riêng.

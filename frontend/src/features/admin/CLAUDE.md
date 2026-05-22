@@ -29,30 +29,26 @@
 
 ## 1.1 Purpose
 
-Dashboard quản trị toàn bộ: xem analytics/KPIs, quản lý sản phẩm/đơn hàng/người dùng/tồn kho, tạo/xóa mã giảm giá, quản lý gói bảo hành, xem audit log, quản lý banner và bài viết tin tức. Tất cả pages trong feature này require role `admin` hoặc `manager`.
+Dashboard quản trị toàn bộ: xem analytics/KPIs, quản lý sản phẩm/đơn hàng/người dùng/tồn kho, tạo/xóa mã giảm giá, xem audit log. Tất cả pages trong feature này require role `admin` hoặc `manager`.
 
 ## 1.2 Routes
 
-| Route                      | Page                   |
-| -------------------------- | ---------------------- |
-| `/admin/dashboard`         | `DashboardPage`        |
-| `/admin/products`          | `ProductsPage`         |
-| `/admin/products/create`   | `CreateProductPage`    |
-| `/admin/products/:id/edit` | `EditProductPage`      |
-| `/admin/products/import`   | `ProductImportPage`    |
-| `/admin/categories`        | `CategoriesPage`       |
-| `/admin/categories/:id`    | `CategoryPage`         |
-| `/admin/brands`            | `BrandsPage`           |
-| `/admin/orders`            | `OrdersPage`           |
-| `/admin/users`             | `UsersPage`            |
-| `/admin/users/:id`         | `UserDetailPage`       |
-| `/admin/warranty-packages` | `WarrantyPackagesPage` |
-| `/admin/discount-codes`    | `DiscountCodesPage`    |
-| `/admin/banners`           | `BannersPage`          |
-| `/admin/news`              | `NewsPage`             |
-| `/admin/news/create`       | `CreateNewsPage`       |
-| `/admin/inventory`         | `InventoryPage`        |
-| `/admin/audit-log`         | `AuditLogPage`         |
+| Route                      | Page                |
+| -------------------------- | ------------------- |
+| `/admin/dashboard`         | `DashboardPage`     |
+| `/admin/products`          | `ProductsPage`      |
+| `/admin/products/create`   | `CreateProductPage` |
+| `/admin/products/:id/edit` | `EditProductPage`   |
+| `/admin/products/import`   | `ProductImportPage` |
+| `/admin/categories`        | `CategoriesPage`    |
+| `/admin/categories/:id`    | `CategoryPage`      |
+| `/admin/brands`            | `BrandsPage`        |
+| `/admin/orders`            | `OrdersPage`        |
+| `/admin/users`             | `UsersPage`         |
+| `/admin/users/:id`         | `UserDetailPage`    |
+| `/admin/discount-codes`    | `DiscountCodesPage` |
+| `/admin/inventory`         | `InventoryPage`     |
+| `/admin/audit-log`         | `AuditLogPage`      |
 
 ---
 
@@ -68,20 +64,18 @@ features/admin/
     admin-product-api.ts      — CRUD sản phẩm, clone, status toggle; auto-parse JSON variants/attributes; export adminProductKeys
     admin-user-api.ts         — Quản lý người dùng: list, get, update, delete; export adminUserKeys
     discount-code-api.ts      — CRUD mã giảm giá; export discountCodeKeys
-    warranty-api.ts           — CRUD gói bảo hành (endpoint /warranty-packages, KHÔNG prefix /admin/)
 
   components/
-    AdminLayout.tsx           — Layout wrapper: sidebar nav (12 mục), header với dark mode toggle, responsive drawer mobile
+    AdminLayout.tsx           — Layout wrapper: sidebar nav, header với dark mode toggle, responsive drawer mobile
     CreateProductForm.tsx     — Form nhiều tab tạo sản phẩm: basic info, variants, images, attributes, SEO, FAQ
     DashboardCharts.tsx       — Charts recharts: revenue line, category pie, order bar, top products
     ProductExportModal.tsx    — Modal export danh sách sản phẩm ra Excel (dùng exceljs)
 
   pages/
-    DashboardPage.tsx         — /admin/dashboard: 7 KPI cards + DashboardCharts + recent orders table + low-stock widget
+    DashboardPage.tsx         — /admin/dashboard: KPI cards + DashboardCharts + recent orders table + low-stock widget
     InventoryPage.tsx         — /admin/inventory: bảng tồn kho theo variant
     DiscountCodesPage.tsx     — /admin/discount-codes: danh sách + CRUD mã giảm giá
     AuditLogPage.tsx          — /admin/audit-log: lịch sử hành động admin
-    WarrantyPackagesPage.tsx  — /admin/warranty-packages: CRUD gói bảo hành
     UsersPage.tsx             — /admin/users: bảng người dùng với filter
     UserDetailPage.tsx        — /admin/users/:id: profile đầy đủ + chỉnh sửa role/status
 
@@ -96,11 +90,6 @@ features/admin/
 
     orders/
       OrdersPage.tsx          — /admin/orders: bảng Ant Design với filter trạng thái, modal chi tiết + update status
-
-    content/
-      NewsPage.tsx            — /admin/news: danh sách bài viết
-      CreateNewsPage.tsx      — /admin/news/create
-      BannersPage.tsx         — /admin/banners: quản lý banner theo vị trí
 
   index.ts                    — Barrel export
 ```
@@ -118,7 +107,6 @@ Mỗi api file có query key object riêng:
 - `adminOrderKeys` — `['admin-orders', ...]`
 - `adminUserKeys` — `['admin-users', ...]`
 - `discountCodeKeys` — `['discount-codes', ...]`
-- `warrantyKeys` — `['warranty-packages', ...]`
 
 Tất cả mutations invalidate query key tương ứng sau khi thành công.
 
@@ -162,10 +150,6 @@ Tất cả mutations invalidate query key tương ứng sau khi thành công.
 | POST   | `/admin/discount-codes`                | Tạo mã giảm giá                                                       |
 | PUT    | `/admin/discount-codes/:id`            | Cập nhật mã giảm giá                                                  |
 | DELETE | `/admin/discount-codes/:id`            | Xóa mã giảm giá                                                       |
-| GET    | `/warranty-packages`                   | Danh sách gói bảo hành (không prefix /admin/)                         |
-| POST   | `/warranty-packages`                   | Tạo gói bảo hành                                                      |
-| PUT    | `/warranty-packages/:id`               | Cập nhật gói bảo hành                                                 |
-| DELETE | `/warranty-packages/:id`               | Xóa gói bảo hành                                                      |
 
 ## 4.2 Query hooks
 
@@ -188,8 +172,6 @@ Tất cả mutations invalidate query key tương ứng sau khi thành công.
 - `useGetUserByIdQuery(id)` — chi tiết người dùng
 - `useGetDiscountCodesQuery(params?)` — danh sách mã giảm giá
 - `useGetDiscountCodeByIdQuery(id)` — chi tiết mã giảm giá
-- `useGetWarrantyPackagesQuery(params?)` — danh sách gói bảo hành
-- `useGetWarrantyPackageByIdQuery(id)` — chi tiết gói bảo hành
 
 **Mutations:**
 
@@ -204,9 +186,6 @@ Tất cả mutations invalidate query key tương ứng sau khi thành công.
 - `useCreateDiscountCodeMutation()` — tạo mã giảm giá
 - `useUpdateDiscountCodeMutation()` — cập nhật mã giảm giá
 - `useDeleteDiscountCodeMutation()` — xóa mã giảm giá
-- `useCreateWarrantyPackageMutation()` — tạo gói bảo hành
-- `useUpdateWarrantyPackageMutation()` — cập nhật gói bảo hành
-- `useDeleteWarrantyPackageMutation()` — xóa gói bảo hành
 
 ---
 
@@ -271,7 +250,6 @@ interface CreateProductRequest {
   attributes?: Array<{ name: string; value: string }>;
   faqs?: Array<{ question: string; answer: string }>;
   seoTitle?: string;
-  warrantyPackageIds?: string[];
 }
 
 // admin-order-api.ts
@@ -309,7 +287,6 @@ interface User {
 ## 7.1 Depends on
 
 - `features/auth` — `useAuth()` hook cho `AdminLayout` (user info, logout)
-- `features/catalog` — `WarrantyPackage` type import trong `warranty-api.ts`
 - `stores/auth-store` — kiểm tra isAuthenticated, role
 - `stores/ui-store` — theme state cho `AdminLayout`
 - Ant Design (`antd`) — Table, Modal, Form, Select, Pagination, Drawer (dùng rộng rãi trong admin)
@@ -319,14 +296,12 @@ interface User {
 ## 7.2 Used by
 
 - `AppRoutes.tsx` — mount `AdminLayout` tại route `/admin/*`
-- `features/catalog/warranty-api.ts` — import `WarrantyPackage` type từ feature catalog
 
 ---
 
 # 8. Gotchas & Edge Cases
 
 - **`useGetAdminProductByIdQuery`** tự parse JSON string cho `attributes` và `variants.attributes` trong `queryFn` — data trả về đã là object, không cần parse lại.
-- **`warranty-api.ts`** gọi `/warranty-packages` (không prefix `/admin/`) — khác với tất cả api file admin khác.
 - **`useUpdateProductMutation` và `useDeleteProductMutation`** invalidate cả `['products']` (public catalog cache) để user thấy thay đổi ngay.
 - **`useLazyGetAdminProductsQuery`** trả về `{ trigger }` không phải React Query instance — gọi `await trigger(filters)` thủ công.
 - **Admin pages catalog/orders/content** nằm trong `features/admin/pages/<domain>/`, không phải feature domain tương ứng.

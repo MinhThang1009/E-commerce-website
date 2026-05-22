@@ -46,7 +46,9 @@ export function useGetAllCategoriesQuery(options?: { enabled?: boolean; skip?: b
   return useQuery<CategoryResponse>({
     queryKey: categoryKeys.lists(),
     queryFn: async () => {
-      const { data } = await apiClient.get('/categories');
+      const { data } = await apiClient.get('/categories', {
+        headers: { 'Cache-Control': 'no-cache' },
+      });
       return data;
     },
     enabled: options?.skip !== undefined ? !options.skip : true,

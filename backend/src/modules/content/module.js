@@ -9,29 +9,12 @@ const ContentService = require('@modules/content/services/content-service');
 const SequelizeContentRepository = require('@modules/content/repositories/sequelize-content-repository');
 const buildRoutes = require('@modules/content/routes');
 
-// Content module — gộp 3 sub-domain. Trả `mounts` array để app.js mount nhiều
-// path khác nhau (banner/news/contact).
-module.exports = ({
-  Banner,
-  News,
-  Feedback,
-  User,
-  emailService,
-  redisClient,
-  eventBus,
-  logger,
-  adminEmail,
-}) => {
-  if (!Banner) throw new Error('content module: Banner model bắt buộc');
-  if (!News) throw new Error('content module: News model bắt buộc');
+// Content module — chỉ còn contact/feedback. Banner và News đã bị xóa.
+module.exports = ({ Feedback, emailService, redisClient, eventBus, logger, adminEmail }) => {
   if (!Feedback) throw new Error('content module: Feedback model bắt buộc');
-  if (!User) throw new Error('content module: User model bắt buộc');
 
   const contentRepository = new SequelizeContentRepository({
-    Banner,
-    News,
     Feedback,
-    User,
   });
 
   // Adapter: nodemailer-based email service → IEmailGateway port.
@@ -70,11 +53,8 @@ module.exports = ({
   const routes = buildRoutes({ contentController });
 
   return {
-    mounts: [
-      { basePath: '/banners', router: routes.banner },
-      { basePath: '/news', router: routes.news },
-      { basePath: '/contact', router: routes.contact },
-    ],
+    basePath: '/contact',
+    router: routes.contact,
     subscribeEvents() {},
   };
 };

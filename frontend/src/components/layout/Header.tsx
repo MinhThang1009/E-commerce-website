@@ -168,7 +168,6 @@ const Header: React.FC = () => {
             { key: 'shop' as NavigationIconKey, path: '/shop' },
             { key: 'categories' as NavigationIconKey, path: '/categories' },
             { key: 'deals' as NavigationIconKey, path: '/deals' },
-            { key: 'news' as NavigationIconKey, path: '/news' },
             { key: 'about' as NavigationIconKey, path: '/about' },
           ].map((item) => {
             const IconComponent = NAVIGATION_ICONS[item.key];
@@ -466,7 +465,6 @@ const Header: React.FC = () => {
               { key: 'shop', path: '/shop' },
               { key: 'categories', path: '/categories' },
               { key: 'deals', path: '/deals' },
-              { key: 'news', path: '/news' },
               { key: 'about', path: '/about' },
             ].map((item) => (
               <Link

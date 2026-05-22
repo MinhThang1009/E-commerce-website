@@ -1,6 +1,6 @@
 # TechStore — Chiến Lược Testing
 
-> 5 tầng test, 282 suites, 5.694 test cases, coverage 100% (unit).
+> 5 tầng test, 275 suites, 5.411 test cases, coverage 100% (unit).
 
 ## Mục lục
 
@@ -34,12 +34,12 @@ TechStore áp dụng chiến lược kiểm thử đa tầng. Mỗi tầng phụ
 
 | Suite | Suites | Tests | Runtime | Config |
 |---|---|---|---|---|
-| BE Unit Tests | 173 | **4.061** | ~10s | `jest.config.js` |
+| BE Unit Tests | 166 | **3.778** | ~10s | `jest.config.js` |
 | BE Integration Tests | 42 | **228** | ~50s | `jest.integration.config.js` |
 | BE API HTTP Tests | 45 | **866** | ~140s | `jest.api.config.js` |
 | BE E2E Tests | 5 | **102** | ~20s | `jest.e2e.config.js` |
 | FE Component Tests | 17 | **437** | ~7s | `jest.config.cjs` (frontend/) |
-| **Tổng** | **282** | **5.694** | | |
+| **Tổng** | **275** | **5.411** | | |
 
 ---
 
@@ -53,7 +53,7 @@ TechStore áp dụng chiến lược kiểm thử đa tầng. Mỗi tầng phụ
                 ┌─┴──────────────────────┴─┐
                 │ Integration Tests (228)   │  ← Service/repo layer (real DB)
               ┌─┴──────────────────────────┴─┐
-              │  Unit Tests (4.061 + 437)     │  ← Isolated logic + React components
+              │  Unit Tests (3.778 + 437)     │  ← Isolated logic + React components
               └────────────────────────────────┘
 ```
 
@@ -73,7 +73,7 @@ TechStore áp dụng chiến lược kiểm thử đa tầng. Mỗi tầng phụ
 
 **Mục đích**: Kiểm tra logic nghiệp vụ của từng hàm trong isolation hoàn toàn. Mọi external dependency (Sequelize models, email, AI, Redis) đều được mock bằng `jest.fn()`.
 
-**Phạm vi**: 173 test suites, 4.061 test cases.
+**Phạm vi**: 166 test suites, 3.778 test cases.
 - Tất cả Service classes (19 modules × nhiều methods)
 - Repository classes
 - Controller handlers (input/output, error paths)
@@ -137,7 +137,7 @@ frontend/src/__tests__/
 - Repository queries (Sequelize findAll, create, update, destroy với real schema)
 - Transactions và `runInTransaction` / `lockRow`
 - Race conditions và concurrent stock deductions
-- Business flow tests (order → inventory → loyalty chain)
+- Business flow tests (order → inventory chain)
 
 **Vị trí file test**:
 ```
@@ -199,7 +199,7 @@ backend/src/__api__/
 - Flow đăng ký → xác thực email → đăng nhập
 - Flow mua hàng: browse sản phẩm → thêm giỏ → checkout → đặt hàng → thanh toán
 - Flow quản trị: tạo sản phẩm → cập nhật tồn kho → xử lý đơn hàng
-- Flow loyalty: đặt hàng → DELIVERED → kiểm tra điểm tích lũy
+- Flow đặt hàng → DELIVERED → xác nhận trạng thái
 - Flow discount: tạo mã → apply → validate usedCount
 
 **Vị trí file test**:
@@ -416,12 +416,12 @@ npm run build
 
 | Suite | Suites | Tests | Runtime |
 |---|---|---|---|
-| BE Unit Tests | 173 | 4.061 | ~10s |
+| BE Unit Tests | 166 | 3.778 | ~10s |
 | BE Integration Tests | 42 | 228 | ~50s |
 | BE API HTTP Tests | 45 | 866 | ~140s |
 | BE E2E Tests | 5 | 102 | ~20s |
 | FE Component Tests | 17 | 437 | ~7s |
-| **Tổng** | **282** | **5.694** | |
+| **Tổng** | **275** | **5.411** | |
 
 **Coverage (local unit tests)**:
 - Statements: 100%

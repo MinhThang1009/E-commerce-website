@@ -58,7 +58,7 @@ Route → Page → Components
 | Motion | Framer Motion |
 | Icons | Heroicons + Ant Design Icons + Lucide React |
 
-## 1.3 14 features — mỗi feature = 1 domain cô lập
+## 1.3 11 features — mỗi feature = 1 domain cô lập
 
 - Không có cross-feature imports (ngoại lệ duy nhất: `orders → reviews` cho `ReviewModal`)
 - Shared code trong `src/components/`, `src/stores/`, `src/hooks/`, `src/utils/`, `src/lib/`
@@ -182,7 +182,7 @@ Các route paths được định nghĩa trong `src/routes/paths.ts` (constants 
 
 **Protected routes:** `/checkout`, `/payment-qr`, `/profile`, `/orders`, `/wishlist`
 
-**Admin routes (AdminRoute):** `/admin/dashboard`, `/admin/products/*`, `/admin/orders`, `/admin/users/*`, `/admin/categories`, `/admin/brands`, `/admin/news/*`, `/admin/banners`, `/admin/inventory`, `/admin/discount-codes`, `/admin/warranty-packages`, `/admin/audit-log`
+**Admin routes (AdminRoute):** `/admin/dashboard`, `/admin/products/*`, `/admin/orders`, `/admin/users/*`, `/admin/categories`, `/admin/brands`, `/admin/inventory`, `/admin/discount-codes`, `/admin/audit-log`
 
 ---
 
@@ -193,11 +193,9 @@ Các route paths được định nghĩa trong `src/routes/paths.ts` (constants 
 | `admin` | `/admin/*` | Dashboard, CRUD products/orders/users, analytics | [CLAUDE.md](src/features/admin/CLAUDE.md) |
 | `ai` | global widget (no route) | AI chatbot widget, RAG chat interface | [CLAUDE.md](src/features/ai/CLAUDE.md) |
 | `auth` | `/login`, `/register`, `/forgot-password`, `/reset-password`, `/verify-email` | Đăng nhập, đăng ký, quên mật khẩu, Google OAuth | [CLAUDE.md](src/features/auth/CLAUDE.md) |
-| `cart` | `/cart` | Giỏ hàng, guest/auth merge, warranty package | [CLAUDE.md](src/features/cart/CLAUDE.md) |
+| `cart` | `/cart` | Giỏ hàng, guest/auth merge | [CLAUDE.md](src/features/cart/CLAUDE.md) |
 | `catalog` | `/shop`, `/products/:id`, `/categories/*`, `/brands`, `/deals`, `/new-arrivals`, `/best-sellers` | Shop, product detail, categories, brands | [CLAUDE.md](src/features/catalog/CLAUDE.md) |
 | `checkout` | `/checkout`, `/checkout/payment` | Checkout flow, address, discount code | [CLAUDE.md](src/features/checkout/CLAUDE.md) |
-| `content` | `/news/*`, `/contact` | Tin tức, trang liên hệ | [CLAUDE.md](src/features/content/CLAUDE.md) |
-| `loyalty` | embedded trong `/profile` | Điểm tích lũy, lịch sử điểm | [CLAUDE.md](src/features/loyalty/CLAUDE.md) |
 | `orders` | `/orders`, `/track-order` | Danh sách đơn, chi tiết đơn, track order | [CLAUDE.md](src/features/orders/CLAUDE.md) |
 | `payment` | `/payment-qr` | Thanh toán QR code (MoMo/VNPay) | [CLAUDE.md](src/features/payment/CLAUDE.md) |
 | `reviews` | embedded (no route) | Review modal, star rating | [CLAUDE.md](src/features/reviews/CLAUDE.md) |
@@ -206,8 +204,8 @@ Các route paths được định nghĩa trong `src/routes/paths.ts` (constants 
 | `wishlist` | `/wishlist` | Danh sách yêu thích | [CLAUDE.md](src/features/wishlist/CLAUDE.md) |
 
 **Admin pages nằm ở đâu:**
-- `features/admin/pages/` — dashboard, inventory, discount-codes, audit-log, users, warranty-packages, banners
-- Trang admin của domain khác nằm trong feature đó: `features/catalog/pages/catalog/` (products, brands, categories CRUD), `features/orders/pages/orders/`, `features/content/pages/` (news management)
+- `features/admin/pages/` — dashboard, inventory, discount-codes, audit-log, users
+- Trang admin của domain khác nằm trong feature đó: `features/catalog/pages/catalog/` (products, brands, categories CRUD), `features/orders/pages/orders/`
 
 ---
 
@@ -305,7 +303,7 @@ frontend/src/
   utils/CLAUDE.md                            ← 14 utility files
   types/CLAUDE.md                            ← global TypeScript types
   styles/CLAUDE.md                           ← SCSS tokens, global styles
-  constants/CLAUDE.md                        ← PAGINATION, UPLOAD, LOYALTY
+  constants/CLAUDE.md                        ← PAGINATION, UPLOAD
   __tests__/CLAUDE.md                        ← Component tests (Jest + RTL, 17 suites/437 tests)
   features/admin/CLAUDE.md                   ← Admin dashboard, CRUD pages
   features/ai/CLAUDE.md                      ← AI chatbot widget
@@ -313,8 +311,6 @@ frontend/src/
   features/cart/CLAUDE.md                    ← Giỏ hàng
   features/catalog/CLAUDE.md                 ← Shop, product detail, categories, brands
   features/checkout/CLAUDE.md                ← Checkout flow
-  features/content/CLAUDE.md                 ← News, contact
-  features/loyalty/CLAUDE.md                 ← Điểm tích lũy
   features/orders/CLAUDE.md                  ← Orders list, order detail
   features/payment/CLAUDE.md                 ← Payment QR page
   features/reviews/CLAUDE.md                 ← Product reviews

@@ -61,4 +61,4 @@ await unitOfWork.runInTransaction(async (tx) => {
 
 - `SELECT FOR UPDATE` chỉ có tác dụng trong InnoDB transaction — đảm bảo MySQL dùng InnoDB engine
 - Nested transaction reuse (không tạo SAVEPOINT) — tránh deadlock khi gọi lồng nhau
-- Dùng khi: giảm stock, đổi điểm loyalty, apply discount code (tránh oversell/double-redeem)
+- Dùng khi: giảm stock, apply discount code (tránh oversell/double-redeem)

@@ -86,17 +86,12 @@ ROUTES.ADMIN_DASHBOARD; // '/admin/dashboard'
 ROUTES.ADMIN_PRODUCTS; // '/admin/products'
 ROUTES.ADMIN_PRODUCTS_CREATE; // '/admin/products/create'
 ROUTES.ADMIN_PRODUCTS_EDIT; // '/admin/products/edit/:id'
-ROUTES.ADMIN_NEWS; // '/admin/news'
-ROUTES.ADMIN_NEWS_CREATE; // '/admin/news/create'
-ROUTES.ADMIN_NEWS_EDIT; // '/admin/news/edit/:id'
 ROUTES.ADMIN_CATEGORIES; // '/admin/categories'
 ROUTES.ADMIN_ORDERS; // '/admin/orders'
 ROUTES.ADMIN_USERS; // '/admin/users'
 ROUTES.ADMIN_USER_DETAIL; // '/admin/users/:id'
-ROUTES.ADMIN_WARRANTY_PACKAGES; // '/admin/warranty-packages'
 ROUTES.ADMIN_DISCOUNT_CODES; // '/admin/discount-codes'
 ROUTES.ADMIN_BRANDS; // '/admin/brands'
-ROUTES.ADMIN_BANNERS; // '/admin/banners'
 ROUTES.ADMIN_INVENTORY; // '/admin/inventory'
 ROUTES.ADMIN_AUDIT_LOG; // '/admin/audit-log'
 ```
@@ -114,7 +109,6 @@ buildRoute.verifyEmail(email?)                            // '/verify-email?emai
 buildRoute.paymentQr(orderId, amount, numberOrder)        // '/payment-qr?orderId=...&amount=...&numberOrder=...'
 buildRoute.checkoutRepay(orderId, amount)                 // '/checkout?repayOrder=...&amount=...'
 buildRoute.adminProductEdit(id)                           // '/admin/products/edit/123'
-buildRoute.adminNewsEdit(id)                              // '/admin/news/edit/123'
 buildRoute.adminUserDetail(id)                            // '/admin/users/123'
 buildRoute.adminOrderDetail(id)                           // '/admin/orders/123'
 buildRoute.adminOrdersPending()                           // '/admin/orders?status=pending'
@@ -153,10 +147,9 @@ Suspense (fallback: <LoadingSpinner fullScreen />)
         /admin → redirect /admin/dashboard
         /admin/dashboard
         /admin/products, /admin/products/create, /admin/products/edit/:id
-        /admin/news, /admin/news/create, /admin/news/edit/:id
         /admin/categories, /admin/orders, /admin/users, /admin/users/:id
-        /admin/warranty-packages, /admin/discount-codes
-        /admin/brands, /admin/banners, /admin/inventory, /admin/audit-log
+        /admin/discount-codes
+        /admin/brands, /admin/inventory, /admin/audit-log
 ```
 
 ## 3.2 Lazy loading pattern
@@ -214,5 +207,4 @@ import { ProtectedRoute, PublicOnlyRoute, AdminRoute } from '@/features/auth';
 - **`/verify-email` không protected** — user có thể truy cập sau khi đăng ký (chưa authenticated).
 - **Admin redirect:** `/admin` → `Navigate to ROUTES.ADMIN_DASHBOARD` (không phải page riêng).
 - **Lazy loading tất cả pages** — khi thêm page mới phải `lazy()` wrap và thêm vào Routes.
-- **`/admin/news/edit/:id`** và `/admin/news/create` dùng cùng 1 component `CreateNewsPage` — component tự detect mode từ URL params.
 - **`AdminRoute` wrap `AdminLayout`** — AdminLayout render `<Outlet />` cho sub-routes của admin.

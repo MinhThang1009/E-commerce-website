@@ -131,7 +131,7 @@ deleteFile({ user, type, filenameRaw });
 - **Storage:** diskStorage, filename = `uuid()` + original extension (lowercase)
 - **fileFilter:** chỉ nhận `image/jpeg`, `image/jpg`, `image/png`, `image/webp`
 - **limits:** `fileSize: 5MB`, `files: 10`
-- **uploadDirs:** 9 subdirs trong `backend/uploads/`: `reviews`, `products`, `users`, `categories`, `brands`, `banners`, `news`, `avatars`, `temp`
+- **uploadDirs:** subdirs trong `backend/uploads/`: `reviews`, `products`, `users`, `categories`, `brands`, `avatars`, `temp`
 
 ---
 
@@ -147,7 +147,7 @@ Base path: `/api/uploads`. Tất cả require `authenticate`.
 | POST   | `/:type/multiple`  | authenticate | Upload nhiều file (multer `array('files', maxCount)`) |
 | DELETE | `/:type/:filename` | authenticate | Xóa file (service check `user.role === 'admin'`)      |
 
-**`:type` hợp lệ:** `reviews`, `products`, `users`, `categories`, `brands`, `banners`, `news`, `avatars`, `temp`
+**`:type` hợp lệ:** `reviews`, `products`, `users`, `categories`, `brands`, `avatars`, `temp`
 
 **Giới hạn multiple upload theo type:**
 
@@ -169,7 +169,7 @@ Module không nhận Sequelize models — chỉ dùng `fs.promises`, `multer`, `
 
 ## 5.2 Used by (module khác dùng module này)
 
-- `admin` — upload ảnh sản phẩm, banner, tin tức
+- `admin` — upload ảnh sản phẩm
 - `users` — upload avatar (FE upload file, lấy URL, rồi gọi `PUT /api/users/profile`)
 - `reviews` — upload ảnh review
 

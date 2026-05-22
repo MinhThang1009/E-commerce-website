@@ -110,8 +110,6 @@ Supported entity types và fields:
 - `product` — `name`, `shortDescription`, `description`, `seoTitle`, `seoDescription`
 - `category` — `name`, `description`
 - `brand` — `name`
-- `news` — `title`, `content`, `description`, `category`
-- `banner` — `title`
 
 Luôn giữ `_vi` và `_en` columns trong response object (admin cần cả 2). `FIELD_MAPS` cũng được export nếu cần introspect.
 

@@ -184,6 +184,7 @@ class CatalogService {
     const category = await this.catalogRepository.createCategory({
       name: payload.name,
       description: payload.description,
+      isActive: payload.isActive ?? true,
     });
     await this._invalidateCacheKey('categories:all');
     return category;
@@ -195,7 +196,7 @@ class CatalogService {
    *
    * @param {object} params
    * @param {number|string} params.id - ID danh mục cần cập nhật
-   * @param {object} params.patch - Dữ liệu cần cập nhật (name, description)
+   * @param {object} params.patch - Dữ liệu cần cập nhật (name, description, isActive)
    * @returns {Promise<object>} Danh mục sau khi cập nhật
    * @throws {AppError} 404 nếu không tìm thấy danh mục
    */
@@ -205,6 +206,7 @@ class CatalogService {
 
     if (patch.name !== undefined) category.name = patch.name;
     if (patch.description !== undefined) category.description = patch.description;
+    if (patch.isActive !== undefined) category.isActive = patch.isActive;
     await this.catalogRepository.saveCategory(category);
     await this._invalidateCacheKey('categories:all');
     return category;

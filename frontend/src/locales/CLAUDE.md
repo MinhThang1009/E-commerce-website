@@ -87,7 +87,6 @@ payment:
 profile:
   info.{title,firstName,lastName,email,phone,...}
   address.{title,addNew,edit,delete,...}
-  loyalty.{title,points,redeem,...}
 
 reviews: {...}
 wishlist: {...}

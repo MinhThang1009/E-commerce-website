@@ -29,7 +29,7 @@
 
 ## 1.1 Purpose
 
-Quản lý giỏ hàng: guest (local state, persist localStorage) và authenticated user (server-synced). Tự động merge local cart vào server cart khi login. Export `cartKeys` và hooks để features khác (orders, checkout, ai) invalidate và sử dụng. Hỗ trợ warranty package per cart item.
+Quản lý giỏ hàng: guest (local state, persist localStorage) và authenticated user (server-synced). Tự động merge local cart vào server cart khi login. Export `cartKeys` và hooks để features khác (orders, checkout, ai) invalidate và sử dụng.
 
 ## 1.2 Routes
 
@@ -100,17 +100,17 @@ Actions: `addItem`, `removeItem`, `updateQuantity`, `clearLocalCart`, `initializ
 
 ## 4.1 Endpoints sử dụng
 
-| Method | Path              | Mô tả                                                                        |
-| ------ | ----------------- | ---------------------------------------------------------------------------- |
-| GET    | `/cart`           | Fetch server cart                                                            |
-| GET    | `/cart/count`     | Chỉ lấy số lượng items (dùng ở Header badge)                                 |
-| GET    | `/cart/validate`  | Validate cart items — kiểm tra tồn kho + giá hiện tại                        |
-| POST   | `/cart`           | Thêm item; body: `{ productId, variantId?, quantity?, warrantyPackageIds? }` |
-| PUT    | `/cart/items/:id` | Cập nhật quantity; body: `{ quantity }`                                      |
-| DELETE | `/cart/items/:id` | Xóa 1 item                                                                   |
-| DELETE | `/cart`           | Xóa toàn bộ giỏ                                                              |
-| POST   | `/cart/sync`      | Đẩy local items lên server (ghi đè)                                          |
-| POST   | `/cart/merge`     | Merge guest session cart + server cart (server deduplicate)                  |
+| Method | Path              | Mô tả                                                       |
+| ------ | ----------------- | ----------------------------------------------------------- |
+| GET    | `/cart`           | Fetch server cart                                           |
+| GET    | `/cart/count`     | Chỉ lấy số lượng items (dùng ở Header badge)                |
+| GET    | `/cart/validate`  | Validate cart items — kiểm tra tồn kho + giá hiện tại       |
+| POST   | `/cart`           | Thêm item; body: `{ productId, variantId?, quantity? }`     |
+| PUT    | `/cart/items/:id` | Cập nhật quantity; body: `{ quantity }`                     |
+| DELETE | `/cart/items/:id` | Xóa 1 item                                                  |
+| DELETE | `/cart`           | Xóa toàn bộ giỏ                                             |
+| POST   | `/cart/sync`      | Đẩy local items lên server (ghi đè)                         |
+| POST   | `/cart/merge`     | Merge guest session cart + server cart (server deduplicate) |
 
 ## 4.2 Query hooks
 
@@ -122,7 +122,7 @@ Actions: `addItem`, `removeItem`, `updateQuantity`, `clearLocalCart`, `initializ
 
 **Mutations:**
 
-- `useAddToCartMutation()` — thêm item; `warrantyPackageIds?` để gắn gói bảo hành
+- `useAddToCartMutation()` — thêm item vào giỏ
 - `useUpdateCartItemMutation()` — cập nhật quantity `{ id, data: { quantity } }`
 - `useRemoveCartItemMutation()` — xóa 1 item theo id
 - `useClearCartMutation()` — xóa toàn bộ giỏ server
@@ -158,8 +158,6 @@ interface CartItem {
   inStock?: boolean;
   stockQuantity?: number;
   cartId?: string;
-  warrantyPackageIds?: string[];
-  warrantyPackages?: Array<{ id: string; name: string; price: number; durationMonths: number }>;
 }
 
 // api/cart-api.ts (shape từ server)
@@ -201,7 +199,6 @@ interface AddToCartRequest {
   productId: string;
   variantId?: string;
   quantity?: number;
-  warrantyPackageIds?: string[];
 }
 ```
 
@@ -232,7 +229,7 @@ interface AddToCartRequest {
 - **`useSyncCartMutation` khác `useMergeCartMutation`:** sync = đẩy local items lên server sạch (ghi đè). Merge = kết hợp guest cart + server cart, server quyết định deduplicate. `use-cart-sync.ts` dùng sync; `use-cart-merge.ts` dùng merge.
 - **`useValidateCartQuery`** gọi trước khi bước vào checkout để bắt items hết hàng hoặc giá thay đổi — không skip.
 - **Race condition sync:** `use-cart-sync.ts` không overwrite local cart bằng empty server cart khi đang sync — tránh trường hợp server trả `[]` trước khi sync hoàn thành.
-- **Warranty packages:** `CartItem.warrantyPackageIds` truyền qua `useAddToCartMutation` body. Warranty fee tính riêng trong checkout.
+- **Không còn warranty packages:** CartItem không có `warrantyPackageIds`. Warranty module đã bị xóa.
 - **`cartKeys` được export** — feature `orders` và `ai` import để invalidate cart sau khi tạo đơn/add từ chat.
 - **CartPage xử lý MoMo return:** kiểm tra query param `?status=momo-return&resultCode=0` khi mount — nếu có, clear cart và redirect `/orders`.
 

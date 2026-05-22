@@ -45,14 +45,12 @@
 | Error handling, EventBus, UnitOfWork | [`backend/src/shared/CLAUDE.md`](backend/src/shared/CLAUDE.md) |
 | Cron jobs / cleanup | [`backend/src/jobs/CLAUDE.md`](backend/src/jobs/CLAUDE.md) |
 | Đánh giá sản phẩm | [`backend/src/modules/reviews/CLAUDE.md`](backend/src/modules/reviews/CLAUDE.md) |
-| Điểm tích lũy loyalty | [`backend/src/modules/loyalty/CLAUDE.md`](backend/src/modules/loyalty/CLAUDE.md) |
 | Tồn kho, inventory log | [`backend/src/modules/inventory/CLAUDE.md`](backend/src/modules/inventory/CLAUDE.md) |
 | Mã giảm giá | [`backend/src/modules/discount-code/CLAUDE.md`](backend/src/modules/discount-code/CLAUDE.md) |
-| Gói bảo hành | [`backend/src/modules/warranty-package/CLAUDE.md`](backend/src/modules/warranty-package/CLAUDE.md) |
 | Thuộc tính sản phẩm (màu, size...) | [`backend/src/modules/attribute/CLAUDE.md`](backend/src/modules/attribute/CLAUDE.md) |
 | Lịch sử tìm kiếm | [`backend/src/modules/search-history/CLAUDE.md`](backend/src/modules/search-history/CLAUDE.md) |
 | Profile người dùng, địa chỉ | [`backend/src/modules/users/CLAUDE.md`](backend/src/modules/users/CLAUDE.md) |
-| Banner, tin tức, feedback/contact | [`backend/src/modules/content/CLAUDE.md`](backend/src/modules/content/CLAUDE.md) |
+| Feedback/contact | [`backend/src/modules/content/CLAUDE.md`](backend/src/modules/content/CLAUDE.md) |
 | Danh sách yêu thích | [`backend/src/modules/wishlist/CLAUDE.md`](backend/src/modules/wishlist/CLAUDE.md) |
 | FE components (Button, Modal, Layout…) | [`frontend/src/components/CLAUDE.md`](frontend/src/components/CLAUDE.md) |
 | FE state management (Zustand stores) | [`frontend/src/stores/CLAUDE.md`](frontend/src/stores/CLAUDE.md) |
@@ -158,12 +156,12 @@ npm run test:ci             # CI mode + coverage
 
 - **Framework:** Node.js 20 + Express 4 + Sequelize 6 + MySQL 8
 - **Pattern:** Mỗi module = 1 vertical slice tự trị. Bên trong: Controller → Service → Repository
-- **19 modules:** `admin`, `ai`, `attribute`, `auth`, `cart`, `catalog`, `content`, `discount-code`, `image`, `inventory`, `loyalty`, `orders`, `payment`, `reviews`, `search-history`, `upload`, `users`, `warranty-package`, `wishlist`
+- **16 modules:** `admin`, `ai`, `attribute`, `auth`, `cart`, `catalog`, `content`, `discount-code`, `image`, `inventory`, `orders`, `payment`, `reviews`, `search-history`, `upload`, `users`, `wishlist`
 - **Entry:** `src/server.js` → `src/app.js` (DI wiring — nơi duy nhất khởi tạo modules)
 - **Cache:** Redis optional; falls back to in-memory automatically
 - **Pattern variants:**
-  - Full DI (13 modules): `auth`, `users`, `cart`, `wishlist`, `reviews`, `loyalty`, `content`, `upload`, `catalog`, `orders`, `payment`, `inventory`, `ai`
-  - Singleton / Thin wrapper (6 modules): `discount-code`, `warranty-package`, `search-history`, `image`, `admin`, `attribute`
+  - Full DI (11 modules): `auth`, `users`, `cart`, `wishlist`, `reviews`, `content`, `upload`, `catalog`, `orders`, `payment`, `inventory`, `ai`
+  - Singleton / Thin wrapper (5 modules): `discount-code`, `search-history`, `image`, `admin`, `attribute`
 
 ## 4.2 Frontend — Feature-Based
 
@@ -172,7 +170,7 @@ npm run test:ci             # CI mode + coverage
 - **Feature code** (`src/features/<name>/`): `api/`, `components/`, `hooks/`, `pages/`, `types/`
 - **Shared:** `src/components/`, `src/stores/`, `src/hooks/`, `src/utils/`, `src/lib/`, `src/types/`
 - **State (server):** TanStack Query v5; **State (client):** Zustand v5 + Immer
-- **14 features:** `admin`, `ai`, `auth`, `cart`, `catalog`, `checkout`, `content`, `loyalty`, `orders`, `payment`, `reviews`, `upload`, `users`, `wishlist`
+- **11 features:** `admin`, `ai`, `auth`, `cart`, `catalog`, `checkout`, `orders`, `payment`, `reviews`, `upload`, `users`, `wishlist`
 
 ---
 
@@ -216,16 +214,16 @@ npm run test:ci             # CI mode + coverage
 
 ```
 orders    → cart (xóa sau đặt), users (shippingAddress), payment (check status),
-            inventory (eventBus: order.created/cancelled), discount-code (apply),
-            loyalty (cộng điểm sau DELIVERED), emailService, WarrantyPackage (fee)
+            inventory (eventBus: order.cancelled), discount-code (apply),
+            emailService
 
-cart      → catalog (Product/Variant info), warranty-package (fee calc)
+cart      → catalog (Product/Variant info)
 
 catalog   → attribute (filters), inventory (stock display), image (thumbnails)
 
 auth      → users (User model); ← used by all modules (authenticate middleware)
 
-admin     → orders, users, catalog, reviews, content, loyalty, discount-code, inventory
+admin     → orders, users, catalog, reviews, content, discount-code, inventory
 
 ai        → catalog (vector search via vectorStoreService), attribute (name generator inject)
           ← Product model hooks (auto-upsert afterCreate/Update/Destroy)
@@ -250,12 +248,11 @@ inventory ← orders (subscribe: order.created, order.cancelled → audit log)
 - **Rate limiters:** `chatbotLimiter` = 20 req/60s (dev: 200). Test AI → dùng `NODE_ENV=development`.
 - **Vector Store:** auto-rebuild khi vector count lệch >5% so với active products. Log "Rebuilding vector store..." là bình thường.
 - **Cron Jobs:** daily 2AM + weekly Sunday 3AM — không disable trừ khi có lý do rõ ràng.
-- **Models đã drop hoàn toàn:** `Collection`, `EmailCampaign`, `NewsletterSubscriber`, `ImportLog` — không reference lại.
-- **Loyalty points:** cộng sau DELIVERED, không phải sau PLACED hay PAID.
+- **Models đã drop hoàn toàn:** `Collection`, `EmailCampaign`, `NewsletterSubscriber`, `ImportLog`, `Banner`, `News`, `LoyaltyHistory`, `WarrantyPackage`, `ProductWarranty` — không reference lại.
 - **Stock decrement:** LUÔN trong transaction với SELECT FOR UPDATE — không decrement bên ngoài unitOfWork.
 - **Discount usedCount:** tăng CHỈ khi đơn PAID, không phải khi validate/apply.
 - **Image model:** file `models/image.js` tồn tại nhưng đã xóa khỏi `index.js` associations — `image` module require trực tiếp, không qua DI.
-- **Content module:** có 3 mount points (`/api/banners`, `/api/news`, `/api/contact`) — khác với các module đơn lẻ.
+- **Content module:** chỉ còn 1 endpoint (`POST /api/contact/feedback`) — feedback/contact only.
 - **Catalog module:** có 3 mount points (`/api/products`, `/api/categories`, `/api/brands`).
 - **AI module basePath:** `/api/chatbot` (không phải `/api/ai`).
 - **Wishlist module basePath:** `/api/wishlists` (plural).
@@ -267,12 +264,12 @@ inventory ← orders (subscribe: order.created, order.cancelled → audit log)
 
 | Suite | Suites | Tests | Runtime | Config |
 |---|---|---|---|---|
-| BE Unit Tests | 173 | 4.061 | ~10s | `jest.config.js` |
+| BE Unit Tests | 166 | 3.778 | ~10s | `jest.config.js` |
 | BE Integration Tests | 42 | 228 | ~50s | `jest.integration.config.js` |
 | BE API HTTP Tests | 45 | 866 | ~140s | `jest.api.config.js` |
 | BE E2E Tests | 5 | 102 | ~20s | `jest.e2e.config.js` |
 | FE Component Tests | 17 | 437 | ~7s | `jest.config.cjs` (frontend/) |
-| **Tổng** | **282** | **5.694** | | |
+| **Tổng** | **275** | **5.411** | | |
 
 - **BE Coverage (local):** statements 99%, branches 97%, functions 99%, lines 99% (thresholds trong `jest.config.js`)
 - **BE Coverage (CI):** statements ≥97%, lines ≥97%, branches ≥85%, functions ≥95%
@@ -288,15 +285,15 @@ inventory ← orders (subscribe: order.created, order.cancelled → audit log)
 CLAUDE.md                                    ← File này: navigation entry point
 STRUCTURE.md                                 ← Architecture, tech stack, data flow, schema
 DIAGRAMS.md                                  ← Mermaid diagrams (Use Case, Sequence, ERD, Flow)
-TESTING_STRATEGY.md                          ← Chiến lược test 5 tầng, 5.694 tests
+TESTING_STRATEGY.md                          ← Chiến lược test 5 tầng, 5.411 tests
 README.md                                    ← Project README, setup instructions
 
 backend/CLAUDE.md                            ← BE architecture, DI pattern, request trace
 backend/src/
   config/CLAUDE.md                           ← sequelize, redis, swagger
-  constants/CLAUDE.md                        ← Hằng số toàn cục (loyalty, shipping, OTP, JWT)
+  constants/CLAUDE.md                        ← Hằng số toàn cục (shipping, OTP, JWT)
   locales/CLAUDE.md                          ← i18n vi.json / en.json, conventions
-  models/CLAUDE.md                           ← 32 models, associations, conventions
+  models/CLAUDE.md                           ← 27 models, associations, conventions
   migrations/CLAUDE.md                       ← 71+ migrations, phases, patterns
   middlewares/CLAUDE.md                      ← authenticate, authorize, cache, rate-limiter
   shared/CLAUDE.md                           ← EventBus, AppError/errors, admin-audit, unit-of-work
@@ -310,18 +307,16 @@ backend/src/
   modules/auth/CLAUDE.md                     ← Auth: JWT, OAuth Google, OTP, password reset
   modules/cart/CLAUDE.md                     ← Giỏ hàng: guest/auth merge, variant pricing
   modules/catalog/CLAUDE.md                  ← Sản phẩm, danh mục, thương hiệu
-  modules/content/CLAUDE.md                  ← Banner, tin tức, feedback/contact
+  modules/content/CLAUDE.md                  ← Feedback/contact
   modules/discount-code/CLAUDE.md            ← Mã giảm giá
   modules/image/CLAUDE.md                    ← Image proxy, CDN bypass
   modules/inventory/CLAUDE.md               ← Tồn kho, audit log
-  modules/loyalty/CLAUDE.md                  ← Điểm tích lũy loyalty
   modules/orders/CLAUDE.md                   ← Đơn hàng, checkout, trạng thái
   modules/payment/CLAUDE.md                  ← Thanh toán MoMo/VNPay
   modules/reviews/CLAUDE.md                  ← Đánh giá sản phẩm
   modules/search-history/CLAUDE.md           ← Lịch sử tìm kiếm
   modules/upload/CLAUDE.md                   ← Upload file (multer, magic bytes)
   modules/users/CLAUDE.md                    ← Profile người dùng, địa chỉ
-  modules/warranty-package/CLAUDE.md         ← Gói bảo hành
   modules/wishlist/CLAUDE.md                 ← Danh sách yêu thích
   __tests__/CLAUDE.md                        ← Unit cross-cutting tests
   __integration__/CLAUDE.md                  ← Integration tests (MySQL real)
@@ -349,7 +344,7 @@ frontend/src/
   utils/CLAUDE.md                            ← 14 utility files
   types/CLAUDE.md                            ← Type barrel, shared types
   styles/CLAUDE.md                           ← SCSS tokens, global CSS, Tailwind guidance
-  constants/CLAUDE.md                        ← PAGINATION, UPLOAD, LOYALTY
+  constants/CLAUDE.md                        ← PAGINATION, UPLOAD
   __tests__/CLAUDE.md                        ← Component tests (Jest + RTL)
   features/admin/CLAUDE.md                   ← Admin dashboard, CRUD pages
   features/ai/CLAUDE.md                      ← AI chatbot widget
@@ -357,8 +352,6 @@ frontend/src/
   features/cart/CLAUDE.md                    ← Giỏ hàng
   features/catalog/CLAUDE.md                 ← Shop, product detail, categories, brands
   features/checkout/CLAUDE.md                ← Checkout flow
-  features/content/CLAUDE.md                 ← News, contact
-  features/loyalty/CLAUDE.md                 ← Điểm tích lũy
   features/orders/CLAUDE.md                  ← Orders list, order detail
   features/payment/CLAUDE.md                 ← Payment QR page
   features/reviews/CLAUDE.md                 ← Product reviews

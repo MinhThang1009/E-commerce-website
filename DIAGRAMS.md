@@ -13,9 +13,8 @@ Tất cả diagram dùng [Mermaid](https://mermaid.js.org/) — render trực ti
   - [2.3 Cart & Checkout](#23-cart--checkout)
   - [2.4 Orders & Payment](#24-orders--payment)
   - [2.5 Reviews & Ratings](#25-reviews--ratings)
-  - [2.6 Inventory & Warranty](#26-inventory--warranty)
-  - [2.7 Loyalty & Rewards](#27-loyalty--rewards)
-  - [2.8 AI Chatbot & Search History](#28-ai-chatbot--search-history)
+  - [2.6 Inventory](#26-inventory)
+  - [2.7 AI Chatbot & Search History](#27-ai-chatbot--search-history)
   - [2.9 Content Management](#29-content-management)
   - [2.10 Admin Dashboard](#210-admin-dashboard)
 - [3. Sơ Đồ Tuần Tự](#3-sơ-đồ-tuần-tự)
@@ -57,7 +56,7 @@ flowchart TB
         G3[Xem chi tiết sản phẩm]
         G4[Thêm vào giỏ hàng guest]
         G5[Chat với AI Chatbot]
-        G6[Xem banner và tin tức]
+        G6[Xem tin tức]
         G7[Đăng ký tài khoản]
         G8[Đăng nhập / Google OAuth]
     end
@@ -70,10 +69,8 @@ flowchart TB
         C4[Xác nhận đã nhận hàng]
         C5[Viết đánh giá sản phẩm]
         C6[Quản lý danh sách yêu thích]
-        C7[Tích điểm và đổi điểm Loyalty]
-        C8[Quản lý hồ sơ và địa chỉ]
-        C9[Chọn gói bảo hành]
-        C10[Xem lịch sử tìm kiếm]
+        C7[Quản lý hồ sơ và địa chỉ]
+        C8[Xem lịch sử tìm kiếm]
     end
 
     subgraph UC_ADMIN["Use cases — Quản trị viên"]
@@ -81,15 +78,12 @@ flowchart TB
         A1[Quản lý sản phẩm và biến thể]
         A2[Quản lý đơn hàng và cập nhật trạng thái]
         A3[Quản lý người dùng]
-        A4[Quản lý nội dung banner và tin tức]
-        A5[Xem thống kê và báo cáo]
-        A6[Quản lý mã giảm giá]
-        A7[Quản lý tồn kho và nhập hàng]
-        A8[Quản lý gói bảo hành]
-        A9[Xem audit log]
-        A10[Quản lý danh mục và thương hiệu]
-        A11[Quản lý chương trình Loyalty]
-        A12[Quản lý thuộc tính sản phẩm]
+        A4[Xem thống kê và báo cáo]
+        A5[Quản lý mã giảm giá]
+        A6[Quản lý tồn kho và nhập hàng]
+        A7[Xem audit log]
+        A8[Quản lý danh mục và thương hiệu]
+        A9[Quản lý thuộc tính sản phẩm]
     end
 
     Guest --> UC_GUEST
@@ -195,7 +189,7 @@ flowchart TB
     subgraph CART["Cart — Giỏ hàng"]
         direction TB
         C1["GET /api/cart\nLấy giỏ hàng user cart hoặc guest cart theo sessionId"]
-        C2["POST /api/cart\nThêm sản phẩm vào giỏ\ncó thể kèm warrantyPackageIds JSON"]
+        C2["POST /api/cart\nThêm sản phẩm vào giỏ"]
         C3["PUT /api/cart/items/:id\nCập nhật quantity\nvalidate tồn kho thực tế"]
         C4["DELETE /api/cart/items/:id\nXóa 1 item khỏi giỏ"]
         C5["DELETE /api/cart\nXóa toàn bộ giỏ hàng"]
@@ -205,16 +199,12 @@ flowchart TB
     subgraph CHECKOUT["Checkout — Quy trình đặt hàng"]
         direction TB
         D1["Chọn địa chỉ giao hàng\nhoặc nhập địa chỉ mới"]
-        D2["Chọn gói bảo hành tùy chọn\nGET /api/warranty-packages/product/:id"]
-        D3["Nhập mã giảm giá\nPOST /api/discount-codes/apply\ncheck type value min_order_amount end_date usage_limit"]
-        D4["Sử dụng điểm Loyalty\nPOST /api/loyalty/redeem SELECT FOR UPDATE\n1 điểm = POINTS_VALUE VND"]
-        D5["Chọn phương thức thanh toán\nCOD / VNPay / MoMo / bank_transfer"]
-        D6["POST /api/orders\nTạo đơn hàng\nSELECT FOR UPDATE variants\ntính subtotal + shipping + warranty - discount - loyalty_discount"]
+        D2["Nhập mã giảm giá\nPOST /api/discount-codes/apply\ncheck type value min_order_amount end_date usage_limit"]
+        D3["Chọn phương thức thanh toán\nCOD / VNPay / MoMo / bank_transfer"]
+        D4["POST /api/orders\nTạo đơn hàng\nSELECT FOR UPDATE variants\ntính subtotal + shipping - discount"]
         D1 --> D2
         D2 --> D3
         D3 --> D4
-        D4 --> D5
-        D5 --> D6
     end
 
     Guest --> C1
@@ -240,7 +230,7 @@ flowchart TB
         O3["GET /api/orders/number/:number\nTra cứu theo mã ORD-YYMM-..."]
         O4["GET /api/orders/track\nTra cứu công khai không cần auth"]
         O5["POST /api/orders/:id/cancel\nHủy đơn khi pending hoặc processing\nhoàn stock về variants"]
-        O6["POST /api/orders/:id/receive\nXác nhận đã nhận hàng\ntrigger cộng Loyalty points"]
+        O6["POST /api/orders/:id/receive\nXác nhận đã nhận hàng"]
         O7["POST /api/orders/:id/repay\nThanh toán lại khi pending/failed"]
         O8["GET /api/orders/shipping-estimate\nƯớc tính phí vận chuyển\n?subtotal=N&weight=N"]
     end
@@ -259,7 +249,7 @@ flowchart TB
     subgraph ADMIN_O["Admin — Quản lý đơn hàng"]
         direction TB
         AO1["GET /api/orders/admin/all\nTất cả đơn hàng lọc status payment date"]
-        AO2["PATCH /api/orders/admin/:id/status\nCập nhật pending→processing→shipped→delivered\nTrigger loyalty khi DELIVERED"]
+        AO2["PATCH /api/orders/admin/:id/status\nCập nhật pending→processing→shipped→delivered"]
         AO3["GET /api/admin/stats\nThống kê theo khoảng thời gian\ngroupBy hour/day/week/month"]
     end
 
@@ -298,7 +288,7 @@ flowchart TB
     Admin --> R7
 ```
 
-## 2.6 Inventory & Warranty
+## 2.6 Inventory
 
 ```mermaid
 flowchart TB
@@ -306,55 +296,19 @@ flowchart TB
 
     subgraph INVENTORY["Inventory — Tồn kho"]
         direction TB
-        I1["EventBus order.created\ninventory deduct stock\nSELECT FOR UPDATE + ghi inventory_logs"]
-        I2["EventBus order.cancelled\ninventory restore stock\nghi inventory_logs type=return"]
+        I1["EventBus order.created\ninventory ghi audit log\nghi inventory_logs"]
+        I2["EventBus order.cancelled\ninventory ghi audit log restore\nghi inventory_logs type=return"]
         I3["POST /api/inventory/products/:id/restock\nAdmin nhập hàng\nghi inventory_logs type=restock"]
         I4["GET /api/inventory/logs\nAdmin xem lịch sử tồn kho\nlọc productId variantId change_type"]
         I5["GET /api/admin/products/:id\nXem chi tiết sản phẩm kèm tồn kho theo variant"]
     end
 
-    subgraph WARRANTY["Warranty — Gói bảo hành"]
-        direction TB
-        W1["GET /api/warranty-packages\nDanh sách tất cả gói bảo hành"]
-        W2["GET /api/warranty-packages/product/:productId\nGói bảo hành của sản phẩm cụ thể\nqua product_warranties junction table"]
-        W3["POST /api/warranty-packages\nAdmin tạo gói bảo hành\nname duration_months price terms coverage"]
-        W4["PUT /api/warranty-packages/:id\nAdmin cập nhật gói"]
-        W5["DELETE /api/warranty-packages/:id\nAdmin xóa gói"]
-    end
-
     Admin --> I3
     Admin --> I4
     Admin --> I5
-    Admin --> W3
-    Admin --> W4
-    Admin --> W5
 ```
 
-## 2.7 Loyalty & Rewards
-
-```mermaid
-flowchart TB
-    Customer(["Khách hàng"])
-    Admin(["Admin"])
-
-    subgraph LOYALTY["Loyalty — Điểm tích lũy & Hạng thành viên"]
-        direction TB
-        L1["GET /api/loyalty\nXem points + lịch sử paginated\ntype earn/spend/refund/adjustment"]
-        L2["POST /api/loyalty/redeem\nĐổi điểm lấy giảm giá\nSELECT FOR UPDATE chống race condition\n1 điểm = POINTS_VALUE VND"]
-        L3["Tích điểm tự động sau DELIVERED\nfloor subtotal / POINTS_EARN_RATE\ngọi từ orders service khi admin cập nhật status"]
-        L4["Hệ thống tính tier tự động\nBronze 0-9 pts\nSilver 10-49 pts\nGold 50-199 pts\nPlatinum >=200 pts"]
-        L5["GET /api/admin/users/:id\nAdmin xem lịch sử điểm của user\nkèm loyaltyHistories paginated"]
-        L6["PUT /api/admin/users/:id\nAdmin điều chỉnh loyalty points thủ công\ncập nhật loyalty_points trực tiếp"]
-        L3 --> L4
-    end
-
-    Customer --> L1
-    Customer --> L2
-    Admin --> L5
-    Admin --> L6
-```
-
-## 2.8 AI Chatbot & Search History
+## 2.7 AI Chatbot & Search History
 
 ```mermaid
 flowchart TB
@@ -395,35 +349,14 @@ flowchart TB
 flowchart TB
     Guest(["Khách vãng lai"])
     Customer(["Khách hàng"])
-    Admin(["Admin"])
 
-    subgraph CONTENT["Content — Nội dung & Liên hệ"]
+    subgraph CONTENT["Content — Feedback/Liên hệ"]
         direction TB
-        CN1["GET /api/banners\nDanh sách banner active HTTP cache 900s\nposition home_hero/home_middle/sidebar"]
-        CN2["GET /api/news\nDanh sách tin tức đã publish\nlọc category is_published=true"]
-        CN3["GET /api/news/slug/:slug\nChi tiết tin tức auto tăng view_count"]
-        CN4["GET /api/news/slug/:slug/related\nTin tức liên quan cùng category"]
-        CN5["POST /api/contact/feedback\nGửi feedback/liên hệ\nname email phone subject content\ngửi email admin async"]
-        CN6["POST /api/banners\nAdmin tạo banner mới\ntitle_vi title_en image_url link_url position priority"]
-        CN7["PATCH /api/banners/:id\nAdmin cập nhật banner"]
-        CN8["DELETE /api/banners/:id\nAdmin xóa banner soft delete"]
-        CN9["POST /api/news\nAdmin tạo tin tức\ntitle_vi title_en slug content_vi content_en thumbnail"]
-        CN10["PUT /api/news/:id\nAdmin cập nhật tin tức"]
-        CN11["DELETE /api/news/:id\nAdmin xóa tin tức soft delete"]
+        CN1["POST /api/contact/feedback\nGửi feedback/liên hệ\nname email phone subject content\ngửi email admin async"]
     end
 
     Guest --> CN1
-    Guest --> CN2
-    Guest --> CN3
-    Guest --> CN4
-    Guest --> CN5
-    Customer --> CN5
-    Admin --> CN6
-    Admin --> CN7
-    Admin --> CN8
-    Admin --> CN9
-    Admin --> CN10
-    Admin --> CN11
+    Customer --> CN1
 ```
 
 ## 2.10 Admin Dashboard
@@ -437,8 +370,8 @@ flowchart TB
         AD1["GET /api/admin/dashboard\nTổng quan: totalUsers totalRevenue aov\ntopProducts ordersByStatus"]
         AD2["GET /api/admin/stats\nDoanh thu chi tiết theo startDate/endDate\ngroupBy=day/month/year"]
         AD3["GET /api/admin/analytics/top-products\nTop sản phẩm bán chạy\nlọc metric=revenue/soldCount khoảng thời gian"]
-        AD4["GET /api/admin/users\nDanh sách users + loyalty tier lọc role is_active"]
-        AD5["PUT /api/admin/users/:id\nCập nhật user: role isActive + điều chỉnh điểm\nbao gồm toggle kích hoạt/vô hiệu hóa"]
+        AD4["GET /api/admin/users\nDanh sách users lọc role is_active"]
+        AD5["PUT /api/admin/users/:id\nCập nhật user: role isActive\nbao gồm toggle kích hoạt/vô hiệu hóa"]
         AD6["GET /api/admin/discount-codes\nQuản lý mã giảm giá lọc is_active expired"]
         AD7["POST/PUT/DELETE /api/admin/discount-codes\nCRUD mã giảm giá\ncode type=percent/fixed value min_order_amount usage_limit"]
         AD8["GET /api/admin/audit-logs\nNhật ký thao tác admin\nlọc action entity_type adminId date"]
@@ -543,10 +476,6 @@ sequenceDiagram
     participant Mail as Gmail SMTP
 
     Customer->>FE: Xem giỏ hàng chọn địa chỉ
-    FE->>API: GET /api/warranty-packages/product/:id
-    API-->>FE: Danh sách gói bảo hành
-    Customer->>FE: Chọn gói bảo hành tùy chọn
-
     Customer->>FE: Nhập mã giảm giá
     FE->>API: POST /api/discount-codes/validate code
     API->>DB: SELECT discount_codes WHERE code + is_active + end_date > NOW() + used_count < usage_limit
@@ -556,19 +485,8 @@ sequenceDiagram
         API-->>FE: discountAmount type value
     end
 
-    Customer->>FE: Sử dụng điểm Loyalty tùy chọn
-    FE->>API: POST /api/loyalty/redeem points
-    API->>DB: SELECT FOR UPDATE users WHERE id=?
-    alt Không đủ điểm
-        API-->>FE: 400 Số điểm không đủ
-    else Đủ điểm
-        API->>DB: UPDATE loyalty_points - points
-        API->>DB: INSERT loyalty_histories type=spend
-        API-->>FE: pointsRedeemed remainingPoints
-    end
-
     Customer->>FE: Xác nhận đặt hàng chọn phương thức thanh toán
-    FE->>API: POST /api/orders items shippingAddress paymentMethod discountCode pointsToUse warrantyPackageIds
+    FE->>API: POST /api/orders items shippingAddress paymentMethod discountCode
     API->>DB: BEGIN TRANSACTION
     API->>DB: SELECT FOR UPDATE product_variants WHERE id IN lock chống oversell
     DB-->>API: Variants với stock_quantity hiện tại
@@ -579,9 +497,9 @@ sequenceDiagram
         FE-->>Customer: Thông báo hết hàng
     else Đủ hàng
         API->>API: _generateOrderNumber ORD-YYMM-timestamp-hex
-        API->>API: Tính subtotal + _calculateShipping + warrantyFee - discountAmount - loyaltyDiscount
+        API->>API: Tính subtotal + _calculateShipping - discountAmount
         API->>DB: INSERT orders number status=pending paymentStatus=pending
-        API->>DB: INSERT order_items orderId productId variantId quantity unitPrice warrantyPackageIds
+        API->>DB: INSERT order_items orderId productId variantId quantity unitPrice
         API->>DB: UPDATE product_variants SET stock_quantity = stock_quantity - qty
 
         alt COD hoặc bank_transfer
@@ -628,9 +546,7 @@ sequenceDiagram
     Note over Customer,Mail: Khi admin xác nhận DELIVERED
 
     API->>DB: UPDATE orders SET status=delivered
-    API->>DB: UPDATE loyalty_points += floor subtotal / POINTS_EARN_RATE
-    API->>DB: INSERT loyalty_histories type=earn
-    API->>API: Kiểm tra tier mới Bronze/Silver/Gold/Platinum
+    API->>API: eventBus.publish type=order.delivered payload orderId
 ```
 
 ## 3.3 AI Chatbot (RAG pipeline)
@@ -722,7 +638,7 @@ sequenceDiagram
     participant Disk as Disk Storage /uploads/
 
     Admin->>FE: Chọn file ảnh JPEG/PNG/WebP max 10MB
-    FE->>API: POST /api/uploads/{type}/single\nmultipart/form-data type product/avatar/news\nauthenticate middleware
+    FE->>API: POST /api/uploads/{type}/single\nmultipart/form-data type product/avatar\nauthenticate middleware
 
     API->>API: multer middleware validate MIME type\nmimetype in image/jpeg image/png image/webp
     API->>API: generate filename timestamp-random.ext
@@ -872,7 +788,6 @@ erDiagram
         datetime otp_expires
         varchar_255 reset_password_token
         datetime reset_password_expires
-        int loyalty_points
         datetime created_at
         datetime updated_at
         datetime deleted_at
@@ -1075,29 +990,6 @@ erDiagram
         datetime updated_at
     }
 
-    warranty_packages {
-        int id PK
-        varchar_200 name
-        text description
-        int duration_months
-        decimal_15_2 price
-        longtext terms
-        longtext coverage
-        tinyint is_active
-        int sort_order
-        datetime created_at
-        datetime updated_at
-    }
-
-    product_warranties {
-        int id PK
-        int product_id FK
-        int warranty_package_id FK
-        tinyint is_default
-        datetime created_at
-        datetime updated_at
-    }
-
     wishlists {
         int id PK
         int user_id FK
@@ -1162,8 +1054,6 @@ erDiagram
     attribute_groups ||--o{ attribute_values : "có giá trị"
     products ||--o{ product_attribute_groups : "liên kết attribute group"
     attribute_groups ||--o{ product_attribute_groups : "liên kết sản phẩm"
-    products ||--o{ product_warranties : "có gói bảo hành"
-    warranty_packages ||--o{ product_warranties : "áp dụng cho sản phẩm"
     product_variants ||--o{ product_images : "có ảnh riêng"
     products ||--o{ wishlists : "được lưu yêu thích"
     products ||--o{ recently_viewed : "được xem gần đây"
@@ -1227,11 +1117,7 @@ erDiagram
         decimal_15_2 tax
         decimal_15_2 shipping_cost
         decimal_15_2 discount
-        decimal_15_2 warranty_cost
-        decimal_15_2 points_discount
         decimal_15_2 total
-        int points_earned
-        int points_used
         varchar_255 tracking_number
         varchar_255 shipping_provider
         datetime estimated_delivery
@@ -1257,7 +1143,6 @@ erDiagram
         decimal_15_2 subtotal
         varchar_255 image
         longtext attributes
-        longtext warranty_package_ids
         datetime created_at
         datetime updated_at
     }
@@ -1278,18 +1163,6 @@ erDiagram
         int variant_id FK
         int quantity
         decimal_15_2 unit_price
-        longtext warranty_package_ids
-        datetime created_at
-        datetime updated_at
-    }
-
-    loyalty_histories {
-        int id PK
-        int user_id FK
-        int order_id FK
-        int points
-        enum type
-        varchar_255 description
         datetime created_at
         datetime updated_at
     }
@@ -1297,8 +1170,6 @@ erDiagram
     users ||--o{ orders : "đặt hàng"
     discount_codes ||--o{ orders : "được áp dụng"
     orders ||--o{ order_items : "gồm các mục"
-    orders ||--o{ loyalty_histories : "tạo lịch sử điểm"
-    users ||--o{ loyalty_histories : "tích lũy điểm"
     users ||--o{ carts : "có giỏ hàng"
     carts ||--o{ cart_items : "chứa sản phẩm"
 ```
@@ -1307,41 +1178,6 @@ erDiagram
 
 ```mermaid
 erDiagram
-    banners {
-        int id PK
-        varchar_255 title_vi
-        varchar_255 title_en
-        varchar_512 image_url
-        varchar_512 link_url
-        enum position
-        tinyint is_active
-        int priority
-        datetime created_at
-        datetime updated_at
-        datetime deleted_at
-    }
-
-    news {
-        int id PK
-        varchar_200 title_vi
-        varchar_200 title_en
-        varchar_100 slug UK
-        longtext content_vi
-        longtext content_en
-        varchar_512 thumbnail
-        text description_vi
-        text description_en
-        varchar_100 category_vi
-        varchar_100 category_en
-        int view_count
-        varchar_500 tags
-        tinyint is_published
-        int user_id FK
-        datetime created_at
-        datetime updated_at
-        datetime deleted_at
-    }
-
     feedbacks {
         int id PK
         varchar_255 name
@@ -1389,7 +1225,6 @@ erDiagram
         datetime updated_at
     }
 
-    users ||--o{ news : "viết bài"
     reviews ||--o{ review_feedbacks : "nhận đánh giá hữu ích"
     users ||--o{ review_feedbacks : "đánh giá hữu ích"
     users ||--o{ search_histories : "lịch sử tìm kiếm"
@@ -1459,14 +1294,14 @@ erDiagram
 flowchart TB
     subgraph CLIENT["Client Layer port 5175"]
         direction TB
-        FE["Frontend\nReact 18 + TypeScript\nVite build tool\nTanStack Query v5\nZustand v5 + Immer\nTailwind CSS + SCSS\n14 features"]
+        FE["Frontend\nReact 18 + TypeScript\nVite build tool\nTanStack Query v5\nZustand v5 + Immer\nTailwind CSS + SCSS\n11 features"]
     end
 
     subgraph BACKEND["Backend Layer port 8888"]
         direction TB
-        API["Express 4\nNode.js 20\nModular Monolith\n19 modules"]
+        API["Express 4\nNode.js 20\nModular Monolith\n16 modules"]
 
-        subgraph MODULES["19 Business Modules"]
+        subgraph MODULES["16 Business Modules"]
             direction TB
             M1["auth JWT OTP OAuth"]
             M2["users profile addresses"]
@@ -1476,22 +1311,19 @@ flowchart TB
             M6["payment VNPay MoMo COD"]
             M7["reviews đánh giá"]
             M8["wishlist yêu thích"]
-            M9["loyalty points tiers"]
-            M10["inventory tồn kho"]
-            M11["content banner news"]
-            M12["ai RAG chatbot"]
-            M13["upload file"]
-            M14["admin dashboard"]
-            M15["discount-code"]
-            M16["warranty-package"]
-            M17["attribute groups values"]
-            M18["search-history"]
-            M19["image proxy"]
+            M9["inventory tồn kho"]
+            M10["content feedback"]
+            M11["ai RAG chatbot"]
+            M12["upload file"]
+            M13["admin dashboard"]
+            M14["discount-code"]
+            M15["attribute groups values"]
+            M16["search-history"]
         end
 
         subgraph SHARED["Shared Infrastructure"]
             direction TB
-            SH1["EventBus in-memory pub/sub\npayment.succeeded → inventory\norder.created → inventory audit"]
+            SH1["EventBus in-memory pub/sub\npayment.succeeded\norder.created → inventory audit\norder.cancelled → inventory audit"]
             SH2["UnitOfWork runInTransaction + lockRow\nSELECT FOR UPDATE chống oversell"]
             SH3["AppError + errors\nAdminAuditService audit log"]
         end
@@ -1512,8 +1344,8 @@ flowchart TB
 
     subgraph STORAGE["Storage Layer"]
         direction TB
-        DB[("MySQL 8\nSequelize 6 ORM\n32 models\ntransactions + soft deletes")]
-        REDIS[("Redis\nbl:jti JWT blacklist\nContent cache banners catalog\nChatbot cache TTL 5m\nIn-memory fallback tự động")]
+        DB[("MySQL 8\nSequelize 6 ORM\n27 models\ntransactions + soft deletes")]
+        REDIS[("Redis\nbl:jti JWT blacklist\nContent cache catalog\nChatbot cache TTL 5m\nIn-memory fallback tự động")]
         DISK[("Disk Storage\n/uploads/ static files\nvector-db.json product vectors\nchat history in-memory Map")]
     end
 
@@ -1797,30 +1629,27 @@ flowchart TB
     subgraph BE_LAYER["Backend Node.js 20 + Express 4 port 8888"]
         direction TB
 
-        subgraph BE_MODULES["19 Business Modules src/modules/"]
+        subgraph BE_MODULES["16 Business Modules src/modules/"]
             BM1["auth\nDI User eventBus emailService redisClient\nJWT + OTP + Google OAuth"]
             BM2["users\nDI User Address eventBus\nProfile + địa chỉ"]
             BM3["catalog\nDI Category Brand Product ProductVariant\nProductAttribute Review RecentlyViewed\nRedis cache cho listing"]
-            BM4["cart\nDI Cart CartItem Product ProductVariant WarrantyPackage\nGuest + user cart + merge"]
-            BM5["orders\nDI Order OrderItem Cart Product DiscountCode\nLoyaltyHistory InventoryLog WarrantyPackage\nSELECT FOR UPDATE email confirm"]
+            BM4["cart\nDI Cart CartItem Product ProductVariant\nGuest + user cart + merge"]
+            BM5["orders\nDI Order OrderItem Cart Product DiscountCode\nInventoryLog\nSELECT FOR UPDATE email confirm"]
             BM6["payment\nDI Order DiscountCode Cart momoService vnpayService\nIPN webhook + idempotency"]
             BM7["reviews\nDI Review Product User Order OrderItem\nhasUserPurchased check"]
             BM8["wishlist\nDI Wishlist Product"]
-            BM9["loyalty\nDI User LoyaltyHistory sequelize\nSELECT FOR UPDATE redeem"]
-            BM10["inventory\nDI Product ProductVariant InventoryLog\nEventBus subscriber"]
-            BM11["content\nDI Banner News Feedback emailService redisClient\nHTTP cache 900s banners"]
-            BM12["ai\nDI Product ProductVariant Category chatbotService\nRAG pipeline orchestration"]
-            BM13["upload\nMulter file handling\n/uploads/type/ static"]
-            BM14["admin\nSingleton dashboard analytics + audit log\nCRUD delegates + stats"]
-            BM15["discount-code\nSingleton validate + apply codes"]
-            BM16["warranty-package\nSingleton CRUD gói bảo hành"]
-            BM17["attribute\nSingleton attribute groups + values cho AI"]
-            BM18["search-history\nSingleton lưu + lấy lịch sử tìm kiếm"]
-            BM19["image\nSingleton image proxy middleware"]
+            BM9["inventory\nDI Product ProductVariant InventoryLog\nEventBus subscriber"]
+            BM10["content\nDI Feedback emailService\nfeedback/contact only"]
+            BM11["ai\nDI Product ProductVariant Category chatbotService\nRAG pipeline orchestration"]
+            BM12["upload\nMulter file handling\n/uploads/type/ static"]
+            BM13["admin\nSingleton dashboard analytics + audit log\nCRUD delegates + stats"]
+            BM14["discount-code\nSingleton validate + apply codes"]
+            BM15["attribute\nSingleton attribute groups + values cho AI"]
+            BM16["search-history\nSingleton lưu + lấy lịch sử tìm kiếm"]
         end
 
         subgraph BE_SHARED["Shared Infrastructure src/shared/"]
-            BS1["EventBus in-memory pub/sub singleton\nevent payment.succeeded → inventory\nevent order.created → inventory audit\nevent order.cancelled → inventory restore"]
+            BS1["EventBus in-memory pub/sub singleton\nevent payment.succeeded\nevent order.created → inventory audit\nevent order.cancelled → inventory audit"]
             BS2["UnitOfWork runInTransaction + lockRow\nSELECT FOR UPDATE chống race condition"]
             BS3["AppError + errors.js HTTP error hierarchy\nAdminAuditService ghi audit_logs"]
         end

@@ -42,6 +42,12 @@ const Category = sequelize.define(
         this.setDataValue('descriptionVi', v);
       },
     },
+    isActive: {
+      type: DataTypes.BOOLEAN,
+      allowNull: false,
+      defaultValue: true,
+      field: 'is_active',
+    },
     // Xóa mềm (soft delete)
     deletedAt: {
       type: DataTypes.DATE,

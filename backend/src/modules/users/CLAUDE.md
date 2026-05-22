@@ -138,7 +138,6 @@ Inject từ `app.js`:
 - `auth` — share `User` model (auth tạo/query User, users module update User — không gọi service của nhau)
 - `orders` — `shippingAddress` khi tạo đơn (đọc trực tiếp từ DB, không gọi users service)
 - `admin` — user management (gọi qua admin service)
-- `loyalty` — `User.loyaltyPoints` field
 
 ---
 

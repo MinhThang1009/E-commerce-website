@@ -70,7 +70,7 @@ Xóa test data còn sót sau khi integration/API/E2E tests fail giữa chừng. 
 npm run db:cleanup-test-data
 ```
 
-Tự động reseed news nếu `news` table bị xóa sạch sau cleanup.
+Xóa records theo prefix `__` — news table đã bị drop, script này chỉ cleanup tables còn tồn tại.
 
 ## 2.4 db-verify.js
 
@@ -145,7 +145,7 @@ npx sequelize-cli db:seed --seed 20260101000003-seed-admin-user.js  # Chỉ seed
 | `20260101000001-seed-categories.js` | 1 | 5 categories: Điện thoại (slug `dien-thoai`), Tablet, Laptop, Smartwatch, Đồng hồ |
 | `20260101000002-seed-brands.js` | 2 | 12 brands: Apple, Samsung, Xiaomi, OPPO, Vivo, Realme, Nokia, Huawei, LG, ASUS, Acer, CITIZEN |
 | `20260101000003-seed-admin-user.js` | 3 | 1 admin: `admin@techstore.vn` / `Admin@123` (bcrypt hash, cost 10) |
-| `20260101000004-seed-news.js` | 4 | Tin tức công nghệ mẫu (~10 bài viết) — DELETE trước khi INSERT (không dùng INSERT IGNORE) |
+| `20260101000004-seed-news.js` | 4 | **Đã xóa / bỏ qua** — news table đã drop, seeder này không còn áp dụng |
 
 **CẢNH BÁO:** Đổi password admin trước khi deploy production. Hash trong seeder là `Admin@123`.
 

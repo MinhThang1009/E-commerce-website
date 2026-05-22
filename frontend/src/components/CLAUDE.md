@@ -159,7 +159,7 @@ import { Button, Modal, PremiumButton, Card, Badge } from '@components/common';
 | Component         | Mô tả                                                                                                                                                         |
 | ----------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `HeroSection`     | Landing hero với gradient mesh background, product category cards (iPhone, MacBook, Watch, iPad), Framer Motion animations, 2 CTA buttons. Responsive design. |
-| `HomeNewsSection` | Hiển thị bài viết mới nhất (`useGetNewsQuery`) và banners (`useGetBannersQuery`).                                                                             |
+| `HomeNewsSection` | Hiển thị bài viết mới nhất (`useGetNewsQuery`) và banners (`useGetBannersQuery`). Banner backend module đã xóa nhưng GET `/banners` endpoint vẫn hoạt động.   |
 
 Chỉ dùng trong `HomePage` (`src/pages/HomePage.tsx`).
 

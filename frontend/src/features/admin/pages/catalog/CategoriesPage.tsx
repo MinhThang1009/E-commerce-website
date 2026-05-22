@@ -15,7 +15,7 @@ import {
   Switch,
   InputNumber,
   Space,
-  message,
+  App,
   Popconfirm,
   Tag,
   Image,
@@ -55,6 +55,7 @@ interface CategoryFormData {
 
 const CategoriesPage: React.FC = () => {
   const { t } = useTranslation();
+  const { message } = App.useApp();
   const [form] = Form.useForm();
   const [isModalVisible, setIsModalVisible] = useState(false);
   const [editingCategory, setEditingCategory] = useState<Category | null>(null);
@@ -287,6 +288,7 @@ const CategoriesPage: React.FC = () => {
           }}
           footer={null}
           width={600}
+          forceRender
         >
           <Form
             form={form}
@@ -310,12 +312,7 @@ const CategoriesPage: React.FC = () => {
             </Form.Item>
 
             <Form.Item name="image" label={t('admin.categories.table.image')}>
-              <ImageUpload
-                type="categories"
-                multiple={false}
-                value={form.getFieldValue('image')}
-                onChange={(val) => form.setFieldsValue({ image: val })}
-              />
+              <ImageUpload type="categories" multiple={false} />
             </Form.Item>
 
             <Form.Item name="parentId" label={t('admin.categories.form.parentCategory')}>

@@ -17,7 +17,6 @@
 
 File `src/constants/index.js` chứa tất cả hằng số business-level dùng chung trong backend:
 
-- Tỉ lệ tích điểm loyalty
 - Ngưỡng phí ship
 - Giới hạn upload, phân trang, cart
 - Thời gian hết hạn OTP, JWT refresh
@@ -30,8 +29,6 @@ Bất cứ giá trị nào lặp lại ở >1 file → đưa vào đây.
 
 | Constant                   |           Giá trị | Mô tả                                                     |
 | -------------------------- | ----------------: | --------------------------------------------------------- |
-| `POINTS_EARN_RATE`         |          `100000` | 100,000 VND chi tiêu = 1 điểm loyalty                     |
-| `POINTS_VALUE`             |            `1000` | 1 điểm = 1,000 VND khi đổi                                |
 | `SHIPPING_FREE_THRESHOLD`  |         `2000000` | Miễn phí ship nếu subtotal ≥ 2,000,000 VND                |
 | `SHIPPING_BASE_RATE`       |           `30000` | Phí ship cơ bản (VND)                                     |
 | `SHIPPING_WEIGHT_RATE`     |            `5000` | +5,000 VND mỗi kg vượt 2kg                                |
@@ -64,6 +61,5 @@ if (subtotal >= this.constants.SHIPPING_FREE_THRESHOLD) {
 
 # 4. Gotchas
 
-- **Đừng thay đổi `POINTS_EARN_RATE` / `POINTS_VALUE`** mà không cập nhật tài liệu — ảnh hưởng tới hạng thành viên (Bronze/Silver/Gold/Platinum).
 - **Đừng inline số magic** trong service. Ví dụ KHÔNG: `if (subtotal >= 2000000)`. Phải dùng `constants.SHIPPING_FREE_THRESHOLD`.
 - File này là **server-side**, không expose ra frontend. Frontend có constants riêng tại `frontend/src/constants/`.

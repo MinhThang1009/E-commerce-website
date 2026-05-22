@@ -29,7 +29,7 @@
 
 ## 1.1 Purpose
 
-Hiển thị nội dung editorial: tin tức/blog (list + detail), trang liên hệ, và quản lý banner cho HomePage. Cung cấp API hooks cho banner CRUD (dùng bởi admin). Admin pages cho news/banner quản lý nằm trong `features/admin/pages/content/` — không phải feature này.
+Hiển thị tin tức/blog (list + detail), trang liên hệ, và banner cho HomePage. Admin pages cho news/banner đã bị xóa cùng với module backend tương ứng — feature này chỉ còn phần hiển thị public và feedback form. API hooks cho banner vẫn còn để fetch banners hiển thị trên homepage, nhưng CRUD admin banner đã bị xóa.
 
 ## 1.2 Routes
 
@@ -131,12 +131,9 @@ Không dùng Zustand stores.
 
 **Mutations:**
 
-- `useCreateNewsMutation()` — tạo bài viết (admin)
+- `useCreateNewsMutation()` — tạo bài viết (admin — backend endpoint vẫn còn)
 - `useUpdateNewsMutation()` — cập nhật bài viết; invalidate `newsKeys.all` + `newsKeys.detail(id)`
 - `useDeleteNewsMutation()` — xóa bài viết
-- `useCreateBannerMutation()` — tạo banner (admin)
-- `useUpdateBannerMutation()` — cập nhật banner với PATCH (admin)
-- `useDeleteBannerMutation()` — xóa banner (admin)
 - `useSendFeedbackMutation()` — gửi form liên hệ; body: `{ name, email, phone?, subject, content }`
 
 ---
@@ -223,9 +220,6 @@ interface FeedbackRequest {
 
 ## 7.2 Used by
 
-- `features/admin/pages/content/BannersPage.tsx` — `useGetBannersQuery`, `useCreateBannerMutation`, `useUpdateBannerMutation`, `useDeleteBannerMutation`
-- `features/admin/pages/content/NewsPage.tsx` — `useGetNewsQuery`, `useDeleteNewsMutation`
-- `features/admin/pages/content/CreateNewsPage.tsx` — `useCreateNewsMutation`, `ProductPickerModal`
 - `src/pages/HomePage.tsx` — `useGetBannersQuery({ position: 'home_hero' })` để lấy banner hero
 - `src/components/common/FeedbackModal.tsx` — `useSendFeedbackMutation` (dùng cùng mutation với ContactPage)
 
@@ -237,8 +231,7 @@ interface FeedbackRequest {
 - **Rich text HTML** trong `NewsDetailPage` render qua `dangerouslySetInnerHTML` + `DOMPurify.sanitize()` — backend đã sanitize trước khi lưu nhưng FE vẫn sanitize lần nữa để phòng ngừa.
 - **Banners** query tại điểm dùng (không global store) — `HomePage` gọi `useGetBannersQuery({ position: 'home_hero', isActive: true })` trực tiếp.
 - **`useSendFeedbackMutation`** dùng cho cả `ContactPage` và `FeedbackModal` trong `src/components/common/` — hai nơi dùng cùng mutation, cùng endpoint.
-- **`useUpdateBannerMutation` dùng PATCH** — khác với `useUpdateNewsMutation` dùng PUT.
-- **Admin pages** cho news/banner nằm trong `features/admin/pages/content/`, không phải trong feature này.
+- **Admin banner/news pages đã xóa**: `features/admin/pages/content/` (BannersPage, NewsPage, CreateNewsPage) đã bị xóa cùng với backend modules. Không tạo lại.
 - **`useGetRelatedNewsQuery`** nhận `slug` (không phải ID) — endpoint `GET /news/slug/:slug/related`.
 - **Category filter** trong `NewsListPage` dùng string category name (không phải ID) — `params.category !== 'Tất cả'` mới append vào query.
 

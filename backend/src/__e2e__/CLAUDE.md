@@ -43,13 +43,13 @@ Trả lời câu hỏi: **"Toàn bộ user journey có hoạt động không?"**
 
 # 3. User flows
 
-| File                                | Flow                                                                                                              |
-| ----------------------------------- | ----------------------------------------------------------------------------------------------------------------- |
-| `auth-flow.e2e.test.js`             | Register → verify email (OTP) → login → refresh token → logout → token invalid                                    |
-| `shopping-flow.e2e.test.js`         | Browse catalog → add to cart → apply discount → checkout → place order → write review                             |
-| `checkout-flow.e2e.test.js`         | Cart → discount code → payment COD → payment VNPay IPN → payment MoMo IPN → order DELIVERED → loyalty points cộng |
-| `admin-flow.e2e.test.js`            | Admin login → create product → upload image → update inventory → view audit log → manage users                    |
-| `wishlist-profile-flow.e2e.test.js` | Add to wishlist → move to cart → update profile → add address → set default address                               |
+| File                                | Flow                                                                                           |
+| ----------------------------------- | ---------------------------------------------------------------------------------------------- |
+| `auth-flow.e2e.test.js`             | Register → verify email (OTP) → login → refresh token → logout → token invalid                 |
+| `shopping-flow.e2e.test.js`         | Browse catalog → add to cart → apply discount → checkout → place order → write review          |
+| `checkout-flow.e2e.test.js`         | Cart → discount code → payment COD → payment VNPay IPN → payment MoMo IPN → order DELIVERED    |
+| `admin-flow.e2e.test.js`            | Admin login → create product → upload image → update inventory → view audit log → manage users |
+| `wishlist-profile-flow.e2e.test.js` | Add to wishlist → move to cart → update profile → add address → set default address            |
 
 ---
 
@@ -147,4 +147,3 @@ describe('Checkout flow — COD payment', () => {
 - **Payment mocking**: VNPay/MoMo IPN callbacks được simulate bằng cách POST đến endpoint `/api/payments/vnpay-ipn` và `/api/payments/momo-ipn` với chữ ký giả lập (test environment bỏ qua verify signature)
 - **Email service mock**: không gửi mail thật — `jest.mock('@services/email')` trong `e2e-setup.js`
 - **Port 9996** — riêng cho E2E, không conflict với API (9997) hay integration (9998)
-- **Loyalty points** chỉ cộng sau DELIVERED — test bước cộng điểm phải trigger DELIVERED status trước

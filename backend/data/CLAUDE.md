@@ -28,7 +28,7 @@ data/
 
 # 2. migration_full.sql
 
-Full schema MySQL snapshot. Chứa **40 `CREATE TABLE`** statements — nhưng 5 bảng legacy đã bị drop bởi migrations sau (`collections`, `product_collections`, `email_campaigns`, `import_logs`, `newsletter_subscribers`). Schema active thực tế có **35 bảng**.
+Full schema MySQL snapshot. Chứa các `CREATE TABLE` statements — một số bảng legacy đã bị drop bởi migrations sau (`collections`, `product_collections`, `email_campaigns`, `import_logs`, `newsletter_subscribers`, `banners`, `news`, `loyalty_histories`, `warranty_packages`, `product_warranties`). Schema active thực tế có **27 bảng**.
 
 **Dùng khi:**
 - Setup DB nhanh cho dev mới (không cần chạy từng migration)
@@ -51,7 +51,6 @@ Dữ liệu mẫu bulk insert cho dev/demo. Bao gồm:
 - ~50 sản phẩm: laptop, điện thoại, smartwatch, tablet
 - ProductVariants, ProductSpecifications, ProductAttributes
 - Categories (5), Brands (12)
-- WarrantyPackages mẫu
 
 **Reset DB hoàn toàn:**
 ```bash

@@ -29,7 +29,7 @@
 
 ## 1.1 Purpose
 
-Luồng thanh toán single-page với nhiều section: nhập địa chỉ giao hàng (hỗ trợ autofill từ địa chỉ đã lưu), chọn phương thức thanh toán (COD, VNPay, MoMo, trả góp, chuyển khoản), áp mã giảm giá, đổi điểm loyalty, xem order summary, xác nhận đơn hàng. Sau khi tạo đơn → redirect sang cổng thanh toán tương ứng hoặc trang orders.
+Luồng thanh toán single-page với nhiều section: nhập địa chỉ giao hàng (hỗ trợ autofill từ địa chỉ đã lưu), chọn phương thức thanh toán (COD, VNPay, MoMo, trả góp, chuyển khoản), áp mã giảm giá, xem order summary, xác nhận đơn hàng. Sau khi tạo đơn → redirect sang cổng thanh toán tương ứng hoặc trang orders.
 
 Feature tối giản — **không có** `api/`, `components/`, `types/` riêng. Dùng trực tiếp hooks từ các features khác.
 
@@ -85,7 +85,6 @@ Không có endpoint riêng — dùng từ features khác:
 | GET    | `/cart/validate`            | cart    | Validate tồn kho + giá trước submit |
 | DELETE | `/cart`                     | cart    | Xóa giỏ sau thanh toán              |
 | GET    | `/users/me/addresses`       | users   | Danh sách địa chỉ đã lưu (autofill) |
-| GET    | `/loyalty/me`               | loyalty | Điểm tích lũy hiện có               |
 | POST   | `/orders`                   | orders  | Tạo đơn hàng                        |
 | POST   | `/discount-codes/validate`  | orders  | Validate + áp mã giảm giá           |
 | POST   | `/payment/momo/create-url`  | payment | Tạo URL thanh toán MoMo             |
@@ -99,7 +98,6 @@ Không có endpoint riêng — dùng từ features khác:
 - `useGetCartCountQuery()` từ `features/cart` — count badge
 - `useValidateCartQuery()` từ `features/cart` — validate trước submit
 - `useGetAddressesQuery()` từ `features/users` — địa chỉ đã lưu
-- `useGetLoyaltyInfoQuery()` từ `features/loyalty` — điểm tích lũy
 
 **Mutations (từ features khác):**
 
@@ -142,7 +140,6 @@ Không có `types/` riêng. Import từ:
 - `features/orders` — `useCreateOrderMutation`, `useApplyDiscountCodeMutation`
 - `features/cart` — `CartItem`, `cartKeys`, `useGetCartCountQuery`, `useValidateCartQuery`, `useClearCartMutation`
 - `features/payment` — `useCreateMomoUrlMutation`, `useCreateVNPayUrlMutation`
-- `features/loyalty` — `useGetLoyaltyInfoQuery`
 - `features/users` — `useGetAddressesQuery`
 - `stores/cart-store` — items, subtotal, clearLocalCart
 - `stores/auth-store` — user profile, isAuthenticated
@@ -166,7 +163,6 @@ Không có feature nào import từ checkout.
 - **Bank transfer flow:** tạo order → navigate `/payment-qr?orderId=&amount=&numberOrder=` → `PaymentQRPage` trong feature `payment`.
 - **Phí ship tính từ khoảng cách:** `AddressPicker` trả về lat/lon từ geocoding (LocationIQ) → tính Haversine distance từ kho hàng (21.0378, 105.7827) → 15k cho 3km đầu, +5k/km tiếp theo, max 100k.
 - **`shippingCost` không gửi lên backend** — backend tự tính theo Phase 7.3. FE chỉ hiển thị estimate.
-- **Loyalty points:** 1 điểm = 1.000 VND. Max điểm dùng = min(availablePoints, floor((subtotal - discountAmount) / 1000)).
 - **Validate cart trước submit:** `useValidateCartQuery` — bắt items hết hàng trước khi user confirm.
 - **Discount code từ CartPage:** navigate với `location.state = { voucherCode, discountAmount }` → CheckoutPage tự động apply nếu state có voucher.
 

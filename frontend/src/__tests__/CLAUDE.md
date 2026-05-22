@@ -36,7 +36,7 @@ Frontend tests xác minh:
 - Real API calls (mock toàn bộ)
 - Backend business logic
 
-**Baseline:** 17 suites, 437 tests, ~7s runtime, **100% coverage** tất cả metrics.
+**Baseline:** 17 suites, 437 tests, ~7s runtime, **100% coverage** tất cả metrics. (Note: test count may differ slightly after loyalty/warranty removal.)
 
 ---
 

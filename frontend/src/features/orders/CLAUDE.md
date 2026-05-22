@@ -86,7 +86,7 @@ export const orderKeys = {
 | `useCancelOrderMutation()`       | `POST /api/orders/:id/cancel`    | Hủy đơn hàng — invalidate detail + list                                                          |
 | `useRepayOrderMutation()`        | `POST /api/orders/:id/repay`     | Tạo lại URL thanh toán cho đơn đã tạo                                                            |
 | `useApplyDiscountCodeMutation()` | `POST /api/discount-codes/apply` | Áp mã giảm giá — nhận `{ code, orderAmount }`, trả về `{ discountAmount, discountCodeId, code }` |
-| `useConfirmReceivedMutation()`   | `POST /api/orders/:id/receive`   | Xác nhận đã nhận hàng — trả về `{ pointsEarned }`                                                |
+| `useConfirmReceivedMutation()`   | `POST /api/orders/:id/receive`   | Xác nhận đã nhận hàng                                                                            |
 
 ---
 
@@ -101,9 +101,9 @@ export const orderKeys = {
 
 ## Components
 
-| Component      | Mô tả                                                                                                                                                                                                                                                                                                                                                         |
-| -------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `OrderDetails` | Expandable detail panel trong `OrdersPage`. Hiển thị: stepper tiến trình (pending→processing→shipped→delivered), địa chỉ giao hàng, thông tin thanh toán, danh sách items (product thumbnail, variant, warranty), payment summary (subtotal, shipping, warranty, discount, loyalty discount, total). Nếu đơn `delivered` → hiện nút "Viết đánh giá" per item. |
+| Component      | Mô tả                                                                                                                                                                                                                                                                                                                   |
+| -------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `OrderDetails` | Expandable detail panel trong `OrdersPage`. Hiển thị: stepper tiến trình (pending→processing→shipped→delivered), địa chỉ giao hàng, thông tin thanh toán, danh sách items (product thumbnail, variant), payment summary (subtotal, shipping, discount, total). Nếu đơn `delivered` → hiện nút "Viết đánh giá" per item. |
 
 ---
 
@@ -127,13 +127,9 @@ interface Order {
   shippingCost: number;
   discount: number;
   total: number;
-  warrantyCost?: number;
   trackingNumber?: string;
   shippingProvider?: string;
   estimatedDelivery?: string;
-  pointsEarned?: number;
-  pointsUsed?: number;
-  pointsDiscount?: number;
   items?: OrderItem[];
   // Shipping/billing address: shippingFirstName, shippingLastName, shippingAddress1, shippingCity, shippingState, shippingZip, shippingCountry, shippingPhone...
   // Billing tương tự với prefix "billing"
@@ -168,7 +164,6 @@ interface CreateOrderRequest {
     productId: string;
     variantId?: string;
     quantity: number;
-    warrantyPackageIds?: string[];
   }>;
 }
 ```
@@ -196,9 +191,9 @@ interface CreateOrderRequest {
 - **`TrackOrderPage` dùng `fetch()` trực tiếp** — không qua `apiClient`, không attach Bearer token. Endpoint public, guest có thể tra cứu bằng mã đơn + email.
 - **`useGetOrderByIdQuery` hỗ trợ `refetchInterval`** — `PaymentQRPage` dùng hook này với `{ refetchInterval: 5000 }` để poll payment status.
 - **`useApplyDiscountCodeMutation` endpoint là `/api/discount-codes/apply`** — không phải `/orders/apply-discount`. Nhận `{ code, orderAmount }` — phải truyền orderAmount để server tính % discount.
-- **`useConfirmReceivedMutation` trả về `{ pointsEarned }`** — `OrdersPage` hiển thị toast "Bạn nhận được X điểm" nếu `pointsEarned > 0`.
+- **`useConfirmReceivedMutation`** — `OrdersPage` nhận phản hồi sau khi xác nhận.
 - **`useCreateOrderMutation` invalidate `cartKeys`** — import `cartKeys` từ cart feature để invalidate cả `cartKeys.all` và `cartKeys.count` sau khi đặt hàng.
 - **Cross-feature import hợp lệ:** `OrdersPage` → `ReviewModal` từ feature `reviews` — đây là cross-feature import duy nhất được phép trong dự án.
 - **`Order` interface có flat address fields** — `shippingFirstName`, `shippingAddress1`... không phải nested object `shippingAddress: { firstName, address1 }`.
 - **`OrdersPage` xử lý payment redirect:** detect `?payment=success|failed` trong URL sau khi VNPay/MoMo redirect về → clear cart + show notification → `navigate('/orders', { replace: true })`.
-- **Nút "Xác nhận nhận hàng"** hiển thị khi `status === 'shipped'` hoặc (`status === 'delivered'` và chưa có `pointsEarned`). Logic này tránh duplicate confirm.
+- **Nút "Xác nhận nhận hàng"** hiển thị khi `status === 'shipped'` hoặc `status === 'delivered'` chưa xử lý. Logic này tránh duplicate confirm.

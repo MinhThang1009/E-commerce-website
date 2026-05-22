@@ -49,7 +49,7 @@ return {
 };
 ```
 
-`app.js` iterate qua `mounts` khi mount. Models inject qua DI: `Category`, `Brand`, `Product`, `ProductAttribute`, `ProductVariant`, `ProductSpecification`, `Review`, `RecentlyViewed`, `WarrantyPackage`.
+`app.js` iterate qua `mounts` khi mount. Models inject qua DI: `Category`, `Brand`, `Product`, `ProductAttribute`, `ProductVariant`, `ProductSpecification`, `Review`, `RecentlyViewed`.
 
 ---
 
@@ -143,25 +143,25 @@ Cache detail: `product:detail:{id}` / `product:detail:{slug}` (TTL 10 phút), ch
 
 Route order quan trọng — named paths phải đứng trước `/:id` để tránh bị catch nhầm.
 
-| Method | Path                   | Auth                              | Cache HTTP | Mô tả                                                                                         |
-| ------ | ---------------------- | --------------------------------- | ---------- | --------------------------------------------------------------------------------------------- |
-| GET    | `/`                    | —                                 | 60s        | Danh sách sản phẩm (filter, sort, pagination)                                                 |
-| GET    | `/recently-viewed`     | authenticate                      | —          | Sản phẩm đã xem gần đây (tối đa 20)                                                           |
-| GET    | `/featured`            | —                                 | 600s       | Sản phẩm nổi bật                                                                              |
-| GET    | `/new-arrivals`        | —                                 | 300s       | Sản phẩm mới nhất                                                                             |
-| GET    | `/best-sellers`        | —                                 | —          | Sản phẩm bán chạy (tham số: period=week/month/year)                                           |
-| GET    | `/deals`               | —                                 | —          | Sản phẩm đang giảm giá                                                                        |
-| GET    | `/filters`             | —                                 | —          | Filter options (priceRange, brands, colors, sizes, attributes)                                |
-| GET    | `/search`              | —                                 | —          | Tìm kiếm full-text (tham số: q, page, limit)                                                  |
-| GET    | `/suggestions`         | —                                 | —          | Autocomplete gợi ý tên sản phẩm (tham số: q)                                                  |
-| GET    | `/slug/:slug`          | optionalAuthenticate              | 300s       | Chi tiết theo slug (hỗ trợ ?skuId, ?color)                                                    |
-| GET    | `/:id/related`         | —                                 | —          | Sản phẩm liên quan                                                                            |
-| GET    | `/:id/variants`        | —                                 | —          | Danh sách biến thể                                                                            |
-| GET    | `/:id/reviews-summary` | —                                 | —          | Tổng hợp rating (average, count, distribution)                                                |
-| GET    | `/:id`                 | optionalAuthenticate              | 300s       | Chi tiết theo ID (hỗ trợ ?skuId, ?color)                                                      |
-| POST   | `/`                    | authenticate + authorize('admin') | —          | Tạo sản phẩm (transaction: product + categories + variants + attributes + specs + warranties) |
-| PUT    | `/:id`                 | authenticate + authorize('admin') | —          | Cập nhật sản phẩm (transaction)                                                               |
-| DELETE | `/:id`                 | authenticate + authorize('admin') | —          | Xóa sản phẩm                                                                                  |
+| Method | Path                   | Auth                              | Cache HTTP | Mô tả                                                                            |
+| ------ | ---------------------- | --------------------------------- | ---------- | -------------------------------------------------------------------------------- |
+| GET    | `/`                    | —                                 | 60s        | Danh sách sản phẩm (filter, sort, pagination)                                    |
+| GET    | `/recently-viewed`     | authenticate                      | —          | Sản phẩm đã xem gần đây (tối đa 20)                                              |
+| GET    | `/featured`            | —                                 | 600s       | Sản phẩm nổi bật                                                                 |
+| GET    | `/new-arrivals`        | —                                 | 300s       | Sản phẩm mới nhất                                                                |
+| GET    | `/best-sellers`        | —                                 | —          | Sản phẩm bán chạy (tham số: period=week/month/year)                              |
+| GET    | `/deals`               | —                                 | —          | Sản phẩm đang giảm giá                                                           |
+| GET    | `/filters`             | —                                 | —          | Filter options (priceRange, brands, colors, sizes, attributes)                   |
+| GET    | `/search`              | —                                 | —          | Tìm kiếm full-text (tham số: q, page, limit)                                     |
+| GET    | `/suggestions`         | —                                 | —          | Autocomplete gợi ý tên sản phẩm (tham số: q)                                     |
+| GET    | `/slug/:slug`          | optionalAuthenticate              | 300s       | Chi tiết theo slug (hỗ trợ ?skuId, ?color)                                       |
+| GET    | `/:id/related`         | —                                 | —          | Sản phẩm liên quan                                                               |
+| GET    | `/:id/variants`        | —                                 | —          | Danh sách biến thể                                                               |
+| GET    | `/:id/reviews-summary` | —                                 | —          | Tổng hợp rating (average, count, distribution)                                   |
+| GET    | `/:id`                 | optionalAuthenticate              | 300s       | Chi tiết theo ID (hỗ trợ ?skuId, ?color)                                         |
+| POST   | `/`                    | authenticate + authorize('admin') | —          | Tạo sản phẩm (transaction: product + categories + variants + attributes + specs) |
+| PUT    | `/:id`                 | authenticate + authorize('admin') | —          | Cập nhật sản phẩm (transaction)                                                  |
+| DELETE | `/:id`                 | authenticate + authorize('admin') | —          | Xóa sản phẩm                                                                     |
 
 ## 4.2 Categories (`/api/categories`)
 
@@ -194,7 +194,7 @@ Route order quan trọng — named paths phải đứng trước `/:id` để tr
 
 ## 5.1 Depends on
 
-- Models inject từ app.js: `Category`, `Brand`, `Product`, `ProductAttribute`, `ProductVariant`, `ProductSpecification`, `Review`, `RecentlyViewed`, `WarrantyPackage`
+- Models inject từ app.js: `Category`, `Brand`, `Product`, `ProductAttribute`, `ProductVariant`, `ProductSpecification`, `Review`, `RecentlyViewed`
 - `sequelize` — complex queries, transactions, raw SQL
 - `redisClient` — cache store factory async (optional, null → cacheStore null, service tự bypass)
 - `eventBus`, `logger`
@@ -206,7 +206,6 @@ Route order quan trọng — named paths phải đứng trước `/:id` để tr
 - `ai` — catalog data cho vector search context; Product model hooks auto-upsert vào vector store
 - `admin` — CRUD sản phẩm, danh mục, thương hiệu
 - `reviews` — `Product` model (avgRating display)
-- `warranty-package` — `WarrantyPackage` model (gắn vào product khi tạo)
 
 ---
 

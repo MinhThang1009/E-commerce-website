@@ -34,7 +34,7 @@
 
 ## 1.1 Purpose
 
-Xử lý toàn bộ vòng đời đơn hàng: tạo đơn từ giỏ hàng hoặc buy-now (với stock lock + SELECT FOR UPDATE), áp dụng discount code và loyalty points, hủy đơn (restore stock + hoàn điểm), thanh toán lại, xác nhận nhận hàng (user), cộng điểm loyalty sau `delivered`, và public order tracking. Service lớn nhất codebase (~885 lines).
+Xử lý toàn bộ vòng đời đơn hàng: tạo đơn từ giỏ hàng hoặc buy-now (với stock lock + SELECT FOR UPDATE), áp dụng discount code, hủy đơn (restore stock), thanh toán lại, xác nhận nhận hàng (user), và public order tracking.
 
 ## 1.2 DI Pattern
 
@@ -50,9 +50,7 @@ const repo = new SequelizeOrdersRepository({
   ProductVariant,
   User,
   DiscountCode,
-  LoyaltyHistory,
   InventoryLog,
-  WarrantyPackage,
   sequelize,
 });
 const emailGateway = {
@@ -121,15 +119,11 @@ runInTransaction(async (tx) => {
     Validate stockQuantity >= quantity
     decrementVariantStock() / decrementProductStock()
     Ghi pendingInventoryLog
-    Tính subtotal, totalWeightKg, warrantyFee
+    Tính subtotal, totalWeightKg
 
   Validate + apply discountCode (nếu có):
     - Manual methods (cod, bank_transfer, installment) → incrementDiscountCodeUsage() ngay
     - Online methods (momo, vnpay) → đợi IPN webhook xác nhận
-
-  Validate + trừ loyaltyPoints (nếu pointsToUse > 0):
-    - Validate user.loyaltyPoints >= pointsToUse
-    - updateUserPoints() + createLoyaltyHistory(type='spend')
 
   Tính shippingCost (free nếu subtotal >= SHIPPING_FREE_THRESHOLD)
   cancelPendingOrdersByUser(userId)   ← hủy pending orders cũ của user
@@ -137,7 +131,6 @@ runInTransaction(async (tx) => {
   createOrder() + createOrderItems() + createInventoryLogs()
 
   Cart flow + manual payment → clearUserCart()
-  Update orderId cho loyalty history nếu pointsToUse > 0
 })
 
 eventBus.publish('order.created', payload)          ← outside transaction
@@ -152,9 +145,6 @@ emailGateway.sendOrderConfirmationEmail()            ← fire-and-forget
 3. Nếu delivered + COD → order.paymentStatus = 'paid' tự động
 4. saveOrder()
 5. Nếu delivered VÀ previousStatus !== delivered:
-   - pointsEarned = floor(subtotal / POINTS_EARN_RATE)
-   - updateUserPoints() + createLoyaltyHistory(type='earn')
-   - order.pointsEarned = N; saveOrder()
    - eventBus.publish('order.delivered', ...)
 6. emailGateway.sendOrderStatusUpdateEmail() — fire-and-forget
 ```
@@ -167,8 +157,6 @@ Chỉ cancel được khi `status === 'pending'` hoặc `status === 'processing'
 runInTransaction(async (tx) => {
   order.status = 'cancelled'
   Restore stock (variant hoặc product)
-  Nếu order.pointsUsed > 0  → hoàn điểm, LoyaltyHistory(type='refund')
-  Nếu order.pointsEarned > 0 → thu hồi điểm, LoyaltyHistory(type='refund')
 })
 eventBus.publish('order.cancelled', payload)
 emailGateway.sendOrderCancellationEmail() — fire-and-forget
@@ -179,17 +167,13 @@ emailGateway.sendOrderCancellationEmail() — fire-and-forget
 User tự xác nhận đã nhận hàng. Trigger từ status `shipped`, `processing`, hoặc `delivered`:
 
 ```
-Nếu đã delivered + pointsEarned !== 0 → idempotent, trả 200 ngay
+Nếu đã delivered → idempotent, trả 200 ngay
 Nếu chưa:
   order.status = 'delivered'
   Nếu COD → order.paymentStatus = 'paid'
   saveOrder() + reload()
-  Nếu order.pointsEarned === 0:
-    newPointsAwarded = floor(subtotal / POINTS_EARN_RATE)
-    updateUserPoints() + createLoyaltyHistory(type='earn')
-    order.pointsEarned = newPointsAwarded (hoặc -1 nếu subtotal > 0 nhưng điểm = 0)
   eventBus.publish('order.delivered', ...)
-Trả về { pointsEarned, data: order }
+Trả về { data: order }
 ```
 
 ## 3.5 repayOrder
@@ -260,11 +244,11 @@ Base path: `/api/orders`
 
 Inject từ `app.js`:
 
-- **Models:** `Order`, `OrderItem`, `Cart`, `CartItem`, `Product`, `ProductVariant`, `User`, `DiscountCode`, `LoyaltyHistory`, `InventoryLog`, `WarrantyPackage`
+- **Models:** `Order`, `OrderItem`, `Cart`, `CartItem`, `Product`, `ProductVariant`, `User`, `DiscountCode`, `InventoryLog`
 - **sequelize:** cho transactions
 - **emailService:** wrapped thành `emailGateway` adapter trong `module.js`
 - **eventBus, logger**
-- **constants:** `POINTS_EARN_RATE`, `POINTS_VALUE`, `SHIPPING_FREE_THRESHOLD`, `SHIPPING_BASE_RATE`, `SHIPPING_WEIGHT_RATE`
+- **constants:** `SHIPPING_FREE_THRESHOLD`, `SHIPPING_BASE_RATE`, `SHIPPING_WEIGHT_RATE`
 
 ## 5.2 Used by
 
@@ -286,11 +270,10 @@ Inject từ `app.js`:
 
 - **SELECT FOR UPDATE bắt buộc:** `lockVariant(variantId, tx)` / `lockProduct(productId, tx)` trước khi decrement stock — không bỏ. Nếu bỏ → race condition oversell khi nhiều requests tạo đơn cùng lúc.
 - **Discount `usedCount` tăng khi nào:** Manual methods (cod/bank_transfer/installment) → tăng ngay trong `createOrder` transaction. Online methods (momo/vnpay) → tăng trong `payment-service.js` sau IPN/return success.
-- **Loyalty points cộng sau DELIVERED:** Inline trong `updateOrderStatus()` và `confirmReceived()`. Nếu `earnPoints` fail → status update vẫn succeed (không rollback — nhưng `order.pointsEarned` không được set).
 - **Stock restore là inline trong cancelOrder:** Restore xảy ra trong `orders-service.js` trực tiếp — không qua inventory event. `order.cancelled` event chỉ để inventory tạo audit LOG, không để restore stock.
 - **`cancelPendingOrdersByUser()`:** Được gọi trong `createOrder()` để hủy pending order cũ trước khi tạo mới (1 user chỉ có 1 pending order tại một thời điểm). Không expose qua HTTP.
 - **`emailGateway` là adapter:** Wrap `emailService` để dễ mock trong tests. Không gọi `emailService` trực tiếp trong service.
-- **`confirmReceived` idempotent:** Nếu `order.status === 'delivered'` và `order.pointsEarned !== 0` → return ngay không xử lý lại. `pointsEarned = -1` có nghĩa "đã xử lý nhưng không đủ điểm", không phải lỗi.
+- **`confirmReceived` idempotent:** Nếu `order.status === 'delivered'` → return ngay không xử lý lại.
 - **productImages mapping:** `getUserOrders()` và `getOrderById()` map `productImages[]` → `thumbnail` + `images[]` + delete `productImages`. FE expect shape này.
 - **`orders-service.js` dài:** Đọc `createOrder()` trước (lines 1–490), sau đó `updateOrderStatus()` + `cancelOrder()`. Helpers `_calcShippingCost`, `_buildTrackingSteps`, `_canCancel`... ở đầu file.
 

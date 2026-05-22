@@ -28,7 +28,7 @@
 
 ## 1.1 Purpose
 
-Cung cấp toàn bộ chức năng quản trị hệ thống: dashboard analytics, CRUD tất cả entities (sản phẩm, đơn hàng, users, reviews, discount codes), import hàng loạt sản phẩm từ CSV/JSON, export data, và xem audit logs.
+Cung cấp toàn bộ chức năng quản trị hệ thống: dashboard analytics, CRUD tất cả entities (sản phẩm, đơn hàng, users, reviews, discount codes, tồn kho), import hàng loạt sản phẩm từ CSV/JSON, export data, và xem audit logs.
 
 ## 1.2 Pattern (Singleton)
 
@@ -105,7 +105,7 @@ Tất cả dùng Sequelize.fn aggregate (không phải raw SQL):
 ## 3.2 Product CRUD
 
 - `getAllProducts({ page, limit, sortBy, sortOrder })` — danh sách có phân trang
-- `getProductById(id)` — chi tiết kèm categories, variants, specs, attributes, warrantyPackages
+- `getProductById(id)` — chi tiết kèm categories, variants, specs, attributes
 - `createProduct(data)` — tạo mới, sync vector store async sau khi tạo
 - `updateProduct(id, data)` — cập nhật, sync vector store async
 - `deleteProduct(id)` — xóa, remove khỏi vector store
@@ -146,14 +146,14 @@ Base path: `/api/admin`. Tất cả require `adminAuthenticate` + `auditMiddlewa
 | GET    | `/admin/dashboard`                     | —          | Stats tổng quan hệ thống                                        |
 | GET    | `/admin/stats`                         | —          | Stats theo khoảng thời gian (`startDate`, `endDate`, `groupBy`) |
 | GET    | `/admin/users`                         | —          | Danh sách users (phân trang, search, role filter)               |
-| GET    | `/admin/users/:id`                     | —          | Chi tiết user (kèm addresses, orders, loyaltyHistories)         |
+| GET    | `/admin/users/:id`                     | —          | Chi tiết user (kèm addresses, orders)                           |
 | PUT    | `/admin/users/:id`                     | —          | Cập nhật user                                                   |
 | DELETE | `/admin/users/:id`                     | —          | Xóa user                                                        |
 | GET    | `/admin/products`                      | —          | Danh sách sản phẩm (phân trang)                                 |
 | GET    | `/admin/products/import-template`      | —          | Download CSV template                                           |
 | POST   | `/admin/products/import`               | —          | Import từ CSV/JSON (multer memoryStorage, max 5MB)              |
 | GET    | `/admin/products/export`               | —          | Export ra CSV hoặc JSON (`?format=json`)                        |
-| GET    | `/admin/products/:id`                  | —          | Chi tiết sản phẩm (kèm variants, specs, attributes, warranties) |
+| GET    | `/admin/products/:id`                  | —          | Chi tiết sản phẩm (kèm variants, specs, attributes)             |
 | POST   | `/admin/products`                      | —          | Tạo sản phẩm mới                                                |
 | PUT    | `/admin/products/:id`                  | —          | Cập nhật sản phẩm                                               |
 | DELETE | `/admin/products/:id`                  | —          | Xóa sản phẩm                                                    |
@@ -190,7 +190,7 @@ Base path: `/api/admin`. Tất cả require `adminAuthenticate` + `auditMiddlewa
 - `discount-code` module — `discountCodeController` và `discountCodeValidator` import trực tiếp trong `routes.js` (cross-module import được cho phép ở routes layer)
 - `@shared/admin-audit` — `auditMiddleware` + `AdminAuditService`
 - `@services/vector-store/` — sync vector store sau create/import product (async)
-- `@models` — require trực tiếp (singleton exception): Product, User, Order, Review, Category, Brand, OrderItem, ProductVariant, ProductImage, ProductWarranty, ProductCategory, WarrantyPackage, CartItem, Wishlist, Address, LoyaltyHistory, SearchHistory, RecentlyViewed, InventoryLog, AuditLog, ChatMessage
+- `@models` — require trực tiếp (singleton exception): Product, User, Order, Review, Category, Brand, OrderItem, ProductVariant, ProductImage, ProductCategory, CartItem, Wishlist, Address, SearchHistory, RecentlyViewed, InventoryLog, AuditLog, ChatMessage
 - `@modules/ai/services/product/product-enricher` — enrich data trước khi upsert vector store (require lazy trong `setImmediate`)
 
 ## 5.2 Used by (module khác dùng module này)

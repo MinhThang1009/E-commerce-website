@@ -159,7 +159,7 @@ backend/
 │   │   ├── redis.js         # Redis client + in-memory fallback
 │   │   └── swagger.js       # OpenAPI spec builder
 │   ├── constants/
-│   │   └── index.js         # POINTS_EARN_RATE, SHIPPING_*, JWT_*, PAGINATION_*, OTP_*, MAX_CART_QUANTITY
+│   │   └── index.js         # SHIPPING_*, JWT_*, PAGINATION_*, OTP_*, MAX_CART_QUANTITY
 │   ├── locales/
 │   │   ├── vi.json          # Tiếng Việt
 │   │   └── en.json          # English
@@ -251,9 +251,9 @@ ordersModule.subscribeEvents(); // đăng ký event handlers
 app.use('/api' + ordersModule.basePath, ordersModule.router);
 ```
 
-**Singleton (6 modules)**: `discount-code`, `warranty-package`, `search-history`, `image`, `admin`, `attribute` — wrapper mỏng, gọi service functions trực tiếp (không inject deps). Dùng cho modules ít phức tạp hoặc không cần isolation test.
+**Singleton (5 modules)**: `discount-code`, `search-history`, `image`, `admin`, `attribute` — wrapper mỏng, gọi service functions trực tiếp (không inject deps). Dùng cho modules ít phức tạp hoặc không cần isolation test.
 
-## 4.3 19 Backend Modules
+## 4.3 16 Backend Modules
 
 | Module | Base path | Mô tả |
 |---|---|---|
@@ -265,17 +265,15 @@ app.use('/api' + ordersModule.basePath, ordersModule.router);
 | `payment` | `/api/payments` | MoMo + VNPay create-URL, IPN callback, refund (admin) |
 | `inventory` | `/api/inventory` | Stock view + adjust + audit log. SELECT FOR UPDATE chống race condition |
 | `reviews` | `/api/reviews` | CRUD review. Chỉ user có OrderItem với productId mới được review |
-| `loyalty` | `/api/loyalty` | Xem điểm, lịch sử, đổi điểm. Cộng điểm khi đơn chuyển sang DELIVERED |
 | `discount-code` | `/api/discount-codes` | CRUD mã giảm giá, validate, apply. usedCount tăng khi PAID |
-| `warranty-package` | `/api/warranty-packages` | Gói bảo hành + tính phí |
 | `ai` | `/api/chatbot` | RAG chat, gợi ý sản phẩm, thêm vào giỏ qua chatbot |
 | `admin` | `/api/admin` | Dashboard analytics, audit log, bulk operations |
-| `content` | `/api/banners`, `/api/news`, `/api/feedback` | Banner + tin tức + feedback form |
-| `wishlist` | `/api/wishlist` | Toggle yêu thích sản phẩm |
+| `content` | `/api/contact` | Feedback/contact form |
+| `wishlist` | `/api/wishlists` | Toggle yêu thích sản phẩm |
 | `image` | `/api/images` + `/api/img` (proxy) | Quản lý ảnh, Sharp processing, image proxy |
-| `upload` | `/api/upload` | Multer file upload, resize, cleanup |
+| `upload` | `/api/uploads` | Multer file upload, resize, cleanup |
 | `attribute` | `/api/attributes` | AttributeGroup + AttributeValue + AI name generator |
-| `search-history` | `/api/search-history` | Lưu và xem lịch sử tìm kiếm |
+| `search-history` | `/api/search-histories` | Lưu và xem lịch sử tìm kiếm |
 
 ## 4.4 Shared Infrastructure
 
@@ -328,10 +326,8 @@ Routing: tất cả routes lazy-loaded trong `AppRoutes.tsx` với `React.lazy` 
 | `users` | ProfilePage | useProfile, useUpdateProfile, useAddresses |
 | `wishlist` | WishlistPage | useWishlist, useToggleWishlist |
 | `reviews` | (embedded trong ProductDetail) | useProductReviews, useCreateReview |
-| `loyalty` | (embedded trong Profile) | useLoyaltyHistory, useRedeemPoints |
 | `ai` | ChatWidgetPortal (floating) | useChatbot, useRecommendations |
-| `content` | NewsListPage, NewsDetailPage, ContactPage | useNews, useBanners, useSubmitFeedback |
-| `admin` | DashboardPage + 11 admin pages | useAdminStats, useAdminOrders, useAdminProducts... |
+| `admin` | DashboardPage + admin pages | useAdminStats, useAdminOrders, useAdminProducts... |
 | `upload` | (embedded) | useUploadImage |
 
 ## 5.3 State Management
@@ -363,7 +359,7 @@ Routing: tất cả routes lazy-loaded trong `AppRoutes.tsx` với `React.lazy` 
 
 | Table | Model | Mô tả |
 |---|---|---|
-| `users` | User | Tài khoản: email, password (bcrypt), googleId, role (user/admin), OTP fields, loyalty points, resetToken |
+| `users` | User | Tài khoản: email, password (bcrypt), googleId, role (user/admin), OTP fields, resetToken |
 | `addresses` | Address | Địa chỉ giao hàng của user (1 user N addresses) |
 | `categories` | Category | Danh mục sản phẩm (flat, có parentId cho nested display) |
 | `brands` | Brand | Thương hiệu (name, slug, logo) |
@@ -375,14 +371,10 @@ Routing: tất cả routes lazy-loaded trong `AppRoutes.tsx` với `React.lazy` 
 | `carts` | Cart | Giỏ hàng: userId (nullable cho guest), sessionId, status (active/abandoned/converted) |
 | `cart_items` | CartItem | Item trong giỏ: cartId, productId, variantId, quantity |
 | `orders` | Order | Đơn hàng: status, paymentMethod, paymentStatus, shippingAddress (JSON), totalAmount, discountCodeId |
-| `order_items` | OrderItem | Item đơn hàng: orderId, productId, variantId, quantity, price, warrantyPackageId |
+| `order_items` | OrderItem | Item đơn hàng: orderId, productId, variantId, quantity, price |
 | `reviews` | Review | Đánh giá: userId, productId, rating, comment, isVerifiedPurchase |
 | `wishlist` | Wishlist | Junction: userId + productId (many-to-many) |
-| `loyalty_histories` | LoyaltyHistory | Lịch sử điểm: userId, orderId, points, type (earn/redeem), description |
 | `discount_codes` | DiscountCode | Mã giảm giá: code, type (percent/fixed), value, minOrderAmount, usedCount, maxUses, startDate, endDate |
-| `warranty_packages` | WarrantyPackage | Gói bảo hành: name, duration, price, description |
-| `banners` | Banner | Banner trang chủ: imageUrl, title, link, position, isActive |
-| `news` | News | Tin tức/blog: title, slug, content, thumbnail, userId (author), publishedAt |
 | `feedback` | Feedback | Form liên hệ: name, email, subject, message, status |
 | `chat_messages` | ChatMessage | Lịch sử chat AI: userId (nullable), sessionId, role (user/assistant), content, isArchived |
 | `search_histories` | SearchHistory | Lịch sử tìm kiếm: userId (nullable), query, timestamp |
@@ -395,12 +387,11 @@ Routing: tất cả routes lazy-loaded trong `AppRoutes.tsx` với `React.lazy` 
 | Table | Model | Quan hệ |
 |---|---|---|
 | `product_categories` | ProductCategory | Product ↔ Category (many-to-many, legacy compat) |
-| `product_warranties` | ProductWarranty | Product ↔ WarrantyPackage (many-to-many) |
 | `product_attribute_groups` | ProductAttributeGroup | Product ↔ AttributeGroup (many-to-many) |
 | `attribute_groups` | AttributeGroup | Nhóm thuộc tính (màu sắc, dung lượng...) |
 | `attribute_values` | AttributeValue | Giá trị trong nhóm thuộc tính |
 
-**Lưu ý quan trọng về models đã xóa**: `Collection`, `EmailCampaign`, `NewsletterSubscriber`, `ImportLog`, và model `Image` (file tồn tại nhưng đã xóa khỏi `index.js` associations) — không reference lại.
+**Lưu ý quan trọng về models đã xóa**: `Collection`, `EmailCampaign`, `NewsletterSubscriber`, `ImportLog`, `Banner`, `News`, `LoyaltyHistory`, `WarrantyPackage`, `ProductWarranty`, và model `Image` (file tồn tại nhưng đã xóa khỏi `index.js` associations) — không reference lại.
 
 ---
 
@@ -489,11 +480,11 @@ createOrder()
     │
     └─▶ (sau DELIVERED) ordersModule
                 ▶ eventBus.publish({ type: 'order.delivered' })
-                        ▶ loyaltyModule.subscribe → cộng điểm (POINTS_EARN_RATE: 100k VND = 1 điểm)
+                        ▶ (hiện chưa có subscriber)
 
 cancelOrder()
     └─▶ eventBus.publish({ type: 'order.cancelled' })
-                ▶ inventoryModule.subscribe → restore stock
+                ▶ inventoryModule.subscribe → tạo audit log
 ```
 
 **Auth events**:
@@ -517,14 +508,11 @@ product.afterCreate/Update/Destroy
 orders    ──▶ cart (xóa sau khi đặt)
           ──▶ users (shippingAddress, email)
           ──▶ payment (kiểm tra paymentStatus qua eventBus)
-          ──▶ inventory (eventBus: order.created → deduct, order.cancelled → restore)
+          ──▶ inventory (eventBus: order.cancelled → audit log)
           ──▶ discount-code (apply, tăng usedCount khi PAID)
-          ──▶ loyalty (eventBus: order.delivered → cộng điểm)
-          ──▶ warranty-package (tính phí bảo hành trong OrderItem)
           ──▶ emailService (gửi xác nhận đơn hàng)
 
 cart      ──▶ catalog (Product/Variant info, kiểm tra stock)
-          ──▶ warranty-package (tính phí bảo hành trong CartItem)
 
 catalog   ──▶ attribute (filters, AI name generator)
           ──▶ inventory (stock display tại variant level)
@@ -533,7 +521,7 @@ catalog   ──▶ attribute (filters, AI name generator)
 auth      ──▶ users (User model)
           ◀── tất cả modules (authenticate middleware inject userId vào req.user)
 
-admin     ──▶ orders, users, catalog, reviews, content, loyalty, discount-code, inventory
+admin     ──▶ orders, users, catalog, reviews, content, discount-code, inventory
 
 ai        ──▶ catalog (vector search qua vectorStoreService)
           ──▶ attribute (name generator inject)

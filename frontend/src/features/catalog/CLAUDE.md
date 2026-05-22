@@ -86,7 +86,6 @@ features/catalog/
     ProductGallery.tsx            — Gallery ảnh product detail (thumbnails + main)
     ProductImageGallery.tsx       — Variant của gallery
     RecentlyViewedProducts.tsx    — Horizontal carousel 10 sản phẩm gần nhất (từ catalogStore)
-    WarrantySelection.tsx         — UI chọn gói bảo hành trong product detail
     ProductDetailsSection.tsx     — Tabs specs/FAQ/reviews trong product detail
     DynamicProductTitle.tsx       — Title động theo variant đang chọn
     DynamicProductName.tsx        — Variant của DynamicProductTitle
@@ -108,7 +107,6 @@ features/catalog/
     ProductSeoForm.tsx            — Form SEO (admin)
     ProductFAQForm.tsx            — Form FAQ (admin)
     ProductFAQSection.tsx         — Section FAQ hiển thị (admin)
-    ProductWarrantyForm.tsx       — Form chọn gói bảo hành cho sản phẩm (admin)
     FormActions.tsx               — Action buttons cho form (admin)
     TabNavigation.tsx             — Tab navigation component (admin)
     ValidationAlerts.tsx          — Alert validation errors (admin)
@@ -128,7 +126,7 @@ features/catalog/
     product.types.ts       — Product, ProductVariant, ProductFilters interfaces
     category.types.ts      — Category interface
 
-  index.ts                 — Barrel export (productKeys, WarrantyPackage type, hooks, components, pages)
+  index.ts                 — Barrel export (productKeys, hooks, components, pages)
 ```
 
 ---
@@ -256,7 +254,6 @@ attributeService.assignAttributeGroupToProduct(productId, groupId);
 | `ProductPrice`           | Hiển thị giá theo variant đang chọn: gạch giá gốc khi có discount, badge "Giảm X%".                                                                                    |
 | `ProductVariantSelector` | Chọn color/storage (dạng button groups), disable variant hết hàng, highlight selected.                                                                                 |
 | `RecentlyViewedProducts` | Horizontal carousel 10 sản phẩm gần nhất lấy từ `catalogStore.recentlyViewed`.                                                                                         |
-| `WarrantySelection`      | UI chọn gói bảo hành trong product detail — hiển thị danh sách gói, price, duration.                                                                                   |
 | `ProductDetailsSection`  | Tabs trong product detail: Thông số kỹ thuật (specs), FAQ, Reviews (render từ feature reviews).                                                                        |
 
 ---
@@ -302,17 +299,6 @@ interface Category {
   parentId?: string;
   children?: Category[];
 }
-
-// Export từ index.ts (dùng trong warranty-api.ts của admin)
-interface WarrantyPackage {
-  id: string;
-  name: string;
-  description?: string;
-  durationMonths: number;
-  price: number;
-  isActive: boolean;
-  coverage?: string[];
-}
 ```
 
 ---
@@ -328,7 +314,7 @@ interface WarrantyPackage {
 
 ## 7.2 Used by
 
-- `features/admin` — import nhiều form components (ProductBasicInfoForm, HierarchicalVariantsForm, etc.) và `WarrantyPackage` type
+- `features/admin` — import nhiều form components (ProductBasicInfoForm, HierarchicalVariantsForm, etc.)
 - `features/ai/components/ChatProductCard.tsx` — render product từ AI response
 - `src/pages/` — `HomePage` dùng `useGetFeaturedProductsQuery`, `useGetNewArrivalsQuery`
 

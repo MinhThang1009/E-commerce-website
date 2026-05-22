@@ -91,7 +91,7 @@ Tất cả data tạo bởi helpers đều dùng prefix `__HTTP_` để cleanup 
 | orders             | `orders.http.test.js`, `orders-edge-cases.http.test.js`, `orders-extra.http.test.js`                                                                     |
 | admin              | `admin.http.test.js`, `admin-extra.http.test.js`, `admin-comprehensive.http.test.js`                                                                     |
 | ai                 | `ai-chatbot.http.test.js`, `ai-edge-cases.http.test.js`                                                                                                  |
-| attribute          | `attribute.http.test.js`, `attribute-extra.http.test.js`, `attribute-users-warranty-search-deep.http.test.js`                                            |
+| attribute          | `attribute.http.test.js`, `attribute-extra.http.test.js`, `attribute-users-search-deep.http.test.js`                                                     |
 | content            | `content.http.test.js`, `content-deep.http.test.js`                                                                                                      |
 | discount-code      | `discount-code.http.test.js`, `discount-edge-cases.http.test.js`                                                                                         |
 | payment            | `payment.http.test.js`, `payment-edge-cases.http.test.js`, `payment-reviews-deep.http.test.js`                                                           |
@@ -99,7 +99,7 @@ Tất cả data tạo bởi helpers đều dùng prefix `__HTTP_` để cleanup 
 | wishlist           | `wishlist.http.test.js`, `wishlist-comprehensive.http.test.js`                                                                                           |
 | users              | `users.http.test.js`, `users-comprehensive.http.test.js`                                                                                                 |
 | multi-module       | `multi-module.http.test.js` — test flows xuyên nhiều modules                                                                                             |
-| các module còn lại | `inventory`, `loyalty`, `search-history`, `upload`, `warranty-package`, `rate-limit` — 1 file mỗi module                                                 |
+| các module còn lại | `inventory`, `search-history`, `upload`, `rate-limit` — 1 file mỗi module                                                                                |
 
 ---
 

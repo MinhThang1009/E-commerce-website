@@ -7,7 +7,6 @@
       "shop": "Shop",
       "categories": "Categories",
       "deals": "Deals",
-      "news": "News",
       "about": "About",
       "newArrivals": "New Arrivals",
       "bestSellers": "Best Sellers",
@@ -967,14 +966,12 @@
     "nav": {
       "dashboard": "Dashboard",
       "products": "Products",
-      "news": "News",
       "categories": "Categories",
       "brands": "Brands",
       "orders": "Orders",
       "users": "Users",
       "warranty": "Warranty Packages",
       "discounts": "Discount Codes",
-      "banners": "Banner Management",
       "inventory": "Inventory",
       "auditLog": "Audit Log"
     },
@@ -1602,71 +1599,6 @@
         "paused": "Paused"
       }
     },
-    "news": {
-      "title": "News Management",
-      "addArticle": "Add Article",
-      "editArticle": "Edit Article",
-      "searchPlaceholder": "Search articles...",
-      "table": {
-        "title": "Title",
-        "category": "Category",
-        "author": "Author",
-        "publishedAt": "Published At",
-        "status": "Status",
-        "actions": "Actions",
-        "views": "Views",
-        "createdAt": "Created date",
-        "slug": "Slug",
-        "image": "Image"
-      },
-      "form": {
-        "title": "Title",
-        "titlePlaceholder": "Enter article title",
-        "content": "Content",
-        "category": "Category",
-        "tags": "Tags",
-        "tagsPlaceholder": "Enter tags",
-        "thumbnail": "Thumbnail",
-        "status": "Status",
-        "publishedAt": "Publish Date",
-        "titleRequired": "Please enter title",
-        "slugRequired": "Please enter slug",
-        "thumbnailRequired": "Please enter image URL",
-        "categoryRequired": "Please select category",
-        "categoryPlaceholder": "Select category",
-        "description": "Short description",
-        "contentRequired": "Please enter content",
-        "slug": "Slug"
-      },
-      "messages": {
-        "addSuccess": "Article added successfully",
-        "editSuccess": "Article updated successfully",
-        "deleteSuccess": "Article deleted successfully",
-        "deleteError": "Cannot delete article",
-        "loadError": "Cannot load articles",
-        "createSuccess": "Article created successfully"
-      },
-      "subtitle": "Manage news articles",
-      "deleteTitle": "Delete article",
-      "deleteConfirm": "Are you sure you want to delete this article?",
-      "status": {
-        "published": "Published",
-        "draft": "Draft"
-      },
-      "pageStats": "{{total}} articles · {{pages}} pages",
-      "backButton": "Back",
-      "insertProduct": "Insert product",
-      "save": "Save article",
-      "update": "Update",
-      "editTitle": "Edit article",
-      "createTitle": "Add new article",
-      "categories": {
-        "news": "News",
-        "review": "Review",
-        "advice": "Advice",
-        "tips": "Tips & Tricks"
-      }
-    },
     "users": {
       "title": "User Management",
       "table": {
@@ -1805,63 +1737,6 @@
       "status": {
         "active": "Active",
         "paused": "Paused"
-      }
-    },
-    "banners": {
-      "title": "Banner Management",
-      "addBanner": "Add Banner",
-      "editBanner": "Edit Banner",
-      "table": {
-        "title": "Title",
-        "image": "Image",
-        "link": "Link",
-        "position": "Position",
-        "sortOrder": "Sort Order",
-        "isActive": "Active",
-        "actions": "Actions",
-        "active": "Active",
-        "priority": "Priority"
-      },
-      "form": {
-        "title": "Title",
-        "titlePlaceholder": "Enter banner title",
-        "subtitle": "Subtitle",
-        "subtitlePlaceholder": "Enter subtitle",
-        "description": "Description",
-        "image": "Image",
-        "link": "Link",
-        "linkPlaceholder": "/products",
-        "linkText": "Button Text",
-        "linkTextPlaceholder": "Shop Now",
-        "position": "Display Position",
-        "sortOrder": "Sort Order",
-        "startDate": "Start Date",
-        "endDate": "End Date",
-        "isActive": "Active",
-        "titleRequired": "Please enter title!",
-        "imageUrl": "Banner image",
-        "imageRequired": "Please upload an image",
-        "linkUrl": "Link URL",
-        "positionRequired": "Please select position!",
-        "priority": "Priority"
-      },
-      "messages": {
-        "addSuccess": "Banner added successfully",
-        "editSuccess": "Banner updated successfully",
-        "deleteSuccess": "Banner deleted successfully",
-        "deleteError": "Cannot delete banner",
-        "loadError": "Cannot load banners",
-        "createSuccess": "Banner created successfully",
-        "fetchError": "Failed to fetch banners",
-        "saveError": "Failed to save banner"
-      },
-      "createBanner": "Create Banner",
-      "createBannerModal": "Create new Banner",
-      "deleteConfirm": "Are you sure you want to delete this banner?",
-      "positions": {
-        "homeHero": "Home Hero",
-        "homeMiddle": "Home Middle",
-        "sidebar": "Sidebar"
       }
     },
     "userDetail": {
@@ -2822,27 +2697,6 @@
     "empty": "No new products available",
     "emptyHint": "Check back soon for new arrivals"
   },
-  "news": {
-    "pageTitle": "News",
-    "categories": {
-      "all": "All",
-      "news": "News",
-      "review": "Reviews",
-      "advice": "Advice",
-      "tips": "Tips"
-    },
-    "empty": "No articles in this category yet.",
-    "notFound": "Article not found",
-    "backToList": "Back to news list",
-    "authorAt": "Author at TechStore",
-    "share": "Share:",
-    "views": "Views: {{count}}",
-    "related": "Related Articles",
-    "recent": "Recently Updated",
-    "home": "Home",
-    "newsLink": "News",
-    "defaultCategory": "News"
-  },
   "filters": {
     "price": "Price",
     "categories": "Categories",
@@ -3695,10 +3549,6 @@
     "selectProvince": "-- Select Province/City --",
     "selectDistrict": "-- Select District --",
     "selectWard": "-- Select Ward --"
-  },
-  "home": {
-    "newsTitle": "News & Events",
-    "newsDefaultCategory": "News"
   },
   "productExport": {
     "title": "Export products",

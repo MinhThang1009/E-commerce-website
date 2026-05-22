@@ -26,9 +26,6 @@ export const ROUTES = {
   TRACK_ORDER: '/track-order',
   PRIVACY_POLICY: '/privacy-policy',
   TERMS: '/terms',
-  NEWS: '/news',
-  NEWS_DETAIL: '/news/:slug',
-
   // Xác thực
   LOGIN: '/login',
   REGISTER: '/register',
@@ -54,9 +51,6 @@ export const ROUTES = {
   ADMIN_PRODUCTS: '/admin/products',
   ADMIN_PRODUCTS_CREATE: '/admin/products/create',
   ADMIN_PRODUCTS_EDIT: '/admin/products/edit/:id',
-  ADMIN_NEWS: '/admin/news',
-  ADMIN_NEWS_CREATE: '/admin/news/create',
-  ADMIN_NEWS_EDIT: '/admin/news/edit/:id',
   ADMIN_CATEGORIES: '/admin/categories',
   ADMIN_ORDERS: '/admin/orders',
   ADMIN_USERS: '/admin/users',
@@ -64,7 +58,6 @@ export const ROUTES = {
   ADMIN_WARRANTY_PACKAGES: '/admin/warranty-packages',
   ADMIN_DISCOUNT_CODES: '/admin/discount-codes',
   ADMIN_BRANDS: '/admin/brands',
-  ADMIN_BANNERS: '/admin/banners',
   ADMIN_INVENTORY: '/admin/inventory',
   ADMIN_AUDIT_LOG: '/admin/audit-log',
 } as const;
@@ -73,7 +66,6 @@ export const ROUTES = {
 export const buildRoute = {
   productDetail: (id: string | number) => `/products/${id}`,
   category: (slug: string) => `/categories/${slug}`,
-  newsDetail: (slug: string) => `/news/${slug}`,
   shopSearch: (query: string) => `/shop?search=${encodeURIComponent(query)}`,
   shopCategory: (slug: string) => `/shop?category=${slug}`,
   shopBrand: (id: string | number) => `/shop?brand=${id}`,
@@ -84,7 +76,6 @@ export const buildRoute = {
   checkoutRepay: (repayOrderId: string | number, repayAmount: string | number) =>
     `/checkout?repayOrder=${repayOrderId}&amount=${repayAmount}`,
   adminProductEdit: (id: string | number) => `/admin/products/edit/${id}`,
-  adminNewsEdit: (id: string | number) => `/admin/news/edit/${id}`,
   adminUserDetail: (id: string | number) => `/admin/users/${id}`,
   adminOrderDetail: (id: string | number) => `/admin/orders/${id}`,
   adminOrdersPending: () => '/admin/orders?status=pending',

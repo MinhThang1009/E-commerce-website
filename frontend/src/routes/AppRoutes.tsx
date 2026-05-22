@@ -48,9 +48,6 @@ const AdminCategoriesPage = lazy(() => import('@/features/admin/pages/catalog/Ca
 const AdminWarrantyPackagesPage = lazy(() => import('@/features/admin/pages/WarrantyPackagesPage'));
 const AdminDiscountCodesPage = lazy(() => import('@/features/admin/pages/DiscountCodesPage'));
 const AdminBrandsPage = lazy(() => import('@/features/admin/pages/catalog/BrandsPage'));
-const AdminNewsPage = lazy(() => import('@/features/admin/pages/content/NewsPage'));
-const CreateNewsPage = lazy(() => import('@/features/admin/pages/content/CreateNewsPage'));
-const AdminBannersPage = lazy(() => import('@/features/admin/pages/content/BannersPage'));
 const AdminInventoryPage = lazy(() => import('@/features/admin/pages/InventoryPage'));
 const AdminAuditLogPage = lazy(() => import('@/features/admin/pages/AuditLogPage'));
 
@@ -59,9 +56,6 @@ const PaymentQRPage = lazy(() => import('@/features/payment/pages/PaymentQRPage'
 // Các trang lỗi
 const UnauthorizedPage = lazy(() => import('@/pages/UnauthorizedPage'));
 const NotFoundPage = lazy(() => import('@/pages/NotFoundPage'));
-
-const NewsListPage = lazy(() => import('@/features/content/pages/NewsListPage'));
-const NewsDetailPage = lazy(() => import('@/features/content/pages/NewsDetailPage'));
 
 const AppRoutes: React.FC = () => {
   return (
@@ -95,9 +89,6 @@ const AppRoutes: React.FC = () => {
           <Route path="track-order" element={<TrackOrderPage />} />
           <Route path="privacy-policy" element={<PrivacyPolicyPage />} />
           <Route path="terms" element={<TermsPage />} />
-          <Route path="news" element={<NewsListPage />} />
-          <Route path="news/:slug" element={<NewsDetailPage />} />
-
           {/* Routes chỉ dành cho khách (chuyển hướng về trang chủ nếu đã đăng nhập) */}
           <Route
             path="login"
@@ -208,11 +199,6 @@ const AppRoutes: React.FC = () => {
           <Route path="products/create" element={<CreateProductPage />} />
           <Route path="products/edit/:id" element={<EditProductPage />} />
 
-          {/* Quản lý tin tức */}
-          <Route path="news" element={<AdminNewsPage />} />
-          <Route path="news/create" element={<CreateNewsPage />} />
-          <Route path="news/edit/:id" element={<CreateNewsPage />} />
-
           {/* Các mục admin khác */}
           <Route path="categories" element={<AdminCategoriesPage />} />
           <Route path="orders" element={<AdminOrdersPage />} />
@@ -221,7 +207,6 @@ const AppRoutes: React.FC = () => {
           <Route path="warranty-packages" element={<AdminWarrantyPackagesPage />} />
           <Route path="discount-codes" element={<AdminDiscountCodesPage />} />
           <Route path="brands" element={<AdminBrandsPage />} />
-          <Route path="banners" element={<AdminBannersPage />} />
           <Route path="inventory" element={<AdminInventoryPage />} />
           <Route path="audit-log" element={<AdminAuditLogPage />} />
         </Route>

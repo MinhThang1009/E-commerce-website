@@ -1,7 +1,7 @@
 // @ts-nocheck — mock factories dùng loose types
 /// <reference types="jest" />
 /**
- * Content pages tests — NewsListPage, ContactPage, TrackOrderPage.
+ * Content pages tests — ContactPage, TrackOrderPage.
  * Dùng @testing-library/react + jsdom + ts-jest.
  */
 import React from 'react';
@@ -43,18 +43,11 @@ jest.mock('dayjs', () => {
   return { __esModule: true, default: dayjsFn };
 });
 
-// ── Mock news API ───────────────────────────────────────────────
-let mockGetNewsQuery = {
-  data: { news: [], count: 0, totalPages: 0, currentPage: 1 },
-  isLoading: false,
-};
-jest.mock('@/features/content/api/news-api', () => ({
-  useGetNewsQuery: () => mockGetNewsQuery,
-}));
-
 // ── Mock contact API ────────────────────────────────────────────
+// Dùng object wrapper để các test có thể kiểm soát behavior (success vs error)
+const contactMockState = { sendFeedback: jest.fn().mockResolvedValue(undefined) };
 jest.mock('@/features/content/api/contact-api', () => ({
-  useSendFeedbackMutation: () => ({ mutateAsync: jest.fn(), isPending: false }),
+  useSendFeedbackMutation: () => ({ mutateAsync: contactMockState.sendFeedback, isPending: false }),
 }));
 
 // ── Mock @/components/common barrel ────────────────────────────
@@ -126,15 +119,6 @@ jest.mock('@/components/common/LoadingSpinner', () => {
   };
 });
 
-// ── Mock Pagination ─────────────────────────────────────────────
-jest.mock('@/components/common/Pagination', () => {
-  const R = require('react');
-  return {
-    __esModule: true,
-    default: () => R.createElement('div', { 'data-testid': 'pagination' }),
-  };
-});
-
 // ── Mock utilities ──────────────────────────────────────────────
 jest.mock('@/utils/error-utils', () => ({
   getErrorMsg: (_err: unknown, fallback: string) => fallback,
@@ -153,7 +137,6 @@ jest.mock('@/routes/paths', () => ({
     CONTACT: '/contact',
   },
   buildRoute: {
-    newsDetail: (slug: string) => `/news/${slug}`,
     productDetail: (id: string) => `/products/${id}`,
   },
 }));
@@ -233,70 +216,8 @@ jest.mock('@/features/orders/pages/TrackOrderPage', () => {
 });
 
 // ── Import pages sau mock ───────────────────────────────────────
-import NewsListPage from '@/features/content/pages/NewsListPage';
 import ContactPage from '@/features/content/pages/ContactPage';
 import TrackOrderPage from '@/features/orders/pages/TrackOrderPage';
-
-// ═══════════════════════════════════════════════════════════════
-// NewsListPage
-// ═══════════════════════════════════════════════════════════════
-describe('NewsListPage', () => {
-  beforeEach(() => {
-    jest.clearAllMocks();
-    mockGetNewsQuery = {
-      data: { news: [], count: 0, totalPages: 0, currentPage: 1 },
-      isLoading: false,
-    };
-  });
-
-  it('render trang tin tức không bị crash', () => {
-    render(<NewsListPage />);
-    // Trang luôn render danh sách category tabs — có thể xuất hiện nhiều lần (button + h1)
-    const allElements = screen.getAllByText('news.categories.all');
-    expect(allElements.length).toBeGreaterThan(0);
-  });
-
-  it('hiển thị empty state khi không có bài viết nào', () => {
-    render(<NewsListPage />);
-    expect(screen.getByText('news.empty')).toBeInTheDocument();
-  });
-
-  it('loading state — hiển thị spinner khi đang tải', () => {
-    mockGetNewsQuery = { data: null, isLoading: true };
-    render(<NewsListPage />);
-    expect(screen.getByTestId('loading-spinner')).toBeInTheDocument();
-  });
-
-  it('hiển thị các tab danh mục tin tức', () => {
-    render(<NewsListPage />);
-    // CATEGORIES bao gồm: all, news, review, advice, tips
-    expect(screen.getByText('news.categories.review')).toBeInTheDocument();
-  });
-
-  it('hiển thị danh sách bài viết khi có dữ liệu', () => {
-    mockGetNewsQuery = {
-      data: {
-        news: [
-          {
-            id: '1',
-            title: 'Bài viết thử nghiệm',
-            slug: 'bai-viet-thu-nghiem',
-            thumbnail: null,
-            category: 'Tin tức',
-            createdAt: '2025-01-01',
-            author: { firstName: 'Nguyễn', lastName: 'A' },
-          },
-        ],
-        count: 1,
-        totalPages: 1,
-        currentPage: 1,
-      },
-      isLoading: false,
-    };
-    render(<NewsListPage />);
-    expect(screen.getByText('Bài viết thử nghiệm')).toBeInTheDocument();
-  });
-});
 
 // ═══════════════════════════════════════════════════════════════
 // ContactPage

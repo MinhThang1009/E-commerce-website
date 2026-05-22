@@ -7,7 +7,6 @@
       "shop": "Cửa hàng",
       "categories": "Danh mục",
       "deals": "Khuyến mãi",
-      "news": "Tin tức",
       "about": "Giới thiệu",
       "newArrivals": "Hàng mới",
       "bestSellers": "Bán chạy",
@@ -1086,14 +1085,12 @@
     "nav": {
       "dashboard": "Tổng quan",
       "products": "Sản phẩm",
-      "news": "Tin tức",
       "categories": "Danh mục",
       "brands": "Thương hiệu",
       "orders": "Đơn hàng",
       "users": "Người dùng",
       "warranty": "Gói bảo hành",
       "discounts": "Mã giảm giá",
-      "banners": "Quản lý Banner",
       "inventory": "Quản lý kho",
       "auditLog": "Nhật ký hệ thống"
     },
@@ -1722,71 +1719,6 @@
         "paused": "Tạm dừng"
       }
     },
-    "news": {
-      "title": "Quản lý Tin Tức",
-      "addArticle": "Thêm Bài Viết",
-      "editArticle": "Sửa Bài Viết",
-      "searchPlaceholder": "Tìm kiếm bài viết...",
-      "table": {
-        "title": "Tiêu đề",
-        "category": "Danh mục",
-        "author": "Tác giả",
-        "publishedAt": "Ngày đăng",
-        "status": "Trạng thái",
-        "actions": "Thao tác",
-        "views": "Lượt xem",
-        "createdAt": "Ngày tạo",
-        "slug": "Slug",
-        "image": "Ảnh"
-      },
-      "form": {
-        "title": "Tiêu đề",
-        "titlePlaceholder": "Nhập tiêu đề bài viết",
-        "content": "Nội dung",
-        "category": "Danh mục",
-        "tags": "Tags",
-        "tagsPlaceholder": "Nhập tags",
-        "thumbnail": "Ảnh đại diện",
-        "status": "Trạng thái",
-        "publishedAt": "Ngày đăng",
-        "titleRequired": "Vui lòng nhập tiêu đề",
-        "slugRequired": "Vui lòng nhập slug",
-        "thumbnailRequired": "Vui lòng nhập URL hình ảnh",
-        "categoryRequired": "Vui lòng chọn chuyên mục",
-        "categoryPlaceholder": "Chọn chuyên mục",
-        "description": "Mô tả ngắn",
-        "contentRequired": "Vui lòng nhập nội dung",
-        "slug": "Slug"
-      },
-      "messages": {
-        "addSuccess": "Thêm bài viết thành công",
-        "editSuccess": "Cập nhật bài viết thành công",
-        "deleteSuccess": "Xóa bài viết thành công",
-        "deleteError": "Không thể xóa bài viết",
-        "loadError": "Không thể tải danh sách bài viết",
-        "createSuccess": "Tạo bài viết thành công"
-      },
-      "subtitle": "Quản lý bài viết tin tức",
-      "deleteTitle": "Xóa bài viết",
-      "deleteConfirm": "Bạn có chắc chắn muốn xóa bài viết này?",
-      "status": {
-        "published": "Đã xuất bản",
-        "draft": "Bản nháp"
-      },
-      "pageStats": "{{total}} bài viết · {{pages}} trang",
-      "backButton": "Quay lại",
-      "insertProduct": "Chèn sản phẩm",
-      "save": "Lưu bài viết",
-      "update": "Cập nhật",
-      "editTitle": "Chỉnh sửa bài viết",
-      "createTitle": "Thêm bài viết mới",
-      "categories": {
-        "news": "Tin tức",
-        "review": "Đánh giá",
-        "advice": "Tư vấn",
-        "tips": "Thủ thuật"
-      }
-    },
     "users": {
       "title": "Quản lý Người Dùng",
       "table": {
@@ -1925,63 +1857,6 @@
       "status": {
         "active": "Hoạt động",
         "paused": "Tạm dừng"
-      }
-    },
-    "banners": {
-      "title": "Quản lý Banner",
-      "addBanner": "Thêm Banner",
-      "editBanner": "Sửa Banner",
-      "table": {
-        "title": "Tiêu đề",
-        "image": "Hình ảnh",
-        "link": "Liên kết",
-        "position": "Vị trí",
-        "sortOrder": "Thứ tự",
-        "isActive": "Kích hoạt",
-        "actions": "Thao tác",
-        "active": "Hiển thị",
-        "priority": "Ưu tiên"
-      },
-      "form": {
-        "title": "Tiêu đề",
-        "titlePlaceholder": "Nhập tiêu đề banner",
-        "subtitle": "Phụ đề",
-        "subtitlePlaceholder": "Nhập phụ đề",
-        "description": "Mô tả",
-        "image": "Hình ảnh",
-        "link": "Liên kết",
-        "linkPlaceholder": "/products",
-        "linkText": "Chữ nút",
-        "linkTextPlaceholder": "Mua ngay",
-        "position": "Vị trí hiển thị",
-        "sortOrder": "Thứ tự",
-        "startDate": "Ngày bắt đầu",
-        "endDate": "Ngày kết thúc",
-        "isActive": "Kích hoạt",
-        "titleRequired": "Vui lòng nhập tiêu đề!",
-        "imageUrl": "Hình ảnh Banner",
-        "imageRequired": "Vui lòng tải ảnh lên",
-        "linkUrl": "Link URL",
-        "positionRequired": "Vui lòng chọn vị trí!",
-        "priority": "Thứ tự ưu tiên"
-      },
-      "messages": {
-        "addSuccess": "Thêm banner thành công",
-        "editSuccess": "Cập nhật banner thành công",
-        "deleteSuccess": "Xóa banner thành công",
-        "deleteError": "Không thể xóa banner",
-        "loadError": "Không thể tải danh sách banner",
-        "createSuccess": "Tạo banner thành công",
-        "fetchError": "Không thể tải danh sách banner",
-        "saveError": "Không thể lưu banner"
-      },
-      "createBanner": "Tạo Banner",
-      "createBannerModal": "Tạo Banner mới",
-      "deleteConfirm": "Bạn có chắc chắn muốn xóa banner này?",
-      "positions": {
-        "homeHero": "Trang chủ - Trên cùng",
-        "homeMiddle": "Trang chủ - Giữa trang",
-        "sidebar": "Thanh bên"
       }
     },
     "userDetail": {
@@ -2822,27 +2697,6 @@
     "errorDesc": "Đã xảy ra lỗi khi tải hàng mới về. Vui lòng thử lại sau.",
     "empty": "Không có sản phẩm mới nào",
     "emptyHint": "Sớm quay lại để xem hàng mới"
-  },
-  "news": {
-    "pageTitle": "Tin tức",
-    "categories": {
-      "all": "Tất cả",
-      "news": "Tin tức",
-      "review": "Đánh giá",
-      "advice": "Tư vấn",
-      "tips": "Thủ thuật"
-    },
-    "empty": "Chưa có bài viết nào trong chuyên mục này.",
-    "notFound": "Không tìm thấy bài viết",
-    "backToList": "Quay lại danh sách tin tức",
-    "authorAt": "Tác giả tại TechStore",
-    "share": "Chia sẻ:",
-    "views": "Lượt xem: {{count}}",
-    "related": "Bài viết liên quan",
-    "recent": "Tin mới cập nhật",
-    "home": "Trang chủ",
-    "newsLink": "Tin tức",
-    "defaultCategory": "Tin tức"
   },
   "filters": {
     "price": "Giá",
@@ -3696,10 +3550,6 @@
     "selectProvince": "-- Chọn Tỉnh/Thành phố --",
     "selectDistrict": "-- Chọn Quận/Huyện --",
     "selectWard": "-- Chọn Phường/Xã --"
-  },
-  "home": {
-    "newsTitle": "Tin tức & Sự kiện",
-    "newsDefaultCategory": "Tin tức"
   },
   "productExport": {
     "title": "Xuất sản phẩm",

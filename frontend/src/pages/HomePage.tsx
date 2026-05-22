@@ -5,7 +5,7 @@
  * @description Trang chủ premium — unified canvas, bento grid, marquee brands
  */
 import React from 'react';
-import { HeroSection, HomeNewsSection } from '@/components/sections';
+import { HeroSection } from '@/components/sections';
 import { ProductCardSkeleton, CategoryCardSkeleton } from '@/components/common/LoadingState';
 import { ErrorState, EmptyState } from '@/components/common/ErrorState';
 import { PageLayout } from '@/components/layout/PageLayout';
@@ -379,12 +379,6 @@ const HomePage: React.FC = () => {
             )}
           </div>
         </section>
-
-        {/* Iridescent divider */}
-        <hr className="iridescent-rule" />
-
-        {/* ──────────────── NEWS ──────────────── */}
-        <HomeNewsSection />
       </div>
       {/* end page-canvas */}
     </PageLayout>

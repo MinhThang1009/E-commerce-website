@@ -69,7 +69,7 @@ Cấu trúc: nested object, JSON. Ví dụ:
 # 4. Cách dùng trong code
 
 ```js
-const t = require('@utils/i18n');
+const { t } = require('@utils/i18n');
 
 // Trong controller/service (locale lấy từ req.locale)
 throw new BusinessError(t('errors.order.notFound', req.locale));

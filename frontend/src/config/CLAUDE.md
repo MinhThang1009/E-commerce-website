@@ -45,16 +45,16 @@ i18n.changeLanguage('en'); // Switch language
 
 ## 2.2 Cấu hình hiện tại
 
-| Config            | Value                                                                                    |
-| ----------------- | ---------------------------------------------------------------------------------------- |
-| Default locale    | `'vi'` (lấy từ `localStorage('language')`, fallback về `'vi'`)                           |
-| Supported locales | `['vi', 'en']`                                                                           |
-| Locale files      | `src/locales/vi.json`, `src/locales/en.json`                                             |
-| Detection order   | `localStorage('language')` → `navigator.language` → `htmlTag`                            |
-| Storage           | `localStorage('language')`                                                               |
-| `fallbackLng`     | `'vi'` — nếu key không tìm thấy trong ngôn ngữ hiện tại, fallback về `vi`                |
-| Debug             | Bật trong `development` (`process.env.NODE_ENV === 'development'`), tắt trong production |
-| Default namespace | `'translation'` (1 file duy nhất, không split namespace)                                 |
+| Config            | Value                                                                                                                                                                                          |
+| ----------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Default locale    | `'vi'` (lấy từ `localStorage('language')`, fallback về `'vi'`)                                                                                                                                 |
+| Supported locales | `['vi', 'en']`                                                                                                                                                                                 |
+| Locale files      | `src/locales/vi.json`, `src/locales/en.json`                                                                                                                                                   |
+| Detection order   | Plugin `i18next-browser-languagedetector` **không registered** — `lng: localStorage.getItem('language') \|\| 'vi'` được đọc trực tiếp trong `init()`. Detection order tự động không hoạt động. |
+| Storage           | `localStorage('language')`                                                                                                                                                                     |
+| `fallbackLng`     | `'vi'` — nếu key không tìm thấy trong ngôn ngữ hiện tại, fallback về `vi`                                                                                                                      |
+| Debug             | Bật trong `development` (`process.env.NODE_ENV === 'development'`), tắt trong production                                                                                                       |
+| Default namespace | `'translation'` (1 file duy nhất, không split namespace)                                                                                                                                       |
 
 ## 2.3 Quy ước bắt buộc
 

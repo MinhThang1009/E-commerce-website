@@ -124,7 +124,7 @@ HTTP POST /api/orders
                   │  })
                   ├→ emailGateway.sendOrderConfirmationEmail()  ← async, non-blocking
                   └→ eventBus.publish('order.created', { orderId, items })
-                            └→ inventory module: createInventoryLog (audit-only)
+                            └→ (hiện chưa có subscriber — inventory chỉ subscribe order.cancelled)
 ```
 
 ---
@@ -170,7 +170,7 @@ app.use('/api' + contentModule.basePath, contentModule.router);  // → /api/con
 | `src/middlewares/detect-locale.js` | Parse locale từ `Accept-Language` header hoặc `?lang=` |
 
 **EventBus events hiện có (3):**
-- `order.created` — publish bởi orders, subscribe bởi inventory (ghi inventory log)
+- `order.created` — publish bởi orders (hiện chưa có subscriber chức năng)
 - `order.cancelled` — publish bởi orders, subscribe bởi inventory (ghi inventory log; actual stock restore xảy ra inline trong orders service)
 - `auth.userRegistered` — publish bởi auth (chưa có subscriber)
 
@@ -277,7 +277,7 @@ backend/src/
   constants/CLAUDE.md                        ← Hằng số (shipping, OTP, JWT, cart)
   locales/CLAUDE.md                          ← i18n vi.json / en.json
   models/CLAUDE.md                           ← 26 models, associations
-  migrations/CLAUDE.md                       ← 80 migrations, schema history
+  migrations/CLAUDE.md                       ← 81 migrations, schema history
   middlewares/CLAUDE.md                      ← authenticate, authorize, rate-limiter
   shared/CLAUDE.md                           ← EventBus, AppError, UnitOfWork
     shared/errors/CLAUDE.md                  ← Error class hierarchy

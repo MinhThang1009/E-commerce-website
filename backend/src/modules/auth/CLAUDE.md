@@ -109,18 +109,18 @@ modules/auth/
 
 Base path: `/api/auth`
 
-| Method | Path                        | Auth         | Rate Limit | Mô tả                                       |
-| ------ | --------------------------- | ------------ | ---------- | ------------------------------------------- |
-| POST   | `/auth/register`            | —            | —          | Đăng ký tài khoản mới                       |
-| POST   | `/auth/login`               | —            | —          | Đăng nhập email/password                    |
-| POST   | `/auth/google`              | —            | —          | Đăng nhập/đăng ký qua Google OAuth          |
-| POST   | `/auth/logout`              | authenticate | —          | Đăng xuất (revoke refresh token family)     |
-| POST   | `/auth/verify-otp`          | —            | otpLimiter | Xác thực email bằng OTP 6 chữ số            |
-| POST   | `/auth/resend-verification` | —            | otpLimiter | Gửi lại OTP xác thực email                  |
-| POST   | `/auth/refresh-token`       | —            | —          | Lấy access token mới (rotate refresh token) |
-| POST   | `/auth/forgot-password`     | —            | otpLimiter | Yêu cầu reset password                      |
-| POST   | `/auth/reset-password`      | —            | —          | Đặt lại mật khẩu bằng OTP                   |
-| GET    | `/auth/me`                  | authenticate | —          | Lấy thông tin user hiện tại                 |
+| Method | Path                        | Auth         | Rate Limit | Mô tả                                                                                      |
+| ------ | --------------------------- | ------------ | ---------- | ------------------------------------------------------------------------------------------ |
+| POST   | `/auth/register`            | —            | —          | Đăng ký tài khoản mới                                                                      |
+| POST   | `/auth/login`               | —            | —          | Đăng nhập email/password                                                                   |
+| POST   | `/auth/google`              | —            | —          | Đăng nhập/đăng ký qua Google OAuth                                                         |
+| POST   | `/auth/logout`              | authenticate | —          | Đăng xuất (client-side only — server không revoke token; client tự xóa token khỏi storage) |
+| POST   | `/auth/verify-otp`          | —            | otpLimiter | Xác thực email bằng OTP 6 chữ số                                                           |
+| POST   | `/auth/resend-verification` | —            | otpLimiter | Gửi lại OTP xác thực email                                                                 |
+| POST   | `/auth/refresh-token`       | —            | —          | Lấy access token mới (rotate refresh token)                                                |
+| POST   | `/auth/forgot-password`     | —            | otpLimiter | Yêu cầu reset password                                                                     |
+| POST   | `/auth/reset-password`      | —            | —          | Đặt lại mật khẩu bằng hex token 64 ký tự (`crypto.randomBytes(32)`, không phải OTP)        |
+| GET    | `/auth/me`                  | authenticate | —          | Lấy thông tin user hiện tại                                                                |
 
 **`otpLimiter`** áp dụng cho: `/verify-otp`, `/resend-verification`, `/forgot-password`. `/reset-password` **không** có rate limit.
 

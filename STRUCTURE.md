@@ -11,11 +11,11 @@
 - [4. Backend Architecture](#4-backend-architecture)
   - [4.1 Modular Monolith pattern](#41-modular-monolith-pattern)
   - [4.2 DI Pattern](#42-di-pattern)
-  - [4.3 19 Backend Modules](#43-19-backend-modules)
+  - [4.3 17 Backend Modules](#43-17-backend-modules)
   - [4.4 Shared Infrastructure](#44-shared-infrastructure)
 - [5. Frontend Architecture](#5-frontend-architecture)
   - [5.1 Feature-Based pattern](#51-feature-based-pattern)
-  - [5.2 14 Frontend Features](#52-14-frontend-features)
+  - [5.2 13 Frontend Features](#52-13-frontend-features)
   - [5.3 State Management](#53-state-management)
 - [6. Database Schema Overview](#6-database-schema-overview)
   - [6.1 Core tables](#61-core-tables)
@@ -38,8 +38,8 @@
 
 TechStore là hệ thống monorepo gồm hai ứng dụng độc lập:
 
-- **Backend**: Node.js API server, Modular Monolith với 19 modules, giao tiếp qua EventBus nội bộ
-- **Frontend**: React SPA, Feature-Based với 14 features, không có cross-feature imports
+- **Backend**: Node.js API server, Modular Monolith với 17 modules, giao tiếp qua EventBus nội bộ
+- **Frontend**: React SPA, Feature-Based với 13 features, không có cross-feature imports
 
 ```
 Browser ──HTTP──▶ Vite Dev Proxy (port 5175)
@@ -114,7 +114,7 @@ backend/
 ├── src/
 │   ├── server.js            # Entry point — env validation, DB connect, startup
 │   ├── app.js               # Express app — middleware stack + DI wiring + module mounting
-│   ├── modules/             # 19 feature modules (xem mục 4.3)
+│   ├── modules/             # 17 feature modules (xem mục 4.3)
 │   │   └── <name>/
 │   │       ├── module.js          # DI factory — buildXxxModule({deps...})
 │   │       ├── routes.js          # Express router factory
@@ -122,7 +122,7 @@ backend/
 │   │       ├── services/          # Business logic
 │   │       ├── repositories/      # Sequelize queries
 │   │       └── validators/        # Zod schemas
-│   ├── models/              # 32 Sequelize models
+│   ├── models/              # 26 Sequelize models
 │   │   ├── index.js         # Barrel + tất cả associations
 │   │   └── *.js             # Individual model files
 │   ├── shared/
@@ -138,7 +138,8 @@ backend/
 │   │       └── vector-store.js        # HybridVectorStore (JSON-based)
 │   ├── middlewares/
 │   │   ├── authenticate.js  # JWT verify + optional variant
-│   │   ├── authorize.js     # Role-based access (admin/user)
+│   │   ├── admin-auth.js    # JWT verify dành riêng cho admin panel (adminAuthenticate)
+│   │   ├── authorize.js     # Role-based access (admin/customer)
 │   │   ├── rate-limiter.js  # apiLimiter, authLimiter, chatbotLimiter, otpLimiter
 │   │   ├── detect-locale.js # Accept-Language → req.locale
 │   │   ├── validate-request.js  # Zod validation middleware
@@ -155,7 +156,7 @@ backend/
 │   │   ├── sequelize.js     # Sequelize instance singleton
 │   │   └── swagger.js       # OpenAPI spec builder
 │   ├── constants/
-│   │   └── index.js         # SHIPPING_*, JWT_*, PAGINATION_*, OTP_*, MAX_CART_QUANTITY
+│   │   └── index.js         # SHIPPING_FREE_THRESHOLD, JWT_*, PAGINATION_*, OTP_*, MAX_CART_QUANTITY
 │   ├── locales/
 │   │   ├── vi.json          # Tiếng Việt
 │   │   └── en.json          # English
@@ -167,7 +168,7 @@ backend/
 ├── docs/
 │   └── openapi.json         # Auto-generated OpenAPI spec
 ├── scripts/                 # rebuild-db.js, index-products.js, export-seed.js...
-├── migrations/              # 72 Sequelize migrations
+├── migrations/              # 82 Sequelize migrations
 ├── .env.example
 ├── .sequelizerc
 ├── jest.config.js           # Unit test config
@@ -181,7 +182,7 @@ backend/
 ```
 frontend/
 ├── src/
-│   ├── features/            # 14 feature modules (xem mục 5.2)
+│   ├── features/            # 13 feature modules (xem mục 5.2)
 │   │   └── <name>/
 │   │       ├── api/         # TanStack Query hooks + API functions
 │   │       ├── components/  # UI components của feature
@@ -209,7 +210,7 @@ frontend/
 │   ├── config/
 │   │   └── i18n.ts          # i18next initialization (localStorage detect, vi mặc định)
 │   ├── constants/
-│   │   └── index.ts         # PAGINATION, UPLOAD
+│   │   └── index.ts         # PAGINATION, UPLOAD, SHIPPING
 │   └── locales/
 │       ├── vi.json
 │       └── en.json
@@ -228,7 +229,7 @@ frontend/
 
 Mỗi module là một **vertical slice tự trị** — đóng gói đầy đủ HTTP layer, business logic, DB queries, và event handlers. Module không được import trực tiếp từ module khác; mọi giao tiếp cross-module đi qua:
 
-1. **EventBus** (pub/sub, in-process) — cho side effects bất đồng bộ (ví dụ: order.created → inventory deduct)
+1. **EventBus** (pub/sub, in-process) — cho side effects bất đồng bộ (ví dụ: order.cancelled → inventory log)
 2. **Shared models** (được inject qua DI) — khi cần query dữ liệu của module khác
 3. **Shared services** (email, vectorStore) — được inject tường minh qua constructor
 
@@ -238,7 +239,7 @@ Entry point DI duy nhất: `src/app.js`. Đây là nơi khởi tạo tất cả 
 
 Có hai variant:
 
-**Full DI (13 modules)**: Factory function nhận toàn bộ dependencies (Sequelize models, eventBus, logger, services...) qua tham số, không require trực tiếp trong file service.
+**Full DI (12 modules)**: Factory function nhận toàn bộ dependencies (Sequelize models, eventBus, logger, services...) qua tham số, không require trực tiếp trong file service.
 
 ```javascript
 // Ví dụ: buildOrdersModule({ Order, OrderItem, Cart, ..., eventBus, logger, emailService })
@@ -249,7 +250,7 @@ app.use('/api' + ordersModule.basePath, ordersModule.router);
 
 **Singleton (5 modules)**: `discount-code`, `search-history`, `image`, `admin`, `attribute` — wrapper mỏng, gọi service functions trực tiếp (không inject deps). Dùng cho modules ít phức tạp hoặc không cần isolation test.
 
-## 4.3 16 Backend Modules
+## 4.3 17 Backend Modules
 
 | Module | Base path | Mô tả |
 |---|---|---|
@@ -261,7 +262,7 @@ app.use('/api' + ordersModule.basePath, ordersModule.router);
 | `payment` | `/api/payments` | MoMo + VNPay create-URL, IPN callback, refund (admin) |
 | `inventory` | `/api/inventory` | Stock view + adjust. SELECT FOR UPDATE chống race condition |
 | `reviews` | `/api/reviews` | CRUD review. Chỉ user có OrderItem với productId mới được review |
-| `discount-code` | `/api/discount-codes` | CRUD mã giảm giá, validate, apply. usedCount tăng khi PAID |
+| `discount-code` | `/api/discount-codes` | CRUD mã giảm giá, validate, apply. usedCount tăng khi createOrder (manual) hoặc IPN success (online) |
 | `ai` | `/api/chatbot` | RAG chat, gợi ý sản phẩm, thêm vào giỏ qua chatbot |
 | `admin` | `/api/admin` | Dashboard analytics, bulk operations |
 | `content` | `/api/contact` | Feedback/contact form |
@@ -305,7 +306,7 @@ Mỗi feature trong `src/features/<name>/` là unit cô lập:
 
 Routing: tất cả routes lazy-loaded trong `AppRoutes.tsx` với `React.lazy` + `Suspense`. Code splitting tự động theo feature.
 
-## 5.2 14 Frontend Features
+## 5.2 13 Frontend Features
 
 | Feature | Trang chính | API hooks |
 |---|---|---|
@@ -320,6 +321,7 @@ Routing: tất cả routes lazy-loaded trong `AppRoutes.tsx` với `React.lazy` 
 | `reviews` | (embedded trong ProductDetail) | useProductReviews, useCreateReview |
 | `ai` | ChatWidgetPortal (floating) | useChatbot, useRecommendations |
 | `admin` | DashboardPage + admin pages | useAdminStats, useAdminOrders, useAdminProducts... |
+| `content` | ContactPage | useSendFeedbackMutation |
 | `upload` | (embedded) | useUploadImage |
 
 ## 5.3 State Management
@@ -331,8 +333,8 @@ Routing: tất cả routes lazy-loaded trong `AppRoutes.tsx` với `React.lazy` 
 | `auth-store` | user, token, isAuthenticated, isLoading, justLoggedIn | localStorage (user), sessionStorage (access_token) |
 | `cart-store` | items, totalItems, subtotal, serverCart, isOpen | localStorage (cartItems) |
 | `chat-store` | messages, isOpen, sessionId, chatHistory | localStorage (chat_messages, chat_session_id) |
-| `catalog-store` | filters, sort, pagination state | Không persist |
-| `wishlist-store` | wishlistIds | Không persist |
+| `catalog-store` | recentlyViewed[] (max 10), compareList[] (max 4), filters | localStorage (recentlyViewed) |
+| `wishlist-store` | items[] (product IDs) | Không persist |
 | `ui-store` | notifications, isSearchOpen, isMobileMenuOpen, theme | localStorage (theme) |
 
 **TanStack Query**: Server state (products, orders, user data...). Config mặc định: `staleTime: 5 phút`, `gcTime: 10 phút`, `retry: 1`, `refetchOnWindowFocus: false`.
@@ -351,7 +353,7 @@ Sequelize models, MySQL 8, charset utf8mb4, timezone +07:00. Tất cả tables d
 
 | Table | Model | Mô tả |
 |---|---|---|
-| `users` | User | Tài khoản: email, password (bcrypt), googleId, role (user/admin), OTP fields, resetToken |
+| `users` | User | Tài khoản: email, password (bcrypt), googleId, role (customer/admin), OTP fields, resetToken |
 | `addresses` | Address | Địa chỉ giao hàng của user (1 user N addresses) |
 | `categories` | Category | Danh mục sản phẩm (flat, có parentId cho nested display); fields: `isActive` (default true), `sortOrder` (default 0) |
 | `brands` | Brand | Thương hiệu (name, slug, logo) |
@@ -462,26 +464,22 @@ EventBus là singleton in-process. Các luồng event chính:
 **Order lifecycle**:
 ```
 createOrder()
-    │
     ├─▶ eventBus.publish({ type: 'order.created', payload: { orderId, items, userId } })
-    │           ▶ inventoryModule.subscribe → deduct stock (runInTransaction + lockRow)
-    │
-    ├─▶ (sau payment confirmed) paymentModule → ordersModule update paymentStatus
-    │           ▶ eventBus.publish({ type: 'payment.completed' })
-    │
-    └─▶ (sau DELIVERED) ordersModule
-                ▶ eventBus.publish({ type: 'order.delivered' })
-                        ▶ (hiện chưa có subscriber)
+    │           ▶ (hiện chưa có subscriber chức năng)
+    └─▶ emailGateway.sendOrderConfirmationEmail() — fire-and-forget
 
 cancelOrder()
     └─▶ eventBus.publish({ type: 'order.cancelled' })
-                ▶ inventoryModule.subscribe → ghi inventory log
+                ▶ inventoryModule.subscribe → ghi inventory log (stock đã restore inline)
+
+(payment confirmed)
+    └─▶ paymentModule update paymentStatus inline trong service (không qua eventBus)
 ```
 
 **Auth events**:
 ```
-register() ──▶ event → emailService.sendVerificationOTP()
-logout()   ──▶ revoke refresh token family (access token cleared phía client)
+register() ──▶ eventBus.publish('auth.userRegistered') — hiện chưa có subscriber
+logout()   ──▶ no-op server-side (client tự xóa token)
 ```
 
 **Catalog events**:
@@ -497,9 +495,8 @@ product.afterCreate/Update/Destroy
 ```
 orders    ──▶ cart (xóa sau khi đặt)
           ──▶ users (shippingAddress, email)
-          ──▶ payment (kiểm tra paymentStatus qua eventBus)
-          ──▶ inventory (eventBus: order.cancelled → inventory log)
-          ──▶ discount-code (apply, tăng usedCount khi PAID)
+          ──▶ inventory (eventBus: order.cancelled → ghi inventory log)
+          ──▶ discount-code (apply, tăng usedCount khi createOrder hoặc IPN success)
           ──▶ emailService (gửi xác nhận đơn hàng)
 
 cart      ──▶ catalog (Product/Variant info, kiểm tra stock)
@@ -517,9 +514,9 @@ ai        ──▶ catalog (vector search qua vectorStoreService)
           ──▶ attribute (name generator inject)
           ◀── Product model hooks (auto-upsert afterCreate/Update/Destroy)
 
-payment   ──▶ orders (update paymentStatus qua eventBus)
+payment   ──▶ orders (update paymentStatus inline trong service, không qua eventBus)
 
-inventory ◀── orders (subscribe: order.created, order.cancelled → inventory log)
+inventory ◀── orders (subscribe: order.cancelled → ghi inventory log; order.created chưa có subscriber)
 ```
 
 ---

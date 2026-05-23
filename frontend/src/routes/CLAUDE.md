@@ -178,11 +178,11 @@ lazy(() => import('@/features/admin/pages/orders/OrdersPage'));
 
 ## 4.1 3 loại guards
 
-| Guard             | Location                                     | Logic chi tiết                                                                                                                                                  |
-| ----------------- | -------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `ProtectedRoute`  | `src/components/routing/ProtectedRoute.tsx`  | `!isAuthenticated` → Navigate to `ROUTES.LOGIN` với `state={{ from: location }}`. Optional `requiredRoles[]` prop để check thêm.                                |
-| `AdminRoute`      | `src/components/routing/AdminRoute.tsx`      | Có token nhưng không có user → fetch via `useGetCurrentUserQuery`. Check `role !== 'admin' && role !== 'manager'` → `/unauthorized`. Không có token → `/login`. |
-| `PublicOnlyRoute` | `src/components/routing/PublicOnlyRoute.tsx` | `isAuthenticated` → Navigate to `ROUTES.HOME`.                                                                                                                  |
+| Guard             | Location                                     | Logic chi tiết                                                                                                                            |
+| ----------------- | -------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------- |
+| `ProtectedRoute`  | `src/components/routing/ProtectedRoute.tsx`  | `!isAuthenticated` → Navigate to `ROUTES.LOGIN` với `state={{ from: location }}`. Optional `requiredRoles[]` prop để check thêm.          |
+| `AdminRoute`      | `src/components/routing/AdminRoute.tsx`      | Có token nhưng không có user → fetch via `useGetCurrentUserQuery`. Check `role !== 'admin'` → `/unauthorized`. Không có token → `/login`. |
+| `PublicOnlyRoute` | `src/components/routing/PublicOnlyRoute.tsx` | `isAuthenticated` → Navigate to `ROUTES.HOME`.                                                                                            |
 
 ## 4.2 Re-export
 

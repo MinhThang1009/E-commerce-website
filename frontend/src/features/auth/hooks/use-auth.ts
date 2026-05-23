@@ -45,10 +45,6 @@ export const useAuth = () => {
     return result;
   };
 
-  const isManager = (): boolean => {
-    return hasRole('manager');
-  };
-
   const getUserFullName = (): string => {
     if (authState.user?.firstName && authState.user?.lastName) {
       return `${authState.user.firstName} ${authState.user.lastName}`;
@@ -62,7 +58,6 @@ export const useAuth = () => {
     logout,
     hasRole,
     isAdmin,
-    isManager,
     getUserFullName,
 
     isLoggedIn: authState.isAuthenticated && !!authState.user,

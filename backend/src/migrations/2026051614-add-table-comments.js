@@ -5,7 +5,7 @@
  */
 
 const TABLE_COMMENTS = [
-  ['users', 'Người dùng hệ thống (customer, admin, manager)'],
+  ['users', 'Người dùng hệ thống (customer, admin)'],
   ['addresses', 'Địa chỉ giao hàng của người dùng'],
   ['categories', 'Danh mục sản phẩm (đa cấp)'],
   ['brands', 'Thương hiệu sản phẩm'],

@@ -65,7 +65,7 @@ Không có query keys riêng. Dùng trực tiếp từ features khác.
 
 ## 3.2 Client state (Zustand)
 
-- `cartStore` — `items`, `subtotal`, `totalItems` (hiển thị order summary); `clearLocalCart` sau khi tạo đơn thành công
+- `cartStore` — `items` và `clearLocalCart` (gọi sau khi tạo đơn thành công). Subtotal được tính locally qua `reduce()` — không lấy từ store.
 - `authStore` — `user` (autofill form: firstName, lastName, email, phone), `isAuthenticated`
 - `uiStore` — `addNotification` (thông báo thành công/lỗi)
 - Form state: `useState` local trong `CheckoutPage` — **không persist** (intentional, tránh stale data khi reload)
@@ -78,26 +78,22 @@ Không có query keys riêng. Dùng trực tiếp từ features khác.
 
 Không có endpoint riêng — dùng từ features khác:
 
-| Method | Path                        | Feature | Mô tả                               |
-| ------ | --------------------------- | ------- | ----------------------------------- |
-| GET    | `/cart`                     | cart    | Lấy items hiện tại                  |
-| GET    | `/cart/count`               | cart    | Số lượng items (sync badge)         |
-| GET    | `/cart/validate`            | cart    | Validate tồn kho + giá trước submit |
-| DELETE | `/cart`                     | cart    | Xóa giỏ sau thanh toán              |
-| GET    | `/users/me/addresses`       | users   | Danh sách địa chỉ đã lưu (autofill) |
-| POST   | `/orders`                   | orders  | Tạo đơn hàng                        |
-| POST   | `/discount-codes/validate`  | orders  | Validate + áp mã giảm giá           |
-| POST   | `/payment/momo/create-url`  | payment | Tạo URL thanh toán MoMo             |
-| POST   | `/payment/vnpay/create-url` | payment | Tạo URL thanh toán VNPay            |
+| Method | Path                         | Feature | Mô tả                               |
+| ------ | ---------------------------- | ------- | ----------------------------------- |
+| GET    | `/cart/count`                | cart    | Số lượng items (sync badge)         |
+| GET    | `/users/me/addresses`        | users   | Danh sách địa chỉ đã lưu (autofill) |
+| POST   | `/orders`                    | orders  | Tạo đơn hàng                        |
+| POST   | `/discount-codes/validate`   | orders  | Validate + áp mã giảm giá           |
+| POST   | `/payments/momo/create-url`  | payment | Tạo URL thanh toán MoMo             |
+| POST   | `/payments/vnpay/create-url` | payment | Tạo URL thanh toán VNPay            |
 
 ## 4.2 Query hooks
 
 **Queries (từ features khác):**
 
-- `useGetCartQuery()` từ `features/cart` — items hiện tại
 - `useGetCartCountQuery()` từ `features/cart` — count badge
-- `useValidateCartQuery()` từ `features/cart` — validate trước submit
 - `useGetAddressesQuery()` từ `features/users` — địa chỉ đã lưu
+- `useGetAvailableDiscountCodesQuery()` từ `features/orders` — Danh sách mã giảm giá khả dụng để hiển thị picker
 
 **Mutations (từ features khác):**
 
@@ -105,7 +101,6 @@ Không có endpoint riêng — dùng từ features khác:
 - `useApplyDiscountCodeMutation()` từ `features/orders` — áp mã giảm giá
 - `useCreateMomoUrlMutation()` từ `features/payment` — tạo URL MoMo
 - `useCreateVNPayUrlMutation()` từ `features/payment` — tạo URL VNPay
-- `useClearCartMutation()` từ `features/cart` — xóa giỏ
 
 ---
 
@@ -127,7 +122,7 @@ Không có endpoint riêng — dùng từ features khác:
 Không có `types/` riêng. Import từ:
 
 - `features/orders` — `CreateOrderRequest`, `Order`
-- `features/cart` — `CartItem`, `BackendCart`
+- `features/cart` — `CartItem`
 - `features/users` — `Address` (dùng trong autofill select)
 - `src/types/user.types.ts` — `User`
 
@@ -138,10 +133,10 @@ Không có `types/` riêng. Import từ:
 ## 7.1 Depends on
 
 - `features/orders` — `useCreateOrderMutation`, `useApplyDiscountCodeMutation`
-- `features/cart` — `CartItem`, `cartKeys`, `useGetCartCountQuery`, `useValidateCartQuery`, `useClearCartMutation`
+- `features/cart` — `CartItem`, `cartKeys`, `useGetCartCountQuery`
 - `features/payment` — `useCreateMomoUrlMutation`, `useCreateVNPayUrlMutation`
 - `features/users` — `useGetAddressesQuery`
-- `stores/cart-store` — items, subtotal, clearLocalCart
+- `stores/cart-store` — items, clearLocalCart (subtotal computed locally)
 - `stores/auth-store` — user profile, isAuthenticated
 - `stores/ui-store` — addNotification
 - `components/common/AddressPicker` — geocoding, tính phí ship theo khoảng cách
@@ -163,7 +158,7 @@ Không có feature nào import từ checkout.
 - **Bank transfer flow:** tạo order → navigate `/payment-qr?orderId=&amount=&numberOrder=` → `PaymentQRPage` trong feature `payment`.
 - **Phí ship tính từ khoảng cách:** `AddressPicker` trả về lat/lon từ geocoding (LocationIQ) → tính Haversine distance từ kho hàng (21.0378, 105.7827) → 15k cho 3km đầu, +5k/km tiếp theo, max 100k.
 - **`shippingCost` không gửi lên backend** — backend tự tính theo Phase 7.3. FE chỉ hiển thị estimate.
-- **Validate cart trước submit:** `useValidateCartQuery` — bắt items hết hàng trước khi user confirm.
+- **Validate cart trước submit:** validation xảy ra phía backend khi tạo đơn — không dùng `useValidateCartQuery` trên FE.
 - **Discount code từ CartPage:** navigate với `location.state = { voucherCode, discountAmount }` → CheckoutPage tự động apply nếu state có voucher.
 
 ---

@@ -1,6 +1,6 @@
 # TechStore — Chiến Lược Testing
 
-> 5 tầng test, 258 suites, 5.095 test cases, coverage 100% (unit).
+> 5 tầng test, 258 suites, 5.092 test cases, coverage 100% (unit).
 
 ## Mục lục
 
@@ -34,12 +34,12 @@ TechStore áp dụng chiến lược kiểm thử đa tầng. Mỗi tầng phụ
 
 | Suite | Suites | Tests | Runtime | Config |
 |---|---|---|---|---|
-| BE Unit Tests | 160 | **3.563** | ~10s | `jest.config.js` |
+| BE Unit Tests | 160 | **3.560** | ~10s | `jest.config.js` |
 | BE Integration Tests | 36 | **184** | ~50s | `jest.integration.config.js` |
 | BE API HTTP Tests | 39 | **700** | ~190s | `jest.api.config.js` |
 | BE E2E Tests | 5 | **100** | ~20s | `jest.e2e.config.js` |
 | FE Component Tests | 18 | **548** | ~9s | `jest.config.cjs` (frontend/) |
-| **Tổng** | **258** | **5.095** | | |
+| **Tổng** | **258** | **5.092** | | |
 
 ---
 
@@ -53,7 +53,7 @@ TechStore áp dụng chiến lược kiểm thử đa tầng. Mỗi tầng phụ
                 ┌─┴──────────────────────┴─┐
                 │ Integration Tests (184)   │  ← Service/repo layer (real DB)
               ┌─┴──────────────────────────┴─┐
-              │  Unit Tests (3.563 + 548)     │  ← Isolated logic + React components
+              │  Unit Tests (3.560 + 548)     │  ← Isolated logic + React components
               └────────────────────────────────┘
 ```
 
@@ -61,7 +61,7 @@ TechStore áp dụng chiến lược kiểm thử đa tầng. Mỗi tầng phụ
 |---|---|---|---|
 | BE Unit | Jest 29 | Mock (jest.fn()) | — |
 | BE Integration | Jest 29 | MySQL thật (`techstore_test`) | 9998 |
-| BE API HTTP | Jest 29 + Supertest | MySQL thật (`techstore`) | 9997 |
+| BE API HTTP | Jest 29 + Supertest | MySQL thật (`techstore_test`) | 9997 |
 | BE E2E | Jest 29 + Supertest | MySQL thật (`techstore_test`) | 9996 |
 | FE Component | Jest 29 + ts-jest + @testing-library/react | jsdom | — |
 
@@ -73,7 +73,7 @@ TechStore áp dụng chiến lược kiểm thử đa tầng. Mỗi tầng phụ
 
 **Mục đích**: Kiểm tra logic nghiệp vụ của từng hàm trong isolation hoàn toàn. Mọi external dependency (Sequelize models, email, AI) đều được mock bằng `jest.fn()`.
 
-**Phạm vi**: 160 test suites, 3.563 test cases.
+**Phạm vi**: 160 test suites, 3.560 test cases.
 - Tất cả Service classes (17 modules × nhiều methods)
 - Repository classes
 - Controller handlers (input/output, error paths)
@@ -184,7 +184,7 @@ backend/src/__api__/
 - Port server test: 9997 (tránh conflict với integration port 9998)
 
 **Setup**: `./src/__api__/setup.js` + `./src/__api__/http-setup.js`
-- `setup.js` set env vars (port 9997, JWT secrets); `http-setup.js` override `DB_NAME = 'techstore'` (seed data đầy đủ)
+- `setup.js` set env vars (port 9997, JWT secrets, `DB_NAME = 'techstore_test'`)
 - Mỗi test file import `http-setup.js` để dùng `createTestUser` / `createTestProduct` (prefix `__HTTP_`)
 - Cleanup tự động qua `globalTeardown` sau toàn bộ suite
 
@@ -378,7 +378,7 @@ npm run test:cov -- <pattern>
 # Integration tests (cần MySQL thật — techstore_test)
 npm run test:integration
 
-# API HTTP tests (cần MySQL thật — techstore)
+# API HTTP tests (cần MySQL thật — techstore_test)
 npm run test:api
 
 # E2E tests (cần MySQL thật — techstore_test)
@@ -389,8 +389,7 @@ npm run lint
 ```
 
 **Setup MySQL cho Integration/API/E2E tests**:
-- Integration + E2E dùng `techstore_test` — tạo DB trống, sau đó: `DB_NAME=techstore_test npm run db:seed`
-- API HTTP dùng `techstore` — DB mặc định đã có seed data từ `npm run db:seed`
+- Tất cả test tiers (Integration, API HTTP, E2E) đều dùng `techstore_test`
 - DB name được hardcode trong setup files — không cần env var riêng khi chạy tests
 
 ## 10.2 Frontend
@@ -425,12 +424,12 @@ npm run build
 
 | Suite | Suites | Tests | Runtime |
 |---|---|---|---|
-| BE Unit Tests | 160 | 3.563 | ~10s |
+| BE Unit Tests | 160 | 3.560 | ~10s |
 | BE Integration Tests | 36 | 184 | ~50s |
 | BE API HTTP Tests | 39 | 700 | ~190s |
 | BE E2E Tests | 5 | 100 | ~20s |
 | FE Component Tests | 18 | 548 | ~9s |
-| **Tổng** | **258** | **5.095** | |
+| **Tổng** | **258** | **5.092** | |
 
 **Coverage (local unit tests)**:
 - Statements: 100% (threshold 99%)
@@ -520,7 +519,7 @@ test('tạo đơn hàng thành công khi tồn kho đủ', async () => {
 
 ## 12.2 Database test setup
 
-**Integration/E2E tests** dùng `techstore_test`; **API HTTP tests** dùng `techstore` (seed data đầy đủ):
+**Tất cả test tiers** (Integration, API HTTP, E2E) đều dùng `techstore_test`:
 
 ```javascript
 // src/__integration__/setup.js

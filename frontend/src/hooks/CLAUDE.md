@@ -26,6 +26,8 @@
 
 # 1. Tổng quan
 
+6 hook files (8 exported hooks — `use-api-state.ts` exports 3: `useApiState`, `usePaginatedApiState`, `useSubmissionState`).
+
 ## 1.1 Danh sách files
 
 ```

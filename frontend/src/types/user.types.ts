@@ -7,7 +7,7 @@ export interface User {
   name?: string; // Họ tên đầy đủ (firstName + lastName)
   phone?: string;
   avatar?: string;
-  role: 'customer' | 'admin' | 'manager';
+  role: 'customer' | 'admin';
   addresses?: Address[];
   defaultAddressId?: string;
   wishlist?: string[]; // Mảng ID sản phẩm

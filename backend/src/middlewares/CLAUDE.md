@@ -52,7 +52,7 @@ router.post('/cart', optionalAuthenticate, handler); // Guest + user đều OK
 RBAC — dùng **sau** `authenticate`:
 
 ```js
-router.delete('/products/:id', authenticate, authorize('admin', 'manager'), handler);
+router.delete('/products/:id', authenticate, authorize('admin'), handler);
 ```
 
 - 401 nếu `req.user` undefined (chưa authenticate)
@@ -69,7 +69,7 @@ adminRouter.use(adminAuthenticate); // Tất cả admin routes
 adminRouter.delete('/users/:id', requireSuperAdmin, handler); // Chỉ role === 'admin'
 ```
 
-- `adminAuthenticate` — verify JWT + kiểm tra `role in ['admin', 'manager']`
+- `adminAuthenticate` — verify JWT + kiểm tra `role === 'admin'`
 - `requireSuperAdmin` — chỉ cho `role === 'admin'` (chain sau `adminAuthenticate`)
 
 ---

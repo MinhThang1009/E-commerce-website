@@ -27,11 +27,10 @@ File: `.github/workflows/ci.yml`
 
 ## 1.1 Triggers
 
-| Event | Branches |
-|---|---|
-| `push` | `main`, `phase-*`, `feat/*`, `fix/*` |
-| `pull_request` | target `main` |
-| **Bỏ qua (paths-ignore)** | `**.md`, `docs/**`, `.github/ISSUE_TEMPLATE/**`, `.gitignore`, `LICENSE` |
+| Event | Branches | paths-ignore |
+|---|---|---|
+| `push` | `main`, `phase-*`, `feat/*`, `fix/*` | `**.md`, `docs/**`, `.github/ISSUE_TEMPLATE/**`, `.gitignore`, `LICENSE` |
+| `pull_request` | target `main` | `**.md`, `docs/**` |
 
 ## 1.2 Jobs
 

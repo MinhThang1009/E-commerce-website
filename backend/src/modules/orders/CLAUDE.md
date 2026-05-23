@@ -125,7 +125,7 @@ runInTransaction(async (tx) => {
     - Manual methods (cod, bank_transfer, installment) → incrementDiscountCodeUsage() ngay
     - Online methods (momo, vnpay) → đợi IPN webhook xác nhận
 
-  Tính shippingCost (free nếu subtotal >= SHIPPING_FREE_THRESHOLD)
+  Lấy shippingCost từ req.body.shippingCost (FE-supplied, server tin tưởng giá trị này)
   cancelPendingOrdersByUser(userId)   ← hủy pending orders cũ của user
 
   createOrder() + createOrderItems() + createInventoryLogs()
@@ -144,9 +144,7 @@ emailGateway.sendOrderConfirmationEmail()            ← fire-and-forget
 2. order.status = newStatus
 3. Nếu delivered + COD → order.paymentStatus = 'paid' tự động
 4. saveOrder()
-5. Nếu delivered VÀ previousStatus !== delivered:
-   - eventBus.publish('order.delivered', ...)
-6. emailGateway.sendOrderStatusUpdateEmail() — fire-and-forget
+5. emailGateway.sendOrderStatusUpdateEmail() — fire-and-forget
 ```
 
 ## 3.3 cancelOrder (user)
@@ -164,15 +162,13 @@ emailGateway.sendOrderCancellationEmail() — fire-and-forget
 
 ## 3.4 confirmReceived (user)
 
-User tự xác nhận đã nhận hàng. Trigger từ status `shipped`, `processing`, hoặc `delivered`:
+User tự xác nhận đã nhận hàng. Chỉ cho phép từ status `shipped` hoặc `processing`. Gọi trên đơn đã `delivered` → throw 422:
 
 ```
-Nếu đã delivered → idempotent, trả 200 ngay
-Nếu chưa:
-  order.status = 'delivered'
-  Nếu COD → order.paymentStatus = 'paid'
-  saveOrder() + reload()
-  eventBus.publish('order.delivered', ...)
+Nếu status không phải 'shipped' hoặc 'processing' → throw 422
+order.status = 'delivered'
+Nếu COD → order.paymentStatus = 'paid'
+saveOrder() + reload()
 Trả về { data: order }
 ```
 
@@ -186,17 +182,17 @@ Không cần auth. Query params: `?number=ORD-...&email=user@email.com`. Trả v
 
 ## 3.7 estimateShipping
 
-Synchronous (không async). Input: `?subtotal=N&weight=N`. Trả về `{ shippingCost, freeShippingThreshold }`.
+Synchronous (không async). Input: `?subtotal=N` (tham số `weight` bị bỏ qua). Signature: `estimateShipping({ subtotal })`. Trả về `{ shippingCost: 0 | null, freeShippingThreshold }`.
 
 ## 3.8 Order number format
 
-`ORD-{YYYYMMDD}-{4-byte hex uppercase}` — ví dụ `ORD-20260523-A3F2B1C9`
+`ORD-{YYYYMMDD}-{4-digit decimal}` — ví dụ `ORD-20260523-4823`
 
-Sử dụng `crypto.randomBytes(4)` — đảm bảo tính random an toàn.
+Sử dụng `crypto.randomInt(1000, 9999)`.
 
 ## 3.9 Shipping calculation
 
-`shippingCost = 0` nếu `subtotal >= SHIPPING_FREE_THRESHOLD`. Nếu không: `SHIPPING_BASE_RATE + ceil(weight - 2kg) * SHIPPING_WEIGHT_RATE` (chỉ phụ thu khi weight > 2kg).
+Nếu `subtotal >= SHIPPING_FREE_THRESHOLD` → `shippingCost = 0`. Ngược lại → trả `null` (FE tự tính theo khoảng cách). Không có công thức weight-based trong service.
 
 ## 3.10 Order status transitions
 
@@ -207,7 +203,7 @@ cancelled   cancelled
 ```
 
 - `cancelled`: từ `pending` hoặc `processing` (user hoặc admin)
-- `delivered`: từ `shipped`, `processing`, hoặc `delivered` (idempotent) — qua `confirmReceived` (user) hoặc `updateOrderStatus` (admin)
+- `delivered`: từ `shipped` hoặc `processing` — qua `confirmReceived` (user) hoặc `updateOrderStatus` (admin). Gọi `confirmReceived` khi đã `delivered` → 422.
 - `returned`: không có trong service hiện tại (chỉ là status value trong DB)
 
 ---
@@ -248,7 +244,7 @@ Inject từ `app.js`:
 - **sequelize:** cho transactions
 - **emailService:** wrapped thành `emailGateway` adapter trong `module.js`
 - **eventBus, logger**
-- **constants:** `SHIPPING_FREE_THRESHOLD`, `SHIPPING_BASE_RATE`, `SHIPPING_WEIGHT_RATE`
+- **constants:** `SHIPPING_FREE_THRESHOLD`
 
 ## 5.2 Used by
 
@@ -258,11 +254,11 @@ Inject từ `app.js`:
 
 ## 5.3 Events published
 
-| Event             | Khi nào                                           | Subscriber                                    |
-| ----------------- | ------------------------------------------------- | --------------------------------------------- |
-| `order.created`   | Sau tạo đơn thành công (outside transaction)      | (hiện chưa có subscriber chức năng)           |
-| `order.cancelled` | Sau hủy đơn                                       | `inventory` — ghi inventory log stock restore |
-| `order.delivered` | Khi admin set delivered hoặc user confirmReceived | (hiện chưa có subscriber)                     |
+| Event             | Khi nào                                                     | Subscriber                                    |
+| ----------------- | ----------------------------------------------------------- | --------------------------------------------- |
+| `order.created`   | Sau tạo đơn thành công (outside transaction)                | (hiện chưa có subscriber chức năng)           |
+| `order.cancelled` | Sau hủy đơn                                                 | `inventory` — ghi inventory log stock restore |
+| `order.delivered` | (planned, không implemented — code không publish event này) | —                                             |
 
 ---
 
@@ -273,7 +269,7 @@ Inject từ `app.js`:
 - **Stock restore là inline trong cancelOrder:** Restore xảy ra trong `orders-service.js` trực tiếp — không qua inventory event. `order.cancelled` event chỉ để inventory ghi InventoryLog, không để restore stock.
 - **`cancelPendingOrdersByUser()`:** Được gọi trong `createOrder()` để hủy pending order cũ trước khi tạo mới (1 user chỉ có 1 pending order tại một thời điểm). Không expose qua HTTP.
 - **`emailGateway` là adapter:** Wrap `emailService` để dễ mock trong tests. Không gọi `emailService` trực tiếp trong service.
-- **`confirmReceived` idempotent:** Nếu `order.status === 'delivered'` → return ngay không xử lý lại.
+- **`confirmReceived` không idempotent:** Nếu `order.status === 'delivered'` → throw 422. Chỉ cho phép từ `shipped` hoặc `processing`.
 - **productImages mapping:** `getUserOrders()` và `getOrderById()` map `productImages[]` → `thumbnail` + `images[]` + delete `productImages`. FE expect shape này.
 - **`orders-service.js` dài:** Đọc `createOrder()` trước (lines 1–490), sau đó `updateOrderStatus()` + `cancelOrder()`. Helpers `_calcShippingCost`, `_buildTrackingSteps`, `_canCancel`... ở đầu file.
 

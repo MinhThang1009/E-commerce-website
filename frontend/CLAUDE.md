@@ -167,7 +167,7 @@ export function useGetUserOrdersQuery() {
 | Guard | Logic |
 |---|---|
 | `ProtectedRoute` | Redirect `/login` nếu `!isAuthenticated` |
-| `AdminRoute` | Redirect `/` nếu `role !== 'admin' && role !== 'manager'` |
+| `AdminRoute` | Redirect `ROUTES.UNAUTHORIZED` (`/unauthorized`) nếu `role !== 'admin'` |
 | `PublicOnlyRoute` | Redirect `/` nếu đã authenticated (login, register pages) |
 
 ## 5.2 Lazy loading
@@ -215,7 +215,7 @@ Các route paths được định nghĩa trong `src/routes/paths.ts` (constants 
 ```
 src/components/
   common/        ← UI primitives: Button, Modal, Input, Card, Badge, Pagination, Rating, Table...
-  layout/        ← Header, Footer, MainLayout, AdminLayout, PageLayout, Grid
+  layout/        ← Header, Footer, MainLayout, PageLayout, Grid (AdminLayout nằm trong features/admin/components/)
   routing/       ← ProtectedRoute, AdminRoute, PublicOnlyRoute
   sections/      ← HomePage sections (HeroSection, FeaturedProductsSection...)
   icons/         ← Custom icon components

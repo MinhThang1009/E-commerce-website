@@ -118,12 +118,11 @@ Sort options:
 Private helper, gọi sau mỗi CREATE/UPDATE/DELETE:
 
 ```js
-const reviews = await Review.findAll({ where: { productId }, attributes: ['rating'] });
-const avg = reviews.reduce((s, r) => s + r.rating, 0) / reviews.length;
-Product.update({ rating: avg, reviewCount: reviews.length }, { where: { id: productId } });
+const { avg, count } = await reviewsRepository.getProductRatingsAggregate(productId);
+await reviewsRepository.updateProductRating(productId, avg, count);
 ```
 
-Tính trực tiếp từ tất cả reviews — không dùng SQL AVG(). Nếu `reviews.length === 0` → `{ avg: 0, count: 0 }`.
+Delegates hoàn toàn cho repository — service không tự tính toán inline. Nếu `count === 0` → `{ avg: 0, count: 0 }`.
 
 ---
 
@@ -175,7 +174,7 @@ Inject từ `app.js`:
 - **`avgRating` update sau mỗi review CRUD:** `_refreshProductRating()` gọi inline trong service, không qua model hooks. Nếu `rating` sai trên Product → kiểm tra xem có code path nào bỏ qua `_refreshProductRating` không.
 - **Không có `GET /check-purchased` endpoint:** FE xác định "đã mua" bằng cách thử `POST /` — service trả 403 nếu chưa mua. Không thêm endpoint check riêng.
 - **Admin không thể delete review qua HTTP:** `deleteReview` service tìm `findReviewByIdAndUserId` — admin không có userId khớp → 404. Admin delete phải xử lý direct DB hoặc thêm endpoint riêng.
-- **`_refreshProductRating` dùng JS AVG:** Load tất cả ratings của product rồi tính JS. Với product có nhiều reviews → xem xét dùng SQL AVG() nếu performance issue.
+- **`_refreshProductRating` delegate cho repository:** Gọi `reviewsRepository.getProductRatingsAggregate(productId)` (SQL aggregate) + `reviewsRepository.updateProductRating(...)`. Service không tự tính toán inline.
 
 ---
 

@@ -101,9 +101,7 @@ modules/inventory/
    - Save `stockable` (variant hoặc product) với stock mới
    - Nếu là variant: `sumVariantStockByProductId` → update `Product.stockQuantity` cho đồng bộ
    - Tạo `InventoryLog` (changeType: `'restock'`)
-6. Publish event `inventory.restocked` (sau transaction)
-
-Trả về: `{ productId, variantId, previousStock, newStock, quantity, log }`.
+     Trả về: `{ productId, variantId, previousStock, newStock, quantity, log }`.
 
 ## 3.2 Inventory logs listing
 
@@ -156,7 +154,7 @@ Tất cả routes apply `router.use(authenticate)` + `router.use(authorize('admi
 
 - Models inject từ app.js: `Product`, `ProductVariant`, `InventoryLog`, `User`
 - `sequelize` — transactions cho restock
-- `eventBus` — subscribe `order.cancelled`, publish `inventory.restocked`
+- `eventBus` — subscribe `order.cancelled`
 - `logger`
 
 ## 5.2 Used by
@@ -165,9 +163,7 @@ Tất cả routes apply `router.use(authenticate)` + `router.use(authorize('admi
 
 - `orders` — publish `order.cancelled` → inventory ghi inventory log
 
-**Publish events:**
-
-- `inventory.restocked` — sau restock thành công (hiện không có module nào subscribe)
+**Publish events:** không có (event `inventory.restocked` đã xóa khỏi implementation).
 
 **Direct dependency:**
 
@@ -190,8 +186,8 @@ Tất cả routes apply `router.use(authenticate)` + `router.use(authorize('admi
 
 # 7. Tests
 
-| File                                        | Loại | Mô tả                                  |
-| ------------------------------------------- | ---- | -------------------------------------- |
-| `services/inventory-service.test.js`        | Unit | Restock logic, event publish, validate |
-| `controllers/inventory-controller.test.js`  | Unit | HTTP layer                             |
-| `repositories/inventory-repository.test.js` | Unit | Repository queries                     |
+| File                                        | Loại | Mô tả                   |
+| ------------------------------------------- | ---- | ----------------------- |
+| `services/inventory-service.test.js`        | Unit | Restock logic, validate |
+| `controllers/inventory-controller.test.js`  | Unit | HTTP layer              |
+| `repositories/inventory-repository.test.js` | Unit | Repository queries      |

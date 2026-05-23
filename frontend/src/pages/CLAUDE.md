@@ -100,7 +100,7 @@ src/pages/
 
 **Route:** `/unauthorized`
 
-**Trigger:** `AdminRoute` guard redirect về đây khi user đăng nhập nhưng không đủ quyền (role không phải `admin` hoặc `manager`).
+**Trigger:** `AdminRoute` guard redirect về đây khi user đăng nhập nhưng không đủ quyền (role không phải `admin`).
 
 **Content:** Thông báo 403, link về trang chủ. Không có API calls.
 

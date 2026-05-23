@@ -62,7 +62,8 @@ Cross-module communication mà không import lẫn nhau trực tiếp.
 
 ```js
 // Subscribe (trong module.subscribeEvents() hoặc module factory)
-eventBus.subscribe('order.created', async ({ payload }) => {
+// Ví dụ: inventory subscribe order.cancelled để ghi log
+eventBus.subscribe('order.cancelled', async ({ payload }) => {
   await inventoryService.logChange(payload.orderId);
 });
 
@@ -75,11 +76,11 @@ eventBus.publish({ type: 'order.created', payload: { orderId }, occurredAt: new 
 
 **Events hiện tại (3):**
 
-| Event                 | Publisher | Subscriber                    |
-| --------------------- | --------- | ----------------------------- |
-| `order.created`       | orders    | inventory (log change)        |
-| `order.cancelled`     | orders    | inventory (restore stock log) |
-| `auth.userRegistered` | auth      | — (publish-only hiện tại)     |
+| Event                 | Publisher | Subscriber                       |
+| --------------------- | --------- | -------------------------------- |
+| `order.created`       | orders    | — (chưa có subscriber chức năng) |
+| `order.cancelled`     | orders    | inventory (restore stock log)    |
+| `auth.userRegistered` | auth      | — (publish-only hiện tại)        |
 
 ---
 

@@ -104,7 +104,7 @@ Không có query hooks riêng. Polling status dùng `useGetOrderByIdQuery` từ 
 | ---------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `BankTransferQR` | Generate `https://img.vietqr.io/image/{BANK_CODE}-{ACCOUNT_NUMBER}-compact.jpg?amount=&addInfo=&accountName=` từ env vars. Hiển thị thông tin ngân hàng (tên ngân hàng, số tài khoản, chủ tài khoản, số tiền, nội dung chuyển khoản) với copy-to-clipboard. |
 
-`BankTransferQR` dùng bởi `CheckoutPage` (feature checkout) — không dùng trực tiếp trong `PaymentQRPage`.
+`BankTransferQR` không được import bởi `CheckoutPage` hoặc `PaymentQRPage` — hiện là dead code, được export từ `index.ts` nhưng chưa dùng ở đâu trong runtime.
 
 ---
 
@@ -145,7 +145,7 @@ interface BankTransferQRProps {
 
 **Feature này được dùng bởi:**
 
-- `features/checkout` — import `BankTransferQR`, `useCreateMomoUrlMutation`, `useCreateVNPayUrlMutation`
+- `features/checkout` — import `useCreateMomoUrlMutation`, `useCreateVNPayUrlMutation` (KHÔNG import `BankTransferQR`)
 - `routes/AppRoutes.tsx` — mount `PaymentQRPage` tại `/payment-qr` (ProtectedRoute)
 
 ---

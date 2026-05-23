@@ -34,7 +34,6 @@ import {
   ShoppingOutlined,
   ArrowLeftOutlined,
   CrownOutlined,
-  TeamOutlined,
   CheckCircleOutlined,
   CloseCircleOutlined,
 } from '@ant-design/icons';
@@ -73,12 +72,7 @@ const UserDetailPage: React.FC = () => {
             {t('admin.users.roles.admin')}
           </Tag>
         );
-      case 'manager':
-        return (
-          <Tag color="orange" icon={<TeamOutlined />}>
-            {t('admin.users.roles.manager')}
-          </Tag>
-        );
+
       case 'customer':
         return (
           <Tag color="blue" icon={<UserOutlined />}>

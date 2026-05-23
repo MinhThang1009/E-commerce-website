@@ -1,6 +1,6 @@
 # Migrations — TechStore Backend
 
-> 80 Sequelize migration files tại `src/migrations/`. Schema hiện tại: `backend/data/migration.sql`.
+> 81 Sequelize migration files tại `src/migrations/`. Schema hiện tại: `backend/data/migration.sql`.
 
 ← Quay lại [`backend/CLAUDE.md`](../../CLAUDE.md)
 
@@ -120,6 +120,7 @@
 2026052201-add-is-active-to-categories.js
 2026052202-add-fields-to-brands.js
 2026052203-drop-audit-logs.js
+2026052204-remove-manager-role.js
 ```
 
 ---
@@ -147,6 +148,7 @@
 
 | File                                        | Nội dung                                                                        |
 | ------------------------------------------- | ------------------------------------------------------------------------------- |
+| `2026052204-remove-manager-role.js`         | ALTER `users.role` ENUM: remove `'manager'` (chỉ còn `'customer'`, `'admin'`)   |
 | `2026052203-drop-audit-logs.js`             | Drop `audit_logs`                                                               |
 | `2026052202-add-fields-to-brands.js`        | Add `description_vi`, `description_en`, `website`, `is_active` to `brands`      |
 | `2026052201-add-is-active-to-categories.js` | Add `is_active` to `categories`                                                 |

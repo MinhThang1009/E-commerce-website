@@ -169,6 +169,7 @@ class PaymentService {
       });
 
       if (processed) {
+        await this._incrementDiscountCodeUsage(processed.id);
         await this._clearUserCart(processed.userId);
         await this._sendOrderConfirmationEmailSafe(processed.id);
       }

@@ -61,7 +61,7 @@ export const orderKeys = {
 ## Client state (Zustand)
 
 - `authStore` — `user` (để enable queries, hiển thị guard nếu chưa login)
-- `cartStore` — `clearLocalCart()` gọi sau payment success redirect; `useCartStore.cartKeys` để invalidate sau tạo đơn
+- `cartStore` — `clearLocalCart()` gọi sau payment success redirect; `cartKeys` (named export từ `@/features/cart`) để invalidate sau tạo đơn
 - `uiStore` — notifications (toast sau cancel/confirm)
 
 ---
@@ -70,11 +70,12 @@ export const orderKeys = {
 
 ## Queries
 
-| Hook                                         | Endpoint                         | Mô tả                                                          |
-| -------------------------------------------- | -------------------------------- | -------------------------------------------------------------- |
-| `useGetUserOrdersQuery(params?, options?)`   | `GET /api/orders?page=&limit=`   | Danh sách đơn hàng của user có pagination                      |
-| `useGetOrderByIdQuery(id, options?)`         | `GET /api/orders/:id`            | Chi tiết đơn hàng — hỗ trợ `refetchInterval` option để polling |
-| `useGetOrderByNumberQuery(number, options?)` | `GET /api/orders/number/:number` | Tra cứu theo mã đơn hàng                                       |
+| Hook                                         | Endpoint                         | Mô tả                                                                       |
+| -------------------------------------------- | -------------------------------- | --------------------------------------------------------------------------- |
+| `useGetUserOrdersQuery(params?, options?)`   | `GET /api/orders?page=&limit=`   | Danh sách đơn hàng của user có pagination                                   |
+| `useGetOrderByIdQuery(id, options?)`         | `GET /api/orders/:id`            | Chi tiết đơn hàng — hỗ trợ `refetchInterval` option để polling              |
+| `useGetOrderByNumberQuery(number, options?)` | `GET /api/orders/number/:number` | Tra cứu theo mã đơn hàng                                                    |
+| `useGetAvailableDiscountCodesQuery()`        | `GET /api/discount-codes`        | Danh sách mã giảm giá khả dụng — dùng bởi `CheckoutPage` để hiển thị picker |
 
 `useGetOrderByIdQuery` hỗ trợ `refetchInterval` — được dùng bởi `PaymentQRPage` (feature payment) để poll payment status mỗi 5 giây.
 
@@ -94,10 +95,10 @@ export const orderKeys = {
 
 ## Pages
 
-| Page             | Route           | Mô tả                                                                                                                                                                                                                                                            |
-| ---------------- | --------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------- |
-| `OrdersPage`     | `/orders`       | Danh sách đơn hàng có pagination. Actions: hủy (chỉ `pending`), repay, xác nhận nhận (`shipped` hoặc `delivered` chưa có điểm). Sau xác nhận → trigger `ReviewModal` từ feature `reviews`. Xử lý redirect sau VNPay/MoMo payment qua URL param `?payment=success | failed`. |
-| `TrackOrderPage` | `/orders/track` | Form nhập mã đơn + email. Public — không cần login. Dùng `fetch()` trực tiếp (không qua `apiClient`). Stepper timeline hiển thị tiến độ đơn hàng.                                                                                                                |
+| Page             | Route          | Mô tả                                                                                                                                                                                                                                                                     |
+| ---------------- | -------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `OrdersPage`     | `/orders`      | Danh sách đơn hàng có pagination. Actions: hủy (chỉ `pending`), repay, xác nhận nhận (`shipped` hoặc `processing` chưa xử lý). Sau xác nhận → trigger `ReviewModal` từ feature `reviews`. Xử lý redirect sau VNPay/MoMo payment qua URL param `?payment=success\|failed`. |
+| `TrackOrderPage` | `/track-order` | Form nhập mã đơn + email. Public — không cần login. Dùng `fetch()` trực tiếp (không qua `apiClient`). Stepper timeline hiển thị tiến độ đơn hàng.                                                                                                                         |
 
 ## Components
 
@@ -168,7 +169,7 @@ interface CreateOrderRequest {
 }
 ```
 
-**Lưu ý:** `api/order-api.ts` có thêm `OrdersResponse`, `ApplyDiscountRequest`, `ApplyDiscountResponse`, `CreateOrderResponse` types inline (không re-export từ `types/order.types.ts`).
+**Lưu ý:** `api/order-api.ts` có thêm `OrdersResponse`, `ApplyDiscountRequest`, `ApplyDiscountResponse`, `CreateOrderResponse`, `AvailableDiscountCode` types inline (không re-export từ `types/order.types.ts`). `AvailableDiscountCode` shape: `{ id, code, type, value, minOrderAmount, maxDiscountAmount, endDate }` — dùng bởi `CheckoutPage` khi render discount picker.
 
 ---
 
@@ -196,4 +197,4 @@ interface CreateOrderRequest {
 - **Cross-feature import hợp lệ:** `OrdersPage` → `ReviewModal` từ feature `reviews` — đây là cross-feature import duy nhất được phép trong dự án.
 - **`Order` interface có flat address fields** — `shippingFirstName`, `shippingAddress1`... không phải nested object `shippingAddress: { firstName, address1 }`.
 - **`OrdersPage` xử lý payment redirect:** detect `?payment=success|failed` trong URL sau khi VNPay/MoMo redirect về → clear cart + show notification → `navigate('/orders', { replace: true })`.
-- **Nút "Xác nhận nhận hàng"** hiển thị khi `status === 'shipped'` hoặc `status === 'delivered'` chưa xử lý. Logic này tránh duplicate confirm.
+- **Nút "Xác nhận nhận hàng"** hiển thị khi `status === 'shipped'` hoặc `status === 'processing'` chưa xử lý. Logic này tránh duplicate confirm.

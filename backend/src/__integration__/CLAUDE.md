@@ -48,7 +48,7 @@ Trả lời câu hỏi: **"Service X có hoạt động đúng với DB thật k
 
 ```js
 process.env.NODE_ENV = 'development'; // Nới lỏng rate limiters 10x
-process.env.DB_NAME = 'techstore'; // DB thật, không phải DB test riêng
+process.env.DB_NAME = 'techstore_test'; // DB thật, không phải DB test riêng
 process.env.PORT = '9998';
 ```
 
@@ -120,7 +120,7 @@ await Product.destroy({
 # 7. Cách chạy
 
 ```bash
-# Từ thư mục backend/ — MySQL phải chạy, DB 'techstore' phải có seed data
+# Từ thư mục backend/ — MySQL phải chạy, DB 'techstore_test' phải có seed data
 npm run test:integration                                          # Toàn bộ 42 suites/228 tests
 npm run test:integration -- --testPathPattern=orders             # Chỉ orders
 npm run test:integration -- --testPathPattern=concurrent         # Race condition tests
@@ -131,7 +131,7 @@ npm run test:integration -- --testPathPattern=schema-drift       # Schema drift 
 
 # 8. Gotchas
 
-- **Không chạy song song với `npm run dev`** — cùng DB `techstore` có thể conflict data
+- **Không chạy song song với test khác** — cùng DB `techstore_test` có thể conflict data
 - **DB phải có seed data** — một số tests đọc categories, brands, admin user từ seed (chạy `npm run db:seed` trước)
 - **`NODE_ENV=development` trong setup.js** — bắt buộc để nới lỏng rate limiters 10x; `NODE_ENV=test` sẽ khiến một số test timeout vì rate limit quá chặt
 - **`schema-drift.integration.test.js` fail** nếu có migration pending chưa chạy — luôn `npm run db:migrate` trước

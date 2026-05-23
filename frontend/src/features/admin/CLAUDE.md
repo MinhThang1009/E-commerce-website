@@ -29,7 +29,7 @@
 
 ## 1.1 Purpose
 
-Dashboard quản trị toàn bộ: xem analytics/KPIs, quản lý sản phẩm/đơn hàng/người dùng/tồn kho, tạo/xóa mã giảm giá. Tất cả pages trong feature này require role `admin` hoặc `manager`.
+Dashboard quản trị toàn bộ: xem analytics/KPIs, quản lý sản phẩm/đơn hàng/người dùng/tồn kho, tạo/xóa mã giảm giá. Tất cả pages trong feature này require role `admin`.
 
 ## 1.2 Routes
 
@@ -79,9 +79,9 @@ features/admin/
       ProductsPage.tsx        — /admin/products: danh sách với filter (category, status, price, stock)
       CreateProductPage.tsx   — /admin/products/create: dùng CreateProductForm
       EditProductPage.tsx     — /admin/products/:id/edit
-      ProductImportPage.tsx   — /admin/products/import: import hàng loạt
+      ProductImportPage.tsx   — /admin/products/import: import hàng loạt (file exists but not registered in AppRoutes.tsx — currently unreachable)
       CategoriesPage.tsx      — /admin/categories: quản lý danh mục cây
-      CategoryPage.tsx        — /admin/categories/:id: chi tiết danh mục
+      CategoryPage.tsx        — /admin/categories/:id: chi tiết danh mục (file exists but not registered in AppRoutes.tsx — currently unreachable)
       BrandsPage.tsx          — /admin/brands: quản lý thương hiệu
 
     orders/
@@ -108,7 +108,7 @@ Tất cả mutations invalidate query key tương ứng sau khi thành công.
 
 ## 3.2 Client state (Zustand)
 
-- `authStore` — lấy token, kiểm tra role (`admin`/`manager`). Không có Zustand store riêng cho admin.
+- `authStore` — lấy token, kiểm tra role (`admin`). Không có Zustand store riêng cho admin.
 - `uiStore` — theme dark/light toggle trong `AdminLayout`.
 
 ---
@@ -230,22 +230,48 @@ interface ChatbotStats {
 // admin-product-api.ts
 interface CreateProductRequest {
   name: string;
+  baseName?: string;
   description: string;
   shortDescription: string;
   price?: number | string;
+  comparePrice?: number | string | null;
+  stock?: number;
+  sku?: string;
   images: string[];
   status: 'active' | 'inactive' | 'draft';
+  featured?: boolean;
   categoryIds: string[];
+  condition?: 'new' | 'like-new' | 'used' | 'refurbished';
+  specifications?: Array<{
+    name: string;
+    value: string;
+    category?: string;
+  }>;
+  attributes?: Array<{
+    name: string;
+    value: string;
+  }>;
   variants?: Array<{
     name: string;
+    variantName?: string;
+    sku?: string;
     price: number | string;
+    compareAtPrice?: number | string | null;
     stockQuantity?: number;
+    stock?: number;
+    isDefault?: boolean;
+    isAvailable?: boolean;
     attributes?: Record<string, string>;
+    specifications?: Record<string, string | number | boolean>;
     images?: string[];
   }>;
-  attributes?: Array<{ name: string; value: string }>;
-  faqs?: Array<{ question: string; answer: string }>;
   seoTitle?: string;
+  seoDescription?: string;
+  seoKeywords?: string[];
+  faqs?: Array<{
+    question: string;
+    answer: string;
+  }>;
 }
 
 // admin-order-api.ts
@@ -261,7 +287,7 @@ interface AdminOrder {
   discount: number;
   total: number;
   User: { id; firstName; lastName; email; phone? };
-  items: Array<{ id; productId; quantity; price; Product }>;
+  items: Array<{ id; productId; quantity; unitPrice: number; Product }>;
 }
 
 // admin-user-api.ts
@@ -270,7 +296,7 @@ interface User {
   email: string;
   firstName: string;
   lastName: string;
-  role: 'customer' | 'admin' | 'manager';
+  role: 'customer' | 'admin';
   isEmailVerified: boolean;
   isActive: boolean;
 }
@@ -304,7 +330,7 @@ interface User {
 - **`AdminLayout`** wrap ở route level trong `AppRoutes.tsx` — không cần import trong từng page.
 - **Charts** dùng `recharts` — không dùng Chart.js hay D3.
 - **Export Excel** dùng `exceljs` — không dùng `xlsx` hay `sheetjs`.
-- **`AdminRoute`** trong `src/components/routing/` cho phép cả role `admin` lẫn `manager` — không chỉ `admin`.
+- **`AdminRoute`** trong `src/components/routing/` chỉ cho phép role `admin`.
 - **Query keys có cấu trúc** (`adminDashboardKeys`, etc.) — không dùng inline string array như features nhỏ.
 - **`CategoriesPage` dùng `useGetCategoryTreeQuery`** (từ `features/catalog`) thay vì `useGetAllCategoriesQuery` — cần raw tree kể cả categories inactive/không có sản phẩm.
 

@@ -56,7 +56,7 @@ Thứ tự đọc khuyến nghị: types → api → utils → hooks → compone
 features/catalog/
   api/
     product-api.ts          — 13 hooks; tất cả responses qua transformProductsResponse(); export productKeys
-    category-api.ts         — 8 hooks (5 queries + 3 mutations admin); export categoryKeys
+    category-api.ts         — 10 hooks (7 queries + 3 mutations admin); export categoryKeys
     brand-api.ts            — 6 hooks (3 queries + 3 mutations admin)
     search-history-api.ts   — 4 hooks (1 query + 3 mutations)
     attribute-api.ts        — Class-based attributeService (KHÔNG phải hooks)
@@ -223,7 +223,7 @@ export const productKeys = {
 - `useGetProductFiltersQuery(params?)`
 - `useGetRecentlyViewedQuery(params?)`
 
-**category-api.ts:** `useGetAllCategoriesQuery`, `useGetCategoryTreeQuery` _(gửi `Cache-Control: no-cache` header — dùng cho admin để luôn nhận data mới nhất)_, `useGetCategoryByIdQuery(id)`, `useGetCategoryBySlugQuery(slug)`, `useGetFeaturedCategoriesQuery`, `useCreateCategoryMutation`, `useUpdateCategoryMutation`, `useDeleteCategoryMutation`
+**category-api.ts:** `useGetAllCategoriesQuery`, `useGetCategoryTreeQuery`, `useGetCategoryByIdQuery(id)`, `useGetCategoryBySlugQuery(slug)`, `useGetFeaturedCategoriesQuery`, `useGetProductsByCategoryQuery(params)`, `useGetCategoriesQuery`, `useCreateCategoryMutation`, `useUpdateCategoryMutation`, `useDeleteCategoryMutation`
 
 **brand-api.ts:** `useGetBrandsQuery`, `useGetBrandBySlugQuery(slug)`, `useGetProductsByBrandQuery(params)`, `useCreateBrandMutation`, `useUpdateBrandMutation`, `useDeleteBrandMutation`
 
@@ -283,7 +283,8 @@ interface ProductVariant {
   attributes: Record<string, string>; // { "Màu sắc": "Đen", "Dung lượng": "256GB" }
 }
 interface ProductFilters {
-  priceRange?: [number, number];
+  minPrice?: number;
+  maxPrice?: number;
   categories?: string[];
   sortBy?: string;
   page?: number;

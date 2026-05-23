@@ -10,7 +10,9 @@
   - [2.1 Values](#21-values)
 - [3. UPLOAD](#3-upload)
   - [3.1 Values](#31-values)
-- [4. Key Gotchas](#4-key-gotchas)
+- [4. SHIPPING](#4-shipping)
+  - [4.1 Values](#41-values)
+- [5. Key Gotchas](#5-key-gotchas)
 
 ---
 
@@ -51,9 +53,19 @@ UPLOAD.ACCEPTED_IMAGE_TYPES; // ['image/jpeg', 'image/png', 'image/webp', 'image
 
 ---
 
+# 4. SHIPPING
+
+## 4.1 Values
+
+```ts
+SHIPPING.FREE_THRESHOLD; // 5_000_000 — miễn phí ship nếu subtotal >= 5,000,000 VND
+SHIPPING.BASE_RATE; // 30_000 — phí ship cơ bản (FE tự tính theo khoảng cách)
+SHIPPING.MAX_FEE; // 100_000 — phí ship tối đa
+```
+
 ---
 
-# 4. Key Gotchas
+# 5. Key Gotchas
 
 - **Luôn dùng constants** — không hardcode `limit: 10` hay `limit: 20` inline. Thay đổi 1 value → áp dụng toàn app.
 - **`ADMIN_LIMIT: 20`** chỉ dùng cho admin tables — user-facing pages dùng `DEFAULT_LIMIT: 10`.

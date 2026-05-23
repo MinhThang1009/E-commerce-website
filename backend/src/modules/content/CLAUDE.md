@@ -96,7 +96,6 @@ Base path: `/api/contact`
 
 - **`adminEmail` fail silent**: Email failure chỉ log error, request vẫn trả 200. Không re-throw.
 - **Banner và News đã bị xóa**: Model `Banner`, `News` đã drop. Routes `/api/banners` và `/api/news` không còn tồn tại. Không reference lại.
-- **`content-dto.js` có `toCampaignDto`**: Dead code từ `EmailCampaign` model đã bị drop. KHÔNG reference.
 
 ---
 
@@ -107,5 +106,5 @@ Base path: `/api/contact`
 | `services/content-service.test.js`               | Unit | Service logic: feedback      |
 | `controllers/content-controller.test.js`         | Unit | HTTP layer: feedback handler |
 | `controllers/content-controller.contact.test.js` | Unit | Feedback/contact edge cases  |
-| `validators/content-validator.test.js`           | Unit | Zod schema validation        |
-| `repositories/content-repository.test.js`        | Unit | Repository queries           |
+
+| `repositories/content-repository.test.js` | Unit | Repository queries |

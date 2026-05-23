@@ -9,14 +9,13 @@
  *   - Token hết hạn → 401
  *   - User không tồn tại → 401
  *   - User có role 'customer' → 403
- *   - User có role 'manager' → pass
  *   - User có role 'admin' → pass
  *   - Email chưa xác thực → 401
  *   - Lỗi không phải JWT → next(error)
  *
  * requireSuperAdmin:
  *   - req.user không được gán → 401
- *   - req.user.role là 'manager' → 403
+ *   - req.user.role là 'customer' → 403
  *   - req.user.role là 'admin' → next()
  */
 
@@ -144,21 +143,6 @@ describe('adminAuthenticate', () => {
     });
   });
 
-  describe('khi user có role manager', () => {
-    it('gán req.user và gọi next() không có lỗi', async () => {
-      const user = makeUser({ role: 'manager' });
-      User.findByPk.mockResolvedValue(user);
-      const token = makeToken({ role: 'manager' });
-      const req = makeReq(token);
-      const next = jest.fn();
-
-      await adminAuthenticate(req, makeRes(), next);
-
-      expect(next).toHaveBeenCalledWith();
-      expect(req.user).toBe(user);
-    });
-  });
-
   describe('khi user có role admin', () => {
     it('gán req.user và gọi next() không có lỗi', async () => {
       const user = makeUser({ role: 'admin' });
@@ -216,16 +200,6 @@ describe('requireSuperAdmin', () => {
         next,
       );
       expect(next.mock.calls[0][0].statusCode).toBe(401);
-    });
-  });
-
-  describe('khi user có role manager', () => {
-    it('gọi next với AppError 403', () => {
-      const next = jest.fn();
-      requireSuperAdmin({ user: { role: 'manager' } }, makeRes(), next);
-      const err = next.mock.calls[0][0];
-      expect(err.statusCode).toBe(403);
-      expect(err.message).toContain('Super Admin');
     });
   });
 

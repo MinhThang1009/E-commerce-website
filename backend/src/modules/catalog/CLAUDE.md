@@ -49,7 +49,7 @@ return {
 };
 ```
 
-`app.js` iterate qua `mounts` khi mount. Models inject qua DI: `Category`, `Brand`, `Product`, `ProductAttribute`, `ProductVariant`, `ProductSpecification`, `Review`, `RecentlyViewed`.
+`app.js` iterate qua `mounts` khi mount. Models inject qua DI: `Category`, `Brand`, `Product`, `ProductAttribute`, `ProductVariant`, `ProductSpecification`, `ProductImage`, `Review`, `RecentlyViewed`.
 
 ---
 
@@ -191,7 +191,7 @@ Route order quan trọng — named paths phải đứng trước `/:id` để tr
 
 ## 5.1 Depends on
 
-- Models inject từ app.js: `Category`, `Brand`, `Product`, `ProductAttribute`, `ProductVariant`, `ProductSpecification`, `Review`, `RecentlyViewed`
+- Models inject từ app.js: `Category`, `Brand`, `Product`, `ProductAttribute`, `ProductVariant`, `ProductSpecification`, `ProductImage`, `Review`, `RecentlyViewed`
 - `sequelize` — complex queries, transactions, raw SQL
 - `eventBus`, `logger`
 

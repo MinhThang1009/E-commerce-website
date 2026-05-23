@@ -44,7 +44,7 @@ describe('authorize', () => {
 
   describe('khi req.user.role không nằm trong danh sách cho phép', () => {
     it('gọi next với AppError 403', () => {
-      const middleware = authorize('admin', 'manager');
+      const middleware = authorize('admin');
       const next = jest.fn();
       const customerUser = { id: 1, role: 'customer' };
 
@@ -59,23 +59,11 @@ describe('authorize', () => {
 
   describe('khi req.user.role khớp với role được phép', () => {
     it('gọi next() không có lỗi', () => {
-      const middleware = authorize('admin', 'manager');
+      const middleware = authorize('admin');
       const next = jest.fn();
       const adminUser = { id: 2, role: 'admin' };
 
       middleware(makeReq(adminUser), makeRes(), next);
-
-      expect(next).toHaveBeenCalledWith(); // gọi không có tham số lỗi
-    });
-  });
-
-  describe('khi authorize nhận nhiều roles và user có role phù hợp', () => {
-    it('gọi next() không có lỗi cho role thứ hai trong danh sách', () => {
-      const middleware = authorize('admin', 'manager');
-      const next = jest.fn();
-      const managerUser = { id: 3, role: 'manager' };
-
-      middleware(makeReq(managerUser), makeRes(), next);
 
       expect(next).toHaveBeenCalledWith();
     });

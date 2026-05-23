@@ -71,22 +71,25 @@ Frontend tests xác minh:
 ## 3.1 jest.config.cjs (root `frontend/`)
 
 ```js
-// Key config
-preset: 'ts-jest'
-testEnvironment: 'jsdom'
-setupFilesAfterFramework: ['<rootDir>/jest.setup.cjs']  // import @testing-library/jest-dom
-transform: {
-  '^.+\\.tsx?$': 'ts-jest',
-  '^.+\\.cjs$': ['babel-jest', ...]
-}
-moduleNameMapper: {
-  '@/(.*)': '<rootDir>/src/$1',
-  '@features/(.*)': '<rootDir>/src/features/$1',
-  '@components/(.*)': '<rootDir>/src/components/$1',
-  '@stores/(.*)': '<rootDir>/src/stores/$1',
-  // ... (all aliases)
-}
+// Dùng projects array — 2 test runners
+module.exports = {
+  projects: [
+    // Project 1: CommonJS utils (node env)
+    { displayName: 'utils', testEnvironment: 'node', testMatch: ['**/__tests__/**/*.test.cjs'] },
+    // Project 2: React component tests (jsdom env, ts-jest)
+    {
+      displayName: 'components',
+      testEnvironment: 'jsdom',
+      testMatch: ['**/__tests__/**/*.test.tsx'],
+      transform: { '^.+\\.(ts|tsx)$': ['ts-jest', { tsconfig: { jsx: 'react-jsx' } }] },
+      setupFiles: ['<rootDir>/jest.setup.cjs'], // import @testing-library/jest-dom
+      moduleNameMapper: { '^@/(.*)$': '<rootDir>/src/$1' /* ... all aliases */ },
+    },
+  ],
+};
 ```
+
+Key: `projects` array (không phải flat config), `setupFiles` (không phải `setupFilesAfterFramework`).
 
 ## 3.2 **mocks**/ trong test files
 
@@ -125,9 +128,16 @@ describe('Button component', () => {
 ## 5.2 Render helper
 
 ```ts
-// Dùng renderWithProviders để wrap QueryClientProvider + BrowserRouter + i18n
-import { renderWithProviders } from './test-utils';
-const { getByRole, getByText } = renderWithProviders(<Component />);
+// Tests dùng render trực tiếp từ @testing-library/react — không có test-utils file
+// Mỗi test tạo QueryClient mới để tránh data bleeding
+import { render } from '@testing-library/react';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { MemoryRouter } from 'react-router-dom';
+
+const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+const { getByRole, getByText } = render(
+  <QueryClientProvider client={queryClient}><MemoryRouter><Component /></MemoryRouter></QueryClientProvider>
+);
 ```
 
 ## 5.3 User events

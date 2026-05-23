@@ -11,7 +11,7 @@ const { AppError } = require('@middlewares/error-handler');
 
 /**
  * Middleware xác thực dành riêng cho admin
- * Kiểm tra token, user tồn tại và có quyền admin/manager
+ * Kiểm tra token, user tồn tại và có quyền admin
  */
 const adminAuthenticate = async (req, res, next) => {
   try {
@@ -33,8 +33,8 @@ const adminAuthenticate = async (req, res, next) => {
       return next(new AppError('Người dùng không tồn tại', 401));
     }
 
-    // Kiểm tra user có quyền admin hoặc manager không
-    if (!['admin', 'manager'].includes(user.role)) {
+    // Kiểm tra user có quyền admin không
+    if (user.role !== 'admin') {
       return next(new AppError('Bạn không có quyền truy cập admin panel', 403));
     }
 

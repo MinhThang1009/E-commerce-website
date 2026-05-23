@@ -422,7 +422,7 @@ const getAllUsers = catchAsync(async (req, res) => {
 /**
  * Admin cập nhật thông tin user — có thể thay đổi role, isEmailVerified, isActive
  * (khác user tự cập nhật). Ba ràng buộc: admin không tự đổi role mình; admin không
- * tự deactivate mình; chỉ role `admin` (không phải `manager`) mới đổi role user khác.
+ * tự deactivate mình; chỉ role `admin` mới đổi role user khác.
  * Chỉ cập nhật trường có trong req.body (dùng hasOwnProperty).
  *
  * @param {Object} req - HTTP request từ Express
@@ -454,7 +454,7 @@ const updateUser = catchAsync(async (req, res) => {
     throw new AppError('Không thể vô hiệu hóa tài khoản của chính mình', 403);
   }
 
-  // Chỉ admin mới được thay đổi role — manager không có quyền
+  // Chỉ admin mới được thay đổi role
   if (role && role !== user.role && req.user.role !== 'admin') {
     throw new AppError('Chỉ admin mới có quyền thay đổi role', 403);
   }

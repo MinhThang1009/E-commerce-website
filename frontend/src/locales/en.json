@@ -1623,7 +1623,6 @@
       "deleteConfirm": "Are you sure you want to delete this user?",
       "roles": {
         "admin": "Administrator",
-        "manager": "Manager",
         "customer": "Customer"
       },
       "status": {

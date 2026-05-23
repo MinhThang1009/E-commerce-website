@@ -36,18 +36,9 @@ Module nhận full DI từ `app.js`:
 
 ```js
 // module.js wires:
-module.exports = ({
-  Product,
-  ProductVariant,
-  Category,
-  chatbotService,
-  sequelize,
-  eventBus,
-  logger,
-}) => {
+module.exports = ({ Product, ProductVariant, Category, chatbotService, sequelize, logger }) => {
   const aiRepository = new SequelizeAIRepository({ Product, ProductVariant, Category, sequelize });
-  const llmGateway = new ChatbotLLMGateway({ chatbotService });
-  const ragPipeline = new RAGPipeline({ llmGateway, vectorStore: vectorStoreService });
+  const ragPipeline = new RAGPipeline({ chatbotService, vectorStore: vectorStoreService });
   const aiService = new AIService({ aiRepository, ragPipeline, logger });
   const aiController = new AIController({ aiService, logger });
 };
@@ -114,7 +105,7 @@ modules/ai/
 
 **`services/core/ai-service.js`** (~65 lines) chỉ orchestrate, không chứa logic phức tạp:
 
-- `handleMessage({ message, userId, sessionId, context })` — delegate hoàn toàn cho `ragPipeline.run()`, trả về `{ response, products, suggestions, intent }`
+- `handleMessage({ message, userId, sessionId })` — delegate hoàn toàn cho `ragPipeline.run()`, trả về `{ response, products, suggestions, intent }`
 - `getRecommendations({ type, limit })` — `type='deals'` → `repo.findActiveDeals(limit)`; mọi type khác → `repo.findFeaturedProducts(limit)`
 - `trackAnalytics({ event, userId, sessionId, productId, value, metadata, timestamp })` — ghi event vào `ChatMessage`-like analytics table qua `repo.createAnalyticsEvent()`
 - `addToCart({ productId, variantId, quantity, sessionId, userId })` — verify product active + stock không bằng 0, insert CartItem qua repo, ghi analytics event `product_added_to_cart`
@@ -130,7 +121,7 @@ modules/ai/
 4. Song song: LLM rewrite query + hybridSearch(normalizedQuery, 10)
 5. Nếu LLM rewrite khác → refined hybridSearch(rewrittenQuery, 10), chọn kết quả tốt hơn
 6. Fallback: nếu 0 kết quả trên threshold → hybridSearch(query, 3, minScore=0)
-7. llmGateway.handleMessage() với { retrievedProducts, normalizedQuery, llmRewrittenQuery }
+7. chatbotService.handleMessage() với { retrievedProducts, normalizedQuery, llmRewrittenQuery }
 ```
 
 Kết quả trả về: `{ response: string, products: Array, suggestions: Array, intent: string }`.
@@ -153,6 +144,7 @@ Kết quả trả về: `{ response: string, products: Array, suggestions: Array
 - `expandAbbreviations(text)` — regex-based expansion cho brand/model abbreviations
 - `isOffTopic(msg)` — regex pattern: thời tiết, bóng đá, âm nhạc, phim, nấu ăn, sức khỏe, tin tức
 - `classifyIntent(text)` — 6 intents: `off_topic`, `order_inquiry`, `policy`, `pricing`, `product_search`, `general`
+- `isPromptInjection(text)` — detect prompt injection attempts trong user input
 
 ## 3.5 Product Name Generator
 
@@ -183,7 +175,7 @@ Base path: `/api/chatbot`
 
 ## 5.1 Depends on (module này dùng)
 
-- `chatbotService` — inject vào `ChatbotLLMGateway` (bắt buộc, throw nếu thiếu)
+- `chatbotService` — inject vào `RAGPipeline` (bắt buộc, throw nếu thiếu)
 - `@services/vector-store/vector-store` — hybrid search (require trực tiếp trong module.js, try/catch)
 - `Product`, `ProductVariant`, `Category` models — inject qua DI từ app.js
 - `sequelize` — transaction support trong repository
@@ -218,7 +210,7 @@ Base path: `/api/chatbot`
 | `services/core/ai-service.test.js`                           | Unit        | Orchestration layer (4 methods)                       |
 | `services/core/ai-policy.test.js`                            | Unit        | Off-topic, intent classification, abbreviation expand |
 | `services/chatbot/chatbot-service.test.js`                   | Unit        | LLM gateway + session management                      |
-| `services/chatbot/chatbot-catalog-session.test.js`           | Unit        | Session catalog data management                       |
+| `services/chatbot/chatbot-cache-session.test.js`             | Unit        | Session catalog data management                       |
 | `services/chatbot/chatbot.test.js`                           | Unit        | Chatbot integration tests                             |
 | `services/chatbot/rag/rag-pipeline.test.js`                  | Unit        | RAG pipeline flow                                     |
 | `services/chatbot/language/language-detector.test.js`        | Unit        | Language detection                                    |

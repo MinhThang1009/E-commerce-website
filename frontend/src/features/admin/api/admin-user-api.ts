@@ -14,7 +14,7 @@ export interface User {
   lastName: string;
   phone?: string;
   avatar?: string;
-  role: 'customer' | 'admin' | 'manager';
+  role: 'customer' | 'admin';
   isEmailVerified: boolean;
   isActive: boolean;
   createdAt: string;
@@ -39,7 +39,7 @@ export interface UpdateUserRequest {
   firstName?: string;
   lastName?: string;
   phone?: string;
-  role?: 'customer' | 'admin' | 'manager';
+  role?: 'customer' | 'admin';
   isEmailVerified?: boolean;
   isActive?: boolean;
 }

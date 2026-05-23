@@ -54,7 +54,7 @@ Service và repository `require('@models')` trực tiếp (không qua DI). Pre-c
 ```
 modules/discount-code/
   module.js
-  routes.js                              — chỉ có 1 route: POST /apply
+  routes.js                              — 2 routes: GET / (getAvailableDiscountCodes) và POST /apply
   controllers/
     discount-code-controller.js          — functions xuất: getAllDiscountCodes, getById, create, update, delete, applyDiscountCode
   services/
@@ -97,11 +97,11 @@ Trả về: `{ discountAmount, discountCodeId, code }`.
 
 Functions: `getAllDiscountCodes({ page, limit, search, isActive, sortBy, sortOrder })`, `getDiscountCodeById(id)`, `createDiscountCode(data, actor)`, `updateDiscountCode(id, data, actor)`, `deleteDiscountCode(id, actor)`.
 
-Tất cả write operations được ghi nhận qua service. `updateDiscountCode` phân biệt trường hợp `'DEACTIVATE'` (khi `isActive` đổi từ true → false) với `'UPDATE'` thông thường.
+Tất cả write operations được ghi nhận qua service. `updateDiscountCode` cập nhật các trường được truyền vào — không có phân nhánh action type đặc biệt.
 
 ## 3.3 Business rules
 
-- **`usedCount` tăng CHỈ sau PAID**: `POST /apply` chỉ validate, KHÔNG increment. `incrementUsedCount(id)` được gọi bởi `orders` module sau payment thành công.
+- **`usedCount` tăng khi nào**: `POST /apply` chỉ validate, KHÔNG increment. `incrementUsedCount(id)` được gọi bởi `orders` module — manual payments (cod/bank_transfer/installment) tăng ngay trong `createOrder`; online payments (momo/vnpay) tăng sau IPN/return success trong `payment-service`.
 - **Discount types**: `percent` (% của orderAmount, có thể cap bởi `maxDiscountAmount`) hoặc `fixed` (số tiền cố định).
 - **No race condition protection**: Nếu 2 users apply code cuối cùng đồng thời → có thể overclaim nhẹ. Accepted risk — discount code không phải critical inventory.
 - **Code unique**: Khi tạo/update kiểm tra `findOne({ code })` trước — nếu trùng → 400.
@@ -116,9 +116,10 @@ Base path: `/api/discount-codes`
 
 | Method | Path     | Auth       | Mô tả                                            |
 | ------ | -------- | ---------- | ------------------------------------------------ |
+| GET    | `/`      | — (public) | Danh sách mã giảm giá khả dụng cho checkout      |
 | POST   | `/apply` | — (public) | Validate mã và tính discount amount khi checkout |
 
-Đây là endpoint **duy nhất** được mount qua discount-code module routes.
+Đây là các endpoints được mount qua discount-code module routes.
 
 ## 4.2 Admin endpoints (qua admin module routes)
 
@@ -153,8 +154,8 @@ Singleton — không nhận inject qua DI. Require trực tiếp:
 
 # 6. Gotchas & Edge Cases
 
-- **`usedCount` KHÔNG tăng khi `/apply`**: Đây là behavior đúng. `usedCount` chỉ tăng khi đơn hàng PAID (gọi `incrementUsedCount` từ orders module). Nếu thấy `usedCount` không tăng sau `/apply` → đúng rồi.
-- **Admin CRUD không qua discount-code routes**: Nhìn vào `discount-code/routes.js` chỉ thấy `POST /apply`. Admin CRUD nằm trong `admin/routes.js` — tìm ở đó khi debug.
+- **`usedCount` KHÔNG tăng khi `/apply`**: Đây là behavior đúng. `usedCount` tăng trong `orders-service` (manual payment) hoặc `payment-service` (online payment) — không phải tại bước validate/apply. Nếu thấy `usedCount` không tăng sau `/apply` → đúng rồi.
+- **Admin CRUD không qua discount-code routes**: Nhìn vào `discount-code/routes.js` chỉ thấy `GET /` và `POST /apply`. Admin CRUD nằm trong `admin/routes.js` — tìm ở đó khi debug.
 - **`POST /apply` không cần auth**: Public endpoint, không có `authenticate` middleware.
 - **Service dùng function exports, không phải class**: `require('@modules/discount-code/services/discount-code-service')` trả về object `{ getAllDiscountCodes, applyDiscountCode, ... }` — không phải instance.
 - **Repository singleton import**: `const discountCodeRepository = require('@modules/discount-code/repositories/sequelize-discount-code-repository')` — module-level singleton, không qua constructor injection.

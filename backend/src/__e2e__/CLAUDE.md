@@ -58,7 +58,7 @@ Trả lời câu hỏi: **"Toàn bộ user journey có hoạt động không?"**
 
 ```js
 process.env.NODE_ENV = 'development';
-process.env.DB_NAME = 'techstore';
+process.env.DB_NAME = 'techstore_test';
 process.env.PORT = '9996';
 ```
 
@@ -105,7 +105,7 @@ const { app, request, createE2EUser, createE2EAdmin, createE2EProduct } = requir
 # 6. Cách chạy
 
 ```bash
-# Từ thư mục backend/ — MySQL phải chạy, DB 'techstore' phải có seed data
+# Từ thư mục backend/ — MySQL phải chạy, DB 'techstore_test' phải có seed data
 npm run test:e2e                                      # Full 5 suites/102 tests (~20s)
 npm run test:e2e -- --testPathPattern=checkout-flow  # Chỉ checkout flow
 npm run test:e2e -- --testPathPattern=auth-flow      # Chỉ auth flow

@@ -96,7 +96,7 @@ Không dùng Zustand stores.
 interface UploadImageOptions {
   category?: 'product' | 'user' | 'review';
   productId?: string;
-  generateThumbs?: boolean; // Tạo 3 sizes: 200px, 400px, 800px — chỉ dùng cho product images
+  generateThumbs?: boolean; // Tạo 3 sizes: 150px, 300px, 600px (small/medium/large) — chỉ dùng cho product images
   optimize?: boolean; // WebP conversion + compression — tốn CPU
 }
 ```

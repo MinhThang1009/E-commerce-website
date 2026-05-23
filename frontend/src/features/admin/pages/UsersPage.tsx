@@ -55,7 +55,7 @@ interface UserFormData {
   firstName: string;
   lastName: string;
   phone?: string;
-  role: 'customer' | 'admin' | 'manager';
+  role: 'customer' | 'admin';
   isEmailVerified: boolean;
   isActive: boolean;
 }
@@ -136,8 +136,7 @@ const UsersPage: React.FC = () => {
     switch (role) {
       case 'admin':
         return 'red';
-      case 'manager':
-        return 'orange';
+
       case 'customer':
         return 'blue';
       default:
@@ -149,8 +148,7 @@ const UsersPage: React.FC = () => {
     switch (role) {
       case 'admin':
         return <CrownOutlined />;
-      case 'manager':
-        return <TeamOutlined />;
+
       default:
         return <UserOutlined />;
     }
@@ -160,8 +158,7 @@ const UsersPage: React.FC = () => {
     switch (role) {
       case 'admin':
         return t('admin.users.roles.admin');
-      case 'manager':
-        return t('admin.users.roles.manager');
+
       case 'customer':
         return t('admin.users.roles.customer');
       default:

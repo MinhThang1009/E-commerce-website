@@ -64,8 +64,8 @@ const AdminRoute: React.FC<AdminRouteProps> = ({ children }) => {
     return <Navigate to={ROUTES.LOGIN} state={{ from: location }} replace />;
   }
 
-  // Kiểm tra xem user có phải admin hoặc manager không
-  if (userToCheck?.role !== 'admin' && userToCheck?.role !== 'manager') {
+  // Kiểm tra xem user có phải admin không
+  if (userToCheck?.role !== 'admin') {
     return <Navigate to={ROUTES.UNAUTHORIZED} replace />;
   }
 

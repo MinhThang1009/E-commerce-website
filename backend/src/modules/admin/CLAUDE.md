@@ -130,7 +130,7 @@ Tất cả dùng Sequelize.fn aggregate (không phải raw SQL):
 ## 3.4 Business rules
 
 - Admin không thể xóa chính mình — check `req.user.id !== targetUserId`
-- Vector store sync sau create/update/import là async fire-and-forget — response trả về trước khi sync xong
+- Vector store sync: **create/update** dùng direct `await` với try/catch (block response nhưng lỗi không ảnh hưởng status code); **import** dùng `setImmediate` fire-and-forget (response trả về trước khi sync xong)
 - `deepParseJSON()` / `deepParseJSONArray()` trong service: xử lý trường hợp field bị stringify nhiều lần (tối đa 5 lần)
 
 ---
@@ -187,7 +187,7 @@ Base path: `/api/admin`. Tất cả require `adminAuthenticate`.
 - `discount-code` module — `discountCodeController` và `discountCodeValidator` import trực tiếp trong `routes.js` (cross-module import được cho phép ở routes layer)
 - `@services/vector-store/` — sync vector store sau create/import product (async)
 - `@models` — require trực tiếp (singleton exception): Product, User, Order, Review, Category, Brand, OrderItem, ProductVariant, ProductImage, ProductCategory, CartItem, Wishlist, Address, SearchHistory, RecentlyViewed, InventoryLog, ChatMessage
-- `@modules/ai/services/product/product-enricher` — enrich data trước khi upsert vector store (require lazy trong `setImmediate`)
+- `@modules/ai/services/product/product-enricher` — enrich data trước khi upsert vector store (require lazy trong try/catch block hoặc setImmediate tùy flow)
 
 ## 5.2 Used by (module khác dùng module này)
 
@@ -202,7 +202,7 @@ Không module nào depend vào admin (leaf node trong dependency graph).
 - **Import routes trước `/products/:id`**: Routes `/products/import-template`, `/products/import`, `/products/export` phải đăng ký trước `/products/:id` để Express không nhầm `import-template` là một product ID.
 - **`product-import-service.js` có repo riêng**: Dùng `sequelize-product-import-repository.js`, không phải `sequelize-admin-repository.js`. Không nhầm lẫn.
 - **`allFailed` flag trong import**: Nếu mọi row đều fail validation → trả về HTTP 422 với `{ allFailed: true }`. Không insert bất kỳ row nào.
-- **Vector store sync là fire-and-forget**: Dùng `setImmediate` — response trả về trước khi sync xong. Nếu sync lỗi → chỉ log warning, không ảnh hưởng response.
+- **Vector store sync — 2 cơ chế khác nhau**: Create/update product dùng direct `await` với try/catch — response chờ sync xong, lỗi chỉ log không ảnh hưởng status code. Import dùng `setImmediate` fire-and-forget — response trả về trước khi sync xong.
 - **Multer memoryStorage**: File upload lưu trong RAM (không lưu disk). Giới hạn 5MB. Chỉ nhận `.csv` hoặc `.json`.
 - **Discount code trong admin routes**: `routes.js` import trực tiếp `discountCodeController` từ `@modules/discount-code/controllers/...` — là cross-module import nhưng cho phép ở routes layer.
 

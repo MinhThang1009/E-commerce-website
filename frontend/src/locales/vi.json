@@ -1744,7 +1744,6 @@
       "deleteConfirm": "Bạn có chắc chắn muốn xóa người dùng này?",
       "roles": {
         "admin": "Quản trị viên",
-        "manager": "Quản lý",
         "customer": "Khách hàng"
       },
       "status": {

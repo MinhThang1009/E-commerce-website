@@ -76,7 +76,7 @@ const LoginPage: React.FC = () => {
 
       // Chuyển hướng theo vai trò người dùng
       const userRole = result?.user?.role;
-      if (userRole === 'admin' || userRole === 'manager') {
+      if (userRole === 'admin') {
         navigate('/admin', { replace: true });
       } else {
         navigate(from === '/admin' ? '/' : from, { replace: true });

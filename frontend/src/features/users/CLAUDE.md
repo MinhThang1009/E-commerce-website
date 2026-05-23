@@ -29,7 +29,7 @@ api/
   user-api.ts      — TanStack Query hooks + export userKeys
 
 pages/
-  ProfilePage.tsx  — /profile: layout 5 tabs
+  ProfilePage.tsx  — /profile: layout 4 tabs
 
 index.ts           — Barrel export
 ```
@@ -86,9 +86,9 @@ export const userKeys = {
 
 | Page          | Route      | Mô tả                                                                         |
 | ------------- | ---------- | ----------------------------------------------------------------------------- |
-| `ProfilePage` | `/profile` | Layout 5 tabs với hero header + avatar card. Tab content inline trong 1 file. |
+| `ProfilePage` | `/profile` | Layout 4 tabs với hero header + avatar card. Tab content inline trong 1 file. |
 
-## 5 Tabs trong ProfilePage
+## 4 Tabs trong ProfilePage
 
 | Tab key     | Nội dung                                                                                                                                           |
 | ----------- | -------------------------------------------------------------------------------------------------------------------------------------------------- |
@@ -111,7 +111,7 @@ interface User {
   email: string;
   phone?: string;
   avatar?: string;
-  role: 'customer' | 'admin' | 'manager';
+  role: 'customer' | 'admin';
   isEmailVerified: boolean;
   createdAt: string;
 }

@@ -582,7 +582,7 @@ CREATE TABLE `users` (
   `last_name` varchar(255) NOT NULL,
   `phone` varchar(20) DEFAULT NULL,
   `avatar` varchar(512) DEFAULT NULL,
-  `role` enum('customer','admin','manager') DEFAULT 'customer',
+  `role` enum('customer','admin') DEFAULT 'customer',
   `is_email_verified` tinyint(1) DEFAULT 0,
   `is_active` tinyint(1) DEFAULT 1,
   `otp_code` varchar(6) DEFAULT NULL,

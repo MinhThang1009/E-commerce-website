@@ -577,26 +577,20 @@ describe('POST /api/admin/products/:id/clone', () => {
 });
 
 // ─────────────────────────────────────────────────────────────────────────────
-// PUT /api/admin/users/:id — manager không được thay đổi role
-// Verify qua HTTP request với manager role trong req.user
+// PUT /api/admin/users/:id — non-admin không được thay đổi role
 // ─────────────────────────────────────────────────────────────────────────────
 
 describe('updateUser — non-admin không được thay đổi role (trực tiếp gọi handler)', () => {
-  it('403 khi req.user.role là manager và cố thay đổi role của user khác', async () => {
-    // Tạo app riêng với middleware inject manager role
+  it('403 khi req.user.role là customer và cố thay đổi role của user khác', async () => {
     const localApp = express();
     localApp.use(express.json());
-    // Middleware inject manager role — đặt TRƯỚC router để override
     localApp.use((req, _res, next) => {
-      req.user = { id: 999, role: 'manager', email: 'manager@test.com' };
+      req.user = { id: 999, role: 'customer', email: 'customer@test.com' };
       next();
     });
 
-    // Cần mock lại adminAuthenticate trong router không ảnh hưởng app này
-    // Thay vào đó, mock module trực tiếp và import controller
     const { updateUser } = require('./admin-controller');
 
-    // Wrap bằng catchAsync pattern thủ công
     localApp.put('/users/:id', (req, res, next) => {
       updateUser(req, res, next);
     });

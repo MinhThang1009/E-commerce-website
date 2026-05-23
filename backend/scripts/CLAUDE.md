@@ -135,17 +135,15 @@ Nằm tại `scripts/seeders/`. Chạy qua **Sequelize CLI** — **idempotent** 
 # Từ thư mục backend/
 npx sequelize-cli db:seed:all                                    # Seed tất cả (theo thứ tự timestamp)
 npx sequelize-cli db:seed:undo:all                               # Rollback tất cả
-npx sequelize-cli db:seed --seed 20260101000003-seed-admin-user.js  # Chỉ seed admin
+npx sequelize-cli db:seed --seed 2026010103-seed-admin.js            # Chỉ seed admin
 ```
 
 **Thứ tự seeders (phải chạy theo thứ tự timestamp):**
 
 | Seeder | Thứ tự | Dữ liệu |
 |---|---|---|
-| `20260101000001-seed-categories.js` | 1 | 5 categories: Điện thoại (slug `dien-thoai`), Tablet, Laptop, Smartwatch, Đồng hồ |
-| `20260101000002-seed-brands.js` | 2 | 12 brands: Apple, Samsung, Xiaomi, OPPO, Vivo, Realme, Nokia, Huawei, LG, ASUS, Acer, CITIZEN |
-| `20260101000003-seed-admin-user.js` | 3 | 1 admin: `admin@techstore.vn` / `Admin@123` (bcrypt hash, cost 10) |
-| `20260101000004-seed-news.js` | 4 | **Đã xóa / bỏ qua** — news table đã drop, seeder này không còn áp dụng |
+| `2026010103-seed-admin.js` | 1 | 1 admin: `admin@techstore.vn` / `Admin@123` (bcrypt hash, cost 10) |
+| `2026010105-seed-user.js` | 2 | 1 user thường để test |
 
 **CẢNH BÁO:** Đổi password admin trước khi deploy production. Hash trong seeder là `Admin@123`.
 

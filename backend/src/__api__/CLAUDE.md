@@ -37,7 +37,7 @@ API HTTP tests xác minh **HTTP contract** của từng endpoint qua Supertest �
 | Focus      | HTTP contract (status, body shape) | Business logic + DB constraint  |
 | Runtime    | ~190s                              | ~50s                            |
 | Files      | `*.http.test.js`                   | `*.integration.test.js`         |
-| DB         | MySQL thật (`techstore`)           | MySQL thật (`techstore`)        |
+| DB         | MySQL thật (`techstore_test`)      | MySQL thật (`techstore_test`)   |
 | Port       | 9997                               | 9998                            |
 | maxWorkers | 1                                  | 1                               |
 
@@ -49,7 +49,7 @@ API HTTP tests xác minh **HTTP contract** của từng endpoint qua Supertest �
 
 ```js
 process.env.NODE_ENV = 'development';
-process.env.DB_NAME = 'techstore';
+process.env.DB_NAME = 'techstore_test';
 process.env.PORT = '9997';
 ```
 
@@ -91,8 +91,8 @@ Tất cả data tạo bởi helpers đều dùng prefix `__HTTP_` để cleanup 
 | orders             | `orders.http.test.js`, `orders-edge-cases.http.test.js`, `orders-extra.http.test.js`                                                                     |
 | admin              | `admin.http.test.js`, `admin-extra.http.test.js`, `admin-comprehensive.http.test.js`                                                                     |
 | ai                 | `ai-chatbot.http.test.js`, `ai-edge-cases.http.test.js`                                                                                                  |
-| attribute          | `attribute.http.test.js`, `attribute-extra.http.test.js`, `attribute-users-search-deep.http.test.js`                                                     |
-| content            | `content.http.test.js`, `content-deep.http.test.js`                                                                                                      |
+| attribute          | `attribute.http.test.js`, `attribute-extra.http.test.js`                                                                                                 |
+| content            | `content.http.test.js`                                                                                                                                   |
 | discount-code      | `discount-code.http.test.js`, `discount-edge-cases.http.test.js`                                                                                         |
 | payment            | `payment.http.test.js`, `payment-edge-cases.http.test.js`, `payment-reviews-deep.http.test.js`                                                           |
 | reviews            | `reviews.http.test.js`, `reviews-edge-cases.http.test.js`                                                                                                |
@@ -106,7 +106,7 @@ Tất cả data tạo bởi helpers đều dùng prefix `__HTTP_` để cleanup 
 # 6. Cách chạy
 
 ```bash
-# Từ thư mục backend/ — MySQL phải chạy, DB 'techstore' phải có seed data
+# Từ thư mục backend/ — MySQL phải chạy, DB 'techstore_test' phải có seed data
 npm run test:api                              # Full 39 suites/700 tests (~190s)
 npm run test:api -- --testPathPattern=auth   # Chỉ auth tests
 npm run test:api -- --testPathPattern=catalog-deep  # Chỉ catalog-deep
@@ -140,7 +140,7 @@ it('trả về 404 khi sản phẩm không tồn tại', async () => { ... });
 
 # 8. Gotchas
 
-- **MySQL phải running** trước khi chạy — DB name lấy từ env `DB_NAME` (mặc định `techstore`)
+- **MySQL phải running** trước khi chạy — DB name lấy từ env `DB_NAME` (setup.js set `techstore_test`)
 - **`maxWorkers=1`** bắt buộc — không chạy song song để tránh data race trên cùng DB
 - **Cleanup test data** — dùng prefix `__HTTP_` để xóa. `npm run db:cleanup-test-data` xóa hết `__INT_TEST_`, `__HTTP_`, `__E2E_` records
 - **Rate limiter tắt trong test** — `NODE_ENV=development` nới lỏng 10x; nếu test `rate-limit.http.test.js` cần test rate limit thật thì override lại trong test đó

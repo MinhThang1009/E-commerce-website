@@ -103,7 +103,7 @@ interface User {
   email: string;
   phone?: string;
   avatar?: string;
-  role: 'customer' | 'admin' | 'manager';
+  role: 'customer' | 'admin';
   isEmailVerified: boolean;
   createdAt: string;
 }
@@ -170,7 +170,7 @@ interface DiscountCode {
 # 4. Key Gotchas
 
 - **Domain types phải ở trong feature** (`features/<name>/types/`) — không define mới ở `src/types/`. File `index.ts` chỉ re-export, không define domain types.
-- **`User.role`** có 3 values: `'customer'`, `'admin'`, `'manager'`. Code kiểm tra admin role phải check cả 2: `role === 'admin' || role === 'manager'`.
+- **`User.role`** có 2 values: `'customer'`, `'admin'`. Code kiểm tra admin role dùng: `role === 'admin'`.
 - **`PaginatedResponse<T>`** là type chuẩn cho mọi list API — dùng type này thay vì define inline.
 - **`WishlistItem` trong `common.types.ts`** là type cũ/legacy — wishlist store thực tế chỉ dùng `string[]` (product IDs). Không dùng `WishlistItem` cho wishlist store logic.
 - **`AddNotificationPayload`** vs `Notification`: `Notification` có `id` (auto-generated bởi store), `AddNotificationPayload` không có `id` — dùng `AddNotificationPayload` khi gọi `addNotification()`.

@@ -131,12 +131,8 @@ module.exports = ({ ordersController }) => {
   router.get('/shipping-estimate', ordersController.estimateShipping);
   router.get('/', ordersController.getUserOrders);
   router.get('/number/:number', ordersController.getOrderByNumber);
-  router.get('/:id', ordersController.getOrderById);
-  router.post('/:id/cancel', ordersController.cancelOrder);
-  router.post('/:id/repay', ordersController.repayOrder);
-  router.post('/:id/receive', ordersController.confirmReceived);
 
-  // Admin
+  // Admin — phải đứng trước /:id để tránh Express match "admin" như một id
   router.get('/admin/all', authorize('admin'), ordersController.getAllOrders);
   router.patch(
     '/admin/:id/status',
@@ -144,6 +140,12 @@ module.exports = ({ ordersController }) => {
     validateRequest(updateOrderStatusSchema),
     ordersController.updateOrderStatus,
   );
+
+  // /:id phải đứng sau các static routes (/admin/all, /number/:number, /shipping-estimate)
+  router.get('/:id', ordersController.getOrderById);
+  router.post('/:id/cancel', ordersController.cancelOrder);
+  router.post('/:id/repay', ordersController.repayOrder);
+  router.post('/:id/receive', ordersController.confirmReceived);
 
   return router;
 };

@@ -122,11 +122,11 @@ import { Button, Modal, PremiumButton, Card, Badge } from '@components/common';
 
 # 4. Routing Components
 
-| Component         | Logic                                                                                                                                     | Redirect khi fail                                                 |
-| ----------------- | ----------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------- |
-| `ProtectedRoute`  | `!isAuthenticated` → redirect. Lưu `state={{ from: location }}` để redirect back sau login. Optional `requiredRoles?: string[]`.          | `ROUTES.LOGIN`                                                    |
-| `AdminRoute`      | Có token nhưng chưa có user → gọi `useGetCurrentUserQuery`. Check `role !== 'admin' && role !== 'manager'`. Hiện spinner trong khi fetch. | `ROUTES.LOGIN` (không có token), `ROUTES.UNAUTHORIZED` (sai role) |
-| `PublicOnlyRoute` | `isAuthenticated` → redirect. Dùng cho login/register pages.                                                                              | `ROUTES.HOME`                                                     |
+| Component         | Logic                                                                                                                            | Redirect khi fail                                                 |
+| ----------------- | -------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------- |
+| `ProtectedRoute`  | `!isAuthenticated` → redirect. Lưu `state={{ from: location }}` để redirect back sau login. Optional `requiredRoles?: string[]`. | `ROUTES.LOGIN`                                                    |
+| `AdminRoute`      | Có token nhưng chưa có user → gọi `useGetCurrentUserQuery`. Check `role !== 'admin'`. Hiện spinner trong khi fetch.              | `ROUTES.LOGIN` (không có token), `ROUTES.UNAUTHORIZED` (sai role) |
+| `PublicOnlyRoute` | `isAuthenticated` → redirect. Dùng cho login/register pages.                                                                     | `ROUTES.HOME`                                                     |
 
 ### Dùng trong AppRoutes.tsx
 

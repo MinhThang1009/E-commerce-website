@@ -227,9 +227,9 @@ admin     → orders, users, catalog, reviews, content, discount-code, inventory
 ai        → catalog (vector search via vectorStoreService), attribute (name generator inject)
           ← Product model hooks (auto-upsert afterCreate/Update/Destroy)
 
-payment   → orders (update paymentStatus via eventBus)
+payment   → orders (update paymentStatus inline trong service, không qua eventBus)
 
-inventory ← orders (subscribe: order.created, order.cancelled → inventory log)
+inventory ← orders (subscribe: order.cancelled → ghi inventory log; order.created không có subscriber)
 ```
 
 ---
@@ -249,7 +249,7 @@ inventory ← orders (subscribe: order.created, order.cancelled → inventory lo
 - **Cron Jobs:** daily 2AM + weekly Sunday 3AM — không disable trừ khi có lý do rõ ràng.
 - **Models đã drop hoàn toàn:** `Collection`, `EmailCampaign`, `NewsletterSubscriber`, `ImportLog`, `Banner`, `News`, `LoyaltyHistory`, `WarrantyPackage`, `ProductWarranty` — không reference lại.
 - **Stock decrement:** LUÔN trong transaction với SELECT FOR UPDATE — không decrement bên ngoài unitOfWork.
-- **Discount usedCount:** tăng CHỈ khi đơn PAID, không phải khi validate/apply.
+- **Discount usedCount:** Manual payments (cod/bank_transfer/installment) → tăng ngay trong `createOrder` transaction. Online payments (momo/vnpay) → tăng trong `payment-service.js` sau IPN/return success. Không tăng tại bước validate/apply.
 - **Image model:** file `models/image.js` tồn tại nhưng đã xóa khỏi `index.js` associations — `image` module require trực tiếp, không qua DI.
 - **Content module:** chỉ còn 1 endpoint (`POST /api/contact/feedback`) — feedback/contact only.
 - **Catalog module:** có 3 mount points (`/api/products`, `/api/categories`, `/api/brands`).
@@ -263,12 +263,12 @@ inventory ← orders (subscribe: order.created, order.cancelled → inventory lo
 
 | Suite | Suites | Tests | Runtime | Config |
 |---|---|---|---|---|
-| BE Unit Tests | 160 | 3.563 | ~10s | `jest.config.js` |
+| BE Unit Tests | 160 | 3.560 | ~10s | `jest.config.js` |
 | BE Integration Tests | 36 | 184 | ~50s | `jest.integration.config.js` |
 | BE API HTTP Tests | 39 | 700 | ~190s | `jest.api.config.js` |
 | BE E2E Tests | 5 | 100 | ~20s | `jest.e2e.config.js` |
 | FE Component Tests | 18 | 548 | ~9s | `jest.config.cjs` (frontend/) |
-| **Tổng** | **258** | **5.095** | | |
+| **Tổng** | **258** | **5.092** | | |
 
 - **BE Coverage (local):** statements 99%, branches 97%, functions 99%, lines 99% (thresholds trong `jest.config.js`)
 - **BE Coverage (CI):** statements ≥97%, lines ≥97%, branches ≥85%, functions ≥95%
@@ -293,7 +293,7 @@ backend/src/
   constants/CLAUDE.md                        ← Hằng số toàn cục (shipping, OTP, JWT)
   locales/CLAUDE.md                          ← i18n vi.json / en.json, conventions
   models/CLAUDE.md                           ← 26 models, associations, conventions
-  migrations/CLAUDE.md                       ← 80 migrations, phases, patterns
+  migrations/CLAUDE.md                       ← 81 migrations, phases, patterns
   middlewares/CLAUDE.md                      ← authenticate, authorize, rate-limiter
   shared/CLAUDE.md                           ← EventBus, AppError/errors, unit-of-work
   services/CLAUDE.md                         ← email, vector-store, embedding (shared, non-DI)
@@ -338,12 +338,12 @@ frontend/src/
   stores/CLAUDE.md                           ← 6 Zustand stores
   routes/CLAUDE.md                           ← paths.ts, AppRoutes.tsx, lazy loading
   components/CLAUDE.md                       ← shared components (common/, layout/, routing/, sections/, icons/)
-  hooks/CLAUDE.md                            ← 8 global hooks
+  hooks/CLAUDE.md                            ← 6 hook files (8 exported hooks)
   pages/CLAUDE.md                            ← 8 static pages
   utils/CLAUDE.md                            ← 14 utility files
   types/CLAUDE.md                            ← Type barrel, shared types
   styles/CLAUDE.md                           ← SCSS tokens, global CSS, Tailwind guidance
-  constants/CLAUDE.md                        ← PAGINATION, UPLOAD
+  constants/CLAUDE.md                        ← PAGINATION, UPLOAD, SHIPPING
   __tests__/CLAUDE.md                        ← Component tests (Jest + RTL)
   features/admin/CLAUDE.md                   ← Admin dashboard, CRUD pages
   features/ai/CLAUDE.md                      ← AI chatbot widget

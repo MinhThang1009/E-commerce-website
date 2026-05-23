@@ -9,7 +9,7 @@
 - [3. Request Flow](#3-request-flow)
 - [4. Từng file](#4-từng-file)
   - [4.1 chatbot-service.js](#41-chatbot-servicejs)
-    - [4.3 rag/rag-pipeline.js](#43-ragrag-pipelinejs)
+    - [4.2 rag/rag-pipeline.js](#42-ragrag-pipelinejs)
   - [4.4 prompt/prompt-builder.js](#44-promptprompt-builderjs)
   - [4.5 prompt/response-parser.js](#45-promptresponse-parserjs)
   - [4.6 keyword/keyword-fallback.js](#46-keywordkeyword-fallbackjs)
@@ -46,13 +46,13 @@ chatbot/
 
 ```
 POST /api/chatbot/message
-  → AIService.chat()
-      → RAGPipeline.process(message, userId, sessionId)
+  → AIService.handleMessage()
+      → RAGPipeline.run(message, userId, sessionId)
             ① validate (AIPolicy: độ dài, off-topic, spam)
             ② expandAbbreviations (ip → iPhone, ss → Samsung...)
-            ③ parallel: llmGateway.rewriteQuery(msg) + vectorStore.hybridSearch(msg)
+            ③ parallel: chatbotService.rewriteQuery(msg) + vectorStore.hybridSearch(msg)
             ④ nếu rewritten query khác → hybridSearch lại với query mới
-            ⑤ llmGateway.handleMessage() → ChatbotService.getAIResponse()
+            ⑤ chatbotService.handleMessage() → ChatbotService.getAIResponse()
                   → promptBuilder.createPrompt(msg, products)
                   → LLM HTTP call (provider rotation: 429/402/500/503 → thử next)
                   → responseParser.parseAIResponse(llmText, products)

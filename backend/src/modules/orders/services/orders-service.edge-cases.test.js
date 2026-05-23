@@ -6,8 +6,6 @@ const OrdersService = require('./orders-service');
 // ─── Constants ────────────────────────────────────────────────────────────────
 
 const CONSTANTS = {
-  POINTS_EARN_RATE: 1000,
-  POINTS_VALUE: 100,
   SHIPPING_FREE_THRESHOLD: 500000,
   SHIPPING_BASE_RATE: 30000,
 };
@@ -37,9 +35,6 @@ function buildService() {
     findActiveDiscountCode: jest.fn().mockResolvedValue(null),
     incrementDiscountCodeUsage: jest.fn().mockResolvedValue(),
     findUserById: jest.fn(),
-    updateUserPoints: jest.fn().mockResolvedValue(),
-    createLoyaltyHistory: jest.fn().mockResolvedValue(),
-    updateLoyaltyHistoryOrderId: jest.fn().mockResolvedValue(),
     createOrder: jest.fn(),
     createOrderItem: jest.fn(),
     createInventoryLogs: jest.fn().mockResolvedValue(),

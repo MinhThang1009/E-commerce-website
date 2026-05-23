@@ -33,7 +33,7 @@ Module dùng DI đầy đủ với adapter pattern — 4 adapters được đị
 
 ```js
 // module.js wires:
-module.exports = ({ User, eventBus, logger, emailService }) => {
+module.exports = ({ User, logger, emailService }) => {
   // emailGateway   → { sendOtpEmail, sendResetPasswordEmail } (wraps emailService)
   // googleVerifier → { verifyIdToken, verifyAccessToken }     (wraps OAuth2Client + axios)
   // tokenSigner    → { signAccessToken, signRefreshToken, verifyAccessToken, verifyRefreshToken }
@@ -84,20 +84,20 @@ modules/auth/
 - `register({ email, password, firstName, lastName, phone })` — tạo User, gửi OTP qua email (không block nếu email fail), publish `auth.userRegistered` event
 - `login({ email, password, ip })` — verify password (bcrypt), kiểm tra `isEmailVerified` + `isActive`, tạo access token + refresh token
 - `googleLogin({ token })` — verify `id_token` qua `OAuth2Client` (thử trước), fallback verify `accessToken` qua axios GET Google userinfo API. Auto-create user nếu chưa tồn tại. Merge account nếu email trùng.
-- `logout({ refreshToken })` — revoke refresh token family `rt_family_revoked:<familyId>` (clear phía client, không blacklist access token)
+- `logout({ accessToken, refreshToken })` — **no-op server-side** (`void` cả 2 params); access token và refresh token vẫn valid cho đến hết TTL — client tự xóa khỏi storage
 - `verifyOtp({ email, otp })` — timing-safe compare OTP 6 chữ số, set `isEmailVerified=true`, clear OTP fields
 - `resendVerification({ email })` — tạo OTP mới hết hạn 10 phút, gửi email. Trả generic message ngay cả khi user không tồn tại (chống enumeration).
-- `refreshToken({ refreshToken })` — verify refresh token, check family không bị revoke, tạo access token mới + refresh token mới (rotate), revoke token cũ
-- `forgotPassword({ email })` — tạo OTP reset 6 chữ số hết hạn 10 phút, gửi email reset password
-- `resetPassword({ email, otp, newPassword })` — verify OTP reset, update password hash, clear OTP fields
+- `refreshToken({ refreshToken })` — verify refresh token (verifyRefreshToken), tạo cặp token mới (access + refresh token mới), trả về `{ token, refreshToken: newRefreshToken }`
+- `forgotPassword({ email })` — tạo hex token 64 ký tự (`crypto.randomBytes(32).toString('hex')`), TTL **15 phút**, lưu vào `user.resetPasswordToken + resetPasswordExpires`, gửi email chứa token
+- `resetPassword({ token, password })` — tìm user có `resetPasswordToken` khớp và chưa hết hạn, update password hash, clear token fields
 - `getCurrentUser(userId)` — query user từ DB (không tin vào JWT payload cho thông tin user)
 
 ## 3.2 Business rules
 
-- **JWT access token**: HS256, payload `{ id, role, jti: randomUUID() }`, TTL từ env `JWT_EXPIRES_IN`
-- **JWT refresh token**: payload `{ id, jti: randomUUID(), familyId: uuid }`, TTL từ env `JWT_REFRESH_EXPIRES_IN`
-- **Token rotation**: Mỗi lần refresh → tạo token pair mới, revoke token cũ. Nếu refresh token cũ bị reuse → revoke toàn bộ family → force logout tất cả devices
-- **Logout**: Revoke refresh token family; access token không bị blacklist — token vẫn valid cho đến hết TTL (xử lý clear phía client)
+- **JWT access token**: HS256, payload `{ id, role }`, TTL từ env `JWT_EXPIRES_IN`
+- **JWT refresh token**: payload `{ id }`, TTL từ env `JWT_REFRESH_EXPIRES_IN`
+- **Token rotation**: Mỗi lần gọi `refreshToken` → tạo cặp token mới (không revoke token cũ phía server — stateless)
+- **Logout**: **No-op server-side** — không revoke, không blacklist. Client tự xóa token khỏi storage. Token vẫn valid cho đến hết TTL.
 - **OTP**: 6 chữ số random (`crypto.randomInt(100000, 1000000)`), TTL 10 phút, so sánh timing-safe
 - **Google OAuth dual mode**: `verifyIdToken()` cho Google `id_token` (mobile), `verifyAccessToken()` cho Google `access_token` (web flow)
 - **Password hash**: bcrypt, cost factor từ env `BCRYPT_ROUNDS` (default 12, test dùng 4)
@@ -132,7 +132,7 @@ Base path: `/api/auth`
 
 - `User` model — inject từ `app.js`, share với `users` module
 - `emailService` — gửi OTP email + reset password email (inject từ app.js)
-- `eventBus` — publish `auth.userRegistered` (bắt buộc)
+- `eventBus` — **không inject** qua `module.js`; `auth-service.js` có `if (this.eventBus)` guard nhưng thực tế không nhận dependency này
 
 ## 5.2 Used by (module khác dùng module này)
 
@@ -149,9 +149,9 @@ Base path: `/api/auth`
 
 - **`authenticate` middleware không trong auth module**: Nằm ở `src/middlewares/authenticate.js`, dùng chung toàn app. Auth module chỉ tạo token; middleware verify là tầng riêng.
 - **Adapters inline trong `module.js`**: Không có file `jwt-token-signer.js` riêng biệt. Mọi adapter đều inline trong `module.js`.
-- **Logout chỉ revoke refresh token**: Access token không bị blacklist — vẫn valid cho đến hết TTL. Client có trách nhiệm xóa token khỏi storage ngay khi logout.
-- **Family ID rotation — security behavior**: Reuse refresh token cũ sau khi đã rotate → revoke toàn bộ family `rt_family_revoked:<familyId>` → force logout tất cả devices. Intentional, không bypass.
-- **`/reset-password` không có rate limit**: Endpoint này validate OTP trước khi reset — brute force bị chặn bởi OTP TTL 10 phút và OTP bị clear sau dùng.
+- **Logout là no-op server-side**: Cả access token lẫn refresh token không bị revoke — vẫn valid cho đến hết TTL. Client có trách nhiệm xóa token khỏi storage ngay khi logout.
+- **Không có token blacklisting**: Stateless JWT. Nếu cần revoke token trước TTL (e.g., account ban), phải implement Redis blacklist riêng — hiện chưa có.
+- **`/reset-password` không có rate limit**: Endpoint validate hex token trước khi reset — brute force bị chặn bởi token TTL 15 phút và token bị clear sau dùng.
 - **Google OAuth fallback**: `verifyIdToken()` thất bại → thử `verifyAccessToken()`. Nếu cả hai fail → `AppError 401`. Không lưu kết quả verify.
 - **OTP timing-safe compare**: Dùng `crypto.timingSafeEqual` để tránh timing attack. OTP được pad thành 6 chữ số trước khi compare.
 - **`bcrypt` cost 4 trong test**: Set env `BCRYPT_ROUNDS=4` để test nhanh hơn. Production không được dùng giá trị thấp hơn 10.

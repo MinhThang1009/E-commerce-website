@@ -64,7 +64,6 @@ async function run() {
         isFeatured: p.isFeatured || false,
         basePrice: parseFloat(p.basePrice),
         compareAtPrice: p.compareAtPrice ? parseFloat(p.compareAtPrice) : undefined,
-        warrantyMonths: p.warrantyMonths || 12,
         shortDescription: p.shortDescription || '',
         description: p.description || '',
         tags: p.tags || [],

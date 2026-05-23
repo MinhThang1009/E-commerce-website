@@ -210,7 +210,6 @@ jest.mock('@models', () => {
     CartItem: { destroy: jest.fn() },
     Wishlist: { destroy: jest.fn() },
     Address: {},
-    LoyaltyHistory: { create: jest.fn() },
     SearchHistory: {},
     RecentlyViewed: {},
     InventoryLog: {

@@ -39,7 +39,6 @@ const ASSOCIATION_TO_MODEL = {
   product: 'Product',
   products: 'Product',
   productAttributes: 'ProductAttribute',
-  warrantyPackages: 'WarrantyPackage',
   cart: 'Cart',
   cartItems: 'CartItem',
   cartItem: 'CartItem',
@@ -47,7 +46,6 @@ const ASSOCIATION_TO_MODEL = {
   orderItems: 'OrderItem',
   orderItem: 'OrderItem',
   address: 'Address',
-  loyaltyHistory: 'LoyaltyHistory',
   inventoryLogs: 'InventoryLog',
   chatMessages: 'ChatMessage',
 };

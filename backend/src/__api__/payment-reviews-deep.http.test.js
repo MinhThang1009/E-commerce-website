@@ -27,17 +27,7 @@
  */
 require('module-alias/register');
 const { app, request, createTestUser, createTestProduct } = require('./http-setup');
-const {
-  User,
-  Category,
-  Brand,
-  Order,
-  OrderItem,
-  Cart,
-  CartItem,
-  LoyaltyHistory,
-  Review,
-} = require('@models');
+const { User, Category, Brand, Order, OrderItem, Cart, CartItem, Review } = require('@models');
 const { Op } = require('sequelize');
 
 const TS = Date.now();
@@ -153,13 +143,9 @@ afterAll(async () => {
     await Order.destroy({ where: { id: { [Op.in]: orderIds } }, force: true }).catch(() => {});
   }
 
-  // Dọn loyalty + cart
+  // Dọn cart
   const userIds = [adminUser?.id, userA?.id, userB?.id].filter(Boolean);
   if (userIds.length) {
-    await LoyaltyHistory.destroy({
-      where: { userId: { [Op.in]: userIds } },
-      force: true,
-    }).catch(() => {});
     const carts = await Cart.findAll({ where: { userId: { [Op.in]: userIds } } });
     const cartIds = carts.map((c) => c.id);
     if (cartIds.length) {

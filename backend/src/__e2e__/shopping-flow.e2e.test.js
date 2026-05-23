@@ -275,18 +275,8 @@ describe('Bước 6 — Lịch sử đơn hàng', () => {
   });
 });
 
-// ── Bước 7: Loyalty ──────────────────────────────────────────
-describe('Bước 7 — Loyalty', () => {
-  test('GET /api/loyalty → 200, trả về điểm thưởng', async () => {
-    const res = await request(app).get('/api/loyalty').set('Authorization', `Bearer ${token}`);
-
-    expect(res.status).toBe(200);
-    expect(res.body.status).toBe('success');
-  });
-});
-
-// ── Bước 8: Dọn giỏ hàng ─────────────────────────────────────
-describe('Bước 8 — Dọn giỏ hàng', () => {
+// ── Bước 7: Dọn giỏ hàng ─────────────────────────────────────
+describe('Bước 7 — Dọn giỏ hàng', () => {
   test('DELETE /api/cart/items/:id → 200/204 (hoặc 404 nếu cart đã clear)', async () => {
     if (!cartItemId) return;
 

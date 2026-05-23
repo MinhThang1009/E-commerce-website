@@ -172,4 +172,3 @@ Tất cả endpoints dùng `optionalAuthenticate` (apply qua `router.use()`) —
 | `src/__api__/cart.http.test.js`                           | API HTTP    | End-to-end HTTP                   |
 | `src/__api__/cart-edge-cases.http.test.js`                | API HTTP    | HTTP edge cases                   |
 | `src/__api__/cart-extra.http.test.js`                     | API HTTP    | HTTP extra scenarios              |
-| `src/__api__/cart-orders-loyalty-deep.http.test.js`       | API HTTP    | Deep integration với orders       |

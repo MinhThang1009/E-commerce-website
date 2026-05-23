@@ -12,7 +12,7 @@ import { ProductListCard } from '@/features/catalog';
 import { FilterPanel } from '@/features/catalog';
 import Pagination from '@/components/common/Pagination';
 import Select from '@/components/common/Select';
-import { PremiumButton, BannerDisplay } from '@/components/common';
+import { PremiumButton } from '@/components/common';
 import LoadingSpinner from '@/components/common/LoadingSpinner';
 import { ErrorState } from '@/components/common/ErrorState';
 import { Product, ProductFilters } from '../types/product.types';
@@ -310,9 +310,6 @@ const ShopPage: React.FC = () => {
               onFilterChange={handleFilterChange}
               onClearFilters={handleClearFilters}
             />
-
-            {/* Banner bên cạnh */}
-            <BannerDisplay position="sidebar" className="mt-8" />
           </div>
 
           {/* Bộ lọc - Mobile */}

@@ -150,7 +150,6 @@ function makeMockUser(overrides = {}) {
     role: 'customer',
     isEmailVerified: true,
     isActive: true,
-    loyaltyPoints: 0,
     comparePassword: jest.fn().mockResolvedValue(true),
     toJSON: jest.fn().mockReturnValue({ id: 1, email: 'user@example.com', role: 'customer' }),
     ...overrides,

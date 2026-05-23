@@ -9,10 +9,7 @@
 //   - findVariantBasic
 //   - lockProduct / lockVariant
 //   - decrementVariantStock
-//   - findActiveWarrantyPackagesByIds
 //   - findUserById
-//   - updateUserPoints
-//   - updateLoyaltyHistoryOrderId
 //   - createOrderItem
 
 const SequelizeOrdersRepository = require('./sequelize-orders-repository');
@@ -40,7 +37,6 @@ function makeInstance(extra = {}) {
     decrement: jest.fn().mockResolvedValue(true),
     increment: jest.fn().mockResolvedValue(true),
     stockQuantity: 100,
-    loyaltyPoints: 500,
     ...extra,
   };
 }
@@ -55,9 +51,7 @@ function makeRepo(overrides = {}) {
     ProductVariant: makeModel(),
     User: makeModel(),
     DiscountCode: makeModel(),
-    LoyaltyHistory: makeModel(),
     InventoryLog: makeModel(),
-    WarrantyPackage: makeModel(),
     sequelize: {
       transaction: jest.fn(async (work) => work({ LOCK: { UPDATE: 'UPDATE' } })),
     },
@@ -349,16 +343,12 @@ describe('SequelizeOrdersRepository — decrementVariantStock', () => {
 });
 
 // ════════════════════════════════════════════════════════════════════════════
-// findActiveWarrantyPackagesByIds
-// ════════════════════════════════════════════════════════════════════════════
-
-// ════════════════════════════════════════════════════════════════════════════
 // findUserById
 // ════════════════════════════════════════════════════════════════════════════
 
 describe('SequelizeOrdersRepository — findUserById', () => {
   test('gọi User.findByPk với id', async () => {
-    const mockUser = { id: 1, loyaltyPoints: 100 };
+    const mockUser = { id: 1 };
     const { repo, deps } = makeRepo({ User: makeModel({ findByPk: mockUser }) });
 
     const result = await repo.findUserById(1);
@@ -376,14 +366,6 @@ describe('SequelizeOrdersRepository — findUserById', () => {
     expect(deps.User.findByPk).toHaveBeenCalledWith(5, opts);
   });
 });
-
-// ════════════════════════════════════════════════════════════════════════════
-// updateUserPoints
-// ════════════════════════════════════════════════════════════════════════════
-
-// ════════════════════════════════════════════════════════════════════════════
-// updateLoyaltyHistoryOrderId
-// ════════════════════════════════════════════════════════════════════════════
 
 // ════════════════════════════════════════════════════════════════════════════
 // createOrderItem

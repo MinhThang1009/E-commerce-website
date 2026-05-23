@@ -18,7 +18,7 @@
 
 # 1. Mục đích & Trách nhiệm
 
-Hiển thị danh sách đơn hàng, xem chi tiết, hủy đơn, thanh toán lại, xác nhận nhận hàng. Có trang tracking công khai không cần login. Cung cấp `useCreateOrderMutation` và `useApplyDiscountCodeMutation` được dùng bởi `CheckoutPage` (feature checkout). Routes: `/orders`, `/orders/track`.
+Hiển thị danh sách đơn hàng, xem chi tiết, hủy đơn, thanh toán lại, xác nhận nhận hàng. Có trang tracking công khai không cần login. Cung cấp `useCreateOrderMutation` và `useApplyDiscountCodeMutation` được dùng bởi `CheckoutPage` (feature checkout). Routes: `/orders`, `/track-order`.
 
 ---
 
@@ -33,7 +33,7 @@ components/
 
 pages/
   OrdersPage.tsx      — /orders: danh sách đơn có pagination, action buttons (hủy/repay/xác nhận), trigger ReviewModal
-  TrackOrderPage.tsx  — /orders/track: tra cứu theo mã + email (public, không cần auth, dùng fetch() trực tiếp)
+  TrackOrderPage.tsx  — /track-order: tra cứu theo mã + email (public, không cần auth, dùng fetch() trực tiếp)
 
 types/
   order.types.ts      — Order, OrderItem, OrderStatus, PaymentStatus, PaymentMethod, CheckoutData types

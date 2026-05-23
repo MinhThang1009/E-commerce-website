@@ -1,6 +1,6 @@
 # TechStore — Chiến Lược Testing
 
-> 5 tầng test, 275 suites, 5.538 test cases, coverage 100% (unit).
+> 5 tầng test, 258 suites, 5.095 test cases, coverage 100% (unit).
 
 ## Mục lục
 
@@ -34,12 +34,12 @@ TechStore áp dụng chiến lược kiểm thử đa tầng. Mỗi tầng phụ
 
 | Suite | Suites | Tests | Runtime | Config |
 |---|---|---|---|---|
-| BE Unit Tests | 166 | **3.905** | ~10s | `jest.config.js` |
-| BE Integration Tests | 42 | **228** | ~50s | `jest.integration.config.js` |
-| BE API HTTP Tests | 45 | **866** | ~140s | `jest.api.config.js` |
-| BE E2E Tests | 5 | **102** | ~20s | `jest.e2e.config.js` |
-| FE Component Tests | 17 | **437** | ~7s | `jest.config.cjs` (frontend/) |
-| **Tổng** | **275** | **5.538** | | |
+| BE Unit Tests | 160 | **3.563** | ~10s | `jest.config.js` |
+| BE Integration Tests | 36 | **184** | ~50s | `jest.integration.config.js` |
+| BE API HTTP Tests | 39 | **700** | ~190s | `jest.api.config.js` |
+| BE E2E Tests | 5 | **100** | ~20s | `jest.e2e.config.js` |
+| FE Component Tests | 18 | **548** | ~9s | `jest.config.cjs` (frontend/) |
+| **Tổng** | **258** | **5.095** | | |
 
 ---
 
@@ -47,13 +47,13 @@ TechStore áp dụng chiến lược kiểm thử đa tầng. Mỗi tầng phụ
 
 ```
                     ┌──────────────────┐
-                    │  E2E Tests (102) │   ← Full user flows (HTTP + real DB)
+                    │  E2E Tests (100) │   ← Full user flows (HTTP + real DB)
                   ┌─┴──────────────────┴─┐
-                  │  API HTTP Tests (866) │  ← Endpoint tests (Supertest + real DB)
+                  │  API HTTP Tests (700) │  ← Endpoint tests (Supertest + real DB)
                 ┌─┴──────────────────────┴─┐
-                │ Integration Tests (228)   │  ← Service/repo layer (real DB)
+                │ Integration Tests (184)   │  ← Service/repo layer (real DB)
               ┌─┴──────────────────────────┴─┐
-              │  Unit Tests (3.905 + 437)     │  ← Isolated logic + React components
+              │  Unit Tests (3.563 + 548)     │  ← Isolated logic + React components
               └────────────────────────────────┘
 ```
 
@@ -61,7 +61,7 @@ TechStore áp dụng chiến lược kiểm thử đa tầng. Mỗi tầng phụ
 |---|---|---|---|
 | BE Unit | Jest 29 | Mock (jest.fn()) | — |
 | BE Integration | Jest 29 | MySQL thật (`techstore_test`) | 9998 |
-| BE API HTTP | Jest 29 + Supertest | MySQL thật (`techstore_test`) | 9997 |
+| BE API HTTP | Jest 29 + Supertest | MySQL thật (`techstore`) | 9997 |
 | BE E2E | Jest 29 + Supertest | MySQL thật (`techstore_test`) | 9996 |
 | FE Component | Jest 29 + ts-jest + @testing-library/react | jsdom | — |
 
@@ -73,8 +73,8 @@ TechStore áp dụng chiến lược kiểm thử đa tầng. Mỗi tầng phụ
 
 **Mục đích**: Kiểm tra logic nghiệp vụ của từng hàm trong isolation hoàn toàn. Mọi external dependency (Sequelize models, email, AI) đều được mock bằng `jest.fn()`.
 
-**Phạm vi**: 166 test suites, 3.905 test cases.
-- Tất cả Service classes (19 modules × nhiều methods)
+**Phạm vi**: 160 test suites, 3.563 test cases.
+- Tất cả Service classes (17 modules × nhiều methods)
 - Repository classes
 - Controller handlers (input/output, error paths)
 - Utility functions (`logger`, `i18n`, `catch-async`, `image-url`)
@@ -98,15 +98,15 @@ backend/src/
 
 **Config**: `backend/jest.config.js`
 - `testMatch`: patterns trên + `src/__tests__/**/*.test.js`
-- `setupFiles`: `./src/__tests__/setup.js` (mock toàn cục)
+- `setupFiles`: `./src/__tests__/setup.js` — set env vars (`NODE_ENV=test`, `JWT_SECRET`, `DB_NAME=test_db`, `PORT=9999`) trước khi tests load
 - `clearMocks: true` (reset mocks giữa các tests)
-- Các file excluded khỏi coverage: `module.js` (DI wiring), `index.js` (barrel), `*-dto.js`, `i-*-repository.js`, `app.js`, `server.js`, migrations, seeders, config
+- Files excluded khỏi coverage: xem danh sách đầy đủ tại [§7.1](#71-backend-coverage)
 
 ## 3.2 Frontend Component Tests
 
 **Mục đích**: Kiểm tra React components, Zustand stores, và utility functions trong môi trường jsdom.
 
-**Phạm vi**: 17 test suites, 437 test cases.
+**Phạm vi**: 18 test suites, 548 test cases.
 - Zustand stores (auth, cart, chat, catalog, wishlist, ui) — state transitions
 - Utility functions (formatters, validators, token-manager)
 - React components (render, user interactions, conditional rendering)
@@ -122,7 +122,7 @@ frontend/src/__tests__/
 - 2 projects: `utils` (node env, `.test.cjs`) + `components` (jsdom env, `.test.tsx`)
 - `components` project dùng `ts-jest` với `jsx: react-jsx`
 - Module aliases được map tương ứng với `vite.config.ts`
-- `setupFiles`: `jest.setup.cjs` (mock globals: localStorage, sessionStorage, matchMedia)
+- `setupFiles` (chỉ áp dụng cho project `components`): `jest.setup.cjs` — polyfill `React.default`, mock `matchMedia` và `localStorage`
 
 ---
 
@@ -132,7 +132,7 @@ frontend/src/__tests__/
 
 **Mục đích**: Kiểm tra Service và Repository layer với database MySQL thật. Xác nhận logic nghiệp vụ hoạt động đúng với SQL queries thực tế, transactions, và constraints.
 
-**Phạm vi**: 42 test suites, 228 test cases.
+**Phạm vi**: 36 test suites, 184 test cases.
 - Service methods với real DB queries (thay vì mock)
 - Repository queries (Sequelize findAll, create, update, destroy với real schema)
 - Transactions và `runInTransaction` / `lockRow`
@@ -152,9 +152,8 @@ backend/src/__integration__/
 - `globalTeardown`: `./src/__integration__/teardown.js` — cleanup DB sau toàn bộ suite
 
 **Setup**: `./src/__integration__/setup.js`
-- Kết nối MySQL thật với `DB_NAME_TEST` (mặc định `techstore_test`)
-- Load tất cả models và associations
-- Truncate tables cần thiết trước mỗi test file (isolate data)
+- Hardcode `DB_NAME = 'techstore_test'` (không cần env var riêng)
+- Tất cả test data tạo với prefix `__INT_TEST_` và tự cleanup trong `afterAll`
 
 ---
 
@@ -162,7 +161,7 @@ backend/src/__integration__/
 
 **Mục đích**: Kiểm tra toàn bộ HTTP layer — từ routes đến middleware chain đến DB. Dùng Supertest để gửi real HTTP requests đến Express app.
 
-**Phạm vi**: 45 test suites, 866 test cases.
+**Phạm vi**: 39 test suites, 700 test cases.
 - Authentication (JWT verify, token refresh, token reuse detection)
 - Authorization (role check — user vs admin endpoints)
 - Input validation (Zod schemas — valid/invalid payloads)
@@ -184,10 +183,10 @@ backend/src/__api__/
 - `globalTeardown`: `./src/__api__/teardown.js`
 - Port server test: 9997 (tránh conflict với integration port 9998)
 
-**Setup**: `./src/__api__/setup.js`
-- Khởi động Express app trên port 9997
-- Kết nối MySQL thật, load models
-- Tạo test users (user role + admin role) cho authentication tests
+**Setup**: `./src/__api__/setup.js` + `./src/__api__/http-setup.js`
+- `setup.js` set env vars (port 9997, JWT secrets); `http-setup.js` override `DB_NAME = 'techstore'` (seed data đầy đủ)
+- Mỗi test file import `http-setup.js` để dùng `createTestUser` / `createTestProduct` (prefix `__HTTP_`)
+- Cleanup tự động qua `globalTeardown` sau toàn bộ suite
 
 ---
 
@@ -195,7 +194,7 @@ backend/src/__api__/
 
 **Mục đích**: Kiểm tra toàn bộ user journey end-to-end qua HTTP. Mỗi test file = 1 flow hoàn chỉnh nhiều bước.
 
-**Phạm vi**: 5 test suites, 102 test cases.
+**Phạm vi**: 5 test suites, 100 test cases.
 - Flow đăng ký → xác thực email → đăng nhập
 - Flow mua hàng: browse sản phẩm → thêm giỏ → checkout → đặt hàng → thanh toán
 - Flow quản trị: tạo sản phẩm → cập nhật tồn kho → xử lý đơn hàng
@@ -212,6 +211,7 @@ backend/src/__e2e__/
 - `testMatch`: `**/src/__e2e__/**/*.e2e.test.js`
 - `maxWorkers: 1`
 - `testTimeout: 60000` (60s — flows có nhiều bước)
+- `globalTeardown`: `./src/__e2e__/teardown.js`
 - Port server test: 9996
 
 **Đặc điểm**:
@@ -256,16 +256,17 @@ CI threshold thấp hơn local để không fail khi thêm file mới chưa có 
 - `migrations/`, `seeders/` — DB scripts, không có logic test
 - `config/` — configuration objects
 - `*-dto.js` — data shapes, không có logic
-- `i-*-repository.js`, `i-*-service.js` — interface definitions
+- `i-*-repository.js`, `i-*-service.js`, `I*.js` — interface definitions
+- `src/routes/imageProxy.js` — proxy utility, không có business logic
 
-**Files với istanbul ignore** (comment `/* istanbul ignore */`): Branches không thể cover thực tế (OS-dependent code, fallback paths trong edge cases hiếm gặp). Danh sách đầy đủ xem [`MEMORY.md`](C:\Users\Admin\.claude\projects\d--QUAN-TR-NG-e-commerce-website\memory\project_test_state.md).
+**Files với istanbul ignore** (comment `/* istanbul ignore */`): Branches không thể cover thực tế — OS-dependent code, fallback paths trong edge cases hiếm gặp (ví dụ: catch branches của dynamic require).
 
 ## 7.2 Frontend coverage
 
 Frontend chạy `npm run test:ci` để generate coverage.
 
-- Coverage được enforce qua `jest.config.cjs`
-- Target: 100% cho tất cả files trong `src/__tests__/`
+- `jest.config.cjs` không đặt `coverageThreshold` — không enforce minimum tự động
+- Theo convention dự án: target 100% (enforce qua code review, không qua config)
 - Component tests dùng `@testing-library/react` + `@testing-library/user-event`
 
 ---
@@ -324,7 +325,7 @@ GitHub Actions workflow (`.github/workflows/ci.yml`) chạy trên `push` đến 
 1. `npm ci` — install dependencies
 2. `npm run lint:strict` — ESLint zero warnings
 3. `bash scripts/lint-migrations.sh` — kiểm tra tất cả migrations có `down()` rollback
-4. `npm audit --audit-level=high` — security audit (continue-on-error)
+4. `npm audit --audit-level=high --omit=dev` — security audit (continue-on-error)
 5. Jest unit tests + coverage (không có DB — chỉ mock)
 6. Enforce coverage thresholds: Stmts >= 97%, Lines >= 97%, Branches >= 85%, Fns >= 95%
 7. Upload coverage artifact (`backend-coverage`, retention 7 ngày)
@@ -333,7 +334,7 @@ GitHub Actions workflow (`.github/workflows/ci.yml`) chạy trên `push` đến 
 1. `npm ci`
 2. `npm run lint` — ESLint
 3. `npm run typecheck` — `tsc --noEmit`
-4. `npm audit --audit-level=high` — security audit (continue-on-error)
+4. `npm audit --audit-level=high --omit=dev` — security audit (continue-on-error)
 5. `npm run build` — production build với `VITE_API_URL=http://localhost:8888/api`
 6. Bundle size check: `dist/` phải <= 10MB
 7. Upload build artifact (`frontend-dist`, retention 3 ngày)
@@ -341,12 +342,11 @@ GitHub Actions workflow (`.github/workflows/ci.yml`) chạy trên `push` đến 
 **Lưu ý quan trọng**: CI **không chạy** Integration Tests, API HTTP Tests, hay E2E Tests vì chúng cần MySQL thật. Chỉ chạy được locally hoặc trên server có MySQL setup. Trong CI, Backend coverage được đảm bảo hoàn toàn qua Unit Tests (mock DB).
 
 **Husky pre-commit hooks** (`.husky/pre-commit`):
-1. Secret scanning — block commit nếu phát hiện AWS keys, Stripe live keys, GitHub tokens, private keys, hardcoded passwords trong staged files
-2. Block `.env` files (trừ `.env.example`)
-3. `scripts/audit-architecture.sh` — kiểm tra: service không import Sequelize trực tiếp, controller không touch ORM, không có cross-module deep imports
-4. Frontend `lint-staged` (ESLint + Prettier cho changed files)
-5. Frontend `tsc --noEmit`
-6. Backend `lint-staged` (ESLint + Prettier cho changed files)
+1. Secret scanning + block `.env` files — cùng một `if` block: quét staged files tìm AWS keys/Stripe/GitHub tokens/private keys/hardcoded passwords; block `.env.*` (trừ `.env.example`)
+2. `scripts/audit-architecture.sh` — kiểm tra: service không import Sequelize trực tiếp, controller không touch ORM, không có cross-module deep imports
+3. Frontend `lint-staged` (ESLint + Prettier cho changed files)
+4. Frontend `tsc --noEmit`
+5. Backend `lint-staged` (ESLint + Prettier cho changed files)
 
 ---
 
@@ -357,22 +357,31 @@ GitHub Actions workflow (`.github/workflows/ci.yml`) chạy trên `push` đến 
 ```bash
 cd backend
 
-# Unit tests + coverage (CI mode)
+# Unit tests + coverage
 npm run test
 
 # Unit tests không coverage (nhanh hơn)
 npm run test:fast
 
-# Chạy test 1 file cụ thể
+# Unit tests CI mode (--ci --runInBand)
+npm run test:ci
+
+# Unit tests + watch mode
+npm run test:watch
+
+# Chạy test 1 file cụ thể (không coverage)
 npm run test:file -- <pattern>
 
-# Integration tests (cần MySQL thật)
+# Chạy 1 file với coverage
+npm run test:cov -- <pattern>
+
+# Integration tests (cần MySQL thật — techstore_test)
 npm run test:integration
 
-# API HTTP tests (cần MySQL thật)
+# API HTTP tests (cần MySQL thật — techstore)
 npm run test:api
 
-# E2E tests (cần MySQL thật)
+# E2E tests (cần MySQL thật — techstore_test)
 npm run test:e2e
 
 # Lint
@@ -380,9 +389,9 @@ npm run lint
 ```
 
 **Setup MySQL cho Integration/API/E2E tests**:
-1. Tạo database `techstore_test` trong MySQL
-2. Set `DB_NAME_TEST=techstore_test` trong `.env`
-3. Chạy migrations: `npm run db:migrate` (với `NODE_ENV=test` hoặc đảm bảo `DB_NAME` trỏ đúng)
+- Integration + E2E dùng `techstore_test` — tạo DB trống, sau đó: `DB_NAME=techstore_test npm run db:seed`
+- API HTTP dùng `techstore` — DB mặc định đã có seed data từ `npm run db:seed`
+- DB name được hardcode trong setup files — không cần env var riêng khi chạy tests
 
 ## 10.2 Frontend
 
@@ -416,18 +425,18 @@ npm run build
 
 | Suite | Suites | Tests | Runtime |
 |---|---|---|---|
-| BE Unit Tests | 166 | 3.905 | ~10s |
-| BE Integration Tests | 42 | 228 | ~50s |
-| BE API HTTP Tests | 45 | 866 | ~140s |
-| BE E2E Tests | 5 | 102 | ~20s |
-| FE Component Tests | 17 | 437 | ~7s |
-| **Tổng** | **275** | **5.538** | |
+| BE Unit Tests | 160 | 3.563 | ~10s |
+| BE Integration Tests | 36 | 184 | ~50s |
+| BE API HTTP Tests | 39 | 700 | ~190s |
+| BE E2E Tests | 5 | 100 | ~20s |
+| FE Component Tests | 18 | 548 | ~9s |
+| **Tổng** | **258** | **5.095** | |
 
 **Coverage (local unit tests)**:
-- Statements: 100%
-- Branches: 100%
-- Functions: 100%
-- Lines: 100%
+- Statements: 100% (threshold 99%)
+- Branches: ~97–100% (threshold 97% — một số nhánh ||/?? khó cover hoàn toàn)
+- Functions: 100% (threshold 99%)
+- Lines: 100% (threshold 99%)
 
 **Ràng buộc khi thêm code mới**:
 - Mọi service method mới → phải có unit test tương ứng
@@ -459,16 +468,14 @@ jest.mock('@models', () => ({
 
 **Mock service trong controller test**:
 ```javascript
-const mockService = {
-  getAll: jest.fn(),
-  getById: jest.fn(),
-  create: jest.fn(),
-  update: jest.fn(),
-  delete: jest.fn(),
+const mockOrdersService = {
+  createOrder: jest.fn(),
+  getUserOrders: jest.fn(),
+  cancelOrder: jest.fn(),
 };
 
-// Inject vào controller factory
-const controller = createController({ service: mockService });
+// Inject vào controller constructor (DI pattern)
+const controller = new OrdersController({ ordersService: mockOrdersService });
 ```
 
 **Mock EventBus**:
@@ -479,11 +486,16 @@ jest.mock('@shared/event-bus', () => ({
 }));
 ```
 
-**Mock email service**:
+**Mock email service** (7 exported functions):
 ```javascript
 jest.mock('@services/email', () => ({
-  sendOTPEmail: jest.fn().mockResolvedValue(true),
-  sendOrderConfirmation: jest.fn().mockResolvedValue(true),
+  sendEmail: jest.fn().mockResolvedValue({ messageId: 'test-id' }),
+  sendOtpEmail: jest.fn().mockResolvedValue(true),
+  sendResetPasswordEmail: jest.fn().mockResolvedValue(true),
+  sendOrderConfirmationEmail: jest.fn().mockResolvedValue(true),
+  sendOrderStatusUpdateEmail: jest.fn().mockResolvedValue(true),
+  sendOrderCancellationEmail: jest.fn().mockResolvedValue(true),
+  sendAdminFeedbackNotification: jest.fn().mockResolvedValue(true),
 }));
 ```
 
@@ -508,28 +520,20 @@ test('tạo đơn hàng thành công khi tồn kho đủ', async () => {
 
 ## 12.2 Database test setup
 
-**Integration và API tests** dùng MySQL thật với database `techstore_test`:
+**Integration/E2E tests** dùng `techstore_test`; **API HTTP tests** dùng `techstore` (seed data đầy đủ):
 
 ```javascript
 // src/__integration__/setup.js
-process.env.NODE_ENV = 'test';
-process.env.DB_NAME = process.env.DB_NAME_TEST || 'techstore_test';
-
-// Kết nối và load models
 require('module-alias/register');
 require('dotenv').config();
-const { sequelize } = require('@models');
 
-beforeAll(async () => {
-  await sequelize.authenticate();
-});
-
-afterAll(async () => {
-  await sequelize.close();
-});
+process.env.NODE_ENV = 'development'; // nới lỏng rate limit 10x
+process.env.DB_NAME = 'techstore_test';
+process.env.PORT = '9998';
+// JWT_SECRET, JWT_REFRESH_SECRET hardcoded cho test
 ```
 
-**Data isolation**: Mỗi integration test file tự truncate tables cần thiết trong `beforeEach` hoặc `beforeAll`. Không dùng transactions để rollback (phức tạp với Sequelize associations).
+**Data isolation**: Mỗi integration test file tự tạo data với prefix `__INT_TEST_` trong `beforeAll` và tự xóa trong `afterAll`. Không truncate tables chung — giữ seed data không bị mất.
 
 **Port conflicts**: Mỗi test tier dùng port server riêng:
 - Integration: 9998
@@ -540,21 +544,10 @@ afterAll(async () => {
 
 **Supertest setup (API/E2E)**:
 ```javascript
-// src/__api__/setup.js
-const app = require('../../app');
-const supertest = require('supertest');
+// src/__api__/http-setup.js — helper dùng chung trong mỗi test file
+const { app, request, createTestUser, createTestProduct } = require('./http-setup');
 
-let server;
-let request;
-
-beforeAll(async () => {
-  server = app.listen(9997);
-  request = supertest(server);
-  global.request = request;
-  // Tạo test users...
-});
-
-afterAll(async () => {
-  server.close();
-});
+// createTestUser(overrides) → { user, token }    — prefix email '__http_test_'
+// createTestProduct(overrides) → { product, variant, cat, brand }  — prefix '__HTTP_Product_'
+// Tất cả data cleanup qua globalTeardown (prefix '__HTTP_')
 ```

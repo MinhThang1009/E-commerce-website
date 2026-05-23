@@ -7,7 +7,6 @@
  *   1350 — updateProduct: vectorStore filter inactive product
  *   1553 — getProducts: product.categories null → []
  *   1995 — cloneProduct: SKU suffix without '-'
- *   2027 — cloneProduct: warrantyPackages with ProductWarranty.isDefault
  */
 
 process.env.NODE_ENV = 'test';
@@ -158,11 +157,6 @@ jest.mock('@models', () => {
       bulkCreate: jest.fn(),
       destroy: jest.fn(),
     },
-    ProductWarranty: {
-      create: jest.fn(),
-      destroy: jest.fn(),
-      bulkCreate: jest.fn(),
-    },
     ProductCategory: {
       destroy: jest.fn(),
       bulkCreate: jest.fn(),
@@ -181,7 +175,6 @@ jest.mock('@models', () => {
     CartItem: { destroy: jest.fn() },
     Wishlist: { destroy: jest.fn() },
     Address: {},
-    LoyaltyHistory: { create: jest.fn() },
     SearchHistory: {},
     RecentlyViewed: {},
     InventoryLog: {
@@ -192,10 +185,6 @@ jest.mock('@models', () => {
       count: jest.fn(),
       findAll: jest.fn(),
       findOne: jest.fn(),
-    },
-    WarrantyPackage: {
-      findAll: jest.fn(),
-      findByPk: jest.fn(),
     },
     Brand: {},
     sequelize: {
@@ -224,11 +213,9 @@ const {
   ProductVariant,
   ProductAttribute,
   ProductSpecification,
-  ProductWarranty,
   ProductImage,
   ProductCategory,
   Category,
-  WarrantyPackage,
   Order,
   OrderItem,
   InventoryLog,
@@ -258,7 +245,6 @@ function makeProduct(overrides = {}) {
     productAttributes: [],
     variants: [],
     productSpecifications: [],
-    warrantyPackages: [],
     ...overrides,
   };
   return {
@@ -369,7 +355,6 @@ describe('POST /api/admin/products/:id/clone — line 1995: SKU without hyphen',
       status: 'active',
       variants: [variant],
       productSpecifications: [],
-      warrantyPackages: [],
       productImages: [],
       productAttributes: [],
     });
@@ -410,12 +395,6 @@ describe('POST /api/admin/products/:id/clone — line 1995: SKU without hyphen',
     expect(varBulkCall.sku).toMatch(/^.+-\d+$/);
   });
 });
-
-// ─────────────────────────────────────────────────────────────────────────────
-// Line 2027: cloneProduct — warrantyPackages with ProductWarranty?.isDefault
-// ─────────────────────────────────────────────────────────────────────────────
-
-describe('POST /api/admin/products/:id/clone — line 2027: warrantyPackages clone', () => {});
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Line 1350: updateProduct vectorStore — inactive product removed from items

@@ -2,7 +2,7 @@
 
 Tất cả diagram dùng [Mermaid](https://mermaid.js.org/) — render trực tiếp trên GitHub.
 
-> Dựa trực tiếp từ source code: `backend/data/migration_full.sql`, `backend/src/models/index.js`, và các service files. Tên bảng, columns, quan hệ đúng với schema thực tế.
+> Dựa trực tiếp từ source code: `backend/data/migration.sql`, `backend/src/models/index.js`, và các service files. Tên bảng, columns, quan hệ đúng với schema thực tế.
 
 ## Mục lục
 
@@ -751,7 +751,7 @@ sequenceDiagram
 
 # 4. ERD — Entity Relationship Diagram
 
-> Dựa trực tiếp từ `backend/data/migration_full.sql`. Tên cột, kiểu dữ liệu, khóa ngoại đúng 100% với schema thực tế.
+> Dựa trực tiếp từ `backend/data/migration.sql`. Tên cột, kiểu dữ liệu, khóa ngoại đúng 100% với schema thực tế.
 
 ## 4.1 User & Auth tables
 

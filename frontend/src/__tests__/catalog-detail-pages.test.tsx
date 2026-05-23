@@ -1,8 +1,7 @@
 // @ts-nocheck — mock factories dùng loose types
 /// <reference types="jest" />
 /**
- * Catalog detail pages tests — NewsDetailPage (loading, not-found), CategoryPage (loading, spinner),
- * NewArrivalsPage (loading, render).
+ * Catalog detail pages tests — CategoryPage (loading, spinner), NewArrivalsPage (loading, render).
  * Dùng @testing-library/react + jsdom + ts-jest.
  */
 import React from 'react';
@@ -188,13 +187,11 @@ jest.mock('@/utils/error-utils', () => ({
 jest.mock('@/routes/paths', () => ({
   ROUTES: {
     SHOP: '/shop',
-    NEWS: '/news',
     HOME: '/',
     LOGIN: '/login',
   },
   buildRoute: {
     productDetail: (id: string) => `/products/${id}`,
-    newsDetail: (slug: string) => `/news/${slug}`,
     category: (slug: string) => `/categories/${slug}`,
   },
 }));

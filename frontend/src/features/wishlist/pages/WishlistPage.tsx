@@ -14,14 +14,18 @@ import { ProductCard } from '@/features/catalog';
 import LoadingSpinner from '@/components/common/LoadingSpinner';
 import { HeartIcon } from '@heroicons/react/24/outline';
 import { useWishlistStore } from '@/stores/wishlist-store';
+import { useAuthStore } from '@/stores/auth-store';
 
 const WishlistPage: React.FC = () => {
   const { t } = useTranslation();
   const navigate = useNavigate();
   const clearWishlistLocal = useWishlistStore((s) => s.clearWishlistLocal);
+  const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
   const [showClearConfirm, setShowClearConfirm] = React.useState(false);
 
-  const { data: wishlistData, isLoading } = useGetWishlistQuery();
+  const { data: wishlistData, isLoading } = useGetWishlistQuery(undefined, {
+    enabled: isAuthenticated,
+  });
   const { mutateAsync: clearWishlist, isPending: isClearing } = useClearWishlistMutation();
 
   const handleClearWishlist = async () => {

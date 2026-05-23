@@ -80,8 +80,6 @@ function makeService(repoOverrides = {}) {
     clearProductVariants: jest.fn().mockResolvedValue(),
     createProductImages: jest.fn().mockResolvedValue([]),
     clearProductImages: jest.fn().mockResolvedValue(),
-    findWarrantyPackagesByIds: jest.fn().mockResolvedValue([]),
-    setProductWarrantyPackages: jest.fn().mockResolvedValue(),
     runInTransaction: jest.fn((fn) => fn({})),
     ...repoOverrides,
   };
@@ -989,18 +987,6 @@ describe('createProduct — với attributes (không phải parentAttributes)', 
     );
   });
 });
-
-// ════════════════════════════════════════════════════════════════════════════
-// createProduct — line 936: warrantyPackages tìm thấy đủ → không throw
-// ════════════════════════════════════════════════════════════════════════════
-
-describe('createProduct — warrantyPackageIds hợp lệ', () => {});
-
-// ════════════════════════════════════════════════════════════════════════════
-// updateProduct — patch.warrantyPackageIds = [] → setProductWarrantyPackages([])
-// ════════════════════════════════════════════════════════════════════════════
-
-describe('updateProduct — warrantyPackageIds rỗng', () => {});
 
 // ════════════════════════════════════════════════════════════════════════════
 // updateProduct — patch.attributes = [] → clearProductAttributes, không createProductAttributes

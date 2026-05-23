@@ -16,8 +16,6 @@
 jest.mock('@models', () => ({
   // Phase 42 modules/content yêu cầu đầy đủ models cho DI; các model không liên
   // quan stub rỗng để không crash module init.
-  Banner: { findAll: jest.fn(), findByPk: jest.fn() },
-  News: { findAll: jest.fn(), findByPk: jest.fn(), findOne: jest.fn() },
   Feedback: {
     create: jest.fn(),
   },
@@ -48,14 +46,12 @@ jest.mock('@services/email', () => ({
 const express = require('express');
 const supertest = require('supertest');
 const buildContentModule = require('@modules/content/module');
-const { Banner, News, Feedback, User } = require('@models');
+const { Feedback, User } = require('@models');
 const emailService = require('@services/email');
 const eventBus = require('@shared/event-bus');
 const logger = require('@utils/logger');
 
 const contentModule = buildContentModule({
-  Banner,
-  News,
   Feedback,
   User,
   emailService,

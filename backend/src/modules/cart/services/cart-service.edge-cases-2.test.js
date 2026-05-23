@@ -109,9 +109,6 @@ jest.mock('@models', () => {
         .fn()
         .mockResolvedValue({ id: 1, cartId: 10, productId: 1, variantId: null, quantity: 2 }),
     },
-    WarrantyPackage: {
-      findAll: jest.fn().mockResolvedValue([]),
-    },
     User: {
       findByPk: jest.fn().mockResolvedValue({ id: 1 }),
     },
@@ -123,7 +120,6 @@ jest.mock('@models', () => {
     ProductAttribute: { findAll: jest.fn().mockResolvedValue([]) },
     ProductSpecification: { findAll: jest.fn().mockResolvedValue([]) },
     ProductImage: { findAll: jest.fn().mockResolvedValue([]) },
-    LoyaltyHistory: { create: jest.fn().mockResolvedValue({}) },
     InventoryLog: { create: jest.fn().mockResolvedValue({}) },
     SearchHistory: { findAll: jest.fn().mockResolvedValue([]) },
     Category: { findAll: jest.fn().mockResolvedValue([]) },
@@ -150,7 +146,7 @@ jest.mock('@models', () => {
 const express = require('express');
 const supertest = require('supertest');
 const buildCartModule = require('@modules/cart/module');
-const { Cart, CartItem, Product, ProductVariant, WarrantyPackage, sequelize } = require('@models');
+const { Cart, CartItem, Product, ProductVariant, sequelize } = require('@models');
 const eventBus = require('@shared/event-bus');
 const logger = require('@utils/logger');
 const { errorHandler } = require('@middlewares/error-handler');

@@ -84,8 +84,6 @@ describe('CatalogService', () => {
       clearProductVariants: jest.fn().mockResolvedValue(),
       clearProductImages: jest.fn().mockResolvedValue(),
       createProductImages: jest.fn().mockResolvedValue(),
-      findWarrantyPackagesByIds: jest.fn(),
-      setProductWarrantyPackages: jest.fn().mockResolvedValue(),
       runInTransaction: jest.fn((fn) => fn({})),
     };
     service = new CatalogService({

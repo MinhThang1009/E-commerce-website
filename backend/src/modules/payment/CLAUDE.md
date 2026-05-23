@@ -44,7 +44,6 @@ const service = new PaymentService({
   momoGateway,
   vnpayGateway,
   emailGateway,
-  eventBus,
   logger,
   frontendUrl,
 });
@@ -122,7 +121,6 @@ modules/payment/
 4. Post-transaction (fire-and-forget):
    _clearUserCart(userId)
    _sendOrderConfirmationEmailSafe(orderId)
-   eventBus.publish('payment.succeeded', ...)
 5. Response 204 nếu valid, 400 nếu signature fail
 ```
 
@@ -212,7 +210,7 @@ Inject từ `app.js`:
 - **Models:** `Order`, `OrderItem`, `User`, `Cart`, `CartItem`, `DiscountCode`
 - **Services:** `momoService`, `vnpayService` (Singleton — wrapped thành gateway adapters), `emailService`
 - **sequelize:** cho transactions
-- **eventBus, logger**
+- **logger**
 - **frontendUrl:** URL redirect sau payment. Fallback `process.env.FRONTEND_URL`
 
 ## 5.2 Used by
@@ -221,9 +219,7 @@ Inject từ `app.js`:
 
 ## 5.3 Events published
 
-| Event               | Khi nào                 | Subscriber                                                                            |
-| ------------------- | ----------------------- | ------------------------------------------------------------------------------------- |
-| `payment.succeeded` | Sau MoMo IPN thành công | (hiện chưa có subscriber; orders `paymentStatus` update inline trong payment service) |
+Payment module **không publish bất kỳ EventBus event nào**. Toàn bộ post-payment actions (update `paymentStatus`, tăng `usedCount` discount, clear cart, gửi email) được thực hiện inline trong service — không qua EventBus.
 
 ---
 

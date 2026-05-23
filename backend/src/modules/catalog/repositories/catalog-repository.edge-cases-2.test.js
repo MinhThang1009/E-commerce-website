@@ -45,7 +45,6 @@ function makeRepo(modelOverrides = {}, seqOverride = null) {
     ProductSpecification: makeModel(),
     Review: makeModel(),
     RecentlyViewed: makeModel(),
-    WarrantyPackage: makeModel(),
     sequelize,
     ...modelOverrides,
   };
@@ -194,14 +193,10 @@ describe('findOtherAttributes — với categoryId', () => {
     await repo.findOtherAttributes({});
 
     const call = deps.ProductAttribute.findAll.mock.calls[0][0];
-    expect(call.group).toEqual(['nameVi', 'nameEn', 'values']);
+    expect(call.group).toEqual(['name', 'values']);
     expect(call.limit).toBe(500);
   });
 });
-
-// ─── setProductWarrantyPackages ───────────────────────────────────────────────
-
-describe('setProductWarrantyPackages', () => {});
 
 // ─── findDeals — sort price_desc ──────────────────────────────────────────────
 
@@ -282,10 +277,6 @@ describe('createProductVariants — line 771: thiếu ProductVariant model', () 
     );
   });
 });
-
-// ─── findWarrantyPackagesByIds — guard: WarrantyPackage thiếu → throw ──────────
-
-describe('findWarrantyPackagesByIds — guard: thiếu WarrantyPackage model', () => {});
 
 // ─── clearProductAttributes — guard: ProductAttribute null → return early ───────
 

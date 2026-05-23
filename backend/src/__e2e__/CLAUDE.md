@@ -34,7 +34,7 @@ Trả lời câu hỏi: **"Toàn bộ user journey có hoạt động không?"**
 | Số endpoints / test | Nhiều (5–15 bước)                      | 1–2                    | 2–5                 |
 | State giữa steps    | Có (token, orderId, cartId carry over) | Không                  | Không               |
 | Số suites / tests   | 5 / 102                                | 45 / 866               | 42 / 228            |
-| Runtime             | ~20s                                   | ~140s                  | ~50s                |
+| Runtime             | ~20s                                   | ~190s                  | ~50s                |
 | Timeout             | 60s                                    | 30s                    | 30s                 |
 | Port                | 9996                                   | 9997                   | 9998                |
 

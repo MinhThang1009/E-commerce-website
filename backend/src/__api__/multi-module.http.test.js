@@ -1,6 +1,6 @@
 /**
  * HTTP tests cho các module nhỏ:
- * attribute, content, search-history, inventory, discount-code, warranty-package
+ * attribute, content, search-history, inventory, discount-code
  */
 require('module-alias/register');
 const { app, request, createTestUser, createTestProduct } = require('./http-setup');
@@ -10,12 +10,9 @@ const {
   Brand,
   AttributeGroup,
   AttributeValue,
-  Banner,
-  News,
   SearchHistory,
   InventoryLog,
   DiscountCode,
-  WarrantyPackage,
 } = require('@models');
 const { Op } = require('sequelize');
 
@@ -23,7 +20,6 @@ const TS = Date.now();
 let admin, adminToken, user, userToken;
 let prod, variant, cat, brand;
 let attrGroupId, attrValueId;
-let wpId;
 
 beforeAll(async () => {
   ({ user: admin, token: adminToken } = await createTestUser({
@@ -40,10 +36,7 @@ beforeAll(async () => {
 afterAll(async () => {
   if (attrValueId) await AttributeValue.destroy({ where: { id: attrValueId }, force: true });
   if (attrGroupId) await AttributeGroup.destroy({ where: { id: attrGroupId }, force: true });
-  if (wpId) await WarrantyPackage.destroy({ where: { id: wpId }, force: true });
   await SearchHistory.destroy({ where: { userId: user?.id }, force: true });
-  await Banner.destroy({ where: { titleVi: { [Op.like]: `__HTTP_Banner_${TS}%` } } });
-  await News.destroy({ where: { slug: { [Op.like]: `http-news-${TS}%` } } });
   await DiscountCode.destroy({ where: { code: { [Op.like]: `HTTP-MISC-${TS}%` } }, force: true });
   if (variant) await variant.destroy({ force: true });
   if (prod) await prod.destroy({ force: true });
@@ -103,62 +96,6 @@ describe('PUT /api/attributes/values/:id', () => {
       .put(`/api/attributes/values/${attrValueId}`)
       .set('Authorization', `Bearer ${adminToken}`)
       .send({ name: `__HTTP_Val_Updated_${TS}` });
-    expect([200, 201]).toContain(res.status);
-  });
-});
-
-// ── Content — Banners ────────────────────────────────────────
-describe('GET /api/banners', () => {
-  test('→ 200', async () => {
-    const res = await request(app).get('/api/banners');
-    expect(res.status).toBe(200);
-    expect(res.body.status).toBe('success');
-  });
-});
-
-describe('POST /api/banners (admin)', () => {
-  test('không auth → 401', async () => {
-    const res = await request(app).post('/api/banners').send({ titleVi: 'X' });
-    expect(res.status).toBe(401);
-  });
-  test('admin → 201', async () => {
-    const res = await request(app)
-      .post('/api/banners')
-      .set('Authorization', `Bearer ${adminToken}`)
-      .send({
-        title: `__HTTP_Banner_${TS}`,
-        imageUrl: 'https://example.com/img/test.jpg',
-        isActive: true,
-        position: 'home_hero',
-      });
-    expect([200, 201]).toContain(res.status);
-  });
-});
-
-// ── Content — News ───────────────────────────────────────────
-describe('GET /api/news', () => {
-  test('→ 200', async () => {
-    const res = await request(app).get('/api/news');
-    expect(res.status).toBe(200);
-    expect(res.body.status).toBe('success');
-  });
-});
-
-describe('POST /api/news (admin)', () => {
-  test('không auth → 401', async () => {
-    const res = await request(app).post('/api/news').send({ title: 'X' });
-    expect(res.status).toBe(401);
-  });
-  test('admin → 201', async () => {
-    const res = await request(app)
-      .post('/api/news')
-      .set('Authorization', `Bearer ${adminToken}`)
-      .send({
-        title: `__HTTP_News_${TS}`,
-        slug: `http-news-${TS}`,
-        content: 'Test content',
-        isPublished: false,
-      });
     expect([200, 201]).toContain(res.status);
   });
 });
@@ -239,37 +176,6 @@ describe('POST /api/discount-codes/apply', () => {
   });
 });
 
-// ── Warranty Packages ────────────────────────────────────────
-describe('GET /api/warranty-packages', () => {
-  test('public → 200', async () => {
-    const res = await request(app).get('/api/warranty-packages');
-    expect(res.status).toBe(200);
-    expect(res.body.status).toBe('success');
-  });
-});
-
-describe('POST /api/warranty-packages (admin)', () => {
-  test('không auth → 401', async () => {
-    const res = await request(app).post('/api/warranty-packages').send({ name: 'X' });
-    expect(res.status).toBe(401);
-  });
-  test('admin → 201', async () => {
-    const res = await request(app)
-      .post('/api/warranty-packages')
-      .set('Authorization', `Bearer ${adminToken}`)
-      .send({ name: `__HTTP_WP_${TS}`, price: 500000, durationMonths: 12 });
-    expect([200, 201]).toContain(res.status);
-    wpId = res.body.data?.id || res.body.data?.warrantyPackage?.id;
-  });
-});
-
-describe('GET /api/warranty-packages/product/:productId', () => {
-  test('→ 200', async () => {
-    const res = await request(app).get(`/api/warranty-packages/product/${prod.id}`);
-    expect(res.status).toBe(200);
-  });
-});
-
 // ── Inventory (admin) ────────────────────────────────────────
 describe('GET /api/inventory/logs', () => {
   test('admin → 200', async () => {
@@ -290,50 +196,6 @@ describe('GET /api/health', () => {
   test('→ 200', async () => {
     const res = await request(app).get('/api/health');
     expect(res.status).toBe(200);
-  });
-});
-
-// ── Warranty Package endpoints còn thiếu ─────────────────────
-describe('GET /api/warranty-packages/:id', () => {
-  test('tồn tại → 200', async () => {
-    if (!wpId) return;
-    const res = await request(app).get(`/api/warranty-packages/${wpId}`);
-    expect(res.status).toBe(200);
-    expect(res.body.status).toBe('success');
-  });
-  test('không tồn tại → 404', async () => {
-    const res = await request(app).get('/api/warranty-packages/999999999');
-    expect([400, 404]).toContain(res.status);
-  });
-});
-
-describe('PUT /api/warranty-packages/:id', () => {
-  test('không auth → 401', async () => {
-    const res = await request(app).put('/api/warranty-packages/1').send({ name: 'X' });
-    expect(res.status).toBe(401);
-  });
-  test('admin → 200 hoặc 404', async () => {
-    if (!wpId) return;
-    const res = await request(app)
-      .put(`/api/warranty-packages/${wpId}`)
-      .set('Authorization', `Bearer ${adminToken}`)
-      .send({ name: `__HTTP_WP_Updated_${Date.now()}`, price: 600000, durationMonths: 12 });
-    expect([200, 400, 404]).toContain(res.status);
-  });
-});
-
-describe('DELETE /api/warranty-packages/:id', () => {
-  test('không auth → 401', async () => {
-    const res = await request(app).delete('/api/warranty-packages/1');
-    expect(res.status).toBe(401);
-  });
-  test('admin → 200 hoặc 404', async () => {
-    if (!wpId) return;
-    const res = await request(app)
-      .delete(`/api/warranty-packages/${wpId}`)
-      .set('Authorization', `Bearer ${adminToken}`);
-    expect([200, 400, 404]).toContain(res.status);
-    wpId = null; // đã xóa
   });
 });
 

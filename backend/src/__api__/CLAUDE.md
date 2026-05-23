@@ -35,7 +35,7 @@ API HTTP tests xác minh **HTTP contract** của từng endpoint qua Supertest �
 | ---------- | ---------------------------------- | ------------------------------- |
 | Tool       | Supertest (HTTP request)           | Sequelize trực tiếp + Supertest |
 | Focus      | HTTP contract (status, body shape) | Business logic + DB constraint  |
-| Runtime    | ~140s                              | ~50s                            |
+| Runtime    | ~190s                              | ~50s                            |
 | Files      | `*.http.test.js`                   | `*.integration.test.js`         |
 | DB         | MySQL thật (`techstore`)           | MySQL thật (`techstore`)        |
 | Port       | 9997                               | 9998                            |
@@ -107,7 +107,7 @@ Tất cả data tạo bởi helpers đều dùng prefix `__HTTP_` để cleanup 
 
 ```bash
 # Từ thư mục backend/ — MySQL phải chạy, DB 'techstore' phải có seed data
-npm run test:api                              # Full 45 suites/866 tests (~140s)
+npm run test:api                              # Full 39 suites/700 tests (~190s)
 npm run test:api -- --testPathPattern=auth   # Chỉ auth tests
 npm run test:api -- --testPathPattern=catalog-deep  # Chỉ catalog-deep
 

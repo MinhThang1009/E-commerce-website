@@ -156,11 +156,6 @@ jest.mock('@models', () => {
       bulkCreate: jest.fn(),
       destroy: jest.fn(),
     },
-    ProductWarranty: {
-      create: jest.fn(),
-      destroy: jest.fn(),
-      bulkCreate: jest.fn(),
-    },
     ProductCategory: {
       destroy: jest.fn(),
       bulkCreate: jest.fn(),
@@ -179,7 +174,6 @@ jest.mock('@models', () => {
     CartItem: { destroy: jest.fn() },
     Wishlist: { destroy: jest.fn() },
     Address: {},
-    LoyaltyHistory: { create: jest.fn() },
     SearchHistory: {},
     RecentlyViewed: {},
     InventoryLog: {
@@ -190,10 +184,6 @@ jest.mock('@models', () => {
       count: jest.fn(),
       findAll: jest.fn(),
       findOne: jest.fn(),
-    },
-    WarrantyPackage: {
-      findAll: jest.fn(),
-      findByPk: jest.fn(),
     },
     Brand: {},
     sequelize: {
@@ -225,13 +215,11 @@ const {
   ProductVariant,
   ProductAttribute,
   ProductSpecification,
-  ProductWarranty,
   ProductCategory,
   ProductImage,
   Category,
   Review,
   InventoryLog,
-  WarrantyPackage,
   CartItem,
   Wishlist,
   sequelize,
@@ -259,7 +247,6 @@ function makeProduct(overrides = {}) {
     productAttributes: [],
     variants: [],
     productSpecifications: [],
-    warrantyPackages: [],
     ...overrides,
   };
   return {
@@ -572,7 +559,6 @@ describe('POST /api/admin/products/:id/clone', () => {
       attributes: [],
       variants: [],
       productSpecifications: [],
-      warrantyPackages: [],
     });
 
     // Product.findByPk lần 1: lấy original (với includes), lần 2: clone mới

@@ -71,7 +71,6 @@ features/catalog/
     product-transform.ts    — transformProductsResponse(): normalize API responses về display format
     product-helpers.ts      — price range calc, stock check, variant selection logic
     product-naming.ts       — tạo tên động từ variant config (vd: "iPhone 15 Pro 256GB Đen")
-    product-transform.ts    — normalize API
     sample-product-data.ts  — dữ liệu mẫu cho form
 
   components/
@@ -160,8 +159,8 @@ export const productKeys = {
 
 `catalogStore` (`src/stores/catalog-store.ts`) chỉ lưu:
 
-- `recentlyViewed: string[]` — max 10 product IDs, persist localStorage
-- `compareList: string[]` — max 4 product IDs, không persist
+- `recentlyViewed: Product[]` — max 10 full Product objects, persist localStorage
+- `compareList: Product[]` — max 4 full Product objects, không persist
 
 `cartStore` — `addItem` từ ProductCard, ProductDetailPage (quick add).
 `wishlistStore` — toggle wishlist từ ProductCard.
@@ -266,7 +265,7 @@ interface Product {
   id: string;
   name: string;
   slug: string;
-  basePrice: number;
+  price: number;
   images: string[];
   categoryId: string;
   brandId?: string;
@@ -279,7 +278,8 @@ interface ProductVariant {
   id: string;
   sku: string;
   price: number;
-  stock: number;
+  stockQuantity: number;
+  stock?: number; // alias optional cho stockQuantity
   attributes: Record<string, string>; // { "Màu sắc": "Đen", "Dung lượng": "256GB" }
 }
 interface ProductFilters {

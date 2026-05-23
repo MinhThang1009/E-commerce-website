@@ -220,15 +220,13 @@ src/components/
   sections/      ← HomePage sections (HeroSection, FeaturedProductsSection...)
   icons/         ← Custom icon components
 
-src/hooks/       ← Global hooks (8 hooks):
+src/hooks/       ← Global hooks (6 hooks):
   use-token-refresh.ts  ← Auto-refresh JWT trước khi hết hạn
   use-antd-toast.ts     ← Ant Design message/notification
   use-debounce.ts       ← Debounce value
-  use-intersection-observer.ts
-  use-local-storage.ts
-  use-media-query.ts
-  use-previous.ts
-  use-scroll-to-top.ts
+  use-notifications.ts  ← Notification queue + toast logic
+  use-api-state.ts      ← Wrapper cho loading/error/data state pattern
+  use-scroll-to-top.ts  ← Scroll to top on route change
 ```
 
 ---
@@ -305,7 +303,7 @@ frontend/src/
   types/CLAUDE.md                            ← global TypeScript types
   styles/CLAUDE.md                           ← SCSS tokens, global styles
   constants/CLAUDE.md                        ← PAGINATION, UPLOAD
-  __tests__/CLAUDE.md                        ← Component tests (Jest + RTL, 17 suites/437 tests)
+  __tests__/CLAUDE.md                        ← Component tests (Jest + RTL, 18 suites)
   features/admin/CLAUDE.md                   ← Admin dashboard, CRUD pages
   features/ai/CLAUDE.md                      ← AI chatbot widget
   features/auth/CLAUDE.md                    ← Login, register, forgot password

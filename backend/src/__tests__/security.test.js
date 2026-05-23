@@ -199,7 +199,6 @@ describe('User.prototype.toJSON — không trả về các field nhạy cảm', 
     otpExpires: new Date(),
     resetPasswordToken: 'reset-token-abc123',
     resetPasswordExpires: new Date(),
-    loyaltyPoints: 100,
   };
 
   test('password bị xóa khỏi kết quả toJSON()', () => {
@@ -222,7 +221,6 @@ describe('User.prototype.toJSON — không trả về các field nhạy cảm', 
     expect(result.id).toBe(1);
     expect(result.email).toBe('user@test.com');
     expect(result.role).toBe('customer');
-    expect(result.loyaltyPoints).toBe(100);
   });
 });
 

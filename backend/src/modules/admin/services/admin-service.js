@@ -620,8 +620,7 @@ const getProductById = catchAsync(async (req, res) => {
  *
  * Luồng xử lý: (1) Tạo Product cơ bản; (2) Cập nhật compareAtPrice qua raw SQL;
  * (3) Gán danh mục; (4) Tạo ProductAttribute; (5) Tạo ProductVariant + tính tổng
- * stockQuantity; (6) Tạo ProductImage; (7) Tạo ProductSpecification; (8) Liên kết
- * WarrantyPackage (package đầu tiên là isDefault); (9) Đồng bộ vector store AI
+ * stockQuantity; (6) Tạo ProductImage; (7) Tạo ProductSpecification; (8) Đồng bộ vector store AI
  * (bất đồng bộ, không block response).
  *
  * Chấp nhận cả `price` lẫn `basePrice` trong body (tương thích ngược).
@@ -636,7 +635,6 @@ const getProductById = catchAsync(async (req, res) => {
  * @param {Array<Object>} [req.body.variants=[]] - Biến thể sản phẩm
  * @param {Array} [req.body.images=[]] - URL ảnh (chuỗi hoặc object)
  * @param {Array<Object>} [req.body.specifications=[]] - Thông số kỹ thuật
- * @param {Array<number>} [req.body.warrantyPackageIds=[]] - ID gói bảo hành
  * @param {Object} req.user - Thông tin admin đang đăng nhập
  * @param {Object} res - HTTP response — hàm này tự gọi res.json() để trả kết quả
  */
@@ -950,7 +948,7 @@ const createProduct = catchAsync(async (req, res) => {
  * (2) ảnh (replace toàn bộ); (3) compareAtPrice qua raw SQL; (4) danh mục;
  * (5) attributes vi sai; (6) variants vi sai + tính lại stockQuantity;
  * (7) specifications vi sai + auto-translate valueEn background;
- * (8) warranty packages (replace toàn bộ); (9) commit → sync vector store.
+ * (8) commit → sync vector store.
  * Sản phẩm inactive bị xóa khỏi vector store index.
  *
  * @param {Object} req - HTTP request từ Express

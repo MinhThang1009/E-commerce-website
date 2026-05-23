@@ -1,9 +1,5 @@
 // Hằng số toàn cục — tập trung tại đây, không hardcode rải rác trong controllers
 module.exports = {
-  // Điểm tích lũy loyalty
-  POINTS_EARN_RATE: 100000, // Cứ 100,000 VND chi tiêu = 1 điểm tích lũy
-  POINTS_VALUE: 1000, // 1 điểm = 1,000 VND giảm giá khi đổi
-
   // Phí vận chuyển
   SHIPPING_FREE_THRESHOLD: 5000000, // Miễn phí ship nếu subtotal >= 5,000,000 VND
 

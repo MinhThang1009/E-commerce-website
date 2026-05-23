@@ -26,8 +26,6 @@ function buildTrackingSteps(status) {
 // ─── Constants ────────────────────────────────────────────────────────────────
 
 const CONSTANTS = {
-  POINTS_EARN_RATE: 1000,
-  POINTS_VALUE: 100,
   SHIPPING_FREE_THRESHOLD: 2000000,
 };
 
@@ -44,7 +42,6 @@ function buildService() {
     decrementVariantStock: jest.fn().mockResolvedValue(),
     restoreProductStock: jest.fn().mockResolvedValue(),
     restoreVariantStock: jest.fn().mockResolvedValue(),
-    findActiveWarrantyPackagesByIds: jest.fn().mockResolvedValue([]),
     findOrCreateActiveCart: jest.fn(),
     findActiveCartBySessionId: jest.fn().mockResolvedValue(null),
     findCartByPkWithItemsDetails: jest.fn(),
@@ -57,9 +54,6 @@ function buildService() {
     findActiveDiscountCode: jest.fn().mockResolvedValue(null),
     incrementDiscountCodeUsage: jest.fn().mockResolvedValue(),
     findUserById: jest.fn(),
-    updateUserPoints: jest.fn().mockResolvedValue(),
-    createLoyaltyHistory: jest.fn().mockResolvedValue(),
-    updateLoyaltyHistoryOrderId: jest.fn().mockResolvedValue(),
     createOrder: jest.fn(),
     createOrderItem: jest.fn(),
     createInventoryLogs: jest.fn().mockResolvedValue(),
@@ -111,8 +105,6 @@ function mkOrder(overrides = {}) {
     paymentStatus: 'pending',
     subtotal: 200000,
     total: 230000,
-    pointsUsed: 0,
-    pointsEarned: 0,
     createdAt: new Date(),
     items: [],
     reload: jest.fn().mockResolvedValue(),
@@ -237,7 +229,7 @@ describe('OrdersService › updateOrderStatus', () => {
   it('COD + status=delivered → paymentStatus = paid', async () => {
     const order = mkOrder({ status: 'shipped', paymentMethod: 'cod' });
     repo.findOrderByPkWithItemsAndUser.mockResolvedValue(order);
-    repo.findUserById.mockResolvedValue({ id: 1, loyaltyPoints: 0 });
+    repo.findUserById.mockResolvedValue({ id: 1 });
 
     await service.updateOrderStatus({ id: 1, status: STATUS.DELIVERED });
 

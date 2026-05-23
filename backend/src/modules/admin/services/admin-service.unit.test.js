@@ -140,7 +140,6 @@ jest.mock('@models', () => {
       bulkCreate: jest.fn(),
       destroy: jest.fn(),
     },
-    ProductWarranty: { create: jest.fn(), destroy: jest.fn(), bulkCreate: jest.fn() },
     ProductCategory: { destroy: jest.fn(), bulkCreate: jest.fn() },
     Review: {
       findAll: jest.fn(),
@@ -152,12 +151,10 @@ jest.mock('@models', () => {
     CartItem: { destroy: jest.fn() },
     Wishlist: { destroy: jest.fn() },
     Address: {},
-    LoyaltyHistory: { create: jest.fn() },
     SearchHistory: {},
     RecentlyViewed: {},
     InventoryLog: { create: jest.fn(), findAndCountAll: jest.fn() },
     ChatMessage: { count: jest.fn(), findAll: jest.fn(), findOne: jest.fn() },
-    WarrantyPackage: { findAll: jest.fn(), findByPk: jest.fn() },
     Brand: {},
     sequelize: {
       query: jest.fn().mockResolvedValue([[], {}]),

@@ -1,7 +1,7 @@
 'use strict';
 
 // Phase 40.9 GAP fix — Convert 18 TIMESTAMP columns ở Group A tables sang DATETIME
-// để match migration_full.sql v3.0 (đã unified DATETIME từ commit e0c3256)
+// để match migration.sql v3.0 (đã unified DATETIME từ commit e0c3256)
 // Idempotent: skip nếu column đã DATETIME
 //
 // Lý do unify (per plan.md): DATETIME không bị ảnh hưởng bởi timezone conversion,

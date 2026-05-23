@@ -56,7 +56,6 @@ jest.mock('@models', () => ({
     findOne: jest.fn(),
     create: jest.fn(),
   },
-  WarrantyPackage: { findAll: jest.fn().mockResolvedValue([]) },
   ProductVariant: {
     findAll: jest.fn().mockResolvedValue([]),
   },
@@ -173,7 +172,6 @@ describe('GET /api/products — pagination limit và offset', () => {
       ProductAttribute,
       ProductSpecification,
       RecentlyViewed,
-      WarrantyPackage,
       ProductVariant,
       Review,
       sequelize,
@@ -186,7 +184,6 @@ describe('GET /api/products — pagination limit và offset', () => {
     const _ProductAttribute = ProductAttribute || { findAll: jest.fn() };
     const _ProductSpecification = ProductSpecification || { findAll: jest.fn() };
     const _RecentlyViewed = RecentlyViewed || { findAll: jest.fn() };
-    const _WarrantyPackage = WarrantyPackage || { findAll: jest.fn() };
 
     const catalogModule = buildCatalogModule({
       Category,
@@ -197,7 +194,6 @@ describe('GET /api/products — pagination limit và offset', () => {
       ProductSpecification: _ProductSpecification,
       Review,
       RecentlyViewed: _RecentlyViewed,
-      WarrantyPackage: _WarrantyPackage,
       sequelize,
       eventBus,
       logger,

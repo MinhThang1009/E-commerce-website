@@ -1,6 +1,6 @@
 'use strict';
 
-// Phase 40.18 — Rename 39 FK constraints theo pattern fk_* (consistent với migration_full.sql v3.0)
+// Phase 40.18 — Rename 39 FK constraints theo pattern fk_* (consistent với migration.sql v3.0)
 // Idempotent: skip nếu FK mới đã tồn tại; skip nếu FK cũ đã không còn
 //
 // PRE-FLIGHT đã verify (2026-05-05):

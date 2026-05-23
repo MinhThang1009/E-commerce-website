@@ -92,7 +92,6 @@ jest.mock('@/features/catalog', () => {
 jest.mock('@/components/common', () => ({
   PremiumButton: ({ children, onClick }: { children: unknown; onClick?: () => void }) =>
     React.createElement('button', { onClick }, children),
-  BannerDisplay: () => null,
 }));
 
 jest.mock('@/components/common/LoadingSpinner', () => {
@@ -199,7 +198,6 @@ jest.mock('@/routes/paths', () => ({
     productDetail: (id: string) => `/products/${id}`,
     shopBrand: (id: string) => `/shop?brand=${id}`,
     shopCategory: (id: string) => `/shop?category=${id}`,
-    newsDetail: (slug: string) => `/news/${slug}`,
   },
 }));
 

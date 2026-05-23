@@ -47,7 +47,6 @@ function makeRepo(modelOverrides = {}, seqOverride = null) {
     ProductSpecification: makeModel(),
     Review: makeModel(),
     RecentlyViewed: makeModel(),
-    WarrantyPackage: makeModel(),
     sequelize,
     ...modelOverrides,
   };
@@ -333,13 +332,6 @@ describe('setProductCategories — gọi không có options', () => {
     expect(product.setCategories).toHaveBeenCalledWith(categories, {});
   });
 });
-
-// ════════════════════════════════════════════════════════════════════════════
-// setProductWarrantyPackages — lines 741-743
-// Nhánh: gọi không có options (default options = {})
-// ════════════════════════════════════════════════════════════════════════════
-
-describe('setProductWarrantyPackages — gọi không có options', () => {});
 
 // ════════════════════════════════════════════════════════════════════════════
 // createProductSpecifications — gọi không có options (default options = {})

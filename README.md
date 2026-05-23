@@ -196,7 +196,7 @@ Chatbot TechStore sử dụng kiến trúc Hybrid RAG để tư vấn sản ph�
 |---|---|---|---|
 | BE Unit Tests | `src/**/*.test.js` | Mock | ~10s |
 | BE Integration Tests | `src/__integration__/**/*.integration.test.js` | MySQL thật | ~50s |
-| BE API HTTP Tests | `src/__api__/**/*.http.test.js` | MySQL thật | ~140s |
+| BE API HTTP Tests | `src/__api__/**/*.http.test.js` | MySQL thật | ~190s |
 | BE E2E Tests | `src/__e2e__/**/*.e2e.test.js` | MySQL thật | ~20s |
 | FE Component Tests | `**/__tests__/**/*.test.{cjs,tsx}` | jsdom | ~7s |
 

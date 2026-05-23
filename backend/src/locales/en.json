@@ -61,7 +61,6 @@
     "couponExpired": "Coupon has expired",
     "couponLimitReached": "Coupon usage limit has been reached",
     "couponMinOrderNotMet": "Order does not meet the minimum value of {{amount}} to use this coupon",
-    "insufficientPoints": "You do not have enough loyalty points",
     "stockInsufficient": "Product \"{{name}}\" only has {{available}} items left",
     "cancelled": "Order has been cancelled",
     "statusUpdated": "Order status updated successfully",
@@ -90,8 +89,7 @@
     "cannotDeleteBrandWithProducts": "Cannot delete brand that has products",
     "searchKeywordRequired": "Search keyword is required",
     "invalidCategoryId": "Invalid category ID",
-    "categoriesNotExist": "One or more categories do not exist",
-    "warrantyPackagesNotExist": "One or more warranty packages do not exist"
+    "categoriesNotExist": "One or more categories do not exist"
   },
   "payment": {
     "orderNotFound": "Order not found",
@@ -111,10 +109,6 @@
     "invalidTransactionDate": "Invalid transaction date format"
   },
   "content": {
-    "bannerNotFound": "Banner not found",
-    "slugExists": "Slug already exists",
-    "newsNotFound": "News article not found",
-    "newsDeleted": "News article deleted successfully",
     "requiredFieldsMissing": "Please provide all required fields (name, email, subject, content)",
     "feedbackReceived": "Thank you for your feedback. We will review it soon!",
     "serverError": "Server error"
@@ -140,10 +134,6 @@
     "deleteSuccess": "File deleted successfully",
     "uploadSuccess": "File uploaded successfully",
     "batchUploadSuccess": "{{count}} files uploaded successfully"
-  },
-  "loyalty": {
-    "userNotFound": "User not found",
-    "insufficientPoints": "Insufficient loyalty points (current: {{current}}, required: {{required}})"
   },
   "inventory": {
     "productNotFound": "Product not found",
@@ -173,9 +163,6 @@
     "cannotGetNameAttributes": "Unable to get name-affecting attributes",
     "cannotBatchCreateNames": "Unable to batch create product names",
     "cannotCreateRealtimeName": "Unable to create real-time name"
-  },
-  "warranty": {
-    "serverError": "Server error"
   },
   "email": {
     "footer": {

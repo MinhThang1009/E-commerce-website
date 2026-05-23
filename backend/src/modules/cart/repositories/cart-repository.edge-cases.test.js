@@ -34,7 +34,6 @@ function makeRepo(overrides = {}, seqOverride = null) {
     CartItem: makeModel(),
     Product: makeModel(),
     ProductVariant: makeModel(),
-    WarrantyPackage: makeModel(),
     sequelize,
     ...overrides,
   };

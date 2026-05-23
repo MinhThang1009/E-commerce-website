@@ -8,7 +8,7 @@ const { col } = require('sequelize');
 const IOrdersRepository = require('@modules/orders/repositories/i-orders-repository');
 
 // Sequelize impl của IOrdersRepository — duy nhất layer truy cập Order/OrderItem
-// + cross-models (Cart/CartItem/Product/Variant/User/DiscountCode/Loyalty/Inventory).
+// + cross-models (Cart/CartItem/Product/Variant/User/DiscountCode/Inventory).
 //
 // Cross-module read shortcut (Cart/Product/Variant) sẽ được refactor khi
 // inventory module DDD-lite hoàn tất Phase 5.
@@ -295,8 +295,6 @@ class SequelizeOrdersRepository extends IOrdersRepository {
     return variant.save(options);
   }
 
-  // -------- Warranty --------
-
   // -------- DiscountCode --------
 
   async findActiveDiscountCode(code, options = {}) {
@@ -310,7 +308,7 @@ class SequelizeOrdersRepository extends IOrdersRepository {
     return code.increment('usedCount', options);
   }
 
-  // -------- User / Loyalty --------
+  // -------- User --------
 
   async findUserById(id, options = {}) {
     return this.User.findByPk(id, options);

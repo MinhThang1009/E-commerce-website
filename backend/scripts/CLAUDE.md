@@ -39,7 +39,7 @@
 
 ## 2.1 rebuild-db.js
 
-DROP database → CREATE database → import `data/migration_full.sql` → import `data/seed_data.sql`.
+DROP database → CREATE database → import `data/migration.sql` → import `data/seed_data.sql`.
 
 ```bash
 node scripts/rebuild-db.js

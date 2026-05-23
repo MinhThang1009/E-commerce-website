@@ -40,9 +40,7 @@ function makeRepo(overrides = {}) {
     ProductVariant: makeModel(),
     User: makeModel(),
     DiscountCode: makeModel(),
-    LoyaltyHistory: makeModel(),
     InventoryLog: makeModel(),
-    WarrantyPackage: makeModel(),
     sequelize: {
       transaction: jest.fn(async (work) => work({ LOCK: { UPDATE: 'UPDATE' } })),
     },
@@ -309,10 +307,10 @@ describe('SequelizeOrdersRepository — Transaction', () => {
 });
 
 // ════════════════════════════════════════════════════════════════════════════
-// DiscountCode / LoyaltyHistory
+// DiscountCode
 // ════════════════════════════════════════════════════════════════════════════
 
-describe('SequelizeOrdersRepository — DiscountCode và LoyaltyHistory', () => {
+describe('SequelizeOrdersRepository — DiscountCode', () => {
   test('findActiveDiscountCode — gọi findOne với code và isActive=true', async () => {
     const mockCode = { id: 1, code: 'SALE10', isActive: true };
     const { repo, deps } = makeRepo({ DiscountCode: makeModel({ findOne: mockCode }) });

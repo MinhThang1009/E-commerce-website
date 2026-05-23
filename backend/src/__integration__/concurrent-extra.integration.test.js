@@ -5,7 +5,6 @@
  *   1. Concurrent addToCart cùng item → quantity sum đúng, không duplicate
  *   2. Concurrent createReview cùng product → upsert: 1 record trong DB
  *   3. Concurrent updateProfile → last write wins
- *   4. Concurrent incrementNewsView → viewCount tăng không mất
  */
 require('module-alias/register');
 const sequelize = require('@config/sequelize');

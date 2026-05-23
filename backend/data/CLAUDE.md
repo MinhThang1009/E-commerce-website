@@ -5,7 +5,7 @@
 ## Mục lục
 
 - [1. Files](#1-files)
-- [2. migration_full.sql](#2-migration_fullsql)
+- [2. migration.sql](#2-migration_fullsql)
 - [3. seed_data.sql](#3-seed_datasql)
 - [4. products.json](#4-productsjson)
 - [5. vector-db.json](#5-vector-dbjson)
@@ -17,7 +17,7 @@
 
 ```
 data/
-├── migration_full.sql     ← Full schema (35 bảng active) — dump trước các drop migrations
+├── migration.sql     ← Full schema (35 bảng active) — dump trước các drop migrations
 ├── seed_data.sql          ← Bulk seed data (products, variants, images, attributes)
 ├── products.json          ← Snapshot sản phẩm JSON (~317KB, dùng cho import/export)
 ├── vector-db.json         ← Vector embeddings active (~1.2MB, auto-generated)
@@ -26,7 +26,7 @@ data/
 
 ---
 
-# 2. migration_full.sql
+# 2. migration.sql
 
 Full schema MySQL snapshot. Chứa các `CREATE TABLE` statements — một số bảng legacy đã bị drop bởi migrations sau (`collections`, `product_collections`, `email_campaigns`, `import_logs`, `newsletter_subscribers`, `banners`, `news`, `loyalty_histories`, `warranty_packages`, `product_warranties`). Schema active thực tế có **27 bảng**.
 
@@ -37,7 +37,7 @@ Full schema MySQL snapshot. Chứa các `CREATE TABLE` statements — một số
 
 **Cập nhật sau mỗi đợt migration mới:**
 ```bash
-mysqldump --no-data techstore > backend/data/migration_full.sql
+mysqldump --no-data techstore > backend/data/migration.sql
 # Hoặc qua rebuild-db workflow: migrations → export mới
 ```
 
@@ -135,4 +135,4 @@ cp backend/data/vector-db.json.bak backend/data/vector-db.json
 - **`seed_data.sql` bind với schema hiện tại** — sau migration thay đổi cấu trúc table, phải re-generate seed file mới
 - **Không commit dữ liệu thật từ production** — chỉ dùng mock/sample data. PII từ production không được lưu ở đây
 - **File `.bak` không commit** — thêm vào `.gitignore` nếu chưa có (file ~1.2MB có thể bloat git history)
-- **`migration_full.sql` dùng `utf8mb4_unicode_ci`** — không phải `utf8mb4_0900_ai_ci` (MySQL 8.0 default). `rebuild-db.js` tự convert khi import
+- **`migration.sql` dùng `utf8mb4_unicode_ci`** — không phải `utf8mb4_0900_ai_ci` (MySQL 8.0 default). `rebuild-db.js` tự convert khi import

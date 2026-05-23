@@ -103,11 +103,8 @@ jest.mock('@models', () => {
       create: jest.fn().mockResolvedValue({ id: 1 }),
       destroy: jest.fn().mockResolvedValue(1),
     },
-    WarrantyPackage: {
-      findAll: jest.fn().mockResolvedValue([]),
-    },
     User: {
-      findByPk: jest.fn().mockResolvedValue({ id: 1, loyaltyPoints: 0, update: jest.fn() }),
+      findByPk: jest.fn().mockResolvedValue({ id: 1, update: jest.fn() }),
     },
     Order: {
       findByPk: jest.fn().mockResolvedValue(null),
@@ -124,7 +121,6 @@ jest.mock('@models', () => {
     ProductAttribute: { findAll: jest.fn().mockResolvedValue([]) },
     ProductSpecification: { findAll: jest.fn().mockResolvedValue([]) },
     ProductImage: { findAll: jest.fn().mockResolvedValue([]) },
-    LoyaltyHistory: { create: jest.fn().mockResolvedValue({}) },
     InventoryLog: { create: jest.fn().mockResolvedValue({}) },
     SearchHistory: { findAll: jest.fn().mockResolvedValue([]) },
     Category: { findAll: jest.fn().mockResolvedValue([]) },
@@ -159,9 +155,7 @@ const {
   ProductVariant,
   User,
   DiscountCode,
-  LoyaltyHistory,
   InventoryLog,
-  WarrantyPackage,
   sequelize,
 } = require('@models');
 const eventBus = require('@shared/event-bus');
@@ -179,9 +173,7 @@ const ordersModule = buildOrdersModule({
   ProductVariant,
   User,
   DiscountCode,
-  LoyaltyHistory,
   InventoryLog,
-  WarrantyPackage,
   sequelize,
   eventBus,
   logger,

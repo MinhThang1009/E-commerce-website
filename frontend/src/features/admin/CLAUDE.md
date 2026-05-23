@@ -38,10 +38,8 @@ Dashboard quản trị toàn bộ: xem analytics/KPIs, quản lý sản phẩm/�
 | `/admin/dashboard`         | `DashboardPage`     |
 | `/admin/products`          | `ProductsPage`      |
 | `/admin/products/create`   | `CreateProductPage` |
-| `/admin/products/:id/edit` | `EditProductPage`   |
-| `/admin/products/import`   | `ProductImportPage` |
+| `/admin/products/edit/:id` | `EditProductPage`   |
 | `/admin/categories`        | `CategoriesPage`    |
-| `/admin/categories/:id`    | `CategoryPage`      |
 | `/admin/brands`            | `BrandsPage`        |
 | `/admin/orders`            | `OrdersPage`        |
 | `/admin/users`             | `UsersPage`         |

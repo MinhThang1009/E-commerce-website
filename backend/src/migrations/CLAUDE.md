@@ -1,6 +1,6 @@
 # Migrations — TechStore Backend
 
-> 79 Sequelize migration files tại `src/migrations/`. Schema hiện tại: `backend/data/migration_full.sql`.
+> 80 Sequelize migration files tại `src/migrations/`. Schema hiện tại: `backend/data/migration.sql`.
 
 ← Quay lại [`backend/CLAUDE.md`](../../CLAUDE.md)
 
@@ -21,7 +21,7 @@
 
 # 1. Lưu ý đọc file
 
-**KHÔNG đọc hết** 79 files — chỉ đọc khi cần trace schema change cụ thể. Dùng tên file (date prefix) để xác định file cần xem. Toàn bộ schema hiện tại ở `data/migration_full.sql`.
+**KHÔNG đọc hết** 80 files — chỉ đọc khi cần trace schema change cụ thể. Dùng tên file (date prefix) để xác định file cần xem. Toàn bộ schema hiện tại ở `data/migration.sql`.
 
 ---
 
@@ -60,34 +60,37 @@
 2026031801-add-new-features-tables.js
 2026031802-add-loyalty-and-recently-viewed.js
 2026031803-create-banners.js
-2026050201-product-status-to-english.js
-2026050301-add-soft-delete-to-reviews.js
-2026050401-add-stock-quantity-to-products.js
-2026050402-rename-price-to-unit-price.js
-2026050403-add-discount-fields-to-orders.js
-2026050404-add-indexes.js
-2026050405-create-inventory-logs.js
-2026050406-add-ai-chatbot-fields.js
-2026050407-add-chatmessage-ai-fields.js
-2026050409-add-FK-constraint-names.js
-2026050410-rename-search-history-table.js
+2026031804-create-email-campaigns.js
+2026050201-migrate-product-status-to-english.js
+2026050301-update-reviews-add-variant-soft-delete.js
+2026050302-add-stock-quantity-to-products.js
+2026050401-phase6-schema-naming-standards.js
+2026050402-phase6-add-indexes.js
+2026050403-create-inventory-logs.js
+2026050404-phase8-schema-standards.js
+2026050405-phase8-cleanup-constraints.js
+2026050406-phase9-chatmessage-ai-fields.js
+2026050407-phase10-chatmessage-status-fields.js
+2026050409-phase38-fix-fk-constraint-names.js
+2026050410-phase38-rename-search-history-table.js
 2026050411-create-import-logs.js
-2026050412-add-soft-delete-columns.js
-2026050501-rename-snake-case.js
-2026050502-add-FK-constraints.js
-2026050503-decimal-precision.js
-2026050504-varchar-lengths.js
-2026050505-default-values.js
-2026050506-null-consistency.js
-2026050507-check-constraints.js
-2026050508-soft-delete-columns-2.js
-2026050509-timestamp-to-datetime.js
-2026050510-add-missing-columns.js
-2026050511-fix-snake-case-remaining.js
-2026050512-cleanup-indexes.js
-2026051601-fix-remaining-indexes.js
-2026051602-optimize-varchar.js
-2026051603-rename-recently-viewed.js
+2026050412-phase35-soft-delete-columns.js
+2026050501-phase40-rename-columns-to-snake-case.js
+2026050502-phase40-add-missing-fk-constraints.js
+2026050503-phase40-unify-decimal-precision.js
+2026050504-phase40-drop-redundant-products-brand.js
+2026050505-phase40-rename-fk-constraints.js
+2026050506-phase40-index-standardization.js
+2026050507-phase40-default-values.js
+2026050508-phase40-null-consistency.js
+2026050509-phase40-check-constraints.js
+2026050510-phase40-add-missing-soft-delete.js
+2026050511-phase40-varchar-lengths.js
+2026050512-phase40-timestamp-to-datetime.js
+2026051501-remove-stripe-customer-id.js
+2026051601-fix-schema-indexes-constraints.js
+2026051602-optimize-varchar-lengths.js
+2026051603-rename-recently-viewed-table.js
 2026051605-add-table-comments.js
 2026051606-drop-columns-rename-indexes-checks.js
 2026051607-rename-remaining-indexes.js
@@ -107,6 +110,16 @@
 2026052001-drop-import-logs.js
 2026052002-drop-newsletter-email-campaign.js
 2026052003-drop-collections.js
+2026052101-drop-review-feedbacks.js
+2026052102-drop-banners-and-news.js
+2026052103-drop-loyalty.js
+2026052104-drop-warranty-tables.js
+2026052105-drop-banners-and-news.js
+2026052106-drop-loyalty.js
+2026052107-drop-warranty-tables.js
+2026052201-add-is-active-to-categories.js
+2026052202-add-fields-to-brands.js
+2026052203-drop-audit-logs.js
 ```
 
 ---
@@ -124,27 +137,35 @@
 | **i18n**             | `2026051611`              | Column-per-locale: `name_vi`/`name_en`, `description_vi`/`description_en` cho 6 bảng (products, categories, brands, news, banners)                                                                        |
 | **Cleanup**          | `2026051601`–`2026051615` | Index/constraint rename, optimize varchar, recently-viewed rename, table comments, drop columns, standardize column types, remove support_chat, add specifications_en                                     |
 | **Specs & variants** | `2026051700`–`2026051704` | `value_en` to product_specifications, `attributes_en` to product_variants, restore images table, rename reviews → product_reviews, drop brand_categories                                                  |
-| **Drop phase**       | `2026052001`–`2026052003` | Drop `import_logs`, drop `email_campaigns`+`newsletter_subscribers`, drop `collections`+`product_collections`                                                                                             |
+| **Drop phase 1**     | `2026052001`–`2026052003` | Drop `import_logs`, drop `email_campaigns`+`newsletter_subscribers`, drop `collections`+`product_collections`                                                                                             |
+| **Drop phase 2**     | `2026052101`–`2026052107` | Drop `review_feedbacks`, drop `banners`+`news` (×2), drop `loyalty_histories` (×2), drop `warranty_packages`+`product_warranties` (×2) — 105/106/107 là re-run của 102/103/104                            |
+| **Brand/Category**   | `2026052201`–`2026052203` | Add `is_active` to `categories`, add `description_vi/en`+`website`+`is_active` to `brands`, drop `audit_logs`                                                                                             |
 
 ---
 
 # 5. Migrations gần nhất (cuối cùng)
 
-| File                                              | Nội dung                                                                  |
-| ------------------------------------------------- | ------------------------------------------------------------------------- |
-| `2026052003-drop-collections.js`                  | Drop `product_collections` và `collections` (module đã xóa khỏi codebase) |
-| `2026052002-drop-newsletter-email-campaign.js`    | Drop `email_campaigns`, `newsletter_subscribers`                          |
-| `2026052001-drop-import-logs.js`                  | Drop `import_logs`                                                        |
-| `2026051704-drop-brand-categories.js`             | Drop bảng `brand_categories`                                              |
-| `2026051703-rename-reviews-to-product-reviews.js` | Rename `reviews` → `product_reviews`                                      |
+| File                                        | Nội dung                                                                        |
+| ------------------------------------------- | ------------------------------------------------------------------------------- |
+| `2026052203-drop-audit-logs.js`             | Drop `audit_logs`                                                               |
+| `2026052202-add-fields-to-brands.js`        | Add `description_vi`, `description_en`, `website`, `is_active` to `brands`      |
+| `2026052201-add-is-active-to-categories.js` | Add `is_active` to `categories`                                                 |
+| `2026052107-drop-warranty-tables.js`        | Re-run: drop `product_warranties`, `warranty_packages`                          |
+| `2026052106-drop-loyalty.js`                | Re-run: drop `loyalty_histories`                                                |
+| `2026052105-drop-banners-and-news.js`       | Re-run: drop `banners`, `news`                                                  |
+| `2026052104-drop-warranty-tables.js`        | Drop `product_warranties`, `warranty_packages` (loyalty/warranty module đã xóa) |
+| `2026052103-drop-loyalty.js`                | Drop `loyalty_histories`                                                        |
+| `2026052102-drop-banners-and-news.js`       | Drop `banners`, `news`                                                          |
+| `2026052101-drop-review-feedbacks.js`       | Drop `review_feedbacks`                                                         |
 
-**Models đã drop hoàn toàn:** `Collection`, `EmailCampaign`, `NewsletterSubscriber`, `ImportLog` — không reference lại trong code mới.
+**Models đã drop hoàn toàn:** `Collection`, `EmailCampaign`, `NewsletterSubscriber`, `ImportLog`, `Banner`, `News`, `LoyaltyHistory`, `WarrantyPackage`, `ProductWarranty` — không reference lại trong code mới.
 
 ---
 
 # 6. Sequence gaps đã biết
 
 - `2026051604` — không tồn tại (số bị bỏ qua khi tạo, không có migration bị xóa)
+- `2026052105`/`2026052106`/`2026052107` — trùng nội dung với `2026052102`/`2026052103`/`2026052104` (re-run migrations; cả 2 bộ đều có `down()` — chạy cả 6 là bình thường)
 
 ---
 
@@ -161,10 +182,10 @@ npx sequelize-cli db:migrate:undo --name <file>  # Undo migration cụ thể
 **Sau khi thêm migration mới và chạy:**
 
 ```bash
-mysqldump --no-data techstore > backend/data/migration_full.sql
+mysqldump --no-data techstore > backend/data/migration.sql
 ```
 
-Cập nhật `data/migration_full.sql` để giữ schema snapshot đồng bộ.
+Cập nhật `data/migration.sql` để giữ schema snapshot đồng bộ.
 
 ---
 
@@ -222,7 +243,7 @@ module.exports = {
 
 # 10. Schema snapshot
 
-File `backend/data/migration_full.sql` chứa toàn bộ schema hiện tại (sau khi chạy tất cả migrations). Dùng để:
+File `backend/data/migration.sql` chứa toàn bộ schema hiện tại (sau khi chạy tất cả migrations). Dùng để:
 
 - Tham chiếu nhanh không cần chạy migrations
 - Khởi tạo DB trên môi trường mới

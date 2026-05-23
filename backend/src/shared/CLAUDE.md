@@ -73,16 +73,13 @@ eventBus.publish({ type: 'order.created', payload: { orderId }, occurredAt: new 
 - `Promise.allSettled` — 1 handler lỗi không block handlers khác
 - `eventBus.clear()` — xóa toàn bộ subscribers (dùng trong test isolation)
 
-**Events hiện tại (6):**
+**Events hiện tại (3):**
 
 | Event                 | Publisher | Subscriber                    |
 | --------------------- | --------- | ----------------------------- |
 | `order.created`       | orders    | inventory (log change)        |
 | `order.cancelled`     | orders    | inventory (restore stock log) |
 | `auth.userRegistered` | auth      | — (publish-only hiện tại)     |
-| `order.delivered`     | orders    | — (publish-only hiện tại)     |
-| `payment.succeeded`   | payment   | — (publish-only hiện tại)     |
-| `inventory.restocked` | inventory | — (publish-only hiện tại)     |
 
 ---
 

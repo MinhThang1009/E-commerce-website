@@ -235,12 +235,6 @@ describe('cartService.js — getCartCount (lines 149-150)', () => {
 });
 
 // ════════════════════════════════════════════════════════════════════════════════
-// cartService.js line 191 — addToCart với warrantyPackageIds không hợp lệ
-// ════════════════════════════════════════════════════════════════════════════════
-
-describe('cartService.js — addToCart with invalid warrantyPackageIds (line 191)', () => {});
-
-// ════════════════════════════════════════════════════════════════════════════════
 // uploadService.js line 120 — path traversal: filePath doesn't start with uploadDir
 // ════════════════════════════════════════════════════════════════════════════════
 
@@ -570,50 +564,7 @@ describe('paymentService.js — _clearUserCart (lines 65-71)', () => {
 });
 
 // ════════════════════════════════════════════════════════════════════════════════
-// contentService.js line 43 — getBannerById banner not found → throw 404
-// ════════════════════════════════════════════════════════════════════════════════
-
-describe('contentService.js — getBannerById (line 43)', () => {
-  function makeContentService(repoOverrides = {}) {
-    const ContentService = require('@modules/content/services/content-service');
-    return new ContentService({
-      contentRepository: {
-        findAllBanners: jest.fn().mockResolvedValue([]),
-        findBannerById: jest.fn().mockResolvedValue(null),
-        createBanner: jest.fn(),
-        saveBanner: jest.fn(),
-        deleteBanner: jest.fn(),
-        findOrCreateSubscriber: jest.fn(),
-        saveSubscriber: jest.fn(),
-        createFeedback: jest.fn(),
-        findAllNews: jest.fn(),
-        findNewsBySlug: jest.fn(),
-        ...repoOverrides,
-      },
-      emailGateway: {
-        sendAdminFeedbackNotification: jest.fn().mockResolvedValue(),
-      },
-
-      eventBus: { publish: jest.fn() },
-      logger: { info: jest.fn(), error: jest.fn(), warn: jest.fn(), debug: jest.fn() },
-      adminEmail: 'admin@test.com',
-    });
-  }
-
-  it('banner không tồn tại → throw AppError 404 (line 43)', async () => {
-    const service = makeContentService({
-      findBannerById: jest.fn().mockResolvedValue(null),
-    });
-
-    await expect(service.getBannerById({ id: 999 })).rejects.toMatchObject({
-      statusCode: 404,
-      message: 'content.bannerNotFound',
-    });
-  });
-});
-
-// ════════════════════════════════════════════════════════════════════════════════
-// contentService.js line 266 — fire-and-forget admin email error handler in submitFeedback
+// contentService.js — fire-and-forget admin email error handler in submitFeedback
 // Note: sendFeedback is the method name in the service
 // ════════════════════════════════════════════════════════════════════════════════
 

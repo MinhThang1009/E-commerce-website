@@ -276,7 +276,6 @@ jest.mock('@/components/common', () => {
       onClick?: () => void;
       disabled?: boolean;
     }) => R.createElement('button', { onClick, disabled, 'data-testid': 'premium-btn' }, children),
-    BannerDisplay: () => null,
     LoadingSpinner: () => R.createElement('div', { 'data-testid': 'loading-spinner' }),
     Select: ({ options }: { options: { value: string; label: string }[] }) =>
       R.createElement('div', { 'data-testid': 'select' }),
@@ -443,7 +442,6 @@ jest.mock('@/routes/paths', () => ({
     ORDERS: '/orders',
     LOGIN: '/login',
     HOME: '/',
-    NEWS: '/news',
   },
   buildRoute: {
     productDetail: (id: string) => `/products/${id}`,

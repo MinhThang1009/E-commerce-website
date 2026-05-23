@@ -1235,7 +1235,6 @@ class CatalogService {
    * 3. **ProductSpecifications** — thông số kỹ thuật dạng bảng (tên, giá trị, nhóm, thứ tự)
    * 4. **ProductAttributes** — thuộc tính filter (màu, size, RAM, ...) — từ `parentAttributes` hoặc `attributes`
    * 5. **ProductVariants** — các biến thể (SKU, giá, stock, attributes, ...) — auto-generate SKU nếu không truyền
-   * 6. **WarrantyPackages** — gói bảo hành được gắn kèm sản phẩm (validate tất cả IDs tồn tại)
    *
    * Nếu bất kỳ bước nào fail → toàn bộ transaction rollback, không có entity nào được tạo.
    * Sau khi commit → fetch lại product với full associations để trả về.
@@ -1256,10 +1255,8 @@ class CatalogService {
    * @param {object[]} [params.payload.parentAttributes] - Thuộc tính cha [{name, type, values, required}]
    * @param {object[]} [params.payload.attributes] - Thuộc tính trực tiếp [{name, type, values, ...}]
    * @param {object[]} [params.payload.variants] - Biến thể [{sku, name, price, stockQuantity, attributes, ...}]
-   * @param {number[]} [params.payload.warrantyPackageIds] - Danh sách ID gói bảo hành
    * @returns {Promise<object>} Sản phẩm vừa tạo với full associations
    * @throws {AppError} 400 nếu có `categoryIds` không tồn tại trong DB
-   * @throws {AppError} 400 nếu có `warrantyPackageIds` không tồn tại trong DB
    */
   async createProduct({ payload }) {
     const isVariantProduct = Boolean(payload.variants && payload.variants.length > 0);
@@ -1396,7 +1393,6 @@ class CatalogService {
    *   - `categoryIds`: xóa hết rồi gắn lại toàn bộ (validate IDs tồn tại)
    *   - `attributes`: xóa hết rồi tạo lại
    *   - `variants`: xóa hết rồi tạo lại
-   *   - `warrantyPackageIds`: xóa hết rồi gắn lại (truyền mảng rỗng → xóa hết)
    *
    * Toàn bộ thao tác trong 1 transaction. Sau khi commit:
    *   - Fetch lại product với full associations để trả về
@@ -1406,7 +1402,7 @@ class CatalogService {
    * @param {object} params.patch - Dữ liệu cần cập nhật (chỉ trường nào truyền vào mới update)
    * @returns {Promise<object>} Sản phẩm sau khi cập nhật với full associations
    * @throws {AppError} 404 nếu không tìm thấy sản phẩm
-   * @throws {AppError} 400 nếu `categoryIds` hoặc `warrantyPackageIds` chứa ID không tồn tại
+   * @throws {AppError} 400 nếu `categoryIds` chứa ID không tồn tại
    */
   async updateProduct({ id, patch }) {
     const product = await this.catalogRepository.findProductByPk(id);

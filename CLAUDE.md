@@ -118,11 +118,11 @@ Dùng `Glob` tool — deny rules tự chặn node_modules, không cần filter t
 
 ```bash
 # cd backend
-npm run dev                 # Start dev server (port 8888, nodemon)
+npm run dev                 # Start dev server (port 8888, node --watch)
 npm run test                # Run unit tests + coverage (~10s)
 npm run test:fast           # Run unit tests không coverage
 npm run test:integration    # Integration tests (cần MySQL thật, ~50s)
-npm run test:api            # API HTTP tests (cần MySQL thật, ~140s)
+npm run test:api            # API HTTP tests (cần MySQL thật, ~190s)
 npm run test:e2e            # E2E tests (cần MySQL thật, ~20s)
 npm run lint                # ESLint
 npm run lint:strict         # ESLint --max-warnings 0 (dùng trong CI)
@@ -244,7 +244,7 @@ inventory ← orders (subscribe: order.created, order.cancelled → inventory lo
 - **Commit format:** `<type>(<scope>): <Vietnamese subject>` — xem `git-workflow.md`.
 - **Pre-commit hook** (`scripts/audit-architecture.sh`) block: service import Sequelize trực tiếp, controller touch ORM, cross-module deep import. Fix violation, không bypass `--no-verify`.
 - **New backend module:** `node scripts/new-module.mjs --name=<name> --type=simple|ddd-lite` — không copy thủ công.
-- **Rate limiters:** `chatbotLimiter` = 20 req/60s (dev: 200). Test AI → dùng `NODE_ENV=development`.
+- **Rate limiters:** `chatbotLimiter` = 20 req/60s (không có dev override).
 - **Vector Store:** auto-rebuild khi vector count lệch >5% so với active products. Log "Rebuilding vector store..." là bình thường.
 - **Cron Jobs:** daily 2AM + weekly Sunday 3AM — không disable trừ khi có lý do rõ ràng.
 - **Models đã drop hoàn toàn:** `Collection`, `EmailCampaign`, `NewsletterSubscriber`, `ImportLog`, `Banner`, `News`, `LoyaltyHistory`, `WarrantyPackage`, `ProductWarranty` — không reference lại.
@@ -263,12 +263,12 @@ inventory ← orders (subscribe: order.created, order.cancelled → inventory lo
 
 | Suite | Suites | Tests | Runtime | Config |
 |---|---|---|---|---|
-| BE Unit Tests | 166 | 3.905 | ~10s | `jest.config.js` |
-| BE Integration Tests | 42 | 228 | ~50s | `jest.integration.config.js` |
-| BE API HTTP Tests | 45 | 866 | ~140s | `jest.api.config.js` |
-| BE E2E Tests | 5 | 102 | ~20s | `jest.e2e.config.js` |
-| FE Component Tests | 17 | 437 | ~7s | `jest.config.cjs` (frontend/) |
-| **Tổng** | **275** | **5.538** | | |
+| BE Unit Tests | 160 | 3.563 | ~10s | `jest.config.js` |
+| BE Integration Tests | 36 | 184 | ~50s | `jest.integration.config.js` |
+| BE API HTTP Tests | 39 | 700 | ~190s | `jest.api.config.js` |
+| BE E2E Tests | 5 | 100 | ~20s | `jest.e2e.config.js` |
+| FE Component Tests | 18 | 548 | ~9s | `jest.config.cjs` (frontend/) |
+| **Tổng** | **258** | **5.095** | | |
 
 - **BE Coverage (local):** statements 99%, branches 97%, functions 99%, lines 99% (thresholds trong `jest.config.js`)
 - **BE Coverage (CI):** statements ≥97%, lines ≥97%, branches ≥85%, functions ≥95%
@@ -284,7 +284,7 @@ inventory ← orders (subscribe: order.created, order.cancelled → inventory lo
 CLAUDE.md                                    ← File này: navigation entry point
 STRUCTURE.md                                 ← Architecture, tech stack, data flow, schema
 DIAGRAMS.md                                  ← Mermaid diagrams (Use Case, Sequence, ERD, Flow)
-TESTING_STRATEGY.md                          ← Chiến lược test 5 tầng, 5.538 tests
+TESTING_STRATEGY.md                          ← Chiến lược test 5 tầng, 5.095 tests
 README.md                                    ← Project README, setup instructions
 
 backend/CLAUDE.md                            ← BE architecture, DI pattern, request trace
@@ -292,8 +292,8 @@ backend/src/
   config/CLAUDE.md                           ← sequelize, swagger
   constants/CLAUDE.md                        ← Hằng số toàn cục (shipping, OTP, JWT)
   locales/CLAUDE.md                          ← i18n vi.json / en.json, conventions
-  models/CLAUDE.md                           ← 27 models, associations, conventions
-  migrations/CLAUDE.md                       ← 79 migrations, phases, patterns
+  models/CLAUDE.md                           ← 26 models, associations, conventions
+  migrations/CLAUDE.md                       ← 80 migrations, phases, patterns
   middlewares/CLAUDE.md                      ← authenticate, authorize, rate-limiter
   shared/CLAUDE.md                           ← EventBus, AppError/errors, unit-of-work
   services/CLAUDE.md                         ← email, vector-store, embedding (shared, non-DI)

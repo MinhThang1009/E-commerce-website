@@ -93,7 +93,7 @@ const connectDB = async () => {
 
 // Legacy ensureColumns đã xóa — các cột (google_id, warranty_cost,
 // warranty_package_ids, session_id, user_id nullable) đã có trong
-// migration_full.sql và migrations 2026050501+. Không cần ALTER inline.
+// migration.sql và migrations 2026050501+. Không cần ALTER inline.
 
 // Kiểm tra và tự động rebuild vector store nếu lệch > 5% so với DB
 const checkVectorStoreSync = async () => {

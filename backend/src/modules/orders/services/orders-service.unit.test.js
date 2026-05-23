@@ -8,8 +8,6 @@ describe('OrdersService', () => {
   let service;
 
   const constants = {
-    POINTS_EARN_RATE: 1000,
-    POINTS_VALUE: 100,
     SHIPPING_FREE_THRESHOLD: 2000000,
   };
 
@@ -44,13 +42,9 @@ describe('OrdersService', () => {
       decrementVariantStock: jest.fn().mockResolvedValue(),
       restoreProductStock: jest.fn().mockResolvedValue(),
       restoreVariantStock: jest.fn().mockResolvedValue(),
-      findActiveWarrantyPackagesByIds: jest.fn().mockResolvedValue([]),
       findActiveDiscountCode: jest.fn(),
       incrementDiscountCodeUsage: jest.fn().mockResolvedValue(),
       findUserById: jest.fn(),
-      updateUserPoints: jest.fn().mockResolvedValue(),
-      createLoyaltyHistory: jest.fn().mockResolvedValue(),
-      updateLoyaltyHistoryOrderId: jest.fn().mockResolvedValue(),
       createInventoryLogs: jest.fn().mockResolvedValue(),
       runInTransaction: jest.fn(async (work) => work({ LOCK: { UPDATE: 'FOR UPDATE' } })),
     };
@@ -102,8 +96,6 @@ describe('OrdersService', () => {
         id: 1,
         status: 'shipped',
         items: [],
-        pointsUsed: 0,
-        pointsEarned: 0,
         userId: 1,
         number: 'X',
       });
@@ -119,8 +111,6 @@ describe('OrdersService', () => {
         status: 'pending',
         userId: 1,
         number: 'ORD-1',
-        pointsUsed: 0,
-        pointsEarned: 0,
         items: [
           { productId: 10, variantId: 5, quantity: 2, ProductVariant: variant, Product: null },
         ],

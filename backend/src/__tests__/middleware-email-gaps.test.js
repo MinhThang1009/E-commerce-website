@@ -197,8 +197,6 @@ describe('ordersService.js — cart guest merge branch (lines 106-108)', () => {
   const OrdersService = require('@modules/orders/services/orders-service');
 
   const constants = {
-    POINTS_EARN_RATE: 1000,
-    POINTS_VALUE: 100,
     SHIPPING_FREE_THRESHOLD: 500000,
     SHIPPING_BASE_RATE: 30000,
   };
@@ -234,13 +232,9 @@ describe('ordersService.js — cart guest merge branch (lines 106-108)', () => {
       decrementVariantStock: jest.fn().mockResolvedValue(),
       restoreProductStock: jest.fn().mockResolvedValue(),
       restoreVariantStock: jest.fn().mockResolvedValue(),
-      findActiveWarrantyPackagesByIds: jest.fn().mockResolvedValue([]),
       findActiveDiscountCode: jest.fn(),
       incrementDiscountCodeUsage: jest.fn().mockResolvedValue(),
       findUserById: jest.fn(),
-      updateUserPoints: jest.fn().mockResolvedValue(),
-      createLoyaltyHistory: jest.fn().mockResolvedValue(),
-      updateLoyaltyHistoryOrderId: jest.fn().mockResolvedValue(),
       createInventoryLogs: jest.fn().mockResolvedValue(),
       runInTransaction: jest.fn(async (work) => work({ LOCK: { UPDATE: 'FOR UPDATE' } })),
       ...overrides,
@@ -300,7 +294,6 @@ describe('ordersService.js — cart guest merge branch (lines 106-108)', () => {
           productId: 1,
           variantId: null,
           quantity: 5,
-          warrantyPackageIds: [],
           Product: product,
           ProductVariant: null,
         },
@@ -341,7 +334,7 @@ describe('ordersService.js — cart guest merge branch (lines 106-108)', () => {
       quantity: 5,
       subtotal: 500000,
     });
-    repo.findUserById.mockResolvedValue({ id: 1, email: 'test@test.com', loyaltyPoints: 0 });
+    repo.findUserById.mockResolvedValue({ id: 1, email: 'test@test.com' });
 
     const result = await service.createOrder({
       user: { id: 1, email: 'test@test.com' },
@@ -393,7 +386,6 @@ describe('ordersService.js — cart guest merge branch (lines 106-108)', () => {
           productId: 2,
           variantId: null,
           quantity: 1,
-          warrantyPackageIds: [],
           Product: product,
           ProductVariant: null,
         },
@@ -433,7 +425,7 @@ describe('ordersService.js — cart guest merge branch (lines 106-108)', () => {
       quantity: 1,
       subtotal: 200000,
     });
-    repo.findUserById.mockResolvedValue({ id: 1, email: 'test@test.com', loyaltyPoints: 0 });
+    repo.findUserById.mockResolvedValue({ id: 1, email: 'test@test.com' });
 
     await service.createOrder({
       user: { id: 1, email: 'test@test.com' },
@@ -478,7 +470,6 @@ describe('ordersService.js — cart guest merge branch (lines 106-108)', () => {
     };
     repo.findProductWithDefaultVariant.mockResolvedValue(product);
     repo.lockProduct.mockResolvedValue({ ...product, stockQuantity: 5 });
-    repo.findActiveWarrantyPackagesByIds.mockResolvedValue([]);
     repo.createOrder.mockResolvedValue({
       id: 'ord-4',
       number: 'ORD-004',
@@ -504,7 +495,7 @@ describe('ordersService.js — cart guest merge branch (lines 106-108)', () => {
       quantity: 1,
       subtotal: 100000,
     });
-    repo.findUserById.mockResolvedValue({ id: 1, email: 'u@u.com', loyaltyPoints: 0 });
+    repo.findUserById.mockResolvedValue({ id: 1, email: 'u@u.com' });
 
     // Should NOT throw even when email fails
     const result = await service.createOrder({
@@ -564,7 +555,7 @@ describe('ordersService.js — cart guest merge branch (lines 106-108)', () => {
       ],
     };
     repo.findOrderForCancel.mockResolvedValue(order);
-    repo.findUserById.mockResolvedValue({ id: 1, email: 'cancel@test.com', loyaltyPoints: 0 });
+    repo.findUserById.mockResolvedValue({ id: 1, email: 'cancel@test.com' });
 
     // cancelOrder takes { id, userId, userEmail } — pass userEmail to trigger email send
     await service.cancelOrder({ id: 'ord-c1', userId: 1, userEmail: 'cancel@test.com' });
@@ -601,7 +592,7 @@ describe('ordersService.js — cart guest merge branch (lines 106-108)', () => {
       items: [],
     };
     repo.findOrderByPkWithItemsAndUser.mockResolvedValue(order);
-    repo.findUserById.mockResolvedValue({ id: 1, email: 'u@u.com', loyaltyPoints: 0 });
+    repo.findUserById.mockResolvedValue({ id: 1, email: 'u@u.com' });
 
     await service.updateOrderStatus({ id: 'ord-d1', status: 'delivered' });
 

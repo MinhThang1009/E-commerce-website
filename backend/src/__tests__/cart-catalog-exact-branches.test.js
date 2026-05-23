@@ -24,7 +24,6 @@ function makeCartService() {
     clearCartItems: jest.fn().mockResolvedValue(0),
     findOrCreateActiveCartByUserId: jest.fn(),
     findOrCreateActiveCartBySessionId: jest.fn(),
-    findWarrantyPackagesByIds: jest.fn().mockResolvedValue([]),
     findCartItemsForMerge: jest.fn().mockResolvedValue([]),
     saveCart: jest.fn().mockResolvedValue({}),
     sumCartItemQuantity: jest.fn().mockResolvedValue(0),
@@ -50,13 +49,12 @@ describe('CartService._buildCartResponse — branch coverage', () => {
         id: 1,
         ProductVariant: null, // outer ternary FALSE → evaluate inner
         Product: null, // inner ternary FALSE → price = 0
-        warrantyPackages: null,
         quantity: 2,
       }),
     };
     repo.findCartItemsWithDetails.mockResolvedValue([cartItemRaw]);
     const result = await svc._buildCartResponse({ id: 99 });
-    expect(result.subtotal).toBe(0); // price=0 * quantity=2 + warrantyPrice=0 * 2 = 0
+    expect(result.subtotal).toBe(0); // price=0 * quantity=2 = 0
   });
 });
 
@@ -116,7 +114,6 @@ describe('CartService.validateCart — branch coverage', () => {
           basePrice: 200000,
           defaultVariant: { stockQuantity: 5 },
         },
-        warrantyPackages: [],
       },
     ];
     repo.findActiveCartByUserId.mockResolvedValue(cart);
@@ -362,7 +359,6 @@ describe('CatalogService.createProduct — branch coverage', () => {
     catalogRepo.createProductSpecifications = jest.fn().mockResolvedValue([]);
     catalogRepo.createProductAttributes = jest.fn().mockResolvedValue([]);
     catalogRepo.setProductCategories = jest.fn().mockResolvedValue();
-    catalogRepo.setProductWarrantyPackages = jest.fn().mockResolvedValue();
     catalogRepo.createProduct = jest.fn().mockResolvedValue(product);
     catalogRepo.findProductById = jest.fn().mockResolvedValue({ toJSON: () => ({ ...product }) });
 
@@ -373,7 +369,6 @@ describe('CatalogService.createProduct — branch coverage', () => {
         status: 'active',
         variants: [{ name: 'Large', price: 100000, sku: 'SKU-L' }], // ← v.name truthy
         categories: [],
-        warrantyPackageIds: [],
       });
     } catch (e) {
       // May throw due to incomplete mock — we just need the branch to be hit
@@ -397,7 +392,6 @@ function makeOrdersService() {
     findOrCreateActiveCart: jest.fn(),
     clearCartItems: jest.fn().mockResolvedValue(0),
     findActiveDiscountCode: jest.fn().mockResolvedValue(null),
-    findWarrantyPackagesByIds: jest.fn().mockResolvedValue([]),
     createOrder: jest.fn().mockResolvedValue({ id: 100, number: 'ORD-001' }),
     createOrderItem: jest.fn().mockResolvedValue({ id: 1 }),
     createInventoryLogs: jest.fn().mockResolvedValue([]),
@@ -420,8 +414,6 @@ function makeOrdersService() {
     constants: {
       SHIPPING_FREE_THRESHOLD: 500000,
       SHIPPING_BASE_RATE: 30000,
-      POINTS_EARN_RATE: 1000,
-      POINTS_VALUE: 100,
     },
   });
 }

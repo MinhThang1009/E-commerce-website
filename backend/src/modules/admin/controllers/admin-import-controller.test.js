@@ -119,7 +119,6 @@ jest.mock('@models', () => ({
   CartItem: { destroy: jest.fn() },
   InventoryLog: { create: jest.fn(), findAndCountAll: jest.fn() },
   ChatMessage: { count: jest.fn(), findAll: jest.fn(), findOne: jest.fn() },
-  WarrantyPackage: { findAll: jest.fn(), findByPk: jest.fn() },
   DiscountCode: {
     findAll: jest.fn(),
     findByPk: jest.fn(),

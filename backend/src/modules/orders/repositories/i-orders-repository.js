@@ -4,10 +4,8 @@
  * @module orders
  * @description Data access layer cho orders
  */
-// IOrdersRepository — interface data access cho Orders module DDD-lite.
+// IOrdersRepository định nghĩa interface cho repository của orders module, bao gồm cả cross-module reads (Cart/Product/Variant) để tránh tạo thêm repository trong các module khác chỉ để phục vụ read cho orders.
 // Cover Order CRUD + cart/product reads (cross-module shortcut, sẽ refactor
-// khi inventory/cart module DDD-lite hoàn tất) + DiscountCode/LoyaltyHistory/
-// InventoryLog write.
 
 class IOrdersRepository {
   // -------- Order --------
@@ -103,8 +101,6 @@ class IOrdersRepository {
     throw new Error('not implemented');
   }
 
-  // -------- Warranty --------
-
   // -------- DiscountCode --------
   async findActiveDiscountCode(_code, _options) {
     throw new Error('not implemented');
@@ -113,11 +109,8 @@ class IOrdersRepository {
     throw new Error('not implemented');
   }
 
-  // -------- User loyalty --------
+  // -------- User --------
   async findUserById(_id, _options) {
-    throw new Error('not implemented');
-  }
-  async updateUserPoints(_user, _points, _options) {
     throw new Error('not implemented');
   }
 

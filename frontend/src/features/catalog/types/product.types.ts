@@ -36,7 +36,6 @@ export interface Product {
   brand?: string;
   model?: string;
   condition?: 'new' | 'like-new' | 'used' | 'refurbished';
-  warrantyMonths?: number;
   specifications?: Record<string, string | number | boolean>;
   faqs?: FAQ[];
   // SEO — có thể null nếu admin chưa điền
@@ -143,9 +142,6 @@ export interface ProductFormData {
   // Thuộc tính & Biến thể
   attributes?: ProductAttribute[];
   variants?: ProductVariantFormData[];
-
-  // Bảo hành
-  warrantyMonths?: number;
 
   // Câu hỏi thường gặp
   faqs?: FAQ[];

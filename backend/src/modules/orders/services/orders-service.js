@@ -40,13 +40,7 @@ function _buildTrackingSteps(status) {
 }
 // Orders Service — pure business logic; mọi data access qua repo.
 class OrdersService {
-  constructor({
-    ordersRepository,
-    emailGateway,
-    eventBus,
-    logger,
-    constants, // SHIPPING_FREE_THRESHOLD
-  }) {
+  constructor({ ordersRepository, emailGateway, eventBus, logger, constants }) {
     this.repo = ordersRepository;
     this.emailGateway = emailGateway;
     this.eventBus = eventBus;
@@ -506,10 +500,6 @@ class OrdersService {
           await this.repo.restoreProductStock(item.Product, item.quantity, { transaction });
         }
       }
-
-      // Refund loyalty points used
-
-      // Revoke earned points if any
 
       cancelledOrder = order;
     });

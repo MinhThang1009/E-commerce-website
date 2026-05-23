@@ -189,7 +189,6 @@ jest.mock('@/components/common', () => ({
     disabled?: boolean;
   }) =>
     React.createElement('button', { onClick, disabled, 'data-testid': 'premium-btn' }, children),
-  BannerDisplay: () => null,
 }));
 
 jest.mock('@/components/common/Button', () => ({

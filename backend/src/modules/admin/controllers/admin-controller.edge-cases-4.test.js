@@ -8,7 +8,6 @@
  *   Line 723  — createProduct catch categories: product.setCategories throw
  *   Line 868  — createProduct catch images: ProductImage.bulkCreate throw
  *   Line 892  — createProduct catch specs: ProductSpecification.bulkCreate throw
- *   Line 933  — createProduct catch warranty: WarrantyPackage.findAll throw
  *   Line 978  — createProduct catch vectorStore: vectorStoreService.save throw
  *   Line 1077 — updateProduct: image object path (img.url || img.imageUrl)
  *   Line 1296 — updateProduct translate catch
@@ -167,11 +166,6 @@ jest.mock('@models', () => {
       bulkCreate: jest.fn(),
       destroy: jest.fn(),
     },
-    ProductWarranty: {
-      create: jest.fn(),
-      destroy: jest.fn(),
-      bulkCreate: jest.fn(),
-    },
     ProductCategory: {
       destroy: jest.fn(),
       bulkCreate: jest.fn(),
@@ -190,7 +184,6 @@ jest.mock('@models', () => {
     CartItem: { destroy: jest.fn() },
     Wishlist: { destroy: jest.fn() },
     Address: {},
-    LoyaltyHistory: { create: jest.fn() },
     SearchHistory: {},
     RecentlyViewed: {},
     InventoryLog: {
@@ -201,10 +194,6 @@ jest.mock('@models', () => {
       count: jest.fn(),
       findAll: jest.fn(),
       findOne: jest.fn(),
-    },
-    WarrantyPackage: {
-      findAll: jest.fn(),
-      findByPk: jest.fn(),
     },
     Brand: {},
     sequelize: {
@@ -232,11 +221,9 @@ const {
   ProductVariant,
   ProductAttribute,
   ProductSpecification,
-  ProductWarranty,
   ProductCategory,
   ProductImage,
   Category,
-  WarrantyPackage,
   sequelize,
 } = require('@models');
 
@@ -262,7 +249,6 @@ function makeProduct(overrides = {}) {
     productAttributes: [],
     variants: [],
     productSpecifications: [],
-    warrantyPackages: [],
     ...overrides,
   };
   return {
@@ -532,12 +518,6 @@ describe('POST /api/admin/products — line 892: specs catch khi bulkCreate thro
 });
 
 // ─────────────────────────────────────────────────────────────────────────────
-// createProduct — line 933: catch khi warranty setup throw
-// ─────────────────────────────────────────────────────────────────────────────
-
-describe('POST /api/admin/products — line 933: warranty catch khi WarrantyPackage.findAll throw', () => {});
-
-// ─────────────────────────────────────────────────────────────────────────────
 // createProduct — line 978: catch khi vectorStoreService.save throw
 // ─────────────────────────────────────────────────────────────────────────────
 
@@ -697,7 +677,6 @@ describe('POST /api/admin/products/:id/clone — line 1934: count++ khi tên b�
       productAttributes: [],
       variants: [],
       productSpecifications: [],
-      warrantyPackages: [],
     });
 
     Product.findByPk.mockResolvedValueOnce(originalProduct);
@@ -750,7 +729,6 @@ describe('POST /api/admin/products/:id/clone — lines 1976-1983: clone productA
       productAttributes: [origAttr],
       variants: [],
       productSpecifications: [],
-      warrantyPackages: [],
     });
 
     Product.findByPk.mockResolvedValueOnce(originalProduct);
@@ -777,7 +755,6 @@ describe('POST /api/admin/products/:id/clone — lines 1976-1983: clone productA
       productAttributes: [],
       variants: [],
       productSpecifications: [],
-      warrantyPackages: [],
     });
 
     Product.findByPk.mockResolvedValueOnce(originalProduct);

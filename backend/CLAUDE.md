@@ -39,7 +39,7 @@ Request → Express → Middleware stack → Module Router
 - `src/app.js` là nơi duy nhất khởi tạo và wiring dependencies
 
 **Shared infrastructure** (dùng chung, không thuộc module nào):
-- `src/models/` — 27 Sequelize models
+- `src/models/` — 26 Sequelize models
 - `src/middlewares/` — authenticate, authorize, rate-limiter, detect-locale
 - `src/services/` — email, vector-store, embedding
 - `src/shared/` — EventBus, AppError, UnitOfWork
@@ -138,18 +138,19 @@ app.use('/api' + authModule.basePath, authModule.router);   // → /api/auth
 app.use('/api' + cartModule.basePath, cartModule.router);   // → /api/cart
 ```
 
-Hai modules trả về `mounts` array (nhiều router trên nhiều paths):
+**Chỉ 1 module** trả về `mounts` array (nhiều router trên nhiều paths):
 
 ```js
 // catalog → /api/products, /api/categories, /api/brands
 catalogModule.mounts.forEach(({ basePath, router }) => {
   app.use('/api' + basePath, router);
 });
+```
 
-// content → /api/contact
-contentModule.mounts.forEach(({ basePath, router }) => {
-  app.use('/api' + basePath, router);
-});
+`content` module trả về single `{ basePath, router }` như các module khác:
+
+```js
+app.use('/api' + contentModule.basePath, contentModule.router);  // → /api/contact
 ```
 
 ---
@@ -168,11 +169,9 @@ contentModule.mounts.forEach(({ basePath, router }) => {
 | `src/middlewares/admin-auth.js` | `adminAuthenticate` — riêng cho admin endpoints |
 | `src/middlewares/detect-locale.js` | Parse locale từ `Accept-Language` header hoặc `?lang=` |
 
-**EventBus events hiện có:**
+**EventBus events hiện có (3):**
 - `order.created` — publish bởi orders, subscribe bởi inventory (ghi inventory log)
 - `order.cancelled` — publish bởi orders, subscribe bởi inventory (ghi inventory log; actual stock restore xảy ra inline trong orders service)
-- `order.delivered` — publish bởi orders khi admin/user confirm delivered (hiện chưa có subscriber)
-- `payment.succeeded` — publish bởi payment sau IPN success (update paymentStatus, usedCount discount, clear cart — tất cả inline)
 - `auth.userRegistered` — publish bởi auth (chưa có subscriber)
 
 ---
@@ -215,7 +214,7 @@ contentModule.mounts.forEach(({ basePath, router }) => {
 |---|---|---|---|---|
 | Unit | `src/modules/**/*.test.js`, `src/__tests__/*.test.js`, co-located | `jest.config.js` | Mock | ~10s |
 | Integration | `src/__integration__/*.integration.test.js` | `jest.integration.config.js` | MySQL thật | ~50s |
-| API HTTP | `src/__api__/*.http.test.js` | `jest.api.config.js` | MySQL thật | ~140s |
+| API HTTP | `src/__api__/*.http.test.js` | `jest.api.config.js` | MySQL thật | ~190s |
 | E2E | `src/__e2e__/*.e2e.test.js` | `jest.e2e.config.js` | MySQL thật | ~20s |
 
 Unit tests chạy song song; integration/api/e2e tests `maxWorkers=1`.
@@ -232,7 +231,7 @@ Unit tests chạy song song; integration/api/e2e tests `maxWorkers=1`.
 
 ```bash
 # Từ thư mục backend/
-npm run dev                  # Dev server (port 8888, nodemon)
+npm run dev                  # Dev server (port 8888, node --watch)
 npm run test                 # Unit tests + coverage (~10s)
 npm run test:fast            # Unit tests không coverage
 npm run test:file <pattern>  # Test 1 file theo pattern
@@ -277,8 +276,8 @@ backend/src/
   config/CLAUDE.md                           ← sequelize, swagger config
   constants/CLAUDE.md                        ← Hằng số (shipping, OTP, JWT, cart)
   locales/CLAUDE.md                          ← i18n vi.json / en.json
-  models/CLAUDE.md                           ← 27 models, associations
-  migrations/CLAUDE.md                       ← 79 migrations, schema history
+  models/CLAUDE.md                           ← 26 models, associations
+  migrations/CLAUDE.md                       ← 80 migrations, schema history
   middlewares/CLAUDE.md                      ← authenticate, authorize, rate-limiter
   shared/CLAUDE.md                           ← EventBus, AppError, UnitOfWork
     shared/errors/CLAUDE.md                  ← Error class hierarchy

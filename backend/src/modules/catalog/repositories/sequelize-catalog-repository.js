@@ -626,9 +626,9 @@ class SequelizeCatalogRepository extends ICatalogRepository {
       };
     }
     return this.ProductAttribute.findAll({
-      attributes: ['nameVi', 'nameEn', 'values'],
+      attributes: ['name', 'values'],
       where,
-      group: ['nameVi', 'nameEn', 'values'],
+      group: ['name', 'values'],
       limit: 500,
       raw: true,
     });

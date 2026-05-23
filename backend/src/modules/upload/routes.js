@@ -24,7 +24,7 @@ module.exports = ({ uploadController }) => {
    *         required: true
    *         schema:
    *           type: string
-   *           enum: [avatar, product, news]
+   *           enum: [avatar, product, reviews, categories, brands, users]
    * /api/uploads/{type}/multiple:
    *   post:
    *     summary: Upload nhiều file theo loại

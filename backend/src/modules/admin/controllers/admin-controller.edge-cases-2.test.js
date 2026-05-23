@@ -13,7 +13,6 @@
  *   769-840          — createProduct: variants processing path
  *   857,868          — createProduct: images processing (string url / object url)
  *   878-892          — createProduct: specifications bulkCreate
- *   903-933          — createProduct: warrantyPackages
  *   978              — createProduct: vector store inactive product skip
  *   1077             — updateProduct: stockQuantity-only update (no variants)
  *   1096             — updateProduct: compareAtPrice with comparePrice field
@@ -21,7 +20,6 @@
  *   1175-1235        — updateProduct: variants diff (delete old, update existing, create new)
  *   1241             — updateProduct: stockQuantity update when no variants key
  *   1249-1283        — updateProduct: specifications diff
- *   1288-1301        — updateProduct: warrantyPackageIds update
  *   1331-1332        — updateProduct: vector store inactive product filter
  *   1336             — updateProduct: vector store save
  *   1399-1400        — deleteProduct: rollback on error
@@ -34,7 +32,6 @@
  *   1958-1965        — cloneProduct: attributes (productAttributes) clone
  *   1970-1983        — cloneProduct: variants clone with SKU suffix
  *   1991-1998        — cloneProduct: productSpecifications clone
- *   2006-2011        — cloneProduct: warrantyPackages clone
  *   2030-2032        — cloneProduct: transaction rollback on error
  */
 
@@ -180,11 +177,6 @@ jest.mock('@models', () => {
       bulkCreate: jest.fn(),
       destroy: jest.fn(),
     },
-    ProductWarranty: {
-      create: jest.fn(),
-      destroy: jest.fn(),
-      bulkCreate: jest.fn(),
-    },
     ProductCategory: {
       destroy: jest.fn(),
       bulkCreate: jest.fn(),
@@ -203,7 +195,6 @@ jest.mock('@models', () => {
     CartItem: { destroy: jest.fn() },
     Wishlist: { destroy: jest.fn() },
     Address: {},
-    LoyaltyHistory: { create: jest.fn() },
     SearchHistory: {},
     RecentlyViewed: {},
     InventoryLog: {
@@ -214,10 +205,6 @@ jest.mock('@models', () => {
       count: jest.fn(),
       findAll: jest.fn(),
       findOne: jest.fn(),
-    },
-    WarrantyPackage: {
-      findAll: jest.fn(),
-      findByPk: jest.fn(),
     },
     Brand: {},
     sequelize: {
@@ -247,13 +234,11 @@ const {
   ProductVariant,
   ProductAttribute,
   ProductSpecification,
-  ProductWarranty,
   ProductCategory,
   ProductImage,
   Category,
   Review,
   InventoryLog,
-  WarrantyPackage,
   CartItem,
   Wishlist,
   sequelize,
@@ -281,7 +266,6 @@ function makeProduct(overrides = {}) {
     productAttributes: [],
     variants: [],
     productSpecifications: [],
-    warrantyPackages: [],
     ...overrides,
   };
   return {
@@ -556,7 +540,7 @@ describe('GET /api/admin/dashboard — topProducts với productImages', () => {
 });
 
 // ─────────────────────────────────────────────────────────────────────────────
-// createProduct — comparePrice, categories (auto-create), attributes, variants, images, specs, warranty
+// createProduct — comparePrice, categories (auto-create), attributes, variants, images, specs
 // ─────────────────────────────────────────────────────────────────────────────
 
 describe('POST /api/admin/products — createProduct với các quan hệ', () => {
@@ -830,7 +814,7 @@ describe('POST /api/admin/products — createProduct với các quan hệ', () =
 });
 
 // ─────────────────────────────────────────────────────────────────────────────
-// updateProduct — attributes diff, variants diff, specs diff, warranty
+// updateProduct — attributes diff, variants diff, specs diff
 // ─────────────────────────────────────────────────────────────────────────────
 
 describe('PUT /api/admin/products/:id — updateProduct các diff paths', () => {
@@ -1321,7 +1305,6 @@ describe('POST /api/admin/products/:id/clone — với quan hệ đầy đủ', 
       productAttributes: [],
       variants: [],
       productSpecifications: [],
-      warrantyPackages: [],
     });
 
     Product.findByPk.mockResolvedValueOnce(originalProduct);
@@ -1347,7 +1330,6 @@ describe('POST /api/admin/products/:id/clone — với quan hệ đầy đủ', 
       productAttributes: [],
       variants: [origVariant],
       productSpecifications: [],
-      warrantyPackages: [],
     });
 
     Product.findByPk.mockResolvedValueOnce(originalProduct);
@@ -1376,7 +1358,6 @@ describe('POST /api/admin/products/:id/clone — với quan hệ đầy đủ', 
       productAttributes: [],
       variants: [],
       productSpecifications: [origSpec],
-      warrantyPackages: [],
     });
 
     Product.findByPk.mockResolvedValueOnce(originalProduct);
@@ -1403,7 +1384,6 @@ describe('POST /api/admin/products/:id/clone — với quan hệ đầy đủ', 
       productAttributes: [],
       variants: [],
       productSpecifications: [],
-      warrantyPackages: [],
     });
 
     Product.findByPk.mockResolvedValueOnce(originalProduct);

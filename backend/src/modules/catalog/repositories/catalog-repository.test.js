@@ -47,7 +47,6 @@ function makeRepo(modelOverrides = {}, seqOverride = null) {
     ProductSpecification: makeModel(),
     Review: makeModel(),
     RecentlyViewed: makeModel(),
-    WarrantyPackage: makeModel(),
     sequelize,
     ...modelOverrides,
   };

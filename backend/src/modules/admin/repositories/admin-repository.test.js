@@ -15,9 +15,6 @@ const mockProductAttributeCreate = jest.fn();
 const mockProductAttributeBulkCreate = jest.fn();
 const mockProductVariantCreate = jest.fn();
 const mockProductVariantBulkCreate = jest.fn();
-const mockProductWarrantyCreate = jest.fn();
-const mockProductWarrantyBulkCreate = jest.fn();
-const mockProductWarrantyDestroy = jest.fn();
 const mockProductCategoryBulkCreate = jest.fn();
 const mockOrderFindAll = jest.fn();
 const mockOrderItemFindAll = jest.fn();
@@ -66,16 +63,10 @@ jest.mock('@models', () => ({
     sum: jest.fn().mockResolvedValue(0),
     destroy: jest.fn(),
   },
-  ProductWarranty: {
-    create: (...args) => mockProductWarrantyCreate(...args),
-    bulkCreate: (...args) => mockProductWarrantyBulkCreate(...args),
-    destroy: (...args) => mockProductWarrantyDestroy(...args),
-  },
   ProductCategory: {
     bulkCreate: (...args) => mockProductCategoryBulkCreate(...args),
     destroy: (...args) => mockProductCategoryDestroy(...args),
   },
-  WarrantyPackage: { findAll: jest.fn().mockResolvedValue([]) },
   User: {
     count: jest.fn().mockResolvedValue(0),
     findAndCountAll: jest.fn().mockResolvedValue({ count: 0, rows: [] }),
@@ -110,7 +101,6 @@ jest.mock('@models', () => ({
     findAll: (...args) => mockChatMessageFindAll(...args),
   },
   Address: {},
-  LoyaltyHistory: {},
   SearchHistory: {},
   RecentlyViewed: {},
   Op: {},
@@ -194,7 +184,6 @@ describe('adminRepository — bulkCreate functions với non-empty options (TRUE
   const specData = [{ key: 'ram', value: '8GB' }];
   const attrData = [{ name: 'Color' }];
   const variantData = [{ sku: 'SKU-1' }];
-  const warrantyData = [{ packageId: 1 }];
   const catData = [{ productId: 1, categoryId: 2 }];
 
   test('bulkCreateProductImages với options → gọi với options', async () => {
@@ -424,9 +413,7 @@ describe('adminRepository — Product queries', () => {
     ProductSpecification,
     ProductAttribute,
     ProductVariant,
-    WarrantyPackage,
     ProductImage,
-    ProductWarranty,
   } = require('@models');
 
   test('findProducts gọi Product.findAndCountAll', async () => {

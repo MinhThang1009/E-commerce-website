@@ -62,10 +62,6 @@ class ICartRepository {
   async findVariantByIdAndProductId(_variantId, _productId) {
     throw new Error('not implemented');
   }
-  async findActiveWarrantyPackagesByIds(_ids) {
-    throw new Error('not implemented');
-  }
-
   async findCartItemsWithDetails(_cartId) {
     throw new Error('not implemented');
   }

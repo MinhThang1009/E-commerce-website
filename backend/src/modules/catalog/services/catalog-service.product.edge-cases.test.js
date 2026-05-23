@@ -31,7 +31,6 @@ jest.mock('@models', () => {
     Brand: { findAll: mockFn(), findByPk: mockFn() },
     ProductAttribute: { findAll: mockFn() },
     ProductSpecification: { findAll: mockFn() },
-    WarrantyPackage: { findAll: mockFn() },
     ProductVariant: { findAll: mockFn() },
     Review: { findAll: mockFn() },
     RecentlyViewed: { upsert: mockFn(), findAll: mockFn(), findOne: mockFn(), create: mockFn() },
@@ -101,7 +100,6 @@ const {
   ProductSpecification,
   Review,
   RecentlyViewed,
-  WarrantyPackage,
   sequelize,
 } = require('@models');
 const eventBus = require('@shared/event-bus');
@@ -116,7 +114,6 @@ const catalogModule = buildCatalogModule({
   ProductSpecification,
   Review,
   RecentlyViewed,
-  WarrantyPackage,
   sequelize,
   eventBus,
   logger,

@@ -36,7 +36,7 @@ Frontend tests xác minh:
 - Real API calls (mock toàn bộ)
 - Backend business logic
 
-**Baseline:** 17 suites, 437 tests, ~7s runtime, **100% coverage** tất cả metrics. (Note: test count may differ slightly after loyalty/warranty removal.)
+**Baseline:** 18 suites, ~7s runtime, **100% coverage** tất cả metrics.
 
 ---
 
@@ -58,6 +58,7 @@ Frontend tests xác minh:
 | `content-pages.test.tsx`          | Contact page, TrackOrder page                                                         |
 | `stores.test.tsx`                 | Cart store, Wishlist store, UI store — actions + state                                |
 | `token-manager.test.tsx`          | Token refresh, auto-logout, deduplication logic                                       |
+| `use-notifications.test.tsx`      | `use-notifications.ts` hook — toast, queuing, dedup logic                             |
 | `user-pages.test.tsx`             | Profile page, Address management                                                      |
 | `utils.test.cjs`                  | Utility functions (CommonJS test runner compat)                                       |
 | `utils.test.tsx`                  | Utility functions — format, error-utils, cn, price-utils                              |

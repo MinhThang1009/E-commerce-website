@@ -76,7 +76,6 @@ jest.mock('@/components/common', () => {
         { onClick, 'data-testid': 'premium-btn', disabled: disabled || isProcessing },
         isProcessing ? processingText : children,
       ),
-    BannerDisplay: () => null,
   };
 });
 

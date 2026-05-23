@@ -164,7 +164,7 @@ describe('localizeEntity — branch coverage (lines 47, 56)', () => {
 
 describe('FIELD_MAPS', () => {
   test('tất cả supported types tồn tại', () => {
-    ['product', 'category', 'brand', 'news', 'banner'].forEach((type) => {
+    ['product', 'category', 'brand'].forEach((type) => {
       expect(FIELD_MAPS[type]).toBeDefined();
       expect(FIELD_MAPS[type].length).toBeGreaterThan(0);
     });
@@ -172,10 +172,5 @@ describe('FIELD_MAPS', () => {
 
   test('product có đủ 5 fields', () => {
     expect(FIELD_MAPS.product).toHaveLength(5);
-  });
-
-  test('banner có 1 field (title)', () => {
-    expect(FIELD_MAPS.banner).toHaveLength(1);
-    expect(FIELD_MAPS.banner[0][0]).toBe('title');
   });
 });

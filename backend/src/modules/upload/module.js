@@ -30,8 +30,6 @@ module.exports = ({ uploadsBaseDir, eventBus, logger } = {}) => {
     users: path.join(baseDir, 'users'),
     categories: path.join(baseDir, 'categories'),
     brands: path.join(baseDir, 'brands'),
-    banners: path.join(baseDir, 'banners'),
-    news: path.join(baseDir, 'news'),
     avatars: path.join(baseDir, 'avatars'),
     temp: path.join(baseDir, 'temp'),
   };

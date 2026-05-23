@@ -6,8 +6,6 @@ const OrdersService = require('./orders-service');
 
 // ─── Constants dùng chung ───────────────────────────────────────────────────
 const CONSTANTS = {
-  POINTS_EARN_RATE: 1000,
-  POINTS_VALUE: 100, // 1 điểm = 100 VNĐ
   SHIPPING_FREE_THRESHOLD: 2000000,
 };
 
@@ -87,9 +85,6 @@ function buildService() {
     restoreProductStock: jest.fn().mockResolvedValue(),
     restoreVariantStock: jest.fn().mockResolvedValue(),
 
-    // warranty
-    findActiveWarrantyPackagesByIds: jest.fn().mockResolvedValue([]),
-
     // cart
     findOrCreateActiveCart: jest.fn(),
     findActiveCartBySessionId: jest.fn().mockResolvedValue(null),
@@ -105,11 +100,7 @@ function buildService() {
     findActiveDiscountCode: jest.fn().mockResolvedValue(null),
     incrementDiscountCodeUsage: jest.fn().mockResolvedValue(),
 
-    // user / loyalty
     findUserById: jest.fn(),
-    updateUserPoints: jest.fn().mockResolvedValue(),
-    createLoyaltyHistory: jest.fn().mockResolvedValue(),
-    updateLoyaltyHistoryOrderId: jest.fn().mockResolvedValue(),
 
     // order
     createOrder: jest.fn(),
@@ -753,8 +744,6 @@ describe('OrdersService › createOrder', () => {
     expect(repo.clearCartItems).not.toHaveBeenCalled();
   });
 
-  // ── Loyalty points ─────────────────────────────────────────────────────────
-
   // ── Cart flow ──────────────────────────────────────────────────────────────
 
   test('cart flow (không có items) — giỏ trống → AppError 400', async () => {
@@ -805,7 +794,6 @@ describe('OrdersService › createOrder', () => {
           quantity: 1,
           Product: product,
           ProductVariant: null,
-          warrantyPackageIds: [],
         },
       ],
     });
@@ -1249,8 +1237,6 @@ describe('OrdersService › cancelOrder', () => {
     expect(repo.restoreVariantStock).toHaveBeenCalledTimes(1);
   });
 
-  // ── Loyalty points refund ──────────────────────────────────────────────────
-
   // ── Email ─────────────────────────────────────────────────────────────────
 
   test('có userEmail → gửi email hủy đơn', async () => {
@@ -1305,7 +1291,6 @@ describe('OrdersService › createOrder — cart merge (item trùng)', () => {
           quantity: 5,
           Product: product,
           ProductVariant: null,
-          warrantyPackageIds: [],
         },
       ],
     });

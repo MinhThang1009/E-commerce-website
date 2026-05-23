@@ -56,7 +56,6 @@ async function importProduct(entry, brandMap, catMap) {
       visibility: 'public',
       basePrice: entry.basePrice,
       compareAtPrice: entry.compareAtPrice || null,
-      warrantyMonths: entry.warrantyMonths || 12,
       shortDescription: entry.shortDescription || '',
       description: entry.description || '',
       tags: entry.tags || [],

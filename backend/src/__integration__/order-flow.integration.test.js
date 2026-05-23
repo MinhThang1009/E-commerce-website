@@ -1,6 +1,6 @@
 /**
  * Integration tests — Full order flow end-to-end với DB thật.
- * Simulate: Guest cart → Login → Merge → Checkout → Order → Payment → Loyalty
+ * Simulate: Guest cart → Login → Merge → Checkout → Order → Payment
  */
 require('module-alias/register');
 const sequelize = require('@config/sequelize');
@@ -74,7 +74,7 @@ afterAll(async () => {
   if (user) await user.destroy({ force: true });
 });
 
-describe('Full Order Flow — Cart → Order → Payment → Loyalty', () => {
+describe('Full Order Flow — Cart → Order → Payment', () => {
   let cart, order;
   const QTY = 2;
 

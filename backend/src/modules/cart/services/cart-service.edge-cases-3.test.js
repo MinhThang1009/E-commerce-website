@@ -99,9 +99,6 @@ jest.mock('@models', () => {
       destroy: jest.fn().mockResolvedValue(1),
       sum: jest.fn().mockResolvedValue(0),
     },
-    WarrantyPackage: {
-      findAll: jest.fn().mockResolvedValue([]),
-    },
     User: {
       findByPk: jest.fn().mockResolvedValue({ id: 1 }),
     },
@@ -113,7 +110,6 @@ jest.mock('@models', () => {
     ProductAttribute: { findAll: jest.fn().mockResolvedValue([]) },
     ProductSpecification: { findAll: jest.fn().mockResolvedValue([]) },
     ProductImage: { findAll: jest.fn().mockResolvedValue([]) },
-    LoyaltyHistory: { create: jest.fn().mockResolvedValue({}) },
     InventoryLog: { create: jest.fn().mockResolvedValue({}) },
     SearchHistory: { findAll: jest.fn().mockResolvedValue([]) },
     Category: { findAll: jest.fn().mockResolvedValue([]) },
@@ -143,7 +139,7 @@ jest.mock('@models', () => {
 const express = require('express');
 const supertest = require('supertest');
 const buildCartModule = require('@modules/cart/module');
-const { Cart, CartItem, Product, ProductVariant, WarrantyPackage, sequelize } = require('@models');
+const { Cart, CartItem, Product, ProductVariant, sequelize } = require('@models');
 const eventBus = require('@shared/event-bus');
 const logger = require('@utils/logger');
 const { errorHandler } = require('@middlewares/error-handler');
@@ -197,7 +193,6 @@ describe('GET /api/cart — lấy giỏ hàng', () => {
       productId: 1,
       variantId: null,
       quantity: 2,
-      warrantyPackageIds: [],
       Product: {
         id: 1,
         name: 'Laptop Test',
@@ -214,7 +209,6 @@ describe('GET /api/cart — lấy giỏ hàng', () => {
           productId: this.productId,
           variantId: this.variantId,
           quantity: this.quantity,
-          warrantyPackageIds: this.warrantyPackageIds,
           Product: { ...this.Product },
           ProductVariant: null,
         };

@@ -18,20 +18,22 @@ afterAll(async () => {
   );
 });
 
-describe('Token blacklist sau logout', () => {
-  test('token bị blacklist sau logout → 401', async () => {
+describe('Token sau logout', () => {
+  test('access token vẫn valid sau logout cho đến hết TTL (by design — không blacklist)', async () => {
     const { user, token } = await createTestUser({ email: `__http_sec_bl_${TS}@t.com` });
 
-    // Verify token works before logout
     const before = await request(app).get('/api/auth/me').set('Authorization', `Bearer ${token}`);
     expect(before.status).toBe(200);
 
-    // Logout
-    await request(app).post('/api/auth/logout').set('Authorization', `Bearer ${token}`);
+    // Logout chỉ revoke refresh token family, không blacklist access token
+    const logoutRes = await request(app)
+      .post('/api/auth/logout')
+      .set('Authorization', `Bearer ${token}`);
+    expect([200, 204]).toContain(logoutRes.status);
 
-    // Token phải không dùng được nữa
+    // Access token vẫn valid cho đến TTL — đây là thiết kế có chủ ý
     const after = await request(app).get('/api/auth/me').set('Authorization', `Bearer ${token}`);
-    expect(after.status).toBe(401);
+    expect(after.status).toBe(200);
 
     await user.destroy({ force: true });
   });

@@ -5,16 +5,7 @@
  */
 require('module-alias/register');
 const { app, request, createTestUser, createTestProduct } = require('./http-setup');
-const {
-  User,
-  Category,
-  Brand,
-  Order,
-  OrderItem,
-  LoyaltyHistory,
-  Cart,
-  CartItem,
-} = require('@models');
+const { User, Category, Brand, Order, OrderItem, Cart, CartItem } = require('@models');
 const { Op } = require('sequelize');
 
 const TS = Date.now();
@@ -67,12 +58,6 @@ beforeAll(async () => {
 });
 
 afterAll(async () => {
-  // Dọn LoyaltyHistory của cả 3 users
-  const userIds = [userA?.id, userB?.id, admin?.id].filter(Boolean);
-  if (userIds.length) {
-    await LoyaltyHistory.destroy({ where: { userId: { [Op.in]: userIds } }, force: true });
-  }
-
   // Dọn tất cả orders của userA và userB
   if (userA?.id) {
     const orders = await Order.findAll({ where: { userId: userA.id }, paranoid: false });
@@ -87,6 +72,7 @@ afterAll(async () => {
   }
 
   // Dọn cart
+  const userIds = [userA?.id, userB?.id, admin?.id].filter(Boolean);
   for (const uid of userIds) {
     const carts = await Cart.findAll({ where: { userId: uid } });
     const cartIds = carts.map((c) => c.id);

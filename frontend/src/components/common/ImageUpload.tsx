@@ -15,15 +15,7 @@ interface ImageUploadProps {
   value?: string | string[];
   onChange?: (value: string | string[]) => void;
   multiple?: boolean;
-  type?:
-    | 'products'
-    | 'categories'
-    | 'users'
-    | 'reviews'
-    | 'collections'
-    | 'brands'
-    | 'banners'
-    | 'news';
+  type?: 'products' | 'categories' | 'users' | 'reviews' | 'brands';
   label?: string;
   maxFiles?: number;
   id?: string;

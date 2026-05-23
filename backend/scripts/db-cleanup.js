@@ -12,20 +12,13 @@ const {
   Order,
   OrderItem,
   Wishlist,
-  WarrantyPackage,
-  ProductWarranty,
   AttributeGroup,
   AttributeValue,
   ProductAttributeGroup,
   Image,
-  News,
   Brand,
-  Collection,
-  ProductCollection,
   SearchHistory,
-  LoyaltyHistory,
   RecentlyViewed,
-  Banner,
   DiscountCode,
 } = require('../src/models');
 
@@ -34,12 +27,9 @@ async function cleanup() {
   const transaction = await sequelize.transaction();
 
   try {
-    // Tạm thời tắt kiểm tra khóa ngoại để xóa dữ liệu dễ dàng hơn
     await sequelize.query('SET FOREIGN_KEY_CHECKS = 0', { transaction });
 
     const modelsToClean = [
-      { model: Banner, name: 'Banner' },
-      { model: LoyaltyHistory, name: 'LoyaltyHistory' },
       { model: SearchHistory, name: 'SearchHistory' },
       { model: RecentlyViewed, name: 'RecentlyViewed' },
       { model: Review, name: 'Review' },
@@ -48,10 +38,7 @@ async function cleanup() {
       { model: CartItem, name: 'CartItem' },
       { model: Cart, name: 'Cart' },
       { model: Wishlist, name: 'Wishlist' },
-      { model: ProductWarranty, name: 'ProductWarranty' },
-      { model: WarrantyPackage, name: 'WarrantyPackage' },
       { model: ProductCategory, name: 'ProductCategory' },
-      { model: ProductCollection, name: 'ProductCollection' },
       { model: ProductVariant, name: 'ProductVariant' },
       { model: ProductAttribute, name: 'ProductAttribute' },
       { model: ProductAttributeGroup, name: 'ProductAttributeGroup' },
@@ -59,11 +46,9 @@ async function cleanup() {
       { model: Image, name: 'Image' },
       { model: Product, name: 'Product' },
       { model: Category, name: 'Category' },
-      { model: Collection, name: 'Collection' },
       { model: Brand, name: 'Brand' },
       { model: AttributeValue, name: 'AttributeValue' },
       { model: AttributeGroup, name: 'AttributeGroup' },
-      { model: News, name: 'News' },
       { model: DiscountCode, name: 'DiscountCode' },
     ];
 
@@ -75,7 +60,6 @@ async function cleanup() {
       }
     }
 
-    // Bật lại kiểm tra khóa ngoại
     await sequelize.query('SET FOREIGN_KEY_CHECKS = 1', { transaction });
 
     await transaction.commit();

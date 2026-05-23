@@ -159,23 +159,3 @@ describe('POST /api/cart/sync authenticated', () => {
     expect([200, 400]).toContain(res.status);
   });
 });
-
-// ── POST /api/cart items có warranty package ─────────────────────────────────
-
-describe('POST /api/cart items với warrantyPackageIds', () => {
-  test('warrantyPackageIds không tồn tại → 200 (bỏ qua) hoặc 400', async () => {
-    // Theo cart-validator warrantyPackageIds là optional array
-    // Service xử lý gracefully khi id không hợp lệ
-    const res = await request(app)
-      .post('/api/cart')
-      .set('Authorization', `Bearer ${token}`)
-      .send({
-        productId: product.id,
-        variantId: variant.id,
-        quantity: 1,
-        warrantyPackageIds: [999999999],
-      });
-    // Service có thể bỏ qua warranty không hợp lệ hoặc báo lỗi
-    expect([200, 400, 404]).toContain(res.status);
-  });
-});

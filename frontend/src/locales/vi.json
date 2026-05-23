@@ -798,7 +798,6 @@
       "tax": "Thuế (7%)",
       "total": "Tổng cộng",
       "freeShipping": "Miễn phí",
-      "warrantyFee": "Phí gói bảo hành",
       "loyaltyDiscount": "Giảm từ điểm thưởng",
       "discount": "Giảm giá",
       "distanceInfo": "📍 Khoảng cách: {{distance}} km - Phí: {{fee}}",
@@ -885,20 +884,6 @@
       "discountInfo": "Đã áp dụng mã {{code}}. Giảm {{amount}}",
       "available": "Mã giảm giá có thể dùng:",
       "minOrder": "Đơn tối thiểu {{amount}}"
-    },
-    "loyaltyPoints": {
-      "title": "Điểm thưởng",
-      "available": "Điểm có thể dùng: {{points}}",
-      "useAll": "Dùng hết",
-      "applied": "Đã dùng {{points}} điểm",
-      "discount": "Giảm từ điểm thưởng",
-      "rate": "1 điểm = 1,000đ",
-      "inputPlaceholder": "Số điểm muốn dùng",
-      "appliedInfo": "Đã áp dụng {{points}} điểm. Giảm {{amount}}",
-      "invalidPoints": "Số điểm không hợp lệ",
-      "maxExceeded": "Bạn chỉ có tối đa {{max}} điểm",
-      "exceeds": "Giảm giá bằng điểm không được vượt quá giá trị đơn hàng",
-      "pointsHeader": "Sử dụng điểm tích lũy (Có {{points}} điểm)"
     },
     "installment": {
       "title": "Hướng dẫn Trả góp 0%",
@@ -1032,7 +1017,6 @@
     "totalCol": "Tổng",
     "variantLabel": "Phân loại: {{variant}}",
     "freeShipping": "Miễn phí",
-    "warrantyCost": "Phí gói bảo hành",
     "pointsDiscount": "Đổi điểm",
     "paymentSummary": "Tổng kết thanh toán",
     "subtotalWithCount": "Tạm tính ({{count}} sản phẩm)",
@@ -1092,7 +1076,6 @@
       "brands": "Thương hiệu",
       "orders": "Đơn hàng",
       "users": "Người dùng",
-      "warranty": "Gói bảo hành",
       "discounts": "Mã giảm giá",
       "inventory": "Quản lý kho"
     },
@@ -1375,8 +1358,7 @@
         "pricing": "5. Giá & Kho hàng",
         "category": "6. Phân loại",
         "images": "7. Hình ảnh",
-        "warranty": "8. Bảo hành",
-        "seo": "9. SEO",
+        "seo": "8. SEO",
         "faqs": "10. FAQ"
       },
       "loadingText": "Đang tải thông tin sản phẩm...",
@@ -1493,26 +1475,6 @@
         "howToLabel": "Cách nhập",
         "requirementsLabel": "Yêu cầu",
         "formatLabel": "Định dạng"
-      },
-      "warranty": {
-        "title": "Gói bảo hành",
-        "loading": "Đang tải gói bảo hành...",
-        "loadError": "Lỗi tải dữ liệu",
-        "loadErrorDesc": "Không thể tải danh sách gói bảo hành. Vui lòng thử lại sau.",
-        "infoAlert": "Thông tin bảo hành",
-        "infoAlertDesc": "Khách hàng có thể chọn nhiều gói bảo hành để tăng cường bảo vệ sản phẩm",
-        "emptyAlert": "Chưa có gói bảo hành",
-        "emptyAlertDesc": "Hiện tại chưa có gói bảo hành nào được cấu hình. Vui lòng liên hệ quản trị viên để thêm gói bảo hành.",
-        "selectLabel": "Chọn gói bảo hành",
-        "free": "Miễn phí",
-        "durationLabel": "Thời hạn:",
-        "noteAlert": "Lưu ý",
-        "noteAlertDesc": "Gói bảo hành cơ bản được bao gồm mặc định. Các gói khác là tùy chọn bổ sung.",
-        "followProduct": "Theo sản phẩm",
-        "months": "{{count}} tháng",
-        "year": "1 năm",
-        "yearsMonths": "{{years}} năm {{months}} tháng",
-        "yearsOnly": "{{years}} năm"
       },
       "seo": {
         "titleLabel": "Tiêu đề SEO",
@@ -1809,65 +1771,6 @@
         "asc": "Tăng dần"
       }
     },
-    "warrantyPackages": {
-      "title": "Quản lý gói bảo hành",
-      "addPackage": "Thêm gói bảo hành",
-      "editPackage": "Sửa gói bảo hành",
-      "table": {
-        "name": "Tên gói",
-        "duration": "Thời hạn",
-        "price": "Giá",
-        "description": "Mô tả",
-        "isActive": "Kích hoạt",
-        "actions": "Thao tác",
-        "packageName": "Tên gói",
-        "period": "Thời hạn",
-        "monthsLabel": "{{months}} tháng",
-        "benefits": "Quyền lợi",
-        "moreBenefits": "+{{count}} quyền lợi khác",
-        "order": "Thứ tự",
-        "free": "Miễn phí"
-      },
-      "form": {
-        "name": "Tên gói bảo hành",
-        "namePlaceholder": "Nhập tên gói",
-        "duration": "Thời hạn (tháng)",
-        "durationPlaceholder": "12",
-        "price": "Giá",
-        "pricePlaceholder": "0",
-        "description": "Mô tả",
-        "descriptionPlaceholder": "Mô tả gói bảo hành",
-        "isActive": "Kích hoạt",
-        "nameRequired": "Vui lòng nhập tên gói bảo hành",
-        "durationRequired": "Vui lòng nhập thời hạn",
-        "descriptionRequired": "Vui lòng nhập mô tả",
-        "priceRequired": "Vui lòng nhập giá",
-        "sortOrder": "Thứ tự hiển thị",
-        "sortOrderRequired": "Vui lòng nhập thứ tự",
-        "coverage": "Quyền lợi bảo hành",
-        "coverageRequired": "Vui lòng nhập quyền lợi",
-        "coveragePlaceholder": "Mỗi dòng là một quyền lợi"
-      },
-      "messages": {
-        "addSuccess": "Thêm gói bảo hành thành công",
-        "editSuccess": "Cập nhật gói bảo hành thành công",
-        "deleteSuccess": "Xóa gói bảo hành thành công",
-        "deleteError": "Không thể xóa gói bảo hành",
-        "loadError": "Không thể tải danh sách gói bảo hành",
-        "free": "Miễn phí",
-        "createSuccess": "Tạo gói bảo hành thành công"
-      },
-      "subtitle": "Tạo và quản lý các gói bảo hành cho sản phẩm",
-      "deleteTitle": "Xóa gói bảo hành",
-      "deleteConfirm": "Bạn có chắc chắn muốn xóa gói bảo hành này?",
-      "totalItems": "{{range0}}-{{range1}} của {{total}} gói bảo hành",
-      "createPackage": "Tạo gói bảo hành",
-      "createPackageModal": "Tạo gói bảo hành mới",
-      "status": {
-        "active": "Hoạt động",
-        "paused": "Tạm dừng"
-      }
-    },
     "userDetail": {
       "notFound": "Không tìm thấy người dùng hoặc có lỗi xảy ra",
       "backToList": "Quay lại danh sách",
@@ -2004,13 +1907,6 @@
     "remainingStock": "Còn: {{count}}",
     "priceRange": "Giá từ {{min}} đến {{max}}",
     "stockAvailable": "Còn {{count}} sản phẩm",
-    "warrantyTitle": "Chọn gói bảo hành",
-    "warrantyFree": "Miễn phí",
-    "warrantyDuration": "Thời gian: {{months}} tháng",
-    "warrantyCollapse": "Thu gọn",
-    "warrantyExpand": "Xem chi tiết",
-    "warrantyTotal": "Tổng tiền bảo hành:",
-    "warrantyNote": "Gói bảo hành cơ bản được bao gồm miễn phí với mọi sản phẩm. Các gói bảo hành khác là tùy chọn bổ sung để tăng cường bảo vệ sản phẩm của bạn.",
     "faq": "Câu hỏi thường gặp",
     "viewLargeImage": "Xem ảnh lớn",
     "selectAttributesRequired": "Vui lòng chọn đầy đủ các thuộc tính để mua hàng",
@@ -2442,7 +2338,6 @@
       "info": "Thông tin cá nhân",
       "password": "Đổi mật khẩu",
       "orders": "Đơn hàng",
-      "loyalty": "Điểm tích lũy",
       "addresses": "Sổ địa chỉ"
     },
     "info": {
@@ -2487,25 +2382,6 @@
       "subtitle": "Theo dõi lịch sử mua hàng của bạn",
       "description": "Xem toàn bộ lịch sử đơn hàng của bạn",
       "viewAll": "Xem đơn hàng"
-    },
-    "loyalty": {
-      "title": "Điểm tích lũy",
-      "subtitle": "Lịch sử tích lũy và sử dụng điểm của bạn",
-      "totalPoints": "Tổng điểm hiện tại",
-      "tableDate": "Ngày",
-      "tableType": "Loại",
-      "tablePoints": "Số điểm",
-      "tableDesc": "Mô tả",
-      "typeEarn": "Tích điểm",
-      "typeSpend": "Sử dụng",
-      "typeRefund": "Hoàn điểm",
-      "typeAdjust": "Điều chỉnh",
-      "noHistory": "Chưa có lịch sử giao dịch điểm",
-      "policyTitle": "Chính sách tích điểm",
-      "policy1": "Tích lũy 1 điểm cho mỗi 100,000đ giá trị đơn hàng khi giao hàng thành công.",
-      "policy2": "Mỗi 1 điểm tương ứng với 1,000đ khi sử dụng để thanh toán đơn hàng.",
-      "policy3": "Điểm không có giá trị quy đổi thành tiền mặt.",
-      "pointsDisplay": "{{points}} Điểm"
     },
     "addresses": {
       "title": "Địa chỉ đã lưu",
@@ -3667,9 +3543,6 @@
     "notFound": "Không tìm thấy tài nguyên yêu cầu.",
     "server": "Lỗi server. Vui lòng thử lại sau.",
     "unknown": "Đã xảy ra lỗi không xác định."
-  },
-  "banner": {
-    "exploreNow": "Khám phá ngay"
   },
   "editor": {
     "placeholder": "Nhập nội dung...",

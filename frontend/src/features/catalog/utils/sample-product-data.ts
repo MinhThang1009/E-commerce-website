@@ -100,11 +100,6 @@ export const SAMPLE_LAPTOP_DATA: Record<string, unknown> = {
   // Shipping
   freeShipping: true,
   shippingClass: 'standard',
-
-  // Warranty
-  warrantyPeriod: 12,
-  warrantyType: 'manufacturer',
-  warrantyDescription: 'Bảo hành chính hãng Apple 12 tháng toàn cầu',
 };
 
 export const SAMPLE_LAPTOP_ATTRIBUTES = [

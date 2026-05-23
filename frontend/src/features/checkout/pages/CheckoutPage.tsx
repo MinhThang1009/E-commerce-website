@@ -297,8 +297,6 @@ const CheckoutPage: React.FC = () => {
 
   const subtotal = items.reduce((sum, item) => sum + item.price * item.quantity, 0);
 
-  const warrantyTotal = items.reduce((sum: number) => sum, 0);
-
   // Tính phí vận chuyển theo khoảng cách, nhưng miễn phí nếu subtotal >= ngưỡng (đồng bộ backend)
   let shippingCost = 0;
   let finalDistance = 0;
@@ -338,8 +336,7 @@ const CheckoutPage: React.FC = () => {
   const tax = 0; // Thuế 0% - không áp dụng thuế theo yêu cầu
   const discountAmount = appliedDiscount ? appliedDiscount.amount : 0;
 
-  // Tính giảm giá theo điểm (1 điểm = 1.000 VND)
-  const total = subtotal + warrantyTotal + shippingCost + tax - discountAmount;
+  const total = subtotal + shippingCost + tax - discountAmount;
 
   // Xử lý thay đổi input trong form
   const handleInputChange = (name: string, value: string) => {
@@ -1129,12 +1126,6 @@ const CheckoutPage: React.FC = () => {
                         : formatPrice(shippingCost)}
                     </span>
                   </div>
-                  {warrantyTotal > 0 && (
-                    <div className="flex justify-between text-neutral-600 dark:text-neutral-400">
-                      <span>{t('checkout.orderSummary.warrantyFee')}</span>
-                      <span>{formatPrice(warrantyTotal)}</span>
-                    </div>
-                  )}
                   {appliedDiscount && (
                     <div className="flex justify-between text-green-600 font-medium">
                       <span>

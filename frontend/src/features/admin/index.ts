@@ -7,7 +7,7 @@
  * Tất cả admin pages nằm trong features/admin/pages/<domain>/:
  *   - features/admin/pages/          → Dashboard, Users, Inventory, DiscountCodes
  *   - features/admin/pages/catalog/  → Products, Categories, Brands
- *   - features/admin/pages/content/  → News, Banners
+ *   - features/admin/pages/content/  → (removed — only feedback remains)
  *   - features/admin/pages/orders/   → OrdersPage
  */
 // Barrel export feature admin — public surface

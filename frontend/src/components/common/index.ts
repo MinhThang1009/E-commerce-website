@@ -25,8 +25,6 @@ export { default as ThemeToggle } from './ThemeToggle';
 export { default as RichTextEditor } from './RichTextEditor';
 export { default as EnhancedRichTextEditor } from './EnhancedRichTextEditor';
 
-export { default as BannerDisplay } from './BannerDisplay';
-
 // Các component tiện ích mới
 export * from './LoadingState';
 export * from './ErrorState';

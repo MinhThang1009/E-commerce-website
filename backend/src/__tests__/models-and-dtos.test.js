@@ -1,15 +1,10 @@
 ﻿/**
  * models.and.dtos.extra.test.js
  *
- * Tests for model virtual fields and DTOs at low coverage:
- *   - src/models/banner.js              — virtual field `title` getter/setter (66%)
+ * Tests for DTOs at low coverage:
  *   - src/modules/users/dtos/usersDto.js  — toUserDto / toAddressDto (71%)
  *   - src/modules/auth/dtos/authDto.js    — toAuthUserDto (75%)
  *   - src/modules/payment/domain/events/PaymentFailedEvent.js — constructor (50%)
- *
- * Strategy for banner.js: mock sequelize.define to capture field definitions,
- * then invoke the virtual field getter/setter directly (same pattern used in
- * model.hooks.additional.test.js).
  */
 
 process.env.NODE_ENV = 'test';
@@ -50,10 +45,6 @@ function loadModelCapture(modelPath) {
 
   return { fields: capturedFields };
 }
-
-// ════════════════════════════════════════════════════════════════════════════
-// banner.js — virtual field `title` getter and setter
-// ════════════════════════════════════════════════════════════════════════════
 
 // ════════════════════════════════════════════════════════════════════════════
 // usersDto.js — toUserDto và toAddressDto

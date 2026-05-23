@@ -42,9 +42,7 @@ function makeRepo(overrides = {}) {
     ProductVariant: makeModel(),
     User: makeModel(),
     DiscountCode: makeModel(),
-    LoyaltyHistory: makeModel(),
     InventoryLog: makeModel(),
-    WarrantyPackage: makeModel(),
     sequelize,
     ...overrides,
   };
@@ -215,16 +213,12 @@ describe('createInventoryLogs', () => {
   });
 });
 
-// ─── findActiveWarrantyPackagesByIds — branch: không truyền options ────────────
-
-describe('findActiveWarrantyPackagesByIds', () => {});
-
 // ─── findUserById — branch: không truyền options ─────────────────────────────
 
 describe('findUserById', () => {
   it('gọi User.findByPk với id và default options {} khi không truyền options', async () => {
     const { repo, deps } = makeRepo();
-    const user = { id: 3, loyaltyPoints: 100 };
+    const user = { id: 3 };
     deps.User.findByPk.mockResolvedValue(user);
 
     const result = await repo.findUserById(3);

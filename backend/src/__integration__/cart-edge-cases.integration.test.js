@@ -4,16 +4,7 @@
  */
 require('module-alias/register');
 const sequelize = require('@config/sequelize');
-const {
-  User,
-  Cart,
-  CartItem,
-  Product,
-  ProductVariant,
-  Category,
-  Brand,
-  WarrantyPackage,
-} = require('@models');
+const { User, Cart, CartItem, Product, ProductVariant, Category, Brand } = require('@models');
 const { Op } = require('sequelize');
 
 const SequelizeCartRepository = require('@modules/cart/repositories/sequelize-cart-repository');
@@ -28,7 +19,6 @@ function makeService() {
     CartItem,
     Product,
     ProductVariant,
-    WarrantyPackage,
     sequelize,
   });
   return new CartService({

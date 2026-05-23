@@ -81,10 +81,12 @@ import { ProtectedRoute, AdminRoute, PublicOnlyRoute } from '@/features/auth';
 ## Barrel export
 
 ```ts
-// common/index.ts exports tất cả common components
+// common/index.ts export phần lớn common components — dùng barrel khi có thể
 import { Button, Modal, PremiumButton, Card, Badge } from '@components/common';
 // hoặc: import { Button } from '@/components/common';
 ```
+
+> **Các component KHÔNG có trong barrel** (import trực tiếp): `SimpleRichTextEditor`, `EditorErrorBoundary`, `SearchBar`, `ImageUpload`, `AddressPicker`, `FeedbackModal`.
 
 ---
 

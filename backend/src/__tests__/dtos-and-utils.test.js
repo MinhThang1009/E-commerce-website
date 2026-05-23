@@ -91,57 +91,7 @@ describe('toProductDto', () => {
 });
 
 // ─── CONTENT DTO ──────────────────────────────────────────────────────────────
-const {
-  toBannerDto,
-  toNewsDto,
-  toCampaignDto,
-  toFeedbackDto,
-} = require('@modules/content/dtos/content-dto');
-
-describe('toBannerDto', () => {
-  test('trả về null khi input là null', () => {
-    expect(toBannerDto(null)).toBeNull();
-  });
-
-  test('trả về null khi input là undefined', () => {
-    expect(toBannerDto(undefined)).toBeNull();
-  });
-
-  test('pass-through banner object', () => {
-    const banner = { id: 1, title: 'Sale' };
-    expect(toBannerDto(banner)).toBe(banner);
-  });
-});
-
-describe('toNewsDto', () => {
-  test('trả về null khi input là null', () => {
-    expect(toNewsDto(null)).toBeNull();
-  });
-
-  test('trả về null khi input là undefined', () => {
-    expect(toNewsDto(undefined)).toBeNull();
-  });
-
-  test('pass-through news object', () => {
-    const news = { id: 2, headline: 'New product' };
-    expect(toNewsDto(news)).toBe(news);
-  });
-});
-
-describe('toCampaignDto', () => {
-  test('trả về null khi input là null', () => {
-    expect(toCampaignDto(null)).toBeNull();
-  });
-
-  test('trả về null khi input là undefined', () => {
-    expect(toCampaignDto(undefined)).toBeNull();
-  });
-
-  test('pass-through campaign object', () => {
-    const campaign = { id: 3, name: 'Summer Sale' };
-    expect(toCampaignDto(campaign)).toBe(campaign);
-  });
-});
+const { toFeedbackDto } = require('@modules/content/dtos/content-dto');
 
 describe('toFeedbackDto', () => {
   test('trả về null khi input là null', () => {
@@ -180,8 +130,6 @@ describe('toInventoryDto', () => {
     expect(toInventoryDto(model)).toEqual({ id: 99 });
   });
 });
-
-// ─── LOYALTY DTO ──────────────────────────────────────────────────────────────
 
 // ─── ORDERS DTO ───────────────────────────────────────────────────────────────
 const { toOrderDto } = require('@modules/orders/dtos/orders-dto');

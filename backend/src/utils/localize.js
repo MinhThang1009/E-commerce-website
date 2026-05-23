@@ -22,13 +22,6 @@ const FIELD_MAPS = {
     ['description', 'descriptionVi', 'descriptionEn'],
   ],
   brand: [['name', 'nameVi', 'nameEn']],
-  news: [
-    ['title', 'titleVi', 'titleEn'],
-    ['content', 'contentVi', 'contentEn'],
-    ['description', 'descriptionVi', 'descriptionEn'],
-    ['category', 'categoryVi', 'categoryEn'],
-  ],
-  banner: [['title', 'titleVi', 'titleEn']],
 };
 
 /**

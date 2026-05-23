@@ -137,21 +137,13 @@ jest.mock('@models', () => {
       findOne: jest.fn().mockImplementation((...args) => mockDiscountFindOneImpl(...args)),
       update: jest.fn().mockResolvedValue([1]),
     },
-    LoyaltyHistory: {
-      create: jest.fn().mockResolvedValue({}),
-      update: jest.fn().mockResolvedValue([1]),
-    },
     InventoryLog: {
       create: jest.fn().mockResolvedValue({}),
       bulkCreate: jest.fn().mockResolvedValue([]),
     },
-    WarrantyPackage: {
-      findAll: jest.fn().mockResolvedValue([]),
-    },
     User: {
       findByPk: jest.fn().mockResolvedValue({
         id: 1,
-        loyaltyPoints: 0,
         update: jest.fn().mockResolvedValue(undefined),
       }),
     },
@@ -187,9 +179,7 @@ const {
   ProductVariant,
   User,
   DiscountCode,
-  LoyaltyHistory,
   InventoryLog,
-  WarrantyPackage,
   sequelize,
 } = require('@models');
 const eventBus = require('@shared/event-bus');
@@ -207,9 +197,7 @@ const ordersModule = buildOrdersModule({
   ProductVariant,
   User,
   DiscountCode,
-  LoyaltyHistory,
   InventoryLog,
-  WarrantyPackage,
   sequelize,
   eventBus,
   logger,
@@ -557,7 +545,6 @@ describe('POST /api/orders — cart-based flow', () => {
       productId: 1,
       variantId: 1,
       quantity: 2,
-      warrantyPackageIds: [],
       Product: {
         id: 1,
         name: 'Laptop',
@@ -638,7 +625,6 @@ describe('POST /api/orders — cart-based flow', () => {
           productId: 1,
           variantId: 1,
           quantity: 1,
-          warrantyPackageIds: [],
           Product: {
             id: 1,
             name: 'Phone',

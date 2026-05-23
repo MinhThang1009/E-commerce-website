@@ -22,7 +22,6 @@ export interface CreateProductRequest {
   featured?: boolean;
   categoryIds: string[];
   condition?: 'new' | 'like-new' | 'used' | 'refurbished';
-  warrantyMonths?: number;
   specifications?: Array<{
     name: string;
     value: string;

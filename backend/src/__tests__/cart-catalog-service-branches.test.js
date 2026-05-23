@@ -31,7 +31,6 @@ function buildCartService() {
     sumCartItemQuantity: jest.fn(),
     findProductById: jest.fn(),
     findVariantByIdAndProductId: jest.fn(),
-    findActiveWarrantyPackagesByIds: jest.fn().mockResolvedValue([]),
     findCartItemsWithDetails: jest.fn().mockResolvedValue([]),
     findCartItemByIdWithCartAndStock: jest.fn(),
     findCartItemsForValidation: jest.fn().mockResolvedValue([]),
@@ -46,7 +45,6 @@ function buildCartService() {
 
 // ─── Line 71: FALSE branch của `item.Product ? item.Product.basePrice : 0`
 // Cách duy nhất để hit nhánh này là: item.ProductVariant = null (outer false) VÀ item.Product = null.
-// Để phân biệt với test đã có (cả 2 null, không có warrantyPackages):
 // Ta tạo item có ProductVariant = truthy để dùng variant.price, sau đó item thứ 2 ProductVariant=null, Product=null.
 // Theo yêu cầu: "item có ProductVariant nhưng Product = null" → outer ternary lấy variant.price (TRUE branch).
 // Còn nhánh FALSE của inner (`item.Product ? ... : 0`) xảy ra khi: ProductVariant=null VÀ Product=null.
@@ -62,7 +60,6 @@ describe('CartService._buildCartResponse — line 71: item có ProductVariant tr
         id: 50,
         quantity: 3,
         variantId: 10,
-        warrantyPackageIds: [],
         Product: null, // Product = null (edge case sau deletion)
         ProductVariant: { price: 75000 }, // ProductVariant có giá trị
       }),
@@ -279,8 +276,6 @@ function makeCatalogService(repoOverrides = {}) {
     clearProductAttributes: jest.fn().mockResolvedValue(),
     createProductVariants: jest.fn().mockResolvedValue(),
     clearProductVariants: jest.fn().mockResolvedValue(),
-    findWarrantyPackagesByIds: jest.fn().mockResolvedValue([]),
-    setProductWarrantyPackages: jest.fn().mockResolvedValue(),
     runInTransaction: jest.fn((fn) => fn({})),
     ...repoOverrides,
   };
@@ -620,8 +615,6 @@ describe('CatalogService.createProduct — line 896: variant name fallback → v
 const OrdersService = require('@modules/orders/services/orders-service');
 
 const CONSTANTS = {
-  POINTS_EARN_RATE: 1000,
-  POINTS_VALUE: 100,
   SHIPPING_FREE_THRESHOLD: 500000,
   SHIPPING_BASE_RATE: 30000,
 };
@@ -637,7 +630,6 @@ function buildOrdersService() {
     decrementVariantStock: jest.fn().mockResolvedValue(),
     restoreProductStock: jest.fn().mockResolvedValue(),
     restoreVariantStock: jest.fn().mockResolvedValue(),
-    findActiveWarrantyPackagesByIds: jest.fn().mockResolvedValue([]),
     findOrCreateActiveCart: jest.fn(),
     findActiveCartBySessionId: jest.fn().mockResolvedValue(null),
     findCartByPkWithItemsDetails: jest.fn(),
@@ -650,9 +642,6 @@ function buildOrdersService() {
     findActiveDiscountCode: jest.fn().mockResolvedValue(null),
     incrementDiscountCodeUsage: jest.fn().mockResolvedValue(),
     findUserById: jest.fn(),
-    updateUserPoints: jest.fn().mockResolvedValue(),
-    createLoyaltyHistory: jest.fn().mockResolvedValue(),
-    updateLoyaltyHistoryOrderId: jest.fn().mockResolvedValue(),
     createOrder: jest.fn(),
     createOrderItem: jest.fn(),
     createInventoryLogs: jest.fn().mockResolvedValue(),

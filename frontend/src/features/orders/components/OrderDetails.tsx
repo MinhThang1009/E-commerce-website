@@ -364,13 +364,6 @@ const OrderDetails: React.FC<OrderDetailsProps> = ({ orderId, onOpenReview }) =>
                 </span>
               </div>
 
-              {(order.warrantyCost ?? 0) > 0 && (
-                <div className="flex justify-between items-center text-neutral-600 dark:text-neutral-300 pt-2 pb-2 border-b border-neutral-200 dark:border-neutral-700 border-dashed">
-                  <span>{t('orders.warrantyCost')}</span>
-                  <span className="font-medium">{formatPrice(order.warrantyCost!)}</span>
-                </div>
-              )}
-
               {order.discount > 0 && (
                 <div className="flex justify-between items-center text-emerald-600 dark:text-emerald-400 pt-2">
                   <span className="flex items-center gap-2">

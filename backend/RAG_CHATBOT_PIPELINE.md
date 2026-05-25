@@ -76,7 +76,7 @@ flowchart TD
         B["①  validateMessage"]
         B -->|hợp lệ| C["②  expandAbbreviations"]
         C --> D["③  classifyIntent"]
-        D --> D2["③  isPromptInjection&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<br/>(sequential sau classifyIntent)&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;"]
+        D --> D2["③  isPromptInjection<br/>(sequential sau classifyIntent)&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;"]
     end
 
     B -->|không hợp lệ| BERR["❌ AppError 400 (bad request)&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;"]

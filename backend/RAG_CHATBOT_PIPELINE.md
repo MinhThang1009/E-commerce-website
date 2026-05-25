@@ -54,7 +54,7 @@
 | ③ | **Classify & Gate** | `classifyIntent()` + `isPromptInjection()` | Phân loại 6 intent + chặn injection (15 loại, 28 regex, OWASP LLM01) / off-topic |
 | ④ | **Load Session** | `conversationHistory.get(sessionId)` | Lấy lịch sử hội thoại từ RAM Map cho multi-turn context |
 | ⑤ | **Retrieve** | `_enrichQueryFromHistory()` (⑤a) + `_retrieveProducts()` (⑤b) | Giải quyết đại từ + hybrid search (vector + keyword) lấy sản phẩm liên quan |
-| ⑥ | **Augment & Generate** | `augmentAndGenerate()` | LLM UP: build prompt với products → gọi LLM → parse JSON. LLM DOWN: `simpleKeywordMatch()` |
+| ⑥ | **Augment & Generate** | `augmentAndGenerate()` | LLM UP: ⑥a (Augment) build prompt với products → ⑥b (Generate) gọi LLM → parse JSON. LLM DOWN: ⑥.1-⑥.5 `simpleKeywordMatch()` |
 | ⑦ | **Persist** | Session update + `_persistMessages()` | Lưu history vào RAM (session) + DB (analytics, fire-and-forget) |
 
 > **Mapping sang thuật ngữ RAG:**
@@ -104,12 +104,12 @@ flowchart TD
     K -->|Không| K1["⑤b  fallback limit=3"]
     K1 --> M
 
-    M -->|"LLM UP"| N1["⑥  _getCatalogData"]
-    N1 --> N2["⑥  _sanitizeMessage"]
-    N2 --> N3["⑥  buildAugmentedPrompt"]
-    N3 --> N4["⑥  system + history + prompt"]
-    N4 --> N5["⑥  LLM HTTP POST"]
-    N5 -->|thành công| N6["⑥  parseLLMOutput"]
+    M -->|"LLM UP"| N1["⑥a.1  _getCatalogData"]
+    N1 --> N2["⑥a.2  _sanitizeMessage"]
+    N2 --> N3["⑥a.3  buildAugmentedPrompt"]
+    N3 --> N4["⑥a.4  system + history + prompt"]
+    N4 --> N5["⑥b.1  LLM HTTP POST"]
+    N5 -->|thành công| N6["⑥b.2  parseLLMOutput"]
     N5 -->|thất bại| N7
 
     M -->|"LLM DOWN"| N7["⑥.1  simpleKeywordMatch\nname+10 desc+5 scoring"]
@@ -289,19 +289,23 @@ Output: `{ products[], finalQuery }` — max 10 items, sorted by hybrid score.
    - Không match → `getFallbackResponse()` (chào hỏi chung)
 
 **Path B — LLM UP** (`providers.length ≥ 1`):
-1. `_getCatalogData()` — load brands + categories từ DB, cache TTL 5 phút
-2. `_sanitizeMessage(userMessage)` — replace `"` → `'`, collapse newlines, trim 500 chars
-3. `buildAugmentedPrompt(sanitizedMessage, products)` ([`prompt-builder.js:41`](src/modules/ai/services/chatbot/prompt/prompt-builder.js#L41)) — inject:
+
+**⑥a — Augment** (build prompt với context):
+1. `⑥a.1` `_getCatalogData()` — load brands + categories từ DB, cache TTL 5 phút
+2. `⑥a.2` `_sanitizeMessage(userMessage)` — replace `"` → `'`, collapse newlines, trim 500 chars
+3. `⑥a.3` `buildAugmentedPrompt(sanitizedMessage, products)` ([`prompt-builder.js:41`](src/modules/ai/services/chatbot/prompt/prompt-builder.js#L41)) — inject:
    - Danh sách sản phẩm (với `⚠️[low confidence]` flag nếu có)
    - Version warning (số model trong query không khớp products)
    - Thông tin cửa hàng (env vars: WARRANTY, SHIPPING, RETURN, SUPPORT)
    - Câu hỏi user
    - Quy tắc so khớp sản phẩm + JSON output format: `{ response, matchedProducts[], suggestions[], intent }`
-4. Build `messages[]`: `[system prompt, ...history, {role:'user', content: augmentedPrompt}]`
-5. Provider rotation loop: `axios.post` → temperature 0.3, max_tokens 800, `response_format: {type:'json_object'}`
+4. `⑥a.4` Build `messages[]`: `[system prompt, ...history, {role:'user', content: augmentedPrompt}]`
+
+**⑥b — Generate** (gọi LLM + parse):
+5. `⑥b.1` Provider rotation loop: `axios.post` → temperature 0.3, max_tokens 800, `response_format: {type:'json_object'}`
    - 429/402/500/503/network error → `continue` (thử provider tiếp)
    - 400/401 → `break` (lỗi cố định, không retry)
-6. `parseLLMOutput(rawLLMOutput, products, userMessage)` — extractJSON → match product names (hallucination detect inline) → dedup → post-processing: `extractProductsFromText` bổ sung SP LLM đề cập nhưng bỏ sót (phrase boundary regex + dedup prefix xét cả alreadyMatchedIds)
+6. `⑥b.2` `parseLLMOutput(rawLLMOutput, products, userMessage)` — extractJSON → match product names (hallucination detect inline) → dedup → post-processing: `extractProductsFromText` bổ sung SP LLM đề cập nhưng bỏ sót (phrase boundary regex + dedup prefix xét cả alreadyMatchedIds)
 7. Nếu ALL providers fail → fallback `simpleKeywordMatch(userMessage, products)`
 
 ---

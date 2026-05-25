@@ -310,6 +310,18 @@ const INJECTION_PATTERNS = [
   /(jailbreak|DAN\s*mode|developer\s*mode|chế\s*độ\s*(nhà\s*phát\s*triển|không\s*giới\s*hạn))/iu,
   // 9. Lộ system prompt / hidden instructions (EN + VI)
   /(reveal|show|print|display|hiển\s*thị|cho\s*xem).{0,20}(system\s*prompt|hidden|instructions?|nội\s*dung\s*hệ\s*thống|prompt\s*ẩn)/iu,
+  // 10. Ghi đè hành vi — "from now on" / "từ giờ trở đi" (EN + VI)
+  /\bfrom\s+now\s+on\b/i,
+  /từ\s*(bây\s*giờ|giờ|nay)\s*(trở\s*đi|về\s*sau)?/iu,
+  // 11. Bypass / override safety trực tiếp (EN + VI)
+  /\b(bypass|override|disable|turn\s*off|remove)\b.{0,20}\b(safety|filter|restriction|guardrail|limit)/i,
+  /(vượt\s*qua|tắt|bỏ|gỡ\s*bỏ|phá).{0,20}(giới\s*hạn|bộ\s*lọc|filter|hạn\s*chế|an\s*toàn|bảo\s*vệ)/iu,
+  // 12. Fictional framing — bọc injection trong kịch bản giả (EN + VI)
+  /\b(hypothetical|imagine|fictional|pretend).{0,30}(no\s*(rules?|restrictions?|limits?|filters?)|unrestricted|unfiltered)/i,
+  /(giả\s*sử|tưởng\s*tượng|trong\s*trường\s*hợp).{0,30}(không\s*(có\s*)?(quy\s*tắc|giới\s*hạn|hạn\s*chế|luật)|tự\s*do)/iu,
+  // 13. Repeat / echo attack — bắt LLM tự affirm (EN + VI)
+  /\b(repeat\s+after\s+me|say\s+exactly|echo\s+this)\b/i,
+  /(lặp\s*lại|nói\s*theo|nói\s*lại\s*chính\s*xác)/iu,
 ];
 
 function isPromptInjection(text) {

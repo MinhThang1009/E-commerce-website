@@ -289,7 +289,7 @@ function classifyIntent(normalizedText) {
 const INJECTION_PATTERNS = [
   // 1. Bỏ qua chỉ thị (EN + VI)
   /ignore\s+(all\s+)?(previous\s+)?instructions?/i,
-  /bỏ\s*qua\s+(tất\s*cả\s+)?(các\s+)?(hướng\s*dẫn|chỉ\s*thị|lệnh|quy\s*tắc)/iu,
+  /bỏ\s*qua\s+(tất\s*cả\s+|mọi\s+)?(các\s+)?(hướng\s*dẫn|chỉ\s*thị|lệnh|quy\s*tắc)/iu,
   // 2. Chèn system prompt
   /\bsystem\s*:/i,
   // 3. Đóng vai / role-play (EN + VI)
@@ -305,7 +305,7 @@ const INJECTION_PATTERNS = [
   /\byou\s+are\s+now\b/i,
   /(bây\s*giờ|giờ)\s+bạn\s+là/iu,
   // 7. Trích xuất dữ liệu (EN + VI)
-  /(get|give|show|send|lấy|cho|cung\s*cấp|xuất|trích\s*xuất).{0,30}(user\s*data|dữ\s*liệu\s*(người\s*dùng|khách\s*hàng)|thông\s*tin\s*(cá\s*nhân|tài\s*khoản)|personal\s*(data|info)|customer\s*data|database|password|credentials?)/iu,
+  /(get|give|show|send|lấy|cho|đưa|cung\s*cấp|xuất|trích\s*xuất).{0,30}(user\s*data|data\s*user|dữ\s*liệu\s*(người\s*dùng|khách\s*hàng)|thông\s*tin\s*(cá\s*nhân|tài\s*khoản)|personal\s*(data|info)|customer\s*data|database|password|credentials?)/iu,
   // 8. Jailbreak / DAN / developer mode (EN + VI)
   /(jailbreak|DAN\s*mode|developer\s*mode|chế\s*độ\s*(nhà\s*phát\s*triển|không\s*giới\s*hạn))/iu,
   // 9. Lộ system prompt / hidden instructions (EN + VI)

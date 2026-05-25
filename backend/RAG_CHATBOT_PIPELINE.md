@@ -45,6 +45,26 @@
 
 ## 2. Pipeline Flow — Quy trình xử lý 1 query
 
+### 2.0. Tổng quan 7 bước
+
+| Bước | Tên | Hàm chính | Mục đích |
+|------|-----|-----------|----------|
+| ① | **Validate** | `validateMessage()` | Chặn input xấu sớm (rỗng, quá dài, không có chữ/số) |
+| ② | **Normalize** | `expandAbbreviations()` | Chuẩn hoá viết tắt (`ip→iPhone`), EN→VI (`smartphone→điện thoại`), không dấu→có dấu (`gia→giá`) |
+| ③ | **Classify & Gate** | `classifyIntent()` + `isPromptInjection()` | Phân loại 6 intent + chặn injection/off-topic trước khi tốn tài nguyên search/LLM |
+| ④ | **Load Session** | `conversationHistory.get(sessionId)` | Lấy lịch sử hội thoại từ RAM Map cho multi-turn context |
+| ⑤ | **Retrieve** | `_enrichQueryFromHistory()` (⑤a) + `_retrieveProducts()` (⑤b) | Giải quyết đại từ + hybrid search (vector + keyword) lấy sản phẩm liên quan |
+| ⑥ | **Augment & Generate** | `augmentAndGenerate()` | LLM UP: build prompt với products → gọi LLM → parse JSON. LLM DOWN: `simpleKeywordMatch()` |
+| ⑦ | **Persist** | Session update + `_persistMessages()` | Lưu history vào RAM (session) + DB (analytics, fire-and-forget) |
+
+> **Mapping sang thuật ngữ RAG:**
+> - Bước ①–④ = **Preprocessing** — chuẩn bị query trước khi search.
+> - Bước ⑤ = **Retrieve** (R trong RAG) — tìm sản phẩm liên quan bằng hybrid search.
+> - Bước ⑥ = **Augment** (A) + **Generate** (G) — nhồi context vào prompt rồi gọi LLM sinh response.
+> - Bước ⑦ = **Post-processing** — lưu trữ, không ảnh hưởng response.
+>
+> LLM DOWN path (keyword fallback) bỏ qua Augment & Generate → chỉ là **Information Retrieval**, không phải RAG. Xem [§2.4](#24-llm-up-vs-llm-down--khác-nhau-ở-đâu) để hiểu sự khác biệt.
+
 ### 2.1. Sơ đồ tổng thể
 
 ```mermaid

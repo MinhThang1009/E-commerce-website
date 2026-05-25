@@ -59,13 +59,13 @@ modules/auth/
   controllers/
     auth-controller.js                     — Thin handlers, delegate sang authService
   services/
-    auth-service.js                        — Business logic auth (~400 lines)
+    auth-service.js                        — Business logic auth (~294 lines)
   repositories/
     i-auth-repository.js                   — Interface
     sequelize-auth-repository.js           — User, OTP, RefreshToken Sequelize queries
   validators/
     auth-validator.js                      — Zod: registerSchema, loginSchema, forgotPasswordSchema,
-                                             resetPasswordSchema, emailSchema
+                                             resetPasswordSchema, emailSchema, otpSchema (exported nhưng không dùng trong routes)
   dtos/
     auth-dto.js                            — toUserDto() loại bỏ password/OTP fields
   CLAUDE.md
@@ -100,7 +100,7 @@ modules/auth/
 - **Logout**: **No-op server-side** — không revoke, không blacklist. Client tự xóa token khỏi storage. Token vẫn valid cho đến hết TTL.
 - **OTP**: 6 chữ số random (`crypto.randomInt(100000, 1000000)`), TTL 10 phút, so sánh timing-safe
 - **Google OAuth dual mode**: `verifyIdToken()` cho Google `id_token` (mobile), `verifyAccessToken()` cho Google `access_token` (web flow)
-- **Password hash**: bcrypt, cost factor từ env `BCRYPT_ROUNDS` (default 12, test dùng 4)
+- **Password hash**: bcrypt, cost factor **hardcoded 12** trong User model `beforeSave` hook (không dùng env `BCRYPT_ROUNDS` — đó là comment cũ). Hash xảy ra tại model layer, không phải service.
 - **User enumeration protection**: `resendVerification` và `forgotPassword` luôn trả generic success message dù user không tồn tại
 
 ---
@@ -141,7 +141,7 @@ Base path: `/api/auth`
 
 **Events published:**
 
-- `auth.userRegistered` — payload `{ userId, email }`. Hiện không có subscriber nào.
+- `auth.userRegistered` — payload `{ userId, email }`. **Thực tế không bao giờ được publish** vì `eventBus` không được inject vào module (guard `if (this.eventBus)` trong service luôn false). Hiện không có subscriber nào.
 
 ---
 
@@ -154,7 +154,7 @@ Base path: `/api/auth`
 - **`/reset-password` không có rate limit**: Endpoint validate hex token trước khi reset — brute force bị chặn bởi token TTL 15 phút và token bị clear sau dùng.
 - **Google OAuth fallback**: `verifyIdToken()` thất bại → thử `verifyAccessToken()`. Nếu cả hai fail → `AppError 401`. Không lưu kết quả verify.
 - **OTP timing-safe compare**: Dùng `crypto.timingSafeEqual` để tránh timing attack. OTP được pad thành 6 chữ số trước khi compare.
-- **`bcrypt` cost 4 trong test**: Set env `BCRYPT_ROUNDS=4` để test nhanh hơn. Production không được dùng giá trị thấp hơn 10.
+- **`bcrypt` cost trong test**: Cost factor hardcoded 12 trong User model — không có env override. Test dùng mock hoặc real bcrypt (chậm hơn).
 
 ---
 

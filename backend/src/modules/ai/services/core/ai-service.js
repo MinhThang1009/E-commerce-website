@@ -14,11 +14,11 @@
  *   3. trackAnalytics   — ghi lại sự kiện phân tích (user click, add to cart...)
  *   4. addToCart        — thêm sản phẩm vào giỏ hàng qua chatbot
  *
- * Tại sao cần tầng service này nếu chỉ delegate cho ragPipeline + repo?
- * Theo kiến trúc Layered: Controller không được gọi trực tiếp Repository hay RAGPipeline.
+ * Tại sao cần tầng service này nếu chỉ delegate cho chatbotService + repo?
+ * Theo kiến trúc Layered: Controller không được gọi trực tiếp Repository hay ChatbotService.
  * Tầng Service là nơi tập trung business rules (ví dụ: kiểm tra tồn kho trước khi addToCart).
  *
- * @depends-on sequelize-ai-repository, ragPipeline, logger
+ * @depends-on sequelize-ai-repository, chatbotService, logger
  * @see module.js (DI wiring), routes.js (endpoints), CLAUDE.md (overview)
  */
 const { AppError } = require('@shared/errors');
@@ -35,31 +35,51 @@ class AIService {
    *
    * @param {Object} deps - Các dependency cần thiết.
    * @param {Object} deps.aiRepository - Repository để query DB (sản phẩm, giỏ hàng, analytics).
-   * @param {Object} deps.ragPipeline - RAG pipeline xử lý tin nhắn chatbot.
+   * @param {Object} deps.chatbotService - ChatbotService xử lý toàn bộ RAG pipeline.
    * @param {Object} deps.logger - Logger để ghi log (Winston).
    */
-  constructor({ aiRepository, ragPipeline, logger }) {
+  constructor({ aiRepository, chatbotService, logger }) {
     this.repo = aiRepository;
-    this.ragPipeline = ragPipeline;
+    this.chatbotService = chatbotService;
     this.logger = logger;
   }
 
   /**
-   * Xử lý tin nhắn chatbot — delegate hoàn toàn cho RAGPipeline.
+   * Xử lý tin nhắn chatbot — delegate hoàn toàn cho ChatbotService.
    *
-   * Tại sao chỉ có 1 dòng gọi ragPipeline.run()?
-   * Toàn bộ logic phức tạp (validate, normalize, search, generate) nằm trong RAGPipeline.
-   * AIService chỉ là trung gian giữa Controller (HTTP layer) và RAGPipeline (AI layer).
+   * Tại sao chỉ có 1 dòng gọi chatbotService.handleMessage()?
+   * Toàn bộ logic phức tạp (validate, normalize, search, generate) nằm trong ChatbotService.
+   * AIService chỉ là trung gian giữa Controller (HTTP layer) và ChatbotService (AI layer).
    *
    * @param {Object} params - Tham số đầu vào.
    * @param {string} params.message - Tin nhắn từ user (ví dụ: "iPhone 16 giá bao nhiêu?").
    * @param {number|null} [params.userId] - ID user đã đăng nhập; null nếu khách vãng lai.
    * @param {string|null} [params.sessionId] - Session ID để nhớ lịch sử hội thoại.
-   * @returns {Promise<Object>} Kết quả từ RAGPipeline:
+   * @returns {Promise<Object>} Kết quả từ ChatbotService:
    *   `{ response: string, products: Array, suggestions: Array, intent: string }`
    */
   async handleMessage({ message, userId, sessionId }) {
-    return this.ragPipeline.run({ message, userId, sessionId });
+    return this.chatbotService.handleMessage(message, userId, sessionId);
+  }
+
+  clearSession(sessionId) {
+    return this.chatbotService.clearSession(sessionId);
+  }
+
+  getSessionHistory(sessionId) {
+    return this.chatbotService.getSessionHistory(sessionId);
+  }
+
+  async getSessionMessages(sessionId) {
+    return this.chatbotService.getSessionMessages(sessionId);
+  }
+
+  registerSession(sessionId) {
+    return this.chatbotService.registerSession(sessionId);
+  }
+
+  async getLatestSession() {
+    return this.chatbotService.getLatestSession();
   }
 
   /**

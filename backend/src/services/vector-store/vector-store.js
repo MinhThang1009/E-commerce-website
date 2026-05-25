@@ -63,42 +63,100 @@ const KEYWORD_NAME_WEIGHT = 3;
 const KEYWORD_TEXT_WEIGHT = 1;
 
 /**
- * [Indexing — Text Enrichment] Tạo chuỗi text phong phú từ product data để embedding.
- * Gộp tên, thương hiệu, danh mục, mô tả, giá, tình trạng hàng thành 1 đoạn text ≤1500 ký tự.
- * @param {Object} product - Plain object sản phẩm (đã qua enrichProductData + toJSON).
- * @returns {string} Text dùng cho cả EN và VI embedding model.
- */
-function buildEmbeddingText(product) {
-  const parts = [
-    product.name,
-    product.baseName ? `Thương hiệu: ${product.baseName}` : '',
-    product.categories?.[0]?.name ? `Danh mục: ${product.categories[0].name}` : '',
-    product.shortDescription || '',
-    // Strip HTML tags từ description để không embed HTML markup
-    product.description ? product.description.replace(/<[^>]*>/g, '').substring(0, 500) : '',
-    product.basePrice ? `Giá: ${product.basePrice.toLocaleString('vi-VN')} đồng` : '',
-    // Stock thực nằm ở variant level — dùng inStock đã compute hoặc tính từ variants
-    (product.inStock !== undefined ? product.inStock : product.stockQuantity > 0)
-      ? 'Còn hàng'
-      : 'Hết hàng',
-  ];
-  return parts.filter(Boolean).join('. ').substring(0, MAX_EMBEDDING_TEXT_LENGTH);
-}
-
-/**
  * Singleton hybrid search engine — kết hợp semantic (cosine) + keyword (BM25) search.
  *
  * Vòng đời:
  * 1. Constructor → load file JSON từ disk (async, fire-and-forget)
  * 2. Product model hooks gọi upsertProduct() mỗi khi tạo/sửa sản phẩm
- * 3. RAGPipeline gọi hybridSearch() khi user gửi tin nhắn chatbot
+ * 3. ChatbotService gọi hybridSearch() khi user gửi tin nhắn chatbot
  * 4. save() ghi lại file JSON sau mỗi upsert
  */
 class HybridVectorStore {
+  /**
+   * [Indexing — Text Enrichment] Tạo chuỗi text phong phú từ product data để embedding.
+   * Gộp tên, thương hiệu, danh mục, mô tả, giá, tình trạng hàng thành 1 đoạn text ≤1500 ký tự.
+   * @param {Object} product - Plain object sản phẩm (đã qua enrichProductData + toJSON).
+   * @returns {string} Text dùng cho cả EN và VI embedding model.
+   */
+  static buildEmbeddingText(product, specKeyMap = {}) {
+    const localizeKey = (k) => specKeyMap[k] || k.replace(/_/g, ' ');
+    // Tổng hợp tên phiên bản, màu sắc, cấu hình từ variants
+    const variantsPart = (() => {
+      const variants = product.variants || [];
+      if (!variants.length) return '';
+      const names = [...new Set(variants.map(v => v.variantName || v.displayName).filter(Boolean))];
+      const colors = [...new Set(variants.flatMap(v => {
+        const a = v.attributes || {};
+        return [a.color, a['Màu sắc']].filter(Boolean);
+      }))];
+      const storages = [...new Set(variants.flatMap(v => {
+        const a = v.attributes || {};
+        return [a.storage, a['Dung lượng'], a['RAM']].filter(Boolean);
+      }))];
+      const parts2 = [];
+      if (names.length) parts2.push('Phiên bản: ' + names.slice(0, 6).join(', '));
+      if (colors.length) parts2.push('Màu: ' + colors.join(', '));
+      if (storages.length) parts2.push('Cấu hình: ' + storages.join(', '));
+      return parts2.join('. ');
+    })();
+
+    const parts = [
+      product.name,
+      product.nameEn && product.nameEn !== product.name ? product.nameEn : '',
+      product.model ? `Model: ${product.model}` : '',
+      product.baseName ? `Thương hiệu: ${product.baseName}` : '',
+      product.categories?.[0]?.name ? `Danh mục: ${product.categories[0].name}` : '',
+      product.shortDescription || '',
+      product.shortDescriptionEn || '',
+      // Strip HTML tags từ description để không embed HTML markup
+      product.description ? product.description.replace(/<[^>]*>/g, '').substring(0, 500) : '',
+      product.descriptionEn ? product.descriptionEn.replace(/<[^>]*>/g, '').substring(0, 300) : '',
+      // Thông số kỹ thuật từ JSON column products.specifications (pin, màn hình, RAM, chip...)
+      product.specifications && typeof product.specifications === 'object' && Object.keys(product.specifications).length > 0
+        ? 'Thông số: ' + Object.entries(product.specifications).map(([k, v]) => `${localizeKey(k)}: ${v}`).join(', ')
+        : '',
+      // Thông số từ bảng product_specifications (nếu có)
+      product.productSpecifications?.length
+        ? product.productSpecifications
+            .map(s => `${s.name} ${s.value}${s.valueEn && s.valueEn !== s.value ? ' ' + s.valueEn : ''}`)
+            .join(', ')
+        : '',
+      variantsPart,
+      product.tags?.length ? 'Tags: ' + (Array.isArray(product.tags) ? product.tags.join(', ') : product.tags) : '',
+      product.basePrice ? `Giá: ${product.basePrice.toLocaleString('vi-VN')} đồng` : '',
+      // Stock thực nằm ở variant level — dùng inStock đã compute hoặc tính từ variants
+      (product.inStock !== undefined ? product.inStock : product.stockQuantity > 0)
+        ? 'Còn hàng'
+        : 'Hết hàng',
+    ];
+    return parts.filter(Boolean).join('. ').substring(0, MAX_EMBEDDING_TEXT_LENGTH);
+  }
+
+  /** Map spec key EN→VI — set bởi index-products.js, persist ra file để server load lại. */
+  setSpecKeyMap(map) {
+    this._specKeyMap = map || {};
+    // Persist để server đang chạy (hooks) dùng được khi tạo/sửa sản phẩm mới
+    try {
+      fs.writeFileSync(this._specKeyMapPath, JSON.stringify(this._specKeyMap, null, 2), 'utf8');
+    } catch { /* bỏ qua nếu lỗi ghi file */ }
+  }
+
+  /** Trả tên spec bằng tiếng Việt nếu có map, fallback snake→space. */
+  _localizeSpecKey(key) {
+    return this._specKeyMap?.[key] || key.replace(/_/g, ' ');
+  }
+
   constructor() {
     // __dirname = backend/src/services/vector-store → 3 levels up = backend/
-    this.storagePath = path.join(__dirname, '../../../data/vector-db.json');
+    this.storagePath    = path.join(__dirname, '../../../data/vector-db.json');
+    this._specKeyMapPath = path.join(__dirname, '../../../data/spec-key-map.json');
     this.items = [];
+    // Load spec key map từ file persist (nếu có) để hooks dùng ngay khi server start
+    try {
+      this._specKeyMap = fs.existsSync(this._specKeyMapPath)
+        ? JSON.parse(fs.readFileSync(this._specKeyMapPath, 'utf8'))
+        : {};
+    } catch { this._specKeyMap = {}; }
     // Fire-and-forget khi khởi động — server không block chờ load xong
     this.loadPromise = this.load();
   }
@@ -168,7 +226,7 @@ class HybridVectorStore {
     try {
       await this.loadPromise;
 
-      const textToEmbed = buildEmbeddingText(product);
+      const textToEmbed = HybridVectorStore.buildEmbeddingText(product, this._specKeyMap);
 
       const vector = await embeddingService.generateEmbedding(textToEmbed, 'passage');
       if (!vector || !Array.isArray(vector)) throw new Error('vector không hợp lệ');
@@ -184,15 +242,42 @@ class HybridVectorStore {
         metadata: {
           id: product.id,
           name: product.name,
+          nameEn: product.nameEn || '',
           slug: product.slug,
-          price: product.basePrice,
-          compareAtPrice: product.compareAtPrice,
+          model: product.model || '',
+          price: product.basePrice != null ? Number(product.basePrice) : null,
+          compareAtPrice: product.compareAtPrice != null ? Number(product.compareAtPrice) : null,
           thumbnail: product.thumbnail,
           inStock: product.inStock,
           stockQuantity: product.stockQuantity,
           category: product.categories?.[0]?.name || product.category?.name || 'Sản phẩm',
           baseName: product.baseName,
           shortDescription: product.shortDescription || '',
+          shortDescriptionEn: product.shortDescriptionEn || '',
+          description: product.description
+            ? product.description.replace(/<[^>]*>/g, '').substring(0, 800)
+            : '',
+          ratingAverage: product.ratingAverage != null ? Number(product.ratingAverage) : null,
+          // Kết hợp specs từ JSON column + bảng product_specifications
+          specifications: [
+            ...(product.specifications && typeof product.specifications === 'object'
+              ? Object.entries(product.specifications).map(([k, v]) => `${this._localizeSpecKey(k)}: ${v}`)
+              : []),
+            ...(product.productSpecifications || []).map(
+              s => `${s.name}: ${s.value}${s.valueEn && s.valueEn !== s.value ? ' (' + s.valueEn + ')' : ''}`,
+            ),
+          ].join(' | '),
+          // Biến thể: màu sắc, cấu hình, giá từng phiên bản
+          variants: (product.variants || []).map(v => ({
+            variantName: v.variantName || '',
+            displayName: v.displayName || '',
+            price: v.price != null ? Number(v.price) : null,
+            compareAtPrice: v.compareAtPrice != null ? Number(v.compareAtPrice) : null,
+            stockQuantity: v.stockQuantity || 0,
+            isDefault: v.isDefault || false,
+            attributes: v.attributes || {},
+          })),
+          tags: Array.isArray(product.tags) ? product.tags : [],
           createdAt: product.createdAt,
         },
       });
@@ -344,7 +429,7 @@ class HybridVectorStore {
         const inText = textTokens.has(token);
         if (inName || inText) {
           matchedTokenCount++;
-          // Token trong tên sản phẩm có giá trị gấp 3 lần so với trong mô tả
+          // Token trong tên sản phẩm có giá trị gấp 3 lần so với trong mô tả kỹ thuật
           rawScore += (inName ? KEYWORD_NAME_WEIGHT : 0) + (inText ? KEYWORD_TEXT_WEIGHT : 0);
         }
       }
@@ -375,7 +460,7 @@ class HybridVectorStore {
    *   Mặc định 0 để lấy tất cả — caller tự lọc. hybridSearch truyền DEFAULT_MIN_SCORE (0.45).
    * @returns {Promise<Array<Object>>} Items có score ≥ minScore, sắp xếp giảm dần theo score.
    */
-  async _vectorSearch(query, limit, minScore) {
+  async _semanticSearch(query, limit, minScore) {
     const queryVector = await embeddingService.generateEmbedding(query, 'query');
 
     const scoredItems = this.items.map((item) => {
@@ -410,7 +495,7 @@ class HybridVectorStore {
    * 2. Keyword-only results (không có trong vector results):
    *    score = DEFAULT_MIN_SCORE + (keywordScore / maxKw) × KEYWORD_INJECTION_MAX_BOOST
    *    = 0.45 + tỷ_lệ × 0.15  →  tối đa 0.60  →  luôn thấp hơn vector results tốt
-   *    Flag `lowConfidence: true` để RAGPipeline biết xử lý cẩn thận hơn.
+   *    Flag `lowConfidence: true` để ChatbotService biết xử lý cẩn thận hơn.
    *
    * @param {string} query - Query text đã normalize.
    * @param {number} [limit=5] - Số kết quả tối đa trả về.
@@ -424,7 +509,7 @@ class HybridVectorStore {
 
       // Bước 1: Chạy song song 2 phương pháp search — lấy gấp đôi limit để có dư cho merge
       const [vectorResults, keywordResults] = await Promise.all([
-        this._vectorSearch(query, limit * 2, minScore),
+        this._semanticSearch(query, limit * 2, minScore),
         Promise.resolve(this._keywordSearch(query, limit * 2)),
       ]);
 
@@ -446,22 +531,22 @@ class HybridVectorStore {
       // Ví dụ: "iPhone 15" match exact trong tên sản phẩm nhưng embedding không nhận ra
       // maxKw defaults to 1: prevent chia cho 0 khi mảng rỗng, đảm bảo tỷ lệ ≤ 1
       const maxKeywordScore = keywordResults.reduce((max, r) => Math.max(max, r.keywordScore), 1);
-      const injected = keywordResults
+      const keywordOnlyResults = keywordResults
         .filter((r) => !vectorIds.has(r.metadata.id))
         .map((r) => ({
           ...r,
           // Score = sàn (minScore) + phần thưởng tỷ lệ với chất lượng keyword match
           score: minScore + (r.keywordScore / maxKeywordScore) * KEYWORD_INJECTION_MAX_BOOST,
-          // Flag cho RAGPipeline biết result này chỉ dựa trên keyword, chưa có xác nhận ngữ nghĩa
+          // Flag cho ChatbotService biết result này chỉ dựa trên keyword, chưa có xác nhận ngữ nghĩa
           lowConfidence: true,
         }));
 
-      if (injected.length > 0) {
-        logger.debug(`[HYBRID] Injected ${injected.length} keyword-only results`);
+      if (keywordOnlyResults.length > 0) {
+        logger.debug(`[HYBRID] Injected ${keywordOnlyResults.length} keyword-only results`);
       }
 
       // Bước 5: Merge cả 2 nguồn, sort theo score giảm dần, cắt lấy top N
-      return [...vectorResults, ...injected].sort((a, b) => b.score - a.score).slice(0, limit);
+      return [...vectorResults, ...keywordOnlyResults].sort((a, b) => b.score - a.score).slice(0, limit);
     } catch (error) {
       logger.error('Lỗi tìm kiếm vector:', error.message);
       return [];

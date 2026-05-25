@@ -926,7 +926,7 @@ const createProduct = catchAsync(async (req, res) => {
   });
 
   try {
-    const { enrichProductData } = require('@modules/ai/services/product/product-enricher');
+    const { enrichProductData } = require('@utils/product-helpers');
     await vectorStoreService.loadPromise;
     if (productWithRelations.status === 'active') {
       await vectorStoreService.upsertProduct(enrichProductData(productWithRelations.toJSON()));
@@ -1359,7 +1359,7 @@ const updateProduct = catchAsync(async (req, res) => {
     });
 
     try {
-      const { enrichProductData } = require('@modules/ai/services/product/product-enricher');
+      const { enrichProductData } = require('@utils/product-helpers');
       await vectorStoreService.loadPromise;
       if (finalProduct && finalProduct.status === 'active') {
         await vectorStoreService.upsertProduct(enrichProductData(finalProduct.toJSON()));
@@ -2277,7 +2277,7 @@ const restockProduct = catchAsync(async (req, res) => {
 
   // Đồng bộ vector store sau khi stock thay đổi để chatbot hiển thị đúng trạng thái tồn kho
   try {
-    const { enrichProductData } = require('@modules/ai/services/product/product-enricher');
+    const { enrichProductData } = require('@utils/product-helpers');
     await vectorStoreService.loadPromise;
     const productForIndex = await adminRepository.findProductById(productId, {
       include: [

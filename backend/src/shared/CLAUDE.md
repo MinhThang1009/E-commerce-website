@@ -40,7 +40,7 @@ const { AppError, NotFoundError, BusinessError, ValidationError } = require('@sh
 
 // Resource không tìm thấy
 throw new NotFoundError('Product', productId);
-// → message: "Product with id '42' does not exist"
+// → message: "Product với id "42" không tồn tại"
 
 // Business rule violation (constructor: message, domainCode)
 throw new BusinessError('errors.cart.outOfStock', 'OUT_OF_STOCK');
@@ -124,4 +124,4 @@ const {
 } = require('@shared');
 ```
 
-`Result` — utility class cho pattern Result/Option (ít dùng trực tiếp, chủ yếu dùng trong DDD-lite modules nếu cần).
+`Result` — utility class cho pattern Result/Option (ít dùng trực tiếp, chủ yếu dùng trong DDD-lite modules nếu cần). **Lưu ý:** file `src/shared/result.js` không tồn tại trên disk — `index.js` sẽ throw khi `require('@shared')` được gọi trực tiếp mà không có mock.

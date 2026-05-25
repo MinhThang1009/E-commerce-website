@@ -6,7 +6,7 @@
  * ChatbotService — trung tâm điều phối giao tiếp với LLM và quản lý lịch sử hội thoại.
  *
  * Service này làm 3 việc chính:
- *   1. **Gọi LLM (getAIResponse)**: gửi request đến OpenRouter/OpenAI-compatible API,
+ *   1. **Gọi LLM (augmentAndGenerate)**: gửi request đến OpenRouter/OpenAI-compatible API,
  *      có cơ chế tự động chuyển provider khi gặp lỗi (provider rotation).
  *   2. **Quản lý lịch sử hội thoại (session memory)**: lưu trữ các tin nhắn trong
  *      phiên hội thoại, giới hạn số lượng để tránh tốn quá nhiều bộ nhớ.
@@ -25,6 +25,7 @@
  * TTL 30 phút: session không hoạt động sau 30 phút bị xóa → giải phóng RAM tự động.
  */
 const axios = require('axios');
+const { Op } = require('sequelize');
 // try/catch nhất quán với module.js — nếu vector-store fail load, Path B dùng [] thay vì crash
 let vectorStoreService = null;
 try {
@@ -33,11 +34,13 @@ try {
   // vectorStoreService = null → Path B fallback về empty products
 }
 const { detectLanguage } = require('@modules/ai/services/chatbot/language/language-detector');
-const { expandAbbreviations, classifyIntent } = require('@modules/ai/services/core/ai-policy');
+const { validateMessage, expandAbbreviations, classifyIntent, isPromptInjection } = require('@modules/ai/services/core/ai-policy');
+const { AppError } = require('@shared/errors');
 const logger = require('@utils/logger');
 const promptBuilder = require('@modules/ai/services/chatbot/prompt/prompt-builder');
 const responseParser = require('@modules/ai/services/chatbot/prompt/response-parser');
 const keywordFallback = require('@modules/ai/services/chatbot/keyword/keyword-fallback');
+const { fuzzyExpandQuery } = require('@modules/ai/services/chatbot/query/fuzzy-expander');
 
 // ════════════════════════════════════════════════════════════════════════════════
 // CÁC HẰNG SỐ CẤU HÌNH — tập trung ở đầu file để dễ điều chỉnh
@@ -139,13 +142,23 @@ const LLM_REWRITE_TIMEOUT_MS = 8000;
 class ChatbotService {
   constructor() {
     // ── Cấu hình providers từ environment variables ───────────────────────────
-    // Hỗ trợ 1 provider hiện tại, có thể mở rộng bằng cách push thêm vào array
+    // Provider 1: LLM_API_KEY + LLM_BASE_URL + LLM_MODEL_1
+    // Provider 2+: LLM_API_KEY_2 + LLM_BASE_URL_2 (fallback LLM_BASE_URL) + LLM_MODEL_2
+    // Rotation: thử lần lượt, provider sau là fallback khi provider trước lỗi.
     this.providers = [];
-    if (process.env.LLM_API_KEY && process.env.LLM_BASE_URL) {
+    const baseUrl = process.env.LLM_BASE_URL;
+    if (process.env.LLM_API_KEY && baseUrl) {
       this.providers.push({
         key: process.env.LLM_API_KEY,
-        url: `${process.env.LLM_BASE_URL}/chat/completions`,
-        model: process.env.LLM_MODEL || 'openai/gpt-4.5',
+        url: `${baseUrl}/chat/completions`,
+        model: process.env.LLM_MODEL_1,
+      });
+    }
+    if (process.env.LLM_MODEL_2) {
+      this.providers.push({
+        key: process.env.LLM_API_KEY_2 || process.env.LLM_API_KEY,
+        url: `${process.env.LLM_BASE_URL_2 || baseUrl}/chat/completions`,
+        model: process.env.LLM_MODEL_2,
       });
     }
 
@@ -167,10 +180,10 @@ class ChatbotService {
 
     // ── Delegate các extracted functions ─────────────────────────────────────
     // Các hàm này được tách ra file riêng để dễ test độc lập.
-    // Gán lên instance để tests có thể gọi chatbotService.createPrompt() trực tiếp
+    // Gán lên instance để tests có thể gọi chatbotService.buildAugmentedPrompt() trực tiếp
     // (tránh phải mock require() — khó hơn nhiều trong Jest).
-    this.createPrompt = promptBuilder.createPrompt;
-    this.parseAIResponse = responseParser.parseAIResponse;
+    this.buildAugmentedPrompt = promptBuilder.buildAugmentedPrompt;
+    this.parseLLMOutput = responseParser.parseLLMOutput;
     this.simpleKeywordMatch = keywordFallback.simpleKeywordMatch;
     this.getFallbackResponse = keywordFallback.getFallbackResponse;
 
@@ -199,6 +212,292 @@ class ChatbotService {
   }
 
   /**
+   * Inject Sequelize models từ app.js sau khi singleton được tạo.
+   * Phải gọi trước request đầu tiên đến chatbot.
+   *
+   * @param {{ Brand, Category, ChatMessage }} models
+   */
+  initialize({ Brand, Category, ChatMessage }) {
+    this.Brand = Brand;
+    this.Category = Category;
+    this.ChatMessage = ChatMessage;
+  }
+
+  /**
+   * Xử lý một tin nhắn của user — entry point chính của ChatbotService.
+   *
+   * Flow 7 bước: validate → normalize → injection/off-topic → load history
+   *   → retrieve (hybrid search + LLM rewrite song song) → generate (LLM) → persist
+   *
+   * @param {string} message - Tin nhắn gốc từ user.
+   * @param {number|null} [userId=null] - ID user đã đăng nhập; null nếu khách vãng lai.
+   * @param {string|null} [sessionId=null] - Session ID để track conversation history.
+   * @returns {Promise<Object>} `{ response, products, suggestions, intent }`
+   */
+  async handleMessage(message, userId = null, sessionId = null) {
+    const startTime = Date.now();
+    try {
+      // ── Bước 1-3: Validate + Normalize + Security gates ───────────────────────
+      logger.debug(`📝 Câu truy vấn gốc: "${message}"`);
+      const prep = this._preprocessMessage(message);
+      if (!prep.valid) throw new AppError(prep.reason, 400);
+
+      const { normalizedQuery, intent, injection, offTopic } = prep;
+
+      if (injection) {
+        logger.warn('[Security] Phát hiện prompt injection, từ chối xử lý');
+        const isEn = detectLanguage(message) === 'en';
+        const injectionResponse = {
+          response: isEn
+            ? '🛡️ I can only help with tech product inquiries.'
+            : '🛡️ Mình chỉ có thể hỗ trợ tư vấn sản phẩm công nghệ ạ.',
+          products: [],
+          suggestions: isEn ? ['View phones', 'View laptops'] : ['Xem điện thoại', 'Xem laptop'],
+          intent: 'off_topic',
+        };
+        this._persistMessages(
+          sessionId, userId, message, injectionResponse.response, 'off_topic', Date.now() - startTime, true,
+        ).catch((err) => logger.warn('[Chatbot] Lưu injection message thất bại:', err.message));
+        return injectionResponse;
+      }
+
+      if (offTopic) {
+        const isEn = detectLanguage(message) === 'en';
+        const offTopicResponse = {
+          response: isEn
+            ? 'ℹ️ This question is outside my area of expertise. I can only help with tech products like phones, laptops, smartwatches... Would you like to explore any products?'
+            : 'ℹ️ Câu hỏi này nằm ngoài phạm vi mình có thể hỗ trợ ạ. Mình chỉ tư vấn được về sản phẩm công nghệ như điện thoại, laptop, đồng hồ thông minh... Bạn cần tìm hiểu sản phẩm nào không?',
+          products: [],
+          suggestions: isEn
+            ? ['View phones', 'View laptops', 'Deals & promotions', 'Get advice']
+            : ['Xem điện thoại', 'Xem laptop', 'Sản phẩm khuyến mãi', 'Tư vấn thêm'],
+          intent: 'off_topic',
+        };
+        this._persistMessages(
+          sessionId, userId, message, offTopicResponse.response, intent, Date.now() - startTime, true,
+        ).catch((err) => logger.warn('[Chatbot] Lưu off-topic message thất bại:', err.message));
+        return offTopicResponse;
+      }
+
+      // ── Bước 4: Load lịch sử hội thoại từ session memory ─────────────────────
+      const sessionEntry = sessionId ? this.conversationHistory.get(sessionId) : null;
+      const conversationHistory = sessionEntry ? sessionEntry.messages : [];
+
+      // ── Bước 5: Retrieve — embedding-based hybrid search ────────────────────
+      const enrichedQuery = this._enrichQueryFromHistory(normalizedQuery, conversationHistory);
+      const { products: relevantProducts, finalQuery } = await this._retrieveProducts(enrichedQuery, normalizedQuery);
+
+      // ── Bước 6: Generation — gọi LLM để sinh câu trả lời ────────────────────
+      const aiResponse = await this.augmentAndGenerate(
+        finalQuery,
+        relevantProducts,
+        conversationHistory,
+      );
+
+      // ── Bước 7: Persist — cập nhật session memory + lưu DB ──────────────────
+      if (sessionId) {
+        const userContentForHistory = this._sanitizeMessage(finalQuery || message);
+        const updatedMessages = [
+          ...conversationHistory,
+          { role: 'user', content: userContentForHistory },
+          { role: 'assistant', content: aiResponse.response || '' },
+        ].slice(-(MAX_HISTORY_TURNS * 2));
+
+        this.conversationHistory.set(sessionId, {
+          messages: updatedMessages,
+          lastAccess: Date.now(),
+        });
+
+        this._evictStaleSessions();
+      }
+
+      const responseTimeMs = Date.now() - startTime;
+      this._persistMessages(
+        sessionId, userId, message, aiResponse.response || '', intent, responseTimeMs, false,
+        { products: aiResponse.products, suggestions: aiResponse.suggestions },
+      ).catch((err) => logger.warn('[Chatbot] Lưu tin nhắn thất bại (non-blocking):', err.message));
+
+      return aiResponse;
+    } catch (error) {
+      // Re-throw AppError để controller xử lý đúng HTTP status code (400, 404...)
+      if (error.statusCode) throw error;
+      logger.error('Lỗi chatbot:', error);
+      return this.getFallbackResponse(message);
+    }
+  }
+
+  /**
+   * Tiền xử lý tin nhắn: validate → normalize → classify → detect security gates.
+   * Tách riêng để dễ test độc lập và trace trong scripts/preprocess-trace.js.
+   *
+   * @param {string} message - Tin nhắn gốc từ user.
+   * @returns {{ valid: boolean, reason?: string, normalizedQuery?: string,
+   *             intent?: string, injection?: boolean, offTopic?: boolean }}
+   */
+  _preprocessMessage(message) {
+    const validation = validateMessage(message);
+    if (!validation.valid) return { valid: false, reason: validation.reason };
+
+    const normalizedQuery = expandAbbreviations(message);
+    const intent = classifyIntent(normalizedQuery);
+    const injection = isPromptInjection(message);
+    const offTopic = intent === 'off_topic';
+
+    return { valid: true, normalizedQuery, intent, injection, offTopic };
+  }
+
+  /**
+   * Enrich query bằng context từ conversation history khi user dùng đại từ.
+   *
+   * Vấn đề: "cái đó có bao nhiêu RAM?" — vector search không biết "cái đó" là gì,
+   * trả về products ngẫu nhiên → LLM nói "chưa có sản phẩm đó" dù Turn 1 đã xác nhận có.
+   *
+   * Fix: nếu query chứa đại từ chỉ định, append nội dung của 1-2 assistant messages
+   * gần nhất vào query để vector search có ngữ cảnh đúng.
+   *
+   * @param {string} query - Query đã normalize.
+   * @param {Array<{role:string, content:string}>} history - Conversation history.
+   * @returns {string} Query gốc hoặc query đã enrich (nếu phát hiện đại từ).
+   */
+  _enrichQueryFromHistory(query, history) {
+    if (!history || history.length === 0) return query;
+
+    // Dùng [\p{L}\p{N}]* thay vì \w* để nhận ký tự Unicode tiếng Việt có dấu.
+    // Pattern "[\p{L}\p{N}]*(?:đó|này|kia)" bắt MỌI cụm "X đó/này/kia" mà không cần liệt kê prefix.
+    const PRONOUN_RE =
+      /(?:^|\s)[\p{L}\p{N}]*(?:đó|này|kia)(?=[\s,?.!]|$)|(?:^|\s)nó(?=[\s,?.!]|$)|so sánh|cả hai|2 cái|hai cái/iu;
+    const hasPronoun = PRONOUN_RE.test(query);
+
+    // Implicit follow-up: câu hỏi ngắn không có subject rõ ràng nhưng rõ ràng hỏi về SP vừa đề cập.
+    // Ví dụ: "có màu gì?", "giá bao nhiêu?", "còn hàng không?", "bảo hành mấy năm?"
+    // Điều kiện: query ngắn (<= 50 ký tự) + không chứa brand/product name + history có data.
+    const BRAND_RE = /iphone|samsung|macbook|xiaomi|oppo|realme|apple|dell|asus|acer|casio|citizen|laptop|tablet|điện thoại|đồng hồ|máy tính|smartwatch|earphone|headphone|airpod/i;
+    const isImplicitFollowup = !hasPronoun
+      && query.trim().length <= 50
+      && !BRAND_RE.test(query);
+
+    if (!hasPronoun && !isImplicitFollowup) return query;
+
+    // Trích xuất TÊN SẢN PHẨM ĐẦU TIÊN từ mỗi assistant message gần nhất.
+    //
+    // Lý do chỉ lấy sản phẩm đầu tiên (không phải top 3):
+    //   - Nếu lấy top 3 từ mỗi turn, turn có nhiều iPhone (T1/T2/T3) sẽ có 3 iPhone names
+    //     trong khi turn về MacBook (T4) chỉ có 1 → iPhone dominate keyword ranking → MacBook
+    //     không lên top 3 khi user so sánh.
+    //   - Chỉ lấy top 1 đảm bảo mỗi turn được đại diện BẰNG NHAU trong enriched query.
+    //
+    // Hỗ trợ format:
+    //   1. Keyword fallback: "• Điện thoại iPhone 17 - 24.990.000 đ"  → extract "Điện thoại iPhone 17"
+    //   2. LLM response: lấy 60 ký tự đầu làm fallback (thường bắt đầu bằng tên sản phẩm)
+    const extractTopProductFromResponse = (text) => {
+      // Skip "not found" response — không có SP để extract, tránh noise vào enriched query
+      if (text.startsWith('🚫') || /Cửa hàng hiện chưa có|không tìm thấy|ngoài phạm vi/i.test(text.substring(0, 80))) return null;
+      const firstBullet = text
+        .split('\n')
+        .find((l) => l.includes('•'));
+      if (firstBullet) {
+        return firstBullet
+          .replace(/^.*?•\s*/, '')
+          .replace(/\s*-\s*[\d.,]+.*$/, '')
+          .trim();
+      }
+      return text.substring(0, 60);
+    };
+
+    const recentContext = history
+      .filter((m) => m.role === 'assistant')
+      .slice(-2)
+      .map((m) => extractTopProductFromResponse(m.content))
+      .filter(Boolean)
+      .join(' ');
+
+    if (!recentContext.trim()) return query;
+    logger.debug(`[Enrich] ${hasPronoun ? 'Pronoun' : 'Implicit follow-up'} detected, appending product names from history`);
+    return `${query} ${recentContext}`;
+  }
+
+  /**
+   * Bước 5 — Retrieval: embedding-based hybrid search để tìm sản phẩm liên quan.
+   *
+   * Pipeline nội bộ:
+   *   1. Clean negation phrases khỏi query (tránh embedding bias từ brand bị phủ định)
+   *   2. Song song: LLM rewrite query + hybridSearch(query) để giảm latency
+   *   3. Nếu LLM rewrite khác query gốc → hybridSearch lần 2 với query đã rewrite
+   *   4. Nếu 0 kết quả → hạ minScore về 0, lấy top-3 (fallback low-confidence)
+   *
+   * Tách riêng để handleMessage() không bị "ô nhiễm" bởi ~50 dòng retrieval logic.
+   *
+   * @param {string} enrichedQuery - Query đã enrich từ history (xử lý đại từ).
+   * @param {string} normalizedQuery - Query đã normalize (để so sánh với LLM rewrite).
+   * @returns {Promise<{ products: Array, finalQuery: string }>}
+   */
+  async _retrieveProducts(enrichedQuery, normalizedQuery) {
+    if (!vectorStoreService) return { products: [], finalQuery: enrichedQuery };
+
+    try {
+      // Strip mệnh đề phủ định trước khi gửi lên embedding model.
+      // "không cần iPhone, Samsung" → bias embedding về iPhone/Samsung dù là phủ định.
+      const queryForRetrieval =
+        enrichedQuery
+          .replace(
+            /(?:không\s+(?:cần|muốn|thích|dùng)|tránh|avoid|don't\s+want)\s+[\p{L}\p{N}\s,/]+?(?=\s+(?:gì|hay|hoặc|được|cũng|mà|nhưng|,|$)|\s*$)/igu,
+            ' ',
+          )
+          .trim() || enrichedQuery;
+
+      // Chạy song song LLM rewrite + hybridSearch để giảm latency
+      const [llmRewrite, initialResults] = await Promise.all([
+        this.rewriteQuery(queryForRetrieval).catch(() => null),
+        vectorStoreService.hybridSearch(queryForRetrieval, 10),
+      ]);
+
+      let finalQuery = enrichedQuery;
+      let products;
+
+      if (llmRewrite && llmRewrite.toLowerCase() !== normalizedQuery.toLowerCase()) {
+        finalQuery = llmRewrite;
+        logger.debug(`✨ [LLM Rewrite] "${normalizedQuery}" → "${llmRewrite}"`);
+        try {
+          const refinedResults = await vectorStoreService.hybridSearch(llmRewrite, 10);
+          const results = refinedResults.length > 0 ? refinedResults : initialResults;
+          products = results.map((r) => ({
+            ...r.metadata,
+            score: r.score,
+            ...(r.lowConfidence && { lowConfidence: true }),
+          }));
+        } catch {
+          products = initialResults.map((r) => ({ ...r.metadata, score: r.score }));
+        }
+      } else {
+        products = initialResults.map((r) => ({
+          ...r.metadata,
+          score: r.score,
+          ...(r.lowConfidence && { lowConfidence: true }),
+        }));
+      }
+
+      // Fallback: không có kết quả trên threshold → hạ minScore, lấy top-3
+      if (products.length === 0) {
+        logger.warn('[Chatbot] Không có kết quả trên threshold — hạ minScore lấy top-3');
+        try {
+          const lowResults = await vectorStoreService.hybridSearch(finalQuery, 3, 0);
+          products = lowResults.map((r) => ({ ...r.metadata, score: r.score, lowConfidence: true }));
+        } catch {
+          products = [];
+        }
+      }
+
+      if (process.env.NODE_ENV !== 'production') {
+        logger.debug(`📦 Tìm thấy ${products.length} sản phẩm liên quan qua RAG`);
+      }
+      return { products, finalQuery };
+    } catch (err) {
+      logger.warn('[Chatbot] Vector search thất bại, tiếp tục không có retrieval:', err.message);
+      return { products: [], finalQuery: enrichedQuery };
+    }
+  }
+
+  /**
    * Gọi LLM để chuẩn hóa và cải thiện query của user.
    *
    * Tại sao dùng LLM để rewrite thay vì chỉ expandAbbreviations?
@@ -207,7 +506,7 @@ class ChatbotService {
    *   "ip17 pro bao nh" → "iPhone 17 Pro bao nhiêu tiền" (sửa lỗi chính tả + expand đầy đủ)
    *   "ss fold 6 vs ip16 pm" → "Samsung Galaxy Z Fold 6 vs iPhone 16 Pro Max"
    *
-   * **Tại sao chạy song song với hybridSearch trong RAGPipeline?**
+   * **Tại sao chạy song song với hybridSearch?**
    * LLM rewrite mất 1-3 giây. Nếu chạy tuần tự trước hybridSearch:
    *   rewrite (1-3s) → search (0.5-1s) → tổng 1.5-4 giây thêm vào latency.
    * Chạy song song: cả hai chạy cùng lúc → tổng chỉ là max(1-3s, 0.5-1s) = 1-3 giây.
@@ -220,8 +519,18 @@ class ChatbotService {
    * @returns {Promise<string|null>} Query đã cải thiện, hoặc null nếu lỗi/không thay đổi được.
    */
   async rewriteQuery(message) {
-    // Không có provider → không thể rewrite, trả null ngay
-    if (this.providers.length === 0) return null;
+    // Không có LLM provider → fuzzy expand từ product catalog thay thế
+    if (this.providers.length === 0) {
+      if (!vectorStoreService) return null;
+      await vectorStoreService.loadPromise;
+      const productNames = vectorStoreService.items.map(i => i.metadata?.name).filter(Boolean);
+      const { expanded, changed } = fuzzyExpandQuery(message, productNames);
+      if (changed) {
+        logger.debug(`[FuzzyExpand] "${message}" → "${expanded}"`);
+        return expanded;
+      }
+      return null;
+    }
 
     for (let i = 0; i < this.providers.length; i++) {
       const provider = this.providers[i];
@@ -271,302 +580,6 @@ class ChatbotService {
   }
 
   /**
-   * Xử lý một tin nhắn của user — entry point chính của ChatbotService.
-   *
-   * Được RAGPipeline gọi sau khi đã search sản phẩm (Path A — thông thường),
-   * hoặc có thể gọi trực tiếp không qua RAGPipeline (Path B — legacy/testing).
-   *
-   * **Flow 6 bước chi tiết:**
-   * ```
-   * Bước 1 — Chuẩn hóa query:
-   *   expandAbbreviations("ip15") → "iPhone 15"
-   *   classifyIntent("iPhone 15 giá") → "product_search"
-   *   (bỏ qua nếu RAGPipeline đã làm — context.normalizedQuery + context.preClassifiedIntent)
-   *
-   * Bước 2 — Off-topic early return:
-   *   intent === 'off_topic' → trả response cố định ngay
-   *   Không gọi LLM, không search sản phẩm → tiết kiệm quota + giảm latency
-   *
-   * Bước 3 — Load session history:
-   *   Lấy messages[] từ conversationHistory Map theo sessionId
-   *   Inject vào LLM prompt ở bước 5 → chatbot "nhớ" ngữ cảnh hội thoại trước
-   *
-   * Bước 4 — Retrieval (chỉ khi không qua RAGPipeline):
-   *   Path A (chính): RAGPipeline đã search → dùng context.retrievedProducts
-   *   Path B (legacy): gọi hybridSearch + rewriteQuery song song
-   *
-   * Bước 5 — Generation:
-   *   getAIResponse(query, products, context, history)
-   *   → build system prompt + RAG context → gọi LLM → parse JSON response
-   *
-   * Bước 6 — Persist:
-   *   Cập nhật conversationHistory Map (session memory)
-   *   _persistMessages() → lưu vào bảng ChatMessage (DB) cho analytics
-   * ```
-   *
-   * @param {string} message - Tin nhắn gốc từ user.
-   * @param {number|null} [userId=null] - ID user đã đăng nhập; null nếu khách vãng lai.
-   * @param {string|null} [sessionId=null] - Session ID để track conversation history.
-   *   null → không lưu/load history, chatbot không nhớ cuộc hội thoại.
-   * @param {Object} [context={}] - Context từ RAGPipeline (bỏ qua bước đã làm):
-   *   - `normalizedQuery` {string}: query đã expand abbreviations
-   *   - `preClassifiedIntent` {string}: intent đã phân loại
-   *   - `retrievedProducts` {Array}: sản phẩm đã search (skip bước retrieval)
-   *   - `llmRewrittenQuery` {string}: query đã LLM rewrite (dùng cho generation)
-   * @returns {Promise<Object>} Kết quả:
-   *   `{ response: string, products: Array, suggestions: Array, intent: string }`
-   */
-  async handleMessage(message, userId = null, sessionId = null, context = {}) {
-    const startTime = Date.now(); // Ghi thời điểm bắt đầu để tính response time
-    try {
-      // ── Bước 1: Chuẩn hóa query + phân loại intent ─────────────────────────
-      logger.debug(`📝 Câu truy vấn gốc: "${message}"`);
-
-      // Nếu RAGPipeline đã làm bước này → dùng kết quả sẵn có, không làm lại
-      // (tránh gọi expandAbbreviations 2 lần cho cùng 1 request)
-      const rewrittenQuery = context.normalizedQuery || expandAbbreviations(message);
-      const intent = context.preClassifiedIntent || classifyIntent(rewrittenQuery);
-      const searchMessage = rewrittenQuery;
-
-      // Log query cuối cùng để debug — ưu tiên LLM-rewritten nếu có
-      const displayQuery = context.llmRewrittenQuery || rewrittenQuery;
-      if (displayQuery && displayQuery.toLowerCase() !== message.toLowerCase()) {
-        logger.debug(`✨ Câu truy vấn đã viết lại: "${displayQuery}" (intent: ${intent})`);
-      }
-
-      // ── Bước 1b: Kiểm tra prompt injection — trả về fallback ngay, không gọi LLM ──
-      if (this._isPromptInjection(message)) {
-        logger.warn('[Security] Phát hiện prompt injection, từ chối xử lý');
-        const isEn = detectLanguage(message) === 'en';
-        const injectionResponse = {
-          response: isEn
-            ? 'I can only help with tech product inquiries.'
-            : 'Mình chỉ có thể hỗ trợ tư vấn sản phẩm công nghệ ạ.',
-          products: [],
-          suggestions: isEn ? ['View phones', 'View laptops'] : ['Xem điện thoại', 'Xem laptop'],
-          intent: 'off_topic',
-        };
-        this._persistMessages(
-          sessionId,
-          userId,
-          message,
-          injectionResponse.response,
-          'off_topic',
-          Date.now() - startTime,
-          true,
-        ).catch((err) => logger.warn('[Chatbot] Lưu injection message thất bại:', err.message));
-        return injectionResponse;
-      }
-
-      // ── Bước 2: Off-topic → trả về response cố định, bỏ qua LLM ───────────
-      // Tại sao không gọi LLM cho câu hỏi off-topic?
-      // Câu trả lời luôn giống nhau ("nằm ngoài phạm vi hỗ trợ") → không cần LLM.
-      // Tiết kiệm ~2-3 giây latency và không tốn quota API.
-      if (intent === 'off_topic') {
-        const lang = detectLanguage(message);
-        const isEn = lang === 'en';
-        const offTopicResponse = {
-          response: isEn
-            ? 'This question is outside my area of expertise 😅 I can only help with tech products like phones, laptops, smartwatches... Would you like to explore any products?'
-            : 'Câu hỏi này nằm ngoài phạm vi mình có thể hỗ trợ ạ 😅 Mình chỉ tư vấn được về sản phẩm công nghệ như điện thoại, laptop, đồng hồ thông minh... Bạn cần tìm hiểu sản phẩm nào không?',
-          products: [],
-          suggestions: isEn
-            ? ['View phones', 'View laptops', 'Deals & promotions', 'Get advice']
-            : ['Xem điện thoại', 'Xem laptop', 'Sản phẩm khuyến mãi', 'Tư vấn thêm'],
-          intent: 'off_topic',
-        };
-        // Persist off-topic message vào DB cho analytics (fire-and-forget — không block response)
-        this._persistMessages(
-          sessionId,
-          userId,
-          message,
-          offTopicResponse.response,
-          intent,
-          Date.now() - startTime,
-          true,
-        ).catch((err) => logger.warn('[Chatbot] Lưu off-topic message thất bại:', err.message));
-        return offTopicResponse;
-      }
-
-      // ── Bước 3: Load lịch sử hội thoại từ session memory ───────────────────
-      // sessionEntry = { messages: [...], lastAccess: timestamp } hoặc null nếu chưa có
-      const sessionEntry = sessionId ? this.conversationHistory.get(sessionId) : null;
-      const conversationHistory = sessionEntry ? sessionEntry.messages : [];
-      // conversationHistory được inject vào LLM ở bước 5 → LLM "nhớ" cuộc hội thoại
-
-      // ── Bước 4: Retrieval — lấy sản phẩm liên quan ─────────────────────────
-      let relevantProducts = [];
-      let finalQuery = searchMessage;
-
-      if (context.retrievedProducts) {
-        // Path A (thông thường): RAGPipeline đã search, kết quả được truyền qua context
-        // → dùng trực tiếp, không search lại (tiết kiệm thời gian + tránh kết quả khác nhau)
-        relevantProducts = context.retrievedProducts;
-        // Dùng LLM-rewritten query (nếu có) để xây prompt tốt hơn
-        if (context.llmRewrittenQuery) finalQuery = context.llmRewrittenQuery;
-      } else {
-        // Path B (legacy): handleMessage gọi trực tiếp không qua RAGPipeline
-        // Chạy song song LLM rewrite + vector search để giảm tổng thời gian chờ
-        // Giải thích Promise.all: xem comment tương tự trong rag-pipeline.js
-        const [llmRewrite, initialSearchResults] = await Promise.all([
-          this.rewriteQuery(searchMessage),
-          vectorStoreService.hybridSearch(searchMessage, 10).catch(() => []),
-        ]);
-
-        finalQuery = llmRewrite || searchMessage;
-        if (llmRewrite && llmRewrite !== searchMessage) {
-          logger.debug(`✨ [LLM Rewrite] "${searchMessage}" → "${llmRewrite}"`);
-          try {
-            const refinedResults = await vectorStoreService.hybridSearch(llmRewrite, 10);
-            // Dùng kết quả của query rewritten nếu có; fallback về kết quả ban đầu nếu rỗng
-            relevantProducts =
-              refinedResults.length > 0
-                ? refinedResults.map((r) => ({ ...r.metadata, score: r.score }))
-                : initialSearchResults.map((r) => ({ ...r.metadata, score: r.score }));
-          } catch {
-            // hybridSearch với query rewritten lỗi → fallback về kết quả ban đầu
-            relevantProducts = initialSearchResults.map((r) => ({ ...r.metadata, score: r.score }));
-          }
-        } else {
-          relevantProducts = initialSearchResults.map((r) => ({ ...r.metadata, score: r.score }));
-        }
-
-        // Không có sản phẩm nào vượt ngưỡng score → hạ ngưỡng, lấy top-3 gần nhất
-        // Đánh dấu lowConfidence = true để prompt-builder cảnh báo LLM
-        if (relevantProducts.length === 0) {
-          logger.warn('Retrieval score < threshold cho mọi item — hạ threshold lấy top-3');
-          try {
-            const lowScoreResults = await vectorStoreService.hybridSearch(finalQuery, 3, 0);
-            relevantProducts = lowScoreResults.map((r) => ({
-              ...r.metadata,
-              score: r.score,
-              lowConfidence: true,
-            }));
-          } catch {
-            relevantProducts = [];
-          }
-        }
-      }
-
-      if (process.env.NODE_ENV !== 'production') {
-        logger.debug(`📦 Tìm thấy ${relevantProducts.length} sản phẩm liên quan qua RAG`);
-      }
-
-      // ── Bước 5: Generation — gọi LLM để sinh câu trả lời ──────────────────
-      // getAIResponse nhận: query đã normalize, sản phẩm liên quan,
-      //   context bổ sung, và lịch sử hội thoại (để LLM nhớ ngữ cảnh)
-      const aiResponse = await this.getAIResponse(
-        finalQuery,
-        relevantProducts,
-        { ...context, originalMessage: message },
-        conversationHistory,
-      );
-
-      // ── Bước 6: Persist — cập nhật session memory + lưu DB ─────────────────
-      if (sessionId) {
-        // Thêm tin nhắn mới vào history, cắt bỏ tin cũ nếu vượt quá MAX_HISTORY_TURNS
-        // slice(-(MAX_HISTORY_TURNS * 2)): lấy 20 phần tử cuối (10 turns × 2 messages)
-        // Dấu - trước số nghĩa là đếm từ cuối mảng
-        // Sanitize trước khi lưu vào history — history sẽ được inject vào LLM turn sau.
-        // Dùng displayQuery (đã normalize) nếu có, fallback về message gốc.
-        const userContentForHistory = this._sanitizeMessage(displayQuery || message);
-        const updatedMessages = [
-          ...conversationHistory,
-          { role: 'user', content: userContentForHistory },
-          { role: 'assistant', content: aiResponse.response || '' },
-        ].slice(-(MAX_HISTORY_TURNS * 2));
-
-        // Cập nhật lastAccess để _evictStaleSessions biết session này vừa dùng
-        this.conversationHistory.set(sessionId, {
-          messages: updatedMessages,
-          lastAccess: Date.now(),
-        });
-
-        // Dọn dẹp session cũ/không dùng sau mỗi lần cập nhật
-        this._evictStaleSessions();
-      }
-
-      const responseTimeMs = Date.now() - startTime;
-      // Lưu cặp tin nhắn vào DB — thực sự non-blocking (fire-and-forget)
-      // Không await → lỗi DB không làm chậm response trả về user
-      this._persistMessages(
-        sessionId,
-        userId,
-        message,
-        aiResponse.response || '',
-        intent,
-        responseTimeMs,
-        false, // isFallback = false vì đã qua LLM thành công
-      ).catch((err) => logger.warn('[Chatbot] Lưu tin nhắn thất bại (non-blocking):', err.message));
-
-      return aiResponse;
-    } catch (error) {
-      // Lỗi không mong đợi → log và trả về fallback thay vì crash
-      logger.error('Lỗi chatbot:', error);
-      return this.getFallbackResponse(message);
-    }
-  }
-
-  /**
-   * Lưu cặp tin nhắn user + assistant vào bảng ChatMessage trong DB.
-   *
-   * **Tại sao lưu cả 2 messages cùng lúc (bulkCreate) thay vì riêng lẻ?**
-   * 1 DB call thay vì 2 → giảm overhead, đặc biệt quan trọng với MySQL.
-   *
-   * **Tại sao non-blocking (chỉ log warning, không throw)?**
-   * Nếu DB lỗi (connection dropped, disk full), chatbot vẫn phải trả lời được user.
-   * Analytics là "nice to have" — mất dữ liệu analytics ít nghiêm trọng hơn
-   * so với chatbot không hoạt động.
-   *
-   * @param {string|null} sessionId - Session ID (null → skip, không lưu).
-   * @param {number|null} userId - ID user (null nếu anonymous).
-   * @param {string} userMessage - Tin nhắn gốc từ user.
-   * @param {string} assistantReply - Câu trả lời của chatbot.
-   * @param {string} intent - Intent đã classify (product_search, off_topic...).
-   * @param {number} responseTimeMs - Thời gian xử lý (ms) — dùng cho analytics dashboard.
-   * @param {boolean} isFallback - true nếu không qua LLM (keyword fallback hoặc off-topic).
-   * @returns {Promise<void>}
-   */
-  async _persistMessages(
-    sessionId,
-    userId,
-    userMessage,
-    assistantReply,
-    intent,
-    responseTimeMs,
-    isFallback,
-  ) {
-    try {
-      // Không lưu nếu không có sessionId hoặc model chưa được inject
-      if (!sessionId || !this.ChatMessage) return;
-      await this.ChatMessage.bulkCreate([
-        {
-          sessionId,
-          userId: userId || null,
-          content: userMessage,
-          role: 'user',
-          messageType: 'ai_chatbot',
-          intent,
-          isFallback: false, // Tin nhắn của user không phải fallback
-        },
-        {
-          sessionId,
-          userId: userId || null,
-          content: assistantReply,
-          role: 'assistant',
-          messageType: 'ai_chatbot',
-          intent,
-          responseTimeMs, // Thời gian xử lý — dùng trong admin dashboard để monitor performance
-          isFallback, // Đánh dấu nếu response này từ fallback (không qua LLM)
-        },
-      ]);
-    } catch (dbError) {
-      // Lỗi DB chỉ log cảnh báo — không ảnh hưởng flow trả lời user
-      logger.warn('Không thể lưu chatbot messages vào DB:', dbError.message);
-    }
-  }
-
-  /**
    * Gọi LLM với RAG context + lịch sử hội thoại để sinh câu trả lời.
    *
    * **Cấu trúc messages gửi cho LLM:**
@@ -586,13 +599,12 @@ class ChatbotService {
    * Khi provider thành công → return ngay (không thử provider khác).
    * Khi tất cả fail → simpleKeywordMatch() (fallback cuối cùng).
    *
-   * @param {string} userMessage - Query đã sanitize (escape quotes, cắt 2000 ký tự).
+   * @param {string} userMessage - Query đã sanitize (escape quotes, cắt 500 ký tự).
    * @param {Array<Object>} products - Sản phẩm từ Retrieval (ground truth để inject vào prompt).
-   * @param {Object} context - Context bổ sung (originalMessage, llmRewrittenQuery...).
    * @param {Array<Object>} [history=[]] - Lịch sử hội thoại: [{role: 'user'|'assistant', content}].
    * @returns {Promise<Object>} Kết quả: `{ response, products, suggestions, intent }`.
    */
-  async getAIResponse(userMessage, products, context, history = []) {
+  async augmentAndGenerate(userMessage, products, history = []) {
     // Không có provider → keyword match với products đã retrieve (nhất quán với all-providers-fail path)
     if (this.providers.length === 0) {
       return this.simpleKeywordMatch(userMessage, products);
@@ -611,8 +623,8 @@ class ChatbotService {
     const sanitizedMessage = this._sanitizeMessage(userMessage);
 
     // ── Xây dựng RAG context prompt (phần "Augmented") ───────────────────────
-    // createPrompt inject danh sách sản phẩm + thông tin cửa hàng vào câu hỏi user
-    const ragContextMessage = this.createPrompt(sanitizedMessage, products, context);
+    // buildAugmentedPrompt inject danh sách sản phẩm + thông tin cửa hàng vào câu hỏi user
+    const augmentedPrompt = this.buildAugmentedPrompt(sanitizedMessage, products);
 
     const storeName = process.env.STORE_NAME || 'TechStore';
 
@@ -633,7 +645,7 @@ QUY TẮC BẮT BUỘC:
     const messages = [
       { role: 'system', content: systemContent },
       ...history, // Lịch sử hội thoại giúp LLM nhớ ngữ cảnh ("cái đó" → biết là gì)
-      { role: 'user', content: ragContextMessage },
+      { role: 'user', content: augmentedPrompt },
     ];
 
     // ── Provider rotation: thử lần lượt từng provider ────────────────────────
@@ -646,7 +658,7 @@ QUY TẮC BẮT BUỘC:
           );
         }
 
-        const response = await axios.post(
+        const httpResponse = await axios.post(
           provider.url,
           {
             model: provider.model,
@@ -665,9 +677,9 @@ QUY TẮC BẮT BUỘC:
         );
 
         // Trích xuất text response từ cấu trúc JSON của OpenAI-compatible API
-        // response.data.choices[0].message.content = nội dung tin nhắn của LLM
-        const aiText = response.data.choices?.[0]?.message?.content;
-        if (!aiText) {
+        // httpResponse.data.choices[0].message.content = nội dung tin nhắn của LLM
+        const rawLLMOutput = httpResponse.data.choices?.[0]?.message?.content;
+        if (!rawLLMOutput) {
           // LLM trả về choices rỗng (hiếm nhưng có thể xảy ra) → thử provider tiếp theo
           logger.warn(`LLM trả về choices rỗng (${provider.model}) — thử provider tiếp theo`);
           continue;
@@ -677,7 +689,7 @@ QUY TẮC BẮT BUỘC:
           logger.debug(`Đã nhận phản hồi từ ${provider.model}`);
 
         // Parse JSON response và map tên sản phẩm về object thực trong DB
-        return this.parseAIResponse(aiText, products, userMessage);
+        return this.parseLLMOutput(rawLLMOutput, products, userMessage);
       } catch (error) {
         const status = error.response?.status;
 
@@ -690,7 +702,7 @@ QUY TẮC BẮT BUỘC:
           !error.response // Network error (timeout, DNS fail, connection refused)
         ) {
           logger.warn(
-            `[Rotation] getAIResponse provider ${attempt + 1}/${this.providers.length} (${provider.model}) lỗi ${status || error.code}, thử tiếp...`,
+            `[Rotation] augmentAndGenerate provider ${attempt + 1}/${this.providers.length} (${provider.model}) lỗi ${status || error.code}, thử tiếp...`,
           );
           continue;
         }
@@ -707,40 +719,6 @@ QUY TẮC BẮT BUỘC:
 
     // Tất cả providers đều thất bại → fallback về keyword matching
     return this.simpleKeywordMatch(userMessage, products);
-  }
-
-  /**
-   * Dọn dẹp session memory để tránh rò rỉ bộ nhớ (memory leak).
-   *
-   * **Memory leak là gì?**
-   * Nếu không xóa session cũ, Map sẽ tích lũy sessions mãi mãi trong RAM.
-   * Server chạy nhiều ngày → hàng nghìn sessions → RAM tăng vô hạn → server crash.
-   *
-   * **Evict là gì?**
-   * "Evict" là loại bỏ entry cũ/không dùng khỏi bộ nhớ.
-   * **Chiến lược LRU (Least Recently Used):**
-   * Khi vẫn còn quá nhiều session sau khi xóa hết hạn → xóa những session
-   * có lần truy cập CŨ NHẤT (ít dùng nhất) cho đến khi còn MAX_SESSIONS.
-   * LRU là chiến lược tốt vì giữ lại những session đang active nhất.
-   *
-   * **Được gọi khi nào?**
-   * Sau mỗi lần cập nhật conversationHistory (handleMessage bước 6).
-   * Không gọi theo timer vì eviction xảy ra đủ thường xuyên theo request.
-   */
-  // ════════════════════════════════════════════════════════════════════════════
-  // HELPER METHODS — DI, cache, sanitize, injection detection
-  // ════════════════════════════════════════════════════════════════════════════
-
-  /**
-   * Inject Sequelize models từ app.js sau khi singleton được tạo.
-   * Phải gọi trước request đầu tiên đến chatbot.
-   *
-   * @param {{ Brand, Category, ChatMessage }} models
-   */
-  initialize({ Brand, Category, ChatMessage }) {
-    this.Brand = Brand;
-    this.Category = Category;
-    this.ChatMessage = ChatMessage;
   }
 
   /**
@@ -785,26 +763,134 @@ QUY TẮC BẮT BUỘC:
       .replace(/"/g, "'")
       .replace(/\n{2,}/g, '\n')
       .trim()
-      .substring(0, 2000);
+      .substring(0, 500);
   }
 
   /**
-   * Phát hiện prompt injection patterns phổ biến.
-   * Trả về true nếu phát hiện → caller nên từ chối xử lý.
+   * Lưu cặp tin nhắn user + assistant vào bảng ChatMessage trong DB.
    *
-   * @param {string} text - Tin nhắn gốc từ user.
-   * @returns {boolean}
+   * **Tại sao lưu cả 2 messages cùng lúc (bulkCreate) thay vì riêng lẻ?**
+   * 1 DB call thay vì 2 → giảm overhead, đặc biệt quan trọng với MySQL.
+   *
+   * **Tại sao non-blocking (chỉ log warning, không throw)?**
+   * Nếu DB lỗi (connection dropped, disk full), chatbot vẫn phải trả lời được user.
+   * Analytics là "nice to have" — mất dữ liệu analytics ít nghiêm trọng hơn
+   * so với chatbot không hoạt động.
+   *
+   * @param {string|null} sessionId - Session ID (null → skip, không lưu).
+   * @param {number|null} userId - ID user (null nếu anonymous).
+   * @param {string} userMessage - Tin nhắn gốc từ user.
+   * @param {string} assistantReply - Câu trả lời của chatbot.
+   * @param {string} intent - Intent đã classify (product_search, off_topic...).
+   * @param {number} responseTimeMs - Thời gian xử lý (ms) — dùng cho analytics dashboard.
+   * @param {boolean} isFallback - true nếu không qua LLM (keyword fallback hoặc off-topic).
+   * @returns {Promise<void>}
    */
-  _isPromptInjection(text) {
-    const patterns = [
-      /ignore\s+(all\s+)?(previous\s+)?instructions?/i,
-      /\bsystem\s*:/i,
-      /\bact\s+as\b/i,
-      /\bforget\s+(all|everything|your)\b/i,
-      /\bpretend\s+(to\s+be|you\s+are)\b/i,
-      /\byou\s+are\s+now\b/i,
-    ];
-    return patterns.some((p) => p.test(text));
+  async _persistMessages(
+    sessionId,
+    userId,
+    userMessage,
+    assistantReply,
+    intent,
+    responseTimeMs,
+    isFallback,
+    aiMeta = null,
+  ) {
+    try {
+      // Không lưu nếu không có sessionId hoặc model chưa được inject
+      if (!sessionId || !this.ChatMessage) return;
+
+      await this.ChatMessage.bulkCreate([
+        {
+          sessionId,
+          userId: userId || null,
+          content: userMessage,
+          role: 'user',
+          messageType: 'ai_chatbot',
+          intent,
+          isFallback: false, // Tin nhắn của user không phải fallback
+        },
+        {
+          sessionId,
+          userId: userId || null,
+          content: assistantReply,
+          role: 'assistant',
+          messageType: 'ai_chatbot',
+          intent,
+          responseTimeMs,
+          isFallback,
+          ...(aiMeta ? { metadata: JSON.stringify(aiMeta) } : {}),
+        },
+      ]);
+    } catch (dbError) {
+      // Lỗi DB chỉ log cảnh báo — không ảnh hưởng flow trả lời user
+      logger.warn('Không thể lưu chatbot messages vào DB:', dbError.message);
+    }
+  }
+
+  /**
+   * Dọn dẹp session memory để tránh rò rỉ bộ nhớ (memory leak).
+   *
+   * **Memory leak là gì?**
+   * Nếu không xóa session cũ, Map sẽ tích lũy sessions mãi mãi trong RAM.
+   * Server chạy nhiều ngày → hàng nghìn sessions → RAM tăng vô hạn → server crash.
+   *
+   * **Evict là gì?**
+   * "Evict" là loại bỏ entry cũ/không dùng khỏi bộ nhớ.
+   * **Chiến lược LRU (Least Recently Used):**
+   * Khi vẫn còn quá nhiều session sau khi xóa hết hạn → xóa những session
+   * có lần truy cập CŨ NHẤT (ít dùng nhất) cho đến khi còn MAX_SESSIONS.
+   * LRU là chiến lược tốt vì giữ lại những session đang active nhất.
+   *
+   * **Được gọi khi nào?**
+   * Sau mỗi lần cập nhật conversationHistory (handleMessage bước 6).
+   * Không gọi theo timer vì eviction xảy ra đủ thường xuyên theo request.
+   */
+  clearSession(sessionId) {
+    if (!sessionId) {
+      this.conversationHistory.clear();
+      return true;
+    }
+    return this.conversationHistory.delete(sessionId);
+  }
+
+  getSessionHistory(sessionId) {
+    const entry = this.conversationHistory.get(sessionId);
+    return entry ? entry.messages : [];
+  }
+
+  // Session đang active trên UI — được cập nhật khi UI gọi registerSession()
+  // Tại sao cần? getLatestSession() từ DB không biết session mới nếu chưa có message.
+  // registerSession() cho phép terminal --watch theo đúng session UI ngay lập tức.
+  _registeredSession = null;
+
+  registerSession(sessionId) {
+    this._registeredSession = sessionId;
+    logger.debug(`[Session] UI registered session: ${sessionId}`);
+  }
+
+  async getLatestSession() {
+    // Ưu tiên session được UI đăng ký (biết ngay khi UI tạo session mới)
+    if (this._registeredSession) return this._registeredSession;
+    if (!this.ChatMessage) return null;
+    const latest = await this.ChatMessage.findOne({
+      where: { messageType: 'ai_chatbot', role: 'user' },
+      order: [['createdAt', 'DESC']],
+      attributes: ['sessionId'],
+      raw: true,
+    });
+    return latest?.sessionId || null;
+  }
+
+  async getSessionMessages(sessionId, limit = 50) {
+    if (!sessionId || !this.ChatMessage) return [];
+    return this.ChatMessage.findAll({
+      where: { sessionId, role: { [Op.in]: ['user', 'assistant'] }, messageType: 'ai_chatbot' },
+      order: [['createdAt', 'ASC']],
+      limit,
+      attributes: ['role', 'content', 'intent', 'metadata', 'createdAt'],
+      raw: true,
+    });
   }
 
   _evictStaleSessions() {

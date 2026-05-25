@@ -16,6 +16,7 @@ interface ChatMessagesProps {
   messagesEndRef: RefObject<HTMLDivElement>;
   // eslint-disable-next-line @typescript-eslint/no-explicit-any -- User object shape varies
   user?: any;
+  isLoading?: boolean;
 }
 
 /**
@@ -26,6 +27,7 @@ const ChatMessages: React.FC<ChatMessagesProps> = ({
   onSuggestionClick,
   messagesEndRef,
   user,
+  isLoading = false,
 }) => {
   const { t } = useTranslation();
   return (
@@ -77,7 +79,7 @@ const ChatMessages: React.FC<ChatMessagesProps> = ({
             </div>
           )}
 
-          <MessageBubble message={message} onSuggestionClick={onSuggestionClick} />
+          <MessageBubble message={message} onSuggestionClick={onSuggestionClick} isLoading={isLoading} />
         </div>
       ))}
       <div ref={messagesEndRef} />

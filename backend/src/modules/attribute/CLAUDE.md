@@ -102,7 +102,7 @@ Các method này **delegate sang `_nameGenerator`** (được inject từ ai mod
 
 ## 3.3 Business rules
 
-- **AttributeGroup types**: `select | color | size | text`
+- **AttributeGroup types**: `color | config | storage | size | custom`
 - **AttributeValue.affectsName**: Flag quyết định value có được dùng để sinh tên sản phẩm không. Chỉ value có `affectsName=true` và `isActive=true` mới được dùng trong name generation.
 - **AttributeValue.nameTemplate**: Template riêng để hiển thị trong tên (vd: "256GB" thay vì "256"). Nếu null → dùng `name`.
 - **Sort order**: Tên sinh ra ghép theo `attributeGroup.sortOrder` → `attributeValue.sortOrder`.

@@ -49,9 +49,17 @@ const ChatWidgetPortal: React.FC = () => {
 
   useEffect(() => {
     saveSessionIdToStorage(sessionId);
+    // Register session với server để terminal --watch biết session hiện tại ngay lập tức
+    if (sessionId) {
+      fetch('/api/chatbot/session/register', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ sessionId }),
+      }).catch(() => {}); // fire-and-forget
+    }
   }, [sessionId]);
 
-  const { mutateAsync: sendChatbotMessage, isPending: isLoading } = useSendChatbotMessageMutation();
+  const { mutateAsync: sendChatbotMessage, isPending: isLoading, reset: resetMutation } = useSendChatbotMessageMutation();
 
   useEffect(() => {
     if (isOpen && messages.length === 0) {
@@ -190,7 +198,106 @@ const ChatWidgetPortal: React.FC = () => {
   };
 
   const handleClearChat = () => {
+    resetMutation();           // reset isLoading → ẩn typing indicator ngay
     clearMessagesAction(createSessionId());
+  };
+
+  // Persist demo mode trong sessionStorage — tính 1 lần khi mount, không tính lại mỗi render
+  // ?demo=true  → bật, ghi sessionStorage (navigate sang trang khác vẫn giữ)
+  // ?demo=false → tắt, xóa sessionStorage
+  const [isDemoMode] = useState<boolean>(() => {
+    const param = new URLSearchParams(window.location.search).get('demo');
+    if (param === 'true')  { sessionStorage.setItem('demo_mode', 'true');  return true; }
+    if (param === 'false') { sessionStorage.removeItem('demo_mode');        return false; }
+    return sessionStorage.getItem('demo_mode') === 'true';
+  });
+  // Patch window.history để inject ?demo=true vào MỌI navigation (kể cả <Link>)
+  // Cleanup khi component unmount hoặc isDemoMode = false
+  useEffect(() => {
+    if (!isDemoMode) return;
+
+    const injectDemo = (url: string | URL | null | undefined): string | URL | null | undefined => {
+      if (!url) return url;
+      const s = url.toString();
+      const [path, qs] = s.split('?');
+      const params = new URLSearchParams(qs || '');
+      if (params.get('demo') === 'true') return url; // đã có, không thay đổi
+      params.set('demo', 'true');
+      return `${path}?${params.toString()}`;
+    };
+
+    const origPush    = window.history.pushState.bind(window.history);
+    const origReplace = window.history.replaceState.bind(window.history);
+
+    window.history.pushState = (state, title, url) =>
+      origPush(state, title, injectDemo(url) as string);
+    window.history.replaceState = (state, title, url) =>
+      origReplace(state, title, injectDemo(url) as string);
+
+    return () => {
+      window.history.pushState    = origPush;
+      window.history.replaceState = origReplace;
+    };
+  }, [isDemoMode]);
+
+  // Auto-poll khi demo mode bật — cứ 3s fetch DB, cập nhật khi DB có TIN MỚI
+  const lastDbCountRef = useRef(0);
+  useEffect(() => {
+    if (!isDemoMode || !sessionId) return;
+    // Khởi tạo lastDbCountRef với số messages hiện tại để không reload ngay
+    lastDbCountRef.current = messagesRef.current.filter(m => !m.isLoading).length;
+
+    const poll = async () => {
+      // Bỏ qua poll khi đang chờ response — tránh setMessagesAction 2 lần → flicker
+      if (messagesRef.current.some(m => m.isLoading)) return;
+      try {
+        const res = await fetch(`/api/chatbot/session/${sessionId}/messages`);
+        const json = await res.json();
+        const dbMsgs = json?.data?.messages ?? [];
+        if (dbMsgs.length > lastDbCountRef.current) {
+          lastDbCountRef.current = dbMsgs.length;
+          setMessagesAction(dbMsgs.map(dbMsgToMessage));
+        }
+      } catch { /* silent */ }
+    };
+    const timer = setInterval(poll, 3000);
+    return () => clearInterval(timer);
+  }, [isDemoMode, sessionId]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Helper: chuyển DB message → Message (bao gồm products/suggestions từ metadata)
+  const dbMsgToMessage = (m: { role: string; content: string; metadata?: string; createdAt: string }, idx: number): Message => {
+    const meta = m.metadata ? (() => { try { return JSON.parse(m.metadata!); } catch { return null; } })() : null;
+    return {
+      id: `${new Date(m.createdAt).getTime()}_${idx}`,
+      text: m.content,
+      sender: m.role === 'user' ? ('user' as const) : ('ai' as const),
+      ...(meta?.products?.length    ? { products: meta.products }       : {}),
+      ...(meta?.suggestions?.length ? { suggestions: meta.suggestions } : {}),
+    };
+  };
+
+  const [isSyncing, setIsSyncing] = useState(false);
+  const handleLoadHistory = async () => {
+    if (isSyncing) return;
+
+    // Hỏi session ID — mặc định là session hiện tại của UI
+    const input = window.prompt('Session ID cần đồng bộ:', sessionId ?? '');
+    if (!input?.trim()) return;
+
+    const targetSession = input.trim();
+    setIsSyncing(true);
+    try {
+      const res = await fetch(`/api/chatbot/session/${targetSession}/messages`);
+      const json = await res.json();
+      if (json.status === 'success' && json.data.messages.length > 0) {
+        const loaded: Message[] = json.data.messages.map(dbMsgToMessage);
+        setMessagesAction(loaded);
+      } else {
+        window.alert('Không tìm thấy lịch sử cho session này.');
+      }
+    } catch { /* silent */ } finally {
+      setIsSyncing(false);
+    }
   };
 
   const toggleChat = () => {
@@ -253,13 +360,19 @@ const ChatWidgetPortal: React.FC = () => {
             className="glass-widget fixed inset-x-4 bottom-20 sm:absolute sm:bottom-20 sm:right-0 sm:inset-x-auto w-auto sm:w-96 md:max-w-md rounded-3xl overflow-hidden flex flex-col chat-widget-active z-[9999] h-[75vh] max-h-[680px] min-h-[480px] sm:h-[680px] sm:max-h-[88vh]"
             onClick={(e) => e.stopPropagation()}
           >
-            <ChatHeader onClose={toggleChat} />
+            <ChatHeader
+              onClose={toggleChat}
+              onClearChat={handleClearChat}
+              onLoadHistory={isDemoMode ? handleLoadHistory : undefined}
+              isSyncing={isSyncing}
+            />
 
             <ChatMessages
               messages={messages}
               onSuggestionClick={handleSuggestionClick}
               messagesEndRef={messagesEndRef}
               user={user}
+              isLoading={isLoading}
             />
 
             <ChatInput

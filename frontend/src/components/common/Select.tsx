@@ -4,7 +4,7 @@
  * @feature shared
  * @description Shared UI component
  */
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect, useId } from 'react';
 import { useTranslation } from 'react-i18next';
 
 export interface SelectOption {
@@ -39,6 +39,7 @@ const Select: React.FC<SelectProps> = ({
   const placeholderText = placeholder ?? t('common.selectOption');
   const [isOpen, setIsOpen] = useState(false);
   const selectRef = useRef<HTMLDivElement>(null);
+  const buttonId = useId();
 
   const selectedOption = options.find((option) => option.value === value);
 
@@ -81,7 +82,7 @@ const Select: React.FC<SelectProps> = ({
   return (
     <div className={`${baseClasses} ${className}`} ref={selectRef}>
       {label && (
-        <label className="block text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-1">
+        <label htmlFor={buttonId} className="block text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-1">
           {label}
           {required && <span className="text-red-500 ml-1">*</span>}
         </label>
@@ -89,6 +90,7 @@ const Select: React.FC<SelectProps> = ({
 
       <div className="relative">
         <button
+          id={buttonId}
           type="button"
           className={selectClasses}
           onClick={toggleDropdown}

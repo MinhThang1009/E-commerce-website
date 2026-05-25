@@ -4,7 +4,7 @@
  *
  * Bao gồm:
  *  - ChatbotService.simpleKeywordMatch  (price consistency: vector store vs DB)
- *  - ChatbotService.parseAIResponse     (discount calculation, 3 trường hợp)
+ *  - ChatbotService.parseLLMOutput     (discount calculation, 3 trường hợp)
  *  - ChatbotService.extractSearchParams       (không extract số model thành giá)
  *  - VectorStoreService.cosineSimilarity      (NaN guard, edge cases)
  */
@@ -51,22 +51,11 @@ jest.mock('@services/vector-store/vector-store', () => ({
 // Mock axios để tránh gọi OpenRouter API
 jest.mock('axios');
 
-// Mock embedding services — chỉ cần khi test cosineSimilarity qua jest.requireActual
-jest.mock('@modules/ai/services/embedding/embedding', () => ({
-  getEmbedding: jest.fn().mockResolvedValue(new Array(1536).fill(0)),
-  isAvailable: jest.fn().mockReturnValue(false),
-}));
-
-jest.mock('@modules/ai/services/embedding/vi-embedding', () => ({
-  getEmbedding: jest.fn().mockResolvedValue(new Array(1024).fill(0)),
-  isAvailable: jest.fn().mockReturnValue(false),
-}));
-
 // ---------- Require sau khi mock đã đăng ký ----------
 
 const chatbotService = require('./chatbot-service');
 // Require trực tiếp để đảm bảo V8 coverage tracking đúng
-const { parseAIResponse, extractJSON } = require('./prompt/response-parser');
+const { parseLLMOutput, extractJSON } = require('./prompt/response-parser');
 
 // ============================================================
 // ChatbotService.simpleKeywordMatch
@@ -148,13 +137,13 @@ describe('ChatbotService.simpleKeywordMatch', () => {
 });
 
 // ============================================================
-// ChatbotService.parseAIResponse
+// ChatbotService.parseLLMOutput
 // ============================================================
 
-// Note: chatbotService.parseAIResponse = responseParser.parseAIResponse (direct reference).
+// Note: chatbotService.parseLLMOutput = responseParser.parseLLMOutput (direct reference).
 // Tests below gọi responseParser trực tiếp để đảm bảo V8 coverage tracking,
 // đồng thời verify contract của binding này.
-describe('parseAIResponse (via chatbotService.parseAIResponse binding)', () => {
+describe('parseLLMOutput (via chatbotService.parseLLMOutput binding)', () => {
   const makeAiText = (matchedProducts = ['iPhone 15 Pro']) =>
     JSON.stringify({
       response: 'Đây là sản phẩm phù hợp cho bạn!',
@@ -178,7 +167,7 @@ describe('parseAIResponse (via chatbotService.parseAIResponse binding)', () => {
       },
     ];
     // (33M - 29.99M) / 33M * 100 ≈ 9.12 → Math.round → 9
-    const result = chatbotService.parseAIResponse(makeAiText(), products, 'iphone 15 pro');
+    const result = chatbotService.parseLLMOutput(makeAiText(), products, 'iphone 15 pro');
     expect(result.products[0].discount).toBe(9);
   });
 
@@ -195,7 +184,7 @@ describe('parseAIResponse (via chatbotService.parseAIResponse binding)', () => {
         stockQuantity: 5,
       },
     ];
-    const result = chatbotService.parseAIResponse(makeAiText(), products, 'iphone 15 pro');
+    const result = chatbotService.parseLLMOutput(makeAiText(), products, 'iphone 15 pro');
     expect(result.products[0].discount).toBe(0);
   });
 
@@ -212,7 +201,7 @@ describe('parseAIResponse (via chatbotService.parseAIResponse binding)', () => {
         stockQuantity: 5,
       },
     ];
-    const result = chatbotService.parseAIResponse(makeAiText(), products, 'iphone 15 pro');
+    const result = chatbotService.parseLLMOutput(makeAiText(), products, 'iphone 15 pro');
     expect(result.products[0].discount).toBe(0);
   });
 
@@ -231,7 +220,7 @@ describe('parseAIResponse (via chatbotService.parseAIResponse binding)', () => {
       },
     ];
     // (31M - 28M) / 31M * 100 ≈ 9.67 → Math.round → 10
-    const result = chatbotService.parseAIResponse(makeAiText(), products, 'iphone 15 pro');
+    const result = chatbotService.parseLLMOutput(makeAiText(), products, 'iphone 15 pro');
     expect(result.products[0].price).toBe(28000000);
     expect(result.products[0].discount).toBe(10);
   });
@@ -251,7 +240,7 @@ describe('parseAIResponse (via chatbotService.parseAIResponse binding)', () => {
       },
     ];
     // Chuỗi không phải JSON → JSON.parse throw → rơi vào simpleKeywordMatch
-    const result = chatbotService.parseAIResponse('bố cục bị lỗi', products, 'iphone 15 pro');
+    const result = chatbotService.parseLLMOutput('bố cục bị lỗi', products, 'iphone 15 pro');
     expect(result).toHaveProperty('response');
     expect(result).toHaveProperty('suggestions');
   });
@@ -278,7 +267,7 @@ describe('parseAIResponse (via chatbotService.parseAIResponse binding)', () => {
       suggestions: [],
       intent: 'product_search',
     });
-    const result = parseAIResponse(aiText, products, 'iphone 11 pro');
+    const result = parseLLMOutput(aiText, products, 'iphone 11 pro');
     // LLM không thêm số sai → số check pass → word overlap 3/4 ≥ 80% → match
     expect(result.products).toHaveLength(1);
   });
@@ -302,7 +291,7 @@ describe('parseAIResponse (via chatbotService.parseAIResponse binding)', () => {
       suggestions: [],
       intent: 'product_search',
     });
-    const result = parseAIResponse(aiText, products, 'iphone 14 pro');
+    const result = parseLLMOutput(aiText, products, 'iphone 14 pro');
     expect(result.products).toHaveLength(0);
   });
 
@@ -325,7 +314,7 @@ describe('parseAIResponse (via chatbotService.parseAIResponse binding)', () => {
       suggestions: [],
       intent: 'product_search',
     });
-    const result = parseAIResponse(aiText, products, 'macbook air');
+    const result = parseLLMOutput(aiText, products, 'macbook air');
     expect(result.products[0].discount).toBeGreaterThan(0);
   });
 
@@ -348,7 +337,7 @@ describe('parseAIResponse (via chatbotService.parseAIResponse binding)', () => {
       suggestions: [],
       intent: 'product_search',
     });
-    const result = parseAIResponse(aiText, products, 'samsung s24');
+    const result = parseLLMOutput(aiText, products, 'samsung s24');
     // Dedup: chỉ giữ 1 item dù matchedProducts có 2 lần
     expect(result.products).toHaveLength(1);
     expect(result.products[0].id).toBe(5);

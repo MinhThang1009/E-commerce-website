@@ -5,7 +5,7 @@
  */
 process.env.NODE_ENV = 'test';
 
-const { parseAIResponse } = require('./response-parser');
+const { parseLLMOutput } = require('./response-parser');
 
 describe('response-parser — hasNumberMismatch FALSE branch (line 63)', () => {
   // Cần test case: pName !== rName, có số ở cả hai, nhưng số GIỐNG NHAU
@@ -36,7 +36,7 @@ describe('response-parser — hasNumberMismatch FALSE branch (line 63)', () => {
     // pName !== rName → không short-circuit ở line 45
     // numbersP=['27'], numbersR=['27'] → hasNumberMismatch = false
     // if (false) { return false; } → KHÔNG return → fall through → line 63 FALSE branch
-    const result = parseAIResponse(aiText, prods, 'màn hình 27');
+    const result = parseLLMOutput(aiText, prods, 'màn hình 27');
     expect(result).toBeDefined();
   });
 
@@ -62,7 +62,7 @@ describe('response-parser — hasNumberMismatch FALSE branch (line 63)', () => {
     });
     // pName='laptop 14 inch', rName='laptop mỏng 14'
     // numbersP=['14'], numbersR=['14'] → no mismatch → if(false) → FALSE branch
-    const result = parseAIResponse(aiText, prods, 'laptop 14');
+    const result = parseLLMOutput(aiText, prods, 'laptop 14');
     expect(result).toBeDefined();
   });
 });

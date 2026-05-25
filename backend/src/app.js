@@ -203,24 +203,13 @@ require('@jobs/cleanup');
 // }
 
 // Thiết lập các HTTP security headers
+// CSP bị tắt vì backend chỉ trả về JSON — CSP chỉ có ý nghĩa cho HTML document.
+// Frontend (Vite/Nginx) là nơi đặt CSP cho HTML page.
 app.use(
   helmet({
     crossOriginResourcePolicy: { policy: 'cross-origin' },
     crossOriginOpenerPolicy: { policy: 'unsafe-none' },
-    // CSP — dev thêm unsafe-eval vì Vite proxy forward header về browser
-    contentSecurityPolicy: {
-      directives: {
-        defaultSrc: ["'self'"],
-        scriptSrc:
-          process.env.NODE_ENV === 'production'
-            ? ["'self'", 'https://accounts.google.com']
-            : ["'self'", 'https://accounts.google.com', "'unsafe-eval'"],
-        styleSrc: ["'self'", "'unsafe-inline'"],
-        imgSrc: ["'self'", 'data:', 'https:', 'blob:'],
-        connectSrc: ["'self'"],
-        frameSrc: ["'self'"],
-      },
-    },
+    contentSecurityPolicy: false,
   }),
 );
 

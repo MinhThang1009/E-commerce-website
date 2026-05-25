@@ -20,7 +20,7 @@ class SequelizeAIRepository extends IAIRepository {
 
   async findActiveDeals(limit = 10) {
     return this.Product.findAll({
-      where: { status: 'active', compareAtPrice: { [Op.gt]: 0 } },
+      where: { status: 'active', compareAtPrice: { [Op.gt]: literal('`Product`.`base_price`') } },
       include: [
         {
           model: this.ProductVariant,
@@ -67,7 +67,7 @@ class SequelizeAIRepository extends IAIRepository {
       userId: userId || null,
       content: JSON.stringify({ event, productId, value, metadata }),
       role: 'user',
-      messageType: 'ai_chatbot',
+      messageType: 'support_chat', // dùng support_chat để phân biệt với chat messages thật
       intent: event,
     }).catch(() => null); // Non-blocking — analytics failure không fail request
   }

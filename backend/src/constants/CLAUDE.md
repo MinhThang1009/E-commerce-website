@@ -42,7 +42,8 @@ Bất cứ giá trị nào lặp lại ở >1 file → đưa vào đây.
 # 3. Cách dùng
 
 ```js
-const constants = require('@constants'); // hoặc inject qua module factory
+const constants = require('./constants'); // hoặc inject qua module factory
+// Lưu ý: không có alias @constants trong _moduleAliases — dùng relative path
 // app.js inject constants vào ordersModule (xem app.js)
 const ordersModule = buildOrdersModule({ ..., constants });
 ```

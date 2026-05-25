@@ -25,9 +25,9 @@
 **TechStore** là website thương mại điện tử fullstack chuyên bán thiết bị công nghệ (laptop, điện thoại, smartwatch, tablet, phụ kiện...). Hệ thống tích hợp AI Chatbot sử dụng RAG để tư vấn sản phẩm theo thời gian thực, hỗ trợ thanh toán trực tuyến qua MoMo và VNPay, và có hệ thống quản trị toàn diện.
 
 **Điểm nổi bật:**
-- Kiến trúc Modular Monolith — 19 backend modules, DI pattern, Event-Driven Communication
+- Kiến trúc Modular Monolith — 17 backend modules, DI pattern, Event-Driven Communication
 - AI Chatbot với Hybrid RAG (cosine similarity + BM25 keyword, 1024-dim vectors)
-- 5.694+ test cases, coverage 100% (unit), CI/CD với GitHub Actions
+- **5.069 test cases** (257 suites, 5 tầng), coverage 100% unit, CI/CD với GitHub Actions
 - Hỗ trợ đa ngôn ngữ (vi/en), dark mode, responsive
 
 ---
@@ -42,9 +42,9 @@
 - i18next + react-i18next (vi/en)
 
 **Backend**
-- Node.js 20 + Express 4 (Modular Monolith, 19 modules)
+- Node.js 20 + Express 4 (Modular Monolith, 17 modules)
 - Sequelize 6 + MySQL 8 (utf8mb4, timezone +07:00)
-- JWT (access 15m + refresh 30d), Google OAuth 2.0
+- JWT (access 15m + refresh env `JWT_REFRESH_EXPIRES_IN`, cookie default 7d), Google OAuth 2.0
 - Nodemailer (Gmail SMTP), bcrypt, Zod validation
 
 **AI / RAG**
@@ -72,21 +72,21 @@
 
 ## 4. Cài đặt và chạy
 
-### 1. Clone repo
+### 4.1 Clone repo
 
 ```bash
 git clone <repo-url>
 cd e-commerce-website
 ```
 
-### 2. Cài dependencies
+### 4.2 Cài dependencies
 
 ```bash
 cd backend && npm install
 cd ../frontend && npm install
 ```
 
-### 3. Cấu hình môi trường
+### 4.3 Cấu hình môi trường
 
 ```bash
 cp backend/.env.example backend/.env
@@ -97,15 +97,15 @@ cp frontend/.env.example frontend/.env
 # Điền: VITE_API_URL, VITE_GOOGLE_CLIENT_ID
 ```
 
-### 4. Khởi tạo database
+### 4.4 Khởi tạo database
 
 ```bash
 cd backend
-npm run db:migrate    # Tạo schema từ 72 migrations
+npm run db:migrate    # Tạo schema từ 81 migrations
 npm run db:seed       # Import seed data (sản phẩm, danh mục, users mẫu)
 ```
 
-### 5. Build vector store cho AI (tùy chọn)
+### 4.5 Build vector store cho AI (tùy chọn)
 
 ```bash
 cd backend
@@ -114,7 +114,7 @@ npm run ai:rebuild-vectors
 
 Cần `JINA_API_KEY` hoặc `HF_API_KEY`. Nếu bỏ qua, chatbot vẫn hoạt động nhưng không có semantic search.
 
-### 6. Chạy dự án
+### 4.6 Chạy dự án
 
 ```bash
 # Terminal 1 — Backend (port 8888)
@@ -132,7 +132,7 @@ cd frontend && npm run dev
 
 ## 5. Tổng quan tính năng
 
-### 19 Backend Modules
+### 5.1 Backend Modules (17)
 
 | Module | Mô tả |
 |---|---|
@@ -145,7 +145,7 @@ cd frontend && npm run dev
 | `inventory` | Quản lý tồn kho, ghi log biến động stock, SELECT FOR UPDATE chống race condition |
 | `reviews` | Đánh giá sản phẩm (chỉ user đã mua), thống kê rating tổng hợp |
 | `discount-code` | Mã giảm giá (% hoặc cố định), hạn dùng, giới hạn số lần |
-| `ai` | AI chatbot RAG pipeline, gợi ý sản phẩm, thêm vào giỏ qua chat |
+| `ai` | AI chatbot (Hybrid RAG 7-bước), gợi ý sản phẩm, thêm vào giỏ qua chat, analytics |
 | `admin` | Dashboard analytics, CRUD toàn bộ entities |
 | `content` | Feedback/contact form |
 | `wishlist` | Danh sách yêu thích |
@@ -154,7 +154,7 @@ cd frontend && npm run dev
 | `attribute` | Nhóm thuộc tính (màu, size, RAM...), giá trị thuộc tính, AI name generator |
 | `search-history` | Lưu lịch sử tìm kiếm, cleanup tự động (giữ 50 entries/user) |
 
-### 11 Frontend Features
+### 5.2 Frontend Features (13)
 
 | Feature | Mô tả |
 |---|---|
@@ -169,36 +169,46 @@ cd frontend && npm run dev
 | `reviews` | Viết đánh giá (sau khi đã mua), xem rating và bình luận |
 | `ai` | Chat widget nổi (floating, resizable), hiển thị sản phẩm từ AI, thêm vào giỏ qua chat |
 | `admin` | Dashboard analytics, CRUD sản phẩm/đơn hàng/người dùng/tồn kho |
+| `content` | Form liên hệ/feedback |
 | `upload` | Upload ảnh với preview, drag-and-drop, crop |
 
 ---
 
 ## 6. Hệ thống AI / RAG
 
-Chatbot TechStore sử dụng kiến trúc Hybrid RAG để tư vấn sản phẩm:
+Chatbot TechStore sử dụng kiến trúc Hybrid RAG, toàn bộ pipeline xử lý trong `ChatbotService` với 7 bước:
 
-**Indexing** (`npm run ai:rebuild-vectors`): Đọc sản phẩm active từ DB → xây dựng embedding text phong phú (tên + thương hiệu + danh mục + mô tả + giá + tình trạng kho) → gọi embedding API (chain fallback: Jina v3 → e5-instruct → e5-base) → lưu 1024-dim vectors vào `data/vector-db.json`.
+```
+validate → normalize (expandAbbreviations) → injection/off-topic check
+→ load session history → retrieve (parallel hybridSearch + LLM rewrite)
+→ generate (LLM) → persist (session Map + DB)
+```
 
-**Retrieval (Hybrid Search)**: Khi user hỏi, chạy song song hai luồng:
-- **Semantic search**: cosine similarity với query embedding, ngưỡng mặc định 0.45
-- **Keyword search**: BM25-inspired (name weight ×3, text weight ×1, coverage ratio)
-- Kết hợp: boost +0.05 nếu item khớp cả hai, inject keyword-only results
+**Indexing** (`npm run ai:rebuild-vectors`): Đọc sản phẩm active từ DB → xây dựng embedding text (tên + thương hiệu + danh mục + mô tả + giá + tồn kho) → gọi embedding API (chain fallback: Jina v3 → e5-instruct → e5-base) → lưu 1024-dim vectors vào `data/vector-db.json`.
 
-**Generation**: Sản phẩm liên quan được đưa vào context prompt → LLM sinh phản hồi tiếng Việt tự nhiên kèm thông tin chi tiết.
+**Retrieval (Hybrid Search)**: Chạy song song `hybridSearch` + `rewriteQuery` (LLM chuẩn hóa query):
+- **Semantic search**: cosine similarity, ngưỡng mặc định 0.45
+- **Keyword search**: BM25-inspired (name weight ×3, text weight ×1)
+- Kết hợp: boost +0.05 nếu khớp cả hai; fallback minScore=0 topK=3 nếu không có kết quả
 
-**Auto-rebuild**: Server startup tự so sánh số vector với sản phẩm active — lệch >5% thì trigger rebuild ngầm.
+**Generation**: Sản phẩm liên quan + session history → context prompt → LLM (temp=0.3, max_tokens=800) → parse JSON → phản hồi tiếng Việt tự nhiên.
+
+**Session memory**: Map in-memory, max 500 sessions, TTL 30 phút, LRU eviction. Reset khi restart server.
+
+**Auto-rebuild**: Server startup so sánh số vector với sản phẩm active — lệch >5% thì trigger rebuild ngầm.
 
 ---
 
 ## 7. Testing
 
-| Suite | Pattern | DB | Runtime |
-|---|---|---|---|
-| BE Unit Tests | `src/**/*.test.js` | Mock | ~10s |
-| BE Integration Tests | `src/__integration__/**/*.integration.test.js` | MySQL thật | ~50s |
-| BE API HTTP Tests | `src/__api__/**/*.http.test.js` | MySQL thật | ~190s |
-| BE E2E Tests | `src/__e2e__/**/*.e2e.test.js` | MySQL thật | ~20s |
-| FE Component Tests | `**/__tests__/**/*.test.{cjs,tsx}` | jsdom | ~7s |
+| Suite | Suites | Tests | DB | Runtime |
+|---|---|---|---|---|
+| BE Unit Tests | 159 | 3.537 | Mock | ~10s |
+| BE Integration Tests | 36 | 184 | MySQL thật | ~50s |
+| BE API HTTP Tests | 39 | 700 | MySQL thật | ~190s |
+| BE E2E Tests | 5 | 100 | MySQL thật | ~20s |
+| FE Component Tests | 18 | 548 | jsdom | ~9s |
+| **Tổng** | **257** | **5.069** | | |
 
 Coverage threshold (CI): Statements >= 97%, Lines >= 97%, Branches >= 85%, Functions >= 95%.
 
@@ -232,36 +242,36 @@ e-commerce-website/
 │   ├── src/
 │   │   ├── app.js              # DI wiring, middleware stack, module mounting
 │   │   ├── server.js           # Entry point, DB connect, env validation
-│   │   ├── modules/            # 19 feature modules
+│   │   ├── modules/            # 17 feature modules
 │   │   │   ├── auth/           # routes.js, module.js, services/, controllers/, repositories/
 │   │   │   ├── catalog/        # categories + brands + products
 │   │   │   ├── orders/
 │   │   │   ├── payment/        # MoMo + VNPay
 │   │   │   ├── ai/             # chatbot service, vector search
-│   │   │   └── ...             # 14 modules khác
-│   │   ├── models/             # 32 Sequelize models + associations (index.js)
-│   │   ├── shared/             # EventBus, AppError, UnitOfWork, AdminAudit
+│   │   │   └── ...             # 12 modules khác
+│   │   ├── models/             # 26 Sequelize models + associations (index.js)
+│   │   ├── shared/             # EventBus, AppError, UnitOfWork
 │   │   ├── services/           # email, embedding (unified), vector-store
 │   │   ├── middlewares/        # authenticate, authorize, rate-limiter
 │   │   ├── utils/              # logger (Winston), i18n, catch-async
 │   │   ├── jobs/               # Cron: daily 2AM + weekly Sunday 3AM
 │   │   ├── config/             # database.js, sequelize.js, swagger.js
 │   │   ├── constants/          # shipping, OTP, pagination limits
-│   │   └── locales/            # vi.json / en.json
+│   │   ├── locales/            # vi.json / en.json
+│   │   └── migrations/         # 81 Sequelize migrations
 │   ├── data/                   # vector-db.json, SQL dumps
 │   ├── docs/                   # openapi.json (auto-generated)
-│   ├── scripts/                # rebuild-db.js, index-products.js, audit-architecture.sh
-│   └── migrations/             # 72 Sequelize migrations
+│   └── scripts/                # rebuild-db.js, index-products.js, audit-architecture.sh
 │
 ├── frontend/
 │   ├── src/
-│   │   ├── features/           # 14 feature modules
+│   │   ├── features/           # 13 feature modules
 │   │   │   ├── auth/           # api/, pages/, components/, hooks/, types/
 │   │   │   ├── catalog/
 │   │   │   ├── cart/
 │   │   │   ├── orders/
 │   │   │   ├── ai/             # chat widget, ChatbotErrorBoundary
-│   │   │   └── ...             # 9 features khác
+│   │   │   └── ...             # 8 features khác
 │   │   ├── components/         # Shared: common/, layout/, routing/, icons/
 │   │   ├── stores/             # 6 Zustand stores (auth, cart, chat, catalog, wishlist, ui)
 │   │   ├── routes/             # AppRoutes.tsx (lazy), paths.ts
@@ -272,7 +282,7 @@ e-commerce-website/
 │   │   ├── types/              # Shared TypeScript types
 │   │   ├── styles/             # SCSS tokens, global CSS
 │   │   ├── config/             # i18n.ts initialization
-│   │   ├── constants/          # PAGINATION, UPLOAD
+│   │   ├── constants/          # PAGINATION, UPLOAD, SHIPPING
 │   │   └── locales/            # vi.json / en.json
 │   ├── index.html
 │   └── vite.config.ts
@@ -289,7 +299,7 @@ e-commerce-website/
 
 ## 9. Biến môi trường
 
-### Backend (`backend/.env`)
+### 9.1 Backend (`backend/.env`)
 
 | Biến | Bắt buộc | Mô tả |
 |---|---|---|
@@ -311,7 +321,7 @@ e-commerce-website/
 | `MOMO_PARTNER_CODE`, `MOMO_ACCESS_KEY`, `MOMO_SECRET_KEY` | Không | MoMo |
 | `PORT` | Không | Mặc định 8888 |
 
-### Frontend (`frontend/.env`)
+### 9.2 Frontend (`frontend/.env`)
 
 | Biến | Mô tả |
 |---|---|

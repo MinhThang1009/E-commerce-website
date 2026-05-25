@@ -4,7 +4,7 @@
  * @feature ai
  * @description UI component cho feature ai
  */
-import React, { FormEvent, useState } from 'react';
+import React, { FormEvent, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { LoadingIcon, SendIcon } from './icons/index';
 
@@ -25,16 +25,33 @@ const ChatInput: React.FC<ChatInputProps> = ({
   const { t } = useTranslation();
   const [input, setInput] = useState('');
 
-  const MAX_LENGTH = 2000;
-  const WARN_LENGTH = 1800;
+  const MAX_LENGTH = 500;
+  const WARN_LENGTH = 450;
   const isOverLimit = input.length > MAX_LENGTH;
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
 
   const handleSubmit = (e: FormEvent) => {
     e.preventDefault();
-    // Không gửi khi vượt giới hạn — backend cũng validate 400 khi > 2000 ký tự
+    // Không gửi khi vượt giới hạn — backend cũng validate 400 khi > 500 ký tự
     if (input.trim() && !isLoading && !isOverLimit) {
       onSendMessage(input);
       setInput('');
+      if (textareaRef.current) textareaRef.current.style.height = 'auto';
+    }
+  };
+
+  const handleChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
+    setInput(e.target.value);
+    // Auto-resize: reset rồi set theo scrollHeight để textarea tự co giãn
+    e.target.style.height = 'auto';
+    e.target.style.height = e.target.scrollHeight + 'px';
+  };
+
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
+    // Enter = gửi, Shift+Enter = xuống dòng
+    if (e.key === 'Enter' && !e.shiftKey) {
+      e.preventDefault();
+      handleSubmit(e as unknown as FormEvent);
     }
   };
 
@@ -61,25 +78,28 @@ const ChatInput: React.FC<ChatInputProps> = ({
         </div>
       )}
 
-      <form onSubmit={handleSubmit} className="flex items-center space-x-2">
+      <form onSubmit={handleSubmit} className="flex items-end space-x-2">
         <div className="relative flex-1 group">
-          <input
-            type="text"
+          <textarea
+            ref={textareaRef}
+            rows={1}
             value={input}
-            onChange={(e) => setInput(e.target.value)}
+            onChange={handleChange}
+            onKeyDown={handleKeyDown}
             placeholder={t('chat.placeholder')}
-            maxLength={MAX_LENGTH + 100} /* Cho phép gõ vượt để thấy cảnh báo, không cắt ngầm */
-            className={`glass-input-field w-full rounded-2xl pl-4 pr-14 py-3 text-sm text-neutral-900 dark:text-white placeholder-neutral-500 dark:placeholder-neutral-400 ${
+            maxLength={MAX_LENGTH + 50} /* Cho phép gõ vượt để thấy cảnh báo, không cắt ngầm */
+            className={`glass-input-field w-full rounded-2xl pl-4 pr-14 py-3 text-sm text-neutral-900 dark:text-white placeholder-neutral-500 dark:placeholder-neutral-400 resize-none overflow-y-auto ${
               isOverLimit ? 'border-red-400/60 !ring-red-400/20' : ''
             }`}
+            style={{ maxHeight: '8rem' }}
             disabled={isLoading}
             autoComplete="off"
-          />
+          ></textarea>
 
           {/* Số ký tự đã nhập — đỏ khi vượt ngưỡng cảnh báo */}
           {input.length > 0 && (
             <div
-              className={`absolute right-3 top-1/2 transform -translate-y-1/2 text-[10px] font-bold px-1.5 py-0.5 rounded-full border shadow-sm ${
+              className={`absolute right-3 bottom-3 text-[10px] font-bold px-1.5 py-0.5 rounded-full border shadow-sm ${
                 isOverLimit
                   ? 'text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-900/30 border-red-300 dark:border-red-700'
                   : input.length > WARN_LENGTH

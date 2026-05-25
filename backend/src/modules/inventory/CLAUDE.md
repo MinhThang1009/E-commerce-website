@@ -74,7 +74,7 @@ modules/inventory/
   controllers/
     inventory-controller.js
   services/
-    inventory-service.js                 — ~127 lines: restock + logs listing
+    inventory-service.js                 — ~115 lines: restock + logs listing
   repositories/
     sequelize-inventory-repository.js    — CRUD InventoryLog, stock queries
     i-inventory-repository.js            — interface

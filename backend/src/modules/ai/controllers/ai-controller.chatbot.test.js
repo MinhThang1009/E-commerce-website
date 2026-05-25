@@ -113,15 +113,15 @@ describe('POST /api/chatbot/message', () => {
     expect(res.body.status).toBe('error');
   });
 
-  test('400 khi message vượt 2000 ký tự', async () => {
-    const res = await request.post('/api/chatbot/message').send({ message: 'a'.repeat(2001) });
+  test('400 khi message vượt 500 ký tự', async () => {
+    const res = await request.post('/api/chatbot/message').send({ message: 'a'.repeat(501) });
     expect(res.status).toBe(400);
     expect(res.body.status).toBe('error');
-    expect(res.body.message).toMatch(/quá dài|2000/);
+    expect(res.body.message).toMatch(/quá dài|500/);
   });
 
-  test('200 khi message đúng 2000 ký tự', async () => {
-    const res = await request.post('/api/chatbot/message').send({ message: 'a'.repeat(2000) });
+  test('200 khi message đúng 500 ký tự', async () => {
+    const res = await request.post('/api/chatbot/message').send({ message: 'a'.repeat(500) });
     expect(res.status).toBe(200);
     expect(res.body.status).toBe('success');
   });

@@ -43,6 +43,10 @@ jest.mock('@services/vector-store/vector-store', () => mockVectorStore);
 
 jest.mock('@models/category', () => ({}));
 jest.mock('@models/product-image', () => ({}));
+jest.mock('@models/product-variant', () => ({}));
+jest.mock('@utils/product-helpers', () => ({
+  enrichProductData: jest.fn((p) => p),
+}));
 
 // Capture define call
 let capturedHooks = {};

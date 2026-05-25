@@ -217,10 +217,10 @@ src/components/
   common/        ← UI primitives: Button, Modal, Input, Card, Badge, Pagination, Rating, Table...
   layout/        ← Header, Footer, MainLayout, PageLayout, Grid (AdminLayout nằm trong features/admin/components/)
   routing/       ← ProtectedRoute, AdminRoute, PublicOnlyRoute
-  sections/      ← HomePage sections (HeroSection, FeaturedProductsSection...)
+  sections/      ← HomePage sections (HeroSection)
   icons/         ← Custom icon components
 
-src/hooks/       ← Global hooks (6 hooks):
+src/hooks/       ← Global hooks (6 hook files, 8 exported hooks):
   use-token-refresh.ts  ← Auto-refresh JWT trước khi hết hạn
   use-antd-toast.ts     ← Ant Design message/notification
   use-debounce.ts       ← Debounce value
@@ -243,7 +243,7 @@ src/hooks/       ← Global hooks (6 hooks):
 
 - `src/styles/index.scss` — global CSS variables + Tailwind base imports
 - `src/styles/` — SCSS tokens cho spacing, colors, typography
-- Override Ant Design styles trong `src/styles/antd-overrides.scss` (nếu có)
+- Override Ant Design dark mode trong `src/styles/index.scss` (`.dark .ant-*` selectors)
 
 ---
 
@@ -302,7 +302,7 @@ frontend/src/
   utils/CLAUDE.md                            ← 14 utility files
   types/CLAUDE.md                            ← global TypeScript types
   styles/CLAUDE.md                           ← SCSS tokens, global styles
-  constants/CLAUDE.md                        ← PAGINATION, UPLOAD
+  constants/CLAUDE.md                        ← PAGINATION, UPLOAD, SHIPPING
   __tests__/CLAUDE.md                        ← Component tests (Jest + RTL, 18 suites)
   features/admin/CLAUDE.md                   ← Admin dashboard, CRUD pages
   features/ai/CLAUDE.md                      ← AI chatbot widget

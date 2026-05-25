@@ -65,7 +65,7 @@ Giao tiếp giữa backend và frontend: HTTP REST API, JSON, JWT Bearer token. 
 | Web framework | Express | 4.18 |
 | ORM | Sequelize | 6.37 |
 | Database | MySQL | 8.x |
-| Auth | JWT (access 15m + refresh 30d) + Google OAuth 2.0 + bcrypt 6 | — |
+| Auth | JWT (access 15m + refresh env `JWT_REFRESH_EXPIRES_IN`, cookie default 7d) + Google OAuth 2.0 + bcrypt | — |
 | Email | Nodemailer (Gmail SMTP) | 7.x |
 | Validation | Zod | 4.x |
 | API docs | Swagger UI + swagger-jsdoc (OpenAPI 3.0) | — |
@@ -140,7 +140,7 @@ backend/
 │   │   ├── authenticate.js  # JWT verify + optional variant
 │   │   ├── admin-auth.js    # JWT verify dành riêng cho admin panel (adminAuthenticate)
 │   │   ├── authorize.js     # Role-based access (admin/customer)
-│   │   ├── rate-limiter.js  # apiLimiter, authLimiter, chatbotLimiter, otpLimiter
+│   │   ├── rate-limiter.js  # apiLimiter, authLimiter, otpLimiter, chatbotLimiter, chatLimiter
 │   │   ├── detect-locale.js # Accept-Language → req.locale
 │   │   ├── validate-request.js  # Zod validation middleware
 │   │   └── error-handler.js # Global error middleware
@@ -168,7 +168,7 @@ backend/
 ├── docs/
 │   └── openapi.json         # Auto-generated OpenAPI spec
 ├── scripts/                 # rebuild-db.js, index-products.js, export-seed.js...
-├── migrations/              # 82 Sequelize migrations
+├── migrations/              # 81 Sequelize migrations
 ├── .env.example
 ├── .sequelizerc
 ├── jest.config.js           # Unit test config
@@ -310,19 +310,19 @@ Routing: tất cả routes lazy-loaded trong `AppRoutes.tsx` với `React.lazy` 
 
 | Feature | Trang chính | API hooks |
 |---|---|---|
-| `auth` | Login, Register, ForgotPassword, ResetPassword, VerifyEmail | useLogin, useRegister, useGoogleLogin, useForgotPassword |
-| `catalog` | ShopPage, ProductDetailPage, CategoriesPage, BrandsPage, DealsPage, NewArrivalsPage, BestSellersPage | useProducts, useProduct, useCategories, useBrands |
-| `cart` | CartPage | useCart, useAddToCart, useUpdateCartItem, useRemoveCartItem |
-| `checkout` | CheckoutPage | useCreateOrder, useShippingEstimate, useValidateDiscount |
-| `orders` | OrdersPage, TrackOrderPage | useOrders, useOrder, useCancelOrder, useConfirmReceived |
-| `payment` | PaymentQRPage | useCreateMomoUrl, useCreateVNPayUrl |
-| `users` | ProfilePage | useProfile, useUpdateProfile, useAddresses |
-| `wishlist` | WishlistPage | useWishlist, useToggleWishlist |
-| `reviews` | (embedded trong ProductDetail) | useProductReviews, useCreateReview |
-| `ai` | ChatWidgetPortal (floating) | useChatbot, useRecommendations |
-| `admin` | DashboardPage + admin pages | useAdminStats, useAdminOrders, useAdminProducts... |
+| `auth` | Login, Register, ForgotPassword, ResetPassword, VerifyEmail | useLoginMutation, useRegisterMutation, useGoogleLoginMutation, useForgotPasswordMutation |
+| `catalog` | ShopPage, ProductDetailPage, CategoriesPage, BrandsPage, DealsPage, NewArrivalsPage, BestSellersPage | useGetProductsQuery, useGetProductBySlugQuery, useGetAllCategoriesQuery, useGetBrandsQuery |
+| `cart` | CartPage | useGetCartQuery, useAddToCartMutation, useUpdateCartItemMutation, useRemoveCartItemMutation |
+| `checkout` | CheckoutPage | useCreateOrderMutation, useApplyDiscountCodeMutation, useGetAvailableDiscountCodesQuery |
+| `orders` | OrdersPage, TrackOrderPage | useGetUserOrdersQuery, useGetOrderByIdQuery, useCancelOrderMutation, useConfirmReceivedMutation |
+| `payment` | PaymentQRPage | useCreateMomoUrlMutation, useCreateVNPayUrlMutation |
+| `users` | ProfilePage | useUpdateProfileMutation, useGetAddressesQuery, useChangePasswordMutation |
+| `wishlist` | WishlistPage | useGetWishlistQuery, useAddToWishlistMutation, useRemoveFromWishlistMutation |
+| `reviews` | (embedded trong ProductDetail) | useGetProductReviewsQuery, useCreateReviewMutation |
+| `ai` | ChatWidgetPortal (floating) | useSendChatbotMessageMutation, useAddToCartViaChatbotMutation |
+| `admin` | DashboardPage + admin pages | useGetDashboardStatsQuery, useGetAdminOrdersQuery, useGetAdminProductsQuery... |
 | `content` | ContactPage | useSendFeedbackMutation |
-| `upload` | (embedded) | useUploadImage |
+| `upload` | (embedded) | useUploadImageMutation, useUploadSingleMutation |
 
 ## 5.3 State Management
 
@@ -353,7 +353,7 @@ Sequelize models, MySQL 8, charset utf8mb4, timezone +07:00. Tất cả tables d
 
 | Table | Model | Mô tả |
 |---|---|---|
-| `users` | User | Tài khoản: email, password (bcrypt), googleId, role (customer/admin), OTP fields, resetToken |
+| `users` | User | Tài khoản: email, password (bcrypt), googleId, role (customer/admin), otpCode, resetPasswordToken, resetPasswordExpires |
 | `addresses` | Address | Địa chỉ giao hàng của user (1 user N addresses) |
 | `categories` | Category | Danh mục sản phẩm (flat, có parentId cho nested display); fields: `isActive` (default true), `sortOrder` (default 0) |
 | `brands` | Brand | Thương hiệu (name, slug, logo) |
@@ -366,12 +366,12 @@ Sequelize models, MySQL 8, charset utf8mb4, timezone +07:00. Tất cả tables d
 | `cart_items` | CartItem | Item trong giỏ: cartId, productId, variantId, quantity |
 | `orders` | Order | Đơn hàng: status, paymentMethod, paymentStatus, shippingAddress (JSON), totalAmount, discountCodeId |
 | `order_items` | OrderItem | Item đơn hàng: orderId, productId, variantId, quantity, price |
-| `reviews` | Review | Đánh giá: userId, productId, rating, comment, isVerifiedPurchase |
-| `wishlist` | Wishlist | Junction: userId + productId (many-to-many) |
+| `product_reviews` | Review | Đánh giá: userId, productId, rating, comment, isVerifiedPurchase |
+| `wishlists` | Wishlist | Junction: userId + productId (many-to-many) |
 | `discount_codes` | DiscountCode | Mã giảm giá: code, type (percent/fixed), value, minOrderAmount, usedCount, maxUses, startDate, endDate |
-| `feedback` | Feedback | Form liên hệ: name, email, subject, message, status |
+| `feedbacks` | Feedback | Form liên hệ: name, email, subject, content, status |
 | `chat_messages` | ChatMessage | Lịch sử chat AI: userId (nullable), sessionId, role (user/assistant), content, isArchived |
-| `search_histories` | SearchHistory | Lịch sử tìm kiếm: userId (nullable), query, timestamp |
+| `search_histories` | SearchHistory | Lịch sử tìm kiếm: userId (nullable), sessionId, keyword, resultsCount |
 | `recently_viewed` | RecentlyViewed | Sản phẩm đã xem: userId, productId, viewedAt |
 | `inventory_logs` | InventoryLog | Inventory log tồn kho: productId, variantId, orderId, changeType, quantityBefore, quantityAfter |
 
@@ -413,7 +413,6 @@ HTTP Request
     │       │       └─ Service (business logic)
     │       │               └─ Repository (Sequelize queries)
     │       │                       └─ MySQL
-    │       └─ responseHeaders (security headers)
     │
     └─ errorHandler (global error middleware)
 ```
@@ -435,16 +434,20 @@ Products (MySQL) ──▶ enrichProductData()
 
 **Query** (realtime khi user chat):
 ```
-User message ──▶ Chatbot Service
+User message ──▶ AIService.handleMessage()
                       │
-                      ├─── vectorStore.hybridSearch(query, limit=5)
-                      │         ├─ _vectorSearch(): cosine similarity (threshold 0.45)
-                      │         ├─ _keywordSearch(): BM25-inspired (name×3, text×1)
-                      │         └─ merge: boost +0.05 overlap, inject keyword-only
-                      │
-                      ├─── Build prompt (context = top products)
-                      │
-                      └─── LLM API (OpenAI-compatible) → phản hồi tiếng Việt
+                      └─── chatbotService.handleMessage() [7 bước]
+                                │
+                                ├─ ① validate (AppError 400 nếu sai)
+                                ├─ ② expandAbbreviations (ip→iPhone...)
+                                ├─ ③ isPromptInjection / isOffTopic → early return
+                                ├─ ④ load conversationHistory Map
+                                ├─ ⑤ Promise.all: rewriteQuery LLM + hybridSearch(normalizedQuery)
+                                │         ├─ _vectorSearch(): cosine similarity (threshold 0.45)
+                                │         ├─ _keywordSearch(): BM25-inspired (name×3, text×1)
+                                │         └─ merge: boost +0.05 overlap, inject keyword-only
+                                ├─ ⑥ Build prompt → LLM API (OpenAI-compatible)
+                                └─ ⑦ persist: session Map + ChatMessage DB
 ```
 
 **Auto-rebuild trigger** (startup):
@@ -478,8 +481,8 @@ cancelOrder()
 
 **Auth events**:
 ```
-register() ──▶ eventBus.publish('auth.userRegistered') — hiện chưa có subscriber
-logout()   ──▶ no-op server-side (client tự xóa token)
+register() ──▶ (event KHÔNG được publish — auth module không inject eventBus, guard `if (this.eventBus)` luôn false)
+logout()   ──▶ no-op server-side (clear refreshToken cookie Max-Age=0, client tự xóa access token)
 ```
 
 **Catalog events**:
@@ -537,7 +540,7 @@ inventory ◀── orders (subscribe: order.cancelled → ghi inventory log; or
 | `JWT_SECRET` | **Có** | >= 32 ký tự ngẫu nhiên |
 | `JWT_EXPIRES_IN` | Không | Mặc định 15m |
 | `JWT_REFRESH_SECRET` | **Có** | >= 32 ký tự ngẫu nhiên |
-| `JWT_REFRESH_EXPIRES_IN` | Không | Mặc định 7d (constants: 30d) |
+| `JWT_REFRESH_EXPIRES_IN` | Không | Cookie maxAge default 7d (auth-controller.js). JWT `expiresIn` không có fallback nếu bỏ trống. |
 | `LLM_BASE_URL`, `LLM_API_KEY`, `LLM_MODEL` | Không | OpenAI-compatible LLM endpoint |
 | `JINA_API_KEY` | Không | Jina v3 embedding (ưu tiên) |
 | `HF_API_KEY` | Không | HuggingFace embedding (fallback) |
@@ -545,11 +548,18 @@ inventory ◀── orders (subscribe: order.cancelled → ghi inventory log; or
 | `OPENROUTER_API_KEY` | Không | OpenRouter cho LLM chatbot |
 | `GOOGLE_CLIENT_ID` | Không | Google OAuth |
 | `EMAIL_HOST`, `EMAIL_PORT`, `EMAIL_USERNAME`, `EMAIL_PASSWORD` | **Có** | Gmail SMTP |
+| `EMAIL_FROM`, `EMAIL_FROM_NAME` | Không | From address + display name cho email gửi đi |
+| `EMAIL_SECURE` | Không | `true` cho TLS (port 465). Mặc định false |
+| `ADMIN_EMAIL` | Không | Email nhận feedback từ content module |
+| `CDN_BASE_URL`, `ASSET_BASE_URL` | Không | Base URL cho ảnh/CDN (fallback về localhost nếu không set) |
+| `TRANSLATE_MODEL` | Không | Model dùng cho translation (mặc định deepseek/deepseek-v4-flash:free) |
 | `CORS_ORIGIN` | Không | Production: set cụ thể. Dev: dùng `CORS_ORIGINS_DEV` |
 | `CORS_ORIGINS_DEV` | Không | Comma-separated origins cho dev |
 | `FRONTEND_URL` | Không | Mặc định http://localhost:5175 |
 | `VNP_TMN_CODE`, `VNP_HASH_SECRET`, `VNP_URL`, `VNP_RETURN_URL`, `VNP_IPN_URL` | Không | VNPay |
+| `VNP_API` | Không | VNPay refund API endpoint |
 | `MOMO_PARTNER_CODE`, `MOMO_ACCESS_KEY`, `MOMO_SECRET_KEY`, `MOMO_API_ENDPOINT` | Không | MoMo |
+| `MOMO_IPN_URL`, `MOMO_REDIRECT_URL` | Không | MoMo IPN callback + redirect URL sau thanh toán |
 | `LOG_LEVEL` | Không | Winston log level, mặc định `info` |
 
 ## 9.2 Frontend env vars

@@ -2,7 +2,6 @@ const AIService = require('./ai-service');
 
 describe('AIService', () => {
   let repo;
-  let ragPipeline;
   let ruleBasedChatbot;
   let service;
 
@@ -14,21 +13,20 @@ describe('AIService', () => {
       findProductForCart: jest.fn(),
       addToCart: jest.fn(),
     };
-    ragPipeline = { run: jest.fn() };
     ruleBasedChatbot = { extractSearchParams: jest.fn() };
     service = new AIService({
       aiRepository: repo,
-      ragPipeline,
+      chatbotService: { handleMessage: jest.fn() },
       ruleBasedChatbot,
       logger: { info: jest.fn(), error: jest.fn() },
     });
   });
 
   describe('handleMessage', () => {
-    test('delegate sang ragPipeline.run', async () => {
-      ragPipeline.run.mockResolvedValue({ response: 'hi' });
-      const result = await service.handleMessage({ message: 'hello' });
-      expect(ragPipeline.run).toHaveBeenCalledWith({ message: 'hello' });
+    test('delegate sang chatbotService.handleMessage', async () => {
+      service.chatbotService.handleMessage.mockResolvedValue({ response: 'hi' });
+      const result = await service.handleMessage({ message: 'hello', userId: 1, sessionId: 'sess' });
+      expect(service.chatbotService.handleMessage).toHaveBeenCalledWith('hello', 1, 'sess');
       expect(result.response).toBe('hi');
     });
   });

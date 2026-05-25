@@ -19,7 +19,7 @@ jest.mock('@modules/ai/services/chatbot/keyword/keyword-fallback', () => ({
   })),
 }));
 
-const { parseAIResponse, extractJSON } = require('./response-parser');
+const { parseLLMOutput, extractJSON } = require('./response-parser');
 
 describe('extractJSON — inner try-catch (lines 18-19)', () => {
   test('trả về null khi text có {...} nhưng không phải JSON hợp lệ', () => {
@@ -39,7 +39,7 @@ describe('extractJSON — inner try-catch (lines 18-19)', () => {
   });
 });
 
-describe('parseAIResponse — number mismatch (line 62)', () => {
+describe('parseLLMOutput — number mismatch (line 62)', () => {
   const products = [
     {
       id: 1,
@@ -83,7 +83,7 @@ describe('parseAIResponse — number mismatch (line 62)', () => {
       intent: 'product_search',
     });
 
-    const result = parseAIResponse(aiText, prods, 'iphone 15 pro');
+    const result = parseLLMOutput(aiText, prods, 'iphone 15 pro');
     expect(result.products).toHaveLength(0);
   });
 
@@ -105,7 +105,7 @@ describe('parseAIResponse — number mismatch (line 62)', () => {
       intent: 'product_search',
     });
 
-    const result = parseAIResponse(aiText, prods, 'iphone 15');
+    const result = parseLLMOutput(aiText, prods, 'iphone 15');
     expect(result.products).toHaveLength(1);
     expect(result.products[0].id).toBe(4);
   });
@@ -113,7 +113,7 @@ describe('parseAIResponse — number mismatch (line 62)', () => {
 
 // ─── hasNegationContext — pos === Infinity khi không có keyword nào trong response (line 109) ─
 
-describe('parseAIResponse — extractProductsFromText: product words không xuất hiện trong response (line 109)', () => {
+describe('parseLLMOutput — extractProductsFromText: product words không xuất hiện trong response (line 109)', () => {
   test('sản phẩm có tên không xuất hiện trong response text → không được bổ sung vào extras', () => {
     const prods = [
       {
@@ -135,7 +135,7 @@ describe('parseAIResponse — extractProductsFromText: product words không xu�
       intent: 'general',
     });
 
-    const result = parseAIResponse(aiText, prods, 'laptop rẻ');
+    const result = parseLLMOutput(aiText, prods, 'laptop rẻ');
     // Không có sản phẩm nào được bổ sung vì words không xuất hiện trong response
     expect(result.products).toHaveLength(0);
   });
@@ -143,7 +143,7 @@ describe('parseAIResponse — extractProductsFromText: product words không xu�
 
 // ─── extractProductsFromText — product passed 75% threshold → push extras (lines 171-187) ─
 
-describe('parseAIResponse — extractProductsFromText: bổ sung sản phẩm từ response text (lines 171-187)', () => {
+describe('parseLLMOutput — extractProductsFromText: bổ sung sản phẩm từ response text (lines 171-187)', () => {
   test('sản phẩm được đề cập trong response nhưng không có trong matchedProducts → được bổ sung', () => {
     // matchedProducts sẽ là rỗng từ LLM, nhưng response đề cập sản phẩm → extractProductsFromText bổ sung
     const prods = [
@@ -167,7 +167,7 @@ describe('parseAIResponse — extractProductsFromText: bổ sung sản phẩm t�
       intent: 'product_search',
     });
 
-    const result = parseAIResponse(aiText, prods, 'samsung a55');
+    const result = parseLLMOutput(aiText, prods, 'samsung a55');
     // extractProductsFromText phải phát hiện và bổ sung Samsung Galaxy A55
     expect(result.products).toHaveLength(1);
     expect(result.products[0].id).toBe(60);
@@ -195,7 +195,7 @@ describe('parseAIResponse — extractProductsFromText: bổ sung sản phẩm t�
       intent: 'product_search',
     });
 
-    const result = parseAIResponse(aiText, prods, 'xiaomi note 13');
+    const result = parseLLMOutput(aiText, prods, 'xiaomi note 13');
     expect(result.products).toHaveLength(1);
     expect(result.products[0].price).toBe(8000000);
     expect(result.products[0].inStock).toBe(true); // default true khi inStock = undefined
@@ -205,7 +205,7 @@ describe('parseAIResponse — extractProductsFromText: bổ sung sản phẩm t�
 
 // ─── hasNumberMismatch FALSE branch — matching numbers fall through ───────────
 
-describe('parseAIResponse — hasNumberMismatch=false: fall through tiếp tục matching', () => {
+describe('parseLLMOutput — hasNumberMismatch=false: fall through tiếp tục matching', () => {
   test('Samsung Galaxy S24 vs Samsung S24 — không exact match, numbers match (24=24), hasNumberMismatch=false', () => {
     // pName='samsung galaxy s24' !== rName='samsung s24' → không short-circuit ở line 45
     // Cả hai có số '24' → numbersP=['24'], numbersR=['24'] → hasNumberMismatch=false
@@ -228,7 +228,7 @@ describe('parseAIResponse — hasNumberMismatch=false: fall through tiếp tục
       suggestions: [],
       intent: 'product_search',
     });
-    const result = parseAIResponse(aiText, prods, 'samsung s24');
+    const result = parseLLMOutput(aiText, prods, 'samsung s24');
     expect(result).toBeDefined();
   });
 });

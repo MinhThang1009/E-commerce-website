@@ -179,6 +179,7 @@ main,
 
 /* ── Base styles ── */
 html {
+  position: relative; /* Framer Motion useScroll dùng <html> làm default container */
   scroll-behavior: smooth;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;

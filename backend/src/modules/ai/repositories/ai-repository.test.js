@@ -30,7 +30,7 @@ function makeRepo(overrides = {}) {
 // ════════════════════════════════════════════════════════════════════════════
 
 describe('SequelizeAiRepository.findActiveDeals', () => {
-  test('gọi Product.findAll với status=active và compareAtPrice > 0', async () => {
+  test('gọi Product.findAll với status=active và compareAtPrice > basePrice', async () => {
     const { repo, deps } = makeRepo();
     await repo.findActiveDeals(5);
 
@@ -38,7 +38,7 @@ describe('SequelizeAiRepository.findActiveDeals', () => {
       expect.objectContaining({
         where: expect.objectContaining({
           status: 'active',
-          compareAtPrice: expect.objectContaining({ [Op.gt]: 0 }),
+          compareAtPrice: expect.objectContaining({ [Op.gt]: literal('`Product`.`base_price`') }),
         }),
         limit: 5,
       }),

@@ -7,13 +7,6 @@
 const AIController = require('@modules/ai/controllers/ai-controller');
 const AIService = require('@modules/ai/services/core/ai-service');
 const SequelizeAIRepository = require('@modules/ai/repositories/sequelize-ai-repository');
-const RAGPipeline = require('@modules/ai/services/chatbot/rag/rag-pipeline');
-let vectorStoreService;
-try {
-  vectorStoreService = require('@services/vector-store/vector-store');
-} catch (e) {
-  vectorStoreService = null;
-}
 const buildRoutes = require('@modules/ai/routes');
 
 module.exports = ({ Product, ProductVariant, Category, chatbotService, sequelize, logger }) => {
@@ -21,11 +14,10 @@ module.exports = ({ Product, ProductVariant, Category, chatbotService, sequelize
   if (!chatbotService) throw new Error('ai module: chatbotService bắt buộc');
 
   const aiRepository = new SequelizeAIRepository({ Product, ProductVariant, Category, sequelize });
-  const ragPipeline = new RAGPipeline({ chatbotService, vectorStore: vectorStoreService });
 
   const aiService = new AIService({
     aiRepository,
-    ragPipeline,
+    chatbotService,
     logger,
   });
   const aiController = new AIController({ aiService, logger });

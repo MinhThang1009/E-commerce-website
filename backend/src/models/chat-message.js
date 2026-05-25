@@ -53,6 +53,11 @@ const ChatMessage = sequelize.define(
       allowNull: false,
       defaultValue: false,
     },
+    // JSON string: { products, suggestions } cho assistant messages — dùng cho demo sync
+    metadata: {
+      type: DataTypes.TEXT,
+      allowNull: true,
+    },
   },
   {
     tableName: 'chat_messages',

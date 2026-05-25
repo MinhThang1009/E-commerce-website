@@ -55,7 +55,7 @@ modules/reviews/
     reviews-controller.js
     reviews-controller.test.js
   services/
-    reviews-service.js                         — ~178 lines
+    reviews-service.js                         — ~189 lines
     reviews-service.test.js
     reviews-service.unit.test.js
     reviews-service.edge-cases.test.js
@@ -123,6 +123,8 @@ await reviewsRepository.updateProductRating(productId, avg, count);
 ```
 
 Delegates hoàn toàn cho repository — service không tự tính toán inline. Nếu `count === 0` → `{ avg: 0, count: 0 }`.
+
+**`includeCount` param:** Khi gọi từ `createReview` / `deleteReview` → `includeCount = true` (update cả `rating` + `reviewCount`). Khi gọi từ `updateReview` → `includeCount = false` (chỉ update `rating`, không cập nhật `reviewCount` vì số lượng review không đổi khi edit).
 
 ---
 

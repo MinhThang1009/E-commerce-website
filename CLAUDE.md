@@ -263,12 +263,12 @@ inventory ← orders (subscribe: order.cancelled → ghi inventory log; order.cr
 
 | Suite | Suites | Tests | Runtime | Config |
 |---|---|---|---|---|
-| BE Unit Tests | 160 | 3.560 | ~10s | `jest.config.js` |
+| BE Unit Tests | 159 | 3.537 | ~10s | `jest.config.js` |
 | BE Integration Tests | 36 | 184 | ~50s | `jest.integration.config.js` |
 | BE API HTTP Tests | 39 | 700 | ~190s | `jest.api.config.js` |
 | BE E2E Tests | 5 | 100 | ~20s | `jest.e2e.config.js` |
 | FE Component Tests | 18 | 548 | ~9s | `jest.config.cjs` (frontend/) |
-| **Tổng** | **258** | **5.092** | | |
+| **Tổng** | **257** | **5.069** | | |
 
 - **BE Coverage (local):** statements 99%, branches 97%, functions 99%, lines 99% (thresholds trong `jest.config.js`)
 - **BE Coverage (CI):** statements ≥97%, lines ≥97%, branches ≥85%, functions ≥95%
@@ -284,7 +284,7 @@ inventory ← orders (subscribe: order.cancelled → ghi inventory log; order.cr
 CLAUDE.md                                    ← File này: navigation entry point
 STRUCTURE.md                                 ← Architecture, tech stack, data flow, schema
 DIAGRAMS.md                                  ← Mermaid diagrams (Use Case, Sequence, ERD, Flow)
-TESTING_STRATEGY.md                          ← Chiến lược test 5 tầng, 5.095 tests
+TESTING_STRATEGY.md                          ← Chiến lược test 5 tầng, 5.069 tests
 README.md                                    ← Project README, setup instructions
 
 backend/CLAUDE.md                            ← BE architecture, DI pattern, request trace
@@ -302,6 +302,15 @@ backend/src/
   routes/CLAUDE.md                           ← Legacy /health route
   modules/admin/CLAUDE.md                    ← Admin module: dashboard, CRUD, analytics
   modules/ai/CLAUDE.md                       ← AI chatbot, RAG pipeline, vector search
+  modules/ai/services/chatbot/CLAUDE.md       ← Chatbot sub-services (RAG, prompt, keyword, language)
+  modules/ai/services/core/CLAUDE.md          ← AIService (orchestration) + AIPolicy (pure rules)
+  modules/ai/services/embedding/CLAUDE.md     ← (embedding.js, vi-embedding.js đã xóa — chỉ còn CLAUDE.md)
+  modules/ai/services/product/CLAUDE.md       ← ProductNameGenerator (singleton); enrichProductData → @utils/product-helpers
+  modules/ai/services/translate/CLAUDE.md     ← translateBatch Vi→En (OpenRouter + MyMemory fallback)
+  shared/errors/CLAUDE.md                     ← Error class hierarchy chi tiết
+  shared/persistence/CLAUDE.md                ← UnitOfWork pattern chi tiết
+  services/embedding/CLAUDE.md                ← Embedding service (provider chain)
+  services/vector-store/CLAUDE.md             ← HybridVectorStore implementation
   modules/attribute/CLAUDE.md                ← Thuộc tính sản phẩm (màu, size, loại...)
   modules/auth/CLAUDE.md                     ← Auth: JWT, OAuth Google, OTP, password reset
   modules/cart/CLAUDE.md                     ← Giỏ hàng: guest/auth merge, variant pricing
@@ -328,7 +337,6 @@ backend/docs/CLAUDE.md                       ← OpenAPI spec (auto-generated)
 
 .github/workflows/CLAUDE.md                  ← CI pipeline: jobs, coverage thresholds, artifacts
 scripts/CLAUDE.md                            ← Root scripts: audit, i18n check, module scaffolder
-.claude/plans/CLAUDE.md                      ← Kế hoạch phát triển, refactor, audit plans
 
 frontend/CLAUDE.md                           ← FE architecture, patterns, conventions
 frontend/src/

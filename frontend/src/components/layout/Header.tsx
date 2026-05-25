@@ -412,6 +412,8 @@ const Header: React.FC = () => {
                 }}
               >
                 <input
+                  id="mobile-search-input"
+                  name="q"
                   type="text"
                   placeholder={t('header.actions.searchPlaceholder')}
                   className="w-full py-2.5 pl-10 pr-4 rounded-lg border border-neutral-300 dark:border-neutral-600 bg-white dark:bg-neutral-700 text-neutral-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary-500"

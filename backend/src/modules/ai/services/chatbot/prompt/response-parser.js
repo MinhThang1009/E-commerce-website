@@ -12,13 +12,17 @@
  *
  * Luồng xử lý:
  *   1. extractJSON()       — strip markdown, parse JSON (2 cách thử)
- *   2. parseAIResponse()   — map matchedProducts về sản phẩm thực trong DB
+ *   2. parseLLMOutput()    — map matchedProducts về sản phẩm thực trong DB
  *                          — phát hiện hallucination, log cảnh báo
  *                          — post-processing: bổ sung sản phẩm bị LLM bỏ sót
  *   3. Fallback            — nếu parse thất bại → simpleKeywordMatch()
  */
 const logger = require('@utils/logger');
 const { simpleKeywordMatch } = require('@modules/ai/services/chatbot/keyword/keyword-fallback');
+
+// Chuyển DECIMAL string từ Sequelize ("24990000.00") sang Number — tránh ".00" lọt ra client
+// null/undefined passthrough, chuyển DECIMAL string ("24990000.00") → Number
+const toNum = (v) => (v == null ? v : Number(v));
 
 /**
  * Trích xuất object JSON từ text response của LLM.
@@ -128,52 +132,76 @@ function hasNegationContext(rLower, words) {
  * không đưa "iPhone 15 Pro" vào mảng matchedProducts. Frontend sẽ không hiển thị
  * card sản phẩm → user không click được. Hàm này phát hiện và bổ sung các sản phẩm bị bỏ sót.
  *
- * Cách hoạt động: word-overlap ≥ 75%
- *   - Tách tên sản phẩm thành các từ (bỏ stopwords và từ ngắn ≤ 2 ký tự)
- *   - Đếm số từ xuất hiện trong response text
- *   - Nếu ≥ 75% số từ xuất hiện → sản phẩm này được đề cập trong response → bổ sung
- *
- * Tại sao 75% chứ không phải 100%?
- * Tên sản phẩm dài có thể bị viết tắt trong response (bỏ bớt "Pro" chẳng hạn).
- * 75% đủ chặt để tránh false positive nhưng đủ linh hoạt để catch tên viết tắt.
+ * Cách hoạt động: phrase boundary + prefix dedup
+ *   Pass 1: Strip category prefix ("Điện thoại", "Laptop"...) → lấy core name, kiểm tra
+ *           core name xuất hiện như phrase trong response (regex boundary `(?![\p{L}\p{N}])`)
+ *   Pass 2: Nếu core name P là substring của core name Q đã match (kể cả alreadyMatchedIds),
+ *           kiểm tra P có lần xuất hiện độc lập không (không ngay trước extension của Q).
+ *           Không độc lập → bỏ P (tránh inject "iPhone 17" khi chỉ có "iPhone 17 Pro Max").
  *
  * @param {string} responseText - Nội dung câu trả lời từ LLM (text, không phải JSON).
  * @param {Array<Object>} retrievedProducts - Tất cả sản phẩm từ bước Retrieval (ground truth).
  * @param {Set<number>} alreadyMatchedIds - Set ID sản phẩm đã có trong matchedProducts rồi (skip).
  * @returns {Array<Object>} Danh sách sản phẩm bổ sung (đã format giống matchedProducts).
  */
+// Prefix danh mục trong tên SP ở DB — LLM thường bỏ qua khi viết response
+const CATEGORY_PREFIX_RE = /^(điện thoại|laptop|máy tính bảng|tai nghe|đồng hồ thông minh|máy tính)\s+/i;
+
 function extractProductsFromText(responseText, retrievedProducts, alreadyMatchedIds) {
   const rLower = responseText.toLowerCase();
-  const extras = [];
 
+  // Pass 1: Tìm candidate bằng phrase match trên "core name" (bỏ prefix danh mục).
+  // VD: "Điện thoại iPhone 17 Pro Max" → core "iphone 17 pro max" → check trong response.
+  const candidates = [];
   for (const p of retrievedProducts) {
-    // Bỏ qua sản phẩm đã có trong matchedProducts
     if (alreadyMatchedIds.has(p.id)) continue;
+    const core = p.name.toLowerCase().replace(CATEGORY_PREFIX_RE, '').trim();
+    if (core.split(/\s+/).length < 2) continue;
 
-    // Tách tên sản phẩm thành từng từ, lọc bỏ stopwords và từ quá ngắn
-    const words = p.name
-      .toLowerCase()
-      .split(/\s+/)
-      .filter((w) => w.length > 2 && !STOPWORDS.has(w));
+    const esc = core.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    if (!new RegExp(esc + '(?![\\p{L}\\p{N}])', 'u').test(rLower)) continue;
 
-    // Cần ít nhất 2 từ để tránh match nhầm (tên 1 từ quá chung chung)
-    if (words.length < 2) continue;
+    const coreWords = core.split(/\s+/).filter((w) => w.length >= 2);
+    if (hasNegationContext(rLower, coreWords)) continue;
 
-    // Đếm số từ xuất hiện trong response text
-    const matchCount = words.filter((w) => rLower.includes(w)).length;
+    candidates.push({ product: p, core });
+  }
 
-    // Kiểm tra ngưỡng 75%: Math.ceil(75%) để làm tròn lên
-    // Ví dụ: 4 từ → cần ít nhất Math.ceil(4 * 0.75) = 3 từ match
-    if (matchCount < Math.ceil(words.length * 0.75)) continue;
+  // Pass 2: Dedup thông minh — chỉ loại P nếu P không có lần xuất hiện độc lập.
+  // "Độc lập" = xuất hiện trong response mà không bị nối tiếp bởi extension của tên dài hơn Q.
+  //
+  // Quan trọng: xét CẢ sản phẩm đã matched (alreadyMatchedIds) khi tìm "longer variant".
+  // Vì "iPhone 17 Pro Max" đã matched bởi LLM nên không có trong candidates,
+  // nhưng vẫn cần để biết "iPhone 17 Pro" là prefix của nó trong response.
+  const alreadyMatchedCores = retrievedProducts
+    .filter((p) => alreadyMatchedIds.has(p.id))
+    .map((p) => p.name.toLowerCase().replace(CATEGORY_PREFIX_RE, '').trim())
+    .filter((core) => {
+      const esc = core.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+      return new RegExp(esc + '(?![\\p{L}\\p{N}])', 'u').test(rLower);
+    });
 
-    // Bỏ qua nếu LLM đang nói sản phẩm này KHÔNG có (phủ định trong cùng câu)
-    // Ví dụ: "chưa có Samsung Galaxy S25 Ultra" → không inject card sản phẩm đó
-    if (hasNegationContext(rLower, words)) continue;
+  const allContextCores = [...candidates.map((c) => c.core), ...alreadyMatchedCores];
 
-    // Sản phẩm đạt ngưỡng → bổ sung vào danh sách
-    const price = p.price ?? p.basePrice;
-    const compare = p.compareAtPrice;
-    extras.push({
+  const deduped = candidates.filter(({ core: pCore }) => {
+    const longerCores = allContextCores
+      .filter((qCore) => qCore !== pCore && qCore.includes(pCore))
+      .map((qCore) => qCore.slice(pCore.length).trim().split(/\s+/)[0])
+      .filter(Boolean);
+
+    if (longerCores.length === 0) return true; // Không có tên dài hơn → giữ
+
+    // Kiểm tra P có lần xuất hiện độc lập không:
+    // P xuất hiện mà KHÔNG theo sau bởi bất kỳ extension nào → P được nhắc riêng
+    const pEsc = pCore.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    const extAlts = longerCores.map((e) => `\\s+${e.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}`).join('|');
+    return new RegExp(`${pEsc}(?!(${extAlts}))`, 'u').test(rLower);
+  });
+
+  return deduped.map(({ product: p }) => {
+    const price = toNum(p.price ?? p.basePrice);
+    const compare = toNum(p.compareAtPrice);
+    return {
       id: p.id,
       name: p.name,
       slug: p.slug,
@@ -183,11 +211,9 @@ function extractProductsFromText(responseText, retrievedProducts, alreadyMatched
       inStock: p.inStock !== undefined ? p.inStock : true,
       stockQuantity: p.stockQuantity,
       rating: null,
-      // Tính % giảm giá: ((giá gốc - giá bán) / giá gốc) × 100, làm tròn số nguyên
       discount: compare && compare > price ? Math.round(((compare - price) / compare) * 100) : 0,
-    });
-  }
-  return extras;
+    };
+  });
 }
 
 /**
@@ -213,7 +239,7 @@ function extractProductsFromText(responseText, retrievedProducts, alreadyMatched
  * Nếu LLM đề xuất tên sản phẩm không có trong retrieved products → log cảnh báo.
  * Điều này xảy ra khi LLM "tưởng tượng" sản phẩm không có trong kho.
  *
- * @param {string} aiText - Raw text response từ LLM (có thể có markdown fences).
+ * @param {string} rawLLMOutput - Raw text response từ LLM (có thể có markdown fences).
  * @param {Array<Object>} products - Sản phẩm từ bước Retrieval (ground truth — không được thay đổi).
  * @param {string} userMessage - Câu hỏi gốc của user (dùng cho fallback nếu parse thất bại).
  * @returns {Object} Kết quả chuẩn hóa:
@@ -222,10 +248,10 @@ function extractProductsFromText(responseText, retrievedProducts, alreadyMatched
  *   - `suggestions` {Array}: gợi ý câu hỏi tiếp theo
  *   - `intent` {string}: phân loại ý định
  */
-function parseAIResponse(aiText, products, userMessage) {
+function parseLLMOutput(rawLLMOutput, products, userMessage) {
   try {
     // ── Bước 1: Parse JSON từ text của LLM ──────────────────────────────────────
-    const parsed = extractJSON(aiText);
+    const parsed = extractJSON(rawLLMOutput);
     if (!parsed) throw new Error('Không parse được JSON từ response');
 
     // ── Bước 2: Ánh xạ tên sản phẩm → object thực trong DB ──────────────────────
@@ -277,8 +303,8 @@ function parseAIResponse(aiText, products, userMessage) {
 
         if (product) {
           // Sản phẩm tìm thấy → format thành object chuẩn cho frontend
-          const resolvedPrice = product.price ?? product.basePrice;
-          const resolvedCompare = product.compareAtPrice;
+          const resolvedPrice = toNum(product.price ?? product.basePrice);
+          const resolvedCompare = toNum(product.compareAtPrice);
           matchedProducts.push({
             id: product.id,
             name: product.name,
@@ -322,12 +348,12 @@ function parseAIResponse(aiText, products, userMessage) {
     if (extras.length > 0) {
       logger.debug(`[RAG] Post-processing: bổ sung ${extras.length} sản phẩm từ response text`);
     }
-    const finalProducts = [...uniqueProducts, ...extras];
+    const resolvedProducts = [...uniqueProducts, ...extras];
 
     // ── Bước 5: Trả về kết quả chuẩn hóa ────────────────────────────────────────
     return {
       response: parsed.response || 'Tôi có thể giúp bạn tìm sản phẩm phù hợp!',
-      products: finalProducts,
+      products: resolvedProducts,
       suggestions: parsed.suggestions || [
         'Xem tất cả sản phẩm',
         'Sản phẩm khuyến mãi',
@@ -338,7 +364,7 @@ function parseAIResponse(aiText, products, userMessage) {
     };
   } catch (error) {
     // JSON parse thất bại hoặc dữ liệu không hợp lệ → fallback về keyword matching
-    logger.error('[RAG] parseAIResponse JSON.parse failed:', error.message);
+    logger.error('[RAG] parseLLMOutput JSON.parse failed:', error.message);
   }
 
   // Fallback: không parse được JSON → dùng keyword matching đơn giản
@@ -346,4 +372,4 @@ function parseAIResponse(aiText, products, userMessage) {
   return simpleKeywordMatch(userMessage, products);
 }
 
-module.exports = { parseAIResponse, extractJSON };
+module.exports = { parseLLMOutput, extractJSON };

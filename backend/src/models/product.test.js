@@ -31,6 +31,8 @@ jest.mock('@services/vector-store/vector-store', () => ({
   upsertProduct: jest.fn().mockResolvedValue(undefined),
   save: jest.fn().mockResolvedValue(undefined),
   items: [],
+}));
+jest.mock('@utils/product-helpers', () => ({
   enrichProductData: jest.fn((p) => p),
 }));
 

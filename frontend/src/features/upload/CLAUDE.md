@@ -181,7 +181,7 @@ interface MultipleImageResponse {
   - `image-api.ts` → `/images/` — rich, có thumbnails + category + optimize
   - **Dùng `upload-api.ts`** khi: user avatar, review images (không cần thumbnails)
   - **Dùng `image-api.ts`** khi: product images (cần thumbnails), admin operations
-- **`generateThumbs: true`** tạo 3 sizes (200px/400px/800px). Chỉ dùng cho product images — không dùng cho avatar.
+- **`generateThumbs: true`** tạo 3 sizes (150px/300px/600px = small/medium/large). Chỉ dùng cho product images — không dùng cho avatar.
 - **`optimize: true`** → WebP conversion + compression. Tốn CPU — không dùng cho bulk upload hoặc avatar.
 - **`useConvertBase64ToImageMutation`** dùng trong admin product form khi user paste image từ clipboard vào rich text editor. Logic trong `utils/description-image-processor.ts`.
 - **`useCleanupOrphanedFilesMutation`** chỉ dùng trong admin maintenance — không expose ra user-facing UI.

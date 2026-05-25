@@ -315,7 +315,8 @@ const Product = sequelize.define(
           if (vectorStoreService && product.status === 'active') {
             const Category = require('@models/category');
             const ProductImage = require('@models/product-image');
-            const { enrichProductData } = require('@modules/ai/services/product/product-enricher');
+            const { enrichProductData } = require('@utils/product-helpers');
+            const ProductSpecification = require('@models/product-specification');
             const fullProduct = await Product.findByPk(product.id, {
               include: [
                 { model: Category, as: 'categories', attributes: ['name'] },
@@ -324,6 +325,12 @@ const Product = sequelize.define(
                   model: ProductImage,
                   as: 'productImages',
                   attributes: ['imageUrl', 'isThumbnail'],
+                  required: false,
+                },
+                {
+                  model: ProductSpecification,
+                  as: 'productSpecifications',
+                  attributes: ['name', 'value', 'valueEn', 'category'],
                   required: false,
                 },
               ],
@@ -348,9 +355,8 @@ const Product = sequelize.define(
               const Category = require('@models/category');
               const ProductImage = require('@models/product-image');
               const ProductVariant = require('@models/product-variant');
-              const {
-                enrichProductData,
-              } = require('@modules/ai/services/product/product-enricher');
+              const { enrichProductData } = require('@utils/product-helpers');
+              const ProductSpecification = require('@models/product-specification');
               const fullProduct = await Product.findByPk(product.id, {
                 include: [
                   { model: Category, as: 'categories', attributes: ['name'] },
@@ -364,7 +370,13 @@ const Product = sequelize.define(
                   {
                     model: ProductVariant,
                     as: 'variants',
-                    attributes: ['stockQuantity'],
+                    attributes: ['variantName', 'displayName', 'price', 'compareAtPrice', 'stockQuantity', 'isDefault', 'attributes', 'attributesEn'],
+                    required: false,
+                  },
+                  {
+                    model: ProductSpecification,
+                    as: 'productSpecifications',
+                    attributes: ['name', 'value', 'valueEn', 'category'],
                     required: false,
                   },
                 ],

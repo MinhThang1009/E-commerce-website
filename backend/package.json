@@ -54,7 +54,8 @@
     "db:sync:dry": "node scripts/sync-products.js --dry-run",
     "db:export": "node scripts/export-seed.js",
     "db:export-seed": "node scripts/export-seed.js",
-    "db:export:json": "node scripts/export-products-json.js"
+    "db:export:json": "node scripts/export-products-json.js",
+    "check-docs": "node -r dotenv/config scripts/check-docs.js"
   },
   "keywords": [
     "ecommerce",

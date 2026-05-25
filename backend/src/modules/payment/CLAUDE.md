@@ -66,7 +66,7 @@ modules/payment/
     payment-controller.js                      — 7 handlers
     payment-controller.unit.test.js
   services/
-    payment-service.js                         — orchestration MoMo + VNPay (~330 lines)
+    payment-service.js                         — orchestration MoMo + VNPay (~309 lines)
     payment-service.test.js
     momo-service.js                            — Singleton: HMAC-SHA256, gọi MoMo API
     momo-service.test.js
@@ -197,7 +197,7 @@ Base path: `/api/payments`
 
 **Body `POST /momo/create-url` và `POST /vnpay/create-url`:** `{ orderId: number }` — validated bởi `createUrlSchema`
 
-**Body `POST /refund`:** `{ orderId, amount?, reason?, ipAddr? }` — validated bởi `refundSchema`
+**Body `POST /refund`:** `{ orderId, amount?, reason? }` — validated bởi `refundSchema`. `ipAddr` được controller tự lấy từ `x-forwarded-for` header, KHÔNG nhận từ body.
 
 ---
 

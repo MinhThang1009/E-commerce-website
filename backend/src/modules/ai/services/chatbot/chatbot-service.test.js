@@ -4,7 +4,7 @@
  *
  * Mỗi section có mock setup riêng do dùng jest.resetModules()/jest.isolateModules().
  * Section 1 (main): handleMessage, getFallbackResponse, _persistMessages, _evictStaleSessions
- * Section 2 (branches): createPrompt branches, getAIResponse branches
+ * Section 2 (branches): buildAugmentedPrompt branches, augmentAndGenerate branches
  * Section 3 (additional): _ensureCatalogData, edge cases
  * Section 4 (extra2): rewriteQuery, constructor với LLM env, context.retrievedProducts, error rotation
  */
@@ -172,10 +172,10 @@ describe('ChatbotService._persistMessages', () => {
 });
 
 // ============================================================
-// ChatbotService.createPrompt
+// ChatbotService.buildAugmentedPrompt
 // ============================================================
 
-describe('ChatbotService.createPrompt', () => {
+describe('ChatbotService.buildAugmentedPrompt', () => {
   const sampleProducts = [
     {
       name: 'iPhone 15 Pro',
@@ -196,35 +196,35 @@ describe('ChatbotService.createPrompt', () => {
   ];
 
   test('chứa tên sản phẩm trong prompt', () => {
-    const prompt = chatbotService.createPrompt('tìm điện thoại', sampleProducts, {});
+    const prompt = chatbotService.buildAugmentedPrompt('tìm điện thoại', sampleProducts, {});
     expect(prompt).toContain('iPhone 15 Pro');
     expect(prompt).toContain('Galaxy S24');
   });
 
   test('chứa tin nhắn người dùng trong prompt', () => {
     const userMsg = 'tôi muốn mua điện thoại gaming';
-    const prompt = chatbotService.createPrompt(userMsg, sampleProducts, {});
+    const prompt = chatbotService.buildAugmentedPrompt(userMsg, sampleProducts, {});
     expect(prompt).toContain(userMsg);
   });
 
   test('chứa hướng dẫn format JSON', () => {
-    const prompt = chatbotService.createPrompt('hello', sampleProducts, {});
+    const prompt = chatbotService.buildAugmentedPrompt('hello', sampleProducts, {});
     expect(prompt).toContain('JSON');
     expect(prompt).toContain('response');
     expect(prompt).toContain('matchedProducts');
   });
 
   test('xử lý được danh sách sản phẩm rỗng', () => {
-    expect(() => chatbotService.createPrompt('hello', [], {})).not.toThrow();
+    expect(() => chatbotService.buildAugmentedPrompt('hello', [], {})).not.toThrow();
   });
 
   test('dùng price từ field price khi có (vector store source)', () => {
-    const prompt = chatbotService.createPrompt('iphone', [sampleProducts[0]], {});
+    const prompt = chatbotService.buildAugmentedPrompt('iphone', [sampleProducts[0]], {});
     expect(prompt).toContain('29.990.000');
   });
 
   test('fallback sang basePrice khi price = undefined (DB source)', () => {
-    const prompt = chatbotService.createPrompt('samsung', [sampleProducts[1]], {});
+    const prompt = chatbotService.buildAugmentedPrompt('samsung', [sampleProducts[1]], {});
     expect(prompt).toContain('19.990.000');
   });
 });
@@ -307,7 +307,7 @@ describe('ChatbotService.handleMessage', () => {
       },
     });
 
-    const result = await chatbotService.handleMessage('bóng đá hôm nay ai thắng', null, null, {});
+    const result = await chatbotService.handleMessage('bóng đá hôm nay ai thắng', null, null);
 
     expect(result).toHaveProperty('response');
     expect(result.intent).toBe('off_topic');
@@ -319,10 +319,10 @@ describe('ChatbotService.handleMessage', () => {
 
   test('fallback về getFallbackResponse khi apiKey = demo-key', async () => {
     // setup.js đặt OPENROUTER_API_KEY = 'demo-key' → normalizeAndClassify skip API call
-    // vectorStore.hybridSearch trả về [] → getAIResponse → demo-key → getFallbackResponse
+    // vectorStore.hybridSearch trả về [] → augmentAndGenerate → demo-key → getFallbackResponse
     vectorStoreService.hybridSearch.mockResolvedValueOnce([]);
 
-    const result = await chatbotService.handleMessage('tìm iphone', null, null, {});
+    const result = await chatbotService.handleMessage('tìm iphone', null, null);
 
     expect(result).toHaveProperty('response');
     expect(result).toHaveProperty('suggestions');
@@ -331,7 +331,7 @@ describe('ChatbotService.handleMessage', () => {
   test('lưu session history khi có sessionId', async () => {
     vectorStoreService.hybridSearch.mockResolvedValueOnce([]);
 
-    await chatbotService.handleMessage('hello', null, 'my-session', {});
+    await chatbotService.handleMessage('hello', null, 'my-session');
 
     expect(chatbotService.conversationHistory.has('my-session')).toBe(true);
     const entry = chatbotService.conversationHistory.get('my-session');
@@ -343,7 +343,7 @@ describe('ChatbotService.handleMessage', () => {
   test('không lưu session khi không có sessionId', async () => {
     vectorStoreService.hybridSearch.mockResolvedValueOnce([]);
 
-    await chatbotService.handleMessage('hello', null, null, {});
+    await chatbotService.handleMessage('hello', null, null);
 
     expect(chatbotService.conversationHistory.size).toBe(0);
   });
@@ -361,7 +361,7 @@ describe('ChatbotService.handleMessage', () => {
     });
 
     vectorStoreService.hybridSearch.mockResolvedValueOnce([]);
-    await chatbotService.handleMessage('new message', null, sessionId, {});
+    await chatbotService.handleMessage('new message', null, sessionId);
 
     const entry = chatbotService.conversationHistory.get(sessionId);
     // Sau khi thêm 2 messages mới và trim, tổng tối đa vẫn là 20
@@ -372,7 +372,7 @@ describe('ChatbotService.handleMessage', () => {
     vectorStoreService.hybridSearch.mockRejectedValueOnce(new Error('vector fail'));
     // Product.findAll không liên quan — getAllProducts đã bị loại bỏ khỏi service
 
-    const result = await chatbotService.handleMessage('iphone', null, null, {});
+    const result = await chatbotService.handleMessage('iphone', null, null);
     expect(result).toHaveProperty('response');
     expect(result).toHaveProperty('intent');
     expect(Array.isArray(result.suggestions)).toBe(true);
@@ -412,10 +412,10 @@ describe('ChatbotService._initializeChatbot', () => {
   });
 });
 
-describe('ChatbotService.getAIResponse', () => {
+describe('ChatbotService.augmentAndGenerate', () => {
   test('trả về fallback khi apiKey = demo-key', async () => {
     // setup.js đặt OPENROUTER_API_KEY = 'demo-key'
-    const result = await chatbotService.getAIResponse('tìm iphone', [], {}, []);
+    const result = await chatbotService.augmentAndGenerate('tìm iphone', [], []);
     expect(result).toHaveProperty('response');
     expect(result.intent).toBe('general');
   });
@@ -443,7 +443,7 @@ describe('ChatbotService.getAIResponse', () => {
         compareAtPrice: null,
       },
     ];
-    const result = await chatbotService.getAIResponse('iphone', products, {}, []);
+    const result = await chatbotService.augmentAndGenerate('iphone', products, []);
 
     expect(result).toHaveProperty('response');
     expect(result).toHaveProperty('products');
@@ -514,7 +514,7 @@ describe('ChatbotService.handleMessage — line 156: NODE_ENV production', () =>
 
     vectorStoreService.hybridSearch.mockResolvedValueOnce([]);
 
-    await chatbotService.handleMessage('tìm iphone', null, null, {});
+    await chatbotService.handleMessage('tìm iphone', null, null);
 
     // Không có debug call nào chứa "sản phẩm liên quan qua RAG"
     const debugCalls = logger.debug.mock.calls.map((c) => c[0]);
@@ -539,9 +539,9 @@ describe('ChatbotService.handleMessage — line 173: aiResponse.response || ""',
       { key: 'test-key', url: 'https://api.test/v1/chat/completions', model: 'gpt-4' },
     ];
 
-    // getAIResponse trả về object không có response field
-    const originalGetAI = chatbotService.getAIResponse.bind(chatbotService);
-    chatbotService.getAIResponse = jest.fn().mockResolvedValue({
+    // augmentAndGenerate trả về object không có response field
+    const originalGetAI = chatbotService.augmentAndGenerate.bind(chatbotService);
+    chatbotService.augmentAndGenerate = jest.fn().mockResolvedValue({
       products: [],
       suggestions: [],
       intent: 'general',
@@ -561,14 +561,14 @@ describe('ChatbotService.handleMessage — line 173: aiResponse.response || ""',
       },
     });
 
-    await chatbotService.handleMessage('hello', null, 'sess-no-response', {});
+    await chatbotService.handleMessage('hello', null, 'sess-no-response');
 
     const entry = chatbotService.conversationHistory.get('sess-no-response');
     // assistant message content phải là '' không phải undefined
     const assistantMsg = entry?.messages.find((m) => m.role === 'assistant');
     expect(assistantMsg?.content).toBe('');
 
-    chatbotService.getAIResponse = originalGetAI;
+    chatbotService.augmentAndGenerate = originalGetAI;
     chatbotService.providers = originalProviders;
   });
 });
@@ -577,13 +577,13 @@ describe('ChatbotService.handleMessage — line 173: aiResponse.response || ""',
 // Line 233: !this.apiKey (null/undefined) — branch khác demo-key
 // ============================================================
 
-describe('ChatbotService.getAIResponse — providers array empty', () => {
+describe('ChatbotService.augmentAndGenerate — providers array empty', () => {
   it('trả về fallback khi providers rỗng (không có provider nào)', async () => {
     // Production dùng this.providers.length === 0 thay vì !this.apiKey
     const originalProviders = chatbotService.providers;
     chatbotService.providers = [];
 
-    const result = await chatbotService.getAIResponse('tìm điện thoại', [], {}, []);
+    const result = await chatbotService.augmentAndGenerate('tìm điện thoại', [], []);
 
     expect(result).toHaveProperty('response');
     expect(result.intent).toBe('general');
@@ -597,7 +597,7 @@ describe('ChatbotService.getAIResponse — providers array empty', () => {
     const originalProviders = chatbotService.providers;
     chatbotService.providers = [];
 
-    const result = await chatbotService.getAIResponse('tìm laptop', [], {}, []);
+    const result = await chatbotService.augmentAndGenerate('tìm laptop', [], []);
     expect(result).toHaveProperty('response');
 
     chatbotService.providers = originalProviders;
@@ -605,10 +605,10 @@ describe('ChatbotService.getAIResponse — providers array empty', () => {
 });
 
 // ============================================================
-// getAIResponse — query DB trực tiếp cho brands/categories
+// augmentAndGenerate — query DB trực tiếp cho brands/categories
 // ============================================================
 
-describe('ChatbotService.getAIResponse — query DB trực tiếp cho brands/categories', () => {
+describe('ChatbotService.augmentAndGenerate — query DB trực tiếp cho brands/categories', () => {
   it('dùng chuỗi rỗng khi DB trả về [] cho brands và categories', async () => {
     // Production dùng this.providers array
     const originalProviders = chatbotService.providers;
@@ -636,7 +636,7 @@ describe('ChatbotService.getAIResponse — query DB trực tiếp cho brands/cat
       },
     });
 
-    const result = await chatbotService.getAIResponse('hello', [], {}, []);
+    const result = await chatbotService.augmentAndGenerate('hello', [], []);
     // Không crash — brands/categories được lấy từ DB (trả về [])
     expect(result).toHaveProperty('response');
 
@@ -648,7 +648,7 @@ describe('ChatbotService.getAIResponse — query DB trực tiếp cho brands/cat
 // Line 298: NODE_ENV = 'production' → debug "Đã nhận phản hồi" không được gọi
 // ============================================================
 
-describe('ChatbotService.getAIResponse — line 298: production suppresses debug', () => {
+describe('ChatbotService.augmentAndGenerate — line 298: production suppresses debug', () => {
   it('không gọi debug "Đã nhận phản hồi" khi NODE_ENV=production', async () => {
     const originalEnv = process.env.NODE_ENV;
     // Production dùng this.providers array
@@ -677,7 +677,7 @@ describe('ChatbotService.getAIResponse — line 298: production suppresses debug
       },
     });
 
-    await chatbotService.getAIResponse('test', [], {}, []);
+    await chatbotService.augmentAndGenerate('test', [], []);
 
     const debugCalls = logger.debug.mock.calls.map((c) => c[0]);
     const hasReceivedLog = debugCalls.some(
@@ -691,14 +691,14 @@ describe('ChatbotService.getAIResponse — line 298: production suppresses debug
 });
 
 // ============================================================
-// Lines 316-359: createPrompt branches
+// Lines 316-359: buildAugmentedPrompt branches
 // — p.category undefined → p.categories?.[0]?.name || 'Sản phẩm'
 // — p.stockQuantity = undefined → inStock branch
 // ============================================================
 
-describe('ChatbotService.createPrompt — uncovered branches (lines 316-359)', () => {
+describe('ChatbotService.buildAugmentedPrompt — uncovered branches (lines 316-359)', () => {
   it('dùng p.category khi p.category có giá trị', () => {
-    // createPrompt dùng `p.category || 'Sản phẩm'` — set category trực tiếp
+    // buildAugmentedPrompt dùng `p.category || 'Sản phẩm'` — set category trực tiếp
     const products = [
       {
         name: 'iPhone 15 Pro',
@@ -709,7 +709,7 @@ describe('ChatbotService.createPrompt — uncovered branches (lines 316-359)', (
       },
     ];
 
-    const prompt = chatbotService.createPrompt('tìm điện thoại', products, {});
+    const prompt = chatbotService.buildAugmentedPrompt('tìm điện thoại', products, {});
     expect(prompt).toContain('Điện thoại');
   });
 
@@ -724,7 +724,7 @@ describe('ChatbotService.createPrompt — uncovered branches (lines 316-359)', (
       },
     ];
 
-    const prompt = chatbotService.createPrompt('tìm gì đó', products, {});
+    const prompt = chatbotService.buildAugmentedPrompt('tìm gì đó', products, {});
     expect(prompt).toContain('Sản phẩm');
   });
 
@@ -739,7 +739,7 @@ describe('ChatbotService.createPrompt — uncovered branches (lines 316-359)', (
       },
     ];
 
-    const prompt = chatbotService.createPrompt('tìm phone', products, {});
+    const prompt = chatbotService.buildAugmentedPrompt('tìm phone', products, {});
     expect(prompt).toContain('Mô tả đang cập nhật');
   });
 
@@ -755,7 +755,7 @@ describe('ChatbotService.createPrompt — uncovered branches (lines 316-359)', (
       },
     ];
 
-    const prompt = chatbotService.createPrompt('tìm tablet', products, {});
+    const prompt = chatbotService.buildAugmentedPrompt('tìm tablet', products, {});
     expect(prompt).toContain('Còn hàng');
   });
 
@@ -771,7 +771,7 @@ describe('ChatbotService.createPrompt — uncovered branches (lines 316-359)', (
       },
     ];
 
-    const prompt = chatbotService.createPrompt('tìm tablet', products, {});
+    const prompt = chatbotService.buildAugmentedPrompt('tìm tablet', products, {});
     expect(prompt).toContain('Hết hàng');
   });
 
@@ -787,17 +787,17 @@ describe('ChatbotService.createPrompt — uncovered branches (lines 316-359)', (
       },
     ];
 
-    const prompt = chatbotService.createPrompt('tìm gì đó', products, {});
+    const prompt = chatbotService.buildAugmentedPrompt('tìm gì đó', products, {});
     expect(prompt).toContain('Sản phẩm');
   });
 });
 
 // ============================================================
 // Line 391: product.price ?? product.basePrice — right side khi price là null/undefined
-// trong parseAIResponse
+// trong parseLLMOutput
 // ============================================================
 
-describe('ChatbotService.parseAIResponse — line 391: price ?? basePrice right side', () => {
+describe('ChatbotService.parseLLMOutput — line 391: price ?? basePrice right side', () => {
   it('dùng basePrice khi product.price = null (line 391 ?? right side)', () => {
     const products = [
       {
@@ -820,7 +820,7 @@ describe('ChatbotService.parseAIResponse — line 391: price ?? basePrice right 
       intent: 'product_search',
     });
 
-    const result = chatbotService.parseAIResponse(aiText, products, 'samsung');
+    const result = chatbotService.parseLLMOutput(aiText, products, 'samsung');
     expect(result.products).toHaveLength(1);
     expect(result.products[0].price).toBe(10990000);
   });
@@ -847,7 +847,7 @@ describe('ChatbotService.parseAIResponse — line 391: price ?? basePrice right 
       intent: 'general',
     });
 
-    const result = chatbotService.parseAIResponse(aiText, products, 'test');
+    const result = chatbotService.parseLLMOutput(aiText, products, 'test');
     // Không crash — price sẽ là undefined
     expect(result.products).toHaveLength(1);
     expect(result.products[0].price).toBeUndefined();
@@ -859,7 +859,7 @@ describe('ChatbotService.parseAIResponse — line 391: price ?? basePrice right 
 // — right side khi parsed.response falsy
 // ============================================================
 
-describe('ChatbotService.parseAIResponse — line 415: parsed.response || default', () => {
+describe('ChatbotService.parseLLMOutput — line 415: parsed.response || default', () => {
   it('dùng default text khi parsed.response = null', () => {
     const aiText = JSON.stringify({
       response: null, // null → || triggers right side
@@ -868,7 +868,7 @@ describe('ChatbotService.parseAIResponse — line 415: parsed.response || defaul
       intent: 'general',
     });
 
-    const result = chatbotService.parseAIResponse(aiText, [], 'hello');
+    const result = chatbotService.parseLLMOutput(aiText, [], 'hello');
     expect(result.response).toBe('Tôi có thể giúp bạn tìm sản phẩm phù hợp!');
   });
 
@@ -880,7 +880,7 @@ describe('ChatbotService.parseAIResponse — line 415: parsed.response || defaul
       intent: 'general',
     });
 
-    const result = chatbotService.parseAIResponse(aiText, [], 'hello');
+    const result = chatbotService.parseLLMOutput(aiText, [], 'hello');
     expect(result.response).toBe('Tôi có thể giúp bạn tìm sản phẩm phù hợp!');
   });
 });
@@ -890,7 +890,7 @@ describe('ChatbotService.parseAIResponse — line 415: parsed.response || defaul
 // đều rỗng sau split → Set rỗng → minSize = 0 → return false)
 // ============================================================
 
-describe('ChatbotService.parseAIResponse — line 443: minSize = 0 edge case', () => {
+describe('ChatbotService.parseLLMOutput — line 443: minSize = 0 edge case', () => {
   it('không match khi cả pName lẫn rName đều chỉ có 1 từ ngắn bị lọc', () => {
     // pName = "a" (1 ký tự), rName = "b" (1 ký tự)
     // Sau split: pWords = {"a"}, rWords = {"b"}
@@ -917,7 +917,7 @@ describe('ChatbotService.parseAIResponse — line 443: minSize = 0 edge case', (
       intent: 'general',
     });
 
-    const result = chatbotService.parseAIResponse(aiText, products, 'b');
+    const result = chatbotService.parseLLMOutput(aiText, products, 'b');
     // Không match (intersection < 80%)
     expect(result.products).toHaveLength(0);
   });
@@ -945,7 +945,7 @@ describe('ChatbotService.parseAIResponse — line 443: minSize = 0 edge case', (
     });
 
     // Không crash — vào minSize = 0 → return false → không match
-    const result = chatbotService.parseAIResponse(aiText, products, 'test');
+    const result = chatbotService.parseLLMOutput(aiText, products, 'test');
     expect(result.products).toHaveLength(0);
   });
 });
@@ -1119,7 +1119,7 @@ describe('ChatbotService.handleMessage — line 112: rewrittenQuery same as mess
     logger.debug.mockClear();
     vectorStoreService.hybridSearch.mockResolvedValueOnce([]);
 
-    await chatbotService.handleMessage('tìm iphone', null, null, {});
+    await chatbotService.handleMessage('tìm iphone', null, null);
 
     // Không có call debug nào chứa "Câu truy vấn đã viết lại"
     const hasRewriteLog = logger.debug.mock.calls.some(
@@ -1152,23 +1152,23 @@ describe('ChatbotService.handleMessage — line 112: rewrittenQuery same as mess
     });
     vectorStoreService.hybridSearch.mockResolvedValueOnce([]);
 
-    // Cần mock getAIResponse để không gọi API thật
-    const originalGetAI = chatbotService.getAIResponse.bind(chatbotService);
-    chatbotService.getAIResponse = jest.fn().mockResolvedValue({
+    // Cần mock augmentAndGenerate để không gọi API thật
+    const originalGetAI = chatbotService.augmentAndGenerate.bind(chatbotService);
+    chatbotService.augmentAndGenerate = jest.fn().mockResolvedValue({
       response: 'OK',
       products: [],
       suggestions: [],
       intent: 'product_search',
     });
 
-    await chatbotService.handleMessage('ip 15 pm', null, null, {});
+    await chatbotService.handleMessage('ip 15 pm', null, null);
 
     const hasRewriteLog = logger.debug.mock.calls.some(
-      (args) => typeof args[0] === 'string' && args[0].includes('Câu truy vấn đã viết lại'),
+      (args) => typeof args[0] === 'string' && args[0].includes('[LLM Rewrite]'),
     );
     expect(hasRewriteLog).toBe(true);
 
-    chatbotService.getAIResponse = originalGetAI;
+    chatbotService.augmentAndGenerate = originalGetAI;
     chatbotService.providers = originalProviders;
   });
 });
@@ -1290,10 +1290,10 @@ describe('ChatbotService.handleMessage — line 104: default parameters', () => 
 });
 
 // ============================================================
-// getAIResponse — line 233: history = [] default param
+// augmentAndGenerate — line 233: history = [] default param
 // ============================================================
 
-describe('ChatbotService.getAIResponse — line 233: history default = []', () => {
+describe('ChatbotService.augmentAndGenerate — line 233: history default = []', () => {
   it('hoạt động đúng khi không truyền history (default = [])', async () => {
     // Production dùng this.providers array
     const originalProviders = chatbotService.providers;
@@ -1321,7 +1321,7 @@ describe('ChatbotService.getAIResponse — line 233: history default = []', () =
     });
 
     // Không truyền history argument → default = []
-    const result = await chatbotService.getAIResponse('tìm iphone', [], {});
+    const result = await chatbotService.augmentAndGenerate('tìm iphone', []);
 
     expect(result).toHaveProperty('response');
     // Messages phải chứa system + user (không có history items)
@@ -1333,10 +1333,10 @@ describe('ChatbotService.getAIResponse — line 233: history default = []', () =
 });
 
 // ============================================================
-// getAIResponse — DB lỗi khi load brands/categories → dùng chuỗi rỗng, không crash
+// augmentAndGenerate — DB lỗi khi load brands/categories → dùng chuỗi rỗng, không crash
 // ============================================================
 
-describe('ChatbotService.getAIResponse — DB lỗi khi load brands/categories', () => {
+describe('ChatbotService.augmentAndGenerate — DB lỗi khi load brands/categories', () => {
   it('không crash khi Brand.findAll throw, systemContent có "Danh mục:"', async () => {
     // Production dùng this.providers array
     const originalProviders = chatbotService.providers;
@@ -1365,7 +1365,7 @@ describe('ChatbotService.getAIResponse — DB lỗi khi load brands/categories',
       },
     });
 
-    const result = await chatbotService.getAIResponse('hello', [], {}, []);
+    const result = await chatbotService.augmentAndGenerate('hello', [], []);
 
     // Không crash — systemContent được build với chuỗi rỗng khi DB lỗi
     expect(result).toHaveProperty('response');
@@ -1384,7 +1384,7 @@ describe('ChatbotService.getAIResponse — DB lỗi khi load brands/categories',
 // khi matchedProducts không phải mảng hoặc không tồn tại
 // ============================================================
 
-describe('ChatbotService.parseAIResponse — line 359: matchedProducts not array', () => {
+describe('ChatbotService.parseLLMOutput — line 359: matchedProducts not array', () => {
   it('matchedProducts là string (không phải array) → không match, không crash', () => {
     const aiText = JSON.stringify({
       response: 'Test response',
@@ -1393,7 +1393,7 @@ describe('ChatbotService.parseAIResponse — line 359: matchedProducts not array
       intent: 'general',
     });
 
-    const result = chatbotService.parseAIResponse(aiText, [], 'test');
+    const result = chatbotService.parseLLMOutput(aiText, [], 'test');
     // Không crash, products = []
     expect(result.response).toBe('Test response');
     expect(result.products).toHaveLength(0);
@@ -1407,7 +1407,7 @@ describe('ChatbotService.parseAIResponse — line 359: matchedProducts not array
       intent: 'general',
     });
 
-    const result = chatbotService.parseAIResponse(aiText, [], 'test');
+    const result = chatbotService.parseLLMOutput(aiText, [], 'test');
     expect(result.products).toHaveLength(0);
   });
 
@@ -1419,7 +1419,7 @@ describe('ChatbotService.parseAIResponse — line 359: matchedProducts not array
       intent: 'general',
     });
 
-    const result = chatbotService.parseAIResponse(aiText, [], 'test');
+    const result = chatbotService.parseLLMOutput(aiText, [], 'test');
     expect(result.response).toBe('No products field');
     expect(result.products).toHaveLength(0);
   });
@@ -1474,10 +1474,10 @@ afterEach(() => {
 });
 
 // ============================================================
-// getAIResponse — query DB trực tiếp cho brands/categories mỗi lần gọi
+// augmentAndGenerate — query DB trực tiếp cho brands/categories mỗi lần gọi
 // ============================================================
 
-describe('ChatbotService.getAIResponse — brands/categories từ DB', () => {
+describe('ChatbotService.augmentAndGenerate — brands/categories từ DB', () => {
   beforeEach(() => {
     mockBrandFindAll.mockReset();
     mockCategoryFindAll.mockReset();
@@ -1519,7 +1519,7 @@ describe('ChatbotService.getAIResponse — brands/categories từ DB', () => {
       },
     });
 
-    await chatbotService.getAIResponse('tìm điện thoại', [], {}, []);
+    await chatbotService.augmentAndGenerate('tìm điện thoại', [], []);
 
     // Kiểm tra systemContent có brands và categories từ DB
     const callArgs = axios.post.mock.calls[0][1];
@@ -1557,8 +1557,8 @@ describe('ChatbotService.getAIResponse — brands/categories từ DB', () => {
       },
     });
 
-    await chatbotService.getAIResponse('test 1', [], {}, []);
-    await chatbotService.getAIResponse('test 2', [], {}, []);
+    await chatbotService.augmentAndGenerate('test 1', [], []);
+    await chatbotService.augmentAndGenerate('test 2', [], []);
 
     // Lần 1 query DB, lần 2 dùng cache → mỗi mock chỉ được gọi 1 lần
     expect(mockBrandFindAll).toHaveBeenCalledTimes(1);
@@ -1593,7 +1593,7 @@ describe('ChatbotService.getAIResponse — brands/categories từ DB', () => {
       },
     });
 
-    await chatbotService.getAIResponse('test', [], {}, []);
+    await chatbotService.augmentAndGenerate('test', [], []);
 
     const callArgs = axios.post.mock.calls[0][1];
     const systemMsg = callArgs.messages[0].content;
@@ -1605,10 +1605,10 @@ describe('ChatbotService.getAIResponse — brands/categories từ DB', () => {
 });
 
 // ============================================================
-// ChatbotService.parseAIResponse
+// ChatbotService.parseLLMOutput
 // ============================================================
 
-describe('ChatbotService.parseAIResponse', () => {
+describe('ChatbotService.parseLLMOutput', () => {
   const sampleProducts = [
     {
       id: 1,
@@ -1653,7 +1653,7 @@ describe('ChatbotService.parseAIResponse', () => {
       intent: 'product_search',
     });
 
-    const result = chatbotService.parseAIResponse(aiText, sampleProducts, 'iphone');
+    const result = chatbotService.parseLLMOutput(aiText, sampleProducts, 'iphone');
 
     expect(result.response).toBe('Tôi gợi ý iPhone 15 Pro cho bạn!');
     expect(result.products).toHaveLength(1);
@@ -1670,7 +1670,7 @@ describe('ChatbotService.parseAIResponse', () => {
       intent: 'pricing',
     });
 
-    const result = chatbotService.parseAIResponse(aiText, sampleProducts, 'iphone');
+    const result = chatbotService.parseLLMOutput(aiText, sampleProducts, 'iphone');
 
     // iPhone 15 Pro: price 29990000, compareAtPrice 32000000
     const product = result.products[0];
@@ -1686,7 +1686,7 @@ describe('ChatbotService.parseAIResponse', () => {
       intent: 'product_search',
     });
 
-    const result = chatbotService.parseAIResponse(aiText, sampleProducts, 'samsung');
+    const result = chatbotService.parseLLMOutput(aiText, sampleProducts, 'samsung');
 
     expect(result.products[0].discount).toBe(0);
   });
@@ -1699,7 +1699,7 @@ describe('ChatbotService.parseAIResponse', () => {
       intent: 'product_search',
     });
 
-    const result = chatbotService.parseAIResponse(aiText, sampleProducts, 'iphone pro max');
+    const result = chatbotService.parseLLMOutput(aiText, sampleProducts, 'iphone pro max');
 
     // Phải match đúng Pro Max, không match nhầm Pro
     expect(result.products).toHaveLength(1);
@@ -1714,7 +1714,7 @@ describe('ChatbotService.parseAIResponse', () => {
       intent: 'product_search',
     });
 
-    chatbotService.parseAIResponse(aiText, sampleProducts, 'iphone');
+    chatbotService.parseLLMOutput(aiText, sampleProducts, 'iphone');
 
     expect(logger.warn).toHaveBeenCalledWith(expect.stringContaining('Hallucination detected'));
   });
@@ -1726,13 +1726,13 @@ describe('ChatbotService.parseAIResponse', () => {
       intent: 'general',
     });
 
-    const result = chatbotService.parseAIResponse(aiText, [], 'hello');
+    const result = chatbotService.parseLLMOutput(aiText, [], 'hello');
 
     expect(result.suggestions).toHaveLength(4); // default 4 suggestions
   });
 
   it('fallback về simpleKeywordMatch khi JSON parse fail', () => {
-    const result = chatbotService.parseAIResponse('not-json-at-all', sampleProducts, 'iphone');
+    const result = chatbotService.parseLLMOutput('not-json-at-all', sampleProducts, 'iphone');
 
     // simpleKeywordMatch sẽ tìm "iphone" trong product names
     expect(result).toHaveProperty('response');
@@ -1746,7 +1746,7 @@ describe('ChatbotService.parseAIResponse', () => {
       suggestions: [],
     });
 
-    const result = chatbotService.parseAIResponse(aiText, [], 'hello');
+    const result = chatbotService.parseLLMOutput(aiText, [], 'hello');
     expect(result.intent).toBe('general');
   });
 
@@ -1770,7 +1770,7 @@ describe('ChatbotService.parseAIResponse', () => {
       intent: 'product_search',
     });
 
-    const result = chatbotService.parseAIResponse(aiText, productsWithUndefinedInStock, 'test');
+    const result = chatbotService.parseLLMOutput(aiText, productsWithUndefinedInStock, 'test');
     expect(result.products[0].inStock).toBe(true);
   });
 
@@ -1778,7 +1778,7 @@ describe('ChatbotService.parseAIResponse', () => {
     const aiText =
       '```json\n{"response":"Tốt","matchedProducts":[],"suggestions":[],"intent":"general"}\n```';
 
-    const result = chatbotService.parseAIResponse(aiText, [], 'hello');
+    const result = chatbotService.parseLLMOutput(aiText, [], 'hello');
     expect(result.response).toBe('Tốt');
   });
 });
@@ -1927,10 +1927,10 @@ describe('ChatbotService.simpleKeywordMatch — keyword matching', () => {
 });
 
 // ============================================================
-// ChatbotService.getAIResponse — success path
+// ChatbotService.augmentAndGenerate — success path
 // ============================================================
 
-describe('ChatbotService.getAIResponse — success path', () => {
+describe('ChatbotService.augmentAndGenerate — success path', () => {
   beforeEach(() => {
     axios.post.mockReset();
     // Seed catalog data để không gọi DB
@@ -1971,7 +1971,7 @@ describe('ChatbotService.getAIResponse — success path', () => {
       },
     ];
 
-    const result = await chatbotService.getAIResponse('iphone 15 pro', products, {}, []);
+    const result = await chatbotService.augmentAndGenerate('iphone 15 pro', products, []);
 
     expect(result.response).toBe('Đây là iPhone 15 Pro!');
     expect(result.products).toHaveLength(1);
@@ -1990,7 +1990,7 @@ describe('ChatbotService.getAIResponse — success path', () => {
       data: { choices: [{ message: { content: null } }] },
     });
 
-    const result = await chatbotService.getAIResponse('tìm điện thoại', [], {}, []);
+    const result = await chatbotService.augmentAndGenerate('tìm điện thoại', [], []);
 
     expect(result).toHaveProperty('response');
     expect(result.intent).toBe('general');
@@ -2026,7 +2026,7 @@ describe('ChatbotService.getAIResponse — success path', () => {
       { role: 'assistant', content: 'trả lời trước' },
     ];
 
-    await chatbotService.getAIResponse('câu tiếp theo', [], {}, history);
+    await chatbotService.augmentAndGenerate('câu tiếp theo', [], history);
 
     const callArgs = axios.post.mock.calls[0][1];
     // messages phải chứa history
@@ -2059,7 +2059,7 @@ describe('ChatbotService.getAIResponse — success path', () => {
     });
 
     const longMessage = 'a'.repeat(2500); // vượt giới hạn 2000
-    await chatbotService.getAIResponse(longMessage, [], {}, []);
+    await chatbotService.augmentAndGenerate(longMessage, [], []);
 
     const callArgs = axios.post.mock.calls[0][1];
     const userMsgContent = callArgs.messages[callArgs.messages.length - 1].content;
@@ -2071,10 +2071,10 @@ describe('ChatbotService.getAIResponse — success path', () => {
 });
 
 // ============================================================
-// ChatbotService.parseAIResponse — number-based version matching
+// ChatbotService.parseLLMOutput — number-based version matching
 // ============================================================
 
-describe('ChatbotService.parseAIResponse — version number matching', () => {
+describe('ChatbotService.parseLLMOutput — version number matching', () => {
   const productsWithVersionNumbers = [
     {
       id: 1,
@@ -2122,7 +2122,7 @@ describe('ChatbotService.parseAIResponse — version number matching', () => {
       intent: 'product_search',
     });
 
-    const result = chatbotService.parseAIResponse(aiText, productsWithVersionNumbers, 'iphone 16');
+    const result = chatbotService.parseLLMOutput(aiText, productsWithVersionNumbers, 'iphone 16');
 
     expect(result.products).toHaveLength(1);
     expect(result.products[0].name).toBe('iPhone 16');
@@ -2139,7 +2139,7 @@ describe('ChatbotService.parseAIResponse — version number matching', () => {
       intent: 'product_search',
     });
 
-    const result = chatbotService.parseAIResponse(
+    const result = chatbotService.parseLLMOutput(
       aiText,
       productsWithVersionNumbers,
       'galaxy ultra',
@@ -2169,7 +2169,7 @@ describe('ChatbotService.parseAIResponse — version number matching', () => {
       intent: 'product_search',
     });
 
-    const result = chatbotService.parseAIResponse(aiText, simpleProducts, 'dell');
+    const result = chatbotService.parseLLMOutput(aiText, simpleProducts, 'dell');
 
     expect(result.products).toHaveLength(1);
     expect(result.products[0].name).toBe('Laptop Dell Inspiron');
@@ -2177,7 +2177,7 @@ describe('ChatbotService.parseAIResponse — version number matching', () => {
 });
 
 // ============================================================
-// ChatbotService.parseAIResponse — word intersection matching (lines 382-386)
+// ChatbotService.parseLLMOutput — word intersection matching (lines 382-386)
 //
 // Điều kiện để vào nhánh này:
 //   1. pName !== rName (không exact match)
@@ -2186,7 +2186,7 @@ describe('ChatbotService.parseAIResponse — version number matching', () => {
 //   4. word intersection quyết định kết quả
 // ============================================================
 
-describe('ChatbotService.parseAIResponse — word intersection matching (lines 382-386)', () => {
+describe('ChatbotService.parseLLMOutput — word intersection matching (lines 382-386)', () => {
   it('intersection ≥ 80% words → match thành công (line 386 = true)', () => {
     // pName = "laptop dell inspiron" (3 từ: laptop, dell, inspiron)
     // rName = "dell inspiron laptop" (3 từ: dell, inspiron, laptop — khác order)
@@ -2214,7 +2214,7 @@ describe('ChatbotService.parseAIResponse — word intersection matching (lines 3
       intent: 'product_search',
     });
 
-    const result = chatbotService.parseAIResponse(aiText, products, 'dell inspiron');
+    const result = chatbotService.parseLLMOutput(aiText, products, 'dell inspiron');
 
     // Phải match vì word intersection >= 80%
     expect(result.products).toHaveLength(1);
@@ -2245,7 +2245,7 @@ describe('ChatbotService.parseAIResponse — word intersection matching (lines 3
       intent: 'product_search',
     });
 
-    const result = chatbotService.parseAIResponse(aiText, products, 'samsung');
+    const result = chatbotService.parseLLMOutput(aiText, products, 'samsung');
 
     // KHÔNG match vì word intersection < 80%
     expect(result.products).toHaveLength(0);
@@ -2277,7 +2277,7 @@ describe('ChatbotService.parseAIResponse — word intersection matching (lines 3
       intent: 'product_search',
     });
 
-    const result = chatbotService.parseAIResponse(aiText, products, 'sony');
+    const result = chatbotService.parseLLMOutput(aiText, products, 'sony');
 
     // Đúng 80% → phải match
     expect(result.products).toHaveLength(1);
@@ -2308,17 +2308,15 @@ describe('ChatbotService.parseAIResponse — word intersection matching (lines 3
       intent: 'product_search',
     });
 
-    const result = chatbotService.parseAIResponse(aiText, products, 'bose');
+    const result = chatbotService.parseLLMOutput(aiText, products, 'bose');
 
     // Không match: 2/5 = 40% < 80%
     expect(result.products).toHaveLength(0);
   });
 
-  it('từ đơn ký tự bị loại khỏi intersection (w.length > 1 điều kiện — line 384)', () => {
-    // pName = "màn hình lg c": fuzzy match thất bại vì "lg" và "samsung" khác nhau
-    // Tuy nhiên Option B (extractProductsFromText) dùng words filter length > 2:
-    //   words = ['màn', 'hình'] (lg=2 bị loại, c=1 bị loại)
-    //   response text "Màn Hình Samsung C" chứa cả "màn" và "hình" → 2/2 ≥ 75% → bổ sung
+  it('phrase match không bổ sung khi core name khác brand (lg c ≠ samsung c)', () => {
+    // pName = "Màn Hình LG C": core (sau strip prefix) = "lg c"
+    // response = "Màn Hình Samsung C": không chứa phrase "lg c" → không bổ sung
     const products = [
       {
         id: 5,
@@ -2338,11 +2336,9 @@ describe('ChatbotService.parseAIResponse — word intersection matching (lines 3
       intent: 'product_search',
     });
 
-    const result = chatbotService.parseAIResponse(aiText, products, 'màn hình');
+    const result = chatbotService.parseLLMOutput(aiText, products, 'màn hình');
 
-    // Option B bổ sung "Màn Hình LG C" vì "màn" và "hình" xuất hiện trong response text
-    expect(result.products).toHaveLength(1);
-    expect(result.products[0].name).toBe('Màn Hình LG C');
+    expect(result.products).toHaveLength(0);
   });
 });
 
@@ -2378,7 +2374,7 @@ describe('ChatbotService.handleMessage — outer catch fallback', () => {
       },
     });
 
-    const result = await chatbotService.handleMessage('bóng đá hôm nay', null, null, {});
+    const result = await chatbotService.handleMessage('bóng đá hôm nay', null, null);
 
     expect(result).toHaveProperty('response');
 
@@ -2419,9 +2415,9 @@ describe('ChatbotService — vectorStore.hybridSearch với non-empty results (l
       },
     ]);
 
-    // Mock getAIResponse để không thực sự gọi API
-    const originalGetAI = chatbotService.getAIResponse.bind(chatbotService);
-    chatbotService.getAIResponse = jest.fn().mockResolvedValue({
+    // Mock augmentAndGenerate để không thực sự gọi API
+    const originalGetAI = chatbotService.augmentAndGenerate.bind(chatbotService);
+    chatbotService.augmentAndGenerate = jest.fn().mockResolvedValue({
       response: 'Đây là iPhone 15!',
       products: [{ id: 1, name: 'iPhone 15', price: 20000000 }],
       suggestions: [],
@@ -2430,24 +2426,24 @@ describe('ChatbotService — vectorStore.hybridSearch với non-empty results (l
 
     mockChatMessageBulkCreate.mockResolvedValue([]);
 
-    await chatbotService.handleMessage('tìm iphone', null, 'sess-vec-test', {});
+    await chatbotService.handleMessage('tìm iphone', null, 'sess-vec-test');
 
     // Map callback được gọi với non-empty results → relevantProducts được populated
     expect(vectorStoreService.hybridSearch).toHaveBeenCalled();
 
     // Restore
-    chatbotService.getAIResponse = originalGetAI;
+    chatbotService.augmentAndGenerate = originalGetAI;
     chatbotService.providers = originalProviders;
     jest.clearAllMocks();
   });
 });
 
 // ============================================================
-// ChatbotService.parseAIResponse — line 372 every() callback
+// ChatbotService.parseLLMOutput — line 372 every() callback
 // (khi rVersions.length === pVersions.length nhưng keywords khác nhau)
 // ============================================================
 
-describe('ChatbotService.parseAIResponse — line 372 every() callback', () => {
+describe('ChatbotService.parseLLMOutput — line 372 every() callback', () => {
   it('cùng số version keywords nhưng khác loại → every() trả false → không match (line 372 right side)', () => {
     // rName = 'iphone 15 pro' → rVersions = ['pro'] (length 1)
     // pName = 'iphone 15 max' → pVersions = ['max'] (length 1)
@@ -2473,7 +2469,7 @@ describe('ChatbotService.parseAIResponse — line 372 every() callback', () => {
       intent: 'product_search',
     });
 
-    const result = chatbotService.parseAIResponse(aiText, products, 'iphone 15');
+    const result = chatbotService.parseLLMOutput(aiText, products, 'iphone 15');
 
     // 'pro' !== 'max' → every() callback thực thi và trả false → không match
     expect(result.products).toHaveLength(0);
@@ -2522,11 +2518,11 @@ function addFakeProvider(overrides = {}) {
 // ═══════════════════════════════════════════════════════════════════════════════
 
 describe('ChatbotService constructor với LLM_API_KEY + LLM_BASE_URL', () => {
-  test('providers có LLM entry khi env vars được set kèm LLM_MODEL', () => {
+  test('providers có LLM entry khi env vars được set kèm LLM_MODEL_1', () => {
     let serviceWithEnv;
     process.env.LLM_API_KEY = 'test-llm-key';
     process.env.LLM_BASE_URL = 'https://llm.test.com';
-    process.env.LLM_MODEL = 'test-model-v1';
+    process.env.LLM_MODEL_1 = 'test-model-v1';
 
     jest.isolateModules(() => {
       serviceWithEnv = require('./chatbot-service');
@@ -2534,17 +2530,17 @@ describe('ChatbotService constructor với LLM_API_KEY + LLM_BASE_URL', () => {
 
     delete process.env.LLM_API_KEY;
     delete process.env.LLM_BASE_URL;
-    delete process.env.LLM_MODEL;
+    delete process.env.LLM_MODEL_1;
 
     expect(serviceWithEnv.providers.some((p) => p.key === 'test-llm-key')).toBe(true);
     expect(serviceWithEnv.providers.some((p) => p.model === 'test-model-v1')).toBe(true);
   });
 
-  test('dùng model mặc định openai/gpt-4.5 khi LLM_MODEL không set (line 54)', () => {
+  test('model là undefined khi LLM_MODEL_1 không set', () => {
     let serviceWithEnv;
     process.env.LLM_API_KEY = 'default-model-key';
     process.env.LLM_BASE_URL = 'https://llm.test.com';
-    // LLM_MODEL không set → dùng default
+    // LLM_MODEL_1 không set → model = undefined
 
     jest.isolateModules(() => {
       serviceWithEnv = require('./chatbot-service');
@@ -2555,7 +2551,7 @@ describe('ChatbotService constructor với LLM_API_KEY + LLM_BASE_URL', () => {
 
     const llmProvider = serviceWithEnv.providers.find((p) => p.key === 'default-model-key');
     expect(llmProvider).toBeDefined();
-    expect(llmProvider.model).toBe('openai/gpt-4.5');
+    expect(llmProvider.model).toBeUndefined();
   });
 
   test('providers rỗng khi không có LLM_API_KEY', () => {
@@ -2671,7 +2667,7 @@ describe('ChatbotService.rewriteQuery', () => {
 describe('ChatbotService.handleMessage — off-topic English', () => {
   test('trả về response tiếng Anh khi off-topic message là tiếng Anh', async () => {
     // 'football match today' → isOffTopic = true, detectLanguage('football match today') = 'en'
-    const result = await chatbotService.handleMessage('football match today', null, null, {});
+    const result = await chatbotService.handleMessage('football match today', null, null);
 
     expect(result.intent).toBe('off_topic');
     // English response contains English keywords
@@ -2681,10 +2677,10 @@ describe('ChatbotService.handleMessage — off-topic English', () => {
 });
 
 // ═══════════════════════════════════════════════════════════════════════════════
-// getAIResponse — brands/categories map arrows (lines 84-85)
+// augmentAndGenerate — brands/categories map arrows (lines 84-85)
 // ═══════════════════════════════════════════════════════════════════════════════
 
-describe('ChatbotService.getAIResponse — brands/categories map arrows', () => {
+describe('ChatbotService.augmentAndGenerate — brands/categories map arrows', () => {
   beforeEach(() => {
     // Reset catalog cache để test dùng mock data mới nhất
     chatbotService._catalogCache = null;
@@ -2714,7 +2710,7 @@ describe('ChatbotService.getAIResponse — brands/categories map arrows', () => 
       },
     });
 
-    await chatbotService.getAIResponse('test', [], {}, []);
+    await chatbotService.augmentAndGenerate('test', [], []);
 
     // Kiểm tra systemContent chứa brands và categories được inject
     const callArgs = axios.post.mock.calls[0][1];
@@ -2726,36 +2722,19 @@ describe('ChatbotService.getAIResponse — brands/categories map arrows', () => 
   });
 });
 
-describe('ChatbotService.handleMessage — context.retrievedProducts', () => {
-  test('dùng retrievedProducts từ context thay vì tự retrieve', async () => {
-    const products = [{ id: 1, name: 'iPhone 15', score: 0.9 }];
-    const context = { retrievedProducts: products, preClassifiedIntent: 'product_search' };
+describe('ChatbotService.handleMessage — retrieve flow', () => {
+  test('handleMessage với message hợp lệ trả về kết quả có response', async () => {
+    const result = await chatbotService.handleMessage('iPhone 15 giá bao nhiêu', null, null);
 
-    // Không cần LLM provider — getAIResponse trả fallback khi providers rỗng
-    const result = await chatbotService.handleMessage(
-      'iPhone 15 giá bao nhiêu',
-      null,
-      null,
-      context,
-    );
-
-    // hybridSearch KHÔNG được gọi vì đã có retrievedProducts
-    expect(vectorStoreService.hybridSearch).not.toHaveBeenCalled();
     expect(result).toBeDefined();
+    expect(result).toHaveProperty('response');
   });
 
-  test('dùng llmRewrittenQuery khi có trong context', async () => {
-    const products = [{ id: 2, name: 'Samsung Galaxy S25', score: 0.8 }];
-    const context = {
-      retrievedProducts: products,
-      llmRewrittenQuery: 'Samsung Galaxy S25 Ultra',
-      preClassifiedIntent: 'product_search',
-    };
+  test('handleMessage tự retrieve khi không có retrievedProducts trong context', async () => {
+    await chatbotService.handleMessage('ss s25 ultra', null, null);
 
-    const result = await chatbotService.handleMessage('ss s25 ultra', null, null, context);
-
-    expect(vectorStoreService.hybridSearch).not.toHaveBeenCalled();
-    expect(result).toBeDefined();
+    // vectorStore được gọi vì handleMessage tự retrieve
+    expect(vectorStoreService.hybridSearch).toHaveBeenCalled();
   });
 });
 
@@ -2777,7 +2756,7 @@ describe('ChatbotService.handleMessage — legacy llmRewrite path', () => {
         data: { choices: [{ message: { content: 'Dell Gaming Laptop RTX 4060' } }] },
       })
       .mockResolvedValueOnce({
-        // Lần 2: getAIResponse
+        // Lần 2: augmentAndGenerate
         data: {
           choices: [
             {
@@ -2796,7 +2775,7 @@ describe('ChatbotService.handleMessage — legacy llmRewrite path', () => {
       .mockResolvedValueOnce([]) // initial search
       .mockResolvedValueOnce(refinedProducts); // refined search
 
-    const result = await chatbotService.handleMessage('laptop gaming dell', null, null, {});
+    const result = await chatbotService.handleMessage('laptop gaming dell', null, null);
 
     // Gọi 2 lần: initial + refined
     expect(vectorStoreService.hybridSearch).toHaveBeenCalledTimes(2);
@@ -2827,7 +2806,7 @@ describe('ChatbotService.handleMessage — legacy llmRewrite path', () => {
       .mockResolvedValueOnce(initialProducts) // initial
       .mockRejectedValueOnce(new Error('refined search failed')); // refined throws
 
-    const result = await chatbotService.handleMessage('macbook pro', null, null, {});
+    const result = await chatbotService.handleMessage('macbook pro', null, null);
 
     expect(result).toBeDefined();
   });
@@ -2857,7 +2836,7 @@ describe('ChatbotService.handleMessage — legacy llmRewrite path', () => {
       .mockResolvedValueOnce(initialProducts) // initial: có kết quả
       .mockResolvedValueOnce([]); // refined: rỗng → dùng initial (line 267)
 
-    const result = await chatbotService.handleMessage('laptop dell xps', null, null, {});
+    const result = await chatbotService.handleMessage('laptop dell xps', null, null);
 
     expect(result).toBeDefined();
   });
@@ -2876,15 +2855,15 @@ describe('ChatbotService.handleMessage — fallback search catch (line 285)', ()
       .mockResolvedValueOnce([]) // initial: rỗng
       .mockRejectedValueOnce(new Error('fallback error')); // fallback throw
 
-    const result = await chatbotService.handleMessage('laptop gaming', null, null, {});
+    const result = await chatbotService.handleMessage('laptop gaming', null, null);
 
     expect(result).toBeDefined();
-    // Fallback getAIResponse với products=[] → simpleKeywordMatch
+    // Fallback augmentAndGenerate với products=[] → simpleKeywordMatch
   });
 });
 
 // ═══════════════════════════════════════════════════════════════════════════════
-// getAIResponse — provider rotation khi 429/500/503 (lines 461-478)
+// augmentAndGenerate — provider rotation khi 429/500/503 (lines 461-478)
 // ═══════════════════════════════════════════════════════════════════════════════
 
 // ═══════════════════════════════════════════════════════════════════════════════
@@ -2900,7 +2879,7 @@ describe('ChatbotService._evictStaleSessions — early return khi empty', () => 
   });
 });
 
-describe('ChatbotService.getAIResponse — provider rotation', () => {
+describe('ChatbotService.augmentAndGenerate — provider rotation', () => {
   beforeEach(() => {
     axios.post.mockReset();
     mockBrandFindAll.mockResolvedValue([]);
@@ -2927,7 +2906,7 @@ describe('ChatbotService.getAIResponse — provider rotation', () => {
         },
       }); // provider 2: thành công
 
-    const result = await chatbotService.getAIResponse('iPhone 15', [], {}, []);
+    const result = await chatbotService.augmentAndGenerate('iPhone 15', [], []);
 
     expect(axios.post).toHaveBeenCalledTimes(2);
     expect(result.response).toBe('tìm thấy sản phẩm');
@@ -2947,7 +2926,7 @@ describe('ChatbotService.getAIResponse — provider rotation', () => {
       .mockRejectedValueOnce(err503)
       .mockRejectedValueOnce(networkErr);
 
-    const result = await chatbotService.getAIResponse('MacBook', [], {}, []);
+    const result = await chatbotService.augmentAndGenerate('MacBook', [], []);
 
     expect(axios.post).toHaveBeenCalledTimes(3);
     // Hết tất cả providers → simpleKeywordMatch
@@ -2961,7 +2940,7 @@ describe('ChatbotService.getAIResponse — provider rotation', () => {
     const err400 = Object.assign(new Error('Bad request'), { response: { status: 400 } });
     axios.post.mockRejectedValue(err400);
 
-    const result = await chatbotService.getAIResponse('test', [], {}, []);
+    const result = await chatbotService.augmentAndGenerate('test', [], []);
 
     // Chỉ gọi 1 lần vì break sau 400
     expect(axios.post).toHaveBeenCalledTimes(1);
@@ -2985,7 +2964,7 @@ describe('ChatbotService.getAIResponse — provider rotation', () => {
       },
     });
 
-    const result = await chatbotService.getAIResponse('test', [], {}, []);
+    const result = await chatbotService.augmentAndGenerate('test', [], []);
 
     expect(axios.post).toHaveBeenCalledTimes(2);
     expect(result.response).toBe('ok');
@@ -3011,7 +2990,7 @@ describe('ChatbotService.handleMessage — prompt injection (lines 339-358)', ()
     expect(result.intent).toBe('off_topic');
     expect(result.products).toEqual([]);
     expect(typeof result.response).toBe('string');
-    // Không gọi LLM (getAIResponse) vì bị từ chối sớm
+    // Không gọi LLM (augmentAndGenerate) vì bị từ chối sớm
   });
 
   test('trả về response tiếng Anh khi injection message là tiếng Anh', async () => {
@@ -3035,20 +3014,20 @@ describe('ChatbotService.handleMessage — outer catch block fallback (lines 505
     chatbotService.conversationHistory.clear();
   });
 
+  afterEach(() => {
+    jest.restoreAllMocks();
+  });
+
   test('trả về getFallbackResponse khi có lỗi không mong đợi trong handleMessage', async () => {
-    // Inject lỗi vào _isPromptInjection để trigger outer catch
-    const originalMethod = chatbotService._isPromptInjection.bind(chatbotService);
-    chatbotService._isPromptInjection = () => {
+    // Inject lỗi vào augmentAndGenerate để trigger outer catch
+    jest.spyOn(chatbotService, 'augmentAndGenerate').mockImplementation(() => {
       throw new Error('Lỗi không mong đợi');
-    };
+    });
 
     const result = await chatbotService.handleMessage('xin chào', null, null);
 
     // Phải trả về fallback, không crash
     expect(typeof result.response).toBe('string');
     expect(result.response.length).toBeGreaterThan(0);
-
-    // Restore
-    chatbotService._isPromptInjection = originalMethod;
   });
 });

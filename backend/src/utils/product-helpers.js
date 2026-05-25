@@ -137,6 +137,23 @@ const findVariantByAttributes = (variants, selectedAttributes) => {
   });
 };
 
+/**
+ * Compute thumbnail + inStock từ product associations.
+ * Dùng chung cho indexProducts, model hooks, admin controllers.
+ * @param {Object} productData - Plain object (thường từ .toJSON())
+ * @returns {Object} productData đã mutate
+ */
+const enrichProductData = (productData) => {
+  const thumbImg = productData.productImages?.find((img) => img.isThumbnail);
+  productData.thumbnail = thumbImg?.imageUrl || productData.productImages?.[0]?.imageUrl || null;
+  const variantStock = (productData.variants || []).reduce(
+    (sum, v) => sum + (v.stockQuantity || 0),
+    0,
+  );
+  productData.inStock = variantStock > 0 || productData.stockQuantity > 0;
+  return productData;
+};
+
 module.exports = {
   calculateTotalStock,
   updateProductTotalStock,
@@ -145,4 +162,5 @@ module.exports = {
   hasVariants,
   getVariantStock,
   findVariantByAttributes,
+  enrichProductData,
 };

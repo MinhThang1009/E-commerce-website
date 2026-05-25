@@ -176,16 +176,6 @@ jest.mock('@utils/logger', () => ({
   debug: jest.fn(),
 }));
 
-jest.mock('@modules/ai/services/embedding/embedding', () => ({
-  embed: jest.fn().mockResolvedValue([]),
-  isAvailable: jest.fn().mockReturnValue(false),
-}));
-
-jest.mock('@modules/ai/services/embedding/vi-embedding', () => ({
-  embed: jest.fn().mockResolvedValue([]),
-  isAvailable: jest.fn().mockReturnValue(false),
-}));
-
 jest.mock('fs', () => ({
   existsSync: jest.fn().mockReturnValue(false),
   mkdirSync: jest.fn(),

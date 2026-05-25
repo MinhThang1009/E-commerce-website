@@ -219,10 +219,11 @@ const AddressPicker: React.FC<AddressPickerProps> = ({
 
       {/* Tỉnh / Thành phố */}
       <div>
-        <label className="block text-xs font-medium text-neutral-500 dark:text-neutral-400 mb-1">
+        <label htmlFor="address-province" className="block text-xs font-medium text-neutral-500 dark:text-neutral-400 mb-1">
           {t('addressPicker.province')}
         </label>
         <select
+          id="address-province"
           className={selectClass}
           value={selectedProvinceCode ?? ''}
           onChange={(e) => {
@@ -244,10 +245,11 @@ const AddressPicker: React.FC<AddressPickerProps> = ({
 
       {/* Quận / Huyện */}
       <div>
-        <label className="block text-xs font-medium text-neutral-500 dark:text-neutral-400 mb-1">
+        <label htmlFor="address-district" className="block text-xs font-medium text-neutral-500 dark:text-neutral-400 mb-1">
           {t('addressPicker.district')}
         </label>
         <select
+          id="address-district"
           className={selectClass}
           value={selectedDistrictCode ?? ''}
           disabled={!selectedProvinceCode || loadingDistricts}
@@ -272,10 +274,11 @@ const AddressPicker: React.FC<AddressPickerProps> = ({
 
       {/* Phường / Xã */}
       <div>
-        <label className="block text-xs font-medium text-neutral-500 dark:text-neutral-400 mb-1">
+        <label htmlFor="address-ward" className="block text-xs font-medium text-neutral-500 dark:text-neutral-400 mb-1">
           {t('addressPicker.ward')}
         </label>
         <select
+          id="address-ward"
           className={selectClass}
           value={selectedWard}
           disabled={!selectedDistrictCode || loadingWards}

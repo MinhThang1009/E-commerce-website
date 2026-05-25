@@ -83,7 +83,7 @@ Không có endpoint riêng — dùng từ features khác:
 | GET    | `/cart/count`                | cart    | Số lượng items (sync badge)         |
 | GET    | `/users/me/addresses`        | users   | Danh sách địa chỉ đã lưu (autofill) |
 | POST   | `/orders`                    | orders  | Tạo đơn hàng                        |
-| POST   | `/discount-codes/validate`   | orders  | Validate + áp mã giảm giá           |
+| POST   | `/discount-codes/apply`      | orders  | Validate + áp mã giảm giá           |
 | POST   | `/payments/momo/create-url`  | payment | Tạo URL thanh toán MoMo             |
 | POST   | `/payments/vnpay/create-url` | payment | Tạo URL thanh toán VNPay            |
 

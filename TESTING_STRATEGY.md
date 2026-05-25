@@ -1,6 +1,6 @@
 # TechStore — Chiến Lược Testing
 
-> 5 tầng test, 258 suites, 5.092 test cases, coverage 100% (unit).
+> 5 tầng test, 257 suites, 5.069 test cases, coverage 100% (unit).
 
 ## Mục lục
 
@@ -34,12 +34,12 @@ TechStore áp dụng chiến lược kiểm thử đa tầng. Mỗi tầng phụ
 
 | Suite | Suites | Tests | Runtime | Config |
 |---|---|---|---|---|
-| BE Unit Tests | 160 | **3.560** | ~10s | `jest.config.js` |
+| BE Unit Tests | 159 | **3.537** | ~10s | `jest.config.js` |
 | BE Integration Tests | 36 | **184** | ~50s | `jest.integration.config.js` |
 | BE API HTTP Tests | 39 | **700** | ~190s | `jest.api.config.js` |
 | BE E2E Tests | 5 | **100** | ~20s | `jest.e2e.config.js` |
 | FE Component Tests | 18 | **548** | ~9s | `jest.config.cjs` (frontend/) |
-| **Tổng** | **258** | **5.092** | | |
+| **Tổng** | **257** | **5.069** | | |
 
 ---
 
@@ -53,7 +53,7 @@ TechStore áp dụng chiến lược kiểm thử đa tầng. Mỗi tầng phụ
                 ┌─┴──────────────────────┴─┐
                 │ Integration Tests (184)   │  ← Service/repo layer (real DB)
               ┌─┴──────────────────────────┴─┐
-              │  Unit Tests (3.560 + 548)     │  ← Isolated logic + React components
+              │  Unit Tests (3.537 + 548)     │  ← Isolated logic + React components
               └────────────────────────────────┘
 ```
 
@@ -73,7 +73,7 @@ TechStore áp dụng chiến lược kiểm thử đa tầng. Mỗi tầng phụ
 
 **Mục đích**: Kiểm tra logic nghiệp vụ của từng hàm trong isolation hoàn toàn. Mọi external dependency (Sequelize models, email, AI) đều được mock bằng `jest.fn()`.
 
-**Phạm vi**: 160 test suites, 3.560 test cases.
+**Phạm vi**: 159 test suites, 3.537 test cases.
 - Tất cả Service classes (17 modules × nhiều methods)
 - Repository classes
 - Controller handlers (input/output, error paths)
@@ -424,12 +424,12 @@ npm run build
 
 | Suite | Suites | Tests | Runtime |
 |---|---|---|---|
-| BE Unit Tests | 160 | 3.560 | ~10s |
+| BE Unit Tests | 159 | 3.537 | ~10s |
 | BE Integration Tests | 36 | 184 | ~50s |
 | BE API HTTP Tests | 39 | 700 | ~190s |
 | BE E2E Tests | 5 | 100 | ~20s |
 | FE Component Tests | 18 | 548 | ~9s |
-| **Tổng** | **258** | **5.092** | |
+| **Tổng** | **257** | **5.069** | |
 
 **Coverage (local unit tests)**:
 - Statements: 100% (threshold 99%)

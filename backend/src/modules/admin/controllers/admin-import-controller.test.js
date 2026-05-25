@@ -133,6 +133,7 @@ jest.mock('@utils/product-helpers', () => ({
   updateProductTotalStock: jest.fn().mockResolvedValue(undefined),
   validateVariantAttributes: jest.fn().mockReturnValue([]),
   generateVariantSku: jest.fn().mockReturnValue('SKU-TEST'),
+  enrichProductData: jest.fn((d) => d),
 }));
 
 // ─────────────────────────────────────────────────────────────────────────────

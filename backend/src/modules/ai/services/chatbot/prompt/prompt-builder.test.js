@@ -4,7 +4,7 @@
  *   và null name branch (line 32).
  */
 
-const { createPrompt } = require('./prompt-builder');
+const { buildAugmentedPrompt } = require('./prompt-builder');
 
 const makeProduct = (overrides = {}) => ({
   id: 1,
@@ -17,50 +17,50 @@ const makeProduct = (overrides = {}) => ({
   ...overrides,
 });
 
-describe('createPrompt — product list formatting', () => {
+describe('buildAugmentedPrompt — product list formatting', () => {
   test('trả về chuỗi prompt chứa tên sản phẩm', () => {
-    const result = createPrompt('iphone 15', [makeProduct()], {});
+    const result = buildAugmentedPrompt('iphone 15', [makeProduct()], {});
     expect(result).toContain('iPhone 15 Pro');
   });
 
   test('sản phẩm không có trong DB → "(Không tìm thấy sản phẩm nào)"', () => {
-    const result = createPrompt('test query', [], {});
+    const result = buildAugmentedPrompt('test query', [], {});
     expect(result).toContain('Không tìm thấy');
   });
 
   // Line 21 — lowConfidence branch
   test('lowConfidence=true → thêm "⚠️[low confidence]" prefix (line 21)', () => {
     const lowConfProduct = makeProduct({ lowConfidence: true });
-    const result = createPrompt('test', [lowConfProduct], {});
+    const result = buildAugmentedPrompt('test', [lowConfProduct], {});
     expect(result).toContain('⚠️[low confidence]');
   });
 
   test('lowConfidence=false → không có prefix warning', () => {
-    const result = createPrompt('test', [makeProduct({ lowConfidence: false })], {});
+    const result = buildAugmentedPrompt('test', [makeProduct({ lowConfidence: false })], {});
     expect(result).not.toContain('⚠️[low confidence]');
   });
 
   // category || 'Sản phẩm'
   test('product không có category → dùng "Sản phẩm" mặc định', () => {
-    const result = createPrompt('test', [makeProduct({ category: null })], {});
+    const result = buildAugmentedPrompt('test', [makeProduct({ category: null })], {});
     expect(result).toContain('Sản phẩm');
   });
 
   // shortDescription || 'Mô tả đang cập nhật'
   test('product không có shortDescription → "Mô tả đang cập nhật"', () => {
-    const result = createPrompt('test', [makeProduct({ shortDescription: null })], {});
+    const result = buildAugmentedPrompt('test', [makeProduct({ shortDescription: null })], {});
     expect(result).toContain('Mô tả đang cập nhật');
   });
 
   // inStock false → 'Hết hàng'
   test('inStock=false → hiển thị "Hết hàng"', () => {
-    const result = createPrompt('test', [makeProduct({ inStock: false })], {});
+    const result = buildAugmentedPrompt('test', [makeProduct({ inStock: false })], {});
     expect(result).toContain('Hết hàng');
   });
 
   // price ?? basePrice
   test('price=null → dùng basePrice fallback', () => {
-    const result = createPrompt('test', [makeProduct({ price: null, basePrice: 25000000 })], {});
+    const result = buildAugmentedPrompt('test', [makeProduct({ price: null, basePrice: 25000000 })], {});
     expect(result).toContain('25');
   });
 
@@ -68,7 +68,7 @@ describe('createPrompt — product list formatting', () => {
   test('product với name=null → dùng "" làm tên (line 32)', () => {
     const products = [makeProduct({ name: null })];
     // Không crash khi name là null
-    const result = createPrompt('test query 15', products, {});
+    const result = buildAugmentedPrompt('test query 15', products, {});
     expect(typeof result).toBe('string');
   });
 });

@@ -287,12 +287,7 @@ const CheckoutPage: React.FC = () => {
   // Danh sách quốc gia
   const _countries = [
     { value: 'VN', label: t('checkout.countries.VN') },
-    { value: 'US', label: t('checkout.countries.US') },
-    { value: 'CA', label: t('checkout.countries.CA') },
-    { value: 'UK', label: t('checkout.countries.UK') },
-    { value: 'AU', label: t('checkout.countries.AU') },
-    { value: 'DE', label: t('checkout.countries.DE') },
-    { value: 'FR', label: t('checkout.countries.FR') },
+    { value: 'US', label: t('checkout.countries.US') }
   ];
 
   const subtotal = items.reduce((sum, item) => sum + item.price * item.quantity, 0);
@@ -306,6 +301,7 @@ const CheckoutPage: React.FC = () => {
     const lon = formData.lon;
 
     if (lat && lon) {
+      // Hàm tính khoảng cách giữa 2 điểm dựa trên tọa độ địa lý (Haversine formula)
       const calculateDistance = (lat1: number, lon1: number, lat2: number, lon2: number) => {
         const deg2rad = (deg: number) => deg * (Math.PI / 180);
         const R = 6371;

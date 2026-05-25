@@ -35,7 +35,7 @@ Module lớn nhất codebase. Cung cấp toàn bộ catalog API: danh sách/lọ
 
 ## 1.2 DI Pattern (Multi-Mount)
 
-Module trả về `mounts` array thay vì 1 router duy nhất — pattern đặc biệt, chỉ catalog và content dùng:
+Module trả về `mounts` array thay vì 1 router duy nhất — pattern đặc biệt, **chỉ catalog dùng** (content và các module khác dùng single router bình thường):
 
 ```js
 // module.js
@@ -62,9 +62,9 @@ modules/catalog/
   module.js
   routes.js                              — single file, export { categories, brands, products }
   controllers/
-    catalog-controller.js                — ~260 lines: handlers cho cả 3 sub-domain
+    catalog-controller.js                — ~333 lines: handlers cho cả 3 sub-domain
   services/
-    catalog-service.js                   — ~1095 lines: toàn bộ business logic
+    catalog-service.js                   — ~1521 lines: toàn bộ business logic
   repositories/
     sequelize-catalog-repository.js      — ~750 lines: complex joins + aggregation queries
     i-catalog-repository.js              — interface (abstract base)
@@ -122,8 +122,8 @@ Nếu có `userId` → gọi `_trackRecentlyViewed` (fire-and-forget, max 20 ent
 - `getAllCategories()` — filter chỉ giữ categories có `productCount > 0` **và** `isActive !== false`
 - `getAllBrands({ categoryId, hasProducts })` — filter brands có active products khi `hasProducts = true`
 - Không thể xóa category/brand đang có sản phẩm — 400 error
-- `createCategory({ name, description, isActive, sortOrder })` — `sortOrder` default 0
-- `updateCategory({ id, patch })` — patch chấp nhận `name`, `description`, `isActive`, `sortOrder`
+- `createCategory({ name, description, image, parentId, isActive, sortOrder })` — `sortOrder` default 0, `isActive` default true, `parentId` default null
+- `updateCategory({ id, patch })` — patch chấp nhận `name`, `description`, `image`, `parentId`, `isActive`, `sortOrder`
 
 ## 3.5 Business rules
 
@@ -234,3 +234,10 @@ Route order quan trọng — named paths phải đứng trước `/:id` để tr
 | `repositories/catalog-repository.edge-cases-2.test.js` | Unit | Repository edge cases (batch 2)              |
 | `controllers/catalog-controller.test.js`               | Unit | HTTP layer                                   |
 | `controllers/catalog-controller.edge-cases.test.js`    | Unit | Controller edge cases                        |
+| `src/__integration__/catalog.integration.test.js`      | Integration | DB integration (MySQL thật)            |
+| `src/__integration__/catalog-recently-viewed.integration.test.js` | Integration | Recently viewed integration     |
+| `src/__api__/catalog.http.test.js`                     | API HTTP | End-to-end HTTP                         |
+| `src/__api__/catalog-products.http.test.js`            | API HTTP | Product endpoints                       |
+| `src/__api__/catalog-comprehensive.http.test.js`       | API HTTP | Comprehensive scenarios                 |
+| `src/__api__/catalog-deep.http.test.js`                | API HTTP | Deep scenarios                          |
+| `src/__api__/catalog-extra.http.test.js`               | API HTTP | Extra scenarios                         |

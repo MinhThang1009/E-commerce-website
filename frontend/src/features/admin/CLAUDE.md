@@ -189,7 +189,7 @@ Tất cả mutations invalidate query key tương ứng sau khi thành công.
 
 | Component            | Mô tả                                                                                                                                                                                          |
 | -------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `AdminLayout`        | Sidebar (12 mục nav), header với user dropdown + dark mode toggle. Responsive: drawer Ant Design trên mobile, sidebar cố định trên desktop. Wrap ở route level — không import trong từng page. |
+| `AdminLayout`        | Sidebar (8 mục nav: dashboard, products, categories, brands, orders, users, discount-codes, inventory), header với user dropdown + dark mode toggle. Responsive: drawer Ant Design trên mobile, sidebar cố định trên desktop. Wrap ở route level — không import trong từng page. |
 | `CreateProductForm`  | Form nhiều tab với state phức tạp: basic info, variants (hierarchical), images, attributes (dynamic), SEO, FAQ. Dùng trong cả `CreateProductPage` và `EditProductPage`.                        |
 | `DashboardCharts`    | Recharts wrapper: revenue line chart, category pie chart, order status bar chart, top products list. Data fetch nội bộ qua `useGetTopProductsAnalyticsQuery` và các hooks analytics.           |
 | `ProductExportModal` | Chọn columns muốn export, filter range date, tạo file Excel qua `exceljs`.                                                                                                                     |
@@ -296,9 +296,13 @@ interface User {
   email: string;
   firstName: string;
   lastName: string;
+  phone?: string;
+  avatar?: string;
   role: 'customer' | 'admin';
   isEmailVerified: boolean;
   isActive: boolean;
+  createdAt: string;
+  updatedAt: string;
 }
 ```
 

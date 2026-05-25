@@ -53,7 +53,7 @@ modules/users/
     users-controller.js                        — thin HTTP wrapper, dùng toUserDto/toAddressDto
     users-controller.test.js
   services/
-    users-service.js                           — ~143 lines: profile + address CRUD
+    users-service.js                           — ~130 lines: profile + address CRUD
     users-service.test.js
     users-service.unit.test.js
   repositories/
@@ -117,7 +117,7 @@ Base path: `/api/users`. Tất cả require `authenticate` (global middleware �
 
 **Body `PUT /profile`:** `{ firstName?, lastName?, phone?, avatar? }` (tất cả optional)
 **Body `POST /change-password`:** `{ currentPassword, newPassword, confirmPassword }` (newPassword min 6 chars, confirm phải khớp)
-**Body address:** `{ firstName, lastName, address1, city, state, zip, country, company?, address2?, phone?, isDefault? }`
+**Body address:** `{ firstName, lastName, address1, city, state, zip, country, name?, company?, address2?, phone?, isDefault? }` (isDefault default false)
 
 ---
 
@@ -158,4 +158,5 @@ Inject từ `app.js`:
 | `repositories/users-repository.test.js`         | Unit        | Repository queries                       |
 | `validators/users-validator.test.js`            | Unit        | Zod schema validation                    |
 | `src/__integration__/users.integration.test.js` | Integration | DB integration                           |
-| `src/__api__/users.api.test.js`                 | HTTP        | End-to-end HTTP                          |
+| `src/__api__/users.http.test.js`                | HTTP        | End-to-end HTTP                          |
+| `src/__api__/users-comprehensive.http.test.js`  | HTTP        | Comprehensive HTTP scenarios             |

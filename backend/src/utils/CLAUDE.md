@@ -128,6 +128,7 @@ const {
   hasVariants,
   getVariantStock,
   findVariantByAttributes,
+  enrichProductData,
 } = require('@utils/product-helpers');
 
 calculateTotalStock(variants); // sum stockQuantity từ tất cả variants
@@ -137,4 +138,5 @@ generateVariantSku(productSku, attrs); // "SKU-RED-256GB"
 hasVariants(product); // product.variants.length > 0
 getVariantStock(variants, selectedAttrs); // stockQuantity của variant khớp attrs
 findVariantByAttributes(variants, selectedAttrs); // tìm variant khớp exact attribute combo
+enrichProductData(productData); // gán thumbnail + inStock từ associations vào product plain object
 ```

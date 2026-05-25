@@ -38,7 +38,7 @@ Trả lời câu hỏi: **"Service X có hoạt động đúng với DB thật k
 | Timeout       | 5s               | 30s                          | 30s                  | 60s                  |
 | Port server   | —                | 9998                         | 9997                 | 9996                 |
 | Chạy trong CI | Có               | Không                        | Không                | Không                |
-| Runtime       | ~10s             | ~50s                         | ~140s                | ~20s                 |
+| Runtime       | ~10s             | ~50s                         | ~190s                | ~20s                 |
 
 ---
 
@@ -121,7 +121,7 @@ await Product.destroy({
 
 ```bash
 # Từ thư mục backend/ — MySQL phải chạy, DB 'techstore_test' phải có seed data
-npm run test:integration                                          # Toàn bộ 42 suites/228 tests
+npm run test:integration                                          # Toàn bộ 36 suites/184 tests
 npm run test:integration -- --testPathPattern=orders             # Chỉ orders
 npm run test:integration -- --testPathPattern=concurrent         # Race condition tests
 npm run test:integration -- --testPathPattern=schema-drift       # Schema drift check

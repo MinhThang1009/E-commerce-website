@@ -82,7 +82,7 @@ modules/orders/
     orders-controller.js                        — 11 handlers
     orders-controller.unit.test.js
   services/
-    orders-service.js                           — ~885 lines: toàn bộ business logic
+    orders-service.js                           — ~667 lines: toàn bộ business logic
     orders-service.test.js
     orders-service.unit.test.js
     orders-service.edge-cases.test.js
@@ -133,8 +133,8 @@ runInTransaction(async (tx) => {
   Cart flow + manual payment → clearUserCart()
 })
 
-eventBus.publish('order.created', payload)          ← outside transaction
-emailGateway.sendOrderConfirmationEmail()            ← fire-and-forget
+eventBus.publish({ type: 'order.created', payload })  ← outside transaction, object form
+emailGateway.sendOrderConfirmationEmail()              ← fire-and-forget
 ```
 
 ## 3.2 updateOrderStatus (admin)
@@ -156,7 +156,7 @@ runInTransaction(async (tx) => {
   order.status = 'cancelled'
   Restore stock (variant hoặc product)
 })
-eventBus.publish('order.cancelled', payload)
+eventBus.publish({ type: 'order.cancelled', payload })
 emailGateway.sendOrderCancellationEmail() — fire-and-forget
 ```
 

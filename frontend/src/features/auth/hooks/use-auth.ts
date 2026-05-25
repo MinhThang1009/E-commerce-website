@@ -6,6 +6,7 @@
  */
 import { useAuthStore } from '@/stores/auth-store';
 import { useCartStore } from '@/stores/cart-store';
+import { useChatStore } from '@/stores/chat-store';
 import { useWishlistStore } from '@/stores/wishlist-store';
 import { useLogoutMutation } from '../api/auth-api';
 import { queryClient } from '@/lib/query-client';
@@ -26,6 +27,7 @@ export const useAuth = () => {
       useAuthStore.getState().logout();
       useWishlistStore.getState().clearWishlistLocal();
       useCartStore.getState().initializeCart();
+      useChatStore.getState().clearMessages(crypto.randomUUID());
       queryClient.clear();
 
       localStorage.removeItem('wishlist');

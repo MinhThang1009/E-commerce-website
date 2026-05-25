@@ -9,7 +9,7 @@
  * "Pure functions" nghĩa là: không có side effects, không gọi DB hay API,
  * không thay đổi state bên ngoài. Cùng input luôn cho cùng output → dễ test.
  *
- * Được dùng bởi RAGPipeline (validate + normalize) và ChatbotService (classify intent).
+ * Được dùng bởi ChatbotService (validate + normalize + classify intent + injection check).
  */
 
 /**
@@ -17,7 +17,7 @@
  * Giới hạn này bảo vệ server khỏi payload quá lớn và giới hạn context window của LLM.
  * LLM tính phí theo token (~1 token ≈ 4 ký tự), tin nhắn quá dài = tốn tiền + chậm hơn.
  */
-const MAX_MESSAGE_LENGTH = 2000;
+const MAX_MESSAGE_LENGTH = 500;
 
 /**
  * Bảng viết tắt domain-specific mà LLM không tự hiểu được.
@@ -40,7 +40,9 @@ const ABBREV_MAP = {
   '\\bip(?=\\d)': 'iPhone ',
   // "ip" đứng độc lập (không có số theo sau) → "iPhone"
   '\\bip\\b': 'iPhone',
-  // "pm" → "Pro Max" (thường dùng: "ip16pm" nhưng sau expand "ip" → "iPhone 16pm" → "iPhone 16 Pro Max")
+  // "pm" nối liền sau chữ-số: "17pm...", "ip17pm..." → " Pro Max"
+  '(?<=\\d)pm': ' Pro Max',
+  // "pm" → "Pro Max" (standalone)
   '\\bpm\\b': 'Pro Max',
   // "ss23" → "Samsung S23", "ss24" → "Samsung S24"
   '\\bss(?=\\d)': 'Samsung S',
@@ -57,10 +59,94 @@ const ABBREV_MAP = {
   // "r7" → "AMD Ryzen 7"
   '\\br7\\b': 'AMD Ryzen 7',
   // Viết tắt câu hỏi hội thoại phổ biến
-  // "bnh" → "bao nhiêu" (giá bnh = giá bao nhiêu)
+  // "bnh" nối liền: sau chữ ("pmbnh") hoặc sau số ("17bnh")
+  '(?<=[a-zA-Z]{2,})bnh': ' bao nhiêu',
+  '(?<=\\d)bnh': ' bao nhiêu',
+  // "bnh" → "bao nhiêu" (standalone)
   '\\bbnh\\b': 'bao nhiêu',
-  // "bh" → "bảo hành"
+  // "bh" nối liền sau chữ
+  '(?<=[a-zA-Z]{2,})bh': ' bảo hành',
+  // "bh" → "bảo hành" (standalone)
   '\\bbh\\b': 'bảo hành',
+
+  // ── Thuật ngữ tiếng Anh → tiếng Việt tương đương ─────────────────────────────────
+  // Mục đích: keyword fallback hoạt động được với query tiếng Anh mà không cần LLM.
+  '\\bsmartphones?\\b': 'điện thoại',
+  '\\btablets?\\b': 'máy tính bảng',
+  '\\bheadphones?\\b': 'tai nghe',
+  '\\bearphones?\\b': 'tai nghe',
+  '\\bearbuds?\\b': 'tai nghe',
+  '\\bsmartwatch(?:es)?\\b': 'đồng hồ thông minh',
+
+  // ── Tiếng Việt không dấu → có dấu ─────────────────────────────────────────────
+  // Normalize query từ user gõ không dấu (telex/VNI bị tắt) để intent classification
+  // và price filter hoạt động đúng.
+  //
+  // Ưu tiên multi-word patterns trước (dài → ngắn) để tránh match một phần.
+  // Chỉ map từ phổ biến trong ngữ cảnh mua sắm — không map toàn bộ từ điển.
+
+  // Giá / tầm giá — quan trọng để price filter trong keyword-fallback.js hoạt động
+  '\\bbao\\s+nhieu\\b':        'bao nhiêu',    // "bao nhieu" → "bao nhiêu"
+  '\\bgia\\s+bao\\s+nhieu\\b': 'giá bao nhiêu',
+  '\\btam\\s+gia\\b':          'tầm giá',
+  '\\bduoi\\b':                'dưới',         // "dưới 15 triệu"
+  '\\btren\\b':                'trên',         // "trên 30 triệu"
+  '\\bkhoang\\b':              'khoảng',       // "khoảng 20 triệu"
+  '\\btam\\b':                 'tầm',          // "tầm 20 triệu"
+  '\\btrieu\\b':               'triệu',        // đơn vị giá — price filter cần có dấu
+  '\\bnghin\\b':               'nghìn',        // đơn vị giá nhỏ
+  '\\bgia\\b':                 'giá',          // "giá bao nhiêu"
+
+  // Trạng thái hàng hóa
+  '\\bcon\\s+hang\\b':    'còn hàng',
+  '\\bhet\\s+hang\\b':    'hết hàng',
+  '\\bton\\s+kho\\b':     'tồn kho',
+  '\\bcon\\s+ko\\b':      'còn không',
+
+  // Dịch vụ / chính sách — quan trọng cho intent: policy, order_inquiry
+  '\\bgiao\\s+hang\\b':   'giao hàng',
+  '\\bbao\\s+hanh\\b':    'bảo hành',   // cũng có "bh" nhưng user có thể gõ đủ
+  '\\bdoi\\s+tra\\b':     'đổi trả',
+  '\\bchinh\\s+sach\\b':  'chính sách',
+  '\\bmien\\s+phi\\b':    'miễn phí',
+  '\\bdon\\s+hang\\b':    'đơn hàng',
+  '\\bdat\\s+hang\\b':    'đặt hàng',
+  '\\bvan\\s+chuyen\\b':  'vận chuyển',
+
+  // Hành động tìm kiếm / tư vấn
+  '\\btu\\s+van\\b':      'tư vấn',
+  '\\bso\\s+sanh\\b':     'so sánh',
+  '\\btim\\s+kiem\\b':    'tìm kiếm',
+  '\\bcai\\s+nao\\b':     'cái nào',
+  '\\bnên\\s+mua\\b':     'nên mua',    // đã có dấu nhưng để dự phòng
+  '\\bnen\\s+mua\\b':     'nên mua',
+  '\\bmuon\\s+mua\\b':    'muốn mua',
+  '\\btot\\s+nhat\\b':    'tốt nhất',
+  '\\bmoi\\s+nhat\\b':    'mới nhất',
+  '\\bdang\\s+ban\\b':    'đang bán',
+
+  // Loại sản phẩm (tiếng Việt không dấu)
+  '\\bdien\\s+thoai\\b':          'điện thoại',
+  '\\bmay\\s+tinh\\s+bang\\b':    'máy tính bảng',
+  '\\bdong\\s+ho\\s+thong\\s+minh\\b': 'đồng hồ thông minh',
+  '\\bdong\\s+ho\\b':             'đồng hồ',
+  '\\btai\\s+nghe\\b':            'tai nghe',
+
+  // Từ phủ định / trạng thái — ảnh hưởng negation filter và intent
+  '\\bkhong\\b':    'không',    // "không cần Samsung", "giao hàng không"
+  '\\bkhong\\s+co\\b': 'không có',
+  '\\bco\\s+khong\\b': 'có không',
+  '\\bhet\\b':      'hết',      // "hết hàng chưa"
+
+  // Trợ từ tìm kiếm thường gặp
+  '\\bnhieu\\b':    'nhiều',
+  '\\bnhat\\b':     'nhất',     // "tốt nhất", "mới nhất" — khi đứng độc lập
+  '\\bmoi\\b':      'mới',
+  '\\btot\\b':      'tốt',
+  '\\bre\\b':       'rẻ',       // "rẻ nhất", "máy rẻ"
+  '\\bdat\\b':      'đắt',      // "đắt quá"
+  '\\bnhe\\b':      'nhẹ',      // "máy nhẹ"
+  '\\bpin\\s+lau\\b': 'pin lâu',
 };
 
 /**
@@ -74,10 +160,7 @@ const ABBREV_MAP = {
  */
 function expandAbbreviations(text) {
   let result = text;
-  // Duyệt qua từng cặp (pattern, replacement) trong ABBREV_MAP
-  // Object.entries() trả về mảng [[pattern1, replacement1], [pattern2, replacement2], ...]
   for (const [pattern, replacement] of Object.entries(ABBREV_MAP)) {
-    // Flag 'giu': g=global (thay tất cả), i=case-insensitive, u=Unicode support
     result = result.replace(new RegExp(pattern, 'giu'), replacement);
   }
   return result;
@@ -91,7 +174,7 @@ function expandAbbreviations(text) {
  *   2. Không vượt quá MAX_MESSAGE_LENGTH ký tự
  *
  * Tại sao trả về object { valid, reason } thay vì throw error?
- * Để caller (RAGPipeline) tự quyết định cách xử lý lỗi (throw AppError với HTTP status 400).
+ * Để caller (ChatbotService.handleMessage) tự quyết định cách xử lý lỗi (throw AppError 400).
  * Pure function không nên throw — throw là side effect.
  *
  * @param {string} message - Tin nhắn gốc từ user.
@@ -223,4 +306,5 @@ module.exports = {
   classifyIntent,
   isPromptInjection,
   MAX_MESSAGE_LENGTH,
+  ABBREV_MAP,
 };

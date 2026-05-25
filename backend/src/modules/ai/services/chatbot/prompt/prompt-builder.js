@@ -5,7 +5,7 @@
  *
  * PromptBuilder — xây dựng nội dung tin nhắn gửi cho LLM (phần "Augmented" trong RAG).
  *
- * Sau khi RAGPipeline đã tìm được sản phẩm liên quan (Retrieval),
+ * Sau khi ChatbotService đã tìm được sản phẩm liên quan (Retrieval bước 5),
  * bước này tạo một đoạn text kết hợp:
  *   - Danh sách sản phẩm tìm được (ground truth từ DB)
  *   - Thông tin cửa hàng (bảo hành, giao hàng, đổi trả)
@@ -33,24 +33,35 @@
  * và trả lời sai. Version warning báo LLM biết: số trong query không khớp với số trong danh sách
  * → phải nói rõ "cửa hàng chưa có iPhone 17" thay vì bịa thông tin.
  *
- * @param {string} userMessage - Query của user đã sanitize (tối đa 2000 ký tự, đã escape quotes).
+ * @param {string} userMessage - Query của user đã sanitize (tối đa 500 ký tự, đã escape quotes).
  * @param {Array<Object>} products - Danh sách sản phẩm từ bước Retrieval.
  *   Mỗi sản phẩm có: name, category, shortDescription, price/basePrice, inStock, lowConfidence.
- * @param {Object} context - Context bổ sung (originalMessage, llmRewrittenQuery...).
- *   Hiện chưa dùng trực tiếp trong hàm này nhưng giữ để mở rộng sau.
  * @returns {string} Nội dung prompt dạng text, sẵn sàng gửi cho LLM.
  */
-function createPrompt(userMessage, products, context) {
+function buildAugmentedPrompt(userMessage, products) {
   // ── Phần 1: Xây dựng danh sách sản phẩm ────────────────────────────────────────
   // Mỗi sản phẩm được format thành 1 dòng với đầy đủ thông tin cần thiết
-  const productList =
+  const retrievalContextText =
     products.length > 0
       ? products
           .map(
             (p) =>
               // ⚠️[low confidence]: cờ báo kết quả tìm kiếm kém chính xác (score thấp)
               // LLM sẽ thận trọng hơn khi đề xuất sản phẩm có flag này
-              `- ${p.lowConfidence ? '⚠️[low confidence] ' : ''}${p.name} (${p.category || 'Sản phẩm'}): ${p.shortDescription || 'Mô tả đang cập nhật'} - Giá: ${Number(p.price ?? p.basePrice).toLocaleString('vi-VN')} đ - Tình trạng: ${p.inStock ? 'Còn hàng' : 'Hết hàng'}`,
+              (() => {
+                const variantsStr = p.variants?.length
+                  ? ' | Phiên bản: ' + p.variants.map(v =>
+                      `${v.variantName}${v.price != null ? ' (' + Number(v.price).toLocaleString('vi-VN') + 'đ' : ''}${v.stockQuantity > 0 ? ', còn hàng' : ', hết hàng'})`
+                    ).join('; ')
+                  : '';
+                const ratingStr = p.ratingAverage != null && p.ratingAverage > 0
+                  ? ` - Đánh giá: ${Number(p.ratingAverage).toFixed(1)}/5`
+                  : '';
+                const descStr = p.description && p.description !== p.shortDescription
+                  ? ` - Mô tả: ${p.description.substring(0, 300)}`
+                  : '';
+                return `- ${p.lowConfidence ? '⚠️[low confidence] ' : ''}${p.name} (${p.category || 'Sản phẩm'}): ${p.shortDescription || 'Mô tả đang cập nhật'}${descStr}${p.specifications ? '. Thông số: ' + p.specifications : ''}${variantsStr} - Giá từ: ${Number(p.price ?? p.basePrice).toLocaleString('vi-VN')} đ - Tình trạng: ${p.inStock ? 'Còn hàng' : 'Hết hàng'}${ratingStr}`;
+              })(),
           )
           .join('\n')
       : '(Không tìm thấy sản phẩm nào phù hợp trong cơ sở dữ liệu)';
@@ -89,7 +100,7 @@ function createPrompt(userMessage, products, context) {
   // (không hardcode trong code → không cần sửa code khi thay đổi chính sách)
   return `
 DANH SÁCH SẢN PHẨM HIỆN CÓ (Dữ liệu thực tế — retrieved bởi semantic search):
-${productList}
+${retrievalContextText}
 ${versionWarning}
 
 THÔNG TIN CỬA HÀNG (${process.env.STORE_NAME || 'TechStore'}):
@@ -126,4 +137,4 @@ Trả về ĐÚNG định dạng JSON sau:
 }`;
 }
 
-module.exports = { createPrompt };
+module.exports = { buildAugmentedPrompt };

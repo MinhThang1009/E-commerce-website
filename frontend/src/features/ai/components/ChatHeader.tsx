@@ -10,12 +10,15 @@ import { CloseIcon, LightningIcon } from './icons/index';
 
 interface ChatHeaderProps {
   onClose: () => void;
+  onClearChat?: () => void;
+  onLoadHistory?: () => void;
+  isSyncing?: boolean;
 }
 
 /**
  * Component hiển thị header của chat widget
  */
-const ChatHeader: React.FC<ChatHeaderProps> = ({ onClose }) => {
+const ChatHeader: React.FC<ChatHeaderProps> = ({ onClose, onClearChat, onLoadHistory, isSyncing }) => {
   const { t } = useTranslation();
 
   return (
@@ -48,18 +51,62 @@ const ChatHeader: React.FC<ChatHeaderProps> = ({ onClose }) => {
           </div>
         </div>
 
-        <button
-          onClick={onClose}
-          className="w-8 h-8 rounded-xl flex items-center justify-center transition-all duration-200 hover:scale-110 active:scale-90"
-          style={{
-            background: 'rgba(255,255,255,0.16)',
-            backdropFilter: 'blur(8px)',
-            border: '1px solid rgba(255,255,255,0.22)',
-          }}
-          aria-label={t('chat.closeChat')}
-        >
-          <CloseIcon />
-        </button>
+        <div className="flex items-center gap-1.5">
+          {/* Nút xóa lịch sử trò chuyện */}
+          {onClearChat && (
+            <button
+              onClick={onClearChat}
+              title={t('chat.clearChat')}
+              className="w-8 h-8 rounded-xl flex items-center justify-center transition-all duration-200 hover:scale-110 active:scale-90 hover:bg-red-500/30"
+              style={{
+                background: 'rgba(255,255,255,0.12)',
+                backdropFilter: 'blur(8px)',
+                border: '1px solid rgba(255,255,255,0.18)',
+              }}
+            >
+              <svg xmlns="http://www.w3.org/2000/svg" className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <polyline points="3 6 5 6 21 6" />
+                <path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6" />
+                <path d="M10 11v6M14 11v6" />
+                <path d="M9 6V4a1 1 0 011-1h4a1 1 0 011 1v2" />
+              </svg>
+            </button>
+          )}
+
+          {/* Nút tải lịch sử từ server */}
+          {onLoadHistory && (
+            <button
+              onClick={onLoadHistory}
+              title={t('chat.loadHistory')}
+              disabled={isSyncing}
+              className="w-8 h-8 rounded-xl flex items-center justify-center transition-all duration-200 hover:scale-110 active:scale-90 disabled:opacity-50"
+              style={{
+                background: 'rgba(255,255,255,0.12)',
+                backdropFilter: 'blur(8px)',
+                border: '1px solid rgba(255,255,255,0.18)',
+              }}
+            >
+              <svg xmlns="http://www.w3.org/2000/svg" className={`w-4 h-4 ${isSyncing ? 'animate-spin' : ''}`} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <polyline points="1 4 1 10 7 10" />
+                <path d="M3.51 15a9 9 0 102.13-9.36L1 10" />
+              </svg>
+            </button>
+          )}
+
+          {/* Nút đóng */}
+          <button
+            onClick={onClose}
+            className="w-8 h-8 rounded-xl flex items-center justify-center transition-all duration-200 hover:scale-110 active:scale-90"
+            style={{
+              background: 'rgba(255,255,255,0.16)',
+              backdropFilter: 'blur(8px)',
+              border: '1px solid rgba(255,255,255,0.22)',
+            }}
+            aria-label={t('chat.closeChat')}
+          >
+            <CloseIcon />
+          </button>
+        </div>
       </div>
 
       {/* Status badges */}

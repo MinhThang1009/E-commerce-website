@@ -54,11 +54,14 @@ const mockProductInstance = { findByPk: jest.fn() };
 
 jest.mock('@config/sequelize', () => ({
   define: jest.fn((modelName, fields, opts) => {
-    capturedFields = fields;
-    if (opts && opts.hooks) {
-      capturedHooks = { ...opts.hooks };
+    if (modelName === 'Product') {
+      capturedFields = fields;
+      if (opts && opts.hooks) {
+        capturedHooks = { ...opts.hooks };
+      }
+      return mockProductInstance;
     }
-    return mockProductInstance;
+    return {};
   }),
 }));
 

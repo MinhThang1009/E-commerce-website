@@ -49,7 +49,7 @@ Base class. Fields:
 
 ## 3.2 NotFoundError
 
-`new NotFoundError(resource, id)` → message: `"{resource} với id '{id}' không tồn tại"`
+`new NotFoundError(resource, id)` → message: `"{resource} với id \"{id}\" không tồn tại"`
 
 statusCode: 404
 

@@ -33,7 +33,7 @@ Trả lời câu hỏi: **"Toàn bộ user journey có hoạt động không?"**
 | Focus               | User journey (5–15 steps)              | HTTP endpoint contract | DB + business logic |
 | Số endpoints / test | Nhiều (5–15 bước)                      | 1–2                    | 2–5                 |
 | State giữa steps    | Có (token, orderId, cartId carry over) | Không                  | Không               |
-| Số suites / tests   | 5 / 102                                | 45 / 866               | 42 / 228            |
+| Số suites / tests   | 5 / 100                                | 39 / 700               | 36 / 184            |
 | Runtime             | ~20s                                   | ~190s                  | ~50s                |
 | Timeout             | 60s                                    | 30s                    | 30s                 |
 | Port                | 9996                                   | 9997                   | 9998                |
@@ -106,7 +106,7 @@ const { app, request, createE2EUser, createE2EAdmin, createE2EProduct } = requir
 
 ```bash
 # Từ thư mục backend/ — MySQL phải chạy, DB 'techstore_test' phải có seed data
-npm run test:e2e                                      # Full 5 suites/102 tests (~20s)
+npm run test:e2e                                      # Full 5 suites/100 tests (~20s)
 npm run test:e2e -- --testPathPattern=checkout-flow  # Chỉ checkout flow
 npm run test:e2e -- --testPathPattern=auth-flow      # Chỉ auth flow
 ```

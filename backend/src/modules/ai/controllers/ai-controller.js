@@ -72,6 +72,40 @@ class AIController {
     }
   };
 
+  clearSession = async (req, res) => {
+    const { sessionId } = req.body;
+    const cleared = this.aiService.clearSession(sessionId);
+    res.json({ status: 'success', message: cleared ? 'Session đã xóa' : 'Session không tồn tại' });
+  };
+
+  registerSession = async (req, res) => {
+    const { sessionId } = req.body;
+    if (!sessionId) return res.json({ status: 'fail', message: 'sessionId required' });
+    this.aiService.registerSession(sessionId);
+    res.json({ status: 'success' });
+  };
+
+  getLatestSession = async (req, res, next) => {
+    try {
+      const latest = await this.aiService.getLatestSession();
+      res.json({ status: 'success', data: { sessionId: latest } });
+    } catch (err) { next(err); }
+  };
+
+  getSessionHistory = async (req, res) => {
+    const { sessionId } = req.params;
+    const messages = this.aiService.getSessionHistory(sessionId);
+    res.json({ status: 'success', data: { sessionId, turns: Math.floor(messages.length / 2), messages } });
+  };
+
+  getSessionMessages = async (req, res, next) => {
+    try {
+      const { sessionId } = req.params;
+      const messages = await this.aiService.getSessionMessages(sessionId);
+      res.json({ status: 'success', data: { sessionId, messages } });
+    } catch (err) { next(err); }
+  };
+
   addToCart = async (req, res, next) => {
     try {
       const { productId, variantId, quantity = 1, sessionId } = req.body;

@@ -187,7 +187,7 @@ Base path: `/api/admin`. Tất cả require `adminAuthenticate`.
 - `discount-code` module — `discountCodeController` và `discountCodeValidator` import trực tiếp trong `routes.js` (cross-module import được cho phép ở routes layer)
 - `@services/vector-store/` — sync vector store sau create/import product (async)
 - `@models` — require trực tiếp (singleton exception): Product, User, Order, Review, Category, Brand, OrderItem, ProductVariant, ProductImage, ProductCategory, CartItem, Wishlist, Address, SearchHistory, RecentlyViewed, InventoryLog, ChatMessage
-- `@modules/ai/services/product/product-enricher` — enrich data trước khi upsert vector store (require lazy trong try/catch block hoặc setImmediate tùy flow)
+- `@utils/product-helpers` — `enrichProductData` (enrich data trước khi upsert vector store, require lazy)
 
 ## 5.2 Used by (module khác dùng module này)
 

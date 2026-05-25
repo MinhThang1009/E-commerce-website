@@ -123,7 +123,7 @@ HTTP POST /api/orders
                   │    apply DiscountCode (nếu có)
                   │  })
                   ├→ emailGateway.sendOrderConfirmationEmail()  ← async, non-blocking
-                  └→ eventBus.publish('order.created', { orderId, items })
+                  └→ eventBus.publish({ type: 'order.created', payload: { orderId, orderNumber, userId, total, items }, occurredAt: new Date().toISOString() })
                             └→ (hiện chưa có subscriber — inventory chỉ subscribe order.cancelled)
 ```
 

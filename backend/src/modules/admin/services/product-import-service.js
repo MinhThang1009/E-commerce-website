@@ -281,7 +281,7 @@ const importProducts = async ({ file, adminId }) => {
   if (newProductIds.length > 0) {
     setImmediate(async () => {
       try {
-        const { enrichProductData } = require('@modules/ai/services/product/product-enricher');
+        const { enrichProductData } = require('@utils/product-helpers');
         const newProducts = await repo.findProductsByIds(newProductIds);
         for (const p of newProducts) {
           await vectorStoreService.upsertProduct(enrichProductData(p.toJSON()));

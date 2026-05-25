@@ -279,6 +279,8 @@ const SearchBar: React.FC<SearchBarProps> = ({
             <form onSubmit={handleSearchSubmit} className="relative">
               <input
                 ref={inputRef}
+                id="header-search-input"
+                name="q"
                 type="text"
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}

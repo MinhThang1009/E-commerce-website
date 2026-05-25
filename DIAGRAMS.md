@@ -91,7 +91,7 @@ flowchart TB
 
     subgraph UC_CUSTOMER["Use cases — Khách hàng"]
         direction TB
-        C1[Đặt hàng và thanh toán<br/>COD / VNPay / MoMo]
+        C1["Đặt hàng và thanh toán<br/>COD / VNPay / MoMo"]
         C2[Theo dõi trạng thái đơn hàng]
         C3[Hủy đơn hàng]
         C4[Xác nhận đã nhận hàng]
@@ -114,10 +114,10 @@ flowchart TB
 
     subgraph UC_ADMIN["Use cases — Quản trị viên"]
         direction TB
-        A1[Quản lý sản phẩm CRUD<br/>clone, status, import/export]
-        A2[Quản lý đơn hàng<br/>cập nhật trạng thái, hủy]
-        A3[Quản lý người dùng<br/>role, vô hiệu hóa, xóa]
-        A4[Xem thống kê và báo cáo<br/>dashboard, analytics, export]
+        A1["Quản lý sản phẩm CRUD<br/>clone, status, import/export"]
+        A2["Quản lý đơn hàng<br/>cập nhật trạng thái, hủy"]
+        A3["Quản lý người dùng<br/>role, vô hiệu hóa, xóa"]
+        A4["Xem thống kê và báo cáo<br/>dashboard, analytics, export"]
         A5[Quản lý mã giảm giá CRUD]
         A6[Quản lý tồn kho và nhập hàng]
         A7[Quản lý đánh giá sản phẩm]
@@ -1883,8 +1883,7 @@ flowchart TB
     AI_R["ai.routes<br/>POST /api/chatbot/message"]
     AI_C["chatbot.controller<br/>chatbotLimiter 20req/60s"]
     AI_S["ai-service.js<br/>orchestrator"]
-    RAG["rag-pipeline.js<br/>validate · normalize · intent<br/>hybridSearch · rewrite"]
-    CHAT_S["chatbot-service.js<br/>LLM generation · LRU sessions"]
+    CHAT_S["chatbot-service.js<br/>validate · normalize · retrieve<br/>LLM generation · LRU sessions"]
     VS["vector-store.js<br/>HybridVectorStore<br/>BM25 + cosine · topK=10"]
     EMBED["unified-embedding.js<br/>Jina v3 primary<br/>HF fallback x2 · 1024d"]
     EXT_AI["AI Providers<br/>Jina AI (primary)<br/>HuggingFace (fallback x2)"]
@@ -1893,9 +1892,8 @@ flowchart TB
 
     AI_R --> AI_C
     AI_C --> AI_S
-    AI_S --> RAG
-    RAG --> VS
-    RAG --> CHAT_S
+    AI_S --> CHAT_S
+    CHAT_S --> VS
     VS --> EMBED
     EMBED -->|"HTTP"| EXT_AI
     VS <-->|"fs read/write"| DISK

@@ -114,7 +114,9 @@ export const orderKeys = {
 // types/order.types.ts
 type OrderStatus = 'pending' | 'processing' | 'shipped' | 'delivered' | 'cancelled';
 type PaymentStatus = 'pending' | 'paid' | 'failed' | 'refunded';
-type PaymentMethod = 'credit_card' | 'paypal' | 'bank_transfer' | 'cash_on_delivery';
+// ⚠️ PaymentMethod type trong source không sync với backend — Order.paymentMethod typed as `string` cho linh hoạt
+// Backend thực tế dùng: 'cod' | 'vnpay' | 'momo' | 'installment' | 'bank_transfer'
+type PaymentMethod = 'credit_card' | 'paypal' | 'bank_transfer' | 'cash_on_delivery'; // Stub cũ, chỉ dùng trong CheckoutData (unused)
 
 interface Order {
   id: string;

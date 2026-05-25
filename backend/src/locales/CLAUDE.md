@@ -82,7 +82,7 @@ const subject = t('email.orderConfirmation.subject', locale, { orderId: order.id
 
 # 5. Validation locale
 
-Script `scripts/compare-locales.js` (root scripts) so sánh keys giữa `vi.json` và `en.json`:
+Script `scripts/check-i18n.js` (root scripts) so sánh keys giữa `vi.json` và `en.json`:
 
 ```bash
 node scripts/check-i18n.js

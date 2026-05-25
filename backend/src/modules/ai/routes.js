@@ -57,5 +57,18 @@ module.exports = ({ aiController }) => {
    */
   router.post('/cart/add', authenticate, aiController.addToCart);
 
+  /**
+   * @swagger
+   * /api/chatbot/session/clear:
+   *   post:
+   *     summary: Xóa lịch sử session chatbot (demo/debug)
+   *     tags: [AI Chatbot]
+   */
+  router.post('/session/clear', aiController.clearSession);
+  router.post('/session/register', aiController.registerSession);
+  router.get('/session/latest', aiController.getLatestSession);
+  router.get('/session/:sessionId/history', aiController.getSessionHistory);
+  router.get('/session/:sessionId/messages', aiController.getSessionMessages);
+
   return router;
 };

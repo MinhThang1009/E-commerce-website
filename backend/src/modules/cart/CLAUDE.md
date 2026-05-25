@@ -89,11 +89,11 @@ modules/cart/
 - `clearCart({ user, cookieSessionId })` — xóa toàn bộ items của cart.
 - `syncCart({ user, cookieSessionId, items })` — replace toàn bộ items trong cart bằng danh sách từ client (dùng cho offline sync).
 - `mergeCart({ user, cookieSessionId })` — merge guest cart (`cookieSessionId`) vào user cart. Items trùng `productId + variantId` → cộng dồn quantity; items mới → append. Guest cart chuyển status `merged`.
-- `validateCart({ user, cookieSessionId })` — check stock và availability cho mỗi item. Không lock. Trả danh sách items valid/invalid.
+- `validateCart({ user, cookieSessionId })` — check stock và availability cho mỗi item. Không lock. Trả `{ hasIssues, items }` với mỗi item có fields: `priceChanged`, `outOfStock`, `quantityExceedsStock`, `hasIssue`, `maxStock`, `currentPrice`, `savedPrice`.
 
 ## 3.2 Business rules
 
-- **Guest cart**: Dùng `sessionId` UUID cookie, cart status `active`. Không cần đăng nhập.
+- **Guest cart**: Dùng cookie name `sessionId` (UUID), cart status `active`. Không cần đăng nhập. Cookie được set bởi controller qua `setSessionCookie` callback khi guest thêm item đầu tiên.
 - **Merge logic trong `getCart`**: Khi user đăng nhập có cookie sessionId, `getCart` tự merge inline (không cần gọi `/merge` riêng). `/merge` endpoint là explicit call cho trường hợp post-login.
 - **Merge deduplication**: Items trùng `productId + variantId` → cộng dồn quantity. Items không trùng → append. Sau merge, guest cart status = `merged`.
 - **Ownership check**: `_assertOwnership` verify CartItem thuộc về đúng user (userId match) hoặc đúng session (sessionId match). Throw 403 nếu không match.
@@ -116,8 +116,8 @@ Tất cả endpoints dùng `optionalAuthenticate` (apply qua `router.use()`) —
 | GET    | `/cart`           | optionalAuthenticate | Lấy giỏ hàng (kèm auto-merge nếu có cookie guest) |
 | GET    | `/cart/count`     | optionalAuthenticate | Đếm tổng quantity items                           |
 | POST   | `/cart`           | optionalAuthenticate | Thêm sản phẩm vào giỏ (validate stock)            |
-| POST   | `/cart/sync`      | optionalAuthenticate | Replace toàn bộ items bằng danh sách từ client    |
-| POST   | `/cart/merge`     | optionalAuthenticate | Explicit merge guest cart vào user cart           |
+| POST   | `/cart/sync`      | optionalAuthenticate (service yêu cầu user login, guest → 401) | Replace toàn bộ items bằng danh sách từ client    |
+| POST   | `/cart/merge`     | optionalAuthenticate (service yêu cầu user login, guest → 401) | Explicit merge guest cart vào user cart           |
 | GET    | `/cart/validate`  | optionalAuthenticate | Check stock/availability trước checkout           |
 | PUT    | `/cart/items/:id` | optionalAuthenticate | Cập nhật quantity item (validate stock)           |
 | DELETE | `/cart/items/:id` | optionalAuthenticate | Xóa 1 item                                        |
@@ -144,10 +144,10 @@ Tất cả endpoints dùng `optionalAuthenticate` (apply qua `router.use()`) —
 
 # 6. Gotchas & Edge Cases
 
-- **`optionalAuthenticate` apply ở router level**: `router.use(optionalAuthenticate)` — không phải per-route. Guest dùng `sessionId` từ cookie `techstore_session`.
+- **`optionalAuthenticate` apply ở router level**: `router.use(optionalAuthenticate)` — không phải per-route. Guest dùng `sessionId` từ cookie `sessionId` (không phải `techstore_session` — tên cookie thực tế là `sessionId`).
 - **Auto-merge trong `getCart`**: Khi user đã login gọi `GET /cart` mà có cookie `sessionId` → service tự động merge guest cart inline. Không cần gọi `/merge` riêng.
 - **Merge idempotent**: Gọi `POST /cart/merge` nhiều lần — sau lần đầu, guest cart status = `merged`, không còn active items. Lần 2 là no-op.
-- **`setSessionCookie` callback**: `addToCart` nhận callback để controller set cookie. Pattern này tránh service biết về HTTP response. Test cần mock callback này.
+- **`setSessionCookie` callback**: `addToCart` nhận callback để controller set cookie. `mergeCart` nhận `clearSessionCookie` callback để controller xóa cookie sau khi merge. Pattern này tránh service biết về HTTP response. Test cần mock callbacks này.
 - **Stock check không lock**: `validateCart()` chỉ check hiện tại, không lock. Lock thực sự (`SELECT FOR UPDATE`) xảy ra trong `orders` module khi tạo đơn. Race condition nhỏ là acceptable trade-off.
 - **Không còn warranty package**: CartItem không có `warrantyPackageIds`. Orders service không tính warranty fee.
 - **Image resolution**: `_buildCartResponse` ưu tiên ảnh theo `variantId`, fallback về `isThumbnail=true`, cuối cùng là ảnh đầu tiên.

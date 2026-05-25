@@ -2,13 +2,40 @@ require('dotenv').config();
 require('module-alias/register');
 const path = require('path');
 const fs = require('fs');
-const { Product, Category, ProductImage, ProductVariant } = require('../src/models');
+const { Product, Category, ProductImage, ProductVariant, ProductSpecification } = require('../src/models');
 const vectorStoreService = require('../src/services/vector-store/vector-store');
-const { enrichProductData } = require('../src/modules/ai/services/product/product-enricher');
-const viEmbeddingService = require('../src/modules/ai/services/embedding/vi-embedding');
+const { enrichProductData } = require('../src/utils/product-helpers');
 
 // Script index tất cả sản phẩm vào vector store
 // Chạy: node scripts/indexProducts.js hoặc npm run ai:rebuild-vectors
+
+/** Gọi LLM 1 lần để dịch tất cả spec keys EN→VI. Fallback: giữ nguyên nếu LLM không có. */
+async function translateSpecKeys(keys) {
+  const apiKey = process.env.LLM_API_KEY;
+  const baseUrl = process.env.LLM_BASE_URL;
+  const model   = process.env.LLM_MODEL_1 || process.env.LLM_MODEL_2;
+  if (!apiKey || !baseUrl || !model || !keys.length) return {};
+
+  const axios = require('axios');
+  const prompt = `Dịch các tên thông số kỹ thuật sau từ tiếng Anh sang tiếng Việt ngắn gọn, chuyên nghiệp.
+Trả về JSON {"<key>": "<tên tiếng Việt>"}. Chỉ trả JSON, không giải thích.
+Keys: ${JSON.stringify(keys)}`;
+  try {
+    const res = await axios.post(`${baseUrl}/chat/completions`, {
+      model,
+      messages: [{ role: 'user', content: prompt }],
+      response_format: { type: 'json_object' },
+      temperature: 0,
+      max_tokens: 600,
+    }, { headers: { Authorization: `Bearer ${apiKey}`, 'Content-Type': 'application/json' }, timeout: 30000 });
+    const raw = res.data.choices?.[0]?.message?.content;
+    return raw ? JSON.parse(raw) : {};
+  } catch (e) {
+    console.warn('⚠️  Không dịch được spec keys — giữ nguyên tiếng Anh:', e.message);
+    return {};
+  }
+}
+
 const indexAllProducts = async () => {
   try {
     // Đảm bảo vectorStore đã load xong trước khi thao tác
@@ -23,12 +50,27 @@ const indexAllProducts = async () => {
         { model: Category, as: 'categories', through: { attributes: [] }, attributes: ['name'] },
         { model: Category, as: 'category', attributes: ['name'] },
         { model: ProductImage, as: 'productImages', attributes: ['imageUrl', 'isThumbnail'], required: false },
-        { model: ProductVariant, as: 'variants', attributes: ['stockQuantity'], required: false },
+        { model: ProductVariant, as: 'variants',
+          attributes: ['variantName', 'displayName', 'price', 'compareAtPrice', 'stockQuantity', 'isDefault', 'attributes', 'attributesEn'],
+          required: false },
+        { model: ProductSpecification, as: 'productSpecifications', attributes: ['name', 'value', 'valueEn', 'category'], required: false },
       ],
     });
 
     console.log(`Tìm thấy ${products.length} sản phẩm cần index.`);
-    console.log(`🌐 Vietnamese embedding: ${viEmbeddingService.isAvailable() ? '✅ Khả dụng' : '⚠️ Chưa cấu hình (chỉ tạo English vectors)'}`);
+
+    // Thu thập tất cả spec keys và dịch 1 lần qua LLM trước khi index
+    const allSpecKeys = [...new Set(products.flatMap(p => {
+      const specs = p.specifications;
+      return (specs && typeof specs === 'object') ? Object.keys(specs) : [];
+    }))];
+    if (allSpecKeys.length > 0) {
+      process.stdout.write(`🔤 Dịch ${allSpecKeys.length} spec keys EN→VI qua LLM... `);
+      const specKeyMap = await translateSpecKeys(allSpecKeys);
+      const translated = Object.keys(specKeyMap).length;
+      process.stdout.write(translated > 0 ? `✅ ${translated} keys\n` : `⚠️ bỏ qua (không có LLM)\n`);
+      vectorStoreService.setSpecKeyMap(specKeyMap);
+    }
 
     // Backup trước khi clear — nếu script crash giữa chừng còn file để restore
     const storagePath = vectorStoreService.storagePath;

@@ -10,9 +10,10 @@ import { useTranslation } from 'react-i18next';
 interface ChatSuggestionsProps {
   suggestions: string[];
   onSuggestionClick: (suggestion: string) => void;
+  isLoading?: boolean;
 }
 
-const ChatSuggestions: React.FC<ChatSuggestionsProps> = ({ suggestions, onSuggestionClick }) => {
+const ChatSuggestions: React.FC<ChatSuggestionsProps> = ({ suggestions, onSuggestionClick, isLoading = false }) => {
   const { t } = useTranslation();
   if (!suggestions || suggestions.length === 0) return null;
 
@@ -33,7 +34,8 @@ const ChatSuggestions: React.FC<ChatSuggestionsProps> = ({ suggestions, onSugges
           <button
             key={index}
             onClick={() => onSuggestionClick(suggestion)}
-            className="chat-suggestion-button group text-xs bg-gradient-to-r from-primary-50 via-primary-100 to-primary-50 hover:from-primary-100 hover:via-primary-200 hover:to-primary-100 dark:from-primary-900/10 dark:via-primary-800/20 dark:to-primary-900/10 dark:hover:from-primary-800/30 dark:hover:via-primary-700/40 dark:hover:to-primary-800/30 text-primary-700 dark:text-primary-300 rounded-xl px-4 py-2.5 transition-all duration-300 border border-primary-100/60 dark:border-primary-800/60 hover:border-primary-300 dark:hover:border-primary-600 hover:shadow-lg hover:shadow-primary-500/10 transform font-semibold backdrop-blur-sm"
+            disabled={isLoading}
+            className="chat-suggestion-button group text-xs bg-gradient-to-r from-primary-50 via-primary-100 to-primary-50 hover:from-primary-100 hover:via-primary-200 hover:to-primary-100 dark:from-primary-900/10 dark:via-primary-800/20 dark:to-primary-900/10 dark:hover:from-primary-800/30 dark:hover:via-primary-700/40 dark:hover:to-primary-800/30 text-primary-700 dark:text-primary-300 rounded-xl px-4 py-2.5 transition-all duration-300 border border-primary-100/60 dark:border-primary-800/60 hover:border-primary-300 dark:hover:border-primary-600 hover:shadow-lg hover:shadow-primary-500/10 transform font-semibold backdrop-blur-sm disabled:opacity-40 disabled:pointer-events-none"
           >
             <span className="flex items-center space-x-2">
               <span>{suggestion}</span>

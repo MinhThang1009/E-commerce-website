@@ -83,7 +83,6 @@ const ProductCard: React.FC<ProductCardProps> = ({ product }) => {
             src={proxyImg(product.thumbnail)}
             alt={localizeField(product, 'name', i18n.language)}
             className="w-full h-full object-cover object-center transform group-hover:scale-110 transition-transform duration-500"
-            loading="lazy"
           />
         ) : (
           <div className="w-full h-full flex items-center justify-center bg-neutral-100 dark:bg-neutral-800">

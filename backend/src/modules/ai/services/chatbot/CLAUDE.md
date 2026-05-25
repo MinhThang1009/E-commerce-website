@@ -9,18 +9,17 @@
 - [3. Request Flow](#3-request-flow)
 - [4. Từng file](#4-từng-file)
   - [4.1 chatbot-service.js](#41-chatbot-servicejs)
-    - [4.2 rag/rag-pipeline.js](#42-ragrag-pipelinejs)
-  - [4.4 prompt/prompt-builder.js](#44-promptprompt-builderjs)
-  - [4.5 prompt/response-parser.js](#45-promptresponse-parserjs)
-  - [4.6 keyword/keyword-fallback.js](#46-keywordkeyword-fallbackjs)
-  - [4.7 language/language-detector.js](#47-languagelanguage-detectorjs)
+  - [4.2 prompt/prompt-builder.js](#42-promptprompt-builderjs)
+  - [4.3 prompt/response-parser.js](#43-promptresponse-parserjs)
+  - [4.4 keyword/keyword-fallback.js](#44-keywordkeyword-fallbackjs)
+  - [4.5 language/language-detector.js](#45-languagelanguage-detectorjs)
 - [5. Gotchas](#5-gotchas)
 
 ---
 
 # 1. Tổng quan
 
-RAG pipeline và các sub-services xử lý một chat message: validate → normalize → retrieve → augment → generate. Khu vực code phức tạp nhất trong module `ai`.
+`chatbot-service.js` là singleton xử lý toàn bộ RAG pipeline: validate → normalize → retrieve → augment → generate. Khu vực code phức tạp nhất trong module `ai`.
 
 ---
 
@@ -28,9 +27,7 @@ RAG pipeline và các sub-services xử lý một chat message: validate → nor
 
 ```
 chatbot/
-  chatbot-service.js          — Singleton; LLM HTTP client, session memory (Map)
-  rag/
-    rag-pipeline.js           — Orchestrator: validate → expand → search → rewrite → generate
+  chatbot-service.js          — Singleton; full RAG flow + LLM HTTP client + session memory
   prompt/
     prompt-builder.js         — Pure fn: tạo RAG prompt từ products + userMessage
     response-parser.js        — Parse JSON response từ LLM, fallback nếu malformed
@@ -47,16 +44,19 @@ chatbot/
 ```
 POST /api/chatbot/message
   → AIService.handleMessage()
-      → RAGPipeline.run(message, userId, sessionId)
-            ① validate (AIPolicy: độ dài, off-topic, spam)
+      → chatbotService.handleMessage(message, userId, sessionId)
+            ① validateMessage (AppError 400 nếu không hợp lệ)
             ② expandAbbreviations (ip → iPhone, ss → Samsung...)
-            ③ parallel: chatbotService.rewriteQuery(msg) + vectorStore.hybridSearch(msg)
-            ④ nếu rewritten query khác → hybridSearch lại với query mới
-            ⑤ chatbotService.handleMessage() → ChatbotService.getAIResponse()
-                  → promptBuilder.createPrompt(msg, products)
+            ③ isPromptInjection / isOffTopic → early return, không retrieve
+            ④ load conversationHistory từ Map (session memory)
+            ⑤ parallel: rewriteQuery LLM + hybridSearch(normalizedQuery)
+               → nếu rewrite khác → hybridSearch lại, chọn kết quả tốt hơn
+               → fallback minScore=0 topK=3 nếu 0 kết quả
+            ⑥ augmentAndGenerate() → promptBuilder.buildAugmentedPrompt(msg, products)
                   → LLM HTTP call (provider rotation: 429/402/500/503 → thử next)
-                  → responseParser.parseAIResponse(llmText, products)
+                  → responseParser.parseLLMOutput(llmText, products)
                   → fallback: keywordFallback.simpleKeywordMatch()
+            ⑦ persist: cập nhật session Map + ChatMessage DB (fire-and-forget)
 ```
 
 ---
@@ -69,42 +69,38 @@ POST /api/chatbot/message
 
 Responsibilities:
 
-- LLM HTTP calls với **provider rotation** (env: `LLM_API_KEY`, `LLM_BASE_URL`, `LLM_MODEL`)
+- **Full RAG pipeline** trong `handleMessage()` — 7 bước (xem Request Flow)
+- LLM HTTP calls với **provider rotation** (env: `LLM_API_KEY`, `LLM_BASE_URL`, `LLM_MODEL_1` primary + `LLM_MODEL_2` fallback)
 - **Session memory**: `Map<sessionId, { messages[], lastAccess }>` — reset khi restart
   - `MAX_HISTORY_TURNS = 10` (20 messages), `MAX_SESSIONS = 500`, `SESSION_TTL_MS = 30 phút`
-- **Catalog data**: brands + categories load từ DB, refresh định kỳ
+- **Catalog data**: brands + categories load từ DB, cache **TTL 5 phút** (`_catalogCacheExpiry = now + 5 * 60 * 1000`)
+- `vectorStoreService` — lazy require tại module level, `null` nếu load thất bại
 
-## 4.2 rag/rag-pipeline.js
+## 4.2 prompt/prompt-builder.js
 
-Orchestrator. Constructor nhận `{ chatbotService, vectorStore }` — cả hai inject (không require trực tiếp).
-
-Flow: validate → expand → parallel search+rewrite → merge results → generate.
-
-`vectorStore` optional (null trong test) — pipeline degrade gracefully, trả empty products.
-
-## 4.4 prompt/prompt-builder.js
-
-Pure function `createPrompt(userMessage, products, context)`.
+Pure function `buildAugmentedPrompt(userMessage, products)`.
 
 Inject product list (tên, giá, stock, category, brand, slug) + store info + matching rules + version warning vào system prompt. Không dùng instance state.
 
-## 4.5 prompt/response-parser.js
+## 4.4 prompt/response-parser.js
 
-`parseAIResponse(text, products, userMessage)`:
+`parseLLMOutput(rawLLMOutput, products, userMessage)`:
 
 1. Strip markdown code fences nếu có
 2. `JSON.parse` — nếu fail → regex extract `{...}` block → nếu vẫn fail → fallback `simpleKeywordMatch`
-3. Validate fields: `response` (string), `products` (array), `intent` (string)
+3. Map tên sản phẩm LLM trả về → object thực trong DB (fuzzy match 4 bước: exact, version keywords, numbers, word overlap ≥80%)
+4. Dedup theo ID
+5. `extractProductsFromText`: bổ sung SP LLM đề cập trong response text nhưng bỏ sót khỏi `matchedProducts` — dùng phrase boundary regex + dedup prefix (xét cả alreadyMatchedIds để tránh inject SP ngắn hơn khi SP dài hơn đã matched).
 
-## 4.6 keyword/keyword-fallback.js
+## 4.5 keyword/keyword-fallback.js
 
 `simpleKeywordMatch(userMessage, products)` — tokenize message, match với `product.name + brand + category`. Name weight ×3 (tên quan trọng hơn).
 
 `getFallbackResponse(lang)` — trả message xin lỗi khi không match được gì.
 
-Dùng khi: LLM providers đều lỗi hoặc `parseAIResponse` fail.
+Dùng khi: LLM providers đều lỗi hoặc `parseLLMOutput` fail.
 
-## 4.7 language/language-detector.js
+## 4.6 language/language-detector.js
 
 `detectLanguage(text)` — 3 rules theo thứ tự:
 
@@ -120,6 +116,8 @@ Dùng bởi: `keywordFallback`, `chatbotService` (chọn ngôn ngữ response).
 
 - **Session memory mất khi restart** — không persist. Đủ cho demo/KLTN.
 - **Provider rotation chỉ retry HTTP errors** (429/402/500/503/network) — lỗi khác (400 bad request) → break ngay, không retry.
-- **`rewriteQuery` fail không block** — RAGPipeline dùng original query nếu LLM rewrite lỗi.
-- **`vectorStore = null` trong unit tests** — RAGPipeline handle null bằng cách skip search, trả empty products list.
+- **`rewriteQuery` fail không block** — dùng `.catch(() => null)`, fallback về normalizedQuery. Khi LLM DOWN: dùng `fuzzyExpandQuery` (prefix + edit-distance so với product catalog) trước khi trả null — cải thiện recall cho typo và partial names.
+- **`clearSession(sessionId)`** — xóa session khỏi `conversationHistory` Map. Nếu không có `sessionId` → xóa toàn bộ. Dùng cho demo/debug qua `POST /chatbot/session/clear`.
+- **`vectorStoreService = null`** — `handleMessage` skip bước retrieval, trả empty products list. `jest.mock('@services/vector-store/vector-store')` trong tests.
 - **`chatbotService` là singleton** — không reinitialize trong test; dùng `jest.spyOn` thay vì new instance.
+- **Validation throw AppError** — `handleMessage` re-throw AppError (có `statusCode`) trong outer catch để controller xử lý HTTP status đúng.

@@ -1,6 +1,6 @@
 ﻿require('module-alias/register'); // phải là dòng đầu tiên trước mọi require khác
 require('dotenv').config();
-// Kích hoạt nodemon restart khi thay đổi .env — last touched: 2026-05-21
+// Kích hoạt nodemon restart khi thay đổi .env — last touched: 2026-05-24
 
 // Import logger trước validation để startup error có cùng định dạng với mọi log khác
 const logger = require('@utils/logger');
@@ -70,18 +70,18 @@ process.on('uncaughtException', (err) => {
 const connectDB = async () => {
   try {
     await sequelize.authenticate();
-    logger.info('Kết nối database thành công.');
+    logger.info('Kết nối database thành công');
 
     // Load models và quan hệ
     require('@models');
-    logger.info('Đã load toàn bộ model.');
+    logger.info('Đã load toàn bộ model');
 
     // Tự động sync schema khi DB_SYNC=true (dev only).
     // foreignKeys: false — tránh lỗi "Too many keys" của MySQL (giới hạn 64 key/bảng).
     // alter: true — chỉ thêm column/bảng mới, KHÔNG xóa dữ liệu hiện có.
     if (process.env.NODE_ENV !== 'production' && process.env.DB_SYNC === 'true') {
       await sequelize.sync({ alter: true, foreignKeys: false });
-      logger.info('Đồng bộ schema database thành công.');
+      logger.info('Đồng bộ schema database thành công');
     }
   } catch (error) {
     logger.error('Không thể kết nối database:', error);
@@ -134,12 +134,12 @@ const checkVectorStoreSync = async () => {
           if (rebuildErr) {
             logger.error('Rebuild vector store thất bại:', rebuildErr.message);
           } else {
-            logger.info('Đã rebuild vector store tự động.');
+            logger.info('Đã rebuild vector store tự động');
           }
         },
       );
     } else {
-      logger.info(`Vector store OK: ${vectorCount} vectors / ${activeCount} sản phẩm active.`);
+      logger.info(`Vector store OK: ${vectorCount} vectors / ${activeCount} sản phẩm active`);
     }
   } catch (err) {
     logger.warn('Không thể kiểm tra vector store sync:', err.message);

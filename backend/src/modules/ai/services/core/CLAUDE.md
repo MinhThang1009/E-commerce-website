@@ -62,7 +62,7 @@ Constructor deps: `{ aiRepository, chatbotService, logger }`.
 | `expandAbbreviations` | `(text) → string` | Regex-based 3 lớp: (1) brand abbreviations `ip→iPhone, ss→Samsung, mb→MacBook, r5→AMD Ryzen 5, bnh→bao nhiêu, bh→bảo hành`; (2) EN→VI `smartphone→điện thoại, tablet→máy tính bảng`; (3) VI không dấu→có dấu `gia→giá, trieu→triệu, giao hang→giao hàng`... |
 | `isOffTopic` | `(message) → boolean` | Regex check: thời tiết, bóng đá, âm nhạc, phim, nấu ăn, sức khỏe, tin tức (cả vi + en) |
 | `classifyIntent` | `(normalizedText) → string` | 6 intents theo thứ tự ưu tiên (xem bên dưới) |
-| `isPromptInjection` | `(text) → boolean` | Detect 6 patterns injection phổ biến |
+| `isPromptInjection` | `(text) → boolean` | Detect 15 loại injection (28 regex, EN+VI) — đối chiếu OWASP LLM01:2025 |
 | `MAX_MESSAGE_LENGTH` | `number` | `500` (hằng số) |
 
 **6 intents của `classifyIntent` (thứ tự ưu tiên):**

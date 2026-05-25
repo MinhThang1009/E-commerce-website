@@ -379,11 +379,11 @@ Sort giảm dần theo final score → cắt lấy top `limit` → trả về ch
 
 ```mermaid
 flowchart LR
-    A["User query"] --> B["Preprocess<br/><i>giống nhau</i><br/>Validate → Normalize<br/>→ Intent → Gates"]
-    B --> C["Retrieval<br/><i>giống nhau</i><br/>hybridSearch topK=10<br/>minScore=0.45<br/>+ LLM rewrite"]
-    C --> D{"LLM<br/>available?"}
-    D -->|UP| E["augmentAndGenerate<br/>build prompt → call LLM<br/>→ parse output<br/><b>Natural language</b>"]
-    D -->|DOWN| F["simpleKeywordMatch<br/>token matching<br/>→ emoji format 💰📋🚫🔍<br/><b>Pattern matching</b>"]
+    A["  User query  "] --> B["  Preprocess  <br/>  <i>giống nhau</i>  <br/>  Validate → Normalize  <br/>  → Intent → Gates  "]
+    B --> C["  Retrieval  <br/>  <i>giống nhau</i>  <br/>  hybridSearch topK=10  <br/>  minScore=0.45  <br/>  + LLM rewrite  "]
+    C --> D{"  LLM  <br/>  available?  "}
+    D -->|UP| E["  augmentAndGenerate  <br/>  ⑥a: build prompt → ⑥b: call LLM  <br/>  → parse output  <br/>  <b>Natural language</b>  "]
+    D -->|DOWN| F["  simpleKeywordMatch  <br/>  ⑥.1-⑥.5 token matching  <br/>  → emoji format 💰📋🚫🔍  <br/>  <b>Pattern matching</b>  "]
 ```
 
 | Aspect | LLM UP | LLM DOWN |

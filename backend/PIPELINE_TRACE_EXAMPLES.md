@@ -106,7 +106,7 @@
 **Tại sao:** Embedding không hiểu negation — vector("không muốn iPhone") **gần** vector("iPhone"). Strip mệnh đề phủ định khỏi `queryForRetrieval`. Strip rộng hơn N6d-4 (bao gồm cả "không cần" — dù không phải loại trừ, vẫn gây bias embedding).
 
 **Ví dụ:**
-- `"ĐT không cần iPhone tầm 15-20tr"` → strip → `"ĐT tầm 15-20tr"` (search không bias về iPhone)
+- `"điện thoại không cần iPhone tầm 15-20 triệu"` → strip → `"điện thoại tầm 15-20 triệu"` (search không bias về iPhone)
 
 ### N5b-2 — ⑤b Promise.all `chatbot-service.js:434`
 **Tại sao:** Chạy **song song** giảm latency. Search lần 1 dùng `queryForRetrieval` (đã strip negation). Kết quả lần 1 dùng khi: (1) rewrite fail/timeout, (2) rewrite giống gốc → skip lần 2, (3) lần 2 rỗng.

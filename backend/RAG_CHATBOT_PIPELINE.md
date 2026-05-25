@@ -69,70 +69,70 @@
 
 ```mermaid
 flowchart TD
-    A["        👤 User gửi message        "]
+    A["&nbsp;&nbsp;&nbsp;👤 User gửi message&nbsp;&nbsp;&nbsp;"]
     A --> PREP
 
-    subgraph PREP["        _preprocessMessage(message)        "]
-        B["        ①  validateMessage        "]
-        B -->|hợp lệ| C["        ②  expandAbbreviations        "]
-        C --> D["        ③  classifyIntent        "]
-        D --> D2["        ③  isPromptInjection        <br/>        (sequential sau classifyIntent)        "]
+    subgraph PREP["&nbsp;&nbsp;&nbsp;_preprocessMessage(message)&nbsp;&nbsp;&nbsp;"]
+        B["&nbsp;&nbsp;&nbsp;①  validateMessage&nbsp;&nbsp;&nbsp;"]
+        B -->|hợp lệ| C["&nbsp;&nbsp;&nbsp;②  expandAbbreviations&nbsp;&nbsp;&nbsp;"]
+        C --> D["&nbsp;&nbsp;&nbsp;③  classifyIntent&nbsp;&nbsp;&nbsp;"]
+        D --> D2["&nbsp;&nbsp;&nbsp;③  isPromptInjection&nbsp;&nbsp;&nbsp;<br/>&nbsp;&nbsp;&nbsp;(sequential sau classifyIntent)&nbsp;&nbsp;&nbsp;"]
     end
 
-    B -->|không hợp lệ| BERR["        ❌ AppError 400 (bad request)        "]
+    B -->|không hợp lệ| BERR["&nbsp;&nbsp;&nbsp;❌ AppError 400 (bad request)&nbsp;&nbsp;&nbsp;"]
 
-    D2 --> E{"        prompt injection?        "}
-    E -->|Có| EINJ["        🛡️ _persistMessages(isFallback) + return        "]
-    E -->|Không| E2{"        offTopic?        <br/>        (intent=='off_topic')        "}
+    D2 --> E{"&nbsp;&nbsp;&nbsp;prompt injection?&nbsp;&nbsp;&nbsp;"}
+    E -->|Có| EINJ["&nbsp;&nbsp;&nbsp;🛡️ _persistMessages(isFallback) + return&nbsp;&nbsp;&nbsp;"]
+    E -->|Không| E2{"&nbsp;&nbsp;&nbsp;offTopic?&nbsp;&nbsp;&nbsp;<br/>&nbsp;&nbsp;&nbsp;(intent=='off_topic')&nbsp;&nbsp;&nbsp;"}
     D -.->|intent| E2
-    E2 -->|Có| EOT["        ℹ️ _persistMessages(isFallback) + return        "]
-    E2 -->|Không| G["        ④  load session history        "]
+    E2 -->|Có| EOT["&nbsp;&nbsp;&nbsp;ℹ️ _persistMessages(isFallback) + return&nbsp;&nbsp;&nbsp;"]
+    E2 -->|Không| G["&nbsp;&nbsp;&nbsp;④  load session history&nbsp;&nbsp;&nbsp;"]
 
-    G --> H["        ⑤a  _enrichQueryFromHistory        "]
-    H --> I["        ⑤b  _retrieveProducts        "]
-    I --> ISTRIP["        ⑤b  strip negation phrases        <br/>        (tránh embedding bias)        "]
-    ISTRIP --> PAR["        ⑤b  Promise.all        "]
-    PAR --> I1["        ⑤b  rewriteQuery        "]
-    PAR --> I2["        ⑤b  hybridSearch limit=10        "]
-    I1 --> J{"        rewrite khác?        "}
+    G --> H["&nbsp;&nbsp;&nbsp;⑤a  _enrichQueryFromHistory&nbsp;&nbsp;&nbsp;"]
+    H --> I["&nbsp;&nbsp;&nbsp;⑤b  _retrieveProducts&nbsp;&nbsp;&nbsp;"]
+    I --> ISTRIP["&nbsp;&nbsp;&nbsp;⑤b  strip negation phrases&nbsp;&nbsp;&nbsp;<br/>&nbsp;&nbsp;&nbsp;(tránh embedding bias)&nbsp;&nbsp;&nbsp;"]
+    ISTRIP --> PAR["&nbsp;&nbsp;&nbsp;⑤b  Promise.all&nbsp;&nbsp;&nbsp;"]
+    PAR --> I1["&nbsp;&nbsp;&nbsp;⑤b  rewriteQuery&nbsp;&nbsp;&nbsp;"]
+    PAR --> I2["&nbsp;&nbsp;&nbsp;⑤b  hybridSearch limit=10&nbsp;&nbsp;&nbsp;"]
+    I1 --> J{"&nbsp;&nbsp;&nbsp;rewrite khác?&nbsp;&nbsp;&nbsp;"}
     I2 --> J
-    J -->|Có| J1["        ⑤b  hybridSearch lần 2        <br/>        (fallback → I2 nếu rỗng)        "]
+    J -->|Có| J1["&nbsp;&nbsp;&nbsp;⑤b  hybridSearch lần 2&nbsp;&nbsp;&nbsp;<br/>&nbsp;&nbsp;&nbsp;(fallback → I2 nếu rỗng)&nbsp;&nbsp;&nbsp;"]
     J -->|Không| K
     J1 --> K
-    K{"        products > 0?        "}
-    K -->|Có| M{"        ⑥  providers?        "}
-    K -->|Không| K1["        ⑤b  fallback limit=3        "]
+    K{"&nbsp;&nbsp;&nbsp;products > 0?&nbsp;&nbsp;&nbsp;"}
+    K -->|Có| M{"&nbsp;&nbsp;&nbsp;⑥  providers?&nbsp;&nbsp;&nbsp;"}
+    K -->|Không| K1["&nbsp;&nbsp;&nbsp;⑤b  fallback limit=3&nbsp;&nbsp;&nbsp;"]
     K1 --> M
 
-    M -->|"LLM UP"| N1["        ⑥a.1  _getCatalogData        "]
-    N1 --> N2["        ⑥a.2  _sanitizeMessage        "]
-    N2 --> N3["        ⑥a.3  buildAugmentedPrompt        "]
-    N3 --> N4["        ⑥a.4  system + history + prompt        "]
-    N4 --> N5["        ⑥b.1  LLM HTTP POST        "]
-    N5 -->|thành công| N6["        ⑥b.2  parseLLMOutput        "]
+    M -->|"LLM UP"| N1["&nbsp;&nbsp;&nbsp;⑥a.1  _getCatalogData&nbsp;&nbsp;&nbsp;"]
+    N1 --> N2["&nbsp;&nbsp;&nbsp;⑥a.2  _sanitizeMessage&nbsp;&nbsp;&nbsp;"]
+    N2 --> N3["&nbsp;&nbsp;&nbsp;⑥a.3  buildAugmentedPrompt&nbsp;&nbsp;&nbsp;"]
+    N3 --> N4["&nbsp;&nbsp;&nbsp;⑥a.4  system + history + prompt&nbsp;&nbsp;&nbsp;"]
+    N4 --> N5["&nbsp;&nbsp;&nbsp;⑥b.1  LLM HTTP POST&nbsp;&nbsp;&nbsp;"]
+    N5 -->|thành công| N6["&nbsp;&nbsp;&nbsp;⑥b.2  parseLLMOutput&nbsp;&nbsp;&nbsp;"]
     N5 -->|thất bại| N7
 
-    M -->|"LLM DOWN"| N7["        ⑥.1  simpleKeywordMatch        <br/>        name+10 desc+5 scoring        "]
-    N7 --> N8["        ⑥.2  version + brand check        "]
-    N8 -->|"0 kết quả"| NFOUND["        🚫 notFoundResponse        "]
-    N8 -->|"có kết quả"| N9["        ⑥.3  negation + price        <br/>        + category prefix filter        "]
-    N9 --> N9B["        ⑥.4  sort by score + dedup        "]
-    N9B --> N10["        ⑥.5  intent-aware response        <br/>        💰📋🔍🌟        "]
+    M -->|"LLM DOWN"| N7["&nbsp;&nbsp;&nbsp;⑥.1  simpleKeywordMatch&nbsp;&nbsp;&nbsp;<br/>&nbsp;&nbsp;&nbsp;name+10 desc+5 scoring&nbsp;&nbsp;&nbsp;"]
+    N7 --> N8["&nbsp;&nbsp;&nbsp;⑥.2  version + brand check&nbsp;&nbsp;&nbsp;"]
+    N8 -->|"0 kết quả"| NFOUND["&nbsp;&nbsp;&nbsp;🚫 notFoundResponse&nbsp;&nbsp;&nbsp;"]
+    N8 -->|"có kết quả"| N9["&nbsp;&nbsp;&nbsp;⑥.3  negation + price&nbsp;&nbsp;&nbsp;<br/>&nbsp;&nbsp;&nbsp;+ category prefix filter&nbsp;&nbsp;&nbsp;"]
+    N9 --> N9B["&nbsp;&nbsp;&nbsp;⑥.4  sort by score + dedup&nbsp;&nbsp;&nbsp;"]
+    N9B --> N10["&nbsp;&nbsp;&nbsp;⑥.5  intent-aware response&nbsp;&nbsp;&nbsp;<br/>&nbsp;&nbsp;&nbsp;💰📋🔍🌟&nbsp;&nbsp;&nbsp;"]
     N10 -->|"khớp"| O
-    N10 -->|"không khớp"| N10FALL["        getFallbackResponse        <br/>        (keyword — no results)        "]
+    N10 -->|"không khớp"| N10FALL["&nbsp;&nbsp;&nbsp;getFallbackResponse&nbsp;&nbsp;&nbsp;<br/>&nbsp;&nbsp;&nbsp;(keyword — no results)&nbsp;&nbsp;&nbsp;"]
 
-    N6 --> O{"        ⑦  sessionId?        "}
+    N6 --> O{"&nbsp;&nbsp;&nbsp;⑦  sessionId?&nbsp;&nbsp;&nbsp;"}
     NFOUND --> O
     N10FALL --> O
-    O -->|Có| O1["        ⑦  sanitize + update history        "]
-    O1 --> O2["        ⑦  _evictStaleSessions        "]
+    O -->|Có| O1["&nbsp;&nbsp;&nbsp;⑦  sanitize + update history&nbsp;&nbsp;&nbsp;"]
+    O1 --> O2["&nbsp;&nbsp;&nbsp;⑦  _evictStaleSessions&nbsp;&nbsp;&nbsp;"]
     O2 --> P
-    O -->|Không| P["        ⑦  _persistMessages        "]
-    P --> R["        📤 return response        "]
+    O -->|Không| P["&nbsp;&nbsp;&nbsp;⑦  _persistMessages&nbsp;&nbsp;&nbsp;"]
+    P --> R["&nbsp;&nbsp;&nbsp;📤 return response&nbsp;&nbsp;&nbsp;"]
 
-    R -.-> ERR{"        catch error        "}
-    ERR -->|có statusCode| ERR1["        re-throw 400/404        "]
-    ERR -->|lỗi khác| ERR2["        getFallbackResponse        "]
+    R -.-> ERR{"&nbsp;&nbsp;&nbsp;catch error&nbsp;&nbsp;&nbsp;"}
+    ERR -->|có statusCode| ERR1["&nbsp;&nbsp;&nbsp;re-throw 400/404&nbsp;&nbsp;&nbsp;"]
+    ERR -->|lỗi khác| ERR2["&nbsp;&nbsp;&nbsp;getFallbackResponse&nbsp;&nbsp;&nbsp;"]
 ```
 
 > **Ghi chú sơ đồ:** `🚫 notFoundResponse()` được gọi từ N8 khi version/brand filter để lại 0 kết quả (keyword-fallback.js:146, 183). `getFallbackResponse()` có **2 call site**: (1) N10FALL — từ `simpleKeywordMatch` khi keyword không khớp gì, response đi tiếp qua `sessionId?` → `_persistMessages` → `return response` bình thường; (2) ERR2 — từ catch block trong `handleMessage`, early return, không qua `_persistMessages`.
@@ -379,11 +379,11 @@ Sort giảm dần theo final score → cắt lấy top `limit` → trả về ch
 
 ```mermaid
 flowchart LR
-    A["        User query        "] --> B["        Preprocess        <br/>        <i>giống nhau</i>        <br/>        Validate → Normalize        <br/>        → Intent → Gates        "]
-    B --> C["        Retrieval        <br/>        <i>giống nhau</i>        <br/>        hybridSearch topK=10        <br/>        minScore=0.45        <br/>        + LLM rewrite        "]
-    C --> D{"        LLM        <br/>        available?        "}
-    D -->|UP| E["        augmentAndGenerate        <br/>        ⑥a: build prompt → ⑥b: call LLM        <br/>        → parse output        <br/>        <b>Natural language</b>        "]
-    D -->|DOWN| F["        simpleKeywordMatch        <br/>        ⑥.1-⑥.5 token matching        <br/>        → emoji format 💰📋🚫🔍        <br/>        <b>Pattern matching</b>        "]
+    A["&nbsp;&nbsp;&nbsp;User query&nbsp;&nbsp;&nbsp;"] --> B["&nbsp;&nbsp;&nbsp;Preprocess&nbsp;&nbsp;&nbsp;<br/>&nbsp;&nbsp;&nbsp;<i>giống nhau</i>&nbsp;&nbsp;&nbsp;<br/>&nbsp;&nbsp;&nbsp;Validate → Normalize&nbsp;&nbsp;&nbsp;<br/>&nbsp;&nbsp;&nbsp;→ Intent → Gates&nbsp;&nbsp;&nbsp;"]
+    B --> C["&nbsp;&nbsp;&nbsp;Retrieval&nbsp;&nbsp;&nbsp;<br/>&nbsp;&nbsp;&nbsp;<i>giống nhau</i>&nbsp;&nbsp;&nbsp;<br/>&nbsp;&nbsp;&nbsp;hybridSearch topK=10&nbsp;&nbsp;&nbsp;<br/>&nbsp;&nbsp;&nbsp;minScore=0.45&nbsp;&nbsp;&nbsp;<br/>&nbsp;&nbsp;&nbsp;+ LLM rewrite&nbsp;&nbsp;&nbsp;"]
+    C --> D{"&nbsp;&nbsp;&nbsp;LLM&nbsp;&nbsp;&nbsp;<br/>&nbsp;&nbsp;&nbsp;available?&nbsp;&nbsp;&nbsp;"}
+    D -->|UP| E["&nbsp;&nbsp;&nbsp;augmentAndGenerate&nbsp;&nbsp;&nbsp;<br/>&nbsp;&nbsp;&nbsp;⑥a: build prompt → ⑥b: call LLM&nbsp;&nbsp;&nbsp;<br/>&nbsp;&nbsp;&nbsp;→ parse output&nbsp;&nbsp;&nbsp;<br/>&nbsp;&nbsp;&nbsp;<b>Natural language</b>&nbsp;&nbsp;&nbsp;"]
+    D -->|DOWN| F["&nbsp;&nbsp;&nbsp;simpleKeywordMatch&nbsp;&nbsp;&nbsp;<br/>&nbsp;&nbsp;&nbsp;⑥.1-⑥.5 token matching&nbsp;&nbsp;&nbsp;<br/>&nbsp;&nbsp;&nbsp;→ emoji format 💰📋🚫🔍&nbsp;&nbsp;&nbsp;<br/>&nbsp;&nbsp;&nbsp;<b>Pattern matching</b>&nbsp;&nbsp;&nbsp;"]
 ```
 
 | Aspect | LLM UP | LLM DOWN |

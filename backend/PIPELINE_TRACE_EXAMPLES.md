@@ -183,7 +183,7 @@
 **Tại sao:** 0 SP ≥ 0.45 (`DEFAULT_MIN_SCORE`) → LLM không có context → hallucinate. Hạ ngưỡng xuống 0 → top 3 + `lowConfidence=true` → prompt builder thêm `⚠️[low confidence]`.
 
 **Ví dụ:**
-- `"Google Pixel 9 Pro"` → 0 SP ≥ 0.45 → fallback top 3 score thấp → LLM trả "chưa có" thay vì hallucinate
+- `"Google Pixel 9 Pro"` → 0 SP có score ≥ 0.45 → hạ minScore xuống 0, lấy **3 SP có score cao nhất** (dù score rất thấp, ví dụ 0.15) → tất cả 3 SP đánh flag `lowConfidence=true` → LLM đọc flag biết "không chắc chắn" → trả "chưa có" thay vì hallucinate
 
 ### N6-check — ⑥ providers? `chatbot-service.js:609`
 **Tại sao:** Điểm rẽ chính: `providers.length===0` → LLM DOWN (keyword fallback), ngược lại → LLM UP (RAG đầy đủ).

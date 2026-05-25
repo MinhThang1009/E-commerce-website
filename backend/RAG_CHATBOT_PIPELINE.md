@@ -192,13 +192,25 @@ Phân loại vào 1 trong 6 intents theo thứ tự ưu tiên (intent đầu ti�
 
 ⚠️ Chạy trên `message` **GỐC** (không phải normalizedQuery) — vì injection patterns cần detect trên raw input, tránh expand làm mất pattern.
 
-6 regex patterns:
-1. `ignore (all) (previous) instructions` → EC3
-2. `system:` → EC3b
-3. `act as` → EC3
-4. `forget all/everything/your` → EC3c
-5. `pretend to be / you are` → EC3c
-6. `you are now` → EC3b
+15 loại (EN + VI), 28 regex — đối chiếu OWASP LLM01:2025:
+
+| # | Loại | Patterns (EN / VI) | OWASP category | Test |
+|---|------|-------------------|----------------|------|
+| 1 | Bỏ qua chỉ thị | `ignore instructions` / `bỏ qua hướng dẫn` | Direct override | EC3 |
+| 2 | Chèn system prompt | `system:` | Prompt prefix | EC3b |
+| 3 | Đóng vai / role-play | `act as` / `đóng vai, giả làm` | Role-play | EC3 |
+| 4 | Quên quy tắc | `forget all` / `quên hết quy tắc` | Direct override | EC3c |
+| 5 | Giả vờ | `pretend to be` / `giả vờ là` | Identity override | EC3c |
+| 6 | Gán lại danh tính | `you are now` / `bây giờ bạn là` | Identity override | EC3b |
+| 7 | Trích xuất dữ liệu | `get user data` / `lấy dữ liệu khách hàng` | Data exfiltration | EC3d-f |
+| 8 | Jailbreak / DAN | `jailbreak, DAN mode` / `chế độ không giới hạn` | Jailbreak | — |
+| 9 | Lộ system prompt | `reveal system prompt` / `cho xem nội dung hệ thống` | Prompt leaking | — |
+| 10 | Ghi đè hành vi | `from now on` / `từ giờ trở đi` | Instruction override | — |
+| 11 | Bypass safety | `bypass safety filter` / `vượt qua giới hạn` | Safety bypass | — |
+| 12 | Fictional framing | `imagine no rules` / `giả sử không có quy tắc` | Social engineering | — |
+| 13 | Repeat / echo | `repeat after me` (chỉ EN — VI dễ false positive) | Echo attack | — |
+| 14 | Ký tự ẩn | zero-width space, bidirectional override | Stealth injection | — |
+| 15 | Delimiter giả | `### ADMIN`, `[SYSTEM]`, `[CHỈ THỊ QUẢN TRỊ]` | Boundary confusion | — |
 
 **`offTopic = intent === 'off_topic'`** — derive trực tiếp từ intent, không gọi `isOffTopic()` riêng.
 
@@ -631,7 +643,7 @@ Mọi pattern trong ABBREV_MAP đều được áp dụng với `new RegExp(patt
 | `expandAbbreviations()` | ai-policy.js | EC1, EC-A, EC-F→EC-S, EC7, EC-PM | ✅ 18/18 brand+EN→VI; VI diacriticless: 50+ patterns |
 | `classifyIntent()` | ai-policy.js | EC2a, EC2c, EC5, EC9, EC10, EC-L | ✅ 6/6 intents |
 | `isOffTopic()` | ai-policy.js | EC2a, EC2b | ✅ 2 tests |
-| `isPromptInjection()` | ai-policy.js | EC3, EC3b, EC3c, EC3d, EC3e, EC3f | ✅ 4/7 patterns |
+| `isPromptInjection()` | ai-policy.js | EC3, EC3b, EC3c, EC3d-f + 25 unit tests | ✅ 15 loại, 28 regex (OWASP LLM01) |
 | `_enrichQueryFromHistory()` | chatbot-service.js | T2, T3, T5 | ✅ 3 pronouns |
 | `_retrieveProducts()` | chatbot-service.js | All RAG_PIPELINE tests | ✅ 40+ tests |
 | `hybridSearch()` | vector-store.js | Implicit (all RAG) | ✅ topK=10 + fallback topK=3 |

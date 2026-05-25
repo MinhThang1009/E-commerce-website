@@ -319,9 +319,13 @@ const INJECTION_PATTERNS = [
   // 12. Fictional framing — bọc injection trong kịch bản giả (EN + VI)
   /\b(hypothetical|imagine|fictional|pretend).{0,30}(no\s*(rules?|restrictions?|limits?|filters?)|unrestricted|unfiltered)/i,
   /(giả\s*sử|tưởng\s*tượng|trong\s*trường\s*hợp).{0,30}(không\s*(có\s*)?(quy\s*tắc|giới\s*hạn|hạn\s*chế|luật)|tự\s*do)/iu,
-  // 13. Repeat / echo attack — bắt LLM tự affirm (EN + VI)
+  // 13. Repeat / echo attack — bắt LLM tự affirm (chỉ EN, VI dễ false positive: "lặp lại giá iPhone")
   /\b(repeat\s+after\s+me|say\s+exactly|echo\s+this)\b/i,
-  /(lặp\s*lại|nói\s*theo|nói\s*lại\s*chính\s*xác)/iu,
+  // 14. Ký tự ẩn — zero-width space/joiner, bidirectional override (OWASP LLM01 stealth injection)
+  /[​‌‍‎‏‪-‮⁠﻿]/,
+  // 15. Giả delimiter hệ thống — giả lệnh admin/system trong ngoặc hoặc heading (OWASP LLM01 boundary confusion)
+  /#{3,}\s*(ADMIN|SYSTEM|INSTRUCTION|DIRECTIVE|OVERRIDE|IGNORE)/i,
+  /\[\s*(ADMIN|SYSTEM|INSTRUCTION|UNLOCK|OVERRIDE|CHỈ\s*THỊ(\s*QUẢN\s*TRỊ)?|QUẢN\s*TRỊ|HỆ\s*THỐNG)\s*\]/iu,
 ];
 
 function isPromptInjection(text) {

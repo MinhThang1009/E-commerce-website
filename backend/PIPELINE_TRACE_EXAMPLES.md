@@ -198,8 +198,8 @@
 **Ví dụ:**
 - `{brands: ["Apple","Samsung","Xiaomi",...], categories: ["Laptop","Điện thoại",...]}` → LLM không recommend "Google Pixel" khi shop không bán
 
-### N6a-2 — ⑥ sanitizeMessage `chatbot-service.js`
-**Tại sao:** User input concatenate trực tiếp vào prompt string. `"`→`'` (defensive), collapse newlines, `.substring(0,500)` vì `finalQuery` có thể >500 chars sau N5a enrich.
+### N6a-2 — ⑥ sanitizeMessage (làm sạch text) `chatbot-service.js`
+**Tại sao:** "Sanitize" = làm sạch input trước khi xử lý — loại bỏ ký tự không mong muốn. User input được concatenate trực tiếp vào prompt string gửi LLM, nên cần làm sạch 3 thứ: (1) `"`→`'` tránh phá JSON format trong prompt template, (2) collapse newlines liên tiếp (`\n\n\n`→`\n`) tiết kiệm token LLM, (3) `.substring(0,500)` cắt độ dài vì `finalQuery` có thể >500 chars sau N5a enrich append history.
 
 **Ví dụ:**
 - Trước: `'iPhone "chính hãng" giá?\n\n\nbao nhiêu'` (enriched query 600 chars)

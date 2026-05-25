@@ -244,7 +244,7 @@ messages = [
 **Ví dụ:**
 - Provider 1: 429 (rate limit), Provider 2: 503 (service tạm nghỉ) → hết → `simpleKeywordMatch(finalQuery, products)` → user nhận 🔍
 
-### N6d-1 — ⑥.1 tokenize+score `keyword-fallback.js:66`
+### N6d-1 — ⑥.1 simpleKeywordMatch (tokenize+score) `keyword-fallback.js:66`
 **Tại sao:** `product.name` match +10 > `product.shortDescription` match +5 vì tên quan trọng hơn mô tả.
 
 **Ví dụ:**

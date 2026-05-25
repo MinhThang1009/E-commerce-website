@@ -150,11 +150,11 @@ async function runPipeline(query, llmMode, providedSessionId = null) {
     : `${C.green}Trong phạm vi${C.reset}`));
 
   if (injection) {
-    console.log(warn('Prompt injection -> tra ve phan hoi bao ve, ket thuc pipeline'));
+    console.log(warn('⚠️  Prompt injection → trả về phản hồi bảo vệ, kết thúc pipeline'));
     return;
   }
   if (offTopic) {
-    console.log(warn('Off-topic -> tra ve thong bao pham vi ho tro, ket thuc pipeline'));
+    console.log(warn('⚠️  Off-topic → trả về thông báo phạm vi hỗ trợ, kết thúc pipeline'));
     return;
   }
   console.log(ok(`Đạt tất cả security gates  ->  tiếp tục vào RAG pipeline`));

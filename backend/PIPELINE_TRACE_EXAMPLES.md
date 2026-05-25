@@ -52,9 +52,16 @@
 - `"best earbuds"` → `"best tai nghe"`
 
 ### N3a — ③ classifyIntent `ai-policy.js:244`
-**Tại sao:** Intent quyết định 2 việc: (1) gate off_topic chặn query ngoài phạm vi, (2) response format ở keyword fallback (💰📋🔍🌟). Chạy trên **normalizedQuery** (đã expand) vì "bnh" sau expand thành "bao nhiêu" mới match `pricing`.
+**Tại sao:** Intent quyết định 2 việc: (1) gate off_topic chặn query ngoài phạm vi, (2) response format ở keyword fallback (💰📋🔍🌟). Chạy trên **normalizedQuery** (đã expand) vì "bnh" sau expand thành "bao nhiêu" mới match `pricing`. Thứ tự ưu tiên (match đầu tiên return ngay):
+1. `off_topic` — thời tiết, bóng đá, phim, nấu ăn, tin tức...
+2. `order_inquiry` — đơn hàng, ship, giao hàng, tracking
+3. `policy` — bảo hành, đổi trả, chính sách
+4. `pricing` — giá, bao nhiêu, tiền
+5. `product_search` — brand, tư vấn, so sánh
+6. `general` — default (không match pattern nào)
+
 - `"bóng đá Samsung S25 giá bao nhiêu"` → `off_topic` (ưu tiên 1 thắng pricing ưu tiên 4)
-- `"cái đó có bao nhiêu RAM?"` → `pricing` ("bao nhiêu" match, dù hỏi specs)
+- `"cái đó có bao nhiêu RAM?"` → `pricing` ("bao nhiêu" match ưu tiên 4, dù hỏi specs)
 
 ### N3b — ③ isPromptInjection `ai-policy.js:289-335`
 **Tại sao:** Chặn prompt injection TRƯỚC khi query đến LLM. Chạy trên **message GỐC** (không phải normalizedQuery) vì expand có thể biến đổi pattern.

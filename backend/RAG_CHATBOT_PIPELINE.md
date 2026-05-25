@@ -274,7 +274,7 @@ Output: `{ products[], finalQuery }` — max 10 items, sorted by hybrid score.
 - Return `simpleKeywordMatch(userMessage, products)` ngay lập tức
 
 `simpleKeywordMatch` ([`keyword-fallback.js:66-431`](src/modules/ai/services/chatbot/keyword/keyword-fallback.js#L66-L431)) gồm 8 bước:
-1. **Tokenize + scoring:** tách query thành từ, match với product name (+10 điểm) + description (+5 điểm)
+1. **Tokenize + scoring:** tách query thành từ, match với `product.name` (+10 điểm) + `product.shortDescription` (+5 điểm)
 2. **Version filter:** extract số model từ query (bỏ qua giá/specs) → lọc products chứa số đó
 3. **Brand coherence:** nếu brand token trong query không match kết quả → trả "chưa có"
 4. **Negation filter:** parse "không muốn/tránh/avoid" → loại products bị phủ định

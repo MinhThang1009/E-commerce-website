@@ -167,12 +167,14 @@ messages = [
 ```
 
 ### N6b-1 — ⑥ LLM HTTP POST `chatbot-service.js`
-**Tại sao:** Bước **Generate** (chữ G trong RAG). temp=0.3, max_tokens=800. Provider rotation: 429/402/500/503/network → `continue`. 400/401 → `break`.
+**Tại sao:** Bước **Generate** (chữ G trong RAG). temp=0.3, max_tokens=800. Provider rotation theo HTTP status:
+- **Retry** (lỗi tạm thời → `continue` thử provider tiếp): 429 (rate limit — quá nhiều request), 402 (hết quota), 500 (server lỗi), 503 (service tạm nghỉ), network error (timeout/DNS fail)
+- **Dừng** (lỗi cố định → `break`): 400 (bad request — format sai), 401 (unauthorized — API key sai)
 
 **Ví dụ:**
-- Provider 1 (gpt-4): 429 → continue
-- Provider 2 (gpt-3.5): 200 OK → return
-- Nếu 400 Bad Request → break ngay (lỗi cố định, không retry)
+- Provider 1 (gpt-4): 429 (rate limit) → continue thử tiếp
+- Provider 2 (gpt-3.5): 200 (OK) → return kết quả
+- Nếu 400 (bad request) → break ngay (retry cũng lỗi tương tự)
 
 ### N6b-2 — ⑥ parseLLMOutput `response-parser.js`
 **Tại sao:** LLM hallucinate tên SP không có trong DB. Parse JSON → match với products thực → loại. `extractProductsFromText` bổ sung SP nhắc trong response text nhưng bỏ sót trong JSON.
@@ -185,7 +187,7 @@ messages = [
 **Tại sao:** Graceful degradation — tất cả providers down → keyword fallback thay vì error 500. Products đã retrieve ở bước ⑤ → không search lại.
 
 **Ví dụ:**
-- Provider 1: 429, Provider 2: 503 → hết → `simpleKeywordMatch(finalQuery, products)` → user nhận 🔍
+- Provider 1: 429 (rate limit), Provider 2: 503 (service tạm nghỉ) → hết → `simpleKeywordMatch(finalQuery, products)` → user nhận 🔍
 
 ### N6d-1 — ⑥.1 tokenize+score `keyword-fallback.js:66`
 **Tại sao:** `product.name` match +10 > `product.shortDescription` match +5 vì tên quan trọng hơn mô tả.
@@ -254,10 +256,10 @@ messages = [
 - Nếu detect toàn bộ: "iPhone" → product_search 🔍 (sai)
 
 ### N6d-fb — getFallbackResponse `keyword-fallback.js`
-**Tại sao:** Catch-all khi 0 match + intent không match format nào. Khác ERR-b: đi qua N7 persist bình thường.
+**Tại sao:** Catch-all khi 0 match + intent không match format nào. Khác ERR-b: đi qua N7 persist (lưu DB) bình thường.
 
 **Ví dụ:**
-- `"xin chào"` → 0 keyword match, intent=general → `"Xin chào! Mình là chatbot TechStore, có thể giúp gì?"` → persist vào DB ✅
+- `"xin chào"` → 0 keyword match, intent=general → `"Xin chào! Mình là chatbot TechStore, có thể giúp gì?"` → persist (lưu DB) ✅
 
 ### N7a — ⑦ session update `chatbot-service.js:298`
 **Tại sao:** Lưu RAM để turn sau có context (N4 → N5a). Max 10 turns (20 messages) tránh tốn token. Evict >30 phút + LRU >500 sessions.
@@ -272,13 +274,13 @@ messages = [
 - `ChatMessage.bulkCreate([{content:"iPhone 17 giá?", role:"user"}, {content:"28.990.000đ", role:"assistant"}]).catch(warn)`
 
 ### ERR-a — catch có statusCode `chatbot-service.js:323`
-**Tại sao:** AppError = lỗi "dự kiến" → re-throw → controller trả HTTP status đúng. Không persist.
+**Tại sao:** AppError = lỗi "dự kiến" → re-throw → controller trả HTTP status đúng. Không persist (không lưu DB).
 
 **Ví dụ:**
-- `validateMessage("a"×501)` → `AppError("Tin nhắn quá dài", 400)` → catch → re-throw → HTTP 400
+- `validateMessage("a"×501)` → `AppError("Tin nhắn quá dài", 400)` → catch → re-throw → HTTP 400 (bad request — input không hợp lệ)
 
 ### ERR-b — catch unknown `chatbot-service.js:324-325`
-**Tại sao:** Lỗi "không dự kiến" → log + fallback thay vì HTTP 500. **KHÔNG persist** (khác N6d-fb). Không update session — tránh garbage.
+**Tại sao:** Lỗi "không dự kiến" → log + fallback thay vì HTTP 500 (server lỗi nội bộ). **KHÔNG persist (không lưu DB)** (khác N6d-fb). Không update session (không lưu RAM) — tránh garbage.
 
 **Ví dụ:**
 - `TypeError: Cannot read property 'x' of undefined` → catch → `getFallbackResponse`
@@ -423,7 +425,7 @@ messages = [
 | ⑥ | **N6-check** | LLM UP | |
 | ⑥a | **N6a-1→4** | Augment: inject iPhone 17 PM vào prompt | |
 | ⑥b | **N6b-1→2** | Generate → parse | |
-| ⑦ | **N7a→b** | Session + persist | |
+| ⑦ | **N7a→b** | Session (lưu RAM) + persist (lưu DB) | |
 | **Kết quả** | | 📝 iPhone 17 Pro Max — giá + specs | User gõ 14 ký tự → system hiểu đầy đủ nhờ N2 |
 
 ---
@@ -464,7 +466,7 @@ messages = [
 | ⑥ | **N6-check** | LLM UP | |
 | ⑥a | **N6a-3** | `buildAugmentedPrompt` → prompt có **`⚠️[low confidence]`** + version warning | Flag cảnh báo LLM: "SP dưới đây KHÔNG chắc liên quan — đừng recommend như chính xác". Không có flag → LLM có thể hallucinate "Pixel 9 Pro giá 25 triệu" |
 | ⑥b | **N6b-1→2** | LLM đọc flags → trả "Rất tiếc, hiện shop chưa có Google Pixel 9 Pro..." | LLM hiểu low confidence → "chưa có" + gợi ý thay thế |
-| ⑦ | **N7a→b** | Session + persist | |
+| ⑦ | **N7a→b** | Session (lưu RAM) + persist (lưu DB) | |
 | **Kết quả** | | 📝 "Hiện shop chưa có Google Pixel 9 Pro. Bạn có thể tham khảo..." | lowConfidence flag ngăn hallucination |
 
 ---
@@ -484,7 +486,7 @@ messages = [
 | ⑥.2 | **N6d-2→3** | Version [17,25] filter, brand iPhone ✅ Samsung ✅ | |
 | ⑥.3–4 | **N6d-4→7** | Negation: không. Price: không. Sort + dedup | |
 | ⑥.5 | **N6d-8** | Intent → product_search → **🔍 format** | |
-| ⑦ | **N7a→b** | Session + persist | |
+| ⑦ | **N7a→b** | Session (lưu RAM) + persist (lưu DB) | |
 | **Kết quả** | | 🔍 Liệt kê 2 SP (KHÔNG có bảng so sánh chi tiết như LLM UP) | Degraded: user thấy đúng SP nhưng phải tự so sánh |
 
 ---
@@ -512,7 +514,7 @@ messages = [
 | ⑥.3 | **N6d-6** | Category: skip ("pro" không phải category) | |
 | ⑥.4 | **N6d-7** | Sort: iPhone 17 Pro score 30 → đứng đầu | |
 | ⑥.5 | **N6d-8** | Intent (10 từ đầu) → `pricing` + `isPriceQuery` → **💰 format** | 10 từ đầu tránh history context nhiễu intent. 💰: tên + giá + stock |
-| ⑦ | **N7a→b** | Session + persist | |
+| ⑦ | **N7a→b** | Session (lưu RAM) + persist (lưu DB) | |
 | **Kết quả** | | 💰 "iPhone 17 Pro — 28.990.000₫ — Còn hàng" | |
 
 ---
@@ -535,7 +537,7 @@ messages = [
 | ⑥.3 | **N6d-6** | **Category prefix**: "điện thoại" → chỉ giữ SP tên bắt đầu bằng "Điện thoại" | Loại laptop, tablet, tai nghe |
 | ⑥.4 | **N6d-7** | Sort + dedup | SP còn lại sau 3 filter |
 | ⑥.5 | **N6d-8** | Intent → product_search → **🔍 format** (list top 5) | |
-| ⑦ | **N7a→b** | Session + persist | |
+| ⑦ | **N7a→b** | Session (lưu RAM) + persist (lưu DB) | |
 | **Kết quả** | | 🔍 "Samsung A57 — 17.990.000₫, OPPO Reno15 — 16.990.000₫, ..." | Không iPhone, 15-20M, chỉ ĐT. 3 filter stack đúng |
 
 ---
@@ -553,7 +555,7 @@ messages = [
 | ⑥.2 | **N6d-3** | Brand Samsung ∈ results ban đầu, nhưng sau version filter = 0 | |
 | | **N6d-nf** | → **`notFoundResponse()`** | Gọi khi version/brand filter để lại 0. Trả rõ ràng thay vì generic |
 | ⑥.3–5 | **N6d-4→8** | **— Không thực thi** | Dừng tại N6d-nf |
-| ⑦ | **N7a→b** | Session + persist | notFound vẫn persist bình thường |
+| ⑦ | **N7a→b** | Session (lưu RAM) + persist (lưu DB) | notFound vẫn persist (lưu DB) bình thường |
 | **Kết quả** | | 🚫 "Hiện chưa có Samsung S99 Ultra trong cửa hàng" | |
 
 ---
@@ -571,7 +573,7 @@ messages = [
 | ⑥.2 | **N6d-3** | **Brand "Huawei" ∉ results → brand coherence FAIL** | User hỏi Huawei nhưng kết quả toàn Samsung/iPhone → KHÔNG hợp lý. Trả "chưa có" thay vì recommend SP sai brand |
 | | **N6d-nf** | → **`notFoundResponse()`** | |
 | ⑥.3–5 | **N6d-4→8** | — | |
-| ⑦ | **N7a→b** | Session + persist | |
+| ⑦ | **N7a→b** | Session (lưu RAM) + persist (lưu DB) | |
 | **Kết quả** | | 🚫 "Hiện chưa có Huawei Mate 70 trong cửa hàng" | |
 
 ---
@@ -590,7 +592,7 @@ messages = [
 | ⑥.3–4 | **N6d-4→7** | Negation/price/category: skip. Sort: 0 scored products | |
 | ⑥.5 | **N6d-8** | Intent (10 từ đầu) → `general`, không match 💰📋🔍🌟 | |
 | | **N6d-fb** | → **`getFallbackResponse()`** | Catch-all cuối cùng: keyword không khớp + intent không match format nào. **Vẫn đi qua N7** (khác ERR-b) |
-| ⑦ | **N7a→b** | Session + persist | |
+| ⑦ | **N7a→b** | Session (lưu RAM) + persist (lưu DB) | |
 | **Kết quả** | | 👋 "Xin chào! Tôi có thể giúp gì..." | |
 
 ---
@@ -607,7 +609,7 @@ messages = [
 | ⑥ | **N6-check** | LLM DOWN | |
 | ⑥.1–4 | **N6d-1→7** | Score thấp (từ khoá policy ít match product name/desc), filters skip | |
 | ⑥.5 | **N6d-8** | Intent → **`policy`** → **📋 format** | 📋 đọc env vars: `RETURN_POLICY`, `WARRANTY_INFO`, `SHIPPING_INFO`, `SUPPORT_INFO`. **Không phụ thuộc product matching** — chỉ cần intent đúng |
-| ⑦ | **N7a→b** | Session + persist | |
+| ⑦ | **N7a→b** | Session (lưu RAM) + persist (lưu DB) | |
 | **Kết quả** | | 📋 "Chính sách đổi trả: [RETURN_POLICY]. Bảo hành: [WARRANTY_INFO]..." | Admin cập nhật env = cập nhật response |
 
 ---
@@ -625,7 +627,7 @@ messages = [
 | ⑥ | **N6-check** | LLM DOWN | |
 | ⑥.1–4 | **N6d-1→7** | Tokenize, filter, sort | |
 | ⑥.5 | **N6d-8** | Intent → **`order_inquiry`** → **📋 format** | 📋 focus shipping: đọc `SHIPPING_INFO`. Tương tự policy |
-| ⑦ | **N7a→b** | Session + persist | |
+| ⑦ | **N7a→b** | Session (lưu RAM) + persist (lưu DB) | |
 | **Kết quả** | | 📋 "Thông tin giao hàng: [SHIPPING_INFO]" | "mưa to" bị bỏ qua — đúng behaviour |
 
 ---
@@ -646,7 +648,7 @@ messages = [
 | ⑥.2–3 | **N6d-2→3** | Version: không số. Brand: MacBook ✅ | |
 | ⑥.3–4 | **N6d-4→7** | Filters skip. Sort by score | |
 | ⑥.5 | **N6d-8** | Detect **"mới nhất"** → **🌟 format**: **sort lại by `createdAt` desc** | 🌟 override sort của N6d-7. Thay vì sort by keyword score → sort by ngày nhập SP. Đúng ý "mới nhất" |
-| ⑦ | **N7a→b** | Session + persist | |
+| ⑦ | **N7a→b** | Session (lưu RAM) + persist (lưu DB) | |
 | **Kết quả** | | 🌟 "MacBook Pro M4 (2025) — 45.990.000₫ — Mới nhất" | SP mới nhất lên đầu |
 
 ---
@@ -660,7 +662,7 @@ messages = [
 | ①–④ | **N1→N4** | Pass bình thường | |
 | ⑤b | **N5b-2** | hybridSearch → ❌ DB error → `AppError("DB unavailable", 503)` | |
 | Error | **ERR-a** | `error.statusCode` tồn tại (503) → **re-throw** | AppError = lỗi "dự kiến", có status → controller trả HTTP đúng. Không "nuốt" error |
-| ⑥–⑦ | — | **Không generate, KHÔNG persist** | |
+| ⑥–⑦ | — | **Không generate, KHÔNG persist (không lưu DB)** | |
 | **Kết quả** | | **HTTP 503** — `{error: "DB unavailable"}` | |
 
 ---
@@ -675,7 +677,7 @@ messages = [
 | ⑤b hoặc ⑥ | | ❌ TypeError: `Cannot read property 'x' of undefined` | |
 | Error | **ERR-b** | `error.statusCode` không tồn tại → `logger.error` → **`getFallbackResponse(message)`** early return | Khác ERR-a: không re-throw mà trả fallback. User nhận response thay vì HTTP 500 |
 | ⑦ | **N7a** | ❌ **SKIP** — không update session | Tránh garbage trong history |
-| ⑦ | **N7b** | ❌ **SKIP** — `_persistMessages` **KHÔNG được gọi** | **Điểm khác biệt quan trọng** vs Path 16 (N6d-fb): Path 16 getFallbackResponse đi qua persist bình thường. Path 21 là early return từ catch → KHÔNG persist. Analytics mất message |
+| ⑦ | **N7b** | ❌ **SKIP** — `_persistMessages` **KHÔNG được gọi** | **Điểm khác biệt quan trọng** vs Path 16 (N6d-fb): Path 16 getFallbackResponse đi qua persist (lưu DB) bình thường. Path 21 là early return từ catch → KHÔNG persist (không lưu DB). Analytics mất message |
 | **Kết quả** | | 👋 Fallback response — không lưu DB, không update session | logger.error ghi cho debugging |
 
 ---
@@ -748,10 +750,10 @@ User message
      │       └─ no match → fallback 👋       Path 16
      │
      ├─ ⑦ sessionId?
-     │   ├─ null → skip session + persist    Path 22
-     │   └─ có → update history + persist
+     │   ├─ null → skip session (RAM) + persist (DB)    Path 22
+     │   └─ có → update history (RAM) + persist (DB)
      │
      └─ Error
          ├─ có statusCode → re-throw         Path 20
-         └─ unknown → fallback, KHÔNG persist Path 21
+         └─ unknown → fallback, KHÔNG persist (DB) Path 21
 ```

@@ -227,7 +227,7 @@
 |------|------|---------------|---------|
 | ① | **N1** | ✅ | |
 | ② | **N2** | Giữ nguyên | "cái đó", "RAM" không phải abbreviation |
-| ③ | **N3a** | intent = `general` | "cái đó có bao nhiêu RAM" không match pricing (không có "giá") hay product_search (không có brand). Intent detection không hiểu pronoun — đó là việc N5a |
+| ③ | **N3a** | intent = `pricing` | "cái đó có **bao nhiêu** RAM" → "bao nhiêu" match pricing regex (ưu tiên 4). Dù user thực ra hỏi specs, intent detection chỉ match keyword — không hiểu ngữ cảnh. N5a sẽ resolve pronoun "cái đó" |
 | ③ | **N3b** | injection = No | |
 | Gate | **G1→G2** | Pass | |
 | ④ | **N4** | `history = [{user: "iPhone 17 giá?", assistant: "iPhone 17 Pro giá 28.990.000₫..."}]` | History từ turn 1 — input quan trọng cho N5a |

@@ -295,8 +295,8 @@
 | ⑤b | **N5b-2** | `rewriteQuery` → dùng **`fuzzyExpandQuery()`** (LLM DOWN không có provider cho rewrite) ∥ hybridSearch(10) | LLM DOWN đặc biệt: rewrite fallback sang fuzzy (prefix + edit-distance). Kém hơn LLM rewrite nhưng bắt được typo |
 | ⑤b | **N5b-3→4** | iPhone 17 Pro found | |
 | ⑥ | **N6-check** | providers=0 → **LLM DOWN** | Khác Path 11 (có provider nhưng fail). Ở đây KHÔNG có provider → đi thẳng keyword |
-| ⑥.1 | **N6d-1** | Tokenize "iPhone 17 pro bao nhiêu": `"iPhone"+10`, `"17"+10`, `"pro"+10`. `"bao nhiêu"` → 0 (không match tên/mô tả) | name match +10 > desc match +5. "bao nhiêu" bị ignore |
-| ⑥.2 | **N6d-2** | Version extract: **"17"** (bỏ qua "bao nhiêu" vì giá-related) → filter SP chứa "17" | Version extraction biết phân biệt: "20 triệu" = giá, "17" = model number |
+| ⑥.1 | **N6d-1** | Tokenize "iPhone 17 pro bao nhiêu": `"iPhone"+10`, `"17"+10`, `"pro"+10`. `"bao"` và `"nhiêu"` pass filter (≥3 chars) nhưng không match tên/mô tả SP nào → 0 điểm | name match +10 > shortDescription match +5 |
+| ⑥.2 | **N6d-2** | Version extract: **"17"** → filter SP chứa "17" | "bao nhiêu" không chứa số nên không tạo version number. Version extraction strip "20 triệu" (giá) và "8GB" (specs) trước khi extract — chỉ lấy standalone numbers ("17") và embedded numbers ("S99"→"99") |
 | ⑥.2 | **N6d-3** | Brand "iPhone" ∈ results → coherent ✅ | Nếu không có iPhone → N6d-nf |
 | ⑥.3 | **N6d-4** | Negation: không có | |
 | ⑥.3 | **N6d-5** | Price: `isPriceQuery=true` (có "bao nhiêu") nhưng **không có range** (dưới/trên/tầm) → **không filter giá** | `isPriceQuery` chỉ ảnh hưởng format (💰), không filter. Filter cần pattern: dưới/trên/tầm + số + triệu |

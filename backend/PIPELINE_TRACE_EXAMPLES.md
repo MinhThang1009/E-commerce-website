@@ -257,11 +257,12 @@ messages = [
   - `"bao"` / `"nhiêu"`: pass filter (≥3 chars) nhưng không match tên/mô tả SP nào → 0 điểm
 
 ### N6d-2 — ⑥.2 version filter `keyword-fallback.js:146`
-**Tại sao:** Extract model number, bỏ qua giá/specs.
+**Tại sao:** Extract model number, bỏ qua giá/specs. **Hạn chế:** chỉ extract **số**, không phân biệt prefix (A-series vs S-series) — "Samsung A57" và "Samsung S57" đều chứa "57" nên cả 2 đều pass filter. Tuy nhiên N6d-1 scoring vẫn xếp hạng đúng vì token "a57" match tên "Galaxy A57" cao hơn "Galaxy S57".
 
 **Ví dụ:**
 - `"Samsung S25 giá 20 triệu 8GB"` → strip "20 triệu" (giá) + "8GB" (specs) → còn `"samsung s25 giá"` → extract "25" từ "S25" (regex `/[a-zA-Z]+(\d{2,})\b/` bắt số ≥2 chữ số nối sau chữ cái)
   - Samsung S25 ✅ (tên chứa "25"), Samsung A57 ❌ (version "57" ≠ "25")
+- `"Samsung A57"` → extract "57" → giữ cả A57 lẫn S57 (cả 2 chứa "57") — N6d-1 scoring xếp A57 lên trước vì token "a57" match tên chính xác hơn
 
 ### N6d-3 — ⑥.2 brand coherence `keyword-fallback.js:175-183`
 **Tại sao:** Tránh recommend SP sai brand. `brandDiscriminator` = token đầu tiên (>3 chars, không phải số, có trong SP ban đầu) → check trong kết quả sau version filter.

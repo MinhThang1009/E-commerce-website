@@ -38,42 +38,42 @@
 
 ## Node Reference — Bản chất từng node
 
-| Node | Tên trong sơ đồ | Bản chất — tại sao node này tồn tại | File |
+| Node | Tên trong sơ đồ | Bản chất — TẠI SAO node này tồn tại | File |
 |------|-----------------|--------------------------------------|------|
-| **N1** | ① validateMessage | Chặn input xấu sớm, tiết kiệm tài nguyên. 3 rules: không rỗng, ≤500 chars, có ≥1 chữ/số Unicode | `ai-policy.js:185` |
-| **N2** | ② expandAbbreviations | Chuẩn hoá viết tắt (`ip→iPhone`, `smartphone→điện thoại`, `gia→giá`) để search + keyword match nhận diện được | `ai-policy.js:161` |
-| **N3a** | ③ classifyIntent | Phân loại 6 intent theo thứ tự ưu tiên (off_topic > order > policy > pricing > product > general). Chạy trên **normalizedQuery** (đã expand) | `ai-policy.js:244` |
-| **N3b** | ③ isPromptInjection | Phát hiện 15 loại injection (28 regex, EN+VI, OWASP LLM01:2025). Chạy trên **message GỐC** (expand có thể làm mất pattern) | `ai-policy.js:289-335` |
-| **G1** | prompt injection? | Gate 1: injection → dừng ngay, không cho đến LLM. Check TRƯỚC off_topic | `chatbot-service.js:250` |
-| **G2** | offTopic? | Gate 2: off_topic → dừng, tiết kiệm chi phí LLM + retrieval | `chatbot-service.js:260` |
-| **N4** | ④ load session | Lấy history từ RAM Map bằng sessionId. Null/mới → `history=[]` | `chatbot-service.js:283` |
-| **N5a** | ⑤a enrichQuery | Giải quyết đại từ (cái đó, nó, so sánh) bằng cách lấy tên SP từ history append vào query | `chatbot-service.js:362` |
-| **N5b-1** | ⑤b strip negation | Loại "không muốn X" khỏi query TRƯỚC embedding — vì embedding không hiểu negation ("không muốn iPhone" vẫn gần vector "iPhone") | `chatbot-service.js` |
-| **N5b-2** | ⑤b Promise.all | Song song: LLM rewrite (8s timeout) ∥ hybridSearch(10). Song song giảm latency, search lần 1 là fallback nếu rewrite fail | `chatbot-service.js:422` |
-| **N5b-3** | ⑤b rewrite khác? | Rewrite khác → search lần 2 thay thế lần 1. Giống → skip. Lần 2 rỗng → giữ lần 1 | `chatbot-service.js` |
-| **N5b-4** | products > 0? | 0 SP ≥ 0.45 → fallback(3, minScore=0): lấy top 3 dù score thấp, đánh `lowConfidence=true` | `chatbot-service.js` |
-| **N6-check** | ⑥ providers? | Điểm rẽ chính: `providers.length===0` → LLM DOWN, ngược lại → LLM UP | `chatbot-service.js:595` |
-| **N6a-1** | ⑥ getCatalogData | Load brands+categories từ DB, cache 5 phút. Cho LLM biết shop bán gì | `chatbot-service.js` |
-| **N6a-2** | ⑥ sanitizeMessage | `"`→`'`, collapse newlines, trim 500. Phòng user input phá format prompt | `chatbot-service.js` |
-| **N6a-3** | ⑥ buildAugmentedPrompt | **Bước AUGMENT của RAG**: nhồi products + store info + câu hỏi vào prompt template | `prompt-builder.js:41` |
-| **N6a-4** | ⑥ system+history+prompt | Ghép `[system, ...history, {user: augmentedPrompt}]` thành messages array cho LLM | `chatbot-service.js` |
-| **N6b-1** | ⑥ LLM HTTP POST | **Bước GENERATE**: gọi LLM (temp=0.3, 800 tokens, JSON format). Provider rotation: 429/503 → next, 400/401 → break | `chatbot-service.js` |
-| **N6b-2** | ⑥ parseLLMOutput | Parse JSON → match product names (phát hiện hallucination) → dedup → bổ sung SP LLM nhắc tới | `response-parser.js` |
-| **N6b-fail** | LLM thất bại | All providers fail → chuyển sang `simpleKeywordMatch`. User vẫn nhận response | `chatbot-service.js` |
-| **N6d-1** | ⑥.1 tokenize+score | Tách query thành từ, match product name (+10) + description (+5) | `keyword-fallback.js:66` |
-| **N6d-2** | ⑥.2 version filter | Extract số model (bỏ qua giá/specs) → lọc SP chứa số đó | `keyword-fallback.js:146` |
-| **N6d-3** | ⑥.2 brand coherence | Brand trong query không match kết quả → "chưa có" thay vì recommend SP sai brand | `keyword-fallback.js:183` |
-| **N6d-nf** | 🚫 notFoundResponse | Gọi khi version/brand filter để lại 0 kết quả | `keyword-fallback.js` |
-| **N6d-4** | ⑥.3 negation filter | Parse "không muốn/thích/dùng/cần", "tránh", "avoid" → loại SP bị phủ định | `keyword-fallback.js` |
-| **N6d-5** | ⑥.3 price filter | 4 patterns: range (`15-20tr`), approx (`tầm 20tr`), max (`dưới 15tr`), min (`trên 30tr`) | `keyword-fallback.js` |
-| **N6d-6** | ⑥.3 category prefix | "laptop" → chỉ giữ SP có tên/category laptop. Tránh recommend điện thoại khi hỏi laptop | `keyword-fallback.js` |
-| **N6d-7** | ⑥.4 sort+dedup | Sort matchScore desc + loại trùng | `keyword-fallback.js` |
-| **N6d-8** | ⑥.5 intent-aware | Detect intent từ **10 từ đầu** (tránh history context nhiễu). Format: 💰📋🔍🌟 | `keyword-fallback.js` |
-| **N6d-fb** | getFallbackResponse (keyword) | Keyword không khớp gì + intent không match → greeting. Vẫn đi qua persist | `keyword-fallback.js` |
-| **N7a** | ⑦ session update | Có sessionId → append user+assistant → slice(-20) giữ 10 turns → evict sessions >30 phút | `chatbot-service.js:298` |
-| **N7b** | ⑦ persistMessages | `ChatMessage.bulkCreate` fire-and-forget. DB lỗi → chỉ warning, response vẫn trả | `chatbot-service.js:312` |
-| **ERR-a** | catch có statusCode | AppError → re-throw, controller trả HTTP status đúng. Không persist | `chatbot-service.js:321` |
-| **ERR-b** | catch unknown | Log + `getFallbackResponse` early return. **KHÔNG persist** (khác N6d-fb) | `chatbot-service.js:324` |
+| **N1** | ① validateMessage | **Tại sao:** Chặn input xấu sớm trước khi pipeline tốn tài nguyên cho expand/search/LLM. 3 rules: không rỗng, ≤500 chars (phòng DoS — embedding + LLM tính phí theo token), có ≥1 chữ/số Unicode (loại "???!!!" vô nghĩa) | `ai-policy.js:185` |
+| **N2** | ② expandAbbreviations | **Tại sao:** User VN hay viết tắt (`ip17`, `ss`, `bnh`) — nếu không expand, cả vector search lẫn keyword match đều không nhận diện được sản phẩm. Ví dụ: search "ip17" trả 0 kết quả, search "iPhone 17" trả đúng | `ai-policy.js:161` |
+| **N3a** | ③ classifyIntent | **Tại sao:** Intent quyết định 2 việc: (1) gate off_topic chặn query ngoài phạm vi, (2) response format ở keyword fallback (💰📋🔍🌟). Chạy trên **normalizedQuery** (đã expand) vì "bnh" sau expand thành "bao nhiêu" mới match được intent `pricing` | `ai-policy.js:244` |
+| **N3b** | ③ isPromptInjection | **Tại sao:** Chặn prompt injection TRƯỚC khi query đến LLM — nếu injection lọt qua, LLM có thể bị khai thác. Chạy trên **message GỐC** (không phải normalizedQuery) vì expand có thể biến đổi pattern: "ip all previous" → "iPhone all previous" → mất pattern "ignore" | `ai-policy.js:289-335` |
+| **G1** | prompt injection? | **Tại sao:** Gate 1 check TRƯỚC Gate 2 (off_topic) vì injection nguy hiểm hơn — cần chặn ngay dù intent có vẻ "bình thường". Injection message thường có intent = `general` (không match pattern sản phẩm) | `chatbot-service.js:250` |
+| **G2** | offTopic? | **Tại sao:** Tiết kiệm chi phí LLM (~$0.003/request) + retrieval cho query chắc chắn ngoài phạm vi (thời tiết, bóng đá...). Dùng regex < 1ms thay vì gọi LLM 1-3s để phân loại | `chatbot-service.js:260` |
+| **N4** | ④ load session | **Tại sao:** Cần history hội thoại để: (1) N5a resolve đại từ ("cái đó" = SP nào?), (2) N6a-4 gửi context cho LLM hiểu conversation. Không có session → mỗi turn là độc lập, LLM không biết user đã hỏi gì trước đó | `chatbot-service.js:283` |
+| **N5a** | ⑤a enrichQuery | **Tại sao:** Vector search không hiểu đại từ — search "cái đó có bao nhiêu RAM" trả kết quả ngẫu nhiên. Append tên SP từ history ("iPhone 17") vào query → embedding gần đúng SP → search chính xác | `chatbot-service.js:362` |
+| **N5b-1** | ⑤b strip negation | **Tại sao:** Embedding không hiểu negation — vector("không muốn iPhone") **gần** vector("iPhone") vì từ "iPhone" vẫn xuất hiện. Strip "không muốn iPhone" khỏi query trước search → tránh trả về iPhone. Negation sẽ được xử lý riêng ở N6d-4 (keyword filter) | `chatbot-service.js` |
+| **N5b-2** | ⑤b Promise.all | **Tại sao:** LLM rewrite mất 3-8s, hybridSearch mất ~0.5s. Chạy **song song** giảm tổng latency (3s thay vì 3.5s tuần tự). Search lần 1 (với query gốc) là **pre-emptive fallback** — chỉ dùng khi rewrite fail hoặc timeout, không bao giờ lãng phí | `chatbot-service.js:422` |
+| **N5b-3** | ⑤b rewrite khác? | **Tại sao:** LLM rewrite có thể cải thiện query bằng cách thêm synonym, sửa typo, bỏ filler ("tôi là sinh viên" → "laptop nhẹ pin trâu 20 triệu"). So sánh rewritten query với **normalizedQuery gốc** (từ bước ②): nếu **khác** → search lần 2 với rewritten query, kết quả lần 2 **thay thế** lần 1 (vì rewritten query chính xác hơn). Nếu **giống** → query đã đủ rõ, skip search lần 2 (tiết kiệm 1 lần search). Nếu search lần 2 **rỗng** → giữ lại kết quả lần 1 (rewrite tệ hơn gốc) | `chatbot-service.js` |
+| **N5b-4** | products > 0? | **Tại sao:** Trả 0 kết quả → LLM không có context để trả lời, user không nhận được gì hữu ích. Hạ ngưỡng từ 0.45 xuống 0 → lấy top 3 dù score thấp + đánh flag `lowConfidence=true` để LLM biết "đây không chắc chắn" → LLM có thể trả "chưa có SP này" thay vì hallucinate | `chatbot-service.js` |
+| **N6-check** | ⑥ providers? | **Tại sao:** Điểm rẽ chính quyết định chất lượng response. `providers.length===0` (không có LLM API nào) → LLM DOWN (keyword fallback, chất lượng thấp hơn nhưng luôn hoạt động). Ngược lại → LLM UP (RAG đầy đủ, natural language response) | `chatbot-service.js:595` |
+| **N6a-1** | ⑥ getCatalogData | **Tại sao:** LLM cần biết shop bán brand/category nào để không recommend SP không tồn tại. Cache 5 phút vì danh sách brand/category ít thay đổi — tránh query DB mỗi request | `chatbot-service.js` |
+| **N6a-2** | ⑥ sanitizeMessage | **Tại sao:** User input có thể chứa `"` (phá JSON format trong prompt), multiple newlines (lãng phí token), hoặc text quá dài. `"`→`'`, collapse newlines, trim 500 chars — phòng thủ trước khi inject vào prompt | `chatbot-service.js` |
+| **N6a-3** | ⑥ buildAugmentedPrompt | **Tại sao:** Đây là bước **Augment** (chữ A trong RAG) — nhồi retrieved products + store info (warranty, shipping) + câu hỏi user vào 1 prompt string. Không có bước này, LLM không biết shop có SP gì → hallucinate tên/giá | `prompt-builder.js:41` |
+| **N6a-4** | ⑥ system+history+prompt | **Tại sao:** LLM cần 3 phần: (1) system prompt chứa rules ("chỉ recommend SP trong list, trả JSON"), (2) history để hiểu context multi-turn, (3) augmented prompt ở cuối = câu hỏi mới nhất. Thiếu system → LLM không tuân rules. Thiếu history → mất context | `chatbot-service.js` |
+| **N6b-1** | ⑥ LLM HTTP POST | **Tại sao:** Bước **Generate** (chữ G trong RAG). temp=0.3 cho deterministic (tránh creative hallucination). max_tokens=800 đủ cho JSON response chi tiết. Provider rotation: 429/503 (tạm thời) → thử provider tiếp. 400/401 (lỗi cố định — bad request/unauthorized) → break ngay, không retry | `chatbot-service.js` |
+| **N6b-2** | ⑥ parseLLMOutput | **Tại sao:** LLM có thể hallucinate tên SP không tồn tại trong DB. Parse JSON → match tên SP LLM trả về với danh sách products thực → loại hallucination. `extractProductsFromText` bổ sung SP LLM nhắc trong prose nhưng bỏ sót khỏi `matchedProducts` JSON | `response-parser.js` |
+| **N6b-fail** | LLM thất bại | **Tại sao:** Graceful degradation — khi tất cả LLM providers đều down, chuyển sang keyword fallback thay vì trả error 500. User vẫn nhận response (dù kém chi tiết hơn). Products đã retrieve ở bước 5 → không cần search lại | `chatbot-service.js` |
+| **N6d-1** | ⑥.1 tokenize+score | **Tại sao:** Khi không có LLM, dùng keyword matching thay thế. Name match +10 > description match +5 vì tên SP quan trọng hơn mô tả: "iPhone 17" trong tên = chắc chắn đúng SP, "iPhone 17" trong mô tả = có thể là SP khác nhắc tới | `keyword-fallback.js:66` |
+| **N6d-2** | ⑥.2 version filter | **Tại sao:** User hỏi "Samsung S25" → search trả S25 + A57 + S24. Version filter extract "25" → chỉ giữ SP chứa "25". Thông minh: biết bỏ qua số liên quan giá ("20 triệu") và specs ("8GB") — chỉ lấy model number | `keyword-fallback.js:146` |
+| **N6d-3** | ⑥.2 brand coherence | **Tại sao:** User hỏi "Huawei Mate 70" → search trả Samsung/iPhone (vì embedding gần "điện thoại"). Nếu không check brand → recommend Samsung cho người hỏi Huawei = sai. Brand coherence: brand query ∉ results → "chưa có" | `keyword-fallback.js:183` |
+| **N6d-nf** | 🚫 notFoundResponse | **Tại sao:** Khi version/brand filter để lại 0 kết quả, trả response rõ ràng ("chưa có Samsung S99") thay vì "không tìm thấy gì" generic. User biết chính xác shop không có SP đó | `keyword-fallback.js` |
+| **N6d-4** | ⑥.3 negation filter | **Tại sao:** Xử lý negation mà N5b-1 đã strip trước search. Parse "không muốn/thích/dùng/cần", "tránh", "avoid" → loại SP bị phủ định khỏi kết quả. Chỉ nhận pattern cứng — không hiểu ẩn ý ("chán Samsung" không bị bắt) | `keyword-fallback.js` |
+| **N6d-5** | ⑥.3 price filter | **Tại sao:** User thường kèm ngân sách khi tìm SP. 4 patterns: range (`15-20 triệu` → min+max), approx (`tầm 20 triệu` → ±20%), max (`dưới 15 triệu`), min (`trên 30 triệu`). "triệu" → ×1.000.000. Filter SP ngoài ngân sách | `keyword-fallback.js` |
+| **N6d-6** | ⑥.3 category prefix | **Tại sao:** User hỏi "laptop 20 triệu" → search trả cả điện thoại 20 triệu. Category prefix filter: detect "laptop" → chỉ giữ SP có tên/category laptop. Tránh recommend điện thoại khi hỏi laptop | `keyword-fallback.js` |
+| **N6d-7** | ⑥.4 sort+dedup | **Tại sao:** Sau 3 lớp filter (negation + price + category), SP còn lại cần sắp xếp theo relevance. Sort matchScore desc → SP match nhiều keyword nhất lên đầu. Dedup loại trùng (có thể xuất hiện từ cả vector lẫn keyword search) | `keyword-fallback.js` |
+| **N6d-8** | ⑥.5 intent-aware | **Tại sao:** Cùng SP nhưng user hỏi giá (💰) khác user hỏi specs (🔍). Detect intent từ **10 từ đầu** query thay vì toàn bộ — vì N5a có thể append tên SP vào cuối query, nếu detect trên toàn bộ thì tên SP có thể nhiễu intent (ví dụ: "cái đó bao nhiêu? iPhone 17" → "iPhone" khiến intent nghiêng product_search thay vì pricing) | `keyword-fallback.js` |
+| **N6d-fb** | getFallbackResponse (keyword) | **Tại sao:** Catch-all cuối cùng khi keyword không khớp gì + intent không match format nào (ví dụ "xin chào" → greeting). Khác ERR-b: response từ N6d-fb đi qua N7 persist bình thường (lưu DB), còn ERR-b là early return từ catch block → KHÔNG persist | `keyword-fallback.js` |
+| **N7a** | ⑦ session update | **Tại sao:** Lưu conversation vào RAM để turn sau có context (N4 → N5a). Giới hạn: max 10 turns (20 messages) tránh prompt quá dài tốn token. Evict sessions >30 phút + LRU khi >500 sessions — giới hạn RAM usage trên server | `chatbot-service.js:298` |
+| **N7b** | ⑦ persistMessages | **Tại sao:** Lưu vào DB cho analytics (admin xem lịch sử chat, thống kê). Fire-and-forget: `.catch()` chỉ log warning — nếu DB chết, chatbot vẫn trả response được. Analytics là "nice to have", response cho user là "must have" | `chatbot-service.js:312` |
+| **ERR-a** | catch có statusCode | **Tại sao:** AppError (400/404) là lỗi "dự kiến" do code nội bộ throw (input không hợp lệ, SP không tồn tại). Re-throw để controller trả HTTP status đúng cho client. Không persist — message lỗi không nên lưu analytics | `chatbot-service.js:321` |
+| **ERR-b** | catch unknown | **Tại sao:** Lỗi "không dự kiến" (TypeError, null pointer...). Log error cho debugging + trả fallback response thay vì HTTP 500 — user vẫn thấy chatbot hoạt động. **KHÔNG persist** (khác N6d-fb) — tránh garbage trong analytics. Không update session — tránh error response làm nhiễu history | `chatbot-service.js:324` |
 
 ---
 

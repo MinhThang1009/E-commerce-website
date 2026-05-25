@@ -38,6 +38,18 @@
 
 ## Node Reference — Bản chất từng node
 
+### A — 👤 User gửi message
+**Tại sao:** Entry point của pipeline. User gửi message qua `POST /api/chatbot/message` → controller gọi `AIService.handleMessage()` → delegate cho `chatbotService.handleMessage(message, userId, sessionId)`.
+
+**Ví dụ:**
+- `{ message: "ip17 pro bnh", sessionId: "abc-123" }` → bắt đầu pipeline 7 bước
+
+### PREP — _preprocessMessage(message) `chatbot-service.js:337`
+**Tại sao:** Gom 4 phép kiểm tra (validate + expand + classify + injection) vào 1 hàm thuần (pure function) trả `{ valid, normalizedQuery, intent, injection, offTopic }`. Tách riêng khỏi `handleMessage` để dễ test và tái sử dụng.
+
+**Ví dụ:**
+- Input: `"ip17 pro bnh"` → Output: `{ valid: true, normalizedQuery: "iPhone 17 pro bao nhiêu", intent: "pricing", injection: false, offTopic: false }`
+
 ### N1 — ① validateMessage `ai-policy.js:185`
 **Tại sao:** Chặn input xấu sớm trước khi pipeline tốn tài nguyên cho expand/search/LLM. 3 rules: không rỗng, ≤500 chars (phòng DoS — embedding + LLM tính phí theo token), có ≥1 chữ/số Unicode.
 
@@ -94,6 +106,20 @@
 **Ví dụ:**
 - `"thời tiết hà nội"` → off_topic → BLOCK, tiết kiệm 1 lần LLM call + 1 lần hybridSearch
 
+### EINJ — 🛡️ _persistMessages(isFallback) + return `chatbot-service.js:250-261`
+**Tại sao:** Khi G1 phát hiện injection → build response bảo vệ (detect ngôn ngữ VI/EN → trả response tương ứng), gọi `_persistMessages` với `isFallback=true` (lưu DB để analytics biết có injection attempt), rồi return ngay — **không đi tiếp bước 4-7**.
+
+**Ví dụ:**
+- VI: `"🛡️ Mình chỉ có thể hỗ trợ tư vấn sản phẩm công nghệ ạ."` + `intent: 'off_topic'` + `products: []`
+- EN: `"🛡️ I can only help with tech product inquiries."`
+
+### EOT — ℹ️ _persistMessages(isFallback) + return `chatbot-service.js:264-279`
+**Tại sao:** Khi G2 phát hiện off_topic → build response thông báo phạm vi (detect ngôn ngữ VI/EN), gọi `_persistMessages` với `isFallback=true`, rồi return ngay — **không đi tiếp bước 4-7**. Logic giống EINJ nhưng response khác (thông báo phạm vi thay vì cảnh báo injection).
+
+**Ví dụ:**
+- VI: `"ℹ️ Câu hỏi này nằm ngoài phạm vi mình có thể hỗ trợ ạ. Mình chỉ tư vấn được về sản phẩm công nghệ..."` + suggestions: `["Xem điện thoại", "Xem laptop"]`
+- EN: `"ℹ️ This question is outside my area of expertise..."`
+
 ### N4 — ④ load session `chatbot-service.js:283`
 **Tại sao:** Cần history để: (1) N5a resolve đại từ ("cái đó" = SP nào?), (2) N6a-4 gửi context cho LLM. Không có session → mỗi turn độc lập.
 
@@ -108,6 +134,13 @@
 **Ví dụ:**
 - `"cái đó có bao nhiêu RAM?"` + history có "iPhone 17" → `"cái đó có bao nhiêu RAM? iPhone 17"`
 - `"có màu gì?"` (19 chars, no brand) → implicit follow-up → append SP từ history
+
+### N5b — ⑤b _retrieveProducts `chatbot-service.js:434`
+**Tại sao:** Hàm wrapper chứa toàn bộ logic retrieval: strip negation → Promise.all(rewrite ∥ search) → search lần 2 nếu rewrite khác → fallback nếu 0 kết quả. Nhận `enrichedQuery` (từ N5a) + `normalizedQuery` (từ bước ②), trả `{ products[], finalQuery }`. Nếu `vectorStoreService = null` → return ngay `{ products: [], finalQuery: enrichedQuery }`.
+
+**Ví dụ:**
+- Input: `enrichedQuery="iPhone 17 Pro giá bao nhiêu"`, `normalizedQuery="iPhone 17 Pro giá bao nhiêu"`
+- Output: `{ products: [{id:1, name:"iPhone 17 Pro", score:0.89, ...}], finalQuery: "iPhone 17 Pro giá bao nhiêu" }`
 
 ### N5b-1 — ⑤b strip negation `chatbot-service.js`
 **Tại sao:** Embedding không hiểu negation — vector("không muốn iPhone") **gần** vector("iPhone"). Strip mệnh đề phủ định khỏi `queryForRetrieval`. Strip rộng hơn N6d-4 (bao gồm cả "không cần" — dù không phải loại trừ, vẫn gây bias embedding).
@@ -289,6 +322,13 @@ messages = [
 **Ví dụ:**
 - `[...turn1, ...turn10, newUser, newAssistant].slice(-20)` → turn 1 bị loại khi có turn 11
 
+### N7a-evict — ⑦ _evictStaleSessions `chatbot-service.js:896`
+**Tại sao:** Giới hạn RAM usage. Gọi sau mỗi lần update session (N7a). 2 bước: (1) xóa sessions idle > `SESSION_TTL_MS` (30 phút), (2) nếu vẫn > `MAX_SESSIONS` (500) → sort by `lastAccess` tăng dần → xóa sessions cũ nhất (LRU) cho đến khi còn đúng 500.
+
+**Ví dụ:**
+- 520 sessions, 30 sessions idle > 30 phút → xóa 30 → còn 490 (< 500) → dừng
+- 520 sessions, 5 sessions idle > 30 phút → xóa 5 → còn 515 > 500 → LRU xóa thêm 15 cũ nhất → còn 500
+
 ### N7b — ⑦ persistMessages `chatbot-service.js:315`
 **Tại sao:** Lưu DB cho analytics. Fire-and-forget — DB lỗi chỉ warning, user vẫn nhận response.
 
@@ -307,6 +347,12 @@ messages = [
 **Ví dụ:**
 - `TypeError: Cannot read property 'x' of undefined` → catch → `getFallbackResponse`
 - → user nhận "Xin lỗi, mình gặp sự cố..." — KHÔNG lưu DB, KHÔNG update session
+
+### R — 📤 return response `chatbot-service.js:320`
+**Tại sao:** Trả `{ response, products, suggestions, intent }` cho `AIService.handleMessage()` → controller serialize → HTTP 200 (OK) cho client. Đây là output cuối cùng của pipeline — tất cả 7 bước đã hoàn tất.
+
+**Ví dụ:**
+- `{ response: "iPhone 17 Pro có giá 28.490.000đ ạ 😊", products: [{id:1, name:"iPhone 17 Pro", price:28490000}], suggestions: ["Xem chi tiết", "So sánh"], intent: "pricing" }`
 
 ---
 

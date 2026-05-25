@@ -260,8 +260,8 @@ messages = [
 **Tại sao:** Extract model number, bỏ qua giá/specs.
 
 **Ví dụ:**
-- `"Samsung S25 giá 20 triệu 8GB"` → strip "20 triệu" (giá) + "8GB" (specs) → extract "25"
-  - Samsung S25 ✅, Samsung A57 ❌ (version "57" ≠ "25")
+- `"Samsung S25 giá 20 triệu 8GB"` → strip "20 triệu" (giá) + "8GB" (specs) → còn `"samsung s25 giá"` → extract "25" từ "S25" (regex `/[a-zA-Z]+(\d{2,})\b/` bắt số ≥2 chữ số nối sau chữ cái)
+  - Samsung S25 ✅ (tên chứa "25"), Samsung A57 ❌ (version "57" ≠ "25")
 
 ### N6d-3 — ⑥.2 brand coherence `keyword-fallback.js:175-183`
 **Tại sao:** Tránh recommend SP sai brand. `brandDiscriminator` = token đầu tiên (>3 chars, không phải số, có trong SP ban đầu) → check trong kết quả sau version filter.

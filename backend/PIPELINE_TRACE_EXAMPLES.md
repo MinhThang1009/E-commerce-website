@@ -234,12 +234,12 @@ messages = [
 - Provider 2 (gpt-3.5): 200 (OK) → return kết quả
 - Nếu 400 (bad request) → break ngay (retry cũng lỗi tương tự)
 
-### N6b-2 — ⑥ parseLLMOutput `response-parser.js`
-**Tại sao:** LLM hallucinate tên SP không có trong DB. Parse JSON → match với products thực → loại. `extractProductsFromText` bổ sung SP nhắc trong response text nhưng bỏ sót trong JSON.
+### N6b-2 — ⑥ parseLLMOutput (parse JSON + loại hallucination) `response-parser.js`
+**Tại sao:** LLM trả response dạng chuỗi JSON text → `JSON.parse()` chuyển thành object JavaScript để code xử lý. Sau đó match từng tên SP trong `matchedProducts` với danh sách products thực từ bước ⑤ — SP nào LLM bịa ra (hallucination = tên SP không tồn tại trong danh sách retrieve) → loại, tránh frontend hiển thị SP không tồn tại. Ngoài ra, `extractProductsFromText` quét phần `response` text — nếu LLM nhắc tên SP trong câu trả lời nhưng quên liệt kê trong `matchedProducts` JSON → bổ sung.
 
-**Ví dụ:**
-- LLM trả `matchedProducts:["Samsung S99"]` → không có trong retrieved → loại ❌
-- Response text nhắc "Samsung S25 Ultra" → `extractProductsFromText` bổ sung ✅
+**Ví dụ:** Bước ⑤ retrieve được `[iPhone 17 Pro, Samsung S25 Ultra]`. LLM trả:
+- `matchedProducts: ["iPhone 17 Pro", "Samsung S99 Ultra"]` → "iPhone 17 Pro" match ✅, "Samsung S99 Ultra" không có trong retrieved → loại ❌ (hallucination)
+- `response: "Bạn nên xem thêm Samsung S25 Ultra"` → `extractProductsFromText` phát hiện "Samsung S25 Ultra" có trong retrieved nhưng bị LLM bỏ sót khỏi JSON → bổ sung ✅
 
 ### N6b-fail — LLM thất bại `chatbot-service.js`
 **Tại sao:** Graceful degradation — tất cả providers down → keyword fallback thay vì error 500. Products đã retrieve ở bước ⑤ → không search lại.

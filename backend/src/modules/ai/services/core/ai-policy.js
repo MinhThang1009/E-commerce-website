@@ -293,6 +293,7 @@ const INJECTION_PATTERNS = [
   /\bforget\s+(all|everything|your)\b/i,
   /\bpretend\s+(to\s+be|you\s+are)\b/i,
   /\byou\s+are\s+now\b/i,
+  /\b(get|give|show|send|lấy|cho|cung\s*cấp|xuất|trích\s*xuất)\b.{0,30}\b(user\s*data|dữ\s*liệu\s*(người\s*dùng|khách\s*hàng)|thông\s*tin\s*(cá\s*nhân|tài\s*khoản)|personal\s*(data|info)|customer\s*data|database|password|credentials?)\b/i,
 ];
 
 function isPromptInjection(text) {

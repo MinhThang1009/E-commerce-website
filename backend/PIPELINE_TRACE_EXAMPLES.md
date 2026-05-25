@@ -316,7 +316,7 @@
 |------|------|---------------|---------|
 | ①–③ | **N1→G2** | ✅, intent=product_search, pass | |
 | ⑤b | **N5b-1** | **Strip "không cần iPhone"** → search `"điện thoại tầm 15-20 triệu"` | N5b-1 strip regex CÓ "không cần" → loại khỏi embedding query. Đây là cơ chế chính loại iPhone cho EC-E (search không trả iPhone vì query đã strip) |
-| ⑤b | **N5b-2** | hybridSearch("điện thoại tầm 15-20 triệu", 10) → nhiều ĐT, **bao gồm cả iPhone** | Search không biết loại iPhone — chỉ tìm "điện thoại 15-20M". Loại = việc của N6d-4 |
+| ⑤b | **N5b-2** | hybridSearch("điện thoại tầm 15-20 triệu", 10) → nhiều ĐT (có thể bao gồm iPhone nếu score đủ cao) | Query đã strip "không cần iPhone" ở N5b-1 → embedding ít bias về iPhone, nhưng iPhone vẫn có thể xuất hiện nếu giá 15-20M |
 | ⑥ | **N6-check** | LLM DOWN | |
 | ⑥.1 | **N6d-1** | Tokenize + score: "điện thoại" +10 cho phones | |
 | ⑥.2 | **N6d-2** | Version: "15", "20" là giá → **skip** | Version extraction phân biệt: "15-20 triệu" = giá, "iPhone 15" = model |

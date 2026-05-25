@@ -251,9 +251,10 @@ messages = [
 **Tại sao:** `product.name` match +10 > `product.shortDescription` match +5 vì tên quan trọng hơn mô tả.
 
 **Ví dụ:**
-- Query `"iPhone 17 pro bao nhiêu"`:
-  - `"iphone"` +10, `"pro"` +10 = 20 điểm cho "iPhone 17 Pro"
-  - `"bao"` / `"nhiêu"`: pass filter (≥3 chars) nhưng không match tên/mô tả → 0 điểm
+- Query `"iPhone 17 pro bao nhiêu"` → tokens (>2 chars): `["iphone", "pro", "bao", "nhiêu"]`. `"17"` bị loại (chỉ 2 chars ≤ 2):
+  - `"iphone"` match tên +10, `"pro"` match tên +10 = 20 điểm cho "iPhone 17 Pro"
+  - `"17"` **không tham gia scoring** (bị loại bởi filter >2 chars) — nhưng vẫn được dùng ở N6d-2 version filter
+  - `"bao"` / `"nhiêu"`: pass filter (≥3 chars) nhưng không match tên/mô tả SP nào → 0 điểm
 
 ### N6d-2 — ⑥.2 version filter `keyword-fallback.js:146`
 **Tại sao:** Extract model number, bỏ qua giá/specs.

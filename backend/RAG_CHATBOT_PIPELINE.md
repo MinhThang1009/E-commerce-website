@@ -1,6 +1,6 @@
 # RAG Chatbot Pipeline — Tài liệu kỹ thuật & Edge Case Testing
 
-> **53 edge cases** kiểm tra toàn bộ pipeline chatbot RAG dưới cả 2 điều kiện: LLM UP (full RAG) và LLM DOWN (keyword fallback).
+> **56 edge cases** kiểm tra toàn bộ pipeline chatbot RAG dưới cả 2 điều kiện: LLM UP (full RAG) và LLM DOWN (keyword fallback).
 >
 > Script: [`test-edge-cases.py`](test-edge-cases.py) | Pipeline trace: [`scripts/preprocess-trace.js`](scripts/preprocess-trace.js)
 
@@ -17,7 +17,7 @@
 - [3. Bảng Pipeline Trace — Tiền xử lý tất cả edge cases](#3-bảng-pipeline-trace--tiền-xử-lý-tất-cả-edge-cases)
   - [3.1. Abbreviation Expansion Map (18/18 entries có test)](#31-abbreviation-expansion-map-1818-entries-có-test)
 - [4. Kết quả chi tiết theo Section](#4-kết-quả-chi-tiết-theo-section)
-  - [4.1. GATE — Security Gates (7 tests)](#41-gate--security-gates-7-tests)
+  - [4.1. GATE — Security Gates (10 tests)](#41-gate--security-gates-10-tests)
   - [4.2. FALLBACK — Keyword Fallback (11 tests)](#42-fallback--keyword-fallback-11-tests)
   - [4.3. SESSION — Multi-turn Context (5 tests)](#43-session--multi-turn-context-5-tests)
   - [4.4. ABBREV — Abbreviation + EN→VI (8 tests)](#44-abbrev--abbreviation--envi-8-tests)
@@ -35,9 +35,9 @@
 
 | Metric | Giá trị |
 |--------|---------|
-| Tổng edge cases | **53** |
+| Tổng edge cases | **56** |
 | Phân loại | 8 sections |
-| LLM DOWN tests | 37 (hoạt động khi LLM không available) |
+| LLM DOWN tests | 40 (hoạt động khi LLM không available) |
 | LLM UP tests | 16 (cần LLM để pass đầy đủ) |
 | Dual-mode | Tests chấp nhận cả response format LLM lẫn keyword fallback |
 
@@ -51,7 +51,7 @@
 |------|-----|-----------|----------|
 | ① | **Validate** | `validateMessage()` | Chặn input xấu sớm (rỗng, quá dài, không có chữ/số) |
 | ② | **Normalize** | `expandAbbreviations()` | Chuẩn hoá viết tắt (`ip→iPhone`), EN→VI (`smartphone→điện thoại`), không dấu→có dấu (`gia→giá`) |
-| ③ | **Classify & Gate** | `classifyIntent()` + `isPromptInjection()` | Phân loại 6 intent + chặn injection/off-topic trước khi tốn tài nguyên search/LLM |
+| ③ | **Classify & Gate** | `classifyIntent()` + `isPromptInjection()` | Phân loại 6 intent + chặn injection (15 loại, 28 regex, OWASP LLM01) / off-topic |
 | ④ | **Load Session** | `conversationHistory.get(sessionId)` | Lấy lịch sử hội thoại từ RAM Map cho multi-turn context |
 | ⑤ | **Retrieve** | `_enrichQueryFromHistory()` (⑤a) + `_retrieveProducts()` (⑤b) | Giải quyết đại từ + hybrid search (vector + keyword) lấy sản phẩm liên quan |
 | ⑥ | **Augment & Generate** | `augmentAndGenerate()` | LLM UP: build prompt với products → gọi LLM → parse JSON. LLM DOWN: `simpleKeywordMatch()` |
@@ -188,7 +188,7 @@ Phân loại vào 1 trong 6 intents theo thứ tự ưu tiên (intent đầu ti�
 
 **Thứ tự quan trọng:** `off_topic` check TRƯỚC `product_search` nên "bóng đá Samsung S25" → off_topic (không phải product_search dù có brand name).
 
-**④ `isPromptInjection(message)`** — [`ai-policy.js:298-300`](src/modules/ai/services/core/ai-policy.js#L298-L300)
+**④ `isPromptInjection(message)`** — [`ai-policy.js:289-335`](src/modules/ai/services/core/ai-policy.js#L289-L335)
 
 ⚠️ Chạy trên `message` **GỐC** (không phải normalizedQuery) — vì injection patterns cần detect trên raw input, tránh expand làm mất pattern.
 

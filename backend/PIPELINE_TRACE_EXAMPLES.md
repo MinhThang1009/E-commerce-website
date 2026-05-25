@@ -43,7 +43,7 @@
 | **N1** | ① validateMessage | Chặn input xấu sớm, tiết kiệm tài nguyên. 3 rules: không rỗng, ≤500 chars, có ≥1 chữ/số Unicode | `ai-policy.js:185` |
 | **N2** | ② expandAbbreviations | Chuẩn hoá viết tắt (`ip→iPhone`, `smartphone→điện thoại`, `gia→giá`) để search + keyword match nhận diện được | `ai-policy.js:161` |
 | **N3a** | ③ classifyIntent | Phân loại 6 intent theo thứ tự ưu tiên (off_topic > order > policy > pricing > product > general). Chạy trên **normalizedQuery** (đã expand) | `ai-policy.js:244` |
-| **N3b** | ③ isPromptInjection | Phát hiện 6 pattern tấn công. Chạy trên **message GỐC** (expand có thể làm mất pattern) | `ai-policy.js:298` |
+| **N3b** | ③ isPromptInjection | Phát hiện 15 loại injection (28 regex, EN+VI, OWASP LLM01:2025). Chạy trên **message GỐC** (expand có thể làm mất pattern) | `ai-policy.js:289-335` |
 | **G1** | prompt injection? | Gate 1: injection → dừng ngay, không cho đến LLM. Check TRƯỚC off_topic | `chatbot-service.js:250` |
 | **G2** | offTopic? | Gate 2: off_topic → dừng, tiết kiệm chi phí LLM + retrieval | `chatbot-service.js:260` |
 | **N4** | ④ load session | Lấy history từ RAM Map bằng sessionId. Null/mới → `history=[]` | `chatbot-service.js:283` |

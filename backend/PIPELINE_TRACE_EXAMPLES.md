@@ -165,11 +165,11 @@
 ### N5b-2b — ⑤b hybridSearch limit=10 `vector-store.js:506`
 **Tại sao:** Tìm top 10 SP liên quan bằng hybrid search (cosine similarity + BM25-inspired keyword). Chạy **song song** với rewriteQuery (N5b-2a) trong Promise.all. Đây là search lần 1 — kết quả dùng làm fallback nếu rewrite fail hoặc giống gốc.
 
-**Ví dụ:** `hybridSearch("iPhone 17 Pro giá bao nhiêu", 10)` → top 10 SP, score ≥ 0.45:
-- `iPhone 17 Pro Max` → vector score 0.89 + overlap boost +0.05 = **0.94** (match cả vector lẫn keyword)
-- `iPhone 17 Pro` → vector score 0.85 + overlap boost +0.05 = **0.90** (match cả 2)
-- `iPhone 17` → vector score 0.72 = **0.72** (chỉ match vector, không match keyword)
-- `Xiaomi Redmi Note` → keyword-only score 0.45 + 0.08 = **0.53** (`lowConfidence=true` — chỉ match keyword, không match vector)
+**Ví dụ:** `hybridSearch("laptop tầm 20 triệu cho sinh viên", 10)` → top 10 SP, score ≥ 0.45:
+- `Laptop MacBook Air M4` → vector score 0.82 + overlap boost +0.05 = **0.87** (match cả vector lẫn keyword vì tên chứa "laptop")
+- `Laptop Asus Vivobook` → vector score 0.75 + overlap boost +0.05 = **0.80** (match cả 2)
+- `Laptop Lenovo IdeaPad` → vector score 0.68 = **0.68** (chỉ match vector, keyword "sinh viên" không có trong tên/mô tả)
+- `Máy tính bảng Samsung Tab` → keyword-only score 0.45 + 0.08 = **0.53** (`lowConfidence=true` — keyword "laptop" không match nhưng mô tả chứa "sinh viên", vector không match)
 
 ### N5b-3 — ⑤b rewrite khác? `chatbot-service.js`
 **Tại sao:** LLM rewrite cải thiện query (synonym, sửa typo, bỏ filler). So sánh rewritten query với **normalizedQuery gốc** (bước ②): khác → search lần 2 thay thế lần 1. Giống → skip. Lần 2 rỗng → giữ lần 1.

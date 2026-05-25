@@ -47,6 +47,13 @@
 - `"a"×501` → ❌ >500
 - `"iPhone 17?"` → ✅
 
+### BERR — ❌ AppError 400 `chatbot-service.js:243`
+**Tại sao:** Khi N1 validate fail → `handleMessage` throw `AppError(reason, 400)` → controller trả HTTP 400 (bad request) cho client. Pipeline dừng hoàn toàn — không tốn resource cho expand/search/LLM.
+
+**Ví dụ:**
+- `"   "` → `AppError("Tin nhắn trống", 400)` → HTTP 400
+- `"a"×501` → `AppError("Tin nhắn quá dài", 400)` → HTTP 400
+
 ### N2 — ② expandAbbreviations `ai-policy.js:161`
 **Tại sao:** User VN hay viết tắt (`ip17`, `ss`, `bnh`) — nếu không expand, cả vector search lẫn keyword match đều không nhận diện được sản phẩm.
 

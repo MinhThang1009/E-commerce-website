@@ -310,14 +310,14 @@ messages = [
 
 **Ví dụ:**
 - finalQuery: `"cái đó bao nhiêu? iPhone 17 Pro Max giá 28.990.000đ..."`
-- 10 từ đầu: `"cái đó bao nhiêu iphone 17 pro max giá 28"` → "bao nhiêu" → 💰
-- Nếu detect toàn bộ: "iPhone" → product_search 🔍 (sai)
+- 10 từ đầu: `"cái đó bao nhiêu? iPhone 17 Pro Max giá 28.990.000đ"` → "bao nhiêu" match pricing → 💰
+- Tại sao 10 từ: nếu query dài hơn (có history append phía sau), intent detect trên toàn bộ có thể bị nhiễu bởi context cũ
 
 ### N6d-fb — getFallbackResponse `keyword-fallback.js`
 **Tại sao:** Catch-all khi 0 match + intent không match format nào. Khác ERR-b: đi qua N7 persist (lưu DB) bình thường.
 
 **Ví dụ:**
-- `"xin chào"` → 0 keyword match, intent=general → `"Xin chào! Mình là chatbot TechStore, có thể giúp gì?"` → persist (lưu DB) ✅
+- `"xin chào"` → 0 keyword match, intent=general → `"Chào bạn! Mình là nhân viên hỗ trợ của TechStore. Mình có thể giúp gì cho bạn hôm nay?"` → persist (lưu DB) ✅
 
 ### N7a — ⑦ session update `chatbot-service.js:298`
 **Tại sao:** Lưu RAM để turn sau có context (N4 → N5a). Max 10 turns (20 messages) tránh tốn token. Evict >30 phút + LRU >500 sessions.

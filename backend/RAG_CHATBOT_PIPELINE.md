@@ -76,27 +76,27 @@ flowchart TD
         B["      ①  validateMessage      "]
         B -->|hợp lệ| C["      ②  expandAbbreviations      "]
         C --> D["      ③  classifyIntent      "]
-        D --> D2["      ③  isPromptInjection      \n      (sequential sau classifyIntent)      "]
+        D --> D2["      ③  isPromptInjection      <br/>      (sequential sau classifyIntent)      "]
     end
 
     B -->|không hợp lệ| BERR["      ❌ AppError 400 (bad request)      "]
 
     D2 --> E{"      prompt injection?      "}
     E -->|Có| EINJ["      🛡️ _persistMessages(isFallback) + return      "]
-    E -->|Không| E2{"      offTopic?      \n      (intent=='off_topic')      "}
+    E -->|Không| E2{"      offTopic?      <br/>      (intent=='off_topic')      "}
     D -.->|intent| E2
     E2 -->|Có| EOT["      ℹ️ _persistMessages(isFallback) + return      "]
     E2 -->|Không| G["      ④  load session history      "]
 
     G --> H["      ⑤a  _enrichQueryFromHistory      "]
     H --> I["      ⑤b  _retrieveProducts      "]
-    I --> ISTRIP["      ⑤b  strip negation phrases      \n      (tránh embedding bias)      "]
+    I --> ISTRIP["      ⑤b  strip negation phrases      <br/>      (tránh embedding bias)      "]
     ISTRIP --> PAR["      ⑤b  Promise.all      "]
     PAR --> I1["      ⑤b  rewriteQuery      "]
     PAR --> I2["      ⑤b  hybridSearch limit=10      "]
     I1 --> J{"      rewrite khác?      "}
     I2 --> J
-    J -->|Có| J1["      ⑤b  hybridSearch lần 2      \n      (fallback → I2 nếu rỗng)      "]
+    J -->|Có| J1["      ⑤b  hybridSearch lần 2      <br/>      (fallback → I2 nếu rỗng)      "]
     J -->|Không| K
     J1 --> K
     K{"      products > 0?      "}
@@ -112,14 +112,14 @@ flowchart TD
     N5 -->|thành công| N6["      ⑥b.2  parseLLMOutput      "]
     N5 -->|thất bại| N7
 
-    M -->|"LLM DOWN"| N7["      ⑥.1  simpleKeywordMatch      \n      name+10 desc+5 scoring      "]
+    M -->|"LLM DOWN"| N7["      ⑥.1  simpleKeywordMatch      <br/>      name+10 desc+5 scoring      "]
     N7 --> N8["      ⑥.2  version + brand check      "]
     N8 -->|"0 kết quả"| NFOUND["      🚫 notFoundResponse      "]
-    N8 -->|"có kết quả"| N9["      ⑥.3  negation + price      \n      + category prefix filter      "]
+    N8 -->|"có kết quả"| N9["      ⑥.3  negation + price      <br/>      + category prefix filter      "]
     N9 --> N9B["      ⑥.4  sort by score + dedup      "]
-    N9B --> N10["      ⑥.5  intent-aware response      \n      💰📋🔍🌟      "]
+    N9B --> N10["      ⑥.5  intent-aware response      <br/>      💰📋🔍🌟      "]
     N10 -->|"khớp"| O
-    N10 -->|"không khớp"| N10FALL["      getFallbackResponse      \n      (keyword — no results)      "]
+    N10 -->|"không khớp"| N10FALL["      getFallbackResponse      <br/>      (keyword — no results)      "]
 
     N6 --> O{"      ⑦  sessionId?      "}
     NFOUND --> O

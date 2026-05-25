@@ -114,6 +114,21 @@
 **Ví dụ:**
 - rewrite 3s ∥ search 0.5s → tổng 3s (tuần tự sẽ mất 3.5s). Search lần 1 không bao giờ lãng phí
 
+### N5b-2a — ⑤b rewriteQuery `chatbot-service.js:521`
+**Tại sao:** LLM cải thiện query bằng cách thêm synonym, sửa typo, bỏ filler — giúp hybridSearch tìm chính xác hơn. Khi LLM DOWN (providers=0) → fallback sang `fuzzyExpandQuery()` (prefix + edit-distance so với product catalog, không cần LLM). Timeout 8s (`LLM_REWRITE_TIMEOUT_MS`), `.catch(→null)` — fail không block pipeline.
+
+**Ví dụ:**
+- LLM UP: `"tôi là SV cần laptop nhẹ"` → rewrite → `"laptop nhẹ pin trâu 20 triệu"`
+- LLM DOWN: `"ipho 17 pro"` (typo) → `fuzzyExpandQuery` → `"iPhone 17 pro"` (prefix match từ catalog)
+- Timeout/fail → return `null` → N5b-3 skip search lần 2
+
+### N5b-2b — ⑤b hybridSearch limit=10 `vector-store.js:506`
+**Tại sao:** Tìm top 10 SP liên quan bằng hybrid search (cosine similarity + BM25-inspired keyword). Chạy **song song** với rewriteQuery (N5b-2a) trong Promise.all. Đây là search lần 1 — kết quả dùng làm fallback nếu rewrite fail hoặc giống gốc.
+
+**Ví dụ:**
+- `hybridSearch("iPhone 17 Pro giá bao nhiêu", 10)` → top 10 SP, score ≥ 0.45
+- Scoring: vector results (cosine) + keyword-only results (`lowConfidence=true`) + overlap boost (+0.05)
+
 ### N5b-3 — ⑤b rewrite khác? `chatbot-service.js`
 **Tại sao:** LLM rewrite cải thiện query (synonym, sửa typo, bỏ filler). So sánh rewritten query với **normalizedQuery gốc** (bước ②): khác → search lần 2 thay thế lần 1. Giống → skip. Lần 2 rỗng → giữ lần 1.
 

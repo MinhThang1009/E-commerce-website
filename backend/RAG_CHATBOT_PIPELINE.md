@@ -69,70 +69,70 @@
 
 ```mermaid
 flowchart TD
-    A["  👤 User gửi message  "]
+    A["      👤 User gửi message      "]
     A --> PREP
 
-    subgraph PREP["  _preprocessMessage(message)  "]
-        B["  ①  validateMessage  "]
-        B -->|hợp lệ| C["  ②  expandAbbreviations  "]
-        C --> D["  ③  classifyIntent  "]
-        D --> D2["    ③  isPromptInjection    \n    (sequential sau classifyIntent)    "]
+    subgraph PREP["      _preprocessMessage(message)      "]
+        B["      ①  validateMessage      "]
+        B -->|hợp lệ| C["      ②  expandAbbreviations      "]
+        C --> D["      ③  classifyIntent      "]
+        D --> D2["      ③  isPromptInjection      \n      (sequential sau classifyIntent)      "]
     end
 
-    B -->|không hợp lệ| BERR["    ❌ AppError 400 (bad request)    "]
+    B -->|không hợp lệ| BERR["      ❌ AppError 400 (bad request)      "]
 
-    D2 --> E{"  prompt injection?  "}
-    E -->|Có| EINJ["    🛡️ _persistMessages(isFallback) + return    "]
-    E -->|Không| E2{"  offTopic?  \n  (intent=='off_topic')  "}
+    D2 --> E{"      prompt injection?      "}
+    E -->|Có| EINJ["      🛡️ _persistMessages(isFallback) + return      "]
+    E -->|Không| E2{"      offTopic?      \n      (intent=='off_topic')      "}
     D -.->|intent| E2
-    E2 -->|Có| EOT["    ℹ️ _persistMessages(isFallback) + return    "]
-    E2 -->|Không| G["  ④  load session history  "]
+    E2 -->|Có| EOT["      ℹ️ _persistMessages(isFallback) + return      "]
+    E2 -->|Không| G["      ④  load session history      "]
 
-    G --> H["    ⑤a  _enrichQueryFromHistory    "]
-    H --> I["  ⑤b  _retrieveProducts  "]
-    I --> ISTRIP["  ⑤b  strip negation phrases  \n  (tránh embedding bias)  "]
-    ISTRIP --> PAR["  ⑤b  Promise.all  "]
-    PAR --> I1["  ⑤b  rewriteQuery  "]
-    PAR --> I2["  ⑤b  hybridSearch limit=10  "]
-    I1 --> J{"  rewrite khác?  "}
+    G --> H["      ⑤a  _enrichQueryFromHistory      "]
+    H --> I["      ⑤b  _retrieveProducts      "]
+    I --> ISTRIP["      ⑤b  strip negation phrases      \n      (tránh embedding bias)      "]
+    ISTRIP --> PAR["      ⑤b  Promise.all      "]
+    PAR --> I1["      ⑤b  rewriteQuery      "]
+    PAR --> I2["      ⑤b  hybridSearch limit=10      "]
+    I1 --> J{"      rewrite khác?      "}
     I2 --> J
-    J -->|Có| J1["  ⑤b  hybridSearch lần 2  \n  (fallback → I2 nếu rỗng)  "]
+    J -->|Có| J1["      ⑤b  hybridSearch lần 2      \n      (fallback → I2 nếu rỗng)      "]
     J -->|Không| K
     J1 --> K
-    K{"  products > 0?  "}
-    K -->|Có| M{"  ⑥  providers?  "}
-    K -->|Không| K1["  ⑤b  fallback limit=3  "]
+    K{"      products > 0?      "}
+    K -->|Có| M{"      ⑥  providers?      "}
+    K -->|Không| K1["      ⑤b  fallback limit=3      "]
     K1 --> M
 
-    M -->|"LLM UP"| N1["  ⑥a.1  _getCatalogData  "]
-    N1 --> N2["  ⑥a.2  _sanitizeMessage  "]
-    N2 --> N3["    ⑥a.3  buildAugmentedPrompt    "]
-    N3 --> N4["    ⑥a.4  system + history + prompt    "]
-    N4 --> N5["  ⑥b.1  LLM HTTP POST  "]
-    N5 -->|thành công| N6["  ⑥b.2  parseLLMOutput  "]
+    M -->|"LLM UP"| N1["      ⑥a.1  _getCatalogData      "]
+    N1 --> N2["      ⑥a.2  _sanitizeMessage      "]
+    N2 --> N3["      ⑥a.3  buildAugmentedPrompt      "]
+    N3 --> N4["      ⑥a.4  system + history + prompt      "]
+    N4 --> N5["      ⑥b.1  LLM HTTP POST      "]
+    N5 -->|thành công| N6["      ⑥b.2  parseLLMOutput      "]
     N5 -->|thất bại| N7
 
-    M -->|"LLM DOWN"| N7["  ⑥.1  simpleKeywordMatch  \n  name+10 desc+5 scoring  "]
-    N7 --> N8["  ⑥.2  version + brand check  "]
-    N8 -->|"0 kết quả"| NFOUND["  🚫 notFoundResponse  "]
-    N8 -->|"có kết quả"| N9["  ⑥.3  negation + price  \n  + category prefix filter  "]
-    N9 --> N9B["  ⑥.4  sort by score + dedup  "]
-    N9B --> N10["  ⑥.5  intent-aware response  \n  💰📋🔍🌟  "]
+    M -->|"LLM DOWN"| N7["      ⑥.1  simpleKeywordMatch      \n      name+10 desc+5 scoring      "]
+    N7 --> N8["      ⑥.2  version + brand check      "]
+    N8 -->|"0 kết quả"| NFOUND["      🚫 notFoundResponse      "]
+    N8 -->|"có kết quả"| N9["      ⑥.3  negation + price      \n      + category prefix filter      "]
+    N9 --> N9B["      ⑥.4  sort by score + dedup      "]
+    N9B --> N10["      ⑥.5  intent-aware response      \n      💰📋🔍🌟      "]
     N10 -->|"khớp"| O
-    N10 -->|"không khớp"| N10FALL["  getFallbackResponse  \n  (keyword — no results)  "]
+    N10 -->|"không khớp"| N10FALL["      getFallbackResponse      \n      (keyword — no results)      "]
 
-    N6 --> O{"  ⑦  sessionId?  "}
+    N6 --> O{"      ⑦  sessionId?      "}
     NFOUND --> O
     N10FALL --> O
-    O -->|Có| O1["  ⑦  sanitize + update history  "]
-    O1 --> O2["  ⑦  _evictStaleSessions  "]
+    O -->|Có| O1["      ⑦  sanitize + update history      "]
+    O1 --> O2["      ⑦  _evictStaleSessions      "]
     O2 --> P
-    O -->|Không| P["  ⑦  _persistMessages  "]
-    P --> R["  📤 return response  "]
+    O -->|Không| P["      ⑦  _persistMessages      "]
+    P --> R["      📤 return response      "]
 
-    R -.-> ERR{"  catch error  "}
-    ERR -->|có statusCode| ERR1["  re-throw 400/404  "]
-    ERR -->|lỗi khác| ERR2["  getFallbackResponse  "]
+    R -.-> ERR{"      catch error      "}
+    ERR -->|có statusCode| ERR1["      re-throw 400/404      "]
+    ERR -->|lỗi khác| ERR2["      getFallbackResponse      "]
 ```
 
 > **Ghi chú sơ đồ:** `🚫 notFoundResponse()` được gọi từ N8 khi version/brand filter để lại 0 kết quả (keyword-fallback.js:146, 183). `getFallbackResponse()` có **2 call site**: (1) N10FALL — từ `simpleKeywordMatch` khi keyword không khớp gì, response đi tiếp qua `sessionId?` → `_persistMessages` → `return response` bình thường; (2) ERR2 — từ catch block trong `handleMessage`, early return, không qua `_persistMessages`.
@@ -379,11 +379,11 @@ Sort giảm dần theo final score → cắt lấy top `limit` → trả về ch
 
 ```mermaid
 flowchart LR
-    A["  User query  "] --> B["  Preprocess  <br/>  <i>giống nhau</i>  <br/>  Validate → Normalize  <br/>  → Intent → Gates  "]
-    B --> C["  Retrieval  <br/>  <i>giống nhau</i>  <br/>  hybridSearch topK=10  <br/>  minScore=0.45  <br/>  + LLM rewrite  "]
-    C --> D{"  LLM  <br/>  available?  "}
-    D -->|UP| E["  augmentAndGenerate  <br/>  ⑥a: build prompt → ⑥b: call LLM  <br/>  → parse output  <br/>  <b>Natural language</b>  "]
-    D -->|DOWN| F["  simpleKeywordMatch  <br/>  ⑥.1-⑥.5 token matching  <br/>  → emoji format 💰📋🚫🔍  <br/>  <b>Pattern matching</b>  "]
+    A["      User query      "] --> B["      Preprocess      <br/>      <i>giống nhau</i>      <br/>      Validate → Normalize      <br/>      → Intent → Gates      "]
+    B --> C["      Retrieval      <br/>      <i>giống nhau</i>      <br/>      hybridSearch topK=10      <br/>      minScore=0.45      <br/>      + LLM rewrite      "]
+    C --> D{"      LLM      <br/>      available?      "}
+    D -->|UP| E["      augmentAndGenerate      <br/>      ⑥a: build prompt → ⑥b: call LLM      <br/>      → parse output      <br/>      <b>Natural language</b>      "]
+    D -->|DOWN| F["      simpleKeywordMatch      <br/>      ⑥.1-⑥.5 token matching      <br/>      → emoji format 💰📋🚫🔍      <br/>      <b>Pattern matching</b>      "]
 ```
 
 | Aspect | LLM UP | LLM DOWN |

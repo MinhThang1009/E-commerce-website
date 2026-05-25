@@ -256,21 +256,23 @@ messages = [
   - `"17"` **không tham gia scoring** (bị loại bởi filter >2 chars) — nhưng vẫn được dùng ở N6d-2 version filter
   - `"bao"` / `"nhiêu"`: pass filter (≥3 chars) nhưng không match tên/mô tả SP nào → 0 điểm
 
-### N6d-2 — ⑥.2 version filter `keyword-fallback.js:146`
-**Tại sao:** Extract model number, bỏ qua giá/specs. **Hạn chế:** chỉ extract **số**, không phân biệt prefix (A-series vs S-series) — "Samsung A57" và "Samsung S57" đều chứa "57" nên cả 2 đều pass filter. Tuy nhiên N6d-1 scoring vẫn xếp hạng đúng vì token "a57" match tên "Galaxy A57" cao hơn "Galaxy S57".
+### N6d-2 — ⑥.2 version + brand check `keyword-fallback.js:94-186`
+**Tại sao:** 2 bước tuần tự trong cùng 1 block:
 
-**Ví dụ:**
+**Bước 1 — Version filter** (line 94-146): Extract model number từ query, bỏ qua giá/specs. Filter SP không chứa số đó. **Hạn chế:** chỉ extract **số**, không phân biệt prefix (A-series vs S-series) — nhưng N6d-1 scoring bổ trợ xếp hạng đúng.
+
+**Bước 2 — Brand coherence** (line 175-183): Sau version filter, check `brandDiscriminator` (token đầu tiên >3 chars, không phải số, có trong SP ban đầu) có trong kết quả không → nếu không → `notFoundResponse`. Tránh recommend SP sai brand.
+
+**Ví dụ version filter:**
 - `"Samsung S25 giá 20 triệu 8GB"` → strip "20 triệu" (giá) + "8GB" (specs) → còn `"samsung s25 giá"` → extract "25" từ "S25" (regex `/[a-zA-Z]+(\d{2,})\b/` bắt số ≥2 chữ số nối sau chữ cái)
   - Samsung S25 ✅ (tên chứa "25"), Samsung A57 ❌ (version "57" ≠ "25")
 - `"Samsung A57"` → extract "57" → giữ cả A57 lẫn S57 (cả 2 chứa "57" — version filter chỉ nhìn số, không phân biệt prefix A vs S)
   - Tuy nhiên N6d-1 scoring (đã chạy trước đó) đã xếp hạng đúng: token `"a57"` match substring trong tên "Galaxy **A57**" → +10 điểm, nhưng KHÔNG match "Galaxy **S57**" (tên không chứa "a57") → 0 điểm
   - Kết quả: A57 score 20 (`"samsung"` +10, `"a57"` +10), S57 score 10 (`"samsung"` +10) → A57 xếp trước
 
-### N6d-3 — ⑥.2 brand coherence `keyword-fallback.js:175-183`
-**Tại sao:** Tránh recommend SP sai brand. `brandDiscriminator` = token đầu tiên (>3 chars, không phải số, có trong SP ban đầu) → check trong kết quả sau version filter.
-
-**Ví dụ:**
+**Ví dụ brand coherence:**
 - `"iPhone 15 Pro"` → discriminator="iphone" → sau version filter ("15"): 0 SP → "iphone" ∉ filtered → `notFoundResponse`: "chưa có iPhone 15 Pro"
+- `"Huawei Mate 70"` → discriminator tìm token >3 chars có trong SP ban đầu → "huawei" không có trong bất kỳ SP nào → skip brand check (không có discriminator hợp lệ)
 
 ### N6d-nf — 🚫 notFoundResponse `keyword-fallback.js`
 **Tại sao:** Version/brand filter để lại 0 → trả rõ ràng thay vì generic.

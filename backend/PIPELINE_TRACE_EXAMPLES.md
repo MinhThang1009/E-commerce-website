@@ -295,9 +295,9 @@ messages = [
 **Tại sao:** `finalQuery` giữ nguyên negation (strip ở N5b-1 chỉ ảnh hưởng `queryForRetrieval`). "không **cần**" KHÔNG trigger (code coi = brand không quan trọng). Chỉ nhận pattern cứng.
 
 **Ví dụ:**
-- `"không muốn iPhone"` → loại iPhone ✅
-- `"không cần iPhone"` → KHÔNG loại ⚠️ (N5b-1 strip giúp search ít bias, nhưng N6d-4 không filter)
-- `"chán Samsung"` → KHÔNG loại ⚠️ (pattern cứng, không hiểu ẩn ý)
+- Query: `"điện thoại không muốn iPhone"` → iPhone bị loại ✅, products: `[Samsung S25, Xiaomi Redmi Note 15]`
+- Query: `"điện thoại không cần iPhone"` → iPhone KHÔNG bị loại ⚠️, products: `[iPhone 17 Pro, Samsung S25, Xiaomi]` ("không cần" không nằm trong negation regex)
+- Query: `"điện thoại chán Samsung rồi"` → Samsung KHÔNG bị loại ⚠️, products: `[Samsung S25, iPhone 17 Pro, Xiaomi]` (pattern cứng, "chán" không được nhận diện)
 
 ### N6d-5 — ⑥.3 price filter `keyword-fallback.js`
 **Tại sao:** User kèm ngân sách → filter SP ngoài range. 4 patterns:

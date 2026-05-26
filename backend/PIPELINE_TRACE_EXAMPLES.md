@@ -38,6 +38,26 @@
 
 ## Node Reference — Bản chất từng node
 
+### Tóm tắt 44 nodes theo 7 bước
+
+| Bước | Nodes | Tóm tắt |
+|------|-------|---------|
+| **Entry** | A, PREP | User gửi message → `_preprocessMessage()` gom 4 phép kiểm tra |
+| **① Validate** | N1, BERR | 3 rules (rỗng, >500 chars, không có chữ/số) → fail thì HTTP 400 |
+| **② Normalize** | N2 | Expand viết tắt: `ip→iPhone`, `bnh→bao nhiêu`, `smartphone→điện thoại` |
+| **③ Classify & Gate** | N3a, N3b, G1, G2, EINJ, EOT | Phân loại 6 intent + chặn injection (15 patterns) / off-topic |
+| **④ Session** | N4 | Load history từ RAM Map → cho N5a resolve đại từ + N6a-4 gửi LLM |
+| **⑤ Retrieve** | N5a, N5b, N5b-1→4, N5b-2a, N5b-2b | Enrich query (pronoun/implicit) → strip negation → rewrite ∥ search → fallback |
+| **⑥ Augment & Generate** | **LLM UP:** N6-check, N6a-1→4, N6b-1→2, N6b-fail | Augment (⑥a: catalog+sanitize+prompt+messages) → Generate (⑥b: LLM POST+parse) |
+| | **LLM DOWN:** N6d-1→8, N6d-nf, N6d-fb | Keyword fallback: score→version+brand→negation+price+category→sort→intent format |
+| **⑦ Persist** | N7a, N7a-evict, N7b | Session RAM (max 10 turns, evict >30min) + DB analytics (fire-and-forget) |
+| **Output** | R | Return `{ response, products, suggestions, intent }` → HTTP 200 |
+| **Error** | ERR-a, ERR-b | AppError → re-throw HTTP status. Unknown → fallback, KHÔNG persist |
+
+> Chi tiết từng node bên dưới — WHY + ví dụ verified bằng code.
+
+---
+
 ### A — 👤 User gửi message
 **Tại sao:** Entry point của pipeline. User gửi message qua `POST /api/chatbot/message` → controller gọi `AIService.handleMessage()` → delegate cho `chatbotService.handleMessage(message, userId, sessionId)`.
 

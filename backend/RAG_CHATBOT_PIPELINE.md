@@ -90,9 +90,9 @@ flowchart TD
     E2 -->|Không| G["④  load session history"]
 
     G --> H["⑤a  _enrichQueryFromHistory"]
+    H --> I["⑤b  _retrieveProducts"]
 
     subgraph RETRIEVE["🔍 Retrieve (R trong RAG)"]
-        H --> I["⑤b  _retrieveProducts"]
         I --> ISTRIP["⑤b  strip negation phrases<br/>(tránh embedding bias)"]
         ISTRIP --> PAR["⑤b  Promise.all"]
         PAR --> I1["⑤b  rewriteQuery"]

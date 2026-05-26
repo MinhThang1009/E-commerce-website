@@ -303,17 +303,17 @@ messages = [
 **Tại sao:** User kèm ngân sách → filter SP ngoài range. 4 patterns:
 
 **Ví dụ:**
-- `"tầm 20 triệu"` → approx: 16M–24M (±20%)
-- `"15-20 triệu"` → range: 15M–20M
-- `"dưới 15 triệu"` → max: ≤15M
-- `"trên 30 triệu"` → min: ≥30M
+- Query: `"laptop tầm 20 triệu"` → approx ±20%: 16M–24M → products: `[Acer Gaming Nitro: 22.990.000đ]` (MacBook 27.9M bị loại, Vivobook 15.9M bị loại)
+- Query: `"laptop 15-20 triệu"` → range: 15M–20M → products: `[Asus Vivobook 15: 15.990.000đ]`
+- Query: `"laptop dưới 15 triệu"` → max: ≤15M → products: `[Lenovo IdeaPad: 12.990.000đ]`
+- Query: `"laptop trên 25 triệu"` → min: ≥25M → products: `[MacBook Air M4: 27.990.000đ]`
 
 ### N6d-6 — ⑥.3 category prefix `keyword-fallback.js`
 **Tại sao:** Detect category term → `product.name.startsWith()`. Chỉ áp dụng khi đúng 1 prefix (skip so sánh).
 
 **Ví dụ:**
-- `"laptop 20tr"` → "laptop" → giữ "Laptop MacBook..." ✅, bỏ "Điện thoại iPhone..." ❌
-- `"so sánh laptop vs điện thoại"` → 2 prefix + comparative → skip filter
+- Query: `"laptop tầm 20 triệu"` → detect "laptop" → `name.startsWith("laptop")` → giữ `[Acer Gaming Nitro]` ✅, bỏ Điện thoại iPhone/Samsung ❌
+- Query: `"so sánh laptop vs điện thoại"` → comparative query detected → skip category filter → products: `[iPhone 17 Pro, Samsung S25, MacBook Air]` (giữ cả 2 category)
 
 ### N6d-7 — ⑥.4 sort+dedup `keyword-fallback.js`
 **Tại sao:** Sort relevance, dedup defensive (input từ hybridSearch đã unique nhưng guard edge case).

@@ -89,28 +89,37 @@ flowchart TD
     E2 -->|Có| EOT["ℹ️ _persistMessages(isFallback) + return"]
     E2 -->|Không| G["④  load session history"]
 
-    G --> H["⑤a  _enrichQueryFromHistory"]
-    H --> I["⑤b  _retrieveProducts"]
-    I --> ISTRIP["⑤b  strip negation phrases<br/>(tránh embedding bias)"]
-    ISTRIP --> PAR["⑤b  Promise.all"]
-    PAR --> I1["⑤b  rewriteQuery"]
-    PAR --> I2["⑤b  hybridSearch limit=10"]
-    I1 --> J{"rewrite khác?"}
-    I2 --> J
-    J -->|Có| J1["⑤b  hybridSearch lần 2<br/>(fallback → I2 nếu rỗng)"]
-    J -->|Không| K
-    J1 --> K
-    K{"products > 0?"}
+    subgraph RETRIEVE["🔍 Retrieve (R trong RAG)"]
+        G --> H["⑤a  _enrichQueryFromHistory"]
+        H --> I["⑤b  _retrieveProducts"]
+        I --> ISTRIP["⑤b  strip negation phrases<br/>(tránh embedding bias)"]
+        ISTRIP --> PAR["⑤b  Promise.all"]
+        PAR --> I1["⑤b  rewriteQuery"]
+        PAR --> I2["⑤b  hybridSearch limit=10"]
+        I1 --> J{"rewrite khác?"}
+        I2 --> J
+        J -->|Có| J1["⑤b  hybridSearch lần 2<br/>(fallback → I2 nếu rỗng)"]
+        J -->|Không| K
+        J1 --> K
+        K{"products > 0?"}
+        K -->|Không| K1["⑤b  fallback limit=3"]
+    end
+
     K -->|Có| M{"⑥  providers?"}
-    K -->|Không| K1["⑤b  fallback limit=3"]
     K1 --> M
 
-    M -->|"LLM UP"| N1["⑥a.1  _getCatalogData"]
-    N1 --> N2["⑥a.2  _sanitizeMessage"]
-    N2 --> N3["⑥a.3  buildAugmentedPrompt"]
-    N3 --> N4["⑥a.4  system + history + prompt"]
-    N4 --> N5["⑥b.1  LLM HTTP POST"]
-    N5 -->|thành công| N6["⑥b.2  parseLLMOutput"]
+    subgraph AUGMENT["📝 Augment (A trong RAG)"]
+        M -->|"LLM UP"| N1["⑥a.1  _getCatalogData"]
+        N1 --> N2["⑥a.2  _sanitizeMessage"]
+        N2 --> N3["⑥a.3  buildAugmentedPrompt"]
+        N3 --> N4["⑥a.4  system + history + prompt"]
+    end
+
+    subgraph GENERATE["⚡ Generate (G trong RAG)"]
+        N4 --> N5["⑥b.1  LLM HTTP POST"]
+        N5 -->|thành công| N6["⑥b.2  parseLLMOutput"]
+    end
+
     N5 -->|thất bại| N7
 
     M -->|"LLM DOWN"| N7["⑥.1  simpleKeywordMatch<br/>name+10 desc+5 scoring"]
@@ -137,28 +146,10 @@ flowchart TD
     ERR -->|có statusCode| ERR1["re-throw 400/404"]
     ERR -->|lỗi khác| ERR2["getFallbackResponse"]
 
-    %% ── RAG color coding ──
-    %% R = Retrieve (xanh dương)
-    style H fill:#bbdefb,stroke:#1565c0,color:#000
-    style I fill:#bbdefb,stroke:#1565c0,color:#000
-    style ISTRIP fill:#bbdefb,stroke:#1565c0,color:#000
-    style PAR fill:#bbdefb,stroke:#1565c0,color:#000
-    style I1 fill:#bbdefb,stroke:#1565c0,color:#000
-    style I2 fill:#bbdefb,stroke:#1565c0,color:#000
-    style J fill:#bbdefb,stroke:#1565c0,color:#000
-    style J1 fill:#bbdefb,stroke:#1565c0,color:#000
-    style K fill:#bbdefb,stroke:#1565c0,color:#000
-    style K1 fill:#bbdefb,stroke:#1565c0,color:#000
-
-    %% A = Augment (vàng)
-    style N1 fill:#fff9c4,stroke:#f9a825,color:#000
-    style N2 fill:#fff9c4,stroke:#f9a825,color:#000
-    style N3 fill:#fff9c4,stroke:#f9a825,color:#000
-    style N4 fill:#fff9c4,stroke:#f9a825,color:#000
-
-    %% G = Generate (xanh lá)
-    style N5 fill:#c8e6c9,stroke:#2e7d32,color:#000
-    style N6 fill:#c8e6c9,stroke:#2e7d32,color:#000
+    %% ── RAG color coding (subgraph nền) ──
+    style RETRIEVE fill:#e3f2fd,stroke:#1565c0,color:#000
+    style AUGMENT fill:#fffde7,stroke:#f9a825,color:#000
+    style GENERATE fill:#e8f5e9,stroke:#2e7d32,color:#000
 ```
 
 > **Ghi chú sơ đồ:** `🚫 notFoundResponse()` được gọi từ N8 khi version/brand filter để lại 0 kết quả (keyword-fallback.js:146, 183). `getFallbackResponse()` có **2 call site**: (1) N10FALL — từ `simpleKeywordMatch` khi keyword không khớp gì, response đi tiếp qua `sessionId?` → `_persistMessages` → `return response` bình thường; (2) ERR2 — từ catch block trong `handleMessage`, early return, không qua `_persistMessages`.

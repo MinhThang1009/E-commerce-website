@@ -134,6 +134,29 @@ flowchart TD
     R -.-> ERR{"catch error"}
     ERR -->|có statusCode| ERR1["re-throw 400/404"]
     ERR -->|lỗi khác| ERR2["getFallbackResponse"]
+
+    %% ── RAG color coding ──
+    %% R = Retrieve (xanh dương)
+    style H fill:#bbdefb,stroke:#1565c0,color:#000
+    style I fill:#bbdefb,stroke:#1565c0,color:#000
+    style ISTRIP fill:#bbdefb,stroke:#1565c0,color:#000
+    style PAR fill:#bbdefb,stroke:#1565c0,color:#000
+    style I1 fill:#bbdefb,stroke:#1565c0,color:#000
+    style I2 fill:#bbdefb,stroke:#1565c0,color:#000
+    style J fill:#bbdefb,stroke:#1565c0,color:#000
+    style J1 fill:#bbdefb,stroke:#1565c0,color:#000
+    style K fill:#bbdefb,stroke:#1565c0,color:#000
+    style K1 fill:#bbdefb,stroke:#1565c0,color:#000
+
+    %% A = Augment (vàng)
+    style N1 fill:#fff9c4,stroke:#f9a825,color:#000
+    style N2 fill:#fff9c4,stroke:#f9a825,color:#000
+    style N3 fill:#fff9c4,stroke:#f9a825,color:#000
+    style N4 fill:#fff9c4,stroke:#f9a825,color:#000
+
+    %% G = Generate (xanh lá)
+    style N5 fill:#c8e6c9,stroke:#2e7d32,color:#000
+    style N6 fill:#c8e6c9,stroke:#2e7d32,color:#000
 ```
 
 > **Ghi chú sơ đồ:** `🚫 notFoundResponse()` được gọi từ N8 khi version/brand filter để lại 0 kết quả (keyword-fallback.js:146, 183). `getFallbackResponse()` có **2 call site**: (1) N10FALL — từ `simpleKeywordMatch` khi keyword không khớp gì, response đi tiếp qua `sessionId?` → `_persistMessages` → `return response` bình thường; (2) ERR2 — từ catch block trong `handleMessage`, early return, không qua `_persistMessages`.

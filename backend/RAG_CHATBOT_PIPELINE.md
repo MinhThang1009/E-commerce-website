@@ -89,8 +89,9 @@ flowchart TD
     E2 -->|Có| EOT["ℹ️ _persistMessages(isFallback) + return"]
     E2 -->|Không| G["④  load session history"]
 
+    G --> H["⑤a  _enrichQueryFromHistory"]
+
     subgraph RETRIEVE["🔍 Retrieve (R trong RAG)"]
-        G --> H["⑤a  _enrichQueryFromHistory"]
         H --> I["⑤b  _retrieveProducts"]
         I --> ISTRIP["⑤b  strip negation phrases<br/>(tránh embedding bias)"]
         ISTRIP --> PAR["⑤b  Promise.all"]
@@ -109,17 +110,20 @@ flowchart TD
     K1 --> M
 
     subgraph AUGMENT["📝 Augment (A trong RAG)"]
-        M -->|"LLM UP"| N1["⑥a.1  _getCatalogData"]
+        N1["⑥a.1  _getCatalogData"]
         N1 --> N2["⑥a.2  _sanitizeMessage"]
         N2 --> N3["⑥a.3  buildAugmentedPrompt"]
         N3 --> N4["⑥a.4  system + history + prompt"]
     end
 
+    M -->|"LLM UP"| N1
+
     subgraph GENERATE["⚡ Generate (G trong RAG)"]
-        N4 --> N5["⑥b.1  LLM HTTP POST"]
+        N5["⑥b.1  LLM HTTP POST"]
         N5 -->|thành công| N6["⑥b.2  parseLLMOutput"]
     end
 
+    N4 --> N5
     N5 -->|thất bại| N7
 
     M -->|"LLM DOWN"| N7["⑥.1  simpleKeywordMatch<br/>name+10 desc+5 scoring"]

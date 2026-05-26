@@ -265,14 +265,14 @@ messages = [
 
 **Ví dụ xuyên suốt 2 bước:** Query `"Samsung S25 giá bao nhiêu"`, DB có 4 SP:
 
-| SP | Bước 1 — Version filter (extract "25") | Bước 2 — Brand coherence ("samsung") |
-|---|---|---|
-| Samsung Galaxy S25 Ultra | ✅ tên chứa "25" | ✅ tên chứa "samsung" |
-| Samsung Galaxy S25 | ✅ tên chứa "25" | ✅ tên chứa "samsung" |
-| Samsung Galaxy A25 | ✅ tên chứa "25" (chỉ nhìn số, không phân biệt S vs A) | ✅ tên chứa "samsung" |
-| iPhone 17 Pro | ❌ loại ("17" ≠ "25") | — (đã loại ở bước 1) |
+| SP | N6d-1 Score | Bước 1 — Version filter (extract "25") | Bước 2 — Brand coherence ("samsung") |
+|---|---|---|---|
+| Samsung Galaxy S25 Ultra | 20 (`"samsung"` +10, `"s25"` +10) | ✅ tên chứa "25" | ✅ tên chứa "samsung" |
+| Samsung Galaxy S25 | 20 (`"samsung"` +10, `"s25"` +10) | ✅ tên chứa "25" | ✅ tên chứa "samsung" |
+| Samsung Galaxy A25 | 10 (`"samsung"` +10, `"s25"` ∉ tên "A25") | ✅ tên chứa "25" (chỉ nhìn số) | ✅ tên chứa "samsung" |
+| iPhone 17 Pro | 0 | ❌ loại ("17" ≠ "25") | — (đã loại ở bước 1) |
 
-→ Kết quả: 3 SP Samsung (S25 Ultra, S25, A25). iPhone 17 Pro bị loại ở bước 1. Bước 2 confirm brand "samsung" đúng → pass.
+→ Kết quả: 3 SP Samsung pass cả 2 bước. Nhưng **thứ tự** do scoring quyết định: S25 Ultra + S25 (20 điểm) xếp trước A25 (10 điểm). User thấy SP đúng đứng đầu, A25 là gợi ý thêm.
 
 **Ví dụ brand coherence fail:** Query `"iPhone 25 giá bao nhiêu"`, cùng DB:
 

@@ -289,7 +289,7 @@ messages = [
 **Tại sao:** Version/brand filter để lại 0 → trả rõ ràng thay vì generic.
 
 **Ví dụ:**
-- `"Samsung S99 Ultra giá bao nhiêu"` → `"🚫 Cửa hàng hiện chưa có samsung s99 ultra ạ. Bạn có muốn xem các sản phẩm tương tự đang có không?"`
+- Query: `"Samsung S99 Ultra giá bao nhiêu"`, Response: `"🚫 Cửa hàng hiện chưa có samsung s99 ultra ạ. Bạn có muốn xem các sản phẩm tương tự đang có không?"`
 
 ### N6d-4 — ⑥.3 negation filter `keyword-fallback.js`
 **Tại sao:** `finalQuery` giữ nguyên negation (strip ở N5b-1 chỉ ảnh hưởng `queryForRetrieval`). "không **cần**" KHÔNG trigger (code coi = brand không quan trọng). Chỉ nhận pattern cứng.

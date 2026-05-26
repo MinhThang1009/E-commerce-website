@@ -263,15 +263,27 @@ messages = [
 
 **Bước 2 — Brand coherence** (line 175-183): Sau version filter, check `brandDiscriminator` (token đầu tiên >3 chars, không phải số, có trong SP ban đầu) có trong kết quả không → nếu không → `notFoundResponse`. Tránh recommend SP sai brand.
 
-**Ví dụ xuyên suốt 2 bước:** (DB có: Samsung S25 Ultra, Samsung A57, iPhone 17 Pro)
+**Ví dụ xuyên suốt 2 bước:** Query `"Samsung S25 giá bao nhiêu"`, DB có 4 SP:
 
-Ví dụ 1 — `"Samsung S25 giá bao nhiêu"`:
-- Bước 1: extract "25" từ "S25" → filter SP chứa "25" → Samsung S25 Ultra ✅, A57 ❌ ("57"≠"25") → **1 kết quả**
-- Bước 2: discriminator="samsung" → "samsung" ∈ filtered (S25 Ultra có "Samsung") ✅ → **pass** → trả kết quả
+| SP | Bước 1 — Version filter (extract "25") | Bước 2 — Brand coherence ("samsung") |
+|---|---|---|
+| Samsung Galaxy S25 Ultra | ✅ tên chứa "25" | ✅ tên chứa "samsung" |
+| Samsung Galaxy S25 | ✅ tên chứa "25" | ✅ tên chứa "samsung" |
+| Samsung Galaxy A25 | ✅ tên chứa "25" (chỉ nhìn số, không phân biệt S vs A) | ✅ tên chứa "samsung" |
+| iPhone 17 Pro | ❌ loại ("17" ≠ "25") | — (đã loại ở bước 1) |
 
-Ví dụ 2 — `"iPhone 57 giá bao nhiêu"`:
-- Bước 1: extract "57" → filter SP chứa "57" → Samsung A57 ✅ ("57" match), S25 Ultra ❌, iPhone 17 Pro ❌ → **1 kết quả** (Samsung A57)
-- Bước 2: discriminator="iphone" → "iphone" ∉ filtered (chỉ có Samsung A57, không có iPhone) → **fail** → `notFoundResponse`: "chưa có iPhone 57"
+→ Kết quả: 3 SP Samsung (S25 Ultra, S25, A25). iPhone 17 Pro bị loại ở bước 1. Bước 2 confirm brand "samsung" đúng → pass.
+
+**Ví dụ brand coherence fail:** Query `"iPhone 25 giá bao nhiêu"`, cùng DB:
+
+| SP | Bước 1 — Version filter (extract "25") | Bước 2 — Brand coherence ("iphone") |
+|---|---|---|
+| Samsung Galaxy S25 Ultra | ✅ chứa "25" | ❌ không chứa "iphone" |
+| Samsung Galaxy S25 | ✅ chứa "25" | ❌ không chứa "iphone" |
+| Samsung Galaxy A25 | ✅ chứa "25" | ❌ không chứa "iphone" |
+| iPhone 17 Pro | ❌ loại ("17" ≠ "25") | — (đã loại ở bước 1) |
+
+→ Bước 1: 3 SP Samsung pass. Bước 2: discriminator="iphone" nhưng cả 3 SP đều Samsung → "iphone" ∉ filtered → `notFoundResponse`: "chưa có iPhone 25"
 
 ### N6d-nf — 🚫 notFoundResponse `keyword-fallback.js`
 **Tại sao:** Version/brand filter để lại 0 → trả rõ ràng thay vì generic.

@@ -263,16 +263,14 @@ messages = [
 
 **Bước 2 — Brand coherence** (line 175-183): Sau version filter, check `brandDiscriminator` (token đầu tiên >3 chars, không phải số, có trong SP ban đầu) có trong kết quả không → nếu không → `notFoundResponse`. Tránh recommend SP sai brand.
 
-**Ví dụ version filter:**
-- `"Samsung S25 giá 20 triệu 8GB"` → strip "20 triệu" (giá) + "8GB" (specs) → còn `"samsung s25 giá"` → extract "25" từ "S25" (regex `/[a-zA-Z]+(\d{2,})\b/` bắt số ≥2 chữ số nối sau chữ cái)
-  - Samsung S25 ✅ (tên chứa "25"), Samsung A57 ❌ (version "57" ≠ "25")
-- `"Samsung A57"` → extract "57" → giữ cả A57 lẫn S57 (cả 2 chứa "57" — version filter chỉ nhìn số, không phân biệt prefix A vs S)
-  - Tuy nhiên N6d-1 scoring (đã chạy trước đó) đã xếp hạng đúng: token `"a57"` match substring trong tên "Galaxy **A57**" → +10 điểm, nhưng KHÔNG match "Galaxy **S57**" (tên không chứa "a57") → 0 điểm
-  - Kết quả: A57 score 20 (`"samsung"` +10, `"a57"` +10), S57 score 10 (`"samsung"` +10) → A57 xếp trước
+**Ví dụ version filter:** (DB có: Samsung S25 Ultra, Samsung A57, Samsung A37)
+- `"Samsung S25 giá bao nhiêu"` → extract "25" từ "S25" → filter SP chứa "25" → Samsung S25 Ultra ✅, A57 ❌ ("57"≠"25"), A37 ❌ ("37"≠"25") → **1 kết quả**
+- `"Samsung S99 giá bao nhiêu"` → extract "99" → filter → **0 SP** chứa "99" → `notFoundResponse`: "chưa có Samsung S99"
+- `"Samsung A57"` → extract "57" → giữ cả A57 lẫn S57 nếu có (version filter chỉ nhìn số, không phân biệt prefix A vs S) — nhưng N6d-1 scoring bổ trợ: token `"a57"` match "Galaxy A57" (+10) nhưng không match "Galaxy S57" → A57 xếp trước
 
-**Ví dụ brand coherence:**
-- `"iPhone 15 Pro"` → discriminator="iphone" → sau version filter ("15"): 0 SP → "iphone" ∉ filtered → `notFoundResponse`: "chưa có iPhone 15 Pro"
-- `"Huawei Mate 70"` → discriminator tìm token >3 chars có trong SP ban đầu → "huawei" không có trong bất kỳ SP nào → skip brand check (không có discriminator hợp lệ)
+**Ví dụ brand coherence:** (DB có: Samsung S25, Samsung A57, iPhone 17 Pro)
+- `"Samsung S25"` → discriminator="samsung" → sau version filter: Samsung S25 ✅ → "samsung" ∈ filtered ✅ → **pass**
+- `"iPhone 57 giá bao nhiêu"` → version filter: extract "57" → Samsung A57 match "57" ✅ → nhưng brand coherence: discriminator="iphone" → "iphone" ∉ filtered (chỉ có Samsung A57) → `notFoundResponse`: "chưa có iPhone 57"
 
 ### N6d-nf — 🚫 notFoundResponse `keyword-fallback.js`
 **Tại sao:** Version/brand filter để lại 0 → trả rõ ràng thay vì generic.

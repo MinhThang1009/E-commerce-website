@@ -319,22 +319,23 @@ messages = [
 **Tại sao:** Sort relevance, dedup defensive (input từ hybridSearch đã unique nhưng guard edge case).
 
 **Ví dụ:**
-- Trước: `[{Xiaomi:5}, {iPhone Pro:20}, {iPhone PM:30}]`
-- Sau sort: `[{iPhone PM:30}, {iPhone Pro:20}, {Xiaomi:5}]`
+- Query: `"iPhone giá bao nhiêu"`, scoring: iPhone 17 Pro Max = 20 (`"iphone"` +10, `"giá"` không match), iPhone 17 Pro = 20, Xiaomi = 0 (loại)
+- Sort: `[iPhone 17 Pro Max: 20, iPhone 17 Pro: 20]` → SP score cao nhất lên đầu, score bằng nhau giữ thứ tự gốc
 
 ### N6d-8 — ⑥.5 intent-aware `keyword-fallback.js`
 **Tại sao:** Detect intent từ **10 từ đầu** (tránh N5a append history nhiễu). Format: 💰📋🔍🌟.
 
 **Ví dụ:**
-- finalQuery: `"cái đó bao nhiêu? iPhone 17 Pro Max giá 28.990.000đ..."`
-- 10 từ đầu: `"cái đó bao nhiêu? iPhone 17 Pro Max giá 28.990.000đ"` → "bao nhiêu" match pricing → 💰
-- Tại sao 10 từ: nếu query dài hơn (có history append phía sau), intent detect trên toàn bộ có thể bị nhiễu bởi context cũ
+- Query: `"iPhone 17 Pro giá bao nhiêu"` → 10 từ đầu → "bao nhiêu" match pricing → 💰 Response: `"💰 Điện thoại iPhone 17 Pro Max có giá 37.990.000 đ, đang còn hàng ạ 😊"`
+- Query: `"tư vấn điện thoại iPhone"` → "tư vấn" match product_search → 🔍 Response: `"🔍 Mình tìm thấy một số sản phẩm phù hợp..."`
+- Query: `"chính sách đổi trả"` → match policy → 📋 Response: `"📋 Chính sách cửa hàng: • Giao hàng: Miễn phí... • Bảo hành: 12 tháng..."`
+- Tại sao 10 từ đầu: nếu query dài (có history append phía sau), intent detect trên toàn bộ có thể bị nhiễu bởi context cũ
 
 ### N6d-fb — getFallbackResponse `keyword-fallback.js`
 **Tại sao:** Catch-all khi 0 match + intent không match format nào. Khác ERR-b: đi qua N7 persist (lưu DB) bình thường.
 
 **Ví dụ:**
-- `"xin chào"` → 0 keyword match, intent=general → `"Chào bạn! Mình là nhân viên hỗ trợ của TechStore. Mình có thể giúp gì cho bạn hôm nay?"` → persist (lưu DB) ✅
+- Query: `"xin chào"` → 0 keyword match, intent=general → Response: `"Chào bạn! Mình là nhân viên hỗ trợ của TechStore. Mình có thể giúp gì cho bạn hôm nay? 😊"`, products: 0 → persist (lưu DB) ✅
 
 ### N7a — ⑦ session update `chatbot-service.js:298`
 **Tại sao:** Lưu RAM để turn sau có context (N4 → N5a). Max 10 turns (20 messages) tránh tốn token. Evict >30 phút + LRU >500 sessions.

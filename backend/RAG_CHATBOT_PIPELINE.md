@@ -116,8 +116,10 @@ flowchart TD
     M -->|"LLM DOWN"| N7["⑥.1  simpleKeywordMatch<br/>name+10 desc+5 scoring"]
     N7 --> N8["⑥.2  version + brand check"]
     N8 -->|"0 kết quả"| NFOUND["🚫 notFoundResponse"]
-    N8 -->|"có kết quả"| N9["⑥.3  negation + price<br/>+ category prefix filter"]
-    N9 --> N9B["⑥.4  sort by score + dedup"]
+    N8 -->|"có kết quả"| N9a["⑥.3a  negation filter"]
+    N9a --> N9b["⑥.3b  price range filter"]
+    N9b --> N9c["⑥.3c  category prefix filter"]
+    N9c --> N9B["⑥.4  sort by score + dedup"]
     N9B --> N10["⑥.5  intent-aware response<br/>💰📋🔍🌟"]
     N10 -->|"khớp"| O
     N10 -->|"không khớp"| N10FALL["getFallbackResponse<br/>(keyword — no results)"]

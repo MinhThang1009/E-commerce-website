@@ -97,11 +97,6 @@ const OrderDetails: React.FC<OrderDetailsProps> = ({ orderId, onOpenReview }) =>
           <Badge variant={statusVariants[order.status]?.variant || 'neutral'}>
             {statusVariants[order.status]?.label || order.status}
           </Badge>
-          {order.paymentStatus === 'paid' && (
-            <span className="bg-emerald-100 text-emerald-800 text-xs font-bold px-2.5 py-1 rounded-full dark:bg-emerald-900/30 dark:text-emerald-400">
-              {t('orders.paidBadge')}
-            </span>
-          )}
         </div>
       </div>
 

@@ -6,7 +6,7 @@
  */
 import React from 'react';
 import { useParams, Link } from 'react-router-dom';
-import { ROUTES, buildRoute } from '@/routes/paths';
+import { ROUTES } from '@/routes/paths';
 import {
   User,
   Mail,
@@ -265,12 +265,9 @@ const UserDetailPage: React.FC = () => {
                               className="border-b border-neutral-200 dark:border-neutral-700 hover:bg-neutral-50 dark:hover:bg-neutral-800/50"
                             >
                               <td className="px-4 py-3">
-                                <Link
-                                  to={buildRoute.adminOrderDetail(order.id)}
-                                  className="font-medium text-primary-600 hover:underline"
-                                >
+                                <span className="font-medium text-primary-600">
                                   #{order.number || order.id.substring(0, 8)}
-                                </Link>
+                                </span>
                               </td>
                               <td className="px-4 py-3 text-neutral-600 dark:text-neutral-400">
                                 {formatDate(order.createdAt)}

@@ -226,8 +226,10 @@ const OrderDetails: React.FC<OrderDetailsProps> = ({ orderId, onOpenReview }) =>
             <div className="space-y-3 text-sm text-neutral-600 dark:text-neutral-300">
               <p className="flex justify-between items-center pb-2 border-b border-neutral-200 dark:border-neutral-700/50">
                 <span className="text-neutral-500">{t('orders.paymentType')}:</span>
-                <span className="uppercase font-extrabold text-primary-600 bg-primary-50 dark:bg-primary-900/20 px-3 py-1 rounded-md border border-primary-100 dark:border-primary-800/50 tracking-wider">
-                  {order.paymentMethod}
+                <span className="font-bold text-primary-600 bg-primary-50 dark:bg-primary-900/20 px-3 py-1 rounded-md border border-primary-100 dark:border-primary-800/50">
+                  {t(`orders.paymentMethods.${order.paymentMethod?.toLowerCase()}`, {
+                    defaultValue: order.paymentMethod,
+                  })}
                 </span>
               </p>
               <p className="flex justify-between items-center pb-2 border-b border-neutral-200 dark:border-neutral-700/50">

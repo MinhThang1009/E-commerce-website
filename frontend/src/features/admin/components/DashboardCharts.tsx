@@ -364,6 +364,12 @@ const DashboardCharts: React.FC = () => {
                   data={orderDataForChart}
                   margin={{ top: 10, right: 10, left: -10, bottom: 0 }}
                 >
+                  <defs>
+                    <linearGradient id="colorOrders" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="0%" stopColor="#10b981" stopOpacity={0.9} />
+                      <stop offset="100%" stopColor="#10b981" stopOpacity={0.4} />
+                    </linearGradient>
+                  </defs>
                   <CartesianGrid
                     strokeDasharray="3 3"
                     className="stroke-neutral-200 dark:stroke-neutral-700"
@@ -374,8 +380,8 @@ const DashboardCharts: React.FC = () => {
                   <Bar
                     dataKey="orderCount"
                     name={ordersLabel}
-                    fill="#10b981"
-                    radius={[4, 4, 0, 0]}
+                    fill="url(#colorOrders)"
+                    radius={[6, 6, 0, 0]}
                   />
                 </BarChart>
               </ResponsiveContainer>

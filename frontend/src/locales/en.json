@@ -813,6 +813,8 @@
   "orders": {
     "title": "My orders",
     "filterAll": "All",
+    "filterEmpty": "No orders found",
+    "filterEmptyDesc": "No orders found with this status. Try a different filter.",
     "loginRequired": "Login required",
     "loginMessage": "Please log in to view your orders.",
     "empty": {

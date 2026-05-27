@@ -426,13 +426,23 @@ const OrdersPage: React.FC = () => {
 
         {orders.length === 0 ? (
           <div className="bg-white dark:bg-neutral-800 rounded-lg shadow-sm">
-            <EmptyState
-              variant="orders"
-              title={t('orders.empty.title')}
-              description={t('orders.empty.message')}
-              actionLabel={t('orders.empty.startShopping')}
-              onAction={() => navigate(ROUTES.SHOP)}
-            />
+            {statusFilter !== 'all' ? (
+              <EmptyState
+                variant="search"
+                title={t('orders.filterEmpty')}
+                description={t('orders.filterEmptyDesc')}
+                actionLabel={t('orders.filterAll')}
+                onAction={() => setStatusFilter('all')}
+              />
+            ) : (
+              <EmptyState
+                variant="orders"
+                title={t('orders.empty.title')}
+                description={t('orders.empty.message')}
+                actionLabel={t('orders.empty.startShopping')}
+                onAction={() => navigate(ROUTES.SHOP)}
+              />
+            )}
           </div>
         ) : (
           <>
@@ -449,7 +459,7 @@ const OrdersPage: React.FC = () => {
                 return (
                   <div
                     key={order.id}
-                    className="group/card bg-white dark:bg-neutral-800/90 rounded-2xl shadow-sm border border-neutral-200 dark:border-neutral-700 overflow-hidden hover:shadow-lg hover:-translate-y-0.5 dark:hover:border-neutral-600 transition-all duration-300"
+                    className={`group/card bg-white dark:bg-neutral-800/90 rounded-2xl shadow-sm border border-neutral-200 dark:border-neutral-700 overflow-hidden hover:shadow-lg hover:-translate-y-0.5 dark:hover:border-neutral-600 transition-all duration-300 ${order.status === 'cancelled' ? 'opacity-60 hover:opacity-90' : ''}`}
                     style={{
                       borderLeft: `4px solid ${statusBorderColors[order.status] || '#a3a3a3'}`,
                     }}
@@ -521,7 +531,7 @@ const OrdersPage: React.FC = () => {
                           </div>
                         </div>
 
-                        <div className="flex gap-2 lg:border-l lg:pl-4 border-neutral-200 dark:border-neutral-700">
+                        <div className="flex flex-wrap gap-2 lg:border-l lg:pl-4 border-neutral-200 dark:border-neutral-700">
                           <Button
                             variant="outline"
                             size="sm"

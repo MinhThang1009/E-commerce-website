@@ -936,6 +936,8 @@
   "orders": {
     "title": "Đơn hàng của tôi",
     "filterAll": "Tất cả",
+    "filterEmpty": "Không có đơn hàng nào",
+    "filterEmptyDesc": "Không tìm thấy đơn hàng với trạng thái này. Thử chọn trạng thái khác.",
     "loginRequired": "Yêu cầu đăng nhập",
     "loginMessage": "Vui lòng đăng nhập để xem đơn hàng của bạn.",
     "empty": {

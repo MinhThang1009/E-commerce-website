@@ -10,7 +10,8 @@
       "about": "About",
       "newArrivals": "New Arrivals",
       "bestSellers": "Best Sellers",
-      "contact": "Contact"
+      "contact": "Contact",
+      "explore": "Explore"
     },
     "actions": {
       "search": "Search",
@@ -754,7 +755,8 @@
       "cardExpiryInvalid": "Please use MM/YY format",
       "cardCvcRequired": "CVC is required",
       "cardCvcInvalid": "Please enter a valid CVC",
-      "orderCreationFailed": "Failed to create order. Please try again."
+      "orderCreationFailed": "Failed to create order. Please try again.",
+      "paymentRequired": "Please select a payment method"
     },
     "success": {
       "message": "Your order has been placed successfully!"
@@ -942,7 +944,7 @@
       "price_asc": "Price: Low to High",
       "price_desc": "Price: High to Low"
     },
-    "stats": "Showing {{count}} products",
+    "stats": "Showing {{current}} of {{total}} products",
     "error": {
       "title": "Failed to load products",
       "message": "An error occurred while loading best selling products."
@@ -1686,6 +1688,24 @@
         "createdAt": "Order date",
         "total": "Total"
       },
+      "orderDialog": {
+        "title": "Order Details",
+        "orderNumber": "Order Number",
+        "orderDate": "Order Date",
+        "status": "Status",
+        "paymentStatus": "Payment",
+        "paymentMethod": "Method",
+        "subtotal": "Subtotal",
+        "shipping": "Shipping",
+        "discount": "Discount",
+        "total": "Total",
+        "viewInOrders": "View in order management",
+        "cod": "Cash on delivery",
+        "paymentPending": "Pending payment",
+        "paymentPaid": "Paid",
+        "paymentFailed": "Payment failed",
+        "paymentRefunded": "Refunded"
+      },
       "orderStatus": {
         "delivered": "Delivered",
         "pending": "Pending"
@@ -2285,7 +2305,11 @@
     "companyAddress": "Address: 105/562 Lang Street, Lang Ha Ward, Dong Da District, Hanoi. Phone: 1900633579",
     "bctNotified": "NOTIFIED - MOIT",
     "bctRegistered": "REGISTERED - MOIT",
-    "dmcaProtected": "DMCA Protected"
+    "dmcaProtected": "DMCA Protected",
+    "paymentAccepted": "Accepted Payments",
+    "securePayment": "Secure Payment",
+    "freeShipping": "Free Shipping",
+    "warranty": "Official Warranty"
   },
   "shop": {
     "filters": {
@@ -2557,10 +2581,10 @@
   },
   "deals": {
     "pageTitle": "Deals",
-    "heroTitle": "Super Sale - Over 50% OFF",
-    "heroDesc": "Discover shock-price deals with over 50% off. Limited time — buy now before it's gone!",
-    "heroBadge": "OVER 50% OFF",
-    "showing": "Showing {{count}} products with over 50% off",
+    "heroTitle": "Super Sale",
+    "heroDesc": "Discover the best deals on tech products. Limited time — buy now before it's gone!",
+    "heroBadge": "SPECIAL DEALS",
+    "showing": "Showing {{count}} discounted products",
     "explore": "Explore discounted products",
     "errorTitle": "Error Loading Deals",
     "errorDesc": "We encountered an error loading deals. Please try again later.",

@@ -10,7 +10,8 @@
       "about": "Giới thiệu",
       "newArrivals": "Hàng mới",
       "bestSellers": "Bán chạy",
-      "contact": "Liên hệ"
+      "contact": "Liên hệ",
+      "explore": "Khám phá"
     },
     "actions": {
       "search": "Tìm kiếm",
@@ -707,7 +708,11 @@
     "companyAddress": "Địa chỉ: 105/562 Đường Láng, Phường Láng Hạ, Quận Đống Đa, Hà Nội. Điện thoại: 1900633579",
     "bctNotified": "ĐÃ THÔNG BÁO - BCT",
     "bctRegistered": "ĐÃ ĐĂNG KÝ - BCT",
-    "dmcaProtected": "Bảo vệ DMCA"
+    "dmcaProtected": "Bảo vệ DMCA",
+    "paymentAccepted": "Thanh toán chấp nhận",
+    "securePayment": "Thanh toán an toàn",
+    "freeShipping": "Miễn phí vận chuyển",
+    "warranty": "Bảo hành chính hãng"
   },
   "checkout": {
     "title": "Thanh toán",
@@ -873,7 +878,8 @@
       "cardExpiryInvalid": "Vui lòng sử dụng định dạng MM/YY",
       "cardCvcRequired": "CVC là bắt buộc",
       "cardCvcInvalid": "Vui lòng nhập CVC hợp lệ",
-      "orderCreationFailed": "Không thể tạo đơn hàng. Vui lòng thử lại."
+      "orderCreationFailed": "Không thể tạo đơn hàng. Vui lòng thử lại.",
+      "paymentRequired": "Vui lòng chọn phương thức thanh toán"
     },
     "success": {
       "message": "Đơn hàng của bạn đã được đặt thành công!"
@@ -1061,7 +1067,7 @@
       "price_asc": "Giá tăng dần",
       "price_desc": "Giá giảm dần"
     },
-    "stats": "Đang hiển thị {{count}} sản phẩm",
+    "stats": "Đang hiển thị {{current}} trên {{total}} sản phẩm",
     "error": {
       "title": "Không thể tải sản phẩm",
       "message": "Đã xảy ra lỗi khi tải danh sách sản phẩm bán chạy."
@@ -1806,6 +1812,24 @@
         "code": "Mã đơn",
         "createdAt": "Ngày đặt",
         "total": "Tổng tiền"
+      },
+      "orderDialog": {
+        "title": "Chi tiết đơn hàng",
+        "orderNumber": "Mã đơn",
+        "orderDate": "Ngày đặt",
+        "status": "Trạng thái",
+        "paymentStatus": "Thanh toán",
+        "paymentMethod": "Phương thức",
+        "subtotal": "Tạm tính",
+        "shipping": "Phí vận chuyển",
+        "discount": "Giảm giá",
+        "total": "Tổng cộng",
+        "viewInOrders": "Xem trong quản lý đơn hàng",
+        "cod": "Thanh toán khi nhận hàng",
+        "paymentPending": "Chờ thanh toán",
+        "paymentPaid": "Đã thanh toán",
+        "paymentFailed": "Thanh toán thất bại",
+        "paymentRefunded": "Đã hoàn tiền"
       },
       "orderStatus": {
         "delivered": "Đã giao",
@@ -2559,10 +2583,10 @@
   },
   "deals": {
     "pageTitle": "Khuyến mãi",
-    "heroTitle": "Siêu giảm giá - Trên 50% OFF",
-    "heroDesc": "Khám phá các sản phẩm giảm giá sốc với mức giảm trên 50%. Cơ hội có hạn, mua ngay kẻo lỡ!",
-    "heroBadge": "GIẢM GIÁ TRÊN 50%",
-    "showing": "Hiển thị {{count}} sản phẩm giảm giá trên 50%",
+    "heroTitle": "Siêu giảm giá",
+    "heroDesc": "Khám phá các sản phẩm đang giảm giá sốc. Cơ hội có hạn, mua ngay kẻo lỡ!",
+    "heroBadge": "KHUYẾN MÃI ĐẶC BIỆT",
+    "showing": "Hiển thị {{count}} sản phẩm đang giảm giá",
     "explore": "Khám phá các sản phẩm giảm giá sốc",
     "errorTitle": "Lỗi khi tải sản phẩm giảm giá",
     "errorDesc": "Đã xảy ra lỗi khi tải danh sách sản phẩm giảm giá. Vui lòng thử lại sau.",

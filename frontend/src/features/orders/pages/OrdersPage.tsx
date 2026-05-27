@@ -14,6 +14,7 @@ import { useAuthStore } from '@/stores/auth-store';
 import Button from '@/components/common/Button';
 import Badge, { BadgeVariant } from '@/components/common/Badge';
 import PremiumButton from '@/components/common/PremiumButton';
+import { EmptyState } from '@/components/common/ErrorState';
 import {
   useGetUserOrdersQuery,
   useCancelOrderMutation,
@@ -340,37 +341,14 @@ const OrdersPage: React.FC = () => {
       </div>
 
       {orders.length === 0 ? (
-        <div className="bg-white dark:bg-neutral-800 rounded-lg shadow-sm p-12 text-center">
-          <div className="text-neutral-400 mb-6">
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              className="h-20 w-20 mx-auto"
-              fill="none"
-              viewBox="0 0 24 24"
-              stroke="currentColor"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={1.5}
-                d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"
-              />
-            </svg>
-          </div>
-          <h2 className="text-2xl font-semibold text-neutral-700 dark:text-neutral-300 mb-3">
-            {t('orders.empty.title')}
-          </h2>
-          <p className="text-neutral-500 dark:text-neutral-400 mb-8 max-w-md mx-auto">
-            {t('orders.empty.message')}
-          </p>
-          <PremiumButton
-            variant="primary"
-            size="large"
-            iconType="arrow-right"
-            onClick={() => navigate(ROUTES.SHOP)}
-          >
-            {t('orders.empty.startShopping')}
-          </PremiumButton>
+        <div className="bg-white dark:bg-neutral-800 rounded-lg shadow-sm">
+          <EmptyState
+            variant="orders"
+            title={t('orders.empty.title')}
+            description={t('orders.empty.message')}
+            actionLabel={t('orders.empty.startShopping')}
+            onAction={() => navigate(ROUTES.SHOP)}
+          />
         </div>
       ) : (
         <>

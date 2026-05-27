@@ -8,6 +8,7 @@ import React from 'react';
 import { useTranslation } from 'react-i18next';
 import PremiumButton from './PremiumButton';
 import { getErrorMessage } from '@/utils/error-utils';
+import { ShoppingCart, Search, Heart, Package, Inbox } from 'lucide-react';
 
 interface ErrorStateProps {
   error: unknown;
@@ -19,12 +20,15 @@ interface ErrorStateProps {
   language?: 'vi' | 'en';
 }
 
+type EmptyVariant = 'cart' | 'search' | 'wishlist' | 'orders' | 'generic';
+
 interface EmptyStateProps {
   title: string;
   description?: string;
   actionLabel?: string;
   onAction?: () => void;
   icon?: React.ReactNode;
+  variant?: EmptyVariant;
   className?: string;
 }
 
@@ -102,39 +106,48 @@ export const ErrorState: React.FC<ErrorStateProps> = ({
   );
 };
 
+const VARIANT_CONFIG: Record<EmptyVariant, { Icon: React.ElementType; gradient: string }> = {
+  cart: { Icon: ShoppingCart, gradient: 'from-primary-400 to-blue-500' },
+  search: { Icon: Search, gradient: 'from-amber-400 to-orange-500' },
+  wishlist: { Icon: Heart, gradient: 'from-rose-400 to-pink-500' },
+  orders: { Icon: Package, gradient: 'from-purple-400 to-indigo-500' },
+  generic: { Icon: Inbox, gradient: 'from-neutral-400 to-neutral-500' },
+};
+
 export const EmptyState: React.FC<EmptyStateProps> = ({
   title,
   description,
   actionLabel,
   onAction,
   icon,
+  variant = 'generic',
   className = '',
 }) => {
-  const defaultIcon = (
-    <svg
-      className="h-12 w-12 text-neutral-400"
-      fill="none"
-      stroke="currentColor"
-      viewBox="0 0 24 24"
-      xmlns="http://www.w3.org/2000/svg"
-    >
-      <path
-        strokeLinecap="round"
-        strokeLinejoin="round"
-        strokeWidth={2}
-        d="M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2 2v7m16 0v5a2 2 0 01-2 2H6a2 2 0 01-2-2v-5m16 0h-2.586a1 1 0 00-.707.293l-2.414 2.414a1 1 0 01-.707.293h-3.172a1 1 0 01-.707-.293l-2.414-2.414A1 1 0 006.586 13H4"
+  const config = VARIANT_CONFIG[variant];
+
+  const illustratedIcon = (
+    <div className="relative mb-2">
+      <div
+        className={`w-20 h-20 rounded-2xl bg-gradient-to-br ${config.gradient} opacity-10 absolute inset-0 m-auto blur-xl`}
       />
-    </svg>
+      <div
+        className={`relative w-20 h-20 rounded-2xl bg-gradient-to-br ${config.gradient} bg-opacity-10 flex items-center justify-center`}
+      >
+        <config.Icon className="size-9 text-white" strokeWidth={1.5} />
+      </div>
+    </div>
   );
 
   return (
-    <div className={`flex flex-col items-center text-center py-12 ${className}`}>
-      <div className="mb-4">{icon || defaultIcon}</div>
+    <div className={`flex flex-col items-center text-center py-16 ${className}`}>
+      <div className="mb-4">{icon || illustratedIcon}</div>
 
       <h3 className="text-lg font-semibold text-neutral-800 dark:text-neutral-200 mb-2">{title}</h3>
 
       {description && (
-        <p className="text-neutral-600 dark:text-neutral-400 mb-6 max-w-md">{description}</p>
+        <p className="text-sm text-neutral-500 dark:text-neutral-400 mb-6 max-w-sm leading-relaxed">
+          {description}
+        </p>
       )}
 
       {actionLabel && onAction && (

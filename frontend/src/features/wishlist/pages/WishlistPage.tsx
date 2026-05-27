@@ -8,7 +8,7 @@ import React from 'react';
 import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
 import { ROUTES } from '@/routes/paths';
-import { PremiumButton } from '@/components/common';
+import { EmptyState } from '@/components/common/ErrorState';
 import { useGetWishlistQuery, useClearWishlistMutation } from '../api/wishlist-api';
 import { ProductCard } from '@/features/catalog';
 import LoadingSpinner from '@/components/common/LoadingSpinner';
@@ -84,24 +84,13 @@ const WishlistPage: React.FC = () => {
       </div>
 
       {items.length === 0 ? (
-        <div className="text-center py-16">
-          <div className="bg-neutral-100 dark:bg-neutral-800 rounded-full h-20 w-20 flex items-center justify-center mx-auto mb-4">
-            <Heart className="h-10 w-10 text-neutral-400 dark:text-neutral-500" />
-          </div>
-          <h2 className="text-xl font-semibold text-neutral-800 dark:text-neutral-200 mb-2">
-            {t('wishlist.emptyTitle')}
-          </h2>
-          <p className="text-neutral-600 dark:text-neutral-400 mb-6">{t('wishlist.emptyDesc')}</p>
-          <PremiumButton
-            variant="primary"
-            size="large"
-            iconType="arrow-right"
-            onClick={() => navigate(ROUTES.SHOP)}
-            className="px-8"
-          >
-            {t('wishlist.continueShopping')}
-          </PremiumButton>
-        </div>
+        <EmptyState
+          variant="wishlist"
+          title={t('wishlist.emptyTitle')}
+          description={t('wishlist.emptyDesc')}
+          actionLabel={t('wishlist.continueShopping')}
+          onAction={() => navigate(ROUTES.SHOP)}
+        />
       ) : (
         <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
           {items.map((product) => (

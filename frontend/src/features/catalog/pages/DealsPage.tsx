@@ -12,7 +12,9 @@ import { ProductCard } from '@/features/catalog';
 import { ProductListCard } from '@/features/catalog';
 import LoadingSpinner from '@/components/common/LoadingSpinner';
 import Select from '@/components/common/Select';
+import PageHero from '@/components/common/PageHero';
 import { Product } from '../types/product.types';
+import { Zap } from 'lucide-react';
 
 const DealsPage: React.FC = () => {
   const { t } = useTranslation();
@@ -26,7 +28,7 @@ const DealsPage: React.FC = () => {
     isLoading,
     error,
   } = useGetDealsQuery({
-    minDiscount: 50,
+    minDiscount: 1,
     sort: sortOption,
     limit,
   });
@@ -87,15 +89,14 @@ const DealsPage: React.FC = () => {
       <Helmet>
         <title>{t('deals.pageTitle', { defaultValue: 'Deals' })} | TechStore</title>
       </Helmet>
-      <div className="container mx-auto px-4 py-8 animate-fadeIn">
-        <div className="bg-gradient-to-r from-primary-600 to-secondary-500 rounded-xl p-8 mb-8 text-white text-center">
-          <h1 className="text-4xl font-bold mb-4">{t('deals.heroTitle')}</h1>
-          <p className="text-lg max-w-2xl mx-auto mb-6">{t('deals.heroDesc')}</p>
-          <div className="inline-block bg-white text-primary-600 font-bold py-3 px-6 rounded-full text-lg">
-            {t('deals.heroBadge')}
-          </div>
-        </div>
-
+      <PageHero
+        icon={<Zap className="w-7 h-7" />}
+        title={t('deals.heroTitle')}
+        subtitle={t('deals.heroDesc')}
+        badge={t('deals.heroBadge')}
+        gradient="violet"
+      />
+      <div className="container mx-auto px-4 py-8">
         <div className="mb-8 text-center">
           <p className="text-neutral-600 dark:text-neutral-400 text-lg">
             {formattedProducts.length > 0

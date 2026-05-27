@@ -5,6 +5,7 @@
  * @description Page component của feature cart
  */
 import { PremiumButton } from '@/components/common';
+import { EmptyState } from '@/components/common/ErrorState';
 import CartItem from '../components/CartItem';
 import CheckCircleIcon from '@/components/icons/CheckCircleIcon';
 import PlusCircleIcon from '@/components/icons/PlusCircleIcon';
@@ -308,37 +309,13 @@ const CartPage: React.FC = () => {
       )}
 
       {items.length === 0 ? (
-        <div className="p-8 text-center">
-          <svg
-            xmlns="http://www.w3.org/2000/svg"
-            className="h-16 w-16 mx-auto text-neutral-400 mb-4"
-            fill="none"
-            viewBox="0 0 24 24"
-            stroke="currentColor"
-          >
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              strokeWidth={2}
-              d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z"
-            />
-          </svg>
-          <h2 className="text-xl font-semibold text-neutral-700 dark:text-neutral-300 mb-2">
-            {t('cart.emptyCart.title')}
-          </h2>
-          <p className="text-neutral-500 dark:text-neutral-400 mb-6">
-            {t('cart.emptyCart.message')}
-          </p>
-          <PremiumButton
-            variant="primary"
-            size="large"
-            iconType="arrow-right"
-            onClick={() => navigate(ROUTES.SHOP)}
-            className="px-8"
-          >
-            {t('cart.emptyCart.startShopping')}
-          </PremiumButton>
-        </div>
+        <EmptyState
+          variant="cart"
+          title={t('cart.emptyCart.title')}
+          description={t('cart.emptyCart.message')}
+          actionLabel={t('cart.emptyCart.startShopping')}
+          onAction={() => navigate(ROUTES.SHOP)}
+        />
       ) : (
         <motion.div
           className="grid grid-cols-1 lg:grid-cols-3 gap-8"

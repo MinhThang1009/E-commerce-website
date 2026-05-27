@@ -4,7 +4,7 @@
  * @feature admin
  * @description Page component của feature admin
  */
-import React from 'react';
+import React, { useState } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { ROUTES } from '@/routes/paths';
 import {
@@ -19,6 +19,8 @@ import {
   Crown,
   CheckCircle,
   XCircle,
+  Eye,
+  ExternalLink,
 } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { useGetUserByIdQuery } from '../api/admin-user-api';
@@ -26,11 +28,14 @@ import LoadingSpinner from '@/components/common/LoadingSpinner';
 import { Button } from '@/components/ui/button';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 
 const UserDetailPage: React.FC = () => {
   const { t, i18n } = useTranslation();
   const { id } = useParams<{ id: string }>();
   const { data: userData, isLoading, error } = useGetUserByIdQuery(id || '');
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any -- order fields dynamic from API
+  const [selectedOrder, setSelectedOrder] = useState<any>(null);
 
   if (isLoading) return <LoadingSpinner fullScreen />;
   if (error || !userData) {
@@ -265,9 +270,13 @@ const UserDetailPage: React.FC = () => {
                               className="border-b border-neutral-200 dark:border-neutral-700 hover:bg-neutral-50 dark:hover:bg-neutral-800/50"
                             >
                               <td className="px-4 py-3">
-                                <span className="font-medium text-primary-600">
+                                <button
+                                  type="button"
+                                  onClick={() => setSelectedOrder(order)}
+                                  className="font-medium text-primary-600 hover:text-primary-700 dark:hover:text-primary-400 hover:underline cursor-pointer"
+                                >
                                   #{order.number || order.id.substring(0, 8)}
-                                </span>
+                                </button>
                               </td>
                               <td className="px-4 py-3 text-neutral-600 dark:text-neutral-400">
                                 {formatDate(order.createdAt)}
@@ -375,6 +384,149 @@ const UserDetailPage: React.FC = () => {
           </div>
         </div>
       </div>
+
+      {/* Order Detail Dialog */}
+      <Dialog open={!!selectedOrder} onOpenChange={(open) => !open && setSelectedOrder(null)}>
+        <DialogContent className="max-w-[500px]">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Eye className="size-5" />
+              {t('admin.userDetail.orderDialog.title')}
+            </DialogTitle>
+          </DialogHeader>
+          {selectedOrder && (
+            <div className="space-y-4">
+              <div className="rounded-lg border border-neutral-200 dark:border-neutral-700 overflow-hidden">
+                <table className="w-full text-sm">
+                  <tbody>
+                    <tr className="border-b border-neutral-200 dark:border-neutral-700">
+                      <td className="px-4 py-2.5 font-medium bg-neutral-50 dark:bg-neutral-800 w-[140px]">
+                        {t('admin.userDetail.orderDialog.orderNumber')}
+                      </td>
+                      <td className="px-4 py-2.5 font-semibold dark:text-white">
+                        #{selectedOrder.number || selectedOrder.id?.substring(0, 8)}
+                      </td>
+                    </tr>
+                    <tr className="border-b border-neutral-200 dark:border-neutral-700">
+                      <td className="px-4 py-2.5 font-medium bg-neutral-50 dark:bg-neutral-800">
+                        {t('admin.userDetail.orderDialog.orderDate')}
+                      </td>
+                      <td className="px-4 py-2.5 dark:text-neutral-300">
+                        {formatDate(selectedOrder.createdAt)}
+                      </td>
+                    </tr>
+                    <tr className="border-b border-neutral-200 dark:border-neutral-700">
+                      <td className="px-4 py-2.5 font-medium bg-neutral-50 dark:bg-neutral-800">
+                        {t('admin.userDetail.orderDialog.status')}
+                      </td>
+                      <td className="px-4 py-2.5">
+                        <span
+                          className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-medium ${getStatusColor(selectedOrder.status)}`}
+                        >
+                          {getStatusLabel(selectedOrder.status)}
+                        </span>
+                      </td>
+                    </tr>
+                    {selectedOrder.paymentStatus && (
+                      <tr className="border-b border-neutral-200 dark:border-neutral-700">
+                        <td className="px-4 py-2.5 font-medium bg-neutral-50 dark:bg-neutral-800">
+                          {t('admin.userDetail.orderDialog.paymentStatus')}
+                        </td>
+                        <td className="px-4 py-2.5">
+                          <span
+                            className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-medium ${
+                              selectedOrder.paymentStatus === 'paid'
+                                ? 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400'
+                                : selectedOrder.paymentStatus === 'failed'
+                                  ? 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400'
+                                  : 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-400'
+                            }`}
+                          >
+                            {t(
+                              `admin.userDetail.orderDialog.payment${selectedOrder.paymentStatus.charAt(0).toUpperCase() + selectedOrder.paymentStatus.slice(1)}`,
+                            )}
+                          </span>
+                        </td>
+                      </tr>
+                    )}
+                    {selectedOrder.paymentMethod && (
+                      <tr className="border-b border-neutral-200 dark:border-neutral-700">
+                        <td className="px-4 py-2.5 font-medium bg-neutral-50 dark:bg-neutral-800">
+                          {t('admin.userDetail.orderDialog.paymentMethod')}
+                        </td>
+                        <td className="px-4 py-2.5 dark:text-neutral-300">
+                          {selectedOrder.paymentMethod === 'cod'
+                            ? t('admin.userDetail.orderDialog.cod')
+                            : selectedOrder.paymentMethod.toUpperCase()}
+                        </td>
+                      </tr>
+                    )}
+                  </tbody>
+                </table>
+              </div>
+
+              {/* Financial summary */}
+              <div className="rounded-lg border border-neutral-200 dark:border-neutral-700 p-4 space-y-2 text-sm">
+                {selectedOrder.subtotal != null && (
+                  <div className="flex justify-between text-neutral-600 dark:text-neutral-400">
+                    <span>{t('admin.userDetail.orderDialog.subtotal')}</span>
+                    <span>
+                      {Number(selectedOrder.subtotal).toLocaleString(
+                        i18n.language === 'vi' ? 'vi-VN' : 'en-US',
+                        { maximumFractionDigits: 0 },
+                      )}
+                      {t('common.currencySymbol')}
+                    </span>
+                  </div>
+                )}
+                {selectedOrder.shippingCost != null && Number(selectedOrder.shippingCost) > 0 && (
+                  <div className="flex justify-between text-neutral-600 dark:text-neutral-400">
+                    <span>{t('admin.userDetail.orderDialog.shipping')}</span>
+                    <span>
+                      {Number(selectedOrder.shippingCost).toLocaleString(
+                        i18n.language === 'vi' ? 'vi-VN' : 'en-US',
+                        { maximumFractionDigits: 0 },
+                      )}
+                      {t('common.currencySymbol')}
+                    </span>
+                  </div>
+                )}
+                {selectedOrder.discount != null && Number(selectedOrder.discount) > 0 && (
+                  <div className="flex justify-between text-neutral-600 dark:text-neutral-400">
+                    <span>{t('admin.userDetail.orderDialog.discount')}</span>
+                    <span className="text-red-500">
+                      -
+                      {Number(selectedOrder.discount).toLocaleString(
+                        i18n.language === 'vi' ? 'vi-VN' : 'en-US',
+                        { maximumFractionDigits: 0 },
+                      )}
+                      {t('common.currencySymbol')}
+                    </span>
+                  </div>
+                )}
+                <hr className="border-neutral-200 dark:border-neutral-700" />
+                <div className="flex justify-between font-semibold dark:text-white">
+                  <span>{t('admin.userDetail.orderDialog.total')}</span>
+                  <span>
+                    {Number(selectedOrder.total).toLocaleString(
+                      i18n.language === 'vi' ? 'vi-VN' : 'en-US',
+                      { maximumFractionDigits: 0 },
+                    )}
+                    {t('common.currencySymbol')}
+                  </span>
+                </div>
+              </div>
+
+              <Link to={ROUTES.ADMIN_ORDERS} onClick={() => setSelectedOrder(null)}>
+                <Button variant="outline" className="w-full gap-2">
+                  <ExternalLink className="size-4" />
+                  {t('admin.userDetail.orderDialog.viewInOrders')}
+                </Button>
+              </Link>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };

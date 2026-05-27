@@ -14,7 +14,7 @@ import Pagination from '@/components/common/Pagination';
 import Select from '@/components/common/Select';
 import { PremiumButton } from '@/components/common';
 import LoadingSpinner from '@/components/common/LoadingSpinner';
-import { ErrorState } from '@/components/common/ErrorState';
+import { ErrorState, EmptyState } from '@/components/common/ErrorState';
 import { Product, ProductFilters } from '../types/product.types';
 import { Category } from '../types/category.types';
 import { useGetProductsQuery } from '../api/product-api';
@@ -408,31 +408,13 @@ const ShopPage: React.FC = () => {
             ) : productsError ? (
               <ErrorState error={productsError} onRetry={refetchProducts} />
             ) : !productsData?.data || productsData.data.length === 0 ? (
-              <div className="text-center py-12 bg-neutral-50 dark:bg-neutral-800 rounded-lg">
-                <svg
-                  xmlns="http://www.w3.org/2000/svg"
-                  className="h-12 w-12 mx-auto text-neutral-400 mb-4"
-                  fill="none"
-                  viewBox="0 0 24 24"
-                  stroke="currentColor"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M9.172 16.172a4 4 0 015.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
-                  />
-                </svg>
-                <h3 className="text-xl font-semibold text-neutral-700 dark:text-neutral-300 mb-2">
-                  {t('shop.noProducts.title')}
-                </h3>
-                <p className="text-neutral-500 dark:text-neutral-400 mb-6">
-                  {t('shop.noProducts.message')}
-                </p>
-                <PremiumButton variant="primary" size="large" onClick={handleClearFilters}>
-                  {t('shop.noProducts.clearFilters')}
-                </PremiumButton>
-              </div>
+              <EmptyState
+                variant="search"
+                title={t('shop.noProducts.title')}
+                description={t('shop.noProducts.message')}
+                actionLabel={t('shop.noProducts.clearFilters')}
+                onAction={handleClearFilters}
+              />
             ) : (
               <>
                 <motion.div

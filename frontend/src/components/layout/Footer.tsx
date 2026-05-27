@@ -10,6 +10,7 @@ import { useTranslation } from 'react-i18next';
 import { ShopIcon } from '@/components/icons';
 import FeedbackModal from '@/components/common/FeedbackModal';
 import { ROUTES } from '@/routes/paths';
+import { ShieldCheck, Truck, Award, CreditCard } from 'lucide-react';
 
 const Footer: React.FC = () => {
   const { t } = useTranslation();
@@ -216,25 +217,75 @@ const Footer: React.FC = () => {
           onClose={() => setIsFeedbackModalVisible(false)}
         />
 
-        {/* Footer dưới */}
+        {/* Trust signals */}
         <div className="border-t border-neutral-200 dark:border-neutral-800 pt-8 mt-8">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div className="text-sm text-neutral-500 dark:text-neutral-500">
-              <p className="mb-2">
-                &copy; {new Date().getFullYear()} {t('header.brand')}. {t('footer.copyright')}
-              </p>
-              <p className="mb-1">{t('footer.companyName')}</p>
-              <p>{t('footer.companyAddress')}</p>
-            </div>
-            <div className="flex items-end justify-start md:justify-end gap-2">
-              <div className="bg-blue-500 text-white px-2 py-1 text-xs font-bold rounded">
-                {t('footer.dmcaProtected')}
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
+            {[
+              {
+                icon: ShieldCheck,
+                labelKey: 'footer.securePayment',
+                color: 'text-green-600 dark:text-green-400',
+              },
+              {
+                icon: Truck,
+                labelKey: 'footer.freeShipping',
+                color: 'text-blue-600 dark:text-blue-400',
+              },
+              {
+                icon: Award,
+                labelKey: 'footer.warranty',
+                color: 'text-amber-600 dark:text-amber-400',
+              },
+              {
+                icon: CreditCard,
+                labelKey: 'footer.paymentAccepted',
+                color: 'text-purple-600 dark:text-purple-400',
+              },
+            ].map(({ icon: TrustIcon, labelKey, color }) => (
+              <div
+                key={labelKey}
+                className="flex items-center gap-3 p-3 rounded-xl bg-neutral-50 dark:bg-neutral-800/50 border border-neutral-100 dark:border-neutral-800"
+              >
+                <TrustIcon className={`size-5 shrink-0 ${color}`} />
+                <span className="text-sm font-medium text-neutral-700 dark:text-neutral-300">
+                  {t(labelKey)}
+                </span>
               </div>
-              <div className="bg-primary-600 text-white px-2 py-1 text-xs font-bold rounded">
-                {t('footer.bctNotified')}
+            ))}
+          </div>
+
+          {/* Payment methods */}
+          <div className="flex flex-wrap items-center justify-center gap-3 mb-8">
+            {['VISA', 'MasterCard', 'MoMo', 'VNPay', 'COD'].map((method) => (
+              <div
+                key={method}
+                className="px-3 py-1.5 rounded-lg bg-neutral-100 dark:bg-neutral-800 border border-neutral-200 dark:border-neutral-700 text-xs font-semibold text-neutral-600 dark:text-neutral-400"
+              >
+                {method}
               </div>
-              <div className="bg-red-600 text-white px-2 py-1 text-xs font-bold rounded">
-                {t('footer.bctRegistered')}
+            ))}
+          </div>
+
+          {/* Bottom bar */}
+          <div className="border-t border-neutral-200 dark:border-neutral-800 pt-6">
+            <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+              <div className="text-sm text-neutral-500 dark:text-neutral-500">
+                <p className="mb-1">
+                  &copy; {new Date().getFullYear()} {t('header.brand')}. {t('footer.copyright')}
+                </p>
+                <p className="text-xs">{t('footer.companyName')}</p>
+              </div>
+              <div className="flex items-center gap-2">
+                <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-blue-50 dark:bg-blue-900/20 text-blue-700 dark:text-blue-400 text-xs font-semibold border border-blue-200 dark:border-blue-800">
+                  <ShieldCheck className="size-3.5" />
+                  {t('footer.dmcaProtected')}
+                </span>
+                <span className="inline-flex items-center px-2.5 py-1 rounded-md bg-primary-50 dark:bg-primary-900/20 text-primary-700 dark:text-primary-400 text-xs font-semibold border border-primary-200 dark:border-primary-800">
+                  {t('footer.bctNotified')}
+                </span>
+                <span className="inline-flex items-center px-2.5 py-1 rounded-md bg-red-50 dark:bg-red-900/20 text-red-700 dark:text-red-400 text-xs font-semibold border border-red-200 dark:border-red-800">
+                  {t('footer.bctRegistered')}
+                </span>
               </div>
             </div>
           </div>

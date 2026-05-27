@@ -12,7 +12,7 @@ import { PremiumButton } from '@/components/common';
 import { useGetWishlistQuery, useClearWishlistMutation } from '../api/wishlist-api';
 import { ProductCard } from '@/features/catalog';
 import LoadingSpinner from '@/components/common/LoadingSpinner';
-import { HeartIcon } from '@heroicons/react/24/outline';
+import { Heart } from 'lucide-react';
 import { useWishlistStore } from '@/stores/wishlist-store';
 import { useAuthStore } from '@/stores/auth-store';
 
@@ -49,7 +49,7 @@ const WishlistPage: React.FC = () => {
     <div className="container mx-auto px-4 py-8">
       <div className="flex items-center justify-between mb-8 border-b border-neutral-200 dark:border-neutral-700 pb-4">
         <h1 className="text-3xl font-bold text-neutral-800 dark:text-neutral-100 flex items-center gap-2">
-          <HeartIcon className="h-8 w-8 text-rose-500" />
+          <Heart className="h-8 w-8 text-rose-500" />
           {t('header.dropdown.wishlist')}
         </h1>
 
@@ -86,7 +86,7 @@ const WishlistPage: React.FC = () => {
       {items.length === 0 ? (
         <div className="text-center py-16">
           <div className="bg-neutral-100 dark:bg-neutral-800 rounded-full h-20 w-20 flex items-center justify-center mx-auto mb-4">
-            <HeartIcon className="h-10 w-10 text-neutral-400 dark:text-neutral-500" />
+            <Heart className="h-10 w-10 text-neutral-400 dark:text-neutral-500" />
           </div>
           <h2 className="text-xl font-semibold text-neutral-800 dark:text-neutral-200 mb-2">
             {t('wishlist.emptyTitle')}

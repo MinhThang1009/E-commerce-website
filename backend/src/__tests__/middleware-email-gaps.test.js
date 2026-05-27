@@ -653,7 +653,6 @@ describe('email.js — createTransporter Gmail path (line 49)', () => {
     jest.mock('nodemailer', () => ({
       createTransport: mockCreateTransport,
     }));
-    jest.mock('sanitize-html', () => jest.fn((html) => html));
     jest.mock('@utils/logger', () => ({
       info: jest.fn(),
       error: jest.fn(),

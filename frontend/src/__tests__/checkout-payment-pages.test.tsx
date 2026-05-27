@@ -37,6 +37,24 @@ jest.mock('react-router-dom', () => {
   };
 });
 
+// ── Mock framer-motion ──────────────────────────────────────────
+jest.mock('framer-motion', () => {
+  const React = require('react');
+  return {
+    motion: new Proxy(
+      {},
+      {
+        get:
+          (_t: unknown, tag: string) =>
+          ({ children, className, ...rest }: Record<string, unknown>) =>
+            React.createElement(tag, { className, ...rest }, children),
+      },
+    ),
+    AnimatePresence: ({ children }: { children: unknown }) => children,
+    MotionConfig: ({ children }: { children: unknown }) => children,
+  };
+});
+
 // ── Mock react-helmet-async ─────────────────────────────────────
 jest.mock('react-helmet-async', () => ({
   Helmet: ({ children }: { children: unknown }) => children,
@@ -48,31 +66,24 @@ jest.mock('@tanstack/react-query', () => ({
   useQueryClient: () => ({ invalidateQueries: mockInvalidateQueries }),
 }));
 
-// ── Mock antd ──────────────────────────────────────────────────
-// CheckoutPage sử dụng antd Button/Modal/Table — mock toàn bộ để tránh lỗi transform
-jest.mock('antd', () => {
+// ── Mock @radix-ui/react-dialog (dùng bởi shadcn Dialog) ───────
+jest.mock('@radix-ui/react-dialog', () => {
   const R = require('react');
   return {
-    Button: ({
-      children,
-      onClick,
-      disabled,
-    }: {
-      children: unknown;
-      onClick?: () => void;
-      disabled?: boolean;
-    }) => R.createElement('button', { onClick, disabled, 'data-testid': 'antd-btn' }, children),
-    Modal: ({ children, open }: { children: unknown; open?: boolean }) =>
-      open ? R.createElement('div', { 'data-testid': 'antd-modal' }, children) : null,
-    Table: () => R.createElement('div', { 'data-testid': 'antd-table' }),
-  };
-});
-
-jest.mock('@ant-design/icons', () => {
-  const R = require('react');
-  return {
-    CheckCircleOutlined: () => R.createElement('span', { 'data-testid': 'check-icon' }),
-    InfoCircleOutlined: () => R.createElement('span', { 'data-testid': 'info-icon' }),
+    Root: ({ children, open }: { children: unknown; open?: boolean }) =>
+      R.createElement(
+        'div',
+        { 'data-testid': 'dialog-root', 'data-state': open ? 'open' : 'closed' },
+        open ? children : null,
+      ),
+    Trigger: ({ children }: { children: unknown }) => children,
+    Portal: ({ children }: { children: unknown }) => children,
+    Overlay: () => null,
+    Content: ({ children }: { children: unknown }) =>
+      R.createElement('div', { 'data-testid': 'dialog-content', role: 'dialog' }, children),
+    Title: ({ children }: { children: unknown }) => R.createElement('h2', {}, children),
+    Description: ({ children }: { children: unknown }) => R.createElement('p', {}, children),
+    Close: ({ children }: { children: unknown }) => children || null,
   };
 });
 
@@ -429,10 +440,6 @@ jest.mock('@/utils/localize', () => ({
   localizeField: (_field: unknown, key: string, _lang?: string) => key,
 }));
 
-jest.mock('@/utils/toast', () => ({
-  toast: { success: jest.fn(), error: jest.fn(), warning: jest.fn() },
-}));
-
 // ── Mock routes ─────────────────────────────────────────────────
 jest.mock('@/routes/paths', () => ({
   ROUTES: {
@@ -691,6 +698,11 @@ describe('CheckoutPage: sau khi kiểm tra', () => {
     return render(<CheckoutPage />);
   };
 
+  const goToPaymentStep = () => {
+    const nextBtn = screen.getByText('checkout.step.next');
+    fireEvent.click(nextBtn);
+  };
+
   it('hiển thị tiêu đề checkout.title sau khi hết loading', () => {
     // Arrange — giỏ hàng có items để không bị redirect
     mockCartState = {
@@ -736,6 +748,7 @@ describe('CheckoutPage: sau khi kiểm tra', () => {
       setServerCart: jest.fn(),
     };
     render(<CheckoutPage />);
+    goToPaymentStep();
     // Assert — payment method section
     expect(screen.getByText('checkout.paymentMethod.title')).toBeInTheDocument();
   });
@@ -752,6 +765,7 @@ describe('CheckoutPage: sau khi kiểm tra', () => {
       setServerCart: jest.fn(),
     };
     render(<CheckoutPage />);
+    goToPaymentStep();
     // Assert — radio options cho từng payment method
     const radios = document.querySelectorAll('input[type="radio"][name="paymentMethod"]');
     expect(radios.length).toBeGreaterThanOrEqual(3);
@@ -769,6 +783,7 @@ describe('CheckoutPage: sau khi kiểm tra', () => {
       setServerCart: jest.fn(),
     };
     render(<CheckoutPage />);
+    goToPaymentStep();
     // Act — chọn VNPay radio
     const vnpayRadio = document.querySelector(
       'input[type="radio"][value="vnpay"]',
@@ -795,14 +810,15 @@ describe('CheckoutPage: sau khi kiểm tra', () => {
       setServerCart: jest.fn(),
     };
     render(<CheckoutPage />);
+    goToPaymentStep();
     // Act — chọn installment
     const installmentRadio = document.querySelector(
       'input[type="radio"][value="installment"]',
     ) as HTMLInputElement;
     if (installmentRadio) {
       fireEvent.click(installmentRadio);
-      // Assert — modal trả góp mở (antd Modal mock hiển thị khi open=true)
-      expect(screen.getByTestId('antd-modal')).toBeInTheDocument();
+      // Assert — dialog trả góp mở
+      expect(screen.getByTestId('dialog-content')).toBeInTheDocument();
     } else {
       expect(screen.getByText('checkout.paymentMethod.installment')).toBeInTheDocument();
     }
@@ -871,6 +887,7 @@ describe('CheckoutPage: sau khi kiểm tra', () => {
       setServerCart: jest.fn(),
     };
     render(<CheckoutPage />);
+    goToPaymentStep();
     // Act — nhập ghi chú vào textarea
     const notesTextarea = screen.getByPlaceholderText('checkout.orderNotes.placeholder');
     fireEvent.change(notesTextarea, { target: { value: 'Giao hàng buổi sáng.' } });
@@ -1150,6 +1167,12 @@ describe('CheckoutPage: submit form', () => {
     return result;
   };
 
+  const renderAndGoToPayment = () => {
+    const result = renderWithItems();
+    fireEvent.click(screen.getByText('checkout.step.next'));
+    return result;
+  };
+
   it('submit với phương thức COD khi form chưa điền → validate thất bại, không gọi createOrder', async () => {
     // Arrange — form rỗng (không điền firstName, lastName, email, phone)
     renderWithItems();
@@ -1216,7 +1239,7 @@ describe('CheckoutPage: submit form', () => {
 
   it('chọn VNPay → radio VNPay được check', () => {
     // Arrange
-    renderWithItems();
+    renderAndGoToPayment();
 
     // Act — click radio VNPay
     const vnpayRadio = document.querySelector(
@@ -1233,7 +1256,7 @@ describe('CheckoutPage: submit form', () => {
 
   it('chọn MoMo → radio MoMo được check', () => {
     // Arrange
-    renderWithItems();
+    renderAndGoToPayment();
 
     // Act
     const momoRadio = document.querySelector(
@@ -1249,7 +1272,7 @@ describe('CheckoutPage: submit form', () => {
 
   it('chọn COD (mặc định) → radio COD được check', () => {
     // Arrange
-    renderWithItems();
+    renderAndGoToPayment();
 
     // Assert — COD là default nên đã được check
     const codRadio = document.querySelector('input[type="radio"][value="cod"]') as HTMLInputElement;

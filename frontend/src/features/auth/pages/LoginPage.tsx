@@ -81,7 +81,7 @@ const LoginPage: React.FC = () => {
       } else {
         navigate(from === '/admin' ? '/' : from, { replace: true });
       }
-    } catch (err) {
+    } catch (_err) {
       // Lỗi đã được TanStack Query xử lý và hiển thị trên UI
     }
   };

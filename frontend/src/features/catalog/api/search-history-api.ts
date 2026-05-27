@@ -9,7 +9,7 @@ import apiClient from '@/lib/api-client';
 
 // === Query Keys ===
 
-export const searchHistoryKeys = {
+const searchHistoryKeys = {
   all: ['search-history'] as const,
   list: (params: unknown) => [...searchHistoryKeys.all, 'list', params] as const,
 };

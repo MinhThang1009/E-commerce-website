@@ -8,3 +8,4 @@
 
 // API endpoints (TanStack Query)
 export * from './api/user-api';
+export { default as ProfileAddressesTab } from './components/ProfileAddressesTab';

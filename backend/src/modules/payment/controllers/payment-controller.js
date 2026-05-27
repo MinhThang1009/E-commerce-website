@@ -64,12 +64,12 @@ class PaymentController {
         req.headers['x-forwarded-for'] ||
         req.connection?.remoteAddress ||
         req.socket?.remoteAddress;
-      const data = await this.paymentService.createVNPayUrl({
+      const paymentUrl = await this.paymentService.createVNPayUrl({
         ...req.body,
         ipAddr,
         userId: req.user.id,
       });
-      res.status(200).json({ status: 'success', data });
+      res.status(200).json({ status: 'success', data: { paymentUrl } });
     } catch (err) {
       next(err);
     }

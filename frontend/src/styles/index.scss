@@ -3,9 +3,7 @@
 
 @import url('https://fonts.googleapis.com/css2?family=Montserrat:ital,wght@0,300;0,400;0,500;0,600;0,700;0,800;0,900;1,700&family=Inter:wght@300;400;500;600;700&display=swap');
 
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
+@reference "tailwindcss";
 
 /* ─────────────────────────────────────────────────────────────
    DESIGN SYSTEM 2025-2026 — Light/Dark mode + Liquid Glass
@@ -310,38 +308,6 @@ body {
   box-shadow: 0 1px 24px rgba(0, 0, 0, 0.06);
 }
 
-/* Glass button */
-.glass-btn {
-  position: relative;
-  background: var(--glass-bg);
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
-  border: 1px solid var(--glass-border);
-  border-radius: 9999px;
-  overflow: hidden;
-  isolation: isolate;
-  cursor: pointer;
-
-  &::before {
-    content: '';
-    position: absolute;
-    inset: 0;
-    background: linear-gradient(180deg, rgba(255, 255, 255, 0.15) 0%, transparent 100%);
-    border-radius: inherit;
-    pointer-events: none;
-  }
-
-  &:hover {
-    background: var(--glass-bg-hover);
-    border-color: rgba(255, 255, 255, 0.3);
-  }
-
-  > * {
-    position: relative;
-    z-index: 1;
-  }
-}
-
 /* ─────────────────────────────────────────────────────────────
    GRADIENT TEXT — 2025 expressive typography
    ───────────────────────────────────────────────────────────── */
@@ -427,22 +393,6 @@ body {
    LEGACY ANIMATIONS (giữ nguyên compatibility)
    ───────────────────────────────────────────────────────────── */
 
-@keyframes fadeInUp {
-  from {
-    opacity: 0;
-    transform: translateY(30px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
-}
-
-.animate-fade-in-up {
-  opacity: 0;
-  animation: fadeInUp 0.8s ease-out forwards;
-}
-
 @keyframes shimmer {
   0% {
     background-position: -200% center;
@@ -452,61 +402,8 @@ body {
   }
 }
 
-.animate-slide-in-left {
-  animation: slideInFromLeft 0.5s ease-out forwards;
-}
-.animate-slide-in-right {
-  animation: slideInFromRight 0.5s ease-out forwards;
-}
-.animate-scale-in {
-  animation: scaleIn 0.3s ease-out forwards;
-}
-.animate-slide-in-top {
-  animation: slideInTop 0.3s ease-out forwards;
-}
 .animate-slideInTop {
   animation: slideInTop 0.3s ease-out forwards;
-}
-
-@keyframes slideInFromLeft {
-  from {
-    opacity: 0;
-    transform: translateX(-30px);
-  }
-  to {
-    opacity: 1;
-    transform: translateX(0);
-  }
-}
-@keyframes slideInFromRight {
-  from {
-    opacity: 0;
-    transform: translateX(30px);
-  }
-  to {
-    opacity: 1;
-    transform: translateX(0);
-  }
-}
-@keyframes slideInTop {
-  from {
-    opacity: 0;
-    transform: translateY(-20px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
-}
-@keyframes scaleIn {
-  from {
-    opacity: 0;
-    transform: scale(0.95);
-  }
-  to {
-    opacity: 1;
-    transform: scale(1);
-  }
 }
 
 /* ─────────────────────────────────────────────────────────────
@@ -570,28 +467,6 @@ body {
 
   &::placeholder {
     color: var(--text-tertiary);
-  }
-}
-
-/* Bento grid card */
-.bento-card {
-  @apply rounded-3xl p-6 overflow-hidden relative;
-  background: var(--bg-surface);
-  border: 1px solid var(--border-default);
-  transition:
-    transform 0.3s cubic-bezier(0.16, 1, 0.3, 1),
-    box-shadow 0.3s cubic-bezier(0.16, 1, 0.3, 1);
-
-  &:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 8px 40px rgba(0, 0, 0, 0.08);
-  }
-
-  .dark & {
-    background: var(--bg-elevated);
-    &:hover {
-      box-shadow: 0 8px 40px rgba(0, 0, 0, 0.3);
-    }
   }
 }
 
@@ -1396,70 +1271,6 @@ body {
   }
 }
 
-/* Ant Design Toast Styles */
-.ant-message-dark {
-  .ant-message-notice-content {
-    background-color: #1a1a1a;
-    color: #f9fafb;
-    border: 1px solid rgba(255, 255, 255, 0.08);
-    box-shadow:
-      0 3px 6px -4px rgba(0, 0, 0, 0.48),
-      0 6px 16px 0 rgba(0, 0, 0, 0.32),
-      0 9px 28px 8px rgba(0, 0, 0, 0.2);
-  }
-
-  /* Đảm bảo text luôn hiển thị rõ ràng */
-  .ant-message-custom-content {
-    color: #f9fafb;
-  }
-
-  /* Màu cho các loại toast khác nhau */
-  .ant-message-success {
-    .anticon {
-      color: #10b981;
-    }
-    span {
-      color: #f9fafb;
-    }
-  }
-
-  .ant-message-error {
-    .anticon {
-      color: #ef4444;
-    }
-    span {
-      color: #f9fafb;
-    }
-  }
-
-  .ant-message-warning {
-    .anticon {
-      color: #f59e0b;
-    }
-    span {
-      color: #f9fafb;
-    }
-  }
-
-  .ant-message-info {
-    .anticon {
-      color: #3b82f6;
-    }
-    span {
-      color: #f9fafb;
-    }
-  }
-
-  .ant-message-loading {
-    .anticon {
-      color: #60a5fa;
-    }
-    span {
-      color: #f9fafb;
-    }
-  }
-}
-
 :root {
   /* Font variables */
   --font-heading: 'Montserrat', sans-serif;
@@ -1511,246 +1322,6 @@ body {
   --color-text-primary: #f5f5f5;
   --color-text-secondary: #a3a3a3;
   --color-border: #334155;
-}
-
-/* Ant Design Dark Mode Overrides */
-.dark {
-  /* Card styles */
-  .ant-card {
-    background-color: #1a1a1a;
-    border-color: rgba(255, 255, 255, 0.08);
-    color: #f9fafb;
-  }
-
-  .ant-card-head {
-    color: #f9fafb;
-    border-color: rgba(255, 255, 255, 0.08);
-  }
-
-  /* Table styles */
-  .ant-table {
-    background-color: #1a1a1a;
-    color: #f9fafb;
-  }
-
-  .ant-table-thead > tr > th {
-    background-color: #111111;
-    color: #f9fafb;
-    border-color: rgba(255, 255, 255, 0.08);
-  }
-
-  .ant-table-tbody > tr > td {
-    border-color: rgba(255, 255, 255, 0.08);
-    color: #f9fafb;
-  }
-
-  .ant-table-tbody > tr:hover > td {
-    background-color: #262626;
-  }
-
-  /* Fixed columns in tables */
-  .ant-table-cell-fix-right,
-  .ant-table-cell-fix-left {
-    background-color: #1a1a1a !important;
-  }
-
-  .ant-table-tbody > tr:hover .ant-table-cell-fix-right,
-  .ant-table-tbody > tr:hover .ant-table-cell-fix-left {
-    background-color: #262626 !important;
-  }
-
-  /* Fix for sticky header */
-  .ant-table-header .ant-table-cell-fix-right,
-  .ant-table-header .ant-table-cell-fix-left {
-    background-color: #111111 !important;
-  }
-
-  /* Custom class for dark mode tables with fixed columns */
-  .dark-table-fixed-columns {
-    .ant-table-cell-fix-right,
-    .ant-table-cell-fix-left {
-      background-color: #1a1a1a !important;
-    }
-
-    .ant-table-tbody > tr:hover .ant-table-cell-fix-right,
-    .ant-table-tbody > tr:hover .ant-table-cell-fix-left {
-      background-color: #262626 !important;
-    }
-
-    .ant-table-cell-fix-right::before,
-    .ant-table-cell-fix-left::before {
-      background-color: transparent !important;
-    }
-  }
-
-  /* Pagination */
-  .ant-pagination-item {
-    background-color: #1a1a1a;
-    border-color: rgba(255, 255, 255, 0.08);
-
-    a {
-      color: #f9fafb;
-    }
-
-    &-active {
-      background-color: #3b82f6;
-      border-color: #3b82f6;
-
-      a {
-        color: white;
-      }
-    }
-  }
-
-  /* Form elements */
-  .ant-input,
-  .ant-input-number,
-  .ant-select-selector,
-  .ant-select-dropdown,
-  .ant-picker,
-  .ant-input-affix-wrapper {
-    background-color: #1a1a1a !important;
-    border-color: rgba(255, 255, 255, 0.08) !important;
-    color: #f9fafb !important;
-  }
-
-  .ant-input-affix-wrapper .ant-input {
-    background-color: transparent !important;
-    border-color: transparent !important;
-  }
-
-  .ant-input-affix-wrapper-focused {
-    border-color: #1890ff !important;
-    box-shadow: 0 0 0 2px rgba(24, 144, 255, 0.2) !important;
-  }
-
-  .ant-select-selection-item {
-    color: #f9fafb !important;
-  }
-
-  .ant-input::placeholder {
-    color: #9ca3af !important;
-  }
-
-  .ant-select-dropdown {
-    background-color: #1a1a1a !important;
-  }
-
-  .ant-select-item {
-    color: #f9fafb !important;
-  }
-
-  .ant-select-item-option-active:not(.ant-select-item-option-disabled) {
-    background-color: #262626 !important;
-  }
-
-  .ant-select-item-option-selected:not(.ant-select-item-option-disabled) {
-    background-color: #2563eb !important;
-    color: white !important;
-  }
-
-  /* Modal — neutral dark + white text */
-  .ant-modal-content,
-  .ant-modal-header {
-    background-color: #1a1a1a;
-    color: #f5f5f5;
-  }
-
-  .ant-modal-content p,
-  .ant-modal-content span,
-  .ant-modal-content div {
-    color: inherit;
-  }
-
-  .ant-modal-title {
-    color: #f9fafb;
-  }
-
-  .ant-modal-close-x {
-    color: #f9fafb;
-  }
-
-  /* Drawer */
-  .ant-drawer-content {
-    background-color: #1a1a1a;
-  }
-
-  .ant-drawer-header {
-    background-color: #1a1a1a;
-    border-color: rgba(255, 255, 255, 0.08);
-  }
-
-  .ant-drawer-title {
-    color: #f9fafb;
-  }
-
-  .ant-drawer-close {
-    color: #f9fafb;
-  }
-
-  /* Buttons */
-  .ant-btn-default {
-    background-color: #1a1a1a;
-    border-color: rgba(255, 255, 255, 0.08);
-    color: #f9fafb;
-
-    &:hover {
-      background-color: #262626;
-      border-color: #4b5563;
-    }
-  }
-
-  /* Text buttons in dark mode */
-  .ant-btn-text {
-    background-color: transparent !important;
-    color: #f9fafb !important;
-
-    &:hover {
-      background-color: #262626 !important;
-      color: white !important;
-    }
-  }
-
-  /* Link buttons in dark mode */
-  .ant-btn-link {
-    color: #3b82f6 !important;
-
-    &:hover {
-      color: #60a5fa !important;
-    }
-
-    &.ant-btn-dangerous {
-      color: #ef4444 !important;
-
-      &:hover {
-        color: #f87171 !important;
-      }
-    }
-  }
-
-  /* Fix for input suffix icons */
-  .ant-input-suffix .anticon {
-    color: #9ca3af !important;
-  }
-
-  /* Fix for select arrows */
-  .ant-select-arrow .anticon {
-    color: #9ca3af !important;
-  }
-
-  /* Fix for input number handlers */
-  .ant-input-number-handler-wrap {
-    background-color: #262626 !important;
-  }
-
-  .ant-input-number-handler {
-    border-color: #4b5563 !important;
-  }
-
-  .ant-input-number-handler-up-inner,
-  .ant-input-number-handler-down-inner {
-    color: #9ca3af !important;
-  }
 }
 
 @layer base {
@@ -1896,10 +1467,6 @@ body {
 }
 
 /* Animations */
-.fade-in {
-  animation: fadeIn var(--duration-300) var(--ease-out);
-}
-
 @keyframes fadeIn {
   from {
     opacity: 0;
@@ -1913,64 +1480,6 @@ body {
   animation: fadeIn 0.3s ease-out;
 }
 
-.fade-out {
-  animation: fadeOut var(--duration-200) var(--ease-in);
-}
-
-@keyframes fadeOut {
-  from {
-    opacity: 1;
-  }
-  to {
-    opacity: 0;
-  }
-}
-
-/* Hero Section Animations - Enhanced for New Design */
-@keyframes fadeInUp {
-  from {
-    opacity: 0;
-    transform: translateY(30px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
-}
-
-@keyframes slideInFromLeft {
-  from {
-    opacity: 0;
-    transform: translateX(-50px);
-  }
-  to {
-    opacity: 1;
-    transform: translateX(0);
-  }
-}
-
-@keyframes slideInFromRight {
-  from {
-    opacity: 0;
-    transform: translateX(50px);
-  }
-  to {
-    opacity: 1;
-    transform: translateX(0);
-  }
-}
-
-@keyframes scaleIn {
-  from {
-    opacity: 0;
-    transform: scale(0.9);
-  }
-  to {
-    opacity: 1;
-    transform: scale(1);
-  }
-}
-
 @keyframes slideInTop {
   from {
     opacity: 0;
@@ -1982,40 +1491,15 @@ body {
   }
 }
 
-/* Animation classes */
-.animate-fade-in-up {
-  opacity: 0;
-  animation: fadeInUp 0.8s ease-out forwards;
-}
-
-.animate-slide-in-left {
-  opacity: 0;
-  animation: slideInFromLeft 0.8s ease-out forwards;
-}
-
-.animate-slide-in-right {
-  opacity: 0;
-  animation: slideInFromRight 0.8s ease-out forwards;
-}
-
-.animate-scale-in {
-  opacity: 0;
-  animation: scaleIn 0.6s ease-out forwards;
-}
-
-/* Mobile menu animation */
-.animate-slideInTop {
-  animation: slideInTop 0.3s ease-out forwards;
-}
-
-/* Legacy support */
-.hero-fade-in {
-  animation: fadeInUp 0.6s ease-out forwards;
-}
-
-.hero-fade-in-delay {
-  opacity: 0;
-  animation: fadeInUp 0.6s ease-out 0.2s forwards;
+@keyframes scaleIn {
+  from {
+    opacity: 0;
+    transform: scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
 }
 
 /* Line clamp utilities */
@@ -2077,47 +1561,24 @@ body {
       0 16px 32px rgba(0, 0, 0, 0.15);
   }
 
-  /* Premium Button Styles - Match Ant Design exactly with new classes */
-  .premium-button,
-  .ant-btn.css-dev-only-do-not-override-mc1tut {
+  /* Premium Button Styles */
+  .premium-button {
     position: relative;
     overflow: hidden;
-    transition: 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important;
-    transform: translateY(0px) !important;
-    font-weight: 600 !important;
+    transition: 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    font-weight: 600;
     letter-spacing: 0.025em;
-    border: 1px solid transparent !important;
-    cursor: pointer !important;
-    outline: none !important;
-    user-select: none !important;
-    touch-action: manipulation !important;
-    line-height: 1.5715 !important;
-    display: inline-flex !important;
-    align-items: center !important;
-    justify-content: center !important;
-    gap: 8px !important;
-    border-radius: 0.75rem !important;
-  }
-
-  /* Size specific styles to match Ant Design */
-  .premium-button.ant-btn-lg {
-    height: 56px !important; /* h-14 = 56px */
-    padding: 6.4px 15px !important;
-    font-size: 18px !important; /* text-lg */
-    font-weight: 600 !important; /* font-semibold */
-    line-height: 1.5 !important;
-  }
-
-  .premium-button.ant-btn-sm {
-    height: 32px !important;
-    padding: 0px 7px !important;
-    font-size: 14px !important;
-  }
-
-  .premium-button.ant-btn {
-    height: 40px !important;
-    padding: 4px 15px !important;
-    font-size: 16px !important;
+    border: 1px solid transparent;
+    cursor: pointer;
+    outline: none;
+    user-select: none;
+    touch-action: manipulation;
+    line-height: 1.5715;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    border-radius: 0.75rem;
   }
 
   .premium-button::before {
@@ -2136,26 +1597,11 @@ body {
     left: 100%;
   }
 
-  .premium-button .ant-btn-icon,
   .premium-button span {
     position: relative;
     z-index: 2;
   }
 
-  .premium-button .ant-btn-icon {
-    display: inline-flex !important;
-    align-items: center !important;
-    justify-content: center !important;
-  }
-
-  .premium-button .ant-btn-icon .anticon {
-    font-size: 1em !important;
-    width: 1em !important;
-    height: 1em !important;
-    display: inline-block !important;
-  }
-
-  /* Content wrapper to match Ant Design structure */
   .premium-button > span:last-child {
     display: flex !important;
     align-items: center !important;
@@ -2166,8 +1612,7 @@ body {
    * Light mode: opacity cao (0.88) để không chìm trên nền trắng
    * Dark mode:  opacity thấp (0.26) để blur thấy màu background
    */
-  .premium-button-primary,
-  .ant-btn-primary.ant-btn-color-primary.ant-btn-variant-solid {
+  .premium-button-primary {
     background: rgba(42, 172, 167, 0.88) !important;
     backdrop-filter: blur(12px) saturate(1.8) !important;
     -webkit-backdrop-filter: blur(12px) saturate(1.8) !important;
@@ -2178,8 +1623,7 @@ body {
       rgba(42, 172, 167, 0.32) 0px 4px 16px 0px !important;
   }
 
-  .dark .premium-button-primary,
-  .dark .ant-btn-primary.ant-btn-color-primary.ant-btn-variant-solid {
+  .dark .premium-button-primary {
     background: rgba(42, 172, 167, 0.26) !important;
     border: 1px solid rgba(75, 188, 184, 0.42) !important;
     box-shadow:
@@ -2188,8 +1632,7 @@ body {
   }
 
   /* Secondary glass — coral tint */
-  .premium-button-secondary,
-  .ant-btn-default.ant-btn-color-default.ant-btn-variant-solid.premium-button-secondary {
+  .premium-button-secondary {
     background: rgba(255, 117, 94, 0.26) !important;
     backdrop-filter: blur(12px) saturate(1.8) !important;
     -webkit-backdrop-filter: blur(12px) saturate(1.8) !important;
@@ -2200,8 +1643,7 @@ body {
       rgba(255, 117, 94, 0.3) 0px 4px 16px 0px !important;
   }
 
-  .premium-button-success,
-  .ant-btn-primary.ant-btn-color-primary.ant-btn-variant-solid.premium-button-success {
+  .premium-button-success {
     background: linear-gradient(135deg, #10b981, #059669) !important;
     border-color: transparent !important;
     color: white !important;
@@ -2242,12 +1684,12 @@ body {
   }
 
   /* Hover effects */
-  .premium-button-primary:hover:not(:disabled):not(.ant-btn-loading) {
+  .premium-button-primary:hover:not(:disabled):not(.loading) {
     transform: translateY(-2px) !important;
     box-shadow: rgba(42, 172, 167, 0.5) 0px 8px 25px 0px !important;
   }
 
-  .premium-button-primary:active:not(:disabled):not(.ant-btn-loading) {
+  .premium-button-primary:active:not(:disabled):not(.loading) {
     transform: translateY(0px) !important;
     box-shadow: rgba(42, 172, 167, 0.3) 0px 4px 15px 0px !important;
   }
@@ -2297,81 +1739,5 @@ body {
   .dark .premium-button-ghost:hover,
   .dark .premium-button-outline:hover {
     background: rgba(96, 165, 250, 0.1) !important;
-  }
-
-  /* Loading state animation */
-  .premium-button.ant-btn-loading {
-    position: relative;
-  }
-
-  .premium-button.ant-btn-loading::after {
-    content: '';
-    position: absolute;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    background: linear-gradient(
-      45deg,
-      transparent 30%,
-      rgba(255, 255, 255, 0.1) 50%,
-      transparent 70%
-    );
-    animation: shimmer 2s infinite;
-    z-index: 1;
-  }
-
-  @keyframes shimmer {
-    0% {
-      transform: translateX(-100%);
-    }
-    100% {
-      transform: translateX(100%);
-    }
-  }
-}
-
-.slide-in-bottom {
-  animation: slideInBottom var(--duration-300) var(--ease-out);
-}
-
-@keyframes slideInBottom {
-  from {
-    transform: translateY(20px);
-    opacity: 0;
-  }
-  to {
-    transform: translateY(0);
-    opacity: 1;
-  }
-}
-
-.slide-in-right {
-  animation: slideInRight var(--duration-300) var(--ease-out);
-}
-
-@keyframes slideInRight {
-  from {
-    transform: translateX(20px);
-    opacity: 0;
-  }
-  to {
-    transform: translateX(0);
-    opacity: 1;
-  }
-}
-
-.scale-in {
-  animation: scaleIn var(--duration-300) var(--ease-out);
-}
-
-@keyframes scaleIn {
-  from {
-    transform: scale(0.95);
-    opacity: 0;
-  }
-  to {
-    transform: scale(1);
-    opacity: 1;
   }
 }

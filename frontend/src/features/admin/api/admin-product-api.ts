@@ -122,7 +122,7 @@ export interface ApiResponse<T> {
 
 // === Query Keys ===
 
-export const adminProductKeys = {
+const adminProductKeys = {
   all: ['admin-products'] as const,
   lists: () => [...adminProductKeys.all, 'list'] as const,
   list: (filters: unknown) => [...adminProductKeys.lists(), filters] as const,
@@ -301,13 +301,3 @@ export function useUpdateProductStatusMutation() {
     },
   });
 }
-
-// Service class giữ nguyên cho các call không qua hook
-class AdminProductService {
-  async createProduct(productData: CreateProductRequest) {
-    const response = await apiClient.post('/admin/products', productData);
-    return response.data;
-  }
-}
-
-export const adminProductService = new AdminProductService();

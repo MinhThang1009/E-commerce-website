@@ -45,18 +45,19 @@ Route → Page → Components
 
 | Layer | Tech |
 |---|---|
-| Framework | React 18 + TypeScript + Vite |
-| Routing | React Router v6 |
+| Framework | React 19 + TypeScript + Vite 8 |
+| Routing | React Router v7 |
 | Server state | TanStack Query v5 |
 | Client state | Zustand v5 + Immer |
 | HTTP | Axios (qua `api-client.ts`) |
-| Styling | Tailwind CSS + SCSS |
-| i18n | i18next + react-i18next |
-| UI library | Ant Design v5 |
-| Rich text | Quill v2 (react-quill) |
+| Styling | Tailwind CSS v4 (`@tailwindcss/vite`) + SCSS |
+| i18n | i18next v26 + react-i18next |
+| UI library | shadcn/ui (Radix UI + cva) |
+| Rich text | Tiptap (TiptapEditor component, mode='simple'\|'full') |
 | Charts | Recharts |
-| Motion | Framer Motion |
-| Icons | Heroicons + Ant Design Icons + Lucide React |
+| Motion | Framer Motion v12 |
+| Validation | Zod v4 (form schemas) |
+| Icons | Lucide React |
 
 ## 1.3 13 features — mỗi feature = 1 domain cô lập
 
@@ -222,7 +223,6 @@ src/components/
 
 src/hooks/       ← Global hooks (6 hook files, 8 exported hooks):
   use-token-refresh.ts  ← Auto-refresh JWT trước khi hết hạn
-  use-antd-toast.ts     ← Ant Design message/notification
   use-debounce.ts       ← Debounce value
   use-notifications.ts  ← Notification queue + toast logic
   use-api-state.ts      ← Wrapper cho loading/error/data state pattern
@@ -243,7 +243,6 @@ src/hooks/       ← Global hooks (6 hook files, 8 exported hooks):
 
 - `src/styles/index.scss` — global CSS variables + Tailwind base imports
 - `src/styles/` — SCSS tokens cho spacing, colors, typography
-- Override Ant Design dark mode trong `src/styles/index.scss` (`.dark .ant-*` selectors)
 
 ---
 

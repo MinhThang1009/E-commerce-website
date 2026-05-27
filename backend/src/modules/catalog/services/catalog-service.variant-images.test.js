@@ -62,10 +62,7 @@ describe('CatalogService — variant images branch coverage', () => {
 
   describe('createProduct — variant có images nhưng createdVariants[i] không có id', () => {
     test('bỏ qua tạo ảnh variant khi createdVariants trả về phần tử không có id', async () => {
-      catalogRepository.createProductVariants.mockResolvedValue([
-        { id: 10 },
-        undefined,
-      ]);
+      catalogRepository.createProductVariants.mockResolvedValue([{ id: 10 }, undefined]);
       catalogRepository.findProductByIdWithFullDetails.mockResolvedValue({ id: 1 });
 
       await service.createProduct({
@@ -80,9 +77,7 @@ describe('CatalogService — variant images branch coverage', () => {
       });
 
       expect(catalogRepository.createProductImages).toHaveBeenCalledWith(
-        expect.arrayContaining([
-          expect.objectContaining({ variantId: 10, imageUrl: 'v1.jpg' }),
-        ]),
+        expect.arrayContaining([expect.objectContaining({ variantId: 10, imageUrl: 'v1.jpg' })]),
         expect.any(Object),
       );
       const imageRows = catalogRepository.createProductImages.mock.calls[0][0];
@@ -98,10 +93,7 @@ describe('CatalogService — variant images branch coverage', () => {
       const product = { id: 1, slug: 'p', save: jest.fn() };
       catalogRepository.findProductByPk.mockResolvedValue(product);
       catalogRepository.findProductByIdWithFullDetails.mockResolvedValue(product);
-      catalogRepository.createProductVariants.mockResolvedValue([
-        undefined,
-        { id: 20 },
-      ]);
+      catalogRepository.createProductVariants.mockResolvedValue([undefined, { id: 20 }]);
 
       await service.updateProduct({
         id: 1,
@@ -114,9 +106,7 @@ describe('CatalogService — variant images branch coverage', () => {
       });
 
       expect(catalogRepository.createProductImages).toHaveBeenCalledWith(
-        expect.arrayContaining([
-          expect.objectContaining({ variantId: 20, imageUrl: 'v2.jpg' }),
-        ]),
+        expect.arrayContaining([expect.objectContaining({ variantId: 20, imageUrl: 'v2.jpg' })]),
         expect.any(Object),
       );
       const imageRows = catalogRepository.createProductImages.mock.calls[0][0];

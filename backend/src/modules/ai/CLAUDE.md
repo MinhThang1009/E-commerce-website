@@ -113,6 +113,7 @@ modules/ai/
 **`services/chatbot/chatbot-service.js`** là singleton (`module.exports = new ChatbotService()`). Đây là class duy nhất xử lý toàn bộ RAG pipeline:
 
 **Flow 7 bước trong `handleMessage()`:**
+
 1. `validateMessage()` — không rỗng, ≤500 ký tự → throw AppError 400 nếu không hợp lệ
 2. `expandAbbreviations()` — chuẩn hóa query (ip→iPhone, ss→Samsung...)
 3. `isPromptInjection` / `isOffTopic` → early return, không gọi retrieval hay LLM
@@ -122,6 +123,7 @@ modules/ai/
 7. **Persist**: cập nhật session memory + `ChatMessage` DB (fire-and-forget)
 
 **Các concerns khác:**
+
 - **Provider rotation**: `LLM_API_KEY + LLM_BASE_URL + LLM_MODEL_1` (primary) + `LLM_MODEL_2` (fallback). Retry khi 429/402/500/503. Fallback `simpleKeywordMatch` khi hết providers.
 - **rewriteQuery fallback**: khi LLM down, dùng `fuzzyExpandQuery` (prefix + edit-distance so với product catalog) thay vì trả null.
 - **Session memory**: `Map<sessionId, { messages, lastAccess }>`. Max 10 turns, 500 sessions, TTL 30 phút. LRU eviction. Reset khi restart.
@@ -154,12 +156,12 @@ modules/ai/
 
 Base path: `/api/chatbot`
 
-| Method | Path                       | Auth                 | Rate Limit                                        | Mô tả                                        |
-| ------ | -------------------------- | -------------------- | ------------------------------------------------- | -------------------------------------------- |
-| POST   | `/chatbot/message`         | optionalAuthenticate | chatbotLimiter (20 req/60s, prod và dev như nhau) | Gửi message nhận RAG response                |
-| GET    | `/chatbot/recommendations` | optionalAuthenticate | —                                                 | Gợi ý sản phẩm (`?type=deals` hoặc featured) |
-| POST   | `/chatbot/analytics`       | authenticate         | —                                                 | Track analytics event (yêu cầu login)        |
-| POST   | `/chatbot/cart/add`        | authenticate         | —                                                 | Thêm sản phẩm vào giỏ qua chatbot            |
+| Method | Path                       | Auth                 | Rate Limit                                        | Mô tả                                                                                  |
+| ------ | -------------------------- | -------------------- | ------------------------------------------------- | -------------------------------------------------------------------------------------- |
+| POST   | `/chatbot/message`         | optionalAuthenticate | chatbotLimiter (20 req/60s, prod và dev như nhau) | Gửi message nhận RAG response                                                          |
+| GET    | `/chatbot/recommendations` | optionalAuthenticate | —                                                 | Gợi ý sản phẩm (`?type=deals` hoặc featured)                                           |
+| POST   | `/chatbot/analytics`       | authenticate         | —                                                 | Track analytics event (yêu cầu login)                                                  |
+| POST   | `/chatbot/cart/add`        | authenticate         | —                                                 | Thêm sản phẩm vào giỏ qua chatbot                                                      |
 | POST   | `/chatbot/session/clear`   | —                    | —                                                 | Xóa session history theo `sessionId` (hoặc toàn bộ nếu không có). Dùng cho demo/debug. |
 
 ---

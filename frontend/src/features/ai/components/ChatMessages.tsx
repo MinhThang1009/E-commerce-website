@@ -13,7 +13,7 @@ import MessageBubble from './MessageBubble';
 interface ChatMessagesProps {
   messages: Message[];
   onSuggestionClick: (suggestion: string) => void;
-  messagesEndRef: RefObject<HTMLDivElement>;
+  messagesEndRef: RefObject<HTMLDivElement | null>;
   // eslint-disable-next-line @typescript-eslint/no-explicit-any -- User object shape varies
   user?: any;
   isLoading?: boolean;
@@ -79,7 +79,11 @@ const ChatMessages: React.FC<ChatMessagesProps> = ({
             </div>
           )}
 
-          <MessageBubble message={message} onSuggestionClick={onSuggestionClick} isLoading={isLoading} />
+          <MessageBubble
+            message={message}
+            onSuggestionClick={onSuggestionClick}
+            isLoading={isLoading}
+          />
         </div>
       ))}
       <div ref={messagesEndRef} />

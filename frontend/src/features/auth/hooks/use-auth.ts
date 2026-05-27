@@ -33,7 +33,7 @@ export const useAuth = () => {
       localStorage.removeItem('wishlist');
       localStorage.removeItem('recentSearches');
       localStorage.removeItem('cartItems');
-    } catch (error) {
+    } catch (_error) {
       useAuthStore.getState().logout();
     }
   };

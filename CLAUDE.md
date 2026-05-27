@@ -164,7 +164,7 @@ npm run test:ci             # CI mode + coverage
 
 ## 4.2 Frontend — Feature-Based
 
-- **Framework:** React 18 + TypeScript + Vite
+- **Framework:** React 19 + TypeScript + Vite 8
 - **Pattern:** Mỗi feature = 1 unit cô lập. Không có cross-feature imports.
 - **Feature code** (`src/features/<name>/`): `api/`, `components/`, `hooks/`, `pages/`, `types/`
 - **Shared:** `src/components/`, `src/stores/`, `src/hooks/`, `src/utils/`, `src/lib/`, `src/types/`
@@ -263,12 +263,12 @@ inventory ← orders (subscribe: order.cancelled → ghi inventory log; order.cr
 
 | Suite | Suites | Tests | Runtime | Config |
 |---|---|---|---|---|
-| BE Unit Tests | 159 | 3.537 | ~10s | `jest.config.js` |
+| BE Unit Tests | 159 | 3.636 | ~10s | `jest.config.js` |
 | BE Integration Tests | 36 | 184 | ~50s | `jest.integration.config.js` |
 | BE API HTTP Tests | 39 | 700 | ~190s | `jest.api.config.js` |
 | BE E2E Tests | 5 | 100 | ~20s | `jest.e2e.config.js` |
 | FE Component Tests | 18 | 548 | ~9s | `jest.config.cjs` (frontend/) |
-| **Tổng** | **257** | **5.069** | | |
+| **Tổng** | **257** | **5.168** | | |
 
 - **BE Coverage (local):** statements 99%, branches 97%, functions 99%, lines 99% (thresholds trong `jest.config.js`)
 - **BE Coverage (CI):** statements ≥97%, lines ≥97%, branches ≥85%, functions ≥95%
@@ -284,7 +284,7 @@ inventory ← orders (subscribe: order.cancelled → ghi inventory log; order.cr
 CLAUDE.md                                    ← File này: navigation entry point
 STRUCTURE.md                                 ← Architecture, tech stack, data flow, schema
 DIAGRAMS.md                                  ← Mermaid diagrams (Use Case, Sequence, ERD, Flow)
-TESTING_STRATEGY.md                          ← Chiến lược test 5 tầng, 5.069 tests
+TESTING_STRATEGY.md                          ← Chiến lược test 5 tầng, 5.168 tests
 README.md                                    ← Project README, setup instructions
 
 backend/CLAUDE.md                            ← BE architecture, DI pattern, request trace

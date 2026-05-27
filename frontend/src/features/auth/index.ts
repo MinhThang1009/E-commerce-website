@@ -35,7 +35,6 @@ export { useAuthStore } from '@/stores/auth-store';
 export {
   useLoginMutation,
   useRegisterMutation,
-  useRefreshTokenMutation,
   useLogoutMutation,
   useResetPasswordMutation,
   useResendVerificationMutation,

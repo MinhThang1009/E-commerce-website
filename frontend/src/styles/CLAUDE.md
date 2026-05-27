@@ -25,7 +25,7 @@
 ```
 styles/
 ├── _tokens.scss              ← Design tokens: brand colors, button glass tokens, surface tokens
-├── index.scss                ← Global styles, CSS variables, Liquid Glass classes, Ant Design overrides
+├── index.scss                ← Global styles, CSS variables, Liquid Glass classes
 └── product-description.css   ← Override cho Quill HTML output (product description)
 ```
 
@@ -119,7 +119,6 @@ Dark mode: opacity thấp hơn để glass trong hơn, màu giữ nguyên.
 .glass-card-sm       // Smaller glass card (radius 0.875rem)
 .glass-card-lg       // Large glass card (radius 1.75rem)
 .glass-nav           // Navbar glass
-.glass-btn           // Glass button base
 .glass-input         // Glass form input
 .glass-product-card  // Product card (2.0 — noise grain + specular)
 .glass-product-card-featured  // Featured product tall card
@@ -135,7 +134,6 @@ Dark mode: opacity thấp hơn để glass trong hơn, màu giữ nguyên.
 
 /* Layout */
 .page-canvas         // Unified page background (no stripe effect)
-.bento-card          // Bento grid card
 
 /* Glass buttons 2.0 */
 .btn-glass-primary   // CTA — teal
@@ -143,7 +141,7 @@ Dark mode: opacity thấp hơn để glass trong hơn, màu giữ nguyên.
 .btn-glass-danger    // Delete — red
 .btn-glass-secondary // View — neutral
 
-/* Premium buttons (Ant Design) */
+/* Premium buttons */
 .premium-button      // Base class
 .premium-button-primary, -secondary, -success, -info, -warning, -danger, -ghost, -outline
 
@@ -158,10 +156,6 @@ Dark mode: opacity thấp hơn để glass trong hơn, màu giữ nguyên.
 .scrollbar-thin      // Modern thin scrollbar
 .focus-ring          // Accessibility focus ring
 .gradient-border     // Gradient border via ::before pseudo
-
-/* Ant Design dark mode overrides */
-.ant-message-dark    // Dark mode toast styles
-.dark .ant-*         // Dark mode overrides cho Table, Modal, Form, Pagination...
 ```
 
 ---
@@ -188,7 +182,6 @@ Design system 2025-2026 — Apple iOS 26 inspired. Key concepts:
 | Design tokens (brand colors, glass vars)   | `_tokens.scss` CSS variables                           |
 | Complex animations (keyframes phức tạp)    | `index.scss` hoặc **Framer Motion**                    |
 | Product description HTML từ Quill          | `product-description.css` class `.description-content` |
-| Override Ant Design dark mode              | `index.scss` `.dark .ant-*`                            |
 
 **Nguyên tắc:** ưu tiên Tailwind. Chỉ dùng SCSS khi Tailwind không xử lý được.
 

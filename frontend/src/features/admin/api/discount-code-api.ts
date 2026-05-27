@@ -35,7 +35,7 @@ export interface DiscountCodeFilters {
 
 // === Query Keys ===
 
-export const discountCodeKeys = {
+const discountCodeKeys = {
   all: ['discount-codes'] as const,
   lists: () => [...discountCodeKeys.all, 'list'] as const,
   list: (filters: unknown) => [...discountCodeKeys.lists(), filters] as const,
@@ -57,20 +57,6 @@ export function useGetDiscountCodesQuery(
       return data;
     },
     enabled: options?.skip !== undefined ? !options.skip : true,
-  });
-}
-
-export function useGetDiscountCodeByIdQuery(
-  id: string,
-  options?: { enabled?: boolean; skip?: boolean },
-) {
-  return useQuery<DiscountCodeResponse>({
-    queryKey: discountCodeKeys.detail(id),
-    queryFn: async () => {
-      const { data } = await apiClient.get(`/admin/discount-codes/${id}`);
-      return data;
-    },
-    enabled: options?.skip !== undefined ? !options.skip : !!id,
   });
 }
 

@@ -1,3 +1,4 @@
+/* eslint-disable react-refresh/only-export-components */
 /**
  * @file index.tsx
  * @layer Component
@@ -214,7 +215,6 @@ export const ChevronDownIcon: React.FC<IconProps> = ({ className = 'h-6 w-6', si
   </svg>
 );
 
-// Bảng map icon dùng cho render động
 export const NAVIGATION_ICONS = {
   home: HomeIcon,
   shop: ShopIcon,

@@ -5,113 +5,130 @@
  * @description UI component cho feature catalog
  */
 import React from 'react';
-import { Form, Input, Select, Row, Col, Button, Alert } from 'antd';
+import { UseFormReturn } from 'react-hook-form';
 import { useTranslation } from 'react-i18next';
-import SimpleRichTextEditor from '@/components/common/SimpleRichTextEditor';
+import { Info } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Alert, AlertTitle, AlertDescription } from '@/components/ui/alert';
+import {
+  Select,
+  SelectTrigger,
+  SelectValue,
+  SelectContent,
+  SelectItem,
+} from '@/components/ui/select';
+import TiptapEditor from '@/components/common/TiptapEditor';
 import Base64ImageWarning from './Base64ImageWarning';
 
-const { TextArea } = Input;
-const { Option } = Select;
-
 interface ProductBasicInfoFormProps {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  form: UseFormReturn<any>;
   fillExampleData: () => void;
   productId?: string;
 }
 
 const ProductBasicInfoForm: React.FC<ProductBasicInfoFormProps> = ({
+  form,
   fillExampleData,
   productId: _productId,
 }) => {
   const { t } = useTranslation();
-  const form = Form.useFormInstance();
-  const description = Form.useWatch('description', form) || '';
+  const description = form.watch('description') || '';
 
   const handleFillSampleData = async () => {
     if (!import.meta.env.DEV) return;
     const { SAMPLE_LAPTOP_DATA } = await import('../utils/sample-product-data');
-    form.setFieldsValue(SAMPLE_LAPTOP_DATA);
+    Object.entries(SAMPLE_LAPTOP_DATA).forEach(([key, value]) => {
+      form.setValue(key, value);
+    });
     fillExampleData();
   };
   return (
-    <Row gutter={[24, 16]}>
-      <Col span={24}>
-        <Form.Item
-          name="name"
-          label={t('admin.products.form.name')}
-          rules={[{ required: true, message: t('admin.products.form.nameRequired') }]}
-        >
-          <Input placeholder={t('admin.products.form.namePlaceholder')} size="large" />
-        </Form.Item>
-      </Col>
-
-      <Col span={24}>
-        <Form.Item name="status" label={t('admin.products.form.status')}>
-          <Select placeholder={t('admin.products.form.statusPlaceholder')}>
-            <Option value="active">{t('admin.products.form.statusActive')}</Option>
-            <Option value="inactive">{t('admin.products.form.statusInactive')}</Option>
-            <Option value="draft">{t('admin.products.form.statusDraft')}</Option>
-          </Select>
-        </Form.Item>
-      </Col>
-
-      <Col span={24}>
-        <Form.Item
-          name="shortDescription"
-          label={t('admin.products.form.shortDescription')}
-          rules={[
-            { required: true, message: t('admin.products.form.shortDescriptionRequired') },
-            { min: 5, message: t('admin.products.form.shortDescriptionMin') },
-          ]}
-        >
-          <TextArea
-            rows={3}
-            placeholder={t('admin.products.form.shortDescriptionPlaceholder')}
-            showCount
-            maxLength={200}
-          />
-        </Form.Item>
-      </Col>
-
-      <Col span={24}>
-        <Form.Item
-          name="description"
-          label={t('admin.products.form.description')}
-          rules={[
-            { required: true, message: t('admin.products.form.descriptionRequired') },
-            { min: 10, message: t('admin.products.form.descriptionMin') },
-          ]}
-        >
-          <SimpleRichTextEditor
-            placeholder={t('admin.products.form.descriptionPlaceholder')}
-            height={300}
-          />
-        </Form.Item>
-        {description && <Base64ImageWarning description={description} />}
-      </Col>
-
-      <Col span={24}>
-        <Alert
-          message={t('admin.products.form.tipTitle')}
-          description={
-            <div>
-              <p>• {t('admin.products.form.tipLine1')}</p>
-              <p>• {t('admin.products.form.tipLine2')}</p>
-              {import.meta.env.DEV && (
-                <p>
-                  •{' '}
-                  <Button type="link" size="small" onClick={handleFillSampleData}>
-                    {t('admin.products.form.tipFillData')}
-                  </Button>{' '}
-                  {t('admin.products.form.tipFillDataSuffix')}
-                </p>
-              )}
-            </div>
-          }
-          type="info"
-          showIcon
+    <div className="grid grid-cols-1 gap-4">
+      <div>
+        <Label className="mb-1.5 block">{t('admin.products.form.name')}</Label>
+        <Input
+          placeholder={t('admin.products.form.namePlaceholder')}
+          className="h-11"
+          {...form.register('name')}
         />
-      </Col>
-    </Row>
+        {form.formState.errors.name?.message && (
+          <p className="text-sm text-red-500 mt-1">{String(form.formState.errors.name.message)}</p>
+        )}
+      </div>
+
+      <div>
+        <Label className="mb-1.5 block">{t('admin.products.form.status')}</Label>
+        <Select
+          value={form.watch('status') || ''}
+          onValueChange={(v) => form.setValue('status', v)}
+        >
+          <SelectTrigger>
+            <SelectValue placeholder={t('admin.products.form.statusPlaceholder')} />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="active">{t('admin.products.form.statusActive')}</SelectItem>
+            <SelectItem value="inactive">{t('admin.products.form.statusInactive')}</SelectItem>
+            <SelectItem value="draft">{t('admin.products.form.statusDraft')}</SelectItem>
+          </SelectContent>
+        </Select>
+      </div>
+
+      <div>
+        <Label className="mb-1.5 block">{t('admin.products.form.shortDescription')}</Label>
+        <textarea
+          className="flex w-full rounded-xl border border-neutral-300 dark:border-neutral-600 bg-white dark:bg-neutral-800 px-3 py-2 text-sm text-neutral-900 dark:text-neutral-100 shadow-sm transition-colors placeholder:text-neutral-400 dark:placeholder:text-neutral-500 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500/30 focus-visible:border-primary-500 disabled:cursor-not-allowed disabled:opacity-50"
+          rows={3}
+          placeholder={t('admin.products.form.shortDescriptionPlaceholder')}
+          maxLength={200}
+          {...form.register('shortDescription')}
+        />
+        {form.formState.errors.shortDescription?.message && (
+          <p className="text-sm text-red-500 mt-1">
+            {String(form.formState.errors.shortDescription.message)}
+          </p>
+        )}
+      </div>
+
+      <div>
+        <Label className="mb-1.5 block">{t('admin.products.form.description')}</Label>
+        <TiptapEditor
+          mode="full"
+          placeholder={t('admin.products.form.descriptionPlaceholder')}
+          height={300}
+          value={description}
+          onChange={(html) => form.setValue('description', html)}
+        />
+        {form.formState.errors.description?.message && (
+          <p className="text-sm text-red-500 mt-1">
+            {String(form.formState.errors.description.message)}
+          </p>
+        )}
+        {description && <Base64ImageWarning description={description} />}
+      </div>
+
+      <Alert variant="info">
+        <Info className="size-4" />
+        <AlertTitle>{t('admin.products.form.tipTitle')}</AlertTitle>
+        <AlertDescription>
+          <div>
+            <p>• {t('admin.products.form.tipLine1')}</p>
+            <p>• {t('admin.products.form.tipLine2')}</p>
+            {import.meta.env.DEV && (
+              <p>
+                •{' '}
+                <Button variant="link" size="sm" onClick={handleFillSampleData}>
+                  {t('admin.products.form.tipFillData')}
+                </Button>{' '}
+                {t('admin.products.form.tipFillDataSuffix')}
+              </p>
+            )}
+          </div>
+        </AlertDescription>
+      </Alert>
+    </div>
   );
 };
 

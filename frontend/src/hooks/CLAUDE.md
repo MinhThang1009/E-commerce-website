@@ -18,15 +18,13 @@
   - [5.1 Scroll to top on navigation](#51-scroll-to-top-on-navigation)
 - [6. use-debounce.ts](#6-use-debouncets)
   - [6.1 Generic debounce hook](#61-generic-debounce-hook)
-- [7. use-antd-toast.ts](#7-use-antd-toastts)
-  - [7.1 Ant Design message API với dark mode](#71-ant-design-message-api-với-dark-mode)
-- [8. Key Gotchas](#8-key-gotchas)
+- [7. Key Gotchas](#7-key-gotchas)
 
 ---
 
 # 1. Tổng quan
 
-6 hook files (8 exported hooks — `use-api-state.ts` exports 3: `useApiState`, `usePaginatedApiState`, `useSubmissionState`).
+5 hook files (8 exported hooks — `use-api-state.ts` exports 3: `useApiState`, `usePaginatedApiState`, `useSubmissionState`).
 
 ## 1.1 Danh sách files
 
@@ -37,7 +35,6 @@ hooks/
   use-token-refresh.ts   — Auto-refresh JWT mỗi 5 phút + khi tab focus
   use-scroll-to-top.ts   — Scroll to top on route change
   use-debounce.ts        — Generic debounce hook
-  use-antd-toast.ts      — Ant Design message API với dark mode support
 ```
 
 **Feature-specific hooks** sống trong `features/<name>/hooks/` — không đặt ở đây.
@@ -186,48 +183,10 @@ Generic — hoạt động với mọi type `T`. Standard delay: **300ms**.
 
 ---
 
-# 7. use-antd-toast.ts
-
-## 7.1 Ant Design message API với dark mode
-
-```ts
-// Signature
-const { success, error, info, warning, loading, close, contextHolder } = useAntdToast();
-```
-
-Tự động detect `theme` từ `useUiStore` để apply `.ant-message-dark` class khi dark mode.
-
-```tsx
-// Phải render contextHolder để Ant Design có context
-function MyComponent() {
-  const { success, error, contextHolder } = useAntdToast();
-
-  return (
-    <>
-      {contextHolder}
-      <Button onClick={() => success('Thành công!')}>Submit</Button>
-    </>
-  );
-}
-```
-
-**Config mặc định:** `duration: 3000ms`, `maxCount: 5`, `top: 70px`.
-
-**Options:**
-
-```ts
-success('Message', { duration: 5000, key: 'unique-key' });
-close('unique-key'); // Đóng toast theo key
-close(); // Đóng tất cả
-```
-
----
-
-# 8. Key Gotchas
+# 7. Key Gotchas
 
 - **`useTokenRefresh` mount 1 lần duy nhất** ở App level (`App.tsx`). Nếu mount nhiều lần → nhiều intervals đồng thời → multiple refresh calls.
 - **`useScrollToTop` mount trong `MainLayout`** — không mount trong từng page vì MainLayout wrap tất cả user routes.
 - **`useSubmissionState` cho non-TanStack mutations** — nếu đã dùng `useMutation()` của TanStack Query → dùng `isPending`, `isError`, `isSuccess` của nó, không cần hook này.
-- **`useAntdToast` cần `contextHolder`** trong render tree để toast work — nếu quên đặt `{contextHolder}` → toast không hiện.
 - **`useDebounce` delay 300ms** là standard — chỉ thay đổi khi có lý do cụ thể (slow network testing, accessibility).
 - **`useApiState.canRetry`** chỉ `true` cho `NETWORK_ERROR` + `SERVER_ERROR` — không retry 4xx errors (client errors).

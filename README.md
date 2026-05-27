@@ -7,16 +7,17 @@
 ## Mục lục
 
 - [1. Giới thiệu](#1-giới-thiệu)
-- [2. Tech Stack](#2-tech-stack)
-- [3. Yêu cầu hệ thống](#3-yêu-cầu-hệ-thống)
-- [4. Cài đặt và chạy](#4-cài-đặt-và-chạy)
-- [5. Tổng quan tính năng](#5-tổng-quan-tính-năng)
-- [6. Hệ thống AI / RAG](#6-hệ-thống-ai--rag)
-- [7. Testing](#7-testing)
-- [8. Cấu trúc thư mục](#8-cấu-trúc-thư-mục)
-- [9. Biến môi trường](#9-biến-môi-trường)
-- [10. API Documentation](#10-api-documentation)
-- [11. Tài liệu kỹ thuật](#11-tài-liệu-kỹ-thuật)
+- [2. Kiến trúc & Chất lượng code](#2-kiến-trúc--chất-lượng-code)
+- [3. Tech Stack](#3-tech-stack)
+- [4. Yêu cầu hệ thống](#4-yêu-cầu-hệ-thống)
+- [5. Cài đặt và chạy](#5-cài-đặt-và-chạy)
+- [6. Tổng quan tính năng](#6-tổng-quan-tính-năng)
+- [7. Hệ thống AI / RAG](#7-hệ-thống-ai--rag)
+- [8. Testing](#8-testing)
+- [9. Cấu trúc thư mục](#9-cấu-trúc-thư-mục)
+- [10. Biến môi trường](#10-biến-môi-trường)
+- [11. API Documentation](#11-api-documentation)
+- [12. Tài liệu kỹ thuật](#12-tài-liệu-kỹ-thuật)
 
 ---
 
@@ -27,19 +28,57 @@
 **Điểm nổi bật:**
 - Kiến trúc Modular Monolith — 17 backend modules, DI pattern, Event-Driven Communication
 - AI Chatbot với Hybrid RAG (cosine similarity + BM25 keyword, 1024-dim vectors)
-- **5.069 test cases** (257 suites, 5 tầng), coverage 100% unit, CI/CD với GitHub Actions
+- **5.168 test cases** (257 suites, 5 tầng), coverage 100% unit, CI/CD với GitHub Actions
 - Hỗ trợ đa ngôn ngữ (vi/en), dark mode, responsive
 
 ---
 
-## 2. Tech Stack
+## 2. Kiến trúc & Chất lượng code
+
+### 2.1 Modular Monolith (Backend)
+
+```
+Client Request → Express Middleware (auth, rate-limit, XSS sanitize)
+    → Module Router → Controller → Service → Repository → MySQL
+                         ↕ EventBus (async cross-module communication)
+```
+
+17 modules độc lập, mỗi module tự chứa: `routes → controller → service → repository`. Module giao tiếp qua **EventBus** (pub/sub pattern), không import trực tiếp service lẫn nhau. DI wiring tập trung tại `app.js`.
+
+### 2.2 Feature-Based Architecture (Frontend)
+
+```
+Route → Page (lazy-loaded) → Components
+           ├→ TanStack Query hooks (server state, cache, optimistic updates)
+           └→ Zustand stores (client state, persist localStorage)
+                └→ apiClient (Axios, auto-inject JWT, auto-logout on 401)
+```
+
+13 features cô lập. Không có cross-feature imports. Shared code ở `components/`, `stores/`, `hooks/`, `utils/`.
+
+### 2.3 Biện pháp chất lượng
+
+| Biện pháp | Chi tiết |
+|---|---|
+| **5.168 test cases** | 5 tầng: Unit → Integration → API HTTP → E2E → Component |
+| **Coverage thresholds** | Statements ≥97%, Lines ≥97%, Branches ≥85%, Functions ≥95% |
+| **ESLint strict** | `--max-warnings 0` — không cho phép warning tồn tại |
+| **Pre-commit hooks** | Secret scan + architecture audit (chặn service import ORM trực tiếp) + lint-staged |
+| **CI/CD** | GitHub Actions: lint + typecheck + build + test trên mỗi push |
+| **Type safety** | TypeScript strict mode (FE), Zod schemas cho form validation |
+| **i18n coverage** | Mọi user-visible string qua `t('key')`, parity check vi/en |
+
+---
+
+## 3. Tech Stack
 
 **Frontend**
-- React 18 + TypeScript + Vite 5
+- React 19 + TypeScript + Vite 8 (build ~2.5s)
 - Zustand v5 + Immer (client state) / TanStack Query v5 (server state)
-- Tailwind CSS v3 + SCSS + Ant Design v5 + Framer Motion
-- React Router v6 (lazy-loaded, code splitting)
-- i18next + react-i18next (vi/en)
+- Tailwind CSS v4 (`@tailwindcss/vite`) + SCSS + Ant Design v6 + Framer Motion v12
+- React Router v7 (lazy-loaded, code splitting)
+- i18next v26 + react-i18next (vi/en)
+- Zod v4 (form validation schemas)
 
 **Backend**
 - Node.js 20 + Express 4 (Modular Monolith, 17 modules)
@@ -61,7 +100,7 @@
 
 ---
 
-## 3. Yêu cầu hệ thống
+## 4. Yêu cầu hệ thống
 
 - **Node.js** >= 20
 - **MySQL** 8.x
@@ -70,23 +109,23 @@
 
 ---
 
-## 4. Cài đặt và chạy
+## 5. Cài đặt và chạy
 
-### 4.1 Clone repo
+### 5.1 Clone repo
 
 ```bash
 git clone <repo-url>
 cd e-commerce-website
 ```
 
-### 4.2 Cài dependencies
+### 5.2 Cài dependencies
 
 ```bash
 cd backend && npm install
 cd ../frontend && npm install
 ```
 
-### 4.3 Cấu hình môi trường
+### 5.3 Cấu hình môi trường
 
 ```bash
 cp backend/.env.example backend/.env
@@ -97,7 +136,7 @@ cp frontend/.env.example frontend/.env
 # Điền: VITE_API_URL, VITE_GOOGLE_CLIENT_ID
 ```
 
-### 4.4 Khởi tạo database
+### 5.4 Khởi tạo database
 
 ```bash
 cd backend
@@ -105,7 +144,7 @@ npm run db:migrate    # Tạo schema từ 81 migrations
 npm run db:seed       # Import seed data (sản phẩm, danh mục, users mẫu)
 ```
 
-### 4.5 Build vector store cho AI (tùy chọn)
+### 5.5 Build vector store cho AI (tùy chọn)
 
 ```bash
 cd backend
@@ -114,7 +153,7 @@ npm run ai:rebuild-vectors
 
 Cần `JINA_API_KEY` hoặc `HF_API_KEY`. Nếu bỏ qua, chatbot vẫn hoạt động nhưng không có semantic search.
 
-### 4.6 Chạy dự án
+### 5.6 Chạy dự án
 
 ```bash
 # Terminal 1 — Backend (port 8888)
@@ -130,9 +169,9 @@ cd frontend && npm run dev
 
 ---
 
-## 5. Tổng quan tính năng
+## 6. Tổng quan tính năng
 
-### 5.1 Backend Modules (17)
+### 6.1 Backend Modules (17)
 
 | Module | Mô tả |
 |---|---|
@@ -154,7 +193,7 @@ cd frontend && npm run dev
 | `attribute` | Nhóm thuộc tính (màu, size, RAM...), giá trị thuộc tính, AI name generator |
 | `search-history` | Lưu lịch sử tìm kiếm, cleanup tự động (giữ 50 entries/user) |
 
-### 5.2 Frontend Features (13)
+### 6.2 Frontend Features (13)
 
 | Feature | Mô tả |
 |---|---|
@@ -174,7 +213,7 @@ cd frontend && npm run dev
 
 ---
 
-## 6. Hệ thống AI / RAG
+## 7. Hệ thống AI / RAG
 
 Chatbot TechStore sử dụng kiến trúc Hybrid RAG, toàn bộ pipeline xử lý trong `ChatbotService` với 7 bước:
 
@@ -199,16 +238,16 @@ validate → normalize (expandAbbreviations) → injection/off-topic check
 
 ---
 
-## 7. Testing
+## 8. Testing
 
 | Suite | Suites | Tests | DB | Runtime |
 |---|---|---|---|---|
-| BE Unit Tests | 159 | 3.537 | Mock | ~10s |
+| BE Unit Tests | 159 | 3.636 | Mock | ~10s |
 | BE Integration Tests | 36 | 184 | MySQL thật | ~50s |
 | BE API HTTP Tests | 39 | 700 | MySQL thật | ~190s |
 | BE E2E Tests | 5 | 100 | MySQL thật | ~20s |
 | FE Component Tests | 18 | 548 | jsdom | ~9s |
-| **Tổng** | **257** | **5.069** | | |
+| **Tổng** | **257** | **5.168** | | |
 
 Coverage threshold (CI): Statements >= 97%, Lines >= 97%, Branches >= 85%, Functions >= 95%.
 
@@ -234,7 +273,7 @@ npm run build             # Production build
 
 ---
 
-## 8. Cấu trúc thư mục
+## 9. Cấu trúc thư mục
 
 ```
 e-commerce-website/
@@ -297,9 +336,9 @@ e-commerce-website/
 
 ---
 
-## 9. Biến môi trường
+## 10. Biến môi trường
 
-### 9.1 Backend (`backend/.env`)
+### 10.1 Backend (`backend/.env`)
 
 | Biến | Bắt buộc | Mô tả |
 |---|---|---|
@@ -321,7 +360,7 @@ e-commerce-website/
 | `MOMO_PARTNER_CODE`, `MOMO_ACCESS_KEY`, `MOMO_SECRET_KEY` | Không | MoMo |
 | `PORT` | Không | Mặc định 8888 |
 
-### 9.2 Frontend (`frontend/.env`)
+### 10.2 Frontend (`frontend/.env`)
 
 | Biến | Mô tả |
 |---|---|
@@ -331,7 +370,7 @@ e-commerce-website/
 
 ---
 
-## 10. API Documentation
+## 11. API Documentation
 
 Swagger UI: `http://localhost:8888/api-docs`
 
@@ -339,7 +378,7 @@ Export JSON: `cd backend && npm run docs:openapi` → tạo `docs/openapi.json`
 
 ---
 
-## 11. Tài liệu kỹ thuật
+## 12. Tài liệu kỹ thuật
 
 | File | Nội dung |
 |---|---|

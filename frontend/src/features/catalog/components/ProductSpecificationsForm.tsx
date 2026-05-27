@@ -5,12 +5,19 @@
  * @description UI component cho feature catalog
  */
 import React, { useState, useEffect } from 'react';
-import { Form, Input, Button, Card, Row, Col, Space, Typography, Select } from 'antd';
-import { PlusOutlined, DeleteOutlined, InfoCircleOutlined } from '@ant-design/icons';
+import { UseFormReturn } from 'react-hook-form';
+import { Plus, Trash2, Info } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
-
-const { TextArea } = Input;
-const { Title, Text } = Typography;
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
+import {
+  Select,
+  SelectTrigger,
+  SelectValue,
+  SelectContent,
+  SelectItem,
+} from '@/components/ui/select';
 
 interface Specification {
   id: string;
@@ -21,6 +28,8 @@ interface Specification {
 }
 
 interface ProductSpecificationsFormProps {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  form: UseFormReturn<any>;
   initialSpecifications?: Specification[];
 }
 
@@ -58,11 +67,11 @@ const normalizeCategory = (cat?: string) =>
   cat && VALID_CATEGORIES.has(cat) ? cat : (CATEGORY_EN_TO_VI[cat || ''] ?? 'Thông số chung');
 
 const ProductSpecificationsForm: React.FC<ProductSpecificationsFormProps> = ({
+  form,
   initialSpecifications = [],
 }) => {
   const { t } = useTranslation();
   const [specifications, setSpecifications] = useState<Specification[]>(initialSpecifications);
-  const form = Form.useFormInstance();
 
   const specificationCategories = [
     { value: 'Hiệu năng', label: t('admin.products.specs.categories.performance') },
@@ -91,7 +100,7 @@ const ProductSpecificationsForm: React.FC<ProductSpecificationsFormProps> = ({
   }, [initialSpecifications]);
 
   useEffect(() => {
-    form.setFieldValue('specifications', specifications);
+    form.setValue('specifications', specifications);
   }, [specifications, form]);
 
   const addSpecification = () => {
@@ -116,113 +125,107 @@ const ProductSpecificationsForm: React.FC<ProductSpecificationsFormProps> = ({
   };
 
   return (
-    <div style={{ padding: '24px' }}>
-      <Title level={3}>
-        <InfoCircleOutlined style={{ marginRight: 8 }} />
+    <div className="p-6">
+      <h3 className="text-lg font-semibold flex items-center gap-2 mb-1">
+        <Info className="size-5" />
         {t('admin.products.specs.title')}
-      </Title>
-      <Text type="secondary" style={{ display: 'block', marginBottom: 24 }}>
+      </h3>
+      <p className="text-sm text-neutral-500 dark:text-neutral-400 mb-6">
         {t('admin.products.specs.subtitle')}
-      </Text>
+      </p>
 
-      <div style={{ marginBottom: 24 }}>
-        <Button type="primary" icon={<PlusOutlined />} onClick={addSpecification} size="large">
+      <div className="mb-6">
+        <Button size="lg" onClick={addSpecification}>
+          <Plus className="size-4" />
           {t('admin.products.specs.addButton')}
         </Button>
       </div>
 
       {specifications.length > 0 && (
-        <Card title={t('admin.products.specs.listTitle')} style={{ marginBottom: 24 }}>
-          <Space direction="vertical" style={{ width: '100%' }} size="middle">
+        <Card className="mb-6">
+          <CardHeader>
+            <CardTitle>{t('admin.products.specs.listTitle')}</CardTitle>
+          </CardHeader>
+          <CardContent className="flex flex-col gap-3">
             {specifications.map((spec, index) => (
-              <Card
+              <div
                 key={`${spec.id}-${index}`}
-                size="small"
-                className="dark:bg-neutral-800 dark:border-neutral-600"
+                className="rounded-lg border border-neutral-200 dark:border-neutral-600 bg-white dark:bg-neutral-800 p-3"
               >
-                <Row gutter={16} align="middle">
-                  <Col span={5}>
-                    <Input
-                      placeholder={t('admin.products.specs.namePlaceholder')}
-                      value={spec.name}
-                      onChange={(e) => updateSpecification(spec.id, 'name', e.target.value)}
-                    />
-                  </Col>
-                  <Col span={5}>
-                    <TextArea
-                      placeholder={t('admin.products.specs.valuePlaceholder')}
-                      value={spec.value}
-                      onChange={(e) => updateSpecification(spec.id, 'value', e.target.value)}
-                      rows={1}
-                      autoSize={{ minRows: 1, maxRows: 3 }}
-                    />
-                  </Col>
-                  <Col span={5}>
-                    <TextArea
-                      placeholder="Value (EN) — optional"
-                      value={spec.valueEn || ''}
-                      onChange={(e) =>
-                        updateSpecification(
-                          spec.id,
-                          'valueEn' as keyof Specification,
-                          e.target.value,
-                        )
-                      }
-                      rows={1}
-                      autoSize={{ minRows: 1, maxRows: 3 }}
-                    />
-                  </Col>
-                  <Col span={7}>
-                    <Select
-                      placeholder={t('admin.products.specs.categoryPlaceholder')}
-                      value={spec.category}
-                      onChange={(value) => updateSpecification(spec.id, 'category', value)}
-                      style={{ width: '100%' }}
-                    >
+                <div className="grid grid-cols-[1fr_1fr_1fr_1.4fr_auto] gap-4 items-center">
+                  <Input
+                    placeholder={t('admin.products.specs.namePlaceholder')}
+                    value={spec.name}
+                    onChange={(e) => updateSpecification(spec.id, 'name', e.target.value)}
+                  />
+                  <textarea
+                    className="flex w-full rounded-xl border border-neutral-300 dark:border-neutral-600 bg-white dark:bg-neutral-800 px-3 py-2 text-sm text-neutral-900 dark:text-neutral-100 shadow-sm transition-colors placeholder:text-neutral-400 dark:placeholder:text-neutral-500 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500/30 focus-visible:border-primary-500 disabled:cursor-not-allowed disabled:opacity-50 resize-y"
+                    placeholder={t('admin.products.specs.valuePlaceholder')}
+                    value={spec.value}
+                    onChange={(e) => updateSpecification(spec.id, 'value', e.target.value)}
+                    rows={1}
+                  />
+                  <textarea
+                    className="flex w-full rounded-xl border border-neutral-300 dark:border-neutral-600 bg-white dark:bg-neutral-800 px-3 py-2 text-sm text-neutral-900 dark:text-neutral-100 shadow-sm transition-colors placeholder:text-neutral-400 dark:placeholder:text-neutral-500 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500/30 focus-visible:border-primary-500 disabled:cursor-not-allowed disabled:opacity-50 resize-y"
+                    placeholder="Value (EN) — optional"
+                    value={spec.valueEn || ''}
+                    onChange={(e) =>
+                      updateSpecification(spec.id, 'valueEn' as keyof Specification, e.target.value)
+                    }
+                    rows={1}
+                  />
+                  <Select
+                    value={spec.category || 'Thông số chung'}
+                    onValueChange={(value) => updateSpecification(spec.id, 'category', value)}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder={t('admin.products.specs.categoryPlaceholder')} />
+                    </SelectTrigger>
+                    <SelectContent>
                       {specificationCategories.map((category) => (
-                        <Select.Option key={category.value} value={category.value}>
+                        <SelectItem key={category.value} value={category.value}>
                           {category.label}
-                        </Select.Option>
+                        </SelectItem>
                       ))}
-                    </Select>
-                  </Col>
-                  <Col span={2} style={{ textAlign: 'center' }}>
-                    <Button
-                      type="text"
-                      danger
-                      icon={<DeleteOutlined />}
-                      onClick={() => removeSpecification(spec.id)}
-                    />
-                  </Col>
-                </Row>
-              </Card>
+                    </SelectContent>
+                  </Select>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="text-red-500 hover:text-red-600"
+                    onClick={() => removeSpecification(spec.id)}
+                  >
+                    <Trash2 className="size-4" />
+                  </Button>
+                </div>
+              </div>
             ))}
-          </Space>
+          </CardContent>
         </Card>
       )}
 
       {specifications.length === 0 && (
-        <Card
-          className="dark:bg-neutral-800 dark:border-neutral-600"
-          style={{ textAlign: 'center', padding: '40px 20px', border: '2px dashed #d9d9d9' }}
-        >
-          <div style={{ fontSize: '48px', marginBottom: 16 }}>📋</div>
-          <Title level={4} className="dark:text-neutral-400">
+        <div className="text-center py-10 px-5 border-2 border-dashed border-neutral-300 dark:border-neutral-600 rounded-lg bg-white dark:bg-neutral-800">
+          <div className="text-5xl mb-4">📋</div>
+          <h4 className="text-base font-semibold dark:text-neutral-400">
             {t('admin.products.specs.emptyTitle')}
-          </Title>
-          <Text type="secondary">{t('admin.products.specs.emptyDesc')}</Text>
-        </Card>
+          </h4>
+          <p className="text-sm text-neutral-500 dark:text-neutral-400">
+            {t('admin.products.specs.emptyDesc')}
+          </p>
+        </div>
       )}
 
-      <Form.Item name="specifications" hidden>
-        <Input />
-      </Form.Item>
-
       {specifications.length > 0 && (
-        <Card title={t('admin.products.specs.summaryTitle')} style={{ marginTop: 24 }} size="small">
-          <Text strong>
-            {t('admin.products.specs.summaryText', { count: specifications.length })}
-          </Text>
+        <Card className="mt-6">
+          <CardHeader>
+            <CardTitle className="text-sm">{t('admin.products.specs.summaryTitle')}</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <span className="font-semibold">
+              {t('admin.products.specs.summaryText', { count: specifications.length })}
+            </span>
+          </CardContent>
         </Card>
       )}
     </div>

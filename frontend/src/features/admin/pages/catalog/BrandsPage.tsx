@@ -6,32 +6,11 @@
  */
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import React, { useState } from 'react';
-import {
-  Table,
-  Button,
-  Modal,
-  Form,
-  Input,
-  Switch,
-  Space,
-  Popconfirm,
-  Tag,
-  Image,
-  Card,
-  Typography,
-} from 'antd';
-import { useAntdToast } from '@/hooks/use-antd-toast';
+import { useUiStore } from '@/stores/ui-store';
 import { useTranslation } from 'react-i18next';
 import ImageUpload from '@/components/common/ImageUpload';
 import { getUploadUrl } from '@/utils/upload-url';
-import {
-  PlusOutlined,
-  EditOutlined,
-  DeleteOutlined,
-  GlobalOutlined,
-  ReloadOutlined,
-  TrademarkOutlined,
-} from '@ant-design/icons';
+import LoadingSpinner from '@/components/common/LoadingSpinner';
 import {
   useGetBrandsQuery,
   useCreateBrandMutation,
@@ -39,9 +18,28 @@ import {
   useDeleteBrandMutation,
 } from '@features/catalog/api/brand-api';
 import { getErrorMsg } from '@/utils/error-utils';
-
-const { Title } = Typography;
-const { TextArea } = Input;
+import {
+  Button,
+  Card,
+  CardContent,
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  Input,
+  Label,
+  Switch,
+} from '@/components/ui';
+import {
+  Plus,
+  Pencil,
+  Trash2,
+  Globe,
+  RefreshCw,
+  Award,
+  ChevronLeft,
+  ChevronRight,
+} from 'lucide-react';
 
 interface BrandFormData {
   name: string;
@@ -51,12 +49,29 @@ interface BrandFormData {
   isActive: boolean;
 }
 
+interface FormErrors {
+  name?: string;
+  website?: string;
+}
+
+const initialFormData: BrandFormData = {
+  name: '',
+  description: '',
+  logoUrl: '',
+  website: '',
+  isActive: true,
+};
+
 const BrandsPage: React.FC = () => {
   const { t } = useTranslation();
-  const { success: toastSuccess, error: toastError, contextHolder } = useAntdToast();
-  const [form] = Form.useForm();
+  const addNotification = useUiStore((s) => s.addNotification);
+  const [formData, setFormData] = useState<BrandFormData>(initialFormData);
+  const [formErrors, setFormErrors] = useState<FormErrors>({});
   const [isModalVisible, setIsModalVisible] = useState(false);
   const [editingBrand, setEditingBrand] = useState<any>(null);
+  const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
+  const [currentPage, setCurrentPage] = useState(1);
+  const pageSize = 10;
 
   const { data: brandsData, isLoading, refetch } = useGetBrandsQuery();
   const { mutateAsync: createBrand, isPending: isCreating } = useCreateBrandMutation();
@@ -64,240 +79,366 @@ const BrandsPage: React.FC = () => {
   const { mutateAsync: deleteBrand, isPending: _isDeleting } = useDeleteBrandMutation();
 
   const brands = brandsData?.data || [];
+  const totalPages = Math.ceil(brands.length / pageSize);
+  const paginatedBrands = brands.slice((currentPage - 1) * pageSize, currentPage * pageSize);
 
-  const handleSubmit = async (values: BrandFormData) => {
+  const validateForm = (): boolean => {
+    const errors: FormErrors = {};
+    if (!formData.name || formData.name.trim().length === 0) {
+      errors.name = t('admin.brands.form.nameRequired');
+    }
+    if (formData.website && formData.website.trim().length > 0) {
+      try {
+        new URL(formData.website);
+      } catch {
+        errors.website = t('admin.brands.form.websiteInvalid');
+      }
+    }
+    setFormErrors(errors);
+    return Object.keys(errors).length === 0;
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!validateForm()) return;
+
     try {
       if (editingBrand) {
-        await updateBrand({ id: editingBrand.id, body: values });
-        toastSuccess(t('admin.brands.messages.editSuccess'));
+        await updateBrand({ id: editingBrand.id, body: formData });
+        addNotification({ message: t('admin.brands.messages.editSuccess'), type: 'success' });
       } else {
-        await createBrand(values);
-        toastSuccess(t('admin.brands.messages.addSuccess'));
+        await createBrand(formData);
+        addNotification({ message: t('admin.brands.messages.addSuccess'), type: 'success' });
       }
       setIsModalVisible(false);
       setEditingBrand(null);
-      form.resetFields();
+      setFormData(initialFormData);
+      setFormErrors({});
       refetch();
     } catch (error) {
-      toastError(getErrorMsg(error, t('common.errorOccurred')));
+      addNotification({ message: getErrorMsg(error, t('common.errorOccurred')), type: 'error' });
     }
   };
 
   const handleDelete = async (id: string) => {
     try {
       await deleteBrand(id);
-      toastSuccess(t('admin.brands.messages.deleteSuccess'));
+      addNotification({ message: t('admin.brands.messages.deleteSuccess'), type: 'success' });
       refetch();
     } catch (error) {
-      toastError(getErrorMsg(error, t('admin.brands.messages.deleteError')));
+      addNotification({
+        message: getErrorMsg(error, t('admin.brands.messages.deleteError')),
+        type: 'error',
+      });
     }
+    setDeleteConfirmId(null);
   };
 
   const handleCreate = () => {
     setEditingBrand(null);
     setIsModalVisible(true);
-    form.resetFields();
-    form.setFieldsValue({ isActive: true });
+    setFormData(initialFormData);
+    setFormErrors({});
   };
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any -- Brand API response fields
   const handleEdit = (brand: any) => {
     setEditingBrand(brand);
     setIsModalVisible(true);
-    form.setFieldsValue({
+    setFormData({
       name: brand.name,
-      description: brand.description,
-      logoUrl: brand.logoUrl,
-      website: brand.website,
+      description: brand.description || '',
+      logoUrl: brand.logoUrl || '',
+      website: brand.website || '',
       isActive: brand.isActive,
     });
+    setFormErrors({});
   };
-
-  const columns = [
-    {
-      title: t('admin.brands.table.logo'),
-      dataIndex: 'logoUrl',
-      key: 'logoUrl',
-      width: 80,
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      render: (logo: string, record: any) => {
-        const fullLogoUrl = getUploadUrl(logo);
-        return logo ? (
-          <Image
-            src={fullLogoUrl}
-            alt={record.name}
-            width={50}
-            height={50}
-            style={{ objectFit: 'contain', borderRadius: 4, background: '#f5f5f5', padding: 4 }}
-          />
-        ) : (
-          <div className="w-12 h-12 bg-gray-100 rounded flex items-center justify-center">
-            <TrademarkOutlined className="text-gray-400" />
-          </div>
-        );
-      },
-    },
-    {
-      title: t('admin.brands.table.name'),
-      dataIndex: 'name',
-      key: 'name',
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      render: (name: string, record: any) => (
-        <div>
-          <div className="font-medium">{name}</div>
-          <div className="text-sm text-gray-500">{record.slug}</div>
-        </div>
-      ),
-    },
-    {
-      title: t('admin.brands.table.website') || 'Website',
-      dataIndex: 'website',
-      key: 'website',
-      render: (website: string) =>
-        website ? (
-          <a
-            href={website}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="flex items-center gap-1"
-          >
-            <GlobalOutlined /> {new URL(website).hostname}
-          </a>
-        ) : (
-          <span className="text-gray-400">—</span>
-        ),
-    },
-    {
-      title: t('admin.brands.table.status'),
-      dataIndex: 'isActive',
-      key: 'isActive',
-      render: (isActive: boolean) => (
-        <Tag color={isActive ? 'success' : 'error'}>
-          {isActive ? t('common.active') : t('admin.common.hidden')}
-        </Tag>
-      ),
-    },
-    {
-      title: t('admin.brands.table.actions'),
-      key: 'actions',
-      width: 120,
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      render: (_: unknown, record: any) => (
-        <Space>
-          <Button
-            type="link"
-            icon={<EditOutlined />}
-            onClick={() => handleEdit(record)}
-            size="small"
-          />
-          <Popconfirm
-            title={t('admin.brands.deleteTitle')}
-            description={t('admin.brands.deleteConfirm')}
-            onConfirm={() => handleDelete(record.id)}
-            okText={t('common.delete')}
-            cancelText={t('common.cancel')}
-            okButtonProps={{ danger: true }}
-          >
-            <Button type="link" icon={<DeleteOutlined />} danger size="small" />
-          </Popconfirm>
-        </Space>
-      ),
-    },
-  ];
 
   return (
     <div className="p-2 sm:p-4 md:p-6">
-      {contextHolder}
       <Card className="dark:bg-neutral-800">
-        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 gap-4">
-          <div>
-            <Title level={2} className="!mb-1 text-xl md:text-2xl dark:text-white">
-              {t('admin.brands.title')}
-            </Title>
-            <p className="text-neutral-600 dark:text-neutral-400">{t('admin.brands.subtitle')}</p>
-          </div>
-          <Space className="flex-wrap">
-            <Button
-              icon={<ReloadOutlined />}
-              onClick={() => refetch()}
-              loading={isLoading}
-              className="dark:text-neutral-300"
-            >
-              {t('common.refresh')}
-            </Button>
-            <Button type="primary" icon={<PlusOutlined />} onClick={handleCreate}>
-              {t('admin.brands.addBrand')}
-            </Button>
-          </Space>
-        </div>
-
-        <div className="overflow-x-auto">
-          <Table
-            columns={columns}
-            dataSource={brands}
-            rowKey="id"
-            loading={isLoading}
-            scroll={{ x: 800 }}
-            pagination={{
-              pageSize: 10,
-              showSizeChanger: true,
-              showTotal: (total) => t('admin.brands.totalItems', { total }),
-            }}
-          />
-        </div>
-
-        <Modal
-          title={editingBrand ? t('admin.brands.editBrand') : t('admin.brands.addBrandModal')}
-          open={isModalVisible}
-          onCancel={() => {
-            setIsModalVisible(false);
-            setEditingBrand(null);
-            form.resetFields();
-          }}
-          footer={null}
-          width={600}
-          forceRender
-        >
-          <Form form={form} layout="vertical" onFinish={handleSubmit}>
-            <Form.Item
-              name="name"
-              label={t('admin.brands.form.name')}
-              rules={[{ required: true, message: t('admin.brands.form.nameRequired') }]}
-            >
-              <Input placeholder={t('admin.brands.form.namePlaceholder')} />
-            </Form.Item>
-
-            <Form.Item name="description" label={t('admin.brands.form.description')}>
-              <TextArea rows={3} placeholder={t('admin.brands.form.descriptionPlaceholder')} />
-            </Form.Item>
-
-            <Form.Item name="logoUrl" label={t('admin.brands.form.logo')}>
-              <ImageUpload type="brands" multiple={false} />
-            </Form.Item>
-
-            <Form.Item
-              name="website"
-              label={t('admin.brands.form.website')}
-              rules={[{ type: 'url', message: t('admin.brands.form.websiteInvalid') }]}
-            >
-              <Input placeholder={t('admin.brands.form.websitePlaceholder')} />
-            </Form.Item>
-
-            <Form.Item name="isActive" label={t('common.status')} valuePropName="checked">
-              <Switch
-                checkedChildren={t('common.active')}
-                unCheckedChildren={t('admin.common.hidden')}
-              />
-            </Form.Item>
-
-            <div className="flex justify-end gap-2 mt-6">
-              <Button onClick={() => setIsModalVisible(false)}>{t('common.cancel')}</Button>
-              <Button type="primary" htmlType="submit" loading={isCreating || isUpdating}>
-                {editingBrand ? t('common.update') : t('common.create')}
+        <CardContent className="pt-6">
+          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 gap-4">
+            <div>
+              <h2 className="text-xl md:text-2xl font-semibold mb-1 dark:text-white">
+                {t('admin.brands.title')}
+              </h2>
+              <p className="text-neutral-600 dark:text-neutral-400">{t('admin.brands.subtitle')}</p>
+            </div>
+            <div className="flex flex-wrap gap-2">
+              <Button
+                variant="outline"
+                onClick={() => refetch()}
+                disabled={isLoading}
+                className="dark:text-neutral-300"
+              >
+                <RefreshCw className={`w-4 h-4 mr-2 ${isLoading ? 'animate-spin' : ''}`} />
+                {t('common.refresh')}
+              </Button>
+              <Button onClick={handleCreate}>
+                <Plus className="w-4 h-4 mr-2" />
+                {t('admin.brands.addBrand')}
               </Button>
             </div>
-          </Form>
-        </Modal>
+          </div>
+
+          <div className="overflow-x-auto">
+            {isLoading ? (
+              <div className="flex justify-center py-12">
+                <LoadingSpinner size="lg" />
+              </div>
+            ) : (
+              <>
+                <table className="w-full text-sm">
+                  <thead>
+                    <tr className="border-b border-neutral-200 dark:border-neutral-700">
+                      <th className="p-3 text-left w-20">{t('admin.brands.table.logo')}</th>
+                      <th className="p-3 text-left">{t('admin.brands.table.name')}</th>
+                      <th className="p-3 text-left">
+                        {t('admin.brands.table.website') || 'Website'}
+                      </th>
+                      <th className="p-3 text-left">{t('admin.brands.table.status')}</th>
+                      <th className="p-3 text-left w-[120px]">{t('admin.brands.table.actions')}</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {paginatedBrands.map((record: any) => {
+                      const fullLogoUrl = getUploadUrl(record.logoUrl);
+                      return (
+                        <tr
+                          key={record.id}
+                          className="border-b border-neutral-100 dark:border-neutral-800 hover:bg-neutral-50 dark:hover:bg-neutral-800/50"
+                        >
+                          <td className="p-3">
+                            {record.logoUrl ? (
+                              <img
+                                src={fullLogoUrl}
+                                alt={record.name}
+                                className="w-[50px] h-[50px] object-contain rounded bg-gray-100 p-1"
+                              />
+                            ) : (
+                              <div className="w-12 h-12 bg-gray-100 dark:bg-neutral-700 rounded flex items-center justify-center">
+                                <Award className="w-5 h-5 text-gray-400" />
+                              </div>
+                            )}
+                          </td>
+                          <td className="p-3">
+                            <div className="font-medium">{record.name}</div>
+                            <div className="text-sm text-gray-500">{record.slug}</div>
+                          </td>
+                          <td className="p-3">
+                            {record.website ? (
+                              <a
+                                href={record.website}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="flex items-center gap-1 text-primary-600 dark:text-primary-400 hover:underline"
+                              >
+                                <Globe className="w-4 h-4" /> {new URL(record.website).hostname}
+                              </a>
+                            ) : (
+                              <span className="text-gray-400">—</span>
+                            )}
+                          </td>
+                          <td className="p-3">
+                            <span
+                              className={`inline-block px-2 py-0.5 text-xs rounded ${
+                                record.isActive
+                                  ? 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400'
+                                  : 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400'
+                              }`}
+                            >
+                              {record.isActive ? t('common.active') : t('admin.common.hidden')}
+                            </span>
+                          </td>
+                          <td className="p-3">
+                            <div className="flex items-center gap-1">
+                              <button
+                                className="p-1.5 rounded hover:bg-neutral-100 dark:hover:bg-neutral-700 text-neutral-600 dark:text-neutral-400"
+                                onClick={() => handleEdit(record)}
+                              >
+                                <Pencil className="w-4 h-4" />
+                              </button>
+                              <button
+                                className="p-1.5 rounded hover:bg-red-50 dark:hover:bg-red-900/20 text-red-600 dark:text-red-400"
+                                onClick={() => setDeleteConfirmId(record.id)}
+                              >
+                                <Trash2 className="w-4 h-4" />
+                              </button>
+                            </div>
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+
+                {/* Phân trang */}
+                {brands.length > pageSize && (
+                  <div className="mt-4 flex items-center justify-between">
+                    <span className="text-sm text-neutral-500 dark:text-neutral-400">
+                      {t('admin.brands.totalItems', { total: brands.length })}
+                    </span>
+                    <div className="flex items-center gap-1">
+                      <button
+                        className="p-2 rounded hover:bg-neutral-100 dark:hover:bg-neutral-700 disabled:opacity-40"
+                        disabled={currentPage <= 1}
+                        onClick={() => setCurrentPage((p) => p - 1)}
+                      >
+                        <ChevronLeft className="w-4 h-4" />
+                      </button>
+                      {Array.from({ length: totalPages }, (_, i) => (
+                        <button
+                          key={i + 1}
+                          className={`px-3 py-1 rounded text-sm ${
+                            currentPage === i + 1
+                              ? 'bg-primary-600 text-white'
+                              : 'hover:bg-neutral-100 dark:hover:bg-neutral-700'
+                          }`}
+                          onClick={() => setCurrentPage(i + 1)}
+                        >
+                          {i + 1}
+                        </button>
+                      ))}
+                      <button
+                        className="p-2 rounded hover:bg-neutral-100 dark:hover:bg-neutral-700 disabled:opacity-40"
+                        disabled={currentPage >= totalPages}
+                        onClick={() => setCurrentPage((p) => p + 1)}
+                      >
+                        <ChevronRight className="w-4 h-4" />
+                      </button>
+                    </div>
+                  </div>
+                )}
+              </>
+            )}
+          </div>
+
+          {/* Delete confirm dialog */}
+          <Dialog open={!!deleteConfirmId} onOpenChange={() => setDeleteConfirmId(null)}>
+            <DialogContent>
+              <DialogHeader>
+                <DialogTitle>{t('admin.brands.deleteTitle')}</DialogTitle>
+              </DialogHeader>
+              <p className="text-sm text-neutral-600 dark:text-neutral-400">
+                {t('admin.brands.deleteConfirm')}
+              </p>
+              <div className="flex justify-end gap-2 mt-4">
+                <Button variant="outline" onClick={() => setDeleteConfirmId(null)}>
+                  {t('common.cancel')}
+                </Button>
+                <Button
+                  variant="destructive"
+                  onClick={() => deleteConfirmId && handleDelete(deleteConfirmId)}
+                >
+                  {t('common.delete')}
+                </Button>
+              </div>
+            </DialogContent>
+          </Dialog>
+
+          {/* Create/Edit modal */}
+          <Dialog
+            open={isModalVisible}
+            onOpenChange={(open) => {
+              if (!open) {
+                setIsModalVisible(false);
+                setEditingBrand(null);
+                setFormData(initialFormData);
+                setFormErrors({});
+              }
+            }}
+          >
+            <DialogContent className="max-w-[600px]">
+              <DialogHeader>
+                <DialogTitle>
+                  {editingBrand ? t('admin.brands.editBrand') : t('admin.brands.addBrandModal')}
+                </DialogTitle>
+              </DialogHeader>
+              <form onSubmit={handleSubmit} className="space-y-4">
+                <div className="space-y-2">
+                  <Label htmlFor="brand-name">{t('admin.brands.form.name')}</Label>
+                  <Input
+                    id="brand-name"
+                    placeholder={t('admin.brands.form.namePlaceholder')}
+                    value={formData.name}
+                    onChange={(e) => setFormData((prev) => ({ ...prev, name: e.target.value }))}
+                  />
+                  {formErrors.name && (
+                    <p className="text-red-500 text-xs mt-1">{formErrors.name}</p>
+                  )}
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="brand-description">{t('admin.brands.form.description')}</Label>
+                  <textarea
+                    id="brand-description"
+                    rows={3}
+                    placeholder={t('admin.brands.form.descriptionPlaceholder')}
+                    className="flex w-full rounded-xl border border-neutral-300 dark:border-neutral-600 bg-white dark:bg-neutral-800 px-3 py-2 text-sm text-neutral-900 dark:text-neutral-100 shadow-sm placeholder:text-neutral-400 focus:outline-none focus:ring-2 focus:ring-primary-500/30 focus:border-primary-500 disabled:cursor-not-allowed disabled:opacity-50"
+                    value={formData.description || ''}
+                    onChange={(e) =>
+                      setFormData((prev) => ({ ...prev, description: e.target.value }))
+                    }
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <Label>{t('admin.brands.form.logo')}</Label>
+                  <ImageUpload
+                    type="brands"
+                    multiple={false}
+                    value={formData.logoUrl || ''}
+                    onChange={(val) =>
+                      setFormData((prev) => ({
+                        ...prev,
+                        logoUrl: typeof val === 'string' ? val : val[0] || '',
+                      }))
+                    }
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="brand-website">{t('admin.brands.form.website')}</Label>
+                  <Input
+                    id="brand-website"
+                    placeholder={t('admin.brands.form.websitePlaceholder')}
+                    value={formData.website || ''}
+                    onChange={(e) => setFormData((prev) => ({ ...prev, website: e.target.value }))}
+                  />
+                  {formErrors.website && (
+                    <p className="text-red-500 text-xs mt-1">{formErrors.website}</p>
+                  )}
+                </div>
+
+                <div className="space-y-2">
+                  <Label>{t('common.status')}</Label>
+                  <div className="flex items-center gap-2 pt-1">
+                    <Switch
+                      checked={formData.isActive}
+                      onCheckedChange={(checked) =>
+                        setFormData((prev) => ({ ...prev, isActive: checked }))
+                      }
+                    />
+                    <span className="text-sm text-neutral-600 dark:text-neutral-400">
+                      {formData.isActive ? t('common.active') : t('admin.common.hidden')}
+                    </span>
+                  </div>
+                </div>
+
+                <div className="flex justify-end gap-2 mt-6">
+                  <Button variant="outline" type="button" onClick={() => setIsModalVisible(false)}>
+                    {t('common.cancel')}
+                  </Button>
+                  <Button type="submit" disabled={isCreating || isUpdating}>
+                    {(isCreating || isUpdating) && <LoadingSpinner size="sm" />}
+                    {editingBrand ? t('common.update') : t('common.create')}
+                  </Button>
+                </div>
+              </form>
+            </DialogContent>
+          </Dialog>
+        </CardContent>
       </Card>
     </div>
   );

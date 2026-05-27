@@ -6,17 +6,11 @@
  */
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import apiClient from '@/lib/api-client';
+import type { User } from '@/types/user.types';
 
-export interface User {
-  id: string;
-  email: string;
-  firstName: string;
-  lastName: string;
-  phone?: string;
-  avatar?: string;
-  role: 'customer' | 'admin';
-  isEmailVerified: boolean;
+export interface UserDetail extends User {
   isActive: boolean;
+  isEmailVerified: boolean;
   createdAt: string;
   updatedAt: string;
 }
@@ -24,7 +18,7 @@ export interface User {
 export interface UserResponse {
   status: string;
   data: {
-    users: User[];
+    users: UserDetail[];
     pagination: {
       currentPage: number;
       totalPages: number;
@@ -56,7 +50,7 @@ export interface UserFilters {
 
 // === Query Keys ===
 
-export const adminUserKeys = {
+const adminUserKeys = {
   all: ['admin-users'] as const,
   lists: () => [...adminUserKeys.all, 'list'] as const,
   list: (filters: unknown) => [...adminUserKeys.lists(), filters] as const,
@@ -103,7 +97,7 @@ export function useGetUserByIdQuery(id: string, options?: { enabled?: boolean; s
 
 export function useUpdateUserMutation() {
   const queryClient = useQueryClient();
-  return useMutation<{ status: string; data: { user: User } }, Error, UpdateUserRequest>({
+  return useMutation<{ status: string; data: { user: UserDetail } }, Error, UpdateUserRequest>({
     mutationFn: async ({ id, ...userData }) => {
       const { data } = await apiClient.put(`/admin/users/${id}`, userData);
       return data;

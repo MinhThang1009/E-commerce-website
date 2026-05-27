@@ -10,9 +10,10 @@ import { useTranslation } from 'react-i18next';
 import { ROUTES } from '@/routes/paths';
 import { useAuth } from '@/features/auth';
 import { useUiStore } from '@/stores/ui-store';
-import { ConfigProvider, App as AntdApp, theme as antdTheme, Button, Drawer } from 'antd';
-import { MenuOutlined } from '@ant-design/icons';
+import { Menu, Moon, Sun } from 'lucide-react';
 import { UserIcon } from '@/components/icons';
+import { Button } from '@/components/ui';
+import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet';
 
 const AdminLayout: React.FC = () => {
   const location = useLocation();
@@ -198,209 +199,165 @@ const AdminLayout: React.FC = () => {
   ];
 
   return (
-    <ConfigProvider
-      theme={{
-        algorithm: theme === 'dark' ? antdTheme.darkAlgorithm : antdTheme.defaultAlgorithm,
-        token: {
-          colorPrimary: '#1890ff',
-          borderRadius: 6,
-        },
-      }}
-    >
-      <AntdApp>
-        <div className="min-h-screen bg-neutral-50 dark:bg-neutral-900">
-          {/* Header Admin */}
-          <div className="bg-white dark:bg-neutral-800 shadow-sm border-b border-neutral-200 dark:border-neutral-700 sticky top-0 z-30">
-            <div className="px-4 md:px-6 h-16">
-              <div className="flex items-center justify-between h-full">
-                <div className="flex items-center space-x-4">
-                  {/* Nút menu mobile */}
-                  <Button
-                    type="text"
-                    icon={<MenuOutlined />}
-                    className="md:hidden text-neutral-700 dark:text-neutral-300"
-                    onClick={() => setMobileMenuOpen(true)}
-                  />
+    <div className="min-h-screen bg-neutral-50 dark:bg-neutral-900">
+      {/* Header Admin */}
+      <div className="bg-white dark:bg-neutral-800 shadow-sm border-b border-neutral-200 dark:border-neutral-700 sticky top-0 z-30">
+        <div className="px-4 md:px-6 h-16">
+          <div className="flex items-center justify-between h-full">
+            <div className="flex items-center space-x-4">
+              {/* Nút menu mobile */}
+              <Button
+                variant="ghost"
+                size="icon"
+                className="md:hidden text-neutral-700 dark:text-neutral-300"
+                onClick={() => setMobileMenuOpen(true)}
+              >
+                <Menu className="w-5 h-5" />
+              </Button>
 
-                  {t('admin.title')}
-                </div>
-                <div className="flex items-center space-x-2 md:space-x-4">
-                  {/* Nút chuyển đổi giao diện */}
-                  <Button
-                    type="text"
-                    onClick={toggleTheme}
-                    className="flex items-center justify-center text-neutral-700 dark:text-neutral-300"
-                  >
-                    {theme === 'light' ? (
-                      <svg
-                        xmlns="http://www.w3.org/2000/svg"
-                        className="h-5 w-5"
-                        viewBox="0 0 20 20"
-                        fill="currentColor"
-                      >
-                        <path d="M17.293 13.293A8 8 0 016.707 2.707a8.001 8.001 0 1010.586 10.586z" />
-                      </svg>
-                    ) : (
-                      <svg
-                        xmlns="http://www.w3.org/2000/svg"
-                        className="h-5 w-5"
-                        viewBox="0 0 20 20"
-                        fill="currentColor"
-                      >
-                        <path
-                          fillRule="evenodd"
-                          d="M10 2a1 1 0 011 1v1a1 1 0 11-2 0V3a1 1 0 011-1zm4 8a4 4 0 11-8 0 4 4 0 018 0zm-.464 4.95l.707.707a1 1 0 001.414-1.414l-.707-.707a1 1 0 00-1.414 1.414zm2.12-10.607a1 1 0 010 1.414l-.706.707a1 1 0 11-1.414-1.414l.707-.707a1 1 0 011.414 0zM17 11a1 1 0 100-2h-1a1 1 0 100 2h1zm-7 4a1 1 0 011 1v1a1 1 0 11-2 0v-1a1 1 0 011-1zM5.05 6.464A1 1 0 106.465 5.05l-.708-.707a1 1 0 00-1.414 1.414l.707.707zm1.414 8.486l-.707.707a1 1 0 01-1.414-1.414l.707-.707a1 1 0 011.414 1.414zM4 11a1 1 0 100-2H3a1 1 0 000 2h1z"
-                          clipRule="evenodd"
-                        />
-                      </svg>
-                    )}
-                  </Button>
+              {t('admin.title')}
+            </div>
+            <div className="flex items-center space-x-2 md:space-x-4">
+              {/* Nút chuyển đổi giao diện */}
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={toggleTheme}
+                className="text-neutral-700 dark:text-neutral-300"
+              >
+                {theme === 'light' ? <Moon className="h-5 w-5" /> : <Sun className="h-5 w-5" />}
+              </Button>
 
-                  {/* Dropdown người dùng */}
-                  <div className="relative" ref={userDropdownRef}>
-                    <button
-                      onClick={handleUserClick}
-                      className={`group relative p-1.5 sm:p-2 rounded-xl transition-all duration-300 ${
-                        isAuthenticated
-                          ? 'bg-gradient-to-r from-primary-100 to-primary-50 dark:from-primary-900/20 dark:to-primary-800/10 text-primary-600 dark:text-primary-400 hover:from-primary-200 hover:to-primary-100 dark:hover:from-primary-900/30 dark:hover:to-primary-800/20 border border-primary-200/50 dark:border-primary-700/30'
-                          : 'text-neutral-700 dark:text-neutral-300 hover:bg-neutral-100 dark:hover:bg-neutral-800 border border-transparent hover:border-neutral-200 dark:hover:border-neutral-700'
-                      }`}
-                      aria-label={t('header.actions.userAccount')}
-                    >
-                      <UserIcon className="h-4 w-4 sm:h-5 sm:w-5 group-hover:scale-110 transition-transform duration-300" />
-                      {isAuthenticated && (
-                        <span className="absolute -top-0.5 -right-0.5 sm:-top-1 sm:-right-1 w-2.5 h-2.5 sm:w-3 sm:h-3 bg-gradient-to-r from-success-500 to-success-400 rounded-full border-2 border-white dark:border-neutral-800 animate-pulse"></span>
-                      )}
-                      {isAuthenticated && (
-                        <div className="absolute inset-0 bg-gradient-to-r from-primary-500/10 to-primary-400/10 rounded-xl opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
-                      )}
-                    </button>
+              {/* Dropdown người dùng */}
+              <div className="relative" ref={userDropdownRef}>
+                <button
+                  onClick={handleUserClick}
+                  className={`group relative p-1.5 sm:p-2 rounded-xl transition-all duration-300 ${
+                    isAuthenticated
+                      ? 'bg-gradient-to-r from-primary-100 to-primary-50 dark:from-primary-900/20 dark:to-primary-800/10 text-primary-600 dark:text-primary-400 hover:from-primary-200 hover:to-primary-100 dark:hover:from-primary-900/30 dark:hover:to-primary-800/20 border border-primary-200/50 dark:border-primary-700/30'
+                      : 'text-neutral-700 dark:text-neutral-300 hover:bg-neutral-100 dark:hover:bg-neutral-800 border border-transparent hover:border-neutral-200 dark:hover:border-neutral-700'
+                  }`}
+                  aria-label={t('header.actions.userAccount')}
+                >
+                  <UserIcon className="h-4 w-4 sm:h-5 sm:w-5 group-hover:scale-110 transition-transform duration-300" />
+                  {isAuthenticated && (
+                    <span className="absolute -top-0.5 -right-0.5 sm:-top-1 sm:-right-1 w-2.5 h-2.5 sm:w-3 sm:h-3 bg-gradient-to-r from-success-500 to-success-400 rounded-full border-2 border-white dark:border-neutral-800 animate-pulse"></span>
+                  )}
+                  {isAuthenticated && (
+                    <div className="absolute inset-0 bg-gradient-to-r from-primary-500/10 to-primary-400/10 rounded-xl opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+                  )}
+                </button>
 
-                    {/* Menu dropdown người dùng */}
-                    {isAuthenticated && showUserDropdown && (
-                      <div className="absolute right-0 mt-2 w-48 bg-white dark:bg-neutral-800 rounded-lg shadow-lg border border-neutral-200 dark:border-neutral-700 z-50">
-                        <div className="py-2">
-                          <div className="px-4 py-2 border-b border-neutral-200 dark:border-neutral-700">
-                            <p className="font-semibold text-neutral-800 dark:text-neutral-100 truncate max-w-[160px]">
-                              {getUserFullName()}
-                            </p>
-                            <p className="text-sm text-neutral-600 dark:text-neutral-400 truncate max-w-[160px]">
-                              {user?.email}
-                            </p>
-                          </div>
-                          <Link
-                            to={ROUTES.HOME}
-                            className="block px-4 py-2 text-sm text-neutral-700 dark:text-neutral-300 hover:bg-neutral-100 dark:hover:bg-neutral-700 transition-colors"
-                            onClick={() => setShowUserDropdown(false)}
-                          >
-                            {t('admin.backToStore')}
-                          </Link>
-                          <div className="border-t border-neutral-200 dark:border-neutral-700 mt-2">
-                            <button
-                              onClick={() => {
-                                setShowUserDropdown(false);
-                                handleLogoutClick();
-                              }}
-                              className="block w-full text-left px-4 py-2 text-sm text-red-600 dark:text-red-400 hover:bg-neutral-100 dark:hover:bg-neutral-700 transition-colors"
-                            >
-                              {t('header.dropdown.logout')}
-                            </button>
-                          </div>
-                        </div>
+                {/* Menu dropdown người dùng */}
+                {isAuthenticated && showUserDropdown && (
+                  <div className="absolute right-0 mt-2 w-48 bg-white dark:bg-neutral-800 rounded-lg shadow-lg border border-neutral-200 dark:border-neutral-700 z-50">
+                    <div className="py-2">
+                      <div className="px-4 py-2 border-b border-neutral-200 dark:border-neutral-700">
+                        <p className="font-semibold text-neutral-800 dark:text-neutral-100 truncate max-w-[160px]">
+                          {getUserFullName()}
+                        </p>
+                        <p className="text-sm text-neutral-600 dark:text-neutral-400 truncate max-w-[160px]">
+                          {user?.email}
+                        </p>
                       </div>
-                    )}
+                      <Link
+                        to={ROUTES.HOME}
+                        className="block px-4 py-2 text-sm text-neutral-700 dark:text-neutral-300 hover:bg-neutral-100 dark:hover:bg-neutral-700 transition-colors"
+                        onClick={() => setShowUserDropdown(false)}
+                      >
+                        {t('admin.backToStore')}
+                      </Link>
+                      <div className="border-t border-neutral-200 dark:border-neutral-700 mt-2">
+                        <button
+                          onClick={() => {
+                            setShowUserDropdown(false);
+                            handleLogoutClick();
+                          }}
+                          className="block w-full text-left px-4 py-2 text-sm text-red-600 dark:text-red-400 hover:bg-neutral-100 dark:hover:bg-neutral-700 transition-colors"
+                        >
+                          {t('header.dropdown.logout')}
+                        </button>
+                      </div>
+                    </div>
                   </div>
-                </div>
+                )}
               </div>
             </div>
           </div>
-
-          <div className="flex flex-col md:flex-row">
-            {/* Drawer sidebar cho mobile */}
-            <Drawer
-              title={t('admin.menu')}
-              placement="left"
-              onClose={() => setMobileMenuOpen(false)}
-              open={mobileMenuOpen}
-              width={280}
-              styles={{
-                body: { padding: 0 },
-                header: {
-                  borderBottom: `1px solid ${theme === 'dark' ? '#424242' : '#f0f0f0'}`,
-                  background: theme === 'dark' ? '#141414' : '#fff',
-                  color: theme === 'dark' ? '#fff' : '#000',
-                },
-              }}
-            >
-              <nav className="px-4 py-4">
-                <ul className="space-y-2">
-                  {adminNavItems.map((item) => {
-                    const isActive = location.pathname === item.path;
-                    return (
-                      <li key={item.key}>
-                        <Link
-                          to={item.path}
-                          className={`flex items-center space-x-3 px-4 py-3 rounded-lg transition-colors ${
-                            isActive
-                              ? 'bg-primary-100 dark:bg-primary-900/20 text-primary-700 dark:text-primary-300 font-medium'
-                              : 'text-neutral-700 dark:text-neutral-300 hover:bg-neutral-100 dark:hover:bg-neutral-700 hover:text-neutral-900 dark:hover:text-white'
-                          }`}
-                          onClick={() => setMobileMenuOpen(false)}
-                        >
-                          <span
-                            className={isActive ? 'text-primary-600 dark:text-primary-400' : ''}
-                          >
-                            {item.icon}
-                          </span>
-                          <span>{item.label}</span>
-                        </Link>
-                      </li>
-                    );
-                  })}
-                </ul>
-              </nav>
-            </Drawer>
-
-            {/* Sidebar cho desktop */}
-            <div className="hidden md:block w-64 bg-white dark:bg-neutral-800 shadow-sm border-r border-neutral-200 dark:border-neutral-700 sticky top-16 h-[calc(100vh-64px)] overflow-y-auto overflow-x-hidden">
-              <nav className="px-6 py-6">
-                <ul className="space-y-2">
-                  {adminNavItems.map((item) => {
-                    const isActive = location.pathname === item.path;
-                    return (
-                      <li key={item.key}>
-                        <Link
-                          to={item.path}
-                          className={`flex items-center space-x-3 px-4 py-3 rounded-lg transition-colors ${
-                            isActive
-                              ? 'bg-primary-100 dark:bg-primary-900/20 text-primary-700 dark:text-primary-300 font-medium'
-                              : 'text-neutral-700 dark:text-neutral-300 hover:bg-neutral-100 dark:hover:bg-neutral-700 hover:text-neutral-900 dark:hover:text-white'
-                          }`}
-                        >
-                          <span
-                            className={isActive ? 'text-primary-600 dark:text-primary-400' : ''}
-                          >
-                            {item.icon}
-                          </span>
-                          <span>{item.label}</span>
-                        </Link>
-                      </li>
-                    );
-                  })}
-                </ul>
-              </nav>
-            </div>
-
-            {/* Nội dung chính */}
-            <div className="flex-1 w-full">
-              <main className="p-4 md:p-6">
-                <Outlet />
-              </main>
-            </div>
-          </div>
         </div>
-      </AntdApp>
-    </ConfigProvider>
+      </div>
+
+      <div className="flex flex-col md:flex-row">
+        {/* Sheet sidebar cho mobile */}
+        <Sheet open={mobileMenuOpen} onOpenChange={setMobileMenuOpen}>
+          <SheetContent side="left" className="w-[280px] p-0">
+            <SheetHeader className="border-b border-neutral-200 dark:border-neutral-700">
+              <SheetTitle>{t('admin.menu')}</SheetTitle>
+            </SheetHeader>
+            <nav className="px-4 py-4">
+              <ul className="space-y-2">
+                {adminNavItems.map((item) => {
+                  const isActive = location.pathname === item.path;
+                  return (
+                    <li key={item.key}>
+                      <Link
+                        to={item.path}
+                        className={`flex items-center space-x-3 px-4 py-3 rounded-lg transition-colors ${
+                          isActive
+                            ? 'bg-primary-100 dark:bg-primary-900/20 text-primary-700 dark:text-primary-300 font-medium'
+                            : 'text-neutral-700 dark:text-neutral-300 hover:bg-neutral-100 dark:hover:bg-neutral-700 hover:text-neutral-900 dark:hover:text-white'
+                        }`}
+                        onClick={() => setMobileMenuOpen(false)}
+                      >
+                        <span className={isActive ? 'text-primary-600 dark:text-primary-400' : ''}>
+                          {item.icon}
+                        </span>
+                        <span>{item.label}</span>
+                      </Link>
+                    </li>
+                  );
+                })}
+              </ul>
+            </nav>
+          </SheetContent>
+        </Sheet>
+
+        {/* Sidebar cho desktop */}
+        <div className="hidden md:block w-64 bg-white dark:bg-neutral-800 shadow-sm border-r border-neutral-200 dark:border-neutral-700 sticky top-16 h-[calc(100vh-64px)] overflow-y-auto overflow-x-hidden">
+          <nav className="px-6 py-6">
+            <ul className="space-y-2">
+              {adminNavItems.map((item) => {
+                const isActive = location.pathname === item.path;
+                return (
+                  <li key={item.key}>
+                    <Link
+                      to={item.path}
+                      className={`flex items-center space-x-3 px-4 py-3 rounded-lg transition-colors ${
+                        isActive
+                          ? 'bg-primary-100 dark:bg-primary-900/20 text-primary-700 dark:text-primary-300 font-medium'
+                          : 'text-neutral-700 dark:text-neutral-300 hover:bg-neutral-100 dark:hover:bg-neutral-700 hover:text-neutral-900 dark:hover:text-white'
+                      }`}
+                    >
+                      <span className={isActive ? 'text-primary-600 dark:text-primary-400' : ''}>
+                        {item.icon}
+                      </span>
+                      <span>{item.label}</span>
+                    </Link>
+                  </li>
+                );
+              })}
+            </ul>
+          </nav>
+        </div>
+
+        {/* Nội dung chính */}
+        <div className="flex-1 w-full">
+          <main className="p-4 md:p-6">
+            <Outlet />
+          </main>
+        </div>
+      </div>
+    </div>
   );
 };
 

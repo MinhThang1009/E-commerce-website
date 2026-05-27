@@ -87,7 +87,7 @@ export interface UpdateOrderStatusRequest {
 
 // === Query Keys ===
 
-export const adminOrderKeys = {
+const adminOrderKeys = {
   all: ['admin-orders'] as const,
   lists: () => [...adminOrderKeys.all, 'list'] as const,
   list: (params: unknown) => [...adminOrderKeys.lists(), params] as const,

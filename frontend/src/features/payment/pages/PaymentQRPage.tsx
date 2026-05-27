@@ -109,7 +109,7 @@ const PaymentQRPage: React.FC = () => {
       setIsExpired(true);
       if (orderId && !isCancelling && orderData?.data?.status !== 'cancelled') {
         cancelOrder(orderId)
-          .catch(() => {})
+          .catch((err) => console.error('Lỗi huỷ đơn hàng hết hạn:', err))
           .finally(() => setTimeout(() => navigate(ROUTES.CART), 1500));
       }
       return;
@@ -155,7 +155,7 @@ const PaymentQRPage: React.FC = () => {
       if (res.data?.paymentUrl) {
         window.location.href = res.data.paymentUrl;
       }
-    } catch (err) {
+    } catch (_err) {
       addNotification({ type: 'error', message: t('paymentQR.cancelError'), duration: 4000 });
       setIsRedirecting(false);
     }

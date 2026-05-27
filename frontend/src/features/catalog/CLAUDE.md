@@ -81,26 +81,18 @@ features/catalog/
     FilterPanel.tsx               — Variant của ProductFilters (modal/panel)
     ProductPrice.tsx              — Hiển thị giá đúng theo variant đang chọn
     ProductVariantSelector.tsx    — Chọn color/storage, disable khi hết hàng
-    EnhancedVariantSelector.tsx   — Variant selector nâng cao với state phức tạp hơn
     ProductGallery.tsx            — Gallery ảnh product detail (thumbnails + main)
     ProductImageGallery.tsx       — Variant của gallery
     RecentlyViewedProducts.tsx    — Horizontal carousel 10 sản phẩm gần nhất (từ catalogStore)
     ProductDetailsSection.tsx     — Tabs specs/FAQ/reviews trong product detail
-    DynamicProductTitle.tsx       — Title động theo variant đang chọn
-    DynamicProductName.tsx        — Variant của DynamicProductTitle
-    SimpleDynamicTitle.tsx        — Phiên bản đơn giản hơn
+    DynamicProductName.tsx        — Tên sản phẩm động theo variant đang chọn
     AttributeModal.tsx            — Modal thêm/sửa attribute (admin)
-    DynamicAttributeSelector.tsx  — Attribute selector động (admin product form)
-    SimpleAttributeSelector.tsx   — Phiên bản đơn giản
-    EnhancedProductBasicForm.tsx  — Enhanced form cơ bản (admin)
     ProductBasicInfoForm.tsx      — Form thông tin cơ bản (admin)
     ProductCategoryForm.tsx       — Form chọn danh mục (admin)
     ProductPricingForm.tsx        — Form giá (admin)
     ProductImagesForm.tsx         — Form upload ảnh (admin)
     ProductSpecificationsForm.tsx — Form specifications (admin)
     ProductAttributesSection.tsx  — Section attributes (admin)
-    HierarchicalAttributesForm.tsx — Form attributes hierarchical (admin)
-    HierarchicalVariantsForm.tsx  — Form variants hierarchical (admin)
     ProductVariantsSection.tsx    — Section variants (admin)
     VariantModal.tsx              — Modal tạo/sửa variant (admin)
     ProductSeoForm.tsx            — Form SEO (admin)
@@ -322,7 +314,7 @@ interface Category {
 
 ## 7.2 Used by
 
-- `features/admin` — import nhiều form components (ProductBasicInfoForm, HierarchicalVariantsForm, etc.)
+- `features/admin` — import form components (ProductBasicInfoForm, ProductVariantsSection, etc.)
 - `features/ai/components/ChatProductCard.tsx` — render product từ AI response
 - `src/pages/` — `HomePage` dùng `useGetFeaturedProductsQuery`, `useGetNewArrivalsQuery`
 

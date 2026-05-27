@@ -87,7 +87,20 @@
       "promotions": {
         "discount": "-50%",
         "freeShip": "Free ship"
-      }
+      },
+      "description": "60+ premium tech products — phones, laptops, smartwatches. Fast delivery, 12-month warranty.",
+      "heading1": "Premium Tech",
+      "heading2": "Redefined",
+      "heading3": "For You",
+      "statProducts": "Products",
+      "statWarranty": "Months warranty",
+      "statDelivery": "Fast delivery",
+      "ctaShopNow": "Shop Now",
+      "ctaBrowse": "Browse Categories",
+      "limitedTime": "Limited time",
+      "within24h": "Within 24h",
+      "productsCount": "products",
+      "scroll": "Scroll"
     },
     "featuredProducts": {
       "title": "Featured products",
@@ -579,6 +592,13 @@
   },
   "checkout": {
     "title": "Checkout",
+    "step": {
+      "shipping": "Shipping",
+      "payment": "Payment",
+      "confirm": "Confirm",
+      "next": "Continue",
+      "back": "Back"
+    },
     "emptyCart": {
       "title": "Your cart is empty",
       "message": "Add some items to your cart before proceeding to checkout.",

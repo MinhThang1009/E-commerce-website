@@ -111,9 +111,10 @@ const containerVariants = {
     opacity: 1,
     transition: { staggerChildren: 0.12, delayChildren: 0.1 },
   },
-};
+} as const;
 
-const itemVariants = {
+// eslint-disable-next-line @typescript-eslint/no-explicit-any -- framer-motion v12 Variants type quá strict với ease array
+const itemVariants: any = {
   hidden: { opacity: 0, y: 28 },
   visible: {
     opacity: 1,
@@ -122,7 +123,8 @@ const itemVariants = {
   },
 };
 
-const cardVariants = {
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+const cardVariants: any = {
   hidden: { opacity: 0, scale: 0.9, y: 20 },
   visible: (i: number) => ({
     opacity: 1,
@@ -139,7 +141,6 @@ interface HeroSectionProps {
 
 const HeroSection: React.FC<HeroSectionProps> = ({ onShopNowClick, onBrowseCategoriesClick }) => {
   const { t, i18n } = useTranslation();
-  const isEn = i18n.language === 'en';
   const sectionRef = useRef<HTMLElement>(null);
 
   // Parallax scroll
@@ -274,19 +275,19 @@ const HeroSection: React.FC<HeroSectionProps> = ({ onShopNowClick, onBrowseCateg
                 className="block text-5xl sm:text-6xl lg:text-7xl xl:text-8xl
                 text-neutral-900 dark:text-white"
               >
-                {isEn ? 'Premium Tech' : 'Công nghệ'}
+                {t('homepage.hero.heading1')}
               </span>
               <span
                 className="block text-5xl sm:text-6xl lg:text-7xl xl:text-8xl
                 gradient-text mt-1"
               >
-                {isEn ? 'Redefined' : 'Cao cấp'}
+                {t('homepage.hero.heading2')}
               </span>
               <span
                 className="block text-5xl sm:text-6xl lg:text-7xl xl:text-8xl
                 text-neutral-900 dark:text-white mt-1"
               >
-                {isEn ? 'For You' : 'Cho bạn'}
+                {t('homepage.hero.heading3')}
               </span>
             </motion.h1>
 
@@ -296,9 +297,7 @@ const HeroSection: React.FC<HeroSectionProps> = ({ onShopNowClick, onBrowseCateg
               className="text-lg sm:text-xl text-neutral-500 dark:text-neutral-400
                 font-light leading-relaxed max-w-xl mx-auto lg:mx-0 mb-8"
             >
-              {isEn
-                ? '60+ premium tech products — phones, laptops, smartwatches. Fast delivery, 12-month warranty.'
-                : '60+ sản phẩm công nghệ cao cấp — điện thoại, laptop, smartwatch. Giao nhanh 24h, bảo hành 12 tháng.'}
+              {t('homepage.hero.description')}
             </motion.p>
 
             {/* Stats row */}
@@ -307,9 +306,9 @@ const HeroSection: React.FC<HeroSectionProps> = ({ onShopNowClick, onBrowseCateg
               className="flex items-center gap-6 justify-center lg:justify-start mb-10"
             >
               {[
-                { value: '60+', label: isEn ? 'Products' : 'Sản phẩm' },
-                { value: '12', label: isEn ? 'Months warranty' : 'Tháng bảo hành' },
-                { value: '24h', label: isEn ? 'Fast delivery' : 'Giao hàng' },
+                { value: '60+', label: t('homepage.hero.statProducts') },
+                { value: '12', label: t('homepage.hero.statWarranty') },
+                { value: '24h', label: t('homepage.hero.statDelivery') },
               ].map((stat) => (
                 <div key={stat.label} className="text-center">
                   <div className="text-2xl font-black text-primary-500 dark:text-primary-400">
@@ -346,7 +345,7 @@ const HeroSection: React.FC<HeroSectionProps> = ({ onShopNowClick, onBrowseCateg
                 className="btn-glass-primary group px-7 py-4 rounded-2xl text-base flex items-center justify-center gap-2.5"
               >
                 <ShoppingBag className="w-5 h-5 group-hover:scale-110 transition-transform" />
-                {isEn ? 'Shop Now' : 'Mua sắm ngay'}
+                {t('homepage.hero.ctaShopNow')}
                 <ArrowRight className="w-4 h-4 opacity-0 -translate-x-2 group-hover:opacity-100 group-hover:translate-x-0 transition-all duration-300" />
               </motion.button>
 
@@ -358,7 +357,7 @@ const HeroSection: React.FC<HeroSectionProps> = ({ onShopNowClick, onBrowseCateg
                 className="btn-glass-secondary group px-7 py-4 rounded-2xl text-base flex items-center justify-center gap-2.5"
               >
                 <LayoutGrid className="w-4 h-4" />
-                {isEn ? 'Browse Categories' : 'Khám phá danh mục'}
+                {t('homepage.hero.ctaBrowse')}
                 <ChevronRight className="w-4 h-4 group-hover:translate-x-1 transition-transform duration-300" />
               </motion.button>
             </motion.div>
@@ -441,10 +440,10 @@ const HeroSection: React.FC<HeroSectionProps> = ({ onShopNowClick, onBrowseCateg
                         <div className="flex items-center justify-between">
                           <div>
                             <h3 className="font-bold text-neutral-900 dark:text-white text-sm leading-tight">
-                              {isEn ? cat.labelEn : cat.label}
+                              {i18n.language === 'en' ? cat.labelEn : cat.label}
                             </h3>
                             <p className="text-xs text-neutral-500 dark:text-neutral-400 mt-0.5">
-                              {cat.count} {isEn ? 'products' : 'sản phẩm'}
+                              {cat.count} {t('homepage.hero.productsCount')}
                             </p>
                           </div>
                           <div
@@ -483,7 +482,7 @@ const HeroSection: React.FC<HeroSectionProps> = ({ onShopNowClick, onBrowseCateg
                       {t('homepage.hero.promotions.discount')}
                     </div>
                     <div className="text-[10px] text-neutral-500 dark:text-neutral-400">
-                      {isEn ? 'Limited time' : 'Có hạn'}
+                      {t('homepage.hero.limitedTime')}
                     </div>
                   </div>
                 </div>
@@ -507,7 +506,7 @@ const HeroSection: React.FC<HeroSectionProps> = ({ onShopNowClick, onBrowseCateg
                       {t('homepage.hero.promotions.freeShip')}
                     </div>
                     <div className="text-[10px] text-neutral-500 dark:text-neutral-400">
-                      {isEn ? 'Within 24h' : 'Trong 24h'}
+                      {t('homepage.hero.within24h')}
                     </div>
                   </div>
                 </div>
@@ -536,7 +535,7 @@ const HeroSection: React.FC<HeroSectionProps> = ({ onShopNowClick, onBrowseCateg
                 alt={cat.label}
                 className="w-8 h-8 rounded-lg object-cover"
               />
-              <span>{isEn ? cat.labelEn : cat.label}</span>
+              <span>{i18n.language === 'en' ? cat.labelEn : cat.label}</span>
               <span className="text-xs text-neutral-400 dark:text-neutral-500">{cat.count}</span>
             </Link>
           ))}
@@ -551,7 +550,7 @@ const HeroSection: React.FC<HeroSectionProps> = ({ onShopNowClick, onBrowseCateg
         className="absolute bottom-8 left-1/2 -translate-x-1/2 z-20 flex flex-col items-center gap-2"
       >
         <span className="text-xs text-neutral-400 dark:text-neutral-500 font-medium tracking-widest uppercase">
-          {isEn ? 'Scroll' : 'Cuộn'}
+          {t('homepage.hero.scroll')}
         </span>
         <motion.div
           animate={{ y: [0, 8, 0] }}

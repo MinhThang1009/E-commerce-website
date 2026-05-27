@@ -14,8 +14,7 @@ import { useUiStore } from '@/stores/ui-store';
 import { useAddToCartMutation } from '@/features/cart';
 import { calculatePriceRange, calculateDiscountPercentage } from '@/utils/price-utils';
 import { proxyImg } from '@/utils/proxy-img';
-import { v4 as uuidv4 } from 'uuid';
-import { ShoppingCartIcon } from '@heroicons/react/24/outline';
+import { ShoppingCart } from 'lucide-react';
 import { getErrorMsg } from '@/utils/error-utils';
 
 interface ProductListCardProps extends Product {
@@ -81,7 +80,7 @@ const ProductListCard: React.FC<ProductListCardProps> = ({
       } else {
         // Nếu chưa đăng nhập, lưu vào localStorage
         const newItem = {
-          id: uuidv4(),
+          id: crypto.randomUUID(),
           productId: id,
           name,
           price,
@@ -118,7 +117,7 @@ const ProductListCard: React.FC<ProductListCardProps> = ({
 
     try {
       const buyNowItem = {
-        id: uuidv4(),
+        id: crypto.randomUUID(),
         productId: id,
         name,
         price,
@@ -233,7 +232,7 @@ const ProductListCard: React.FC<ProductListCardProps> = ({
               {isBuying ? (
                 <div className="h-4 w-4 border-2 border-white/70 border-t-white rounded-full animate-spin" />
               ) : (
-                <ShoppingCartIcon className="h-5 w-5" />
+                <ShoppingCart className="h-5 w-5" />
               )}
               {t('product.buyNowDelivery')}
             </button>
@@ -298,4 +297,4 @@ const ProductListCard: React.FC<ProductListCardProps> = ({
   );
 };
 
-export default ProductListCard;
+export default React.memo(ProductListCard);

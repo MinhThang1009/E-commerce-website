@@ -6,9 +6,23 @@
  */
 import React, { useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Modal, Form, Input, InputNumber, Select, Button, Space } from 'antd';
-import { SaveOutlined, CloseOutlined } from '@ant-design/icons';
+import { useForm } from 'react-hook-form';
+import { Save, X } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import {
+  Select,
+  SelectTrigger,
+  SelectValue,
+  SelectContent,
+  SelectItem,
+} from '@/components/ui/select';
 import { formatAttributeKey } from '../utils/product-naming';
+
+const inputNumberClassName =
+  'flex h-10 w-full rounded-xl border border-neutral-300 dark:border-neutral-600 bg-white dark:bg-neutral-800 px-3 py-2 text-sm text-neutral-900 dark:text-neutral-100 shadow-sm transition-colors placeholder:text-neutral-400 dark:placeholder:text-neutral-500 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500/30 focus-visible:border-primary-500 disabled:cursor-not-allowed disabled:opacity-50';
 
 interface Variant {
   id?: string;
@@ -40,11 +54,19 @@ const VariantModal: React.FC<VariantModalProps> = ({
   attributes,
 }) => {
   const { t } = useTranslation();
-  const [form] = Form.useForm();
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const form = useForm<any>({
+    defaultValues: {
+      name: '',
+      price: 0,
+      stock: 0,
+      sku: '',
+    },
+  });
 
   useEffect(() => {
     if (variant) {
-      form.setFieldsValue({
+      form.reset({
         name: variant.name || '',
         price: variant.price || 0,
         stock: variant.stock || 0,
@@ -54,12 +76,17 @@ const VariantModal: React.FC<VariantModalProps> = ({
         ...variant.attributes,
       });
     } else {
-      form.resetFields();
+      form.reset({
+        name: '',
+        price: 0,
+        stock: 0,
+        sku: '',
+      });
     }
   }, [variant, form, open]);
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any -- Antd Form destructuring cần dynamic keys
-  const handleSubmit = (values: any) => {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any -- Form destructuring can dynamic keys
+  const handleSubmit = form.handleSubmit((values: any) => {
     const { name, price, compareAtPrice, stock, sku, images, ...attributeValues } = values;
 
     const filteredAttributes: Record<string, string> = {};
@@ -93,208 +120,207 @@ const VariantModal: React.FC<VariantModalProps> = ({
 
     onSave(variantData);
     handleClose();
-  };
+  });
 
   const handleClose = () => {
-    form.resetFields();
+    form.reset();
     onClose();
   };
 
   return (
-    <Modal
-      title={variant ? t('variantModal.editTitle') : t('variantModal.addTitle')}
+    <Dialog
       open={open}
-      onCancel={handleClose}
-      footer={null}
-      width={800}
-      destroyOnHidden
+      onOpenChange={(isOpen) => {
+        if (!isOpen) handleClose();
+      }}
     >
-      <Form
-        form={form}
-        layout="vertical"
-        onFinish={handleSubmit}
-        initialValues={{
-          name: '',
-          price: 0,
-          stock: 0,
-          sku: '',
-        }}
-      >
-        <div
-          style={{
-            display: 'grid',
-            gridTemplateColumns: '1fr 1fr',
-            gap: '16px',
-          }}
-        >
-          <Form.Item
-            label={t('variantModal.nameLabel')}
-            name="name"
-            rules={[{ required: true, message: t('variantModal.nameRequired') }]}
-          >
-            <Input placeholder={t('variantModal.namePlaceholder')} />
-          </Form.Item>
+      <DialogContent className="max-w-3xl">
+        <DialogHeader>
+          <DialogTitle>
+            {variant ? t('variantModal.editTitle') : t('variantModal.addTitle')}
+          </DialogTitle>
+        </DialogHeader>
 
-          <Form.Item
-            label={t('variantModal.skuLabel')}
-            name="sku"
-            tooltip={t('variantModal.skuTooltip')}
-          >
-            <Input placeholder={t('variantModal.skuPlaceholder')} />
-          </Form.Item>
-        </div>
-
-        <div
-          style={{
-            display: 'grid',
-            gridTemplateColumns: '1fr 1fr',
-            gap: '16px',
-          }}
-        >
-          <Form.Item
-            label={t('variantModal.priceLabel')}
-            required
-            tooltip={t('variantModal.priceTooltip')}
-          >
-            <Space.Compact style={{ width: '100%' }}>
-              <Form.Item
-                name="price"
-                noStyle
-                rules={[
-                  { required: true, message: t('variantModal.priceRequired') },
-                  { type: 'number', min: 0, message: t('variantModal.priceMustBePositive') },
-                ]}
-              >
-                <InputNumber<number>
-                  placeholder="1,000,000"
-                  min={0}
-                  step={1000}
-                  style={{ width: '100%' }}
-                  formatter={(value) =>
-                    value ? `${value}`.replace(/\B(?=(\d{3})+(?!\d))/g, ',') : ''
-                  }
-                  parser={(value) => Number(value?.replace(/\$\s?|(,*)/g, '') ?? '')}
+        <form onSubmit={handleSubmit}>
+          <div className="space-y-4 py-4">
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <Label className="mb-1.5 block">{t('variantModal.nameLabel')}</Label>
+                <Input
+                  placeholder={t('variantModal.namePlaceholder')}
+                  {...form.register('name', { required: t('variantModal.nameRequired') })}
                 />
-              </Form.Item>
-              <div className="ant-input-group-addon">{t('common.currencySymbol')}</div>
-            </Space.Compact>
-          </Form.Item>
+                {form.formState.errors.name?.message && (
+                  <p className="text-sm text-red-500 mt-1">
+                    {String(form.formState.errors.name.message)}
+                  </p>
+                )}
+              </div>
 
-          <Form.Item
-            label={t('variantModal.comparePriceLabel')}
-            tooltip={t('variantModal.comparePriceTooltip')}
-          >
-            <Space.Compact style={{ width: '100%' }}>
-              <Form.Item name="compareAtPrice" noStyle>
-                <InputNumber<number>
-                  placeholder="12,990,000"
-                  min={0}
-                  step={1000}
-                  style={{ width: '100%' }}
-                  formatter={(value) =>
-                    value ? `${value}`.replace(/\B(?=(\d{3})+(?!\d))/g, ',') : ''
-                  }
-                  parser={(value) => Number(value?.replace(/\$\s?|(,*)/g, '') ?? '')}
-                />
-              </Form.Item>
-              <div className="ant-input-group-addon">{t('common.currencySymbol')}</div>
-            </Space.Compact>
-          </Form.Item>
+              <div>
+                <Label className="mb-1.5 block">
+                  {t('variantModal.skuLabel')}
+                  <span
+                    className="ml-1 text-xs text-neutral-500"
+                    title={t('variantModal.skuTooltip')}
+                  >
+                    (?)
+                  </span>
+                </Label>
+                <Input placeholder={t('variantModal.skuPlaceholder')} {...form.register('sku')} />
+              </div>
+            </div>
 
-          <Form.Item label={t('variantModal.stockLabel')} required>
-            <Space.Compact style={{ width: '100%' }}>
-              <Form.Item
-                name="stock"
-                noStyle
-                rules={[
-                  { required: true, message: t('variantModal.stockRequired') },
-                  { type: 'number', min: 0, message: t('variantModal.stockMustBeNonNeg') },
-                ]}
-              >
-                <InputNumber<number>
-                  placeholder="50"
-                  min={0}
-                  style={{ width: '100%' }}
-                  formatter={(value) =>
-                    value ? `${value}`.replace(/\B(?=(\d{3})+(?!\d))/g, ',') : ''
-                  }
-                  parser={(value) => Number(value?.replace(/\$\s?|(,*)/g, '') ?? '')}
-                />
-              </Form.Item>
-              <div className="ant-input-group-addon">{t('common.unitProduct')}</div>
-            </Space.Compact>
-          </Form.Item>
-        </div>
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <Label className="mb-1.5 block">
+                  {t('variantModal.priceLabel')} <span className="text-red-500">*</span>
+                  <span
+                    className="ml-1 text-xs text-neutral-500"
+                    title={t('variantModal.priceTooltip')}
+                  >
+                    (?)
+                  </span>
+                </Label>
+                <div className="flex">
+                  <input
+                    type="number"
+                    className={`${inputNumberClassName} rounded-r-none`}
+                    placeholder="1,000,000"
+                    min={0}
+                    step={1000}
+                    {...form.register('price', { required: t('variantModal.priceRequired') })}
+                  />
+                  <span className="inline-flex items-center px-3 border border-l-0 border-neutral-300 dark:border-neutral-600 bg-neutral-50 dark:bg-neutral-800 rounded-r-xl text-sm text-neutral-600 dark:text-neutral-400">
+                    {t('common.currencySymbol')}
+                  </span>
+                </div>
+                {form.formState.errors.price?.message && (
+                  <p className="text-sm text-red-500 mt-1">
+                    {String(form.formState.errors.price.message)}
+                  </p>
+                )}
+              </div>
 
-        {/* Thuộc tính biến thể */}
-        {attributes.length > 0 && (
-          <div
-            style={{
-              borderTop: '1px solid #f0f0f0',
-              paddingTop: '16px',
-              marginTop: '16px',
-            }}
-          >
-            <h3 style={{ marginBottom: '16px' }}>{t('variantModal.attrSectionTitle')}</h3>
-            <div
-              style={{
-                display: 'grid',
-                gridTemplateColumns: '1fr 1fr',
-                gap: '16px',
-              }}
-            >
-              {attributes.map((attr) => {
-                const values = attr.value
-                  ? (attr.value as string)
-                      .split(',')
-                      .map((v: string) => v.trim())
-                      .filter((v: string) => v)
-                  : [];
-                return (
-                  <Form.Item key={attr.id} label={formatAttributeKey(attr.name)} name={attr.name}>
-                    <Select
-                      placeholder={t('variantModal.selectAttr', {
-                        name: formatAttributeKey(attr.name),
-                      })}
-                      allowClear
-                    >
-                      {values.map((value: string) => (
-                        <Select.Option key={value} value={value}>
-                          {value}
-                        </Select.Option>
-                      ))}
-                    </Select>
-                  </Form.Item>
-                );
-              })}
+              <div>
+                <Label className="mb-1.5 block">
+                  {t('variantModal.comparePriceLabel')}
+                  <span
+                    className="ml-1 text-xs text-neutral-500"
+                    title={t('variantModal.comparePriceTooltip')}
+                  >
+                    (?)
+                  </span>
+                </Label>
+                <div className="flex">
+                  <input
+                    type="number"
+                    className={`${inputNumberClassName} rounded-r-none`}
+                    placeholder="12,990,000"
+                    min={0}
+                    step={1000}
+                    {...form.register('compareAtPrice')}
+                  />
+                  <span className="inline-flex items-center px-3 border border-l-0 border-neutral-300 dark:border-neutral-600 bg-neutral-50 dark:bg-neutral-800 rounded-r-xl text-sm text-neutral-600 dark:text-neutral-400">
+                    {t('common.currencySymbol')}
+                  </span>
+                </div>
+              </div>
+
+              <div>
+                <Label className="mb-1.5 block">
+                  {t('variantModal.stockLabel')} <span className="text-red-500">*</span>
+                </Label>
+                <div className="flex">
+                  <input
+                    type="number"
+                    className={`${inputNumberClassName} rounded-r-none`}
+                    placeholder="50"
+                    min={0}
+                    {...form.register('stock', { required: t('variantModal.stockRequired') })}
+                  />
+                  <span className="inline-flex items-center px-3 border border-l-0 border-neutral-300 dark:border-neutral-600 bg-neutral-50 dark:bg-neutral-800 rounded-r-xl text-sm text-neutral-600 dark:text-neutral-400">
+                    {t('common.unitProduct')}
+                  </span>
+                </div>
+                {form.formState.errors.stock?.message && (
+                  <p className="text-sm text-red-500 mt-1">
+                    {String(form.formState.errors.stock.message)}
+                  </p>
+                )}
+              </div>
+            </div>
+
+            {/* Thuoc tinh bien the */}
+            {attributes.length > 0 && (
+              <div className="border-t border-neutral-200 dark:border-neutral-700 pt-4 mt-4">
+                <h3 className="mb-4 font-semibold">{t('variantModal.attrSectionTitle')}</h3>
+                <div className="grid grid-cols-2 gap-4">
+                  {attributes.map((attr) => {
+                    const values = attr.value
+                      ? (attr.value as string)
+                          .split(',')
+                          .map((v: string) => v.trim())
+                          .filter((v: string) => v)
+                      : [];
+                    return (
+                      <div key={attr.id}>
+                        <Label className="mb-1.5 block">{formatAttributeKey(attr.name)}</Label>
+                        <Select
+                          value={form.watch(attr.name) || ''}
+                          onValueChange={(v) => form.setValue(attr.name, v)}
+                        >
+                          <SelectTrigger>
+                            <SelectValue
+                              placeholder={t('variantModal.selectAttr', {
+                                name: formatAttributeKey(attr.name),
+                              })}
+                            />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {values.map((value: string) => (
+                              <SelectItem key={value} value={value}>
+                                {value}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
+
+            {/* Anh bien the */}
+            <div className="border-t border-neutral-200 dark:border-neutral-700 pt-4 mt-4">
+              <Label className="mb-1.5 block">{t('variantModal.imagesLabel')}</Label>
+              <textarea
+                className="flex w-full rounded-xl border border-neutral-300 dark:border-neutral-600 bg-white dark:bg-neutral-800 px-3 py-2 text-sm text-neutral-900 dark:text-neutral-100 shadow-sm transition-colors placeholder:text-neutral-400 dark:placeholder:text-neutral-500 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500/30 focus-visible:border-primary-500"
+                rows={3}
+                placeholder={t('variantModal.imagesPlaceholder')}
+                {...form.register('images')}
+              />
+              <p className="text-xs text-neutral-500 mt-1">{t('variantModal.imagesHint')}</p>
             </div>
           </div>
-        )}
 
-        {/* Ảnh biến thể */}
-        <div style={{ borderTop: '1px solid #f0f0f0', paddingTop: '16px', marginTop: '16px' }}>
-          <Form.Item
-            name="images"
-            label={t('variantModal.imagesLabel')}
-            extra={t('variantModal.imagesHint')}
-          >
-            <Input.TextArea rows={3} placeholder={t('variantModal.imagesPlaceholder')} />
-          </Form.Item>
-        </div>
-
-        {/* Nút submit */}
-        <div style={{ textAlign: 'right', marginTop: '24px' }}>
-          <Space>
-            <Button onClick={handleClose} icon={<CloseOutlined />}>
-              {t('common.cancel')}
-            </Button>
-            <Button type="primary" htmlType="submit" icon={<SaveOutlined />}>
-              {variant ? t('variantModal.updateBtn') : t('variantModal.addBtn')}
-            </Button>
-          </Space>
-        </div>
-      </Form>
-    </Modal>
+          {/* Nut submit */}
+          <div className="text-right mt-6">
+            <div className="inline-flex items-center gap-2">
+              <Button variant="outline" type="button" onClick={handleClose}>
+                <X className="size-4" />
+                {t('common.cancel')}
+              </Button>
+              <Button type="submit">
+                <Save className="size-4" />
+                {variant ? t('variantModal.updateBtn') : t('variantModal.addBtn')}
+              </Button>
+            </div>
+          </div>
+        </form>
+      </DialogContent>
+    </Dialog>
   );
 };
 

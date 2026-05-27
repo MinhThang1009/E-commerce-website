@@ -28,7 +28,7 @@ export interface UpdateCategoryRequest extends CreateCategoryRequest {
 
 // === Query Keys ===
 
-export const categoryKeys = {
+const categoryKeys = {
   all: ['categories'] as const,
   lists: () => [...categoryKeys.all, 'list'] as const,
   tree: () => [...categoryKeys.all, 'tree'] as const,
@@ -61,20 +61,6 @@ export function useGetCategoryTreeQuery(options?: { enabled?: boolean; skip?: bo
       return data;
     },
     enabled: options?.skip !== undefined ? !options.skip : true,
-  });
-}
-
-export function useGetCategoryByIdQuery(
-  id: string,
-  options?: { enabled?: boolean; skip?: boolean },
-) {
-  return useQuery<CategoryResponse>({
-    queryKey: categoryKeys.detail(id),
-    queryFn: async () => {
-      const { data } = await apiClient.get(`/categories/${id}`);
-      return data;
-    },
-    enabled: options?.skip !== undefined ? !options.skip : !!id,
   });
 }
 
@@ -151,17 +137,6 @@ export function useGetProductsByCategoryQuery(
       return data;
     },
     enabled: options?.skip !== undefined ? !options.skip : !!params.id,
-  });
-}
-
-export function useGetFeaturedCategoriesQuery(options?: { enabled?: boolean; skip?: boolean }) {
-  return useQuery<CategoryResponse>({
-    queryKey: categoryKeys.featured(),
-    queryFn: async () => {
-      const { data } = await apiClient.get('/categories/featured');
-      return data;
-    },
-    enabled: options?.skip !== undefined ? !options.skip : true,
   });
 }
 

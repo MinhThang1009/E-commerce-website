@@ -100,9 +100,10 @@ function validateRow(row, rowIndex) {
  * Escape field cho CSV — bọc ngoặc kép nếu có dấu phẩy/ngoặc kép/newline.
  */
 function escapeCsvField(val) {
-  const s = String(val ?? '');
-  if (s.includes(',') || s.includes('"') || s.includes('\n')) return `"${s.replace(/"/g, '""')}"`;
-  return s;
+  const fieldValue = String(val ?? '');
+  if (fieldValue.includes(',') || fieldValue.includes('"') || fieldValue.includes('\n'))
+    return `"${fieldValue.replace(/"/g, '""')}"`;
+  return fieldValue;
 }
 
 module.exports = { CSV_HEADERS, parseCsvLine, parseCsv, validateRow, escapeCsvField };

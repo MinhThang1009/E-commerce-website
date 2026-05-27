@@ -6,10 +6,11 @@
  */
 import React from 'react';
 import { useTranslation } from 'react-i18next';
-import { Button, Space, Alert } from 'antd';
-import { ArrowRightOutlined, ArrowLeftOutlined, SaveOutlined } from '@ant-design/icons';
+import { ArrowRight, ArrowLeft, Save, Loader2, CheckCircle, Info } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { Alert, AlertTitle, AlertDescription } from '@/components/ui/alert';
 
-// Các step BẮT BUỘC phải điền (còn lại là tùy chọn)
+// Cc step BT BUC phi in (cn li l ty chn)
 const REQUIRED_STEPS = ['basic', 'pricing', 'category'];
 
 interface TabNavigationProps {
@@ -47,7 +48,7 @@ const TabNavigation: React.FC<TabNavigationProps> = ({
 
   const handleNext = () => {
     if (!nextTab) return;
-    // Force fresh validation nếu có validateForm prop
+    // Force fresh validation nu c validateForm prop
     const isValid = validateForm ? validateForm() : completedSteps[activeTab];
     if (isValid) {
       setActiveTab(nextTab);
@@ -67,32 +68,28 @@ const TabNavigation: React.FC<TabNavigationProps> = ({
   if (isLastTab || !nextTab) {
     if (isLastTab && allStepsCompleted && onSubmit) {
       return (
-        <div style={{ marginTop: 24, textAlign: 'right' }}>
-          <Alert
-            message={t('product.allStepsComplete')}
-            description={t('product.canCreateNow')}
-            type="success"
-            showIcon
-            style={{ marginBottom: 16 }}
-          />
-          <Space>
+        <div className="mt-6 text-right">
+          <Alert variant="success" className="mb-4 text-left">
+            <CheckCircle className="size-4" />
+            <AlertTitle>{t('product.allStepsComplete')}</AlertTitle>
+            <AlertDescription>{t('product.canCreateNow')}</AlertDescription>
+          </Alert>
+          <div className="inline-flex items-center gap-2">
             {prevTab && (
-              <Button onClick={handlePrev} icon={<ArrowLeftOutlined />} size="large">
+              <Button variant="outline" size="lg" onClick={handlePrev}>
+                <ArrowLeft className="size-4" />
                 {t('common.back')}
               </Button>
             )}
-            <Button
-              type="primary"
-              onClick={onSubmit}
-              icon={<SaveOutlined />}
-              size="large"
-              loading={isSubmitting}
-              disabled={isSubmitting}
-              style={{ minWidth: 150 }}
-            >
+            <Button size="lg" onClick={onSubmit} disabled={isSubmitting} className="min-w-[150px]">
+              {isSubmitting ? (
+                <Loader2 className="size-4 animate-spin" />
+              ) : (
+                <Save className="size-4" />
+              )}
               {isSubmitting ? resolvedLoadingText : resolvedSubmitText}
             </Button>
-          </Space>
+          </div>
         </div>
       );
     }
@@ -103,37 +100,39 @@ const TabNavigation: React.FC<TabNavigationProps> = ({
   const isRequiredStep = REQUIRED_STEPS.includes(activeTab);
   const isOptionalStep = !isRequiredStep;
 
-  const alertType = isCurrentStepCompleted ? 'success' : isOptionalStep ? 'info' : 'info';
+  const alertVariant = isCurrentStepCompleted ? 'success' : 'info';
   const alertMessage = isCurrentStepCompleted
     ? t('product.stepComplete')
     : isOptionalStep
-      ? t('product.optionalStep') || 'Bước này không bắt buộc'
+      ? t('product.optionalStep') || 'Bc ny khng bt buc'
       : t('product.completeStepFirst');
   const alertDesc = isCurrentStepCompleted
     ? t('product.canContinueStep')
     : isOptionalStep
-      ? t('product.optionalStepDesc') || 'Bạn có thể bỏ qua hoặc điền thêm thông tin.'
+      ? t('product.optionalStepDesc') || 'Bn c th b qua hoc in thm thng tin.'
       : t('product.fillRequiredFirst');
 
+  const AlertIcon = isCurrentStepCompleted ? CheckCircle : Info;
+
   return (
-    <div style={{ marginTop: 24, textAlign: 'right' }}>
-      <Alert
-        message={alertMessage}
-        description={alertDesc}
-        type={alertType}
-        showIcon
-        style={{ marginBottom: 16 }}
-      />
-      <Space>
+    <div className="mt-6 text-right">
+      <Alert variant={alertVariant} className="mb-4 text-left">
+        <AlertIcon className="size-4" />
+        <AlertTitle>{alertMessage}</AlertTitle>
+        <AlertDescription>{alertDesc}</AlertDescription>
+      </Alert>
+      <div className="inline-flex items-center gap-2">
         {prevTab && (
-          <Button onClick={handlePrev} icon={<ArrowLeftOutlined />} size="large">
+          <Button variant="outline" size="lg" onClick={handlePrev}>
+            <ArrowLeft className="size-4" />
             {t('common.back')}
           </Button>
         )}
-        <Button type="primary" onClick={handleNext} icon={<ArrowRightOutlined />} size="large">
+        <Button size="lg" onClick={handleNext}>
           {t('common.nextStep')}
+          <ArrowRight className="size-4" />
         </Button>
-      </Space>
+      </div>
     </div>
   );
 };

@@ -44,24 +44,29 @@ function buildAugmentedPrompt(userMessage, products) {
   const retrievalContextText =
     products.length > 0
       ? products
-          .map(
-            (p) =>
-              // ⚠️[low confidence]: cờ báo kết quả tìm kiếm kém chính xác (score thấp)
-              // LLM sẽ thận trọng hơn khi đề xuất sản phẩm có flag này
-              (() => {
-                const variantsStr = p.variants?.length
-                  ? ' | Phiên bản: ' + p.variants.map(v =>
-                      `${v.variantName}${v.price != null ? ' (' + Number(v.price).toLocaleString('vi-VN') + 'đ' : ''}${v.stockQuantity > 0 ? ', còn hàng' : ', hết hàng'})`
-                    ).join('; ')
-                  : '';
-                const ratingStr = p.ratingAverage != null && p.ratingAverage > 0
+          .map((p) =>
+            // ⚠️[low confidence]: cờ báo kết quả tìm kiếm kém chính xác (score thấp)
+            // LLM sẽ thận trọng hơn khi đề xuất sản phẩm có flag này
+            (() => {
+              const variantsStr = p.variants?.length
+                ? ' | Phiên bản: ' +
+                  p.variants
+                    .map(
+                      (v) =>
+                        `${v.variantName}${v.price != null ? ' (' + Number(v.price).toLocaleString('vi-VN') + 'đ' : ''}${v.stockQuantity > 0 ? ', còn hàng' : ', hết hàng'})`,
+                    )
+                    .join('; ')
+                : '';
+              const ratingStr =
+                p.ratingAverage != null && p.ratingAverage > 0
                   ? ` - Đánh giá: ${Number(p.ratingAverage).toFixed(1)}/5`
                   : '';
-                const descStr = p.description && p.description !== p.shortDescription
+              const descStr =
+                p.description && p.description !== p.shortDescription
                   ? ` - Mô tả: ${p.description.substring(0, 300)}`
                   : '';
-                return `- ${p.lowConfidence ? '⚠️[low confidence] ' : ''}${p.name} (${p.category || 'Sản phẩm'}): ${p.shortDescription || 'Mô tả đang cập nhật'}${descStr}${p.specifications ? '. Thông số: ' + p.specifications : ''}${variantsStr} - Giá từ: ${Number(p.price ?? p.basePrice).toLocaleString('vi-VN')} đ - Tình trạng: ${p.inStock ? 'Còn hàng' : 'Hết hàng'}${ratingStr}`;
-              })(),
+              return `- ${p.lowConfidence ? '⚠️[low confidence] ' : ''}${p.name} (${p.category || 'Sản phẩm'}): ${p.shortDescription || 'Mô tả đang cập nhật'}${descStr}${p.specifications ? '. Thông số: ' + p.specifications : ''}${variantsStr} - Giá từ: ${Number(p.price ?? p.basePrice).toLocaleString('vi-VN')} đ - Tình trạng: ${p.inStock ? 'Còn hàng' : 'Hết hàng'}${ratingStr}`;
+            })(),
           )
           .join('\n')
       : '(Không tìm thấy sản phẩm nào phù hợp trong cơ sở dữ liệu)';

@@ -8,4 +8,3 @@
 
 // API endpoints (TanStack Query)
 export * from './api/image-api';
-export * from './api/upload-api';

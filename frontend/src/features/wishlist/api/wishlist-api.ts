@@ -22,7 +22,7 @@ export interface CheckWishlistResponse {
 
 // === Query Keys ===
 
-export const wishlistKeys = {
+const wishlistKeys = {
   all: ['wishlist'] as const,
   list: () => [...wishlistKeys.all, 'list'] as const,
   check: (productId: string) => [...wishlistKeys.all, 'check', productId] as const,

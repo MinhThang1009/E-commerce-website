@@ -6,36 +6,17 @@
  */
 import React, { useState } from 'react';
 import {
-  Table,
-  Button,
-  Modal,
-  Form,
-  Input,
-  Select,
-  Switch,
-  Space,
-  message,
-  Popconfirm,
-  Tag,
-  Avatar,
-  Card,
-  Typography,
-  Row,
-  Col,
-  Statistic,
-} from 'antd';
-import {
-  UserOutlined,
-  EditOutlined,
-  DeleteOutlined,
-  ReloadOutlined,
-  SearchOutlined,
-  MailOutlined,
-  PhoneOutlined,
-  CrownOutlined,
-  TeamOutlined,
-  EyeOutlined,
-} from '@ant-design/icons';
+  User,
+  Pencil,
+  Trash2,
+  RefreshCw,
+  Search,
+  Mail,
+  Phone,
+  Crown,
+  Users,
+  Eye,
+} from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { buildRoute } from '@/routes/paths';
@@ -43,13 +24,25 @@ import {
   useGetAllUsersQuery,
   useUpdateUserMutation,
   useDeleteUserMutation,
-  type User,
+  type UserDetail,
   type UserFilters,
 } from '../api/admin-user-api';
 import { getErrorMsg } from '@/utils/error-utils';
-
-const { Title } = Typography;
-const { Option } = Select;
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Switch } from '@/components/ui/switch';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import {
+  Select,
+  SelectTrigger,
+  SelectValue,
+  SelectContent,
+  SelectItem,
+} from '@/components/ui/select';
+import { Card, CardContent } from '@/components/ui/card';
+import { Pagination } from '@/components/common';
+import { useUiStore } from '@/stores/ui-store';
 
 interface UserFormData {
   firstName: string;
@@ -63,9 +56,18 @@ interface UserFormData {
 const UsersPage: React.FC = () => {
   const { t, i18n } = useTranslation();
   const navigate = useNavigate();
-  const [form] = Form.useForm();
+  const { addNotification } = useUiStore();
   const [isModalVisible, setIsModalVisible] = useState(false);
-  const [editingUser, setEditingUser] = useState<User | null>(null);
+  const [editingUser, setEditingUser] = useState<UserDetail | null>(null);
+  const [formData, setFormData] = useState<UserFormData>({
+    firstName: '',
+    lastName: '',
+    phone: '',
+    role: 'customer',
+    isEmailVerified: false,
+    isActive: true,
+  });
+  const [formErrors, setFormErrors] = useState<Record<string, string>>({});
   const [filters, setFilters] = useState<UserFilters>({
     page: 1,
     limit: 10,
@@ -82,39 +84,65 @@ const UsersPage: React.FC = () => {
   const users = usersData?.data?.users || [];
   const pagination = usersData?.data?.pagination;
 
-  const handleSubmit = async (values: UserFormData) => {
-    if (!editingUser) return;
+  const validateForm = (): boolean => {
+    const errors: Record<string, string> = {};
+    if (!formData.firstName.trim()) {
+      errors.firstName = t('admin.users.form.firstNameRequired');
+    }
+    if (!formData.lastName.trim()) {
+      errors.lastName = t('admin.users.form.lastNameRequired');
+    }
+    if (formData.phone && !/^(0|\+84)[0-9]{9}$/.test(formData.phone)) {
+      errors.phone = t('validation.phone.invalid');
+    }
+    if (!formData.role) {
+      errors.role = t('admin.users.form.roleRequired');
+    }
+    setFormErrors(errors);
+    return Object.keys(errors).length === 0;
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!editingUser || !validateForm()) return;
     try {
-      await updateUser({ id: editingUser.id, ...values });
-      message.success(t('admin.users.messages.editSuccess'));
+      await updateUser({ id: editingUser.id, ...formData });
+      addNotification({ type: 'success', message: t('admin.users.messages.editSuccess') });
       setIsModalVisible(false);
       setEditingUser(null);
-      form.resetFields();
     } catch (error) {
-      message.error(getErrorMsg(error, t('admin.users.messages.editError')));
+      addNotification({
+        type: 'error',
+        message: getErrorMsg(error, t('admin.users.messages.editError')),
+      });
     }
   };
 
   const handleDelete = async (id: string) => {
+    if (!window.confirm(t('admin.users.deleteConfirm'))) return;
     try {
       await deleteUser(id);
-      message.success(t('admin.users.messages.deleteSuccess'));
+      addNotification({ type: 'success', message: t('admin.users.messages.deleteSuccess') });
     } catch (error) {
-      message.error(getErrorMsg(error, t('admin.users.messages.deleteError')));
+      addNotification({
+        type: 'error',
+        message: getErrorMsg(error, t('admin.users.messages.deleteError')),
+      });
     }
   };
 
-  const handleEdit = (user: User) => {
+  const handleEdit = (user: UserDetail) => {
     setEditingUser(user);
-    setIsModalVisible(true);
-    form.setFieldsValue({
+    setFormData({
       firstName: user.firstName,
       lastName: user.lastName,
-      phone: user.phone,
+      phone: user.phone || '',
       role: user.role,
       isEmailVerified: user.isEmailVerified,
       isActive: user.isActive,
     });
+    setFormErrors({});
+    setIsModalVisible(true);
   };
 
   const handleSearch = (value: string) => {
@@ -128,29 +156,23 @@ const UsersPage: React.FC = () => {
     setFilters((prev) => ({ ...prev, [key]: value, page: 1 }));
   };
 
-  const handleTableChange = (page: number, pageSize: number) => {
-    setFilters((prev) => ({ ...prev, page, limit: pageSize }));
-  };
-
   const getRoleColor = (role: string) => {
     switch (role) {
       case 'admin':
-        return 'red';
-
+        return 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400';
       case 'customer':
-        return 'blue';
+        return 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400';
       default:
-        return 'default';
+        return 'bg-neutral-100 text-neutral-800 dark:bg-neutral-700 dark:text-neutral-300';
     }
   };
 
   const getRoleIcon = (role: string) => {
     switch (role) {
       case 'admin':
-        return <CrownOutlined />;
-
+        return <Crown className="size-3" />;
       default:
-        return <UserOutlined />;
+        return <User className="size-3" />;
     }
   };
 
@@ -158,7 +180,6 @@ const UsersPage: React.FC = () => {
     switch (role) {
       case 'admin':
         return t('admin.users.roles.admin');
-
       case 'customer':
         return t('admin.users.roles.customer');
       default:
@@ -166,348 +187,427 @@ const UsersPage: React.FC = () => {
     }
   };
 
-  const columns = [
-    {
-      title: t('admin.users.table.user'),
-      key: 'user',
-      render: (_: unknown, record: User) => (
-        <div className="flex items-center gap-3">
-          <Avatar src={record.avatar} icon={<UserOutlined />} size={48} />
-          <div>
-            <div className="font-medium">
-              {record.firstName} {record.lastName}
-            </div>
-            <div className="text-sm text-gray-500 flex items-center gap-1">
-              <MailOutlined className="text-xs" />
-              {record.email}
-            </div>
-            {record.phone && (
-              <div className="text-sm text-gray-500 flex items-center gap-1">
-                <PhoneOutlined className="text-xs" />
-                {record.phone}
-              </div>
-            )}
-          </div>
-        </div>
-      ),
-    },
-    {
-      title: t('admin.users.table.role'),
-      dataIndex: 'role',
-      key: 'role',
-      width: 120,
-      render: (role: string) => (
-        <Tag color={getRoleColor(role)} icon={getRoleIcon(role)}>
-          {getRoleLabel(role)}
-        </Tag>
-      ),
-    },
-    {
-      title: t('common.status'),
-      key: 'status',
-      width: 150,
-      render: (_: unknown, record: User) => (
-        <div className="space-y-1">
-          <div>
-            <Tag color={record.isActive ? 'success' : 'error'}>
-              {record.isActive ? t('admin.users.status.active') : t('admin.users.status.locked')}
-            </Tag>
-          </div>
-          <div>
-            <Tag color={record.isEmailVerified ? 'processing' : 'warning'}>
-              {record.isEmailVerified
-                ? t('admin.users.table.verified')
-                : t('admin.users.table.notVerified')}
-            </Tag>
-          </div>
-        </div>
-      ),
-    },
-    {
-      title: t('admin.users.table.createdAt'),
-      dataIndex: 'createdAt',
-      key: 'createdAt',
-      width: 120,
-      render: (date: string) =>
-        new Date(date).toLocaleDateString(i18n.language === 'vi' ? 'vi-VN' : 'en-US'),
-    },
-    {
-      title: t('admin.common.actions'),
-      key: 'actions',
-      width: 120,
-      render: (_: unknown, record: User) => (
-        <Space>
-          <Button
-            type="link"
-            icon={<EyeOutlined />}
-            onClick={() => navigate(buildRoute.adminUserDetail(record.id))}
-            size="small"
-          />
-          <Button
-            type="link"
-            icon={<EditOutlined />}
-            onClick={() => handleEdit(record)}
-            size="small"
-          />
-          <Popconfirm
-            title={t('admin.users.deleteTitle')}
-            description={t('admin.users.deleteConfirm')}
-            onConfirm={() => handleDelete(record.id)}
-            okText={t('common.delete')}
-            cancelText={t('common.cancel')}
-            okButtonProps={{ danger: true }}
-          >
-            <Button type="link" icon={<DeleteOutlined />} danger size="small" />
-          </Popconfirm>
-        </Space>
-      ),
-    },
-  ];
-
   const totalUsers = pagination?.totalItems || 0;
   const adminCount = users.filter((u) => u.role === 'admin').length;
   const customerCount = users.filter((u) => u.role === 'customer').length;
   const verifiedCount = users.filter((u) => u.isEmailVerified).length;
+  const totalPages = pagination ? Math.ceil(pagination.totalItems / pagination.itemsPerPage) : 1;
 
   return (
     <div className="p-2 sm:p-4 md:p-6">
       <Card className="dark:bg-neutral-800">
-        <div className="mb-6">
-          <Title level={2} className="!mb-1 text-xl md:text-2xl dark:text-white">
-            {t('admin.users.title')}
-          </Title>
-          <p className="text-neutral-600 dark:text-neutral-400">{t('admin.users.subtitle')}</p>
-        </div>
+        <CardContent className="pt-6">
+          <div className="mb-6">
+            <h2 className="text-xl md:text-2xl font-semibold dark:text-white mb-1">
+              {t('admin.users.title')}
+            </h2>
+            <p className="text-neutral-600 dark:text-neutral-400">{t('admin.users.subtitle')}</p>
+          </div>
 
-        <Row gutter={[16, 16]} className="mb-6">
-          <Col xs={24} sm={12} md={6}>
+          {/* Stats */}
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
             <Card className="dark:bg-neutral-700">
-              <Statistic
-                title={
-                  <span className="dark:text-neutral-300">{t('admin.users.stats.total')}</span>
-                }
-                value={totalUsers}
-                prefix={<UserOutlined />}
-                valueStyle={{ color: '#1890ff' }}
-              />
+              <CardContent className="pt-4 pb-4">
+                <p className="text-sm text-neutral-500 dark:text-neutral-300 mb-1">
+                  {t('admin.users.stats.total')}
+                </p>
+                <div className="flex items-center gap-2">
+                  <User className="size-5" style={{ color: 'var(--admin-info)' }} />
+                  <span className="text-2xl font-semibold" style={{ color: 'var(--admin-info)' }}>
+                    {totalUsers}
+                  </span>
+                </div>
+              </CardContent>
             </Card>
-          </Col>
-          <Col xs={24} sm={12} md={6}>
             <Card className="dark:bg-neutral-700">
-              <Statistic
-                title={
-                  <span className="dark:text-neutral-300">{t('admin.users.stats.admins')}</span>
-                }
-                value={adminCount}
-                prefix={<CrownOutlined />}
-                valueStyle={{ color: '#f5222d' }}
-              />
+              <CardContent className="pt-4 pb-4">
+                <p className="text-sm text-neutral-500 dark:text-neutral-300 mb-1">
+                  {t('admin.users.stats.admins')}
+                </p>
+                <div className="flex items-center gap-2">
+                  <Crown className="size-5" style={{ color: 'var(--admin-error)' }} />
+                  <span className="text-2xl font-semibold" style={{ color: 'var(--admin-error)' }}>
+                    {adminCount}
+                  </span>
+                </div>
+              </CardContent>
             </Card>
-          </Col>
-          <Col xs={24} sm={12} md={6}>
             <Card className="dark:bg-neutral-700">
-              <Statistic
-                title={
-                  <span className="dark:text-neutral-300">{t('admin.users.stats.customers')}</span>
-                }
-                value={customerCount}
-                prefix={<TeamOutlined />}
-                valueStyle={{ color: '#52c41a' }}
-              />
+              <CardContent className="pt-4 pb-4">
+                <p className="text-sm text-neutral-500 dark:text-neutral-300 mb-1">
+                  {t('admin.users.stats.customers')}
+                </p>
+                <div className="flex items-center gap-2">
+                  <Users className="size-5" style={{ color: 'var(--admin-success)' }} />
+                  <span
+                    className="text-2xl font-semibold"
+                    style={{ color: 'var(--admin-success)' }}
+                  >
+                    {customerCount}
+                  </span>
+                </div>
+              </CardContent>
             </Card>
-          </Col>
-          <Col xs={24} sm={12} md={6}>
             <Card className="dark:bg-neutral-700">
-              <Statistic
-                title={
-                  <span className="dark:text-neutral-300">{t('admin.users.stats.verified')}</span>
-                }
-                value={verifiedCount}
-                prefix={<MailOutlined />}
-                valueStyle={{ color: '#722ed1' }}
-              />
+              <CardContent className="pt-4 pb-4">
+                <p className="text-sm text-neutral-500 dark:text-neutral-300 mb-1">
+                  {t('admin.users.stats.verified')}
+                </p>
+                <div className="flex items-center gap-2">
+                  <Mail className="size-5" style={{ color: '#722ed1' }} />
+                  <span className="text-2xl font-semibold" style={{ color: '#722ed1' }}>
+                    {verifiedCount}
+                  </span>
+                </div>
+              </CardContent>
             </Card>
-          </Col>
-        </Row>
+          </div>
 
-        <div className="mb-4 p-4 bg-gray-50 dark:bg-neutral-700 rounded-lg">
-          <Row gutter={[16, 16]} align="middle">
-            <Col xs={24} md={12} lg={8}>
-              <Input
-                placeholder={t('admin.users.searchPlaceholder')}
-                value={filters.search}
-                onChange={(e) => handleSearch(e.target.value)}
-                suffix={<SearchOutlined style={{ color: 'rgba(0,0,0,.45)' }} />}
-                allowClear
-              />
-            </Col>
-            <Col xs={12} sm={8} md={6} lg={4}>
+          {/* Filters */}
+          <div className="mb-4 p-4 bg-gray-50 dark:bg-neutral-700 rounded-lg">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4 items-end">
+              <div className="md:col-span-2">
+                <div className="relative">
+                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-neutral-400" />
+                  <Input
+                    placeholder={t('admin.users.searchPlaceholder')}
+                    value={filters.search}
+                    onChange={(e) => handleSearch(e.target.value)}
+                    className="pl-9"
+                  />
+                </div>
+              </div>
               <Select
-                placeholder={t('admin.users.filter.role')}
-                value={filters.role}
-                onChange={(value) => handleFilterChange('role', value)}
-                style={{ width: '100%' }}
-                allowClear
+                value={filters.role || 'all'}
+                onValueChange={(value) => handleFilterChange('role', value === 'all' ? '' : value)}
               >
-                <Option value="">{t('common.all')}</Option>
-                <Option value="admin">{t('admin.users.roles.admin')}</Option>
-                <Option value="customer">{t('admin.users.roles.customer')}</Option>
+                <SelectTrigger>
+                  <SelectValue placeholder={t('admin.users.filter.role')} />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">{t('common.all')}</SelectItem>
+                  <SelectItem value="admin">{t('admin.users.roles.admin')}</SelectItem>
+                  <SelectItem value="customer">{t('admin.users.roles.customer')}</SelectItem>
+                </SelectContent>
               </Select>
-            </Col>
-            <Col xs={12} sm={8} md={6} lg={4}>
               <Select
-                placeholder={t('admin.users.filter.sortBy')}
                 value={filters.sortBy}
-                onChange={(value) => handleFilterChange('sortBy', value)}
-                style={{ width: '100%' }}
+                onValueChange={(value) => handleFilterChange('sortBy', value)}
               >
-                <Option value="createdAt">{t('admin.users.filter.sortByDate')}</Option>
-                <Option value="firstName">{t('admin.users.filter.sortByName')}</Option>
-                <Option value="email">{t('admin.users.filter.sortByEmail')}</Option>
+                <SelectTrigger>
+                  <SelectValue placeholder={t('admin.users.filter.sortBy')} />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="createdAt">{t('admin.users.filter.sortByDate')}</SelectItem>
+                  <SelectItem value="firstName">{t('admin.users.filter.sortByName')}</SelectItem>
+                  <SelectItem value="email">{t('admin.users.filter.sortByEmail')}</SelectItem>
+                </SelectContent>
               </Select>
-            </Col>
-            <Col xs={12} sm={8} md={6} lg={4}>
-              <Select
-                placeholder={t('admin.users.filter.sortOrder')}
-                value={filters.sortOrder}
-                onChange={(value) => handleFilterChange('sortOrder', value)}
-                style={{ width: '100%' }}
-              >
-                <Option value="DESC">{t('admin.users.filter.desc')}</Option>
-                <Option value="ASC">{t('admin.users.filter.asc')}</Option>
-              </Select>
-            </Col>
-            <Col xs={12} sm={8} md={6} lg={4}>
-              <Button
-                icon={<ReloadOutlined />}
-                onClick={() => refetch()}
-                loading={isLoading}
-                style={{ width: '100%' }}
-                className="dark:text-neutral-300"
-              >
-                {t('common.refresh')}
-              </Button>
-            </Col>
-          </Row>
-        </div>
+              <div className="flex gap-2">
+                <Select
+                  value={filters.sortOrder}
+                  onValueChange={(value) => handleFilterChange('sortOrder', value)}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder={t('admin.users.filter.sortOrder')} />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="DESC">{t('admin.users.filter.desc')}</SelectItem>
+                    <SelectItem value="ASC">{t('admin.users.filter.asc')}</SelectItem>
+                  </SelectContent>
+                </Select>
+                <Button
+                  variant="outline"
+                  onClick={() => refetch()}
+                  disabled={isLoading}
+                  className="shrink-0"
+                >
+                  <RefreshCw className={`size-4 ${isLoading ? 'animate-spin' : ''}`} />
+                </Button>
+              </div>
+            </div>
+          </div>
 
-        <div className="overflow-x-auto">
-          <Table
-            columns={columns}
-            dataSource={users}
-            className="dark-table-fixed-columns"
-            rowKey="id"
-            loading={isLoading}
-            pagination={{
-              current: pagination?.currentPage,
-              total: pagination?.totalItems,
-              pageSize: pagination?.itemsPerPage,
-              showSizeChanger: true,
-              showQuickJumper: true,
-              showTotal: (total, range) =>
-                t('admin.users.totalItems', { range0: range[0], range1: range[1], total }),
-              onChange: handleTableChange,
-            }}
-            scroll={{ x: 800 }}
-          />
-        </div>
+          {/* Table */}
+          <div className="overflow-x-auto rounded-lg border border-neutral-200 dark:border-neutral-700">
+            <table className="w-full text-sm min-w-[800px]">
+              <thead>
+                <tr className="border-b border-neutral-200 dark:border-neutral-700 bg-neutral-50 dark:bg-neutral-800">
+                  <th className="text-left px-4 py-3 font-medium text-neutral-700 dark:text-neutral-300">
+                    {t('admin.users.table.user')}
+                  </th>
+                  <th className="text-left px-4 py-3 font-medium text-neutral-700 dark:text-neutral-300 w-[120px]">
+                    {t('admin.users.table.role')}
+                  </th>
+                  <th className="text-left px-4 py-3 font-medium text-neutral-700 dark:text-neutral-300 w-[150px]">
+                    {t('common.status')}
+                  </th>
+                  <th className="text-left px-4 py-3 font-medium text-neutral-700 dark:text-neutral-300 w-[120px]">
+                    {t('admin.users.table.createdAt')}
+                  </th>
+                  <th className="text-left px-4 py-3 font-medium text-neutral-700 dark:text-neutral-300 w-[120px]">
+                    {t('admin.common.actions')}
+                  </th>
+                </tr>
+              </thead>
+              <tbody>
+                {isLoading ? (
+                  <tr>
+                    <td colSpan={5} className="text-center py-12 text-neutral-500">
+                      {t('common.loading')}
+                    </td>
+                  </tr>
+                ) : users.length === 0 ? (
+                  <tr>
+                    <td colSpan={5} className="text-center py-12 text-neutral-500">
+                      {t('common.noData')}
+                    </td>
+                  </tr>
+                ) : (
+                  users.map((record) => (
+                    <tr
+                      key={record.id}
+                      className="border-b border-neutral-200 dark:border-neutral-700 hover:bg-neutral-50 dark:hover:bg-neutral-800/50"
+                    >
+                      <td className="px-4 py-3">
+                        <div className="flex items-center gap-3">
+                          {record.avatar ? (
+                            <img
+                              src={record.avatar}
+                              alt=""
+                              className="w-12 h-12 rounded-full object-cover"
+                            />
+                          ) : (
+                            <div className="w-12 h-12 rounded-full bg-neutral-200 dark:bg-neutral-700 flex items-center justify-center">
+                              <User className="size-5 text-neutral-500" />
+                            </div>
+                          )}
+                          <div>
+                            <div className="font-medium dark:text-white">
+                              {record.firstName} {record.lastName}
+                            </div>
+                            <div className="text-sm text-gray-500 flex items-center gap-1">
+                              <Mail className="size-3" />
+                              {record.email}
+                            </div>
+                            {record.phone && (
+                              <div className="text-sm text-gray-500 flex items-center gap-1">
+                                <Phone className="size-3" />
+                                {record.phone}
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                      </td>
+                      <td className="px-4 py-3">
+                        <span
+                          className={`inline-flex items-center gap-1 px-2 py-0.5 rounded text-xs font-medium ${getRoleColor(record.role)}`}
+                        >
+                          {getRoleIcon(record.role)}
+                          {getRoleLabel(record.role)}
+                        </span>
+                      </td>
+                      <td className="px-4 py-3">
+                        <div className="space-y-1">
+                          <div>
+                            <span
+                              className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-medium ${
+                                record.isActive
+                                  ? 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400'
+                                  : 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400'
+                              }`}
+                            >
+                              {record.isActive
+                                ? t('admin.users.status.active')
+                                : t('admin.users.status.locked')}
+                            </span>
+                          </div>
+                          <div>
+                            <span
+                              className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-medium ${
+                                record.isEmailVerified
+                                  ? 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400'
+                                  : 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-400'
+                              }`}
+                            >
+                              {record.isEmailVerified
+                                ? t('admin.users.table.verified')
+                                : t('admin.users.table.notVerified')}
+                            </span>
+                          </div>
+                        </div>
+                      </td>
+                      <td className="px-4 py-3 text-neutral-600 dark:text-neutral-400">
+                        {new Date(record.createdAt).toLocaleDateString(
+                          i18n.language === 'vi' ? 'vi-VN' : 'en-US',
+                        )}
+                      </td>
+                      <td className="px-4 py-3">
+                        <div className="flex items-center gap-1">
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => navigate(buildRoute.adminUserDetail(record.id))}
+                          >
+                            <Eye className="size-4" />
+                          </Button>
+                          <Button variant="ghost" size="sm" onClick={() => handleEdit(record)}>
+                            <Pencil className="size-4" />
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            className="text-red-600 hover:text-red-700 hover:bg-red-50 dark:hover:bg-red-900/20"
+                            onClick={() => handleDelete(record.id)}
+                          >
+                            <Trash2 className="size-4" />
+                          </Button>
+                        </div>
+                      </td>
+                    </tr>
+                  ))
+                )}
+              </tbody>
+            </table>
+          </div>
 
-        <Modal
-          title={t('admin.users.editUser')}
-          open={isModalVisible}
-          onCancel={() => {
+          {/* Pagination */}
+          {totalPages > 1 && (
+            <Pagination
+              currentPage={pagination?.currentPage || 1}
+              totalPages={totalPages}
+              onPageChange={(page) => setFilters((prev) => ({ ...prev, page }))}
+            />
+          )}
+        </CardContent>
+      </Card>
+
+      {/* Edit User Dialog */}
+      <Dialog
+        open={isModalVisible}
+        onOpenChange={(open) => {
+          if (!open) {
             setIsModalVisible(false);
             setEditingUser(null);
-            form.resetFields();
-          }}
-          footer={null}
-          width={600}
-        >
-          <Form form={form} layout="vertical" onFinish={handleSubmit}>
-            <Row gutter={16}>
-              <Col span={12}>
-                <Form.Item
-                  name="firstName"
-                  label={t('admin.users.form.firstName')}
-                  rules={[{ required: true, message: t('admin.users.form.firstNameRequired') }]}
-                >
-                  <Input placeholder={t('admin.users.form.firstNamePlaceholder')} />
-                </Form.Item>
-              </Col>
-              <Col span={12}>
-                <Form.Item
-                  name="lastName"
-                  label={t('admin.users.form.lastName')}
-                  rules={[{ required: true, message: t('admin.users.form.lastNameRequired') }]}
-                >
-                  <Input placeholder={t('admin.users.form.lastNamePlaceholder')} />
-                </Form.Item>
-              </Col>
-            </Row>
+          }
+        }}
+      >
+        <DialogContent className="max-w-[600px]">
+          <DialogHeader>
+            <DialogTitle>{t('admin.users.editUser')}</DialogTitle>
+          </DialogHeader>
+          <form onSubmit={handleSubmit} className="space-y-4">
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <Label>{t('admin.users.form.firstName')}</Label>
+                <Input
+                  value={formData.firstName}
+                  onChange={(e) => setFormData((prev) => ({ ...prev, firstName: e.target.value }))}
+                  placeholder={t('admin.users.form.firstNamePlaceholder')}
+                  className="mt-1"
+                />
+                {formErrors.firstName && (
+                  <p className="text-xs text-red-500 mt-1">{formErrors.firstName}</p>
+                )}
+              </div>
+              <div>
+                <Label>{t('admin.users.form.lastName')}</Label>
+                <Input
+                  value={formData.lastName}
+                  onChange={(e) => setFormData((prev) => ({ ...prev, lastName: e.target.value }))}
+                  placeholder={t('admin.users.form.lastNamePlaceholder')}
+                  className="mt-1"
+                />
+                {formErrors.lastName && (
+                  <p className="text-xs text-red-500 mt-1">{formErrors.lastName}</p>
+                )}
+              </div>
+            </div>
 
-            <Form.Item
-              name="phone"
-              label={t('admin.users.form.phone')}
-              rules={[{ pattern: /^(0|\+84)[0-9]{9}$/, message: t('validation.phone.invalid') }]}
-            >
-              <Input placeholder={t('admin.users.form.phonePlaceholder')} maxLength={10} />
-            </Form.Item>
+            <div>
+              <Label>{t('admin.users.form.phone')}</Label>
+              <Input
+                value={formData.phone || ''}
+                onChange={(e) => setFormData((prev) => ({ ...prev, phone: e.target.value }))}
+                placeholder={t('admin.users.form.phonePlaceholder')}
+                maxLength={10}
+                className="mt-1"
+              />
+              {formErrors.phone && <p className="text-xs text-red-500 mt-1">{formErrors.phone}</p>}
+            </div>
 
-            <Form.Item
-              name="role"
-              label={t('admin.users.form.role')}
-              rules={[{ required: true, message: t('admin.users.form.roleRequired') }]}
-            >
-              <Select placeholder={t('admin.users.form.rolePlaceholder')}>
-                <Option value="customer">{t('admin.users.roles.customer')}</Option>
-                <Option value="admin">{t('admin.users.roles.admin')}</Option>
+            <div>
+              <Label>{t('admin.users.form.role')}</Label>
+              <Select
+                value={formData.role}
+                onValueChange={(value) =>
+                  setFormData((prev) => ({ ...prev, role: value as 'customer' | 'admin' }))
+                }
+              >
+                <SelectTrigger className="mt-1">
+                  <SelectValue placeholder={t('admin.users.form.rolePlaceholder')} />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="customer">{t('admin.users.roles.customer')}</SelectItem>
+                  <SelectItem value="admin">{t('admin.users.roles.admin')}</SelectItem>
+                </SelectContent>
               </Select>
-            </Form.Item>
+              {formErrors.role && <p className="text-xs text-red-500 mt-1">{formErrors.role}</p>}
+            </div>
 
-            <Row gutter={16}>
-              <Col span={12}>
-                <Form.Item
-                  name="isEmailVerified"
-                  label={t('admin.users.form.emailStatus')}
-                  valuePropName="checked"
-                >
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <Label>{t('admin.users.form.emailStatus')}</Label>
+                <div className="flex items-center gap-2 mt-2">
                   <Switch
-                    checkedChildren={t('admin.users.form.emailVerified')}
-                    unCheckedChildren={t('admin.users.form.emailNotVerified')}
+                    checked={formData.isEmailVerified}
+                    onCheckedChange={(checked) =>
+                      setFormData((prev) => ({ ...prev, isEmailVerified: checked }))
+                    }
                   />
-                </Form.Item>
-              </Col>
-              <Col span={12}>
-                <Form.Item
-                  name="isActive"
-                  label={t('admin.users.form.accountStatus')}
-                  valuePropName="checked"
-                >
+                  <span className="text-sm text-neutral-600 dark:text-neutral-400">
+                    {formData.isEmailVerified
+                      ? t('admin.users.form.emailVerified')
+                      : t('admin.users.form.emailNotVerified')}
+                  </span>
+                </div>
+              </div>
+              <div>
+                <Label>{t('admin.users.form.accountStatus')}</Label>
+                <div className="flex items-center gap-2 mt-2">
                   <Switch
-                    checkedChildren={t('admin.users.status.active')}
-                    unCheckedChildren={t('admin.users.status.locked')}
+                    checked={formData.isActive}
+                    onCheckedChange={(checked) =>
+                      setFormData((prev) => ({ ...prev, isActive: checked }))
+                    }
                   />
-                </Form.Item>
-              </Col>
-            </Row>
+                  <span className="text-sm text-neutral-600 dark:text-neutral-400">
+                    {formData.isActive
+                      ? t('admin.users.status.active')
+                      : t('admin.users.status.locked')}
+                  </span>
+                </div>
+              </div>
+            </div>
 
             <div className="flex justify-end gap-2 mt-6">
               <Button
+                type="button"
+                variant="outline"
                 onClick={() => {
                   setIsModalVisible(false);
                   setEditingUser(null);
-                  form.resetFields();
                 }}
               >
                 {t('common.cancel')}
               </Button>
-              <Button type="primary" htmlType="submit" loading={isUpdating}>
-                {t('common.update')}
+              <Button type="submit" disabled={isUpdating}>
+                {isUpdating ? t('common.loading') : t('common.update')}
               </Button>
             </div>
-          </Form>
-        </Modal>
-      </Card>
+          </form>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };

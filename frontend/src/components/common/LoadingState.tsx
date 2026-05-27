@@ -12,20 +12,10 @@
 import React from 'react';
 import { useTranslation } from 'react-i18next';
 
-interface LoadingStateProps {
+interface LoadingSpinnerProps {
   size?: 'sm' | 'md' | 'lg';
-  variant?: 'spinner' | 'skeleton' | 'pulse';
-  className?: string;
-}
-
-interface LoadingSpinnerProps extends LoadingStateProps {
   text?: string;
-}
-
-interface LoadingSkeletonProps extends LoadingStateProps {
-  lines?: number;
-  width?: string;
-  height?: string;
+  className?: string;
 }
 
 /**
@@ -63,76 +53,21 @@ export const LoadingSpinner: React.FC<LoadingSpinnerProps> = ({
 };
 
 /**
- * Component Loading Skeleton
- */
-export const LoadingSkeleton: React.FC<LoadingSkeletonProps> = ({
-  lines = 3,
-  width = '100%',
-  height = '1rem',
-  className = '',
-}) => {
-  return (
-    <div className={`animate-pulse space-y-2 ${className}`}>
-      {Array.from({ length: lines }).map((_, index) => (
-        <div
-          key={index}
-          className="bg-neutral-200 dark:bg-neutral-700 rounded"
-          style={{
-            width: index === lines - 1 ? '75%' : width,
-            height,
-          }}
-        />
-      ))}
-    </div>
-  );
-};
-
-/**
- * Component Loading Pulse
- */
-export const LoadingPulse: React.FC<LoadingStateProps> = ({ size = 'md', className = '' }) => {
-  const sizeClasses = {
-    sm: 'h-16 w-16',
-    md: 'h-24 w-24',
-    lg: 'h-32 w-32',
-  };
-
-  return (
-    <div className={`flex items-center justify-center ${className}`}>
-      <div
-        className={`animate-pulse bg-primary-200 dark:bg-primary-800 rounded-full ${sizeClasses[size]}`}
-      />
-    </div>
-  );
-};
-
-/**
  * Loading Skeleton cho card sản phẩm
  */
 export const ProductCardSkeleton: React.FC<{ className?: string }> = ({ className = '' }) => {
   return (
-    <div
-      className={`animate-pulse bg-white dark:bg-neutral-800 rounded-lg shadow-md p-4 ${className}`}
-    >
-      {/* Skeleton ảnh */}
-      <div className="aspect-square bg-neutral-200 dark:bg-neutral-700 rounded-lg mb-3" />
-
-      {/* Skeleton tiêu đề */}
-      <div className="h-4 bg-neutral-200 dark:bg-neutral-700 rounded mb-2" />
-      <div className="h-4 bg-neutral-200 dark:bg-neutral-700 rounded w-3/4 mb-3" />
-
-      {/* Skeleton giá */}
-      <div className="h-5 bg-neutral-200 dark:bg-neutral-700 rounded w-1/2 mb-2" />
-
-      {/* Skeleton đánh giá */}
+    <div className={`bg-white dark:bg-neutral-800 rounded-2xl shadow-md p-4 ${className}`}>
+      <div className="aspect-square shimmer rounded-xl mb-3" />
+      <div className="h-4 shimmer rounded mb-2" />
+      <div className="h-4 shimmer rounded w-3/4 mb-3" />
+      <div className="h-5 shimmer rounded w-1/2 mb-2" />
       <div className="flex items-center space-x-1 mb-3">
         {Array.from({ length: 5 }).map((_, index) => (
-          <div key={index} className="h-3 w-3 bg-neutral-200 dark:bg-neutral-700 rounded-full" />
+          <div key={index} className="h-3 w-3 shimmer rounded-full" />
         ))}
       </div>
-
-      {/* Skeleton nút */}
-      <div className="h-8 bg-neutral-200 dark:bg-neutral-700 rounded" />
+      <div className="h-10 shimmer rounded-xl" />
     </div>
   );
 };
@@ -158,42 +93,13 @@ export const CategoryCardSkeleton: React.FC<{ className?: string }> = ({ classNa
 };
 
 /**
- * Component trạng thái loading chung
- */
-export const LoadingState: React.FC<LoadingStateProps> = ({ variant = 'spinner', ...props }) => {
-  switch (variant) {
-    case 'skeleton':
-      return <LoadingSkeleton {...props} />;
-    case 'pulse':
-      return <LoadingPulse {...props} />;
-    default:
-      return <LoadingSpinner {...props} />;
-  }
-};
-
-/**
  * Component loading toàn trang
  */
 export const FullPageLoading: React.FC<{ message?: string }> = ({ message }) => {
   const { t } = useTranslation();
   return (
-    <div className="fixed inset-0 bg-white dark:bg-[#111111] flex items-center justify-center z-50">
+    <div className="fixed inset-0 bg-white dark:bg-neutral-900 flex items-center justify-center z-50">
       <LoadingSpinner size="lg" text={message ?? t('common.loading')} />
-    </div>
-  );
-};
-
-/**
- * Component loading theo section
- */
-export const SectionLoading: React.FC<{
-  message?: string;
-  className?: string;
-}> = ({ message, className = '' }) => {
-  const { t } = useTranslation();
-  return (
-    <div className={`flex justify-center items-center py-20 ${className}`}>
-      <LoadingSpinner size="md" text={message ?? t('common.loading')} />
     </div>
   );
 };

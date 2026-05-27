@@ -79,13 +79,12 @@ features/admin/
       ProductsPage.tsx        — /admin/products: danh sách với filter (category, status, price, stock)
       CreateProductPage.tsx   — /admin/products/create: dùng CreateProductForm
       EditProductPage.tsx     — /admin/products/:id/edit
-      ProductImportPage.tsx   — /admin/products/import: import hàng loạt (file exists but not registered in AppRoutes.tsx — currently unreachable)
       CategoriesPage.tsx      — /admin/categories: quản lý danh mục cây
       CategoryPage.tsx        — /admin/categories/:id: chi tiết danh mục (file exists but not registered in AppRoutes.tsx — currently unreachable)
       BrandsPage.tsx          — /admin/brands: quản lý thương hiệu
 
     orders/
-      OrdersPage.tsx          — /admin/orders: bảng Ant Design với filter trạng thái, modal chi tiết + update status
+      OrdersPage.tsx          — /admin/orders: bảng HTML với filter trạng thái, modal chi tiết + update status
 
   index.ts                    — Barrel export
 ```
@@ -187,12 +186,12 @@ Tất cả mutations invalidate query key tương ứng sau khi thành công.
 
 # 5. Components chính
 
-| Component            | Mô tả                                                                                                                                                                                          |
-| -------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `AdminLayout`        | Sidebar (8 mục nav: dashboard, products, categories, brands, orders, users, discount-codes, inventory), header với user dropdown + dark mode toggle. Responsive: drawer Ant Design trên mobile, sidebar cố định trên desktop. Wrap ở route level — không import trong từng page. |
-| `CreateProductForm`  | Form nhiều tab với state phức tạp: basic info, variants (hierarchical), images, attributes (dynamic), SEO, FAQ. Dùng trong cả `CreateProductPage` và `EditProductPage`.                        |
-| `DashboardCharts`    | Recharts wrapper: revenue line chart, category pie chart, order status bar chart, top products list. Data fetch nội bộ qua `useGetTopProductsAnalyticsQuery` và các hooks analytics.           |
-| `ProductExportModal` | Chọn columns muốn export, filter range date, tạo file Excel qua `exceljs`.                                                                                                                     |
+| Component            | Mô tả                                                                                                                                                                                                                                                                            |
+| -------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `AdminLayout`        | Sidebar (8 mục nav: dashboard, products, categories, brands, orders, users, discount-codes, inventory), header với user dropdown + dark mode toggle. Responsive: Sheet (shadcn/ui) trên mobile, sidebar cố định trên desktop. Wrap ở route level — không import trong từng page. |
+| `CreateProductForm`  | Form nhiều tab với state phức tạp: basic info, variants (hierarchical), images, attributes (dynamic), SEO, FAQ. Dùng trong cả `CreateProductPage` và `EditProductPage`.                                                                                                          |
+| `DashboardCharts`    | Recharts wrapper: revenue line chart, category pie chart, order status bar chart, top products list. Data fetch nội bộ qua `useGetTopProductsAnalyticsQuery` và các hooks analytics.                                                                                             |
+| `ProductExportModal` | Chọn columns muốn export, filter range date, tạo file Excel qua `exceljs`.                                                                                                                                                                                                       |
 
 ---
 
@@ -315,7 +314,7 @@ interface User {
 - `features/auth` — `useAuth()` hook cho `AdminLayout` (user info, logout)
 - `stores/auth-store` — kiểm tra isAuthenticated, role
 - `stores/ui-store` — theme state cho `AdminLayout`
-- Ant Design (`antd`) — Table, Modal, Form, Select, Pagination, Drawer (dùng rộng rãi trong admin)
+- shadcn/ui — Dialog, Sheet, Select, Button (dùng rộng rãi trong admin)
 - `recharts` — charts trong `DashboardCharts`
 - `exceljs` — export Excel trong `ProductExportModal`
 

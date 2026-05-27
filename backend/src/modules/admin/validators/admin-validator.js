@@ -1,5 +1,4 @@
 const { z } = require('zod');
-const idSchema = z.coerce.number().int().positive('ID không hợp lệ');
 const paginationSchema = z.object({
   page: z.coerce.number().int().min(1).optional(),
   limit: z.coerce.number().int().min(1).max(100000).optional(),
@@ -57,7 +56,6 @@ const updateOrderStatusSchema = z.object({
   note: z.string().max(500).optional(),
 });
 module.exports = {
-  idSchema,
   paginationSchema,
   statsSchema,
   createProductSchema,

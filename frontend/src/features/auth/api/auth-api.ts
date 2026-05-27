@@ -70,18 +70,6 @@ export function useRegisterMutation() {
   });
 }
 
-export function useRefreshTokenMutation() {
-  return useMutation({
-    mutationFn: async () => {
-      const { data } = await apiClient.post<BackendResponse>('/auth/refresh-token');
-      if (data?.status === 'success') {
-        return { token: data.token! };
-      }
-      return data as unknown as { token: string };
-    },
-  });
-}
-
 export function useForgotPasswordMutation() {
   return useMutation({
     mutationFn: async ({ email }: { email: string }) => {

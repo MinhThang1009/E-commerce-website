@@ -39,12 +39,12 @@ Constructor deps: `{ aiRepository, chatbotService, logger }`.
 
 **4 methods:**
 
-| Method | Signature | Mô tả |
-|---|---|---|
-| `handleMessage` | `({ message, userId, sessionId }) → Promise<{ response, products, suggestions, intent }>` | Delegate hoàn toàn cho `chatbotService.handleMessage()` |
-| `getRecommendations` | `({ type='personal', limit=5 }) → Promise<Array>` | `type='deals'` → `repo.findActiveDeals(limit)`; mọi type khác → `repo.findFeaturedProducts(limit)` |
-| `trackAnalytics` | `({ event, userId, sessionId, productId, value, metadata, timestamp }) → Promise<Object>` | Ghi analytics event vào DB qua `repo.createAnalyticsEvent()` |
-| `addToCart` | `({ productId, variantId, quantity, sessionId, userId }) → Promise<Object>` | Verify stock + insert CartItem + ghi analytics event `product_added_to_cart` |
+| Method               | Signature                                                                                 | Mô tả                                                                                              |
+| -------------------- | ----------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------- |
+| `handleMessage`      | `({ message, userId, sessionId }) → Promise<{ response, products, suggestions, intent }>` | Delegate hoàn toàn cho `chatbotService.handleMessage()`                                            |
+| `getRecommendations` | `({ type='personal', limit=5 }) → Promise<Array>`                                         | `type='deals'` → `repo.findActiveDeals(limit)`; mọi type khác → `repo.findFeaturedProducts(limit)` |
+| `trackAnalytics`     | `({ event, userId, sessionId, productId, value, metadata, timestamp }) → Promise<Object>` | Ghi analytics event vào DB qua `repo.createAnalyticsEvent()`                                       |
+| `addToCart`          | `({ productId, variantId, quantity, sessionId, userId }) → Promise<Object>`               | Verify stock + insert CartItem + ghi analytics event `product_added_to_cart`                       |
 
 **Business logic trong `addToCart`:** tổng stock = `sum(variants[].stockQuantity) || product.stockQuantity`. Throw `AppError 404` nếu product không tồn tại; `AppError 400` nếu `status !== 'active'` hoặc tổng stock ≤ 0.
 
@@ -56,16 +56,17 @@ Constructor deps: `{ aiRepository, chatbotService, logger }`.
 
 **Exported:**
 
-| Export | Signature | Mô tả |
-|---|---|---|
-| `validateMessage` | `(message) → { valid: boolean, reason?: string }` | Không rỗng, ≤ 500 ký tự, phải có ít nhất 1 chữ cái/chữ số |
-| `expandAbbreviations` | `(text) → string` | Regex-based 3 lớp: (1) brand abbreviations `ip→iPhone, ss→Samsung, mb→MacBook, r5→AMD Ryzen 5, bnh→bao nhiêu, bh→bảo hành`; (2) EN→VI `smartphone→điện thoại, tablet→máy tính bảng`; (3) VI không dấu→có dấu `gia→giá, trieu→triệu, giao hang→giao hàng`... |
-| `isOffTopic` | `(message) → boolean` | Regex check: thời tiết, bóng đá, âm nhạc, phim, nấu ăn, sức khỏe, tin tức (cả vi + en) |
-| `classifyIntent` | `(normalizedText) → string` | 6 intents theo thứ tự ưu tiên (xem bên dưới) |
-| `isPromptInjection` | `(text) → boolean` | Detect 15 loại injection (28 regex, EN+VI) — đối chiếu OWASP LLM01:2025 |
-| `MAX_MESSAGE_LENGTH` | `number` | `500` (hằng số) |
+| Export                | Signature                                         | Mô tả                                                                                                                                                                                                                                                       |
+| --------------------- | ------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `validateMessage`     | `(message) → { valid: boolean, reason?: string }` | Không rỗng, ≤ 500 ký tự, phải có ít nhất 1 chữ cái/chữ số                                                                                                                                                                                                   |
+| `expandAbbreviations` | `(text) → string`                                 | Regex-based 3 lớp: (1) brand abbreviations `ip→iPhone, ss→Samsung, mb→MacBook, r5→AMD Ryzen 5, bnh→bao nhiêu, bh→bảo hành`; (2) EN→VI `smartphone→điện thoại, tablet→máy tính bảng`; (3) VI không dấu→có dấu `gia→giá, trieu→triệu, giao hang→giao hàng`... |
+| `isOffTopic`          | `(message) → boolean`                             | Regex check: thời tiết, bóng đá, âm nhạc, phim, nấu ăn, sức khỏe, tin tức (cả vi + en)                                                                                                                                                                      |
+| `classifyIntent`      | `(normalizedText) → string`                       | 6 intents theo thứ tự ưu tiên (xem bên dưới)                                                                                                                                                                                                                |
+| `isPromptInjection`   | `(text) → boolean`                                | Detect 15 loại injection (28 regex, EN+VI) — đối chiếu OWASP LLM01:2025                                                                                                                                                                                     |
+| `MAX_MESSAGE_LENGTH`  | `number`                                          | `500` (hằng số)                                                                                                                                                                                                                                             |
 
 **6 intents của `classifyIntent` (thứ tự ưu tiên):**
+
 1. `off_topic` — off-topic check trước (tránh "bóng đá Samsung" → `product_search`)
 2. `order_inquiry` — đơn hàng, giao hàng, tracking
 3. `policy` — bảo hành, đổi trả, chính sách

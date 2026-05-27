@@ -25,7 +25,11 @@ describe('AIService', () => {
   describe('handleMessage', () => {
     test('delegate sang chatbotService.handleMessage', async () => {
       service.chatbotService.handleMessage.mockResolvedValue({ response: 'hi' });
-      const result = await service.handleMessage({ message: 'hello', userId: 1, sessionId: 'sess' });
+      const result = await service.handleMessage({
+        message: 'hello',
+        userId: 1,
+        sessionId: 'sess',
+      });
       expect(service.chatbotService.handleMessage).toHaveBeenCalledWith('hello', 1, 'sess');
       expect(result.response).toBe('hi');
     });

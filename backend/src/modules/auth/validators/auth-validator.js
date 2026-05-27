@@ -39,16 +39,10 @@ const emailSchema = z.object({
   email: z.string().min(1, 'Email không được để trống').email('Email không hợp lệ'),
 });
 
-const otpSchema = z.object({
-  email: z.string().email('Email không hợp lệ'),
-  otp: z.string().min(4, 'OTP không hợp lệ').max(8, 'OTP không hợp lệ'),
-});
-
 module.exports = {
   registerSchema,
   loginSchema,
   forgotPasswordSchema,
   resetPasswordSchema,
   emailSchema,
-  otpSchema,
 };

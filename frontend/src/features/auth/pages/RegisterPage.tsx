@@ -119,7 +119,7 @@ const RegisterPage: React.FC = () => {
       });
       setRegisteredEmail(email);
       setStep('otp');
-    } catch (err) {
+    } catch (_err) {
       // Lỗi đã được TanStack Query xử lý
     }
   };

@@ -6,13 +6,12 @@
  */
 import React from 'react';
 import { useTranslation } from 'react-i18next';
-import { Button, Row, Col, Typography, Table, Space, Tag, Alert } from 'antd';
-import { PlusOutlined, EditOutlined, DeleteOutlined } from '@ant-design/icons';
+import { Plus, Pencil, Trash2 } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { Alert, AlertTitle, AlertDescription } from '@/components/ui/alert';
 import { ProductVariant } from '@/types';
 import { getLocale } from '@/utils/format';
 import { formatAttributeKey } from '../utils/product-naming';
-
-const { Title, Text } = Typography;
 
 interface ProductVariantsSectionProps {
   variants: ProductVariant[];
@@ -29,126 +28,132 @@ const ProductVariantsSection: React.FC<ProductVariantsSectionProps> = ({
 }) => {
   const { t } = useTranslation();
 
-  const variantColumns = [
-    {
-      title: t('productSection.variants.nameColumn'),
-      dataIndex: 'name',
-      key: 'name',
-      render: (name: string, record: ProductVariant) => {
-        if (name) return name;
-        // Auto-generate từ attributes khi không có name
-        if (record.attributes && Object.keys(record.attributes).length > 0) {
-          return Object.values(record.attributes).join(' / ');
-        }
-        return <span className="text-neutral-400 text-sm">—</span>;
-      },
-    },
-    {
-      title: t('productSection.variants.attrColumn'),
-      dataIndex: 'attributes',
-      key: 'attributes',
-      render: (attributes: Record<string, string>) => {
-        if (!attributes || Object.keys(attributes).length === 0) {
-          return <Text type="secondary">{t('productSection.variants.noAttrValue')}</Text>;
-        }
-        return (
-          <div>
-            {Object.entries(attributes).map(([key, value]) => (
-              <Tag key={key} color="blue">
-                {formatAttributeKey(key)}: {value}
-              </Tag>
-            ))}
-          </div>
-        );
-      },
-    },
-    {
-      title: t('productSection.variants.priceColumn'),
-      dataIndex: 'price',
-      key: 'price',
-      render: (price: number) =>
-        `${price.toLocaleString(getLocale())}${t('common.currencySymbol')}`,
-    },
-    {
-      title: t('productSection.variants.stockColumn'),
-      dataIndex: 'stock',
-      key: 'stock',
-    },
-    {
-      title: t('productSection.variants.skuColumn'),
-      dataIndex: 'sku',
-      key: 'sku',
-    },
-    {
-      title: t('productSection.variants.actionsColumn'),
-      key: 'actions',
-      width: 120,
-      render: (_: unknown, record: ProductVariant) => (
-        <Space>
-          <Button
-            type="text"
-            size="small"
-            icon={<EditOutlined />}
-            onClick={() => onEditVariant(record)}
-          />
-          <Button
-            type="text"
-            size="small"
-            danger
-            icon={<DeleteOutlined />}
-            onClick={() => onDeleteVariant(record.id!)}
-          />
-        </Space>
-      ),
-    },
-  ];
-
   return (
     <div>
-      <Row gutter={[16, 16]} style={{ marginBottom: 16 }}>
-        <Col span={24}>
-          <div
-            style={{
-              display: 'flex',
-              justifyContent: 'space-between',
-              alignItems: 'center',
-            }}
-          >
-            <div>
-              <Title level={5}>
-                {t('productSection.variants.sectionTitle')} <Text type="danger">*</Text>
-              </Title>
-              <Text type="secondary">{t('productSection.variants.sectionDesc')}</Text>
-              <div style={{ marginTop: 8 }}>
-                <Text type="warning">
-                  <strong>{t('common.note')}:</strong> {t('productSection.variants.note')}
-                </Text>
-              </div>
-            </div>
-            <Button type="primary" icon={<PlusOutlined />} onClick={onAddVariant}>
-              {t('productSection.variants.addButton')}
-            </Button>
-          </div>
-        </Col>
-      </Row>
+      <div className="flex justify-between items-center mb-4">
+        <div>
+          <h5 className="text-base font-semibold">
+            {t('productSection.variants.sectionTitle')} <span className="text-red-500">*</span>
+          </h5>
+          <p className="text-sm text-neutral-500 dark:text-neutral-400">
+            {t('productSection.variants.sectionDesc')}
+          </p>
+          <p className="text-sm text-amber-600 dark:text-amber-400 mt-2">
+            <strong>{t('common.note')}:</strong> {t('productSection.variants.note')}
+          </p>
+        </div>
+        <Button onClick={onAddVariant}>
+          <Plus className="size-4" />
+          {t('productSection.variants.addButton')}
+        </Button>
+      </div>
 
       {variants.length === 0 && (
-        <Alert
-          message={t('productSection.variants.emptyInfo')}
-          description={t('productSection.variants.emptyInfoDesc')}
-          type="info"
-          showIcon
-          style={{ marginBottom: 16 }}
-        />
+        <Alert variant="info" className="mb-4">
+          <AlertTitle>{t('productSection.variants.emptyInfo')}</AlertTitle>
+          <AlertDescription>{t('productSection.variants.emptyInfoDesc')}</AlertDescription>
+        </Alert>
       )}
 
-      <Table
-        dataSource={variants}
-        columns={variantColumns}
-        rowKey="id"
-        pagination={false}
-        locale={{ emptyText: t('productSection.variants.emptyTable') }}
-      />
+      <div className="w-full overflow-x-auto rounded-lg border border-neutral-200 dark:border-neutral-700">
+        <table className="w-full text-sm">
+          <thead>
+            <tr className="border-b border-neutral-200 dark:border-neutral-700 bg-neutral-50 dark:bg-neutral-800/50">
+              <th className="px-4 py-3 text-left font-medium text-neutral-600 dark:text-neutral-300">
+                {t('productSection.variants.nameColumn')}
+              </th>
+              <th className="px-4 py-3 text-left font-medium text-neutral-600 dark:text-neutral-300">
+                {t('productSection.variants.attrColumn')}
+              </th>
+              <th className="px-4 py-3 text-left font-medium text-neutral-600 dark:text-neutral-300">
+                {t('productSection.variants.priceColumn')}
+              </th>
+              <th className="px-4 py-3 text-left font-medium text-neutral-600 dark:text-neutral-300">
+                {t('productSection.variants.stockColumn')}
+              </th>
+              <th className="px-4 py-3 text-left font-medium text-neutral-600 dark:text-neutral-300">
+                {t('productSection.variants.skuColumn')}
+              </th>
+              <th className="px-4 py-3 text-left font-medium text-neutral-600 dark:text-neutral-300 w-[120px]">
+                {t('productSection.variants.actionsColumn')}
+              </th>
+            </tr>
+          </thead>
+          <tbody>
+            {variants.length === 0 ? (
+              <tr>
+                <td
+                  colSpan={6}
+                  className="px-4 py-8 text-center text-neutral-400 dark:text-neutral-500"
+                >
+                  {t('productSection.variants.emptyTable')}
+                </td>
+              </tr>
+            ) : (
+              variants.map((variant) => (
+                <tr
+                  key={variant.id}
+                  className="border-b border-neutral-100 dark:border-neutral-800 last:border-b-0 hover:bg-neutral-50 dark:hover:bg-neutral-800/30"
+                >
+                  <td className="px-4 py-3">
+                    {variant.name ? (
+                      variant.name
+                    ) : variant.attributes && Object.keys(variant.attributes).length > 0 ? (
+                      Object.values(variant.attributes).join(' / ')
+                    ) : (
+                      <span className="text-neutral-400 text-sm">&mdash;</span>
+                    )}
+                  </td>
+                  <td className="px-4 py-3">
+                    {!variant.attributes || Object.keys(variant.attributes).length === 0 ? (
+                      <span className="text-neutral-400 dark:text-neutral-500">
+                        {t('productSection.variants.noAttrValue')}
+                      </span>
+                    ) : (
+                      <div className="flex flex-wrap gap-1">
+                        {Object.entries(variant.attributes).map(([key, value]) => (
+                          <span
+                            key={key}
+                            className="inline-block rounded-full bg-blue-100 dark:bg-blue-900 text-blue-700 dark:text-blue-300 px-2 py-0.5 text-xs"
+                          >
+                            {formatAttributeKey(key)}: {value}
+                          </span>
+                        ))}
+                      </div>
+                    )}
+                  </td>
+                  <td className="px-4 py-3">
+                    {`${variant.price.toLocaleString(getLocale())}${t('common.currencySymbol')}`}
+                  </td>
+                  {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
+                  <td className="px-4 py-3">{(variant as any).stock}</td>
+                  <td className="px-4 py-3">{variant.sku}</td>
+                  <td className="px-4 py-3">
+                    <div className="flex items-center gap-1">
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="size-8"
+                        onClick={() => onEditVariant(variant)}
+                      >
+                        <Pencil className="size-4" />
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="size-8 text-red-500 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-950/20"
+                        onClick={() => onDeleteVariant(variant.id!)}
+                      >
+                        <Trash2 className="size-4" />
+                      </Button>
+                    </div>
+                  </td>
+                </tr>
+              ))
+            )}
+          </tbody>
+        </table>
+      </div>
     </div>
   );
 };

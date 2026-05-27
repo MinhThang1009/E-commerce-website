@@ -15,10 +15,8 @@ import { Link, useNavigate } from 'react-router-dom';
 import { useAuthStore } from '@/stores/auth-store';
 import { useWishlistStore } from '@/stores/wishlist-store';
 import { useAddToWishlistMutation, useRemoveFromWishlistMutation } from '@/features/wishlist';
-import { HeartIcon } from '@heroicons/react/24/outline';
-import { HeartIcon as HeartIconSolid } from '@heroicons/react/24/solid';
+import { Heart, ShoppingCart, Eye } from 'lucide-react';
 import { useAddToCartMutation } from '@/features/cart';
-import { ShoppingCartIcon, EyeIcon } from '@heroicons/react/24/outline';
 import { motion } from 'framer-motion';
 
 interface ProductCardProps extends Product {
@@ -165,19 +163,22 @@ const ProductCard: React.FC<ProductCardProps> = ({
           )}
         </div>
 
-        {/* Wishlist */}
-        <button
+        {/* Wishlist — scale bounce khi toggle */}
+        <motion.button
           className="absolute top-3 right-3 z-20 p-2 rounded-full bg-white/80 dark:bg-neutral-700/80 backdrop-blur-sm shadow hover:bg-white dark:hover:bg-neutral-700 transition-all"
           onClick={handleToggleWishlist}
           disabled={isToggling}
           aria-label={t('product.toggleWishlist')}
+          whileTap={{ scale: 0.85 }}
+          animate={isWishlisted ? { scale: [1, 1.3, 1] } : {}}
+          transition={{ duration: 0.3 }}
         >
           {isWishlisted ? (
-            <HeartIconSolid className="h-4 w-4 text-rose-500" />
+            <Heart className="h-4 w-4 text-rose-500 fill-rose-500" />
           ) : (
-            <HeartIcon className="h-4 w-4 text-neutral-400 group-hover:text-rose-400 transition-colors" />
+            <Heart className="h-4 w-4 text-neutral-400 group-hover:text-rose-400 transition-colors" />
           )}
-        </button>
+        </motion.button>
 
         {/* Product image
          * mix-blend-mode: multiply — loại bỏ nền trắng baked-in của ảnh CDN
@@ -251,7 +252,7 @@ const ProductCard: React.FC<ProductCardProps> = ({
             {isBuying ? (
               <div className="h-4 w-4 border-2 border-white/70 border-t-white rounded-full animate-spin" />
             ) : (
-              <ShoppingCartIcon className="h-4 w-4" />
+              <ShoppingCart className="h-4 w-4" />
             )}
             {t('product.buyNow')}
           </button>
@@ -260,7 +261,7 @@ const ProductCard: React.FC<ProductCardProps> = ({
             className="btn-glass-secondary w-full py-2 text-sm flex items-center justify-center gap-1.5"
             onClick={handleViewDetails}
           >
-            <EyeIcon className="w-4 h-4 flex-shrink-0" />
+            <Eye className="w-4 h-4 flex-shrink-0" />
             {t('product.viewDetails')}
           </button>
         </div>
@@ -269,4 +270,4 @@ const ProductCard: React.FC<ProductCardProps> = ({
   );
 };
 
-export default ProductCard;
+export default React.memo(ProductCard);

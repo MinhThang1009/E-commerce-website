@@ -18,7 +18,6 @@ import {
   useDeleteSearchHistoryMutation,
   useClearAllSearchHistoryMutation,
 } from '@/features/catalog';
-import { v4 as uuidv4 } from 'uuid';
 import { getLocale } from '@/utils/format';
 import { proxyImg } from '@/utils/proxy-img';
 
@@ -58,7 +57,7 @@ const SearchBar: React.FC<SearchBarProps> = ({
       // Xử lý Session ID
       let currentSessionId = localStorage.getItem('search_session_id');
       if (!currentSessionId) {
-        currentSessionId = uuidv4();
+        currentSessionId = crypto.randomUUID();
         localStorage.setItem('search_session_id', currentSessionId);
       }
       setSessionId(currentSessionId);

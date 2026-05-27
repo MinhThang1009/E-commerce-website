@@ -10,28 +10,26 @@ import { useTranslation } from 'react-i18next';
 import { ROUTES, buildRoute } from '@/routes/paths';
 import { SHIPPING } from '@/constants';
 import { useQueryClient } from '@tanstack/react-query';
-import { CheckCircleOutlined, InfoCircleOutlined } from '@ant-design/icons';
-import { Button, Modal, Table } from 'antd';
-
-import PremiumButton from '@/components/common/PremiumButton';
-import Input from '@/components/common/Input';
-import AddressPicker from '@/components/common/AddressPicker';
-import { CartItem } from '@/features/cart';
+import {
+  CheckoutOrderSummary,
+  CheckoutPaymentMethod,
+  CheckoutShippingForm,
+} from '@/features/checkout';
+import CheckoutStepIndicator from '../components/CheckoutStepIndicator';
+import { motion, AnimatePresence } from 'framer-motion';
+import { PremiumButton } from '@/components/common';
 import { useCartStore } from '@/stores/cart-store';
 import { useAuthStore } from '@/stores/auth-store';
 import { useUiStore } from '@/stores/ui-store';
-import { formatPrice } from '@/utils/format';
 import {
   useCreateOrderMutation,
   useApplyDiscountCodeMutation,
   useGetAvailableDiscountCodesQuery,
 } from '@/features/orders';
-import type { AvailableDiscountCode } from '@/features/orders';
 import { cartKeys, useGetCartCountQuery } from '@/features/cart';
 import { useCreateMomoUrlMutation } from '@/features/payment';
 import { useCreateVNPayUrlMutation } from '@/features/payment';
 import { useGetAddressesQuery } from '@/features/users';
-import { Address } from '@/types/user.types';
 import { getErrorMsg } from '@/utils/error-utils';
 
 const CheckoutPage: React.FC = () => {
@@ -165,25 +163,6 @@ const CheckoutPage: React.FC = () => {
     { value: 'installment', label: t('checkout.paymentMethod.installment') },
   ];
 
-  // Các phương thức vận chuyển được hỗ trợ, có thể dễ dàng mở rộng hoặc chỉnh sửa sau này, đồng thời sử dụng i18n để hỗ trợ đa ngôn ngữ
-  const _shippingMethods = [
-    {
-      value: 'standard',
-      label: t('checkout.shippingMethod.standard'),
-      price: 30000,
-    },
-    {
-      value: 'express',
-      label: t('checkout.shippingMethod.express'),
-      price: 50000,
-    },
-    {
-      value: 'free',
-      label: t('checkout.shippingMethod.free'),
-      price: 0,
-    },
-  ];
-
   // Trạng thái form và lỗi validation, có thể dễ dàng mở rộng hoặc chỉnh sửa sau này để thêm các trường mới hoặc thay đổi logic validation
   const [formData, setFormData] = useState({
     firstName: user?.firstName || '',
@@ -218,6 +197,30 @@ const CheckoutPage: React.FC = () => {
 
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [isProcessing, setIsProcessing] = useState(false);
+  const [currentStep, setCurrentStep] = useState(0);
+  const [stepDirection, setStepDirection] = useState(1);
+
+  const wizardSteps = [
+    { key: 'shipping', labelKey: 'checkout.step.shipping' },
+    { key: 'payment', labelKey: 'checkout.step.payment' },
+    { key: 'confirm', labelKey: 'checkout.step.confirm' },
+  ];
+
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const stepSlide: any = {
+    enter: (dir: number) => ({ x: dir > 0 ? 80 : -80, opacity: 0 }),
+    center: { x: 0, opacity: 1, transition: { duration: 0.35, ease: [0.16, 1, 0.3, 1] } },
+    exit: (dir: number) => ({ x: dir > 0 ? -80 : 80, opacity: 0, transition: { duration: 0.2 } }),
+  };
+
+  const goNext = () => {
+    setStepDirection(1);
+    setCurrentStep((s) => Math.min(s + 1, wizardSteps.length - 1));
+  };
+  const goBack = () => {
+    setStepDirection(-1);
+    setCurrentStep((s) => Math.max(s - 1, 0));
+  };
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const [currentOrder, setCurrentOrder] = useState<any>(null);
   const [isInstallmentModalOpen, setIsInstallmentModalOpen] = useState(false);
@@ -244,51 +247,12 @@ const CheckoutPage: React.FC = () => {
     // eslint-disable-next-line react-hooks/exhaustive-deps -- Chỉ apply voucher từ navigation state khi state thay đổi, appliedDiscount/navigate/location dùng qua closure
   }, [location.state]);
 
-  // Cột bảng trả góp
-  const installmentColumns = [
-    {
-      title: t('checkout.installment.bankColumn'),
-      dataIndex: 'bank',
-      key: 'bank',
-      render: (text: string) => <span className="font-medium">{text}</span>,
-    },
-    {
-      title: t('checkout.installment.termsColumn'),
-      dataIndex: 'terms',
-      key: 'terms',
-    },
-    {
-      title: t('checkout.installment.feeColumn'),
-      dataIndex: 'fee',
-      key: 'fee',
-      render: () => (
-        <span className="text-green-600 font-medium">{t('checkout.installment.freeLabel')}</span>
-      ),
-    },
-  ];
-
-  const mo = t('checkout.installment.monthsUnit');
-  const installmentData = [
-    { key: '1', bank: 'Techcombank', terms: `3, 6, 9, 12 ${mo}`, fee: '0%' },
-    { key: '2', bank: 'VPBank', terms: `3, 6, 9, 12 ${mo}`, fee: '0%' },
-    { key: '3', bank: 'Sacombank', terms: `6, 12 ${mo}`, fee: '0%' },
-    { key: '4', bank: 'VIB', terms: `3, 6, 9, 12 ${mo}`, fee: '0%' },
-    { key: '5', bank: 'HSBC', terms: `3, 6, 9, 12 ${mo}`, fee: '0%' },
-    { key: '6', bank: 'TPBank', terms: `3, 6, 9, 12 ${mo}`, fee: '0%' },
-  ];
-
   // Mở modal khi chọn thanh toán trả góp
   useEffect(() => {
     if (formData.paymentMethod === 'installment') {
       setIsInstallmentModalOpen(true);
     }
   }, [formData.paymentMethod]);
-
-  // Danh sách quốc gia
-  const _countries = [
-    { value: 'VN', label: t('checkout.countries.VN') },
-    { value: 'US', label: t('checkout.countries.US') }
-  ];
 
   const subtotal = items.reduce((sum, item) => sum + item.price * item.quantity, 0);
 
@@ -370,6 +334,43 @@ const CheckoutPage: React.FC = () => {
   };
 
   // Đã xóa các handler tỉnh/thành cũ
+
+  const handleAddressChange = (
+    val: string,
+    lat?: string | number,
+    lon?: string | number,
+    detail?: { city?: string; state?: string; country?: string },
+  ) => {
+    setFormData((prev) => {
+      const updated = { ...prev, address: val };
+      const parts = val
+        .split(',')
+        .map((p) => p.trim())
+        .filter(Boolean);
+      const fallback = parts.length > 0 ? parts[parts.length - 1] : val.trim();
+      updated.state = parts.length > 2 ? parts[parts.length - 2] : fallback;
+      updated.city = parts.length > 3 ? parts[parts.length - 3] : fallback;
+
+      if (lat && lon) {
+        updated.lat = lat;
+        updated.lon = lon;
+      }
+      if (detail?.city) updated.city = detail.city;
+      if (detail?.state) updated.state = detail.state;
+      if (detail?.country) updated.country = detail.country;
+
+      if (updated.sameAsShipping) {
+        updated.billingCity = updated.city;
+        updated.billingState = updated.state;
+        updated.billingCountry = updated.country;
+      }
+
+      return updated;
+    });
+    if (errors.address) {
+      setErrors((prev) => ({ ...prev, address: '' }));
+    }
+  };
 
   // Xử lý checkbox "giống địa chỉ giao hàng"
   const _handleSameAsShipping = (checked: boolean) => {
@@ -745,461 +746,165 @@ const CheckoutPage: React.FC = () => {
 
   return (
     <div className="container mx-auto px-4 py-8">
-      <h1 className="text-3xl font-bold text-neutral-800 dark:text-neutral-100 mb-8">
+      <h1 className="text-3xl font-bold text-neutral-800 dark:text-neutral-100 mb-4">
         {isRepayingOrder ? t('checkout.repayTitle') : t('checkout.title')}
       </h1>
 
+      {!isRepayingOrder && <CheckoutStepIndicator currentStep={currentStep} steps={wizardSteps} />}
+
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-        {/* Cột trái - Các form */}
-        <div className="space-y-8">
-          {/* Shipping Information - Ẩn khi thanh toán lại */}
-          {!isRepayingOrder && (
-            <div className="bg-white dark:bg-neutral-800 rounded-lg shadow-sm p-6">
-              <h2 className="text-xl font-semibold text-neutral-800 dark:text-neutral-100 mb-6">
-                {t('checkout.shippingInfo.title')}
-              </h2>
+        {/* Cột trái - Wizard steps */}
+        <div className="min-h-[400px]">
+          <AnimatePresence mode="wait" custom={stepDirection}>
+            {currentStep === 0 && !isRepayingOrder && (
+              <motion.div
+                key="step-shipping"
+                custom={stepDirection}
+                variants={stepSlide}
+                initial="enter"
+                animate="center"
+                exit="exit"
+                className="space-y-8"
+              >
+                <CheckoutShippingForm
+                  formData={formData}
+                  errors={errors}
+                  savedAddresses={savedAddresses}
+                  onInputChange={handleInputChange}
+                  onAddressChange={handleAddressChange}
+                />
+                <div className="flex justify-end">
+                  <PremiumButton variant="primary" size="large" onClick={goNext}>
+                    {t('checkout.step.next')}
+                  </PremiumButton>
+                </div>
+              </motion.div>
+            )}
 
-              {/* Chọn địa chỉ đã lưu để tự động điền vào form */}
-              {savedAddresses && savedAddresses.length > 0 && (
-                <div className="mb-6">
-                  <label className="block text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-2">
-                    {t('checkout.shippingInfo.savedAddresses')}
-                  </label>
-                  <select
-                    className="w-full px-4 py-2.5 rounded-lg border border-neutral-300 dark:border-neutral-600 bg-white dark:bg-neutral-700 text-sm focus:ring-2 focus:ring-primary-500/20 focus:border-primary-500 outline-none"
-                    defaultValue=""
-                    onChange={(e) => {
-                      const addrId = e.target.value;
-                      if (!addrId) return;
-                      const addr = savedAddresses.find((a: Address) => a.id === addrId);
-                      if (!addr) return;
-                      // Tự động điền form từ địa chỉ đã chọn
-                      setFormData((prev) => ({
-                        ...prev,
-                        firstName: addr.firstName || prev.firstName,
-                        lastName: addr.lastName || prev.lastName,
-                        phone: addr.phone || prev.phone,
-                        address: addr.address1 + (addr.address2 ? `, ${addr.address2}` : ''),
-                      }));
-                    }}
+            {(currentStep === 1 || isRepayingOrder) && (
+              <motion.div
+                key="step-payment"
+                custom={stepDirection}
+                variants={stepSlide}
+                initial="enter"
+                animate="center"
+                exit="exit"
+                className="space-y-8"
+              >
+                <CheckoutPaymentMethod
+                  paymentMethods={paymentMethods}
+                  selectedMethod={formData.paymentMethod}
+                  onMethodChange={(value) => handleInputChange('paymentMethod', value)}
+                  isInstallmentModalOpen={isInstallmentModalOpen}
+                  onCloseInstallmentModal={() => setIsInstallmentModalOpen(false)}
+                />
+
+                <div className="bg-white dark:bg-neutral-800 rounded-lg shadow-sm p-6">
+                  <h2 className="text-xl font-semibold text-neutral-800 dark:text-neutral-100 mb-4">
+                    {t('checkout.orderNotes.title')}
+                  </h2>
+                  <textarea
+                    value={formData.notes}
+                    onChange={(e) => handleInputChange('notes', e.target.value)}
+                    placeholder={t('checkout.orderNotes.placeholder')}
+                    className="w-full p-3 border border-neutral-200 dark:border-neutral-700 rounded-lg bg-white dark:bg-neutral-800 text-neutral-800 dark:text-neutral-100"
+                    rows={3}
+                  />
+                </div>
+
+                <div className="flex justify-between">
+                  {!isRepayingOrder && (
+                    <PremiumButton variant="outline" size="large" onClick={goBack}>
+                      {t('checkout.step.back')}
+                    </PremiumButton>
+                  )}
+                  <PremiumButton
+                    variant="primary"
+                    size="large"
+                    onClick={goNext}
+                    className="ml-auto"
                   >
-                    <option value="">{t('checkout.shippingInfo.selectSaved')}</option>
-                    {savedAddresses.map((addr: Address) => (
-                      <option key={addr.id} value={addr.id}>
-                        {addr.isDefault ? `★ ` : ''}
-                        {addr.name ? `${addr.name}: ` : ''}
-                        {addr.firstName} {addr.lastName} — {addr.address1}, {addr.city}
-                      </option>
-                    ))}
-                  </select>
-                  <p className="text-xs text-neutral-500 dark:text-neutral-400 mt-1">
-                    {t('checkout.shippingInfo.orEnterNew')}
-                  </p>
+                    {t('checkout.step.next')}
+                  </PremiumButton>
                 </div>
-              )}
+              </motion.div>
+            )}
 
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <Input
-                  label={t('checkout.shippingInfo.firstName')}
-                  value={formData.firstName}
-                  onChange={(e) => handleInputChange('firstName', e.target.value)}
-                  error={errors.firstName}
-                  required
+            {currentStep === 2 && (
+              <motion.div
+                key="step-confirm"
+                custom={stepDirection}
+                variants={stepSlide}
+                initial="enter"
+                animate="center"
+                exit="exit"
+              >
+                <CheckoutOrderSummary
+                  items={items}
+                  isRepayingOrder={isRepayingOrder}
+                  currentOrder={currentOrder}
+                  subtotal={subtotal}
+                  shippingCost={shippingCost}
+                  finalDistance={finalDistance}
+                  tax={tax}
+                  total={total}
+                  appliedDiscount={appliedDiscount}
+                  discountCodeInput={discountCodeInput}
+                  onDiscountCodeChange={setDiscountCodeInput}
+                  discountError={discountError}
+                  isValidatingCode={isValidatingCode}
+                  availableCodes={availableCodes}
+                  onApplyDiscount={handleApplyDiscount}
+                  onRemoveDiscount={handleRemoveDiscount}
+                  onSelectDiscountCode={(code) => {
+                    setDiscountCodeInput(code);
+                    setDiscountError('');
+                  }}
+                  paymentMethod={formData.paymentMethod}
+                  isProcessing={isProcessing}
+                  onSubmit={() => handleSubmit({ preventDefault: () => {} } as React.FormEvent)}
                 />
-                <Input
-                  label={t('checkout.shippingInfo.lastName')}
-                  value={formData.lastName}
-                  onChange={(e) => handleInputChange('lastName', e.target.value)}
-                  error={errors.lastName}
-                  required
-                />
-                <Input
-                  label={t('checkout.shippingInfo.email')}
-                  type="email"
-                  autoComplete="email"
-                  value={formData.email}
-                  onChange={(e) => handleInputChange('email', e.target.value)}
-                  error={errors.email}
-                  required
-                />
-                <Input
-                  label={t('checkout.shippingInfo.phone')}
-                  type="tel"
-                  inputMode="numeric"
-                  autoComplete="tel"
-                  maxLength={10}
-                  value={formData.phone}
-                  onChange={(e) =>
-                    handleInputChange('phone', e.target.value.replace(/[^0-9]/g, ''))
-                  }
-                  error={errors.phone}
-                  required
-                />
-                <div className="md:col-span-2">
-                  <AddressPicker
-                    label={t('checkout.shippingInfo.address')}
-                    value={formData.address}
-                    onChange={(val, lat, lon, detail) => {
-                      setFormData((prev) => {
-                        const updated = { ...prev, address: val };
 
-                        // Parse city/state từ comma-separated address (fallback)
-                        const parts = val
-                          .split(',')
-                          .map((p) => p.trim())
-                          .filter(Boolean);
-                        const fallback = parts.length > 0 ? parts[parts.length - 1] : val.trim();
-                        updated.state = parts.length > 2 ? parts[parts.length - 2] : fallback;
-                        updated.city = parts.length > 3 ? parts[parts.length - 3] : fallback;
-
-                        // Override bằng structured detail từ geocoder nếu có
-                        if (lat && lon) {
-                          updated.lat = lat;
-                          updated.lon = lon;
-                        }
-                        if (detail?.city) updated.city = detail.city;
-                        if (detail?.state) updated.state = detail.state;
-                        if (detail?.country) updated.country = detail.country;
-
-                        if (updated.sameAsShipping) {
-                          updated.billingCity = updated.city;
-                          updated.billingState = updated.state;
-                          updated.billingCountry = updated.country;
-                        }
-
-                        return updated;
-                      });
-                      if (errors.address) {
-                        setErrors((prev) => ({ ...prev, address: '' }));
-                      }
-                    }}
-                    error={errors.address}
-                    required
-                  />
+                <div className="flex justify-between mt-6">
+                  <PremiumButton variant="outline" size="large" onClick={goBack}>
+                    {t('checkout.step.back')}
+                  </PremiumButton>
                 </div>
-              </div>
-            </div>
-          )}
+              </motion.div>
+            )}
+          </AnimatePresence>
+        </div>
 
-          {/* Đã xóa phương thức giao hàng tính theo yêu cầu, phí giao hàng được tính tự động. */}
-
-          {/* Chọn phương thức thanh toán */}
-          <div className="bg-white dark:bg-neutral-800 rounded-lg shadow-sm p-6">
-            <h2 className="text-xl font-semibold text-neutral-800 dark:text-neutral-100 mb-4">
-              {t('checkout.paymentMethod.title')}
-            </h2>
-
-            <div className="space-y-3">
-              {paymentMethods.map((method) => (
-                <label
-                  key={method.value}
-                  className="flex items-center p-3 border border-neutral-200 dark:border-neutral-700 rounded-lg cursor-pointer hover:bg-neutral-50 dark:hover:bg-neutral-700"
-                >
-                  <input
-                    type="radio"
-                    name="paymentMethod"
-                    value={method.value}
-                    checked={formData.paymentMethod === method.value}
-                    onChange={(e) => handleInputChange('paymentMethod', e.target.value)}
-                    className="mr-3"
-                  />
-                  <div className="flex-grow">
-                    <div className="font-medium text-neutral-800 dark:text-neutral-100">
-                      {method.label}
-                    </div>
-                  </div>
-                </label>
-              ))}
-            </div>
-
-            {/* Modal thông tin trả góp */}
-            <Modal
-              title={
-                <div className="flex items-center space-x-2 text-xl text-primary-600">
-                  <InfoCircleOutlined />
-                  <span>{t('checkout.installment.title')}</span>
-                </div>
-              }
-              open={isInstallmentModalOpen}
-              onCancel={() => setIsInstallmentModalOpen(false)}
-              footer={[
-                <Button key="close" type="primary" onClick={() => setIsInstallmentModalOpen(false)}>
-                  {t('checkout.installment.understood')}
-                </Button>,
-              ]}
-              width={700}
-              centered
-              classNames={{
-                content: 'dark:bg-[#141414]',
-                header: 'dark:bg-[#141414]',
-                body: 'dark:bg-[#141414]',
+        {/* Cột phải - Order summary mini (visible ở step 0 & 1) */}
+        {currentStep < 2 && (
+          <div className="hidden lg:block">
+            <CheckoutOrderSummary
+              items={items}
+              isRepayingOrder={isRepayingOrder}
+              currentOrder={currentOrder}
+              subtotal={subtotal}
+              shippingCost={shippingCost}
+              finalDistance={finalDistance}
+              tax={tax}
+              total={total}
+              appliedDiscount={appliedDiscount}
+              discountCodeInput={discountCodeInput}
+              onDiscountCodeChange={setDiscountCodeInput}
+              discountError={discountError}
+              isValidatingCode={isValidatingCode}
+              availableCodes={availableCodes}
+              onApplyDiscount={handleApplyDiscount}
+              onRemoveDiscount={handleRemoveDiscount}
+              onSelectDiscountCode={(code) => {
+                setDiscountCodeInput(code);
+                setDiscountError('');
               }}
-            >
-              <div className="space-y-4 py-2">
-                <div className="bg-blue-50 dark:bg-blue-900/20 p-4 rounded-lg border border-blue-100 dark:border-blue-800 text-blue-800 dark:text-blue-300">
-                  <h4 className="font-semibold mb-2">{t('checkout.installment.process')}</h4>
-                  <ol className="list-decimal list-inside space-y-1 text-sm">
-                    <li>{t('checkout.installment.step1')}</li>
-                    <li>{t('checkout.installment.step2')}</li>
-                    <li>{t('checkout.installment.step3')}</li>
-                  </ol>
-                </div>
-
-                <h4 className="font-semibold text-gray-700 dark:text-neutral-300 mt-4">
-                  {t('checkout.installment.bankList')}
-                </h4>
-                <Table
-                  columns={installmentColumns}
-                  dataSource={installmentData}
-                  pagination={false}
-                  size="small"
-                  bordered
-                />
-
-                <p className="text-xs text-gray-500 dark:text-neutral-400 italic mt-2">
-                  {t('checkout.installment.note')}
-                </p>
-              </div>
-            </Modal>
-          </div>
-
-          {/* Ghi chú đơn hàng */}
-          <div className="bg-white dark:bg-neutral-800 rounded-lg shadow-sm p-6">
-            <h2 className="text-xl font-semibold text-neutral-800 dark:text-neutral-100 mb-4">
-              {t('checkout.orderNotes.title')}
-            </h2>
-            <textarea
-              value={formData.notes}
-              onChange={(e) => handleInputChange('notes', e.target.value)}
-              placeholder={t('checkout.orderNotes.placeholder')}
-              className="w-full p-3 border border-neutral-200 dark:border-neutral-700 rounded-lg bg-white dark:bg-neutral-800 text-neutral-800 dark:text-neutral-100"
-              rows={3}
+              paymentMethod={formData.paymentMethod}
+              isProcessing={isProcessing}
+              onSubmit={() => handleSubmit({ preventDefault: () => {} } as React.FormEvent)}
             />
           </div>
-        </div>
-
-        {/* Cột phải - Tóm tắt đơn hàng */}
-        <div className="space-y-6">
-          {/* Tóm tắt đơn hàng */}
-          <div className="bg-white dark:bg-neutral-800 rounded-lg shadow-sm p-6 sticky top-4">
-            <h2 className="text-xl font-semibold text-neutral-800 dark:text-neutral-100 mb-6">
-              {t('checkout.orderSummary.title')}
-            </h2>
-
-            {/* Sản phẩm trong giỏ hoặc đơn hàng thanh toán lại */}
-            {isRepayingOrder ? (
-              <div className="space-y-4 mb-6">
-                <div className="p-4 bg-blue-50 dark:bg-primary-700/20 rounded-lg">
-                  <div className="text-blue-800 dark:text-blue-200">
-                    <div className="font-semibold mb-2">{t('checkout.repayOrder.title')}</div>
-                    <div className="text-sm mb-1">
-                      {t('checkout.repayOrder.id')}: {currentOrder.id}
-                    </div>
-                    <div className="text-lg font-semibold">
-                      {t('checkout.repayOrder.amount')}: {formatPrice(currentOrder.total)}
-                    </div>
-                  </div>
-                </div>
-              </div>
-            ) : (
-              <div className="space-y-4 mb-6">
-                {items.map((item) => (
-                  <CartItem
-                    key={`${item.id}-${item.variantId || 'default'}`}
-                    item={item}
-                    isCheckout={true}
-                  />
-                ))}
-              </div>
-            )}
-
-            {/* Phần mã giảm giá */}
-            {!isRepayingOrder && (
-              <div className="mb-6 border-t border-neutral-200 dark:border-neutral-700 pt-4">
-                {/* Danh sách mã khả dụng */}
-                {availableCodes.length > 0 && !appliedDiscount && (
-                  <div className="mb-3">
-                    <p className="text-xs text-neutral-500 dark:text-neutral-400 mb-2">
-                      {t('checkout.discountCode.available')}
-                    </p>
-                    <div className="flex flex-wrap gap-2">
-                      {availableCodes.map((dc: AvailableDiscountCode) => {
-                        const eligible =
-                          dc.minOrderAmount === null || subtotal >= dc.minOrderAmount;
-                        const label =
-                          dc.type === 'percent'
-                            ? `${dc.value}%${dc.maxDiscountAmount ? ` (tối đa ${formatPrice(dc.maxDiscountAmount)})` : ''}`
-                            : formatPrice(dc.value);
-                        return (
-                          <button
-                            key={dc.id}
-                            disabled={!eligible}
-                            onClick={() => {
-                              setDiscountCodeInput(dc.code);
-                              setDiscountError('');
-                            }}
-                            title={
-                              !eligible && dc.minOrderAmount
-                                ? t('checkout.discountCode.minOrder', {
-                                    amount: formatPrice(dc.minOrderAmount),
-                                  })
-                                : dc.code
-                            }
-                            className={`px-2.5 py-1 rounded border text-xs font-mono font-semibold transition-colors ${
-                              eligible
-                                ? 'border-emerald-400 text-emerald-700 dark:text-emerald-300 dark:border-emerald-600 hover:bg-emerald-50 dark:hover:bg-emerald-900/30 cursor-pointer'
-                                : 'border-neutral-300 dark:border-neutral-600 text-neutral-400 cursor-not-allowed opacity-60'
-                            }`}
-                          >
-                            {dc.code}
-                            <span className="ml-1 font-normal text-neutral-500 dark:text-neutral-400">
-                              -{label}
-                            </span>
-                          </button>
-                        );
-                      })}
-                    </div>
-                  </div>
-                )}
-
-                <div className="flex space-x-2 items-end">
-                  <div className="flex-grow">
-                    <Input
-                      placeholder={t('checkout.discountCode.placeholder')}
-                      value={discountCodeInput}
-                      onChange={(e) => setDiscountCodeInput(e.target.value.toUpperCase())}
-                      disabled={!!appliedDiscount}
-                    />
-                  </div>
-                  <button
-                    onClick={appliedDiscount ? handleRemoveDiscount : handleApplyDiscount}
-                    disabled={isValidatingCode}
-                    className={`h-[42px] px-4 text-sm font-semibold disabled:opacity-50 ${appliedDiscount ? 'btn-danger' : 'btn-glass-primary'}`}
-                  >
-                    {isValidatingCode
-                      ? '...'
-                      : appliedDiscount
-                        ? t('checkout.discountCode.cancel')
-                        : t('common.apply')}
-                  </button>
-                </div>
-                {discountError && <p className="text-red-500 text-xs mt-1">{discountError}</p>}
-                {appliedDiscount && (
-                  <p className="text-green-600 text-sm mt-1 flex items-center">
-                    <CheckCircleOutlined className="mr-1" />
-                    {t('checkout.discountCode.discountInfo', {
-                      code: appliedDiscount.code,
-                      amount: formatPrice(appliedDiscount.amount),
-                    })}
-                  </p>
-                )}
-              </div>
-            )}
-
-            {/* Tổng cộng */}
-            <div className="border-t border-neutral-200 dark:border-neutral-700 pt-4 space-y-2">
-              {!isRepayingOrder ? (
-                <>
-                  <div className="flex justify-between text-neutral-600 dark:text-neutral-400">
-                    <span>{t('checkout.orderSummary.subtotal')}</span>
-                    <span>{formatPrice(subtotal)}</span>
-                  </div>
-                  <div className="flex justify-between text-neutral-600 dark:text-neutral-400">
-                    <div className="flex flex-col">
-                      <span>{t('checkout.orderSummary.shipping')}</span>
-                      {finalDistance > 0 && (
-                        <span className="text-base font-bold text-emerald-700 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-900/30 px-2.5 py-1.5 rounded-md mt-1.5 shadow-sm border border-emerald-100 dark:border-emerald-800 inline-flex items-center">
-                          {t('checkout.orderSummary.distanceInfo', {
-                            distance: finalDistance.toFixed(1),
-                            fee: formatPrice(shippingCost),
-                          })}
-                        </span>
-                      )}
-                    </div>
-                    <span>
-                      {shippingCost === 0
-                        ? t('checkout.orderSummary.freeShipping')
-                        : formatPrice(shippingCost)}
-                    </span>
-                  </div>
-                  {appliedDiscount && (
-                    <div className="flex justify-between text-green-600 font-medium">
-                      <span>
-                        {t('checkout.orderSummary.discountCodeLabel', {
-                          code: appliedDiscount.code,
-                        })}
-                      </span>
-                      <span>-{formatPrice(appliedDiscount.amount)}</span>
-                    </div>
-                  )}
-                  {tax > 0 && (
-                    <div className="flex justify-between text-neutral-600 dark:text-neutral-400">
-                      <span>{t('checkout.orderSummary.tax')}</span>
-                      <span>{formatPrice(tax)}</span>
-                    </div>
-                  )}
-                  <div className="flex justify-between text-lg font-semibold text-neutral-800 dark:text-neutral-100 pt-2 border-t border-neutral-200 dark:border-neutral-700">
-                    <span>{t('checkout.orderSummary.total')}</span>
-                    <span>{formatPrice(total)}</span>
-                  </div>
-                </>
-              ) : (
-                <div className="flex justify-between text-lg font-semibold text-neutral-800 dark:text-neutral-100">
-                  <span>{t('checkout.orderSummary.total')}</span>
-                  <span>{formatPrice(currentOrder.total)}</span>
-                </div>
-              )}
-            </div>
-
-            {/* Nút tương ứng với từng phương thức thanh toán */}
-            {['bank_transfer', 'vnpay', 'momo', 'installment', 'cod'].includes(
-              formData.paymentMethod,
-            ) &&
-              (!currentOrder || ['vnpay', 'momo'].includes(formData.paymentMethod)) && (
-                <PremiumButton
-                  variant="primary"
-                  size="large"
-                  iconType="arrow-right"
-                  isProcessing={isProcessing}
-                  processingText={t('common.processing')}
-                  onClick={handleSubmit}
-                  className="w-full mt-6 h-14 text-lg font-semibold"
-                >
-                  {t('checkout.buttons.continueToPayment')}
-                </PremiumButton>
-              )}
-
-            {/* Phần thanh toán QR chuyển khoản (hiển thị sau khi tạo đơn hàng) - Chuyển hướng đến trang QR */}
-            {formData.paymentMethod === 'bank_transfer' && currentOrder && (
-              <div className="mt-6">
-                {/* Tự động chuyển hướng đến trang thanh toán QR */}
-                <div className="text-center py-4">
-                  <p className="text-lg text-neutral-700 dark:text-neutral-300">
-                    {t('checkout.redirectingToPayment')}
-                  </p>
-                </div>
-              </div>
-            )}
-
-            {/* Thông báo bảo mật */}
-            <div className="mt-6 p-4 bg-green-50 dark:bg-green-900/20 rounded-lg">
-              <div className="flex items-center text-green-800 dark:text-green-200">
-                <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"
-                  />
-                </svg>
-                <div>
-                  <div className="font-semibold">{t('checkout.securityNotice.title')}</div>
-                  <div className="text-sm">{t('checkout.securityNotice.message')}</div>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
+        )}
       </div>
     </div>
   );

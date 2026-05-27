@@ -57,10 +57,6 @@ features/ai/
     ChatInput.tsx             — Text input + voice button (Web Speech API) + send button
     ChatSuggestions.tsx       — Suggested quick replies bên dưới message AI
     AIProductCard.tsx         — Product card mở rộng (dùng ngoài chat context)
-    AIStatusIndicator.tsx     — Chỉ báo trạng thái AI (thinking/online)
-    ChatToggleButton.tsx      — FAB button góc dưới phải (không dùng bởi ChatWidgetPortal — widget dùng inline button trực tiếp)
-    ChatEmptyState.tsx        — Empty state khi chưa có tin nhắn (gợi ý ban đầu)
-    ChatActionButtons.tsx     — Action buttons trong message AI (view cart, checkout...)
     icons/                    — SVG icon components: SendIcon, BotIcon, UserIcon, LoadingIcon, TrashIcon, HelpIcon...
 
   hooks/
@@ -116,7 +112,6 @@ Chỉ có mutations — **không có query hooks**. Chat history không fetch t�
 | Component              | Mô tả                                                                                                                                                                                                                                              |
 | ---------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `ChatWidgetPortal`     | Fixed-position div chứa toàn bộ widget; `isOpen` là local `useState` trong component này (không phải chatStore); quản lý layout, gọi `useSendChatbotMessageMutation`, xử lý typing indicator (isLoading message), error handling với i18n messages |
-| `ChatToggleButton`     | FAB button bottom-right (không được import bởi `ChatWidgetPortal` — widget dùng inline button với `ChatIcon`/`CloseIcon`)                                                                                                                          |
 | `ChatMessages`         | Scrollable list với auto-scroll xuống cuối khi có message mới                                                                                                                                                                                      |
 | `ChatInput`            | Text field + voice button (Web Speech API) + submit; disabled khi isLoading                                                                                                                                                                        |
 | `ChatbotErrorBoundary` | Bắt lỗi render — fallback thay vì crash toàn trang                                                                                                                                                                                                 |

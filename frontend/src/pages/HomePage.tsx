@@ -22,6 +22,7 @@ import { ROUTES, buildRoute } from '@/routes/paths';
 import { localizeField } from '@/utils/localize';
 import { motion } from 'framer-motion';
 import { Sparkles, ArrowRight, LayoutGrid, Award } from 'lucide-react';
+import { fadeUp, stagger, itemFade } from '@/utils/motion';
 
 /**
  * Simple Icons CDN — SVG logos cho tech brands, reliable hơn Clearbit
@@ -50,22 +51,6 @@ function getBrandLogoUrl(name: string): string | null {
   // 6b7280 = gray-500, visible on both light/dark
   return slug ? `https://cdn.simpleicons.org/${slug}/6b7280` : null;
 }
-
-// Animation variants dùng lại nhiều nơi
-const fadeUp = {
-  hidden: { opacity: 0, y: 24 },
-  visible: { opacity: 1, y: 0, transition: { duration: 0.6, ease: [0.16, 1, 0.3, 1] } },
-};
-
-const stagger = {
-  hidden: {},
-  visible: { transition: { staggerChildren: 0.08 } },
-};
-
-const itemFade = {
-  hidden: { opacity: 0, y: 20 },
-  visible: { opacity: 1, y: 0, transition: { duration: 0.5, ease: [0.16, 1, 0.3, 1] } },
-};
 
 const HomePage: React.FC = () => {
   const { t, i18n } = useTranslation();

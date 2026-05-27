@@ -1,11 +1,10 @@
-﻿/**
+/**
  * @file CreateProductPage.tsx
  * @layer Page
  * @feature catalog
  * @description Page component của feature catalog
  */
-import { ArrowLeftOutlined } from '@ant-design/icons';
-import { App, Button, Card, Col, Divider, Form, Row, Tabs, Typography } from 'antd';
+import { ArrowLeft } from 'lucide-react';
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
@@ -15,6 +14,7 @@ import i18next from 'i18next';
 import { useProductAttributes } from '@features/catalog/hooks/use-product-attributes';
 import { useProductForm } from '@features/catalog/hooks/use-product-form';
 import { useProductVariants } from '@features/catalog/hooks/use-product-variants';
+import { useFormAdapter } from '@features/catalog/hooks/use-form-adapter';
 
 // Các API hook cần thiết
 import { useCreateProductMutation } from '@/features/admin';
@@ -40,11 +40,21 @@ import ProductFAQForm from '@features/catalog/components/ProductFAQForm';
 import { AttributeGroup } from '@features/catalog/api/attribute-api';
 import { ProductFormData, ProductAttribute, ProductVariant } from '@/types';
 import { getErrorMsg } from '@/utils/error-utils';
+import { useUiStore } from '@/stores/ui-store';
 
 // Utils xử lý ảnh trong mô tả sản phẩm (base64 -> file đã upload)
 import { hasBase64Images, processDescriptionImages } from '@/utils/description-image-processor';
 
-const { Title, Text } = Typography;
+// shadcn/ui
+import {
+  Button,
+  Card,
+  CardContent,
+  Tabs,
+  TabsContent,
+  TabsList,
+  TabsTrigger,
+} from '@/components/ui';
 
 // Tạo SKU ngẫu nhiên dạng PRD-XXXXXX (6 ký tự uppercase + số)
 const generateSku = (prefix = 'PRD') => {
@@ -86,8 +96,21 @@ const getDefaultFaqs = () => [
 const CreateProductPage: React.FC = () => {
   const { t } = useTranslation();
   const navigate = useNavigate();
-  const { message } = App.useApp();
-  const [form] = Form.useForm();
+  const addNotification = useUiStore((s) => s.addNotification);
+  const form = useFormAdapter({
+    defaultValues: {
+      price: 0,
+      stockQuantity: 0,
+      status: 'active',
+      featured: false,
+      categoryIds: [],
+      specifications: [],
+      seoKeywords: '',
+      images: '',
+      thumbnail: '',
+      condition: 'new',
+    },
+  });
 
   // State để theo dõi các bước đã hoàn thành trong quy trình tạo sản phẩm
   const [completedSteps, setCompletedSteps] = useState<Record<string, boolean>>({
@@ -146,21 +169,9 @@ const CreateProductPage: React.FC = () => {
     }
   }, [variants, form]);
 
-  // Đặt giá trị mặc định cho form khi component được mount để tránh lỗi "undefined" khi truy cập các trường chưa được điền
+  // Đặt FAQs mặc định sau mount (cần i18next đã sẵn sàng)
   useEffect(() => {
-    form.setFieldsValue({
-      price: 0,
-      stockQuantity: 0,
-      status: 'active',
-      featured: false,
-      categoryIds: [],
-      specifications: [],
-      seoKeywords: '',
-      images: '',
-      thumbnail: '',
-      condition: 'new',
-      faqs: getDefaultFaqs(),
-    });
+    form.setFieldsValue({ faqs: getDefaultFaqs() });
   }, [form]);
 
   // Custom hooks cho form sản phẩm sẽ trả về các trạng thái và hàm cần thiết để quản lý form, validation, và submit
@@ -340,18 +351,20 @@ const CreateProductPage: React.FC = () => {
         };
 
         await createProduct(productData);
-        message.success(t('admin.products.messages.createSuccess'));
+        addNotification({ message: t('admin.products.messages.createSuccess'), type: 'success' });
         navigate('/admin/products');
       } catch (error) {
         // Rollback: xóa ảnh description đã upload nếu tạo sản phẩm thất bại
         // Tránh orphaned files khi form bị lỗi validation sau khi ảnh đã được upload
         if (uploadedDescImageIds.length > 0) {
           await Promise.allSettled(
-            uploadedDescImageIds.map((id) => deleteImage(id).catch(() => {})),
+            uploadedDescImageIds.map((id) =>
+              deleteImage(id).catch((err) => console.error('Lỗi xoá ảnh rollback:', err)),
+            ),
           );
         }
         const errorMessage = formatErrorMessage(error);
-        message.error(errorMessage);
+        addNotification({ message: errorMessage, type: 'error' });
       }
     },
     isSubmitting: isCreating,
@@ -405,326 +418,198 @@ const CreateProductPage: React.FC = () => {
     setActiveTab(key);
   };
 
-  const tabItems = [
-    {
-      key: 'basic',
-      label: (
-        <span
-          style={{
-            color: completedSteps.basic ? '#52c41a' : isTabAccessible('basic') ? undefined : '#999',
-          }}
-        >
-          {t('admin.products.tabs.basic')} {completedSteps.basic ? '?' : ''}
-        </span>
-      ),
-      disabled: !isTabAccessible('basic'),
-      children: (
-        <>
-          <ProductBasicInfoForm fillExampleData={fillExampleData} productId={undefined} />
-          <TabNavigation
-            activeTab={activeTab}
-            setActiveTab={setActiveTab}
-            tabOrder={TAB_ORDER}
-            completedSteps={completedSteps}
-            validateForm={validateForm}
-          />
-        </>
-      ),
-    },
-    {
-      key: 'specifications',
-      label: (
-        <span
-          style={{
-            color: completedSteps.specifications
-              ? '#52c41a'
-              : isTabAccessible('specifications')
-                ? undefined
-                : '#999',
-          }}
-        >
-          {t('admin.products.tabs.specifications')} {completedSteps.specifications ? '?' : ''}
-        </span>
-      ),
-      disabled: !isTabAccessible('specifications'),
-      children: (
-        <>
-          <ProductSpecificationsForm initialSpecifications={[]} />
-          <TabNavigation
-            activeTab={activeTab}
-            setActiveTab={setActiveTab}
-            tabOrder={TAB_ORDER}
-            completedSteps={completedSteps}
-            validateForm={validateForm}
-          />
-        </>
-      ),
-    },
-    {
-      key: 'attributes',
-      label: (
-        <span
-          style={{
-            color: completedSteps.attributes
-              ? '#52c41a'
-              : isTabAccessible('attributes')
-                ? undefined
-                : '#999',
-          }}
-        >
-          {t('admin.products.tabs.attributes')} {completedSteps.attributes ? '?' : ''}
-        </span>
-      ),
-      disabled: !isTabAccessible('attributes'),
-      children: (
-        <>
-          <ProductAttributesSection
-            attributes={attributes}
-            onAddAttribute={() => openAttributeModal()}
-            onEditAttribute={(attribute) => openAttributeModal(attribute)}
-            onDeleteAttribute={handleDeleteAttribute}
-          />
-          <TabNavigation
-            activeTab={activeTab}
-            setActiveTab={setActiveTab}
-            tabOrder={TAB_ORDER}
-            completedSteps={completedSteps}
-            validateForm={validateForm}
-          />
-        </>
-      ),
-    },
-    {
-      key: 'variants',
-      label: (
-        <span
-          style={{
-            color: completedSteps.variants
-              ? '#52c41a'
-              : isTabAccessible('variants')
-                ? undefined
-                : '#999',
-          }}
-        >
-          {t('admin.products.tabs.variants')} {completedSteps.variants ? '?' : ''}
-        </span>
-      ),
-      disabled: !isTabAccessible('variants'),
-      children: (
-        <>
-          <ProductVariantsSection
-            variants={variants}
-            onAddVariant={() => openVariantModal()}
-            onEditVariant={(variant) => openVariantModal(variant)}
-            onDeleteVariant={handleDeleteVariant}
-          />
-          <TabNavigation
-            activeTab={activeTab}
-            setActiveTab={setActiveTab}
-            tabOrder={TAB_ORDER}
-            completedSteps={completedSteps}
-            validateForm={validateForm}
-          />
-        </>
-      ),
-    },
-    {
-      key: 'pricing',
-      label: (
-        <span
-          style={{
-            color: completedSteps.pricing
-              ? '#52c41a'
-              : isTabAccessible('pricing')
-                ? undefined
-                : '#999',
-          }}
-        >
-          {t('admin.products.tabs.pricing')} {completedSteps.pricing ? '?' : ''}
-        </span>
-      ),
-      disabled: !isTabAccessible('pricing'),
-      children: (
-        <>
-          <ProductPricingForm hasVariants={variants.length > 0} variants={variants} />
-          <TabNavigation
-            activeTab={activeTab}
-            setActiveTab={setActiveTab}
-            tabOrder={TAB_ORDER}
-            completedSteps={completedSteps}
-            validateForm={validateForm}
-          />
-        </>
-      ),
-    },
-    {
-      key: 'category',
-      label: (
-        <span
-          style={{
-            color: completedSteps.category
-              ? '#52c41a'
-              : isTabAccessible('category')
-                ? undefined
-                : '#999',
-          }}
-        >
-          {t('admin.products.tabs.category')} {completedSteps.category ? '?' : ''}
-        </span>
-      ),
-      disabled: !isTabAccessible('category'),
-      children: (
-        <>
-          <ProductCategoryForm categories={categoriesList} isLoading={isCategoriesLoading} />
-          <TabNavigation
-            activeTab={activeTab}
-            setActiveTab={setActiveTab}
-            tabOrder={TAB_ORDER}
-            completedSteps={completedSteps}
-            validateForm={validateForm}
-          />
-        </>
-      ),
-    },
-    {
-      key: 'images',
-      label: (
-        <span
-          style={{
-            color: completedSteps.images
-              ? '#52c41a'
-              : isTabAccessible('images')
-                ? undefined
-                : '#999',
-          }}
-        >
-          {t('admin.products.tabs.images')} {completedSteps.images ? '?' : ''}
-        </span>
-      ),
-      disabled: !isTabAccessible('images'),
-      children: (
-        <>
-          <ProductImagesForm />
-          <TabNavigation
-            activeTab={activeTab}
-            setActiveTab={setActiveTab}
-            tabOrder={TAB_ORDER}
-            completedSteps={completedSteps}
-            validateForm={validateForm}
-          />
-        </>
-      ),
-    },
-    {
-      key: 'faqs',
-      label: (
-        <span
-          style={{
-            color: completedSteps.faqs ? '#52c41a' : isTabAccessible('faqs') ? undefined : '#999',
-          }}
-        >
-          {t('admin.products.tabs.faqs')} {completedSteps.faqs ? '?' : ''}
-        </span>
-      ),
-      disabled: !isTabAccessible('faqs'),
-      children: (
-        <>
-          <ProductFAQForm />
-          <TabNavigation
-            activeTab={activeTab}
-            setActiveTab={setActiveTab}
-            tabOrder={TAB_ORDER}
-            completedSteps={completedSteps}
-            validateForm={validateForm}
-          />
-        </>
-      ),
-    },
-    {
-      key: 'seo',
-      label: (
-        <span
-          style={{
-            color: completedSteps.seo ? '#52c41a' : isTabAccessible('seo') ? undefined : '#999',
-          }}
-        >
-          {t('admin.products.tabs.seo')} {completedSteps.seo ? '?' : ''}
-        </span>
-      ),
-      disabled: !isTabAccessible('seo'),
-      children: (
-        <>
-          <ProductSeoForm />
-          <TabNavigation
-            activeTab={activeTab}
-            setActiveTab={setActiveTab}
-            tabOrder={TAB_ORDER}
-            completedSteps={completedSteps}
-            validateForm={validateForm}
-            isLastTab={true}
-            onSubmit={() => handleSubmit(form.getFieldsValue())}
-            isSubmitting={isCreating}
-            submitText={t('admin.products.submit.create')}
-            loadingText={t('admin.products.submit.creating')}
-          />
-        </>
-      ),
-    },
-  ];
+  const getTabLabelStyle = (tabKey: string) => {
+    if (completedSteps[tabKey]) return 'text-green-600 dark:text-green-400';
+    if (!isTabAccessible(tabKey)) return 'text-neutral-400 dark:text-neutral-500';
+    return '';
+  };
 
   return (
-    <div style={{ padding: '24px' }}>
+    <div className="p-6">
       {/* Header */}
-      <Card style={{ marginBottom: 24 }}>
-        <Row justify="space-between" align="middle">
-          <Col>
-            <Title level={2} style={{ margin: 0 }}>
-              {t('admin.products.create.title')}
-            </Title>
-            <Text type="secondary">{t('admin.products.create.subtitle')}</Text>
-          </Col>
-          <Col>
-            <Button
-              icon={<ArrowLeftOutlined />}
-              onClick={() => navigate('/admin/products')}
-              style={{ marginRight: 8 }}
-            >
-              {t('admin.products.backButton')}
-            </Button>
-          </Col>
-        </Row>
+      <Card className="mb-6">
+        <CardContent className="pt-6">
+          <div className="flex justify-between items-center">
+            <div>
+              <h2 className="text-2xl font-semibold text-neutral-900 dark:text-white">
+                {t('admin.products.create.title')}
+              </h2>
+              <p className="text-neutral-500 dark:text-neutral-400">
+                {t('admin.products.create.subtitle')}
+              </p>
+            </div>
+            <div>
+              <Button
+                variant="outline"
+                onClick={() => navigate('/admin/products')}
+                className="mr-2"
+              >
+                <ArrowLeft className="w-4 h-4 mr-2" />
+                {t('admin.products.backButton')}
+              </Button>
+            </div>
+          </div>
+        </CardContent>
       </Card>
 
       {/* Form */}
       <Card>
-        <Form
-          form={form}
-          layout="vertical"
-          onFinish={handleSubmit}
-          onFieldsChange={validateForm}
-          initialValues={{
-            status: 'active',
-            featured: false,
-            stockQuantity: 0,
-            price: 0,
-          }}
-        >
-          <Tabs
-            activeKey={activeTab}
-            onChange={handleTabChange}
-            items={tabItems}
-            style={{ minHeight: 400 }}
-          />
+        <CardContent className="pt-6">
+          <form
+            onSubmit={form._rhf.handleSubmit((values) => handleSubmit(values as ProductFormData))}
+            onChange={validateForm}
+          >
+            <Tabs value={activeTab} onValueChange={handleTabChange} className="min-h-[400px]">
+              <TabsList className="flex flex-wrap h-auto gap-1 bg-transparent mb-4">
+                {TAB_ORDER.map((tabKey) => (
+                  <TabsTrigger
+                    key={tabKey}
+                    value={tabKey}
+                    disabled={!isTabAccessible(tabKey)}
+                    className={`${getTabLabelStyle(tabKey)} data-[state=active]:bg-primary-100 data-[state=active]:text-primary-700 dark:data-[state=active]:bg-primary-900/20 dark:data-[state=active]:text-primary-300`}
+                  >
+                    {t(`admin.products.tabs.${tabKey}`)} {completedSteps[tabKey] ? '?' : ''}
+                  </TabsTrigger>
+                ))}
+              </TabsList>
 
-          <Divider />
+              <TabsContent value="basic">
+                <ProductBasicInfoForm
+                  form={form._rhf}
+                  fillExampleData={fillExampleData}
+                  productId={undefined}
+                />
+                <TabNavigation
+                  activeTab={activeTab}
+                  setActiveTab={setActiveTab}
+                  tabOrder={TAB_ORDER}
+                  completedSteps={completedSteps}
+                  validateForm={validateForm}
+                />
+              </TabsContent>
 
-          <ValidationAlerts
-            isFormValid={isFormValid}
-            missingFields={[]} // getMissingFields() hiện không cần thiết vì ValidationAlerts trả về null
-          />
+              <TabsContent value="specifications">
+                <ProductSpecificationsForm form={form._rhf} initialSpecifications={[]} />
+                <TabNavigation
+                  activeTab={activeTab}
+                  setActiveTab={setActiveTab}
+                  tabOrder={TAB_ORDER}
+                  completedSteps={completedSteps}
+                  validateForm={validateForm}
+                />
+              </TabsContent>
 
-          {/* FormActions bị ẩn vì button tạo sản phẩm đã được chuyển vào TabNavigation */}
-        </Form>
+              <TabsContent value="attributes">
+                <ProductAttributesSection
+                  attributes={attributes}
+                  onAddAttribute={() => openAttributeModal()}
+                  onEditAttribute={(attribute) => openAttributeModal(attribute)}
+                  onDeleteAttribute={handleDeleteAttribute}
+                />
+                <TabNavigation
+                  activeTab={activeTab}
+                  setActiveTab={setActiveTab}
+                  tabOrder={TAB_ORDER}
+                  completedSteps={completedSteps}
+                  validateForm={validateForm}
+                />
+              </TabsContent>
+
+              <TabsContent value="variants">
+                <ProductVariantsSection
+                  variants={variants}
+                  onAddVariant={() => openVariantModal()}
+                  onEditVariant={(variant) => openVariantModal(variant)}
+                  onDeleteVariant={handleDeleteVariant}
+                />
+                <TabNavigation
+                  activeTab={activeTab}
+                  setActiveTab={setActiveTab}
+                  tabOrder={TAB_ORDER}
+                  completedSteps={completedSteps}
+                  validateForm={validateForm}
+                />
+              </TabsContent>
+
+              <TabsContent value="pricing">
+                <ProductPricingForm
+                  form={form._rhf}
+                  hasVariants={variants.length > 0}
+                  variants={variants}
+                />
+                <TabNavigation
+                  activeTab={activeTab}
+                  setActiveTab={setActiveTab}
+                  tabOrder={TAB_ORDER}
+                  completedSteps={completedSteps}
+                  validateForm={validateForm}
+                />
+              </TabsContent>
+
+              <TabsContent value="category">
+                <ProductCategoryForm
+                  form={form._rhf}
+                  categories={categoriesList}
+                  isLoading={isCategoriesLoading}
+                />
+                <TabNavigation
+                  activeTab={activeTab}
+                  setActiveTab={setActiveTab}
+                  tabOrder={TAB_ORDER}
+                  completedSteps={completedSteps}
+                  validateForm={validateForm}
+                />
+              </TabsContent>
+
+              <TabsContent value="images">
+                <ProductImagesForm form={form._rhf} />
+                <TabNavigation
+                  activeTab={activeTab}
+                  setActiveTab={setActiveTab}
+                  tabOrder={TAB_ORDER}
+                  completedSteps={completedSteps}
+                  validateForm={validateForm}
+                />
+              </TabsContent>
+
+              <TabsContent value="faqs">
+                <ProductFAQForm form={form._rhf} />
+                <TabNavigation
+                  activeTab={activeTab}
+                  setActiveTab={setActiveTab}
+                  tabOrder={TAB_ORDER}
+                  completedSteps={completedSteps}
+                  validateForm={validateForm}
+                />
+              </TabsContent>
+
+              <TabsContent value="seo">
+                <ProductSeoForm form={form._rhf} />
+                <TabNavigation
+                  activeTab={activeTab}
+                  setActiveTab={setActiveTab}
+                  tabOrder={TAB_ORDER}
+                  completedSteps={completedSteps}
+                  validateForm={validateForm}
+                  isLastTab={true}
+                  onSubmit={() => handleSubmit(form.getFieldsValue() as ProductFormData)}
+                  isSubmitting={isCreating}
+                  submitText={t('admin.products.submit.create')}
+                  loadingText={t('admin.products.submit.creating')}
+                />
+              </TabsContent>
+            </Tabs>
+
+            <hr className="my-6 border-neutral-200 dark:border-neutral-700" />
+
+            <ValidationAlerts
+              isFormValid={isFormValid}
+              missingFields={[]} // getMissingFields() hiện không cần thiết vì ValidationAlerts trả về null
+            />
+
+            {/* FormActions bị ẩn vì button tạo sản phẩm đã được chuyển vào TabNavigation */}
+          </form>
+        </CardContent>
       </Card>
 
       {/* Modals */}

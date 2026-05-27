@@ -89,13 +89,18 @@ class AIController {
     try {
       const latest = await this.aiService.getLatestSession();
       res.json({ status: 'success', data: { sessionId: latest } });
-    } catch (err) { next(err); }
+    } catch (err) {
+      next(err);
+    }
   };
 
   getSessionHistory = async (req, res) => {
     const { sessionId } = req.params;
     const messages = this.aiService.getSessionHistory(sessionId);
-    res.json({ status: 'success', data: { sessionId, turns: Math.floor(messages.length / 2), messages } });
+    res.json({
+      status: 'success',
+      data: { sessionId, turns: Math.floor(messages.length / 2), messages },
+    });
   };
 
   getSessionMessages = async (req, res, next) => {
@@ -103,7 +108,9 @@ class AIController {
       const { sessionId } = req.params;
       const messages = await this.aiService.getSessionMessages(sessionId);
       res.json({ status: 'success', data: { sessionId, messages } });
-    } catch (err) { next(err); }
+    } catch (err) {
+      next(err);
+    }
   };
 
   addToCart = async (req, res, next) => {

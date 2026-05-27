@@ -16,7 +16,7 @@ import { createProductFiltersParams, transformProductsResponse } from '../utils/
 
 // === Query Keys ===
 
-export const productKeys = {
+const productKeys = {
   all: ['products'] as const,
   lists: () => [...productKeys.all, 'list'] as const,
   list: (filters: unknown) => [...productKeys.lists(), filters] as const,
@@ -79,25 +79,6 @@ export function useGetProductByIdQuery(
         : options?.skip !== undefined
           ? !options.skip
           : !!id,
-  });
-}
-
-export function useGetProductBySlugQuery(
-  params: { slug: string; skuId?: string; color?: string },
-  options?: { enabled?: boolean; skip?: boolean },
-) {
-  return useQuery<ProductDetailApiResponse>({
-    queryKey: productKeys.slug(JSON.stringify(params)),
-    queryFn: async () => {
-      const urlParams = new URLSearchParams();
-      if (params.skuId) urlParams.append('skuId', params.skuId);
-      if (params.color) urlParams.append('color', params.color);
-
-      const url = `/products/slug/${params.slug}${urlParams.toString() ? `?${urlParams.toString()}` : ''}`;
-      const { data } = await apiClient.get(url);
-      return transformProductsResponse(data);
-    },
-    enabled: options?.skip !== undefined ? !options.skip : !!params.slug,
   });
 }
 
@@ -188,34 +169,6 @@ export function useGetRelatedProductsQuery(
   });
 }
 
-export function useGetProductVariantsQuery(
-  productId: string,
-  options?: { enabled?: boolean; skip?: boolean },
-) {
-  return useQuery({
-    queryKey: productKeys.variants(productId),
-    queryFn: async () => {
-      const { data } = await apiClient.get(`/products/${productId}/variants`);
-      return data;
-    },
-    enabled: options?.skip !== undefined ? !options.skip : !!productId,
-  });
-}
-
-export function useGetProductReviewsSummaryQuery(
-  productId: string,
-  options?: { enabled?: boolean; skip?: boolean },
-) {
-  return useQuery({
-    queryKey: productKeys.reviewsSummary(productId),
-    queryFn: async () => {
-      const { data } = await apiClient.get(`/products/${productId}/reviews-summary`);
-      return data;
-    },
-    enabled: options?.skip !== undefined ? !options.skip : !!productId,
-  });
-}
-
 export function useSearchProductsQuery(
   params: { q: string; page?: number; limit?: number },
   options?: { enabled?: boolean; skip?: boolean; staleTime?: number },
@@ -240,23 +193,6 @@ export function useSearchProductsQuery(
     },
     enabled: isEnabled,
     staleTime: options?.staleTime,
-  });
-}
-
-export function useGetProductFiltersQuery(
-  params: { categoryId?: string } = {},
-  options?: { enabled?: boolean; skip?: boolean },
-) {
-  return useQuery({
-    queryKey: productKeys.filters(params),
-    queryFn: async () => {
-      const queryParams = new URLSearchParams();
-      if (params.categoryId) queryParams.append('categoryId', params.categoryId);
-      const { data } = await apiClient.get(`/products/filters?${queryParams.toString()}`);
-      // transformResponse: response.data — extract .data từ backend wrapper
-      return data.data;
-    },
-    enabled: options?.skip !== undefined ? !options.skip : true,
   });
 }
 

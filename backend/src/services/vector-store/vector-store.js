@@ -84,15 +84,25 @@ class HybridVectorStore {
     const variantsPart = (() => {
       const variants = product.variants || [];
       if (!variants.length) return '';
-      const names = [...new Set(variants.map(v => v.variantName || v.displayName).filter(Boolean))];
-      const colors = [...new Set(variants.flatMap(v => {
-        const a = v.attributes || {};
-        return [a.color, a['Màu sắc']].filter(Boolean);
-      }))];
-      const storages = [...new Set(variants.flatMap(v => {
-        const a = v.attributes || {};
-        return [a.storage, a['Dung lượng'], a['RAM']].filter(Boolean);
-      }))];
+      const names = [
+        ...new Set(variants.map((v) => v.variantName || v.displayName).filter(Boolean)),
+      ];
+      const colors = [
+        ...new Set(
+          variants.flatMap((v) => {
+            const a = v.attributes || {};
+            return [a.color, a['Màu sắc']].filter(Boolean);
+          }),
+        ),
+      ];
+      const storages = [
+        ...new Set(
+          variants.flatMap((v) => {
+            const a = v.attributes || {};
+            return [a.storage, a['Dung lượng'], a['RAM']].filter(Boolean);
+          }),
+        ),
+      ];
       const parts2 = [];
       if (names.length) parts2.push('Phiên bản: ' + names.slice(0, 6).join(', '));
       if (colors.length) parts2.push('Màu: ' + colors.join(', '));
@@ -112,17 +122,27 @@ class HybridVectorStore {
       product.description ? product.description.replace(/<[^>]*>/g, '').substring(0, 500) : '',
       product.descriptionEn ? product.descriptionEn.replace(/<[^>]*>/g, '').substring(0, 300) : '',
       // Thông số kỹ thuật từ JSON column products.specifications (pin, màn hình, RAM, chip...)
-      product.specifications && typeof product.specifications === 'object' && Object.keys(product.specifications).length > 0
-        ? 'Thông số: ' + Object.entries(product.specifications).map(([k, v]) => `${localizeKey(k)}: ${v}`).join(', ')
+      product.specifications &&
+      typeof product.specifications === 'object' &&
+      Object.keys(product.specifications).length > 0
+        ? 'Thông số: ' +
+          Object.entries(product.specifications)
+            .map(([k, v]) => `${localizeKey(k)}: ${v}`)
+            .join(', ')
         : '',
       // Thông số từ bảng product_specifications (nếu có)
       product.productSpecifications?.length
         ? product.productSpecifications
-            .map(s => `${s.name} ${s.value}${s.valueEn && s.valueEn !== s.value ? ' ' + s.valueEn : ''}`)
+            .map(
+              (s) =>
+                `${s.name} ${s.value}${s.valueEn && s.valueEn !== s.value ? ' ' + s.valueEn : ''}`,
+            )
             .join(', ')
         : '',
       variantsPart,
-      product.tags?.length ? 'Tags: ' + (Array.isArray(product.tags) ? product.tags.join(', ') : product.tags) : '',
+      product.tags?.length
+        ? 'Tags: ' + (Array.isArray(product.tags) ? product.tags.join(', ') : product.tags)
+        : '',
       product.basePrice ? `Giá: ${product.basePrice.toLocaleString('vi-VN')} đồng` : '',
       // Stock thực nằm ở variant level — dùng inStock đã compute hoặc tính từ variants
       (product.inStock !== undefined ? product.inStock : product.stockQuantity > 0)
@@ -138,7 +158,9 @@ class HybridVectorStore {
     // Persist để server đang chạy (hooks) dùng được khi tạo/sửa sản phẩm mới
     try {
       fs.writeFileSync(this._specKeyMapPath, JSON.stringify(this._specKeyMap, null, 2), 'utf8');
-    } catch { /* bỏ qua nếu lỗi ghi file */ }
+    } catch {
+      /* bỏ qua nếu lỗi ghi file */
+    }
   }
 
   /** Trả tên spec bằng tiếng Việt nếu có map, fallback snake→space. */
@@ -148,7 +170,7 @@ class HybridVectorStore {
 
   constructor() {
     // __dirname = backend/src/services/vector-store → 3 levels up = backend/
-    this.storagePath    = path.join(__dirname, '../../../data/vector-db.json');
+    this.storagePath = path.join(__dirname, '../../../data/vector-db.json');
     this._specKeyMapPath = path.join(__dirname, '../../../data/spec-key-map.json');
     this.items = [];
     // Load spec key map từ file persist (nếu có) để hooks dùng ngay khi server start
@@ -156,7 +178,9 @@ class HybridVectorStore {
       this._specKeyMap = fs.existsSync(this._specKeyMapPath)
         ? JSON.parse(fs.readFileSync(this._specKeyMapPath, 'utf8'))
         : {};
-    } catch { this._specKeyMap = {}; }
+    } catch {
+      this._specKeyMap = {};
+    }
     // Fire-and-forget khi khởi động — server không block chờ load xong
     this.loadPromise = this.load();
   }
@@ -261,14 +285,17 @@ class HybridVectorStore {
           // Kết hợp specs từ JSON column + bảng product_specifications
           specifications: [
             ...(product.specifications && typeof product.specifications === 'object'
-              ? Object.entries(product.specifications).map(([k, v]) => `${this._localizeSpecKey(k)}: ${v}`)
+              ? Object.entries(product.specifications).map(
+                  ([k, v]) => `${this._localizeSpecKey(k)}: ${v}`,
+                )
               : []),
             ...(product.productSpecifications || []).map(
-              s => `${s.name}: ${s.value}${s.valueEn && s.valueEn !== s.value ? ' (' + s.valueEn + ')' : ''}`,
+              (s) =>
+                `${s.name}: ${s.value}${s.valueEn && s.valueEn !== s.value ? ' (' + s.valueEn + ')' : ''}`,
             ),
           ].join(' | '),
           // Biến thể: màu sắc, cấu hình, giá từng phiên bản
-          variants: (product.variants || []).map(v => ({
+          variants: (product.variants || []).map((v) => ({
             variantName: v.variantName || '',
             displayName: v.displayName || '',
             price: v.price != null ? Number(v.price) : null,
@@ -546,7 +573,9 @@ class HybridVectorStore {
       }
 
       // Bước 5: Merge cả 2 nguồn, sort theo score giảm dần, cắt lấy top N
-      return [...vectorResults, ...keywordOnlyResults].sort((a, b) => b.score - a.score).slice(0, limit);
+      return [...vectorResults, ...keywordOnlyResults]
+        .sort((a, b) => b.score - a.score)
+        .slice(0, limit);
     } catch (error) {
       logger.error('Lỗi tìm kiếm vector:', error.message);
       return [];

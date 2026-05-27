@@ -18,7 +18,12 @@ interface ChatHeaderProps {
 /**
  * Component hiển thị header của chat widget
  */
-const ChatHeader: React.FC<ChatHeaderProps> = ({ onClose, onClearChat, onLoadHistory, isSyncing }) => {
+const ChatHeader: React.FC<ChatHeaderProps> = ({
+  onClose,
+  onClearChat,
+  onLoadHistory,
+  isSyncing,
+}) => {
   const { t } = useTranslation();
 
   return (
@@ -64,7 +69,14 @@ const ChatHeader: React.FC<ChatHeaderProps> = ({ onClose, onClearChat, onLoadHis
                 border: '1px solid rgba(255,255,255,0.18)',
               }}
             >
-              <svg xmlns="http://www.w3.org/2000/svg" className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                className="w-4 h-4"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+              >
                 <polyline points="3 6 5 6 21 6" />
                 <path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6" />
                 <path d="M10 11v6M14 11v6" />
@@ -86,7 +98,14 @@ const ChatHeader: React.FC<ChatHeaderProps> = ({ onClose, onClearChat, onLoadHis
                 border: '1px solid rgba(255,255,255,0.18)',
               }}
             >
-              <svg xmlns="http://www.w3.org/2000/svg" className={`w-4 h-4 ${isSyncing ? 'animate-spin' : ''}`} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                className={`w-4 h-4 ${isSyncing ? 'animate-spin' : ''}`}
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+              >
                 <polyline points="1 4 1 10 7 10" />
                 <path d="M3.51 15a9 9 0 102.13-9.36L1 10" />
               </svg>

@@ -10,9 +10,7 @@
 
 // Components UI dùng phổ biến (các component lớn khác giữ ở components/, import deep nội bộ)
 // Type ProductFilters trùng tên component nên export component dạng alias để tránh đụng
-export { default as ProductGrid } from './components/ProductGrid';
 export { default as ProductFiltersComponent } from './components/ProductFilters';
-export { default as ProductGallery } from './components/ProductGallery';
 export { default as ProductCategoryForm } from './components/ProductCategoryForm';
 export { default as ProductPrice } from './components/ProductPrice';
 export { default as ProductImageGallery } from './components/ProductImageGallery';
@@ -29,16 +27,12 @@ export { useProductVariants } from './hooks/use-product-variants';
 export {
   useGetProductsQuery,
   useGetProductByIdQuery,
-  useGetProductBySlugQuery,
   useGetFeaturedProductsQuery,
   useGetNewArrivalsQuery,
   useGetBestSellersQuery,
   useGetDealsQuery,
   useGetRelatedProductsQuery,
-  useGetProductVariantsQuery,
-  useGetProductReviewsSummaryQuery,
   useSearchProductsQuery,
-  useGetProductFiltersQuery,
   useGetRecentlyViewedQuery,
 } from './api/product-api';
 
@@ -46,21 +40,17 @@ export {
 export {
   useGetAllCategoriesQuery,
   useGetCategoryTreeQuery,
-  useGetCategoryByIdQuery,
   useGetCategoryBySlugQuery,
   useCreateCategoryMutation,
   useUpdateCategoryMutation,
   useDeleteCategoryMutation,
   useGetProductsByCategoryQuery,
-  useGetFeaturedCategoriesQuery,
   useGetCategoriesQuery,
 } from './api/category-api';
 
 // API hooks — Brand
 export {
   useGetBrandsQuery,
-  useGetBrandBySlugQuery,
-  useGetProductsByBrandQuery,
   useCreateBrandMutation,
   useUpdateBrandMutation,
   useDeleteBrandMutation,

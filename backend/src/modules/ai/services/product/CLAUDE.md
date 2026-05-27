@@ -36,18 +36,19 @@ product/
 **Singleton** (`module.exports = new ProductNameGeneratorService()`).
 
 Require `@models` trực tiếp (không nhận DI). Tự định nghĩa associations inline nếu chưa tồn tại:
+
 - `AttributeValue.belongsTo(AttributeGroup, { as: 'attributeGroup' })`
 - `AttributeGroup.hasMany(AttributeValue, { as: 'values' })`
 
 **5 async methods:**
 
-| Method | Signature | Mô tả |
-|---|---|---|
-| `generateProductName` | `(baseName, selectedAttributes=[], separator=' ') → Promise<string>` | Query `AttributeValue` có `affectsName=true` + `isActive=true`; sort theo `attributeGroup.sortOrder` + `sortOrder`; join `nameTemplate \|\| name` với separator |
-| `generateVariantName` | `(baseName, attributesCombination={}, separator=' ') → Promise<string>` | Wrapper: extract `Object.values(attributesCombination)` rồi gọi `generateProductName` |
-| `previewProductName` | `(baseName, selectedAttributes=[], options={}) → Promise<Object>` | Preview không lưu DB; trả `{ originalName, generatedName, hasChanges, parts, affectingAttributes? }` |
-| `getNameAffectingAttributes` | `(productId=null) → Promise<Array>` | List tất cả AttributeValue có `affectsName=true` + `isActive=true`; include AttributeGroup active |
-| `batchGenerateNames` | `(items=[], separator=' ') → Promise<Array>` | Sequential loop (không parallel); mỗi item: `{ id, baseName, selectedAttributes }` → trả `{ id, baseName, generatedName, selectedAttributes }` |
+| Method                       | Signature                                                               | Mô tả                                                                                                                                                           |
+| ---------------------------- | ----------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `generateProductName`        | `(baseName, selectedAttributes=[], separator=' ') → Promise<string>`    | Query `AttributeValue` có `affectsName=true` + `isActive=true`; sort theo `attributeGroup.sortOrder` + `sortOrder`; join `nameTemplate \|\| name` với separator |
+| `generateVariantName`        | `(baseName, attributesCombination={}, separator=' ') → Promise<string>` | Wrapper: extract `Object.values(attributesCombination)` rồi gọi `generateProductName`                                                                           |
+| `previewProductName`         | `(baseName, selectedAttributes=[], options={}) → Promise<Object>`       | Preview không lưu DB; trả `{ originalName, generatedName, hasChanges, parts, affectingAttributes? }`                                                            |
+| `getNameAffectingAttributes` | `(productId=null) → Promise<Array>`                                     | List tất cả AttributeValue có `affectsName=true` + `isActive=true`; include AttributeGroup active                                                               |
+| `batchGenerateNames`         | `(items=[], separator=' ') → Promise<Array>`                            | Sequential loop (không parallel); mỗi item: `{ id, baseName, selectedAttributes }` → trả `{ id, baseName, generatedName, selectedAttributes }`                  |
 
 **Tên thực dùng:** `nameTemplate` ưu tiên hơn `name` — nếu `nameTemplate` có giá trị thì dùng `nameTemplate`.
 

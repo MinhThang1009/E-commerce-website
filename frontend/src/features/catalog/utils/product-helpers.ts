@@ -72,59 +72,10 @@ export const findVariantByAttributes = (
 };
 
 /**
- * Lấy tồn kho cho một giá trị thuộc tính cụ thể
- */
-export const getAttributeValueStock = (
-  product: Product,
-  attributeName: string,
-  attributeValue: string,
-): number => {
-  if (!product.variants || product.variants.length === 0) {
-    return product.stock || 0;
-  }
-
-  const matchingVariants = product.variants.filter((variant) => {
-    if (!variant.attributes || !variant.attributes[attributeName]) return false;
-    return (
-      String(variant.attributes[attributeName]).normalize('NFC').toLowerCase().trim() ===
-      String(attributeValue).normalize('NFC').toLowerCase().trim()
-    );
-  });
-
-  return matchingVariants.reduce((total, variant) => total + variant.stockQuantity, 0);
-};
-
-/**
  * Kiểm tra sản phẩm có biến thể không
  */
 export const hasVariants = (product: Product): boolean => {
   return !!(product.variants && product.variants.length > 0);
-};
-
-/**
- * Lấy tất cả tổ hợp thuộc tính khả dụng
- */
-export const getAvailableAttributeCombinations = (product: Product): Record<string, string>[] => {
-  if (!product.variants || product.variants.length === 0) return [];
-
-  return product.variants
-    .filter((variant) => variant.stockQuantity > 0)
-    .map((variant) => variant.attributes);
-};
-
-/**
- * Kiểm tra tổ hợp thuộc tính cụ thể có sẵn không
- */
-export const isAttributeCombinationAvailable = (
-  product: Product,
-  selectedAttributes: Record<string, string>,
-): boolean => {
-  if (!product.variants || product.variants.length === 0) {
-    return product.stock > 0;
-  }
-
-  const stock = getVariantStock(product, selectedAttributes);
-  return stock > 0;
 };
 
 /**
@@ -216,41 +167,6 @@ export const getAttributeValuesWithStock = (
       available: stock > 0,
     };
   });
-};
-
-/**
- * Lấy tồn kho khả dụng cho một giá trị thuộc tính có xét đến các thuộc tính đã chọn khác
- */
-export const getAttributeValueStockWithContext = (
-  product: Product,
-  attributeName: string,
-  attributeValue: string,
-  otherSelectedAttributes: Record<string, string> = {},
-): number => {
-  if (!product.variants || product.variants.length === 0) {
-    return product.stock || 0;
-  }
-
-  // Kết hợp các thuộc tính đã chọn khác với giá trị cụ thể này
-  const combinedAttributes = {
-    ...otherSelectedAttributes,
-    [attributeName]: attributeValue,
-  };
-
-  // Tìm các biến thể khớp
-  const matchingVariants = product.variants.filter((variant) => {
-    if (!variant.attributes) return false;
-    return Object.entries(combinedAttributes).every(([key, value]) => {
-      const variantValue = variant.attributes[key];
-      if (!variantValue || !value) return false;
-      return (
-        String(variantValue).normalize('NFC').toLowerCase().trim() ===
-        String(value).normalize('NFC').toLowerCase().trim()
-      );
-    });
-  });
-
-  return matchingVariants.reduce((total, variant) => total + variant.stockQuantity, 0);
 };
 
 /**

@@ -5,8 +5,16 @@
  * @description UI component cho feature admin
  */
 import React, { useState } from 'react';
-import { Modal, Radio, Space, Button, App } from 'antd';
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+} from '@/components/ui/dialog';
+import { Button } from '@/components/ui/button';
 import { useTranslation } from 'react-i18next';
+import { useUiStore } from '@/stores/ui-store';
 import { exportToExcel, exportToCSV } from '@/utils/export-utils';
 
 interface ProductExportModalProps {
@@ -38,7 +46,7 @@ const ProductExportModal: React.FC<ProductExportModalProps> = ({
   isLoading,
 }) => {
   const { t } = useTranslation();
-  const { message } = App.useApp();
+  const addNotification = useUiStore((s) => s.addNotification);
   const [scope, setScope] = useState<'current' | 'all' | 'selected' | 'filtered'>('current');
   const [format, setFormat] = useState<'xlsx' | 'csv'>('xlsx');
   const [isProcessing, setIsProcessing] = useState(false);
@@ -53,7 +61,7 @@ const ProductExportModal: React.FC<ProductExportModalProps> = ({
         dataToExport = currentPageData;
       } else if (scope === 'selected') {
         if (selectedRows.length === 0) {
-          message.warning(t('productExport.selectProducts'));
+          addNotification({ message: t('productExport.selectProducts'), type: 'warning' });
           setIsProcessing(false);
           return;
         }
@@ -65,7 +73,7 @@ const ProductExportModal: React.FC<ProductExportModalProps> = ({
       }
 
       if (dataToExport.length === 0) {
-        message.warning(t('productExport.noData'));
+        addNotification({ message: t('productExport.noData'), type: 'warning' });
         setIsProcessing(false);
         return;
       }
@@ -110,59 +118,103 @@ const ProductExportModal: React.FC<ProductExportModalProps> = ({
         exportToCSV(transformedData, fileName);
       }
 
-      message.success(t('productExport.success'));
+      addNotification({ message: t('productExport.success'), type: 'success' });
       onClose();
     } catch (error) {
       console.error('Xuất dữ liệu thất bại:', error);
-      message.error(t('productExport.error'));
+      addNotification({ message: t('productExport.error'), type: 'error' });
     } finally {
       setIsProcessing(false);
     }
   };
 
-  return (
-    <Modal
-      title={t('productExport.title')}
-      open={isOpen}
-      onCancel={onClose}
-      footer={[
-        <Button key="cancel" onClick={onClose}>
-          {t('productExport.cancel')}
-        </Button>,
-        <Button
-          key="submit"
-          type="primary"
-          onClick={handleExport}
-          loading={isProcessing || isLoading}
-        >
-          {t('productExport.confirm')}
-        </Button>,
-      ]}
-    >
-      <div style={{ marginBottom: 24 }}>
-        <div style={{ marginBottom: 8, fontWeight: 500 }}>{t('productExport.scopeLabel')}</div>
-        <Radio.Group onChange={(e) => setScope(e.target.value)} value={scope}>
-          <Space direction="vertical">
-            <Radio value="current">{t('productExport.currentPage')}</Radio>
-            <Radio value="all">{t('productExport.allProducts')}</Radio>
-            <Radio value="selected">
-              {t('productExport.selectedProducts', { count: selectedRows.length })}
-            </Radio>
-            <Radio value="filtered">{t('productExport.filteredProducts')}</Radio>
-          </Space>
-        </Radio.Group>
-      </div>
+  const scopeOptions = [
+    { value: 'current' as const, label: t('productExport.currentPage') },
+    { value: 'all' as const, label: t('productExport.allProducts') },
+    {
+      value: 'selected' as const,
+      label: t('productExport.selectedProducts', { count: selectedRows.length }),
+    },
+    { value: 'filtered' as const, label: t('productExport.filteredProducts') },
+  ];
 
-      <div>
-        <div style={{ marginBottom: 8, fontWeight: 500 }}>{t('productExport.formatLabel')}</div>
-        <Radio.Group onChange={(e) => setFormat(e.target.value)} value={format}>
-          <Space direction="vertical">
-            <Radio value="xlsx">{t('productExport.formatExcel')}</Radio>
-            <Radio value="csv">{t('productExport.formatCsv')}</Radio>
-          </Space>
-        </Radio.Group>
-      </div>
-    </Modal>
+  const formatOptions = [
+    { value: 'xlsx' as const, label: t('productExport.formatExcel') },
+    { value: 'csv' as const, label: t('productExport.formatCsv') },
+  ];
+
+  return (
+    <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
+      <DialogContent>
+        <DialogHeader>
+          <DialogTitle>{t('productExport.title')}</DialogTitle>
+        </DialogHeader>
+
+        <div className="space-y-6">
+          <div>
+            <div className="mb-2 font-medium text-sm text-neutral-700 dark:text-neutral-300">
+              {t('productExport.scopeLabel')}
+            </div>
+            <div className="flex flex-col gap-2">
+              {scopeOptions.map((option) => (
+                <label key={option.value} className="flex items-center gap-2 cursor-pointer">
+                  <input
+                    type="radio"
+                    name="export-scope"
+                    value={option.value}
+                    checked={scope === option.value}
+                    onChange={() => setScope(option.value)}
+                    className="accent-primary-500"
+                  />
+                  <span className="text-sm text-neutral-700 dark:text-neutral-300">
+                    {option.label}
+                  </span>
+                </label>
+              ))}
+            </div>
+          </div>
+
+          <div>
+            <div className="mb-2 font-medium text-sm text-neutral-700 dark:text-neutral-300">
+              {t('productExport.formatLabel')}
+            </div>
+            <div className="flex flex-col gap-2">
+              {formatOptions.map((option) => (
+                <label key={option.value} className="flex items-center gap-2 cursor-pointer">
+                  <input
+                    type="radio"
+                    name="export-format"
+                    value={option.value}
+                    checked={format === option.value}
+                    onChange={() => setFormat(option.value)}
+                    className="accent-primary-500"
+                  />
+                  <span className="text-sm text-neutral-700 dark:text-neutral-300">
+                    {option.label}
+                  </span>
+                </label>
+              ))}
+            </div>
+          </div>
+        </div>
+
+        <DialogFooter>
+          <Button variant="outline" onClick={onClose}>
+            {t('productExport.cancel')}
+          </Button>
+          <Button onClick={handleExport} disabled={isProcessing || isLoading}>
+            {isProcessing || isLoading ? (
+              <div className="flex items-center gap-2">
+                <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white" />
+                <span>{t('productExport.confirm')}</span>
+              </div>
+            ) : (
+              t('productExport.confirm')
+            )}
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
   );
 };
 

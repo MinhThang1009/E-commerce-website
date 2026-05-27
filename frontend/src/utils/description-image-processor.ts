@@ -4,8 +4,11 @@
  * @feature global
  * @description Helper utility function
  */
-import { message } from 'antd';
 import i18next from 'i18next';
+import { useUiStore } from '@/stores/ui-store';
+
+const notify = (type: 'success' | 'error' | 'warning' | 'info', msg: string) =>
+  useUiStore.getState().addNotification({ type, message: msg });
 import { getErrorMsg } from '@/utils/error-utils';
 
 export interface ProcessDescriptionOptions {
@@ -65,30 +68,13 @@ export const processDescriptionImages = async (
   const uploadedImages: ProcessDescriptionResult['uploadedImages'] = [];
   let hasErrors = false;
 
-  // Hiển thị thông báo đang tải
-  const loadingKey = 'converting-images';
-  message.loading({
-    content: i18next.t('descProcessor.converting', { count: base64Images.length }),
-    key: loadingKey,
-    duration: 0,
-  });
+  notify('info', i18next.t('descProcessor.converting', { count: base64Images.length }));
 
   try {
-    // Xử lý từng ảnh base64
     for (let i = 0; i < base64Images.length; i++) {
       const base64Data = base64Images[i];
 
       try {
-        // Cập nhật thông báo đang tải
-        message.loading({
-          content: i18next.t('descProcessor.convertingItem', {
-            current: i + 1,
-            total: base64Images.length,
-          }),
-          key: loadingKey,
-          duration: 0,
-        });
-
         // Gọi API để chuyển đổi base64 thành file đã tải lên
         const result = await options.uploadImageFn({
           base64Data,
@@ -128,23 +114,20 @@ export const processDescriptionImages = async (
       }
     }
 
-    // Ẩn thông báo đang tải
-    message.destroy(loadingKey);
-
-    // Hiển thị thông báo kết quả
     if (uploadedImages.length > 0) {
       if (hasErrors) {
-        message.warning(
+        notify(
+          'warning',
           i18next.t('descProcessor.partialSuccess', {
             uploaded: uploadedImages.length,
             total: base64Images.length,
           }),
         );
       } else {
-        message.success(i18next.t('descProcessor.fullSuccess', { count: uploadedImages.length }));
+        notify('success', i18next.t('descProcessor.fullSuccess', { count: uploadedImages.length }));
       }
     } else if (hasErrors) {
-      message.error(i18next.t('descProcessor.allFailed'));
+      notify('error', i18next.t('descProcessor.allFailed'));
     }
 
     return {
@@ -153,9 +136,8 @@ export const processDescriptionImages = async (
       hasChanges: uploadedImages.length > 0,
     };
   } catch (error) {
-    message.destroy(loadingKey);
     console.error('Lỗi khi xử lý ảnh trong mô tả:', error);
-    message.error(i18next.t('descProcessor.error'));
+    notify('error', i18next.t('descProcessor.error'));
 
     return {
       processedDescription: description, // Trả về bản gốc nếu có lỗi

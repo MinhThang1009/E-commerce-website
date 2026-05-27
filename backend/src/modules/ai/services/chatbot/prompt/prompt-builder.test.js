@@ -60,7 +60,11 @@ describe('buildAugmentedPrompt — product list formatting', () => {
 
   // price ?? basePrice
   test('price=null → dùng basePrice fallback', () => {
-    const result = buildAugmentedPrompt('test', [makeProduct({ price: null, basePrice: 25000000 })], {});
+    const result = buildAugmentedPrompt(
+      'test',
+      [makeProduct({ price: null, basePrice: 25000000 })],
+      {},
+    );
     expect(result).toContain('25');
   });
 
@@ -70,5 +74,56 @@ describe('buildAugmentedPrompt — product list formatting', () => {
     // Không crash khi name là null
     const result = buildAugmentedPrompt('test query 15', products, {});
     expect(typeof result).toBe('string');
+  });
+
+  // Line 54: variants branch — v.stockQuantity > 0 ? còn hàng : hết hàng
+  test('product có variants → text chứa "Phiên bản:" và giá từng variant', () => {
+    const product = makeProduct({
+      variants: [
+        { variantName: '128GB', price: 25000000, stockQuantity: 5 },
+        { variantName: '256GB', price: 30000000, stockQuantity: 0 },
+      ],
+    });
+    const result = buildAugmentedPrompt('test', [product], {});
+    expect(result).toContain('Phiên bản:');
+    expect(result).toContain('128GB');
+    expect(result).toContain('còn hàng');
+    expect(result).toContain('hết hàng');
+  });
+
+  test('product có variants với price=null → không hiển thị giá variant', () => {
+    const product = makeProduct({
+      variants: [{ variantName: 'Basic', price: null, stockQuantity: 3 }],
+    });
+    const result = buildAugmentedPrompt('test', [product], {});
+    expect(result).toContain('Basic');
+    expect(result).toContain('còn hàng');
+  });
+
+  test('product có ratingAverage > 0 → hiển thị đánh giá', () => {
+    const product = makeProduct({ ratingAverage: 4.5 });
+    const result = buildAugmentedPrompt('test', [product], {});
+    expect(result).toContain('Đánh giá: 4.5/5');
+  });
+
+  test('product có ratingAverage = 0 → không hiển thị đánh giá', () => {
+    const product = makeProduct({ ratingAverage: 0 });
+    const result = buildAugmentedPrompt('test', [product], {});
+    expect(result).not.toContain('Đánh giá:');
+  });
+
+  test('product có description khác shortDescription → hiển thị mô tả', () => {
+    const product = makeProduct({
+      shortDescription: 'Ngắn gọn',
+      description: 'Mô tả chi tiết dài hơn',
+    });
+    const result = buildAugmentedPrompt('test', [product], {});
+    expect(result).toContain('Mô tả: Mô tả chi tiết dài hơn');
+  });
+
+  test('product có specifications → hiển thị thông số', () => {
+    const product = makeProduct({ specifications: 'RAM: 8GB | Pin: 4000mAh' });
+    const result = buildAugmentedPrompt('test', [product], {});
+    expect(result).toContain('Thông số: RAM: 8GB');
   });
 });

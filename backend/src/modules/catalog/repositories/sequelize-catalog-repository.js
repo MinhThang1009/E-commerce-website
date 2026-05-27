@@ -497,7 +497,7 @@ class SequelizeCatalogRepository extends ICatalogRepository {
       order: [
         [
           this.sequelize.literal(
-            `CASE ${safeIds.map((id, i) => `WHEN id = ${id} THEN ${i}`).join(' ')} END`,
+            `CASE ${safeIds.map((id, i) => `WHEN \`Product\`.\`id\` = ${id} THEN ${i}`).join(' ')} END`,
           ),
         ],
       ],

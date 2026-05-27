@@ -20,9 +20,10 @@ import { useCartStore } from '@/stores/cart-store';
 import { useAuthStore } from '@/stores/auth-store';
 import { Link, useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import { ROUTES, buildRoute } from '@/routes/paths';
-import { v4 as uuidv4 } from 'uuid';
 import ProductImageGallery from '../components/ProductImageGallery';
 import RecentlyViewedProducts from '../components/RecentlyViewedProducts';
+import { motion } from 'framer-motion';
+import { fadeUp, stagger, itemFade, viewportOnce } from '@/utils/motion';
 
 import { useUiStore } from '@/stores/ui-store';
 import { useAddToCartMutation } from '@/features/cart';
@@ -260,7 +261,7 @@ const ProductDetailPage: React.FC = () => {
 
         // Dự phòng lưu localStorage nếu API thất bại
         const newItem = {
-          id: uuidv4(),
+          id: crypto.randomUUID(),
           productId: product.id,
           name: productName,
           price:
@@ -287,7 +288,7 @@ const ProductDetailPage: React.FC = () => {
     } else {
       // Nếu chưa đăng nhập, KHÔNG gọi API, chỉ lưu vào localStorage
       const newItem = {
-        id: uuidv4(),
+        id: crypto.randomUUID(),
         productId: product.id,
         name: product.name,
         price:
@@ -347,7 +348,7 @@ const ProductDetailPage: React.FC = () => {
           : product.thumbnail;
 
       const buyNowItem = {
-        id: uuidv4(),
+        id: crypto.randomUUID(),
         productId: product.id,
         variantId: variantId,
         name: product.name,
@@ -509,9 +510,14 @@ const ProductDetailPage: React.FC = () => {
       </nav>
 
       {/* Chi tiết sản phẩm */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mb-16">
+      <motion.div
+        className="grid grid-cols-1 md:grid-cols-2 gap-8 mb-16"
+        initial="hidden"
+        animate="visible"
+        variants={stagger}
+      >
         {/* Hình ảnh sản phẩm */}
-        <div>
+        <motion.div variants={fadeUp}>
           <ProductImageGallery
             images={product.images ? product.images.filter(Boolean) : []}
             thumbnail={
@@ -522,10 +528,10 @@ const ProductDetailPage: React.FC = () => {
             }
             productName={productName}
           />
-        </div>
+        </motion.div>
 
         {/* Thông tin sản phẩm */}
-        <div>
+        <motion.div variants={fadeUp}>
           {/* Tiêu đề sản phẩm tiêu chuẩn */}
           <h1 className="text-3xl font-bold text-neutral-900 dark:text-white mb-2">
             {productName}
@@ -826,7 +832,7 @@ const ProductDetailPage: React.FC = () => {
               );
             })()}
           </div>
-        </div>
+        </motion.div>
 
         {/* Thông tin bổ sung */}
         {/* <div className="border-t border-neutral-200 dark:border-neutral-700 pt-6 space-y-4">
@@ -888,7 +894,7 @@ const ProductDetailPage: React.FC = () => {
               </span>
             </div>
           </div> */}
-      </div>
+      </motion.div>
 
       {/* Phần chi tiết sản phẩm */}
       <ProductDetailsSection
@@ -902,12 +908,18 @@ const ProductDetailPage: React.FC = () => {
       <ProductFAQSection faqs={product.faqs || []} />
 
       {/* Phần đánh giá */}
-      <div id="reviews" className="mb-16 mt-20 scroll-mt-24">
+      <motion.div
+        id="reviews"
+        className="mb-16 mt-20 scroll-mt-24"
+        initial="hidden"
+        whileInView="visible"
+        viewport={viewportOnce}
+        variants={fadeUp}
+      >
         <h2 className="text-2xl font-bold text-neutral-800 dark:text-neutral-100 mb-6">
           {t('productDetail.customerReviews')}
         </h2>
 
-        {/* Phần đánh giá */}
         {product?.id && (
           <ProductReviews
             productId={product.id}
@@ -915,21 +927,31 @@ const ProductDetailPage: React.FC = () => {
             totalReviews={product.ratings?.count || 0}
           />
         )}
-      </div>
+      </motion.div>
 
       {/* Sản phẩm liên quan */}
       {relatedProducts && relatedProducts.length > 0 && (
-        <div>
+        <motion.div
+          initial="hidden"
+          whileInView="visible"
+          viewport={viewportOnce}
+          variants={fadeUp}
+        >
           <h2 className="text-2xl font-bold text-neutral-800 dark:text-neutral-100 mb-6">
             {t('productDetail.relatedProducts')}
           </h2>
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+          <motion.div
+            className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6"
+            variants={stagger}
+          >
             {/* eslint-disable-next-line @typescript-eslint/no-explicit-any -- ProductCard cần full product type */}
             {relatedProducts.slice(0, 4).map((product: any) => (
-              <ProductCard key={product.id} {...product} />
+              <motion.div key={product.id} variants={itemFade}>
+                <ProductCard {...product} />
+              </motion.div>
             ))}
-          </div>
-        </div>
+          </motion.div>
+        </motion.div>
       )}
 
       {/* Sản phẩm đã xem gần đây */}

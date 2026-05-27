@@ -138,10 +138,10 @@ Query key duy nhất: `['auth', 'currentUser']` cho `useGetCurrentUserQuery`.
 
 # 5. Components chính
 
-| Component           | Mô tả                                                                                                                                                   |
-| ------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `AuthProvider`      | Mount ở root app — khởi tạo auth state, restore session từ localStorage/sessionStorage. Không render UI.                                                |
-| `GoogleLoginButton` | Tích hợp Google OAuth. Server nhận Google ID token, trả về `{ user, token }` qua `POST /auth/google`.                                                   |
+| Component           | Mô tả                                                                                                                                                                    |
+| ------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `AuthProvider`      | Mount ở root app — khởi tạo auth state, restore session từ localStorage/sessionStorage. Không render UI.                                                                 |
+| `GoogleLoginButton` | Tích hợp Google OAuth. Server nhận Google ID token, trả về `{ user, token }` qua `POST /auth/google`.                                                                    |
 | `useAuth` (hook)    | Wrap `authStore` + `useLogoutMutation`. Expose: `logout()` (full cleanup), `isAdmin()`, `hasRole(role)`, `getUserFullName()`, `isLoggedIn`, `hasToken`, `needsUserInfo`. |
 
 ---

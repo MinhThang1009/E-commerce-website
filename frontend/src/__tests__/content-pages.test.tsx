@@ -124,10 +124,6 @@ jest.mock('@/utils/error-utils', () => ({
   ErrorType: {},
 }));
 
-jest.mock('@/utils/toast', () => ({
-  toast: { success: jest.fn(), error: jest.fn(), warning: jest.fn() },
-}));
-
 // ── Mock routes ─────────────────────────────────────────────────
 jest.mock('@/routes/paths', () => ({
   ROUTES: {

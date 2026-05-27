@@ -34,6 +34,7 @@ translate/
 Không class, không singleton — export named function. Không nhận DI; đọc config từ env trực tiếp.
 
 **Config từ env:**
+
 - `OPENROUTER_API_KEY` — nếu thiếu hoặc `'demo-key'` → skip thẳng sang MyMemory
 - `TRANSLATE_MODEL` — model ID trên OpenRouter; default `'deepseek/deepseek-v4-flash:free'`
 - `FRONTEND_URL` — dùng làm `HTTP-Referer` header; default `'http://localhost:5173'`
@@ -45,6 +46,7 @@ translateBatch(texts, from='vi', to='en') → Promise<string[]>
 ```
 
 Entry point duy nhất được export. Flow:
+
 1. Nếu `texts` rỗng → return ngay
 2. Nếu có `OPENROUTER_API_KEY` (và không phải `demo-key`) → gọi `translateWithOpenRouter`
 3. Nếu OpenRouter trả kết quả giống hệt input (không có item nào thực sự được dịch) → fallback MyMemory

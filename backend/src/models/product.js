@@ -370,7 +370,16 @@ const Product = sequelize.define(
                   {
                     model: ProductVariant,
                     as: 'variants',
-                    attributes: ['variantName', 'displayName', 'price', 'compareAtPrice', 'stockQuantity', 'isDefault', 'attributes', 'attributesEn'],
+                    attributes: [
+                      'variantName',
+                      'displayName',
+                      'price',
+                      'compareAtPrice',
+                      'stockQuantity',
+                      'isDefault',
+                      'attributes',
+                      'attributesEn',
+                    ],
                     required: false,
                   },
                   {

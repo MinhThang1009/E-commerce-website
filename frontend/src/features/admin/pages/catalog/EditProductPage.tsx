@@ -1,4 +1,4 @@
-﻿/**
+/**
  * @file EditProductPage.tsx
  * @layer Page
  * @feature catalog
@@ -8,13 +8,15 @@ import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { ROUTES } from '@/routes/paths';
-import { Form, App, Card, Tabs, Divider, Typography, Row, Col, Button, Spin, Result } from 'antd';
-import { ArrowLeftOutlined } from '@ant-design/icons';
+import { ArrowLeft, AlertCircle } from 'lucide-react';
+import LoadingSpinner from '@/components/common/LoadingSpinner';
+import { useUiStore } from '@/stores/ui-store';
 
 // Custom hooks
 import { useProductForm } from '@features/catalog/hooks/use-product-form';
 import { useProductAttributes } from '@features/catalog/hooks/use-product-attributes';
 import { useProductVariants } from '@features/catalog/hooks/use-product-variants';
+import { useFormAdapter } from '@features/catalog/hooks/use-form-adapter';
 
 // Các API hook
 import { useUpdateProductMutation, useGetAdminProductByIdQuery } from '@/features/admin';
@@ -44,7 +46,16 @@ import type { UpdateProductRequest } from '@/features/admin';
 import { processDescriptionImages, hasBase64Images } from '@/utils/description-image-processor';
 import { getErrorMsg } from '@/utils/error-utils';
 
-const { Title, Text } = Typography;
+// shadcn/ui
+import {
+  Button,
+  Card,
+  CardContent,
+  Tabs,
+  TabsContent,
+  TabsList,
+  TabsTrigger,
+} from '@/components/ui';
 
 // Map raw DB spec keys → tên tiếng Việt
 const SPEC_NAME_LABELS: Record<string, string> = {
@@ -149,8 +160,8 @@ const EditProductPage: React.FC = () => {
   const { t } = useTranslation();
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
-  const { message } = App.useApp();
-  const [form] = Form.useForm();
+  const addNotification = useUiStore((s) => s.addNotification);
+  const form = useFormAdapter();
 
   // Các API hook
   const {
@@ -308,12 +319,12 @@ const EditProductPage: React.FC = () => {
         }
 
         await updateProduct(productData);
-        message.success(t('admin.products.messages.updateSuccess'));
+        addNotification({ message: t('admin.products.messages.updateSuccess'), type: 'success' });
         navigate(ROUTES.ADMIN_PRODUCTS);
       } catch (error) {
         console.error('Failed to update product:', error);
         const errorMessage = formatErrorMessage(error);
-        message.error(errorMessage);
+        addNotification({ message: errorMessage, type: 'error' });
       }
     },
     isSubmitting: isUpdating,
@@ -340,7 +351,7 @@ const EditProductPage: React.FC = () => {
           if (Array.isArray(parsedDescription)) {
             processedDescription = parsedDescription.join('');
           }
-        } catch (e) {
+        } catch (_e) {
           // Nếu parse thất bại, giữ nguyên
         }
       }
@@ -598,136 +609,165 @@ const EditProductPage: React.FC = () => {
   // Xử lý trạng thái loading và error
   if (isLoadingProduct) {
     return (
-      <div style={{ padding: '24px', textAlign: 'center' }}>
-        <Spin size="large" tip={t('admin.products.loadingText')}>
-          <div style={{ minHeight: '200px' }} />
-        </Spin>
+      <div className="p-6 text-center">
+        <LoadingSpinner size="lg" />
+        <p className="mt-4 text-neutral-500 dark:text-neutral-400">
+          {t('admin.products.loadingText')}
+        </p>
       </div>
     );
   }
 
   if (productError || !id) {
     return (
-      <Result
-        status="error"
-        title={t('admin.products.errors.loadFailed')}
-        subTitle={t('admin.products.errors.loadFailedDesc')}
-        extra={[
-          <Button type="primary" key="back" onClick={() => navigate(ROUTES.ADMIN_PRODUCTS)}>
+      <div className="p-6 text-center">
+        <div className="max-w-md mx-auto">
+          <AlertCircle className="w-16 h-16 mx-auto text-red-500 mb-4" />
+          <h3 className="text-lg font-semibold text-neutral-900 dark:text-white mb-2">
+            {t('admin.products.errors.loadFailed')}
+          </h3>
+          <p className="text-neutral-500 dark:text-neutral-400 mb-6">
+            {t('admin.products.errors.loadFailedDesc')}
+          </p>
+          <Button onClick={() => navigate(ROUTES.ADMIN_PRODUCTS)}>
             {t('admin.products.backToList')}
-          </Button>,
-        ]}
-      />
+          </Button>
+        </div>
+      </div>
     );
   }
 
-  const tabItems = [
-    {
-      key: 'basic',
-      label: t('admin.products.editTabs.basic'),
-      children: <ProductBasicInfoForm fillExampleData={fillExampleData} />,
-    },
-    {
-      key: 'attributes',
-      label: t('admin.products.editTabs.attributes'),
-      children: (
-        <ProductAttributesSection
-          attributes={attributes}
-          onAddAttribute={() => openAttributeModal()}
-          onEditAttribute={(attribute) => openAttributeModal(attribute)}
-          onDeleteAttribute={handleDeleteAttribute}
-        />
-      ),
-    },
-    {
-      key: 'variants',
-      label: t('admin.products.editTabs.variants'),
-      children: (
-        <ProductVariantsSection
-          variants={variants}
-          onAddVariant={() => openVariantModal()}
-          onEditVariant={(variant) => openVariantModal(variant)}
-          onDeleteVariant={handleDeleteVariant}
-        />
-      ),
-    },
-    {
-      key: 'specifications',
-      label: t('admin.products.editTabs.specifications'),
-      children: <ProductSpecificationsForm initialSpecifications={specifications} />,
-    },
-    {
-      key: 'pricing',
-      label: t('admin.products.editTabs.pricing'),
-      children: <ProductPricingForm hasVariants={variants.length > 0} variants={variants} />,
-    },
-    {
-      key: 'category',
-      label: t('admin.products.editTabs.category'),
-      children: <ProductCategoryForm categories={categories} isLoading={isCategoriesLoading} />,
-    },
-    {
-      key: 'images',
-      label: t('admin.products.editTabs.images'),
-      children: <ProductImagesForm />,
-    },
-    {
-      key: 'seo',
-      label: t('admin.products.editTabs.seo'),
-      children: <ProductSeoForm />,
-    },
-    {
-      key: 'faqs',
-      label: t('admin.products.tabs.faqs'),
-      children: <ProductFAQForm />,
-    },
+  const TAB_KEYS = [
+    'basic',
+    'attributes',
+    'variants',
+    'specifications',
+    'pricing',
+    'category',
+    'images',
+    'seo',
+    'faqs',
   ];
 
   return (
-    <div style={{ padding: '24px' }}>
+    <div className="p-6">
       {/* Header */}
-      <Card style={{ marginBottom: 24 }}>
-        <Row justify="space-between" align="middle">
-          <Col>
-            <Title level={2} style={{ margin: 0 }}>
-              {t('admin.products.edit.title')}
-            </Title>
-            <Text type="secondary">{t('admin.products.edit.subtitle')}</Text>
-          </Col>
-          <Col>
-            <Button
-              icon={<ArrowLeftOutlined />}
-              onClick={() => navigate(ROUTES.ADMIN_PRODUCTS)}
-              style={{ marginRight: 8 }}
-            >
-              {t('admin.products.backButton')}
-            </Button>
-          </Col>
-        </Row>
+      <Card className="mb-6">
+        <CardContent className="pt-6">
+          <div className="flex justify-between items-center">
+            <div>
+              <h2 className="text-2xl font-semibold text-neutral-900 dark:text-white">
+                {t('admin.products.edit.title')}
+              </h2>
+              <p className="text-neutral-500 dark:text-neutral-400">
+                {t('admin.products.edit.subtitle')}
+              </p>
+            </div>
+            <div>
+              <Button
+                variant="outline"
+                onClick={() => navigate(ROUTES.ADMIN_PRODUCTS)}
+                className="mr-2"
+              >
+                <ArrowLeft className="w-4 h-4 mr-2" />
+                {t('admin.products.backButton')}
+              </Button>
+            </div>
+          </div>
+        </CardContent>
       </Card>
 
       {/* Form */}
       <Card>
-        <Form form={form} layout="vertical" onFinish={handleSubmit} onFieldsChange={validateForm}>
-          <Tabs
-            activeKey={activeTab}
-            onChange={setActiveTab}
-            items={tabItems}
-            style={{ minHeight: 400 }}
-          />
+        <CardContent className="pt-6">
+          <form
+            onSubmit={form._rhf.handleSubmit((values) => handleSubmit(values as ProductFormData))}
+            onChange={validateForm}
+          >
+            <Tabs value={activeTab} onValueChange={setActiveTab} className="min-h-[400px]">
+              <TabsList className="flex flex-wrap h-auto gap-1 bg-transparent mb-4">
+                {TAB_KEYS.map((tabKey) => (
+                  <TabsTrigger
+                    key={tabKey}
+                    value={tabKey}
+                    className="data-[state=active]:bg-primary-100 data-[state=active]:text-primary-700 dark:data-[state=active]:bg-primary-900/20 dark:data-[state=active]:text-primary-300"
+                  >
+                    {t(`admin.products.editTabs.${tabKey}`) || t(`admin.products.tabs.${tabKey}`)}
+                  </TabsTrigger>
+                ))}
+              </TabsList>
 
-          <Divider />
+              <TabsContent value="basic">
+                <ProductBasicInfoForm form={form._rhf} fillExampleData={fillExampleData} />
+              </TabsContent>
 
-          <ValidationAlerts isFormValid={isFormValid} missingFields={getMissingFields()} />
+              <TabsContent value="attributes">
+                <ProductAttributesSection
+                  attributes={attributes}
+                  onAddAttribute={() => openAttributeModal()}
+                  onEditAttribute={(attribute) => openAttributeModal(attribute)}
+                  onDeleteAttribute={handleDeleteAttribute}
+                />
+              </TabsContent>
 
-          <FormActions
-            isFormValid={isFormValid}
-            isSubmitting={isUpdating}
-            submitText={t('admin.products.submit.update')}
-            loadingText={t('admin.products.submit.updating')}
-            onCancel={() => navigate(ROUTES.ADMIN_PRODUCTS)}
-          />
-        </Form>
+              <TabsContent value="variants">
+                <ProductVariantsSection
+                  variants={variants}
+                  onAddVariant={() => openVariantModal()}
+                  onEditVariant={(variant) => openVariantModal(variant)}
+                  onDeleteVariant={handleDeleteVariant}
+                />
+              </TabsContent>
+
+              <TabsContent value="specifications">
+                <ProductSpecificationsForm
+                  form={form._rhf}
+                  initialSpecifications={specifications}
+                />
+              </TabsContent>
+
+              <TabsContent value="pricing">
+                <ProductPricingForm
+                  form={form._rhf}
+                  hasVariants={variants.length > 0}
+                  variants={variants}
+                />
+              </TabsContent>
+
+              <TabsContent value="category">
+                <ProductCategoryForm
+                  form={form._rhf}
+                  categories={categories}
+                  isLoading={isCategoriesLoading}
+                />
+              </TabsContent>
+
+              <TabsContent value="images">
+                <ProductImagesForm form={form._rhf} />
+              </TabsContent>
+
+              <TabsContent value="seo">
+                <ProductSeoForm form={form._rhf} />
+              </TabsContent>
+
+              <TabsContent value="faqs">
+                <ProductFAQForm form={form._rhf} />
+              </TabsContent>
+            </Tabs>
+
+            <hr className="my-6 border-neutral-200 dark:border-neutral-700" />
+
+            <ValidationAlerts isFormValid={isFormValid} missingFields={getMissingFields()} />
+
+            <FormActions
+              isFormValid={isFormValid}
+              isSubmitting={isUpdating}
+              submitText={t('admin.products.submit.update')}
+              loadingText={t('admin.products.submit.updating')}
+              onCancel={() => navigate(ROUTES.ADMIN_PRODUCTS)}
+            />
+          </form>
+        </CardContent>
       </Card>
 
       {/* Modals */}

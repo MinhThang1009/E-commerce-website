@@ -219,7 +219,7 @@ const ReviewList: React.FC<ReviewListProps> = ({ productId }) => {
                           ))}
                         </div>
                       ) : null;
-                    } catch (e) {
+                    } catch (_e) {
                       return null;
                     }
                   })()}

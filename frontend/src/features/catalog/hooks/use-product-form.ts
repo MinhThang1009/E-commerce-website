@@ -6,12 +6,13 @@
  */
 import { useState, useEffect, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Form, FormInstance, message } from 'antd';
 import { ProductFormData } from '@/types';
 import { SAMPLE_LAPTOP_DATA } from '../utils/sample-product-data';
+import { useUiStore } from '@/stores/ui-store';
+import type { FormAdapter } from './use-form-adapter';
 
 interface UseProductFormProps {
-  form: FormInstance;
+  form: FormAdapter;
   initialValues?: Partial<ProductFormData>;
   onSubmit: (values: ProductFormData) => Promise<void>;
   isSubmitting: boolean;
@@ -33,6 +34,7 @@ export const useProductForm = ({
   isEditMode = false,
 }: UseProductFormProps) => {
   const { t } = useTranslation();
+  const addNotification = useUiStore((s) => s.addNotification);
   const [isFormValid, setIsFormValid] = useState(false);
   const [activeTab, setActiveTab] = useState('basic');
 
@@ -58,14 +60,11 @@ export const useProductForm = ({
           };
           const nameOk = checkField('name');
           const shortDescOk = checkField('shortDescription');
-          // Quill đôi khi không update form store — fallback kiểm tra DOM
           const descFormOk = checkField('description');
           const descDomOk =
             typeof document !== 'undefined'
-              ? (
-                  document.querySelector('.simple-quill-editor .ql-editor')?.textContent?.trim() ||
-                  ''
-                ).length > 0
+              ? (document.querySelector('.tiptap.ProseMirror')?.textContent?.trim() || '').length >
+                0
               : false;
           isStepValid = nameOk && shortDescOk && (descFormOk || descDomOk);
           break;
@@ -184,7 +183,7 @@ export const useProductForm = ({
   }, [initialValues, form]);
 
   // Theo dõi thay đổi giá trị form để cập nhật validation
-  const watchFormValues = Form.useWatch([], form);
+  const watchFormValues = form._rhf.watch();
 
   const validationTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -208,28 +207,16 @@ export const useProductForm = ({
         'price',
         'stockQuantity',
         'categoryIds',
-        // Thêm thuộc tính và biến thể vào danh sách trường bắt buộc
-        // 'attributes',
-        // 'variants',
       ];
 
       const isFieldsFilled = requiredFields.every((field) => {
-        const value = values[field];
+        const value = values[field as keyof typeof values];
         if (field === 'categoryIds') {
           return value && Array.isArray(value) && value.length > 0;
         }
         if (field === 'price' || field === 'stockQuantity') {
           return value !== undefined && value !== null && value !== '' && value >= 0;
         }
-        // Kiểm tra thuộc tính và biến thể nếu cần
-        // if (field === 'attributes') {
-        //   // Kiểm tra xem có thuộc tính nào không
-        //   return value && Array.isArray(value) && value.length > 0;
-        // }
-        // if (field === 'variants') {
-        //   // Kiểm tra xem có biến thể nào không
-        //   return value && Array.isArray(value) && value.length > 0;
-        // }
         return (
           value !== undefined &&
           value !== null &&
@@ -267,9 +254,8 @@ export const useProductForm = ({
 
   // Lấy danh sách trường bắt buộc còn thiếu để hiển thị
   const getMissingFields = () => {
-    // Sử dụng watchFormValues nếu có để tránh cảnh báo form chưa kết nối khi render
-    // Nếu không có (ví dụ: lần render đầu tiên), sử dụng giá trị rỗng
-    const values = watchFormValues || {};
+    // Sử dụng form.getFieldsValue() thay vì watchFormValues (có thể rỗng lần render đầu)
+    const values = form.getFieldsValue() || {};
 
     const fieldLabels = {
       name: t('productForm.fieldName'),
@@ -357,8 +343,8 @@ export const useProductForm = ({
     if (isEditMode) {
       try {
         await onSubmit(values);
-      } catch (error) {
-        message.error(t('productForm.saveError'));
+      } catch (_error) {
+        addNotification({ message: t('productForm.saveError'), type: 'error' });
       }
       return;
     }
@@ -367,14 +353,17 @@ export const useProductForm = ({
     const missingFieldNames = getMissingFields();
 
     if (missingFieldNames.length > 0) {
-      message.error(t('productForm.fillRequired', { fields: missingFieldNames.join(', ') }));
+      addNotification({
+        message: t('productForm.fillRequired', { fields: missingFieldNames.join(', ') }),
+        type: 'error',
+      });
       return;
     }
 
     try {
       await onSubmit(values);
-    } catch (error) {
-      message.error(t('productForm.saveError'));
+    } catch (_error) {
+      addNotification({ message: t('productForm.saveError'), type: 'error' });
     }
   };
 

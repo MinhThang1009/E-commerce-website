@@ -35,46 +35,51 @@ class CartService {
         const itemData = item.toJSON();
 
         if (itemData.Product) {
-          const p = itemData.Product;
-          // Thêm backward-compat name field từ nameVi/nameEn
-          p.name = p.nameVi || p.nameEn || p.name || '';
-          // Stock thực nằm ở variant level — tính tổng stock từ tất cả variants
-          const variantStock = (p.variants || []).reduce((s, v) => s + (v.stockQuantity || 0), 0);
-          p.stockQuantity = variantStock || (p.defaultVariant ? p.defaultVariant.stockQuantity : 0);
-          p.inStock =
-            variantStock > 0 || (p.defaultVariant ? p.defaultVariant.stockQuantity > 0 : false);
+          const product = itemData.Product;
+          product.name = product.nameVi || product.nameEn || product.name || '';
+          const variantStock = (product.variants || []).reduce(
+            (sum, variant) => sum + (variant.stockQuantity || 0),
+            0,
+          );
+          product.stockQuantity =
+            variantStock || (product.defaultVariant ? product.defaultVariant.stockQuantity : 0);
+          product.inStock =
+            variantStock > 0 ||
+            (product.defaultVariant ? product.defaultVariant.stockQuantity > 0 : false);
 
-          if (p.productImages && p.productImages.length > 0) {
-            // Ưu tiên ảnh theo variantId, fallback về thumbnail chính
+          if (product.productImages && product.productImages.length > 0) {
             const variantImg = itemData.variantId
-              ? p.productImages.find(
+              ? product.productImages.find(
                   (img) =>
                     img.variant_id === itemData.variantId || img.variantId === itemData.variantId,
                 )
               : null;
             const primaryImg =
               variantImg ||
-              p.productImages.find(
+              product.productImages.find(
                 (img) => img.isThumbnail === true || img.is_thumbnail === true,
               ) ||
-              p.productImages[0];
-            p.thumbnail = primaryImg.imageUrl;
+              product.productImages[0];
+            product.thumbnail = primaryImg.imageUrl;
           } else {
-            p.thumbnail = p.thumbnail || null;
+            product.thumbnail = product.thumbnail || null;
           }
 
-          // Ưu tiên giá từ defaultVariant (variant product có base_price=0)
-          const variantPrice = p.defaultVariant?.price ? parseFloat(p.defaultVariant.price) : null;
+          const variantPrice = product.defaultVariant?.price
+            ? parseFloat(product.defaultVariant.price)
+            : null;
           const minVariantPrice =
             variantPrice ||
             (() => {
-              const prices = (p.variants || []).map((v) => parseFloat(v.price)).filter(Boolean);
+              const prices = (product.variants || [])
+                .map((variant) => parseFloat(variant.price))
+                .filter(Boolean);
               return prices.length ? Math.min(...prices) : null;
             })();
-          p.price = minVariantPrice || parseFloat(p.basePrice) || 0;
-          delete p.productImages;
-          delete p.defaultVariant;
-          delete p.variants;
+          product.price = minVariantPrice || parseFloat(product.basePrice) || 0;
+          delete product.productImages;
+          delete product.defaultVariant;
+          delete product.variants;
         }
 
         return itemData;

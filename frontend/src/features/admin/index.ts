@@ -14,7 +14,6 @@
 
 // Components
 export { default as AdminLayout } from './components/AdminLayout';
-export { default as CreateProductForm } from './components/CreateProductForm';
 export { default as DashboardCharts } from './components/DashboardCharts';
 export { default as ProductExportModal } from './components/ProductExportModal';
 

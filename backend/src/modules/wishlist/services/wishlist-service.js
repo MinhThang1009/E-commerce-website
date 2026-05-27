@@ -18,30 +18,35 @@ class WishlistService {
   async getWishlist({ userId }) {
     const items = await this.wishlistRepository.findByUserIdWithProducts(userId);
     const products = items.map((item) => {
-      const p = item.Product.toJSON();
-      // Stock thực nằm ở variant level — tính tổng stock từ tất cả variants
-      const variantStock = (p.variants || []).reduce((s, v) => s + (v.stockQuantity || 0), 0);
-      p.stockQuantity = variantStock || (p.defaultVariant ? p.defaultVariant.stockQuantity : 0);
-      p.inStock =
-        variantStock > 0 || (p.defaultVariant ? p.defaultVariant.stockQuantity > 0 : false);
+      const product = item.Product.toJSON();
+      const variantStock = (product.variants || []).reduce(
+        (sum, variant) => sum + (variant.stockQuantity || 0),
+        0,
+      );
+      product.stockQuantity =
+        variantStock || (product.defaultVariant ? product.defaultVariant.stockQuantity : 0);
+      product.inStock =
+        variantStock > 0 ||
+        (product.defaultVariant ? product.defaultVariant.stockQuantity > 0 : false);
 
-      if (p.productImages && p.productImages.length > 0) {
-        p.images = p.productImages.map((img) => ({
+      if (product.productImages && product.productImages.length > 0) {
+        product.images = product.productImages.map((img) => ({
           id: img.id,
           url: img.imageUrl,
           alt: img.altText,
           isPrimary: img.isPrimary,
         }));
-        const primary = p.productImages.find((img) => img.isPrimary) || p.productImages[0];
-        p.thumbnail = primary.imageUrl;
+        const primary =
+          product.productImages.find((img) => img.isPrimary) || product.productImages[0];
+        product.thumbnail = primary.imageUrl;
       } else {
-        p.images = [];
-        p.thumbnail = null;
+        product.images = [];
+        product.thumbnail = null;
       }
-      delete p.productImages;
-      delete p.defaultVariant;
-      delete p.variants;
-      return p;
+      delete product.productImages;
+      delete product.defaultVariant;
+      delete product.variants;
+      return product;
     });
     return { products };
   }

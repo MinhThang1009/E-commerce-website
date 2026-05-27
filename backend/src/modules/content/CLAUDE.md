@@ -106,4 +106,4 @@ Base path: `/api/contact`
 | `services/content-service.test.js`               | Unit | Service logic: feedback      |
 | `controllers/content-controller.test.js`         | Unit | HTTP layer: feedback handler |
 | `controllers/content-controller.contact.test.js` | Unit | Feedback/contact edge cases  |
-| `repositories/content-repository.test.js` | Unit | Repository queries |
+| `repositories/content-repository.test.js`        | Unit | Repository queries           |

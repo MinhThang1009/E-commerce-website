@@ -5,7 +5,7 @@
  * @description Shared UI component
  */
 import React, { useState, useRef } from 'react';
-import { XMarkIcon, CloudArrowUpIcon, LinkIcon } from '@heroicons/react/24/outline';
+import { X, Upload, Link2 } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { useNotifications } from '@/hooks/use-notifications';
 import { getUploadUrl } from '@/utils/upload-url';
@@ -151,7 +151,7 @@ const ImageUpload: React.FC<ImageUploadProps> = ({
               onClick={() => handleRemove(img)}
               className="absolute top-1 right-1 p-1 bg-red-500 text-white rounded-full opacity-0 group-hover:opacity-100 transition-opacity shadow-lg"
             >
-              <XMarkIcon className="w-4 h-4" />
+              <X className="w-4 h-4" />
             </button>
             <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center pointer-events-none">
               <span className="text-[10px] text-white font-medium px-2 py-1 bg-black/60 rounded-full">
@@ -176,7 +176,7 @@ const ImageUpload: React.FC<ImageUploadProps> = ({
               <div className="w-8 h-8 border-4 border-primary-500 border-t-transparent rounded-full animate-spin"></div>
             ) : (
               <>
-                <CloudArrowUpIcon className="w-8 h-8 text-neutral-400 mb-2" />
+                <Upload className="w-8 h-8 text-neutral-400 mb-2" />
                 <span className="text-xs font-medium text-neutral-500 dark:text-neutral-400">
                   {t('imageUpload.uploadButton')}
                 </span>
@@ -193,7 +193,7 @@ const ImageUpload: React.FC<ImageUploadProps> = ({
           onClick={() => setShowUrlInput(!showUrlInput)}
           className="text-sm text-primary-600 dark:text-primary-400 flex items-center gap-1.5 hover:underline font-medium"
         >
-          <LinkIcon className="w-4 h-4" />
+          <Link2 className="w-4 h-4" />
           {showUrlInput ? t('imageUpload.hideUrl') : t('imageUpload.showUrl')}
         </button>
 

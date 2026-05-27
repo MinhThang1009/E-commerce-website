@@ -5,74 +5,87 @@
  * @description UI component cho feature catalog
  */
 import React from 'react';
-import { Form, Input, Row, Col, Alert } from 'antd';
+import { UseFormReturn } from 'react-hook-form';
 import { useTranslation } from 'react-i18next';
+import { Info } from 'lucide-react';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Alert, AlertTitle, AlertDescription } from '@/components/ui/alert';
 
-const { TextArea } = Input;
+interface ProductSeoFormProps {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  form: UseFormReturn<any>;
+}
 
-const ProductSeoForm: React.FC = () => {
+const ProductSeoForm: React.FC<ProductSeoFormProps> = ({ form }) => {
   const { t } = useTranslation();
 
   return (
-    <Row gutter={[24, 16]}>
+    <div className="grid grid-cols-2 gap-x-6 gap-y-4">
       {/* SEO Title — VI */}
-      <Col span={12}>
-        <Form.Item name="seoTitleVi" label={`${t('admin.products.seo.titleLabel')} (VI)`}>
-          <Input placeholder={t('admin.products.seo.titlePlaceholder')} maxLength={60} showCount />
-        </Form.Item>
-      </Col>
+      <div>
+        <Label className="mb-1.5 block">{`${t('admin.products.seo.titleLabel')} (VI)`}</Label>
+        <Input
+          placeholder={t('admin.products.seo.titlePlaceholder')}
+          maxLength={60}
+          {...form.register('seoTitleVi')}
+        />
+      </div>
       {/* SEO Title — EN */}
-      <Col span={12}>
-        <Form.Item name="seoTitleEn" label={`${t('admin.products.seo.titleLabel')} (EN)`}>
-          <Input placeholder="SEO title in English" maxLength={60} showCount />
-        </Form.Item>
-      </Col>
+      <div>
+        <Label className="mb-1.5 block">{`${t('admin.products.seo.titleLabel')} (EN)`}</Label>
+        <Input placeholder="SEO title in English" maxLength={60} {...form.register('seoTitleEn')} />
+      </div>
 
       {/* SEO Description — VI */}
-      <Col span={12}>
-        <Form.Item name="seoDescriptionVi" label={`${t('admin.products.seo.descLabel')} (VI)`}>
-          <TextArea
-            rows={3}
-            placeholder={t('admin.products.seo.descPlaceholder')}
-            maxLength={160}
-            showCount
-          />
-        </Form.Item>
-      </Col>
+      <div>
+        <Label className="mb-1.5 block">{`${t('admin.products.seo.descLabel')} (VI)`}</Label>
+        <textarea
+          className="flex w-full rounded-xl border border-neutral-300 dark:border-neutral-600 bg-white dark:bg-neutral-800 px-3 py-2 text-sm text-neutral-900 dark:text-neutral-100 shadow-sm transition-colors placeholder:text-neutral-400 dark:placeholder:text-neutral-500 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500/30 focus-visible:border-primary-500 disabled:cursor-not-allowed disabled:opacity-50"
+          rows={3}
+          placeholder={t('admin.products.seo.descPlaceholder')}
+          maxLength={160}
+          {...form.register('seoDescriptionVi')}
+        />
+      </div>
       {/* SEO Description — EN */}
-      <Col span={12}>
-        <Form.Item name="seoDescriptionEn" label={`${t('admin.products.seo.descLabel')} (EN)`}>
-          <TextArea rows={3} placeholder="SEO description in English" maxLength={160} showCount />
-        </Form.Item>
-      </Col>
+      <div>
+        <Label className="mb-1.5 block">{`${t('admin.products.seo.descLabel')} (EN)`}</Label>
+        <textarea
+          className="flex w-full rounded-xl border border-neutral-300 dark:border-neutral-600 bg-white dark:bg-neutral-800 px-3 py-2 text-sm text-neutral-900 dark:text-neutral-100 shadow-sm transition-colors placeholder:text-neutral-400 dark:placeholder:text-neutral-500 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500/30 focus-visible:border-primary-500 disabled:cursor-not-allowed disabled:opacity-50"
+          rows={3}
+          placeholder="SEO description in English"
+          maxLength={160}
+          {...form.register('seoDescriptionEn')}
+        />
+      </div>
 
-      <Col span={24}>
-        <Form.Item name="seoKeywords" label={t('admin.products.seo.keywordsLabel')}>
-          <TextArea
-            rows={2}
-            placeholder={t('admin.products.seo.keywordsPlaceholder')}
-            maxLength={200}
-            showCount
-          />
-        </Form.Item>
-      </Col>
+      <div className="col-span-2">
+        <Label className="mb-1.5 block">{t('admin.products.seo.keywordsLabel')}</Label>
+        <textarea
+          className="flex w-full rounded-xl border border-neutral-300 dark:border-neutral-600 bg-white dark:bg-neutral-800 px-3 py-2 text-sm text-neutral-900 dark:text-neutral-100 shadow-sm transition-colors placeholder:text-neutral-400 dark:placeholder:text-neutral-500 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500/30 focus-visible:border-primary-500 disabled:cursor-not-allowed disabled:opacity-50"
+          rows={2}
+          placeholder={t('admin.products.seo.keywordsPlaceholder')}
+          maxLength={200}
+          {...form.register('seoKeywords')}
+        />
+      </div>
 
-      <Col span={24}>
-        <Alert
-          message={t('admin.products.seo.alertTitle')}
-          description={
+      <div className="col-span-2">
+        <Alert variant="info">
+          <Info className="size-4" />
+          <AlertTitle>{t('admin.products.seo.alertTitle')}</AlertTitle>
+          <AlertDescription>
             <div>
               <p>• {t('admin.products.seo.tip1')}</p>
               <p>• {t('admin.products.seo.tip2')}</p>
               <p>• {t('admin.products.seo.tip3')}</p>
               <p>• {t('admin.products.seo.tip4')}</p>
             </div>
-          }
-          type="info"
-          showIcon
-        />
-      </Col>
-    </Row>
+          </AlertDescription>
+        </Alert>
+      </div>
+    </div>
   );
 };
 

@@ -1,7 +1,9 @@
+@reference "tailwindcss";
 /* Description Content Dark Mode Styles */
 .description-content {
   /* Base styles */
   line-height: 1.6;
+  @apply text-gray-800 dark:text-gray-200;
 }
 
 .description-content h1,
@@ -25,6 +27,13 @@
 
 .description-content p {
   @apply text-gray-800 dark:text-gray-200 mb-4;
+}
+
+/* Override inline styles từ rich text editor — đảm bảo text đọc được trong dark mode */
+.dark .description-content,
+.dark .description-content * {
+  color: inherit !important;
+  background-color: transparent !important;
 }
 
 .description-content ul,

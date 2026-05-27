@@ -6,12 +6,12 @@
  */
 import React from 'react';
 import { useTranslation } from 'react-i18next';
-import { Card, Button, Space, Typography, Tag, Divider } from 'antd';
-import { CheckOutlined } from '@ant-design/icons';
+import { Check } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { cn } from '@/utils/cn';
 import { ProductWithVariants } from '../types/product.types';
 import { getLocale } from '@/utils/format';
-
-const { Text } = Typography;
 
 interface ProductVariantSelectorProps {
   product: ProductWithVariants;
@@ -37,7 +37,7 @@ const ProductVariantSelector: React.FC<ProductVariantSelectorProps> = ({
   }
 
   const formatPrice = (price: number) => {
-    // Luôn dùng VND — dùng locale động để format dấu phân tách (vi: dấu chấm, en: dấu phẩy)
+    // Lun dng VND  dng locale ng  format du phn tch (vi: du chm, en: du phy)
     return `${price.toLocaleString(getLocale())}${t('common.currencySymbol')}`;
   };
 
@@ -45,59 +45,47 @@ const ProductVariantSelector: React.FC<ProductVariantSelectorProps> = ({
   const availableVariants = product.availableVariants;
 
   return (
-    <Card
-      className={className}
-      title={
-        <Space>
-          <span>🔧</span>
+    <Card className={className}>
+      <CardHeader>
+        <CardTitle className="flex items-center gap-2">
+          <span>&#128295;</span>
           <span>{t('product.chooseVersion')}</span>
-        </Space>
-      }
-      size="small"
-    >
-      <Space direction="vertical" style={{ width: '100%' }} size="middle">
+        </CardTitle>
+      </CardHeader>
+      <CardContent className="flex flex-col gap-4">
         {currentVariant && (
-          <div
-            style={{
-              padding: '12px',
-              backgroundColor: '#f0f9ff',
-              borderRadius: '8px',
-              border: '1px solid #0ea5e9',
-            }}
-          >
-            <Space direction="vertical" size="small">
-              <Text strong style={{ color: '#0ea5e9' }}>
-                <CheckOutlined style={{ marginRight: 4 }} />
+          <div className="rounded-lg border border-sky-500 bg-sky-50 dark:bg-sky-950/20 p-3">
+            <div className="flex flex-col gap-1">
+              <span className="font-semibold text-sky-500">
+                <Check className="inline size-4 mr-1" />
                 {t('product.selectedVariant', { name: currentVariant.name })}
-              </Text>
-              <Space>
-                <Text strong style={{ fontSize: '16px', color: '#dc2626' }}>
+              </span>
+              <div className="flex items-center gap-2">
+                <span className="text-base font-bold text-red-600">
                   {formatPrice(currentVariant.price)}
-                </Text>
+                </span>
                 {currentVariant.compareAtPrice &&
                   currentVariant.compareAtPrice > currentVariant.price && (
-                    <Text delete style={{ color: '#6b7280' }}>
+                    <span className="text-neutral-500 line-through">
                       {formatPrice(currentVariant.compareAtPrice)}
-                    </Text>
+                    </span>
                   )}
-              </Space>
-              <Text type="secondary" style={{ fontSize: '12px' }}>
+              </div>
+              <span className="text-xs text-neutral-500 dark:text-neutral-400">
                 {t('product.skuAndStock', {
                   sku: currentVariant.sku,
                   stock: currentVariant.stockQuantity,
                 })}
-              </Text>
-            </Space>
+              </span>
+            </div>
           </div>
         )}
 
-        <Divider style={{ margin: '8px 0' }} />
+        <hr className="border-neutral-200 dark:border-neutral-700 my-0" />
 
         <div>
-          <Text strong style={{ marginBottom: 8, display: 'block' }}>
-            {t('product.availableVersions')}
-          </Text>
-          <Space direction="vertical" style={{ width: '100%' }} size="small">
+          <span className="font-semibold block mb-2">{t('product.availableVersions')}</span>
+          <div className="flex flex-col gap-2">
             {availableVariants.map((variant) => {
               const isSelected =
                 selectedVariantId === variant.id || (!selectedVariantId && variant.isDefault);
@@ -106,87 +94,76 @@ const ProductVariantSelector: React.FC<ProductVariantSelectorProps> = ({
               return (
                 <Button
                   key={variant.id}
+                  variant="outline"
                   onClick={() => onVariantChange(variant.id)}
                   disabled={isOutOfStock}
-                  style={{
-                    width: '100%',
-                    height: 'auto',
-                    padding: '12px 16px',
-                    textAlign: 'left',
-                    border: isSelected ? '2px solid #0ea5e9' : '1px solid #d1d5db',
-                    backgroundColor: isSelected ? '#f0f9ff' : 'white',
-                    opacity: isOutOfStock ? 0.5 : 1,
-                  }}
+                  className={cn(
+                    'w-full h-auto p-3 text-left justify-start',
+                    isSelected && 'border-2 border-sky-500 bg-sky-50 dark:bg-sky-950/20',
+                    isOutOfStock && 'opacity-50',
+                  )}
                 >
-                  <div style={{ width: '100%' }}>
-                    <div
-                      style={{
-                        display: 'flex',
-                        justifyContent: 'space-between',
-                        alignItems: 'flex-start',
-                        marginBottom: 4,
-                      }}
-                    >
-                      <Text
-                        strong
-                        style={{
-                          color: isSelected ? '#0ea5e9' : '#374151',
-                          fontSize: '14px',
-                        }}
+                  <div className="w-full">
+                    <div className="flex justify-between items-start mb-1">
+                      <span
+                        className={cn(
+                          'font-semibold text-sm',
+                          isSelected ? 'text-sky-500' : 'text-neutral-700 dark:text-neutral-200',
+                        )}
                       >
-                        {isSelected && <CheckOutlined style={{ marginRight: 4 }} />}
+                        {isSelected && <Check className="inline size-3.5 mr-1" />}
                         {variant.name}
-                      </Text>
-                      <Space>
-                        {variant.isDefault && <Tag color="blue">{t('product.defaultVariant')}</Tag>}
-                        {isOutOfStock && <Tag color="red">{t('product.outOfStock')}</Tag>}
-                      </Space>
+                      </span>
+                      <div className="flex items-center gap-1">
+                        {variant.isDefault && (
+                          <span className="inline-block rounded-full bg-blue-100 dark:bg-blue-900 text-blue-700 dark:text-blue-300 px-2 py-0.5 text-xs">
+                            {t('product.defaultVariant')}
+                          </span>
+                        )}
+                        {isOutOfStock && (
+                          <span className="inline-block rounded-full bg-red-100 dark:bg-red-900 text-red-700 dark:text-red-300 px-2 py-0.5 text-xs">
+                            {t('product.outOfStock')}
+                          </span>
+                        )}
+                      </div>
                     </div>
 
-                    <div
-                      style={{
-                        display: 'flex',
-                        justifyContent: 'space-between',
-                        alignItems: 'center',
-                      }}
-                    >
-                      <Space>
-                        <Text strong style={{ color: '#dc2626', fontSize: '14px' }}>
+                    <div className="flex justify-between items-center">
+                      <div className="flex items-center gap-2">
+                        <span className="font-bold text-red-600 text-sm">
                           {formatPrice(variant.price)}
-                        </Text>
+                        </span>
                         {variant.compareAtPrice && variant.compareAtPrice > variant.price && (
-                          <Text delete style={{ color: '#6b7280', fontSize: '12px' }}>
+                          <span className="text-neutral-500 text-xs line-through">
                             {formatPrice(variant.compareAtPrice)}
-                          </Text>
+                          </span>
                         )}
-                      </Space>
-                      <Text type="secondary" style={{ fontSize: '12px' }}>
+                      </div>
+                      <span className="text-xs text-neutral-500 dark:text-neutral-400">
                         {t('product.remainingStock', {
                           count: variant.stockQuantity,
                         })}
-                      </Text>
+                      </span>
                     </div>
                   </div>
                 </Button>
               );
             })}
-          </Space>
+          </div>
         </div>
 
         {availableVariants.length > 1 && (
           <>
-            <Divider style={{ margin: '8px 0' }} />
-            <div style={{ fontSize: '12px', color: '#6b7280' }}>
-              <Text type="secondary">
-                {t('product.priceRange', {
-                  min: formatPrice(Math.min(...availableVariants.map((v) => v.price))),
-                  max: formatPrice(Math.max(...availableVariants.map((v) => v.price))),
-                })}
-              </Text>
+            <hr className="border-neutral-200 dark:border-neutral-700 my-0" />
+            <div className="text-xs text-neutral-500 dark:text-neutral-400">
+              {t('product.priceRange', {
+                min: formatPrice(Math.min(...availableVariants.map((v) => v.price))),
+                max: formatPrice(Math.max(...availableVariants.map((v) => v.price))),
+              })}
             </div>
           </>
         )}
-      </Space>
+      </CardContent>
     </Card>
   );
 };

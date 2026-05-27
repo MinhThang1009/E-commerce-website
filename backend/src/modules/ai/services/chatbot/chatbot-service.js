@@ -34,7 +34,12 @@ try {
   // vectorStoreService = null → Path B fallback về empty products
 }
 const { detectLanguage } = require('@modules/ai/services/chatbot/language/language-detector');
-const { validateMessage, expandAbbreviations, classifyIntent, isPromptInjection } = require('@modules/ai/services/core/ai-policy');
+const {
+  validateMessage,
+  expandAbbreviations,
+  classifyIntent,
+  isPromptInjection,
+} = require('@modules/ai/services/core/ai-policy');
 const { AppError } = require('@shared/errors');
 const logger = require('@utils/logger');
 const promptBuilder = require('@modules/ai/services/chatbot/prompt/prompt-builder');
@@ -256,7 +261,13 @@ class ChatbotService {
           intent: 'off_topic',
         };
         this._persistMessages(
-          sessionId, userId, message, injectionResponse.response, 'off_topic', Date.now() - startTime, true,
+          sessionId,
+          userId,
+          message,
+          injectionResponse.response,
+          'off_topic',
+          Date.now() - startTime,
+          true,
         ).catch((err) => logger.warn('[Chatbot] Lưu injection message thất bại:', err.message));
         return injectionResponse;
       }
@@ -274,7 +285,13 @@ class ChatbotService {
           intent: 'off_topic',
         };
         this._persistMessages(
-          sessionId, userId, message, offTopicResponse.response, intent, Date.now() - startTime, true,
+          sessionId,
+          userId,
+          message,
+          offTopicResponse.response,
+          intent,
+          Date.now() - startTime,
+          true,
         ).catch((err) => logger.warn('[Chatbot] Lưu off-topic message thất bại:', err.message));
         return offTopicResponse;
       }
@@ -285,7 +302,10 @@ class ChatbotService {
 
       // ── Bước 5: Retrieve — embedding-based hybrid search ────────────────────
       const enrichedQuery = this._enrichQueryFromHistory(normalizedQuery, conversationHistory);
-      const { products: relevantProducts, finalQuery } = await this._retrieveProducts(enrichedQuery, normalizedQuery);
+      const { products: relevantProducts, finalQuery } = await this._retrieveProducts(
+        enrichedQuery,
+        normalizedQuery,
+      );
 
       // ── Bước 6: Generation — gọi LLM để sinh câu trả lời ────────────────────
       const aiResponse = await this.augmentAndGenerate(
@@ -313,7 +333,13 @@ class ChatbotService {
 
       const responseTimeMs = Date.now() - startTime;
       this._persistMessages(
-        sessionId, userId, message, aiResponse.response || '', intent, responseTimeMs, false,
+        sessionId,
+        userId,
+        message,
+        aiResponse.response || '',
+        intent,
+        responseTimeMs,
+        false,
         { products: aiResponse.products, suggestions: aiResponse.suggestions },
       ).catch((err) => logger.warn('[Chatbot] Lưu tin nhắn thất bại (non-blocking):', err.message));
 
@@ -371,10 +397,9 @@ class ChatbotService {
     // Implicit follow-up: câu hỏi ngắn không có subject rõ ràng nhưng rõ ràng hỏi về SP vừa đề cập.
     // Ví dụ: "có màu gì?", "giá bao nhiêu?", "còn hàng không?", "bảo hành mấy năm?"
     // Điều kiện: query ngắn (<= 50 ký tự) + không chứa brand/product name + history có data.
-    const BRAND_RE = /iphone|samsung|macbook|xiaomi|oppo|realme|apple|dell|asus|acer|casio|citizen|laptop|tablet|điện thoại|đồng hồ|máy tính|smartwatch|earphone|headphone|airpod/i;
-    const isImplicitFollowup = !hasPronoun
-      && query.trim().length <= 50
-      && !BRAND_RE.test(query);
+    const BRAND_RE =
+      /iphone|samsung|macbook|xiaomi|oppo|realme|apple|dell|asus|acer|casio|citizen|laptop|tablet|điện thoại|đồng hồ|máy tính|smartwatch|earphone|headphone|airpod/i;
+    const isImplicitFollowup = !hasPronoun && query.trim().length <= 50 && !BRAND_RE.test(query);
 
     if (!hasPronoun && !isImplicitFollowup) return query;
 
@@ -391,10 +416,12 @@ class ChatbotService {
     //   2. LLM response: lấy 60 ký tự đầu làm fallback (thường bắt đầu bằng tên sản phẩm)
     const extractTopProductFromResponse = (text) => {
       // Skip "not found" response — không có SP để extract, tránh noise vào enriched query
-      if (text.startsWith('🚫') || /Cửa hàng hiện chưa có|không tìm thấy|ngoài phạm vi/i.test(text.substring(0, 80))) return null;
-      const firstBullet = text
-        .split('\n')
-        .find((l) => l.includes('•'));
+      if (
+        text.startsWith('🚫') ||
+        /Cửa hàng hiện chưa có|không tìm thấy|ngoài phạm vi/i.test(text.substring(0, 80))
+      )
+        return null;
+      const firstBullet = text.split('\n').find((l) => l.includes('•'));
       if (firstBullet) {
         return firstBullet
           .replace(/^.*?•\s*/, '')
@@ -412,7 +439,9 @@ class ChatbotService {
       .join(' ');
 
     if (!recentContext.trim()) return query;
-    logger.debug(`[Enrich] ${hasPronoun ? 'Pronoun' : 'Implicit follow-up'} detected, appending product names from history`);
+    logger.debug(
+      `[Enrich] ${hasPronoun ? 'Pronoun' : 'Implicit follow-up'} detected, appending product names from history`,
+    );
     return `${query} ${recentContext}`;
   }
 
@@ -440,7 +469,7 @@ class ChatbotService {
       const queryForRetrieval =
         enrichedQuery
           .replace(
-            /(?:không\s+(?:cần|muốn|thích|dùng)|tránh|avoid|don't\s+want)\s+[\p{L}\p{N}\s,/]+?(?=\s+(?:gì|hay|hoặc|được|cũng|mà|nhưng|,|$)|\s*$)/igu,
+            /(?:không\s+(?:cần|muốn|thích|dùng)|tránh|avoid|don't\s+want)\s+[\p{L}\p{N}\s,/]+?(?=\s+(?:gì|hay|hoặc|được|cũng|mà|nhưng|,|$)|\s*$)/giu,
             ' ',
           )
           .trim() || enrichedQuery;
@@ -481,7 +510,11 @@ class ChatbotService {
         logger.warn('[Chatbot] Không có kết quả trên threshold — hạ minScore lấy top-3');
         try {
           const lowResults = await vectorStoreService.hybridSearch(finalQuery, 3, 0);
-          products = lowResults.map((r) => ({ ...r.metadata, score: r.score, lowConfidence: true }));
+          products = lowResults.map((r) => ({
+            ...r.metadata,
+            score: r.score,
+            lowConfidence: true,
+          }));
         } catch {
           products = [];
         }
@@ -523,7 +556,7 @@ class ChatbotService {
     if (this.providers.length === 0) {
       if (!vectorStoreService) return null;
       await vectorStoreService.loadPromise;
-      const productNames = vectorStoreService.items.map(i => i.metadata?.name).filter(Boolean);
+      const productNames = vectorStoreService.items.map((i) => i.metadata?.name).filter(Boolean);
       const { expanded, changed } = fuzzyExpandQuery(message, productNames);
       if (changed) {
         logger.debug(`[FuzzyExpand] "${message}" → "${expanded}"`);

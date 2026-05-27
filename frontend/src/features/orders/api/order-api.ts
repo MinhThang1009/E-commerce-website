@@ -145,7 +145,7 @@ export interface CreateOrderResponse {
 }
 
 // Query keys tập trung
-export const orderKeys = {
+const orderKeys = {
   all: ['orders'] as const,
   lists: () => [...orderKeys.all, 'list'] as const,
   list: (params: { page?: number; limit?: number }) => [...orderKeys.lists(), params] as const,
@@ -186,19 +186,6 @@ export function useGetOrderByIdQuery(
       return res.data;
     },
     enabled: !!id,
-    ...options,
-  });
-}
-
-/** Lấy đơn hàng theo số đơn hàng */
-export function useGetOrderByNumberQuery(number: string, options?: { enabled?: boolean }) {
-  return useQuery<{ status: string; data: Order }>({
-    queryKey: orderKeys.byNumber(number),
-    queryFn: async () => {
-      const res = await apiClient.get<{ status: string; data: Order }>(`/orders/number/${number}`);
-      return res.data;
-    },
-    enabled: !!number,
     ...options,
   });
 }

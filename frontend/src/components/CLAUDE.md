@@ -21,7 +21,7 @@
 
 ```
 src/components/
-  common/     — UI primitives (Button, Modal, Input, Card, Rating, RichTextEditor...)
+  common/     — UI primitives (Button, Modal, Input, Card, Rating, TiptapEditor...)
   layout/     — Page structure (Header, Footer, MainLayout, PageLayout, Grid)
   routing/    — Route guards (ProtectedRoute, AdminRoute, PublicOnlyRoute)
   sections/   — Homepage sections (HeroSection)
@@ -48,35 +48,32 @@ import { ProtectedRoute, AdminRoute, PublicOnlyRoute } from '@/features/auth';
 
 ## Danh sách components
 
-| Component                | Props quan trọng                                                                                                                                | Dùng khi                                                                                |
-| ------------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------- |
-| `Button`                 | `variant: primary/secondary/outline/ghost/danger`, `size: sm/md/lg`, `isLoading`, `leftIcon/rightIcon`, `fullWidth`, `as`, `to`                 | Tất cả CTA buttons. `as={Link} to="..."` để render dạng Link                            |
-| `PremiumButton`          | Glass/Liquid Glass effect; `variant: primary/secondary/outline/ghost`, `size: small/middle/large`, `iconType`, `isProcessing`, `processingText` | Landing page CTA, upgrade prompts, nơi cần visual premium                               |
-| `IconButton`             | `icon`, `aria-label` (bắt buộc), `variant`, `size`                                                                                              | Action buttons nhỏ (edit, delete, close)                                                |
-| `ButtonGroup`            | Wrap nhiều `Button` liền nhau                                                                                                                   | Toolbar, filter groups                                                                  |
-| `Modal`                  | `isOpen`, `onClose`, `title?`, `size: sm/md/lg/xl`, `footer?`, `closeOnClickOutside` (default true)                                             | Dialog overlay — `createPortal` vào `document.body`, block scroll khi mở, đóng bằng ESC |
-| `Input`                  | `label?`, `error?`, `helperText?`, `leftIcon?`, `rightIcon?`, `fullWidth`                                                                       | Form text fields                                                                        |
-| `Textarea`               | `label?`, `error?`, `rows?`                                                                                                                     | Multi-line text input                                                                   |
-| `Select`                 | `options: {value, label}[]`, `value`, `onChange`, `label?`, `error?`, `disabled?`                                                               | Dropdown select                                                                         |
-| `Checkbox`               | `label?`, `checked`, `onChange`                                                                                                                 | Form checkboxes                                                                         |
-| `Card`                   | `title?`, `subtitle?`, `hoverable?`, `footer?`, `onClick?`                                                                                      | Content container                                                                       |
-| `Badge`                  | `variant: primary/success/warning/error/info/neutral`, `size?`                                                                                  | Status labels nhỏ                                                                       |
-| `Pagination`             | `currentPage`, `totalPages`, `onPageChange`, `siblingCount?`                                                                                    | Phân trang                                                                              |
-| `Rating`                 | `value`, `readOnly?`, `onChange?`, `interactive?`, `size?`                                                                                      | 5-sao rating display/input                                                              |
-| `LoadingSpinner`         | `size: sm/md/lg/large`, `fullScreen?`                                                                                                           | Loading states                                                                          |
-| `LoadingState`           | Export: `SkeletonLoader`, `FullPageLoading`, `ProductCardSkeleton`, `CategoryCardSkeleton`                                                      | Skeleton loading                                                                        |
-| `ErrorState`             | Export: `ErrorState({ error, onRetry?, size? })`, `EmptyState({ title, description? })`                                                         | API error display + empty data states                                                   |
-| `RichTextEditor`         | `value`, `onChange`, `placeholder?`                                                                                                             | WYSIWYG Quill editor (basic toolbar)                                                    |
-| `EnhancedRichTextEditor` | `value`, `onChange`, `placeholder?`                                                                                                             | Extended toolbar + image upload (dùng trong admin)                                      |
-| `SimpleRichTextEditor`   | `value`, `onChange`, `placeholder?`                                                                                                             | Quill toolbar đơn giản (nội dung ngắn)                                                  |
-| `EditorErrorBoundary`    | `children`                                                                                                                                      | Wrap Quill editors để bắt render errors                                                 |
-| `SearchBar`              | `isExpanded`, `onClose`, `className?`                                                                                                           | Header search với debounce 300ms, navigate đến `/shop?search=...`                       |
-| `ImageUpload`            | `onUpload`, `maxSize?`, `accept?`                                                                                                               | Admin/user image upload với preview                                                     |
-| `AddressPicker`          | `value`, `onChange`                                                                                                                             | Province/district/ward cascading selects (API địa chỉ VN)                               |
-| `Notifications`          | Không có props — đặt 1 lần trong `App.tsx`                                                                                                      | Global toast container — reads `ui-store.notifications`                                 |
-| `LanguageSwitcher`       | —                                                                                                                                               | Header i18n toggle (vi/en) — lưu vào `localStorage('language')`                         |
-| `ThemeToggle`            | —                                                                                                                                               | Header dark/light mode toggle — dùng View Transitions API cho circular reveal effect    |
-| `FeedbackModal`          | `isOpen`, `onClose`, `onSubmit`                                                                                                                 | Thu thập feedback người dùng                                                            |
+| Component          | Props quan trọng                                                                                                                                | Dùng khi                                                                                |
+| ------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------- |
+| `Button`           | `variant: primary/secondary/outline/ghost/danger`, `size: sm/md/lg`, `isLoading`, `leftIcon/rightIcon`, `fullWidth`, `as`, `to`                 | Tất cả CTA buttons. `as={Link} to="..."` để render dạng Link                            |
+| `PremiumButton`    | Glass/Liquid Glass effect; `variant: primary/secondary/outline/ghost`, `size: small/middle/large`, `iconType`, `isProcessing`, `processingText` | Landing page CTA, upgrade prompts, nơi cần visual premium                               |
+| `IconButton`       | `icon`, `aria-label` (bắt buộc), `variant`, `size`                                                                                              | Action buttons nhỏ (edit, delete, close)                                                |
+| `ButtonGroup`      | Wrap nhiều `Button` liền nhau                                                                                                                   | Toolbar, filter groups                                                                  |
+| `Modal`            | `isOpen`, `onClose`, `title?`, `size: sm/md/lg/xl`, `footer?`, `closeOnClickOutside` (default true)                                             | Dialog overlay — `createPortal` vào `document.body`, block scroll khi mở, đóng bằng ESC |
+| `Input`            | `label?`, `error?`, `helperText?`, `leftIcon?`, `rightIcon?`, `fullWidth`                                                                       | Form text fields                                                                        |
+| `Textarea`         | `label?`, `error?`, `rows?`                                                                                                                     | Multi-line text input                                                                   |
+| `Select`           | `options: {value, label}[]`, `value`, `onChange`, `label?`, `error?`, `disabled?`                                                               | Dropdown select                                                                         |
+| `Checkbox`         | `label?`, `checked`, `onChange`                                                                                                                 | Form checkboxes                                                                         |
+| `Card`             | `title?`, `subtitle?`, `hoverable?`, `footer?`, `onClick?`                                                                                      | Content container                                                                       |
+| `Badge`            | `variant: primary/success/warning/error/info/neutral`, `size?`                                                                                  | Status labels nhỏ                                                                       |
+| `Pagination`       | `currentPage`, `totalPages`, `onPageChange`, `siblingCount?`                                                                                    | Phân trang                                                                              |
+| `Rating`           | `value`, `readOnly?`, `onChange?`, `interactive?`, `size?`                                                                                      | 5-sao rating display/input                                                              |
+| `LoadingSpinner`   | `size: sm/md/lg/large`, `fullScreen?`                                                                                                           | Loading states                                                                          |
+| `LoadingState`     | Export: `SkeletonLoader`, `FullPageLoading`, `ProductCardSkeleton`, `CategoryCardSkeleton`                                                      | Skeleton loading                                                                        |
+| `ErrorState`       | Export: `ErrorState({ error, onRetry?, size? })`, `EmptyState({ title, description? })`                                                         | API error display + empty data states                                                   |
+| `TiptapEditor`     | `value`, `onChange`, `mode: 'simple'\|'full'`, `placeholder?`                                                                                   | Tiptap WYSIWYG editor (simple: basic toolbar, full: extended + image)                   |
+| `SearchBar`        | `isExpanded`, `onClose`, `className?`                                                                                                           | Header search với debounce 300ms, navigate đến `/shop?search=...`                       |
+| `ImageUpload`      | `onUpload`, `maxSize?`, `accept?`                                                                                                               | Admin/user image upload với preview                                                     |
+| `AddressPicker`    | `value`, `onChange`                                                                                                                             | Province/district/ward cascading selects (API địa chỉ VN)                               |
+| `Notifications`    | Không có props — đặt 1 lần trong `App.tsx`                                                                                                      | Global toast container — reads `ui-store.notifications`                                 |
+| `LanguageSwitcher` | —                                                                                                                                               | Header i18n toggle (vi/en) — lưu vào `localStorage('language')`                         |
+| `ThemeToggle`      | —                                                                                                                                               | Header dark/light mode toggle — dùng View Transitions API cho circular reveal effect    |
+| `FeedbackModal`    | `isOpen`, `onClose`, `onSubmit`                                                                                                                 | Thu thập feedback người dùng                                                            |
 
 ## Barrel export
 
@@ -86,19 +83,20 @@ import { Button, Modal, PremiumButton, Card, Badge } from '@components/common';
 // hoặc: import { Button } from '@/components/common';
 ```
 
-> **Các component KHÔNG có trong barrel** (import trực tiếp): `SimpleRichTextEditor`, `EditorErrorBoundary`, `SearchBar`, `ImageUpload`, `AddressPicker`, `FeedbackModal`.
+> **Các component KHÔNG có trong barrel** (import trực tiếp): `TiptapEditor`, `SearchBar`, `ImageUpload`, `AddressPicker`, `FeedbackModal`.
 
 ---
 
 # 3. Layout Components
 
-| Component    | Mô tả                                                                                                                                                                                                                                                                                  |
-| ------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `MainLayout` | Root layout cho user routes: `Header → <Outlet /> → Footer`. Mount `useScrollToTop()`. Trigger `useCartMerge(isAuthenticated, justLoggedIn)` sau login.                                                                                                                                |
-| `Header`     | Fixed top nav (z-50): logo, search bar, user dropdown (avatar/initials), cart/wishlist badge count, language/theme toggles, mobile hamburger menu. Scroll-aware: thêm `backdrop-blur` khi scroll > 10px. Cart count: ưu tiên server count khi authenticated, fallback về localStorage. |
-| `Footer`     | Links danh mục, store info, social links, feedback form CTA.                                                                                                                                                                                                                           |
-| `PageLayout` | Per-page wrapper: SEO qua `react-helmet-async`, loading/error states. Props: `title`, `description?`, `keywords?`, `isLoading?`, `error?`, `showContainer?`, `noPaddingTop?`.                                                                                                          |
-| `Grid`       | Dynamic grid với `cols` prop (1–6), `gap`, responsive breakpoints. Tailwind safelist cần cho `grid-cols-{n}` dynamic.                                                                                                                                                                  |
+| Component        | Mô tả                                                                                                                                                                                                                                                                                  |
+| ---------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `MainLayout`     | Root layout cho user routes: `Header → AnimatePresence + PageTransition → <Outlet /> → Footer`. Mount `useScrollToTop()`. Trigger `useCartMerge(isAuthenticated, justLoggedIn)` sau login.                                                                                             |
+| `PageTransition` | Framer Motion wrapper cho route transitions (fade + slide). Keyed by `pathname` — AnimatePresence triggers enter/exit animations khi route thay đổi.                                                                                                                                   |
+| `Header`         | Fixed top nav (z-50): logo, search bar, user dropdown (avatar/initials), cart/wishlist badge count, language/theme toggles, mobile hamburger menu. Scroll-aware: thêm `backdrop-blur` khi scroll > 10px. Cart count: ưu tiên server count khi authenticated, fallback về localStorage. |
+| `Footer`         | Links danh mục, store info, social links, feedback form CTA.                                                                                                                                                                                                                           |
+| `PageLayout`     | Per-page wrapper: SEO qua `react-helmet-async`, loading/error states. Props: `title`, `description?`, `keywords?`, `isLoading?`, `error?`, `showContainer?`, `noPaddingTop?`.                                                                                                          |
+| `Grid`           | Dynamic grid với `cols` prop (1–6), `gap`, responsive breakpoints. Tailwind safelist cần cho `grid-cols-{n}` dynamic.                                                                                                                                                                  |
 
 ### MainLayout mount pattern
 
@@ -201,7 +199,7 @@ import {
 
 Tất cả icon accept `className` và `size` props. Đây là SVG components tự viết, không wrap thư viện.
 
-**Heroicons:** một số nơi dùng `@heroicons/react/24/outline` trực tiếp (VD: `HeartIcon` trong Header, WishlistPage). Không wrap lại.
+**Lucide React:** icon library chính cho toàn bộ storefront + admin.
 
 ---
 
@@ -210,14 +208,12 @@ Tất cả icon accept `className` và `size` props. Đây là SVG components t�
 ## Khi nào dùng Button vs PremiumButton
 
 - **`Button`**: UI thông thường trong tất cả features — form submit, cancel, pagination
-- **`PremiumButton`**: Landing page CTA, hero sections, nơi cần visual nổi bật (Glass effect). Extends Ant Design Button.
+- **`PremiumButton`**: Landing page CTA, hero sections, nơi cần visual nổi bật (Glass effect).
 
-## Khi nào dùng RichTextEditor variants
+## Khi nào dùng TiptapEditor modes
 
-- **`SimpleRichTextEditor`**: nội dung ngắn (product short description, FAQ, feedback)
-- **`RichTextEditor`**: nội dung trung bình với basic toolbar
-- **`EnhancedRichTextEditor`**: product description trong admin (extended toolbar + image upload + base64 processing)
-- Luôn wrap bằng `EditorErrorBoundary` khi dùng trong admin
+- **`mode='simple'`**: nội dung ngắn (product short description, FAQ, feedback) — basic toolbar
+- **`mode='full'`**: product description trong admin — extended toolbar + image upload
 
 ## Notifications
 

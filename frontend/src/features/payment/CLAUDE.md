@@ -139,7 +139,7 @@ interface BankTransferQRProps {
 **Feature này phụ thuộc vào:**
 
 - `features/orders` — `useGetOrderByIdQuery` (polling), `useCancelOrderMutation` (auto-cancel khi timeout)
-- `@ant-design/icons` — `CopyOutlined`, `CheckOutlined` trong `BankTransferQR`
+- `lucide-react` — `Copy`, `Check` icons trong `BankTransferQR`
 - `lib/api-client` — HTTP requests
 - `stores/ui-store` — `addNotification()`
 

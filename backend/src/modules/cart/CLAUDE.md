@@ -111,17 +111,17 @@ Base path: `/api/cart`
 
 Tất cả endpoints dùng `optionalAuthenticate` (apply qua `router.use()`) — hoạt động cả guest lẫn logged-in user.
 
-| Method | Path              | Auth                 | Mô tả                                             |
-| ------ | ----------------- | -------------------- | ------------------------------------------------- |
-| GET    | `/cart`           | optionalAuthenticate | Lấy giỏ hàng (kèm auto-merge nếu có cookie guest) |
-| GET    | `/cart/count`     | optionalAuthenticate | Đếm tổng quantity items                           |
-| POST   | `/cart`           | optionalAuthenticate | Thêm sản phẩm vào giỏ (validate stock)            |
+| Method | Path              | Auth                                                           | Mô tả                                             |
+| ------ | ----------------- | -------------------------------------------------------------- | ------------------------------------------------- |
+| GET    | `/cart`           | optionalAuthenticate                                           | Lấy giỏ hàng (kèm auto-merge nếu có cookie guest) |
+| GET    | `/cart/count`     | optionalAuthenticate                                           | Đếm tổng quantity items                           |
+| POST   | `/cart`           | optionalAuthenticate                                           | Thêm sản phẩm vào giỏ (validate stock)            |
 | POST   | `/cart/sync`      | optionalAuthenticate (service yêu cầu user login, guest → 401) | Replace toàn bộ items bằng danh sách từ client    |
 | POST   | `/cart/merge`     | optionalAuthenticate (service yêu cầu user login, guest → 401) | Explicit merge guest cart vào user cart           |
-| GET    | `/cart/validate`  | optionalAuthenticate | Check stock/availability trước checkout           |
-| PUT    | `/cart/items/:id` | optionalAuthenticate | Cập nhật quantity item (validate stock)           |
-| DELETE | `/cart/items/:id` | optionalAuthenticate | Xóa 1 item                                        |
-| DELETE | `/cart`           | optionalAuthenticate | Xóa toàn bộ giỏ hàng                              |
+| GET    | `/cart/validate`  | optionalAuthenticate                                           | Check stock/availability trước checkout           |
+| PUT    | `/cart/items/:id` | optionalAuthenticate                                           | Cập nhật quantity item (validate stock)           |
+| DELETE | `/cart/items/:id` | optionalAuthenticate                                           | Xóa 1 item                                        |
+| DELETE | `/cart`           | optionalAuthenticate                                           | Xóa toàn bộ giỏ hàng                              |
 
 ---
 

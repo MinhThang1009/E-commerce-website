@@ -1,3 +1,8 @@
+// TextEncoder/TextDecoder polyfill cho react-router v7
+const { TextEncoder, TextDecoder } = require('util');
+if (!global.TextEncoder) global.TextEncoder = TextEncoder;
+if (!global.TextDecoder) global.TextDecoder = TextDecoder;
+
 // Setup cho React component tests — chạy trước mỗi test suite
 
 // ts-jest với moduleResolution:'bundler' compile `import React from 'react'` thành

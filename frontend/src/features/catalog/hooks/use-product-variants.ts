@@ -6,14 +6,14 @@
  */
 import { ProductVariant } from '@/types';
 import { useEffect, useState } from 'react';
-import type { FormInstance } from 'antd';
+import type { FormAdapter } from './use-form-adapter';
 
 /**
  * Quản lý danh sách variants của sản phẩm trong form admin (tạo mới hoặc chỉnh sửa).
  *
  * Hook xử lý 3 trách nhiệm chính:
  * 1. **Quản lý state variants** — thêm, sửa, xóa variant qua modal.
- * 2. **Đồng bộ form Ant Design** — tự động tính lại `stockQuantity` (tổng tồn kho)
+ * 2. **Đồng bộ form** — tự động tính lại `stockQuantity` (tổng tồn kho)
  *    và `price` (giá trung bình theo trọng số tồn kho) mỗi khi danh sách variants thay đổi.
  * 3. **Kiểm soát modal** — mở/đóng modal tạo/sửa variant, theo dõi variant đang được sửa.
  *
@@ -34,7 +34,7 @@ import type { FormInstance } from 'antd';
  *
  * @param initialVariants - Danh sách variants ban đầu khi mở form.
  *   Mảng rỗng khi tạo sản phẩm mới; danh sách variants hiện có khi chỉnh sửa.
- * @param form - Instance form Ant Design (từ `Form.useForm()`). Nếu truyền vào,
+ * @param form - FormAdapter instance. Nếu truyền vào,
  *   hook sẽ tự động cập nhật các field `stockQuantity` và `price` khi variants thay đổi.
  *   Nếu không truyền (undefined), phần đồng bộ form bị bỏ qua.
  *
@@ -48,7 +48,7 @@ import type { FormInstance } from 'antd';
  * - `openVariantModal` — Mở modal; truyền variant để sửa, không truyền để tạo mới.
  * - `closeVariantModal` — Đóng modal và xóa `editingVariant`.
  */
-export const useProductVariants = (initialVariants: ProductVariant[] = [], form?: FormInstance) => {
+export const useProductVariants = (initialVariants: ProductVariant[] = [], form?: FormAdapter) => {
   const [variants, setVariants] = useState<ProductVariant[]>(initialVariants);
   const [variantModalVisible, setVariantModalVisible] = useState(false);
   const [editingVariant, setEditingVariant] = useState<ProductVariant | null>(null);
@@ -114,7 +114,7 @@ export const useProductVariants = (initialVariants: ProductVariant[] = [], form?
    *   Nếu variant đã có `id` sẵn (từ API), giữ nguyên `id` đó.
    * Sau khi xử lý, đóng modal và xóa `editingVariant`.
    *
-   * @param variant - Dữ liệu variant từ form trong modal (đã được validate bởi Ant Design Form).
+   * @param variant - Dữ liệu variant từ form trong modal.
    */
   const handleAddVariant = (variant: ProductVariant) => {
     if (editingVariant) {

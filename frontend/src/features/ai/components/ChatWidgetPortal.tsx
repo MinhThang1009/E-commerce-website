@@ -49,17 +49,24 @@ const ChatWidgetPortal: React.FC = () => {
 
   useEffect(() => {
     saveSessionIdToStorage(sessionId);
-    // Register session với server để terminal --watch biết session hiện tại ngay lập tức
-    if (sessionId) {
-      fetch('/api/chatbot/session/register', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ sessionId }),
-      }).catch(() => {}); // fire-and-forget
-    }
+    if (!sessionId) return;
+    const controller = new AbortController();
+    fetch('/api/chatbot/session/register', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ sessionId }),
+      signal: controller.signal,
+    }).catch((err) => {
+      if (err.name !== 'AbortError') console.error('Lỗi đăng ký session chatbot:', err);
+    });
+    return () => controller.abort();
   }, [sessionId]);
 
-  const { mutateAsync: sendChatbotMessage, isPending: isLoading, reset: resetMutation } = useSendChatbotMessageMutation();
+  const {
+    mutateAsync: sendChatbotMessage,
+    isPending: isLoading,
+    reset: resetMutation,
+  } = useSendChatbotMessageMutation();
 
   useEffect(() => {
     if (isOpen && messages.length === 0) {
@@ -198,7 +205,7 @@ const ChatWidgetPortal: React.FC = () => {
   };
 
   const handleClearChat = () => {
-    resetMutation();           // reset isLoading → ẩn typing indicator ngay
+    resetMutation(); // reset isLoading → ẩn typing indicator ngay
     clearMessagesAction(createSessionId());
   };
 
@@ -207,8 +214,14 @@ const ChatWidgetPortal: React.FC = () => {
   // ?demo=false → tắt, xóa sessionStorage
   const [isDemoMode] = useState<boolean>(() => {
     const param = new URLSearchParams(window.location.search).get('demo');
-    if (param === 'true')  { sessionStorage.setItem('demo_mode', 'true');  return true; }
-    if (param === 'false') { sessionStorage.removeItem('demo_mode');        return false; }
+    if (param === 'true') {
+      sessionStorage.setItem('demo_mode', 'true');
+      return true;
+    }
+    if (param === 'false') {
+      sessionStorage.removeItem('demo_mode');
+      return false;
+    }
     return sessionStorage.getItem('demo_mode') === 'true';
   });
   // Patch window.history để inject ?demo=true vào MỌI navigation (kể cả <Link>)
@@ -226,7 +239,7 @@ const ChatWidgetPortal: React.FC = () => {
       return `${path}?${params.toString()}`;
     };
 
-    const origPush    = window.history.pushState.bind(window.history);
+    const origPush = window.history.pushState.bind(window.history);
     const origReplace = window.history.replaceState.bind(window.history);
 
     window.history.pushState = (state, title, url) =>
@@ -235,7 +248,7 @@ const ChatWidgetPortal: React.FC = () => {
       origReplace(state, title, injectDemo(url) as string);
 
     return () => {
-      window.history.pushState    = origPush;
+      window.history.pushState = origPush;
       window.history.replaceState = origReplace;
     };
   }, [isDemoMode]);
@@ -245,11 +258,11 @@ const ChatWidgetPortal: React.FC = () => {
   useEffect(() => {
     if (!isDemoMode || !sessionId) return;
     // Khởi tạo lastDbCountRef với số messages hiện tại để không reload ngay
-    lastDbCountRef.current = messagesRef.current.filter(m => !m.isLoading).length;
+    lastDbCountRef.current = messagesRef.current.filter((m) => !m.isLoading).length;
 
     const poll = async () => {
       // Bỏ qua poll khi đang chờ response — tránh setMessagesAction 2 lần → flicker
-      if (messagesRef.current.some(m => m.isLoading)) return;
+      if (messagesRef.current.some((m) => m.isLoading)) return;
       try {
         const res = await fetch(`/api/chatbot/session/${sessionId}/messages`);
         const json = await res.json();
@@ -258,20 +271,33 @@ const ChatWidgetPortal: React.FC = () => {
           lastDbCountRef.current = dbMsgs.length;
           setMessagesAction(dbMsgs.map(dbMsgToMessage));
         }
-      } catch { /* silent */ }
+      } catch {
+        /* silent */
+      }
     };
     const timer = setInterval(poll, 3000);
     return () => clearInterval(timer);
   }, [isDemoMode, sessionId]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Helper: chuyển DB message → Message (bao gồm products/suggestions từ metadata)
-  const dbMsgToMessage = (m: { role: string; content: string; metadata?: string; createdAt: string }, idx: number): Message => {
-    const meta = m.metadata ? (() => { try { return JSON.parse(m.metadata!); } catch { return null; } })() : null;
+  const dbMsgToMessage = (
+    m: { role: string; content: string; metadata?: string; createdAt: string },
+    idx: number,
+  ): Message => {
+    const meta = m.metadata
+      ? (() => {
+          try {
+            return JSON.parse(m.metadata!);
+          } catch {
+            return null;
+          }
+        })()
+      : null;
     return {
       id: `${new Date(m.createdAt).getTime()}_${idx}`,
       text: m.content,
       sender: m.role === 'user' ? ('user' as const) : ('ai' as const),
-      ...(meta?.products?.length    ? { products: meta.products }       : {}),
+      ...(meta?.products?.length ? { products: meta.products } : {}),
       ...(meta?.suggestions?.length ? { suggestions: meta.suggestions } : {}),
     };
   };
@@ -295,7 +321,9 @@ const ChatWidgetPortal: React.FC = () => {
       } else {
         window.alert('Không tìm thấy lịch sử cho session này.');
       }
-    } catch { /* silent */ } finally {
+    } catch {
+      /* silent */
+    } finally {
       setIsSyncing(false);
     }
   };

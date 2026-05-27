@@ -21,6 +21,8 @@ import { useQueryClient } from '@tanstack/react-query';
 import { ROUTES } from '@/routes/paths';
 import { cartKeys } from '../api/cart-api';
 import { getErrorMsg } from '@/utils/error-utils';
+import { motion } from 'framer-motion';
+import { fadeUp, stagger, itemFade } from '@/utils/motion';
 
 const CartPage: React.FC = () => {
   const { t } = useTranslation();
@@ -211,7 +213,7 @@ const CartPage: React.FC = () => {
       }
       setAppliedVoucher(null);
       setVoucherCode('');
-    } catch (error) {
+    } catch (_error) {
       clearLocalCart();
       showNotification({ message: t('cart.notifications.serverError'), type: 'error' });
     }
@@ -232,9 +234,14 @@ const CartPage: React.FC = () => {
 
   return (
     <div className="container mx-auto px-4 py-8">
-      <h1 className="text-3xl font-bold text-neutral-800 dark:text-neutral-100 mb-8">
+      <motion.h1
+        className="text-3xl font-bold text-neutral-800 dark:text-neutral-100 mb-8"
+        initial="hidden"
+        animate="visible"
+        variants={fadeUp}
+      >
         {t('cart.title')}
-      </h1>
+      </motion.h1>
 
       {/* Trạng thái đồng bộ */}
       {isAuthenticated && serverCart && serverCart.id && (
@@ -333,9 +340,14 @@ const CartPage: React.FC = () => {
           </PremiumButton>
         </div>
       ) : (
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+        <motion.div
+          className="grid grid-cols-1 lg:grid-cols-3 gap-8"
+          initial="hidden"
+          animate="visible"
+          variants={stagger}
+        >
           {/* Các sản phẩm trong giỏ hàng */}
-          <div className="lg:col-span-2">
+          <motion.div className="lg:col-span-2" variants={itemFade}>
             <div className="bg-white dark:bg-neutral-800 rounded-lg shadow-sm p-6">
               <div className="flex justify-between items-center mb-6">
                 <h2 className="text-xl font-semibold text-neutral-800 dark:text-neutral-100">
@@ -368,10 +380,10 @@ const CartPage: React.FC = () => {
                 })}
               </div>
             </div>
-          </div>
+          </motion.div>
 
           {/* Tóm tắt đơn hàng */}
-          <div className="lg:col-span-1">
+          <motion.div className="lg:col-span-1" variants={itemFade}>
             <div className="bg-white dark:bg-neutral-800 rounded-lg shadow-sm p-6 sticky top-24 space-y-6">
               <h2 className="text-xl font-semibold text-neutral-800 dark:text-neutral-100">
                 {t('cart.orderSummary')}
@@ -521,8 +533,8 @@ const CartPage: React.FC = () => {
                 ))}
               </div>
             </div>
-          </div>
-        </div>
+          </motion.div>
+        </motion.div>
       )}
     </div>
   );

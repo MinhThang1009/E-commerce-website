@@ -30,8 +30,19 @@ jest.mock('react-router-dom', () => {
 
 // ── Mock framer-motion ──────────────────────────────────────────
 jest.mock('framer-motion', () => ({
-  motion: { div: ({ children }: { children: unknown }) => children },
+  motion: new Proxy(
+    {},
+    {
+      get:
+        (_t: unknown, tag: string) =>
+        ({ children, ...props }: Record<string, unknown>) => {
+          const React = require('react');
+          return React.createElement(tag, props, children);
+        },
+    },
+  ),
   AnimatePresence: ({ children }: { children: unknown }) => children,
+  MotionConfig: ({ children }: { children: unknown }) => children,
 }));
 
 // ── Mock react-helmet-async ─────────────────────────────────────
@@ -178,10 +189,6 @@ jest.mock('@/components/common', () => {
 jest.mock('@/utils/error-utils', () => ({
   getErrorMsg: (_err: unknown, fallback: string) => fallback,
   ErrorType: {},
-}));
-
-jest.mock('@/utils/toast', () => ({
-  toast: { success: jest.fn(), error: jest.fn(), warning: jest.fn() },
 }));
 
 jest.mock('@/utils/format', () => ({

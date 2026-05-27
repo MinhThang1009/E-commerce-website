@@ -39,14 +39,15 @@ embedding/
 **Singleton** (`module.exports = new EmbeddingService()`).
 
 **Config từ env:**
+
 - `OPENROUTER_API_KEY` — bắt buộc để hoạt động; nếu thiếu hoặc là `'demo-key'` → throw khi gọi
 - Model cố định: `openai/text-embedding-3-small` qua `https://openrouter.ai/api/v1/embeddings`
 
 **Exported methods:**
 
-| Method | Signature | Mô tả |
-|---|---|---|
-| `generateEmbedding` | `(text) → Promise<number[]>` | Single text → embedding vector; retry 3 lần với backoff 500/1000/2000ms |
+| Method                    | Signature                       | Mô tả                                                                          |
+| ------------------------- | ------------------------------- | ------------------------------------------------------------------------------ |
+| `generateEmbedding`       | `(text) → Promise<number[]>`    | Single text → embedding vector; retry 3 lần với backoff 500/1000/2000ms        |
 | `generateBatchEmbeddings` | `(texts) → Promise<number[][]>` | Mảng texts → mảng embedding vectors; timeout 60s (gấp đôi single); retry 3 lần |
 
 **Retry policy:** exponential backoff `[500, 1000, 2000]ms` cho cả hai methods. Lần thử cuối throw error.
@@ -58,18 +59,20 @@ embedding/
 **Singleton** (`module.exports = new VietnameseEmbeddingService()`).
 
 **Config từ env:**
+
 - `HF_API_KEY` — HuggingFace token; nếu thiếu → `isAvailable()` trả `false`, `generateEmbedding` throw
 - Model: `intfloat/multilingual-e5-large` qua `https://router.huggingface.co/hf-inference/models/intfloat/multilingual-e5-large`
 - `EXPECTED_DIM = 1024` — validate output dimensions
 
 **Exported methods:**
 
-| Method | Signature | Mô tả |
-|---|---|---|
-| `isAvailable` | `() → boolean` | Trả `true` nếu `HF_API_KEY` được set |
+| Method              | Signature                                  | Mô tả                                                                                |
+| ------------------- | ------------------------------------------ | ------------------------------------------------------------------------------------ |
+| `isAvailable`       | `() → boolean`                             | Trả `true` nếu `HF_API_KEY` được set                                                 |
 | `generateEmbedding` | `(text, type='query') → Promise<number[]>` | Prefix `'query: '` hoặc `'passage: '` trước text; retry 2 lần với backoff 500/1000ms |
 
 **Prefix bắt buộc của `multilingual-e5-large`:**
+
 - `type='query'` → prefix `'query: '` — dùng khi search (RAG retrieval)
 - `type='passage'` → prefix `'passage: '` — dùng khi index documents (build vector store)
 
@@ -83,11 +86,11 @@ Prefix này là yêu cầu của model, không phải optional — bỏ qua làm
 
 `modules/ai/services/embedding/` (file này) khác với `src/services/embedding/` (shared service):
 
-| | `modules/ai/services/embedding/` | `src/services/embedding/` |
-|---|---|---|
+|          | `modules/ai/services/embedding/`    | `src/services/embedding/`       |
+| -------- | ----------------------------------- | ------------------------------- |
 | Dùng bởi | Có thể dùng trong AI module context | `vector-store` service (shared) |
-| DI | Singleton, không nhận DI | Inject vào vector store |
-| Scope | Module-local | Global shared service |
+| DI       | Singleton, không nhận DI            | Inject vào vector store         |
+| Scope    | Module-local                        | Global shared service           |
 
 ---
 

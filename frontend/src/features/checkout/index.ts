@@ -11,3 +11,6 @@
 // payment flow ở features/payment; orders flow ở features/orders.
 
 export { default as CheckoutPage } from './pages/CheckoutPage';
+export { default as CheckoutOrderSummary } from './components/CheckoutOrderSummary';
+export { default as CheckoutPaymentMethod } from './components/CheckoutPaymentMethod';
+export { default as CheckoutShippingForm } from './components/CheckoutShippingForm';

@@ -201,20 +201,6 @@ export function useClearCartMutation() {
   });
 }
 
-export function useSyncCartMutation() {
-  const queryClient = useQueryClient();
-  return useMutation({
-    mutationFn: async (data: SyncCartRequest) => {
-      const res = await apiClient.post<CartResponse>('/cart/sync', data);
-      return res.data.data;
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: cartKeys.all });
-      queryClient.invalidateQueries({ queryKey: cartKeys.count });
-    },
-  });
-}
-
 export function useMergeCartMutation() {
   const queryClient = useQueryClient();
   return useMutation({

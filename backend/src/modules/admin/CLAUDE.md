@@ -43,7 +43,7 @@ module.exports = () => ({
 });
 ```
 
-`admin-service.js` và `sequelize-admin-repository.js` `require('@models')` trực tiếp — đây là intentional exception cho singleton modules. Pre-commit hook không block vì module này được khai báo là singleton exception.
+`admin-service.js` (thin re-export) và các sub-service files `require('@models')` trực tiếp — đây là intentional exception cho singleton modules. Pre-commit hook không block vì module này được khai báo là singleton exception.
 
 ## 1.3 Auth pattern
 
@@ -67,7 +67,12 @@ modules/admin/
     admin-controller.js                           — Re-export trực tiếp từ admin-service.js
     admin-import-controller.js                    — Upload (multer memoryStorage) + import/export
   services/
-    admin-service.js                              — Business logic chính (~2000+ lines, HTTP-aware)
+    admin-service.js                              — Thin re-export (19 lines): spread 5 sub-service files
+    admin-stats-service.js                        — Dashboard stats, detailed stats (259 lines)
+    admin-user-service.js                         — User CRUD: list, detail, update, delete (160 lines)
+    admin-order-service.js                        — Order management: list, status, cancel, reviews (299 lines)
+    admin-product-service.js                      — Product CRUD, clone, stock, restock, vector sync (1201 lines)
+    admin-analytics-service.js                    — Analytics: order status, top products, revenue, growth, chatbot (418 lines)
     product-import-service.js                     — Parse, validate, bulk insert CSV/JSON
   repositories/
     i-admin-repository.js                         — Interface (tài liệu)
@@ -81,6 +86,8 @@ modules/admin/
     admin-dto.js                                  — toDto() / toDtoList() wrapper Sequelize instance
   CLAUDE.md
 ```
+
+> **Pattern:** `admin-service.js` là thin re-export — spread (`...`) 5 focused service files vào 1 object duy nhất. Consumer (controller) vẫn `require('admin-service')` và nhận tất cả methods. Khi sửa logic, sửa sub-service file tương ứng, không sửa `admin-service.js`.
 
 ---
 

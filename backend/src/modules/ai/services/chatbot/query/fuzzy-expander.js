@@ -20,16 +20,15 @@
 // ── Edit distance (Levenshtein) ───────────────────────────────────────────────
 
 function editDistance(a, b) {
-  const m = a.length, n = b.length;
+  const m = a.length,
+    n = b.length;
   const dp = Array.from({ length: m + 1 }, (_, i) => i);
   for (let j = 1; j <= n; j++) {
     let prev = dp[0];
     dp[0] = j;
     for (let i = 1; i <= m; i++) {
       const temp = dp[i];
-      dp[i] = a[i - 1] === b[j - 1]
-        ? prev
-        : 1 + Math.min(prev, dp[i - 1], dp[i]);
+      dp[i] = a[i - 1] === b[j - 1] ? prev : 1 + Math.min(prev, dp[i - 1], dp[i]);
       prev = temp;
     }
   }
@@ -51,7 +50,7 @@ function buildPrefixIndex(productNames) {
 
   for (const name of productNames) {
     // Tách theo whitespace, giữ cả token chữ-số kiểu "A57", "S25"
-    const tokens = name.split(/\s+/).filter(t => /[a-zA-Z]/.test(t) && t.length >= 3);
+    const tokens = name.split(/\s+/).filter((t) => /[a-zA-Z]/.test(t) && t.length >= 3);
 
     for (const token of tokens) {
       const lower = token.toLowerCase();
@@ -84,13 +83,15 @@ function expandLetterToken(token, index, threshold, nextNumSeg = null) {
   // Exact prefix match
   if (index.has(token)) {
     const candidates = [...index.get(token)];
-    if (candidates.length === 1) return { expanded: candidates[0], score: 1.0, method: 'exact_prefix' };
+    if (candidates.length === 1)
+      return { expanded: candidates[0], score: 1.0, method: 'exact_prefix' };
 
     // Nhiều candidates → dùng số model kế tiếp để disambiguate
     // Ví dụ: "ip" + "17" → ưu tiên candidate có "17" trong product names (iPhone 17, không phải iPad A16)
     if (nextNumSeg) {
-      const withNum = candidates.filter(c => c.toLowerCase().includes(nextNumSeg));
-      if (withNum.length === 1) return { expanded: withNum[0], score: 0.9, method: 'prefix_disambig' };
+      const withNum = candidates.filter((c) => c.toLowerCase().includes(nextNumSeg));
+      if (withNum.length === 1)
+        return { expanded: withNum[0], score: 0.9, method: 'prefix_disambig' };
     }
     // Fallback: candidate dài nhất thường cụ thể hơn (iPhone vs iPad → chọn dài hơn không hợp lý)
     // Chọn candidate có tên thông dụng nhất (alphabetical first không tốt)
@@ -132,34 +133,45 @@ function expandTokenWithSplit(token, index, threshold = 0.75) {
     return { expanded: token, score: 1, method: 'keep' };
   }
 
-  const expandedParts = segments.map((seg, idx) => {
-    if (/^\d+$/.test(seg)) return { part: seg, changed: false }; // số → giữ nguyên
-    const nextNumSeg = segments[idx + 1] && /^\d+$/.test(segments[idx + 1]) ? segments[idx + 1] : null;
-    const result = expandLetterToken(seg.toLowerCase(), index, threshold, nextNumSeg);
-    const expandedLower = result.expanded.toLowerCase();
-    const didChange = result.method !== 'keep' && expandedLower !== seg.toLowerCase();
-    if (!didChange) return { part: seg, changed: false };
+  const expandedParts = segments
+    .map((seg, idx) => {
+      if (/^\d+$/.test(seg)) return { part: seg, changed: false }; // số → giữ nguyên
+      const nextNumSeg =
+        segments[idx + 1] && /^\d+$/.test(segments[idx + 1]) ? segments[idx + 1] : null;
+      const result = expandLetterToken(seg.toLowerCase(), index, threshold, nextNumSeg);
+      const expandedLower = result.expanded.toLowerCase();
+      const didChange = result.method !== 'keep' && expandedLower !== seg.toLowerCase();
+      if (!didChange) return { part: seg, changed: false };
 
-    // Dedup: nếu expanded đã chứa số model của segment kế tiếp → bỏ số đó ra
-    const nextSeg = segments[idx + 1];
-    let finalExpanded = result.expanded;
-    if (nextSeg && /^\d+$/.test(nextSeg) && expandedLower.includes(nextSeg)) {
-      // expanded = "Reno15", nextSeg = "15" → chỉ giữ expanded, bỏ nextSeg
-      segments[idx + 1] = ''; // mark để skip
-    }
+      // Dedup: nếu expanded đã chứa số model của segment kế tiếp → bỏ số đó ra
+      const nextSeg = segments[idx + 1];
+      const finalExpanded = result.expanded;
+      if (nextSeg && /^\d+$/.test(nextSeg) && expandedLower.includes(nextSeg)) {
+        // expanded = "Reno15", nextSeg = "15" → chỉ giữ expanded, bỏ nextSeg
+        segments[idx + 1] = ''; // mark để skip
+      }
 
-    return { part: finalExpanded, changed: true, score: result.score, method: result.method };
-  }).filter((p, i) => {
-    // Bỏ các segment đã bị mark rỗng do dedup trên
-    return segments[i] !== '';
-  });
+      return { part: finalExpanded, changed: true, score: result.score, method: result.method };
+    })
+    .filter((p, i) => {
+      // Bỏ các segment đã bị mark rỗng do dedup trên
+      return segments[i] !== '';
+    });
 
-  const anyChanged = expandedParts.some(p => p.changed);
+  const anyChanged = expandedParts.some((p) => p.changed);
   if (!anyChanged) return { expanded: token, score: 1, method: 'keep' };
 
-  const reconstructed = expandedParts.map(p => p.part).filter(Boolean).join(' ').trim();
-  const firstChange = expandedParts.find(p => p.changed);
-  return { expanded: reconstructed, score: firstChange?.score ?? 0.8, method: firstChange?.method ?? 'split' };
+  const reconstructed = expandedParts
+    .map((p) => p.part)
+    .filter(Boolean)
+    .join(' ')
+    .trim();
+  const firstChange = expandedParts.find((p) => p.changed);
+  return {
+    expanded: reconstructed,
+    score: firstChange?.score ?? 0.8,
+    method: firstChange?.method ?? 'split',
+  };
 }
 
 // ── Main export ───────────────────────────────────────────────────────────────
@@ -182,7 +194,7 @@ function fuzzyExpandQuery(query, productNames, { threshold = 0.75, debug = false
   const changes = [];
   let changed = false;
 
-  const resultParts = tokens.map(part => {
+  const resultParts = tokens.map((part) => {
     if (!part.trim()) return part; // whitespace → giữ nguyên
 
     const lower = part.toLowerCase();
@@ -191,7 +203,12 @@ function fuzzyExpandQuery(query, productNames, { threshold = 0.75, debug = false
     if (method !== 'keep' && expanded.toLowerCase() !== lower) {
       // Giữ case gốc nếu expansion ngắn hơn (viết hoa đầu)
       const result = expanded.charAt(0).toUpperCase() + expanded.slice(1);
-      changes.push({ original: part, expanded: result, score: Math.round(score * 100) + '%', method });
+      changes.push({
+        original: part,
+        expanded: result,
+        score: Math.round(score * 100) + '%',
+        method,
+      });
       changed = true;
       return result;
     }

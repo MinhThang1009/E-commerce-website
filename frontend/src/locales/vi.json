@@ -87,7 +87,20 @@
       "promotions": {
         "discount": "-50%",
         "freeShip": "Free ship"
-      }
+      },
+      "description": "60+ sản phẩm công nghệ cao cấp — điện thoại, laptop, smartwatch. Giao nhanh 24h, bảo hành 12 tháng.",
+      "heading1": "Công nghệ",
+      "heading2": "Cao cấp",
+      "heading3": "Cho bạn",
+      "statProducts": "Sản phẩm",
+      "statWarranty": "Tháng bảo hành",
+      "statDelivery": "Giao hàng",
+      "ctaShopNow": "Mua sắm ngay",
+      "ctaBrowse": "Khám phá danh mục",
+      "limitedTime": "Có hạn",
+      "within24h": "Trong 24h",
+      "productsCount": "sản phẩm",
+      "scroll": "Cuộn"
     },
     "featuredProducts": {
       "title": "Sản phẩm nổi bật",
@@ -698,6 +711,13 @@
   },
   "checkout": {
     "title": "Thanh toán",
+    "step": {
+      "shipping": "Giao hàng",
+      "payment": "Thanh toán",
+      "confirm": "Xác nhận",
+      "next": "Tiếp tục",
+      "back": "Quay lại"
+    },
     "emptyCart": {
       "title": "Giỏ hàng của bạn đang trống",
       "message": "Thêm một số sản phẩm vào giỏ hàng trước khi tiến hành thanh toán.",

@@ -64,7 +64,10 @@ modules/catalog/
   controllers/
     catalog-controller.js                — ~333 lines: handlers cho cả 3 sub-domain
   services/
-    catalog-service.js                   — ~1521 lines: toàn bộ business logic
+    catalog-service.js                   — Orchestrator (26 lines): class CatalogService + mixin pattern
+    catalog-category-methods.js          — Category methods: list, tree, CRUD, slug lookup (142 lines)
+    catalog-brand-methods.js             — Brand methods: list, CRUD, slug lookup (84 lines)
+    catalog-product-methods.js           — Product methods: list, detail, filter, search, CRUD (767 lines)
   repositories/
     sequelize-catalog-repository.js      — ~750 lines: complex joins + aggregation queries
     i-catalog-repository.js              — interface (abstract base)
@@ -76,6 +79,8 @@ modules/catalog/
 ```
 
 > `routes.js` là **single file** không phải thư mục — export object `{ categories, brands, products }`.
+
+> **Pattern:** `catalog-service.js` định nghĩa class `CatalogService` (constructor + constant `RECENTLY_VIEWED_MAX`), sau đó mix methods vào prototype: `Object.assign(CatalogService.prototype, categoryMethods, brandMethods, productMethods)`. Mixin files export plain objects chứa methods — `this` trong mỗi method trỏ đến instance CatalogService (có `this.catalogRepository`, `this.eventBus`, `this.logger`). Khi sửa logic, sửa file mixin tương ứng, không sửa `catalog-service.js`.
 
 ---
 
@@ -222,22 +227,22 @@ Route order quan trọng — named paths phải đứng trước `/:id` để tr
 
 # 7. Tests
 
-| File                                                   | Loại | Mô tả                                        |
-| ------------------------------------------------------ | ---- | -------------------------------------------- |
-| `services/catalog-service.test.js`                     | Unit | Happy path toàn bộ service methods           |
-| `services/catalog-service.edge-cases.test.js`          | Unit | Edge cases: filter, sort, variant resolution |
-| `services/catalog-service.product.edge-cases.test.js`  | Unit | Edge cases riêng cho product CRUD            |
-| `services/catalog-service.skuid.test.js`               | Unit | skuId + color query resolution               |
-| `services/catalog-product-service.test.js`             | Unit | Product service branches                     |
-| `repositories/catalog-repository.test.js`              | Unit | Repository queries                           |
-| `repositories/catalog-repository.edge-cases.test.js`   | Unit | Repository edge cases                        |
-| `repositories/catalog-repository.edge-cases-2.test.js` | Unit | Repository edge cases (batch 2)              |
-| `controllers/catalog-controller.test.js`               | Unit | HTTP layer                                   |
-| `controllers/catalog-controller.edge-cases.test.js`    | Unit | Controller edge cases                        |
-| `src/__integration__/catalog.integration.test.js`      | Integration | DB integration (MySQL thật)            |
-| `src/__integration__/catalog-recently-viewed.integration.test.js` | Integration | Recently viewed integration     |
-| `src/__api__/catalog.http.test.js`                     | API HTTP | End-to-end HTTP                         |
-| `src/__api__/catalog-products.http.test.js`            | API HTTP | Product endpoints                       |
-| `src/__api__/catalog-comprehensive.http.test.js`       | API HTTP | Comprehensive scenarios                 |
-| `src/__api__/catalog-deep.http.test.js`                | API HTTP | Deep scenarios                          |
-| `src/__api__/catalog-extra.http.test.js`               | API HTTP | Extra scenarios                         |
+| File                                                              | Loại        | Mô tả                                        |
+| ----------------------------------------------------------------- | ----------- | -------------------------------------------- |
+| `services/catalog-service.test.js`                                | Unit        | Happy path toàn bộ service methods           |
+| `services/catalog-service.edge-cases.test.js`                     | Unit        | Edge cases: filter, sort, variant resolution |
+| `services/catalog-service.product.edge-cases.test.js`             | Unit        | Edge cases riêng cho product CRUD            |
+| `services/catalog-service.skuid.test.js`                          | Unit        | skuId + color query resolution               |
+| `services/catalog-product-service.test.js`                        | Unit        | Product service branches                     |
+| `repositories/catalog-repository.test.js`                         | Unit        | Repository queries                           |
+| `repositories/catalog-repository.edge-cases.test.js`              | Unit        | Repository edge cases                        |
+| `repositories/catalog-repository.edge-cases-2.test.js`            | Unit        | Repository edge cases (batch 2)              |
+| `controllers/catalog-controller.test.js`                          | Unit        | HTTP layer                                   |
+| `controllers/catalog-controller.edge-cases.test.js`               | Unit        | Controller edge cases                        |
+| `src/__integration__/catalog.integration.test.js`                 | Integration | DB integration (MySQL thật)                  |
+| `src/__integration__/catalog-recently-viewed.integration.test.js` | Integration | Recently viewed integration                  |
+| `src/__api__/catalog.http.test.js`                                | API HTTP    | End-to-end HTTP                              |
+| `src/__api__/catalog-products.http.test.js`                       | API HTTP    | Product endpoints                            |
+| `src/__api__/catalog-comprehensive.http.test.js`                  | API HTTP    | Comprehensive scenarios                      |
+| `src/__api__/catalog-deep.http.test.js`                           | API HTTP    | Deep scenarios                               |
+| `src/__api__/catalog-extra.http.test.js`                          | API HTTP    | Extra scenarios                              |

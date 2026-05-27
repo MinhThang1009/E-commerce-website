@@ -23,7 +23,7 @@ export interface ChangePasswordRequest {
 
 // === Query Keys ===
 
-export const userKeys = {
+const userKeys = {
   all: ['user'] as const,
   addresses: () => [...userKeys.all, 'addresses'] as const,
   currentUser: () => [...userKeys.all, 'current'] as const,

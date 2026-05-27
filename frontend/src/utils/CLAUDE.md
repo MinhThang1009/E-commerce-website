@@ -19,7 +19,7 @@
 
 # 1. Tổng quan
 
-## 1.1 Danh sách 14 files
+## 1.1 Danh sách 12 files
 
 ```
 utils/
@@ -29,14 +29,12 @@ utils/
   error-utils.ts                  — Parse/classify errors, retry logic
   auth-utils.ts                   — Auto-logout handler, 401 xử lý
   token-manager.ts                — Token validation + refresh + deduplication
-  toast.ts                        — UI feedback toasts (wrapper)
-  image-utils.ts                  — Image URL helpers, fallback, category images
+  image-utils.ts                  — Category image mapping, fallback handler
   proxy-img.ts                    — Proxy URLs cho external images (TGDD/Cellphones)
   upload-url.ts                   — Construct full URL cho uploaded files
   localize.ts                     — Bilingual field extraction (Vi/En)
   export-utils.ts                 — Excel/CSV export via exceljs
   description-image-processor.ts  — Base64 → upload trong Rich Text Editor
-  html-processor.ts               — HTML decode cho Rich Text Editor
 ```
 
 Import qua `@utils/`:
@@ -114,14 +112,12 @@ translateValue('Đen', 'en'); // → "Black" (color translation table)
 | `error-utils.ts`                 | `parseError(err)`, `getErrorMessage(err)`, `isRetryableError(err)`, `getErrorMsg(err, fallback?)`, `createErrorHandler(fn?)`, `retryWithBackoff(fn, maxRetries, baseDelay)`, `formatErrorForLogging(err)` | Parse/classify Axios errors, lấy user-friendly message, retry logic                      |
 | `auth-utils.ts`                  | `handleUnauthorizedError(error)`, `handleAutoLogout(msg?, delay?)`, `setNavigateFunction(navigate)`, `logoutManager`                                                                                      | 401 handling trong `api-client.ts`. `setNavigateFunction` gọi 1 lần trong App.tsx        |
 | `token-manager.ts`               | `getValidToken()`, `isTokenExpired(token)`, `refreshTokenIfNeeded()`                                                                                                                                      | Token injection trong API request interceptor. **Deduplicate** nhiều concurrent requests |
-| `toast.ts`                       | `toast.success(msg)`, `toast.error(msg)`, `toast.warning(msg)`, `toast.loading(msg)`, `toast.dismiss()`                                                                                                   | Quick toast notifications (wrapper)                                                      |
-| `image-utils.ts`                 | `getCategoryImage(name, slug?)` → fallback URL, `handleImageError(e)`, `createCategoryImageErrorHandler(name)`, `preloadImages(urls[])`                                                                   | Image URL theo category, fallback khi ảnh lỗi                                            |
+| `image-utils.ts`                 | `getCategoryImage(name, slug?)`, `createCategoryImageErrorHandler(name)`                                                                                                                                  | Category image mapping, fallback handler                                                 |
 | `proxy-img.ts`                   | `proxyImg(url)` → `/api/img?url=<encoded>`                                                                                                                                                                | Bypass hotlink protection của TGDD/Cellphones/CellphoneS                                 |
 | `upload-url.ts`                  | `getUploadUrl(path)` → full URL                                                                                                                                                                           | Construct URL cho uploaded files (`/uploads/...` → full URL với domain)                  |
 | `localize.ts`                    | `localizeField(obj, field, lang)`, `translateValue(value, lang)`                                                                                                                                          | Extract đúng ngôn ngữ từ object có `nameVi` + `nameEn`                                   |
 | `export-utils.ts`                | `exportToExcel(data, headers, filename)`, `exportToCSV(data, headers, filename)`                                                                                                                          | Export admin reports/danh sách (dùng `exceljs`)                                          |
 | `description-image-processor.ts` | `processDescriptionImages(html: string): Promise<string>`                                                                                                                                                 | Convert base64 ảnh trong Rich Text Editor HTML → upload + replace URL trước khi submit   |
-| `html-processor.ts`              | `processHtmlForEditor(html: string): string`                                                                                                                                                              | Decode HTML entities trước khi load content vào Rich Text Editor                         |
 
 ---
 

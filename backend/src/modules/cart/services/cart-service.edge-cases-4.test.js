@@ -175,9 +175,7 @@ describe('CartService — branch coverage bổ sung', () => {
 
   describe('syncCart — variant không tồn tại', () => {
     test('variantId không match → bỏ qua item đó', async () => {
-      cartRepository.findOrCreateActiveCartByUserId = jest
-        .fn()
-        .mockResolvedValue({ id: 10 });
+      cartRepository.findOrCreateActiveCartByUserId = jest.fn().mockResolvedValue({ id: 10 });
       cartRepository.findProductById = jest.fn().mockResolvedValue({
         id: 1,
         basePrice: 100,
@@ -199,9 +197,7 @@ describe('CartService — branch coverage bổ sung', () => {
 
   describe('syncCart — product.basePrice falsy', () => {
     test('basePrice null → unitPrice = 0', async () => {
-      cartRepository.findOrCreateActiveCartByUserId = jest
-        .fn()
-        .mockResolvedValue({ id: 10 });
+      cartRepository.findOrCreateActiveCartByUserId = jest.fn().mockResolvedValue({ id: 10 });
       cartRepository.findProductById = jest.fn().mockResolvedValue({
         id: 1,
         basePrice: null,
@@ -312,6 +308,35 @@ describe('CartService — branch coverage bổ sung', () => {
       const result = await service.validateCart({ user: { id: 1 }, cookieSessionId: null });
 
       expect(result.items[0].currentPrice).toBe(200);
+    });
+  });
+
+  // ── Line 471: validateCart — defaultVariant null + ProductVariant null → baseStockQuantity = 0 ──
+
+  describe('validateCart — defaultVariant null (line 471 false branch)', () => {
+    test('defaultVariant null + ProductVariant null → baseStockQuantity = 0 → outOfStock', async () => {
+      cartRepository.findActiveCartByUserId = jest.fn().mockResolvedValue({ id: 10 });
+      cartRepository.findCartItemsForValidation = jest.fn().mockResolvedValue([
+        {
+          id: 1,
+          productId: 1,
+          variantId: null,
+          quantity: 1,
+          unitPrice: 100,
+          Product: {
+            id: 1,
+            nameVi: 'Test No Variant',
+            basePrice: 100,
+            defaultVariant: null,
+          },
+          ProductVariant: null,
+        },
+      ]);
+
+      const result = await service.validateCart({ user: { id: 1 }, cookieSessionId: null });
+
+      expect(result.items[0].outOfStock).toBe(true);
+      expect(result.items[0].maxStock).toBe(0);
     });
   });
 

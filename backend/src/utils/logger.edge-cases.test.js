@@ -222,3 +222,53 @@ describe('logger — production file transports (lines 43-49)', () => {
     jest.resetModules();
   });
 });
+
+// ── formatSplat branch — line 37: object vs primitive ────────────────────────
+
+describe('logger — formatSplat line 37 branch (object vs primitive in splat)', () => {
+  it('xử lý cả string/number (String(s)) lẫn object (JSON.stringify) trong splat', () => {
+    jest.resetModules();
+
+    let capturedPrintf = null;
+    jest.doMock('winston', () => {
+      const actual = jest.requireActual('winston');
+      return {
+        ...actual,
+        format: {
+          ...actual.format,
+          printf: jest.fn().mockImplementation((fn) => {
+            capturedPrintf = fn;
+            return actual.format.printf(fn);
+          }),
+          combine: actual.format.combine.bind(actual.format),
+          timestamp: actual.format.timestamp.bind(actual.format),
+          errors: actual.format.errors.bind(actual.format),
+          splat: actual.format.splat.bind(actual.format),
+          colorize: actual.format.colorize.bind(actual.format),
+          json: actual.format.json.bind(actual.format),
+        },
+      };
+    });
+
+    require('./logger');
+    expect(capturedPrintf).not.toBeNull();
+
+    // splat chứa hỗn hợp: object + string + number + null
+    const output = capturedPrintf({
+      timestamp: '2026-01-01 00:00:00',
+      level: 'info',
+      message: 'test-tty-color-branch',
+      [Symbol.for('splat')]: [{ key: 'val' }, 'plain-text', 42, null],
+    });
+
+    expect(output).toContain('test-tty-color-branch');
+    // Object → JSON.stringify
+    expect(output).toContain('{"key":"val"}');
+    // String → String(s)
+    expect(output).toContain('plain-text');
+    // Number → String(s)
+    expect(output).toContain('42');
+
+    jest.resetModules();
+  });
+});

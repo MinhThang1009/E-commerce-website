@@ -34,8 +34,19 @@ jest.mock('react-router-dom', () => {
 
 // ── Mock framer-motion ──────────────────────────────────────────
 jest.mock('framer-motion', () => ({
-  motion: { div: ({ children }: { children: unknown }) => children },
+  motion: new Proxy(
+    {},
+    {
+      get:
+        (_t: unknown, tag: string) =>
+        ({ children, ...props }: Record<string, unknown>) => {
+          const React = require('react');
+          return React.createElement(tag, props, children);
+        },
+    },
+  ),
   AnimatePresence: ({ children }: { children: unknown }) => children,
+  MotionConfig: ({ children }: { children: unknown }) => children,
 }));
 
 // ── Mock stores ─────────────────────────────────────────────────
@@ -102,10 +113,6 @@ jest.mock('@/utils/format', () => ({
   getLocale: () => 'vi-VN',
 }));
 
-jest.mock('@/utils/toast', () => ({
-  toast: { success: jest.fn(), error: jest.fn(), warning: jest.fn() },
-}));
-
 jest.mock('@/utils/error-utils', () => ({
   getErrorMsg: (_err: unknown, fallback: string) => fallback,
   ErrorType: {},
@@ -125,24 +132,10 @@ jest.mock('@/routes/paths', () => ({
   },
 }));
 
-// ── Mock @heroicons ─────────────────────────────────────────────
-jest.mock('@heroicons/react/24/outline', () => {
-  const R = require('react');
-  return {
-    HeartIcon: () => R.createElement('svg', { 'data-testid': 'heart-icon' }),
-    ShoppingCartIcon: () => R.createElement('svg', { 'data-testid': 'cart-icon' }),
-    EyeIcon: () => R.createElement('svg', { 'data-testid': 'eye-icon' }),
-  };
+// ── Mock crypto.randomUUID (thay uuid package đã xoá) ──────────
+Object.defineProperty(globalThis, 'crypto', {
+  value: { ...globalThis.crypto, randomUUID: () => 'test-uuid-1234' },
 });
-jest.mock('@heroicons/react/24/solid', () => {
-  const R = require('react');
-  return {
-    HeartIcon: () => R.createElement('svg', { 'data-testid': 'heart-icon-solid' }),
-  };
-});
-
-// ── Mock uuid ───────────────────────────────────────────────────
-jest.mock('uuid', () => ({ v4: () => 'test-uuid-1234' }));
 
 // ── Import components ───────────────────────────────────────────
 import LoadingSpinner from '@/components/common/LoadingSpinner';

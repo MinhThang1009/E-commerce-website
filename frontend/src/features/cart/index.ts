@@ -22,7 +22,6 @@ export {
   useUpdateCartItemMutation,
   useRemoveCartItemMutation,
   useClearCartMutation,
-  useSyncCartMutation,
   useMergeCartMutation,
   useValidateCartQuery,
   cartKeys,
@@ -40,7 +39,6 @@ export type {
 
 // Hooks
 export { useCartMerge } from './hooks/use-cart-merge';
-export { useCartSync } from './hooks/use-cart-sync';
 
 // Zustand store
 export { useCartStore } from '@/stores/cart-store';

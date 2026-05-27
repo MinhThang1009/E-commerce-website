@@ -68,9 +68,9 @@ const FilterPanel: React.FC<FilterPanelProps> = ({
     }));
   };
 
-  const baseClasses = `bg-white dark:bg-neutral-800 rounded-lg shadow-sm p-5 ${
+  const baseClasses = `backdrop-blur-xl bg-white/70 dark:bg-neutral-800/70 border border-white/20 dark:border-white/10 rounded-2xl shadow-lg p-5 ${
     isMobile
-      ? 'fixed inset-0 z-50 overflow-auto'
+      ? 'fixed inset-0 z-50 overflow-auto rounded-none'
       : 'sticky top-24 max-h-[calc(100vh-120px)] overflow-auto'
   }`;
 

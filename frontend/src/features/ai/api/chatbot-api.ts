@@ -76,15 +76,6 @@ export function useSendChatbotMessageMutation() {
   });
 }
 
-export function useTrackChatbotAnalyticsMutation() {
-  return useMutation<unknown, Error, TrackAnalyticsRequest>({
-    mutationFn: async (body) => {
-      const { data } = await apiClient.post('/chatbot/analytics', body);
-      return data;
-    },
-  });
-}
-
 export function useAddToCartViaChatbotMutation() {
   const queryClient = useQueryClient();
   return useMutation<unknown, Error, AddToCartViaChatbotRequest>({

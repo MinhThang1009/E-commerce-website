@@ -15,14 +15,7 @@ export { default as ReviewSection } from './components/ReviewSection';
 export { default as ReviewSummary } from './components/ReviewSummary';
 
 // API hooks (TanStack Query) + query keys
-export {
-  reviewKeys,
-  useGetProductReviewsQuery,
-  useCreateReviewMutation,
-  useUpdateReviewMutation,
-  useDeleteReviewMutation,
-  useGetUserReviewsQuery,
-} from './api/review-api';
+export { useGetProductReviewsQuery, useCreateReviewMutation } from './api/review-api';
 export type { Review, ReviewFilters, CreateReviewData } from './api/review-api';
 
 // Kiểu dữ liệu

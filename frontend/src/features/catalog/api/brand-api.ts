@@ -6,11 +6,10 @@
  */
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import apiClient from '@/lib/api-client';
-import { transformProductsResponse } from '../utils/product-transform';
 
 // === Query Keys ===
 
-export const brandKeys = {
+const brandKeys = {
   all: ['brands'] as const,
   list: (params?: unknown) => [...brandKeys.all, 'list', params] as const,
   slug: (slug: string) => [...brandKeys.all, 'slug', slug] as const,
@@ -38,39 +37,6 @@ export function useGetBrandsQuery(
       return data;
     },
     enabled: options?.skip !== undefined ? !options.skip : true,
-  });
-}
-
-export function useGetBrandBySlugQuery(
-  slug: string,
-  options?: { enabled?: boolean; skip?: boolean },
-) {
-  return useQuery({
-    queryKey: brandKeys.slug(slug),
-    queryFn: async () => {
-      const { data } = await apiClient.get(`/brands/slug/${slug}`);
-      return data;
-    },
-    enabled: options?.skip !== undefined ? !options.skip : !!slug,
-  });
-}
-
-export function useGetProductsByBrandQuery(
-  params: { slug: string; page?: number; limit?: number },
-  options?: { enabled?: boolean; skip?: boolean },
-) {
-  return useQuery({
-    queryKey: brandKeys.products(params.slug, params),
-    queryFn: async () => {
-      const urlParams = new URLSearchParams();
-      urlParams.append('page', (params.page || 1).toString());
-      urlParams.append('limit', (params.limit || 12).toString());
-      const { data } = await apiClient.get(
-        `/brands/slug/${params.slug}/products?${urlParams.toString()}`,
-      );
-      return transformProductsResponse(data);
-    },
-    enabled: options?.skip !== undefined ? !options.skip : !!params.slug,
   });
 }
 

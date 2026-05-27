@@ -17,7 +17,7 @@ import { useWishlistStore } from '@/stores/wishlist-store';
 import { useAuth } from '@/features/auth';
 import { useGetCartCountQuery } from '@/features/cart';
 import { useGetWishlistQuery } from '@/features/wishlist';
-import { HeartIcon } from '@heroicons/react/24/outline';
+import { Heart } from 'lucide-react';
 import {
   NAVIGATION_ICONS,
   NavigationIconKey,
@@ -138,8 +138,8 @@ const Header: React.FC = () => {
     <header
       className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${
         isScrolled || isSearchOpen
-          ? 'bg-white/96 dark:bg-[#111111]/98 backdrop-blur-md py-2'
-          : 'bg-white/90 dark:bg-[#111111]/95 backdrop-blur-sm py-3'
+          ? 'bg-white/96 dark:bg-neutral-900/98 backdrop-blur-md py-2'
+          : 'bg-white/90 dark:bg-neutral-900/95 backdrop-blur-sm py-3'
       }`}
     >
       <div className="container mx-auto px-3 sm:px-4 md:px-6 lg:px-8 grid grid-cols-[auto_1fr_auto] items-center gap-2 sm:gap-4">
@@ -332,7 +332,7 @@ const Header: React.FC = () => {
             }`}
             aria-label={t('header.actions.wishlist')}
           >
-            <HeartIcon className="h-4 w-4 sm:h-5 sm:w-5 group-hover:scale-110 transition-transform duration-300" />
+            <Heart className="h-4 w-4 sm:h-5 sm:w-5 group-hover:scale-110 transition-transform duration-300" />
             {wishlistCount > 0 && (
               <>
                 <span className="absolute -top-1 -right-1 sm:-top-0.5 sm:-right-0.5 bg-gradient-to-r from-rose-500 to-pink-500 text-white text-xs font-bold rounded-full w-4 h-4 sm:w-5 sm:h-5 flex items-center justify-center shadow-lg">
@@ -382,7 +382,7 @@ const Header: React.FC = () => {
 
       {/* Menu mobile */}
       {isMobileMenuOpen && (
-        <div className="lg:hidden absolute top-full left-0 right-0 bg-white dark:bg-[#171717] shadow-lg py-4 px-4 sm:px-6 space-y-4 animate-slideInTop border-b border-neutral-200 dark:border-white/[0.06]">
+        <div className="lg:hidden absolute top-full left-0 right-0 bg-white dark:bg-neutral-900 shadow-lg py-4 px-4 sm:px-6 space-y-4 animate-slideInTop border-b border-neutral-200 dark:border-white/[0.06]">
           {/* Tìm kiếm mobile */}
           <div className="pb-4">
             <div className="relative">

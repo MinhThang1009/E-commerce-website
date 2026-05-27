@@ -1,8 +1,7 @@
 import { useEffect } from 'react';
-import { ConfigProvider } from 'antd';
-import viVN from 'antd/locale/vi_VN';
 import { BrowserRouter as Router, useNavigate, useLocation } from 'react-router-dom';
 import { useQueryClient } from '@tanstack/react-query';
+import { MotionConfig } from 'framer-motion';
 import { useCartStore } from '@/stores/cart-store';
 import { cartKeys } from '@/features/cart';
 import { HelmetProvider } from 'react-helmet-async';
@@ -11,17 +10,16 @@ import Notifications from '@/components/common/Notifications';
 import { ChatWidgetPortal, ChatbotErrorBoundary } from '@/features/ai';
 import { useTokenRefresh } from '@/hooks/use-token-refresh';
 import { LoginSuccess, AuthProvider } from '@/features/auth';
-import { useAntdToast } from '@/hooks/use-antd-toast';
 import { setNavigateFunction } from '@/utils/auth-utils';
 import { useUiStore } from '@/stores/ui-store';
 // Khởi tạo cấu hình i18n
 import '@/config/i18n';
+import '@/styles/tailwind.css';
 import '@/styles/index.scss';
 
 // Component con có quyền truy cập useNavigate (phải nằm trong Router)
 const AppContent: React.FC = () => {
   const theme = useUiStore((s) => s.theme);
-  const { contextHolder } = useAntdToast();
   const clearLocalCart = useCartStore((s) => s.clearLocalCart);
   const navigate = useNavigate();
   const queryClient = useQueryClient();
@@ -64,7 +62,6 @@ const AppContent: React.FC = () => {
   return (
     <HelmetProvider>
       <AuthProvider>
-        {contextHolder}
         <Notifications />
         <LoginSuccess />
         <AppRoutes />
@@ -78,11 +75,11 @@ const AppContent: React.FC = () => {
 
 const App: React.FC = () => {
   return (
-    <ConfigProvider locale={viVN}>
-      <Router future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
+    <MotionConfig reducedMotion="user">
+      <Router>
         <AppContent />
       </Router>
-    </ConfigProvider>
+    </MotionConfig>
   );
 };
 

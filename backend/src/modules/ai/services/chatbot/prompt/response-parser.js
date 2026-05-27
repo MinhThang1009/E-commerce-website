@@ -145,7 +145,8 @@ function hasNegationContext(rLower, words) {
  * @returns {Array<Object>} Danh sách sản phẩm bổ sung (đã format giống matchedProducts).
  */
 // Prefix danh mục trong tên SP ở DB — LLM thường bỏ qua khi viết response
-const CATEGORY_PREFIX_RE = /^(điện thoại|laptop|máy tính bảng|tai nghe|đồng hồ thông minh|máy tính)\s+/i;
+const CATEGORY_PREFIX_RE =
+  /^(điện thoại|laptop|máy tính bảng|tai nghe|đồng hồ thông minh|máy tính)\s+/i;
 
 function extractProductsFromText(responseText, retrievedProducts, alreadyMatchedIds) {
   const rLower = responseText.toLowerCase();
@@ -194,7 +195,9 @@ function extractProductsFromText(responseText, retrievedProducts, alreadyMatched
     // Kiểm tra P có lần xuất hiện độc lập không:
     // P xuất hiện mà KHÔNG theo sau bởi bất kỳ extension nào → P được nhắc riêng
     const pEsc = pCore.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-    const extAlts = longerCores.map((e) => `\\s+${e.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}`).join('|');
+    const extAlts = longerCores
+      .map((e) => `\\s+${e.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}`)
+      .join('|');
     return new RegExp(`${pEsc}(?!(${extAlts}))`, 'u').test(rLower);
   });
 

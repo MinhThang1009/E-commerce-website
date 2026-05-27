@@ -6,10 +6,11 @@
  */
 import React from 'react';
 import { Outlet } from 'react-router-dom';
+import { AnimatePresence } from 'framer-motion';
 import { useAuthStore } from '@/stores/auth-store';
 import Header from './Header';
 import Footer from './Footer';
-// Không cần import ChatWidget ở đây nữa vì đã được thêm vào App.tsx
+import PageTransition from './PageTransition';
 import { useScrollToTop } from '@/hooks/use-scroll-to-top';
 import { useCartMerge } from '@/features/cart';
 
@@ -29,11 +30,14 @@ const MainLayout: React.FC = () => {
       <Header />
       <main className="flex-grow pt-16 sm:pt-[4.5rem] lg:pt-20">
         <div className="w-full">
-          <Outlet />
+          <AnimatePresence mode="wait">
+            <PageTransition>
+              <Outlet />
+            </PageTransition>
+          </AnimatePresence>
         </div>
       </main>
       <Footer />
-      {/* ChatWidget đã được thêm vào App.tsx */}
     </div>
   );
 };

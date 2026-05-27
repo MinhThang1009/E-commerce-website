@@ -29,9 +29,9 @@
 
 ## 1.1 Purpose
 
-Luồng thanh toán single-page với nhiều section: nhập địa chỉ giao hàng (hỗ trợ autofill từ địa chỉ đã lưu), chọn phương thức thanh toán (COD, VNPay, MoMo, trả góp, chuyển khoản), áp mã giảm giá, xem order summary, xác nhận đơn hàng. Sau khi tạo đơn → redirect sang cổng thanh toán tương ứng hoặc trang orders.
+Luồng thanh toán 3-step wizard (Giao hàng → Thanh toán → Xác nhận) với framer-motion `AnimatePresence` transition giữa các bước. Nhập địa chỉ giao hàng (hỗ trợ autofill từ địa chỉ đã lưu), chọn phương thức thanh toán (COD, VNPay, MoMo, trả góp, chuyển khoản), áp mã giảm giá, xem order summary, xác nhận đơn hàng. Sau khi tạo đơn → redirect sang cổng thanh toán tương ứng hoặc trang orders.
 
-Feature tối giản — **không có** `api/`, `components/`, `types/` riêng. Dùng trực tiếp hooks từ các features khác.
+Feature không có `api/`, `types/` riêng — dùng trực tiếp hooks từ các features khác. Có `components/` chứa 4 sub-components tách ra từ CheckoutPage.
 
 ## 1.2 Routes
 
@@ -49,10 +49,16 @@ Feature tối giản — **không có** `api/`, `components/`, `types/` riêng. 
 
 ```
 features/checkout/
-  pages/
-    CheckoutPage.tsx    — Toàn bộ checkout flow: form địa chỉ, payment selection, mã giảm giá, order summary, submit
+  components/
+    CheckoutShippingForm.tsx    — Form thông tin giao hàng + chọn địa chỉ đã lưu
+    CheckoutPaymentMethod.tsx   — Chọn phương thức thanh toán + modal trả góp
+    CheckoutOrderSummary.tsx    — Cột phải: items, mã giảm giá, tổng cộng, nút thanh toán
+    CheckoutStepIndicator.tsx   — Animated progress bar (3 bước, framer-motion)
 
-  index.ts              — Barrel export
+  pages/
+    CheckoutPage.tsx            — 3-step wizard orchestrator: điều phối state + render step hiện tại qua AnimatePresence
+
+  index.ts                      — Barrel export (CheckoutPage + 3 sub-components)
 ```
 
 ---
@@ -106,14 +112,22 @@ Không có endpoint riêng — dùng từ features khác:
 
 # 5. Components chính
 
-`CheckoutPage` là component duy nhất — không có components con riêng trong feature.
+`CheckoutPage` là 3-step wizard sử dụng framer-motion `AnimatePresence` để animate transition giữa các bước. State `currentStep` (0/1/2) quyết định step nào hiển thị. Repay flow bỏ qua step 0 (shipping).
 
-`CheckoutPage` render các shared components từ `src/components/common/`:
+## Sub-components (trong `components/`)
 
-- `AddressPicker` — địa chỉ với geocoding (LocationIQ API), tính tọa độ để tính phí ship
-- `Input` — form fields
-- `PremiumButton` — submit button
-- `CartItem` (từ `features/cart`) — hiển thị items trong order summary, `isCheckout={true}` để ẩn quantity stepper
+| Component               | Mô tả                                                                                                                                                  |
+| ----------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `CheckoutShippingForm`  | Step 0 — Form giao hàng: firstName, lastName, email, phone, address (qua `AddressPicker` với geocoding LocationIQ). Hỗ trợ autofill từ địa chỉ đã lưu. |
+| `CheckoutPaymentMethod` | Step 1 — Chọn phương thức thanh toán (COD, VNPay, MoMo, trả góp, chuyển khoản). Có modal trả góp (Dialog + HTML table).                                |
+| `CheckoutOrderSummary`  | Step 2 — Hiển thị items (`CartItem` từ `features/cart`, `isCheckout={true}`), áp mã giảm giá, tổng cộng, nút thanh toán (`PremiumButton`).             |
+| `CheckoutStepIndicator` | Animated progress bar hiển thị 3 bước với trạng thái completed/active/pending. Dùng framer-motion cho animation circle + check icon.                   |
+
+## Shared components sử dụng
+
+- `AddressPicker` (`src/components/common/`) — geocoding, tính phí ship theo khoảng cách
+- `Input`, `PremiumButton` (`src/components/common/`)
+- `CartItem` (từ `features/cart`) — hiển thị items trong order summary
 
 ---
 

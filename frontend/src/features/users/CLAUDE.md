@@ -26,15 +26,18 @@ Trang profile (`/profile`) với 4 tabs: thông tin cá nhân, đổi mật kh�
 
 ```
 api/
-  user-api.ts      — TanStack Query hooks + export userKeys
+  user-api.ts              — TanStack Query hooks + export userKeys
+
+components/
+  ProfileAddressesTab.tsx  — Tab quản lý địa chỉ giao hàng (extracted từ ProfilePage)
 
 pages/
-  ProfilePage.tsx  — /profile: layout 4 tabs
+  ProfilePage.tsx          — /profile: layout 4 tabs (~789 dòng, giảm từ ~1021 sau refactor)
 
-index.ts           — Barrel export
+index.ts                   — Barrel export
 ```
 
-Không có `components/`, `types/` riêng. UI inline trong `ProfilePage` hoặc từ `src/components/common/`.
+Không có `types/` riêng. UI inline trong `ProfilePage` hoặc từ `src/components/common/`, ngoại trừ address tab đã tách ra `ProfileAddressesTab`.
 
 ---
 
@@ -84,18 +87,24 @@ export const userKeys = {
 
 ## Pages
 
-| Page          | Route      | Mô tả                                                                         |
-| ------------- | ---------- | ----------------------------------------------------------------------------- |
-| `ProfilePage` | `/profile` | Layout 4 tabs với hero header + avatar card. Tab content inline trong 1 file. |
+| Page          | Route      | Mô tả                                                                                        |
+| ------------- | ---------- | -------------------------------------------------------------------------------------------- |
+| `ProfilePage` | `/profile` | Layout 4 tabs với hero header + avatar card. Address tab extracted ra `ProfileAddressesTab`. |
+
+## Components
+
+| Component             | Mô tả                                                                                                                                                          |
+| --------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `ProfileAddressesTab` | Tab quản lý địa chỉ giao hàng — extracted từ `ProfilePage` để giảm kích thước file (1021 → ~789 dòng). Nhận state + callbacks qua props, không có logic riêng. |
 
 ## 4 Tabs trong ProfilePage
 
-| Tab key     | Nội dung                                                                                                                                           |
-| ----------- | -------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `info`      | Cập nhật firstName, lastName, phone. Email read-only (không thể thay đổi). Avatar hiển thị hoặc initials fallback. Toggle edit mode (`isEditing`). |
-| `password`  | Form đổi mật khẩu: currentPassword, newPassword, confirmPassword. Min 6 chars cho new password.                                                    |
-| `orders`    | Link redirect sang `/orders`. Không render order list inline — chỉ hiển thị icon + button.                                                         |
-| `addresses` | CRUD địa chỉ: danh sách với default indicator, form thêm/sửa inline (toggle `showAddressForm`). Validate phone VN: `/^(0\|\+84)[0-9]{9}$/`.        |
+| Tab key     | Nội dung                                                                                                                                                                   |
+| ----------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `info`      | Cập nhật firstName, lastName, phone. Email read-only (không thể thay đổi). Avatar hiển thị hoặc initials fallback. Toggle edit mode (`isEditing`).                         |
+| `password`  | Form đổi mật khẩu: currentPassword, newPassword, confirmPassword. Min 6 chars cho new password.                                                                            |
+| `orders`    | Link redirect sang `/orders`. Không render order list inline — chỉ hiển thị icon + button.                                                                                 |
+| `addresses` | Render `ProfileAddressesTab` — CRUD địa chỉ: danh sách với default indicator, form thêm/sửa inline (toggle `showAddressForm`). Validate phone VN: `/^(0\|\+84)[0-9]{9}$/`. |
 
 ---
 

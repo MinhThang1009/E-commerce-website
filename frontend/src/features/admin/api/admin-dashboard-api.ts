@@ -122,15 +122,6 @@ export interface LowStockProduct {
   thumbnail: string | null;
 }
 
-export interface ChatbotStats {
-  totalSessions: number;
-  totalMessages: number;
-  avgMessagesPerSession: number;
-  intentBreakdown: Record<string, number>;
-  fallbackRate: number;
-  avgResponseTimeMs: number;
-}
-
 export interface DateRangeQuery {
   startDate?: string;
   endDate?: string;
@@ -153,7 +144,7 @@ export interface ExportQuery {
 
 // === Query Keys ===
 
-export const adminDashboardKeys = {
+const adminDashboardKeys = {
   all: ['admin-dashboard'] as const,
   stats: () => [...adminDashboardKeys.all, 'stats'] as const,
   detailed: (params: unknown) => [...adminDashboardKeys.all, 'detailed', params] as const,
@@ -278,29 +269,5 @@ export function useGetLowStockAnalyticsQuery(
       return data;
     },
     enabled: options?.skip !== undefined ? !options.skip : true,
-  });
-}
-
-export function useGetChatbotStatsQuery(
-  params?: DateRangeQuery | void,
-  options?: { enabled?: boolean; skip?: boolean },
-) {
-  // Ưu tiên enabled nếu có, fallback sang skip (compat), mặc định true
-  const isEnabled =
-    options?.enabled !== undefined
-      ? options.enabled
-      : options?.skip !== undefined
-        ? !options.skip
-        : true;
-
-  return useQuery<{ status: string; data: ChatbotStats }>({
-    queryKey: adminDashboardKeys.chatbotStats(params),
-    queryFn: async () => {
-      const { data } = await apiClient.get('/admin/chatbot/stats', {
-        params: params || undefined,
-      });
-      return data;
-    },
-    enabled: isEnabled,
   });
 }

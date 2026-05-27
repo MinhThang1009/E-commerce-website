@@ -56,7 +56,7 @@ const Footer: React.FC = () => {
   const [isFeedbackModalVisible, setIsFeedbackModalVisible] = React.useState(false);
 
   return (
-    <footer className="bg-white dark:bg-[#171717] pt-16 pb-8 border-t border-neutral-200 dark:border-white/[0.06]">
+    <footer className="bg-white dark:bg-neutral-900 pt-16 pb-8 border-t border-neutral-200 dark:border-white/[0.06]">
       <div className="container mx-auto px-4">
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8 mb-12">
           {/* Thương hiệu & Mạng xã hội */}

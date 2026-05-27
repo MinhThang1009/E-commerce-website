@@ -1,14 +1,15 @@
 import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react';
+import tailwindcss from '@tailwindcss/vite';
 import path from 'path';
 
 // https://vitejs.dev/config/
 export default defineConfig({
-  plugins: [react()],
+  plugins: [react(), tailwindcss()],
   css: {
+    postcss: { plugins: [] },
     preprocessorOptions: {
       scss: {
-        // Dùng modern Sass compiler API thay vì legacy JS API (đã deprecated từ Dart Sass 2.0)
         api: 'modern-compiler',
       },
     },

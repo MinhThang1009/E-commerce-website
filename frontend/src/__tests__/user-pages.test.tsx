@@ -30,16 +30,6 @@ jest.mock('react-router-dom', () => {
   };
 });
 
-// ── Mock @heroicons ─────────────────────────────────────────────
-jest.mock('@heroicons/react/24/outline', () => {
-  const R = require('react');
-  return {
-    HeartIcon: ({ className }: { className?: string }) =>
-      R.createElement('svg', { 'data-testid': 'heart-icon', className }),
-    ShoppingCartIcon: () => R.createElement('svg', { 'data-testid': 'cart-icon' }),
-  };
-});
-
 // ── Mock stores ─────────────────────────────────────────────────
 jest.mock('@/stores/wishlist-store', () => ({
   useWishlistStore: (selector?: (s: unknown) => unknown) => {
@@ -128,7 +118,7 @@ jest.mock('@/features/users', () => ({
   useSetDefaultAddressMutation: () => ({ mutateAsync: jest.fn() }),
 }));
 
-// ── Mock @/components/common barrel (chứa EnhancedRichTextEditor dùng import.meta) ────
+// ── Mock @/components/common barrel ────
 jest.mock('@/components/common', () => {
   const R = require('react');
   const btn = ({ children, onClick, disabled }: any) =>
@@ -142,8 +132,7 @@ jest.mock('@/components/common', () => {
       R.createElement('input', { value, onChange, placeholder }),
     Modal: ({ children, isOpen }: any) => (isOpen ? R.createElement('div', null, children) : null),
     ImageUpload: () => null,
-    RichTextEditor: () => null,
-    EnhancedRichTextEditor: () => null,
+    TiptapEditor: () => null,
     Select: () => null,
     Pagination: () => null,
   };

@@ -57,7 +57,7 @@ export interface ReviewsResponse {
 }
 
 // Query keys tập trung
-export const reviewKeys = {
+const reviewKeys = {
   all: ['reviews'] as const,
   product: (productId: string) => [...reviewKeys.all, 'product', productId] as const,
   productFiltered: (productId: string, filters: ReviewFilters) =>
@@ -95,25 +95,6 @@ export function useGetProductReviewsQuery(
   });
 }
 
-/** Lấy danh sách đánh giá của người dùng */
-export function useGetUserReviewsQuery(
-  params: { page?: number; limit?: number } = {},
-  options?: { enabled?: boolean },
-) {
-  return useQuery<ReviewsResponse>({
-    queryKey: reviewKeys.user(params),
-    queryFn: async () => {
-      const queryParams = new URLSearchParams();
-      if (params.page) queryParams.append('page', params.page.toString());
-      if (params.limit) queryParams.append('limit', params.limit.toString());
-
-      const res = await apiClient.get(`/reviews/user?${queryParams.toString()}`);
-      return res.data;
-    },
-    ...options,
-  });
-}
-
 // --- Mutation hooks ---
 
 /** Tạo đánh giá mới */
@@ -132,43 +113,6 @@ export function useCreateReviewMutation() {
       queryClient.invalidateQueries({
         queryKey: ['products', 'detail', variables.productId],
       });
-    },
-  });
-}
-
-/** Cập nhật đánh giá */
-export function useUpdateReviewMutation() {
-  const queryClient = useQueryClient();
-  return useMutation<unknown, Error, { id: string } & Partial<CreateReviewData>>({
-    mutationFn: async ({ id, ...reviewData }) => {
-      const res = await apiClient.put(`/reviews/${id}`, reviewData);
-      return res.data;
-    },
-    onSuccess: (_data, variables) => {
-      if (variables.productId) {
-        queryClient.invalidateQueries({
-          queryKey: reviewKeys.product(variables.productId),
-        });
-        queryClient.invalidateQueries({
-          queryKey: ['products', 'detail', variables.productId],
-        });
-      } else {
-        queryClient.invalidateQueries({ queryKey: reviewKeys.all });
-      }
-    },
-  });
-}
-
-/** Xóa đánh giá */
-export function useDeleteReviewMutation() {
-  const queryClient = useQueryClient();
-  return useMutation<unknown, Error, string>({
-    mutationFn: async (id) => {
-      const res = await apiClient.delete(`/reviews/${id}`);
-      return res.data;
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: reviewKeys.all });
     },
   });
 }

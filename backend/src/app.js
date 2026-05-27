@@ -197,11 +197,6 @@ const app = express();
 // Đăng ký scheduled cleanup jobs (cron) — abandoned carts, expired OTP, search history, v.v.
 require('@jobs/cleanup');
 
-// // Tin tưởng reverse proxy headers khi chạy sau Nginx/PM2
-// if (process.env.NODE_ENV === 'production') {
-//   app.set('trust proxy', 1);
-// }
-
 // Thiết lập các HTTP security headers
 // CSP bị tắt vì backend chỉ trả về JSON — CSP chỉ có ý nghĩa cho HTML document.
 // Frontend (Vite/Nginx) là nơi đặt CSP cho HTML page.

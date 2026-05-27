@@ -36,23 +36,38 @@ jest.mock('react-router-dom', () => {
 jest.mock('framer-motion', () => {
   const React = require('react');
   return {
-    motion: {
-      div: ({ children, className, ...rest }: Record<string, unknown>) =>
-        React.createElement('div', { className, ...rest }, children),
-    },
+    motion: new Proxy(
+      {},
+      {
+        get:
+          (_t: unknown, tag: string) =>
+          ({ children, className, ...rest }: Record<string, unknown>) =>
+            React.createElement(tag, { className, ...rest }, children),
+      },
+    ),
     AnimatePresence: ({ children }: { children: unknown }) => children,
+    MotionConfig: ({ children }: { children: unknown }) => children,
   };
 });
 
-// ── Mock Heroicons ────────────────────────────────────────────
-jest.mock('@heroicons/react/24/outline', () => ({
-  HeartIcon: () => <svg data-testid="heart-icon" />,
-  ShoppingCartIcon: () => <svg data-testid="cart-icon" />,
-  EyeIcon: () => <svg data-testid="eye-icon" />,
-}));
-jest.mock('@heroicons/react/24/solid', () => ({
-  HeartIcon: () => <svg data-testid="heart-icon-solid" />,
-}));
+// ── Mock lucide-react ─────────────────────────────────────────
+jest.mock('lucide-react', () => {
+  const R = require('react');
+  const icon =
+    (name: string) =>
+    ({ className, ...rest }: Record<string, unknown>) =>
+      R.createElement('svg', { 'data-testid': name, className: className || '' });
+  return {
+    Heart: icon('heart-icon'),
+    ShoppingCart: icon('cart-icon'),
+    Eye: icon('eye-icon'),
+    X: icon('x-icon'),
+    Upload: icon('upload-icon'),
+    Link2: icon('link-icon'),
+    Sun: icon('sun-icon'),
+    Moon: icon('moon-icon'),
+  };
+});
 
 // ── Mock stores ───────────────────────────────────────────────
 const mockAddNotification = jest.fn();
@@ -141,13 +156,6 @@ jest.mock('@utils/format', () => ({
   getLocale: () => 'vi-VN',
 }));
 
-jest.mock('@utils/toast', () => ({
-  toast: {
-    success: jest.fn(),
-    error: jest.fn(),
-  },
-}));
-
 jest.mock('@/routes/paths', () => ({
   buildRoute: {
     productDetail: (id: string) => `/products/${id}`,
@@ -155,8 +163,10 @@ jest.mock('@/routes/paths', () => ({
   },
 }));
 
-// Mock uuid
-jest.mock('uuid', () => ({ v4: () => 'test-uuid-1234' }));
+// Mock crypto.randomUUID (thay uuid package đã xoá)
+Object.defineProperty(globalThis, 'crypto', {
+  value: { ...globalThis.crypto, randomUUID: () => 'test-uuid-1234' },
+});
 
 // Mock auth hook
 jest.mock('@features/auth', () => ({
@@ -471,15 +481,19 @@ describe('ProductCard', () => {
     expect(mockAddToWishlistLocal).toHaveBeenCalledWith('prod-1');
   });
 
-  test('sản phẩm đã trong wishlist → hiển thị heart solid', () => {
+  test('sản phẩm đã trong wishlist → hiển thị heart filled', () => {
     mockWishlistItems.push('prod-1');
     render(<ProductCard {...baseProductProps} />);
-    expect(screen.getByTestId('heart-icon-solid')).toBeInTheDocument();
+    const heart = screen.getByTestId('heart-icon');
+    expect(heart).toBeInTheDocument();
+    expect(heart.getAttribute('class')).toContain('fill-rose-500');
   });
 
   test('sản phẩm chưa trong wishlist → hiển thị heart outline', () => {
     render(<ProductCard {...baseProductProps} />);
-    expect(screen.getByTestId('heart-icon')).toBeInTheDocument();
+    const heart = screen.getByTestId('heart-icon');
+    expect(heart).toBeInTheDocument();
+    expect(heart.getAttribute('class')).not.toContain('fill-rose-500');
   });
 
   test('hiển thị rating khi có ratings', () => {

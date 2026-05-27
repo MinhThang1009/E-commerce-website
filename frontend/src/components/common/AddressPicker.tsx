@@ -85,7 +85,7 @@ const AddressPicker: React.FC<AddressPickerProps> = ({
   const [loadingDistricts, setLoadingDistricts] = useState(false);
   const [loadingWards, setLoadingWards] = useState(false);
 
-  const geocodeRef = useRef<ReturnType<typeof setTimeout>>();
+  const geocodeRef = useRef<ReturnType<typeof setTimeout>>(undefined);
   const mapContainerRef = useRef<HTMLDivElement>(null);
   const mapRef = useRef<L.Map | null>(null);
   const markerRef = useRef<L.Marker | null>(null);
@@ -95,7 +95,7 @@ const AddressPicker: React.FC<AddressPickerProps> = ({
     fetch(`${VN_API}/p/`)
       .then((r) => r.json())
       .then((data: AdminUnit[]) => setProvinces(data))
-      .catch(() => {});
+      .catch((err) => console.error('Lỗi tải danh sách tỉnh/thành:', err));
   }, []);
 
   // Load quận/huyện khi chọn tỉnh
@@ -114,7 +114,7 @@ const AddressPicker: React.FC<AddressPickerProps> = ({
     fetch(`${VN_API}/p/${selectedProvinceCode}?depth=2`)
       .then((r) => r.json())
       .then((data) => setDistricts(data.districts ?? []))
-      .catch(() => {})
+      .catch((err) => console.error('Lỗi tải danh sách quận/huyện:', err))
       .finally(() => setLoadingDistricts(false));
   }, [selectedProvinceCode]);
 
@@ -130,7 +130,7 @@ const AddressPicker: React.FC<AddressPickerProps> = ({
     fetch(`${VN_API}/d/${selectedDistrictCode}?depth=2`)
       .then((r) => r.json())
       .then((data) => setWards(data.wards ?? []))
-      .catch(() => {})
+      .catch((err) => console.error('Lỗi tải danh sách phường/xã:', err))
       .finally(() => setLoadingWards(false));
   }, [selectedDistrictCode]);
 
@@ -219,7 +219,10 @@ const AddressPicker: React.FC<AddressPickerProps> = ({
 
       {/* Tỉnh / Thành phố */}
       <div>
-        <label htmlFor="address-province" className="block text-xs font-medium text-neutral-500 dark:text-neutral-400 mb-1">
+        <label
+          htmlFor="address-province"
+          className="block text-xs font-medium text-neutral-500 dark:text-neutral-400 mb-1"
+        >
           {t('addressPicker.province')}
         </label>
         <select
@@ -245,7 +248,10 @@ const AddressPicker: React.FC<AddressPickerProps> = ({
 
       {/* Quận / Huyện */}
       <div>
-        <label htmlFor="address-district" className="block text-xs font-medium text-neutral-500 dark:text-neutral-400 mb-1">
+        <label
+          htmlFor="address-district"
+          className="block text-xs font-medium text-neutral-500 dark:text-neutral-400 mb-1"
+        >
           {t('addressPicker.district')}
         </label>
         <select
@@ -274,7 +280,10 @@ const AddressPicker: React.FC<AddressPickerProps> = ({
 
       {/* Phường / Xã */}
       <div>
-        <label htmlFor="address-ward" className="block text-xs font-medium text-neutral-500 dark:text-neutral-400 mb-1">
+        <label
+          htmlFor="address-ward"
+          className="block text-xs font-medium text-neutral-500 dark:text-neutral-400 mb-1"
+        >
           {t('addressPicker.ward')}
         </label>
         <select

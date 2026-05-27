@@ -6,4 +6,4 @@ Disallow: /admin/
 Disallow: /api
 Disallow: /api/
 
-Sitemap: https://techstore.vn/sitemap.xml
+Sitemap: https://techstore.vn/api/sitemap.xml

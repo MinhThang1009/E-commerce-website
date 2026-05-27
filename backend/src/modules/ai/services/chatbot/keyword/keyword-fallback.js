@@ -103,7 +103,10 @@ function simpleKeywordMatch(userMessage, products) {
   //   3. Extract số embedded trong model code: [a-zA-Z]+(\d{2,})\b (bắt "99" từ "S99", "57" từ "A57")
   const queryForVersionExtract = lowerMessage
     // Strip dải giá: "15-20 triệu", "10 đến 15tr"
-    .replace(/\b\d+(?:[.,]\d+)?\s*[-–]\s*\d+(?:[.,]\d+)?\s*(?:tr(?:iệu)?|nghìn|k\b|đ\b|vnd|đồng)\b/gi, ' ')
+    .replace(
+      /\b\d+(?:[.,]\d+)?\s*[-–]\s*\d+(?:[.,]\d+)?\s*(?:tr(?:iệu)?|nghìn|k\b|đ\b|vnd|đồng)\b/gi,
+      ' ',
+    )
     // Strip giá đơn: "20 triệu", "500k", "10đ"
     .replace(/\b\d+(?:[.,]\d+)?\s*(?:tr(?:iệu)?|nghìn|k\b|đ\b|vnd|đồng)\b/gi, ' ')
     // Strip thông số kỹ thuật: "128GB", "4000mAh", "165Hz", "48MP"
@@ -114,7 +117,9 @@ function simpleKeywordMatch(userMessage, products) {
   // Standalone 2+ digit numbers: "17" trong "iPhone 17"
   const standaloneNums = queryForVersionExtract.match(/\b\d{2,}\b/g) || [];
   // Embedded trong model code: "99" từ "S99", "57" từ "A57", "15" từ "Reno15"
-  const embeddedNums = [...queryForVersionExtract.matchAll(/[a-zA-Z]+(\d{2,})\b/g)].map((m) => m[1]);
+  const embeddedNums = [...queryForVersionExtract.matchAll(/[a-zA-Z]+(\d{2,})\b/g)].map(
+    (m) => m[1],
+  );
   const versionNumbers = [...new Set([...standaloneNums, ...embeddedNums])];
 
   if (versionNumbers.length > 0) {
@@ -179,7 +184,10 @@ function simpleKeywordMatch(userMessage, products) {
         t !== lowerMessage &&
         matchedProducts.some((p) => p.name?.toLowerCase().includes(t)),
     );
-    if (brandDiscriminator && !filtered.some((p) => p.name?.toLowerCase().includes(brandDiscriminator))) {
+    if (
+      brandDiscriminator &&
+      !filtered.some((p) => p.name?.toLowerCase().includes(brandDiscriminator))
+    ) {
       return notFoundResponse();
     }
 
@@ -340,7 +348,10 @@ function simpleKeywordMatch(userMessage, products) {
   };
 
   // Policy / order_inquiry không có sản phẩm → trả thẳng policy info
-  if ((detectedIntent === 'policy' || detectedIntent === 'order_inquiry') && uniqueProducts.length === 0) {
+  if (
+    (detectedIntent === 'policy' || detectedIntent === 'order_inquiry') &&
+    uniqueProducts.length === 0
+  ) {
     return buildPolicyResponse(false);
   }
 
@@ -365,8 +376,12 @@ function simpleKeywordMatch(userMessage, products) {
       const top = uniqueProducts[0];
       const price = toNum(top.price ?? top.basePrice);
       const stockSuffix = top.inStock
-        ? isEn ? ', currently in stock 😊' : ', đang còn hàng ạ 😊'
-        : isEn ? ' (currently out of stock)' : ' (hiện đang hết hàng)';
+        ? isEn
+          ? ', currently in stock 😊'
+          : ', đang còn hàng ạ 😊'
+        : isEn
+          ? ' (currently out of stock)'
+          : ' (hiện đang hết hàng)';
       return {
         response: isEn
           ? `💰 ${top.name} is priced at ${price?.toLocaleString('vi-VN')} ₫${stockSuffix}`

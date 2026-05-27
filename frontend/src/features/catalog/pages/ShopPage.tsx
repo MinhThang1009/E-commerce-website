@@ -22,6 +22,8 @@ import { useGetCategoriesQuery } from '../api/category-api';
 import { useGetBrandsQuery } from '../api/brand-api';
 import { useTranslation } from 'react-i18next';
 import { localizeField } from '@/utils/localize';
+import { motion } from 'framer-motion';
+import { fadeUp, stagger, itemFade, viewportOnce } from '@/utils/motion';
 
 // Tùy chọn sắp xếp sẽ được xử lý bên trong component do dùng hooks
 
@@ -215,9 +217,14 @@ const ShopPage: React.FC = () => {
           href={`${import.meta.env.VITE_SITE_URL || 'https://techstore.vn'}/shop`}
         />
       </Helmet>
-      <div className="container mx-auto px-4 py-8 animate-fadeIn">
+      <div className="container mx-auto px-4 py-8">
         {/* Tiêu đề trang */}
-        <div className="mb-8 text-center">
+        <motion.div
+          className="mb-8 text-center"
+          initial="hidden"
+          animate="visible"
+          variants={fadeUp}
+        >
           <h1 className="text-4xl font-bold text-neutral-800 dark:text-neutral-100 mb-3">
             {t('shop.title')}
           </h1>
@@ -229,7 +236,7 @@ const ShopPage: React.FC = () => {
                 })
               : t('shop.subtitle')}
           </p>
-        </div>
+        </motion.div>
 
         {/* Nút lọc trên mobile */}
         <div className="lg:hidden mb-4">
@@ -428,21 +435,27 @@ const ShopPage: React.FC = () => {
               </div>
             ) : (
               <>
-                <div
+                <motion.div
                   className={
                     viewMode === 'grid'
                       ? 'grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8 xl:gap-10 auto-rows-fr'
                       : 'space-y-8'
                   }
+                  initial="hidden"
+                  whileInView="visible"
+                  viewport={viewportOnce}
+                  variants={stagger}
                 >
-                  {productsData?.data?.map((product: Product) =>
-                    viewMode === 'grid' ? (
-                      <ProductCard key={product.id} {...product} />
-                    ) : (
-                      <ProductListCard key={product.id} {...product} />
-                    ),
-                  )}
-                </div>
+                  {productsData?.data?.map((product: Product) => (
+                    <motion.div key={product.id} variants={itemFade}>
+                      {viewMode === 'grid' ? (
+                        <ProductCard {...product} />
+                      ) : (
+                        <ProductListCard {...product} />
+                      )}
+                    </motion.div>
+                  ))}
+                </motion.div>
 
                 {/* Phân trang */}
                 {productsData?.total && Math.ceil(productsData.total / productsData.limit) > 1 && (

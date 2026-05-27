@@ -5,9 +5,9 @@
  * @description UI component cho feature catalog
  */
 import React from 'react';
-import { Button, Space } from 'antd';
-import { SaveOutlined } from '@ant-design/icons';
+import { Save, Loader2 } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
+import { Button } from '@/components/ui/button';
 
 interface FormActionsProps {
   isFormValid: boolean;
@@ -15,7 +15,7 @@ interface FormActionsProps {
   submitText: string;
   loadingText: string;
   onCancel: () => void;
-  visible?: boolean; // Thêm prop để kiểm soát hiển thị
+  visible?: boolean; // Thm prop  kim sot hin th
 }
 
 const FormActions: React.FC<FormActionsProps> = ({
@@ -33,25 +33,16 @@ const FormActions: React.FC<FormActionsProps> = ({
   }
 
   return (
-    <div style={{ textAlign: 'right' }}>
-      <Space>
-        <Button onClick={onCancel} size="large" style={{ minWidth: 120 }}>
+    <div className="text-right">
+      <div className="inline-flex items-center gap-2">
+        <Button variant="outline" size="lg" onClick={onCancel} className="min-w-[120px]">
           {t('common.cancel')}
         </Button>
-        <Button
-          type="primary"
-          htmlType="submit"
-          icon={<SaveOutlined />}
-          size="large"
-          loading={isSubmitting}
-          disabled={isSubmitting}
-          style={{
-            minWidth: 150,
-          }}
-        >
+        <Button type="submit" size="lg" disabled={isSubmitting} className="min-w-[150px]">
+          {isSubmitting ? <Loader2 className="size-4 animate-spin" /> : <Save className="size-4" />}
           {isSubmitting ? loadingText : submitText}
         </Button>
-      </Space>
+      </div>
     </div>
   );
 };

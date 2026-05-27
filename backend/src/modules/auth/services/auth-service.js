@@ -48,13 +48,6 @@ class AuthService {
       this.logger.error(`[Auth] Gửi OTP email thất bại cho ${user.email}: ${emailErr.message}`);
     }
 
-    if (this.eventBus) {
-      this.eventBus.publish({
-        type: 'auth.userRegistered',
-        payload: { userId: user.id, email: user.email },
-      });
-    }
-
     return { message: 'auth.registerSuccess' };
   }
 

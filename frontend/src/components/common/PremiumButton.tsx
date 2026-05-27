@@ -5,15 +5,15 @@
  * @description Shared UI component
  */
 import React from 'react';
-import { Button, ButtonProps } from 'antd';
 import {
-  CheckCircleOutlined,
-  ArrowRightOutlined,
-  ShoppingCartOutlined,
-  HeartOutlined,
-  UserOutlined,
-  SettingOutlined,
-} from '@ant-design/icons';
+  CheckCircle,
+  ArrowRight,
+  ShoppingCart,
+  Heart,
+  User,
+  Settings,
+  Loader2,
+} from 'lucide-react';
 
 export type PremiumButtonVariant =
   | 'primary' // Gradient xanh lá - CTA chính
@@ -34,28 +34,33 @@ export type PremiumButtonIcon =
   | 'settings'
   | 'none';
 
-interface PremiumButtonProps extends Omit<ButtonProps, 'type' | 'icon' | 'variant'> {
+interface PremiumButtonProps extends Omit<React.ButtonHTMLAttributes<HTMLButtonElement>, 'type'> {
   variant?: PremiumButtonVariant;
   iconType?: PremiumButtonIcon;
   isProcessing?: boolean;
   processingText?: string;
   gradientHover?: boolean;
+  /** Kích thước button — tương thích với API cũ */
+  size?: 'small' | 'middle' | 'large';
+  /** HTML button type */
+  htmlType?: 'button' | 'submit' | 'reset';
 }
 
 const getIcon = (iconType: PremiumButtonIcon) => {
+  const iconClass = 'size-4';
   switch (iconType) {
     case 'check':
-      return <CheckCircleOutlined />;
+      return <CheckCircle className={iconClass} />;
     case 'arrow-right':
-      return <ArrowRightOutlined />;
+      return <ArrowRight className={iconClass} />;
     case 'cart':
-      return <ShoppingCartOutlined />;
+      return <ShoppingCart className={iconClass} />;
     case 'heart':
-      return <HeartOutlined />;
+      return <Heart className={iconClass} />;
     case 'user':
-      return <UserOutlined />;
+      return <User className={iconClass} />;
     case 'settings':
-      return <SettingOutlined />;
+      return <Settings className={iconClass} />;
     default:
       return null;
   }
@@ -122,12 +127,26 @@ const getGradientStyle = (variant: PremiumButtonVariant, isProcessing: boolean) 
   };
 };
 
+const getSizeClasses = (size: 'small' | 'middle' | 'large') => {
+  switch (size) {
+    case 'small':
+      return 'h-8 px-3 text-xs rounded-lg';
+    case 'large':
+      return 'h-12 px-6 text-base rounded-xl';
+    case 'middle':
+    default:
+      return 'h-10 px-4 text-sm rounded-xl';
+  }
+};
+
 const PremiumButton: React.FC<PremiumButtonProps> = ({
   variant = 'primary',
   iconType = 'none',
   isProcessing = false,
   processingText = 'Processing...',
   gradientHover = true,
+  size = 'middle',
+  htmlType = 'button',
   children,
   className = '',
   style = {},
@@ -142,7 +161,7 @@ const PremiumButton: React.FC<PremiumButtonProps> = ({
   const isGhost = variant === 'ghost';
   const isOutline = variant === 'outline';
 
-  const buttonStyle = {
+  const buttonStyle: React.CSSProperties = {
     // primary/secondary: background='' → không override → CSS class glass xử lý
     ...(gradientStyle.background ? { background: gradientStyle.background } : {}),
     ...(gradientStyle.boxShadow && !gradientStyle.boxShadow.endsWith(' ')
@@ -154,7 +173,7 @@ const PremiumButton: React.FC<PremiumButtonProps> = ({
     ...style,
   };
 
-  const handleMouseEnter = (e: React.MouseEvent<HTMLElement>) => {
+  const handleMouseEnter = (e: React.MouseEvent<HTMLButtonElement>) => {
     if (!isProcessing && !disabled && gradientHover) {
       e.currentTarget.style.transform = 'translateY(-2px)';
       e.currentTarget.style.boxShadow = gradientStyle.shadowHover;
@@ -162,7 +181,7 @@ const PremiumButton: React.FC<PremiumButtonProps> = ({
     onMouseEnter?.(e);
   };
 
-  const handleMouseLeave = (e: React.MouseEvent<HTMLElement>) => {
+  const handleMouseLeave = (e: React.MouseEvent<HTMLButtonElement>) => {
     if (!isProcessing && !disabled) {
       e.currentTarget.style.transform = 'translateY(0)';
       e.currentTarget.style.boxShadow = gradientStyle.boxShadow;
@@ -170,31 +189,16 @@ const PremiumButton: React.FC<PremiumButtonProps> = ({
     onMouseLeave?.(e);
   };
 
-  const getButtonType = () => {
-    if (isGhost || isOutline) return 'default';
-    return 'primary';
-  };
-
   const getButtonClasses = () => {
     const baseClasses = [
       'premium-button',
       `premium-button-${variant}`,
-      'css-dev-only-do-not-override-mc1tut',
+      'inline-flex items-center justify-center gap-2 font-semibold border cursor-pointer',
+      getSizeClasses(size),
     ];
 
-    // Thêm các class Ant Design tương ứng cho từng variant
-    if (variant === 'primary') {
-      baseClasses.push('ant-btn-primary', 'ant-btn-color-primary', 'ant-btn-variant-solid');
-    } else if (variant === 'secondary') {
-      baseClasses.push('ant-btn-default', 'ant-btn-color-default', 'ant-btn-variant-solid');
-    } else if (variant === 'success') {
-      baseClasses.push('ant-btn-primary', 'ant-btn-color-primary', 'ant-btn-variant-solid');
-    } else if (variant === 'danger') {
-      baseClasses.push('ant-btn-dangerous', 'ant-btn-color-danger', 'ant-btn-variant-solid');
-    } else if (variant === 'outline') {
-      baseClasses.push('ant-btn-default', 'ant-btn-color-default', 'ant-btn-variant-outlined');
-    } else if (variant === 'ghost') {
-      baseClasses.push('ant-btn-text', 'ant-btn-color-default', 'ant-btn-variant-text');
+    if (disabled || isProcessing) {
+      baseClasses.push('opacity-50 cursor-not-allowed');
     }
 
     if (className) {
@@ -205,11 +209,9 @@ const PremiumButton: React.FC<PremiumButtonProps> = ({
   };
 
   return (
-    <Button
-      type={getButtonType()}
-      loading={isProcessing}
+    <button
+      type={htmlType}
       disabled={disabled || isProcessing}
-      icon={icon}
       className={getButtonClasses()}
       style={buttonStyle}
       onMouseEnter={handleMouseEnter}
@@ -217,11 +219,17 @@ const PremiumButton: React.FC<PremiumButtonProps> = ({
       {...props}
     >
       {isProcessing ? (
-        <span className="flex items-center justify-center">{processingText}</span>
+        <span className="flex items-center justify-center gap-2">
+          <Loader2 className="size-4 animate-spin" />
+          {processingText}
+        </span>
       ) : (
-        <span className="flex items-center justify-center">{children}</span>
+        <span className="flex items-center justify-center gap-2">
+          {icon}
+          {children}
+        </span>
       )}
-    </Button>
+    </button>
   );
 };
 

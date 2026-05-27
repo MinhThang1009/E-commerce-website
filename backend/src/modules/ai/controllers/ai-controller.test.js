@@ -257,4 +257,143 @@ describe('AIController', () => {
       expect(next).toHaveBeenCalledWith(err);
     });
   });
+
+  // ────────────────────────────────────────────────────────────
+  // clearSession (lines 75-78)
+  // ────────────────────────────────────────────────────────────
+
+  describe('clearSession', () => {
+    test('clearSession trả về "Session đã xóa" khi cleared=true', async () => {
+      aiService.clearSession = jest.fn().mockReturnValue(true);
+      const req = { body: { sessionId: 'sess-1' } };
+      const res = makeRes();
+      await controller.clearSession(req, res);
+      expect(aiService.clearSession).toHaveBeenCalledWith('sess-1');
+      expect(res.json).toHaveBeenCalledWith({ status: 'success', message: 'Session đã xóa' });
+    });
+
+    test('clearSession trả về "Session không tồn tại" khi cleared=false', async () => {
+      aiService.clearSession = jest.fn().mockReturnValue(false);
+      const req = { body: { sessionId: 'not-exist' } };
+      const res = makeRes();
+      await controller.clearSession(req, res);
+      expect(res.json).toHaveBeenCalledWith({
+        status: 'success',
+        message: 'Session không tồn tại',
+      });
+    });
+  });
+
+  // ────────────────────────────────────────────────────────────
+  // registerSession (lines 81-85)
+  // ────────────────────────────────────────────────────────────
+
+  describe('registerSession', () => {
+    test('sessionId hợp lệ → gọi aiService.registerSession và trả success', async () => {
+      aiService.registerSession = jest.fn();
+      const req = { body: { sessionId: 'sess-abc' } };
+      const res = makeRes();
+      await controller.registerSession(req, res);
+      expect(aiService.registerSession).toHaveBeenCalledWith('sess-abc');
+      expect(res.json).toHaveBeenCalledWith({ status: 'success' });
+    });
+
+    test('sessionId falsy → trả về fail', async () => {
+      aiService.registerSession = jest.fn();
+      const req = { body: {} };
+      const res = makeRes();
+      await controller.registerSession(req, res);
+      expect(aiService.registerSession).not.toHaveBeenCalled();
+      expect(res.json).toHaveBeenCalledWith({ status: 'fail', message: 'sessionId required' });
+    });
+  });
+
+  // ────────────────────────────────────────────────────────────
+  // getLatestSession (lines 88-92)
+  // ────────────────────────────────────────────────────────────
+
+  describe('getLatestSession', () => {
+    test('trả về sessionId từ aiService', async () => {
+      aiService.getLatestSession = jest.fn().mockResolvedValue('sess-latest');
+      const req = {};
+      const res = makeRes();
+      const next = jest.fn();
+      await controller.getLatestSession(req, res, next);
+      expect(res.json).toHaveBeenCalledWith({
+        status: 'success',
+        data: { sessionId: 'sess-latest' },
+      });
+    });
+
+    test('service throw → gọi next(err)', async () => {
+      const err = new Error('DB fail');
+      aiService.getLatestSession = jest.fn().mockRejectedValue(err);
+      const req = {};
+      const res = makeRes();
+      const next = jest.fn();
+      await controller.getLatestSession(req, res, next);
+      expect(next).toHaveBeenCalledWith(err);
+    });
+  });
+
+  // ────────────────────────────────────────────────────────────
+  // getSessionHistory (lines 95-98)
+  // ────────────────────────────────────────────────────────────
+
+  describe('getSessionHistory', () => {
+    test('trả về messages + turns', async () => {
+      const messages = [
+        { role: 'user', content: 'Hi' },
+        { role: 'assistant', content: 'Hello' },
+      ];
+      aiService.getSessionHistory = jest.fn().mockReturnValue(messages);
+      const req = { params: { sessionId: 'sess-1' } };
+      const res = makeRes();
+      await controller.getSessionHistory(req, res);
+      expect(res.json).toHaveBeenCalledWith({
+        status: 'success',
+        data: { sessionId: 'sess-1', turns: 1, messages },
+      });
+    });
+
+    test('session rỗng → turns = 0', async () => {
+      aiService.getSessionHistory = jest.fn().mockReturnValue([]);
+      const req = { params: { sessionId: 'empty' } };
+      const res = makeRes();
+      await controller.getSessionHistory(req, res);
+      expect(res.json).toHaveBeenCalledWith({
+        status: 'success',
+        data: { sessionId: 'empty', turns: 0, messages: [] },
+      });
+    });
+  });
+
+  // ────────────────────────────────────────────────────────────
+  // getSessionMessages (lines 101-106)
+  // ────────────────────────────────────────────────────────────
+
+  describe('getSessionMessages', () => {
+    test('trả về messages từ DB', async () => {
+      const msgs = [{ role: 'user', content: 'Test' }];
+      aiService.getSessionMessages = jest.fn().mockResolvedValue(msgs);
+      const req = { params: { sessionId: 'sess-db' } };
+      const res = makeRes();
+      const next = jest.fn();
+      await controller.getSessionMessages(req, res, next);
+      expect(res.json).toHaveBeenCalledWith({
+        status: 'success',
+        data: { sessionId: 'sess-db', messages: msgs },
+      });
+    });
+
+    test('service throw → gọi next(err)', async () => {
+      const err = new Error('DB fail');
+      aiService.getSessionMessages = jest.fn().mockRejectedValue(err);
+      const req = { params: { sessionId: 'sess-x' } };
+      const res = makeRes();
+      const next = jest.fn();
+      await controller.getSessionMessages(req, res, next);
+      expect(next).toHaveBeenCalledWith(err);
+    });
+  });
 });

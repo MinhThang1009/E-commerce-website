@@ -86,66 +86,66 @@ const ABBREV_MAP = {
   // Chỉ map từ phổ biến trong ngữ cảnh mua sắm — không map toàn bộ từ điển.
 
   // Giá / tầm giá — quan trọng để price filter trong keyword-fallback.js hoạt động
-  '\\bbao\\s+nhieu\\b':        'bao nhiêu',    // "bao nhieu" → "bao nhiêu"
+  '\\bbao\\s+nhieu\\b': 'bao nhiêu', // "bao nhieu" → "bao nhiêu"
   '\\bgia\\s+bao\\s+nhieu\\b': 'giá bao nhiêu',
-  '\\btam\\s+gia\\b':          'tầm giá',
-  '\\bduoi\\b':                'dưới',         // "dưới 15 triệu"
-  '\\btren\\b':                'trên',         // "trên 30 triệu"
-  '\\bkhoang\\b':              'khoảng',       // "khoảng 20 triệu"
-  '\\btam\\b':                 'tầm',          // "tầm 20 triệu"
-  '\\btrieu\\b':               'triệu',        // đơn vị giá — price filter cần có dấu
-  '\\bnghin\\b':               'nghìn',        // đơn vị giá nhỏ
-  '\\bgia\\b':                 'giá',          // "giá bao nhiêu"
+  '\\btam\\s+gia\\b': 'tầm giá',
+  '\\bduoi\\b': 'dưới', // "dưới 15 triệu"
+  '\\btren\\b': 'trên', // "trên 30 triệu"
+  '\\bkhoang\\b': 'khoảng', // "khoảng 20 triệu"
+  '\\btam\\b': 'tầm', // "tầm 20 triệu"
+  '\\btrieu\\b': 'triệu', // đơn vị giá — price filter cần có dấu
+  '\\bnghin\\b': 'nghìn', // đơn vị giá nhỏ
+  '\\bgia\\b': 'giá', // "giá bao nhiêu"
 
   // Trạng thái hàng hóa
-  '\\bcon\\s+hang\\b':    'còn hàng',
-  '\\bhet\\s+hang\\b':    'hết hàng',
-  '\\bton\\s+kho\\b':     'tồn kho',
-  '\\bcon\\s+ko\\b':      'còn không',
+  '\\bcon\\s+hang\\b': 'còn hàng',
+  '\\bhet\\s+hang\\b': 'hết hàng',
+  '\\bton\\s+kho\\b': 'tồn kho',
+  '\\bcon\\s+ko\\b': 'còn không',
 
   // Dịch vụ / chính sách — quan trọng cho intent: policy, order_inquiry
-  '\\bgiao\\s+hang\\b':   'giao hàng',
-  '\\bbao\\s+hanh\\b':    'bảo hành',   // cũng có "bh" nhưng user có thể gõ đủ
-  '\\bdoi\\s+tra\\b':     'đổi trả',
-  '\\bchinh\\s+sach\\b':  'chính sách',
-  '\\bmien\\s+phi\\b':    'miễn phí',
-  '\\bdon\\s+hang\\b':    'đơn hàng',
-  '\\bdat\\s+hang\\b':    'đặt hàng',
-  '\\bvan\\s+chuyen\\b':  'vận chuyển',
+  '\\bgiao\\s+hang\\b': 'giao hàng',
+  '\\bbao\\s+hanh\\b': 'bảo hành', // cũng có "bh" nhưng user có thể gõ đủ
+  '\\bdoi\\s+tra\\b': 'đổi trả',
+  '\\bchinh\\s+sach\\b': 'chính sách',
+  '\\bmien\\s+phi\\b': 'miễn phí',
+  '\\bdon\\s+hang\\b': 'đơn hàng',
+  '\\bdat\\s+hang\\b': 'đặt hàng',
+  '\\bvan\\s+chuyen\\b': 'vận chuyển',
 
   // Hành động tìm kiếm / tư vấn
-  '\\btu\\s+van\\b':      'tư vấn',
-  '\\bso\\s+sanh\\b':     'so sánh',
-  '\\btim\\s+kiem\\b':    'tìm kiếm',
-  '\\bcai\\s+nao\\b':     'cái nào',
-  '\\bnên\\s+mua\\b':     'nên mua',    // đã có dấu nhưng để dự phòng
-  '\\bnen\\s+mua\\b':     'nên mua',
-  '\\bmuon\\s+mua\\b':    'muốn mua',
-  '\\btot\\s+nhat\\b':    'tốt nhất',
-  '\\bmoi\\s+nhat\\b':    'mới nhất',
-  '\\bdang\\s+ban\\b':    'đang bán',
+  '\\btu\\s+van\\b': 'tư vấn',
+  '\\bso\\s+sanh\\b': 'so sánh',
+  '\\btim\\s+kiem\\b': 'tìm kiếm',
+  '\\bcai\\s+nao\\b': 'cái nào',
+  '\\bnên\\s+mua\\b': 'nên mua', // đã có dấu nhưng để dự phòng
+  '\\bnen\\s+mua\\b': 'nên mua',
+  '\\bmuon\\s+mua\\b': 'muốn mua',
+  '\\btot\\s+nhat\\b': 'tốt nhất',
+  '\\bmoi\\s+nhat\\b': 'mới nhất',
+  '\\bdang\\s+ban\\b': 'đang bán',
 
   // Loại sản phẩm (tiếng Việt không dấu)
-  '\\bdien\\s+thoai\\b':          'điện thoại',
-  '\\bmay\\s+tinh\\s+bang\\b':    'máy tính bảng',
+  '\\bdien\\s+thoai\\b': 'điện thoại',
+  '\\bmay\\s+tinh\\s+bang\\b': 'máy tính bảng',
   '\\bdong\\s+ho\\s+thong\\s+minh\\b': 'đồng hồ thông minh',
-  '\\bdong\\s+ho\\b':             'đồng hồ',
-  '\\btai\\s+nghe\\b':            'tai nghe',
+  '\\bdong\\s+ho\\b': 'đồng hồ',
+  '\\btai\\s+nghe\\b': 'tai nghe',
 
   // Từ phủ định / trạng thái — ảnh hưởng negation filter và intent
-  '\\bkhong\\b':    'không',    // "không cần Samsung", "giao hàng không"
+  '\\bkhong\\b': 'không', // "không cần Samsung", "giao hàng không"
   '\\bkhong\\s+co\\b': 'không có',
   '\\bco\\s+khong\\b': 'có không',
-  '\\bhet\\b':      'hết',      // "hết hàng chưa"
+  '\\bhet\\b': 'hết', // "hết hàng chưa"
 
   // Trợ từ tìm kiếm thường gặp
-  '\\bnhieu\\b':    'nhiều',
-  '\\bnhat\\b':     'nhất',     // "tốt nhất", "mới nhất" — khi đứng độc lập
-  '\\bmoi\\b':      'mới',
-  '\\btot\\b':      'tốt',
-  '\\bre\\b':       'rẻ',       // "rẻ nhất", "máy rẻ"
-  '\\bdat\\b':      'đắt',      // "đắt quá"
-  '\\bnhe\\b':      'nhẹ',      // "máy nhẹ"
+  '\\bnhieu\\b': 'nhiều',
+  '\\bnhat\\b': 'nhất', // "tốt nhất", "mới nhất" — khi đứng độc lập
+  '\\bmoi\\b': 'mới',
+  '\\btot\\b': 'tốt',
+  '\\bre\\b': 'rẻ', // "rẻ nhất", "máy rẻ"
+  '\\bdat\\b': 'đắt', // "đắt quá"
+  '\\bnhe\\b': 'nhẹ', // "máy nhẹ"
   '\\bpin\\s+lau\\b': 'pin lâu',
 };
 

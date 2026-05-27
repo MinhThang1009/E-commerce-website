@@ -9,6 +9,7 @@ import { useTranslation } from 'react-i18next';
 import { useGetOrderByIdQuery } from '@/features/orders';
 import { formatPrice } from '@/utils/format';
 import Badge, { BadgeVariant } from '@/components/common/Badge';
+import { Clock, Package, Truck, CheckCircle, MapPin, CreditCard } from 'lucide-react';
 
 interface OrderDetailsProps {
   orderId: string;
@@ -39,7 +40,7 @@ const OrderDetails: React.FC<OrderDetailsProps> = ({ orderId, onOpenReview }) =>
 
   const order = response.data;
 
-  // Logic thanh tiến trình
+  const STEP_ICONS = [Clock, Package, Truck, CheckCircle];
   const steps = ['pending', 'processing', 'shipped', 'delivered'];
   let currentStepIndex = steps.indexOf(order.status);
   if (order.status === 'cancelled') {
@@ -103,35 +104,20 @@ const OrderDetails: React.FC<OrderDetailsProps> = ({ orderId, onOpenReview }) =>
               {steps.map((step, idx) => {
                 const isCompleted = idx <= currentStepIndex;
                 const isActive = idx === currentStepIndex;
+                const StepIcon = STEP_ICONS[idx];
                 return (
                   <div
                     key={step}
                     className="relative flex md:flex-col items-center gap-4 md:gap-0 z-10 w-full md:w-32 group"
                   >
                     <div
-                      className={`w-10 h-10 rounded-xl flex items-center justify-center font-bold text-sm shadow-sm transition-all duration-500 ${
+                      className={`w-11 h-11 rounded-2xl flex items-center justify-center font-bold text-sm shadow-sm transition-all duration-500 ${
                         isCompleted
-                          ? 'bg-green-500 text-white ring-4 ring-green-50 dark:ring-green-900/40 shadow-green-500/30'
-                          : 'bg-white dark:bg-neutral-800 border-2 border-neutral-300 dark:border-neutral-600 text-neutral-400'
-                      } ${isActive ? 'scale-110 shadow-md' : ''}`}
+                          ? 'bg-green-500 text-white shadow-green-500/30'
+                          : 'bg-neutral-100 dark:bg-neutral-800 border-2 border-neutral-300 dark:border-neutral-600 text-neutral-400'
+                      } ${isActive ? 'scale-110 shadow-md ring-4 ring-green-50 dark:ring-green-900/40' : ''}`}
                     >
-                      {idx < currentStepIndex ? (
-                        <svg
-                          className="w-4 h-4"
-                          fill="none"
-                          viewBox="0 0 24 24"
-                          stroke="currentColor"
-                        >
-                          <path
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                            strokeWidth={3}
-                            d="M5 13l4 4L19 7"
-                          />
-                        </svg>
-                      ) : (
-                        idx + 1
-                      )}
+                      <StepIcon className="w-5 h-5" />
                     </div>
                     <div className="md:mt-3 md:text-center text-left">
                       <span
@@ -164,23 +150,10 @@ const OrderDetails: React.FC<OrderDetailsProps> = ({ orderId, onOpenReview }) =>
         {/* 2. Block Thông tin Giao hàng & Thanh toán */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           <div className="bg-neutral-50 dark:bg-neutral-800/40 p-5 rounded-2xl border border-neutral-100 dark:border-neutral-700/50 shadow-sm transition-transform hover:-translate-y-1 duration-300">
-            <div className="flex items-center gap-2 mb-4">
-              <span className="p-2 bg-indigo-100 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400 rounded-lg">
-                <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"
-                  />
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"
-                  />
-                </svg>
-              </span>
+            <div className="flex items-center gap-3 mb-4">
+              <div className="w-10 h-10 rounded-xl bg-primary-50 dark:bg-primary-900/20 flex items-center justify-center">
+                <MapPin className="w-5 h-5 text-primary-600 dark:text-primary-400" />
+              </div>
               <h3 className="font-bold text-neutral-800 dark:text-neutral-100 text-lg">
                 {t('orders.deliverySection')}
               </h3>
@@ -208,17 +181,10 @@ const OrderDetails: React.FC<OrderDetailsProps> = ({ orderId, onOpenReview }) =>
           </div>
 
           <div className="bg-neutral-50 dark:bg-neutral-800/40 p-5 rounded-2xl border border-neutral-100 dark:border-neutral-700/50 shadow-sm transition-transform hover:-translate-y-1 duration-300">
-            <div className="flex items-center gap-2 mb-4">
-              <span className="p-2 bg-amber-100 dark:bg-amber-900/30 text-amber-600 dark:text-amber-400 rounded-lg">
-                <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z"
-                  />
-                </svg>
-              </span>
+            <div className="flex items-center gap-3 mb-4">
+              <div className="w-10 h-10 rounded-xl bg-amber-50 dark:bg-amber-900/20 flex items-center justify-center">
+                <CreditCard className="w-5 h-5 text-amber-600 dark:text-amber-400" />
+              </div>
               <h3 className="font-bold text-neutral-800 dark:text-neutral-100 text-lg">
                 {t('orders.paymentSection')}
               </h3>

@@ -48,19 +48,45 @@ jest.mock('dompurify', () => ({
   default: { sanitize: (html: string) => html },
 }));
 
+// ── Mock framer-motion ──────────────────────────────────────────
+jest.mock('framer-motion', () => {
+  const R = require('react');
+  const motion = new Proxy(
+    {},
+    {
+      get: (_: unknown, tag: string) =>
+        R.forwardRef((props: Record<string, unknown>, ref: unknown) => {
+          const {
+            initial,
+            animate,
+            exit,
+            variants,
+            whileHover,
+            whileInView,
+            whileTap,
+            viewport,
+            transition,
+            layout,
+            layoutId,
+            ...rest
+          } = props;
+          return R.createElement(tag, { ...rest, ref });
+        }),
+    },
+  );
+  return {
+    __esModule: true,
+    motion,
+    AnimatePresence: ({ children }: { children: unknown }) => children,
+  };
+});
+
 // ── Mock lucide-react ────────────────────────────────────────────
 jest.mock('lucide-react', () => {
   const R = require('react');
-  const Icon = ({ className }: { className?: string }) =>
-    R.createElement('svg', { 'data-testid': 'lucide-icon', className });
-  return {
-    Smartphone: Icon,
-    Tablet: Icon,
-    Laptop: Icon,
-    Watch: Icon,
-    Clock: Icon,
-    Package: Icon,
-  };
+  const Icon = (props: Record<string, unknown>) =>
+    R.createElement('svg', { 'data-testid': 'lucide-icon', className: props.className });
+  return new Proxy({}, { get: () => Icon });
 });
 
 // ── Mock LoadingSpinner ─────────────────────────────────────────

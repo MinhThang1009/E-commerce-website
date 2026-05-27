@@ -129,7 +129,7 @@ const ProductCard: React.FC<ProductCardProps> = ({
 
   return (
     <motion.div
-      className="group relative glass-product-card h-full flex flex-col"
+      className="group relative glass-product-card h-full flex flex-col transition-all duration-300 hover:-translate-y-1.5 hover:shadow-2xl hover:shadow-primary-500/10 dark:hover:shadow-primary-400/5"
       initial={{ opacity: 0, y: 24 }}
       whileInView={{ opacity: 1, y: 0 }}
       viewport={{ once: true, margin: '-40px' }}
@@ -188,13 +188,29 @@ const ProductCard: React.FC<ProductCardProps> = ({
           <img
             src={proxyImg(thumbnail)}
             alt={displayName}
-            className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
+            className="w-full h-full object-cover transition-all duration-500 group-hover:scale-110 group-hover:brightness-105"
             loading="lazy"
           />
         </Link>
 
         {/* Hover overlay */}
-        <div className="absolute inset-0 bg-gradient-to-t from-black/30 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none" />
+        <div className="absolute inset-0 bg-gradient-to-t from-black/40 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none" />
+
+        {/* Variant spec badges — hiện trên hover */}
+        {variants && variants.length > 0 && variants[0]?.attributes && (
+          <div className="absolute bottom-3 left-3 right-3 z-10 flex flex-wrap gap-1.5 opacity-0 group-hover:opacity-100 translate-y-2 group-hover:translate-y-0 transition-all duration-300">
+            {Object.values(variants[0].attributes)
+              .slice(0, 2)
+              .map((val, i) => (
+                <span
+                  key={i}
+                  className="px-2 py-0.5 text-[10px] font-semibold bg-white/90 dark:bg-neutral-800/90 backdrop-blur-sm rounded text-neutral-700 dark:text-neutral-200 shadow-sm"
+                >
+                  {String(val)}
+                </span>
+              ))}
+          </div>
+        )}
       </div>
 
       {/* ── Info area ── */}

@@ -17,7 +17,7 @@ import { useWishlistStore } from '@/stores/wishlist-store';
 import { useAuth } from '@/features/auth';
 import { useGetCartCountQuery } from '@/features/cart';
 import { useGetWishlistQuery } from '@/features/wishlist';
-import { Heart } from 'lucide-react';
+import { Heart, ChevronDown, Zap, Trophy, Sparkles, Compass } from 'lucide-react';
 import {
   NAVIGATION_ICONS,
   NavigationIconKey,
@@ -27,6 +27,86 @@ import {
   MenuIcon,
   CloseIcon,
 } from '@/components/icons';
+
+const EXPLORE_LINKS = [
+  { path: '/deals', icon: Zap, labelKey: 'header.navigation.deals', color: 'text-rose-500' },
+  {
+    path: '/best-sellers',
+    icon: Trophy,
+    labelKey: 'header.navigation.bestSellers',
+    color: 'text-amber-500',
+  },
+  {
+    path: '/new-arrivals',
+    icon: Sparkles,
+    labelKey: 'header.navigation.newArrivals',
+    color: 'text-blue-500',
+  },
+];
+
+const ExploreDropdown: React.FC = () => {
+  const { t } = useTranslation();
+  const location = useLocation();
+  const [open, setOpen] = useState(false);
+  const ref = useRef<HTMLDivElement>(null);
+
+  const isActive = EXPLORE_LINKS.some((l) => location.pathname.startsWith(l.path));
+
+  useEffect(() => {
+    const handleClickOutside = (e: MouseEvent) => {
+      if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false);
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+
+  return (
+    <div ref={ref} className="relative">
+      <button
+        type="button"
+        onClick={() => setOpen(!open)}
+        className={`group relative flex items-center gap-1 px-2 xl:px-3 py-2 rounded-xl font-medium transition-all duration-300 hover:bg-primary-50 dark:hover:bg-primary-900/10 whitespace-nowrap ${
+          isActive
+            ? 'text-primary-600 dark:text-primary-400 font-semibold'
+            : 'text-neutral-700 dark:text-neutral-300 hover:text-primary-600 dark:hover:text-primary-400'
+        }`}
+      >
+        <Compass className="h-4 w-4 opacity-60 group-hover:opacity-100 transition-opacity hidden xl:block" />
+        <span className="text-sm">{t('header.navigation.explore')}</span>
+        <ChevronDown
+          className={`h-3.5 w-3.5 transition-transform duration-200 ${open ? 'rotate-180' : ''}`}
+        />
+        <div
+          className={`absolute bottom-0 left-1/2 transform -translate-x-1/2 h-0.5 bg-gradient-to-r from-primary-500 to-secondary-500 transition-all duration-300 ${isActive ? 'w-full' : 'w-0 group-hover:w-full'}`}
+        />
+      </button>
+
+      {open && (
+        <div className="absolute top-full left-0 mt-2 w-52 bg-white dark:bg-neutral-800 rounded-xl shadow-xl border border-neutral-200 dark:border-neutral-700 py-2 z-50 animate-in fade-in slide-in-from-top-2 duration-200">
+          {EXPLORE_LINKS.map((link) => {
+            const LinkIcon = link.icon;
+            const active = location.pathname.startsWith(link.path);
+            return (
+              <Link
+                key={link.path}
+                to={link.path}
+                onClick={() => setOpen(false)}
+                className={`flex items-center gap-3 px-4 py-2.5 text-sm transition-colors ${
+                  active
+                    ? 'bg-primary-50 dark:bg-primary-900/20 text-primary-600 dark:text-primary-400 font-medium'
+                    : 'text-neutral-700 dark:text-neutral-300 hover:bg-neutral-50 dark:hover:bg-neutral-700/50'
+                }`}
+              >
+                <LinkIcon className={`h-4 w-4 ${active ? 'text-primary-500' : link.color}`} />
+                {t(link.labelKey)}
+              </Link>
+            );
+          })}
+        </div>
+      )}
+    </div>
+  );
+};
 
 const Header: React.FC = () => {
   const [isScrolled, setIsScrolled] = useState(false);
@@ -162,20 +242,46 @@ const Header: React.FC = () => {
         </Link>
 
         {/* Điều hướng desktop */}
-        <nav className="col-start-2 hidden lg:flex items-center space-x-1 justify-center overflow-hidden">
+        <nav className="col-start-2 hidden lg:flex items-center space-x-1 justify-center">
           {[
             { key: 'home' as NavigationIconKey, path: '/' },
             { key: 'shop' as NavigationIconKey, path: '/shop' },
-            { key: 'categories' as NavigationIconKey, path: '/categories' },
-            { key: 'deals' as NavigationIconKey, path: '/deals' },
-            { key: 'about' as NavigationIconKey, path: '/about' },
           ].map((item) => {
             const IconComponent = NAVIGATION_ICONS[item.key];
-            // Route "/" chỉ active khi khớp chính xác; các route khác active khi pathname bắt đầu bằng path
             const isActive =
               item.path === '/'
                 ? location.pathname === '/'
                 : location.pathname.startsWith(item.path);
+            return (
+              <Link
+                key={item.key}
+                to={item.path}
+                className={`group relative px-2 xl:px-3 py-2 rounded-xl font-medium transition-all duration-300 hover:bg-primary-50 dark:hover:bg-primary-900/10 whitespace-nowrap ${
+                  isActive
+                    ? 'text-primary-600 dark:text-primary-400 font-semibold'
+                    : 'text-neutral-700 dark:text-neutral-300 hover:text-primary-600 dark:hover:text-primary-400'
+                }`}
+              >
+                <div className="flex items-center space-x-1">
+                  <IconComponent className="h-4 w-4 opacity-60 group-hover:opacity-100 transition-opacity hidden xl:block" />
+                  <span className="text-sm">{t(`header.navigation.${item.key}`)}</span>
+                </div>
+                <div
+                  className={`absolute bottom-0 left-1/2 transform -translate-x-1/2 h-0.5 bg-gradient-to-r from-primary-500 to-secondary-500 transition-all duration-300 ${isActive ? 'w-full' : 'w-0 group-hover:w-full'}`}
+                ></div>
+              </Link>
+            );
+          })}
+
+          {/* Dropdown "Khám phá" — sau Cửa hàng */}
+          <ExploreDropdown />
+
+          {[
+            { key: 'categories' as NavigationIconKey, path: '/categories' },
+            { key: 'about' as NavigationIconKey, path: '/about' },
+          ].map((item) => {
+            const IconComponent = NAVIGATION_ICONS[item.key];
+            const isActive = location.pathname.startsWith(item.path);
             return (
               <Link
                 key={item.key}
@@ -210,7 +316,7 @@ const Header: React.FC = () => {
           </div>
 
           {/* Chuyển đổi ngôn ngữ */}
-          <div className="hidden xsm:block p-1 sm:p-2 rounded-xl hover:bg-neutral-100 dark:hover:bg-neutral-800 transition-colors">
+          <div className="hidden sm:block p-1 sm:p-2 rounded-xl hover:bg-neutral-100 dark:hover:bg-neutral-800 transition-colors">
             <LanguageSwitcher />
           </div>
 
@@ -335,7 +441,10 @@ const Header: React.FC = () => {
             <Heart className="h-4 w-4 sm:h-5 sm:w-5 group-hover:scale-110 transition-transform duration-300" />
             {wishlistCount > 0 && (
               <>
-                <span className="absolute -top-1 -right-1 sm:-top-0.5 sm:-right-0.5 bg-gradient-to-r from-rose-500 to-pink-500 text-white text-xs font-bold rounded-full w-4 h-4 sm:w-5 sm:h-5 flex items-center justify-center shadow-lg">
+                <span
+                  key={wishlistCount}
+                  className="absolute -top-1 -right-1 sm:-top-0.5 sm:-right-0.5 bg-gradient-to-r from-rose-500 to-pink-500 text-white text-xs font-bold rounded-full w-4 h-4 sm:w-5 sm:h-5 flex items-center justify-center shadow-lg animate-[bounce_0.5s_ease-in-out_1]"
+                >
                   {wishlistCount}
                 </span>
               </>
@@ -355,7 +464,10 @@ const Header: React.FC = () => {
             <CartIcon className="h-4 w-4 sm:h-5 sm:w-5 group-hover:scale-110 transition-transform duration-300" />
             {cartItemsCount > 0 && (
               <>
-                <span className="absolute -top-1 -right-1 sm:-top-0.5 sm:-right-0.5 bg-gradient-to-r from-secondary-500 to-warning-500 text-white text-xs font-bold rounded-full w-4 h-4 sm:w-5 sm:h-5 flex items-center justify-center shadow-lg animate-bounce">
+                <span
+                  key={cartItemsCount}
+                  className="absolute -top-1 -right-1 sm:-top-0.5 sm:-right-0.5 bg-gradient-to-r from-secondary-500 to-warning-500 text-white text-xs font-bold rounded-full w-4 h-4 sm:w-5 sm:h-5 flex items-center justify-center shadow-lg animate-[bounce_0.5s_ease-in-out_1]"
+                >
                   {cartItemsCount > 99 ? '99+' : cartItemsCount}
                 </span>
                 <div className="absolute inset-0 bg-gradient-to-r from-secondary-500/10 to-secondary-400/10 rounded-xl opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
@@ -463,27 +575,63 @@ const Header: React.FC = () => {
 
           <div className="space-y-2">
             {[
-              { key: 'home', path: '/' },
-              { key: 'shop', path: '/shop' },
-              { key: 'categories', path: '/categories' },
-              { key: 'deals', path: '/deals' },
-              { key: 'about', path: '/about' },
-            ].map((item) => (
-              <Link
-                key={item.key}
-                to={item.path}
-                className="block font-medium text-neutral-700 dark:text-neutral-300 hover:text-primary-500 dark:hover:text-primary-400 transition-colors py-2 whitespace-nowrap"
-                onClick={() => toggleMobileMenu()}
-              >
-                {t(`header.navigation.${item.key}`)}
-              </Link>
-            ))}
+              { key: 'home' as NavigationIconKey, path: '/' },
+              { key: 'shop' as NavigationIconKey, path: '/shop' },
+              { key: 'categories' as NavigationIconKey, path: '/categories' },
+              { key: 'about' as NavigationIconKey, path: '/about' },
+            ].map((item) => {
+              const IconComponent = NAVIGATION_ICONS[item.key];
+              return (
+                <Link
+                  key={item.key}
+                  to={item.path}
+                  className="flex items-center gap-2.5 font-medium text-neutral-700 dark:text-neutral-300 hover:text-primary-500 dark:hover:text-primary-400 transition-colors py-2 whitespace-nowrap"
+                  onClick={() => toggleMobileMenu()}
+                >
+                  <IconComponent className="h-4 w-4 text-neutral-400" />
+                  {t(`header.navigation.${item.key}`)}
+                </Link>
+              );
+            })}
+
+            <div className="pt-2 border-t border-neutral-100 dark:border-neutral-800">
+              <p className="text-xs font-semibold text-neutral-400 dark:text-neutral-500 uppercase tracking-wider mb-2">
+                {t('header.navigation.explore')}
+              </p>
+              {EXPLORE_LINKS.map((link) => {
+                const LinkIcon = link.icon;
+                return (
+                  <Link
+                    key={link.path}
+                    to={link.path}
+                    className="flex items-center gap-2.5 font-medium text-neutral-700 dark:text-neutral-300 hover:text-primary-500 dark:hover:text-primary-400 transition-colors py-2"
+                    onClick={() => toggleMobileMenu()}
+                  >
+                    <LinkIcon className={`h-4 w-4 ${link.color}`} />
+                    {t(link.labelKey)}
+                  </Link>
+                );
+              })}
+            </div>
           </div>
 
           {/* Language Switcher Mobile */}
           <div className="pt-4 border-t border-neutral-200 dark:border-neutral-700">
             <div className="flex items-center justify-between">
-              <span className="text-sm font-medium text-neutral-700 dark:text-neutral-300">
+              <span className="flex items-center gap-2.5 text-sm font-medium text-neutral-700 dark:text-neutral-300">
+                <svg
+                  className="h-4 w-4 text-neutral-400"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                  strokeWidth={2}
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    d="M21 12a9 9 0 01-9 9m9-9a9 9 0 00-9-9m9 9H3m9 9a9 9 0 01-9-9m9 9c1.657 0 3-4.03 3-9s-1.343-9-3-9m0 18c-1.657 0-3-4.03-3-9s1.343-9 3-9m-9 9a9 9 0 019-9"
+                  />
+                </svg>
                 {t('header.actions.changeLanguage')}
               </span>
               <LanguageSwitcher />

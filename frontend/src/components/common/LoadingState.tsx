@@ -77,16 +77,11 @@ export const ProductCardSkeleton: React.FC<{ className?: string }> = ({ classNam
  */
 export const CategoryCardSkeleton: React.FC<{ className?: string }> = ({ className = '' }) => {
   return (
-    <div
-      className={`animate-pulse bg-white dark:bg-neutral-800 rounded-xl shadow-lg overflow-hidden ${className}`}
-    >
-      {/* Skeleton ảnh */}
-      <div className="aspect-w-3 aspect-h-2 bg-neutral-200 dark:bg-neutral-700" />
-
-      {/* Skeleton nội dung */}
-      <div className="p-6 space-y-2">
-        <div className="h-5 bg-neutral-200 dark:bg-neutral-700 rounded w-2/3" />
-        <div className="h-4 bg-neutral-200 dark:bg-neutral-700 rounded w-1/2" />
+    <div className={`bg-white dark:bg-neutral-800 rounded-2xl overflow-hidden ${className}`}>
+      <div className="aspect-[3/2] shimmer" />
+      <div className="p-5 space-y-2">
+        <div className="h-5 shimmer rounded w-2/3" />
+        <div className="h-4 shimmer rounded w-1/2" />
       </div>
     </div>
   );

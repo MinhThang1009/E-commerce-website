@@ -28,6 +28,27 @@ Object.defineProperty(window, 'matchMedia', {
   })),
 });
 
+// framer-motion mock — ESM module không work với ts-jest
+jest.mock('framer-motion', () => {
+  const React = require('react');
+  const motion = new Proxy({}, {
+    get: (_, tag) => React.forwardRef((props, ref) => {
+      const { initial, animate, exit, variants, whileHover, whileInView, whileTap,
+        viewport, transition, layout, layoutId, ...rest } = props;
+      return React.createElement(tag, { ...rest, ref });
+    }),
+  });
+  return {
+    __esModule: true,
+    motion,
+    AnimatePresence: ({ children }) => children,
+    useScroll: () => ({ scrollYProgress: { get: () => 0 } }),
+    useTransform: () => 0,
+    useMotionValue: (v) => ({ get: () => v, set: () => {} }),
+    useReducedMotion: () => false,
+  };
+});
+
 // localStorage mock
 Object.defineProperty(window, 'localStorage', {
   value: {

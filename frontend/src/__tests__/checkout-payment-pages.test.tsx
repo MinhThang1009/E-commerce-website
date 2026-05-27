@@ -674,6 +674,11 @@ describe('CheckoutPage: sau khi kiểm tra', () => {
       if (typeof fn === 'function') (fn as () => void)();
       return 0 as unknown as ReturnType<typeof setTimeout>;
     });
+    mockAuthState = {
+      user: { firstName: 'Test', lastName: 'User', email: 'test@test.com', phone: '0901234567' },
+      isAuthenticated: true,
+      updateUser: jest.fn(),
+    };
     jest.clearAllMocks();
   });
 
@@ -1132,6 +1137,11 @@ describe('CheckoutPage: submit form', () => {
       if (typeof fn === 'function') (fn as () => void)();
       return 0 as unknown as ReturnType<typeof setTimeout>;
     });
+    mockAuthState = {
+      user: { firstName: 'Test', lastName: 'User', email: 'test@test.com', phone: '0901234567' },
+      isAuthenticated: true,
+      updateUser: jest.fn(),
+    };
     jest.clearAllMocks();
     mockCreateOrderFn = jest.fn().mockResolvedValue({
       data: { order: { id: 'ord-sub', total: 1000000, number: 'ORD-SUB-001' } },
@@ -1145,7 +1155,11 @@ describe('CheckoutPage: submit form', () => {
     mockCreateMomoUrlFn = jest
       .fn()
       .mockResolvedValue({ data: { payUrl: 'https://momo.example.com/pay' } });
-    mockAuthState = { user: null, isAuthenticated: false, updateUser: jest.fn() };
+    mockAuthState = {
+      user: { firstName: 'Test', lastName: 'User', email: 'test@test.com', phone: '0901234567' },
+      isAuthenticated: true,
+      updateUser: jest.fn(),
+    };
     window.history.pushState({}, '', '/checkout');
   });
 

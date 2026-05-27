@@ -214,6 +214,23 @@ const CheckoutPage: React.FC = () => {
   };
 
   const goNext = () => {
+    if (currentStep === 0 && !isRepayingOrder) {
+      const missing = ['firstName', 'lastName', 'email', 'phone'].filter(
+        (f) => !formData[f as keyof typeof formData],
+      );
+      if (missing.length > 0) {
+        const newErrors: Record<string, string> = {};
+        missing.forEach((f) => {
+          newErrors[f] = t('checkout.validation.required');
+        });
+        setErrors(newErrors);
+        return;
+      }
+    }
+    if (currentStep === 1 && !formData.paymentMethod) {
+      addNotification({ type: 'warning', message: t('checkout.validation.paymentRequired') });
+      return;
+    }
     setStepDirection(1);
     setCurrentStep((s) => Math.min(s + 1, wizardSteps.length - 1));
   };
@@ -752,7 +769,7 @@ const CheckoutPage: React.FC = () => {
 
       {!isRepayingOrder && <CheckoutStepIndicator currentStep={currentStep} steps={wizardSteps} />}
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+      <div className={`grid grid-cols-1 ${currentStep !== 2 ? 'lg:grid-cols-2' : ''} gap-8`}>
         {/* Cột trái - Wizard steps */}
         <div className="min-h-[400px]">
           <AnimatePresence mode="wait" custom={stepDirection}>
@@ -875,9 +892,9 @@ const CheckoutPage: React.FC = () => {
           </AnimatePresence>
         </div>
 
-        {/* Cột phải - Order summary mini (visible ở step 0 & 1) */}
-        {currentStep < 2 && (
-          <div className="hidden lg:block">
+        {/* Cột phải - Order summary (ẩn ở step confirm vì đã là nội dung chính) */}
+        {currentStep !== 2 && (
+          <div className="hidden lg:block sticky top-20">
             <CheckoutOrderSummary
               items={items}
               isRepayingOrder={isRepayingOrder}

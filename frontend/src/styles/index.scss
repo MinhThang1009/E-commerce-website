@@ -564,6 +564,27 @@ body {
     transform: scale(0.97);
     box-shadow: inset 0 2px 6px rgba(0, 0, 0, 0.18);
   }
+
+  /* Ripple effect on click */
+  &::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    border-radius: inherit;
+    background: radial-gradient(
+      circle at var(--ripple-x, 50%) var(--ripple-y, 50%),
+      rgba(255, 255, 255, 0.3) 0%,
+      transparent 60%
+    );
+    opacity: 0;
+    transition: opacity 0.4s ease;
+    pointer-events: none;
+    z-index: 1;
+  }
+  &:active:not(:disabled)::after {
+    opacity: 1;
+    transition: opacity 0s;
+  }
 }
 
 /* ── CTA: Mua ngay — teal (dùng --btn-cta-* tokens) ── */
@@ -1416,14 +1437,52 @@ body {
 
   /* Input styles */
   .input {
-    @apply block w-full px-4 py-3 rounded-lg border border-neutral-300 bg-white text-neutral-800 placeholder-neutral-400 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500 transition-colors duration-200 dark:border-neutral-600 dark:bg-neutral-800 dark:text-neutral-200 dark:placeholder-neutral-500 dark:focus:ring-primary-400 dark:focus:border-primary-400;
+    display: block;
+    width: 100%;
+    padding: 0.75rem 1rem;
+    border-radius: 0.5rem;
+    border: 1.5px solid #d1d5db;
+    background-color: #ffffff;
+    color: #111827;
+    font-size: 0.95rem;
+    transition:
+      border-color 0.2s,
+      box-shadow 0.2s;
+    &::placeholder {
+      color: #9ca3af;
+    }
+    &:focus {
+      outline: none;
+      border-color: var(--accent, #2aaca7);
+      box-shadow: 0 0 0 3px rgba(42, 172, 167, 0.15);
+    }
+    .dark & {
+      border-color: #525252;
+      background-color: rgba(38, 38, 38, 0.6);
+      color: #f5f5f5;
+      &::placeholder {
+        color: #737373;
+      }
+      &:focus {
+        border-color: #4bbcb8;
+        box-shadow: 0 0 0 3px rgba(75, 188, 184, 0.15);
+      }
+    }
   }
 
   .input-error {
     @apply border-error-500 focus:ring-error-100 focus:border-error-500 dark:border-error-400 dark:focus:ring-error-900 dark:focus:border-error-400;
   }
 
-  /* Fix browser autofill override dark mode background */
+  /* Fix browser autofill override text color + background */
+  input:-webkit-autofill,
+  input:-webkit-autofill:hover,
+  input:-webkit-autofill:focus,
+  input:-webkit-autofill:active {
+    -webkit-box-shadow: 0 0 0px 1000px #ffffff inset !important;
+    -webkit-text-fill-color: #1a1a1a !important;
+    caret-color: #1a1a1a !important;
+  }
   .dark input:-webkit-autofill,
   .dark input:-webkit-autofill:hover,
   .dark input:-webkit-autofill:focus,

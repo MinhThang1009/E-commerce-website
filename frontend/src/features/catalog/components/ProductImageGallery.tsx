@@ -4,9 +4,18 @@
  * @feature catalog
  * @description UI component cho feature catalog
  */
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useCallback, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
-import { ChevronLeft, ChevronRight, Eye } from 'lucide-react';
+import {
+  ChevronLeft,
+  ChevronRight,
+  ZoomIn,
+  ZoomOut,
+  RotateCw,
+  FlipHorizontal2,
+  Maximize2,
+  X,
+} from 'lucide-react';
 import { Dialog, DialogContent } from '@/components/ui/dialog';
 import { proxyImg } from '@/utils/proxy-img';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -26,11 +35,52 @@ const ProductImageGallery: React.FC<ProductImageGalleryProps> = ({
   const [selectedImage, setSelectedImage] = useState(0);
   const [slideDirection, setSlideDirection] = useState(0);
   const [previewOpen, setPreviewOpen] = useState(false);
-  const constraintsRef = useRef<HTMLDivElement>(null);
+  const [zoomPos, setZoomPos] = useState({ x: 50, y: 50 });
+  const [isZooming, setIsZooming] = useState(false);
+  const [lbZoom, setLbZoom] = useState(1);
+  const [lbRotate, setLbRotate] = useState(0);
+  const [lbFlip, setLbFlip] = useState(false);
 
-  const goToImage = (index: number) => {
-    setSlideDirection(index > selectedImage ? 1 : -1);
-    setSelectedImage(index);
+  const resetLightbox = () => {
+    setLbZoom(1);
+    setLbRotate(0);
+    setLbFlip(false);
+  };
+  const constraintsRef = useRef<HTMLDivElement>(null);
+  const mainImageRef = useRef<HTMLDivElement>(null);
+
+  const images = React.useMemo(() => {
+    const rawImages = [thumbnail, ...(propImages || [])].filter(Boolean) as string[];
+    return [...new Set(rawImages)].map(proxyImg);
+  }, [thumbnail, propImages]);
+
+  const goToImage = useCallback(
+    (index: number) => {
+      setSlideDirection(index > selectedImage ? 1 : -1);
+      setSelectedImage(index);
+    },
+    [selectedImage],
+  );
+
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'ArrowLeft')
+        goToImage(selectedImage === 0 ? images.length - 1 : selectedImage - 1);
+      if (e.key === 'ArrowRight')
+        goToImage(selectedImage === images.length - 1 ? 0 : selectedImage + 1);
+      if (e.key === 'Escape' && previewOpen) setPreviewOpen(false);
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [selectedImage, images.length, previewOpen, goToImage]);
+
+  const handleMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
+    if (!mainImageRef.current) return;
+    const rect = mainImageRef.current.getBoundingClientRect();
+    setZoomPos({
+      x: ((e.clientX - rect.left) / rect.width) * 100,
+      y: ((e.clientY - rect.top) / rect.height) * 100,
+    });
   };
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -44,12 +94,6 @@ const ProductImageGallery: React.FC<ProductImageGalleryProps> = ({
       setSelectedImage((prev) => (prev === 0 ? images.length - 1 : prev - 1));
     }
   };
-
-  // Kết hợp thumbnail và ảnh, lọc bỏ trùng lặp và chuỗi rỗng
-  const images = React.useMemo(() => {
-    const rawImages = [thumbnail, ...(propImages || [])].filter(Boolean) as string[];
-    return [...new Set(rawImages)].map(proxyImg);
-  }, [thumbnail, propImages]);
 
   const handlePrevImage = (e: React.MouseEvent) => {
     e.stopPropagation();
@@ -90,21 +134,37 @@ const ProductImageGallery: React.FC<ProductImageGalleryProps> = ({
               onDragEnd={handleDragEnd}
               className="absolute inset-0 cursor-grab active:cursor-grabbing"
             >
-              <div className="relative w-full h-full group/img">
+              <div
+                ref={mainImageRef}
+                className="relative w-full h-full overflow-hidden"
+                onMouseEnter={() => setIsZooming(true)}
+                onMouseLeave={() => setIsZooming(false)}
+                onMouseMove={handleMouseMove}
+                onClick={() => setPreviewOpen(true)}
+                role="button"
+                tabIndex={0}
+                aria-label={t('product.viewLargeImage')}
+              >
                 <img
                   src={images[selectedImage]}
                   alt={`${productName} - View ${selectedImage + 1}`}
                   referrerPolicy="no-referrer"
-                  className="absolute inset-0 w-full h-full object-contain"
+                  className="absolute inset-0 w-full h-full object-contain transition-transform duration-200"
+                  style={
+                    isZooming
+                      ? {
+                          transform: 'scale(2)',
+                          transformOrigin: `${zoomPos.x}% ${zoomPos.y}%`,
+                        }
+                      : undefined
+                  }
                 />
-                <button
-                  type="button"
-                  onClick={() => setPreviewOpen(true)}
-                  className="absolute inset-0 flex items-center justify-center bg-black/30 backdrop-blur-[2px] w-full h-full text-white opacity-0 group-hover/img:opacity-100 transition-opacity cursor-pointer"
+                <div
+                  className={`absolute inset-0 flex items-center justify-center bg-black/20 text-white transition-opacity duration-200 cursor-zoom-in ${isZooming ? 'opacity-0' : 'opacity-0 group-hover:opacity-100'}`}
                 >
-                  <Eye className="w-5 h-5 mr-2" />
-                  <span className="font-medium">{t('product.viewLargeImage')}</span>
-                </button>
+                  <ZoomIn className="w-5 h-5 mr-2" />
+                  <span className="font-medium text-sm">{t('product.viewLargeImage')}</span>
+                </div>
               </div>
             </motion.div>
           </AnimatePresence>
@@ -130,20 +190,25 @@ const ProductImageGallery: React.FC<ProductImageGalleryProps> = ({
           </>
         )}
 
-        {/* Pagination dots — visible trên mobile */}
+        {/* Image counter + pagination dots */}
         {images.length > 1 && (
-          <div className="absolute bottom-3 left-1/2 -translate-x-1/2 flex gap-1.5 z-10 sm:hidden">
-            {images.map((_, idx) => (
-              <button
-                key={idx}
-                onClick={() => goToImage(idx)}
-                className={`w-2 h-2 rounded-full transition-all duration-300 ${
-                  idx === selectedImage ? 'bg-primary-500 w-5' : 'bg-white/60'
-                }`}
-                aria-label={`Image ${idx + 1}`}
-              />
-            ))}
-          </div>
+          <>
+            <div className="absolute top-3 right-3 z-10 px-2.5 py-1 rounded-full bg-black/50 backdrop-blur-sm text-white text-xs font-medium">
+              {selectedImage + 1} / {images.length}
+            </div>
+            <div className="absolute bottom-3 left-1/2 -translate-x-1/2 flex gap-1.5 z-10 sm:hidden">
+              {images.map((_, idx) => (
+                <button
+                  key={idx}
+                  onClick={() => goToImage(idx)}
+                  className={`w-2 h-2 rounded-full transition-all duration-300 ${
+                    idx === selectedImage ? 'bg-primary-500 w-5' : 'bg-white/60'
+                  }`}
+                  aria-label={`Image ${idx + 1}`}
+                />
+              ))}
+            </div>
+          </>
         )}
       </div>
 
@@ -179,15 +244,115 @@ const ProductImageGallery: React.FC<ProductImageGalleryProps> = ({
           ))}
         </div>
       )}
-      {/* Lightbox preview */}
-      <Dialog open={previewOpen} onOpenChange={setPreviewOpen}>
-        <DialogContent className="max-w-[95vw] max-h-[95vh] p-0 bg-black/95 border-none flex items-center justify-center">
+      {/* Lightbox preview with navigation + controls */}
+      <Dialog
+        open={previewOpen}
+        onOpenChange={(open) => {
+          setPreviewOpen(open);
+          if (!open) resetLightbox();
+        }}
+      >
+        <DialogContent className="!max-w-none !w-screen !h-screen !rounded-none p-0 bg-black border-none flex items-center justify-center">
           <img
             src={images[selectedImage]}
             alt={`${productName} - Full view`}
             referrerPolicy="no-referrer"
-            className="max-w-full max-h-[90vh] object-contain"
+            className="max-w-[90vw] max-h-[85vh] object-contain select-none transition-transform duration-200"
+            style={{
+              transform: `scale(${lbZoom}) rotate(${lbRotate}deg) scaleX(${lbFlip ? -1 : 1})`,
+            }}
           />
+
+          {/* Navigation arrows */}
+          {images.length > 1 && (
+            <>
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  handlePrevImage(e);
+                  resetLightbox();
+                }}
+                className="absolute left-4 top-1/2 -translate-y-1/2 w-12 h-12 flex items-center justify-center bg-white/10 hover:bg-white/20 rounded-full text-white transition-colors"
+                aria-label={t('product.prevImage')}
+              >
+                <ChevronLeft className="w-6 h-6" />
+              </button>
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  handleNextImage(e);
+                  resetLightbox();
+                }}
+                className="absolute right-4 top-1/2 -translate-y-1/2 w-12 h-12 flex items-center justify-center bg-white/10 hover:bg-white/20 rounded-full text-white transition-colors"
+                aria-label={t('product.nextImage')}
+              >
+                <ChevronRight className="w-6 h-6" />
+              </button>
+            </>
+          )}
+
+          {/* Bottom toolbar — zoom, rotate, flip, counter */}
+          <div className="absolute bottom-4 left-1/2 -translate-x-1/2 flex items-center gap-1 px-2 py-1.5 rounded-full bg-black/60 backdrop-blur-md border border-white/10">
+            <button
+              onClick={() => setLbZoom((z) => Math.max(0.5, z - 0.25))}
+              className="w-9 h-9 flex items-center justify-center rounded-full text-white/80 hover:text-white hover:bg-white/10 transition-colors"
+              aria-label="Zoom out"
+            >
+              <ZoomOut className="w-4 h-4" />
+            </button>
+            <span className="text-white/60 text-xs font-mono w-10 text-center">
+              {Math.round(lbZoom * 100)}%
+            </span>
+            <button
+              onClick={() => setLbZoom((z) => Math.min(3, z + 0.25))}
+              className="w-9 h-9 flex items-center justify-center rounded-full text-white/80 hover:text-white hover:bg-white/10 transition-colors"
+              aria-label="Zoom in"
+            >
+              <ZoomIn className="w-4 h-4" />
+            </button>
+            <div className="w-px h-5 bg-white/20 mx-1" />
+            <button
+              onClick={() => setLbRotate((r) => r + 90)}
+              className="w-9 h-9 flex items-center justify-center rounded-full text-white/80 hover:text-white hover:bg-white/10 transition-colors"
+              aria-label="Rotate"
+            >
+              <RotateCw className="w-4 h-4" />
+            </button>
+            <button
+              onClick={() => setLbFlip((f) => !f)}
+              className="w-9 h-9 flex items-center justify-center rounded-full text-white/80 hover:text-white hover:bg-white/10 transition-colors"
+              aria-label="Flip"
+            >
+              <FlipHorizontal2 className="w-4 h-4" />
+            </button>
+            <button
+              onClick={resetLightbox}
+              className="w-9 h-9 flex items-center justify-center rounded-full text-white/80 hover:text-white hover:bg-white/10 transition-colors"
+              aria-label="Reset"
+            >
+              <Maximize2 className="w-4 h-4" />
+            </button>
+            {images.length > 1 && (
+              <>
+                <div className="w-px h-5 bg-white/20 mx-1" />
+                <span className="text-white/60 text-xs font-medium px-2">
+                  {selectedImage + 1} / {images.length}
+                </span>
+              </>
+            )}
+          </div>
+
+          {/* Close button */}
+          <button
+            onClick={() => {
+              setPreviewOpen(false);
+              resetLightbox();
+            }}
+            className="absolute top-4 right-4 w-10 h-10 flex items-center justify-center bg-white/10 hover:bg-white/20 rounded-full text-white transition-colors"
+            aria-label={t('common.close')}
+          >
+            <X className="w-5 h-5" />
+          </button>
         </DialogContent>
       </Dialog>
     </div>

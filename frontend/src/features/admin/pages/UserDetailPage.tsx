@@ -92,9 +92,9 @@ const UserDetailPage: React.FC = () => {
   };
 
   const getStatusLabel = (status: string) => {
-    if (status === 'delivered') return t('admin.userDetail.orderStatus.delivered');
-    if (status === 'pending') return t('admin.userDetail.orderStatus.pending');
-    return status;
+    const key = `admin.dashboard.orderStatus.${status}`;
+    const translated = t(key);
+    return translated !== key ? translated : status;
   };
 
   return (
@@ -283,8 +283,9 @@ const UserDetailPage: React.FC = () => {
                                 </span>
                               </td>
                               <td className="px-4 py-3 font-semibold dark:text-white">
-                                {order.total.toLocaleString(
+                                {Number(order.total).toLocaleString(
                                   i18n.language === 'vi' ? 'vi-VN' : 'en-US',
+                                  { maximumFractionDigits: 0 },
                                 )}
                                 {t('common.currencySymbol')}
                               </td>

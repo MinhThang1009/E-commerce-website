@@ -48,27 +48,35 @@ const OrderDetails: React.FC<OrderDetailsProps> = ({ orderId, onOpenReview }) =>
   }
 
   return (
-    <div className="bg-white dark:bg-neutral-900 border-t border-neutral-200 dark:border-neutral-700/60 transition-all">
+    <div className="bg-white dark:bg-neutral-900 transition-all rounded-t-2xl overflow-hidden">
+      {/* Gradient accent bar */}
+      <div className="h-1 bg-gradient-to-r from-primary-500 via-indigo-500 to-purple-500" />
+
       {/* 1. Tiêu đề Đơn hàng */}
       <div className="p-6 pb-4 border-b border-neutral-100 dark:border-neutral-800 flex flex-col md:flex-row md:justify-between md:items-center gap-4">
-        <div>
-          <h2 className="text-xl font-bold tracking-tight text-neutral-800 dark:text-neutral-100">
-            {t('orders.detailTitle', { number: order.number })}
-          </h2>
-          <p className="text-sm text-neutral-500 dark:text-neutral-400 mt-1">
-            {t('orders.placedAt', {
-              date: new Date(order.createdAt).toLocaleString(
-                i18n.language === 'vi' ? 'vi-VN' : 'en-US',
-              ),
-            })}
-          </p>
-        </div>
         <div className="flex items-center gap-3">
+          <div className="w-10 h-10 rounded-xl bg-primary-50 dark:bg-primary-900/20 flex items-center justify-center shrink-0">
+            <Package className="w-5 h-5 text-primary-600 dark:text-primary-400" />
+          </div>
+          <div>
+            <h2 className="text-lg font-bold tracking-tight text-neutral-800 dark:text-neutral-100">
+              {t('orders.detailTitle', { number: order.number })}
+            </h2>
+            <p className="text-xs text-neutral-500 dark:text-neutral-400 mt-0.5">
+              {t('orders.placedAt', {
+                date: new Date(order.createdAt).toLocaleString(
+                  i18n.language === 'vi' ? 'vi-VN' : 'en-US',
+                ),
+              })}
+            </p>
+          </div>
+        </div>
+        <div className="flex items-center gap-2">
           <Badge variant={statusVariants[order.status]?.variant || 'neutral'}>
             {statusVariants[order.status]?.label || order.status}
           </Badge>
           {order.paymentStatus === 'paid' && (
-            <span className="bg-emerald-100 text-emerald-800 text-xs font-bold px-2 py-1 rounded-full dark:bg-emerald-900/30 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-800/50">
+            <span className="bg-emerald-100 text-emerald-800 text-xs font-bold px-2.5 py-1 rounded-full dark:bg-emerald-900/30 dark:text-emerald-400">
               {t('orders.paidBadge')}
             </span>
           )}
@@ -365,7 +373,7 @@ const OrderDetails: React.FC<OrderDetailsProps> = ({ orderId, onOpenReview }) =>
                 <span className="text-neutral-500 dark:text-neutral-400 text-sm">
                   {t('orders.totalPayment')}
                 </span>
-                <span className="font-black text-3xl md:text-4xl text-neutral-900 dark:text-white">
+                <span className="font-black text-2xl text-neutral-900 dark:text-white">
                   {formatPrice(order.total)}
                 </span>
               </div>

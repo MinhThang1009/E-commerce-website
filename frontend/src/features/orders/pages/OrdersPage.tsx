@@ -564,8 +564,31 @@ const OrdersPage: React.FC = () => {
                       </div>
                     </div>
 
+                    {/* Mini progress bar — màu theo status */}
+                    {order.status !== 'cancelled' && (
+                      <div className="px-6 pt-3">
+                        <div className="h-1.5 bg-neutral-200 dark:bg-neutral-700 rounded-full overflow-hidden">
+                          <div
+                            className="h-full rounded-full transition-all duration-500"
+                            style={{
+                              width: `${Math.max(25, (['pending', 'processing', 'shipped', 'delivered'].indexOf(order.status) + 1) * 25)}%`,
+                              background:
+                                (
+                                  {
+                                    pending: 'linear-gradient(to right, #facc15, #eab308)',
+                                    processing: 'linear-gradient(to right, #60a5fa, #3b82f6)',
+                                    shipped: 'linear-gradient(to right, #a78bfa, #8b5cf6)',
+                                    delivered: 'linear-gradient(to right, #4ade80, #22c55e)',
+                                  } as Record<string, string>
+                                )[order.status] || '#a3a3a3',
+                            }}
+                          />
+                        </div>
+                      </div>
+                    )}
+
                     {/* Xem trước sản phẩm trong đơn hàng */}
-                    <div className="p-6">
+                    <div className="p-6 pt-4">
                       {order.items && order.items.length > 0 ? (
                         <div className="flex items-center gap-4">
                           <div className="flex gap-2 flex-wrap">

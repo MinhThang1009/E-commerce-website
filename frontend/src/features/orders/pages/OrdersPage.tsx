@@ -371,22 +371,22 @@ const OrdersPage: React.FC = () => {
             {
               key: 'pending',
               label: t('orders.status.pending'),
-              color: 'bg-yellow-100 dark:bg-yellow-900/30 text-yellow-700 dark:text-yellow-400',
+              color: 'bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400',
             },
             {
               key: 'processing',
               label: t('orders.status.processing'),
-              color: 'bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400',
+              color: 'bg-sky-100 dark:bg-sky-900/30 text-sky-700 dark:text-sky-400',
             },
             {
               key: 'shipped',
               label: t('orders.status.shipped'),
-              color: 'bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-400',
+              color: 'bg-indigo-100 dark:bg-indigo-900/30 text-indigo-700 dark:text-indigo-400',
             },
             {
               key: 'delivered',
               label: t('orders.status.delivered'),
-              color: 'bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400',
+              color: 'bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400',
             },
             {
               key: 'cancelled',
@@ -439,11 +439,11 @@ const OrdersPage: React.FC = () => {
             <div className="space-y-4">
               {orders.map((order) => {
                 const statusBorderColors: Record<string, string> = {
-                  pending: '#facc15',
-                  processing: '#60a5fa',
-                  shipped: '#a78bfa',
-                  delivered: '#4ade80',
-                  cancelled: '#f87171',
+                  pending: '#f59e0b',
+                  processing: '#38bdf8',
+                  shipped: '#6366f1',
+                  delivered: '#10b981',
+                  cancelled: '#ef4444',
                 };
 
                 return (
@@ -575,10 +575,10 @@ const OrdersPage: React.FC = () => {
                               background:
                                 (
                                   {
-                                    pending: 'linear-gradient(to right, #facc15, #eab308)',
-                                    processing: 'linear-gradient(to right, #60a5fa, #3b82f6)',
-                                    shipped: 'linear-gradient(to right, #a78bfa, #8b5cf6)',
-                                    delivered: 'linear-gradient(to right, #4ade80, #22c55e)',
+                                    pending: 'linear-gradient(to right, #fbbf24, #f59e0b)',
+                                    processing: 'linear-gradient(to right, #7dd3fc, #38bdf8)',
+                                    shipped: 'linear-gradient(to right, #818cf8, #6366f1)',
+                                    delivered: 'linear-gradient(to right, #34d399, #10b981)',
                                   } as Record<string, string>
                                 )[order.status] || '#a3a3a3',
                             }}

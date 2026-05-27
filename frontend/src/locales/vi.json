@@ -935,6 +935,7 @@
   },
   "orders": {
     "title": "Đơn hàng của tôi",
+    "filterAll": "Tất cả",
     "loginRequired": "Yêu cầu đăng nhập",
     "loginMessage": "Vui lòng đăng nhập để xem đơn hàng của bạn.",
     "empty": {

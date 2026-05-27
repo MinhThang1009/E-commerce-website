@@ -56,6 +56,7 @@ const OrdersPage: React.FC = () => {
   const queryClient = useQueryClient();
   const [selectedOrder, setSelectedOrder] = useState<string | null>(null);
   const [currentPage, setCurrentPage] = useState(1);
+  const [statusFilter, setStatusFilter] = useState<string>('all');
   const [cancellingOrder, setCancellingOrder] = useState<string | null>(null);
   const [_repayingOrder, setRepayingOrder] = useState<string | null>(null);
   const [confirmingOrder, setConfirmingOrder] = useState<string | null>(null);
@@ -328,8 +329,17 @@ const OrdersPage: React.FC = () => {
     );
   }
 
-  const orders = ordersResponse?.data || [];
-  const totalPages = ordersResponse ? Math.ceil(ordersResponse.total / ordersResponse.limit) : 1;
+  const allOrders = ordersResponse?.data || [];
+  const orders =
+    statusFilter === 'all'
+      ? allOrders
+      : allOrders.filter((o: { status: string }) => o.status === statusFilter);
+  const totalPages =
+    statusFilter === 'all'
+      ? ordersResponse
+        ? Math.ceil(ordersResponse.total / ordersResponse.limit)
+        : 1
+      : 1;
 
   return (
     <div className="min-h-screen bg-neutral-100/50 dark:bg-neutral-950">
@@ -348,6 +358,70 @@ const OrdersPage: React.FC = () => {
               </p>
             </div>
           </div>
+        </div>
+
+        {/* Status filter tabs */}
+        <div className="flex gap-2 mb-6 overflow-x-auto pb-1 no-scrollbar">
+          {[
+            {
+              key: 'all',
+              label: t('orders.filterAll'),
+              color: 'bg-neutral-200 dark:bg-neutral-700 text-neutral-800 dark:text-neutral-200',
+            },
+            {
+              key: 'pending',
+              label: t('orders.status.pending'),
+              color: 'bg-yellow-100 dark:bg-yellow-900/30 text-yellow-700 dark:text-yellow-400',
+            },
+            {
+              key: 'processing',
+              label: t('orders.status.processing'),
+              color: 'bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400',
+            },
+            {
+              key: 'shipped',
+              label: t('orders.status.shipped'),
+              color: 'bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-400',
+            },
+            {
+              key: 'delivered',
+              label: t('orders.status.delivered'),
+              color: 'bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400',
+            },
+            {
+              key: 'cancelled',
+              label: t('orders.status.cancelled'),
+              color: 'bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400',
+            },
+          ].map((tab) => {
+            const count =
+              tab.key === 'all'
+                ? allOrders.length
+                : allOrders.filter((o: { status: string }) => o.status === tab.key).length;
+            return (
+              <button
+                key={tab.key}
+                onClick={() => {
+                  setStatusFilter(tab.key);
+                  setCurrentPage(1);
+                }}
+                className={`px-4 py-2 rounded-full text-sm font-medium whitespace-nowrap transition-all ${
+                  statusFilter === tab.key
+                    ? `${tab.color} shadow-sm`
+                    : 'bg-transparent text-neutral-500 dark:text-neutral-400 hover:bg-neutral-100 dark:hover:bg-neutral-800'
+                }`}
+              >
+                {tab.label}
+                {count > 0 && (
+                  <span
+                    className={`ml-1.5 text-xs ${statusFilter === tab.key ? 'opacity-80' : 'opacity-60'}`}
+                  >
+                    ({count})
+                  </span>
+                )}
+              </button>
+            );
+          })}
         </div>
 
         {orders.length === 0 ? (
@@ -498,7 +572,7 @@ const OrdersPage: React.FC = () => {
                             {order.items.slice(0, 4).map((item) => (
                               <div
                                 key={item.id}
-                                className="w-12 h-12 rounded-lg border border-neutral-100 dark:border-neutral-700 overflow-hidden bg-neutral-50 dark:bg-neutral-800 flex-shrink-0 shadow-sm hover:scale-105 transition-transform"
+                                className="w-14 h-14 rounded-xl border border-neutral-100 dark:border-neutral-700 overflow-hidden bg-neutral-50 dark:bg-neutral-800 flex-shrink-0 shadow-sm hover:scale-105 transition-transform"
                               >
                                 {item.Product?.thumbnail ||
                                 item.Product?.images?.[0] ||

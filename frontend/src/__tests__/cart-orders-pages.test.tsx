@@ -1396,7 +1396,8 @@ describe('OrdersPage — branch coverage bổ sung', () => {
     };
     render(<OrdersPage />);
     // Render thành công — badge status hiển thị
-    expect(screen.getByText('orders.status.processing')).toBeInTheDocument();
+    const matches = screen.getAllByText('orders.status.processing');
+    expect(matches.length).toBeGreaterThanOrEqual(1);
   });
 
   // ── Lines 504-518: 3 branches của src image expression ─────────────────────

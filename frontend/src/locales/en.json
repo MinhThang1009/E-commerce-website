@@ -812,6 +812,7 @@
   },
   "orders": {
     "title": "My orders",
+    "filterAll": "All",
     "loginRequired": "Login required",
     "loginMessage": "Please log in to view your orders.",
     "empty": {

@@ -361,7 +361,7 @@ const OrdersPage: React.FC = () => {
           </div>
         ) : (
           <>
-            <div className="space-y-6">
+            <div className="grid grid-cols-1 xl:grid-cols-2 gap-5">
               {orders.map((order) => {
                 const statusBorderColors: Record<string, string> = {
                   pending: '#facc15',
@@ -374,7 +374,7 @@ const OrdersPage: React.FC = () => {
                 return (
                   <div
                     key={order.id}
-                    className="group/card bg-white dark:bg-neutral-800 rounded-2xl shadow-md dark:shadow-neutral-900/50 border border-neutral-200/80 dark:border-neutral-700/50 overflow-hidden hover:shadow-xl dark:hover:shadow-neutral-900/70 hover:-translate-y-1 transition-all duration-300"
+                    className="group/card bg-white dark:bg-neutral-800/90 rounded-2xl shadow-sm border border-neutral-200 dark:border-neutral-700 overflow-hidden hover:shadow-lg hover:-translate-y-0.5 dark:hover:border-neutral-600 transition-all duration-300"
                     style={{
                       borderLeft: `4px solid ${statusBorderColors[order.status] || '#a3a3a3'}`,
                     }}
@@ -428,7 +428,7 @@ const OrdersPage: React.FC = () => {
                               <p className="text-xs text-neutral-400 dark:text-neutral-500 uppercase tracking-wider">
                                 {t('orders.total')}
                               </p>
-                              <p className="text-2xl font-black text-primary-600 dark:text-primary-400">
+                              <p className="text-2xl font-black text-neutral-900 dark:text-white">
                                 {formatCurrency(order.total)}
                               </p>
                             </div>

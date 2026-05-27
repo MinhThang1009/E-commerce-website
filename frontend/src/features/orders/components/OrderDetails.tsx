@@ -174,7 +174,7 @@ const OrderDetails: React.FC<OrderDetailsProps> = ({ orderId, onOpenReview }) =>
 
         {/* 2. Block Thông tin Giao hàng & Thanh toán */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          <div className="bg-neutral-50 dark:bg-neutral-800/40 p-5 rounded-2xl border border-neutral-100 dark:border-neutral-700/50 shadow-sm transition-transform hover:-translate-y-1 duration-300">
+          <div className="bg-neutral-50 dark:bg-neutral-800/40 p-5 rounded-2xl border border-neutral-100 dark:border-neutral-700/50 shadow-sm hover:shadow-md hover:border-neutral-200 dark:hover:border-neutral-600 transition-all duration-300">
             <div className="flex items-center gap-3 mb-4">
               <div className="w-10 h-10 rounded-xl bg-primary-50 dark:bg-primary-900/20 flex items-center justify-center">
                 <MapPin className="w-5 h-5 text-primary-600 dark:text-primary-400" />
@@ -205,7 +205,7 @@ const OrderDetails: React.FC<OrderDetailsProps> = ({ orderId, onOpenReview }) =>
             </div>
           </div>
 
-          <div className="bg-neutral-50 dark:bg-neutral-800/40 p-5 rounded-2xl border border-neutral-100 dark:border-neutral-700/50 shadow-sm transition-transform hover:-translate-y-1 duration-300">
+          <div className="bg-neutral-50 dark:bg-neutral-800/40 p-5 rounded-2xl border border-neutral-100 dark:border-neutral-700/50 shadow-sm hover:shadow-md hover:border-neutral-200 dark:hover:border-neutral-600 transition-all duration-300">
             <div className="flex items-center gap-3 mb-4">
               <div className="w-10 h-10 rounded-xl bg-amber-50 dark:bg-amber-900/20 flex items-center justify-center">
                 <CreditCard className="w-5 h-5 text-amber-600 dark:text-amber-400" />
@@ -297,7 +297,7 @@ const OrderDetails: React.FC<OrderDetailsProps> = ({ orderId, onOpenReview }) =>
               {order.items?.map((item) => (
                 <div
                   key={item.id}
-                  className="grid grid-cols-1 md:grid-cols-12 gap-4 p-4 items-center hover:bg-neutral-50/50 dark:hover:bg-neutral-800/50 transition-colors"
+                  className="grid grid-cols-1 md:grid-cols-12 gap-4 p-4 items-center hover:bg-neutral-100/60 dark:hover:bg-neutral-700/30 transition-colors rounded-xl"
                 >
                   <div className="col-span-1 md:col-span-6 flex gap-4 items-center">
                     <div className="w-20 h-20 rounded-xl overflow-hidden shadow-sm bg-neutral-100 dark:bg-neutral-800 border border-neutral-200 dark:border-neutral-700 flex-shrink-0">
@@ -352,7 +352,7 @@ const OrderDetails: React.FC<OrderDetailsProps> = ({ orderId, onOpenReview }) =>
                             item.Product?.name || item.name || '',
                           )
                         }
-                        className="text-xs px-3 py-1.5 border border-primary-500 text-primary-600 rounded-md hover:bg-primary-50 dark:hover:bg-primary-900/40 font-medium transition-colors"
+                        className="text-sm px-4 py-2 bg-primary-500 text-white rounded-lg hover:bg-primary-600 font-semibold transition-all shadow-sm hover:shadow-md"
                       >
                         {t('orders.writeReview')}
                       </button>
@@ -407,11 +407,11 @@ const OrderDetails: React.FC<OrderDetailsProps> = ({ orderId, onOpenReview }) =>
                 </div>
               )}
 
-              <div className="pt-4 flex justify-between items-end mt-4">
-                <span className="text-neutral-500 dark:text-neutral-400 text-sm">
+              <div className="pt-4 mt-4 border-t-2 border-neutral-300 dark:border-neutral-600 flex justify-between items-end">
+                <span className="text-neutral-600 dark:text-neutral-300 font-semibold">
                   {t('orders.totalPayment')}
                 </span>
-                <span className="font-black text-2xl text-neutral-900 dark:text-white">
+                <span className="font-black text-2xl text-neutral-900 dark:text-white tracking-tight">
                   {formatPrice(order.total)}
                 </span>
               </div>

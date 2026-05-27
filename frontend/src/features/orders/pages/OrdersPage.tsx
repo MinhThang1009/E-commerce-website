@@ -16,6 +16,7 @@ import Badge, { BadgeVariant } from '@/components/common/Badge';
 import PremiumButton from '@/components/common/PremiumButton';
 import { EmptyState } from '@/components/common/ErrorState';
 import { Package } from 'lucide-react';
+import { Dialog, DialogContent } from '@/components/ui/dialog';
 import {
   useGetUserOrdersQuery,
   useCancelOrderMutation,
@@ -361,7 +362,7 @@ const OrdersPage: React.FC = () => {
           </div>
         ) : (
           <>
-            <div className="grid grid-cols-1 xl:grid-cols-2 gap-5">
+            <div className="space-y-4">
               {orders.map((order) => {
                 const statusBorderColors: Record<string, string> = {
                   pending: '#facc15',
@@ -573,15 +574,19 @@ const OrdersPage: React.FC = () => {
                         </div>
                       )}
                     </div>
-
-                    {/* Chi tiết đơn hàng có thể mở rộng */}
-                    {selectedOrder === order.id && (
-                      <OrderDetails orderId={order.id} onOpenReview={handleOpenReview} />
-                    )}
                   </div>
                 );
               })}
             </div>
+
+            {/* Order Detail Dialog */}
+            <Dialog open={!!selectedOrder} onOpenChange={(open) => !open && setSelectedOrder(null)}>
+              <DialogContent className="max-w-[800px] max-h-[85vh] overflow-y-auto p-0">
+                {selectedOrder && (
+                  <OrderDetails orderId={selectedOrder} onOpenReview={handleOpenReview} />
+                )}
+              </DialogContent>
+            </Dialog>
 
             {/* Phân trang */}
             {totalPages > 1 && (

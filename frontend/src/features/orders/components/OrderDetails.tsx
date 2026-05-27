@@ -230,19 +230,10 @@ const OrderDetails: React.FC<OrderDetailsProps> = ({ orderId, onOpenReview }) =>
               </p>
               <p className="flex justify-between items-center pb-2 border-b border-neutral-200 dark:border-neutral-700/50">
                 <span className="text-neutral-500">{t('orders.paymentStatusLabel')}:</span>
-                <span
-                  className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold ${
-                    order.paymentStatus === 'paid'
-                      ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400'
-                      : order.paymentStatus === 'failed'
-                        ? 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400'
-                        : order.paymentStatus === 'refunded'
-                          ? 'bg-neutral-100 text-neutral-600 dark:bg-neutral-800 dark:text-neutral-400'
-                          : 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-400'
-                  }`}
-                >
-                  {order.paymentStatus === 'paid' && <CheckCircle className="w-3.5 h-3.5" />}
-                  {order.paymentStatus === 'failed' && <Clock className="w-3.5 h-3.5" />}
+                <span className="inline-flex items-center gap-1.5 font-semibold text-neutral-800 dark:text-neutral-100">
+                  {order.paymentStatus === 'paid' && (
+                    <CheckCircle className="w-4 h-4 text-emerald-500" />
+                  )}
                   {order.status === 'cancelled' && order.paymentStatus === 'pending'
                     ? '—'
                     : order.paymentStatus === 'paid'

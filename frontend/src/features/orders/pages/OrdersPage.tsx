@@ -433,7 +433,7 @@ const OrdersPage: React.FC = () => {
                                 {formatCurrency(order.total)}
                               </p>
                             </div>
-                            {order.paymentStatus && order.status !== 'cancelled' && (
+                            {order.paymentStatus && (
                               <span
                                 className={`px-3 py-1 text-xs font-semibold rounded-full shadow-sm ${
                                   paymentStatusColors[order.paymentStatus]

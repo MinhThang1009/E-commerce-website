@@ -254,8 +254,8 @@ const UsersPage: React.FC = () => {
                   {t('admin.users.stats.verified')}
                 </p>
                 <div className="flex items-center gap-2">
-                  <Mail className="size-5" style={{ color: '#722ed1' }} />
-                  <span className="text-2xl font-semibold" style={{ color: '#722ed1' }}>
+                  <Mail className="size-5 text-purple-600 dark:text-purple-400" />
+                  <span className="text-2xl font-semibold text-purple-600 dark:text-purple-400">
                     {verifiedCount}
                   </span>
                 </div>

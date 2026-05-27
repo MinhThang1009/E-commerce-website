@@ -109,9 +109,9 @@ const OrderDetails: React.FC<OrderDetailsProps> = ({ orderId, onOpenReview }) =>
                     className="relative flex md:flex-col items-center gap-4 md:gap-0 z-10 w-full md:w-32 group"
                   >
                     <div
-                      className={`w-8 h-8 rounded-full flex items-center justify-center font-bold text-sm shadow-sm transition-all duration-500 ${
+                      className={`w-10 h-10 rounded-xl flex items-center justify-center font-bold text-sm shadow-sm transition-all duration-500 ${
                         isCompleted
-                          ? 'bg-green-500 text-white ring-4 ring-green-50 dark:ring-green-900/40'
+                          ? 'bg-green-500 text-white ring-4 ring-green-50 dark:ring-green-900/40 shadow-green-500/30'
                           : 'bg-white dark:bg-neutral-800 border-2 border-neutral-300 dark:border-neutral-600 text-neutral-400'
                       } ${isActive ? 'scale-110 shadow-md' : ''}`}
                     >

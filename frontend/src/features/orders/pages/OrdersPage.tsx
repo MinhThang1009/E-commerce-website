@@ -15,6 +15,7 @@ import Button from '@/components/common/Button';
 import Badge, { BadgeVariant } from '@/components/common/Badge';
 import PremiumButton from '@/components/common/PremiumButton';
 import { EmptyState } from '@/components/common/ErrorState';
+import { Package } from 'lucide-react';
 import {
   useGetUserOrdersQuery,
   useCancelOrderMutation,
@@ -330,301 +331,310 @@ const OrdersPage: React.FC = () => {
   const totalPages = ordersResponse ? Math.ceil(ordersResponse.total / ordersResponse.limit) : 1;
 
   return (
-    <div className="container mx-auto px-4 py-8">
-      <div className="flex items-center justify-between mb-8">
-        <h1 className="text-3xl font-bold text-neutral-800 dark:text-neutral-100">
-          {t('orders.title')}
-        </h1>
-        <div className="text-sm text-neutral-500 dark:text-neutral-400">
-          {ordersResponse?.total || 0} {t('orders.ordersTotal')}
+    <div className="min-h-screen bg-neutral-50 dark:bg-neutral-950">
+      <div className="container mx-auto px-4 py-8">
+        <div className="flex items-center justify-between mb-8">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-xl bg-primary-50 dark:bg-primary-900/20 flex items-center justify-center">
+              <Package className="w-5 h-5 text-primary-600 dark:text-primary-400" />
+            </div>
+            <div>
+              <h1 className="text-2xl font-bold text-neutral-800 dark:text-neutral-100">
+                {t('orders.title')}
+              </h1>
+              <p className="text-sm text-neutral-500 dark:text-neutral-400">
+                {ordersResponse?.total || 0} {t('orders.ordersTotal')}
+              </p>
+            </div>
+          </div>
         </div>
-      </div>
 
-      {orders.length === 0 ? (
-        <div className="bg-white dark:bg-neutral-800 rounded-lg shadow-sm">
-          <EmptyState
-            variant="orders"
-            title={t('orders.empty.title')}
-            description={t('orders.empty.message')}
-            actionLabel={t('orders.empty.startShopping')}
-            onAction={() => navigate(ROUTES.SHOP)}
-          />
-        </div>
-      ) : (
-        <>
-          <div className="space-y-6">
-            {orders.map((order) => {
-              const statusColors: Record<string, string> = {
-                pending: 'border-l-yellow-400',
-                processing: 'border-l-blue-400',
-                shipped: 'border-l-purple-400',
-                delivered: 'border-l-green-400',
-                cancelled: 'border-l-red-400',
-              };
+        {orders.length === 0 ? (
+          <div className="bg-white dark:bg-neutral-800 rounded-lg shadow-sm">
+            <EmptyState
+              variant="orders"
+              title={t('orders.empty.title')}
+              description={t('orders.empty.message')}
+              actionLabel={t('orders.empty.startShopping')}
+              onAction={() => navigate(ROUTES.SHOP)}
+            />
+          </div>
+        ) : (
+          <>
+            <div className="space-y-6">
+              {orders.map((order) => {
+                const statusColors: Record<string, string> = {
+                  pending: 'border-l-yellow-400',
+                  processing: 'border-l-blue-400',
+                  shipped: 'border-l-purple-400',
+                  delivered: 'border-l-green-400',
+                  cancelled: 'border-l-red-400',
+                };
 
-              return (
-                <div
-                  key={order.id}
-                  className={`bg-white dark:bg-neutral-800 rounded-xl shadow-sm border border-neutral-100 dark:border-neutral-700/50 overflow-hidden hover:shadow-md transition-all duration-300 border-l-4 ${/* istanbul ignore next */ statusColors[order.status] || 'border-l-neutral-400'}`}
-                >
-                  {/* Tiêu đề đơn hàng */}
-                  <div className="p-6 border-b border-neutral-100 dark:border-neutral-700/60 bg-gradient-to-r from-neutral-50/80 to-transparent dark:from-neutral-900/40">
-                    <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
-                      <div className="flex flex-col sm:flex-row sm:items-center gap-4 flex-1">
-                        <div>
-                          <div className="flex items-center gap-3 mb-1">
-                            <h2 className="text-lg font-bold text-neutral-800 dark:text-neutral-100">
-                              {t('orders.orderNumber', { number: order.number })}
-                            </h2>
-                            <Badge variant={statusVariants[order.status].variant}>
-                              {t(`orders.status.${order.status}`)}
-                            </Badge>
+                return (
+                  <div
+                    key={order.id}
+                    className={`bg-white dark:bg-neutral-800 rounded-xl shadow-sm border border-neutral-100 dark:border-neutral-700/50 overflow-hidden hover:shadow-md transition-all duration-300 border-l-4 ${/* istanbul ignore next */ statusColors[order.status] || 'border-l-neutral-400'}`}
+                  >
+                    {/* Tiêu đề đơn hàng */}
+                    <div className="p-6 border-b border-neutral-100 dark:border-neutral-700/60 bg-gradient-to-r from-neutral-50/80 to-transparent dark:from-neutral-900/40">
+                      <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
+                        <div className="flex flex-col sm:flex-row sm:items-center gap-4 flex-1">
+                          <div>
+                            <div className="flex items-center gap-3 mb-1">
+                              <h2 className="text-lg font-bold text-neutral-800 dark:text-neutral-100">
+                                {t('orders.orderNumber', { number: order.number })}
+                              </h2>
+                              <Badge variant={statusVariants[order.status].variant}>
+                                {t(`orders.status.${order.status}`)}
+                              </Badge>
+                            </div>
+                            <p className="text-sm text-neutral-500 dark:text-neutral-400 flex items-center gap-1">
+                              <svg
+                                xmlns="http://www.w3.org/2000/svg"
+                                className="h-4 w-4"
+                                fill="none"
+                                viewBox="0 0 24 24"
+                                stroke="currentColor"
+                              >
+                                <path
+                                  strokeLinecap="round"
+                                  strokeLinejoin="round"
+                                  strokeWidth={2}
+                                  d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v14a2 2 0 00-2 2z"
+                                />
+                              </svg>
+                              {t('orders.placedOn', {
+                                date: formatDate(order.createdAt),
+                              })}
+                              {order.paymentMethod && (
+                                <span className="ml-2 pl-2 border-l border-neutral-300 dark:border-neutral-700">
+                                  {t(`orders.paymentMethods.${order.paymentMethod.toLowerCase()}`, {
+                                    defaultValue: order.paymentMethod,
+                                  })}
+                                </span>
+                              )}
+                            </p>
                           </div>
-                          <p className="text-sm text-neutral-500 dark:text-neutral-400 flex items-center gap-1">
-                            <svg
-                              xmlns="http://www.w3.org/2000/svg"
-                              className="h-4 w-4"
-                              fill="none"
-                              viewBox="0 0 24 24"
-                              stroke="currentColor"
-                            >
-                              <path
-                                strokeLinecap="round"
-                                strokeLinejoin="round"
-                                strokeWidth={2}
-                                d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v14a2 2 0 00-2 2z"
-                              />
-                            </svg>
-                            {t('orders.placedOn', {
-                              date: formatDate(order.createdAt),
-                            })}
-                            {order.paymentMethod && (
-                              <span className="ml-2 pl-2 border-l border-neutral-300 dark:border-neutral-700">
-                                {t(`orders.paymentMethods.${order.paymentMethod.toLowerCase()}`, {
-                                  defaultValue: order.paymentMethod,
-                                })}
+
+                          <div className="sm:ml-auto flex items-center gap-4">
+                            <div className="text-right">
+                              <p className="text-xs text-neutral-400 dark:text-neutral-500 uppercase tracking-wider">
+                                {t('orders.total')}
+                              </p>
+                              <p className="text-2xl font-black text-primary-600 dark:text-primary-400">
+                                {formatCurrency(order.total)}
+                              </p>
+                            </div>
+                            {order.paymentStatus && order.status !== 'cancelled' && (
+                              <span
+                                className={`px-3 py-1 text-xs font-semibold rounded-full shadow-sm ${
+                                  paymentStatusColors[order.paymentStatus]
+                                }`}
+                              >
+                                {order.paymentStatus === 'pending' && order.paymentMethod === 'cod'
+                                  ? t('orders.paymentStatus.cod')
+                                  : t(`orders.paymentStatus.${order.paymentStatus}`)}
                               </span>
                             )}
-                          </p>
+                          </div>
                         </div>
 
-                        <div className="sm:ml-auto flex items-center gap-4">
-                          <div className="text-right">
-                            <p className="text-xs text-neutral-400 dark:text-neutral-500 uppercase tracking-wider">
-                              {t('orders.total')}
+                        <div className="flex gap-2 lg:border-l lg:pl-4 border-neutral-200 dark:border-neutral-700">
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => toggleOrderDetails(order.id)}
+                            className="bg-white dark:bg-neutral-800 hover:bg-neutral-50 dark:hover:bg-neutral-700 dark:text-neutral-200 border-neutral-200 dark:border-neutral-600 shadow-sm"
+                          >
+                            {selectedOrder === order.id
+                              ? t('orders.hideDetails')
+                              : t('orders.viewDetails')}
+                          </Button>
+
+                          {(order.status === 'pending' || order.status === 'processing') && (
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => handleCancelOrder(order.id)}
+                              disabled={cancellingOrder === order.id}
+                              className="text-red-600 hover:text-red-700 hover:bg-red-50 dark:text-red-400 dark:hover:text-red-300 dark:hover:bg-red-900/20 border border-transparent hover:border-red-200 dark:hover:border-red-800/40"
+                            >
+                              {cancellingOrder === order.id
+                                ? t('orders.cancelling')
+                                : t('orders.cancelOrder')}
+                            </Button>
+                          )}
+
+                          {(order.status === 'shipped' || order.status === 'processing') && (
+                            <Button
+                              variant="primary"
+                              size="sm"
+                              onClick={() => handleConfirmReceived(order.id)}
+                              disabled={confirmingOrder === order.id}
+                              className="bg-green-600 hover:bg-green-700 text-white border-none shadow-md flex items-center justify-center gap-2 font-semibold px-4 py-2 transition-all hover:scale-[1.02]"
+                            >
+                              {confirmingOrder === order.id
+                                ? t('orders.confirming')
+                                : t('orders.confirmReceived')}
+                            </Button>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Xem trước sản phẩm trong đơn hàng */}
+                    <div className="p-6">
+                      {order.items && order.items.length > 0 ? (
+                        <div className="flex items-center gap-4">
+                          <div className="flex gap-2 flex-wrap">
+                            {order.items.slice(0, 4).map((item) => (
+                              <div
+                                key={item.id}
+                                className="w-12 h-12 rounded-lg border border-neutral-100 dark:border-neutral-700 overflow-hidden bg-neutral-50 dark:bg-neutral-800 flex-shrink-0 shadow-sm hover:scale-105 transition-transform"
+                              >
+                                {item.Product?.thumbnail ||
+                                item.Product?.images?.[0] ||
+                                item.image ? (
+                                  <img
+                                    src={
+                                      item.Product?.thumbnail ||
+                                      item.Product?.images?.[0] ||
+                                      item.image
+                                    }
+                                    alt={item.Product?.name || item.name}
+                                    className="w-full h-full object-cover"
+                                  />
+                                ) : (
+                                  <div className="w-full h-full flex items-center justify-center text-xs font-medium text-neutral-400">
+                                    {item.Product?.name?.charAt(0) || item.name?.charAt(0) || '?'}
+                                  </div>
+                                )}
+                              </div>
+                            ))}
+                            {order.items.length > 4 && (
+                              <div className="w-12 h-12 rounded-lg border border-neutral-100 dark:border-neutral-700 bg-neutral-50 dark:bg-neutral-800 flex items-center justify-center text-xs font-bold text-neutral-500 shadow-sm">
+                                +{order.items.length - 4}
+                              </div>
+                            )}
+                          </div>
+                          <div>
+                            <p className="text-sm font-medium text-neutral-800 dark:text-neutral-200">
+                              {t('orders.items', { count: order.items.length })}
                             </p>
-                            <p className="text-2xl font-black text-primary-600 dark:text-primary-400">
-                              {formatCurrency(order.total)}
+                            <p className="text-xs text-neutral-500 dark:text-neutral-400">
+                              {order.items
+                                .slice(0, 2)
+                                .map((item) => item.Product?.name)
+                                .join(', ')}
+                              {order.items.length > 2 && '...'}
                             </p>
                           </div>
-                          {order.paymentStatus && order.status !== 'cancelled' && (
-                            <span
-                              className={`px-3 py-1 text-xs font-semibold rounded-full shadow-sm ${
-                                paymentStatusColors[order.paymentStatus]
-                              }`}
-                            >
-                              {order.paymentStatus === 'pending' && order.paymentMethod === 'cod'
-                                ? t('orders.paymentStatus.cod')
-                                : t(`orders.paymentStatus.${order.paymentStatus}`)}
-                            </span>
-                          )}
                         </div>
-                      </div>
-
-                      <div className="flex gap-2 lg:border-l lg:pl-4 border-neutral-200 dark:border-neutral-700">
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => toggleOrderDetails(order.id)}
-                          className="bg-white dark:bg-neutral-800 hover:bg-neutral-50 dark:hover:bg-neutral-700 dark:text-neutral-200 border-neutral-200 dark:border-neutral-600 shadow-sm"
-                        >
-                          {selectedOrder === order.id
-                            ? t('orders.hideDetails')
-                            : t('orders.viewDetails')}
-                        </Button>
-
-                        {(order.status === 'pending' || order.status === 'processing') && (
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => handleCancelOrder(order.id)}
-                            disabled={cancellingOrder === order.id}
-                            className="text-red-600 hover:text-red-700 hover:bg-red-50 dark:text-red-400 dark:hover:text-red-300 dark:hover:bg-red-900/20 border border-transparent hover:border-red-200 dark:hover:border-red-800/40"
-                          >
-                            {cancellingOrder === order.id
-                              ? t('orders.cancelling')
-                              : t('orders.cancelOrder')}
-                          </Button>
-                        )}
-
-                        {(order.status === 'shipped' || order.status === 'processing') && (
-                          <Button
-                            variant="primary"
-                            size="sm"
-                            onClick={() => handleConfirmReceived(order.id)}
-                            disabled={confirmingOrder === order.id}
-                            className="bg-green-600 hover:bg-green-700 text-white border-none shadow-md flex items-center justify-center gap-2 font-semibold px-4 py-2 transition-all hover:scale-[1.02]"
-                          >
-                            {confirmingOrder === order.id
-                              ? t('orders.confirming')
-                              : t('orders.confirmReceived')}
-                          </Button>
-                        )}
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Xem trước sản phẩm trong đơn hàng */}
-                  <div className="p-6">
-                    {order.items && order.items.length > 0 ? (
-                      <div className="flex items-center gap-4">
-                        <div className="flex gap-2 flex-wrap">
-                          {order.items.slice(0, 4).map((item) => (
-                            <div
-                              key={item.id}
-                              className="w-12 h-12 rounded-lg border border-neutral-100 dark:border-neutral-700 overflow-hidden bg-neutral-50 dark:bg-neutral-800 flex-shrink-0 shadow-sm hover:scale-105 transition-transform"
-                            >
-                              {item.Product?.thumbnail ||
-                              item.Product?.images?.[0] ||
-                              item.image ? (
-                                <img
-                                  src={
-                                    item.Product?.thumbnail ||
-                                    item.Product?.images?.[0] ||
-                                    item.image
-                                  }
-                                  alt={item.Product?.name || item.name}
-                                  className="w-full h-full object-cover"
-                                />
-                              ) : (
-                                <div className="w-full h-full flex items-center justify-center text-xs font-medium text-neutral-400">
-                                  {item.Product?.name?.charAt(0) || item.name?.charAt(0) || '?'}
-                                </div>
-                              )}
-                            </div>
-                          ))}
-                          {order.items.length > 4 && (
-                            <div className="w-12 h-12 rounded-lg border border-neutral-100 dark:border-neutral-700 bg-neutral-50 dark:bg-neutral-800 flex items-center justify-center text-xs font-bold text-neutral-500 shadow-sm">
-                              +{order.items.length - 4}
-                            </div>
-                          )}
-                        </div>
-                        <div>
-                          <p className="text-sm font-medium text-neutral-800 dark:text-neutral-200">
-                            {t('orders.items', { count: order.items.length })}
-                          </p>
-                          <p className="text-xs text-neutral-500 dark:text-neutral-400">
-                            {order.items
-                              .slice(0, 2)
-                              .map((item) => item.Product?.name)
-                              .join(', ')}
-                            {order.items.length > 2 && '...'}
+                      ) : (
+                        <div className="text-center py-4">
+                          <p className="text-neutral-500 dark:text-neutral-400">
+                            {t('orders.noItemsFound')}
                           </p>
                         </div>
-                      </div>
-                    ) : (
-                      <div className="text-center py-4">
-                        <p className="text-neutral-500 dark:text-neutral-400">
-                          {t('orders.noItemsFound')}
-                        </p>
-                      </div>
-                    )}
-
-                    {/* Thông tin vận chuyển */}
-                    {(order.trackingNumber || order.estimatedDelivery) && (
-                      <div className="mt-4 pt-4 border-t border-neutral-200 dark:border-neutral-700">
-                        <div className="flex flex-col sm:flex-row sm:items-center gap-4 text-sm">
-                          {order.trackingNumber && (
-                            <div>
-                              <span className="text-neutral-500 dark:text-neutral-400">
-                                {t('orders.tracking')}:{' '}
-                              </span>
-                              <span className="font-medium text-neutral-800 dark:text-neutral-200">
-                                {order.trackingNumber}
-                              </span>
-                            </div>
-                          )}
-                          {order.estimatedDelivery && (
-                            <div>
-                              <span className="text-neutral-500 dark:text-neutral-400">
-                                {t('orders.estimatedDelivery')}:{' '}
-                              </span>
-                              <span className="font-medium text-neutral-800 dark:text-neutral-200">
-                                {formatDate(order.estimatedDelivery)}
-                              </span>
-                            </div>
-                          )}
-                        </div>
-                      </div>
-                    )}
-                  </div>
-
-                  {/* Chi tiết đơn hàng có thể mở rộng */}
-                  {selectedOrder === order.id && (
-                    <OrderDetails orderId={order.id} onOpenReview={handleOpenReview} />
-                  )}
-                </div>
-              );
-            })}
-          </div>
-
-          {/* Phân trang */}
-          {totalPages > 1 && (
-            <div className="mt-8 flex justify-center">
-              <div className="flex items-center gap-2">
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => handlePageChange(currentPage - 1)}
-                  disabled={currentPage === 1}
-                >
-                  {t('common.previous')}
-                </Button>
-                {Array.from({ length: totalPages }, (_, i) => i + 1)
-                  .filter(
-                    (page) =>
-                      page === 1 || page === totalPages || Math.abs(page - currentPage) <= 2,
-                  )
-                  .map((page, index, array) => (
-                    <div key={page} className="flex items-center">
-                      {index > 0 && array[index - 1] !== page - 1 && (
-                        <span className="px-2 text-neutral-400">...</span>
                       )}
-                      <Button
-                        variant={page === currentPage ? 'primary' : 'ghost'}
-                        size="sm"
-                        onClick={() => handlePageChange(page)}
-                      >
-                        {page}
-                      </Button>
+
+                      {/* Thông tin vận chuyển */}
+                      {(order.trackingNumber || order.estimatedDelivery) && (
+                        <div className="mt-4 pt-4 border-t border-neutral-200 dark:border-neutral-700">
+                          <div className="flex flex-col sm:flex-row sm:items-center gap-4 text-sm">
+                            {order.trackingNumber && (
+                              <div>
+                                <span className="text-neutral-500 dark:text-neutral-400">
+                                  {t('orders.tracking')}:{' '}
+                                </span>
+                                <span className="font-medium text-neutral-800 dark:text-neutral-200">
+                                  {order.trackingNumber}
+                                </span>
+                              </div>
+                            )}
+                            {order.estimatedDelivery && (
+                              <div>
+                                <span className="text-neutral-500 dark:text-neutral-400">
+                                  {t('orders.estimatedDelivery')}:{' '}
+                                </span>
+                                <span className="font-medium text-neutral-800 dark:text-neutral-200">
+                                  {formatDate(order.estimatedDelivery)}
+                                </span>
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                      )}
                     </div>
-                  ))}
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => handlePageChange(currentPage + 1)}
-                  disabled={currentPage === totalPages}
-                >
-                  {t('common.next')}
-                </Button>
-              </div>
+
+                    {/* Chi tiết đơn hàng có thể mở rộng */}
+                    {selectedOrder === order.id && (
+                      <OrderDetails orderId={order.id} onOpenReview={handleOpenReview} />
+                    )}
+                  </div>
+                );
+              })}
             </div>
-          )}
-        </>
-      )}
-      {/* Modal đánh giá */}
-      {reviewProduct && (
-        <ReviewModal
-          isOpen={reviewModalOpen}
-          onClose={() => {
-            setReviewModalOpen(false);
-            setReviewProduct(null);
-          }}
-          productId={reviewProduct.id}
-          productName={reviewProduct.name}
-          onSuccess={() => refetch()} // có thể cần khóa nút đánh giá nếu đã implement khóa ở backend
-        />
-      )}
+
+            {/* Phân trang */}
+            {totalPages > 1 && (
+              <div className="mt-8 flex justify-center">
+                <div className="flex items-center gap-2">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => handlePageChange(currentPage - 1)}
+                    disabled={currentPage === 1}
+                  >
+                    {t('common.previous')}
+                  </Button>
+                  {Array.from({ length: totalPages }, (_, i) => i + 1)
+                    .filter(
+                      (page) =>
+                        page === 1 || page === totalPages || Math.abs(page - currentPage) <= 2,
+                    )
+                    .map((page, index, array) => (
+                      <div key={page} className="flex items-center">
+                        {index > 0 && array[index - 1] !== page - 1 && (
+                          <span className="px-2 text-neutral-400">...</span>
+                        )}
+                        <Button
+                          variant={page === currentPage ? 'primary' : 'ghost'}
+                          size="sm"
+                          onClick={() => handlePageChange(page)}
+                        >
+                          {page}
+                        </Button>
+                      </div>
+                    ))}
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => handlePageChange(currentPage + 1)}
+                    disabled={currentPage === totalPages}
+                  >
+                    {t('common.next')}
+                  </Button>
+                </div>
+              </div>
+            )}
+          </>
+        )}
+        {/* Modal đánh giá */}
+        {reviewProduct && (
+          <ReviewModal
+            isOpen={reviewModalOpen}
+            onClose={() => {
+              setReviewModalOpen(false);
+              setReviewProduct(null);
+            }}
+            productId={reviewProduct.id}
+            productName={reviewProduct.name}
+            onSuccess={() => refetch()} // có thể cần khóa nút đánh giá nếu đã implement khóa ở backend
+          />
+        )}
+      </div>
     </div>
   );
 };

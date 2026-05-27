@@ -363,22 +363,25 @@ const OrdersPage: React.FC = () => {
           <>
             <div className="space-y-6">
               {orders.map((order) => {
-                const statusColors: Record<string, string> = {
-                  pending: 'border-l-yellow-400',
-                  processing: 'border-l-blue-400',
-                  shipped: 'border-l-purple-400',
-                  delivered: 'border-l-green-400',
-                  cancelled: 'border-l-red-400',
+                const statusBorderColors: Record<string, string> = {
+                  pending: '#facc15',
+                  processing: '#60a5fa',
+                  shipped: '#a78bfa',
+                  delivered: '#4ade80',
+                  cancelled: '#f87171',
                 };
 
                 return (
                   <div
                     key={order.id}
-                    className={`bg-white dark:bg-neutral-800 rounded-xl shadow-md border border-neutral-200 dark:border-neutral-700/50 overflow-hidden hover:shadow-xl hover:-translate-y-0.5 transition-all duration-300 border-l-4 ${/* istanbul ignore next */ statusColors[order.status] || 'border-l-neutral-400'}`}
+                    className="group/card bg-white dark:bg-neutral-800 rounded-2xl shadow-md dark:shadow-neutral-900/50 border border-neutral-200/80 dark:border-neutral-700/50 overflow-hidden hover:shadow-xl dark:hover:shadow-neutral-900/70 hover:-translate-y-1 transition-all duration-300"
+                    style={{
+                      borderLeft: `4px solid ${statusBorderColors[order.status] || '#a3a3a3'}`,
+                    }}
                   >
                     {/* Tiêu đề đơn hàng */}
                     <div
-                      className="p-6 border-b border-neutral-100 dark:border-neutral-700/60 bg-gradient-to-r from-neutral-50/80 to-transparent dark:from-neutral-900/40 cursor-pointer hover:bg-neutral-50 dark:hover:bg-neutral-750 transition-colors"
+                      className="p-6 border-b border-neutral-100 dark:border-neutral-700/60 bg-gradient-to-r from-neutral-50/80 to-transparent dark:from-neutral-800/60 cursor-pointer hover:from-neutral-100/80 dark:hover:from-neutral-700/60 transition-all"
                       onClick={() => toggleOrderDetails(order.id)}
                     >
                       <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">

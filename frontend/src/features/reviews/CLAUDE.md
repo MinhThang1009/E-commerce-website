@@ -61,7 +61,6 @@ export const reviewKeys = {
 
 ## Client state (Zustand)
 
-- `authStore` — `isAuthenticated` để enable/disable `ReviewForm` và query `useGetUserReviewsQuery`
 
 ---
 
@@ -72,7 +71,6 @@ export const reviewKeys = {
 | Hook                                        | Endpoint                                                         | Mô tả                                                                                                       |
 | ------------------------------------------- | ---------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------- |
 | `useGetProductReviewsQuery(args, options?)` | `GET /api/reviews/product/:productId?page=&limit=&rating=&sort=` | Danh sách đánh giá của sản phẩm với filter. Enabled khi `productId` có giá trị và không phải `'undefined'`. |
-| `useGetUserReviewsQuery(params?, options?)` | `GET /api/reviews/user?page=&limit=`                             | Đánh giá của user hiện tại                                                                                  |
 
 `args` của `useGetProductReviewsQuery`:
 
@@ -87,8 +85,6 @@ type Args = { productId: string } & ReviewFilters;
 | Hook                        | Endpoint                  | Mô tả                                                                                           |
 | --------------------------- | ------------------------- | ----------------------------------------------------------------------------------------------- |
 | `useCreateReviewMutation()` | `POST /api/reviews`       | Tạo đánh giá — invalidate `reviewKeys.product(productId)` + `['products', 'detail', productId]` |
-| `useUpdateReviewMutation()` | `PUT /api/reviews/:id`    | Cập nhật đánh giá — invalidate product reviews + product detail                                 |
-| `useDeleteReviewMutation()` | `DELETE /api/reviews/:id` | Xóa đánh giá — invalidate `reviewKeys.all`                                                      |
 
 `useCreateReviewMutation` payload:
 

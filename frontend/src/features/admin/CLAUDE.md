@@ -64,7 +64,6 @@ features/admin/
 
   components/
     AdminLayout.tsx           — Layout wrapper: sidebar nav, header với dark mode toggle, responsive drawer mobile
-    CreateProductForm.tsx     — Form nhiều tab tạo sản phẩm: basic info, variants, images, attributes, SEO, FAQ
     DashboardCharts.tsx       — Charts recharts: revenue line, category pie, order bar, top products
     ProductExportModal.tsx    — Modal export danh sách sản phẩm ra Excel (dùng exceljs)
 

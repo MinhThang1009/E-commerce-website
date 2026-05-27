@@ -20,7 +20,6 @@
 
 Cung cấp hooks để upload file/ảnh lên server. Không có UI riêng, không có pages — chỉ export hooks để các features khác dùng. Có 2 luồng upload độc lập dùng cho mục đích khác nhau:
 
-- **Simple upload** (`upload-api.ts` → `/uploads/`): nhanh, không metadata, dùng cho avatar user, review images.
 - **Rich image upload** (`image-api.ts` → `/images/`): có thumbnails, category, optimize, admin tools, dùng cho product images.
 
 ---
@@ -29,7 +28,6 @@ Cung cấp hooks để upload file/ảnh lên server. Không có UI riêng, khô
 
 ```
 api/
-  upload-api.ts   — Simple upload: POST /uploads/:type/single|multiple, DELETE /uploads/:type/:filename
   image-api.ts    — Rich image upload: /images/ với metadata, thumbnails, admin tools; export imageKeys
 
 index.ts          — Barrel export tất cả hooks và types
@@ -54,7 +52,6 @@ export const imageKeys = {
 };
 ```
 
-`upload-api.ts` không có query keys (chỉ mutations).
 
 ## Client state (Zustand)
 
@@ -72,7 +69,6 @@ Không dùng Zustand stores.
 | `useGetImagesByProductIdQuery(productId, options?)` | `GET /api/images/product/:productId` | Danh sách ảnh của sản phẩm                         |
 | `useImageHealthCheckQuery()`                        | `GET /api/images/health`             | Health check image service                         |
 
-## Mutations — Simple upload (`upload-api.ts`, path `/api/uploads/`)
 
 | Hook                          | Endpoint                              | Body                         | Mô tả                                           |
 | ----------------------------- | ------------------------------------- | ---------------------------- | ----------------------------------------------- |
@@ -114,7 +110,6 @@ Không có components riêng trong feature này. UI upload được implement tr
 # 6. Types
 
 ```typescript
-// upload-api.ts
 interface UploadResponse {
   status: string;
   message: string;
@@ -177,9 +172,7 @@ interface MultipleImageResponse {
 # 8. Gotchas & Edge Cases
 
 - **2 paths hoàn toàn khác nhau:**
-  - `upload-api.ts` → `/uploads/:type/` — simple, nhanh, không metadata
   - `image-api.ts` → `/images/` — rich, có thumbnails + category + optimize
-  - **Dùng `upload-api.ts`** khi: user avatar, review images (không cần thumbnails)
   - **Dùng `image-api.ts`** khi: product images (cần thumbnails), admin operations
 - **`generateThumbs: true`** tạo 3 sizes (150px/300px/600px = small/medium/large). Chỉ dùng cho product images — không dùng cho avatar.
 - **`optimize: true`** → WebP conversion + compression. Tốn CPU — không dùng cho bulk upload hoặc avatar.

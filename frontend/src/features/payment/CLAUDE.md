@@ -35,7 +35,6 @@ api/
   vnpay-api.ts       — Mutation tạo URL thanh toán VNPay (POST /api/payments/vnpay/create-url)
 
 components/
-  BankTransferQR.tsx — QR image VietQR từ env vars VITE_BANK_CODE + VITE_BANK_ACCOUNT_NUMBER
 
 pages/
   PaymentQRPage.tsx  — /payment-qr: QR + countdown 15 phút + poll status; DEV test card panel
@@ -102,9 +101,7 @@ Không có query hooks riêng. Polling status dùng `useGetOrderByIdQuery` từ 
 
 | Component        | Mô tả                                                                                                                                                                                                                                                       |
 | ---------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `BankTransferQR` | Generate `https://img.vietqr.io/image/{BANK_CODE}-{ACCOUNT_NUMBER}-compact.jpg?amount=&addInfo=&accountName=` từ env vars. Hiển thị thông tin ngân hàng (tên ngân hàng, số tài khoản, chủ tài khoản, số tiền, nội dung chuyển khoản) với copy-to-clipboard. |
 
-`BankTransferQR` không được import bởi `CheckoutPage` hoặc `PaymentQRPage` — hiện là dead code, được export từ `index.ts` nhưng chưa dùng ở đâu trong runtime.
 
 ---
 
@@ -122,10 +119,8 @@ Không có `types/` directory riêng — types inline trong api files:
 // Response: { data?: { paymentUrl?: string } }
 ```
 
-`BankTransferQR` props:
 
 ```typescript
-interface BankTransferQRProps {
   amount: number;
   orderId: string;
   numberOrder: string;
@@ -139,13 +134,11 @@ interface BankTransferQRProps {
 **Feature này phụ thuộc vào:**
 
 - `features/orders` — `useGetOrderByIdQuery` (polling), `useCancelOrderMutation` (auto-cancel khi timeout)
-- `lucide-react` — `Copy`, `Check` icons trong `BankTransferQR`
 - `lib/api-client` — HTTP requests
 - `stores/ui-store` — `addNotification()`
 
 **Feature này được dùng bởi:**
 
-- `features/checkout` — import `useCreateMomoUrlMutation`, `useCreateVNPayUrlMutation` (KHÔNG import `BankTransferQR`)
 - `routes/AppRoutes.tsx` — mount `PaymentQRPage` tại `/payment-qr` (ProtectedRoute)
 
 ---
@@ -153,7 +146,6 @@ interface BankTransferQRProps {
 # 8. Gotchas & Edge Cases
 
 - **Field name MoMo vs VNPay khác nhau:** MoMo → `data.payUrl`; VNPay → `data.paymentUrl`. Không nhầm khi destructure response.
-- **`BankTransferQR` KHÔNG hardcode bank info** — lấy từ env vars `VITE_BANK_CODE`, `VITE_BANK_ACCOUNT_NUMBER`, `VITE_BANK_NAME`, `VITE_BANK_ACCOUNT_NAME`. Thiếu env → QR image 404 (fallback về giá trị mặc định Techcombank/19031546128019).
 - **Countdown timer 15 phút là UI-only** — backend không tự hủy đơn khi hết giờ. FE phải chủ động gọi `useCancelOrderMutation` khi `isExpired = true`.
 - **Test card numbers** trong `PaymentQRPage` chỉ render khi `import.meta.env.DEV === true` — tree-shaken hoàn toàn ở production build. 3 test cards: NCB success, NCB error, Visa success.
 - **`PaymentQRPage` đọc params từ `useSearchParams()`** — thiếu `orderId` hoặc `amountParam` → render invalid link screen.

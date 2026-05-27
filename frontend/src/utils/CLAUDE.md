@@ -5,7 +5,7 @@
 ## Mục lục
 
 - [1. Tổng quan](#1-tổng-quan)
-  - [1.1 Danh sách 14 files](#11-danh-sách-14-files)
+  - [1.1 Danh sách 12 files](#11-danh-sách-12-files)
 - [2. Hay dùng nhất](#2-hay-dùng-nhất)
   - [2.1 cn — Tailwind class merging](#21-cn--tailwind-class-merging)
   - [2.2 format.ts — Format display](#22-formatts--format-display)

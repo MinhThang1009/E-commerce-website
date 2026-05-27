@@ -60,7 +60,6 @@ features/ai/
     icons/                    — SVG icon components: SendIcon, BotIcon, UserIcon, LoadingIcon, TrashIcon, HelpIcon...
 
   hooks/
-    use-speech-recognition.ts — Web Speech API wrapper với lang: 'vi-VN'
 
   constants/
     chat-widget.ts            — CHAT_WIDGET_CONFIG: DEFAULT_SIZE 384×600, MIN 300×400, MAX 800×800; STORAGE_KEYS; getGreetingMessage() (không dùng bởi ChatWidgetPortal — widget build greeting inline); RESIZE_HANDLE_STYLES + RESIZE_HANDLE_CLASSES (leftover từ resize implementation cũ, hiện không dùng)
@@ -177,7 +176,6 @@ interface SendChatbotMessageRequest {
 - `stores/chat-store` — messages state, persist localStorage
 - `stores/auth-store` — user.id cho chat history, token cho legacy chatbot-service
 - TanStack Query key `['cart']` — invalidate qua `queryClient.invalidateQueries` sau add-to-cart (không import `cart-store` trực tiếp)
-- `Web Speech API` — voice input trong `use-speech-recognition.ts`
 
 ## 7.2 Used by
 
@@ -193,7 +191,6 @@ interface SendChatbotMessageRequest {
 - **Widget size persist** vào `localStorage[CHAT_WIDGET_CONFIG.STORAGE_KEYS.SIZE]` = `'chatWidgetSize'`. Default 384×600, min 300×400, max 800×800.
 - **Chat messages persist qua navigation** — chatStore Zustand giữ state trong memory + localStorage, không reset khi navigate.
 - **Widget render:** `ChatWidgetPortal` là fixed-position div — z-index luôn cao nhất (z-50 button, z-[9999] panel), không bị clip bởi `overflow: hidden` của parent.
-- **Voice search:** `use-speech-recognition.ts` dùng Web Speech API với `lang: 'vi-VN'` — chỉ hoạt động trên HTTPS và Chrome/Edge. Không có fallback tự động.
 - **Rate limit backend:** `chatbotLimiter` = 20 req/60s, không có dev override.
 - **Typing indicator:** khi gửi, ChatWidget push `{ isLoading: true }` vào store ngay lập tức, sau đó replace bằng response thực. Nếu lỗi → replace bằng error message.
 - **`isLoading` trong Message type** chỉ dùng tạm thời cho typing indicator — không persist vào localStorage.

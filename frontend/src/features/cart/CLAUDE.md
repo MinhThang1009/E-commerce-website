@@ -53,7 +53,6 @@ features/cart/
 
   hooks/
     use-cart-merge.ts     — Watch justLoggedIn flag → add local items lên server sau login, merge server cart
-    use-cart-sync.ts      — Sync server cart → cartStore khi fetch thành công; clear khi logout
 
   pages/
     CartPage.tsx          — /cart: danh sách CartItem + voucher input + order summary + nút checkout
@@ -226,9 +225,7 @@ interface AddToCartRequest {
 
 - **Guest cart:** khi chưa login, cartStore dùng `localStorage`. Khi login → `use-cart-merge.ts` tự động add từng local item lên server (không dùng `useSyncCartMutation` vì sync ghi đè, thay vào đó dùng `addToCart` cho từng item), sau đó gọi `useMergeCartMutation` để deduplicate nếu không có local items.
 - **`useGetCartQuery` chỉ enable khi login:** luôn pass `{ enabled: isAuthenticated }` — nếu quên, query bắn request lúc guest → 401.
-- **`useSyncCartMutation` khác `useMergeCartMutation`:** sync = đẩy local items lên server sạch (ghi đè). Merge = kết hợp guest cart + server cart, server quyết định deduplicate. `use-cart-sync.ts` dùng sync; `use-cart-merge.ts` dùng merge.
 - **`useValidateCartQuery`** gọi trước khi bước vào checkout để bắt items hết hàng hoặc giá thay đổi — không skip.
-- **Race condition sync:** `use-cart-sync.ts` không overwrite local cart bằng empty server cart khi đang sync — tránh trường hợp server trả `[]` trước khi sync hoàn thành.
 - **Không còn warranty packages:** CartItem không có `warrantyPackageIds`. Warranty module đã bị xóa.
 - **`cartKeys` được export** — feature `orders` và `ai` import để invalidate cart sau khi tạo đơn/add từ chat.
 - **CartPage xử lý MoMo return:** kiểm tra query param `?status=momo-return&resultCode=0` khi mount — nếu có, clear cart và redirect `/orders`.

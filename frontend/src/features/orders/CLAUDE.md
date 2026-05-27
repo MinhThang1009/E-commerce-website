@@ -74,7 +74,6 @@ export const orderKeys = {
 | -------------------------------------------- | -------------------------------- | --------------------------------------------------------------------------- |
 | `useGetUserOrdersQuery(params?, options?)`   | `GET /api/orders?page=&limit=`   | Danh sách đơn hàng của user có pagination                                   |
 | `useGetOrderByIdQuery(id, options?)`         | `GET /api/orders/:id`            | Chi tiết đơn hàng — hỗ trợ `refetchInterval` option để polling              |
-| `useGetOrderByNumberQuery(number, options?)` | `GET /api/orders/number/:number` | Tra cứu theo mã đơn hàng                                                    |
 | `useGetAvailableDiscountCodesQuery()`        | `GET /api/discount-codes`        | Danh sách mã giảm giá khả dụng — dùng bởi `CheckoutPage` để hiển thị picker |
 
 `useGetOrderByIdQuery` hỗ trợ `refetchInterval` — được dùng bởi `PaymentQRPage` (feature payment) để poll payment status mỗi 5 giây.

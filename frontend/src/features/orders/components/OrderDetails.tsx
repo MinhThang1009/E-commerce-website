@@ -229,6 +229,13 @@ const OrderDetails: React.FC<OrderDetailsProps> = ({ orderId, onOpenReview }) =>
                   {order.paymentStatus === 'paid' && (
                     <CheckCircle className="w-4 h-4 text-emerald-500" />
                   )}
+                  {order.paymentStatus === 'failed' && <Clock className="w-4 h-4 text-red-500" />}
+                  {order.paymentStatus === 'pending' && (
+                    <Clock className="w-4 h-4 text-amber-500" />
+                  )}
+                  {order.paymentStatus === 'refunded' && (
+                    <Package className="w-4 h-4 text-neutral-500" />
+                  )}
                   {order.status === 'cancelled' && order.paymentStatus === 'pending'
                     ? '—'
                     : order.paymentStatus === 'paid'

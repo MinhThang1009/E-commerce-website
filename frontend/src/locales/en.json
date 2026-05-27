@@ -919,8 +919,8 @@
     "detailTitle": "Order details: #{{number}}",
     "placedAt": "Placed on: {{date}}",
     "paidStatus": "Paid",
-    "failedStatus": "❌ Payment failed",
-    "pendingPaymentStatus": "⏳ Pending payment"
+    "failedStatus": "Payment failed",
+    "pendingPaymentStatus": "Pending payment"
   },
   "payment": {
     "initializingPayment": "Initializing payment...",

@@ -1042,8 +1042,8 @@
     "detailTitle": "Chi tiết đơn hàng: #{{number}}",
     "placedAt": "Ngày đặt: {{date}}",
     "paidStatus": "Đã thanh toán",
-    "failedStatus": "❌ Thanh toán thất bại",
-    "pendingPaymentStatus": "⏳ Chờ thanh toán"
+    "failedStatus": "Thanh toán thất bại",
+    "pendingPaymentStatus": "Chờ thanh toán"
   },
   "payment": {
     "initializingPayment": "Đang khởi tạo thanh toán...",

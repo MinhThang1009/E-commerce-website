@@ -716,6 +716,7 @@
   },
   "checkout": {
     "title": "Thanh toán",
+    "secureCheckout": "Thanh toán an toàn",
     "step": {
       "shipping": "Giao hàng",
       "payment": "Thanh toán",

@@ -762,165 +762,214 @@ const CheckoutPage: React.FC = () => {
   const isRepayingOrder = currentOrder && currentOrder.isRepay;
 
   return (
-    <div className="container mx-auto px-4 py-8">
-      <h1 className="text-3xl font-bold text-neutral-800 dark:text-neutral-100 mb-4">
-        {isRepayingOrder ? t('checkout.repayTitle') : t('checkout.title')}
-      </h1>
+    <div className="min-h-screen bg-neutral-50 dark:bg-neutral-950">
+      <div className="container mx-auto px-4 py-6 pb-24 lg:pb-8">
+        <div className="flex items-center justify-between mb-6">
+          <h1 className="text-2xl font-bold text-neutral-800 dark:text-neutral-100">
+            {isRepayingOrder ? t('checkout.repayTitle') : t('checkout.title')}
+          </h1>
+          <div className="hidden sm:flex items-center gap-2 text-xs text-neutral-500 dark:text-neutral-400">
+            <svg
+              className="w-4 h-4 text-green-500"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+              strokeWidth={2}
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"
+              />
+            </svg>
+            {t('checkout.secureCheckout')}
+          </div>
+        </div>
 
-      {!isRepayingOrder && <CheckoutStepIndicator currentStep={currentStep} steps={wizardSteps} />}
+        {!isRepayingOrder && (
+          <CheckoutStepIndicator currentStep={currentStep} steps={wizardSteps} />
+        )}
 
-      <div className={`grid grid-cols-1 ${currentStep !== 2 ? 'lg:grid-cols-2' : ''} gap-8`}>
-        {/* Cột trái - Wizard steps */}
-        <div className="min-h-[400px]">
-          <AnimatePresence mode="wait" custom={stepDirection}>
-            {currentStep === 0 && !isRepayingOrder && (
-              <motion.div
-                key="step-shipping"
-                custom={stepDirection}
-                variants={stepSlide}
-                initial="enter"
-                animate="center"
-                exit="exit"
-                className="space-y-8"
-              >
-                <CheckoutShippingForm
-                  formData={formData}
-                  errors={errors}
-                  savedAddresses={savedAddresses}
-                  onInputChange={handleInputChange}
-                  onAddressChange={handleAddressChange}
-                />
-                <div className="flex justify-end">
-                  <PremiumButton variant="primary" size="large" onClick={goNext}>
-                    {t('checkout.step.next')}
-                  </PremiumButton>
-                </div>
-              </motion.div>
-            )}
-
-            {(currentStep === 1 || isRepayingOrder) && (
-              <motion.div
-                key="step-payment"
-                custom={stepDirection}
-                variants={stepSlide}
-                initial="enter"
-                animate="center"
-                exit="exit"
-                className="space-y-8"
-              >
-                <CheckoutPaymentMethod
-                  paymentMethods={paymentMethods}
-                  selectedMethod={formData.paymentMethod}
-                  onMethodChange={(value) => handleInputChange('paymentMethod', value)}
-                  isInstallmentModalOpen={isInstallmentModalOpen}
-                  onCloseInstallmentModal={() => setIsInstallmentModalOpen(false)}
-                />
-
-                <div className="bg-white dark:bg-neutral-800 rounded-lg shadow-sm p-6">
-                  <h2 className="text-xl font-semibold text-neutral-800 dark:text-neutral-100 mb-4">
-                    {t('checkout.orderNotes.title')}
-                  </h2>
-                  <textarea
-                    value={formData.notes}
-                    onChange={(e) => handleInputChange('notes', e.target.value)}
-                    placeholder={t('checkout.orderNotes.placeholder')}
-                    className="w-full p-3 border border-neutral-200 dark:border-neutral-700 rounded-lg bg-white dark:bg-neutral-800 text-neutral-800 dark:text-neutral-100"
-                    rows={3}
+        <div className={`grid grid-cols-1 ${currentStep !== 2 ? 'lg:grid-cols-2' : ''} gap-8`}>
+          {/* Cột trái - Wizard steps */}
+          <div className="min-h-[400px]">
+            <AnimatePresence mode="wait" custom={stepDirection}>
+              {currentStep === 0 && !isRepayingOrder && (
+                <motion.div
+                  key="step-shipping"
+                  custom={stepDirection}
+                  variants={stepSlide}
+                  initial="enter"
+                  animate="center"
+                  exit="exit"
+                  className="space-y-8"
+                >
+                  <CheckoutShippingForm
+                    formData={formData}
+                    errors={errors}
+                    savedAddresses={savedAddresses}
+                    onInputChange={handleInputChange}
+                    onAddressChange={handleAddressChange}
                   />
-                </div>
+                  <div className="flex justify-end">
+                    <PremiumButton variant="primary" size="large" onClick={goNext}>
+                      {t('checkout.step.next')}
+                    </PremiumButton>
+                  </div>
+                </motion.div>
+              )}
 
-                <div className="flex justify-between">
-                  {!isRepayingOrder && (
+              {(currentStep === 1 || isRepayingOrder) && (
+                <motion.div
+                  key="step-payment"
+                  custom={stepDirection}
+                  variants={stepSlide}
+                  initial="enter"
+                  animate="center"
+                  exit="exit"
+                  className="space-y-8"
+                >
+                  <CheckoutPaymentMethod
+                    paymentMethods={paymentMethods}
+                    selectedMethod={formData.paymentMethod}
+                    onMethodChange={(value) => handleInputChange('paymentMethod', value)}
+                    isInstallmentModalOpen={isInstallmentModalOpen}
+                    onCloseInstallmentModal={() => setIsInstallmentModalOpen(false)}
+                  />
+
+                  <div className="bg-white dark:bg-neutral-800 rounded-lg shadow-sm p-6">
+                    <h2 className="text-xl font-semibold text-neutral-800 dark:text-neutral-100 mb-4">
+                      {t('checkout.orderNotes.title')}
+                    </h2>
+                    <textarea
+                      value={formData.notes}
+                      onChange={(e) => handleInputChange('notes', e.target.value)}
+                      placeholder={t('checkout.orderNotes.placeholder')}
+                      className="w-full p-3 border border-neutral-200 dark:border-neutral-700 rounded-lg bg-white dark:bg-neutral-800 text-neutral-800 dark:text-neutral-100"
+                      rows={3}
+                    />
+                  </div>
+
+                  <div className="flex justify-between">
+                    {!isRepayingOrder && (
+                      <PremiumButton variant="outline" size="large" onClick={goBack}>
+                        {t('checkout.step.back')}
+                      </PremiumButton>
+                    )}
+                    <PremiumButton
+                      variant="primary"
+                      size="large"
+                      onClick={goNext}
+                      className="ml-auto"
+                    >
+                      {t('checkout.step.next')}
+                    </PremiumButton>
+                  </div>
+                </motion.div>
+              )}
+
+              {currentStep === 2 && (
+                <motion.div
+                  key="step-confirm"
+                  custom={stepDirection}
+                  variants={stepSlide}
+                  initial="enter"
+                  animate="center"
+                  exit="exit"
+                >
+                  <CheckoutOrderSummary
+                    items={items}
+                    isRepayingOrder={isRepayingOrder}
+                    currentOrder={currentOrder}
+                    subtotal={subtotal}
+                    shippingCost={shippingCost}
+                    finalDistance={finalDistance}
+                    tax={tax}
+                    total={total}
+                    appliedDiscount={appliedDiscount}
+                    discountCodeInput={discountCodeInput}
+                    onDiscountCodeChange={setDiscountCodeInput}
+                    discountError={discountError}
+                    isValidatingCode={isValidatingCode}
+                    availableCodes={availableCodes}
+                    onApplyDiscount={handleApplyDiscount}
+                    onRemoveDiscount={handleRemoveDiscount}
+                    onSelectDiscountCode={(code) => {
+                      setDiscountCodeInput(code);
+                      setDiscountError('');
+                    }}
+                    paymentMethod={formData.paymentMethod}
+                    isProcessing={isProcessing}
+                    onSubmit={() => handleSubmit({ preventDefault: () => {} } as React.FormEvent)}
+                  />
+
+                  <div className="flex justify-between mt-6">
                     <PremiumButton variant="outline" size="large" onClick={goBack}>
                       {t('checkout.step.back')}
                     </PremiumButton>
-                  )}
-                  <PremiumButton
-                    variant="primary"
-                    size="large"
-                    onClick={goNext}
-                    className="ml-auto"
-                  >
-                    {t('checkout.step.next')}
-                  </PremiumButton>
-                </div>
-              </motion.div>
-            )}
+                  </div>
+                </motion.div>
+              )}
+            </AnimatePresence>
+          </div>
 
-            {currentStep === 2 && (
-              <motion.div
-                key="step-confirm"
-                custom={stepDirection}
-                variants={stepSlide}
-                initial="enter"
-                animate="center"
-                exit="exit"
-              >
-                <CheckoutOrderSummary
-                  items={items}
-                  isRepayingOrder={isRepayingOrder}
-                  currentOrder={currentOrder}
-                  subtotal={subtotal}
-                  shippingCost={shippingCost}
-                  finalDistance={finalDistance}
-                  tax={tax}
-                  total={total}
-                  appliedDiscount={appliedDiscount}
-                  discountCodeInput={discountCodeInput}
-                  onDiscountCodeChange={setDiscountCodeInput}
-                  discountError={discountError}
-                  isValidatingCode={isValidatingCode}
-                  availableCodes={availableCodes}
-                  onApplyDiscount={handleApplyDiscount}
-                  onRemoveDiscount={handleRemoveDiscount}
-                  onSelectDiscountCode={(code) => {
-                    setDiscountCodeInput(code);
-                    setDiscountError('');
-                  }}
-                  paymentMethod={formData.paymentMethod}
-                  isProcessing={isProcessing}
-                  onSubmit={() => handleSubmit({ preventDefault: () => {} } as React.FormEvent)}
-                />
-
-                <div className="flex justify-between mt-6">
-                  <PremiumButton variant="outline" size="large" onClick={goBack}>
-                    {t('checkout.step.back')}
-                  </PremiumButton>
-                </div>
-              </motion.div>
-            )}
-          </AnimatePresence>
+          {/* Cột phải - Order summary (ẩn ở step confirm vì đã là nội dung chính) */}
+          {currentStep !== 2 && (
+            <div className="hidden lg:block sticky top-20">
+              <CheckoutOrderSummary
+                items={items}
+                isRepayingOrder={isRepayingOrder}
+                currentOrder={currentOrder}
+                subtotal={subtotal}
+                shippingCost={shippingCost}
+                finalDistance={finalDistance}
+                tax={tax}
+                total={total}
+                appliedDiscount={appliedDiscount}
+                discountCodeInput={discountCodeInput}
+                onDiscountCodeChange={setDiscountCodeInput}
+                discountError={discountError}
+                isValidatingCode={isValidatingCode}
+                availableCodes={availableCodes}
+                onApplyDiscount={handleApplyDiscount}
+                onRemoveDiscount={handleRemoveDiscount}
+                onSelectDiscountCode={(code) => {
+                  setDiscountCodeInput(code);
+                  setDiscountError('');
+                }}
+                paymentMethod={formData.paymentMethod}
+                isProcessing={false}
+                onSubmit={goNext}
+                hideSubmitButton
+              />
+            </div>
+          )}
         </div>
 
-        {/* Cột phải - Order summary (ẩn ở step confirm vì đã là nội dung chính) */}
-        {currentStep !== 2 && (
-          <div className="hidden lg:block sticky top-20">
-            <CheckoutOrderSummary
-              items={items}
-              isRepayingOrder={isRepayingOrder}
-              currentOrder={currentOrder}
-              subtotal={subtotal}
-              shippingCost={shippingCost}
-              finalDistance={finalDistance}
-              tax={tax}
-              total={total}
-              appliedDiscount={appliedDiscount}
-              discountCodeInput={discountCodeInput}
-              onDiscountCodeChange={setDiscountCodeInput}
-              discountError={discountError}
-              isValidatingCode={isValidatingCode}
-              availableCodes={availableCodes}
-              onApplyDiscount={handleApplyDiscount}
-              onRemoveDiscount={handleRemoveDiscount}
-              onSelectDiscountCode={(code) => {
-                setDiscountCodeInput(code);
-                setDiscountError('');
-              }}
-              paymentMethod={formData.paymentMethod}
-              isProcessing={false}
-              onSubmit={goNext}
-              hideSubmitButton
-            />
+        {/* Sticky mobile CTA — chỉ hiện trên mobile khi chưa ở step confirm */}
+        {currentStep < 2 && (
+          <div
+            className="fixed bottom-0 left-0 right-0 lg:hidden bg-white dark:bg-neutral-800 border-t border-neutral-200 dark:border-neutral-700 p-4 z-40 shadow-[0_-4px_20px_rgba(0,0,0,0.1)]"
+            aria-hidden="true"
+          >
+            <div className="flex items-center justify-between gap-4">
+              <div className="text-sm">
+                <span className="text-neutral-500 dark:text-neutral-400">{t('common.total')}:</span>
+                <span className="ml-2 text-lg font-bold text-neutral-900 dark:text-white">
+                  {total.toLocaleString('vi-VN', { maximumFractionDigits: 0 })}
+                  {t('common.currencySymbol')}
+                </span>
+              </div>
+              <PremiumButton
+                variant="primary"
+                size="middle"
+                onClick={goNext}
+                className="shrink-0"
+                tabIndex={-1}
+              >
+                {t('checkout.buttons.continueToPayment')}
+              </PremiumButton>
+            </div>
           </div>
         )}
       </div>

@@ -8,6 +8,7 @@ import { useTranslation } from 'react-i18next';
 import Input from '@/components/common/Input';
 import AddressPicker from '@/components/common/AddressPicker';
 import { Address } from '@/types/user.types';
+import { MapPin } from 'lucide-react';
 
 interface CheckoutShippingFormProps {
   formData: {
@@ -40,10 +41,15 @@ const CheckoutShippingForm: React.FC<CheckoutShippingFormProps> = ({
   const { t } = useTranslation();
 
   return (
-    <div className="bg-white dark:bg-neutral-800 rounded-lg shadow-sm p-6">
-      <h2 className="text-xl font-semibold text-neutral-800 dark:text-neutral-100 mb-6">
-        {t('checkout.shippingInfo.title')}
-      </h2>
+    <div className="bg-white dark:bg-neutral-800 rounded-xl shadow-sm border border-neutral-100 dark:border-neutral-700/50 p-6">
+      <div className="flex items-center gap-3 mb-6">
+        <div className="w-10 h-10 rounded-xl bg-primary-50 dark:bg-primary-900/20 flex items-center justify-center">
+          <MapPin className="w-5 h-5 text-primary-600 dark:text-primary-400" />
+        </div>
+        <h2 className="text-lg font-semibold text-neutral-800 dark:text-neutral-100">
+          {t('checkout.shippingInfo.title')}
+        </h2>
+      </div>
 
       {savedAddresses && savedAddresses.length > 0 && (
         <div className="mb-6">

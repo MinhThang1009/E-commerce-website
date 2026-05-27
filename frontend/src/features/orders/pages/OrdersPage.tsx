@@ -331,7 +331,7 @@ const OrdersPage: React.FC = () => {
   const totalPages = ordersResponse ? Math.ceil(ordersResponse.total / ordersResponse.limit) : 1;
 
   return (
-    <div className="min-h-screen bg-neutral-50 dark:bg-neutral-950">
+    <div className="min-h-screen bg-neutral-100/50 dark:bg-neutral-950">
       <div className="container mx-auto px-4 py-8">
         <div className="flex items-center justify-between mb-8">
           <div className="flex items-center gap-3">
@@ -374,10 +374,13 @@ const OrdersPage: React.FC = () => {
                 return (
                   <div
                     key={order.id}
-                    className={`bg-white dark:bg-neutral-800 rounded-xl shadow-sm border border-neutral-100 dark:border-neutral-700/50 overflow-hidden hover:shadow-md transition-all duration-300 border-l-4 ${/* istanbul ignore next */ statusColors[order.status] || 'border-l-neutral-400'}`}
+                    className={`bg-white dark:bg-neutral-800 rounded-xl shadow-md border border-neutral-200 dark:border-neutral-700/50 overflow-hidden hover:shadow-xl hover:-translate-y-0.5 transition-all duration-300 border-l-4 ${/* istanbul ignore next */ statusColors[order.status] || 'border-l-neutral-400'}`}
                   >
                     {/* Tiêu đề đơn hàng */}
-                    <div className="p-6 border-b border-neutral-100 dark:border-neutral-700/60 bg-gradient-to-r from-neutral-50/80 to-transparent dark:from-neutral-900/40">
+                    <div
+                      className="p-6 border-b border-neutral-100 dark:border-neutral-700/60 bg-gradient-to-r from-neutral-50/80 to-transparent dark:from-neutral-900/40 cursor-pointer hover:bg-neutral-50 dark:hover:bg-neutral-750 transition-colors"
+                      onClick={() => toggleOrderDetails(order.id)}
+                    >
                       <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
                         <div className="flex flex-col sm:flex-row sm:items-center gap-4 flex-1">
                           <div>

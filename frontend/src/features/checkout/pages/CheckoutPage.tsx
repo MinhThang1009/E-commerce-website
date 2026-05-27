@@ -762,7 +762,7 @@ const CheckoutPage: React.FC = () => {
   const isRepayingOrder = currentOrder && currentOrder.isRepay;
 
   return (
-    <div className="min-h-screen bg-neutral-50 dark:bg-neutral-950">
+    <div className="min-h-screen bg-neutral-100/50 dark:bg-neutral-950">
       <div className="container mx-auto px-4 py-6 pb-24 lg:pb-8">
         <div className="flex items-center justify-between mb-6">
           <h1 className="text-2xl font-bold text-neutral-800 dark:text-neutral-100">

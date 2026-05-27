@@ -339,7 +339,10 @@ const OrderDetails: React.FC<OrderDetailsProps> = ({ orderId, onOpenReview }) =>
                     {order.status === 'delivered' && item.Product && onOpenReview && (
                       <button
                         onClick={() =>
-                          onOpenReview(item.Product?.id ?? '', item.Product?.name ?? '')
+                          onOpenReview(
+                            item.Product?.id || item.productId || '',
+                            item.Product?.name || item.name || '',
+                          )
                         }
                         className="text-xs px-3 py-1.5 border border-primary-500 text-primary-600 rounded-md hover:bg-primary-50 dark:hover:bg-primary-900/40 font-medium transition-colors"
                       >

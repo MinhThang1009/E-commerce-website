@@ -67,6 +67,7 @@ const OrdersPage: React.FC = () => {
   const [reviewProduct, setReviewProduct] = useState<{ id: string; name: string } | null>(null);
 
   const handleOpenReview = (productId: string, productName: string) => {
+    setSelectedOrder(null);
     setReviewProduct({ id: productId, name: productName });
     setReviewModalOpen(true);
   };
@@ -714,7 +715,7 @@ const OrdersPage: React.FC = () => {
             </Dialog>
 
             {/* Phân trang */}
-            {totalPages > 1 && (
+            {totalPages > 1 && !searchQuery && (
               <div className="mt-8 flex justify-center">
                 <div className="flex items-center gap-1 bg-white dark:bg-neutral-800 rounded-xl p-1 border border-neutral-200 dark:border-neutral-700 shadow-sm">
                   <Button

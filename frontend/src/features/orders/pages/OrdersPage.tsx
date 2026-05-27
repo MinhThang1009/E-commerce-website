@@ -15,7 +15,7 @@ import Button from '@/components/common/Button';
 import Badge, { BadgeVariant } from '@/components/common/Badge';
 import PremiumButton from '@/components/common/PremiumButton';
 import { EmptyState } from '@/components/common/ErrorState';
-import { Package } from 'lucide-react';
+import { Package, Search } from 'lucide-react';
 import { Dialog, DialogContent } from '@/components/ui/dialog';
 import {
   useGetUserOrdersQuery,
@@ -57,6 +57,7 @@ const OrdersPage: React.FC = () => {
   const [selectedOrder, setSelectedOrder] = useState<string | null>(null);
   const [currentPage, setCurrentPage] = useState(1);
   const [statusFilter, setStatusFilter] = useState<string>('all');
+  const [searchQuery, setSearchQuery] = useState('');
   const [cancellingOrder, setCancellingOrder] = useState<string | null>(null);
   const [_repayingOrder, setRepayingOrder] = useState<string | null>(null);
   const [confirmingOrder, setConfirmingOrder] = useState<string | null>(null);
@@ -330,10 +331,15 @@ const OrdersPage: React.FC = () => {
   }
 
   const allOrders = ordersResponse?.data || [];
-  const orders =
+  const filteredByStatus =
     statusFilter === 'all'
       ? allOrders
       : allOrders.filter((o: { status: string }) => o.status === statusFilter);
+  const orders = searchQuery
+    ? filteredByStatus.filter((o: { number: string }) =>
+        o.number?.toLowerCase().includes(searchQuery.toLowerCase()),
+      )
+    : filteredByStatus;
   const totalPages =
     statusFilter === 'all'
       ? ordersResponse
@@ -358,6 +364,18 @@ const OrdersPage: React.FC = () => {
               </p>
             </div>
           </div>
+        </div>
+
+        {/* Search + filter */}
+        <div className="relative mb-4">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-neutral-400" />
+          <input
+            type="text"
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            placeholder={t('orders.searchPlaceholder')}
+            className="input pl-10 !mb-0"
+          />
         </div>
 
         {/* Status filter tabs */}
@@ -459,7 +477,7 @@ const OrdersPage: React.FC = () => {
                 return (
                   <div
                     key={order.id}
-                    className={`group/card bg-white dark:bg-neutral-800/90 rounded-2xl shadow-sm border border-neutral-200 dark:border-neutral-700 overflow-hidden hover:shadow-lg hover:-translate-y-0.5 dark:hover:border-neutral-600 transition-all duration-300 ${order.status === 'cancelled' ? 'opacity-60 hover:opacity-90' : ''}`}
+                    className={`group/card bg-white dark:bg-neutral-800/90 rounded-2xl shadow-sm border border-neutral-200 dark:border-neutral-700 overflow-hidden hover:shadow-lg hover:shadow-primary-500/5 hover:-translate-y-0.5 dark:hover:border-neutral-600 dark:hover:shadow-primary-400/5 transition-all duration-300 ${order.status === 'cancelled' ? 'opacity-60 hover:opacity-90' : ''}`}
                     style={{
                       borderLeft: `4px solid ${statusBorderColors[order.status] || '#a3a3a3'}`,
                     }}
@@ -698,7 +716,7 @@ const OrdersPage: React.FC = () => {
             {/* Phân trang */}
             {totalPages > 1 && (
               <div className="mt-8 flex justify-center">
-                <div className="flex items-center gap-2">
+                <div className="flex items-center gap-1 bg-white dark:bg-neutral-800 rounded-xl p-1 border border-neutral-200 dark:border-neutral-700 shadow-sm">
                   <Button
                     variant="outline"
                     size="sm"

@@ -4,11 +4,12 @@
  * @feature orders
  * @description UI component cho feature orders
  */
-import React from 'react';
+import React, { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useGetOrderByIdQuery } from '@/features/orders';
 import { formatPrice } from '@/utils/format';
 import Badge, { BadgeVariant } from '@/components/common/Badge';
+import { Copy, Check as CheckIcon } from 'lucide-react';
 import { Clock, Package, Truck, CheckCircle, MapPin, CreditCard } from 'lucide-react';
 
 interface OrderDetailsProps {
@@ -18,6 +19,13 @@ interface OrderDetailsProps {
 
 const OrderDetails: React.FC<OrderDetailsProps> = ({ orderId, onOpenReview }) => {
   const { t, i18n } = useTranslation();
+  const [copied, setCopied] = useState(false);
+
+  const handleCopy = (text: string) => {
+    navigator.clipboard.writeText(text);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
+  };
 
   const statusVariants: Record<string, { variant: BadgeVariant; label: string }> = {
     pending: { variant: 'warning', label: t('orders.status.pending') },
@@ -59,9 +67,23 @@ const OrderDetails: React.FC<OrderDetailsProps> = ({ orderId, onOpenReview }) =>
             <Package className="w-5 h-5 text-primary-600 dark:text-primary-400" />
           </div>
           <div>
-            <h2 className="text-lg font-bold tracking-tight text-neutral-800 dark:text-neutral-100">
-              {t('orders.detailTitle', { number: order.number })}
-            </h2>
+            <div className="flex items-center gap-2">
+              <h2 className="text-lg font-bold tracking-tight text-neutral-800 dark:text-neutral-100">
+                {t('orders.detailTitle', { number: order.number })}
+              </h2>
+              <button
+                type="button"
+                onClick={() => handleCopy(order.number)}
+                className="p-1 rounded-md hover:bg-neutral-100 dark:hover:bg-neutral-800 text-neutral-400 hover:text-neutral-600 dark:hover:text-neutral-300 transition-colors"
+                title={t('common.copy')}
+              >
+                {copied ? (
+                  <CheckIcon className="w-3.5 h-3.5 text-green-500" />
+                ) : (
+                  <Copy className="w-3.5 h-3.5" />
+                )}
+              </button>
+            </div>
             <p className="text-xs text-neutral-500 dark:text-neutral-400 mt-0.5">
               {t('orders.placedAt', {
                 date: new Date(order.createdAt).toLocaleString(

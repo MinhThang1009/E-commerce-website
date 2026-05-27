@@ -40,6 +40,7 @@ interface CheckoutOrderSummaryProps {
   paymentMethod: string;
   isProcessing: boolean;
   onSubmit: () => void;
+  hideSubmitButton?: boolean;
 }
 
 const CheckoutOrderSummary: React.FC<CheckoutOrderSummaryProps> = ({
@@ -63,6 +64,7 @@ const CheckoutOrderSummary: React.FC<CheckoutOrderSummaryProps> = ({
   paymentMethod,
   isProcessing,
   onSubmit,
+  hideSubmitButton = false,
 }) => {
   const { t } = useTranslation();
 
@@ -230,7 +232,8 @@ const CheckoutOrderSummary: React.FC<CheckoutOrderSummaryProps> = ({
           )}
         </div>
 
-        {['bank_transfer', 'vnpay', 'momo', 'installment', 'cod'].includes(paymentMethod) &&
+        {!hideSubmitButton &&
+          ['bank_transfer', 'vnpay', 'momo', 'installment', 'cod'].includes(paymentMethod) &&
           (!currentOrder || ['vnpay', 'momo'].includes(paymentMethod)) && (
             <PremiumButton
               variant="primary"

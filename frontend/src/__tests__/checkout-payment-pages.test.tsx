@@ -1188,16 +1188,19 @@ describe('CheckoutPage: submit form', () => {
   };
 
   it('submit với phương thức COD khi form chưa điền → validate thất bại, không gọi createOrder', async () => {
-    // Arrange — form rỗng (không điền firstName, lastName, email, phone)
     renderWithItems();
 
-    // Act — click submit
+    // Navigate tới step 2 (confirm) — goNext x2
+    const nextBtns = screen.getAllByText('checkout.step.next');
+    fireEvent.click(nextBtns[0]); // step 0 → 1
+    fireEvent.click(screen.getByText('checkout.step.next')); // step 1 → 2
+
+    // Click submit ở step 2
     const submitBtn = screen.getByText('checkout.buttons.continueToPayment');
     fireEvent.click(submitBtn);
 
     await new Promise((r) => setTimeout(r, 0));
 
-    // Assert — createOrder không được gọi vì form invalid
     expect(mockCreateOrderFn).not.toHaveBeenCalled();
   });
 
@@ -1244,9 +1247,11 @@ describe('CheckoutPage: submit form', () => {
 
     render(<CheckoutPage />);
 
-    // Cần điền địa chỉ để validateForm pass (address cần ít nhất 2 dấu phẩy)
-    // CheckoutPage không có trường address visible thông qua mock Input — test này xác minh
-    // rằng form render đúng và submit button tồn tại
+    // Navigate tới step 2 (confirm) — goNext x2
+    const nextBtns = screen.getAllByText('checkout.step.next');
+    fireEvent.click(nextBtns[0]);
+    fireEvent.click(screen.getByText('checkout.step.next'));
+
     const submitBtn = screen.getByText('checkout.buttons.continueToPayment');
     expect(submitBtn).toBeInTheDocument();
   });

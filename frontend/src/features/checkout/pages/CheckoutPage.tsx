@@ -917,8 +917,9 @@ const CheckoutPage: React.FC = () => {
                 setDiscountError('');
               }}
               paymentMethod={formData.paymentMethod}
-              isProcessing={isProcessing}
-              onSubmit={() => handleSubmit({ preventDefault: () => {} } as React.FormEvent)}
+              isProcessing={false}
+              onSubmit={goNext}
+              hideSubmitButton
             />
           </div>
         )}

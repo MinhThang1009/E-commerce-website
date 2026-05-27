@@ -16,7 +16,7 @@ import TextAlign from '@tiptap/extension-text-align';
 import Underline from '@tiptap/extension-underline';
 import Color from '@tiptap/extension-color';
 import { TextStyle } from '@tiptap/extension-text-style';
-import { useCallback, useEffect } from 'react';
+import { useCallback, useEffect, useMemo } from 'react';
 
 interface TiptapEditorProps {
   value?: string;
@@ -179,27 +179,31 @@ const TiptapEditor: React.FC<TiptapEditorProps> = ({
   className = '',
   id,
 }) => {
-  const extensions = [
-    StarterKit.configure({
-      heading: mode === 'full' ? { levels: [2, 3, 4] } : false,
-    }),
-    Underline,
-    Placeholder.configure({ placeholder: placeholder || '' }),
-    ...(mode === 'full'
-      ? [
-          Image.configure({ inline: true }),
-          Link.configure({ openOnClick: false }),
-          TextAlign.configure({ types: ['heading', 'paragraph'] }),
-          TextStyle,
-          Color,
-        ]
-      : []),
-  ];
+  const extensions = useMemo(
+    () => [
+      StarterKit.configure({
+        heading: mode === 'full' ? { levels: [2, 3, 4] } : false,
+      }),
+      Underline,
+      Placeholder.configure({ placeholder: placeholder || '' }),
+      ...(mode === 'full'
+        ? [
+            Image.configure({ inline: true }),
+            Link.configure({ openOnClick: false }),
+            TextAlign.configure({ types: ['heading', 'paragraph'] }),
+            TextStyle,
+            Color,
+          ]
+        : []),
+    ],
+    [mode, placeholder],
+  );
 
   const editor = useEditor({
     extensions,
     content: value,
     editable: !readOnly,
+    immediatelyRender: false,
     onUpdate: ({ editor: e }) => {
       onChange?.(e.getHTML());
     },
@@ -216,12 +220,14 @@ const TiptapEditor: React.FC<TiptapEditorProps> = ({
       id={id}
       className={`border border-neutral-200 dark:border-neutral-700 rounded-lg overflow-hidden ${className}`}
     >
-      {!readOnly && <MenuBar editor={editor} mode={mode} />}
-      <EditorContent
-        editor={editor}
-        className="prose dark:prose-invert max-w-none px-4 py-3 focus:outline-none"
-        style={{ minHeight: height }}
-      />
+      {!readOnly && editor && <MenuBar editor={editor} mode={mode} />}
+      {editor && (
+        <EditorContent
+          editor={editor}
+          className="prose dark:prose-invert max-w-none px-4 py-3 focus:outline-none"
+          style={{ minHeight: height }}
+        />
+      )}
     </div>
   );
 };

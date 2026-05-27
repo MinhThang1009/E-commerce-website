@@ -52,7 +52,6 @@ export const imageKeys = {
 };
 ```
 
-
 ## Client state (Zustand)
 
 Không dùng Zustand stores.
@@ -68,7 +67,6 @@ Không dùng Zustand stores.
 | `useGetImageByIdQuery(id, options?)`                | `GET /api/images/:id`                | Chi tiết ảnh theo ID — enabled khi `id` có giá trị |
 | `useGetImagesByProductIdQuery(productId, options?)` | `GET /api/images/product/:productId` | Danh sách ảnh của sản phẩm                         |
 | `useImageHealthCheckQuery()`                        | `GET /api/images/health`             | Health check image service                         |
-
 
 | Hook                          | Endpoint                              | Body                         | Mô tả                                           |
 | ----------------------------- | ------------------------------------- | ---------------------------- | ----------------------------------------------- |

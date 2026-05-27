@@ -99,9 +99,8 @@ Không có query hooks riêng. Polling status dùng `useGetOrderByIdQuery` từ 
 
 ## Components
 
-| Component        | Mô tả                                                                                                                                                                                                                                                       |
-| ---------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-
+| Component | Mô tả |
+| --------- | ----- |
 
 ---
 
@@ -118,7 +117,6 @@ Không có `types/` directory riêng — types inline trong api files:
 // Body: { orderId: string; amount?: number; bankCode?: string }
 // Response: { data?: { paymentUrl?: string } }
 ```
-
 
 ```typescript
   amount: number;

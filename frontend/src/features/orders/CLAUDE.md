@@ -70,11 +70,11 @@ export const orderKeys = {
 
 ## Queries
 
-| Hook                                         | Endpoint                         | Mô tả                                                                       |
-| -------------------------------------------- | -------------------------------- | --------------------------------------------------------------------------- |
-| `useGetUserOrdersQuery(params?, options?)`   | `GET /api/orders?page=&limit=`   | Danh sách đơn hàng của user có pagination                                   |
-| `useGetOrderByIdQuery(id, options?)`         | `GET /api/orders/:id`            | Chi tiết đơn hàng — hỗ trợ `refetchInterval` option để polling              |
-| `useGetAvailableDiscountCodesQuery()`        | `GET /api/discount-codes`        | Danh sách mã giảm giá khả dụng — dùng bởi `CheckoutPage` để hiển thị picker |
+| Hook                                       | Endpoint                       | Mô tả                                                                       |
+| ------------------------------------------ | ------------------------------ | --------------------------------------------------------------------------- |
+| `useGetUserOrdersQuery(params?, options?)` | `GET /api/orders?page=&limit=` | Danh sách đơn hàng của user có pagination                                   |
+| `useGetOrderByIdQuery(id, options?)`       | `GET /api/orders/:id`          | Chi tiết đơn hàng — hỗ trợ `refetchInterval` option để polling              |
+| `useGetAvailableDiscountCodesQuery()`      | `GET /api/discount-codes`      | Danh sách mã giảm giá khả dụng — dùng bởi `CheckoutPage` để hiển thị picker |
 
 `useGetOrderByIdQuery` hỗ trợ `refetchInterval` — được dùng bởi `PaymentQRPage` (feature payment) để poll payment status mỗi 5 giây.
 

@@ -61,7 +61,6 @@ export const reviewKeys = {
 
 ## Client state (Zustand)
 
-
 ---
 
 # 4. API Calls
@@ -82,9 +81,9 @@ type Args = { productId: string } & ReviewFilters;
 
 ## Mutations
 
-| Hook                        | Endpoint                  | Mô tả                                                                                           |
-| --------------------------- | ------------------------- | ----------------------------------------------------------------------------------------------- |
-| `useCreateReviewMutation()` | `POST /api/reviews`       | Tạo đánh giá — invalidate `reviewKeys.product(productId)` + `['products', 'detail', productId]` |
+| Hook                        | Endpoint            | Mô tả                                                                                           |
+| --------------------------- | ------------------- | ----------------------------------------------------------------------------------------------- |
+| `useCreateReviewMutation()` | `POST /api/reviews` | Tạo đánh giá — invalidate `reviewKeys.product(productId)` + `['products', 'detail', productId]` |
 
 `useCreateReviewMutation` payload:
 

@@ -325,7 +325,7 @@ const OrderDetails: React.FC<OrderDetailsProps> = ({ orderId, onOpenReview }) =>
                   </div>
                   <div className="col-span-1 md:col-span-2 text-right flex flex-col items-end gap-2">
                     {/* Trên mobile, tổng giá được căn phải */}
-                    <p className="font-bold text-primary-600 dark:text-primary-500 text-lg">
+                    <p className="font-bold text-neutral-900 dark:text-white text-lg">
                       {formatPrice(item.subtotal)}
                     </p>
                     {order.status === 'delivered' && item.Product && onOpenReview && (
@@ -387,7 +387,7 @@ const OrderDetails: React.FC<OrderDetailsProps> = ({ orderId, onOpenReview }) =>
                 <span className="text-neutral-500 dark:text-neutral-400 text-sm">
                   {t('orders.totalPayment')}
                 </span>
-                <span className="font-black text-3xl md:text-4xl text-primary-600 dark:text-primary-500 bg-clip-text text-transparent bg-gradient-to-r from-primary-600 to-indigo-600 dark:from-primary-400 dark:to-indigo-400">
+                <span className="font-black text-3xl md:text-4xl text-neutral-900 dark:text-white">
                   {formatPrice(order.total)}
                 </span>
               </div>

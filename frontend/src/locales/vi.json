@@ -1041,7 +1041,7 @@
     "discountVoucher": "Giảm giá (Voucher)",
     "detailTitle": "Chi tiết đơn hàng: #{{number}}",
     "placedAt": "Ngày đặt: {{date}}",
-    "paidStatus": "✅ Đã thanh toán",
+    "paidStatus": "Đã thanh toán",
     "failedStatus": "❌ Thanh toán thất bại",
     "pendingPaymentStatus": "⏳ Chờ thanh toán"
   },

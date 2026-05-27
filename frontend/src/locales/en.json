@@ -918,7 +918,7 @@
     "discountVoucher": "Discount (Voucher)",
     "detailTitle": "Order details: #{{number}}",
     "placedAt": "Placed on: {{date}}",
-    "paidStatus": "✅ Paid",
+    "paidStatus": "Paid",
     "failedStatus": "❌ Payment failed",
     "pendingPaymentStatus": "⏳ Pending payment"
   },

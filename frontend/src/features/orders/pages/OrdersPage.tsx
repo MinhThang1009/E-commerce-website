@@ -15,7 +15,7 @@ import Button from '@/components/common/Button';
 import Badge, { BadgeVariant } from '@/components/common/Badge';
 import PremiumButton from '@/components/common/PremiumButton';
 import { EmptyState } from '@/components/common/ErrorState';
-import { Package, Search } from 'lucide-react';
+import { Package, Search, CheckCircle, Clock } from 'lucide-react';
 import { Dialog, DialogContent } from '@/components/ui/dialog';
 import {
   useGetUserOrdersQuery,
@@ -538,10 +538,17 @@ const OrdersPage: React.FC = () => {
                             </div>
                             {order.paymentStatus && (
                               <span
-                                className={`px-3 py-1 text-xs font-semibold rounded-full shadow-sm ${
+                                className={`inline-flex items-center gap-1.5 px-3 py-1 text-xs font-semibold rounded-full shadow-sm ${
                                   paymentStatusColors[order.paymentStatus]
                                 }`}
                               >
+                                {order.paymentStatus === 'paid' && (
+                                  <CheckCircle className="w-3.5 h-3.5" />
+                                )}
+                                {(order.paymentStatus === 'pending' ||
+                                  order.paymentStatus === 'failed') && (
+                                  <Clock className="w-3.5 h-3.5" />
+                                )}
                                 {order.paymentStatus === 'pending' && order.paymentMethod === 'cod'
                                   ? t('orders.paymentStatus.cod')
                                   : t(`orders.paymentStatus.${order.paymentStatus}`)}

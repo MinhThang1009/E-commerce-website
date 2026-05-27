@@ -225,7 +225,17 @@ const OrderDetails: React.FC<OrderDetailsProps> = ({ orderId, onOpenReview }) =>
               </p>
               <p className="flex justify-between items-center pb-2 border-b border-neutral-200 dark:border-neutral-700/50">
                 <span className="text-neutral-500">{t('orders.paymentStatusLabel')}:</span>
-                <span className="inline-flex items-center gap-1.5 font-semibold text-neutral-800 dark:text-neutral-100">
+                <span
+                  className={`inline-flex items-center gap-1.5 font-semibold ${
+                    order.paymentStatus === 'paid'
+                      ? 'text-emerald-600 dark:text-emerald-400'
+                      : order.paymentStatus === 'failed'
+                        ? 'text-red-600 dark:text-red-400'
+                        : order.paymentStatus === 'refunded'
+                          ? 'text-neutral-600 dark:text-neutral-400'
+                          : 'text-amber-600 dark:text-amber-400'
+                  }`}
+                >
                   {order.paymentStatus === 'paid' && (
                     <CheckCircle className="w-4 h-4 text-emerald-500" />
                   )}
@@ -262,14 +272,19 @@ const OrderDetails: React.FC<OrderDetailsProps> = ({ orderId, onOpenReview }) =>
         </div>
 
         {/* 3. Danh sách Sản phẩm */}
-        <div>
-          <h3 className="text-lg font-bold text-neutral-800 dark:text-neutral-100 mb-4 flex items-center gap-2">
-            🛍️ {t('orders.yourProducts')}{' '}
+        <div className="bg-neutral-50 dark:bg-neutral-800/40 rounded-2xl border border-neutral-100 dark:border-neutral-700/50 shadow-sm overflow-hidden">
+          <div className="flex items-center gap-3 p-5 pb-3">
+            <div className="w-10 h-10 rounded-xl bg-indigo-50 dark:bg-indigo-900/20 flex items-center justify-center">
+              <Package className="w-5 h-5 text-indigo-600 dark:text-indigo-400" />
+            </div>
+            <h3 className="text-lg font-bold text-neutral-800 dark:text-neutral-100">
+              {t('orders.yourProducts')}
+            </h3>
             <span className="text-sm font-normal text-neutral-400 bg-neutral-100 dark:bg-neutral-800 px-2 rounded-full">
               {order.items?.length || 0}
             </span>
-          </h3>
-          <div className="bg-white dark:bg-neutral-800/50 rounded-2xl border border-neutral-100 dark:border-neutral-700/60 shadow-sm overflow-hidden">
+          </div>
+          <div>
             {/* Tiêu đề bảng cho desktop */}
             <div className="hidden md:grid grid-cols-12 gap-4 p-4 border-b border-neutral-200 dark:border-neutral-700/60 bg-neutral-50/50 dark:bg-neutral-900/50 text-xs font-semibold text-neutral-500 uppercase tracking-wider">
               <div className="col-span-6">{t('orders.productCol')}</div>
@@ -351,10 +366,15 @@ const OrderDetails: React.FC<OrderDetailsProps> = ({ orderId, onOpenReview }) =>
 
         {/* 4. Block Tổng kết */}
         <div className="flex flex-col lg:flex-row justify-end pt-4 mb-4 gap-6">
-          <div className="w-full lg:w-[45%] bg-neutral-50 dark:bg-neutral-800/40 border border-neutral-100 dark:border-neutral-700/50 p-6 md:p-8 rounded-[24px] shadow-sm relative overflow-hidden transition-transform hover:-translate-y-1 duration-300">
-            <h3 className="font-semibold text-neutral-500 dark:text-neutral-400 uppercase tracking-widest text-xs mb-6 relative z-10">
-              {t('orders.paymentSummary')}
-            </h3>
+          <div className="w-full lg:w-[55%] bg-neutral-50 dark:bg-neutral-800/40 border border-neutral-100 dark:border-neutral-700/50 p-6 md:p-8 rounded-2xl shadow-sm relative overflow-hidden">
+            <div className="flex items-center gap-3 mb-6">
+              <div className="w-9 h-9 rounded-xl bg-emerald-50 dark:bg-emerald-900/20 flex items-center justify-center">
+                <CreditCard className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
+              </div>
+              <h3 className="font-semibold text-neutral-700 dark:text-neutral-300 text-sm uppercase tracking-wider">
+                {t('orders.paymentSummary')}
+              </h3>
+            </div>
 
             <div className="space-y-4 relative z-10">
               <div className="flex justify-between items-center text-neutral-600 dark:text-neutral-300">

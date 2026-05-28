@@ -186,8 +186,7 @@ const DashboardCharts: React.FC = () => {
     );
   }
 
-  // Chart card wrapper — glass (user yêu cầu glassmorphism toàn bộ)
-  const cardClass = 'glass-card rounded-2xl p-5';
+  const cardClass = 'admin-chart-card rounded-2xl p-5';
 
   return (
     <div className="space-y-4 mt-6">

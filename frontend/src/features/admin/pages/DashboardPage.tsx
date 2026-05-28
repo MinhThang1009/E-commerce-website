@@ -7,7 +7,7 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
-import { motion, useReducedMotion } from 'framer-motion';
+import { motion } from 'framer-motion';
 import {
   DollarSign,
   ShoppingBag,
@@ -63,7 +63,6 @@ function GrowthPill({ value }: { value: number }) {
 
 const DashboardPage: React.FC = () => {
   const { t, i18n } = useTranslation();
-  const shouldReduce = useReducedMotion();
 
   const {
     data: dashboardData,
@@ -160,18 +159,10 @@ const DashboardPage: React.FC = () => {
       >
         {/* Card 1: Sales Summary — big revenue + growth + vs last month */}
         <motion.div variants={fadeUp}>
-          <div className="glass-card rounded-2xl p-5 h-full relative overflow-hidden">
-            {!shouldReduce && (
-              <div
-                className="absolute inset-0 -z-10 opacity-50"
-                style={{
-                  background: `
-                    radial-gradient(circle at 20% 30%, rgba(42, 172, 167, 0.15) 0%, transparent 45%),
-                    radial-gradient(circle at 85% 70%, rgba(255, 117, 94, 0.08) 0%, transparent 50%)
-                  `,
-                }}
-              />
-            )}
+          <div
+            className="admin-kpi-card p-5 h-full"
+            style={{ '--kpi-accent': 'var(--accent)' } as React.CSSProperties}
+          >
             <div className="flex items-center justify-between mb-3">
               <div className="flex items-center gap-2">
                 <div className="w-9 h-9 rounded-xl bg-[var(--accent)]/12 flex items-center justify-center">
@@ -225,7 +216,10 @@ const DashboardPage: React.FC = () => {
 
         {/* Card 2: Recent Orders — timeline mini (NexaStore style) */}
         <motion.div variants={fadeUp}>
-          <div className="glass-card rounded-2xl p-5 h-full">
+          <div
+            className="admin-kpi-card p-5 h-full"
+            style={{ '--kpi-accent': 'var(--admin-info)' } as React.CSSProperties}
+          >
             <div className="flex items-center justify-between mb-3">
               <div className="flex items-center gap-2">
                 <div className="w-9 h-9 rounded-xl bg-[var(--admin-info)]/12 flex items-center justify-center">
@@ -296,7 +290,10 @@ const DashboardPage: React.FC = () => {
 
         {/* Card 3: Customer Overview — 4 sub-KPIs (NexaStore style) */}
         <motion.div variants={fadeUp}>
-          <div className="glass-card rounded-2xl p-5 h-full">
+          <div
+            className="admin-kpi-card p-5 h-full"
+            style={{ '--kpi-accent': 'var(--admin-success)' } as React.CSSProperties}
+          >
             <div className="flex items-center justify-between mb-4">
               <div className="flex items-center gap-2">
                 <div className="w-9 h-9 rounded-xl bg-[var(--admin-success)]/12 flex items-center justify-center">
@@ -387,7 +384,7 @@ const DashboardPage: React.FC = () => {
       {/* ===== ROW BOTTOM: Top Products + Low Stock side by side ===== */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 mt-4">
         {/* Top products */}
-        <div className="glass-card rounded-2xl overflow-hidden">
+        <div className="admin-kpi-card overflow-hidden">
           <div className="px-5 py-4 border-b border-[var(--border-default)] flex items-center justify-between">
             <div className="flex items-center gap-2">
               <TrendingUp className="w-4 h-4 text-[var(--accent)]" strokeWidth={2.25} />
@@ -450,7 +447,7 @@ const DashboardPage: React.FC = () => {
 
         {/* Low Stock */}
         {lowStockProducts.length > 0 && (
-          <div id="low-stock-widget" className="glass-card rounded-2xl overflow-hidden">
+          <div id="low-stock-widget" className="admin-kpi-card overflow-hidden">
             <div className="px-5 py-4 border-b border-[var(--border-default)] flex items-center gap-2">
               <AlertTriangle className="w-4 h-4 text-[var(--admin-warning)]" strokeWidth={2.25} />
               <h2 className="text-sm font-semibold">{t('admin.dashboard.lowStock.title')}</h2>

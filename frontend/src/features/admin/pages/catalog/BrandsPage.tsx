@@ -17,7 +17,6 @@ import {
   Award,
   ChevronLeft,
   ChevronRight,
-  Sparkles,
 } from 'lucide-react';
 import { useUiStore } from '@/stores/ui-store';
 import { getUploadUrl } from '@/utils/upload-url';
@@ -43,6 +42,7 @@ import {
   Switch,
 } from '@/components/ui';
 import StatusPill from '../../components/StatusPill';
+import AdminPageHeader from '../../components/AdminPageHeader';
 
 interface BrandFormData {
   name: string;
@@ -166,29 +166,15 @@ const BrandsPage: React.FC = () => {
 
   return (
     <div>
-      {/* Page header với gradient subtle */}
-      <div className="relative rounded-3xl bg-[var(--bg-base)] dark:bg-white/[0.03] border border-[var(--border-default)] p-6 mb-5 overflow-hidden">
-        <div
-          className="absolute inset-0 -z-10 opacity-50 pointer-events-none"
-          style={{
-            background: `
-              radial-gradient(circle at 100% 0%, rgba(255, 117, 94, 0.10) 0%, transparent 40%),
-              radial-gradient(circle at 0% 100%, rgba(42, 172, 167, 0.08) 0%, transparent 35%)
-            `,
-          }}
-        />
-        <div className="relative flex flex-col sm:flex-row items-start sm:items-end justify-between gap-3">
-          <div>
-            <span className="section-number">04 / THƯƠNG HIỆU</span>
-            <div className="flex items-center gap-2.5 mt-2">
-              <h1 className="display-heading">{t('admin.brands.title')}</h1>
-              <Sparkles className="w-5 h-5 text-[var(--accent)]/60" aria-hidden="true" />
-            </div>
-            <p className="text-sm text-[var(--text-tertiary)] mt-1.5">
-              {t('admin.brands.subtitle')}
-            </p>
-          </div>
-          <div className="flex items-center gap-2 flex-wrap">
+      {/* Page header */}
+      <AdminPageHeader
+        sectionNumber="04 / THƯƠNG HIỆU"
+        title={t('admin.brands.title')}
+        gradientTitle
+        sparkle
+        subtitle={t('admin.brands.subtitle')}
+        actions={
+          <>
             <Button variant="outline" onClick={() => refetch()} disabled={isLoading}>
               <RefreshCw
                 className={cn('w-4 h-4 mr-2', isLoading && 'animate-spin')}
@@ -196,13 +182,13 @@ const BrandsPage: React.FC = () => {
               />
               {t('common.refresh')}
             </Button>
-            <Button onClick={handleCreate}>
+            <Button className="admin-btn-primary" onClick={handleCreate}>
               <Plus className="w-4 h-4 mr-2" strokeWidth={2.25} />
               {t('admin.brands.addBrand')}
             </Button>
-          </div>
-        </div>
-      </div>
+          </>
+        }
+      />
 
       {/* Table */}
       <div className="rounded-2xl bg-[var(--bg-base)] dark:bg-white/[0.03] border border-[var(--border-default)] overflow-hidden shadow-sm">
@@ -228,7 +214,7 @@ const BrandsPage: React.FC = () => {
                 defaultValue: 'Tạo thương hiệu đầu tiên để khách hàng dễ nhận biết sản phẩm.',
               })}
             </p>
-            <Button onClick={handleCreate}>
+            <Button className="admin-btn-primary" onClick={handleCreate}>
               <Plus className="w-4 h-4 mr-2" strokeWidth={2.25} />
               {t('admin.brands.addBrand')}
             </Button>
@@ -505,7 +491,11 @@ const BrandsPage: React.FC = () => {
               <Button variant="outline" type="button" onClick={() => setIsModalVisible(false)}>
                 {t('common.cancel')}
               </Button>
-              <Button type="submit" disabled={isCreating || isUpdating}>
+              <Button
+                type="submit"
+                className="admin-btn-primary"
+                disabled={isCreating || isUpdating}
+              >
                 {(isCreating || isUpdating) && <LoadingSpinner size="sm" />}
                 {editingBrand ? t('common.update') : t('common.create')}
               </Button>

@@ -48,17 +48,17 @@
         "shopping": {
           "title": "Setup Gaming Đỉnh Cao",
           "subtitle": "Nâng tầm trải nghiệm với dàn PC và Gear xịn xò nhất",
-          "badge": "🔥 PC Gaming 2024"
+          "badge": "PC Gaming 2024"
         },
         "fashion": {
           "title": "Laptop & Workstation",
           "subtitle": "Hiệu năng mạnh mẽ, thiết kế sang trọng cho mọi nhu cầu",
-          "badge": "✨ High Performance"
+          "badge": "High Performance"
         },
         "technology": {
           "title": "Công nghệ tiên tiến",
           "subtitle": "Những sản phẩm công nghệ mới nhất và hiện đại nhất",
-          "badge": "🚀 Công nghệ mới"
+          "badge": "Công nghệ mới"
         }
       },
       "buttons": {
@@ -333,9 +333,9 @@
       "viewCart": "Xem giỏ hàng",
       "askMore": "Hỏi thêm",
       "findMore": "Tìm thêm sản phẩm",
-      "hotProducts": "Tìm sản phẩm hot 🔥",
-      "bestSellers": "Sản phẩm bán chạy ⭐",
-      "shoppingSupport": "Hỗ trợ mua hàng 💬",
+      "hotProducts": "Tìm sản phẩm hot",
+      "bestSellers": "Sản phẩm bán chạy",
+      "shoppingSupport": "Hỗ trợ mua hàng",
       "viewTshirts": "Xem áo thun",
       "viewJeans": "Xem quần jean",
       "viewSneakers": "Xem giày sneaker",
@@ -381,7 +381,7 @@
     "helpMessage": "Hướng dẫn sử dụng",
     "supportButton": "Hỗ trợ",
     "emptyState": {
-      "title": "Chào mừng bạn! 👋",
+      "title": "Chào mừng bạn!",
       "description": "Tôi là AI Assistant, sẵn sàng giúp bạn tìm sản phẩm và tư vấn mua hàng.",
       "newProducts": "Xem sản phẩm mới",
       "promotions": "Sản phẩm khuyến mãi",
@@ -565,7 +565,7 @@
       "placeholder": "Nhập mã voucher...",
       "apply": "Áp dụng",
       "remove": "Huỷ",
-      "appliedSuccess": "Áp dụng mã giảm giá thành công! 🎉",
+      "appliedSuccess": "Áp dụng mã giảm giá thành công!",
       "removedSuccess": "Đã huỷ mã giảm giá",
       "invalid": "Mã giảm giá không hợp lệ",
       "cancelled": "Mã giảm giá bị huỷ: {{message}}",
@@ -574,9 +574,9 @@
     "validation": {
       "outOfStock": "Hết hàng",
       "stockIssues": "Một số sản phẩm trong giỏ có thay đổi:",
-      "outOfStockAction": "❌ Hết hàng — vui lòng xoá khỏi giỏ",
-      "onlyLeft": "📦 Chỉ còn {{max}} sản phẩm, bạn đang đặt {{qty}}",
-      "priceChanged": "💸 Giá đã thay đổi: {{old}} → {{new}}",
+      "outOfStockAction": "Hết hàng — vui lòng xoá khỏi giỏ",
+      "onlyLeft": "Chỉ còn {{max}} sản phẩm, bạn đang đặt {{qty}}",
+      "priceChanged": "Giá đã thay đổi: {{old}} → {{new}}",
       "cartHasOutOfStock": "Giỏ có sản phẩm hết hàng"
     },
     "perProduct": "mỗi sản phẩm",
@@ -797,7 +797,7 @@
       "accountNumber": "Số tài khoản",
       "amount": "Số tiền",
       "reference": "Nội dung chuyển khoản",
-      "noteReference": "⚠️ Vui lòng nhập chính xác nội dung chuyển khoản để đơn hàng được xử lý nhanh chóng",
+      "noteReference": "Vui lòng nhập chính xác nội dung chuyển khoản để đơn hàng được xử lý nhanh chóng",
       "afterPayment": "Sau khi chuyển khoản:",
       "step1": "Giữ lại biên lai chuyển khoản",
       "step2": "Đơn hàng sẽ được xử lý trong vòng 1-2 giờ",
@@ -819,7 +819,7 @@
       "freeShipping": "Miễn phí",
       "loyaltyDiscount": "Giảm từ điểm thưởng",
       "discount": "Giảm giá",
-      "distanceInfo": "📍 Khoảng cách: {{distance}} km - Phí: {{fee}}",
+      "distanceInfo": "Khoảng cách: {{distance}} km - Phí: {{fee}}",
       "discountCodeLabel": "Mã giảm giá ({{code}})"
     },
     "placeOrder": "Đặt hàng",
@@ -1069,7 +1069,7 @@
   "bestSellers": {
     "title": "Sản phẩm bán chạy",
     "subtitle": "Những sản phẩm được yêu thích nhất của chúng tôi",
-    "badge": "🏆 Top bán chạy",
+    "badge": "Top bán chạy",
     "browse": "Xem tất cả sản phẩm",
     "sortBy": "Sắp xếp theo",
     "sort": {
@@ -1275,8 +1275,8 @@
         "updating": "Đang cập nhật...",
         "codDeliveredNote": "Đơn COD chuyển sang 'Đã giao hàng' sẽ tự động đánh dấu đã thanh toán.",
         "cancelledRefundNote": "Đơn đã thanh toán bị hủy — trạng thái thanh toán đã tự động chuyển sang 'Đã hoàn tiền'.",
-        "deliveredUnpaidNote": "⚠️ Đơn chưa thanh toán nhưng đang được đánh dấu là đã giao hàng.",
-        "refundedActiveNote": "⚠️ Đơn đã hoàn tiền nhưng trạng thái đơn không phải 'Đã hủy'.",
+        "deliveredUnpaidNote": "Đơn chưa thanh toán nhưng đang được đánh dấu là đã giao hàng.",
+        "refundedActiveNote": "Đơn đã hoàn tiền nhưng trạng thái đơn không phải 'Đã hủy'.",
         "errorCancelledPaid": "Đơn đã hủy không thể ở trạng thái 'Đã thanh toán' — hãy chọn 'Đã hoàn tiền'.",
         "errorDeliveredUnpaid": "Đơn đã giao phải có trạng thái thanh toán hợp lệ (không phải Chờ hoặc Thất bại).",
         "errorRefundedActive": "Chỉ đơn 'Đã hủy' mới có thể ở trạng thái 'Đã hoàn tiền'."
@@ -1380,7 +1380,15 @@
         "create": "Tạo sản phẩm",
         "creating": "Đang tạo...",
         "update": "Cập nhật sản phẩm",
-        "updating": "Đang cập nhật..."
+        "updating": "Đang cập nhật...",
+        "saveDraft": "Lưu nháp",
+        "publish": "Xuất bản"
+      },
+      "autosave": {
+        "saving": "Đang lưu nháp...",
+        "saved": "Đã tự lưu nháp lúc {{time}}",
+        "idle": "Chưa lưu nháp",
+        "restored": "Đã khôi phục bản nháp đang soạn dở"
       },
       "editTabs": {
         "basic": "1. Thông tin cơ bản",
@@ -1404,9 +1412,9 @@
         "namePlaceholder": "Nhập tên sản phẩm",
         "status": "Trạng thái",
         "statusPlaceholder": "Chọn trạng thái",
-        "statusActive": "✅ Hoạt động",
-        "statusInactive": "⏸️ Không hoạt động",
-        "statusDraft": "📝 Bản nháp",
+        "statusActive": "Hoạt động",
+        "statusInactive": "Không hoạt động",
+        "statusDraft": "Bản nháp",
         "shortDescription": "Mô tả ngắn",
         "shortDescriptionRequired": "Vui lòng nhập mô tả ngắn!",
         "shortDescriptionMin": "Mô tả ngắn phải có ít nhất 5 ký tự",
@@ -1426,13 +1434,13 @@
         "subtitle": "Thêm các thông số kỹ thuật chi tiết để khách hàng có thể so sánh và đánh giá sản phẩm",
         "addButton": "Thêm thông số kỹ thuật",
         "addSample": "Thêm mẫu laptop",
-        "listTitle": "📋 Danh sách thông số",
+        "listTitle": "Danh sách thông số",
         "namePlaceholder": "Tên thông số (VD: CPU, RAM...)",
         "valuePlaceholder": "Giá trị thông số (VD: Intel Core i5, 8GB DDR4...)",
         "categoryPlaceholder": "Chọn danh mục",
         "emptyTitle": "Chưa có thông số kỹ thuật nào",
         "emptyDesc": "Nhấn nút \"Thêm thông số kỹ thuật\" để bắt đầu thêm thông số cho sản phẩm",
-        "summaryTitle": "📊 Tổng quan",
+        "summaryTitle": "Tổng quan",
         "summaryText": "Tổng cộng: {{count}} thông số kỹ thuật",
         "categories": {
           "performance": "Hiệu năng",
@@ -1653,6 +1661,11 @@
       "title": "Quản lý mã giảm giá",
       "addCode": "Thêm mã giảm giá",
       "editCode": "Sửa mã giảm giá",
+      "stats": {
+        "running": "Đang chạy",
+        "expired": "Hết hạn",
+        "totalUsage": "Tổng lượt dùng"
+      },
       "table": {
         "code": "Mã",
         "type": "Loại",
@@ -2697,7 +2710,7 @@
     "guide": "Hướng dẫn sử dụng thẻ test",
     "guide1": "Chọn thẻ test ở trên, nhấn \"Thanh toán qua VNPay\"",
     "guide2": "Trên trang VNPay: chọn \"Thanh toán thẻ nội địa / ATM\"",
-    "guide3": "Nhập thông tin thẻ từ bảng trên (click 📋 để copy nhanh)",
+    "guide3": "Nhập thông tin thẻ từ bảng trên (click để copy nhanh)",
     "guide4": "Nhập OTP: 123456 khi được yêu cầu",
     "guide5": "Hoàn tất thanh toán và hệ thống tự động cập nhật",
     "card1bank": "NCB",
@@ -2841,9 +2854,9 @@
     "deleteRestrict2": "Danh mục có chứa sản phẩm"
   },
   "createProduct": {
-    "statusActive": "✅ Đang bán",
-    "statusInactive": "⏸️ Tạm dừng",
-    "statusDraft": "📝 Bản nháp",
+    "statusActive": "Đang bán",
+    "statusInactive": "Tạm dừng",
+    "statusDraft": "Bản nháp",
     "nameRequired": "Vui lòng nhập tên sản phẩm",
     "descRequired": "Vui lòng nhập mô tả sản phẩm",
     "shortDescRequired": "Vui lòng nhập mô tả ngắn",
@@ -2925,17 +2938,17 @@
     "removeVariantSr": "Xóa biến thể"
   },
   "attrModal": {
-    "editTitle": "🏷️ Chỉnh sửa thuộc tính",
-    "addTitle": "🏷️ Thêm thuộc tính mới",
-    "nameLabel": "🏷️ Tên thuộc tính",
+    "editTitle": "Chỉnh sửa thuộc tính",
+    "addTitle": "Thêm thuộc tính mới",
+    "nameLabel": "Tên thuộc tính",
     "nameTooltip": "Tên mô tả loại thuộc tính (VD: Màu sắc, Size, Chất liệu)",
     "namePlaceholder": "VD: Màu sắc, Chất liệu, Kích thước",
     "nameRequired": "Vui lòng nhập tên thuộc tính",
-    "valueLabel": "📝 Giá trị thuộc tính",
+    "valueLabel": "Giá trị thuộc tính",
     "valueTooltip": "Nhập các giá trị có thể có, cách nhau bởi dấu phẩy",
     "valuePlaceholder": "VD: Đỏ, Xanh, Đen (cách nhau bởi dấu phẩy)",
     "valueRequired": "Vui lòng nhập giá trị thuộc tính",
-    "tipTitle": "💡 Gợi ý tạo thuộc tính",
+    "tipTitle": "Gợi ý tạo thuộc tính",
     "tipNameLabel": "Tên thuộc tính:",
     "tipNameDesc": "Nên rõ ràng, dễ hiểu (VD: \"Màu sắc\", \"Kích thước\")",
     "tipValueLabel": "Giá trị:",
@@ -2943,7 +2956,7 @@
     "tipCommaLabel": "Cách nhau bởi dấu phẩy:",
     "tipCommaDesc": "\"Đen, Trắng, Xanh Titan\" hoặc \"128GB, 256GB, 512GB\"",
     "tipUsage": "Thuộc tính này sẽ được sử dụng khi tạo biến thể sản phẩm",
-    "exampleTitle": "📖 Ví dụ minh họa",
+    "exampleTitle": "Ví dụ minh họa",
     "exNameLabel": "Tên:",
     "exValueLabel": "Giá trị:",
     "ex1name": "Màu sắc",
@@ -2956,22 +2969,22 @@
     "updateBtn": "Cập nhật thuộc tính"
   },
   "variantModal": {
-    "editTitle": "🎭 Chỉnh sửa biến thể",
-    "addTitle": "🎭 Thêm biến thể mới",
-    "nameLabel": "🏷️ Tên biến thể",
+    "editTitle": "Chỉnh sửa biến thể",
+    "addTitle": "Thêm biến thể mới",
+    "nameLabel": "Tên biến thể",
     "nameRequired": "Vui lòng nhập tên biến thể",
     "namePlaceholder": "VD: Đen 256GB, Trắng 16GB RAM",
-    "skuLabel": "📦 Mã SKU",
+    "skuLabel": "Mã SKU",
     "skuTooltip": "Format gợi ý: {HÃNG}-{MODEL}-{THÔNG SỐ}-{MÀU}. VD: SAM-S25U-256-BLK, APL-IP17P-512-WHI, SAS-G46-LTE-BLK. Để trống sẽ tạo mã tạm VAR-XXXXXX",
     "skuPlaceholder": "VD: SAM-S25U-256-BLK",
-    "priceLabel": "💰 Giá (VNĐ)",
+    "priceLabel": "Giá (VNĐ)",
     "priceTooltip": "Giá của biến thể này",
     "priceRequired": "Vui lòng nhập giá",
     "priceMustBePositive": "Giá phải lớn hơn 0",
-    "stockLabel": "📦 Số lượng tồn kho",
+    "stockLabel": "Số lượng tồn kho",
     "stockRequired": "Vui lòng nhập số lượng",
     "stockMustBeNonNeg": "Số lượng không được âm",
-    "attrSectionTitle": "🎨 Thuộc tính biến thể",
+    "attrSectionTitle": "Thuộc tính biến thể",
     "selectAttr": "Chọn {{name}}",
     "addBtn": "Thêm biến thể",
     "comparePriceLabel": "Giá so sánh",
@@ -3444,9 +3457,9 @@
     "isVariant": "Sản phẩm có variants",
     "statusLabel": "Trạng thái",
     "statusPlaceholder": "Chọn trạng thái",
-    "statusActive": "✅ Hoạt động",
-    "statusInactive": "⏸️ Không hoạt động",
-    "statusDraft": "📝 Bản nháp",
+    "statusActive": "Hoạt động",
+    "statusInactive": "Không hoạt động",
+    "statusDraft": "Bản nháp",
     "shortDescLabel": "Mô tả ngắn",
     "shortDescRequired": "Vui lòng nhập mô tả ngắn!",
     "shortDescPlaceholder": "Nhập mô tả ngắn về sản phẩm (hiển thị trong danh sách sản phẩm)",
@@ -3644,7 +3657,13 @@
   },
   "inventory": {
     "title": "Quản lý kho hàng",
+    "subtitle": "Theo dõi và cập nhật tồn kho theo sản phẩm và biến thể",
     "searchPlaceholder": "Tìm kiếm sản phẩm...",
+    "stats": {
+      "totalStock": "Tổng tồn kho",
+      "lowStock": "Sắp hết",
+      "outOfStock": "Hết hàng"
+    },
     "colProduct": "Sản phẩm",
     "colVariant": "Biến thể",
     "colSku": "SKU",

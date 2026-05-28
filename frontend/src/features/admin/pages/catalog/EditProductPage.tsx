@@ -34,9 +34,11 @@ import ProductSeoForm from '@features/catalog/components/ProductSeoForm';
 import ProductSpecificationsForm from '@features/catalog/components/ProductSpecificationsForm';
 import ProductFAQForm from '@features/catalog/components/ProductFAQForm';
 import ValidationAlerts from '@features/catalog/components/ValidationAlerts';
-import FormActions from '@features/catalog/components/FormActions';
+import ProductFormStepper from '@features/catalog/components/ProductFormStepper';
+import ProductFormSaveBar from '@features/catalog/components/ProductFormSaveBar';
 import AttributeModal from '@features/catalog/components/AttributeModal';
 import VariantModal from '@features/catalog/components/VariantModal';
+import AdminPageHeader from '../../components/AdminPageHeader';
 
 // Types
 import { ProductFormData, ProductAttribute, ProductVariant } from '@/types';
@@ -643,33 +645,30 @@ const EditProductPage: React.FC = () => {
     'faqs',
   ];
 
+  const steps = TAB_KEYS.map((key) => ({ key, label: t(`admin.products.tabs.${key}`) }));
+
+  // Submit với status chỉ định (Lưu nháp = draft, Xuất bản = active)
+  const submitWithStatus = (status: 'draft' | 'active') => {
+    form.setFieldValue('status', status);
+    handleSubmit({ ...(form.getFieldsValue(true) as ProductFormData), status });
+  };
+
   return (
     <div>
-      {/* Page header glass */}
-      <div className="relative rounded-3xl bg-[var(--bg-base)] dark:bg-white/[0.03] border border-[var(--border-default)] p-6 mb-5 overflow-hidden">
-        <div
-          className="absolute inset-0 -z-10 opacity-50 pointer-events-none"
-          style={{
-            background: `
-              radial-gradient(circle at 100% 0%, rgba(24, 144, 255, 0.10) 0%, transparent 40%),
-              radial-gradient(circle at 0% 100%, rgba(42, 172, 167, 0.08) 0%, transparent 35%)
-            `,
-          }}
-        />
-        <div className="relative flex flex-col sm:flex-row items-start sm:items-end justify-between gap-3">
-          <div>
-            <span className="section-number">02 / CHỈNH SỬA SẢN PHẨM</span>
-            <h1 className="display-heading mt-2">{t('admin.products.edit.title')}</h1>
-            <p className="text-sm text-[var(--text-tertiary)] mt-1.5">
-              {t('admin.products.edit.subtitle')}
-            </p>
-          </div>
+      {/* Page header */}
+      <AdminPageHeader
+        sectionNumber="02 / CHỈNH SỬA SẢN PHẨM"
+        title={t('admin.products.edit.title')}
+        gradientTitle
+        sparkle
+        subtitle={t('admin.products.edit.subtitle')}
+        actions={
           <Button variant="outline" onClick={() => navigate(ROUTES.ADMIN_PRODUCTS)}>
             <ArrowLeft className="w-4 h-4 mr-2" strokeWidth={2.25} />
             {t('admin.products.backButton')}
           </Button>
-        </div>
-      </div>
+        }
+      />
 
       {/* Form container */}
       <div className="rounded-2xl bg-[var(--bg-base)] dark:bg-white/[0.03] border border-[var(--border-default)] p-5 shadow-sm">
@@ -677,84 +676,93 @@ const EditProductPage: React.FC = () => {
           onSubmit={form._rhf.handleSubmit((values) => handleSubmit(values as ProductFormData))}
           onChange={validateForm}
         >
-          <Tabs value={activeTab} onValueChange={setActiveTab} className="min-h-[400px]">
-            <TabsList className="flex flex-wrap h-auto gap-1 bg-transparent mb-4 p-0">
+          <Tabs value={activeTab} onValueChange={setActiveTab}>
+            {/* TabsList ẩn — giữ cho Radix Tabs + a11y; điều hướng thật qua stepper */}
+            <TabsList className="sr-only">
               {TAB_KEYS.map((tabKey) => (
-                <TabsTrigger
-                  key={tabKey}
-                  value={tabKey}
-                  className="text-xs font-medium rounded-lg px-3 py-2 transition data-[state=active]:bg-[var(--accent)]/12 data-[state=active]:text-[var(--accent)] data-[state=active]:shadow-sm"
-                >
-                  {t(`admin.products.editTabs.${tabKey}`) || t(`admin.products.tabs.${tabKey}`)}
+                <TabsTrigger key={tabKey} value={tabKey}>
+                  {t(`admin.products.tabs.${tabKey}`)}
                 </TabsTrigger>
               ))}
             </TabsList>
 
-            <TabsContent value="basic">
-              <ProductBasicInfoForm form={form._rhf} fillExampleData={fillExampleData} />
-            </TabsContent>
+            <div className="grid grid-cols-1 lg:grid-cols-[240px_1fr] gap-6">
+              {/* Vertical stepper trái */}
+              <aside className="lg:sticky lg:top-[88px] lg:self-start">
+                <ProductFormStepper steps={steps} activeStep={activeTab} onSelect={setActiveTab} />
+              </aside>
 
-            <TabsContent value="attributes">
-              <ProductAttributesSection
-                attributes={attributes}
-                onAddAttribute={() => openAttributeModal()}
-                onEditAttribute={(attribute) => openAttributeModal(attribute)}
-                onDeleteAttribute={handleDeleteAttribute}
-              />
-            </TabsContent>
+              {/* Nội dung bước phải */}
+              <div className="min-h-[420px]">
+                <TabsContent value="basic">
+                  <ProductBasicInfoForm form={form._rhf} fillExampleData={fillExampleData} />
+                </TabsContent>
 
-            <TabsContent value="variants">
-              <ProductVariantsSection
-                variants={variants}
-                onAddVariant={() => openVariantModal()}
-                onEditVariant={(variant) => openVariantModal(variant)}
-                onDeleteVariant={handleDeleteVariant}
-              />
-            </TabsContent>
+                <TabsContent value="attributes">
+                  <ProductAttributesSection
+                    attributes={attributes}
+                    onAddAttribute={() => openAttributeModal()}
+                    onEditAttribute={(attribute) => openAttributeModal(attribute)}
+                    onDeleteAttribute={handleDeleteAttribute}
+                  />
+                </TabsContent>
 
-            <TabsContent value="specifications">
-              <ProductSpecificationsForm form={form._rhf} initialSpecifications={specifications} />
-            </TabsContent>
+                <TabsContent value="variants">
+                  <ProductVariantsSection
+                    variants={variants}
+                    onAddVariant={() => openVariantModal()}
+                    onEditVariant={(variant) => openVariantModal(variant)}
+                    onDeleteVariant={handleDeleteVariant}
+                  />
+                </TabsContent>
 
-            <TabsContent value="pricing">
-              <ProductPricingForm
-                form={form._rhf}
-                hasVariants={variants.length > 0}
-                variants={variants}
-              />
-            </TabsContent>
+                <TabsContent value="specifications">
+                  <ProductSpecificationsForm
+                    form={form._rhf}
+                    initialSpecifications={specifications}
+                  />
+                </TabsContent>
 
-            <TabsContent value="category">
-              <ProductCategoryForm
-                form={form._rhf}
-                categories={categories}
-                isLoading={isCategoriesLoading}
-              />
-            </TabsContent>
+                <TabsContent value="pricing">
+                  <ProductPricingForm
+                    form={form._rhf}
+                    hasVariants={variants.length > 0}
+                    variants={variants}
+                  />
+                </TabsContent>
 
-            <TabsContent value="images">
-              <ProductImagesForm form={form._rhf} />
-            </TabsContent>
+                <TabsContent value="category">
+                  <ProductCategoryForm
+                    form={form._rhf}
+                    categories={categories}
+                    isLoading={isCategoriesLoading}
+                  />
+                </TabsContent>
 
-            <TabsContent value="seo">
-              <ProductSeoForm form={form._rhf} />
-            </TabsContent>
+                <TabsContent value="images">
+                  <ProductImagesForm form={form._rhf} />
+                </TabsContent>
 
-            <TabsContent value="faqs">
-              <ProductFAQForm form={form._rhf} />
-            </TabsContent>
+                <TabsContent value="seo">
+                  <ProductSeoForm form={form._rhf} />
+                </TabsContent>
+
+                <TabsContent value="faqs">
+                  <ProductFAQForm form={form._rhf} />
+                </TabsContent>
+              </div>
+            </div>
           </Tabs>
-
-          <div className="my-6 h-px bg-[var(--border-default)]" />
 
           <ValidationAlerts isFormValid={isFormValid} missingFields={getMissingFields()} />
 
-          <FormActions
-            isFormValid={isFormValid}
+          <ProductFormSaveBar
             isSubmitting={isUpdating}
-            submitText={t('admin.products.submit.update')}
-            loadingText={t('admin.products.submit.updating')}
+            onSaveDraft={() => submitWithStatus('draft')}
+            onPublish={() => submitWithStatus('active')}
             onCancel={() => navigate(ROUTES.ADMIN_PRODUCTS)}
+            draftText={t('admin.products.submit.saveDraft')}
+            publishText={t('admin.products.submit.publish')}
           />
         </form>
       </div>

@@ -4,8 +4,18 @@
  * @feature admin
  * @description Page component của feature admin
  */
-import React, { useState } from 'react';
-import { Plus, Pencil, Trash2, Percent, DollarSign, Search, Sparkles } from 'lucide-react';
+import React, { useState, useEffect, useMemo } from 'react';
+import {
+  Plus,
+  Pencil,
+  Trash2,
+  Percent,
+  DollarSign,
+  Search,
+  Zap,
+  CalendarX,
+  TrendingUp,
+} from 'lucide-react';
 import dayjs from 'dayjs';
 import { useTranslation } from 'react-i18next';
 import { motion } from 'framer-motion';
@@ -35,6 +45,8 @@ import { Tooltip, TooltipTrigger, TooltipContent } from '@/components/ui/tooltip
 import { Pagination } from '@/components/common';
 import { useUiStore } from '@/stores/ui-store';
 import StatusPill from '../components/StatusPill';
+import AdminPageHeader from '../components/AdminPageHeader';
+import AdminStatCard from '../components/AdminStatCard';
 
 interface DiscountFormData {
   code: string;
@@ -79,8 +91,33 @@ const DiscountCodesPage: React.FC = () => {
     useUpdateDiscountCodeMutation();
   const { mutateAsync: deleteDiscountCode } = useDeleteDiscountCodeMutation();
 
-  const discountCodes = discountCodesData?.data?.discountCodes || [];
+  const discountCodes = useMemo(
+    () => discountCodesData?.data?.discountCodes || [],
+    [discountCodesData],
+  );
   const totalPages = Math.ceil((discountCodesData?.data?.pagination?.total || 0) / filters.limit);
+
+  // Instant search — debounce 300ms (bỏ nút search riêng theo spec §8)
+  useEffect(() => {
+    const id = setTimeout(() => {
+      setFilters((prev) => ({ ...prev, search: searchValue, page: 1 }));
+    }, 300);
+    return () => clearTimeout(id);
+  }, [searchValue]);
+
+  // Aggregate cho StatStrip — tính từ danh sách đã tải (data thật)
+  const stats = useMemo(() => {
+    const now = dayjs();
+    let running = 0;
+    let expired = 0;
+    let totalUsage = 0;
+    for (const c of discountCodes) {
+      totalUsage += c.usedCount || 0;
+      if (c.endDate && dayjs(c.endDate).isBefore(now)) expired += 1;
+      else if (c.isActive) running += 1;
+    }
+    return { running, expired, totalUsage };
+  }, [discountCodes]);
 
   const generateRandomCode = () => {
     const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
@@ -192,55 +229,59 @@ const DiscountCodesPage: React.FC = () => {
 
   const formatPrice = (price: number | string) => formatPriceUtil(price);
 
-  const handleSearch = () => {
-    setFilters({ ...filters, search: searchValue, page: 1 });
-  };
-
   return (
     <div>
       {/* Page header */}
-      <div className="relative rounded-3xl bg-[var(--bg-base)] dark:bg-white/[0.03] border border-[var(--border-default)] p-6 mb-5 overflow-hidden">
-        <div
-          className="absolute inset-0 -z-10 opacity-50 pointer-events-none"
-          style={{
-            background: `radial-gradient(circle at 100% 0%, rgba(250, 173, 20, 0.10) 0%, transparent 40%), radial-gradient(circle at 0% 100%, rgba(42, 172, 167, 0.08) 0%, transparent 35%)`,
-          }}
-        />
-        <div className="relative flex flex-col sm:flex-row items-start sm:items-end justify-between gap-3">
-          <div>
-            <span className="section-number">07 / MÃ GIẢM GIÁ</span>
-            <div className="flex items-center gap-2.5 mt-2">
-              <h1 className="display-heading">{t('admin.discountCodes.title')}</h1>
-              <Sparkles className="w-5 h-5 text-[var(--accent)]/60" aria-hidden="true" />
-            </div>
-            <p className="text-sm text-[var(--text-tertiary)] mt-1.5">
-              {t('admin.discountCodes.subtitle')}
-            </p>
-          </div>
-          <Button onClick={handleCreate}>
+      <AdminPageHeader
+        sectionNumber="07 / MÃ GIẢM GIÁ"
+        title={t('admin.discountCodes.title')}
+        gradientTitle
+        sparkle
+        subtitle={t('admin.discountCodes.subtitle')}
+        actions={
+          <Button className="admin-btn-primary" onClick={handleCreate}>
             <Plus className="w-4 h-4 mr-2" strokeWidth={2.25} />
             {t('admin.discountCodes.createCode')}
           </Button>
-        </div>
+        }
+      />
+
+      {/* StatStrip — đang chạy / hết hạn / tổng lượt dùng */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-3 mb-5">
+        <AdminStatCard
+          label={t('admin.discountCodes.stats.running')}
+          value={stats.running}
+          icon={Zap}
+          accentVar="--admin-success"
+          isLoading={isLoading}
+        />
+        <AdminStatCard
+          label={t('admin.discountCodes.stats.expired')}
+          value={stats.expired}
+          icon={CalendarX}
+          accentVar="--admin-error"
+          isLoading={isLoading}
+        />
+        <AdminStatCard
+          label={t('admin.discountCodes.stats.totalUsage')}
+          value={stats.totalUsage}
+          icon={TrendingUp}
+          accentVar="--admin-info"
+          isLoading={isLoading}
+        />
       </div>
 
       {/* Filter + table card */}
       <div className="rounded-2xl bg-[var(--bg-base)] dark:bg-white/[0.03] border border-[var(--border-default)] overflow-hidden shadow-sm">
         <div className="p-4 border-b border-[var(--border-default)]">
-          <div className="flex gap-2">
-            <div className="relative flex-1 max-w-xs">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[var(--text-tertiary)] pointer-events-none" />
-              <Input
-                placeholder={t('admin.discountCodes.searchPlaceholder')}
-                value={searchValue}
-                onChange={(e) => setSearchValue(e.target.value)}
-                onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
-                className="pl-9"
-              />
-            </div>
-            <Button variant="outline" onClick={handleSearch}>
-              <Search className="w-4 h-4" strokeWidth={2.25} />
-            </Button>
+          <div className="relative max-w-xs">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[var(--text-tertiary)] pointer-events-none" />
+            <Input
+              placeholder={t('admin.discountCodes.searchPlaceholder')}
+              value={searchValue}
+              onChange={(e) => setSearchValue(e.target.value)}
+              className="pl-9"
+            />
           </div>
         </div>
 
@@ -587,7 +628,11 @@ const DiscountCodesPage: React.FC = () => {
               <Button type="button" variant="outline" onClick={() => setIsModalOpen(false)}>
                 {t('common.cancel')}
               </Button>
-              <Button type="submit" disabled={isCreating || isUpdating}>
+              <Button
+                type="submit"
+                className="admin-btn-primary"
+                disabled={isCreating || isUpdating}
+              >
                 {isCreating || isUpdating
                   ? t('common.loading')
                   : editingCode

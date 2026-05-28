@@ -15,6 +15,7 @@ import { useProductAttributes } from '@features/catalog/hooks/use-product-attrib
 import { useProductForm } from '@features/catalog/hooks/use-product-form';
 import { useProductVariants } from '@features/catalog/hooks/use-product-variants';
 import { useFormAdapter } from '@features/catalog/hooks/use-form-adapter';
+import { useFormAutosave } from '@features/catalog/hooks/use-form-autosave';
 
 // Các API hook cần thiết
 import { useCreateProductMutation } from '@/features/admin';
@@ -32,9 +33,11 @@ import ProductPricingForm from '@features/catalog/components/ProductPricingForm'
 import ProductSeoForm from '@features/catalog/components/ProductSeoForm';
 import ProductSpecificationsForm from '@features/catalog/components/ProductSpecificationsForm';
 import ProductVariantsSection from '@features/catalog/components/ProductVariantsSection';
-import TabNavigation from '@features/catalog/components/TabNavigation';
 import ValidationAlerts from '@features/catalog/components/ValidationAlerts';
 import ProductFAQForm from '@features/catalog/components/ProductFAQForm';
+import ProductFormStepper from '@features/catalog/components/ProductFormStepper';
+import ProductFormSaveBar from '@features/catalog/components/ProductFormSaveBar';
+import AdminPageHeader from '../../components/AdminPageHeader';
 
 // Types và utils
 import { AttributeGroup } from '@features/catalog/api/attribute-api';
@@ -150,6 +153,26 @@ const CreateProductPage: React.FC = () => {
     closeVariantModal,
   } = useProductVariants([], form);
 
+  // Autosave nháp vào localStorage (debounce) — khôi phục khi quay lại form tạo
+  const {
+    status: autosaveStatus,
+    lastSavedAt,
+    getDraft,
+    clearDraft,
+  } = useFormAutosave({ form, storageKey: 'product-draft:create' });
+
+  // Khôi phục bản nháp đang soạn dở (chạy 1 lần sau mount, override default)
+  const draftRestoredRef = React.useRef(false);
+  useEffect(() => {
+    if (draftRestoredRef.current) return;
+    draftRestoredRef.current = true;
+    const draft = getDraft();
+    if (draft && Object.keys(draft).length > 0) {
+      form.setFieldsValue(draft);
+      addNotification({ message: t('admin.products.autosave.restored'), type: 'info' });
+    }
+  }, [getDraft, form, addNotification, t]);
+
   // Debug: Log attributes whenever they change - đặc biệt là để theo dõi khi xóa thuộc tính (vì thuộc tính bị xóa sẽ ảnh hưởng đến biến thể)
   useEffect(() => {}, [attributes]);
 
@@ -161,9 +184,12 @@ const CreateProductPage: React.FC = () => {
     }
   }, [variants, form]);
 
-  // Đặt FAQs mặc định sau mount (cần i18next đã sẵn sàng)
+  // Đặt FAQs mặc định sau mount (cần i18next đã sẵn sàng) — bỏ qua nếu draft đã khôi phục faqs
   useEffect(() => {
-    form.setFieldsValue({ faqs: getDefaultFaqs() });
+    const current = form.getFieldValue('faqs');
+    if (!Array.isArray(current) || current.length === 0) {
+      form.setFieldsValue({ faqs: getDefaultFaqs() });
+    }
   }, [form]);
 
   // Custom hooks cho form sản phẩm sẽ trả về các trạng thái và hàm cần thiết để quản lý form, validation, và submit
@@ -343,6 +369,7 @@ const CreateProductPage: React.FC = () => {
         };
 
         await createProduct(productData);
+        clearDraft();
         addNotification({ message: t('admin.products.messages.createSuccess'), type: 'success' });
         navigate('/admin/products');
       } catch (error) {
@@ -416,33 +443,30 @@ const CreateProductPage: React.FC = () => {
     return '';
   };
 
+  const steps = TAB_ORDER.map((key) => ({ key, label: t(`admin.products.tabs.${key}`) }));
+
+  // Submit với status chỉ định (Lưu nháp = draft, Xuất bản = active)
+  const submitWithStatus = (status: 'draft' | 'active') => {
+    form.setFieldValue('status', status);
+    handleSubmit({ ...(form.getFieldsValue() as ProductFormData), status });
+  };
+
   return (
     <div>
-      {/* Page header glass */}
-      <div className="relative rounded-3xl bg-[var(--bg-base)] dark:bg-white/[0.03] border border-[var(--border-default)] p-6 mb-5 overflow-hidden">
-        <div
-          className="absolute inset-0 -z-10 opacity-50 pointer-events-none"
-          style={{
-            background: `
-              radial-gradient(circle at 100% 0%, rgba(42, 172, 167, 0.10) 0%, transparent 40%),
-              radial-gradient(circle at 0% 100%, rgba(82, 196, 26, 0.08) 0%, transparent 35%)
-            `,
-          }}
-        />
-        <div className="relative flex flex-col sm:flex-row items-start sm:items-end justify-between gap-3">
-          <div>
-            <span className="section-number">02 / TẠO SẢN PHẨM</span>
-            <h1 className="display-heading mt-2">{t('admin.products.create.title')}</h1>
-            <p className="text-sm text-[var(--text-tertiary)] mt-1.5">
-              {t('admin.products.create.subtitle')}
-            </p>
-          </div>
+      {/* Page header */}
+      <AdminPageHeader
+        sectionNumber="02 / TẠO SẢN PHẨM"
+        title={t('admin.products.create.title')}
+        gradientTitle
+        sparkle
+        subtitle={t('admin.products.create.subtitle')}
+        actions={
           <Button variant="outline" onClick={() => navigate('/admin/products')}>
             <ArrowLeft className="w-4 h-4 mr-2" strokeWidth={2.25} />
             {t('admin.products.backButton')}
           </Button>
-        </div>
-      </div>
+        }
+      />
 
       {/* Form container */}
       <div className="rounded-2xl bg-[var(--bg-base)] dark:bg-white/[0.03] border border-[var(--border-default)] p-5 shadow-sm">
@@ -450,161 +474,103 @@ const CreateProductPage: React.FC = () => {
           onSubmit={form._rhf.handleSubmit((values) => handleSubmit(values as ProductFormData))}
           onChange={validateForm}
         >
-          <Tabs value={activeTab} onValueChange={handleTabChange} className="min-h-[400px]">
-            <TabsList className="flex flex-wrap h-auto gap-1 bg-transparent mb-4 p-0">
-              {TAB_ORDER.map((tabKey) => {
-                const isCompleted = completedSteps[tabKey];
-                const isAccessible = isTabAccessible(tabKey);
-                return (
-                  <TabsTrigger
-                    key={tabKey}
-                    value={tabKey}
-                    disabled={!isAccessible}
-                    className={`
-                        text-xs font-medium rounded-lg px-3 py-2 transition
-                        ${isCompleted ? 'text-[var(--admin-success)]' : ''}
-                        ${!isAccessible ? 'text-[var(--text-tertiary)] opacity-50' : ''}
-                        data-[state=active]:bg-[var(--accent)]/12 data-[state=active]:text-[var(--accent)]
-                        data-[state=active]:shadow-sm
-                      `}
-                  >
-                    {t(`admin.products.tabs.${tabKey}`)}
-                    {isCompleted && <span className="ml-1 text-[var(--admin-success)]">✓</span>}
-                  </TabsTrigger>
-                );
-              })}
+          <Tabs value={activeTab} onValueChange={handleTabChange}>
+            {/* TabsList ẩn — giữ cho Radix Tabs + a11y; điều hướng thật qua stepper */}
+            <TabsList className="sr-only">
+              {TAB_ORDER.map((tabKey) => (
+                <TabsTrigger key={tabKey} value={tabKey} disabled={!isTabAccessible(tabKey)}>
+                  {t(`admin.products.tabs.${tabKey}`)}
+                </TabsTrigger>
+              ))}
             </TabsList>
 
-            <TabsContent value="basic">
-              <ProductBasicInfoForm
-                form={form._rhf}
-                fillExampleData={fillExampleData}
-                productId={undefined}
-              />
-              <TabNavigation
-                activeTab={activeTab}
-                setActiveTab={setActiveTab}
-                tabOrder={TAB_ORDER}
-                completedSteps={completedSteps}
-                validateForm={validateForm}
-              />
-            </TabsContent>
+            <div className="grid grid-cols-1 lg:grid-cols-[240px_1fr] gap-6">
+              {/* Vertical stepper trái */}
+              <aside className="lg:sticky lg:top-[88px] lg:self-start">
+                <ProductFormStepper
+                  steps={steps}
+                  activeStep={activeTab}
+                  completedSteps={completedSteps}
+                  isStepAccessible={isTabAccessible}
+                  onSelect={handleTabChange}
+                />
+              </aside>
 
-            <TabsContent value="specifications">
-              <ProductSpecificationsForm form={form._rhf} initialSpecifications={[]} />
-              <TabNavigation
-                activeTab={activeTab}
-                setActiveTab={setActiveTab}
-                tabOrder={TAB_ORDER}
-                completedSteps={completedSteps}
-                validateForm={validateForm}
-              />
-            </TabsContent>
+              {/* Nội dung bước phải */}
+              <div className="min-h-[420px]">
+                <TabsContent value="basic">
+                  <ProductBasicInfoForm
+                    form={form._rhf}
+                    fillExampleData={fillExampleData}
+                    productId={undefined}
+                  />
+                </TabsContent>
 
-            <TabsContent value="attributes">
-              <ProductAttributesSection
-                attributes={attributes}
-                onAddAttribute={() => openAttributeModal()}
-                onEditAttribute={(attribute) => openAttributeModal(attribute)}
-                onDeleteAttribute={handleDeleteAttribute}
-              />
-              <TabNavigation
-                activeTab={activeTab}
-                setActiveTab={setActiveTab}
-                tabOrder={TAB_ORDER}
-                completedSteps={completedSteps}
-                validateForm={validateForm}
-              />
-            </TabsContent>
+                <TabsContent value="specifications">
+                  <ProductSpecificationsForm form={form._rhf} initialSpecifications={[]} />
+                </TabsContent>
 
-            <TabsContent value="variants">
-              <ProductVariantsSection
-                variants={variants}
-                onAddVariant={() => openVariantModal()}
-                onEditVariant={(variant) => openVariantModal(variant)}
-                onDeleteVariant={handleDeleteVariant}
-              />
-              <TabNavigation
-                activeTab={activeTab}
-                setActiveTab={setActiveTab}
-                tabOrder={TAB_ORDER}
-                completedSteps={completedSteps}
-                validateForm={validateForm}
-              />
-            </TabsContent>
+                <TabsContent value="attributes">
+                  <ProductAttributesSection
+                    attributes={attributes}
+                    onAddAttribute={() => openAttributeModal()}
+                    onEditAttribute={(attribute) => openAttributeModal(attribute)}
+                    onDeleteAttribute={handleDeleteAttribute}
+                  />
+                </TabsContent>
 
-            <TabsContent value="pricing">
-              <ProductPricingForm
-                form={form._rhf}
-                hasVariants={variants.length > 0}
-                variants={variants}
-              />
-              <TabNavigation
-                activeTab={activeTab}
-                setActiveTab={setActiveTab}
-                tabOrder={TAB_ORDER}
-                completedSteps={completedSteps}
-                validateForm={validateForm}
-              />
-            </TabsContent>
+                <TabsContent value="variants">
+                  <ProductVariantsSection
+                    variants={variants}
+                    onAddVariant={() => openVariantModal()}
+                    onEditVariant={(variant) => openVariantModal(variant)}
+                    onDeleteVariant={handleDeleteVariant}
+                  />
+                </TabsContent>
 
-            <TabsContent value="category">
-              <ProductCategoryForm
-                form={form._rhf}
-                categories={categoriesList}
-                isLoading={isCategoriesLoading}
-              />
-              <TabNavigation
-                activeTab={activeTab}
-                setActiveTab={setActiveTab}
-                tabOrder={TAB_ORDER}
-                completedSteps={completedSteps}
-                validateForm={validateForm}
-              />
-            </TabsContent>
+                <TabsContent value="pricing">
+                  <ProductPricingForm
+                    form={form._rhf}
+                    hasVariants={variants.length > 0}
+                    variants={variants}
+                  />
+                </TabsContent>
 
-            <TabsContent value="images">
-              <ProductImagesForm form={form._rhf} />
-              <TabNavigation
-                activeTab={activeTab}
-                setActiveTab={setActiveTab}
-                tabOrder={TAB_ORDER}
-                completedSteps={completedSteps}
-                validateForm={validateForm}
-              />
-            </TabsContent>
+                <TabsContent value="category">
+                  <ProductCategoryForm
+                    form={form._rhf}
+                    categories={categoriesList}
+                    isLoading={isCategoriesLoading}
+                  />
+                </TabsContent>
 
-            <TabsContent value="faqs">
-              <ProductFAQForm form={form._rhf} />
-              <TabNavigation
-                activeTab={activeTab}
-                setActiveTab={setActiveTab}
-                tabOrder={TAB_ORDER}
-                completedSteps={completedSteps}
-                validateForm={validateForm}
-              />
-            </TabsContent>
+                <TabsContent value="images">
+                  <ProductImagesForm form={form._rhf} />
+                </TabsContent>
 
-            <TabsContent value="seo">
-              <ProductSeoForm form={form._rhf} />
-              <TabNavigation
-                activeTab={activeTab}
-                setActiveTab={setActiveTab}
-                tabOrder={TAB_ORDER}
-                completedSteps={completedSteps}
-                validateForm={validateForm}
-                isLastTab={true}
-                onSubmit={() => handleSubmit(form.getFieldsValue() as ProductFormData)}
-                isSubmitting={isCreating}
-                submitText={t('admin.products.submit.create')}
-                loadingText={t('admin.products.submit.creating')}
-              />
-            </TabsContent>
+                <TabsContent value="faqs">
+                  <ProductFAQForm form={form._rhf} />
+                </TabsContent>
+
+                <TabsContent value="seo">
+                  <ProductSeoForm form={form._rhf} />
+                </TabsContent>
+              </div>
+            </div>
           </Tabs>
 
-          <div className="my-6 h-px bg-[var(--border-default)]" />
-
           <ValidationAlerts isFormValid={isFormValid} missingFields={[]} />
+
+          <ProductFormSaveBar
+            autosaveStatus={autosaveStatus}
+            lastSavedAt={lastSavedAt}
+            isSubmitting={isCreating}
+            onSaveDraft={() => submitWithStatus('draft')}
+            onPublish={() => submitWithStatus('active')}
+            onCancel={() => navigate('/admin/products')}
+            draftText={t('admin.products.submit.saveDraft')}
+            publishText={t('admin.products.submit.publish')}
+          />
         </form>
       </div>
 

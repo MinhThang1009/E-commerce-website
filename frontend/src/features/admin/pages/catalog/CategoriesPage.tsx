@@ -15,7 +15,6 @@ import {
   RefreshCw,
   ChevronLeft,
   ChevronRight,
-  Sparkles,
 } from 'lucide-react';
 import { useUiStore } from '@/stores/ui-store';
 import { getErrorMsg } from '@/utils/error-utils';
@@ -46,6 +45,7 @@ import {
   Switch,
 } from '@/components/ui';
 import StatusPill from '../../components/StatusPill';
+import AdminPageHeader from '../../components/AdminPageHeader';
 
 interface CategoryFormData {
   name: string;
@@ -181,29 +181,15 @@ const CategoriesPage: React.FC = () => {
 
   return (
     <div>
-      {/* Page header với gradient subtle */}
-      <div className="relative rounded-3xl bg-[var(--bg-base)] dark:bg-white/[0.03] border border-[var(--border-default)] p-6 mb-5 overflow-hidden">
-        <div
-          className="absolute inset-0 -z-10 opacity-50 pointer-events-none"
-          style={{
-            background: `
-              radial-gradient(circle at 100% 0%, rgba(82, 196, 26, 0.10) 0%, transparent 40%),
-              radial-gradient(circle at 0% 100%, rgba(114, 46, 209, 0.08) 0%, transparent 35%)
-            `,
-          }}
-        />
-        <div className="relative flex flex-col sm:flex-row items-start sm:items-end justify-between gap-3">
-          <div>
-            <span className="section-number">03 / DANH MỤC</span>
-            <div className="flex items-center gap-2.5 mt-2">
-              <h1 className="display-heading">{t('admin.categories.title')}</h1>
-              <Sparkles className="w-5 h-5 text-[var(--accent)]/60" aria-hidden="true" />
-            </div>
-            <p className="text-sm text-[var(--text-tertiary)] mt-1.5">
-              {t('admin.categories.subtitle')}
-            </p>
-          </div>
-          <div className="flex items-center gap-2 flex-wrap">
+      {/* Page header */}
+      <AdminPageHeader
+        sectionNumber="03 / DANH MỤC"
+        title={t('admin.categories.title')}
+        gradientTitle
+        sparkle
+        subtitle={t('admin.categories.subtitle')}
+        actions={
+          <>
             <Button variant="outline" onClick={() => refetch()} disabled={isLoading}>
               <RefreshCw
                 className={cn('w-4 h-4 mr-2', isLoading && 'animate-spin')}
@@ -211,13 +197,13 @@ const CategoriesPage: React.FC = () => {
               />
               {t('common.refresh')}
             </Button>
-            <Button onClick={handleCreate}>
+            <Button className="admin-btn-primary" onClick={handleCreate}>
               <Plus className="w-4 h-4 mr-2" strokeWidth={2.25} />
               {t('admin.categories.addCategory')}
             </Button>
-          </div>
-        </div>
-      </div>
+          </>
+        }
+      />
 
       {/* Table */}
       <div className="rounded-2xl bg-[var(--bg-base)] dark:bg-white/[0.03] border border-[var(--border-default)] overflow-hidden shadow-sm">
@@ -243,7 +229,7 @@ const CategoriesPage: React.FC = () => {
                 defaultValue: 'Tạo danh mục đầu tiên để phân loại sản phẩm dễ dàng hơn.',
               })}
             </p>
-            <Button onClick={handleCreate}>
+            <Button className="admin-btn-primary" onClick={handleCreate}>
               <Plus className="w-4 h-4 mr-2" strokeWidth={2.25} />
               {t('admin.categories.addCategory')}
             </Button>
@@ -579,7 +565,11 @@ const CategoriesPage: React.FC = () => {
               >
                 {t('common.cancel')}
               </Button>
-              <Button type="submit" disabled={isCreating || isUpdating}>
+              <Button
+                type="submit"
+                className="admin-btn-primary"
+                disabled={isCreating || isUpdating}
+              >
                 {(isCreating || isUpdating) && <LoadingSpinner size="sm" />}
                 {editingCategory ? t('common.update') : t('common.create')}
               </Button>

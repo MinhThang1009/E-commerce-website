@@ -16,7 +16,6 @@ import {
   Crown,
   Users,
   Eye,
-  Sparkles,
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
@@ -47,7 +46,8 @@ import {
 import { Pagination } from '@/components/common';
 import { useUiStore } from '@/stores/ui-store';
 import StatusPill from '../components/StatusPill';
-import FlipNumber from '../components/FlipNumber';
+import AdminPageHeader from '../components/AdminPageHeader';
+import AdminStatCard from '../components/AdminStatCard';
 
 interface UserFormData {
   firstName: string;
@@ -171,72 +171,53 @@ const UsersPage: React.FC = () => {
   return (
     <div>
       {/* Page header */}
-      <div className="relative rounded-3xl bg-[var(--bg-base)] dark:bg-white/[0.03] border border-[var(--border-default)] p-6 mb-5 overflow-hidden">
-        <div
-          className="absolute inset-0 -z-10 opacity-50 pointer-events-none"
-          style={{
-            background: `
-              radial-gradient(circle at 100% 0%, rgba(24, 144, 255, 0.10) 0%, transparent 40%),
-              radial-gradient(circle at 0% 100%, rgba(114, 46, 209, 0.08) 0%, transparent 35%)
-            `,
-          }}
-        />
-        <div className="relative">
-          <span className="section-number">06 / NGƯỜI DÙNG</span>
-          <div className="flex items-center gap-2.5 mt-2">
-            <h1 className="display-heading">{t('admin.users.title')}</h1>
-            <Sparkles className="w-5 h-5 text-[var(--accent)]/60" aria-hidden="true" />
-          </div>
-          <p className="text-sm text-[var(--text-tertiary)] mt-1.5">{t('admin.users.subtitle')}</p>
-        </div>
-      </div>
+      <AdminPageHeader
+        sectionNumber="06 / NGƯỜI DÙNG"
+        title={t('admin.users.title')}
+        gradientTitle
+        sparkle
+        subtitle={t('admin.users.subtitle')}
+        actions={
+          <Button variant="outline" onClick={() => refetch()} disabled={isLoading}>
+            <RefreshCw
+              className={cn('w-4 h-4 mr-2', isLoading && 'animate-spin')}
+              strokeWidth={2.25}
+            />
+            {t('common.refresh')}
+          </Button>
+        }
+      />
 
-      {/* Mini KPI stats */}
+      {/* KPI stats — AdminStatCard chuẩn (đồng bộ Dashboard) */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-5">
-        {[
-          {
-            label: t('admin.users.stats.total'),
-            value: totalUsers,
-            Icon: User,
-            color: '--admin-info',
-          },
-          {
-            label: t('admin.users.stats.admins'),
-            value: adminCount,
-            Icon: Crown,
-            color: '--admin-error',
-          },
-          {
-            label: t('admin.users.stats.customers'),
-            value: customerCount,
-            Icon: Users,
-            color: '--admin-success',
-          },
-          {
-            label: t('admin.users.stats.verified'),
-            value: verifiedCount,
-            Icon: Mail,
-            color: '--admin-purple',
-          },
-        ].map(({ label, value, Icon, color }) => (
-          <div
-            key={label}
-            className="rounded-2xl bg-[var(--bg-base)] dark:bg-white/[0.03] border border-[var(--border-default)] p-4 shadow-sm hover:shadow-lg hover:-translate-y-0.5 transition-all duration-200"
-          >
-            <div className="flex items-center justify-between mb-2">
-              <span className="text-[11px] font-semibold uppercase tracking-wider text-[var(--text-tertiary)]">
-                {label}
-              </span>
-              <div
-                className="w-8 h-8 rounded-lg flex items-center justify-center"
-                style={{ background: `var(${color}) / 0.12` }}
-              >
-                <Icon className="w-4 h-4" style={{ color: `var(${color})` }} strokeWidth={2.25} />
-              </div>
-            </div>
-            <FlipNumber value={value} className="text-2xl font-bold text-[var(--text-primary)]" />
-          </div>
-        ))}
+        <AdminStatCard
+          label={t('admin.users.stats.total')}
+          value={totalUsers}
+          icon={User}
+          accentVar="--admin-info"
+          isLoading={isLoading}
+        />
+        <AdminStatCard
+          label={t('admin.users.stats.admins')}
+          value={adminCount}
+          icon={Crown}
+          accentVar="--admin-error"
+          isLoading={isLoading}
+        />
+        <AdminStatCard
+          label={t('admin.users.stats.customers')}
+          value={customerCount}
+          icon={Users}
+          accentVar="--admin-success"
+          isLoading={isLoading}
+        />
+        <AdminStatCard
+          label={t('admin.users.stats.verified')}
+          value={verifiedCount}
+          icon={Mail}
+          accentVar="--admin-purple"
+          isLoading={isLoading}
+        />
       </div>
 
       {/* Filter bar */}
@@ -274,31 +255,18 @@ const UsersPage: React.FC = () => {
               <SelectItem value="email">{t('admin.users.filter.sortByEmail')}</SelectItem>
             </SelectContent>
           </Select>
-          <div className="flex gap-2">
-            <Select
-              value={filters.sortOrder}
-              onValueChange={(v) => handleFilterChange('sortOrder', v)}
-            >
-              <SelectTrigger>
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="DESC">{t('admin.users.filter.desc')}</SelectItem>
-                <SelectItem value="ASC">{t('admin.users.filter.asc')}</SelectItem>
-              </SelectContent>
-            </Select>
-            <Button
-              variant="outline"
-              onClick={() => refetch()}
-              disabled={isLoading}
-              className="shrink-0"
-            >
-              <RefreshCw
-                className={cn('w-4 h-4', isLoading && 'animate-spin')}
-                strokeWidth={2.25}
-              />
-            </Button>
-          </div>
+          <Select
+            value={filters.sortOrder}
+            onValueChange={(v) => handleFilterChange('sortOrder', v)}
+          >
+            <SelectTrigger>
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="DESC">{t('admin.users.filter.desc')}</SelectItem>
+              <SelectItem value="ASC">{t('admin.users.filter.asc')}</SelectItem>
+            </SelectContent>
+          </Select>
         </div>
       </div>
 
@@ -585,7 +553,7 @@ const UsersPage: React.FC = () => {
               >
                 {t('common.cancel')}
               </Button>
-              <Button type="submit" disabled={isUpdating}>
+              <Button type="submit" className="admin-btn-primary" disabled={isUpdating}>
                 {isUpdating ? t('common.loading') : t('common.update')}
               </Button>
             </div>

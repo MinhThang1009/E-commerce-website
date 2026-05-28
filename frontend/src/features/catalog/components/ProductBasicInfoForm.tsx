@@ -7,7 +7,7 @@
 import React from 'react';
 import { UseFormReturn } from 'react-hook-form';
 import { useTranslation } from 'react-i18next';
-import { Info } from 'lucide-react';
+import { Info, CheckCircle2, PauseCircle, PenLine } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -69,9 +69,24 @@ const ProductBasicInfoForm: React.FC<ProductBasicInfoFormProps> = ({
             <SelectValue placeholder={t('admin.products.form.statusPlaceholder')} />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="active">{t('admin.products.form.statusActive')}</SelectItem>
-            <SelectItem value="inactive">{t('admin.products.form.statusInactive')}</SelectItem>
-            <SelectItem value="draft">{t('admin.products.form.statusDraft')}</SelectItem>
+            <SelectItem value="active">
+              <span className="flex items-center gap-2">
+                <CheckCircle2 className="h-4 w-4 text-[var(--admin-success)]" strokeWidth={2.25} />
+                {t('admin.products.form.statusActive')}
+              </span>
+            </SelectItem>
+            <SelectItem value="inactive">
+              <span className="flex items-center gap-2">
+                <PauseCircle className="h-4 w-4 text-[var(--admin-warning)]" strokeWidth={2.25} />
+                {t('admin.products.form.statusInactive')}
+              </span>
+            </SelectItem>
+            <SelectItem value="draft">
+              <span className="flex items-center gap-2">
+                <PenLine className="h-4 w-4 text-[var(--text-tertiary)]" strokeWidth={2.25} />
+                {t('admin.products.form.statusDraft')}
+              </span>
+            </SelectItem>
           </SelectContent>
         </Select>
       </div>

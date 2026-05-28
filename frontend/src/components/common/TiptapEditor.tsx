@@ -17,6 +17,7 @@ import Underline from '@tiptap/extension-underline';
 import Color from '@tiptap/extension-color';
 import { TextStyle } from '@tiptap/extension-text-style';
 import { useCallback, useEffect, useMemo } from 'react';
+import { AlignLeft, AlignCenter, AlignRight, Link2, Image as ImageIcon } from 'lucide-react';
 
 interface TiptapEditorProps {
   value?: string;
@@ -133,7 +134,7 @@ function MenuBar({
             className={btnClass(editor.isActive({ textAlign: 'left' }))}
             title="Align left"
           >
-            &#8676;
+            <AlignLeft className="h-4 w-4" strokeWidth={2.25} />
           </button>
           <button
             type="button"
@@ -141,7 +142,7 @@ function MenuBar({
             className={btnClass(editor.isActive({ textAlign: 'center' }))}
             title="Align center"
           >
-            &#8596;
+            <AlignCenter className="h-4 w-4" strokeWidth={2.25} />
           </button>
           <button
             type="button"
@@ -149,7 +150,7 @@ function MenuBar({
             className={btnClass(editor.isActive({ textAlign: 'right' }))}
             title="Align right"
           >
-            &#8677;
+            <AlignRight className="h-4 w-4" strokeWidth={2.25} />
           </button>
           <span className="w-px h-6 bg-neutral-300 dark:bg-neutral-600 mx-1 self-center" />
           <button
@@ -158,10 +159,10 @@ function MenuBar({
             className={btnClass(editor.isActive('link'))}
             title="Link"
           >
-            &#128279;
+            <Link2 className="h-4 w-4" strokeWidth={2.25} />
           </button>
           <button type="button" onClick={addImage} className={btnClass(false)} title="Image">
-            &#128247;
+            <ImageIcon className="h-4 w-4" strokeWidth={2.25} />
           </button>
         </>
       )}

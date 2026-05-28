@@ -48,17 +48,17 @@
         "shopping": {
           "title": "Discover the shopping world",
           "subtitle": "Thousands of high-quality products at the best prices",
-          "badge": "🔥 Trend 2024"
+          "badge": "Trend 2024"
         },
         "fashion": {
           "title": "Modern fashion",
           "subtitle": "Latest collections from top brands",
-          "badge": "✨ New collection"
+          "badge": "New collection"
         },
         "technology": {
           "title": "Advanced technology",
           "subtitle": "The latest and most modern technology products",
-          "badge": "🚀 New technology"
+          "badge": "New technology"
         }
       },
       "buttons": {
@@ -333,9 +333,9 @@
       "viewCart": "View cart",
       "askMore": "Ask more",
       "findMore": "Find more products",
-      "hotProducts": "Find hot products 🔥",
-      "bestSellers": "Best sellers ⭐",
-      "shoppingSupport": "Shopping support 💬",
+      "hotProducts": "Find hot products",
+      "bestSellers": "Best sellers",
+      "shoppingSupport": "Shopping support",
       "viewTshirts": "View T-shirts",
       "viewJeans": "View jeans",
       "viewSneakers": "View sneakers",
@@ -381,7 +381,7 @@
     "helpMessage": "Help guide",
     "supportButton": "Support",
     "emptyState": {
-      "title": "Welcome! 👋",
+      "title": "Welcome!",
       "description": "I am an AI Assistant, ready to help you find products and get shopping advice.",
       "newProducts": "View new products",
       "promotions": "Promotional products",
@@ -566,7 +566,7 @@
       "onlyLeft": "Only {{count}} left",
       "outOfStock": "Out of stock",
       "outOfStockAction": "Please remove out-of-stock items before checking out",
-      "priceChanged": "💸 Price changed: {{old}} → {{new}}",
+      "priceChanged": "Price changed: {{old}} → {{new}}",
       "stockIssues": "Stock issues found"
     },
     "voucher": {
@@ -668,7 +668,7 @@
       "accountNumber": "Account number",
       "amount": "Amount",
       "reference": "Transfer reference",
-      "noteReference": "⚠️ Please enter the exact transfer reference for quick order processing",
+      "noteReference": "Please enter the exact transfer reference for quick order processing",
       "afterPayment": "After bank transfer:",
       "step1": "Keep your transfer receipt",
       "step2": "Order will be processed within 1-2 hours",
@@ -690,7 +690,7 @@
       "freeShipping": "Free",
       "loyaltyDiscount": "Loyalty points discount",
       "discount": "Discount",
-      "distanceInfo": "📍 Distance: {{distance}} km - Fee: {{fee}}",
+      "distanceInfo": "Distance: {{distance}} km - Fee: {{fee}}",
       "discountCodeLabel": "Discount code ({{code}})"
     },
     "placeOrder": "Place order",
@@ -940,7 +940,7 @@
   "bestSellers": {
     "title": "Best Sellers",
     "subtitle": "Our most loved products",
-    "badge": "🏆 Top Sellers",
+    "badge": "Top Sellers",
     "browse": "Browse all products",
     "sortBy": "Sort by",
     "sort": {
@@ -1146,8 +1146,8 @@
         "updating": "Updating...",
         "codDeliveredNote": "COD orders marked as 'Delivered' will automatically be marked as paid.",
         "cancelledRefundNote": "Paid order cancelled — payment status automatically changed to 'Refunded'.",
-        "deliveredUnpaidNote": "⚠️ Order is not paid but being marked as delivered.",
-        "refundedActiveNote": "⚠️ Order is refunded but status is not 'Cancelled'.",
+        "deliveredUnpaidNote": "Order is not paid but being marked as delivered.",
+        "refundedActiveNote": "Order is refunded but status is not 'Cancelled'.",
         "errorCancelledPaid": "A cancelled order cannot have 'Paid' payment status — please select 'Refunded'.",
         "errorDeliveredUnpaid": "A delivered order must have a valid payment status (not Pending or Failed).",
         "errorRefundedActive": "Only 'Cancelled' orders can have 'Refunded' payment status."
@@ -1253,7 +1253,15 @@
         "create": "Create product",
         "creating": "Creating...",
         "update": "Update product",
-        "updating": "Updating..."
+        "updating": "Updating...",
+        "saveDraft": "Save draft",
+        "publish": "Publish"
+      },
+      "autosave": {
+        "saving": "Saving draft...",
+        "saved": "Auto-saved at {{time}}",
+        "idle": "Not saved yet",
+        "restored": "Restored your unsaved draft"
       },
       "editTabs": {
         "basic": "1. Basic info",
@@ -1276,9 +1284,9 @@
         "namePlaceholder": "Enter product name",
         "status": "Status",
         "statusPlaceholder": "Select status",
-        "statusActive": "✅ Active",
-        "statusInactive": "⏸️ Inactive",
-        "statusDraft": "📝 Draft",
+        "statusActive": "Active",
+        "statusInactive": "Inactive",
+        "statusDraft": "Draft",
         "shortDescription": "Short description",
         "shortDescriptionRequired": "Please enter short description!",
         "shortDescriptionMin": "Short description must be at least 5 characters",
@@ -1298,13 +1306,13 @@
         "subtitle": "Add detailed specifications so customers can compare and evaluate the product",
         "addButton": "Add specification",
         "addSample": "Add laptop sample",
-        "listTitle": "📋 Specifications list",
+        "listTitle": "Specifications list",
         "namePlaceholder": "Spec name (e.g., CPU, RAM...)",
         "valuePlaceholder": "Spec value (e.g., Intel Core i5, 8GB DDR4...)",
         "categoryPlaceholder": "Select category",
         "emptyTitle": "No specifications yet",
         "emptyDesc": "Click \"Add specification\" to start adding specs for the product",
-        "summaryTitle": "📊 Summary",
+        "summaryTitle": "Summary",
         "summaryText": "Total: {{count}} specifications",
         "categories": {
           "performance": "Performance",
@@ -1522,6 +1530,11 @@
       "title": "Discount code management",
       "addCode": "Add discount code",
       "editCode": "Edit discount code",
+      "stats": {
+        "running": "Running",
+        "expired": "Expired",
+        "totalUsage": "Total usage"
+      },
       "table": {
         "code": "Code",
         "type": "Type",
@@ -2695,7 +2708,7 @@
     "guide": "How to use test cards",
     "guide1": "Select a test card above, click \"Pay via VNPay\"",
     "guide2": "On VNPay page: select \"Domestic Card / ATM\"",
-    "guide3": "Enter card details from the table above (click 📋 to copy quickly)",
+    "guide3": "Enter card details from the table above (click to copy quickly)",
     "guide4": "Enter OTP: 123456 when prompted",
     "guide5": "Complete payment and the system will update automatically",
     "card1bank": "NCB",
@@ -2839,9 +2852,9 @@
     "deleteRestrict2": "The category contains products"
   },
   "createProduct": {
-    "statusActive": "✅ Active",
-    "statusInactive": "⏸️ Paused",
-    "statusDraft": "📝 Draft",
+    "statusActive": "Active",
+    "statusInactive": "Paused",
+    "statusDraft": "Draft",
     "nameRequired": "Please enter product name",
     "descRequired": "Please enter product description",
     "shortDescRequired": "Please enter short description",
@@ -2923,17 +2936,17 @@
     "removeVariantSr": "Remove variant"
   },
   "attrModal": {
-    "editTitle": "🏷️ Edit Attribute",
-    "addTitle": "🏷️ Add New Attribute",
-    "nameLabel": "🏷️ Attribute Name",
+    "editTitle": "Edit Attribute",
+    "addTitle": "Add New Attribute",
+    "nameLabel": "Attribute Name",
     "nameTooltip": "Descriptive name for attribute type (e.g., Color, Size, Material)",
     "namePlaceholder": "E.g.: Color, Material, Size",
     "nameRequired": "Please enter attribute name",
-    "valueLabel": "📝 Attribute Values",
+    "valueLabel": "Attribute Values",
     "valueTooltip": "Enter possible values separated by commas",
     "valuePlaceholder": "E.g.: Red, Blue, Black (comma separated)",
     "valueRequired": "Please enter attribute values",
-    "tipTitle": "💡 Attribute Creation Tips",
+    "tipTitle": "Attribute Creation Tips",
     "tipNameLabel": "Attribute name:",
     "tipNameDesc": "Should be clear (e.g., \"Color\", \"Size\")",
     "tipValueLabel": "Values:",
@@ -2941,7 +2954,7 @@
     "tipCommaLabel": "Comma separated:",
     "tipCommaDesc": "\"Black, White, Titan Blue\" or \"128GB, 256GB, 512GB\"",
     "tipUsage": "This attribute will be used when creating product variants",
-    "exampleTitle": "📖 Examples",
+    "exampleTitle": "Examples",
     "exNameLabel": "Name:",
     "exValueLabel": "Values:",
     "ex1name": "Color",
@@ -2954,22 +2967,22 @@
     "updateBtn": "Update Attribute"
   },
   "variantModal": {
-    "editTitle": "🎭 Edit Variant",
-    "addTitle": "🎭 Add New Variant",
-    "nameLabel": "🏷️ Variant Name",
+    "editTitle": "Edit Variant",
+    "addTitle": "Add New Variant",
+    "nameLabel": "Variant Name",
     "nameRequired": "Please enter variant name",
     "namePlaceholder": "E.g.: Black 256GB, White 16GB RAM",
-    "skuLabel": "📦 SKU",
+    "skuLabel": "SKU",
     "skuTooltip": "Suggested format: {BRAND}-{MODEL}-{SPEC}-{COLOR}. E.g.: SAM-S25U-256-BLK, APL-IP17P-512-WHI. Leave empty to auto-generate VAR-XXXXXX",
     "skuPlaceholder": "E.g.: SAM-S25U-256-BLK",
-    "priceLabel": "💰 Price (VND)",
+    "priceLabel": "Price (VND)",
     "priceTooltip": "Price for this variant",
     "priceRequired": "Please enter price",
     "priceMustBePositive": "Price must be greater than 0",
-    "stockLabel": "📦 Stock Quantity",
+    "stockLabel": "Stock Quantity",
     "stockRequired": "Please enter quantity",
     "stockMustBeNonNeg": "Quantity cannot be negative",
-    "attrSectionTitle": "🎨 Variant Attributes",
+    "attrSectionTitle": "Variant Attributes",
     "selectAttr": "Select {{name}}",
     "addBtn": "Add Variant",
     "comparePriceLabel": "Compare Price",
@@ -3442,9 +3455,9 @@
     "isVariant": "Product has variants",
     "statusLabel": "Status",
     "statusPlaceholder": "Select status",
-    "statusActive": "✅ Active",
-    "statusInactive": "⏸️ Inactive",
-    "statusDraft": "📝 Draft",
+    "statusActive": "Active",
+    "statusInactive": "Inactive",
+    "statusDraft": "Draft",
     "shortDescLabel": "Short description",
     "shortDescRequired": "Please enter the short description!",
     "shortDescPlaceholder": "Enter short description (displayed in product listing)",
@@ -3642,7 +3655,13 @@
   },
   "inventory": {
     "title": "Inventory management",
+    "subtitle": "Track and update stock by product and variant",
     "searchPlaceholder": "Search products...",
+    "stats": {
+      "totalStock": "Total stock",
+      "lowStock": "Low stock",
+      "outOfStock": "Out of stock"
+    },
     "colProduct": "Product",
     "colVariant": "Variant",
     "colSku": "SKU",

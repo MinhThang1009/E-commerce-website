@@ -4,10 +4,24 @@
  * @feature admin
  * @description Page component của feature admin
  */
-import React, { useState } from 'react';
-import { Search, Pencil, Save, X, ChevronDown, ChevronRight, Sparkles } from 'lucide-react';
+import React, { useState, useMemo } from 'react';
+import {
+  Search,
+  Pencil,
+  Save,
+  X,
+  ChevronDown,
+  ChevronRight,
+  RefreshCw,
+  Boxes,
+  AlertTriangle,
+  PackageX,
+} from 'lucide-react';
 import { useTranslation } from 'react-i18next';
+import { cn } from '@/utils/cn';
 import StatusPill from '../components/StatusPill';
+import AdminPageHeader from '../components/AdminPageHeader';
+import AdminStatCard from '../components/AdminStatCard';
 import { useGetAdminProductsQuery } from '../api/admin-product-api';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
@@ -39,6 +53,14 @@ interface EditingState {
 }
 
 const LOW_STOCK_THRESHOLD = 5;
+
+// Ngưỡng hiển thị thanh tồn kho (cap trực quan) + màu theo mức
+const STOCK_BAR_MAX = 100;
+function stockColor(s: number): string {
+  if (s === 0) return 'var(--admin-error)';
+  if (s <= LOW_STOCK_THRESHOLD) return 'var(--admin-warning)';
+  return 'var(--admin-success)';
+}
 
 const InventoryPage: React.FC = () => {
   const { t } = useTranslation();
@@ -84,6 +106,19 @@ const InventoryPage: React.FC = () => {
   });
 
   const totalPages = Math.ceil((data?.data?.pagination?.totalItems || 0) / 20);
+
+  // Aggregate cho StatStrip — tính từ sản phẩm đã tải (data thật)
+  const stats = useMemo(() => {
+    let totalStock = 0;
+    let lowStock = 0;
+    let outOfStock = 0;
+    for (const p of products) {
+      totalStock += p.stockQuantity;
+      if (p.stockQuantity === 0) outOfStock += 1;
+      else if (p.stockQuantity <= LOW_STOCK_THRESHOLD) lowStock += 1;
+    }
+    return { totalStock, lowStock, outOfStock };
+  }, [products]);
 
   const getStockBadge = (stock: number) => {
     if (stock === 0) return <StatusPill variant="error" label={t('inventory.outOfStock')} />;
@@ -166,7 +201,18 @@ const InventoryPage: React.FC = () => {
         />
       );
     }
-    return <span>{stock}</span>;
+    const sc = stockColor(stock);
+    const pct = stock === 0 ? 0 : Math.min(100, (stock / STOCK_BAR_MAX) * 100);
+    return (
+      <div className="flex items-center gap-2">
+        <span className="text-xs font-bold tabular-nums w-10 text-right" style={{ color: sc }}>
+          {stock}
+        </span>
+        <div className="h-1.5 flex-1 max-w-[80px] rounded-full bg-[var(--border-default)] overflow-hidden">
+          <div className="h-full rounded-full" style={{ width: `${pct}%`, backgroundColor: sc }} />
+        </div>
+      </div>
+    );
   };
 
   const renderActionButtons = (isEditing: boolean, onEdit: () => void) => {
@@ -175,7 +221,12 @@ const InventoryPage: React.FC = () => {
         <div className="flex items-center gap-2">
           <Tooltip>
             <TooltipTrigger asChild>
-              <Button size="sm" onClick={handleSave} disabled={saving}>
+              <Button
+                size="sm"
+                className="admin-btn-primary"
+                onClick={handleSave}
+                disabled={saving}
+              >
                 <Save className="size-4" />
               </Button>
             </TooltipTrigger>
@@ -207,33 +258,61 @@ const InventoryPage: React.FC = () => {
   return (
     <div>
       {/* Page header */}
-      <div className="relative rounded-3xl bg-[var(--bg-base)] dark:bg-white/[0.03] border border-[var(--border-default)] p-6 mb-5 overflow-hidden">
-        <div
-          className="absolute inset-0 -z-10 opacity-50 pointer-events-none"
-          style={{
-            background: `radial-gradient(circle at 100% 0%, rgba(82, 196, 26, 0.10) 0%, transparent 40%), radial-gradient(circle at 0% 100%, rgba(250, 173, 20, 0.08) 0%, transparent 35%)`,
-          }}
-        />
-        <div className="relative flex flex-col sm:flex-row items-start sm:items-end justify-between gap-3">
-          <div>
-            <span className="section-number">08 / KHO HÀNG</span>
-            <div className="flex items-center gap-2.5 mt-2">
-              <h1 className="display-heading">{t('inventory.title')}</h1>
-              <Sparkles className="w-5 h-5 text-[var(--accent)]/60" aria-hidden="true" />
-            </div>
-          </div>
-          <div className="relative w-full sm:w-[280px]">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[var(--text-tertiary)] pointer-events-none" />
-            <Input
-              placeholder={t('inventory.searchPlaceholder')}
-              value={searchText}
-              onChange={(e) => {
-                setSearchText(e.target.value);
-                setPage(1);
-              }}
-              className="pl-9"
+      <AdminPageHeader
+        sectionNumber="08 / KHO HÀNG"
+        title={t('inventory.title')}
+        gradientTitle
+        sparkle
+        subtitle={t('inventory.subtitle')}
+        actions={
+          <Button variant="outline" onClick={() => refetch()} disabled={isLoading}>
+            <RefreshCw
+              className={cn('w-4 h-4 mr-2', isLoading && 'animate-spin')}
+              strokeWidth={2.25}
             />
-          </div>
+            {t('common.refresh')}
+          </Button>
+        }
+      />
+
+      {/* StatStrip — tổng tồn / sắp hết / hết hàng */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-3 mb-5">
+        <AdminStatCard
+          label={t('inventory.stats.totalStock')}
+          value={stats.totalStock}
+          icon={Boxes}
+          accentVar="--accent"
+          isLoading={isLoading}
+        />
+        <AdminStatCard
+          label={t('inventory.stats.lowStock')}
+          value={stats.lowStock}
+          icon={AlertTriangle}
+          accentVar="--admin-warning"
+          isLoading={isLoading}
+        />
+        <AdminStatCard
+          label={t('inventory.stats.outOfStock')}
+          value={stats.outOfStock}
+          icon={PackageX}
+          accentVar="--admin-error"
+          isLoading={isLoading}
+        />
+      </div>
+
+      {/* Filter bar — search */}
+      <div className="rounded-2xl bg-[var(--bg-base)] dark:bg-white/[0.03] border border-[var(--border-default)] p-4 mb-5 shadow-sm">
+        <div className="relative w-full sm:max-w-xs">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[var(--text-tertiary)] pointer-events-none" />
+          <Input
+            placeholder={t('inventory.searchPlaceholder')}
+            value={searchText}
+            onChange={(e) => {
+              setSearchText(e.target.value);
+              setPage(1);
+            }}
+            className="pl-9"
+          />
         </div>
       </div>
 
@@ -306,11 +385,9 @@ const InventoryPage: React.FC = () => {
                           {hasVariants ? `${product.variants.length} biến thể` : '—'}
                         </td>
                         <td className="px-4 py-3 text-[var(--text-primary)]">
-                          {hasVariants ? (
-                            <span>{product.stockQuantity}</span>
-                          ) : (
-                            renderStockCell(product.stockQuantity, isEditingProduct)
-                          )}
+                          {hasVariants
+                            ? renderStockCell(product.stockQuantity, false)
+                            : renderStockCell(product.stockQuantity, isEditingProduct)}
                         </td>
                         <td className="px-4 py-3">{getStockBadge(product.stockQuantity)}</td>
                         <td className="px-4 py-3">

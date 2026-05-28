@@ -26,15 +26,20 @@ import type { LucideIcon } from 'lucide-react';
 
 import dayjs from 'dayjs';
 import { motion } from 'framer-motion';
-import { useGetAdminOrdersQuery, useUpdateOrderStatusMutation, AdminOrder } from '@/features/admin';
+import {
+  useGetAdminOrdersQuery,
+  useUpdateOrderStatusMutation,
+  useGetDashboardStatsQuery,
+  AdminOrder,
+} from '@/features/admin';
 import { useTranslation } from 'react-i18next';
 import { formatPrice } from '@/utils/format';
 import { cn } from '@/utils/cn';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-// StatusPill sẽ thay thế inline status tags khi refactor chi tiết OrdersPage modal content
-import type {} from '../../components/StatusPill';
+import AdminPageHeader from '../../components/AdminPageHeader';
+import AdminStatCard from '../../components/AdminStatCard';
 import {
   Select,
   SelectTrigger,
@@ -148,6 +153,11 @@ const OrdersPage: React.FC = () => {
   });
 
   const { mutateAsync: updateOrderStatus, isPending: isUpdating } = useUpdateOrderStatusMutation();
+
+  // Aggregate cho StatStrip — dùng chung query với Dashboard (data thật, không bịa)
+  const { data: dashboardData, isLoading: isStatsLoading } = useGetDashboardStatsQuery();
+  const ordersByStatus = dashboardData?.data?.overview?.ordersByStatus ?? {};
+  const totalRevenue = dashboardData?.data?.overview?.totalRevenue ?? 0;
 
   const formatCurrency = useCallback((amount: number) => formatPrice(amount), []);
 
@@ -333,25 +343,14 @@ const OrdersPage: React.FC = () => {
 
   return (
     <div>
-      {/* Page header glass */}
-      <div className="relative rounded-3xl bg-[var(--bg-base)] dark:bg-white/[0.03] border border-[var(--border-default)] p-6 mb-5 overflow-hidden">
-        <div
-          className="absolute inset-0 -z-10 opacity-50 pointer-events-none"
-          style={{
-            background: `
-              radial-gradient(circle at 100% 0%, rgba(114, 46, 209, 0.10) 0%, transparent 40%),
-              radial-gradient(circle at 0% 100%, rgba(24, 144, 255, 0.08) 0%, transparent 35%)
-            `,
-          }}
-        />
-        <div className="relative flex flex-col sm:flex-row items-start sm:items-end justify-between gap-3">
-          <div>
-            <span className="section-number">05 / ĐƠN HÀNG</span>
-            <h1 className="display-heading mt-2">{t('admin.orders.title')}</h1>
-            <p className="text-sm text-[var(--text-tertiary)] mt-1.5">
-              {t('admin.orders.subtitle')}
-            </p>
-          </div>
+      {/* Page header */}
+      <AdminPageHeader
+        sectionNumber="05 / ĐƠN HÀNG"
+        title={t('admin.orders.title')}
+        gradientTitle
+        sparkle
+        subtitle={t('admin.orders.subtitle')}
+        actions={
           <Button variant="outline" onClick={() => refetch()} disabled={isLoading}>
             <RefreshCw
               className={cn('w-4 h-4 mr-2', isLoading && 'animate-spin')}
@@ -359,7 +358,47 @@ const OrdersPage: React.FC = () => {
             />
             {t('admin.orders.messages.retry')}
           </Button>
-        </div>
+        }
+      />
+
+      {/* StatStrip — aggregate trạng thái + doanh thu (data thật từ dashboard) */}
+      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3 mb-5">
+        <AdminStatCard
+          label={t('admin.orders.status.pending')}
+          value={ordersByStatus.pending ?? 0}
+          icon={Clock}
+          accentVar="--admin-warning"
+          isLoading={isStatsLoading}
+        />
+        <AdminStatCard
+          label={t('admin.orders.status.processing')}
+          value={ordersByStatus.processing ?? 0}
+          icon={RefreshCw}
+          accentVar="--admin-info"
+          isLoading={isStatsLoading}
+        />
+        <AdminStatCard
+          label={t('admin.orders.status.delivered')}
+          value={ordersByStatus.delivered ?? 0}
+          icon={CheckCircle}
+          accentVar="--admin-success"
+          isLoading={isStatsLoading}
+        />
+        <AdminStatCard
+          label={t('admin.orders.status.cancelled')}
+          value={ordersByStatus.cancelled ?? 0}
+          icon={XCircle}
+          accentVar="--admin-error"
+          isLoading={isStatsLoading}
+        />
+        <AdminStatCard
+          label={t('admin.dashboard.stats.totalRevenue')}
+          value={totalRevenue}
+          icon={DollarSign}
+          accentVar="--accent"
+          suffix={t('common.currencySymbol')}
+          isLoading={isStatsLoading}
+        />
       </div>
 
       {/* Filter bar */}
@@ -986,7 +1025,11 @@ const OrdersPage: React.FC = () => {
             >
               {t('admin.orders.updateStatus.cancel')}
             </Button>
-            <Button onClick={handleStatusUpdate} disabled={isUpdating}>
+            <Button
+              onClick={handleStatusUpdate}
+              className="admin-btn-primary"
+              disabled={isUpdating}
+            >
               {isUpdating ? t('common.loading') : t('admin.orders.updateStatus.update')}
             </Button>
           </DialogFooter>

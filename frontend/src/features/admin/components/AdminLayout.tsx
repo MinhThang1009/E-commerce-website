@@ -2,362 +2,400 @@
  * @file AdminLayout.tsx
  * @layer Component
  * @feature admin
- * @description UI component cho feature admin
+ * @description Layout admin với floating sidebar + glass header + cinematic motion
  */
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState } from 'react';
 import { Link, useLocation, Outlet, useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
-import { ROUTES } from '@/routes/paths';
+import { motion, AnimatePresence } from 'framer-motion';
+import {
+  LayoutDashboard,
+  Package,
+  FolderTree,
+  Tag,
+  ShoppingCart,
+  Users,
+  Ticket,
+  Boxes,
+  Menu,
+  Bell,
+  Calendar,
+  Search,
+  ChevronDown,
+  LogOut,
+  Home,
+  type LucideIcon,
+} from 'lucide-react';
 import { useAuth } from '@/features/auth';
-import { useUiStore } from '@/stores/ui-store';
-import { Menu, Moon, Sun } from 'lucide-react';
-import { UserIcon } from '@/components/icons';
-import { Button } from '@/components/ui';
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet';
+import ThemeToggle from '@/components/common/ThemeToggle';
+import { cn } from '@/utils/cn';
+
+type NavItem = {
+  key: string;
+  path: string;
+  labelKey: string;
+  Icon: LucideIcon;
+};
+
+type NavGroup = {
+  labelKey: string;
+  items: NavItem[];
+};
+
+const NAV_GROUPS: NavGroup[] = [
+  {
+    labelKey: 'admin.nav.groups.overview',
+    items: [
+      {
+        key: 'dashboard',
+        path: '/admin/dashboard',
+        labelKey: 'admin.nav.dashboard',
+        Icon: LayoutDashboard,
+      },
+    ],
+  },
+  {
+    labelKey: 'admin.nav.groups.sales',
+    items: [
+      {
+        key: 'orders',
+        path: '/admin/orders',
+        labelKey: 'admin.nav.orders',
+        Icon: ShoppingCart,
+      },
+      {
+        key: 'discounts',
+        path: '/admin/discount-codes',
+        labelKey: 'admin.nav.discounts',
+        Icon: Ticket,
+      },
+      {
+        key: 'users',
+        path: '/admin/users',
+        labelKey: 'admin.nav.users',
+        Icon: Users,
+      },
+    ],
+  },
+  {
+    labelKey: 'admin.nav.groups.catalog',
+    items: [
+      {
+        key: 'products',
+        path: '/admin/products',
+        labelKey: 'admin.nav.products',
+        Icon: Package,
+      },
+      {
+        key: 'categories',
+        path: '/admin/categories',
+        labelKey: 'admin.nav.categories',
+        Icon: FolderTree,
+      },
+      {
+        key: 'brands',
+        path: '/admin/brands',
+        labelKey: 'admin.nav.brands',
+        Icon: Tag,
+      },
+      {
+        key: 'inventory',
+        path: '/admin/inventory',
+        labelKey: 'admin.nav.inventory',
+        Icon: Boxes,
+      },
+    ],
+  },
+];
+
+// Apple-style out-quart easing curve cho mọi UI transition
+const easeOutQuart = [0.22, 1, 0.36, 1] as const;
+
+const containerVariants = {
+  initial: { opacity: 0, scale: 0.96 },
+  animate: {
+    opacity: 1,
+    scale: 1,
+    transition: { duration: 0.5, ease: easeOutQuart },
+  },
+};
+
+const sidebarVariants = {
+  initial: { x: -40, opacity: 0 },
+  animate: {
+    x: 0,
+    opacity: 1,
+    transition: { delay: 0.15, duration: 0.4, ease: easeOutQuart },
+  },
+};
+
+const headerVariants = {
+  initial: { y: -16, opacity: 0 },
+  animate: {
+    y: 0,
+    opacity: 1,
+    transition: { delay: 0.2, duration: 0.35, ease: easeOutQuart },
+  },
+};
+
+const navStaggerVariants = {
+  animate: { transition: { staggerChildren: 0.03, delayChildren: 0.3 } },
+};
+
+const navItemVariants = {
+  initial: { x: -8, opacity: 0 },
+  animate: { x: 0, opacity: 1, transition: { duration: 0.25, ease: easeOutQuart } },
+};
 
 const AdminLayout: React.FC = () => {
+  const { t } = useTranslation();
   const location = useLocation();
   const navigate = useNavigate();
-  const { t } = useTranslation();
-  const { user, getUserFullName, isAuthenticated, logout } = useAuth();
-  const [showUserDropdown, setShowUserDropdown] = useState(false);
-  const userDropdownRef = useRef<HTMLDivElement>(null);
-  const theme = useUiStore((s) => s.theme);
-  const setTheme = useUiStore((s) => s.setTheme);
+  const { user, getUserFullName, logout } = useAuth();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-  const [_windowWidth, setWindowWidth] = useState(window.innerWidth);
+  const [showUserMenu, setShowUserMenu] = useState(false);
 
-  // Xử lý thay đổi kích thước cửa sổ cho thiết kế responsive
-  useEffect(() => {
-    const handleResize = () => {
-      setWindowWidth(window.innerWidth);
-      if (window.innerWidth >= 768) {
-        setMobileMenuOpen(false);
-      }
-    };
-
-    window.addEventListener('resize', handleResize);
-    return () => window.removeEventListener('resize', handleResize);
-  }, []);
-
-  // Xử lý click ra ngoài dropdown để đóng dropdown
-  useEffect(() => {
-    const handleClickOutside = (event: MouseEvent) => {
-      if (userDropdownRef.current && !userDropdownRef.current.contains(event.target as Node)) {
-        setShowUserDropdown(false);
-      }
-    };
-
-    document.addEventListener('mousedown', handleClickOutside);
-    return () => document.removeEventListener('mousedown', handleClickOutside);
-  }, []);
-
-  const handleUserClick = () => {
-    if (isAuthenticated) {
-      setShowUserDropdown(!showUserDropdown);
-    } else {
-      navigate('/login');
-    }
-  };
-
-  const handleLogoutClick = async () => {
+  const handleLogout = async () => {
     await logout();
     navigate('/', { replace: true });
   };
 
-  const toggleTheme = () => {
-    setTheme(theme === 'light' ? 'dark' : 'light');
+  const fullName = getUserFullName() || user?.email || '';
+  // Lấy tên cuối (first name) cho lời chào — tránh tên dài chiếm hết header
+  const firstName = fullName.split(' ').slice(-1)[0] || fullName;
+
+  const renderNavItem = (item: NavItem, onClick?: () => void) => {
+    const isActive =
+      location.pathname === item.path || location.pathname.startsWith(item.path + '/');
+    const Icon = item.Icon;
+    return (
+      <motion.li key={item.key} variants={navItemVariants}>
+        <Link
+          to={item.path}
+          onClick={onClick}
+          className={cn(
+            'group relative flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm transition-all duration-200',
+            isActive
+              ? 'bg-[var(--accent)]/15 text-[var(--accent)] font-medium'
+              : 'text-[var(--text-secondary)] hover:bg-white/5 hover:text-[var(--text-primary)]',
+          )}
+        >
+          {isActive && (
+            <span className="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-5 bg-[var(--accent)] rounded-r" />
+          )}
+          <Icon className="w-[18px] h-[18px] flex-shrink-0" strokeWidth={isActive ? 2.25 : 2} />
+          <span className="truncate">{t(item.labelKey)}</span>
+        </Link>
+      </motion.li>
+    );
   };
 
-  const adminNavItems = [
-    {
-      key: 'dashboard',
-      path: '/admin/dashboard',
-      label: t('admin.nav.dashboard'),
-      icon: (
-        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            strokeWidth={2}
-            d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"
-          />
-        </svg>
-      ),
-    },
-    {
-      key: 'products',
-      path: '/admin/products',
-      label: t('admin.nav.products'),
-      icon: (
-        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            strokeWidth={2}
-            d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"
-          />
-        </svg>
-      ),
-    },
-    {
-      key: 'categories',
-      path: '/admin/categories',
-      label: t('admin.nav.categories'),
-      icon: (
-        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            strokeWidth={2}
-            d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z"
-          />
-        </svg>
-      ),
-    },
-    {
-      key: 'brands',
-      path: '/admin/brands',
-      label: t('admin.nav.brands'),
-      icon: (
-        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            strokeWidth={2}
-            d="M19.428 15.428a2 2 0 00-1.022-.547l-2.387-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.054.191l-.868.434a2 2 0 00-.918 2.336l.244.733a2 2 0 002.321 1.341l.733-.122a6 6 0 013.92-.016l.32.08a6 6 0 003.92.016l.732.122a2 2 0 002.321-1.341l.244-.733a2 2 0 00-.918-2.336l-.868-.434z"
-          />
-          <path
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            strokeWidth={2}
-            d="M8 8a4 4 0 118 0 4 4 0 01-8 0z"
-          />
-        </svg>
-      ),
-    },
-    {
-      key: 'orders',
-      path: '/admin/orders',
-      label: t('admin.nav.orders'),
-      icon: (
-        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            strokeWidth={2}
-            d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
-          />
-        </svg>
-      ),
-    },
-    {
-      key: 'users',
-      path: '/admin/users',
-      label: t('admin.nav.users'),
-      icon: (
-        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            strokeWidth={2}
-            d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197m13.5-9a2.5 2.5 0 11-5 0 2.5 2.5 0 015 0z"
-          />
-        </svg>
-      ),
-    },
-    {
-      key: 'discount-codes',
-      path: '/admin/discount-codes',
-      label: t('admin.nav.discounts'),
-      icon: (
-        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            strokeWidth={2}
-            d="M9 14l6-6m-5.5.5h.01m4.99 5h.01M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16l3.5-2 3.5 2 3.5-2 3.5 2z"
-          />
-        </svg>
-      ),
-    },
-    {
-      key: 'inventory',
-      path: '/admin/inventory',
-      label: t('admin.nav.inventory'),
-      icon: (
-        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            strokeWidth={2}
-            d="M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2 2v7m16 0v5a2 2 0 01-2 2H6a2 2 0 01-2-2v-5m16 0h-2.586a1 1 0 00-.707.293l-2.414 2.414a1 1 0 01-.707.293h-3.172a1 1 0 01-.707-.293l-2.414-2.414A1 1 0 006.586 13H4"
-          />
-        </svg>
-      ),
-    },
-  ];
-
-  return (
-    <div className="min-h-screen bg-neutral-50 dark:bg-neutral-900">
-      {/* Header Admin */}
-      <div className="bg-white dark:bg-neutral-800 shadow-sm border-b border-neutral-200 dark:border-neutral-700 sticky top-0 z-30">
-        <div className="px-4 md:px-6 h-16">
-          <div className="flex items-center justify-between h-full">
-            <div className="flex items-center space-x-4">
-              {/* Nút menu mobile */}
-              <Button
-                variant="ghost"
-                size="icon"
-                className="md:hidden text-neutral-700 dark:text-neutral-300"
-                onClick={() => setMobileMenuOpen(true)}
-              >
-                <Menu className="w-5 h-5" />
-              </Button>
-
-              {t('admin.title')}
-            </div>
-            <div className="flex items-center space-x-2 md:space-x-4">
-              {/* Nút chuyển đổi giao diện */}
-              <Button
-                variant="ghost"
-                size="icon"
-                onClick={toggleTheme}
-                className="text-neutral-700 dark:text-neutral-300"
-              >
-                {theme === 'light' ? <Moon className="h-5 w-5" /> : <Sun className="h-5 w-5" />}
-              </Button>
-
-              {/* Dropdown người dùng */}
-              <div className="relative" ref={userDropdownRef}>
-                <button
-                  onClick={handleUserClick}
-                  className={`group relative p-1.5 sm:p-2 rounded-xl transition-all duration-300 ${
-                    isAuthenticated
-                      ? 'bg-gradient-to-r from-primary-100 to-primary-50 dark:from-primary-900/20 dark:to-primary-800/10 text-primary-600 dark:text-primary-400 hover:from-primary-200 hover:to-primary-100 dark:hover:from-primary-900/30 dark:hover:to-primary-800/20 border border-primary-200/50 dark:border-primary-700/30'
-                      : 'text-neutral-700 dark:text-neutral-300 hover:bg-neutral-100 dark:hover:bg-neutral-800 border border-transparent hover:border-neutral-200 dark:hover:border-neutral-700'
-                  }`}
-                  aria-label={t('header.actions.userAccount')}
-                >
-                  <UserIcon className="h-4 w-4 sm:h-5 sm:w-5 group-hover:scale-110 transition-transform duration-300" />
-                  {isAuthenticated && (
-                    <span className="absolute -top-0.5 -right-0.5 sm:-top-1 sm:-right-1 w-2.5 h-2.5 sm:w-3 sm:h-3 bg-gradient-to-r from-success-500 to-success-400 rounded-full border-2 border-white dark:border-neutral-800 animate-pulse"></span>
-                  )}
-                  {isAuthenticated && (
-                    <div className="absolute inset-0 bg-gradient-to-r from-primary-500/10 to-primary-400/10 rounded-xl opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
-                  )}
-                </button>
-
-                {/* Menu dropdown người dùng */}
-                {isAuthenticated && showUserDropdown && (
-                  <div className="absolute right-0 mt-2 w-48 bg-white dark:bg-neutral-800 rounded-lg shadow-lg border border-neutral-200 dark:border-neutral-700 z-50">
-                    <div className="py-2">
-                      <div className="px-4 py-2 border-b border-neutral-200 dark:border-neutral-700">
-                        <p className="font-semibold text-neutral-800 dark:text-neutral-100 truncate max-w-[160px]">
-                          {getUserFullName()}
-                        </p>
-                        <p className="text-sm text-neutral-600 dark:text-neutral-400 truncate max-w-[160px]">
-                          {user?.email}
-                        </p>
-                      </div>
-                      <Link
-                        to={ROUTES.HOME}
-                        className="block px-4 py-2 text-sm text-neutral-700 dark:text-neutral-300 hover:bg-neutral-100 dark:hover:bg-neutral-700 transition-colors"
-                        onClick={() => setShowUserDropdown(false)}
-                      >
-                        {t('admin.backToStore')}
-                      </Link>
-                      <div className="border-t border-neutral-200 dark:border-neutral-700 mt-2">
-                        <button
-                          onClick={() => {
-                            setShowUserDropdown(false);
-                            handleLogoutClick();
-                          }}
-                          className="block w-full text-left px-4 py-2 text-sm text-red-600 dark:text-red-400 hover:bg-neutral-100 dark:hover:bg-neutral-700 transition-colors"
-                        >
-                          {t('header.dropdown.logout')}
-                        </button>
-                      </div>
-                    </div>
-                  </div>
-                )}
-              </div>
-            </div>
+  const sidebarContent = (mobileOnClose?: () => void) => (
+    <div className="flex flex-col h-full">
+      {/* Logo */}
+      <div className="flex items-center gap-2.5 px-2 mb-6">
+        <div className="w-9 h-9 rounded-lg bg-gradient-to-br from-[var(--color-primary)] to-[var(--color-primary-dark)] flex items-center justify-center shadow-md">
+          <span className="text-white font-bold text-sm">TS</span>
+        </div>
+        <div className="min-w-0">
+          <div className="font-bold text-base tracking-tight text-[var(--text-primary)]">
+            TechStore
+          </div>
+          <div className="text-[10px] text-[var(--text-tertiary)] uppercase tracking-wider">
+            {t('admin.title')}
           </div>
         </div>
       </div>
 
-      <div className="flex flex-col md:flex-row">
-        {/* Sheet sidebar cho mobile */}
+      {/* Nav groups */}
+      <motion.nav
+        className="flex-1 overflow-y-auto -mx-1 px-1 scrollbar-thin"
+        variants={navStaggerVariants}
+        initial="initial"
+        animate="animate"
+      >
+        {NAV_GROUPS.map((group, idx) => (
+          <div key={group.labelKey} className={idx === 0 ? '' : 'mt-5'}>
+            <div className="text-[11px] font-semibold uppercase tracking-wider text-[var(--text-tertiary)] mb-2 px-3">
+              {t(group.labelKey)}
+            </div>
+            <ul className="space-y-0.5">
+              {group.items.map((item) => renderNavItem(item, mobileOnClose))}
+            </ul>
+          </div>
+        ))}
+      </motion.nav>
+
+      {/* User card sticky bottom */}
+      <div className="mt-4 pt-4 border-t border-[var(--border-default)] relative">
+        <button
+          type="button"
+          onClick={() => setShowUserMenu(!showUserMenu)}
+          className="w-full flex items-center gap-3 p-2 rounded-xl hover:bg-white/5 transition"
+        >
+          <div className="w-9 h-9 rounded-full bg-gradient-to-br from-[var(--accent)] to-[var(--color-primary-dark)] flex items-center justify-center text-white font-semibold text-sm ring-2 ring-[var(--accent)]/20">
+            {(fullName[0] || 'A').toUpperCase()}
+          </div>
+          <div className="flex-1 text-left min-w-0">
+            <div className="text-sm font-medium truncate text-[var(--text-primary)]">
+              {fullName}
+            </div>
+            <div className="text-[11px] text-[var(--text-tertiary)] truncate">{user?.email}</div>
+          </div>
+          <ChevronDown
+            className={cn(
+              'w-4 h-4 text-[var(--text-tertiary)] transition flex-shrink-0',
+              showUserMenu && 'rotate-180',
+            )}
+          />
+        </button>
+
+        {showUserMenu && (
+          <div className="absolute bottom-full mb-2 left-0 right-0 glass-card rounded-xl overflow-hidden shadow-lg z-50">
+            <Link
+              to="/"
+              onClick={() => setShowUserMenu(false)}
+              className="flex items-center gap-3 px-4 py-2.5 text-sm text-[var(--text-primary)] hover:bg-white/5 transition"
+            >
+              <Home className="w-4 h-4" />
+              <span>{t('admin.backToStore')}</span>
+            </Link>
+            <button
+              type="button"
+              onClick={() => {
+                setShowUserMenu(false);
+                handleLogout();
+              }}
+              className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-[var(--admin-error)] hover:bg-[var(--admin-error)]/10 transition border-t border-[var(--border-default)]"
+            >
+              <LogOut className="w-4 h-4" />
+              <span>{t('header.dropdown.logout')}</span>
+            </button>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+
+  return (
+    <motion.div
+      className="min-h-screen bg-[var(--bg-sunken)]"
+      variants={containerVariants}
+      initial="initial"
+      animate="animate"
+    >
+      <div className="flex min-h-screen p-3 md:p-4 lg:p-6 gap-4">
+        {/* Sidebar desktop — floating glass */}
+        <motion.aside
+          className="hidden lg:flex w-60 glass-card rounded-3xl p-5 sticky top-4 self-start h-[calc(100vh-3rem)]"
+          variants={sidebarVariants}
+          initial="initial"
+          animate="animate"
+        >
+          {sidebarContent()}
+        </motion.aside>
+
+        {/* Sheet mobile */}
         <Sheet open={mobileMenuOpen} onOpenChange={setMobileMenuOpen}>
-          <SheetContent side="left" className="w-[280px] p-0">
-            <SheetHeader className="border-b border-neutral-200 dark:border-neutral-700">
+          <SheetContent side="left" className="w-[280px] p-0 glass-card-lg border-none">
+            <SheetHeader className="sr-only">
               <SheetTitle>{t('admin.menu')}</SheetTitle>
             </SheetHeader>
-            <nav className="px-4 py-4">
-              <ul className="space-y-2">
-                {adminNavItems.map((item) => {
-                  const isActive = location.pathname === item.path;
-                  return (
-                    <li key={item.key}>
-                      <Link
-                        to={item.path}
-                        className={`flex items-center space-x-3 px-4 py-3 rounded-lg transition-colors ${
-                          isActive
-                            ? 'bg-primary-100 dark:bg-primary-900/20 text-primary-700 dark:text-primary-300 font-medium'
-                            : 'text-neutral-700 dark:text-neutral-300 hover:bg-neutral-100 dark:hover:bg-neutral-700 hover:text-neutral-900 dark:hover:text-white'
-                        }`}
-                        onClick={() => setMobileMenuOpen(false)}
-                      >
-                        <span className={isActive ? 'text-primary-600 dark:text-primary-400' : ''}>
-                          {item.icon}
-                        </span>
-                        <span>{item.label}</span>
-                      </Link>
-                    </li>
-                  );
-                })}
-              </ul>
-            </nav>
+            <div className="h-full p-5">{sidebarContent(() => setMobileMenuOpen(false))}</div>
           </SheetContent>
         </Sheet>
 
-        {/* Sidebar cho desktop */}
-        <div className="hidden md:block w-64 bg-white dark:bg-neutral-800 shadow-sm border-r border-neutral-200 dark:border-neutral-700 sticky top-16 h-[calc(100vh-64px)] overflow-y-auto overflow-x-hidden">
-          <nav className="px-6 py-6">
-            <ul className="space-y-2">
-              {adminNavItems.map((item) => {
-                const isActive = location.pathname === item.path;
-                return (
-                  <li key={item.key}>
-                    <Link
-                      to={item.path}
-                      className={`flex items-center space-x-3 px-4 py-3 rounded-lg transition-colors ${
-                        isActive
-                          ? 'bg-primary-100 dark:bg-primary-900/20 text-primary-700 dark:text-primary-300 font-medium'
-                          : 'text-neutral-700 dark:text-neutral-300 hover:bg-neutral-100 dark:hover:bg-neutral-700 hover:text-neutral-900 dark:hover:text-white'
-                      }`}
-                    >
-                      <span className={isActive ? 'text-primary-600 dark:text-primary-400' : ''}>
-                        {item.icon}
-                      </span>
-                      <span>{item.label}</span>
-                    </Link>
-                  </li>
-                );
-              })}
-            </ul>
-          </nav>
-        </div>
+        {/* Main column */}
+        <div className="flex-1 flex flex-col min-w-0">
+          {/* Header sticky glass */}
+          <motion.header
+            className="sticky top-3 z-30 mb-4 glass-nav rounded-2xl px-4 md:px-6 py-3 flex items-center justify-between gap-3"
+            variants={headerVariants}
+            initial="initial"
+            animate="animate"
+          >
+            <div className="flex items-center gap-3 min-w-0 flex-1">
+              <button
+                type="button"
+                className="lg:hidden p-2 rounded-lg hover:bg-white/5 transition flex-shrink-0"
+                onClick={() => setMobileMenuOpen(true)}
+                aria-label={t('admin.menu')}
+              >
+                <Menu className="w-5 h-5" />
+              </button>
+              <div className="min-w-0 flex-1">
+                <div className="hidden md:block text-base font-semibold truncate text-[var(--text-primary)]">
+                  {t('admin.welcome.greeting', { name: firstName })}
+                </div>
+                <div className="hidden md:block text-xs text-[var(--text-tertiary)] truncate">
+                  {t('admin.welcome.subtitle')}
+                </div>
+                <div className="md:hidden font-semibold text-[var(--text-primary)]">
+                  {t('admin.title')}
+                </div>
+              </div>
+            </div>
 
-        {/* Nội dung chính */}
-        <div className="flex-1 w-full">
-          <main className="p-4 md:p-6">
-            <Outlet />
+            {/* Right cluster: search + date + notif + theme */}
+            <div className="flex items-center gap-1 md:gap-2 flex-shrink-0">
+              <button
+                type="button"
+                className="hidden md:flex items-center gap-2 px-3 py-2 rounded-xl border border-[var(--border-default)] hover:bg-white/5 text-sm text-[var(--text-secondary)] transition"
+                aria-label={t('header.actions.search')}
+              >
+                <Search className="w-4 h-4" />
+                <span className="hidden lg:inline">{t('header.actions.search')}</span>
+                <kbd
+                  aria-hidden="true"
+                  className="hidden lg:inline ml-2 px-1.5 py-0.5 text-[10px] font-mono bg-white/10 rounded"
+                >
+                  ⌘K
+                </kbd>
+              </button>
+
+              <button
+                type="button"
+                className="hidden md:flex items-center gap-2 px-3 py-2 rounded-xl border border-[var(--border-default)] hover:bg-white/5 text-sm text-[var(--text-secondary)] transition"
+                aria-label={t('admin.dashboard.lastUpdated')}
+              >
+                <Calendar className="w-4 h-4" />
+                <span className="hidden xl:inline">30d</span>
+              </button>
+
+              <button
+                type="button"
+                className="relative p-2 rounded-xl hover:bg-white/5 transition"
+                aria-label="Notifications"
+              >
+                <Bell className="w-5 h-5 text-[var(--text-secondary)]" />
+                <span
+                  aria-hidden="true"
+                  className="absolute top-1.5 right-1.5 w-2 h-2 bg-[var(--admin-error)] rounded-full"
+                />
+              </button>
+
+              <ThemeToggle />
+            </div>
+          </motion.header>
+
+          {/* Main content với page transition */}
+          <main className="flex-1 min-w-0">
+            <AnimatePresence mode="wait">
+              <motion.div
+                key={location.pathname}
+                initial={{ opacity: 0, y: 12 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -8 }}
+                transition={{ duration: 0.3, ease: easeOutQuart }}
+              >
+                <Outlet />
+              </motion.div>
+            </AnimatePresence>
           </main>
         </div>
       </div>
-    </div>
+    </motion.div>
   );
 };
 

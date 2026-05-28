@@ -963,6 +963,10 @@
     "title": "Admin dashboard",
     "menu": "Admin menu",
     "backToStore": "Back to Store",
+    "welcome": {
+      "greeting": "Welcome back, {{name}}",
+      "subtitle": "Here's what's happening with your store today."
+    },
     "nav": {
       "dashboard": "Dashboard",
       "products": "Products",
@@ -971,7 +975,12 @@
       "orders": "Orders",
       "users": "Users",
       "discounts": "Discount codes",
-      "inventory": "Inventory"
+      "inventory": "Inventory",
+      "groups": {
+        "overview": "Overview",
+        "sales": "Sales",
+        "catalog": "Catalog management"
+      }
     },
     "dashboard": {
       "title": "Admin dashboard",

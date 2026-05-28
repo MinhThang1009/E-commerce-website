@@ -1092,6 +1092,10 @@
     "title": "Bảng quản trị",
     "menu": "Menu quản trị",
     "backToStore": "Về trang shop",
+    "welcome": {
+      "greeting": "Chào mừng trở lại, {{name}}",
+      "subtitle": "Đây là tình hình cửa hàng của bạn hôm nay."
+    },
     "nav": {
       "dashboard": "Tổng quan",
       "products": "Sản phẩm",
@@ -1100,7 +1104,12 @@
       "orders": "Đơn hàng",
       "users": "Người dùng",
       "discounts": "Mã giảm giá",
-      "inventory": "Quản lý kho"
+      "inventory": "Quản lý kho",
+      "groups": {
+        "overview": "Tổng quan",
+        "sales": "Bán hàng",
+        "catalog": "Quản lý kho hàng"
+      }
     },
     "dashboard": {
       "title": "Bảng điều khiển Admin",

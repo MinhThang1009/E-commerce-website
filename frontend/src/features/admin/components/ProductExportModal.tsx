@@ -145,53 +145,63 @@ const ProductExportModal: React.FC<ProductExportModalProps> = ({
 
   return (
     <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
-      <DialogContent>
+      <DialogContent className="glass-card-lg max-w-md">
         <DialogHeader>
           <DialogTitle>{t('productExport.title')}</DialogTitle>
         </DialogHeader>
 
-        <div className="space-y-6">
+        <div className="space-y-5">
           <div>
-            <div className="mb-2 font-medium text-sm text-neutral-700 dark:text-neutral-300">
+            <div className="mb-2 text-[11px] font-semibold uppercase tracking-wider text-[var(--text-tertiary)]">
               {t('productExport.scopeLabel')}
             </div>
             <div className="flex flex-col gap-2">
               {scopeOptions.map((option) => (
-                <label key={option.value} className="flex items-center gap-2 cursor-pointer">
+                <label
+                  key={option.value}
+                  className={`flex items-center gap-2.5 px-3 py-2.5 rounded-xl cursor-pointer border transition ${
+                    scope === option.value
+                      ? 'bg-[var(--accent)]/8 border-[var(--accent)]/25 text-[var(--accent)]'
+                      : 'border-[var(--border-default)] text-[var(--text-secondary)] hover:bg-white/5'
+                  }`}
+                >
                   <input
                     type="radio"
                     name="export-scope"
                     value={option.value}
                     checked={scope === option.value}
                     onChange={() => setScope(option.value)}
-                    className="accent-primary-500"
+                    className="accent-[var(--accent)]"
                   />
-                  <span className="text-sm text-neutral-700 dark:text-neutral-300">
-                    {option.label}
-                  </span>
+                  <span className="text-sm font-medium">{option.label}</span>
                 </label>
               ))}
             </div>
           </div>
 
           <div>
-            <div className="mb-2 font-medium text-sm text-neutral-700 dark:text-neutral-300">
+            <div className="mb-2 text-[11px] font-semibold uppercase tracking-wider text-[var(--text-tertiary)]">
               {t('productExport.formatLabel')}
             </div>
-            <div className="flex flex-col gap-2">
+            <div className="flex gap-2">
               {formatOptions.map((option) => (
-                <label key={option.value} className="flex items-center gap-2 cursor-pointer">
+                <label
+                  key={option.value}
+                  className={`flex-1 flex items-center justify-center gap-2 px-3 py-2.5 rounded-xl cursor-pointer border transition text-sm font-medium ${
+                    format === option.value
+                      ? 'bg-[var(--accent)]/8 border-[var(--accent)]/25 text-[var(--accent)]'
+                      : 'border-[var(--border-default)] text-[var(--text-secondary)] hover:bg-white/5'
+                  }`}
+                >
                   <input
                     type="radio"
                     name="export-format"
                     value={option.value}
                     checked={format === option.value}
                     onChange={() => setFormat(option.value)}
-                    className="accent-primary-500"
+                    className="accent-[var(--accent)]"
                   />
-                  <span className="text-sm text-neutral-700 dark:text-neutral-300">
-                    {option.label}
-                  </span>
+                  {option.label}
                 </label>
               ))}
             </div>

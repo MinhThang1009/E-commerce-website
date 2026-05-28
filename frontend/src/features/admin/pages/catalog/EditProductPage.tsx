@@ -47,15 +47,7 @@ import { processDescriptionImages, hasBase64Images } from '@/utils/description-i
 import { getErrorMsg } from '@/utils/error-utils';
 
 // shadcn/ui
-import {
-  Button,
-  Card,
-  CardContent,
-  Tabs,
-  TabsContent,
-  TabsList,
-  TabsTrigger,
-} from '@/components/ui';
+import { Button, Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui';
 
 // Map raw DB spec keys → tên tiếng Việt
 const SPEC_NAME_LABELS: Record<string, string> = {
@@ -609,9 +601,9 @@ const EditProductPage: React.FC = () => {
   // Xử lý trạng thái loading và error
   if (isLoadingProduct) {
     return (
-      <div className="p-6 text-center">
+      <div className="py-16 text-center">
         <LoadingSpinner size="lg" />
-        <p className="mt-4 text-neutral-500 dark:text-neutral-400">
+        <p className="mt-4 text-sm text-[var(--text-tertiary)]">
           {t('admin.products.loadingText')}
         </p>
       </div>
@@ -620,13 +612,15 @@ const EditProductPage: React.FC = () => {
 
   if (productError || !id) {
     return (
-      <div className="p-6 text-center">
+      <div className="py-16 text-center">
         <div className="max-w-md mx-auto">
-          <AlertCircle className="w-16 h-16 mx-auto text-red-500 mb-4" />
-          <h3 className="text-lg font-semibold text-neutral-900 dark:text-white mb-2">
+          <div className="w-16 h-16 mx-auto mb-4 rounded-2xl bg-[var(--admin-error)]/10 flex items-center justify-center">
+            <AlertCircle className="w-8 h-8 text-[var(--admin-error)]" strokeWidth={1.5} />
+          </div>
+          <h3 className="text-lg font-semibold text-[var(--text-primary)] mb-2">
             {t('admin.products.errors.loadFailed')}
           </h3>
-          <p className="text-neutral-500 dark:text-neutral-400 mb-6">
+          <p className="text-sm text-[var(--text-tertiary)] mb-6">
             {t('admin.products.errors.loadFailedDesc')}
           </p>
           <Button onClick={() => navigate(ROUTES.ADMIN_PRODUCTS)}>
@@ -650,125 +644,120 @@ const EditProductPage: React.FC = () => {
   ];
 
   return (
-    <div className="p-6">
-      {/* Header */}
-      <Card className="mb-6">
-        <CardContent className="pt-6">
-          <div className="flex justify-between items-center">
-            <div>
-              <h2 className="text-2xl font-semibold text-neutral-900 dark:text-white">
-                {t('admin.products.edit.title')}
-              </h2>
-              <p className="text-neutral-500 dark:text-neutral-400">
-                {t('admin.products.edit.subtitle')}
-              </p>
-            </div>
-            <div>
-              <Button
-                variant="outline"
-                onClick={() => navigate(ROUTES.ADMIN_PRODUCTS)}
-                className="mr-2"
-              >
-                <ArrowLeft className="w-4 h-4 mr-2" />
-                {t('admin.products.backButton')}
-              </Button>
-            </div>
+    <div>
+      {/* Page header glass */}
+      <div className="relative rounded-3xl bg-[var(--bg-base)] dark:bg-white/[0.03] border border-[var(--border-default)] p-6 mb-5 overflow-hidden">
+        <div
+          className="absolute inset-0 -z-10 opacity-50 pointer-events-none"
+          style={{
+            background: `
+              radial-gradient(circle at 100% 0%, rgba(24, 144, 255, 0.10) 0%, transparent 40%),
+              radial-gradient(circle at 0% 100%, rgba(42, 172, 167, 0.08) 0%, transparent 35%)
+            `,
+          }}
+        />
+        <div className="relative flex flex-col sm:flex-row items-start sm:items-end justify-between gap-3">
+          <div>
+            <span className="section-number">02 / CHỈNH SỬA SẢN PHẨM</span>
+            <h1 className="display-heading mt-2">{t('admin.products.edit.title')}</h1>
+            <p className="text-sm text-[var(--text-tertiary)] mt-1.5">
+              {t('admin.products.edit.subtitle')}
+            </p>
           </div>
-        </CardContent>
-      </Card>
+          <Button variant="outline" onClick={() => navigate(ROUTES.ADMIN_PRODUCTS)}>
+            <ArrowLeft className="w-4 h-4 mr-2" strokeWidth={2.25} />
+            {t('admin.products.backButton')}
+          </Button>
+        </div>
+      </div>
 
-      {/* Form */}
-      <Card>
-        <CardContent className="pt-6">
-          <form
-            onSubmit={form._rhf.handleSubmit((values) => handleSubmit(values as ProductFormData))}
-            onChange={validateForm}
-          >
-            <Tabs value={activeTab} onValueChange={setActiveTab} className="min-h-[400px]">
-              <TabsList className="flex flex-wrap h-auto gap-1 bg-transparent mb-4">
-                {TAB_KEYS.map((tabKey) => (
-                  <TabsTrigger
-                    key={tabKey}
-                    value={tabKey}
-                    className="data-[state=active]:bg-primary-100 data-[state=active]:text-primary-700 dark:data-[state=active]:bg-primary-900/20 dark:data-[state=active]:text-primary-300"
-                  >
-                    {t(`admin.products.editTabs.${tabKey}`) || t(`admin.products.tabs.${tabKey}`)}
-                  </TabsTrigger>
-                ))}
-              </TabsList>
+      {/* Form container */}
+      <div className="rounded-2xl bg-[var(--bg-base)] dark:bg-white/[0.03] border border-[var(--border-default)] p-5 shadow-sm">
+        <form
+          onSubmit={form._rhf.handleSubmit((values) => handleSubmit(values as ProductFormData))}
+          onChange={validateForm}
+        >
+          <Tabs value={activeTab} onValueChange={setActiveTab} className="min-h-[400px]">
+            <TabsList className="flex flex-wrap h-auto gap-1 bg-transparent mb-4 p-0">
+              {TAB_KEYS.map((tabKey) => (
+                <TabsTrigger
+                  key={tabKey}
+                  value={tabKey}
+                  className="text-xs font-medium rounded-lg px-3 py-2 transition data-[state=active]:bg-[var(--accent)]/12 data-[state=active]:text-[var(--accent)] data-[state=active]:shadow-sm"
+                >
+                  {t(`admin.products.editTabs.${tabKey}`) || t(`admin.products.tabs.${tabKey}`)}
+                </TabsTrigger>
+              ))}
+            </TabsList>
 
-              <TabsContent value="basic">
-                <ProductBasicInfoForm form={form._rhf} fillExampleData={fillExampleData} />
-              </TabsContent>
+            <TabsContent value="basic">
+              <ProductBasicInfoForm form={form._rhf} fillExampleData={fillExampleData} />
+            </TabsContent>
 
-              <TabsContent value="attributes">
-                <ProductAttributesSection
-                  attributes={attributes}
-                  onAddAttribute={() => openAttributeModal()}
-                  onEditAttribute={(attribute) => openAttributeModal(attribute)}
-                  onDeleteAttribute={handleDeleteAttribute}
-                />
-              </TabsContent>
+            <TabsContent value="attributes">
+              <ProductAttributesSection
+                attributes={attributes}
+                onAddAttribute={() => openAttributeModal()}
+                onEditAttribute={(attribute) => openAttributeModal(attribute)}
+                onDeleteAttribute={handleDeleteAttribute}
+              />
+            </TabsContent>
 
-              <TabsContent value="variants">
-                <ProductVariantsSection
-                  variants={variants}
-                  onAddVariant={() => openVariantModal()}
-                  onEditVariant={(variant) => openVariantModal(variant)}
-                  onDeleteVariant={handleDeleteVariant}
-                />
-              </TabsContent>
+            <TabsContent value="variants">
+              <ProductVariantsSection
+                variants={variants}
+                onAddVariant={() => openVariantModal()}
+                onEditVariant={(variant) => openVariantModal(variant)}
+                onDeleteVariant={handleDeleteVariant}
+              />
+            </TabsContent>
 
-              <TabsContent value="specifications">
-                <ProductSpecificationsForm
-                  form={form._rhf}
-                  initialSpecifications={specifications}
-                />
-              </TabsContent>
+            <TabsContent value="specifications">
+              <ProductSpecificationsForm form={form._rhf} initialSpecifications={specifications} />
+            </TabsContent>
 
-              <TabsContent value="pricing">
-                <ProductPricingForm
-                  form={form._rhf}
-                  hasVariants={variants.length > 0}
-                  variants={variants}
-                />
-              </TabsContent>
+            <TabsContent value="pricing">
+              <ProductPricingForm
+                form={form._rhf}
+                hasVariants={variants.length > 0}
+                variants={variants}
+              />
+            </TabsContent>
 
-              <TabsContent value="category">
-                <ProductCategoryForm
-                  form={form._rhf}
-                  categories={categories}
-                  isLoading={isCategoriesLoading}
-                />
-              </TabsContent>
+            <TabsContent value="category">
+              <ProductCategoryForm
+                form={form._rhf}
+                categories={categories}
+                isLoading={isCategoriesLoading}
+              />
+            </TabsContent>
 
-              <TabsContent value="images">
-                <ProductImagesForm form={form._rhf} />
-              </TabsContent>
+            <TabsContent value="images">
+              <ProductImagesForm form={form._rhf} />
+            </TabsContent>
 
-              <TabsContent value="seo">
-                <ProductSeoForm form={form._rhf} />
-              </TabsContent>
+            <TabsContent value="seo">
+              <ProductSeoForm form={form._rhf} />
+            </TabsContent>
 
-              <TabsContent value="faqs">
-                <ProductFAQForm form={form._rhf} />
-              </TabsContent>
-            </Tabs>
+            <TabsContent value="faqs">
+              <ProductFAQForm form={form._rhf} />
+            </TabsContent>
+          </Tabs>
 
-            <hr className="my-6 border-neutral-200 dark:border-neutral-700" />
+          <div className="my-6 h-px bg-[var(--border-default)]" />
 
-            <ValidationAlerts isFormValid={isFormValid} missingFields={getMissingFields()} />
+          <ValidationAlerts isFormValid={isFormValid} missingFields={getMissingFields()} />
 
-            <FormActions
-              isFormValid={isFormValid}
-              isSubmitting={isUpdating}
-              submitText={t('admin.products.submit.update')}
-              loadingText={t('admin.products.submit.updating')}
-              onCancel={() => navigate(ROUTES.ADMIN_PRODUCTS)}
-            />
-          </form>
-        </CardContent>
-      </Card>
+          <FormActions
+            isFormValid={isFormValid}
+            isSubmitting={isUpdating}
+            submitText={t('admin.products.submit.update')}
+            loadingText={t('admin.products.submit.updating')}
+            onCancel={() => navigate(ROUTES.ADMIN_PRODUCTS)}
+          />
+        </form>
+      </div>
 
       {/* Modals */}
       {attributeModalVisible && (

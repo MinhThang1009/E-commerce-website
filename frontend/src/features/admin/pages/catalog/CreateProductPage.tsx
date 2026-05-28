@@ -46,15 +46,7 @@ import { useUiStore } from '@/stores/ui-store';
 import { hasBase64Images, processDescriptionImages } from '@/utils/description-image-processor';
 
 // shadcn/ui
-import {
-  Button,
-  Card,
-  CardContent,
-  Tabs,
-  TabsContent,
-  TabsList,
-  TabsTrigger,
-} from '@/components/ui';
+import { Button, Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui';
 
 // Tạo SKU ngẫu nhiên dạng PRD-XXXXXX (6 ký tự uppercase + số)
 const generateSku = (prefix = 'PRD') => {
@@ -418,199 +410,203 @@ const CreateProductPage: React.FC = () => {
     setActiveTab(key);
   };
 
-  const getTabLabelStyle = (tabKey: string) => {
-    if (completedSteps[tabKey]) return 'text-green-600 dark:text-green-400';
-    if (!isTabAccessible(tabKey)) return 'text-neutral-400 dark:text-neutral-500';
+  const _getTabLabelStyle = (tabKey: string) => {
+    if (completedSteps[tabKey]) return 'text-[var(--admin-success)]';
+    if (!isTabAccessible(tabKey)) return 'text-[var(--text-tertiary)] opacity-50';
     return '';
   };
 
   return (
-    <div className="p-6">
-      {/* Header */}
-      <Card className="mb-6">
-        <CardContent className="pt-6">
-          <div className="flex justify-between items-center">
-            <div>
-              <h2 className="text-2xl font-semibold text-neutral-900 dark:text-white">
-                {t('admin.products.create.title')}
-              </h2>
-              <p className="text-neutral-500 dark:text-neutral-400">
-                {t('admin.products.create.subtitle')}
-              </p>
-            </div>
-            <div>
-              <Button
-                variant="outline"
-                onClick={() => navigate('/admin/products')}
-                className="mr-2"
-              >
-                <ArrowLeft className="w-4 h-4 mr-2" />
-                {t('admin.products.backButton')}
-              </Button>
-            </div>
+    <div>
+      {/* Page header glass */}
+      <div className="relative rounded-3xl bg-[var(--bg-base)] dark:bg-white/[0.03] border border-[var(--border-default)] p-6 mb-5 overflow-hidden">
+        <div
+          className="absolute inset-0 -z-10 opacity-50 pointer-events-none"
+          style={{
+            background: `
+              radial-gradient(circle at 100% 0%, rgba(42, 172, 167, 0.10) 0%, transparent 40%),
+              radial-gradient(circle at 0% 100%, rgba(82, 196, 26, 0.08) 0%, transparent 35%)
+            `,
+          }}
+        />
+        <div className="relative flex flex-col sm:flex-row items-start sm:items-end justify-between gap-3">
+          <div>
+            <span className="section-number">02 / TẠO SẢN PHẨM</span>
+            <h1 className="display-heading mt-2">{t('admin.products.create.title')}</h1>
+            <p className="text-sm text-[var(--text-tertiary)] mt-1.5">
+              {t('admin.products.create.subtitle')}
+            </p>
           </div>
-        </CardContent>
-      </Card>
+          <Button variant="outline" onClick={() => navigate('/admin/products')}>
+            <ArrowLeft className="w-4 h-4 mr-2" strokeWidth={2.25} />
+            {t('admin.products.backButton')}
+          </Button>
+        </div>
+      </div>
 
-      {/* Form */}
-      <Card>
-        <CardContent className="pt-6">
-          <form
-            onSubmit={form._rhf.handleSubmit((values) => handleSubmit(values as ProductFormData))}
-            onChange={validateForm}
-          >
-            <Tabs value={activeTab} onValueChange={handleTabChange} className="min-h-[400px]">
-              <TabsList className="flex flex-wrap h-auto gap-1 bg-transparent mb-4">
-                {TAB_ORDER.map((tabKey) => (
+      {/* Form container */}
+      <div className="rounded-2xl bg-[var(--bg-base)] dark:bg-white/[0.03] border border-[var(--border-default)] p-5 shadow-sm">
+        <form
+          onSubmit={form._rhf.handleSubmit((values) => handleSubmit(values as ProductFormData))}
+          onChange={validateForm}
+        >
+          <Tabs value={activeTab} onValueChange={handleTabChange} className="min-h-[400px]">
+            <TabsList className="flex flex-wrap h-auto gap-1 bg-transparent mb-4 p-0">
+              {TAB_ORDER.map((tabKey) => {
+                const isCompleted = completedSteps[tabKey];
+                const isAccessible = isTabAccessible(tabKey);
+                return (
                   <TabsTrigger
                     key={tabKey}
                     value={tabKey}
-                    disabled={!isTabAccessible(tabKey)}
-                    className={`${getTabLabelStyle(tabKey)} data-[state=active]:bg-primary-100 data-[state=active]:text-primary-700 dark:data-[state=active]:bg-primary-900/20 dark:data-[state=active]:text-primary-300`}
+                    disabled={!isAccessible}
+                    className={`
+                        text-xs font-medium rounded-lg px-3 py-2 transition
+                        ${isCompleted ? 'text-[var(--admin-success)]' : ''}
+                        ${!isAccessible ? 'text-[var(--text-tertiary)] opacity-50' : ''}
+                        data-[state=active]:bg-[var(--accent)]/12 data-[state=active]:text-[var(--accent)]
+                        data-[state=active]:shadow-sm
+                      `}
                   >
-                    {t(`admin.products.tabs.${tabKey}`)} {completedSteps[tabKey] ? '?' : ''}
+                    {t(`admin.products.tabs.${tabKey}`)}
+                    {isCompleted && <span className="ml-1 text-[var(--admin-success)]">✓</span>}
                   </TabsTrigger>
-                ))}
-              </TabsList>
+                );
+              })}
+            </TabsList>
 
-              <TabsContent value="basic">
-                <ProductBasicInfoForm
-                  form={form._rhf}
-                  fillExampleData={fillExampleData}
-                  productId={undefined}
-                />
-                <TabNavigation
-                  activeTab={activeTab}
-                  setActiveTab={setActiveTab}
-                  tabOrder={TAB_ORDER}
-                  completedSteps={completedSteps}
-                  validateForm={validateForm}
-                />
-              </TabsContent>
+            <TabsContent value="basic">
+              <ProductBasicInfoForm
+                form={form._rhf}
+                fillExampleData={fillExampleData}
+                productId={undefined}
+              />
+              <TabNavigation
+                activeTab={activeTab}
+                setActiveTab={setActiveTab}
+                tabOrder={TAB_ORDER}
+                completedSteps={completedSteps}
+                validateForm={validateForm}
+              />
+            </TabsContent>
 
-              <TabsContent value="specifications">
-                <ProductSpecificationsForm form={form._rhf} initialSpecifications={[]} />
-                <TabNavigation
-                  activeTab={activeTab}
-                  setActiveTab={setActiveTab}
-                  tabOrder={TAB_ORDER}
-                  completedSteps={completedSteps}
-                  validateForm={validateForm}
-                />
-              </TabsContent>
+            <TabsContent value="specifications">
+              <ProductSpecificationsForm form={form._rhf} initialSpecifications={[]} />
+              <TabNavigation
+                activeTab={activeTab}
+                setActiveTab={setActiveTab}
+                tabOrder={TAB_ORDER}
+                completedSteps={completedSteps}
+                validateForm={validateForm}
+              />
+            </TabsContent>
 
-              <TabsContent value="attributes">
-                <ProductAttributesSection
-                  attributes={attributes}
-                  onAddAttribute={() => openAttributeModal()}
-                  onEditAttribute={(attribute) => openAttributeModal(attribute)}
-                  onDeleteAttribute={handleDeleteAttribute}
-                />
-                <TabNavigation
-                  activeTab={activeTab}
-                  setActiveTab={setActiveTab}
-                  tabOrder={TAB_ORDER}
-                  completedSteps={completedSteps}
-                  validateForm={validateForm}
-                />
-              </TabsContent>
+            <TabsContent value="attributes">
+              <ProductAttributesSection
+                attributes={attributes}
+                onAddAttribute={() => openAttributeModal()}
+                onEditAttribute={(attribute) => openAttributeModal(attribute)}
+                onDeleteAttribute={handleDeleteAttribute}
+              />
+              <TabNavigation
+                activeTab={activeTab}
+                setActiveTab={setActiveTab}
+                tabOrder={TAB_ORDER}
+                completedSteps={completedSteps}
+                validateForm={validateForm}
+              />
+            </TabsContent>
 
-              <TabsContent value="variants">
-                <ProductVariantsSection
-                  variants={variants}
-                  onAddVariant={() => openVariantModal()}
-                  onEditVariant={(variant) => openVariantModal(variant)}
-                  onDeleteVariant={handleDeleteVariant}
-                />
-                <TabNavigation
-                  activeTab={activeTab}
-                  setActiveTab={setActiveTab}
-                  tabOrder={TAB_ORDER}
-                  completedSteps={completedSteps}
-                  validateForm={validateForm}
-                />
-              </TabsContent>
+            <TabsContent value="variants">
+              <ProductVariantsSection
+                variants={variants}
+                onAddVariant={() => openVariantModal()}
+                onEditVariant={(variant) => openVariantModal(variant)}
+                onDeleteVariant={handleDeleteVariant}
+              />
+              <TabNavigation
+                activeTab={activeTab}
+                setActiveTab={setActiveTab}
+                tabOrder={TAB_ORDER}
+                completedSteps={completedSteps}
+                validateForm={validateForm}
+              />
+            </TabsContent>
 
-              <TabsContent value="pricing">
-                <ProductPricingForm
-                  form={form._rhf}
-                  hasVariants={variants.length > 0}
-                  variants={variants}
-                />
-                <TabNavigation
-                  activeTab={activeTab}
-                  setActiveTab={setActiveTab}
-                  tabOrder={TAB_ORDER}
-                  completedSteps={completedSteps}
-                  validateForm={validateForm}
-                />
-              </TabsContent>
+            <TabsContent value="pricing">
+              <ProductPricingForm
+                form={form._rhf}
+                hasVariants={variants.length > 0}
+                variants={variants}
+              />
+              <TabNavigation
+                activeTab={activeTab}
+                setActiveTab={setActiveTab}
+                tabOrder={TAB_ORDER}
+                completedSteps={completedSteps}
+                validateForm={validateForm}
+              />
+            </TabsContent>
 
-              <TabsContent value="category">
-                <ProductCategoryForm
-                  form={form._rhf}
-                  categories={categoriesList}
-                  isLoading={isCategoriesLoading}
-                />
-                <TabNavigation
-                  activeTab={activeTab}
-                  setActiveTab={setActiveTab}
-                  tabOrder={TAB_ORDER}
-                  completedSteps={completedSteps}
-                  validateForm={validateForm}
-                />
-              </TabsContent>
+            <TabsContent value="category">
+              <ProductCategoryForm
+                form={form._rhf}
+                categories={categoriesList}
+                isLoading={isCategoriesLoading}
+              />
+              <TabNavigation
+                activeTab={activeTab}
+                setActiveTab={setActiveTab}
+                tabOrder={TAB_ORDER}
+                completedSteps={completedSteps}
+                validateForm={validateForm}
+              />
+            </TabsContent>
 
-              <TabsContent value="images">
-                <ProductImagesForm form={form._rhf} />
-                <TabNavigation
-                  activeTab={activeTab}
-                  setActiveTab={setActiveTab}
-                  tabOrder={TAB_ORDER}
-                  completedSteps={completedSteps}
-                  validateForm={validateForm}
-                />
-              </TabsContent>
+            <TabsContent value="images">
+              <ProductImagesForm form={form._rhf} />
+              <TabNavigation
+                activeTab={activeTab}
+                setActiveTab={setActiveTab}
+                tabOrder={TAB_ORDER}
+                completedSteps={completedSteps}
+                validateForm={validateForm}
+              />
+            </TabsContent>
 
-              <TabsContent value="faqs">
-                <ProductFAQForm form={form._rhf} />
-                <TabNavigation
-                  activeTab={activeTab}
-                  setActiveTab={setActiveTab}
-                  tabOrder={TAB_ORDER}
-                  completedSteps={completedSteps}
-                  validateForm={validateForm}
-                />
-              </TabsContent>
+            <TabsContent value="faqs">
+              <ProductFAQForm form={form._rhf} />
+              <TabNavigation
+                activeTab={activeTab}
+                setActiveTab={setActiveTab}
+                tabOrder={TAB_ORDER}
+                completedSteps={completedSteps}
+                validateForm={validateForm}
+              />
+            </TabsContent>
 
-              <TabsContent value="seo">
-                <ProductSeoForm form={form._rhf} />
-                <TabNavigation
-                  activeTab={activeTab}
-                  setActiveTab={setActiveTab}
-                  tabOrder={TAB_ORDER}
-                  completedSteps={completedSteps}
-                  validateForm={validateForm}
-                  isLastTab={true}
-                  onSubmit={() => handleSubmit(form.getFieldsValue() as ProductFormData)}
-                  isSubmitting={isCreating}
-                  submitText={t('admin.products.submit.create')}
-                  loadingText={t('admin.products.submit.creating')}
-                />
-              </TabsContent>
-            </Tabs>
+            <TabsContent value="seo">
+              <ProductSeoForm form={form._rhf} />
+              <TabNavigation
+                activeTab={activeTab}
+                setActiveTab={setActiveTab}
+                tabOrder={TAB_ORDER}
+                completedSteps={completedSteps}
+                validateForm={validateForm}
+                isLastTab={true}
+                onSubmit={() => handleSubmit(form.getFieldsValue() as ProductFormData)}
+                isSubmitting={isCreating}
+                submitText={t('admin.products.submit.create')}
+                loadingText={t('admin.products.submit.creating')}
+              />
+            </TabsContent>
+          </Tabs>
 
-            <hr className="my-6 border-neutral-200 dark:border-neutral-700" />
+          <div className="my-6 h-px bg-[var(--border-default)]" />
 
-            <ValidationAlerts
-              isFormValid={isFormValid}
-              missingFields={[]} // getMissingFields() hiện không cần thiết vì ValidationAlerts trả về null
-            />
-
-            {/* FormActions bị ẩn vì button tạo sản phẩm đã được chuyển vào TabNavigation */}
-          </form>
-        </CardContent>
-      </Card>
+          <ValidationAlerts isFormValid={isFormValid} missingFields={[]} />
+        </form>
+      </div>
 
       {/* Modals */}
       {attributeModalVisible && (

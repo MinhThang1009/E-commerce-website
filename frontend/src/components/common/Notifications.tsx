@@ -29,7 +29,7 @@ const Notification: React.FC<{ notification: NotificationType }> = ({ notificati
         return (
           <svg
             xmlns="http://www.w3.org/2000/svg"
-            className="h-6 w-6 text-primary-500"
+            className="h-5 w-5"
             fill="none"
             viewBox="0 0 24 24"
             stroke="currentColor"
@@ -46,7 +46,7 @@ const Notification: React.FC<{ notification: NotificationType }> = ({ notificati
         return (
           <svg
             xmlns="http://www.w3.org/2000/svg"
-            className="h-6 w-6 text-red-500"
+            className="h-5 w-5"
             fill="none"
             viewBox="0 0 24 24"
             stroke="currentColor"
@@ -63,7 +63,7 @@ const Notification: React.FC<{ notification: NotificationType }> = ({ notificati
         return (
           <svg
             xmlns="http://www.w3.org/2000/svg"
-            className="h-6 w-6 text-yellow-500"
+            className="h-5 w-5"
             fill="none"
             viewBox="0 0 24 24"
             stroke="currentColor"
@@ -81,7 +81,7 @@ const Notification: React.FC<{ notification: NotificationType }> = ({ notificati
         return (
           <svg
             xmlns="http://www.w3.org/2000/svg"
-            className="h-6 w-6 text-blue-500"
+            className="h-5 w-5"
             fill="none"
             viewBox="0 0 24 24"
             stroke="currentColor"
@@ -97,33 +97,36 @@ const Notification: React.FC<{ notification: NotificationType }> = ({ notificati
     }
   };
 
-  // Lấy màu nền theo loại thông báo
-  const getBackgroundColor = () => {
+  // Màu accent theo loại — token-based, tự thích nghi dark/light
+  const accentColor = (() => {
     switch (notification.type) {
       case 'success':
-        return 'bg-teal-50 dark:bg-neutral-800 border-teal-300 dark:border-teal-700';
+        return 'var(--accent)';
       case 'error':
-        return 'bg-red-50 dark:bg-neutral-800 border-red-300 dark:border-red-700';
+        return 'var(--admin-error)';
       case 'warning':
-        return 'bg-amber-50 dark:bg-neutral-800 border-amber-300 dark:border-amber-700';
+        return 'var(--admin-warning)';
       case 'info':
       default:
-        return 'bg-sky-50 dark:bg-neutral-800 border-sky-300 dark:border-sky-700';
+        return 'var(--admin-info)';
     }
-  };
+  })();
 
   return (
     <div
-      className={`flex items-center p-4 mb-3 rounded-lg border shadow-md animate-fadeIn ${getBackgroundColor()}`}
+      className="flex items-center gap-3 p-3.5 mb-3 rounded-xl border border-[var(--border-default)] bg-[var(--bg-elevated)] shadow-lg animate-slideInTop"
+      style={{ borderLeft: `4px solid ${accentColor}` }}
       role="alert"
     >
-      <div className="flex-shrink-0 mr-3">{getIcon()}</div>
-      <div className="flex-grow text-sm font-medium text-neutral-800 dark:text-white">
+      <div className="flex-shrink-0" style={{ color: accentColor }}>
+        {getIcon()}
+      </div>
+      <div className="flex-grow text-sm font-medium text-[var(--text-primary)]">
         {notification.message}
       </div>
       <button
         type="button"
-        className="ml-4 text-neutral-400 hover:text-neutral-500 dark:text-neutral-500 dark:hover:text-neutral-400"
+        className="ml-2 text-[var(--text-tertiary)] hover:text-[var(--text-primary)] transition-colors"
         onClick={() => removeNotification(notification.id)}
         aria-label={t('common.close')}
       >

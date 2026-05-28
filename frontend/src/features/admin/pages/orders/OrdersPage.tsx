@@ -592,7 +592,7 @@ const OrdersPage: React.FC = () => {
 
       {/* Modal chi tiết đơn hàng */}
       <Dialog open={isDetailsModalOpen} onOpenChange={setIsDetailsModalOpen}>
-        <DialogContent className="glass-card-lg max-w-[800px] max-h-[85vh] overflow-y-auto">
+        <DialogContent className="glass-dialog max-w-[800px] max-h-[85vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <Eye className="size-5" />
@@ -890,7 +890,7 @@ const OrdersPage: React.FC = () => {
           }
         }}
       >
-        <DialogContent className="glass-card-lg max-w-lg">
+        <DialogContent className="glass-dialog max-w-lg">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <Pencil className="w-5 h-5" />

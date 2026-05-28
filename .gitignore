@@ -54,6 +54,9 @@ Thumbs.db
 tmp/
 temp/
 
+# Mockup HTML tạm (so sánh variant redesign admin) — xóa sau khi rollout xong
+frontend/public/_mock-*.html
+
 # Claude Code
 .claude/
 

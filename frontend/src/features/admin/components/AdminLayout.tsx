@@ -19,8 +19,6 @@ import {
   Boxes,
   Menu,
   Bell,
-  Calendar,
-  Search,
   ChevronDown,
   LogOut,
   Home,
@@ -300,7 +298,7 @@ const AdminLayout: React.FC = () => {
 
         {/* Sheet mobile */}
         <Sheet open={mobileMenuOpen} onOpenChange={setMobileMenuOpen}>
-          <SheetContent side="left" className="w-[280px] p-0 glass-card-lg border-none">
+          <SheetContent side="left" className="w-[280px] p-0 glass-dialog border-none">
             <SheetHeader className="sr-only">
               <SheetTitle>{t('admin.menu')}</SheetTitle>
             </SheetHeader>
@@ -312,7 +310,7 @@ const AdminLayout: React.FC = () => {
         <div className="flex-1 flex flex-col min-w-0">
           {/* Header sticky glass */}
           <motion.header
-            className="sticky top-3 z-30 mb-4 glass-nav rounded-2xl px-4 md:px-6 py-3 flex items-center justify-between gap-3"
+            className="sticky top-3 z-40 mb-4 admin-sticky-header rounded-2xl px-4 md:px-6 py-3 flex items-center justify-between gap-3"
             variants={headerVariants}
             initial="initial"
             animate="animate"
@@ -346,32 +344,8 @@ const AdminLayout: React.FC = () => {
               </div>
             </div>
 
-            {/* Right cluster: search + date + notif + theme */}
+            {/* Right cluster: notif + theme */}
             <div className="flex items-center gap-1 md:gap-2 flex-shrink-0">
-              <button
-                type="button"
-                className="hidden md:flex items-center gap-2 px-3 py-2 rounded-xl border border-[var(--border-default)] hover:bg-white/5 text-sm text-[var(--text-secondary)] transition"
-                aria-label={t('header.actions.search')}
-              >
-                <Search className="w-4 h-4" />
-                <span className="hidden lg:inline">{t('header.actions.search')}</span>
-                <kbd
-                  aria-hidden="true"
-                  className="hidden lg:inline ml-2 px-1.5 py-0.5 text-[10px] font-mono bg-white/10 rounded"
-                >
-                  ⌘K
-                </kbd>
-              </button>
-
-              <button
-                type="button"
-                className="hidden md:flex items-center gap-2 px-3 py-2 rounded-xl border border-[var(--border-default)] hover:bg-white/5 text-sm text-[var(--text-secondary)] transition"
-                aria-label={t('admin.dashboard.lastUpdated')}
-              >
-                <Calendar className="w-4 h-4" />
-                <span className="hidden xl:inline">30d</span>
-              </button>
-
               <button
                 type="button"
                 className="relative p-2 rounded-xl hover:bg-white/5 transition"

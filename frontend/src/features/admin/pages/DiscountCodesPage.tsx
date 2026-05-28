@@ -403,7 +403,7 @@ const DiscountCodesPage: React.FC = () => {
           }
         }}
       >
-        <DialogContent className="glass-card-lg max-w-[700px] max-h-[85vh] overflow-y-auto">
+        <DialogContent className="glass-dialog max-w-[700px] max-h-[85vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>
               {editingCode

@@ -41,7 +41,11 @@ export const useUiStore = create<UIState & UiActions>()(
 
     addNotification: (payload) =>
       set((state) => {
-        const id = Date.now().toString();
+        // Dedupe: bỏ toast cũ cùng message+type để toast mới THAY THẾ (không xếp chồng khi thao tác nhanh)
+        state.notifications = state.notifications.filter(
+          (n) => !(n.message === payload.message && n.type === payload.type),
+        );
+        const id = `${Date.now()}-${Math.random().toString(36).slice(2, 7)}`;
         state.notifications.push({
           id,
           ...payload,

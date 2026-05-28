@@ -22,7 +22,7 @@ import {
   ChevronRight,
   AlertCircle,
   Package as PackageIcon,
-  Sparkles,
+  X,
 } from 'lucide-react';
 import {
   useGetAdminProductsQuery,
@@ -53,6 +53,7 @@ import {
   DialogFooter,
 } from '@/components/ui';
 import StatusPill, { type StatusVariant } from '../../components/StatusPill';
+import AdminPageHeader from '../../components/AdminPageHeader';
 
 interface AdminProductRow {
   id: string;
@@ -83,6 +84,31 @@ const STATUS_VARIANT: Record<string, StatusVariant> = {
   inactive: 'warning',
   draft: 'neutral',
 };
+
+// Màu category chip — deterministic theo tên (mỗi danh mục 1 màu ổn định)
+const CAT_PALETTE = [
+  '#2aaca7',
+  '#8b5cf6',
+  '#f59e0b',
+  '#3b82f6',
+  '#ec4899',
+  '#06b6d4',
+  '#10b981',
+  '#ef4444',
+];
+function categoryColor(name: string): string {
+  let h = 0;
+  for (let i = 0; i < name.length; i++) h = (h * 31 + name.charCodeAt(i)) >>> 0;
+  return CAT_PALETTE[h % CAT_PALETTE.length];
+}
+
+// Ngưỡng hiển thị thanh tồn kho (cap trực quan) + màu theo mức
+const STOCK_BAR_MAX = 150;
+function stockColor(s: number): string {
+  if (s === 0) return 'var(--admin-error)';
+  if (s < 20) return 'var(--admin-warning)';
+  return 'var(--admin-success)';
+}
 
 const ProductsPage: React.FC = () => {
   const { t } = useTranslation();
@@ -292,46 +318,35 @@ const ProductsPage: React.FC = () => {
 
   return (
     <div>
-      {/* Page header với gradient subtle */}
-      <div className="relative rounded-3xl bg-[var(--bg-base)] dark:bg-white/[0.03] border border-[var(--border-default)] p-6 mb-5 overflow-hidden">
-        {/* Subtle gradient mesh */}
-        <div
-          className="absolute inset-0 -z-10 opacity-50 pointer-events-none"
-          style={{
-            background: `
-              radial-gradient(circle at 100% 0%, rgba(42, 172, 167, 0.10) 0%, transparent 40%),
-              radial-gradient(circle at 0% 100%, rgba(24, 144, 255, 0.08) 0%, transparent 35%)
-            `,
-          }}
-        />
-        <div className="relative flex flex-col sm:flex-row items-start sm:items-end justify-between gap-3">
-          <div>
-            <span className="section-number">02 / SẢN PHẨM</span>
-            <div className="flex items-center gap-2.5 mt-2">
-              <h1 className="display-heading">{t('admin.products.title')}</h1>
-              <Sparkles className="w-5 h-5 text-[var(--accent)]/60" aria-hidden="true" />
-            </div>
-            <p className="text-sm text-[var(--text-tertiary)] mt-1.5">
-              {pagination?.totalItems
-                ? t('admin.products.stats', {
-                    totalItems: pagination.totalItems,
-                    totalPages: pagination.totalPages,
-                  })
-                : t('admin.products.subtitle')}
-            </p>
-          </div>
-          <div className="flex items-center gap-2 flex-wrap">
+      <AdminPageHeader
+        sectionNumber="02 / SẢN PHẨM"
+        title={t('admin.products.title')}
+        gradientTitle
+        sparkle
+        subtitle={
+          pagination?.totalItems
+            ? t('admin.products.stats', {
+                totalItems: pagination.totalItems,
+                totalPages: pagination.totalPages,
+              })
+            : t('admin.products.subtitle')
+        }
+        actions={
+          <>
             <Button variant="outline" onClick={() => setIsExportModalOpen(true)}>
               <Download className="w-4 h-4 mr-2" strokeWidth={2.25} />
               {t('admin.products.actions.export')}
             </Button>
-            <Button onClick={() => navigate('/admin/products/create')}>
+            <Button
+              className="admin-btn-primary"
+              onClick={() => navigate('/admin/products/create')}
+            >
               <Plus className="w-4 h-4 mr-2" strokeWidth={2.25} />
               {t('admin.products.actions.add')}
             </Button>
-          </div>
-        </div>
-      </div>
+          </>
+        }
+      />
 
       {/* Filter bar — glass card */}
       <div className="rounded-2xl bg-[var(--bg-base)] dark:bg-white/[0.03] border border-[var(--border-default)] p-4 mb-5 shadow-sm">
@@ -383,8 +398,37 @@ const ProductsPage: React.FC = () => {
         </div>
       </div>
 
+      {/* Bulk-action bar — hiện khi có sản phẩm được chọn */}
+      {selectedRowKeys.length > 0 && (
+        <div className="flex items-center justify-between gap-3 px-4 py-2.5 mb-3 rounded-2xl bg-[var(--accent)]/10 border border-[var(--accent)]/25">
+          <span className="text-sm font-medium text-[var(--text-primary)]">
+            {t('admin.products.bulk.selected', {
+              count: selectedRowKeys.length,
+              defaultValue: 'Đã chọn {{count}} sản phẩm',
+            })}
+          </span>
+          <div className="flex items-center gap-2">
+            <Button variant="outline" size="sm" onClick={() => setIsExportModalOpen(true)}>
+              <Download className="w-3.5 h-3.5 mr-1.5" strokeWidth={2.25} />
+              {t('admin.products.bulk.export', { defaultValue: 'Xuất đã chọn' })}
+            </Button>
+            <button
+              type="button"
+              onClick={() => {
+                setSelectedRowKeys([]);
+                setSelectedRows([]);
+              }}
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-lg text-[var(--text-secondary)] hover:bg-white/5 transition"
+            >
+              <X className="w-3.5 h-3.5" strokeWidth={2.25} />
+              {t('admin.products.bulk.clear', { defaultValue: 'Bỏ chọn' })}
+            </button>
+          </div>
+        </div>
+      )}
+
       {/* Table card */}
-      <div className="rounded-2xl bg-[var(--bg-base)] dark:bg-white/[0.03] border border-[var(--border-default)] overflow-hidden shadow-sm">
+      <div className="admin-card-glow rounded-2xl bg-[var(--bg-base)] dark:bg-white/[0.03] border border-[var(--border-default)] overflow-hidden shadow-sm">
         {isLoading ? (
           <div className="p-5 space-y-3">
             {[...Array(6)].map((_, idx) => (
@@ -408,7 +452,10 @@ const ProductsPage: React.FC = () => {
                 defaultValue: 'Tạo sản phẩm đầu tiên để bắt đầu bán hàng trên TechStore.',
               })}
             </p>
-            <Button onClick={() => navigate('/admin/products/create')}>
+            <Button
+              className="admin-btn-primary"
+              onClick={() => navigate('/admin/products/create')}
+            >
               <Plus className="w-4 h-4 mr-2" strokeWidth={2.25} />
               {t('admin.products.actions.add')}
             </Button>
@@ -416,12 +463,12 @@ const ProductsPage: React.FC = () => {
         ) : (
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
-              <thead className="bg-white/[0.02]">
+              <thead className="bg-[var(--bg-surface)] dark:bg-white/[0.02]">
                 <tr>
                   <th className="px-4 py-3 text-left w-10">
                     <input
                       type="checkbox"
-                      className="rounded border-[var(--border-default)] accent-[var(--accent)]"
+                      className="admin-checkbox"
                       checked={
                         productList.length > 0 && selectedRowKeys.length === productList.length
                       }
@@ -477,17 +524,20 @@ const ProductsPage: React.FC = () => {
                 {productList.map((product) => {
                   const stock =
                     product.stockQuantity !== undefined ? product.stockQuantity : product.stock;
-                  const isLowStock = (stock ?? 0) === 0;
+                  const stockVal = stock ?? 0;
+                  const sc = stockColor(stockVal);
+                  const stockPct =
+                    stockVal === 0 ? 0 : Math.min(100, (stockVal / STOCK_BAR_MAX) * 100);
                   return (
                     <motion.tr
                       key={product.id}
                       variants={rowItem}
-                      className="border-t border-[var(--border-default)] hover:bg-white/[0.03] transition group"
+                      className="border-t border-[var(--border-default)] hover:bg-[var(--accent)]/[0.05] transition group"
                     >
                       <td className="px-4 py-3">
                         <input
                           type="checkbox"
-                          className="rounded border-[var(--border-default)] accent-[var(--accent)]"
+                          className="admin-checkbox"
                           checked={selectedRowKeys.includes(product.id)}
                           onChange={(e) => handleSelectRow(product, e.target.checked)}
                           aria-label={`Chọn ${product.name}`}
@@ -505,22 +555,35 @@ const ProductsPage: React.FC = () => {
                           />
                         </div>
                       </td>
-                      <td className="px-4 py-3 max-w-[260px]">
+                      <td className="px-4 py-3 max-w-[280px]">
                         <div className="font-medium text-[var(--text-primary)] truncate">
                           {product.name}
                         </div>
+                        {(product.sku as string | undefined) && (
+                          <div className="text-[11px] text-[var(--text-tertiary)] tabular-nums mt-0.5 truncate">
+                            {product.sku as string}
+                          </div>
+                        )}
                       </td>
                       <td className="px-4 py-3">
                         {product.categories && product.categories.length > 0 ? (
                           <div className="flex flex-wrap gap-1">
-                            {product.categories.slice(0, 2).map((cat, index) => (
-                              <span
-                                key={index}
-                                className="inline-flex items-center px-2 py-0.5 rounded-md text-[11px] font-medium bg-[var(--admin-info)]/10 text-[var(--admin-info)] border border-[var(--admin-info)]/20"
-                              >
-                                {cat.name}
-                              </span>
-                            ))}
+                            {product.categories.slice(0, 2).map((cat, index) => {
+                              const c = categoryColor(cat.name);
+                              return (
+                                <span
+                                  key={index}
+                                  className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-md text-[11px] font-medium"
+                                  style={{ backgroundColor: `${c}1f`, color: c }}
+                                >
+                                  <span
+                                    className="w-1.5 h-1.5 rounded-full"
+                                    style={{ backgroundColor: c }}
+                                  />
+                                  {cat.name}
+                                </span>
+                              );
+                            })}
                             {product.categories.length > 2 && (
                               <span className="text-[11px] text-[var(--text-tertiary)]">
                                 +{product.categories.length - 2}
@@ -534,19 +597,28 @@ const ProductsPage: React.FC = () => {
                       <td className="px-4 py-3 text-right whitespace-nowrap tabular-nums font-semibold text-[var(--text-primary)]">
                         {calculateDisplayPrice(product)}
                       </td>
-                      <td className="px-4 py-3 text-center">
-                        <StatusPill
-                          variant={isLowStock ? 'error' : 'success'}
-                          label={String(stock ?? 0)}
-                          showDot={false}
-                        />
+                      <td className="px-4 py-3">
+                        <div className="flex items-center gap-2">
+                          <span
+                            className="text-xs font-bold tabular-nums w-8 text-right"
+                            style={{ color: sc }}
+                          >
+                            {stockVal}
+                          </span>
+                          <div className="h-1.5 flex-1 max-w-[64px] rounded-full bg-[var(--border-default)] overflow-hidden">
+                            <div
+                              className="h-full rounded-full"
+                              style={{ width: `${stockPct}%`, backgroundColor: sc }}
+                            />
+                          </div>
+                        </div>
                       </td>
                       <td className="px-4 py-3">
                         <Select
                           value={product.status}
                           onValueChange={(value) => handleStatusChange(product.id, value)}
                         >
-                          <SelectTrigger className="w-full h-8 text-xs border-[var(--border-default)]">
+                          <SelectTrigger className="h-8 w-auto text-xs border-0 border-transparent bg-transparent dark:bg-transparent shadow-none px-1 gap-1 hover:bg-transparent dark:hover:bg-transparent focus:ring-0 focus-visible:ring-2 focus-visible:ring-[var(--accent)] data-[state=open]:bg-transparent dark:data-[state=open]:bg-transparent">
                             <SelectValue />
                           </SelectTrigger>
                           <SelectContent>
@@ -564,7 +636,7 @@ const ProductsPage: React.FC = () => {
                         </Select>
                       </td>
                       <td className="px-4 py-3">
-                        <div className="flex items-center justify-end gap-0.5">
+                        <div className="flex items-center justify-end gap-0.5 opacity-60 group-hover:opacity-100 transition-opacity">
                           <button
                             type="button"
                             onClick={() => openQuickView(product)}
@@ -666,7 +738,7 @@ const ProductsPage: React.FC = () => {
 
       {/* Delete confirm dialog — glass */}
       <Dialog open={!!deleteConfirmId} onOpenChange={() => setDeleteConfirmId(null)}>
-        <DialogContent className="glass-card-lg !border-[var(--admin-error)]/20 max-w-md">
+        <DialogContent className="glass-dialog !border-[var(--admin-error)]/20 max-w-md">
           <DialogHeader>
             <div className="flex items-start gap-3">
               <div className="w-10 h-10 rounded-full bg-[var(--admin-error)]/15 flex items-center justify-center flex-shrink-0">
@@ -696,7 +768,7 @@ const ProductsPage: React.FC = () => {
 
       {/* Quick view modal — glass */}
       <Dialog open={isQuickViewOpen} onOpenChange={setIsQuickViewOpen}>
-        <DialogContent className="glass-card-lg max-w-[640px]">
+        <DialogContent className="glass-dialog max-w-[640px]">
           <DialogHeader>
             <DialogTitle>{t('admin.products.modal.viewTitle')}</DialogTitle>
           </DialogHeader>

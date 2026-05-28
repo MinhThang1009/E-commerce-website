@@ -80,7 +80,7 @@
   /* Text */
   --text-primary: #fafafa;
   --text-secondary: #a1a1aa;
-  --text-tertiary: #52525b;
+  --text-tertiary: #8a8a92;
 
   /* Borders */
   --border-default: #27272a;
@@ -332,6 +332,32 @@ body {
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
+}
+
+/* Signature flagship (Variant C): text-primary → teal → coral. Theme-adaptive (dùng --text-primary). */
+.gradient-text-brand {
+  background: linear-gradient(
+    100deg,
+    var(--text-primary) 16%,
+    var(--accent) 52%,
+    var(--color-secondary) 100%
+  );
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+/* Hairline gradient divider — signature dưới page header */
+.admin-hairline {
+  height: 1px;
+  border: 0;
+  background: linear-gradient(
+    90deg,
+    transparent,
+    rgba(42, 172, 167, 0.55) 18%,
+    rgba(255, 117, 94, 0.45) 55%,
+    transparent 92%
+  );
 }
 
 .gradient-text-shine {
@@ -1101,6 +1127,218 @@ body {
   box-shadow:
     0 1px 2px rgba(0, 0, 0, 0.2),
     0 4px 20px rgba(0, 0, 0, 0.25);
+}
+
+/* Admin sticky header — frosted bar đủ đục để text đọc được khi content scroll phía sau */
+.admin-sticky-header {
+  background: rgba(255, 255, 255, 0.85);
+  backdrop-filter: blur(20px) saturate(1.8);
+  -webkit-backdrop-filter: blur(20px) saturate(1.8);
+  border: 1px solid var(--border-default);
+  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.06);
+}
+.dark .admin-sticky-header {
+  background: rgba(17, 17, 17, 0.82);
+  border-color: rgba(255, 255, 255, 0.08);
+  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.4);
+}
+
+/* Hover glow teal cho card dashboard (G2.0 feel) — additive, KHÔNG sửa class dùng chung */
+.admin-card-glow {
+  transition:
+    transform 0.25s ease,
+    box-shadow 0.25s ease,
+    border-color 0.25s ease;
+}
+.admin-card-glow:hover {
+  transform: translateY(-3px);
+  border-color: rgba(42, 172, 167, 0.4);
+  box-shadow:
+    0 8px 30px rgba(42, 172, 167, 0.15),
+    0 4px 16px rgba(0, 0, 0, 0.06);
+}
+.dark .admin-card-glow:hover {
+  border-color: rgba(75, 188, 184, 0.35);
+  box-shadow:
+    0 2px 8px rgba(0, 0, 0, 0.3),
+    0 18px 50px rgba(42, 172, 167, 0.18),
+    inset 0 0 0 1px rgba(75, 188, 184, 0.12);
+}
+
+/*
+ * Glass cho Dialog/Sheet (Radix). KHÔNG set `position` — để giữ `fixed` + canh giữa
+ * của Radix. (Trước đây dùng .glass-card-lg vốn có position:relative → modal rớt đáy.)
+ * !important trên background/border để thắng utility bg-white/dark:bg-neutral-900 của base.
+ */
+.glass-dialog {
+  background: rgba(255, 255, 255, 0.92) !important;
+  backdrop-filter: blur(24px) saturate(1.6);
+  -webkit-backdrop-filter: blur(24px) saturate(1.6);
+  border: 1px solid var(--glass-border) !important;
+}
+.dark .glass-dialog {
+  background: rgba(22, 22, 22, 0.95) !important;
+  border-color: rgba(255, 255, 255, 0.08) !important;
+}
+
+/* Admin checkbox — custom, đồng bộ design system (thay native accent-color thô) */
+.admin-checkbox {
+  appearance: none;
+  -webkit-appearance: none;
+  width: 18px;
+  height: 18px;
+  flex-shrink: 0;
+  border-radius: 6px;
+  border: 1.5px solid var(--border-strong);
+  background: var(--bg-base);
+  cursor: pointer;
+  position: relative;
+  transition:
+    background 0.15s ease,
+    border-color 0.15s ease,
+    box-shadow 0.15s ease;
+}
+.admin-checkbox:hover {
+  border-color: var(--accent);
+}
+.admin-checkbox:checked,
+.admin-checkbox:indeterminate {
+  background: var(--accent);
+  border-color: var(--accent);
+}
+.admin-checkbox:checked::after {
+  content: '';
+  position: absolute;
+  left: 5.5px;
+  top: 2px;
+  width: 4px;
+  height: 8px;
+  border: solid #fff;
+  border-width: 0 2px 2px 0;
+  transform: rotate(45deg);
+}
+.admin-checkbox:indeterminate::after {
+  content: '';
+  position: absolute;
+  left: 3.5px;
+  right: 3.5px;
+  top: 7.5px;
+  height: 2px;
+  border-radius: 1px;
+  background: #fff;
+}
+.admin-checkbox:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+/* Admin radio — custom tròn, đồng bộ design system (thay native radio trắng) */
+.admin-radio {
+  appearance: none;
+  -webkit-appearance: none;
+  width: 18px;
+  height: 18px;
+  flex-shrink: 0;
+  border-radius: 50%;
+  border: 1.5px solid var(--border-strong);
+  background: var(--bg-base);
+  cursor: pointer;
+  position: relative;
+  transition:
+    border-color 0.15s ease,
+    box-shadow 0.15s ease;
+}
+.admin-radio:hover {
+  border-color: var(--accent);
+}
+.admin-radio:checked {
+  border-color: var(--accent);
+}
+.admin-radio:checked::after {
+  content: '';
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  background: var(--accent);
+  transform: translate(-50%, -50%);
+}
+.admin-radio:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+/* Admin primary CTA — gradient teal + glow (flagship). Scope admin, không đụng Button global. */
+/*
+ * Token CTA admin — derive từ --color-primary qua color-mix.
+ * Đổi --color-primary (brand) HOẶC --admin-cta-* (chỉ admin) 1 chỗ → toàn bộ nút primary đổi theo.
+ * Khác nhau light/dark chỉ ở độ trong (opacity) của glass.
+ */
+:root {
+  --admin-cta-bg: color-mix(in srgb, var(--color-primary) 88%, transparent);
+  --admin-cta-bg-hover: color-mix(in srgb, var(--color-primary) 96%, transparent);
+  --admin-cta-border: color-mix(in srgb, var(--color-primary-light) 55%, transparent);
+}
+.dark {
+  --admin-cta-bg: color-mix(in srgb, var(--color-primary) 28%, transparent);
+  --admin-cta-bg-hover: color-mix(in srgb, var(--color-primary) 40%, transparent);
+  --admin-cta-border: color-mix(in srgb, var(--color-primary-light) 50%, transparent);
+}
+
+/* Primary CTA — Liquid Glass 2.0 (translucent + blur + specular), KHÔNG hard-code màu */
+.admin-btn-primary {
+  position: relative;
+  isolation: isolate;
+  overflow: hidden;
+  background: var(--admin-cta-bg) !important;
+  backdrop-filter: blur(12px) saturate(1.8);
+  -webkit-backdrop-filter: blur(12px) saturate(1.8);
+  border: 1px solid var(--admin-cta-border) !important;
+  color: #fff !important;
+  box-shadow:
+    inset 0 1.5px 0 rgba(255, 255, 255, 0.32),
+    0 2px 8px rgba(0, 0, 0, 0.12);
+  transition:
+    transform 0.15s ease,
+    box-shadow 0.2s ease,
+    background 0.2s ease;
+}
+/* Specular sweep — đặc trưng glass 2.0 (highlight trắng, không phụ thuộc màu brand) */
+.admin-btn-primary::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    140deg,
+    rgba(255, 255, 255, 0.28) 0%,
+    rgba(255, 255, 255, 0.06) 38%,
+    transparent 60%
+  );
+  pointer-events: none;
+  z-index: -1;
+}
+.admin-btn-primary:hover {
+  background: var(--admin-cta-bg-hover) !important;
+  transform: translateY(-1px);
+  box-shadow:
+    inset 0 1.5px 0 rgba(255, 255, 255, 0.38),
+    0 4px 12px rgba(0, 0, 0, 0.16);
+}
+.admin-btn-primary:active {
+  transform: translateY(0);
+}
+/* Dark: bg/border tự đổi qua token; chỉ chỉnh shadow cho hợp nền tối */
+.dark .admin-btn-primary {
+  box-shadow:
+    inset 0 1.5px 0 rgba(255, 255, 255, 0.16),
+    0 2px 10px rgba(0, 0, 0, 0.4);
+}
+.dark .admin-btn-primary:hover {
+  box-shadow:
+    inset 0 1.5px 0 rgba(255, 255, 255, 0.2),
+    0 4px 14px rgba(0, 0, 0, 0.45);
 }
 
 /* Focus visible ring — accessibility */

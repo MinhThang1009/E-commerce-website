@@ -5,6 +5,9 @@
  */
 export const CHART_BLUE = '#3b82f6';
 export const CHART_GREEN = '#10b981';
+/** Brand teal cho single-series charts (revenue, top sản phẩm). Light/dark variant để đủ tương phản. */
+export const CHART_TEAL = '#2aaca7';
+export const CHART_TEAL_LIGHT = '#4bbcb8';
 export const CHART_YELLOW = '#f59e0b';
 export const CHART_RED = '#ef4444';
 export const CHART_VIOLET = '#8b5cf6';

@@ -386,7 +386,7 @@ const UserDetailPage: React.FC = () => {
 
       {/* Order Detail Dialog — glass */}
       <Dialog open={!!selectedOrder} onOpenChange={(open) => !open && setSelectedOrder(null)}>
-        <DialogContent className="glass-card-lg max-w-[500px]">
+        <DialogContent className="glass-dialog max-w-[500px]">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <Eye className="w-5 h-5" strokeWidth={2.25} />

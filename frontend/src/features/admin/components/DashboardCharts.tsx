@@ -7,7 +7,18 @@
 import React, { useState, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useSearchParams } from 'react-router-dom';
-import { Download, FileSpreadsheet } from 'lucide-react';
+import {
+  Download,
+  FileSpreadsheet,
+  TrendingUp,
+  BarChart3,
+  PieChart as PieChartIcon,
+  UserPlus,
+  Trophy,
+  Layers,
+  CreditCard,
+  type LucideIcon,
+} from 'lucide-react';
 import {
   ResponsiveContainer,
   AreaChart,
@@ -24,6 +35,7 @@ import {
   Tooltip,
   CartesianGrid,
   Legend,
+  Label,
 } from 'recharts';
 import dayjs from 'dayjs';
 import { useUiStore } from '@/stores/ui-store';
@@ -32,7 +44,8 @@ import { cn } from '@/utils/cn';
 import {
   PIE_COLORS,
   ORDER_STATUS_COLORS,
-  CHART_BLUE,
+  CHART_TEAL,
+  CHART_TEAL_LIGHT,
   CHART_GREEN,
   CHART_VIOLET,
 } from '@constants/chart-colors';
@@ -52,6 +65,25 @@ const AXIS_LIGHT = '#52525b';
 const AXIS_DARK = '#a1a1aa';
 const GRID_LIGHT = 'rgba(0,0,0,0.06)';
 const GRID_DARK = 'rgba(255,255,255,0.06)';
+
+/** Header chart: icon chip màu + tiêu đề — đồng bộ ngôn ngữ icon với KPI card */
+const ChartCardTitle: React.FC<{ icon: LucideIcon; color: string; title: string }> = ({
+  icon: Icon,
+  color,
+  title,
+}) => (
+  <div className="flex items-center gap-2 mb-4">
+    <span
+      className="inline-flex items-center justify-center w-7 h-7 rounded-lg flex-shrink-0"
+      style={{ backgroundColor: `${color}22`, color }}
+    >
+      <Icon className="w-4 h-4" strokeWidth={2.25} />
+    </span>
+    <h3 className="text-xs font-bold uppercase tracking-wider text-[var(--text-secondary)]">
+      {title}
+    </h3>
+  </div>
+);
 
 const DashboardCharts: React.FC = () => {
   const { t } = useTranslation();
@@ -141,6 +173,8 @@ const DashboardCharts: React.FC = () => {
     fontSize: 11,
   };
   const gridStroke = isDark ? GRID_DARK : GRID_LIGHT;
+  // Teal brand cho single-series — luminous hơn trong dark để đủ tương phản
+  const accent = isDark ? CHART_TEAL_LIGHT : CHART_TEAL;
 
   // Format axis numeric tick: 1500 → "1.5K", 1500000 → "1.5M"
   const compactNumber = (v: number) => {
@@ -186,7 +220,7 @@ const DashboardCharts: React.FC = () => {
     );
   }
 
-  const cardClass = 'admin-chart-card rounded-2xl p-5';
+  const cardClass = 'admin-chart-card admin-card-glow rounded-2xl p-5';
 
   return (
     <div className="space-y-4 mt-6">
@@ -299,8 +333,10 @@ const DashboardCharts: React.FC = () => {
       {/* Row 1: Revenue Area + Order Count Bar */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
         <div className={cardClass}>
-          <h3 className="text-xs font-bold uppercase tracking-wider text-[var(--text-secondary)] mb-4">
-            {t('admin.charts.revenue', {
+          <ChartCardTitle
+            icon={TrendingUp}
+            color={accent}
+            title={t('admin.charts.revenue', {
               period: t(
                 `admin.charts.period${
                   period === '7d'
@@ -313,7 +349,7 @@ const DashboardCharts: React.FC = () => {
                 }`,
               ),
             })}
-          </h3>
+          />
           <div className="h-72">
             <ResponsiveContainer width="100%" height="100%">
               <AreaChart
@@ -322,8 +358,8 @@ const DashboardCharts: React.FC = () => {
               >
                 <defs>
                   <linearGradient id="colorRevenue" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="0%" stopColor={CHART_BLUE} stopOpacity={0.5} />
-                    <stop offset="100%" stopColor={CHART_BLUE} stopOpacity={0.05} />
+                    <stop offset="0%" stopColor={accent} stopOpacity={0.5} />
+                    <stop offset="100%" stopColor={accent} stopOpacity={0.05} />
                   </linearGradient>
                 </defs>
                 <CartesianGrid stroke={gridStroke} strokeDasharray="0" vertical={false} />
@@ -335,7 +371,7 @@ const DashboardCharts: React.FC = () => {
                   tickLine={false}
                 />
                 <Tooltip
-                  cursor={{ stroke: CHART_BLUE, strokeDasharray: '4 4', opacity: 0.4 }}
+                  cursor={{ stroke: accent, strokeDasharray: '4 4', opacity: 0.4 }}
                   content={
                     <GlassTooltip
                       formatter={(v) => formatPrice(Number(v))}
@@ -347,12 +383,12 @@ const DashboardCharts: React.FC = () => {
                   type="monotone"
                   dataKey="revenue"
                   name={revenueLabel}
-                  stroke={CHART_BLUE}
+                  stroke={accent}
                   fillOpacity={1}
                   fill="url(#colorRevenue)"
                   strokeWidth={3}
-                  dot={{ r: 4, fill: CHART_BLUE, stroke: isDark ? '#111' : '#fff', strokeWidth: 2 }}
-                  activeDot={{ r: 6, fill: CHART_BLUE }}
+                  dot={{ r: 4, fill: accent, stroke: isDark ? '#111' : '#fff', strokeWidth: 2 }}
+                  activeDot={{ r: 6, fill: accent }}
                 />
                 {/* Ghost line kỳ trước — Comparison Mode §21.5 */}
                 {comparison.isComparing && comparison.previousOrders.length > 0 && (
@@ -377,9 +413,11 @@ const DashboardCharts: React.FC = () => {
         </div>
 
         <div className={cardClass}>
-          <h3 className="text-xs font-bold uppercase tracking-wider text-[var(--text-secondary)] mb-4">
-            {t('admin.charts.orderCount')}
-          </h3>
+          <ChartCardTitle
+            icon={BarChart3}
+            color={CHART_GREEN}
+            title={t('admin.charts.orderCount')}
+          />
           <div className="h-72">
             <ResponsiveContainer width="100%" height="100%">
               <BarChart
@@ -404,6 +442,7 @@ const DashboardCharts: React.FC = () => {
                   name={ordersLabel}
                   fill="url(#colorOrders)"
                   radius={[8, 8, 0, 0]}
+                  maxBarSize={64}
                 />
               </BarChart>
             </ResponsiveContainer>
@@ -414,9 +453,11 @@ const DashboardCharts: React.FC = () => {
       {/* Row 2: Order Status Pie + User Growth Line */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
         <div className={cardClass}>
-          <h3 className="text-xs font-bold uppercase tracking-wider text-[var(--text-secondary)] mb-4">
-            {t('admin.charts.orderStatusDist')}
-          </h3>
+          <ChartCardTitle
+            icon={PieChartIcon}
+            color={accent}
+            title={t('admin.charts.orderStatusDist')}
+          />
           <div className="h-72">
             <ResponsiveContainer width="100%" height="100%">
               <PieChart>
@@ -430,7 +471,7 @@ const DashboardCharts: React.FC = () => {
                   outerRadius={95}
                   stroke={isDark ? '#111111' : '#ffffff'}
                   strokeWidth={2}
-                  label={({ label, count }) => `${label}: ${count}`}
+                  paddingAngle={2}
                 >
                   {(orderStatusData?.data || []).map((entry) => (
                     <Cell
@@ -438,6 +479,38 @@ const DashboardCharts: React.FC = () => {
                       fill={ORDER_STATUS_COLORS[entry.status] || '#9ca3af'}
                     />
                   ))}
+                  <Label
+                    position="center"
+                    content={({ viewBox }) => {
+                      const vb = viewBox as { cx?: number; cy?: number } | undefined;
+                      if (vb?.cx == null || vb?.cy == null) return null;
+                      const total = (orderStatusData?.data || []).reduce(
+                        (sum, d) => sum + (d.count ?? 0),
+                        0,
+                      );
+                      return (
+                        <text x={vb.cx} y={vb.cy} textAnchor="middle">
+                          <tspan
+                            x={vb.cx}
+                            dy="-0.1em"
+                            fontSize="26"
+                            fontWeight="700"
+                            fill={isDark ? '#fafafa' : '#09090b'}
+                          >
+                            {total}
+                          </tspan>
+                          <tspan
+                            x={vb.cx}
+                            dy="1.6em"
+                            fontSize="11"
+                            fill={isDark ? AXIS_DARK : AXIS_LIGHT}
+                          >
+                            {t('admin.charts.totalOrdersShort', { defaultValue: 'đơn' })}
+                          </tspan>
+                        </text>
+                      );
+                    }}
+                  />
                 </Pie>
                 <Tooltip content={<GlassTooltip />} />
                 <Legend wrapperStyle={{ fontSize: 11 }} />
@@ -447,9 +520,11 @@ const DashboardCharts: React.FC = () => {
         </div>
 
         <div className={cardClass}>
-          <h3 className="text-xs font-bold uppercase tracking-wider text-[var(--text-secondary)] mb-4">
-            {t('admin.charts.userGrowth')}
-          </h3>
+          <ChartCardTitle
+            icon={UserPlus}
+            color={CHART_VIOLET}
+            title={t('admin.charts.userGrowth')}
+          />
           <div className="h-72">
             <ResponsiveContainer width="100%" height="100%">
               <LineChart
@@ -485,9 +560,17 @@ const DashboardCharts: React.FC = () => {
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
         <div className={cardClass}>
           <div className="flex items-center justify-between mb-3">
-            <h3 className="text-[11px] font-semibold uppercase tracking-wider text-[var(--text-tertiary)]">
-              {t('admin.charts.topProducts')}
-            </h3>
+            <div className="flex items-center gap-2">
+              <span
+                className="inline-flex items-center justify-center w-7 h-7 rounded-lg flex-shrink-0"
+                style={{ backgroundColor: `${accent}22`, color: accent }}
+              >
+                <Trophy className="w-4 h-4" strokeWidth={2.25} />
+              </span>
+              <h3 className="text-[11px] font-semibold uppercase tracking-wider text-[var(--text-tertiary)]">
+                {t('admin.charts.topProducts')}
+              </h3>
+            </div>
             <div className="flex gap-1">
               <button
                 type="button"
@@ -543,7 +626,7 @@ const DashboardCharts: React.FC = () => {
                   tickLine={false}
                 />
                 <Tooltip
-                  cursor={{ fill: 'rgba(59, 130, 246, 0.08)' }}
+                  cursor={{ fill: 'rgba(42, 172, 167, 0.08)' }}
                   content={
                     <GlassTooltip
                       formatter={
@@ -563,8 +646,9 @@ const DashboardCharts: React.FC = () => {
                       ? t('admin.charts.revenueLabel')
                       : t('admin.charts.soldCount')
                   }
-                  fill={topProductMetric === 'revenue' ? CHART_BLUE : CHART_GREEN}
+                  fill={topProductMetric === 'revenue' ? accent : CHART_GREEN}
                   radius={[0, 6, 6, 0]}
+                  maxBarSize={30}
                 />
               </BarChart>
             </ResponsiveContainer>
@@ -572,9 +656,11 @@ const DashboardCharts: React.FC = () => {
         </div>
 
         <div className={cardClass}>
-          <h3 className="text-xs font-bold uppercase tracking-wider text-[var(--text-secondary)] mb-4">
-            {t('admin.charts.revenueByCategory')}
-          </h3>
+          <ChartCardTitle
+            icon={Layers}
+            color={CHART_VIOLET}
+            title={t('admin.charts.revenueByCategory')}
+          />
           <div className="h-72">
             <ResponsiveContainer width="100%" height="100%">
               <BarChart
@@ -605,7 +691,12 @@ const DashboardCharts: React.FC = () => {
                     />
                   }
                 />
-                <Bar dataKey="revenue" name={t('admin.charts.revenueLabel')} radius={[6, 6, 0, 0]}>
+                <Bar
+                  dataKey="revenue"
+                  name={t('admin.charts.revenueLabel')}
+                  radius={[6, 6, 0, 0]}
+                  maxBarSize={72}
+                >
                   {(categoryData?.data || []).map((_, i) => (
                     <Cell key={i} fill={PIE_COLORS[i % PIE_COLORS.length]} />
                   ))}
@@ -619,9 +710,11 @@ const DashboardCharts: React.FC = () => {
       {/* Row 4: Payment Methods Pie */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
         <div className={cardClass}>
-          <h3 className="text-xs font-bold uppercase tracking-wider text-[var(--text-secondary)] mb-4">
-            {t('admin.charts.paymentMethods')}
-          </h3>
+          <ChartCardTitle
+            icon={CreditCard}
+            color={accent}
+            title={t('admin.charts.paymentMethods')}
+          />
           <div className="h-72">
             <ResponsiveContainer width="100%" height="100%">
               <PieChart>
@@ -639,7 +732,7 @@ const DashboardCharts: React.FC = () => {
                   outerRadius={95}
                   stroke={isDark ? '#111111' : '#ffffff'}
                   strokeWidth={2}
-                  label={({ name, value }) => `${name}: ${value}`}
+                  paddingAngle={2}
                 >
                   {(paymentMethodsData?.data || []).map((_, i) => (
                     <Cell key={i} fill={PIE_COLORS[i % PIE_COLORS.length]} />

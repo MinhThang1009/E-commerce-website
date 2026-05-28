@@ -386,7 +386,7 @@ const BrandsPage: React.FC = () => {
 
       {/* Delete confirm — glass */}
       <Dialog open={!!deleteConfirmId} onOpenChange={() => setDeleteConfirmId(null)}>
-        <DialogContent className="glass-card-lg !border-[var(--admin-error)]/20 max-w-md">
+        <DialogContent className="glass-dialog !border-[var(--admin-error)]/20 max-w-md">
           <DialogHeader>
             <div className="flex items-start gap-3">
               <div className="w-10 h-10 rounded-full bg-[var(--admin-error)]/15 flex items-center justify-center flex-shrink-0">
@@ -426,7 +426,7 @@ const BrandsPage: React.FC = () => {
           }
         }}
       >
-        <DialogContent className="glass-card-lg max-w-[600px]">
+        <DialogContent className="glass-dialog max-w-[600px]">
           <DialogHeader>
             <DialogTitle>
               {editingBrand ? t('admin.brands.editBrand') : t('admin.brands.addBrandModal')}

@@ -475,7 +475,7 @@ const UsersPage: React.FC = () => {
           }
         }}
       >
-        <DialogContent className="glass-card-lg max-w-[600px]">
+        <DialogContent className="glass-dialog max-w-[600px]">
           <DialogHeader>
             <DialogTitle>{t('admin.users.editUser')}</DialogTitle>
           </DialogHeader>

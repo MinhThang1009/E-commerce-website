@@ -145,7 +145,7 @@ const ProductExportModal: React.FC<ProductExportModalProps> = ({
 
   return (
     <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
-      <DialogContent className="glass-card-lg max-w-md">
+      <DialogContent className="glass-dialog max-w-md">
         <DialogHeader>
           <DialogTitle>{t('productExport.title')}</DialogTitle>
         </DialogHeader>
@@ -171,7 +171,7 @@ const ProductExportModal: React.FC<ProductExportModalProps> = ({
                     value={option.value}
                     checked={scope === option.value}
                     onChange={() => setScope(option.value)}
-                    className="accent-[var(--accent)]"
+                    className="admin-radio"
                   />
                   <span className="text-sm font-medium">{option.label}</span>
                 </label>
@@ -199,7 +199,7 @@ const ProductExportModal: React.FC<ProductExportModalProps> = ({
                     value={option.value}
                     checked={format === option.value}
                     onChange={() => setFormat(option.value)}
-                    className="accent-[var(--accent)]"
+                    className="admin-radio"
                   />
                   {option.label}
                 </label>
@@ -212,7 +212,11 @@ const ProductExportModal: React.FC<ProductExportModalProps> = ({
           <Button variant="outline" onClick={onClose}>
             {t('productExport.cancel')}
           </Button>
-          <Button onClick={handleExport} disabled={isProcessing || isLoading}>
+          <Button
+            className="admin-btn-primary"
+            onClick={handleExport}
+            disabled={isProcessing || isLoading}
+          >
             {isProcessing || isLoading ? (
               <div className="flex items-center gap-2">
                 <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white" />

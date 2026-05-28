@@ -153,6 +153,25 @@ describe('uiStore', () => {
     expect(result.current.notifications[0].id).toBeDefined();
   });
 
+  test('addNotification dedupe — toast trùng message+type thì thay thế, không xếp chồng', () => {
+    const { result } = renderHook(() => useUiStore());
+    act(() => {
+      result.current.addNotification({ message: 'Trùng', type: 'success', duration: 3000 });
+      result.current.addNotification({ message: 'Trùng', type: 'success', duration: 3000 });
+    });
+    expect(result.current.notifications).toHaveLength(1);
+    expect(result.current.notifications[0].message).toBe('Trùng');
+  });
+
+  test('addNotification — cùng message khác type thì giữ cả hai', () => {
+    const { result } = renderHook(() => useUiStore());
+    act(() => {
+      result.current.addNotification({ message: 'Same', type: 'success', duration: 3000 });
+      result.current.addNotification({ message: 'Same', type: 'error', duration: 3000 });
+    });
+    expect(result.current.notifications).toHaveLength(2);
+  });
+
   test('removeNotification xóa đúng theo id', async () => {
     const { result } = renderHook(() => useUiStore());
     act(() => {

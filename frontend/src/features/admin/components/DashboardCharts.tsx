@@ -45,6 +45,7 @@ import {
   useGetPaymentMethodsAnalyticsQuery,
 } from '../api/admin-dashboard-api';
 import GlassTooltip from './GlassTooltip';
+import { usePeriodComparison, type ComparePeriod } from '../hooks/usePeriodComparison';
 
 // Axis tick color theo theme (constants — KHÔNG CSS var, vì Recharts SVG)
 const AXIS_LIGHT = '#52525b';
@@ -65,6 +66,7 @@ const DashboardCharts: React.FC = () => {
   const [customTo, setCustomTo] = useState(searchParams.get('to') || '');
   const [groupBy, setGroupBy] = useState<'day' | 'week' | 'month'>('day');
   const [topProductMetric, setTopProductMetric] = useState<'revenue' | 'soldCount'>('revenue');
+  const [comparePeriod, setComparePeriod] = useState<ComparePeriod>(null);
 
   const { startDate, endDate } = useMemo(() => {
     if (period === 'custom' && customFrom && customTo) {
@@ -110,6 +112,9 @@ const DashboardCharts: React.FC = () => {
   const { data: categoryData } = useGetRevenueByCategoryAnalyticsQuery({ startDate, endDate });
   const { data: userGrowthData } = useGetUserGrowthAnalyticsQuery({ startDate, endDate, groupBy });
   const { data: paymentMethodsData } = useGetPaymentMethodsAnalyticsQuery();
+
+  // Comparison Mode — ghost line kỳ trước (spec §21.5)
+  const comparison = usePeriodComparison({ startDate, endDate, groupBy }, comparePeriod);
 
   const formatPeriodLabel = (label: string) => {
     if (!label) return '';
@@ -249,8 +254,31 @@ const DashboardCharts: React.FC = () => {
           </select>
         </div>
 
-        {/* Export buttons */}
-        <div className="flex items-center gap-2">
+        {/* Comparison toggle + Export buttons */}
+        <div className="flex items-center gap-2 flex-wrap">
+          {/* Comparison Mode toggle — spec §21.5 Signature Feature */}
+          <select
+            value={comparePeriod ?? ''}
+            onChange={(e) => setComparePeriod((e.target.value || null) as ComparePeriod)}
+            className={cn(
+              'px-3 py-1.5 text-xs font-medium rounded-lg border transition',
+              comparePeriod
+                ? 'bg-[var(--admin-purple)]/12 border-[var(--admin-purple)]/30 text-[var(--admin-purple)]'
+                : 'border-[var(--border-default)] text-[var(--text-secondary)] hover:bg-white/5',
+            )}
+          >
+            <option value="">{t('admin.comparison.off', { defaultValue: 'So sánh' })}</option>
+            <option value="previous-week">
+              {t('admin.comparison.previousWeek', { defaultValue: 'vs Tuần trước' })}
+            </option>
+            <option value="previous-month">
+              {t('admin.comparison.previousMonth', { defaultValue: 'vs Tháng trước' })}
+            </option>
+            <option value="previous-year">
+              {t('admin.comparison.previousYear', { defaultValue: 'vs Năm trước' })}
+            </option>
+          </select>
+
           <button
             type="button"
             onClick={() => handleExport('orders')}
@@ -326,6 +354,23 @@ const DashboardCharts: React.FC = () => {
                   fill="url(#colorRevenue)"
                   strokeWidth={2.5}
                 />
+                {/* Ghost line kỳ trước — Comparison Mode §21.5 */}
+                {comparison.isComparing && comparison.previousOrders.length > 0 && (
+                  <Line
+                    type="monotone"
+                    data={comparison.previousOrders.map((o, i) => ({
+                      name: orderDataForChart[i]?.name ?? formatPeriodLabel(o.period),
+                      prevRevenue: o.revenue,
+                    }))}
+                    dataKey="prevRevenue"
+                    name={t('admin.comparison.previousPeriod', { defaultValue: 'Kỳ trước' })}
+                    stroke={isDark ? '#a1a1aa' : '#71717a'}
+                    strokeWidth={1.5}
+                    strokeDasharray="6 3"
+                    dot={false}
+                    opacity={0.5}
+                  />
+                )}
               </AreaChart>
             </ResponsiveContainer>
           </div>

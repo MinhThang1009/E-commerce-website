@@ -55,42 +55,54 @@ import { Tooltip, TooltipTrigger, TooltipContent } from '@/components/ui/tooltip
 import { Pagination } from '@/components/common';
 import { useUiStore } from '@/stores/ui-store';
 
-// Cấu hình trạng thái với màu sắc và icon
+// Cấu hình trạng thái — admin tokens (KHÔNG Tailwind color literals)
 const STATUS_CONFIG: Record<string, { color: string; Icon: LucideIcon }> = {
   pending: {
-    color: 'bg-orange-100 text-orange-800 dark:bg-orange-900/30 dark:text-orange-400',
+    color:
+      'bg-[var(--admin-warning)]/12 text-[var(--admin-warning)] border border-[var(--admin-warning)]/25',
     Icon: Clock,
   },
   processing: {
-    color: 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400',
+    color:
+      'bg-[var(--admin-info)]/12 text-[var(--admin-info)] border border-[var(--admin-info)]/25',
     Icon: RefreshCw,
   },
   shipped: {
-    color: 'bg-purple-100 text-purple-800 dark:bg-purple-900/30 dark:text-purple-400',
+    color:
+      'bg-[var(--admin-purple)]/12 text-[var(--admin-purple)] border border-[var(--admin-purple)]/25',
     Icon: Truck,
   },
   delivered: {
-    color: 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400',
+    color:
+      'bg-[var(--admin-success)]/12 text-[var(--admin-success)] border border-[var(--admin-success)]/25',
     Icon: CheckCircle,
   },
   cancelled: {
-    color: 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400',
+    color:
+      'bg-[var(--admin-error)]/12 text-[var(--admin-error)] border border-[var(--admin-error)]/25',
     Icon: XCircle,
   },
 };
 
 const PAYMENT_STATUS_CONFIG: Record<string, { color: string; Icon: LucideIcon }> = {
   pending: {
-    color: 'bg-orange-100 text-orange-800 dark:bg-orange-900/30 dark:text-orange-400',
+    color:
+      'bg-[var(--admin-warning)]/12 text-[var(--admin-warning)] border border-[var(--admin-warning)]/25',
     Icon: Clock,
   },
   paid: {
-    color: 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400',
+    color:
+      'bg-[var(--admin-success)]/12 text-[var(--admin-success)] border border-[var(--admin-success)]/25',
     Icon: CheckCircle,
   },
-  failed: { color: 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400', Icon: XCircle },
+  failed: {
+    color:
+      'bg-[var(--admin-error)]/12 text-[var(--admin-error)] border border-[var(--admin-error)]/25',
+    Icon: XCircle,
+  },
   refunded: {
-    color: 'bg-[var(--text-tertiary)]/12 text-[var(--text-secondary)]',
+    color:
+      'bg-[var(--text-tertiary)]/12 text-[var(--text-secondary)] border border-[var(--border-default)]',
     Icon: RotateCcw,
   },
 };

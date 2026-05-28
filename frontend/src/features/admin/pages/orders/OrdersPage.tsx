@@ -25,13 +25,16 @@ import {
 import type { LucideIcon } from 'lucide-react';
 
 import dayjs from 'dayjs';
+import { motion } from 'framer-motion';
 import { useGetAdminOrdersQuery, useUpdateOrderStatusMutation, AdminOrder } from '@/features/admin';
-import styles from './OrdersPage.module.css';
 import { useTranslation } from 'react-i18next';
-import { getLocale } from '@/utils/format';
+import { formatPrice } from '@/utils/format';
+import { cn } from '@/utils/cn';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+// StatusPill sẽ thay thế inline status tags khi refactor chi tiết OrdersPage modal content
+import type {} from '../../components/StatusPill';
 import {
   Select,
   SelectTrigger,
@@ -134,13 +137,7 @@ const OrdersPage: React.FC = () => {
 
   const { mutateAsync: updateOrderStatus, isPending: isUpdating } = useUpdateOrderStatusMutation();
 
-  // Định dạng tiền tệ — luôn VND, locale động theo ngôn ngữ UI
-  const formatCurrency = useCallback((amount: number) => {
-    return new Intl.NumberFormat(getLocale(), {
-      style: 'currency',
-      currency: 'VND',
-    }).format(amount);
-  }, []);
+  const formatCurrency = useCallback((amount: number) => formatPrice(amount), []);
 
   // Định dạng ngày tháng
   const formatDate = useCallback((dateString: string) => {
@@ -284,273 +281,302 @@ const OrdersPage: React.FC = () => {
     return undefined;
   };
 
-  // Component loading
   if (isLoading) {
     return (
-      <div className="p-6 text-center">
-        <div className="animate-spin w-8 h-8 border-4 border-primary-500 border-t-transparent rounded-full mx-auto" />
-        <p className="mt-4 text-neutral-500 dark:text-neutral-400">{t('common.loading')}</p>
+      <div>
+        <div className="mb-6">
+          <span className="section-number">05 / ĐƠN HÀNG</span>
+          <div className="h-9 w-64 mt-2 shimmer rounded-lg" />
+        </div>
+        <div className="space-y-3">
+          {[...Array(6)].map((_, idx) => (
+            <div key={idx} className="shimmer h-14 rounded-lg" />
+          ))}
+        </div>
       </div>
     );
   }
 
-  // Component lỗi
   if (error) {
-    console.error('OrdersPage: Lỗi API', error);
     return (
-      <div className="p-6">
-        <Alert variant="destructive">
-          <AlertDescription className="flex items-center justify-between">
-            <span>{t('admin.orders.messages.loadError')}</span>
-            <Button size="sm" variant="destructive" onClick={() => refetch()}>
-              {t('admin.orders.messages.retry')}
-            </Button>
-          </AlertDescription>
-        </Alert>
+      <div>
+        <div className="mb-6">
+          <span className="section-number">05 / ĐƠN HÀNG</span>
+          <h1 className="display-heading mt-2">{t('admin.orders.title')}</h1>
+        </div>
+        <div className="glass-card-lg p-10 text-center">
+          <div className="w-16 h-16 mx-auto mb-4 rounded-2xl bg-[var(--admin-error)]/10 flex items-center justify-center">
+            <ShoppingCart className="w-8 h-8 text-[var(--admin-error)]" strokeWidth={1.5} />
+          </div>
+          <p className="text-sm text-[var(--text-tertiary)] mb-4">
+            {t('admin.orders.messages.loadError')}
+          </p>
+          <Button variant="outline" onClick={() => refetch()}>
+            {t('admin.orders.messages.retry')}
+          </Button>
+        </div>
       </div>
     );
   }
 
   return (
-    <div className={`${styles.ordersPage} dark:bg-neutral-900 dark:!bg-neutral-900`}>
-      {/* Tiêu đề trang */}
-      <div className={styles.pageHeader}>
-        <h2 className={`${styles.pageTitle} dark:text-white text-xl md:text-2xl font-semibold`}>
-          <ShoppingCart className="size-6" />
-          {t('admin.orders.title')}
-        </h2>
-        <p className="text-neutral-500 dark:text-neutral-400">{t('admin.orders.subtitle')}</p>
+    <div>
+      {/* Page header glass */}
+      <div className="relative rounded-3xl bg-[var(--bg-base)] dark:bg-white/[0.03] border border-[var(--border-default)] p-6 mb-5 overflow-hidden">
+        <div
+          className="absolute inset-0 -z-10 opacity-50 pointer-events-none"
+          style={{
+            background: `
+              radial-gradient(circle at 100% 0%, rgba(114, 46, 209, 0.10) 0%, transparent 40%),
+              radial-gradient(circle at 0% 100%, rgba(24, 144, 255, 0.08) 0%, transparent 35%)
+            `,
+          }}
+        />
+        <div className="relative flex flex-col sm:flex-row items-start sm:items-end justify-between gap-3">
+          <div>
+            <span className="section-number">05 / ĐƠN HÀNG</span>
+            <h1 className="display-heading mt-2">{t('admin.orders.title')}</h1>
+            <p className="text-sm text-[var(--text-tertiary)] mt-1.5">
+              {t('admin.orders.subtitle')}
+            </p>
+          </div>
+          <Button variant="outline" onClick={() => refetch()} disabled={isLoading}>
+            <RefreshCw
+              className={cn('w-4 h-4 mr-2', isLoading && 'animate-spin')}
+              strokeWidth={2.25}
+            />
+            {t('admin.orders.messages.retry')}
+          </Button>
+        </div>
       </div>
 
-      {/* Bộ lọc */}
-      <Card className={`${styles.filterCard} dark:bg-neutral-800 mb-6`}>
-        <CardContent className="pt-6">
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 items-end">
-            <div className="relative">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-neutral-400" />
-              <Input
-                placeholder={t('admin.orders.searchPlaceholder')}
-                onChange={(e) => handleSearch(e.target.value)}
-                className="pl-9"
-              />
-            </div>
-            <Select
-              value={statusFilter || 'all'}
-              onValueChange={(value) => handleStatusFilterChange(value === 'all' ? '' : value)}
-            >
-              <SelectTrigger>
-                <SelectValue placeholder={t('admin.orders.filterByStatus')} />
-              </SelectTrigger>
-              <SelectContent>
-                {statusOptions.map((option) => (
-                  <SelectItem key={option.value || 'all'} value={option.value || 'all'}>
-                    {option.value === ''
-                      ? t('admin.orders.allStatus')
-                      : t(`admin.orders.status.${option.value}`)}
-                  </SelectItem>
+      {/* Filter bar */}
+      <div className="rounded-2xl bg-[var(--bg-base)] dark:bg-white/[0.03] border border-[var(--border-default)] p-4 mb-5 shadow-sm">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 items-end">
+          <div className="relative lg:col-span-2">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[var(--text-tertiary)] pointer-events-none" />
+            <Input
+              placeholder={t('admin.orders.searchPlaceholder')}
+              onChange={(e) => handleSearch(e.target.value)}
+              className="pl-9"
+            />
+          </div>
+          <Select
+            value={statusFilter || 'all'}
+            onValueChange={(value) => handleStatusFilterChange(value === 'all' ? '' : value)}
+          >
+            <SelectTrigger>
+              <SelectValue placeholder={t('admin.orders.filterByStatus')} />
+            </SelectTrigger>
+            <SelectContent>
+              {statusOptions.map((option) => (
+                <SelectItem key={option.value || 'all'} value={option.value || 'all'}>
+                  {option.value === ''
+                    ? t('admin.orders.allStatus')
+                    : t(`admin.orders.status.${option.value}`)}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+      </div>
+
+      {/* Orders table */}
+      <div className="rounded-2xl bg-[var(--bg-base)] dark:bg-white/[0.03] border border-[var(--border-default)] overflow-hidden shadow-sm">
+        <div className="overflow-x-auto">
+          <table className="w-full text-sm min-w-[800px]">
+            <thead className="bg-white/[0.02]">
+              <tr>
+                {[
+                  { key: 'orderNumber', w: 'w-[120px]' },
+                  { key: 'customer', w: 'w-[200px]' },
+                  { key: 'createdAt', w: 'w-[140px]' },
+                  { key: 'total', w: 'w-[120px]' },
+                ].map(({ key, w }) => (
+                  <th
+                    key={key}
+                    className={`text-left px-4 py-3 text-[11px] font-semibold uppercase tracking-wider text-[var(--text-tertiary)] ${w}`}
+                  >
+                    {t(`admin.orders.table.${key}`)}
+                  </th>
                 ))}
-              </SelectContent>
-            </Select>
-            <div className="sm:col-span-2 lg:col-span-2 flex justify-end">
-              <Button variant="outline" onClick={() => refetch()} disabled={isLoading}>
-                <RefreshCw className={`size-4 mr-1 ${isLoading ? 'animate-spin' : ''}`} />
-                {t('admin.orders.messages.retry')}
-              </Button>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
-
-      {/* Bảng đơn hàng */}
-      <Card className={`${styles.tableCard} dark:bg-neutral-800`}>
-        <CardContent className="pt-6">
-          <div className="overflow-x-auto rounded-lg border border-neutral-200 dark:border-neutral-700">
-            <table className="w-full text-sm min-w-[800px]">
-              <thead>
-                <tr className="border-b border-neutral-200 dark:border-neutral-700 bg-neutral-50 dark:bg-neutral-800">
-                  <th className="text-left px-4 py-3 font-medium text-neutral-700 dark:text-neutral-300 w-[120px]">
-                    {t('admin.orders.table.orderNumber')}
-                  </th>
-                  <th className="text-left px-4 py-3 font-medium text-neutral-700 dark:text-neutral-300 w-[200px]">
-                    {t('admin.orders.table.customer')}
-                  </th>
-                  <th className="text-left px-4 py-3 font-medium text-neutral-700 dark:text-neutral-300 w-[140px]">
-                    {t('admin.orders.table.createdAt')}
-                  </th>
-                  <th className="text-left px-4 py-3 font-medium text-neutral-700 dark:text-neutral-300 w-[120px]">
-                    {t('admin.orders.table.total')}
-                  </th>
-                  <th className="text-left px-4 py-3 font-medium text-neutral-700 dark:text-neutral-300 w-[120px]">
-                    {t('common.status')}
-                  </th>
-                  <th className="text-left px-4 py-3 font-medium text-neutral-700 dark:text-neutral-300 w-[120px]">
-                    {t('admin.orders.table.payment')}
-                  </th>
-                  <th className="text-left px-4 py-3 font-medium text-neutral-700 dark:text-neutral-300 w-[120px] sticky right-0 bg-neutral-50 dark:bg-neutral-800">
-                    {t('admin.common.actions')}
-                  </th>
+                <th className="text-left px-4 py-3 text-[11px] font-semibold uppercase tracking-wider text-[var(--text-tertiary)] w-[120px]">
+                  {t('common.status')}
+                </th>
+                <th className="text-left px-4 py-3 text-[11px] font-semibold uppercase tracking-wider text-[var(--text-tertiary)] w-[120px]">
+                  {t('admin.orders.table.payment')}
+                </th>
+                <th className="text-right px-4 py-3 text-[11px] font-semibold uppercase tracking-wider text-[var(--text-tertiary)] w-[120px]">
+                  {t('admin.common.actions')}
+                </th>
+              </tr>
+            </thead>
+            <motion.tbody
+              initial="initial"
+              animate="animate"
+              variants={{ animate: { transition: { staggerChildren: 0.025 } } }}
+            >
+              {orders.length === 0 ? (
+                <tr>
+                  <td colSpan={7} className="text-center py-12 text-neutral-500">
+                    {t('admin.orders.noOrdersFound')}
+                  </td>
                 </tr>
-              </thead>
-              <tbody>
-                {orders.length === 0 ? (
-                  <tr>
-                    <td colSpan={7} className="text-center py-12 text-neutral-500">
-                      {t('admin.orders.noOrdersFound')}
-                    </td>
-                  </tr>
-                ) : (
-                  orders.map((record: AdminOrder) => {
-                    const statusConfig = STATUS_CONFIG[record.status as keyof typeof STATUS_CONFIG];
-                    const paymentConfig =
-                      PAYMENT_STATUS_CONFIG[
-                        record.paymentStatus as keyof typeof PAYMENT_STATUS_CONFIG
-                      ];
-                    const isCOD = record.paymentMethod === 'cod';
+              ) : (
+                orders.map((record: AdminOrder, _idx: number) => {
+                  const statusConfig = STATUS_CONFIG[record.status as keyof typeof STATUS_CONFIG];
+                  const paymentConfig =
+                    PAYMENT_STATUS_CONFIG[
+                      record.paymentStatus as keyof typeof PAYMENT_STATUS_CONFIG
+                    ];
+                  const isCOD = record.paymentMethod === 'cod';
 
-                    let paymentStatusText: string = record.paymentStatus;
-                    if (record.paymentStatus === 'pending') {
-                      paymentStatusText = isCOD
-                        ? t('admin.orders.paymentStatus.cod')
-                        : t('admin.orders.paymentStatus.pending');
-                    } else if (record.paymentStatus === 'paid') {
-                      paymentStatusText = t('admin.orders.paymentStatus.paid');
-                    } else if (record.paymentStatus === 'failed') {
-                      paymentStatusText = t('admin.orders.paymentStatus.failed');
-                    } else if (record.paymentStatus === 'refunded') {
-                      paymentStatusText = t('admin.orders.paymentStatus.refunded');
-                    }
+                  let paymentStatusText: string = record.paymentStatus;
+                  if (record.paymentStatus === 'pending') {
+                    paymentStatusText = isCOD
+                      ? t('admin.orders.paymentStatus.cod')
+                      : t('admin.orders.paymentStatus.pending');
+                  } else if (record.paymentStatus === 'paid') {
+                    paymentStatusText = t('admin.orders.paymentStatus.paid');
+                  } else if (record.paymentStatus === 'failed') {
+                    paymentStatusText = t('admin.orders.paymentStatus.failed');
+                  } else if (record.paymentStatus === 'refunded') {
+                    paymentStatusText = t('admin.orders.paymentStatus.refunded');
+                  }
 
-                    const warning =
-                      record.status === 'delivered' &&
-                      !isCOD &&
-                      (record.paymentStatus === 'pending' || record.paymentStatus === 'failed')
-                        ? t('admin.orders.updateStatus.deliveredUnpaidNote')
-                        : record.paymentStatus === 'refunded' && record.status !== 'cancelled'
-                          ? t('admin.orders.updateStatus.refundedActiveNote')
-                          : record.status === 'cancelled' && record.paymentStatus === 'paid'
-                            ? t('admin.orders.updateStatus.cancelledRefundNote')
-                            : null;
+                  const warning =
+                    record.status === 'delivered' &&
+                    !isCOD &&
+                    (record.paymentStatus === 'pending' || record.paymentStatus === 'failed')
+                      ? t('admin.orders.updateStatus.deliveredUnpaidNote')
+                      : record.paymentStatus === 'refunded' && record.status !== 'cancelled'
+                        ? t('admin.orders.updateStatus.refundedActiveNote')
+                        : record.status === 'cancelled' && record.paymentStatus === 'paid'
+                          ? t('admin.orders.updateStatus.cancelledRefundNote')
+                          : null;
 
-                    const paymentTag = (
-                      <span
-                        className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium ${paymentConfig?.color || ''}`}
-                      >
-                        {warning ? (
-                          <AlertTriangle className="w-3.5 h-3.5" />
-                        ) : (
-                          paymentConfig?.Icon && <paymentConfig.Icon className="w-3.5 h-3.5" />
-                        )}
-                        {paymentStatusText}
-                      </span>
-                    );
+                  const paymentTag = (
+                    <span
+                      className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium ${paymentConfig?.color || ''}`}
+                    >
+                      {warning ? (
+                        <AlertTriangle className="w-3.5 h-3.5" />
+                      ) : (
+                        paymentConfig?.Icon && <paymentConfig.Icon className="w-3.5 h-3.5" />
+                      )}
+                      {paymentStatusText}
+                    </span>
+                  );
 
-                    return (
-                      <tr
-                        key={record.id}
-                        className="border-b border-neutral-200 dark:border-neutral-700 hover:bg-neutral-50 dark:hover:bg-neutral-800/50"
-                      >
-                        <td className="px-4 py-3">
-                          <div>
-                            <span className="font-semibold dark:text-white">#{record.number}</span>
-                            <br />
-                            <span className="text-xs text-neutral-500">
-                              {t('admin.orders.table.itemCount', {
-                                count: record.items?.length || 0,
-                              })}
-                            </span>
-                          </div>
-                        </td>
-                        <td className="px-4 py-3">
-                          <div>
-                            <div className="flex items-center gap-2">
-                              <User className="size-4 text-neutral-400" />
-                              <span className="font-semibold dark:text-white">
-                                {record.User?.firstName} {record.User?.lastName}
-                              </span>
-                            </div>
-                            <span className="text-xs text-neutral-500">{record.User?.email}</span>
-                          </div>
-                        </td>
-                        <td className="px-4 py-3">
-                          <div className="flex items-center gap-2">
-                            <Calendar className="size-4 text-neutral-400" />
-                            <span className="dark:text-neutral-300">
-                              {formatDate(record.createdAt)}
-                            </span>
-                          </div>
-                        </td>
-                        <td className="px-4 py-3">
-                          <div className="flex items-center gap-2">
-                            <DollarSign className="size-4 text-neutral-400" />
-                            <span className="font-semibold" style={{ color: 'var(--admin-info)' }}>
-                              {formatCurrency(record.total)}
-                            </span>
-                          </div>
-                        </td>
-                        <td className="px-4 py-3">
-                          <span
-                            className={`${styles.statusTag} inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium ${statusConfig?.color || ''}`}
-                          >
-                            {statusConfig?.Icon && (
-                              <statusConfig.Icon className="w-3.5 h-3.5 inline" />
-                            )}{' '}
-                            {t(`admin.orders.status.${record.status}`)}
+                  return (
+                    <motion.tr
+                      key={record.id}
+                      variants={{
+                        initial: { opacity: 0, y: 8 },
+                        animate: { opacity: 1, y: 0, transition: { duration: 0.25 } },
+                      }}
+                      className="border-t border-[var(--border-default)] hover:bg-white/[0.03] transition group"
+                    >
+                      <td className="px-4 py-3">
+                        <div>
+                          <span className="font-semibold dark:text-white">#{record.number}</span>
+                          <br />
+                          <span className="text-xs text-neutral-500">
+                            {t('admin.orders.table.itemCount', {
+                              count: record.items?.length || 0,
+                            })}
                           </span>
-                        </td>
-                        <td className="px-4 py-3">
-                          {warning ? (
-                            <Tooltip>
-                              <TooltipTrigger asChild>{paymentTag}</TooltipTrigger>
-                              <TooltipContent>{warning}</TooltipContent>
-                            </Tooltip>
-                          ) : (
-                            paymentTag
-                          )}
-                        </td>
-                        <td className="px-4 py-3 sticky right-0 bg-white dark:bg-neutral-900">
-                          <div className="flex items-center gap-1">
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              onClick={() => handleViewDetails(record)}
-                              title={t('admin.orders.actions.view')}
-                            >
-                              <Eye className="size-4" />
-                            </Button>
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              onClick={() => handleUpdateStatus(record)}
-                              title={t('admin.orders.actions.update')}
-                            >
-                              <Pencil className="size-4" />
-                            </Button>
+                        </div>
+                      </td>
+                      <td className="px-4 py-3">
+                        <div>
+                          <div className="flex items-center gap-2">
+                            <User className="size-4 text-neutral-400" />
+                            <span className="font-semibold dark:text-white">
+                              {record.User?.firstName} {record.User?.lastName}
+                            </span>
                           </div>
-                        </td>
-                      </tr>
-                    );
-                  })
-                )}
-              </tbody>
-            </table>
-          </div>
+                          <span className="text-xs text-neutral-500">{record.User?.email}</span>
+                        </div>
+                      </td>
+                      <td className="px-4 py-3">
+                        <div className="flex items-center gap-2">
+                          <Calendar className="size-4 text-neutral-400" />
+                          <span className="dark:text-neutral-300">
+                            {formatDate(record.createdAt)}
+                          </span>
+                        </div>
+                      </td>
+                      <td className="px-4 py-3">
+                        <div className="flex items-center gap-2">
+                          <DollarSign className="size-4 text-neutral-400" />
+                          <span className="font-semibold" style={{ color: 'var(--admin-info)' }}>
+                            {formatCurrency(record.total)}
+                          </span>
+                        </div>
+                      </td>
+                      <td className="px-4 py-3">
+                        <span
+                          className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium ${statusConfig?.color || ''}`}
+                        >
+                          {statusConfig?.Icon && (
+                            <statusConfig.Icon className="w-3.5 h-3.5 inline" />
+                          )}{' '}
+                          {t(`admin.orders.status.${record.status}`)}
+                        </span>
+                      </td>
+                      <td className="px-4 py-3">
+                        {warning ? (
+                          <Tooltip>
+                            <TooltipTrigger asChild>{paymentTag}</TooltipTrigger>
+                            <TooltipContent>{warning}</TooltipContent>
+                          </Tooltip>
+                        ) : (
+                          paymentTag
+                        )}
+                      </td>
+                      <td className="px-4 py-3">
+                        <div className="flex items-center justify-end gap-0.5">
+                          <button
+                            type="button"
+                            onClick={() => handleViewDetails(record)}
+                            className="p-1.5 rounded-lg text-[var(--text-secondary)] hover:bg-[var(--admin-info)]/10 hover:text-[var(--admin-info)] transition"
+                            title={t('admin.orders.actions.view')}
+                          >
+                            <Eye className="w-4 h-4" strokeWidth={2.25} />
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => handleUpdateStatus(record)}
+                            className="p-1.5 rounded-lg text-[var(--text-secondary)] hover:bg-[var(--accent)]/10 hover:text-[var(--accent)] transition"
+                            title={t('admin.orders.actions.update')}
+                          >
+                            <Pencil className="w-4 h-4" strokeWidth={2.25} />
+                          </button>
+                        </div>
+                      </td>
+                    </motion.tr>
+                  );
+                })
+              )}
+            </motion.tbody>
+          </table>
+        </div>
 
-          {/* Phân trang */}
-          {pagination && pagination.totalPages > 1 && (
-            <div className={`${styles.paginationContainer} dark:border-neutral-700`}>
-              <Pagination
-                currentPage={page}
-                totalPages={totalPages}
-                onPageChange={(newPage) => setPage(newPage)}
-              />
-            </div>
-          )}
-        </CardContent>
-      </Card>
+        {pagination && pagination.totalPages > 1 && (
+          <div className="px-5 py-4 border-t border-[var(--border-default)]">
+            <Pagination
+              currentPage={page}
+              totalPages={totalPages}
+              onPageChange={(newPage) => setPage(newPage)}
+            />
+          </div>
+        )}
+      </div>
 
       {/* Modal chi tiết đơn hàng */}
       <Dialog open={isDetailsModalOpen} onOpenChange={setIsDetailsModalOpen}>
-        <DialogContent className="max-w-[800px] max-h-[85vh] overflow-y-auto">
+        <DialogContent className="glass-card-lg max-w-[800px] max-h-[85vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <Eye className="size-5" />
@@ -844,10 +870,10 @@ const OrdersPage: React.FC = () => {
           }
         }}
       >
-        <DialogContent className="max-w-lg">
+        <DialogContent className="glass-card-lg max-w-lg">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
-              <Pencil className="size-5" />
+              <Pencil className="w-5 h-5" />
               {t('admin.orders.updateStatus.title')}
             </DialogTitle>
           </DialogHeader>

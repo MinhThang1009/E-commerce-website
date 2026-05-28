@@ -1,13 +1,26 @@
 /**
  * @file CategoriesPage.tsx
  * @layer Page
- * @feature catalog
- * @description Page component của feature catalog
+ * @feature admin
+ * @description Quản lý danh mục — glass design + tree structure (spec §7, §16.2)
  */
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
+import { motion } from 'framer-motion';
+import {
+  Plus,
+  Pencil,
+  Trash2,
+  FolderOpen,
+  RefreshCw,
+  ChevronLeft,
+  ChevronRight,
+  Sparkles,
+} from 'lucide-react';
 import { useUiStore } from '@/stores/ui-store';
-import LoadingSpinner from '@/components/common/LoadingSpinner';
+import { getErrorMsg } from '@/utils/error-utils';
+import { categorySchema } from '@/schemas/admin';
+import { cn } from '@/utils/cn';
 import {
   useGetCategoryTreeQuery,
   useCreateCategoryMutation,
@@ -16,12 +29,9 @@ import {
 } from '@features/catalog/api/category-api';
 import type { Category } from '@features/catalog/types/category.types';
 import ImageUpload from '@/components/common/ImageUpload';
-import { getErrorMsg } from '@/utils/error-utils';
-import { categorySchema } from '@/schemas/admin';
+import LoadingSpinner from '@/components/common/LoadingSpinner';
 import {
   Button,
-  Card,
-  CardContent,
   Dialog,
   DialogContent,
   DialogHeader,
@@ -35,15 +45,7 @@ import {
   SelectItem,
   Switch,
 } from '@/components/ui';
-import {
-  Plus,
-  Pencil,
-  Trash2,
-  FolderOpen,
-  RefreshCw,
-  ChevronLeft,
-  ChevronRight,
-} from 'lucide-react';
+import StatusPill from '../../components/StatusPill';
 
 interface CategoryFormData {
   name: string;
@@ -67,6 +69,13 @@ const initialFormData: CategoryFormData = {
   sortOrder: 0,
 };
 
+const easeOutQuart = [0.22, 1, 0.36, 1] as const;
+const rowStagger = { animate: { transition: { staggerChildren: 0.025 } } };
+const rowItem = {
+  initial: { opacity: 0, y: 8 },
+  animate: { opacity: 1, y: 0, transition: { duration: 0.25, ease: easeOutQuart } },
+};
+
 const CategoriesPage: React.FC = () => {
   const { t } = useTranslation();
   const addNotification = useUiStore((s) => s.addNotification);
@@ -83,14 +92,13 @@ const CategoriesPage: React.FC = () => {
   const { mutateAsync: updateCategory, isPending: isUpdating } = useUpdateCategoryMutation();
   const { mutateAsync: deleteCategory } = useDeleteCategoryMutation();
 
-  const categories = React.useMemo(() => {
+  const categories = useMemo(() => {
     if (!categoriesData?.data) return [];
     if (Array.isArray(categoriesData.data)) return categoriesData.data;
     return [categoriesData.data];
   }, [categoriesData]);
 
-  // Phân trang thủ công
-  const totalPages = Math.ceil(categories.length / pageSize);
+  const totalPages = Math.max(1, Math.ceil(categories.length / pageSize));
   const paginatedCategories = categories.slice(
     (currentPage - 1) * pageSize,
     currentPage * pageSize,
@@ -169,347 +177,416 @@ const CategoriesPage: React.FC = () => {
     setFormErrors({});
   };
 
-  return (
-    <div className="p-2 sm:p-4 md:p-6">
-      <Card className="dark:bg-neutral-800">
-        <CardContent className="pt-6">
-          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 gap-4">
-            <div>
-              <h2 className="text-xl md:text-2xl font-semibold mb-1 dark:text-white">
-                {t('admin.categories.title')}
-              </h2>
-              <p className="text-neutral-600 dark:text-neutral-400">
-                {t('admin.categories.subtitle')}
-              </p>
-            </div>
-            <div className="flex flex-wrap gap-2">
-              <Button
-                variant="outline"
-                onClick={() => refetch()}
-                disabled={isLoading}
-                className="dark:text-neutral-300"
-              >
-                <RefreshCw className={`w-4 h-4 mr-2 ${isLoading ? 'animate-spin' : ''}`} />
-                {t('common.refresh')}
-              </Button>
-              <Button onClick={handleCreate}>
-                <Plus className="w-4 h-4 mr-2" />
-                {t('admin.categories.addCategory')}
-              </Button>
-            </div>
-          </div>
+  const isEmpty = !isLoading && categories.length === 0;
 
-          <div className="overflow-x-auto">
-            {isLoading ? (
-              <div className="flex justify-center py-12">
-                <LoadingSpinner size="lg" />
+  return (
+    <div>
+      {/* Page header với gradient subtle */}
+      <div className="relative rounded-3xl bg-[var(--bg-base)] dark:bg-white/[0.03] border border-[var(--border-default)] p-6 mb-5 overflow-hidden">
+        <div
+          className="absolute inset-0 -z-10 opacity-50 pointer-events-none"
+          style={{
+            background: `
+              radial-gradient(circle at 100% 0%, rgba(82, 196, 26, 0.10) 0%, transparent 40%),
+              radial-gradient(circle at 0% 100%, rgba(114, 46, 209, 0.08) 0%, transparent 35%)
+            `,
+          }}
+        />
+        <div className="relative flex flex-col sm:flex-row items-start sm:items-end justify-between gap-3">
+          <div>
+            <span className="section-number">03 / DANH MỤC</span>
+            <div className="flex items-center gap-2.5 mt-2">
+              <h1 className="display-heading">{t('admin.categories.title')}</h1>
+              <Sparkles className="w-5 h-5 text-[var(--accent)]/60" aria-hidden="true" />
+            </div>
+            <p className="text-sm text-[var(--text-tertiary)] mt-1.5">
+              {t('admin.categories.subtitle')}
+            </p>
+          </div>
+          <div className="flex items-center gap-2 flex-wrap">
+            <Button variant="outline" onClick={() => refetch()} disabled={isLoading}>
+              <RefreshCw
+                className={cn('w-4 h-4 mr-2', isLoading && 'animate-spin')}
+                strokeWidth={2.25}
+              />
+              {t('common.refresh')}
+            </Button>
+            <Button onClick={handleCreate}>
+              <Plus className="w-4 h-4 mr-2" strokeWidth={2.25} />
+              {t('admin.categories.addCategory')}
+            </Button>
+          </div>
+        </div>
+      </div>
+
+      {/* Table */}
+      <div className="rounded-2xl bg-[var(--bg-base)] dark:bg-white/[0.03] border border-[var(--border-default)] overflow-hidden shadow-sm">
+        {isLoading ? (
+          <div className="p-5 space-y-3">
+            {[...Array(6)].map((_, idx) => (
+              <div key={idx} className="shimmer h-14 rounded-lg" />
+            ))}
+          </div>
+        ) : isEmpty ? (
+          <div className="flex flex-col items-center justify-center py-16 px-6">
+            <div className="relative w-20 h-20 mb-5">
+              <div className="absolute inset-0 rounded-3xl bg-[var(--accent)]/10 blur-2xl" />
+              <div className="relative w-full h-full rounded-3xl bg-gradient-to-br from-[var(--accent)]/15 to-[var(--color-secondary)]/10 flex items-center justify-center border border-[var(--accent)]/20">
+                <FolderOpen className="w-10 h-10 text-[var(--accent)]" strokeWidth={1.5} />
               </div>
-            ) : (
-              <>
-                <table className="w-full text-sm">
-                  <thead>
-                    <tr className="border-b border-neutral-200 dark:border-neutral-700">
-                      <th className="p-3 text-left w-20">{t('admin.categories.table.image')}</th>
-                      <th className="p-3 text-left">{t('admin.categories.table.name')}</th>
-                      <th className="p-3 text-left">{t('admin.brands.form.description')}</th>
-                      <th className="p-3 text-left">{t('admin.categories.table.parent')}</th>
-                      <th className="p-3 text-left">{t('common.status')}</th>
-                      <th className="p-3 text-left w-20">{t('admin.categories.table.order')}</th>
-                      <th className="p-3 text-left w-[120px]">{t('admin.common.actions')}</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {paginatedCategories.map((record: Category) => (
-                      <tr
-                        key={record.id}
-                        className="border-b border-neutral-100 dark:border-neutral-800 hover:bg-neutral-50 dark:hover:bg-neutral-800/50"
-                      >
-                        <td className="p-3">
+            </div>
+            <h3 className="text-lg font-semibold mb-1.5 text-[var(--text-primary)]">
+              {t('admin.categories.empty.title', { defaultValue: 'Chưa có danh mục nào' })}
+            </h3>
+            <p className="text-sm text-[var(--text-tertiary)] text-center max-w-sm mb-6">
+              {t('admin.categories.empty.description', {
+                defaultValue: 'Tạo danh mục đầu tiên để phân loại sản phẩm dễ dàng hơn.',
+              })}
+            </p>
+            <Button onClick={handleCreate}>
+              <Plus className="w-4 h-4 mr-2" strokeWidth={2.25} />
+              {t('admin.categories.addCategory')}
+            </Button>
+          </div>
+        ) : (
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm">
+              <thead className="bg-white/[0.02]">
+                <tr>
+                  <th className="px-4 py-3 text-left text-[11px] font-semibold uppercase tracking-wider text-[var(--text-tertiary)] w-20">
+                    {t('admin.categories.table.image')}
+                  </th>
+                  <th className="px-4 py-3 text-left text-[11px] font-semibold uppercase tracking-wider text-[var(--text-tertiary)]">
+                    {t('admin.categories.table.name')}
+                  </th>
+                  <th className="px-4 py-3 text-left text-[11px] font-semibold uppercase tracking-wider text-[var(--text-tertiary)]">
+                    {t('admin.brands.form.description')}
+                  </th>
+                  <th className="px-4 py-3 text-left text-[11px] font-semibold uppercase tracking-wider text-[var(--text-tertiary)]">
+                    {t('admin.categories.table.parent')}
+                  </th>
+                  <th className="px-4 py-3 text-left text-[11px] font-semibold uppercase tracking-wider text-[var(--text-tertiary)]">
+                    {t('common.status')}
+                  </th>
+                  <th className="px-4 py-3 text-center text-[11px] font-semibold uppercase tracking-wider text-[var(--text-tertiary)] w-20">
+                    {t('admin.categories.table.order')}
+                  </th>
+                  <th className="px-4 py-3 text-right text-[11px] font-semibold uppercase tracking-wider text-[var(--text-tertiary)] w-[120px]">
+                    {t('admin.common.actions')}
+                  </th>
+                </tr>
+              </thead>
+              <motion.tbody variants={rowStagger} initial="initial" animate="animate">
+                {paginatedCategories.map((record: Category) => {
+                  const parent = record.parentId
+                    ? categories.find((cat: Category) => cat.id === record.parentId)
+                    : null;
+                  return (
+                    <motion.tr
+                      key={record.id}
+                      variants={rowItem}
+                      className="border-t border-[var(--border-default)] hover:bg-white/[0.03] transition group"
+                    >
+                      <td className="px-4 py-3">
+                        <div className="w-12 h-12 rounded-lg overflow-hidden bg-[var(--bg-surface)] ring-1 ring-[var(--border-default)] group-hover:ring-[var(--accent)]/30 transition flex items-center justify-center">
                           {record.image ? (
                             <img
                               src={record.image}
                               alt={record.name}
-                              className="w-[50px] h-[50px] object-cover rounded"
+                              className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-300"
                             />
                           ) : (
-                            <div className="w-12 h-12 bg-gray-100 dark:bg-neutral-700 rounded flex items-center justify-center">
-                              <FolderOpen className="w-5 h-5 text-gray-400" />
-                            </div>
+                            <FolderOpen
+                              className="w-5 h-5 text-[var(--text-tertiary)]"
+                              strokeWidth={1.75}
+                            />
                           )}
-                        </td>
-                        <td className="p-3">
-                          <div className="font-medium">{record.name}</div>
-                          <div className="text-sm text-gray-500">{record.slug}</div>
-                        </td>
-                        <td className="p-3">
-                          {record.description ? (
-                            <div className="max-w-xs truncate" title={record.description}>
-                              {record.description}
-                            </div>
-                          ) : (
-                            <span className="text-gray-400">—</span>
-                          )}
-                        </td>
-                        <td className="p-3">
-                          {!record.parentId ? (
-                            <span className="inline-block px-2 py-0.5 text-xs rounded bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400">
-                              {t('admin.categories.table.root')}
-                            </span>
-                          ) : (
-                            (() => {
-                              const parent = categories.find(
-                                (cat: Category) => cat.id === record.parentId,
-                              );
-                              return parent ? (
-                                <span className="inline-block px-2 py-0.5 text-xs rounded bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400">
-                                  {parent.name}
-                                </span>
-                              ) : (
-                                <span className="text-gray-400">—</span>
-                              );
-                            })()
-                          )}
-                        </td>
-                        <td className="p-3">
-                          <span
-                            className={`inline-block px-2 py-0.5 text-xs rounded ${
-                              record.isActive
-                                ? 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400'
-                                : 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400'
-                            }`}
+                        </div>
+                      </td>
+                      <td className="px-4 py-3">
+                        <div className="font-medium text-[var(--text-primary)]">{record.name}</div>
+                        <div className="text-[11px] text-[var(--text-tertiary)] tabular-nums">
+                          {record.slug}
+                        </div>
+                      </td>
+                      <td className="px-4 py-3 max-w-xs">
+                        {record.description ? (
+                          <div
+                            className="truncate text-[var(--text-secondary)]"
+                            title={record.description}
                           >
-                            {record.isActive ? t('common.active') : t('admin.common.hidden')}
-                          </span>
-                        </td>
-                        <td className="p-3">{record.sortOrder || 0}</td>
-                        <td className="p-3">
-                          <div className="flex items-center gap-1">
-                            <button
-                              className="p-1.5 rounded hover:bg-neutral-100 dark:hover:bg-neutral-700 text-neutral-600 dark:text-neutral-400"
-                              onClick={() => handleEdit(record)}
-                            >
-                              <Pencil className="w-4 h-4" />
-                            </button>
-                            <button
-                              className="p-1.5 rounded hover:bg-red-50 dark:hover:bg-red-900/20 text-red-600 dark:text-red-400"
-                              onClick={() => setDeleteConfirmId(record.id)}
-                            >
-                              <Trash2 className="w-4 h-4" />
-                            </button>
+                            {record.description}
                           </div>
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-
-                {/* Phân trang */}
-                {categories.length > pageSize && (
-                  <div className="mt-4 flex items-center justify-between">
-                    <span className="text-sm text-neutral-500 dark:text-neutral-400">
-                      {t('admin.categories.totalItems', {
-                        range0: (currentPage - 1) * pageSize + 1,
-                        range1: Math.min(currentPage * pageSize, categories.length),
-                        total: categories.length,
-                      })}
-                    </span>
-                    <div className="flex items-center gap-1">
-                      <button
-                        className="p-2 rounded hover:bg-neutral-100 dark:hover:bg-neutral-700 disabled:opacity-40"
-                        disabled={currentPage <= 1}
-                        onClick={() => setCurrentPage((p) => p - 1)}
-                      >
-                        <ChevronLeft className="w-4 h-4" />
-                      </button>
-                      {Array.from({ length: totalPages }, (_, i) => (
-                        <button
-                          key={i + 1}
-                          className={`px-3 py-1 rounded text-sm ${
-                            currentPage === i + 1
-                              ? 'bg-primary-600 text-white'
-                              : 'hover:bg-neutral-100 dark:hover:bg-neutral-700'
-                          }`}
-                          onClick={() => setCurrentPage(i + 1)}
-                        >
-                          {i + 1}
-                        </button>
-                      ))}
-                      <button
-                        className="p-2 rounded hover:bg-neutral-100 dark:hover:bg-neutral-700 disabled:opacity-40"
-                        disabled={currentPage >= totalPages}
-                        onClick={() => setCurrentPage((p) => p + 1)}
-                      >
-                        <ChevronRight className="w-4 h-4" />
-                      </button>
-                    </div>
-                  </div>
-                )}
-              </>
-            )}
+                        ) : (
+                          <span className="text-[var(--text-tertiary)]">—</span>
+                        )}
+                      </td>
+                      <td className="px-4 py-3">
+                        {!record.parentId ? (
+                          <StatusPill
+                            variant="success"
+                            label={t('admin.categories.table.root')}
+                            showDot={false}
+                          />
+                        ) : parent ? (
+                          <StatusPill variant="info" label={parent.name} showDot={false} />
+                        ) : (
+                          <span className="text-[var(--text-tertiary)]">—</span>
+                        )}
+                      </td>
+                      <td className="px-4 py-3">
+                        <StatusPill
+                          variant={record.isActive ? 'success' : 'error'}
+                          label={record.isActive ? t('common.active') : t('admin.common.hidden')}
+                        />
+                      </td>
+                      <td className="px-4 py-3 text-center tabular-nums text-[var(--text-secondary)]">
+                        {record.sortOrder || 0}
+                      </td>
+                      <td className="px-4 py-3">
+                        <div className="flex items-center justify-end gap-0.5">
+                          <button
+                            type="button"
+                            onClick={() => handleEdit(record)}
+                            className="p-1.5 rounded-lg text-[var(--text-secondary)] hover:bg-[var(--accent)]/10 hover:text-[var(--accent)] transition"
+                            title={t('admin.common.actions')}
+                          >
+                            <Pencil className="w-4 h-4" strokeWidth={2.25} />
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => setDeleteConfirmId(record.id)}
+                            className="p-1.5 rounded-lg text-[var(--text-secondary)] hover:bg-[var(--admin-error)]/10 hover:text-[var(--admin-error)] transition"
+                            title={t('common.delete')}
+                          >
+                            <Trash2 className="w-4 h-4" strokeWidth={2.25} />
+                          </button>
+                        </div>
+                      </td>
+                    </motion.tr>
+                  );
+                })}
+              </motion.tbody>
+            </table>
           </div>
+        )}
 
-          {/* Delete confirm dialog */}
-          <Dialog open={!!deleteConfirmId} onOpenChange={() => setDeleteConfirmId(null)}>
-            <DialogContent>
-              <DialogHeader>
-                <DialogTitle>{t('admin.categories.deleteTitle')}</DialogTitle>
-              </DialogHeader>
-              <p className="text-sm text-neutral-600 dark:text-neutral-400">
-                {t('admin.categories.deleteConfirm')}
-              </p>
-              <div className="flex justify-end gap-2 mt-4">
-                <Button variant="outline" onClick={() => setDeleteConfirmId(null)}>
-                  {t('common.cancel')}
-                </Button>
-                <Button
-                  variant="destructive"
-                  onClick={() => deleteConfirmId && handleDelete(deleteConfirmId)}
-                >
-                  {t('common.delete')}
-                </Button>
-              </div>
-            </DialogContent>
-          </Dialog>
-
-          {/* Create/Edit modal */}
-          <Dialog
-            open={isModalVisible}
-            onOpenChange={(open) => {
-              if (!open) {
-                setIsModalVisible(false);
-                setEditingCategory(null);
-                setFormData(initialFormData);
-                setFormErrors({});
-              }
-            }}
-          >
-            <DialogContent className="max-w-[600px]">
-              <DialogHeader>
-                <DialogTitle>
-                  {editingCategory
-                    ? t('admin.categories.editCategory')
-                    : t('admin.categories.addCategoryModal')}
-                </DialogTitle>
-              </DialogHeader>
-              <form onSubmit={handleSubmit} className="space-y-4">
-                <div className="space-y-2">
-                  <Label htmlFor="cat-name">{t('admin.categories.table.name')}</Label>
-                  <Input
-                    id="cat-name"
-                    placeholder={t('admin.categories.form.namePlaceholder') || ''}
-                    value={formData.name}
-                    onChange={(e) => setFormData((prev) => ({ ...prev, name: e.target.value }))}
-                  />
-                  {formErrors.name && (
-                    <p className="text-red-500 text-xs mt-1">{formErrors.name}</p>
-                  )}
-                </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="cat-description">{t('admin.brands.form.description')}</Label>
-                  <textarea
-                    id="cat-description"
-                    rows={3}
-                    placeholder={t('admin.brands.form.descriptionPlaceholder')}
-                    className="flex w-full rounded-xl border border-neutral-300 dark:border-neutral-600 bg-white dark:bg-neutral-800 px-3 py-2 text-sm text-neutral-900 dark:text-neutral-100 shadow-sm placeholder:text-neutral-400 focus:outline-none focus:ring-2 focus:ring-primary-500/30 focus:border-primary-500 disabled:cursor-not-allowed disabled:opacity-50"
-                    value={formData.description || ''}
-                    onChange={(e) =>
-                      setFormData((prev) => ({ ...prev, description: e.target.value }))
-                    }
-                  />
-                </div>
-
-                <div className="space-y-2">
-                  <Label>{t('admin.categories.table.image')}</Label>
-                  <ImageUpload
-                    type="categories"
-                    multiple={false}
-                    value={formData.image || ''}
-                    onChange={(val) =>
-                      setFormData((prev) => ({
-                        ...prev,
-                        image: typeof val === 'string' ? val : val[0] || '',
-                      }))
-                    }
-                  />
-                </div>
-
-                <div className="space-y-2">
-                  <Label>{t('admin.categories.form.parentCategory')}</Label>
-                  <Select
-                    value={formData.parentId || ''}
-                    onValueChange={(val) =>
-                      setFormData((prev) => ({ ...prev, parentId: val || null }))
-                    }
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder={t('admin.categories.form.selectParent')} />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {getParentOptions(editingCategory?.id).map((opt) => (
-                        <SelectItem key={opt.value} value={opt.value}>
-                          {opt.label}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="cat-sortOrder">{t('admin.categories.form.displayOrder')}</Label>
-                    <input
-                      id="cat-sortOrder"
-                      type="number"
-                      min={0}
-                      placeholder="0"
-                      className="flex h-10 w-full rounded-xl border border-neutral-300 dark:border-neutral-600 bg-white dark:bg-neutral-800 px-3 py-2 text-sm text-neutral-900 dark:text-neutral-100 shadow-sm placeholder:text-neutral-400 focus:outline-none focus:ring-2 focus:ring-primary-500/30 focus:border-primary-500 disabled:cursor-not-allowed disabled:opacity-50"
-                      value={formData.sortOrder}
-                      onChange={(e) =>
-                        setFormData((prev) => ({ ...prev, sortOrder: Number(e.target.value) || 0 }))
-                      }
-                    />
-                  </div>
-
-                  <div className="space-y-2">
-                    <Label>{t('common.status')}</Label>
-                    <div className="flex items-center gap-2 pt-2">
-                      <Switch
-                        checked={formData.isActive}
-                        onCheckedChange={(checked) =>
-                          setFormData((prev) => ({ ...prev, isActive: checked }))
-                        }
-                      />
-                      <span className="text-sm text-neutral-600 dark:text-neutral-400">
-                        {formData.isActive ? t('common.active') : t('admin.common.hidden')}
-                      </span>
-                    </div>
-                  </div>
-                </div>
-
-                <div className="flex flex-wrap justify-end gap-2 mt-6">
-                  <Button
-                    variant="outline"
+        {/* Pagination */}
+        {categories.length > pageSize && !isEmpty && (
+          <div className="flex flex-col sm:flex-row items-center justify-between gap-3 px-5 py-4 border-t border-[var(--border-default)]">
+            <span className="text-xs text-[var(--text-tertiary)]">
+              {t('admin.categories.totalItems', {
+                range0: (currentPage - 1) * pageSize + 1,
+                range1: Math.min(currentPage * pageSize, categories.length),
+                total: categories.length,
+              })}
+            </span>
+            <div className="flex items-center gap-1">
+              <button
+                type="button"
+                disabled={currentPage <= 1}
+                onClick={() => setCurrentPage((p) => p - 1)}
+                className="p-2 rounded-lg text-[var(--text-secondary)] hover:bg-white/5 disabled:opacity-30 disabled:cursor-not-allowed transition"
+                aria-label="Previous"
+              >
+                <ChevronLeft className="w-4 h-4" />
+              </button>
+              {Array.from({ length: totalPages }, (_, i) => {
+                const page = i + 1;
+                const isActive = currentPage === page;
+                return (
+                  <button
+                    key={page}
                     type="button"
-                    onClick={() => {
-                      setIsModalVisible(false);
-                      setEditingCategory(null);
-                      setFormData(initialFormData);
-                      setFormErrors({});
-                    }}
+                    onClick={() => setCurrentPage(page)}
+                    className={cn(
+                      'min-w-[36px] h-9 px-3 rounded-lg text-sm font-medium transition tabular-nums',
+                      isActive
+                        ? 'bg-[var(--accent)] text-white shadow-md shadow-[var(--accent)]/20'
+                        : 'text-[var(--text-secondary)] hover:bg-white/5',
+                    )}
                   >
-                    {t('common.cancel')}
-                  </Button>
-                  <Button type="submit" disabled={isCreating || isUpdating}>
-                    {(isCreating || isUpdating) && <LoadingSpinner size="sm" />}
-                    {editingCategory ? t('common.update') : t('common.create')}
-                  </Button>
+                    {page}
+                  </button>
+                );
+              })}
+              <button
+                type="button"
+                disabled={currentPage >= totalPages}
+                onClick={() => setCurrentPage((p) => p + 1)}
+                className="p-2 rounded-lg text-[var(--text-secondary)] hover:bg-white/5 disabled:opacity-30 disabled:cursor-not-allowed transition"
+                aria-label="Next"
+              >
+                <ChevronRight className="w-4 h-4" />
+              </button>
+            </div>
+          </div>
+        )}
+      </div>
+
+      {/* Delete confirm dialog — glass */}
+      <Dialog open={!!deleteConfirmId} onOpenChange={() => setDeleteConfirmId(null)}>
+        <DialogContent className="glass-card-lg !border-[var(--admin-error)]/20 max-w-md">
+          <DialogHeader>
+            <div className="flex items-start gap-3">
+              <div className="w-10 h-10 rounded-full bg-[var(--admin-error)]/15 flex items-center justify-center flex-shrink-0">
+                <Trash2 className="w-5 h-5 text-[var(--admin-error)]" strokeWidth={2.25} />
+              </div>
+              <div>
+                <DialogTitle>{t('admin.categories.deleteTitle')}</DialogTitle>
+                <p className="text-sm text-[var(--text-tertiary)] mt-1">
+                  {t('admin.categories.deleteConfirm')}
+                </p>
+              </div>
+            </div>
+          </DialogHeader>
+          <div className="flex justify-end gap-2 mt-2">
+            <Button variant="outline" onClick={() => setDeleteConfirmId(null)}>
+              {t('common.cancel')}
+            </Button>
+            <Button
+              variant="destructive"
+              onClick={() => deleteConfirmId && handleDelete(deleteConfirmId)}
+            >
+              {t('common.delete')}
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Create/Edit modal — glass */}
+      <Dialog
+        open={isModalVisible}
+        onOpenChange={(open) => {
+          if (!open) {
+            setIsModalVisible(false);
+            setEditingCategory(null);
+            setFormData(initialFormData);
+            setFormErrors({});
+          }
+        }}
+      >
+        <DialogContent className="glass-card-lg max-w-[600px]">
+          <DialogHeader>
+            <DialogTitle>
+              {editingCategory
+                ? t('admin.categories.editCategory')
+                : t('admin.categories.addCategoryModal')}
+            </DialogTitle>
+          </DialogHeader>
+          <form onSubmit={handleSubmit} className="space-y-4">
+            <div className="space-y-2">
+              <Label htmlFor="cat-name">{t('admin.categories.table.name')}</Label>
+              <Input
+                id="cat-name"
+                placeholder={t('admin.categories.form.namePlaceholder') || ''}
+                value={formData.name}
+                onChange={(e) => setFormData((prev) => ({ ...prev, name: e.target.value }))}
+              />
+              {formErrors.name && (
+                <p className="text-[var(--admin-error)] text-xs mt-1">{formErrors.name}</p>
+              )}
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="cat-description">{t('admin.brands.form.description')}</Label>
+              <textarea
+                id="cat-description"
+                rows={3}
+                placeholder={t('admin.brands.form.descriptionPlaceholder')}
+                className="flex w-full rounded-xl border border-[var(--border-default)] bg-[var(--bg-base)] dark:bg-white/[0.03] px-3 py-2 text-sm text-[var(--text-primary)] placeholder:text-[var(--text-tertiary)] focus:outline-none focus:ring-2 focus:ring-[var(--accent)]/30 focus:border-[var(--accent)] transition disabled:opacity-50"
+                value={formData.description || ''}
+                onChange={(e) => setFormData((prev) => ({ ...prev, description: e.target.value }))}
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label>{t('admin.categories.table.image')}</Label>
+              <ImageUpload
+                type="categories"
+                multiple={false}
+                value={formData.image || ''}
+                onChange={(val) =>
+                  setFormData((prev) => ({
+                    ...prev,
+                    image: typeof val === 'string' ? val : val[0] || '',
+                  }))
+                }
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label>{t('admin.categories.form.parentCategory')}</Label>
+              <Select
+                value={formData.parentId || ''}
+                onValueChange={(val) => setFormData((prev) => ({ ...prev, parentId: val || null }))}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder={t('admin.categories.form.selectParent')} />
+                </SelectTrigger>
+                <SelectContent>
+                  {getParentOptions(editingCategory?.id).map((opt) => (
+                    <SelectItem key={opt.value} value={opt.value}>
+                      {opt.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="cat-sortOrder">{t('admin.categories.form.displayOrder')}</Label>
+                <input
+                  id="cat-sortOrder"
+                  type="number"
+                  min={0}
+                  placeholder="0"
+                  className="flex h-10 w-full rounded-xl border border-[var(--border-default)] bg-[var(--bg-base)] dark:bg-white/[0.03] px-3 py-2 text-sm text-[var(--text-primary)] placeholder:text-[var(--text-tertiary)] focus:outline-none focus:ring-2 focus:ring-[var(--accent)]/30 focus:border-[var(--accent)] transition tabular-nums"
+                  value={formData.sortOrder}
+                  onChange={(e) =>
+                    setFormData((prev) => ({ ...prev, sortOrder: Number(e.target.value) || 0 }))
+                  }
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label>{t('common.status')}</Label>
+                <div className="flex items-center gap-2 pt-2">
+                  <Switch
+                    checked={formData.isActive}
+                    onCheckedChange={(checked) =>
+                      setFormData((prev) => ({ ...prev, isActive: checked }))
+                    }
+                  />
+                  <span className="text-sm text-[var(--text-secondary)]">
+                    {formData.isActive ? t('common.active') : t('admin.common.hidden')}
+                  </span>
                 </div>
-              </form>
-            </DialogContent>
-          </Dialog>
-        </CardContent>
-      </Card>
+              </div>
+            </div>
+
+            <div className="flex flex-wrap justify-end gap-2 mt-6">
+              <Button
+                variant="outline"
+                type="button"
+                onClick={() => {
+                  setIsModalVisible(false);
+                  setEditingCategory(null);
+                  setFormData(initialFormData);
+                  setFormErrors({});
+                }}
+              >
+                {t('common.cancel')}
+              </Button>
+              <Button type="submit" disabled={isCreating || isUpdating}>
+                {(isCreating || isUpdating) && <LoadingSpinner size="sm" />}
+                {editingCategory ? t('common.update') : t('common.create')}
+              </Button>
+            </div>
+          </form>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };

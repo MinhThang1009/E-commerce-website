@@ -1,45 +1,13 @@
 /**
  * @file ProductsPage.tsx
  * @layer Page
- * @feature catalog
- * @description Page component của feature catalog
+ * @feature admin
+ * @description Quản lý sản phẩm — list + filter + table với glass design (spec §7, §16.2)
  */
 import { useState, useEffect, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { buildRoute } from '@/routes/paths';
-import {
-  useGetAdminProductsQuery,
-  useDeleteProductMutation,
-  useCloneProductMutation,
-  useUpdateProductStatusMutation,
-  useLazyGetAdminProductsQuery,
-} from '@/features/admin';
-import { useGetAllCategoriesQuery } from '@features/catalog/api/category-api';
 import { useTranslation } from 'react-i18next';
-import { ProductExportModal } from '@/features/admin';
-import { calculatePriceRange } from '@/utils/price-utils';
-import { getLocale } from '@/utils/format';
-import { useUiStore } from '@/stores/ui-store';
-import LoadingSpinner from '@/components/common/LoadingSpinner';
-import {
-  Button,
-  Card,
-  CardContent,
-  Input,
-  Select,
-  SelectTrigger,
-  SelectValue,
-  SelectContent,
-  SelectItem,
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogFooter,
-  Alert,
-  AlertTitle,
-  AlertDescription,
-} from '@/components/ui';
+import { motion, AnimatePresence } from 'framer-motion';
 import {
   Plus,
   Search,
@@ -53,9 +21,39 @@ import {
   ChevronLeft,
   ChevronRight,
   AlertCircle,
+  Package as PackageIcon,
+  Sparkles,
 } from 'lucide-react';
+import {
+  useGetAdminProductsQuery,
+  useDeleteProductMutation,
+  useCloneProductMutation,
+  useUpdateProductStatusMutation,
+  useLazyGetAdminProductsQuery,
+} from '@/features/admin';
+import { useGetAllCategoriesQuery } from '@features/catalog/api/category-api';
+import { ProductExportModal } from '@/features/admin';
+import { buildRoute } from '@/routes/paths';
+import { calculatePriceRange } from '@/utils/price-utils';
+import { formatPrice } from '@/utils/format';
+import { useUiStore } from '@/stores/ui-store';
+import { cn } from '@/utils/cn';
+import {
+  Button,
+  Input,
+  Select,
+  SelectTrigger,
+  SelectValue,
+  SelectContent,
+  SelectItem,
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+} from '@/components/ui';
+import StatusPill, { type StatusVariant } from '../../components/StatusPill';
 
-// Kiểu sản phẩm dùng trong bảng quản trị
 interface AdminProductRow {
   id: string;
   name: string;
@@ -70,6 +68,22 @@ interface AdminProductRow {
   [key: string]: unknown;
 }
 
+const easeOutQuart = [0.22, 1, 0.36, 1] as const;
+const rowStagger = {
+  animate: { transition: { staggerChildren: 0.025 } },
+};
+const rowItem = {
+  initial: { opacity: 0, y: 8 },
+  animate: { opacity: 1, y: 0, transition: { duration: 0.25, ease: easeOutQuart } },
+};
+
+// Map product status → StatusPill variant
+const STATUS_VARIANT: Record<string, StatusVariant> = {
+  active: 'success',
+  inactive: 'warning',
+  draft: 'neutral',
+};
+
 const ProductsPage: React.FC = () => {
   const { t } = useTranslation();
   const navigate = useNavigate();
@@ -82,7 +96,6 @@ const ProductsPage: React.FC = () => {
     { value: 'draft', label: t('admin.products.status.draft') },
   ];
 
-  // Trạng thái bộ lọc
   const [searchTerm, setSearchTerm] = useState('');
   const [categoryFilter, setCategoryFilter] = useState('all');
   const [statusFilter, setStatusFilter] = useState('all');
@@ -90,24 +103,15 @@ const ProductsPage: React.FC = () => {
   const [sortBy, setSortBy] = useState('createdAt');
   const [sortOrder, setSortOrder] = useState<'ASC' | 'DESC'>('DESC');
 
-  // Trạng thái chọn hàng
   const [selectedRowKeys, setSelectedRowKeys] = useState<string[]>([]);
   const [selectedRows, setSelectedRows] = useState<AdminProductRow[]>([]);
-
-  // Trạng thái xuất dữ liệu
   const [isExportModalOpen, setIsExportModalOpen] = useState(false);
-
-  // Trạng thái modal
   const [selectedProduct, setSelectedProduct] = useState<AdminProductRow | null>(null);
   const [isQuickViewOpen, setIsQuickViewOpen] = useState(false);
-
-  // Trạng thái confirm delete
   const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
 
-  // Lấy danh mục từ API
   const { data: categoriesResponse, isLoading: isCategoriesLoading } = useGetAllCategoriesQuery();
 
-  // Các query và mutation API
   const {
     data: productsResponse,
     error,
@@ -123,27 +127,23 @@ const ProductsPage: React.FC = () => {
     sortOrder,
   });
 
-  const { mutateAsync: deleteProduct, isPending: _isDeleting } = useDeleteProductMutation();
+  const { mutateAsync: deleteProduct } = useDeleteProductMutation();
   const { mutateAsync: cloneProduct, isPending: isCloning } = useCloneProductMutation();
-  const { mutateAsync: updateProductStatus, isPending: _isUpdatingStatus } =
-    useUpdateProductStatusMutation();
+  const { mutateAsync: updateProductStatus } = useUpdateProductStatusMutation();
   const { trigger: triggerGetProducts } = useLazyGetAdminProductsQuery();
-  const [isFetchingForExport, _setIsFetchingForExport] = useState(false);
+  const [isFetchingForExport] = useState(false);
 
-  // Xử lý dữ liệu sản phẩm từ API
   const products = useMemo(
     () => productsResponse?.data?.products || [],
     [productsResponse?.data?.products],
   );
   const pagination = productsResponse?.data?.pagination;
 
-  // Xử lý dữ liệu danh mục từ API
   const rawCategories = categoriesResponse?.data;
   const apiCategories = useMemo(() => {
     return Array.isArray(rawCategories) ? rawCategories : rawCategories ? [rawCategories] : [];
   }, [rawCategories]);
 
-  // Tạo options cho dropdown danh mục
   const categoryOptions = [
     { value: 'all', label: t('admin.products.filters.allCategories') },
     ...(Array.isArray(apiCategories)
@@ -154,110 +154,78 @@ const ProductsPage: React.FC = () => {
       : []),
   ];
 
-  // Xử lý xóa sản phẩm
   const handleDeleteProduct = async (productId: string) => {
     try {
       await deleteProduct(productId);
       addNotification({ message: t('admin.products.messages.deleteSuccess'), type: 'success' });
       refetch();
-    } catch (error) {
+    } catch (e) {
       addNotification({ message: t('admin.products.messages.deleteError'), type: 'error' });
-      console.error('Xóa sản phẩm thất bại:', error);
+      console.error('Xóa sản phẩm thất bại:', e);
     }
     setDeleteConfirmId(null);
   };
 
-  // Xử lý thay đổi trạng thái sản phẩm
   const handleStatusChange = async (productId: string, newStatus: string) => {
     try {
       await updateProductStatus({ id: productId, status: newStatus });
       addNotification({ message: t('admin.products.messages.statusSuccess'), type: 'success' });
-    } catch (error) {
+    } catch (e) {
       addNotification({ message: t('admin.products.messages.statusError'), type: 'error' });
-      console.error('Thay đổi trạng thái thất bại:', error);
+      console.error('Thay đổi trạng thái thất bại:', e);
     }
   };
 
-  // Xử lý nhân bản sản phẩm
   const handleCloneProduct = async (productId: string) => {
     try {
       await cloneProduct(productId);
       addNotification({ message: t('admin.products.messages.cloneSuccess'), type: 'success' });
       refetch();
-    } catch (error) {
+    } catch (e) {
       addNotification({ message: t('admin.products.messages.cloneError'), type: 'error' });
-      console.error('Nhân bản sản phẩm thất bại:', error);
+      console.error('Nhân bản sản phẩm thất bại:', e);
     }
   };
 
-  // Xử lý lấy dữ liệu xuất
   const handleExportAll = async (exportFilters: Record<string, unknown>) => {
     try {
       const result = await triggerGetProducts({
         ...exportFilters,
-        limit: 99999, // Lấy tất cả để xuất
+        limit: 99999,
       });
       return result?.data?.products || [];
-    } catch (error) {
-      console.error('Lấy sản phẩm để xuất thất bại:', error);
-      throw error;
+    } catch (e) {
+      console.error('Lấy sản phẩm để xuất thất bại:', e);
+      throw e;
     }
   };
 
-  // Mở modal xem nhanh
   const openQuickView = (product: AdminProductRow) => {
     setSelectedProduct(product);
     setIsQuickViewOpen(true);
   };
 
-  // Xử lý tìm kiếm với debounce
   useEffect(() => {
     const timeoutId = setTimeout(() => {
-      setCurrentPage(1); // Quay về trang đầu khi tìm kiếm
+      setCurrentPage(1);
     }, 300);
-
     return () => clearTimeout(timeoutId);
   }, [searchTerm, categoryFilter, statusFilter]);
 
-  // Định dạng tiền tệ — luôn VND, locale động theo ngôn ngữ UI
-  const formatCurrency = (amount: number) => {
-    return new Intl.NumberFormat(getLocale(), {
-      style: 'currency',
-      currency: 'VND',
-    }).format(amount);
-  };
-
-  // Tính giá thấp nhất từ biến thể hoặc giá cơ bản
   const calculateDisplayPrice = (product: AdminProductRow) => {
     if (product.variants && product.variants.length > 0) {
       const prices = product.variants.map((variant) => parseFloat(String(variant.price)));
       const minPrice = Math.min(...prices);
-      return formatCurrency(minPrice);
+      return formatPrice(minPrice);
     }
-    return formatCurrency(product.price);
+    return formatPrice(product.price);
   };
 
-  // Lấy style tag trạng thái
-  const getStatusClasses = (status: string) => {
-    switch (status) {
-      case 'active':
-        return 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400';
-      case 'inactive':
-        return 'bg-orange-100 text-orange-800 dark:bg-orange-900/30 dark:text-orange-400';
-      case 'draft':
-        return 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400';
-      default:
-        return 'bg-gray-100 text-gray-800 dark:bg-gray-900/30 dark:text-gray-400';
-    }
-  };
-
-  // Xử lý sắp xếp
   const handleSort = (field: string) => {
     if (sortBy === field) {
       if (sortOrder === 'ASC') {
         setSortOrder('DESC');
       } else {
-        // Reset về mặc định khi user click lần 3 để bỏ sort
         setSortBy('createdAt');
         setSortOrder('DESC');
       }
@@ -276,7 +244,6 @@ const ProductsPage: React.FC = () => {
     );
   };
 
-  // Chọn / bỏ chọn tất cả
   const handleSelectAll = (checked: boolean) => {
     if (checked) {
       const allKeys = (products as unknown as AdminProductRow[]).map((p) => p.id);
@@ -288,7 +255,6 @@ const ProductsPage: React.FC = () => {
     }
   };
 
-  // Chọn / bỏ chọn 1 hàng
   const handleSelectRow = (product: AdminProductRow, checked: boolean) => {
     if (checked) {
       setSelectedRowKeys((prev) => [...prev, product.id]);
@@ -299,233 +265,288 @@ const ProductsPage: React.FC = () => {
     }
   };
 
+  // ===== Error state =====
   if (error) {
     return (
-      <div className="p-6">
-        <Alert variant="destructive">
-          <AlertCircle className="h-4 w-4" />
-          <AlertTitle>{t('admin.products.messages.loadError')}</AlertTitle>
-          <AlertDescription className="flex items-center justify-between">
-            <span>{t('admin.products.messages.loadError')}</span>
-            <Button variant="outline" size="sm" onClick={() => refetch()}>
-              {t('admin.products.actions.retry')}
-            </Button>
-          </AlertDescription>
-        </Alert>
+      <div>
+        <div className="mb-6">
+          <span className="section-number">02 / SẢN PHẨM</span>
+          <h1 className="display-heading mt-2">{t('admin.products.title')}</h1>
+        </div>
+        <div className="glass-card-lg p-10 text-center">
+          <div className="w-16 h-16 mx-auto mb-4 rounded-2xl bg-[var(--admin-error)]/10 flex items-center justify-center">
+            <AlertCircle className="w-8 h-8 text-[var(--admin-error)]" strokeWidth={1.5} />
+          </div>
+          <h2 className="text-lg font-semibold mb-2">{t('admin.products.messages.loadError')}</h2>
+          <Button variant="outline" onClick={() => refetch()}>
+            {t('admin.products.actions.retry')}
+          </Button>
+        </div>
       </div>
     );
   }
 
+  const productList = products as unknown as AdminProductRow[];
+  const isEmpty = !isLoading && productList.length === 0;
+  const totalPages = pagination?.totalPages || 1;
+
   return (
-    <div className="p-2 sm:p-4 md:p-6">
-      {/* Tiêu đề trang */}
-      <Card className="mb-4 md:mb-6">
-        <CardContent className="pt-6">
-          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-            <div>
-              <h2 className="text-xl md:text-2xl font-semibold text-neutral-900 dark:text-white">
-                {t('admin.products.title')}
-              </h2>
-              <p className="mt-2 text-sm text-neutral-600 dark:text-neutral-400">
-                {pagination?.totalItems
-                  ? t('admin.products.stats', {
-                      totalItems: pagination.totalItems,
-                      totalPages: pagination.totalPages,
-                    })
-                  : t('admin.products.subtitle')}
-              </p>
+    <div>
+      {/* Page header với gradient subtle */}
+      <div className="relative rounded-3xl bg-[var(--bg-base)] dark:bg-white/[0.03] border border-[var(--border-default)] p-6 mb-5 overflow-hidden">
+        {/* Subtle gradient mesh */}
+        <div
+          className="absolute inset-0 -z-10 opacity-50 pointer-events-none"
+          style={{
+            background: `
+              radial-gradient(circle at 100% 0%, rgba(42, 172, 167, 0.10) 0%, transparent 40%),
+              radial-gradient(circle at 0% 100%, rgba(24, 144, 255, 0.08) 0%, transparent 35%)
+            `,
+          }}
+        />
+        <div className="relative flex flex-col sm:flex-row items-start sm:items-end justify-between gap-3">
+          <div>
+            <span className="section-number">02 / SẢN PHẨM</span>
+            <div className="flex items-center gap-2.5 mt-2">
+              <h1 className="display-heading">{t('admin.products.title')}</h1>
+              <Sparkles className="w-5 h-5 text-[var(--accent)]/60" aria-hidden="true" />
             </div>
-            <div className="flex justify-start sm:justify-end gap-2">
-              <Button variant="outline" onClick={() => setIsExportModalOpen(true)} size="default">
-                <Download className="w-4 h-4 mr-2" />
-                {t('admin.products.actions.export')}
-              </Button>
-              <Button onClick={() => navigate('/admin/products/create')} size="default">
-                <Plus className="w-4 h-4 mr-2" />
-                {t('admin.products.actions.add')}
-              </Button>
-            </div>
+            <p className="text-sm text-[var(--text-tertiary)] mt-1.5">
+              {pagination?.totalItems
+                ? t('admin.products.stats', {
+                    totalItems: pagination.totalItems,
+                    totalPages: pagination.totalPages,
+                  })
+                : t('admin.products.subtitle')}
+            </p>
           </div>
-        </CardContent>
-      </Card>
-
-      {/* Bộ lọc */}
-      <Card className="mb-4 md:mb-6">
-        <CardContent className="pt-6">
-          <div className="grid grid-cols-1 md:grid-cols-12 gap-4 items-center">
-            <div className="md:col-span-5 lg:col-span-4 relative">
-              <Input
-                placeholder={t('admin.products.filters.searchPlaceholder')}
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                className="pr-10"
-              />
-              <Search className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-neutral-400" />
-            </div>
-            <div className="md:col-span-3 lg:col-span-2">
-              <Select
-                value={categoryFilter}
-                onValueChange={setCategoryFilter}
-                disabled={isCategoriesLoading}
-              >
-                <SelectTrigger className="w-full">
-                  <SelectValue placeholder={t('admin.products.filters.categoryPlaceholder')} />
-                </SelectTrigger>
-                <SelectContent>
-                  {categoryOptions.map((opt) => (
-                    <SelectItem key={opt.value} value={opt.value}>
-                      {opt.label}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-            <div className="md:col-span-3 lg:col-span-2">
-              <Select value={statusFilter} onValueChange={setStatusFilter}>
-                <SelectTrigger className="w-full">
-                  <SelectValue placeholder={t('admin.products.filters.statusPlaceholder')} />
-                </SelectTrigger>
-                <SelectContent>
-                  {statusOptions.map((opt) => (
-                    <SelectItem key={opt.value} value={opt.value}>
-                      {opt.label}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
+          <div className="flex items-center gap-2 flex-wrap">
+            <Button variant="outline" onClick={() => setIsExportModalOpen(true)}>
+              <Download className="w-4 h-4 mr-2" strokeWidth={2.25} />
+              {t('admin.products.actions.export')}
+            </Button>
+            <Button onClick={() => navigate('/admin/products/create')}>
+              <Plus className="w-4 h-4 mr-2" strokeWidth={2.25} />
+              {t('admin.products.actions.add')}
+            </Button>
           </div>
-        </CardContent>
-      </Card>
+        </div>
+      </div>
 
-      {/* Bảng sản phẩm */}
-      <Card>
-        <CardContent className="pt-6">
-          {isLoading ? (
-            <div className="flex justify-center py-12">
-              <LoadingSpinner size="lg" />
+      {/* Filter bar — glass card */}
+      <div className="rounded-2xl bg-[var(--bg-base)] dark:bg-white/[0.03] border border-[var(--border-default)] p-4 mb-5 shadow-sm">
+        <div className="grid grid-cols-1 md:grid-cols-12 gap-3 items-center">
+          <div className="md:col-span-6 relative">
+            <Search
+              className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[var(--text-tertiary)] pointer-events-none"
+              aria-hidden="true"
+            />
+            <Input
+              placeholder={t('admin.products.filters.searchPlaceholder')}
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="pl-10"
+            />
+          </div>
+          <div className="md:col-span-3">
+            <Select
+              value={categoryFilter}
+              onValueChange={setCategoryFilter}
+              disabled={isCategoriesLoading}
+            >
+              <SelectTrigger className="w-full">
+                <SelectValue placeholder={t('admin.products.filters.categoryPlaceholder')} />
+              </SelectTrigger>
+              <SelectContent>
+                {categoryOptions.map((opt) => (
+                  <SelectItem key={opt.value} value={opt.value}>
+                    {opt.label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+          <div className="md:col-span-3">
+            <Select value={statusFilter} onValueChange={setStatusFilter}>
+              <SelectTrigger className="w-full">
+                <SelectValue placeholder={t('admin.products.filters.statusPlaceholder')} />
+              </SelectTrigger>
+              <SelectContent>
+                {statusOptions.map((opt) => (
+                  <SelectItem key={opt.value} value={opt.value}>
+                    {opt.label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+        </div>
+      </div>
+
+      {/* Table card */}
+      <div className="rounded-2xl bg-[var(--bg-base)] dark:bg-white/[0.03] border border-[var(--border-default)] overflow-hidden shadow-sm">
+        {isLoading ? (
+          <div className="p-5 space-y-3">
+            {[...Array(6)].map((_, idx) => (
+              <div key={idx} className="shimmer h-14 rounded-lg" />
+            ))}
+          </div>
+        ) : isEmpty ? (
+          // Empty state với icon đẹp
+          <div className="flex flex-col items-center justify-center py-16 px-6">
+            <div className="relative w-20 h-20 mb-5">
+              <div className="absolute inset-0 rounded-3xl bg-[var(--accent)]/10 blur-2xl" />
+              <div className="relative w-full h-full rounded-3xl bg-gradient-to-br from-[var(--accent)]/15 to-[var(--color-secondary)]/10 flex items-center justify-center border border-[var(--accent)]/20">
+                <PackageIcon className="w-10 h-10 text-[var(--accent)]" strokeWidth={1.5} />
+              </div>
             </div>
-          ) : (
-            <div className="overflow-x-auto">
-              <table className="w-full text-sm">
-                <thead>
-                  <tr className="border-b border-neutral-200 dark:border-neutral-700">
-                    <th className="p-3 text-left w-10">
-                      <input
-                        type="checkbox"
-                        className="rounded border-neutral-300 dark:border-neutral-600"
-                        checked={
-                          (products as unknown as AdminProductRow[]).length > 0 &&
-                          selectedRowKeys.length ===
-                            (products as unknown as AdminProductRow[]).length
-                        }
-                        onChange={(e) => handleSelectAll(e.target.checked)}
-                      />
-                    </th>
-                    <th className="p-3 text-left w-20">{t('admin.products.table.image')}</th>
-                    <th className="p-3 text-left">
-                      <button
-                        className="flex items-center gap-1 hover:text-primary-600"
-                        onClick={() => handleSort('name')}
-                      >
-                        {t('admin.products.table.name')} <SortIcon field="name" />
-                      </button>
-                    </th>
-                    <th className="p-3 text-left">{t('admin.products.table.category')}</th>
-                    <th className="p-3 text-left">
-                      <button
-                        className="flex items-center gap-1 hover:text-primary-600"
-                        onClick={() => handleSort('price')}
-                      >
-                        {t('admin.products.table.price')} <SortIcon field="price" />
-                      </button>
-                    </th>
-                    <th className="p-3 text-left">
-                      <button
-                        className="flex items-center gap-1 hover:text-primary-600"
-                        onClick={() => handleSort('stockQuantity')}
-                      >
-                        {t('admin.products.table.stock')} <SortIcon field="stockQuantity" />
-                      </button>
-                    </th>
-                    <th className="p-3 text-left w-[150px]">{t('admin.products.table.status')}</th>
-                    <th className="p-3 text-left w-[150px]">{t('admin.products.table.actions')}</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {(products as unknown as AdminProductRow[]).map((product) => (
-                    <tr
-                      key={product.id}
-                      className="border-b border-neutral-100 dark:border-neutral-800 hover:bg-neutral-50 dark:hover:bg-neutral-800/50"
+            <h3 className="text-lg font-semibold mb-1.5 text-[var(--text-primary)]">
+              {t('admin.products.empty.title', { defaultValue: 'Chưa có sản phẩm nào' })}
+            </h3>
+            <p className="text-sm text-[var(--text-tertiary)] text-center max-w-sm mb-6">
+              {t('admin.products.empty.description', {
+                defaultValue: 'Tạo sản phẩm đầu tiên để bắt đầu bán hàng trên TechStore.',
+              })}
+            </p>
+            <Button onClick={() => navigate('/admin/products/create')}>
+              <Plus className="w-4 h-4 mr-2" strokeWidth={2.25} />
+              {t('admin.products.actions.add')}
+            </Button>
+          </div>
+        ) : (
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm">
+              <thead className="bg-white/[0.02]">
+                <tr>
+                  <th className="px-4 py-3 text-left w-10">
+                    <input
+                      type="checkbox"
+                      className="rounded border-[var(--border-default)] accent-[var(--accent)]"
+                      checked={
+                        productList.length > 0 && selectedRowKeys.length === productList.length
+                      }
+                      onChange={(e) => handleSelectAll(e.target.checked)}
+                      aria-label={t('admin.products.table.image')}
+                    />
+                  </th>
+                  <th className="px-4 py-3 text-left text-[11px] font-semibold uppercase tracking-wider text-[var(--text-tertiary)] w-20">
+                    {t('admin.products.table.image')}
+                  </th>
+                  <th className="px-4 py-3 text-left">
+                    <button
+                      type="button"
+                      onClick={() => handleSort('name')}
+                      className="inline-flex items-center gap-1 text-[11px] font-semibold uppercase tracking-wider text-[var(--text-tertiary)] hover:text-[var(--accent)] transition"
                     >
-                      <td className="p-3">
+                      {t('admin.products.table.name')}
+                      <SortIcon field="name" />
+                    </button>
+                  </th>
+                  <th className="px-4 py-3 text-left text-[11px] font-semibold uppercase tracking-wider text-[var(--text-tertiary)]">
+                    {t('admin.products.table.category')}
+                  </th>
+                  <th className="px-4 py-3 text-right">
+                    <button
+                      type="button"
+                      onClick={() => handleSort('price')}
+                      className="inline-flex items-center gap-1 text-[11px] font-semibold uppercase tracking-wider text-[var(--text-tertiary)] hover:text-[var(--accent)] transition"
+                    >
+                      {t('admin.products.table.price')}
+                      <SortIcon field="price" />
+                    </button>
+                  </th>
+                  <th className="px-4 py-3 text-center">
+                    <button
+                      type="button"
+                      onClick={() => handleSort('stockQuantity')}
+                      className="inline-flex items-center gap-1 text-[11px] font-semibold uppercase tracking-wider text-[var(--text-tertiary)] hover:text-[var(--accent)] transition"
+                    >
+                      {t('admin.products.table.stock')}
+                      <SortIcon field="stockQuantity" />
+                    </button>
+                  </th>
+                  <th className="px-4 py-3 text-left text-[11px] font-semibold uppercase tracking-wider text-[var(--text-tertiary)] w-[140px]">
+                    {t('admin.products.table.status')}
+                  </th>
+                  <th className="px-4 py-3 text-right text-[11px] font-semibold uppercase tracking-wider text-[var(--text-tertiary)] w-[140px]">
+                    {t('admin.products.table.actions')}
+                  </th>
+                </tr>
+              </thead>
+              <motion.tbody variants={rowStagger} initial="initial" animate="animate">
+                {productList.map((product) => {
+                  const stock =
+                    product.stockQuantity !== undefined ? product.stockQuantity : product.stock;
+                  const isLowStock = (stock ?? 0) === 0;
+                  return (
+                    <motion.tr
+                      key={product.id}
+                      variants={rowItem}
+                      className="border-t border-[var(--border-default)] hover:bg-white/[0.03] transition group"
+                    >
+                      <td className="px-4 py-3">
                         <input
                           type="checkbox"
-                          className="rounded border-neutral-300 dark:border-neutral-600"
+                          className="rounded border-[var(--border-default)] accent-[var(--accent)]"
                           checked={selectedRowKeys.includes(product.id)}
                           onChange={(e) => handleSelectRow(product, e.target.checked)}
+                          aria-label={`Chọn ${product.name}`}
                         />
                       </td>
-                      <td className="p-3">
-                        <img
-                          width={50}
-                          height={50}
-                          src={product.images?.[0] || '/placeholder-image.jpg'}
-                          alt={t('product.imageAlt')}
-                          className="object-cover rounded w-[50px] h-[50px]"
-                          onError={(e) => {
-                            (e.target as HTMLImageElement).src = '/placeholder-image.jpg';
-                          }}
-                        />
-                      </td>
-                      <td className="p-3">
-                        <div className="max-w-[200px]">
-                          <div className="font-medium">{product.name}</div>
+                      <td className="px-4 py-3">
+                        <div className="w-12 h-12 rounded-lg overflow-hidden bg-[var(--bg-surface)] ring-1 ring-[var(--border-default)] group-hover:ring-[var(--accent)]/30 transition">
+                          <img
+                            src={product.images?.[0] || '/placeholder-image.jpg'}
+                            alt={product.name}
+                            className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-300"
+                            onError={(e) => {
+                              (e.target as HTMLImageElement).src = '/placeholder-image.jpg';
+                            }}
+                          />
                         </div>
                       </td>
-                      <td className="p-3">
+                      <td className="px-4 py-3 max-w-[260px]">
+                        <div className="font-medium text-[var(--text-primary)] truncate">
+                          {product.name}
+                        </div>
+                      </td>
+                      <td className="px-4 py-3">
                         {product.categories && product.categories.length > 0 ? (
-                          product.categories.map((cat, index) => (
-                            <span
-                              key={index}
-                              className="inline-block px-2 py-0.5 mr-1 mb-1 text-xs rounded bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400"
-                            >
-                              {cat.name}
-                            </span>
-                          ))
+                          <div className="flex flex-wrap gap-1">
+                            {product.categories.slice(0, 2).map((cat, index) => (
+                              <span
+                                key={index}
+                                className="inline-flex items-center px-2 py-0.5 rounded-md text-[11px] font-medium bg-[var(--admin-info)]/10 text-[var(--admin-info)] border border-[var(--admin-info)]/20"
+                              >
+                                {cat.name}
+                              </span>
+                            ))}
+                            {product.categories.length > 2 && (
+                              <span className="text-[11px] text-[var(--text-tertiary)]">
+                                +{product.categories.length - 2}
+                              </span>
+                            )}
+                          </div>
                         ) : (
-                          <span className="text-neutral-400">-</span>
+                          <span className="text-[var(--text-tertiary)]">—</span>
                         )}
                       </td>
-                      <td className="p-3">
-                        <span className="font-medium" style={{ color: 'var(--admin-success)' }}>
-                          {calculateDisplayPrice(product)}
-                        </span>
+                      <td className="px-4 py-3 text-right whitespace-nowrap tabular-nums font-semibold text-[var(--text-primary)]">
+                        {calculateDisplayPrice(product)}
                       </td>
-                      <td className="p-3">
-                        {(() => {
-                          const stock =
-                            product.stockQuantity !== undefined
-                              ? product.stockQuantity
-                              : product.stock;
-                          return (
-                            <span
-                              style={{
-                                color:
-                                  (stock ?? 0) > 0 ? 'var(--admin-success)' : 'var(--admin-error)',
-                              }}
-                            >
-                              {stock}
-                            </span>
-                          );
-                        })()}
+                      <td className="px-4 py-3 text-center">
+                        <StatusPill
+                          variant={isLowStock ? 'error' : 'success'}
+                          label={String(stock ?? 0)}
+                          showDot={false}
+                        />
                       </td>
-                      <td className="p-3">
+                      <td className="px-4 py-3">
                         <Select
                           value={product.status}
                           onValueChange={(value) => handleStatusChange(product.id, value)}
                         >
-                          <SelectTrigger className="w-[140px] h-8 text-xs">
+                          <SelectTrigger className="w-full h-8 text-xs border-[var(--border-default)]">
                             <SelectValue />
                           </SelectTrigger>
                           <SelectContent>
@@ -533,115 +554,132 @@ const ProductsPage: React.FC = () => {
                               .filter((opt) => opt.value !== 'all')
                               .map((opt) => (
                                 <SelectItem key={opt.value} value={opt.value}>
-                                  <span
-                                    className={`inline-block px-2 py-0.5 text-xs rounded ${getStatusClasses(opt.value)}`}
-                                  >
-                                    {opt.label}
-                                  </span>
+                                  <StatusPill
+                                    variant={STATUS_VARIANT[opt.value] || 'neutral'}
+                                    label={opt.label}
+                                  />
                                 </SelectItem>
                               ))}
                           </SelectContent>
                         </Select>
                       </td>
-                      <td className="p-3">
-                        <div className="flex items-center gap-1">
+                      <td className="px-4 py-3">
+                        <div className="flex items-center justify-end gap-0.5">
                           <button
-                            className="p-1.5 rounded hover:bg-neutral-100 dark:hover:bg-neutral-700 text-neutral-600 dark:text-neutral-400"
+                            type="button"
                             onClick={() => openQuickView(product)}
+                            className="p-1.5 rounded-lg text-[var(--text-secondary)] hover:bg-[var(--admin-info)]/10 hover:text-[var(--admin-info)] transition"
                             title={t('admin.products.actions.view')}
                           >
-                            <Eye className="w-4 h-4" />
+                            <Eye className="w-4 h-4" strokeWidth={2.25} />
                           </button>
                           <button
-                            className="p-1.5 rounded hover:bg-neutral-100 dark:hover:bg-neutral-700 text-neutral-600 dark:text-neutral-400"
+                            type="button"
                             onClick={() => navigate(buildRoute.adminProductEdit(product.id))}
+                            className="p-1.5 rounded-lg text-[var(--text-secondary)] hover:bg-[var(--accent)]/10 hover:text-[var(--accent)] transition"
                             title={t('admin.products.actions.edit')}
                           >
-                            <Pencil className="w-4 h-4" />
+                            <Pencil className="w-4 h-4" strokeWidth={2.25} />
                           </button>
                           <button
-                            className="p-1.5 rounded hover:bg-neutral-100 dark:hover:bg-neutral-700 text-blue-600 dark:text-blue-400"
+                            type="button"
                             onClick={() => handleCloneProduct(product.id)}
                             disabled={isCloning}
+                            className="p-1.5 rounded-lg text-[var(--text-secondary)] hover:bg-[var(--admin-purple)]/10 hover:text-[var(--admin-purple)] transition disabled:opacity-40 disabled:cursor-not-allowed"
                             title={t('admin.products.actions.clone')}
                           >
-                            <Copy className="w-4 h-4" />
+                            <Copy className="w-4 h-4" strokeWidth={2.25} />
                           </button>
                           <button
-                            className="p-1.5 rounded hover:bg-red-50 dark:hover:bg-red-900/20 text-red-600 dark:text-red-400"
+                            type="button"
                             onClick={() => setDeleteConfirmId(product.id)}
+                            className="p-1.5 rounded-lg text-[var(--text-secondary)] hover:bg-[var(--admin-error)]/10 hover:text-[var(--admin-error)] transition"
                             title={t('admin.products.actions.delete')}
                           >
-                            <Trash2 className="w-4 h-4" />
+                            <Trash2 className="w-4 h-4" strokeWidth={2.25} />
                           </button>
                         </div>
                       </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          )}
-
-          {/* Phân trang */}
-          {pagination && (
-            <div className="mt-4 flex flex-col sm:flex-row items-center justify-between gap-2">
-              <span className="text-sm text-neutral-500 dark:text-neutral-400">
-                {t('admin.products.pagination.total', {
-                  start: (currentPage - 1) * (pagination?.itemsPerPage || 10) + 1,
-                  end: Math.min(
-                    currentPage * (pagination?.itemsPerPage || 10),
-                    pagination?.totalItems || 0,
-                  ),
-                  total: pagination?.totalItems || 0,
-                })}
-              </span>
-              <div className="flex items-center gap-1">
-                <button
-                  className="p-2 rounded hover:bg-neutral-100 dark:hover:bg-neutral-700 disabled:opacity-40"
-                  disabled={currentPage <= 1}
-                  onClick={() => setCurrentPage((p) => p - 1)}
-                >
-                  <ChevronLeft className="w-4 h-4" />
-                </button>
-                {Array.from({ length: Math.min(pagination.totalPages || 1, 7) }, (_, i) => {
-                  const page = i + 1;
-                  return (
-                    <button
-                      key={page}
-                      className={`px-3 py-1 rounded text-sm ${
-                        currentPage === page
-                          ? 'bg-primary-600 text-white'
-                          : 'hover:bg-neutral-100 dark:hover:bg-neutral-700'
-                      }`}
-                      onClick={() => setCurrentPage(page)}
-                    >
-                      {page}
-                    </button>
+                    </motion.tr>
                   );
                 })}
-                <button
-                  className="p-2 rounded hover:bg-neutral-100 dark:hover:bg-neutral-700 disabled:opacity-40"
-                  disabled={currentPage >= (pagination.totalPages || 1)}
-                  onClick={() => setCurrentPage((p) => p + 1)}
-                >
-                  <ChevronRight className="w-4 h-4" />
-                </button>
+              </motion.tbody>
+            </table>
+          </div>
+        )}
+
+        {/* Pagination */}
+        {pagination && !isEmpty && (
+          <div className="flex flex-col sm:flex-row items-center justify-between gap-3 px-5 py-4 border-t border-[var(--border-default)]">
+            <span className="text-xs text-[var(--text-tertiary)]">
+              {t('admin.products.pagination.total', {
+                start: (currentPage - 1) * (pagination?.itemsPerPage || 10) + 1,
+                end: Math.min(
+                  currentPage * (pagination?.itemsPerPage || 10),
+                  pagination?.totalItems || 0,
+                ),
+                total: pagination?.totalItems || 0,
+              })}
+            </span>
+            <div className="flex items-center gap-1">
+              <button
+                type="button"
+                disabled={currentPage <= 1}
+                onClick={() => setCurrentPage((p) => p - 1)}
+                className="p-2 rounded-lg text-[var(--text-secondary)] hover:bg-white/5 disabled:opacity-30 disabled:cursor-not-allowed transition"
+                aria-label="Previous"
+              >
+                <ChevronLeft className="w-4 h-4" />
+              </button>
+              {Array.from({ length: Math.min(totalPages, 7) }, (_, i) => {
+                const page = i + 1;
+                const isActive = currentPage === page;
+                return (
+                  <button
+                    key={page}
+                    type="button"
+                    onClick={() => setCurrentPage(page)}
+                    className={cn(
+                      'min-w-[36px] h-9 px-3 rounded-lg text-sm font-medium transition tabular-nums',
+                      isActive
+                        ? 'bg-[var(--accent)] text-white shadow-md shadow-[var(--accent)]/20'
+                        : 'text-[var(--text-secondary)] hover:bg-white/5',
+                    )}
+                  >
+                    {page}
+                  </button>
+                );
+              })}
+              <button
+                type="button"
+                disabled={currentPage >= totalPages}
+                onClick={() => setCurrentPage((p) => p + 1)}
+                className="p-2 rounded-lg text-[var(--text-secondary)] hover:bg-white/5 disabled:opacity-30 disabled:cursor-not-allowed transition"
+                aria-label="Next"
+              >
+                <ChevronRight className="w-4 h-4" />
+              </button>
+            </div>
+          </div>
+        )}
+      </div>
+
+      {/* Delete confirm dialog — glass */}
+      <Dialog open={!!deleteConfirmId} onOpenChange={() => setDeleteConfirmId(null)}>
+        <DialogContent className="glass-card-lg !border-[var(--admin-error)]/20 max-w-md">
+          <DialogHeader>
+            <div className="flex items-start gap-3">
+              <div className="w-10 h-10 rounded-full bg-[var(--admin-error)]/15 flex items-center justify-center flex-shrink-0">
+                <Trash2 className="w-5 h-5 text-[var(--admin-error)]" strokeWidth={2.25} />
+              </div>
+              <div>
+                <DialogTitle>{t('admin.products.messages.deleteTitle')}</DialogTitle>
+                <p className="text-sm text-[var(--text-tertiary)] mt-1">
+                  {t('admin.products.messages.deleteDescription')}
+                </p>
               </div>
             </div>
-          )}
-        </CardContent>
-      </Card>
-
-      {/* Delete confirm dialog */}
-      <Dialog open={!!deleteConfirmId} onOpenChange={() => setDeleteConfirmId(null)}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>{t('admin.products.messages.deleteTitle')}</DialogTitle>
           </DialogHeader>
-          <p className="text-sm text-neutral-600 dark:text-neutral-400">
-            {t('admin.products.messages.deleteDescription')}
-          </p>
           <DialogFooter>
             <Button variant="outline" onClick={() => setDeleteConfirmId(null)}>
               {t('common.cancel')}
@@ -656,89 +694,120 @@ const ProductsPage: React.FC = () => {
         </DialogContent>
       </Dialog>
 
-      {/* Modal xem nhanh */}
+      {/* Quick view modal — glass */}
       <Dialog open={isQuickViewOpen} onOpenChange={setIsQuickViewOpen}>
-        <DialogContent className="max-w-[600px]">
+        <DialogContent className="glass-card-lg max-w-[640px]">
           <DialogHeader>
             <DialogTitle>{t('admin.products.modal.viewTitle')}</DialogTitle>
           </DialogHeader>
-          {selectedProduct && (
-            <div className="grid grid-cols-3 gap-4">
-              <div>
-                <img
-                  className="w-full rounded"
-                  src={selectedProduct.images?.[0] || '/placeholder-image.jpg'}
-                  alt={selectedProduct.name}
-                  onError={(e) => {
-                    (e.target as HTMLImageElement).src = '/placeholder-image.jpg';
-                  }}
-                />
-              </div>
-              <div className="col-span-2 space-y-3">
-                <div>
-                  <strong>{t('admin.products.modal.productName')}:</strong> {selectedProduct.name}
+          <AnimatePresence>
+            {selectedProduct && (
+              <motion.div
+                initial={{ opacity: 0, y: 8 }}
+                animate={{ opacity: 1, y: 0 }}
+                className="grid grid-cols-1 sm:grid-cols-3 gap-4"
+              >
+                <div className="sm:col-span-1">
+                  <div className="aspect-square rounded-xl overflow-hidden bg-[var(--bg-surface)] ring-1 ring-[var(--border-default)]">
+                    <img
+                      className="w-full h-full object-cover"
+                      src={selectedProduct.images?.[0] || '/placeholder-image.jpg'}
+                      alt={selectedProduct.name}
+                      onError={(e) => {
+                        (e.target as HTMLImageElement).src = '/placeholder-image.jpg';
+                      }}
+                    />
+                  </div>
                 </div>
-                <div>
-                  <strong>{t('admin.products.modal.category')}:</strong>{' '}
-                  {selectedProduct.categories && selectedProduct.categories.length > 0 ? (
-                    selectedProduct.categories.map((cat: { name: string }, index: number) => (
-                      <span
-                        key={index}
-                        className="inline-block px-2 py-0.5 mr-1 text-xs rounded bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400"
-                      >
-                        {cat.name}
-                      </span>
-                    ))
-                  ) : (
-                    <span>-</span>
+                <div className="sm:col-span-2 space-y-3 text-sm">
+                  <div>
+                    <div className="text-[11px] font-semibold uppercase tracking-wider text-[var(--text-tertiary)] mb-0.5">
+                      {t('admin.products.modal.productName')}
+                    </div>
+                    <div className="font-semibold text-[var(--text-primary)]">
+                      {selectedProduct.name}
+                    </div>
+                  </div>
+                  <div>
+                    <div className="text-[11px] font-semibold uppercase tracking-wider text-[var(--text-tertiary)] mb-1">
+                      {t('admin.products.modal.category')}
+                    </div>
+                    {selectedProduct.categories && selectedProduct.categories.length > 0 ? (
+                      <div className="flex flex-wrap gap-1">
+                        {selectedProduct.categories.map((cat, index) => (
+                          <span
+                            key={index}
+                            className="inline-flex items-center px-2 py-0.5 rounded-md text-[11px] font-medium bg-[var(--admin-info)]/10 text-[var(--admin-info)] border border-[var(--admin-info)]/20"
+                          >
+                            {cat.name}
+                          </span>
+                        ))}
+                      </div>
+                    ) : (
+                      <span className="text-[var(--text-tertiary)]">—</span>
+                    )}
+                  </div>
+                  <div>
+                    <div className="text-[11px] font-semibold uppercase tracking-wider text-[var(--text-tertiary)] mb-0.5">
+                      {t('admin.products.modal.price')}
+                    </div>
+                    <div className="font-bold text-[var(--text-primary)] tabular-nums">
+                      {
+                        calculatePriceRange(
+                          selectedProduct.price,
+                          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                          selectedProduct.variants as any,
+                        ).priceText
+                      }
+                    </div>
+                  </div>
+                  <div className="grid grid-cols-2 gap-3">
+                    <div>
+                      <div className="text-[11px] font-semibold uppercase tracking-wider text-[var(--text-tertiary)] mb-1">
+                        {t('admin.products.modal.stock')}
+                      </div>
+                      <StatusPill
+                        variant={
+                          ((selectedProduct.stockQuantity ?? 0) || (selectedProduct.stock ?? 0)) > 0
+                            ? 'success'
+                            : 'error'
+                        }
+                        label={String(
+                          selectedProduct.stockQuantity !== undefined
+                            ? selectedProduct.stockQuantity
+                            : selectedProduct.stock,
+                        )}
+                        showDot={false}
+                      />
+                    </div>
+                    <div>
+                      <div className="text-[11px] font-semibold uppercase tracking-wider text-[var(--text-tertiary)] mb-1">
+                        {t('admin.products.modal.status')}
+                      </div>
+                      <StatusPill
+                        variant={STATUS_VARIANT[selectedProduct.status] || 'neutral'}
+                        label={
+                          selectedProduct.status
+                            ? t(`admin.products.status.${selectedProduct.status}`)
+                            : ''
+                        }
+                      />
+                    </div>
+                  </div>
+                  {selectedProduct.description && (
+                    <div>
+                      <div className="text-[11px] font-semibold uppercase tracking-wider text-[var(--text-tertiary)] mb-1">
+                        {t('admin.products.modal.description')}
+                      </div>
+                      <p className="text-sm text-[var(--text-secondary)] line-clamp-3">
+                        {selectedProduct.description}
+                      </p>
+                    </div>
                   )}
                 </div>
-                <div>
-                  <strong>{t('admin.products.modal.price')}:</strong>{' '}
-                  <span className="font-medium" style={{ color: 'var(--admin-success)' }}>
-                    {
-                      calculatePriceRange(
-                        selectedProduct.price,
-                        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                        selectedProduct.variants as any,
-                      ).priceText
-                    }
-                  </span>
-                </div>
-                <div>
-                  <strong>{t('admin.products.modal.stock')}:</strong>{' '}
-                  <span
-                    style={{
-                      color:
-                        ((selectedProduct.stockQuantity ?? 0) || (selectedProduct.stock ?? 0)) > 0
-                          ? 'var(--admin-success)'
-                          : 'var(--admin-error)',
-                    }}
-                  >
-                    {selectedProduct.stockQuantity !== undefined
-                      ? selectedProduct.stockQuantity
-                      : selectedProduct.stock}
-                  </span>
-                </div>
-                <div>
-                  <strong>{t('admin.products.modal.status')}:</strong>{' '}
-                  <span
-                    className={`inline-block px-2 py-0.5 text-xs rounded ${getStatusClasses(selectedProduct.status)}`}
-                  >
-                    {selectedProduct.status
-                      ? t(`admin.products.status.${selectedProduct.status}`)
-                      : ''}
-                  </span>
-                </div>
-                {selectedProduct.description && (
-                  <div>
-                    <strong>{t('admin.products.modal.description')}:</strong>
-                    <p className="mt-2">{selectedProduct.description}</p>
-                  </div>
-                )}
-              </div>
-            </div>
-          )}
+              </motion.div>
+            )}
+          </AnimatePresence>
           <DialogFooter>
             <Button variant="outline" onClick={() => setIsQuickViewOpen(false)}>
               {t('admin.products.modal.close')}
@@ -749,6 +818,7 @@ const ProductsPage: React.FC = () => {
                 navigate(buildRoute.adminProductEdit(selectedProduct?.id ?? ''));
               }}
             >
+              <Pencil className="w-4 h-4 mr-2" strokeWidth={2.25} />
               {t('admin.products.modal.edit')}
             </Button>
           </DialogFooter>

@@ -1,0 +1,113 @@
+/**
+ * @file StatusPill.tsx
+ * @layer Component
+ * @feature admin
+ * @description Status pill dùng chung cho admin tables — spec §5
+ */
+import React from 'react';
+import { cn } from '@/utils/cn';
+
+export type StatusVariant =
+  | 'pending'
+  | 'processing'
+  | 'shipped'
+  | 'delivered'
+  | 'cancelled'
+  | 'success'
+  | 'warning'
+  | 'error'
+  | 'info'
+  | 'purple'
+  | 'neutral';
+
+const VARIANT_TOKEN: Record<StatusVariant, { bg: string; text: string; border: string }> = {
+  pending: {
+    bg: 'bg-[var(--admin-warning)]/12',
+    text: 'text-[var(--admin-warning)]',
+    border: 'border-[var(--admin-warning)]/25',
+  },
+  processing: {
+    bg: 'bg-[var(--admin-info)]/12',
+    text: 'text-[var(--admin-info)]',
+    border: 'border-[var(--admin-info)]/25',
+  },
+  shipped: {
+    bg: 'bg-[var(--admin-purple)]/12',
+    text: 'text-[var(--admin-purple)]',
+    border: 'border-[var(--admin-purple)]/25',
+  },
+  delivered: {
+    bg: 'bg-[var(--admin-success)]/12',
+    text: 'text-[var(--admin-success)]',
+    border: 'border-[var(--admin-success)]/25',
+  },
+  cancelled: {
+    bg: 'bg-[var(--admin-error)]/12',
+    text: 'text-[var(--admin-error)]',
+    border: 'border-[var(--admin-error)]/25',
+  },
+  success: {
+    bg: 'bg-[var(--admin-success)]/12',
+    text: 'text-[var(--admin-success)]',
+    border: 'border-[var(--admin-success)]/25',
+  },
+  warning: {
+    bg: 'bg-[var(--admin-warning)]/12',
+    text: 'text-[var(--admin-warning)]',
+    border: 'border-[var(--admin-warning)]/25',
+  },
+  error: {
+    bg: 'bg-[var(--admin-error)]/12',
+    text: 'text-[var(--admin-error)]',
+    border: 'border-[var(--admin-error)]/25',
+  },
+  info: {
+    bg: 'bg-[var(--admin-info)]/12',
+    text: 'text-[var(--admin-info)]',
+    border: 'border-[var(--admin-info)]/25',
+  },
+  purple: {
+    bg: 'bg-[var(--admin-purple)]/12',
+    text: 'text-[var(--admin-purple)]',
+    border: 'border-[var(--admin-purple)]/25',
+  },
+  neutral: {
+    bg: 'bg-[var(--text-tertiary)]/12',
+    text: 'text-[var(--text-secondary)]',
+    border: 'border-[var(--border-default)]',
+  },
+};
+
+interface StatusPillProps {
+  variant: StatusVariant;
+  label: React.ReactNode;
+  /** Hiển thị dot indicator bên trái (mặc định true) */
+  showDot?: boolean;
+  className?: string;
+}
+
+const StatusPill: React.FC<StatusPillProps> = ({ variant, label, showDot = true, className }) => {
+  const cfg = VARIANT_TOKEN[variant];
+  return (
+    <span
+      className={cn(
+        'inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-medium border whitespace-nowrap',
+        cfg.bg,
+        cfg.text,
+        cfg.border,
+        className,
+      )}
+    >
+      {showDot && (
+        <span
+          className="w-1.5 h-1.5 rounded-full"
+          style={{ background: 'currentColor' }}
+          aria-hidden="true"
+        />
+      )}
+      {label}
+    </span>
+  );
+};
+
+export default StatusPill;

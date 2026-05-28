@@ -31,6 +31,7 @@ import {
 import { useGetAdminOrdersQuery } from '../api/admin-order-api';
 import DashboardCharts from '../components/DashboardCharts';
 import FlipNumber from '../components/FlipNumber';
+import StatusPill from '../components/StatusPill';
 
 const easeOutQuart = [0.22, 1, 0.36, 1] as const;
 
@@ -42,57 +43,6 @@ const gridItem = {
   initial: { opacity: 0, y: 16 },
   animate: { opacity: 1, y: 0, transition: { duration: 0.35, ease: easeOutQuart } },
 };
-
-// Map admin order status → token color cho status pill (spec §5.2)
-const STATUS_TOKEN: Record<string, { bg: string; text: string; border: string }> = {
-  pending: {
-    bg: 'bg-[var(--admin-warning)]/12',
-    text: 'text-[var(--admin-warning)]',
-    border: 'border-[var(--admin-warning)]/25',
-  },
-  processing: {
-    bg: 'bg-[var(--admin-info)]/12',
-    text: 'text-[var(--admin-info)]',
-    border: 'border-[var(--admin-info)]/25',
-  },
-  shipped: {
-    bg: 'bg-[var(--admin-purple)]/12',
-    text: 'text-[var(--admin-purple)]',
-    border: 'border-[var(--admin-purple)]/25',
-  },
-  delivered: {
-    bg: 'bg-[var(--admin-success)]/12',
-    text: 'text-[var(--admin-success)]',
-    border: 'border-[var(--admin-success)]/25',
-  },
-  cancelled: {
-    bg: 'bg-[var(--admin-error)]/12',
-    text: 'text-[var(--admin-error)]',
-    border: 'border-[var(--admin-error)]/25',
-  },
-};
-
-/** Status pill — spec §5 (px-2 py-0.5 text-[11px] rounded-full) */
-function StatusPill({ status, label }: { status: string; label: string }) {
-  const cfg = STATUS_TOKEN[status] ?? STATUS_TOKEN.processing;
-  return (
-    <span
-      className={cn(
-        'inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-medium border',
-        cfg.bg,
-        cfg.text,
-        cfg.border,
-      )}
-    >
-      <span
-        className="w-1.5 h-1.5 rounded-full"
-        style={{ background: 'currentColor' }}
-        aria-hidden="true"
-      />
-      {label}
-    </span>
-  );
-}
 
 /** Growth pill — green nếu tăng, coral nếu giảm */
 function GrowthPill({ value }: { value: number }) {
@@ -506,7 +456,14 @@ const DashboardPage: React.FC = () => {
                       </td>
                       <td className="px-4 py-3 whitespace-nowrap">
                         <StatusPill
-                          status={order.status}
+                          variant={
+                            order.status as
+                              | 'pending'
+                              | 'processing'
+                              | 'shipped'
+                              | 'delivered'
+                              | 'cancelled'
+                          }
                           label={t(`admin.dashboard.orderStatus.${order.status}`)}
                         />
                       </td>
@@ -642,7 +599,7 @@ const DashboardPage: React.FC = () => {
                       </td>
                       <td className="px-4 py-3 whitespace-nowrap">
                         <StatusPill
-                          status={isOut ? 'cancelled' : 'pending'}
+                          variant={isOut ? 'cancelled' : 'pending'}
                           label={String(product.stockQuantity)}
                         />
                       </td>

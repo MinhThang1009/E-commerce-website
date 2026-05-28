@@ -186,9 +186,8 @@ const DashboardCharts: React.FC = () => {
     );
   }
 
-  // Card wrapper — solid (KHÔNG glass) per spec §0 Rule 1
-  const cardClass =
-    'rounded-2xl bg-[var(--bg-base)] dark:bg-white/[0.03] border border-[var(--border-default)] p-5 shadow-sm';
+  // Chart card wrapper — glass (user yêu cầu glassmorphism toàn bộ)
+  const cardClass = 'glass-card rounded-2xl p-5';
 
   return (
     <div className="space-y-4 mt-6">
@@ -301,7 +300,7 @@ const DashboardCharts: React.FC = () => {
       {/* Row 1: Revenue Area + Order Count Bar */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
         <div className={cardClass}>
-          <h3 className="text-[11px] font-semibold uppercase tracking-wider text-[var(--text-tertiary)] mb-3">
+          <h3 className="text-xs font-bold uppercase tracking-wider text-[var(--text-secondary)] mb-4">
             {t('admin.charts.revenue', {
               period: t(
                 `admin.charts.period${
@@ -316,7 +315,7 @@ const DashboardCharts: React.FC = () => {
               ),
             })}
           </h3>
-          <div className="h-64">
+          <div className="h-72">
             <ResponsiveContainer width="100%" height="100%">
               <AreaChart
                 data={orderDataForChart}
@@ -324,8 +323,8 @@ const DashboardCharts: React.FC = () => {
               >
                 <defs>
                   <linearGradient id="colorRevenue" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="5%" stopColor={CHART_BLUE} stopOpacity={0.3} />
-                    <stop offset="95%" stopColor={CHART_BLUE} stopOpacity={0} />
+                    <stop offset="0%" stopColor={CHART_BLUE} stopOpacity={0.5} />
+                    <stop offset="100%" stopColor={CHART_BLUE} stopOpacity={0.05} />
                   </linearGradient>
                 </defs>
                 <CartesianGrid stroke={gridStroke} strokeDasharray="0" vertical={false} />
@@ -352,7 +351,9 @@ const DashboardCharts: React.FC = () => {
                   stroke={CHART_BLUE}
                   fillOpacity={1}
                   fill="url(#colorRevenue)"
-                  strokeWidth={2.5}
+                  strokeWidth={3}
+                  dot={{ r: 4, fill: CHART_BLUE, stroke: isDark ? '#111' : '#fff', strokeWidth: 2 }}
+                  activeDot={{ r: 6, fill: CHART_BLUE }}
                 />
                 {/* Ghost line kỳ trước — Comparison Mode §21.5 */}
                 {comparison.isComparing && comparison.previousOrders.length > 0 && (
@@ -377,10 +378,10 @@ const DashboardCharts: React.FC = () => {
         </div>
 
         <div className={cardClass}>
-          <h3 className="text-[11px] font-semibold uppercase tracking-wider text-[var(--text-tertiary)] mb-3">
+          <h3 className="text-xs font-bold uppercase tracking-wider text-[var(--text-secondary)] mb-4">
             {t('admin.charts.orderCount')}
           </h3>
-          <div className="h-64">
+          <div className="h-72">
             <ResponsiveContainer width="100%" height="100%">
               <BarChart
                 data={orderDataForChart}
@@ -388,8 +389,8 @@ const DashboardCharts: React.FC = () => {
               >
                 <defs>
                   <linearGradient id="colorOrders" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="0%" stopColor={CHART_GREEN} stopOpacity={0.9} />
-                    <stop offset="100%" stopColor={CHART_GREEN} stopOpacity={0.4} />
+                    <stop offset="0%" stopColor={CHART_GREEN} stopOpacity={1} />
+                    <stop offset="100%" stopColor={CHART_GREEN} stopOpacity={0.6} />
                   </linearGradient>
                 </defs>
                 <CartesianGrid stroke={gridStroke} strokeDasharray="0" vertical={false} />
@@ -414,10 +415,10 @@ const DashboardCharts: React.FC = () => {
       {/* Row 2: Order Status Pie + User Growth Line */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
         <div className={cardClass}>
-          <h3 className="text-[11px] font-semibold uppercase tracking-wider text-[var(--text-tertiary)] mb-3">
+          <h3 className="text-xs font-bold uppercase tracking-wider text-[var(--text-secondary)] mb-4">
             {t('admin.charts.orderStatusDist')}
           </h3>
-          <div className="h-64">
+          <div className="h-72">
             <ResponsiveContainer width="100%" height="100%">
               <PieChart>
                 <Pie
@@ -426,8 +427,8 @@ const DashboardCharts: React.FC = () => {
                   nameKey="label"
                   cx="50%"
                   cy="50%"
-                  innerRadius={50}
-                  outerRadius={85}
+                  innerRadius={55}
+                  outerRadius={95}
                   stroke={isDark ? '#111111' : '#ffffff'}
                   strokeWidth={2}
                   label={({ label, count }) => `${label}: ${count}`}
@@ -447,10 +448,10 @@ const DashboardCharts: React.FC = () => {
         </div>
 
         <div className={cardClass}>
-          <h3 className="text-[11px] font-semibold uppercase tracking-wider text-[var(--text-tertiary)] mb-3">
+          <h3 className="text-xs font-bold uppercase tracking-wider text-[var(--text-secondary)] mb-4">
             {t('admin.charts.userGrowth')}
           </h3>
-          <div className="h-64">
+          <div className="h-72">
             <ResponsiveContainer width="100%" height="100%">
               <LineChart
                 data={(userGrowthData?.data || []).map((d) => ({
@@ -515,7 +516,7 @@ const DashboardCharts: React.FC = () => {
               </button>
             </div>
           </div>
-          <div className="h-64">
+          <div className="h-72">
             <ResponsiveContainer width="100%" height="100%">
               <BarChart
                 data={(topProductsData?.data || []).map((p) => ({
@@ -572,10 +573,10 @@ const DashboardCharts: React.FC = () => {
         </div>
 
         <div className={cardClass}>
-          <h3 className="text-[11px] font-semibold uppercase tracking-wider text-[var(--text-tertiary)] mb-3">
+          <h3 className="text-xs font-bold uppercase tracking-wider text-[var(--text-secondary)] mb-4">
             {t('admin.charts.revenueByCategory')}
           </h3>
-          <div className="h-64">
+          <div className="h-72">
             <ResponsiveContainer width="100%" height="100%">
               <BarChart
                 data={(categoryData?.data || []).map((c, i) => ({
@@ -619,10 +620,10 @@ const DashboardCharts: React.FC = () => {
       {/* Row 4: Payment Methods Pie */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
         <div className={cardClass}>
-          <h3 className="text-[11px] font-semibold uppercase tracking-wider text-[var(--text-tertiary)] mb-3">
+          <h3 className="text-xs font-bold uppercase tracking-wider text-[var(--text-secondary)] mb-4">
             {t('admin.charts.paymentMethods')}
           </h3>
-          <div className="h-64">
+          <div className="h-72">
             <ResponsiveContainer width="100%" height="100%">
               <PieChart>
                 <Pie
@@ -635,8 +636,8 @@ const DashboardCharts: React.FC = () => {
                   nameKey="name"
                   cx="50%"
                   cy="50%"
-                  innerRadius={50}
-                  outerRadius={85}
+                  innerRadius={55}
+                  outerRadius={95}
                   stroke={isDark ? '#111111' : '#ffffff'}
                   strokeWidth={2}
                   label={({ name, value }) => `${name}: ${value}`}

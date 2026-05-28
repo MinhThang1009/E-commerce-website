@@ -90,7 +90,7 @@ const PAYMENT_STATUS_CONFIG: Record<string, { color: string; Icon: LucideIcon }>
   },
   failed: { color: 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400', Icon: XCircle },
   refunded: {
-    color: 'bg-neutral-100 text-neutral-800 dark:bg-neutral-700 dark:text-neutral-300',
+    color: 'bg-[var(--text-tertiary)]/12 text-[var(--text-secondary)]',
     Icon: RotateCcw,
   },
 };
@@ -418,7 +418,7 @@ const OrdersPage: React.FC = () => {
             >
               {orders.length === 0 ? (
                 <tr>
-                  <td colSpan={7} className="text-center py-12 text-neutral-500">
+                  <td colSpan={7} className="text-center py-12 text-[var(--text-tertiary)]">
                     {t('admin.orders.noOrdersFound')}
                   </td>
                 </tr>
@@ -479,9 +479,11 @@ const OrdersPage: React.FC = () => {
                     >
                       <td className="px-4 py-3">
                         <div>
-                          <span className="font-semibold dark:text-white">#{record.number}</span>
+                          <span className="font-semibold text-[var(--text-primary)]">
+                            #{record.number}
+                          </span>
                           <br />
-                          <span className="text-xs text-neutral-500">
+                          <span className="text-xs text-[var(--text-tertiary)]">
                             {t('admin.orders.table.itemCount', {
                               count: record.items?.length || 0,
                             })}
@@ -491,25 +493,27 @@ const OrdersPage: React.FC = () => {
                       <td className="px-4 py-3">
                         <div>
                           <div className="flex items-center gap-2">
-                            <User className="size-4 text-neutral-400" />
-                            <span className="font-semibold dark:text-white">
+                            <User className="size-4 text-[var(--text-tertiary)]" />
+                            <span className="font-semibold text-[var(--text-primary)]">
                               {record.User?.firstName} {record.User?.lastName}
                             </span>
                           </div>
-                          <span className="text-xs text-neutral-500">{record.User?.email}</span>
+                          <span className="text-xs text-[var(--text-tertiary)]">
+                            {record.User?.email}
+                          </span>
                         </div>
                       </td>
                       <td className="px-4 py-3">
                         <div className="flex items-center gap-2">
-                          <Calendar className="size-4 text-neutral-400" />
-                          <span className="dark:text-neutral-300">
+                          <Calendar className="size-4 text-[var(--text-tertiary)]" />
+                          <span className="text-[var(--text-secondary)]">
                             {formatDate(record.createdAt)}
                           </span>
                         </div>
                       </td>
                       <td className="px-4 py-3">
                         <div className="flex items-center gap-2">
-                          <DollarSign className="size-4 text-neutral-400" />
+                          <DollarSign className="size-4 text-[var(--text-tertiary)]" />
                           <span className="font-semibold" style={{ color: 'var(--admin-info)' }}>
                             {formatCurrency(record.total)}
                           </span>
@@ -586,25 +590,25 @@ const OrdersPage: React.FC = () => {
           {selectedOrder && (
             <div className="space-y-4">
               {/* Thông tin cơ bản đơn hàng */}
-              <div className="overflow-x-auto rounded-lg border border-neutral-200 dark:border-neutral-700">
+              <div className="overflow-x-auto rounded-lg border border-[var(--border-default)]">
                 <table className="w-full text-sm">
                   <tbody>
-                    <tr className="border-b border-neutral-200 dark:border-neutral-700">
-                      <td className="px-4 py-2 font-medium bg-neutral-50 dark:bg-neutral-800 w-[200px]">
+                    <tr className="border-b border-[var(--border-default)]">
+                      <td className="px-4 py-2 font-medium bg-white/[0.02] w-[200px]">
                         {t('admin.orders.details.orderNumber')}
                       </td>
-                      <td className="px-4 py-2 font-semibold dark:text-white">
+                      <td className="px-4 py-2 font-semibold text-[var(--text-primary)]">
                         #{selectedOrder.number}
                       </td>
-                      <td className="px-4 py-2 font-medium bg-neutral-50 dark:bg-neutral-800 w-[200px]">
+                      <td className="px-4 py-2 font-medium bg-white/[0.02] w-[200px]">
                         {t('admin.orders.details.orderDate')}
                       </td>
-                      <td className="px-4 py-2 dark:text-neutral-300">
+                      <td className="px-4 py-2 text-[var(--text-secondary)]">
                         {formatDate(selectedOrder.createdAt)}
                       </td>
                     </tr>
                     <tr>
-                      <td className="px-4 py-2 font-medium bg-neutral-50 dark:bg-neutral-800">
+                      <td className="px-4 py-2 font-medium bg-white/[0.02]">
                         {t('admin.orders.details.orderStatus')}
                       </td>
                       <td className="px-4 py-2">
@@ -620,7 +624,7 @@ const OrdersPage: React.FC = () => {
                           {t(`admin.orders.status.${selectedOrder.status}`)}
                         </span>
                       </td>
-                      <td className="px-4 py-2 font-medium bg-neutral-50 dark:bg-neutral-800">
+                      <td className="px-4 py-2 font-medium bg-white/[0.02]">
                         {t('admin.orders.details.paymentStatus')}
                       </td>
                       <td className="px-4 py-2">
@@ -663,25 +667,29 @@ const OrdersPage: React.FC = () => {
                   </CardHeader>
                   <CardContent className="text-sm space-y-1">
                     <div className="flex justify-between">
-                      <span className="text-neutral-500">
+                      <span className="text-[var(--text-tertiary)]">
                         {t('admin.orders.details.customer.name')}
                       </span>
-                      <span className="dark:text-neutral-200">
+                      <span className="text-[var(--text-primary)]">
                         {selectedOrder.User?.firstName} {selectedOrder.User?.lastName}
                       </span>
                     </div>
                     <div className="flex justify-between">
-                      <span className="text-neutral-500">
+                      <span className="text-[var(--text-tertiary)]">
                         {t('admin.orders.details.customer.email')}
                       </span>
-                      <span className="dark:text-neutral-200">{selectedOrder.User?.email}</span>
+                      <span className="text-[var(--text-primary)]">
+                        {selectedOrder.User?.email}
+                      </span>
                     </div>
                     {selectedOrder.User?.phone && (
                       <div className="flex justify-between">
-                        <span className="text-neutral-500">
+                        <span className="text-[var(--text-tertiary)]">
                           {t('admin.orders.details.customer.phone')}
                         </span>
-                        <span className="dark:text-neutral-200">{selectedOrder.User.phone}</span>
+                        <span className="text-[var(--text-primary)]">
+                          {selectedOrder.User.phone}
+                        </span>
                       </div>
                     )}
                   </CardContent>
@@ -695,26 +703,26 @@ const OrdersPage: React.FC = () => {
                   </CardHeader>
                   <CardContent className="text-sm space-y-1">
                     <div className="flex justify-between">
-                      <span className="text-neutral-500">
+                      <span className="text-[var(--text-tertiary)]">
                         {t('admin.orders.details.shipping.fullName')}
                       </span>
-                      <span className="dark:text-neutral-200">
+                      <span className="text-[var(--text-primary)]">
                         {selectedOrder.shippingFirstName} {selectedOrder.shippingLastName}
                       </span>
                     </div>
                     <div className="flex justify-between">
-                      <span className="text-neutral-500">
+                      <span className="text-[var(--text-tertiary)]">
                         {t('admin.orders.details.shipping.phone')}
                       </span>
-                      <span className="dark:text-neutral-200">
+                      <span className="text-[var(--text-primary)]">
                         {selectedOrder.shippingPhone || 'N/A'}
                       </span>
                     </div>
                     <div className="flex justify-between">
-                      <span className="text-neutral-500">
+                      <span className="text-[var(--text-tertiary)]">
                         {t('admin.orders.details.shipping.address')}
                       </span>
-                      <span className="dark:text-neutral-200 text-right max-w-[200px]">
+                      <span className="text-[var(--text-primary)] text-right max-w-[200px]">
                         {selectedOrder.shippingAddress1}
                         {selectedOrder.shippingAddress2
                           ? `, ${selectedOrder.shippingAddress2}`
@@ -736,20 +744,20 @@ const OrdersPage: React.FC = () => {
                 <CardContent className="text-sm">
                   <div className="grid grid-cols-2 gap-4">
                     <div className="flex justify-between">
-                      <span className="text-neutral-500">
+                      <span className="text-[var(--text-tertiary)]">
                         {t('admin.orders.details.paymentInfo.method')}
                       </span>
-                      <span className="dark:text-neutral-200">
+                      <span className="text-[var(--text-primary)]">
                         {selectedOrder.paymentMethod === 'cod'
                           ? t('admin.orders.details.paymentInfo.cod')
                           : selectedOrder.paymentMethod.toUpperCase()}
                       </span>
                     </div>
                     <div className="flex justify-between">
-                      <span className="text-neutral-500">
+                      <span className="text-[var(--text-tertiary)]">
                         {t('admin.orders.details.paymentInfo.transaction')}
                       </span>
-                      <span className="dark:text-neutral-200">
+                      <span className="text-[var(--text-primary)]">
                         {selectedOrder.paymentTransactionId || 'N/A'}
                       </span>
                     </div>
@@ -767,7 +775,7 @@ const OrdersPage: React.FC = () => {
                     {selectedOrder.items.map((item) => (
                       <div
                         key={item.id}
-                        className="flex items-center gap-3 p-3 bg-neutral-50 dark:bg-neutral-800 rounded-lg"
+                        className="flex items-center gap-3 p-3 bg-white/[0.02] rounded-lg"
                       >
                         {item.Product?.images?.[0] && (
                           <img
@@ -777,16 +785,16 @@ const OrdersPage: React.FC = () => {
                           />
                         )}
                         <div className="flex-1 min-w-0">
-                          <p className="font-semibold dark:text-white truncate">
+                          <p className="font-semibold text-[var(--text-primary)] truncate">
                             {item.Product?.name || t('admin.orders.noItemsFound')}
                           </p>
-                          <p className="text-sm text-neutral-500">
+                          <p className="text-sm text-[var(--text-tertiary)]">
                             {t('admin.orders.details.items.quantity')}: {item.quantity} x{' '}
                             {formatCurrency(item.unitPrice)}
                           </p>
                         </div>
                         <div className="text-right shrink-0">
-                          <p className="font-semibold text-base dark:text-white">
+                          <p className="font-semibold text-base text-[var(--text-primary)]">
                             {formatCurrency(item.quantity * item.unitPrice)}
                           </p>
                         </div>
@@ -806,26 +814,26 @@ const OrdersPage: React.FC = () => {
                 <CardContent>
                   <div className="space-y-2 text-sm">
                     <div className="flex justify-between">
-                      <span className="text-neutral-600 dark:text-neutral-400">
+                      <span className="text-[var(--text-secondary)]">
                         {t('admin.orders.details.summary.subtotal')}:
                       </span>
-                      <span className="dark:text-neutral-200">
+                      <span className="text-[var(--text-primary)]">
                         {formatCurrency(selectedOrder.subtotal)}
                       </span>
                     </div>
                     <div className="flex justify-between">
-                      <span className="text-neutral-600 dark:text-neutral-400">
+                      <span className="text-[var(--text-secondary)]">
                         {t('admin.orders.details.summary.tax')}:
                       </span>
-                      <span className="dark:text-neutral-200">
+                      <span className="text-[var(--text-primary)]">
                         {formatCurrency(selectedOrder.tax)}
                       </span>
                     </div>
                     <div className="flex justify-between">
-                      <span className="text-neutral-600 dark:text-neutral-400">
+                      <span className="text-[var(--text-secondary)]">
                         {t('admin.orders.details.summary.shipping')}:
                       </span>
-                      <span className="dark:text-neutral-200">
+                      <span className="text-[var(--text-primary)]">
                         {formatCurrency(selectedOrder.shippingCost)}
                       </span>
                     </div>
@@ -838,9 +846,9 @@ const OrdersPage: React.FC = () => {
                         <span>-{formatCurrency(selectedOrder.discount)}</span>
                       </div>
                     )}
-                    <hr className="border-neutral-200 dark:border-neutral-700 my-2" />
+                    <hr className="border-[var(--border-default)] my-2" />
                     <div className="flex justify-between">
-                      <span className="font-semibold text-base dark:text-white">
+                      <span className="font-semibold text-base text-[var(--text-primary)]">
                         {t('admin.orders.details.summary.total')}:
                       </span>
                       <span
@@ -951,7 +959,7 @@ const OrdersPage: React.FC = () => {
                   value={updateForm.note}
                   onChange={(e) => setUpdateForm((prev) => ({ ...prev, note: e.target.value }))}
                   placeholder={t('admin.orders.updateStatus.notePlaceholder')}
-                  className="mt-1 flex w-full rounded-xl border border-neutral-300 dark:border-neutral-600 bg-white dark:bg-neutral-800 px-3 py-2 text-sm text-neutral-900 dark:text-neutral-100 shadow-sm transition-colors placeholder:text-neutral-400 dark:placeholder:text-neutral-500 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500/30 focus-visible:border-primary-500"
+                  className="mt-1 flex w-full rounded-xl border border-[var(--border-default)] bg-[var(--bg-base)] dark:bg-white/[0.03] px-3 py-2 text-sm text-[var(--text-primary)] text-[var(--text-primary)] shadow-sm transition-colors placeholder:text-[var(--text-tertiary)] dark:placeholder:text-[var(--text-tertiary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500/30 focus-visible:border-primary-500"
                 />
               </div>
             </div>

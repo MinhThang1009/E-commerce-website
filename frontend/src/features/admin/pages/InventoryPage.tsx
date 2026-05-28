@@ -257,13 +257,13 @@ const InventoryPage: React.FC = () => {
             <tbody>
               {isLoading ? (
                 <tr>
-                  <td colSpan={6} className="text-center py-12 text-neutral-500">
+                  <td colSpan={6} className="text-center py-12 text-[var(--text-tertiary)]">
                     {t('common.loading')}
                   </td>
                 </tr>
               ) : products.length === 0 ? (
                 <tr>
-                  <td colSpan={6} className="text-center py-12 text-neutral-500">
+                  <td colSpan={6} className="text-center py-12 text-[var(--text-tertiary)]">
                     {t('common.noData')}
                   </td>
                 </tr>
@@ -289,7 +289,7 @@ const InventoryPage: React.FC = () => {
                           {hasVariants && (
                             <button
                               onClick={() => toggleExpand(product.key)}
-                              className="text-neutral-500 hover:text-neutral-800 dark:hover:text-neutral-200"
+                              className="text-[var(--text-tertiary)] hover:text-[var(--text-primary)]"
                             >
                               {isExpanded ? (
                                 <ChevronDown className="size-4" />
@@ -299,13 +299,13 @@ const InventoryPage: React.FC = () => {
                             </button>
                           )}
                         </td>
-                        <td className="px-4 py-3 dark:text-neutral-200 truncate max-w-[300px]">
+                        <td className="px-4 py-3 text-[var(--text-primary)] truncate max-w-[300px]">
                           {product.name}
                         </td>
-                        <td className="px-4 py-3 text-neutral-600 dark:text-neutral-400">
+                        <td className="px-4 py-3 text-[var(--text-secondary)]">
                           {hasVariants ? `${product.variants.length} biến thể` : '—'}
                         </td>
-                        <td className="px-4 py-3 dark:text-neutral-200">
+                        <td className="px-4 py-3 text-[var(--text-primary)]">
                           {hasVariants ? (
                             <span>{product.stockQuantity}</span>
                           ) : (
@@ -338,13 +338,13 @@ const InventoryPage: React.FC = () => {
                               }`}
                             >
                               <td className="px-3 py-2" />
-                              <td className="px-4 py-2 pl-12 dark:text-neutral-300">
+                              <td className="px-4 py-2 pl-12 text-[var(--text-secondary)]">
                                 {variant.name}
                               </td>
-                              <td className="px-4 py-2 text-neutral-600 dark:text-neutral-400">
+                              <td className="px-4 py-2 text-[var(--text-secondary)]">
                                 {variant.sku || '—'}
                               </td>
-                              <td className="px-4 py-2 dark:text-neutral-200">
+                              <td className="px-4 py-2 text-[var(--text-primary)]">
                                 {renderStockCell(variant.stockQuantity, isEditingVariant)}
                               </td>
                               <td className="px-4 py-2">{getStockBadge(variant.stockQuantity)}</td>

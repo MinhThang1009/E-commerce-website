@@ -271,13 +271,13 @@ const DiscountCodesPage: React.FC = () => {
             >
               {isLoading ? (
                 <tr>
-                  <td colSpan={7} className="text-center py-12 text-neutral-500">
+                  <td colSpan={7} className="text-center py-12 text-[var(--text-tertiary)]">
                     {t('common.loading')}
                   </td>
                 </tr>
               ) : discountCodes.length === 0 ? (
                 <tr>
-                  <td colSpan={7} className="text-center py-12 text-neutral-500">
+                  <td colSpan={7} className="text-center py-12 text-[var(--text-tertiary)]">
                     {t('common.noData')}
                   </td>
                 </tr>
@@ -300,7 +300,7 @@ const DiscountCodesPage: React.FC = () => {
                       />
                     </td>
                     <td className="px-4 py-3">
-                      <div className="flex items-center gap-1 dark:text-neutral-200">
+                      <div className="flex items-center gap-1 text-[var(--text-primary)]">
                         {record.type === 'percent' ? (
                           <Percent className="size-4 text-orange-500" />
                         ) : (
@@ -313,10 +313,10 @@ const DiscountCodesPage: React.FC = () => {
                         </span>
                       </div>
                     </td>
-                    <td className="px-4 py-3 text-neutral-600 dark:text-neutral-400">
+                    <td className="px-4 py-3 text-[var(--text-secondary)]">
                       {formatPrice(record.minOrderAmount)}
                     </td>
-                    <td className="px-4 py-3 text-sm text-gray-600 dark:text-neutral-400">
+                    <td className="px-4 py-3 text-sm text-[var(--text-secondary)]">
                       <div>
                         {t('admin.discountCodes.table.from')}{' '}
                         {record.startDate
@@ -575,7 +575,7 @@ const DiscountCodesPage: React.FC = () => {
                     setFormData((prev) => ({ ...prev, isActive: checked }))
                   }
                 />
-                <span className="text-sm text-neutral-600 dark:text-neutral-400">
+                <span className="text-sm text-[var(--text-secondary)]">
                   {formData.isActive
                     ? t('admin.discountCodes.status.active')
                     : t('admin.discountCodes.status.paused')}
